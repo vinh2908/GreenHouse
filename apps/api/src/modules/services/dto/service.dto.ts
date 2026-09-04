@@ -1,6 +1,14 @@
 import {
-  IsString, IsOptional, IsEnum, IsNumber, IsBoolean, IsArray,
-  IsNotEmpty, MaxLength, Min, Max,
+  IsString,
+  IsOptional,
+  IsEnum,
+  IsNumber,
+  IsBoolean,
+  IsArray,
+  IsNotEmpty,
+  MaxLength,
+  Min,
+  Max,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { ServiceStatus } from '@homemate/types';
