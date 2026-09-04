@@ -14,8 +14,8 @@ import { AuthModule } from './modules/auth/auth.module';
 
 // ─── Phase 3: User Profiles ───────────────────────────────────────────────────
 import { UsersModule } from './modules/users/users.module';
-// import { CustomersModule } from './modules/customers/customers.module';
-// import { HelpersModule } from './modules/helpers/helpers.module';
+import { CustomersModule } from './modules/customers/customers.module';
+import { HelpersModule } from './modules/helpers/helpers.module';
 
 // ─── Phase 4: Services ────────────────────────────────────────────────────────
 // import { ServicesModule } from './modules/services/services.module';
@@ -76,6 +76,8 @@ import { UsersModule } from './modules/users/users.module';
     // Feature modules
     AuthModule,
     UsersModule,
+    CustomersModule,
+    HelpersModule,
 
     // Phase 4+ (uncomment as implemented)
     // CustomersModule,
