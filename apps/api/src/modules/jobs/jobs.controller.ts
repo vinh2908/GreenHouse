@@ -1,12 +1,24 @@
 import {
-  Controller, Get, Post, Patch, Body, Param,
-  UseGuards, Query, HttpCode, HttpStatus,
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Body,
+  Param,
+  UseGuards,
+  Query,
+  HttpCode,
+  HttpStatus,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { JobsService } from './jobs.service';
 import {
-  CreateJobDto, CreateQuoteDto, SelectQuoteDto,
-  CompleteJobDto, ReviewJobDto, CancelJobDto,
+  CreateJobDto,
+  CreateQuoteDto,
+  SelectQuoteDto,
+  CompleteJobDto,
+  ReviewJobDto,
+  CancelJobDto,
 } from './dto/job.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
@@ -22,10 +34,7 @@ export class JobsController {
 
   @Post()
   @ApiOperation({ summary: '[Customer] Đăng yêu cầu công việc' })
-  async createJob(
-    @CurrentUser() user: { sub: string },
-    @Body() dto: CreateJobDto,
-  ) {
+  async createJob(@CurrentUser() user: { sub: string }, @Body() dto: CreateJobDto) {
     return this.jobsService.createJob(user.sub, dto);
   }
 
@@ -34,10 +43,7 @@ export class JobsController {
   @Get('my')
   @ApiOperation({ summary: '[Customer] Lấy danh sách job của tôi' })
   @ApiQuery({ name: 'status', required: false })
-  async getMyJobs(
-    @CurrentUser() user: { sub: string },
-    @Query('status') status?: string,
-  ) {
+  async getMyJobs(@CurrentUser() user: { sub: string }, @Query('status') status?: string) {
     return this.jobsService.getCustomerJobs(user.sub, status);
   }
 
@@ -61,10 +67,7 @@ export class JobsController {
   @Get('helper/my')
   @ApiOperation({ summary: '[Helper] Xem lịch sử công việc của tôi' })
   @ApiQuery({ name: 'status', required: false })
-  async getHelperJobs(
-    @CurrentUser() user: { sub: string },
-    @Query('status') status?: string,
-  ) {
+  async getHelperJobs(@CurrentUser() user: { sub: string }, @Query('status') status?: string) {
     return this.jobsService.getHelperJobs(user.sub, status);
   }
 
@@ -116,10 +119,7 @@ export class JobsController {
 
   @Get(':jobId/contract')
   @ApiOperation({ summary: 'Xem hợp đồng số của job' })
-  async getContract(
-    @CurrentUser() user: { sub: string },
-    @Param('jobId') jobId: string,
-  ) {
+  async getContract(@CurrentUser() user: { sub: string }, @Param('jobId') jobId: string) {
     return this.jobsService.getContract(jobId, user.sub);
   }
 
@@ -128,30 +128,21 @@ export class JobsController {
   @Patch(':jobId/on-the-way')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: '[Helper] Xác nhận đang trên đường đến' })
-  async onTheWay(
-    @CurrentUser() user: { sub: string },
-    @Param('jobId') jobId: string,
-  ) {
+  async onTheWay(@CurrentUser() user: { sub: string }, @Param('jobId') jobId: string) {
     return this.jobsService.helperOnTheWay(user.sub, jobId);
   }
 
   @Patch(':jobId/arrived')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: '[Helper] Xác nhận đã đến nơi' })
-  async arrived(
-    @CurrentUser() user: { sub: string },
-    @Param('jobId') jobId: string,
-  ) {
+  async arrived(@CurrentUser() user: { sub: string }, @Param('jobId') jobId: string) {
     return this.jobsService.helperArrived(user.sub, jobId);
   }
 
   @Patch(':jobId/start')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: '[Helper] Bắt đầu làm việc' })
-  async startJob(
-    @CurrentUser() user: { sub: string },
-    @Param('jobId') jobId: string,
-  ) {
+  async startJob(@CurrentUser() user: { sub: string }, @Param('jobId') jobId: string) {
     return this.jobsService.startJob(user.sub, jobId);
   }
 
