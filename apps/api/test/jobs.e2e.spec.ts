@@ -33,7 +33,10 @@ describe('Jobs E2E (Phase 5)', () => {
         ConfigModule.forRoot({ isGlobal: true, load: [appConfig, jwtConfig], ignoreEnvFile: true }),
         MongooseModule.forRoot(mongod.getUri()),
         ThrottlerModule.forRoot([{ ttl: 60000, limit: 100 }]),
-        AuthModule, UsersModule, ServicesModule, JobsModule,
+        AuthModule,
+        UsersModule,
+        ServicesModule,
+        JobsModule,
       ],
     }).compile();
 
@@ -257,7 +260,12 @@ describe('Jobs E2E (Phase 5)', () => {
       const res = await request(app.getHttpServer())
         .patch(`/api/v1/jobs/${jobId}/complete`)
         .set('Authorization', `Bearer ${helperToken}`)
-        .send({ completion_photos: ['http://minio/completion/before.jpg', 'http://minio/completion/after.jpg'] })
+        .send({
+          completion_photos: [
+            'http://minio/completion/before.jpg',
+            'http://minio/completion/after.jpg',
+          ],
+        })
         .expect(200);
       expect(res.body.data.status).toBe('pending_review');
       expect(res.body.data.completion_photos).toHaveLength(2);

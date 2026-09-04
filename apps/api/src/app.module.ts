@@ -29,8 +29,8 @@ import { JobsModule } from './modules/jobs/jobs.module';
 // import { MatchingModule } from './modules/matching/matching.module';
 
 // ─── Phase 7: Realtime ────────────────────────────────────────────────────────
-// import { NotificationsModule } from './modules/notifications/notifications.module';
-// import { ChatModule } from './modules/chat/chat.module';
+import { NotificationsModule } from './modules/notifications/notifications.module';
+import { ChatModule } from './modules/chat/chat.module';
 
 // ─── Phase 8: Payment & Wallet ────────────────────────────────────────────────
 // import { PaymentsModule } from './modules/payments/payments.module';
@@ -80,6 +80,8 @@ import { JobsModule } from './modules/jobs/jobs.module';
     HelpersModule,
     ServicesModule,
     JobsModule,
+    NotificationsModule,
+    ChatModule,
 
     // Phase 4+ (uncomment as implemented)
     // CustomersModule,
