@@ -69,8 +69,7 @@ export class AuthService {
     if (!user) throw new UnauthorizedException('Số điện thoại hoặc mật khẩu không đúng');
 
     const isPasswordValid = await bcrypt.compare(dto.password, user.password_hash);
-    if (!isPasswordValid)
-      throw new UnauthorizedException('Số điện thoại hoặc mật khẩu không đúng');
+    if (!isPasswordValid) throw new UnauthorizedException('Số điện thoại hoặc mật khẩu không đúng');
 
     if (user.status === 'suspended')
       throw new UnauthorizedException('Tài khoản đã bị khóa. Liên hệ hỗ trợ.');
@@ -149,7 +148,13 @@ export class AuthService {
 
   // ─── Token Generation ──────────────────────────────────────────────────────
 
-  private async generateTokens(user: { id?: string; _id?: unknown; phone: string; roles: UserRole[]; active_role: UserRole }) {
+  private async generateTokens(user: {
+    id?: string;
+    _id?: unknown;
+    phone: string;
+    roles: UserRole[];
+    active_role: UserRole;
+  }) {
     const userId = (user.id ?? String(user._id)) as string;
     const payload: JwtPayload = {
       sub: userId,
