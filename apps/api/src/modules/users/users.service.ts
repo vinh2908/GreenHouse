@@ -24,10 +24,7 @@ export class UsersService {
   }
 
   async findByPhoneWithPassword(phone: string): Promise<UserDocument | null> {
-    return this.userModel
-      .findOne({ phone, is_deleted: false })
-      .select('+password_hash')
-      .exec();
+    return this.userModel.findOne({ phone, is_deleted: false }).select('+password_hash').exec();
   }
 
   async findByEmail(email: string): Promise<UserDocument | null> {
