@@ -59,8 +59,8 @@ services:
     container_name: homemate-minio
     restart: unless-stopped
     ports:
-      - '9000:9000'  # S3 API
-      - '9001:9001'  # Console UI
+      - '9000:9000' # S3 API
+      - '9001:9001' # Console UI
     environment:
       MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:-minioadmin}
       MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:-minioadmin123}
@@ -135,8 +135,8 @@ services:
       minio:
         condition: service_healthy
     volumes:
-      - ./apps/api/src:/app/apps/api/src  # hot reload
-      - ./packages:/app/packages          # shared packages
+      - ./apps/api/src:/app/apps/api/src # hot reload
+      - ./packages:/app/packages # shared packages
     networks:
       - homemate-network
     healthcheck:
