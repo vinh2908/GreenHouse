@@ -10,10 +10,10 @@ import minioConfig from './config/minio.config';
 import { HealthController } from './common/health.controller';
 
 // ─── Phase 2: Authentication ──────────────────────────────────────────────────
-// import { AuthModule } from './modules/auth/auth.module';
+import { AuthModule } from './modules/auth/auth.module';
 
 // ─── Phase 3: User Profiles ───────────────────────────────────────────────────
-// import { UsersModule } from './modules/users/users.module';
+import { UsersModule } from './modules/users/users.module';
 // import { CustomersModule } from './modules/customers/customers.module';
 // import { HelpersModule } from './modules/helpers/helpers.module';
 
@@ -73,9 +73,11 @@ import { HealthController } from './common/health.controller';
       ],
     }),
 
-    // Feature modules — uncomment theo từng phase
-    // AuthModule,
-    // UsersModule,
+    // Feature modules
+    AuthModule,
+    UsersModule,
+
+    // Phase 4+ (uncomment as implemented)
     // CustomersModule,
     // HelpersModule,
     // ServicesModule,
