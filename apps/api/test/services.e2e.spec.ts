@@ -30,7 +30,9 @@ describe('Services E2E (Phase 4)', () => {
         ConfigModule.forRoot({ isGlobal: true, load: [appConfig, jwtConfig], ignoreEnvFile: true }),
         MongooseModule.forRoot(mongod.getUri()),
         ThrottlerModule.forRoot([{ ttl: 60000, limit: 100 }]),
-        AuthModule, UsersModule, ServicesModule,
+        AuthModule,
+        UsersModule,
+        ServicesModule,
       ],
     }).compile();
 
@@ -56,18 +58,14 @@ describe('Services E2E (Phase 4)', () => {
 
   describe('GET /services/categories (public)', () => {
     it('should return empty array initially', async () => {
-      const res = await request(app.getHttpServer())
-        .get('/api/v1/services/categories')
-        .expect(200);
+      const res = await request(app.getHttpServer()).get('/api/v1/services/categories').expect(200);
       expect(res.body.data).toEqual([]);
     });
   });
 
   describe('GET /services (public)', () => {
     it('should return empty array initially', async () => {
-      const res = await request(app.getHttpServer())
-        .get('/api/v1/services')
-        .expect(200);
+      const res = await request(app.getHttpServer()).get('/api/v1/services').expect(200);
       expect(res.body.data).toEqual([]);
     });
   });
@@ -95,9 +93,7 @@ describe('Services E2E (Phase 4)', () => {
       const servicesService = app.get(ServicesService);
       await servicesService.seedDefaultServices();
 
-      const res = await request(app.getHttpServer())
-        .get('/api/v1/services/categories')
-        .expect(200);
+      const res = await request(app.getHttpServer()).get('/api/v1/services/categories').expect(200);
       expect(res.body.data.length).toBeGreaterThanOrEqual(5);
       categoryId = res.body.data[0]._id;
     });

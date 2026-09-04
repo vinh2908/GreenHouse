@@ -1,7 +1,12 @@
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
-import { Service, ServiceDocument, ServiceCategory, ServiceCategoryDocument } from './schemas/service.schema';
+import {
+  Service,
+  ServiceDocument,
+  ServiceCategory,
+  ServiceCategoryDocument,
+} from './schemas/service.schema';
 import { CreateServiceDto, CreateServiceCategoryDto, UpdateServiceDto } from './dto/service.dto';
 import { ServiceStatus } from '@homemate/types';
 
@@ -81,9 +86,7 @@ export class ServicesService {
   }
 
   async updateStatus(id: string, status: ServiceStatus) {
-    const service = await this.serviceModel
-      .findByIdAndUpdate(id, { status }, { new: true })
-      .exec();
+    const service = await this.serviceModel.findByIdAndUpdate(id, { status }, { new: true }).exec();
     if (!service) throw new NotFoundException('Dịch vụ không tồn tại');
     return service;
   }
@@ -105,43 +108,63 @@ export class ServicesService {
     await this.serviceModel.create([
       {
         category_id: categories[0]._id,
-        name: 'Giúp việc theo giờ', slug: 'giup-viec-theo-gio',
+        name: 'Giúp việc theo giờ',
+        slug: 'giup-viec-theo-gio',
         description: 'Thuê người giúp việc theo số giờ linh hoạt.',
-        price_range_min: 50000, price_range_max: 120000,
-        estimated_duration_min: 2, estimated_duration_max: 8,
-        platform_fee_percent: 15, tags: ['giup-viec', 'theo-gio'],
+        price_range_min: 50000,
+        price_range_max: 120000,
+        estimated_duration_min: 2,
+        estimated_duration_max: 8,
+        platform_fee_percent: 15,
+        tags: ['giup-viec', 'theo-gio'],
       },
       {
         category_id: categories[1]._id,
-        name: 'Giúp việc theo ngày', slug: 'giup-viec-theo-ngay',
+        name: 'Giúp việc theo ngày',
+        slug: 'giup-viec-theo-ngay',
         description: 'Thuê người giúp việc trọn ngày (8 tiếng).',
-        price_range_min: 350000, price_range_max: 700000,
-        estimated_duration_min: 8, estimated_duration_max: 10,
-        platform_fee_percent: 15, tags: ['giup-viec', 'theo-ngay'],
+        price_range_min: 350000,
+        price_range_max: 700000,
+        estimated_duration_min: 8,
+        estimated_duration_max: 10,
+        platform_fee_percent: 15,
+        tags: ['giup-viec', 'theo-ngay'],
       },
       {
         category_id: categories[2]._id,
-        name: 'Tổng vệ sinh nhà', slug: 'tong-ve-sinh-nha',
+        name: 'Tổng vệ sinh nhà',
+        slug: 'tong-ve-sinh-nha',
         description: 'Vệ sinh toàn diện căn nhà.',
-        price_range_min: 500000, price_range_max: 3000000,
-        estimated_duration_min: 4, estimated_duration_max: 16,
-        platform_fee_percent: 20, tags: ['ve-sinh', 'tong-ve-sinh'],
+        price_range_min: 500000,
+        price_range_max: 3000000,
+        estimated_duration_min: 4,
+        estimated_duration_max: 16,
+        platform_fee_percent: 20,
+        tags: ['ve-sinh', 'tong-ve-sinh'],
       },
       {
         category_id: categories[3]._id,
-        name: 'Giúp việc định kỳ', slug: 'giup-viec-dinh-ky',
+        name: 'Giúp việc định kỳ',
+        slug: 'giup-viec-dinh-ky',
         description: 'Đặt lịch hàng tuần hoặc hàng tháng.',
-        price_range_min: 40000, price_range_max: 100000,
-        estimated_duration_min: 2, estimated_duration_max: 8,
-        platform_fee_percent: 15, tags: ['dinh-ky', 'hang-tuan'],
+        price_range_min: 40000,
+        price_range_max: 100000,
+        estimated_duration_min: 2,
+        estimated_duration_max: 8,
+        platform_fee_percent: 15,
+        tags: ['dinh-ky', 'hang-tuan'],
       },
       {
         category_id: categories[4]._id,
-        name: 'Nấu ăn gia đình', slug: 'nau-an-gia-dinh',
+        name: 'Nấu ăn gia đình',
+        slug: 'nau-an-gia-dinh',
         description: 'Thuê người nấu bữa ăn tại nhà.',
-        price_range_min: 80000, price_range_max: 200000,
-        estimated_duration_min: 1, estimated_duration_max: 4,
-        platform_fee_percent: 15, tags: ['nau-an', 'bep'],
+        price_range_min: 80000,
+        price_range_max: 200000,
+        estimated_duration_min: 1,
+        estimated_duration_max: 4,
+        platform_fee_percent: 15,
+        tags: ['nau-an', 'bep'],
       },
     ]);
   }

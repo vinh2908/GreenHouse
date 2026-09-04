@@ -20,8 +20,8 @@ import { HelpersModule } from './modules/helpers/helpers.module';
 // ─── Phase 4: Services ────────────────────────────────────────────────────────
 import { ServicesModule } from './modules/services/services.module';
 
-// ─── Phase 5: Job & Quote System (Vua Thợ model) ─────────────────────────────
-// import { JobsModule } from './modules/jobs/jobs.module';
+// ─── Phase 5: Job & Quote System ─────────────────────────────────────────────
+import { JobsModule } from './modules/jobs/jobs.module';
 // import { QuotesModule } from './modules/quotes/quotes.module';
 // import { ContractsModule } from './modules/contracts/contracts.module';
 
@@ -79,6 +79,7 @@ import { ServicesModule } from './modules/services/services.module';
     CustomersModule,
     HelpersModule,
     ServicesModule,
+    JobsModule,
 
     // Phase 4+ (uncomment as implemented)
     // CustomersModule,
