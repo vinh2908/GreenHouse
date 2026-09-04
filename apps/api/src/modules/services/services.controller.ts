@@ -1,10 +1,24 @@
 import {
-  Controller, Get, Post, Put, Patch, Body,
-  Param, Query, UseGuards, HttpCode, HttpStatus,
+  Controller,
+  Get,
+  Post,
+  Put,
+  Patch,
+  Body,
+  Param,
+  Query,
+  UseGuards,
+  HttpCode,
+  HttpStatus,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { ServicesService } from './services.service';
-import { CreateServiceDto, CreateServiceCategoryDto, UpdateServiceDto, UpdateServiceStatusDto } from './dto/service.dto';
+import {
+  CreateServiceDto,
+  CreateServiceCategoryDto,
+  UpdateServiceDto,
+  UpdateServiceStatusDto,
+} from './dto/service.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { RolesGuard } from '../../common/guards/roles.guard';
