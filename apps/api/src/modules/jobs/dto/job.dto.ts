@@ -1,6 +1,13 @@
 import {
-  IsString, IsNotEmpty, IsOptional, IsArray, IsBoolean,
-  IsDateString, MaxLength, IsNumber, ValidateNested,
+  IsString,
+  IsNotEmpty,
+  IsOptional,
+  IsArray,
+  IsBoolean,
+  IsDateString,
+  MaxLength,
+  IsNumber,
+  ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
@@ -36,11 +43,15 @@ export class CreateJobDto {
   @ApiProperty() @IsString() @IsNotEmpty() description: string;
 
   @ApiPropertyOptional({ type: [String] })
-  @IsOptional() @IsArray() @IsString({ each: true })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
   photos?: string[];
 
   @ApiPropertyOptional({ type: [String] })
-  @IsOptional() @IsArray() @IsString({ each: true })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
   videos?: string[];
 
   @ApiProperty({ type: JobAddressDto })
@@ -64,7 +75,8 @@ export class CreateQuoteDto {
   @ApiPropertyOptional() @IsOptional() @IsString() available_time_start?: string;
   @ApiPropertyOptional() @IsOptional() @IsString() available_time_end?: string;
   @ApiPropertyOptional({ type: Array })
-  @IsOptional() @IsArray()
+  @IsOptional()
+  @IsArray()
   materials_breakdown?: { name: string; quantity: number; unit_price: number }[];
 }
 
@@ -75,7 +87,9 @@ export class SelectQuoteDto {
 
 export class CompleteJobDto {
   @ApiPropertyOptional({ type: [String] })
-  @IsOptional() @IsArray() @IsString({ each: true })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
   completion_photos?: string[];
 }
 

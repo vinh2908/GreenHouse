@@ -1,16 +1,34 @@
 import {
-  Injectable, NotFoundException, BadRequestException,
-  ForbiddenException, ConflictException,
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  ForbiddenException,
+  ConflictException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
-import { Job, JobDocument, Quote, QuoteDocument, Contract, ContractDocument } from './schemas/job.schema';
 import {
-  CreateJobDto, CreateQuoteDto, SelectQuoteDto,
-  CompleteJobDto, ReviewJobDto, CancelJobDto,
+  Job,
+  JobDocument,
+  Quote,
+  QuoteDocument,
+  Contract,
+  ContractDocument,
+} from './schemas/job.schema';
+import {
+  CreateJobDto,
+  CreateQuoteDto,
+  SelectQuoteDto,
+  CompleteJobDto,
+  ReviewJobDto,
+  CancelJobDto,
 } from './dto/job.dto';
 import { JobStatus, QuoteStatus, ContractStatus, isValidJobTransition } from '@homemate/types';
-import { JOB_OPEN_EXPIRY_HOURS, JOB_QUOTE_EXPIRY_HOURS, PLATFORM_FEE_BY_SERVICE } from '@homemate/constants';
+import {
+  JOB_OPEN_EXPIRY_HOURS,
+  JOB_QUOTE_EXPIRY_HOURS,
+  PLATFORM_FEE_BY_SERVICE,
+} from '@homemate/constants';
 
 @Injectable()
 export class JobsService {
@@ -41,9 +59,7 @@ export class JobsService {
 
   private validateTransition(from: JobStatus, to: JobStatus) {
     if (!isValidJobTransition(from, to)) {
-      throw new BadRequestException(
-        `Không thể chuyển trạng thái từ "${from}" sang "${to}"`,
-      );
+      throw new BadRequestException(`Không thể chuyển trạng thái từ "${from}" sang "${to}"`);
     }
   }
 
@@ -74,13 +90,15 @@ export class JobsService {
       preferred_time_end: dto.preferred_time_end,
       is_flexible_time: dto.is_flexible_time ?? false,
       expires_at: expiresAt,
-      events: [{
-        status: JobStatus.OPEN,
-        actor_id: new Types.ObjectId(customerId),
-        actor_role: 'customer',
-        timestamp: new Date(),
-        note: 'Đăng yêu cầu',
-      }],
+      events: [
+        {
+          status: JobStatus.OPEN,
+          actor_id: new Types.ObjectId(customerId),
+          actor_role: 'customer',
+          timestamp: new Date(),
+          note: 'Đăng yêu cầu',
+        },
+      ],
     });
 
     return job;
@@ -116,13 +134,15 @@ export class JobsService {
     }
 
     // Check existing quote from this helper
-    const existing = await this.quoteModel.findOne({
-      job_id: new Types.ObjectId(jobId),
-      helper_id: new Types.ObjectId(helperId),
-    }).exec();
+    const existing = await this.quoteModel
+      .findOne({
+        job_id: new Types.ObjectId(jobId),
+        helper_id: new Types.ObjectId(helperId),
+      })
+      .exec();
     if (existing) throw new ConflictException('Bạn đã gửi báo giá cho job này');
 
-    const materialsTotal = (dto.materials_cost ?? 0);
+    const materialsTotal = dto.materials_cost ?? 0;
     const totalPrice = dto.labor_cost + materialsTotal;
     const platformFeeRate = PLATFORM_FEE_BY_SERVICE.default;
     const platformFee = Math.round(totalPrice * platformFeeRate);
@@ -150,10 +170,12 @@ export class JobsService {
     });
 
     // Update job
-    await this.jobModel.findByIdAndUpdate(jobId, {
-      status: JobStatus.RECEIVING_QUOTES,
-      $inc: { total_quotes_count: 1 },
-    }).exec();
+    await this.jobModel
+      .findByIdAndUpdate(jobId, {
+        status: JobStatus.RECEIVING_QUOTES,
+        $inc: { total_quotes_count: 1 },
+      })
+      .exec();
 
     return quote;
   }
@@ -186,7 +208,11 @@ export class JobsService {
 
   // ─── Customer: Select quote → create Contract ─────────────────────────────
 
-  async selectQuote(customerId: string, jobId: string, dto: SelectQuoteDto): Promise<{ job: JobDocument; contract: ContractDocument }> {
+  async selectQuote(
+    customerId: string,
+    jobId: string,
+    dto: SelectQuoteDto,
+  ): Promise<{ job: JobDocument; contract: ContractDocument }> {
     const job = await this.jobModel.findById(jobId).exec();
     if (!job) throw new NotFoundException('Job không tồn tại');
     if (job.customer_id.toString() !== customerId) throw new ForbiddenException();
@@ -195,18 +221,22 @@ export class JobsService {
     }
 
     const quote = await this.quoteModel.findById(dto.quote_id).exec();
-    if (!quote || quote.job_id.toString() !== jobId) throw new NotFoundException('Quote không tồn tại');
-    if (quote.status !== QuoteStatus.PENDING) throw new BadRequestException('Quote không còn hiệu lực');
+    if (!quote || quote.job_id.toString() !== jobId)
+      throw new NotFoundException('Quote không tồn tại');
+    if (quote.status !== QuoteStatus.PENDING)
+      throw new BadRequestException('Quote không còn hiệu lực');
 
     // Mark quote as accepted
     quote.status = QuoteStatus.ACCEPTED;
     await quote.save();
 
     // Reject other quotes
-    await this.quoteModel.updateMany(
-      { job_id: new Types.ObjectId(jobId), _id: { $ne: new Types.ObjectId(dto.quote_id) } },
-      { status: QuoteStatus.REJECTED },
-    ).exec();
+    await this.quoteModel
+      .updateMany(
+        { job_id: new Types.ObjectId(jobId), _id: { $ne: new Types.ObjectId(dto.quote_id) } },
+        { status: QuoteStatus.REJECTED },
+      )
+      .exec();
 
     // Create contract
     const contract = await this.contractModel.create({
@@ -268,7 +298,11 @@ export class JobsService {
 
   // ─── Helper: Complete (upload evidence) ──────────────────────────────────
 
-  async completeByHelper(helperId: string, jobId: string, dto: CompleteJobDto): Promise<JobDocument> {
+  async completeByHelper(
+    helperId: string,
+    jobId: string,
+    dto: CompleteJobDto,
+  ): Promise<JobDocument> {
     const job = await this.jobModel.findById(jobId).exec();
     if (!job) throw new NotFoundException('Job không tồn tại');
     if (job.helper_id?.toString() !== helperId) throw new ForbiddenException();
@@ -282,7 +316,11 @@ export class JobsService {
 
   // ─── Customer: Approve completion ────────────────────────────────────────
 
-  async approveCompletion(customerId: string, jobId: string, dto: ReviewJobDto): Promise<JobDocument> {
+  async approveCompletion(
+    customerId: string,
+    jobId: string,
+    dto: ReviewJobDto,
+  ): Promise<JobDocument> {
     const job = await this.jobModel.findById(jobId).exec();
     if (!job) throw new NotFoundException('Job không tồn tại');
     if (job.customer_id.toString() !== customerId) throw new ForbiddenException();
@@ -292,17 +330,24 @@ export class JobsService {
     this.addEvent(job, JobStatus.COMPLETED, customerId, 'customer', 'Nghiệm thu hoàn thành');
 
     // Update contract
-    await this.contractModel.findOneAndUpdate(
-      { job_id: new Types.ObjectId(jobId) },
-      { status: ContractStatus.COMPLETED, completed_at: new Date() },
-    ).exec();
+    await this.contractModel
+      .findOneAndUpdate(
+        { job_id: new Types.ObjectId(jobId) },
+        { status: ContractStatus.COMPLETED, completed_at: new Date() },
+      )
+      .exec();
 
     return job.save();
   }
 
   // ─── Cancel job ───────────────────────────────────────────────────────────
 
-  async cancelJob(actorId: string, actorRole: string, jobId: string, dto: CancelJobDto): Promise<JobDocument> {
+  async cancelJob(
+    actorId: string,
+    actorRole: string,
+    jobId: string,
+    dto: CancelJobDto,
+  ): Promise<JobDocument> {
     const job = await this.jobModel.findById(jobId).exec();
     if (!job) throw new NotFoundException('Job không tồn tại');
 
@@ -319,10 +364,12 @@ export class JobsService {
     this.addEvent(job, JobStatus.CANCELLED, actorId, actorRole, `Hủy: ${dto.reason}`);
 
     // Reject all pending quotes
-    await this.quoteModel.updateMany(
-      { job_id: new Types.ObjectId(jobId), status: QuoteStatus.PENDING },
-      { status: QuoteStatus.REJECTED },
-    ).exec();
+    await this.quoteModel
+      .updateMany(
+        { job_id: new Types.ObjectId(jobId), status: QuoteStatus.PENDING },
+        { status: QuoteStatus.REJECTED },
+      )
+      .exec();
 
     return job.save();
   }
