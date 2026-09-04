@@ -1,12 +1,18 @@
 import {
-  Injectable, NotFoundException, BadRequestException, ConflictException,
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  ConflictException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { HelperProfile, HelperProfileDocument } from './schemas/helper-profile.schema';
 import {
-  UpdateHelperProfileDto, SetHelperStatusDto, SubmitKycDto,
-  UpdateLocationDto, BankAccountDto,
+  UpdateHelperProfileDto,
+  SetHelperStatusDto,
+  SubmitKycDto,
+  UpdateLocationDto,
+  BankAccountDto,
 } from './dto/helper.dto';
 import { HelperStatus, VerificationStatus } from '@homemate/types';
 
@@ -51,11 +57,11 @@ export class HelpersService {
     const profile = await this.getOrCreate(userId);
 
     // Can't go ONLINE if not verified
-    if (dto.status === HelperStatus.ONLINE &&
-      profile.verification_status !== VerificationStatus.APPROVED) {
-      throw new BadRequestException(
-        'Tài khoản chưa được xác minh. Vui lòng hoàn thành KYC trước.',
-      );
+    if (
+      dto.status === HelperStatus.ONLINE &&
+      profile.verification_status !== VerificationStatus.APPROVED
+    ) {
+      throw new BadRequestException('Tài khoản chưa được xác minh. Vui lòng hoàn thành KYC trước.');
     }
 
     // Can't change status if BUSY (actively working)
@@ -87,13 +93,15 @@ export class HelpersService {
   }
 
   async updateLocation(userId: string, dto: UpdateLocationDto): Promise<void> {
-    await this.helperModel.findOneAndUpdate(
-      { user_id: userId },
-      {
-        location: { type: 'Point', coordinates: dto.coordinates },
-        last_location_update: new Date(),
-      },
-    ).exec();
+    await this.helperModel
+      .findOneAndUpdate(
+        { user_id: userId },
+        {
+          location: { type: 'Point', coordinates: dto.coordinates },
+          last_location_update: new Date(),
+        },
+      )
+      .exec();
   }
 
   async updateBankAccount(userId: string, dto: BankAccountDto): Promise<HelperProfileDocument> {

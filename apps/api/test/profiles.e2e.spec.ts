@@ -29,7 +29,10 @@ describe('Profiles E2E (Phase 3)', () => {
         ConfigModule.forRoot({ isGlobal: true, load: [appConfig, jwtConfig], ignoreEnvFile: true }),
         MongooseModule.forRoot(mongod.getUri()),
         ThrottlerModule.forRoot([{ ttl: 60000, limit: 100 }]),
-        AuthModule, UsersModule, CustomersModule, HelpersModule,
+        AuthModule,
+        UsersModule,
+        CustomersModule,
+        HelpersModule,
       ],
     }).compile();
 
@@ -171,7 +174,11 @@ describe('Profiles E2E (Phase 3)', () => {
       const res = await request(app.getHttpServer())
         .put('/api/v1/helpers/me/bank-account')
         .set('Authorization', `Bearer ${helperToken}`)
-        .send({ bank_name: 'Vietcombank', account_number: '0123456789', account_name: 'HELPER TEST' })
+        .send({
+          bank_name: 'Vietcombank',
+          account_number: '0123456789',
+          account_name: 'HELPER TEST',
+        })
         .expect(200);
       expect(res.body.data.bank_account.bank_name).toBe('Vietcombank');
     });
