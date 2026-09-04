@@ -1,0 +1,43 @@
+{
+  "name": "homemate",
+  "version": "1.0.0",
+  "private": true,
+  "description": "HomeMate - Home Service Marketplace Platform",
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "test": "turbo run test",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
+    "dev:api": "turbo run dev --filter=@homemate/api",
+    "dev:admin": "turbo run dev --filter=@homemate/admin",
+    "dev:mobile": "turbo run dev --filter=@homemate/mobile",
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down",
+    "docker:logs": "docker compose logs -f",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "turbo": "^2.3.3",
+    "prettier": "^3.4.2",
+    "eslint": "^9.18.0",
+    "@typescript-eslint/parser": "^8.20.0",
+    "@typescript-eslint/eslint-plugin": "^8.20.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^15.3.0",
+    "typescript": "^5.7.3"
+  },
+  "lint-staged": {
+    "**/*.{ts,tsx,js,jsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "**/*.{json,md,yml,yaml}": [
+      "prettier --write"
+    ]
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
+  }
+}
