@@ -17,8 +17,7 @@ export const useBookingStore = create<BookingState>(set => ({
 
   setActiveBooking: booking => set({ activeBooking: booking }),
 
-  setDraftBooking: draft =>
-    set(state => ({ draftBooking: { ...state.draftBooking, ...draft } })),
+  setDraftBooking: draft => set(state => ({ draftBooking: { ...state.draftBooking, ...draft } })),
 
   clearDraft: () => set({ draftBooking: null }),
 

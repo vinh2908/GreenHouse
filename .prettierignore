@@ -9,3 +9,6 @@ coverage
 .env.local
 .env.*.local
 .turbo
+# NativeWind CSS reference file — not valid CSS for prettier
+apps/mobile/global.css
+pnpm-lock.yaml

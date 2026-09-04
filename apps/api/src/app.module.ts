@@ -7,26 +7,53 @@ import databaseConfig from './config/database.config';
 import jwtConfig from './config/jwt.config';
 import redisConfig from './config/redis.config';
 import minioConfig from './config/minio.config';
-
 import { HealthController } from './common/health.controller';
 
-// Modules (will be added phase by phase)
+// ─── Phase 2: Authentication ──────────────────────────────────────────────────
 // import { AuthModule } from './modules/auth/auth.module';
+
+// ─── Phase 3: User Profiles ───────────────────────────────────────────────────
 // import { UsersModule } from './modules/users/users.module';
+// import { CustomersModule } from './modules/customers/customers.module';
+// import { HelpersModule } from './modules/helpers/helpers.module';
+
+// ─── Phase 4: Services ────────────────────────────────────────────────────────
 // import { ServicesModule } from './modules/services/services.module';
-// ...
+
+// ─── Phase 5: Job & Quote System (Vua Thợ model) ─────────────────────────────
+// import { JobsModule } from './modules/jobs/jobs.module';
+// import { QuotesModule } from './modules/quotes/quotes.module';
+// import { ContractsModule } from './modules/contracts/contracts.module';
+
+// ─── Phase 6: Job Feed & Matching ────────────────────────────────────────────
+// import { MatchingModule } from './modules/matching/matching.module';
+
+// ─── Phase 7: Realtime ────────────────────────────────────────────────────────
+// import { NotificationsModule } from './modules/notifications/notifications.module';
+// import { ChatModule } from './modules/chat/chat.module';
+
+// ─── Phase 8: Payment & Wallet ────────────────────────────────────────────────
+// import { PaymentsModule } from './modules/payments/payments.module';
+// import { WalletModule } from './modules/wallet/wallet.module';
+
+// ─── Phase 9: Admin ───────────────────────────────────────────────────────────
+// import { AdminModule } from './modules/admin/admin.module';
+// import { AnalyticsModule } from './modules/analytics/analytics.module';
+
+// ─── Phase 10: AI Features ────────────────────────────────────────────────────
+// import { AiModule } from './modules/ai/ai.module';
 
 @Module({
   controllers: [HealthController],
   imports: [
-    // Config
+    // Config — global
     ConfigModule.forRoot({
       isGlobal: true,
       load: [appConfig, databaseConfig, jwtConfig, redisConfig, minioConfig],
       envFilePath: ['.env.local', '.env'],
     }),
 
-    // Database
+    // Database — MongoDB
     MongooseModule.forRootAsync({
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
@@ -46,9 +73,22 @@ import { HealthController } from './common/health.controller';
       ],
     }),
 
-    // Feature modules (uncomment as implemented)
+    // Feature modules — uncomment theo từng phase
     // AuthModule,
     // UsersModule,
+    // CustomersModule,
+    // HelpersModule,
+    // ServicesModule,
+    // JobsModule,
+    // QuotesModule,
+    // ContractsModule,
+    // MatchingModule,
+    // NotificationsModule,
+    // ChatModule,
+    // PaymentsModule,
+    // WalletModule,
+    // AdminModule,
+    // AnalyticsModule,
   ],
 })
 export class AppModule {}
