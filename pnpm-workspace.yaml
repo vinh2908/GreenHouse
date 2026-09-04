@@ -1,3 +1,5 @@
 packages:
   - 'apps/*'
   - 'packages/*'
+allowBuilds:
+  mongodb-memory-server: set this to true or false
