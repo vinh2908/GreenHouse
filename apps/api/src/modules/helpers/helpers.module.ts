@@ -5,9 +5,7 @@ import { HelpersService } from './helpers.service';
 import { HelperProfile, HelperProfileSchema } from './schemas/helper-profile.schema';
 
 @Module({
-  imports: [
-    MongooseModule.forFeature([{ name: HelperProfile.name, schema: HelperProfileSchema }]),
-  ],
+  imports: [MongooseModule.forFeature([{ name: HelperProfile.name, schema: HelperProfileSchema }])],
   controllers: [HelpersController],
   providers: [HelpersService],
   exports: [HelpersService],

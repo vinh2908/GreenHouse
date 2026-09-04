@@ -18,7 +18,7 @@ import { CustomersModule } from './modules/customers/customers.module';
 import { HelpersModule } from './modules/helpers/helpers.module';
 
 // ─── Phase 4: Services ────────────────────────────────────────────────────────
-// import { ServicesModule } from './modules/services/services.module';
+import { ServicesModule } from './modules/services/services.module';
 
 // ─── Phase 5: Job & Quote System (Vua Thợ model) ─────────────────────────────
 // import { JobsModule } from './modules/jobs/jobs.module';
@@ -78,6 +78,7 @@ import { HelpersModule } from './modules/helpers/helpers.module';
     UsersModule,
     CustomersModule,
     HelpersModule,
+    ServicesModule,
 
     // Phase 4+ (uncomment as implemented)
     // CustomersModule,

@@ -1,6 +1,4 @@
-import {
-  Injectable, NotFoundException, BadRequestException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { CustomerProfile, CustomerProfileDocument } from './schemas/customer-profile.schema';
@@ -39,7 +37,9 @@ export class CustomersService {
 
     // If this is marked as default, remove default from others
     if (dto.is_default) {
-      profile.addresses.forEach(a => { a.is_default = false; });
+      profile.addresses.forEach(a => {
+        a.is_default = false;
+      });
     }
 
     // If no addresses yet, make this default
@@ -69,7 +69,9 @@ export class CustomersService {
     }
 
     if (dto.is_default) {
-      profile.addresses.forEach(a => { a.is_default = false; });
+      profile.addresses.forEach(a => {
+        a.is_default = false;
+      });
     }
 
     Object.assign(profile.addresses[addressIndex], {
@@ -105,7 +107,9 @@ export class CustomersService {
     if (addressIndex < 0 || addressIndex >= profile.addresses.length) {
       throw new NotFoundException('Địa chỉ không tồn tại');
     }
-    profile.addresses.forEach((a, i) => { a.is_default = i === addressIndex; });
+    profile.addresses.forEach((a, i) => {
+      a.is_default = i === addressIndex;
+    });
     await profile.save();
     return profile;
   }

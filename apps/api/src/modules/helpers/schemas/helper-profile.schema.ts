@@ -33,7 +33,12 @@ export class HelperProfile {
   @Prop({ type: String, enum: HelperStatus, default: HelperStatus.OFFLINE, index: true })
   status: HelperStatus;
 
-  @Prop({ type: String, enum: VerificationStatus, default: VerificationStatus.UNSUBMITTED, index: true })
+  @Prop({
+    type: String,
+    enum: VerificationStatus,
+    default: VerificationStatus.UNSUBMITTED,
+    index: true,
+  })
   verification_status: VerificationStatus;
 
   // KYC

@@ -1,12 +1,24 @@
 import {
-  Controller, Get, Patch, Post, Put, Body,
-  Param, UseGuards, HttpCode, HttpStatus, Query,
+  Controller,
+  Get,
+  Patch,
+  Post,
+  Put,
+  Body,
+  Param,
+  UseGuards,
+  HttpCode,
+  HttpStatus,
+  Query,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { HelpersService } from './helpers.service';
 import {
-  UpdateHelperProfileDto, SetHelperStatusDto, SubmitKycDto,
-  UpdateLocationDto, BankAccountDto,
+  UpdateHelperProfileDto,
+  SetHelperStatusDto,
+  SubmitKycDto,
+  UpdateLocationDto,
+  BankAccountDto,
 } from './dto/helper.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
@@ -28,48 +40,33 @@ export class HelpersController {
 
   @Patch('me/profile')
   @ApiOperation({ summary: 'Cập nhật hồ sơ helper' })
-  async updateProfile(
-    @CurrentUser() user: { sub: string },
-    @Body() dto: UpdateHelperProfileDto,
-  ) {
+  async updateProfile(@CurrentUser() user: { sub: string }, @Body() dto: UpdateHelperProfileDto) {
     return this.helpersService.updateProfile(user.sub, dto);
   }
 
   @Patch('me/status')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Bật/tắt trạng thái nhận việc (ONLINE/OFFLINE)' })
-  async setStatus(
-    @CurrentUser() user: { sub: string },
-    @Body() dto: SetHelperStatusDto,
-  ) {
+  async setStatus(@CurrentUser() user: { sub: string }, @Body() dto: SetHelperStatusDto) {
     return this.helpersService.setStatus(user.sub, dto);
   }
 
   @Post('me/kyc')
   @ApiOperation({ summary: 'Nộp hồ sơ KYC (CCCD + selfie)' })
-  async submitKyc(
-    @CurrentUser() user: { sub: string },
-    @Body() dto: SubmitKycDto,
-  ) {
+  async submitKyc(@CurrentUser() user: { sub: string }, @Body() dto: SubmitKycDto) {
     return this.helpersService.submitKyc(user.sub, dto);
   }
 
   @Patch('me/location')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Cập nhật vị trí GPS realtime' })
-  async updateLocation(
-    @CurrentUser() user: { sub: string },
-    @Body() dto: UpdateLocationDto,
-  ) {
+  async updateLocation(@CurrentUser() user: { sub: string }, @Body() dto: UpdateLocationDto) {
     await this.helpersService.updateLocation(user.sub, dto);
   }
 
   @Put('me/bank-account')
   @ApiOperation({ summary: 'Cập nhật tài khoản ngân hàng' })
-  async updateBankAccount(
-    @CurrentUser() user: { sub: string },
-    @Body() dto: BankAccountDto,
-  ) {
+  async updateBankAccount(@CurrentUser() user: { sub: string }, @Body() dto: BankAccountDto) {
     return this.helpersService.updateBankAccount(user.sub, dto);
   }
 
