@@ -16,6 +16,8 @@ export interface IServiceCategory {
   created_at: Date;
 }
 
+// Model Vua Thợ: KHÔNG có giá cố định
+// Helper tự báo giá — platform chỉ cung cấp khoảng giá tham khảo
 export interface IService {
   _id: string;
   category_id: string;
@@ -23,14 +25,31 @@ export interface IService {
   slug: string;
   description: string;
   icon?: string;
+  banner_image?: string;
   status: ServiceStatus;
-  base_price: number;
-  price_per_hour: number;
-  min_hours: number;
-  max_hours: number;
+
+  // Khoảng giá gợi ý (thị trường) — không phải giá cố định
+  price_range_min: number; // VND
+  price_range_max: number; // VND
+
+  // Thời gian ước tính
+  estimated_duration_min: number; // hours
+  estimated_duration_max: number; // hours
+
+  // Cài đặt platform
   platform_fee_percent: number;
-  estimated_duration?: number;
+  requires_site_visit: boolean; // Cần xem nhà trước khi báo giá chính xác
+  allows_video_upload: boolean;
+
+  // Tags & SEO
   tags: string[];
+  keywords: string[];
+
+  // Stats
+  total_jobs: number;
+  total_helpers: number;
+  avg_rating: number;
+
   created_at: Date;
   updated_at: Date;
 }

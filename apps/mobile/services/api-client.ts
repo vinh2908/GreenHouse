@@ -2,8 +2,7 @@ import axios, { AxiosInstance } from 'axios';
 import * as SecureStore from 'expo-secure-store';
 import Constants from 'expo-constants';
 
-const API_URL =
-  Constants.expoConfig?.extra?.apiUrl || 'http://localhost:3000/api/v1';
+const API_URL = Constants.expoConfig?.extra?.apiUrl || 'http://localhost:3000/api/v1';
 
 const apiClient: AxiosInstance = axios.create({
   baseURL: API_URL,
