@@ -1,0 +1,72 @@
+{
+  "expo": {
+    "name": "HomeMate",
+    "slug": "homemate",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "homemate",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "image": "./assets/images/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#FF6B1A"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.homemate.app",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "HomeMate cần quyền truy cập vị trí để tìm người giúp việc gần bạn.",
+        "NSCameraUsageDescription": "HomeMate cần quyền truy cập camera để chụp ảnh công việc.",
+        "NSPhotoLibraryUsageDescription": "HomeMate cần quyền truy cập thư viện ảnh để upload hình ảnh."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "backgroundColor": "#FF6B1A"
+      },
+      "package": "com.homemate.app",
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE"
+      ]
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "static",
+      "favicon": "./assets/images/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-font",
+      "expo-secure-store",
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Cho phép HomeMate truy cập vị trí của bạn."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/notification-icon.png",
+          "color": "#FF6B1A"
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "apiUrl": "http://localhost:3000/api/v1",
+      "wsUrl": "http://localhost:3000",
+      "eas": {
+        "projectId": "your-eas-project-id"
+      }
+    }
+  }
+}
