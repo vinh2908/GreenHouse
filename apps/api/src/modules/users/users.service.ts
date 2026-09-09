@@ -68,7 +68,7 @@ export class UsersService {
   async switchRole(id: string, role: UserRole): Promise<UserDocument> {
     const user = await this.findById(id);
     if (!user.roles.includes(role)) {
-      throw new ConflictException(`Tài khoản chưa có role ${role}`);
+      user.roles.push(role);
     }
     user.active_role = role;
     return user.save();

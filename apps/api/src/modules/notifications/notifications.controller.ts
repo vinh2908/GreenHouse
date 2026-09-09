@@ -30,10 +30,7 @@ export class NotificationsController {
 
   @Patch(':id/read')
   @ApiOperation({ summary: 'Đánh dấu thông báo đã đọc' })
-  async markRead(
-    @CurrentUser() user: { sub: string },
-    @Param('id') id: string,
-  ) {
+  async markRead(@CurrentUser() user: { sub: string }, @Param('id') id: string) {
     return this.notificationsService.markRead(user.sub, id);
   }
 

@@ -11,3 +11,10 @@ coverage/
 .env.*.local
 .turbo/
 *.js.map
+*.tsbuildinfo
+ui*.xml
+*.png
+data/
+tools/
+
+

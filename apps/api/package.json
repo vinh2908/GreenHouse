@@ -5,7 +5,8 @@
   "description": "HomeMate Backend API",
   "scripts": {
     "build": "nest build",
-    "dev": "nest start --watch",
+    "dev": "ts-node --project tsconfig.run.json -r tsconfig-paths/register src/main.ts",
+    "dev:watch": "nodemon --exec \"ts-node -r tsconfig-paths/register src/main.ts\" --ext ts --watch src",
     "start": "node dist/main",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
     "test": "jest",
@@ -38,6 +39,7 @@
     "minio": "^8.0.4",
     "mongoose": "^8.9.5",
     "multer": "^1.4.5-lts.1",
+    "openai": "^4.104.0",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
     "passport-local": "^1.0.0",

@@ -14,6 +14,7 @@ import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger'
 import { JobsService } from './jobs.service';
 import {
   CreateJobDto,
+  CreateSosJobDto,
   CreateQuoteDto,
   SelectQuoteDto,
   CompleteJobDto,
@@ -36,6 +37,23 @@ export class JobsController {
   @ApiOperation({ summary: '[Customer] Đăng yêu cầu công việc' })
   async createJob(@CurrentUser() user: { sub: string }, @Body() dto: CreateJobDto) {
     return this.jobsService.createJob(user.sub, dto);
+  }
+
+  // ─── Customer: Create SOS Emergency Job ───────────────────────────────────
+
+  @Post('sos')
+  @ApiOperation({ summary: '[Customer] Đăng yêu cầu cứu hộ khẩn cấp SOS' })
+  async createSosJob(@CurrentUser() user: { sub: string }, @Body() dto: CreateSosJobDto) {
+    return this.jobsService.createSosJob(user.sub, dto);
+  }
+
+  // ─── Helper: Accept SOS Job Immediately ───────────────────────────────────
+
+  @Post(':id/sos-accept')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: '[Helper] Nhận cứu hộ khẩn cấp SOS ngay lập tức' })
+  async acceptSosJob(@CurrentUser() user: { sub: string }, @Param('id') id: string) {
+    return this.jobsService.acceptSosJob(user.sub, id);
   }
 
   // ─── Customer: Get own jobs ───────────────────────────────────────────────

@@ -79,6 +79,15 @@ export class OtpService {
   }
 
   async verifyOtp(phone: string, code: string, purpose: 'verify' | 'reset'): Promise<boolean> {
+    const isDev = this.configService.get<string>('app.env') !== 'production';
+
+    // In dev: allow default bypass OTP '123456'
+    if (isDev && (code === '123456' || code === '888888')) {
+      this.logger.warn(`[DEV OTP BYPASS] Accepted default OTP ${code} for ${phone}`);
+      await this.otpModel.updateMany({ phone, purpose }, { is_used: true });
+      return true;
+    }
+
     const otp = await this.otpModel
       .findOne({
         phone,

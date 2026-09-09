@@ -73,6 +73,19 @@ export class Job {
   @Prop({ default: false })
   is_flexible_time: boolean;
 
+  // ── SOS Emergency Fields ──────────────────────────────────────────────────
+  @Prop({ default: false, index: true })
+  is_sos: boolean;
+
+  @Prop()
+  sos_category?: string; // 'electric' | 'plumbing' | 'lock' | 'ac_gas'
+
+  @Prop({ default: 0 })
+  sos_surcharge?: number; // Phụ phí SOS khẩn cấp (VNĐ)
+
+  @Prop({ default: 15 })
+  sos_eta_minutes?: number; // Ước tính thời gian có mặt (phút)
+
   @Prop({ type: { min: Number, max: Number, estimated_duration: Number, confidence: Number } })
   ai_price_suggestion?: {
     min: number;
@@ -216,8 +229,8 @@ export class Contract {
   @Prop({ type: Types.ObjectId, ref: 'Job', required: true, unique: true })
   job_id: Types.ObjectId;
 
-  @Prop({ type: Types.ObjectId, ref: 'Quote', required: true })
-  quote_id: Types.ObjectId;
+  @Prop({ type: Types.ObjectId, ref: 'Quote' })
+  quote_id?: Types.ObjectId;
 
   @Prop({ type: Types.ObjectId, ref: 'User', required: true })
   customer_id: Types.ObjectId;

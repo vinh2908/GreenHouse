@@ -1,39 +1,40 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import {
   LayoutDashboard,
   Users,
   UserCheck,
   Briefcase,
-  ShoppingCart,
   CreditCard,
   BarChart3,
-  Settings,
-  Bell,
-  Tag,
-  AlertTriangle,
   Star,
+  LogOut,
+  ShieldCheck,
 } from 'lucide-react';
+import { useAuthStore } from '@/stores/auth.store';
 
 const navItems = [
-  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/users', label: 'Khách hàng', icon: Users },
-  { href: '/helpers', label: 'Người giúp việc', icon: UserCheck },
-  { href: '/services', label: 'Dịch vụ', icon: Briefcase },
-  { href: '/bookings', label: 'Đơn hàng', icon: ShoppingCart },
-  { href: '/payments', label: 'Thanh toán', icon: CreditCard },
-  { href: '/promotions', label: 'Khuyến mãi', icon: Tag },
-  { href: '/reviews', label: 'Đánh giá', icon: Star },
-  { href: '/disputes', label: 'Khiếu nại', icon: AlertTriangle },
-  { href: '/notifications', label: 'Thông báo', icon: Bell },
-  { href: '/analytics', label: 'Thống kê', icon: BarChart3 },
-  { href: '/settings', label: 'Cài đặt', icon: Settings },
+  { href: '/', label: 'Tổng quan Dashboard', icon: LayoutDashboard },
+  { href: '/users', label: 'Quản lý Người dùng', icon: Users },
+  { href: '/helpers', label: 'Đối tác Thợ & Giúp việc', icon: UserCheck },
+  { href: '/helpers/kyc', label: 'Duyệt e-KYC Thợ', icon: ShieldCheck },
+  { href: '/jobs', label: 'Quản lý Đơn hàng', icon: Briefcase },
+  { href: '/payments', label: 'Thanh toán & Rút tiền', icon: CreditCard },
+  { href: '/reviews', label: 'Đánh giá & Phản hồi', icon: Star },
+  { href: '/analytics', label: 'Thống kê & Báo cáo', icon: BarChart3 },
 ];
 
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
+  const { user, logout } = useAuthStore();
+
+  const handleLogout = () => {
+    logout();
+    router.replace('/login');
+  };
 
   return (
     <div className="flex h-screen bg-background">
@@ -41,26 +42,28 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
       <aside className="w-64 border-r bg-card flex flex-col">
         {/* Logo */}
         <div className="p-6 border-b">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-              <span className="text-primary-foreground font-bold text-sm">H</span>
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center shadow-md">
+              <span className="text-primary-foreground font-black text-lg">H</span>
             </div>
-            <span className="font-bold text-lg">HomeMate</span>
+            <div>
+              <span className="font-extrabold text-lg tracking-tight">HomeMate</span>
+              <p className="text-xs text-muted-foreground">Admin Portal</p>
+            </div>
           </div>
-          <p className="text-xs text-muted-foreground mt-1">Admin Dashboard</p>
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
+        <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
           {navItems.map(({ href, label, icon: Icon }) => {
-            const isActive = pathname === href || pathname.startsWith(href + '/');
+            const isActive = href === '/' ? pathname === '/' : pathname === href || pathname.startsWith(href + '/');
             return (
               <Link
                 key={href}
                 href={href}
-                className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold transition-colors ${
                   isActive
-                    ? 'bg-primary text-primary-foreground'
+                    ? 'bg-primary text-primary-foreground shadow-sm'
                     : 'text-muted-foreground hover:bg-muted hover:text-foreground'
                 }`}
               >
@@ -71,15 +74,28 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
           })}
         </nav>
 
-        {/* Footer */}
-        <div className="p-4 border-t">
-          <p className="text-xs text-muted-foreground">v1.0.0 — Phase 1</p>
+        {/* User profile & Logout footer */}
+        <div className="p-4 border-t space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="min-w-0">
+              <p className="text-sm font-bold truncate">{user?.full_name || 'Admin System'}</p>
+              <p className="text-xs text-muted-foreground truncate">{user?.phone || '0999999999'}</p>
+            </div>
+            <button
+              onClick={handleLogout}
+              title="Đăng xuất"
+              className="p-1.5 rounded-md hover:bg-destructive/10 text-destructive transition-colors"
+            >
+              <LogOut className="h-4 w-4" />
+            </button>
+          </div>
+          <p className="text-[11px] text-muted-foreground/60 text-center">HomeMate v1.0.0 • Production Ready</p>
         </div>
       </aside>
 
       {/* Main content */}
-      <main className="flex-1 overflow-auto">
-        <div className="p-8">{children}</div>
+      <main className="flex-1 overflow-auto bg-muted/20">
+        <div className="p-8 max-w-7xl mx-auto">{children}</div>
       </main>
     </div>
   );

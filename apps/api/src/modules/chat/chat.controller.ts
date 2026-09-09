@@ -1,6 +1,13 @@
 import {
-  Controller, Get, Post, Body, Param, Query,
-  UseGuards, HttpCode, HttpStatus,
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  Query,
+  UseGuards,
+  HttpCode,
+  HttpStatus,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { IsString, IsNotEmpty, IsOptional } from 'class-validator';
@@ -29,10 +36,7 @@ export class ChatController {
 
   @Get('jobs/:jobId/conversation')
   @ApiOperation({ summary: 'Lấy conversation theo job' })
-  async getByJob(
-    @CurrentUser() user: { sub: string },
-    @Param('jobId') jobId: string,
-  ) {
+  async getByJob(@CurrentUser() user: { sub: string }, @Param('jobId') jobId: string) {
     return this.chatService.getConversationByJob(jobId, user.sub);
   }
 

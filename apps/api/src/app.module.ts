@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { ThrottlerModule } from '@nestjs/throttler';
-import appConfig from './config/app.config';
+import appConfig, { aiConfig } from './config/app.config';
 import databaseConfig from './config/database.config';
 import jwtConfig from './config/jwt.config';
 import redisConfig from './config/redis.config';
@@ -33,15 +33,16 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
 import { ChatModule } from './modules/chat/chat.module';
 
 // ─── Phase 8: Payment & Wallet ────────────────────────────────────────────────
-// import { PaymentsModule } from './modules/payments/payments.module';
+import { PaymentsModule } from './modules/payments/payments.module';
+import { ReviewsModule } from './modules/reviews/reviews.module';
 // import { WalletModule } from './modules/wallet/wallet.module';
 
 // ─── Phase 9: Admin ───────────────────────────────────────────────────────────
-// import { AdminModule } from './modules/admin/admin.module';
-// import { AnalyticsModule } from './modules/analytics/analytics.module';
+import { AdminModule } from './modules/admin/admin.module';
+import { AnalyticsModule } from './modules/analytics/analytics.module';
 
 // ─── Phase 10: AI Features ────────────────────────────────────────────────────
-// import { AiModule } from './modules/ai/ai.module';
+import { AiModule } from './modules/ai/ai.module';
 
 @Module({
   controllers: [HealthController],
@@ -49,7 +50,7 @@ import { ChatModule } from './modules/chat/chat.module';
     // Config — global
     ConfigModule.forRoot({
       isGlobal: true,
-      load: [appConfig, databaseConfig, jwtConfig, redisConfig, minioConfig],
+      load: [appConfig, aiConfig, databaseConfig, jwtConfig, redisConfig, minioConfig],
       envFilePath: ['.env.local', '.env'],
     }),
 
@@ -82,6 +83,11 @@ import { ChatModule } from './modules/chat/chat.module';
     JobsModule,
     NotificationsModule,
     ChatModule,
+    PaymentsModule,
+    ReviewsModule,
+    AdminModule,
+    AnalyticsModule,
+    AiModule,
 
     // Phase 4+ (uncomment as implemented)
     // CustomersModule,

@@ -9,9 +9,9 @@ interface AuthState {
   isAuthenticated: boolean;
   isLoading: boolean;
 
-  setAuth: (user: IUser, accessToken: string, refreshToken: string) => Promise<void>;
-  setUser: (user: IUser) => void;
-  switchRole: (role: UserRole) => void;
+  setAuth: (user: any, accessToken: string, refreshToken: string) => Promise<void>;
+  setUser: (user: any) => void;
+  switchRole: (role: any) => void;
   logout: () => Promise<void>;
   loadStoredAuth: () => Promise<void>;
 }
