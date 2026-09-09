@@ -1,14 +1,17 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Inject, forwardRef } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Notification, NotificationDocument } from './schemas/notification.schema';
-import { NOTIFICATION_TYPES } from '@homemate/constants';
+import { NOTIFICATION_TYPES, SOCKET_EVENTS } from '@homemate/constants';
+import { AppGateway } from '../chat/app.gateway';
 
 @Injectable()
 export class NotificationsService {
   constructor(
     @InjectModel(Notification.name)
     private notificationModel: Model<NotificationDocument>,
+    @Inject(forwardRef(() => AppGateway))
+    private gateway: AppGateway,
   ) {}
 
   async create(data: {
@@ -18,45 +21,61 @@ export class NotificationsService {
     body: string;
     payload?: Record<string, unknown>;
   }): Promise<NotificationDocument> {
-    return this.notificationModel.create({
+    const notification = await this.notificationModel.create({
       user_id: new Types.ObjectId(data.userId),
       type: data.type,
       title: data.title,
       body: data.body,
       data: data.payload,
     });
+
+    // Realtime: push notification event to user's socket room
+    try {
+      this.gateway.emitToUser(data.userId, SOCKET_EVENTS.NOTIFICATION_NEW, {
+        _id: String(notification._id),
+        type: notification.type,
+        title: notification.title,
+        body: notification.body,
+        data: notification.data,
+        is_read: false,
+        created_at: notification.created_at,
+      });
+    } catch {
+      // Ignore socket error if user is offline
+    }
+
+    return notification;
   }
 
   async getForUser(userId: string, unreadOnly = false) {
     const query: Record<string, unknown> = { user_id: new Types.ObjectId(userId) };
     if (unreadOnly) query['is_read'] = false;
-    return this.notificationModel
-      .find(query)
-      .sort({ created_at: -1 })
-      .limit(50)
-      .exec();
+    return this.notificationModel.find(query).sort({ created_at: -1 }).limit(50).exec();
   }
 
   async markRead(userId: string, notificationId: string) {
-    return this.notificationModel.findOneAndUpdate(
-      { _id: new Types.ObjectId(notificationId), user_id: new Types.ObjectId(userId) },
-      { is_read: true },
-      { new: true },
-    ).exec();
+    return this.notificationModel
+      .findOneAndUpdate(
+        { _id: new Types.ObjectId(notificationId), user_id: new Types.ObjectId(userId) },
+        { is_read: true },
+        { new: true },
+      )
+      .exec();
   }
 
   async markAllRead(userId: string) {
-    return this.notificationModel.updateMany(
-      { user_id: new Types.ObjectId(userId), is_read: false },
-      { is_read: true },
-    ).exec();
+    return this.notificationModel
+      .updateMany({ user_id: new Types.ObjectId(userId), is_read: false }, { is_read: true })
+      .exec();
   }
 
   async getUnreadCount(userId: string): Promise<number> {
-    return this.notificationModel.countDocuments({
-      user_id: new Types.ObjectId(userId),
-      is_read: false,
-    }).exec();
+    return this.notificationModel
+      .countDocuments({
+        user_id: new Types.ObjectId(userId),
+        is_read: false,
+      })
+      .exec();
   }
 
   // ─── Convenience helpers for specific notification types ───────────────────

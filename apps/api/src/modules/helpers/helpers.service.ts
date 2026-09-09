@@ -15,12 +15,14 @@ import {
   BankAccountDto,
 } from './dto/helper.dto';
 import { HelperStatus, VerificationStatus } from '@homemate/types';
+import { AppGateway } from '../chat/app.gateway';
 
 @Injectable()
 export class HelpersService {
   constructor(
     @InjectModel(HelperProfile.name)
     private helperModel: Model<HelperProfileDocument>,
+    private readonly gateway: AppGateway,
   ) {}
 
   async getOrCreate(userId: string): Promise<HelperProfileDocument> {
@@ -38,8 +40,22 @@ export class HelpersService {
     return this.getOrCreate(userId);
   }
 
-  async getPublicProfile(userId: string): Promise<HelperProfileDocument> {
-    const profile = await this.helperModel.findOne({ user_id: userId }).exec();
+  async getPublicProfile(idOrUserId: string): Promise<HelperProfileDocument> {
+    const query = Types.ObjectId.isValid(idOrUserId)
+      ? {
+          $or: [
+            { user_id: new Types.ObjectId(idOrUserId) },
+            { _id: new Types.ObjectId(idOrUserId) },
+          ],
+        }
+      : { user_id: idOrUserId };
+
+    const profile = await this.helperModel
+      .findOne(query)
+      .populate('user_id', 'full_name avatar phone created_at')
+      .populate('service_ids', 'name slug icon base_price_min base_price_max')
+      .exec();
+
     if (!profile) throw new NotFoundException('Helper không tồn tại');
     return profile;
   }
@@ -70,7 +86,15 @@ export class HelpersService {
     }
 
     profile.status = dto.status;
-    return profile.save();
+    await profile.save();
+
+    // Realtime: broadcast helper availability change to personal room
+    this.gateway.emitToUser(userId, 'helper:status_changed', {
+      helper_id: userId,
+      status: dto.status,
+    });
+
+    return profile;
   }
 
   async submitKyc(userId: string, dto: SubmitKycDto): Promise<HelperProfileDocument> {

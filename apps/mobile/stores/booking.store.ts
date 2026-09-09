@@ -1,14 +1,13 @@
 import { create } from 'zustand';
-import type { IBooking, BookingStatus } from '@homemate/types';
 
 interface BookingState {
-  activeBooking: IBooking | null;
-  draftBooking: Partial<IBooking> | null;
+  activeBooking: any | null;
+  draftBooking: any | null;
 
-  setActiveBooking: (booking: IBooking | null) => void;
-  setDraftBooking: (draft: Partial<IBooking>) => void;
+  setActiveBooking: (booking: any | null) => void;
+  setDraftBooking: (draft: any) => void;
   clearDraft: () => void;
-  updateBookingStatus: (status: BookingStatus) => void;
+  updateBookingStatus: (status: any) => void;
 }
 
 export const useBookingStore = create<BookingState>(set => ({

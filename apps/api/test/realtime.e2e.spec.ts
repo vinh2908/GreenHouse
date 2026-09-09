@@ -34,7 +34,10 @@ describe('Realtime E2E (Phase 6)', () => {
         ConfigModule.forRoot({ isGlobal: true, load: [appConfig, jwtConfig], ignoreEnvFile: true }),
         MongooseModule.forRoot(mongod.getUri()),
         ThrottlerModule.forRoot([{ ttl: 60000, limit: 100 }]),
-        AuthModule, UsersModule, NotificationsModule, ChatModule,
+        AuthModule,
+        UsersModule,
+        NotificationsModule,
+        ChatModule,
       ],
     }).compile();
 

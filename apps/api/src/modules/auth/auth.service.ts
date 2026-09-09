@@ -118,7 +118,22 @@ export class AuthService {
     if (!user) throw new BadRequestException('Số điện thoại không tồn tại');
 
     await this.usersService.markVerified(user.id as string);
-    return { message: 'Xác minh số điện thoại thành công' };
+
+    // Generate tokens so user is immediately logged in after OTP verification
+    const tokens = await this.generateTokens(user);
+
+    return {
+      message: 'Xác minh số điện thoại thành công',
+      ...tokens,
+      user: {
+        id: user.id,
+        phone: user.phone,
+        full_name: user.full_name,
+        roles: user.roles,
+        active_role: user.active_role,
+        is_phone_verified: true,
+      },
+    };
   }
 
   // ─── Forgot / Reset Password ───────────────────────────────────────────────
