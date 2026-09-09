@@ -115,11 +115,7 @@ export default function DashboardPage() {
               <ResponsiveContainer width="100%" height={220}>
                 <LineChart data={jobsPerDay}>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                  <XAxis
-                    dataKey="date"
-                    tick={{ fontSize: 11 }}
-                    tickFormatter={d => d.slice(5)}
-                  />
+                  <XAxis dataKey="date" tick={{ fontSize: 11 }} tickFormatter={d => d.slice(5)} />
                   <YAxis tick={{ fontSize: 11 }} />
                   <Tooltip
                     formatter={(v: number) => [v, 'Jobs']}
@@ -157,9 +153,7 @@ export default function DashboardPage() {
                     tick={{ fontSize: 11 }}
                     tickFormatter={v => (v / 1_000_000).toFixed(0) + 'M'}
                   />
-                  <Tooltip
-                    formatter={(v: number) => [formatVND(v), 'Doanh thu']}
-                  />
+                  <Tooltip formatter={(v: number) => [formatVND(v), 'Doanh thu']} />
                   <Bar dataKey="total" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
@@ -195,18 +189,14 @@ export default function DashboardPage() {
                     }
                     labelLine={false}
                   >
-                    {jobsByStatus.map(
-                      (entry: { status: string; count: number }, index: number) => (
-                        <Cell
-                          key={entry.status}
-                          fill={STATUS_COLORS[entry.status] ?? PIE_COLORS[index % PIE_COLORS.length]}
-                        />
-                      ),
-                    )}
+                    {jobsByStatus.map((entry: { status: string; count: number }, index: number) => (
+                      <Cell
+                        key={entry.status}
+                        fill={STATUS_COLORS[entry.status] ?? PIE_COLORS[index % PIE_COLORS.length]}
+                      />
+                    ))}
                   </Pie>
-                  <Tooltip
-                    formatter={(v: number, n: string) => [v, STATUS_VI[n] ?? n]}
-                  />
+                  <Tooltip formatter={(v: number, n: string) => [v, STATUS_VI[n] ?? n]} />
                 </PieChart>
               </ResponsiveContainer>
             ) : (
@@ -227,22 +217,27 @@ export default function DashboardPage() {
               <div className="space-y-3">
                 {topHelpers
                   .slice(0, 6)
-                  .map((h: { full_name: string; phone: string; completed_jobs: number }, i: number) => (
-                    <div key={i} className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary">
-                          {i + 1}
+                  .map(
+                    (
+                      h: { full_name: string; phone: string; completed_jobs: number },
+                      i: number,
+                    ) => (
+                      <div key={i} className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary">
+                            {i + 1}
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium">{h.full_name ?? 'N/A'}</p>
+                            <p className="text-xs text-muted-foreground">{h.phone}</p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="text-sm font-medium">{h.full_name ?? 'N/A'}</p>
-                          <p className="text-xs text-muted-foreground">{h.phone}</p>
-                        </div>
+                        <span className="text-sm font-semibold text-green-600">
+                          {h.completed_jobs} jobs
+                        </span>
                       </div>
-                      <span className="text-sm font-semibold text-green-600">
-                        {h.completed_jobs} jobs
-                      </span>
-                    </div>
-                  ))}
+                    ),
+                  )}
               </div>
             ) : (
               <div className="h-[220px] flex items-center justify-center text-muted-foreground text-sm">

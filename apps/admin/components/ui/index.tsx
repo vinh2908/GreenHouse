@@ -80,7 +80,14 @@ export function Button({
           fill="none"
           viewBox="0 0 24 24"
         >
-          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+          <circle
+            className="opacity-25"
+            cx="12"
+            cy="12"
+            r="10"
+            stroke="currentColor"
+            strokeWidth="4"
+          />
           <path
             className="opacity-75"
             fill="currentColor"
@@ -126,7 +133,10 @@ export function Input({ className, label, error, id, ...props }: InputProps) {
 
 export function Card({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
   return (
-    <div className={cn('rounded-lg border bg-card text-card-foreground shadow-sm', className)} {...props} />
+    <div
+      className={cn('rounded-lg border bg-card text-card-foreground shadow-sm', className)}
+      {...props}
+    />
   );
 }
 
@@ -152,7 +162,10 @@ export function Table({ className, ...props }: React.HTMLAttributes<HTMLTableEle
   );
 }
 
-export function TableHeader({ className, ...props }: React.HTMLAttributes<HTMLTableSectionElement>) {
+export function TableHeader({
+  className,
+  ...props
+}: React.HTMLAttributes<HTMLTableSectionElement>) {
   return <thead className={cn('[&_tr]:border-b', className)} {...props} />;
 }
 
@@ -162,10 +175,7 @@ export function TableBody({ className, ...props }: React.HTMLAttributes<HTMLTabl
 
 export function TableRow({ className, ...props }: React.HTMLAttributes<HTMLTableRowElement>) {
   return (
-    <tr
-      className={cn('border-b transition-colors hover:bg-muted/50', className)}
-      {...props}
-    />
+    <tr className={cn('border-b transition-colors hover:bg-muted/50', className)} {...props} />
   );
 }
 
@@ -240,7 +250,8 @@ export function StatCard({ title, value, description, trend, icon }: StatCardPro
         {description && <p className="text-xs text-muted-foreground mt-1">{description}</p>}
         {trend && (
           <p className={cn('text-xs mt-1', trend.value >= 0 ? 'text-green-600' : 'text-red-600')}>
-            {trend.value >= 0 ? '+' : ''}{trend.value}% {trend.label}
+            {trend.value >= 0 ? '+' : ''}
+            {trend.value}% {trend.label}
           </p>
         )}
       </CardContent>
@@ -269,8 +280,19 @@ export function Loading() {
         fill="none"
         viewBox="0 0 24 24"
       >
-        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+        <circle
+          className="opacity-25"
+          cx="12"
+          cy="12"
+          r="10"
+          stroke="currentColor"
+          strokeWidth="4"
+        />
+        <path
+          className="opacity-75"
+          fill="currentColor"
+          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+        />
       </svg>
     </div>
   );

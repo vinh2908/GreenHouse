@@ -1,16 +1,19 @@
 import {
-  Controller, Post, Body, Get, UseGuards, HttpCode, HttpStatus, Query,
+  Controller,
+  Post,
+  Body,
+  Get,
+  UseGuards,
+  HttpCode,
+  HttpStatus,
+  Query,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { AiBookingService } from './services/ai-booking.service';
 import { AiMatchingService } from './services/ai-matching.service';
 import { AiSupportService } from './services/ai-support.service';
 import { AiConfigService } from './services/ai-config.service';
-import {
-  AnalyzeBookingDto,
-  EstimatePriceDto,
-  SupportChatDto,
-} from './dto/ai.dto';
+import { AnalyzeBookingDto, EstimatePriceDto, SupportChatDto } from './dto/ai.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Public } from '../../common/decorators/public.decorator';
@@ -55,10 +58,7 @@ export class AiController {
     description:
       'Khách nhập mô tả tự do → AI phân tích → trả về service type, thời gian, số người, ước giá',
   })
-  async analyzeBooking(
-    @Body() dto: AnalyzeBookingDto,
-    @CurrentUser() _user: { sub: string },
-  ) {
+  async analyzeBooking(@Body() dto: AnalyzeBookingDto, @CurrentUser() _user: { sub: string }) {
     return this.bookingService.analyzeBookingRequest(dto.text);
   }
 
@@ -70,8 +70,7 @@ export class AiController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: '[AI] Ước tính giá dịch vụ từ mô tả công việc',
-    description:
-      'Khách mô tả công việc → AI ước tính giá min/max, thời gian, độ phức tạp',
+    description: 'Khách mô tả công việc → AI ước tính giá min/max, thời gian, độ phức tạp',
   })
   async estimatePrice(@Body() dto: EstimatePriceDto) {
     return this.bookingService.estimatePrice(dto.description, dto.service_type);

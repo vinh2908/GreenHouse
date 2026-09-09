@@ -33,7 +33,7 @@ async function runSeed() {
       },
       $setOnInsert: { created_at: new Date() },
     },
-    { upsert: true }
+    { upsert: true },
   );
 
   // Helper: Anh Tuấn
@@ -54,7 +54,7 @@ async function runSeed() {
       },
       $setOnInsert: { created_at: new Date() },
     },
-    { upsert: true, returnDocument: 'after' }
+    { upsert: true, returnDocument: 'after' },
   );
 
   const helperId = helperRes?._id || (await usersCollection.findOne({ phone: '0902222222' }))?._id;
@@ -76,7 +76,7 @@ async function runSeed() {
       },
       $setOnInsert: { created_at: new Date() },
     },
-    { upsert: true }
+    { upsert: true },
   );
 
   // Helper Wallet
@@ -92,7 +92,7 @@ async function runSeed() {
       },
       $setOnInsert: { created_at: new Date() },
     },
-    { upsert: true }
+    { upsert: true },
   );
 
   console.log('Users re-seeded with password123 successfully!');

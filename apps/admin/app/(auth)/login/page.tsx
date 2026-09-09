@@ -24,8 +24,8 @@ export default function LoginPage() {
       const msg =
         err instanceof Error
           ? err.message
-          : (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-            'Đăng nhập thất bại';
+          : ((err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
+            'Đăng nhập thất bại');
       setError(msg);
     } finally {
       setLoading(false);

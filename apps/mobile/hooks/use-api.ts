@@ -7,8 +7,7 @@ import Toast from 'react-native-toast-message';
 
 export function useLogin() {
   return useMutation({
-    mutationFn: (data: { phone: string; password: string }) =>
-      apiClient.post('/auth/login', data),
+    mutationFn: (data: { phone: string; password: string }) => apiClient.post('/auth/login', data),
   });
 }
 
@@ -21,8 +20,7 @@ export function useRegister() {
 
 export function useVerifyOtp() {
   return useMutation({
-    mutationFn: (data: { phone: string; otp: string }) =>
-      apiClient.post('/auth/otp/verify', data),
+    mutationFn: (data: { phone: string; otp: string }) => apiClient.post('/auth/otp/verify', data),
   });
 }
 
@@ -75,8 +73,13 @@ export function useServices() {
     queryFn: async () => {
       const { data } = await apiClient.get('/services');
       return data.data as {
-        _id: string; name: string; slug: string; icon?: string;
-        description?: string; base_price_min?: number; base_price_max?: number;
+        _id: string;
+        name: string;
+        slug: string;
+        icon?: string;
+        description?: string;
+        base_price_min?: number;
+        base_price_max?: number;
       }[];
     },
     staleTime: 10 * 60 * 1000,
@@ -135,17 +138,28 @@ export function useCreateJob() {
     mutationFn: (dto: unknown) => apiClient.post('/jobs', dto),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['jobs', 'my'] });
-      Toast.show({ type: 'success', text1: 'Đăng việc thành công!', text2: 'Đang chờ báo giá từ thợ' });
+      Toast.show({
+        type: 'success',
+        text1: 'Đăng việc thành công!',
+        text2: 'Đang chờ báo giá từ thợ',
+      });
     },
-    onError: () => Toast.show({ type: 'error', text1: 'Đăng việc thất bại', text2: 'Vui lòng thử lại' }),
+    onError: () =>
+      Toast.show({ type: 'error', text1: 'Đăng việc thất bại', text2: 'Vui lòng thử lại' }),
   });
 }
 
 export function useCreateSosJob() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (dto: { category: string; title: string; description: string; address: any; surcharge?: number; photos?: string[] }) =>
-      apiClient.post('/jobs/sos', dto),
+    mutationFn: (dto: {
+      category: string;
+      title: string;
+      description: string;
+      address: any;
+      surcharge?: number;
+      photos?: string[];
+    }) => apiClient.post('/jobs/sos', dto),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['jobs', 'my'] });
     },
@@ -159,7 +173,11 @@ export function useAcceptSosJob() {
     onSuccess: (_, jobId) => {
       qc.invalidateQueries({ queryKey: ['job', jobId] });
       qc.invalidateQueries({ queryKey: ['jobs'] });
-      Toast.show({ type: 'success', text1: '🚨 BẠN ĐÃ NHẬN ĐƠN CỨU HỘ SOS!', text2: 'Vui lòng di chuyển khẩn cấp đến địa chỉ khách hàng' });
+      Toast.show({
+        type: 'success',
+        text1: '🚨 BẠN ĐÃ NHẬN ĐƠN CỨU HỘ SOS!',
+        text2: 'Vui lòng di chuyển khẩn cấp đến địa chỉ khách hàng',
+      });
     },
   });
 }
@@ -172,7 +190,11 @@ export function useSelectQuote() {
     onSuccess: (_, vars) => {
       qc.invalidateQueries({ queryKey: ['job', vars.jobId] });
       qc.invalidateQueries({ queryKey: ['jobs', 'my'] });
-      Toast.show({ type: 'success', text1: 'Đã chọn helper!', text2: 'Cuộc trò chuyện đã được tạo' });
+      Toast.show({
+        type: 'success',
+        text1: 'Đã chọn helper!',
+        text2: 'Cuộc trò chuyện đã được tạo',
+      });
     },
   });
 }
@@ -196,7 +218,11 @@ export function useApproveJob() {
       apiClient.patch(`/jobs/${jobId}/approve`, { rating, review }),
     onSuccess: (_, vars) => {
       qc.invalidateQueries({ queryKey: ['job', vars.jobId] });
-      Toast.show({ type: 'success', text1: 'Nghiệm thu thành công!', text2: 'Cảm ơn bạn đã đánh giá' });
+      Toast.show({
+        type: 'success',
+        text1: 'Nghiệm thu thành công!',
+        text2: 'Cảm ơn bạn đã đánh giá',
+      });
     },
   });
 }
@@ -229,8 +255,16 @@ export function useHelperJobs(status?: string) {
 export function useSubmitQuote() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ jobId, ...dto }: { jobId: string; labor_cost: number; estimated_duration: number; notes?: string; available_date?: string }) =>
-      apiClient.post(`/jobs/${jobId}/quotes`, dto),
+    mutationFn: ({
+      jobId,
+      ...dto
+    }: {
+      jobId: string;
+      labor_cost: number;
+      estimated_duration: number;
+      notes?: string;
+      available_date?: string;
+    }) => apiClient.post(`/jobs/${jobId}/quotes`, dto),
     onSuccess: (_, vars) => {
       qc.invalidateQueries({ queryKey: ['job', vars.jobId] });
       qc.invalidateQueries({ queryKey: ['jobs'] });
@@ -269,7 +303,11 @@ export function useCompleteJob() {
       apiClient.patch(`/jobs/${jobId}/complete`, { completion_photos }),
     onSuccess: (_, vars) => {
       qc.invalidateQueries({ queryKey: ['job', vars.jobId] });
-      Toast.show({ type: 'success', text1: 'Đã upload ảnh hoàn thành!', text2: 'Đang chờ khách nghiệm thu' });
+      Toast.show({
+        type: 'success',
+        text1: 'Đã upload ảnh hoàn thành!',
+        text2: 'Đang chờ khách nghiệm thu',
+      });
     },
   });
 }
@@ -289,8 +327,7 @@ export function useHelperProfile() {
 export function useSetHelperStatus() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (status: 'online' | 'offline') =>
-      apiClient.patch('/helpers/me/status', { status }),
+    mutationFn: (status: 'online' | 'offline') => apiClient.patch('/helpers/me/status', { status }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['helper', 'profile'] }),
   });
 }
@@ -298,11 +335,19 @@ export function useSetHelperStatus() {
 export function useSubmitKyc() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (dto: { id_card_number: string; id_card_front: string; id_card_back: string; selfie_photo: string }) =>
-      apiClient.post('/helpers/me/kyc', dto),
+    mutationFn: (dto: {
+      id_card_number: string;
+      id_card_front: string;
+      id_card_back: string;
+      selfie_photo: string;
+    }) => apiClient.post('/helpers/me/kyc', dto),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['helper', 'profile'] });
-      Toast.show({ type: 'success', text1: 'Nộp hồ sơ e-KYC thành công!', text2: 'Hồ sơ đang được xét duyệt trong 24h' });
+      Toast.show({
+        type: 'success',
+        text1: 'Nộp hồ sơ e-KYC thành công!',
+        text2: 'Hồ sơ đang được xét duyệt trong 24h',
+      });
     },
   });
 }
@@ -366,14 +411,22 @@ export function useTransactions(page = 1) {
 export function useRequestWithdrawal() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (dto: { amount: number; bank_account?: { bank_name: string; account_number: string; account_name: string } }) =>
-      apiClient.post('/payments/withdraw', dto),
+    mutationFn: (dto: {
+      amount: number;
+      bank_account?: { bank_name: string; account_number: string; account_name: string };
+    }) => apiClient.post('/payments/withdraw', dto),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['wallet'] });
-      Toast.show({ type: 'success', text1: 'Yêu cầu rút tiền đã gửi!', text2: 'Sẽ được xử lý trong 1-3 ngày làm việc' });
+      Toast.show({
+        type: 'success',
+        text1: 'Yêu cầu rút tiền đã gửi!',
+        text2: 'Sẽ được xử lý trong 1-3 ngày làm việc',
+      });
     },
     onError: (err: unknown) => {
-      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? 'Rút tiền thất bại';
+      const msg =
+        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
+        'Rút tiền thất bại';
       Toast.show({ type: 'error', text1: msg });
     },
   });
@@ -396,10 +449,9 @@ export function useMessages(conversationId?: string, page = 1) {
   return useQuery({
     queryKey: ['messages', conversationId, page],
     queryFn: async () => {
-      const { data } = await apiClient.get(
-        `/chat/conversations/${conversationId}/messages`,
-        { params: { page, limit: 30 } },
-      );
+      const { data } = await apiClient.get(`/chat/conversations/${conversationId}/messages`, {
+        params: { page, limit: 30 },
+      });
       return data.data;
     },
     enabled: !!conversationId,
@@ -446,7 +498,8 @@ export function useUnreadCount() {
 export function useMarkNotificationRead() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (notificationId: string) => apiClient.patch(`/notifications/${notificationId}/read`),
+    mutationFn: (notificationId: string) =>
+      apiClient.patch(`/notifications/${notificationId}/read`),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['notifications'] });
       qc.invalidateQueries({ queryKey: ['notifications', 'count'] });
@@ -525,8 +578,13 @@ export function useAiSupport() {
 export function useCreateReview() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (dto: { job_id: string; helper_id: string; rating: number; comment?: string; tags?: string[] }) =>
-      apiClient.post('/reviews', dto),
+    mutationFn: (dto: {
+      job_id: string;
+      helper_id: string;
+      rating: number;
+      comment?: string;
+      tags?: string[];
+    }) => apiClient.post('/reviews', dto),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['jobs'] });
       Toast.show({ type: 'success', text1: 'Đánh giá thành công!' });

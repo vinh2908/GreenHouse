@@ -1,11 +1,26 @@
 import { useState } from 'react';
 import {
-  View, Text, ScrollView, SafeAreaView, TouchableOpacity, Alert, Modal, TextInput,
+  View,
+  Text,
+  ScrollView,
+  SafeAreaView,
+  TouchableOpacity,
+  Alert,
+  Modal,
+  TextInput,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import {
-  ArrowLeft, MessageCircle, Star, ChevronRight,
-  MapPin, Calendar, Clock, Check, X, ShieldCheck,
+  ArrowLeft,
+  MessageCircle,
+  Star,
+  ChevronRight,
+  MapPin,
+  Calendar,
+  Clock,
+  Check,
+  X,
+  ShieldCheck,
 } from 'lucide-react-native';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
@@ -13,13 +28,26 @@ import 'dayjs/locale/vi';
 import Toast from 'react-native-toast-message';
 import { useAuthStore } from '@/stores/auth.store';
 import {
-  useJobDetail, useJobQuotes, useJobContract,
-  useSelectQuote, useCancelJob, useApproveJob, useCreateReview,
+  useJobDetail,
+  useJobQuotes,
+  useJobContract,
+  useSelectQuote,
+  useCancelJob,
+  useApproveJob,
+  useCreateReview,
 } from '@/hooks/use-api';
 import { useJobSocketUpdates } from '@/hooks/use-socket';
 import {
-  Button, Card, JobStatusBadge, Avatar, StarRating,
-  LoadingSpinner, COLORS, Separator, PriceText, Badge,
+  Button,
+  Card,
+  JobStatusBadge,
+  Avatar,
+  StarRating,
+  LoadingSpinner,
+  COLORS,
+  Separator,
+  PriceText,
+  Badge,
 } from '@/components/ui';
 
 dayjs.extend(relativeTime);
@@ -65,13 +93,25 @@ export default function JobDetailScreen() {
   const [showReview, setShowReview] = useState(false);
   const [rating, setRating] = useState(5);
   const [reviewText, setReviewText] = useState('');
-  const [selectedDate, setSelectedDate] = useState(dayjs().add(1, 'day').format('YYYY-MM-DDT09:00:00'));
+  const [selectedDate, setSelectedDate] = useState(
+    dayjs().add(1, 'day').format('YYYY-MM-DDT09:00:00'),
+  );
 
   if (jLoading) return <LoadingSpinner />;
   if (!job) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: '#fff', justifyContent: 'center', alignItems: 'center', padding: 20 }}>
-        <Text style={{ fontSize: 16, color: COLORS.gray[600], marginBottom: 16 }}>Không tìm thấy thông tin đơn hàng</Text>
+      <SafeAreaView
+        style={{
+          flex: 1,
+          backgroundColor: '#fff',
+          justifyContent: 'center',
+          alignItems: 'center',
+          padding: 20,
+        }}
+      >
+        <Text style={{ fontSize: 16, color: COLORS.gray[600], marginBottom: 16 }}>
+          Không tìm thấy thông tin đơn hàng
+        </Text>
         <Button title="Quay lại" variant="outline" onPress={() => router.back()} />
       </SafeAreaView>
     );
@@ -97,9 +137,15 @@ export default function JobDetailScreen() {
           onPress: async () => {
             try {
               await selectQuote.mutateAsync({
-                jobId: id!, quote_id: quoteId, scheduled_at: selectedDate,
+                jobId: id!,
+                quote_id: quoteId,
+                scheduled_at: selectedDate,
               });
-              Toast.show({ type: 'success', text1: 'Đã chọn thợ thành công!', text2: 'Hợp đồng đã được kích hoạt' });
+              Toast.show({
+                type: 'success',
+                text1: 'Đã chọn thợ thành công!',
+                text2: 'Hợp đồng đã được kích hoạt',
+              });
             } catch (err: any) {
               const msg = err?.response?.data?.message || 'Không thể chọn báo giá';
               Toast.show({ type: 'error', text1: msg });
@@ -140,7 +186,11 @@ export default function JobDetailScreen() {
           comment: reviewText,
         });
       }
-      Toast.show({ type: 'success', text1: 'Nghiệm thu & Đánh giá thành công!', text2: 'Cảm ơn bạn đã tin tưởng HomeMate' });
+      Toast.show({
+        type: 'success',
+        text1: 'Nghiệm thu & Đánh giá thành công!',
+        text2: 'Cảm ơn bạn đã tin tưởng HomeMate',
+      });
       setShowReview(false);
     } catch {
       Toast.show({ type: 'error', text1: 'Gửi đánh giá thất bại' });
@@ -152,8 +202,13 @@ export default function JobDetailScreen() {
       {/* Header */}
       <View
         style={{
-          flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14,
-          backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: COLORS.gray[100],
+          flexDirection: 'row',
+          alignItems: 'center',
+          paddingHorizontal: 16,
+          paddingVertical: 14,
+          backgroundColor: '#fff',
+          borderBottomWidth: 1,
+          borderBottomColor: COLORS.gray[100],
         }}
       >
         <TouchableOpacity
@@ -162,26 +217,48 @@ export default function JobDetailScreen() {
             if (router.canGoBack()) {
               router.back();
             } else {
-              router.replace(user?.active_role === 'helper' ? '/(helper)/jobs' : '/(customer)/jobs');
+              router.replace(
+                user?.active_role === 'helper' ? '/(helper)/jobs' : '/(customer)/jobs',
+              );
             }
           }}
           hitSlop={{ top: 16, bottom: 16, left: 16, right: 16 }}
-          style={{ width: 42, height: 42, borderRadius: 12, backgroundColor: COLORS.gray[100], alignItems: 'center', justifyContent: 'center' }}
+          style={{
+            width: 42,
+            height: 42,
+            borderRadius: 12,
+            backgroundColor: COLORS.gray[100],
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
         >
           <ArrowLeft size={22} color={COLORS.gray[800]} />
         </TouchableOpacity>
-        <Text style={{ fontSize: 17, fontWeight: '800', color: COLORS.gray[900], marginLeft: 12, flex: 1 }} numberOfLines={1}>
+        <Text
+          style={{
+            fontSize: 17,
+            fontWeight: '800',
+            color: COLORS.gray[900],
+            marginLeft: 12,
+            flex: 1,
+          }}
+          numberOfLines={1}
+        >
           {job.title}
         </Text>
         <JobStatusBadge status={job.status} />
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 16, gap: 14, paddingBottom: 60 }}>
-
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ padding: 16, gap: 14, paddingBottom: 60 }}
+      >
         {/* ── Status tracker ─────────────────────────────────────────── */}
         {job.status !== 'cancelled' && (
           <Card style={{ gap: 12, padding: 16 }}>
-            <Text style={{ fontWeight: '800', fontSize: 15, color: COLORS.gray[900] }}>Tiến trình thực hiện</Text>
+            <Text style={{ fontWeight: '800', fontSize: 15, color: COLORS.gray[900] }}>
+              Tiến trình thực hiện
+            </Text>
             {STATUS_STEPS.filter(s => s.key !== 'cancelled').map((s, i) => {
               const done = i < currentStepIdx;
               const active = i === currentStepIdx;
@@ -189,27 +266,54 @@ export default function JobDetailScreen() {
                 <View key={s.key} style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
                   <View
                     style={{
-                      width: 24, height: 24, borderRadius: 12, alignItems: 'center', justifyContent: 'center',
-                      backgroundColor: done ? COLORS.success : active ? COLORS.primary : COLORS.gray[200],
+                      width: 24,
+                      height: 24,
+                      borderRadius: 12,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      backgroundColor: done
+                        ? COLORS.success
+                        : active
+                          ? COLORS.primary
+                          : COLORS.gray[200],
                     }}
                   >
                     {done ? (
                       <Check size={14} color="#fff" strokeWidth={3} />
                     ) : (
-                      <Text style={{ fontSize: 11, color: active ? '#fff' : COLORS.gray[500], fontWeight: '800' }}>
+                      <Text
+                        style={{
+                          fontSize: 11,
+                          color: active ? '#fff' : COLORS.gray[500],
+                          fontWeight: '800',
+                        }}
+                      >
                         {i + 1}
                       </Text>
                     )}
                   </View>
-                  <Text style={{
-                    fontSize: 14, fontWeight: active ? '800' : done ? '600' : '400',
-                    color: active ? COLORS.primary : done ? COLORS.gray[900] : COLORS.gray[400],
-                  }}>
+                  <Text
+                    style={{
+                      fontSize: 14,
+                      fontWeight: active ? '800' : done ? '600' : '400',
+                      color: active ? COLORS.primary : done ? COLORS.gray[900] : COLORS.gray[400],
+                    }}
+                  >
                     {s.label}
                   </Text>
                   {active && (
-                    <View style={{ marginLeft: 'auto', backgroundColor: COLORS.primaryLight, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6 }}>
-                      <Text style={{ color: COLORS.primary, fontSize: 11, fontWeight: '800' }}>HIỆN TẠI</Text>
+                    <View
+                      style={{
+                        marginLeft: 'auto',
+                        backgroundColor: COLORS.primaryLight,
+                        paddingHorizontal: 8,
+                        paddingVertical: 2,
+                        borderRadius: 6,
+                      }}
+                    >
+                      <Text style={{ color: COLORS.primary, fontSize: 11, fontWeight: '800' }}>
+                        HIỆN TẠI
+                      </Text>
                     </View>
                   )}
                 </View>
@@ -230,11 +334,17 @@ export default function JobDetailScreen() {
               />
             )}
             {job.preferred_time_start && (
-              <Badge label={job.preferred_time_start} color={COLORS.gray[100]} textColor={COLORS.gray[700]} />
+              <Badge
+                label={job.preferred_time_start}
+                color={COLORS.gray[100]}
+                textColor={COLORS.gray[700]}
+              />
             )}
           </View>
 
-          <Text style={{ fontSize: 15, color: COLORS.gray[900], lineHeight: 22, fontWeight: '500' }}>
+          <Text
+            style={{ fontSize: 15, color: COLORS.gray[900], lineHeight: 22, fontWeight: '500' }}
+          >
             {job.description}
           </Text>
 
@@ -242,8 +352,18 @@ export default function JobDetailScreen() {
 
           <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 8 }}>
             <MapPin size={16} color={COLORS.gray[500]} style={{ marginTop: 2 }} />
-            <Text style={{ flex: 1, fontSize: 14, color: COLORS.gray[700], lineHeight: 20, fontWeight: '600' }}>
-              {job.address?.full_address}{job.address?.district ? `, ${job.address.district}` : ''}, {job.address?.city ?? 'Hồ Chí Minh'}
+            <Text
+              style={{
+                flex: 1,
+                fontSize: 14,
+                color: COLORS.gray[700],
+                lineHeight: 20,
+                fontWeight: '600',
+              }}
+            >
+              {job.address?.full_address}
+              {job.address?.district ? `, ${job.address.district}` : ''},{' '}
+              {job.address?.city ?? 'Hồ Chí Minh'}
             </Text>
           </View>
         </Card>
@@ -251,24 +371,35 @@ export default function JobDetailScreen() {
         {/* ── Helper assigned card ───────────────────────────────────── */}
         {hasHelperAssigned && helperObj && (
           <Card style={{ padding: 16 }}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+            <View
+              style={{
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: 12,
+              }}
+            >
               <Text style={{ fontWeight: '800', fontSize: 15, color: COLORS.gray[900] }}>
                 Thợ phụ trách đơn hàng
               </Text>
               <TouchableOpacity
                 onPress={() => {
-                  const hUserId = typeof job.helper_id === 'string' ? job.helper_id : job.helper_id?._id;
+                  const hUserId =
+                    typeof job.helper_id === 'string' ? job.helper_id : job.helper_id?._id;
                   router.push({ pathname: '/helper-profile/[id]', params: { id: hUserId } });
                 }}
               >
-                <Text style={{ fontSize: 12.5, color: COLORS.primary, fontWeight: '700' }}>Xem hồ sơ thợ →</Text>
+                <Text style={{ fontSize: 12.5, color: COLORS.primary, fontWeight: '700' }}>
+                  Xem hồ sơ thợ →
+                </Text>
               </TouchableOpacity>
             </View>
 
             <TouchableOpacity
               activeOpacity={0.8}
               onPress={() => {
-                const hUserId = typeof job.helper_id === 'string' ? job.helper_id : job.helper_id?._id;
+                const hUserId =
+                  typeof job.helper_id === 'string' ? job.helper_id : job.helper_id?._id;
                 router.push({ pathname: '/helper-profile/[id]', params: { id: hUserId } });
               }}
               style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}
@@ -289,8 +420,11 @@ export default function JobDetailScreen() {
                 activeOpacity={0.8}
                 onPress={() => router.push({ pathname: '/chat/[jobId]', params: { jobId: id } })}
                 style={{
-                  backgroundColor: COLORS.primaryLight, borderRadius: 12,
-                  padding: 10, borderWidth: 1, borderColor: '#FFD9C5',
+                  backgroundColor: COLORS.primaryLight,
+                  borderRadius: 12,
+                  padding: 10,
+                  borderWidth: 1,
+                  borderColor: '#FFD9C5',
                 }}
               >
                 <MessageCircle size={20} color={COLORS.primary} />
@@ -302,7 +436,13 @@ export default function JobDetailScreen() {
         {/* ── Quotes List ────────────────────────────────────────────── */}
         {['open', 'receiving_quotes'].includes(job.status) && (
           <Card style={{ gap: 12, padding: 16 }}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+            <View
+              style={{
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+              }}
+            >
               <Text style={{ fontWeight: '800', fontSize: 16, color: COLORS.gray[900] }}>
                 Danh sách thợ báo giá ({quotes?.length ?? 0})
               </Text>
@@ -321,34 +461,57 @@ export default function JobDetailScreen() {
                 return (
                   <View
                     key={q._id}
-                    style={{ borderWidth: 1.5, borderColor: COLORS.gray[200], borderRadius: 16, padding: 14, gap: 10, backgroundColor: '#fff' }}
+                    style={{
+                      borderWidth: 1.5,
+                      borderColor: COLORS.gray[200],
+                      borderRadius: 16,
+                      padding: 14,
+                      gap: 10,
+                      backgroundColor: '#fff',
+                    }}
                   >
                     <TouchableOpacity
                       activeOpacity={0.8}
                       onPress={() => {
-                        const hId = typeof q.helper_id === 'string' ? q.helper_id : q.helper_id?._id;
-                        if (hId) router.push({ pathname: '/helper-profile/[id]', params: { id: hId } });
+                        const hId =
+                          typeof q.helper_id === 'string' ? q.helper_id : q.helper_id?._id;
+                        if (hId)
+                          router.push({ pathname: '/helper-profile/[id]', params: { id: hId } });
                       }}
                       style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}
                     >
                       <Avatar name={hName} uri={hAvatar} size={42} />
                       <View style={{ flex: 1 }}>
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                          <Text style={{ fontWeight: '800', fontSize: 14, color: COLORS.gray[900] }}>
+                          <Text
+                            style={{ fontWeight: '800', fontSize: 14, color: COLORS.gray[900] }}
+                          >
                             {hName}
                           </Text>
                           <ShieldCheck size={14} color={COLORS.success} />
                         </View>
                         <Text style={{ fontSize: 12, color: COLORS.gray[500], marginTop: 1 }}>
-                          Dự kiến: {q.estimated_duration}h • {q.available_date ? dayjs(q.available_date).format('DD/MM') : 'Có mặt ngay'}
+                          Dự kiến: {q.estimated_duration}h •{' '}
+                          {q.available_date
+                            ? dayjs(q.available_date).format('DD/MM')
+                            : 'Có mặt ngay'}
                         </Text>
                       </View>
                       <PriceText amount={q.total_price} size={18} />
                     </TouchableOpacity>
 
                     {q.notes && (
-                      <View style={{ backgroundColor: COLORS.gray[50], padding: 10, borderRadius: 10 }}>
-                        <Text style={{ fontSize: 13, color: COLORS.gray[700], fontStyle: 'italic', lineHeight: 18 }}>
+                      <View
+                        style={{ backgroundColor: COLORS.gray[50], padding: 10, borderRadius: 10 }}
+                      >
+                        <Text
+                          style={{
+                            fontSize: 13,
+                            color: COLORS.gray[700],
+                            fontStyle: 'italic',
+                            lineHeight: 18,
+                          }}
+                        >
                           "{q.notes}"
                         </Text>
                       </View>
@@ -372,20 +535,34 @@ export default function JobDetailScreen() {
         {/* ── Contract Details ───────────────────────────────────────── */}
         {contract && (
           <Card style={{ gap: 10, padding: 16 }}>
-            <Text style={{ fontWeight: '800', fontSize: 15, color: COLORS.gray[900] }}>Chi tiết hợp đồng dịch vụ</Text>
+            <Text style={{ fontWeight: '800', fontSize: 15, color: COLORS.gray[900] }}>
+              Chi tiết hợp đồng dịch vụ
+            </Text>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
               <Text style={{ color: COLORS.gray[600], fontSize: 13.5 }}>Tiền công thợ</Text>
-              <PriceText amount={contract.labor_cost} size={14} color={COLORS.gray[900]} bold={false} />
+              <PriceText
+                amount={contract.labor_cost}
+                size={14}
+                color={COLORS.gray[900]}
+                bold={false}
+              />
             </View>
             {contract.materials_cost > 0 && (
               <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
                 <Text style={{ color: COLORS.gray[600], fontSize: 13.5 }}>Vật tư & Linh kiện</Text>
-                <PriceText amount={contract.materials_cost} size={14} color={COLORS.gray[900]} bold={false} />
+                <PriceText
+                  amount={contract.materials_cost}
+                  size={14}
+                  color={COLORS.gray[900]}
+                  bold={false}
+                />
               </View>
             )}
             <Separator my={4} />
             <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-              <Text style={{ fontWeight: '800', color: COLORS.gray[900], fontSize: 15 }}>Tổng thanh toán</Text>
+              <Text style={{ fontWeight: '800', color: COLORS.gray[900], fontSize: 15 }}>
+                Tổng thanh toán
+              </Text>
               <PriceText amount={contract.total_price} size={17} />
             </View>
           </Card>
@@ -423,31 +600,57 @@ export default function JobDetailScreen() {
             <TouchableOpacity onPress={() => setShowReview(false)}>
               <X size={24} color={COLORS.gray[700]} />
             </TouchableOpacity>
-            <Text style={{ fontSize: 18, fontWeight: '800', marginLeft: 12, color: COLORS.gray[900] }}>
+            <Text
+              style={{ fontSize: 18, fontWeight: '800', marginLeft: 12, color: COLORS.gray[900] }}
+            >
               Nghiệm thu & Đánh giá
             </Text>
           </View>
           <ScrollView contentContainerStyle={{ padding: 20, gap: 20 }}>
-            <Text style={{ fontSize: 16, color: COLORS.gray[700], textAlign: 'center', fontWeight: '600' }}>
+            <Text
+              style={{
+                fontSize: 16,
+                color: COLORS.gray[700],
+                textAlign: 'center',
+                fontWeight: '600',
+              }}
+            >
               Bạn đánh giá chất lượng phục vụ của thợ thế nào?
             </Text>
             <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 12 }}>
               {[1, 2, 3, 4, 5].map(s => (
                 <TouchableOpacity key={s} onPress={() => setRating(s)}>
-                  <Text style={{ fontSize: 44, opacity: s <= rating ? 1 : 0.25, color: '#F59E0B' }}>★</Text>
+                  <Text style={{ fontSize: 44, opacity: s <= rating ? 1 : 0.25, color: '#F59E0B' }}>
+                    ★
+                  </Text>
                 </TouchableOpacity>
               ))}
             </View>
-            <Text style={{ textAlign: 'center', color: COLORS.primary, fontWeight: '800', fontSize: 16 }}>
+            <Text
+              style={{
+                textAlign: 'center',
+                color: COLORS.primary,
+                fontWeight: '800',
+                fontSize: 16,
+              }}
+            >
               {['', 'Rất tệ', 'Tệ', 'Bình thường', 'Tốt', 'Rất hài lòng (5 sao)'][rating]}
             </Text>
 
             <View style={{ gap: 8 }}>
-              <Text style={{ fontWeight: '700', color: COLORS.gray[700] }}>Nhận xét chi tiết (tuỳ chọn)</Text>
+              <Text style={{ fontWeight: '700', color: COLORS.gray[700] }}>
+                Nhận xét chi tiết (tuỳ chọn)
+              </Text>
               <TextInput
                 style={{
-                  borderWidth: 1.5, borderColor: COLORS.gray[200], borderRadius: 14,
-                  padding: 14, fontSize: 15, minHeight: 90, textAlignVertical: 'top', color: COLORS.gray[900],
+                  borderWidth: 1.5,
+                  borderColor: COLORS.gray[200],
+                  borderRadius: 14,
+                  padding: 14,
+                  fontSize: 15,
+                  minHeight: 90,
+                  textAlignVertical: 'top',
+                  color: COLORS.gray[900],
                 }}
                 placeholder="Chia sẻ trải nghiệm của bạn về sự nhiệt tình, đúng giờ và tay nghề của thợ..."
                 value={reviewText}

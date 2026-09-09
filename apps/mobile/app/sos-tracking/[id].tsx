@@ -1,12 +1,27 @@
 import { useState, useEffect } from 'react';
 import {
-  View, Text, ScrollView, SafeAreaView, TouchableOpacity,
-  Linking, Share, ActivityIndicator, Alert,
+  View,
+  Text,
+  ScrollView,
+  SafeAreaView,
+  TouchableOpacity,
+  Linking,
+  Share,
+  ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import {
-  ShieldCheck, Phone, MessageCircle, MapPin, Share2,
-  Clock, CheckCircle2, AlertTriangle, ArrowLeft, Navigation,
+  ShieldCheck,
+  Phone,
+  MessageCircle,
+  MapPin,
+  Share2,
+  Clock,
+  CheckCircle2,
+  AlertTriangle,
+  ArrowLeft,
+  Navigation,
 } from 'lucide-react-native';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
@@ -15,7 +30,15 @@ import Toast from 'react-native-toast-message';
 import { useJobDetail, useCancelJob } from '@/hooks/use-api';
 import { useJobSocketUpdates } from '@/hooks/use-socket';
 import { socketService, SOCKET_EVENTS } from '@/services/socket.service';
-import { Button, Card, Avatar, LoadingSpinner, COLORS, Separator, PriceText } from '@/components/ui';
+import {
+  Button,
+  Card,
+  Avatar,
+  LoadingSpinner,
+  COLORS,
+  Separator,
+  PriceText,
+} from '@/components/ui';
 
 dayjs.extend(relativeTime);
 dayjs.locale('vi');
@@ -42,12 +65,18 @@ export default function SosTrackingScreen() {
         text2: 'Thợ đang chuẩn bị đồ nghề và di chuyển gấp đến bạn.',
       });
     });
-    return () => { unsub(); };
+    return () => {
+      unsub();
+    };
   }, [refetch]);
 
   if (isLoading) return <LoadingSpinner />;
 
-  const isMatched = job?.status === 'confirmed' || job?.status === 'helper_on_the_way' || job?.status === 'helper_arrived' || job?.status === 'in_progress';
+  const isMatched =
+    job?.status === 'confirmed' ||
+    job?.status === 'helper_on_the_way' ||
+    job?.status === 'helper_arrived' ||
+    job?.status === 'in_progress';
   const helperObj = typeof job?.helper_id === 'object' && job?.helper_id ? job.helper_id : null;
   const helperName = helperObj?.full_name || 'Anh Tuấn (Thợ Điện Nước)';
   const helperPhone = helperObj?.phone || '0902222222';
@@ -62,13 +91,17 @@ export default function SosTrackingScreen() {
       await Share.share({
         message: `🚨 Tôi đang gọi cứu hộ sự cố khẩn cấp "${job?.title}" tại địa chỉ: ${job?.address?.full_address}. Thợ phụ trách: ${helperName} (${helperPhone}). Theo dõi qua HomeMate.`,
       });
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
   };
 
   const handleCancel = () => {
     Alert.alert(
       'Hủy yêu cầu cứu hộ?',
-      isMatched ? 'Thợ đang trên đường di chuyển khẩn cấp đến bạn. Hủy lúc này có thể phát sinh phí di chuyển của thợ.' : 'Bạn có chắc chắn muốn hủy yêu cầu cứu hộ?',
+      isMatched
+        ? 'Thợ đang trên đường di chuyển khẩn cấp đến bạn. Hủy lúc này có thể phát sinh phí di chuyển của thợ.'
+        : 'Bạn có chắc chắn muốn hủy yêu cầu cứu hộ?',
       [
         { text: 'Tiếp tục chờ', style: 'cancel' },
         {
@@ -79,7 +112,7 @@ export default function SosTrackingScreen() {
             router.replace('/(customer)/home');
           },
         },
-      ]
+      ],
     );
   };
 
@@ -88,15 +121,25 @@ export default function SosTrackingScreen() {
       {/* ── Top Header ─────────────────────────────────────────────── */}
       <View
         style={{
-          flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-          paddingHorizontal: 16, paddingVertical: 14,
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          paddingHorizontal: 16,
+          paddingVertical: 14,
           backgroundColor: isMatched ? '#10B981' : '#DC2626',
         }}
       >
         <TouchableOpacity
           activeOpacity={0.7}
           onPress={() => router.replace('/(customer)/home')}
-          style={{ width: 38, height: 38, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' }}
+          style={{
+            width: 38,
+            height: 38,
+            borderRadius: 12,
+            backgroundColor: 'rgba(255,255,255,0.2)',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
         >
           <ArrowLeft size={20} color="#FFFFFF" />
         </TouchableOpacity>
@@ -106,35 +149,78 @@ export default function SosTrackingScreen() {
         <TouchableOpacity
           activeOpacity={0.7}
           onPress={handleShareSos}
-          style={{ width: 38, height: 38, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' }}
+          style={{
+            width: 38,
+            height: 38,
+            borderRadius: 12,
+            backgroundColor: 'rgba(255,255,255,0.2)',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
         >
           <Share2 size={18} color="#FFFFFF" />
         </TouchableOpacity>
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 16, gap: 14, paddingBottom: 60 }}>
-
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ padding: 16, gap: 14, paddingBottom: 60 }}
+      >
         {/* ── TRƯỜNG HỢP 1: ĐANG PHÁT SÓNG QUÉT TÌM THỢ GẦN NHẤT ─────── */}
         {!isMatched && (
-          <Card style={{ alignItems: 'center', padding: 24, gap: 14, backgroundColor: '#FEF2F2', borderColor: '#FECACA', borderWidth: 2 }}>
-            <View style={{ width: 80, height: 80, borderRadius: 40, backgroundColor: '#FEE2E2', alignItems: 'center', justifyContent: 'center' }}>
+          <Card
+            style={{
+              alignItems: 'center',
+              padding: 24,
+              gap: 14,
+              backgroundColor: '#FEF2F2',
+              borderColor: '#FECACA',
+              borderWidth: 2,
+            }}
+          >
+            <View
+              style={{
+                width: 80,
+                height: 80,
+                borderRadius: 40,
+                backgroundColor: '#FEE2E2',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
               <ActivityIndicator size="large" color="#DC2626" />
             </View>
-            <Text style={{ fontSize: 19, fontWeight: '900', color: '#991B1B', textAlign: 'center' }}>
+            <Text
+              style={{ fontSize: 19, fontWeight: '900', color: '#991B1B', textAlign: 'center' }}
+            >
               Đang broadcast tín hiệu tới 5 thợ gần bạn nhất
             </Text>
             <Text style={{ fontSize: 13, color: '#B91C1C', textAlign: 'center', lineHeight: 19 }}>
-              Hệ thống đang quét các đối tác thợ online trong bán kính 10km đã xác minh e-KYC. Thợ đầu tiên bấm nhận sẽ lập tức di chuyển đến bạn.
+              Hệ thống đang quét các đối tác thợ online trong bán kính 10km đã xác minh e-KYC. Thợ
+              đầu tiên bấm nhận sẽ lập tức di chuyển đến bạn.
             </Text>
 
-            <View style={{ backgroundColor: '#fff', padding: 12, borderRadius: 12, width: '100%', gap: 6, marginTop: 4 }}>
+            <View
+              style={{
+                backgroundColor: '#fff',
+                padding: 12,
+                borderRadius: 12,
+                width: '100%',
+                gap: 6,
+                marginTop: 4,
+              }}
+            >
               <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
                 <Text style={{ fontSize: 12.5, color: COLORS.gray[600] }}>Sự cố khẩn cấp:</Text>
-                <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.gray[900] }}>{job?.title}</Text>
+                <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.gray[900] }}>
+                  {job?.title}
+                </Text>
               </View>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
                 <Text style={{ fontSize: 12.5, color: COLORS.gray[600] }}>Thời gian cam kết:</Text>
-                <Text style={{ fontSize: 13, fontWeight: '900', color: '#DC2626' }}>Có mặt sau 15 phút</Text>
+                <Text style={{ fontSize: 13, fontWeight: '900', color: '#DC2626' }}>
+                  Có mặt sau 15 phút
+                </Text>
               </View>
             </View>
           </Card>
@@ -144,16 +230,23 @@ export default function SosTrackingScreen() {
         {isMatched && (
           <>
             {/* ETA Counter Card */}
-            <Card style={{ alignItems: 'center', padding: 20, gap: 8, backgroundColor: '#ECFDF5', borderColor: '#A7F3D0', borderWidth: 2 }}>
+            <Card
+              style={{
+                alignItems: 'center',
+                padding: 20,
+                gap: 8,
+                backgroundColor: '#ECFDF5',
+                borderColor: '#A7F3D0',
+                borderWidth: 2,
+              }}
+            >
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                 <Navigation size={22} color={COLORS.success} />
                 <Text style={{ fontSize: 15, fontWeight: '800', color: '#065F46' }}>
                   DỰ KIẾN CÓ MẶT SAU
                 </Text>
               </View>
-              <Text style={{ fontSize: 36, fontWeight: '900', color: '#065F46' }}>
-                {eta} PHÚT
-              </Text>
+              <Text style={{ fontSize: 36, fontWeight: '900', color: '#065F46' }}>{eta} PHÚT</Text>
               <Text style={{ fontSize: 13, color: '#047857', fontWeight: '600' }}>
                 Thợ đang mang đồ nghề chuyên dụng và di chuyển gấp đến bạn
               </Text>
@@ -177,11 +270,24 @@ export default function SosTrackingScreen() {
                   <Text style={{ fontSize: 13, color: COLORS.gray[500], marginTop: 2 }}>
                     {helperPhone}
                   </Text>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 }}>
-                    <View style={{ backgroundColor: '#ECFDF5', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 }}>
-                      <Text style={{ fontSize: 11, color: COLORS.success, fontWeight: '700' }}>e-KYC 100%</Text>
+                  <View
+                    style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 }}
+                  >
+                    <View
+                      style={{
+                        backgroundColor: '#ECFDF5',
+                        paddingHorizontal: 6,
+                        paddingVertical: 2,
+                        borderRadius: 6,
+                      }}
+                    >
+                      <Text style={{ fontSize: 11, color: COLORS.success, fontWeight: '700' }}>
+                        e-KYC 100%
+                      </Text>
                     </View>
-                    <Text style={{ fontSize: 12, color: '#F59E0B', fontWeight: '800' }}>★ 4.9 (48 đơn)</Text>
+                    <Text style={{ fontSize: 12, color: '#F59E0B', fontWeight: '800' }}>
+                      ★ 4.9 (48 đơn)
+                    </Text>
                   </View>
                 </View>
               </View>
@@ -194,26 +300,42 @@ export default function SosTrackingScreen() {
                   activeOpacity={0.8}
                   onPress={handleCallHelper}
                   style={{
-                    flex: 1, backgroundColor: '#10B981', borderRadius: 14,
-                    paddingVertical: 12, alignItems: 'center', justifyContent: 'center',
-                    flexDirection: 'row', gap: 8,
+                    flex: 1,
+                    backgroundColor: '#10B981',
+                    borderRadius: 14,
+                    paddingVertical: 12,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexDirection: 'row',
+                    gap: 8,
                   }}
                 >
                   <Phone size={18} color="#fff" />
-                  <Text style={{ color: '#fff', fontWeight: '800', fontSize: 14 }}>Gọi điện ngay</Text>
+                  <Text style={{ color: '#fff', fontWeight: '800', fontSize: 14 }}>
+                    Gọi điện ngay
+                  </Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
                   activeOpacity={0.8}
                   onPress={() => router.push({ pathname: '/chat/[jobId]', params: { jobId: id } })}
                   style={{
-                    flex: 1, backgroundColor: COLORS.primaryLight, borderRadius: 14,
-                    paddingVertical: 12, alignItems: 'center', justifyContent: 'center',
-                    flexDirection: 'row', gap: 8, borderWidth: 1.5, borderColor: '#FFD9C5',
+                    flex: 1,
+                    backgroundColor: COLORS.primaryLight,
+                    borderRadius: 14,
+                    paddingVertical: 12,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexDirection: 'row',
+                    gap: 8,
+                    borderWidth: 1.5,
+                    borderColor: '#FFD9C5',
                   }}
                 >
                   <MessageCircle size={18} color={COLORS.primary} />
-                  <Text style={{ color: COLORS.primary, fontWeight: '800', fontSize: 14 }}>Nhắn tin</Text>
+                  <Text style={{ color: COLORS.primary, fontWeight: '800', fontSize: 14 }}>
+                    Nhắn tin
+                  </Text>
                 </TouchableOpacity>
               </View>
             </Card>
@@ -227,8 +349,17 @@ export default function SosTrackingScreen() {
           </Text>
           <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 8 }}>
             <MapPin size={16} color={COLORS.primary} style={{ marginTop: 2 }} />
-            <Text style={{ flex: 1, fontSize: 14, color: COLORS.gray[700], lineHeight: 20, fontWeight: '600' }}>
-              {job?.address?.full_address}{job?.address?.district ? `, ${job?.address.district}` : ''}
+            <Text
+              style={{
+                flex: 1,
+                fontSize: 14,
+                color: COLORS.gray[700],
+                lineHeight: 20,
+                fontWeight: '600',
+              }}
+            >
+              {job?.address?.full_address}
+              {job?.address?.district ? `, ${job?.address.district}` : ''}
             </Text>
           </View>
           <Separator my={2} />
@@ -253,7 +384,6 @@ export default function SosTrackingScreen() {
             onPress={handleCancel}
           />
         </View>
-
       </ScrollView>
     </SafeAreaView>
   );

@@ -24,7 +24,14 @@ import {
   ReviewJobDto,
   CancelJobDto,
 } from './dto/job.dto';
-import { JobStatus, QuoteStatus, ContractStatus, isValidJobTransition, HelperStatus, VerificationStatus } from '@homemate/types';
+import {
+  JobStatus,
+  QuoteStatus,
+  ContractStatus,
+  isValidJobTransition,
+  HelperStatus,
+  VerificationStatus,
+} from '@homemate/types';
 import {
   JOB_OPEN_EXPIRY_HOURS,
   JOB_QUOTE_EXPIRY_HOURS,
@@ -193,10 +200,12 @@ export class JobsService {
     });
 
     // 2. Broadcast khẩn cấp tới TOÀN BỘ Thợ đang Online & Đã xác minh e-KYC
-    const verifiedHelpers = await this.helperModel.find({
-      status: HelperStatus.ONLINE,
-      verification_status: VerificationStatus.APPROVED,
-    }).exec();
+    const verifiedHelpers = await this.helperModel
+      .find({
+        status: HelperStatus.ONLINE,
+        verification_status: VerificationStatus.APPROVED,
+      })
+      .exec();
 
     const broadcastPayload = {
       job_id: String(job._id),
@@ -212,15 +221,21 @@ export class JobsService {
     };
 
     for (const helper of verifiedHelpers) {
-      this.gateway.emitToUser(String(helper.user_id), SOCKET_EVENTS.SOS_BROADCAST, broadcastPayload);
+      this.gateway.emitToUser(
+        String(helper.user_id),
+        SOCKET_EVENTS.SOS_BROADCAST,
+        broadcastPayload,
+      );
       // Gửi notification khẩn cấp
-      this.notificationsService.create({
-        userId: String(helper.user_id),
-        type: NOTIFICATION_TYPES.NEW_JOB_NEARBY,
-        title: '🚨 CỨU HỘ KHẨN CẤP SOS GẦN BẠN!',
-        body: `${dto.title} tại ${dto.address.district}. Phụ phí SOS: +${surcharge.toLocaleString()}đ`,
-        payload: { job_id: String(job._id), is_sos: true },
-      }).catch(() => {});
+      this.notificationsService
+        .create({
+          userId: String(helper.user_id),
+          type: NOTIFICATION_TYPES.NEW_JOB_NEARBY,
+          title: '🚨 CỨU HỘ KHẨN CẤP SOS GẦN BẠN!',
+          body: `${dto.title} tại ${dto.address.district}. Phụ phí SOS: +${surcharge.toLocaleString()}đ`,
+          payload: { job_id: String(job._id), is_sos: true },
+        })
+        .catch(() => {});
     }
 
     // Emit cho chính Customer
@@ -235,7 +250,10 @@ export class JobsService {
 
   // ─── Helper: Accept SOS Job Immediately (First-Accept Matching) ────────────
 
-  async acceptSosJob(helperId: string, jobId: string): Promise<{ job: JobDocument; contract: ContractDocument }> {
+  async acceptSosJob(
+    helperId: string,
+    jobId: string,
+  ): Promise<{ job: JobDocument; contract: ContractDocument }> {
     const job = await this.jobModel.findById(jobId).populate('service_id').exec();
     if (!job) throw new NotFoundException('Đơn cứu hộ SOS không tồn tại');
     if (!job.is_sos) throw new BadRequestException('Đây không phải đơn cứu hộ SOS');
@@ -243,7 +261,9 @@ export class JobsService {
       throw new ConflictException('Đơn cứu hộ này đã có thợ khác nhận');
     }
 
-    const helperProfile = await this.helperModel.findOne({ user_id: new Types.ObjectId(helperId) }).exec();
+    const helperProfile = await this.helperModel
+      .findOne({ user_id: new Types.ObjectId(helperId) })
+      .exec();
     if (!helperProfile || helperProfile.verification_status !== VerificationStatus.APPROVED) {
       throw new ForbiddenException('Chỉ thợ đã xác thực e-KYC mới có quyền nhận đơn cứu hộ SOS');
     }
@@ -293,10 +313,7 @@ export class JobsService {
     await job.save();
 
     // 3. Tự động tạo cuộc trò chuyện khẩn cấp
-    await this.chatService.getOrCreateConversation(jobId, [
-      String(job.customer_id),
-      helperId,
-    ]);
+    await this.chatService.getOrCreateConversation(jobId, [String(job.customer_id), helperId]);
 
     // 4. Bắn Socket Realtime thông báo cho Khách hàng ngay lập tức
     const payload = {
@@ -330,7 +347,10 @@ export class JobsService {
   async getCustomerJobs(customerId: string, status?: string) {
     const query: Record<string, unknown> = { customer_id: new Types.ObjectId(customerId) };
     if (status) {
-      const statuses = status.split(',').map(s => s.trim()).filter(Boolean);
+      const statuses = status
+        .split(',')
+        .map(s => s.trim())
+        .filter(Boolean);
       query['status'] = statuses.length > 1 ? { $in: statuses } : statuses[0];
     }
     return this.jobModel
@@ -798,7 +818,10 @@ export class JobsService {
   async getHelperJobs(helperId: string, status?: string) {
     const query: Record<string, unknown> = { helper_id: new Types.ObjectId(helperId) };
     if (status) {
-      const statuses = status.split(',').map(s => s.trim()).filter(Boolean);
+      const statuses = status
+        .split(',')
+        .map(s => s.trim())
+        .filter(Boolean);
       query['status'] = statuses.length > 1 ? { $in: statuses } : statuses[0];
     }
     return this.jobModel

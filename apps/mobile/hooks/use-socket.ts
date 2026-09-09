@@ -52,13 +52,10 @@ export function useJobSocketUpdates(jobId?: string) {
       },
     );
 
-    const unsub2 = socketService.on<{ quote_id: string }>(
-      SOCKET_EVENTS.QUOTE_RECEIVED,
-      () => {
-        qc.invalidateQueries({ queryKey: ['job', jobId, 'quotes'] });
-        Toast.show({ type: 'success', text1: '💰 Có báo giá mới!' });
-      },
-    );
+    const unsub2 = socketService.on<{ quote_id: string }>(SOCKET_EVENTS.QUOTE_RECEIVED, () => {
+      qc.invalidateQueries({ queryKey: ['job', jobId, 'quotes'] });
+      Toast.show({ type: 'success', text1: '💰 Có báo giá mới!' });
+    });
 
     return () => {
       unsub1();
@@ -79,7 +76,7 @@ export function useChatSocket(conversationId?: string) {
 
     const unsub = socketService.on<{ message: unknown; conversation_id: string }>(
       SOCKET_EVENTS.CHAT_NEW_MESSAGE,
-      (data) => {
+      data => {
         const cId = data?.conversation_id;
         if (!cId || cId === conversationId) {
           qc.invalidateQueries({ queryKey: ['messages', conversationId] });

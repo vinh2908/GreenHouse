@@ -1,4 +1,10 @@
-import { Injectable, NotFoundException, ForbiddenException, Inject, forwardRef } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+  Inject,
+  forwardRef,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import {
@@ -70,7 +76,9 @@ export class ChatService {
 
     if (!conv) throw new NotFoundException('Không thể mở cuộc trò chuyện');
 
-    const isParticipant = conv.participants.some((p: any) => p._id?.toString() === userId || p.toString() === userId);
+    const isParticipant = conv.participants.some(
+      (p: any) => p._id?.toString() === userId || p.toString() === userId,
+    );
     if (!isParticipant) throw new ForbiddenException();
     return conv;
   }

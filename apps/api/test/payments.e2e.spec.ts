@@ -31,7 +31,9 @@ describe('Payments E2E (Phase 7)', () => {
         ConfigModule.forRoot({ isGlobal: true, load: [appConfig, jwtConfig], ignoreEnvFile: true }),
         MongooseModule.forRoot(mongod.getUri()),
         ThrottlerModule.forRoot([{ ttl: 60000, limit: 100 }]),
-        AuthModule, UsersModule, PaymentsModule,
+        AuthModule,
+        UsersModule,
+        PaymentsModule,
       ],
     }).compile();
 

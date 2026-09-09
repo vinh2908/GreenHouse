@@ -26,7 +26,11 @@ export class AiBookingService {
     let service_type = 'housekeeping_hourly';
     let service_name = 'Giúp việc theo giờ';
 
-    if (lower.includes('tổng vệ sinh') || lower.includes('tong ve sinh') || lower.includes('dọn tổng')) {
+    if (
+      lower.includes('tổng vệ sinh') ||
+      lower.includes('tong ve sinh') ||
+      lower.includes('dọn tổng')
+    ) {
       service_type = 'deep_cleaning';
       service_name = 'Tổng vệ sinh nhà';
     } else if (lower.includes('nấu ăn') || lower.includes('nau an') || lower.includes('nấu cơm')) {
@@ -35,7 +39,11 @@ export class AiBookingService {
     } else if (lower.includes('theo ngày') || lower.includes('cả ngày')) {
       service_type = 'housekeeping_daily';
       service_name = 'Giúp việc theo ngày';
-    } else if (lower.includes('định kỳ') || lower.includes('hàng tuần') || lower.includes('hàng tháng')) {
+    } else if (
+      lower.includes('định kỳ') ||
+      lower.includes('hàng tuần') ||
+      lower.includes('hàng tháng')
+    ) {
       service_type = 'housekeeping_periodic';
       service_name = 'Giúp việc định kỳ';
     }
@@ -110,9 +118,7 @@ Trả về JSON với các field:
   // ─── Ước tính giá từ mô tả công việc ─────────────────────────────────────
 
   async estimatePrice(description: string, serviceType?: string): Promise<AiPriceEstimate> {
-    const ref = serviceType
-      ? PRICE_REFERENCE[serviceType]
-      : PRICE_REFERENCE['housekeeping_hourly'];
+    const ref = serviceType ? PRICE_REFERENCE[serviceType] : PRICE_REFERENCE['housekeeping_hourly'];
 
     if (!this.aiConfig.isFeatureEnabled('PRICE_ESTIMATOR')) {
       // Mock estimate
@@ -124,8 +130,7 @@ Trả về JSON với các field:
         estimated_duration_hours: hours,
         num_workers: 1,
         complexity: 'medium',
-        reasoning:
-          'Ước tính dựa trên bảng giá chuẩn. Giá thực tế do helper báo giá cụ thể.',
+        reasoning: 'Ước tính dựa trên bảng giá chuẩn. Giá thực tế do helper báo giá cụ thể.',
         tasks: ['Dọn phòng khách', 'Lau sàn', 'Vệ sinh bếp'],
         confidence: 0.5,
       };

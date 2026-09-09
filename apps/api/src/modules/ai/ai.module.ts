@@ -7,17 +7,7 @@ import { AiSupportService } from './services/ai-support.service';
 
 @Module({
   controllers: [AiController],
-  providers: [
-    AiConfigService,
-    AiBookingService,
-    AiMatchingService,
-    AiSupportService,
-  ],
-  exports: [
-    AiConfigService,
-    AiBookingService,
-    AiMatchingService,
-    AiSupportService,
-  ],
+  providers: [AiConfigService, AiBookingService, AiMatchingService, AiSupportService],
+  exports: [AiConfigService, AiBookingService, AiMatchingService, AiSupportService],
 })
 export class AiModule {}

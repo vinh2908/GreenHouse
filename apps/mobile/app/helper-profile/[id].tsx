@@ -1,11 +1,28 @@
 import { useState } from 'react';
 import {
-  View, Text, ScrollView, SafeAreaView, TouchableOpacity, RefreshControl, Image,
+  View,
+  Text,
+  ScrollView,
+  SafeAreaView,
+  TouchableOpacity,
+  RefreshControl,
+  Image,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import {
-  ArrowLeft, ShieldCheck, Star, Clock, CheckCircle2,
-  Wrench, MessageCircle, Phone, MapPin, Calendar, Award, ThumbsUp, Sparkles,
+  ArrowLeft,
+  ShieldCheck,
+  Star,
+  Clock,
+  CheckCircle2,
+  Wrench,
+  MessageCircle,
+  Phone,
+  MapPin,
+  Calendar,
+  Award,
+  ThumbsUp,
+  Sparkles,
 } from 'lucide-react-native';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
@@ -13,7 +30,15 @@ import 'dayjs/locale/vi';
 import { useAuthStore } from '@/stores/auth.store';
 import { useHelperPublicProfile, useHelperReviews } from '@/hooks/use-api';
 import {
-  Button, Card, Avatar, LoadingSpinner, COLORS, Separator, PriceText, Badge, StarRating,
+  Button,
+  Card,
+  Avatar,
+  LoadingSpinner,
+  COLORS,
+  Separator,
+  PriceText,
+  Badge,
+  StarRating,
 } from '@/components/ui';
 
 dayjs.extend(relativeTime);
@@ -36,7 +61,8 @@ export default function HelperPublicProfileScreen() {
 
   if (pLoading) return <LoadingSpinner />;
 
-  const helperUser = typeof profile?.user_id === 'object' && profile?.user_id ? profile.user_id : {};
+  const helperUser =
+    typeof profile?.user_id === 'object' && profile?.user_id ? profile.user_id : {};
   const helperName = helperUser?.full_name || profile?.full_name || 'Anh Tuấn (Thợ Điện Nước)';
   const helperAvatar = helperUser?.avatar || profile?.avatar;
   const ratingScore = profile?.average_rating || profile?.rating || 4.9;
@@ -50,16 +76,28 @@ export default function HelperPublicProfileScreen() {
       {/* ── Top Bar ──────────────────────────────────────────────────── */}
       <View
         style={{
-          flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-          paddingHorizontal: 16, paddingVertical: 14,
-          backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: COLORS.gray[100],
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          paddingHorizontal: 16,
+          paddingVertical: 14,
+          backgroundColor: '#fff',
+          borderBottomWidth: 1,
+          borderBottomColor: COLORS.gray[100],
         }}
       >
         <TouchableOpacity
           activeOpacity={0.7}
           onPress={handleBack}
           hitSlop={{ top: 14, bottom: 14, left: 14, right: 14 }}
-          style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: COLORS.gray[100], alignItems: 'center', justifyContent: 'center' }}
+          style={{
+            width: 40,
+            height: 40,
+            borderRadius: 12,
+            backgroundColor: COLORS.gray[100],
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
         >
           <ArrowLeft size={20} color={COLORS.gray[800]} />
         </TouchableOpacity>
@@ -72,7 +110,13 @@ export default function HelperPublicProfileScreen() {
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ padding: 16, gap: 14, paddingBottom: 100 }}
-        refreshControl={<RefreshControl refreshing={pLoading || rLoading} onRefresh={refetch} colors={[COLORS.primary]} />}
+        refreshControl={
+          <RefreshControl
+            refreshing={pLoading || rLoading}
+            onRefresh={refetch}
+            colors={[COLORS.primary]}
+          />
+        }
       >
         {/* ── 1. KHỐI THÔNG TIN ĐỊNH DANH (TẠO SỰ TIN TƯỞNG) ──────────── */}
         <Card style={{ alignItems: 'center', padding: 20, gap: 12 }}>
@@ -81,8 +125,12 @@ export default function HelperPublicProfileScreen() {
             {isVerified && (
               <View
                 style={{
-                  position: 'absolute', bottom: 0, right: 0,
-                  backgroundColor: '#fff', borderRadius: 12, padding: 2,
+                  position: 'absolute',
+                  bottom: 0,
+                  right: 0,
+                  backgroundColor: '#fff',
+                  borderRadius: 12,
+                  padding: 2,
                 }}
               >
                 <ShieldCheck size={24} color={COLORS.success} />
@@ -147,9 +195,7 @@ export default function HelperPublicProfileScreen() {
 
           {/* Đúng giờ */}
           <Card style={{ flex: 1, alignItems: 'center', padding: 14, gap: 4 }}>
-            <Text style={{ fontSize: 20, fontWeight: '900', color: COLORS.success }}>
-              99%
-            </Text>
+            <Text style={{ fontSize: 20, fontWeight: '900', color: COLORS.success }}>99%</Text>
             <Text style={{ fontSize: 11, color: COLORS.gray[500], fontWeight: '700' }}>
               Đúng giờ hẹn
             </Text>
@@ -157,7 +203,15 @@ export default function HelperPublicProfileScreen() {
         </View>
 
         {/* Thẻ cam kết uy tín */}
-        <Card style={{ backgroundColor: '#FFFBEB', borderWidth: 1.5, borderColor: '#FDE68A', padding: 14, gap: 6 }}>
+        <Card
+          style={{
+            backgroundColor: '#FFFBEB',
+            borderWidth: 1.5,
+            borderColor: '#FDE68A',
+            padding: 14,
+            gap: 6,
+          }}
+        >
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
             <Award size={18} color="#D97706" />
             <Text style={{ fontSize: 14, fontWeight: '800', color: '#B45309' }}>
@@ -165,9 +219,9 @@ export default function HelperPublicProfileScreen() {
             </Text>
           </View>
           <Text style={{ fontSize: 12.5, color: '#92400E', lineHeight: 18 }}>
-            • Tỷ lệ hoàn thành công việc: 100% (Không hủy ngang).{'\n'}
-            • Hơn 3 năm kinh nghiệm thực tế trong lĩnh vực điện nước & gia dụng.{'\n'}
-            • Bảo hành chất lượng dịch vụ và bảo hiểm an toàn trong quá trình làm việc.
+            • Tỷ lệ hoàn thành công việc: 100% (Không hủy ngang).{'\n'}• Hơn 3 năm kinh nghiệm thực
+            tế trong lĩnh vực điện nước & gia dụng.{'\n'}• Bảo hành chất lượng dịch vụ và bảo hiểm
+            an toàn trong quá trình làm việc.
           </Text>
         </Card>
 
@@ -212,7 +266,9 @@ export default function HelperPublicProfileScreen() {
               🧰 Dụng cụ mang theo:
             </Text>
             <Text style={{ fontSize: 13, color: COLORS.gray[600], lineHeight: 19 }}>
-              Thợ tự túc mang đầy đủ đồ nghề chuyên nghiệp: Đồng hồ đo điện tử Fluke, máy khoan bê tông Bosch, máy thông cống áp lực cao, bạt hứng nước vệ sinh máy lạnh và đồ bảo hộ an toàn.
+              Thợ tự túc mang đầy đủ đồ nghề chuyên nghiệp: Đồng hồ đo điện tử Fluke, máy khoan bê
+              tông Bosch, máy thông cống áp lực cao, bạt hứng nước vệ sinh máy lạnh và đồ bảo hộ an
+              toàn.
             </Text>
           </View>
         </Card>
@@ -226,26 +282,47 @@ export default function HelperPublicProfileScreen() {
             </Text>
           </View>
 
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4 }}>
+          <View
+            style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4 }}
+          >
             <Text style={{ fontSize: 13.5, color: COLORS.gray[600] }}>Công thợ theo giờ:</Text>
-            <Text style={{ fontSize: 14, fontWeight: '800', color: COLORS.primary }}>70.000₫ – 100.000₫ / giờ</Text>
+            <Text style={{ fontSize: 14, fontWeight: '800', color: COLORS.primary }}>
+              70.000₫ – 100.000₫ / giờ
+            </Text>
           </View>
 
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4 }}>
-            <Text style={{ fontSize: 13.5, color: COLORS.gray[600] }}>Gói sửa điện nước cơ bản:</Text>
-            <Text style={{ fontSize: 14, fontWeight: '800', color: COLORS.primary }}>Từ 150.000₫ / ca</Text>
+          <View
+            style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4 }}
+          >
+            <Text style={{ fontSize: 13.5, color: COLORS.gray[600] }}>
+              Gói sửa điện nước cơ bản:
+            </Text>
+            <Text style={{ fontSize: 14, fontWeight: '800', color: COLORS.primary }}>
+              Từ 150.000₫ / ca
+            </Text>
           </View>
 
-          <View style={{ backgroundColor: COLORS.gray[50], padding: 10, borderRadius: 10, marginTop: 4 }}>
+          <View
+            style={{
+              backgroundColor: COLORS.gray[50],
+              padding: 10,
+              borderRadius: 10,
+              marginTop: 4,
+            }}
+          >
             <Text style={{ fontSize: 12.5, color: COLORS.gray[600], fontWeight: '600' }}>
-              🕐 Khung giờ làm việc: <Text style={{ color: COLORS.gray[900], fontWeight: '800' }}>07:30 – 19:30</Text> (Tất cả các ngày trong tuần)
+              🕐 Khung giờ làm việc:{' '}
+              <Text style={{ color: COLORS.gray[900], fontWeight: '800' }}>07:30 – 19:30</Text> (Tất
+              cả các ngày trong tuần)
             </Text>
           </View>
         </Card>
 
         {/* ── 5. ĐÁNH GIÁ THỰC TẾ TỪ KHÁCH HÀNG CŨ (REVIEWS) ─────────── */}
         <Card style={{ gap: 14, padding: 16 }}>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+          <View
+            style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}
+          >
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
               <ThumbsUp size={18} color={COLORS.primary} />
               <Text style={{ fontSize: 16, fontWeight: '800', color: COLORS.gray[900] }}>
@@ -258,33 +335,68 @@ export default function HelperPublicProfileScreen() {
           {reviewsList.length === 0 ? (
             <View style={{ gap: 12 }}>
               {/* Review mẫu 1 */}
-              <View style={{ backgroundColor: COLORS.gray[50], padding: 12, borderRadius: 12, gap: 6 }}>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <Text style={{ fontWeight: '800', fontSize: 14, color: COLORS.gray[900] }}>Chị Mai (Quận 1)</Text>
+              <View
+                style={{ backgroundColor: COLORS.gray[50], padding: 12, borderRadius: 12, gap: 6 }}
+              >
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                  }}
+                >
+                  <Text style={{ fontWeight: '800', fontSize: 14, color: COLORS.gray[900] }}>
+                    Chị Mai (Quận 1)
+                  </Text>
                   <StarRating rating={5} size={12} />
                 </View>
                 <Text style={{ fontSize: 13, color: COLORS.gray[700], lineHeight: 18 }}>
-                  "Anh Tuấn làm việc rất chuyên nghiệp, đến đúng giờ hẹn. Sửa điện dứt điểm không còn mùi khét, dụng cụ mang theo rất đầy đủ và dọn dẹp sạch sẽ sau khi sửa."
+                  "Anh Tuấn làm việc rất chuyên nghiệp, đến đúng giờ hẹn. Sửa điện dứt điểm không
+                  còn mùi khét, dụng cụ mang theo rất đầy đủ và dọn dẹp sạch sẽ sau khi sửa."
                 </Text>
-                <Text style={{ fontSize: 11, color: COLORS.gray[400], marginTop: 2 }}>5 giờ trước • Dịch vụ Sửa điện gia dụng</Text>
+                <Text style={{ fontSize: 11, color: COLORS.gray[400], marginTop: 2 }}>
+                  5 giờ trước • Dịch vụ Sửa điện gia dụng
+                </Text>
               </View>
 
               {/* Review mẫu 2 */}
-              <View style={{ backgroundColor: COLORS.gray[50], padding: 12, borderRadius: 12, gap: 6 }}>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <Text style={{ fontWeight: '800', fontSize: 14, color: COLORS.gray[900] }}>Anh Hoàng (Bình Thạnh)</Text>
+              <View
+                style={{ backgroundColor: COLORS.gray[50], padding: 12, borderRadius: 12, gap: 6 }}
+              >
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                  }}
+                >
+                  <Text style={{ fontWeight: '800', fontSize: 14, color: COLORS.gray[900] }}>
+                    Anh Hoàng (Bình Thạnh)
+                  </Text>
                   <StarRating rating={5} size={12} />
                 </View>
                 <Text style={{ fontSize: 13, color: COLORS.gray[700], lineHeight: 18 }}>
-                  "Vệ sinh máy lạnh rất kỹ, tháo dàn lạnh bọc bạt cẩn thận không để nước bắn ra tường. Giá cả hợp lý và báo giá trước rõ ràng."
+                  "Vệ sinh máy lạnh rất kỹ, tháo dàn lạnh bọc bạt cẩn thận không để nước bắn ra
+                  tường. Giá cả hợp lý và báo giá trước rõ ràng."
                 </Text>
-                <Text style={{ fontSize: 11, color: COLORS.gray[400], marginTop: 2 }}>2 ngày trước • Dịch vụ Vệ sinh máy lạnh</Text>
+                <Text style={{ fontSize: 11, color: COLORS.gray[400], marginTop: 2 }}>
+                  2 ngày trước • Dịch vụ Vệ sinh máy lạnh
+                </Text>
               </View>
             </View>
           ) : (
             reviewsList.map((r: any) => (
-              <View key={r._id} style={{ backgroundColor: COLORS.gray[50], padding: 12, borderRadius: 12, gap: 6 }}>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+              <View
+                key={r._id}
+                style={{ backgroundColor: COLORS.gray[50], padding: 12, borderRadius: 12, gap: 6 }}
+              >
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                  }}
+                >
                   <Text style={{ fontWeight: '800', fontSize: 14, color: COLORS.gray[900] }}>
                     {r.customer_id?.full_name || 'Khách hàng ẩn danh'}
                   </Text>
@@ -296,7 +408,16 @@ export default function HelperPublicProfileScreen() {
                   </Text>
                 )}
                 {r.helper_reply && (
-                  <View style={{ backgroundColor: '#fff', padding: 8, borderRadius: 8, marginTop: 4, borderLeftWidth: 3, borderLeftColor: COLORS.primary }}>
+                  <View
+                    style={{
+                      backgroundColor: '#fff',
+                      padding: 8,
+                      borderRadius: 8,
+                      marginTop: 4,
+                      borderLeftWidth: 3,
+                      borderLeftColor: COLORS.primary,
+                    }}
+                  >
                     <Text style={{ fontSize: 12, color: COLORS.gray[600], fontStyle: 'italic' }}>
                       Thợ phản hồi: "{r.helper_reply}"
                     </Text>
@@ -314,12 +435,22 @@ export default function HelperPublicProfileScreen() {
       {/* ── Bottom Floating Bar: Nhắn tin / Gọi điện ─────────────────── */}
       <View
         style={{
-          position: 'absolute', bottom: 0, left: 0, right: 0,
-          backgroundColor: '#fff', paddingHorizontal: 20, paddingVertical: 14,
-          borderTopWidth: 1, borderTopColor: COLORS.gray[100],
-          flexDirection: 'row', gap: 12,
-          shadowColor: '#000', shadowOffset: { width: 0, height: -4 },
-          shadowOpacity: 0.08, shadowRadius: 10, elevation: 8,
+          position: 'absolute',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          backgroundColor: '#fff',
+          paddingHorizontal: 20,
+          paddingVertical: 14,
+          borderTopWidth: 1,
+          borderTopColor: COLORS.gray[100],
+          flexDirection: 'row',
+          gap: 12,
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: -4 },
+          shadowOpacity: 0.08,
+          shadowRadius: 10,
+          elevation: 8,
         }}
       >
         <Button

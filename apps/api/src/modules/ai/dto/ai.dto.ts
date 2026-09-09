@@ -1,6 +1,4 @@
-import {
-  IsString, IsNotEmpty, IsOptional, IsArray, ValidateNested, IsEnum,
-} from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, IsArray, ValidateNested, IsEnum } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 
@@ -9,7 +7,8 @@ export class AnalyzeBookingDto {
     description: 'Yêu cầu tự nhiên của khách hàng',
     example: 'Tôi cần người dọn căn hộ 2 phòng ngủ vào chiều mai khoảng 3 tiếng',
   })
-  @IsString() @IsNotEmpty()
+  @IsString()
+  @IsNotEmpty()
   text: string;
 }
 
@@ -18,15 +17,23 @@ export class EstimatePriceDto {
     description: 'Mô tả công việc cần làm',
     example: 'Dọn nhà 3 tầng, 4 phòng ngủ, có sân vườn',
   })
-  @IsString() @IsNotEmpty()
+  @IsString()
+  @IsNotEmpty()
   description: string;
 
   @ApiPropertyOptional({
     description: 'Loại dịch vụ',
-    enum: ['housekeeping_hourly', 'housekeeping_daily', 'deep_cleaning', 'housekeeping_periodic', 'cooking'],
+    enum: [
+      'housekeeping_hourly',
+      'housekeeping_daily',
+      'deep_cleaning',
+      'housekeeping_periodic',
+      'cooking',
+    ],
     example: 'housekeeping_hourly',
   })
-  @IsOptional() @IsString()
+  @IsOptional()
+  @IsString()
   service_type?: string;
 }
 
@@ -36,13 +43,15 @@ export class AiChatMessageDto {
   role: 'user' | 'assistant';
 
   @ApiProperty()
-  @IsString() @IsNotEmpty()
+  @IsString()
+  @IsNotEmpty()
   content: string;
 }
 
 export class SupportChatDto {
   @ApiProperty({ description: 'Tin nhắn hiện tại của người dùng' })
-  @IsString() @IsNotEmpty()
+  @IsString()
+  @IsNotEmpty()
   message: string;
 
   @ApiPropertyOptional({
@@ -61,14 +70,17 @@ export class RankHelpersDto {
     description: 'Danh sách helper IDs cần xếp hạng',
     example: ['helper1_id', 'helper2_id'],
   })
-  @IsArray() @IsString({ each: true })
+  @IsArray()
+  @IsString({ each: true })
   helper_ids: string[];
 
   @ApiPropertyOptional({ description: 'Service ID của job' })
-  @IsOptional() @IsString()
+  @IsOptional()
+  @IsString()
   service_id?: string;
 
   @ApiPropertyOptional({ description: 'Mô tả công việc để AI giải thích phù hợp' })
-  @IsOptional() @IsString()
+  @IsOptional()
+  @IsString()
   job_description?: string;
 }

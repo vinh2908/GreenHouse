@@ -1,7 +1,15 @@
 import { useState } from 'react';
 import {
-  View, Text, ScrollView, SafeAreaView, TouchableOpacity, Alert,
-  TextInput, Modal, KeyboardAvoidingView, Platform,
+  View,
+  Text,
+  ScrollView,
+  SafeAreaView,
+  TouchableOpacity,
+  Alert,
+  TextInput,
+  Modal,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { ArrowLeft, Navigation, Check, Camera, MessageCircle, X } from 'lucide-react-native';
@@ -13,13 +21,24 @@ import { useJobSocketUpdates } from '@/hooks/use-socket';
 dayjs.extend(relativeTime);
 dayjs.locale('vi');
 import {
-  useJobDetail, useJobQuotes, useSubmitQuote, useHelperOnTheWay,
-  useHelperArrived, useStartJob, useCompleteJob,
+  useJobDetail,
+  useJobQuotes,
+  useSubmitQuote,
+  useHelperOnTheWay,
+  useHelperArrived,
+  useStartJob,
+  useCompleteJob,
 } from '@/hooks/use-api';
 import { useAuthStore } from '@/stores/auth.store';
 import {
-  Button, Card, JobStatusBadge, COLORS, LoadingSpinner,
-  Separator, PriceText, Badge,
+  Button,
+  Card,
+  JobStatusBadge,
+  COLORS,
+  LoadingSpinner,
+  Separator,
+  PriceText,
+  Badge,
 } from '@/components/ui';
 import Toast from 'react-native-toast-message';
 
@@ -79,10 +98,16 @@ export default function HelperJobDetailScreen() {
         estimated_duration: Number(estimatedDuration),
         notes: notes || undefined,
       });
-      Toast.show({ type: 'success', text1: 'Gửi báo giá thành công!', text2: 'Chờ khách hàng duyệt và chọn bạn' });
+      Toast.show({
+        type: 'success',
+        text1: 'Gửi báo giá thành công!',
+        text2: 'Chờ khách hàng duyệt và chọn bạn',
+      });
       setShowQuoteModal(false);
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? 'Gửi báo giá thất bại. Vui lòng thử lại.';
+      const msg =
+        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
+        'Gửi báo giá thất bại. Vui lòng thử lại.';
       Toast.show({ type: 'error', text1: msg });
     }
   };
@@ -108,32 +133,53 @@ export default function HelperJobDetailScreen() {
     ]);
   };
 
-  const isMyActiveJob = job.helper_id &&
-    (typeof job.helper_id === 'string' ? job.helper_id : job.helper_id._id);
+  const isMyActiveJob =
+    job.helper_id && (typeof job.helper_id === 'string' ? job.helper_id : job.helper_id._id);
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.gray[50] }}>
       {/* Header */}
-      <View style={{
-        flexDirection: 'row', alignItems: 'center', padding: 16,
-        backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: COLORS.gray[100],
-      }}>
+      <View
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          padding: 16,
+          backgroundColor: '#fff',
+          borderBottomWidth: 1,
+          borderBottomColor: COLORS.gray[100],
+        }}
+      >
         <TouchableOpacity
           activeOpacity={0.7}
           onPress={handleBack}
           hitSlop={{ top: 14, bottom: 14, left: 14, right: 14 }}
-          style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: COLORS.gray[100], alignItems: 'center', justifyContent: 'center' }}
+          style={{
+            width: 40,
+            height: 40,
+            borderRadius: 12,
+            backgroundColor: COLORS.gray[100],
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
         >
           <ArrowLeft size={20} color={COLORS.gray[800]} />
         </TouchableOpacity>
-        <Text style={{ fontSize: 17, fontWeight: '800', color: COLORS.gray[900], flex: 1, marginLeft: 12 }} numberOfLines={1}>
+        <Text
+          style={{
+            fontSize: 17,
+            fontWeight: '800',
+            color: COLORS.gray[900],
+            flex: 1,
+            marginLeft: 12,
+          }}
+          numberOfLines={1}
+        >
           {job.title}
         </Text>
         <JobStatusBadge status={job.status} />
       </View>
 
       <ScrollView contentContainerStyle={{ padding: 16, gap: 14, paddingBottom: 120 }}>
-
         {/* ── Job info ─────────────────────────────────────────────── */}
         <Card style={{ gap: 12 }}>
           <View style={{ flexDirection: 'row', gap: 10, flexWrap: 'wrap' }}>
@@ -146,17 +192,32 @@ export default function HelperJobDetailScreen() {
               />
             )}
             {job.preferred_time_start && (
-              <Badge label={job.preferred_time_start} color={COLORS.gray[100]} textColor={COLORS.gray[700]} />
+              <Badge
+                label={job.preferred_time_start}
+                color={COLORS.gray[100]}
+                textColor={COLORS.gray[700]}
+              />
             )}
           </View>
-          <Text style={{ fontSize: 15, color: COLORS.gray[900], lineHeight: 22, fontWeight: '500' }}>
+          <Text
+            style={{ fontSize: 15, color: COLORS.gray[900], lineHeight: 22, fontWeight: '500' }}
+          >
             {job.description}
           </Text>
           <Separator my={4} />
           <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 8 }}>
             <Text style={{ fontSize: 16 }}>📍</Text>
-            <Text style={{ flex: 1, fontSize: 14, color: COLORS.gray[700], lineHeight: 20, fontWeight: '600' }}>
-              {job.address?.full_address}{job.address?.district ? `, ${job.address.district}` : ''}
+            <Text
+              style={{
+                flex: 1,
+                fontSize: 14,
+                color: COLORS.gray[700],
+                lineHeight: 20,
+                fontWeight: '600',
+              }}
+            >
+              {job.address?.full_address}
+              {job.address?.district ? `, ${job.address.district}` : ''}
             </Text>
           </View>
         </Card>
@@ -164,12 +225,23 @@ export default function HelperJobDetailScreen() {
         {/* ── Customer info ─────────────────────────────────────────── */}
         {isMyActiveJob && (
           <Card style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-            <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: COLORS.primary, alignItems: 'center', justifyContent: 'center' }}>
+            <View
+              style={{
+                width: 44,
+                height: 44,
+                borderRadius: 22,
+                backgroundColor: COLORS.primary,
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
               <Text style={{ color: '#fff', fontWeight: '800', fontSize: 18 }}>K</Text>
             </View>
             <View style={{ flex: 1 }}>
               <Text style={{ fontWeight: '800', fontSize: 15, color: COLORS.gray[900] }}>
-                {typeof job.customer_id === 'object' && job.customer_id ? (job.customer_id as { full_name: string }).full_name : 'Khách hàng'}
+                {typeof job.customer_id === 'object' && job.customer_id
+                  ? (job.customer_id as { full_name: string }).full_name
+                  : 'Khách hàng'}
               </Text>
               <Text style={{ fontSize: 13, color: COLORS.gray[500] }}>Chủ đơn đặt dịch vụ</Text>
             </View>
@@ -235,22 +307,51 @@ export default function HelperJobDetailScreen() {
         {['open', 'receiving_quotes'].includes(job.status) && !isMyActiveJob && (
           <View>
             {myQuote ? (
-              <Card style={{ backgroundColor: COLORS.successLight, borderColor: '#A7F3D0', borderWidth: 1.5, gap: 8 }}>
+              <Card
+                style={{
+                  backgroundColor: COLORS.successLight,
+                  borderColor: '#A7F3D0',
+                  borderWidth: 1.5,
+                  gap: 8,
+                }}
+              >
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                   <Text style={{ fontSize: 16 }}>✅</Text>
                   <Text style={{ fontWeight: '800', fontSize: 15, color: COLORS.success }}>
                     Bạn đã gửi báo giá cho đơn này
                   </Text>
                 </View>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 }}>
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    marginTop: 4,
+                  }}
+                >
                   <Text style={{ fontSize: 13, color: COLORS.gray[600] }}>Giá công đã báo:</Text>
                   <PriceText amount={myQuote.total_price} size={16} />
                 </View>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <Text style={{ fontSize: 13, color: COLORS.gray[600] }}>Thực nhận về ví (trừ 15%):</Text>
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                  }}
+                >
+                  <Text style={{ fontSize: 13, color: COLORS.gray[600] }}>
+                    Thực nhận về ví (trừ 15%):
+                  </Text>
                   <PriceText amount={myQuote.helper_receives} size={15} color={COLORS.success} />
                 </View>
-                <Text style={{ fontSize: 12, color: COLORS.gray[500], marginTop: 2, fontStyle: 'italic' }}>
+                <Text
+                  style={{
+                    fontSize: 12,
+                    color: COLORS.gray[500],
+                    marginTop: 2,
+                    fontStyle: 'italic',
+                  }}
+                >
                   Đang chờ khách hàng xem xét và lựa chọn bạn.
                 </Text>
               </Card>
@@ -263,7 +364,6 @@ export default function HelperJobDetailScreen() {
             )}
           </View>
         )}
-
       </ScrollView>
 
       {/* ── Quote Modal ───────────────────────────────────────────────── */}
@@ -273,19 +373,31 @@ export default function HelperJobDetailScreen() {
             <TouchableOpacity onPress={() => setShowQuoteModal(false)}>
               <X size={24} color={COLORS.gray[700]} />
             </TouchableOpacity>
-            <Text style={{ fontSize: 18, fontWeight: '800', marginLeft: 12, color: COLORS.gray[900] }}>
+            <Text
+              style={{ fontSize: 18, fontWeight: '800', marginLeft: 12, color: COLORS.gray[900] }}
+            >
               Gửi báo giá dịch vụ
             </Text>
           </View>
 
-          <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+          <KeyboardAvoidingView
+            style={{ flex: 1 }}
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          >
             <ScrollView contentContainerStyle={{ padding: 20, gap: 20 }}>
               <View style={{ gap: 8 }}>
-                <Text style={{ fontWeight: '700', color: COLORS.gray[700] }}>Giá công thợ (₫) *</Text>
+                <Text style={{ fontWeight: '700', color: COLORS.gray[700] }}>
+                  Giá công thợ (₫) *
+                </Text>
                 <TextInput
                   style={{
-                    borderWidth: 1.5, borderColor: COLORS.gray[200], borderRadius: 14,
-                    padding: 14, fontSize: 22, fontWeight: '800', color: COLORS.gray[900],
+                    borderWidth: 1.5,
+                    borderColor: COLORS.gray[200],
+                    borderRadius: 14,
+                    padding: 14,
+                    fontSize: 22,
+                    fontWeight: '800',
+                    color: COLORS.gray[900],
                   }}
                   placeholder="VD: 300000"
                   value={laborCost}
@@ -298,36 +410,59 @@ export default function HelperJobDetailScreen() {
               {total > 0 && (
                 <Card style={{ backgroundColor: COLORS.primaryLight, gap: 10 }}>
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                    <Text style={{ color: COLORS.gray[700], fontWeight: '600' }}>Giá khách hàng trả</Text>
+                    <Text style={{ color: COLORS.gray[700], fontWeight: '600' }}>
+                      Giá khách hàng trả
+                    </Text>
                     <PriceText amount={total} size={14} color={COLORS.gray[900]} bold={false} />
                   </View>
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                    <Text style={{ color: COLORS.gray[500], fontWeight: '500' }}>Phí nền tảng (15%)</Text>
-                    <PriceText amount={platformFee} size={14} color={COLORS.gray[500]} bold={false} />
+                    <Text style={{ color: COLORS.gray[500], fontWeight: '500' }}>
+                      Phí nền tảng (15%)
+                    </Text>
+                    <PriceText
+                      amount={platformFee}
+                      size={14}
+                      color={COLORS.gray[500]}
+                      bold={false}
+                    />
                   </View>
                   <Separator my={4} />
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                    <Text style={{ fontWeight: '800', color: COLORS.gray[900] }}>Thực nhận về ví</Text>
+                    <Text style={{ fontWeight: '800', color: COLORS.gray[900] }}>
+                      Thực nhận về ví
+                    </Text>
                     <PriceText amount={helperReceives} size={17} />
                   </View>
                 </Card>
               )}
 
               <View style={{ gap: 8 }}>
-                <Text style={{ fontWeight: '700', color: COLORS.gray[700] }}>Thời gian ước tính (giờ)</Text>
+                <Text style={{ fontWeight: '700', color: COLORS.gray[700] }}>
+                  Thời gian ước tính (giờ)
+                </Text>
                 <View style={{ flexDirection: 'row', gap: 10 }}>
                   {[1, 2, 3, 4, 5, 6, 8].map(h => (
                     <TouchableOpacity
                       key={h}
                       onPress={() => setEstimatedDuration(String(h))}
                       style={{
-                        paddingHorizontal: 16, paddingVertical: 10, borderRadius: 12,
+                        paddingHorizontal: 16,
+                        paddingVertical: 10,
+                        borderRadius: 12,
                         borderWidth: 2,
-                        borderColor: estimatedDuration === String(h) ? COLORS.primary : COLORS.gray[200],
-                        backgroundColor: estimatedDuration === String(h) ? COLORS.primaryLight : '#fff',
+                        borderColor:
+                          estimatedDuration === String(h) ? COLORS.primary : COLORS.gray[200],
+                        backgroundColor:
+                          estimatedDuration === String(h) ? COLORS.primaryLight : '#fff',
                       }}
                     >
-                      <Text style={{ fontWeight: '800', color: estimatedDuration === String(h) ? COLORS.primary : COLORS.gray[700] }}>
+                      <Text
+                        style={{
+                          fontWeight: '800',
+                          color:
+                            estimatedDuration === String(h) ? COLORS.primary : COLORS.gray[700],
+                        }}
+                      >
                         {h}h
                       </Text>
                     </TouchableOpacity>
@@ -336,11 +471,18 @@ export default function HelperJobDetailScreen() {
               </View>
 
               <View style={{ gap: 8 }}>
-                <Text style={{ fontWeight: '700', color: COLORS.gray[700] }}>Ghi chú gửi khách (tuỳ chọn)</Text>
+                <Text style={{ fontWeight: '700', color: COLORS.gray[700] }}>
+                  Ghi chú gửi khách (tuỳ chọn)
+                </Text>
                 <TextInput
                   style={{
-                    borderWidth: 1.5, borderColor: COLORS.gray[200], borderRadius: 14,
-                    padding: 14, fontSize: 15, minHeight: 80, textAlignVertical: 'top',
+                    borderWidth: 1.5,
+                    borderColor: COLORS.gray[200],
+                    borderRadius: 14,
+                    padding: 14,
+                    fontSize: 15,
+                    minHeight: 80,
+                    textAlignVertical: 'top',
                     color: COLORS.gray[900],
                   }}
                   placeholder="VD: Tôi có đầy đủ đồ nghề chuyên dụng, có thể đến ngay..."

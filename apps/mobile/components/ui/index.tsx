@@ -71,18 +71,19 @@ export function Button({
   const bgColor = isPrimary
     ? COLORS.primary
     : isSecondary
-    ? COLORS.gray[100]
-    : isDanger
-    ? COLORS.error
-    : 'transparent';
+      ? COLORS.gray[100]
+      : isDanger
+        ? COLORS.error
+        : 'transparent';
 
-  const textColor = isPrimary || isDanger
-    ? '#FFFFFF'
-    : isOutline
-    ? COLORS.primary
-    : isSecondary
-    ? COLORS.gray[800]
-    : COLORS.primary;
+  const textColor =
+    isPrimary || isDanger
+      ? '#FFFFFF'
+      : isOutline
+        ? COLORS.primary
+        : isSecondary
+          ? COLORS.gray[800]
+          : COLORS.primary;
 
   const paddingY = { sm: 9, md: 13, lg: 16 }[size];
   const fontSize = { sm: 13, md: 15, lg: 16 }[size];
@@ -146,9 +147,7 @@ export function Input({ label, error, leftIcon, rightIcon, style, ...props }: In
   return (
     <View style={{ gap: 6 }}>
       {label && (
-        <Text style={{ fontSize: 13, fontWeight: '600', color: COLORS.gray[700] }}>
-          {label}
-        </Text>
+        <Text style={{ fontSize: 13, fontWeight: '600', color: COLORS.gray[700] }}>{label}</Text>
       )}
       <View
         style={{
@@ -270,7 +269,12 @@ export function Avatar({ uri, name, size = 44 }: AvatarProps) {
     return (
       <Image
         source={{ uri }}
-        style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: COLORS.gray[200] }}
+        style={{
+          width: size,
+          height: size,
+          borderRadius: size / 2,
+          backgroundColor: COLORS.gray[200],
+        }}
       />
     );
   }
@@ -312,7 +316,9 @@ export function SectionHeader({ title, action, onAction, subtitle }: SectionHead
   return (
     <View style={{ marginBottom: 12 }}>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Text style={{ fontSize: 18, fontWeight: '800', color: COLORS.gray[900], letterSpacing: -0.3 }}>
+        <Text
+          style={{ fontSize: 18, fontWeight: '800', color: COLORS.gray[900], letterSpacing: -0.3 }}
+        >
           {title}
         </Text>
         {action && (
@@ -354,11 +360,21 @@ export function EmptyState({ emoji = '📋', title, subtitle, action, onAction }
       >
         <Text style={{ fontSize: 36 }}>{emoji}</Text>
       </View>
-      <Text style={{ fontSize: 16, fontWeight: '700', color: COLORS.gray[800], textAlign: 'center' }}>
+      <Text
+        style={{ fontSize: 16, fontWeight: '700', color: COLORS.gray[800], textAlign: 'center' }}
+      >
         {title}
       </Text>
       {subtitle && (
-        <Text style={{ fontSize: 13, color: COLORS.gray[500], textAlign: 'center', marginTop: 6, lineHeight: 19 }}>
+        <Text
+          style={{
+            fontSize: 13,
+            color: COLORS.gray[500],
+            textAlign: 'center',
+            marginTop: 6,
+            lineHeight: 19,
+          }}
+        >
           {subtitle}
         </Text>
       )}

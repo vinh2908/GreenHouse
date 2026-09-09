@@ -13,7 +13,8 @@ export default function DashboardLayoutWrapper({ children }: { children: React.R
 
   useEffect(() => {
     setMounted(true);
-    const token = accessToken || (typeof window !== 'undefined' ? localStorage.getItem('access_token') : null);
+    const token =
+      accessToken || (typeof window !== 'undefined' ? localStorage.getItem('access_token') : null);
     if (!token) {
       router.replace('/login');
     }

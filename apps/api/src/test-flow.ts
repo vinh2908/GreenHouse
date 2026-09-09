@@ -49,7 +49,10 @@ async function testFullFlow() {
 
   // ─── BƯỚC 1: Đăng nhập Khách hàng & Thợ ───────────────────────────────────────
   console.log('📌 [BƯỚC 1] Đăng nhập tài khoản...');
-  const customerLogin = await post('/auth/login', { phone: '0901111111', password: 'password123' }).catch(async () => {
+  const customerLogin = await post('/auth/login', {
+    phone: '0901111111',
+    password: 'password123',
+  }).catch(async () => {
     // Nếu pass cũ chưa match thì đăng ký mới hoặc pass 123456
     return post('/auth/login', { phone: '0901111111', password: 'password123' });
   });
@@ -64,24 +67,30 @@ async function testFullFlow() {
   console.log('\n📌 [BƯỚC 2] Khách hàng chọn dịch vụ & đăng việc...');
   const servicesRes = await get('/services', customerToken);
   const servicesList = Array.isArray(servicesRes) ? servicesRes : servicesRes.services || [];
-  const electricService = servicesList.find((s: any) => s.slug === 'electrician') || servicesList[0];
+  const electricService =
+    servicesList.find((s: any) => s.slug === 'electrician') || servicesList[0];
   console.log(` -> Dịch vụ đã chọn: ${electricService.name} (ID: ${electricService._id})`);
 
-  const newJob = await post('/jobs', {
-    service_id: electricService._id,
-    title: 'Sửa chập điện ổ cắm phòng khách & thay aptomat tổng',
-    description: 'Ổ cắm phòng khách bị tóe lửa khét, aptomat tự nhảy liên tục. Cần thợ có chuyên môn đến xử lý gấp trong chiều nay.',
-    address: {
-      full_address: '128 Đường Lê Lợi, Phường Bến Thành',
-      ward: 'Phường Bến Thành',
-      district: 'Quận 1',
-      city: 'Hồ Chí Minh',
-      location: { type: 'Point', coordinates: [106.6983, 10.7725] },
+  const newJob = await post(
+    '/jobs',
+    {
+      service_id: electricService._id,
+      title: 'Sửa chập điện ổ cắm phòng khách & thay aptomat tổng',
+      description:
+        'Ổ cắm phòng khách bị tóe lửa khét, aptomat tự nhảy liên tục. Cần thợ có chuyên môn đến xử lý gấp trong chiều nay.',
+      address: {
+        full_address: '128 Đường Lê Lợi, Phường Bến Thành',
+        ward: 'Phường Bến Thành',
+        district: 'Quận 1',
+        city: 'Hồ Chí Minh',
+        location: { type: 'Point', coordinates: [106.6983, 10.7725] },
+      },
+      preferred_date: new Date().toISOString().split('T')[0],
+      preferred_time_start: '14:30',
+      is_flexible_time: false,
     },
-    preferred_date: new Date().toISOString().split('T')[0],
-    preferred_time_start: '14:30',
-    is_flexible_time: false,
-  }, customerToken);
+    customerToken,
+  );
   console.log(` -> ✅ Đăng việc thành công! Job ID: ${newJob._id}`);
   console.log(` -> Trạng thái Job: [${newJob.status.toUpperCase()}]`);
 
@@ -90,18 +99,27 @@ async function testFullFlow() {
   const availableJobs = await get('/jobs/available', helperToken);
   console.log(` -> Số đơn hàng tìm thấy xung quanh: ${availableJobs.total} đơn`);
   const foundJob = availableJobs.jobs.find((j: any) => j._id === newJob._id);
-  console.log(` -> Đã tìm thấy đơn của khách: "${foundJob.title}" tại ${foundJob.address.district}`);
+  console.log(
+    ` -> Đã tìm thấy đơn của khách: "${foundJob.title}" tại ${foundJob.address.district}`,
+  );
 
   // ─── BƯỚC 4: Thợ gửi báo giá ───────────────────────────────────────────────
   console.log('\n📌 [BƯỚC 4] Thợ gửi báo giá cho đơn hàng...');
-  const quote = await post(`/jobs/${newJob._id}/quotes`, {
-    labor_cost: 350000,
-    estimated_duration: 2,
-    notes: 'Tôi mang theo đồng hồ đo điện fluke, dây điện Cadivi và aptomat Panasonic chính hãng để thay thế.',
-    available_date: new Date().toISOString().split('T')[0],
-  }, helperToken);
+  const quote = await post(
+    `/jobs/${newJob._id}/quotes`,
+    {
+      labor_cost: 350000,
+      estimated_duration: 2,
+      notes:
+        'Tôi mang theo đồng hồ đo điện fluke, dây điện Cadivi và aptomat Panasonic chính hãng để thay thế.',
+      available_date: new Date().toISOString().split('T')[0],
+    },
+    helperToken,
+  );
   console.log(` -> ✅ Gửi báo giá thành công!`);
-  console.log(` -> Giá công báo: ${quote.labor_cost.toLocaleString()}đ | Phí sàn (15%): ${quote.platform_fee.toLocaleString()}đ | Thợ thực nhận: ${quote.helper_receives.toLocaleString()}đ`);
+  console.log(
+    ` -> Giá công báo: ${quote.labor_cost.toLocaleString()}đ | Phí sàn (15%): ${quote.platform_fee.toLocaleString()}đ | Thợ thực nhận: ${quote.helper_receives.toLocaleString()}đ`,
+  );
 
   // ─── BƯỚC 5: Khách hàng xem báo giá & chọn Thợ ─────────────────────────────
   console.log('\n📌 [BƯỚC 5] Khách hàng xem danh sách báo giá & chấp nhận Thợ...');
@@ -109,10 +127,14 @@ async function testFullFlow() {
   console.log(` -> Số báo giá nhận được: ${quotesList.length}`);
   const selectedQuote = quotesList[0];
 
-  const selectResult = await post(`/jobs/${newJob._id}/select-quote`, {
-    quote_id: selectedQuote._id,
-    scheduled_at: new Date().toISOString(),
-  }, customerToken);
+  const selectResult = await post(
+    `/jobs/${newJob._id}/select-quote`,
+    {
+      quote_id: selectedQuote._id,
+      scheduled_at: new Date().toISOString(),
+    },
+    customerToken,
+  );
   console.log(` -> ✅ Khách đã chọn thợ! Hợp đồng đã được ký.`);
   console.log(` -> Trạng thái Job cập nhật: [${selectResult.job.status.toUpperCase()}]`);
 
@@ -133,18 +155,29 @@ async function testFullFlow() {
 
   // ─── BƯỚC 9: Thợ hoàn tất công việc ────────────────────────────────────────
   console.log('\n📌 [BƯỚC 9] Thợ hoàn tất sửa chữa & gửi yêu cầu nghiệm thu...');
-  const completedJob = await patch(`/jobs/${newJob._id}/complete`, {
-    completion_photos: ['https://images.unsplash.com/photo-1621905251189-08b45d6a269e'],
-  }, helperToken);
+  const completedJob = await patch(
+    `/jobs/${newJob._id}/complete`,
+    {
+      completion_photos: ['https://images.unsplash.com/photo-1621905251189-08b45d6a269e'],
+    },
+    helperToken,
+  );
   console.log(` -> ✅ Trạng thái: [${completedJob.status.toUpperCase()}] (Pending review)`);
 
   // ─── BƯỚC 10: Khách hàng nghiệm thu & đánh giá 5 sao ────────────────────────
   console.log('\n📌 [BƯỚC 10] Khách hàng kiểm tra, nghiệm thu & đánh giá 5 sao...');
-  const approvedJob = await patch(`/jobs/${newJob._id}/approve`, {
-    rating: 5,
-    review: 'Anh Tuấn làm việc rất chuyên nghiệp, cẩn thận, giải thích rõ nguyên nhân chập điện. Rất hài lòng!',
-  }, customerToken);
-  console.log(` -> ✅ Trạng thái đơn hàng cuối cùng: [${approvedJob.status.toUpperCase()}] (COMPLETED)`);
+  const approvedJob = await patch(
+    `/jobs/${newJob._id}/approve`,
+    {
+      rating: 5,
+      review:
+        'Anh Tuấn làm việc rất chuyên nghiệp, cẩn thận, giải thích rõ nguyên nhân chập điện. Rất hài lòng!',
+    },
+    customerToken,
+  );
+  console.log(
+    ` -> ✅ Trạng thái đơn hàng cuối cùng: [${approvedJob.status.toUpperCase()}] (COMPLETED)`,
+  );
 
   // ─── BƯỚC 11: Kiểm tra ví tiền của Thợ ──────────────────────────────────────
   console.log('\n📌 [BƯỚC 11] Kiểm tra số dư ví của Thợ sau khi hoàn thành...');
@@ -154,7 +187,9 @@ async function testFullFlow() {
 
   const transactions = await get('/payments/transactions', helperToken);
   const latestTx = transactions.transactions[0];
-  console.log(` -> Giao dịch cộng tiền gần nhất: +${latestTx.amount.toLocaleString()}đ ("${latestTx.description}")`);
+  console.log(
+    ` -> Giao dịch cộng tiền gần nhất: +${latestTx.amount.toLocaleString()}đ ("${latestTx.description}")`,
+  );
 
   console.log('\n====================================================');
   console.log('🎉 TOÀN BỘ LUỒNG E2E ĐÃ HOÀN TẤT VÀ VẬN HÀNH HOÀN HẢO!');
