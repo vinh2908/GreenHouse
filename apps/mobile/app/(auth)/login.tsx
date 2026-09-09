@@ -1,58 +1,192 @@
-import { View, Text, TextInput, TouchableOpacity, SafeAreaView } from 'react-native';
-import { Link } from 'expo-router';
+import { useState } from 'react';
+import {
+  View,
+  Text,
+  ScrollView,
+  SafeAreaView,
+  TouchableOpacity,
+  KeyboardAvoidingView,
+  Platform,
+} from 'react-native';
+import { useRouter } from 'expo-router';
+import { Phone, Lock, Eye, EyeOff, ShieldCheck, Wrench } from 'lucide-react-native';
+import Toast from 'react-native-toast-message';
+import { useAuthStore } from '@/stores/auth.store';
+import { useLogin } from '@/hooks/use-api';
+import { Button, Input, COLORS } from '@/components/ui';
 
 export default function LoginScreen() {
+  const router = useRouter();
+  const setAuth = useAuthStore(s => s.setAuth);
+  const login = useLogin();
+
+  const [phone, setPhone] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+
+  const handleLogin = async () => {
+    if (!phone.trim() || !password.trim()) {
+      Toast.show({ type: 'error', text1: 'Vui lòng nhập số điện thoại và mật khẩu' });
+      return;
+    }
+    try {
+      const { data } = await login.mutateAsync({ phone, password });
+      const { access_token, refresh_token, user } = data.data;
+      await setAuth(user, access_token, refresh_token);
+      
+      Toast.show({ type: 'success', text1: `Xin chào ${user.full_name ?? 'bạn'}!` });
+
+      // Redirect by active role
+      if (user.active_role === 'helper') {
+        router.replace('/(helper)/dashboard');
+      } else {
+        router.replace('/(customer)/home');
+      }
+    } catch (err: unknown) {
+      const msg =
+        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
+        'Đăng nhập không thành công';
+      Toast.show({ type: 'error', text1: msg });
+    }
+  };
+
   return (
-    <SafeAreaView className="flex-1 bg-white">
-      <View className="flex-1 px-6 justify-center">
-        {/* Logo */}
-        <View className="items-center mb-10">
-          <View className="w-20 h-20 rounded-2xl bg-primary items-center justify-center mb-4">
-            <Text className="text-white font-bold text-3xl">H</Text>
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+        <ScrollView contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 24, justifyContent: 'center' }} keyboardShouldPersistTaps="handled">
+          {/* ── Brand Logo & Header ────────────────────────────────────── */}
+          <View style={{ alignItems: 'center', marginBottom: 36 }}>
+            <View
+              style={{
+                width: 76,
+                height: 76,
+                borderRadius: 24,
+                backgroundColor: COLORS.primary,
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginBottom: 14,
+                shadowColor: COLORS.primary,
+                shadowOffset: { width: 0, height: 8 },
+                shadowOpacity: 0.35,
+                shadowRadius: 14,
+                elevation: 8,
+              }}
+            >
+              <Text style={{ color: '#FFFFFF', fontSize: 36, fontWeight: '900' }}>H</Text>
+            </View>
+            <Text style={{ fontSize: 28, fontWeight: '900', color: COLORS.gray[900], letterSpacing: -0.5 }}>
+              HomeMate
+            </Text>
+            <Text style={{ fontSize: 14, color: COLORS.gray[500], marginTop: 4, fontWeight: '500' }}>
+              Nền tảng dịch vụ & thợ sửa chữa tại nhà
+            </Text>
           </View>
-          <Text className="text-2xl font-bold text-gray-900">HomeMate</Text>
-          <Text className="text-gray-500 mt-1">Giúp việc nhà chuyên nghiệp</Text>
-        </View>
 
-        {/* Form */}
-        <View className="space-y-4">
-          <View>
-            <Text className="text-sm font-medium text-gray-700 mb-2">Số điện thoại</Text>
-            <TextInput
-              className="border border-gray-200 rounded-xl px-4 py-3 text-base bg-gray-50"
-              placeholder="0xxx xxx xxx"
+          {/* ── Form Inputs ────────────────────────────────────────────── */}
+          <View style={{ gap: 14 }}>
+            <Input
+              label="Số điện thoại"
+              placeholder="Nhập số điện thoại của bạn"
               keyboardType="phone-pad"
+              value={phone}
+              onChangeText={setPhone}
+              leftIcon={<Phone size={18} color={COLORS.gray[400]} />}
             />
+            <Input
+              label="Mật khẩu"
+              placeholder="Nhập mật khẩu"
+              secureTextEntry={!showPassword}
+              value={password}
+              onChangeText={setPassword}
+              leftIcon={<Lock size={18} color={COLORS.gray[400]} />}
+              rightIcon={
+                <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+                  {showPassword ? (
+                    <EyeOff size={18} color={COLORS.gray[400]} />
+                  ) : (
+                    <Eye size={18} color={COLORS.gray[400]} />
+                  )}
+                </TouchableOpacity>
+              }
+            />
+
+            <TouchableOpacity style={{ alignSelf: 'flex-end', marginTop: -2 }}>
+              <Text style={{ color: COLORS.primary, fontSize: 13, fontWeight: '700' }}>
+                Quên mật khẩu?
+              </Text>
+            </TouchableOpacity>
+
+            <Button
+              title="Đăng nhập"
+              loading={login.isPending}
+              onPress={handleLogin}
+              style={{ marginTop: 8 }}
+            />
+
+            {/* ── Quick Dev Login Shortcuts ────────────────────────── */}
+            <View style={{ marginTop: 8, gap: 8 }}>
+              <Button
+                title="⚡ Đăng nhập nhanh: Khách hàng (Chị Mai)"
+                variant="secondary"
+                size="sm"
+                onPress={async () => {
+                  setPhone('0901111111');
+                  setPassword('password123');
+                  try {
+                    const { data } = await login.mutateAsync({ phone: '0901111111', password: 'password123' });
+                    const { access_token, refresh_token, user } = data.data;
+                    await setAuth(user, access_token, refresh_token);
+                    Toast.show({ type: 'success', text1: 'Đăng nhập thành công: Chị Mai' });
+                    router.replace('/(customer)/home');
+                  } catch (e) {
+                    Toast.show({ type: 'error', text1: 'Đăng nhập thất bại' });
+                  }
+                }}
+              />
+              <Button
+                title="⚡ Đăng nhập nhanh: Thợ / Đối tác (Anh Tuấn)"
+                variant="outline"
+                size="sm"
+                onPress={async () => {
+                  setPhone('0902222222');
+                  setPassword('password123');
+                  try {
+                    const { data } = await login.mutateAsync({ phone: '0902222222', password: 'password123' });
+                    const { access_token, refresh_token, user } = data.data;
+                    await setAuth(user, access_token, refresh_token);
+                    Toast.show({ type: 'success', text1: 'Đăng nhập thành công: Anh Tuấn' });
+                    router.replace('/(helper)/dashboard');
+                  } catch (e) {
+                    Toast.show({ type: 'error', text1: 'Đăng nhập thất bại' });
+                  }
+                }}
+              />
+            </View>
           </View>
 
-          <View>
-            <Text className="text-sm font-medium text-gray-700 mb-2">Mật khẩu</Text>
-            <TextInput
-              className="border border-gray-200 rounded-xl px-4 py-3 text-base bg-gray-50"
-              placeholder="••••••••"
-              secureTextEntry
-            />
+          {/* ── Divider ────────────────────────────────────────────────── */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 24 }}>
+            <View style={{ flex: 1, height: 1, backgroundColor: COLORS.gray[200] }} />
+            <Text style={{ marginHorizontal: 12, color: COLORS.gray[400], fontSize: 13, fontWeight: '500' }}>
+              hoặc
+            </Text>
+            <View style={{ flex: 1, height: 1, backgroundColor: COLORS.gray[200] }} />
           </View>
 
-          <TouchableOpacity className="items-end">
-            <Link href="/(auth)/forgot-password">
-              <Text className="text-primary text-sm">Quên mật khẩu?</Text>
-            </Link>
-          </TouchableOpacity>
-
-          <TouchableOpacity className="bg-primary rounded-xl py-4 items-center mt-2">
-            <Text className="text-white font-semibold text-base">Đăng nhập</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Register */}
-        <View className="flex-row justify-center mt-8">
-          <Text className="text-gray-500">Chưa có tài khoản? </Text>
-          <Link href="/(auth)/register">
-            <Text className="text-primary font-semibold">Đăng ký ngay</Text>
-          </Link>
-        </View>
-      </View>
+          {/* ── Register Link ──────────────────────────────────────────── */}
+          <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 6 }}>
+            <Text style={{ color: COLORS.gray[600], fontSize: 14 }}>Chưa có tài khoản?</Text>
+            <TouchableOpacity onPress={() => router.push('/(auth)/register')}>
+              <Text style={{ color: COLORS.primary, fontWeight: '800', fontSize: 14 }}>
+                Đăng ký ngay
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

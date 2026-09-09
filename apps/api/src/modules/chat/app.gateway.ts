@@ -91,19 +91,13 @@ export class AppGateway implements OnGatewayConnection, OnGatewayDisconnect {
   // ─── Room management ──────────────────────────────────────────────────────
 
   @SubscribeMessage('join:job')
-  handleJoinJob(
-    @ConnectedSocket() client: Socket,
-    @MessageBody() data: { job_id: string },
-  ) {
+  handleJoinJob(@ConnectedSocket() client: Socket, @MessageBody() data: { job_id: string }) {
     client.join(`job:${data.job_id}`);
     return { event: 'joined', room: `job:${data.job_id}` };
   }
 
   @SubscribeMessage('leave:job')
-  handleLeaveJob(
-    @ConnectedSocket() client: Socket,
-    @MessageBody() data: { job_id: string },
-  ) {
+  handleLeaveJob(@ConnectedSocket() client: Socket, @MessageBody() data: { job_id: string }) {
     client.leave(`job:${data.job_id}`);
   }
 
@@ -184,6 +178,10 @@ export class AppGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   emitToJob(jobId: string, event: string, data: unknown) {
     this.server.to(`job:${jobId}`).emit(event, data);
+  }
+
+  emitToConversation(conversationId: string, event: string, data: unknown) {
+    this.server.to(`chat:${conversationId}`).emit(event, data);
   }
 
   isUserOnline(userId: string): boolean {

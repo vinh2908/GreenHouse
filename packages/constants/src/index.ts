@@ -119,6 +119,11 @@ export const SOCKET_EVENTS = {
   CHAT_NEW_MESSAGE: 'chat:new_message',
   CHAT_MESSAGE_READ: 'chat:message_read',
 
+  // SOS Emergency
+  SOS_BROADCAST: 'sos:broadcast', // Gửi khẩn cấp tới thợ xung quanh
+  SOS_ACCEPTED: 'sos:accepted',   // Thợ nhận việc cứu hộ
+  SOS_CANCELLED: 'sos:cancelled',
+
   // Notification
   NOTIFICATION_NEW: 'notification:new',
 } as const;
@@ -162,4 +167,34 @@ export const NOTIFICATION_TYPES = {
   REVIEW_RECEIVED: 'review_received',
   PROMOTION: 'promotion',
   SYSTEM: 'system',
+} as const;
+
+// ─── AI Feature Flags ──────────────────────────────────────────────────────────
+// Bật/tắt từng AI feature độc lập qua env vars
+
+export const AI_FEATURE_FLAGS = {
+  BOOKING_ASSISTANT: process.env['AI_BOOKING_ASSISTANT'] !== 'false',
+  PRICE_ESTIMATOR: process.env['AI_PRICE_ESTIMATOR'] !== 'false',
+  MATCH_EXPLANATION: process.env['AI_MATCH_EXPLANATION'] !== 'false',
+  CUSTOMER_SUPPORT: process.env['AI_CUSTOMER_SUPPORT'] !== 'false',
+} as const;
+
+// ─── AI Config ─────────────────────────────────────────────────────────────────
+
+export const AI_CONFIG = {
+  MODEL: 'gpt-4o-mini',          // Default model — cheap, fast
+  MAX_TOKENS: 1000,
+  TEMPERATURE: 0.3,              // Low temp for structured output
+  SUPPORT_MAX_TOKENS: 500,       // Shorter for support chat
+  SUPPORT_TEMPERATURE: 0.7,      // Slightly creative for chat
+} as const;
+
+// ─── Platform service slug → Vietnamese name ──────────────────────────────────
+
+export const SERVICE_SLUG_VI: Record<string, string> = {
+  housekeeping_hourly: 'Giúp việc theo giờ',
+  housekeeping_daily: 'Giúp việc theo ngày',
+  deep_cleaning: 'Tổng vệ sinh nhà',
+  housekeeping_periodic: 'Giúp việc định kỳ',
+  cooking: 'Nấu ăn gia đình',
 } as const;
