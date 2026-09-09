@@ -34,7 +34,8 @@ async function seedRichJobs() {
     service_id: sAc._id,
     status: 'receiving_quotes',
     title: 'Vệ sinh 2 máy lạnh Daikin Inverter & kiểm tra gas',
-    description: '2 máy lạnh Daikin 1.5HP ở phòng khách và phòng ngủ chính chạy yếu lạnh, có mùi ẩm mốc. Cần thợ chuyên nghiệp mang theo bạt hứng nước và máy xịt áp lực cao.',
+    description:
+      '2 máy lạnh Daikin 1.5HP ở phòng khách và phòng ngủ chính chạy yếu lạnh, có mùi ẩm mốc. Cần thợ chuyên nghiệp mang theo bạt hứng nước và máy xịt áp lực cao.',
     photos: [],
     videos: [],
     address: {
@@ -89,7 +90,8 @@ async function seedRichJobs() {
     service_id: sPlumbing._id,
     status: 'in_progress',
     title: 'Thông tắc bồn rửa chén bát & thay xi-phông thoát nước',
-    description: 'Bồn rửa chén thoát nước rất chậm và bị rỉ nước dưới đáy tủ bếp. Cần thợ xử lý triệt để.',
+    description:
+      'Bồn rửa chén thoát nước rất chậm và bị rỉ nước dưới đáy tủ bếp. Cần thợ xử lý triệt để.',
     address: {
       full_address: '45/2 Nguyễn Thị Minh Khai',
       ward: 'Phường Đa Kao',

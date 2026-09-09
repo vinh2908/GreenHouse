@@ -1,7 +1,4 @@
-import {
-  Controller, Get, Post, Patch, Body, Param, Query,
-  UseGuards,
-} from '@nestjs/common';
+import { Controller, Get, Post, Patch, Body, Param, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { ReviewsService } from './reviews.service';
 import { CreateReviewDto, HelperReplyDto } from './dto/review.dto';
@@ -22,10 +19,7 @@ export class ReviewsController {
 
   @Post()
   @ApiOperation({ summary: '[Customer] Đánh giá công việc đã hoàn thành' })
-  async createReview(
-    @CurrentUser() user: { sub: string },
-    @Body() dto: CreateReviewDto,
-  ) {
+  async createReview(@CurrentUser() user: { sub: string }, @Body() dto: CreateReviewDto) {
     return this.reviewsService.createReview(user.sub, dto.helper_id, dto);
   }
 
@@ -82,11 +76,7 @@ export class ReviewsController {
     @Query('page') page?: number,
     @Query('limit') limit?: number,
   ) {
-    return this.reviewsService.getCustomerReviews(
-      user.sub,
-      Number(page) || 1,
-      Number(limit) || 10,
-    );
+    return this.reviewsService.getCustomerReviews(user.sub, Number(page) || 1, Number(limit) || 10);
   }
 
   // ─── Admin: All reviews ────────────────────────────────────────────────────

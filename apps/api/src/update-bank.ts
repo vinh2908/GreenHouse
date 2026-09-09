@@ -18,7 +18,7 @@ async function updateHelperBank() {
           account_name: 'NGUYEN VAN TUAN',
         },
       },
-    }
+    },
   );
 
   console.log('Bank account updated for Anh Tuấn successfully!');

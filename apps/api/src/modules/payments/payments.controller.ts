@@ -1,6 +1,14 @@
 import {
-  Controller, Get, Post, Patch, Body, Param, Query,
-  UseGuards, HttpCode, HttpStatus,
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Body,
+  Param,
+  Query,
+  UseGuards,
+  HttpCode,
+  HttpStatus,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { PaymentsService } from './payments.service';
@@ -45,10 +53,7 @@ export class PaymentsController {
   @Post('pay')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: '[Mock] Thanh toán cho job (dev only)' })
-  async mockPayJob(
-    @CurrentUser() user: { sub: string },
-    @Body() dto: MockPayJobDto,
-  ) {
+  async mockPayJob(@CurrentUser() user: { sub: string }, @Body() dto: MockPayJobDto) {
     // In production: integrate real payment gateway (VNPay, MoMo, ZaloPay)
     // For MVP/dev: mock success
     return this.paymentsService.mockPayJob(user.sub, dto.job_id, 0, dto.payment_method);
@@ -58,10 +63,7 @@ export class PaymentsController {
 
   @Post('withdraw')
   @ApiOperation({ summary: '[Helper] Yêu cầu rút tiền' })
-  async requestWithdrawal(
-    @CurrentUser() user: { sub: string },
-    @Body() dto: RequestWithdrawalDto,
-  ) {
+  async requestWithdrawal(@CurrentUser() user: { sub: string }, @Body() dto: RequestWithdrawalDto) {
     return this.paymentsService.requestWithdrawal(user.sub, dto.amount, dto.bank_account);
   }
 

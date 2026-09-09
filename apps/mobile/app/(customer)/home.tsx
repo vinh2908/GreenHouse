@@ -40,10 +40,34 @@ dayjs.locale('vi');
 
 // ─── Danh mục dịch vụ chuẩn Vua Thợ ───────────────────────────────────────────
 const SERVICE_CATEGORIES = [
-  { id: 'housekeeping_hourly', name: 'Giúp việc\ntheo giờ', emoji: '🧹', bg: '#FFF4ED', slug: 'housekeeping_hourly' },
-  { id: 'deep_cleaning', name: 'Tổng vệ sinh\nnhà cửa', emoji: '✨', bg: '#ECFDF5', slug: 'deep_cleaning' },
-  { id: 'electrician', name: 'Sửa điện\ngia dụng', emoji: '⚡', bg: '#FEF3C7', slug: 'electrician' },
-  { id: 'plumbing', name: 'Sửa ống nước\nthông cống', emoji: '🚰', bg: '#EFF6FF', slug: 'plumbing' },
+  {
+    id: 'housekeeping_hourly',
+    name: 'Giúp việc\ntheo giờ',
+    emoji: '🧹',
+    bg: '#FFF4ED',
+    slug: 'housekeeping_hourly',
+  },
+  {
+    id: 'deep_cleaning',
+    name: 'Tổng vệ sinh\nnhà cửa',
+    emoji: '✨',
+    bg: '#ECFDF5',
+    slug: 'deep_cleaning',
+  },
+  {
+    id: 'electrician',
+    name: 'Sửa điện\ngia dụng',
+    emoji: '⚡',
+    bg: '#FEF3C7',
+    slug: 'electrician',
+  },
+  {
+    id: 'plumbing',
+    name: 'Sửa ống nước\nthông cống',
+    emoji: '🚰',
+    bg: '#EFF6FF',
+    slug: 'plumbing',
+  },
   { id: 'ac_repair', name: 'Vệ sinh\nmáy lạnh', emoji: '❄️', bg: '#E0F2FE', slug: 'ac_repair' },
   { id: 'cooking', name: 'Nấu ăn\ngia đình', emoji: '🍳', bg: '#FFFBEB', slug: 'cooking' },
   { id: 'appliance', name: 'Sửa máy giặt\ntủ lạnh', emoji: '🧺', bg: '#F5F3FF', slug: 'appliance' },
@@ -61,16 +85,19 @@ export default function CustomerHomeScreen() {
   const [currentLocationName, setCurrentLocationName] = useState('Hồ Chí Minh • Quận 1');
 
   useEffect(() => {
-    locationService.getCurrentLocationDetails().then(details => {
-      if (details?.district) {
-        setCurrentLocationName(`${details.city || 'Hồ Chí Minh'} • ${details.district}`);
-      }
-    }).catch(() => {});
+    locationService
+      .getCurrentLocationDetails()
+      .then(details => {
+        if (details?.district) {
+          setCurrentLocationName(`${details.city || 'Hồ Chí Minh'} • ${details.district}`);
+        }
+      })
+      .catch(() => {});
   }, []);
 
-  const activeJobs = recentJobs?.filter((j: { status: string }) =>
-    !['completed', 'cancelled'].includes(j.status),
-  ) ?? [];
+  const activeJobs =
+    recentJobs?.filter((j: { status: string }) => !['completed', 'cancelled'].includes(j.status)) ??
+    [];
 
   const handleSwitchToWorker = async () => {
     try {
@@ -87,7 +114,9 @@ export default function CustomerHomeScreen() {
     <SafeAreaView style={{ flex: 1, backgroundColor: '#F8F9FA' }}>
       <ScrollView
         showsVerticalScrollIndicator={false}
-        refreshControl={<RefreshControl refreshing={jLoading} onRefresh={refetch} colors={[COLORS.primary]} />}
+        refreshControl={
+          <RefreshControl refreshing={jLoading} onRefresh={refetch} colors={[COLORS.primary]} />
+        }
         contentContainerStyle={{ paddingBottom: 110 }}
       >
         {/* ── 1. Top Header Bar (Vua Thợ Style) ────────────────────────── */}
@@ -101,11 +130,19 @@ export default function CustomerHomeScreen() {
             borderBottomColor: COLORS.gray[100],
           }}
         >
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+          <View
+            style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}
+          >
             {/* Location selector */}
             <TouchableOpacity
               activeOpacity={0.7}
-              style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1, marginRight: 12 }}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 6,
+                flex: 1,
+                marginRight: 12,
+              }}
             >
               <View
                 style={{
@@ -120,9 +157,14 @@ export default function CustomerHomeScreen() {
                 <MapPin size={18} color={COLORS.primary} />
               </View>
               <View>
-                <Text style={{ fontSize: 11, color: COLORS.gray[400], fontWeight: '600' }}>Vị trí của bạn</Text>
+                <Text style={{ fontSize: 11, color: COLORS.gray[400], fontWeight: '600' }}>
+                  Vị trí của bạn
+                </Text>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}>
-                  <Text style={{ fontSize: 14, fontWeight: '800', color: COLORS.gray[900] }} numberOfLines={1}>
+                  <Text
+                    style={{ fontSize: 14, fontWeight: '800', color: COLORS.gray[900] }}
+                    numberOfLines={1}
+                  >
                     {currentLocationName}
                   </Text>
                   <ChevronRight size={14} color={COLORS.gray[500]} />
@@ -243,14 +285,37 @@ export default function CustomerHomeScreen() {
               </View>
               <View style={{ flex: 1 }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                  <Text style={{ color: '#FFFFFF', fontWeight: '900', fontSize: 16, letterSpacing: 0.3 }}>
+                  <Text
+                    style={{
+                      color: '#FFFFFF',
+                      fontWeight: '900',
+                      fontSize: 16,
+                      letterSpacing: 0.3,
+                    }}
+                  >
                     CỨU HỘ SOS KHẨN CẤP
                   </Text>
-                  <View style={{ backgroundColor: '#FFFFFF', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 }}>
-                    <Text style={{ color: '#DC2626', fontSize: 10, fontWeight: '900' }}>15P CÓ MẶT</Text>
+                  <View
+                    style={{
+                      backgroundColor: '#FFFFFF',
+                      paddingHorizontal: 6,
+                      paddingVertical: 2,
+                      borderRadius: 6,
+                    }}
+                  >
+                    <Text style={{ color: '#DC2626', fontSize: 10, fontWeight: '900' }}>
+                      15P CÓ MẶT
+                    </Text>
                   </View>
                 </View>
-                <Text style={{ color: 'rgba(255,255,255,0.9)', fontSize: 12, marginTop: 2, fontWeight: '500' }}>
+                <Text
+                  style={{
+                    color: 'rgba(255,255,255,0.9)',
+                    fontSize: 12,
+                    marginTop: 2,
+                    fontWeight: '500',
+                  }}
+                >
                   Chập điện, vỡ ống nước, kẹt khóa cửa ngoài...
                 </Text>
               </View>
@@ -300,11 +365,27 @@ export default function CustomerHomeScreen() {
                   <Text style={{ color: '#fff', fontWeight: '800', fontSize: 16 }}>
                     Trợ lý AI HomeMate
                   </Text>
-                  <View style={{ backgroundColor: '#FF6B1A33', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 }}>
-                    <Text style={{ color: COLORS.primary, fontSize: 10, fontWeight: '800' }}>THÔNG MINH</Text>
+                  <View
+                    style={{
+                      backgroundColor: '#FF6B1A33',
+                      paddingHorizontal: 6,
+                      paddingVertical: 2,
+                      borderRadius: 6,
+                    }}
+                  >
+                    <Text style={{ color: COLORS.primary, fontSize: 10, fontWeight: '800' }}>
+                      THÔNG MINH
+                    </Text>
                   </View>
                 </View>
-                <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 12.5, marginTop: 3, lineHeight: 18 }}>
+                <Text
+                  style={{
+                    color: 'rgba(255,255,255,0.7)',
+                    fontSize: 12.5,
+                    marginTop: 3,
+                    lineHeight: 18,
+                  }}
+                >
                   Nhập sự cố hoặc việc cần làm, AI tự động gợi ý giải pháp & ước tính giá chuẩn.
                 </Text>
               </View>
@@ -320,7 +401,14 @@ export default function CustomerHomeScreen() {
             action="Tất cả 63 nghề"
             onAction={() => router.push('/(customer)/booking')}
           />
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, justifyContent: 'space-between' }}>
+          <View
+            style={{
+              flexDirection: 'row',
+              flexWrap: 'wrap',
+              gap: 10,
+              justifyContent: 'space-between',
+            }}
+          >
             {SERVICE_CATEGORIES.map(category => (
               <TouchableOpacity
                 key={category.id}
@@ -425,51 +513,103 @@ export default function CustomerHomeScreen() {
               onAction={() => router.push('/(customer)/jobs')}
             />
             <View style={{ gap: 10 }}>
-              {activeJobs.slice(0, 2).map((job: {
-                _id: string;
-                title: string;
-                status: string;
-                service_id: { name: string } | null;
-                created_at: string;
-                helper_id?: { full_name: string; avatar?: string } | null;
-              }) => (
-                <TouchableOpacity
-                  key={job._id}
-                  activeOpacity={0.85}
-                  onPress={() => router.push({ pathname: '/job-detail/[id]', params: { id: job._id } })}
-                >
-                  <Card style={{ borderWidth: 1.5, borderColor: '#FFE4D6', gap: 10 }}>
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <Text style={{ fontWeight: '800', fontSize: 15, color: COLORS.gray[900], flex: 1, marginRight: 8 }} numberOfLines={1}>
-                        {job.title}
-                      </Text>
-                      <JobStatusBadge status={job.status} />
-                    </View>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                      <Badge label={(job.service_id as { name: string } | null)?.name ?? 'Dịch vụ'} size="sm" />
-                      <Text style={{ fontSize: 12, color: COLORS.gray[500] }}>
-                        {dayjs(job.created_at).fromNow()}
-                      </Text>
-                    </View>
-
-                    {job.helper_id && (
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4, paddingTop: 8, borderTopWidth: 1, borderTopColor: COLORS.gray[100] }}>
-                        <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: COLORS.primary, alignItems: 'center', justifyContent: 'center' }}>
-                          <Text style={{ color: '#fff', fontSize: 12, fontWeight: '800' }}>
-                            {(job.helper_id as { full_name: string }).full_name?.[0] ?? 'T'}
+              {activeJobs
+                .slice(0, 2)
+                .map(
+                  (job: {
+                    _id: string;
+                    title: string;
+                    status: string;
+                    service_id: { name: string } | null;
+                    created_at: string;
+                    helper_id?: { full_name: string; avatar?: string } | null;
+                  }) => (
+                    <TouchableOpacity
+                      key={job._id}
+                      activeOpacity={0.85}
+                      onPress={() =>
+                        router.push({ pathname: '/job-detail/[id]', params: { id: job._id } })
+                      }
+                    >
+                      <Card style={{ borderWidth: 1.5, borderColor: '#FFE4D6', gap: 10 }}>
+                        <View
+                          style={{
+                            flexDirection: 'row',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                          }}
+                        >
+                          <Text
+                            style={{
+                              fontWeight: '800',
+                              fontSize: 15,
+                              color: COLORS.gray[900],
+                              flex: 1,
+                              marginRight: 8,
+                            }}
+                            numberOfLines={1}
+                          >
+                            {job.title}
+                          </Text>
+                          <JobStatusBadge status={job.status} />
+                        </View>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                          <Badge
+                            label={(job.service_id as { name: string } | null)?.name ?? 'Dịch vụ'}
+                            size="sm"
+                          />
+                          <Text style={{ fontSize: 12, color: COLORS.gray[500] }}>
+                            {dayjs(job.created_at).fromNow()}
                           </Text>
                         </View>
-                        <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.gray[800] }}>
-                          Thợ: {(job.helper_id as { full_name: string }).full_name}
-                        </Text>
-                        <Text style={{ marginLeft: 'auto', fontSize: 12, color: COLORS.primary, fontWeight: '700' }}>
-                          Chi tiết →
-                        </Text>
-                      </View>
-                    )}
-                  </Card>
-                </TouchableOpacity>
-              ))}
+
+                        {job.helper_id && (
+                          <View
+                            style={{
+                              flexDirection: 'row',
+                              alignItems: 'center',
+                              gap: 8,
+                              marginTop: 4,
+                              paddingTop: 8,
+                              borderTopWidth: 1,
+                              borderTopColor: COLORS.gray[100],
+                            }}
+                          >
+                            <View
+                              style={{
+                                width: 28,
+                                height: 28,
+                                borderRadius: 14,
+                                backgroundColor: COLORS.primary,
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                              }}
+                            >
+                              <Text style={{ color: '#fff', fontSize: 12, fontWeight: '800' }}>
+                                {(job.helper_id as { full_name: string }).full_name?.[0] ?? 'T'}
+                              </Text>
+                            </View>
+                            <Text
+                              style={{ fontSize: 13, fontWeight: '700', color: COLORS.gray[800] }}
+                            >
+                              Thợ: {(job.helper_id as { full_name: string }).full_name}
+                            </Text>
+                            <Text
+                              style={{
+                                marginLeft: 'auto',
+                                fontSize: 12,
+                                color: COLORS.primary,
+                                fontWeight: '700',
+                              }}
+                            >
+                              Chi tiết →
+                            </Text>
+                          </View>
+                        )}
+                      </Card>
+                    </TouchableOpacity>
+                  ),
+                )}
             </View>
           </View>
         )}
@@ -495,35 +635,63 @@ export default function CustomerHomeScreen() {
             </Card>
           ) : (
             <View style={{ gap: 10 }}>
-              {recentJobs.slice(0, 4).map((job: {
-                _id: string;
-                title: string;
-                status: string;
-                service_id: { name: string } | null;
-                address: { district: string };
-                created_at: string;
-              }) => (
-                <TouchableOpacity
-                  key={job._id}
-                  activeOpacity={0.8}
-                  onPress={() => router.push({ pathname: '/job-detail/[id]', params: { id: job._id } })}
-                >
-                  <Card style={{ gap: 8 }}>
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <Text style={{ fontWeight: '700', fontSize: 14, color: COLORS.gray[900], flex: 1, marginRight: 8 }} numberOfLines={1}>
-                        {job.title}
-                      </Text>
-                      <JobStatusBadge status={job.status} />
-                    </View>
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <Text style={{ fontSize: 12, color: COLORS.gray[500] }}>
-                        📍 {job.address?.district ?? 'TP.HCM'} • {dayjs(job.created_at).format('DD/MM/YYYY')}
-                      </Text>
-                      <ChevronRight size={14} color={COLORS.gray[400]} />
-                    </View>
-                  </Card>
-                </TouchableOpacity>
-              ))}
+              {recentJobs
+                .slice(0, 4)
+                .map(
+                  (job: {
+                    _id: string;
+                    title: string;
+                    status: string;
+                    service_id: { name: string } | null;
+                    address: { district: string };
+                    created_at: string;
+                  }) => (
+                    <TouchableOpacity
+                      key={job._id}
+                      activeOpacity={0.8}
+                      onPress={() =>
+                        router.push({ pathname: '/job-detail/[id]', params: { id: job._id } })
+                      }
+                    >
+                      <Card style={{ gap: 8 }}>
+                        <View
+                          style={{
+                            flexDirection: 'row',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                          }}
+                        >
+                          <Text
+                            style={{
+                              fontWeight: '700',
+                              fontSize: 14,
+                              color: COLORS.gray[900],
+                              flex: 1,
+                              marginRight: 8,
+                            }}
+                            numberOfLines={1}
+                          >
+                            {job.title}
+                          </Text>
+                          <JobStatusBadge status={job.status} />
+                        </View>
+                        <View
+                          style={{
+                            flexDirection: 'row',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                          }}
+                        >
+                          <Text style={{ fontSize: 12, color: COLORS.gray[500] }}>
+                            📍 {job.address?.district ?? 'TP.HCM'} •{' '}
+                            {dayjs(job.created_at).format('DD/MM/YYYY')}
+                          </Text>
+                          <ChevronRight size={14} color={COLORS.gray[400]} />
+                        </View>
+                      </Card>
+                    </TouchableOpacity>
+                  ),
+                )}
             </View>
           )}
         </View>

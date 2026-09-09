@@ -69,8 +69,8 @@ export default function HelpersPage() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Người giúp việc</h1>
           <p className="text-muted-foreground">
-            Tổng cộng{' '}
-            <span className="font-semibold text-foreground">{data?.total ?? 0}</span> helper
+            Tổng cộng <span className="font-semibold text-foreground">{data?.total ?? 0}</span>{' '}
+            helper
           </p>
         </div>
         <Link href="/helpers/kyc">

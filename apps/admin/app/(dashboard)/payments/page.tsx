@@ -125,7 +125,11 @@ export default function PaymentsPage() {
                       user_id: string;
                       amount: number;
                       status: string;
-                      bank_account: { bank_name: string; account_number: string; account_name: string };
+                      bank_account: {
+                        bank_name: string;
+                        account_number: string;
+                        account_name: string;
+                      };
                       admin_note?: string;
                       created_at: string;
                     }) => (
@@ -268,9 +272,7 @@ export default function PaymentsPage() {
                     }) => (
                       <TableRow key={tx._id}>
                         <TableCell>
-                          <Badge variant={TX_TYPE_BADGE[tx.type] ?? 'secondary'}>
-                            {tx.type}
-                          </Badge>
+                          <Badge variant={TX_TYPE_BADGE[tx.type] ?? 'secondary'}>{tx.type}</Badge>
                         </TableCell>
                         <TableCell className="text-sm">{tx.description}</TableCell>
                         <TableCell
@@ -289,8 +291,8 @@ export default function PaymentsPage() {
                               tx.status === 'success'
                                 ? 'success'
                                 : tx.status === 'failed'
-                                ? 'danger'
-                                : 'warning'
+                                  ? 'danger'
+                                  : 'warning'
                             }
                           >
                             {tx.status}

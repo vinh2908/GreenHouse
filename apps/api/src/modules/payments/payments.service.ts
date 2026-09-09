@@ -1,10 +1,19 @@
 import {
-  Injectable, NotFoundException, BadRequestException,
+  Injectable,
+  NotFoundException,
+  BadRequestException,
   ConflictException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
-import { Wallet, WalletDocument, Transaction, TransactionDocument, Withdrawal, WithdrawalDocument } from './schemas/payment.schema';
+import {
+  Wallet,
+  WalletDocument,
+  Transaction,
+  TransactionDocument,
+  Withdrawal,
+  WithdrawalDocument,
+} from './schemas/payment.schema';
 import { BankAccountInfoDto } from './dto/payment.dto';
 
 @Injectable()
@@ -23,7 +32,8 @@ export class PaymentsService {
         { user_id: new Types.ObjectId(userId) },
         { $setOnInsert: { user_id: new Types.ObjectId(userId) } },
         { upsert: true, new: true },
-      ).exec();
+      )
+      .exec();
     return wallet!;
   }
 
@@ -72,9 +82,11 @@ export class PaymentsService {
     const balanceAfter = balanceBefore + amount;
 
     // Atomic update
-    await this.walletModel.findByIdAndUpdate(wallet._id, {
-      $inc: { balance: amount, total_earned: amount },
-    }).exec();
+    await this.walletModel
+      .findByIdAndUpdate(wallet._id, {
+        $inc: { balance: amount, total_earned: amount },
+      })
+      .exec();
 
     return this.transactionModel.create({
       wallet_id: wallet._id,
@@ -121,10 +133,12 @@ export class PaymentsService {
     }
 
     // Check no pending withdrawal
-    const pending = await this.withdrawalModel.findOne({
-      user_id: new Types.ObjectId(helperId),
-      status: 'pending',
-    }).exec();
+    const pending = await this.withdrawalModel
+      .findOne({
+        user_id: new Types.ObjectId(helperId),
+        status: 'pending',
+      })
+      .exec();
     if (pending) throw new ConflictException('Bạn đã có yêu cầu rút tiền đang chờ xử lý');
 
     // Use provided bank_account or fallback placeholder
@@ -142,9 +156,11 @@ export class PaymentsService {
     });
 
     // Deduct from wallet (hold)
-    await this.walletModel.findByIdAndUpdate(wallet._id, {
-      $inc: { balance: -amount },
-    }).exec();
+    await this.walletModel
+      .findByIdAndUpdate(wallet._id, {
+        $inc: { balance: -amount },
+      })
+      .exec();
 
     // Record transaction
     await this.transactionModel.create({
@@ -176,12 +192,7 @@ export class PaymentsService {
     if (status) query['status'] = status;
     const skip = (page - 1) * limit;
     const [withdrawals, total] = await Promise.all([
-      this.withdrawalModel
-        .find(query)
-        .sort({ created_at: -1 })
-        .skip(skip)
-        .limit(limit)
-        .exec(),
+      this.withdrawalModel.find(query).sort({ created_at: -1 }).skip(skip).limit(limit).exec(),
       this.withdrawalModel.countDocuments(query).exec(),
     ]);
     return { withdrawals, total, page, limit, total_pages: Math.ceil(total / limit) };
@@ -204,22 +215,25 @@ export class PaymentsService {
     if (action === 'approve') {
       withdrawal.status = 'completed';
       // Update wallet total_withdrawn
-      await this.walletModel.findOneAndUpdate(
-        { user_id: withdrawal.user_id },
-        { $inc: { total_withdrawn: withdrawal.amount } },
-      ).exec();
+      await this.walletModel
+        .findOneAndUpdate(
+          { user_id: withdrawal.user_id },
+          { $inc: { total_withdrawn: withdrawal.amount } },
+        )
+        .exec();
       // Update transaction status
-      await this.transactionModel.findOneAndUpdate(
-        { 'metadata.withdrawal_id': withdrawalId },
-        { status: 'success' },
-      ).exec();
+      await this.transactionModel
+        .findOneAndUpdate({ 'metadata.withdrawal_id': withdrawalId }, { status: 'success' })
+        .exec();
     } else {
       withdrawal.status = 'rejected';
       // Refund to wallet
       const wallet = await this.getOrCreateWallet(String(withdrawal.user_id));
-      await this.walletModel.findByIdAndUpdate(wallet._id, {
-        $inc: { balance: withdrawal.amount },
-      }).exec();
+      await this.walletModel
+        .findByIdAndUpdate(wallet._id, {
+          $inc: { balance: withdrawal.amount },
+        })
+        .exec();
       await this.transactionModel.create({
         wallet_id: wallet._id,
         user_id: withdrawal.user_id,
@@ -231,10 +245,9 @@ export class PaymentsService {
         description: `Hoàn tiền rút thất bại`,
       });
       // Update transaction status
-      await this.transactionModel.findOneAndUpdate(
-        { 'metadata.withdrawal_id': withdrawalId },
-        { status: 'failed' },
-      ).exec();
+      await this.transactionModel
+        .findOneAndUpdate({ 'metadata.withdrawal_id': withdrawalId }, { status: 'failed' })
+        .exec();
     }
 
     withdrawal.admin_note = adminNote;
@@ -250,12 +263,7 @@ export class PaymentsService {
     if (type) query['type'] = type;
     const skip = (page - 1) * limit;
     const [transactions, total] = await Promise.all([
-      this.transactionModel
-        .find(query)
-        .sort({ created_at: -1 })
-        .skip(skip)
-        .limit(limit)
-        .exec(),
+      this.transactionModel.find(query).sort({ created_at: -1 }).skip(skip).limit(limit).exec(),
       this.transactionModel.countDocuments(query).exec(),
     ]);
     return { transactions, total, page, limit, total_pages: Math.ceil(total / limit) };

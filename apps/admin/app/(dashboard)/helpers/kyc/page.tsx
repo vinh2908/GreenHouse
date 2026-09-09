@@ -41,7 +41,8 @@ export default function KycPendingPage() {
       <div>
         <h1 className="text-3xl font-bold tracking-tight">KYC chờ duyệt</h1>
         <p className="text-muted-foreground">
-          <span className="font-semibold text-foreground">{data?.total ?? 0}</span> hồ sơ đang chờ xét duyệt
+          <span className="font-semibold text-foreground">{data?.total ?? 0}</span> hồ sơ đang chờ
+          xét duyệt
         </p>
       </div>
 
@@ -78,7 +79,9 @@ export default function KycPendingPage() {
                         <TableCell>
                           <p className="font-medium">{h.user_id?.full_name ?? '—'}</p>
                         </TableCell>
-                        <TableCell className="font-mono text-sm">{h.user_id?.phone ?? '—'}</TableCell>
+                        <TableCell className="font-mono text-sm">
+                          {h.user_id?.phone ?? '—'}
+                        </TableCell>
                         <TableCell className="font-mono text-sm">
                           {h.id_card_number ?? '—'}
                         </TableCell>
@@ -92,9 +95,7 @@ export default function KycPendingPage() {
                               variant="outline"
                               className="text-green-600 border-green-300 hover:bg-green-50"
                               loading={approve.isPending}
-                              onClick={() =>
-                                h.user_id && approve.mutate(h.user_id._id)
-                              }
+                              onClick={() => h.user_id && approve.mutate(h.user_id._id)}
                             >
                               <CheckCircle className="mr-1 h-3 w-3" />
                               Duyệt
@@ -103,9 +104,7 @@ export default function KycPendingPage() {
                               size="sm"
                               variant="outline"
                               className="text-red-600 border-red-300 hover:bg-red-50"
-                              onClick={() =>
-                                setRejectingId(rejectingId === h._id ? null : h._id)
-                              }
+                              onClick={() => setRejectingId(rejectingId === h._id ? null : h._id)}
                             >
                               <XCircle className="mr-1 h-3 w-3" />
                               Từ chối
@@ -119,7 +118,9 @@ export default function KycPendingPage() {
                           <div className="flex gap-3 flex-wrap">
                             {h.id_card_front && (
                               <a href={h.id_card_front} target="_blank" rel="noreferrer">
-                                <div className="text-xs text-blue-600 underline">CCCD mặt trước</div>
+                                <div className="text-xs text-blue-600 underline">
+                                  CCCD mặt trước
+                                </div>
                               </a>
                             )}
                             {h.id_card_back && (

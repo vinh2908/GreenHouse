@@ -11,22 +11,26 @@ export class AdminListQueryDto {
   limit?: number;
 
   @ApiPropertyOptional({ description: 'Tìm kiếm theo tên/số điện thoại' })
-  @IsOptional() @IsString()
+  @IsOptional()
+  @IsString()
   search?: string;
 
   @ApiPropertyOptional({ description: 'Lọc theo trạng thái' })
-  @IsOptional() @IsString()
+  @IsOptional()
+  @IsString()
   status?: string;
 }
 
 export class AdminSuspendDto {
   @ApiPropertyOptional({ description: 'Lý do đình chỉ' })
-  @IsOptional() @IsString()
+  @IsOptional()
+  @IsString()
   reason?: string;
 }
 
 export class AdminKycActionDto {
   @ApiPropertyOptional({ description: 'Lý do từ chối (nếu reject)' })
-  @IsOptional() @IsString()
+  @IsOptional()
+  @IsString()
   reason?: string;
 }

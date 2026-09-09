@@ -33,9 +33,11 @@ async function checkAndCreateAdmin() {
     // Reset pass admin123
     await usersCollection.updateOne(
       { _id: admin._id },
-      { $set: { password_hash: passwordHash, status: 'active', is_verified: true } }
+      { $set: { password_hash: passwordHash, status: 'active', is_verified: true } },
     );
-    console.log(`✅ Admin user exists (${admin.phone} - ${admin.full_name}). Password reset to admin123`);
+    console.log(
+      `✅ Admin user exists (${admin.phone} - ${admin.full_name}). Password reset to admin123`,
+    );
   }
 
   process.exit(0);

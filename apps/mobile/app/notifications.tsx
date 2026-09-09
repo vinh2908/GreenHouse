@@ -1,5 +1,10 @@
 import {
-  View, Text, ScrollView, SafeAreaView, TouchableOpacity, RefreshControl,
+  View,
+  Text,
+  ScrollView,
+  SafeAreaView,
+  TouchableOpacity,
+  RefreshControl,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Bell, CheckCheck, ArrowLeft, ChevronRight } from 'lucide-react-native';
@@ -62,24 +67,37 @@ export default function NotificationsScreen() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.gray[50] }}>
       {/* Header */}
-      <View style={{
-        flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-        paddingHorizontal: 20, paddingVertical: 16,
-        backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: COLORS.gray[100],
-      }}>
+      <View
+        style={{
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          paddingHorizontal: 20,
+          paddingVertical: 16,
+          backgroundColor: '#fff',
+          borderBottomWidth: 1,
+          borderBottomColor: COLORS.gray[100],
+        }}
+      >
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
           <TouchableOpacity
             activeOpacity={0.7}
             onPress={handleBack}
             hitSlop={{ top: 14, bottom: 14, left: 14, right: 14 }}
             style={{
-              width: 38, height: 38, borderRadius: 12,
-              backgroundColor: COLORS.gray[100], alignItems: 'center', justifyContent: 'center',
+              width: 38,
+              height: 38,
+              borderRadius: 12,
+              backgroundColor: COLORS.gray[100],
+              alignItems: 'center',
+              justifyContent: 'center',
             }}
           >
             <ArrowLeft size={20} color={COLORS.gray[800]} />
           </TouchableOpacity>
-          <Text style={{ fontSize: 18, fontWeight: '800', color: COLORS.gray[900] }}>Thông báo</Text>
+          <Text style={{ fontSize: 18, fontWeight: '800', color: COLORS.gray[900] }}>
+            Thông báo
+          </Text>
         </View>
 
         <TouchableOpacity
@@ -93,52 +111,97 @@ export default function NotificationsScreen() {
 
       <ScrollView
         contentContainerStyle={{ padding: 16, gap: 10, paddingBottom: 40 }}
-        refreshControl={<RefreshControl refreshing={isLoading} onRefresh={refetch} colors={[COLORS.primary]} />}
+        refreshControl={
+          <RefreshControl refreshing={isLoading} onRefresh={refetch} colors={[COLORS.primary]} />
+        }
       >
         {isLoading ? (
           <LoadingSpinner />
         ) : !notifications?.length ? (
-          <EmptyState emoji="🔔" title="Chưa có thông báo nào" subtitle="Các cập nhật báo giá, tình trạng đơn hàng và thanh toán sẽ xuất hiện tại đây" />
+          <EmptyState
+            emoji="🔔"
+            title="Chưa có thông báo nào"
+            subtitle="Các cập nhật báo giá, tình trạng đơn hàng và thanh toán sẽ xuất hiện tại đây"
+          />
         ) : (
-          notifications.map((n: { _id: string; type: string; title: string; body: string; is_read: boolean; created_at: string; data?: any }) => (
-            <TouchableOpacity
-              key={n._id}
-              activeOpacity={0.8}
-              onPress={() => handlePressNotification(n)}
-              style={{
-                flexDirection: 'row', gap: 12, padding: 14,
-                backgroundColor: n.is_read ? '#fff' : '#FFF7F3',
-                borderRadius: 16, borderWidth: 1,
-                borderColor: n.is_read ? COLORS.gray[100] : '#FFD9C5',
-                alignItems: 'center',
-              }}
-            >
-              <View
+          notifications.map(
+            (n: {
+              _id: string;
+              type: string;
+              title: string;
+              body: string;
+              is_read: boolean;
+              created_at: string;
+              data?: any;
+            }) => (
+              <TouchableOpacity
+                key={n._id}
+                activeOpacity={0.8}
+                onPress={() => handlePressNotification(n)}
                 style={{
-                  width: 44, height: 44, borderRadius: 14,
-                  backgroundColor: n.is_read ? COLORS.gray[100] : COLORS.primaryLight,
-                  alignItems: 'center', justifyContent: 'center',
+                  flexDirection: 'row',
+                  gap: 12,
+                  padding: 14,
+                  backgroundColor: n.is_read ? '#fff' : '#FFF7F3',
+                  borderRadius: 16,
+                  borderWidth: 1,
+                  borderColor: n.is_read ? COLORS.gray[100] : '#FFD9C5',
+                  alignItems: 'center',
                 }}
               >
-                <Text style={{ fontSize: 22 }}>{NOTIF_ICONS[n.type] ?? '📢'}</Text>
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={{ fontWeight: n.is_read ? '600' : '800', fontSize: 14, color: COLORS.gray[900] }}>
-                  {n.title}
-                </Text>
-                <Text style={{ fontSize: 13, color: COLORS.gray[600], marginTop: 3, lineHeight: 18 }}>
-                  {n.body}
-                </Text>
-                <Text style={{ fontSize: 11, color: COLORS.gray[400], marginTop: 6, fontWeight: '600' }}>
-                  {dayjs(n.created_at).fromNow()}
-                </Text>
-              </View>
-              {!n.is_read && (
-                <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: COLORS.primary, marginRight: 4 }} />
-              )}
-              <ChevronRight size={14} color={COLORS.gray[300]} />
-            </TouchableOpacity>
-          ))
+                <View
+                  style={{
+                    width: 44,
+                    height: 44,
+                    borderRadius: 14,
+                    backgroundColor: n.is_read ? COLORS.gray[100] : COLORS.primaryLight,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <Text style={{ fontSize: 22 }}>{NOTIF_ICONS[n.type] ?? '📢'}</Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text
+                    style={{
+                      fontWeight: n.is_read ? '600' : '800',
+                      fontSize: 14,
+                      color: COLORS.gray[900],
+                    }}
+                  >
+                    {n.title}
+                  </Text>
+                  <Text
+                    style={{ fontSize: 13, color: COLORS.gray[600], marginTop: 3, lineHeight: 18 }}
+                  >
+                    {n.body}
+                  </Text>
+                  <Text
+                    style={{
+                      fontSize: 11,
+                      color: COLORS.gray[400],
+                      marginTop: 6,
+                      fontWeight: '600',
+                    }}
+                  >
+                    {dayjs(n.created_at).fromNow()}
+                  </Text>
+                </View>
+                {!n.is_read && (
+                  <View
+                    style={{
+                      width: 8,
+                      height: 8,
+                      borderRadius: 4,
+                      backgroundColor: COLORS.primary,
+                      marginRight: 4,
+                    }}
+                  />
+                )}
+                <ChevronRight size={14} color={COLORS.gray[300]} />
+              </TouchableOpacity>
+            ),
+          )
         )}
       </ScrollView>
     </SafeAreaView>

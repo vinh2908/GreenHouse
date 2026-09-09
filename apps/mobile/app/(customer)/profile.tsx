@@ -1,10 +1,17 @@
-import {
-  View, Text, ScrollView, SafeAreaView, TouchableOpacity, Alert,
-} from 'react-native';
+import { View, Text, ScrollView, SafeAreaView, TouchableOpacity, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import {
-  User, MapPin, Settings, LogOut, ChevronRight,
-  Star, Shield, HelpCircle, Bell, Wrench, CreditCard,
+  User,
+  MapPin,
+  Settings,
+  LogOut,
+  ChevronRight,
+  Star,
+  Shield,
+  HelpCircle,
+  Bell,
+  Wrench,
+  CreditCard,
 } from 'lucide-react-native';
 import { useAuthStore } from '@/stores/auth.store';
 import { useMyProfile, useSwitchRole } from '@/hooks/use-api';
@@ -40,7 +47,14 @@ export default function CustomerProfileScreen() {
   const handleLogout = () => {
     Alert.alert('Đăng xuất?', 'Bạn có chắc muốn đăng xuất không?', [
       { text: 'Hủy', style: 'cancel' },
-      { text: 'Đăng xuất', style: 'destructive', onPress: async () => { await logout(); router.replace('/(auth)/login'); } },
+      {
+        text: 'Đăng xuất',
+        style: 'destructive',
+        onPress: async () => {
+          await logout();
+          router.replace('/(auth)/login');
+        },
+      },
     ]);
   };
 
@@ -59,12 +73,20 @@ export default function CustomerProfileScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.gray[50] }}>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 110 }}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 110 }}
+      >
         {/* ── Profile header ─────────────────────────────────────────── */}
-        <View style={{
-          backgroundColor: '#fff', padding: 24,
-          alignItems: 'center', borderBottomWidth: 1, borderBottomColor: COLORS.gray[100],
-        }}>
+        <View
+          style={{
+            backgroundColor: '#fff',
+            padding: 24,
+            alignItems: 'center',
+            borderBottomWidth: 1,
+            borderBottomColor: COLORS.gray[100],
+          }}
+        >
           <Avatar name={displayUser?.full_name} uri={displayUser?.avatar} size={80} />
           <Text style={{ fontSize: 20, fontWeight: '800', color: COLORS.gray[900], marginTop: 12 }}>
             {displayUser?.full_name}
@@ -78,10 +100,16 @@ export default function CustomerProfileScreen() {
             onPress={handleSwitchToHelper}
             activeOpacity={0.85}
             style={{
-              marginTop: 16, backgroundColor: COLORS.primaryLight,
-              borderRadius: 20, paddingHorizontal: 20, paddingVertical: 10,
-              flexDirection: 'row', alignItems: 'center', gap: 8,
-              borderWidth: 1.5, borderColor: '#FFD9C5',
+              marginTop: 16,
+              backgroundColor: COLORS.primaryLight,
+              borderRadius: 20,
+              paddingHorizontal: 20,
+              paddingVertical: 10,
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 8,
+              borderWidth: 1.5,
+              borderColor: '#FFD9C5',
             }}
           >
             <Wrench size={18} color={COLORS.primary} />
@@ -95,7 +123,16 @@ export default function CustomerProfileScreen() {
         <View style={{ padding: 16, gap: 16 }}>
           {MENU_SECTIONS.map(section => (
             <View key={section.title}>
-              <Text style={{ fontSize: 12, fontWeight: '700', color: COLORS.gray[400], marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+              <Text
+                style={{
+                  fontSize: 12,
+                  fontWeight: '700',
+                  color: COLORS.gray[400],
+                  marginBottom: 8,
+                  textTransform: 'uppercase',
+                  letterSpacing: 0.5,
+                }}
+              >
                 {section.title}
               </Text>
               <Card style={{ gap: 0 }}>
@@ -104,11 +141,25 @@ export default function CustomerProfileScreen() {
                     {i > 0 && <Separator my={0} />}
                     <TouchableOpacity
                       activeOpacity={0.7}
-                      onPress={() => item.route ? router.push(item.route as never) : null}
-                      style={{ flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 14 }}
+                      onPress={() => (item.route ? router.push(item.route as never) : null)}
+                      style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        gap: 14,
+                        paddingVertical: 14,
+                      }}
                     >
                       <item.icon size={20} color={COLORS.gray[600]} />
-                      <Text style={{ flex: 1, fontSize: 15, color: COLORS.gray[900], fontWeight: '600' }}>{item.label}</Text>
+                      <Text
+                        style={{
+                          flex: 1,
+                          fontSize: 15,
+                          color: COLORS.gray[900],
+                          fontWeight: '600',
+                        }}
+                      >
+                        {item.label}
+                      </Text>
                       <ChevronRight size={16} color={COLORS.gray[400]} />
                     </TouchableOpacity>
                   </View>
@@ -122,9 +173,14 @@ export default function CustomerProfileScreen() {
             activeOpacity={0.8}
             onPress={handleLogout}
             style={{
-              flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-              gap: 8, padding: 14,
-              borderWidth: 1.5, borderColor: '#FFE4E1', borderRadius: 14,
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 8,
+              padding: 14,
+              borderWidth: 1.5,
+              borderColor: '#FFE4E1',
+              borderRadius: 14,
               backgroundColor: '#FFF5F5',
             }}
           >
@@ -132,7 +188,14 @@ export default function CustomerProfileScreen() {
             <Text style={{ fontSize: 15, fontWeight: '700', color: COLORS.error }}>Đăng xuất</Text>
           </TouchableOpacity>
 
-          <Text style={{ textAlign: 'center', fontSize: 12, color: COLORS.gray[400], fontWeight: '500' }}>
+          <Text
+            style={{
+              textAlign: 'center',
+              fontSize: 12,
+              color: COLORS.gray[400],
+              fontWeight: '500',
+            }}
+          >
             HomeMate v1.0.0 • Chuẩn giao diện Vua Thợ
           </Text>
         </View>

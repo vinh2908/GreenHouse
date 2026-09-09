@@ -1,12 +1,28 @@
 import { useState } from 'react';
 import {
-  View, Text, ScrollView, SafeAreaView, TouchableOpacity, Image,
-  TextInput, KeyboardAvoidingView, Platform, Alert,
+  View,
+  Text,
+  ScrollView,
+  SafeAreaView,
+  TouchableOpacity,
+  Image,
+  TextInput,
+  KeyboardAvoidingView,
+  Platform,
+  Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import {
-  ArrowLeft, Camera, ShieldCheck, CheckCircle2, AlertCircle,
-  Clock, Upload, Check, ChevronRight, X,
+  ArrowLeft,
+  Camera,
+  ShieldCheck,
+  CheckCircle2,
+  AlertCircle,
+  Clock,
+  Upload,
+  Check,
+  ChevronRight,
+  X,
 } from 'lucide-react-native';
 import Toast from 'react-native-toast-message';
 import { useAuthStore } from '@/stores/auth.store';
@@ -60,7 +76,10 @@ export default function KycScreen() {
       return;
     }
     if (!frontImage || !backImage || !selfieImage) {
-      Toast.show({ type: 'error', text1: 'Vui lòng chụp đủ 3 ảnh (Mặt trước, mặt sau và chân dung)' });
+      Toast.show({
+        type: 'error',
+        text1: 'Vui lòng chụp đủ 3 ảnh (Mặt trước, mặt sau và chân dung)',
+      });
       return;
     }
 
@@ -83,16 +102,28 @@ export default function KycScreen() {
       {/* ── Top Header ─────────────────────────────────────────────── */}
       <View
         style={{
-          flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-          paddingHorizontal: 16, paddingVertical: 14,
-          backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: COLORS.gray[100],
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          paddingHorizontal: 16,
+          paddingVertical: 14,
+          backgroundColor: '#fff',
+          borderBottomWidth: 1,
+          borderBottomColor: COLORS.gray[100],
         }}
       >
         <TouchableOpacity
           activeOpacity={0.7}
           onPress={handleBack}
           hitSlop={{ top: 14, bottom: 14, left: 14, right: 14 }}
-          style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: COLORS.gray[100], alignItems: 'center', justifyContent: 'center' }}
+          style={{
+            width: 40,
+            height: 40,
+            borderRadius: 12,
+            backgroundColor: COLORS.gray[100],
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
         >
           <ArrowLeft size={20} color={COLORS.gray[800]} />
         </TouchableOpacity>
@@ -102,22 +133,58 @@ export default function KycScreen() {
         <View style={{ width: 38 }} />
       </View>
 
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 16, gap: 16, paddingBottom: 60 }}>
-
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ padding: 16, gap: 16, paddingBottom: 60 }}
+        >
           {/* ── TRƯỜNG HỢP 1: ĐÃ DUYỆT (APPROVED) ────────────────────────── */}
           {kycStatus === 'approved' && (
-            <Card style={{ alignItems: 'center', padding: 24, gap: 14, backgroundColor: '#ECFDF5', borderColor: '#A7F3D0', borderWidth: 1.5 }}>
-              <View style={{ width: 68, height: 68, borderRadius: 34, backgroundColor: '#10B981', alignItems: 'center', justifyContent: 'center' }}>
+            <Card
+              style={{
+                alignItems: 'center',
+                padding: 24,
+                gap: 14,
+                backgroundColor: '#ECFDF5',
+                borderColor: '#A7F3D0',
+                borderWidth: 1.5,
+              }}
+            >
+              <View
+                style={{
+                  width: 68,
+                  height: 68,
+                  borderRadius: 34,
+                  backgroundColor: '#10B981',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
                 <CheckCircle2 size={38} color="#fff" />
               </View>
-              <Text style={{ fontSize: 20, fontWeight: '900', color: '#065F46', textAlign: 'center' }}>
+              <Text
+                style={{ fontSize: 20, fontWeight: '900', color: '#065F46', textAlign: 'center' }}
+              >
                 Hồ sơ đã được xác thực e-KYC 100%
               </Text>
-              <Text style={{ fontSize: 13.5, color: '#047857', textAlign: 'center', lineHeight: 20 }}>
-                Danh tính và hồ sơ tư pháp của bạn đã được kiểm duyệt hợp lệ. Bạn đang có quyền ưu tiên nhận việc và hiển thị huy hiệu thợ uy tín tới khách hàng.
+              <Text
+                style={{ fontSize: 13.5, color: '#047857', textAlign: 'center', lineHeight: 20 }}
+              >
+                Danh tính và hồ sơ tư pháp của bạn đã được kiểm duyệt hợp lệ. Bạn đang có quyền ưu
+                tiên nhận việc và hiển thị huy hiệu thợ uy tín tới khách hàng.
               </Text>
-              <View style={{ backgroundColor: '#fff', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 12, marginTop: 4 }}>
+              <View
+                style={{
+                  backgroundColor: '#fff',
+                  paddingHorizontal: 16,
+                  paddingVertical: 10,
+                  borderRadius: 12,
+                  marginTop: 4,
+                }}
+              >
                 <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.gray[800] }}>
                   Số CCCD: {profile?.id_card_number || '079090123456'}
                 </Text>
@@ -127,22 +194,60 @@ export default function KycScreen() {
 
           {/* ── TRƯỜNG HỢP 2: ĐANG CHỜ DUYỆT (PENDING) ─────────────────── */}
           {kycStatus === 'pending' && (
-            <Card style={{ alignItems: 'center', padding: 24, gap: 14, backgroundColor: '#FFFBEB', borderColor: '#FDE68A', borderWidth: 1.5 }}>
-              <View style={{ width: 68, height: 68, borderRadius: 34, backgroundColor: '#F59E0B', alignItems: 'center', justifyContent: 'center' }}>
+            <Card
+              style={{
+                alignItems: 'center',
+                padding: 24,
+                gap: 14,
+                backgroundColor: '#FFFBEB',
+                borderColor: '#FDE68A',
+                borderWidth: 1.5,
+              }}
+            >
+              <View
+                style={{
+                  width: 68,
+                  height: 68,
+                  borderRadius: 34,
+                  backgroundColor: '#F59E0B',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
                 <Clock size={36} color="#fff" />
               </View>
-              <Text style={{ fontSize: 20, fontWeight: '900', color: '#92400E', textAlign: 'center' }}>
+              <Text
+                style={{ fontSize: 20, fontWeight: '900', color: '#92400E', textAlign: 'center' }}
+              >
                 Hồ sơ đang được xét duyệt
               </Text>
-              <Text style={{ fontSize: 13.5, color: '#B45309', textAlign: 'center', lineHeight: 20 }}>
-                Hồ sơ e-KYC của bạn đã được gửi thành công và đang được ban quản trị HomeMate đối chiếu trong vòng 24 giờ làm việc.
+              <Text
+                style={{ fontSize: 13.5, color: '#B45309', textAlign: 'center', lineHeight: 20 }}
+              >
+                Hồ sơ e-KYC của bạn đã được gửi thành công và đang được ban quản trị HomeMate đối
+                chiếu trong vòng 24 giờ làm việc.
               </Text>
-              <View style={{ backgroundColor: '#fff', padding: 12, borderRadius: 12, width: '100%', gap: 6, marginTop: 4 }}>
+              <View
+                style={{
+                  backgroundColor: '#fff',
+                  padding: 12,
+                  borderRadius: 12,
+                  width: '100%',
+                  gap: 6,
+                  marginTop: 4,
+                }}
+              >
                 <Text style={{ fontSize: 12.5, color: COLORS.gray[600] }}>
-                  • Số CCCD nộp: <Text style={{ fontWeight: '700', color: COLORS.gray[900] }}>{profile?.id_card_number || idCardNumber || '079090123456'}</Text>
+                  • Số CCCD nộp:{' '}
+                  <Text style={{ fontWeight: '700', color: COLORS.gray[900] }}>
+                    {profile?.id_card_number || idCardNumber || '079090123456'}
+                  </Text>
                 </Text>
                 <Text style={{ fontSize: 12.5, color: COLORS.gray[600] }}>
-                  • Trạng thái: <Text style={{ fontWeight: '700', color: '#D97706' }}>Đang kiểm tra dữ liệu hình ảnh</Text>
+                  • Trạng thái:{' '}
+                  <Text style={{ fontWeight: '700', color: '#D97706' }}>
+                    Đang kiểm tra dữ liệu hình ảnh
+                  </Text>
                 </Text>
               </View>
             </Card>
@@ -150,7 +255,15 @@ export default function KycScreen() {
 
           {/* ── TRƯỜNG HỢP 3: BỊ TỪ CHỐI (REJECTED) ────────────────────── */}
           {kycStatus === 'rejected' && (
-            <Card style={{ padding: 18, gap: 12, backgroundColor: '#FEF2F2', borderColor: '#FECACA', borderWidth: 1.5 }}>
+            <Card
+              style={{
+                padding: 18,
+                gap: 12,
+                backgroundColor: '#FEF2F2',
+                borderColor: '#FECACA',
+                borderWidth: 1.5,
+              }}
+            >
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                 <AlertCircle size={24} color={COLORS.error} />
                 <Text style={{ fontSize: 17, fontWeight: '900', color: '#991B1B' }}>
@@ -158,7 +271,9 @@ export default function KycScreen() {
                 </Text>
               </View>
               <Text style={{ fontSize: 13.5, color: '#B91C1C', lineHeight: 20 }}>
-                Lý do: {profile?.rejection_reason || 'Ảnh chụp CCCD bị mờ, lóa sáng hoặc mất góc. Vui lòng chụp lại rõ nét.'}
+                Lý do:{' '}
+                {profile?.rejection_reason ||
+                  'Ảnh chụp CCCD bị mờ, lóa sáng hoặc mất góc. Vui lòng chụp lại rõ nét.'}
               </Text>
               <Text style={{ fontSize: 12.5, color: COLORS.gray[600], fontWeight: '600' }}>
                 Vui lòng cập nhật lại thông tin và chụp lại ảnh bên dưới:
@@ -173,7 +288,9 @@ export default function KycScreen() {
               <Card style={{ backgroundColor: '#1E1E24', padding: 18, gap: 8 }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                   <ShieldCheck size={20} color={COLORS.primary} />
-                  <Text style={{ color: '#fff', fontWeight: '800', fontSize: 16 }}>Quy chuẩn chụp ảnh e-KYC</Text>
+                  <Text style={{ color: '#fff', fontWeight: '800', fontSize: 16 }}>
+                    Quy chuẩn chụp ảnh e-KYC
+                  </Text>
                 </View>
                 <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 12.5, lineHeight: 18 }}>
                   1. Chụp rõ 4 góc của thẻ CCCD/CMND gốc, không lóa sáng.{'\n'}
@@ -188,8 +305,13 @@ export default function KycScreen() {
                 </Text>
                 <TextInput
                   style={{
-                    borderWidth: 1.5, borderColor: COLORS.gray[200], borderRadius: 14,
-                    padding: 14, fontSize: 17, fontWeight: '700', color: COLORS.gray[900],
+                    borderWidth: 1.5,
+                    borderColor: COLORS.gray[200],
+                    borderRadius: 14,
+                    padding: 14,
+                    fontSize: 17,
+                    fontWeight: '700',
+                    color: COLORS.gray[900],
                     backgroundColor: COLORS.gray[50],
                   }}
                   placeholder="Nhập 12 số CCCD (VD: 079090123456)"
@@ -203,7 +325,13 @@ export default function KycScreen() {
 
               {/* 2. Ảnh mặt trước CCCD */}
               <Card style={{ padding: 16, gap: 10 }}>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                  }}
+                >
                   <Text style={{ fontSize: 14, fontWeight: '800', color: COLORS.gray[900] }}>
                     2. Mặt trước CCCD/CMND *
                   </Text>
@@ -214,22 +342,32 @@ export default function KycScreen() {
                   activeOpacity={0.8}
                   onPress={() => handleSimulatePhoto('front')}
                   style={{
-                    height: 140, borderRadius: 14, borderWidth: 2, borderStyle: frontImage ? 'solid' : 'dashed',
+                    height: 140,
+                    borderRadius: 14,
+                    borderWidth: 2,
+                    borderStyle: frontImage ? 'solid' : 'dashed',
                     borderColor: frontImage ? COLORS.success : COLORS.gray[300],
                     backgroundColor: frontImage ? '#ECFDF5' : COLORS.gray[50],
-                    alignItems: 'center', justifyContent: 'center', gap: 8, overflow: 'hidden',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 8,
+                    overflow: 'hidden',
                   }}
                 >
                   {frontImage ? (
                     <View style={{ alignItems: 'center', gap: 4 }}>
                       <CheckCircle2 size={32} color={COLORS.success} />
-                      <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.success }}>Đã tải ảnh mặt trước</Text>
+                      <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.success }}>
+                        Đã tải ảnh mặt trước
+                      </Text>
                       <Text style={{ fontSize: 11, color: COLORS.gray[500] }}>Bấm để chụp lại</Text>
                     </View>
                   ) : (
                     <>
                       <Camera size={28} color={COLORS.primary} />
-                      <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.gray[700] }}>Bấm để chụp / tải ảnh mặt trước</Text>
+                      <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.gray[700] }}>
+                        Bấm để chụp / tải ảnh mặt trước
+                      </Text>
                     </>
                   )}
                 </TouchableOpacity>
@@ -237,7 +375,13 @@ export default function KycScreen() {
 
               {/* 3. Ảnh mặt sau CCCD */}
               <Card style={{ padding: 16, gap: 10 }}>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                  }}
+                >
                   <Text style={{ fontSize: 14, fontWeight: '800', color: COLORS.gray[900] }}>
                     3. Mặt sau CCCD/CMND *
                   </Text>
@@ -248,22 +392,32 @@ export default function KycScreen() {
                   activeOpacity={0.8}
                   onPress={() => handleSimulatePhoto('back')}
                   style={{
-                    height: 140, borderRadius: 14, borderWidth: 2, borderStyle: backImage ? 'solid' : 'dashed',
+                    height: 140,
+                    borderRadius: 14,
+                    borderWidth: 2,
+                    borderStyle: backImage ? 'solid' : 'dashed',
                     borderColor: backImage ? COLORS.success : COLORS.gray[300],
                     backgroundColor: backImage ? '#ECFDF5' : COLORS.gray[50],
-                    alignItems: 'center', justifyContent: 'center', gap: 8, overflow: 'hidden',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 8,
+                    overflow: 'hidden',
                   }}
                 >
                   {backImage ? (
                     <View style={{ alignItems: 'center', gap: 4 }}>
                       <CheckCircle2 size={32} color={COLORS.success} />
-                      <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.success }}>Đã tải ảnh mặt sau</Text>
+                      <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.success }}>
+                        Đã tải ảnh mặt sau
+                      </Text>
                       <Text style={{ fontSize: 11, color: COLORS.gray[500] }}>Bấm để chụp lại</Text>
                     </View>
                   ) : (
                     <>
                       <Camera size={28} color={COLORS.primary} />
-                      <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.gray[700] }}>Bấm để chụp / tải ảnh mặt sau</Text>
+                      <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.gray[700] }}>
+                        Bấm để chụp / tải ảnh mặt sau
+                      </Text>
                     </>
                   )}
                 </TouchableOpacity>
@@ -271,7 +425,13 @@ export default function KycScreen() {
 
               {/* 4. Ảnh selfie cầm CCCD */}
               <Card style={{ padding: 16, gap: 10 }}>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                  }}
+                >
                   <Text style={{ fontSize: 14, fontWeight: '800', color: COLORS.gray[900] }}>
                     4. Ảnh chân dung selfie cầm CCCD *
                   </Text>
@@ -282,22 +442,32 @@ export default function KycScreen() {
                   activeOpacity={0.8}
                   onPress={() => handleSimulatePhoto('selfie')}
                   style={{
-                    height: 140, borderRadius: 14, borderWidth: 2, borderStyle: selfieImage ? 'solid' : 'dashed',
+                    height: 140,
+                    borderRadius: 14,
+                    borderWidth: 2,
+                    borderStyle: selfieImage ? 'solid' : 'dashed',
                     borderColor: selfieImage ? COLORS.success : COLORS.gray[300],
                     backgroundColor: selfieImage ? '#ECFDF5' : COLORS.gray[50],
-                    alignItems: 'center', justifyContent: 'center', gap: 8, overflow: 'hidden',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 8,
+                    overflow: 'hidden',
                   }}
                 >
                   {selfieImage ? (
                     <View style={{ alignItems: 'center', gap: 4 }}>
                       <CheckCircle2 size={32} color={COLORS.success} />
-                      <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.success }}>Đã chụp ảnh chân dung</Text>
+                      <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.success }}>
+                        Đã chụp ảnh chân dung
+                      </Text>
                       <Text style={{ fontSize: 11, color: COLORS.gray[500] }}>Bấm để chụp lại</Text>
                     </View>
                   ) : (
                     <>
                       <Camera size={28} color={COLORS.primary} />
-                      <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.gray[700] }}>Bấm để chụp ảnh selfie cầm CCCD</Text>
+                      <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.gray[700] }}>
+                        Bấm để chụp ảnh selfie cầm CCCD
+                      </Text>
                     </>
                   )}
                 </TouchableOpacity>
@@ -312,7 +482,6 @@ export default function KycScreen() {
               />
             </>
           )}
-
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>

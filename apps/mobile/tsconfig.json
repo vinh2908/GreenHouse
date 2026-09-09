@@ -2,36 +2,18 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "target": "ESNext",
-    "lib": [
-      "ESNext"
-    ],
+    "lib": ["ESNext"],
     "jsx": "react-native",
     "module": "ESNext",
     "moduleResolution": "bundler",
     "strict": true,
     "paths": {
-      "@/*": [
-        "./*"
-      ],
-      "@homemate/types": [
-        "../../packages/types/src"
-      ],
-      "@homemate/constants": [
-        "../../packages/constants/src"
-      ],
-      "@homemate/utils": [
-        "../../packages/utils/src"
-      ]
+      "@/*": ["./*"],
+      "@homemate/types": ["../../packages/types/src"],
+      "@homemate/constants": ["../../packages/constants/src"],
+      "@homemate/utils": ["../../packages/utils/src"]
     }
   },
-  "include": [
-    "**/*.ts",
-    "**/*.tsx",
-    ".expo/types/**/*.ts",
-    "expo-env.d.ts",
-    "nativewind-env.d.ts"
-  ],
-  "exclude": [
-    "node_modules"
-  ]
+  "include": ["**/*.ts", "**/*.tsx", ".expo/types/**/*.ts", "expo-env.d.ts", "nativewind-env.d.ts"],
+  "exclude": ["node_modules"]
 }

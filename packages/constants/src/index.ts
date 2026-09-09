@@ -121,7 +121,7 @@ export const SOCKET_EVENTS = {
 
   // SOS Emergency
   SOS_BROADCAST: 'sos:broadcast', // Gửi khẩn cấp tới thợ xung quanh
-  SOS_ACCEPTED: 'sos:accepted',   // Thợ nhận việc cứu hộ
+  SOS_ACCEPTED: 'sos:accepted', // Thợ nhận việc cứu hộ
   SOS_CANCELLED: 'sos:cancelled',
 
   // Notification
@@ -182,11 +182,11 @@ export const AI_FEATURE_FLAGS = {
 // ─── AI Config ─────────────────────────────────────────────────────────────────
 
 export const AI_CONFIG = {
-  MODEL: 'gpt-4o-mini',          // Default model — cheap, fast
+  MODEL: 'gpt-4o-mini', // Default model — cheap, fast
   MAX_TOKENS: 1000,
-  TEMPERATURE: 0.3,              // Low temp for structured output
-  SUPPORT_MAX_TOKENS: 500,       // Shorter for support chat
-  SUPPORT_TEMPERATURE: 0.7,      // Slightly creative for chat
+  TEMPERATURE: 0.3, // Low temp for structured output
+  SUPPORT_MAX_TOKENS: 500, // Shorter for support chat
+  SUPPORT_TEMPERATURE: 0.7, // Slightly creative for chat
 } as const;
 
 // ─── Platform service slug → Vietnamese name ──────────────────────────────────

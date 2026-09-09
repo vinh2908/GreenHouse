@@ -14,9 +14,7 @@ export class AiConfigService implements OnModuleInit {
   onModuleInit() {
     const apiKey = this.configService.get<string>('ai.openaiApiKey');
     if (!apiKey || apiKey === 'sk-placeholder') {
-      this.logger.warn(
-        'AI module: OPENAI_API_KEY not set — AI features will run in MOCK mode.',
-      );
+      this.logger.warn('AI module: OPENAI_API_KEY not set — AI features will run in MOCK mode.');
       this.isEnabled = false;
       return;
     }

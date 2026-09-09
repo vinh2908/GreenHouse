@@ -1,7 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import {
-  View, Text, SafeAreaView, TouchableOpacity, TextInput,
-} from 'react-native';
+import { View, Text, SafeAreaView, TouchableOpacity, TextInput } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { ArrowLeft } from 'lucide-react-native';
 import Toast from 'react-native-toast-message';
@@ -57,7 +55,9 @@ export default function OtpScreen() {
         router.replace('/(auth)/login');
       }
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? 'Mã OTP không đúng hoặc đã hết hạn';
+      const msg =
+        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
+        'Mã OTP không đúng hoặc đã hết hạn';
       Toast.show({ type: 'error', text1: msg });
       setOtp(['', '', '', '', '', '']);
       inputs.current[0]?.focus();
@@ -85,12 +85,26 @@ export default function OtpScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 16 }}>
+      <View
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          paddingHorizontal: 20,
+          paddingVertical: 16,
+        }}
+      >
         <TouchableOpacity
           activeOpacity={0.7}
           onPress={handleBack}
           hitSlop={{ top: 14, bottom: 14, left: 14, right: 14 }}
-          style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: COLORS.gray[100], alignItems: 'center', justifyContent: 'center' }}
+          style={{
+            width: 40,
+            height: 40,
+            borderRadius: 12,
+            backgroundColor: COLORS.gray[100],
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
         >
           <ArrowLeft size={20} color={COLORS.gray[800]} />
         </TouchableOpacity>
@@ -103,17 +117,36 @@ export default function OtpScreen() {
         <View style={{ alignItems: 'center', marginBottom: 40 }}>
           <View
             style={{
-              width: 72, height: 72, borderRadius: 36,
+              width: 72,
+              height: 72,
+              borderRadius: 36,
               backgroundColor: COLORS.primaryLight,
-              alignItems: 'center', justifyContent: 'center', marginBottom: 20,
+              alignItems: 'center',
+              justifyContent: 'center',
+              marginBottom: 20,
             }}
           >
             <Text style={{ fontSize: 36 }}>📱</Text>
           </View>
-          <Text style={{ fontSize: 18, fontWeight: '700', color: COLORS.gray[900], textAlign: 'center' }}>
+          <Text
+            style={{
+              fontSize: 18,
+              fontWeight: '700',
+              color: COLORS.gray[900],
+              textAlign: 'center',
+            }}
+          >
             Nhập mã xác minh
           </Text>
-          <Text style={{ fontSize: 14, color: COLORS.gray[500], textAlign: 'center', marginTop: 8, lineHeight: 20 }}>
+          <Text
+            style={{
+              fontSize: 14,
+              color: COLORS.gray[500],
+              textAlign: 'center',
+              marginTop: 8,
+              lineHeight: 20,
+            }}
+          >
             Mã OTP 6 số đã được gửi đến số{'\n'}
             <Text style={{ fontWeight: '700', color: COLORS.gray[800] }}>{phone}</Text>
           </Text>
@@ -124,14 +157,21 @@ export default function OtpScreen() {
           {otp.map((digit, i) => (
             <TextInput
               key={i}
-              ref={el => { inputs.current[i] = el; }}
+              ref={el => {
+                inputs.current[i] = el;
+              }}
               value={digit}
               onChangeText={text => handleChange(text.slice(-1), i)}
               maxLength={1}
               keyboardType="number-pad"
               style={{
-                width: 48, height: 56, borderRadius: 12, textAlign: 'center',
-                fontSize: 22, fontWeight: '700', color: COLORS.gray[900],
+                width: 48,
+                height: 56,
+                borderRadius: 12,
+                textAlign: 'center',
+                fontSize: 22,
+                fontWeight: '700',
+                color: COLORS.gray[900],
                 borderWidth: 2,
                 borderColor: digit ? COLORS.primary : COLORS.gray[200],
                 backgroundColor: digit ? COLORS.primaryLight : COLORS.gray[50],
@@ -140,17 +180,14 @@ export default function OtpScreen() {
           ))}
         </View>
 
-        <Button
-          title="Xác nhận"
-          loading={verifyOtp.isPending}
-          onPress={() => handleVerify()}
-        />
+        <Button title="Xác nhận" loading={verifyOtp.isPending} onPress={() => handleVerify()} />
 
         {/* Resend */}
         <View style={{ alignItems: 'center', marginTop: 24 }}>
           {countdown > 0 ? (
             <Text style={{ color: COLORS.gray[500], fontSize: 14 }}>
-              Gửi lại sau <Text style={{ color: COLORS.primary, fontWeight: '600' }}>{countdown}s</Text>
+              Gửi lại sau{' '}
+              <Text style={{ color: COLORS.primary, fontWeight: '600' }}>{countdown}s</Text>
             </Text>
           ) : (
             <TouchableOpacity onPress={handleResend}>

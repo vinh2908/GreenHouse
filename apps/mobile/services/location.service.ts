@@ -63,7 +63,7 @@ class LocationService {
   async reverseGeocode(latitude: number, longitude: number): Promise<LocationResult | null> {
     try {
       const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1&accept-language=vi`;
-      
+
       const res = await fetch(url, {
         headers: {
           'User-Agent': 'HomeMate-App/1.0 (contact@homemate.vn)',
@@ -82,7 +82,9 @@ class LocationService {
       const district = addr.city_district || addr.district || addr.county || 'Quận 1';
       const city = addr.city || addr.state || 'Hồ Chí Minh';
 
-      const fullAddress = street ? `${street}, ${ward ? ward + ', ' : ''}${district}, ${city}` : data.display_name;
+      const fullAddress = street
+        ? `${street}, ${ward ? ward + ', ' : ''}${district}, ${city}`
+        : data.display_name;
 
       return {
         full_address: fullAddress,
@@ -94,7 +96,7 @@ class LocationService {
       };
     } catch (err) {
       console.warn('OSM Reverse geocoding error, falling back to Expo Location:', err);
-      
+
       // Fallback bằng Expo reverseGeocodeAsync
       try {
         const [geo] = await Location.reverseGeocodeAsync({ latitude, longitude });
@@ -111,7 +113,9 @@ class LocationService {
             coordinates: [longitude, latitude],
           };
         }
-      } catch { /* ignore fallback error */ }
+      } catch {
+        /* ignore fallback error */
+      }
 
       return null;
     }
@@ -134,12 +138,14 @@ class LocationService {
     }
 
     const result = await this.reverseGeocode(coords.latitude, coords.longitude);
-    return result || {
-      full_address: 'Quận 1, TP. Hồ Chí Minh',
-      district: 'Quận 1',
-      city: 'Hồ Chí Minh',
-      coordinates: [coords.longitude, coords.latitude],
-    };
+    return (
+      result || {
+        full_address: 'Quận 1, TP. Hồ Chí Minh',
+        district: 'Quận 1',
+        city: 'Hồ Chí Minh',
+        coordinates: [coords.longitude, coords.latitude],
+      }
+    );
   }
 
   /**
@@ -150,7 +156,7 @@ class LocationService {
 
     try {
       const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&countrycodes=vn&addressdetails=1&limit=6&accept-language=vi`;
-      
+
       const res = await fetch(url, {
         headers: {
           'User-Agent': 'HomeMate-App/1.0 (contact@homemate.vn)',

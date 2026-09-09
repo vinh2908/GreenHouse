@@ -1,12 +1,31 @@
 import { useState, useEffect } from 'react';
 import {
-  View, Text, ScrollView, SafeAreaView, TouchableOpacity,
-  TextInput, KeyboardAvoidingView, Platform, Alert, Linking, ActivityIndicator,
+  View,
+  Text,
+  ScrollView,
+  SafeAreaView,
+  TouchableOpacity,
+  TextInput,
+  KeyboardAvoidingView,
+  Platform,
+  Alert,
+  Linking,
+  ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import {
-  ArrowLeft, Flame, Zap, Droplets, Key, ShieldAlert,
-  MapPin, PhoneCall, AlertTriangle, CheckCircle2, Clock, Navigation,
+  ArrowLeft,
+  Flame,
+  Zap,
+  Droplets,
+  Key,
+  ShieldAlert,
+  MapPin,
+  PhoneCall,
+  AlertTriangle,
+  CheckCircle2,
+  Clock,
+  Navigation,
 } from 'lucide-react-native';
 import Toast from 'react-native-toast-message';
 import { useCreateSosJob } from '@/hooks/use-api';
@@ -61,7 +80,9 @@ export default function SosScreen() {
     city: 'Hồ Chí Minh',
     coordinates: [106.6983, 10.7725] as [number, number],
   });
-  const [description, setDescription] = useState('Sự cố khẩn cấp cần thợ có mặt xử lý ngay lập tức!');
+  const [description, setDescription] = useState(
+    'Sự cố khẩn cấp cần thợ có mặt xử lý ngay lập tức!',
+  );
   const [isLocating, setIsLocating] = useState(false);
 
   // Tự động định vị GPS bằng OpenStreetMap khi mở màn hình SOS
@@ -82,8 +103,9 @@ export default function SosScreen() {
           coordinates: details.coordinates,
         });
       }
-    } catch { /* ignore */ }
-    finally {
+    } catch {
+      /* ignore */
+    } finally {
       setIsLocating(false);
     }
   };
@@ -113,7 +135,8 @@ export default function SosScreen() {
         surcharge: surcharge,
       });
 
-      const newJobId = (res as any)?.data?.data?._id || (res as any)?.data?._id || (res as any)?._id;
+      const newJobId =
+        (res as any)?.data?.data?._id || (res as any)?.data?._id || (res as any)?._id;
       Toast.show({
         type: 'success',
         text1: '🚨 ĐÃ PHÁT TÍN HIỆU CỨU HỘ SOS!',
@@ -136,15 +159,25 @@ export default function SosScreen() {
       {/* ── Top Header ─────────────────────────────────────────────── */}
       <View
         style={{
-          flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-          paddingHorizontal: 16, paddingVertical: 14,
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          paddingHorizontal: 16,
+          paddingVertical: 14,
           backgroundColor: '#EF4444',
         }}
       >
         <TouchableOpacity
           activeOpacity={0.7}
           onPress={() => router.back()}
-          style={{ width: 38, height: 38, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' }}
+          style={{
+            width: 38,
+            height: 38,
+            borderRadius: 12,
+            backgroundColor: 'rgba(255,255,255,0.2)',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
         >
           <ArrowLeft size={20} color="#FFFFFF" />
         </TouchableOpacity>
@@ -157,11 +190,24 @@ export default function SosScreen() {
         <View style={{ width: 38 }} />
       </View>
 
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 16, gap: 14, paddingBottom: 100 }}>
-
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ padding: 16, gap: 14, paddingBottom: 100 }}
+        >
           {/* ── CẢNH BÁO AN TOÀN TÍNH MẠNG / CHÁY NỔ ───────────────────── */}
-          <Card style={{ backgroundColor: '#FEF2F2', borderColor: '#F87171', borderWidth: 2, padding: 14, gap: 8 }}>
+          <Card
+            style={{
+              backgroundColor: '#FEF2F2',
+              borderColor: '#F87171',
+              borderWidth: 2,
+              padding: 14,
+              gap: 8,
+            }}
+          >
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
               <AlertTriangle size={20} color="#DC2626" />
               <Text style={{ fontSize: 14, fontWeight: '900', color: '#B91C1C' }}>
@@ -169,22 +215,45 @@ export default function SosScreen() {
               </Text>
             </View>
             <Text style={{ fontSize: 12.5, color: '#991B1B', lineHeight: 18 }}>
-              Nếu sự cố có nguy cơ cháy nổ lớn hoặc đe dọa tính mạng, vui lòng gọi cơ quan cứu hộ quốc gia ngay:
+              Nếu sự cố có nguy cơ cháy nổ lớn hoặc đe dọa tính mạng, vui lòng gọi cơ quan cứu hộ
+              quốc gia ngay:
             </Text>
             <View style={{ flexDirection: 'row', gap: 10, marginTop: 2 }}>
               <TouchableOpacity
                 onPress={() => handleCallEmergency('114')}
-                style={{ flex: 1, backgroundColor: '#DC2626', borderRadius: 10, paddingVertical: 8, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 6 }}
+                style={{
+                  flex: 1,
+                  backgroundColor: '#DC2626',
+                  borderRadius: 10,
+                  paddingVertical: 8,
+                  alignItems: 'center',
+                  flexDirection: 'row',
+                  justifyContent: 'center',
+                  gap: 6,
+                }}
               >
                 <PhoneCall size={16} color="#fff" />
-                <Text style={{ color: '#fff', fontWeight: '800', fontSize: 13 }}>Gọi 114 (Cứu hỏa)</Text>
+                <Text style={{ color: '#fff', fontWeight: '800', fontSize: 13 }}>
+                  Gọi 114 (Cứu hỏa)
+                </Text>
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={() => handleCallEmergency('115')}
-                style={{ flex: 1, backgroundColor: '#2563EB', borderRadius: 10, paddingVertical: 8, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 6 }}
+                style={{
+                  flex: 1,
+                  backgroundColor: '#2563EB',
+                  borderRadius: 10,
+                  paddingVertical: 8,
+                  alignItems: 'center',
+                  flexDirection: 'row',
+                  justifyContent: 'center',
+                  gap: 6,
+                }}
               >
                 <PhoneCall size={16} color="#fff" />
-                <Text style={{ color: '#fff', fontWeight: '800', fontSize: 13 }}>Gọi 115 (Cấp cứu)</Text>
+                <Text style={{ color: '#fff', fontWeight: '800', fontSize: 13 }}>
+                  Gọi 115 (Cấp cứu)
+                </Text>
               </TouchableOpacity>
             </View>
           </Card>
@@ -223,7 +292,16 @@ export default function SosScreen() {
                     </Text>
                   </View>
                   {isSelected && (
-                    <View style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: cat.color, alignItems: 'center', justifyContent: 'center' }}>
+                    <View
+                      style={{
+                        width: 24,
+                        height: 24,
+                        borderRadius: 12,
+                        backgroundColor: cat.color,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
                       <CheckCircle2 size={16} color="#fff" />
                     </View>
                   )}
@@ -234,14 +312,28 @@ export default function SosScreen() {
 
           {/* ── 2. XÁC NHẬN VỊ TRÍ HIỆN TẠI (GPS TỰ ĐỘNG) ──────────────── */}
           <Card style={{ padding: 16, gap: 10 }}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+            <View
+              style={{
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+              }}
+            >
               <Text style={{ fontSize: 14, fontWeight: '800', color: COLORS.gray[900] }}>
                 2. Vị trí cứu hộ (OpenStreetMap)
               </Text>
               <TouchableOpacity
                 onPress={fetchLiveLocation}
                 disabled={isLocating}
-                style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#ECFDF5', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 }}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 4,
+                  backgroundColor: '#ECFDF5',
+                  paddingHorizontal: 8,
+                  paddingVertical: 4,
+                  borderRadius: 6,
+                }}
               >
                 {isLocating ? (
                   <ActivityIndicator size="small" color={COLORS.success} />
@@ -254,29 +346,60 @@ export default function SosScreen() {
               </TouchableOpacity>
             </View>
 
-            <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 8, backgroundColor: COLORS.gray[50], padding: 12, borderRadius: 12 }}>
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'flex-start',
+                gap: 8,
+                backgroundColor: COLORS.gray[50],
+                padding: 12,
+                borderRadius: 12,
+              }}
+            >
               <MapPin size={18} color={COLORS.primary} style={{ marginTop: 2 }} />
               <View style={{ flex: 1 }}>
                 <Text style={{ fontSize: 14, fontWeight: '700', color: COLORS.gray[900] }}>
                   {address.full_address}
                 </Text>
                 <Text style={{ fontSize: 12, color: COLORS.gray[500], marginTop: 2 }}>
-                  {address.ward ? address.ward + ', ' : ''}{address.district}, {address.city}
+                  {address.ward ? address.ward + ', ' : ''}
+                  {address.district}, {address.city}
                 </Text>
               </View>
             </View>
           </Card>
 
           {/* ── 3. CHI PHÍ SOS & CAM KẾT THỜI GIAN ──────────────────────── */}
-          <Card style={{ padding: 16, gap: 12, backgroundColor: '#FFF7ED', borderColor: '#FFD9C5', borderWidth: 1.5 }}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Card
+            style={{
+              padding: 16,
+              gap: 12,
+              backgroundColor: '#FFF7ED',
+              borderColor: '#FFD9C5',
+              borderWidth: 1.5,
+            }}
+          >
+            <View
+              style={{
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+              }}
+            >
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                 <Clock size={18} color={COLORS.primary} />
                 <Text style={{ fontSize: 15, fontWeight: '900', color: COLORS.gray[900] }}>
                   Thời gian thợ có mặt
                 </Text>
               </View>
-              <View style={{ backgroundColor: COLORS.primary, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 }}>
+              <View
+                style={{
+                  backgroundColor: COLORS.primary,
+                  paddingHorizontal: 10,
+                  paddingVertical: 4,
+                  borderRadius: 8,
+                }}
+              >
                 <Text style={{ color: '#fff', fontSize: 13, fontWeight: '900' }}>15 - 20 PHÚT</Text>
               </View>
             </View>
@@ -285,36 +408,51 @@ export default function SosScreen() {
 
             <View style={{ gap: 6 }}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                <Text style={{ fontSize: 13, color: COLORS.gray[600] }}>Công thợ cứu hộ cơ bản:</Text>
+                <Text style={{ fontSize: 13, color: COLORS.gray[600] }}>
+                  Công thợ cứu hộ cơ bản:
+                </Text>
                 <PriceText amount={baseCost} size={14} color={COLORS.gray[900]} bold={false} />
               </View>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                <Text style={{ fontSize: 13, color: COLORS.gray[600] }}>Phụ phí cứu hộ khẩn cấp (+50%):</Text>
+                <Text style={{ fontSize: 13, color: COLORS.gray[600] }}>
+                  Phụ phí cứu hộ khẩn cấp (+50%):
+                </Text>
                 <PriceText amount={surcharge} size={14} color="#DC2626" bold={false} />
               </View>
               <Separator my={2} />
               <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                <Text style={{ fontSize: 15, fontWeight: '900', color: COLORS.gray[900] }}>Ước tính tổng cộng:</Text>
+                <Text style={{ fontSize: 15, fontWeight: '900', color: COLORS.gray[900] }}>
+                  Ước tính tổng cộng:
+                </Text>
                 <PriceText amount={totalEstimate} size={18} color="#DC2626" />
               </View>
             </View>
 
             <Text style={{ fontSize: 11.5, color: COLORS.gray[500], lineHeight: 16 }}>
-              * Phụ phí khẩn cấp dùng để ưu tiên thợ di chuyển ngay lập tức. Khách hàng chỉ thanh toán sau khi thợ hoàn tất xử lý sự cố.
+              * Phụ phí khẩn cấp dùng để ưu tiên thợ di chuyển ngay lập tức. Khách hàng chỉ thanh
+              toán sau khi thợ hoàn tất xử lý sự cố.
             </Text>
           </Card>
-
         </ScrollView>
       </KeyboardAvoidingView>
 
       {/* ── NÚT GỌI CỨU HỘ SOS TO RỰC RỠ Ở ĐÁY ───────────────────────── */}
       <View
         style={{
-          position: 'absolute', bottom: 0, left: 0, right: 0,
-          backgroundColor: '#fff', paddingHorizontal: 16, paddingVertical: 14,
-          borderTopWidth: 1, borderTopColor: COLORS.gray[200],
-          shadowColor: '#000', shadowOffset: { width: 0, height: -4 },
-          shadowOpacity: 0.1, shadowRadius: 10, elevation: 10,
+          position: 'absolute',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          backgroundColor: '#fff',
+          paddingHorizontal: 16,
+          paddingVertical: 14,
+          borderTopWidth: 1,
+          borderTopColor: COLORS.gray[200],
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: -4 },
+          shadowOpacity: 0.1,
+          shadowRadius: 10,
+          elevation: 10,
         }}
       >
         <TouchableOpacity

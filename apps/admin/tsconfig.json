@@ -2,11 +2,7 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "target": "ES2022",
-    "lib": [
-      "dom",
-      "dom.iterable",
-      "esnext"
-    ],
+    "lib": ["dom", "dom.iterable", "esnext"],
     "module": "esnext",
     "moduleResolution": "bundler",
     "jsx": "preserve",
@@ -17,15 +13,9 @@
       }
     ],
     "paths": {
-      "@/*": [
-        "./*"
-      ],
-      "@homemate/types": [
-        "../../packages/types/src"
-      ],
-      "@homemate/constants": [
-        "../../packages/constants/src"
-      ]
+      "@/*": ["./*"],
+      "@homemate/types": ["../../packages/types/src"],
+      "@homemate/constants": ["../../packages/constants/src"]
     },
     "allowJs": true,
     "noEmit": true,
@@ -33,13 +23,6 @@
     "declarationMap": false,
     "isolatedModules": true
   },
-  "include": [
-    "next-env.d.ts",
-    "**/*.ts",
-    "**/*.tsx",
-    ".next/types/**/*.ts"
-  ],
-  "exclude": [
-    "node_modules"
-  ]
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
+  "exclude": ["node_modules"]
 }

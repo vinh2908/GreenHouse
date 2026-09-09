@@ -1,6 +1,14 @@
 import {
-  Controller, Get, Post, Patch, Body, Param, Query,
-  UseGuards, HttpCode, HttpStatus,
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Body,
+  Param,
+  Query,
+  UseGuards,
+  HttpCode,
+  HttpStatus,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { AdminService } from './admin.service';
@@ -76,7 +84,11 @@ export class AdminController {
   @Get('helpers')
   @ApiOperation({ summary: '[Admin] Danh sách người giúp việc' })
   @ApiQuery({ name: 'search', required: false })
-  @ApiQuery({ name: 'status', required: false, enum: ['unsubmitted', 'pending', 'approved', 'rejected'] })
+  @ApiQuery({
+    name: 'status',
+    required: false,
+    enum: ['unsubmitted', 'pending', 'approved', 'rejected'],
+  })
   @ApiQuery({ name: 'page', required: false, type: Number })
   @ApiQuery({ name: 'limit', required: false, type: Number })
   async getHelpers(
@@ -92,10 +104,7 @@ export class AdminController {
   @ApiOperation({ summary: '[Admin] Danh sách hồ sơ KYC chờ duyệt' })
   @ApiQuery({ name: 'page', required: false, type: Number })
   @ApiQuery({ name: 'limit', required: false, type: Number })
-  async getPendingKyc(
-    @Query('page') page?: number,
-    @Query('limit') limit?: number,
-  ) {
+  async getPendingKyc(@Query('page') page?: number, @Query('limit') limit?: number) {
     return this.adminService.getPendingKyc(Number(page) || 1, Number(limit) || 20);
   }
 

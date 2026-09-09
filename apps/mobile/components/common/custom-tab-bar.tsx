@@ -1,15 +1,7 @@
 // apps/mobile/components/common/custom-tab-bar.tsx
 import React from 'react';
 import { View, Text, TouchableOpacity, Platform, StyleSheet } from 'react-native';
-import {
-  Home,
-  Clock,
-  MessageSquare,
-  User,
-  Plus,
-  Briefcase,
-  TrendingUp,
-} from 'lucide-react-native';
+import { Home, Clock, MessageSquare, User, Plus, Briefcase, TrendingUp } from 'lucide-react-native';
 import { COLORS } from '@/components/ui';
 
 interface CustomTabBarProps {
@@ -19,7 +11,12 @@ interface CustomTabBarProps {
   mode?: 'customer' | 'helper';
 }
 
-export function CustomTabBar({ state, descriptors, navigation, mode = 'customer' }: CustomTabBarProps) {
+export function CustomTabBar({
+  state,
+  descriptors,
+  navigation,
+  mode = 'customer',
+}: CustomTabBarProps) {
   return (
     <View style={styles.container}>
       <View style={styles.tabBar}>
@@ -29,7 +26,7 @@ export function CustomTabBar({ state, descriptors, navigation, mode = 'customer'
           if (options.href === null) return null;
 
           const isFocused = state.index === index;
-          const isCenterButton = (mode === 'customer' && route.name === 'booking');
+          const isCenterButton = mode === 'customer' && route.name === 'booking';
 
           const onPress = () => {
             const event = navigation.emit({
@@ -76,21 +73,43 @@ export function CustomTabBar({ state, descriptors, navigation, mode = 'customer'
           const renderIcon = () => {
             switch (route.name) {
               case 'home':
-                return <Home size={iconSize} color={iconColor} strokeWidth={isFocused ? 2.4 : 1.8} />;
+                return (
+                  <Home size={iconSize} color={iconColor} strokeWidth={isFocused ? 2.4 : 1.8} />
+                );
               case 'jobs':
                 return mode === 'helper' ? (
-                  <Briefcase size={iconSize} color={iconColor} strokeWidth={isFocused ? 2.4 : 1.8} />
+                  <Briefcase
+                    size={iconSize}
+                    color={iconColor}
+                    strokeWidth={isFocused ? 2.4 : 1.8}
+                  />
                 ) : (
                   <Clock size={iconSize} color={iconColor} strokeWidth={isFocused ? 2.4 : 1.8} />
                 );
               case 'messages':
-                return <MessageSquare size={iconSize} color={iconColor} strokeWidth={isFocused ? 2.4 : 1.8} />;
+                return (
+                  <MessageSquare
+                    size={iconSize}
+                    color={iconColor}
+                    strokeWidth={isFocused ? 2.4 : 1.8}
+                  />
+                );
               case 'profile':
-                return <User size={iconSize} color={iconColor} strokeWidth={isFocused ? 2.4 : 1.8} />;
+                return (
+                  <User size={iconSize} color={iconColor} strokeWidth={isFocused ? 2.4 : 1.8} />
+                );
               case 'dashboard':
-                return <Home size={iconSize} color={iconColor} strokeWidth={isFocused ? 2.4 : 1.8} />;
+                return (
+                  <Home size={iconSize} color={iconColor} strokeWidth={isFocused ? 2.4 : 1.8} />
+                );
               case 'earnings':
-                return <TrendingUp size={iconSize} color={iconColor} strokeWidth={isFocused ? 2.4 : 1.8} />;
+                return (
+                  <TrendingUp
+                    size={iconSize}
+                    color={iconColor}
+                    strokeWidth={isFocused ? 2.4 : 1.8}
+                  />
+                );
               default:
                 return <Home size={iconSize} color={iconColor} />;
             }

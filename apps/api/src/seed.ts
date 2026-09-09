@@ -99,7 +99,8 @@ async function seed() {
       name: 'Sửa máy giặt & Tủ lạnh',
       slug: 'appliance',
       icon: '🧺',
-      description: 'Sửa máy giặt không vắt, tủ lạnh không đông đá, kêu to, thay linh kiện chính hãng',
+      description:
+        'Sửa máy giặt không vắt, tủ lạnh không đông đá, kêu to, thay linh kiện chính hãng',
       base_price_min: 200000,
       base_price_max: 800000,
       pricing_unit: 'device',
@@ -181,7 +182,11 @@ async function seed() {
     average_rating: 4.9,
     total_completed: 48,
     cancellation_rate: 0,
-    service_ids: [insertedServices.insertedIds[0], insertedServices.insertedIds[2], insertedServices.insertedIds[3]],
+    service_ids: [
+      insertedServices.insertedIds[0],
+      insertedServices.insertedIds[2],
+      insertedServices.insertedIds[3],
+    ],
     verified_at: new Date(),
     created_at: new Date(),
     updated_at: new Date(),

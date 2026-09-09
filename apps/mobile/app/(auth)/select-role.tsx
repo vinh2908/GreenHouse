@@ -19,11 +19,17 @@ export default function SelectRoleScreen() {
     try {
       await switchRoleMutation.mutateAsync(selectedRole);
       updateStoreRole(selectedRole);
-      
+
       Toast.show({
         type: 'success',
-        text1: selectedRole === 'customer' ? 'Chào mừng bạn đến với HomeMate!' : 'Chào mừng đối tác HomeMate!',
-        text2: selectedRole === 'customer' ? 'Bắt đầu tìm kiếm dịch vụ tiện ích' : 'Bắt đầu nhận công việc và gia tăng thu nhập',
+        text1:
+          selectedRole === 'customer'
+            ? 'Chào mừng bạn đến với HomeMate!'
+            : 'Chào mừng đối tác HomeMate!',
+        text2:
+          selectedRole === 'customer'
+            ? 'Bắt đầu tìm kiếm dịch vụ tiện ích'
+            : 'Bắt đầu nhận công việc và gia tăng thu nhập',
       });
 
       if (selectedRole === 'helper') {
@@ -32,7 +38,9 @@ export default function SelectRoleScreen() {
         router.replace('/(customer)/home');
       }
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? 'Đã có lỗi xảy ra';
+      const msg =
+        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
+        'Đã có lỗi xảy ra';
       Toast.show({ type: 'error', text1: msg });
       // Fallback redirect
       if (selectedRole === 'helper') {
@@ -47,7 +55,9 @@ export default function SelectRoleScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
-      <ScrollView contentContainerStyle={{ flexGrow: 1, padding: 24, justifyContent: 'space-between' }}>
+      <ScrollView
+        contentContainerStyle={{ flexGrow: 1, padding: 24, justifyContent: 'space-between' }}
+      >
         <View>
           {/* Header */}
           <View style={{ alignItems: 'center', marginTop: 20, marginBottom: 32 }}>
@@ -69,22 +79,36 @@ export default function SelectRoleScreen() {
             >
               <Text style={{ color: '#fff', fontSize: 28, fontWeight: '800' }}>H</Text>
             </View>
-            <Text style={{ fontSize: 24, fontWeight: '800', color: COLORS.gray[900], textAlign: 'center' }}>
+            <Text
+              style={{
+                fontSize: 24,
+                fontWeight: '800',
+                color: COLORS.gray[900],
+                textAlign: 'center',
+              }}
+            >
               Chào mừng, {user?.full_name?.split(' ').slice(-1)[0] ?? 'bạn'}!
             </Text>
-            <Text style={{ fontSize: 15, color: COLORS.gray[500], textAlign: 'center', marginTop: 8, lineHeight: 22 }}>
+            <Text
+              style={{
+                fontSize: 15,
+                color: COLORS.gray[500],
+                textAlign: 'center',
+                marginTop: 8,
+                lineHeight: 22,
+              }}
+            >
               Bạn muốn sử dụng HomeMate như thế nào?{'\n'}
-              <Text style={{ fontSize: 13, color: COLORS.gray[400] }}>(Bạn có thể chuyển đổi linh hoạt bất kỳ lúc nào)</Text>
+              <Text style={{ fontSize: 13, color: COLORS.gray[400] }}>
+                (Bạn có thể chuyển đổi linh hoạt bất kỳ lúc nào)
+              </Text>
             </Text>
           </View>
 
           {/* Role Cards */}
           <View style={{ gap: 16 }}>
             {/* Customer Option */}
-            <TouchableOpacity
-              activeOpacity={0.85}
-              onPress={() => setSelectedRole('customer')}
-            >
+            <TouchableOpacity activeOpacity={0.85} onPress={() => setSelectedRole('customer')}>
               <Card
                 style={{
                   borderWidth: 2,
@@ -95,8 +119,23 @@ export default function SelectRoleScreen() {
                   gap: 12,
                 }}
               >
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <View style={{ width: 52, height: 52, borderRadius: 16, backgroundColor: selectedRole === 'customer' ? '#fff' : COLORS.gray[100], alignItems: 'center', justifyContent: 'center' }}>
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                  }}
+                >
+                  <View
+                    style={{
+                      width: 52,
+                      height: 52,
+                      borderRadius: 16,
+                      backgroundColor: selectedRole === 'customer' ? '#fff' : COLORS.gray[100],
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
                     <Text style={{ fontSize: 28 }}>🏠</Text>
                   </View>
                   <View
@@ -118,18 +157,18 @@ export default function SelectRoleScreen() {
                   <Text style={{ fontSize: 18, fontWeight: '700', color: COLORS.gray[900] }}>
                     Tôi cần thuê dịch vụ
                   </Text>
-                  <Text style={{ fontSize: 14, color: COLORS.gray[600], marginTop: 4, lineHeight: 20 }}>
-                    Tìm người giúp việc, tổng vệ sinh, nấu ăn, sửa chữa điện nước gia đình nhanh chóng, tin cậy.
+                  <Text
+                    style={{ fontSize: 14, color: COLORS.gray[600], marginTop: 4, lineHeight: 20 }}
+                  >
+                    Tìm người giúp việc, tổng vệ sinh, nấu ăn, sửa chữa điện nước gia đình nhanh
+                    chóng, tin cậy.
                   </Text>
                 </View>
               </Card>
             </TouchableOpacity>
 
             {/* Helper / Worker Option */}
-            <TouchableOpacity
-              activeOpacity={0.85}
-              onPress={() => setSelectedRole('helper')}
-            >
+            <TouchableOpacity activeOpacity={0.85} onPress={() => setSelectedRole('helper')}>
               <Card
                 style={{
                   borderWidth: 2,
@@ -140,8 +179,23 @@ export default function SelectRoleScreen() {
                   gap: 12,
                 }}
               >
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <View style={{ width: 52, height: 52, borderRadius: 16, backgroundColor: selectedRole === 'helper' ? '#fff' : COLORS.gray[100], alignItems: 'center', justifyContent: 'center' }}>
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                  }}
+                >
+                  <View
+                    style={{
+                      width: 52,
+                      height: 52,
+                      borderRadius: 16,
+                      backgroundColor: selectedRole === 'helper' ? '#fff' : COLORS.gray[100],
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
                     <Text style={{ fontSize: 28 }}>🔧</Text>
                   </View>
                   <View
@@ -163,8 +217,11 @@ export default function SelectRoleScreen() {
                   <Text style={{ fontSize: 18, fontWeight: '700', color: COLORS.gray[900] }}>
                     Tôi muốn nhận việc
                   </Text>
-                  <Text style={{ fontSize: 14, color: COLORS.gray[600], marginTop: 4, lineHeight: 20 }}>
-                    Trở thành đối tác giúp việc, thợ sửa chữa để kết nối với hàng nghìn khách hàng xung quanh bạn.
+                  <Text
+                    style={{ fontSize: 14, color: COLORS.gray[600], marginTop: 4, lineHeight: 20 }}
+                  >
+                    Trở thành đối tác giúp việc, thợ sửa chữa để kết nối với hàng nghìn khách hàng
+                    xung quanh bạn.
                   </Text>
                 </View>
               </Card>
