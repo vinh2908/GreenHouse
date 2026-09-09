@@ -22,7 +22,12 @@ export class AnalyticsController {
 
   @Get('jobs-per-day')
   @ApiOperation({ summary: '[Admin] Số job theo ngày' })
-  @ApiQuery({ name: 'days', required: false, type: Number, description: 'Số ngày gần đây (default 30)' })
+  @ApiQuery({
+    name: 'days',
+    required: false,
+    type: Number,
+    description: 'Số ngày gần đây (default 30)',
+  })
   async getJobsPerDay(@Query('days') days?: number) {
     return this.analyticsService.getJobsPerDay(Number(days) || 30);
   }
@@ -35,7 +40,12 @@ export class AnalyticsController {
 
   @Get('revenue-per-month')
   @ApiOperation({ summary: '[Admin] Doanh thu theo tháng' })
-  @ApiQuery({ name: 'months', required: false, type: Number, description: 'Số tháng gần đây (default 6)' })
+  @ApiQuery({
+    name: 'months',
+    required: false,
+    type: Number,
+    description: 'Số tháng gần đây (default 6)',
+  })
   async getRevenuePerMonth(@Query('months') months?: number) {
     return this.analyticsService.getRevenuePerMonth(Number(months) || 6);
   }

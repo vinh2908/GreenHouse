@@ -66,16 +66,22 @@ export class CreateJobDto {
 }
 
 export class CreateSosJobDto {
-  @ApiProperty({ example: 'electrician', description: 'Loại sự cố khẩn cấp: electrician | plumbing | locksmith | ac_repair' })
-  @IsString() @IsNotEmpty()
+  @ApiProperty({
+    example: 'electrician',
+    description: 'Loại sự cố khẩn cấp: electrician | plumbing | locksmith | ac_repair',
+  })
+  @IsString()
+  @IsNotEmpty()
   category: string;
 
   @ApiProperty({ example: 'Chập điện khét ổ cắm phòng khách' })
-  @IsString() @IsNotEmpty()
+  @IsString()
+  @IsNotEmpty()
   title: string;
 
   @ApiProperty({ example: 'Ổ cắm tóe lửa và có mùi khét, cần thợ xử lý khẩn cấp...' })
-  @IsString() @IsNotEmpty()
+  @IsString()
+  @IsNotEmpty()
   description: string;
 
   @ApiProperty({ type: JobAddressDto })
@@ -84,11 +90,14 @@ export class CreateSosJobDto {
   address: JobAddressDto;
 
   @ApiPropertyOptional({ type: [String] })
-  @IsOptional() @IsArray() @IsString({ each: true })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
   photos?: string[];
 
   @ApiPropertyOptional({ default: 100000, description: 'Phụ phí cứu hộ khẩn cấp' })
-  @IsOptional() @IsNumber()
+  @IsOptional()
+  @IsNumber()
   surcharge?: number;
 }
 

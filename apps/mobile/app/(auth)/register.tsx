@@ -39,7 +39,11 @@ export default function RegisterScreen() {
     }
     try {
       await register.mutateAsync({ phone, full_name: fullName, password });
-      Toast.show({ type: 'success', text1: 'Mã OTP đã được gửi', text2: 'Nhập mã để kích hoạt tài khoản' });
+      Toast.show({
+        type: 'success',
+        text1: 'Mã OTP đã được gửi',
+        text2: 'Nhập mã để kích hoạt tài khoản',
+      });
       router.push({ pathname: '/(auth)/otp', params: { phone } });
     } catch (err: unknown) {
       const msg =
@@ -65,7 +69,14 @@ export default function RegisterScreen() {
       >
         <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled">
           {/* Header */}
-          <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 16 }}>
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              paddingHorizontal: 20,
+              paddingVertical: 16,
+            }}
+          >
             <TouchableOpacity
               activeOpacity={0.7}
               onPress={handleBack}
@@ -81,13 +92,17 @@ export default function RegisterScreen() {
             >
               <ArrowLeft size={20} color={COLORS.gray[800]} />
             </TouchableOpacity>
-            <Text style={{ fontSize: 18, fontWeight: '800', color: COLORS.gray[900], marginLeft: 12 }}>
+            <Text
+              style={{ fontSize: 18, fontWeight: '800', color: COLORS.gray[900], marginLeft: 12 }}
+            >
               Tạo tài khoản mới
             </Text>
           </View>
 
           <View style={{ paddingHorizontal: 24, paddingBottom: 40 }}>
-            <Text style={{ fontSize: 14, color: COLORS.gray[500], marginBottom: 24, lineHeight: 20 }}>
+            <Text
+              style={{ fontSize: 14, color: COLORS.gray[500], marginBottom: 24, lineHeight: 20 }}
+            >
               Một tài khoản duy nhất để đặt dịch vụ hoặc nhận việc kiếm thêm thu nhập.
             </Text>
 
@@ -134,10 +149,20 @@ export default function RegisterScreen() {
               />
 
               {/* Terms */}
-              <Text style={{ fontSize: 12, color: COLORS.gray[500], textAlign: 'center', lineHeight: 18, marginTop: 6 }}>
+              <Text
+                style={{
+                  fontSize: 12,
+                  color: COLORS.gray[500],
+                  textAlign: 'center',
+                  lineHeight: 18,
+                  marginTop: 6,
+                }}
+              >
                 Bằng cách đăng ký, bạn đồng ý với{' '}
-                <Text style={{ color: COLORS.primary, fontWeight: '700' }}>Điều khoản dịch vụ</Text> và{' '}
-                <Text style={{ color: COLORS.primary, fontWeight: '700' }}>Chính sách bảo mật</Text> của HomeMate.
+                <Text style={{ color: COLORS.primary, fontWeight: '700' }}>Điều khoản dịch vụ</Text>{' '}
+                và{' '}
+                <Text style={{ color: COLORS.primary, fontWeight: '700' }}>Chính sách bảo mật</Text>{' '}
+                của HomeMate.
               </Text>
 
               <Button

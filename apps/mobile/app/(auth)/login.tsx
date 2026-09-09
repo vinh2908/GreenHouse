@@ -33,7 +33,7 @@ export default function LoginScreen() {
       const { data } = await login.mutateAsync({ phone, password });
       const { access_token, refresh_token, user } = data.data;
       await setAuth(user, access_token, refresh_token);
-      
+
       Toast.show({ type: 'success', text1: `Xin chào ${user.full_name ?? 'bạn'}!` });
 
       // Redirect by active role
@@ -56,7 +56,10 @@ export default function LoginScreen() {
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
-        <ScrollView contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 24, justifyContent: 'center' }} keyboardShouldPersistTaps="handled">
+        <ScrollView
+          contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 24, justifyContent: 'center' }}
+          keyboardShouldPersistTaps="handled"
+        >
           {/* ── Brand Logo & Header ────────────────────────────────────── */}
           <View style={{ alignItems: 'center', marginBottom: 36 }}>
             <View
@@ -77,10 +80,19 @@ export default function LoginScreen() {
             >
               <Text style={{ color: '#FFFFFF', fontSize: 36, fontWeight: '900' }}>H</Text>
             </View>
-            <Text style={{ fontSize: 28, fontWeight: '900', color: COLORS.gray[900], letterSpacing: -0.5 }}>
+            <Text
+              style={{
+                fontSize: 28,
+                fontWeight: '900',
+                color: COLORS.gray[900],
+                letterSpacing: -0.5,
+              }}
+            >
               HomeMate
             </Text>
-            <Text style={{ fontSize: 14, color: COLORS.gray[500], marginTop: 4, fontWeight: '500' }}>
+            <Text
+              style={{ fontSize: 14, color: COLORS.gray[500], marginTop: 4, fontWeight: '500' }}
+            >
               Nền tảng dịch vụ & thợ sửa chữa tại nhà
             </Text>
           </View>
@@ -136,7 +148,10 @@ export default function LoginScreen() {
                   setPhone('0901111111');
                   setPassword('password123');
                   try {
-                    const { data } = await login.mutateAsync({ phone: '0901111111', password: 'password123' });
+                    const { data } = await login.mutateAsync({
+                      phone: '0901111111',
+                      password: 'password123',
+                    });
                     const { access_token, refresh_token, user } = data.data;
                     await setAuth(user, access_token, refresh_token);
                     Toast.show({ type: 'success', text1: 'Đăng nhập thành công: Chị Mai' });
@@ -154,7 +169,10 @@ export default function LoginScreen() {
                   setPhone('0902222222');
                   setPassword('password123');
                   try {
-                    const { data } = await login.mutateAsync({ phone: '0902222222', password: 'password123' });
+                    const { data } = await login.mutateAsync({
+                      phone: '0902222222',
+                      password: 'password123',
+                    });
                     const { access_token, refresh_token, user } = data.data;
                     await setAuth(user, access_token, refresh_token);
                     Toast.show({ type: 'success', text1: 'Đăng nhập thành công: Anh Tuấn' });
@@ -170,7 +188,14 @@ export default function LoginScreen() {
           {/* ── Divider ────────────────────────────────────────────────── */}
           <View style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 24 }}>
             <View style={{ flex: 1, height: 1, backgroundColor: COLORS.gray[200] }} />
-            <Text style={{ marginHorizontal: 12, color: COLORS.gray[400], fontSize: 13, fontWeight: '500' }}>
+            <Text
+              style={{
+                marginHorizontal: 12,
+                color: COLORS.gray[400],
+                fontSize: 13,
+                fontWeight: '500',
+              }}
+            >
               hoặc
             </Text>
             <View style={{ flex: 1, height: 1, backgroundColor: COLORS.gray[200] }} />

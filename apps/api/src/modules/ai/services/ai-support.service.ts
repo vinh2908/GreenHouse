@@ -22,13 +22,11 @@ export class AiSupportService {
 
   constructor(private readonly aiConfig: AiConfigService) {}
 
-  async chat(
-    messages: AiChatMessage[],
-    userMessage: string,
-  ): Promise<AiSupportResponse> {
+  async chat(messages: AiChatMessage[], userMessage: string): Promise<AiSupportResponse> {
     if (!this.aiConfig.isFeatureEnabled('CUSTOMER_SUPPORT')) {
       return {
-        answer: 'Tính năng hỗ trợ AI hiện chưa khả dụng. Vui lòng liên hệ hotline 1900-xxxx để được hỗ trợ.',
+        answer:
+          'Tính năng hỗ trợ AI hiện chưa khả dụng. Vui lòng liên hệ hotline 1900-xxxx để được hỗ trợ.',
         intent: 'general',
         suggested_actions: ['Gọi hotline', 'Gửi email hỗ trợ'],
         confidence: 1,

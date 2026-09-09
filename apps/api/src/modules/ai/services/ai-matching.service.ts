@@ -26,8 +26,7 @@ export class AiMatchingService {
     const distance = helper.distance_km ?? 10;
     const isVerified = helper.verification_status === 'approved' ? 1 : 0;
     const hasService =
-      !jobServiceId ||
-      (helper.service_ids ?? []).some(id => id.toString() === jobServiceId)
+      !jobServiceId || (helper.service_ids ?? []).some(id => id.toString() === jobServiceId)
         ? 1
         : 0;
 
@@ -37,11 +36,11 @@ export class AiMatchingService {
     const distanceScore = Math.max(0, 1 - distance / 30); // 0-30km → 1-0
 
     return (
-      distanceScore * 0.30 +
-      ratingScore * 0.30 +
-      completedScore * 0.20 +
-      isVerified * 0.10 +
-      hasService * 0.10
+      distanceScore * 0.3 +
+      ratingScore * 0.3 +
+      completedScore * 0.2 +
+      isVerified * 0.1 +
+      hasService * 0.1
     );
   }
 
@@ -136,9 +135,7 @@ export class AiMatchingService {
     // Only explain top 5 to limit API calls
     const top5 = scored.slice(0, 5);
     const explanations = await Promise.all(
-      top5.map(({ helper, score }) =>
-        this.explainMatch(helper, score, jobDescription),
-      ),
+      top5.map(({ helper, score }) => this.explainMatch(helper, score, jobDescription)),
     );
 
     return explanations;

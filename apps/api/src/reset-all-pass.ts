@@ -7,10 +7,14 @@ async function resetAllPasswords() {
   if (!db) throw new Error('No DB');
 
   const hash = await bcrypt.hash('password123', 10);
-  await db.collection('users').updateMany(
-    {},
-    { $set: { password_hash: hash, status: 'active', is_verified: true, is_phone_verified: true } }
-  );
+  await db
+    .collection('users')
+    .updateMany(
+      {},
+      {
+        $set: { password_hash: hash, status: 'active', is_verified: true, is_phone_verified: true },
+      },
+    );
 
   console.log('All user passwords reset to password123 successfully!');
   process.exit(0);

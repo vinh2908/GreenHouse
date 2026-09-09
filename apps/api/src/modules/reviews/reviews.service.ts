@@ -12,9 +12,7 @@ import { CreateReviewDto, HelperReplyDto } from './dto/review.dto';
 
 @Injectable()
 export class ReviewsService {
-  constructor(
-    @InjectModel(Review.name) private reviewModel: Model<ReviewDocument>,
-  ) {}
+  constructor(@InjectModel(Review.name) private reviewModel: Model<ReviewDocument>) {}
 
   // ─── Customer: Create review after job completion ──────────────────────────
 

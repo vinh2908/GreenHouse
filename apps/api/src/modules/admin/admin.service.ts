@@ -50,11 +50,7 @@ export class AdminService {
 
   async suspendUser(id: string, reason?: string): Promise<UserDocument> {
     const user = await this.userModel
-      .findByIdAndUpdate(
-        id,
-        { status: UserStatus.SUSPENDED },
-        { new: true },
-      )
+      .findByIdAndUpdate(id, { status: UserStatus.SUSPENDED }, { new: true })
       .exec();
     if (!user) throw new Error('User not found');
     return user;
@@ -112,9 +108,7 @@ export class AdminService {
         .skip(skip)
         .limit(limit)
         .exec(),
-      this.helperModel
-        .countDocuments({ verification_status: VerificationStatus.PENDING })
-        .exec(),
+      this.helperModel.countDocuments({ verification_status: VerificationStatus.PENDING }).exec(),
     ]);
     return { helpers, total, page, limit, total_pages: Math.ceil(total / limit) };
   }
@@ -208,14 +202,14 @@ export class AdminService {
     ] = await Promise.all([
       this.userModel.countDocuments({ is_deleted: false }).exec(),
       this.helperModel.countDocuments().exec(),
-      this.helperModel
-        .countDocuments({ verification_status: VerificationStatus.APPROVED })
-        .exec(),
+      this.helperModel.countDocuments({ verification_status: VerificationStatus.APPROVED }).exec(),
       this.jobModel.countDocuments().exec(),
       this.jobModel.countDocuments({ created_at: { $gte: startOfDay } }).exec(),
       this.jobModel.countDocuments({ created_at: { $gte: startOfMonth } }).exec(),
       this.jobModel
-        .countDocuments({ status: { $in: ['confirmed', 'helper_on_the_way', 'helper_arrived', 'in_progress'] } })
+        .countDocuments({
+          status: { $in: ['confirmed', 'helper_on_the_way', 'helper_arrived', 'in_progress'] },
+        })
         .exec(),
       this.jobModel.countDocuments({ status: 'completed' }).exec(),
     ]);

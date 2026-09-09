@@ -1,14 +1,14 @@
 // ─── AI Feature Types ──────────────────────────────────────────────────────────
 
 export interface AiBookingAnalysis {
-  service_type?: string;           // e.g. 'housekeeping_hourly'
-  service_name?: string;           // human-readable
+  service_type?: string; // e.g. 'housekeeping_hourly'
+  service_name?: string; // human-readable
   estimated_duration_hours?: number;
   num_workers?: number;
-  tasks?: string[];                // ['dọn phòng ngủ', 'lau sàn', ...]
+  tasks?: string[]; // ['dọn phòng ngủ', 'lau sàn', ...]
   price_min?: number;
   price_max?: number;
-  confidence: number;              // 0-1
+  confidence: number; // 0-1
   raw_input: string;
 }
 
@@ -27,7 +27,7 @@ export interface AiPriceEstimate {
 export interface AiMatchExplanation {
   helper_id: string;
   score: number;
-  reasons: string[];               // ['Khoảng cách gần (1.2km)', 'Rating 4.8 ⭐', ...]
+  reasons: string[]; // ['Khoảng cách gần (1.2km)', 'Rating 4.8 ⭐', ...]
   strengths: string[];
   concerns?: string[];
 }
@@ -39,7 +39,7 @@ export interface AiChatMessage {
 
 export interface AiSupportResponse {
   answer: string;
-  intent?: string;                 // 'cancel_booking' | 'check_status' | 'general'
+  intent?: string; // 'cancel_booking' | 'check_status' | 'general'
   suggested_actions?: string[];
   confidence: number;
 }

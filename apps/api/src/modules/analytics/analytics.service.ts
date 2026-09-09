@@ -225,7 +225,9 @@ export class AnalyticsService {
           { $group: { _id: null, total: { $sum: '$amount' } } },
         ])
         .exec(),
-      this.userModel.countDocuments({ created_at: { $gte: startOfMonth }, is_deleted: false }).exec(),
+      this.userModel
+        .countDocuments({ created_at: { $gte: startOfMonth }, is_deleted: false })
+        .exec(),
       this.userModel
         .countDocuments({
           created_at: { $gte: startOfLastMonth, $lte: endOfLastMonth },
@@ -252,9 +254,7 @@ export class AnalyticsService {
         this_month: thisMonthRev,
         last_month: lastMonthRev,
         growth_pct:
-          lastMonthRev > 0
-            ? Math.round(((thisMonthRev - lastMonthRev) / lastMonthRev) * 100)
-            : 0,
+          lastMonthRev > 0 ? Math.round(((thisMonthRev - lastMonthRev) / lastMonthRev) * 100) : 0,
       },
       users: {
         this_month: thisMonthUsers,

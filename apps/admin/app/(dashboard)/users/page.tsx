@@ -61,8 +61,8 @@ export default function UsersPage() {
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Quản lý người dùng</h1>
         <p className="text-muted-foreground">
-          Tổng cộng{' '}
-          <span className="font-semibold text-foreground">{data?.total ?? 0}</span> người dùng
+          Tổng cộng <span className="font-semibold text-foreground">{data?.total ?? 0}</span> người
+          dùng
         </p>
       </div>
 
@@ -186,11 +186,7 @@ export default function UsersPage() {
                 )}
               </TableBody>
             </Table>
-            <Pagination
-              page={page}
-              totalPages={data.total_pages ?? 1}
-              onPageChange={setPage}
-            />
+            <Pagination page={page} totalPages={data.total_pages ?? 1} onPageChange={setPage} />
           </>
         )}
       </div>

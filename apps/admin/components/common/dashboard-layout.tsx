@@ -56,7 +56,10 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
         {/* Navigation */}
         <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
           {navItems.map(({ href, label, icon: Icon }) => {
-            const isActive = href === '/' ? pathname === '/' : pathname === href || pathname.startsWith(href + '/');
+            const isActive =
+              href === '/'
+                ? pathname === '/'
+                : pathname === href || pathname.startsWith(href + '/');
             return (
               <Link
                 key={href}
@@ -79,7 +82,9 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
           <div className="flex items-center justify-between">
             <div className="min-w-0">
               <p className="text-sm font-bold truncate">{user?.full_name || 'Admin System'}</p>
-              <p className="text-xs text-muted-foreground truncate">{user?.phone || '0999999999'}</p>
+              <p className="text-xs text-muted-foreground truncate">
+                {user?.phone || '0999999999'}
+              </p>
             </div>
             <button
               onClick={handleLogout}
@@ -89,7 +94,9 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
               <LogOut className="h-4 w-4" />
             </button>
           </div>
-          <p className="text-[11px] text-muted-foreground/60 text-center">HomeMate v1.0.0 • Production Ready</p>
+          <p className="text-[11px] text-muted-foreground/60 text-center">
+            HomeMate v1.0.0 • Production Ready
+          </p>
         </div>
       </aside>
 

@@ -1,6 +1,22 @@
-import { View, Text, ScrollView, SafeAreaView, TouchableOpacity, Alert, Switch } from 'react-native';
+import {
+  View,
+  Text,
+  ScrollView,
+  SafeAreaView,
+  TouchableOpacity,
+  Alert,
+  Switch,
+} from 'react-native';
 import { useRouter } from 'expo-router';
-import { ShieldCheck, LogOut, ChevronRight, Star, CreditCard, FileText, Home } from 'lucide-react-native';
+import {
+  ShieldCheck,
+  LogOut,
+  ChevronRight,
+  Star,
+  CreditCard,
+  FileText,
+  Home,
+} from 'lucide-react-native';
 import { useAuthStore } from '@/stores/auth.store';
 import { useHelperProfile, useSetHelperStatus, useSwitchRole } from '@/hooks/use-api';
 import { Avatar, Card, COLORS, Separator, Badge, StarRating } from '@/components/ui';
@@ -34,8 +50,12 @@ export default function HelperProfileScreen() {
     Alert.alert('Đăng xuất?', 'Bạn có chắc chắn muốn đăng xuất?', [
       { text: 'Hủy', style: 'cancel' },
       {
-        text: 'Đăng xuất', style: 'destructive',
-        onPress: async () => { await logout(); router.replace('/(auth)/login'); },
+        text: 'Đăng xuất',
+        style: 'destructive',
+        onPress: async () => {
+          await logout();
+          router.replace('/(auth)/login');
+        },
       },
     ]);
   };
@@ -47,39 +67,70 @@ export default function HelperProfileScreen() {
     rejected: { label: 'Hồ sơ bị từ chối', color: COLORS.error, bg: '#FEF2F2' },
   };
 
-  const KYC_STATUS = KYC_CONFIG[profile?.verification_status || 'unsubmitted'] || KYC_CONFIG['unsubmitted'];
+  const KYC_STATUS =
+    KYC_CONFIG[profile?.verification_status || 'unsubmitted'] || KYC_CONFIG['unsubmitted'];
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.gray[50] }}>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 110 }}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 110 }}
+      >
         {/* Header */}
-        <View style={{ backgroundColor: '#fff', padding: 24, alignItems: 'center', borderBottomWidth: 1, borderBottomColor: COLORS.gray[100] }}>
+        <View
+          style={{
+            backgroundColor: '#fff',
+            padding: 24,
+            alignItems: 'center',
+            borderBottomWidth: 1,
+            borderBottomColor: COLORS.gray[100],
+          }}
+        >
           <Avatar name={user?.full_name} size={80} />
           <Text style={{ fontSize: 20, fontWeight: '800', color: COLORS.gray[900], marginTop: 12 }}>
             {user?.full_name}
           </Text>
-          <Text style={{ fontSize: 14, color: COLORS.gray[500], marginTop: 4, fontWeight: '600' }}>{user?.phone}</Text>
+          <Text style={{ fontSize: 14, color: COLORS.gray[500], marginTop: 4, fontWeight: '600' }}>
+            {user?.phone}
+          </Text>
 
           {/* Stats */}
           {profile && (
-            <View style={{ flexDirection: 'row', gap: 24, marginTop: 16, paddingTop: 16, borderTopWidth: 1, borderTopColor: COLORS.gray[100], width: '100%', justifyContent: 'center' }}>
+            <View
+              style={{
+                flexDirection: 'row',
+                gap: 24,
+                marginTop: 16,
+                paddingTop: 16,
+                borderTopWidth: 1,
+                borderTopColor: COLORS.gray[100],
+                width: '100%',
+                justifyContent: 'center',
+              }}
+            >
               <View style={{ alignItems: 'center' }}>
                 <Text style={{ fontSize: 20, fontWeight: '800', color: COLORS.gray[900] }}>
                   {profile.total_completed ?? 0}
                 </Text>
-                <Text style={{ fontSize: 12, color: COLORS.gray[500], fontWeight: '600' }}>Đơn hoàn tất</Text>
+                <Text style={{ fontSize: 12, color: COLORS.gray[500], fontWeight: '600' }}>
+                  Đơn hoàn tất
+                </Text>
               </View>
               <View style={{ width: 1, backgroundColor: COLORS.gray[200] }} />
               <View style={{ alignItems: 'center' }}>
                 <Text style={{ fontSize: 20, fontWeight: '800', color: '#D97706' }}>
                   ★ {profile.average_rating?.toFixed(1) ?? '5.0'}
                 </Text>
-                <Text style={{ fontSize: 12, color: COLORS.gray[500], fontWeight: '600' }}>Điểm uy tín</Text>
+                <Text style={{ fontSize: 12, color: COLORS.gray[500], fontWeight: '600' }}>
+                  Điểm uy tín
+                </Text>
               </View>
               <View style={{ width: 1, backgroundColor: COLORS.gray[200] }} />
               <View style={{ alignItems: 'center' }}>
                 <Text style={{ fontSize: 20, fontWeight: '800', color: COLORS.success }}>100%</Text>
-                <Text style={{ fontSize: 12, color: COLORS.gray[500], fontWeight: '600' }}>Nhận việc</Text>
+                <Text style={{ fontSize: 12, color: COLORS.gray[500], fontWeight: '600' }}>
+                  Nhận việc
+                </Text>
               </View>
             </View>
           )}
@@ -120,21 +171,36 @@ export default function HelperProfileScreen() {
             </View>
             <Switch
               value={isOnline}
-              onValueChange={async v => { setIsOnline(v); await setStatus.mutateAsync(v ? 'online' : 'offline'); }}
+              onValueChange={async v => {
+                setIsOnline(v);
+                await setStatus.mutateAsync(v ? 'online' : 'offline');
+              }}
               trackColor={{ false: COLORS.gray[300], true: COLORS.primary }}
               thumbColor="#fff"
             />
           </Card>
 
           {/* KYC Status Card */}
-          <TouchableOpacity activeOpacity={0.8} onPress={() => router.push({ pathname: '/kyc' } as any)}>
-            <Card style={{ flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: KYC_STATUS.bg }}>
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={() => router.push({ pathname: '/kyc' } as any)}
+          >
+            <Card
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 12,
+                backgroundColor: KYC_STATUS.bg,
+              }}
+            >
               <ShieldCheck size={24} color={KYC_STATUS.color} />
               <View style={{ flex: 1 }}>
                 <Text style={{ fontWeight: '800', fontSize: 14, color: KYC_STATUS.color }}>
                   Xác minh danh tính Thợ (e-KYC)
                 </Text>
-                <Text style={{ fontSize: 13, color: KYC_STATUS.color, marginTop: 2, fontWeight: '600' }}>
+                <Text
+                  style={{ fontSize: 13, color: KYC_STATUS.color, marginTop: 2, fontWeight: '600' }}
+                >
                   {KYC_STATUS.label}
                 </Text>
               </View>
@@ -153,11 +219,20 @@ export default function HelperProfileScreen() {
                 {i > 0 && <Separator my={0} />}
                 <TouchableOpacity
                   activeOpacity={0.7}
-                  onPress={() => item.route ? router.push(item.route as any) : null}
-                  style={{ flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 14 }}
+                  onPress={() => (item.route ? router.push(item.route as any) : null)}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 14,
+                    paddingVertical: 14,
+                  }}
                 >
                   <item.icon size={20} color={COLORS.gray[600]} />
-                  <Text style={{ flex: 1, fontSize: 15, color: COLORS.gray[900], fontWeight: '600' }}>{item.label}</Text>
+                  <Text
+                    style={{ flex: 1, fontSize: 15, color: COLORS.gray[900], fontWeight: '600' }}
+                  >
+                    {item.label}
+                  </Text>
                   <ChevronRight size={16} color={COLORS.gray[400]} />
                 </TouchableOpacity>
               </View>
@@ -168,13 +243,30 @@ export default function HelperProfileScreen() {
           <TouchableOpacity
             activeOpacity={0.8}
             onPress={handleLogout}
-            style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, padding: 14, borderWidth: 1.5, borderColor: '#FFE4E1', borderRadius: 14, backgroundColor: '#FFF5F5' }}
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 8,
+              padding: 14,
+              borderWidth: 1.5,
+              borderColor: '#FFE4E1',
+              borderRadius: 14,
+              backgroundColor: '#FFF5F5',
+            }}
           >
             <LogOut size={18} color={COLORS.error} />
             <Text style={{ fontSize: 15, fontWeight: '800', color: COLORS.error }}>Đăng xuất</Text>
           </TouchableOpacity>
 
-          <Text style={{ textAlign: 'center', fontSize: 12, color: COLORS.gray[400], fontWeight: '500' }}>
+          <Text
+            style={{
+              textAlign: 'center',
+              fontSize: 12,
+              color: COLORS.gray[400],
+              fontWeight: '500',
+            }}
+          >
             HomeMate Đối Tác v1.0.0 • Vua Thợ Ecosystem
           </Text>
         </View>

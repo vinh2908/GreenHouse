@@ -41,7 +41,11 @@ export default function ReviewsPage() {
   const [ratingFilter, setRatingFilter] = useState('');
   const [page, setPage] = useState(1);
 
-  const { data, isLoading } = useAdminReviews({ min_rating: minRating, max_rating: maxRating, page });
+  const { data, isLoading } = useAdminReviews({
+    min_rating: minRating,
+    max_rating: maxRating,
+    page,
+  });
 
   const handleRatingFilter = (value: string) => {
     setRatingFilter(value);
@@ -66,7 +70,8 @@ export default function ReviewsPage() {
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Quản lý đánh giá</h1>
         <p className="text-muted-foreground">
-          Tổng cộng <span className="font-semibold text-foreground">{data?.total ?? 0}</span> đánh giá
+          Tổng cộng <span className="font-semibold text-foreground">{data?.total ?? 0}</span> đánh
+          giá
         </p>
       </div>
 

@@ -1,12 +1,29 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
-  View, Text, ScrollView, SafeAreaView, TouchableOpacity,
-  TextInput, KeyboardAvoidingView, Platform, Alert, ActivityIndicator,
+  View,
+  Text,
+  ScrollView,
+  SafeAreaView,
+  TouchableOpacity,
+  TextInput,
+  KeyboardAvoidingView,
+  Platform,
+  Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import {
-  ArrowLeft, ArrowRight, MapPin, Calendar, Clock, FileText,
-  Sparkles, ChevronRight, Check, Search, Navigation,
+  ArrowLeft,
+  ArrowRight,
+  MapPin,
+  Calendar,
+  Clock,
+  FileText,
+  Sparkles,
+  ChevronRight,
+  Check,
+  Search,
+  Navigation,
 } from 'lucide-react-native';
 import Toast from 'react-native-toast-message';
 import dayjs from 'dayjs';
@@ -17,19 +34,69 @@ import { Button, Input, Card, COLORS, LoadingSpinner, PriceText } from '@/compon
 const STEPS = ['Dịch vụ', 'Địa chỉ', 'Lịch hẹn', 'Mô tả', 'Xác nhận'];
 
 const TIME_SLOTS = [
-  '07:00', '08:00', '09:00', '10:00', '11:00',
-  '13:00', '14:00', '15:00', '16:00', '17:00',
+  '07:00',
+  '08:00',
+  '09:00',
+  '10:00',
+  '11:00',
+  '13:00',
+  '14:00',
+  '15:00',
+  '16:00',
+  '17:00',
 ];
 
 const DURATION_OPTIONS = [1, 2, 3, 4, 5, 6, 8];
 
 const DEFAULT_SERVICES = [
-  { _id: '6aa1269cd33a3aed2b36a5e1', name: 'Giúp việc theo giờ', slug: 'housekeeping_hourly', icon: '🧹', description: 'Dọn dẹp phòng khách, phòng ngủ, lau sàn, rửa chén bát...', base_price_min: 60000 },
-  { _id: '6aa1269cd33a3aed2b36a5e2', name: 'Tổng vệ sinh nhà cửa', slug: 'deep_cleaning', icon: '✨', description: 'Tổng vệ sinh toàn bộ nhà, chà sàn, lau kính chuyên sâu...', base_price_min: 800000 },
-  { _id: '6aa1269cd33a3aed2b36a5e3', name: 'Sửa điện gia dụng', slug: 'electrician', icon: '⚡', description: 'Sửa chập điện, thay công tắc, ổ cắm, lắp đèn chiếu sáng...', base_price_min: 150000 },
-  { _id: '6aa1269cd33a3aed2b36a5e4', name: 'Sửa ống nước & Thông cống', slug: 'plumbing', icon: '🚰', description: 'Thông tắc bồn cầu, chậu rửa, rò rỉ đường ống nước...', base_price_min: 150000 },
-  { _id: '6aa1269cd33a3aed2b36a5e5', name: 'Vệ sinh & Bơm gas máy lạnh', slug: 'ac_repair', icon: '❄️', description: 'Vệ sinh lưới lọc, xịt rửa dàn lạnh, nạp gas chuẩn...', base_price_min: 150000 },
-  { _id: '6aa1269cd33a3aed2b36a5e6', name: 'Nấu ăn gia đình', slug: 'cooking', icon: '🍳', description: 'Đi chợ, chuẩn bị nguyên liệu và nấu các bữa cơm thơm ngon...', base_price_min: 80000 },
+  {
+    _id: '6aa1269cd33a3aed2b36a5e1',
+    name: 'Giúp việc theo giờ',
+    slug: 'housekeeping_hourly',
+    icon: '🧹',
+    description: 'Dọn dẹp phòng khách, phòng ngủ, lau sàn, rửa chén bát...',
+    base_price_min: 60000,
+  },
+  {
+    _id: '6aa1269cd33a3aed2b36a5e2',
+    name: 'Tổng vệ sinh nhà cửa',
+    slug: 'deep_cleaning',
+    icon: '✨',
+    description: 'Tổng vệ sinh toàn bộ nhà, chà sàn, lau kính chuyên sâu...',
+    base_price_min: 800000,
+  },
+  {
+    _id: '6aa1269cd33a3aed2b36a5e3',
+    name: 'Sửa điện gia dụng',
+    slug: 'electrician',
+    icon: '⚡',
+    description: 'Sửa chập điện, thay công tắc, ổ cắm, lắp đèn chiếu sáng...',
+    base_price_min: 150000,
+  },
+  {
+    _id: '6aa1269cd33a3aed2b36a5e4',
+    name: 'Sửa ống nước & Thông cống',
+    slug: 'plumbing',
+    icon: '🚰',
+    description: 'Thông tắc bồn cầu, chậu rửa, rò rỉ đường ống nước...',
+    base_price_min: 150000,
+  },
+  {
+    _id: '6aa1269cd33a3aed2b36a5e5',
+    name: 'Vệ sinh & Bơm gas máy lạnh',
+    slug: 'ac_repair',
+    icon: '❄️',
+    description: 'Vệ sinh lưới lọc, xịt rửa dàn lạnh, nạp gas chuẩn...',
+    base_price_min: 150000,
+  },
+  {
+    _id: '6aa1269cd33a3aed2b36a5e6',
+    name: 'Nấu ăn gia đình',
+    slug: 'cooking',
+    icon: '🍳',
+    description: 'Đi chợ, chuẩn bị nguyên liệu và nấu các bữa cơm thơm ngon...',
+    base_price_min: 80000,
+  },
 ];
 
 export default function BookingScreen() {
@@ -43,9 +110,9 @@ export default function BookingScreen() {
   const [step, setStep] = useState(params.service_id ? 1 : 0);
   const [selectedService, setSelectedService] = useState<string>(params.service_id ?? '');
   const [address, setAddress] = useState({
-    full_address: '128 Đường Lê Lợi',
-    ward: 'Phường Bến Thành',
-    district: 'Quận 1',
+    full_address: '',
+    ward: '',
+    district: '',
     city: 'Hồ Chí Minh',
     coordinates: [106.6983, 10.7725] as [number, number],
   });
@@ -57,13 +124,51 @@ export default function BookingScreen() {
   const [date, setDate] = useState(dayjs().add(1, 'day').format('YYYY-MM-DD'));
   const [timeSlot, setTimeSlot] = useState('09:00');
   const [duration, setDuration] = useState(3);
-  const [title, setTitle] = useState('Dọn dẹp căn hộ 2 phòng ngủ chiều nay');
-  const [description, setDescription] = useState('Cần người đến lau dọn phòng khách, phòng ngủ, cọ rửa 2 nhà vệ sinh trong 3 tiếng.');
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
   const [aiInput, setAiInput] = useState('');
   const [aiSuggestion, setAiSuggestion] = useState<{
-    tasks?: string[]; price_min?: number; price_max?: number;
+    tasks?: string[];
+    price_min?: number;
+    price_max?: number;
   } | null>(null);
-  const [priceEstimate, setPriceEstimate] = useState<{ price_min: number; price_max: number } | null>(null);
+  const [priceEstimate, setPriceEstimate] = useState<{
+    price_min: number;
+    price_max: number;
+  } | null>(null);
+
+  // Khi params thay đổi hoặc chuyển vào màn hình
+  useEffect(() => {
+    if (params.service_id) {
+      setSelectedService(params.service_id);
+      setStep(1);
+    } else {
+      setSelectedService('');
+      setStep(0);
+    }
+  }, [params.service_id, params.service_slug]);
+
+  const resetForm = () => {
+    setStep(0);
+    setSelectedService('');
+    setAddress({
+      full_address: '',
+      ward: '',
+      district: '',
+      city: 'Hồ Chí Minh',
+      coordinates: [106.6983, 10.7725],
+    });
+    setDate(dayjs().add(1, 'day').format('YYYY-MM-DD'));
+    setTimeSlot('09:00');
+    setDuration(3);
+    setTitle('');
+    setDescription('');
+    setAiInput('');
+    setAiSuggestion(null);
+    setPriceEstimate(null);
+    setSearchQuery('');
+    setSearchResults([]);
+  };
 
   const selectedServiceData = services?.find(s => s._id === selectedService);
 
@@ -128,7 +233,11 @@ export default function BookingScreen() {
 
     setSearchQuery('');
     setSearchResults([]);
-    Toast.show({ type: 'success', text1: 'Đã chọn địa điểm từ bản đồ', text2: place.display_name.split(',').slice(0, 2).join(', ') });
+    Toast.show({
+      type: 'success',
+      text1: 'Đã chọn địa điểm từ bản đồ',
+      text2: place.display_name.split(',').slice(0, 2).join(', '),
+    });
   };
 
   const handleAiAnalyze = async () => {
@@ -141,7 +250,8 @@ export default function BookingScreen() {
         const svc = services?.find(s => s.slug === result.service_type);
         if (svc) setSelectedService(svc._id);
       }
-      if (result.estimated_duration_hours) setDuration(Math.min(result.estimated_duration_hours, 8));
+      if (result.estimated_duration_hours)
+        setDuration(Math.min(result.estimated_duration_hours, 8));
       Toast.show({ type: 'success', text1: 'AI đã phân tích xong!', text2: 'Xem gợi ý bên dưới' });
     } catch {
       Toast.show({ type: 'error', text1: 'Phân tích thất bại, thử lại sau' });
@@ -157,7 +267,9 @@ export default function BookingScreen() {
         service_type: svc?.slug,
       });
       setPriceEstimate(data.data);
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
   };
 
   const handleSubmit = async () => {
@@ -181,8 +293,11 @@ export default function BookingScreen() {
         preferred_time_start: timeSlot,
         is_flexible_time: false,
       });
-      router.push('/(customer)/jobs');
-    } catch { /* Toast shown by hook */ }
+      resetForm();
+      router.replace('/(customer)/jobs');
+    } catch {
+      /* Toast shown by hook */
+    }
   };
 
   const canNext = () => {
@@ -208,12 +323,26 @@ export default function BookingScreen() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
       {/* Header */}
-      <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 16 }}>
+      <View
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          paddingHorizontal: 20,
+          paddingVertical: 16,
+        }}
+      >
         <TouchableOpacity
           activeOpacity={0.7}
           onPress={handleBack}
           hitSlop={{ top: 14, bottom: 14, left: 14, right: 14 }}
-          style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: COLORS.gray[100], alignItems: 'center', justifyContent: 'center' }}
+          style={{
+            width: 40,
+            height: 40,
+            borderRadius: 12,
+            backgroundColor: COLORS.gray[100],
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
         >
           <ArrowLeft size={20} color={COLORS.gray[800]} />
         </TouchableOpacity>
@@ -229,7 +358,9 @@ export default function BookingScreen() {
             <View
               key={i}
               style={{
-                flex: 1, height: 4, borderRadius: 2,
+                flex: 1,
+                height: 4,
+                borderRadius: 2,
                 backgroundColor: i <= step ? COLORS.primary : COLORS.gray[200],
               }}
             />
@@ -240,9 +371,14 @@ export default function BookingScreen() {
         </Text>
       </View>
 
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-        <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 180 }} keyboardShouldPersistTaps="handled">
-
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+        <ScrollView
+          contentContainerStyle={{ padding: 20, paddingBottom: 180 }}
+          keyboardShouldPersistTaps="handled"
+        >
           {/* ── STEP 0: Chọn dịch vụ ─────────────────────────────────── */}
           {step === 0 && (
             <View style={{ gap: 16 }}>
@@ -250,12 +386,19 @@ export default function BookingScreen() {
               <Card style={{ backgroundColor: '#1E1E24', gap: 12, padding: 16 }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                   <Sparkles size={20} color={COLORS.primary} />
-                  <Text style={{ color: '#fff', fontWeight: '800', fontSize: 16 }}>Mô tả để AI hỗ trợ</Text>
+                  <Text style={{ color: '#fff', fontWeight: '800', fontSize: 16 }}>
+                    Mô tả để AI hỗ trợ
+                  </Text>
                 </View>
                 <TextInput
                   style={{
-                    backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 12, padding: 12,
-                    color: '#fff', fontSize: 14, minHeight: 80, textAlignVertical: 'top',
+                    backgroundColor: 'rgba(255,255,255,0.1)',
+                    borderRadius: 12,
+                    padding: 12,
+                    color: '#fff',
+                    fontSize: 14,
+                    minHeight: 80,
+                    textAlignVertical: 'top',
                   }}
                   placeholder="VD: Tôi cần người dọn căn hộ 2 phòng ngủ vào chiều mai..."
                   placeholderTextColor="rgba(255,255,255,0.4)"
@@ -272,12 +415,23 @@ export default function BookingScreen() {
                 />
                 {aiSuggestion?.tasks && (
                   <View style={{ gap: 4 }}>
-                    <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12 }}>Gợi ý việc cần làm:</Text>
+                    <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12 }}>
+                      Gợi ý việc cần làm:
+                    </Text>
                     {aiSuggestion.tasks.map((t, i) => (
-                      <Text key={i} style={{ color: '#fff', fontSize: 13 }}>• {t}</Text>
+                      <Text key={i} style={{ color: '#fff', fontSize: 13 }}>
+                        • {t}
+                      </Text>
                     ))}
                     {aiSuggestion.price_min && (
-                      <Text style={{ color: COLORS.primary, fontWeight: '700', fontSize: 13, marginTop: 4 }}>
+                      <Text
+                        style={{
+                          color: COLORS.primary,
+                          fontWeight: '700',
+                          fontSize: 13,
+                          marginTop: 4,
+                        }}
+                      >
                         Ước giá: {new Intl.NumberFormat('vi-VN').format(aiSuggestion.price_min)}₫ –
                         {new Intl.NumberFormat('vi-VN').format(aiSuggestion.price_max ?? 0)}₫
                       </Text>
@@ -301,27 +455,61 @@ export default function BookingScreen() {
                     style={{
                       borderWidth: 2,
                       borderColor: selectedService === svc._id ? COLORS.primary : COLORS.gray[200],
-                      borderRadius: 16, padding: 16,
-                      flexDirection: 'row', alignItems: 'center', gap: 14,
+                      borderRadius: 16,
+                      padding: 16,
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: 14,
                       backgroundColor: selectedService === svc._id ? COLORS.primaryLight : '#fff',
                     }}
                   >
                     <Text style={{ fontSize: 32 }}>
-                      {({ housekeeping_hourly: '🧹', housekeeping_daily: '📅', deep_cleaning: '✨', housekeeping_periodic: '🔄', cooking: '🍳' } as Record<string,string>)[svc.slug] ?? '🏠'}
+                      {(
+                        {
+                          housekeeping_hourly: '🧹',
+                          housekeeping_daily: '📅',
+                          deep_cleaning: '✨',
+                          housekeeping_periodic: '🔄',
+                          cooking: '🍳',
+                        } as Record<string, string>
+                      )[svc.slug] ?? '🏠'}
                     </Text>
                     <View style={{ flex: 1 }}>
-                      <Text style={{ fontWeight: '800', fontSize: 15, color: COLORS.gray[900] }}>{svc.name}</Text>
+                      <Text style={{ fontWeight: '800', fontSize: 15, color: COLORS.gray[900] }}>
+                        {svc.name}
+                      </Text>
                       {svc.description && (
-                        <Text style={{ fontSize: 12, color: COLORS.gray[500], marginTop: 2 }} numberOfLines={1}>{svc.description}</Text>
+                        <Text
+                          style={{ fontSize: 12, color: COLORS.gray[500], marginTop: 2 }}
+                          numberOfLines={1}
+                        >
+                          {svc.description}
+                        </Text>
                       )}
                       {svc.base_price_min && (
-                        <Text style={{ fontSize: 12, color: COLORS.primary, marginTop: 4, fontWeight: '700' }}>
+                        <Text
+                          style={{
+                            fontSize: 12,
+                            color: COLORS.primary,
+                            marginTop: 4,
+                            fontWeight: '700',
+                          }}
+                        >
                           Từ {new Intl.NumberFormat('vi-VN').format(svc.base_price_min)}₫
                         </Text>
                       )}
                     </View>
                     {selectedService === svc._id && (
-                      <View style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: COLORS.primary, alignItems: 'center', justifyContent: 'center' }}>
+                      <View
+                        style={{
+                          width: 24,
+                          height: 24,
+                          borderRadius: 12,
+                          backgroundColor: COLORS.primary,
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                      >
                         <Check size={16} color="#fff" />
                       </View>
                     )}
@@ -334,7 +522,9 @@ export default function BookingScreen() {
           {/* ── STEP 1: Địa chỉ ──────────────────────────────────────── */}
           {step === 1 && (
             <View style={{ gap: 14 }}>
-              <Text style={{ fontSize: 20, fontWeight: '800', color: COLORS.gray[900] }}>Địa chỉ làm việc</Text>
+              <Text style={{ fontSize: 20, fontWeight: '800', color: COLORS.gray[900] }}>
+                Địa chỉ làm việc
+              </Text>
 
               {/* Nút GPS OpenStreetMap */}
               <TouchableOpacity
@@ -342,8 +532,13 @@ export default function BookingScreen() {
                 disabled={isLocating}
                 onPress={handleGetLiveLocation}
                 style={{
-                  borderWidth: 2, borderColor: COLORS.primary, borderRadius: 14,
-                  padding: 14, flexDirection: 'row', alignItems: 'center', gap: 10,
+                  borderWidth: 2,
+                  borderColor: COLORS.primary,
+                  borderRadius: 14,
+                  padding: 14,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 10,
                   backgroundColor: COLORS.primaryLight,
                 }}
               >
@@ -353,7 +548,9 @@ export default function BookingScreen() {
                   <Navigation size={18} color={COLORS.primary} />
                 )}
                 <Text style={{ color: COLORS.primary, fontWeight: '800', fontSize: 14 }}>
-                  {isLocating ? 'Đang định vị vị trí...' : 'Lấy vị trí GPS hiện tại (OpenStreetMap)'}
+                  {isLocating
+                    ? 'Đang định vị vị trí...'
+                    : 'Lấy vị trí GPS hiện tại (OpenStreetMap)'}
                 </Text>
               </TouchableOpacity>
 
@@ -364,9 +561,14 @@ export default function BookingScreen() {
                 </Text>
                 <View
                   style={{
-                    flexDirection: 'row', alignItems: 'center',
-                    borderWidth: 1.5, borderColor: COLORS.gray[200], borderRadius: 14,
-                    paddingHorizontal: 14, backgroundColor: '#fff', gap: 10,
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    borderWidth: 1.5,
+                    borderColor: COLORS.gray[200],
+                    borderRadius: 14,
+                    paddingHorizontal: 14,
+                    backgroundColor: '#fff',
+                    gap: 10,
                   }}
                 >
                   <Search size={18} color={COLORS.gray[400]} />
@@ -382,19 +584,39 @@ export default function BookingScreen() {
 
                 {/* Danh sách gợi ý địa điểm OpenStreetMap */}
                 {searchResults.length > 0 && (
-                  <Card style={{ padding: 6, gap: 0, marginTop: 4, maxHeight: 200, borderColor: COLORS.primaryLight, borderWidth: 1.5 }}>
+                  <Card
+                    style={{
+                      padding: 6,
+                      gap: 0,
+                      marginTop: 4,
+                      maxHeight: 200,
+                      borderColor: COLORS.primaryLight,
+                      borderWidth: 1.5,
+                    }}
+                  >
                     <ScrollView nestedScrollEnabled style={{ maxHeight: 180 }}>
                       {searchResults.map((place, idx) => (
                         <TouchableOpacity
                           key={place.place_id || idx}
                           onPress={() => handleSelectOsmPlace(place)}
                           style={{
-                            padding: 10, borderBottomWidth: idx < searchResults.length - 1 ? 1 : 0,
-                            borderBottomColor: COLORS.gray[100], flexDirection: 'row', alignItems: 'flex-start', gap: 8,
+                            padding: 10,
+                            borderBottomWidth: idx < searchResults.length - 1 ? 1 : 0,
+                            borderBottomColor: COLORS.gray[100],
+                            flexDirection: 'row',
+                            alignItems: 'flex-start',
+                            gap: 8,
                           }}
                         >
                           <MapPin size={16} color={COLORS.primary} style={{ marginTop: 2 }} />
-                          <Text style={{ fontSize: 13, color: COLORS.gray[800], flex: 1, lineHeight: 18 }}>
+                          <Text
+                            style={{
+                              fontSize: 13,
+                              color: COLORS.gray[800],
+                              flex: 1,
+                              lineHeight: 18,
+                            }}
+                          >
                             {place.display_name}
                           </Text>
                         </TouchableOpacity>
@@ -440,11 +662,20 @@ export default function BookingScreen() {
           {/* ── STEP 2: Lịch hẹn ─────────────────────────────────────── */}
           {step === 2 && (
             <View style={{ gap: 20 }}>
-              <Text style={{ fontSize: 20, fontWeight: '800', color: COLORS.gray[900] }}>Chọn lịch hẹn</Text>
+              <Text style={{ fontSize: 20, fontWeight: '800', color: COLORS.gray[900] }}>
+                Chọn lịch hẹn
+              </Text>
 
               {/* Date picker */}
               <View>
-                <Text style={{ fontSize: 14, fontWeight: '700', color: COLORS.gray[700], marginBottom: 10 }}>
+                <Text
+                  style={{
+                    fontSize: 14,
+                    fontWeight: '700',
+                    color: COLORS.gray[700],
+                    marginBottom: 10,
+                  }}
+                >
                   <Calendar size={14} color={COLORS.gray[600]} /> Ngày làm việc
                 </Text>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false}>
@@ -458,19 +689,41 @@ export default function BookingScreen() {
                           key={val}
                           onPress={() => setDate(val)}
                           style={{
-                            width: 56, alignItems: 'center', paddingVertical: 10,
-                            borderRadius: 14, borderWidth: 2,
+                            width: 56,
+                            alignItems: 'center',
+                            paddingVertical: 10,
+                            borderRadius: 14,
+                            borderWidth: 2,
                             borderColor: isSelected ? COLORS.primary : COLORS.gray[200],
                             backgroundColor: isSelected ? COLORS.primary : '#fff',
                           }}
                         >
-                          <Text style={{ fontSize: 11, color: isSelected ? 'rgba(255,255,255,0.8)' : COLORS.gray[500], fontWeight: '600' }}>
+                          <Text
+                            style={{
+                              fontSize: 11,
+                              color: isSelected ? 'rgba(255,255,255,0.8)' : COLORS.gray[500],
+                              fontWeight: '600',
+                            }}
+                          >
                             {d.format('ddd').toUpperCase()}
                           </Text>
-                          <Text style={{ fontSize: 18, fontWeight: '800', color: isSelected ? '#fff' : COLORS.gray[800], marginTop: 2 }}>
+                          <Text
+                            style={{
+                              fontSize: 18,
+                              fontWeight: '800',
+                              color: isSelected ? '#fff' : COLORS.gray[800],
+                              marginTop: 2,
+                            }}
+                          >
                             {d.format('D')}
                           </Text>
-                          <Text style={{ fontSize: 11, color: isSelected ? 'rgba(255,255,255,0.8)' : COLORS.gray[500], fontWeight: '600' }}>
+                          <Text
+                            style={{
+                              fontSize: 11,
+                              color: isSelected ? 'rgba(255,255,255,0.8)' : COLORS.gray[500],
+                              fontWeight: '600',
+                            }}
+                          >
                             Th{d.format('M')}
                           </Text>
                         </TouchableOpacity>
@@ -482,7 +735,14 @@ export default function BookingScreen() {
 
               {/* Time slot */}
               <View>
-                <Text style={{ fontSize: 14, fontWeight: '700', color: COLORS.gray[700], marginBottom: 10 }}>
+                <Text
+                  style={{
+                    fontSize: 14,
+                    fontWeight: '700',
+                    color: COLORS.gray[700],
+                    marginBottom: 10,
+                  }}
+                >
                   Giờ bắt đầu
                 </Text>
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
@@ -491,16 +751,23 @@ export default function BookingScreen() {
                       key={t}
                       onPress={() => setTimeSlot(t)}
                       style={{
-                        paddingHorizontal: 16, paddingVertical: 10, borderRadius: 12,
+                        paddingHorizontal: 16,
+                        paddingVertical: 10,
+                        borderRadius: 12,
                         borderWidth: 2,
                         borderColor: timeSlot === t ? COLORS.primary : COLORS.gray[200],
                         backgroundColor: timeSlot === t ? COLORS.primaryLight : '#fff',
                       }}
                     >
-                      <Text style={{
-                        fontSize: 14, fontWeight: '700',
-                        color: timeSlot === t ? COLORS.primary : COLORS.gray[700],
-                      }}>{t}</Text>
+                      <Text
+                        style={{
+                          fontSize: 14,
+                          fontWeight: '700',
+                          color: timeSlot === t ? COLORS.primary : COLORS.gray[700],
+                        }}
+                      >
+                        {t}
+                      </Text>
                     </TouchableOpacity>
                   ))}
                 </View>
@@ -508,7 +775,14 @@ export default function BookingScreen() {
 
               {/* Duration */}
               <View>
-                <Text style={{ fontSize: 14, fontWeight: '700', color: COLORS.gray[700], marginBottom: 10 }}>
+                <Text
+                  style={{
+                    fontSize: 14,
+                    fontWeight: '700',
+                    color: COLORS.gray[700],
+                    marginBottom: 10,
+                  }}
+                >
                   Thời gian ước tính
                 </Text>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false}>
@@ -518,13 +792,20 @@ export default function BookingScreen() {
                         key={d}
                         onPress={() => setDuration(d)}
                         style={{
-                          paddingHorizontal: 20, paddingVertical: 12, borderRadius: 12,
+                          paddingHorizontal: 20,
+                          paddingVertical: 12,
+                          borderRadius: 12,
                           borderWidth: 2,
                           borderColor: duration === d ? COLORS.primary : COLORS.gray[200],
                           backgroundColor: duration === d ? COLORS.primaryLight : '#fff',
                         }}
                       >
-                        <Text style={{ fontWeight: '800', color: duration === d ? COLORS.primary : COLORS.gray[700] }}>
+                        <Text
+                          style={{
+                            fontWeight: '800',
+                            color: duration === d ? COLORS.primary : COLORS.gray[700],
+                          }}
+                        >
                           {d}h
                         </Text>
                       </TouchableOpacity>
@@ -538,7 +819,9 @@ export default function BookingScreen() {
           {/* ── STEP 3: Mô tả ────────────────────────────────────────── */}
           {step === 3 && (
             <View style={{ gap: 16 }}>
-              <Text style={{ fontSize: 20, fontWeight: '800', color: COLORS.gray[900] }}>Chi tiết công việc</Text>
+              <Text style={{ fontSize: 20, fontWeight: '800', color: COLORS.gray[900] }}>
+                Chi tiết công việc
+              </Text>
 
               <Input
                 label="Tiêu đề yêu cầu *"
@@ -553,9 +836,15 @@ export default function BookingScreen() {
                 </Text>
                 <TextInput
                   style={{
-                    borderWidth: 1.5, borderColor: COLORS.gray[200], borderRadius: 14,
-                    padding: 14, fontSize: 15, color: COLORS.gray[900],
-                    backgroundColor: COLORS.gray[50], minHeight: 120, textAlignVertical: 'top',
+                    borderWidth: 1.5,
+                    borderColor: COLORS.gray[200],
+                    borderRadius: 14,
+                    padding: 14,
+                    fontSize: 15,
+                    color: COLORS.gray[900],
+                    backgroundColor: COLORS.gray[50],
+                    minHeight: 120,
+                    textAlignVertical: 'top',
                   }}
                   placeholder="Mô tả chi tiết: diện tích, tình trạng thiết bị, yêu cầu riêng..."
                   value={description}
@@ -570,21 +859,31 @@ export default function BookingScreen() {
                 <TouchableOpacity
                   onPress={handleEstimatePrice}
                   style={{
-                    flexDirection: 'row', alignItems: 'center', gap: 8,
-                    backgroundColor: '#1E1E24', borderRadius: 14, padding: 14,
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 8,
+                    backgroundColor: '#1E1E24',
+                    borderRadius: 14,
+                    padding: 14,
                   }}
                 >
                   <Sparkles size={18} color={COLORS.primary} />
                   <Text style={{ color: '#fff', fontWeight: '700', flex: 1 }}>
-                    {estimatePrice.isPending ? 'Đang ước tính giá...' : 'AI ước tính giá thị trường'}
+                    {estimatePrice.isPending
+                      ? 'Đang ước tính giá...'
+                      : 'AI ước tính giá thị trường'}
                   </Text>
-                  {!estimatePrice.isPending && <ChevronRight size={16} color="rgba(255,255,255,0.4)" />}
+                  {!estimatePrice.isPending && (
+                    <ChevronRight size={16} color="rgba(255,255,255,0.4)" />
+                  )}
                 </TouchableOpacity>
               )}
 
               {priceEstimate && (
                 <Card style={{ backgroundColor: COLORS.primaryLight, gap: 6 }}>
-                  <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.primary }}>Ước tính giá (AI)</Text>
+                  <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.primary }}>
+                    Ước tính giá (AI)
+                  </Text>
                   <Text style={{ fontSize: 22, fontWeight: '800', color: COLORS.gray[900] }}>
                     {new Intl.NumberFormat('vi-VN').format(priceEstimate.price_min)}₫ –
                     {new Intl.NumberFormat('vi-VN').format(priceEstimate.price_max)}₫
@@ -600,22 +899,40 @@ export default function BookingScreen() {
           {/* ── STEP 4: Xác nhận ─────────────────────────────────────── */}
           {step === 4 && (
             <View style={{ gap: 16 }}>
-              <Text style={{ fontSize: 20, fontWeight: '800', color: COLORS.gray[900] }}>Xác nhận yêu cầu</Text>
+              <Text style={{ fontSize: 20, fontWeight: '800', color: COLORS.gray[900] }}>
+                Xác nhận yêu cầu
+              </Text>
 
               <Card style={{ gap: 14 }}>
                 <Row icon="🏠" label="Dịch vụ" value={selectedServiceData?.name ?? '—'} />
-                <Row icon="📍" label="Địa chỉ" value={`${address.full_address}, ${address.district}, ${address.city}`} />
+                <Row
+                  icon="📍"
+                  label="Địa chỉ"
+                  value={`${address.full_address}, ${address.district}, ${address.city}`}
+                />
                 <Row icon="📅" label="Ngày" value={dayjs(date).format('dddd, DD/MM/YYYY')} />
                 <Row icon="🕐" label="Giờ" value={`${timeSlot} • ${duration} giờ`} />
                 <View style={{ height: 1, backgroundColor: COLORS.gray[100] }} />
-                <Text style={{ fontWeight: '800', fontSize: 16, color: COLORS.gray[900] }}>{title}</Text>
-                <Text style={{ color: COLORS.gray[600], fontSize: 14, lineHeight: 20 }}>{description}</Text>
+                <Text style={{ fontWeight: '800', fontSize: 16, color: COLORS.gray[900] }}>
+                  {title}
+                </Text>
+                <Text style={{ color: COLORS.gray[600], fontSize: 14, lineHeight: 20 }}>
+                  {description}
+                </Text>
               </Card>
 
-              <Card style={{ backgroundColor: '#FFF7ED', flexDirection: 'row', gap: 10, alignItems: 'flex-start' }}>
+              <Card
+                style={{
+                  backgroundColor: '#FFF7ED',
+                  flexDirection: 'row',
+                  gap: 10,
+                  alignItems: 'flex-start',
+                }}
+              >
                 <Text style={{ fontSize: 20 }}>💡</Text>
                 <Text style={{ flex: 1, fontSize: 13, color: COLORS.gray[700], lineHeight: 18 }}>
-                  Sau khi đăng, các thợ xung quanh sẽ gửi báo giá. Bạn có thể tự do so sánh tay nghề & giá cả trước khi chọn thợ.
+                  Sau khi đăng, các thợ xung quanh sẽ gửi báo giá. Bạn có thể tự do so sánh tay nghề
+                  & giá cả trước khi chọn thợ.
                 </Text>
               </Card>
             </View>
@@ -626,11 +943,20 @@ export default function BookingScreen() {
       {/* Bottom CTA */}
       <View
         style={{
-          position: 'absolute', bottom: Platform.OS === 'ios' ? 92 : 72, left: 0, right: 0,
-          backgroundColor: '#fff', paddingHorizontal: 20, paddingVertical: 12,
-          borderTopWidth: 1, borderTopColor: COLORS.gray[100],
-          shadowColor: '#000', shadowOffset: { width: 0, height: -4 },
-          shadowOpacity: 0.08, shadowRadius: 10, elevation: 10,
+          position: 'absolute',
+          bottom: Platform.OS === 'ios' ? 92 : 72,
+          left: 0,
+          right: 0,
+          backgroundColor: '#fff',
+          paddingHorizontal: 20,
+          paddingVertical: 12,
+          borderTopWidth: 1,
+          borderTopColor: COLORS.gray[100],
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: -4 },
+          shadowOpacity: 0.08,
+          shadowRadius: 10,
+          elevation: 10,
         }}
       >
         <Button
@@ -654,7 +980,9 @@ function Row({ icon, label, value }: { icon: string; label: string; value: strin
       <Text style={{ fontSize: 18 }}>{icon}</Text>
       <View style={{ flex: 1 }}>
         <Text style={{ fontSize: 12, color: COLORS.gray[500], fontWeight: '600' }}>{label}</Text>
-        <Text style={{ fontSize: 14, fontWeight: '700', color: COLORS.gray[900], marginTop: 2 }}>{value}</Text>
+        <Text style={{ fontSize: 14, fontWeight: '700', color: COLORS.gray[900], marginTop: 2 }}>
+          {value}
+        </Text>
       </View>
     </View>
   );
