@@ -5,6 +5,7 @@
   "packageManager": "pnpm@10.29.3",
   "description": "HomeMate - Home Service Marketplace Platform",
   "scripts": {
+    "start:all": "scripts\\start-all.bat",
     "dev": "turbo run dev",
     "build": "turbo run build",
     "lint": "turbo run lint",
