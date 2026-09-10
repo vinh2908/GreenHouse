@@ -13,7 +13,6 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  Legend,
 } from 'recharts';
 import { Users, UserCheck, Briefcase, TrendingUp } from 'lucide-react';
 import {

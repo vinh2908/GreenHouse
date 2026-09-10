@@ -12,7 +12,7 @@ export class ServiceCategory {
   @Prop({ required: true })
   name: string;
 
-  @Prop({ required: true, unique: true, index: true })
+  @Prop({ required: true, unique: true })
   slug: string;
 
   @Prop()
@@ -47,7 +47,7 @@ export class Service {
   @Prop({ required: true })
   name: string;
 
-  @Prop({ required: true, unique: true, index: true })
+  @Prop({ required: true, unique: true })
   slug: string;
 
   @Prop({ required: true })

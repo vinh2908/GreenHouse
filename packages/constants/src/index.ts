@@ -172,11 +172,25 @@ export const NOTIFICATION_TYPES = {
 // ─── AI Feature Flags ──────────────────────────────────────────────────────────
 // Bật/tắt từng AI feature độc lập qua env vars
 
+declare const process: { env: Record<string, string | undefined> } | undefined;
+
 export const AI_FEATURE_FLAGS = {
-  BOOKING_ASSISTANT: process.env['AI_BOOKING_ASSISTANT'] !== 'false',
-  PRICE_ESTIMATOR: process.env['AI_PRICE_ESTIMATOR'] !== 'false',
-  MATCH_EXPLANATION: process.env['AI_MATCH_EXPLANATION'] !== 'false',
-  CUSTOMER_SUPPORT: process.env['AI_CUSTOMER_SUPPORT'] !== 'false',
+  BOOKING_ASSISTANT:
+    typeof process !== 'undefined' && process?.env
+      ? process.env['AI_BOOKING_ASSISTANT'] !== 'false'
+      : true,
+  PRICE_ESTIMATOR:
+    typeof process !== 'undefined' && process?.env
+      ? process.env['AI_PRICE_ESTIMATOR'] !== 'false'
+      : true,
+  MATCH_EXPLANATION:
+    typeof process !== 'undefined' && process?.env
+      ? process.env['AI_MATCH_EXPLANATION'] !== 'false'
+      : true,
+  CUSTOMER_SUPPORT:
+    typeof process !== 'undefined' && process?.env
+      ? process.env['AI_CUSTOMER_SUPPORT'] !== 'false'
+      : true,
 } as const;
 
 // ─── AI Config ─────────────────────────────────────────────────────────────────

@@ -123,7 +123,6 @@ export const HelperProfileSchema = SchemaFactory.createForClass(HelperProfile);
 
 // Indexes
 HelperProfileSchema.index({ location: '2dsphere' });
-HelperProfileSchema.index({ user_id: 1 }, { unique: true });
 HelperProfileSchema.index({ status: 1, verification_status: 1 });
 HelperProfileSchema.index({ service_ids: 1 });
 HelperProfileSchema.index({ rating: -1 });

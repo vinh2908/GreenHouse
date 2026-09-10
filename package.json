@@ -2,6 +2,7 @@
   "name": "homemate",
   "version": "1.0.0",
   "private": true,
+  "packageManager": "pnpm@10.29.3",
   "description": "HomeMate - Home Service Marketplace Platform",
   "scripts": {
     "dev": "turbo run dev",
