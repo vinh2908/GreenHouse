@@ -17,7 +17,7 @@ import {
   EmptyState,
   Pagination,
 } from '@/components/ui';
-import { formatDateTime, formatVND } from '@/lib/utils';
+import { formatDateTime } from '@/lib/utils';
 
 const JOB_STATUS_OPTIONS = [
   { value: '', label: 'Tất cả trạng thái' },

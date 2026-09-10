@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { usePendingKyc, useApproveKyc, useRejectKyc } from '@/hooks/use-admin';
 import {
-  Badge,
   Button,
   Table,
   TableHeader,
@@ -14,8 +13,6 @@ import {
   Loading,
   EmptyState,
   Pagination,
-  Card,
-  CardContent,
 } from '@/components/ui';
 import { formatDateTime } from '@/lib/utils';
 import { CheckCircle, XCircle } from 'lucide-react';
