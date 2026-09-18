@@ -115,6 +115,12 @@ export class Job {
   @Prop({ type: [String], default: [] })
   completion_photos: string[];
 
+  @Prop({ type: [String], default: [] })
+  completion_videos: string[];
+
+  @Prop()
+  completion_notes?: string;
+
   @Prop({ min: 1, max: 5 })
   customer_rating?: number;
 

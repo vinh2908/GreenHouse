@@ -138,14 +138,13 @@ export function useCreateJob() {
     mutationFn: (dto: unknown) => apiClient.post('/jobs', dto),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['jobs', 'my'] });
+      qc.invalidateQueries({ queryKey: ['jobs'] });
       Toast.show({
         type: 'success',
         text1: 'Đăng việc thành công!',
-        text2: 'Đang chờ báo giá từ thợ',
+        text2: 'Đang phát thông báo tới các thợ trong khu vực',
       });
     },
-    onError: () =>
-      Toast.show({ type: 'error', text1: 'Đăng việc thất bại', text2: 'Vui lòng thử lại' }),
   });
 }
 
@@ -299,14 +298,28 @@ export function useStartJob() {
 export function useCompleteJob() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ jobId, completion_photos }: { jobId: string; completion_photos?: string[] }) =>
-      apiClient.patch(`/jobs/${jobId}/complete`, { completion_photos }),
+    mutationFn: ({
+      jobId,
+      completion_photos,
+      completion_videos,
+      completion_notes,
+    }: {
+      jobId: string;
+      completion_photos?: string[];
+      completion_videos?: string[];
+      completion_notes?: string;
+    }) =>
+      apiClient.patch(`/jobs/${jobId}/complete`, {
+        completion_photos,
+        completion_videos,
+        completion_notes,
+      }),
     onSuccess: (_, vars) => {
       qc.invalidateQueries({ queryKey: ['job', vars.jobId] });
       Toast.show({
         type: 'success',
-        text1: 'Đã upload ảnh hoàn thành!',
-        text2: 'Đang chờ khách nghiệm thu',
+        text1: 'Đã gửi bằng chứng hoàn thành!',
+        text2: 'Đang chờ khách hàng kiểm tra & nghiệm thu',
       });
     },
   });

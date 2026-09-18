@@ -3,16 +3,29 @@ import {
   View,
   Text,
   ScrollView,
-  SafeAreaView,
   TouchableOpacity,
   Alert,
   TextInput,
   Modal,
   KeyboardAvoidingView,
   Platform,
+  Image,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { ArrowLeft, Navigation, Check, Camera, MessageCircle, X } from 'lucide-react-native';
+import {
+  ArrowLeft,
+  Navigation,
+  Check,
+  Camera,
+  MessageCircle,
+  X,
+  Video,
+  ImagePlus,
+  Trash2,
+  Sparkles,
+} from 'lucide-react-native';
+import * as ImagePicker from 'expo-image-picker';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import 'dayjs/locale/vi';
@@ -73,6 +86,12 @@ export default function HelperJobDetailScreen() {
   const [estimatedDuration, setEstimatedDuration] = useState('3');
   const [notes, setNotes] = useState('');
 
+  // ── Completion Evidence States ───────────────────────────────────────────
+  const [showCompleteModal, setShowCompleteModal] = useState(false);
+  const [completionPhotos, setCompletionPhotos] = useState<string[]>([]);
+  const [completionVideos, setCompletionVideos] = useState<string[]>([]);
+  const [completionNotes, setCompletionNotes] = useState('');
+
   if (isLoading) return <LoadingSpinner />;
   if (!job) return null;
 
@@ -112,22 +131,159 @@ export default function HelperJobDetailScreen() {
     }
   };
 
+  // ── Media Picker Actions ──────────────────────────────────────────────────
+  const handleTakePhoto = async () => {
+    try {
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status !== 'granted') {
+        Toast.show({ type: 'error', text1: 'Cần quyền truy cập camera để chụp ảnh' });
+        return;
+      }
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 0.8,
+      });
+      if (!result.canceled && result.assets[0]?.uri) {
+        setCompletionPhotos(prev => [...prev, result.assets[0].uri]);
+      }
+    } catch {
+      Toast.show({ type: 'error', text1: 'Không thể mở máy ảnh' });
+    }
+  };
+
+  const handlePickPhoto = async () => {
+    try {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        Toast.show({ type: 'error', text1: 'Cần quyền truy cập thư viện để chọn ảnh' });
+        return;
+      }
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsMultipleSelection: true,
+        selectionLimit: 6,
+        quality: 0.8,
+      });
+      if (!result.canceled && result.assets.length > 0) {
+        const newUris = result.assets.map(a => a.uri);
+        setCompletionPhotos(prev => [...prev, ...newUris]);
+      }
+    } catch {
+      Toast.show({ type: 'error', text1: 'Không thể chọn ảnh từ thư viện' });
+    }
+  };
+
+  const handleRecordVideo = async () => {
+    try {
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status !== 'granted') {
+        Toast.show({ type: 'error', text1: 'Cần quyền truy cập camera để quay video' });
+        return;
+      }
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Videos,
+        videoMaxDuration: 60,
+        quality: 0.7,
+      });
+      if (!result.canceled && result.assets[0]?.uri) {
+        setCompletionVideos(prev => [...prev, result.assets[0].uri]);
+      }
+    } catch {
+      Toast.show({ type: 'error', text1: 'Không thể quay video' });
+    }
+  };
+
+  const handlePickVideo = async () => {
+    try {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        Toast.show({ type: 'error', text1: 'Cần quyền truy cập thư viện để chọn video' });
+        return;
+      }
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Videos,
+        allowsMultipleSelection: true,
+        selectionLimit: 2,
+        quality: 0.7,
+      });
+      if (!result.canceled && result.assets.length > 0) {
+        const newUris = result.assets.map(a => a.uri);
+        setCompletionVideos(prev => [...prev, ...newUris]);
+      }
+    } catch {
+      Toast.show({ type: 'error', text1: 'Không thể chọn video từ thư viện' });
+    }
+  };
+
+  const handleCompleteSubmission = async () => {
+    if (completionPhotos.length === 0 && completionVideos.length === 0) {
+      Alert.alert(
+        'Chưa có bằng chứng nghiệm thu',
+        'Khách hàng cần xem ảnh/video kết quả công việc để kiểm tra và nghiệm thu nhanh chóng. Bạn có chắc muốn tiếp tục không?',
+        [
+          { text: 'Chụp/Quay ngay', style: 'cancel' },
+          {
+            text: 'Tiếp tục gửi',
+            onPress: async () => {
+              try {
+                await completeJob.mutateAsync({
+                  jobId: id!,
+                  completion_photos: completionPhotos,
+                  completion_videos: completionVideos,
+                  completion_notes: completionNotes || undefined,
+                });
+                setShowCompleteModal(false);
+              } catch (err: any) {
+                const msg = err?.response?.data?.message || 'Cập nhật thất bại';
+                Toast.show({ type: 'error', text1: msg });
+              }
+            },
+          },
+        ],
+      );
+      return;
+    }
+
+    try {
+      await completeJob.mutateAsync({
+        jobId: id!,
+        completion_photos: completionPhotos,
+        completion_videos: completionVideos,
+        completion_notes: completionNotes || undefined,
+      });
+      setShowCompleteModal(false);
+    } catch (err: any) {
+      const msg = err?.response?.data?.message || 'Cập nhật thất bại';
+      Toast.show({ type: 'error', text1: msg });
+    }
+  };
+
   const handleAction = (action: string) => {
+    if (action === 'complete') {
+      setShowCompleteModal(true);
+      return;
+    }
+
     const labels: Record<string, string> = {
       on_the_way: 'Xác nhận bạn đang di chuyển đến địa chỉ khách hàng?',
       arrived: 'Xác nhận bạn đã có mặt tại địa điểm?',
       start: 'Bắt đầu bấm giờ làm việc?',
-      complete: 'Xác nhận đã hoàn thành công việc?',
     };
     Alert.alert(labels[action] ?? 'Xác nhận?', undefined, [
       { text: 'Hủy', style: 'cancel' },
       {
         text: 'Xác nhận',
         onPress: async () => {
-          if (action === 'on_the_way') await onTheWay.mutateAsync(id!);
-          else if (action === 'arrived') await arrived.mutateAsync(id!);
-          else if (action === 'start') await startJob.mutateAsync(id!);
-          else if (action === 'complete') await completeJob.mutateAsync({ jobId: id! });
+          try {
+            if (action === 'on_the_way') await onTheWay.mutateAsync(id!);
+            else if (action === 'arrived') await arrived.mutateAsync(id!);
+            else if (action === 'start') await startJob.mutateAsync(id!);
+          } catch (err: any) {
+            const msg = err?.response?.data?.message || 'Cập nhật tiến trình thất bại';
+            Toast.show({ type: 'error', text1: msg });
+          }
         },
       },
     ]);
@@ -135,15 +291,18 @@ export default function HelperJobDetailScreen() {
 
   const isMyActiveJob =
     job.helper_id && (typeof job.helper_id === 'string' ? job.helper_id : job.helper_id._id);
+  const insets = useSafeAreaInsets();
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.gray[50] }}>
-      {/* Header */}
+    <View style={{ flex: 1, backgroundColor: COLORS.gray[50] }}>
+      {/* Header (Safe Insets) */}
       <View
         style={{
           flexDirection: 'row',
           alignItems: 'center',
-          padding: 16,
+          paddingHorizontal: 16,
+          paddingTop: Math.max(insets.top + 6, 18),
+          paddingBottom: 14,
           backgroundColor: '#fff',
           borderBottomWidth: 1,
           borderBottomColor: COLORS.gray[100],
@@ -368,7 +527,7 @@ export default function HelperJobDetailScreen() {
 
       {/* ── Quote Modal ───────────────────────────────────────────────── */}
       <Modal visible={showQuoteModal} animationType="slide" presentationStyle="pageSheet">
-        <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
+        <View style={{ flex: 1, backgroundColor: '#fff', paddingTop: Math.max(insets.top, 16) }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', padding: 20 }}>
             <TouchableOpacity onPress={() => setShowQuoteModal(false)}>
               <X size={24} color={COLORS.gray[700]} />
@@ -501,8 +660,321 @@ export default function HelperJobDetailScreen() {
             </ScrollView>
           </KeyboardAvoidingView>
           <Toast />
-        </SafeAreaView>
+        </View>
       </Modal>
-    </SafeAreaView>
+
+      {/* ── Complete Evidence Modal (Chụp ảnh / Quay video hoàn thành) ── */}
+      <Modal visible={showCompleteModal} animationType="slide" presentationStyle="pageSheet">
+        <View style={{ flex: 1, backgroundColor: '#fff', paddingTop: Math.max(insets.top, 16) }}>
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              paddingHorizontal: 20,
+              paddingVertical: 16,
+              borderBottomWidth: 1,
+              borderBottomColor: COLORS.gray[100],
+            }}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+              <TouchableOpacity onPress={() => setShowCompleteModal(false)}>
+                <X size={24} color={COLORS.gray[700]} />
+              </TouchableOpacity>
+              <Text style={{ fontSize: 18, fontWeight: '800', color: COLORS.gray[900] }}>
+                Bằng chứng hoàn thành
+              </Text>
+            </View>
+            <Badge label="Nghiệm thu" color={COLORS.primaryLight} textColor={COLORS.primary} />
+          </View>
+
+          <KeyboardAvoidingView
+            style={{ flex: 1 }}
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          >
+            <ScrollView contentContainerStyle={{ padding: 20, gap: 18, paddingBottom: 60 }}>
+              <View
+                style={{
+                  backgroundColor: COLORS.primaryLight,
+                  padding: 14,
+                  borderRadius: 14,
+                  borderWidth: 1,
+                  borderColor: '#FFD9C5',
+                  gap: 4,
+                }}
+              >
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <Sparkles size={16} color={COLORS.primary} />
+                  <Text style={{ fontWeight: '800', fontSize: 14, color: COLORS.primaryDark }}>
+                    Gửi kết quả để khách nghiệm thu
+                  </Text>
+                </View>
+                <Text style={{ fontSize: 12.5, color: COLORS.gray[700], lineHeight: 18 }}>
+                  Chụp 1-4 hình ảnh hoặc quay video ngắn thể hiện kết quả sạch sẽ, đã sửa chữa xong để khách hàng kiểm tra và bấm hoàn thành nhanh chóng.
+                </Text>
+              </View>
+
+              {/* ── 1. Photos Section ─────────────────────────────────── */}
+              <View style={{ gap: 10 }}>
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                  }}
+                >
+                  <Text style={{ fontWeight: '800', fontSize: 15, color: COLORS.gray[800] }}>
+                    📸 Ảnh kết quả ({completionPhotos.length})
+                  </Text>
+                  <Text style={{ fontSize: 12, color: COLORS.gray[500] }}>Tối đa 6 ảnh</Text>
+                </View>
+
+                {/* Photo Action Buttons */}
+                <View style={{ flexDirection: 'row', gap: 10 }}>
+                  <TouchableOpacity
+                    activeOpacity={0.8}
+                    onPress={handleTakePhoto}
+                    style={{
+                      flex: 1,
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: 6,
+                      backgroundColor: '#FFF4ED',
+                      borderWidth: 1.5,
+                      borderColor: COLORS.primary,
+                      borderRadius: 12,
+                      paddingVertical: 12,
+                    }}
+                  >
+                    <Camera size={18} color={COLORS.primary} />
+                    <Text style={{ fontWeight: '700', fontSize: 13.5, color: COLORS.primary }}>
+                      Chụp ảnh ngay
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    activeOpacity={0.8}
+                    onPress={handlePickPhoto}
+                    style={{
+                      flex: 1,
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: 6,
+                      backgroundColor: COLORS.gray[100],
+                      borderRadius: 12,
+                      paddingVertical: 12,
+                    }}
+                  >
+                    <ImagePlus size={18} color={COLORS.gray[700]} />
+                    <Text style={{ fontWeight: '700', fontSize: 13.5, color: COLORS.gray[800] }}>
+                      Chọn từ album
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+
+                {/* Photos Grid */}
+                {completionPhotos.length > 0 && (
+                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 4 }}>
+                    {completionPhotos.map((uri, index) => (
+                      <View
+                        key={`photo-${index}`}
+                        style={{
+                          width: '30%',
+                          aspectRatio: 1,
+                          borderRadius: 12,
+                          overflow: 'hidden',
+                          position: 'relative',
+                          borderWidth: 1,
+                          borderColor: COLORS.gray[200],
+                        }}
+                      >
+                        <Image
+                          source={{ uri }}
+                          style={{ width: '100%', height: '100%' }}
+                          resizeMode="cover"
+                        />
+                        <TouchableOpacity
+                          activeOpacity={0.8}
+                          onPress={() =>
+                            setCompletionPhotos(prev => prev.filter((_, i) => i !== index))
+                          }
+                          style={{
+                            position: 'absolute',
+                            top: 4,
+                            right: 4,
+                            backgroundColor: 'rgba(0,0,0,0.65)',
+                            width: 24,
+                            height: 24,
+                            borderRadius: 12,
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                          }}
+                        >
+                          <Trash2 size={13} color="#FFF" />
+                        </TouchableOpacity>
+                      </View>
+                    ))}
+                  </View>
+                )}
+              </View>
+
+              {/* ── 2. Videos Section ─────────────────────────────────── */}
+              <View style={{ gap: 10, marginTop: 4 }}>
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                  }}
+                >
+                  <Text style={{ fontWeight: '800', fontSize: 15, color: COLORS.gray[800] }}>
+                    🎥 Video nghiệm thu ({completionVideos.length})
+                  </Text>
+                  <Text style={{ fontSize: 12, color: COLORS.gray[500] }}>1-2 video ngắn</Text>
+                </View>
+
+                {/* Video Action Buttons */}
+                <View style={{ flexDirection: 'row', gap: 10 }}>
+                  <TouchableOpacity
+                    activeOpacity={0.8}
+                    onPress={handleRecordVideo}
+                    style={{
+                      flex: 1,
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: 6,
+                      backgroundColor: '#EEF4FE',
+                      borderWidth: 1.5,
+                      borderColor: COLORS.secondary,
+                      borderRadius: 12,
+                      paddingVertical: 12,
+                    }}
+                  >
+                    <Video size={18} color={COLORS.secondary} />
+                    <Text style={{ fontWeight: '700', fontSize: 13.5, color: COLORS.secondary }}>
+                      Quay video
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    activeOpacity={0.8}
+                    onPress={handlePickVideo}
+                    style={{
+                      flex: 1,
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: 6,
+                      backgroundColor: COLORS.gray[100],
+                      borderRadius: 12,
+                      paddingVertical: 12,
+                    }}
+                  >
+                    <Video size={18} color={COLORS.gray[700]} />
+                    <Text style={{ fontWeight: '700', fontSize: 13.5, color: COLORS.gray[800] }}>
+                      Chọn video
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+
+                {/* Videos List Preview */}
+                {completionVideos.length > 0 && (
+                  <View style={{ gap: 8, marginTop: 4 }}>
+                    {completionVideos.map((uri, index) => (
+                      <View
+                        key={`video-${index}`}
+                        style={{
+                          flexDirection: 'row',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          backgroundColor: COLORS.gray[50],
+                          padding: 12,
+                          borderRadius: 12,
+                          borderWidth: 1,
+                          borderColor: COLORS.gray[200],
+                        }}
+                      >
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 }}>
+                          <View
+                            style={{
+                              width: 34,
+                              height: 34,
+                              borderRadius: 8,
+                              backgroundColor: '#EEF4FE',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                            }}
+                          >
+                            <Video size={18} color={COLORS.secondary} />
+                          </View>
+                          <View style={{ flex: 1 }}>
+                            <Text
+                              style={{ fontSize: 13, fontWeight: '700', color: COLORS.gray[800] }}
+                              numberOfLines={1}
+                            >
+                              Video nghiệm thu #{index + 1}
+                            </Text>
+                            <Text style={{ fontSize: 11, color: COLORS.gray[500] }}>
+                              Đã sẵn sàng gửi cho khách
+                            </Text>
+                          </View>
+                        </View>
+                        <TouchableOpacity
+                          onPress={() =>
+                            setCompletionVideos(prev => prev.filter((_, i) => i !== index))
+                          }
+                          style={{
+                            padding: 6,
+                            borderRadius: 8,
+                            backgroundColor: '#FEE2E2',
+                          }}
+                        >
+                          <Trash2 size={16} color={COLORS.error} />
+                        </TouchableOpacity>
+                      </View>
+                    ))}
+                  </View>
+                )}
+              </View>
+
+              {/* ── 3. Notes Section ──────────────────────────────────── */}
+              <View style={{ gap: 8, marginTop: 4 }}>
+                <Text style={{ fontWeight: '700', color: COLORS.gray[700], fontSize: 13.5 }}>
+                  Ghi chú bàn giao cho khách (tuỳ chọn)
+                </Text>
+                <TextInput
+                  style={{
+                    borderWidth: 1.5,
+                    borderColor: COLORS.gray[200],
+                    borderRadius: 14,
+                    padding: 14,
+                    fontSize: 14,
+                    minHeight: 80,
+                    textAlignVertical: 'top',
+                    color: COLORS.gray[900],
+                  }}
+                  placeholder="VD: Đã dọn dẹp sạch sẽ toàn bộ khu bếp, kiểm tra khóa và van nước an toàn..."
+                  value={completionNotes}
+                  onChangeText={setCompletionNotes}
+                  multiline
+                  placeholderTextColor={COLORS.gray[400]}
+                />
+              </View>
+
+              <Button
+                title="Gửi kết quả & Báo hoàn thành"
+                loading={completeJob.isPending}
+                onPress={handleCompleteSubmission}
+                style={{ marginTop: 10 }}
+              />
+            </ScrollView>
+          </KeyboardAvoidingView>
+          <Toast />
+        </View>
+      </Modal>
+    </View>
   );
 }

@@ -3,7 +3,6 @@ import {
   View,
   Text,
   ScrollView,
-  SafeAreaView,
   TouchableOpacity,
   TextInput,
   KeyboardAvoidingView,
@@ -11,6 +10,7 @@ import {
   Alert,
   ActivityIndicator,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import {
   ArrowLeft,
@@ -128,9 +128,15 @@ export default function BookingScreen() {
   const [description, setDescription] = useState('');
   const [aiInput, setAiInput] = useState('');
   const [aiSuggestion, setAiSuggestion] = useState<{
+    service_type?: string;
+    service_name?: string;
+    estimated_duration_hours?: number;
+    num_workers?: number;
     tasks?: string[];
     price_min?: number;
     price_max?: number;
+    confidence?: number;
+    notes?: string;
   } | null>(null);
   const [priceEstimate, setPriceEstimate] = useState<{
     price_min: number;
@@ -246,15 +252,52 @@ export default function BookingScreen() {
       const { data } = await analyzeAI.mutateAsync(aiInput);
       const result = data.data;
       setAiSuggestion(result);
+
+      // Tự động gán Dịch vụ phù hợp
       if (result.service_type) {
-        const svc = services?.find(s => s.slug === result.service_type);
-        if (svc) setSelectedService(svc._id);
+        const svcList = services && services.length > 0 ? services : DEFAULT_SERVICES;
+        const svc = svcList.find(
+          s =>
+            s.slug === result.service_type ||
+            s.name.toLowerCase().includes(result.service_type.toLowerCase()),
+        );
+        if (svc) {
+          setSelectedService(svc._id);
+        } else {
+          // Fallback map tương đối
+          const fallbackSvc = svcList.find(s =>
+            result.service_type.includes('clean')
+              ? s.slug.includes('clean') || s.slug.includes('housekeeping')
+              : result.service_type.includes('cook')
+                ? s.slug.includes('cook')
+                : result.service_type.includes('repair') || result.service_type.includes('electric') || result.service_type.includes('chay') || result.service_type.includes('dien')
+                  ? s.slug.includes('electric') || s.slug.includes('plumb') || s.slug.includes('ac')
+                  : true,
+          );
+          if (fallbackSvc) setSelectedService(fallbackSvc._id);
+        }
       }
-      if (result.estimated_duration_hours)
-        setDuration(Math.min(result.estimated_duration_hours, 8));
-      Toast.show({ type: 'success', text1: 'AI đã phân tích xong!', text2: 'Xem gợi ý bên dưới' });
+
+      // Tự động điền thời gian ước tính
+      if (result.estimated_duration_hours) {
+        setDuration(Math.min(Math.max(Math.round(result.estimated_duration_hours), 1), 8));
+      }
+
+      // Tự động điền Tiêu đề và Mô tả chi tiết
+      if (result.service_name || result.tasks) {
+        setTitle(result.service_name || aiInput.slice(0, 60));
+        const tasksList = result.tasks?.length ? `\n\nCác hạng mục cần làm:\n• ${result.tasks.join('\n• ')}` : '';
+        const notesStr = result.notes ? `\n\nGhi chú: ${result.notes}` : '';
+        setDescription(`${aiInput}${tasksList}${notesStr}`);
+      }
+
+      Toast.show({
+        type: 'success',
+        text1: 'AI đã phân tích thành công!',
+        text2: 'Đã tự động chọn dịch vụ & tạo chi tiết công việc',
+      });
     } catch {
-      Toast.show({ type: 'error', text1: 'Phân tích thất bại, thử lại sau' });
+      Toast.show({ type: 'error', text1: 'Phân tích thất bại, vui lòng thử lại' });
     }
   };
 
@@ -273,20 +316,40 @@ export default function BookingScreen() {
   };
 
   const handleSubmit = async () => {
-    if (!selectedService || !address.full_address || !title || !description) {
-      Toast.show({ type: 'error', text1: 'Vui lòng điền đầy đủ thông tin' });
+    // Nếu chưa có service_id, tự động lấy service mặc định đầu tiên
+    let currentServiceId = selectedService;
+    if (!currentServiceId) {
+      const defaultSvc = (services && services.length > 0 ? services : DEFAULT_SERVICES)[0];
+      currentServiceId = defaultSvc._id;
+      setSelectedService(currentServiceId);
+    }
+
+    if (!address.full_address.trim() || !address.district.trim()) {
+      Toast.show({ type: 'error', text1: 'Vui lòng nhập đầy đủ địa chỉ làm việc' });
+      setStep(1);
       return;
     }
+    if (!date || !timeSlot) {
+      Toast.show({ type: 'error', text1: 'Vui lòng chọn thời gian bắt đầu' });
+      setStep(2);
+      return;
+    }
+    if (!title.trim() || !description.trim()) {
+      Toast.show({ type: 'error', text1: 'Vui lòng điền tiêu đề và mô tả công việc' });
+      setStep(3);
+      return;
+    }
+
     try {
       await createJob.mutateAsync({
-        service_id: selectedService,
-        title,
-        description,
+        service_id: currentServiceId,
+        title: title.trim(),
+        description: description.trim(),
         address: {
-          full_address: address.full_address,
-          ward: address.ward,
-          district: address.district,
-          city: address.city,
+          full_address: address.full_address.trim(),
+          ward: address.ward?.trim() || undefined,
+          district: address.district.trim(),
+          city: address.city?.trim() || 'Hồ Chí Minh',
           location: { type: 'Point', coordinates: address.coordinates || [106.6983, 10.7725] },
         },
         preferred_date: date,
@@ -295,17 +358,47 @@ export default function BookingScreen() {
       });
       resetForm();
       router.replace('/(customer)/jobs');
-    } catch {
-      /* Toast shown by hook */
+    } catch (err: any) {
+      const msg =
+        err?.response?.data?.message ||
+        (Array.isArray(err?.response?.data?.message)
+          ? err.response.data.message[0]
+          : 'Đăng việc thất bại. Vui lòng thử lại');
+      Toast.show({
+        type: 'error',
+        text1: typeof msg === 'string' ? msg : 'Đăng việc không thành công',
+      });
     }
   };
 
-  const canNext = () => {
-    if (step === 0) return !!selectedService;
-    if (step === 1) return !!address.full_address && !!address.district;
-    if (step === 2) return !!date && !!timeSlot;
-    if (step === 3) return !!title && !!description;
-    return true;
+  const handleNextStep = () => {
+    if (step === 0) {
+      if (!selectedService) {
+        Toast.show({ type: 'error', text1: 'Vui lòng chọn 1 dịch vụ cần làm' });
+        return;
+      }
+      setStep(1);
+    } else if (step === 1) {
+      if (!address.full_address.trim() || !address.district.trim()) {
+        Toast.show({ type: 'error', text1: 'Vui lòng nhập địa chỉ chi tiết và quận/huyện' });
+        return;
+      }
+      setStep(2);
+    } else if (step === 2) {
+      if (!date || !timeSlot) {
+        Toast.show({ type: 'error', text1: 'Vui lòng chọn ngày và giờ bắt đầu làm việc' });
+        return;
+      }
+      setStep(3);
+    } else if (step === 3) {
+      if (!title.trim() || !description.trim()) {
+        Toast.show({ type: 'error', text1: 'Vui lòng điền tiêu đề và mô tả công việc' });
+        return;
+      }
+      setStep(4);
+    } else {
+      handleSubmit();
+    }
   };
 
   const handleBack = () => {
@@ -320,15 +413,18 @@ export default function BookingScreen() {
     }
   };
 
+  const insets = useSafeAreaInsets();
+
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
-      {/* Header */}
+    <View style={{ flex: 1, backgroundColor: '#fff' }}>
+      {/* Header (Safe Insets) */}
       <View
         style={{
           flexDirection: 'row',
           alignItems: 'center',
           paddingHorizontal: 20,
-          paddingVertical: 16,
+          paddingTop: Math.max(insets.top + 6, 18),
+          paddingBottom: 14,
         }}
       >
         <TouchableOpacity
@@ -413,29 +509,83 @@ export default function BookingScreen() {
                   size="sm"
                   style={{ backgroundColor: COLORS.primary }}
                 />
-                {aiSuggestion?.tasks && (
-                  <View style={{ gap: 4 }}>
-                    <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12 }}>
-                      Gợi ý việc cần làm:
-                    </Text>
-                    {aiSuggestion.tasks.map((t, i) => (
-                      <Text key={i} style={{ color: '#fff', fontSize: 13 }}>
-                        • {t}
+                {aiSuggestion && (
+                  <View
+                    style={{
+                      gap: 8,
+                      backgroundColor: 'rgba(255,255,255,0.06)',
+                      padding: 12,
+                      borderRadius: 12,
+                      borderLeftWidth: 3,
+                      borderLeftColor: COLORS.primary,
+                      marginTop: 4,
+                    }}
+                  >
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <Text style={{ color: '#34D399', fontWeight: '800', fontSize: 13.5 }}>
+                        ✓ {aiSuggestion.service_name || 'Đã phân tích xong'}
                       </Text>
-                    ))}
+                      {aiSuggestion.estimated_duration_hours && (
+                        <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 12 }}>
+                          Ước tính: {aiSuggestion.estimated_duration_hours}h
+                        </Text>
+                      )}
+                    </View>
+
+                    {aiSuggestion.tasks && aiSuggestion.tasks.length > 0 && (
+                      <View style={{ gap: 3 }}>
+                        <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 11.5, fontWeight: '700' }}>
+                          Hạng mục cần làm:
+                        </Text>
+                        {aiSuggestion.tasks.map((t, i) => (
+                          <Text key={i} style={{ color: '#fff', fontSize: 12.5 }}>
+                            • {t}
+                          </Text>
+                        ))}
+                      </View>
+                    )}
+
                     {aiSuggestion.price_min && (
                       <Text
                         style={{
-                          color: COLORS.primary,
-                          fontWeight: '700',
-                          fontSize: 13,
-                          marginTop: 4,
+                          color: '#FBBF24',
+                          fontWeight: '800',
+                          fontSize: 13.5,
+                          marginTop: 2,
                         }}
                       >
-                        Ước giá: {new Intl.NumberFormat('vi-VN').format(aiSuggestion.price_min)}₫ –
+                        Ước giá thị trường: {new Intl.NumberFormat('vi-VN').format(aiSuggestion.price_min)}₫ –{' '}
                         {new Intl.NumberFormat('vi-VN').format(aiSuggestion.price_max ?? 0)}₫
                       </Text>
                     )}
+
+                    {aiSuggestion.notes && (
+                      <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11.5, fontStyle: 'italic' }}>
+                        💡 {aiSuggestion.notes}
+                      </Text>
+                    )}
+
+                    <TouchableOpacity
+                      activeOpacity={0.85}
+                      onPress={() => {
+                        if (!selectedService) {
+                          const svcList = services && services.length > 0 ? services : DEFAULT_SERVICES;
+                          setSelectedService(svcList[0]._id);
+                        }
+                        setStep(1);
+                      }}
+                      style={{
+                        backgroundColor: COLORS.primary,
+                        paddingVertical: 9,
+                        borderRadius: 10,
+                        alignItems: 'center',
+                        marginTop: 4,
+                      }}
+                    >
+                      <Text style={{ color: '#fff', fontWeight: '800', fontSize: 13 }}>
+                        Tiếp tục với gợi ý này →
+                      </Text>
+                    </TouchableOpacity>
                   </View>
                 )}
               </Card>
@@ -961,16 +1111,12 @@ export default function BookingScreen() {
       >
         <Button
           title={step === STEPS.length - 1 ? 'Đăng yêu cầu ngay' : 'Tiếp theo'}
-          disabled={!canNext()}
           loading={createJob.isPending}
-          onPress={() => {
-            if (step < STEPS.length - 1) setStep(s => s + 1);
-            else handleSubmit();
-          }}
+          onPress={handleNextStep}
           icon={step < STEPS.length - 1 ? <ArrowRight size={18} color="#fff" /> : undefined}
         />
       </View>
-    </SafeAreaView>
+    </View>
   );
 }
 

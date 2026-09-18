@@ -3,12 +3,12 @@ import {
   View,
   Text,
   ScrollView,
-  SafeAreaView,
   TouchableOpacity,
   Switch,
   RefreshControl,
   Modal,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import {
   Bell,
@@ -137,9 +137,10 @@ export default function HelperDashboardScreen() {
   };
 
   const activeJob = myJobs?.[0];
+  const insets = useSafeAreaInsets();
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#F8F9FA' }}>
+    <View style={{ flex: 1, backgroundColor: '#F8F9FA' }}>
       <ScrollView
         showsVerticalScrollIndicator={false}
         refreshControl={
@@ -147,12 +148,12 @@ export default function HelperDashboardScreen() {
         }
         contentContainerStyle={{ paddingBottom: 110 }}
       >
-        {/* ── 1. Top Header Thợ ────────────────────────────────────────── */}
+        {/* ── 1. Top Header Thợ (Safe Insets) ──────────────────────────── */}
         <View
           style={{
             backgroundColor: '#FFFFFF',
             paddingHorizontal: 18,
-            paddingTop: 12,
+            paddingTop: Math.max(insets.top + 8, 20),
             paddingBottom: 16,
             borderBottomWidth: 1,
             borderBottomColor: COLORS.gray[100],
@@ -719,6 +720,6 @@ export default function HelperDashboardScreen() {
           </View>
         </View>
       </Modal>
-    </SafeAreaView>
+    </View>
   );
 }

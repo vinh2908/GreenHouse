@@ -2,10 +2,10 @@ import {
   View,
   Text,
   ScrollView,
-  SafeAreaView,
   TouchableOpacity,
   RefreshControl,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { MessageCircle, ChevronRight, ShieldCheck } from 'lucide-react-native';
 import dayjs from 'dayjs';
@@ -22,13 +22,14 @@ export default function ConversationsScreen() {
   const router = useRouter();
   const currentUser = useAuthStore(s => s.user);
   const { data: conversations, isLoading, refetch } = useConversations();
+  const insets = useSafeAreaInsets();
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#F8F9FA' }}>
+    <View style={{ flex: 1, backgroundColor: '#F8F9FA' }}>
       <View
         style={{
           paddingHorizontal: 20,
-          paddingTop: 16,
+          paddingTop: Math.max(insets.top + 8, 20),
           paddingBottom: 14,
           backgroundColor: '#fff',
           borderBottomWidth: 1,
@@ -128,6 +129,6 @@ export default function ConversationsScreen() {
           })
         )}
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }

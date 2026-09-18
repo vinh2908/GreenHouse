@@ -3,10 +3,10 @@ import {
   View,
   Text,
   ScrollView,
-  SafeAreaView,
   TouchableOpacity,
   RefreshControl,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { ChevronRight, Plus, Clock, MapPin } from 'lucide-react-native';
 import dayjs from 'dayjs';
@@ -31,9 +31,10 @@ export default function CustomerJobsScreen() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState(0);
   const { data: jobs, isLoading, isRefetching, refetch } = useMyJobs(TABS[activeTab].key);
+  const insets = useSafeAreaInsets();
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#F8F9FA' }}>
+    <View style={{ flex: 1, backgroundColor: '#F8F9FA' }}>
       {/* Header */}
       <View
         style={{
@@ -41,7 +42,7 @@ export default function CustomerJobsScreen() {
           justifyContent: 'space-between',
           alignItems: 'center',
           paddingHorizontal: 20,
-          paddingTop: 16,
+          paddingTop: Math.max(insets.top + 8, 20),
           paddingBottom: 14,
           backgroundColor: '#fff',
           borderBottomWidth: 1,
@@ -250,6 +251,6 @@ export default function CustomerJobsScreen() {
           )
         )}
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }

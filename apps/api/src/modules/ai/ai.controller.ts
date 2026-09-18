@@ -50,23 +50,21 @@ export class AiController {
   // ─── Booking Assistant ────────────────────────────────────────────────────
 
   @Post('booking/analyze')
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
+  @Public()
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: '[AI] Phân tích yêu cầu đặt lịch bằng ngôn ngữ tự nhiên',
     description:
       'Khách nhập mô tả tự do → AI phân tích → trả về service type, thời gian, số người, ước giá',
   })
-  async analyzeBooking(@Body() dto: AnalyzeBookingDto, @CurrentUser() _user: { sub: string }) {
+  async analyzeBooking(@Body() dto: AnalyzeBookingDto) {
     return this.bookingService.analyzeBookingRequest(dto.text);
   }
 
   // ─── Price Estimator ──────────────────────────────────────────────────────
 
   @Post('price/estimate')
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
+  @Public()
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: '[AI] Ước tính giá dịch vụ từ mô tả công việc',

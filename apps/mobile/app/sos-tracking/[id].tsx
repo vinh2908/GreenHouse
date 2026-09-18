@@ -3,13 +3,13 @@ import {
   View,
   Text,
   ScrollView,
-  SafeAreaView,
   TouchableOpacity,
   Linking,
   Share,
   ActivityIndicator,
   Alert,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import {
   ShieldCheck,
@@ -28,8 +28,9 @@ import relativeTime from 'dayjs/plugin/relativeTime';
 import 'dayjs/locale/vi';
 import Toast from 'react-native-toast-message';
 import { useJobDetail, useCancelJob } from '@/hooks/use-api';
-import { useJobSocketUpdates } from '@/hooks/use-socket';
+import { useJobSocketUpdates, useHelperLocation } from '@/hooks/use-socket';
 import { socketService, SOCKET_EVENTS } from '@/services/socket.service';
+import { LiveTrackingMap } from '@/components/common/live-tracking-map';
 import {
   Button,
   Card,
@@ -49,6 +50,7 @@ export default function SosTrackingScreen() {
 
   // ── Realtime Socket Updates ──────────────────────────────────────────────
   useJobSocketUpdates(id);
+  const helperLocation = useHelperLocation(id);
 
   const { data: job, isLoading, refetch } = useJobDetail(id);
   const cancelJob = useCancelJob();
@@ -116,16 +118,19 @@ export default function SosTrackingScreen() {
     );
   };
 
+  const insets = useSafeAreaInsets();
+
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#F8F9FA' }}>
-      {/* ── Top Header ─────────────────────────────────────────────── */}
+    <View style={{ flex: 1, backgroundColor: '#F8F9FA' }}>
+      {/* ── Top Header (Safe Insets) ─────────────────────────────────── */}
       <View
         style={{
           flexDirection: 'row',
           alignItems: 'center',
           justifyContent: 'space-between',
           paddingHorizontal: 16,
-          paddingVertical: 14,
+          paddingTop: Math.max(insets.top + 6, 18),
+          paddingBottom: 14,
           backgroundColor: isMatched ? '#10B981' : '#DC2626',
         }}
       >
@@ -226,33 +231,26 @@ export default function SosTrackingScreen() {
           </Card>
         )}
 
-        {/* ── TRƯỜNG HỢP 2: ĐÃ CÓ THỢ NHẬN (THỢ ĐANG DI CHUYỂN) ──────── */}
+        {/* ── TRƯỜNG HỢP 2: ĐÃ CÓ THỢ NHẬN (BẢN ĐỒ TRACKING NHƯ GRAB) ─── */}
         {isMatched && (
           <>
-            {/* ETA Counter Card */}
-            <Card
-              style={{
-                alignItems: 'center',
-                padding: 20,
-                gap: 8,
-                backgroundColor: '#ECFDF5',
-                borderColor: '#A7F3D0',
-                borderWidth: 2,
+            {/* 1. Bản đồ Live Tracking thời gian thực (Grab Map Style) */}
+            <LiveTrackingMap
+              customerLocation={{
+                latitude: job?.address?.location?.coordinates?.[1] || 10.7725,
+                longitude: job?.address?.location?.coordinates?.[0] || 106.6983,
               }}
-            >
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                <Navigation size={22} color={COLORS.success} />
-                <Text style={{ fontSize: 15, fontWeight: '800', color: '#065F46' }}>
-                  DỰ KIẾN CÓ MẶT SAU
-                </Text>
-              </View>
-              <Text style={{ fontSize: 36, fontWeight: '900', color: '#065F46' }}>{eta} PHÚT</Text>
-              <Text style={{ fontSize: 13, color: '#047857', fontWeight: '600' }}>
-                Thợ đang mang đồ nghề chuyên dụng và di chuyển gấp đến bạn
-              </Text>
-            </Card>
+              helperLocation={helperLocation?.current ? {
+                latitude: helperLocation.current.lat,
+                longitude: helperLocation.current.lng,
+              } : undefined}
+              customerAddress={job?.address?.full_address}
+              helperName={helperName}
+              etaMinutes={eta}
+              height={260}
+            />
 
-            {/* Thẻ định danh Thợ cứu hộ */}
+            {/* 2. Thẻ định danh Thợ cứu hộ */}
             <Card style={{ padding: 16, gap: 14 }}>
               <Text style={{ fontSize: 15, fontWeight: '900', color: COLORS.gray[900] }}>
                 Thông tin thợ cứu hộ phụ trách
@@ -385,6 +383,6 @@ export default function SosTrackingScreen() {
           />
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }

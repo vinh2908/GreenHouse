@@ -16,8 +16,8 @@
       "supportsTablet": false,
       "bundleIdentifier": "com.homemate.app",
       "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "HomeMate cần quyền truy cập vị trí để tìm người giúp việc gần bạn.",
-        "NSCameraUsageDescription": "HomeMate cần quyền truy cập camera để chụp ảnh công việc.",
+        "NSLocationWhenInUseUsageDescription": "HomeMate cần quyền truy cập vị trí để tìm dịch vụ và người giúp việc gần bạn.",
+        "NSCameraUsageDescription": "HomeMate cần quyền truy cập camera để chụp ảnh công việc và xác thực e-KYC.",
         "NSPhotoLibraryUsageDescription": "HomeMate cần quyền truy cập thư viện ảnh để upload hình ảnh."
       }
     },

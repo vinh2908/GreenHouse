@@ -3,11 +3,11 @@ import {
   View,
   Text,
   ScrollView,
-  SafeAreaView,
   TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Phone, Lock, User, Eye, EyeOff, ArrowLeft } from 'lucide-react-native';
 import Toast from 'react-native-toast-message';
@@ -61,20 +61,23 @@ export default function RegisterScreen() {
     }
   };
 
+  const insets = useSafeAreaInsets();
+
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
+    <View style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled">
-          {/* Header */}
+          {/* Header (Safe Insets) */}
           <View
             style={{
               flexDirection: 'row',
               alignItems: 'center',
               paddingHorizontal: 20,
-              paddingVertical: 16,
+              paddingTop: Math.max(insets.top + 6, 18),
+              paddingBottom: 16,
             }}
           >
             <TouchableOpacity
@@ -184,6 +187,6 @@ export default function RegisterScreen() {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </View>
   );
 }

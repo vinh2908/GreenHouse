@@ -23,13 +23,13 @@ export class AiSupportService {
   constructor(private readonly aiConfig: AiConfigService) {}
 
   async chat(messages: AiChatMessage[], userMessage: string): Promise<AiSupportResponse> {
-    if (!this.aiConfig.isFeatureEnabled('CUSTOMER_SUPPORT')) {
+    if (!this.aiConfig.enabled) {
+      const faq = this.getFaqAnswer(userMessage);
       return {
-        answer:
-          'Tính năng hỗ trợ AI hiện chưa khả dụng. Vui lòng liên hệ hotline 1900-xxxx để được hỗ trợ.',
+        answer: faq || 'HomeMate luôn cam kết bảo hiểm an toàn và bảo hành dịch vụ 30 ngày cho mọi công việc. Nếu có bất kỳ vấn đề gì, bạn có thể gửi khiếu nại trong mục Quản lý đơn hoặc liên hệ hotline 1900-8888.',
         intent: 'general',
-        suggested_actions: ['Gọi hotline', 'Gửi email hỗ trợ'],
-        confidence: 1,
+        suggested_actions: ['Xem bảng giá', 'Liên hệ hotline'],
+        confidence: 0.9,
       };
     }
 

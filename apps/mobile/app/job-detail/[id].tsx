@@ -3,12 +3,13 @@ import {
   View,
   Text,
   ScrollView,
-  SafeAreaView,
   TouchableOpacity,
   Alert,
   Modal,
   TextInput,
+  Image,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import {
   ArrowLeft,
@@ -21,6 +22,9 @@ import {
   Check,
   X,
   ShieldCheck,
+  Camera,
+  Video,
+  Sparkles,
 } from 'lucide-react-native';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
@@ -36,7 +40,8 @@ import {
   useApproveJob,
   useCreateReview,
 } from '@/hooks/use-api';
-import { useJobSocketUpdates } from '@/hooks/use-socket';
+import { useJobSocketUpdates, useHelperLocation } from '@/hooks/use-socket';
+import { LiveTrackingMap } from '@/components/common/live-tracking-map';
 import {
   Button,
   Card,
@@ -81,6 +86,7 @@ export default function JobDetailScreen() {
 
   // ── Realtime Socket Updates ──────────────────────────────────────────────
   useJobSocketUpdates(id);
+  const helperLocation = useHelperLocation(id);
 
   const { data: job, isLoading: jLoading } = useJobDetail(id);
   const { data: quotes } = useJobQuotes(id);
@@ -93,6 +99,7 @@ export default function JobDetailScreen() {
   const [showReview, setShowReview] = useState(false);
   const [rating, setRating] = useState(5);
   const [reviewText, setReviewText] = useState('');
+  const [selectedMediaPreview, setSelectedMediaPreview] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState(
     dayjs().add(1, 'day').format('YYYY-MM-DDT09:00:00'),
   );
@@ -100,7 +107,7 @@ export default function JobDetailScreen() {
   if (jLoading) return <LoadingSpinner />;
   if (!job) {
     return (
-      <SafeAreaView
+      <View
         style={{
           flex: 1,
           backgroundColor: '#fff',
@@ -113,7 +120,7 @@ export default function JobDetailScreen() {
           Không tìm thấy thông tin đơn hàng
         </Text>
         <Button title="Quay lại" variant="outline" onPress={() => router.back()} />
-      </SafeAreaView>
+      </View>
     );
   }
 
@@ -197,15 +204,18 @@ export default function JobDetailScreen() {
     }
   };
 
+  const insets = useSafeAreaInsets();
+
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#F8F9FA' }}>
-      {/* Header */}
+    <View style={{ flex: 1, backgroundColor: '#F8F9FA' }}>
+      {/* Header (Safe Insets) */}
       <View
         style={{
           flexDirection: 'row',
           alignItems: 'center',
           paddingHorizontal: 16,
-          paddingVertical: 14,
+          paddingTop: Math.max(insets.top + 6, 18),
+          paddingBottom: 14,
           backgroundColor: '#fff',
           borderBottomWidth: 1,
           borderBottomColor: COLORS.gray[100],
@@ -320,6 +330,24 @@ export default function JobDetailScreen() {
               );
             })}
           </Card>
+        )}
+
+        {/* ── Live Map Tracking (Khi Thợ đang di chuyển hoặc đã đến) ─── */}
+        {(job.status === 'helper_on_the_way' || job.status === 'helper_arrived') && (
+          <LiveTrackingMap
+            customerLocation={{
+              latitude: job.address?.location?.coordinates?.[1] || 10.7725,
+              longitude: job.address?.location?.coordinates?.[0] || 106.6983,
+            }}
+            helperLocation={helperLocation?.current ? {
+              latitude: helperLocation.current.lat,
+              longitude: helperLocation.current.lng,
+            } : undefined}
+            customerAddress={job.address?.full_address}
+            helperName={helperObj?.full_name || 'Thợ HomeMate'}
+            etaMinutes={12}
+            height={220}
+          />
         )}
 
         {/* ── Job info ───────────────────────────────────────────────── */}
@@ -568,10 +596,126 @@ export default function JobDetailScreen() {
           </Card>
         )}
 
+        {/* ── Bằng chứng nghiệm thu từ Thợ (Ảnh / Video hoàn thành) ── */}
+        {((job.completion_photos && job.completion_photos.length > 0) ||
+          (job.completion_videos && job.completion_videos.length > 0) ||
+          job.completion_notes ||
+          job.status === 'pending_review') && (
+          <Card style={{ gap: 12, padding: 16, borderColor: '#FED7AA', borderWidth: 1.5 }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <Sparkles size={18} color={COLORS.primary} />
+                <Text style={{ fontWeight: '800', fontSize: 15, color: COLORS.gray[900] }}>
+                  Bằng chứng hoàn thành từ thợ
+                </Text>
+              </View>
+              {job.status === 'pending_review' && (
+                <Badge label="Chờ bạn kiểm tra" color={COLORS.warningLight} textColor={COLORS.warning} />
+              )}
+            </View>
+
+            {job.completion_notes && (
+              <View style={{ backgroundColor: COLORS.gray[50], padding: 12, borderRadius: 12 }}>
+                <Text style={{ fontSize: 13, color: COLORS.gray[600], fontWeight: '700', marginBottom: 2 }}>
+                  Ghi chú từ thợ:
+                </Text>
+                <Text style={{ fontSize: 13.5, color: COLORS.gray[800], lineHeight: 20 }}>
+                  "{job.completion_notes}"
+                </Text>
+              </View>
+            )}
+
+            {/* Photos */}
+            {job.completion_photos && job.completion_photos.length > 0 && (
+              <View style={{ gap: 6 }}>
+                <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.gray[700] }}>
+                  📸 Hình ảnh kết quả ({job.completion_photos.length}):
+                </Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                  <View style={{ flexDirection: 'row', gap: 10 }}>
+                    {job.completion_photos.map((uri: string, idx: number) => (
+                      <TouchableOpacity
+                        key={`comp-p-${idx}`}
+                        activeOpacity={0.85}
+                        onPress={() => setSelectedMediaPreview(uri)}
+                        style={{
+                          width: 110,
+                          height: 110,
+                          borderRadius: 14,
+                          overflow: 'hidden',
+                          borderWidth: 1.5,
+                          borderColor: COLORS.gray[200],
+                        }}
+                      >
+                        <Image source={{ uri }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </ScrollView>
+              </View>
+            )}
+
+            {/* Videos */}
+            {job.completion_videos && job.completion_videos.length > 0 && (
+              <View style={{ gap: 6, marginTop: 4 }}>
+                <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.gray[700] }}>
+                  🎥 Video nghiệm thu ({job.completion_videos.length}):
+                </Text>
+                <View style={{ gap: 8 }}>
+                  {job.completion_videos.map((vUri: string, idx: number) => (
+                    <TouchableOpacity
+                      key={`comp-v-${idx}`}
+                      activeOpacity={0.8}
+                      onPress={() => setSelectedMediaPreview(vUri)}
+                      style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        backgroundColor: '#EEF4FE',
+                        padding: 12,
+                        borderRadius: 12,
+                        borderWidth: 1,
+                        borderColor: '#BFDBFE',
+                      }}
+                    >
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                        <View
+                          style={{
+                            width: 36,
+                            height: 36,
+                            borderRadius: 10,
+                            backgroundColor: COLORS.secondary,
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                          }}
+                        >
+                          <Video size={20} color="#FFF" />
+                        </View>
+                        <View>
+                          <Text style={{ fontSize: 13.5, fontWeight: '800', color: COLORS.gray[900] }}>
+                            Video hoàn thành #{idx + 1}
+                          </Text>
+                          <Text style={{ fontSize: 11.5, color: COLORS.secondary, fontWeight: '600' }}>
+                            Bấm để kiểm tra video nghiệm thu
+                          </Text>
+                        </View>
+                      </View>
+                      <ChevronRight size={18} color={COLORS.secondary} />
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+            )}
+          </Card>
+        )}
+
         {/* ── Actions ────────────────────────────────────────────────── */}
         <View style={{ gap: 10, marginTop: 4 }}>
           {canApprove && (
-            <Button title="Nghiệm thu & Đánh giá thợ 5⭐" onPress={() => setShowReview(true)} />
+            <Button
+              title="✓ Kiểm tra xong • Nghiệm thu & Đánh giá 5⭐"
+              onPress={() => setShowReview(true)}
+            />
           )}
           {hasHelperAssigned && isActive && (
             <Button
@@ -593,9 +737,50 @@ export default function JobDetailScreen() {
         </View>
       </ScrollView>
 
+      {/* ── Media Fullscreen Preview Modal ─────────────────────────────── */}
+      <Modal visible={Boolean(selectedMediaPreview)} transparent animationType="fade">
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: 'rgba(0,0,0,0.92)',
+            justifyContent: 'center',
+            alignItems: 'center',
+            padding: 20,
+          }}
+        >
+          <TouchableOpacity
+            onPress={() => setSelectedMediaPreview(null)}
+            style={{
+              position: 'absolute',
+              top: Math.max(insets.top + 10, 30),
+              right: 20,
+              backgroundColor: 'rgba(255,255,255,0.2)',
+              width: 44,
+              height: 44,
+              borderRadius: 22,
+              alignItems: 'center',
+              justifyContent: 'center',
+              zIndex: 99,
+            }}
+          >
+            <X size={24} color="#FFF" />
+          </TouchableOpacity>
+
+          {selectedMediaPreview && (
+            <View style={{ width: '100%', height: '75%', borderRadius: 16, overflow: 'hidden' }}>
+              <Image
+                source={{ uri: selectedMediaPreview }}
+                style={{ width: '100%', height: '100%' }}
+                resizeMode="contain"
+              />
+            </View>
+          )}
+        </View>
+      </Modal>
+
       {/* ── Review Modal ───────────────────────────────────────────────── */}
       <Modal visible={showReview} animationType="slide" presentationStyle="pageSheet">
-        <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
+        <View style={{ flex: 1, backgroundColor: '#fff', paddingTop: Math.max(insets.top, 16) }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', padding: 20 }}>
             <TouchableOpacity onPress={() => setShowReview(false)}>
               <X size={24} color={COLORS.gray[700]} />
@@ -667,8 +852,8 @@ export default function JobDetailScreen() {
             />
           </ScrollView>
           <Toast />
-        </SafeAreaView>
+        </View>
       </Modal>
-    </SafeAreaView>
+    </View>
   );
 }

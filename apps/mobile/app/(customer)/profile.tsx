@@ -1,4 +1,5 @@
-import { View, Text, ScrollView, SafeAreaView, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import {
   User,
@@ -21,18 +22,18 @@ const MENU_SECTIONS = [
   {
     title: 'Tài khoản & Cá nhân',
     items: [
-      { icon: User, label: 'Thông tin cá nhân', route: null },
-      { icon: MapPin, label: 'Địa chỉ đã lưu', route: null },
-      { icon: CreditCard, label: 'Phương thức thanh toán', route: null },
-      { icon: Bell, label: 'Cài đặt thông báo', route: '/(customer)/notifications' },
+      { icon: User, label: 'Thông tin cá nhân', route: '/edit-profile' },
+      { icon: MapPin, label: 'Địa chỉ đã lưu', route: '/edit-profile' },
+      { icon: CreditCard, label: 'Phương thức thanh toán & Ví', route: '/bank-account' },
+      { icon: Bell, label: 'Cài đặt thông báo', route: '/notifications' },
     ],
   },
   {
     title: 'Hỗ trợ & Pháp lý',
     items: [
-      { icon: HelpCircle, label: 'Trung tâm trợ giúp Vua Thợ', route: null },
-      { icon: Shield, label: 'Chính sách bảo mật & Bảo hiểm', route: null },
-      { icon: Star, label: 'Đánh giá ứng dụng', route: null },
+      { icon: HelpCircle, label: 'Trung tâm trợ giúp Vua Thợ (24/7)', route: '/help-center' },
+      { icon: Shield, label: 'Chính sách bảo mật & Bảo hiểm 30 ngày', route: '/policy-insurance' },
+      { icon: Star, label: 'Đánh giá ứng dụng HomeMate', route: null },
     ],
   },
 ];
@@ -71,29 +72,44 @@ export default function CustomerProfileScreen() {
     }
   };
 
+  const insets = useSafeAreaInsets();
+
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.gray[50] }}>
+    <View style={{ flex: 1, backgroundColor: COLORS.gray[50] }}>
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 110 }}
       >
-        {/* ── Profile header ─────────────────────────────────────────── */}
+        {/* ── Profile header (Safe Insets) ────────────────────────────── */}
         <View
           style={{
             backgroundColor: '#fff',
-            padding: 24,
+            paddingHorizontal: 24,
+            paddingTop: Math.max(insets.top + 8, 20),
+            paddingBottom: 24,
             alignItems: 'center',
             borderBottomWidth: 1,
             borderBottomColor: COLORS.gray[100],
           }}
         >
-          <Avatar name={displayUser?.full_name} uri={displayUser?.avatar} size={80} />
-          <Text style={{ fontSize: 20, fontWeight: '800', color: COLORS.gray[900], marginTop: 12 }}>
-            {displayUser?.full_name}
-          </Text>
-          <Text style={{ fontSize: 14, color: COLORS.gray[500], marginTop: 4, fontWeight: '600' }}>
-            {displayUser?.phone}
-          </Text>
+          <TouchableOpacity
+            activeOpacity={0.85}
+            onPress={() => router.push('/edit-profile')}
+            style={{ alignItems: 'center' }}
+          >
+            <Avatar name={displayUser?.full_name} uri={displayUser?.avatar} size={80} />
+            <Text style={{ fontSize: 20, fontWeight: '800', color: COLORS.gray[900], marginTop: 12 }}>
+              {displayUser?.full_name}
+            </Text>
+            <Text style={{ fontSize: 14, color: COLORS.gray[500], marginTop: 4, fontWeight: '600' }}>
+              {displayUser?.phone}
+            </Text>
+            <View style={{ backgroundColor: COLORS.gray[100], paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10, marginTop: 6 }}>
+              <Text style={{ fontSize: 12, fontWeight: '700', color: COLORS.primary }}>
+                Chỉnh sửa hồ sơ ✏️
+              </Text>
+            </View>
+          </TouchableOpacity>
 
           {/* Switch to helper role button */}
           <TouchableOpacity
@@ -196,10 +212,10 @@ export default function CustomerProfileScreen() {
               fontWeight: '500',
             }}
           >
-            HomeMate v1.0.0 • Chuẩn giao diện Vua Thợ
+            HomeMate v1.0.0 • Dịch vụ gia đình chuyên nghiệp
           </Text>
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }

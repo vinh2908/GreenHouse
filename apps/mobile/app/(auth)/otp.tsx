@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
-import { View, Text, SafeAreaView, TouchableOpacity, TextInput } from 'react-native';
+import { View, Text, TouchableOpacity, TextInput } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { ArrowLeft } from 'lucide-react-native';
 import Toast from 'react-native-toast-message';
@@ -83,8 +84,10 @@ export default function OtpScreen() {
     }
   };
 
+  const insets = useSafeAreaInsets();
+
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
+    <View style={{ flex: 1, backgroundColor: '#fff', paddingTop: Math.max(insets.top, 16) }}>
       <View
         style={{
           flexDirection: 'row',
@@ -198,6 +201,6 @@ export default function OtpScreen() {
           )}
         </View>
       </View>
-    </SafeAreaView>
+    </View>
   );
 }

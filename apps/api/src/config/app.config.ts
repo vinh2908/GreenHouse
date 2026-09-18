@@ -11,8 +11,12 @@ export default registerAs('app', () => ({
 
 // Separate AI config namespace
 export const aiConfig = registerAs('ai', () => ({
-  openaiApiKey: process.env.OPENAI_API_KEY || 'sk-placeholder',
-  // Feature flags (read from env, default true if key set)
+  provider: process.env.AI_PROVIDER || 'gemini', // 'gemini' | 'openai' | 'mock'
+  geminiApiKey: process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_API_KEY || '',
+  geminiModel: process.env.GEMINI_MODEL || 'gemini-2.5-flash',
+  openaiApiKey: process.env.OPENAI_API_KEY || '',
+  openaiModel: process.env.OPENAI_MODEL || 'gpt-4o-mini',
+  // Feature flags (read from env, default true)
   bookingAssistant: process.env.AI_BOOKING_ASSISTANT !== 'false',
   priceEstimator: process.env.AI_PRICE_ESTIMATOR !== 'false',
   matchExplanation: process.env.AI_MATCH_EXPLANATION !== 'false',

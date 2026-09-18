@@ -2,11 +2,11 @@ import {
   View,
   Text,
   ScrollView,
-  SafeAreaView,
   TouchableOpacity,
   Alert,
   Switch,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import {
   ShieldCheck,
@@ -16,6 +16,9 @@ import {
   CreditCard,
   FileText,
   Home,
+  HelpCircle,
+  Shield,
+  PhoneCall,
 } from 'lucide-react-native';
 import { useAuthStore } from '@/stores/auth.store';
 import { useHelperProfile, useSetHelperStatus, useSwitchRole } from '@/hooks/use-api';
@@ -69,30 +72,44 @@ export default function HelperProfileScreen() {
 
   const KYC_STATUS =
     KYC_CONFIG[profile?.verification_status || 'unsubmitted'] || KYC_CONFIG['unsubmitted'];
+  const insets = useSafeAreaInsets();
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.gray[50] }}>
+    <View style={{ flex: 1, backgroundColor: COLORS.gray[50] }}>
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 110 }}
       >
-        {/* Header */}
+        {/* Header (Safe Insets) */}
         <View
           style={{
             backgroundColor: '#fff',
-            padding: 24,
+            paddingHorizontal: 24,
+            paddingTop: Math.max(insets.top + 8, 20),
+            paddingBottom: 24,
             alignItems: 'center',
             borderBottomWidth: 1,
             borderBottomColor: COLORS.gray[100],
           }}
         >
-          <Avatar name={user?.full_name} size={80} />
-          <Text style={{ fontSize: 20, fontWeight: '800', color: COLORS.gray[900], marginTop: 12 }}>
-            {user?.full_name}
-          </Text>
-          <Text style={{ fontSize: 14, color: COLORS.gray[500], marginTop: 4, fontWeight: '600' }}>
-            {user?.phone}
-          </Text>
+          <TouchableOpacity
+            activeOpacity={0.85}
+            onPress={() => router.push('/edit-profile')}
+            style={{ alignItems: 'center' }}
+          >
+            <Avatar name={user?.full_name} size={80} />
+            <Text style={{ fontSize: 20, fontWeight: '800', color: COLORS.gray[900], marginTop: 12 }}>
+              {user?.full_name}
+            </Text>
+            <Text style={{ fontSize: 14, color: COLORS.gray[500], marginTop: 4, fontWeight: '600' }}>
+              {user?.phone}
+            </Text>
+            <View style={{ backgroundColor: COLORS.gray[100], paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10, marginTop: 6 }}>
+              <Text style={{ fontSize: 12, fontWeight: '700', color: COLORS.primary }}>
+                Chỉnh sửa hồ sơ thợ ✏️
+              </Text>
+            </View>
+          </TouchableOpacity>
 
           {/* Stats */}
           {profile && (
@@ -212,8 +229,10 @@ export default function HelperProfileScreen() {
           <Card style={{ gap: 0 }}>
             {[
               { icon: CreditCard, label: 'Tài khoản ngân hàng liên kết', route: '/bank-account' },
+              { icon: FileText, label: 'Hồ sơ nghề nghiệp & Kỹ năng', route: '/edit-profile' },
+              { icon: HelpCircle, label: 'Trung tâm trợ giúp Vua Thợ (24/7)', route: '/help-center' },
+              { icon: Shield, label: 'Chính sách bảo mật & Bảo hiểm 30 ngày', route: '/policy-insurance' },
               { icon: Star, label: 'Đánh giá & Phản hồi từ khách hàng', route: null },
-              { icon: FileText, label: 'Hồ sơ kỹ năng & Chứng chỉ nghề', route: null },
             ].map((item, i) => (
               <View key={item.label}>
                 {i > 0 && <Separator my={0} />}
@@ -267,10 +286,10 @@ export default function HelperProfileScreen() {
               fontWeight: '500',
             }}
           >
-            HomeMate Đối Tác v1.0.0 • Vua Thợ Ecosystem
+            HomeMate Đối Tác v1.0.0 • Verified Ecosystem
           </Text>
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }

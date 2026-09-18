@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { View, Text, SafeAreaView, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { ArrowRight, CheckCircle2 } from 'lucide-react-native';
 import Toast from 'react-native-toast-message';
@@ -53,8 +54,10 @@ export default function SelectRoleScreen() {
     }
   };
 
+  const insets = useSafeAreaInsets();
+
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
+    <View style={{ flex: 1, backgroundColor: '#fff', paddingTop: Math.max(insets.top, 16), paddingBottom: Math.max(insets.bottom, 16) }}>
       <ScrollView
         contentContainerStyle={{ flexGrow: 1, padding: 24, justifyContent: 'space-between' }}
       >
@@ -239,6 +242,6 @@ export default function SelectRoleScreen() {
           />
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
