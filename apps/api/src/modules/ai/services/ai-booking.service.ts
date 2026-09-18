@@ -3,13 +3,18 @@ import { AiConfigService } from './ai-config.service';
 import { AiBookingAnalysis, AiPriceEstimate } from '@homemate/types';
 import { PLATFORM_FEE_BY_SERVICE, SERVICE_SLUG_VI } from '@homemate/constants';
 
-// ─── Price reference table (VND/giờ theo dịch vụ) ─────────────────────────────
+// ─── Price reference table (VND/giờ hoặc theo lần theo dịch vụ) ─────────────────────────────
 const PRICE_REFERENCE: Record<string, { min: number; max: number; unit: string }> = {
   housekeeping_hourly: { min: 45000, max: 80000, unit: 'hour' },
   housekeeping_daily: { min: 350000, max: 600000, unit: 'day' },
   deep_cleaning: { min: 800000, max: 2500000, unit: 'job' },
   housekeeping_periodic: { min: 45000, max: 80000, unit: 'hour' },
   cooking: { min: 60000, max: 120000, unit: 'hour' },
+  electrician: { min: 150000, max: 500000, unit: 'job' },
+  plumbing: { min: 150000, max: 600000, unit: 'job' },
+  ac_repair: { min: 180000, max: 550000, unit: 'job' },
+  appliance: { min: 200000, max: 700000, unit: 'job' },
+  locksmith: { min: 150000, max: 500000, unit: 'job' },
 };
 
 @Injectable()
@@ -76,26 +81,39 @@ export class AiBookingService {
       return this.mockAnalyze(text);
     }
 
-    const systemPrompt = `Bạn là trợ lý đặt lịch giúp việc nhà HomeMate. Phân tích yêu cầu của khách và trả về JSON.
+    const systemPrompt = `Bạn là trợ lý đặt lịch dịch vụ gia đình và sửa chữa HomeMate (Vua Thợ). Phân tích yêu cầu tự do của khách hàng và trả về JSON chuẩn xác.
 
-Các loại dịch vụ:
-- housekeeping_hourly: Giúp việc theo giờ (45k-80k/giờ)
-- housekeeping_daily: Giúp việc theo ngày (350k-600k/ngày)
-- deep_cleaning: Tổng vệ sinh nhà (800k-2.5tr/lần)
-- housekeeping_periodic: Giúp việc định kỳ (hàng tuần/tháng)
-- cooking: Nấu ăn gia đình (60k-120k/giờ)
+Danh sách 8 dịch vụ cốt lõi của HomeMate:
+1. housekeeping_hourly: Giúp việc theo giờ, dọn dẹp phòng, lau nhà, giặt ủi (45k - 80k/giờ)
+2. deep_cleaning: Tổng vệ sinh nhà cửa, căn hộ, biệt thự, dọn nhà đón Tết (800k - 2.5tr/lần)
+3. cooking: Nấu ăn gia đình, tiệc nhỏ, đi chợ (60k - 120k/giờ)
+4. electrician: Sửa điện gia dụng, chập cháy điện, lắp đèn, ổ cắm, quạt (150k - 500k/lần)
+5. plumbing: Sửa ống nước, rò rỉ bồn rửa/lavabo, thông cống nghẹt, thay vòi sen (150k - 600k/lần)
+6. ac_repair: Vệ sinh máy lạnh, bơm gas, sửa máy lạnh chảy nước/không lạnh (180k - 550k/máy)
+7. appliance: Sửa máy giặt, tủ lạnh, lò vi sóng, bếp từ (200k - 700k/lần)
+8. locksmith: Sửa khóa cửa, thay ổ khóa, lắp đặt camera an ninh (150k - 500k/lần)
 
-Trả về JSON với các field:
+Quy tắc phân tích:
+- Xác định đúng nhất 1 trong 8 service_type trên (Bắt buộc phải chọn 1 trong 8 slug trên, không được để null).
+- service_name: Tên tiêu đề công việc ngắn gọn (tiếng Việt).
+- estimated_duration_hours: Số giờ ước tính (từ 1 đến 8).
+- num_workers: Số thợ phù hợp (1-3 người).
+- tasks: Danh sách các đầu việc cụ thể cần thực hiện.
+- price_min, price_max: Khoảng giá thị trường hợp lý (VND).
+- confidence: Độ tự tin (0.5 - 1.0).
+- notes: Ghi chú hữu ích hoặc lời khuyên cho gia chủ.
+
+Trả về duy nhất JSON hợp lệ theo cấu trúc:
 {
-  "service_type": string,
-  "service_name": string (tiếng Việt),
+  "service_type": "plumbing" | "electrician" | "ac_repair" | "deep_cleaning" | "housekeeping_hourly" | "cooking" | "appliance" | "locksmith",
+  "service_name": string,
   "estimated_duration_hours": number,
   "num_workers": number,
-  "tasks": string[] (danh sách việc cần làm),
-  "price_min": number (VND),
-  "price_max": number (VND),
-  "confidence": number (0-1),
-  "notes": string (gợi ý thêm nếu cần)
+  "tasks": string[],
+  "price_min": number,
+  "price_max": number,
+  "confidence": number,
+  "notes": string
 }`;
 
     try {
@@ -121,7 +139,6 @@ Trả về JSON với các field:
     const ref = serviceType ? PRICE_REFERENCE[serviceType] : PRICE_REFERENCE['housekeeping_hourly'];
 
     if (!this.aiConfig.isFeatureEnabled('PRICE_ESTIMATOR')) {
-      // Mock estimate
       const hours = 3;
       return {
         service_type: serviceType ?? 'housekeeping_hourly',
@@ -136,14 +153,18 @@ Trả về JSON với các field:
       };
     }
 
-    const systemPrompt = `Bạn là chuyên gia định giá dịch vụ giúp việc nhà tại Việt Nam.
-Phân tích mô tả và ước tính giá dịch vụ theo bảng giá chuẩn.
+    const systemPrompt = `Bạn là chuyên gia định giá dịch vụ gia đình và sửa chữa HomeMate (Vua Thợ) tại Việt Nam.
+Phân tích mô tả công việc và ước tính khoảng giá thị trường hợp lý.
 
 Bảng giá tham khảo (VND):
 - Giúp việc theo giờ: 45,000 - 80,000/giờ
-- Giúp việc theo ngày: 350,000 - 600,000/ngày
-- Tổng vệ sinh: 800,000 - 2,500,000/lần
-- Nấu ăn: 60,000 - 120,000/giờ
+- Tổng vệ sinh nhà cửa: 800,000 - 2,500,000/lần
+- Nấu ăn gia đình: 60,000 - 120,000/giờ
+- Sửa điện gia dụng: 150,000 - 500,000/lần
+- Sửa ống nước, thông cống: 150,000 - 600,000/lần
+- Vệ sinh & Sửa máy lạnh: 180,000 - 550,000/máy
+- Sửa máy giặt, tủ lạnh: 200,000 - 700,000/lần
+- Sửa khóa & Lắp camera: 150,000 - 500,000/lần
 
 Trả về JSON:
 {
@@ -159,20 +180,25 @@ Trả về JSON:
 }`;
 
     try {
+      const serviceName = serviceType && (SERVICE_SLUG_VI as Record<string, string>)[serviceType] ? (SERVICE_SLUG_VI as Record<string, string>)[serviceType] : 'Dịch vụ';
       const content = await this.aiConfig.chat(
         [
           { role: 'system', content: systemPrompt },
           {
             role: 'user',
-            content: `Loại dịch vụ: ${SERVICE_SLUG_VI[serviceType ?? ''] ?? 'Giúp việc'}\nMô tả: ${description}`,
+            content: `Loại dịch vụ: ${serviceName}\nMô tả: ${description}`,
           },
         ],
         { jsonMode: true, temperature: 0.2 },
       );
 
-      return JSON.parse(content) as AiPriceEstimate;
+      const parsed = JSON.parse(content) as AiPriceEstimate;
+      if (parsed && typeof parsed.price_min === 'number') {
+        return parsed;
+      }
+      throw new Error('Invalid JSON structure from AI');
     } catch (err) {
-      this.logger.error('AI price estimation failed', err);
+      this.logger.error('AI price estimation failed, falling back to rule-based table', err);
       const hours = 3;
       return {
         service_type: serviceType ?? 'housekeeping_hourly',
@@ -181,8 +207,9 @@ Trả về JSON:
         estimated_duration_hours: hours,
         num_workers: 1,
         complexity: 'medium',
-        reasoning: 'Ước tính theo bảng giá chuẩn.',
-        confidence: 0.4,
+        reasoning: 'Ước tính theo bảng giá chuẩn HomeMate.',
+        tasks: ['Kiểm tra hiện trạng', 'Thực hiện kỹ thuật', 'Nghiệm thu bàn giao'],
+        confidence: 0.8,
       };
     }
   }

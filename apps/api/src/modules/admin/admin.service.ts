@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { User, UserDocument } from '../users/schemas/user.schema';
@@ -114,16 +114,22 @@ export class AdminService {
   }
 
   async approveKyc(userId: string): Promise<HelperProfileDocument> {
-    const profile = await this.helperModel.findOne({ user_id: userId }).exec();
-    if (!profile) throw new Error('Helper not found');
+    const query = Types.ObjectId.isValid(userId)
+      ? { $or: [{ user_id: new Types.ObjectId(userId) }, { _id: new Types.ObjectId(userId) }] }
+      : { user_id: userId };
+    const profile = await this.helperModel.findOne(query).exec();
+    if (!profile) throw new NotFoundException('Helper profile not found');
     profile.verification_status = VerificationStatus.APPROVED;
     profile.verified_at = new Date();
     return profile.save();
   }
 
   async rejectKyc(userId: string, reason: string): Promise<HelperProfileDocument> {
-    const profile = await this.helperModel.findOne({ user_id: userId }).exec();
-    if (!profile) throw new Error('Helper not found');
+    const query = Types.ObjectId.isValid(userId)
+      ? { $or: [{ user_id: new Types.ObjectId(userId) }, { _id: new Types.ObjectId(userId) }] }
+      : { user_id: userId };
+    const profile = await this.helperModel.findOne(query).exec();
+    if (!profile) throw new NotFoundException('Helper profile not found');
     profile.verification_status = VerificationStatus.REJECTED;
     profile.rejection_reason = reason;
     return profile.save();

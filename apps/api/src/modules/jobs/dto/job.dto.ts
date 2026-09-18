@@ -127,6 +127,17 @@ export class CompleteJobDto {
   @IsArray()
   @IsString({ each: true })
   completion_photos?: string[];
+
+  @ApiPropertyOptional({ type: [String] })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  completion_videos?: string[];
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  completion_notes?: string;
 }
 
 export class ReviewJobDto {

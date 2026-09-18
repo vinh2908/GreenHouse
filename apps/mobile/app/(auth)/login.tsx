@@ -3,11 +3,11 @@ import {
   View,
   Text,
   ScrollView,
-  SafeAreaView,
   TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Phone, Lock, Eye, EyeOff, ShieldCheck, Wrench } from 'lucide-react-native';
 import Toast from 'react-native-toast-message';
@@ -50,8 +50,10 @@ export default function LoginScreen() {
     }
   };
 
+  const insets = useSafeAreaInsets();
+
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
+    <View style={{ flex: 1, backgroundColor: '#FFFFFF', paddingTop: Math.max(insets.top, 16), paddingBottom: Math.max(insets.bottom, 16) }}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -64,9 +66,9 @@ export default function LoginScreen() {
           <View style={{ alignItems: 'center', marginBottom: 36 }}>
             <View
               style={{
-                width: 76,
-                height: 76,
-                borderRadius: 24,
+                width: 80,
+                height: 80,
+                borderRadius: 26,
                 backgroundColor: COLORS.primary,
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -78,22 +80,34 @@ export default function LoginScreen() {
                 elevation: 8,
               }}
             >
-              <Text style={{ color: '#FFFFFF', fontSize: 36, fontWeight: '900' }}>H</Text>
+              <Text style={{ fontSize: 44 }}>🛠️</Text>
+            </View>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <Text
+                style={{
+                  fontSize: 30,
+                  fontWeight: '900',
+                  color: COLORS.primary,
+                  letterSpacing: -0.5,
+                }}
+              >
+                HOME
+              </Text>
+              <Text
+                style={{
+                  fontSize: 30,
+                  fontWeight: '900',
+                  color: COLORS.gray[900],
+                  letterSpacing: -0.5,
+                }}
+              >
+                MATE
+              </Text>
             </View>
             <Text
-              style={{
-                fontSize: 28,
-                fontWeight: '900',
-                color: COLORS.gray[900],
-                letterSpacing: -0.5,
-              }}
+              style={{ fontSize: 14, color: COLORS.gray[500], marginTop: 4, fontWeight: '600' }}
             >
-              HomeMate
-            </Text>
-            <Text
-              style={{ fontSize: 14, color: COLORS.gray[500], marginTop: 4, fontWeight: '500' }}
-            >
-              Nền tảng dịch vụ & thợ sửa chữa tại nhà
+              Dịch vụ gia đình & Thợ chuyên nghiệp 24/7
             </Text>
           </View>
 
@@ -212,6 +226,6 @@ export default function LoginScreen() {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </View>
   );
 }

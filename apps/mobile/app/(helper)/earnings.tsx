@@ -3,13 +3,14 @@ import {
   View,
   Text,
   ScrollView,
-  SafeAreaView,
   TouchableOpacity,
   Modal,
   TextInput,
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Toast from 'react-native-toast-message';
 import { TrendingUp, ArrowDownCircle, Clock, CheckCircle, X } from 'lucide-react-native';
 import {
   useWallet,
@@ -66,33 +67,56 @@ export default function HelperEarningsScreen() {
 
   const handleWithdraw = async () => {
     const amt = Number(amount);
-    if (amt < 50000) return;
-    await withdraw.mutateAsync({
-      amount: amt,
-      bank_account: {
-        bank_name: bankName,
-        account_number: accountNumber,
-        account_name: accountName,
-      },
-    });
-    setShowWithdraw(false);
-    setAmount('');
+    if (!amt || isNaN(amt) || amt < 50000) {
+      Toast.show({ type: 'error', text1: 'Số tiền rút tối thiểu là 50,000₫' });
+      return;
+    }
+    if (wallet && amt > wallet.balance) {
+      Toast.show({
+        type: 'error',
+        text1: 'Số dư không đủ',
+        text2: `Số dư ví hiện tại là: ${new Intl.NumberFormat('vi-VN').format(wallet.balance)}₫`,
+      });
+      return;
+    }
+    if (!bankName.trim() || !accountNumber.trim() || !accountName.trim()) {
+      Toast.show({ type: 'error', text1: 'Vui lòng điền đầy đủ thông tin tài khoản ngân hàng' });
+      return;
+    }
+
+    try {
+      await withdraw.mutateAsync({
+        amount: amt,
+        bank_account: {
+          bank_name: bankName.trim(),
+          account_number: accountNumber.trim(),
+          account_name: accountName.trim().toUpperCase(),
+        },
+      });
+      setShowWithdraw(false);
+      setAmount('');
+    } catch (err: any) {
+      const msg = err?.response?.data?.message || 'Yêu cầu rút tiền thất bại';
+      Toast.show({ type: 'error', text1: msg });
+    }
   };
 
   if (isLoading) return <LoadingSpinner />;
 
+  const insets = useSafeAreaInsets();
+
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.gray[50] }}>
+    <View style={{ flex: 1, backgroundColor: COLORS.gray[50] }}>
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 110 }}
       >
-        {/* ── Wallet header ──────────────────────────────────────────── */}
+        {/* ── Wallet header (Safe Insets) ─────────────────────────────── */}
         <View
           style={{
             backgroundColor: COLORS.primary,
             paddingHorizontal: 24,
-            paddingTop: 24,
+            paddingTop: Math.max(insets.top + 8, 24),
             paddingBottom: 60,
             borderBottomLeftRadius: 32,
             borderBottomRightRadius: 32,
@@ -279,7 +303,7 @@ export default function HelperEarningsScreen() {
 
       {/* ── Withdraw Modal ─────────────────────────────────────────────── */}
       <Modal visible={showWithdraw} animationType="slide" presentationStyle="pageSheet">
-        <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
+        <View style={{ flex: 1, backgroundColor: '#fff', paddingTop: Math.max(insets.top, 16) }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', padding: 20 }}>
             <TouchableOpacity onPress={() => setShowWithdraw(false)}>
               <X size={24} color={COLORS.gray[700]} />
@@ -375,8 +399,8 @@ export default function HelperEarningsScreen() {
               />
             </ScrollView>
           </KeyboardAvoidingView>
-        </SafeAreaView>
+        </View>
       </Modal>
-    </SafeAreaView>
+    </View>
   );
 }

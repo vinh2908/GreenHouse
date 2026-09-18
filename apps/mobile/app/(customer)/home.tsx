@@ -4,9 +4,9 @@ import {
   Text,
   ScrollView,
   TouchableOpacity,
-  SafeAreaView,
   RefreshControl,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import {
   Bell,
@@ -110,8 +110,10 @@ export default function CustomerHomeScreen() {
     }
   };
 
+  const insets = useSafeAreaInsets();
+
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#F8F9FA' }}>
+    <View style={{ flex: 1, backgroundColor: '#F8F9FA' }}>
       <ScrollView
         showsVerticalScrollIndicator={false}
         refreshControl={
@@ -119,12 +121,12 @@ export default function CustomerHomeScreen() {
         }
         contentContainerStyle={{ paddingBottom: 110 }}
       >
-        {/* ── 1. Top Header Bar (Vua Thợ Style) ────────────────────────── */}
+        {/* ── 1. Top Header Bar (Vua Thợ Style - Safe Insets) ──────────── */}
         <View
           style={{
             backgroundColor: '#FFFFFF',
             paddingHorizontal: 18,
-            paddingTop: 12,
+            paddingTop: Math.max(insets.top + 8, 20),
             paddingBottom: 16,
             borderBottomWidth: 1,
             borderBottomColor: COLORS.gray[100],
@@ -696,6 +698,6 @@ export default function CustomerHomeScreen() {
           )}
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }

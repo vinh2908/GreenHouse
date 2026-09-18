@@ -3,10 +3,10 @@ import {
   View,
   Text,
   ScrollView,
-  SafeAreaView,
   TouchableOpacity,
   RefreshControl,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { ChevronRight, MapPin, Clock } from 'lucide-react-native';
 import dayjs from 'dayjs';
@@ -53,9 +53,10 @@ export default function HelperJobsScreen() {
   ];
 
   const current = datasets[tab];
+  const insets = useSafeAreaInsets();
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#F8F9FA' }}>
+    <View style={{ flex: 1, backgroundColor: '#F8F9FA' }}>
       {/* Header */}
       <View
         style={{
@@ -63,7 +64,7 @@ export default function HelperJobsScreen() {
           borderBottomWidth: 1,
           borderBottomColor: COLORS.gray[100],
           paddingHorizontal: 20,
-          paddingTop: 16,
+          paddingTop: Math.max(insets.top + 8, 20),
           paddingBottom: 14,
         }}
       >
@@ -231,6 +232,6 @@ export default function HelperJobsScreen() {
           )
         )}
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }

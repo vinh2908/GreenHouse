@@ -261,6 +261,10 @@ export class JobsService {
       throw new ConflictException('Đơn cứu hộ này đã có thợ khác nhận');
     }
 
+    if (job.customer_id.toString() === helperId) {
+      throw new BadRequestException('Bạn không thể tự nhận đơn cứu hộ của chính mình');
+    }
+
     const helperProfile = await this.helperModel
       .findOne({ user_id: new Types.ObjectId(helperId) })
       .exec();
@@ -382,6 +386,10 @@ export class JobsService {
 
     if (job.status !== JobStatus.OPEN && job.status !== JobStatus.RECEIVING_QUOTES) {
       throw new BadRequestException('Job không còn nhận báo giá');
+    }
+
+    if (job.customer_id.toString() === helperId) {
+      throw new BadRequestException('Bạn không thể tự gửi báo giá cho đơn của chính mình');
     }
 
     // Check existing quote from this helper
@@ -643,7 +651,13 @@ export class JobsService {
     if (dto.completion_photos?.length) {
       job.completion_photos = dto.completion_photos;
     }
-    this.addEvent(job, JobStatus.PENDING_REVIEW, helperId, 'helper', 'Upload ảnh hoàn thành');
+    if (dto.completion_videos?.length) {
+      job.completion_videos = dto.completion_videos;
+    }
+    if (dto.completion_notes) {
+      job.completion_notes = dto.completion_notes;
+    }
+    this.addEvent(job, JobStatus.PENDING_REVIEW, helperId, 'helper', 'Upload ảnh/video hoàn thành');
     await job.save();
 
     // Realtime
@@ -651,6 +665,8 @@ export class JobsService {
     this.gateway.emitToJob(jobId, SOCKET_EVENTS.JOB_COMPLETION_UPLOADED, {
       job_id: jobId,
       completion_photos: dto.completion_photos ?? [],
+      completion_videos: dto.completion_videos ?? [],
+      completion_notes: dto.completion_notes,
     });
 
     // Notification: ask customer to review/approve
