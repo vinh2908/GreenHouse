@@ -3,7 +3,6 @@ import {
   View,
   Text,
   ScrollView,
-  SafeAreaView,
   TouchableOpacity,
   TextInput,
   KeyboardAvoidingView,
@@ -12,6 +11,7 @@ import {
   Linking,
   ActivityIndicator,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import {
   ArrowLeft,
@@ -154,16 +154,19 @@ export default function SosScreen() {
     }
   };
 
+  const insets = useSafeAreaInsets();
+
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#F8F9FA' }}>
-      {/* ── Top Header ─────────────────────────────────────────────── */}
+    <View style={{ flex: 1, backgroundColor: '#F8F9FA' }}>
+      {/* ── Top Header (Safe Insets) ─────────────────────────────────── */}
       <View
         style={{
           flexDirection: 'row',
           alignItems: 'center',
           justifyContent: 'space-between',
           paddingHorizontal: 16,
-          paddingVertical: 14,
+          paddingTop: Math.max(insets.top + 6, 18),
+          paddingBottom: 14,
           backgroundColor: '#EF4444',
         }}
       >
@@ -480,6 +483,6 @@ export default function SosScreen() {
           </Text>
         </TouchableOpacity>
       </View>
-    </SafeAreaView>
+    </View>
   );
 }

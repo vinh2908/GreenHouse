@@ -2,7 +2,6 @@ import { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
-  SafeAreaView,
   TouchableOpacity,
   FlatList,
   TextInput,
@@ -10,6 +9,7 @@ import {
   Platform,
   ActivityIndicator,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { ArrowLeft, Send, ShieldCheck, Phone } from 'lucide-react-native';
 import dayjs from 'dayjs';
@@ -94,17 +94,19 @@ export default function ChatScreen() {
   const partnerPhone = partner?.phone;
 
   const allMessages = Array.isArray(messages) ? messages : [];
+  const insets = useSafeAreaInsets();
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#F8F9FA' }}>
-      {/* ── Top Header Bar ─────────────────────────────────────────── */}
+    <View style={{ flex: 1, backgroundColor: '#F8F9FA' }}>
+      {/* ── Top Header Bar (Safe Insets) ───────────────────────────── */}
       <View
         style={{
           flexDirection: 'row',
           alignItems: 'center',
           justifyContent: 'space-between',
           paddingHorizontal: 16,
-          paddingVertical: 12,
+          paddingTop: Math.max(insets.top + 6, 18),
+          paddingBottom: 12,
           backgroundColor: '#fff',
           borderBottomWidth: 1,
           borderBottomColor: COLORS.gray[100],
@@ -320,6 +322,6 @@ export default function ChatScreen() {
           </View>
         </KeyboardAvoidingView>
       )}
-    </SafeAreaView>
+    </View>
   );
 }

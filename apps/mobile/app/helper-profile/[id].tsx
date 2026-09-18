@@ -3,11 +3,11 @@ import {
   View,
   Text,
   ScrollView,
-  SafeAreaView,
   TouchableOpacity,
   RefreshControl,
   Image,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import {
   ArrowLeft,
@@ -70,17 +70,19 @@ export default function HelperPublicProfileScreen() {
   const isVerified = profile?.verification_status === 'approved' || true;
 
   const reviewsList = reviewsData?.reviews || [];
+  const insets = useSafeAreaInsets();
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#F8F9FA' }}>
-      {/* ── Top Bar ──────────────────────────────────────────────────── */}
+    <View style={{ flex: 1, backgroundColor: '#F8F9FA' }}>
+      {/* ── Top Bar (Safe Insets) ────────────────────────────────────── */}
       <View
         style={{
           flexDirection: 'row',
           alignItems: 'center',
           justifyContent: 'space-between',
           paddingHorizontal: 16,
-          paddingVertical: 14,
+          paddingTop: Math.max(insets.top + 6, 18),
+          paddingBottom: 14,
           backgroundColor: '#fff',
           borderBottomWidth: 1,
           borderBottomColor: COLORS.gray[100],
@@ -467,6 +469,6 @@ export default function HelperPublicProfileScreen() {
           onPress={() => router.back()}
         />
       </View>
-    </SafeAreaView>
+    </View>
   );
 }

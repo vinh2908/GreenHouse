@@ -26,7 +26,7 @@ import { JobsModule } from './modules/jobs/jobs.module';
 // import { ContractsModule } from './modules/contracts/contracts.module';
 
 // ─── Phase 6: Job Feed & Matching ────────────────────────────────────────────
-// import { MatchingModule } from './modules/matching/matching.module';
+import { MatchingModule } from './modules/matching/matching.module';
 
 // ─── Phase 7: Realtime ────────────────────────────────────────────────────────
 import { NotificationsModule } from './modules/notifications/notifications.module';
@@ -88,6 +88,7 @@ import { AiModule } from './modules/ai/ai.module';
     AdminModule,
     AnalyticsModule,
     AiModule,
+    MatchingModule,
 
     // Phase 4+ (uncomment as implemented)
     // CustomersModule,

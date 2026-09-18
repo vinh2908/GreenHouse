@@ -211,4 +211,9 @@ export const SERVICE_SLUG_VI: Record<string, string> = {
   deep_cleaning: 'Tổng vệ sinh nhà',
   housekeeping_periodic: 'Giúp việc định kỳ',
   cooking: 'Nấu ăn gia đình',
+  electrician: 'Sửa điện gia dụng',
+  plumbing: 'Sửa ống nước & Thông cống',
+  ac_repair: 'Vệ sinh & Sửa máy lạnh',
+  appliance: 'Sửa máy giặt & Tủ lạnh',
+  locksmith: 'Sửa khóa & Lắp Camera',
 } as const;

@@ -111,6 +111,8 @@ export interface IJob {
 
   // Kết quả
   completion_photos?: string[]; // Ảnh sau khi làm xong (helper upload)
+  completion_videos?: string[]; // Video sau khi làm xong (helper upload)
+  completion_notes?: string; // Ghi chú hoàn thành từ thợ
   customer_rating?: number;
   customer_review?: string;
   helper_rating?: number; // Customer đánh giá helper

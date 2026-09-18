@@ -41,11 +41,14 @@ export default function RootLayout() {
           <Stack.Screen name="(customer)" options={{ headerShown: false }} />
           <Stack.Screen name="(helper)" options={{ headerShown: false }} />
           <Stack.Screen name="notifications" options={{ headerShown: false }} />
+          <Stack.Screen name="edit-profile" options={{ headerShown: false }} />
           <Stack.Screen name="job-detail/[id]" options={{ headerShown: false }} />
           <Stack.Screen name="helper-job-detail/[id]" options={{ headerShown: false }} />
           <Stack.Screen name="helper-profile/[id]" options={{ headerShown: false }} />
           <Stack.Screen name="kyc" options={{ headerShown: false }} />
           <Stack.Screen name="bank-account" options={{ headerShown: false }} />
+          <Stack.Screen name="help-center" options={{ headerShown: false }} />
+          <Stack.Screen name="policy-insurance" options={{ headerShown: false }} />
           <Stack.Screen name="sos" options={{ headerShown: false }} />
           <Stack.Screen name="sos-tracking/[id]" options={{ headerShown: false }} />
           <Stack.Screen name="chat/[jobId]" options={{ headerShown: false }} />

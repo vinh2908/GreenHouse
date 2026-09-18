@@ -2,10 +2,10 @@ import {
   View,
   Text,
   ScrollView,
-  SafeAreaView,
   TouchableOpacity,
   RefreshControl,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Bell, CheckCheck, ArrowLeft, ChevronRight } from 'lucide-react-native';
 import dayjs from 'dayjs';
@@ -64,16 +64,19 @@ export default function NotificationsScreen() {
     }
   };
 
+  const insets = useSafeAreaInsets();
+
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.gray[50] }}>
-      {/* Header */}
+    <View style={{ flex: 1, backgroundColor: COLORS.gray[50] }}>
+      {/* Header (Safe Insets) */}
       <View
         style={{
           flexDirection: 'row',
           justifyContent: 'space-between',
           alignItems: 'center',
           paddingHorizontal: 20,
-          paddingVertical: 16,
+          paddingTop: Math.max(insets.top + 6, 18),
+          paddingBottom: 14,
           backgroundColor: '#fff',
           borderBottomWidth: 1,
           borderBottomColor: COLORS.gray[100],
@@ -204,6 +207,6 @@ export default function NotificationsScreen() {
           )
         )}
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
