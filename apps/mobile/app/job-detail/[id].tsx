@@ -196,7 +196,7 @@ export default function JobDetailScreen() {
       Toast.show({
         type: 'success',
         text1: 'Nghiệm thu & Đánh giá thành công!',
-        text2: 'Cảm ơn bạn đã tin tưởng HomeMate',
+        text2: 'Cảm ơn bạn đã tin tưởng Green House',
       });
       setShowReview(false);
     } catch {
@@ -339,12 +339,16 @@ export default function JobDetailScreen() {
               latitude: job.address?.location?.coordinates?.[1] || 10.7725,
               longitude: job.address?.location?.coordinates?.[0] || 106.6983,
             }}
-            helperLocation={helperLocation?.current ? {
-              latitude: helperLocation.current.lat,
-              longitude: helperLocation.current.lng,
-            } : undefined}
+            helperLocation={
+              helperLocation?.current
+                ? {
+                    latitude: helperLocation.current.lat,
+                    longitude: helperLocation.current.lng,
+                  }
+                : undefined
+            }
             customerAddress={job.address?.full_address}
-            helperName={helperObj?.full_name || 'Thợ HomeMate'}
+            helperName={helperObj?.full_name || 'Thợ Green House'}
             etaMinutes={12}
             height={220}
           />
@@ -602,7 +606,13 @@ export default function JobDetailScreen() {
           job.completion_notes ||
           job.status === 'pending_review') && (
           <Card style={{ gap: 12, padding: 16, borderColor: '#FED7AA', borderWidth: 1.5 }}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+            <View
+              style={{
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+              }}
+            >
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                 <Sparkles size={18} color={COLORS.primary} />
                 <Text style={{ fontWeight: '800', fontSize: 15, color: COLORS.gray[900] }}>
@@ -610,13 +620,24 @@ export default function JobDetailScreen() {
                 </Text>
               </View>
               {job.status === 'pending_review' && (
-                <Badge label="Chờ bạn kiểm tra" color={COLORS.warningLight} textColor={COLORS.warning} />
+                <Badge
+                  label="Chờ bạn kiểm tra"
+                  color={COLORS.warningLight}
+                  textColor={COLORS.warning}
+                />
               )}
             </View>
 
             {job.completion_notes && (
               <View style={{ backgroundColor: COLORS.gray[50], padding: 12, borderRadius: 12 }}>
-                <Text style={{ fontSize: 13, color: COLORS.gray[600], fontWeight: '700', marginBottom: 2 }}>
+                <Text
+                  style={{
+                    fontSize: 13,
+                    color: COLORS.gray[600],
+                    fontWeight: '700',
+                    marginBottom: 2,
+                  }}
+                >
                   Ghi chú từ thợ:
                 </Text>
                 <Text style={{ fontSize: 13.5, color: COLORS.gray[800], lineHeight: 20 }}>
@@ -647,7 +668,11 @@ export default function JobDetailScreen() {
                           borderColor: COLORS.gray[200],
                         }}
                       >
-                        <Image source={{ uri }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
+                        <Image
+                          source={{ uri }}
+                          style={{ width: '100%', height: '100%' }}
+                          resizeMode="cover"
+                        />
                       </TouchableOpacity>
                     ))}
                   </View>
@@ -692,10 +717,14 @@ export default function JobDetailScreen() {
                           <Video size={20} color="#FFF" />
                         </View>
                         <View>
-                          <Text style={{ fontSize: 13.5, fontWeight: '800', color: COLORS.gray[900] }}>
+                          <Text
+                            style={{ fontSize: 13.5, fontWeight: '800', color: COLORS.gray[900] }}
+                          >
                             Video hoàn thành #{idx + 1}
                           </Text>
-                          <Text style={{ fontSize: 11.5, color: COLORS.secondary, fontWeight: '600' }}>
+                          <Text
+                            style={{ fontSize: 11.5, color: COLORS.secondary, fontWeight: '600' }}
+                          >
                             Bấm để kiểm tra video nghiệm thu
                           </Text>
                         </View>

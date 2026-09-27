@@ -12,8 +12,12 @@ async function checkJobDetailData() {
     const help = j.helper_id ? await db.collection('users').findOne({ _id: j.helper_id }) : null;
     console.log(`\nJob ID: ${j._id} | Title: "${j.title}"`);
     console.log(`  -> Status: [${j.status}]`);
-    console.log(`  -> customer_id trong DB: ${j.customer_id} (Tên: ${cust?.full_name}, Phone: ${cust?.phone})`);
-    console.log(`  -> helper_id trong DB:   ${j.helper_id || 'null'} (Tên: ${help?.full_name || 'chưa có'}, Phone: ${help?.phone || 'null'})`);
+    console.log(
+      `  -> customer_id trong DB: ${j.customer_id} (Tên: ${cust?.full_name}, Phone: ${cust?.phone})`,
+    );
+    console.log(
+      `  -> helper_id trong DB:   ${j.helper_id || 'null'} (Tên: ${help?.full_name || 'chưa có'}, Phone: ${help?.phone || 'null'})`,
+    );
   }
 
   process.exit(0);

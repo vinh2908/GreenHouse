@@ -21,7 +21,7 @@ export function LiveTrackingMap({
   customerLocation,
   helperLocation,
   customerAddress = 'Vị trí của bạn',
-  helperName = 'Thợ HomeMate',
+  helperName = 'Thợ Green House',
   etaMinutes = 15,
   height = 280,
 }: LiveTrackingMapProps) {
@@ -77,15 +77,15 @@ export function LiveTrackingMap({
             height: 38px;
           }
           .helper-pin {
-            background-color: #FF6B1A;
+            background-color: #22C55E;
             width: 42px;
             height: 42px;
             animation: pulse 1.5s infinite;
           }
           @keyframes pulse {
-            0% { box-shadow: 0 0 0 0 rgba(255, 107, 26, 0.6); }
-            70% { box-shadow: 0 0 0 12px rgba(255, 107, 26, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(255, 107, 26, 0); }
+            0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.6); }
+            70% { box-shadow: 0 0 0 12px rgba(34, 197, 94, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
           }
           .leaflet-control-attribution {
             display: none !important;
@@ -131,7 +131,7 @@ export function LiveTrackingMap({
 
           // Đường nối lộ trình di chuyển (Màu cam)
           let routeLine = L.polyline([[helpLat, helpLon], [custLat, custLon]], {
-            color: '#FF6B1A',
+            color: '#22C55E',
             weight: 4,
             dashArray: '8, 6',
             opacity: 0.9

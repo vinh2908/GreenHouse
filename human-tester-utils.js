@@ -41,18 +41,40 @@ function dumpScreen() {
 
 function findElement(xml, targetText) {
   // exact text
-  const regex = new RegExp(`text="${targetText}"[^>]*bounds="\\[(\\d+),(\\d+)\\]\\[(\\d+),(\\d+)\\]"`, 'i');
+  const regex = new RegExp(
+    `text="${targetText}"[^>]*bounds="\\[(\\d+),(\\d+)\\]\\[(\\d+),(\\d+)\\]"`,
+    'i',
+  );
   let m = regex.exec(xml);
   if (m) {
-    const x1 = parseInt(m[1]), y1 = parseInt(m[2]), x2 = parseInt(m[3]), y2 = parseInt(m[4]);
-    return { text: targetText, x: Math.round((x1 + x2) / 2), y: Math.round((y1 + y2) / 2), bounds: [x1, y1, x2, y2] };
+    const x1 = parseInt(m[1]),
+      y1 = parseInt(m[2]),
+      x2 = parseInt(m[3]),
+      y2 = parseInt(m[4]);
+    return {
+      text: targetText,
+      x: Math.round((x1 + x2) / 2),
+      y: Math.round((y1 + y2) / 2),
+      bounds: [x1, y1, x2, y2],
+    };
   }
   // contains text
-  const regex2 = new RegExp(`text="[^"]*${targetText}[^"]*"[^>]*bounds="\\[(\\d+),(\\d+)\\]\\[(\\d+),(\\d+)\\]"`, 'i');
+  const regex2 = new RegExp(
+    `text="[^"]*${targetText}[^"]*"[^>]*bounds="\\[(\\d+),(\\d+)\\]\\[(\\d+),(\\d+)\\]"`,
+    'i',
+  );
   m = regex2.exec(xml);
   if (m) {
-    const x1 = parseInt(m[1]), y1 = parseInt(m[2]), x2 = parseInt(m[3]), y2 = parseInt(m[4]);
-    return { text: targetText, x: Math.round((x1 + x2) / 2), y: Math.round((y1 + y2) / 2), bounds: [x1, y1, x2, y2] };
+    const x1 = parseInt(m[1]),
+      y1 = parseInt(m[2]),
+      x2 = parseInt(m[3]),
+      y2 = parseInt(m[4]);
+    return {
+      text: targetText,
+      x: Math.round((x1 + x2) / 2),
+      y: Math.round((y1 + y2) / 2),
+      bounds: [x1, y1, x2, y2],
+    };
   }
   return null;
 }

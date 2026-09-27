@@ -12,12 +12,12 @@ import {
   type ViewProps,
 } from 'react-native';
 
-// ─── Vua Thợ / HomeMate Color Palette ──────────────────────────────────────────
+// ─── Green House Color Palette (Banana Green / Lime Fresh) ───────────────────
 export const COLORS = {
-  primary: '#FF6B1A',
-  primaryDark: '#E55A0E',
-  primaryLight: '#FFF4ED',
-  primaryGlow: 'rgba(255, 107, 26, 0.15)',
+  primary: '#22C55E', // Banana / Fresh vibrant Green
+  primaryDark: '#16A34A',
+  primaryLight: '#DCFCE7',
+  primaryGlow: 'rgba(34, 197, 94, 0.15)',
   secondary: '#1A73E8',
   secondaryLight: '#EEF4FE',
   success: '#10B981',

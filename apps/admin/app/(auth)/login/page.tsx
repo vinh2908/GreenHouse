@@ -37,9 +37,9 @@ export default function LoginPage() {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="mx-auto w-12 h-12 rounded-xl bg-primary flex items-center justify-center mb-4">
-            <span className="text-primary-foreground font-bold text-xl">H</span>
+            <span className="text-primary-foreground font-bold text-xl">G</span>
           </div>
-          <CardTitle className="text-2xl">HomeMate Admin</CardTitle>
+          <CardTitle className="text-2xl">Green House Admin</CardTitle>
           <p className="text-sm text-muted-foreground mt-1">Đăng nhập vào hệ thống quản trị</p>
         </CardHeader>
         <CardContent>

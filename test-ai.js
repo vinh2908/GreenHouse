@@ -21,7 +21,8 @@ async function testAiAssistant() {
 
   // 3. Test AI Booking Assistant: Phân tích yêu cầu tự nhiên
   console.log('\n3. Test AI Booking Assistant (Phân tích câu nói tự nhiên):');
-  const prompt1 = 'Nhà mình ở Landmark 81 căn hộ 3 phòng ngủ bị bẩn nhiều sau khi sơn sửa, cần người đến tổng vệ sinh toàn bộ nhà và lau kính ban công vào chiều thứ 7 khoảng 4 tiếng.';
+  const prompt1 =
+    'Nhà mình ở Landmark 81 căn hộ 3 phòng ngủ bị bẩn nhiều sau khi sơn sửa, cần người đến tổng vệ sinh toàn bộ nhà và lau kính ban công vào chiều thứ 7 khoảng 4 tiếng.';
   console.log(' -> Khách nhập:', `"${prompt1}"`);
 
   const analyzeRes = await fetch(`${BASE_URL}/ai/booking/analyze`, {
@@ -34,12 +35,25 @@ async function testAiAssistant() {
   }).then(r => r.json());
 
   console.log(' -> ✅ AI đã phân tích & bóc tách cấu trúc:');
-  console.log('    • Dịch vụ gợi ý:', analyzeRes.data?.service_name, `(${analyzeRes.data?.service_type})`);
+  console.log(
+    '    • Dịch vụ gợi ý:',
+    analyzeRes.data?.service_name,
+    `(${analyzeRes.data?.service_type})`,
+  );
   console.log('    • Thời gian ước tính:', analyzeRes.data?.estimated_duration_hours, 'tiếng');
   console.log('    • Số thợ cần thiết:', analyzeRes.data?.num_workers, 'người');
   console.log('    • Danh sách việc cần làm:', analyzeRes.data?.tasks?.join(', '));
-  console.log('    • Khoảng giá ước tính:', analyzeRes.data?.price_min?.toLocaleString(), 'đ –', analyzeRes.data?.price_max?.toLocaleString(), 'đ');
-  console.log('    • Độ tin cậy (Confidence):', Math.round((analyzeRes.data?.confidence || 0.8) * 100) + '%');
+  console.log(
+    '    • Khoảng giá ước tính:',
+    analyzeRes.data?.price_min?.toLocaleString(),
+    'đ –',
+    analyzeRes.data?.price_max?.toLocaleString(),
+    'đ',
+  );
+  console.log(
+    '    • Độ tin cậy (Confidence):',
+    Math.round((analyzeRes.data?.confidence || 0.8) * 100) + '%',
+  );
 
   // 4. Test AI Price Estimator
   console.log('\n4. Test AI Price Estimator (Ước tính giá chi tiết):');
@@ -56,13 +70,20 @@ async function testAiAssistant() {
   }).then(r => r.json());
 
   console.log(' -> ✅ AI ước tính giá thị trường:');
-  console.log('    • Khoảng giá:', priceRes.data?.price_min?.toLocaleString(), 'đ –', priceRes.data?.price_max?.toLocaleString(), 'đ');
+  console.log(
+    '    • Khoảng giá:',
+    priceRes.data?.price_min?.toLocaleString(),
+    'đ –',
+    priceRes.data?.price_max?.toLocaleString(),
+    'đ',
+  );
   console.log('    • Độ phức tạp:', priceRes.data?.complexity?.toUpperCase());
   console.log('    • Lý do giải thích:', priceRes.data?.reasoning);
 
   // 5. Test AI Customer Support Chatbot
   console.log('\n5. Test AI Customer Support Chatbot (Hỏi đáp chính sách & chăm sóc khách hàng):');
-  const userQuestion = 'Chính sách bảo hành và bảo hiểm dịch vụ của HomeMate như thế nào nếu thợ làm hỏng đồ?';
+  const userQuestion =
+    'Chính sách bảo hành và bảo hiểm dịch vụ của HomeMate như thế nào nếu thợ làm hỏng đồ?';
   console.log(' -> Khách hỏi:', `"${userQuestion}"`);
 
   const supportRes = await fetch(`${BASE_URL}/ai/support/chat`, {

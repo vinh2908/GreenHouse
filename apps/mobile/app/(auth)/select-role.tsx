@@ -25,8 +25,8 @@ export default function SelectRoleScreen() {
         type: 'success',
         text1:
           selectedRole === 'customer'
-            ? 'Chào mừng bạn đến với HomeMate!'
-            : 'Chào mừng đối tác HomeMate!',
+            ? 'Chào mừng bạn đến với Green House!'
+            : 'Chào mừng đối tác Green House!',
         text2:
           selectedRole === 'customer'
             ? 'Bắt đầu tìm kiếm dịch vụ tiện ích'
@@ -57,7 +57,14 @@ export default function SelectRoleScreen() {
   const insets = useSafeAreaInsets();
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#fff', paddingTop: Math.max(insets.top, 16), paddingBottom: Math.max(insets.bottom, 16) }}>
+    <View
+      style={{
+        flex: 1,
+        backgroundColor: '#fff',
+        paddingTop: Math.max(insets.top, 16),
+        paddingBottom: Math.max(insets.bottom, 16),
+      }}
+    >
       <ScrollView
         contentContainerStyle={{ flexGrow: 1, padding: 24, justifyContent: 'space-between' }}
       >
@@ -80,7 +87,7 @@ export default function SelectRoleScreen() {
                 elevation: 6,
               }}
             >
-              <Text style={{ color: '#fff', fontSize: 28, fontWeight: '800' }}>H</Text>
+              <Text style={{ color: '#fff', fontSize: 28, fontWeight: '800' }}>G</Text>
             </View>
             <Text
               style={{
@@ -101,7 +108,7 @@ export default function SelectRoleScreen() {
                 lineHeight: 22,
               }}
             >
-              Bạn muốn sử dụng HomeMate như thế nào?{'\n'}
+              Bạn muốn sử dụng Green House như thế nào?{'\n'}
               <Text style={{ fontSize: 13, color: COLORS.gray[400] }}>
                 (Bạn có thể chuyển đổi linh hoạt bất kỳ lúc nào)
               </Text>

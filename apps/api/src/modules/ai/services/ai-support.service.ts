@@ -26,7 +26,9 @@ export class AiSupportService {
     if (!this.aiConfig.enabled) {
       const faq = this.getFaqAnswer(userMessage);
       return {
-        answer: faq || 'HomeMate luôn cam kết bảo hiểm an toàn và bảo hành dịch vụ 30 ngày cho mọi công việc. Nếu có bất kỳ vấn đề gì, bạn có thể gửi khiếu nại trong mục Quản lý đơn hoặc liên hệ hotline 1900-8888.',
+        answer:
+          faq ||
+          'HomeMate luôn cam kết bảo hiểm an toàn và bảo hành dịch vụ 30 ngày cho mọi công việc. Nếu có bất kỳ vấn đề gì, bạn có thể gửi khiếu nại trong mục Quản lý đơn hoặc liên hệ hotline 1900-8888.',
         intent: 'general',
         suggested_actions: ['Xem bảng giá', 'Liên hệ hotline'],
         confidence: 0.9,

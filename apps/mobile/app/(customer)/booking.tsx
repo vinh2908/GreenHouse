@@ -270,7 +270,10 @@ export default function BookingScreen() {
               ? s.slug.includes('clean') || s.slug.includes('housekeeping')
               : result.service_type.includes('cook')
                 ? s.slug.includes('cook')
-                : result.service_type.includes('repair') || result.service_type.includes('electric') || result.service_type.includes('chay') || result.service_type.includes('dien')
+                : result.service_type.includes('repair') ||
+                    result.service_type.includes('electric') ||
+                    result.service_type.includes('chay') ||
+                    result.service_type.includes('dien')
                   ? s.slug.includes('electric') || s.slug.includes('plumb') || s.slug.includes('ac')
                   : true,
           );
@@ -286,7 +289,9 @@ export default function BookingScreen() {
       // Tự động điền Tiêu đề và Mô tả chi tiết
       if (result.service_name || result.tasks) {
         setTitle(result.service_name || aiInput.slice(0, 60));
-        const tasksList = result.tasks?.length ? `\n\nCác hạng mục cần làm:\n• ${result.tasks.join('\n• ')}` : '';
+        const tasksList = result.tasks?.length
+          ? `\n\nCác hạng mục cần làm:\n• ${result.tasks.join('\n• ')}`
+          : '';
         const notesStr = result.notes ? `\n\nGhi chú: ${result.notes}` : '';
         setDescription(`${aiInput}${tasksList}${notesStr}`);
       }
@@ -521,7 +526,13 @@ export default function BookingScreen() {
                       marginTop: 4,
                     }}
                   >
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <View
+                      style={{
+                        flexDirection: 'row',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                      }}
+                    >
                       <Text style={{ color: '#34D399', fontWeight: '800', fontSize: 13.5 }}>
                         ✓ {aiSuggestion.service_name || 'Đã phân tích xong'}
                       </Text>
@@ -534,7 +545,13 @@ export default function BookingScreen() {
 
                     {aiSuggestion.tasks && aiSuggestion.tasks.length > 0 && (
                       <View style={{ gap: 3 }}>
-                        <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 11.5, fontWeight: '700' }}>
+                        <Text
+                          style={{
+                            color: 'rgba(255,255,255,0.6)',
+                            fontSize: 11.5,
+                            fontWeight: '700',
+                          }}
+                        >
                           Hạng mục cần làm:
                         </Text>
                         {aiSuggestion.tasks.map((t, i) => (
@@ -554,13 +571,20 @@ export default function BookingScreen() {
                           marginTop: 2,
                         }}
                       >
-                        Ước giá thị trường: {new Intl.NumberFormat('vi-VN').format(aiSuggestion.price_min)}₫ –{' '}
+                        Ước giá thị trường:{' '}
+                        {new Intl.NumberFormat('vi-VN').format(aiSuggestion.price_min)}₫ –{' '}
                         {new Intl.NumberFormat('vi-VN').format(aiSuggestion.price_max ?? 0)}₫
                       </Text>
                     )}
 
                     {aiSuggestion.notes && (
-                      <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11.5, fontStyle: 'italic' }}>
+                      <Text
+                        style={{
+                          color: 'rgba(255,255,255,0.5)',
+                          fontSize: 11.5,
+                          fontStyle: 'italic',
+                        }}
+                      >
                         💡 {aiSuggestion.notes}
                       </Text>
                     )}
@@ -569,7 +593,8 @@ export default function BookingScreen() {
                       activeOpacity={0.85}
                       onPress={() => {
                         if (!selectedService) {
-                          const svcList = services && services.length > 0 ? services : DEFAULT_SERVICES;
+                          const svcList =
+                            services && services.length > 0 ? services : DEFAULT_SERVICES;
                           setSelectedService(svcList[0]._id);
                         }
                         setStep(1);

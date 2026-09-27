@@ -1,12 +1,5 @@
 import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-  Linking,
-  TextInput,
-} from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Linking, TextInput } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import {
@@ -33,7 +26,7 @@ const FAQS = [
   },
   {
     q: 'Tiền công được thanh toán và bảo vệ như thế nào?',
-    a: 'HomeMate giữ tiền an toàn (Escrow). Sau khi bạn chọn báo giá và thợ hoàn thành công việc, thợ sẽ chụp ảnh/video bằng chứng bàn giao. Chỉ khi bạn kiểm tra hài lòng và bấm "Nghiệm thu", tiền công mới được cộng vào ví của thợ.',
+    a: 'Green House giữ tiền an toàn (Escrow). Sau khi bạn chọn báo giá và thợ hoàn thành công việc, thợ sẽ chụp ảnh/video bằng chứng bàn giao. Chỉ khi bạn kiểm tra hài lòng và bấm "Nghiệm thu", tiền công mới được cộng vào ví của thợ.',
   },
   {
     q: 'Dịch vụ Cứu hộ khẩn cấp SOS hoạt động ra sao?',
@@ -45,7 +38,7 @@ const FAQS = [
   },
   {
     q: 'Tôi không hài lòng với chất lượng hoặc có hư hại tài sản thì làm sao?',
-    a: 'HomeMate cam kết Bảo hiểm dịch vụ và bảo hành sửa chữa trong vòng 30 ngày. Nếu công việc chưa đạt chuẩn, thợ sẽ khắc phục miễn phí hoặc hệ thống hoàn tiền 100% kèm bồi thường thiệt hại theo chính sách bảo hiểm.',
+    a: 'Green House cam kết Bảo hiểm dịch vụ và bảo hành sửa chữa trong vòng 30 ngày. Nếu công việc chưa đạt chuẩn, thợ sẽ khắc phục miễn phí hoặc hệ thống hoàn tiền 100% kèm bồi thường thiệt hại theo chính sách bảo hiểm.',
   },
 ];
 
@@ -74,11 +67,11 @@ export default function HelpCenterScreen() {
       const q = aiQuestion.toLowerCase();
       if (q.includes('giá') || q.includes('tiền') || q.includes('chi phí')) {
         setAiAnswer(
-          '💡 Giá dịch vụ trên HomeMate được tính minh bạch dựa trên báo giá trực tiếp từ thợ hoặc biểu phí ước tính chuẩn của AI. Bạn luôn biết rõ giá công và vật tư trước khi xác nhận!',
+          '💡 Giá dịch vụ trên Green House được tính minh bạch dựa trên báo giá trực tiếp từ thợ hoặc biểu phí ước tính chuẩn của AI. Bạn luôn biết rõ giá công và vật tư trước khi xác nhận!',
         );
       } else if (q.includes('hủy') || q.includes('hoàn tiền')) {
         setAiAnswer(
-          '💡 Bạn có thể hủy yêu cầu miễn phí trước khi thợ di chuyển đến. Nếu đơn có phát sinh tranh chấp, HomeMate sẽ đối soát và hoàn tiền trong 24h làm việc.',
+          '💡 Bạn có thể hủy yêu cầu miễn phí trước khi thợ di chuyển đến. Nếu đơn có phát sinh tranh chấp, Green House sẽ đối soát và hoàn tiền trong 24h làm việc.',
         );
       } else if (q.includes('thợ') || q.includes('kyc') || q.includes('uy tín')) {
         setAiAnswer(
@@ -86,7 +79,7 @@ export default function HelpCenterScreen() {
         );
       } else {
         setAiAnswer(
-          `💡 Trợ lý AI HomeMate ghi nhận câu hỏi: "${aiQuestion}". Nếu cần hỗ trợ khẩn cấp, bạn vui lòng gọi hotline 1900 8888 để được tổng đài viên phục vụ ngay lập tức 24/7!`,
+          `💡 Trợ lý AI Green House ghi nhận câu hỏi: "${aiQuestion}". Nếu cần hỗ trợ khẩn cấp, bạn vui lòng gọi hotline 1900 8888 để được tổng đài viên phục vụ ngay lập tức 24/7!`,
         );
       }
     }, 600);
@@ -150,7 +143,9 @@ export default function HelpCenterScreen() {
             gap: 14,
           }}
         >
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+          <View
+            style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}
+          >
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
               <View
                 style={{
@@ -280,7 +275,7 @@ export default function HelpCenterScreen() {
           {aiAnswer && (
             <View
               style={{
-                backgroundColor: '#FFF4ED',
+                backgroundColor: '#DCFCE7',
                 padding: 12,
                 borderRadius: 12,
                 borderLeftWidth: 4,

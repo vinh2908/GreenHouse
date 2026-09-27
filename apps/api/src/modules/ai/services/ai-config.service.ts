@@ -30,7 +30,9 @@ export class AiConfigService implements OnModuleInit {
         this.geminiClient = new GoogleGenerativeAI(geminiKey.trim());
         this.isGeminiEnabled = true;
         this.activeProvider = 'gemini';
-        this.logger.log(`🤖 AI Module: Google Gemini (${this.configService.get('ai.geminiModel') || 'gemini-2.5-flash'}) initialized successfully!`);
+        this.logger.log(
+          `🤖 AI Module: Google Gemini (${this.configService.get('ai.geminiModel') || 'gemini-2.5-flash'}) initialized successfully!`,
+        );
       } catch (err) {
         this.logger.error('Failed to initialize Google Gemini client', err);
       }
@@ -52,7 +54,9 @@ export class AiConfigService implements OnModuleInit {
 
     if (!this.isGeminiEnabled && !this.isOpenAiEnabled) {
       this.activeProvider = 'mock';
-      this.logger.warn('⚠️ AI Module: No valid GEMINI_API_KEY or OPENAI_API_KEY found. Running in SMART MOCK MODE (Zero-crash deterministic engine).');
+      this.logger.warn(
+        '⚠️ AI Module: No valid GEMINI_API_KEY or OPENAI_API_KEY found. Running in SMART MOCK MODE (Zero-crash deterministic engine).',
+      );
     }
   }
 
@@ -83,8 +87,9 @@ export class AiConfigService implements OnModuleInit {
     // ── 1. GỌI GOOGLE GEMINI NẾU CÓ KEY ──────────────────────────────────────
     if (this.isGeminiEnabled && this.geminiClient) {
       try {
-        const modelName = options.model || this.configService.get<string>('ai.geminiModel') || 'gemini-2.5-flash';
-        
+        const modelName =
+          options.model || this.configService.get<string>('ai.geminiModel') || 'gemini-2.5-flash';
+
         // Tách system prompt và user prompt
         const systemMsg = messages.find(m => m.role === 'system');
         const userAndAssistantMsgs = messages.filter(m => m.role !== 'system');
