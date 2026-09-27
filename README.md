@@ -1,4 +1,4 @@
-# HomeMate — Home Service Marketplace
+# Green House — Home Service Marketplace
 
 Nền tảng kết nối khách hàng với người giúp việc tại Việt Nam.
 **Model: Vua Thợ** — Customer đăng job → Helpers gửi báo giá → Customer chọn → Hợp đồng số.

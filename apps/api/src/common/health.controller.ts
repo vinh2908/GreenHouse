@@ -6,7 +6,7 @@ export class HealthController {
   check() {
     return {
       success: true,
-      message: 'HomeMate API is running',
+      message: 'Green House API is running',
       data: {
         status: 'ok',
         timestamp: new Date().toISOString(),

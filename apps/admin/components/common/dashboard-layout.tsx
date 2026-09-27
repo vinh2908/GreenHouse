@@ -44,10 +44,10 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
         <div className="p-6 border-b">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center shadow-md">
-              <span className="text-primary-foreground font-black text-lg">H</span>
+              <span className="text-primary-foreground font-black text-lg">G</span>
             </div>
             <div>
-              <span className="font-extrabold text-lg tracking-tight">HomeMate</span>
+              <span className="font-extrabold text-lg tracking-tight">Green House</span>
               <p className="text-xs text-muted-foreground">Admin Portal</p>
             </div>
           </div>
@@ -95,7 +95,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
             </button>
           </div>
           <p className="text-[11px] text-muted-foreground/60 text-center">
-            HomeMate v1.0.0 • Production Ready
+            Green House v1.0.0 • Production Ready
           </p>
         </div>
       </aside>

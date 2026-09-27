@@ -5,7 +5,7 @@ async function testBrowser() {
   const browser = await puppeteer.launch({
     executablePath: 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
     headless: true,
-    args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu']
+    args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu'],
   });
   console.log('Chrome launched.');
 
@@ -18,7 +18,9 @@ async function testBrowser() {
   console.log('DOM Content Loaded! Title:', await page.title());
 
   await page.waitForSelector('input[name="email"], input[type="email"], input', { timeout: 5000 });
-  const inputs = await page.$$eval('input', els => els.map(e => ({ type: e.type, name: e.name, placeholder: e.placeholder })));
+  const inputs = await page.$$eval('input', els =>
+    els.map(e => ({ type: e.type, name: e.name, placeholder: e.placeholder })),
+  );
   console.log('Found Inputs on Login Screen:', inputs);
 
   await page.screenshot({ path: 'admin_login_screen.png' });

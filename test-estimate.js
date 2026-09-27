@@ -37,7 +37,9 @@ Trả về JSON:
   });
 
   try {
-    const result = await model.generateContent('Loại dịch vụ: Vệ sinh & Sửa máy lạnh\nMô tả: Vệ sinh 2 máy lạnh Daikin 1.5HP ở phòng ngủ và nạp thêm gas r32');
+    const result = await model.generateContent(
+      'Loại dịch vụ: Vệ sinh & Sửa máy lạnh\nMô tả: Vệ sinh 2 máy lạnh Daikin 1.5HP ở phòng ngủ và nạp thêm gas r32',
+    );
     console.log('Result:', result.response.text());
   } catch (e) {
     console.error('Error in estimate:', e);

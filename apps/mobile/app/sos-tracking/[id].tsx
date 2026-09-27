@@ -91,7 +91,7 @@ export default function SosTrackingScreen() {
   const handleShareSos = async () => {
     try {
       await Share.share({
-        message: `🚨 Tôi đang gọi cứu hộ sự cố khẩn cấp "${job?.title}" tại địa chỉ: ${job?.address?.full_address}. Thợ phụ trách: ${helperName} (${helperPhone}). Theo dõi qua HomeMate.`,
+        message: `🚨 Tôi đang gọi cứu hộ sự cố khẩn cấp "${job?.title}" tại địa chỉ: ${job?.address?.full_address}. Thợ phụ trách: ${helperName} (${helperPhone}). Theo dõi qua Green House.`,
       });
     } catch {
       /* ignore */
@@ -240,10 +240,14 @@ export default function SosTrackingScreen() {
                 latitude: job?.address?.location?.coordinates?.[1] || 10.7725,
                 longitude: job?.address?.location?.coordinates?.[0] || 106.6983,
               }}
-              helperLocation={helperLocation?.current ? {
-                latitude: helperLocation.current.lat,
-                longitude: helperLocation.current.lng,
-              } : undefined}
+              helperLocation={
+                helperLocation?.current
+                  ? {
+                      latitude: helperLocation.current.lat,
+                      longitude: helperLocation.current.lng,
+                    }
+                  : undefined
+              }
               customerAddress={job?.address?.full_address}
               helperName={helperName}
               etaMinutes={eta}

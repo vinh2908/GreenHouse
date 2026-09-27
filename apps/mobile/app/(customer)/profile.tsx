@@ -33,7 +33,7 @@ const MENU_SECTIONS = [
     items: [
       { icon: HelpCircle, label: 'Trung tâm trợ giúp Vua Thợ (24/7)', route: '/help-center' },
       { icon: Shield, label: 'Chính sách bảo mật & Bảo hiểm 30 ngày', route: '/policy-insurance' },
-      { icon: Star, label: 'Đánh giá ứng dụng HomeMate', route: null },
+      { icon: Star, label: 'Đánh giá ứng dụng Green House', route: null },
     ],
   },
 ];
@@ -98,13 +98,25 @@ export default function CustomerProfileScreen() {
             style={{ alignItems: 'center' }}
           >
             <Avatar name={displayUser?.full_name} uri={displayUser?.avatar} size={80} />
-            <Text style={{ fontSize: 20, fontWeight: '800', color: COLORS.gray[900], marginTop: 12 }}>
+            <Text
+              style={{ fontSize: 20, fontWeight: '800', color: COLORS.gray[900], marginTop: 12 }}
+            >
               {displayUser?.full_name}
             </Text>
-            <Text style={{ fontSize: 14, color: COLORS.gray[500], marginTop: 4, fontWeight: '600' }}>
+            <Text
+              style={{ fontSize: 14, color: COLORS.gray[500], marginTop: 4, fontWeight: '600' }}
+            >
               {displayUser?.phone}
             </Text>
-            <View style={{ backgroundColor: COLORS.gray[100], paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10, marginTop: 6 }}>
+            <View
+              style={{
+                backgroundColor: COLORS.gray[100],
+                paddingHorizontal: 10,
+                paddingVertical: 4,
+                borderRadius: 10,
+                marginTop: 6,
+              }}
+            >
               <Text style={{ fontSize: 12, fontWeight: '700', color: COLORS.primary }}>
                 Chỉnh sửa hồ sơ ✏️
               </Text>
@@ -212,7 +224,7 @@ export default function CustomerProfileScreen() {
               fontWeight: '500',
             }}
           >
-            HomeMate v1.0.0 • Dịch vụ gia đình chuyên nghiệp
+            Green House v1.0.0 • Dịch vụ gia đình chuyên nghiệp
           </Text>
         </View>
       </ScrollView>

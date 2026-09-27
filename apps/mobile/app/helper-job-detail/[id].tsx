@@ -710,7 +710,8 @@ export default function HelperJobDetailScreen() {
                   </Text>
                 </View>
                 <Text style={{ fontSize: 12.5, color: COLORS.gray[700], lineHeight: 18 }}>
-                  Chụp 1-4 hình ảnh hoặc quay video ngắn thể hiện kết quả sạch sẽ, đã sửa chữa xong để khách hàng kiểm tra và bấm hoàn thành nhanh chóng.
+                  Chụp 1-4 hình ảnh hoặc quay video ngắn thể hiện kết quả sạch sẽ, đã sửa chữa xong
+                  để khách hàng kiểm tra và bấm hoàn thành nhanh chóng.
                 </Text>
               </View>
 
@@ -897,7 +898,9 @@ export default function HelperJobDetailScreen() {
                           borderColor: COLORS.gray[200],
                         }}
                       >
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 }}>
+                        <View
+                          style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 }}
+                        >
                           <View
                             style={{
                               width: 34,

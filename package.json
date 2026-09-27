@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "packageManager": "pnpm@10.29.3",
-  "description": "HomeMate - Home Service Marketplace Platform",
+  "description": "Green House - Home Service Marketplace Platform",
   "scripts": {
     "start:all": "scripts\\start-all.bat",
     "dev": "turbo run dev",

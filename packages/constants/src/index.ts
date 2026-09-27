@@ -1,6 +1,6 @@
 // ─── App Constants ─────────────────────────────────────────────────────────────
 
-export const APP_NAME = 'HomeMate';
+export const APP_NAME = 'Green House';
 export const APP_VERSION = '1.0.0';
 
 // ─── API ───────────────────────────────────────────────────────────────────────

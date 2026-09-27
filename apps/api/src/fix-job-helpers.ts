@@ -19,26 +19,31 @@ async function fixJobHelpers() {
   const helperId = helper._id;
 
   // 1. Cập nhật tất cả các job mà helper_id đang bị lưu trùng với customer_id
-  const invalidJobs = await jobsCollection.find({
-    $expr: { $eq: ['$customer_id', '$helper_id'] }
-  }).toArray();
+  const invalidJobs = await jobsCollection
+    .find({
+      $expr: { $eq: ['$customer_id', '$helper_id'] },
+    })
+    .toArray();
 
   console.log(`Tìm thấy ${invalidJobs.length} đơn hàng bị gán nhầm helper_id = customer_id`);
 
   for (const j of invalidJobs) {
-    if (j.status === 'confirmed' || j.status === 'helper_on_the_way' || j.status === 'helper_arrived' || j.status === 'in_progress' || j.status === 'pending_review' || j.status === 'completed') {
+    if (
+      j.status === 'confirmed' ||
+      j.status === 'helper_on_the_way' ||
+      j.status === 'helper_arrived' ||
+      j.status === 'in_progress' ||
+      j.status === 'pending_review' ||
+      j.status === 'completed'
+    ) {
       // Gán lại đúng Thợ Anh Tuấn
-      await jobsCollection.updateOne(
-        { _id: j._id },
-        { $set: { helper_id: helperId } }
+      await jobsCollection.updateOne({ _id: j._id }, { $set: { helper_id: helperId } });
+      console.log(
+        ` -> Đã sửa Job "${j.title}" (${j._id}): gán helper_id -> Anh Tuấn (${helperId})`,
       );
-      console.log(` -> Đã sửa Job "${j.title}" (${j._id}): gán helper_id -> Anh Tuấn (${helperId})`);
     } else {
       // Nếu là đơn open/receiving_quotes -> set helper_id = null
-      await jobsCollection.updateOne(
-        { _id: j._id },
-        { $set: { helper_id: null } }
-      );
+      await jobsCollection.updateOne({ _id: j._id }, { $set: { helper_id: null } });
       console.log(` -> Đã reset Job "${j.title}" (${j._id}): helper_id -> null`);
     }
   }
