@@ -6,8 +6,8 @@ import { QueryProvider } from '@/components/common/query-provider';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'HomeMate Admin',
-  description: 'HomeMate Admin Dashboard',
+  title: 'Green House Admin',
+  description: 'Green House Admin Dashboard',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

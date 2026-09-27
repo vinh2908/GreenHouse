@@ -1,11 +1,5 @@
 import { useState, useEffect } from 'react';
-import {
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-  RefreshControl,
-} from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, RefreshControl } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import {
@@ -44,7 +38,7 @@ const SERVICE_CATEGORIES = [
     id: 'housekeeping_hourly',
     name: 'Giúp việc\ntheo giờ',
     emoji: '🧹',
-    bg: '#FFF4ED',
+    bg: '#DCFCE7',
     slug: 'housekeeping_hourly',
   },
   {
@@ -184,9 +178,9 @@ export default function CustomerHomeScreen() {
                   flexDirection: 'row',
                   alignItems: 'center',
                   gap: 5,
-                  backgroundColor: '#FFF4ED',
+                  backgroundColor: '#DCFCE7',
                   borderWidth: 1,
-                  borderColor: '#FFD9C5',
+                  borderColor: '#86EFAC',
                   borderRadius: 20,
                   paddingHorizontal: 10,
                   paddingVertical: 6,
@@ -365,11 +359,11 @@ export default function CustomerHomeScreen() {
               <View style={{ flex: 1 }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                   <Text style={{ color: '#fff', fontWeight: '800', fontSize: 16 }}>
-                    Trợ lý AI HomeMate
+                    Trợ lý AI Green House
                   </Text>
                   <View
                     style={{
-                      backgroundColor: '#FF6B1A33',
+                      backgroundColor: 'rgba(34, 197, 94, 0.25)',
                       paddingHorizontal: 6,
                       paddingVertical: 2,
                       borderRadius: 6,

@@ -165,7 +165,7 @@ export default function RegisterScreen() {
                 <Text style={{ color: COLORS.primary, fontWeight: '700' }}>Điều khoản dịch vụ</Text>{' '}
                 và{' '}
                 <Text style={{ color: COLORS.primary, fontWeight: '700' }}>Chính sách bảo mật</Text>{' '}
-                của HomeMate.
+                của Green House.
               </Text>
 
               <Button

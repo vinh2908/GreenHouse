@@ -227,7 +227,7 @@ export default function KycScreen() {
               <Text
                 style={{ fontSize: 13.5, color: '#B45309', textAlign: 'center', lineHeight: 20 }}
               >
-                Hồ sơ e-KYC của bạn đã được gửi thành công và đang được ban quản trị HomeMate đối
+                Hồ sơ e-KYC của bạn đã được gửi thành công và đang được ban quản trị Green House đối
                 chiếu trong vòng 24 giờ làm việc.
               </Text>
               <View

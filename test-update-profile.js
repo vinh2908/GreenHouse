@@ -48,7 +48,10 @@ async function testUpdateProfile() {
     }),
   }).then(r => r.json());
 
-  console.log(' -> ✅ Khu vực làm việc đã cập nhật:', updateHelperRes.data.working_areas?.join(', '));
+  console.log(
+    ' -> ✅ Khu vực làm việc đã cập nhật:',
+    updateHelperRes.data.working_areas?.join(', '),
+  );
 
   console.log('\n====================================================');
   console.log('🎉 TÍNH NĂNG CHỈNH SỬA HỒ SƠ & CÁ NHÂN HÓA HOÀN TẤT!');

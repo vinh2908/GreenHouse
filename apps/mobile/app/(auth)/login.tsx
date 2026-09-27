@@ -53,7 +53,14 @@ export default function LoginScreen() {
   const insets = useSafeAreaInsets();
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#FFFFFF', paddingTop: Math.max(insets.top, 16), paddingBottom: Math.max(insets.bottom, 16) }}>
+    <View
+      style={{
+        flex: 1,
+        backgroundColor: '#FFFFFF',
+        paddingTop: Math.max(insets.top, 16),
+        paddingBottom: Math.max(insets.bottom, 16),
+      }}
+    >
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -91,7 +98,7 @@ export default function LoginScreen() {
                   letterSpacing: -0.5,
                 }}
               >
-                HOME
+                GREEN
               </Text>
               <Text
                 style={{
@@ -101,7 +108,7 @@ export default function LoginScreen() {
                   letterSpacing: -0.5,
                 }}
               >
-                MATE
+                HOUSE
               </Text>
             </View>
             <Text

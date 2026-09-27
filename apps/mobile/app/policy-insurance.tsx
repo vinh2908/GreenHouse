@@ -1,11 +1,5 @@
 import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-  Linking,
-} from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Linking } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import {
@@ -24,7 +18,7 @@ import { Button, Card, COLORS, Badge, Separator } from '@/components/ui';
 import Toast from 'react-native-toast-message';
 
 const TABS = ['insurance', 'privacy', 'claim'] as const;
-type TabType = typeof TABS[number];
+type TabType = (typeof TABS)[number];
 
 export default function PolicyInsuranceScreen() {
   const router = useRouter();
@@ -198,7 +192,7 @@ export default function PolicyInsuranceScreen() {
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={{ fontSize: 17, fontWeight: '900', color: '#FFF' }}>
-                    Cam Kết Vàng HomeMate
+                    Cam Kết Vàng Green House
                   </Text>
                   <Text style={{ fontSize: 13, color: '#A7F3D0', marginTop: 2 }}>
                     Bảo hành 30 ngày • Bảo hiểm tài sản 50 triệu
@@ -207,7 +201,8 @@ export default function PolicyInsuranceScreen() {
               </View>
 
               <Text style={{ fontSize: 13.5, color: 'rgba(255,255,255,0.85)', lineHeight: 20 }}>
-                Mọi công việc được thực hiện qua HomeMate đều tự động áp dụng chính sách bảo hiểm toàn diện mà không phát sinh thêm bất kỳ chi phí nào.
+                Mọi công việc được thực hiện qua Green House đều tự động áp dụng chính sách bảo hiểm
+                toàn diện mà không phát sinh thêm bất kỳ chi phí nào.
               </Text>
             </Card>
 
@@ -242,7 +237,8 @@ export default function PolicyInsuranceScreen() {
                   </View>
                 </View>
                 <Text style={{ fontSize: 13.5, color: COLORS.gray[700], lineHeight: 20 }}>
-                  Nếu sự cố tái diễn hoặc công việc vệ sinh, sửa chữa chưa đạt yêu cầu đã thỏa thuận, thợ sẽ quay lại bảo hành miễn phí trong vòng 24 giờ.
+                  Nếu sự cố tái diễn hoặc công việc vệ sinh, sửa chữa chưa đạt yêu cầu đã thỏa
+                  thuận, thợ sẽ quay lại bảo hành miễn phí trong vòng 24 giờ.
                 </Text>
               </Card>
 
@@ -271,7 +267,8 @@ export default function PolicyInsuranceScreen() {
                   </View>
                 </View>
                 <Text style={{ fontSize: 13.5, color: COLORS.gray[700], lineHeight: 20 }}>
-                  Bảo hiểm chi trả trong trường hợp thợ gây hư hỏng thiết bị gia dụng hoặc đổ vỡ đồ vật có giá trị trong quá trình tác nghiệp tại gia đình bạn.
+                  Bảo hiểm chi trả trong trường hợp thợ gây hư hỏng thiết bị gia dụng hoặc đổ vỡ đồ
+                  vật có giá trị trong quá trình tác nghiệp tại gia đình bạn.
                 </Text>
               </Card>
 
@@ -300,7 +297,8 @@ export default function PolicyInsuranceScreen() {
                   </View>
                 </View>
                 <Text style={{ fontSize: 13.5, color: COLORS.gray[700], lineHeight: 20 }}>
-                  Mọi thợ đều được kiểm tra hồ sơ căn cước công dân gắn chip, giấy chứng nhận nghề và ký cam kết bảo vệ an toàn cho gia chủ.
+                  Mọi thợ đều được kiểm tra hồ sơ căn cước công dân gắn chip, giấy chứng nhận nghề
+                  và ký cam kết bảo vệ an toàn cho gia chủ.
                 </Text>
               </Card>
             </View>
@@ -318,7 +316,9 @@ export default function PolicyInsuranceScreen() {
                 </Text>
               </View>
               <Text style={{ fontSize: 13.5, color: COLORS.gray[700], lineHeight: 21 }}>
-                HomeMate cam kết bảo vệ tối đa dữ liệu riêng tư và thông tin cá nhân của bạn theo tiêu chuẩn bảo mật quốc tế ISO/IEC 27001 và Nghị định 13/2023/NĐ-CP về Bảo vệ dữ liệu cá nhân.
+                Green House cam kết bảo vệ tối đa dữ liệu riêng tư và thông tin cá nhân của bạn theo
+                tiêu chuẩn bảo mật quốc tế ISO/IEC 27001 và Nghị định 13/2023/NĐ-CP về Bảo vệ dữ
+                liệu cá nhân.
               </Text>
             </Card>
 
@@ -327,8 +327,9 @@ export default function PolicyInsuranceScreen() {
                 1. Thu thập thông tin tối thiểu
               </Text>
               <Text style={{ fontSize: 13.5, color: COLORS.gray[600], lineHeight: 20 }}>
-                • Chúng tôi chỉ thu thập số điện thoại, tên, địa chỉ thực hiện đơn hàng và hình ảnh sự cố để phục vụ việc điều phối thợ.{'\n'}
-                • Số điện thoại của bạn được mã hóa và ẩn danh khi liên hệ qua tổng đài hoặc hệ thống chat nội bộ.
+                • Chúng tôi chỉ thu thập số điện thoại, tên, địa chỉ thực hiện đơn hàng và hình ảnh
+                sự cố để phục vụ việc điều phối thợ.{'\n'}• Số điện thoại của bạn được mã hóa và ẩn
+                danh khi liên hệ qua tổng đài hoặc hệ thống chat nội bộ.
               </Text>
             </Card>
 
@@ -337,8 +338,9 @@ export default function PolicyInsuranceScreen() {
                 2. Bảo mật thanh toán & Escrow
               </Text>
               <Text style={{ fontSize: 13.5, color: COLORS.gray[600], lineHeight: 20 }}>
-                • Không lưu trữ thông tin thẻ ngân hàng hoặc mật khẩu tài khoản ví điện tử.{'\n'}
-                • Cơ chế thanh toán giữ hộ (Escrow) bảo đảm quyền lợi đôi bên: Khách nghiệm thu xong thợ mới nhận tiền.
+                • Không lưu trữ thông tin thẻ ngân hàng hoặc mật khẩu tài khoản ví điện tử.{'\n'}•
+                Cơ chế thanh toán giữ hộ (Escrow) bảo đảm quyền lợi đôi bên: Khách nghiệm thu xong
+                thợ mới nhận tiền.
               </Text>
             </Card>
 
@@ -347,7 +349,8 @@ export default function PolicyInsuranceScreen() {
                 3. Quyền của người dùng
               </Text>
               <Text style={{ fontSize: 13.5, color: COLORS.gray[600], lineHeight: 20 }}>
-                Bạn có toàn quyền xem, chỉnh sửa hoặc yêu cầu xóa bỏ hoàn toàn dữ liệu cá nhân và lịch sử hoạt động bất kỳ lúc nào trong phần cài đặt tài khoản.
+                Bạn có toàn quyền xem, chỉnh sửa hoặc yêu cầu xóa bỏ hoàn toàn dữ liệu cá nhân và
+                lịch sử hoạt động bất kỳ lúc nào trong phần cài đặt tài khoản.
               </Text>
             </Card>
           </View>
@@ -356,7 +359,15 @@ export default function PolicyInsuranceScreen() {
         {/* ── TAB 3: QUY TRÌNH BỒI THƯỜNG ──────────────────────────────── */}
         {activeTab === 'claim' && (
           <View style={{ gap: 14 }}>
-            <Card style={{ padding: 16, gap: 12, backgroundColor: '#FFFBEB', borderColor: '#FDE68A', borderWidth: 1.5 }}>
+            <Card
+              style={{
+                padding: 16,
+                gap: 12,
+                backgroundColor: '#FFFBEB',
+                borderColor: '#FDE68A',
+                borderWidth: 1.5,
+              }}
+            >
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                 <AlertCircle size={22} color="#D97706" />
                 <Text style={{ fontSize: 16, fontWeight: '800', color: '#92400E' }}>
@@ -364,7 +375,8 @@ export default function PolicyInsuranceScreen() {
                 </Text>
               </View>
               <Text style={{ fontSize: 13.5, color: '#B45309', lineHeight: 20 }}>
-                Khi có sự cố ngoài ý muốn, đội ngũ Chăm sóc khách hàng HomeMate sẽ tiếp nhận và hoàn tất thẩm định đền bù trong vòng 24 giờ làm việc.
+                Khi có sự cố ngoài ý muốn, đội ngũ Chăm sóc khách hàng Green House sẽ tiếp nhận và hoàn
+                tất thẩm định đền bù trong vòng 24 giờ làm việc.
               </Text>
             </Card>
 
@@ -376,7 +388,16 @@ export default function PolicyInsuranceScreen() {
 
               <View style={{ gap: 14 }}>
                 <View style={{ flexDirection: 'row', gap: 12 }}>
-                  <View style={{ width: 26, height: 26, borderRadius: 13, backgroundColor: COLORS.primary, alignItems: 'center', justifyContent: 'center' }}>
+                  <View
+                    style={{
+                      width: 26,
+                      height: 26,
+                      borderRadius: 13,
+                      backgroundColor: COLORS.primary,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
                     <Text style={{ color: '#fff', fontWeight: '800', fontSize: 13 }}>1</Text>
                   </View>
                   <View style={{ flex: 1 }}>
@@ -390,7 +411,16 @@ export default function PolicyInsuranceScreen() {
                 </View>
 
                 <View style={{ flexDirection: 'row', gap: 12 }}>
-                  <View style={{ width: 26, height: 26, borderRadius: 13, backgroundColor: COLORS.primary, alignItems: 'center', justifyContent: 'center' }}>
+                  <View
+                    style={{
+                      width: 26,
+                      height: 26,
+                      borderRadius: 13,
+                      backgroundColor: COLORS.primary,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
                     <Text style={{ color: '#fff', fontWeight: '800', fontSize: 13 }}>2</Text>
                   </View>
                   <View style={{ flex: 1 }}>
@@ -404,7 +434,16 @@ export default function PolicyInsuranceScreen() {
                 </View>
 
                 <View style={{ flexDirection: 'row', gap: 12 }}>
-                  <View style={{ width: 26, height: 26, borderRadius: 13, backgroundColor: COLORS.primary, alignItems: 'center', justifyContent: 'center' }}>
+                  <View
+                    style={{
+                      width: 26,
+                      height: 26,
+                      borderRadius: 13,
+                      backgroundColor: COLORS.primary,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
                     <Text style={{ color: '#fff', fontWeight: '800', fontSize: 13 }}>3</Text>
                   </View>
                   <View style={{ flex: 1 }}>
@@ -412,13 +451,22 @@ export default function PolicyInsuranceScreen() {
                       Thẩm định & Phương án xử lý
                     </Text>
                     <Text style={{ fontSize: 12.5, color: COLORS.gray[600], marginTop: 2 }}>
-                      HomeMate cử giám định viên hoặc đối chiếu lịch sử làm việc của thợ.
+                      Green House cử giám định viên hoặc đối chiếu lịch sử làm việc của thợ.
                     </Text>
                   </View>
                 </View>
 
                 <View style={{ flexDirection: 'row', gap: 12 }}>
-                  <View style={{ width: 26, height: 26, borderRadius: 13, backgroundColor: COLORS.success, alignItems: 'center', justifyContent: 'center' }}>
+                  <View
+                    style={{
+                      width: 26,
+                      height: 26,
+                      borderRadius: 13,
+                      backgroundColor: COLORS.success,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
                     <Text style={{ color: '#fff', fontWeight: '800', fontSize: 13 }}>4</Text>
                   </View>
                   <View style={{ flex: 1 }}>

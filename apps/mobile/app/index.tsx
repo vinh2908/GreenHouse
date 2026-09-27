@@ -1,13 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import {
-  View,
-  Text,
-  Animated,
-  Dimensions,
-  StyleSheet,
-  StatusBar,
-  Easing,
-} from 'react-native';
+import { View, Text, Animated, Dimensions, StyleSheet, StatusBar, Easing } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Sparkles, ShieldCheck, Zap } from 'lucide-react-native';
 import { useAuthStore } from '@/stores/auth.store';
@@ -105,7 +97,7 @@ export default function SplashScreen() {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#E55A0E" translucent />
+        <StatusBar barStyle="light-content" backgroundColor="#16A34A" translucent />
 
       {/* ── Background Decorative Shapes ─────────────────────────────── */}
       <Animated.View style={[styles.bgCircle1, { opacity: opacityAnim }]} />
@@ -143,13 +135,11 @@ export default function SplashScreen() {
           ]}
         >
           <View style={styles.brandRow}>
-            <Text style={styles.brandPrimary}>HOME</Text>
-            <Text style={styles.brandWhite}>MATE</Text>
+            <Text style={styles.brandPrimary}>GREEN</Text>
+            <Text style={styles.brandWhite}>HOUSE</Text>
           </View>
 
-          <Text style={styles.slogan}>
-            Dịch vụ gia đình & Thợ chuyên nghiệp 24/7
-          </Text>
+          <Text style={styles.slogan}>Dịch vụ gia đình & Thợ chuyên nghiệp 24/7</Text>
         </Animated.View>
 
         {/* ── Feature Highlights Badges ──────────────────────────────── */}
@@ -178,9 +168,7 @@ export default function SplashScreen() {
           <View style={[styles.dot, { opacity: 0.3 }]} />
         </View>
 
-        <Text style={styles.footerText}>
-          HOMEMATE ECOSYSTEM • PHIÊN BẢN 1.0.0
-        </Text>
+        <Text style={styles.footerText}>GREEN HOUSE ECOSYSTEM • PHIÊN BẢN 1.0.0</Text>
       </Animated.View>
     </View>
   );
@@ -189,7 +177,7 @@ export default function SplashScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FF6B1A', // HomeMate Primary Brand Orange
+    backgroundColor: '#22C55E', // Green House Fresh Green
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',
@@ -202,7 +190,7 @@ const styles = StyleSheet.create({
     width: width * 0.9,
     height: width * 0.9,
     borderRadius: (width * 0.9) / 2,
-    backgroundColor: 'rgba(255, 255, 255, 0.12)',
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
   },
   bgCircle2: {
     position: 'absolute',
@@ -211,7 +199,7 @@ const styles = StyleSheet.create({
     width: width * 1.1,
     height: width * 1.1,
     borderRadius: (width * 1.1) / 2,
-    backgroundColor: 'rgba(229, 90, 14, 0.35)',
+    backgroundColor: 'rgba(22, 163, 74, 0.45)',
   },
   bgCircle3: {
     position: 'absolute',
@@ -281,7 +269,7 @@ const styles = StyleSheet.create({
   brandWhite: {
     fontSize: 34,
     fontWeight: '900',
-    color: '#FFE4D6',
+    color: '#DCFCE7',
     letterSpacing: 1.5,
   },
   slogan: {

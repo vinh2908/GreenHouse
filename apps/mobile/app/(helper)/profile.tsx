@@ -1,11 +1,4 @@
-import {
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-  Alert,
-  Switch,
-} from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Alert, Switch } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import {
@@ -98,13 +91,25 @@ export default function HelperProfileScreen() {
             style={{ alignItems: 'center' }}
           >
             <Avatar name={user?.full_name} size={80} />
-            <Text style={{ fontSize: 20, fontWeight: '800', color: COLORS.gray[900], marginTop: 12 }}>
+            <Text
+              style={{ fontSize: 20, fontWeight: '800', color: COLORS.gray[900], marginTop: 12 }}
+            >
               {user?.full_name}
             </Text>
-            <Text style={{ fontSize: 14, color: COLORS.gray[500], marginTop: 4, fontWeight: '600' }}>
+            <Text
+              style={{ fontSize: 14, color: COLORS.gray[500], marginTop: 4, fontWeight: '600' }}
+            >
               {user?.phone}
             </Text>
-            <View style={{ backgroundColor: COLORS.gray[100], paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10, marginTop: 6 }}>
+            <View
+              style={{
+                backgroundColor: COLORS.gray[100],
+                paddingHorizontal: 10,
+                paddingVertical: 4,
+                borderRadius: 10,
+                marginTop: 6,
+              }}
+            >
               <Text style={{ fontSize: 12, fontWeight: '700', color: COLORS.primary }}>
                 Chỉnh sửa hồ sơ thợ ✏️
               </Text>
@@ -230,8 +235,16 @@ export default function HelperProfileScreen() {
             {[
               { icon: CreditCard, label: 'Tài khoản ngân hàng liên kết', route: '/bank-account' },
               { icon: FileText, label: 'Hồ sơ nghề nghiệp & Kỹ năng', route: '/edit-profile' },
-              { icon: HelpCircle, label: 'Trung tâm trợ giúp Vua Thợ (24/7)', route: '/help-center' },
-              { icon: Shield, label: 'Chính sách bảo mật & Bảo hiểm 30 ngày', route: '/policy-insurance' },
+              {
+                icon: HelpCircle,
+                label: 'Trung tâm trợ giúp Vua Thợ (24/7)',
+                route: '/help-center',
+              },
+              {
+                icon: Shield,
+                label: 'Chính sách bảo mật & Bảo hiểm 30 ngày',
+                route: '/policy-insurance',
+              },
               { icon: Star, label: 'Đánh giá & Phản hồi từ khách hàng', route: null },
             ].map((item, i) => (
               <View key={item.label}>
@@ -286,7 +299,7 @@ export default function HelperProfileScreen() {
               fontWeight: '500',
             }}
           >
-            HomeMate Đối Tác v1.0.0 • Verified Ecosystem
+            Green House Đối Tác v1.0.0 • Verified Ecosystem
           </Text>
         </View>
       </ScrollView>

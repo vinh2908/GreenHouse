@@ -57,7 +57,10 @@ export class MatchingService {
   /**
    * Tính điểm số tương thích giữa 1 Thợ và 1 Công việc (0 - 100 điểm)
    */
-  public computeUtilityScore(helper: any, job: any): { score: number; distance_km: number; reasons: string[] } {
+  public computeUtilityScore(
+    helper: any,
+    job: any,
+  ): { score: number; distance_km: number; reasons: string[] } {
     const reasons: string[] = [];
 
     // 1. Tọa độ & Khoảng cách
@@ -111,7 +114,11 @@ export class MatchingService {
    * Ghép cặp tối ưu hàng loạt (Batch Matching với Hungarian Algorithm)
    * Phân bổ N thợ <-> M công việc sao cho tổng điểm hữu dụng toàn hệ thống là LỚN NHẤT
    */
-  async matchBatchJobs(): Promise<{ total_matched: number; matches: MatchPair[]; matrix_size: string }> {
+  async matchBatchJobs(): Promise<{
+    total_matched: number;
+    matches: MatchPair[];
+    matrix_size: string;
+  }> {
     // 1. Lấy danh sách công việc đang chờ (OPEN)
     const openJobs = await this.jobModel
       .find({ status: { $in: [JobStatus.OPEN, JobStatus.RECEIVING_QUOTES] } })

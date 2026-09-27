@@ -3,22 +3,28 @@ const http = require('http');
 async function testCreateJob() {
   // 1. Login as customer (Chị Mai: 0901111111 / password123)
   const loginData = JSON.stringify({ phone: '0901111111', password: 'password123' });
-  
+
   const token = await new Promise((resolve, reject) => {
-    const req = http.request('http://localhost:3000/api/v1/auth/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-    }, res => {
-      let d = '';
-      res.on('data', c => d += c);
-      res.on('end', () => {
-        try {
-          const json = JSON.parse(d);
-          console.log('Login result:', json.success);
-          resolve(json.data.access_token);
-        } catch (e) { reject(e); }
-      });
-    });
+    const req = http.request(
+      'http://localhost:3000/api/v1/auth/login',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      },
+      res => {
+        let d = '';
+        res.on('data', c => (d += c));
+        res.on('end', () => {
+          try {
+            const json = JSON.parse(d);
+            console.log('Login result:', json.success);
+            resolve(json.data.access_token);
+          } catch (e) {
+            reject(e);
+          }
+        });
+      },
+    );
     req.write(loginData);
     req.end();
   });
@@ -43,21 +49,25 @@ async function testCreateJob() {
   };
 
   const createResult = await new Promise((resolve, reject) => {
-    const req = http.request('http://localhost:3000/api/v1/jobs', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
+    const req = http.request(
+      'http://localhost:3000/api/v1/jobs',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
       },
-    }, res => {
-      let d = '';
-      res.on('data', c => d += c);
-      res.on('end', () => {
-        console.log('Status code:', res.statusCode);
-        console.log('Response body:', d);
-        resolve(d);
-      });
-    });
+      res => {
+        let d = '';
+        res.on('data', c => (d += c));
+        res.on('end', () => {
+          console.log('Status code:', res.statusCode);
+          console.log('Response body:', d);
+          resolve(d);
+        });
+      },
+    );
     req.write(JSON.stringify(jobPayload));
     req.end();
   });

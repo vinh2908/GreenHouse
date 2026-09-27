@@ -180,7 +180,10 @@ Trả về JSON:
 }`;
 
     try {
-      const serviceName = serviceType && (SERVICE_SLUG_VI as Record<string, string>)[serviceType] ? (SERVICE_SLUG_VI as Record<string, string>)[serviceType] : 'Dịch vụ';
+      const serviceName =
+        serviceType && (SERVICE_SLUG_VI as Record<string, string>)[serviceType]
+          ? (SERVICE_SLUG_VI as Record<string, string>)[serviceType]
+          : 'Dịch vụ';
       const content = await this.aiConfig.chat(
         [
           { role: 'system', content: systemPrompt },

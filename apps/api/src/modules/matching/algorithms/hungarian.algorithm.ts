@@ -43,7 +43,7 @@ export class HungarianAlgorithm {
           return maxScore - scoreMatrix[i][j];
         }
         return 0; // Dummy worker / Dummy job
-      })
+      }),
     );
 
     // Chạy thuật toán tìm Min Cost
@@ -68,7 +68,9 @@ export class HungarianAlgorithm {
   /**
    * Giải bài toán tối thiểu hóa chi phí (Minimization Problem)
    */
-  public static minimize(costMatrix: number[][]): { workerIndex: number; jobIndex: number; cost: number }[] {
+  public static minimize(
+    costMatrix: number[][],
+  ): { workerIndex: number; jobIndex: number; cost: number }[] {
     const n = costMatrix.length;
     if (n === 0) return [];
 
@@ -193,7 +195,12 @@ export class HungarianAlgorithm {
     return results;
   }
 
-  private static findUncoveredZero(matrix: number[][], rowCovered: boolean[], colCovered: boolean[], n: number): [number, number] | null {
+  private static findUncoveredZero(
+    matrix: number[][],
+    rowCovered: boolean[],
+    colCovered: boolean[],
+    n: number,
+  ): [number, number] | null {
     for (let i = 0; i < n; i++) {
       if (!rowCovered[i]) {
         for (let j = 0; j < n; j++) {
@@ -206,7 +213,12 @@ export class HungarianAlgorithm {
     return null;
   }
 
-  private static findMinUncoveredVal(matrix: number[][], rowCovered: boolean[], colCovered: boolean[], n: number): number {
+  private static findMinUncoveredVal(
+    matrix: number[][],
+    rowCovered: boolean[],
+    colCovered: boolean[],
+    n: number,
+  ): number {
     let minVal = Infinity;
     for (let i = 0; i < n; i++) {
       if (!rowCovered[i]) {
@@ -220,7 +232,13 @@ export class HungarianAlgorithm {
     return minVal === Infinity ? 0 : minVal;
   }
 
-  private static adjustPath(starredZeroes: boolean[][], primedZeroes: boolean[][], startRow: number, startCol: number, n: number) {
+  private static adjustPath(
+    starredZeroes: boolean[][],
+    primedZeroes: boolean[][],
+    startRow: number,
+    startCol: number,
+    n: number,
+  ) {
     const path: [number, number][] = [[startRow, startCol]];
 
     while (true) {

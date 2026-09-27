@@ -1,13 +1,29 @@
 import { useState, useEffect } from 'react';
 import {
-  View, Text, ScrollView, TouchableOpacity,
-  TextInput, KeyboardAvoidingView, Platform, Image,
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  TextInput,
+  KeyboardAvoidingView,
+  Platform,
+  Image,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import {
-  ArrowLeft, Camera, User, Phone, Mail, MapPin,
-  ShieldCheck, CheckCircle2, Sparkles, Briefcase, FileText, Check,
+  ArrowLeft,
+  Camera,
+  User,
+  Phone,
+  Mail,
+  MapPin,
+  ShieldCheck,
+  CheckCircle2,
+  Sparkles,
+  Briefcase,
+  FileText,
+  Check,
 } from 'lucide-react-native';
 import Toast from 'react-native-toast-message';
 import { useAuthStore } from '@/stores/auth.store';
@@ -39,15 +55,19 @@ export default function EditProfileScreen() {
   const [avatar, setAvatar] = useState('');
   const [gender, setGender] = useState<'male' | 'female' | 'other'>('male');
   const [birthYear, setBirthYear] = useState('1994');
-  
+
   // Customization cho Khách hàng
-  const [defaultAddress, setDefaultAddress] = useState('128 Đường Lê Lợi, Phường Bến Thành, Quận 1');
+  const [defaultAddress, setDefaultAddress] = useState(
+    '128 Đường Lê Lợi, Phường Bến Thành, Quận 1',
+  );
   const [homeNote, setHomeNote] = useState('Bấm chuông lầu 2, nhà có thang máy');
 
   // Customization cho Thợ
   const [experienceYears, setExperienceYears] = useState('3');
   const [workingAreas, setWorkingAreas] = useState('Quận 1, Quận 3, Bình Thạnh, TP. Thủ Đức');
-  const [bio, setBio] = useState('Thợ chuyên nghiệp, đầy đủ đồ nghề Bosch & Fluke, nhiệt tình, có mặt đúng giờ.');
+  const [bio, setBio] = useState(
+    'Thợ chuyên nghiệp, đầy đủ đồ nghề Bosch & Fluke, nhiệt tình, có mặt đúng giờ.',
+  );
 
   const [saving, setSaving] = useState(false);
 
@@ -86,16 +106,22 @@ export default function EditProfileScreen() {
       });
 
       // Cập nhật State trong AuthStore
-      const updatedUser = res?.data?.data || res?.data || { ...user, full_name: fullName.trim(), email: email.trim(), avatar };
+      const updatedUser = res?.data?.data ||
+        res?.data || { ...user, full_name: fullName.trim(), email: email.trim(), avatar };
       setUser(updatedUser);
 
       // 2. Nếu là Thợ -> Cập nhật thêm thông tin chuyên môn
       if (isHelper) {
         try {
           await apiClient.patch('/helpers/me/profile', {
-            working_areas: workingAreas.split(',').map(a => a.trim()).filter(Boolean),
+            working_areas: workingAreas
+              .split(',')
+              .map(a => a.trim())
+              .filter(Boolean),
           });
-        } catch { /* ignore helper specific update */ }
+        } catch {
+          /* ignore helper specific update */
+        }
       }
 
       refetchUser();
@@ -150,9 +176,14 @@ export default function EditProfileScreen() {
         <View style={{ width: 40 }} />
       </View>
 
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 16, gap: 16, paddingBottom: 100 }}>
-
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ padding: 16, gap: 16, paddingBottom: 100 }}
+        >
           {/* ── 1. AVATAR PICKER & BỘ SƯU TẬP AVATAR ──────────────────── */}
           <Card style={{ alignItems: 'center', padding: 20, gap: 14 }}>
             <View style={{ position: 'relative' }}>
@@ -166,11 +197,22 @@ export default function EditProfileScreen() {
                   Toast.show({ type: 'info', text1: 'Đã đổi ảnh đại diện mới' });
                 }}
                 style={{
-                  position: 'absolute', bottom: 0, right: 0,
-                  backgroundColor: COLORS.primary, borderRadius: 18, width: 34, height: 34,
-                  alignItems: 'center', justifyContent: 'center',
-                  borderWidth: 3, borderColor: '#fff',
-                  shadowColor: COLORS.primary, shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.4, shadowRadius: 6, elevation: 4,
+                  position: 'absolute',
+                  bottom: 0,
+                  right: 0,
+                  backgroundColor: COLORS.primary,
+                  borderRadius: 18,
+                  width: 34,
+                  height: 34,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderWidth: 3,
+                  borderColor: '#fff',
+                  shadowColor: COLORS.primary,
+                  shadowOffset: { width: 0, height: 3 },
+                  shadowOpacity: 0.4,
+                  shadowRadius: 6,
+                  elevation: 4,
                 }}
               >
                 <Camera size={16} color="#fff" />
@@ -187,7 +229,11 @@ export default function EditProfileScreen() {
             </View>
 
             {/* Danh sách Avatar mẫu để chọn nhanh 1 chạm */}
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10, paddingVertical: 4 }}>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{ gap: 10, paddingVertical: 4 }}
+            >
               {PRESET_AVATARS.map((url, idx) => {
                 const isSelected = avatar === url;
                 return (
@@ -204,10 +250,24 @@ export default function EditProfileScreen() {
                   >
                     <Image
                       source={{ uri: url }}
-                      style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: COLORS.gray[200] }}
+                      style={{
+                        width: 44,
+                        height: 44,
+                        borderRadius: 22,
+                        backgroundColor: COLORS.gray[200],
+                      }}
                     />
                     {isSelected && (
-                      <View style={{ position: 'absolute', top: 0, right: 0, backgroundColor: COLORS.primary, borderRadius: 8, padding: 1 }}>
+                      <View
+                        style={{
+                          position: 'absolute',
+                          top: 0,
+                          right: 0,
+                          backgroundColor: COLORS.primary,
+                          borderRadius: 8,
+                          padding: 1,
+                        }}
+                      >
                         <Check size={10} color="#fff" strokeWidth={3} />
                       </View>
                     )}
@@ -229,8 +289,14 @@ export default function EditProfileScreen() {
               </Text>
               <TextInput
                 style={{
-                  borderWidth: 1.5, borderColor: COLORS.gray[200], borderRadius: 14,
-                  padding: 14, fontSize: 15, color: COLORS.gray[900], backgroundColor: COLORS.gray[50], fontWeight: '600',
+                  borderWidth: 1.5,
+                  borderColor: COLORS.gray[200],
+                  borderRadius: 14,
+                  padding: 14,
+                  fontSize: 15,
+                  color: COLORS.gray[900],
+                  backgroundColor: COLORS.gray[50],
+                  fontWeight: '600',
                 }}
                 placeholder="Nhập họ và tên đầy đủ"
                 value={fullName}
@@ -240,19 +306,42 @@ export default function EditProfileScreen() {
             </View>
 
             <View style={{ gap: 6 }}>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+              <View
+                style={{
+                  flexDirection: 'row',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                }}
+              >
                 <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.gray[700] }}>
                   Số điện thoại đăng ký
                 </Text>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#ECFDF5', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6 }}>
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 4,
+                    backgroundColor: '#ECFDF5',
+                    paddingHorizontal: 8,
+                    paddingVertical: 2,
+                    borderRadius: 6,
+                  }}
+                >
                   <ShieldCheck size={12} color={COLORS.success} />
-                  <Text style={{ fontSize: 11, color: COLORS.success, fontWeight: '700' }}>Đã xác thực OTP</Text>
+                  <Text style={{ fontSize: 11, color: COLORS.success, fontWeight: '700' }}>
+                    Đã xác thực OTP
+                  </Text>
                 </View>
               </View>
               <TextInput
                 style={{
-                  borderWidth: 1.5, borderColor: COLORS.gray[200], borderRadius: 14,
-                  padding: 14, fontSize: 15, color: COLORS.gray[500], backgroundColor: COLORS.gray[100],
+                  borderWidth: 1.5,
+                  borderColor: COLORS.gray[200],
+                  borderRadius: 14,
+                  padding: 14,
+                  fontSize: 15,
+                  color: COLORS.gray[500],
+                  backgroundColor: COLORS.gray[100],
                 }}
                 value={user?.phone || '0901234567'}
                 editable={false}
@@ -265,8 +354,13 @@ export default function EditProfileScreen() {
               </Text>
               <TextInput
                 style={{
-                  borderWidth: 1.5, borderColor: COLORS.gray[200], borderRadius: 14,
-                  padding: 14, fontSize: 15, color: COLORS.gray[900], backgroundColor: COLORS.gray[50],
+                  borderWidth: 1.5,
+                  borderColor: COLORS.gray[200],
+                  borderRadius: 14,
+                  padding: 14,
+                  fontSize: 15,
+                  color: COLORS.gray[900],
+                  backgroundColor: COLORS.gray[50],
                 }}
                 placeholder="VD: nguyenvana@gmail.com"
                 value={email}
@@ -293,13 +387,22 @@ export default function EditProfileScreen() {
                     activeOpacity={0.8}
                     onPress={() => setGender(g.id as any)}
                     style={{
-                      flex: 1, paddingVertical: 10, borderRadius: 12, alignItems: 'center',
+                      flex: 1,
+                      paddingVertical: 10,
+                      borderRadius: 12,
+                      alignItems: 'center',
                       borderWidth: 1.5,
                       borderColor: gender === g.id ? COLORS.primary : COLORS.gray[200],
                       backgroundColor: gender === g.id ? COLORS.primaryLight : COLORS.gray[50],
                     }}
                   >
-                    <Text style={{ fontSize: 13.5, fontWeight: '700', color: gender === g.id ? COLORS.primary : COLORS.gray[700] }}>
+                    <Text
+                      style={{
+                        fontSize: 13.5,
+                        fontWeight: '700',
+                        color: gender === g.id ? COLORS.primary : COLORS.gray[700],
+                      }}
+                    >
                       {g.label}
                     </Text>
                   </TouchableOpacity>
@@ -325,8 +428,13 @@ export default function EditProfileScreen() {
                 </Text>
                 <TextInput
                   style={{
-                    borderWidth: 1.5, borderColor: COLORS.gray[200], borderRadius: 14,
-                    padding: 14, fontSize: 15, color: COLORS.gray[900], backgroundColor: COLORS.gray[50],
+                    borderWidth: 1.5,
+                    borderColor: COLORS.gray[200],
+                    borderRadius: 14,
+                    padding: 14,
+                    fontSize: 15,
+                    color: COLORS.gray[900],
+                    backgroundColor: COLORS.gray[50],
                   }}
                   placeholder="VD: 3 năm"
                   value={experienceYears}
@@ -342,8 +450,13 @@ export default function EditProfileScreen() {
                 </Text>
                 <TextInput
                   style={{
-                    borderWidth: 1.5, borderColor: COLORS.gray[200], borderRadius: 14,
-                    padding: 14, fontSize: 15, color: COLORS.gray[900], backgroundColor: COLORS.gray[50],
+                    borderWidth: 1.5,
+                    borderColor: COLORS.gray[200],
+                    borderRadius: 14,
+                    padding: 14,
+                    fontSize: 15,
+                    color: COLORS.gray[900],
+                    backgroundColor: COLORS.gray[50],
                   }}
                   placeholder="VD: Quận 1, Quận 3, Bình Thạnh..."
                   value={workingAreas}
@@ -358,9 +471,15 @@ export default function EditProfileScreen() {
                 </Text>
                 <TextInput
                   style={{
-                    borderWidth: 1.5, borderColor: COLORS.gray[200], borderRadius: 14,
-                    padding: 14, fontSize: 14.5, color: COLORS.gray[900], backgroundColor: COLORS.gray[50],
-                    minHeight: 80, textAlignVertical: 'top',
+                    borderWidth: 1.5,
+                    borderColor: COLORS.gray[200],
+                    borderRadius: 14,
+                    padding: 14,
+                    fontSize: 14.5,
+                    color: COLORS.gray[900],
+                    backgroundColor: COLORS.gray[50],
+                    minHeight: 80,
+                    textAlignVertical: 'top',
                   }}
                   placeholder="Giới thiệu về kỹ năng, đồ nghề và phong cách làm việc..."
                   value={bio}
@@ -386,8 +505,13 @@ export default function EditProfileScreen() {
                 </Text>
                 <TextInput
                   style={{
-                    borderWidth: 1.5, borderColor: COLORS.gray[200], borderRadius: 14,
-                    padding: 14, fontSize: 14.5, color: COLORS.gray[900], backgroundColor: COLORS.gray[50],
+                    borderWidth: 1.5,
+                    borderColor: COLORS.gray[200],
+                    borderRadius: 14,
+                    padding: 14,
+                    fontSize: 14.5,
+                    color: COLORS.gray[900],
+                    backgroundColor: COLORS.gray[50],
                   }}
                   placeholder="Nhập địa chỉ nhà riêng hoặc chung cư..."
                   value={defaultAddress}
@@ -402,9 +526,15 @@ export default function EditProfileScreen() {
                 </Text>
                 <TextInput
                   style={{
-                    borderWidth: 1.5, borderColor: COLORS.gray[200], borderRadius: 14,
-                    padding: 14, fontSize: 14.5, color: COLORS.gray[900], backgroundColor: COLORS.gray[50],
-                    minHeight: 70, textAlignVertical: 'top',
+                    borderWidth: 1.5,
+                    borderColor: COLORS.gray[200],
+                    borderRadius: 14,
+                    padding: 14,
+                    fontSize: 14.5,
+                    color: COLORS.gray[900],
+                    backgroundColor: COLORS.gray[50],
+                    minHeight: 70,
+                    textAlignVertical: 'top',
                   }}
                   placeholder="VD: Gửi xe ở hầm B1, bấm chuông số 12.04..."
                   value={homeNote}
@@ -424,7 +554,6 @@ export default function EditProfileScreen() {
             icon={<CheckCircle2 size={18} color="#fff" />}
             style={{ marginTop: 4 }}
           />
-
         </ScrollView>
       </KeyboardAvoidingView>
     </View>

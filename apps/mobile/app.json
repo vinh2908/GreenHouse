@@ -1,30 +1,30 @@
 {
   "expo": {
-    "name": "HomeMate",
-    "slug": "homemate",
+    "name": "Green House",
+    "slug": "green-house",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "homemate",
+    "scheme": "greenhouse",
     "userInterfaceStyle": "automatic",
     "splash": {
       "image": "./assets/images/splash.png",
       "resizeMode": "contain",
-      "backgroundColor": "#FF6B1A"
+      "backgroundColor": "#22C55E"
     },
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.homemate.app",
       "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "HomeMate cần quyền truy cập vị trí để tìm dịch vụ và người giúp việc gần bạn.",
-        "NSCameraUsageDescription": "HomeMate cần quyền truy cập camera để chụp ảnh công việc và xác thực e-KYC.",
-        "NSPhotoLibraryUsageDescription": "HomeMate cần quyền truy cập thư viện ảnh để upload hình ảnh."
+        "NSLocationWhenInUseUsageDescription": "Green House cần quyền truy cập vị trí để tìm dịch vụ và người giúp việc gần bạn.",
+        "NSCameraUsageDescription": "Green House cần quyền truy cập camera để chụp ảnh công việc và xác thực e-KYC.",
+        "NSPhotoLibraryUsageDescription": "Green House cần quyền truy cập thư viện ảnh để upload hình ảnh."
       }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#FF6B1A"
+        "backgroundColor": "#22C55E"
       },
       "package": "com.homemate.app",
       "permissions": [
@@ -47,14 +47,14 @@
       [
         "expo-location",
         {
-          "locationAlwaysAndWhenInUsePermission": "Cho phép HomeMate truy cập vị trí của bạn."
+          "locationAlwaysAndWhenInUsePermission": "Cho phép Green House truy cập vị trí của bạn."
         }
       ],
       [
         "expo-notifications",
         {
           "icon": "./assets/images/notification-icon.png",
-          "color": "#FF6B1A"
+          "color": "#22C55E"
         }
       ]
     ],
@@ -62,8 +62,8 @@
       "typedRoutes": true
     },
     "extra": {
-      "apiUrl": "http://localhost:3000/api/v1",
-      "wsUrl": "http://localhost:3000",
+      "apiUrl": "http://192.168.1.168:3000/api/v1",
+      "wsUrl": "http://192.168.1.168:3000",
       "eas": {
         "projectId": "your-eas-project-id"
       }

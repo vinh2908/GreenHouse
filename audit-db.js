@@ -10,7 +10,7 @@ async function auditDatabase() {
 
   const collections = await db.listCollections().toArray();
   console.log(`📌 Total Collections in DB: ${collections.length}`);
-  
+
   for (const c of collections) {
     const count = await db.collection(c.name).countDocuments();
     console.log(`  - ${c.name.padEnd(22)} : ${count} records`);
@@ -18,7 +18,7 @@ async function auditDatabase() {
 
   // Check data integrity
   console.log('\n🔍 Verifying Data Integrity...');
-  
+
   // 1. Check user roles consistency
   const users = await db.collection('users').find({}).toArray();
   let invalidRolesCount = 0;
@@ -49,12 +49,20 @@ async function auditDatabase() {
 
   // 4. Check 2dsphere indexes
   const jobIndexes = await db.collection('jobs').indexes();
-  const hasGeoIndex = jobIndexes.some(idx => idx.name.includes('location_2dsphere') || JSON.stringify(idx.key).includes('2dsphere'));
-  console.log(`  - Jobs collection 2dsphere GeoSpatial Index: ${hasGeoIndex ? 'PRESENT (✅)' : 'MISSING (❌)'}`);
+  const hasGeoIndex = jobIndexes.some(
+    idx => idx.name.includes('location_2dsphere') || JSON.stringify(idx.key).includes('2dsphere'),
+  );
+  console.log(
+    `  - Jobs collection 2dsphere GeoSpatial Index: ${hasGeoIndex ? 'PRESENT (✅)' : 'MISSING (❌)'}`,
+  );
 
   const helperIndexes = await db.collection('helperprofiles').indexes();
-  const hasHelperGeo = helperIndexes.some(idx => idx.name.includes('location_2dsphere') || JSON.stringify(idx.key).includes('2dsphere'));
-  console.log(`  - HelperProfiles collection 2dsphere GeoSpatial Index: ${hasHelperGeo ? 'PRESENT (✅)' : 'MISSING (❌)'}`);
+  const hasHelperGeo = helperIndexes.some(
+    idx => idx.name.includes('location_2dsphere') || JSON.stringify(idx.key).includes('2dsphere'),
+  );
+  console.log(
+    `  - HelperProfiles collection 2dsphere GeoSpatial Index: ${hasHelperGeo ? 'PRESENT (✅)' : 'MISSING (❌)'}`,
+  );
 
   console.log('\n================================================================================');
   console.log('✅ DATABASE AUDIT COMPLETED SUCCESSFULLY');

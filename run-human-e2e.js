@@ -1,4 +1,13 @@
-const { sleep, runAdb, tap, typeText, swipe, dumpScreen, findElement, getVisibleTexts } = require('./human-tester-utils');
+const {
+  sleep,
+  runAdb,
+  tap,
+  typeText,
+  swipe,
+  dumpScreen,
+  findElement,
+  getVisibleTexts,
+} = require('./human-tester-utils');
 const http = require('http');
 
 function apiCall(method, path, data = null, token = null) {
@@ -15,9 +24,13 @@ function apiCall(method, path, data = null, token = null) {
 
     const req = http.request(options, res => {
       let body = '';
-      res.on('data', chunk => body += chunk);
+      res.on('data', chunk => (body += chunk));
       res.on('end', () => {
-        try { resolve({ status: res.statusCode, data: JSON.parse(body) }); } catch (e) { resolve({ status: res.statusCode, raw: body }); }
+        try {
+          resolve({ status: res.statusCode, data: JSON.parse(body) });
+        } catch (e) {
+          resolve({ status: res.statusCode, raw: body });
+        }
       });
     });
     req.on('error', err => reject(err));
@@ -67,7 +80,9 @@ async function runRealHumanSimulation() {
   xml = dumpScreen();
 
   // STEP 4: Proceed with AI Suggestion
-  console.log('\n📱 [HUMAN ACTOR: CHỊ MAI] Bước 4: Xem kết quả AI phân tích (Dịch vụ, Hạng mục, Ước giá)');
+  console.log(
+    '\n📱 [HUMAN ACTOR: CHỊ MAI] Bước 4: Xem kết quả AI phân tích (Dịch vụ, Hạng mục, Ước giá)',
+  );
   swipe(540, 1600, 540, 800);
   await sleep(800);
   xml = dumpScreen();
@@ -103,60 +118,108 @@ async function runRealHumanSimulation() {
   await sleep(3500);
   xml = dumpScreen();
   texts = getVisibleTexts(xml);
-  console.log('  -> Màn hình Quản lý đơn hàng sau khi đăng thành công:', texts.slice(0, 8).join(' | '));
+  console.log(
+    '  -> Màn hình Quản lý đơn hàng sau khi đăng thành công:',
+    texts.slice(0, 8).join(' | '),
+  );
 
   // STEP 9: Helper (Anh Tuấn) logs in and quotes the newly posted job
   console.log('\n🛠️ [HUMAN ACTOR: ANH TUẤN - THỢ] Bước 9: Thợ online nhận thông báo & gửi báo giá');
-  const helperLogin = await apiCall('POST', '/api/v1/auth/login', { phone: '0902222222', password: 'password123' });
+  const helperLogin = await apiCall('POST', '/api/v1/auth/login', {
+    phone: '0902222222',
+    password: 'password123',
+  });
   const hToken = helperLogin.data.data.access_token;
-  
-  const custLogin = await apiCall('POST', '/api/v1/auth/login', { phone: '0901111111', password: 'password123' });
+
+  const custLogin = await apiCall('POST', '/api/v1/auth/login', {
+    phone: '0901111111',
+    password: 'password123',
+  });
   const cToken = custLogin.data.data.access_token;
 
   // Lấy đơn hàng mới nhất có status open
   const myJobs = await apiCall('GET', '/api/v1/jobs/my?status=open', null, cToken);
   const newestJob = myJobs.data?.data?.[0];
-  console.log(`  -> Thợ thấy đơn mới vừa đăng: "${newestJob?.title}" (ID: ${newestJob?._id}, Status: ${newestJob?.status})`);
+  console.log(
+    `  -> Thợ thấy đơn mới vừa đăng: "${newestJob?.title}" (ID: ${newestJob?._id}, Status: ${newestJob?.status})`,
+  );
 
-  const quoteSubmit = await apiCall('POST', `/api/v1/jobs/${newestJob._id}/quotes`, {
-    labor_cost: 250000,
-    materials_cost: 50000,
-    estimated_duration: 2,
-    notes: 'Thợ Tuấn có sẵn đồ nghề và gas R32, có thể qua làm ngay!',
-  }, hToken);
-  console.log(`  -> Thợ đã gửi báo giá thành công: ${quoteSubmit.data.data.total_price.toLocaleString()}₫ (ID: ${quoteSubmit.data.data._id})`);
+  const quoteSubmit = await apiCall(
+    'POST',
+    `/api/v1/jobs/${newestJob._id}/quotes`,
+    {
+      labor_cost: 250000,
+      materials_cost: 50000,
+      estimated_duration: 2,
+      notes: 'Thợ Tuấn có sẵn đồ nghề và gas R32, có thể qua làm ngay!',
+    },
+    hToken,
+  );
+  console.log(
+    `  -> Thợ đã gửi báo giá thành công: ${quoteSubmit.data.data.total_price.toLocaleString()}₫ (ID: ${quoteSubmit.data.data._id})`,
+  );
 
   // STEP 10: Customer accepts quote
-  console.log('\n📱 [HUMAN ACTOR: CHỊ MAI] Bước 10: Khách hàng đồng ý báo giá & tạo hợp đồng dịch vụ');
-  const selectQuote = await apiCall('POST', `/api/v1/jobs/${newestJob._id}/select-quote`, {
-    quote_id: quoteSubmit.data.data._id,
-    scheduled_at: '2026-09-22T09:00:00Z',
-  }, cToken);
-  console.log(`  -> Khách hàng đã ký hợp đồng điện tử thành công! Trạng thái đơn: ${selectQuote.data.data.job.status}`);
+  console.log(
+    '\n📱 [HUMAN ACTOR: CHỊ MAI] Bước 10: Khách hàng đồng ý báo giá & tạo hợp đồng dịch vụ',
+  );
+  const selectQuote = await apiCall(
+    'POST',
+    `/api/v1/jobs/${newestJob._id}/select-quote`,
+    {
+      quote_id: quoteSubmit.data.data._id,
+      scheduled_at: '2026-09-22T09:00:00Z',
+    },
+    cToken,
+  );
+  console.log(
+    `  -> Khách hàng đã ký hợp đồng điện tử thành công! Trạng thái đơn: ${selectQuote.data.data.job.status}`,
+  );
 
   // STEP 11: Helper performs job and uploads evidence photos & videos
-  console.log('\n🛠️ [HUMAN ACTOR: ANH TUẤN] Bước 11: Thợ di chuyển, thực hiện & chụp ảnh/video nghiệm thu');
+  console.log(
+    '\n🛠️ [HUMAN ACTOR: ANH TUẤN] Bước 11: Thợ di chuyển, thực hiện & chụp ảnh/video nghiệm thu',
+  );
   await apiCall('PATCH', `/api/v1/jobs/${newestJob._id}/on-the-way`, null, hToken);
   await apiCall('PATCH', `/api/v1/jobs/${newestJob._id}/arrived`, null, hToken);
   await apiCall('PATCH', `/api/v1/jobs/${newestJob._id}/start`, null, hToken);
-  const completeRes = await apiCall('PATCH', `/api/v1/jobs/${newestJob._id}/complete`, {
-    completion_photos: ['https://images.unsplash.com/ac-clean-finished.jpg'],
-    completion_videos: ['https://video.homemate.vn/ac-drain-flow-checked.mp4'],
-    completion_notes: 'Đã vệ sinh sạch sẽ dàn lạnh, thông ống xả nước và nạp đủ gas lạnh.',
-  }, hToken);
-  console.log(`  -> Thợ đã gửi bằng chứng nghiệm thu (ảnh + video), trạng thái: ${completeRes.data.data.status}`);
+  const completeRes = await apiCall(
+    'PATCH',
+    `/api/v1/jobs/${newestJob._id}/complete`,
+    {
+      completion_photos: ['https://images.unsplash.com/ac-clean-finished.jpg'],
+      completion_videos: ['https://video.homemate.vn/ac-drain-flow-checked.mp4'],
+      completion_notes: 'Đã vệ sinh sạch sẽ dàn lạnh, thông ống xả nước và nạp đủ gas lạnh.',
+    },
+    hToken,
+  );
+  console.log(
+    `  -> Thợ đã gửi bằng chứng nghiệm thu (ảnh + video), trạng thái: ${completeRes.data.data.status}`,
+  );
 
   // STEP 12: Customer verifies evidence & rates 5 stars
-  console.log('\n📱 [HUMAN ACTOR: CHỊ MAI] Bước 12: Khách hàng kiểm tra video/ảnh bàn giao & nghiệm thu 5★');
-  const approveRes = await apiCall('PATCH', `/api/v1/jobs/${newestJob._id}/approve`, {
-    rating: 5,
-    review: 'Thợ làm rất cẩn thận, máy lạnh hết chảy nước và mát lạnh 5 sao!',
-  }, cToken);
+  console.log(
+    '\n📱 [HUMAN ACTOR: CHỊ MAI] Bước 12: Khách hàng kiểm tra video/ảnh bàn giao & nghiệm thu 5★',
+  );
+  const approveRes = await apiCall(
+    'PATCH',
+    `/api/v1/jobs/${newestJob._id}/approve`,
+    {
+      rating: 5,
+      review: 'Thợ làm rất cẩn thận, máy lạnh hết chảy nước và mát lạnh 5 sao!',
+    },
+    cToken,
+  );
   console.log(`  -> Đơn hàng đã hoàn tất 100%! Rating: ${approveRes.data.data.customer_rating}★`);
 
   // STEP 13: Admin audits everything on Dashboard
-  console.log('\n🖥️ [HUMAN ACTOR: QUẢN TRỊ VIÊN ADMIN] Bước 13: Admin kiểm tra toàn bộ số liệu trên Next.js 15 Portal');
-  const adminLogin = await apiCall('POST', '/api/v1/auth/login', { phone: '0999999999', password: 'admin123' });
+  console.log(
+    '\n🖥️ [HUMAN ACTOR: QUẢN TRỊ VIÊN ADMIN] Bước 13: Admin kiểm tra toàn bộ số liệu trên Next.js 15 Portal',
+  );
+  const adminLogin = await apiCall('POST', '/api/v1/auth/login', {
+    phone: '0999999999',
+    password: 'admin123',
+  });
   const aToken = adminLogin.data.data.access_token;
   const adminDashboard = await apiCall('GET', '/api/v1/admin/dashboard', null, aToken);
   console.log('  -> Thống kê Dashboard:', JSON.stringify(adminDashboard.data.data));
