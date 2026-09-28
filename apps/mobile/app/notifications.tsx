@@ -23,9 +23,29 @@ const NOTIF_ICONS: Record<string, string> = {
   quote_rejected: '❌',
   payment_success: '💸',
   review_received: '⭐',
+  new_message: '💬',
+  kyc_approved: '🪪',
+  kyc_rejected: '⚠️',
+  withdrawal_processed: '🏦',
   promotion: '🎁',
   system: '📢',
 };
+
+// Notifications addressed to the user as a helper open the helper screens, whatever
+// role is currently active; the rest follow the active role.
+const HELPER_TYPES = new Set([
+  'quote_accepted',
+  'payment_success',
+  'review_received',
+  'new_job_nearby',
+]);
+const CUSTOMER_TYPES = new Set([
+  'new_quote_received',
+  'job_confirmed',
+  'helper_on_the_way',
+  'helper_arrived',
+  'job_completed',
+]);
 
 export default function NotificationsScreen() {
   const router = useRouter();
@@ -37,6 +57,7 @@ export default function NotificationsScreen() {
   const handleBack = () => {
     if (router.canGoBack()) {
       router.back();
+      return;
     }
     router.replace(user?.active_role === 'helper' ? '/(helper)/dashboard' : '/(customer)/home');
   };
@@ -47,10 +68,27 @@ export default function NotificationsScreen() {
       markRead.mutate(n._id);
     }
 
-    // Điều hướng đến Job tương ứng nếu có job_id
     const jobId = n.data?.job_id || n.payload?.job_id;
+    if (n.type === 'new_message' && jobId) {
+      router.push({ pathname: '/chat/[jobId]', params: { jobId } });
+      return;
+    }
+    if (n.type === 'kyc_approved' || n.type === 'kyc_rejected') {
+      router.push('/kyc');
+      return;
+    }
+    if (n.type === 'withdrawal_processed') {
+      router.push('/(helper)/earnings');
+      return;
+    }
+    // Điều hướng đến Job tương ứng nếu có job_id
     if (jobId) {
-      if (user?.active_role === 'helper') {
+      const asHelper = HELPER_TYPES.has(n.type)
+        ? true
+        : CUSTOMER_TYPES.has(n.type)
+          ? false
+          : user?.active_role === 'helper';
+      if (asHelper) {
         router.push({ pathname: '/helper-job-detail/[id]', params: { id: jobId } });
       } else {
         router.push({ pathname: '/job-detail/[id]', params: { id: jobId } });

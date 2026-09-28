@@ -9,28 +9,40 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Review, ReviewDocument } from './schemas/review.schema';
 import { CreateReviewDto, HelperReplyDto } from './dto/review.dto';
+import { Job, JobDocument } from '../jobs/schemas/job.schema';
+import { HelperProfile, HelperProfileDocument } from '../helpers/schemas/helper-profile.schema';
+import { JobStatus } from '@homemate/types';
+import { NOTIFICATION_TYPES } from '@homemate/constants';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class ReviewsService {
-  constructor(@InjectModel(Review.name) private reviewModel: Model<ReviewDocument>) {}
+  constructor(
+    @InjectModel(Review.name) private reviewModel: Model<ReviewDocument>,
+    @InjectModel(Job.name) private jobModel: Model<JobDocument>,
+    @InjectModel(HelperProfile.name) private helperModel: Model<HelperProfileDocument>,
+    private readonly notificationsService: NotificationsService,
+  ) {}
 
   // ─── Customer: Create review after job completion ──────────────────────────
 
-  async createReview(
-    customerId: string,
-    helperId: string,
-    dto: CreateReviewDto,
-  ): Promise<ReviewDocument> {
-    // Check no duplicate review for this job
-    const existing = await this.reviewModel
-      .findOne({ job_id: new Types.ObjectId(dto.job_id) })
-      .exec();
+  async createReview(customerId: string, dto: CreateReviewDto): Promise<ReviewDocument> {
+    const job = await this.jobModel.findById(dto.job_id).exec();
+    if (!job) throw new NotFoundException('Công việc không tồn tại');
+    if (job.customer_id.toString() !== customerId) {
+      throw new ForbiddenException('Bạn chỉ có thể đánh giá công việc của mình');
+    }
+    if (job.status !== JobStatus.COMPLETED || !job.helper_id) {
+      throw new BadRequestException('Chỉ đánh giá được công việc đã hoàn thành');
+    }
+
+    const existing = await this.reviewModel.findOne({ job_id: job._id }).exec();
     if (existing) throw new ConflictException('Bạn đã đánh giá công việc này rồi');
 
     const review = await this.reviewModel.create({
-      job_id: new Types.ObjectId(dto.job_id),
+      job_id: job._id,
       customer_id: new Types.ObjectId(customerId),
-      helper_id: new Types.ObjectId(helperId),
+      helper_id: job.helper_id,
       rating: dto.rating,
       comment: dto.comment,
       rating_punctuality: dto.rating_punctuality,
@@ -39,7 +51,30 @@ export class ReviewsService {
       tags: dto.tags ?? [],
     });
 
+    await this.syncHelperRating(String(job.helper_id));
+    await this.notificationsService
+      .create({
+        userId: String(job.helper_id),
+        type: NOTIFICATION_TYPES.REVIEW_RECEIVED,
+        title: `Bạn nhận được đánh giá ${dto.rating}★`,
+        body: dto.comment
+          ? `"${dto.comment.slice(0, 100)}" — ${job.title}`
+          : `Công việc "${job.title}"`,
+        payload: { job_id: String(job._id), review_id: String(review._id) },
+      })
+      .catch(() => undefined);
     return review;
+  }
+
+  // Keep the denormalised rating on the helper profile in step with the reviews collection.
+  private async syncHelperRating(helperId: string) {
+    const stats = await this.getHelperRatingStats(helperId);
+    await this.helperModel
+      .updateOne(
+        { user_id: new Types.ObjectId(helperId) },
+        { rating: stats.average_rating, total_reviews: stats.total_reviews },
+      )
+      .exec();
   }
 
   // ─── Helper: Reply to review ───────────────────────────────────────────────

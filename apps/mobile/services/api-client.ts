@@ -3,14 +3,36 @@ import * as SecureStore from 'expo-secure-store';
 import Constants from 'expo-constants';
 import Toast from 'react-native-toast-message';
 
-const API_URL = Constants.expoConfig?.extra?.apiUrl || 'http://localhost:3000/api/v1';
+const getBaseApiUrl = () => {
+  // 1. URL Tunnel Public Internet (Hoạt động 100% trên mọi điện thoại/4G/Wifi Cafe)
+  if (Constants.expoConfig?.extra?.apiUrl) {
+    return Constants.expoConfig.extra.apiUrl;
+  }
+
+  // 2. Dò theo debugger host của Expo Go
+  const hostUri =
+    Constants.expoConfig?.hostUri ||
+    (Constants as any).manifest2?.extra?.expoGo?.debuggerHost ||
+    (Constants as any).manifest?.debuggerHost;
+  if (hostUri) {
+    const ip = hostUri.split(':')[0];
+    if (ip && ip !== 'localhost' && ip !== '127.0.0.1') {
+      return `http://${ip}:3000/api/v1`;
+    }
+  }
+
+  return 'http://10.0.2.2:3000/api/v1';
+};
+
+const API_URL = getBaseApiUrl();
 
 const apiClient: AxiosInstance = axios.create({
   baseURL: API_URL,
   headers: {
     'Content-Type': 'application/json',
+    'Bypass-Tunnel-Reminder': 'true', // Bỏ qua trang xác thực của localtunnel
   },
-  timeout: 15000,
+  timeout: 20000,
 });
 
 // Request interceptor
@@ -58,6 +80,7 @@ apiClient.interceptors.response.use(
         text1: 'Phiên đăng nhập hết hạn',
         text2: 'Vui lòng đăng nhập lại để tiếp tục',
       });
+      return Promise.reject(error);
     }
 
     // ── 2. Xử lý lỗi mất kết nối mạng / Timeout / Server lỗi ─────────────────

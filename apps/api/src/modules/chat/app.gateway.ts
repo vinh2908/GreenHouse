@@ -13,6 +13,9 @@ import { UseGuards, Logger } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { ChatService } from './chat.service';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model, Types } from 'mongoose';
+import { Job, JobDocument } from '../jobs/schemas/job.schema';
 import { SOCKET_EVENTS } from '@homemate/constants';
 
 @WebSocketGateway({
@@ -35,7 +38,20 @@ export class AppGateway implements OnGatewayConnection, OnGatewayDisconnect {
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
     private readonly chatService: ChatService,
+    @InjectModel(Job.name) private readonly jobModel: Model<JobDocument>,
   ) {}
+
+  // Only the job's customer, its assigned helper or an admin may listen to a job room
+  // (status updates, live helper location).
+  private async canAccessJob(client: Socket, jobId: string, helperOnly = false): Promise<boolean> {
+    const userId = client.data.userId as string | undefined;
+    if (!userId || !Types.ObjectId.isValid(jobId)) return false;
+    if (!helperOnly && (client.data.roles as string[] | undefined)?.includes('admin')) return true;
+    const job = await this.jobModel.findById(jobId).select('customer_id helper_id').lean().exec();
+    if (!job) return false;
+    if (helperOnly) return String(job.helper_id) === userId;
+    return String(job.customer_id) === userId || String(job.helper_id) === userId;
+  }
 
   // ─── Connection handling ───────────────────────────────────────────────────
 
@@ -91,7 +107,8 @@ export class AppGateway implements OnGatewayConnection, OnGatewayDisconnect {
   // ─── Room management ──────────────────────────────────────────────────────
 
   @SubscribeMessage('join:job')
-  handleJoinJob(@ConnectedSocket() client: Socket, @MessageBody() data: { job_id: string }) {
+  async handleJoinJob(@ConnectedSocket() client: Socket, @MessageBody() data: { job_id: string }) {
+    if (!(await this.canAccessJob(client, data?.job_id))) throw new WsException('Forbidden');
     client.join(`job:${data.job_id}`);
     return { event: 'joined', room: `job:${data.job_id}` };
   }
@@ -102,12 +119,24 @@ export class AppGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   @SubscribeMessage('join:conversation')
-  handleJoinConversation(
+  async handleJoinConversation(
     @ConnectedSocket() client: Socket,
     @MessageBody() data: { conversation_id: string },
   ) {
+    const userId = client.data.userId as string;
+    if (!(await this.chatService.isParticipant(data?.conversation_id, userId))) {
+      throw new WsException('Forbidden');
+    }
     client.join(`chat:${data.conversation_id}`);
     return { event: 'joined', room: `chat:${data.conversation_id}` };
+  }
+
+  @SubscribeMessage('leave:conversation')
+  handleLeaveConversation(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: { conversation_id: string },
+  ) {
+    client.leave(`chat:${data?.conversation_id}`);
   }
 
   // ─── Chat messages ────────────────────────────────────────────────────────
@@ -146,6 +175,7 @@ export class AppGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @MessageBody() data: { conversation_id: string },
   ) {
     const userId = client.data.userId as string;
+    if (!(await this.chatService.isParticipant(data?.conversation_id, userId))) return;
     await this.chatService.markRead(data.conversation_id, userId);
     this.server.to(`chat:${data.conversation_id}`).emit(SOCKET_EVENTS.CHAT_MESSAGE_READ, {
       conversation_id: data.conversation_id,
@@ -156,11 +186,12 @@ export class AppGateway implements OnGatewayConnection, OnGatewayDisconnect {
   // ─── Helper location update ────────────────────────────────────────────────
 
   @SubscribeMessage('helper:location')
-  handleLocationUpdate(
+  async handleLocationUpdate(
     @ConnectedSocket() client: Socket,
     @MessageBody() data: { job_id: string; lat: number; lng: number },
   ) {
     const helperId = client.data.userId as string;
+    if (!(await this.canAccessJob(client, data?.job_id, true))) throw new WsException('Forbidden');
     // Broadcast to job room so customer can see helper moving
     this.server.to(`job:${data.job_id}`).emit(SOCKET_EVENTS.HELPER_LOCATION_UPDATE, {
       helper_id: helperId,
@@ -182,6 +213,11 @@ export class AppGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   emitToConversation(conversationId: string, event: string, data: unknown) {
     this.server.to(`chat:${conversationId}`).emit(event, data);
+  }
+
+  async isUserInRoom(userId: string, room: string): Promise<boolean> {
+    const sockets = await this.server.in(room).fetchSockets();
+    return sockets.some(s => s.data?.userId === userId);
   }
 
   isUserOnline(userId: string): boolean {

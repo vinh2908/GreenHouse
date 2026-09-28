@@ -34,8 +34,8 @@ export class ServicesService {
 
   // ─── Services ─────────────────────────────────────────────────────────────
 
-  async getAll(categoryId?: string) {
-    const query: Record<string, unknown> = { status: ServiceStatus.ACTIVE };
+  async getAll(categoryId?: string, includeInactive = false) {
+    const query: Record<string, unknown> = includeInactive ? {} : { status: ServiceStatus.ACTIVE };
     if (categoryId && categoryId !== 'undefined' && Types.ObjectId.isValid(categoryId)) {
       query['category_id'] = new Types.ObjectId(categoryId);
     }

@@ -5,7 +5,14 @@
   "packageManager": "pnpm@10.29.3",
   "description": "Green House - Home Service Marketplace Platform",
   "scripts": {
-    "start:all": "scripts\\start-all.bat",
+    "start:all": "node scripts/devctl.mjs start",
+    "stop:all": "node scripts/devctl.mjs stop",
+    "dev:ui": "node scripts/devctl.mjs ui --open",
+    "dev:up": "node scripts/devctl.mjs start",
+    "dev:down": "node scripts/devctl.mjs stop",
+    "dev:restart": "node scripts/devctl.mjs restart",
+    "dev:status": "node scripts/devctl.mjs status",
+    "dev:logs": "node scripts/devctl.mjs logs",
     "dev": "turbo run dev",
     "build": "turbo run build",
     "lint": "turbo run lint",
@@ -26,7 +33,6 @@
     "husky": "^9.1.7",
     "lint-staged": "^15.3.0",
     "prettier": "^3.4.2",
-    "puppeteer": "^25.11.0",
     "turbo": "^2.3.3",
     "typescript": "^5.7.3"
   },

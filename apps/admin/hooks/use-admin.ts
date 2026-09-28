@@ -31,7 +31,10 @@ export function useSuspendUser() {
   return useMutation({
     mutationFn: ({ id, reason }: { id: string; reason?: string }) =>
       apiClient.patch(`/admin/users/${id}/suspend`, { reason }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'users'] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin', 'users'] });
+      qc.invalidateQueries({ queryKey: ['admin', 'user'] });
+    },
   });
 }
 
@@ -39,7 +42,10 @@ export function useActivateUser() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => apiClient.patch(`/admin/users/${id}/activate`),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'users'] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin', 'users'] });
+      qc.invalidateQueries({ queryKey: ['admin', 'user'] });
+    },
   });
 }
 
@@ -70,6 +76,7 @@ export function useApproveKyc() {
   return useMutation({
     mutationFn: (userId: string) => apiClient.patch(`/admin/helpers/${userId}/kyc/approve`),
     onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin', 'user'] });
       qc.invalidateQueries({ queryKey: ['admin', 'helpers'] });
     },
   });
@@ -81,6 +88,7 @@ export function useRejectKyc() {
     mutationFn: ({ userId, reason }: { userId: string; reason: string }) =>
       apiClient.patch(`/admin/helpers/${userId}/kyc/reject`, { reason }),
     onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin', 'user'] });
       qc.invalidateQueries({ queryKey: ['admin', 'helpers'] });
     },
   });
@@ -221,5 +229,105 @@ export function useDashboardStats() {
       return data.data;
     },
     staleTime: 60 * 1000, // 1 min
+  });
+}
+
+// ─── Job detail / admin actions ────────────────────────────────────────────────
+
+export function useAdminJob(id?: string) {
+  return useQuery({
+    queryKey: ['admin', 'job', id],
+    queryFn: async () => {
+      const { data } = await apiClient.get(`/admin/jobs/${id}`);
+      return data.data;
+    },
+    enabled: !!id,
+  });
+}
+
+export function useAdminCancelJob() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, reason }: { id: string; reason: string }) =>
+      apiClient.patch(`/jobs/${id}/cancel`, { reason }),
+    onSuccess: (_, { id }) => {
+      qc.invalidateQueries({ queryKey: ['admin', 'job', id] });
+      qc.invalidateQueries({ queryKey: ['admin', 'jobs'] });
+    },
+  });
+}
+
+// ─── Services catalogue ─────────────────────────────────────────────────────────
+
+export interface AdminService {
+  _id: string;
+  name: string;
+  slug: string;
+  description: string;
+  status: 'active' | 'inactive';
+  price_range_min: number;
+  price_range_max: number;
+  platform_fee_percent: number;
+  category_id: { _id: string; name: string } | null;
+}
+
+export function useAdminServices() {
+  return useQuery({
+    queryKey: ['admin', 'services'],
+    queryFn: async () => {
+      const { data } = await apiClient.get('/services', { params: { include_inactive: true } });
+      return data.data as AdminService[];
+    },
+  });
+}
+
+export function useServiceCategories() {
+  return useQuery({
+    queryKey: ['admin', 'service-categories'],
+    queryFn: async () => {
+      const { data } = await apiClient.get('/services/categories');
+      return data.data as { _id: string; name: string }[];
+    },
+  });
+}
+
+export function useCreateServiceCategory() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (dto: { name: string; slug: string }) =>
+      apiClient.post('/services/categories', dto),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'service-categories'] }),
+  });
+}
+
+export function useSaveService() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      id,
+      ...dto
+    }: Partial<Omit<AdminService, 'category_id'>> & { id?: string; category_id?: string }) =>
+      id ? apiClient.put(`/services/${id}`, dto) : apiClient.post('/services', dto),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'services'] }),
+  });
+}
+
+export function useToggleService() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, status }: { id: string; status: 'active' | 'inactive' }) =>
+      apiClient.patch(`/services/${id}/status`, { status }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'services'] }),
+  });
+}
+
+// ─── Broadcast ──────────────────────────────────────────────────────────────────
+
+export function useBroadcast() {
+  return useMutation({
+    mutationFn: async (dto: { title: string; body: string }) => {
+      const { data } = await apiClient.post('/admin/notifications/broadcast', dto);
+      return data.data as { sent: number };
+    },
   });
 }

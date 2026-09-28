@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useState } from 'react';
 import { useAdminWithdrawals, useAdminTransactions, useProcessWithdrawal } from '@/hooks/use-admin';
 import {
@@ -118,7 +119,7 @@ export default function PaymentsPage() {
                   {withdrawals.withdrawals.map(
                     (w: {
                       _id: string;
-                      user_id: string;
+                      user_id: string | { _id: string; full_name?: string; phone?: string } | null;
                       amount: number;
                       status: string;
                       bank_account: {
@@ -131,7 +132,21 @@ export default function PaymentsPage() {
                     }) => (
                       <>
                         <TableRow key={w._id}>
-                          <TableCell className="font-mono text-xs">{w.user_id}</TableCell>
+                          <TableCell>
+                            {w.user_id && typeof w.user_id === 'object' ? (
+                              <div>
+                                <Link
+                                  href={`/users/${w.user_id._id}`}
+                                  className="font-medium hover:underline"
+                                >
+                                  {w.user_id.full_name ?? '—'}
+                                </Link>
+                                <p className="text-xs text-muted-foreground">{w.user_id.phone}</p>
+                              </div>
+                            ) : (
+                              <span className="font-mono text-xs">{w.user_id ?? '—'}</span>
+                            )}
+                          </TableCell>
                           <TableCell className="font-semibold text-green-700">
                             {formatVND(w.amount)}
                           </TableCell>

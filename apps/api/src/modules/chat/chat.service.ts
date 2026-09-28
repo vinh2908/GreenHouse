@@ -15,6 +15,7 @@ import {
 } from './schemas/chat.schema';
 import { Job, JobDocument } from '../jobs/schemas/job.schema';
 import { AppGateway } from './app.gateway';
+import { NotificationsService } from '../notifications/notifications.service';
 import { SOCKET_EVENTS } from '@homemate/constants';
 
 @Injectable()
@@ -25,6 +26,8 @@ export class ChatService {
     @InjectModel(Job.name) private jobModel: Model<JobDocument>,
     @Inject(forwardRef(() => AppGateway))
     private gateway: AppGateway,
+    @Inject(forwardRef(() => NotificationsService))
+    private notificationsService: NotificationsService,
   ) {}
 
   async getOrCreateConversation(
@@ -81,6 +84,14 @@ export class ChatService {
     );
     if (!isParticipant) throw new ForbiddenException();
     return conv;
+  }
+
+  async isParticipant(conversationId: string, userId: string): Promise<boolean> {
+    if (!Types.ObjectId.isValid(conversationId) || !Types.ObjectId.isValid(userId)) return false;
+    const found = await this.conversationModel
+      .exists({ _id: new Types.ObjectId(conversationId), participants: new Types.ObjectId(userId) })
+      .exec();
+    return !!found;
   }
 
   async getMessages(conversationId: string, userId: string, page = 1, limit = 50) {
@@ -151,6 +162,28 @@ export class ChatService {
       // Ignore socket error if offline
     }
 
+    // Notify recipients who are not currently looking at this conversation.
+    const senderName =
+      (populatedMsg?.sender_id as unknown as { full_name?: string })?.full_name ?? 'Tin nhắn';
+    for (const pId of conv.participants) {
+      const recipientId = String(pId);
+      if (recipientId === senderId) continue;
+      const watching = await this.gateway
+        .isUserInRoom(recipientId, `chat:${conversationId}`)
+        .catch(() => false);
+      if (!watching) {
+        await this.notificationsService
+          .notifyChatMessage(
+            recipientId,
+            senderName,
+            type === 'text' ? content : '[Hình ảnh]',
+            conversationId,
+            conv.job_id ? String(conv.job_id) : undefined,
+          )
+          .catch(() => undefined);
+      }
+    }
+
     return populatedMsg as MessageDocument;
   }
 
@@ -164,6 +197,7 @@ export class ChatService {
         { $addToSet: { read_by: new Types.ObjectId(userId) } },
       )
       .exec();
+    await this.notificationsService.markConversationRead(userId, conversationId);
   }
 
   async getUserConversations(userId: string) {

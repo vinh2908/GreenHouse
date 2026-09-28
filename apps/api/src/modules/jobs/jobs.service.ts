@@ -79,6 +79,20 @@ export class JobsService {
     job.status = status;
   }
 
+  // BUSY while travelling/working so the helper stops receiving SOS broadcasts;
+  // back to ONLINE once the work is handed over or the job is cancelled.
+  private async setHelperBusy(helperId: string | Types.ObjectId, busy: boolean) {
+    await this.helperModel
+      .updateOne(
+        {
+          user_id: new Types.ObjectId(String(helperId)),
+          status: busy ? { $ne: HelperStatus.BUSY } : HelperStatus.BUSY,
+        },
+        { status: busy ? HelperStatus.BUSY : HelperStatus.ONLINE },
+      )
+      .exec();
+  }
+
   private validateTransition(from: JobStatus, to: JobStatus) {
     if (!isValidJobTransition(from, to)) {
       throw new BadRequestException(`Không thể chuyển trạng thái từ "${from}" sang "${to}"`);
@@ -272,6 +286,17 @@ export class JobsService {
       throw new ForbiddenException('Chỉ thợ đã xác thực e-KYC mới có quyền nhận đơn cứu hộ SOS');
     }
 
+    // Atomic claim first-accept-wins: the loser gets a clean 409 instead of leaving
+    // an orphan quote behind and hitting the contracts unique index.
+    const claimed = await this.jobModel
+      .findOneAndUpdate(
+        { _id: job._id, status: JobStatus.OPEN, helper_id: null },
+        { $set: { helper_id: new Types.ObjectId(helperId) } },
+        { new: true },
+      )
+      .exec();
+    if (!claimed) throw new ConflictException('Đơn cứu hộ này đã có thợ khác nhận');
+
     const baseCost = 200000; // Giá công cứu hộ tối thiểu
     const surcharge = job.sos_surcharge || 100000;
     const totalPrice = baseCost + surcharge;
@@ -378,11 +403,57 @@ export class JobsService {
     return job;
   }
 
+  // Owner, assigned helper and admins see everything. Other helpers may preview a job
+  // that is still collecting quotes, but without the customer's phone or exact address.
+  async getJobForUser(jobId: string, userId: string, roles: string[]) {
+    const job = await this.getJobById(jobId);
+    const ownerId = String((job.customer_id as any)?._id ?? job.customer_id);
+    const helperId = job.helper_id ? String((job.helper_id as any)?._id ?? job.helper_id) : null;
+    if (roles.includes('admin') || ownerId === userId || helperId === userId) return job;
+
+    const browsable = [JobStatus.OPEN, JobStatus.RECEIVING_QUOTES].includes(job.status);
+    if (!browsable || !roles.includes('helper')) {
+      throw new ForbiddenException('Bạn không có quyền xem công việc này');
+    }
+    const preview = job.toObject() as any;
+    const a = preview.address ?? {};
+    preview.address = {
+      ward: a.ward,
+      district: a.district,
+      city: a.city,
+      full_address: [a.ward, a.district, a.city].filter(Boolean).join(', '),
+      // ~1 km precision is enough to judge travel distance.
+      location: a.location && {
+        type: 'Point',
+        coordinates: a.location.coordinates.map((c: number) => Math.round(c * 100) / 100),
+      },
+    };
+    if (preview.customer_id && typeof preview.customer_id === 'object') {
+      preview.customer_id = {
+        _id: preview.customer_id._id,
+        full_name: preview.customer_id.full_name,
+        avatar: preview.customer_id.avatar,
+      };
+    }
+    return preview;
+  }
+
   // ─── Helper: Submit quote ─────────────────────────────────────────────────
 
   async submitQuote(helperId: string, jobId: string, dto: CreateQuoteDto): Promise<QuoteDocument> {
     const job = await this.jobModel.findById(jobId).exec();
     if (!job) throw new NotFoundException('Job không tồn tại');
+
+    // Kiểm tra điều kiện e-KYC: Thợ phải được phê duyệt KYC mới được gửi báo giá
+    const helperProfile = await this.helperModel
+      .findOne({ user_id: new Types.ObjectId(helperId) })
+      .populate('user_id', 'full_name')
+      .exec();
+    if (!helperProfile || helperProfile.verification_status !== VerificationStatus.APPROVED) {
+      throw new ForbiddenException(
+        'Tài khoản của bạn chưa hoàn tất xác thực danh tính (e-KYC). Vui lòng xác thực KYC để nhận việc và gửi báo giá.',
+      );
+    }
 
     if (job.status !== JobStatus.OPEN && job.status !== JobStatus.RECEIVING_QUOTES) {
       throw new BadRequestException('Job không còn nhận báo giá');
@@ -403,7 +474,16 @@ export class JobsService {
 
     const materialsTotal = dto.materials_cost ?? 0;
     const totalPrice = dto.labor_cost + materialsTotal;
-    const platformFeeRate = PLATFORM_FEE_BY_SERVICE.default;
+    // Fee configured per service in Admin; fall back to the platform default.
+    const service = await this.serviceModel
+      .findById(job.service_id)
+      .select('platform_fee_percent')
+      .lean()
+      .exec();
+    const platformFeeRate =
+      typeof service?.platform_fee_percent === 'number'
+        ? service.platform_fee_percent / 100
+        : PLATFORM_FEE_BY_SERVICE.default;
     const platformFee = Math.round(totalPrice * platformFeeRate);
     const helperReceives = totalPrice - platformFee;
 
@@ -448,7 +528,7 @@ export class JobsService {
     // Notification: push notification to customer
     await this.notificationsService.notifyNewQuote(
       String(job.customer_id),
-      'Người giúp việc',
+      (helperProfile.user_id as unknown as { full_name?: string })?.full_name ?? 'Thợ',
       job.title,
       jobId,
     );
@@ -501,6 +581,16 @@ export class JobsService {
       throw new NotFoundException('Quote không tồn tại');
     if (quote.status !== QuoteStatus.PENDING)
       throw new BadRequestException('Quote không còn hiệu lực');
+
+    // Atomic claim so two parallel selections cannot both create a contract.
+    const claimed = await this.jobModel
+      .findOneAndUpdate(
+        { _id: job._id, status: job.status, helper_id: null },
+        { $set: { helper_id: quote.helper_id } },
+        { new: true },
+      )
+      .exec();
+    if (!claimed) throw new ConflictException('Job đã chọn báo giá');
 
     // Mark quote as accepted
     quote.status = QuoteStatus.ACCEPTED;
@@ -568,6 +658,7 @@ export class JobsService {
     this.validateTransition(job.status, JobStatus.HELPER_ON_THE_WAY);
     this.addEvent(job, JobStatus.HELPER_ON_THE_WAY, helperId, 'helper');
     await job.save();
+    await this.setHelperBusy(helperId, true);
 
     // Realtime
     this.emitJobStatusChange(job);
@@ -659,6 +750,7 @@ export class JobsService {
     }
     this.addEvent(job, JobStatus.PENDING_REVIEW, helperId, 'helper', 'Upload ảnh/video hoàn thành');
     await job.save();
+    await this.setHelperBusy(helperId, false);
 
     // Realtime
     this.emitJobStatusChange(job);
@@ -682,16 +774,37 @@ export class JobsService {
     jobId: string,
     dto: ReviewJobDto,
   ): Promise<JobDocument> {
-    const job = await this.jobModel.findById(jobId).exec();
-    if (!job) throw new NotFoundException('Job không tồn tại');
-    if (job.customer_id.toString() !== customerId) throw new ForbiddenException();
-    this.validateTransition(job.status, JobStatus.COMPLETED);
+    const existing = await this.jobModel.findById(jobId).exec();
+    if (!existing) throw new NotFoundException('Job không tồn tại');
+    if (existing.customer_id.toString() !== customerId) throw new ForbiddenException();
+    this.validateTransition(existing.status, JobStatus.COMPLETED);
 
-    job.customer_rating = dto.rating;
-    job.customer_review = dto.review;
-    this.addEvent(job, JobStatus.COMPLETED, customerId, 'customer', 'Nghiệm thu hoàn thành');
+    // Atomic claim: only one request can move PENDING_REVIEW → COMPLETED, so the
+    // helper wallet is credited exactly once even if the customer double-taps.
+    const job = await this.jobModel
+      .findOneAndUpdate(
+        { _id: existing._id, status: existing.status },
+        {
+          $set: {
+            status: JobStatus.COMPLETED,
+            customer_rating: dto.rating,
+            customer_review: dto.review,
+          },
+          $push: {
+            events: {
+              status: JobStatus.COMPLETED,
+              note: 'Nghiệm thu hoàn thành',
+              actor_id: new Types.ObjectId(customerId),
+              actor_role: 'customer',
+              timestamp: new Date(),
+            },
+          },
+        },
+        { new: true },
+      )
+      .exec();
+    if (!job) throw new ConflictException('Công việc đã được nghiệm thu');
 
-    // Update contract
     await this.contractModel
       .findOneAndUpdate(
         { job_id: new Types.ObjectId(jobId) },
@@ -699,7 +812,11 @@ export class JobsService {
       )
       .exec();
 
-    await job.save();
+    if (job.helper_id) {
+      await this.helperModel
+        .updateOne({ user_id: job.helper_id }, { $inc: { completed_jobs: 1 } })
+        .exec();
+    }
 
     // ── Phase 8: Credit helper wallet ──────────────────────────────────────
     if (job.helper_id) {
@@ -774,6 +891,7 @@ export class JobsService {
       .exec();
 
     await job.save();
+    if (job.helper_id) await this.setHelperBusy(job.helper_id, false);
 
     // Realtime
     this.emitJobStatusChange(job);
