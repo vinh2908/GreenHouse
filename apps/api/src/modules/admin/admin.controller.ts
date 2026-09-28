@@ -62,7 +62,7 @@ export class AdminController {
   @Get('users/:id')
   @ApiOperation({ summary: '[Admin] Chi tiết người dùng' })
   async getUser(@Param('id') id: string) {
-    return this.adminService.getUserById(id);
+    return this.adminService.getUserDetail(id);
   }
 
   @Patch('users/:id/suspend')

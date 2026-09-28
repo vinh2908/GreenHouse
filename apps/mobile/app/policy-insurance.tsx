@@ -375,8 +375,8 @@ export default function PolicyInsuranceScreen() {
                 </Text>
               </View>
               <Text style={{ fontSize: 13.5, color: '#B45309', lineHeight: 20 }}>
-                Khi có sự cố ngoài ý muốn, đội ngũ Chăm sóc khách hàng Green House sẽ tiếp nhận và hoàn
-                tất thẩm định đền bù trong vòng 24 giờ làm việc.
+                Khi có sự cố ngoài ý muốn, đội ngũ Chăm sóc khách hàng Green House sẽ tiếp nhận và
+                hoàn tất thẩm định đền bù trong vòng 24 giờ làm việc.
               </Text>
             </Card>
 

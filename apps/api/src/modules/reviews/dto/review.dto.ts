@@ -1,19 +1,29 @@
-import { IsString, IsNotEmpty, IsNumber, IsOptional, IsArray, Min, Max } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  IsNumber,
+  IsInt,
+  IsOptional,
+  IsArray,
+  IsMongoId,
+  Min,
+  Max,
+} from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateReviewDto {
   @ApiProperty({ description: 'Job ID cần đánh giá' })
-  @IsString()
-  @IsNotEmpty()
+  @IsMongoId()
   job_id: string;
 
-  @ApiProperty({ description: 'Helper ID được đánh giá' })
+  // Ignored by the server (the helper is taken from the job); kept so older clients still validate.
+  @ApiPropertyOptional({ description: 'Helper ID (bỏ qua, server lấy từ job)' })
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
-  helper_id: string;
+  helper_id?: string;
 
   @ApiProperty({ description: 'Đánh giá tổng thể (1-5 sao)', minimum: 1, maximum: 5 })
-  @IsNumber()
+  @IsInt()
   @Min(1)
   @Max(5)
   rating: number;

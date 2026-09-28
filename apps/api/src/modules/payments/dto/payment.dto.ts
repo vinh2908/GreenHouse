@@ -1,4 +1,13 @@
-import { IsNumber, IsNotEmpty, IsString, Min, IsOptional, ValidateNested } from 'class-validator';
+import {
+  IsNumber,
+  IsNotEmpty,
+  IsString,
+  IsIn,
+  Min,
+  Max,
+  IsOptional,
+  ValidateNested,
+} from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 
@@ -35,6 +44,7 @@ export class RequestWithdrawalDto {
   @ApiProperty({ description: 'Số tiền rút (tối thiểu 50,000₫)', minimum: 50000 })
   @IsNumber()
   @Min(50000)
+  @Max(500_000_000)
   amount: number;
 
   @ApiPropertyOptional({ description: 'Thông tin tài khoản ngân hàng (nếu chưa lưu)' })
@@ -46,8 +56,7 @@ export class RequestWithdrawalDto {
 
 export class ProcessWithdrawalDto {
   @ApiProperty({ enum: ['approve', 'reject'] })
-  @IsString()
-  @IsNotEmpty()
+  @IsIn(['approve', 'reject'])
   action: 'approve' | 'reject';
 
   @ApiPropertyOptional()

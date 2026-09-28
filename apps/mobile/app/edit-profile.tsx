@@ -8,7 +8,9 @@ import {
   KeyboardAvoidingView,
   Platform,
   Image,
+  Alert,
 } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import {
@@ -29,6 +31,7 @@ import Toast from 'react-native-toast-message';
 import { useAuthStore } from '@/stores/auth.store';
 import { useMyProfile, useUpdateProfile, useHelperProfile } from '@/hooks/use-api';
 import apiClient from '@/services/api-client';
+import { uploadFile } from '@/services/upload.service';
 import { Button, Card, LoadingSpinner, COLORS, Separator, Avatar } from '@/components/ui';
 
 // Bộ sưu tập avatar chuyên nghiệp có sẵn để người dùng chọn nhanh 1 chạm
@@ -90,6 +93,52 @@ export default function EditProfileScreen() {
     }
   };
 
+  // Square crop, small file: avatars are shown at <= 90px.
+  const pickAvatar = async (source: 'camera' | 'library') => {
+    try {
+      const perm =
+        source === 'camera'
+          ? await ImagePicker.requestCameraPermissionsAsync()
+          : await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (perm.status !== 'granted') {
+        Toast.show({
+          type: 'error',
+          text1:
+            source === 'camera'
+              ? 'Cần cấp quyền camera để chụp ảnh'
+              : 'Cần cấp quyền truy cập thư viện ảnh',
+        });
+        return;
+      }
+      const options: ImagePicker.ImagePickerOptions = {
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.7,
+      };
+      const result =
+        source === 'camera'
+          ? await ImagePicker.launchCameraAsync(options)
+          : await ImagePicker.launchImageLibraryAsync(options);
+      if (!result.canceled && result.assets[0]?.uri) {
+        // Preview the local file now; it is uploaded when the profile is saved.
+        setAvatar(result.assets[0].uri);
+      }
+    } catch {
+      Toast.show({
+        type: 'error',
+        text1: source === 'camera' ? 'Không thể mở máy ảnh' : 'Không thể mở thư viện ảnh',
+      });
+    }
+  };
+
+  const openAvatarMenu = () =>
+    Alert.alert('Ảnh đại diện', 'Chọn nguồn ảnh', [
+      { text: 'Chụp ảnh', onPress: () => pickAvatar('camera') },
+      { text: 'Chọn từ thư viện', onPress: () => pickAvatar('library') },
+      { text: 'Hủy', style: 'cancel' },
+    ]);
+
   const handleSave = async () => {
     if (!fullName.trim()) {
       Toast.show({ type: 'error', text1: 'Vui lòng nhập họ và tên' });
@@ -98,16 +147,34 @@ export default function EditProfileScreen() {
 
     setSaving(true);
     try {
-      // 1. Cập nhật thông tin User chung
+      // 1. Upload ảnh mới (nếu là ảnh trên máy) rồi cập nhật thông tin User chung
+      let avatarUrl = avatar;
+      if (avatar) {
+        try {
+          avatarUrl = await uploadFile(avatar);
+        } catch {
+          Toast.show({
+            type: 'error',
+            text1: 'Tải ảnh đại diện thất bại',
+            text2: 'Vui lòng thử lại',
+          });
+          return;
+        }
+      }
       const res = await updateProfileMutation.mutateAsync({
         full_name: fullName.trim(),
         email: email.trim() || undefined,
-        avatar: avatar || undefined,
+        avatar: avatarUrl || undefined,
       });
 
       // Cập nhật State trong AuthStore
       const updatedUser = res?.data?.data ||
-        res?.data || { ...user, full_name: fullName.trim(), email: email.trim(), avatar };
+        res?.data || {
+          ...user,
+          full_name: fullName.trim(),
+          email: email.trim(),
+          avatar: avatarUrl,
+        };
       setUser(updatedUser);
 
       // 2. Nếu là Thợ -> Cập nhật thêm thông tin chuyên môn
@@ -187,15 +254,13 @@ export default function EditProfileScreen() {
           {/* ── 1. AVATAR PICKER & BỘ SƯU TẬP AVATAR ──────────────────── */}
           <Card style={{ alignItems: 'center', padding: 20, gap: 14 }}>
             <View style={{ position: 'relative' }}>
-              <Avatar name={fullName || 'User'} uri={avatar} size={90} />
+              <TouchableOpacity activeOpacity={0.85} onPress={openAvatarMenu}>
+                <Avatar name={fullName || 'User'} uri={avatar} size={90} />
+              </TouchableOpacity>
               <TouchableOpacity
                 activeOpacity={0.8}
-                onPress={() => {
-                  // Chọn random avatar từ bộ sưu tập
-                  const nextIdx = Math.floor(Math.random() * PRESET_AVATARS.length);
-                  setAvatar(PRESET_AVATARS[nextIdx]);
-                  Toast.show({ type: 'info', text1: 'Đã đổi ảnh đại diện mới' });
-                }}
+                onPress={openAvatarMenu}
+                accessibilityLabel="Đổi ảnh đại diện"
                 style={{
                   position: 'absolute',
                   bottom: 0,
@@ -224,7 +289,7 @@ export default function EditProfileScreen() {
                 Ảnh đại diện tài khoản
               </Text>
               <Text style={{ fontSize: 12, color: COLORS.gray[400], marginTop: 2 }}>
-                Bấm vào icon máy ảnh hoặc chọn nhanh bên dưới:
+                Chụp ảnh, chọn từ thư viện hoặc chọn nhanh bên dưới:
               </Text>
             </View>
 

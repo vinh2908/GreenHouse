@@ -104,6 +104,8 @@ export default function JobDetailScreen() {
     dayjs().add(1, 'day').format('YYYY-MM-DDT09:00:00'),
   );
 
+  const insets = useSafeAreaInsets();
+
   if (jLoading) return <LoadingSpinner />;
   if (!job) {
     return (
@@ -203,8 +205,6 @@ export default function JobDetailScreen() {
       Toast.show({ type: 'error', text1: 'Gửi đánh giá thất bại' });
     }
   };
-
-  const insets = useSafeAreaInsets();
 
   return (
     <View style={{ flex: 1, backgroundColor: '#F8F9FA' }}>

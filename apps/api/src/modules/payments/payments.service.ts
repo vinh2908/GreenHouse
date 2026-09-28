@@ -15,6 +15,9 @@ import {
   WithdrawalDocument,
 } from './schemas/payment.schema';
 import { BankAccountInfoDto } from './dto/payment.dto';
+import { NOTIFICATION_TYPES } from '@homemate/constants';
+import { NotificationsService } from '../notifications/notifications.service';
+import { HelperProfile, HelperProfileDocument } from '../helpers/schemas/helper-profile.schema';
 
 @Injectable()
 export class PaymentsService {
@@ -22,6 +25,8 @@ export class PaymentsService {
     @InjectModel(Wallet.name) private walletModel: Model<WalletDocument>,
     @InjectModel(Transaction.name) private transactionModel: Model<TransactionDocument>,
     @InjectModel(Withdrawal.name) private withdrawalModel: Model<WithdrawalDocument>,
+    @InjectModel(HelperProfile.name) private helperModel: Model<HelperProfileDocument>,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   // ─── Wallet ───────────────────────────────────────────────────────────────
@@ -124,53 +129,55 @@ export class PaymentsService {
     amount: number,
     bankAccount?: BankAccountInfoDto,
   ): Promise<WithdrawalDocument> {
-    const wallet = await this.getOrCreateWallet(helperId);
-
-    if (wallet.balance < amount) {
-      throw new BadRequestException(
-        `Số dư không đủ. Hiện có: ${wallet.balance.toLocaleString('vi-VN')}₫`,
-      );
-    }
-
-    // Check no pending withdrawal
     const pending = await this.withdrawalModel
-      .findOne({
-        user_id: new Types.ObjectId(helperId),
-        status: 'pending',
-      })
+      .findOne({ user_id: new Types.ObjectId(helperId), status: 'pending' })
       .exec();
     if (pending) throw new ConflictException('Bạn đã có yêu cầu rút tiền đang chờ xử lý');
 
-    // Use provided bank_account or fallback placeholder
-    const resolvedBankAccount = bankAccount ?? {
-      bank_name: 'Chưa cập nhật',
-      account_number: '000000000',
-      account_name: 'HELPER',
-    };
+    const resolvedBankAccount =
+      bankAccount ??
+      (await this.helperModel.findOne({ user_id: new Types.ObjectId(helperId) }).exec())
+        ?.bank_account;
+    if (!resolvedBankAccount?.account_number) {
+      throw new BadRequestException('Vui lòng cập nhật tài khoản ngân hàng trước khi rút tiền');
+    }
+
+    await this.getOrCreateWallet(helperId);
+    // Atomic hold: the balance check and the deduction happen in one update, so
+    // parallel requests cannot overdraw the wallet.
+    const wallet = await this.walletModel
+      .findOneAndUpdate(
+        { user_id: new Types.ObjectId(helperId), balance: { $gte: amount } },
+        { $inc: { balance: -amount } },
+        { new: true },
+      )
+      .exec();
+    if (!wallet) {
+      const current = await this.getOrCreateWallet(helperId);
+      throw new BadRequestException(
+        `Số dư không đủ. Hiện có: ${current.balance.toLocaleString('vi-VN')}₫`,
+      );
+    }
 
     const withdrawal = await this.withdrawalModel.create({
       user_id: new Types.ObjectId(helperId),
       amount,
       status: 'pending',
-      bank_account: resolvedBankAccount,
+      bank_account: {
+        bank_name: resolvedBankAccount.bank_name,
+        account_number: resolvedBankAccount.account_number,
+        account_name: resolvedBankAccount.account_name,
+      },
     });
 
-    // Deduct from wallet (hold)
-    await this.walletModel
-      .findByIdAndUpdate(wallet._id, {
-        $inc: { balance: -amount },
-      })
-      .exec();
-
-    // Record transaction
     await this.transactionModel.create({
       wallet_id: wallet._id,
       user_id: new Types.ObjectId(helperId),
       type: 'withdrawal',
       status: 'pending',
       amount,
-      balance_before: wallet.balance,
-      balance_after: wallet.balance - amount,
+      balance_before: wallet.balance + amount,
+      balance_after: wallet.balance,
       description: `Yêu cầu rút tiền`,
       metadata: { withdrawal_id: String(withdrawal._id) },
     });
@@ -192,7 +199,13 @@ export class PaymentsService {
     if (status) query['status'] = status;
     const skip = (page - 1) * limit;
     const [withdrawals, total] = await Promise.all([
-      this.withdrawalModel.find(query).sort({ created_at: -1 }).skip(skip).limit(limit).exec(),
+      this.withdrawalModel
+        .find(query)
+        .populate('user_id', 'full_name phone')
+        .sort({ created_at: -1 })
+        .skip(skip)
+        .limit(limit)
+        .exec(),
       this.withdrawalModel.countDocuments(query).exec(),
     ]);
     return { withdrawals, total, page, limit, total_pages: Math.ceil(total / limit) };
@@ -206,9 +219,17 @@ export class PaymentsService {
     adminNote?: string,
     adminId?: string,
   ): Promise<WithdrawalDocument> {
-    const withdrawal = await this.withdrawalModel.findById(withdrawalId).exec();
-    if (!withdrawal) throw new NotFoundException('Yêu cầu rút tiền không tồn tại');
-    if (withdrawal.status !== 'pending') {
+    // Claim the pending request atomically so a double click cannot refund twice.
+    const withdrawal = await this.withdrawalModel
+      .findOneAndUpdate(
+        { _id: new Types.ObjectId(withdrawalId), status: 'pending' },
+        { status: action === 'approve' ? 'completed' : 'rejected' },
+        { new: true },
+      )
+      .exec();
+    if (!withdrawal) {
+      const exists = await this.withdrawalModel.exists({ _id: new Types.ObjectId(withdrawalId) });
+      if (!exists) throw new NotFoundException('Yêu cầu rút tiền không tồn tại');
       throw new BadRequestException('Yêu cầu này đã được xử lý');
     }
 
@@ -253,7 +274,22 @@ export class PaymentsService {
     withdrawal.admin_note = adminNote;
     withdrawal.processed_at = new Date();
     withdrawal.processed_by = adminId;
-    return withdrawal.save();
+    const saved = await withdrawal.save();
+
+    const amount = withdrawal.amount.toLocaleString('vi-VN');
+    await this.notificationsService
+      .create({
+        userId: String(withdrawal.user_id),
+        type: NOTIFICATION_TYPES.WITHDRAWAL_PROCESSED,
+        title: action === 'approve' ? 'Rút tiền thành công' : 'Yêu cầu rút tiền bị từ chối',
+        body:
+          action === 'approve'
+            ? `${amount}₫ đã được chuyển về tài khoản ngân hàng của bạn.`
+            : `${amount}₫ đã được hoàn lại vào ví.${adminNote ? ' Lý do: ' + adminNote : ''}`,
+        payload: { withdrawal_id: String(withdrawal._id) },
+      })
+      .catch(() => undefined);
+    return saved;
   }
 
   // ─── Admin: Get all transactions ──────────────────────────────────────────

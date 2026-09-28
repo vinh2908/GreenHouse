@@ -235,6 +235,80 @@ export default function HelperDashboardScreen() {
           </View>
         </View>
 
+        {/* ── Banner Nhắc nhở e-KYC nếu chưa được duyệt ──────────────── */}
+        {profile?.verification_status !== 'approved' && (
+          <View style={{ paddingHorizontal: 16, marginTop: 14 }}>
+            <TouchableOpacity
+              activeOpacity={0.85}
+              onPress={() => router.push('/kyc')}
+              style={{
+                backgroundColor:
+                  profile?.verification_status === 'pending' ? '#FFFBEB' : '#FEF2F2',
+                borderRadius: 16,
+                padding: 14,
+                borderWidth: 1.5,
+                borderColor:
+                  profile?.verification_status === 'pending' ? '#FDE68A' : '#FECACA',
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 12,
+              }}
+            >
+              <View
+                style={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: 12,
+                  backgroundColor:
+                    profile?.verification_status === 'pending' ? '#FEF3C7' : '#FEE2E2',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                {profile?.verification_status === 'pending' ? (
+                  <Clock size={20} color="#D97706" />
+                ) : (
+                  <ShieldCheck size={20} color="#DC2626" />
+                )}
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text
+                  style={{
+                    fontSize: 14,
+                    fontWeight: '800',
+                    color: profile?.verification_status === 'pending' ? '#92400E' : '#991B1B',
+                  }}
+                >
+                  {profile?.verification_status === 'pending'
+                    ? 'Hồ sơ e-KYC đang được xét duyệt'
+                    : 'Yêu cầu xác thực e-KYC để nhận việc'}
+                </Text>
+                <Text
+                  style={{
+                    fontSize: 12,
+                    color: profile?.verification_status === 'pending' ? '#B45309' : '#B91C1C',
+                    marginTop: 2,
+                    lineHeight: 16,
+                  }}
+                >
+                  {profile?.verification_status === 'pending'
+                    ? 'Admin đang kiểm tra CCCD. Bạn sẽ có thể nhận việc ngay khi được duyệt.'
+                    : 'Vui lòng chụp CCCD để mở khóa tính năng nhận việc và gửi báo giá.'}
+                </Text>
+              </View>
+              <Text
+                style={{
+                  fontSize: 13,
+                  fontWeight: '800',
+                  color: profile?.verification_status === 'pending' ? '#D97706' : '#DC2626',
+                }}
+              >
+                {profile?.verification_status === 'pending' ? 'Xem →' : 'Xác thực →'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
         {/* ── 2. Trạng thái Nhận việc Online Toggle ─────────────────────── */}
         <View style={{ paddingHorizontal: 16, marginTop: 14 }}>
           <View

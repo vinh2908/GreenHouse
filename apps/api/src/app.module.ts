@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { ThrottlerModule } from '@nestjs/throttler';
@@ -8,6 +9,7 @@ import jwtConfig from './config/jwt.config';
 import redisConfig from './config/redis.config';
 import minioConfig from './config/minio.config';
 import { HealthController } from './common/health.controller';
+import { HttpThrottlerGuard } from './common/guards/http-throttler.guard';
 
 // ─── Phase 2: Authentication ──────────────────────────────────────────────────
 import { AuthModule } from './modules/auth/auth.module';
@@ -43,9 +45,11 @@ import { AnalyticsModule } from './modules/analytics/analytics.module';
 
 // ─── Phase 10: AI Features ────────────────────────────────────────────────────
 import { AiModule } from './modules/ai/ai.module';
+import { UploadsModule } from './modules/uploads/uploads.module';
 
 @Module({
   controllers: [HealthController],
+  providers: [{ provide: APP_GUARD, useClass: HttpThrottlerGuard }],
   imports: [
     // Config — global
     ConfigModule.forRoot({
@@ -89,6 +93,7 @@ import { AiModule } from './modules/ai/ai.module';
     AnalyticsModule,
     AiModule,
     MatchingModule,
+    UploadsModule,
 
     // Phase 4+ (uncomment as implemented)
     // CustomersModule,

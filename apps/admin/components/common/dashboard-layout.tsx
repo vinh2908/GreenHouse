@@ -12,6 +12,8 @@ import {
   Star,
   LogOut,
   ShieldCheck,
+  Wrench,
+  Megaphone,
 } from 'lucide-react';
 import { useAuthStore } from '@/stores/auth.store';
 
@@ -21,9 +23,11 @@ const navItems = [
   { href: '/helpers', label: 'Đối tác Thợ & Giúp việc', icon: UserCheck },
   { href: '/helpers/kyc', label: 'Duyệt e-KYC Thợ', icon: ShieldCheck },
   { href: '/jobs', label: 'Quản lý Đơn hàng', icon: Briefcase },
+  { href: '/services', label: 'Dịch vụ & Phí', icon: Wrench },
   { href: '/payments', label: 'Thanh toán & Rút tiền', icon: CreditCard },
   { href: '/reviews', label: 'Đánh giá & Phản hồi', icon: Star },
   { href: '/analytics', label: 'Thống kê & Báo cáo', icon: BarChart3 },
+  { href: '/notifications', label: 'Gửi thông báo', icon: Megaphone },
 ];
 
 export function DashboardLayout({ children }: { children: React.ReactNode }) {

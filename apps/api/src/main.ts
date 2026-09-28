@@ -2,12 +2,17 @@ import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { NestExpressApplication } from '@nestjs/platform-express';
 import { AppModule } from './app.module';
+import { UPLOAD_ROOT } from './modules/uploads/uploads.controller';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+
+  // Uploaded files (KYC, job photos, completion evidence)
+  app.useStaticAssets(UPLOAD_ROOT, { prefix: '/uploads/' });
 
   const configService = app.get(ConfigService);
   const port = configService.get<number>('PORT', 3000);
@@ -18,14 +23,7 @@ async function bootstrap() {
 
   // CORS
   app.enableCors({
-    origin: [
-      'http://localhost:3001',
-      'http://127.0.0.1:3001',
-      'http://localhost:8081',
-      'http://127.0.0.1:8081',
-      'http://localhost:3000',
-      'http://127.0.0.1:3000',
-    ],
+    origin: true,
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,
     allowedHeaders: 'Content-Type,Accept,Authorization,X-Requested-With',
