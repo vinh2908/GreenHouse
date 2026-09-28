@@ -93,6 +93,26 @@ export class JobsService {
       .exec();
   }
 
+  // Only helpers whose e-KYC has been approved may browse the job feed, preview
+  // customers' jobs, quote or be selected.
+  async isVerifiedHelper(userId: string | Types.ObjectId): Promise<boolean> {
+    const found = await this.helperModel
+      .exists({
+        user_id: new Types.ObjectId(String(userId)),
+        verification_status: VerificationStatus.APPROVED,
+      })
+      .exec();
+    return !!found;
+  }
+
+  async requireVerifiedHelper(userId: string): Promise<void> {
+    if (!(await this.isVerifiedHelper(userId))) {
+      throw new ForbiddenException(
+        'Bạn cần hoàn tất xác thực danh tính (e-KYC) để xem và nhận việc.',
+      );
+    }
+  }
+
   private validateTransition(from: JobStatus, to: JobStatus) {
     if (!isValidJobTransition(from, to)) {
       throw new BadRequestException(`Không thể chuyển trạng thái từ "${from}" sang "${to}"`);
@@ -214,11 +234,17 @@ export class JobsService {
     });
 
     // 2. Broadcast khẩn cấp tới TOÀN BỘ Thợ đang Online & Đã xác minh e-KYC
-    const verifiedHelpers = await this.helperModel
-      .find({
-        status: HelperStatus.ONLINE,
-        verification_status: VerificationStatus.APPROVED,
-      })
+    // Online, KYC-approved helpers whose account is still active (a suspended or
+    // deleted user must not receive emergency requests).
+    const verifiedHelpers: { user_id: Types.ObjectId }[] = await this.helperModel
+      .aggregate([
+        {
+          $match: { status: HelperStatus.ONLINE, verification_status: VerificationStatus.APPROVED },
+        },
+        { $lookup: { from: 'users', localField: 'user_id', foreignField: '_id', as: 'user' } },
+        { $match: { 'user.status': { $ne: 'suspended' }, 'user.is_deleted': { $ne: true } } },
+        { $project: { user_id: 1 } },
+      ])
       .exec();
 
     const broadcastPayload = {
@@ -415,6 +441,7 @@ export class JobsService {
     if (!browsable || !roles.includes('helper')) {
       throw new ForbiddenException('Bạn không có quyền xem công việc này');
     }
+    await this.requireVerifiedHelper(userId);
     const preview = job.toObject() as any;
     const a = preview.address ?? {};
     preview.address = {
@@ -555,11 +582,26 @@ export class JobsService {
       query['helper_id'] = new Types.ObjectId(requesterId);
     }
 
-    return this.quoteModel
+    const quotes = await this.quoteModel
       .find(query)
       .populate('helper_id', 'full_name avatar')
       .sort({ total_price: 1 })
       .exec();
+    if (requesterRole === 'helper') return quotes;
+
+    // Hide quotes from helpers whose KYC was revoked after they quoted.
+    const helperIds = quotes.map(
+      q => (q.helper_id as unknown as { _id: Types.ObjectId })?._id ?? q.helper_id,
+    );
+    const verified = await this.helperModel
+      .find({ user_id: { $in: helperIds }, verification_status: VerificationStatus.APPROVED })
+      .select('user_id')
+      .lean()
+      .exec();
+    const ok = new Set(verified.map(h => String(h.user_id)));
+    return quotes.filter(q =>
+      ok.has(String((q.helper_id as unknown as { _id: Types.ObjectId })?._id ?? q.helper_id)),
+    );
   }
 
   // ─── Customer: Select quote → create Contract ─────────────────────────────
@@ -581,6 +623,9 @@ export class JobsService {
       throw new NotFoundException('Quote không tồn tại');
     if (quote.status !== QuoteStatus.PENDING)
       throw new BadRequestException('Quote không còn hiệu lực');
+    if (!(await this.isVerifiedHelper(quote.helper_id))) {
+      throw new BadRequestException('Thợ này chưa được xác minh e-KYC, không thể chọn báo giá');
+    }
 
     // Atomic claim so two parallel selections cannot both create a contract.
     const claimed = await this.jobModel
