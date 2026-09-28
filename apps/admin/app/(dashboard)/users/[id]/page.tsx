@@ -31,7 +31,13 @@ import { PhotoGrid } from '@/components/common/photo-grid';
 import { formatDate, formatDateTime, formatVND } from '@/lib/utils';
 import { STATUS_BADGE, STATUS_VI } from '../../jobs/status';
 
-type Ref = { _id: string; full_name?: string; phone?: string; name?: string; title?: string } | null;
+type Ref = {
+  _id: string;
+  full_name?: string;
+  phone?: string;
+  name?: string;
+  title?: string;
+} | null;
 
 interface JobRow {
   _id: string;
@@ -64,14 +70,21 @@ interface ReviewRow {
   helper_id?: Ref;
 }
 
-const KYC_VI: Record<string, { label: string; variant: 'success' | 'warning' | 'danger' | 'secondary' }> = {
+const KYC_VI: Record<
+  string,
+  { label: string; variant: 'success' | 'warning' | 'danger' | 'secondary' }
+> = {
   approved: { label: 'Đã duyệt', variant: 'success' },
   pending: { label: 'Chờ duyệt', variant: 'warning' },
   rejected: { label: 'Từ chối', variant: 'danger' },
   not_submitted: { label: 'Chưa nộp', variant: 'secondary' },
 };
 
-const ROLE_VI: Record<string, string> = { customer: 'Khách hàng', helper: 'Thợ', admin: 'Quản trị' };
+const ROLE_VI: Record<string, string> = {
+  customer: 'Khách hàng',
+  helper: 'Thợ',
+  admin: 'Quản trị',
+};
 const TXN_VI: Record<string, string> = {
   payment: 'Thanh toán',
   earning: 'Thu nhập',
@@ -91,7 +104,13 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
-function JobsTable({ jobs, counterpart }: { jobs: JobRow[]; counterpart: 'customer_id' | 'helper_id' }) {
+function JobsTable({
+  jobs,
+  counterpart,
+}: {
+  jobs: JobRow[];
+  counterpart: 'customer_id' | 'helper_id';
+}) {
   if (!jobs.length) return <EmptyState message="Chưa có công việc" />;
   return (
     <div className="overflow-x-auto">
@@ -129,7 +148,9 @@ function JobsTable({ jobs, counterpart }: { jobs: JobRow[]; counterpart: 'custom
                   {STATUS_VI[j.status] ?? j.status}
                 </Badge>
               </TableCell>
-              <TableCell className="text-sm text-muted-foreground">{formatDateTime(j.created_at)}</TableCell>
+              <TableCell className="text-sm text-muted-foreground">
+                {formatDateTime(j.created_at)}
+              </TableCell>
             </TableRow>
           ))}
         </TableBody>
@@ -208,7 +229,9 @@ export default function UserDetailPage() {
                   {ROLE_VI[r] ?? r}
                 </Badge>
               ))}
-              <Badge variant={suspended ? 'danger' : 'success'}>{suspended ? 'Đã khóa' : 'Hoạt động'}</Badge>
+              <Badge variant={suspended ? 'danger' : 'success'}>
+                {suspended ? 'Đã khóa' : 'Hoạt động'}
+              </Badge>
               {isHelper && <Badge variant={kyc.variant}>KYC: {kyc.label}</Badge>}
             </div>
           </div>
@@ -276,7 +299,9 @@ export default function UserDetailPage() {
             <CardContent className="grid gap-4 sm:grid-cols-2">
               <Field label="Email">{user.email}</Field>
               <Field label="Xác minh SĐT">{user.is_verified ? 'Đã xác minh' : 'Chưa'}</Field>
-              <Field label="Vai trò đang dùng">{ROLE_VI[user.active_role] ?? user.active_role}</Field>
+              <Field label="Vai trò đang dùng">
+                {ROLE_VI[user.active_role] ?? user.active_role}
+              </Field>
               <Field label="Ngày tạo">{formatDate(user.created_at)}</Field>
               {cp && (
                 <>
@@ -307,8 +332,9 @@ export default function UserDetailPage() {
                 <Field label="Tài khoản ngân hàng">
                   {hp?.bank_account ? (
                     <>
-                      {hp.bank_account.bank_name} · <span className="font-mono">{hp.bank_account.account_number}</span>{' '}
-                      · {hp.bank_account.account_name}
+                      {hp.bank_account.bank_name} ·{' '}
+                      <span className="font-mono">{hp.bank_account.account_number}</span> ·{' '}
+                      {hp.bank_account.account_name}
                     </>
                   ) : null}
                 </Field>
@@ -328,18 +354,24 @@ export default function UserDetailPage() {
                   </span>
                   <Badge variant={kyc.variant}>{kyc.label}</Badge>
                   {hp.verified_at && (
-                    <span className="text-muted-foreground">Duyệt lúc {formatDateTime(hp.verified_at)}</span>
+                    <span className="text-muted-foreground">
+                      Duyệt lúc {formatDateTime(hp.verified_at)}
+                    </span>
                   )}
                   {hp.rejection_reason && (
                     <span className="text-destructive">Lý do từ chối: {hp.rejection_reason}</span>
                   )}
                 </div>
-                <PhotoGrid urls={[hp.id_card_front, hp.id_card_back, hp.selfie_photo].filter(Boolean)} />
+                <PhotoGrid
+                  urls={[hp.id_card_front, hp.id_card_back, hp.selfie_photo].filter(Boolean)}
+                />
                 {hp.verification_status === 'pending' && (
                   <div className="flex gap-2">
                     <Button
                       disabled={approveKyc.isPending}
-                      onClick={() => confirm('Duyệt e-KYC cho thợ này?') && approveKyc.mutate(user._id)}
+                      onClick={() =>
+                        confirm('Duyệt e-KYC cho thợ này?') && approveKyc.mutate(user._id)
+                      }
                     >
                       Duyệt KYC
                     </Button>
@@ -348,7 +380,8 @@ export default function UserDetailPage() {
                       disabled={rejectKyc.isPending}
                       onClick={() => {
                         const reason = prompt('Lý do từ chối?');
-                        if (reason?.trim()) rejectKyc.mutate({ userId: user._id, reason: reason.trim() });
+                        if (reason?.trim())
+                          rejectKyc.mutate({ userId: user._id, reason: reason.trim() });
                       }}
                     >
                       Từ chối

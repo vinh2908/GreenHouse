@@ -4,13 +4,29 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useAdminCancelJob, useAdminJob } from '@/hooks/use-admin';
-import { Badge, Button, Card, CardContent, CardHeader, CardTitle, Input, Loading, EmptyState } from '@/components/ui';
+import {
+  Badge,
+  Button,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  Input,
+  Loading,
+  EmptyState,
+} from '@/components/ui';
 import { formatDateTime } from '@/lib/utils';
 import { STATUS_BADGE, STATUS_VI } from '../status';
 import { PhotoGrid } from '@/components/common/photo-grid';
 
 // Statuses from which the state machine still allows a cancellation.
-const CANCELLABLE = ['open', 'receiving_quotes', 'quote_selected', 'confirmed', 'helper_on_the_way'];
+const CANCELLABLE = [
+  'open',
+  'receiving_quotes',
+  'quote_selected',
+  'confirmed',
+  'helper_on_the_way',
+];
 
 interface Person {
   _id?: string;
@@ -94,7 +110,9 @@ export default function JobDetailPage() {
               </p>
             )}
             <div>
-              <p className="mb-2 text-xs uppercase tracking-wide text-muted-foreground">Ảnh khách gửi</p>
+              <p className="mb-2 text-xs uppercase tracking-wide text-muted-foreground">
+                Ảnh khách gửi
+              </p>
               <PhotoGrid urls={job.photos} />
             </div>
             <div>
@@ -150,8 +168,8 @@ export default function JobDetailPage() {
                 />
                 {cancelJob.error && (
                   <p className="text-xs text-destructive">
-                    {(cancelJob.error as { response?: { data?: { message?: string } } }).response?.data
-                      ?.message ?? 'Hủy thất bại'}
+                    {(cancelJob.error as { response?: { data?: { message?: string } } }).response
+                      ?.data?.message ?? 'Hủy thất bại'}
                   </p>
                 )}
                 <Button

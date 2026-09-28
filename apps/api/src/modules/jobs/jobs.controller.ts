@@ -73,10 +73,12 @@ export class JobsController {
   @ApiQuery({ name: 'page', required: false, type: Number })
   @ApiQuery({ name: 'limit', required: false, type: Number })
   async getAvailableJobs(
+    @CurrentUser() user: { sub: string },
     @Query('service_id') serviceId?: string,
     @Query('page') page?: number,
     @Query('limit') limit?: number,
   ) {
+    await this.jobsService.requireVerifiedHelper(user.sub);
     return this.jobsService.getAvailableJobs(serviceId, Number(page) || 1, Number(limit) || 20);
   }
 

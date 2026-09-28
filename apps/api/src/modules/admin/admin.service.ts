@@ -18,7 +18,7 @@ import {
   CustomerProfile,
   CustomerProfileDocument,
 } from '../customers/schemas/customer-profile.schema';
-import { UserRole, UserStatus, VerificationStatus } from '@homemate/types';
+import { HelperStatus, UserRole, UserStatus, VerificationStatus } from '@homemate/types';
 import { NOTIFICATION_TYPES } from '@homemate/constants';
 import { NotificationsService } from '../notifications/notifications.service';
 
@@ -177,6 +177,11 @@ export class AdminService {
       )
       .exec();
     if (!user) throw new NotFoundException('Người dùng không tồn tại');
+    // Every helper search (SOS broadcast, nearby, matching) only picks ONLINE helpers,
+    // so taking the profile offline removes a suspended helper from all of them.
+    await this.helperModel
+      .updateOne({ user_id: user._id }, { status: HelperStatus.OFFLINE })
+      .exec();
     return user;
   }
 
@@ -267,6 +272,8 @@ export class AdminService {
     if (!profile) throw new NotFoundException('Helper profile not found');
     profile.verification_status = VerificationStatus.REJECTED;
     profile.rejection_reason = reason;
+    // A helper who loses verification must stop receiving jobs and SOS broadcasts.
+    if (profile.status === HelperStatus.ONLINE) profile.status = HelperStatus.OFFLINE;
     const saved = await profile.save();
     await this.notificationsService.create({
       userId: String(profile.user_id),

@@ -63,7 +63,11 @@ export default function HelperDashboardScreen() {
   const user = useAuthStore(s => s.user);
   const switchRole = useSwitchRole();
   const { data: profile, isLoading: pLoading } = useHelperProfile();
-  const { data: availableJobs, refetch: refetchJobs } = useAvailableJobs();
+  const { data: availableJobs, refetch: refetchJobs } = useAvailableJobs(
+    undefined,
+    1,
+    profile?.verification_status === 'approved',
+  );
   const { data: myJobs, refetch: refetchMyJobs } = useHelperJobs(
     'confirmed,helper_on_the_way,helper_arrived,in_progress',
   );
@@ -242,13 +246,11 @@ export default function HelperDashboardScreen() {
               activeOpacity={0.85}
               onPress={() => router.push('/kyc')}
               style={{
-                backgroundColor:
-                  profile?.verification_status === 'pending' ? '#FFFBEB' : '#FEF2F2',
+                backgroundColor: profile?.verification_status === 'pending' ? '#FFFBEB' : '#FEF2F2',
                 borderRadius: 16,
                 padding: 14,
                 borderWidth: 1.5,
-                borderColor:
-                  profile?.verification_status === 'pending' ? '#FDE68A' : '#FECACA',
+                borderColor: profile?.verification_status === 'pending' ? '#FDE68A' : '#FECACA',
                 flexDirection: 'row',
                 alignItems: 'center',
                 gap: 12,

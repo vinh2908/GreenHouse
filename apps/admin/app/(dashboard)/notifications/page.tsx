@@ -61,7 +61,9 @@ export default function BroadcastPage() {
             {broadcast.isSuccess && (
               <p className="text-sm text-green-600">Đã gửi tới {broadcast.data.sent} người dùng.</p>
             )}
-            {broadcast.isError && <p className="text-sm text-destructive">Gửi thất bại, thử lại sau.</p>}
+            {broadcast.isError && (
+              <p className="text-sm text-destructive">Gửi thất bại, thử lại sau.</p>
+            )}
             <Button type="submit" disabled={broadcast.isPending || !title.trim() || !body.trim()}>
               {broadcast.isPending ? 'Đang gửi…' : 'Gửi tới tất cả'}
             </Button>
