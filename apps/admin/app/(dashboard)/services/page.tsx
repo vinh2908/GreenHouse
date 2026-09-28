@@ -60,8 +60,9 @@ const slugify = (s: string) =>
     .replace(/^-|-$/g, '');
 
 const errorMessage = (err: unknown) => {
-  const msg = (err as { response?: { data?: { message?: string; error?: { details?: string[] } } } })
-    ?.response?.data;
+  const msg = (
+    err as { response?: { data?: { message?: string; error?: { details?: string[] } } } }
+  )?.response?.data;
   return msg?.error?.details?.join(', ') || msg?.message || 'Có lỗi xảy ra';
 };
 
@@ -134,14 +135,25 @@ export default function ServicesPage() {
                 value={draft.name}
                 onChange={e =>
                   setDraft(d =>
-                    d ? { ...d, name: e.target.value, slug: d.id ? d.slug : slugify(e.target.value) } : d,
+                    d
+                      ? {
+                          ...d,
+                          name: e.target.value,
+                          slug: d.id ? d.slug : slugify(e.target.value),
+                        }
+                      : d,
                   )
                 }
                 required
               />
               <Input label="Slug" value={draft.slug} onChange={set('slug')} required />
               <div className="sm:col-span-2">
-                <Input label="Mô tả" value={draft.description} onChange={set('description')} required={!draft.id} />
+                <Input
+                  label="Mô tả"
+                  value={draft.description}
+                  onChange={set('description')}
+                  required={!draft.id}
+                />
               </div>
               <Select
                 label="Danh mục"
@@ -171,7 +183,8 @@ export default function ServicesPage() {
                         onSuccess: res => {
                           setNewCategory('');
                           const created = (res.data as { data?: { _id: string } }).data;
-                          if (created?._id) setDraft(d => (d ? { ...d, category_id: created._id } : d));
+                          if (created?._id)
+                            setDraft(d => (d ? { ...d, category_id: created._id } : d));
                         },
                       },
                     )
@@ -208,7 +221,10 @@ export default function ServicesPage() {
                 </p>
               )}
               <div className="flex gap-2 sm:col-span-2">
-                <Button type="submit" disabled={save.isPending || (!draft.id && !draft.category_id)}>
+                <Button
+                  type="submit"
+                  disabled={save.isPending || (!draft.id && !draft.category_id)}
+                >
                   {save.isPending ? 'Đang lưu…' : 'Lưu'}
                 </Button>
                 <Button type="button" variant="ghost" onClick={() => setDraft(null)}>
@@ -264,7 +280,10 @@ export default function ServicesPage() {
                         variant={s.status === 'active' ? 'ghost' : 'secondary'}
                         disabled={toggle.isPending}
                         onClick={() =>
-                          toggle.mutate({ id: s._id, status: s.status === 'active' ? 'inactive' : 'active' })
+                          toggle.mutate({
+                            id: s._id,
+                            status: s.status === 'active' ? 'inactive' : 'active',
+                          })
                         }
                       >
                         {s.status === 'active' ? 'Tắt' : 'Bật'}

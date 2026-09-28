@@ -234,8 +234,10 @@ export function useApproveJob() {
 
 // ─── Jobs (Helper) ─────────────────────────────────────────────────────────────
 
-export function useAvailableJobs(serviceId?: string, page = 1) {
+// Only e-KYC approved helpers may load the feed; pass enabled=false otherwise.
+export function useAvailableJobs(serviceId?: string, page = 1, enabled = true) {
   return useQuery({
+    enabled,
     queryKey: ['jobs', 'available', serviceId, page],
     queryFn: async () => {
       const { data } = await apiClient.get('/jobs/available', {

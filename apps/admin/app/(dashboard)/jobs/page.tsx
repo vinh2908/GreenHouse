@@ -114,7 +114,10 @@ export default function JobsPage() {
                     <TableRow key={job._id}>
                       <TableCell>
                         <div>
-                          <Link href={`/jobs/${job._id}`} className="block font-medium max-w-[200px] truncate hover:underline">
+                          <Link
+                            href={`/jobs/${job._id}`}
+                            className="block font-medium max-w-[200px] truncate hover:underline"
+                          >
                             {job.title}
                           </Link>
                           <p className="text-xs text-muted-foreground">

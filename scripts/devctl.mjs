@@ -22,11 +22,18 @@ const LOG_DIR = path.join(ROOT, 'data', 'log');
 const RUN_DIR = path.join(ROOT, 'data', 'run');
 const DB_DIR = path.join(ROOT, 'data', 'db');
 const UI_PORT = Number(process.env.DEVCTL_PORT || 5050);
-const ADB = path.join(process.env.LOCALAPPDATA || '', 'Android', 'Sdk', 'platform-tools', 'adb.exe');
+const ADB = path.join(
+  process.env.LOCALAPPDATA || '',
+  'Android',
+  'Sdk',
+  'platform-tools',
+  'adb.exe',
+);
 
 for (const d of [LOG_DIR, RUN_DIR, DB_DIR]) fs.mkdirSync(d, { recursive: true });
 
-const firstExisting = (...candidates) => candidates.find((c) => c.includes(path.sep) ? fs.existsSync(c) : true);
+const firstExisting = (...candidates) =>
+  candidates.find(c => (c.includes(path.sep) ? fs.existsSync(c) : true));
 
 const SERVICES = {
   mongodb: {
@@ -35,11 +42,26 @@ const SERVICES = {
     group: 'infra',
     command: () => ({
       file: firstExisting(
-        path.join(ROOT, 'tools', 'mongodb70', 'mongodb-win32-x86_64-windows-7.0.18', 'bin', 'mongod.exe'),
+        path.join(
+          ROOT,
+          'tools',
+          'mongodb70',
+          'mongodb-win32-x86_64-windows-7.0.18',
+          'bin',
+          'mongod.exe',
+        ),
         'mongod',
       ),
-      args: ['--dbpath', DB_DIR, '--port', '27017', '--bind_ip', '127.0.0.1',
-        '--setParameter', 'diagnosticDataCollectionEnabled=false'],
+      args: [
+        '--dbpath',
+        DB_DIR,
+        '--port',
+        '27017',
+        '--bind_ip',
+        '127.0.0.1',
+        '--setParameter',
+        'diagnosticDataCollectionEnabled=false',
+      ],
     }),
   },
   redis: {
@@ -83,7 +105,10 @@ const NAMES = Object.keys(SERVICES);
 // Detached cmd.exe does not pass its stdout down to child processes, so we run
 // pnpm's JS entry with node directly instead of going through pnpm.cmd.
 function findPnpmJs() {
-  const dirs = [path.join(process.env.APPDATA || '', 'npm'), ...(process.env.PATH || '').split(path.delimiter)];
+  const dirs = [
+    path.join(process.env.APPDATA || '', 'npm'),
+    ...(process.env.PATH || '').split(path.delimiter),
+  ];
   for (const dir of dirs) {
     for (const rel of ['node_modules/pnpm/bin/pnpm.cjs', '../lib/node_modules/pnpm/bin/pnpm.cjs']) {
       const p = path.join(dir, rel);
@@ -95,7 +120,9 @@ function findPnpmJs() {
 const PNPM_JS = findPnpmJs();
 
 const run = (file, args) =>
-  new Promise((resolve) => execFile(file, args, { windowsHide: true }, (err, stdout) => resolve(err ? '' : stdout)));
+  new Promise(resolve =>
+    execFile(file, args, { windowsHide: true }, (err, stdout) => resolve(err ? '' : stdout)),
+  );
 
 async function listeningPorts() {
   const out = await run('netstat', ['-ano', '-p', 'TCP']);
@@ -108,8 +135,8 @@ async function listeningPorts() {
   return map;
 }
 
-const pidFile = (name) => path.join(RUN_DIR, `${name}.pid`);
-const logFile = (name) => path.join(LOG_DIR, `${name}.log`);
+const pidFile = name => path.join(RUN_DIR, `${name}.pid`);
+const logFile = name => path.join(LOG_DIR, `${name}.log`);
 
 function readPid(name) {
   try {
@@ -131,12 +158,19 @@ function isAlive(pid) {
 
 async function status() {
   const ports = await listeningPorts();
-  return NAMES.map((name) => {
+  return NAMES.map(name => {
     const svc = SERVICES[name];
     const pid = readPid(name);
     const listening = ports.has(svc.port);
     const state = listening ? 'running' : isAlive(pid) ? 'starting' : 'stopped';
-    return { name, label: svc.label, port: svc.port, url: svc.url, state, pid: listening ? ports.get(svc.port) : pid };
+    return {
+      name,
+      label: svc.label,
+      port: svc.port,
+      url: svc.url,
+      state,
+      pid: listening ? ports.get(svc.port) : pid,
+    };
   });
 }
 
@@ -146,10 +180,19 @@ async function startService(name) {
   if (ports.has(svc.port)) return `${name}: already running on :${svc.port}`;
   if (isAlive(readPid(name))) return `${name}: already starting`;
 
+  if (svc.pnpm && process.platform === 'win32' && PNPM_JS) {
+    return startHiddenWindows(name, svc);
+  }
+
   const out = fs.openSync(logFile(name), 'w');
   fs.writeSync(out, `[devctl] ${new Date().toISOString()} starting ${name}\n`);
   let child;
-  const opts = { detached: true, windowsHide: true, stdio: ['ignore', out, out], env: { ...process.env, FORCE_COLOR: '0' } };
+  const opts = {
+    detached: true,
+    windowsHide: true,
+    stdio: ['ignore', out, out],
+    env: { ...process.env, FORCE_COLOR: '0' },
+  };
   if (svc.pnpm) {
     const cwd = path.join(ROOT, svc.cwd);
     child = PNPM_JS
@@ -159,11 +202,41 @@ async function startService(name) {
     const { file, args } = svc.command();
     child = spawn(file, args, { ...opts, cwd: ROOT });
   }
-  child.on('error', (e) => fs.appendFileSync(logFile(name), `[devctl] failed to start: ${e.message}\n`));
+  child.on('error', e =>
+    fs.appendFileSync(logFile(name), `[devctl] failed to start: ${e.message}\n`),
+  );
   child.unref();
   fs.closeSync(out);
   if (child.pid) fs.writeFileSync(pidFile(name), String(child.pid));
   return `${name}: started (pid ${child.pid}) -> ${path.relative(ROOT, logFile(name))}`;
+}
+
+// A detached process has no console, so when pnpm runs its script through cmd.exe
+// Windows opens a new, visible (and empty) console window for it. Start-Process
+// -WindowStyle Hidden instead gives the service its own hidden console that every
+// child process shares, and cmd redirects the whole tree's output into the log.
+async function startHiddenWindows(name, svc) {
+  fs.writeFileSync(logFile(name), `[devctl] ${new Date().toISOString()} starting ${name}\n`);
+  const q = s => `"${s}"`;
+  const cmdLine = [q(process.execPath), q(PNPM_JS), ...svc.pnpm].join(' ');
+  const inner = `/d /s /c "${cmdLine} >> ${q(logFile(name))} 2>&1"`;
+  const ps = s => `'${s.replace(/'/g, "''")}'`;
+  const script =
+    `$p = Start-Process -FilePath cmd.exe -ArgumentList ${ps(inner)} ` +
+    `-WorkingDirectory ${ps(path.join(ROOT, svc.cwd))} -WindowStyle Hidden -PassThru; $p.Id`;
+  const pid = await new Promise(resolve =>
+    execFile(
+      'powershell.exe',
+      ['-NoProfile', '-NonInteractive', '-Command', script],
+      { windowsHide: true, env: { ...process.env, FORCE_COLOR: '0' } },
+      (err, stdout) => {
+        if (err) fs.appendFileSync(logFile(name), `[devctl] failed to start: ${err.message}\n`);
+        resolve(Number(String(stdout).trim()) || null);
+      },
+    ),
+  );
+  if (pid) fs.writeFileSync(pidFile(name), String(pid));
+  return `${name}: started (pid ${pid ?? '?'}) -> ${path.relative(ROOT, logFile(name))}`;
 }
 
 async function stopService(name) {
@@ -172,7 +245,9 @@ async function stopService(name) {
   const tracked = readPid(name);
   // A stale pid file may point to a PID Windows has reused for an unrelated program.
   if (isAlive(tracked)) {
-    const image = (await run('tasklist', ['/FI', `PID eq ${tracked}`, '/FO', 'CSV', '/NH'])).split(',')[0];
+    const image = (await run('tasklist', ['/FI', `PID eq ${tracked}`, '/FO', 'CSV', '/NH'])).split(
+      ',',
+    )[0];
     if (/^"(node|cmd|mongod|redis-server)\.exe"$/i.test(image)) pids.add(tracked);
   }
   const portPid = (await listeningPorts()).get(svc.port);
@@ -180,7 +255,7 @@ async function stopService(name) {
   for (const pid of pids) await run('taskkill', ['/PID', String(pid), '/T', '/F']);
   fs.rmSync(pidFile(name), { force: true });
   for (let i = 0; i < 10 && (await listeningPorts()).has(svc.port); i++) {
-    await new Promise((r) => setTimeout(r, 500));
+    await new Promise(r => setTimeout(r, 500));
   }
   return pids.size ? `${name}: stopped` : `${name}: was not running`;
 }
@@ -190,7 +265,7 @@ async function waitForPort(port, timeoutMs = 30000) {
   for (;;) {
     if ((await listeningPorts()).has(port)) return true;
     if (Date.now() >= end) return false;
-    await new Promise((r) => setTimeout(r, 1000));
+    await new Promise(r => setTimeout(r, 1000));
   }
 }
 
@@ -202,14 +277,15 @@ async function adbReverse() {
 
 async function start(names) {
   const msgs = [];
-  const infra = names.filter((n) => SERVICES[n].group === 'infra');
-  const apps = names.filter((n) => SERVICES[n].group === 'app');
+  const infra = names.filter(n => SERVICES[n].group === 'infra');
+  const apps = names.filter(n => SERVICES[n].group === 'app');
   for (const n of infra) msgs.push(await startService(n));
   // API needs the databases; wait for them before launching apps.
   if (apps.includes('api')) {
     for (const n of ['mongodb', 'redis']) {
       const timeout = infra.includes(n) || isAlive(readPid(n)) ? 20000 : 0;
-      if (!(await waitForPort(SERVICES[n].port, timeout))) msgs.push(`warning: ${n} is not listening, API may fail`);
+      if (!(await waitForPort(SERVICES[n].port, timeout)))
+        msgs.push(`warning: ${n} is not listening, API may fail`);
     }
   }
   for (const n of apps) msgs.push(await startService(n));
@@ -294,7 +370,7 @@ refresh();setInterval(()=>{if(!busy)refresh()},2000);
 function serveUi() {
   const server = http.createServer(async (req, res) => {
     const [, api, action, target] = req.url.split('?')[0].split('/');
-    const json = (data) => {
+    const json = data => {
       res.writeHead(200, { 'content-type': 'application/json' });
       res.end(JSON.stringify(data));
     };
@@ -320,7 +396,7 @@ function serveUi() {
       res.writeHead(500).end(String(e));
     }
   });
-  server.on('error', (e) => {
+  server.on('error', e => {
     if (e.code === 'EADDRINUSE') {
       console.log(`Dashboard đã chạy sẵn: http://localhost:${UI_PORT}`);
       process.exit(0);
@@ -330,16 +406,17 @@ function serveUi() {
   server.listen(UI_PORT, '127.0.0.1', () => {
     console.log(`HomeMate Dev Control: http://localhost:${UI_PORT}`);
     console.log('Đóng cửa sổ này KHÔNG dừng các service. Dùng nút Stop all để dừng.');
-    if (process.argv.includes('--open')) spawn('cmd.exe', ['/c', 'start', '', `http://localhost:${UI_PORT}`], { windowsHide: true });
+    if (process.argv.includes('--open'))
+      spawn('cmd.exe', ['/c', 'start', '', `http://localhost:${UI_PORT}`], { windowsHide: true });
   });
 }
 
 // ─── CLI ──────────────────────────────────────────────────────────────────────
 
 async function main() {
-  const [cmd = 'status', ...rest] = process.argv.slice(2).filter((a) => !a.startsWith('--'));
+  const [cmd = 'status', ...rest] = process.argv.slice(2).filter(a => !a.startsWith('--'));
   const names = rest.length ? rest : NAMES;
-  const bad = names.filter((n) => !SERVICES[n]);
+  const bad = names.filter(n => !SERVICES[n]);
   if (bad.length && cmd !== 'logs') {
     console.error(`Unknown service: ${bad.join(', ')}. Valid: ${NAMES.join(', ')}`);
     process.exit(1);
@@ -348,21 +425,25 @@ async function main() {
     case 'ui':
       return serveUi();
     case 'start':
-      return (await start(names)).forEach((m) => console.log(m));
+      return (await start(names)).forEach(m => console.log(m));
     case 'stop':
-      return (await stop(names)).forEach((m) => console.log(m));
+      return (await stop(names)).forEach(m => console.log(m));
     case 'restart':
-      (await stop(names)).forEach((m) => console.log(m));
-      return (await start(names)).forEach((m) => console.log(m));
+      (await stop(names)).forEach(m => console.log(m));
+      return (await start(names)).forEach(m => console.log(m));
     case 'logs':
       return console.log(tailLog(rest[0] || 'api', 200));
     case 'status':
       for (const s of await status()) {
-        console.log(`${s.state.padEnd(9)} ${s.name.padEnd(8)} :${String(s.port).padEnd(6)} ${s.pid ?? ''} ${s.url ?? ''}`);
+        console.log(
+          `${s.state.padEnd(9)} ${s.name.padEnd(8)} :${String(s.port).padEnd(6)} ${s.pid ?? ''} ${s.url ?? ''}`,
+        );
       }
       return;
     default:
-      console.log('Usage: node scripts/devctl.mjs <ui|start|stop|restart|status|logs> [service...]');
+      console.log(
+        'Usage: node scripts/devctl.mjs <ui|start|stop|restart|status|logs> [service...]',
+      );
   }
 }
 

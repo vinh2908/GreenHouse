@@ -6,7 +6,7 @@ import { ChevronRight, MapPin, Clock } from 'lucide-react-native';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import 'dayjs/locale/vi';
-import { useAvailableJobs, useHelperJobs } from '@/hooks/use-api';
+import { useAvailableJobs, useHelperJobs, useHelperProfile } from '@/hooks/use-api';
 import { Card, JobStatusBadge, Badge, COLORS, EmptyState } from '@/components/ui';
 
 dayjs.extend(relativeTime);
@@ -21,12 +21,15 @@ const TABS = [
 export default function HelperJobsScreen() {
   const router = useRouter();
   const [tab, setTab] = useState(0);
+  const { data: helperProfile, isLoading: pLoading } = useHelperProfile();
+  const kycStatus = helperProfile?.verification_status as string | undefined;
+  const isVerified = kycStatus === 'approved';
   const {
     data: available,
     isLoading: aLoading,
     isRefetching: aRefetching,
     refetch: ra,
-  } = useAvailableJobs();
+  } = useAvailableJobs(undefined, 1, isVerified);
   const {
     data: active,
     isLoading: acLoading,
@@ -118,7 +121,39 @@ export default function HelperJobsScreen() {
           />
         }
       >
-        {!current.loading && (!current.data || current.data.length === 0) ? (
+        {tab === 0 && !pLoading && !isVerified ? (
+          <Card style={{ alignItems: 'center', paddingVertical: 32, gap: 12 }}>
+            <EmptyState
+              emoji={kycStatus === 'pending' ? '⏳' : '🪪'}
+              title={
+                kycStatus === 'pending'
+                  ? 'Hồ sơ e-KYC đang chờ duyệt'
+                  : 'Cần xác thực e-KYC để nhận việc'
+              }
+              subtitle={
+                kycStatus === 'pending'
+                  ? 'Bạn sẽ thấy đơn mới ngay khi hồ sơ được duyệt (thường trong 24h).'
+                  : kycStatus === 'rejected'
+                    ? `Hồ sơ bị từ chối${helperProfile?.rejection_reason ? ': ' + helperProfile.rejection_reason : ''}. Vui lòng nộp lại.`
+                    : 'Chỉ thợ đã xác thực danh tính mới được xem đơn và gửi báo giá cho khách.'
+              }
+            />
+            {kycStatus !== 'pending' && (
+              <TouchableOpacity
+                activeOpacity={0.85}
+                onPress={() => router.push('/kyc')}
+                style={{
+                  backgroundColor: COLORS.primary,
+                  paddingHorizontal: 20,
+                  paddingVertical: 10,
+                  borderRadius: 12,
+                }}
+              >
+                <Text style={{ color: '#fff', fontWeight: '700' }}>Xác thực ngay</Text>
+              </TouchableOpacity>
+            )}
+          </Card>
+        ) : !current.loading && (!current.data || current.data.length === 0) ? (
           <Card style={{ alignItems: 'center', paddingVertical: 40 }}>
             <EmptyState
               emoji={tab === 0 ? '🔍' : tab === 1 ? '📋' : '📚'}
