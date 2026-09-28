@@ -90,7 +90,7 @@ export class AuthService {
       });
 
       const user = await this.usersService.findById(payload.sub);
-      if (!user) throw new UnauthorizedException();
+      if (!user || user.status === 'suspended') throw new UnauthorizedException();
 
       // Issue new tokens (rotate refresh token)
       const tokens = await this.generateTokens(user);

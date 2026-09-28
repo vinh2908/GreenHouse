@@ -56,14 +56,15 @@
           "icon": "./assets/images/notification-icon.png",
           "color": "#22C55E"
         }
-      ]
+      ],
+      "expo-splash-screen"
     ],
     "experiments": {
       "typedRoutes": true
     },
     "extra": {
-      "apiUrl": "http://192.168.1.168:3000/api/v1",
-      "wsUrl": "http://192.168.1.168:3000",
+      "apiUrl": "http://192.168.2.248:3000/api/v1",
+      "wsUrl": "http://192.168.2.248:3000",
       "eas": {
         "projectId": "your-eas-project-id"
       }

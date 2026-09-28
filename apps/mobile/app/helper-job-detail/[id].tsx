@@ -41,6 +41,7 @@ import {
   useHelperArrived,
   useStartJob,
   useCompleteJob,
+  useHelperProfile,
 } from '@/hooks/use-api';
 import { useAuthStore } from '@/stores/auth.store';
 import {
@@ -74,6 +75,7 @@ export default function HelperJobDetailScreen() {
 
   const { data: job, isLoading } = useJobDetail(id);
   const { data: quotes } = useJobQuotes(id);
+  const { data: helperProfile } = useHelperProfile();
 
   const submitQuote = useSubmitQuote();
   const onTheWay = useHelperOnTheWay();
@@ -92,6 +94,8 @@ export default function HelperJobDetailScreen() {
   const [completionVideos, setCompletionVideos] = useState<string[]>([]);
   const [completionNotes, setCompletionNotes] = useState('');
 
+  const insets = useSafeAreaInsets();
+
   if (isLoading) return <LoadingSpinner />;
   if (!job) return null;
 
@@ -101,6 +105,20 @@ export default function HelperJobDetailScreen() {
     return helperId === currentUser?._id;
   });
 
+  const handleOpenQuoteModal = () => {
+    if (helperProfile?.verification_status !== 'approved') {
+      Alert.alert(
+        'Yêu cầu xác thực e-KYC',
+        'Bạn cần hoàn tất và được duyệt xác thực danh tính e-KYC trước khi có thể gửi báo giá và nhận việc.',
+        [
+          { text: 'Để sau', style: 'cancel' },
+          { text: 'Xác thực ngay', onPress: () => router.push('/kyc') },
+        ],
+      );
+      return;
+    }
+    setShowQuoteModal(true);
+  };
   const total = Number(laborCost) || 0;
   const platformFee = Math.round(total * PLATFORM_FEE);
   const helperReceives = total - platformFee;
@@ -291,7 +309,6 @@ export default function HelperJobDetailScreen() {
 
   const isMyActiveJob =
     job.helper_id && (typeof job.helper_id === 'string' ? job.helper_id : job.helper_id._id);
-  const insets = useSafeAreaInsets();
 
   return (
     <View style={{ flex: 1, backgroundColor: COLORS.gray[50] }}>
@@ -517,7 +534,7 @@ export default function HelperJobDetailScreen() {
             ) : (
               <Button
                 title="Gửi báo giá cho khách"
-                onPress={() => setShowQuoteModal(true)}
+                onPress={handleOpenQuoteModal}
                 icon={<Text style={{ color: '#fff', fontSize: 18 }}>💰</Text>}
               />
             )}

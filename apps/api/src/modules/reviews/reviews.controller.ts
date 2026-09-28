@@ -20,7 +20,7 @@ export class ReviewsController {
   @Post()
   @ApiOperation({ summary: '[Customer] Đánh giá công việc đã hoàn thành' })
   async createReview(@CurrentUser() user: { sub: string }, @Body() dto: CreateReviewDto) {
-    return this.reviewsService.createReview(user.sub, dto.helper_id, dto);
+    return this.reviewsService.createReview(user.sub, dto);
   }
 
   // ─── Helper: Reply to review ───────────────────────────────────────────────

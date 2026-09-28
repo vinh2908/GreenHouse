@@ -1,10 +1,12 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
+import { NotificationsModule } from '../notifications/notifications.module';
 import { PaymentsController } from './payments.controller';
 import { PaymentsService } from './payments.service';
 import { Wallet, WalletSchema } from './schemas/payment.schema';
 import { Transaction, TransactionSchema } from './schemas/payment.schema';
 import { Withdrawal, WithdrawalSchema } from './schemas/payment.schema';
+import { HelperProfile, HelperProfileSchema } from '../helpers/schemas/helper-profile.schema';
 
 @Module({
   imports: [
@@ -12,7 +14,9 @@ import { Withdrawal, WithdrawalSchema } from './schemas/payment.schema';
       { name: Wallet.name, schema: WalletSchema },
       { name: Transaction.name, schema: TransactionSchema },
       { name: Withdrawal.name, schema: WithdrawalSchema },
+      { name: HelperProfile.name, schema: HelperProfileSchema },
     ]),
+    NotificationsModule,
   ],
   controllers: [PaymentsController],
   providers: [PaymentsService],

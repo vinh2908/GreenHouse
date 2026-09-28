@@ -90,7 +90,7 @@ export default function HelperProfileScreen() {
             onPress={() => router.push('/edit-profile')}
             style={{ alignItems: 'center' }}
           >
-            <Avatar name={user?.full_name} size={80} />
+            <Avatar name={user?.full_name} uri={user?.avatar} size={80} />
             <Text
               style={{ fontSize: 20, fontWeight: '800', color: COLORS.gray[900], marginTop: 12 }}
             >

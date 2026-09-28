@@ -43,8 +43,12 @@ export class ServicesController {
   @Get()
   @ApiOperation({ summary: 'Lấy danh sách dịch vụ' })
   @ApiQuery({ name: 'category_id', required: false })
-  async getAll(@Query('category_id') categoryId?: string) {
-    return this.servicesService.getAll(categoryId);
+  @ApiQuery({ name: 'include_inactive', required: false, type: Boolean })
+  async getAll(
+    @Query('category_id') categoryId?: string,
+    @Query('include_inactive') includeInactive?: string,
+  ) {
+    return this.servicesService.getAll(categoryId, includeInactive === 'true');
   }
 
   @Public()

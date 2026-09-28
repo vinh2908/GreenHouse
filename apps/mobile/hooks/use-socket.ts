@@ -74,6 +74,13 @@ export function useChatSocket(conversationId?: string) {
     if (!conversationId) return;
     socketService.joinConversation(conversationId);
 
+    // Viewing the chat marks it read (also clears its "Tin nhắn mới" notification).
+    const markRead = () => {
+      socketService.markRead(conversationId);
+      qc.invalidateQueries({ queryKey: ['notifications'] });
+    };
+    markRead();
+
     const unsub = socketService.on<{ message: unknown; conversation_id: string }>(
       SOCKET_EVENTS.CHAT_NEW_MESSAGE,
       data => {
@@ -81,12 +88,14 @@ export function useChatSocket(conversationId?: string) {
         if (!cId || cId === conversationId) {
           qc.invalidateQueries({ queryKey: ['messages', conversationId] });
           qc.invalidateQueries({ queryKey: ['conversations'] });
+          markRead();
         }
       },
     );
 
     return () => {
       unsub();
+      socketService.leaveConversation(conversationId);
     };
   }, [conversationId, qc]);
 }
@@ -97,10 +106,16 @@ export function useNotificationSocket() {
   const qc = useQueryClient();
 
   useEffect(() => {
-    const unsub = socketService.on(SOCKET_EVENTS.NOTIFICATION_NEW, () => {
-      qc.invalidateQueries({ queryKey: ['notifications'] });
-      qc.invalidateQueries({ queryKey: ['notifications', 'count'] });
-    });
+    const unsub = socketService.on<{ title?: string; body?: string }>(
+      SOCKET_EVENTS.NOTIFICATION_NEW,
+      n => {
+        qc.invalidateQueries({ queryKey: ['notifications'] });
+        qc.invalidateQueries({ queryKey: ['notifications', 'count'] });
+        if (n?.title) {
+          Toast.show({ type: 'info', text1: n.title, text2: n.body, visibilityTime: 4000 });
+        }
+      },
+    );
     return unsub;
   }, [qc]);
 }

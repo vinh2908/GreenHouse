@@ -97,7 +97,7 @@ export default function SplashScreen() {
 
   return (
     <View style={styles.container}>
-        <StatusBar barStyle="light-content" backgroundColor="#16A34A" translucent />
+      <StatusBar barStyle="light-content" backgroundColor="#16A34A" translucent />
 
       {/* ── Background Decorative Shapes ─────────────────────────────── */}
       <Animated.View style={[styles.bgCircle1, { opacity: opacityAnim }]} />

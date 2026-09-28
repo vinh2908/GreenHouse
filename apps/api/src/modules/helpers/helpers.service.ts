@@ -50,9 +50,13 @@ export class HelpersService {
         }
       : { user_id: idOrUserId };
 
+    // Public view: never expose KYC documents, bank details or the helper's phone.
     const profile = await this.helperModel
       .findOne(query)
-      .populate('user_id', 'full_name avatar phone created_at')
+      .select(
+        '-id_card_number -id_card_front -id_card_back -selfie_photo -bank_account -rejection_reason',
+      )
+      .populate('user_id', 'full_name avatar created_at')
       .populate('service_ids', 'name slug icon base_price_min base_price_max')
       .exec();
 

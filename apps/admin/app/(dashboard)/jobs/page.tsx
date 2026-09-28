@@ -17,7 +17,9 @@ import {
   EmptyState,
   Pagination,
 } from '@/components/ui';
+import Link from 'next/link';
 import { formatDateTime } from '@/lib/utils';
+import { STATUS_BADGE, STATUS_VI } from './status';
 
 const JOB_STATUS_OPTIONS = [
   { value: '', label: 'Tất cả trạng thái' },
@@ -25,37 +27,13 @@ const JOB_STATUS_OPTIONS = [
   { value: 'receiving_quotes', label: 'Nhận báo giá' },
   { value: 'confirmed', label: 'Đã xác nhận' },
   { value: 'helper_on_the_way', label: 'Helper trên đường' },
+  { value: 'helper_arrived', label: 'Helper đã đến' },
   { value: 'in_progress', label: 'Đang làm' },
   { value: 'pending_review', label: 'Chờ nghiệm thu' },
   { value: 'completed', label: 'Hoàn thành' },
   { value: 'cancelled', label: 'Đã hủy' },
+  { value: 'disputed', label: 'Tranh chấp' },
 ];
-
-const STATUS_BADGE: Record<string, 'success' | 'danger' | 'warning' | 'info' | 'secondary'> = {
-  open: 'info',
-  receiving_quotes: 'info',
-  confirmed: 'warning',
-  helper_on_the_way: 'warning',
-  helper_arrived: 'warning',
-  in_progress: 'warning',
-  pending_review: 'warning',
-  completed: 'success',
-  cancelled: 'danger',
-  disputed: 'danger',
-};
-
-const STATUS_VI: Record<string, string> = {
-  open: 'Mở',
-  receiving_quotes: 'Nhận báo giá',
-  confirmed: 'Xác nhận',
-  helper_on_the_way: 'Trên đường',
-  helper_arrived: 'Đã đến',
-  in_progress: 'Đang làm',
-  pending_review: 'Chờ nghiệm thu',
-  completed: 'Hoàn thành',
-  cancelled: 'Đã hủy',
-  disputed: 'Tranh chấp',
-};
 
 export default function JobsPage() {
   const [status, setStatus] = useState('');
@@ -136,7 +114,9 @@ export default function JobsPage() {
                     <TableRow key={job._id}>
                       <TableCell>
                         <div>
-                          <p className="font-medium max-w-[200px] truncate">{job.title}</p>
+                          <Link href={`/jobs/${job._id}`} className="block font-medium max-w-[200px] truncate hover:underline">
+                            {job.title}
+                          </Link>
                           <p className="text-xs text-muted-foreground">
                             {job.address?.district}, {job.address?.city}
                           </p>

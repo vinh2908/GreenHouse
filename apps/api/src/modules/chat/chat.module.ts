@@ -1,4 +1,5 @@
 import { Module, forwardRef } from '@nestjs/common';
+import { NotificationsModule } from '../notifications/notifications.module';
 import { MongooseModule } from '@nestjs/mongoose';
 import { JwtModule } from '@nestjs/jwt';
 import { ChatController } from './chat.controller';
@@ -16,6 +17,7 @@ import { Job, JobSchema } from '../jobs/schemas/job.schema';
       { name: Job.name, schema: JobSchema },
     ]),
     JwtModule.register({}),
+    forwardRef(() => NotificationsModule),
   ],
   controllers: [ChatController],
   providers: [ChatService, AppGateway],

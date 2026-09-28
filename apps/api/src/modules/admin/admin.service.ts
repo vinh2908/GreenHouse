@@ -1,11 +1,26 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { User, UserDocument } from '../users/schemas/user.schema';
 import { HelperProfile, HelperProfileDocument } from '../helpers/schemas/helper-profile.schema';
 import { Job, JobDocument } from '../jobs/schemas/job.schema';
 import { Notification, NotificationDocument } from '../notifications/schemas/notification.schema';
-import { UserStatus, VerificationStatus } from '@homemate/types';
+import {
+  Wallet,
+  WalletDocument,
+  Transaction,
+  TransactionDocument,
+  Withdrawal,
+  WithdrawalDocument,
+} from '../payments/schemas/payment.schema';
+import { Review, ReviewDocument } from '../reviews/schemas/review.schema';
+import {
+  CustomerProfile,
+  CustomerProfileDocument,
+} from '../customers/schemas/customer-profile.schema';
+import { UserRole, UserStatus, VerificationStatus } from '@homemate/types';
+import { NOTIFICATION_TYPES } from '@homemate/constants';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class AdminService {
@@ -14,6 +29,12 @@ export class AdminService {
     @InjectModel(HelperProfile.name) private helperModel: Model<HelperProfileDocument>,
     @InjectModel(Job.name) private jobModel: Model<JobDocument>,
     @InjectModel(Notification.name) private notificationModel: Model<NotificationDocument>,
+    @InjectModel(Wallet.name) private walletModel: Model<WalletDocument>,
+    @InjectModel(Transaction.name) private transactionModel: Model<TransactionDocument>,
+    @InjectModel(Withdrawal.name) private withdrawalModel: Model<WithdrawalDocument>,
+    @InjectModel(Review.name) private reviewModel: Model<ReviewDocument>,
+    @InjectModel(CustomerProfile.name) private customerModel: Model<CustomerProfileDocument>,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   // ─── Users ────────────────────────────────────────────────────────────────
@@ -44,23 +65,130 @@ export class AdminService {
 
   async getUserById(id: string): Promise<UserDocument> {
     const user = await this.userModel.findById(id).select('-password_hash').exec();
-    if (!user) throw new Error('User not found');
+    if (!user) throw new NotFoundException('Người dùng không tồn tại');
     return user;
   }
 
+  // Everything an admin needs to look into one account, whichever roles it has.
+  async getUserDetail(id: string) {
+    const user = await this.getUserById(id);
+    const uid = user._id as Types.ObjectId;
+    const jobFields = 'title status created_at address.district address.city is_sos';
+    const [
+      helperProfile,
+      customerProfile,
+      wallet,
+      jobsAsCustomer,
+      jobsAsHelper,
+      jobCountsAsCustomer,
+      jobCountsAsHelper,
+      transactions,
+      withdrawals,
+      reviewsReceived,
+      reviewsWritten,
+      ratingAgg,
+    ] = await Promise.all([
+      this.helperModel.findOne({ user_id: uid }).populate('service_ids', 'name').exec(),
+      this.customerModel.findOne({ user_id: uid }).exec(),
+      this.walletModel.findOne({ user_id: uid }).exec(),
+      this.jobModel
+        .find({ customer_id: uid })
+        .select(jobFields)
+        .populate('helper_id', 'full_name phone')
+        .populate('service_id', 'name')
+        .sort({ created_at: -1 })
+        .limit(20)
+        .exec(),
+      this.jobModel
+        .find({ helper_id: uid })
+        .select(jobFields)
+        .populate('customer_id', 'full_name phone')
+        .populate('service_id', 'name')
+        .sort({ created_at: -1 })
+        .limit(20)
+        .exec(),
+      this.jobModel.aggregate([
+        { $match: { customer_id: uid } },
+        { $group: { _id: '$status', n: { $sum: 1 } } },
+      ]),
+      this.jobModel.aggregate([
+        { $match: { helper_id: uid } },
+        { $group: { _id: '$status', n: { $sum: 1 } } },
+      ]),
+      this.transactionModel.find({ user_id: uid }).sort({ created_at: -1 }).limit(20).exec(),
+      this.withdrawalModel.find({ user_id: uid }).sort({ created_at: -1 }).limit(10).exec(),
+      this.reviewModel
+        .find({ helper_id: uid })
+        .populate('customer_id', 'full_name')
+        .populate('job_id', 'title')
+        .sort({ created_at: -1 })
+        .limit(10)
+        .exec(),
+      this.reviewModel
+        .find({ customer_id: uid })
+        .populate('helper_id', 'full_name')
+        .populate('job_id', 'title')
+        .sort({ created_at: -1 })
+        .limit(10)
+        .exec(),
+      // Computed live: the denormalised counters on older helper profiles were never maintained.
+      this.reviewModel.aggregate([
+        { $match: { helper_id: uid } },
+        { $group: { _id: null, avg: { $avg: '$rating' }, n: { $sum: 1 } } },
+      ]),
+    ]);
+
+    const toCounts = (rows: { _id: string; n: number }[]) =>
+      Object.fromEntries(rows.map(r => [r._id, r.n])) as Record<string, number>;
+
+    return {
+      user,
+      helper_profile: helperProfile,
+      customer_profile: customerProfile,
+      wallet,
+      job_counts: {
+        as_customer: toCounts(jobCountsAsCustomer),
+        as_helper: toCounts(jobCountsAsHelper),
+      },
+      jobs_as_customer: jobsAsCustomer,
+      jobs_as_helper: jobsAsHelper,
+      transactions,
+      withdrawals,
+      reviews_received: reviewsReceived,
+      reviews_written: reviewsWritten,
+      rating_stats: {
+        average: ratingAgg[0] ? Math.round(ratingAgg[0].avg * 10) / 10 : 0,
+        total: ratingAgg[0]?.n ?? 0,
+      },
+    };
+  }
+
   async suspendUser(id: string, reason?: string): Promise<UserDocument> {
+    const target = await this.userModel.findById(id).select('roles').exec();
+    if (!target) throw new NotFoundException('Người dùng không tồn tại');
+    if (target.roles?.includes(UserRole.ADMIN)) {
+      throw new BadRequestException('Không thể khóa tài khoản quản trị viên');
+    }
     const user = await this.userModel
-      .findByIdAndUpdate(id, { status: UserStatus.SUSPENDED }, { new: true })
+      .findByIdAndUpdate(
+        id,
+        { status: UserStatus.SUSPENDED, suspension_reason: reason, suspended_at: new Date() },
+        { new: true },
+      )
       .exec();
-    if (!user) throw new Error('User not found');
+    if (!user) throw new NotFoundException('Người dùng không tồn tại');
     return user;
   }
 
   async activateUser(id: string): Promise<UserDocument> {
     const user = await this.userModel
-      .findByIdAndUpdate(id, { status: UserStatus.ACTIVE }, { new: true })
+      .findByIdAndUpdate(
+        id,
+        { status: UserStatus.ACTIVE, $unset: { suspension_reason: 1, suspended_at: 1 } },
+        { new: true },
+      )
       .exec();
-    if (!user) throw new Error('User not found');
+    if (!user) throw new NotFoundException('Người dùng không tồn tại');
     return user;
   }
 
@@ -121,7 +249,14 @@ export class AdminService {
     if (!profile) throw new NotFoundException('Helper profile not found');
     profile.verification_status = VerificationStatus.APPROVED;
     profile.verified_at = new Date();
-    return profile.save();
+    const saved = await profile.save();
+    await this.notificationsService.create({
+      userId: String(profile.user_id),
+      type: NOTIFICATION_TYPES.KYC_APPROVED,
+      title: 'Hồ sơ e-KYC đã được duyệt',
+      body: 'Bạn đã có thể bật trạng thái sẵn sàng và gửi báo giá cho khách hàng.',
+    });
+    return saved;
   }
 
   async rejectKyc(userId: string, reason: string): Promise<HelperProfileDocument> {
@@ -132,7 +267,14 @@ export class AdminService {
     if (!profile) throw new NotFoundException('Helper profile not found');
     profile.verification_status = VerificationStatus.REJECTED;
     profile.rejection_reason = reason;
-    return profile.save();
+    const saved = await profile.save();
+    await this.notificationsService.create({
+      userId: String(profile.user_id),
+      type: NOTIFICATION_TYPES.KYC_REJECTED,
+      title: 'Hồ sơ e-KYC bị từ chối',
+      body: `Lý do: ${reason}. Vui lòng cập nhật và nộp lại hồ sơ.`,
+    });
+    return saved;
   }
 
   // ─── Jobs ─────────────────────────────────────────────────────────────────
@@ -170,23 +312,22 @@ export class AdminService {
       .populate('helper_id', 'full_name phone')
       .populate('service_id', 'name')
       .exec();
-    if (!job) throw new Error('Job not found');
+    if (!job) throw new NotFoundException('Job không tồn tại');
     return job;
   }
 
   // ─── Broadcast notification ───────────────────────────────────────────────
 
   async broadcastNotification(title: string, body: string): Promise<{ sent: number }> {
-    const users = await this.userModel.find({ is_deleted: false }).select('_id').exec();
-    const notifications = users.map(u => ({
-      user_id: u._id,
-      type: 'system',
+    const users = await this.userModel
+      .find({ is_deleted: false, status: { $ne: UserStatus.SUSPENDED } })
+      .select('_id')
+      .exec();
+    return this.notificationsService.broadcastAll(
+      users.map(u => u._id as Types.ObjectId),
       title,
       body,
-      is_read: false,
-    }));
-    await this.notificationModel.insertMany(notifications);
-    return { sent: users.length };
+    );
   }
 
   // ─── Dashboard stats ──────────────────────────────────────────────────────

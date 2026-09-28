@@ -10,7 +10,7 @@ import {
   Min,
   Max,
 } from 'class-validator';
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
 import { ServiceStatus } from '@homemate/types';
 
 export class CreateServiceCategoryDto {
@@ -116,7 +116,7 @@ export class CreateServiceDto {
   keywords?: string[];
 }
 
-export class UpdateServiceDto extends CreateServiceDto {}
+export class UpdateServiceDto extends PartialType(CreateServiceDto) {}
 
 export class UpdateServiceStatusDto {
   @ApiProperty({ enum: ServiceStatus })

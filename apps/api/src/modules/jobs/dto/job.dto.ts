@@ -7,6 +7,12 @@ import {
   IsDateString,
   MaxLength,
   IsNumber,
+  IsInt,
+  IsMongoId,
+  Min,
+  Max,
+  ArrayMinSize,
+  ArrayMaxSize,
   ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
@@ -19,6 +25,8 @@ export class JobAddressLocationDto {
 
   @ApiProperty({ example: [106.6297, 10.8231], description: '[longitude, latitude]' })
   @IsArray()
+  @ArrayMinSize(2)
+  @ArrayMaxSize(2)
   @IsNumber({}, { each: true })
   coordinates: [number, number];
 }
@@ -38,7 +46,7 @@ export class JobAddressDto {
 }
 
 export class CreateJobDto {
-  @ApiProperty() @IsString() @IsNotEmpty() service_id: string;
+  @ApiProperty() @IsMongoId({ message: 'service_id không hợp lệ' }) service_id: string;
   @ApiProperty({ maxLength: 200 }) @IsString() @IsNotEmpty() @MaxLength(200) title: string;
   @ApiProperty() @IsString() @IsNotEmpty() description: string;
 
@@ -98,14 +106,26 @@ export class CreateSosJobDto {
   @ApiPropertyOptional({ default: 100000, description: 'Phụ phí cứu hộ khẩn cấp' })
   @IsOptional()
   @IsNumber()
+  @Min(0)
+  @Max(2_000_000)
   surcharge?: number;
 }
 
 export class CreateQuoteDto {
-  @ApiProperty({ example: 200000 }) @IsNumber() labor_cost: number;
-  @ApiPropertyOptional({ default: 0 }) @IsOptional() @IsNumber() materials_cost?: number;
-  @ApiProperty({ example: 3 }) @IsNumber() estimated_duration: number;
-  @ApiPropertyOptional({ default: 0 }) @IsOptional() @IsNumber() warranty_days?: number;
+  @ApiProperty({ example: 200000 }) @IsNumber() @Min(0) @Max(1_000_000_000) labor_cost: number;
+  @ApiPropertyOptional({ default: 0 })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Max(1_000_000_000)
+  materials_cost?: number;
+  @ApiProperty({ example: 3 }) @IsNumber() @Min(0.5) @Max(720) estimated_duration: number;
+  @ApiPropertyOptional({ default: 0 })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Max(365)
+  warranty_days?: number;
   @ApiPropertyOptional() @IsOptional() @IsString() notes?: string;
   @ApiPropertyOptional() @IsOptional() @IsDateString() available_date?: string;
   @ApiPropertyOptional() @IsOptional() @IsString() available_time_start?: string;
@@ -117,7 +137,7 @@ export class CreateQuoteDto {
 }
 
 export class SelectQuoteDto {
-  @ApiProperty() @IsString() @IsNotEmpty() quote_id: string;
+  @ApiProperty() @IsMongoId() quote_id: string;
   @ApiProperty() @IsDateString() scheduled_at: string;
 }
 
@@ -141,7 +161,7 @@ export class CompleteJobDto {
 }
 
 export class ReviewJobDto {
-  @ApiProperty({ minimum: 1, maximum: 5 }) @IsNumber() rating: number;
+  @ApiProperty({ minimum: 1, maximum: 5 }) @IsInt() @Min(1) @Max(5) rating: number;
   @ApiPropertyOptional() @IsOptional() @IsString() review?: string;
 }
 

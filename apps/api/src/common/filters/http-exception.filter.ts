@@ -37,6 +37,13 @@ export class HttpExceptionFilter implements ExceptionFilter {
           message = 'Validation failed';
         }
       }
+    } else if (exception instanceof Error && this.isBadInput(exception)) {
+      // Malformed ids and schema-level validation are client errors, not server faults.
+      status = HttpStatus.BAD_REQUEST;
+      message = exception.name === 'ValidationError' ? exception.message : 'ID không hợp lệ';
+    } else if (exception instanceof Error && (exception as { code?: number }).code === 11000) {
+      status = HttpStatus.CONFLICT;
+      message = 'Dữ liệu đã tồn tại hoặc đã được xử lý';
     } else if (exception instanceof Error) {
       this.logger.error(`Unhandled error: ${exception.message}`, exception.stack);
     }
@@ -51,6 +58,14 @@ export class HttpExceptionFilter implements ExceptionFilter {
         details,
       },
     });
+  }
+
+  private isBadInput(err: Error): boolean {
+    return (
+      err.name === 'CastError' ||
+      err.name === 'ValidationError' ||
+      (err.name === 'BSONError' && err.message.includes('24 character hex string'))
+    );
   }
 
   private getErrorCode(status: number, fallback: string): string {

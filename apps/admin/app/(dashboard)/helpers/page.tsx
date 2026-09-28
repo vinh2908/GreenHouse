@@ -137,7 +137,16 @@ export default function HelpersPage() {
                   }) => (
                     <TableRow key={h._id}>
                       <TableCell>
-                        <p className="font-medium">{h.user_id?.full_name ?? '—'}</p>
+                        {h.user_id ? (
+                          <Link
+                            href={`/users/${h.user_id._id}`}
+                            className="font-medium hover:underline"
+                          >
+                            {h.user_id.full_name}
+                          </Link>
+                        ) : (
+                          <p className="font-medium">—</p>
+                        )}
                       </TableCell>
                       <TableCell className="font-mono text-sm">{h.user_id?.phone ?? '—'}</TableCell>
                       <TableCell>

@@ -9,9 +9,11 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
+  Modal,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import * as ImagePicker from 'expo-image-picker';
 import {
   ArrowLeft,
   Camera,
@@ -23,13 +25,15 @@ import {
   Check,
   ChevronRight,
   X,
+  Image as ImageIcon,
+  Sparkles,
 } from 'lucide-react-native';
 import Toast from 'react-native-toast-message';
 import { useAuthStore } from '@/stores/auth.store';
 import { useHelperProfile, useSubmitKyc } from '@/hooks/use-api';
 import { Button, Card, LoadingSpinner, COLORS, Separator, Input } from '@/components/ui';
 
-// Ảnh mẫu demo e-KYC
+// Ảnh mẫu demo e-KYC (phục vụ test nhanh)
 const SAMPLE_FRONT = 'https://images.unsplash.com/photo-1544717305-2782549b5136';
 const SAMPLE_BACK = 'https://images.unsplash.com/photo-1544717305-2782549b5136';
 const SAMPLE_SELFIE = 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d';
@@ -53,20 +57,82 @@ export default function KycScreen() {
   const [backImage, setBackImage] = useState<string | null>(null);
   const [selfieImage, setSelfieImage] = useState<string | null>(null);
 
+  // Modal chọn nguồn ảnh (Camera / Thư viện / Ảnh mẫu)
+  const [pickerModalVisible, setPickerModalVisible] = useState(false);
+  const [activeImageType, setActiveImageType] = useState<'front' | 'back' | 'selfie'>('front');
+
   if (isLoading) return <LoadingSpinner />;
 
   const kycStatus = profile?.verification_status || 'unsubmitted';
 
-  const handleSimulatePhoto = (type: 'front' | 'back' | 'selfie') => {
-    if (type === 'front') {
+  const openPickerModal = (type: 'front' | 'back' | 'selfie') => {
+    setActiveImageType(type);
+    setPickerModalVisible(true);
+  };
+
+  const applyImage = (type: 'front' | 'back' | 'selfie', uri: string) => {
+    if (type === 'front') setFrontImage(uri);
+    else if (type === 'back') setBackImage(uri);
+    else setSelfieImage(uri);
+  };
+
+  const handleTakePhoto = async () => {
+    setPickerModalVisible(false);
+    try {
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status !== 'granted') {
+        Toast.show({ type: 'error', text1: 'Cần cấp quyền camera để chụp ảnh e-KYC' });
+        return;
+      }
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: activeImageType === 'selfie' ? [1, 1] : [16, 10],
+        quality: 0.85,
+      });
+      if (!result.canceled && result.assets[0]?.uri) {
+        applyImage(activeImageType, result.assets[0].uri);
+        Toast.show({ type: 'success', text1: 'Đã chụp ảnh thành công' });
+      }
+    } catch {
+      Toast.show({ type: 'error', text1: 'Không thể mở máy ảnh' });
+    }
+  };
+
+  const handlePickFromLibrary = async () => {
+    setPickerModalVisible(false);
+    try {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        Toast.show({ type: 'error', text1: 'Cần cấp quyền thư viện để chọn ảnh' });
+        return;
+      }
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: activeImageType === 'selfie' ? [1, 1] : [16, 10],
+        quality: 0.85,
+      });
+      if (!result.canceled && result.assets[0]?.uri) {
+        applyImage(activeImageType, result.assets[0].uri);
+        Toast.show({ type: 'success', text1: 'Đã chọn ảnh từ thư viện' });
+      }
+    } catch {
+      Toast.show({ type: 'error', text1: 'Không thể mở thư viện ảnh' });
+    }
+  };
+
+  const handleUseSamplePhoto = () => {
+    setPickerModalVisible(false);
+    if (activeImageType === 'front') {
       setFrontImage(SAMPLE_FRONT);
-      Toast.show({ type: 'info', text1: 'Đã chụp mặt trước CCCD' });
-    } else if (type === 'back') {
+      Toast.show({ type: 'info', text1: 'Đã dùng ảnh mẫu: Mặt trước CCCD' });
+    } else if (activeImageType === 'back') {
       setBackImage(SAMPLE_BACK);
-      Toast.show({ type: 'info', text1: 'Đã chụp mặt sau CCCD' });
+      Toast.show({ type: 'info', text1: 'Đã dùng ảnh mẫu: Mặt sau CCCD' });
     } else {
       setSelfieImage(SAMPLE_SELFIE);
-      Toast.show({ type: 'info', text1: 'Đã chụp ảnh chân dung' });
+      Toast.show({ type: 'info', text1: 'Đã dùng ảnh mẫu: Chân dung selfie' });
     }
   };
 
@@ -78,7 +144,7 @@ export default function KycScreen() {
     if (!frontImage || !backImage || !selfieImage) {
       Toast.show({
         type: 'error',
-        text1: 'Vui lòng chụp đủ 3 ảnh (Mặt trước, mặt sau và chân dung)',
+        text1: 'Vui lòng cung cấp đủ 3 ảnh (Mặt trước, mặt sau và chân dung)',
       });
       return;
     }
@@ -98,6 +164,12 @@ export default function KycScreen() {
   };
 
   const insets = useSafeAreaInsets();
+
+  const getTargetTitle = () => {
+    if (activeImageType === 'front') return 'Mặt trước CCCD/CMND';
+    if (activeImageType === 'back') return 'Mặt sau CCCD/CMND';
+    return 'Ảnh chân dung selfie cầm CCCD';
+  };
 
   return (
     <View style={{ flex: 1, backgroundColor: '#F8F9FA' }}>
@@ -189,7 +261,7 @@ export default function KycScreen() {
                 }}
               >
                 <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.gray[800] }}>
-                  Số CCCD: {profile?.id_card_number || '079090123456'}
+                  Số CCCD: {profile?.id_card_number || '—'}
                 </Text>
               </View>
             </Card>
@@ -243,7 +315,7 @@ export default function KycScreen() {
                 <Text style={{ fontSize: 12.5, color: COLORS.gray[600] }}>
                   • Số CCCD nộp:{' '}
                   <Text style={{ fontWeight: '700', color: COLORS.gray[900] }}>
-                    {profile?.id_card_number || idCardNumber || '079090123456'}
+                    {profile?.id_card_number || idCardNumber || '—'}
                   </Text>
                 </Text>
                 <Text style={{ fontSize: 12.5, color: COLORS.gray[600] }}>
@@ -338,40 +410,72 @@ export default function KycScreen() {
                   <Text style={{ fontSize: 14, fontWeight: '800', color: COLORS.gray[900] }}>
                     2. Mặt trước CCCD/CMND *
                   </Text>
-                  {frontImage && <Check size={18} color={COLORS.success} />}
+                  {frontImage && (
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                      <Check size={16} color={COLORS.success} />
+                      <Text style={{ fontSize: 12, fontWeight: '700', color: COLORS.success }}>
+                        Đã có ảnh
+                      </Text>
+                    </View>
+                  )}
                 </View>
 
                 <TouchableOpacity
                   activeOpacity={0.8}
-                  onPress={() => handleSimulatePhoto('front')}
+                  onPress={() => openPickerModal('front')}
                   style={{
-                    height: 140,
+                    height: 160,
                     borderRadius: 14,
                     borderWidth: 2,
                     borderStyle: frontImage ? 'solid' : 'dashed',
-                    borderColor: frontImage ? COLORS.success : COLORS.gray[300],
-                    backgroundColor: frontImage ? '#ECFDF5' : COLORS.gray[50],
+                    borderColor: frontImage ? COLORS.primary : COLORS.gray[300],
+                    backgroundColor: frontImage ? '#FFFFFF' : COLORS.gray[50],
                     alignItems: 'center',
                     justifyContent: 'center',
-                    gap: 8,
                     overflow: 'hidden',
                   }}
                 >
                   {frontImage ? (
-                    <View style={{ alignItems: 'center', gap: 4 }}>
-                      <CheckCircle2 size={32} color={COLORS.success} />
-                      <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.success }}>
-                        Đã tải ảnh mặt trước
-                      </Text>
-                      <Text style={{ fontSize: 11, color: COLORS.gray[500] }}>Bấm để chụp lại</Text>
+                    <View style={{ width: '100%', height: '100%', position: 'relative' }}>
+                      <Image
+                        source={{ uri: frontImage }}
+                        style={{ width: '100%', height: '100%' }}
+                        resizeMode="cover"
+                      />
+                      <View
+                        style={{
+                          position: 'absolute',
+                          bottom: 0,
+                          left: 0,
+                          right: 0,
+                          backgroundColor: 'rgba(0,0,0,0.6)',
+                          paddingVertical: 6,
+                          alignItems: 'center',
+                        }}
+                      >
+                        <Text style={{ color: '#fff', fontSize: 12, fontWeight: '700' }}>
+                          Bấm để đổi ảnh khác
+                        </Text>
+                      </View>
                     </View>
                   ) : (
-                    <>
-                      <Camera size={28} color={COLORS.primary} />
+                    <View style={{ alignItems: 'center', gap: 8 }}>
+                      <View
+                        style={{
+                          width: 48,
+                          height: 48,
+                          borderRadius: 24,
+                          backgroundColor: COLORS.primaryLight,
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                      >
+                        <Camera size={24} color={COLORS.primary} />
+                      </View>
                       <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.gray[700] }}>
-                        Bấm để chụp / tải ảnh mặt trước
+                        Chụp hoặc chọn ảnh mặt trước
                       </Text>
-                    </>
+                    </View>
                   )}
                 </TouchableOpacity>
               </Card>
@@ -388,40 +492,72 @@ export default function KycScreen() {
                   <Text style={{ fontSize: 14, fontWeight: '800', color: COLORS.gray[900] }}>
                     3. Mặt sau CCCD/CMND *
                   </Text>
-                  {backImage && <Check size={18} color={COLORS.success} />}
+                  {backImage && (
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                      <Check size={16} color={COLORS.success} />
+                      <Text style={{ fontSize: 12, fontWeight: '700', color: COLORS.success }}>
+                        Đã có ảnh
+                      </Text>
+                    </View>
+                  )}
                 </View>
 
                 <TouchableOpacity
                   activeOpacity={0.8}
-                  onPress={() => handleSimulatePhoto('back')}
+                  onPress={() => openPickerModal('back')}
                   style={{
-                    height: 140,
+                    height: 160,
                     borderRadius: 14,
                     borderWidth: 2,
                     borderStyle: backImage ? 'solid' : 'dashed',
-                    borderColor: backImage ? COLORS.success : COLORS.gray[300],
-                    backgroundColor: backImage ? '#ECFDF5' : COLORS.gray[50],
+                    borderColor: backImage ? COLORS.primary : COLORS.gray[300],
+                    backgroundColor: backImage ? '#FFFFFF' : COLORS.gray[50],
                     alignItems: 'center',
                     justifyContent: 'center',
-                    gap: 8,
                     overflow: 'hidden',
                   }}
                 >
                   {backImage ? (
-                    <View style={{ alignItems: 'center', gap: 4 }}>
-                      <CheckCircle2 size={32} color={COLORS.success} />
-                      <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.success }}>
-                        Đã tải ảnh mặt sau
-                      </Text>
-                      <Text style={{ fontSize: 11, color: COLORS.gray[500] }}>Bấm để chụp lại</Text>
+                    <View style={{ width: '100%', height: '100%', position: 'relative' }}>
+                      <Image
+                        source={{ uri: backImage }}
+                        style={{ width: '100%', height: '100%' }}
+                        resizeMode="cover"
+                      />
+                      <View
+                        style={{
+                          position: 'absolute',
+                          bottom: 0,
+                          left: 0,
+                          right: 0,
+                          backgroundColor: 'rgba(0,0,0,0.6)',
+                          paddingVertical: 6,
+                          alignItems: 'center',
+                        }}
+                      >
+                        <Text style={{ color: '#fff', fontSize: 12, fontWeight: '700' }}>
+                          Bấm để đổi ảnh khác
+                        </Text>
+                      </View>
                     </View>
                   ) : (
-                    <>
-                      <Camera size={28} color={COLORS.primary} />
+                    <View style={{ alignItems: 'center', gap: 8 }}>
+                      <View
+                        style={{
+                          width: 48,
+                          height: 48,
+                          borderRadius: 24,
+                          backgroundColor: COLORS.primaryLight,
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                      >
+                        <Camera size={24} color={COLORS.primary} />
+                      </View>
                       <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.gray[700] }}>
-                        Bấm để chụp / tải ảnh mặt sau
+                        Chụp hoặc chọn ảnh mặt sau
                       </Text>
-                    </>
+                    </View>
                   )}
                 </TouchableOpacity>
               </Card>
@@ -438,40 +574,72 @@ export default function KycScreen() {
                   <Text style={{ fontSize: 14, fontWeight: '800', color: COLORS.gray[900] }}>
                     4. Ảnh chân dung selfie cầm CCCD *
                   </Text>
-                  {selfieImage && <Check size={18} color={COLORS.success} />}
+                  {selfieImage && (
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                      <Check size={16} color={COLORS.success} />
+                      <Text style={{ fontSize: 12, fontWeight: '700', color: COLORS.success }}>
+                        Đã có ảnh
+                      </Text>
+                    </View>
+                  )}
                 </View>
 
                 <TouchableOpacity
                   activeOpacity={0.8}
-                  onPress={() => handleSimulatePhoto('selfie')}
+                  onPress={() => openPickerModal('selfie')}
                   style={{
-                    height: 140,
+                    height: 160,
                     borderRadius: 14,
                     borderWidth: 2,
                     borderStyle: selfieImage ? 'solid' : 'dashed',
-                    borderColor: selfieImage ? COLORS.success : COLORS.gray[300],
-                    backgroundColor: selfieImage ? '#ECFDF5' : COLORS.gray[50],
+                    borderColor: selfieImage ? COLORS.primary : COLORS.gray[300],
+                    backgroundColor: selfieImage ? '#FFFFFF' : COLORS.gray[50],
                     alignItems: 'center',
                     justifyContent: 'center',
-                    gap: 8,
                     overflow: 'hidden',
                   }}
                 >
                   {selfieImage ? (
-                    <View style={{ alignItems: 'center', gap: 4 }}>
-                      <CheckCircle2 size={32} color={COLORS.success} />
-                      <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.success }}>
-                        Đã chụp ảnh chân dung
-                      </Text>
-                      <Text style={{ fontSize: 11, color: COLORS.gray[500] }}>Bấm để chụp lại</Text>
+                    <View style={{ width: '100%', height: '100%', position: 'relative' }}>
+                      <Image
+                        source={{ uri: selfieImage }}
+                        style={{ width: '100%', height: '100%' }}
+                        resizeMode="cover"
+                      />
+                      <View
+                        style={{
+                          position: 'absolute',
+                          bottom: 0,
+                          left: 0,
+                          right: 0,
+                          backgroundColor: 'rgba(0,0,0,0.6)',
+                          paddingVertical: 6,
+                          alignItems: 'center',
+                        }}
+                      >
+                        <Text style={{ color: '#fff', fontSize: 12, fontWeight: '700' }}>
+                          Bấm để đổi ảnh khác
+                        </Text>
+                      </View>
                     </View>
                   ) : (
-                    <>
-                      <Camera size={28} color={COLORS.primary} />
+                    <View style={{ alignItems: 'center', gap: 8 }}>
+                      <View
+                        style={{
+                          width: 48,
+                          height: 48,
+                          borderRadius: 24,
+                          backgroundColor: COLORS.primaryLight,
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                      >
+                        <Camera size={24} color={COLORS.primary} />
+                      </View>
                       <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.gray[700] }}>
-                        Bấm để chụp ảnh selfie cầm CCCD
+                        Chụp ảnh selfie chân dung
                       </Text>
-                    </>
+                    </View>
                   )}
                 </TouchableOpacity>
               </Card>
@@ -487,6 +655,183 @@ export default function KycScreen() {
           )}
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* ── Modal Bottom Sheet: Lựa chọn nguồn ảnh ───────────────────── */}
+      <Modal
+        visible={pickerModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setPickerModalVisible(false)}
+      >
+        <TouchableOpacity
+          activeOpacity={1}
+          onPress={() => setPickerModalVisible(false)}
+          style={{
+            flex: 1,
+            backgroundColor: 'rgba(0,0,0,0.5)',
+            justifyContent: 'flex-end',
+          }}
+        >
+          <TouchableOpacity
+            activeOpacity={1}
+            style={{
+              backgroundColor: '#fff',
+              borderTopLeftRadius: 24,
+              borderTopRightRadius: 24,
+              padding: 20,
+              paddingBottom: Math.max(insets.bottom + 10, 24),
+              gap: 12,
+            }}
+          >
+            <View
+              style={{
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: 8,
+              }}
+            >
+              <View>
+                <Text style={{ fontSize: 17, fontWeight: '800', color: COLORS.gray[900] }}>
+                  Tải ảnh {getTargetTitle()}
+                </Text>
+                <Text style={{ fontSize: 12.5, color: COLORS.gray[500], marginTop: 2 }}>
+                  Chọn phương thức cung cấp ảnh
+                </Text>
+              </View>
+              <TouchableOpacity
+                onPress={() => setPickerModalVisible(false)}
+                style={{
+                  width: 32,
+                  height: 32,
+                  borderRadius: 16,
+                  backgroundColor: COLORS.gray[100],
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <X size={18} color={COLORS.gray[600]} />
+              </TouchableOpacity>
+            </View>
+
+            {/* Nút 1: Chụp ảnh trực tiếp từ Camera */}
+            <TouchableOpacity
+              activeOpacity={0.75}
+              onPress={handleTakePhoto}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 14,
+                padding: 14,
+                borderRadius: 14,
+                backgroundColor: COLORS.gray[50],
+                borderWidth: 1,
+                borderColor: COLORS.gray[200],
+              }}
+            >
+              <View
+                style={{
+                  width: 44,
+                  height: 44,
+                  borderRadius: 12,
+                  backgroundColor: COLORS.primaryLight,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <Camera size={22} color={COLORS.primary} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 15, fontWeight: '700', color: COLORS.gray[900] }}>
+                  Chụp ảnh trực tiếp (Camera)
+                </Text>
+                <Text style={{ fontSize: 12, color: COLORS.gray[500], marginTop: 2 }}>
+                  Mở máy ảnh thiết bị để chụp ảnh ngay
+                </Text>
+              </View>
+              <ChevronRight size={18} color={COLORS.gray[400]} />
+            </TouchableOpacity>
+
+            {/* Nút 2: Chọn ảnh từ Thư viện */}
+            <TouchableOpacity
+              activeOpacity={0.75}
+              onPress={handlePickFromLibrary}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 14,
+                padding: 14,
+                borderRadius: 14,
+                backgroundColor: COLORS.gray[50],
+                borderWidth: 1,
+                borderColor: COLORS.gray[200],
+              }}
+            >
+              <View
+                style={{
+                  width: 44,
+                  height: 44,
+                  borderRadius: 12,
+                  backgroundColor: '#EFF6FF',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <ImageIcon size={22} color="#2563EB" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 15, fontWeight: '700', color: COLORS.gray[900] }}>
+                  Chọn từ Thư viện ảnh
+                </Text>
+                <Text style={{ fontSize: 12, color: COLORS.gray[500], marginTop: 2 }}>
+                  Tải lên ảnh có sẵn trong thư viện
+                </Text>
+              </View>
+              <ChevronRight size={18} color={COLORS.gray[400]} />
+            </TouchableOpacity>
+
+            {/* Nút 3: Ảnh mẫu chỉ dùng khi phát triển — bản release không được nộp ảnh stock */}
+            {__DEV__ && (
+              <TouchableOpacity
+                activeOpacity={0.75}
+                onPress={handleUseSamplePhoto}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 14,
+                  padding: 14,
+                  borderRadius: 14,
+                  backgroundColor: '#F5F3FF',
+                  borderWidth: 1,
+                  borderColor: '#DDD6FE',
+                }}
+              >
+                <View
+                  style={{
+                    width: 44,
+                    height: 44,
+                    borderRadius: 12,
+                    backgroundColor: '#EDE9FE',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <Sparkles size={22} color="#7C3AED" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 15, fontWeight: '700', color: '#5B21B6' }}>
+                    Dùng ảnh mẫu thử nghiệm (Test nhanh)
+                  </Text>
+                  <Text style={{ fontSize: 12, color: '#7C3AED', marginTop: 2 }}>
+                    Tự động điền ảnh chuẩn để nộp duyệt nhanh
+                  </Text>
+                </View>
+                <ChevronRight size={18} color="#A78BFA" />
+              </TouchableOpacity>
+            )}
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
     </View>
   );
 }

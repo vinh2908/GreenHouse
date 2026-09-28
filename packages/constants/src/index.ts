@@ -162,9 +162,13 @@ export const NOTIFICATION_TYPES = {
   NEW_JOB_NEARBY: 'new_job_nearby',
   QUOTE_ACCEPTED: 'quote_accepted',
   QUOTE_REJECTED: 'quote_rejected',
+  KYC_APPROVED: 'kyc_approved',
+  KYC_REJECTED: 'kyc_rejected',
+  WITHDRAWAL_PROCESSED: 'withdrawal_processed',
   // Common
   PAYMENT_SUCCESS: 'payment_success',
   REVIEW_RECEIVED: 'review_received',
+  NEW_MESSAGE: 'new_message',
   PROMOTION: 'promotion',
   SYSTEM: 'system',
 } as const;

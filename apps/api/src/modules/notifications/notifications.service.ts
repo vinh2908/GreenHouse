@@ -1,4 +1,4 @@
-import { Injectable, Inject, forwardRef } from '@nestjs/common';
+import { Injectable, Inject, NotFoundException, forwardRef } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Notification, NotificationDocument } from './schemas/notification.schema';
@@ -54,13 +54,15 @@ export class NotificationsService {
   }
 
   async markRead(userId: string, notificationId: string) {
-    return this.notificationModel
+    const notification = await this.notificationModel
       .findOneAndUpdate(
         { _id: new Types.ObjectId(notificationId), user_id: new Types.ObjectId(userId) },
         { is_read: true },
         { new: true },
       )
       .exec();
+    if (!notification) throw new NotFoundException('Thông báo không tồn tại');
+    return notification;
   }
 
   async markAllRead(userId: string) {
@@ -75,6 +77,68 @@ export class NotificationsService {
         user_id: new Types.ObjectId(userId),
         is_read: false,
       })
+      .exec();
+  }
+
+  // System message to every active user, pushed live to everyone connected.
+  async broadcastAll(userIds: Types.ObjectId[], title: string, body: string) {
+    await this.notificationModel.insertMany(
+      userIds.map(id => ({
+        user_id: id,
+        type: NOTIFICATION_TYPES.SYSTEM,
+        title,
+        body,
+        is_read: false,
+      })),
+    );
+    this.gateway.server?.emit(SOCKET_EVENTS.NOTIFICATION_NEW, {
+      type: NOTIFICATION_TYPES.SYSTEM,
+      title,
+      body,
+      is_read: false,
+      created_at: new Date(),
+    });
+    return { sent: userIds.length };
+  }
+
+  // One unread notification per conversation: a new message replaces the previous
+  // unread one (so it moves to the top) instead of piling up one per message.
+  async notifyChatMessage(
+    recipientId: string,
+    senderName: string,
+    preview: string,
+    conversationId: string,
+    jobId?: string,
+  ) {
+    const body = `${senderName}: ${preview.length > 80 ? preview.slice(0, 77) + '…' : preview}`;
+    await this.notificationModel
+      .deleteOne({
+        user_id: new Types.ObjectId(recipientId),
+        type: NOTIFICATION_TYPES.NEW_MESSAGE,
+        is_read: false,
+        'data.conversation_id': conversationId,
+      })
+      .exec();
+    return this.create({
+      userId: recipientId,
+      type: NOTIFICATION_TYPES.NEW_MESSAGE,
+      title: 'Tin nhắn mới',
+      body,
+      payload: { conversation_id: conversationId, job_id: jobId },
+    });
+  }
+
+  async markConversationRead(userId: string, conversationId: string) {
+    await this.notificationModel
+      .updateMany(
+        {
+          user_id: new Types.ObjectId(userId),
+          type: NOTIFICATION_TYPES.NEW_MESSAGE,
+          is_read: false,
+          'data.conversation_id': conversationId,
+        },
+        { is_read: true },
+      )
       .exec();
   }
 

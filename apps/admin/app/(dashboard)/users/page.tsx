@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useState } from 'react';
 import { useAdminUsers, useSuspendUser, useActivateUser } from '@/hooks/use-admin';
 import {
@@ -136,7 +137,9 @@ export default function UsersPage() {
                     <TableRow key={user._id}>
                       <TableCell>
                         <div>
-                          <p className="font-medium">{user.full_name}</p>
+                          <Link href={`/users/${user._id}`} className="font-medium hover:underline">
+                            {user.full_name}
+                          </Link>
                           {user.email && (
                             <p className="text-xs text-muted-foreground">{user.email}</p>
                           )}

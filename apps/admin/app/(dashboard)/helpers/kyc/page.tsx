@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useState } from 'react';
 import { usePendingKyc, useApproveKyc, useRejectKyc } from '@/hooks/use-admin';
 import {
@@ -74,7 +75,16 @@ export default function KycPendingPage() {
                     <>
                       <TableRow key={h._id}>
                         <TableCell>
-                          <p className="font-medium">{h.user_id?.full_name ?? '—'}</p>
+                          {h.user_id ? (
+                            <Link
+                              href={`/users/${h.user_id._id}`}
+                              className="font-medium hover:underline"
+                            >
+                              {h.user_id.full_name}
+                            </Link>
+                          ) : (
+                            <p className="font-medium">—</p>
+                          )}
                         </TableCell>
                         <TableCell className="font-mono text-sm">
                           {h.user_id?.phone ?? '—'}

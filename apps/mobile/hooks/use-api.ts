@@ -1,6 +1,7 @@
 // hooks/use-api.ts — TanStack Query hooks cho toàn bộ app
 import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query';
 import apiClient from '@/services/api-client';
+import { uploadFile, uploadFiles } from '@/services/upload.service';
 import Toast from 'react-native-toast-message';
 
 // ─── Auth ──────────────────────────────────────────────────────────────────────
@@ -135,7 +136,12 @@ export function useJobContract(jobId?: string) {
 export function useCreateJob() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (dto: unknown) => apiClient.post('/jobs', dto),
+    mutationFn: async (dto: any) =>
+      apiClient.post('/jobs', {
+        ...dto,
+        photos: await uploadFiles(dto?.photos),
+        videos: await uploadFiles(dto?.videos),
+      }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['jobs', 'my'] });
       qc.invalidateQueries({ queryKey: ['jobs'] });
@@ -158,7 +164,7 @@ export function useCreateSosJob() {
       address: any;
       surcharge?: number;
       photos?: string[];
-    }) => apiClient.post('/jobs/sos', dto),
+    }) => uploadFiles(dto.photos).then(photos => apiClient.post('/jobs/sos', { ...dto, photos })),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['jobs', 'my'] });
     },
@@ -309,11 +315,14 @@ export function useCompleteJob() {
       completion_videos?: string[];
       completion_notes?: string;
     }) =>
-      apiClient.patch(`/jobs/${jobId}/complete`, {
-        completion_photos,
-        completion_videos,
-        completion_notes,
-      }),
+      Promise.all([uploadFiles(completion_photos), uploadFiles(completion_videos)]).then(
+        ([photos, videos]) =>
+          apiClient.patch(`/jobs/${jobId}/complete`, {
+            completion_photos: photos,
+            completion_videos: videos,
+            completion_notes,
+          }),
+      ),
     onSuccess: (_, vars) => {
       qc.invalidateQueries({ queryKey: ['job', vars.jobId] });
       Toast.show({
@@ -353,7 +362,14 @@ export function useSubmitKyc() {
       id_card_front: string;
       id_card_back: string;
       selfie_photo: string;
-    }) => apiClient.post('/helpers/me/kyc', dto),
+    }) =>
+      Promise.all([
+        uploadFile(dto.id_card_front),
+        uploadFile(dto.id_card_back),
+        uploadFile(dto.selfie_photo),
+      ]).then(([id_card_front, id_card_back, selfie_photo]) =>
+        apiClient.post('/helpers/me/kyc', { ...dto, id_card_front, id_card_back, selfie_photo }),
+      ),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['helper', 'profile'] });
       Toast.show({

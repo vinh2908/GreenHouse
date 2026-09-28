@@ -93,8 +93,11 @@ export class JobsController {
 
   @Get(':jobId')
   @ApiOperation({ summary: 'Xem chi tiết job' })
-  async getJob(@Param('jobId') jobId: string) {
-    return this.jobsService.getJobById(jobId);
+  async getJob(
+    @Param('jobId') jobId: string,
+    @CurrentUser() user: { sub: string; roles: string[] },
+  ) {
+    return this.jobsService.getJobForUser(jobId, user.sub, user.roles ?? []);
   }
 
   // ─── Get quotes for job ───────────────────────────────────────────────────

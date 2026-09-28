@@ -34,6 +34,12 @@ export class User {
   @Prop({ type: String, enum: UserStatus, default: UserStatus.ACTIVE, index: true })
   status: UserStatus;
 
+  @Prop()
+  suspension_reason?: string;
+
+  @Prop()
+  suspended_at?: Date;
+
   @Prop({ default: false })
   is_verified: boolean;
 
