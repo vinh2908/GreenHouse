@@ -19,6 +19,7 @@ export interface IUser {
   email?: string;
   full_name: string;
   avatar?: string;
+  gender?: 'male' | 'female' | 'other';
   roles: UserRole[];
   active_role: UserRole;
   status: UserStatus;

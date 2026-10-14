@@ -1,7 +1,10 @@
 import { Tabs } from 'expo-router';
 import { CustomTabBar } from '@/components/common/custom-tab-bar';
+import { useHelperLocationSync } from '@/hooks/use-helper-location-sync';
 
 export default function HelperLayout() {
+  useHelperLocationSync();
+
   return (
     <Tabs
       tabBar={props => <CustomTabBar {...props} mode="helper" />}

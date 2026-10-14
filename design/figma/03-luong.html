@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="vi"><head><meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Green House – 03 Luồng sự kiện</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --primary: #22C55E; --primary-dark: #16A34A; --primary-light: #DCFCE7;
+    --secondary: #1A73E8; --success: #10B981; --warning: #F59E0B; --error: #EF4444;
+    --g50: #F9FAFB; --g100: #F3F4F6; --g200: #E5E7EB; --g300: #D1D5DB; --g400: #9CA3AF;
+    --g500: #6B7280; --g600: #4B5563; --g700: #374151; --g800: #1F2937; --g900: #111827;
+    --helper-bg: #FFFF99; --screen-bg: #F8F9FA;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Inter, system-ui, sans-serif; background: #E9EBEF; color: var(--g900); padding: 48px; }
+  h1.doc { font-size: 28px; font-weight: 800; margin-bottom: 6px; }
+  p.doc { color: var(--g500); font-size: 14px; margin-bottom: 36px; }
+  h2.group { font-size: 18px; font-weight: 800; margin: 40px 0 18px; }
+  .board { display: flex; flex-wrap: wrap; gap: 48px 40px; align-items: flex-start; }
+  .frame-wrap { display: flex; flex-direction: column; gap: 10px; }
+  .frame-name { font-size: 13px; font-weight: 600; color: var(--g600); }
+
+  /* ── Phone frame 375 × 812 ── */
+  .phone { width: 375px; height: 812px; background: var(--screen-bg); border-radius: 28px; overflow: hidden; position: relative; display: flex; flex-direction: column; box-shadow: 0 10px 30px rgba(0,0,0,.12); }
+  .statusbar { height: 44px; padding: 0 22px; display: flex; align-items: center; justify-content: space-between; font-size: 14px; font-weight: 600; flex: none; }
+  .statusbar .sys { display: flex; gap: 6px; align-items: center; }
+  .batt { width: 24px; height: 11px; border-radius: 3px; background: var(--g900); }
+  .body { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
+  .pad { padding: 16px; display: flex; flex-direction: column; gap: 14px; }
+  .row { display: flex; align-items: center; }
+  .between { justify-content: space-between; }
+  .card { background: #fff; border-radius: 18px; padding: 16px; box-shadow: 0 2px 8px rgba(17,24,39,.06); border: 1px solid rgba(17,24,39,.04); }
+  .btn { height: 52px; border-radius: 14px; background: var(--primary); color: #fff; font-weight: 800; font-size: 15px; display: flex; align-items: center; justify-content: center; gap: 8px; }
+  .btn.soft { background: var(--primary-light); color: var(--primary); border: 1.5px solid var(--primary); }
+  .btn.ghost { background: #F5F3FF; color: #5B21B6; border: 1px solid #DDD6FE; font-size: 13px; height: 46px; }
+  .btn.sm { height: 40px; font-size: 13.5px; padding: 0 18px; border-radius: 12px; }
+  .input { height: 50px; border-radius: 14px; border: 1.5px solid var(--g200); background: var(--g50); padding: 0 14px; display: flex; align-items: center; color: var(--g400); font-size: 15px; }
+  .label { font-size: 13px; font-weight: 700; color: var(--g700); margin-bottom: 6px; }
+  .muted { color: var(--g500); }
+  .chip { font-size: 12px; font-weight: 700; padding: 5px 10px; border-radius: 10px; }
+  .avatar { border-radius: 50%; background: linear-gradient(135deg, #94A3B8, #475569); color: #fff; font-weight: 800; display: flex; align-items: center; justify-content: center; flex: none; }
+  .iconbtn { width: 38px; height: 38px; border-radius: 12px; background: var(--g100); display: flex; align-items: center; justify-content: center; flex: none; position: relative; }
+  .dot { position: absolute; top: 7px; right: 8px; width: 7px; height: 7px; border-radius: 50%; background: var(--error); }
+  svg.i { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+  .header { background: #fff; padding: 10px 16px 14px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid var(--g100); flex: none; }
+  .header .title { font-size: 17px; font-weight: 800; }
+  .tabbar { height: 74px; background: #fff; border-top: 1px solid var(--g100); display: flex; flex: none; padding-bottom: 8px; }
+  .tab { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; font-size: 10.5px; font-weight: 600; color: var(--g400); }
+  .tab.on { color: var(--primary); font-weight: 800; }
+  .tab svg.i { width: 22px; height: 22px; }
+  .homebar { position: absolute; bottom: 7px; left: 50%; transform: translateX(-50%); width: 120px; height: 4px; border-radius: 2px; background: var(--g800); opacity: .7; }
+  .mapph { border-radius: 14px; border: 1.5px solid var(--g200); background: #E8EEF1; position: relative; overflow: hidden;
+    background-image: linear-gradient(115deg, transparent 46%, #fff 46%, #fff 49%, transparent 49%), linear-gradient(25deg, transparent 58%, #fff 58%, #fff 60.5%, transparent 60.5%), linear-gradient(160deg, transparent 30%, #F4E9A8 30%, #F4E9A8 33%, transparent 33%), linear-gradient(90deg, #DDE6EA 0 100%); }
+  .mapph .water { position: absolute; right: -30px; top: -20px; width: 150px; height: 130px; border-radius: 50%; background: #AAD3DF; }
+  .pin { position: absolute; left: 50%; top: 46%; transform: translate(-50%, -100%); color: var(--error); }
+  .pin svg { width: 30px; height: 30px; fill: var(--error); stroke: #fff; stroke-width: 1.5; }
+
+  /* ── Desktop frame 1440 × 900 (admin) ── */
+  .desk { width: 1440px; height: 900px; background: #F8FAFC; display: flex; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,.12); font-size: 14px; }
+  .side { width: 256px; background: #fff; border-right: 1px solid #E2E8F0; display: flex; flex-direction: column; flex: none; }
+  .side .brand { padding: 24px; border-bottom: 1px solid #E2E8F0; display: flex; gap: 12px; align-items: center; }
+  .side nav { padding: 12px; display: flex; flex-direction: column; gap: 4px; flex: 1; }
+  .nav { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 8px; font-weight: 600; color: #64748B; }
+  .nav.on { background: var(--primary-dark); color: #fff; }
+  .main { flex: 1; padding: 32px 40px; display: flex; flex-direction: column; gap: 24px; overflow: hidden; }
+  table { width: 100%; border-collapse: collapse; }
+  th { text-align: left; font-size: 13px; color: #64748B; font-weight: 600; padding: 12px 16px; border-bottom: 1px solid #E2E8F0; }
+  td { padding: 14px 16px; border-bottom: 1px solid #E2E8F0; }
+  .obtn { display: inline-flex; align-items: center; gap: 4px; height: 32px; padding: 0 12px; border-radius: 6px; border: 1px solid; font-size: 13px; font-weight: 600; background: #fff; }
+  .imgph { height: 250px; border-radius: 6px; border: 1px solid #E2E8F0; background: #171717; display: flex; align-items: center; justify-content: center; }
+  .idcard { width: 300px; height: 190px; border-radius: 10px; background: linear-gradient(135deg, #CFEFE3, #F3F0D2 60%, #CDE9F0); padding: 14px; display: flex; flex-direction: column; gap: 6px; color: #1F2937; font-size: 10px; }
+
+  .sec { margin-bottom: 44px; }
+  .sec > h2 { font-size: 20px; font-weight: 800; margin-bottom: 4px; }
+  .sec > p { font-size: 13px; color: var(--g500); margin-bottom: 18px; }
+  .grid { display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start; }
+  .comp { background: #fff; border-radius: 14px; padding: 18px; display: flex; flex-direction: column; gap: 12px; border: 1px solid #DDE1E7; }
+  .comp > .name { font-size: 11.5px; font-weight: 700; color: #7C3AED; font-family: ui-monospace, Consolas, monospace; }
+  .comp > .note { font-size: 11.5px; color: var(--g500); max-width: 340px; line-height: 1.45; }
+  .vars { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+  .sw { width: 132px; }
+  .sw .c { height: 64px; border-radius: 12px; border: 1px solid rgba(0,0,0,.06); }
+  .sw b { display: block; font-size: 12.5px; margin-top: 6px; }
+  .sw span { font-size: 11.5px; color: var(--g500); font-family: ui-monospace, Consolas, monospace; }
+  /* flows */
+  .flow { background: #fff; border-radius: 16px; border: 1px solid #DDE1E7; padding: 20px 22px; margin-bottom: 28px; }
+  .flow h3 { font-size: 17px; font-weight: 800; }
+  .flow > p { font-size: 12.5px; color: var(--g500); margin: 2px 0 16px; }
+  .lane { display: flex; align-items: stretch; border-top: 1px dashed #D5DAE1; }
+  .lane .who { width: 108px; flex: none; font-size: 12px; font-weight: 800; padding: 14px 10px 14px 0; display: flex; align-items: center; gap: 6px; }
+  .lane .steps { display: flex; align-items: center; gap: 8px; padding: 12px 0; flex-wrap: wrap; }
+  .step { border-radius: 10px; padding: 9px 12px; font-size: 12.5px; font-weight: 600; line-height: 1.3; max-width: 190px; border: 1.5px solid; }
+  .step small { display: block; font-weight: 500; font-size: 11px; opacity: .8; margin-top: 2px; }
+  .step.k { background: #EEF4FE; border-color: #BFD4FA; color: #1E3A8A; }
+  .step.t { background: #FEFCE8; border-color: #EAD98A; color: #713F12; }
+  .step.s { background: #F3F4F6; border-color: #D1D5DB; color: #374151; }
+  .step.a { background: #F5F3FF; border-color: #D4C8FB; color: #4C1D95; }
+  .step.end { background: #DCFCE7; border-color: #86EFAC; color: #166534; }
+  .step.bad { background: #FEF2F2; border-color: #FCA5A5; color: #991B1B; }
+  .arr { color: var(--g400); font-weight: 800; font-size: 16px; }
+  .st { display: inline-block; font-family: ui-monospace, Consolas, monospace; font-size: 10.5px; background: #111827; color: #fff; border-radius: 6px; padding: 1px 6px; margin-top: 4px; }
+  .legend { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 26px; }
+</style></head>
+<body>
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <symbol id="arrow-left" viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"/></symbol>
+    <symbol id="bell" viewBox="0 0 24 24"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10.3 21a1.94 1.94 0 0 0 3.4 0"/></symbol>
+    <symbol id="map-pin" viewBox="0 0 24 24"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></symbol>
+    <symbol id="search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></symbol>
+    <symbol id="chev" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></symbol>
+    <symbol id="shield" viewBox="0 0 24 24"><path d="M20 13c0 5-3.5 7.5-8 9-4.500-1.500-8-4-8-9V5l8-3 8 3Z"/><path d="m9 12 2 2 4-4"/></symbol>
+    <symbol id="home" viewBox="0 0 24 24"><path d="M3 10.500 12 3l9 7.500V20a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1Z"/></symbol>
+    <symbol id="list" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M9 5v14M15 5v14"/></symbol>
+    <symbol id="trend" viewBox="0 0 24 24"><path d="m22 7-8.500 8.500-5-5L2 17"/><path d="M16 7h6v6"/></symbol>
+    <symbol id="user" viewBox="0 0 24 24"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></symbol>
+    <symbol id="plus" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></symbol>
+    <symbol id="chat" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2Z"/></symbol>
+    <symbol id="clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+    <symbol id="camera" viewBox="0 0 24 24"><path d="M14.500 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3Z"/><circle cx="12" cy="13" r="3"/></symbol>
+    <symbol id="nav" viewBox="0 0 24 24"><path d="m3 11 19-9-9 19-2-8Z"/></symbol>
+    <symbol id="x" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></symbol>
+    <symbol id="check" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m9 12 2 2 4-4"/></symbol>
+    <symbol id="xc" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m15 9-6 6M9 9l6 6"/></symbol>
+    <symbol id="grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></symbol>
+    <symbol id="users" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.870M16 3.130a4 4 0 0 1 0 7.750"/></symbol>
+    <symbol id="brief" viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></symbol>
+    <symbol id="wrench" viewBox="0 0 24 24"><path d="M14.700 6.300a4 4 0 0 0 5 5L22 13.600l-8.400 8.400a2.100 2.100 0 0 1-3-3L19 10.600"/><path d="M14.700 6.300 11 2.600 2.600 11l3.700 3.700"/></symbol>
+    <symbol id="cardi" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></symbol>
+    <symbol id="star" viewBox="0 0 24 24"><path d="m12 2 3.100 6.300 6.900 1-5 4.900 1.200 6.800-6.200-3.200L5.800 21 7 14.200 2 9.300l6.900-1Z"/></symbol>
+    <symbol id="chart" viewBox="0 0 24 24"><path d="M3 3v18h18M8 17v-5M13 17V7M18 17v-8"/></symbol>
+    <symbol id="mega" viewBox="0 0 24 24"><path d="m3 11 18-5v12L3 14v-3ZM11.600 16.800a3 3 0 1 1-5.800-1.600"/></symbol>
+  </defs>
+</svg>
+<h1 class="doc">Green House – 03 Luồng sự kiện</h1>
+<p class="doc">Mỗi hàng là một vai trò, đọc từ trái sang phải. Dùng làm bản đồ để nối prototype giữa các màn hình.</p>
+
+<div class="legend"><div class="step k">Khách hàng</div><div class="step t">Thợ / Đối tác</div><div class="step s">Hệ thống</div><div class="step a">Admin</div><div class="step end">Kết thúc tốt</div><div class="step bad">Nhánh lỗi / huỷ</div><div class="step s" style="border-style:dashed">Nhãn đen = trạng thái lưu trong hệ thống<div class="st">status</div></div></div>
+
+<div class="flow"><h3>1 · Vào app & xác thực tài khoản</h3><p>Màn hình: Chào → Đăng nhập / Đăng ký → OTP → Chọn vai trò.</p><div class="lane"><div class="who">👤 Người dùng</div><div class="steps"><div class="step k">Mở app<small>Màn hình chào</small></div><span class="arr">→</span><div class="step k">Đăng nhập<small>SĐT + mật khẩu</small></div><span class="arr">→</span><div class="step end">Vào trang chính<small>Khách: Trang chủ · Thợ: Tổng quan</small></div></div></div><div class="lane"><div class="who">👤 Người mới</div><div class="steps"><div class="step k">Đăng ký<small>Họ tên, SĐT, mật khẩu</small></div><span class="arr">→</span><div class="step k">Nhập OTP</div><span class="arr">→</span><div class="step k">Chọn vai trò<small>Khách hàng / Thợ</small></div><span class="arr">→</span><div class="step end">Vào trang chính</div></div></div><div class="lane"><div class="who">⚙️ Hệ thống</div><div class="steps"><div class="step s">Kiểm tra thông tin</div><span class="arr">→</span><div class="step s">Cấp phiên đăng nhập<small>Tự làm mới khi hết hạn</small></div><span class="arr">→</span><div class="step bad">Sai thông tin<small>Báo lỗi, ở lại màn hình</small></div></div></div></div>
+
+<div class="flow"><h3>2 · Đặt việc thường: báo giá → chọn thợ → nghiệm thu</h3><p>Luồng chính của sản phẩm. Thứ tự trạng thái lấy từ JobStatus trong packages/types.</p><div class="lane"><div class="who">🙋 Khách</div><div class="steps"><div class="step k">Đăng yêu cầu<small>5 bước: dịch vụ, mô tả, địa chỉ, thời gian, xác nhận</small><div class="st">open</div></div><span class="arr">→</span><div class="step k">Xem danh sách báo giá<small>Xếp theo khoảng cách, sao, giá</small></div><span class="arr">→</span><div class="step k">Chấp nhận một thợ<div class="st">confirmed</div></div><span class="arr">→</span><div class="step k">Theo dõi thợ</div><span class="arr">→</span><div class="step k">Nghiệm thu<small>Xem ảnh hoàn thành</small><div class="st">completed</div></div><span class="arr">→</span><div class="step k">Thanh toán</div><span class="arr">→</span><div class="step end">Đánh giá thợ</div></div></div><div class="lane"><div class="who">🔧 Thợ</div><div class="steps"><div class="step t">Thấy đơn gần mình<small>Tab Nhận việc</small></div><span class="arr">→</span><div class="step t">Gửi báo giá<small>Giá công, ghi chú</small><div class="st">receiving_quotes</div></div><span class="arr">→</span><div class="step t">Đang đến<div class="st">helper_on_the_way</div></div><span class="arr">→</span><div class="step t">Đã đến nơi<div class="st">helper_arrived</div></div><span class="arr">→</span><div class="step t">Bắt đầu làm<div class="st">in_progress</div></div><span class="arr">→</span><div class="step t">Báo hoàn thành<small>Ảnh / video kết quả</small><div class="st">pending_review</div></div></div></div><div class="lane"><div class="who">⚙️ Hệ thống</div><div class="steps"><div class="step s">Lưu vị trí thợ<small>GPS hoặc điểm ghim</small></div><span class="arr">→</span><div class="step s">Tính quãng đường & thời gian đến</div><span class="arr">→</span><div class="step s">Tạo hợp đồng<small>Khi khách chọn thợ</small></div><span class="arr">→</span><div class="step s">Mở khung chat</div><span class="arr">→</span><div class="step s">Gửi thông báo mỗi bước</div><span class="arr">→</span><div class="step s">Cộng tiền vào ví thợ</div></div></div><div class="lane"><div class="who">⚠️ Nhánh khác</div><div class="steps"><div class="step bad">Khách hủy yêu cầu<div class="st">cancelled</div></div><span class="arr">→</span><div class="step bad">Khiếu nại<small>Không đồng ý nghiệm thu</small><div class="st">disputed</div></div><span class="arr">→</span><div class="step bad">Hoàn tiền<div class="st">refunded</div></div></div></div></div>
+
+<div class="flow"><h3>3 · Cứu hộ khẩn cấp SOS</h3><p>Không qua báo giá: thợ nào nhận trước thì được đơn.</p><div class="lane"><div class="who">🙋 Khách</div><div class="steps"><div class="step k">Bấm SOS<small>Chọn loại sự cố, địa chỉ, ảnh</small></div><span class="arr">→</span><div class="step k">Chờ thợ nhận</div><span class="arr">→</span><div class="step k">Theo dõi thợ trên bản đồ</div><span class="arr">→</span><div class="step end">Nghiệm thu & thanh toán</div></div></div><div class="lane"><div class="who">⚙️ Hệ thống</div><div class="steps"><div class="step s">Tạo đơn SOS<small>Có phụ phí</small><div class="st">open</div></div><span class="arr">→</span><div class="step s">Phát tới mọi thợ đang online đã e-KYC</div><span class="arr">→</span><div class="step s">Chốt cho thợ nhận đầu tiên<small>Thợ sau nhận thông báo "đã có thợ khác nhận"</small><div class="st">confirmed</div></div></div></div><div class="lane"><div class="who">🔧 Thợ</div><div class="steps"><div class="step t">Nhận cảnh báo SOS<small>Hiện trên Tổng quan</small></div><span class="arr">→</span><div class="step t">Bấm nhận đơn</div><span class="arr">→</span><div class="step t">Di chuyển → làm → báo hoàn thành</div></div></div></div>
+
+<div class="flow"><h3>4 · Thợ: đăng ký → e-KYC → bật nhận việc</h3><p>Trạng thái lấy từ VerificationStatus và HelperStatus.</p><div class="lane"><div class="who">🔧 Thợ</div><div class="steps"><div class="step t">Chọn vai trò Thợ</div><span class="arr">→</span><div class="step t">Nộp hồ sơ e-KYC<small>Số CCCD, ảnh 2 mặt, ảnh chân dung</small><div class="st">pending</div></div><span class="arr">→</span><div class="step t">Chờ duyệt</div><span class="arr">→</span><div class="step t">Bật nhận việc<div class="st">online</div></div><span class="arr">→</span><div class="step end">Thấy đơn & gửi báo giá</div></div></div><div class="lane"><div class="who">🛡️ Admin</div><div class="steps"><div class="step a">Mở Duyệt e-KYC Thợ</div><span class="arr">→</span><div class="step a">Xem 3 ảnh<small>Phóng to để đối chiếu</small></div><span class="arr">→</span><div class="step a">Duyệt<div class="st">approved</div></div><span class="arr">→</span><div class="step bad">Từ chối + lý do<div class="st">rejected</div></div></div></div><div class="lane"><div class="who">⚙️ Hệ thống</div><div class="steps"><div class="step s">Lưu ảnh gốc, không nén</div><span class="arr">→</span><div class="step s">Gửi thông báo kết quả</div><span class="arr">→</span><div class="step s">Bị từ chối → thợ nộp lại</div><span class="arr">→</span><div class="step s">Đang làm đơn → tạm ngừng nhận SOS<div class="st">busy</div></div></div></div></div>
+
+<div class="flow"><h3>5 · Thu nhập & rút tiền</h3><p>Tiền về ví sau khi đơn hoàn thành; rút tiền cần admin duyệt.</p><div class="lane"><div class="who">🔧 Thợ</div><div class="steps"><div class="step t">Xem ví thu nhập<small>Tab Thu nhập</small></div><span class="arr">→</span><div class="step t">Liên kết tài khoản ngân hàng</div><span class="arr">→</span><div class="step t">Yêu cầu rút tiền</div><span class="arr">→</span><div class="step end">Nhận tiền</div></div></div><div class="lane"><div class="who">🛡️ Admin</div><div class="steps"><div class="step a">Mở Thanh toán & Rút tiền</div><span class="arr">→</span><div class="step a">Duyệt yêu cầu rút</div><span class="arr">→</span><div class="step bad">Từ chối yêu cầu</div></div></div><div class="lane"><div class="who">⚙️ Hệ thống</div><div class="steps"><div class="step s">Ghi giao dịch vào ví</div><span class="arr">→</span><div class="step s">Thông báo kết quả cho thợ</div></div></div></div>
+
+<div class="flow"><h3>6 · Admin: các phân hệ</h3><p>Mỗi phân hệ là một mục trên thanh bên của trang quản trị.</p><div class="lane"><div class="who">🛡️ Người & hồ sơ</div><div class="steps"><div class="step a">Quản lý Người dùng<small>Tìm, khoá / mở tài khoản</small></div><span class="arr">→</span><div class="step a">Đối tác Thợ & Giúp việc</div><span class="arr">→</span><div class="step a">Duyệt e-KYC Thợ</div></div></div><div class="lane"><div class="who">🛡️ Vận hành</div><div class="steps"><div class="step a">Quản lý Đơn hàng<small>Danh sách, chi tiết đơn</small></div><span class="arr">→</span><div class="step a">Dịch vụ & Phí</div><span class="arr">→</span><div class="step a">Đánh giá & Phản hồi</div></div></div><div class="lane"><div class="who">🛡️ Tiền & số liệu</div><div class="steps"><div class="step a">Thanh toán & Rút tiền</div><span class="arr">→</span><div class="step a">Thống kê & Báo cáo</div><span class="arr">→</span><div class="step a">Gửi thông báo</div></div></div></div>
+
+</body></html>

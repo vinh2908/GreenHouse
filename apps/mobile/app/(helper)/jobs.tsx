@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, RefreshControl } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { ChevronRight, MapPin, Clock } from 'lucide-react-native';
+import { ChevronRight, MapPin, Clock, Navigation } from 'lucide-react-native';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import 'dayjs/locale/vi';
@@ -53,11 +53,11 @@ export default function HelperJobsScreen() {
   const insets = useSafeAreaInsets();
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#F8F9FA' }}>
+    <View style={{ flex: 1, backgroundColor: '#FFFF99' }}>
       {/* Header */}
       <View
         style={{
-          backgroundColor: '#fff',
+          backgroundColor: '#FFFF99',
           borderBottomWidth: 1,
           borderBottomColor: COLORS.gray[100],
           paddingHorizontal: 20,
@@ -76,7 +76,7 @@ export default function HelperJobsScreen() {
       {/* Tabs */}
       <View
         style={{
-          backgroundColor: '#fff',
+          backgroundColor: '#FFFF99',
           borderBottomWidth: 1,
           borderBottomColor: COLORS.gray[100],
         }}
@@ -182,6 +182,8 @@ export default function HelperJobsScreen() {
               total_quotes_count: number;
               created_at: string;
               preferred_time_start?: string;
+              distance_km?: number;
+              estimated_minutes?: number;
             }) => (
               <TouchableOpacity
                 key={job._id}
@@ -226,6 +228,14 @@ export default function HelperJobsScreen() {
                         {job.address?.district ?? 'Quận 1'}
                       </Text>
                     </View>
+                    {job.distance_km != null && (
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
+                        <Navigation size={13} color={COLORS.primary} />
+                        <Text style={{ fontSize: 12, color: COLORS.primary, fontWeight: '700' }}>
+                          {job.distance_km} km ~ {job.estimated_minutes ?? '?'} phút
+                        </Text>
+                      </View>
+                    )}
                     {job.preferred_time_start && (
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
                         <Clock size={13} color={COLORS.gray[400]} />

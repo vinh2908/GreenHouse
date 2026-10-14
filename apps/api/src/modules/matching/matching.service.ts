@@ -63,20 +63,20 @@ export class MatchingService {
   ): { score: number; distance_km: number; reasons: string[] } {
     const reasons: string[] = [];
 
-    // 1. Tọa độ & Khoảng cách
-    const jobCoords = job.address?.location?.coordinates || [106.6983, 10.7725]; // [lon, lat]
-    const helperCoords = helper.current_location?.coordinates || [106.6983, 10.7725];
+    // 1. Tọa độ & Khoảng cách — thiếu tọa độ thì không cộng điểm (distance_km = -1),
+    // không giả định cả hai cùng ở một điểm mặc định.
+    const jobCoords = job.address?.location?.coordinates; // [lon, lat]
+    const helperCoords = helper.location?.coordinates;
+    const hasCoords = !!jobCoords && !!helperCoords;
 
-    const distanceKm = this.calculateDistanceKm(
-      helperCoords[1],
-      helperCoords[0],
-      jobCoords[1],
-      jobCoords[0],
-    );
+    const distanceKm = hasCoords
+      ? this.calculateDistanceKm(helperCoords[1], helperCoords[0], jobCoords[1], jobCoords[0])
+      : -1;
 
-    // Điểm khoảng cách: <2km -> 100đ, 10km -> 50đ, >20km -> 10đ
-    const distanceScore = Math.max(0, Math.min(100, 100 - (distanceKm / 20) * 100));
-    if (distanceKm <= 3) reasons.push(`Khoảng cách rất gần (${distanceKm}km)`);
+    // Điểm khoảng cách: 0km -> 100đ, 10km -> 50đ, >=20km -> 0đ
+    const distanceScore = hasCoords ? Math.max(0, 100 - (distanceKm / 20) * 100) : 0;
+    if (!hasCoords) reasons.push('Chưa có vị trí');
+    else if (distanceKm <= 3) reasons.push(`Khoảng cách rất gần (${distanceKm}km)`);
     else reasons.push(`Cách ${distanceKm}km`);
 
     // 2. Chuyên môn (Skills / Service Match)
@@ -88,8 +88,8 @@ export class MatchingService {
     if (hasService) reasons.push('Đúng chuyên môn yêu cầu');
 
     // 3. Đánh giá sao (Rating 1 - 5 sao -> 0 - 100đ)
-    const rating = helper.average_rating || 5.0;
-    const ratingScore = ((rating - 1) / 4) * 100;
+    const rating = helper.rating || 0;
+    const ratingScore = (rating / 5) * 100;
     if (rating >= 4.8) reasons.push(`Uy tín cao: ★ ${rating.toFixed(1)}`);
 
     // 4. Xác thực e-KYC (100đ hoặc 0đ)
@@ -181,7 +181,7 @@ export class MatchingService {
           _id: String(user?._id || h.user_id),
           full_name: user?.full_name || 'Thợ đối tác',
           phone: user?.phone || '',
-          average_rating: h.rating || (h as any).average_rating || 5.0,
+          average_rating: h.rating || 0,
           distance_km: details.distance_km,
         },
         match_score: a.score,
@@ -226,7 +226,7 @@ export class MatchingService {
           _id: String(user?._id || h.user_id),
           full_name: user?.full_name || 'Thợ đối tác',
           phone: user?.phone || '',
-          average_rating: h.rating || (h as any).average_rating || 5.0,
+          average_rating: h.rating || 0,
           distance_km,
         },
         match_score: score,

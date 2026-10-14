@@ -33,8 +33,8 @@ export default function RegisterScreen() {
       Toast.show({ type: 'error', text1: 'Mật khẩu xác nhận không khớp' });
       return;
     }
-    if (password.length < 6) {
-      Toast.show({ type: 'error', text1: 'Mật khẩu phải có ít nhất 6 ký tự' });
+    if (password.length < 8) {
+      Toast.show({ type: 'error', text1: 'Mật khẩu phải có ít nhất 8 ký tự' });
       return;
     }
     try {
@@ -46,10 +46,10 @@ export default function RegisterScreen() {
       });
       router.push({ pathname: '/(auth)/otp', params: { phone } });
     } catch (err: unknown) {
-      const msg =
-        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-        'Đăng ký không thành công';
-      Toast.show({ type: 'error', text1: msg });
+      const responseData = (err as any)?.response?.data;
+      const msg = responseData?.message;
+      const displayMsg = Array.isArray(msg) ? msg[0] : (msg || 'Đăng ký không thành công');
+      Toast.show({ type: 'error', text1: displayMsg });
     }
   };
 
@@ -127,7 +127,7 @@ export default function RegisterScreen() {
               />
               <Input
                 label="Mật khẩu"
-                placeholder="Tối thiểu 6 ký tự"
+                placeholder="Tối thiểu 8 ký tự"
                 secureTextEntry={!showPw}
                 value={password}
                 onChangeText={setPassword}

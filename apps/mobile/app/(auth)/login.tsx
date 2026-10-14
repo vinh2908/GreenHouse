@@ -2,6 +2,7 @@ import { useState } from 'react';
 import {
   View,
   Text,
+  Image,
   ScrollView,
   TouchableOpacity,
   KeyboardAvoidingView,
@@ -87,7 +88,11 @@ export default function LoginScreen() {
                 elevation: 8,
               }}
             >
-              <Text style={{ fontSize: 44 }}>🛠️</Text>
+              <Image
+                source={require('../../assets/images/logo.png')}
+                style={{ width: 60, height: 60 }}
+                resizeMode="contain"
+              />
             </View>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
               <Text
@@ -158,52 +163,6 @@ export default function LoginScreen() {
               onPress={handleLogin}
               style={{ marginTop: 8 }}
             />
-
-            {/* ── Quick Dev Login Shortcuts ────────────────────────── */}
-            <View style={{ marginTop: 8, gap: 8 }}>
-              <Button
-                title="⚡ Đăng nhập nhanh: Khách hàng (Chị Mai)"
-                variant="secondary"
-                size="sm"
-                onPress={async () => {
-                  setPhone('0901111111');
-                  setPassword('password123');
-                  try {
-                    const { data } = await login.mutateAsync({
-                      phone: '0901111111',
-                      password: 'password123',
-                    });
-                    const { access_token, refresh_token, user } = data.data;
-                    await setAuth(user, access_token, refresh_token);
-                    Toast.show({ type: 'success', text1: 'Đăng nhập thành công: Chị Mai' });
-                    router.replace('/(customer)/home');
-                  } catch (e) {
-                    Toast.show({ type: 'error', text1: 'Đăng nhập thất bại' });
-                  }
-                }}
-              />
-              <Button
-                title="⚡ Đăng nhập nhanh: Thợ / Đối tác (Anh Tuấn)"
-                variant="outline"
-                size="sm"
-                onPress={async () => {
-                  setPhone('0902222222');
-                  setPassword('password123');
-                  try {
-                    const { data } = await login.mutateAsync({
-                      phone: '0902222222',
-                      password: 'password123',
-                    });
-                    const { access_token, refresh_token, user } = data.data;
-                    await setAuth(user, access_token, refresh_token);
-                    Toast.show({ type: 'success', text1: 'Đăng nhập thành công: Anh Tuấn' });
-                    router.replace('/(helper)/dashboard');
-                  } catch (e) {
-                    Toast.show({ type: 'error', text1: 'Đăng nhập thất bại' });
-                  }
-                }}
-              />
-            </View>
           </View>
 
           {/* ── Divider ────────────────────────────────────────────────── */}

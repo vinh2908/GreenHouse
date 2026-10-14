@@ -4,7 +4,9 @@ import {
   IsArray,
   IsNumber,
   IsEnum,
+  IsIn,
   IsNotEmpty,
+  Matches,
   MaxLength,
   Min,
   Max,
@@ -60,6 +62,12 @@ export class SetHelperStatusDto {
   status: HelperStatus.ONLINE | HelperStatus.OFFLINE;
 }
 
+// A device-local path (file://, content://) is useless to the admin reviewing the documents.
+const UPLOADED_URL = {
+  pattern: /^https?:\/\//i,
+  message: 'Ảnh e-KYC phải được tải lên máy chủ trước khi nộp',
+};
+
 export class SubmitKycDto {
   @ApiProperty({ example: '0123456789', description: 'Số CCCD/CMND' })
   @IsString()
@@ -69,16 +77,19 @@ export class SubmitKycDto {
   @ApiProperty({ description: 'URL ảnh mặt trước CCCD (sau khi upload lên MinIO)' })
   @IsString()
   @IsNotEmpty()
+  @Matches(UPLOADED_URL.pattern, { message: UPLOADED_URL.message })
   id_card_front: string;
 
   @ApiProperty({ description: 'URL ảnh mặt sau CCCD' })
   @IsString()
   @IsNotEmpty()
+  @Matches(UPLOADED_URL.pattern, { message: UPLOADED_URL.message })
   id_card_back: string;
 
   @ApiProperty({ description: 'URL ảnh selfie kèm CCCD' })
   @IsString()
   @IsNotEmpty()
+  @Matches(UPLOADED_URL.pattern, { message: UPLOADED_URL.message })
   selfie_photo: string;
 }
 
@@ -87,6 +98,15 @@ export class UpdateLocationDto {
   @IsArray()
   @IsNumber({}, { each: true })
   coordinates: [number, number];
+
+  @ApiPropertyOptional({
+    enum: ['manual', 'gps', 'auto'],
+    default: 'auto',
+    description: 'manual = ghim trên bản đồ, gps = bấm nút lấy GPS, auto = app tự gửi định kỳ',
+  })
+  @IsOptional()
+  @IsIn(['manual', 'gps', 'auto'])
+  source?: 'manual' | 'gps' | 'auto';
 }
 
 export class BankAccountDto {

@@ -27,6 +27,10 @@ export class HelperProfile {
   @Prop({ type: Object })
   location?: { type: 'Point'; coordinates: [number, number] };
 
+  // manual = address the helper pinned in their profile; periodic GPS updates must not overwrite it.
+  @Prop({ type: String, enum: ['manual', 'gps'] })
+  location_source?: 'manual' | 'gps';
+
   @Prop()
   last_location_update?: Date;
 

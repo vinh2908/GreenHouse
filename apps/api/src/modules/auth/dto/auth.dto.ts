@@ -14,7 +14,7 @@ export class RegisterDto {
   @IsString()
   @IsNotEmpty()
   @Matches(/^(0[3|5|7|8|9])+([0-9]{8})$/, {
-    message: 'Số điện thoại không hợp lệ',
+    message: 'Số điện thoại phải gồm 10 số và bắt đầu bằng 0 (03, 05, 07, 08, 09)',
   })
   phone: string;
 
@@ -27,7 +27,7 @@ export class RegisterDto {
 
   @ApiProperty({ example: 'Password123!', minLength: 8 })
   @IsString()
-  @MinLength(8)
+  @MinLength(8, { message: 'Mật khẩu phải có ít nhất 8 ký tự' })
   @MaxLength(64)
   password: string;
 
