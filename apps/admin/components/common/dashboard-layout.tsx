@@ -35,6 +35,12 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const { user, logout } = useAuthStore();
 
+  // Longest matching href wins, so /helpers/kyc does not also highlight /helpers.
+  const activeHref = navItems
+    .map(n => n.href)
+    .filter(h => (h === '/' ? pathname === '/' : pathname === h || pathname.startsWith(h + '/')))
+    .sort((a, b) => b.length - a.length)[0];
+
   const handleLogout = () => {
     logout();
     router.replace('/login');
@@ -47,9 +53,8 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
         {/* Logo */}
         <div className="p-6 border-b">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center shadow-md">
-              <span className="text-primary-foreground font-black text-lg">G</span>
-            </div>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logo.svg" alt="Green House" className="w-11 h-11 rounded-xl bg-green-50" />
             <div>
               <span className="font-extrabold text-lg tracking-tight">Green House</span>
               <p className="text-xs text-muted-foreground">Admin Portal</p>
@@ -60,10 +65,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
         {/* Navigation */}
         <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
           {navItems.map(({ href, label, icon: Icon }) => {
-            const isActive =
-              href === '/'
-                ? pathname === '/'
-                : pathname === href || pathname.startsWith(href + '/');
+            const isActive = href === activeHref;
             return (
               <Link
                 key={href}

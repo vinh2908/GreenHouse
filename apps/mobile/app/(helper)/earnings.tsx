@@ -101,12 +101,12 @@ export default function HelperEarningsScreen() {
     }
   };
 
-  if (isLoading) return <LoadingSpinner />;
-
   const insets = useSafeAreaInsets();
 
+  if (isLoading) return <LoadingSpinner />;
+
   return (
-    <View style={{ flex: 1, backgroundColor: COLORS.gray[50] }}>
+    <View style={{ flex: 1, backgroundColor: '#FFFF99' }}>
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 110 }}

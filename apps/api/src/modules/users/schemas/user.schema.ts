@@ -22,6 +22,9 @@ export class User {
   @Prop()
   avatar?: string;
 
+  @Prop({ type: String, enum: ['male', 'female', 'other'] })
+  gender?: 'male' | 'female' | 'other';
+
   @Prop({ required: true, select: false }) // never return in queries
   password_hash: string;
 

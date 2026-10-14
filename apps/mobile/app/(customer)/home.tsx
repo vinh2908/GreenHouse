@@ -1,5 +1,21 @@
 import { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, RefreshControl } from 'react-native';
+import {
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  RefreshControl,
+  Pressable,
+  FlatList,
+} from 'react-native';
+import Animated, {
+  FadeInDown,
+  useAnimatedStyle,
+  useSharedValue,
+  withSequence,
+  withSpring,
+  withTiming,
+} from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import {
@@ -9,14 +25,14 @@ import {
   ChevronRight,
   Sparkles,
   ShieldCheck,
-  Wrench,
   Zap,
   CheckCircle2,
 } from 'lucide-react-native';
 import { useAuthStore } from '@/stores/auth.store';
-import { useServices, useMyJobs, useUnreadCount, useSwitchRole } from '@/hooks/use-api';
+import { useServices, useMyJobs, useUnreadCount, useMyProfile } from '@/hooks/use-api';
 import { locationService } from '@/services/location.service';
 import {
+  Avatar,
   Card,
   JobStatusBadge,
   EmptyState,
@@ -32,46 +48,184 @@ import 'dayjs/locale/vi';
 dayjs.extend(relativeTime);
 dayjs.locale('vi');
 
-// ─── Danh mục dịch vụ chuẩn Vua Thợ ───────────────────────────────────────────
+// ─── Danh mục dịch vụ nổi bật (15 dịch vụ) ───────────────────────────────────
 const SERVICE_CATEGORIES = [
   {
-    id: 'housekeeping_hourly',
+    id: 'house_cleaning',
+    name: 'Dọn dẹp\nvệ sinh',
+    emoji: '🏠',
+    bg: '#DCFCE7',
+    slug: 'house_cleaning',
+  },
+  {
+    id: 'cooking',
+    name: 'Đi chợ &\nnấu ăn',
+    emoji: '🍳',
+    bg: '#FEF3C7',
+    slug: 'cooking',
+  },
+  {
+    id: 'laundry',
+    name: 'Giặt giũ\nlà ủi',
+    emoji: '👔',
+    bg: '#EDE9FE',
+    slug: 'laundry',
+  },
+  {
+    id: 'family_care',
+    name: 'Chăm sóc\nGia Chủ',
+    emoji: '👨‍👩‍👧',
+    bg: '#E0F2FE',
+    slug: 'family_care',
+  },
+  {
+    id: 'petcare',
+    name: 'Chăm sóc\nthú cưng',
+    emoji: '🐾',
+    bg: '#FFEDD5',
+    slug: 'petcare',
+  },
+  {
+    id: 'plantcare',
+    name: 'Chăm sóc\ncây cảnh',
+    emoji: '🌿',
+    bg: '#ECFDF5',
+    slug: 'plantcare',
+  },
+  {
+    id: 'house_management',
+    name: 'Trông giữ\nnhà cửa',
+    emoji: '🔐',
+    bg: '#F0F9FF',
+    slug: 'house_management',
+  },
+  {
+    id: 'hourly_helper',
     name: 'Giúp việc\ntheo giờ',
     emoji: '🧹',
-    bg: '#DCFCE7',
-    slug: 'housekeeping_hourly',
+    bg: '#F0FDF4',
+    slug: 'hourly_helper',
   },
   {
     id: 'deep_cleaning',
-    name: 'Tổng vệ sinh\nnhà cửa',
+    name: 'Tổng vệ\nsinh nhà',
     emoji: '✨',
-    bg: '#ECFDF5',
+    bg: '#FEF9C3',
     slug: 'deep_cleaning',
   },
   {
-    id: 'electrician',
-    name: 'Sửa điện\ngia dụng',
-    emoji: '⚡',
-    bg: '#FEF3C7',
-    slug: 'electrician',
+    id: 'moving_help',
+    name: 'Dọn nhà\nchuyển nhà',
+    emoji: '📦',
+    bg: '#F5F3FF',
+    slug: 'moving_help',
   },
   {
-    id: 'plumbing',
-    name: 'Sửa ống nước\nthông cống',
-    emoji: '🚰',
-    bg: '#EFF6FF',
-    slug: 'plumbing',
+    id: 'handyman',
+    name: 'Phụ việc\nlặt vặt',
+    emoji: '🔧',
+    bg: '#F3F4F6',
+    slug: 'handyman',
   },
-  { id: 'ac_repair', name: 'Vệ sinh\nmáy lạnh', emoji: '❄️', bg: '#E0F2FE', slug: 'ac_repair' },
-  { id: 'cooking', name: 'Nấu ăn\ngia đình', emoji: '🍳', bg: '#FFFBEB', slug: 'cooking' },
-  { id: 'appliance', name: 'Sửa máy giặt\ntủ lạnh', emoji: '🧺', bg: '#F5F3FF', slug: 'appliance' },
-  { id: 'locksmith', name: 'Sửa khóa\nlắp camera', emoji: '🔑', bg: '#F3F4F6', slug: 'locksmith' },
 ];
+
+type ServiceCategory = (typeof SERVICE_CATEGORIES)[number];
+
+// Ô dịch vụ: xuất hiện so le, nhún khi nhấn, emoji lắc nhẹ
+function ServiceCategoryCard({
+  category,
+  index,
+  onPress,
+}: {
+  category: ServiceCategory;
+  index: number;
+  onPress: () => void;
+}) {
+  const scale = useSharedValue(1);
+  const tilt = useSharedValue(0);
+
+  const cardStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
+  const emojiStyle = useAnimatedStyle(() => ({
+    transform: [{ rotate: `${tilt.value}deg` }, { scale: 1 + (1 - scale.value) * 2.5 }],
+  }));
+
+  return (
+    <Animated.View
+      entering={FadeInDown.delay(index * 60)
+        .springify()
+        .damping(14)}
+      style={{ width: 90 }}
+    >
+      <Pressable
+        onPress={onPress}
+        onPressIn={() => {
+          scale.value = withSpring(0.92, { damping: 15, stiffness: 300 });
+          tilt.value = withSequence(
+            withTiming(-12, { duration: 70 }),
+            withTiming(12, { duration: 110 }),
+            withSpring(0, { damping: 6, stiffness: 200 }),
+          );
+        }}
+        onPressOut={() => {
+          scale.value = withSpring(1, { damping: 10, stiffness: 250 });
+        }}
+      >
+        <Animated.View
+          style={[
+            {
+              alignItems: 'center',
+              backgroundColor: '#FFFFFF',
+              borderRadius: 16,
+              paddingVertical: 12,
+              paddingHorizontal: 4,
+              borderWidth: 1,
+              borderColor: COLORS.gray[100],
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: 1 },
+              shadowOpacity: 0.04,
+              shadowRadius: 4,
+              elevation: 1,
+            },
+            cardStyle,
+          ]}
+        >
+          <View
+            style={{
+              width: 48,
+              height: 48,
+              borderRadius: 16,
+              backgroundColor: category.bg,
+              alignItems: 'center',
+              justifyContent: 'center',
+              marginBottom: 6,
+            }}
+          >
+            <Animated.Text style={[{ fontSize: 24 }, emojiStyle]}>{category.emoji}</Animated.Text>
+          </View>
+          <Text
+            style={{
+              fontSize: 11,
+              fontWeight: '700',
+              color: COLORS.gray[800],
+              textAlign: 'center',
+              lineHeight: 14,
+            }}
+            numberOfLines={2}
+          >
+            {category.name}
+          </Text>
+        </Animated.View>
+      </Pressable>
+    </Animated.View>
+  );
+}
 
 export default function CustomerHomeScreen() {
   const router = useRouter();
-  const user = useAuthStore(s => s.user);
-  const switchRole = useSwitchRole();
+  const storedUser = useAuthStore(s => s.user);
+  // Stored login payload has no avatar — prefer the full profile from the API
+  const { data: profile } = useMyProfile();
+  const user = profile ?? storedUser;
   const { data: services, isLoading: sLoading } = useServices();
   const { data: recentJobs, isLoading: jLoading, refetch } = useMyJobs();
   const { data: unread } = useUnreadCount();
@@ -92,17 +246,6 @@ export default function CustomerHomeScreen() {
   const activeJobs =
     recentJobs?.filter((j: { status: string }) => !['completed', 'cancelled'].includes(j.status)) ??
     [];
-
-  const handleSwitchToWorker = async () => {
-    try {
-      await switchRole.mutateAsync('helper');
-      useAuthStore.getState().switchRole('helper');
-      router.replace('/(helper)/dashboard');
-    } catch {
-      useAuthStore.getState().switchRole('helper');
-      router.replace('/(helper)/dashboard');
-    }
-  };
 
   const insets = useSafeAreaInsets();
 
@@ -126,6 +269,27 @@ export default function CustomerHomeScreen() {
             borderBottomColor: COLORS.gray[100],
           }}
         >
+          {/* Profile bar */}
+          <TouchableOpacity
+            activeOpacity={0.7}
+            onPress={() => router.push('/(customer)/profile')}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 14 }}
+          >
+            <Avatar name={user?.full_name} uri={user?.avatar} size={42} />
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 12, color: COLORS.gray[400], fontWeight: '600' }}>
+                Xin chào 👋
+              </Text>
+              <Text
+                style={{ fontSize: 16, fontWeight: '800', color: COLORS.gray[900] }}
+                numberOfLines={1}
+              >
+                {user?.full_name ?? 'Khách'}
+              </Text>
+            </View>
+            <ChevronRight size={18} color={COLORS.gray[400]} />
+          </TouchableOpacity>
+
           <View
             style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}
           >
@@ -168,30 +332,8 @@ export default function CustomerHomeScreen() {
               </View>
             </TouchableOpacity>
 
-            {/* Role switch pill & Notification bell */}
+            {/* Notification bell */}
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-              {/* Quick Mode Toggle */}
-              <TouchableOpacity
-                onPress={handleSwitchToWorker}
-                activeOpacity={0.8}
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: 5,
-                  backgroundColor: '#DCFCE7',
-                  borderWidth: 1,
-                  borderColor: '#86EFAC',
-                  borderRadius: 20,
-                  paddingHorizontal: 10,
-                  paddingVertical: 6,
-                }}
-              >
-                <Wrench size={14} color={COLORS.primary} />
-                <Text style={{ fontSize: 12, fontWeight: '800', color: COLORS.primary }}>
-                  Làm Thợ
-                </Text>
-              </TouchableOpacity>
-
               {/* Notification icon */}
               <TouchableOpacity
                 onPress={() => router.push('/notifications')}
@@ -394,21 +536,19 @@ export default function CustomerHomeScreen() {
         <View style={{ paddingHorizontal: 16, marginTop: 22 }}>
           <SectionHeader
             title="Dịch vụ nổi bật"
-            action="Tất cả 63 nghề"
+            action="Xem thêm"
             onAction={() => router.push('/(customer)/booking')}
           />
-          <View
-            style={{
-              flexDirection: 'row',
-              flexWrap: 'wrap',
-              gap: 10,
-              justifyContent: 'space-between',
-            }}
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{ gap: 10, paddingRight: 4 }}
           >
-            {SERVICE_CATEGORIES.map(category => (
-              <TouchableOpacity
+            {SERVICE_CATEGORIES.map((category, index) => (
+              <ServiceCategoryCard
                 key={category.id}
-                activeOpacity={0.75}
+                category={category}
+                index={index}
                 onPress={() => {
                   const match = services?.find(s => s.slug === category.slug);
                   router.push({
@@ -416,50 +556,9 @@ export default function CustomerHomeScreen() {
                     params: { service_id: match?._id ?? '', service_slug: category.slug },
                   });
                 }}
-                style={{
-                  width: '23%',
-                  alignItems: 'center',
-                  backgroundColor: '#FFFFFF',
-                  borderRadius: 16,
-                  paddingVertical: 12,
-                  paddingHorizontal: 4,
-                  borderWidth: 1,
-                  borderColor: COLORS.gray[100],
-                  shadowColor: '#000',
-                  shadowOffset: { width: 0, height: 1 },
-                  shadowOpacity: 0.04,
-                  shadowRadius: 4,
-                  elevation: 1,
-                }}
-              >
-                <View
-                  style={{
-                    width: 48,
-                    height: 48,
-                    borderRadius: 16,
-                    backgroundColor: category.bg,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    marginBottom: 6,
-                  }}
-                >
-                  <Text style={{ fontSize: 24 }}>{category.emoji}</Text>
-                </View>
-                <Text
-                  style={{
-                    fontSize: 11,
-                    fontWeight: '700',
-                    color: COLORS.gray[800],
-                    textAlign: 'center',
-                    lineHeight: 14,
-                  }}
-                  numberOfLines={2}
-                >
-                  {category.name}
-                </Text>
-              </TouchableOpacity>
+              />
             ))}
-          </View>
+          </ScrollView>
         </View>
 
         {/* ── 4. Quyền lợi cam kết & Bảo hiểm (Vua Thợ Badge) ──────────── */}
@@ -469,30 +568,28 @@ export default function CustomerHomeScreen() {
               backgroundColor: '#FFFFFF',
               borderRadius: 16,
               padding: 14,
-              flexDirection: 'row',
-              justifyContent: 'space-around',
-              alignItems: 'center',
+              gap: 10,
               borderWidth: 1,
               borderColor: COLORS.gray[100],
             }}
           >
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
               <ShieldCheck size={18} color={COLORS.success} />
-              <Text style={{ fontSize: 12, fontWeight: '700', color: COLORS.gray[800] }}>
+              <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.gray[800] }}>
                 Thợ e-KYC 100%
               </Text>
             </View>
-            <View style={{ width: 1, height: 16, backgroundColor: COLORS.gray[200] }} />
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <View style={{ height: 1, backgroundColor: COLORS.gray[100] }} />
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
               <CheckCircle2 size={18} color={COLORS.primary} />
-              <Text style={{ fontSize: 12, fontWeight: '700', color: COLORS.gray[800] }}>
+              <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.gray[800] }}>
                 Bảo hành dịch vụ
               </Text>
             </View>
-            <View style={{ width: 1, height: 16, backgroundColor: COLORS.gray[200] }} />
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <View style={{ height: 1, backgroundColor: COLORS.gray[100] }} />
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
               <Zap size={18} color={COLORS.warning} />
-              <Text style={{ fontSize: 12, fontWeight: '700', color: COLORS.gray[800] }}>
+              <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.gray[800] }}>
                 Có mặt sau 15p
               </Text>
             </View>

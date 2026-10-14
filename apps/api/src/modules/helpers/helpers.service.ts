@@ -121,11 +121,25 @@ export class HelpersService {
   }
 
   async updateLocation(userId: string, dto: UpdateLocationDto): Promise<void> {
+    const source = dto.source ?? 'auto';
+    // The service only operates in Vietnam; a point outside it is a mis-tap or an
+    // emulator's default GPS and would put the helper thousands of km from every job.
+    const [lng, lat] = dto.coordinates;
+    if (!(lat >= 8 && lat <= 23.5 && lng >= 102 && lng <= 110)) {
+      throw new BadRequestException('Vị trí nằm ngoài Việt Nam');
+    }
     await this.helperModel
       .findOneAndUpdate(
-        { user_id: userId },
+        // A raw string never matches the stored ObjectId, so the location was silently dropped.
+        // A background ping never replaces an address the helper pinned by hand; pressing
+        // the GPS button ('gps') or pinning again ('manual') always does.
+        {
+          user_id: new Types.ObjectId(userId),
+          ...(source === 'auto' ? { location_source: { $ne: 'manual' } } : {}),
+        },
         {
           location: { type: 'Point', coordinates: dto.coordinates },
+          location_source: source === 'manual' ? 'manual' : 'gps',
           last_location_update: new Date(),
         },
       )
@@ -141,7 +155,7 @@ export class HelpersService {
   // ─── Admin: verify / reject KYC ──────────────────────────────────────────
 
   async approveKyc(userId: string): Promise<HelperProfileDocument> {
-    const profile = await this.helperModel.findOne({ user_id: userId }).exec();
+    const profile = await this.helperModel.findOne({ user_id: new Types.ObjectId(userId) }).exec();
     if (!profile) throw new NotFoundException('Helper không tồn tại');
     if (profile.verification_status !== VerificationStatus.PENDING) {
       throw new BadRequestException('Hồ sơ không ở trạng thái chờ duyệt');
@@ -152,7 +166,7 @@ export class HelpersService {
   }
 
   async rejectKyc(userId: string, reason: string): Promise<HelperProfileDocument> {
-    const profile = await this.helperModel.findOne({ user_id: userId }).exec();
+    const profile = await this.helperModel.findOne({ user_id: new Types.ObjectId(userId) }).exec();
     if (!profile) throw new NotFoundException('Helper không tồn tại');
     profile.verification_status = VerificationStatus.REJECTED;
     profile.rejection_reason = reason;

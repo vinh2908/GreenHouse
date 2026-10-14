@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { JobsController } from './jobs.controller';
 import { JobsService } from './jobs.service';
+import { RoutingService } from './routing.service';
 import { Job, JobSchema, Quote, QuoteSchema, Contract, ContractSchema } from './schemas/job.schema';
 import { Service, ServiceSchema } from '../services/schemas/service.schema';
 import { HelperProfile, HelperProfileSchema } from '../helpers/schemas/helper-profile.schema';
@@ -23,7 +24,7 @@ import { PaymentsModule } from '../payments/payments.module';
     PaymentsModule,
   ],
   controllers: [JobsController],
-  providers: [JobsService],
+  providers: [JobsService, RoutingService],
   exports: [JobsService],
 })
 export class JobsModule {}

@@ -1,5 +1,14 @@
 import React, { useEffect, useRef } from 'react';
-import { View, Text, Animated, Dimensions, StyleSheet, StatusBar, Easing } from 'react-native';
+import {
+  View,
+  Text,
+  Image,
+  Animated,
+  Dimensions,
+  StyleSheet,
+  StatusBar,
+  Easing,
+} from 'react-native';
 import { useRouter } from 'expo-router';
 import { Sparkles, ShieldCheck, Zap } from 'lucide-react-native';
 import { useAuthStore } from '@/stores/auth.store';
@@ -119,7 +128,11 @@ export default function SplashScreen() {
           <View style={styles.outerGlow}>
             {/* Inner Brand Emblem */}
             <View style={styles.logoBadge}>
-              <Text style={styles.logoEmoji}>🛠️</Text>
+              <Image
+                source={require('../assets/images/logo.png')}
+                style={styles.logoImage}
+                resizeMode="contain"
+              />
             </View>
           </View>
         </Animated.View>
@@ -248,8 +261,9 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     elevation: 6,
   },
-  logoEmoji: {
-    fontSize: 50,
+  logoImage: {
+    width: 84,
+    height: 84,
   },
   textContainer: {
     alignItems: 'center',

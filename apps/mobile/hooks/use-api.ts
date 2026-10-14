@@ -2,6 +2,7 @@
 import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query';
 import apiClient from '@/services/api-client';
 import { uploadFile, uploadFiles } from '@/services/upload.service';
+import { syncHelperLocation } from '@/hooks/use-helper-location-sync';
 import Toast from 'react-native-toast-message';
 
 // ─── Auth ──────────────────────────────────────────────────────────────────────
@@ -46,8 +47,12 @@ export function useMyProfile() {
 export function useUpdateProfile() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (dto: { full_name?: string; email?: string; avatar?: string }) =>
-      apiClient.patch('/users/me', dto),
+    mutationFn: (dto: {
+      full_name?: string;
+      email?: string;
+      avatar?: string;
+      gender?: 'male' | 'female' | 'other';
+    }) => apiClient.patch('/users/me', dto),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['profile', 'me'] });
       Toast.show({ type: 'success', text1: 'Cập nhật thành công' });
@@ -271,7 +276,11 @@ export function useSubmitQuote() {
       estimated_duration: number;
       notes?: string;
       available_date?: string;
-    }) => apiClient.post(`/jobs/${jobId}/quotes`, dto),
+    }) => {
+      // Quotes are ranked by distance: refresh the position alongside, without delaying the quote.
+      syncHelperLocation();
+      return apiClient.post(`/jobs/${jobId}/quotes`, dto);
+    },
     onSuccess: (_, vars) => {
       qc.invalidateQueries({ queryKey: ['job', vars.jobId] });
       qc.invalidateQueries({ queryKey: ['jobs'] });
@@ -391,6 +400,23 @@ export function useUpdateBankAccount() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['helper', 'profile'] });
       Toast.show({ type: 'success', text1: 'Cập nhật tài khoản ngân hàng thành công!' });
+    },
+  });
+}
+
+export function useUpdateHelperLocation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (
+      loc: [number, number] | { coordinates: [number, number]; source: 'manual' | 'gps' },
+    ) =>
+      apiClient.patch(
+        '/helpers/me/location',
+        Array.isArray(loc) ? { coordinates: loc, source: 'auto' } : loc,
+      ),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['helper', 'profile'] });
+      qc.invalidateQueries({ queryKey: ['helper', 'public'] });
     },
   });
 }

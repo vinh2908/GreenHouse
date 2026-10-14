@@ -1,0 +1,413 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Green House – Thiết kế màn hình</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --primary: #22C55E; --primary-dark: #16A34A; --primary-light: #DCFCE7;
+    --secondary: #1A73E8; --success: #10B981; --warning: #F59E0B; --error: #EF4444;
+    --g50: #F9FAFB; --g100: #F3F4F6; --g200: #E5E7EB; --g300: #D1D5DB; --g400: #9CA3AF;
+    --g500: #6B7280; --g600: #4B5563; --g700: #374151; --g800: #1F2937; --g900: #111827;
+    --helper-bg: #FFFF99; --screen-bg: #F8F9FA;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Inter, system-ui, sans-serif; background: #E9EBEF; color: var(--g900); padding: 48px; }
+  h1.doc { font-size: 28px; font-weight: 800; margin-bottom: 6px; }
+  p.doc { color: var(--g500); font-size: 14px; margin-bottom: 36px; }
+  h2.group { font-size: 18px; font-weight: 800; margin: 40px 0 18px; }
+  .board { display: flex; flex-wrap: wrap; gap: 48px 40px; align-items: flex-start; }
+  .frame-wrap { display: flex; flex-direction: column; gap: 10px; }
+  .frame-name { font-size: 13px; font-weight: 600; color: var(--g600); }
+
+  /* ── Phone frame 375 × 812 ── */
+  .phone { width: 375px; height: 812px; background: var(--screen-bg); border-radius: 28px; overflow: hidden; position: relative; display: flex; flex-direction: column; box-shadow: 0 10px 30px rgba(0,0,0,.12); }
+  .statusbar { height: 44px; padding: 0 22px; display: flex; align-items: center; justify-content: space-between; font-size: 14px; font-weight: 600; flex: none; }
+  .statusbar .sys { display: flex; gap: 6px; align-items: center; }
+  .batt { width: 24px; height: 11px; border-radius: 3px; background: var(--g900); }
+  .body { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
+  .pad { padding: 16px; display: flex; flex-direction: column; gap: 14px; }
+  .row { display: flex; align-items: center; }
+  .between { justify-content: space-between; }
+  .card { background: #fff; border-radius: 18px; padding: 16px; box-shadow: 0 2px 8px rgba(17,24,39,.06); border: 1px solid rgba(17,24,39,.04); }
+  .btn { height: 52px; border-radius: 14px; background: var(--primary); color: #fff; font-weight: 800; font-size: 15px; display: flex; align-items: center; justify-content: center; gap: 8px; }
+  .btn.soft { background: var(--primary-light); color: var(--primary); border: 1.5px solid var(--primary); }
+  .btn.ghost { background: #F5F3FF; color: #5B21B6; border: 1px solid #DDD6FE; font-size: 13px; height: 46px; }
+  .btn.sm { height: 40px; font-size: 13.5px; padding: 0 18px; border-radius: 12px; }
+  .input { height: 50px; border-radius: 14px; border: 1.5px solid var(--g200); background: var(--g50); padding: 0 14px; display: flex; align-items: center; color: var(--g400); font-size: 15px; }
+  .label { font-size: 13px; font-weight: 700; color: var(--g700); margin-bottom: 6px; }
+  .muted { color: var(--g500); }
+  .chip { font-size: 12px; font-weight: 700; padding: 5px 10px; border-radius: 10px; }
+  .avatar { border-radius: 50%; background: linear-gradient(135deg, #94A3B8, #475569); color: #fff; font-weight: 800; display: flex; align-items: center; justify-content: center; flex: none; }
+  .iconbtn { width: 38px; height: 38px; border-radius: 12px; background: var(--g100); display: flex; align-items: center; justify-content: center; flex: none; position: relative; }
+  .dot { position: absolute; top: 7px; right: 8px; width: 7px; height: 7px; border-radius: 50%; background: var(--error); }
+  svg.i { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+  .header { background: #fff; padding: 10px 16px 14px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid var(--g100); flex: none; }
+  .header .title { font-size: 17px; font-weight: 800; }
+  .tabbar { height: 74px; background: #fff; border-top: 1px solid var(--g100); display: flex; flex: none; padding-bottom: 8px; }
+  .tab { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; font-size: 10.5px; font-weight: 600; color: var(--g400); }
+  .tab.on { color: var(--primary); font-weight: 800; }
+  .tab svg.i { width: 22px; height: 22px; }
+  .homebar { position: absolute; bottom: 7px; left: 50%; transform: translateX(-50%); width: 120px; height: 4px; border-radius: 2px; background: var(--g800); opacity: .7; }
+  .mapph { border-radius: 14px; border: 1.5px solid var(--g200); background: #E8EEF1; position: relative; overflow: hidden;
+    background-image: linear-gradient(115deg, transparent 46%, #fff 46%, #fff 49%, transparent 49%), linear-gradient(25deg, transparent 58%, #fff 58%, #fff 60.5%, transparent 60.5%), linear-gradient(160deg, transparent 30%, #F4E9A8 30%, #F4E9A8 33%, transparent 33%), linear-gradient(90deg, #DDE6EA 0 100%); }
+  .mapph .water { position: absolute; right: -30px; top: -20px; width: 150px; height: 130px; border-radius: 50%; background: #AAD3DF; }
+  .pin { position: absolute; left: 50%; top: 46%; transform: translate(-50%, -100%); color: var(--error); }
+  .pin svg { width: 30px; height: 30px; fill: var(--error); stroke: #fff; stroke-width: 1.5; }
+
+  /* ── Desktop frame 1440 × 900 (admin) ── */
+  .desk { width: 1440px; height: 900px; background: #F8FAFC; display: flex; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,.12); font-size: 14px; }
+  .side { width: 256px; background: #fff; border-right: 1px solid #E2E8F0; display: flex; flex-direction: column; flex: none; }
+  .side .brand { padding: 24px; border-bottom: 1px solid #E2E8F0; display: flex; gap: 12px; align-items: center; }
+  .side nav { padding: 12px; display: flex; flex-direction: column; gap: 4px; flex: 1; }
+  .nav { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 8px; font-weight: 600; color: #64748B; }
+  .nav.on { background: var(--primary-dark); color: #fff; }
+  .main { flex: 1; padding: 32px 40px; display: flex; flex-direction: column; gap: 24px; overflow: hidden; }
+  table { width: 100%; border-collapse: collapse; }
+  th { text-align: left; font-size: 13px; color: #64748B; font-weight: 600; padding: 12px 16px; border-bottom: 1px solid #E2E8F0; }
+  td { padding: 14px 16px; border-bottom: 1px solid #E2E8F0; }
+  .obtn { display: inline-flex; align-items: center; gap: 4px; height: 32px; padding: 0 12px; border-radius: 6px; border: 1px solid; font-size: 13px; font-weight: 600; background: #fff; }
+  .imgph { height: 250px; border-radius: 6px; border: 1px solid #E2E8F0; background: #171717; display: flex; align-items: center; justify-content: center; }
+  .idcard { width: 300px; height: 190px; border-radius: 10px; background: linear-gradient(135deg, #CFEFE3, #F3F0D2 60%, #CDE9F0); padding: 14px; display: flex; flex-direction: column; gap: 6px; color: #1F2937; font-size: 10px; }
+</style>
+</head>
+<body>
+
+<!-- Icon sprite (Lucide-style) -->
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <symbol id="arrow-left" viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"/></symbol>
+    <symbol id="bell" viewBox="0 0 24 24"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10.3 21a1.94 1.94 0 0 0 3.4 0"/></symbol>
+    <symbol id="map-pin" viewBox="0 0 24 24"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></symbol>
+    <symbol id="search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></symbol>
+    <symbol id="chev" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></symbol>
+    <symbol id="shield" viewBox="0 0 24 24"><path d="M20 13c0 5-3.5 7.5-8 9-4.500-1.500-8-4-8-9V5l8-3 8 3Z"/><path d="m9 12 2 2 4-4"/></symbol>
+    <symbol id="home" viewBox="0 0 24 24"><path d="M3 10.500 12 3l9 7.500V20a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1Z"/></symbol>
+    <symbol id="list" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M9 5v14M15 5v14"/></symbol>
+    <symbol id="trend" viewBox="0 0 24 24"><path d="m22 7-8.500 8.500-5-5L2 17"/><path d="M16 7h6v6"/></symbol>
+    <symbol id="user" viewBox="0 0 24 24"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></symbol>
+    <symbol id="plus" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></symbol>
+    <symbol id="chat" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2Z"/></symbol>
+    <symbol id="clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+    <symbol id="camera" viewBox="0 0 24 24"><path d="M14.500 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3Z"/><circle cx="12" cy="13" r="3"/></symbol>
+    <symbol id="nav" viewBox="0 0 24 24"><path d="m3 11 19-9-9 19-2-8Z"/></symbol>
+    <symbol id="x" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></symbol>
+    <symbol id="check" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m9 12 2 2 4-4"/></symbol>
+    <symbol id="xc" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m15 9-6 6M9 9l6 6"/></symbol>
+    <symbol id="grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></symbol>
+    <symbol id="users" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.870M16 3.130a4 4 0 0 1 0 7.750"/></symbol>
+    <symbol id="brief" viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></symbol>
+    <symbol id="wrench" viewBox="0 0 24 24"><path d="M14.700 6.300a4 4 0 0 0 5 5L22 13.600l-8.400 8.400a2.100 2.100 0 0 1-3-3L19 10.600"/><path d="M14.700 6.300 11 2.600 2.600 11l3.700 3.700"/></symbol>
+    <symbol id="cardi" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></symbol>
+    <symbol id="star" viewBox="0 0 24 24"><path d="m12 2 3.100 6.300 6.900 1-5 4.900 1.200 6.800-6.200-3.200L5.800 21 7 14.200 2 9.300l6.900-1Z"/></symbol>
+    <symbol id="chart" viewBox="0 0 24 24"><path d="M3 3v18h18M8 17v-5M13 17V7M18 17v-8"/></symbol>
+    <symbol id="mega" viewBox="0 0 24 24"><path d="m3 11 18-5v12L3 14v-3ZM11.600 16.800a3 3 0 1 1-5.800-1.600"/></symbol>
+  </defs>
+</svg>
+
+<h1 class="doc">Green House – Thiết kế màn hình</h1>
+<p class="doc">Dựng lại từ code hiện tại của app mobile (Expo) và trang admin (Next.js). Màu chủ đạo #22C55E · chữ Inter · khung mobile 375 × 812 · khung admin 1440 × 900.</p>
+
+<h2 class="group">Mobile – Đăng nhập &amp; Khách hàng</h2>
+<div class="board">
+
+  <!-- 01 Login -->
+  <div class="frame-wrap"><div class="frame-name">01 · Đăng nhập</div>
+  <div class="phone" style="background:#fff">
+    <div class="statusbar"><span>9:41</span><span class="sys"><span>5G</span><span class="batt"></span></span></div>
+    <div class="body pad" style="padding:28px 22px; gap:16px">
+      <div style="display:flex; flex-direction:column; align-items:center; gap:10px; margin:18px 0 10px">
+        <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDI0IiBoZWlnaHQ9IjEwMjQiIHZpZXdCb3g9IjAgMCAxMDI0IDEwMjQiPjxnIHRyYW5zZm9ybT0idHJhbnNsYXRlKDUxMiA1MTIpIHNjYWxlKDEuMSkgdHJhbnNsYXRlKC01MjUgLTU0NSkiPgogIDxyZWN0IHg9IjExMCIgeT0iODQ4IiB3aWR0aD0iODIwIiBoZWlnaHQ9IjIyIiByeD0iMTEiIGZpbGw9IiMxNTgwM0QiIG9wYWNpdHk9IjAuMjIiLz4KICA8IS0tIGhvdXNlIC0tPgogIDxyZWN0IHg9IjUyMCIgeT0iMjcwIiB3aWR0aD0iNjQiIGhlaWdodD0iMTUwIiByeD0iMTAiIGZpbGw9IiMxNTgwM0QiLz4KICA8cmVjdCB4PSIxNzAiIHk9IjQ3MCIgd2lkdGg9IjQ2MCIgaGVpZ2h0PSIzODAiIHJ4PSIyNiIgZmlsbD0iIzIyQzU1RSIvPgogIDxwb2x5Z29uIHBvaW50cz0iMTMwLDQ5MiA0MDAsMjM2IDY3MCw0OTIiIGZpbGw9IiMxNTgwM0QiIHN0cm9rZT0iIzE1ODAzRCIgc3Ryb2tlLXdpZHRoPSIzNiIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgogIDxyZWN0IHg9IjI0NSIgeT0iNjQwIiB3aWR0aD0iMTI0IiBoZWlnaHQ9IjIxMCIgcng9IjE2IiBmaWxsPSIjRkZGRkZGIi8+CiAgPGNpcmNsZSBjeD0iMzQ1IiBjeT0iNzUwIiByPSIxMCIgZmlsbD0iIzIyQzU1RSIvPgogIDxyZWN0IHg9IjQzNSIgeT0iNTYwIiB3aWR0aD0iMTM0IiBoZWlnaHQ9IjEzNCIgcng9IjE4IiBmaWxsPSIjRkZGRkZGIi8+CiAgPHJlY3QgeD0iNDk2IiB5PSI1NjAiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMzQiIGZpbGw9IiMyMkM1NUUiLz4KICA8cmVjdCB4PSI0MzUiIHk9IjYyMSIgd2lkdGg9IjEzNCIgaGVpZ2h0PSIxMiIgZmlsbD0iIzIyQzU1RSIvPgogIDwhLS0gYnJvb20gLS0+CiAgPGxpbmUgeDE9Ijg5MiIgeTE9IjQ3MCIgeDI9Ijg5MiIgeTI9Ijc4NSIgc3Ryb2tlPSIjOTI0MDBFIiBzdHJva2Utd2lkdGg9IjE2IiBzdHJva2UtbGluZWNhcD0icm91bmQiLz4KICA8cG9seWdvbiBwb2ludHM9Ijg2Miw3ODAgOTIyLDc4MCA5NDAsODUwIDg0NCw4NTAiIGZpbGw9IiNGQkJGMjQiIHN0cm9rZT0iI0ZCQkYyNCIgc3Ryb2tlLXdpZHRoPSIxMCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgogIDwhLS0gaG91c2VrZWVwZXIgLS0+CiAgPHBhdGggZD0iTTcxNCA1NzggaDkyIGEzNCAzNCAwIDAgMSAzNCAzMCBsMjYgMjQyIGgtMjEyIGwyNiAtMjQyIGEzNCAzNCAwIDAgMSAzNCAtMzAgeiIgZmlsbD0iIzBGNzY2RSIvPgogIDxsaW5lIHgxPSI3MTIiIHkxPSI2MTIiIHgyPSI2ODYiIHkyPSI3MDQiIHN0cm9rZT0iIzBGNzY2RSIgc3Ryb2tlLXdpZHRoPSIzNCIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIi8+CiAgPGxpbmUgeDE9IjgwOCIgeTE9IjYxMiIgeDI9Ijg4NCIgeTI9IjY2NCIgc3Ryb2tlPSIjMEY3NjZFIiBzdHJva2Utd2lkdGg9IjM0IiBzdHJva2UtbGluZWNhcD0icm91bmQiLz4KICA8Y2lyY2xlIGN4PSI2ODQiIGN5PSI3MTAiIHI9IjIwIiBmaWxsPSIjRkNEOUI2Ii8+CiAgPGNpcmNsZSBjeD0iODg4IiBjeT0iNjY2IiByPSIyMCIgZmlsbD0iI0ZDRDlCNiIvPgogIDxwYXRoIGQ9Ik03MjQgNjI2IGg3MiBsMTYgMTk2IGExMiAxMiAwIDAgMSAtMTIgMTMgaC04MCBhMTIgMTIgMCAwIDEgLTEyIC0xMyB6IiBmaWxsPSIjRkZGRkZGIi8+CiAgPGNpcmNsZSBjeD0iNzYwIiBjeT0iNDI0IiByPSIzMiIgZmlsbD0iIzNGMkExRCIvPgogIDxjaXJjbGUgY3g9Ijc2MCIgY3k9IjUwMiIgcj0iNjQiIGZpbGw9IiNGQ0Q5QjYiLz4KICA8cGF0aCBkPSJNNjk2IDUwMiBhNjQgNjQgMCAwIDEgMTI4IDAgcS0yMiAtNDQgLTY0IC00NCBxLTQyIDAgLTY0IDQ0IHoiIGZpbGw9IiMzRjJBMUQiLz4KICA8Y2lyY2xlIGN4PSI3MzgiIGN5PSI1MTAiIHI9IjciIGZpbGw9IiMzRjJBMUQiLz4KICA8Y2lyY2xlIGN4PSI3ODIiIGN5PSI1MTAiIHI9IjciIGZpbGw9IiMzRjJBMUQiLz4KICA8cGF0aCBkPSJNNzQwIDUzNCBxMjAgMTggNDAgMCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjM0YyQTFEIiBzdHJva2Utd2lkdGg9IjciIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPgo8L2c+PC9zdmc+" alt="Green House" width="96" height="96" style="border-radius:24px; background:#F0FDF4" />
+        <div style="font-size:26px; font-weight:900">Green House</div>
+        <div class="muted" style="font-size:14px; text-align:center">Giúp việc &amp; thợ sửa chữa tận nhà</div>
+      </div>
+      <div><div class="label">Số điện thoại</div><div class="input">Nhập số điện thoại của bạn</div></div>
+      <div><div class="label">Mật khẩu</div><div class="input">Nhập mật khẩu</div></div>
+      <div class="btn">Đăng nhập</div>
+      <div style="text-align:center; font-size:14px" class="muted">Chưa có tài khoản? <b style="color:var(--primary)">Đăng ký</b></div>
+    </div>
+    <div class="homebar"></div>
+  </div></div>
+
+  <!-- 02 Customer home -->
+  <div class="frame-wrap"><div class="frame-name">02 · Trang chủ khách hàng</div>
+  <div class="phone">
+    <div class="statusbar" style="background:#fff"><span>9:41</span><span class="sys"><span>5G</span><span class="batt"></span></span></div>
+    <div class="body">
+      <div style="background:#fff; padding:8px 16px 16px; display:flex; flex-direction:column; gap:14px; border-bottom:1px solid var(--g100)">
+        <div class="row" style="gap:12px">
+          <div class="avatar" style="width:44px;height:44px">M</div>
+          <div style="flex:1">
+            <div class="muted" style="font-size:12.500px">Xin chào 👋</div>
+            <div style="font-size:16px; font-weight:800">Chị Mai</div>
+          </div>
+          <svg class="i muted"><use href="#chev"/></svg>
+        </div>
+        <div class="row between">
+          <div class="row" style="gap:10px">
+            <div style="width:34px;height:34px;border-radius:10px;background:var(--primary-light);color:var(--primary);display:flex;align-items:center;justify-content:center"><svg class="i"><use href="#map-pin"/></svg></div>
+            <div>
+              <div style="font-size:11px; font-weight:600; color:var(--g400)">Vị trí của bạn</div>
+              <div style="font-size:14px; font-weight:800">Đà Nẵng • Ngũ Hành Sơn ›</div>
+            </div>
+          </div>
+          <div class="iconbtn"><svg class="i" style="color:var(--g700)"><use href="#bell"/></svg><span class="dot"></span></div>
+        </div>
+        <div class="row" style="height:46px;border-radius:14px;background:var(--g100);padding:0 14px;gap:10px;color:var(--g400);font-size:14px"><svg class="i"><use href="#search"/></svg>Tìm thợ sửa điện, dọn nhà, sửa máy lạnh...</div>
+      </div>
+      <div class="pad" style="gap:14px">
+        <div style="background:#DC2626;border-radius:18px;padding:14px 16px;color:#fff;display:flex;gap:12px;align-items:center">
+          <div style="font-size:26px">🚨</div>
+          <div style="flex:1">
+            <div class="row" style="gap:8px"><b style="font-size:14px">CỨU HỘ SOS KHẨN CẤP</b><span style="background:rgba(255,255,255,.2);font-size:10px;font-weight:800;padding:2px 6px;border-radius:6px">15P CÓ MẶT</span></div>
+            <div style="font-size:12px;opacity:.9;margin-top:2px">Chập điện, vỡ ống nước, kẹt khóa cửa ngoài...</div>
+          </div>
+        </div>
+        <div style="background:#1E1E24;border-radius:18px;padding:14px 16px;color:#fff">
+          <div class="row" style="gap:8px"><b style="font-size:14px">Trợ lý AI Green House</b><span style="background:var(--primary);font-size:10px;font-weight:800;padding:2px 6px;border-radius:6px">THÔNG MINH</span></div>
+          <div style="font-size:12px;color:rgba(255,255,255,.7);margin-top:4px;line-height:1.450">Nhập sự cố hoặc việc cần làm, AI tự động gợi ý giải pháp &amp; ước tính giá chuẩn.</div>
+        </div>
+        <div class="row between"><b style="font-size:16px">Dịch vụ nổi bật</b><span style="font-size:12.500px;font-weight:700;color:var(--primary)">Tất cả 63 nghề</span></div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px">
+          <div class="card" style="padding:10px 4px;text-align:center;font-size:10.500px;font-weight:600;line-height:1.300"><div style="font-size:22px">🧹</div>Giúp việc<br/>theo giờ</div>
+          <div class="card" style="padding:10px 4px;text-align:center;font-size:10.500px;font-weight:600;line-height:1.300"><div style="font-size:22px">🏠</div>Tổng vệ sinh<br/>nhà cửa</div>
+          <div class="card" style="padding:10px 4px;text-align:center;font-size:10.500px;font-weight:600;line-height:1.300"><div style="font-size:22px">💡</div>Sửa điện<br/>gia dụng</div>
+          <div class="card" style="padding:10px 4px;text-align:center;font-size:10.500px;font-weight:600;line-height:1.300"><div style="font-size:22px">🚰</div>Sửa ống nước<br/>thông cống</div>
+          <div class="card" style="padding:10px 4px;text-align:center;font-size:10.500px;font-weight:600;line-height:1.300"><div style="font-size:22px">❄️</div>Vệ sinh<br/>máy lạnh</div>
+          <div class="card" style="padding:10px 4px;text-align:center;font-size:10.500px;font-weight:600;line-height:1.300"><div style="font-size:22px">🍳</div>Nấu ăn<br/>gia đình</div>
+          <div class="card" style="padding:10px 4px;text-align:center;font-size:10.500px;font-weight:600;line-height:1.300"><div style="font-size:22px">🧺</div>Sửa máy giặt<br/>tủ lạnh</div>
+          <div class="card" style="padding:10px 4px;text-align:center;font-size:10.500px;font-weight:600;line-height:1.300"><div style="font-size:22px">🔐</div>Sửa khóa<br/>lắp camera</div>
+        </div>
+      </div>
+    </div>
+    <div class="tabbar">
+      <div class="tab on"><svg class="i"><use href="#home"/></svg>Trang chủ</div>
+      <div class="tab"><svg class="i"><use href="#list"/></svg>Hoạt động</div>
+      <div class="tab"><svg class="i"><use href="#plus"/></svg>Đăng việc</div>
+      <div class="tab"><svg class="i"><use href="#chat"/></svg>Tin nhắn</div>
+      <div class="tab"><svg class="i"><use href="#user"/></svg>Tài khoản</div>
+    </div>
+    <div class="homebar"></div>
+  </div></div>
+
+  <!-- 03 Job detail with quotes -->
+  <div class="frame-wrap"><div class="frame-name">03 · Chi tiết đơn – Danh sách thợ báo giá</div>
+  <div class="phone">
+    <div class="statusbar" style="background:#fff"><span>9:41</span><span class="sys"><span>5G</span><span class="batt"></span></span></div>
+    <div class="header"><div class="iconbtn"><svg class="i"><use href="#arrow-left"/></svg></div><div class="title" style="flex:1">Lau nhà 56</div><span class="chip" style="background:#F5F3FF;color:#5B21B6">Có báo giá</span></div>
+    <div class="body pad">
+      <div class="card" style="display:flex;flex-direction:column;gap:12px">
+        <div class="row" style="gap:8px"><span class="chip" style="background:var(--primary-light);color:var(--primary)">Giúp việc theo giờ</span><span class="chip" style="background:var(--g100);color:var(--g700)">12/10/2026</span><span class="chip" style="background:var(--g100);color:var(--g700)">07:00</span></div>
+        <div style="font-size:14px;color:var(--g700)">Lau</div>
+        <div class="row" style="gap:8px;font-size:13.500px;font-weight:600;color:var(--g700);align-items:flex-start;border-top:1px solid var(--g100);padding-top:12px"><svg class="i muted"><use href="#map-pin"/></svg>Kiệt 49/59 Bình Kỹ, Ngũ Hành Sơn, Thành phố Đà Nẵng</div>
+      </div>
+      <div class="card" style="display:flex;flex-direction:column;gap:12px">
+        <b style="font-size:16px">Danh sách thợ báo giá (2)</b>
+        <div style="border:1px solid var(--g100);border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:10px">
+          <div class="row" style="gap:10px">
+            <div class="avatar" style="width:42px;height:42px">Q</div>
+            <div style="flex:1">
+              <div class="row" style="gap:4px;font-size:14px;font-weight:800">Quốc Cường <svg class="i" style="width:14px;height:14px;color:var(--success)"><use href="#shield"/></svg></div>
+              <div class="muted" style="font-size:12px;margin-top:1px">Cách 1,2km • Dự kiến đến ~5 phút</div>
+            </div>
+            <b style="font-size:18px;color:var(--primary-dark)">800.000đ</b>
+          </div>
+          <div class="row" style="justify-content:flex-end"><div class="btn sm">Chấp nhận thợ này</div></div>
+        </div>
+        <div style="border:1px solid var(--g100);border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:10px">
+          <div class="row" style="gap:10px">
+            <div class="avatar" style="width:42px;height:42px">T</div>
+            <div style="flex:1">
+              <div class="row" style="gap:4px;font-size:14px;font-weight:800">Anh Tuấn <svg class="i" style="width:14px;height:14px;color:var(--success)"><use href="#shield"/></svg></div>
+              <div class="muted" style="font-size:12px;margin-top:1px">Cách 860km • Dự kiến đến ~10 giờ 51 phút</div>
+            </div>
+            <b style="font-size:18px;color:var(--primary-dark)">500.000đ</b>
+          </div>
+          <div class="row" style="justify-content:flex-end"><div class="btn sm">Chấp nhận thợ này</div></div>
+        </div>
+      </div>
+      <div style="text-align:center;font-weight:700;color:var(--primary);font-size:14px;margin-top:4px">Hủy yêu cầu</div>
+    </div>
+    <div class="homebar"></div>
+  </div></div>
+</div>
+
+<h2 class="group">Mobile – Thợ / Đối tác</h2>
+<div class="board">
+
+  <!-- 04 Helper dashboard -->
+  <div class="frame-wrap"><div class="frame-name">04 · Tổng quan thợ</div>
+  <div class="phone" style="background:var(--helper-bg)">
+    <div class="statusbar"><span>9:41</span><span class="sys"><span>5G</span><span class="batt"></span></span></div>
+    <div class="body">
+      <div class="row" style="padding:8px 18px 16px;gap:12px;border-bottom:1px solid rgba(255,255,255,.7)">
+        <div class="avatar" style="width:44px;height:44px">T</div>
+        <div style="flex:1">
+          <div class="row" style="gap:4px;font-size:16px;font-weight:800">Anh Tuấn <svg class="i" style="width:16px;height:16px;color:var(--success)"><use href="#shield"/></svg></div>
+          <div class="muted" style="font-size:12px">Đối tác Thợ / Người giúp việc</div>
+        </div>
+        <div class="iconbtn"><svg class="i" style="color:var(--g700)"><use href="#bell"/></svg><span class="dot"></span></div>
+      </div>
+      <div class="pad">
+        <div style="background:#1E1E24;border-radius:18px;padding:16px;color:#fff;display:flex;gap:12px;align-items:center">
+          <div style="flex:1">
+            <div class="row" style="gap:8px;font-size:16px;font-weight:800"><span style="width:9px;height:9px;border-radius:50%;background:var(--success)"></span>Đang nhận đơn mới</div>
+            <div style="font-size:12.500px;color:rgba(255,255,255,.7);margin-top:4px;line-height:1.450">Bạn sẽ nhận được thông báo ngay khi có khách hàng đăng việc gần bạn.</div>
+          </div>
+          <div style="width:46px;height:26px;border-radius:13px;background:var(--primary);position:relative;flex:none"><span style="position:absolute;right:3px;top:3px;width:20px;height:20px;border-radius:50%;background:#fff"></span></div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
+          <div class="card" style="padding:12px"><div style="font-size:10px;font-weight:700;color:var(--g500)">VÍ THU NHẬP</div><div style="font-size:15px;font-weight:900;margin:4px 0">1.700.000đ</div><div style="font-size:11px;font-weight:700;color:var(--primary)">Rút tiền →</div></div>
+          <div class="card" style="padding:12px"><div style="font-size:10px;font-weight:700;color:var(--g500)">ĐÃ LÀM</div><div style="font-size:15px;font-weight:900;margin:4px 0">0 đơn</div><div style="font-size:11px;color:var(--g400)">Tỷ lệ nhận 100%</div></div>
+          <div class="card" style="padding:12px"><div style="font-size:10px;font-weight:700;color:var(--g500)">UY TÍN</div><div style="font-size:15px;font-weight:900;margin:4px 0;color:var(--warning)">★ 5.0</div><div style="font-size:11px;color:var(--g400)">Thợ xuất sắc</div></div>
+        </div>
+        <div><div style="font-size:17px;font-weight:800">Công việc đang tiến hành</div><div class="muted" style="font-size:12px">Nhấn để cập nhật trạng thái di chuyển / hoàn thành</div></div>
+        <div class="card" style="border:2px solid var(--primary);display:flex;flex-direction:column;gap:10px">
+          <div class="row between"><b style="font-size:15px">Deco phòng khách</b><span class="chip" style="background:#FFF7ED;color:#C2410C">Đã nhận đơn</span></div>
+          <div class="row muted" style="gap:14px;font-size:13px"><span class="row" style="gap:4px"><svg class="i" style="width:14px;height:14px"><use href="#map-pin"/></svg>Ngũ Hành Sơn</span><span class="row" style="gap:4px"><svg class="i" style="width:14px;height:14px"><use href="#clock"/></svg>09:00</span></div>
+          <div class="btn" style="height:44px;font-size:13.500px">Cập nhật tiến độ &amp; Nghiệm thu →</div>
+        </div>
+        <div class="row between"><div><div style="font-size:17px;font-weight:800">Đơn hàng gần bạn</div><div class="muted" style="font-size:12px">Tự động cập nhật đơn mới mỗi 30s</div></div><b style="font-size:13px;color:var(--primary)">Xem tất cả</b></div>
+        <div class="card" style="display:flex;flex-direction:column;gap:10px">
+          <div class="row between"><b style="font-size:15px">Lau nhà 56</b><span style="font-size:12px;font-weight:700;color:var(--primary)">một giờ trước</span></div>
+          <div class="row" style="gap:10px;font-size:13px;color:var(--g700)"><span class="chip" style="background:var(--primary-light);color:var(--primary)">Giúp việc theo giờ</span>📍 Cách 1,2km • 🕐 07:00</div>
+          <div class="row between" style="border-top:1px solid var(--g100);padding-top:10px;font-size:13px"><span class="muted">2 thợ đã báo giá</span><b style="color:var(--primary)">Gửi báo giá ngay →</b></div>
+        </div>
+      </div>
+    </div>
+    <div class="tabbar">
+      <div class="tab on"><svg class="i"><use href="#home"/></svg>Tổng quan</div>
+      <div class="tab"><svg class="i"><use href="#list"/></svg>Nhận việc</div>
+      <div class="tab"><svg class="i"><use href="#trend"/></svg>Thu nhập</div>
+      <div class="tab"><svg class="i"><use href="#user"/></svg>Tài khoản</div>
+    </div>
+    <div class="homebar"></div>
+  </div></div>
+
+  <!-- 05 e-KYC -->
+  <div class="frame-wrap"><div class="frame-name">05 · Xác thực danh tính (e-KYC)</div>
+  <div class="phone">
+    <div class="statusbar" style="background:#fff"><span>9:41</span><span class="sys"><span>5G</span><span class="batt"></span></span></div>
+    <div class="header"><div class="iconbtn"><svg class="i"><use href="#arrow-left"/></svg></div><div class="title" style="flex:1;text-align:center">Xác thực danh tính (e-KYC)</div><div style="width:38px"></div></div>
+    <div class="body pad" style="gap:12px">
+      <div style="background:#1E1E24;border-radius:18px;padding:14px 16px;color:#fff">
+        <div class="row" style="gap:8px;font-weight:800;font-size:15px"><svg class="i" style="color:var(--primary)"><use href="#shield"/></svg>Quy chuẩn chụp ảnh e-KYC</div>
+        <div style="font-size:12px;color:rgba(255,255,255,.7);margin-top:6px;line-height:1.500">1. Chụp rõ 4 góc của thẻ CCCD/CMND gốc, không lóa sáng.<br/>2. Ảnh chân dung chụp rõ mặt, không đeo kính râm hoặc khẩu trang.</div>
+      </div>
+      <div class="card" style="padding:14px"><div style="font-size:14px;font-weight:800;margin-bottom:8px">1. Số Căn cước công dân (CCCD) *</div><div class="input" style="font-size:14px">Nhập 12 số CCCD (VD: 079090123456)</div></div>
+      <div class="card" style="padding:14px"><div style="font-size:14px;font-weight:800;margin-bottom:8px">2. Mặt trước CCCD/CMND *</div>
+        <div style="height:96px;border-radius:14px;border:2px dashed var(--g300);background:var(--g50);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;font-size:12.500px;font-weight:700;color:var(--g700)"><div style="width:38px;height:38px;border-radius:50%;background:var(--primary-light);color:var(--primary);display:flex;align-items:center;justify-content:center"><svg class="i"><use href="#camera"/></svg></div>Chụp hoặc chọn ảnh mặt trước</div></div>
+      <div class="card" style="padding:14px"><div style="font-size:14px;font-weight:800;margin-bottom:8px">3. Mặt sau CCCD/CMND *</div>
+        <div style="height:96px;border-radius:14px;border:2px dashed var(--g300);background:var(--g50);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;font-size:12.500px;font-weight:700;color:var(--g700)"><div style="width:38px;height:38px;border-radius:50%;background:var(--primary-light);color:var(--primary);display:flex;align-items:center;justify-content:center"><svg class="i"><use href="#camera"/></svg></div>Chụp hoặc chọn ảnh mặt sau</div></div>
+      <div class="card" style="padding:14px"><div style="font-size:14px;font-weight:800;margin-bottom:8px">4. Ảnh chân dung selfie cầm CCCD *</div>
+        <div style="height:60px;border-radius:14px;border:2px dashed var(--g300);background:var(--g50);display:flex;align-items:center;justify-content:center;gap:8px;font-size:12.500px;font-weight:700;color:var(--g700)"><svg class="i" style="color:var(--primary)"><use href="#camera"/></svg>Chụp ảnh selfie chân dung</div></div>
+      <div class="btn">Gửi hồ sơ xét duyệt e-KYC</div>
+    </div>
+    <div class="homebar"></div>
+  </div></div>
+
+  <!-- 06 Edit profile: working location -->
+  <div class="frame-wrap"><div class="frame-name">06 · Sửa hồ sơ – Vị trí hoạt động</div>
+  <div class="phone">
+    <div class="statusbar" style="background:#fff"><span>9:41</span><span class="sys"><span>5G</span><span class="batt"></span></span></div>
+    <div class="header"><div class="iconbtn"><svg class="i"><use href="#arrow-left"/></svg></div><div class="title" style="flex:1;text-align:center">Chỉnh sửa thông tin cá nhân</div><div style="width:38px"></div></div>
+    <div class="body pad">
+      <div class="card" style="display:flex;flex-direction:column;gap:14px">
+        <div class="row" style="gap:8px;font-size:15.500px;font-weight:800"><svg class="i" style="color:var(--primary)"><use href="#brief"/></svg>Hồ sơ nghề nghiệp &amp; Khu vực làm việc</div>
+        <div><div class="label">Số năm kinh nghiệm</div><div class="input" style="color:var(--g900)">3</div></div>
+        <div><div class="label">Khu vực hoạt động ưu tiên</div><div class="input" style="color:var(--g900)">Ngũ Hành Sơn, Thành phố Đà Nẵng</div></div>
+        <div>
+          <div class="label">Vị trí hoạt động của bạn</div>
+          <div class="mapph" style="height:170px"><div class="water"></div>
+            <div class="pin"><svg viewBox="0 0 24 24"><use href="#map-pin"/></svg></div>
+            <div class="row" style="position:absolute;right:8px;top:8px;gap:5px;background:rgba(17,24,39,.85);color:#fff;border-radius:10px;padding:6px 10px;font-size:12px;font-weight:700"><svg class="i" style="width:13px;height:13px"><use href="#map-pin"/></svg>Mở bản đồ chọn địa chỉ</div>
+          </div>
+          <div class="row" style="gap:4px;font-size:12px;color:var(--g600);margin-top:8px"><svg class="i" style="width:14px;height:14px;color:var(--primary)"><use href="#map-pin"/></svg>Kiệt 49/59 Bình Kỹ, Phường Ngũ Hành Sơn, Thành phố Đà Nẵng</div>
+        </div>
+        <div class="btn soft" style="height:46px;font-size:14px"><svg class="i"><use href="#nav"/></svg>Lấy vị trí GPS hiện tại</div>
+        <div style="font-size:11px;color:var(--g400);line-height:1.450">Mở bản đồ để tìm và ghim vị trí hoạt động cố định — khoảng cách tới khách được tính từ điểm này. Nếu dùng GPS, vị trí sẽ tự cập nhật theo điện thoại.</div>
+      </div>
+      <div class="btn"><svg class="i"><use href="#check"/></svg>Lưu thông tin hồ sơ</div>
+    </div>
+    <div class="homebar"></div>
+  </div></div>
+
+  <!-- 07 Location picker -->
+  <div class="frame-wrap"><div class="frame-name">07 · Chọn vị trí trên bản đồ</div>
+  <div class="phone" style="background:#fff">
+    <div class="statusbar"><span>9:41</span><span class="sys"><span>5G</span><span class="batt"></span></span></div>
+    <div style="padding:8px 14px 10px;display:flex;flex-direction:column;gap:10px;border-bottom:1px solid var(--g100)">
+      <div class="row" style="gap:10px"><div class="iconbtn" style="width:36px;height:36px"><svg class="i" style="color:var(--g700)"><use href="#x"/></svg></div><b style="font-size:16px">Chọn vị trí hoạt động</b></div>
+      <div class="row" style="gap:8px;height:44px;border:1.5px solid var(--g200);border-radius:12px;padding:0 12px;background:var(--g50);color:var(--g400);font-size:14px"><svg class="i" style="width:16px;height:16px"><use href="#search"/></svg>Tìm địa chỉ: số nhà, đường, phường, quận...</div>
+    </div>
+    <div class="mapph" style="flex:1;border:0;border-radius:0"><div class="water" style="width:220px;height:200px"></div>
+      <div style="position:absolute;left:10px;top:10px;background:#fff;border-radius:6px;box-shadow:0 1px 4px rgba(0,0,0,.3);font-weight:800;font-size:18px;line-height:30px;text-align:center;width:30px"><div style="border-bottom:1px solid var(--g200)">+</div><div>−</div></div>
+      <div class="pin"><svg viewBox="0 0 24 24" style="width:38px;height:38px"><use href="#map-pin"/></svg></div>
+      <div style="position:absolute;right:0;bottom:0;background:rgba(255,255,255,.85);font-size:10px;padding:2px 6px;color:var(--g700)">© OpenStreetMap</div>
+    </div>
+    <div style="padding:14px 14px 22px;display:flex;flex-direction:column;gap:10px;border-top:1px solid var(--g100)">
+      <div class="row" style="gap:6px;font-size:13px;color:var(--g700);align-items:flex-start"><svg class="i" style="width:15px;height:15px;color:var(--primary);margin-top:1px"><use href="#map-pin"/></svg>Kiệt 49/59 Bình Kỹ, Phường Ngũ Hành Sơn, Thành phố Đà Nẵng</div>
+      <div class="btn">Lưu vị trí này</div>
+    </div>
+    <div class="homebar"></div>
+  </div></div>
+</div>
+
+<h2 class="group">Admin Portal (web)</h2>
+<div class="board">
+
+  <!-- 08 Admin KYC review -->
+  <div class="frame-wrap"><div class="frame-name">08 · Admin – Duyệt e-KYC Thợ</div>
+  <div class="desk">
+    <div class="side">
+      <div class="brand"><img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDI0IiBoZWlnaHQ9IjEwMjQiIHZpZXdCb3g9IjAgMCAxMDI0IDEwMjQiPjxnIHRyYW5zZm9ybT0idHJhbnNsYXRlKDUxMiA1MTIpIHNjYWxlKDEuMSkgdHJhbnNsYXRlKC01MjUgLTU0NSkiPgogIDxyZWN0IHg9IjExMCIgeT0iODQ4IiB3aWR0aD0iODIwIiBoZWlnaHQ9IjIyIiByeD0iMTEiIGZpbGw9IiMxNTgwM0QiIG9wYWNpdHk9IjAuMjIiLz4KICA8IS0tIGhvdXNlIC0tPgogIDxyZWN0IHg9IjUyMCIgeT0iMjcwIiB3aWR0aD0iNjQiIGhlaWdodD0iMTUwIiByeD0iMTAiIGZpbGw9IiMxNTgwM0QiLz4KICA8cmVjdCB4PSIxNzAiIHk9IjQ3MCIgd2lkdGg9IjQ2MCIgaGVpZ2h0PSIzODAiIHJ4PSIyNiIgZmlsbD0iIzIyQzU1RSIvPgogIDxwb2x5Z29uIHBvaW50cz0iMTMwLDQ5MiA0MDAsMjM2IDY3MCw0OTIiIGZpbGw9IiMxNTgwM0QiIHN0cm9rZT0iIzE1ODAzRCIgc3Ryb2tlLXdpZHRoPSIzNiIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgogIDxyZWN0IHg9IjI0NSIgeT0iNjQwIiB3aWR0aD0iMTI0IiBoZWlnaHQ9IjIxMCIgcng9IjE2IiBmaWxsPSIjRkZGRkZGIi8+CiAgPGNpcmNsZSBjeD0iMzQ1IiBjeT0iNzUwIiByPSIxMCIgZmlsbD0iIzIyQzU1RSIvPgogIDxyZWN0IHg9IjQzNSIgeT0iNTYwIiB3aWR0aD0iMTM0IiBoZWlnaHQ9IjEzNCIgcng9IjE4IiBmaWxsPSIjRkZGRkZGIi8+CiAgPHJlY3QgeD0iNDk2IiB5PSI1NjAiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMzQiIGZpbGw9IiMyMkM1NUUiLz4KICA8cmVjdCB4PSI0MzUiIHk9IjYyMSIgd2lkdGg9IjEzNCIgaGVpZ2h0PSIxMiIgZmlsbD0iIzIyQzU1RSIvPgogIDwhLS0gYnJvb20gLS0+CiAgPGxpbmUgeDE9Ijg5MiIgeTE9IjQ3MCIgeDI9Ijg5MiIgeTI9Ijc4NSIgc3Ryb2tlPSIjOTI0MDBFIiBzdHJva2Utd2lkdGg9IjE2IiBzdHJva2UtbGluZWNhcD0icm91bmQiLz4KICA8cG9seWdvbiBwb2ludHM9Ijg2Miw3ODAgOTIyLDc4MCA5NDAsODUwIDg0NCw4NTAiIGZpbGw9IiNGQkJGMjQiIHN0cm9rZT0iI0ZCQkYyNCIgc3Ryb2tlLXdpZHRoPSIxMCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgogIDwhLS0gaG91c2VrZWVwZXIgLS0+CiAgPHBhdGggZD0iTTcxNCA1NzggaDkyIGEzNCAzNCAwIDAgMSAzNCAzMCBsMjYgMjQyIGgtMjEyIGwyNiAtMjQyIGEzNCAzNCAwIDAgMSAzNCAtMzAgeiIgZmlsbD0iIzBGNzY2RSIvPgogIDxsaW5lIHgxPSI3MTIiIHkxPSI2MTIiIHgyPSI2ODYiIHkyPSI3MDQiIHN0cm9rZT0iIzBGNzY2RSIgc3Ryb2tlLXdpZHRoPSIzNCIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIi8+CiAgPGxpbmUgeDE9IjgwOCIgeTE9IjYxMiIgeDI9Ijg4NCIgeTI9IjY2NCIgc3Ryb2tlPSIjMEY3NjZFIiBzdHJva2Utd2lkdGg9IjM0IiBzdHJva2UtbGluZWNhcD0icm91bmQiLz4KICA8Y2lyY2xlIGN4PSI2ODQiIGN5PSI3MTAiIHI9IjIwIiBmaWxsPSIjRkNEOUI2Ii8+CiAgPGNpcmNsZSBjeD0iODg4IiBjeT0iNjY2IiByPSIyMCIgZmlsbD0iI0ZDRDlCNiIvPgogIDxwYXRoIGQ9Ik03MjQgNjI2IGg3MiBsMTYgMTk2IGExMiAxMiAwIDAgMSAtMTIgMTMgaC04MCBhMTIgMTIgMCAwIDEgLTEyIC0xMyB6IiBmaWxsPSIjRkZGRkZGIi8+CiAgPGNpcmNsZSBjeD0iNzYwIiBjeT0iNDI0IiByPSIzMiIgZmlsbD0iIzNGMkExRCIvPgogIDxjaXJjbGUgY3g9Ijc2MCIgY3k9IjUwMiIgcj0iNjQiIGZpbGw9IiNGQ0Q5QjYiLz4KICA8cGF0aCBkPSJNNjk2IDUwMiBhNjQgNjQgMCAwIDEgMTI4IDAgcS0yMiAtNDQgLTY0IC00NCBxLTQyIDAgLTY0IDQ0IHoiIGZpbGw9IiMzRjJBMUQiLz4KICA8Y2lyY2xlIGN4PSI3MzgiIGN5PSI1MTAiIHI9IjciIGZpbGw9IiMzRjJBMUQiLz4KICA8Y2lyY2xlIGN4PSI3ODIiIGN5PSI1MTAiIHI9IjciIGZpbGw9IiMzRjJBMUQiLz4KICA8cGF0aCBkPSJNNzQwIDUzNCBxMjAgMTggNDAgMCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjM0YyQTFEIiBzdHJva2Utd2lkdGg9IjciIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPgo8L2c+PC9zdmc+" width="44" height="44" alt="" style="border-radius:12px;background:#F0FDF4" /><div><div style="font-size:18px;font-weight:800">Green House</div><div style="font-size:12px;color:#64748B">Admin Portal</div></div></div>
+      <nav>
+        <div class="nav"><svg class="i"><use href="#grid"/></svg>Tổng quan Dashboard</div>
+        <div class="nav"><svg class="i"><use href="#users"/></svg>Quản lý Người dùng</div>
+        <div class="nav"><svg class="i"><use href="#user"/></svg>Đối tác Thợ &amp; Giúp việc</div>
+        <div class="nav on"><svg class="i"><use href="#shield"/></svg>Duyệt e-KYC Thợ</div>
+        <div class="nav"><svg class="i"><use href="#brief"/></svg>Quản lý Đơn hàng</div>
+        <div class="nav"><svg class="i"><use href="#wrench"/></svg>Dịch vụ &amp; Phí</div>
+        <div class="nav"><svg class="i"><use href="#cardi"/></svg>Thanh toán &amp; Rút tiền</div>
+        <div class="nav"><svg class="i"><use href="#star"/></svg>Đánh giá &amp; Phản hồi</div>
+        <div class="nav"><svg class="i"><use href="#chart"/></svg>Thống kê &amp; Báo cáo</div>
+        <div class="nav"><svg class="i"><use href="#mega"/></svg>Gửi thông báo</div>
+      </nav>
+      <div style="padding:16px;border-top:1px solid #E2E8F0"><div style="font-weight:700">Quản Trị Viên</div><div style="font-size:12px;color:#64748B">0999999999</div><div style="font-size:11px;color:#94A3B8;text-align:center;margin-top:12px">Green House v1.0.0</div></div>
+    </div>
+    <div class="main">
+      <div><div style="font-size:30px;font-weight:800;letter-spacing:-.5px">KYC chờ duyệt</div><div style="color:#64748B;margin-top:4px"><b style="color:#0F172A">1</b> hồ sơ đang chờ xét duyệt</div></div>
+      <div style="background:#fff;border:1px solid #E2E8F0;border-radius:8px;overflow:hidden">
+        <table>
+          <tr><th>Họ tên</th><th>SĐT</th><th>CCCD</th><th>Nộp hồ sơ</th><th style="text-align:right">Thao tác</th></tr>
+          <tr>
+            <td style="font-weight:600">Nguyễn Văn A</td><td style="font-family:monospace">0900000000</td><td style="font-family:monospace">079090123456</td><td style="color:#64748B">11/10/2026 17:20</td>
+            <td style="text-align:right"><span class="obtn" style="color:#16A34A;border-color:#86EFAC"><svg class="i" style="width:13px;height:13px"><use href="#check"/></svg>Duyệt</span> <span class="obtn" style="color:#DC2626;border-color:#FCA5A5"><svg class="i" style="width:13px;height:13px"><use href="#xc"/></svg>Từ chối</span></td>
+          </tr>
+        </table>
+        <div style="padding:12px 16px 20px;background:#F8FAFC;display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
+          <div><div style="font-size:12px;font-weight:600;color:#64748B;margin-bottom:4px">CCCD mặt trước</div><div class="imgph"><div class="idcard"><b style="color:#DC2626;font-size:13px;text-align:center">CĂN CƯỚC CÔNG DÂN</b><div class="row" style="gap:10px;margin-top:6px"><div style="width:70px;height:90px;background:#fff;border-radius:4px"></div><div style="display:flex;flex-direction:column;gap:5px"><b style="font-size:13px">079090123456</b><span>Họ và tên: NGUYỄN VĂN A</span><span>Ngày sinh: 01/01/1990</span><span>Giới tính: Nam</span><span>Quê quán: …</span></div></div></div></div></div>
+          <div><div style="font-size:12px;font-weight:600;color:#64748B;margin-bottom:4px">CCCD mặt sau</div><div class="imgph"><div class="idcard"><span>Đặc điểm nhận dạng: …</span><span>Ngày, tháng, năm: 01/01/2021</span><div class="row" style="gap:10px;margin-top:8px"><div style="width:44px;height:36px;border-radius:6px;background:#C9A227"></div><div style="width:70px;height:80px;background:#fff;border-radius:4px"></div><div style="width:70px;height:80px;background:#fff;border-radius:4px"></div></div><span style="font-family:monospace;margin-top:auto">IDVNM0790901234567&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;</span></div></div></div>
+          <div><div style="font-size:12px;font-weight:600;color:#64748B;margin-bottom:4px">Ảnh chân dung</div><div class="imgph"><div class="avatar" style="width:150px;height:150px;font-size:48px">A</div></div></div>
+        </div>
+      </div>
+    </div>
+  </div></div>
+
+  <!-- 09 Admin login -->
+  <div class="frame-wrap"><div class="frame-name">09 · Admin – Đăng nhập</div>
+  <div class="desk" style="align-items:center;justify-content:center;background:#F1F5F9">
+    <div style="width:448px;background:#fff;border:1px solid #E2E8F0;border-radius:8px;padding:32px;display:flex;flex-direction:column;gap:16px">
+      <div style="text-align:center"><img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDI0IiBoZWlnaHQ9IjEwMjQiIHZpZXdCb3g9IjAgMCAxMDI0IDEwMjQiPjxnIHRyYW5zZm9ybT0idHJhbnNsYXRlKDUxMiA1MTIpIHNjYWxlKDEuMSkgdHJhbnNsYXRlKC01MjUgLTU0NSkiPgogIDxyZWN0IHg9IjExMCIgeT0iODQ4IiB3aWR0aD0iODIwIiBoZWlnaHQ9IjIyIiByeD0iMTEiIGZpbGw9IiMxNTgwM0QiIG9wYWNpdHk9IjAuMjIiLz4KICA8IS0tIGhvdXNlIC0tPgogIDxyZWN0IHg9IjUyMCIgeT0iMjcwIiB3aWR0aD0iNjQiIGhlaWdodD0iMTUwIiByeD0iMTAiIGZpbGw9IiMxNTgwM0QiLz4KICA8cmVjdCB4PSIxNzAiIHk9IjQ3MCIgd2lkdGg9IjQ2MCIgaGVpZ2h0PSIzODAiIHJ4PSIyNiIgZmlsbD0iIzIyQzU1RSIvPgogIDxwb2x5Z29uIHBvaW50cz0iMTMwLDQ5MiA0MDAsMjM2IDY3MCw0OTIiIGZpbGw9IiMxNTgwM0QiIHN0cm9rZT0iIzE1ODAzRCIgc3Ryb2tlLXdpZHRoPSIzNiIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgogIDxyZWN0IHg9IjI0NSIgeT0iNjQwIiB3aWR0aD0iMTI0IiBoZWlnaHQ9IjIxMCIgcng9IjE2IiBmaWxsPSIjRkZGRkZGIi8+CiAgPGNpcmNsZSBjeD0iMzQ1IiBjeT0iNzUwIiByPSIxMCIgZmlsbD0iIzIyQzU1RSIvPgogIDxyZWN0IHg9IjQzNSIgeT0iNTYwIiB3aWR0aD0iMTM0IiBoZWlnaHQ9IjEzNCIgcng9IjE4IiBmaWxsPSIjRkZGRkZGIi8+CiAgPHJlY3QgeD0iNDk2IiB5PSI1NjAiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMzQiIGZpbGw9IiMyMkM1NUUiLz4KICA8cmVjdCB4PSI0MzUiIHk9IjYyMSIgd2lkdGg9IjEzNCIgaGVpZ2h0PSIxMiIgZmlsbD0iIzIyQzU1RSIvPgogIDwhLS0gYnJvb20gLS0+CiAgPGxpbmUgeDE9Ijg5MiIgeTE9IjQ3MCIgeDI9Ijg5MiIgeTI9Ijc4NSIgc3Ryb2tlPSIjOTI0MDBFIiBzdHJva2Utd2lkdGg9IjE2IiBzdHJva2UtbGluZWNhcD0icm91bmQiLz4KICA8cG9seWdvbiBwb2ludHM9Ijg2Miw3ODAgOTIyLDc4MCA5NDAsODUwIDg0NCw4NTAiIGZpbGw9IiNGQkJGMjQiIHN0cm9rZT0iI0ZCQkYyNCIgc3Ryb2tlLXdpZHRoPSIxMCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgogIDwhLS0gaG91c2VrZWVwZXIgLS0+CiAgPHBhdGggZD0iTTcxNCA1NzggaDkyIGEzNCAzNCAwIDAgMSAzNCAzMCBsMjYgMjQyIGgtMjEyIGwyNiAtMjQyIGEzNCAzNCAwIDAgMSAzNCAtMzAgeiIgZmlsbD0iIzBGNzY2RSIvPgogIDxsaW5lIHgxPSI3MTIiIHkxPSI2MTIiIHgyPSI2ODYiIHkyPSI3MDQiIHN0cm9rZT0iIzBGNzY2RSIgc3Ryb2tlLXdpZHRoPSIzNCIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIi8+CiAgPGxpbmUgeDE9IjgwOCIgeTE9IjYxMiIgeDI9Ijg4NCIgeTI9IjY2NCIgc3Ryb2tlPSIjMEY3NjZFIiBzdHJva2Utd2lkdGg9IjM0IiBzdHJva2UtbGluZWNhcD0icm91bmQiLz4KICA8Y2lyY2xlIGN4PSI2ODQiIGN5PSI3MTAiIHI9IjIwIiBmaWxsPSIjRkNEOUI2Ii8+CiAgPGNpcmNsZSBjeD0iODg4IiBjeT0iNjY2IiByPSIyMCIgZmlsbD0iI0ZDRDlCNiIvPgogIDxwYXRoIGQ9Ik03MjQgNjI2IGg3MiBsMTYgMTk2IGExMiAxMiAwIDAgMSAtMTIgMTMgaC04MCBhMTIgMTIgMCAwIDEgLTEyIC0xMyB6IiBmaWxsPSIjRkZGRkZGIi8+CiAgPGNpcmNsZSBjeD0iNzYwIiBjeT0iNDI0IiByPSIzMiIgZmlsbD0iIzNGMkExRCIvPgogIDxjaXJjbGUgY3g9Ijc2MCIgY3k9IjUwMiIgcj0iNjQiIGZpbGw9IiNGQ0Q5QjYiLz4KICA8cGF0aCBkPSJNNjk2IDUwMiBhNjQgNjQgMCAwIDEgMTI4IDAgcS0yMiAtNDQgLTY0IC00NCBxLTQyIDAgLTY0IDQ0IHoiIGZpbGw9IiMzRjJBMUQiLz4KICA8Y2lyY2xlIGN4PSI3MzgiIGN5PSI1MTAiIHI9IjciIGZpbGw9IiMzRjJBMUQiLz4KICA8Y2lyY2xlIGN4PSI3ODIiIGN5PSI1MTAiIHI9IjciIGZpbGw9IiMzRjJBMUQiLz4KICA8cGF0aCBkPSJNNzQwIDUzNCBxMjAgMTggNDAgMCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjM0YyQTFEIiBzdHJva2Utd2lkdGg9IjciIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPgo8L2c+PC9zdmc+" width="64" height="64" alt="" style="border-radius:16px;background:#F0FDF4" /><div style="font-size:24px;font-weight:700;margin-top:12px">Green House Admin</div><div style="font-size:14px;color:#64748B;margin-top:4px">Đăng nhập vào hệ thống quản trị</div></div>
+      <div><div style="font-size:14px;font-weight:600;margin-bottom:6px">Số điện thoại</div><div style="height:40px;border:1px solid #E2E8F0;border-radius:6px;padding:0 12px;display:flex;align-items:center;color:#94A3B8">0901234567</div></div>
+      <div><div style="font-size:14px;font-weight:600;margin-bottom:6px">Mật khẩu</div><div style="height:40px;border:1px solid #E2E8F0;border-radius:6px;padding:0 12px;display:flex;align-items:center;color:#94A3B8">••••••••</div></div>
+      <div style="height:40px;border-radius:6px;background:var(--primary-dark);color:#fff;font-weight:600;display:flex;align-items:center;justify-content:center">Đăng nhập</div>
+    </div>
+  </div></div>
+</div>
+
+</body>
+</html>

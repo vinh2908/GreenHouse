@@ -72,6 +72,13 @@ const STATUS_STEPS = [
 
 const STATUS_ORDER = STATUS_STEPS.map(s => s.key);
 
+// 45 -> "45 phút", 651 -> "10 giờ 51 phút"
+function formatTravelTime(minutes?: number): string {
+  const m = Math.max(1, Math.round(minutes ?? 0));
+  if (m < 60) return `${m} phút`;
+  return m % 60 ? `${Math.floor(m / 60)} giờ ${m % 60} phút` : `${m / 60} giờ`;
+}
+
 export default function JobDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
@@ -523,10 +530,11 @@ export default function JobDetailScreen() {
                           <ShieldCheck size={14} color={COLORS.success} />
                         </View>
                         <Text style={{ fontSize: 12, color: COLORS.gray[500], marginTop: 1 }}>
-                          Dự kiến: {q.estimated_duration}h •{' '}
-                          {q.available_date
-                            ? dayjs(q.available_date).format('DD/MM')
-                            : 'Có mặt ngay'}
+                          {/* Thời gian di chuyển thực tế theo quãng đường, không phải số giờ thợ tự ước tính */}
+                          {q.distance_km != null
+                            ? `Cách ${q.distance_km}km • Dự kiến đến ~${formatTravelTime(q.estimated_minutes)}`
+                            : 'Chưa xác định được vị trí thợ'}
+                          {q.available_date && ` • ${dayjs(q.available_date).format('DD/MM')}`}
                         </Text>
                       </View>
                       <PriceText amount={q.total_price} size={18} />

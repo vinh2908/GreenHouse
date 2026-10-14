@@ -1,21 +1,16 @@
-import { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, RefreshControl, Image } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, RefreshControl } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import {
   ArrowLeft,
   ShieldCheck,
   Star,
-  Clock,
   CheckCircle2,
   Wrench,
   MessageCircle,
-  Phone,
-  MapPin,
   Calendar,
   Award,
   ThumbsUp,
-  Sparkles,
 } from 'lucide-react-native';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
@@ -29,8 +24,6 @@ import {
   LoadingSpinner,
   COLORS,
   Separator,
-  PriceText,
-  Badge,
   StarRating,
 } from '@/components/ui';
 
@@ -56,11 +49,11 @@ export default function HelperPublicProfileScreen() {
 
   const helperUser =
     typeof profile?.user_id === 'object' && profile?.user_id ? profile.user_id : {};
-  const helperName = helperUser?.full_name || profile?.full_name || 'Anh Tuấn (Thợ Điện Nước)';
+  const helperName = helperUser?.full_name || profile?.full_name || 'Thợ';
   const helperAvatar = helperUser?.avatar || profile?.avatar;
-  const ratingScore = profile?.average_rating || profile?.rating || 4.9;
-  const totalCompleted = profile?.total_completed || profile?.completed_jobs || 48;
-  const isVerified = profile?.verification_status === 'approved' || true;
+  const ratingScore = profile?.average_rating || profile?.rating || 0;
+  const totalCompleted = profile?.total_completed || profile?.completed_jobs || 0;
+  const isVerified = profile?.verification_status === 'approved';
 
   const reviewsList = reviewsData?.reviews || [];
   const insets = useSafeAreaInsets();
@@ -137,9 +130,11 @@ export default function HelperPublicProfileScreen() {
             <Text style={{ fontSize: 20, fontWeight: '900', color: COLORS.gray[900] }}>
               {helperName}
             </Text>
-            <Text style={{ fontSize: 13, color: COLORS.gray[500], fontWeight: '500' }}>
-              32 tuổi • Hoạt động: Quận 1, Bình Thạnh, Q.3 (TP.HCM)
-            </Text>
+            {profile?.working_areas?.length > 0 && (
+              <Text style={{ fontSize: 13, color: COLORS.gray[500], fontWeight: '500' }}>
+                Hoạt động: {profile.working_areas.join(', ')}
+              </Text>
+            )}
           </View>
 
           {/* Huy hiệu xác minh tư pháp / e-KYC */}
@@ -174,7 +169,7 @@ export default function HelperPublicProfileScreen() {
               </Text>
             </View>
             <Text style={{ fontSize: 11, color: COLORS.gray[500], fontWeight: '700' }}>
-              {reviewsList.length > 0 ? `${reviewsList.length} đánh giá` : '48 đánh giá'}
+              {profile?.total_reviews || reviewsList.length || 0} đánh giá
             </Text>
           </Card>
 
@@ -190,7 +185,7 @@ export default function HelperPublicProfileScreen() {
 
           {/* Đúng giờ */}
           <Card style={{ flex: 1, alignItems: 'center', padding: 14, gap: 4 }}>
-            <Text style={{ fontSize: 20, fontWeight: '900', color: COLORS.success }}>99%</Text>
+            <Text style={{ fontSize: 20, fontWeight: '900', color: COLORS.success }}>{profile?.completion_rate ?? 0}%</Text>
             <Text style={{ fontSize: 11, color: COLORS.gray[500], fontWeight: '700' }}>
               Đúng giờ hẹn
             </Text>
@@ -214,8 +209,8 @@ export default function HelperPublicProfileScreen() {
             </Text>
           </View>
           <Text style={{ fontSize: 12.5, color: '#92400E', lineHeight: 18 }}>
-            • Tỷ lệ hoàn thành công việc: 100% (Không hủy ngang).{'\n'}• Hơn 3 năm kinh nghiệm thực
-            tế trong lĩnh vực điện nước & gia dụng.{'\n'}• Bảo hành chất lượng dịch vụ và bảo hiểm
+            • Tỷ lệ hoàn thành công việc: {profile?.completion_rate ?? 0}% (Không hủy ngang).{'\n'}• {profile?.years_experience ? `Hơn ${profile.years_experience} năm` : 'Có'} kinh nghiệm thực
+            tế trong lĩnh vực.{'\n'}• Bảo hành chất lượng dịch vụ và bảo hiểm
             an toàn trong quá trình làm việc.
           </Text>
         </Card>
@@ -229,43 +224,34 @@ export default function HelperPublicProfileScreen() {
             </Text>
           </View>
 
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-            {[
-              'Sửa chập điện âm tường',
-              'Thay aptomat & ổ cắm an toàn',
-              'Thông tắc bồn rửa & ống cống',
-              'Vệ sinh máy lạnh chuyên sâu',
-              'Sửa máy giặt & tủ lạnh',
-              'Lắp đặt đèn LED & quạt trần',
-            ].map(skill => (
-              <View
-                key={skill}
-                style={{
-                  backgroundColor: COLORS.gray[100],
-                  borderRadius: 10,
-                  paddingHorizontal: 12,
-                  paddingVertical: 7,
-                }}
-              >
-                <Text style={{ fontSize: 12.5, fontWeight: '700', color: COLORS.gray[800] }}>
-                  ✓ {skill}
-                </Text>
-              </View>
-            ))}
-          </View>
+          {profile?.skills?.length > 0 && (
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+              {profile.skills.map((skill: string) => (
+                <View
+                  key={skill}
+                  style={{
+                    backgroundColor: COLORS.gray[100],
+                    borderRadius: 10,
+                    paddingHorizontal: 12,
+                    paddingVertical: 7,
+                  }}
+                >
+                  <Text style={{ fontSize: 12.5, fontWeight: '700', color: COLORS.gray[800] }}>
+                    ✓ {skill}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          )}
 
-          <Separator my={4} />
-
-          <View style={{ gap: 4 }}>
-            <Text style={{ fontSize: 13.5, fontWeight: '800', color: COLORS.gray[800] }}>
-              🧰 Dụng cụ mang theo:
-            </Text>
-            <Text style={{ fontSize: 13, color: COLORS.gray[600], lineHeight: 19 }}>
-              Thợ tự túc mang đầy đủ đồ nghề chuyên nghiệp: Đồng hồ đo điện tử Fluke, máy khoan bê
-              tông Bosch, máy thông cống áp lực cao, bạt hứng nước vệ sinh máy lạnh và đồ bảo hộ an
-              toàn.
-            </Text>
-          </View>
+          {profile?.bio && (
+            <>
+              <Separator my={4} />
+              <Text style={{ fontSize: 13, color: COLORS.gray[600], lineHeight: 19 }}>
+                {profile.bio}
+              </Text>
+            </>
+          )}
         </Card>
 
         {/* ── 4. BẢNG GIÁ THAM KHẢO & KHUNG GIỜ HOẠT ĐỘNG ─────────────── */}
@@ -321,7 +307,7 @@ export default function HelperPublicProfileScreen() {
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
               <ThumbsUp size={18} color={COLORS.primary} />
               <Text style={{ fontSize: 16, fontWeight: '800', color: COLORS.gray[900] }}>
-                Khách hàng đánh giá ({reviewsList.length > 0 ? reviewsList.length : '3'})
+                Khách hàng đánh giá ({profile?.total_reviews || reviewsList.length || 0})
               </Text>
             </View>
             <StarRating rating={ratingScore} />

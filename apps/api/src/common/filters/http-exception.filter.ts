@@ -34,7 +34,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
         code = (res.error as string) || code;
         details = Array.isArray(res.message) ? (res.message as unknown[]) : [];
         if (details.length > 0) {
-          message = 'Validation failed';
+          message = typeof details[0] === 'string' ? details[0] : 'Validation failed';
         }
       }
     } else if (exception instanceof Error && this.isBadInput(exception)) {

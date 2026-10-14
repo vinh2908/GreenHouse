@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import * as SecureStore from 'expo-secure-store';
+import * as SecureStore from '@/services/secure-storage';
 import type { IUser, UserRole } from '@homemate/types';
 
 interface AuthState {

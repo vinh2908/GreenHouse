@@ -383,18 +383,27 @@ export default function HelperJobDetailScreen() {
           <Separator my={4} />
           <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 8 }}>
             <Text style={{ fontSize: 16 }}>📍</Text>
-            <Text
-              style={{
-                flex: 1,
-                fontSize: 14,
-                color: COLORS.gray[700],
-                lineHeight: 20,
-                fontWeight: '600',
-              }}
-            >
-              {job.address?.full_address}
-              {job.address?.district ? `, ${job.address.district}` : ''}
-            </Text>
+            <View style={{ flex: 1, gap: 4 }}>
+              <Text
+                style={{
+                  fontSize: 14,
+                  color: COLORS.gray[700],
+                  lineHeight: 20,
+                  fontWeight: '600',
+                }}
+              >
+                {job.address?.full_address}
+                {job.address?.district ? `, ${job.address.district}` : ''}
+              </Text>
+              {job.distance_km != null && (
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                  <Navigation size={14} color={COLORS.primary} />
+                  <Text style={{ fontSize: 13, color: COLORS.primary, fontWeight: '700' }}>
+                    Cách bạn {job.distance_km} km ~ {job.estimated_minutes ?? '?'} phút di chuyển
+                  </Text>
+                </View>
+              )}
+            </View>
           </View>
         </Card>
 

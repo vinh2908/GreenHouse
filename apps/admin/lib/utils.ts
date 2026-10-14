@@ -5,6 +5,19 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+// Uploaded files keep the host the uploader used (LAN IP, 10.0.2.2 on the emulator),
+// which this browser may not reach; re-point them at the API origin the admin uses.
+export function mediaUrl(url?: string | null): string | undefined {
+  if (!url) return undefined;
+  const i = url.indexOf('/uploads/');
+  if (i === -1) return url;
+  const origin = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api/v1').replace(
+    /\/api\/v1\/?$/,
+    '',
+  );
+  return `${origin}${url.slice(i)}`;
+}
+
 export function formatVND(amount: number): string {
   return new Intl.NumberFormat('vi-VN', {
     style: 'currency',

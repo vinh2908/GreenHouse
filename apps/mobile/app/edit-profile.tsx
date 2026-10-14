@@ -9,7 +9,10 @@ import {
   Platform,
   Image,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
+import { LocationPicker, LocationPreview, PickerCoords } from '@/components/common/location-picker';
+import type { LocationResult } from '@/services/location.service';
 import * as ImagePicker from 'expo-image-picker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -26,12 +29,15 @@ import {
   Briefcase,
   FileText,
   Check,
+  Navigation,
 } from 'lucide-react-native';
 import Toast from 'react-native-toast-message';
 import { useAuthStore } from '@/stores/auth.store';
-import { useMyProfile, useUpdateProfile, useHelperProfile } from '@/hooks/use-api';
+import { useMyProfile, useUpdateProfile, useHelperProfile, useUpdateHelperLocation, useAddresses } from '@/hooks/use-api';
+import { useQueryClient } from '@tanstack/react-query';
 import apiClient from '@/services/api-client';
 import { uploadFile } from '@/services/upload.service';
+import { locationService } from '@/services/location.service';
 import { Button, Card, LoadingSpinner, COLORS, Separator, Avatar } from '@/components/ui';
 
 // Bộ sưu tập avatar chuyên nghiệp có sẵn để người dùng chọn nhanh 1 chạm
@@ -46,12 +52,16 @@ const PRESET_AVATARS = [
 
 export default function EditProfileScreen() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { user, setUser } = useAuthStore();
-  const { data: myProfile, isLoading: uLoading, refetch: refetchUser } = useMyProfile();
-  const { data: helperProfile, refetch: refetchHelper } = useHelperProfile();
+  const { data: myProfile, isLoading: uLoading } = useMyProfile();
+  const { data: helperProfile } = useHelperProfile();
   const updateProfileMutation = useUpdateProfile();
 
   const isHelper = user?.active_role === 'helper';
+  const updateLocation = useUpdateHelperLocation();
+  const { data: customerAddresses } = useAddresses();
+  const [pickerFor, setPickerFor] = useState<'helper' | 'customer' | null>(null);
 
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
@@ -60,17 +70,23 @@ export default function EditProfileScreen() {
   const [birthYear, setBirthYear] = useState('1994');
 
   // Customization cho Khách hàng
-  const [defaultAddress, setDefaultAddress] = useState(
-    '128 Đường Lê Lợi, Phường Bến Thành, Quận 1',
-  );
-  const [homeNote, setHomeNote] = useState('Bấm chuông lầu 2, nhà có thang máy');
+  const [defaultAddress, setDefaultAddress] = useState('');
+  const [homeNote, setHomeNote] = useState('');
+  const [customerCoords, setCustomerCoords] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [customerLocationText, setCustomerLocationText] = useState('');
+  const [customerGpsLoading, setCustomerGpsLoading] = useState(false);
+  const [customerAddressIndex, setCustomerAddressIndex] = useState<number | null>(null);
+  const [customerGeoData, setCustomerGeoData] = useState<{ district: string; city: string; ward?: string; street?: string } | null>(null);
 
   // Customization cho Thợ
-  const [experienceYears, setExperienceYears] = useState('3');
-  const [workingAreas, setWorkingAreas] = useState('Quận 1, Quận 3, Bình Thạnh, TP. Thủ Đức');
-  const [bio, setBio] = useState(
-    'Thợ chuyên nghiệp, đầy đủ đồ nghề Bosch & Fluke, nhiệt tình, có mặt đúng giờ.',
-  );
+  const [experienceYears, setExperienceYears] = useState('');
+  const [workingAreas, setWorkingAreas] = useState('');
+  const [bio, setBio] = useState('');
+  const [helperCoords, setHelperCoords] = useState<{ latitude: number; longitude: number } | null>(null);
+  // Set only when the helper changes the pin: 'manual' = tapped the map, 'gps' = used the GPS button.
+  const [coordsSource, setCoordsSource] = useState<'manual' | 'gps' | null>(null);
+  const [locationAddress, setLocationAddress] = useState('');
+  const [gpsLoading, setGpsLoading] = useState(false);
 
   const [saving, setSaving] = useState(false);
 
@@ -80,8 +96,48 @@ export default function EditProfileScreen() {
       if (current.full_name) setFullName(current.full_name);
       if (current.email) setEmail(current.email);
       if (current.avatar) setAvatar(current.avatar);
+      if (current.gender) setGender(current.gender);
     }
   }, [myProfile, user]);
+
+  useEffect(() => {
+    if (customerAddresses?.length) {
+      const defaultIdx = customerAddresses.findIndex((a: any) => a.is_default);
+      const idx = defaultIdx >= 0 ? defaultIdx : 0;
+      const addr = customerAddresses[idx];
+      setCustomerAddressIndex(idx);
+      setDefaultAddress(addr.full_address ?? '');
+      setHomeNote(addr.notes ?? '');
+      if (addr.location?.coordinates) {
+        const [lng, lat] = addr.location.coordinates;
+        setCustomerCoords({ latitude: lat, longitude: lng });
+        setCustomerLocationText(addr.full_address ?? '');
+      }
+      setCustomerGeoData({
+        district: addr.district ?? '',
+        city: addr.city ?? '',
+        ward: addr.ward,
+        street: addr.street,
+      });
+    }
+  }, [customerAddresses]);
+
+  useEffect(() => {
+    if (helperProfile) {
+      setBio(helperProfile.bio ?? '');
+      setExperienceYears(helperProfile.years_experience != null ? String(helperProfile.years_experience) : '');
+      setWorkingAreas(helperProfile.working_areas?.join(', ') ?? '');
+      if (helperProfile.location?.coordinates) {
+        const [lng, lat] = helperProfile.location.coordinates;
+        setHelperCoords({ latitude: lat, longitude: lng });
+        locationService.reverseGeocode(lat, lng).then(geo => {
+          if (geo) setLocationAddress(geo.full_address);
+        });
+      }
+    }
+  }, [helperProfile]);
+
+  const insets = useSafeAreaInsets();
 
   if (uLoading) return <LoadingSpinner />;
 
@@ -165,6 +221,7 @@ export default function EditProfileScreen() {
         full_name: fullName.trim(),
         email: email.trim() || undefined,
         avatar: avatarUrl || undefined,
+        gender,
       });
 
       // Cập nhật State trong AuthStore
@@ -174,25 +231,39 @@ export default function EditProfileScreen() {
           full_name: fullName.trim(),
           email: email.trim(),
           avatar: avatarUrl,
+          gender,
         };
       setUser(updatedUser);
 
-      // 2. Nếu là Thợ -> Cập nhật thêm thông tin chuyên môn
+      // 2. Nếu là Thợ -> Cập nhật thêm thông tin chuyên môn + vị trí GPS
       if (isHelper) {
-        try {
-          await apiClient.patch('/helpers/me/profile', {
-            working_areas: workingAreas
-              .split(',')
-              .map(a => a.trim())
-              .filter(Boolean),
+        await apiClient.patch('/helpers/me/profile', {
+          bio: bio.trim() || undefined,
+          years_experience: parseInt(experienceYears, 10) || 0,
+          working_areas: workingAreas
+            .split(',')
+            .map(a => a.trim())
+            .filter(Boolean),
+        });
+
+        if (helperCoords && coordsSource) {
+          await updateLocation.mutateAsync({
+            coordinates: [helperCoords.longitude, helperCoords.latitude],
+            source: coordsSource,
           });
-        } catch {
-          /* ignore helper specific update */
         }
       }
 
-      refetchUser();
-      refetchHelper();
+      // 3. Nếu là Khách hàng -> Lưu địa chỉ mặc định với GPS
+      if (!isHelper && customerCoords && defaultAddress.trim()) {
+        await persistCustomerAddress(customerCoords, defaultAddress, customerGeoData);
+      }
+
+      queryClient.invalidateQueries({ queryKey: ['profile', 'me'] });
+      queryClient.invalidateQueries({ queryKey: ['helper', 'profile'] });
+      queryClient.invalidateQueries({ queryKey: ['helper', 'public'] });
+      queryClient.invalidateQueries({ queryKey: ['addresses'] });
+      queryClient.invalidateQueries({ queryKey: ['customer', 'profile'] });
 
       Toast.show({ type: 'success', text1: 'Đã lưu thông tin hồ sơ thành công!' });
       handleBack();
@@ -204,10 +275,100 @@ export default function EditProfileScreen() {
     }
   };
 
-  const insets = useSafeAreaInsets();
+  type Coords = { latitude: number; longitude: number };
+  type GeoData = { district: string; city: string; ward?: string; street?: string } | null;
+
+  // Vị trí chọn trong bản đồ toàn màn hình được lưu ngay.
+  const handlePickerConfirm = (coords: PickerCoords, geo: LocationResult | null) => {
+    const target = pickerFor;
+    setPickerFor(null);
+    if (target === 'helper') {
+      setHelperCoords(coords);
+      setCoordsSource('manual');
+      saveHelperLocationNow(coords, 'manual');
+      if (geo) {
+        setLocationAddress(geo.full_address);
+        const area = [geo.district, geo.city].filter(Boolean).join(', ');
+        if (area) setWorkingAreas(area);
+      }
+    } else if (target === 'customer') {
+      setCustomerCoords(coords);
+      if (geo) {
+        const geoData = {
+          district: geo.district ?? '',
+          city: geo.city ?? '',
+          ward: geo.ward,
+          street: geo.road,
+        };
+        setDefaultAddress(geo.full_address);
+        setCustomerLocationText(geo.full_address);
+        setCustomerGeoData(geoData);
+        saveCustomerAddressNow(coords, geo.full_address, geoData);
+      }
+    }
+  };
+
+  // Lưu ngay vị trí thợ khi ghim bản đồ / bấm GPS, không chờ nút Lưu.
+  const saveHelperLocationNow = async (coords: Coords, source: 'manual' | 'gps') => {
+    try {
+      await updateLocation.mutateAsync({
+        coordinates: [coords.longitude, coords.latitude],
+        source,
+      });
+      setCoordsSource(null);
+      Toast.show({ type: 'success', text1: 'Đã lưu vị trí hoạt động' });
+    } catch {
+      // Giữ coordsSource để nút Lưu gửi lại.
+      Toast.show({ type: 'error', text1: 'Chưa lưu được vị trí', text2: 'Bấm Lưu để thử lại' });
+    }
+  };
+
+  const persistCustomerAddress = async (coords: Coords, fullAddress: string, geo: GeoData) => {
+    const addressDto = {
+      label: 'Nhà',
+      full_address: fullAddress.trim(),
+      street: geo?.street || undefined,
+      ward: geo?.ward || undefined,
+      district: geo?.district || 'Quận 1',
+      city: geo?.city || 'Hồ Chí Minh',
+      location: {
+        type: 'Point',
+        coordinates: [coords.longitude, coords.latitude] as [number, number],
+      },
+      notes: homeNote.trim() || undefined,
+      is_default: true,
+    };
+
+    if (customerAddressIndex != null) {
+      await apiClient.put(`/customers/me/addresses/${customerAddressIndex}`, addressDto);
+    } else {
+      await apiClient.post('/customers/me/addresses', addressDto);
+    }
+    // Chờ tải lại để lần lưu sau cập nhật đúng địa chỉ vừa tạo thay vì tạo trùng.
+    await queryClient.invalidateQueries({ queryKey: ['addresses'] });
+  };
+
+  // Lưu ngay địa chỉ khách khi ghim bản đồ / bấm GPS, không chờ nút Lưu.
+  const saveCustomerAddressNow = async (coords: Coords, fullAddress: string, geo: GeoData) => {
+    if (!fullAddress.trim()) return;
+    try {
+      await persistCustomerAddress(coords, fullAddress, geo);
+      Toast.show({ type: 'success', text1: 'Đã lưu địa chỉ hiện tại' });
+    } catch {
+      Toast.show({ type: 'error', text1: 'Chưa lưu được địa chỉ', text2: 'Bấm Lưu để thử lại' });
+    }
+  };
+
 
   return (
     <View style={{ flex: 1, backgroundColor: '#F8F9FA' }}>
+      <LocationPicker
+        visible={pickerFor !== null}
+        title={pickerFor === 'customer' ? 'Chọn địa chỉ nhà' : 'Chọn vị trí hoạt động'}
+        initial={pickerFor === 'customer' ? customerCoords : helperCoords}
+        onClose={() => setPickerFor(null)}
+        onConfirm={handlePickerConfirm}
+      />
       {/* ── Top Header (Safe Insets) ─────────────────────────────────── */}
       <View
         style={{
@@ -530,6 +691,116 @@ export default function EditProfileScreen() {
                 />
               </View>
 
+              {/* ── Vị trí GPS trên bản đồ ──────────────────────────── */}
+              <View style={{ gap: 8 }}>
+                <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.gray[700] }}>
+                  Vị trí hoạt động của bạn
+                </Text>
+
+                <View
+                  style={{
+                    borderRadius: 14,
+                    overflow: 'hidden',
+                    borderWidth: 1.5,
+                    borderColor: COLORS.gray[200],
+                    height: 200,
+                  }}
+                >
+                  <TouchableOpacity
+                    activeOpacity={0.85}
+                    onPress={() => setPickerFor('helper')}
+                    style={{ flex: 1 }}
+                  >
+                    <LocationPreview coords={helperCoords} />
+                    <View
+                      style={{
+                        position: 'absolute',
+                        right: 8,
+                        top: 8,
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        gap: 5,
+                        backgroundColor: 'rgba(17,24,39,0.85)',
+                        borderRadius: 10,
+                        paddingHorizontal: 10,
+                        paddingVertical: 6,
+                      }}
+                    >
+                      <MapPin size={13} color="#fff" />
+                      <Text style={{ color: '#fff', fontSize: 12, fontWeight: '700' }}>
+                        Mở bản đồ chọn địa chỉ
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                </View>
+
+                {locationAddress ? (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                    <MapPin size={14} color={COLORS.primary} />
+                    <Text
+                      style={{ fontSize: 12, color: COLORS.gray[600], flex: 1 }}
+                      numberOfLines={2}
+                    >
+                      {locationAddress}
+                    </Text>
+                  </View>
+                ) : null}
+
+                <TouchableOpacity
+                  activeOpacity={0.8}
+                  disabled={gpsLoading}
+                  onPress={async () => {
+                    setGpsLoading(true);
+                    try {
+                      const coords = await locationService.getCurrentCoordinates();
+                      if (coords) {
+                        setHelperCoords(coords);
+                        setCoordsSource('gps');
+                        const geo = await locationService.reverseGeocode(coords.latitude, coords.longitude);
+                        if (geo) {
+                          setLocationAddress(geo.full_address);
+                          const area = [geo.district, geo.city].filter(Boolean).join(', ');
+                          if (area) setWorkingAreas(area);
+                        }
+                        await saveHelperLocationNow(coords, 'gps');
+                      } else {
+                        Toast.show({
+                          type: 'error',
+                          text1: 'Không lấy được vị trí',
+                          text2: 'Vui lòng bật GPS/Dịch vụ vị trí trên điện thoại',
+                        });
+                      }
+                    } finally {
+                      setGpsLoading(false);
+                    }
+                  }}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 8,
+                    paddingVertical: 12,
+                    borderRadius: 12,
+                    backgroundColor: COLORS.primaryLight,
+                    borderWidth: 1.5,
+                    borderColor: COLORS.primary,
+                  }}
+                >
+                  {gpsLoading ? (
+                    <ActivityIndicator size="small" color={COLORS.primary} />
+                  ) : (
+                    <Navigation size={16} color={COLORS.primary} />
+                  )}
+                  <Text style={{ fontSize: 14, fontWeight: '800', color: COLORS.primary }}>
+                    {gpsLoading ? 'Đang lấy vị trí...' : 'Lấy vị trí GPS hiện tại'}
+                  </Text>
+                </TouchableOpacity>
+
+                <Text style={{ fontSize: 11, color: COLORS.gray[400], lineHeight: 16 }}>
+                  Mở bản đồ để tìm và ghim vị trí hoạt động cố định — khoảng cách tới khách được tính từ điểm này. Nếu dùng GPS, vị trí sẽ tự cập nhật theo điện thoại.
+                </Text>
+              </View>
+
               <View style={{ gap: 6 }}>
                 <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.gray[700] }}>
                   Lời giới thiệu bản thân (Hiển thị tới khách hàng)
@@ -564,9 +835,124 @@ export default function EditProfileScreen() {
                 </Text>
               </View>
 
+              {/* ── Bản đồ GPS chọn vị trí nhà ──────────────────────── */}
+              <View style={{ gap: 8 }}>
+                <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.gray[700] }}>
+                  Vị trí nhà của bạn trên bản đồ
+                </Text>
+
+                <View
+                  style={{
+                    borderRadius: 14,
+                    overflow: 'hidden',
+                    borderWidth: 1.5,
+                    borderColor: COLORS.gray[200],
+                    height: 200,
+                  }}
+                >
+                  <TouchableOpacity
+                    activeOpacity={0.85}
+                    onPress={() => setPickerFor('customer')}
+                    style={{ flex: 1 }}
+                  >
+                    <LocationPreview coords={customerCoords} />
+                    <View
+                      style={{
+                        position: 'absolute',
+                        right: 8,
+                        top: 8,
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        gap: 5,
+                        backgroundColor: 'rgba(17,24,39,0.85)',
+                        borderRadius: 10,
+                        paddingHorizontal: 10,
+                        paddingVertical: 6,
+                      }}
+                    >
+                      <MapPin size={13} color="#fff" />
+                      <Text style={{ color: '#fff', fontSize: 12, fontWeight: '700' }}>
+                        Mở bản đồ chọn địa chỉ
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                </View>
+
+                {customerLocationText ? (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                    <MapPin size={14} color={COLORS.primary} />
+                    <Text
+                      style={{ fontSize: 12, color: COLORS.gray[600], flex: 1 }}
+                      numberOfLines={2}
+                    >
+                      {customerLocationText}
+                    </Text>
+                  </View>
+                ) : null}
+
+                <TouchableOpacity
+                  activeOpacity={0.8}
+                  disabled={customerGpsLoading}
+                  onPress={async () => {
+                    setCustomerGpsLoading(true);
+                    try {
+                      const coords = await locationService.getCurrentCoordinates();
+                      if (coords) {
+                        setCustomerCoords(coords);
+                        const geo = await locationService.reverseGeocode(coords.latitude, coords.longitude);
+                        if (geo) {
+                          const geoData = {
+                            district: geo.district ?? '',
+                            city: geo.city ?? '',
+                            ward: geo.ward,
+                            street: geo.road,
+                          };
+                          setDefaultAddress(geo.full_address);
+                          setCustomerLocationText(geo.full_address);
+                          setCustomerGeoData(geoData);
+                          await saveCustomerAddressNow(coords, geo.full_address, geoData);
+                        }
+                      } else {
+                        Toast.show({
+                          type: 'error',
+                          text1: 'Không lấy được vị trí',
+                          text2: 'Vui lòng bật GPS/Dịch vụ vị trí trên điện thoại',
+                        });
+                      }
+                    } finally {
+                      setCustomerGpsLoading(false);
+                    }
+                  }}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 8,
+                    paddingVertical: 12,
+                    borderRadius: 12,
+                    backgroundColor: COLORS.primaryLight,
+                    borderWidth: 1.5,
+                    borderColor: COLORS.primary,
+                  }}
+                >
+                  {customerGpsLoading ? (
+                    <ActivityIndicator size="small" color={COLORS.primary} />
+                  ) : (
+                    <Navigation size={16} color={COLORS.primary} />
+                  )}
+                  <Text style={{ fontSize: 14, fontWeight: '800', color: COLORS.primary }}>
+                    {customerGpsLoading ? 'Đang lấy vị trí...' : 'Lấy vị trí GPS hiện tại'}
+                  </Text>
+                </TouchableOpacity>
+
+                <Text style={{ fontSize: 11, color: COLORS.gray[400], lineHeight: 16 }}>
+                  Mở bản đồ để tìm và ghim địa chỉ nhà, hoặc bấm nút GPS. Địa chỉ sẽ được tự động điền và lưu ngay.
+                </Text>
+              </View>
+
               <View style={{ gap: 6 }}>
                 <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.gray[700] }}>
-                  Địa chỉ mặc định
+                  Địa chỉ chi tiết
                 </Text>
                 <TextInput
                   style={{

@@ -1,13 +1,18 @@
 // services/socket.service.ts
 // Singleton Socket.IO client với auto-reconnect và event management
 import { io, Socket } from 'socket.io-client';
-import * as SecureStore from 'expo-secure-store';
+import * as SecureStore from '@/services/secure-storage';
 import Constants from 'expo-constants';
 import { SOCKET_EVENTS } from '@homemate/constants';
 import apiClient from '@/services/api-client';
 
 const getBaseWsUrl = () => {
-  const extraWsUrl = Constants.expoConfig?.extra?.wsUrl;
+  // Fixed URL from apps/mobile/.env; otherwise derived from the API URL or Metro's host.
+  const apiUrl = process.env.EXPO_PUBLIC_API_URL;
+  const extraWsUrl =
+    process.env.EXPO_PUBLIC_WS_URL ||
+    Constants.expoConfig?.extra?.wsUrl ||
+    (apiUrl ? apiUrl.replace(/\/api\/v1\/?$/, '') : undefined);
   if (extraWsUrl) {
     return extraWsUrl;
   }
@@ -21,6 +26,12 @@ const getBaseWsUrl = () => {
     if (ip && ip !== 'localhost' && ip !== '127.0.0.1') {
       return `http://${ip}:3000`;
     }
+  }
+
+  // In a browser the API runs on the same machine that serves the page.
+  const webHost = (globalThis as { location?: { hostname?: string } }).location?.hostname;
+  if (webHost) {
+    return `http://${webHost}:3000`;
   }
 
   // Android emulator alias for the host machine (same fallback as api-client).

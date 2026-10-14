@@ -18,7 +18,6 @@ import {
   MapPin,
   Clock,
   ShieldCheck,
-  Home,
   AlertTriangle,
   Flame,
   X,
@@ -31,14 +30,16 @@ import 'dayjs/locale/vi';
 import { useAuthStore } from '@/stores/auth.store';
 import {
   useHelperProfile,
+  useMyProfile,
   useSetHelperStatus,
   useAvailableJobs,
   useHelperJobs,
   useWallet,
   useUnreadCount,
-  useSwitchRole,
   useAcceptSosJob,
+  useUpdateHelperLocation,
 } from '@/hooks/use-api';
+import { locationService } from '@/services/location.service';
 import { socketService, SOCKET_EVENTS } from '@/services/socket.service';
 import {
   Card,
@@ -60,8 +61,10 @@ dayjs.locale('vi');
 
 export default function HelperDashboardScreen() {
   const router = useRouter();
-  const user = useAuthStore(s => s.user);
-  const switchRole = useSwitchRole();
+  const storedUser = useAuthStore(s => s.user);
+  // Stored login payload has no avatar — prefer the full profile from the API
+  const { data: myProfile } = useMyProfile();
+  const user = myProfile ?? storedUser;
   const { data: profile, isLoading: pLoading } = useHelperProfile();
   const { data: availableJobs, refetch: refetchJobs } = useAvailableJobs(
     undefined,
@@ -75,6 +78,7 @@ export default function HelperDashboardScreen() {
   const { data: unread } = useUnreadCount();
   const setStatus = useSetHelperStatus();
   const acceptSos = useAcceptSosJob();
+  const updateLocation = useUpdateHelperLocation();
 
   const [isOnline, setIsOnline] = useState(false);
   const [sosBroadcast, setSosBroadcast] = useState<any>(null);
@@ -125,26 +129,29 @@ export default function HelperDashboardScreen() {
       });
       return;
     }
+
+    if (value) {
+      const coords = await locationService.getCurrentCoordinates();
+      if (coords) {
+        updateLocation.mutate([coords.longitude, coords.latitude]);
+      } else {
+        Toast.show({
+          type: 'info',
+          text1: 'Không lấy được vị trí GPS',
+          text2: 'Vui lòng bật GPS để hệ thống gửi đơn gần bạn chính xác hơn.',
+        });
+      }
+    }
+
     setIsOnline(value);
     await setStatus.mutateAsync(value ? 'online' : 'offline');
-  };
-
-  const handleSwitchToCustomer = async () => {
-    try {
-      await switchRole.mutateAsync('customer');
-      useAuthStore.getState().switchRole('customer');
-      router.replace('/(customer)/home');
-    } catch {
-      useAuthStore.getState().switchRole('customer');
-      router.replace('/(customer)/home');
-    }
   };
 
   const activeJob = myJobs?.[0];
   const insets = useSafeAreaInsets();
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#F8F9FA' }}>
+    <View style={{ flex: 1, backgroundColor: '#FFFF99' }}>
       <ScrollView
         showsVerticalScrollIndicator={false}
         refreshControl={
@@ -155,7 +162,7 @@ export default function HelperDashboardScreen() {
         {/* ── 1. Top Header Thợ (Safe Insets) ──────────────────────────── */}
         <View
           style={{
-            backgroundColor: '#FFFFFF',
+            backgroundColor: '#FFFF99',
             paddingHorizontal: 18,
             paddingTop: Math.max(insets.top + 8, 20),
             paddingBottom: 16,
@@ -166,46 +173,46 @@ export default function HelperDashboardScreen() {
           <View
             style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}
           >
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-              <Avatar name={user?.full_name} size={44} />
-              <View>
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={() => router.push('/(helper)/profile')}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 12,
+                flex: 1,
+                marginRight: 10,
+              }}
+            >
+              <Avatar name={user?.full_name} uri={user?.avatar} size={44} />
+              <View style={{ flex: 1 }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                  <Text style={{ fontSize: 16, fontWeight: '800', color: COLORS.gray[900] }}>
+                  <Text
+                    style={{
+                      fontSize: 16,
+                      fontWeight: '800',
+                      color: COLORS.gray[900],
+                      flexShrink: 1,
+                    }}
+                    numberOfLines={1}
+                  >
                     {user?.full_name}
                   </Text>
                   {profile?.verification_status === 'approved' && (
                     <ShieldCheck size={16} color={COLORS.success} />
                   )}
                 </View>
-                <Text style={{ fontSize: 12, color: COLORS.gray[500], marginTop: 1 }}>
+                <Text
+                  style={{ fontSize: 12, color: COLORS.gray[500], marginTop: 1 }}
+                  numberOfLines={1}
+                >
                   Đối tác Thợ / Người giúp việc
                 </Text>
               </View>
-            </View>
+            </TouchableOpacity>
 
-            {/* Quick Switch to Customer Mode & Bell */}
+            {/* Bell */}
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-              <TouchableOpacity
-                onPress={handleSwitchToCustomer}
-                activeOpacity={0.8}
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: 5,
-                  backgroundColor: COLORS.secondaryLight,
-                  borderWidth: 1,
-                  borderColor: '#D0E1FD',
-                  borderRadius: 20,
-                  paddingHorizontal: 10,
-                  paddingVertical: 6,
-                }}
-              >
-                <Home size={14} color={COLORS.secondary} />
-                <Text style={{ fontSize: 12, fontWeight: '800', color: COLORS.secondary }}>
-                  Đặt việc
-                </Text>
-              </TouchableOpacity>
-
               <TouchableOpacity
                 onPress={() => router.push('/notifications')}
                 activeOpacity={0.7}

@@ -1,12 +1,14 @@
 import axios, { AxiosInstance, AxiosError } from 'axios';
-import * as SecureStore from 'expo-secure-store';
+import * as SecureStore from '@/services/secure-storage';
 import Constants from 'expo-constants';
 import Toast from 'react-native-toast-message';
 
 const getBaseApiUrl = () => {
-  // 1. URL Tunnel Public Internet (Hoạt động 100% trên mọi điện thoại/4G/Wifi Cafe)
-  if (Constants.expoConfig?.extra?.apiUrl) {
-    return Constants.expoConfig.extra.apiUrl;
+  // 1. URL cố định (tunnel / server thật): đặt EXPO_PUBLIC_API_URL trong apps/mobile/.env.
+  //    Không ghi cứng IP LAN vào app.json — IP máy dev đổi theo mạng WiFi.
+  const fixedUrl = process.env.EXPO_PUBLIC_API_URL || Constants.expoConfig?.extra?.apiUrl;
+  if (fixedUrl) {
+    return fixedUrl;
   }
 
   // 2. Dò theo debugger host của Expo Go
@@ -19,6 +21,12 @@ const getBaseApiUrl = () => {
     if (ip && ip !== 'localhost' && ip !== '127.0.0.1') {
       return `http://${ip}:3000/api/v1`;
     }
+  }
+
+  // 3. Chạy trên trình duyệt (expo start --web): API nằm cùng máy với trang web
+  const webHost = (globalThis as { location?: { hostname?: string } }).location?.hostname;
+  if (webHost) {
+    return `http://${webHost}:3000/api/v1`;
   }
 
   return 'http://10.0.2.2:3000/api/v1';

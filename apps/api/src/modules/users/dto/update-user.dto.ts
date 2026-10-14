@@ -1,4 +1,12 @@
-import { IsString, IsOptional, IsEmail, MinLength, MaxLength, Matches } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  IsEmail,
+  IsIn,
+  MinLength,
+  MaxLength,
+  Matches,
+} from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class UpdateUserDto {
@@ -18,6 +26,11 @@ export class UpdateUserDto {
   @IsOptional()
   @IsString()
   avatar?: string;
+
+  @ApiPropertyOptional({ enum: ['male', 'female', 'other'] })
+  @IsOptional()
+  @IsIn(['male', 'female', 'other'])
+  gender?: 'male' | 'female' | 'other';
 
   @ApiPropertyOptional()
   @IsOptional()
