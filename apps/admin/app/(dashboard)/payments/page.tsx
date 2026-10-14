@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { Fragment, useState } from 'react';
 import { useAdminWithdrawals, useAdminTransactions, useProcessWithdrawal } from '@/hooks/use-admin';
 import {
   Badge,
@@ -130,8 +130,8 @@ export default function PaymentsPage() {
                       admin_note?: string;
                       created_at: string;
                     }) => (
-                      <>
-                        <TableRow key={w._id}>
+                      <Fragment key={w._id}>
+                        <TableRow>
                           <TableCell>
                             {w.user_id && typeof w.user_id === 'object' ? (
                               <div>
@@ -224,7 +224,7 @@ export default function PaymentsPage() {
                             </TableCell>
                           </TableRow>
                         )}
-                      </>
+                      </Fragment>
                     ),
                   )}
                 </TableBody>

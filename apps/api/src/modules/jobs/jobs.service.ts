@@ -45,6 +45,10 @@ import { ChatService } from '../chat/chat.service';
 import { PaymentsService } from '../payments/payments.service';
 import { Service, ServiceDocument } from '../services/schemas/service.schema';
 import { HelperProfile, HelperProfileDocument } from '../helpers/schemas/helper-profile.schema';
+import { RoutingService } from './routing.service';
+
+// Beyond this straight-line distance a helper is treated as out of the job's area.
+const QUOTE_SERVICE_RADIUS_KM = 30;
 
 @Injectable()
 export class JobsService {
@@ -58,6 +62,7 @@ export class JobsService {
     private readonly notificationsService: NotificationsService,
     private readonly chatService: ChatService,
     private readonly paymentsService: PaymentsService,
+    private readonly routingService: RoutingService,
   ) {}
 
   // ─── Helper: add event to job ────────────────────────────────────────────
@@ -435,7 +440,14 @@ export class JobsService {
     const job = await this.getJobById(jobId);
     const ownerId = String((job.customer_id as any)?._id ?? job.customer_id);
     const helperId = job.helper_id ? String((job.helper_id as any)?._id ?? job.helper_id) : null;
-    if (roles.includes('admin') || ownerId === userId || helperId === userId) return job;
+    const isOwnerOrHelper = ownerId === userId || helperId === userId;
+
+    if (roles.includes('admin') || isOwnerOrHelper) {
+      if (roles.includes('helper') || helperId === userId) {
+        return this.enrichJobWithDistance(job.toObject(), userId);
+      }
+      return job;
+    }
 
     const browsable = [JobStatus.OPEN, JobStatus.RECEIVING_QUOTES].includes(job.status);
     if (!browsable || !roles.includes('helper')) {
@@ -449,7 +461,6 @@ export class JobsService {
       district: a.district,
       city: a.city,
       full_address: [a.ward, a.district, a.city].filter(Boolean).join(', '),
-      // ~1 km precision is enough to judge travel distance.
       location: a.location && {
         type: 'Point',
         coordinates: a.location.coordinates.map((c: number) => Math.round(c * 100) / 100),
@@ -462,7 +473,26 @@ export class JobsService {
         avatar: preview.customer_id.avatar,
       };
     }
-    return preview;
+    return this.enrichJobWithDistance(preview, userId);
+  }
+
+  private async enrichJobWithDistance(jobObj: any, helperId: string) {
+    const helperProfile = await this.helperModel
+      .findOne({ user_id: new Types.ObjectId(helperId) })
+      .select('location')
+      .lean()
+      .exec();
+    const helperCoords = helperProfile?.location?.coordinates;
+    const jobCoords = jobObj.address?.location?.coordinates;
+    if (helperCoords && jobCoords) {
+      const route = await this.routingService.getRoute(
+        helperCoords[1], helperCoords[0],
+        jobCoords[1], jobCoords[0],
+      );
+      jobObj.distance_km = route.distance_km;
+      jobObj.estimated_minutes = route.estimated_minutes;
+    }
+    return jobObj;
   }
 
   // ─── Helper: Submit quote ─────────────────────────────────────────────────
@@ -585,7 +615,6 @@ export class JobsService {
     const quotes = await this.quoteModel
       .find(query)
       .populate('helper_id', 'full_name avatar')
-      .sort({ total_price: 1 })
       .exec();
     if (requesterRole === 'helper') return quotes;
 
@@ -593,15 +622,101 @@ export class JobsService {
     const helperIds = quotes.map(
       q => (q.helper_id as unknown as { _id: Types.ObjectId })?._id ?? q.helper_id,
     );
-    const verified = await this.helperModel
+    const helperProfiles = await this.helperModel
       .find({ user_id: { $in: helperIds }, verification_status: VerificationStatus.APPROVED })
-      .select('user_id')
+      .select('user_id location rating total_reviews completed_jobs years_experience completion_rate cancellation_rate')
       .lean()
       .exec();
-    const ok = new Set(verified.map(h => String(h.user_id)));
-    return quotes.filter(q =>
-      ok.has(String((q.helper_id as unknown as { _id: Types.ObjectId })?._id ?? q.helper_id)),
+    const profileMap = new Map(helperProfiles.map(h => [String(h.user_id), h]));
+
+    const validQuotes = quotes.filter(q =>
+      profileMap.has(String((q.helper_id as unknown as { _id: Types.ObjectId })?._id ?? q.helper_id)),
     );
+
+    // ── Compute priority score for each quote ──────────────────────────
+    const jobCoords = job.address?.location?.coordinates; // [lng, lat]
+    const maxPrice = Math.max(...validQuotes.map(q => q.total_price || 0), 1);
+
+    const scored = validQuotes.map(q => {
+      const hId = String((q.helper_id as unknown as { _id: Types.ObjectId })?._id ?? q.helper_id);
+      const profile = profileMap.get(hId);
+      let score = 0;
+      // Straight-line km from the job; null when either side has no coordinates.
+      let dist: number | null = null;
+
+      if (profile) {
+        // 1. Distance score (40%) — closer = higher score, 0 at the service radius.
+        // An unknown location earns nothing: it must not outrank a helper known to be near.
+        if (jobCoords && profile.location?.coordinates) {
+          dist = this.haversineKm(
+            jobCoords[1], jobCoords[0],
+            profile.location.coordinates[1], profile.location.coordinates[0],
+          );
+          score += Math.max(0, 100 - (dist / QUOTE_SERVICE_RADIUS_KM) * 100) * 0.4;
+        }
+
+        // 2. Rating score (25%) — 0-5 stars normalized to 0-100
+        const ratingScore = ((profile.rating || 0) / 5) * 100;
+        score += ratingScore * 0.25;
+
+        // 3. Completion rate (15%)
+        score += (profile.completion_rate ?? 100) * 0.15;
+
+        // 4. Experience & track record (10%)
+        const expScore = Math.min(100, ((profile.completed_jobs || 0) / 50) * 60 + ((profile.years_experience || 0) / 10) * 40);
+        score += expScore * 0.1;
+      }
+
+      // 5. Price competitiveness (10%) — lower price = higher score
+      const priceScore = (1 - (q.total_price || 0) / maxPrice) * 100;
+      score += priceScore * 0.1;
+
+      // Helpers inside the service radius always come before those outside it (another
+      // city), who come before helpers with no known location.
+      const tier = dist === null ? 2 : dist <= QUOTE_SERVICE_RADIUS_KM ? 0 : 1;
+      return { quote: q, score, dist, tier };
+    });
+
+    scored.sort((a, b) => {
+      if (a.tier !== b.tier) return a.tier - b.tier;
+      // Out of range: rating/price cannot make up for the trip, so nearest first.
+      if (a.tier === 1) return (a.dist as number) - (b.dist as number);
+      return b.score - a.score || (a.dist ?? 0) - (b.dist ?? 0);
+    });
+
+    // Batch-fetch real routes for helpers with coordinates
+    const helperDestinations = scored
+      .map(s => {
+        const hId = String((s.quote.helper_id as unknown as { _id: Types.ObjectId })?._id ?? s.quote.helper_id);
+        const profile = profileMap.get(hId);
+        if (jobCoords && profile?.location?.coordinates) {
+          return {
+            id: hId,
+            lat: profile.location.coordinates[1],
+            lng: profile.location.coordinates[0],
+          };
+        }
+        return null;
+      })
+      .filter((d): d is { id: string; lat: number; lng: number } => d !== null);
+
+    const routeMap = jobCoords && helperDestinations.length
+      ? await this.routingService.getRoutesBatch(jobCoords[1], jobCoords[0], helperDestinations)
+      : new Map();
+
+    return scored.map(s => {
+      const hId = String((s.quote.helper_id as unknown as { _id: Types.ObjectId })?._id ?? s.quote.helper_id);
+      const profile = profileMap.get(hId);
+      const obj = s.quote.toObject();
+      const route = routeMap.get(hId);
+      if (route) {
+        (obj as any).distance_km = route.distance_km;
+        (obj as any).estimated_minutes = route.estimated_minutes;
+      }
+      (obj as any).helper_rating = profile?.rating ?? 0;
+      (obj as any).helper_completed_jobs = profile?.completed_jobs ?? 0;
+      return obj;
+    });
   }
 
   // ─── Customer: Select quote → create Contract ─────────────────────────────
@@ -970,7 +1085,7 @@ export class JobsService {
 
   // ─── Helper: Get available jobs (job feed) ────────────────────────────────
 
-  async getAvailableJobs(serviceId?: string, page = 1, limit = 20) {
+  async getAvailableJobs(helperId: string, serviceId?: string, page = 1, limit = 20) {
     const query: Record<string, unknown> = {
       status: { $in: [JobStatus.OPEN, JobStatus.RECEIVING_QUOTES] },
       expires_at: { $gt: new Date() },
@@ -979,7 +1094,7 @@ export class JobsService {
       query['service_id'] = new Types.ObjectId(serviceId);
     }
     const skip = (page - 1) * limit;
-    const [jobs, total] = await Promise.all([
+    const [jobs, total, helperProfile] = await Promise.all([
       this.jobModel
         .find(query)
         .populate('service_id', 'name slug icon')
@@ -988,8 +1103,41 @@ export class JobsService {
         .limit(limit)
         .exec(),
       this.jobModel.countDocuments(query).exec(),
+      this.helperModel
+        .findOne({ user_id: new Types.ObjectId(helperId) })
+        .select('location')
+        .lean()
+        .exec(),
     ]);
-    return { jobs, total, page, limit, total_pages: Math.ceil(total / limit) };
+
+    const helperCoords = helperProfile?.location?.coordinates;
+    const jobObjects = jobs.map(job => job.toObject());
+
+    if (helperCoords) {
+      const destinations = jobObjects
+        .filter(obj => obj.address?.location?.coordinates)
+        .map(obj => ({
+          id: String(obj._id),
+          lat: obj.address.location.coordinates[1],
+          lng: obj.address.location.coordinates[0],
+        }));
+
+      const routes = await this.routingService.getRoutesBatch(
+        helperCoords[1], helperCoords[0], destinations,
+      );
+
+      for (const obj of jobObjects) {
+        const route = routes.get(String(obj._id));
+        if (route) {
+          (obj as any).distance_km = route.distance_km;
+          (obj as any).estimated_minutes = route.estimated_minutes;
+        }
+      }
+
+      jobObjects.sort((a, b) => ((a as any).distance_km ?? 999) - ((b as any).distance_km ?? 999));
+    }
+
+    return { jobs: jobObjects, total, page, limit, total_pages: Math.ceil(total / limit) };
   }
 
   // ─── Helper: Get own active job ───────────────────────────────────────────
@@ -1023,5 +1171,17 @@ export class JobsService {
       throw new ForbiddenException();
     }
     return contract;
+  }
+
+  private haversineKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
+    const R = 6371;
+    const dLat = ((lat2 - lat1) * Math.PI) / 180;
+    const dLon = ((lon2 - lon1) * Math.PI) / 180;
+    const a =
+      Math.sin(dLat / 2) ** 2 +
+      Math.cos((lat1 * Math.PI) / 180) *
+        Math.cos((lat2 * Math.PI) / 180) *
+        Math.sin(dLon / 2) ** 2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   }
 }

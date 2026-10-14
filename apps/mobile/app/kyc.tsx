@@ -86,9 +86,9 @@ export default function KycScreen() {
       }
       const result = await ImagePicker.launchCameraAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        aspect: activeImageType === 'selfie' ? [1, 1] : [16, 10],
-        quality: 0.85,
+        // Ảnh gốc, không cắt/nén: bước cắt của hệ thống làm giảm độ phân giải, admin không đọc được chữ trên CCCD.
+        allowsEditing: false,
+        quality: 1,
       });
       if (!result.canceled && result.assets[0]?.uri) {
         applyImage(activeImageType, result.assets[0].uri);
@@ -109,9 +109,9 @@ export default function KycScreen() {
       }
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        aspect: activeImageType === 'selfie' ? [1, 1] : [16, 10],
-        quality: 0.85,
+        // Ảnh gốc, không cắt/nén: bước cắt của hệ thống làm giảm độ phân giải, admin không đọc được chữ trên CCCD.
+        allowsEditing: false,
+        quality: 1,
       });
       if (!result.canceled && result.assets[0]?.uri) {
         applyImage(activeImageType, result.assets[0].uri);
@@ -440,7 +440,7 @@ export default function KycScreen() {
                       <Image
                         source={{ uri: frontImage }}
                         style={{ width: '100%', height: '100%' }}
-                        resizeMode="cover"
+                        resizeMode="contain"
                       />
                       <View
                         style={{
@@ -522,7 +522,7 @@ export default function KycScreen() {
                       <Image
                         source={{ uri: backImage }}
                         style={{ width: '100%', height: '100%' }}
-                        resizeMode="cover"
+                        resizeMode="contain"
                       />
                       <View
                         style={{
@@ -604,7 +604,7 @@ export default function KycScreen() {
                       <Image
                         source={{ uri: selfieImage }}
                         style={{ width: '100%', height: '100%' }}
-                        resizeMode="cover"
+                        resizeMode="contain"
                       />
                       <View
                         style={{

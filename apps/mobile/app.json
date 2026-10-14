@@ -24,7 +24,7 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#22C55E"
+        "backgroundColor": "#F0FDF4"
       },
       "package": "com.homemate.app",
       "permissions": [
@@ -63,8 +63,6 @@
       "typedRoutes": true
     },
     "extra": {
-      "apiUrl": "http://192.168.2.248:3000/api/v1",
-      "wsUrl": "http://192.168.2.248:3000",
       "eas": {
         "projectId": "your-eas-project-id"
       }

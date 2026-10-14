@@ -36,9 +36,12 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-muted/30">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <div className="mx-auto w-12 h-12 rounded-xl bg-primary flex items-center justify-center mb-4">
-            <span className="text-primary-foreground font-bold text-xl">G</span>
-          </div>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/logo.svg"
+            alt="Green House"
+            className="mx-auto w-16 h-16 rounded-2xl bg-green-50 mb-4"
+          />
           <CardTitle className="text-2xl">Green House Admin</CardTitle>
           <p className="text-sm text-muted-foreground mt-1">Đăng nhập vào hệ thống quản trị</p>
         </CardHeader>

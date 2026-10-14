@@ -14,14 +14,22 @@ import {
   PhoneCall,
 } from 'lucide-react-native';
 import { useAuthStore } from '@/stores/auth.store';
-import { useHelperProfile, useSetHelperStatus, useSwitchRole } from '@/hooks/use-api';
+import {
+  useHelperProfile,
+  useMyProfile,
+  useSetHelperStatus,
+  useSwitchRole,
+} from '@/hooks/use-api';
 import { Avatar, Card, COLORS, Separator, Badge, StarRating } from '@/components/ui';
 import { useState, useEffect } from 'react';
 
 export default function HelperProfileScreen() {
   const router = useRouter();
   const logout = useAuthStore(s => s.logout);
-  const user = useAuthStore(s => s.user);
+  const storedUser = useAuthStore(s => s.user);
+  // Stored login payload has no avatar — prefer the full profile from the API
+  const { data: myProfile } = useMyProfile();
+  const user = myProfile ?? storedUser;
   const { data: profile } = useHelperProfile();
   const setStatus = useSetHelperStatus();
   const switchRole = useSwitchRole();
@@ -68,7 +76,7 @@ export default function HelperProfileScreen() {
   const insets = useSafeAreaInsets();
 
   return (
-    <View style={{ flex: 1, backgroundColor: COLORS.gray[50] }}>
+    <View style={{ flex: 1, backgroundColor: '#FFFF99' }}>
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 110 }}
@@ -76,7 +84,7 @@ export default function HelperProfileScreen() {
         {/* Header (Safe Insets) */}
         <View
           style={{
-            backgroundColor: '#fff',
+            backgroundColor: '#FFFF99',
             paddingHorizontal: 24,
             paddingTop: Math.max(insets.top + 8, 20),
             paddingBottom: 24,
@@ -132,7 +140,7 @@ export default function HelperProfileScreen() {
             >
               <View style={{ alignItems: 'center' }}>
                 <Text style={{ fontSize: 20, fontWeight: '800', color: COLORS.gray[900] }}>
-                  {profile.total_completed ?? 0}
+                  {profile.completed_jobs ?? 0}
                 </Text>
                 <Text style={{ fontSize: 12, color: COLORS.gray[500], fontWeight: '600' }}>
                   Đơn hoàn tất
@@ -141,7 +149,7 @@ export default function HelperProfileScreen() {
               <View style={{ width: 1, backgroundColor: COLORS.gray[200] }} />
               <View style={{ alignItems: 'center' }}>
                 <Text style={{ fontSize: 20, fontWeight: '800', color: '#D97706' }}>
-                  ★ {profile.average_rating?.toFixed(1) ?? '5.0'}
+                  ★ {profile.rating?.toFixed(1) ?? '0.0'}
                 </Text>
                 <Text style={{ fontSize: 12, color: COLORS.gray[500], fontWeight: '600' }}>
                   Điểm uy tín
@@ -149,7 +157,7 @@ export default function HelperProfileScreen() {
               </View>
               <View style={{ width: 1, backgroundColor: COLORS.gray[200] }} />
               <View style={{ alignItems: 'center' }}>
-                <Text style={{ fontSize: 20, fontWeight: '800', color: COLORS.success }}>100%</Text>
+                <Text style={{ fontSize: 20, fontWeight: '800', color: COLORS.success }}>{profile.completion_rate ?? 0}%</Text>
                 <Text style={{ fontSize: 12, color: COLORS.gray[500], fontWeight: '600' }}>
                   Nhận việc
                 </Text>
