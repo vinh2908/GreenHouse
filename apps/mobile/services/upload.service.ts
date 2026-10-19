@@ -26,7 +26,7 @@ export async function uploadFile(uri: string): Promise<string> {
   const mimeType = MIME[ext] ?? 'image/jpeg';
 
   const form = new FormData();
-  const isWeb = Platform.OS === 'web' || typeof window !== 'undefined';
+  const isWeb = Platform.OS === 'web';
 
   if (isWeb) {
     try {
@@ -37,7 +37,9 @@ export async function uploadFile(uri: string): Promise<string> {
     } catch {
       const res = await fetch(uri);
       const blob = await res.blob();
-      form.append('file', blob, name);
+      (
+        form as FormData & { append: (field: string, value: Blob, fileName?: string) => void }
+      ).append('file', blob, name);
     }
   } else {
     // Native React Native (Android / iOS)

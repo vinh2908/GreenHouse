@@ -200,11 +200,6 @@ export function useSelectQuote() {
     onSuccess: (_, vars) => {
       qc.invalidateQueries({ queryKey: ['job', vars.jobId] });
       qc.invalidateQueries({ queryKey: ['jobs', 'my'] });
-      Toast.show({
-        type: 'success',
-        text1: 'Đã chọn helper!',
-        text2: 'Cuộc trò chuyện đã được tạo',
-      });
     },
   });
 }
