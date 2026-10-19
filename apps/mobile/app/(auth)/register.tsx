@@ -9,24 +9,34 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Phone, Lock, User, Eye, EyeOff, ArrowLeft } from 'lucide-react-native';
+import { Phone, Lock, User, Eye, EyeOff, ArrowLeft, Mail } from 'lucide-react-native';
 import Toast from 'react-native-toast-message';
+import { useAuthStore } from '@/stores/auth.store';
 import { useRegister } from '@/hooks/use-api';
 import { Button, Input, COLORS } from '@/components/ui';
 
 export default function RegisterScreen() {
   const router = useRouter();
   const register = useRegister();
+  const setAuth = useAuthStore(s => s.setAuth);
 
   const [fullName, setFullName] = useState('');
+  const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPw, setShowPw] = useState(false);
 
   const handleRegister = async () => {
-    if (!fullName.trim() || !phone.trim() || !password.trim()) {
+    const cleanPhone = phone.trim().replace(/\s+/g, '').replace(/^\+84/, '0');
+    const cleanEmail = email.trim().toLowerCase();
+    if (!fullName.trim() || !cleanPhone || !cleanEmail || !password.trim()) {
       Toast.show({ type: 'error', text1: 'Vui lòng điền đầy đủ thông tin' });
+      return;
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(cleanEmail)) {
+      Toast.show({ type: 'error', text1: 'Email không đúng định dạng' });
       return;
     }
     if (password !== confirmPassword) {
@@ -38,13 +48,25 @@ export default function RegisterScreen() {
       return;
     }
     try {
-      await register.mutateAsync({ phone, full_name: fullName, password });
-      Toast.show({
-        type: 'success',
-        text1: 'Mã OTP đã được gửi',
-        text2: 'Nhập mã để kích hoạt tài khoản',
+      const res = await register.mutateAsync({
+        phone: cleanPhone,
+        email: cleanEmail,
+        full_name: fullName.trim(),
+        password,
       });
-      router.push({ pathname: '/(auth)/otp', params: { phone } });
+      const data = res.data?.data;
+      if (data?.access_token && data?.user) {
+        await setAuth(data.user, data.access_token, data.refresh_token);
+        Toast.show({
+          type: 'success',
+          text1: 'Đăng ký thành công!',
+          text2: `Chào mừng ${data.user.full_name} đến với Green House`,
+        });
+        router.replace('/(auth)/select-role');
+      } else {
+        Toast.show({ type: 'success', text1: 'Đăng ký thành công! Vui lòng đăng nhập' });
+        router.replace('/(auth)/login');
+      }
     } catch (err: unknown) {
       const responseData = (err as any)?.response?.data;
       const msg = responseData?.message;
@@ -116,6 +138,15 @@ export default function RegisterScreen() {
                 value={fullName}
                 onChangeText={setFullName}
                 leftIcon={<User size={18} color={COLORS.gray[400]} />}
+              />
+              <Input
+                label="Email"
+                placeholder="VD: nguyenvana@gmail.com"
+                keyboardType="email-address"
+                autoCapitalize="none"
+                value={email}
+                onChangeText={setEmail}
+                leftIcon={<Mail size={18} color={COLORS.gray[400]} />}
               />
               <Input
                 label="Số điện thoại"
