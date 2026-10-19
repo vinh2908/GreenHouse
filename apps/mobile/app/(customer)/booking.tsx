@@ -27,6 +27,7 @@ import {
 } from 'lucide-react-native';
 import Toast from 'react-native-toast-message';
 import dayjs from 'dayjs';
+import { useAuthStore } from '@/stores/auth.store';
 import { useServices, useCreateJob, useAnalyzeBooking, useEstimatePrice } from '@/hooks/use-api';
 import { locationService, OsmPlace } from '@/services/location.service';
 import { Button, Input, Card, COLORS, LoadingSpinner, PriceText } from '@/components/ui';
