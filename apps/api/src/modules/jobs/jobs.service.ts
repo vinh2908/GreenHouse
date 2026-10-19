@@ -1,5 +1,6 @@
 import {
   Injectable,
+  Logger,
   NotFoundException,
   BadRequestException,
   ForbiddenException,
@@ -52,6 +53,8 @@ const QUOTE_SERVICE_RADIUS_KM = 30;
 
 @Injectable()
 export class JobsService {
+  private readonly logger = new Logger(JobsService.name);
+
   constructor(
     @InjectModel(Job.name) private jobModel: Model<JobDocument>,
     @InjectModel(Quote.name) private quoteModel: Model<QuoteDocument>,
@@ -179,13 +182,88 @@ export class JobsService {
       ],
     });
 
-    // Realtime: broadcast new job to nearby helpers (handled by feed polling for MVP)
+    // Notify online, verified helpers who cover this service and are within 30 km.
+    // Keep notification delivery best-effort so a notification outage cannot undo a job.
+    await this.notifyNearbyHelpers(job);
+
+    // Realtime: let the customer refresh their job list.
     this.gateway.emitToUser(customerId, SOCKET_EVENTS.JOB_CREATED, {
       job_id: String(job._id),
       status: job.status,
     });
 
     return job;
+  }
+
+  private async notifyNearbyHelpers(job: JobDocument): Promise<void> {
+    const coordinates = job.address?.location?.coordinates;
+    if (
+      !Array.isArray(coordinates) ||
+      coordinates.length !== 2 ||
+      !coordinates.every(Number.isFinite)
+    ) {
+      return;
+    }
+
+    try {
+      const helpers = await this.helperModel
+        .aggregate<{ user_id: Types.ObjectId }>([
+          {
+            $geoNear: {
+              near: { type: 'Point', coordinates },
+              distanceField: 'distance_meters',
+              maxDistance: QUOTE_SERVICE_RADIUS_KM * 1000,
+              spherical: true,
+              key: 'location',
+              query: {
+                status: HelperStatus.ONLINE,
+                verification_status: VerificationStatus.APPROVED,
+                service_ids: job.service_id,
+              },
+            },
+          },
+          {
+            $lookup: {
+              from: 'users',
+              localField: 'user_id',
+              foreignField: '_id',
+              as: 'user',
+            },
+          },
+          { $unwind: '$user' },
+          { $match: { 'user.status': 'active', 'user.is_deleted': { $ne: true } } },
+          { $project: { user_id: 1 } },
+          { $limit: 100 },
+        ])
+        .exec();
+
+      const district = job.address?.district ? ` tại ${job.address.district}` : '';
+      const notifications = await Promise.allSettled(
+        helpers.map(helper =>
+          this.notificationsService.create({
+            userId: String(helper.user_id),
+            type: NOTIFICATION_TYPES.NEW_JOB_NEARBY,
+            title: 'Có đơn mới gần bạn 🎉',
+            body: `${job.title}${district}. Mở mục Công việc để xem chi tiết và gửi báo giá.`,
+            payload: {
+              job_id: String(job._id),
+              service_id: String(job.service_id),
+              is_sos: false,
+            },
+          }),
+        ),
+      );
+      const failedCount = notifications.filter(result => result.status === 'rejected').length;
+      if (failedCount > 0) {
+        this.logger.warn(`Could not deliver ${failedCount} nearby-job notifications`);
+      }
+    } catch (error) {
+      this.logger.warn(
+        `Could not find or notify helpers for job ${String(job._id)}: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+    }
   }
 
   // ─── Customer: Create SOS Emergency Job ───────────────────────────────────

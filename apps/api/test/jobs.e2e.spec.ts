@@ -1,9 +1,11 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
-import { MongooseModule } from '@nestjs/mongoose';
+import { getModelToken, MongooseModule } from '@nestjs/mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
+import { Types } from 'mongoose';
 import { ConfigModule } from '@nestjs/config';
 import { ThrottlerModule } from '@nestjs/throttler';
+import { HelperStatus, VerificationStatus } from '@homemate/types';
 import { AuthModule } from '../src/modules/auth/auth.module';
 import { UsersModule } from '../src/modules/users/users.module';
 import { ServicesModule } from '../src/modules/services/services.module';
@@ -11,6 +13,7 @@ import { JobsModule } from '../src/modules/jobs/jobs.module';
 import { HttpExceptionFilter } from '../src/common/filters/http-exception.filter';
 import { TransformInterceptor } from '../src/common/interceptors/transform.interceptor';
 import { ServicesService } from '../src/modules/services/services.service';
+import { HelperProfile } from '../src/modules/helpers/schemas/helper-profile.schema';
 import appConfig from '../src/config/app.config';
 import jwtConfig from '../src/config/jwt.config';
 
@@ -22,6 +25,7 @@ describe('Jobs E2E (Phase 5)', () => {
   let mongod: MongoMemoryServer;
   let customerToken: string;
   let helperToken: string;
+  let helperId: string;
   let serviceId: string;
   let jobId: string;
   let quoteId: string;
@@ -55,14 +59,33 @@ describe('Jobs E2E (Phase 5)', () => {
     // Register customer
     let res = await request(app.getHttpServer())
       .post('/api/v1/auth/register')
-      .send({ phone: '0911111111', full_name: 'Customer A', password: 'Password123!' });
+      .send({
+        phone: '0911111111',
+        email: 'customer.a@example.com',
+        full_name: 'Customer A',
+        password: 'Password123!',
+      });
     customerToken = res.body.data.access_token;
 
     // Register helper
     res = await request(app.getHttpServer())
       .post('/api/v1/auth/register')
-      .send({ phone: '0922222222', full_name: 'Helper A', password: 'Password123!' });
+      .send({
+        phone: '0922222222',
+        email: 'helper.a@example.com',
+        full_name: 'Helper A',
+        password: 'Password123!',
+      });
     helperToken = res.body.data.access_token;
+    helperId = res.body.data.user._id;
+
+    await app.get(getModelToken(HelperProfile.name)).create({
+      user_id: new Types.ObjectId(helperId),
+      service_ids: [new Types.ObjectId(serviceId)],
+      location: { type: 'Point', coordinates: [106.701, 10.731] },
+      status: HelperStatus.ONLINE,
+      verification_status: VerificationStatus.APPROVED,
+    });
   });
 
   afterAll(async () => {
@@ -96,6 +119,23 @@ describe('Jobs E2E (Phase 5)', () => {
       expect(res.body.data.title).toBe('Cần người dọn căn hộ 2PN');
       expect(res.body.data.expires_at).toBeDefined();
       jobId = res.body.data._id;
+    });
+
+    it('should notify nearby online and verified helpers for the matching service', async () => {
+      const res = await request(app.getHttpServer())
+        .get('/api/v1/notifications')
+        .set('Authorization', `Bearer ${helperToken}`)
+        .expect(200);
+
+      expect(res.body.data).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            type: 'new_job_nearby',
+            title: 'Có đơn mới gần bạn 🎉',
+            data: expect.objectContaining({ job_id: jobId, is_sos: false }),
+          }),
+        ]),
+      );
     });
 
     it('should reject without token', async () => {
