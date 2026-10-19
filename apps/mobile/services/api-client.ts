@@ -25,14 +25,17 @@ const getBaseApiUrl = () => {
 
   // 3. Chạy trên trình duyệt (expo start --web)
   const webHost = (globalThis as { location?: { hostname?: string } }).location?.hostname;
-  if (webHost && (webHost.includes('vercel.app') || (webHost !== 'localhost' && webHost !== '127.0.0.1'))) {
-    return 'https://small-planes-win.loca.lt/api/v1';
+  if (
+    webHost &&
+    (webHost.includes('vercel.app') || (webHost !== 'localhost' && webHost !== '127.0.0.1'))
+  ) {
+    return 'https://greenhouse-api-chb9.onrender.com/api/v1';
   }
   if (webHost) {
     return `http://${webHost}:3000/api/v1`;
   }
 
-  return 'https://small-planes-win.loca.lt/api/v1';
+  return 'https://greenhouse-api-chb9.onrender.com/api/v1';
 };
 
 const API_URL = getBaseApiUrl();
