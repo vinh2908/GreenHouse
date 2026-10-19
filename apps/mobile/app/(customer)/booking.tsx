@@ -227,15 +227,21 @@ export default function BookingScreen() {
       if (details) {
         setAddress({
           full_address: details.road || details.full_address,
-          ward: details.ward || 'Phường Bến Thành',
-          district: details.district || 'Quận 1',
+          ward: details.ward || '',
+          district: details.district || '',
           city: details.city || 'Hồ Chí Minh',
           coordinates: details.coordinates,
         });
         Toast.show({
           type: 'success',
-          text1: 'Đã định vị thành công (OpenStreetMap)',
+          text1: 'Đã định vị vị trí của bạn',
           text2: details.full_address,
+        });
+      } else {
+        Toast.show({
+          type: 'info',
+          text1: 'Chưa có quyền vị trí',
+          text2: 'Vui lòng cho phép quyền truy cập Vị trí trên trình duyệt hoặc thiết bị.',
         });
       }
     } catch {
