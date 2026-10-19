@@ -244,9 +244,13 @@ export default function SosTrackingScreen() {
                 helperLocation
                   ? {
                       latitude:
-                        'lat' in helperLocation ? helperLocation.lat : (helperLocation as any).current?.lat,
+                        'lat' in helperLocation
+                          ? helperLocation.lat
+                          : (helperLocation as any).current?.lat,
                       longitude:
-                        'lng' in helperLocation ? helperLocation.lng : (helperLocation as any).current?.lng,
+                        'lng' in helperLocation
+                          ? helperLocation.lng
+                          : (helperLocation as any).current?.lng,
                     }
                   : undefined
               }
