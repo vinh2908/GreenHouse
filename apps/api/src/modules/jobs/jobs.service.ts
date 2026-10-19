@@ -486,8 +486,10 @@ export class JobsService {
     const jobCoords = jobObj.address?.location?.coordinates;
     if (helperCoords && jobCoords) {
       const route = await this.routingService.getRoute(
-        helperCoords[1], helperCoords[0],
-        jobCoords[1], jobCoords[0],
+        helperCoords[1],
+        helperCoords[0],
+        jobCoords[1],
+        jobCoords[0],
       );
       jobObj.distance_km = route.distance_km;
       jobObj.estimated_minutes = route.estimated_minutes;
@@ -624,13 +626,17 @@ export class JobsService {
     );
     const helperProfiles = await this.helperModel
       .find({ user_id: { $in: helperIds }, verification_status: VerificationStatus.APPROVED })
-      .select('user_id location rating total_reviews completed_jobs years_experience completion_rate cancellation_rate')
+      .select(
+        'user_id location rating total_reviews completed_jobs years_experience completion_rate cancellation_rate',
+      )
       .lean()
       .exec();
     const profileMap = new Map(helperProfiles.map(h => [String(h.user_id), h]));
 
     const validQuotes = quotes.filter(q =>
-      profileMap.has(String((q.helper_id as unknown as { _id: Types.ObjectId })?._id ?? q.helper_id)),
+      profileMap.has(
+        String((q.helper_id as unknown as { _id: Types.ObjectId })?._id ?? q.helper_id),
+      ),
     );
 
     // ── Compute priority score for each quote ──────────────────────────
@@ -649,8 +655,10 @@ export class JobsService {
         // An unknown location earns nothing: it must not outrank a helper known to be near.
         if (jobCoords && profile.location?.coordinates) {
           dist = this.haversineKm(
-            jobCoords[1], jobCoords[0],
-            profile.location.coordinates[1], profile.location.coordinates[0],
+            jobCoords[1],
+            jobCoords[0],
+            profile.location.coordinates[1],
+            profile.location.coordinates[0],
           );
           score += Math.max(0, 100 - (dist / QUOTE_SERVICE_RADIUS_KM) * 100) * 0.4;
         }
@@ -663,7 +671,10 @@ export class JobsService {
         score += (profile.completion_rate ?? 100) * 0.15;
 
         // 4. Experience & track record (10%)
-        const expScore = Math.min(100, ((profile.completed_jobs || 0) / 50) * 60 + ((profile.years_experience || 0) / 10) * 40);
+        const expScore = Math.min(
+          100,
+          ((profile.completed_jobs || 0) / 50) * 60 + ((profile.years_experience || 0) / 10) * 40,
+        );
         score += expScore * 0.1;
       }
 
@@ -687,7 +698,9 @@ export class JobsService {
     // Batch-fetch real routes for helpers with coordinates
     const helperDestinations = scored
       .map(s => {
-        const hId = String((s.quote.helper_id as unknown as { _id: Types.ObjectId })?._id ?? s.quote.helper_id);
+        const hId = String(
+          (s.quote.helper_id as unknown as { _id: Types.ObjectId })?._id ?? s.quote.helper_id,
+        );
         const profile = profileMap.get(hId);
         if (jobCoords && profile?.location?.coordinates) {
           return {
@@ -700,12 +713,15 @@ export class JobsService {
       })
       .filter((d): d is { id: string; lat: number; lng: number } => d !== null);
 
-    const routeMap = jobCoords && helperDestinations.length
-      ? await this.routingService.getRoutesBatch(jobCoords[1], jobCoords[0], helperDestinations)
-      : new Map();
+    const routeMap =
+      jobCoords && helperDestinations.length
+        ? await this.routingService.getRoutesBatch(jobCoords[1], jobCoords[0], helperDestinations)
+        : new Map();
 
     return scored.map(s => {
-      const hId = String((s.quote.helper_id as unknown as { _id: Types.ObjectId })?._id ?? s.quote.helper_id);
+      const hId = String(
+        (s.quote.helper_id as unknown as { _id: Types.ObjectId })?._id ?? s.quote.helper_id,
+      );
       const profile = profileMap.get(hId);
       const obj = s.quote.toObject();
       const route = routeMap.get(hId);
@@ -1123,7 +1139,9 @@ export class JobsService {
         }));
 
       const routes = await this.routingService.getRoutesBatch(
-        helperCoords[1], helperCoords[0], destinations,
+        helperCoords[1],
+        helperCoords[0],
+        destinations,
       );
 
       for (const obj of jobObjects) {
@@ -1179,9 +1197,7 @@ export class JobsService {
     const dLon = ((lon2 - lon1) * Math.PI) / 180;
     const a =
       Math.sin(dLat / 2) ** 2 +
-      Math.cos((lat1 * Math.PI) / 180) *
-        Math.cos((lat2 * Math.PI) / 180) *
-        Math.sin(dLon / 2) ** 2;
+      Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLon / 2) ** 2;
     return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   }
 }

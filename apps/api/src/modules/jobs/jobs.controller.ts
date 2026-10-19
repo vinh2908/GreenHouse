@@ -79,7 +79,12 @@ export class JobsController {
     @Query('limit') limit?: number,
   ) {
     await this.jobsService.requireVerifiedHelper(user.sub);
-    return this.jobsService.getAvailableJobs(user.sub, serviceId, Number(page) || 1, Number(limit) || 20);
+    return this.jobsService.getAvailableJobs(
+      user.sub,
+      serviceId,
+      Number(page) || 1,
+      Number(limit) || 20,
+    );
   }
 
   // ─── Helper: Own jobs ─────────────────────────────────────────────────────

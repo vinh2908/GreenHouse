@@ -59,7 +59,13 @@ function ToastCard() {
   return (
     <View
       pointerEvents="box-none"
-      style={{ position: 'absolute', top: insets.top + 10, left: 0, right: 0, alignItems: 'center' }}
+      style={{
+        position: 'absolute',
+        top: insets.top + 10,
+        left: 0,
+        right: 0,
+        alignItems: 'center',
+      }}
     >
       <View
         style={{
@@ -80,8 +86,14 @@ function ToastCard() {
         }}
       >
         <View style={{ flex: 1, paddingRight: 10 }}>
-          {text1 ? <Text style={{ fontWeight: '600', fontSize: 15, color: '#1f2937' }}>{text1}</Text> : null}
-          {text2 ? <Text style={{ fontSize: 13, color: '#4b5563', marginTop: 4 }} numberOfLines={2}>{text2}</Text> : null}
+          {text1 ? (
+            <Text style={{ fontWeight: '600', fontSize: 15, color: '#1f2937' }}>{text1}</Text>
+          ) : null}
+          {text2 ? (
+            <Text style={{ fontSize: 13, color: '#4b5563', marginTop: 4 }} numberOfLines={2}>
+              {text2}
+            </Text>
+          ) : null}
         </View>
         <TouchableOpacity
           activeOpacity={0.6}

@@ -5,23 +5,23 @@ từng phân hệ, và luồng sự kiện nối được thành prototype.
 
 ## Cấu trúc file (mỗi dòng là một Page trong Figma)
 
-| Page | Nội dung | Nguồn để nhập |
-|---|---|---|
-| 00 Bìa | Tên dự án, phiên bản, ghi chú | tự tạo |
-| 01 Nền tảng | Màu, chữ, bo góc, khoảng cách, logo | `http://localhost:5599/01-nen-tang.html` |
-| 02 Thành phần | Nguyên tử → phân tử → tổ chức | `http://localhost:5599/02-thanh-phan.html` |
-| 03 Luồng sự kiện | 6 luồng theo vai trò, kèm trạng thái hệ thống | `http://localhost:5599/03-luong.html` |
-| 04 Luồng xác thực | 7 khung thật: đăng ký → OTP → chọn vai trò → đăng nhập → trang chính | `http://localhost:5599/04-luong-xac-thuc.html` |
-| 05 Luồng khách hàng | 12 khung thật theo thứ tự sử dụng | `http://localhost:5599/05-luong-khach-hang.html` |
-| 06 Luồng thợ | 7 khung thật | `http://localhost:5599/06-luong-tho.html` |
-| 10 Mobile – Xác thực | Chào, đăng nhập, đăng ký, OTP, chọn vai trò | app thật `localhost:8081` |
-| 11 Mobile – Khách: Đặt việc | Trang chủ, 5 bước đặt việc, đơn hàng, chi tiết + báo giá | app thật |
-| 12 Mobile – Khách: SOS | SOS, theo dõi SOS | app thật |
-| 13 Mobile – Khách: Tài khoản | Tài khoản, sửa hồ sơ, chọn địa chỉ, thông báo, trợ giúp | app thật |
-| 20 Mobile – Thợ: Nhận việc | Tổng quan, nhận việc, chi tiết đơn, gửi báo giá | app thật |
-| 21 Mobile – Thợ: Hồ sơ & KYC | e-KYC (4 trạng thái), sửa hồ sơ, vị trí hoạt động | app thật |
-| 22 Mobile – Thợ: Thu nhập | Thu nhập, tài khoản ngân hàng | app thật |
-| 30 Admin | 13 trang quản trị | `localhost:3001` |
+| Page                         | Nội dung                                                             | Nguồn để nhập                                    |
+| ---------------------------- | -------------------------------------------------------------------- | ------------------------------------------------ |
+| 00 Bìa                       | Tên dự án, phiên bản, ghi chú                                        | tự tạo                                           |
+| 01 Nền tảng                  | Màu, chữ, bo góc, khoảng cách, logo                                  | `http://localhost:5599/01-nen-tang.html`         |
+| 02 Thành phần                | Nguyên tử → phân tử → tổ chức                                        | `http://localhost:5599/02-thanh-phan.html`       |
+| 03 Luồng sự kiện             | 6 luồng theo vai trò, kèm trạng thái hệ thống                        | `http://localhost:5599/03-luong.html`            |
+| 04 Luồng xác thực            | 7 khung thật: đăng ký → OTP → chọn vai trò → đăng nhập → trang chính | `http://localhost:5599/04-luong-xac-thuc.html`   |
+| 05 Luồng khách hàng          | 12 khung thật theo thứ tự sử dụng                                    | `http://localhost:5599/05-luong-khach-hang.html` |
+| 06 Luồng thợ                 | 7 khung thật                                                         | `http://localhost:5599/06-luong-tho.html`        |
+| 10 Mobile – Xác thực         | Chào, đăng nhập, đăng ký, OTP, chọn vai trò                          | app thật `localhost:8081`                        |
+| 11 Mobile – Khách: Đặt việc  | Trang chủ, 5 bước đặt việc, đơn hàng, chi tiết + báo giá             | app thật                                         |
+| 12 Mobile – Khách: SOS       | SOS, theo dõi SOS                                                    | app thật                                         |
+| 13 Mobile – Khách: Tài khoản | Tài khoản, sửa hồ sơ, chọn địa chỉ, thông báo, trợ giúp              | app thật                                         |
+| 20 Mobile – Thợ: Nhận việc   | Tổng quan, nhận việc, chi tiết đơn, gửi báo giá                      | app thật                                         |
+| 21 Mobile – Thợ: Hồ sơ & KYC | e-KYC (4 trạng thái), sửa hồ sơ, vị trí hoạt động                    | app thật                                         |
+| 22 Mobile – Thợ: Thu nhập    | Thu nhập, tài khoản ngân hàng                                        | app thật                                         |
+| 30 Admin                     | 13 trang quản trị                                                    | `localhost:3001`                                 |
 
 `localhost:5599` là máy chủ tạm chỉ chạy trong phiên làm việc với Claude. Khi nó tắt, mở thẳng
 các file `.html` trong thư mục này (cần bật "Allow access to file URLs" cho extension), hoặc
@@ -76,64 +76,64 @@ Gợi ý sắp xếp trong Figma: một Page cho "Mobile – Khách", một cho 
 
 ### Mobile – chưa đăng nhập
 
-| Màn hình | Đường dẫn |
-|---|---|
-| Đăng nhập | `/login` |
-| Đăng ký | `/register` |
-| Nhập OTP | `/otp` (vào từ Đăng ký) |
-| Chọn vai trò | `/select-role` |
+| Màn hình     | Đường dẫn               |
+| ------------ | ----------------------- |
+| Đăng nhập    | `/login`                |
+| Đăng ký      | `/register`             |
+| Nhập OTP     | `/otp` (vào từ Đăng ký) |
+| Chọn vai trò | `/select-role`          |
 
 ### Mobile – Khách hàng (đăng nhập tài khoản khách)
 
-| Màn hình | Đường dẫn |
-|---|---|
-| Trang chủ | `/home` |
-| Đăng yêu cầu dịch vụ (5 bước — chụp từng bước) | `/booking` |
-| Quản lý đơn hàng | `/jobs` |
-| Chi tiết đơn + danh sách báo giá | bấm một đơn trong `/jobs` |
-| Tin nhắn | `/messages` |
-| Khung chat | bấm một cuộc trò chuyện |
-| Tài khoản | `/profile` |
-| Sửa hồ sơ (khách) | `/edit-profile` |
-| Chọn địa chỉ trên bản đồ | bấm ô bản đồ trong Sửa hồ sơ |
-| Thông báo | `/notifications` |
-| Cứu hộ SOS | `/sos` |
-| Theo dõi SOS | sau khi gửi một yêu cầu SOS |
-| Hồ sơ thợ (khách xem) | bấm tên thợ trong danh sách báo giá |
-| Trung tâm trợ giúp | `/help-center` |
-| Bảo mật & Bảo hiểm | `/policy-insurance` |
+| Màn hình                                       | Đường dẫn                           |
+| ---------------------------------------------- | ----------------------------------- |
+| Trang chủ                                      | `/home`                             |
+| Đăng yêu cầu dịch vụ (5 bước — chụp từng bước) | `/booking`                          |
+| Quản lý đơn hàng                               | `/jobs`                             |
+| Chi tiết đơn + danh sách báo giá               | bấm một đơn trong `/jobs`           |
+| Tin nhắn                                       | `/messages`                         |
+| Khung chat                                     | bấm một cuộc trò chuyện             |
+| Tài khoản                                      | `/profile`                          |
+| Sửa hồ sơ (khách)                              | `/edit-profile`                     |
+| Chọn địa chỉ trên bản đồ                       | bấm ô bản đồ trong Sửa hồ sơ        |
+| Thông báo                                      | `/notifications`                    |
+| Cứu hộ SOS                                     | `/sos`                              |
+| Theo dõi SOS                                   | sau khi gửi một yêu cầu SOS         |
+| Hồ sơ thợ (khách xem)                          | bấm tên thợ trong danh sách báo giá |
+| Trung tâm trợ giúp                             | `/help-center`                      |
+| Bảo mật & Bảo hiểm                             | `/policy-insurance`                 |
 
 ### Mobile – Thợ (đăng xuất, đăng nhập tài khoản thợ)
 
-| Màn hình | Đường dẫn |
-|---|---|
-| Tổng quan | `/dashboard` |
-| Nhận việc | tab "Nhận việc" |
-| Chi tiết đơn (thợ) + gửi báo giá | bấm một đơn |
-| Thu nhập | `/earnings` |
-| Tài khoản thợ | tab "Tài khoản" |
-| Sửa hồ sơ (thợ) + vị trí hoạt động | `/edit-profile` |
-| e-KYC (form nộp) | `/kyc` — dùng tài khoản thợ chưa xác thực để thấy form |
-| e-KYC (đã duyệt / chờ duyệt) | `/kyc` |
-| Tài khoản ngân hàng | `/bank-account` |
+| Màn hình                           | Đường dẫn                                              |
+| ---------------------------------- | ------------------------------------------------------ |
+| Tổng quan                          | `/dashboard`                                           |
+| Nhận việc                          | tab "Nhận việc"                                        |
+| Chi tiết đơn (thợ) + gửi báo giá   | bấm một đơn                                            |
+| Thu nhập                           | `/earnings`                                            |
+| Tài khoản thợ                      | tab "Tài khoản"                                        |
+| Sửa hồ sơ (thợ) + vị trí hoạt động | `/edit-profile`                                        |
+| e-KYC (form nộp)                   | `/kyc` — dùng tài khoản thợ chưa xác thực để thấy form |
+| e-KYC (đã duyệt / chờ duyệt)       | `/kyc`                                                 |
+| Tài khoản ngân hàng                | `/bank-account`                                        |
 
 ### Admin (`http://localhost:3001`)
 
-| Màn hình | Đường dẫn |
-|---|---|
-| Đăng nhập | `/login` |
-| Tổng quan Dashboard | `/` |
-| Quản lý Người dùng | `/users` |
-| Chi tiết người dùng | bấm một người dùng |
-| Đối tác Thợ & Giúp việc | `/helpers` |
-| Duyệt e-KYC Thợ | `/helpers/kyc` |
-| Quản lý Đơn hàng | `/jobs` |
-| Chi tiết đơn hàng | bấm một đơn |
-| Dịch vụ & Phí | `/services` |
-| Thanh toán & Rút tiền | `/payments` |
-| Đánh giá & Phản hồi | `/reviews` |
-| Thống kê & Báo cáo | `/analytics` |
-| Gửi thông báo | `/notifications` |
+| Màn hình                | Đường dẫn          |
+| ----------------------- | ------------------ |
+| Đăng nhập               | `/login`           |
+| Tổng quan Dashboard     | `/`                |
+| Quản lý Người dùng      | `/users`           |
+| Chi tiết người dùng     | bấm một người dùng |
+| Đối tác Thợ & Giúp việc | `/helpers`         |
+| Duyệt e-KYC Thợ         | `/helpers/kyc`     |
+| Quản lý Đơn hàng        | `/jobs`            |
+| Chi tiết đơn hàng       | bấm một đơn        |
+| Dịch vụ & Phí           | `/services`        |
+| Thanh toán & Rút tiền   | `/payments`        |
+| Đánh giá & Phản hồi     | `/reviews`         |
+| Thống kê & Báo cáo      | `/analytics`       |
+| Gửi thông báo           | `/notifications`   |
 
 ## Lưu ý
 

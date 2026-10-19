@@ -19,3 +19,5 @@ tools/
 
 
 apps/api/uploads/
+
+.vercel

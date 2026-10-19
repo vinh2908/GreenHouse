@@ -48,7 +48,7 @@ export default function RegisterScreen() {
     } catch (err: unknown) {
       const responseData = (err as any)?.response?.data;
       const msg = responseData?.message;
-      const displayMsg = Array.isArray(msg) ? msg[0] : (msg || 'Đăng ký không thành công');
+      const displayMsg = Array.isArray(msg) ? msg[0] : msg || 'Đăng ký không thành công';
       Toast.show({ type: 'error', text1: displayMsg });
     }
   };
