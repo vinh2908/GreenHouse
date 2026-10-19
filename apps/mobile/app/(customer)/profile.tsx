@@ -244,7 +244,9 @@ export default function CustomerProfileScreen() {
               }}
             >
               <LogOut size={18} color={COLORS.error} />
-              <Text style={{ fontSize: 15, fontWeight: '700', color: COLORS.error }}>Đăng xuất</Text>
+              <Text style={{ fontSize: 15, fontWeight: '700', color: COLORS.error }}>
+                Đăng xuất
+              </Text>
             </TouchableOpacity>
           )}
 
