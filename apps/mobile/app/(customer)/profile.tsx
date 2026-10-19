@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Alert, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import {
@@ -46,17 +46,26 @@ export default function CustomerProfileScreen() {
   const switchRole = useSwitchRole();
 
   const handleLogout = () => {
-    Alert.alert('Đăng xuất?', 'Bạn có chắc muốn đăng xuất không?', [
-      { text: 'Hủy', style: 'cancel' },
-      {
-        text: 'Đăng xuất',
-        style: 'destructive',
-        onPress: async () => {
-          await logout();
-          router.replace('/(auth)/login');
+    const doLogout = async () => {
+      await logout();
+      router.replace('/(auth)/login');
+    };
+
+    if (Platform.OS === 'web') {
+      const w = (globalThis as any).window;
+      if (w?.confirm ? w.confirm('Bạn có chắc muốn đăng xuất không?') : true) {
+        doLogout();
+      }
+    } else {
+      Alert.alert('Đăng xuất?', 'Bạn có chắc muốn đăng xuất không?', [
+        { text: 'Hủy', style: 'cancel' },
+        {
+          text: 'Đăng xuất',
+          style: 'destructive',
+          onPress: doLogout,
         },
-      },
-    ]);
+      ]);
+    }
   };
 
   const displayUser = profile ?? user;

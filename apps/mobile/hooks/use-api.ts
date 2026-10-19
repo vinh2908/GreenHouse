@@ -212,6 +212,20 @@ export function useCancelJob() {
     onSuccess: (_, vars) => {
       qc.invalidateQueries({ queryKey: ['job', vars.jobId] });
       qc.invalidateQueries({ queryKey: ['jobs', 'my'] });
+      qc.invalidateQueries({ queryKey: ['jobs'] });
+    },
+  });
+}
+
+export function useUpdateJob() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ jobId, data }: { jobId: string; data: any }) =>
+      apiClient.patch(`/jobs/${jobId}`, data),
+    onSuccess: (_, vars) => {
+      qc.invalidateQueries({ queryKey: ['job', vars.jobId] });
+      qc.invalidateQueries({ queryKey: ['jobs', 'my'] });
+      qc.invalidateQueries({ queryKey: ['jobs'] });
     },
   });
 }

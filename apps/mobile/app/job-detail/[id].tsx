@@ -8,6 +8,9 @@ import {
   Modal,
   TextInput,
   Image,
+  Platform,
+  ActivityIndicator,
+  KeyboardAvoidingView,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -25,6 +28,8 @@ import {
   Camera,
   Video,
   Sparkles,
+  Edit3,
+  Navigation,
 } from 'lucide-react-native';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
@@ -39,8 +44,10 @@ import {
   useCancelJob,
   useApproveJob,
   useCreateReview,
+  useUpdateJob,
 } from '@/hooks/use-api';
 import { useJobSocketUpdates, useHelperLocation } from '@/hooks/use-socket';
+import { locationService } from '@/services/location.service';
 import { LiveTrackingMap } from '@/components/common/live-tracking-map';
 import {
   Button,
@@ -53,6 +60,7 @@ import {
   Separator,
   PriceText,
   Badge,
+  Input,
 } from '@/components/ui';
 
 dayjs.extend(relativeTime);
@@ -100,6 +108,7 @@ export default function JobDetailScreen() {
   const { data: contract } = useJobContract(id);
   const selectQuote = useSelectQuote();
   const cancelJob = useCancelJob();
+  const updateJob = useUpdateJob();
   const approveJob = useApproveJob();
   const createReview = useCreateReview();
 
@@ -111,6 +120,18 @@ export default function JobDetailScreen() {
   const [selectedDate, setSelectedDate] = useState(
     dayjs().add(1, 'day').format('YYYY-MM-DDT09:00:00'),
   );
+
+  // ── Edit Job & Location Modal States ─────────────────────────────────────
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editTitle, setEditTitle] = useState('');
+  const [editDescription, setEditDescription] = useState('');
+  const [editFullAddress, setEditFullAddress] = useState('');
+  const [editWard, setEditWard] = useState('');
+  const [editDistrict, setEditDistrict] = useState('');
+  const [editCity, setEditCity] = useState('');
+  const [editNotes, setEditNotes] = useState('');
+  const [editCoords, setEditCoords] = useState<[number, number] | null>(null);
+  const [isLocatingEdit, setIsLocatingEdit] = useState(false);
 
   const insets = useSafeAreaInsets();
 
@@ -136,12 +157,91 @@ export default function JobDetailScreen() {
 
   const currentStepIdx = STATUS_ORDER.indexOf(job.status);
   const isActive = !['completed', 'cancelled', 'disputed'].includes(job.status);
-  const canCancel = ['open', 'receiving_quotes'].includes(job.status);
+  const canCancel = ['open', 'receiving_quotes', 'quote_selected', 'confirmed', 'helper_on_the_way'].includes(job.status);
+  const canEdit = !['completed', 'cancelled', 'disputed'].includes(job.status);
   const canApprove = job.status === 'pending_review';
   const hasHelperAssigned = !!job.helper_id;
 
   const helperObj = typeof job.helper_id === 'object' && job.helper_id ? job.helper_id : null;
   const serviceObj = typeof job.service_id === 'object' && job.service_id ? job.service_id : null;
+
+  const handleOpenEdit = () => {
+    setEditTitle(job.title || '');
+    setEditDescription(job.description || '');
+    setEditFullAddress(job.address?.full_address || '');
+    setEditWard(job.address?.ward || '');
+    setEditDistrict(job.address?.district || '');
+    setEditCity(job.address?.city || 'Hồ Chí Minh');
+    setEditNotes(job.address?.notes || '');
+    setEditCoords(job.address?.location?.coordinates || null);
+    setShowEditModal(true);
+  };
+
+  const handleGetLiveLocationForEdit = async () => {
+    setIsLocatingEdit(true);
+    try {
+      const details = await locationService.getCurrentLocationDetails();
+      if (details) {
+        setEditFullAddress(details.road || details.full_address);
+        setEditWard(details.ward || '');
+        setEditDistrict(details.district || '');
+        setEditCity(details.city || 'Hồ Chí Minh');
+        setEditCoords(details.coordinates);
+        Toast.show({
+          type: 'success',
+          text1: 'Đã lấy vị trí GPS thành công',
+          text2: details.full_address,
+        });
+      } else {
+        Toast.show({
+          type: 'info',
+          text1: 'Chưa có quyền vị trí',
+          text2: 'Vui lòng cấp quyền vị trí cho ứng dụng',
+        });
+      }
+    } catch {
+      Toast.show({ type: 'error', text1: 'Không thể lấy vị trí GPS' });
+    } finally {
+      setIsLocatingEdit(false);
+    }
+  };
+
+  const handleSaveEdit = async () => {
+    if (!id) return;
+    if (!editFullAddress.trim()) {
+      Toast.show({ type: 'error', text1: 'Vui lòng nhập địa chỉ chi tiết' });
+      return;
+    }
+    try {
+      await updateJob.mutateAsync({
+        jobId: id,
+        data: {
+          title: editTitle || undefined,
+          description: editDescription || undefined,
+          address: {
+            full_address: editFullAddress,
+            ward: editWard || undefined,
+            district: editDistrict || 'Quận 1',
+            city: editCity || 'Hồ Chí Minh',
+            notes: editNotes || undefined,
+            location: {
+              type: 'Point',
+              coordinates: editCoords || job.address?.location?.coordinates || [106.6297, 10.8231],
+            },
+          },
+        },
+      });
+      setShowEditModal(false);
+      Toast.show({
+        type: 'success',
+        text1: 'Cập nhật thành công! 🎉',
+        text2: 'Đã lưu thông tin và vị trí mới cho đơn hàng',
+      });
+    } catch (err: any) {
+      const msg = err?.response?.data?.message || 'Cập nhật thất bại. Vui lòng thử lại.';
+      Toast.show({ type: 'error', text1: msg });
+    }
+  };
 
   const handleSelectQuote = async () => {
     if (!quoteToAccept || !id || selectQuote.isPending) return;
@@ -172,21 +272,31 @@ export default function JobDetailScreen() {
   };
 
   const handleCancel = () => {
-    Alert.alert('Hủy đơn hàng?', 'Bạn có chắc chắn muốn hủy yêu cầu này?', [
-      { text: 'Không', style: 'cancel' },
-      {
-        text: 'Hủy đơn',
-        style: 'destructive',
-        onPress: async () => {
-          try {
-            await cancelJob.mutateAsync({ jobId: id!, reason: 'Khách hàng hủy yêu cầu' });
-            Toast.show({ type: 'success', text1: 'Đã hủy đơn hàng thành công' });
-          } catch {
-            Toast.show({ type: 'error', text1: 'Hủy đơn thất bại' });
-          }
+    const doCancel = async () => {
+      try {
+        await cancelJob.mutateAsync({ jobId: id!, reason: 'Khách hàng hủy yêu cầu' });
+        Toast.show({ type: 'success', text1: 'Đã hủy đơn hàng thành công' });
+      } catch (err: any) {
+        const msg = err?.response?.data?.message || 'Hủy đơn thất bại';
+        Toast.show({ type: 'error', text1: msg });
+      }
+    };
+
+    if (Platform.OS === 'web') {
+      const w = (globalThis as any).window;
+      if (w?.confirm ? w.confirm('Bạn có chắc chắn muốn hủy yêu cầu này?') : true) {
+        doCancel();
+      }
+    } else {
+      Alert.alert('Hủy đơn hàng?', 'Bạn có chắc chắn muốn hủy yêu cầu này?', [
+        { text: 'Không', style: 'cancel' },
+        {
+          text: 'Hủy đơn',
+          style: 'destructive',
+          onPress: doCancel,
         },
-      },
-    ]);
+      ]);
+    }
   };
 
   const handleSubmitReview = async () => {
@@ -368,21 +478,48 @@ export default function JobDetailScreen() {
 
         {/* ── Job info ───────────────────────────────────────────────── */}
         <Card style={{ gap: 12, padding: 16 }}>
-          <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
-            <Badge label={serviceObj?.name ?? 'Dịch vụ'} />
-            {job.preferred_date && (
-              <Badge
-                label={dayjs(job.preferred_date).format('DD/MM/YYYY')}
-                color={COLORS.gray[100]}
-                textColor={COLORS.gray[700]}
-              />
-            )}
-            {job.preferred_time_start && (
-              <Badge
-                label={job.preferred_time_start}
-                color={COLORS.gray[100]}
-                textColor={COLORS.gray[700]}
-              />
+          <View
+            style={{
+              flexDirection: 'row',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+            }}
+          >
+            <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap', flex: 1 }}>
+              <Badge label={serviceObj?.name ?? 'Dịch vụ'} />
+              {job.preferred_date && (
+                <Badge
+                  label={dayjs(job.preferred_date).format('DD/MM/YYYY')}
+                  color={COLORS.gray[100]}
+                  textColor={COLORS.gray[700]}
+                />
+              )}
+              {job.preferred_time_start && (
+                <Badge
+                  label={job.preferred_time_start}
+                  color={COLORS.gray[100]}
+                  textColor={COLORS.gray[700]}
+                />
+              )}
+            </View>
+            {canEdit && (
+              <TouchableOpacity
+                onPress={handleOpenEdit}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 4,
+                  backgroundColor: COLORS.primaryLight,
+                  paddingHorizontal: 10,
+                  paddingVertical: 5,
+                  borderRadius: 10,
+                }}
+              >
+                <Edit3 size={13} color={COLORS.primary} />
+                <Text style={{ fontSize: 12, fontWeight: '700', color: COLORS.primary }}>
+                  Sửa vị trí/tin
+                </Text>
+              </TouchableOpacity>
             )}
           </View>
 
@@ -767,6 +904,13 @@ export default function JobDetailScreen() {
               onPress={() => router.push({ pathname: '/chat/[jobId]', params: { jobId: id } })}
             />
           )}
+          {canEdit && (
+            <Button
+              title="✏️  Chỉnh sửa vị trí & thông tin yêu cầu"
+              variant="outline"
+              onPress={handleOpenEdit}
+            />
+          )}
           {canCancel && (
             <Button
               title="Hủy yêu cầu"
@@ -986,6 +1130,148 @@ export default function JobDetailScreen() {
           </ScrollView>
           <Toast />
         </View>
+      </Modal>
+
+      {/* ── Cập nhật Vị trí & Thông tin Đơn hàng ───────────────────────── */}
+      <Modal
+        visible={showEditModal}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setShowEditModal(false)}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          style={{ flex: 1, backgroundColor: '#fff' }}
+        >
+          <View
+            style={{
+              flexDirection: 'row',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              paddingHorizontal: 20,
+              paddingTop: Math.max(insets.top + 10, 20),
+              paddingBottom: 14,
+              borderBottomWidth: 1,
+              borderBottomColor: COLORS.gray[100],
+            }}
+          >
+            <Text style={{ fontSize: 18, fontWeight: '800', color: COLORS.gray[900] }}>
+              Cập nhật thông tin & vị trí
+            </Text>
+            <TouchableOpacity
+              onPress={() => setShowEditModal(false)}
+              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+            >
+              <X size={22} color={COLORS.gray[500]} />
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView contentContainerStyle={{ padding: 20, gap: 16 }}>
+            {/* Nút GPS tự động lấy số nhà, tên đường */}
+            <TouchableOpacity
+              activeOpacity={0.8}
+              disabled={isLocatingEdit}
+              onPress={handleGetLiveLocationForEdit}
+              style={{
+                borderWidth: 2,
+                borderColor: COLORS.primary,
+                borderRadius: 14,
+                padding: 14,
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 10,
+                backgroundColor: COLORS.primaryLight,
+              }}
+            >
+              {isLocatingEdit ? (
+                <ActivityIndicator size="small" color={COLORS.primary} />
+              ) : (
+                <Navigation size={18} color={COLORS.primary} />
+              )}
+              <Text style={{ color: COLORS.primary, fontWeight: '800', fontSize: 14 }}>
+                {isLocatingEdit
+                  ? 'Đang xác định vị trí GPS...'
+                  : 'Lấy vị trí GPS hiện tại (Đề xuất số nhà & đường)'}
+              </Text>
+            </TouchableOpacity>
+
+            <Input
+              label="Địa chỉ chi tiết (Số nhà & tên đường) *"
+              placeholder="VD: 128 Đường Lê Lợi"
+              value={editFullAddress}
+              onChangeText={setEditFullAddress}
+              leftIcon={<MapPin size={16} color={COLORS.gray[400]} />}
+            />
+
+            <View style={{ flexDirection: 'row', gap: 12 }}>
+              <View style={{ flex: 1 }}>
+                <Input
+                  label="Phường/Xã"
+                  placeholder="Phường 1"
+                  value={editWard}
+                  onChangeText={setEditWard}
+                />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Input
+                  label="Quận/Huyện *"
+                  placeholder="Quận 1"
+                  value={editDistrict}
+                  onChangeText={setEditDistrict}
+                />
+              </View>
+            </View>
+
+            <Input
+              label="Thành phố"
+              value={editCity}
+              onChangeText={setEditCity}
+            />
+
+            <Input
+              label="Ghi chú địa chỉ (Chung cư, số phòng, chỉ dẫn...)"
+              placeholder="VD: Chung cư Sunrise, Tầng 8 Phòng 802"
+              value={editNotes}
+              onChangeText={setEditNotes}
+            />
+
+            <Input
+              label="Tiêu đề yêu cầu"
+              value={editTitle}
+              onChangeText={setEditTitle}
+            />
+
+            <View style={{ gap: 6 }}>
+              <Text style={{ fontSize: 14, fontWeight: '700', color: COLORS.gray[700] }}>
+                Mô tả chi tiết công việc
+              </Text>
+              <TextInput
+                style={{
+                  borderWidth: 1.5,
+                  borderColor: COLORS.gray[200],
+                  borderRadius: 14,
+                  padding: 14,
+                  fontSize: 14,
+                  minHeight: 100,
+                  textAlignVertical: 'top',
+                  color: COLORS.gray[900],
+                }}
+                placeholder="Mô tả cụ thể khối lượng công việc, yêu cầu lưu ý..."
+                value={editDescription}
+                onChangeText={setEditDescription}
+                multiline
+                placeholderTextColor={COLORS.gray[400]}
+              />
+            </View>
+
+            <Button
+              title="Lưu thay đổi vị trí & thông tin"
+              loading={updateJob.isPending}
+              onPress={handleSaveEdit}
+              style={{ marginTop: 10 }}
+            />
+          </ScrollView>
+        </KeyboardAvoidingView>
       </Modal>
     </View>
   );

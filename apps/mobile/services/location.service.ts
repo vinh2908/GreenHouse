@@ -95,48 +95,75 @@ class LocationService {
 
   /**
    * Chuyển tọa độ (lat, lon) -> Địa chỉ chi tiết tiếng Việt
-   * (Ưu tiên BigDataCloud API hỗ trợ CORS Web, fallback Nominatim & Expo Location)
+   * (Ưu tiên Expo Native & Photon OSM để lấy chính xác Số nhà & Tên đường, fallback BigDataCloud & Nominatim)
    */
   async reverseGeocode(latitude: number, longitude: number): Promise<LocationResult | null> {
-    // 1. Thử BigDataCloud (CORS-friendly, hoạt động 100% trên trình duyệt Web)
+    // 1. Thử Expo Location native (trên Android / iOS APK)
     try {
-      const url = `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=vi`;
-      const res = await fetch(url);
-      if (res.ok) {
-        const data = await res.json();
-        const ward = data.locality || '';
-        const adminList = data.localityInfo?.administrative || [];
-        const districtObj = adminList.find(
-          (a: any) =>
-            a.adminLevel === 6 ||
-            (a.name &&
-              (a.name.includes('Quận') || a.name.includes('Huyện') || a.name.includes('Thị xã'))),
-        );
-        const district =
-          districtObj?.name ||
-          data.localityInfo?.informative?.find(
-            (a: any) => a.name && (a.name.includes('Quận') || a.name.includes('Huyện')),
-          )?.name ||
-          'Quận 1';
-        const city = data.city || data.principalSubdivision || 'Hồ Chí Minh';
+      const [geo] = await Location.reverseGeocodeAsync({ latitude, longitude });
+      if (geo && (geo.street || geo.name || geo.district)) {
+        const houseNum = geo.name && !geo.name.includes(geo.street || '') ? geo.name : '';
+        const streetName = geo.street || '';
+        const road = [houseNum, streetName].filter(Boolean).join(' ').trim() || geo.name || '';
+        const ward = geo.district || '';
+        const district = geo.subregion || geo.district || 'Quận 1';
+        const city = geo.city || geo.region || 'Hồ Chí Minh';
+        const fullAddress = [road, ward, district, city].filter(Boolean).join(', ');
 
-        const parts = [ward, district, city].filter(Boolean);
-        const fullAddress =
-          parts.length > 0 ? parts.join(', ') : `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
-
-        return {
-          full_address: fullAddress,
-          ward,
-          district,
-          city,
-          coordinates: [longitude, latitude],
-        };
+        if (road || district) {
+          return {
+            full_address: fullAddress,
+            road: road || fullAddress,
+            ward,
+            district,
+            city,
+            coordinates: [longitude, latitude],
+          };
+        }
       }
-    } catch (err) {
-      console.warn('BigDataCloud reverse geocode error:', err);
+    } catch {
+      /* ignore native error when on web */
     }
 
-    // 2. Fallback Nominatim OpenStreetMap
+    // 2. Thử Photon OpenStreetMap Reverse Geocode (Có CORS, miễn phí, trả về Số nhà + Tên đường chính xác)
+    try {
+      const photonUrl = `https://photon.komoot.io/reverse?lat=${latitude}&lon=${longitude}`;
+      const res = await fetch(photonUrl);
+      if (res.ok) {
+        const json = await res.json();
+        const feat = json.features?.[0];
+        if (feat && feat.properties) {
+          const p = feat.properties;
+          const houseNumber = p.housenumber ? `${p.housenumber} ` : '';
+          const street = p.street || '';
+          const placeName = p.name || '';
+          // Nếu có số nhà và tên đường
+          let road = `${houseNumber}${street}`.trim();
+          if (!road && placeName) {
+            road = placeName;
+          }
+          const ward = p.locality || '';
+          const district = p.district || p.city_district || 'Quận 1';
+          const city = p.city || p.state || 'Hồ Chí Minh';
+          const fullAddress = [road, ward, district, city].filter(Boolean).join(', ');
+
+          if (road || district) {
+            return {
+              full_address: fullAddress,
+              road: road || fullAddress,
+              ward,
+              district,
+              city,
+              coordinates: [longitude, latitude],
+            };
+          }
+        }
+      }
+    } catch (err) {
+      console.warn('Photon reverse geocode error:', err);
+    }
+
+    // 3. Fallback Nominatim OpenStreetMap
     try {
       const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1&accept-language=vi`;
       const res = await fetch(url);
@@ -166,28 +193,48 @@ class LocationService {
       console.warn('OSM Reverse geocoding error:', err);
     }
 
-    // 3. Fallback bằng Expo reverseGeocodeAsync (khi chạy trên Native App)
+    // 4. Fallback BigDataCloud (CORS-friendly, trả về phường, quận, thành phố)
     try {
-      const [geo] = await Location.reverseGeocodeAsync({ latitude, longitude });
-      if (geo) {
-        const street = `${geo.name || ''} ${geo.street || ''}`.trim() || 'Vị trí hiện tại';
-        const district = geo.district || geo.subregion || 'Quận 1';
-        const city = geo.city || geo.region || 'Hồ Chí Minh';
+      const url = `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=vi`;
+      const res = await fetch(url);
+      if (res.ok) {
+        const data = await res.json();
+        const ward = data.locality || '';
+        const adminList = data.localityInfo?.administrative || [];
+        const districtObj = adminList.find(
+          (a: any) =>
+            a.adminLevel === 6 ||
+            (a.name &&
+              (a.name.includes('Quận') || a.name.includes('Huyện') || a.name.includes('Thị xã'))),
+        );
+        const district =
+          districtObj?.name ||
+          data.localityInfo?.informative?.find(
+            (a: any) => a.name && (a.name.includes('Quận') || a.name.includes('Huyện')),
+          )?.name ||
+          'Quận 1';
+        const city = data.city || data.principalSubdivision || 'Hồ Chí Minh';
+
+        const parts = [ward, district, city].filter(Boolean);
+        const fullAddress =
+          parts.length > 0 ? parts.join(', ') : `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
+
         return {
-          full_address: `${street}, ${district}, ${city}`,
-          road: street,
-          ward: geo.district || '',
+          full_address: fullAddress,
+          road: ward ? `Khu vực ${ward}` : fullAddress,
+          ward,
           district,
           city,
           coordinates: [longitude, latitude],
         };
       }
-    } catch {
-      /* ignore */
+    } catch (err) {
+      console.warn('BigDataCloud reverse geocode error:', err);
     }
 
     return {
       full_address: `Tọa độ: ${latitude.toFixed(4)}, ${longitude.toFixed(4)}`,
+      road: `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`,
       district: 'Vị trí hiện tại',
       city: 'Việt Nam',
       coordinates: [longitude, latitude],
@@ -206,11 +253,46 @@ class LocationService {
   }
 
   /**
-   * Tìm kiếm địa điểm bằng OpenStreetMap Search API (Autocomplete)
+   * Tìm kiếm địa điểm bằng Photon + OpenStreetMap Search API (Autocomplete)
    */
   async searchPlaces(query: string): Promise<OsmPlace[]> {
     if (!query || query.trim().length < 2) return [];
 
+    // 1. Thử Photon search API (nhanh, hỗ trợ CORS trình duyệt)
+    try {
+      const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(query)}&limit=6&lang=vi`;
+      const res = await fetch(url);
+      if (res.ok) {
+        const json = await res.json();
+        if (json.features?.length) {
+          return json.features.map((f: any, idx: number) => {
+            const p = f.properties || {};
+            const streetName = [p.housenumber, p.street || p.name].filter(Boolean).join(' ');
+            const full = [streetName, p.locality, p.district, p.city || p.state, p.country]
+              .filter(Boolean)
+              .join(', ');
+            return {
+              place_id: p.osm_id || idx,
+              display_name: full || p.name || query,
+              lat: String(f.geometry.coordinates[1]),
+              lon: String(f.geometry.coordinates[0]),
+              address: {
+                house_number: p.housenumber,
+                road: p.street || p.name,
+                suburb: p.locality,
+                district: p.district,
+                city: p.city || p.state,
+                country: p.country,
+              },
+            } as OsmPlace;
+          });
+        }
+      }
+    } catch (err) {
+      console.warn('Photon search error, fallback OSM:', err);
+    }
+
+    // 2. Fallback Nominatim OpenStreetMap
     try {
       const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&countrycodes=vn&addressdetails=1&limit=6&accept-language=vi`;
       const res = await fetch(url);
