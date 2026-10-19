@@ -60,6 +60,12 @@ apiClient.interceptors.request.use(
     } catch {
       // SecureStore error fallback
     }
+
+    // Nếu gửi FormData (upload file/ảnh), gỡ Content-Type application/json để Axios/trình duyệt tự gắn boundary
+    if (config.data instanceof FormData) {
+      delete config.headers['Content-Type'];
+    }
+
     return config;
   },
   error => Promise.reject(error),
