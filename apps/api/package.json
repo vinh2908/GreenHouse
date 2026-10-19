@@ -7,7 +7,7 @@
     "build": "nest build",
     "dev": "ts-node --project tsconfig.run.json -r tsconfig-paths/register src/main.ts",
     "dev:watch": "nodemon --exec \"ts-node -r tsconfig-paths/register src/main.ts\" --ext ts --watch src",
-    "start": "node dist/main",
+    "start": "node dist/apps/api/src/main.js",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
     "test": "jest --passWithNoTests",
     "test:watch": "jest --watch",
