@@ -1,5 +1,17 @@
 import * as Location from 'expo-location';
 
+type BrowserGeolocationPosition = {
+  coords: { latitude: number; longitude: number };
+};
+
+type BrowserGeolocation = {
+  getCurrentPosition: (
+    success: (position: BrowserGeolocationPosition) => void,
+    error: (reason: unknown) => void,
+    options: { enableHighAccuracy: boolean; timeout: number; maximumAge: number },
+  ) => void;
+};
+
 export interface LocationResult {
   full_address: string;
   road?: string;
@@ -35,15 +47,16 @@ class LocationService {
    * Xin quyền GPS và lấy tọa độ hiện tại của thiết bị (hỗ trợ cả Web & Mobile Native)
    */
   async getCurrentCoordinates(): Promise<{ latitude: number; longitude: number } | null> {
-    // 1. Nếu đang chạy trên trình duyệt Web (Chrome, Safari, Edge, Mobile Web)
-    if (
-      typeof window !== 'undefined' &&
-      typeof navigator !== 'undefined' &&
-      navigator.geolocation
-    ) {
+    // 1. Nếu đang chạy trên trình duyệt Web (Chrome, Safari, Edge, Mobile Web).
+    // RN TypeScript không include DOM lib, nên đọc API web qua globalThis có kiểu tường minh.
+    const browserNavigator = (
+      globalThis as typeof globalThis & { navigator?: { geolocation?: BrowserGeolocation } }
+    ).navigator;
+    const browserGeolocation = browserNavigator?.geolocation;
+    if (browserGeolocation) {
       try {
-        const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
-          navigator.geolocation.getCurrentPosition(resolve, reject, {
+        const pos = await new Promise<BrowserGeolocationPosition>((resolve, reject) => {
+          browserGeolocation.getCurrentPosition(resolve, reject, {
             enableHighAccuracy: true,
             timeout: 10000,
             maximumAge: 30000,

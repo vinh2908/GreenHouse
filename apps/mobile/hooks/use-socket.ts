@@ -106,16 +106,43 @@ export function useNotificationSocket() {
   const qc = useQueryClient();
 
   useEffect(() => {
-    const unsub = socketService.on<{ title?: string; body?: string }>(
-      SOCKET_EVENTS.NOTIFICATION_NEW,
-      n => {
-        qc.invalidateQueries({ queryKey: ['notifications'] });
-        qc.invalidateQueries({ queryKey: ['notifications', 'count'] });
-        if (n?.title) {
-          Toast.show({ type: 'info', text1: n.title, text2: n.body, visibilityTime: 4000 });
-        }
-      },
-    );
+    const unsub = socketService.on<{
+      type?: string;
+      title?: string;
+      body?: string;
+      data?: { is_sos?: boolean };
+    }>(SOCKET_EVENTS.NOTIFICATION_NEW, n => {
+      qc.invalidateQueries({ queryKey: ['notifications'] });
+      qc.invalidateQueries({ queryKey: ['notifications', 'count'] });
+      if (n?.title && !(n.type === 'new_job_nearby' && n.data?.is_sos)) {
+        const isNewJob = n.type === 'new_job_nearby';
+        const isAccepted = n.type === 'job_confirmed' || n.type === 'quote_accepted';
+        const isNewQuote = n.type === 'new_quote_received';
+        const title = isNewJob
+          ? 'Có đơn mới gần bạn 🎉'
+          : isAccepted
+            ? 'Tin vui về đơn hàng 🎉'
+            : isNewQuote
+              ? 'Có báo giá mới 💬'
+              : n.title;
+        const body = isNewJob
+          ? `${n.body || 'Một khách hàng vừa đăng công việc phù hợp.'} Mở mục Công việc để xem.`
+          : isAccepted && n.type === 'job_confirmed'
+            ? 'Đã có thợ nhận đơn của bạn. Mở đơn hàng để xem thông tin và theo dõi.'
+            : isAccepted && n.type === 'quote_accepted'
+              ? 'Khách hàng đã chọn báo giá của bạn. Mở đơn để xem hợp đồng.'
+              : isNewQuote
+                ? `${n.body || 'Một thợ vừa gửi báo giá.'} Chạm vào thông báo để xem chi tiết.`
+                : n.body;
+
+        Toast.show({
+          type: isNewJob || isAccepted || isNewQuote ? 'success' : 'info',
+          text1: title,
+          text2: body,
+          visibilityTime: isNewJob || isAccepted ? 6000 : 4500,
+        });
+      }
+    });
     return unsub;
   }, [qc]);
 }
