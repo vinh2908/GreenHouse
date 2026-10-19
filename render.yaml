@@ -4,7 +4,7 @@ services:
     env: node
     plan: free
     region: singapore
-    buildCommand: (corepack enable || npm install -g pnpm) && pnpm install --prod=false && pnpm --filter=@homemate/api... build
+    buildCommand: (corepack enable || npm install -g pnpm) && pnpm install --no-frozen-lockfile --prod=false && pnpm --filter=@homemate/api... build
     startCommand: node apps/api/dist/apps/api/src/main.js
     envVars:
       - key: NODE_ENV
