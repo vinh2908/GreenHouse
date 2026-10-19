@@ -14,12 +14,7 @@ import {
   PhoneCall,
 } from 'lucide-react-native';
 import { useAuthStore } from '@/stores/auth.store';
-import {
-  useHelperProfile,
-  useMyProfile,
-  useSetHelperStatus,
-  useSwitchRole,
-} from '@/hooks/use-api';
+import { useHelperProfile, useMyProfile, useSetHelperStatus, useSwitchRole } from '@/hooks/use-api';
 import { Avatar, Card, COLORS, Separator, Badge, StarRating } from '@/components/ui';
 import { useState, useEffect } from 'react';
 
@@ -157,7 +152,9 @@ export default function HelperProfileScreen() {
               </View>
               <View style={{ width: 1, backgroundColor: COLORS.gray[200] }} />
               <View style={{ alignItems: 'center' }}>
-                <Text style={{ fontSize: 20, fontWeight: '800', color: COLORS.success }}>{profile.completion_rate ?? 0}%</Text>
+                <Text style={{ fontSize: 20, fontWeight: '800', color: COLORS.success }}>
+                  {profile.completion_rate ?? 0}%
+                </Text>
                 <Text style={{ fontSize: 12, color: COLORS.gray[500], fontWeight: '600' }}>
                   Nhận việc
                 </Text>

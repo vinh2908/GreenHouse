@@ -86,7 +86,20 @@ ${sw('SOS', '#DC2626', 'Cứu hộ khẩn cấp')}
 
 <div class="sec"><h2>Thang xám</h2><p>Chữ, viền, nền.</p>
 <div class="grid">
-${[['50', '#F9FAFB', 'Nền ô nhập'], ['100', '#F3F4F6', 'Nền nút icon'], ['200', '#E5E7EB', 'Viền'], ['300', '#D1D5DB', 'Viền nét đứt'], ['400', '#9CA3AF', 'Placeholder'], ['500', '#6B7280', 'Chữ phụ'], ['600', '#4B5563', ''], ['700', '#374151', 'Nhãn'], ['800', '#1F2937', ''], ['900', '#111827', 'Chữ chính']].map(([n, h, u]) => sw('Gray ' + n, h, u)).join('')}
+${[
+  ['50', '#F9FAFB', 'Nền ô nhập'],
+  ['100', '#F3F4F6', 'Nền nút icon'],
+  ['200', '#E5E7EB', 'Viền'],
+  ['300', '#D1D5DB', 'Viền nét đứt'],
+  ['400', '#9CA3AF', 'Placeholder'],
+  ['500', '#6B7280', 'Chữ phụ'],
+  ['600', '#4B5563', ''],
+  ['700', '#374151', 'Nhãn'],
+  ['800', '#1F2937', ''],
+  ['900', '#111827', 'Chữ chính'],
+]
+  .map(([n, h, u]) => sw('Gray ' + n, h, u))
+  .join('')}
 </div></div>
 
 <div class="sec"><h2>Chữ</h2><p>Mobile dùng font hệ thống; bản thiết kế dùng Inter. Admin dùng Inter.</p>
@@ -104,7 +117,18 @@ ${[['50', '#F9FAFB', 'Nền ô nhập'], ['100', '#F3F4F6', 'Nền nút icon'], 
 
 <div class="sec"><h2>Bo góc, khoảng cách, bóng</h2><p>Các giá trị lặp lại trong code.</p>
 <div class="grid">
-  ${[['Chip', 10], ['Nút nhỏ / icon', 12], ['Nút, ô nhập', 14], ['Thẻ', 18], ['Khung nổi', 24]].map(([n, r]) => `<div class="comp" style="align-items:center"><div style="width:96px;height:64px;background:var(--primary-light);border:1.5px solid var(--primary);border-radius:${r}px"></div><div class="name">radius ${r}</div><div class="note">${n}</div></div>`).join('')}
+  ${[
+    ['Chip', 10],
+    ['Nút nhỏ / icon', 12],
+    ['Nút, ô nhập', 14],
+    ['Thẻ', 18],
+    ['Khung nổi', 24],
+  ]
+    .map(
+      ([n, r]) =>
+        `<div class="comp" style="align-items:center"><div style="width:96px;height:64px;background:var(--primary-light);border:1.5px solid var(--primary);border-radius:${r}px"></div><div class="name">radius ${r}</div><div class="note">${n}</div></div>`,
+    )
+    .join('')}
   <div class="comp"><div class="name">spacing</div><div class="vars">${[4, 8, 12, 14, 16, 24].map(s => `<div style="text-align:center;font-size:11px;color:var(--g500)"><div style="width:${s}px;height:32px;background:var(--primary);border-radius:2px;margin:0 auto 4px"></div>${s}</div>`).join('')}</div><div class="note">Lề màn hình 16 · khoảng cách giữa thẻ 14–16 · trong thẻ 10–12</div></div>
   <div class="comp"><div class="name">shadow/card</div><div class="card" style="width:200px">0 2px 8px rgba(17,24,39,.06)</div></div>
 </div></div>
@@ -174,54 +198,178 @@ ${comp('Admin / Action buttons', `<div class="vars" style="font-size:14px"><span
 const S = (cls, t, small = '', st = '') =>
   `<div class="step ${cls}">${t}${small ? `<small>${small}</small>` : ''}${st ? `<div class="st">${st}</div>` : ''}</div>`;
 const A = '<span class="arr">→</span>';
-const lane = (who, steps) => `<div class="lane"><div class="who">${who}</div><div class="steps">${steps.join(A)}</div></div>`;
-const flow = (title, desc, lanes) => `<div class="flow"><h3>${title}</h3><p>${desc}</p>${lanes.join('')}</div>`;
+const lane = (who, steps) =>
+  `<div class="lane"><div class="who">${who}</div><div class="steps">${steps.join(A)}</div></div>`;
+const flow = (title, desc, lanes) =>
+  `<div class="flow"><h3>${title}</h3><p>${desc}</p>${lanes.join('')}</div>`;
 
 const flows = `
 <div class="legend">${S('k', 'Khách hàng')}${S('t', 'Thợ / Đối tác')}${S('s', 'Hệ thống')}${S('a', 'Admin')}${S('end', 'Kết thúc tốt')}${S('bad', 'Nhánh lỗi / huỷ')}<div class="step s" style="border-style:dashed">Nhãn đen = trạng thái lưu trong hệ thống<div class="st">status</div></div></div>
 
-${flow('1 · Vào app & xác thực tài khoản', 'Màn hình: Chào → Đăng nhập / Đăng ký → OTP → Chọn vai trò.', [
-  lane('👤 Người dùng', [S('k', 'Mở app', 'Màn hình chào'), S('k', 'Đăng nhập', 'SĐT + mật khẩu'), S('end', 'Vào trang chính', 'Khách: Trang chủ · Thợ: Tổng quan')]),
-  lane('👤 Người mới', [S('k', 'Đăng ký', 'Họ tên, SĐT, mật khẩu'), S('k', 'Nhập OTP'), S('k', 'Chọn vai trò', 'Khách hàng / Thợ'), S('end', 'Vào trang chính')]),
-  lane('⚙️ Hệ thống', [S('s', 'Kiểm tra thông tin'), S('s', 'Cấp phiên đăng nhập', 'Tự làm mới khi hết hạn'), S('bad', 'Sai thông tin', 'Báo lỗi, ở lại màn hình')]),
-])}
+${flow(
+  '1 · Vào app & xác thực tài khoản',
+  'Màn hình: Chào → Đăng nhập / Đăng ký → OTP → Chọn vai trò.',
+  [
+    lane('👤 Người dùng', [
+      S('k', 'Mở app', 'Màn hình chào'),
+      S('k', 'Đăng nhập', 'SĐT + mật khẩu'),
+      S('end', 'Vào trang chính', 'Khách: Trang chủ · Thợ: Tổng quan'),
+    ]),
+    lane('👤 Người mới', [
+      S('k', 'Đăng ký', 'Họ tên, SĐT, mật khẩu'),
+      S('k', 'Nhập OTP'),
+      S('k', 'Chọn vai trò', 'Khách hàng / Thợ'),
+      S('end', 'Vào trang chính'),
+    ]),
+    lane('⚙️ Hệ thống', [
+      S('s', 'Kiểm tra thông tin'),
+      S('s', 'Cấp phiên đăng nhập', 'Tự làm mới khi hết hạn'),
+      S('bad', 'Sai thông tin', 'Báo lỗi, ở lại màn hình'),
+    ]),
+  ],
+)}
 
-${flow('2 · Đặt việc thường: báo giá → chọn thợ → nghiệm thu', 'Luồng chính của sản phẩm. Thứ tự trạng thái lấy từ JobStatus trong packages/types.', [
-  lane('🙋 Khách', [S('k', 'Đăng yêu cầu', '5 bước: dịch vụ, mô tả, địa chỉ, thời gian, xác nhận', 'open'), S('k', 'Xem danh sách báo giá', 'Xếp theo khoảng cách, sao, giá'), S('k', 'Chấp nhận một thợ', '', 'confirmed'), S('k', 'Theo dõi thợ'), S('k', 'Nghiệm thu', 'Xem ảnh hoàn thành', 'completed'), S('k', 'Thanh toán'), S('end', 'Đánh giá thợ')]),
-  lane('🔧 Thợ', [S('t', 'Thấy đơn gần mình', 'Tab Nhận việc'), S('t', 'Gửi báo giá', 'Giá công, ghi chú', 'receiving_quotes'), S('t', 'Đang đến', '', 'helper_on_the_way'), S('t', 'Đã đến nơi', '', 'helper_arrived'), S('t', 'Bắt đầu làm', '', 'in_progress'), S('t', 'Báo hoàn thành', 'Ảnh / video kết quả', 'pending_review')]),
-  lane('⚙️ Hệ thống', [S('s', 'Lưu vị trí thợ', 'GPS hoặc điểm ghim'), S('s', 'Tính quãng đường & thời gian đến'), S('s', 'Tạo hợp đồng', 'Khi khách chọn thợ'), S('s', 'Mở khung chat'), S('s', 'Gửi thông báo mỗi bước'), S('s', 'Cộng tiền vào ví thợ')]),
-  lane('⚠️ Nhánh khác', [S('bad', 'Khách hủy yêu cầu', '', 'cancelled'), S('bad', 'Khiếu nại', 'Không đồng ý nghiệm thu', 'disputed'), S('bad', 'Hoàn tiền', '', 'refunded')]),
-])}
+${flow(
+  '2 · Đặt việc thường: báo giá → chọn thợ → nghiệm thu',
+  'Luồng chính của sản phẩm. Thứ tự trạng thái lấy từ JobStatus trong packages/types.',
+  [
+    lane('🙋 Khách', [
+      S('k', 'Đăng yêu cầu', '5 bước: dịch vụ, mô tả, địa chỉ, thời gian, xác nhận', 'open'),
+      S('k', 'Xem danh sách báo giá', 'Xếp theo khoảng cách, sao, giá'),
+      S('k', 'Chấp nhận một thợ', '', 'confirmed'),
+      S('k', 'Theo dõi thợ'),
+      S('k', 'Nghiệm thu', 'Xem ảnh hoàn thành', 'completed'),
+      S('k', 'Thanh toán'),
+      S('end', 'Đánh giá thợ'),
+    ]),
+    lane('🔧 Thợ', [
+      S('t', 'Thấy đơn gần mình', 'Tab Nhận việc'),
+      S('t', 'Gửi báo giá', 'Giá công, ghi chú', 'receiving_quotes'),
+      S('t', 'Đang đến', '', 'helper_on_the_way'),
+      S('t', 'Đã đến nơi', '', 'helper_arrived'),
+      S('t', 'Bắt đầu làm', '', 'in_progress'),
+      S('t', 'Báo hoàn thành', 'Ảnh / video kết quả', 'pending_review'),
+    ]),
+    lane('⚙️ Hệ thống', [
+      S('s', 'Lưu vị trí thợ', 'GPS hoặc điểm ghim'),
+      S('s', 'Tính quãng đường & thời gian đến'),
+      S('s', 'Tạo hợp đồng', 'Khi khách chọn thợ'),
+      S('s', 'Mở khung chat'),
+      S('s', 'Gửi thông báo mỗi bước'),
+      S('s', 'Cộng tiền vào ví thợ'),
+    ]),
+    lane('⚠️ Nhánh khác', [
+      S('bad', 'Khách hủy yêu cầu', '', 'cancelled'),
+      S('bad', 'Khiếu nại', 'Không đồng ý nghiệm thu', 'disputed'),
+      S('bad', 'Hoàn tiền', '', 'refunded'),
+    ]),
+  ],
+)}
 
 ${flow('3 · Cứu hộ khẩn cấp SOS', 'Không qua báo giá: thợ nào nhận trước thì được đơn.', [
-  lane('🙋 Khách', [S('k', 'Bấm SOS', 'Chọn loại sự cố, địa chỉ, ảnh'), S('k', 'Chờ thợ nhận'), S('k', 'Theo dõi thợ trên bản đồ'), S('end', 'Nghiệm thu & thanh toán')]),
-  lane('⚙️ Hệ thống', [S('s', 'Tạo đơn SOS', 'Có phụ phí', 'open'), S('s', 'Phát tới mọi thợ đang online đã e-KYC'), S('s', 'Chốt cho thợ nhận đầu tiên', 'Thợ sau nhận thông báo "đã có thợ khác nhận"', 'confirmed')]),
-  lane('🔧 Thợ', [S('t', 'Nhận cảnh báo SOS', 'Hiện trên Tổng quan'), S('t', 'Bấm nhận đơn'), S('t', 'Di chuyển → làm → báo hoàn thành')]),
+  lane('🙋 Khách', [
+    S('k', 'Bấm SOS', 'Chọn loại sự cố, địa chỉ, ảnh'),
+    S('k', 'Chờ thợ nhận'),
+    S('k', 'Theo dõi thợ trên bản đồ'),
+    S('end', 'Nghiệm thu & thanh toán'),
+  ]),
+  lane('⚙️ Hệ thống', [
+    S('s', 'Tạo đơn SOS', 'Có phụ phí', 'open'),
+    S('s', 'Phát tới mọi thợ đang online đã e-KYC'),
+    S(
+      's',
+      'Chốt cho thợ nhận đầu tiên',
+      'Thợ sau nhận thông báo "đã có thợ khác nhận"',
+      'confirmed',
+    ),
+  ]),
+  lane('🔧 Thợ', [
+    S('t', 'Nhận cảnh báo SOS', 'Hiện trên Tổng quan'),
+    S('t', 'Bấm nhận đơn'),
+    S('t', 'Di chuyển → làm → báo hoàn thành'),
+  ]),
 ])}
 
-${flow('4 · Thợ: đăng ký → e-KYC → bật nhận việc', 'Trạng thái lấy từ VerificationStatus và HelperStatus.', [
-  lane('🔧 Thợ', [S('t', 'Chọn vai trò Thợ'), S('t', 'Nộp hồ sơ e-KYC', 'Số CCCD, ảnh 2 mặt, ảnh chân dung', 'pending'), S('t', 'Chờ duyệt'), S('t', 'Bật nhận việc', '', 'online'), S('end', 'Thấy đơn & gửi báo giá')]),
-  lane('🛡️ Admin', [S('a', 'Mở Duyệt e-KYC Thợ'), S('a', 'Xem 3 ảnh', 'Phóng to để đối chiếu'), S('a', 'Duyệt', '', 'approved'), S('bad', 'Từ chối + lý do', '', 'rejected')]),
-  lane('⚙️ Hệ thống', [S('s', 'Lưu ảnh gốc, không nén'), S('s', 'Gửi thông báo kết quả'), S('s', 'Bị từ chối → thợ nộp lại'), S('s', 'Đang làm đơn → tạm ngừng nhận SOS', '', 'busy')]),
-])}
+${flow(
+  '4 · Thợ: đăng ký → e-KYC → bật nhận việc',
+  'Trạng thái lấy từ VerificationStatus và HelperStatus.',
+  [
+    lane('🔧 Thợ', [
+      S('t', 'Chọn vai trò Thợ'),
+      S('t', 'Nộp hồ sơ e-KYC', 'Số CCCD, ảnh 2 mặt, ảnh chân dung', 'pending'),
+      S('t', 'Chờ duyệt'),
+      S('t', 'Bật nhận việc', '', 'online'),
+      S('end', 'Thấy đơn & gửi báo giá'),
+    ]),
+    lane('🛡️ Admin', [
+      S('a', 'Mở Duyệt e-KYC Thợ'),
+      S('a', 'Xem 3 ảnh', 'Phóng to để đối chiếu'),
+      S('a', 'Duyệt', '', 'approved'),
+      S('bad', 'Từ chối + lý do', '', 'rejected'),
+    ]),
+    lane('⚙️ Hệ thống', [
+      S('s', 'Lưu ảnh gốc, không nén'),
+      S('s', 'Gửi thông báo kết quả'),
+      S('s', 'Bị từ chối → thợ nộp lại'),
+      S('s', 'Đang làm đơn → tạm ngừng nhận SOS', '', 'busy'),
+    ]),
+  ],
+)}
 
 ${flow('5 · Thu nhập & rút tiền', 'Tiền về ví sau khi đơn hoàn thành; rút tiền cần admin duyệt.', [
-  lane('🔧 Thợ', [S('t', 'Xem ví thu nhập', 'Tab Thu nhập'), S('t', 'Liên kết tài khoản ngân hàng'), S('t', 'Yêu cầu rút tiền'), S('end', 'Nhận tiền')]),
-  lane('🛡️ Admin', [S('a', 'Mở Thanh toán & Rút tiền'), S('a', 'Duyệt yêu cầu rút'), S('bad', 'Từ chối yêu cầu')]),
+  lane('🔧 Thợ', [
+    S('t', 'Xem ví thu nhập', 'Tab Thu nhập'),
+    S('t', 'Liên kết tài khoản ngân hàng'),
+    S('t', 'Yêu cầu rút tiền'),
+    S('end', 'Nhận tiền'),
+  ]),
+  lane('🛡️ Admin', [
+    S('a', 'Mở Thanh toán & Rút tiền'),
+    S('a', 'Duyệt yêu cầu rút'),
+    S('bad', 'Từ chối yêu cầu'),
+  ]),
   lane('⚙️ Hệ thống', [S('s', 'Ghi giao dịch vào ví'), S('s', 'Thông báo kết quả cho thợ')]),
 ])}
 
 ${flow('6 · Admin: các phân hệ', 'Mỗi phân hệ là một mục trên thanh bên của trang quản trị.', [
-  lane('🛡️ Người & hồ sơ', [S('a', 'Quản lý Người dùng', 'Tìm, khoá / mở tài khoản'), S('a', 'Đối tác Thợ & Giúp việc'), S('a', 'Duyệt e-KYC Thợ')]),
-  lane('🛡️ Vận hành', [S('a', 'Quản lý Đơn hàng', 'Danh sách, chi tiết đơn'), S('a', 'Dịch vụ & Phí'), S('a', 'Đánh giá & Phản hồi')]),
-  lane('🛡️ Tiền & số liệu', [S('a', 'Thanh toán & Rút tiền'), S('a', 'Thống kê & Báo cáo'), S('a', 'Gửi thông báo')]),
+  lane('🛡️ Người & hồ sơ', [
+    S('a', 'Quản lý Người dùng', 'Tìm, khoá / mở tài khoản'),
+    S('a', 'Đối tác Thợ & Giúp việc'),
+    S('a', 'Duyệt e-KYC Thợ'),
+  ]),
+  lane('🛡️ Vận hành', [
+    S('a', 'Quản lý Đơn hàng', 'Danh sách, chi tiết đơn'),
+    S('a', 'Dịch vụ & Phí'),
+    S('a', 'Đánh giá & Phản hồi'),
+  ]),
+  lane('🛡️ Tiền & số liệu', [
+    S('a', 'Thanh toán & Rút tiền'),
+    S('a', 'Thống kê & Báo cáo'),
+    S('a', 'Gửi thông báo'),
+  ]),
 ])}
 `;
 
 const out = [
-  ['01-nen-tang.html', 'Green House – 01 Nền tảng', 'Màu, chữ, bo góc, khoảng cách, logo. Nhập vào Figma page "01 Nền tảng" rồi tạo Color/Text Styles từ đây.', foundations],
-  ['02-thanh-phan.html', 'Green House – 02 Thành phần', 'Tách từ nhỏ đến lớn: nguyên tử → phân tử → tổ chức. Tên tím phía trên mỗi ô là tên Component nên đặt trong Figma.', components],
-  ['03-luong.html', 'Green House – 03 Luồng sự kiện', 'Mỗi hàng là một vai trò, đọc từ trái sang phải. Dùng làm bản đồ để nối prototype giữa các màn hình.', flows],
+  [
+    '01-nen-tang.html',
+    'Green House – 01 Nền tảng',
+    'Màu, chữ, bo góc, khoảng cách, logo. Nhập vào Figma page "01 Nền tảng" rồi tạo Color/Text Styles từ đây.',
+    foundations,
+  ],
+  [
+    '02-thanh-phan.html',
+    'Green House – 02 Thành phần',
+    'Tách từ nhỏ đến lớn: nguyên tử → phân tử → tổ chức. Tên tím phía trên mỗi ô là tên Component nên đặt trong Figma.',
+    components,
+  ],
+  [
+    '03-luong.html',
+    'Green House – 03 Luồng sự kiện',
+    'Mỗi hàng là một vai trò, đọc từ trái sang phải. Dùng làm bản đồ để nối prototype giữa các màn hình.',
+    flows,
+  ],
 ];
-for (const [file, title, sub, body] of out) fs.writeFileSync(path.join(dir, file), page(title, sub, body));
+for (const [file, title, sub, body] of out)
+  fs.writeFileSync(path.join(dir, file), page(title, sub, body));
 console.log('built', out.map(o => o[0]).join(', '));
