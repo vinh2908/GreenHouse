@@ -63,11 +63,17 @@ describe('Auth E2E', () => {
     it('should register successfully', async () => {
       const res = await request(app.getHttpServer())
         .post('/api/v1/auth/register')
-        .send({ phone: '0901234567', full_name: 'Test User', password: 'Password123!' })
+        .send({
+          phone: '0901234567',
+          email: 'test.user@example.com',
+          full_name: 'Test User',
+          password: 'Password123!',
+        })
         .expect(201);
 
       expect(res.body.success).toBe(true);
       expect(res.body.data.user.phone).toBe('0901234567');
+      expect(res.body.data.user.email).toBe('test.user@example.com');
       expect(res.body.data.access_token).toBeDefined();
       expect(res.body.data.refresh_token).toBeDefined();
       expect(res.body.data.user.password_hash).toBeUndefined();
@@ -76,24 +82,70 @@ describe('Auth E2E', () => {
       refreshToken = res.body.data.refresh_token;
     });
 
+    it('should reject missing email', async () => {
+      await request(app.getHttpServer())
+        .post('/api/v1/auth/register')
+        .send({ phone: '0909999998', full_name: 'No Email User', password: 'Password123!' })
+        .expect(400);
+    });
+
+    it('should reject invalid email format', async () => {
+      await request(app.getHttpServer())
+        .post('/api/v1/auth/register')
+        .send({
+          phone: '0909999998',
+          email: 'not-an-email',
+          full_name: 'Bad Email User',
+          password: 'Password123!',
+        })
+        .expect(400);
+    });
+
     it('should reject duplicate phone', async () => {
       await request(app.getHttpServer())
         .post('/api/v1/auth/register')
-        .send({ phone: '0901234567', full_name: 'Another User', password: 'Password123!' })
+        .send({
+          phone: '0901234567',
+          email: 'another@example.com',
+          full_name: 'Another User',
+          password: 'Password123!',
+        })
+        .expect(409);
+    });
+
+    it('should reject duplicate email', async () => {
+      await request(app.getHttpServer())
+        .post('/api/v1/auth/register')
+        .send({
+          phone: '0908888888',
+          email: 'test.user@example.com',
+          full_name: 'Duplicate Email User',
+          password: 'Password123!',
+        })
         .expect(409);
     });
 
     it('should reject invalid phone', async () => {
       await request(app.getHttpServer())
         .post('/api/v1/auth/register')
-        .send({ phone: '12345', full_name: 'Test', password: 'Password123!' })
+        .send({
+          phone: '12345',
+          email: 'invalidphone@example.com',
+          full_name: 'Test',
+          password: 'Password123!',
+        })
         .expect(400);
     });
 
     it('should reject short password', async () => {
       await request(app.getHttpServer())
         .post('/api/v1/auth/register')
-        .send({ phone: '0901234568', full_name: 'Test', password: 'short' })
+        .send({
+          phone: '0901234568',
+          email: 'shortpass@example.com',
+          full_name: 'Test',
+          password: 'short',
+        })
         .expect(400);
     });
   });
@@ -101,7 +153,7 @@ describe('Auth E2E', () => {
   // ── Login ─────────────────────────────────────────────────────────────────
 
   describe('POST /api/v1/auth/login', () => {
-    it('should login successfully', async () => {
+    it('should login successfully with phone', async () => {
       const res = await request(app.getHttpServer())
         .post('/api/v1/auth/login')
         .send({ phone: '0901234567', password: 'Password123!' })
@@ -112,6 +164,17 @@ describe('Auth E2E', () => {
       expect(res.body.data.user.password_hash).toBeUndefined();
       accessToken = res.body.data.access_token;
       refreshToken = res.body.data.refresh_token;
+    });
+
+    it('should login successfully with email', async () => {
+      const res = await request(app.getHttpServer())
+        .post('/api/v1/auth/login')
+        .send({ phone: 'test.user@example.com', password: 'Password123!' })
+        .expect(200);
+
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.access_token).toBeDefined();
+      expect(res.body.data.user.email).toBe('test.user@example.com');
     });
 
     it('should reject wrong password', async () => {

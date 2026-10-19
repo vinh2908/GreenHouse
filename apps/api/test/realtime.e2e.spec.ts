@@ -49,15 +49,21 @@ describe('Realtime E2E (Phase 6)', () => {
     await app.init();
 
     // Register two users
-    let res = await request(app.getHttpServer())
-      .post('/api/v1/auth/register')
-      .send({ phone: '0933333333', full_name: 'User A', password: 'Password123!' });
+    let res = await request(app.getHttpServer()).post('/api/v1/auth/register').send({
+      phone: '0933333333',
+      email: 'user.a@example.com',
+      full_name: 'User A',
+      password: 'Password123!',
+    });
     userAToken = res.body.data.access_token;
     userAId = res.body.data.user._id;
 
-    res = await request(app.getHttpServer())
-      .post('/api/v1/auth/register')
-      .send({ phone: '0944444444', full_name: 'User B', password: 'Password123!' });
+    res = await request(app.getHttpServer()).post('/api/v1/auth/register').send({
+      phone: '0944444444',
+      email: 'user.b@example.com',
+      full_name: 'User B',
+      password: 'Password123!',
+    });
     userBToken = res.body.data.access_token;
     userBId = res.body.data.user._id;
   });
@@ -214,9 +220,12 @@ describe('Realtime E2E (Phase 6)', () => {
 
     it('should reject non-participant from accessing conversation', async () => {
       // Register a third user
-      const res3 = await request(app.getHttpServer())
-        .post('/api/v1/auth/register')
-        .send({ phone: '0955555555', full_name: 'User C', password: 'Password123!' });
+      const res3 = await request(app.getHttpServer()).post('/api/v1/auth/register').send({
+        phone: '0955555555',
+        email: 'user.c@example.com',
+        full_name: 'User C',
+        password: 'Password123!',
+      });
       const userCToken = res3.body.data.access_token;
 
       await request(app.getHttpServer())

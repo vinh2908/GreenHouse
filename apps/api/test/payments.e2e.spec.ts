@@ -1,7 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
-import { MongooseModule } from '@nestjs/mongoose';
+import { getModelToken, MongooseModule } from '@nestjs/mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
+import { Types } from 'mongoose';
 import { ConfigModule } from '@nestjs/config';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { AuthModule } from '../src/modules/auth/auth.module';
@@ -10,6 +11,7 @@ import { PaymentsModule } from '../src/modules/payments/payments.module';
 import { HttpExceptionFilter } from '../src/common/filters/http-exception.filter';
 import { TransformInterceptor } from '../src/common/interceptors/transform.interceptor';
 import { PaymentsService } from '../src/modules/payments/payments.service';
+import { HelperProfile } from '../src/modules/helpers/schemas/helper-profile.schema';
 import appConfig from '../src/config/app.config';
 import jwtConfig from '../src/config/jwt.config';
 
@@ -45,16 +47,32 @@ describe('Payments E2E (Phase 7)', () => {
     await app.init();
 
     // Register helper
-    let res = await request(app.getHttpServer())
-      .post('/api/v1/auth/register')
-      .send({ phone: '0966666666', full_name: 'Helper Pay', password: 'Password123!' });
+    let res = await request(app.getHttpServer()).post('/api/v1/auth/register').send({
+      phone: '0966666666',
+      email: 'helper.pay@example.com',
+      full_name: 'Helper Pay',
+      password: 'Password123!',
+    });
     helperToken = res.body.data.access_token;
     helperId = res.body.data.user._id;
 
+    // Seed helper profile with bank account for withdrawal
+    await app.get(getModelToken(HelperProfile.name)).create({
+      user_id: new Types.ObjectId(helperId),
+      bank_account: {
+        bank_name: 'Vietcombank',
+        account_number: '0123456789',
+        account_name: 'Helper Pay',
+      },
+    });
+
     // Register customer
-    res = await request(app.getHttpServer())
-      .post('/api/v1/auth/register')
-      .send({ phone: '0977777777', full_name: 'Customer Pay', password: 'Password123!' });
+    res = await request(app.getHttpServer()).post('/api/v1/auth/register').send({
+      phone: '0977777777',
+      email: 'customer.pay@example.com',
+      full_name: 'Customer Pay',
+      password: 'Password123!',
+    });
     customerToken = res.body.data.access_token;
     customerId = res.body.data.user._id;
   });
@@ -162,10 +180,23 @@ describe('Payments E2E (Phase 7)', () => {
 
     it('should reject withdrawal exceeding balance', async () => {
       // Register new helper with 0 balance
-      const res = await request(app.getHttpServer())
-        .post('/api/v1/auth/register')
-        .send({ phone: '0988888888', full_name: 'Broke Helper', password: 'Password123!' });
+      const res = await request(app.getHttpServer()).post('/api/v1/auth/register').send({
+        phone: '0988888888',
+        email: 'broke.helper@example.com',
+        full_name: 'Broke Helper',
+        password: 'Password123!',
+      });
       const brokeToken = res.body.data.access_token;
+      const brokeId = res.body.data.user._id;
+
+      await app.get(getModelToken(HelperProfile.name)).create({
+        user_id: new Types.ObjectId(brokeId),
+        bank_account: {
+          bank_name: 'Vietcombank',
+          account_number: '9876543210',
+          account_name: 'Broke Helper',
+        },
+      });
 
       await request(app.getHttpServer())
         .post('/api/v1/payments/withdraw')

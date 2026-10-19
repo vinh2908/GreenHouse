@@ -44,15 +44,21 @@ describe('Profiles E2E (Phase 3)', () => {
     await app.init();
 
     // Register + login customer
-    let res = await request(app.getHttpServer())
-      .post('/api/v1/auth/register')
-      .send({ phone: '0901111111', full_name: 'Customer Test', password: 'Password123!' });
+    let res = await request(app.getHttpServer()).post('/api/v1/auth/register').send({
+      phone: '0901111111',
+      email: 'customer.test@example.com',
+      full_name: 'Customer Test',
+      password: 'Password123!',
+    });
     customerToken = res.body.data.access_token;
 
     // Register + login helper
-    res = await request(app.getHttpServer())
-      .post('/api/v1/auth/register')
-      .send({ phone: '0902222222', full_name: 'Helper Test', password: 'Password123!' });
+    res = await request(app.getHttpServer()).post('/api/v1/auth/register').send({
+      phone: '0902222222',
+      email: 'helper.test@example.com',
+      full_name: 'Helper Test',
+      password: 'Password123!',
+    });
     helperToken = res.body.data.access_token;
   });
 
