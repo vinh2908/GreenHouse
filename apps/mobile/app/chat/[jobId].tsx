@@ -48,6 +48,7 @@ export default function ChatScreen() {
       .get(`/chat/jobs/${jobId}/conversation`)
       .then(({ data }) => {
         setConversation(data.data);
+        (globalThis as any).__activeConversationId = data.data?._id;
       })
       .catch(err => {
         const msg = err?.response?.data?.message || 'Không thể mở cuộc trò chuyện';
@@ -56,6 +57,10 @@ export default function ChatScreen() {
       .finally(() => {
         setLoadingConv(false);
       });
+
+    return () => {
+      (globalThis as any).__activeConversationId = null;
+    };
   }, [jobId]);
 
   const handleSend = async () => {

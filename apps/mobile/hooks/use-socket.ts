@@ -9,17 +9,59 @@ import Toast from 'react-native-toast-message';
 
 export function useSocketConnection() {
   const isAuthenticated = useAuthStore(s => s.isAuthenticated);
+  const qc = useQueryClient();
 
   useEffect(() => {
     if (isAuthenticated) {
       socketService.connect();
+
+      // Lắng nghe toàn cục tin nhắn chat mới để hiển thị popup Toast khi không ở trong phòng chat đó
+      const unsubChat = socketService.on<{
+        conversation_id?: string;
+        message?: {
+          sender_id?: { _id?: string; full_name?: string } | string;
+          content?: string;
+          type?: string;
+        };
+      }>(SOCKET_EVENTS.CHAT_NEW_MESSAGE, data => {
+        const currentUserId = useAuthStore.getState().user?._id;
+        const senderObj = data?.message?.sender_id;
+        const senderId = typeof senderObj === 'object' && senderObj ? senderObj._id : senderObj;
+
+        // Bỏ qua nếu tin nhắn do chính mình gửi
+        if (senderId && senderId === currentUserId) return;
+
+        // Bỏ qua nếu đang trực tiếp mở và xem cuộc trò chuyện này
+        const activeChat = (globalThis as any).__activeConversationId;
+        if (activeChat && activeChat === data?.conversation_id) return;
+
+        const senderName =
+          (typeof senderObj === 'object' && senderObj?.full_name ? senderObj.full_name : null) ||
+          'Đối tác';
+        const content =
+          data?.message?.type === 'image'
+            ? 'Đã gửi một hình ảnh 📷'
+            : data?.message?.content || 'Bạn có tin nhắn mới';
+
+        Toast.show({
+          type: 'info',
+          text1: `💬 ${senderName}`,
+          text2: content,
+          visibilityTime: 5000,
+        });
+
+        qc.invalidateQueries({ queryKey: ['messages'] });
+        qc.invalidateQueries({ queryKey: ['conversations'] });
+        qc.invalidateQueries({ queryKey: ['notifications', 'count'] });
+      });
+
+      return () => {
+        unsubChat();
+      };
     } else {
       socketService.disconnect();
     }
-    return () => {
-      // Don't disconnect on unmount — keep connection alive
-    };
-  }, [isAuthenticated]);
+  }, [isAuthenticated, qc]);
 }
 
 // ─── Job status updates ──────────────────────────────────────────────────────
@@ -118,13 +160,17 @@ export function useNotificationSocket() {
         const isNewJob = n.type === 'new_job_nearby';
         const isAccepted = n.type === 'job_confirmed' || n.type === 'quote_accepted';
         const isNewQuote = n.type === 'new_quote_received';
+        const isNewMsg = n.type === 'new_message';
+
         const title = isNewJob
           ? 'Có đơn mới gần bạn 🎉'
           : isAccepted
             ? 'Tin vui về đơn hàng 🎉'
             : isNewQuote
               ? 'Có báo giá mới 💬'
-              : n.title;
+              : isNewMsg
+                ? '💬 ' + (n.title || 'Tin nhắn mới')
+                : n.title;
         const body = isNewJob
           ? `${n.body || 'Một khách hàng vừa đăng công việc phù hợp.'} Mở mục Công việc để xem.`
           : isAccepted && n.type === 'job_confirmed'
@@ -133,13 +179,15 @@ export function useNotificationSocket() {
               ? 'Khách hàng đã chọn báo giá của bạn. Mở đơn để xem hợp đồng.'
               : isNewQuote
                 ? `${n.body || 'Một thợ vừa gửi báo giá.'} Chạm vào thông báo để xem chi tiết.`
-                : n.body;
+                : isNewMsg
+                  ? n.body || 'Bạn có tin nhắn mới từ đối tác'
+                  : n.body;
 
         Toast.show({
           type: isNewJob || isAccepted || isNewQuote ? 'success' : 'info',
           text1: title,
           text2: body,
-          visibilityTime: isNewJob || isAccepted ? 6000 : 4500,
+          visibilityTime: isNewJob || isAccepted || isNewMsg ? 6000 : 4500,
         });
       }
     });

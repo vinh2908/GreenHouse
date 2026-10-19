@@ -168,3 +168,54 @@ export class ReviewJobDto {
 export class CancelJobDto {
   @ApiProperty() @IsString() @IsNotEmpty() reason: string;
 }
+
+export class UpdateJobDto {
+  @ApiPropertyOptional({ maxLength: 200 })
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  title?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  description?: string;
+
+  @ApiPropertyOptional({ type: JobAddressDto })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => JobAddressDto)
+  address?: JobAddressDto;
+
+  @ApiPropertyOptional({ type: [String] })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  photos?: string[];
+
+  @ApiPropertyOptional({ type: [String] })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  videos?: string[];
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsDateString()
+  preferred_date?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  preferred_time_start?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  preferred_time_end?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  is_flexible_time?: boolean;
+}
