@@ -126,14 +126,23 @@ export default function HelperJobDetailScreen() {
 
   const handleOpenQuoteModal = () => {
     if (helperProfile?.verification_status !== 'approved') {
-      Alert.alert(
-        'Yêu cầu xác thực e-KYC',
-        'Bạn cần hoàn tất và được duyệt xác thực danh tính e-KYC trước khi có thể gửi báo giá và nhận việc.',
-        [
-          { text: 'Để sau', style: 'cancel' },
-          { text: 'Xác thực ngay', onPress: () => router.push('/kyc') },
-        ],
-      );
+      const msg =
+        'Bạn cần hoàn tất và được duyệt xác thực danh tính e-KYC trước khi có thể gửi báo giá và nhận việc.';
+      if (Platform.OS === 'web') {
+        const w = (globalThis as any).window;
+        if (w?.confirm ? w.confirm(msg + '\n\nBấm OK để chuyển tới trang xác thực e-KYC.') : true) {
+          router.push('/kyc');
+        }
+      } else {
+        Alert.alert(
+          'Yêu cầu xác thực e-KYC',
+          msg,
+          [
+            { text: 'Để sau', style: 'cancel' },
+            { text: 'Xác thực ngay', onPress: () => router.push('/kyc') },
+          ],
+        );
+      }
       return;
     }
     setShowQuoteModal(true);
@@ -256,30 +265,38 @@ export default function HelperJobDetailScreen() {
 
   const handleCompleteSubmission = async () => {
     if (completionPhotos.length === 0 && completionVideos.length === 0) {
-      Alert.alert(
-        'Chưa có bằng chứng nghiệm thu',
-        'Khách hàng cần xem ảnh/video kết quả công việc để kiểm tra và nghiệm thu nhanh chóng. Bạn có chắc muốn tiếp tục không?',
-        [
-          { text: 'Chụp/Quay ngay', style: 'cancel' },
-          {
-            text: 'Tiếp tục gửi',
-            onPress: async () => {
-              try {
-                await completeJob.mutateAsync({
-                  jobId: id!,
-                  completion_photos: completionPhotos,
-                  completion_videos: completionVideos,
-                  completion_notes: completionNotes || undefined,
-                });
-                setShowCompleteModal(false);
-              } catch (err: any) {
-                const msg = err?.response?.data?.message || 'Cập nhật thất bại';
-                Toast.show({ type: 'error', text1: msg });
-              }
-            },
-          },
-        ],
-      );
+      const msg =
+        'Khách hàng cần xem ảnh/video kết quả công việc để kiểm tra và nghiệm thu nhanh chóng. Bạn có chắc muốn tiếp tục gửi mà không có ảnh/video?';
+      const doSubmit = async () => {
+        try {
+          await completeJob.mutateAsync({
+            jobId: id!,
+            completion_photos: completionPhotos,
+            completion_videos: completionVideos,
+            completion_notes: completionNotes || undefined,
+          });
+          setShowCompleteModal(false);
+        } catch (err: any) {
+          const m = err?.response?.data?.message || 'Cập nhật thất bại';
+          Toast.show({ type: 'error', text1: m });
+        }
+      };
+
+      if (Platform.OS === 'web') {
+        const w = (globalThis as any).window;
+        if (w?.confirm ? w.confirm(msg) : true) {
+          doSubmit();
+        }
+      } else {
+        Alert.alert(
+          'Chưa có bằng chứng nghiệm thu',
+          msg,
+          [
+            { text: 'Chụp/Quay ngay', style: 'cancel' },
+            { text: 'Tiếp tục gửi', onPress: doSubmit },
+          ],
+        );
+      }
       return;
     }
 
@@ -308,22 +325,36 @@ export default function HelperJobDetailScreen() {
       arrived: 'Xác nhận bạn đã có mặt tại địa điểm?',
       start: 'Bắt đầu bấm giờ làm việc?',
     };
-    Alert.alert(labels[action] ?? 'Xác nhận?', undefined, [
-      { text: 'Hủy', style: 'cancel' },
-      {
-        text: 'Xác nhận',
-        onPress: async () => {
-          try {
-            if (action === 'on_the_way') await onTheWay.mutateAsync(id!);
-            else if (action === 'arrived') await arrived.mutateAsync(id!);
-            else if (action === 'start') await startJob.mutateAsync(id!);
-          } catch (err: any) {
-            const msg = err?.response?.data?.message || 'Cập nhật tiến trình thất bại';
-            Toast.show({ type: 'error', text1: msg });
-          }
-        },
-      },
-    ]);
+
+    const doExecute = async () => {
+      try {
+        if (action === 'on_the_way') {
+          await onTheWay.mutateAsync(id!);
+          Toast.show({ type: 'success', text1: 'Bắt đầu di chuyển đến khách hàng 🚗' });
+        } else if (action === 'arrived') {
+          await arrived.mutateAsync(id!);
+          Toast.show({ type: 'success', text1: 'Đã đến địa điểm của khách hàng 📍' });
+        } else if (action === 'start') {
+          await startJob.mutateAsync(id!);
+          Toast.show({ type: 'success', text1: 'Bắt đầu tính giờ làm việc ▶️' });
+        }
+      } catch (err: any) {
+        const msg = err?.response?.data?.message || 'Cập nhật tiến trình thất bại';
+        Toast.show({ type: 'error', text1: msg });
+      }
+    };
+
+    if (Platform.OS === 'web') {
+      const w = (globalThis as any).window;
+      if (w?.confirm ? w.confirm(labels[action] ?? 'Xác nhận thao tác này?') : true) {
+        doExecute();
+      }
+    } else {
+      Alert.alert(labels[action] ?? 'Xác nhận?', undefined, [
+        { text: 'Hủy', style: 'cancel' },
+        { text: 'Xác nhận', onPress: doExecute },
+      ]);
+    }
   };
 
   const isMyActiveJob =

@@ -24,6 +24,7 @@ import {
   CompleteJobDto,
   ReviewJobDto,
   CancelJobDto,
+  UpdateJobDto,
 } from './dto/job.dto';
 import {
   JobStatus,
@@ -367,6 +368,55 @@ export class JobsService {
       is_sos: true,
       status: job.status,
     });
+
+    return job;
+  }
+
+  // ─── Customer: Update job info & address (before completion) ──────────────
+
+  async updateJob(customerId: string, jobId: string, dto: UpdateJobDto): Promise<JobDocument> {
+    const job = await this.jobModel.findById(jobId).exec();
+    if (!job) throw new NotFoundException('Job không tồn tại');
+    if (job.customer_id.toString() !== customerId) throw new ForbiddenException();
+
+    // Chỉ cho phép sửa khi chưa hoàn tất / chưa hủy
+    if (
+      job.status === JobStatus.COMPLETED ||
+      job.status === JobStatus.CANCELLED ||
+      job.status === JobStatus.DISPUTED
+    ) {
+      throw new BadRequestException('Không thể cập nhật đơn hàng ở trạng thái này');
+    }
+
+    if (dto.title) job.title = dto.title;
+    if (dto.description) job.description = dto.description;
+    if (dto.photos) job.photos = dto.photos;
+    if (dto.videos) job.videos = dto.videos;
+    if (dto.preferred_date) job.preferred_date = new Date(dto.preferred_date);
+    if (dto.preferred_time_start) job.preferred_time_start = dto.preferred_time_start;
+    if (dto.preferred_time_end) job.preferred_time_end = dto.preferred_time_end;
+    if (dto.is_flexible_time !== undefined) job.is_flexible_time = dto.is_flexible_time;
+
+    if (dto.address) {
+      const prevLocation = job.address?.location?.coordinates || [106.6297, 10.8231];
+      job.address = {
+        full_address: dto.address.full_address || job.address.full_address,
+        ward: dto.address.ward ?? job.address.ward,
+        district: dto.address.district || job.address.district,
+        city: dto.address.city || job.address.city,
+        notes: dto.address.notes ?? job.address.notes,
+        location: {
+          type: 'Point',
+          coordinates: dto.address.location?.coordinates || prevLocation,
+        },
+      } as any;
+    }
+
+    this.addEvent(job, job.status, customerId, 'customer', 'Cập nhật thông tin/địa chỉ đơn hàng');
+    await job.save();
+
+    // Realtime broadcast updated job
+    this.emitJobStatusChange(job);
 
     return job;
   }
