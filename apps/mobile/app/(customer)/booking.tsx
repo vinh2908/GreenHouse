@@ -361,6 +361,16 @@ export default function BookingScreen() {
   };
 
   const handleSubmit = async () => {
+    if (!useAuthStore.getState().isAuthenticated) {
+      Toast.show({
+        type: 'info',
+        text1: 'Yêu cầu đăng nhập',
+        text2: 'Vui lòng đăng nhập hoặc tạo tài khoản để gửi đơn đặt thợ',
+      });
+      router.push('/(auth)/login');
+      return;
+    }
+
     // Nếu chưa có service_id, tự động lấy service mặc định đầu tiên
     let currentServiceId = selectedService;
     if (!currentServiceId) {
