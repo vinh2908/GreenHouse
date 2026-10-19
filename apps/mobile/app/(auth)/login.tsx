@@ -182,7 +182,9 @@ export default function LoginScreen() {
           </View>
 
           {/* ── Register Link & Guest Mode ──────────────────────────────────────── */}
-          <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 6, marginBottom: 16 }}>
+          <View
+            style={{ flexDirection: 'row', justifyContent: 'center', gap: 6, marginBottom: 16 }}
+          >
             <Text style={{ color: COLORS.gray[600], fontSize: 14 }}>Chưa có tài khoản?</Text>
             <TouchableOpacity onPress={() => router.push('/(auth)/register')}>
               <Text style={{ color: COLORS.primary, fontWeight: '800', fontSize: 14 }}>
