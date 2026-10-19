@@ -33,7 +33,13 @@ import {
 } from 'lucide-react-native';
 import Toast from 'react-native-toast-message';
 import { useAuthStore } from '@/stores/auth.store';
-import { useMyProfile, useUpdateProfile, useHelperProfile, useUpdateHelperLocation, useAddresses } from '@/hooks/use-api';
+import {
+  useMyProfile,
+  useUpdateProfile,
+  useHelperProfile,
+  useUpdateHelperLocation,
+  useAddresses,
+} from '@/hooks/use-api';
 import { useQueryClient } from '@tanstack/react-query';
 import apiClient from '@/services/api-client';
 import { uploadFile } from '@/services/upload.service';
@@ -72,17 +78,27 @@ export default function EditProfileScreen() {
   // Customization cho Khách hàng
   const [defaultAddress, setDefaultAddress] = useState('');
   const [homeNote, setHomeNote] = useState('');
-  const [customerCoords, setCustomerCoords] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [customerCoords, setCustomerCoords] = useState<{
+    latitude: number;
+    longitude: number;
+  } | null>(null);
   const [customerLocationText, setCustomerLocationText] = useState('');
   const [customerGpsLoading, setCustomerGpsLoading] = useState(false);
   const [customerAddressIndex, setCustomerAddressIndex] = useState<number | null>(null);
-  const [customerGeoData, setCustomerGeoData] = useState<{ district: string; city: string; ward?: string; street?: string } | null>(null);
+  const [customerGeoData, setCustomerGeoData] = useState<{
+    district: string;
+    city: string;
+    ward?: string;
+    street?: string;
+  } | null>(null);
 
   // Customization cho Thợ
   const [experienceYears, setExperienceYears] = useState('');
   const [workingAreas, setWorkingAreas] = useState('');
   const [bio, setBio] = useState('');
-  const [helperCoords, setHelperCoords] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [helperCoords, setHelperCoords] = useState<{ latitude: number; longitude: number } | null>(
+    null,
+  );
   // Set only when the helper changes the pin: 'manual' = tapped the map, 'gps' = used the GPS button.
   const [coordsSource, setCoordsSource] = useState<'manual' | 'gps' | null>(null);
   const [locationAddress, setLocationAddress] = useState('');
@@ -125,7 +141,9 @@ export default function EditProfileScreen() {
   useEffect(() => {
     if (helperProfile) {
       setBio(helperProfile.bio ?? '');
-      setExperienceYears(helperProfile.years_experience != null ? String(helperProfile.years_experience) : '');
+      setExperienceYears(
+        helperProfile.years_experience != null ? String(helperProfile.years_experience) : '',
+      );
       setWorkingAreas(helperProfile.working_areas?.join(', ') ?? '');
       if (helperProfile.location?.coordinates) {
         const [lng, lat] = helperProfile.location.coordinates;
@@ -358,7 +376,6 @@ export default function EditProfileScreen() {
       Toast.show({ type: 'error', text1: 'Chưa lưu được địa chỉ', text2: 'Bấm Lưu để thử lại' });
     }
   };
-
 
   return (
     <View style={{ flex: 1, backgroundColor: '#F8F9FA' }}>
@@ -756,7 +773,10 @@ export default function EditProfileScreen() {
                       if (coords) {
                         setHelperCoords(coords);
                         setCoordsSource('gps');
-                        const geo = await locationService.reverseGeocode(coords.latitude, coords.longitude);
+                        const geo = await locationService.reverseGeocode(
+                          coords.latitude,
+                          coords.longitude,
+                        );
                         if (geo) {
                           setLocationAddress(geo.full_address);
                           const area = [geo.district, geo.city].filter(Boolean).join(', ');
@@ -797,7 +817,8 @@ export default function EditProfileScreen() {
                 </TouchableOpacity>
 
                 <Text style={{ fontSize: 11, color: COLORS.gray[400], lineHeight: 16 }}>
-                  Mở bản đồ để tìm và ghim vị trí hoạt động cố định — khoảng cách tới khách được tính từ điểm này. Nếu dùng GPS, vị trí sẽ tự cập nhật theo điện thoại.
+                  Mở bản đồ để tìm và ghim vị trí hoạt động cố định — khoảng cách tới khách được
+                  tính từ điểm này. Nếu dùng GPS, vị trí sẽ tự cập nhật theo điện thoại.
                 </Text>
               </View>
 
@@ -899,7 +920,10 @@ export default function EditProfileScreen() {
                       const coords = await locationService.getCurrentCoordinates();
                       if (coords) {
                         setCustomerCoords(coords);
-                        const geo = await locationService.reverseGeocode(coords.latitude, coords.longitude);
+                        const geo = await locationService.reverseGeocode(
+                          coords.latitude,
+                          coords.longitude,
+                        );
                         if (geo) {
                           const geoData = {
                             district: geo.district ?? '',
@@ -946,7 +970,8 @@ export default function EditProfileScreen() {
                 </TouchableOpacity>
 
                 <Text style={{ fontSize: 11, color: COLORS.gray[400], lineHeight: 16 }}>
-                  Mở bản đồ để tìm và ghim địa chỉ nhà, hoặc bấm nút GPS. Địa chỉ sẽ được tự động điền và lưu ngay.
+                  Mở bản đồ để tìm và ghim địa chỉ nhà, hoặc bấm nút GPS. Địa chỉ sẽ được tự động
+                  điền và lưu ngay.
                 </Text>
               </View>
 

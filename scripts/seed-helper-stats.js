@@ -46,9 +46,17 @@ async function main() {
     console.log('Updated Chi Mai: rating=3.5, 15 jobs, 2yr exp, HCM location');
   }
 
-  const profiles = await db.collection('helperprofiles')
+  const profiles = await db
+    .collection('helperprofiles')
     .find({ user_id: { $in: [mai?._id, tuan?._id].filter(Boolean) } })
-    .project({ user_id: 1, rating: 1, completed_jobs: 1, years_experience: 1, completion_rate: 1, location: 1 })
+    .project({
+      user_id: 1,
+      rating: 1,
+      completed_jobs: 1,
+      years_experience: 1,
+      completion_rate: 1,
+      location: 1,
+    })
     .toArray();
   console.log('\nVerification:');
   profiles.forEach(p => console.log(JSON.stringify(p)));
