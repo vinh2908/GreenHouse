@@ -88,9 +88,7 @@ export default function SplashScreen() {
       hasNavigated.current = true;
 
       const state = useAuthStore.getState();
-      if (!state.isAuthenticated) {
-        router.replace('/(auth)/login');
-      } else if (state.user?.active_role === 'helper') {
+      if (state.isAuthenticated && state.user?.active_role === 'helper') {
         router.replace('/(helper)/dashboard');
       } else {
         router.replace('/(customer)/home');
