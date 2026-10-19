@@ -96,15 +96,20 @@ class LocationService {
         const districtObj = adminList.find(
           (a: any) =>
             a.adminLevel === 6 ||
-            (a.name && (a.name.includes('Quận') || a.name.includes('Huyện') || a.name.includes('Thị xã')))
+            (a.name &&
+              (a.name.includes('Quận') || a.name.includes('Huyện') || a.name.includes('Thị xã'))),
         );
-        const district = districtObj?.name || data.localityInfo?.informative?.find(
-          (a: any) => a.name && (a.name.includes('Quận') || a.name.includes('Huyện'))
-        )?.name || 'Quận 1';
+        const district =
+          districtObj?.name ||
+          data.localityInfo?.informative?.find(
+            (a: any) => a.name && (a.name.includes('Quận') || a.name.includes('Huyện')),
+          )?.name ||
+          'Quận 1';
         const city = data.city || data.principalSubdivision || 'Hồ Chí Minh';
 
         const parts = [ward, district, city].filter(Boolean);
-        const fullAddress = parts.length > 0 ? parts.join(', ') : `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
+        const fullAddress =
+          parts.length > 0 ? parts.join(', ') : `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
 
         return {
           full_address: fullAddress,
