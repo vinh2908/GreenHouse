@@ -57,25 +57,21 @@ describe('Jobs E2E (Phase 5)', () => {
     serviceId = svcRes.body.data[0]._id;
 
     // Register customer
-    let res = await request(app.getHttpServer())
-      .post('/api/v1/auth/register')
-      .send({
-        phone: '0911111111',
-        email: 'customer.a@example.com',
-        full_name: 'Customer A',
-        password: 'Password123!',
-      });
+    let res = await request(app.getHttpServer()).post('/api/v1/auth/register').send({
+      phone: '0911111111',
+      email: 'customer.a@example.com',
+      full_name: 'Customer A',
+      password: 'Password123!',
+    });
     customerToken = res.body.data.access_token;
 
     // Register helper
-    res = await request(app.getHttpServer())
-      .post('/api/v1/auth/register')
-      .send({
-        phone: '0922222222',
-        email: 'helper.a@example.com',
-        full_name: 'Helper A',
-        password: 'Password123!',
-      });
+    res = await request(app.getHttpServer()).post('/api/v1/auth/register').send({
+      phone: '0922222222',
+      email: 'helper.a@example.com',
+      full_name: 'Helper A',
+      password: 'Password123!',
+    });
     helperToken = res.body.data.access_token;
     helperId = res.body.data.user._id;
 
