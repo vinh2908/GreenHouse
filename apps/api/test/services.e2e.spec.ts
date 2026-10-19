@@ -45,9 +45,12 @@ describe('Services E2E (Phase 4)', () => {
 
     // Register admin user (simulate by registering + manually setting role in DB)
     // For simplicity in tests: register a user, use admin endpoints after manually granting
-    const res = await request(app.getHttpServer())
-      .post('/api/v1/auth/register')
-      .send({ phone: '0900000001', full_name: 'Admin Test', password: 'Password123!' });
+    const res = await request(app.getHttpServer()).post('/api/v1/auth/register').send({
+      phone: '0900000001',
+      email: 'admin.test@example.com',
+      full_name: 'Admin Test',
+      password: 'Password123!',
+    });
     adminToken = res.body.data.access_token;
   });
 
