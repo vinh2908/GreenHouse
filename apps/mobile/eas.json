@@ -1,0 +1,31 @@
+{
+  "cli": {
+    "version": ">= 15.0.0",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal"
+    },
+    "preview": {
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://greenhouse-api-chb9.onrender.com/api/v1"
+      }
+    },
+    "production": {
+      "autoIncrement": true,
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://greenhouse-api-chb9.onrender.com/api/v1"
+      }
+    }
+  },
+  "submit": {
+    "production": {}
+  }
+}
+

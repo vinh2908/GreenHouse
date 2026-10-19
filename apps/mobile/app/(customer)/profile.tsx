@@ -92,36 +92,66 @@ export default function CustomerProfileScreen() {
             borderBottomColor: COLORS.gray[100],
           }}
         >
-          <TouchableOpacity
-            activeOpacity={0.85}
-            onPress={() => router.push('/edit-profile')}
-            style={{ alignItems: 'center' }}
-          >
-            <Avatar name={displayUser?.full_name} uri={displayUser?.avatar} size={80} />
-            <Text
-              style={{ fontSize: 20, fontWeight: '800', color: COLORS.gray[900], marginTop: 12 }}
+          {displayUser ? (
+            <TouchableOpacity
+              activeOpacity={0.85}
+              onPress={() => router.push('/edit-profile')}
+              style={{ alignItems: 'center' }}
             >
-              {displayUser?.full_name}
-            </Text>
-            <Text
-              style={{ fontSize: 14, color: COLORS.gray[500], marginTop: 4, fontWeight: '600' }}
-            >
-              {displayUser?.phone}
-            </Text>
-            <View
-              style={{
-                backgroundColor: COLORS.gray[100],
-                paddingHorizontal: 10,
-                paddingVertical: 4,
-                borderRadius: 10,
-                marginTop: 6,
-              }}
-            >
-              <Text style={{ fontSize: 12, fontWeight: '700', color: COLORS.primary }}>
-                Chỉnh sửa hồ sơ ✏️
+              <Avatar name={displayUser?.full_name} uri={displayUser?.avatar} size={80} />
+              <Text
+                style={{ fontSize: 20, fontWeight: '800', color: COLORS.gray[900], marginTop: 12 }}
+              >
+                {displayUser?.full_name}
               </Text>
+              <Text
+                style={{ fontSize: 14, color: COLORS.gray[500], marginTop: 4, fontWeight: '600' }}
+              >
+                {displayUser?.phone}
+              </Text>
+              <View
+                style={{
+                  backgroundColor: COLORS.gray[100],
+                  paddingHorizontal: 10,
+                  paddingVertical: 4,
+                  borderRadius: 10,
+                  marginTop: 6,
+                }}
+              >
+                <Text style={{ fontSize: 12, fontWeight: '700', color: COLORS.primary }}>
+                  Chỉnh sửa hồ sơ ✏️
+                </Text>
+              </View>
+            </TouchableOpacity>
+          ) : (
+            <View style={{ alignItems: 'center' }}>
+              <Avatar name="Khách" size={80} />
+              <Text
+                style={{ fontSize: 20, fontWeight: '800', color: COLORS.gray[900], marginTop: 12 }}
+              >
+                Khách trải nghiệm
+              </Text>
+              <Text
+                style={{ fontSize: 13, color: COLORS.gray[500], marginTop: 4, fontWeight: '500' }}
+              >
+                Chưa đăng nhập tài khoản
+              </Text>
+              <TouchableOpacity
+                onPress={() => router.push('/(auth)/login')}
+                style={{
+                  backgroundColor: COLORS.primary,
+                  paddingHorizontal: 20,
+                  paddingVertical: 8,
+                  borderRadius: 20,
+                  marginTop: 10,
+                }}
+              >
+                <Text style={{ color: '#fff', fontWeight: '700', fontSize: 13 }}>
+                  Đăng nhập / Tạo tài khoản
+                </Text>
+              </TouchableOpacity>
             </View>
-          </TouchableOpacity>
+          )}
 
           {/* Switch to helper role button */}
           <TouchableOpacity
@@ -196,25 +226,27 @@ export default function CustomerProfileScreen() {
             </View>
           ))}
 
-          {/* Logout */}
-          <TouchableOpacity
-            activeOpacity={0.8}
-            onPress={handleLogout}
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 8,
-              padding: 14,
-              borderWidth: 1.5,
-              borderColor: '#FFE4E1',
-              borderRadius: 14,
-              backgroundColor: '#FFF5F5',
-            }}
-          >
-            <LogOut size={18} color={COLORS.error} />
-            <Text style={{ fontSize: 15, fontWeight: '700', color: COLORS.error }}>Đăng xuất</Text>
-          </TouchableOpacity>
+          {/* Logout (chỉ hiển thị khi đã đăng nhập) */}
+          {displayUser && (
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={handleLogout}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 8,
+                padding: 14,
+                borderWidth: 1.5,
+                borderColor: '#FFE4E1',
+                borderRadius: 14,
+                backgroundColor: '#FFF5F5',
+              }}
+            >
+              <LogOut size={18} color={COLORS.error} />
+              <Text style={{ fontSize: 15, fontWeight: '700', color: COLORS.error }}>Đăng xuất</Text>
+            </TouchableOpacity>
+          )}
 
           <Text
             style={{

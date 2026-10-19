@@ -181,8 +181,8 @@ export default function LoginScreen() {
             <View style={{ flex: 1, height: 1, backgroundColor: COLORS.gray[200] }} />
           </View>
 
-          {/* ── Register Link ──────────────────────────────────────────── */}
-          <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 6 }}>
+          {/* ── Register Link & Guest Mode ──────────────────────────────────────── */}
+          <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 6, marginBottom: 16 }}>
             <Text style={{ color: COLORS.gray[600], fontSize: 14 }}>Chưa có tài khoản?</Text>
             <TouchableOpacity onPress={() => router.push('/(auth)/register')}>
               <Text style={{ color: COLORS.primary, fontWeight: '800', fontSize: 14 }}>
@@ -190,6 +190,15 @@ export default function LoginScreen() {
               </Text>
             </TouchableOpacity>
           </View>
+
+          <TouchableOpacity
+            onPress={() => router.replace('/(customer)/home')}
+            style={{ alignSelf: 'center', paddingVertical: 8, paddingHorizontal: 16 }}
+          >
+            <Text style={{ color: COLORS.gray[500], fontSize: 13, fontWeight: '700' }}>
+              Bỏ qua, khám phá dịch vụ ngay →
+            </Text>
+          </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>
     </View>
