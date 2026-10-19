@@ -64,8 +64,8 @@ async function bootstrap() {
     SwaggerModule.setup('api/docs', app, document);
   }
 
-  await app.listen(port);
-  console.log(`🚀 HomeMate API running on: http://localhost:${port}/api/v1`);
+  await app.listen(port, '0.0.0.0');
+  console.log(`🚀 HomeMate API running on: http://0.0.0.0:${port}/api/v1`);
   if (nodeEnv === 'development') {
     console.log(`📚 Swagger docs: http://localhost:${port}/api/docs`);
   }
