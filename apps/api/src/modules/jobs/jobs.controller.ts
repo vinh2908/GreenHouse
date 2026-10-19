@@ -20,6 +20,7 @@ import {
   CompleteJobDto,
   ReviewJobDto,
   CancelJobDto,
+  UpdateJobDto,
 } from './dto/job.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
@@ -105,6 +106,16 @@ export class JobsController {
     @CurrentUser() user: { sub: string; roles: string[] },
   ) {
     return this.jobsService.getJobForUser(jobId, user.sub, user.roles ?? []);
+  }
+
+  @Patch(':jobId')
+  @ApiOperation({ summary: 'Cập nhật thông tin & vị trí job (khách hàng)' })
+  async updateJob(
+    @CurrentUser() user: { sub: string },
+    @Param('jobId') jobId: string,
+    @Body() dto: UpdateJobDto,
+  ) {
+    return this.jobsService.updateJob(user.sub, jobId, dto);
   }
 
   // ─── Get quotes for job ───────────────────────────────────────────────────
