@@ -104,6 +104,7 @@ export default function JobDetailScreen() {
   const createReview = useCreateReview();
 
   const [showReview, setShowReview] = useState(false);
+  const [quoteToAccept, setQuoteToAccept] = useState<string | null>(null);
   const [rating, setRating] = useState(5);
   const [reviewText, setReviewText] = useState('');
   const [selectedMediaPreview, setSelectedMediaPreview] = useState<string | null>(null);
@@ -142,34 +143,32 @@ export default function JobDetailScreen() {
   const helperObj = typeof job.helper_id === 'object' && job.helper_id ? job.helper_id : null;
   const serviceObj = typeof job.service_id === 'object' && job.service_id ? job.service_id : null;
 
-  const handleSelectQuote = (quoteId: string) => {
-    Alert.alert(
-      'Chọn thợ này?',
-      'Sau khi chọn, hợp đồng sẽ được tạo và cuộc trò chuyện sẽ mở để trao đổi.',
-      [
-        { text: 'Hủy', style: 'cancel' },
-        {
-          text: 'Xác nhận',
-          onPress: async () => {
-            try {
-              await selectQuote.mutateAsync({
-                jobId: id!,
-                quote_id: quoteId,
-                scheduled_at: selectedDate,
-              });
-              Toast.show({
-                type: 'success',
-                text1: 'Đã chọn thợ thành công!',
-                text2: 'Hợp đồng đã được kích hoạt',
-              });
-            } catch (err: any) {
-              const msg = err?.response?.data?.message || 'Không thể chọn báo giá';
-              Toast.show({ type: 'error', text1: msg });
-            }
-          },
-        },
-      ],
-    );
+  const handleSelectQuote = async () => {
+    if (!quoteToAccept || !id || selectQuote.isPending) return;
+
+    try {
+      await selectQuote.mutateAsync({
+        jobId: id,
+        quote_id: quoteToAccept,
+        scheduled_at: selectedDate,
+      });
+      setQuoteToAccept(null);
+      Toast.show({
+        type: 'success',
+        text1: 'Đã chọn thợ thành công 🎉',
+        text2: 'Hợp đồng đã sẵn sàng. Bạn có thể nhắn tin để trao đổi thêm.',
+        visibilityTime: 5000,
+      });
+    } catch (err: any) {
+      const responseMessage = err?.response?.data?.message;
+      const message = Array.isArray(responseMessage) ? responseMessage.join('\n') : responseMessage;
+      Toast.show({
+        type: 'error',
+        text1: 'Chưa thể chọn thợ',
+        text2: message || 'Đơn có thể vừa được cập nhật. Hãy tải lại rồi thử lại.',
+        visibilityTime: 5000,
+      });
+    }
   };
 
   const handleCancel = () => {
@@ -569,7 +568,7 @@ export default function JobDetailScreen() {
                       fullWidth={false}
                       style={{ alignSelf: 'flex-end', marginTop: 4 }}
                       loading={selectQuote.isPending}
-                      onPress={() => handleSelectQuote(q._id)}
+                      onPress={() => setQuoteToAccept(q._id)}
                     />
                   </View>
                 );
@@ -779,6 +778,97 @@ export default function JobDetailScreen() {
           )}
         </View>
       </ScrollView>
+
+      {/* ── Confirm helper selection ───────────────────────────────────── */}
+      <Modal
+        visible={Boolean(quoteToAccept)}
+        transparent
+        animationType="fade"
+        statusBarTranslucent
+        onRequestClose={() => {
+          if (!selectQuote.isPending) setQuoteToAccept(null);
+        }}
+      >
+        <View
+          style={{
+            flex: 1,
+            justifyContent: 'center',
+            alignItems: 'center',
+            backgroundColor: 'rgba(17,24,39,0.48)',
+            padding: 22,
+          }}
+        >
+          <View
+            style={{
+              width: '100%',
+              maxWidth: 420,
+              backgroundColor: '#fff',
+              borderRadius: 24,
+              padding: 22,
+              alignItems: 'center',
+              shadowColor: '#111827',
+              shadowOffset: { width: 0, height: 12 },
+              shadowOpacity: 0.18,
+              shadowRadius: 24,
+              elevation: 12,
+            }}
+          >
+            <View
+              style={{
+                width: 58,
+                height: 58,
+                borderRadius: 20,
+                backgroundColor: COLORS.primaryLight,
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginBottom: 14,
+              }}
+            >
+              <Sparkles size={28} color={COLORS.primaryDark} />
+            </View>
+            <Text
+              style={{
+                color: COLORS.gray[900],
+                fontSize: 19,
+                fontWeight: '800',
+                textAlign: 'center',
+              }}
+            >
+              Chọn thợ này nhé?
+            </Text>
+            <Text
+              style={{
+                color: COLORS.gray[600],
+                fontSize: 14,
+                lineHeight: 21,
+                textAlign: 'center',
+                marginTop: 8,
+                marginBottom: 20,
+              }}
+            >
+              Sau khi xác nhận, báo giá này sẽ được chốt và hợp đồng cùng cuộc trò chuyện sẽ được
+              tạo.
+            </Text>
+            <View style={{ flexDirection: 'row', gap: 10, width: '100%' }}>
+              <Button
+                title="Để sau"
+                variant="outline"
+                fullWidth={false}
+                disabled={selectQuote.isPending}
+                style={{ flex: 1, alignSelf: 'auto' }}
+                onPress={() => setQuoteToAccept(null)}
+              />
+              <Button
+                title="Xác nhận chọn"
+                fullWidth={false}
+                loading={selectQuote.isPending}
+                style={{ flex: 1, alignSelf: 'auto' }}
+                onPress={handleSelectQuote}
+              />
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       {/* ── Media Fullscreen Preview Modal ─────────────────────────────── */}
       <Modal visible={Boolean(selectedMediaPreview)} transparent animationType="fade">
