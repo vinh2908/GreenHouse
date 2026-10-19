@@ -19,6 +19,7 @@
     "test": "turbo run test",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
     "dev:api": "turbo run dev --filter=@homemate/api",
+    "build:api": "turbo run build --filter=@homemate/api...",
     "dev:admin": "turbo run dev --filter=@homemate/admin",
     "dev:mobile": "turbo run dev --filter=@homemate/mobile",
     "docker:up": "docker compose up -d",
