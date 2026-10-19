@@ -175,7 +175,8 @@ export default function OtpScreen() {
             }}
           >
             <Text style={{ fontSize: 13, color: '#16A34A', fontWeight: '600' }}>
-              💡 Mã OTP thử nghiệm: <Text style={{ fontWeight: '800' }}>123456</Text> (Bấm để điền nhanh)
+              💡 Mã OTP thử nghiệm: <Text style={{ fontWeight: '800' }}>123456</Text> (Bấm để điền
+              nhanh)
             </Text>
           </TouchableOpacity>
         </View>
