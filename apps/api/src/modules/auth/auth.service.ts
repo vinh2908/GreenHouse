@@ -36,8 +36,13 @@ export class AuthService {
   // ─── Register ──────────────────────────────────────────────────────────────
 
   async register(dto: RegisterDto) {
-    const existing = await this.usersService.findByPhone(dto.phone);
-    if (existing) throw new ConflictException('Số điện thoại đã được đăng ký');
+    const existingPhone = await this.usersService.findByPhone(dto.phone);
+    if (existingPhone) throw new ConflictException('Số điện thoại đã được đăng ký');
+
+    if (dto.email) {
+      const existingEmail = await this.usersService.findByEmail(dto.email);
+      if (existingEmail) throw new ConflictException('Email đã được đăng ký');
+    }
 
     const passwordHash = await bcrypt.hash(dto.password, 12);
 
@@ -48,35 +53,38 @@ export class AuthService {
       email: dto.email,
     });
 
-    // Tự động gửi OTP xác minh sau khi đăng ký
-    await this.otpService.sendOtp(dto.phone, 'verify');
-
     const tokens = await this.generateTokens(user);
 
-    this.logger.log(`New user registered: ${dto.phone}`);
+    this.logger.log(`New user registered: ${dto.phone} / ${dto.email ?? ''}`);
 
     return {
       user,
       ...tokens,
-      message: 'Đăng ký thành công. Vui lòng xác minh số điện thoại.',
+      message: 'Đăng ký thành công!',
     };
   }
 
   // ─── Login ─────────────────────────────────────────────────────────────────
 
   async login(dto: LoginDto) {
-    const user = await this.usersService.findByPhoneWithPassword(dto.phone);
-    if (!user) throw new UnauthorizedException('Số điện thoại hoặc mật khẩu không đúng');
+    const identifier = dto.phone.trim();
+    // Cho phép đăng nhập bằng cả Số điện thoại hoặc Email!
+    const user = identifier.includes('@')
+      ? await this.usersService.findByEmailWithPassword(identifier)
+      : await this.usersService.findByPhoneWithPassword(identifier);
+
+    if (!user) throw new UnauthorizedException('Số điện thoại, email hoặc mật khẩu không đúng');
 
     const isPasswordValid = await bcrypt.compare(dto.password, user.password_hash);
-    if (!isPasswordValid) throw new UnauthorizedException('Số điện thoại hoặc mật khẩu không đúng');
+    if (!isPasswordValid)
+      throw new UnauthorizedException('Số điện thoại, email hoặc mật khẩu không đúng');
 
     if (user.status === 'suspended')
       throw new UnauthorizedException('Tài khoản đã bị khóa. Liên hệ hỗ trợ.');
 
     const tokens = await this.generateTokens(user);
 
-    this.logger.log(`User logged in: ${dto.phone}`);
+    this.logger.log(`User logged in: ${user.phone}`);
 
     return { user, ...tokens };
   }
