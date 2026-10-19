@@ -1,5 +1,5 @@
 // hooks/use-socket.ts — React hooks tích hợp Socket.IO vào components
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { socketService, SOCKET_EVENTS } from '@/services/socket.service';
 import { useAuthStore } from '@/stores/auth.store';
@@ -120,21 +120,21 @@ export function useNotificationSocket() {
   }, [qc]);
 }
 
-// ─── Helper location (for customers) ────────────────────────────────────────
-
 export function useHelperLocation(jobId?: string) {
-  const locationRef = useRef<{ lat: number; lng: number } | null>(null);
+  const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
 
   useEffect(() => {
     if (!jobId) return;
     const unsub = socketService.on<{ helper_id: string; location: { lat: number; lng: number } }>(
       SOCKET_EVENTS.HELPER_LOCATION_UPDATE,
-      ({ location }) => {
-        locationRef.current = location;
+      ({ location: loc }) => {
+        if (loc?.lat && loc?.lng) {
+          setLocation(loc);
+        }
       },
     );
     return unsub;
   }, [jobId]);
 
-  return locationRef;
+  return location;
 }

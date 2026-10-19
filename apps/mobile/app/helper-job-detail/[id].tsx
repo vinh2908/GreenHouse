@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -30,6 +30,8 @@ import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import 'dayjs/locale/vi';
 import { useJobSocketUpdates } from '@/hooks/use-socket';
+import { socketService } from '@/services/socket.service';
+import { locationService } from '@/services/location.service';
 
 dayjs.extend(relativeTime);
 dayjs.locale('vi');
@@ -76,6 +78,23 @@ export default function HelperJobDetailScreen() {
   const { data: job, isLoading } = useJobDetail(id);
   const { data: quotes } = useJobQuotes(id);
   const { data: helperProfile } = useHelperProfile();
+
+  // ── Broadcast GPS vị trí Thợ thời gian thực khi đang di chuyển ───────────
+  useEffect(() => {
+    if (job?.status !== 'helper_on_the_way' || !id) return;
+
+    const emitCurrentLocation = async () => {
+      const coords = await locationService.getCurrentCoordinates();
+      if (coords) {
+        socketService.updateLocation(id, coords.latitude, coords.longitude);
+      }
+    };
+
+    emitCurrentLocation();
+    const interval = setInterval(emitCurrentLocation, 10000); // 10s gửi GPS 1 lần
+
+    return () => clearInterval(interval);
+  }, [job?.status, id]);
 
   const submitQuote = useSubmitQuote();
   const onTheWay = useHelperOnTheWay();
