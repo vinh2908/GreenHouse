@@ -32,9 +32,33 @@ export interface OsmPlace {
 
 class LocationService {
   /**
-   * Xin quyền GPS và lấy tọa độ hiện tại của thiết bị
+   * Xin quyền GPS và lấy tọa độ hiện tại của thiết bị (hỗ trợ cả Web & Mobile Native)
    */
   async getCurrentCoordinates(): Promise<{ latitude: number; longitude: number } | null> {
+    // 1. Nếu đang chạy trên trình duyệt Web (Chrome, Safari, Edge, Mobile Web)
+    if (
+      typeof window !== 'undefined' &&
+      typeof navigator !== 'undefined' &&
+      navigator.geolocation
+    ) {
+      try {
+        const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject, {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 30000,
+          });
+        });
+        return {
+          latitude: pos.coords.latitude,
+          longitude: pos.coords.longitude,
+        };
+      } catch (err) {
+        console.warn('HTML5 Geolocation error, trying Expo Location:', err);
+      }
+    }
+
+    // 2. Môi trường Native (Android/iOS APK): Dùng Expo Location
     try {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
@@ -51,101 +75,116 @@ class LocationService {
         longitude: location.coords.longitude,
       };
     } catch (err) {
-      console.warn('Error getting location:', err);
+      console.warn('Error getting native location:', err);
       return null;
     }
   }
 
   /**
-   * Reverse Geocoding bằng OpenStreetMap Nominatim:
    * Chuyển tọa độ (lat, lon) -> Địa chỉ chi tiết tiếng Việt
+   * (Ưu tiên BigDataCloud API hỗ trợ CORS Web, fallback Nominatim & Expo Location)
    */
   async reverseGeocode(latitude: number, longitude: number): Promise<LocationResult | null> {
+    // 1. Thử BigDataCloud (CORS-friendly, hoạt động 100% trên trình duyệt Web)
+    try {
+      const url = `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=vi`;
+      const res = await fetch(url);
+      if (res.ok) {
+        const data = await res.json();
+        const ward = data.locality || '';
+        const adminList = data.localityInfo?.administrative || [];
+        const districtObj = adminList.find(
+          (a: any) =>
+            a.adminLevel === 6 ||
+            (a.name && (a.name.includes('Quận') || a.name.includes('Huyện') || a.name.includes('Thị xã')))
+        );
+        const district = districtObj?.name || data.localityInfo?.informative?.find(
+          (a: any) => a.name && (a.name.includes('Quận') || a.name.includes('Huyện'))
+        )?.name || 'Quận 1';
+        const city = data.city || data.principalSubdivision || 'Hồ Chí Minh';
+
+        const parts = [ward, district, city].filter(Boolean);
+        const fullAddress = parts.length > 0 ? parts.join(', ') : `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
+
+        return {
+          full_address: fullAddress,
+          ward,
+          district,
+          city,
+          coordinates: [longitude, latitude],
+        };
+      }
+    } catch (err) {
+      console.warn('BigDataCloud reverse geocode error:', err);
+    }
+
+    // 2. Fallback Nominatim OpenStreetMap
     try {
       const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1&accept-language=vi`;
+      const res = await fetch(url);
+      if (res.ok) {
+        const data: OsmPlace = await res.json();
+        const addr = data.address || {};
+        const houseNumber = addr.house_number ? `${addr.house_number} ` : '';
+        const road = addr.road || '';
+        const street = `${houseNumber}${road}`.trim() || data.display_name?.split(',')[0] || '';
+        const ward = addr.suburb || addr.quarter || addr.neighbourhood || '';
+        const district = addr.city_district || addr.district || addr.county || 'Quận 1';
+        const city = addr.city || addr.state || 'Hồ Chí Minh';
+        const fullAddress = street
+          ? `${street}, ${ward ? ward + ', ' : ''}${district}, ${city}`
+          : data.display_name;
 
-      const res = await fetch(url, {
-        headers: {
-          'User-Agent': 'HomeMate-App/1.0 (contact@homemate.vn)',
-        },
-      });
-
-      if (!res.ok) throw new Error('OSM Reverse Geocode failed');
-      const data: OsmPlace = await res.json();
-      const addr = data.address || {};
-
-      // Phân tích các cấp hành chính Việt Nam từ OpenStreetMap
-      const houseNumber = addr.house_number ? `${addr.house_number} ` : '';
-      const road = addr.road || '';
-      const street = `${houseNumber}${road}`.trim() || data.display_name.split(',')[0];
-      const ward = addr.suburb || addr.quarter || addr.neighbourhood || '';
-      const district = addr.city_district || addr.district || addr.county || 'Quận 1';
-      const city = addr.city || addr.state || 'Hồ Chí Minh';
-
-      const fullAddress = street
-        ? `${street}, ${ward ? ward + ', ' : ''}${district}, ${city}`
-        : data.display_name;
-
-      return {
-        full_address: fullAddress,
-        road: street,
-        ward,
-        district,
-        city,
-        coordinates: [longitude, latitude],
-      };
-    } catch (err) {
-      console.warn('OSM Reverse geocoding error, falling back to Expo Location:', err);
-
-      // Fallback bằng Expo reverseGeocodeAsync
-      try {
-        const [geo] = await Location.reverseGeocodeAsync({ latitude, longitude });
-        if (geo) {
-          const street = `${geo.name || ''} ${geo.street || ''}`.trim() || 'Vị trí hiện tại';
-          const district = geo.district || geo.subregion || 'Quận 1';
-          const city = geo.city || geo.region || 'Hồ Chí Minh';
-          return {
-            full_address: `${street}, ${district}, ${city}`,
-            road: street,
-            ward: geo.district || '',
-            district,
-            city,
-            coordinates: [longitude, latitude],
-          };
-        }
-      } catch {
-        /* ignore fallback error */
+        return {
+          full_address: fullAddress,
+          road: street,
+          ward,
+          district,
+          city,
+          coordinates: [longitude, latitude],
+        };
       }
-
-      return null;
+    } catch (err) {
+      console.warn('OSM Reverse geocoding error:', err);
     }
+
+    // 3. Fallback bằng Expo reverseGeocodeAsync (khi chạy trên Native App)
+    try {
+      const [geo] = await Location.reverseGeocodeAsync({ latitude, longitude });
+      if (geo) {
+        const street = `${geo.name || ''} ${geo.street || ''}`.trim() || 'Vị trí hiện tại';
+        const district = geo.district || geo.subregion || 'Quận 1';
+        const city = geo.city || geo.region || 'Hồ Chí Minh';
+        return {
+          full_address: `${street}, ${district}, ${city}`,
+          road: street,
+          ward: geo.district || '',
+          district,
+          city,
+          coordinates: [longitude, latitude],
+        };
+      }
+    } catch {
+      /* ignore */
+    }
+
+    return {
+      full_address: `Tọa độ: ${latitude.toFixed(4)}, ${longitude.toFixed(4)}`,
+      district: 'Vị trí hiện tại',
+      city: 'Việt Nam',
+      coordinates: [longitude, latitude],
+    };
   }
 
   /**
-   * Lấy địa chỉ hiện tại nhanh chóng (Kết hợp GPS + OpenStreetMap)
+   * Lấy địa chỉ hiện tại nhanh chóng (Kết hợp GPS + Reverse Geocoding)
    */
   async getCurrentLocationDetails(): Promise<LocationResult | null> {
     const coords = await this.getCurrentCoordinates();
     if (!coords) {
-      // Fallback vị trí mặc định tại trung tâm Quận 1 nếu không bật GPS
-      return {
-        full_address: '128 Đường Lê Lợi, Phường Bến Thành',
-        ward: 'Phường Bến Thành',
-        district: 'Quận 1',
-        city: 'Hồ Chí Minh',
-        coordinates: [106.6983, 10.7725],
-      };
+      return null;
     }
-
-    const result = await this.reverseGeocode(coords.latitude, coords.longitude);
-    return (
-      result || {
-        full_address: 'Quận 1, TP. Hồ Chí Minh',
-        district: 'Quận 1',
-        city: 'Hồ Chí Minh',
-        coordinates: [coords.longitude, coords.latitude],
-      }
-    );
+    return this.reverseGeocode(coords.latitude, coords.longitude);
   }
 
   /**
@@ -156,13 +195,7 @@ class LocationService {
 
     try {
       const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&countrycodes=vn&addressdetails=1&limit=6&accept-language=vi`;
-
-      const res = await fetch(url, {
-        headers: {
-          'User-Agent': 'HomeMate-App/1.0 (contact@homemate.vn)',
-        },
-      });
-
+      const res = await fetch(url);
       if (!res.ok) return [];
       return (await res.json()) as OsmPlace[];
     } catch (err) {
