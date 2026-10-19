@@ -31,24 +31,21 @@ export class RegisterDto {
   @MaxLength(64)
   password: string;
 
-  @ApiPropertyOptional({ example: 'user@example.com' })
-  @IsOptional()
-  @IsEmail()
-  email?: string;
+  @ApiProperty({ example: 'user@example.com' })
+  @IsEmail({}, { message: 'Email không hợp lệ' })
+  @IsNotEmpty({ message: 'Vui lòng nhập Email' })
+  email: string;
 }
 
 export class LoginDto {
-  @ApiProperty({ example: '0901234567' })
+  @ApiProperty({ example: '0901234567 hoặc user@example.com' })
   @IsString()
-  @IsNotEmpty()
-  @Matches(/^(0[3|5|7|8|9])+([0-9]{8})$/, {
-    message: 'Số điện thoại không hợp lệ',
-  })
+  @IsNotEmpty({ message: 'Vui lòng nhập số điện thoại hoặc email' })
   phone: string;
 
   @ApiProperty({ example: 'Password123!' })
   @IsString()
-  @IsNotEmpty()
+  @IsNotEmpty({ message: 'Vui lòng nhập mật khẩu' })
   password: string;
 }
 

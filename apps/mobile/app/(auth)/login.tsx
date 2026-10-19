@@ -26,12 +26,17 @@ export default function LoginScreen() {
   const [showPassword, setShowPassword] = useState(false);
 
   const handleLogin = async () => {
-    if (!phone.trim() || !password.trim()) {
-      Toast.show({ type: 'error', text1: 'Vui lòng nhập số điện thoại và mật khẩu' });
+    const identifier = phone.trim();
+    if (!identifier || !password.trim()) {
+      Toast.show({ type: 'error', text1: 'Vui lòng nhập số điện thoại hoặc email và mật khẩu' });
       return;
     }
+    const cleanIdentifier = identifier.includes('@')
+      ? identifier.toLowerCase()
+      : identifier.replace(/\s+/g, '').replace(/^\+84/, '0');
+
     try {
-      const { data } = await login.mutateAsync({ phone, password });
+      const { data } = await login.mutateAsync({ phone: cleanIdentifier, password });
       const { access_token, refresh_token, user } = data.data;
       await setAuth(user, access_token, refresh_token);
 
@@ -126,9 +131,9 @@ export default function LoginScreen() {
           {/* ── Form Inputs ────────────────────────────────────────────── */}
           <View style={{ gap: 14 }}>
             <Input
-              label="Số điện thoại"
-              placeholder="Nhập số điện thoại của bạn"
-              keyboardType="phone-pad"
+              label="Số điện thoại hoặc Email"
+              placeholder="Nhập SĐT hoặc email của bạn"
+              autoCapitalize="none"
               value={phone}
               onChangeText={setPhone}
               leftIcon={<Phone size={18} color={COLORS.gray[400]} />}

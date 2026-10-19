@@ -153,6 +153,31 @@ export default function OtpScreen() {
             Mã OTP 6 số đã được gửi đến số{'\n'}
             <Text style={{ fontWeight: '700', color: COLORS.gray[800] }}>{phone}</Text>
           </Text>
+
+          {/* Demo OTP Helper Badge */}
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={() => {
+              setOtp(['1', '2', '3', '4', '5', '6']);
+              handleVerify('123456');
+            }}
+            style={{
+              backgroundColor: '#F0FDF4',
+              borderColor: '#86EFAC',
+              borderWidth: 1,
+              paddingVertical: 8,
+              paddingHorizontal: 14,
+              borderRadius: 12,
+              marginTop: 14,
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 6,
+            }}
+          >
+            <Text style={{ fontSize: 13, color: '#16A34A', fontWeight: '600' }}>
+              💡 Mã OTP thử nghiệm: <Text style={{ fontWeight: '800' }}>123456</Text> (Bấm để điền nhanh)
+            </Text>
+          </TouchableOpacity>
         </View>
 
         {/* OTP inputs */}
