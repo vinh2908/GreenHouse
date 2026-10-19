@@ -31,6 +31,13 @@ export class UsersService {
     return this.userModel.findOne({ email: email.toLowerCase(), is_deleted: false }).exec();
   }
 
+  async findByEmailWithPassword(email: string): Promise<UserDocument | null> {
+    return this.userModel
+      .findOne({ email: email.toLowerCase(), is_deleted: false })
+      .select('+password_hash')
+      .exec();
+  }
+
   async create(data: {
     phone: string;
     full_name: string;
@@ -40,10 +47,16 @@ export class UsersService {
     const existing = await this.findByPhone(data.phone);
     if (existing) throw new ConflictException('Số điện thoại đã được đăng ký');
 
+    if (data.email) {
+      const existingEmail = await this.findByEmail(data.email);
+      if (existingEmail) throw new ConflictException('Email đã được đăng ký');
+    }
+
     const user = new this.userModel({
       ...data,
       roles: [UserRole.CUSTOMER],
       active_role: UserRole.CUSTOMER,
+      is_verified: true, // Kích hoạt ngay khi tạo tài khoản
     });
     return user.save();
   }
