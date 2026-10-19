@@ -241,10 +241,12 @@ export default function SosTrackingScreen() {
                 longitude: job?.address?.location?.coordinates?.[0] || 106.6983,
               }}
               helperLocation={
-                helperLocation?.current
+                helperLocation
                   ? {
-                      latitude: helperLocation.current.lat,
-                      longitude: helperLocation.current.lng,
+                      latitude:
+                        'lat' in helperLocation ? helperLocation.lat : (helperLocation as any).current?.lat,
+                      longitude:
+                        'lng' in helperLocation ? helperLocation.lng : (helperLocation as any).current?.lng,
                     }
                   : undefined
               }
