@@ -148,7 +148,7 @@ export default function ReviewsPage() {
                       <TableCell>
                         {r.helper_reply ? (
                           <p className="text-sm text-muted-foreground italic max-w-[180px] line-clamp-2">
-                            "{r.helper_reply}"
+                            &ldquo;{r.helper_reply}&rdquo;
                           </p>
                         ) : (
                           <span className="text-muted-foreground text-sm">—</span>
