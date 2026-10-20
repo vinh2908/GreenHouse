@@ -4,6 +4,7 @@ import {
   BadRequestException,
   ConflictException,
   Logger,
+  ServiceUnavailableException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
@@ -20,6 +21,7 @@ import {
   ResetPasswordDto,
 } from './dto/auth.dto';
 import { OtpService } from './otp.service';
+import { AppGateway } from '../chat/app.gateway';
 import { JwtPayload, UserRole } from '@homemate/types';
 
 @Injectable()
@@ -31,6 +33,7 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
     private readonly otpService: OtpService,
+    private readonly gateway: AppGateway,
   ) {}
 
   // ─── Register ──────────────────────────────────────────────────────────────
@@ -99,6 +102,8 @@ export class AuthService {
 
       const user = await this.usersService.findById(payload.sub);
       if (!user || user.status === 'suspended') throw new UnauthorizedException();
+      if ((payload.token_version ?? 0) !== (user.token_version ?? 0))
+        throw new UnauthorizedException();
 
       // Issue new tokens (rotate refresh token)
       const tokens = await this.generateTokens(user);
@@ -147,6 +152,9 @@ export class AuthService {
   // ─── Forgot / Reset Password ───────────────────────────────────────────────
 
   async forgotPassword(phone: string) {
+    if (this.configService.get<string>('app.env') === 'production') {
+      throw new ServiceUnavailableException('Dịch vụ gửi mã xác minh chưa được cấu hình');
+    }
     const user = await this.usersService.findByPhone(phone);
     if (!user) {
       // Don't reveal if phone exists
@@ -165,6 +173,7 @@ export class AuthService {
 
     const passwordHash = await bcrypt.hash(dto.new_password, 12);
     await this.usersService.updatePassword(user.id as string, passwordHash);
+    this.gateway.disconnectUser(user.id as string);
 
     return { message: 'Đặt lại mật khẩu thành công' };
   }
@@ -172,6 +181,7 @@ export class AuthService {
   // ─── Token Generation ──────────────────────────────────────────────────────
 
   private async generateTokens(user: {
+    token_version?: number;
     id?: string;
     _id?: unknown;
     phone: string;
@@ -180,6 +190,7 @@ export class AuthService {
   }) {
     const userId = (user.id ?? String(user._id)) as string;
     const payload: JwtPayload = {
+      token_version: user.token_version ?? 0,
       sub: userId,
       phone: user.phone,
       roles: user.roles,

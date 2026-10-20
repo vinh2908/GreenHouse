@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   ForbiddenException,
+  BadRequestException,
   Inject,
   forwardRef,
 } from '@nestjs/common';
@@ -118,6 +119,17 @@ export class ChatService {
     content: string,
     type = 'text',
   ): Promise<MessageDocument> {
+    if (
+      typeof content !== 'string' ||
+      !content.trim() ||
+      content.length > 5000 ||
+      !['text', 'image'].includes(type)
+    ) {
+      throw new BadRequestException(
+        'Tin nhắn phải có nội dung, tối đa 5000 ký tự và đúng loại được hỗ trợ',
+      );
+    }
+    content = content.trim();
     const conv = await this.conversationModel.findById(conversationId).exec();
     if (!conv) throw new NotFoundException('Không tìm thấy cuộc trò chuyện');
     const isParticipant = conv.participants.some(p => p.toString() === senderId);
@@ -146,18 +158,10 @@ export class ChatService {
 
     // ── Realtime: emit message via WebSocket to conversation room & each participant
     try {
-      this.gateway.emitToConversation(conversationId, SOCKET_EVENTS.CHAT_NEW_MESSAGE, {
+      this.gateway.emitChatMessage(conversationId, conv.participants.map(String), {
         conversation_id: conversationId,
         message: populatedMsg,
       });
-
-      // Emit to each participant room
-      for (const pId of conv.participants) {
-        this.gateway.emitToUser(String(pId), SOCKET_EVENTS.CHAT_NEW_MESSAGE, {
-          conversation_id: conversationId,
-          message: populatedMsg,
-        });
-      }
     } catch {
       // Ignore socket error if offline
     }

@@ -303,6 +303,8 @@ export default function ChatScreen() {
             <TouchableOpacity
               activeOpacity={0.8}
               onPress={handleSend}
+              accessibilityRole="button"
+              accessibilityLabel="Gửi tin nhắn"
               disabled={!text.trim() || sendMsg.isPending}
               style={{
                 width: 44,

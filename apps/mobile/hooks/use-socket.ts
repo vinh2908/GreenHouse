@@ -4,6 +4,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { socketService, SOCKET_EVENTS } from '@/services/socket.service';
 import { useAuthStore } from '@/stores/auth.store';
 import Toast from 'react-native-toast-message';
+import { useRouter } from 'expo-router';
 
 // ─── Connect on auth ─────────────────────────────────────────────────────────
 
@@ -43,12 +44,7 @@ export function useSocketConnection() {
             ? 'Đã gửi một hình ảnh 📷'
             : data?.message?.content || 'Bạn có tin nhắn mới';
 
-        Toast.show({
-          type: 'info',
-          text1: `💬 ${senderName}`,
-          text2: content,
-          visibilityTime: 5000,
-        });
+        // Notification events own the popup; chat events only refresh data.
 
         qc.invalidateQueries({ queryKey: ['messages'] });
         qc.invalidateQueries({ queryKey: ['conversations'] });
@@ -88,16 +84,19 @@ export function useJobSocketUpdates(jobId?: string) {
           completed: '✅ Công việc hoàn thành!',
           cancelled: '❌ Đơn đã bị hủy',
         };
-        if (labels[status]) {
+        if (status === 'in_progress' && labels[status]) {
           Toast.show({ type: 'info', text1: labels[status], visibilityTime: 4000 });
         }
       },
     );
 
-    const unsub2 = socketService.on<{ quote_id: string }>(SOCKET_EVENTS.QUOTE_RECEIVED, () => {
-      qc.invalidateQueries({ queryKey: ['job', jobId, 'quotes'] });
-      Toast.show({ type: 'success', text1: '💰 Có báo giá mới!' });
-    });
+    const unsub2 = socketService.on<{ job_id: string; quote_id: string }>(
+      SOCKET_EVENTS.QUOTE_RECEIVED,
+      data => {
+        if (data.job_id !== jobId) return;
+        qc.invalidateQueries({ queryKey: ['job', jobId, 'quotes'] });
+      },
+    );
 
     return () => {
       unsub1();
@@ -146,16 +145,35 @@ export function useChatSocket(conversationId?: string) {
 
 export function useNotificationSocket() {
   const qc = useQueryClient();
+  const router = useRouter();
+  const seen = useRef(new Set<string>());
+  const userId = useAuthStore(s => s.user?._id);
+  useEffect(() => {
+    seen.current.clear();
+  }, [userId]);
 
   useEffect(() => {
     const unsub = socketService.on<{
+      _id?: string;
       type?: string;
       title?: string;
       body?: string;
-      data?: { is_sos?: boolean };
+      data?: { is_sos?: boolean; job_id?: string; conversation_id?: string };
     }>(SOCKET_EVENTS.NOTIFICATION_NEW, n => {
       qc.invalidateQueries({ queryKey: ['notifications'] });
       qc.invalidateQueries({ queryKey: ['notifications', 'count'] });
+      qc.invalidateQueries({ queryKey: ['jobs'] });
+      if (n.data?.job_id) qc.invalidateQueries({ queryKey: ['job', n.data.job_id] });
+      if (n._id && seen.current.has(n._id)) return;
+      if (n._id) {
+        seen.current.add(n._id);
+        if (seen.current.size > 200) seen.current.delete(seen.current.values().next().value!);
+      }
+      if (
+        n.type === 'new_message' &&
+        n.data?.conversation_id === (globalThis as any).__activeConversationId
+      )
+        return;
       if (n?.title && !(n.type === 'new_job_nearby' && n.data?.is_sos)) {
         const isNewJob = n.type === 'new_job_nearby';
         const isAccepted = n.type === 'job_confirmed' || n.type === 'quote_accepted';
@@ -188,11 +206,34 @@ export function useNotificationSocket() {
           text1: title,
           text2: body,
           visibilityTime: isNewJob || isAccepted || isNewMsg ? 6000 : 4500,
+          onPress: () => {
+            const jobId = n.data?.job_id;
+            if (n.type === 'new_message' && jobId) {
+              router.push({ pathname: '/chat/[jobId]', params: { jobId } });
+            } else if (jobId) {
+              const helper =
+                ['new_job_nearby', 'quote_accepted', 'payment_success', 'review_received'].includes(
+                  n.type || '',
+                ) ||
+                (![
+                  'new_quote_received',
+                  'job_confirmed',
+                  'helper_on_the_way',
+                  'helper_arrived',
+                  'job_completed',
+                ].includes(n.type || '') &&
+                  useAuthStore.getState().user?.active_role === 'helper');
+              router.push({
+                pathname: helper ? '/helper-job-detail/[id]' : '/job-detail/[id]',
+                params: { id: jobId },
+              });
+            } else router.push('/notifications');
+          },
         });
       }
     });
     return unsub;
-  }, [qc]);
+  }, [qc, router]);
 }
 
 export function useHelperLocation(jobId?: string) {
@@ -200,14 +241,15 @@ export function useHelperLocation(jobId?: string) {
 
   useEffect(() => {
     if (!jobId) return;
-    const unsub = socketService.on<{ helper_id: string; location: { lat: number; lng: number } }>(
-      SOCKET_EVENTS.HELPER_LOCATION_UPDATE,
-      ({ location: loc }) => {
-        if (loc?.lat && loc?.lng) {
-          setLocation(loc);
-        }
-      },
-    );
+    const unsub = socketService.on<{
+      job_id: string;
+      helper_id: string;
+      location: { lat: number; lng: number };
+    }>(SOCKET_EVENTS.HELPER_LOCATION_UPDATE, ({ job_id, location: loc }) => {
+      if (job_id === jobId && Number.isFinite(loc?.lat) && Number.isFinite(loc?.lng)) {
+        setLocation(loc);
+      }
+    });
     return unsub;
   }, [jobId]);
 

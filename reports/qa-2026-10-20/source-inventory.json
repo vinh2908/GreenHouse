@@ -1,0 +1,4018 @@
+[
+  {
+    "role": "shared",
+    "kind": "screen",
+    "file": "apps/mobile/app/(auth)/forgot-password.tsx",
+    "line": 1,
+    "detail": "forgot-password.tsx",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/(auth)/forgot-password.tsx",
+    "line": 36,
+    "detail": "onChangeText={v => { setPhone(v); setRequested(false); }}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/(auth)/forgot-password.tsx",
+    "line": 47,
+    "detail": "onPress={() => send.mutate()}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/(auth)/forgot-password.tsx",
+    "line": 57,
+    "detail": "onChangeText={setOtp}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/(auth)/forgot-password.tsx",
+    "line": 61,
+    "detail": "onChangeText={setPassword}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/(auth)/forgot-password.tsx",
+    "line": 65,
+    "detail": "onChangeText={setConfirm}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/(auth)/forgot-password.tsx",
+    "line": 72,
+    "detail": "onPress={() => reset.mutate()}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/(auth)/forgot-password.tsx",
+    "line": 89,
+    "detail": "onPress={() => router.replace('/(auth)/login')}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "screen",
+    "file": "apps/mobile/app/(auth)/login.tsx",
+    "line": 1,
+    "detail": "login.tsx",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/(auth)/login.tsx",
+    "line": 138,
+    "detail": "onChangeText={setPhone}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/(auth)/login.tsx",
+    "line": 146,
+    "detail": "onChangeText={setPassword}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/(auth)/login.tsx",
+    "line": 149,
+    "detail": "onPress={() => setShowPassword(!showPassword)}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/(auth)/login.tsx",
+    "line": 160,
+    "detail": "onPress={() => router.push('/(auth)/forgot-password')}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/(auth)/login.tsx",
+    "line": 171,
+    "detail": "onPress={handleLogin}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/(auth)/login.tsx",
+    "line": 197,
+    "detail": "onPress={() => router.push('/(auth)/register')}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/(auth)/login.tsx",
+    "line": 205,
+    "detail": "onPress={() => router.replace('/(customer)/home')}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "screen",
+    "file": "apps/mobile/app/(auth)/otp.tsx",
+    "line": 1,
+    "detail": "otp.tsx",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/(auth)/otp.tsx",
+    "line": 101,
+    "detail": "onPress={handleBack}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/(auth)/otp.tsx",
+    "line": 160,
+    "detail": "onPress={() => { setOtp(['1', '2', '3', '4', '5', '6']); handleVerify('123456'); }}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/(auth)/otp.tsx",
+    "line": 193,
+    "detail": "onChangeText={text => handleChange(text.slice(-1), i)}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/(auth)/otp.tsx",
+    "line": 212,
+    "detail": "onPress={() => handleVerify()}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/(auth)/otp.tsx",
+    "line": 222,
+    "detail": "onPress={handleResend}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "screen",
+    "file": "apps/mobile/app/(auth)/register.tsx",
+    "line": 1,
+    "detail": "register.tsx",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/(auth)/register.tsx",
+    "line": 107,
+    "detail": "onPress={handleBack}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/(auth)/register.tsx",
+    "line": 139,
+    "detail": "onChangeText={setFullName}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/(auth)/register.tsx",
+    "line": 148,
+    "detail": "onChangeText={setEmail}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/(auth)/register.tsx",
+    "line": 156,
+    "detail": "onChangeText={setPhone}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/(auth)/register.tsx",
+    "line": 164,
+    "detail": "onChangeText={setPassword}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/(auth)/register.tsx",
+    "line": 167,
+    "detail": "onPress={() => setShowPw(!showPw)}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/(auth)/register.tsx",
+    "line": 181,
+    "detail": "onChangeText={setConfirmPassword}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/(auth)/register.tsx",
+    "line": 205,
+    "detail": "onPress={handleRegister}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/(auth)/register.tsx",
+    "line": 212,
+    "detail": "onPress={() => router.back()}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "screen",
+    "file": "apps/mobile/app/(auth)/select-role.tsx",
+    "line": 1,
+    "detail": "select-role.tsx",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/(auth)/select-role.tsx",
+    "line": 121,
+    "detail": "onPress={() => setSelectedRole('customer')}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/(auth)/select-role.tsx",
+    "line": 181,
+    "detail": "onPress={() => setSelectedRole('helper')}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/(auth)/select-role.tsx",
+    "line": 247,
+    "detail": "onPress={handleConfirmRole}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "customer",
+    "kind": "screen",
+    "file": "apps/mobile/app/(customer)/booking.tsx",
+    "line": 1,
+    "detail": "booking.tsx",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "customer",
+    "kind": "interaction",
+    "file": "apps/mobile/app/(customer)/booking.tsx",
+    "line": 494,
+    "detail": "onPress={handleBack}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "customer",
+    "kind": "interaction",
+    "file": "apps/mobile/app/(customer)/booking.tsx",
+    "line": 564,
+    "detail": "onChangeText={setAiInput}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "customer",
+    "kind": "interaction",
+    "file": "apps/mobile/app/(customer)/booking.tsx",
+    "line": 570,
+    "detail": "onPress={handleAiAnalyze}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "customer",
+    "kind": "interaction",
+    "file": "apps/mobile/app/(customer)/booking.tsx",
+    "line": 651,
+    "detail": "onPress={() => { if (!selectedService) { const svcList = services && services.length > 0 ? services : DEFAULT_SERVICES; setSelectedService(svcList[0]._id); } setStep(1); }}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "customer",
+    "kind": "interaction",
+    "file": "apps/mobile/app/(customer)/booking.tsx",
+    "line": 683,
+    "detail": "onPress={() => { setSelectedService(svc._id); setStep(1); }}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "customer",
+    "kind": "interaction",
+    "file": "apps/mobile/app/(customer)/booking.tsx",
+    "line": 771,
+    "detail": "onPress={handleGetLiveLocation}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "customer",
+    "kind": "interaction",
+    "file": "apps/mobile/app/(customer)/booking.tsx",
+    "line": 817,
+    "detail": "onChangeText={handleSearchAddress}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "customer",
+    "kind": "interaction",
+    "file": "apps/mobile/app/(customer)/booking.tsx",
+    "line": 839,
+    "detail": "onPress={() => handleSelectOsmPlace(place)}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "customer",
+    "kind": "interaction",
+    "file": "apps/mobile/app/(customer)/booking.tsx",
+    "line": 871,
+    "detail": "onChangeText={v => setAddress(a => ({ ...a, full_address: v }))}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "customer",
+    "kind": "interaction",
+    "file": "apps/mobile/app/(customer)/booking.tsx",
+    "line": 880,
+    "detail": "onChangeText={v => setAddress(a => ({ ...a, ward: v }))}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "customer",
+    "kind": "interaction",
+    "file": "apps/mobile/app/(customer)/booking.tsx",
+    "line": 888,
+    "detail": "onChangeText={v => setAddress(a => ({ ...a, district: v }))}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "customer",
+    "kind": "interaction",
+    "file": "apps/mobile/app/(customer)/booking.tsx",
+    "line": 895,
+    "detail": "onChangeText={v => setAddress(a => ({ ...a, city: v }))}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "customer",
+    "kind": "interaction",
+    "file": "apps/mobile/app/(customer)/booking.tsx",
+    "line": 928,
+    "detail": "onPress={() => setDate(val)}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "customer",
+    "kind": "interaction",
+    "file": "apps/mobile/app/(customer)/booking.tsx",
+    "line": 990,
+    "detail": "onPress={() => setTimeSlot(t)}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "customer",
+    "kind": "interaction",
+    "file": "apps/mobile/app/(customer)/booking.tsx",
+    "line": 1031,
+    "detail": "onPress={() => setDuration(d)}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "customer",
+    "kind": "interaction",
+    "file": "apps/mobile/app/(customer)/booking.tsx",
+    "line": 1068,
+    "detail": "onChangeText={setTitle}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "customer",
+    "kind": "interaction",
+    "file": "apps/mobile/app/(customer)/booking.tsx",
+    "line": 1089,
+    "detail": "onChangeText={setDescription}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "customer",
+    "kind": "interaction",
+    "file": "apps/mobile/app/(customer)/booking.tsx",
+    "line": 1098,
+    "detail": "onPress={handleEstimatePrice}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "customer",
+    "kind": "interaction",
+    "file": "apps/mobile/app/(customer)/booking.tsx",
+    "line": 1203,
+    "detail": "onPress={handleNextStep}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "customer",
+    "kind": "screen",
+    "file": "apps/mobile/app/(customer)/home.tsx",
+    "line": 1,
+    "detail": "home.tsx",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "customer",
+    "kind": "interaction",
+    "file": "apps/mobile/app/(customer)/home.tsx",
+    "line": 160,
+    "detail": "onPress={onPress}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "customer",
+    "kind": "interaction",
+    "file": "apps/mobile/app/(customer)/home.tsx",
+    "line": 257,
+    "detail": "onRefresh={refetch}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "customer",
+    "kind": "interaction",
+    "file": "apps/mobile/app/(customer)/home.tsx",
+    "line": 275,
+    "detail": "onPress={() => router.push('/(customer)/profile')}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "customer",
+    "kind": "interaction",
+    "file": "apps/mobile/app/(customer)/home.tsx",
+    "line": 298,
+    "detail": "onPress={() => router.push(user ? '/edit-profile' : '/(auth)/login')}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "customer",
+    "kind": "interaction",
+    "file": "apps/mobile/app/(customer)/home.tsx",
+    "line": 340,
+    "detail": "onPress={() => router.push('/notifications')}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "customer",
+    "kind": "interaction",
+    "file": "apps/mobile/app/(customer)/home.tsx",
+    "line": 374,
+    "detail": "onPress={() => router.push('/(customer)/booking')}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "customer",
+    "kind": "interaction",
+    "file": "apps/mobile/app/(customer)/home.tsx",
+    "line": 397,
+    "detail": "onPress={() => router.push('/sos')}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "customer",
+    "kind": "interaction",
+    "file": "apps/mobile/app/(customer)/home.tsx",
+    "line": 470,
+    "detail": "onPress={() => router.push('/(customer)/booking')}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "customer",
+    "kind": "interaction",
+    "file": "apps/mobile/app/(customer)/home.tsx",
+    "line": 553,
+    "detail": "onPress={() => { const match = services?.find(s => s.slug === category.slug); router.push({ pathname: '/(customer)/booking', params: { service_id: match?._id ?? '', service_slug: category.slug }, }); }}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "customer",
+    "kind": "interaction",
+    "file": "apps/mobile/app/(customer)/home.tsx",
+    "line": 624,
+    "detail": "onPress={() => router.push({ pathname: '/job-detail/[id]', params: { id: job._id } }) }",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "customer",
+    "kind": "interaction",
+    "file": "apps/mobile/app/(customer)/home.tsx",
+    "line": 746,
+    "detail": "onPress={() => router.push({ pathname: '/job-detail/[id]', params: { id: job._id } }) }",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "customer",
+    "kind": "screen",
+    "file": "apps/mobile/app/(customer)/jobs.tsx",
+    "line": 1,
+    "detail": "jobs.tsx",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "customer",
+    "kind": "interaction",
+    "file": "apps/mobile/app/(customer)/jobs.tsx",
+    "line": 56,
+    "detail": "onPress={() => router.push('/(customer)/booking')}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "customer",
+    "kind": "interaction",
+    "file": "apps/mobile/app/(customer)/jobs.tsx",
+    "line": 92,
+    "detail": "onPress={() => setActiveTab(i)}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "customer",
+    "kind": "interaction",
+    "file": "apps/mobile/app/(customer)/jobs.tsx",
+    "line": 121,
+    "detail": "onRefresh={refetch}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "customer",
+    "kind": "interaction",
+    "file": "apps/mobile/app/(customer)/jobs.tsx",
+    "line": 156,
+    "detail": "onPress={() => router.push({ pathname: '/job-detail/[id]', params: { id: job._id } }) }",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "customer",
+    "kind": "screen",
+    "file": "apps/mobile/app/(customer)/messages.tsx",
+    "line": 1,
+    "detail": "messages.tsx",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "customer",
+    "kind": "interaction",
+    "file": "apps/mobile/app/(customer)/messages.tsx",
+    "line": 45,
+    "detail": "onRefresh={refetch}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "customer",
+    "kind": "interaction",
+    "file": "apps/mobile/app/(customer)/messages.tsx",
+    "line": 79,
+    "detail": "onPress={() => router.push({ pathname: '/chat/[jobId]', params: { jobId: targetJobId } }) }",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "customer",
+    "kind": "screen",
+    "file": "apps/mobile/app/(customer)/profile.tsx",
+    "line": 1,
+    "detail": "profile.tsx",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "customer",
+    "kind": "interaction",
+    "file": "apps/mobile/app/(customer)/profile.tsx",
+    "line": 116,
+    "detail": "onPress={() => router.push('/edit-profile')}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "customer",
+    "kind": "interaction",
+    "file": "apps/mobile/app/(customer)/profile.tsx",
+    "line": 158,
+    "detail": "onPress={() => router.push('/(auth)/login')}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "customer",
+    "kind": "interaction",
+    "file": "apps/mobile/app/(customer)/profile.tsx",
+    "line": 177,
+    "detail": "onPress={handleSwitchToHelper}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "customer",
+    "kind": "interaction",
+    "file": "apps/mobile/app/(customer)/profile.tsx",
+    "line": 221,
+    "detail": "onPress={() => (item.route ? router.push(item.route as never) : null)}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "customer",
+    "kind": "interaction",
+    "file": "apps/mobile/app/(customer)/profile.tsx",
+    "line": 252,
+    "detail": "onPress={handleLogout}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "helper",
+    "kind": "screen",
+    "file": "apps/mobile/app/(helper)/dashboard.tsx",
+    "line": 1,
+    "detail": "dashboard.tsx",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "helper",
+    "kind": "event",
+    "file": "apps/mobile/app/(helper)/dashboard.tsx",
+    "line": 94,
+    "detail": "socketService.on(SOCKET_EVENTS.SOS_BROADCAST, (data: any) => { setSosBroadcast(data); Toast.show({ type: 'error', text1: '🚨 CỨU HỘ KHẨN CẤP SOS GẦN BẠN!', text2: `${data.title} tại ${data.district}. Phụ phí +${data.surcharge?.toLocaleString()}đ`, visibilityTime: 10000, }); })",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "helper",
+    "kind": "interaction",
+    "file": "apps/mobile/app/(helper)/dashboard.tsx",
+    "line": 158,
+    "detail": "onRefresh={refetchJobs}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "helper",
+    "kind": "interaction",
+    "file": "apps/mobile/app/(helper)/dashboard.tsx",
+    "line": 178,
+    "detail": "onPress={() => router.push('/(helper)/profile')}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "helper",
+    "kind": "interaction",
+    "file": "apps/mobile/app/(helper)/dashboard.tsx",
+    "line": 217,
+    "detail": "onPress={() => router.push('/notifications')}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "helper",
+    "kind": "interaction",
+    "file": "apps/mobile/app/(helper)/dashboard.tsx",
+    "line": 254,
+    "detail": "onPress={() => router.push('/kyc')}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "helper",
+    "kind": "interaction",
+    "file": "apps/mobile/app/(helper)/dashboard.tsx",
+    "line": 380,
+    "detail": "onValueChange={handleToggleOnline}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "helper",
+    "kind": "interaction",
+    "file": "apps/mobile/app/(helper)/dashboard.tsx",
+    "line": 395,
+    "detail": "onPress={() => router.push('/(helper)/earnings')}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "helper",
+    "kind": "interaction",
+    "file": "apps/mobile/app/(helper)/dashboard.tsx",
+    "line": 479,
+    "detail": "onPress={() => router.push({ pathname: '/helper-job-detail/[id]', params: { id: activeJob._id } }) }",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "helper",
+    "kind": "interaction",
+    "file": "apps/mobile/app/(helper)/dashboard.tsx",
+    "line": 526,
+    "detail": "onPress={() => router.push({ pathname: '/helper-job-detail/[id]', params: { id: activeJob._id }, }) }",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "helper",
+    "kind": "interaction",
+    "file": "apps/mobile/app/(helper)/dashboard.tsx",
+    "line": 579,
+    "detail": "onPress={() => router.push({ pathname: '/helper-job-detail/[id]', params: { id: job._id } }) }",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "helper",
+    "kind": "interaction",
+    "file": "apps/mobile/app/(helper)/dashboard.tsx",
+    "line": 704,
+    "detail": "onPress={() => setSosBroadcast(null)}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "helper",
+    "kind": "interaction",
+    "file": "apps/mobile/app/(helper)/dashboard.tsx",
+    "line": 780,
+    "detail": "onPress={handleAcceptSos}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "helper",
+    "kind": "screen",
+    "file": "apps/mobile/app/(helper)/earnings.tsx",
+    "line": 1,
+    "detail": "earnings.tsx",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "helper",
+    "kind": "interaction",
+    "file": "apps/mobile/app/(helper)/earnings.tsx",
+    "line": 189,
+    "detail": "onPress={() => setShowWithdraw(true)}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "helper",
+    "kind": "interaction",
+    "file": "apps/mobile/app/(helper)/earnings.tsx",
+    "line": 308,
+    "detail": "onPress={() => setShowWithdraw(false)}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "helper",
+    "kind": "interaction",
+    "file": "apps/mobile/app/(helper)/earnings.tsx",
+    "line": 346,
+    "detail": "onChangeText={setAmount}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "helper",
+    "kind": "interaction",
+    "file": "apps/mobile/app/(helper)/earnings.tsx",
+    "line": 385,
+    "detail": "onChangeText={f.set}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "helper",
+    "kind": "interaction",
+    "file": "apps/mobile/app/(helper)/earnings.tsx",
+    "line": 398,
+    "detail": "onPress={handleWithdraw}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "helper",
+    "kind": "screen",
+    "file": "apps/mobile/app/(helper)/jobs.tsx",
+    "line": 1,
+    "detail": "jobs.tsx",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "helper",
+    "kind": "interaction",
+    "file": "apps/mobile/app/(helper)/jobs.tsx",
+    "line": 89,
+    "detail": "onPress={() => setTab(i)}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "helper",
+    "kind": "interaction",
+    "file": "apps/mobile/app/(helper)/jobs.tsx",
+    "line": 118,
+    "detail": "onRefresh={current.refetch}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "helper",
+    "kind": "interaction",
+    "file": "apps/mobile/app/(helper)/jobs.tsx",
+    "line": 144,
+    "detail": "onPress={() => router.push('/kyc')}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "helper",
+    "kind": "interaction",
+    "file": "apps/mobile/app/(helper)/jobs.tsx",
+    "line": 191,
+    "detail": "onPress={() => router.push({ pathname: '/helper-job-detail/[id]', params: { id: job._id } }) }",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "helper",
+    "kind": "screen",
+    "file": "apps/mobile/app/(helper)/profile.tsx",
+    "line": 1,
+    "detail": "profile.tsx",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "helper",
+    "kind": "interaction",
+    "file": "apps/mobile/app/(helper)/profile.tsx",
+    "line": 107,
+    "detail": "onPress={() => router.push('/edit-profile')}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "helper",
+    "kind": "interaction",
+    "file": "apps/mobile/app/(helper)/profile.tsx",
+    "line": 185,
+    "detail": "onPress={handleSwitchToCustomer}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "helper",
+    "kind": "interaction",
+    "file": "apps/mobile/app/(helper)/profile.tsx",
+    "line": 216,
+    "detail": "onValueChange={async v => { setIsOnline(v); await setStatus.mutateAsync(v ? 'online' : 'offline'); }}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "helper",
+    "kind": "interaction",
+    "file": "apps/mobile/app/(helper)/profile.tsx",
+    "line": 228,
+    "detail": "onPress={() => router.push({ pathname: '/kyc' } as any)}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "helper",
+    "kind": "interaction",
+    "file": "apps/mobile/app/(helper)/profile.tsx",
+    "line": 278,
+    "detail": "onPress={() => (item.route ? router.push(item.route as any) : null)}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "helper",
+    "kind": "interaction",
+    "file": "apps/mobile/app/(helper)/profile.tsx",
+    "line": 301,
+    "detail": "onPress={handleLogout}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "screen",
+    "file": "apps/mobile/app/bank-account.tsx",
+    "line": 1,
+    "detail": "bank-account.tsx",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/bank-account.tsx",
+    "line": 101,
+    "detail": "onPress={() => router.replace('/(customer)/jobs')}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/bank-account.tsx",
+    "line": 108,
+    "detail": "onPress={() => refetch()}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/bank-account.tsx",
+    "line": 109,
+    "detail": "onPress={handleBack}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/bank-account.tsx",
+    "line": 131,
+    "detail": "onPress={handleBack}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/bank-account.tsx",
+    "line": 269,
+    "detail": "onPress={() => setBankName(bank.name)}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/bank-account.tsx",
+    "line": 316,
+    "detail": "onChangeText={setBankName}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/bank-account.tsx",
+    "line": 339,
+    "detail": "onChangeText={setAccountNumber}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/bank-account.tsx",
+    "line": 362,
+    "detail": "onChangeText={text => setAccountName(text.toUpperCase())}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/bank-account.tsx",
+    "line": 400,
+    "detail": "onPress={handleSave}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "screen",
+    "file": "apps/mobile/app/chat/[jobId].tsx",
+    "line": 1,
+    "detail": "[jobId].tsx",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/chat/[jobId].tsx",
+    "line": 123,
+    "detail": "onPress={handleBack}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/chat/[jobId].tsx",
+    "line": 299,
+    "detail": "onChangeText={setText}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/chat/[jobId].tsx",
+    "line": 305,
+    "detail": "onPress={handleSend}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "screen",
+    "file": "apps/mobile/app/edit-profile.tsx",
+    "line": 1,
+    "detail": "edit-profile.tsx",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/edit-profile.tsx",
+    "line": 405,
+    "detail": "onPress={handleBack}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/edit-profile.tsx",
+    "line": 435,
+    "detail": "onPress={openAvatarMenu}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/edit-profile.tsx",
+    "line": 440,
+    "detail": "onPress={openAvatarMenu}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/edit-profile.tsx",
+    "line": 486,
+    "detail": "onPress={() => setAvatar(url)}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/edit-profile.tsx",
+    "line": 546,
+    "detail": "onChangeText={setFullName}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/edit-profile.tsx",
+    "line": 610,
+    "detail": "onChangeText={setEmail}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/edit-profile.tsx",
+    "line": 631,
+    "detail": "onPress={() => setGender(g.id as any)}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/edit-profile.tsx",
+    "line": 684,
+    "detail": "onChangeText={setExperienceYears}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/edit-profile.tsx",
+    "line": 706,
+    "detail": "onChangeText={setWorkingAreas}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/edit-profile.tsx",
+    "line": 728,
+    "detail": "onPress={() => setPickerFor('helper')}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/edit-profile.tsx",
+    "line": 769,
+    "detail": "onPress={async () => { setGpsLoading(true); try { const coords = await locationService.getCurrentCoordinates(); if (coords) { setHelperCoords(coords); setCoordsSource('gps'); const geo = await locationService.reverseGeocode( coords.latitude, coords.longitude, ); if (geo) { setLocationAddress(geo.ful",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/edit-profile.tsx",
+    "line": 843,
+    "detail": "onChangeText={setBio}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/edit-profile.tsx",
+    "line": 876,
+    "detail": "onPress={() => setPickerFor('customer')}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/edit-profile.tsx",
+    "line": 917,
+    "detail": "onPress={async () => { setCustomerGpsLoading(true); try { const coords = await locationService.getCurrentCoordinates(); if (coords) { setCustomerCoords(coords); const geo = await locationService.reverseGeocode( coords.latitude, coords.longitude, ); if (geo) { const geoData = { district: geo.district",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/edit-profile.tsx",
+    "line": 994,
+    "detail": "onChangeText={setDefaultAddress}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/edit-profile.tsx",
+    "line": 1017,
+    "detail": "onChangeText={setHomeNote}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/edit-profile.tsx",
+    "line": 1029,
+    "detail": "onPress={handleSave}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "screen",
+    "file": "apps/mobile/app/feedback.tsx",
+    "line": 1,
+    "detail": "feedback.tsx",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/feedback.tsx",
+    "line": 33,
+    "detail": "onPress={() => (router.canGoBack() ? router.back() : router.replace('/(customer)/profile'))}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/feedback.tsx",
+    "line": 40,
+    "detail": "onPress={() => router.push('/(auth)/login')}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/feedback.tsx",
+    "line": 47,
+    "detail": "onChangeText={v => { setMessage(v); setSent(false); }}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/feedback.tsx",
+    "line": 58,
+    "detail": "onPress={() => submit.mutate()}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/feedback.tsx",
+    "line": 67,
+    "detail": "onPress={() => history.refetch()}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "screen",
+    "file": "apps/mobile/app/help-center.tsx",
+    "line": 1,
+    "detail": "help-center.tsx",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/help-center.tsx",
+    "line": 105,
+    "detail": "onPress={() => router.back()}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/help-center.tsx",
+    "line": 193,
+    "detail": "onPress={handleCallHotline}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/help-center.tsx",
+    "line": 257,
+    "detail": "onChangeText={setAiQuestion}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/help-center.tsx",
+    "line": 262,
+    "detail": "onPress={handleAskAi}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/help-center.tsx",
+    "line": 301,
+    "detail": "onPress={() => router.push('/sos')}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/help-center.tsx",
+    "line": 323,
+    "detail": "onPress={() => router.push('/policy-insurance' as any)}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/help-center.tsx",
+    "line": 359,
+    "detail": "onPress={() => setExpandedFaq(isOpen ? null : index)}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "helper",
+    "kind": "screen",
+    "file": "apps/mobile/app/helper-job-detail/[id].tsx",
+    "line": 1,
+    "detail": "[id].tsx",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "helper",
+    "kind": "interaction",
+    "file": "apps/mobile/app/helper-job-detail/[id].tsx",
+    "line": 123,
+    "detail": "onPress={() => refetch()}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "helper",
+    "kind": "interaction",
+    "file": "apps/mobile/app/helper-job-detail/[id].tsx",
+    "line": 124,
+    "detail": "onPress={handleBack}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "helper",
+    "kind": "interaction",
+    "file": "apps/mobile/app/helper-job-detail/[id].tsx",
+    "line": 379,
+    "detail": "onPress={handleBack}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "helper",
+    "kind": "interaction",
+    "file": "apps/mobile/app/helper-job-detail/[id].tsx",
+    "line": 483,
+    "detail": "onPress={() => router.push({ pathname: '/chat/[jobId]', params: { jobId: id } })}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "helper",
+    "kind": "interaction",
+    "file": "apps/mobile/app/helper-job-detail/[id].tsx",
+    "line": 502,
+    "detail": "onPress={() => handleAction('on_the_way')}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "helper",
+    "kind": "interaction",
+    "file": "apps/mobile/app/helper-job-detail/[id].tsx",
+    "line": 509,
+    "detail": "onPress={() => handleAction('arrived')}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "helper",
+    "kind": "interaction",
+    "file": "apps/mobile/app/helper-job-detail/[id].tsx",
+    "line": 516,
+    "detail": "onPress={() => handleAction('start')}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "helper",
+    "kind": "interaction",
+    "file": "apps/mobile/app/helper-job-detail/[id].tsx",
+    "line": 523,
+    "detail": "onPress={() => handleAction('complete')}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "helper",
+    "kind": "interaction",
+    "file": "apps/mobile/app/helper-job-detail/[id].tsx",
+    "line": 595,
+    "detail": "onPress={handleOpenQuoteModal}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "helper",
+    "kind": "interaction",
+    "file": "apps/mobile/app/helper-job-detail/[id].tsx",
+    "line": 607,
+    "detail": "onPress={() => setShowQuoteModal(false)}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "helper",
+    "kind": "interaction",
+    "file": "apps/mobile/app/helper-job-detail/[id].tsx",
+    "line": 638,
+    "detail": "onChangeText={setLaborCost}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "helper",
+    "kind": "interaction",
+    "file": "apps/mobile/app/helper-job-detail/[id].tsx",
+    "line": 681,
+    "detail": "onPress={() => setEstimatedDuration(String(h))}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "helper",
+    "kind": "interaction",
+    "file": "apps/mobile/app/helper-job-detail/[id].tsx",
+    "line": 724,
+    "detail": "onChangeText={setNotes}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "helper",
+    "kind": "interaction",
+    "file": "apps/mobile/app/helper-job-detail/[id].tsx",
+    "line": 733,
+    "detail": "onPress={handleSubmitQuote}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "helper",
+    "kind": "interaction",
+    "file": "apps/mobile/app/helper-job-detail/[id].tsx",
+    "line": 756,
+    "detail": "onPress={() => setShowCompleteModal(false)}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "helper",
+    "kind": "interaction",
+    "file": "apps/mobile/app/helper-job-detail/[id].tsx",
+    "line": 812,
+    "detail": "onPress={handleTakePhoto}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "helper",
+    "kind": "interaction",
+    "file": "apps/mobile/app/helper-job-detail/[id].tsx",
+    "line": 834,
+    "detail": "onPress={handlePickPhoto}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "helper",
+    "kind": "interaction",
+    "file": "apps/mobile/app/helper-job-detail/[id].tsx",
+    "line": 876,
+    "detail": "onPress={() => setCompletionPhotos(prev => prev.filter((_, i) => i !== index)) }",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "helper",
+    "kind": "interaction",
+    "file": "apps/mobile/app/helper-job-detail/[id].tsx",
+    "line": 918,
+    "detail": "onPress={handleRecordVideo}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "helper",
+    "kind": "interaction",
+    "file": "apps/mobile/app/helper-job-detail/[id].tsx",
+    "line": 940,
+    "detail": "onPress={handlePickVideo}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "helper",
+    "kind": "interaction",
+    "file": "apps/mobile/app/helper-job-detail/[id].tsx",
+    "line": 1004,
+    "detail": "onPress={() => setCompletionVideos(prev => prev.filter((_, i) => i !== index)) }",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "helper",
+    "kind": "interaction",
+    "file": "apps/mobile/app/helper-job-detail/[id].tsx",
+    "line": 1039,
+    "detail": "onChangeText={setCompletionNotes}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "helper",
+    "kind": "interaction",
+    "file": "apps/mobile/app/helper-job-detail/[id].tsx",
+    "line": 1048,
+    "detail": "onPress={handleCompleteSubmission}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "helper",
+    "kind": "screen",
+    "file": "apps/mobile/app/helper-profile/[id].tsx",
+    "line": 1,
+    "detail": "[id].tsx",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "helper",
+    "kind": "interaction",
+    "file": "apps/mobile/app/helper-profile/[id].tsx",
+    "line": 79,
+    "detail": "onPress={handleBack}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "helper",
+    "kind": "interaction",
+    "file": "apps/mobile/app/helper-profile/[id].tsx",
+    "line": 104,
+    "detail": "onRefresh={refetch}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "helper",
+    "kind": "interaction",
+    "file": "apps/mobile/app/helper-profile/[id].tsx",
+    "line": 445,
+    "detail": "onPress={() => router.back()}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "helper",
+    "kind": "interaction",
+    "file": "apps/mobile/app/helper-profile/[id].tsx",
+    "line": 451,
+    "detail": "onPress={() => router.back()}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "screen",
+    "file": "apps/mobile/app/index.tsx",
+    "line": 1,
+    "detail": "index.tsx",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "screen",
+    "file": "apps/mobile/app/job-detail/[id].tsx",
+    "line": 1,
+    "detail": "[id].tsx",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/job-detail/[id].tsx",
+    "line": 153,
+    "detail": "onPress={() => router.back()}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/job-detail/[id].tsx",
+    "line": 348,
+    "detail": "onPress={() => { if (router.canGoBack()) { router.back(); } else { router.replace( user?.active_role === 'helper' ? '/(helper)/jobs' : '/(customer)/jobs', ); } }}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/job-detail/[id].tsx",
+    "line": 513,
+    "detail": "onPress={handleOpenEdit}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/job-detail/[id].tsx",
+    "line": 573,
+    "detail": "onPress={() => { const hUserId = typeof job.helper_id === 'string' ? job.helper_id : job.helper_id?._id; router.push({ pathname: '/helper-profile/[id]', params: { id: hUserId } }); }}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/job-detail/[id].tsx",
+    "line": 587,
+    "detail": "onPress={() => { const hUserId = typeof job.helper_id === 'string' ? job.helper_id : job.helper_id?._id; router.push({ pathname: '/helper-profile/[id]', params: { id: hUserId } }); }}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/job-detail/[id].tsx",
+    "line": 608,
+    "detail": "onPress={() => router.push({ pathname: '/chat/[jobId]', params: { jobId: id } })}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/job-detail/[id].tsx",
+    "line": 662,
+    "detail": "onPress={() => { const hId = typeof q.helper_id === 'string' ? q.helper_id : q.helper_id?._id; if (hId) router.push({ pathname: '/helper-profile/[id]', params: { id: hId } }); }}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/job-detail/[id].tsx",
+    "line": 714,
+    "detail": "onPress={() => setQuoteToAccept(q._id)}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/job-detail/[id].tsx",
+    "line": 817,
+    "detail": "onPress={() => setSelectedMediaPreview(uri)}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/job-detail/[id].tsx",
+    "line": 850,
+    "detail": "onPress={() => setSelectedMediaPreview(vUri)}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/job-detail/[id].tsx",
+    "line": 902,
+    "detail": "onPress={() => setShowReview(true)}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/job-detail/[id].tsx",
+    "line": 910,
+    "detail": "onPress={() => router.push({ pathname: '/chat/[jobId]', params: { jobId: id } })}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/job-detail/[id].tsx",
+    "line": 917,
+    "detail": "onPress={handleOpenEdit}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/job-detail/[id].tsx",
+    "line": 926,
+    "detail": "onPress={handleCancel}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/job-detail/[id].tsx",
+    "line": 938,
+    "detail": "onRequestClose={() => { if (!selectQuote.isPending) setQuoteToAccept(null); }}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/job-detail/[id].tsx",
+    "line": 1009,
+    "detail": "onPress={() => setQuoteToAccept(null)}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/job-detail/[id].tsx",
+    "line": 1016,
+    "detail": "onPress={handleSelectQuote}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/job-detail/[id].tsx",
+    "line": 1035,
+    "detail": "onPress={() => setSelectedMediaPreview(null)}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/job-detail/[id].tsx",
+    "line": 1068,
+    "detail": "onPress={() => setShowReview(false)}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/job-detail/[id].tsx",
+    "line": 1090,
+    "detail": "onPress={() => setRating(s)}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/job-detail/[id].tsx",
+    "line": 1125,
+    "detail": "onChangeText={setReviewText}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/job-detail/[id].tsx",
+    "line": 1134,
+    "detail": "onPress={handleSubmitReview}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/job-detail/[id].tsx",
+    "line": 1146,
+    "detail": "onRequestClose={() => setShowEditModal(false)}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/job-detail/[id].tsx",
+    "line": 1168,
+    "detail": "onPress={() => setShowEditModal(false)}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/job-detail/[id].tsx",
+    "line": 1180,
+    "detail": "onPress={handleGetLiveLocationForEdit}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/job-detail/[id].tsx",
+    "line": 1208,
+    "detail": "onChangeText={setEditFullAddress}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/job-detail/[id].tsx",
+    "line": 1218,
+    "detail": "onChangeText={setEditWard}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/job-detail/[id].tsx",
+    "line": 1226,
+    "detail": "onChangeText={setEditDistrict}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/job-detail/[id].tsx",
+    "line": 1231,
+    "detail": "onChangeText={setEditCity}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/job-detail/[id].tsx",
+    "line": 1237,
+    "detail": "onChangeText={setEditNotes}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/job-detail/[id].tsx",
+    "line": 1240,
+    "detail": "onChangeText={setEditTitle}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/job-detail/[id].tsx",
+    "line": 1259,
+    "detail": "onChangeText={setEditDescription}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/job-detail/[id].tsx",
+    "line": 1268,
+    "detail": "onPress={handleSaveEdit}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "screen",
+    "file": "apps/mobile/app/kyc.tsx",
+    "line": 1,
+    "detail": "kyc.tsx",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/kyc.tsx",
+    "line": 191,
+    "detail": "onPress={handleBack}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/kyc.tsx",
+    "line": 393,
+    "detail": "onChangeText={setIdCardNumber}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/kyc.tsx",
+    "line": 424,
+    "detail": "onPress={() => openPickerModal('front')}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/kyc.tsx",
+    "line": 506,
+    "detail": "onPress={() => openPickerModal('back')}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/kyc.tsx",
+    "line": 588,
+    "detail": "onPress={() => openPickerModal('selfie')}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/kyc.tsx",
+    "line": 650,
+    "detail": "onPress={handleSubmit}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/kyc.tsx",
+    "line": 663,
+    "detail": "onRequestClose={() => setPickerModalVisible(false)}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/kyc.tsx",
+    "line": 667,
+    "detail": "onPress={() => setPickerModalVisible(false)}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction-needs-review",
+    "file": "apps/mobile/app/kyc.tsx",
+    "line": 674,
+    "detail": "<TouchableOpacity activeOpacity={1} style={{ backgroundColor: '#fff', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, paddingBottom: Math.max(insets.bottom + 10, 24), gap: 12, }} >",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/kyc.tsx",
+    "line": 702,
+    "detail": "onPress={() => setPickerModalVisible(false)}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/kyc.tsx",
+    "line": 719,
+    "detail": "onPress={handleTakePhoto}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/kyc.tsx",
+    "line": 757,
+    "detail": "onPress={handlePickFromLibrary}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/kyc.tsx",
+    "line": 796,
+    "detail": "onPress={handleUseSamplePhoto}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "screen",
+    "file": "apps/mobile/app/notifications.tsx",
+    "line": 1,
+    "detail": "notifications.tsx",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/notifications.tsx",
+    "line": 120,
+    "detail": "onPress={handleBack}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/notifications.tsx",
+    "line": 139,
+    "detail": "onPress={() => markAll.mutate()}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/notifications.tsx",
+    "line": 150,
+    "detail": "onRefresh={refetch}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/notifications.tsx",
+    "line": 175,
+    "detail": "onPress={() => handlePressNotification(n)}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "screen",
+    "file": "apps/mobile/app/policy-insurance.tsx",
+    "line": 1,
+    "detail": "policy-insurance.tsx",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/policy-insurance.tsx",
+    "line": 51,
+    "detail": "onPress={() => router.back()}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/policy-insurance.tsx",
+    "line": 92,
+    "detail": "onPress={() => setActiveTab('insurance')}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/policy-insurance.tsx",
+    "line": 116,
+    "detail": "onPress={() => setActiveTab('privacy')}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/policy-insurance.tsx",
+    "line": 140,
+    "detail": "onPress={() => setActiveTab('claim')}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/policy-insurance.tsx",
+    "line": 486,
+    "detail": "onPress={handleCallSupport}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "screen",
+    "file": "apps/mobile/app/sos-tracking/[id].tsx",
+    "line": 1,
+    "detail": "[id].tsx",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "event",
+    "file": "apps/mobile/app/sos-tracking/[id].tsx",
+    "line": 62,
+    "detail": "socketService.on(SOCKET_EVENTS.SOS_ACCEPTED, (data: any) => { refetch(); Toast.show({ type: 'success', text1: '🚨 ĐÃ CÓ THỢ NHẬN CỨU HỘ!', text2: 'Thợ đang chuẩn bị đồ nghề và di chuyển gấp đến bạn.', }); })",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/sos-tracking/[id].tsx",
+    "line": 139,
+    "detail": "onPress={() => router.replace('/(customer)/home')}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/sos-tracking/[id].tsx",
+    "line": 156,
+    "detail": "onPress={handleShareSos}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/sos-tracking/[id].tsx",
+    "line": 309,
+    "detail": "onPress={handleCallHelper}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/sos-tracking/[id].tsx",
+    "line": 329,
+    "detail": "onPress={() => router.push({ pathname: '/chat/[jobId]', params: { jobId: id } })}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/sos-tracking/[id].tsx",
+    "line": 385,
+    "detail": "onPress={handleShareSos}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/sos-tracking/[id].tsx",
+    "line": 392,
+    "detail": "onPress={handleCancel}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "screen",
+    "file": "apps/mobile/app/sos.tsx",
+    "line": 1,
+    "detail": "sos.tsx",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/sos.tsx",
+    "line": 175,
+    "detail": "onPress={() => router.back()}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/sos.tsx",
+    "line": 226,
+    "detail": "onPress={() => handleCallEmergency('114')}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/sos.tsx",
+    "line": 244,
+    "detail": "onPress={() => handleCallEmergency('115')}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/sos.tsx",
+    "line": 276,
+    "detail": "onPress={() => setSelectedCategory(cat.id)}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/sos.tsx",
+    "line": 329,
+    "detail": "onPress={fetchLiveLocation}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/sos.tsx",
+    "line": 464,
+    "detail": "onPress={handleSendSos}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/_layout.tsx",
+    "line": 101,
+    "detail": "onPress={() => { hide(); onPress?.(); }}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/app/_layout.tsx",
+    "line": 121,
+    "detail": "onPress={hide}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/components/common/app-alert.tsx",
+    "line": 38,
+    "detail": "onRequestClose={() => { if (dialog.options?.cancelable !== false) dismiss(dialog.buttons.find(b => b.style === 'cancel')); }}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/components/common/app-alert.tsx",
+    "line": 79,
+    "detail": "onPress={() => dismiss(button)}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/components/common/custom-tab-bar.tsx",
+    "line": 49,
+    "detail": "onPress={onPress}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/components/common/custom-tab-bar.tsx",
+    "line": 122,
+    "detail": "onPress={onPress}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/components/common/location-picker.tsx",
+    "line": 198,
+    "detail": "onRequestClose={onClose}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/components/common/location-picker.tsx",
+    "line": 213,
+    "detail": "onPress={onClose}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/components/common/location-picker.tsx",
+    "line": 248,
+    "detail": "onChangeText={setQuery}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/components/common/location-picker.tsx",
+    "line": 296,
+    "detail": "onPress={() => selectPlace(item)}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/components/common/location-picker.tsx",
+    "line": 343,
+    "detail": "onPress={() => picked && canSave && onConfirm(picked, geo)}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction-needs-review",
+    "file": "apps/mobile/components/ui/index.tsx",
+    "line": 92,
+    "detail": "<TouchableOpacity accessibilityRole=\"button\" accessibilityLabel={title} activeOpacity={0.82} disabled={disabled || loading} style={[ { backgroundColor: bgColor, borderRadius: 14, paddingVertical: paddingY, paddingHorizontal: 20, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', g",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/components/ui/index.tsx",
+    "line": 328,
+    "detail": "onPress={onAction}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "interaction",
+    "file": "apps/mobile/components/ui/index.tsx",
+    "line": 387,
+    "detail": "onPress={onAction}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "event",
+    "file": "apps/mobile/hooks/use-socket.ts",
+    "line": 20,
+    "detail": "socketService.on<{ conversation_id?: string; message?: { sender_id?: { _id?: string; full_name?: string } | string; content?: string; type?: string; }; }>(SOCKET_EVENTS.CHAT_NEW_MESSAGE, data => { const currentUserId = useAuthStore.getState().user?._id; const senderObj = data?.message?.sender_id; co",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "event",
+    "file": "apps/mobile/hooks/use-socket.ts",
+    "line": 72,
+    "detail": "socketService.on<{ job_id: string; status: string }>( SOCKET_EVENTS.JOB_STATUS_CHANGED, ({ job_id, status }) => { if (job_id !== jobId) return; qc.invalidateQueries({ queryKey: ['job', jobId] }); qc.invalidateQueries({ queryKey: ['jobs'] }); const labels: Record<string, string> = { helper_on_the_way",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "event",
+    "file": "apps/mobile/hooks/use-socket.ts",
+    "line": 93,
+    "detail": "socketService.on<{ job_id: string; quote_id: string }>( SOCKET_EVENTS.QUOTE_RECEIVED, data => { if (data.job_id !== jobId) return; qc.invalidateQueries({ queryKey: ['job', jobId, 'quotes'] }); }, )",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "event",
+    "file": "apps/mobile/hooks/use-socket.ts",
+    "line": 125,
+    "detail": "socketService.on<{ message: unknown; conversation_id: string }>( SOCKET_EVENTS.CHAT_NEW_MESSAGE, data => { const cId = data?.conversation_id; if (!cId || cId === conversationId) { qc.invalidateQueries({ queryKey: ['messages', conversationId] }); qc.invalidateQueries({ queryKey: ['conversations'] });",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "event",
+    "file": "apps/mobile/hooks/use-socket.ts",
+    "line": 156,
+    "detail": "socketService.on<{ _id?: string; type?: string; title?: string; body?: string; data?: { is_sos?: boolean; job_id?: string; conversation_id?: string }; }>(SOCKET_EVENTS.NOTIFICATION_NEW, n => { qc.invalidateQueries({ queryKey: ['notifications'] }); qc.invalidateQueries({ queryKey: ['notifications', '",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "event",
+    "file": "apps/mobile/hooks/use-socket.ts",
+    "line": 244,
+    "detail": "socketService.on<{ job_id: string; helper_id: string; location: { lat: number; lng: number }; }>(SOCKET_EVENTS.HELPER_LOCATION_UPDATE, ({ job_id, location: loc }) => { if (job_id === jobId && Number.isFinite(loc?.lat) && Number.isFinite(loc?.lng)) { setLocation(loc); } })",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "admin",
+    "kind": "screen",
+    "file": "apps/admin/app/(auth)/login/page.tsx",
+    "line": 1,
+    "detail": "page.tsx",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "admin",
+    "kind": "interaction",
+    "file": "apps/admin/app/(auth)/login/page.tsx",
+    "line": 49,
+    "detail": "onSubmit={handleSubmit}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "admin",
+    "kind": "interaction",
+    "file": "apps/admin/app/(auth)/login/page.tsx",
+    "line": 56,
+    "detail": "onChange={e => setPhone(e.target.value)}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "admin",
+    "kind": "interaction",
+    "file": "apps/admin/app/(auth)/login/page.tsx",
+    "line": 65,
+    "detail": "onChange={e => setPassword(e.target.value)}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "admin",
+    "kind": "interaction-needs-review",
+    "file": "apps/admin/app/(auth)/login/page.tsx",
+    "line": 73,
+    "detail": "<Button type=\"submit\" className=\"w-full\" loading={loading}>",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "admin",
+    "kind": "screen",
+    "file": "apps/admin/app/(dashboard)/analytics/page.tsx",
+    "line": 1,
+    "detail": "page.tsx",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "admin",
+    "kind": "screen",
+    "file": "apps/admin/app/(dashboard)/feedback/page.tsx",
+    "line": 1,
+    "detail": "page.tsx",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "admin",
+    "kind": "interaction",
+    "file": "apps/admin/app/(dashboard)/feedback/page.tsx",
+    "line": 22,
+    "detail": "onClick={() => refetch()}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "admin",
+    "kind": "interaction",
+    "file": "apps/admin/app/(dashboard)/feedback/page.tsx",
+    "line": 34,
+    "detail": "onClick={() => update.mutate(item._id)}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "admin",
+    "kind": "screen",
+    "file": "apps/admin/app/(dashboard)/helpers/kyc/page.tsx",
+    "line": 1,
+    "detail": "page.tsx",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "admin",
+    "kind": "interaction",
+    "file": "apps/admin/app/(dashboard)/helpers/kyc/page.tsx",
+    "line": 64,
+    "detail": "onClick={() => onOpen({ title: helper.user_id?.full_name ?? 'Hồ sơ KYC', images, index: i }) }",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "admin",
+    "kind": "interaction",
+    "file": "apps/admin/app/(dashboard)/helpers/kyc/page.tsx",
+    "line": 111,
+    "detail": "onClick={() => onChange(null)}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "admin",
+    "kind": "interaction",
+    "file": "apps/admin/app/(dashboard)/helpers/kyc/page.tsx",
+    "line": 114,
+    "detail": "onClick={e => e.stopPropagation()}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "admin",
+    "kind": "interaction",
+    "file": "apps/admin/app/(dashboard)/helpers/kyc/page.tsx",
+    "line": 133,
+    "detail": "onClick={() => onChange(null)}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "admin",
+    "kind": "interaction",
+    "file": "apps/admin/app/(dashboard)/helpers/kyc/page.tsx",
+    "line": 144,
+    "detail": "onClick={e => { e.stopPropagation(); step(-1); }}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "admin",
+    "kind": "interaction",
+    "file": "apps/admin/app/(dashboard)/helpers/kyc/page.tsx",
+    "line": 156,
+    "detail": "onClick={e => e.stopPropagation()}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "admin",
+    "kind": "interaction",
+    "file": "apps/admin/app/(dashboard)/helpers/kyc/page.tsx",
+    "line": 162,
+    "detail": "onClick={e => { e.stopPropagation(); step(1); }}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "admin",
+    "kind": "interaction",
+    "file": "apps/admin/app/(dashboard)/helpers/kyc/page.tsx",
+    "line": 246,
+    "detail": "onClick={() => h.user_id && approve.mutate(h.user_id._id)}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "admin",
+    "kind": "interaction",
+    "file": "apps/admin/app/(dashboard)/helpers/kyc/page.tsx",
+    "line": 255,
+    "detail": "onClick={() => setRejectingId(rejectingId === h._id ? null : h._id)}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "admin",
+    "kind": "interaction",
+    "file": "apps/admin/app/(dashboard)/helpers/kyc/page.tsx",
+    "line": 274,
+    "detail": "onChange={e => setRejectReason(e.target.value)}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "admin",
+    "kind": "interaction",
+    "file": "apps/admin/app/(dashboard)/helpers/kyc/page.tsx",
+    "line": 280,
+    "detail": "onClick={() => h.user_id && handleReject(h.user_id._id)}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "admin",
+    "kind": "interaction",
+    "file": "apps/admin/app/(dashboard)/helpers/kyc/page.tsx",
+    "line": 287,
+    "detail": "onClick={() => { setRejectingId(null); setRejectReason(''); }}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "admin",
+    "kind": "interaction",
+    "file": "apps/admin/app/(dashboard)/helpers/kyc/page.tsx",
+    "line": 307,
+    "detail": "onChange={setViewer}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "admin",
+    "kind": "screen",
+    "file": "apps/admin/app/(dashboard)/helpers/page.tsx",
+    "line": 1,
+    "detail": "page.tsx",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "admin",
+    "kind": "interaction-needs-review",
+    "file": "apps/admin/app/(dashboard)/helpers/page.tsx",
+    "line": 77,
+    "detail": "<Button>",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "admin",
+    "kind": "interaction",
+    "file": "apps/admin/app/(dashboard)/helpers/page.tsx",
+    "line": 85,
+    "detail": "onSubmit={handleSearch}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "admin",
+    "kind": "interaction",
+    "file": "apps/admin/app/(dashboard)/helpers/page.tsx",
+    "line": 90,
+    "detail": "onChange={e => setSearchInput(e.target.value)}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "admin",
+    "kind": "interaction",
+    "file": "apps/admin/app/(dashboard)/helpers/page.tsx",
+    "line": 96,
+    "detail": "onChange={e => { setStatus(e.target.value); setPage(1); }}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "admin",
+    "kind": "interaction-needs-review",
+    "file": "apps/admin/app/(dashboard)/helpers/page.tsx",
+    "line": 102,
+    "detail": "<Button type=\"submit\" variant=\"outline\">",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "admin",
+    "kind": "screen",
+    "file": "apps/admin/app/(dashboard)/jobs/page.tsx",
+    "line": 1,
+    "detail": "page.tsx",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "admin",
+    "kind": "interaction",
+    "file": "apps/admin/app/(dashboard)/jobs/page.tsx",
+    "line": 62,
+    "detail": "onSubmit={handleSearch}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "admin",
+    "kind": "interaction",
+    "file": "apps/admin/app/(dashboard)/jobs/page.tsx",
+    "line": 67,
+    "detail": "onChange={e => setSearchInput(e.target.value)}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "admin",
+    "kind": "interaction",
+    "file": "apps/admin/app/(dashboard)/jobs/page.tsx",
+    "line": 73,
+    "detail": "onChange={e => { setStatus(e.target.value); setPage(1); }}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "admin",
+    "kind": "interaction-needs-review",
+    "file": "apps/admin/app/(dashboard)/jobs/page.tsx",
+    "line": 79,
+    "detail": "<Button type=\"submit\" variant=\"outline\">",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "admin",
+    "kind": "screen",
+    "file": "apps/admin/app/(dashboard)/jobs/[id]/page.tsx",
+    "line": 1,
+    "detail": "page.tsx",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "admin",
+    "kind": "interaction",
+    "file": "apps/admin/app/(dashboard)/jobs/[id]/page.tsx",
+    "line": 167,
+    "detail": "onChange={e => setReason(e.target.value)}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "admin",
+    "kind": "interaction",
+    "file": "apps/admin/app/(dashboard)/jobs/[id]/page.tsx",
+    "line": 179,
+    "detail": "onClick={() => { if (confirm('Hủy job này? Khách hàng và thợ sẽ nhận được thông báo.')) { cancelJob.mutate({ id, reason: reason.trim() }); } }}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "admin",
+    "kind": "screen",
+    "file": "apps/admin/app/(dashboard)/notifications/page.tsx",
+    "line": 1,
+    "detail": "page.tsx",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "admin",
+    "kind": "interaction",
+    "file": "apps/admin/app/(dashboard)/notifications/page.tsx",
+    "line": 39,
+    "detail": "onSubmit={submit}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "admin",
+    "kind": "interaction",
+    "file": "apps/admin/app/(dashboard)/notifications/page.tsx",
+    "line": 44,
+    "detail": "onChange={e => setTitle(e.target.value)}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "admin",
+    "kind": "interaction",
+    "file": "apps/admin/app/(dashboard)/notifications/page.tsx",
+    "line": 55,
+    "detail": "onChange={e => setBody(e.target.value)}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "admin",
+    "kind": "interaction-needs-review",
+    "file": "apps/admin/app/(dashboard)/notifications/page.tsx",
+    "line": 67,
+    "detail": "<Button type=\"submit\" disabled={broadcast.isPending || !title.trim() || !body.trim()}>",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "admin",
+    "kind": "screen",
+    "file": "apps/admin/app/(dashboard)/page.tsx",
+    "line": 1,
+    "detail": "page.tsx",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "admin",
+    "kind": "screen",
+    "file": "apps/admin/app/(dashboard)/payments/page.tsx",
+    "line": 1,
+    "detail": "page.tsx",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "admin",
+    "kind": "interaction",
+    "file": "apps/admin/app/(dashboard)/payments/page.tsx",
+    "line": 92,
+    "detail": "onChange={e => { setWStatus(e.target.value); setWPage(1); }}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "admin",
+    "kind": "interaction",
+    "file": "apps/admin/app/(dashboard)/payments/page.tsx",
+    "line": 180,
+    "detail": "onClick={() => handleApprove(w._id)}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "admin",
+    "kind": "interaction",
+    "file": "apps/admin/app/(dashboard)/payments/page.tsx",
+    "line": 188,
+    "detail": "onClick={() => setRejectingId(rejectingId === w._id ? null : w._id) }",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "admin",
+    "kind": "interaction",
+    "file": "apps/admin/app/(dashboard)/payments/page.tsx",
+    "line": 206,
+    "detail": "onChange={e => setRejectNote(e.target.value)}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "admin",
+    "kind": "interaction",
+    "file": "apps/admin/app/(dashboard)/payments/page.tsx",
+    "line": 212,
+    "detail": "onClick={() => handleReject(w._id)}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "admin",
+    "kind": "interaction",
+    "file": "apps/admin/app/(dashboard)/payments/page.tsx",
+    "line": 219,
+    "detail": "onClick={() => setRejectingId(null)}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "admin",
+    "kind": "interaction",
+    "file": "apps/admin/app/(dashboard)/payments/page.tsx",
+    "line": 249,
+    "detail": "onChange={e => { setTxType(e.target.value); setTxPage(1); }}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "admin",
+    "kind": "screen",
+    "file": "apps/admin/app/(dashboard)/reviews/page.tsx",
+    "line": 1,
+    "detail": "page.tsx",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "admin",
+    "kind": "interaction",
+    "file": "apps/admin/app/(dashboard)/reviews/page.tsx",
+    "line": 82,
+    "detail": "onChange={e => handleRatingFilter(e.target.value)}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "admin",
+    "kind": "screen",
+    "file": "apps/admin/app/(dashboard)/services/page.tsx",
+    "line": 1,
+    "detail": "page.tsx",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "admin",
+    "kind": "interaction",
+    "file": "apps/admin/app/(dashboard)/services/page.tsx",
+    "line": 121,
+    "detail": "onClick={() => setDraft({ ...EMPTY, category_id: categories?.[0]?._id ?? '' })}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "admin",
+    "kind": "interaction",
+    "file": "apps/admin/app/(dashboard)/services/page.tsx",
+    "line": 132,
+    "detail": "onSubmit={submit}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "admin",
+    "kind": "interaction",
+    "file": "apps/admin/app/(dashboard)/services/page.tsx",
+    "line": 136,
+    "detail": "onChange={e => setDraft(d => d ? { ...d, name: e.target.value, slug: d.id ? d.slug : slugify(e.target.value), } : d, ) }",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "admin",
+    "kind": "interaction",
+    "file": "apps/admin/app/(dashboard)/services/page.tsx",
+    "line": 149,
+    "detail": "onChange={set('slug')}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "admin",
+    "kind": "interaction",
+    "file": "apps/admin/app/(dashboard)/services/page.tsx",
+    "line": 154,
+    "detail": "onChange={set('description')}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "admin",
+    "kind": "interaction",
+    "file": "apps/admin/app/(dashboard)/services/page.tsx",
+    "line": 161,
+    "detail": "onChange={set('category_id')}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "admin",
+    "kind": "interaction",
+    "file": "apps/admin/app/(dashboard)/services/page.tsx",
+    "line": 172,
+    "detail": "onChange={e => setNewCategory(e.target.value)}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "admin",
+    "kind": "interaction",
+    "file": "apps/admin/app/(dashboard)/services/page.tsx",
+    "line": 179,
+    "detail": "onClick={() => createCategory.mutate( { name: newCategory.trim(), slug: slugify(newCategory) }, { onSuccess: res => { setNewCategory(''); const created = (res.data as { data?: { _id: string } }).data; if (created?._id) setDraft(d => (d ? { ...d, category_id: created._id } : d)); }, }, ) }",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "admin",
+    "kind": "interaction",
+    "file": "apps/admin/app/(dashboard)/services/page.tsx",
+    "line": 201,
+    "detail": "onChange={set('price_range_min')}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "admin",
+    "kind": "interaction",
+    "file": "apps/admin/app/(dashboard)/services/page.tsx",
+    "line": 208,
+    "detail": "onChange={set('price_range_max')}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "admin",
+    "kind": "interaction",
+    "file": "apps/admin/app/(dashboard)/services/page.tsx",
+    "line": 216,
+    "detail": "onChange={set('platform_fee_percent')}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "admin",
+    "kind": "interaction-needs-review",
+    "file": "apps/admin/app/(dashboard)/services/page.tsx",
+    "line": 224,
+    "detail": "<Button type=\"submit\" disabled={save.isPending || (!draft.id && !draft.category_id)} >",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "admin",
+    "kind": "interaction",
+    "file": "apps/admin/app/(dashboard)/services/page.tsx",
+    "line": 230,
+    "detail": "onClick={() => setDraft(null)}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "admin",
+    "kind": "interaction",
+    "file": "apps/admin/app/(dashboard)/services/page.tsx",
+    "line": 275,
+    "detail": "onClick={() => edit(s)}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "admin",
+    "kind": "interaction",
+    "file": "apps/admin/app/(dashboard)/services/page.tsx",
+    "line": 282,
+    "detail": "onClick={() => toggle.mutate({ id: s._id, status: s.status === 'active' ? 'inactive' : 'active', }) }",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "admin",
+    "kind": "screen",
+    "file": "apps/admin/app/(dashboard)/users/page.tsx",
+    "line": 1,
+    "detail": "page.tsx",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "admin",
+    "kind": "interaction",
+    "file": "apps/admin/app/(dashboard)/users/page.tsx",
+    "line": 71,
+    "detail": "onSubmit={handleSearch}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "admin",
+    "kind": "interaction",
+    "file": "apps/admin/app/(dashboard)/users/page.tsx",
+    "line": 76,
+    "detail": "onChange={e => setSearchInput(e.target.value)}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "admin",
+    "kind": "interaction",
+    "file": "apps/admin/app/(dashboard)/users/page.tsx",
+    "line": 82,
+    "detail": "onChange={e => { setStatus(e.target.value); setPage(1); }}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "admin",
+    "kind": "interaction-needs-review",
+    "file": "apps/admin/app/(dashboard)/users/page.tsx",
+    "line": 88,
+    "detail": "<Button type=\"submit\" variant=\"outline\">",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "admin",
+    "kind": "interaction",
+    "file": "apps/admin/app/(dashboard)/users/page.tsx",
+    "line": 95,
+    "detail": "onClick={() => { setSearch(''); setSearchInput(''); setStatus(''); setPage(1); }}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "admin",
+    "kind": "interaction",
+    "file": "apps/admin/app/(dashboard)/users/page.tsx",
+    "line": 172,
+    "detail": "onClick={() => activate.mutate(user._id)}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "admin",
+    "kind": "interaction",
+    "file": "apps/admin/app/(dashboard)/users/page.tsx",
+    "line": 181,
+    "detail": "onClick={() => suspend.mutate({ id: user._id })}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "admin",
+    "kind": "screen",
+    "file": "apps/admin/app/(dashboard)/users/[id]/page.tsx",
+    "line": 1,
+    "detail": "page.tsx",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "admin",
+    "kind": "interaction",
+    "file": "apps/admin/app/(dashboard)/users/[id]/page.tsx",
+    "line": 243,
+    "detail": "onClick={() => { if (suspended) { activate.mutate(user._id); } else { const reason = prompt('Lý do khóa tài khoản?'); if (reason?.trim()) suspend.mutate({ id: user._id, reason: reason.trim() }); } }}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "admin",
+    "kind": "interaction",
+    "file": "apps/admin/app/(dashboard)/users/[id]/page.tsx",
+    "line": 281,
+    "detail": "onClick={() => setTab(t.key)}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "admin",
+    "kind": "interaction",
+    "file": "apps/admin/app/(dashboard)/users/[id]/page.tsx",
+    "line": 372,
+    "detail": "onClick={() => confirm('Duyệt e-KYC cho thợ này?') && approveKyc.mutate(user._id) }",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "admin",
+    "kind": "interaction",
+    "file": "apps/admin/app/(dashboard)/users/[id]/page.tsx",
+    "line": 381,
+    "detail": "onClick={() => { const reason = prompt('Lý do từ chối?'); if (reason?.trim()) rejectKyc.mutate({ userId: user._id, reason: reason.trim() }); }}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "admin",
+    "kind": "interaction",
+    "file": "apps/admin/components/common/dashboard-layout.tsx",
+    "line": 98,
+    "detail": "onClick={handleLogout}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "admin",
+    "kind": "interaction-needs-review",
+    "file": "apps/admin/components/ui/index.tsx",
+    "line": 66,
+    "detail": "<button className={cn( 'inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50', buttonVariants[variant] ?? buttonVariants.default, buttonSizes[s",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "admin",
+    "kind": "interaction",
+    "file": "apps/admin/components/ui/index.tsx",
+    "line": 320,
+    "detail": "onClick={() => onPageChange(page - 1)}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "admin",
+    "kind": "interaction",
+    "file": "apps/admin/components/ui/index.tsx",
+    "line": 328,
+    "detail": "onClick={() => onPageChange(page + 1)}",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "admin",
+    "kind": "endpoint-event",
+    "file": "apps/api/src/modules/admin/admin.controller.ts",
+    "line": 39,
+    "detail": "@Get('dashboard') @ApiOperation({ summary: '[Admin] Thống kê tổng quan dashboard' }) async getDashboardStats() { return this.adminService.getDashboardStats(); }",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "admin",
+    "kind": "endpoint-event",
+    "file": "apps/api/src/modules/admin/admin.controller.ts",
+    "line": 47,
+    "detail": "@Get('users') @ApiOperation({ summary: '[Admin] Danh sách người dùng' }) @ApiQuery({ name: 'search', required: false }) @ApiQuery({ name: 'status', required: false }) @ApiQuery({ name: 'page', required: false, type: Number }) @ApiQuery({ name: 'limit', required: false, type: Number }) as",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "admin",
+    "kind": "endpoint-event",
+    "file": "apps/api/src/modules/admin/admin.controller.ts",
+    "line": 62,
+    "detail": "@Get('users/:id') @ApiOperation({ summary: '[Admin] Chi tiết người dùng' }) async getUser(@Param('id') id: string) { return this.adminService.getUserDetail(id); }",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "admin",
+    "kind": "endpoint-event",
+    "file": "apps/api/src/modules/admin/admin.controller.ts",
+    "line": 68,
+    "detail": "@Patch('users/:id/suspend') @HttpCode(HttpStatus.OK) @ApiOperation({ summary: '[Admin] Đình chỉ tài khoản người dùng' }) async suspendUser(@Param('id') id: string, @Body() dto: AdminSuspendDto) { return this.adminService.suspendUser(id, dto.reason); }",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "admin",
+    "kind": "endpoint-event",
+    "file": "apps/api/src/modules/admin/admin.controller.ts",
+    "line": 75,
+    "detail": "@Patch('users/:id/activate') @HttpCode(HttpStatus.OK) @ApiOperation({ summary: '[Admin] Kích hoạt lại tài khoản' }) async activateUser(@Param('id') id: string) { return this.adminService.activateUser(id); }",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "admin",
+    "kind": "endpoint-event",
+    "file": "apps/api/src/modules/admin/admin.controller.ts",
+    "line": 84,
+    "detail": "@Get('helpers') @ApiOperation({ summary: '[Admin] Danh sách người giúp việc' }) @ApiQuery({ name: 'search', required: false }) @ApiQuery({ name: 'status', required: false, enum: ['unsubmitted', 'pending', 'approved', 'rejected'], }) @ApiQuery({ name: 'page', required: false, ty",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "admin",
+    "kind": "endpoint-event",
+    "file": "apps/api/src/modules/admin/admin.controller.ts",
+    "line": 103,
+    "detail": "@Get('helpers/kyc/pending') @ApiOperation({ summary: '[Admin] Danh sách hồ sơ KYC chờ duyệt' }) @ApiQuery({ name: 'page', required: false, type: Number }) @ApiQuery({ name: 'limit', required: false, type: Number }) async getPendingKyc(@Query('page') page?: number, @Query('limit') limit?: num",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "admin",
+    "kind": "endpoint-event",
+    "file": "apps/api/src/modules/admin/admin.controller.ts",
+    "line": 111,
+    "detail": "@Patch('helpers/:userId/kyc/approve') @HttpCode(HttpStatus.OK) @ApiOperation({ summary: '[Admin] Duyệt hồ sơ KYC helper' }) async approveKyc(@Param('userId') userId: string) { return this.adminService.approveKyc(userId); }",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "admin",
+    "kind": "endpoint-event",
+    "file": "apps/api/src/modules/admin/admin.controller.ts",
+    "line": 118,
+    "detail": "@Patch('helpers/:userId/kyc/reject') @HttpCode(HttpStatus.OK) @ApiOperation({ summary: '[Admin] Từ chối hồ sơ KYC helper' }) async rejectKyc(@Param('userId') userId: string, @Body() dto: AdminKycActionDto) { return this.adminService.rejectKyc(userId, dto.reason ?? 'Hồ sơ không hợp lệ'); ",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "admin",
+    "kind": "endpoint-event",
+    "file": "apps/api/src/modules/admin/admin.controller.ts",
+    "line": 127,
+    "detail": "@Get('jobs') @ApiOperation({ summary: '[Admin] Danh sách tất cả jobs' }) @ApiQuery({ name: 'status', required: false }) @ApiQuery({ name: 'search', required: false }) @ApiQuery({ name: 'page', required: false, type: Number }) @ApiQuery({ name: 'limit', required: false, type: Number }) as",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "admin",
+    "kind": "endpoint-event",
+    "file": "apps/api/src/modules/admin/admin.controller.ts",
+    "line": 142,
+    "detail": "@Get('jobs/:id') @ApiOperation({ summary: '[Admin] Chi tiết job' }) async getJob(@Param('id') id: string) { return this.adminService.getJobById(id); }",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "admin",
+    "kind": "endpoint-event",
+    "file": "apps/api/src/modules/admin/admin.controller.ts",
+    "line": 150,
+    "detail": "@Post('notifications/broadcast') @ApiOperation({ summary: '[Admin] Gửi thông báo tới tất cả người dùng' }) async broadcast(@Body() dto: BroadcastDto) { return this.adminService.broadcastNotification(dto.title, dto.body); }",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "endpoint-event",
+    "file": "apps/api/src/modules/ai/ai.controller.ts",
+    "line": 34,
+    "detail": "@Get('status') @Public() @ApiOperation({ summary: 'Kiểm tra trạng thái AI module' }) getStatus() { return { enabled: this.aiConfig.enabled, mode: this.aiConfig.enabled ? 'live' : 'mock', features: { booking_assistant: this.aiConfig.isFeatureEnabled('BOOKING_ASSIST",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "endpoint-event",
+    "file": "apps/api/src/modules/ai/ai.controller.ts",
+    "line": 52,
+    "detail": "@Post('booking/analyze') @Public() @HttpCode(HttpStatus.OK) @ApiOperation({ summary: '[AI] Phân tích yêu cầu đặt lịch bằng ngôn ngữ tự nhiên', description: 'Khách nhập mô tả tự do → AI phân tích → trả về service type, thời gian, số người, ước giá', }) async analyzeBooking(@Bo",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "endpoint-event",
+    "file": "apps/api/src/modules/ai/ai.controller.ts",
+    "line": 66,
+    "detail": "@Post('price/estimate') @Public() @HttpCode(HttpStatus.OK) @ApiOperation({ summary: '[AI] Ước tính giá dịch vụ từ mô tả công việc', description: 'Khách mô tả công việc → AI ước tính giá min/max, thời gian, độ phức tạp', }) async estimatePrice(@Body() dto: EstimatePriceDto) { re",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "endpoint-event",
+    "file": "apps/api/src/modules/ai/ai.controller.ts",
+    "line": 79,
+    "detail": "@Post('support/chat') @HttpCode(HttpStatus.OK) @ApiOperation({ summary: '[AI] Chat hỗ trợ khách hàng', description: 'Khách hỏi câu hỏi tự nhiên → AI trả lời về dịch vụ, giá cả, quy trình, vấn đề phổ biến', }) async supportChat(@Body() dto: SupportChatDto) { // Try FAQ first",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "endpoint-event",
+    "file": "apps/api/src/modules/analytics/analytics.controller.ts",
+    "line": 17,
+    "detail": "@Get('summary') @ApiOperation({ summary: '[Admin] Tóm tắt so sánh tháng này vs tháng trước' }) async getSummary() { return this.analyticsService.getSummary(); }",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "endpoint-event",
+    "file": "apps/api/src/modules/analytics/analytics.controller.ts",
+    "line": 23,
+    "detail": "@Get('jobs-per-day') @ApiOperation({ summary: '[Admin] Số job theo ngày' }) @ApiQuery({ name: 'days', required: false, type: Number, description: 'Số ngày gần đây (default 30)', }) async getJobsPerDay(@Query('days') days?: number) { return this.analyticsService.getJobsPer",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "endpoint-event",
+    "file": "apps/api/src/modules/analytics/analytics.controller.ts",
+    "line": 35,
+    "detail": "@Get('jobs-by-status') @ApiOperation({ summary: '[Admin] Phân bố trạng thái job' }) async getJobsByStatus() { return this.analyticsService.getJobsByStatus(); }",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "endpoint-event",
+    "file": "apps/api/src/modules/analytics/analytics.controller.ts",
+    "line": 41,
+    "detail": "@Get('revenue-per-month') @ApiOperation({ summary: '[Admin] Doanh thu theo tháng' }) @ApiQuery({ name: 'months', required: false, type: Number, description: 'Số tháng gần đây (default 6)', }) async getRevenuePerMonth(@Query('months') months?: number) { return this.analyti",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "endpoint-event",
+    "file": "apps/api/src/modules/analytics/analytics.controller.ts",
+    "line": 53,
+    "detail": "@Get('new-users-per-day') @ApiOperation({ summary: '[Admin] Người dùng mới theo ngày' }) @ApiQuery({ name: 'days', required: false, type: Number }) async getNewUsersPerDay(@Query('days') days?: number) { return this.analyticsService.getNewUsersPerDay(Number(days) || 30); }",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "endpoint-event",
+    "file": "apps/api/src/modules/analytics/analytics.controller.ts",
+    "line": 60,
+    "detail": "@Get('top-helpers') @ApiOperation({ summary: '[Admin] Top helpers theo số job hoàn thành' }) @ApiQuery({ name: 'limit', required: false, type: Number }) async getTopHelpers(@Query('limit') limit?: number) { return this.analyticsService.getTopHelpers(Number(limit) || 10); }",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "endpoint-event",
+    "file": "apps/api/src/modules/analytics/analytics.controller.ts",
+    "line": 67,
+    "detail": "@Get('rating-by-service') @ApiOperation({ summary: '[Admin] Rating trung bình theo loại dịch vụ' }) async getRatingByService() { return this.analyticsService.getRatingByService(); }",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "endpoint-event",
+    "file": "apps/api/src/modules/auth/auth.controller.ts",
+    "line": 26,
+    "detail": "@Public() @Post('register') @Throttle({ default: { ttl: 60000, limit: 5 } }) @ApiOperation({ summary: 'Đăng ký tài khoản mới' }) @ApiResponse({ status: 201, description: 'Đăng ký thành công' }) @ApiResponse({ status: 409, description: 'Số điện thoại đã tồn tại' }) async register(@Body() ",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "endpoint-event",
+    "file": "apps/api/src/modules/auth/auth.controller.ts",
+    "line": 38,
+    "detail": "@Public() @Post('login') @HttpCode(HttpStatus.OK) @Throttle({ default: { ttl: 60000, limit: 10 } }) @ApiOperation({ summary: 'Đăng nhập bằng SĐT + mật khẩu' }) @ApiResponse({ status: 200, description: 'Đăng nhập thành công' }) @ApiResponse({ status: 401, description: 'Sai thông tin đăng ",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "endpoint-event",
+    "file": "apps/api/src/modules/auth/auth.controller.ts",
+    "line": 51,
+    "detail": "@Public() @Post('refresh') @HttpCode(HttpStatus.OK) @ApiOperation({ summary: 'Làm mới access token' }) async refresh(@Body() dto: RefreshTokenDto) { return this.authService.refreshToken(dto); }",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "endpoint-event",
+    "file": "apps/api/src/modules/auth/auth.controller.ts",
+    "line": 61,
+    "detail": "@Public() @Post('otp/send') @HttpCode(HttpStatus.OK) @Throttle({ default: { ttl: 60000, limit: 3 } }) @ApiOperation({ summary: 'Gửi OTP xác minh SĐT' }) async sendOtp(@Body() dto: SendOtpDto) { return this.authService.sendOtp(dto); }",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "endpoint-event",
+    "file": "apps/api/src/modules/auth/auth.controller.ts",
+    "line": 70,
+    "detail": "@Public() @Post('otp/verify') @HttpCode(HttpStatus.OK) @Throttle({ default: { ttl: 60000, limit: 5 } }) @ApiOperation({ summary: 'Xác minh OTP' }) async verifyOtp(@Body() dto: VerifyOtpDto) { return this.authService.verifyOtp(dto); }",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "endpoint-event",
+    "file": "apps/api/src/modules/auth/auth.controller.ts",
+    "line": 81,
+    "detail": "@Public() @Post('forgot-password') @HttpCode(HttpStatus.OK) @Throttle({ default: { ttl: 60000, limit: 3 } }) @ApiOperation({ summary: 'Yêu cầu đặt lại mật khẩu — gửi OTP' }) async forgotPassword(@Body() dto: ForgotPasswordDto) { return this.authService.forgotPassword(dto.phone); }",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "endpoint-event",
+    "file": "apps/api/src/modules/auth/auth.controller.ts",
+    "line": 90,
+    "detail": "@Public() @Post('reset-password') @HttpCode(HttpStatus.OK) @Throttle({ default: { ttl: 60000, limit: 3 } }) @ApiOperation({ summary: 'Đặt lại mật khẩu bằng OTP' }) async resetPassword(@Body() dto: ResetPasswordDto) { return this.authService.resetPassword(dto); }",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "endpoint-event",
+    "file": "apps/api/src/modules/auth/auth.controller.ts",
+    "line": 101,
+    "detail": "@UseGuards(JwtAuthGuard) @Get('me') @ApiBearerAuth() @ApiOperation({ summary: 'Kiểm tra token hợp lệ + lấy thông tin user' }) async me(@CurrentUser() user: unknown) { return user; }",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "endpoint-event",
+    "file": "apps/api/src/modules/chat/app.gateway.ts",
+    "line": 125,
+    "detail": "@SubscribeMessage('join:job') async handleJoinJob(@ConnectedSocket() client: Socket, @MessageBody() data: { job_id: string }) { if (!(await this.canAccessJob(client, data?.job_id))) throw new WsException('Forbidden'); client.join(`job:${data.job_id}`); return { event: 'joined', room: `",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "endpoint-event",
+    "file": "apps/api/src/modules/chat/app.gateway.ts",
+    "line": 132,
+    "detail": "@SubscribeMessage('leave:job') handleLeaveJob(@ConnectedSocket() client: Socket, @MessageBody() data: { job_id: string }) { client.leave(`job:${data.job_id}`); }",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "endpoint-event",
+    "file": "apps/api/src/modules/chat/app.gateway.ts",
+    "line": 137,
+    "detail": "@SubscribeMessage('join:conversation') async handleJoinConversation( @ConnectedSocket() client: Socket, @MessageBody() data: { conversation_id: string }, ) { const userId = client.data.userId as string; if (!(await this.chatService.isParticipant(data?.conversation_id, userId))) {",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "endpoint-event",
+    "file": "apps/api/src/modules/chat/app.gateway.ts",
+    "line": 150,
+    "detail": "@SubscribeMessage('leave:conversation') handleLeaveConversation( @ConnectedSocket() client: Socket, @MessageBody() data: { conversation_id: string }, ) { client.leave(`chat:${data?.conversation_id}`); }",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "endpoint-event",
+    "file": "apps/api/src/modules/chat/app.gateway.ts",
+    "line": 160,
+    "detail": "@SubscribeMessage('chat:send') async handleChatMessage( @ConnectedSocket() client: Socket, @MessageBody() data: { conversation_id: string; content: string; type?: string }, ) { const senderId = client.data.userId as string; if (!senderId) throw new WsException('Unauthorized'); ",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "endpoint-event",
+    "file": "apps/api/src/modules/chat/app.gateway.ts",
+    "line": 188,
+    "detail": "@SubscribeMessage('chat:read') async handleReadReceipt( @ConnectedSocket() client: Socket, @MessageBody() data: { conversation_id: string }, ) { const userId = client.data.userId as string; if (!(await this.chatService.isParticipant(data?.conversation_id, userId))) return; aw",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "endpoint-event",
+    "file": "apps/api/src/modules/chat/app.gateway.ts",
+    "line": 204,
+    "detail": "@SubscribeMessage('helper:location') async handleLocationUpdate( @ConnectedSocket() client: Socket, @MessageBody() data: { job_id: string; lat: number; lng: number }, ) { const helperId = client.data.userId as string; if (!(await this.canAccessJob(client, data?.job_id, true))) th",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "endpoint-event",
+    "file": "apps/api/src/modules/chat/chat.controller.ts",
+    "line": 31,
+    "detail": "@Get('conversations') @ApiOperation({ summary: 'Lấy danh sách cuộc trò chuyện của tôi' }) async getMyConversations(@CurrentUser() user: { sub: string }) { return this.chatService.getUserConversations(user.sub); }",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "endpoint-event",
+    "file": "apps/api/src/modules/chat/chat.controller.ts",
+    "line": 37,
+    "detail": "@Get('jobs/:jobId/conversation') @ApiOperation({ summary: 'Lấy conversation theo job' }) async getByJob(@CurrentUser() user: { sub: string }, @Param('jobId') jobId: string) { return this.chatService.getConversationByJob(jobId, user.sub); }",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "endpoint-event",
+    "file": "apps/api/src/modules/chat/chat.controller.ts",
+    "line": 43,
+    "detail": "@Get('conversations/:conversationId/messages') @ApiOperation({ summary: 'Lấy tin nhắn của conversation' }) async getMessages( @CurrentUser() user: { sub: string }, @Param('conversationId') conversationId: string, @Query('page') page?: number, @Query('limit') limit?: number, ) {",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "endpoint-event",
+    "file": "apps/api/src/modules/chat/chat.controller.ts",
+    "line": 59,
+    "detail": "@Post('conversations/:conversationId/messages') @ApiOperation({ summary: 'Gửi tin nhắn (REST fallback)' }) async sendMessage( @CurrentUser() user: { sub: string }, @Param('conversationId') conversationId: string, @Body() dto: SendMessageDto, ) { return this.chatService.sendMess",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "endpoint-event",
+    "file": "apps/api/src/modules/chat/chat.controller.ts",
+    "line": 69,
+    "detail": "@Post('conversations/:conversationId/read') @HttpCode(HttpStatus.OK) @ApiOperation({ summary: 'Đánh dấu đã đọc tất cả tin nhắn' }) async markRead( @CurrentUser() user: { sub: string }, @Param('conversationId') conversationId: string, ) { await this.chatService.markRead(conversati",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "event",
+    "file": "apps/api/src/modules/chat/chat.service.ts",
+    "line": 149,
+    "detail": "this.gateway.emitToConversation(conversationId, SOCKET_EVENTS.CHAT_NEW_MESSAGE, { conversation_id: conversationId, message: populatedMsg, })",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "event",
+    "file": "apps/api/src/modules/chat/chat.service.ts",
+    "line": 156,
+    "detail": "this.gateway.emitToUser(String(pId), SOCKET_EVENTS.CHAT_NEW_MESSAGE, { conversation_id: conversationId, message: populatedMsg, })",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "endpoint-event",
+    "file": "apps/api/src/modules/customers/customers.controller.ts",
+    "line": 27,
+    "detail": "@Get('me/profile') @ApiOperation({ summary: 'Lấy hồ sơ customer của bản thân' }) async getMyProfile(@CurrentUser() user: { sub: string }) { return this.customersService.getProfile(user.sub); }",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "endpoint-event",
+    "file": "apps/api/src/modules/customers/customers.controller.ts",
+    "line": 33,
+    "detail": "@Get('me/addresses') @ApiOperation({ summary: 'Lấy danh sách địa chỉ' }) async getAddresses(@CurrentUser() user: { sub: string }) { const profile = await this.customersService.getProfile(user.sub); return profile.addresses; }",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "endpoint-event",
+    "file": "apps/api/src/modules/customers/customers.controller.ts",
+    "line": 40,
+    "detail": "@Post('me/addresses') @ApiOperation({ summary: 'Thêm địa chỉ mới' }) async addAddress(@CurrentUser() user: { sub: string }, @Body() dto: CreateAddressDto) { return this.customersService.addAddress(user.sub, dto); }",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "endpoint-event",
+    "file": "apps/api/src/modules/customers/customers.controller.ts",
+    "line": 46,
+    "detail": "@Put('me/addresses/:index') @ApiOperation({ summary: 'Cập nhật địa chỉ theo index' }) async updateAddress( @CurrentUser() user: { sub: string }, @Param('index', ParseIntPipe) index: number, @Body() dto: CreateAddressDto, ) { return this.customersService.updateAddress(user.sub, ",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "endpoint-event",
+    "file": "apps/api/src/modules/customers/customers.controller.ts",
+    "line": 56,
+    "detail": "@Delete('me/addresses/:index') @HttpCode(HttpStatus.NO_CONTENT) @ApiOperation({ summary: 'Xóa địa chỉ theo index' }) async deleteAddress( @CurrentUser() user: { sub: string }, @Param('index', ParseIntPipe) index: number, ) { await this.customersService.deleteAddress(user.sub, ind",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "endpoint-event",
+    "file": "apps/api/src/modules/customers/customers.controller.ts",
+    "line": 66,
+    "detail": "@Put('me/addresses/:index/default') @ApiOperation({ summary: 'Đặt địa chỉ mặc định' }) async setDefault( @CurrentUser() user: { sub: string }, @Param('index', ParseIntPipe) index: number, ) { return this.customersService.setDefaultAddress(user.sub, index); }",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "endpoint-event",
+    "file": "apps/api/src/modules/feedback/feedback.module.ts",
+    "line": 67,
+    "detail": "@Post() create(@CurrentUser() user: { sub: string }, @Body() dto: CreateFeedbackDto) { return this.service.create(user.sub, dto); }",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "endpoint-event",
+    "file": "apps/api/src/modules/feedback/feedback.module.ts",
+    "line": 70,
+    "detail": "@Get('my') mine(@CurrentUser() user: { sub: string }) { return this.service.list(user.sub); }",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "endpoint-event",
+    "file": "apps/api/src/modules/feedback/feedback.module.ts",
+    "line": 73,
+    "detail": "@Get('admin') @UseGuards(RolesGuard) @Roles(UserRole.ADMIN) all() { return this.service.list(); }",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "endpoint-event",
+    "file": "apps/api/src/modules/feedback/feedback.module.ts",
+    "line": 79,
+    "detail": "@Patch(':id/status') @UseGuards(RolesGuard) @Roles(UserRole.ADMIN) update(@Param('id') id: string, @Body() dto: UpdateFeedbackDto) { return this.service.update(id, dto.status); }",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "endpoint-event",
+    "file": "apps/api/src/modules/helpers/helpers.controller.ts",
+    "line": 35,
+    "detail": "@Get('me/profile') @ApiOperation({ summary: 'Lấy hồ sơ helper của bản thân' }) async getMyProfile(@CurrentUser() user: { sub: string }) { return this.helpersService.getProfile(user.sub); }",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "endpoint-event",
+    "file": "apps/api/src/modules/helpers/helpers.controller.ts",
+    "line": 41,
+    "detail": "@Patch('me/profile') @ApiOperation({ summary: 'Cập nhật hồ sơ helper' }) async updateProfile(@CurrentUser() user: { sub: string }, @Body() dto: UpdateHelperProfileDto) { return this.helpersService.updateProfile(user.sub, dto); }",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "endpoint-event",
+    "file": "apps/api/src/modules/helpers/helpers.controller.ts",
+    "line": 47,
+    "detail": "@Patch('me/status') @HttpCode(HttpStatus.OK) @ApiOperation({ summary: 'Bật/tắt trạng thái nhận việc (ONLINE/OFFLINE)' }) async setStatus(@CurrentUser() user: { sub: string }, @Body() dto: SetHelperStatusDto) { return this.helpersService.setStatus(user.sub, dto); }",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "endpoint-event",
+    "file": "apps/api/src/modules/helpers/helpers.controller.ts",
+    "line": 54,
+    "detail": "@Post('me/kyc') @ApiOperation({ summary: 'Nộp hồ sơ KYC (CCCD + selfie)' }) async submitKyc(@CurrentUser() user: { sub: string }, @Body() dto: SubmitKycDto) { return this.helpersService.submitKyc(user.sub, dto); }",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "endpoint-event",
+    "file": "apps/api/src/modules/helpers/helpers.controller.ts",
+    "line": 60,
+    "detail": "@Patch('me/location') @HttpCode(HttpStatus.NO_CONTENT) @ApiOperation({ summary: 'Cập nhật vị trí GPS realtime' }) async updateLocation(@CurrentUser() user: { sub: string }, @Body() dto: UpdateLocationDto) { await this.helpersService.updateLocation(user.sub, dto); }",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "endpoint-event",
+    "file": "apps/api/src/modules/helpers/helpers.controller.ts",
+    "line": 67,
+    "detail": "@Put('me/bank-account') @ApiOperation({ summary: 'Cập nhật tài khoản ngân hàng' }) async updateBankAccount(@CurrentUser() user: { sub: string }, @Body() dto: BankAccountDto) { return this.helpersService.updateBankAccount(user.sub, dto); }",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "endpoint-event",
+    "file": "apps/api/src/modules/helpers/helpers.controller.ts",
+    "line": 75,
+    "detail": "@Get(':userId/profile') @ApiOperation({ summary: 'Xem hồ sơ công khai của helper' }) async getPublicProfile(@Param('userId') userId: string) { return this.helpersService.getPublicProfile(userId); }",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "endpoint-event",
+    "file": "apps/api/src/modules/helpers/helpers.controller.ts",
+    "line": 83,
+    "detail": "@Get('nearby') @ApiOperation({ summary: 'Tìm helpers gần vị trí (cho customer)' }) @ApiQuery({ name: 'lng', type: Number, example: 106.6297 }) @ApiQuery({ name: 'lat', type: Number, example: 10.8231 }) @ApiQuery({ name: 'radius', type: Number, example: 10, description: 'km' }) @ApiQuery({ ",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "event",
+    "file": "apps/api/src/modules/helpers/helpers.service.ts",
+    "line": 96,
+    "detail": "this.gateway.emitToUser(userId, 'helper:status_changed', { helper_id: userId, status: dto.status, })",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "endpoint-event",
+    "file": "apps/api/src/modules/jobs/jobs.controller.ts",
+    "line": 37,
+    "detail": "@Post() @ApiOperation({ summary: '[Customer] Đăng yêu cầu công việc' }) async createJob(@CurrentUser() user: { sub: string }, @Body() dto: CreateJobDto) { return this.jobsService.createJob(user.sub, dto); }",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "endpoint-event",
+    "file": "apps/api/src/modules/jobs/jobs.controller.ts",
+    "line": 45,
+    "detail": "@Post('sos') @ApiOperation({ summary: '[Customer] Đăng yêu cầu cứu hộ khẩn cấp SOS' }) async createSosJob(@CurrentUser() user: { sub: string }, @Body() dto: CreateSosJobDto) { return this.jobsService.createSosJob(user.sub, dto); }",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "endpoint-event",
+    "file": "apps/api/src/modules/jobs/jobs.controller.ts",
+    "line": 53,
+    "detail": "@Post(':id/sos-accept') @HttpCode(HttpStatus.OK) @ApiOperation({ summary: '[Helper] Nhận cứu hộ khẩn cấp SOS ngay lập tức' }) async acceptSosJob(@CurrentUser() user: { sub: string }, @Param('id') id: string) { return this.jobsService.acceptSosJob(user.sub, id); }",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "endpoint-event",
+    "file": "apps/api/src/modules/jobs/jobs.controller.ts",
+    "line": 62,
+    "detail": "@Get('my') @ApiOperation({ summary: '[Customer] Lấy danh sách job của tôi' }) @ApiQuery({ name: 'status', required: false }) async getMyJobs(@CurrentUser() user: { sub: string }, @Query('status') status?: string) { return this.jobsService.getCustomerJobs(user.sub, status); }",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "endpoint-event",
+    "file": "apps/api/src/modules/jobs/jobs.controller.ts",
+    "line": 71,
+    "detail": "@Get('available') @ApiOperation({ summary: '[Helper] Xem danh sách job có thể nhận' }) @ApiQuery({ name: 'service_id', required: false }) @ApiQuery({ name: 'page', required: false, type: Number }) @ApiQuery({ name: 'limit', required: false, type: Number }) async getAvailableJobs( @Curr",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "endpoint-event",
+    "file": "apps/api/src/modules/jobs/jobs.controller.ts",
+    "line": 93,
+    "detail": "@Get('helper/my') @ApiOperation({ summary: '[Helper] Xem lịch sử công việc của tôi' }) @ApiQuery({ name: 'status', required: false }) async getHelperJobs(@CurrentUser() user: { sub: string }, @Query('status') status?: string) { return this.jobsService.getHelperJobs(user.sub, status); }",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "endpoint-event",
+    "file": "apps/api/src/modules/jobs/jobs.controller.ts",
+    "line": 102,
+    "detail": "@Get(':jobId') @ApiOperation({ summary: 'Xem chi tiết job' }) async getJob( @Param('jobId') jobId: string, @CurrentUser() user: { sub: string; roles: string[] }, ) { return this.jobsService.getJobForUser(jobId, user.sub, user.roles ?? []); }",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "endpoint-event",
+    "file": "apps/api/src/modules/jobs/jobs.controller.ts",
+    "line": 111,
+    "detail": "@Patch(':jobId') @ApiOperation({ summary: 'Cập nhật thông tin & vị trí job (khách hàng)' }) async updateJob( @CurrentUser() user: { sub: string }, @Param('jobId') jobId: string, @Body() dto: UpdateJobDto, ) { return this.jobsService.updateJob(user.sub, jobId, dto); }",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "endpoint-event",
+    "file": "apps/api/src/modules/jobs/jobs.controller.ts",
+    "line": 123,
+    "detail": "@Get(':jobId/quotes') @ApiOperation({ summary: 'Xem danh sách báo giá của job' }) async getQuotes( @Param('jobId') jobId: string, @CurrentUser() user: { sub: string; active_role: string }, ) { return this.jobsService.getJobQuotes(jobId, user.sub, user.active_role); }",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "endpoint-event",
+    "file": "apps/api/src/modules/jobs/jobs.controller.ts",
+    "line": 134,
+    "detail": "@Post(':jobId/quotes') @ApiOperation({ summary: '[Helper] Gửi báo giá cho job' }) async submitQuote( @CurrentUser() user: { sub: string }, @Param('jobId') jobId: string, @Body() dto: CreateQuoteDto, ) { return this.jobsService.submitQuote(user.sub, jobId, dto); }",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "endpoint-event",
+    "file": "apps/api/src/modules/jobs/jobs.controller.ts",
+    "line": 146,
+    "detail": "@Post(':jobId/select-quote') @HttpCode(HttpStatus.OK) @ApiOperation({ summary: '[Customer] Chọn báo giá → tạo hợp đồng số' }) async selectQuote( @CurrentUser() user: { sub: string }, @Param('jobId') jobId: string, @Body() dto: SelectQuoteDto, ) { return this.jobsService.selec",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "endpoint-event",
+    "file": "apps/api/src/modules/jobs/jobs.controller.ts",
+    "line": 159,
+    "detail": "@Get(':jobId/contract') @ApiOperation({ summary: 'Xem hợp đồng số của job' }) async getContract(@CurrentUser() user: { sub: string }, @Param('jobId') jobId: string) { return this.jobsService.getContract(jobId, user.sub); }",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "endpoint-event",
+    "file": "apps/api/src/modules/jobs/jobs.controller.ts",
+    "line": 167,
+    "detail": "@Patch(':jobId/on-the-way') @HttpCode(HttpStatus.OK) @ApiOperation({ summary: '[Helper] Xác nhận đang trên đường đến' }) async onTheWay(@CurrentUser() user: { sub: string }, @Param('jobId') jobId: string) { return this.jobsService.helperOnTheWay(user.sub, jobId); }",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "endpoint-event",
+    "file": "apps/api/src/modules/jobs/jobs.controller.ts",
+    "line": 174,
+    "detail": "@Patch(':jobId/arrived') @HttpCode(HttpStatus.OK) @ApiOperation({ summary: '[Helper] Xác nhận đã đến nơi' }) async arrived(@CurrentUser() user: { sub: string }, @Param('jobId') jobId: string) { return this.jobsService.helperArrived(user.sub, jobId); }",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "endpoint-event",
+    "file": "apps/api/src/modules/jobs/jobs.controller.ts",
+    "line": 181,
+    "detail": "@Patch(':jobId/start') @HttpCode(HttpStatus.OK) @ApiOperation({ summary: '[Helper] Bắt đầu làm việc' }) async startJob(@CurrentUser() user: { sub: string }, @Param('jobId') jobId: string) { return this.jobsService.startJob(user.sub, jobId); }",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "endpoint-event",
+    "file": "apps/api/src/modules/jobs/jobs.controller.ts",
+    "line": 188,
+    "detail": "@Patch(':jobId/complete') @HttpCode(HttpStatus.OK) @ApiOperation({ summary: '[Helper] Hoàn thành công việc + upload ảnh' }) async completeJob( @CurrentUser() user: { sub: string }, @Param('jobId') jobId: string, @Body() dto: CompleteJobDto, ) { return this.jobsService.complet",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "endpoint-event",
+    "file": "apps/api/src/modules/jobs/jobs.controller.ts",
+    "line": 201,
+    "detail": "@Patch(':jobId/approve') @HttpCode(HttpStatus.OK) @ApiOperation({ summary: '[Customer] Nghiệm thu + đánh giá helper' }) async approveCompletion( @CurrentUser() user: { sub: string }, @Param('jobId') jobId: string, @Body() dto: ReviewJobDto, ) { return this.jobsService.approve",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "endpoint-event",
+    "file": "apps/api/src/modules/jobs/jobs.controller.ts",
+    "line": 214,
+    "detail": "@Patch(':jobId/cancel') @HttpCode(HttpStatus.OK) @ApiOperation({ summary: 'Hủy job' }) async cancelJob( @CurrentUser() user: { sub: string; active_role: string }, @Param('jobId') jobId: string, @Body() dto: CancelJobDto, ) { return this.jobsService.cancelJob(user.sub, user.ac",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "event",
+    "file": "apps/api/src/modules/jobs/jobs.service.ts",
+    "line": 139,
+    "detail": "this.gateway.emitToJob(String(job._id), SOCKET_EVENTS.JOB_STATUS_CHANGED, payload)",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "event",
+    "file": "apps/api/src/modules/jobs/jobs.service.ts",
+    "line": 141,
+    "detail": "this.gateway.emitToUser(String(job.customer_id), SOCKET_EVENTS.JOB_STATUS_CHANGED, payload)",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "event",
+    "file": "apps/api/src/modules/jobs/jobs.service.ts",
+    "line": 144,
+    "detail": "this.gateway.emitToUser(String(job.helper_id), SOCKET_EVENTS.JOB_STATUS_CHANGED, payload)",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "event",
+    "file": "apps/api/src/modules/jobs/jobs.service.ts",
+    "line": 191,
+    "detail": "this.gateway.emitToUser(customerId, SOCKET_EVENTS.JOB_CREATED, { job_id: String(job._id), status: job.status, })",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "event",
+    "file": "apps/api/src/modules/jobs/jobs.service.ts",
+    "line": 348,
+    "detail": "this.gateway.emitToUser( String(helper.user_id), SOCKET_EVENTS.SOS_BROADCAST, broadcastPayload, )",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "event",
+    "file": "apps/api/src/modules/jobs/jobs.service.ts",
+    "line": 366,
+    "detail": "this.gateway.emitToUser(customerId, SOCKET_EVENTS.JOB_CREATED, { job_id: String(job._id), is_sos: true, status: job.status, })",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "event",
+    "file": "apps/api/src/modules/jobs/jobs.service.ts",
+    "line": 517,
+    "detail": "this.gateway.emitToJob(jobId, SOCKET_EVENTS.SOS_ACCEPTED, payload)",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "event",
+    "file": "apps/api/src/modules/jobs/jobs.service.ts",
+    "line": 518,
+    "detail": "this.gateway.emitToUser(String(job.customer_id), SOCKET_EVENTS.SOS_ACCEPTED, payload)",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "event",
+    "file": "apps/api/src/modules/jobs/jobs.service.ts",
+    "line": 519,
+    "detail": "this.gateway.emitToUser(String(job.customer_id), SOCKET_EVENTS.JOB_STATUS_CHANGED, { job_id: jobId, status: JobStatus.CONFIRMED, })",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "event",
+    "file": "apps/api/src/modules/jobs/jobs.service.ts",
+    "line": 729,
+    "detail": "this.gateway.emitToUser(String(job.customer_id), SOCKET_EVENTS.QUOTE_RECEIVED, quotePayload)",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "event",
+    "file": "apps/api/src/modules/jobs/jobs.service.ts",
+    "line": 950,
+    "detail": "this.gateway.emitToUser(helperId, SOCKET_EVENTS.QUOTE_ACCEPTED, { job_id: jobId, quote_id: dto.quote_id, contract_id: String(contract._id), })",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "event",
+    "file": "apps/api/src/modules/jobs/jobs.service.ts",
+    "line": 975,
+    "detail": "this.gateway.emitToUser(String(job.customer_id), SOCKET_EVENTS.HELPER_ON_THE_WAY, { job_id: jobId, helper_id: helperId, })",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "event",
+    "file": "apps/api/src/modules/jobs/jobs.service.ts",
+    "line": 1004,
+    "detail": "this.gateway.emitToUser(String(job.customer_id), SOCKET_EVENTS.HELPER_ARRIVED, { job_id: jobId, helper_id: helperId, })",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "event",
+    "file": "apps/api/src/modules/jobs/jobs.service.ts",
+    "line": 1033,
+    "detail": "this.gateway.emitToJob(jobId, SOCKET_EVENTS.JOB_STARTED, { job_id: jobId, started_at: new Date().toISOString(), })",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "event",
+    "file": "apps/api/src/modules/jobs/jobs.service.ts",
+    "line": 1067,
+    "detail": "this.gateway.emitToJob(jobId, SOCKET_EVENTS.JOB_COMPLETION_UPLOADED, { job_id: jobId, completion_photos: dto.completion_photos ?? [], completion_videos: dto.completion_videos ?? [], completion_notes: dto.completion_notes, })",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "event",
+    "file": "apps/api/src/modules/jobs/jobs.service.ts",
+    "line": 1155,
+    "detail": "this.gateway.emitToJob(jobId, SOCKET_EVENTS.JOB_COMPLETED, { job_id: jobId, completed_at: new Date().toISOString(), })",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "event",
+    "file": "apps/api/src/modules/jobs/jobs.service.ts",
+    "line": 1160,
+    "detail": "this.gateway.emitToUser(String(job.helper_id), SOCKET_EVENTS.JOB_COMPLETED, { job_id: jobId, })",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "event",
+    "file": "apps/api/src/modules/jobs/jobs.service.ts",
+    "line": 1224,
+    "detail": "this.gateway.emitToJob(jobId, SOCKET_EVENTS.JOB_CANCELLED, { job_id: jobId, cancelled_by: actorRole, reason: dto.reason, })",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "endpoint-event",
+    "file": "apps/api/src/modules/matching/matching.controller.ts",
+    "line": 16,
+    "detail": "@Post('batch') @UseGuards(RolesGuard) @Roles(UserRole.ADMIN) @ApiOperation({ summary: '[Admin/System] Khớp đơn tối ưu toàn cục bằng thuật toán Hungarian (Hungarian Algorithm)', description: 'Giải bài toán phân bổ tối ưu N Thợ <-> M Đơn hàng trong O(N^3), tối đa hóa tổng lợi",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "endpoint-event",
+    "file": "apps/api/src/modules/matching/matching.controller.ts",
+    "line": 29,
+    "detail": "@Get('jobs/:jobId/optimal-helpers') @ApiOperation({ summary: 'Tìm và xếp hạng thợ tối ưu nhất cho 1 công việc', description: 'Tính toán điểm tương thích đa tiêu chí: Khoảng cách, chuyên môn, số sao rating và e-KYC.', }) @ApiQuery({ name: 'limit', required: false, type: Number }) ",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "endpoint-event",
+    "file": "apps/api/src/modules/notifications/notifications.controller.ts",
+    "line": 14,
+    "detail": "@Get() @ApiOperation({ summary: 'Lấy thông báo của tôi' }) @ApiQuery({ name: 'unread_only', required: false, type: Boolean }) async getMyNotifications( @CurrentUser() user: { sub: string }, @Query('unread_only') unreadOnly?: string, ) { return this.notificationsService.getForUser",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "endpoint-event",
+    "file": "apps/api/src/modules/notifications/notifications.controller.ts",
+    "line": 24,
+    "detail": "@Get('unread-count') @ApiOperation({ summary: 'Đếm số thông báo chưa đọc' }) async getUnreadCount(@CurrentUser() user: { sub: string }) { const count = await this.notificationsService.getUnreadCount(user.sub); return { count }; }",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "endpoint-event",
+    "file": "apps/api/src/modules/notifications/notifications.controller.ts",
+    "line": 31,
+    "detail": "@Patch(':id/read') @ApiOperation({ summary: 'Đánh dấu thông báo đã đọc' }) async markRead(@CurrentUser() user: { sub: string }, @Param('id') id: string) { return this.notificationsService.markRead(user.sub, id); }",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "endpoint-event",
+    "file": "apps/api/src/modules/notifications/notifications.controller.ts",
+    "line": 37,
+    "detail": "@Patch('read-all') @ApiOperation({ summary: 'Đánh dấu tất cả đã đọc' }) async markAllRead(@CurrentUser() user: { sub: string }) { await this.notificationsService.markAllRead(user.sub); return { message: 'Đã đánh dấu tất cả là đã đọc' }; }",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "event",
+    "file": "apps/api/src/modules/notifications/notifications.service.ts",
+    "line": 34,
+    "detail": "this.gateway.emitToUser(data.userId, SOCKET_EVENTS.NOTIFICATION_NEW, { _id: String(notification._id), type: notification.type, title: notification.title, body: notification.body, data: notification.data, is_read: false, created_at: notification.created_at, })",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "endpoint-event",
+    "file": "apps/api/src/modules/payments/payments.controller.ts",
+    "line": 31,
+    "detail": "@Get('wallet') @ApiOperation({ summary: 'Xem số dư ví' }) async getWallet(@CurrentUser() user: { sub: string }) { return this.paymentsService.getWallet(user.sub); }",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "endpoint-event",
+    "file": "apps/api/src/modules/payments/payments.controller.ts",
+    "line": 39,
+    "detail": "@Get('transactions') @ApiOperation({ summary: 'Lịch sử giao dịch của tôi' }) @ApiQuery({ name: 'page', required: false, type: Number }) @ApiQuery({ name: 'limit', required: false, type: Number }) async getTransactions( @CurrentUser() user: { sub: string }, @Query('page') page?: numbe",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "endpoint-event",
+    "file": "apps/api/src/modules/payments/payments.controller.ts",
+    "line": 53,
+    "detail": "@Post('pay') @HttpCode(HttpStatus.OK) @ApiOperation({ summary: '[Mock] Thanh toán cho job (dev only)' }) async mockPayJob(@CurrentUser() user: { sub: string }, @Body() dto: MockPayJobDto) { // In production: integrate real payment gateway (VNPay, MoMo, ZaloPay) // For MVP/dev: mock suc",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "endpoint-event",
+    "file": "apps/api/src/modules/payments/payments.controller.ts",
+    "line": 64,
+    "detail": "@Post('withdraw') @ApiOperation({ summary: '[Helper] Yêu cầu rút tiền' }) async requestWithdrawal(@CurrentUser() user: { sub: string }, @Body() dto: RequestWithdrawalDto) { return this.paymentsService.requestWithdrawal(user.sub, dto.amount, dto.bank_account); }",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "endpoint-event",
+    "file": "apps/api/src/modules/payments/payments.controller.ts",
+    "line": 70,
+    "detail": "@Get('withdrawals') @ApiOperation({ summary: '[Helper] Lịch sử rút tiền của tôi' }) async getWithdrawals(@CurrentUser() user: { sub: string }) { return this.paymentsService.getWithdrawals(user.sub); }",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "endpoint-event",
+    "file": "apps/api/src/modules/payments/payments.controller.ts",
+    "line": 78,
+    "detail": "@Get('admin/withdrawals') @UseGuards(RolesGuard) @Roles(UserRole.ADMIN) @ApiOperation({ summary: '[Admin] Danh sách yêu cầu rút tiền' }) @ApiQuery({ name: 'status', required: false, enum: ['pending', 'completed', 'rejected'] }) @ApiQuery({ name: 'page', required: false, type: Number }) @",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "endpoint-event",
+    "file": "apps/api/src/modules/payments/payments.controller.ts",
+    "line": 93,
+    "detail": "@Patch('admin/withdrawals/:id') @UseGuards(RolesGuard) @Roles(UserRole.ADMIN) @ApiOperation({ summary: '[Admin] Duyệt / từ chối yêu cầu rút tiền' }) async processWithdrawal( @CurrentUser() user: { sub: string }, @Param('id') id: string, @Body() dto: ProcessWithdrawalDto, ) { ",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "endpoint-event",
+    "file": "apps/api/src/modules/payments/payments.controller.ts",
+    "line": 107,
+    "detail": "@Get('admin/transactions') @UseGuards(RolesGuard) @Roles(UserRole.ADMIN) @ApiOperation({ summary: '[Admin] Tất cả giao dịch' }) @ApiQuery({ name: 'type', required: false, enum: ['payment', 'earning', 'withdrawal', 'refund'] }) @ApiQuery({ name: 'page', required: false, type: Number }) @A",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "endpoint-event",
+    "file": "apps/api/src/modules/reviews/reviews.controller.ts",
+    "line": 20,
+    "detail": "@Post() @ApiOperation({ summary: '[Customer] Đánh giá công việc đã hoàn thành' }) async createReview(@CurrentUser() user: { sub: string }, @Body() dto: CreateReviewDto) { return this.reviewsService.createReview(user.sub, dto); }",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "endpoint-event",
+    "file": "apps/api/src/modules/reviews/reviews.controller.ts",
+    "line": 28,
+    "detail": "@Patch(':id/reply') @ApiOperation({ summary: '[Helper] Phản hồi đánh giá' }) async replyToReview( @CurrentUser() user: { sub: string }, @Param('id') id: string, @Body() dto: HelperReplyDto, ) { return this.reviewsService.replyToReview(user.sub, id, dto); }",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "endpoint-event",
+    "file": "apps/api/src/modules/reviews/reviews.controller.ts",
+    "line": 40,
+    "detail": "@Get('helpers/:helperId') @ApiOperation({ summary: 'Lấy danh sách đánh giá của một helper' }) @ApiQuery({ name: 'page', required: false, type: Number }) @ApiQuery({ name: 'limit', required: false, type: Number }) async getHelperReviews( @Param('helperId') helperId: string, @Query('pa",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "endpoint-event",
+    "file": "apps/api/src/modules/reviews/reviews.controller.ts",
+    "line": 54,
+    "detail": "@Get('helpers/:helperId/stats') @ApiOperation({ summary: 'Thống kê rating của helper' }) async getHelperStats(@Param('helperId') helperId: string) { return this.reviewsService.getHelperRatingStats(helperId); }",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "endpoint-event",
+    "file": "apps/api/src/modules/reviews/reviews.controller.ts",
+    "line": 62,
+    "detail": "@Get('jobs/:jobId') @ApiOperation({ summary: 'Lấy đánh giá của một công việc' }) async getReviewByJob(@Param('jobId') jobId: string) { return this.reviewsService.getReviewByJob(jobId); }",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "endpoint-event",
+    "file": "apps/api/src/modules/reviews/reviews.controller.ts",
+    "line": 70,
+    "detail": "@Get('my') @ApiOperation({ summary: '[Customer] Đánh giá tôi đã viết' }) @ApiQuery({ name: 'page', required: false, type: Number }) @ApiQuery({ name: 'limit', required: false, type: Number }) async getMyReviews( @CurrentUser() user: { sub: string }, @Query('page') page?: number, ",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "endpoint-event",
+    "file": "apps/api/src/modules/reviews/reviews.controller.ts",
+    "line": 84,
+    "detail": "@Get('admin/all') @UseGuards(RolesGuard) @Roles(UserRole.ADMIN) @ApiOperation({ summary: '[Admin] Tất cả đánh giá trong hệ thống' }) @ApiQuery({ name: 'min_rating', required: false, type: Number }) @ApiQuery({ name: 'max_rating', required: false, type: Number }) @ApiQuery({ name: 'page',",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "endpoint-event",
+    "file": "apps/api/src/modules/services/services.controller.ts",
+    "line": 36,
+    "detail": "@Public() @Get('categories') @ApiOperation({ summary: 'Lấy danh sách danh mục dịch vụ' }) async getCategories() { return this.servicesService.getAllCategories(); }",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "endpoint-event",
+    "file": "apps/api/src/modules/services/services.controller.ts",
+    "line": 43,
+    "detail": "@Public() @Get() @ApiOperation({ summary: 'Lấy danh sách dịch vụ' }) @ApiQuery({ name: 'category_id', required: false }) @ApiQuery({ name: 'include_inactive', required: false, type: Boolean }) async getAll( @Query('category_id') categoryId?: string, @Query('include_inactive') inclu",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "endpoint-event",
+    "file": "apps/api/src/modules/services/services.controller.ts",
+    "line": 55,
+    "detail": "@Public() @Get(':id') @ApiOperation({ summary: 'Lấy chi tiết dịch vụ theo ID' }) async getById(@Param('id') id: string) { return this.servicesService.getById(id); }",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "endpoint-event",
+    "file": "apps/api/src/modules/services/services.controller.ts",
+    "line": 66,
+    "detail": "@ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Roles(UserRole.ADMIN) @Post('categories') @ApiOperation({ summary: '[Admin] Tạo danh mục dịch vụ' }) async createCategory(@Body() dto: CreateServiceCategoryDto) { return this.servicesService.createCategory(dto); }",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "endpoint-event",
+    "file": "apps/api/src/modules/services/services.controller.ts",
+    "line": 75,
+    "detail": "@ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Roles(UserRole.ADMIN) @Post() @ApiOperation({ summary: '[Admin] Tạo dịch vụ mới' }) async create(@Body() dto: CreateServiceDto) { return this.servicesService.create(dto); }",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "endpoint-event",
+    "file": "apps/api/src/modules/services/services.controller.ts",
+    "line": 84,
+    "detail": "@ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Roles(UserRole.ADMIN) @Put(':id') @ApiOperation({ summary: '[Admin] Cập nhật dịch vụ' }) async update(@Param('id') id: string, @Body() dto: UpdateServiceDto) { return this.servicesService.update(id, dto); }",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "endpoint-event",
+    "file": "apps/api/src/modules/services/services.controller.ts",
+    "line": 93,
+    "detail": "@ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Roles(UserRole.ADMIN) @Patch(':id/status') @HttpCode(HttpStatus.OK) @ApiOperation({ summary: '[Admin] Bật/tắt dịch vụ' }) async updateStatus(@Param('id') id: string, @Body() dto: UpdateServiceStatusDto) { return this.servicesServ",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "endpoint-event",
+    "file": "apps/api/src/modules/uploads/uploads.controller.ts",
+    "line": 51,
+    "detail": "@Post() @ApiOperation({ summary: 'Upload ảnh/video (field \"file\"), trả về URL công khai' }) @ApiConsumes('multipart/form-data') @ApiBody({ schema: { type: 'object', properties: { file: { type: 'string', format: 'binary' } } }, }) @UseInterceptors( FileInterceptor('file', { st",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "endpoint-event",
+    "file": "apps/api/src/modules/users/users.controller.ts",
+    "line": 25,
+    "detail": "@Get('me') @ApiOperation({ summary: 'Lấy thông tin bản thân' }) async getMe(@CurrentUser() user: { sub: string }) { return this.usersService.findById(user.sub); }",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "endpoint-event",
+    "file": "apps/api/src/modules/users/users.controller.ts",
+    "line": 31,
+    "detail": "@Patch('me') @ApiOperation({ summary: 'Cập nhật thông tin bản thân' }) async updateMe(@CurrentUser() user: { sub: string }, @Body() dto: UpdateUserDto) { return this.usersService.update(user.sub, dto); }",
+    "status": "NOT_RUN"
+  },
+  {
+    "role": "shared",
+    "kind": "endpoint-event",
+    "file": "apps/api/src/modules/users/users.controller.ts",
+    "line": 37,
+    "detail": "@Patch('me/role') @HttpCode(HttpStatus.OK) @ApiOperation({ summary: 'Chuyển đổi role (customer ↔ helper)' }) async switchRole(@CurrentUser() user: { sub: string }, @Body() dto: UpdateRoleDto) { return this.usersService.switchRole(user.sub, dto.active_role as UserRole); }",
+    "status": "NOT_RUN"
+  }
+]

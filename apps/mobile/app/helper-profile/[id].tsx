@@ -33,6 +33,7 @@ dayjs.locale('vi');
 export default function HelperPublicProfileScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
 
   const { user } = useAuthStore();
   const { data: profile, isLoading: pLoading, refetch } = useHelperPublicProfile(id);
@@ -40,7 +41,7 @@ export default function HelperPublicProfileScreen() {
 
   const handleBack = () => {
     if (router.canGoBack()) {
-      router.back();
+      return router.back();
     }
     router.replace(user?.active_role === 'helper' ? '/(helper)/dashboard' : '/(customer)/home');
   };
@@ -56,7 +57,6 @@ export default function HelperPublicProfileScreen() {
   const isVerified = profile?.verification_status === 'approved';
 
   const reviewsList = reviewsData?.reviews || [];
-  const insets = useSafeAreaInsets();
 
   return (
     <View style={{ flex: 1, backgroundColor: '#F8F9FA' }}>

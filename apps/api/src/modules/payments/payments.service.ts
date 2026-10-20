@@ -3,9 +3,10 @@ import {
   NotFoundException,
   BadRequestException,
   ConflictException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
+import { Model, Types, ClientSession } from 'mongoose';
 import {
   Wallet,
   WalletDocument,
@@ -31,12 +32,12 @@ export class PaymentsService {
 
   // ─── Wallet ───────────────────────────────────────────────────────────────
 
-  async getOrCreateWallet(userId: string): Promise<WalletDocument> {
+  async getOrCreateWallet(userId: string, session?: ClientSession): Promise<WalletDocument> {
     const wallet = await this.walletModel
       .findOneAndUpdate(
         { user_id: new Types.ObjectId(userId) },
         { $setOnInsert: { user_id: new Types.ObjectId(userId) } },
-        { upsert: true, new: true },
+        { upsert: true, new: true, session },
       )
       .exec();
     return wallet!;
@@ -55,6 +56,10 @@ export class PaymentsService {
     amount: number,
     paymentMethod: string,
   ): Promise<{ transaction: TransactionDocument; success: boolean }> {
+    if (process.env.NODE_ENV === 'production')
+      throw new ForbiddenException(
+        'Thanh toán thử nghiệm không khả dụng trên môi trường phát hành',
+      );
     const wallet = await this.getOrCreateWallet(customerId);
 
     // Simulate payment — always succeeds in dev
@@ -81,29 +86,36 @@ export class PaymentsService {
     helperId: string,
     jobId: string,
     amount: number,
+    session?: ClientSession,
   ): Promise<TransactionDocument> {
-    const wallet = await this.getOrCreateWallet(helperId);
-    const balanceBefore = wallet.balance;
-    const balanceAfter = balanceBefore + amount;
-
-    // Atomic update
-    await this.walletModel
-      .findByIdAndUpdate(wallet._id, {
-        $inc: { balance: amount, total_earned: amount },
-      })
-      .exec();
-
-    return this.transactionModel.create({
-      wallet_id: wallet._id,
+    if (!Number.isFinite(amount) || amount <= 0)
+      throw new BadRequestException('Số tiền không hợp lệ');
+    if (!session)
+      return this.walletModel.db.transaction(s => this.creditHelper(helperId, jobId, amount, s));
+    const key = {
       user_id: new Types.ObjectId(helperId),
       job_id: new Types.ObjectId(jobId),
       type: 'earning',
+    };
+    const previous = await this.transactionModel.findOne(key).session(session).exec();
+    if (previous) return previous;
+    const wallet = await this.getOrCreateWallet(helperId, session);
+    const updated = await this.walletModel
+      .findByIdAndUpdate(
+        wallet._id,
+        { $inc: { balance: amount, total_earned: amount } },
+        { new: true, session },
+      )
+      .exec();
+    return new this.transactionModel({
+      ...key,
+      wallet_id: wallet._id,
       status: 'success',
       amount,
-      balance_before: balanceBefore,
-      balance_after: balanceAfter,
+      balance_before: updated!.balance - amount,
+      balance_after: updated!.balance,
       description: `Thu nhập từ công việc #${jobId.slice(-6)}`,
-    });
+    }).save({ session });
   }
 
   // ─── Transactions ─────────────────────────────────────────────────────────
@@ -129,60 +141,69 @@ export class PaymentsService {
     amount: number,
     bankAccount?: BankAccountInfoDto,
   ): Promise<WithdrawalDocument> {
-    const pending = await this.withdrawalModel
-      .findOne({ user_id: new Types.ObjectId(helperId), status: 'pending' })
-      .exec();
-    if (pending) throw new ConflictException('Bạn đã có yêu cầu rút tiền đang chờ xử lý');
+    if (!Number.isInteger(amount) || amount < 50000 || amount > 500_000_000)
+      throw new BadRequestException('Số tiền rút phải là số nguyên từ 50.000 đến 500.000.000 đồng');
+    return this.walletModel.db.transaction(async session => {
+      const pending = await this.withdrawalModel
+        .findOne({ user_id: new Types.ObjectId(helperId), status: 'pending' })
+        .session(session)
+        .exec();
+      if (pending) throw new ConflictException('Bạn đã có yêu cầu rút tiền đang chờ xử lý');
 
-    const resolvedBankAccount =
-      bankAccount ??
-      (await this.helperModel.findOne({ user_id: new Types.ObjectId(helperId) }).exec())
-        ?.bank_account;
-    if (!resolvedBankAccount?.account_number) {
-      throw new BadRequestException('Vui lòng cập nhật tài khoản ngân hàng trước khi rút tiền');
-    }
+      const resolvedBankAccount =
+        bankAccount ??
+        (
+          await this.helperModel
+            .findOne({ user_id: new Types.ObjectId(helperId) })
+            .session(session)
+            .exec()
+        )?.bank_account;
+      if (!resolvedBankAccount?.account_number) {
+        throw new BadRequestException('Vui lòng cập nhật tài khoản ngân hàng trước khi rút tiền');
+      }
 
-    await this.getOrCreateWallet(helperId);
-    // Atomic hold: the balance check and the deduction happen in one update, so
-    // parallel requests cannot overdraw the wallet.
-    const wallet = await this.walletModel
-      .findOneAndUpdate(
-        { user_id: new Types.ObjectId(helperId), balance: { $gte: amount } },
-        { $inc: { balance: -amount } },
-        { new: true },
-      )
-      .exec();
-    if (!wallet) {
-      const current = await this.getOrCreateWallet(helperId);
-      throw new BadRequestException(
-        `Số dư không đủ. Hiện có: ${current.balance.toLocaleString('vi-VN')}₫`,
-      );
-    }
+      await this.getOrCreateWallet(helperId, session);
+      // Atomic hold: the balance check and the deduction happen in one update, so
+      // parallel requests cannot overdraw the wallet.
+      const wallet = await this.walletModel
+        .findOneAndUpdate(
+          { user_id: new Types.ObjectId(helperId), balance: { $gte: amount } },
+          { $inc: { balance: -amount } },
+          { new: true, session },
+        )
+        .exec();
+      if (!wallet) {
+        const current = await this.getOrCreateWallet(helperId, session);
+        throw new BadRequestException(
+          `Số dư không đủ. Hiện có: ${current.balance.toLocaleString('vi-VN')}₫`,
+        );
+      }
 
-    const withdrawal = await this.withdrawalModel.create({
-      user_id: new Types.ObjectId(helperId),
-      amount,
-      status: 'pending',
-      bank_account: {
-        bank_name: resolvedBankAccount.bank_name,
-        account_number: resolvedBankAccount.account_number,
-        account_name: resolvedBankAccount.account_name,
-      },
+      const withdrawal = await new this.withdrawalModel({
+        user_id: new Types.ObjectId(helperId),
+        amount,
+        status: 'pending',
+        bank_account: {
+          bank_name: resolvedBankAccount.bank_name,
+          account_number: resolvedBankAccount.account_number,
+          account_name: resolvedBankAccount.account_name,
+        },
+      }).save({ session });
+
+      await new this.transactionModel({
+        wallet_id: wallet._id,
+        user_id: new Types.ObjectId(helperId),
+        type: 'withdrawal',
+        status: 'pending',
+        amount,
+        balance_before: wallet.balance + amount,
+        balance_after: wallet.balance,
+        description: `Yêu cầu rút tiền`,
+        metadata: { withdrawal_id: String(withdrawal._id) },
+      }).save({ session });
+
+      return withdrawal;
     });
-
-    await this.transactionModel.create({
-      wallet_id: wallet._id,
-      user_id: new Types.ObjectId(helperId),
-      type: 'withdrawal',
-      status: 'pending',
-      amount,
-      balance_before: wallet.balance + amount,
-      balance_after: wallet.balance,
-      description: `Yêu cầu rút tiền`,
-      metadata: { withdrawal_id: String(withdrawal._id) },
-    });
-
-    return withdrawal;
   }
 
   async getWithdrawals(userId: string) {
@@ -219,62 +240,80 @@ export class PaymentsService {
     adminNote?: string,
     adminId?: string,
   ): Promise<WithdrawalDocument> {
-    // Claim the pending request atomically so a double click cannot refund twice.
-    const withdrawal = await this.withdrawalModel
-      .findOneAndUpdate(
-        { _id: new Types.ObjectId(withdrawalId), status: 'pending' },
-        { status: action === 'approve' ? 'completed' : 'rejected' },
-        { new: true },
-      )
-      .exec();
-    if (!withdrawal) {
-      const exists = await this.withdrawalModel.exists({ _id: new Types.ObjectId(withdrawalId) });
-      if (!exists) throw new NotFoundException('Yêu cầu rút tiền không tồn tại');
-      throw new BadRequestException('Yêu cầu này đã được xử lý');
-    }
-
-    if (action === 'approve') {
-      withdrawal.status = 'completed';
-      // Update wallet total_withdrawn
-      await this.walletModel
+    const saved = await this.walletModel.db.transaction(async session => {
+      // Claim the pending request atomically so a double click cannot refund twice.
+      const withdrawal = await this.withdrawalModel
         .findOneAndUpdate(
-          { user_id: withdrawal.user_id },
-          { $inc: { total_withdrawn: withdrawal.amount } },
+          { _id: new Types.ObjectId(withdrawalId), status: 'pending' },
+          { status: action === 'approve' ? 'completed' : 'rejected' },
+          { new: true, session },
         )
         .exec();
-      // Update transaction status
-      await this.transactionModel
-        .findOneAndUpdate({ 'metadata.withdrawal_id': withdrawalId }, { status: 'success' })
-        .exec();
-    } else {
-      withdrawal.status = 'rejected';
-      // Refund to wallet
-      const wallet = await this.getOrCreateWallet(String(withdrawal.user_id));
-      await this.walletModel
-        .findByIdAndUpdate(wallet._id, {
-          $inc: { balance: withdrawal.amount },
-        })
-        .exec();
-      await this.transactionModel.create({
-        wallet_id: wallet._id,
-        user_id: withdrawal.user_id,
-        type: 'refund',
-        status: 'success',
-        amount: withdrawal.amount,
-        balance_before: wallet.balance,
-        balance_after: wallet.balance + withdrawal.amount,
-        description: `Hoàn tiền rút thất bại`,
-      });
-      // Update transaction status
-      await this.transactionModel
-        .findOneAndUpdate({ 'metadata.withdrawal_id': withdrawalId }, { status: 'failed' })
-        .exec();
-    }
+      if (!withdrawal) {
+        const exists = await this.withdrawalModel
+          .exists({ _id: new Types.ObjectId(withdrawalId) })
+          .session(session);
+        if (!exists) throw new NotFoundException('Yêu cầu rút tiền không tồn tại');
+        throw new BadRequestException('Yêu cầu này đã được xử lý');
+      }
 
-    withdrawal.admin_note = adminNote;
-    withdrawal.processed_at = new Date();
-    withdrawal.processed_by = adminId;
-    const saved = await withdrawal.save();
+      if (action === 'approve') {
+        withdrawal.status = 'completed';
+        // Update wallet total_withdrawn
+        await this.walletModel
+          .findOneAndUpdate(
+            { user_id: withdrawal.user_id },
+            { $inc: { total_withdrawn: withdrawal.amount } },
+            { session },
+          )
+          .exec();
+        // Update transaction status
+        await this.transactionModel
+          .findOneAndUpdate(
+            { 'metadata.withdrawal_id': withdrawalId },
+            { status: 'success' },
+            { session },
+          )
+          .exec();
+      } else {
+        withdrawal.status = 'rejected';
+        // Refund to wallet
+        const wallet = await this.getOrCreateWallet(String(withdrawal.user_id), session);
+        await this.walletModel
+          .findByIdAndUpdate(
+            wallet._id,
+            {
+              $inc: { balance: withdrawal.amount },
+            },
+            { session },
+          )
+          .exec();
+        await new this.transactionModel({
+          wallet_id: wallet._id,
+          user_id: withdrawal.user_id,
+          type: 'refund',
+          status: 'success',
+          amount: withdrawal.amount,
+          balance_before: wallet.balance,
+          balance_after: wallet.balance + withdrawal.amount,
+          description: `Hoàn tiền rút thất bại`,
+        }).save({ session });
+        // Update transaction status
+        await this.transactionModel
+          .findOneAndUpdate(
+            { 'metadata.withdrawal_id': withdrawalId },
+            { status: 'failed' },
+            { session },
+          )
+          .exec();
+      }
+
+      withdrawal.admin_note = adminNote;
+      withdrawal.processed_at = new Date();
+      withdrawal.processed_by = adminId;
+      return withdrawal.save({ session });
+    });
+    const withdrawal = saved;
 
     const amount = withdrawal.amount.toLocaleString('vi-VN');
     await this.notificationsService

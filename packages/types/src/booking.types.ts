@@ -22,8 +22,12 @@ export enum JobStatus {
 // Valid state transitions
 export const JOB_STATUS_TRANSITIONS: Record<JobStatus, JobStatus[]> = {
   [JobStatus.DRAFT]: [JobStatus.OPEN, JobStatus.CANCELLED],
-  [JobStatus.OPEN]: [JobStatus.RECEIVING_QUOTES, JobStatus.CANCELLED],
-  [JobStatus.RECEIVING_QUOTES]: [JobStatus.QUOTE_SELECTED, JobStatus.CANCELLED],
+  [JobStatus.OPEN]: [JobStatus.RECEIVING_QUOTES, JobStatus.CONFIRMED, JobStatus.CANCELLED],
+  [JobStatus.RECEIVING_QUOTES]: [
+    JobStatus.QUOTE_SELECTED,
+    JobStatus.CONFIRMED,
+    JobStatus.CANCELLED,
+  ],
   [JobStatus.QUOTE_SELECTED]: [
     JobStatus.CONFIRMED,
     JobStatus.RECEIVING_QUOTES,

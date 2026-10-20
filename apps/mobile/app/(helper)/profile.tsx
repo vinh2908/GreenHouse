@@ -1,4 +1,6 @@
-import { View, Text, ScrollView, TouchableOpacity, Alert, Switch, Platform } from 'react-native';
+import Toast from 'react-native-toast-message';
+import { Alert } from '@/components/common/app-alert';
+import { View, Text, ScrollView, TouchableOpacity, Switch, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import {
@@ -36,12 +38,15 @@ export default function HelperProfileScreen() {
 
   const handleSwitchToCustomer = async () => {
     try {
-      await switchRole.mutateAsync('customer');
-      useAuthStore.getState().switchRole('customer');
+      const response = await switchRole.mutateAsync('customer');
+      useAuthStore.getState().setUser(response.data.data);
       router.replace('/(customer)/home');
     } catch {
-      useAuthStore.getState().switchRole('customer');
-      router.replace('/(customer)/home');
+      Toast.show({
+        type: 'error',
+        text1: 'Chưa chuyển được chế độ',
+        text2: 'Vui lòng thử lại khi có kết nối mạng.',
+      });
     }
   };
 
@@ -176,6 +181,7 @@ export default function HelperProfileScreen() {
           {/* Switch to customer button */}
           <TouchableOpacity
             activeOpacity={0.85}
+            disabled={switchRole.isPending}
             onPress={handleSwitchToCustomer}
             style={{
               flexDirection: 'row',
@@ -259,7 +265,11 @@ export default function HelperProfileScreen() {
                 label: 'Chính sách bảo mật & Bảo hiểm 30 ngày',
                 route: '/policy-insurance',
               },
-              { icon: Star, label: 'Đánh giá & Phản hồi từ khách hàng', route: null },
+              {
+                icon: Star,
+                label: 'Đánh giá & Phản hồi từ khách hàng',
+                route: user?._id ? `/helper-profile/${user._id}` : '/(auth)/login',
+              },
             ].map((item, i) => (
               <View key={item.label}>
                 {i > 0 && <Separator my={0} />}

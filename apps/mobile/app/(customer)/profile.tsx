@@ -1,4 +1,6 @@
-import { View, Text, ScrollView, TouchableOpacity, Alert, Platform } from 'react-native';
+import Toast from 'react-native-toast-message';
+import { Alert } from '@/components/common/app-alert';
+import { View, Text, ScrollView, TouchableOpacity, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import {
@@ -24,8 +26,8 @@ const MENU_SECTIONS = [
     items: [
       { icon: User, label: 'Thông tin cá nhân', route: '/edit-profile' },
       { icon: MapPin, label: 'Địa chỉ đã lưu', route: '/edit-profile' },
-      { icon: CreditCard, label: 'Phương thức thanh toán & Ví', route: '/bank-account' },
-      { icon: Bell, label: 'Cài đặt thông báo', route: '/notifications' },
+      { icon: CreditCard, label: 'Đơn hàng & Thanh toán', route: '/(customer)/jobs' },
+      { icon: Bell, label: 'Thông báo', route: '/notifications' },
     ],
   },
   {
@@ -33,7 +35,7 @@ const MENU_SECTIONS = [
     items: [
       { icon: HelpCircle, label: 'Trung tâm trợ giúp Vua Thợ (24/7)', route: '/help-center' },
       { icon: Shield, label: 'Chính sách bảo mật & Bảo hiểm 30 ngày', route: '/policy-insurance' },
-      { icon: Star, label: 'Đánh giá ứng dụng Green House', route: null },
+      { icon: Star, label: 'Góp ý ứng dụng Green House', route: '/feedback' },
     ],
   },
 ];
@@ -71,13 +73,20 @@ export default function CustomerProfileScreen() {
   const displayUser = profile ?? user;
 
   const handleSwitchToHelper = async () => {
+    if (!user) {
+      router.push('/(auth)/login');
+      return;
+    }
     try {
-      await switchRole.mutateAsync('helper');
-      useAuthStore.getState().switchRole('helper');
+      const response = await switchRole.mutateAsync('helper');
+      useAuthStore.getState().setUser(response.data.data);
       router.replace('/(helper)/dashboard');
     } catch {
-      useAuthStore.getState().switchRole('helper');
-      router.replace('/(helper)/dashboard');
+      Toast.show({
+        type: 'error',
+        text1: 'Chưa chuyển được chế độ',
+        text2: 'Vui lòng thử lại khi có kết nối mạng.',
+      });
     }
   };
 
@@ -164,6 +173,7 @@ export default function CustomerProfileScreen() {
 
           {/* Switch to helper role button */}
           <TouchableOpacity
+            disabled={switchRole.isPending}
             onPress={handleSwitchToHelper}
             activeOpacity={0.85}
             style={{

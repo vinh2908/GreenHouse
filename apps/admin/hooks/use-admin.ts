@@ -130,7 +130,11 @@ export function useProcessWithdrawal() {
       action: 'approve' | 'reject';
       admin_note?: string;
     }) => apiClient.patch(`/payments/admin/withdrawals/${id}`, { action, admin_note }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'withdrawals'] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin', 'withdrawals'] });
+      qc.invalidateQueries({ queryKey: ['admin', 'transactions'] });
+      qc.invalidateQueries({ queryKey: ['admin', 'dashboard'] });
+    },
   });
 }
 

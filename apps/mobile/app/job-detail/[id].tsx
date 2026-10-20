@@ -1,10 +1,10 @@
+import { Alert } from '@/components/common/app-alert';
 import { useState } from 'react';
 import {
   View,
   Text,
   ScrollView,
   TouchableOpacity,
-  Alert,
   Modal,
   TextInput,
   Image,
@@ -157,7 +157,13 @@ export default function JobDetailScreen() {
 
   const currentStepIdx = STATUS_ORDER.indexOf(job.status);
   const isActive = !['completed', 'cancelled', 'disputed'].includes(job.status);
-  const canCancel = ['open', 'receiving_quotes', 'quote_selected', 'confirmed', 'helper_on_the_way'].includes(job.status);
+  const canCancel = [
+    'open',
+    'receiving_quotes',
+    'quote_selected',
+    'confirmed',
+    'helper_on_the_way',
+  ].includes(job.status);
   const canEdit = !['completed', 'cancelled', 'disputed'].includes(job.status);
   const canApprove = job.status === 'pending_review';
   const hasHelperAssigned = !!job.helper_id;
@@ -1222,11 +1228,7 @@ export default function JobDetailScreen() {
               </View>
             </View>
 
-            <Input
-              label="Thành phố"
-              value={editCity}
-              onChangeText={setEditCity}
-            />
+            <Input label="Thành phố" value={editCity} onChangeText={setEditCity} />
 
             <Input
               label="Ghi chú địa chỉ (Chung cư, số phòng, chỉ dẫn...)"
@@ -1235,11 +1237,7 @@ export default function JobDetailScreen() {
               onChangeText={setEditNotes}
             />
 
-            <Input
-              label="Tiêu đề yêu cầu"
-              value={editTitle}
-              onChangeText={setEditTitle}
-            />
+            <Input label="Tiêu đề yêu cầu" value={editTitle} onChangeText={setEditTitle} />
 
             <View style={{ gap: 6 }}>
               <Text style={{ fontSize: 14, fontWeight: '700', color: COLORS.gray[700] }}>
