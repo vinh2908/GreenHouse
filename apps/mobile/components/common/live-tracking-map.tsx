@@ -117,20 +117,20 @@ export function LiveTrackingMap({
             font-size: 20px;
           }
           .customer-pin {
-            background-color: #10B981;
+            background-color: #EF4444;
             width: 42px;
             height: 42px;
           }
           .helper-pin {
-            background-color: #2563EB;
-            width: 44px;
-            height: 44px;
-            animation: pulse 1.6s infinite;
+            background-color: #059669;
+            width: 46px;
+            height: 46px;
+            animation: grab-pulse 1.6s infinite;
           }
-          @keyframes pulse {
-            0% { box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.7); }
-            70% { box-shadow: 0 0 0 16px rgba(37, 99, 235, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(37, 99, 235, 0); }
+          @keyframes grab-pulse {
+            0% { box-shadow: 0 0 0 0 rgba(5, 150, 105, 0.75); }
+            70% { box-shadow: 0 0 0 18px rgba(5, 150, 105, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(5, 150, 105, 0); }
           }
           .leaflet-popup-content-wrapper {
             border-radius: 14px;
@@ -261,7 +261,7 @@ export function LiveTrackingMap({
                 if (data && data.routes && data.routes[0]) {
                   const route = data.routes[0];
                   routeLine = L.geoJSON(route.geometry, {
-                    style: { color: '#10B981', weight: 6, opacity: 0.95 }
+                    style: { color: '#059669', weight: 6, opacity: 0.95 }
                   }).addTo(map);
 
                   map.fitBounds(routeLine.getBounds(), { padding: [45, 45] });
@@ -280,7 +280,7 @@ export function LiveTrackingMap({
               .catch(function() {
                 // Fallback nét đứt thẳng nếu OSRM timeout
                 routeLine = L.polyline([[helpLat, helpLon], [custLat, custLon]], {
-                  color: '#10B981',
+                  color: '#059669',
                   weight: 5,
                   dashArray: '8, 8',
                   opacity: 0.9
@@ -350,11 +350,7 @@ export function LiveTrackingMap({
         </View>
 
         {/* Nút đổi kiểu Vệ tinh / Đường phố */}
-        <TouchableOpacity
-          onPress={toggleLayer}
-          activeOpacity={0.8}
-          style={styles.layerButton}
-        >
+        <TouchableOpacity onPress={toggleLayer} activeOpacity={0.8} style={styles.layerButton}>
           <Layers size={14} color="#1F2937" />
           <Text style={{ fontSize: 11.5, fontWeight: '700', color: '#1F2937' }}>
             {mapType === 'streets' ? '🛰️ Vệ tinh' : '🗺️ Đường phố'}
@@ -371,9 +367,7 @@ export function LiveTrackingMap({
             style={styles.navButton}
           >
             <Navigation size={16} color="#FFFFFF" />
-            <Text style={styles.navButtonText}>
-              Chỉ đường Google Maps (Xem số nhà & Ngã rẽ)
-            </Text>
+            <Text style={styles.navButtonText}>Chỉ đường Google Maps (Xem số nhà & Ngã rẽ)</Text>
             <ExternalLink size={14} color="rgba(255,255,255,0.8)" />
           </TouchableOpacity>
         </View>
