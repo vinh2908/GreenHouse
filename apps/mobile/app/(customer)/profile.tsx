@@ -53,18 +53,14 @@ export default function CustomerProfileScreen() {
       router.replace('/(auth)/login');
     };
 
-    Alert.alert(
-      'Đăng xuất tài khoản?',
-      'Bạn có chắc chắn muốn đăng xuất khỏi Green House không?',
-      [
-        { text: 'Ở lại', style: 'cancel' },
-        {
-          text: 'Đăng xuất',
-          style: 'destructive',
-          onPress: doLogout,
-        },
-      ],
-    );
+    Alert.alert('Đăng xuất tài khoản?', 'Bạn có chắc chắn muốn đăng xuất khỏi Green House không?', [
+      { text: 'Ở lại', style: 'cancel' },
+      {
+        text: 'Đăng xuất',
+        style: 'destructive',
+        onPress: doLogout,
+      },
+    ]);
   };
 
   const displayUser = profile ?? user;

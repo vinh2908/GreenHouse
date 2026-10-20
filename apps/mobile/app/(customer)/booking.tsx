@@ -30,6 +30,7 @@ import dayjs from 'dayjs';
 import { useAuthStore } from '@/stores/auth.store';
 import { useServices, useCreateJob, useAnalyzeBooking, useEstimatePrice } from '@/hooks/use-api';
 import { locationService, OsmPlace } from '@/services/location.service';
+import { LiveTrackingMap } from '@/components/common/live-tracking-map';
 import { Button, Input, Card, COLORS, LoadingSpinner, PriceText } from '@/components/ui';
 
 const STEPS = ['Dịch vụ', 'Địa chỉ', 'Lịch hẹn', 'Mô tả', 'Xác nhận'];
@@ -829,6 +830,23 @@ export default function BookingScreen() {
                 value={address.city}
                 onChangeText={v => setAddress(a => ({ ...a, city: v, coordinates: null }))}
               />
+
+              {/* Bản đồ vị trí làm việc */}
+              <View style={{ marginTop: 8, gap: 6 }}>
+                <Text style={{ fontSize: 14, fontWeight: '700', color: COLORS.gray[800] }}>
+                  Bản đồ vị trí làm việc:
+                </Text>
+                <LiveTrackingMap
+                  customerLocation={{
+                    latitude: address.coordinates ? address.coordinates[1] : 10.7725,
+                    longitude: address.coordinates ? address.coordinates[0] : 106.6983,
+                  }}
+                  customerAddress={address.full_address || 'Vị trí điểm hẹn của bạn'}
+                  status="open"
+                  title="Điểm hẹn làm việc"
+                  height={190}
+                />
+              </View>
             </View>
           )}
 

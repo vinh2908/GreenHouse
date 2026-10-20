@@ -27,7 +27,13 @@ const getDialogIcon = (title: string, message?: string, buttons?: AlertButton[])
   if (t.includes('đăng xuất') || t.includes('logout')) return '🚪';
   if (t.includes('hủy') || t.includes('cancel') || t.includes('xóa')) return '⚠️';
   if (t.includes('di chuyển') || t.includes('xe') || t.includes('đến')) return '🚗';
-  if (t.includes('kyc') || t.includes('xác minh') || t.includes('danh tính') || t.includes('bảo mật')) return '🛡️';
+  if (
+    t.includes('kyc') ||
+    t.includes('xác minh') ||
+    t.includes('danh tính') ||
+    t.includes('bảo mật')
+  )
+    return '🛡️';
   if (t.includes('thành công') || t.includes('hoàn tất') || t.includes('nghiệm thu')) return '✅';
   if (t.includes('ảnh') || t.includes('camera') || t.includes('chứng từ')) return '📷';
   if (t.includes('sos') || t.includes('khẩn cấp') || t.includes('cứu hộ')) return '🚨';

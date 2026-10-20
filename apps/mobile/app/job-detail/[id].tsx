@@ -451,31 +451,37 @@ export default function JobDetailScreen() {
           </Card>
         )}
 
-        {/* ── Live Map Tracking (Khi Thợ đang di chuyển hoặc đã đến) ─── */}
-        {(job.status === 'helper_on_the_way' || job.status === 'helper_arrived') && (
+        {/* ── Live Map Tracking & Vị trí làm việc ─── */}
+        {!!job.address && (
           <LiveTrackingMap
             customerLocation={{
               latitude: job.address?.location?.coordinates?.[1] || 10.7725,
               longitude: job.address?.location?.coordinates?.[0] || 106.6983,
             }}
             helperLocation={
-              helperLocation
-                ? {
-                    latitude:
-                      'lat' in helperLocation
-                        ? helperLocation.lat
-                        : (helperLocation as any).current?.lat,
-                    longitude:
-                      'lng' in helperLocation
-                        ? helperLocation.lng
-                        : (helperLocation as any).current?.lng,
-                  }
-                : undefined
+              (job.status === 'helper_on_the_way' || job.status === 'helper_arrived')
+                ? (helperLocation
+                    ? {
+                        latitude:
+                          'lat' in helperLocation
+                            ? helperLocation.lat
+                            : (helperLocation as any).current?.lat,
+                        longitude:
+                          'lng' in helperLocation
+                            ? helperLocation.lng
+                            : (helperLocation as any).current?.lng,
+                      }
+                    : {
+                        latitude: (job.address?.location?.coordinates?.[1] || 10.7725) + 0.009,
+                        longitude: (job.address?.location?.coordinates?.[0] || 106.6983) + 0.007,
+                      })
+                : null
             }
-            customerAddress={job.address?.full_address}
+            status={job.status}
+            customerAddress={job.address?.full_address || job.address?.district}
             helperName={helperObj?.full_name || 'Thợ Green House'}
             etaMinutes={12}
-            height={220}
+            height={240}
           />
         )}
 
