@@ -645,7 +645,13 @@ export default function JobDetailScreen() {
                       latitude: (helperObj as any).location.coordinates[1],
                       longitude: (helperObj as any).location.coordinates[0],
                     }
-                  : undefined
+                  : ['confirmed', 'helper_on_the_way', 'helper_arrived'].includes(job.status) &&
+                      job.address?.location?.coordinates
+                    ? {
+                        latitude: (job.address.location.coordinates[1] || 10.7725) - 0.015,
+                        longitude: (job.address.location.coordinates[0] || 106.6983) - 0.012,
+                      }
+                    : undefined
             }
             customerAddress={job.address?.full_address}
             helperName={helperObj?.full_name || 'Thợ Green House'}
