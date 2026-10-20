@@ -136,14 +136,10 @@ export default function HelperJobDetailScreen() {
     if (helperProfile?.verification_status !== 'approved') {
       const msg =
         'Bạn cần hoàn tất và được duyệt xác thực danh tính e-KYC trước khi có thể gửi báo giá và nhận việc.';
-      Alert.alert(
-        'Yêu cầu xác thực e-KYC',
-        msg + '\n\nBấm "Xác thực ngay" để hoàn tất e-KYC.',
-        [
-          { text: 'Để sau', style: 'cancel' },
-          { text: 'Xác thực ngay', onPress: () => router.push('/kyc') },
-        ],
-      );
+      Alert.alert('Yêu cầu xác thực e-KYC', msg + '\n\nBấm "Xác thực ngay" để hoàn tất e-KYC.', [
+        { text: 'Để sau', style: 'cancel' },
+        { text: 'Xác thực ngay', onPress: () => router.push('/kyc') },
+      ]);
       return;
     }
     setShowQuoteModal(true);
@@ -283,14 +279,10 @@ export default function HelperJobDetailScreen() {
         }
       };
 
-      Alert.alert(
-        'Chưa có bằng chứng nghiệm thu',
-        msg,
-        [
-          { text: 'Chụp/Quay ngay', style: 'cancel' },
-          { text: 'Tiếp tục gửi', onPress: doSubmit },
-        ],
-      );
+      Alert.alert('Chưa có bằng chứng nghiệm thu', msg, [
+        { text: 'Chụp/Quay ngay', style: 'cancel' },
+        { text: 'Tiếp tục gửi', onPress: doSubmit },
+      ]);
       return;
     }
 
