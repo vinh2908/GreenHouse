@@ -12,6 +12,8 @@ import * as SplashScreen from 'expo-splash-screen';
 import '../global.css';
 import { useSocketConnection, useNotificationSocket } from '@/hooks/use-socket';
 import { AppAlertHost } from '@/components/common/app-alert';
+import { useLiveGps } from '@/hooks/use-live-gps';
+import { useAuthStore } from '@/stores/auth.store';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -130,12 +132,18 @@ function ToastCard() {
 function SocketManager() {
   useSocketConnection();
   useNotificationSocket();
+  useLiveGps();
   return null;
 }
 
 export default function RootLayout() {
   useEffect(() => {
-    SplashScreen.hideAsync();
+    // Deep links/reloads can skip app/index.tsx. Restore auth here so job tracking
+    // reconnects to Socket.IO even when opened directly from a notification.
+    void useAuthStore
+      .getState()
+      .loadStoredAuth()
+      .finally(() => SplashScreen.hideAsync());
   }, []);
 
   return (

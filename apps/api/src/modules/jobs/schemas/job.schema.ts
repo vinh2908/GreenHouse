@@ -112,6 +112,18 @@ export class Job {
   @Prop({ type: Types.ObjectId, ref: 'User' })
   helper_id?: Types.ObjectId;
 
+  // GPS captured for this assignment, never the helper's manually pinned work address.
+  @Prop({
+    type: { lat: Number, lng: Number, accuracy: Number, recorded_at: Number, helper_id: String },
+  })
+  live_helper_location?: {
+    lat: number;
+    lng: number;
+    accuracy?: number;
+    recorded_at: number;
+    helper_id: string;
+  };
+
   @Prop({ type: String, enum: PaymentStatus, default: PaymentStatus.UNPAID })
   payment_status: PaymentStatus;
 

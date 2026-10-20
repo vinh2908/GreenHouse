@@ -55,6 +55,8 @@ import {
 import { useJobSocketUpdates, useHelperLocation } from '@/hooks/use-socket';
 import { locationService } from '@/services/location.service';
 import { LiveTrackingMap } from '@/components/common/live-tracking-map';
+import { LocationPicker } from '@/components/common/location-picker';
+import { validCoordinate } from '@/services/tracking';
 import {
   Button,
   Card,
@@ -115,9 +117,11 @@ export default function JobDetailScreen() {
   };
 
   useJobSocketUpdates(id);
-  const helperLocation = useHelperLocation(id);
-
   const { data: job, isLoading: jLoading } = useJobDetail(id);
+  const helperLocation = useHelperLocation(
+    id,
+    typeof job?.helper_id === 'object' ? job.helper_id?._id : job?.helper_id,
+  );
   const { data: quotes } = useJobQuotes(id);
   const { data: contract } = useJobContract(id);
   const selectQuote = useSelectQuote();
@@ -153,6 +157,7 @@ export default function JobDetailScreen() {
   const [editNotes, setEditNotes] = useState('');
   const [editCoords, setEditCoords] = useState<[number, number] | null>(null);
   const [isLocatingEdit, setIsLocatingEdit] = useState(false);
+  const [showEditMap, setShowEditMap] = useState(false);
 
   const insets = useSafeAreaInsets();
 
@@ -240,6 +245,10 @@ export default function JobDetailScreen() {
       Toast.show({ type: 'error', text1: 'Vui lòng nhập địa chỉ chi tiết' });
       return;
     }
+    if (!editCoords || !validCoordinate(editCoords[1], editCoords[0])) {
+      Toast.show({ type: 'error', text1: 'Vui lòng xác nhận điểm hẹn trên bản đồ hoặc lấy GPS' });
+      return;
+    }
     try {
       await updateJob.mutateAsync({
         jobId: id,
@@ -254,7 +263,7 @@ export default function JobDetailScreen() {
             notes: editNotes || undefined,
             location: {
               type: 'Point',
-              coordinates: editCoords || job.address?.location?.coordinates || [106.6297, 10.8231],
+              coordinates: editCoords,
             },
           },
         },
@@ -625,38 +634,19 @@ export default function JobDetailScreen() {
         {job.address?.location?.coordinates && (
           <LiveTrackingMap
             customerLocation={{
-              latitude: job.address?.location?.coordinates?.[1] || 10.7725,
-              longitude: job.address?.location?.coordinates?.[0] || 106.6983,
+              latitude: job.address?.location?.coordinates?.[1],
+              longitude: job.address?.location?.coordinates?.[0],
             }}
             helperLocation={
               helperLocation
-                ? {
-                    latitude:
-                      'lat' in helperLocation
-                        ? (helperLocation as any).lat
-                        : (helperLocation as any).current?.lat,
-                    longitude:
-                      'lng' in helperLocation
-                        ? (helperLocation as any).lng
-                        : (helperLocation as any).current?.lng,
-                  }
-                : (helperObj as any)?.location?.coordinates
-                  ? {
-                      latitude: (helperObj as any).location.coordinates[1],
-                      longitude: (helperObj as any).location.coordinates[0],
-                    }
-                  : ['confirmed', 'helper_on_the_way', 'helper_arrived'].includes(job.status) &&
-                      job.address?.location?.coordinates
-                    ? {
-                        latitude: (job.address.location.coordinates[1] || 10.7725) - 0.015,
-                        longitude: (job.address.location.coordinates[0] || 106.6983) - 0.012,
-                      }
-                    : undefined
+                ? { latitude: helperLocation.lat, longitude: helperLocation.lng }
+                : null
             }
+            helperRecordedAt={helperLocation?.recorded_at}
+            viewerRole="customer"
             customerAddress={job.address?.full_address}
             helperName={helperObj?.full_name || 'Thợ Green House'}
             status={job.status}
-            etaMinutes={12}
             height={240}
             showNavigationButton={false}
           />
@@ -1756,7 +1746,10 @@ export default function JobDetailScreen() {
               label="Địa chỉ chi tiết (Số nhà & tên đường) *"
               placeholder="VD: 128 Đường Lê Lợi"
               value={editFullAddress}
-              onChangeText={setEditFullAddress}
+              onChangeText={value => {
+                setEditFullAddress(value);
+                setEditCoords(null);
+              }}
               leftIcon={<MapPin size={16} color={COLORS.gray[400]} />}
             />
 
@@ -1766,7 +1759,10 @@ export default function JobDetailScreen() {
                   label="Phường/Xã"
                   placeholder="Phường 1"
                   value={editWard}
-                  onChangeText={setEditWard}
+                  onChangeText={value => {
+                    setEditWard(value);
+                    setEditCoords(null);
+                  }}
                 />
               </View>
               <View style={{ flex: 1 }}>
@@ -1774,12 +1770,41 @@ export default function JobDetailScreen() {
                   label="Quận/Huyện *"
                   placeholder="Quận 1"
                   value={editDistrict}
-                  onChangeText={setEditDistrict}
+                  onChangeText={value => {
+                    setEditDistrict(value);
+                    setEditCoords(null);
+                  }}
                 />
               </View>
             </View>
 
-            <Input label="Thành phố" value={editCity} onChangeText={setEditCity} />
+            <Input
+              label="Thành phố"
+              value={editCity}
+              onChangeText={value => {
+                setEditCity(value);
+                setEditCoords(null);
+              }}
+            />
+            <Button
+              title={editCoords ? 'Kiểm tra điểm hẹn trên bản đồ' : 'Xác nhận điểm hẹn trên bản đồ'}
+              onPress={() => setShowEditMap(true)}
+            />
+            <Text style={{ fontSize: 12, color: COLORS.gray[600] }}>
+              {editCoords
+                ? 'Đã có tọa độ điểm hẹn.'
+                : 'Địa chỉ vừa thay đổi. Hãy chọn lại điểm hẹn để thợ đi đúng nơi.'}
+            </Text>
+            <LocationPicker
+              visible={showEditMap}
+              title="Chọn đúng điểm hẹn theo địa chỉ"
+              initial={editCoords ? { latitude: editCoords[1], longitude: editCoords[0] } : null}
+              onClose={() => setShowEditMap(false)}
+              onConfirm={coords => {
+                setEditCoords([coords.longitude, coords.latitude]);
+                setShowEditMap(false);
+              }}
+            />
 
             <Input
               label="Ghi chú địa chỉ (Chung cư, số phòng, chỉ dẫn...)"
