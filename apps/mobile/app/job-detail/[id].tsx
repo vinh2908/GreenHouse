@@ -4,7 +4,6 @@ import {
   Text,
   ScrollView,
   TouchableOpacity,
-  Alert,
   Modal,
   TextInput,
   Image,
@@ -38,6 +37,7 @@ import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import 'dayjs/locale/vi';
 import Toast from 'react-native-toast-message';
+import { Alert } from '@/components/common/app-alert';
 import { useAuthStore } from '@/stores/auth.store';
 import {
   useJobDetail,
@@ -310,21 +310,18 @@ export default function JobDetailScreen() {
       }
     };
 
-    if (Platform.OS === 'web') {
-      const w = (globalThis as any).window;
-      if (w?.confirm ? w.confirm('Bạn có chắc chắn muốn hủy yêu cầu này?') : true) {
-        doCancel();
-      }
-    } else {
-      Alert.alert('Hủy đơn hàng?', 'Bạn có chắc chắn muốn hủy yêu cầu này?', [
-        { text: 'Không', style: 'cancel' },
+    Alert.alert(
+      'Hủy đơn hàng?',
+      'Bạn có chắc chắn muốn hủy yêu cầu này không? Nếu đã có thợ nhận việc, vui lòng liên hệ trước với thợ.',
+      [
+        { text: 'Ở lại', style: 'cancel' },
         {
-          text: 'Hủy đơn',
+          text: 'Xác nhận hủy',
           style: 'destructive',
           onPress: doCancel,
         },
-      ]);
-    }
+      ],
+    );
   };
 
   const handleSubmitReview = async () => {
@@ -624,8 +621,8 @@ export default function JobDetailScreen() {
           </Card>
         )}
 
-        {/* ── Live Map Tracking ──────────────────────────────────────── */}
-        {(job.status === 'helper_on_the_way' || job.status === 'helper_arrived') && (
+        {/* ── Grab-Style Live Map Tracking & Route ─────────────────────── */}
+        {job.address?.location?.coordinates && (
           <LiveTrackingMap
             customerLocation={{
               latitude: job.address?.location?.coordinates?.[1] || 10.7725,
@@ -636,19 +633,26 @@ export default function JobDetailScreen() {
                 ? {
                     latitude:
                       'lat' in helperLocation
-                        ? helperLocation.lat
+                        ? (helperLocation as any).lat
                         : (helperLocation as any).current?.lat,
                     longitude:
                       'lng' in helperLocation
-                        ? helperLocation.lng
+                        ? (helperLocation as any).lng
                         : (helperLocation as any).current?.lng,
                   }
-                : undefined
+                : (helperObj as any)?.location?.coordinates
+                  ? {
+                      latitude: (helperObj as any).location.coordinates[1],
+                      longitude: (helperObj as any).location.coordinates[0],
+                    }
+                  : undefined
             }
             customerAddress={job.address?.full_address}
             helperName={helperObj?.full_name || 'Thợ Green House'}
+            status={job.status}
             etaMinutes={12}
-            height={220}
+            height={240}
+            showNavigationButton={false}
           />
         )}
 

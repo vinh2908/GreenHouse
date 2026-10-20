@@ -7,7 +7,6 @@ import {
   Linking,
   Share,
   ActivityIndicator,
-  Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -27,6 +26,7 @@ import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import 'dayjs/locale/vi';
 import Toast from 'react-native-toast-message';
+import { Alert } from '@/components/common/app-alert';
 import { useJobDetail, useCancelJob } from '@/hooks/use-api';
 import { useJobSocketUpdates, useHelperLocation } from '@/hooks/use-socket';
 import { socketService, SOCKET_EVENTS } from '@/services/socket.service';
@@ -256,8 +256,10 @@ export default function SosTrackingScreen() {
               }
               customerAddress={job?.address?.full_address}
               helperName={helperName}
+              status={job?.status}
               etaMinutes={eta}
               height={260}
+              showNavigationButton={false}
             />
 
             {/* 2. Thẻ định danh Thợ cứu hộ */}

@@ -8,9 +8,9 @@ import {
   KeyboardAvoidingView,
   Platform,
   Image,
-  Alert,
   ActivityIndicator,
 } from 'react-native';
+import { Alert } from '@/components/common/app-alert';
 import { LocationPicker, LocationPreview, PickerCoords } from '@/components/common/location-picker';
 import type { LocationResult } from '@/services/location.service';
 import * as ImagePicker from 'expo-image-picker';

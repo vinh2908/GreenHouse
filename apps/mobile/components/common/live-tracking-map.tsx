@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, Platform, TouchableOpacity, Linking } from 'react-native';
 import { WebView } from 'react-native-webview';
-import { Navigation, Compass, Layers, ExternalLink } from 'lucide-react-native';
+import { Navigation, Layers, ExternalLink } from 'lucide-react-native';
 
 export interface Coordinates {
   latitude: number;
@@ -25,17 +25,23 @@ export function LiveTrackingMap({
   helperLocation,
   customerAddress = 'Vị trí làm việc',
   helperName = 'Thợ Green House',
-  etaMinutes = 15,
+  etaMinutes = 12,
   height = 270,
   status = 'open',
   title,
   showNavigationButton = true,
 }: LiveTrackingMapProps) {
   const webViewRef = useRef<WebView>(null);
+  const iframeRef = useRef<any>(null);
   const [mapType, setMapType] = useState<'streets' | 'satellite'>('streets');
 
   const isTracking =
-    (status === 'helper_on_the_way' || status === 'helper_arrived') && !!helperLocation;
+    (status === 'confirmed' ||
+      status === 'helper_on_the_way' ||
+      status === 'helper_arrived' ||
+      status === 'in_progress') &&
+    !!helperLocation &&
+    (helperLocation.latitude !== 0 || helperLocation.longitude !== 0);
 
   const custLat = customerLocation?.latitude || 10.7725;
   const custLon = customerLocation?.longitude || 106.6983;
@@ -47,39 +53,84 @@ export function LiveTrackingMap({
   let pillIcon = '📍';
 
   if (status === 'helper_on_the_way') {
-    pillText = `Thợ ${helperName} đang di chuyển (${etaMinutes} phút)`;
-    pillIcon = '🚗';
+    pillText = `🛵 Thợ ${helperName} đang di chuyển tới bạn (~${etaMinutes} phút)`;
+    pillIcon = '🛵';
   } else if (status === 'helper_arrived') {
-    pillText = `Thợ ${helperName} đã có mặt tại điểm hẹn`;
+    pillText = `📍 Thợ ${helperName} đã có mặt tại điểm hẹn`;
     pillIcon = '📍';
   } else if (status === 'in_progress') {
-    pillText = 'Đang tiến hành công việc tại địa chỉ';
+    pillText = '▶️ Thợ đang tiến hành công việc tại địa chỉ';
     pillIcon = '▶️';
+  } else if (status === 'confirmed') {
+    pillText = `🛵 Thợ ${helperName} đã nhận đơn - Sẵn sàng di chuyển`;
+    pillIcon = '🛵';
   } else if (status === 'open' || status === 'receiving_quotes') {
-    pillText = 'Vị trí làm việc • Đang quét thợ trong khu vực';
+    pillText = '📡 Đang quét tìm thợ gần vị trí yêu cầu (bán kính 15km)';
     pillIcon = '📡';
   }
 
   const handleOpenGoogleMaps = () => {
-    const url = isTracking
-      ? `https://www.google.com/maps/dir/?api=1&origin=${helpLat},${helpLon}&destination=${custLat},${custLon}&travelmode=driving`
-      : `https://www.google.com/maps/dir/?api=1&destination=${custLat},${custLon}`;
-    Linking.openURL(url).catch(() => {
-      Linking.openURL(`https://maps.google.com/?q=${custLat},${custLon}`);
-    });
+    const dest = `${custLat},${custLon}`;
+    const orig = isTracking ? `${helpLat},${helpLon}` : '';
+
+    if (Platform.OS === 'android') {
+      const navUrl = `google.navigation:q=${dest}&mode=d`;
+      Linking.canOpenURL(navUrl)
+        .then(supported => {
+          if (supported) return Linking.openURL(navUrl);
+          Linking.openURL(
+            `https://www.google.com/maps/dir/?api=1&origin=${orig}&destination=${dest}&travelmode=driving`,
+          );
+        })
+        .catch(() => {
+          Linking.openURL(
+            `https://www.google.com/maps/dir/?api=1&origin=${orig}&destination=${dest}&travelmode=driving`,
+          );
+        });
+    } else if (Platform.OS === 'ios') {
+      const navUrl = `comgooglemaps://?daddr=${dest}&directionsmode=driving`;
+      Linking.canOpenURL(navUrl)
+        .then(supported => {
+          if (supported) return Linking.openURL(navUrl);
+          Linking.openURL(`http://maps.apple.com/?daddr=${dest}&dirflg=d`);
+        })
+        .catch(() => {
+          Linking.openURL(
+            `https://www.google.com/maps/dir/?api=1&origin=${orig}&destination=${dest}&travelmode=driving`,
+          );
+        });
+    } else {
+      Linking.openURL(
+        `https://www.google.com/maps/dir/?api=1&origin=${orig}&destination=${dest}&travelmode=driving`,
+      );
+    }
   };
 
   const toggleLayer = () => {
     const next = mapType === 'streets' ? 'satellite' : 'streets';
     setMapType(next);
-    if (Platform.OS !== 'web' && webViewRef.current) {
+    if (Platform.OS === 'web' && iframeRef.current?.contentWindow) {
+      iframeRef.current.contentWindow.postMessage({ type: 'switchLayer', layer: next }, '*');
+    } else if (webViewRef.current) {
       webViewRef.current.injectJavaScript(`if (window.switchLayer) window.switchLayer('${next}');`);
     }
   };
 
-  // Cập nhật vị trí Thợ thời gian thực trên bản đồ Leaflet
+  // Cập nhật vị trí Thợ thời gian thực trên bản đồ Leaflet (Web & Native)
   useEffect(() => {
-    if (Platform.OS !== 'web' && webViewRef.current && isTracking && helperLocation) {
+    if (!helperLocation) return;
+
+    if (Platform.OS === 'web' && iframeRef.current?.contentWindow) {
+      iframeRef.current.contentWindow.postMessage(
+        {
+          type: 'updateHelperPosition',
+          lat: helperLocation.latitude,
+          lon: helperLocation.longitude,
+          eta: etaMinutes,
+        },
+        '*',
+      );
+    } else if (webViewRef.current) {
       const script = `
         if (window.updateHelperPosition) {
           window.updateHelperPosition(${helperLocation.latitude}, ${helperLocation.longitude}, ${etaMinutes});
@@ -87,9 +138,9 @@ export function LiveTrackingMap({
       `;
       webViewRef.current.injectJavaScript(script);
     }
-  }, [helperLocation?.latitude, helperLocation?.longitude, etaMinutes, isTracking]);
+  }, [helperLocation?.latitude, helperLocation?.longitude, etaMinutes]);
 
-  // Mã nguồn HTML Leaflet + OpenStreetMap + OSRM Routing + Satellite Imagery
+  // Mã nguồn HTML Leaflet + OpenStreetMap + OSRM Routing + Grab Visual Styling
   const leafletHtml = `
     <!DOCTYPE html>
     <html>
@@ -104,7 +155,7 @@ export function LiveTrackingMap({
             height: 100%;
             margin: 0;
             padding: 0;
-            background-color: #f1f5f9;
+            background-color: #f8fafc;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
           }
           .custom-pin {
@@ -114,7 +165,8 @@ export function LiveTrackingMap({
             border-radius: 50%;
             border: 3px solid #ffffff;
             box-shadow: 0 4px 14px rgba(0,0,0,0.35);
-            font-size: 20px;
+            font-size: 21px;
+            cursor: pointer;
           }
           .customer-pin {
             background-color: #EF4444;
@@ -122,15 +174,18 @@ export function LiveTrackingMap({
             height: 42px;
           }
           .helper-pin {
-            background-color: #059669;
+            background-color: #00B14F;
             width: 46px;
             height: 46px;
-            animation: grab-pulse 1.6s infinite;
+            animation: grab-pulse 1.8s infinite;
+          }
+          .leaflet-marker-icon {
+            transition: transform 0.6s linear, top 0.6s linear, left 0.6s linear;
           }
           @keyframes grab-pulse {
-            0% { box-shadow: 0 0 0 0 rgba(5, 150, 105, 0.75); }
-            70% { box-shadow: 0 0 0 18px rgba(5, 150, 105, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(5, 150, 105, 0); }
+            0% { box-shadow: 0 0 0 0 rgba(0, 177, 79, 0.75); }
+            70% { box-shadow: 0 0 0 18px rgba(0, 177, 79, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(0, 177, 79, 0); }
           }
           .leaflet-popup-content-wrapper {
             border-radius: 14px;
@@ -148,7 +203,7 @@ export function LiveTrackingMap({
           }
           .map-locate-btn {
             position: absolute;
-            bottom: 20px;
+            bottom: 16px;
             right: 14px;
             z-index: 1000;
             background: #ffffff;
@@ -168,13 +223,15 @@ export function LiveTrackingMap({
             bottom: 14px;
             left: 14px;
             z-index: 1000;
-            background: rgba(17, 24, 39, 0.88);
+            background: rgba(17, 24, 39, 0.90);
             color: #ffffff;
-            padding: 6px 12px;
-            border-radius: 10px;
-            font-size: 12px;
-            font-weight: 700;
-            backdrop-filter: blur(4px);
+            padding: 7px 14px;
+            border-radius: 12px;
+            font-size: 12.5px;
+            font-weight: 800;
+            backdrop-filter: blur(6px);
+            box-shadow: 0 3px 10px rgba(0,0,0,0.25);
+            border: 1px solid rgba(255,255,255,0.15);
           }
         </style>
       </head>
@@ -187,8 +244,8 @@ export function LiveTrackingMap({
           const custLat = ${custLat};
           const custLon = ${custLon};
           const isTracking = ${isTracking};
-          const helpLat = ${helpLat};
-          const helpLon = ${helpLon};
+          let curHelpLat = ${helpLat};
+          let curHelpLon = ${helpLon};
           const initialType = '${mapType}';
 
           const map = L.map('map', {
@@ -196,12 +253,12 @@ export function LiveTrackingMap({
             attributionControl: false
           });
 
-          // Layer đường phố OpenStreetMap chi tiết số nhà
+          // OpenStreetMap detail tiles
           const streetLayer = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 19,
           });
 
-          // Layer vệ tinh Esri World Imagery độ phân giải cao
+          // Esri Satellite Imagery
           const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
             maxZoom: 19,
           });
@@ -222,7 +279,7 @@ export function LiveTrackingMap({
             }
           };
 
-          // Marker Điểm hẹn Khách hàng
+          // Customer Pin (Home / Job address)
           const custIcon = L.divIcon({
             className: 'custom-pin customer-pin',
             html: '🏠',
@@ -233,26 +290,16 @@ export function LiveTrackingMap({
           custMarker.bindPopup(
             "<b>📍 Điểm hẹn làm việc</b><br>" +
             "<b>Địa chỉ:</b> ${customerAddress.replace(/"/g, '')}<br>" +
-            "<b>Tọa độ GPS:</b> " + custLat.toFixed(5) + ", " + custLon.toFixed(5)
-          ).openPopup();
+            "<b>Tọa độ:</b> " + custLat.toFixed(5) + ", " + custLon.toFixed(5)
+          );
 
           let routeLine = null;
+          let routeBg = null;
           let helpMarker = null;
 
-          if (isTracking) {
-            // Marker Thợ di chuyển
-            const helpIcon = L.divIcon({
-              className: 'custom-pin helper-pin',
-              html: '🛵',
-              iconSize: [44, 44],
-              iconAnchor: [22, 22]
-            });
-            helpMarker = L.marker([helpLat, helpLon], { icon: helpIcon }).addTo(map);
-            helpMarker.bindPopup("<b>${helperName.replace(/"/g, '')}</b><br>Đang di chuyển tới bạn");
-
-            // Gọi API OSRM tìm đường đi thực tế theo đường phố
+          function renderRoute(hLat, hLon, cLat, cLon) {
             const osrmUrl = "https://router.project-osrm.org/route/v1/driving/" +
-              helpLon + "," + helpLat + ";" + custLon + "," + custLat +
+              hLon + "," + hLat + ";" + cLon + "," + cLat +
               "?overview=full&geometries=geojson";
 
             fetch(osrmUrl)
@@ -260,14 +307,23 @@ export function LiveTrackingMap({
               .then(function(data) {
                 if (data && data.routes && data.routes[0]) {
                   const route = data.routes[0];
-                  routeLine = L.geoJSON(route.geometry, {
-                    style: { color: '#059669', weight: 6, opacity: 0.95 }
+                  if (routeBg) map.removeLayer(routeBg);
+                  if (routeLine) map.removeLayer(routeLine);
+
+                  // Grab Route Border (Dark Green)
+                  routeBg = L.geoJSON(route.geometry, {
+                    style: { color: '#00823A', weight: 8, opacity: 0.85, lineCap: 'round', lineJoin: 'round' }
                   }).addTo(map);
 
-                  map.fitBounds(routeLine.getBounds(), { padding: [45, 45] });
+                  // Grab Route Core (Signature Grab Green)
+                  routeLine = L.geoJSON(route.geometry, {
+                    style: { color: '#00B14F', weight: 5, opacity: 1.0, lineCap: 'round', lineJoin: 'round' }
+                  }).addTo(map);
+
+                  map.fitBounds(routeLine.getBounds(), { padding: [50, 50], maxZoom: 16 });
 
                   const km = (route.distance / 1000).toFixed(1);
-                  const mins = Math.round(route.duration / 60);
+                  const mins = Math.max(1, Math.round(route.duration / 60));
                   const infoEl = document.getElementById('route-info');
                   if (infoEl) {
                     infoEl.style.display = 'block';
@@ -278,26 +334,39 @@ export function LiveTrackingMap({
                 }
               })
               .catch(function() {
-                // Fallback nét đứt thẳng nếu OSRM timeout
-                routeLine = L.polyline([[helpLat, helpLon], [custLat, custLon]], {
-                  color: '#059669',
+                if (routeBg) map.removeLayer(routeBg);
+                if (routeLine) map.removeLayer(routeLine);
+
+                routeLine = L.polyline([[hLat, hLon], [cLat, cLon]], {
+                  color: '#00B14F',
                   weight: 5,
                   dashArray: '8, 8',
-                  opacity: 0.9
+                  opacity: 0.95
                 }).addTo(map);
-                const bounds = L.latLngBounds([[custLat, custLon], [helpLat, helpLon]]);
-                map.fitBounds(bounds, { padding: [45, 45] });
-              });
 
-            window.updateHelperPosition = function(newLat, newLon, eta) {
-              if (helpMarker) helpMarker.setLatLng([newLat, newLon]);
-            };
+                const bounds = L.latLngBounds([[cLat, cLon], [hLat, hLon]]);
+                map.fitBounds(bounds, { padding: [50, 50], maxZoom: 16 });
+              });
+          }
+
+          if (isTracking) {
+            // Helper Marker
+            const helpIcon = L.divIcon({
+              className: 'custom-pin helper-pin',
+              html: '🛵',
+              iconSize: [46, 46],
+              iconAnchor: [23, 23]
+            });
+            helpMarker = L.marker([curHelpLat, curHelpLon], { icon: helpIcon }).addTo(map);
+            helpMarker.bindPopup("<b>${helperName.replace(/"/g, '')}</b><br>🛵 Đang di chuyển theo tuyến đường");
+
+            renderRoute(curHelpLat, curHelpLon, custLat, custLon);
           } else {
-            // Vòng quét bán kính tìm thợ
+            // Scanning radar circle around job address
             L.circle([custLat, custLon], {
               radius: 1200,
-              color: '#10B981',
-              fillColor: '#10B981',
+              color: '#00B14F',
+              fillColor: '#00B14F',
               fillOpacity: 0.12,
               weight: 2,
               dashArray: '5, 5'
@@ -306,11 +375,36 @@ export function LiveTrackingMap({
             map.setView([custLat, custLon], 16);
           }
 
+          window.updateHelperPosition = function(newLat, newLon, eta) {
+            curHelpLat = newLat;
+            curHelpLon = newLon;
+            if (helpMarker) {
+              helpMarker.setLatLng([newLat, newLon]);
+            } else {
+              const helpIcon = L.divIcon({
+                className: 'custom-pin helper-pin',
+                html: '🛵',
+                iconSize: [46, 46],
+                iconAnchor: [23, 23]
+              });
+              helpMarker = L.marker([newLat, newLon], { icon: helpIcon }).addTo(map);
+            }
+            renderRoute(newLat, newLon, custLat, custLon);
+          };
+
+          window.addEventListener('message', function(e) {
+            if (e.data && e.data.type === 'updateHelperPosition') {
+              window.updateHelperPosition(e.data.lat, e.data.lon, e.data.eta);
+            } else if (e.data && e.data.type === 'switchLayer') {
+              window.switchLayer(e.data.layer);
+            }
+          });
+
           function locateUser() {
-            map.locate({ setView: true, maxZoom: 18 });
+            map.locate({ setView: true, maxZoom: 17 });
           }
           map.on('locationfound', function(e) {
-            L.circleMarker(e.latlng, { radius: 7, color: '#3B82F6', fillColor: '#60A5FA', fillOpacity: 0.9 }).addTo(map);
+            L.circleMarker(e.latlng, { radius: 8, color: '#2563EB', fillColor: '#60A5FA', fillOpacity: 0.9 }).addTo(map);
           });
         </script>
       </body>
@@ -323,6 +417,7 @@ export function LiveTrackingMap({
       <View style={[styles.container, { height }]}>
         {Platform.OS === 'web' ? (
           <iframe
+            ref={iframeRef}
             srcDoc={leafletHtml}
             style={{ width: '100%', height: '100%', border: 'none' }}
             title="Green House Interactive Map"
@@ -353,7 +448,7 @@ export function LiveTrackingMap({
         <TouchableOpacity onPress={toggleLayer} activeOpacity={0.8} style={styles.layerButton}>
           <Layers size={14} color="#1F2937" />
           <Text style={{ fontSize: 11.5, fontWeight: '700', color: '#1F2937' }}>
-            {mapType === 'streets' ? '🛰️ Vệ tinh' : '🗺️ Đường phố'}
+            {mapType === 'streets' ? '🛰️ Vệ tinh' : '🗺️ Bản đồ'}
           </Text>
         </TouchableOpacity>
       </View>
@@ -366,9 +461,9 @@ export function LiveTrackingMap({
             activeOpacity={0.85}
             style={styles.navButton}
           >
-            <Navigation size={16} color="#FFFFFF" />
-            <Text style={styles.navButtonText}>Chỉ đường Google Maps (Xem số nhà & Ngã rẽ)</Text>
-            <ExternalLink size={14} color="rgba(255,255,255,0.8)" />
+            <Navigation size={17} color="#FFFFFF" />
+            <Text style={styles.navButtonText}>Chỉ đường Google Maps (Bật dẫn đường & Ngã rẽ)</Text>
+            <ExternalLink size={14} color="rgba(255,255,255,0.85)" />
           </TouchableOpacity>
         </View>
       )}
@@ -437,7 +532,7 @@ const styles = StyleSheet.create({
     width: 9,
     height: 9,
     borderRadius: 4.5,
-    backgroundColor: '#10B981',
+    backgroundColor: '#00B14F',
   },
   statusText: {
     color: '#FFFFFF',
@@ -447,15 +542,15 @@ const styles = StyleSheet.create({
   },
   navButton: {
     flex: 1,
-    height: 44,
-    backgroundColor: '#2563EB',
+    height: 46,
+    backgroundColor: '#00B14F',
     borderRadius: 14,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
     paddingHorizontal: 14,
-    shadowColor: '#2563EB',
+    shadowColor: '#00B14F',
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.3,
     shadowRadius: 6,
