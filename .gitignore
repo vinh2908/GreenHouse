@@ -15,6 +15,7 @@ coverage/
 ui*.xml
 *.png
 !apps/mobile/assets/**
+!apps/mobile/android/**
 data/
 tools/
 
