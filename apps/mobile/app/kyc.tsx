@@ -8,10 +8,10 @@ import {
   TextInput,
   KeyboardAvoidingView,
   Platform,
+  Alert,
   Modal,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Alert } from '@/components/common/app-alert';
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import {
@@ -40,7 +40,6 @@ const SAMPLE_SELFIE = 'https://images.unsplash.com/photo-1507003211169-0a1dd7228
 
 export default function KycScreen() {
   const router = useRouter();
-  const insets = useSafeAreaInsets();
   const { data: profile, isLoading, refetch } = useHelperProfile();
   const submitKyc = useSubmitKyc();
 
@@ -48,7 +47,8 @@ export default function KycScreen() {
 
   const handleBack = () => {
     if (router.canGoBack()) {
-      return router.back();
+      router.back();
+      return;
     }
     router.replace(user?.active_role === 'helper' ? '/(helper)/profile' : '/(customer)/profile');
   };
@@ -163,6 +163,8 @@ export default function KycScreen() {
       Toast.show({ type: 'error', text1: msg });
     }
   };
+
+  const insets = useSafeAreaInsets();
 
   const getTargetTitle = () => {
     if (activeImageType === 'front') return 'Mặt trước CCCD/CMND';

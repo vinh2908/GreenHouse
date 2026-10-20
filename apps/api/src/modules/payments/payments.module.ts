@@ -7,6 +7,7 @@ import { Wallet, WalletSchema } from './schemas/payment.schema';
 import { Transaction, TransactionSchema } from './schemas/payment.schema';
 import { Withdrawal, WithdrawalSchema } from './schemas/payment.schema';
 import { HelperProfile, HelperProfileSchema } from '../helpers/schemas/helper-profile.schema';
+import { Job, JobSchema, Contract, ContractSchema } from '../jobs/schemas/job.schema';
 
 @Module({
   imports: [
@@ -15,6 +16,8 @@ import { HelperProfile, HelperProfileSchema } from '../helpers/schemas/helper-pr
       { name: Transaction.name, schema: TransactionSchema },
       { name: Withdrawal.name, schema: WithdrawalSchema },
       { name: HelperProfile.name, schema: HelperProfileSchema },
+      { name: Job.name, schema: JobSchema },
+      { name: Contract.name, schema: ContractSchema },
     ]),
     NotificationsModule,
   ],

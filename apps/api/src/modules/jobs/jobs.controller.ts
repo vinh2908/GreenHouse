@@ -21,6 +21,10 @@ import {
   ReviewJobDto,
   CancelJobDto,
   UpdateJobDto,
+  OpenDisputeDto,
+  ResolveDisputeDto,
+  ProposeAmendmentDto,
+  RespondAmendmentDto,
 } from './dto/job.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
@@ -154,12 +158,38 @@ export class JobsController {
     return this.jobsService.selectQuote(user.sub, jobId, dto);
   }
 
-  // ─── Get contract ─────────────────────────────────────────────────────────
+  // ─── Get contract & Contract Amendments ───────────────────────────────────
 
   @Get(':jobId/contract')
   @ApiOperation({ summary: 'Xem hợp đồng số của job' })
-  async getContract(@CurrentUser() user: { sub: string }, @Param('jobId') jobId: string) {
-    return this.jobsService.getContract(jobId, user.sub);
+  async getContract(
+    @CurrentUser() user: { sub: string; roles?: string[] },
+    @Param('jobId') jobId: string,
+  ) {
+    return this.jobsService.getContract(jobId, user.sub, user.roles?.includes('admin') ?? false);
+  }
+
+  @Post(':jobId/contract/amendments')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: '[Helper] Đề xuất phụ lục phát sinh vật tư / chi phí' })
+  async proposeAmendment(
+    @CurrentUser() user: { sub: string },
+    @Param('jobId') jobId: string,
+    @Body() dto: ProposeAmendmentDto,
+  ) {
+    return this.jobsService.proposeContractAmendment(user.sub, jobId, dto);
+  }
+
+  @Patch(':jobId/contract/amendments/:amendmentId')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: '[Customer] Đồng ý hoặc từ chối phụ lục phát sinh chi phí' })
+  async respondAmendment(
+    @CurrentUser() user: { sub: string },
+    @Param('jobId') jobId: string,
+    @Param('amendmentId') amendmentId: string,
+    @Body() dto: RespondAmendmentDto,
+  ) {
+    return this.jobsService.respondContractAmendment(user.sub, jobId, amendmentId, dto);
   }
 
   // ─── Helper: Status transitions ───────────────────────────────────────────
@@ -209,16 +239,46 @@ export class JobsController {
     return this.jobsService.approveCompletion(user.sub, jobId, dto);
   }
 
+  // ─── Dispute & Admin Resolution ───────────────────────────────────────────
+
+  @Post(':jobId/dispute')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: '[Customer/Helper] Mở khiếu nại / báo sự cố nghiệm thu' })
+  async openDispute(
+    @CurrentUser() user: { sub: string; active_role: string },
+    @Param('jobId') jobId: string,
+    @Body() dto: OpenDisputeDto,
+  ) {
+    return this.jobsService.openDispute(user.sub, user.active_role, jobId, dto);
+  }
+
+  @Patch(':jobId/resolve-dispute')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: '[Admin] Phân xử tranh chấp & hoàn tiền / giải ngân' })
+  async resolveDispute(
+    @CurrentUser() user: { sub: string; roles?: string[] },
+    @Param('jobId') jobId: string,
+    @Body() dto: ResolveDisputeDto,
+  ) {
+    return this.jobsService.resolveDispute(
+      user.sub,
+      Boolean(user.roles?.includes('admin')),
+      jobId,
+      dto,
+    );
+  }
+
   // ─── Cancel ───────────────────────────────────────────────────────────────
 
   @Patch(':jobId/cancel')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Hủy job' })
   async cancelJob(
-    @CurrentUser() user: { sub: string; active_role: string },
+    @CurrentUser() user: { sub: string; active_role: string; roles?: string[] },
     @Param('jobId') jobId: string,
     @Body() dto: CancelJobDto,
   ) {
-    return this.jobsService.cancelJob(user.sub, user.active_role, jobId, dto);
+    const effectiveRole = user.roles?.includes('admin') ? 'admin' : user.active_role;
+    return this.jobsService.cancelJob(user.sub, effectiveRole, jobId, dto);
   }
 }

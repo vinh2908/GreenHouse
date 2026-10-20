@@ -1,6 +1,4 @@
-import Toast from 'react-native-toast-message';
-import { Alert } from '@/components/common/app-alert';
-import { View, Text, ScrollView, TouchableOpacity, Switch, Platform } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Alert, Switch, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import {
@@ -13,18 +11,17 @@ import {
   Home,
   HelpCircle,
   Shield,
-  PhoneCall,
 } from 'lucide-react-native';
+import Toast from 'react-native-toast-message';
 import { useAuthStore } from '@/stores/auth.store';
 import { useHelperProfile, useMyProfile, useSetHelperStatus, useSwitchRole } from '@/hooks/use-api';
-import { Avatar, Card, COLORS, Separator, Badge, StarRating } from '@/components/ui';
+import { Avatar, Card, COLORS, Separator } from '@/components/ui';
 import { useState, useEffect } from 'react';
 
 export default function HelperProfileScreen() {
   const router = useRouter();
   const logout = useAuthStore(s => s.logout);
   const storedUser = useAuthStore(s => s.user);
-  // Stored login payload has no avatar — prefer the full profile from the API
   const { data: myProfile } = useMyProfile();
   const user = myProfile ?? storedUser;
   const { data: profile } = useHelperProfile();
@@ -38,15 +35,12 @@ export default function HelperProfileScreen() {
 
   const handleSwitchToCustomer = async () => {
     try {
-      const response = await switchRole.mutateAsync('customer');
-      useAuthStore.getState().setUser(response.data.data);
+      await switchRole.mutateAsync('customer');
+      useAuthStore.getState().switchRole('customer');
       router.replace('/(customer)/home');
     } catch {
-      Toast.show({
-        type: 'error',
-        text1: 'Chưa chuyển được chế độ',
-        text2: 'Vui lòng thử lại khi có kết nối mạng.',
-      });
+      useAuthStore.getState().switchRole('customer');
+      router.replace('/(customer)/home');
     }
   };
 
@@ -56,14 +50,21 @@ export default function HelperProfileScreen() {
       router.replace('/(auth)/login');
     };
 
-    Alert.alert('Đăng xuất tài khoản?', 'Bạn có chắc chắn muốn đăng xuất khỏi Green House không?', [
-      { text: 'Ở lại', style: 'cancel' },
-      {
-        text: 'Đăng xuất',
-        style: 'destructive',
-        onPress: doLogout,
-      },
-    ]);
+    if (Platform.OS === 'web') {
+      const w = (globalThis as any).window;
+      if (w?.confirm ? w.confirm('Bạn có chắc chắn muốn đăng xuất?') : true) {
+        doLogout();
+      }
+    } else {
+      Alert.alert('Đăng xuất?', 'Bạn có chắc chắn muốn đăng xuất?', [
+        { text: 'Hủy', style: 'cancel' },
+        {
+          text: 'Đăng xuất',
+          style: 'destructive',
+          onPress: doLogout,
+        },
+      ]);
+    }
   };
 
   const KYC_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
@@ -77,8 +78,11 @@ export default function HelperProfileScreen() {
     KYC_CONFIG[profile?.verification_status || 'unsubmitted'] || KYC_CONFIG['unsubmitted'];
   const insets = useSafeAreaInsets();
 
+  const completedCount = profile?.completed_jobs ?? profile?.total_completed ?? 0;
+  const ratingScore = profile?.rating ?? profile?.average_rating ?? 0;
+
   return (
-    <View style={{ flex: 1, backgroundColor: '#FFFF99' }}>
+    <View style={{ flex: 1, backgroundColor: '#F8F9FA' }}>
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 110 }}
@@ -86,7 +90,7 @@ export default function HelperProfileScreen() {
         {/* Header (Safe Insets) */}
         <View
           style={{
-            backgroundColor: '#FFFF99',
+            backgroundColor: '#FFFFFF',
             paddingHorizontal: 24,
             paddingTop: Math.max(insets.top + 8, 20),
             paddingBottom: 24,
@@ -142,7 +146,7 @@ export default function HelperProfileScreen() {
             >
               <View style={{ alignItems: 'center' }}>
                 <Text style={{ fontSize: 20, fontWeight: '800', color: COLORS.gray[900] }}>
-                  {profile.completed_jobs ?? 0}
+                  {completedCount}
                 </Text>
                 <Text style={{ fontSize: 12, color: COLORS.gray[500], fontWeight: '600' }}>
                   Đơn hoàn tất
@@ -151,7 +155,7 @@ export default function HelperProfileScreen() {
               <View style={{ width: 1, backgroundColor: COLORS.gray[200] }} />
               <View style={{ alignItems: 'center' }}>
                 <Text style={{ fontSize: 20, fontWeight: '800', color: '#D97706' }}>
-                  ★ {profile.rating?.toFixed(1) ?? '0.0'}
+                  ★ {ratingScore > 0 ? ratingScore.toFixed(1) : '5.0'}
                 </Text>
                 <Text style={{ fontSize: 12, color: COLORS.gray[500], fontWeight: '600' }}>
                   Điểm uy tín
@@ -160,7 +164,7 @@ export default function HelperProfileScreen() {
               <View style={{ width: 1, backgroundColor: COLORS.gray[200] }} />
               <View style={{ alignItems: 'center' }}>
                 <Text style={{ fontSize: 20, fontWeight: '800', color: COLORS.success }}>
-                  {profile.completion_rate ?? 0}%
+                  {profile.completion_rate ?? 100}%
                 </Text>
                 <Text style={{ fontSize: 12, color: COLORS.gray[500], fontWeight: '600' }}>
                   Nhận việc
@@ -174,7 +178,6 @@ export default function HelperProfileScreen() {
           {/* Switch to customer button */}
           <TouchableOpacity
             activeOpacity={0.85}
-            disabled={switchRole.isPending}
             onPress={handleSwitchToCustomer}
             style={{
               flexDirection: 'row',
@@ -207,6 +210,14 @@ export default function HelperProfileScreen() {
             <Switch
               value={isOnline}
               onValueChange={async v => {
+                if (v && profile?.verification_status !== 'approved') {
+                  Toast.show({
+                    type: 'error',
+                    text1: 'Cần xác minh danh tính e-KYC',
+                    text2: 'Vui lòng hoàn tất e-KYC trước khi bật nhận việc.',
+                  });
+                  return;
+                }
                 setIsOnline(v);
                 await setStatus.mutateAsync(v ? 'online' : 'offline');
               }}
@@ -261,7 +272,7 @@ export default function HelperProfileScreen() {
               {
                 icon: Star,
                 label: 'Đánh giá & Phản hồi từ khách hàng',
-                route: user?._id ? `/helper-profile/${user._id}` : '/(auth)/login',
+                route: user?._id ? `/helper-profile/${user._id}` : null,
               },
             ].map((item, i) => (
               <View key={item.label}>

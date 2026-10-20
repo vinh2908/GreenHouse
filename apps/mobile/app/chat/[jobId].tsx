@@ -80,6 +80,7 @@ export default function ChatScreen() {
   const handleBack = () => {
     if (router.canGoBack()) {
       router.back();
+      return;
     }
     router.replace(
       currentUser?.active_role === 'helper' ? '/(helper)/jobs' : '/(customer)/messages',
@@ -303,8 +304,6 @@ export default function ChatScreen() {
             <TouchableOpacity
               activeOpacity={0.8}
               onPress={handleSend}
-              accessibilityRole="button"
-              accessibilityLabel="Gửi tin nhắn"
               disabled={!text.trim() || sendMsg.isPending}
               style={{
                 width: 44,

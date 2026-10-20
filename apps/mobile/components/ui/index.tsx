@@ -90,8 +90,6 @@ export function Button({
 
   return (
     <TouchableOpacity
-      accessibilityRole="button"
-      accessibilityLabel={title}
       activeOpacity={0.82}
       disabled={disabled || loading}
       style={[
@@ -165,7 +163,6 @@ export function Input({ label, error, leftIcon, rightIcon, style, ...props }: In
       >
         {leftIcon}
         <TextInput
-          accessibilityLabel={label}
           style={[
             {
               flex: 1,
@@ -415,6 +412,7 @@ export function LoadingSpinner({ size = 'large' }: { size?: 'small' | 'large' })
 const JOB_STATUS_CONFIG: Record<string, { label: string; color: string; textColor: string }> = {
   open: { label: 'Đang tìm thợ', color: '#EFF6FF', textColor: '#1D4ED8' },
   receiving_quotes: { label: 'Có báo giá', color: '#F5F3FF', textColor: '#6D28D9' },
+  quote_selected: { label: 'Đã chọn báo giá', color: '#FFF7ED', textColor: '#C2410C' },
   confirmed: { label: 'Đã nhận đơn', color: '#FFF7ED', textColor: '#C2410C' },
   helper_on_the_way: { label: 'Đang di chuyển', color: '#FEF3C7', textColor: '#92400E' },
   helper_arrived: { label: 'Đã đến nơi', color: '#ECFDF5', textColor: '#065F46' },
@@ -422,7 +420,8 @@ const JOB_STATUS_CONFIG: Record<string, { label: string; color: string; textColo
   pending_review: { label: 'Chờ nghiệm thu', color: '#EFF6FF', textColor: '#1E40AF' },
   completed: { label: 'Hoàn tất', color: '#ECFDF5', textColor: '#065F46' },
   cancelled: { label: 'Đã hủy', color: '#FEF2F2', textColor: '#991B1B' },
-  disputed: { label: 'Khiếu nại', color: '#FEF2F2', textColor: '#991B1B' },
+  disputed: { label: 'Đang tranh chấp', color: '#FEF2F2', textColor: '#991B1B' },
+  refunded: { label: 'Đã hoàn tiền', color: '#F3F4F6', textColor: '#374151' },
 };
 
 export function JobStatusBadge({ status }: { status: string }) {

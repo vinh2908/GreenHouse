@@ -77,6 +77,7 @@ const KYC_VI: Record<
   approved: { label: 'Đã duyệt', variant: 'success' },
   pending: { label: 'Chờ duyệt', variant: 'warning' },
   rejected: { label: 'Từ chối', variant: 'danger' },
+  unsubmitted: { label: 'Chưa nộp', variant: 'secondary' },
   not_submitted: { label: 'Chưa nộp', variant: 'secondary' },
 };
 
@@ -200,7 +201,7 @@ export default function UserDetailPage() {
 
   const { user, helper_profile: hp, customer_profile: cp, wallet, job_counts, rating_stats } = data;
   const isHelper = !!hp || user.roles?.includes('helper');
-  const kyc = KYC_VI[hp?.verification_status ?? 'not_submitted'] ?? KYC_VI.not_submitted;
+  const kyc = KYC_VI[hp?.verification_status ?? 'unsubmitted'] ?? KYC_VI.unsubmitted;
   const suspended = user.status === 'suspended';
   const isAdmin = user.roles?.includes('admin');
 
@@ -342,55 +343,60 @@ export default function UserDetailPage() {
             </Card>
           )}
 
-          {isHelper && hp?.verification_status && hp.verification_status !== 'not_submitted' && (
-            <Card className="lg:col-span-2">
-              <CardHeader>
-                <CardTitle className="text-base">Hồ sơ e-KYC</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex flex-wrap items-center gap-3 text-sm">
-                  <span>
-                    Số CCCD: <b className="font-mono">{hp.id_card_number ?? '—'}</b>
-                  </span>
-                  <Badge variant={kyc.variant}>{kyc.label}</Badge>
-                  {hp.verified_at && (
-                    <span className="text-muted-foreground">
-                      Duyệt lúc {formatDateTime(hp.verified_at)}
+          {isHelper &&
+            hp?.verification_status &&
+            hp.verification_status !== 'unsubmitted' &&
+            hp.verification_status !== 'not_submitted' && (
+              <Card className="lg:col-span-2">
+                <CardHeader>
+                  <CardTitle className="text-base">Hồ sơ e-KYC</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex flex-wrap items-center gap-3 text-sm">
+                    <span>
+                      Số CCCD: <b className="font-mono">{hp.id_card_number ?? '—'}</b>
                     </span>
-                  )}
-                  {hp.rejection_reason && (
-                    <span className="text-destructive">Lý do từ chối: {hp.rejection_reason}</span>
-                  )}
-                </div>
-                <PhotoGrid
-                  urls={[hp.id_card_front, hp.id_card_back, hp.selfie_photo].filter(Boolean)}
-                />
-                {hp.verification_status === 'pending' && (
-                  <div className="flex gap-2">
-                    <Button
-                      disabled={approveKyc.isPending}
-                      onClick={() =>
-                        confirm('Duyệt e-KYC cho thợ này?') && approveKyc.mutate(user._id)
-                      }
-                    >
-                      Duyệt KYC
-                    </Button>
-                    <Button
-                      variant="outline"
-                      disabled={rejectKyc.isPending}
-                      onClick={() => {
-                        const reason = prompt('Lý do từ chối?');
-                        if (reason?.trim())
-                          rejectKyc.mutate({ userId: user._id, reason: reason.trim() });
-                      }}
-                    >
-                      Từ chối
-                    </Button>
+                    <Badge variant={kyc.variant}>{kyc.label}</Badge>
+                    {hp.verified_at && (
+                      <span className="text-muted-foreground">
+                        Duyệt lúc {formatDateTime(hp.verified_at)}
+                      </span>
+                    )}
+                    {hp.rejection_reason && (
+                      <span className="text-destructive">
+                        Lý do từ chối: {hp.rejection_reason}
+                      </span>
+                    )}
                   </div>
-                )}
-              </CardContent>
-            </Card>
-          )}
+                  <PhotoGrid
+                    urls={[hp.id_card_front, hp.id_card_back, hp.selfie_photo].filter(Boolean)}
+                  />
+                  {hp.verification_status === 'pending' && (
+                    <div className="flex gap-2">
+                      <Button
+                        disabled={approveKyc.isPending}
+                        onClick={() =>
+                          confirm('Duyệt e-KYC cho thợ này?') && approveKyc.mutate(user._id)
+                        }
+                      >
+                        Duyệt KYC
+                      </Button>
+                      <Button
+                        variant="outline"
+                        disabled={rejectKyc.isPending}
+                        onClick={() => {
+                          const reason = prompt('Lý do từ chối?');
+                          if (reason?.trim())
+                            rejectKyc.mutate({ userId: user._id, reason: reason.trim() });
+                        }}
+                      >
+                        Từ chối
+                      </Button>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
         </div>
       )}
 
