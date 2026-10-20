@@ -14,13 +14,35 @@ import {
   ArrayMinSize,
   ArrayMaxSize,
   ValidateNested,
+  IsIn,
+  IsDefined,
+  Validate,
+  ValidatorConstraint,
+  ValidatorConstraintInterface,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
+@ValidatorConstraint({ name: 'validCoordinates', async: false })
+class ValidCoordinates implements ValidatorConstraintInterface {
+  validate(value: unknown) {
+    return (
+      Array.isArray(value) &&
+      value.length === 2 &&
+      value.every(Number.isFinite) &&
+      Math.abs(value[0]) <= 180 &&
+      Math.abs(value[1]) <= 90
+    );
+  }
+  defaultMessage() {
+    return 'Tọa độ phải gồm kinh độ [-180, 180] và vĩ độ [-90, 90]';
+  }
+}
+
 export class JobAddressLocationDto {
   @ApiProperty({ example: 'Point' })
   @IsString()
+  @IsIn(['Point'])
   type: string;
 
   @ApiProperty({ example: [106.6297, 10.8231], description: '[longitude, latitude]' })
@@ -28,6 +50,7 @@ export class JobAddressLocationDto {
   @ArrayMinSize(2)
   @ArrayMaxSize(2)
   @IsNumber({}, { each: true })
+  @Validate(ValidCoordinates)
   coordinates: [number, number];
 }
 
@@ -38,6 +61,7 @@ export class JobAddressDto {
   @ApiProperty() @IsString() @IsNotEmpty() city: string;
 
   @ApiProperty({ type: JobAddressLocationDto })
+  @IsDefined()
   @ValidateNested()
   @Type(() => JobAddressLocationDto)
   location: JobAddressLocationDto;
@@ -63,6 +87,7 @@ export class CreateJobDto {
   videos?: string[];
 
   @ApiProperty({ type: JobAddressDto })
+  @IsDefined()
   @ValidateNested()
   @Type(() => JobAddressDto)
   address: JobAddressDto;
@@ -80,6 +105,7 @@ export class CreateSosJobDto {
   })
   @IsString()
   @IsNotEmpty()
+  @IsIn(['electrician', 'plumbing', 'locksmith', 'ac_repair'])
   category: string;
 
   @ApiProperty({ example: 'Chập điện khét ổ cắm phòng khách' })
@@ -93,6 +119,7 @@ export class CreateSosJobDto {
   description: string;
 
   @ApiProperty({ type: JobAddressDto })
+  @IsDefined()
   @ValidateNested()
   @Type(() => JobAddressDto)
   address: JobAddressDto;

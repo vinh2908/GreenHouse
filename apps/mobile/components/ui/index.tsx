@@ -90,6 +90,8 @@ export function Button({
 
   return (
     <TouchableOpacity
+      accessibilityRole="button"
+      accessibilityLabel={title}
       activeOpacity={0.82}
       disabled={disabled || loading}
       style={[
@@ -163,6 +165,7 @@ export function Input({ label, error, leftIcon, rightIcon, style, ...props }: In
       >
         {leftIcon}
         <TextInput
+          accessibilityLabel={label}
           style={[
             {
               flex: 1,

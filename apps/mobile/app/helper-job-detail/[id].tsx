@@ -1,10 +1,10 @@
+import { Alert } from '@/components/common/app-alert';
 import { useState, useEffect } from 'react';
 import {
   View,
   Text,
   ScrollView,
   TouchableOpacity,
-  Alert,
   TextInput,
   Modal,
   KeyboardAvoidingView,
@@ -67,7 +67,7 @@ export default function HelperJobDetailScreen() {
 
   const handleBack = () => {
     if (router.canGoBack()) {
-      router.back();
+      return router.back();
     }
     router.replace('/(helper)/jobs');
   };
@@ -75,7 +75,7 @@ export default function HelperJobDetailScreen() {
   // ── Realtime Socket Updates ──────────────────────────────────────────────
   useJobSocketUpdates(id);
 
-  const { data: job, isLoading } = useJobDetail(id);
+  const { data: job, isLoading, refetch } = useJobDetail(id);
   const { data: quotes } = useJobQuotes(id);
   const { data: helperProfile } = useHelperProfile();
 
@@ -116,7 +116,14 @@ export default function HelperJobDetailScreen() {
   const insets = useSafeAreaInsets();
 
   if (isLoading) return <LoadingSpinner />;
-  if (!job) return null;
+  if (!job)
+    return (
+      <View style={{ padding: 24, gap: 16 }}>
+        <Text>Chưa tải được đơn hàng hoặc bạn không có quyền xem đơn này.</Text>
+        <Button title="Thử lại" onPress={() => refetch()} />
+        <Button title="Quay lại" variant="outline" onPress={handleBack} />
+      </View>
+    );
 
   // Kiểm tra xem thợ hiện tại đã gửi báo giá chưa
   const myQuote = quotes?.find((q: any) => {
@@ -134,14 +141,10 @@ export default function HelperJobDetailScreen() {
           router.push('/kyc');
         }
       } else {
-        Alert.alert(
-          'Yêu cầu xác thực e-KYC',
-          msg,
-          [
-            { text: 'Để sau', style: 'cancel' },
-            { text: 'Xác thực ngay', onPress: () => router.push('/kyc') },
-          ],
-        );
+        Alert.alert('Yêu cầu xác thực e-KYC', msg, [
+          { text: 'Để sau', style: 'cancel' },
+          { text: 'Xác thực ngay', onPress: () => router.push('/kyc') },
+        ]);
       }
       return;
     }
@@ -288,14 +291,10 @@ export default function HelperJobDetailScreen() {
           doSubmit();
         }
       } else {
-        Alert.alert(
-          'Chưa có bằng chứng nghiệm thu',
-          msg,
-          [
-            { text: 'Chụp/Quay ngay', style: 'cancel' },
-            { text: 'Tiếp tục gửi', onPress: doSubmit },
-          ],
-        );
+        Alert.alert('Chưa có bằng chứng nghiệm thu', msg, [
+          { text: 'Chụp/Quay ngay', style: 'cancel' },
+          { text: 'Tiếp tục gửi', onPress: doSubmit },
+        ]);
       }
       return;
     }

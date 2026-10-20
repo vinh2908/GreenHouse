@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { ChatModule } from '../chat/chat.module';
 import { MongooseModule } from '@nestjs/mongoose';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { AdminController } from './admin.controller';
@@ -35,6 +36,7 @@ import {
       { name: CustomerProfile.name, schema: CustomerProfileSchema },
     ]),
     NotificationsModule,
+    ChatModule,
   ],
   controllers: [AdminController],
   providers: [AdminService],

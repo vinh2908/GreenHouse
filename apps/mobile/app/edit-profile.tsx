@@ -1,3 +1,4 @@
+import { Alert } from '@/components/common/app-alert';
 import { useState, useEffect } from 'react';
 import {
   View,
@@ -8,7 +9,6 @@ import {
   KeyboardAvoidingView,
   Platform,
   Image,
-  Alert,
   ActivityIndicator,
 } from 'react-native';
 import { LocationPicker, LocationPreview, PickerCoords } from '@/components/common/location-picker';

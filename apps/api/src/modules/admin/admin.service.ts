@@ -21,6 +21,14 @@ import {
 import { HelperStatus, UserRole, UserStatus, VerificationStatus } from '@homemate/types';
 import { NOTIFICATION_TYPES } from '@homemate/constants';
 import { NotificationsService } from '../notifications/notifications.service';
+import { AppGateway } from '../chat/app.gateway';
+
+const escapeSearch = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+function validatePage(page: number, limit: number) {
+  if (!Number.isInteger(page) || page < 1 || !Number.isInteger(limit) || limit < 1 || limit > 100) {
+    throw new BadRequestException('Trang phải từ 1; số mục mỗi trang phải từ 1 đến 100');
+  }
+}
 
 @Injectable()
 export class AdminService {
@@ -35,11 +43,14 @@ export class AdminService {
     @InjectModel(Review.name) private reviewModel: Model<ReviewDocument>,
     @InjectModel(CustomerProfile.name) private customerModel: Model<CustomerProfileDocument>,
     private readonly notificationsService: NotificationsService,
+    private readonly gateway: AppGateway,
   ) {}
 
   // ─── Users ────────────────────────────────────────────────────────────────
 
   async getUsers(search?: string, status?: string, page = 1, limit = 20) {
+    validatePage(page, limit);
+    if (search) search = escapeSearch(search);
     const query: Record<string, unknown> = { is_deleted: false };
     if (status) query['status'] = status;
     if (search) {
@@ -178,6 +189,7 @@ export class AdminService {
       .exec();
     if (!user) throw new NotFoundException('Người dùng không tồn tại');
     // Every helper search (SOS broadcast, nearby, matching) only picks ONLINE helpers,
+    this.gateway.disconnectUser(id);
     // so taking the profile offline removes a suspended helper from all of them.
     await this.helperModel
       .updateOne({ user_id: user._id }, { status: HelperStatus.OFFLINE })
@@ -200,8 +212,25 @@ export class AdminService {
   // ─── Helpers ──────────────────────────────────────────────────────────────
 
   async getHelpers(search?: string, verificationStatus?: string, page = 1, limit = 20) {
+    validatePage(page, limit);
     const query: Record<string, unknown> = {};
     if (verificationStatus) query['verification_status'] = verificationStatus;
+
+    if (search) {
+      const text = escapeSearch(search);
+      const users = await this.userModel
+        .find({
+          is_deleted: false,
+          $or: [
+            { full_name: { $regex: text, $options: 'i' } },
+            { phone: { $regex: text, $options: 'i' } },
+          ],
+        })
+        .select('_id')
+        .lean()
+        .exec();
+      query['user_id'] = { $in: users.map(user => user._id) };
+    }
 
     // If searching, join with users collection
     const skip = (page - 1) * limit;
@@ -211,14 +240,6 @@ export class AdminService {
         .populate({
           path: 'user_id',
           select: 'full_name phone email avatar status',
-          match: search
-            ? {
-                $or: [
-                  { full_name: { $regex: search, $options: 'i' } },
-                  { phone: { $regex: search, $options: 'i' } },
-                ],
-              }
-            : undefined,
         })
         .sort({ created_at: -1 })
         .skip(skip)
@@ -227,11 +248,11 @@ export class AdminService {
       this.helperModel.countDocuments(query).exec(),
     ]);
 
-    const filtered = search ? helpers.filter(h => h.user_id !== null) : helpers;
-    return { helpers: filtered, total, page, limit, total_pages: Math.ceil(total / limit) };
+    return { helpers, total, page, limit, total_pages: Math.ceil(total / limit) };
   }
 
   async getPendingKyc(page = 1, limit = 20) {
+    validatePage(page, limit);
     const skip = (page - 1) * limit;
     const [helpers, total] = await Promise.all([
       this.helperModel
@@ -287,6 +308,8 @@ export class AdminService {
   // ─── Jobs ─────────────────────────────────────────────────────────────────
 
   async getJobs(status?: string, search?: string, page = 1, limit = 20) {
+    validatePage(page, limit);
+    if (search) search = escapeSearch(search);
     const query: Record<string, unknown> = {};
     if (status) query['status'] = status;
     if (search) {
