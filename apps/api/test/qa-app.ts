@@ -90,20 +90,14 @@ export async function createQaApp() {
       })
       .expect(201);
     const id = res.body.data.user._id;
-    await app
-      .get(getModelToken('User'))
-      .updateOne(
-        { _id: id },
-        {
-          roles:
-            role === 'helper'
-              ? ['customer', 'helper']
-              : role === 'admin'
-                ? ['admin']
-                : ['customer'],
-          active_role: role === 'outsider' ? 'customer' : role,
-        },
-      );
+    await app.get(getModelToken('User')).updateOne(
+      { _id: id },
+      {
+        roles:
+          role === 'helper' ? ['customer', 'helper'] : role === 'admin' ? ['admin'] : ['customer'],
+        active_role: role === 'outsider' ? 'customer' : role,
+      },
+    );
     const login = await request(app.getHttpServer())
       .post('/api/v1/auth/login')
       .send({ phone, password: 'QaOnly123!' })
@@ -115,20 +109,18 @@ export async function createQaApp() {
       refresh: login.body.data.refresh_token,
     };
   }
-  await app
-    .get(getModelToken('HelperProfile'))
-    .create({
-      user_id: new Types.ObjectId(accounts.helper.id),
-      service_ids: services.map((s: any) => new Types.ObjectId(s._id)),
-      verification_status: 'approved',
-      status: 'online',
-      location: { type: 'Point', coordinates: [106.701, 10.731] },
-      bank_account: {
-        bank_name: 'QA Bank',
-        account_name: 'QA HELPER',
-        account_number: '1234567890',
-      },
-    });
+  await app.get(getModelToken('HelperProfile')).create({
+    user_id: new Types.ObjectId(accounts.helper.id),
+    service_ids: services.map((s: any) => new Types.ObjectId(s._id)),
+    verification_status: 'approved',
+    status: 'online',
+    location: { type: 'Point', coordinates: [106.701, 10.731] },
+    bank_account: {
+      bank_name: 'QA Bank',
+      account_name: 'QA HELPER',
+      account_number: '1234567890',
+    },
+  });
   return {
     app,
     mongo,
