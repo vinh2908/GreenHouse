@@ -333,7 +333,7 @@ export default function BookingScreen() {
           ward: address.ward?.trim() || undefined,
           district: address.district.trim(),
           city: address.city?.trim() || 'Hồ Chí Minh',
-          location: { type: 'Point', coordinates: address.coordinates! },
+          location: { type: 'Point', coordinates: address.coordinates || [106.6983, 10.7725] },
         },
         preferred_date: date,
         preferred_time_start: timeSlot,
@@ -367,11 +367,7 @@ export default function BookingScreen() {
         return;
       }
       if (!address.coordinates) {
-        Toast.show({
-          type: 'error',
-          text1: 'Chọn địa điểm từ kết quả tìm kiếm hoặc dùng vị trí hiện tại',
-        });
-        return;
+        setAddress(a => ({ ...a, coordinates: [106.6983, 10.7725] }));
       }
       setStep(2);
     } else if (step === 2) {
