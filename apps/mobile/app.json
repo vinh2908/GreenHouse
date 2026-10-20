@@ -30,12 +30,18 @@
       "permissions": [
         "ACCESS_FINE_LOCATION",
         "ACCESS_COARSE_LOCATION",
+        "ACCESS_BACKGROUND_LOCATION",
+        "FOREGROUND_SERVICE",
+        "FOREGROUND_SERVICE_LOCATION",
         "CAMERA",
         "POST_NOTIFICATIONS",
         "READ_EXTERNAL_STORAGE",
         "WRITE_EXTERNAL_STORAGE",
         "android.permission.ACCESS_COARSE_LOCATION",
         "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_BACKGROUND_LOCATION",
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.FOREGROUND_SERVICE_LOCATION",
         "android.permission.POST_NOTIFICATIONS"
       ]
     },
@@ -51,7 +57,10 @@
       [
         "expo-location",
         {
-          "locationAlwaysAndWhenInUsePermission": "Cho phép Green House truy cập vị trí của bạn."
+          "locationAlwaysAndWhenInUsePermission": "Cho phép Green House truy cập vị trí của bạn kể cả khi ứng dụng đang chạy nền, để thợ chia sẻ hành trình đến khách hàng.",
+          "locationWhenInUsePermission": "Green House cần vị trí của bạn để hiển thị bản đồ và tìm dịch vụ gần đây.",
+          "isAndroidBackgroundLocationEnabled": true,
+          "isAndroidForegroundServiceEnabled": true
         }
       ],
       [

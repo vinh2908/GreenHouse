@@ -17,6 +17,7 @@ function load(relative, mocks = {}) {
     exports: module.exports,
     require: name => (name in mocks ? mocks[name] : require(name)),
     Date,
+    URL,
     Number,
     process: { env: {} },
     setTimeout,
@@ -39,12 +40,24 @@ const { acceptTrackingEvent, trackingTitle, validCoordinate } = load(
   'apps/mobile/services/tracking.ts',
 );
 const { TRACKING_MAP_HTML } = load('apps/mobile/components/common/tracking-map-document.ts');
+const endpointConfig = load('apps/mobile/services/endpoint-config.ts');
 let passed = 0;
 function check(name, run) {
   run();
   console.log('PASS', name);
   passed++;
 }
+check('public deployments reject QA localhost and LAN endpoints', () => {
+  for (const url of ['http://127.0.0.1:3199', 'http://localhost:3199', 'http://192.168.1.8:3000']) {
+    assert.equal(endpointConfig.usableEndpoint(url, 'greenhouse-customer.vercel.app'), false);
+  }
+});
+check('local browser QA remains allowed; release native rejects localhost', () => {
+  assert.equal(endpointConfig.usableEndpoint('http://127.0.0.1:3199', '127.0.0.1'), true);
+  assert.equal(endpointConfig.usableEndpoint('http://127.0.0.1:3199', undefined, false), false);
+});
+check('public API endpoint remains allowed', () =>
+  assert.equal(endpointConfig.usableEndpoint('https://greenhouse-api-chb9.onrender.com', 'greenhouse-customer.vercel.app'), true));
 const now = Date.now(),
   event = {
     job_id: 'job1',
@@ -124,6 +137,7 @@ check('React document/source stable and status text not truncated', () => {
     'expo-constants': { default: { expoConfig: { extra: { wsUrl: 'http://localhost' } } } },
     '@homemate/constants': { SOCKET_EVENTS: {} },
     '@/services/api-client': { default: {} },
+    '@/services/endpoint-config': endpointConfig,
   });
   await socketService.connect();
   socketService.joinJob('job1');

@@ -2,12 +2,14 @@ import axios, { AxiosInstance, AxiosError } from 'axios';
 import * as SecureStore from '@/services/secure-storage';
 import Constants from 'expo-constants';
 import Toast from 'react-native-toast-message';
+import { usableEndpoint } from '@/services/endpoint-config';
 
 const getBaseApiUrl = () => {
   // 1. URL cố định (tunnel / server thật): đặt EXPO_PUBLIC_API_URL trong apps/mobile/.env.
   //    Không ghi cứng IP LAN vào app.json — IP máy dev đổi theo mạng WiFi.
   const fixedUrl = process.env.EXPO_PUBLIC_API_URL || Constants.expoConfig?.extra?.apiUrl;
-  if (fixedUrl) {
+  const browserHost = (globalThis as { location?: { hostname?: string } }).location?.hostname;
+  if (usableEndpoint(fixedUrl, browserHost, typeof __DEV__ !== 'undefined' && __DEV__)) {
     return fixedUrl;
   }
 
