@@ -5,27 +5,10 @@ const API_URL =
 
 export const apiClient = axios.create({
   baseURL: API_URL,
-  timeout: 20000,
   headers: {
     'Content-Type': 'application/json',
   },
 });
-
-let refreshInFlight: Promise<string> | null = null;
-async function refreshSession() {
-  const previous = localStorage.getItem('refresh_token');
-  if (!previous) throw new Error('Missing refresh token');
-  const { data } = await axios.post(
-    `${API_URL}/auth/refresh`,
-    { refresh_token: previous },
-    { timeout: 20000 },
-  );
-  if (localStorage.getItem('refresh_token') !== previous) throw new Error('Session changed');
-  const { access_token, refresh_token } = data.data;
-  const { useAuthStore } = await import('@/stores/auth.store');
-  useAuthStore.getState().setTokens(access_token, refresh_token);
-  return access_token as string;
-}
 
 // Request interceptor — attach token
 apiClient.interceptors.request.use(
@@ -46,29 +29,20 @@ apiClient.interceptors.response.use(
   response => response,
   async error => {
     const originalRequest = error.config;
-    if (
-      error.response?.status === 401 &&
-      originalRequest &&
-      !originalRequest._retry &&
-      !originalRequest.url?.startsWith('/auth/')
-    ) {
+    if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
       try {
-        if (!refreshInFlight)
-          refreshInFlight = refreshSession().finally(() => {
-            refreshInFlight = null;
-          });
-        const accessToken = await refreshInFlight;
-        originalRequest.headers.Authorization = `Bearer ${accessToken}`;
+        const refreshToken = localStorage.getItem('refresh_token');
+        const { data } = await axios.post(`${API_URL}/auth/refresh`, {
+          refresh_token: refreshToken,
+        });
+        const { access_token } = data.data;
+        localStorage.setItem('access_token', access_token);
+        originalRequest.headers.Authorization = `Bearer ${access_token}`;
         return apiClient(originalRequest);
-      } catch (refreshError) {
-        if (
-          axios.isAxiosError(refreshError) &&
-          (!refreshError.response || refreshError.response.status >= 500)
-        )
-          return Promise.reject(refreshError);
-        const { useAuthStore } = await import('@/stores/auth.store');
-        useAuthStore.getState().logout();
+      } catch {
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('refresh_token');
         window.location.href = '/login';
       }
     }

@@ -12,13 +12,13 @@ services:
       - key: PORT
         value: 10000
       - key: MONGODB_URI
-        value: mongodb://nguyenvanvinh290805_db_user:FhZeJiqgLhsGS8qZ@ac-c70xbo6-shard-00-00.a5g35p9.mongodb.net:27017,ac-c70xbo6-shard-00-01.a5g35p9.mongodb.net:27017,ac-c70xbo6-shard-00-02.a5g35p9.mongodb.net:27017/homemate?ssl=true&replicaSet=atlas-o24yif-shard-0&authSource=admin&retryWrites=true&w=majority
+        sync: false
       - key: MONGODB_DB_NAME
         value: homemate
       - key: JWT_ACCESS_SECRET
-        value: homemate-access-secret-super-safe-32chars
+        sync: false
       - key: JWT_REFRESH_SECRET
-        value: homemate-refresh-secret-super-safe-32chars
+        sync: false
       - key: JWT_ACCESS_EXPIRES_IN
         value: 15m
       - key: JWT_REFRESH_EXPIRES_IN

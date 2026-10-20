@@ -35,13 +35,15 @@ export default function HelperJobsScreen() {
     isLoading: acLoading,
     isRefetching: acRefetching,
     refetch: rac,
-  } = useHelperJobs('confirmed,helper_on_the_way,helper_arrived,in_progress,pending_review');
+  } = useHelperJobs(
+    'confirmed,helper_on_the_way,helper_arrived,in_progress,pending_review,disputed',
+  );
   const {
     data: history,
     isLoading: hLoading,
     isRefetching: hRefetching,
     refetch: rh,
-  } = useHelperJobs('completed,cancelled');
+  } = useHelperJobs('completed,cancelled,refunded');
 
   const datasets = [
     { data: available?.jobs, loading: aLoading, refetching: aRefetching, refetch: ra },
@@ -53,11 +55,11 @@ export default function HelperJobsScreen() {
   const insets = useSafeAreaInsets();
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#FFFF99' }}>
+    <View style={{ flex: 1, backgroundColor: '#F8F9FA' }}>
       {/* Header */}
       <View
         style={{
-          backgroundColor: '#FFFF99',
+          backgroundColor: '#FFFFFF',
           borderBottomWidth: 1,
           borderBottomColor: COLORS.gray[100],
           paddingHorizontal: 20,
@@ -76,7 +78,7 @@ export default function HelperJobsScreen() {
       {/* Tabs */}
       <View
         style={{
-          backgroundColor: '#FFFF99',
+          backgroundColor: '#FFFFFF',
           borderBottomWidth: 1,
           borderBottomColor: COLORS.gray[100],
         }}

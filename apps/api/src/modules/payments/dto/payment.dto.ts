@@ -17,10 +17,23 @@ export class MockPayJobDto {
   @IsNotEmpty()
   job_id: string;
 
-  @ApiProperty({ description: 'Phương thức thanh toán mock', example: 'mock_card' })
+  @ApiProperty({ description: 'Phương thức thanh toán (cash | vietqr | momo)', example: 'vietqr' })
   @IsString()
   @IsNotEmpty()
   payment_method: string;
+}
+
+export class TopupWalletDto {
+  @ApiProperty({ description: 'Số tiền nạp vào ví ký quỹ (tối thiểu 50,000₫)', minimum: 50000 })
+  @IsNumber()
+  @Min(50000)
+  @Max(100_000_000)
+  amount: number;
+
+  @ApiPropertyOptional({ description: 'Phương thức nạp (vietqr | momo)', example: 'vietqr' })
+  @IsOptional()
+  @IsString()
+  payment_method?: string;
 }
 
 export class BankAccountInfoDto {

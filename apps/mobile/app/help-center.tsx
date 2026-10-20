@@ -5,18 +5,15 @@ import { useRouter } from 'expo-router';
 import {
   ArrowLeft,
   PhoneCall,
-  MessageCircle,
   Sparkles,
-  HelpCircle,
   ChevronDown,
   ChevronUp,
-  AlertTriangle,
-  Clock,
   ShieldCheck,
   Send,
   Zap,
 } from 'lucide-react-native';
-import { Button, Card, COLORS, Badge, Separator } from '@/components/ui';
+import { Card, COLORS, Badge, Separator } from '@/components/ui';
+import { useAiSupport } from '@/hooks/use-api';
 import Toast from 'react-native-toast-message';
 
 const FAQS = [
@@ -45,6 +42,7 @@ const FAQS = [
 export default function HelpCenterScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const aiSupport = useAiSupport();
   const [expandedFaq, setExpandedFaq] = useState<number | null>(0);
   const [aiQuestion, setAiQuestion] = useState('');
   const [aiAnswer, setAiAnswer] = useState<string | null>(null);
@@ -56,33 +54,39 @@ export default function HelpCenterScreen() {
     });
   };
 
-  const handleAskAi = () => {
-    if (!aiQuestion.trim()) return;
+  const getFallbackAiAnswer = (question: string) => {
+    const q = question.toLowerCase();
+    if (q.includes('giá') || q.includes('tiền') || q.includes('chi phí')) {
+      return '💡 Giá dịch vụ trên Green House được tính minh bạch dựa trên báo giá trực tiếp từ thợ hoặc biểu phí ước tính chuẩn của AI. Bạn luôn biết rõ giá công và vật tư trước khi xác nhận!';
+    }
+    if (q.includes('hủy') || q.includes('hoàn tiền')) {
+      return '💡 Bạn có thể hủy yêu cầu miễn phí trước khi thợ di chuyển đến. Nếu đơn có phát sinh tranh chấp, Green House sẽ đối soát và hoàn tiền trong 24h làm việc.';
+    }
+    if (q.includes('thợ') || q.includes('kyc') || q.includes('uy tín')) {
+      return '💡 100% thợ đều được xác thực danh tính e-KYC CCCD và điểm sao đánh giá thực tế từ các đơn hàng trước đó. Bạn hoàn toàn an tâm nhé!';
+    }
+    return `💡 Trợ lý AI Green House ghi nhận câu hỏi: "${question}". Nếu cần hỗ trợ khẩn cấp, bạn vui lòng gọi hotline 1900 8888 để được tổng đài viên phục vụ ngay lập tức 24/7!`;
+  };
+
+  const handleAskAi = async () => {
+    const question = aiQuestion.trim();
+    if (!question) return;
     setAiLoading(true);
     setAiAnswer(null);
 
-    // AI Support answer helper
-    setTimeout(() => {
-      setAiLoading(false);
-      const q = aiQuestion.toLowerCase();
-      if (q.includes('giá') || q.includes('tiền') || q.includes('chi phí')) {
-        setAiAnswer(
-          '💡 Giá dịch vụ trên Green House được tính minh bạch dựa trên báo giá trực tiếp từ thợ hoặc biểu phí ước tính chuẩn của AI. Bạn luôn biết rõ giá công và vật tư trước khi xác nhận!',
-        );
-      } else if (q.includes('hủy') || q.includes('hoàn tiền')) {
-        setAiAnswer(
-          '💡 Bạn có thể hủy yêu cầu miễn phí trước khi thợ di chuyển đến. Nếu đơn có phát sinh tranh chấp, Green House sẽ đối soát và hoàn tiền trong 24h làm việc.',
-        );
-      } else if (q.includes('thợ') || q.includes('kyc') || q.includes('uy tín')) {
-        setAiAnswer(
-          '💡 100% thợ đều được xác thực danh tính e-KYC CCCD và điểm sao đánh giá thực tế từ các đơn hàng trước đó. Bạn hoàn toàn an tâm nhé!',
-        );
+    try {
+      const res: any = await aiSupport.mutateAsync({ message: question });
+      const reply = res?.data?.reply || res?.reply;
+      if (reply) {
+        setAiAnswer(`💡 ${reply}`);
       } else {
-        setAiAnswer(
-          `💡 Trợ lý AI Green House ghi nhận câu hỏi: "${aiQuestion}". Nếu cần hỗ trợ khẩn cấp, bạn vui lòng gọi hotline 1900 8888 để được tổng đài viên phục vụ ngay lập tức 24/7!`,
-        );
+        setAiAnswer(getFallbackAiAnswer(question));
       }
-    }, 600);
+    } catch {
+      setAiAnswer(getFallbackAiAnswer(question));
+    } finally {
+      setAiLoading(false);
+    }
   };
 
   return (
@@ -102,7 +106,13 @@ export default function HelpCenterScreen() {
       >
         <TouchableOpacity
           activeOpacity={0.7}
-          onPress={() => router.back()}
+          onPress={() => {
+            if (router.canGoBack()) {
+              router.back();
+              return;
+            }
+            router.replace('/(customer)/home');
+          }}
           hitSlop={{ top: 14, bottom: 14, left: 14, right: 14 }}
           style={{
             width: 40,
