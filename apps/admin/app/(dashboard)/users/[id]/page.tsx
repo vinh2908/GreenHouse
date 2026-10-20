@@ -363,9 +363,7 @@ export default function UserDetailPage() {
                       </span>
                     )}
                     {hp.rejection_reason && (
-                      <span className="text-destructive">
-                        Lý do từ chối: {hp.rejection_reason}
-                      </span>
+                      <span className="text-destructive">Lý do từ chối: {hp.rejection_reason}</span>
                     )}
                   </div>
                   <PhotoGrid
