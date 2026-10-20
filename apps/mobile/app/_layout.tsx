@@ -13,6 +13,7 @@ import '../global.css';
 import { useSocketConnection, useNotificationSocket } from '@/hooks/use-socket';
 import { AppAlertHost } from '@/components/common/app-alert';
 import { useLiveGps } from '@/hooks/use-live-gps';
+import { useBackgroundGps } from '@/hooks/use-background-gps';
 import { useAuthStore } from '@/stores/auth.store';
 
 SplashScreen.preventAutoHideAsync();
@@ -133,6 +134,7 @@ function SocketManager() {
   useSocketConnection();
   useNotificationSocket();
   useLiveGps();
+  useBackgroundGps();
   return null;
 }
 

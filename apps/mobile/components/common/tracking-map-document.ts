@@ -14,7 +14,9 @@ html,body,#map{height:100%;width:100%;margin:0;background:#f1f5f9;font-family:sy
 .leaflet-top{top:100px}.leaflet-control-attribution{font-size:8px}
 #info{position:absolute;bottom:23px;left:10px;right:60px;z-index:900;background:#111827e8;color:white;border-radius:12px;padding:8px 10px;font-size:12px}
 #recenter{position:absolute;bottom:26px;right:10px;z-index:900;background:white;border:0;border-radius:12px;width:40px;height:40px;font-size:20px}
+#tile-warning{display:none;position:absolute;top:112px;left:12px;right:12px;z-index:900;background:#fff3cd;color:#713f12;padding:8px;border-radius:8px;font-size:12px}
 </style></head><body><div id="map"></div><div id="info" role="status">Đang tải bản đồ…</div>
+<div id="tile-warning" role="status"></div>
 <button id="recenter" aria-label="Xem toàn bộ hành trình">🎯</button>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script>
@@ -27,17 +29,31 @@ html,body,#map{height:100%;width:100%;margin:0;background:#f1f5f9;font-family:sy
   }
   if(!window.L){info.textContent='Không tải được bản đồ. Kiểm tra kết nối mạng.';return;}
   var map=L.map('map',{zoomControl:true}).setView([16,106],5);
-  var street=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
-    maxZoom:19,attribution:'© OpenStreetMap contributors'
+  var street=L.tileLayer('https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',{
+    maxZoom:19,attribution:'© OpenStreetMap contributors © CARTO'
   }).addTo(map);
+  var streetBackup=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',{
+    maxZoom:19,attribution:'Tiles © Esri'
+  });
   var satellite=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{
     maxZoom:19,attribution:'Tiles © Esri'
   });
   var customer=null, helper=null, dest=null, state=null, route=null, line=null, border=null;
   var point=null, frame=0, version=0, controller=null, lastFetch=0, lastMetrics='';
   var lastDrawAt=0, lastLayer='streets', tileErrors=0;
-  function tileError(){if(++tileErrors===4) info.textContent='Không tải được nền bản đồ. Kiểm tra kết nối mạng.';}
-  street.on('tileerror',tileError);satellite.on('tileerror',tileError);
+  var tileWarning=document.getElementById('tile-warning'), backupActive=false;
+  function tileError(){
+    if(++tileErrors<3)return;
+    if(lastLayer==='streets'&&!backupActive){
+      backupActive=true;map.removeLayer(street);streetBackup.addTo(map);
+    }
+    tileWarning.textContent='Đang thử tải lại nền bản đồ. Kiểm tra kết nối mạng nếu vẫn trống.';
+    tileWarning.style.display='block';
+  }
+  [street,streetBackup,satellite].forEach(function(layer){
+    layer.on('tileerror',tileError);
+    layer.on('tileload',function(){tileErrors=0;tileWarning.style.display='none';});
+  });
   function valid(p){return p && Number.isFinite(p.lat) && Math.abs(p.lat)<=90 &&
     Number.isFinite(p.lng) && Math.abs(p.lng)<=180;}
   function distance(a,b){var rad=Math.PI/180, dlat=(b.lat-a.lat)*rad, dlng=(b.lng-a.lng)*rad;
@@ -162,8 +178,9 @@ html,body,#map{height:100%;width:100%;margin:0;background:#f1f5f9;font-family:sy
     }
     state=next;
     if(next.layer!==lastLayer){lastLayer=next.layer;
-      if(next.layer==='satellite'){map.removeLayer(street);satellite.addTo(map);}
-      else {map.removeLayer(satellite);street.addTo(map);}}
+      tileErrors=0;tileWarning.style.display='none';
+      if(next.layer==='satellite'){map.removeLayer(street);map.removeLayer(streetBackup);satellite.addTo(map);}
+      else {map.removeLayer(satellite);(backupActive?streetBackup:street).addTo(map);}}
     var p=next.helper;
     if(!next.tracking||!dest||!valid(p)||!Number.isFinite(p.recorded_at)||Date.now()-p.recorded_at>120000||p.recorded_at>Date.now()+10000){
       point=null;cancelAnimationFrame(frame);if(helper)map.removeLayer(helper);helper=null;invalidateRoute();refresh();return;
