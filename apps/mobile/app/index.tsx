@@ -12,7 +12,7 @@ import {
 import { useRouter } from 'expo-router';
 import { Sparkles, ShieldCheck, Zap } from 'lucide-react-native';
 import { useAuthStore } from '@/stores/auth.store';
-import { COLORS } from '@/components/ui';
+import apiClient from '@/services/api-client';
 
 const { width, height } = Dimensions.get('window');
 
@@ -29,25 +29,25 @@ export default function SplashScreen() {
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
+    // 0. Đánh thức server API ngầm ngay khi mở app (tránh cold-start trên Render)
+    apiClient.get('/health').catch(() => {});
+
     // 1. Nạp Auth Token ngầm từ SecureStore
     loadStoredAuth().catch(() => {});
 
     // 2. Chạy chuỗi hoạt họa sống động (Choreographed Animations)
     Animated.parallel([
-      // Scale & Spring Logo Icon
       Animated.spring(scaleAnim, {
         toValue: 1,
         friction: 6,
         tension: 40,
         useNativeDriver: true,
       }),
-      // Fade In Background elements
       Animated.timing(opacityAnim, {
         toValue: 1,
         duration: 700,
         useNativeDriver: true,
       }),
-      // Slide Up Brand Name & Slogan
       Animated.timing(textSlideAnim, {
         toValue: 0,
         duration: 800,
@@ -55,7 +55,6 @@ export default function SplashScreen() {
         easing: Easing.out(Easing.back(1.5)),
         useNativeDriver: true,
       }),
-      // Fade in Feature Badges
       Animated.timing(badgeFadeAnim, {
         toValue: 1,
         duration: 700,
@@ -64,7 +63,6 @@ export default function SplashScreen() {
       }),
     ]).start();
 
-    // Loop Pulse Effect cho logo
     Animated.loop(
       Animated.sequence([
         Animated.timing(pulseAnim, {
@@ -113,7 +111,6 @@ export default function SplashScreen() {
 
       {/* ── Center Brand Logo & Typography ───────────────────────────── */}
       <View style={styles.centerContent}>
-        {/* Animated Glowing Logo Icon */}
         <Animated.View
           style={[
             styles.logoContainer,
@@ -122,9 +119,7 @@ export default function SplashScreen() {
             },
           ]}
         >
-          {/* Outer Ring Glow */}
           <View style={styles.outerGlow}>
-            {/* Inner Brand Emblem */}
             <View style={styles.logoBadge}>
               <Image
                 source={require('../assets/images/logo.png')}
@@ -135,7 +130,6 @@ export default function SplashScreen() {
           </View>
         </Animated.View>
 
-        {/* Brand Name & Slogan with Slide Up Animation */}
         <Animated.View
           style={[
             styles.textContainer,
@@ -172,7 +166,6 @@ export default function SplashScreen() {
 
       {/* ── Footer Loading Indicator & Copyright ─────────────────────── */}
       <Animated.View style={[styles.footer, { opacity: opacityAnim }]}>
-        {/* Modern 3-Dots Pulse Indicator */}
         <View style={styles.dotsContainer}>
           <View style={[styles.dot, styles.dotActive]} />
           <View style={[styles.dot, { opacity: 0.6 }]} />
@@ -188,7 +181,7 @@ export default function SplashScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#22C55E', // Green House Fresh Green
+    backgroundColor: '#22C55E',
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',

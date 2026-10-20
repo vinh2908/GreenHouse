@@ -8,41 +8,20 @@ import {
   MaxLength,
   IsNumber,
   IsInt,
+  IsIn,
   IsMongoId,
   Min,
   Max,
   ArrayMinSize,
   ArrayMaxSize,
   ValidateNested,
-  IsIn,
-  IsDefined,
-  Validate,
-  ValidatorConstraint,
-  ValidatorConstraintInterface,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
-@ValidatorConstraint({ name: 'validCoordinates', async: false })
-class ValidCoordinates implements ValidatorConstraintInterface {
-  validate(value: unknown) {
-    return (
-      Array.isArray(value) &&
-      value.length === 2 &&
-      value.every(Number.isFinite) &&
-      Math.abs(value[0]) <= 180 &&
-      Math.abs(value[1]) <= 90
-    );
-  }
-  defaultMessage() {
-    return 'Tọa độ phải gồm kinh độ [-180, 180] và vĩ độ [-90, 90]';
-  }
-}
-
 export class JobAddressLocationDto {
   @ApiProperty({ example: 'Point' })
   @IsString()
-  @IsIn(['Point'])
   type: string;
 
   @ApiProperty({ example: [106.6297, 10.8231], description: '[longitude, latitude]' })
@@ -50,7 +29,6 @@ export class JobAddressLocationDto {
   @ArrayMinSize(2)
   @ArrayMaxSize(2)
   @IsNumber({}, { each: true })
-  @Validate(ValidCoordinates)
   coordinates: [number, number];
 }
 
@@ -61,7 +39,6 @@ export class JobAddressDto {
   @ApiProperty() @IsString() @IsNotEmpty() city: string;
 
   @ApiProperty({ type: JobAddressLocationDto })
-  @IsDefined()
   @ValidateNested()
   @Type(() => JobAddressLocationDto)
   location: JobAddressLocationDto;
@@ -87,7 +64,6 @@ export class CreateJobDto {
   videos?: string[];
 
   @ApiProperty({ type: JobAddressDto })
-  @IsDefined()
   @ValidateNested()
   @Type(() => JobAddressDto)
   address: JobAddressDto;
@@ -105,7 +81,6 @@ export class CreateSosJobDto {
   })
   @IsString()
   @IsNotEmpty()
-  @IsIn(['electrician', 'plumbing', 'locksmith', 'ac_repair'])
   category: string;
 
   @ApiProperty({ example: 'Chập điện khét ổ cắm phòng khách' })
@@ -119,7 +94,6 @@ export class CreateSosJobDto {
   description: string;
 
   @ApiProperty({ type: JobAddressDto })
-  @IsDefined()
   @ValidateNested()
   @Type(() => JobAddressDto)
   address: JobAddressDto;
@@ -190,10 +164,77 @@ export class CompleteJobDto {
 export class ReviewJobDto {
   @ApiProperty({ minimum: 1, maximum: 5 }) @IsInt() @Min(1) @Max(5) rating: number;
   @ApiPropertyOptional() @IsOptional() @IsString() review?: string;
+  @ApiPropertyOptional({ description: 'Phương thức thanh toán (cash | vietqr | momo)' })
+  @IsOptional()
+  @IsString()
+  payment_method?: string;
 }
 
 export class CancelJobDto {
   @ApiProperty() @IsString() @IsNotEmpty() reason: string;
+}
+
+export class OpenDisputeDto {
+  @ApiProperty({ description: 'Lý do khiếu nại / chưa đạt chuẩn nghiệm thu' })
+  @IsString()
+  @IsNotEmpty()
+  reason: string;
+
+  @ApiPropertyOptional({ type: [String], description: 'Ảnh bằng chứng sự cố / khiếu nại' })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  photos?: string[];
+}
+
+export class ResolveDisputeDto {
+  @ApiProperty({ enum: ['refund_full', 'refund_partial', 'release_to_helper'] })
+  @IsIn(['refund_full', 'refund_partial', 'release_to_helper'])
+  action: 'refund_full' | 'refund_partial' | 'release_to_helper';
+
+  @ApiPropertyOptional({ description: 'Số tiền hoàn lại cho khách (dùng khi refund_partial)' })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  refund_amount?: number;
+
+  @ApiProperty({ description: 'Ghi chú phán quyết của Admin' })
+  @IsString()
+  @IsNotEmpty()
+  admin_note: string;
+}
+
+export class ProposeAmendmentDto {
+  @ApiPropertyOptional({ default: 0, description: 'Tiền công phát sinh thêm (VNĐ)' })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Max(100_000_000)
+  additional_labor_cost?: number;
+
+  @ApiPropertyOptional({ default: 0, description: 'Tiền vật tư / linh kiện phát sinh thêm (VNĐ)' })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Max(100_000_000)
+  additional_materials_cost?: number;
+
+  @ApiProperty({ description: 'Lý do phát sinh chi phí / vật tư' })
+  @IsString()
+  @IsNotEmpty()
+  reason: string;
+
+  @ApiPropertyOptional({ type: [String], description: 'Ảnh chụp vật tư / hóa đơn phát sinh' })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  photos?: string[];
+}
+
+export class RespondAmendmentDto {
+  @ApiProperty({ enum: ['accept', 'reject'] })
+  @IsIn(['accept', 'reject'])
+  action: 'accept' | 'reject';
 }
 
 export class UpdateJobDto {

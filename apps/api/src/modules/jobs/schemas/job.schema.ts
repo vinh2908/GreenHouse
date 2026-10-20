@@ -28,6 +28,15 @@ const JobEventSchema = {
   timestamp: { type: Date, default: Date.now },
 };
 
+const DisputeResolutionSchema = {
+  action: { type: String, enum: ['refund_full', 'refund_partial', 'release_to_helper'] },
+  refund_amount: { type: Number, default: 0 },
+  helper_payout: { type: Number, default: 0 },
+  admin_note: { type: String },
+  resolved_by: { type: Types.ObjectId, ref: 'User' },
+  resolved_at: { type: Date },
+};
+
 @Schema({ timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' }, versionKey: '__v' })
 export class Job {
   @Prop({ type: Types.ObjectId, ref: 'User', required: true })
@@ -145,6 +154,29 @@ export class Job {
   @Prop({ type: Types.ObjectId })
   cancelled_by?: Types.ObjectId;
 
+  // ── Dispute & Refund Evidence Fields ──────────────────────────────────────
+  @Prop()
+  dispute_reason?: string;
+
+  @Prop({ type: [String], default: [] })
+  dispute_photos: string[];
+
+  @Prop({ type: Types.ObjectId, ref: 'User' })
+  dispute_opened_by?: Types.ObjectId;
+
+  @Prop()
+  dispute_opened_at?: Date;
+
+  @Prop({ type: DisputeResolutionSchema })
+  dispute_resolution?: {
+    action: 'refund_full' | 'refund_partial' | 'release_to_helper';
+    refund_amount?: number;
+    helper_payout?: number;
+    admin_note?: string;
+    resolved_by?: Types.ObjectId;
+    resolved_at?: Date;
+  };
+
   @Prop()
   expires_at?: Date;
 
@@ -230,6 +262,18 @@ QuoteSchema.index({ expires_at: 1 });
 
 // ─── Contract Schema ──────────────────────────────────────────────────────────
 
+const ContractAmendmentSchema = {
+  proposed_by: { type: Types.ObjectId, ref: 'User', required: true },
+  proposed_role: { type: String, required: true },
+  additional_labor_cost: { type: Number, default: 0 },
+  additional_materials_cost: { type: Number, default: 0 },
+  reason: { type: String, required: true },
+  photos: { type: [String], default: [] },
+  status: { type: String, enum: ['pending', 'accepted', 'rejected'], default: 'pending' },
+  created_at: { type: Date, default: Date.now },
+  responded_at: { type: Date },
+};
+
 @Schema({ timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' }, versionKey: false })
 export class Contract {
   @Prop({ type: Types.ObjectId, ref: 'Job', required: true, unique: true })
@@ -273,6 +317,20 @@ export class Contract {
 
   @Prop({ type: [String], default: [] })
   after_photos: string[];
+
+  @Prop({ type: [ContractAmendmentSchema], default: [] })
+  amendments: {
+    _id?: Types.ObjectId;
+    proposed_by: Types.ObjectId;
+    proposed_role: string;
+    additional_labor_cost: number;
+    additional_materials_cost: number;
+    reason: string;
+    photos: string[];
+    status: 'pending' | 'accepted' | 'rejected';
+    created_at: Date;
+    responded_at?: Date;
+  }[];
 
   @Prop()
   signed_by_customer_at?: Date;

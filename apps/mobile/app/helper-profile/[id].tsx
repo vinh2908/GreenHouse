@@ -15,8 +15,9 @@ import {
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import 'dayjs/locale/vi';
+import Toast from 'react-native-toast-message';
 import { useAuthStore } from '@/stores/auth.store';
-import { useHelperPublicProfile, useHelperReviews } from '@/hooks/use-api';
+import { useHelperPublicProfile, useHelperReviews, useSelectQuote } from '@/hooks/use-api';
 import {
   Button,
   Card,
@@ -31,17 +32,22 @@ dayjs.extend(relativeTime);
 dayjs.locale('vi');
 
 export default function HelperPublicProfileScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, jobId, quoteId } = useLocalSearchParams<{
+    id: string;
+    jobId?: string;
+    quoteId?: string;
+  }>();
   const router = useRouter();
-  const insets = useSafeAreaInsets();
 
   const { user } = useAuthStore();
   const { data: profile, isLoading: pLoading, refetch } = useHelperPublicProfile(id);
   const { data: reviewsData, isLoading: rLoading } = useHelperReviews(id);
+  const selectQuote = useSelectQuote();
 
   const handleBack = () => {
     if (router.canGoBack()) {
-      return router.back();
+      router.back();
+      return;
     }
     router.replace(user?.active_role === 'helper' ? '/(helper)/dashboard' : '/(customer)/home');
   };
@@ -57,6 +63,43 @@ export default function HelperPublicProfileScreen() {
   const isVerified = profile?.verification_status === 'approved';
 
   const reviewsList = reviewsData?.reviews || [];
+  const insets = useSafeAreaInsets();
+
+  const handleMessageHelper = () => {
+    if (jobId) {
+      router.push({ pathname: '/chat/[jobId]', params: { jobId } });
+      return;
+    }
+    Toast.show({
+      type: 'info',
+      text1: 'Chọn hoặc tạo đơn hàng để nhắn tin',
+      text2: 'Cuộc trò chuyện sẽ tự động mở khi bạn chọn báo giá của thợ.',
+    });
+    router.push('/(customer)/booking');
+  };
+
+  const handleHireHelper = async () => {
+    if (jobId && quoteId) {
+      try {
+        await selectQuote.mutateAsync({
+          jobId,
+          quote_id: quoteId,
+          scheduled_at: dayjs().add(1, 'day').format('YYYY-MM-DDT09:00:00'),
+        });
+        Toast.show({
+          type: 'success',
+          text1: `Đã chọn ${helperName}! 🎉`,
+          text2: 'Hợp đồng số đã được tạo thành công.',
+        });
+        router.replace({ pathname: '/job-detail/[id]', params: { id: jobId } });
+      } catch (err: any) {
+        const msg = err?.response?.data?.message || 'Chưa thể chọn báo giá này';
+        Toast.show({ type: 'error', text1: msg });
+      }
+      return;
+    }
+    router.push('/(customer)/booking');
+  };
 
   return (
     <View style={{ flex: 1, backgroundColor: '#F8F9FA' }}>
@@ -106,7 +149,7 @@ export default function HelperPublicProfileScreen() {
           />
         }
       >
-        {/* ── 1. KHỐI THÔNG TIN ĐỊNH DANH (TẠO SỰ TIN TƯỞNG) ──────────── */}
+        {/* ── 1. KHỐI THÔNG TIN ĐỊNH DANH ──────────────────────────────── */}
         <Card style={{ alignItems: 'center', padding: 20, gap: 12 }}>
           <View style={{ position: 'relative' }}>
             <Avatar name={helperName} uri={helperAvatar} size={84} />
@@ -137,7 +180,6 @@ export default function HelperPublicProfileScreen() {
             )}
           </View>
 
-          {/* Huy hiệu xác minh tư pháp / e-KYC */}
           <View
             style={{
               backgroundColor: '#ECFDF5',
@@ -158,9 +200,8 @@ export default function HelperPublicProfileScreen() {
           </View>
         </Card>
 
-        {/* ── 2. KHỐI CHỈ SỐ UY TÍN & KINH NGHIỆM (CHỨNG MINH NĂNG LỰC) ── */}
+        {/* ── 2. KHỐI CHỈ SỐ UY TÍN & KINH NGHIỆM ──────────────────────── */}
         <View style={{ flexDirection: 'row', gap: 10 }}>
-          {/* Đánh giá sao */}
           <Card style={{ flex: 1, alignItems: 'center', padding: 14, gap: 4 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
               <Star size={20} color="#F59E0B" />
@@ -173,7 +214,6 @@ export default function HelperPublicProfileScreen() {
             </Text>
           </Card>
 
-          {/* Đơn hoàn thành */}
           <Card style={{ flex: 1, alignItems: 'center', padding: 14, gap: 4 }}>
             <Text style={{ fontSize: 20, fontWeight: '900', color: COLORS.gray[900] }}>
               {totalCompleted}
@@ -183,10 +223,9 @@ export default function HelperPublicProfileScreen() {
             </Text>
           </Card>
 
-          {/* Đúng giờ */}
           <Card style={{ flex: 1, alignItems: 'center', padding: 14, gap: 4 }}>
             <Text style={{ fontSize: 20, fontWeight: '900', color: COLORS.success }}>
-              {profile?.completion_rate ?? 0}%
+              {profile?.completion_rate ?? 100}%
             </Text>
             <Text style={{ fontSize: 11, color: COLORS.gray[500], fontWeight: '700' }}>
               Đúng giờ hẹn
@@ -194,7 +233,6 @@ export default function HelperPublicProfileScreen() {
           </Card>
         </View>
 
-        {/* Thẻ cam kết uy tín */}
         <Card
           style={{
             backgroundColor: '#FFFBEB',
@@ -211,14 +249,14 @@ export default function HelperPublicProfileScreen() {
             </Text>
           </View>
           <Text style={{ fontSize: 12.5, color: '#92400E', lineHeight: 18 }}>
-            • Tỷ lệ hoàn thành công việc: {profile?.completion_rate ?? 0}% (Không hủy ngang).{'\n'}•{' '}
+            • Tỷ lệ hoàn thành công việc: {profile?.completion_rate ?? 100}% (Không hủy ngang).{'\n'}•{' '}
             {profile?.years_experience ? `Hơn ${profile.years_experience} năm` : 'Có'} kinh nghiệm
             thực tế trong lĩnh vực.{'\n'}• Bảo hành chất lượng dịch vụ và bảo hiểm an toàn trong quá
             trình làm việc.
           </Text>
         </Card>
 
-        {/* ── 3. KỸ NĂNG CHUYÊN MÔN & CÔNG CỤ HỖ TRỢ ───────────────────── */}
+        {/* ── 3. KỸ NĂNG CHUYÊN MÔN ────────────────────────────────────── */}
         <Card style={{ gap: 12, padding: 16 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
             <Wrench size={18} color={COLORS.primary} />
@@ -302,7 +340,7 @@ export default function HelperPublicProfileScreen() {
           </View>
         </Card>
 
-        {/* ── 5. ĐÁNH GIÁ THỰC TẾ TỪ KHÁCH HÀNG CŨ (REVIEWS) ─────────── */}
+        {/* ── 5. ĐÁNH GIÁ THỰC TẾ TỪ KHÁCH HÀNG CŨ ────────────────────── */}
         <Card style={{ gap: 14, padding: 16 }}>
           <View
             style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}
@@ -318,7 +356,6 @@ export default function HelperPublicProfileScreen() {
 
           {reviewsList.length === 0 ? (
             <View style={{ gap: 12 }}>
-              {/* Review mẫu 1 */}
               <View
                 style={{ backgroundColor: COLORS.gray[50], padding: 12, borderRadius: 12, gap: 6 }}
               >
@@ -335,36 +372,11 @@ export default function HelperPublicProfileScreen() {
                   <StarRating rating={5} size={12} />
                 </View>
                 <Text style={{ fontSize: 13, color: COLORS.gray[700], lineHeight: 18 }}>
-                  "Anh Tuấn làm việc rất chuyên nghiệp, đến đúng giờ hẹn. Sửa điện dứt điểm không
-                  còn mùi khét, dụng cụ mang theo rất đầy đủ và dọn dẹp sạch sẽ sau khi sửa."
+                  "Làm việc rất chuyên nghiệp, đến đúng giờ hẹn. Dụng cụ mang theo rất đầy đủ và dọn
+                  dẹp sạch sẽ sau khi hoàn tất."
                 </Text>
                 <Text style={{ fontSize: 11, color: COLORS.gray[400], marginTop: 2 }}>
-                  5 giờ trước • Dịch vụ Sửa điện gia dụng
-                </Text>
-              </View>
-
-              {/* Review mẫu 2 */}
-              <View
-                style={{ backgroundColor: COLORS.gray[50], padding: 12, borderRadius: 12, gap: 6 }}
-              >
-                <View
-                  style={{
-                    flexDirection: 'row',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                  }}
-                >
-                  <Text style={{ fontWeight: '800', fontSize: 14, color: COLORS.gray[900] }}>
-                    Anh Hoàng (Bình Thạnh)
-                  </Text>
-                  <StarRating rating={5} size={12} />
-                </View>
-                <Text style={{ fontSize: 13, color: COLORS.gray[700], lineHeight: 18 }}>
-                  "Vệ sinh máy lạnh rất kỹ, tháo dàn lạnh bọc bạt cẩn thận không để nước bắn ra
-                  tường. Giá cả hợp lý và báo giá trước rõ ràng."
-                </Text>
-                <Text style={{ fontSize: 11, color: COLORS.gray[400], marginTop: 2 }}>
-                  2 ngày trước • Dịch vụ Vệ sinh máy lạnh
+                  Đánh giá tiêu biểu • Dịch vụ gia đình
                 </Text>
               </View>
             </View>
@@ -416,41 +428,44 @@ export default function HelperPublicProfileScreen() {
         </Card>
       </ScrollView>
 
-      {/* ── Bottom Floating Bar: Nhắn tin / Gọi điện ─────────────────── */}
-      <View
-        style={{
-          position: 'absolute',
-          bottom: 0,
-          left: 0,
-          right: 0,
-          backgroundColor: '#fff',
-          paddingHorizontal: 20,
-          paddingVertical: 14,
-          borderTopWidth: 1,
-          borderTopColor: COLORS.gray[100],
-          flexDirection: 'row',
-          gap: 12,
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: -4 },
-          shadowOpacity: 0.08,
-          shadowRadius: 10,
-          elevation: 8,
-        }}
-      >
-        <Button
-          title="Nhắn tin với thợ"
-          variant="outline"
-          style={{ flex: 1 }}
-          icon={<MessageCircle size={18} color={COLORS.primary} />}
-          onPress={() => router.back()}
-        />
-        <Button
-          title="Thuê thợ này"
-          style={{ flex: 1 }}
-          icon={<CheckCircle2 size={18} color="#fff" />}
-          onPress={() => router.back()}
-        />
-      </View>
+      {/* ── Bottom Floating Bar: Nhắn tin / Thuê thợ ─────────────────── */}
+      {user?._id !== id && (
+        <View
+          style={{
+            position: 'absolute',
+            bottom: 0,
+            left: 0,
+            right: 0,
+            backgroundColor: '#fff',
+            paddingHorizontal: 20,
+            paddingVertical: 14,
+            borderTopWidth: 1,
+            borderTopColor: COLORS.gray[100],
+            flexDirection: 'row',
+            gap: 12,
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: -4 },
+            shadowOpacity: 0.08,
+            shadowRadius: 10,
+            elevation: 8,
+          }}
+        >
+          <Button
+            title="Nhắn tin với thợ"
+            variant="outline"
+            style={{ flex: 1 }}
+            icon={<MessageCircle size={18} color={COLORS.primary} />}
+            onPress={handleMessageHelper}
+          />
+          <Button
+            title={quoteId ? 'Chấp nhận báo giá' : 'Thuê thợ này'}
+            style={{ flex: 1 }}
+            loading={selectQuote.isPending}
+            icon={<CheckCircle2 size={18} color="#fff" />}
+            onPress={handleHireHelper}
+          />
+        </View>
+      )}
     </View>
   );
 }

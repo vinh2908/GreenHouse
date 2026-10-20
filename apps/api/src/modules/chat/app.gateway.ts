@@ -9,7 +9,6 @@ import {
   WsException,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
-import { setTimeout, clearTimeout } from 'node:timers';
 import { UseGuards, Logger } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
@@ -18,8 +17,6 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Job, JobDocument } from '../jobs/schemas/job.schema';
 import { SOCKET_EVENTS } from '@homemate/constants';
-import { User, UserDocument } from '../users/schemas/user.schema';
-import { WsSessionGuard } from './ws-session.guard';
 
 @WebSocketGateway({
   cors: {
@@ -28,7 +25,6 @@ import { WsSessionGuard } from './ws-session.guard';
   },
   namespace: '/',
 })
-@UseGuards(WsSessionGuard)
 export class AppGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   server: Server;
@@ -43,7 +39,6 @@ export class AppGateway implements OnGatewayConnection, OnGatewayDisconnect {
     private readonly configService: ConfigService,
     private readonly chatService: ChatService,
     @InjectModel(Job.name) private readonly jobModel: Model<JobDocument>,
-    @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
   ) {}
 
   // Only the job's customer, its assigned helper or an admin may listen to a job room
@@ -76,30 +71,8 @@ export class AppGateway implements OnGatewayConnection, OnGatewayDisconnect {
       });
 
       const userId = payload.sub as string;
-      const user = await this.userModel
-        .findById(userId)
-        .select('status is_deleted roles token_version')
-        .lean()
-        .exec();
-      if (
-        !user ||
-        user.is_deleted ||
-        user.status === 'suspended' ||
-        (payload.token_version ?? 0) !== (user.token_version ?? 0)
-      ) {
-        client.disconnect();
-        return;
-      }
       client.data.userId = userId;
-      client.data.roles = user.roles;
-      client.data.tokenVersion = payload.token_version ?? 0;
-      client.data.expiresAt = Number(payload.exp) * 1000;
-      const expiryTimer = setTimeout(
-        () => client.disconnect(true),
-        Math.min(Math.max(0, client.data.expiresAt - Date.now()), 2147483647),
-      );
-      (expiryTimer as unknown as NodeJS.Timeout).unref();
-      client.data.expiryTimer = expiryTimer;
+      client.data.roles = payload.roles;
 
       // Join personal room
       client.join(`user:${userId}`);
@@ -118,7 +91,6 @@ export class AppGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   handleDisconnect(client: Socket) {
-    if (client.data.expiryTimer) clearTimeout(client.data.expiryTimer);
     const userId = client.data.userId as string;
     if (userId) {
       const sockets = this.userSockets.get(userId);
@@ -185,7 +157,11 @@ export class AppGateway implements OnGatewayConnection, OnGatewayDisconnect {
         data.type ?? 'text',
       );
 
-      // ChatService owns broadcasting so REST and WebSocket sends have identical semantics.
+      // Broadcast to all in conversation room
+      this.server.to(`chat:${data.conversation_id}`).emit(SOCKET_EVENTS.CHAT_NEW_MESSAGE, {
+        message,
+        conversation_id: data.conversation_id,
+      });
 
       return { success: true, message_id: String(message._id) };
     } catch (err) {
@@ -216,13 +192,6 @@ export class AppGateway implements OnGatewayConnection, OnGatewayDisconnect {
   ) {
     const helperId = client.data.userId as string;
     if (!(await this.canAccessJob(client, data?.job_id, true))) throw new WsException('Forbidden');
-    if (
-      !Number.isFinite(data.lat) ||
-      !Number.isFinite(data.lng) ||
-      Math.abs(data.lat) > 90 ||
-      Math.abs(data.lng) > 180
-    )
-      throw new WsException('Vị trí không hợp lệ');
     // Broadcast to job room so customer can see helper moving
     this.server.to(`job:${data.job_id}`).emit(SOCKET_EVENTS.HELPER_LOCATION_UPDATE, {
       helper_id: helperId,
@@ -233,17 +202,6 @@ export class AppGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   // ─── Public emit helpers (called from services) ────────────────────────────
-
-  disconnectUser(userId: string) {
-    this.server?.in(`user:${userId}`).disconnectSockets(true);
-  }
-
-  emitChatMessage(conversationId: string, participants: string[], data: unknown) {
-    // Socket.IO unions room recipients: a socket in both rooms receives one event.
-    this.server
-      .to([`chat:${conversationId}`, ...participants.map(id => `user:${id}`)])
-      .emit(SOCKET_EVENTS.CHAT_NEW_MESSAGE, data);
-  }
 
   emitToUser(userId: string, event: string, data: unknown) {
     this.server.to(`user:${userId}`).emit(event, data);

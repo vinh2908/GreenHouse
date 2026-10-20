@@ -1,11 +1,10 @@
-import { Alert } from '@/components/common/app-alert';
-import { LiveTrackingMap } from '@/components/common/live-tracking-map';
 import { useState, useEffect } from 'react';
 import {
   View,
   Text,
   ScrollView,
   TouchableOpacity,
+  Alert,
   TextInput,
   Modal,
   KeyboardAvoidingView,
@@ -17,7 +16,6 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import {
   ArrowLeft,
   Navigation,
-  Check,
   Camera,
   MessageCircle,
   X,
@@ -25,6 +23,7 @@ import {
   ImagePlus,
   Trash2,
   Sparkles,
+  PlusCircle,
 } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import dayjs from 'dayjs';
@@ -39,12 +38,14 @@ dayjs.locale('vi');
 import {
   useJobDetail,
   useJobQuotes,
+  useJobContract,
   useSubmitQuote,
   useHelperOnTheWay,
   useHelperArrived,
   useStartJob,
   useCompleteJob,
   useHelperProfile,
+  useProposeAmendment,
 } from '@/hooks/use-api';
 import { useAuthStore } from '@/stores/auth.store';
 import {
@@ -68,7 +69,8 @@ export default function HelperJobDetailScreen() {
 
   const handleBack = () => {
     if (router.canGoBack()) {
-      return router.back();
+      router.back();
+      return;
     }
     router.replace('/(helper)/jobs');
   };
@@ -76,8 +78,9 @@ export default function HelperJobDetailScreen() {
   // ── Realtime Socket Updates ──────────────────────────────────────────────
   useJobSocketUpdates(id);
 
-  const { data: job, isLoading, refetch } = useJobDetail(id);
+  const { data: job, isLoading } = useJobDetail(id);
   const { data: quotes } = useJobQuotes(id);
+  const { data: contract } = useJobContract(id);
   const { data: helperProfile } = useHelperProfile();
 
   // ── Broadcast GPS vị trí Thợ thời gian thực khi đang di chuyển ───────────
@@ -102,11 +105,18 @@ export default function HelperJobDetailScreen() {
   const arrived = useHelperArrived();
   const startJob = useStartJob();
   const completeJob = useCompleteJob();
+  const proposeAmendment = useProposeAmendment();
 
   const [showQuoteModal, setShowQuoteModal] = useState(false);
   const [laborCost, setLaborCost] = useState('');
   const [estimatedDuration, setEstimatedDuration] = useState('3');
   const [notes, setNotes] = useState('');
+
+  // ── Contract Amendment Proposal States ───────────────────────────────────
+  const [showAmendmentModal, setShowAmendmentModal] = useState(false);
+  const [amendLaborCost, setAmendLaborCost] = useState('');
+  const [amendMaterialsCost, setAmendMaterialsCost] = useState('');
+  const [amendReason, setAmendReason] = useState('');
 
   // ── Completion Evidence States ───────────────────────────────────────────
   const [showCompleteModal, setShowCompleteModal] = useState(false);
@@ -117,14 +127,7 @@ export default function HelperJobDetailScreen() {
   const insets = useSafeAreaInsets();
 
   if (isLoading) return <LoadingSpinner />;
-  if (!job)
-    return (
-      <View style={{ padding: 24, gap: 16 }}>
-        <Text>Chưa tải được đơn hàng hoặc bạn không có quyền xem đơn này.</Text>
-        <Button title="Thử lại" onPress={() => refetch()} />
-        <Button title="Quay lại" variant="outline" onPress={handleBack} />
-      </View>
-    );
+  if (!job) return null;
 
   // Kiểm tra xem thợ hiện tại đã gửi báo giá chưa
   const myQuote = quotes?.find((q: any) => {
@@ -136,10 +139,21 @@ export default function HelperJobDetailScreen() {
     if (helperProfile?.verification_status !== 'approved') {
       const msg =
         'Bạn cần hoàn tất và được duyệt xác thực danh tính e-KYC trước khi có thể gửi báo giá và nhận việc.';
-      Alert.alert('Yêu cầu xác thực e-KYC', msg + '\n\nBấm "Xác thực ngay" để hoàn tất e-KYC.', [
-        { text: 'Để sau', style: 'cancel' },
-        { text: 'Xác thực ngay', onPress: () => router.push('/kyc') },
-      ]);
+      if (Platform.OS === 'web') {
+        const w = (globalThis as any).window;
+        if (w?.confirm ? w.confirm(msg + '\n\nBấm OK để chuyển tới trang xác thực e-KYC.') : true) {
+          router.push('/kyc');
+        }
+      } else {
+        Alert.alert(
+          'Yêu cầu xác thực e-KYC',
+          msg,
+          [
+            { text: 'Để sau', style: 'cancel' },
+            { text: 'Xác thực ngay', onPress: () => router.push('/kyc') },
+          ],
+        );
+      }
       return;
     }
     setShowQuoteModal(true);
@@ -170,6 +184,40 @@ export default function HelperJobDetailScreen() {
       const msg =
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
         'Gửi báo giá thất bại. Vui lòng thử lại.';
+      Toast.show({ type: 'error', text1: msg });
+    }
+  };
+
+  const handleSubmitAmendment = async () => {
+    const addLabor = Number(amendLaborCost) || 0;
+    const addMat = Number(amendMaterialsCost) || 0;
+    if (addLabor + addMat <= 0) {
+      Toast.show({
+        type: 'error',
+        text1: 'Vui lòng nhập số tiền công hoặc vật tư phát sinh lớn hơn 0₫',
+      });
+      return;
+    }
+    if (!amendReason.trim() || amendReason.trim().length < 5) {
+      Toast.show({
+        type: 'error',
+        text1: 'Vui lòng nhập lý do phát sinh cụ thể để khách hàng duyệt',
+      });
+      return;
+    }
+    try {
+      await proposeAmendment.mutateAsync({
+        jobId: id!,
+        additional_labor_cost: addLabor,
+        additional_materials_cost: addMat,
+        reason: amendReason.trim(),
+      });
+      setShowAmendmentModal(false);
+      setAmendLaborCost('');
+      setAmendMaterialsCost('');
+      setAmendReason('');
+    } catch (err: any) {
+      const msg = err?.response?.data?.message || 'Gửi đề xuất phụ lục thất bại';
       Toast.show({ type: 'error', text1: msg });
     }
   };
@@ -279,10 +327,21 @@ export default function HelperJobDetailScreen() {
         }
       };
 
-      Alert.alert('Chưa có bằng chứng nghiệm thu', msg, [
-        { text: 'Chụp/Quay ngay', style: 'cancel' },
-        { text: 'Tiếp tục gửi', onPress: doSubmit },
-      ]);
+      if (Platform.OS === 'web') {
+        const w = (globalThis as any).window;
+        if (w?.confirm ? w.confirm(msg) : true) {
+          doSubmit();
+        }
+      } else {
+        Alert.alert(
+          'Chưa có bằng chứng nghiệm thu',
+          msg,
+          [
+            { text: 'Chụp/Quay ngay', style: 'cancel' },
+            { text: 'Tiếp tục gửi', onPress: doSubmit },
+          ],
+        );
+      }
       return;
     }
 
@@ -330,23 +389,24 @@ export default function HelperJobDetailScreen() {
       }
     };
 
-    const confirmMessage =
-      action === 'travel'
-        ? 'Bạn có chắc chắn muốn bắt đầu di chuyển đến địa chỉ của khách hàng?'
-        : action === 'arrived'
-          ? 'Xác nhận bạn đã có mặt tại địa chỉ khách hàng?'
-          : action === 'start'
-            ? 'Xác nhận bắt đầu thực hiện công việc và tính giờ?'
-            : 'Xác nhận cập nhật tiến trình công việc?';
-
-    Alert.alert(labels[action] ?? 'Xác nhận tiến trình', confirmMessage, [
-      { text: 'Hủy', style: 'cancel' },
-      { text: 'Xác nhận', onPress: doExecute },
-    ]);
+    if (Platform.OS === 'web') {
+      const w = (globalThis as any).window;
+      if (w?.confirm ? w.confirm(labels[action] ?? 'Xác nhận thao tác này?') : true) {
+        doExecute();
+      }
+    } else {
+      Alert.alert(labels[action] ?? 'Xác nhận?', undefined, [
+        { text: 'Hủy', style: 'cancel' },
+        { text: 'Xác nhận', onPress: doExecute },
+      ]);
+    }
   };
 
   const isMyActiveJob =
     job.helper_id && (typeof job.helper_id === 'string' ? job.helper_id : job.helper_id._id);
+  const canProposeAmendment =
+    isMyActiveJob &&
+    ['confirmed', 'helper_on_the_way', 'helper_arrived', 'in_progress'].includes(job.status);
 
   return (
     <View style={{ flex: 1, backgroundColor: COLORS.gray[50] }}>
@@ -445,29 +505,6 @@ export default function HelperJobDetailScreen() {
           </View>
         </Card>
 
-        {/* ── Bản đồ vị trí khách hàng ── */}
-        {!!job.address && (
-          <LiveTrackingMap
-            customerLocation={{
-              latitude: job.address?.location?.coordinates?.[1] || 10.7725,
-              longitude: job.address?.location?.coordinates?.[0] || 106.6983,
-            }}
-            helperLocation={
-              job.status === 'helper_on_the_way'
-                ? {
-                    latitude: (job.address?.location?.coordinates?.[1] || 10.7725) + 0.009,
-                    longitude: (job.address?.location?.coordinates?.[0] || 106.6983) + 0.007,
-                  }
-                : null
-            }
-            status={job.status}
-            customerAddress={job.address?.full_address || job.address?.district}
-            helperName={currentUser?.full_name || 'Bạn'}
-            etaMinutes={job.estimated_minutes || 15}
-            height={220}
-          />
-        )}
-
         {/* ── Customer info ─────────────────────────────────────────── */}
         {isMyActiveJob && (
           <Card style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
@@ -497,6 +534,100 @@ export default function HelperJobDetailScreen() {
             >
               <MessageCircle size={20} color={COLORS.primary} />
             </TouchableOpacity>
+          </Card>
+        )}
+
+        {/* ── Contract & Amendments Summary (for active helper job) ─── */}
+        {isMyActiveJob && contract && (
+          <Card style={{ gap: 10 }}>
+            <View
+              style={{
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+              }}
+            >
+              <Text style={{ fontWeight: '800', fontSize: 15, color: COLORS.gray[900] }}>
+                Hợp đồng & Phụ lục chi phí
+              </Text>
+              <PriceText amount={contract.total_price} size={16} />
+            </View>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+              <Text style={{ fontSize: 13, color: COLORS.gray[600] }}>
+                Thực nhận dự kiến (85%):
+              </Text>
+              <PriceText amount={contract.helper_receives} size={14} color={COLORS.success} />
+            </View>
+
+            {Array.isArray(contract.amendments) && contract.amendments.length > 0 && (
+              <View style={{ gap: 8, marginTop: 4 }}>
+                {contract.amendments.map((am: any) => {
+                  const addAmt =
+                    (Number(am.additional_labor_cost) || 0) +
+                    (Number(am.additional_materials_cost) || 0);
+                  return (
+                    <View
+                      key={am._id}
+                      style={{
+                        padding: 10,
+                        borderRadius: 10,
+                        backgroundColor: COLORS.gray[50],
+                        borderWidth: 1,
+                        borderColor: COLORS.gray[200],
+                        gap: 4,
+                      }}
+                    >
+                      <View
+                        style={{
+                          flexDirection: 'row',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                        }}
+                      >
+                        <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.gray[800] }}>
+                          +{new Intl.NumberFormat('vi-VN').format(addAmt)}₫
+                        </Text>
+                        <Badge
+                          label={
+                            am.status === 'pending'
+                              ? '⏳ Chờ khách duyệt'
+                              : am.status === 'accepted'
+                                ? '✓ Khách đã đồng ý'
+                                : '✕ Khách từ chối'
+                          }
+                          color={
+                            am.status === 'pending'
+                              ? '#FEF3C7'
+                              : am.status === 'accepted'
+                                ? '#D1FAE5'
+                                : '#FEE2E2'
+                          }
+                          textColor={
+                            am.status === 'pending'
+                              ? '#92400E'
+                              : am.status === 'accepted'
+                                ? '#065F46'
+                                : '#991B1B'
+                          }
+                          size="sm"
+                        />
+                      </View>
+                      <Text style={{ fontSize: 12.5, color: COLORS.gray[600] }}>{am.reason}</Text>
+                    </View>
+                  );
+                })}
+              </View>
+            )}
+
+            {canProposeAmendment && (
+              <Button
+                title="➕ Đề xuất phát sinh vật tư / chi phí"
+                variant="outline"
+                size="sm"
+                icon={<PlusCircle size={16} color={COLORS.primary} />}
+                onPress={() => setShowAmendmentModal(true)}
+              />
+            )}
           </Card>
         )}
 
@@ -611,6 +742,118 @@ export default function HelperJobDetailScreen() {
           </View>
         )}
       </ScrollView>
+
+      {/* ── Propose Contract Amendment Modal ──────────────────────────── */}
+      <Modal
+        visible={showAmendmentModal}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setShowAmendmentModal(false)}
+      >
+        <View style={{ flex: 1, backgroundColor: '#fff', paddingTop: Math.max(insets.top, 16) }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', padding: 20 }}>
+            <TouchableOpacity onPress={() => setShowAmendmentModal(false)}>
+              <X size={24} color={COLORS.gray[700]} />
+            </TouchableOpacity>
+            <Text
+              style={{ fontSize: 18, fontWeight: '800', marginLeft: 12, color: COLORS.gray[900] }}
+            >
+              Đề xuất phụ lục phát sinh
+            </Text>
+          </View>
+
+          <KeyboardAvoidingView
+            style={{ flex: 1 }}
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          >
+            <ScrollView contentContainerStyle={{ padding: 20, gap: 18 }}>
+              <Card style={{ backgroundColor: COLORS.primaryLight, gap: 6 }}>
+                <Text style={{ fontWeight: '800', fontSize: 13.5, color: COLORS.primaryDark }}>
+                  💡 Minh bạch chi phí & Vật tư ngoài
+                </Text>
+                <Text style={{ fontSize: 12.5, color: COLORS.gray[700], lineHeight: 18 }}>
+                  Nếu cần mua thêm vật tư/linh kiện hoặc phát sinh khối lượng công việc ngoài dự
+                  kiến, hãy gửi đề xuất để khách bấm Đồng ý trên ứng dụng trước khi thực hiện.
+                </Text>
+              </Card>
+
+              <View style={{ gap: 6 }}>
+                <Text style={{ fontWeight: '700', color: COLORS.gray[700] }}>
+                  Tiền vật tư / linh kiện phát sinh (₫)
+                </Text>
+                <TextInput
+                  style={{
+                    borderWidth: 1.5,
+                    borderColor: COLORS.gray[200],
+                    borderRadius: 14,
+                    padding: 14,
+                    fontSize: 18,
+                    fontWeight: '700',
+                    color: COLORS.gray[900],
+                  }}
+                  placeholder="VD: 150000"
+                  value={amendMaterialsCost}
+                  onChangeText={setAmendMaterialsCost}
+                  keyboardType="numeric"
+                  placeholderTextColor={COLORS.gray[400]}
+                />
+              </View>
+
+              <View style={{ gap: 6 }}>
+                <Text style={{ fontWeight: '700', color: COLORS.gray[700] }}>
+                  Tiền công làm thêm (₫)
+                </Text>
+                <TextInput
+                  style={{
+                    borderWidth: 1.5,
+                    borderColor: COLORS.gray[200],
+                    borderRadius: 14,
+                    padding: 14,
+                    fontSize: 18,
+                    fontWeight: '700',
+                    color: COLORS.gray[900],
+                  }}
+                  placeholder="VD: 100000"
+                  value={amendLaborCost}
+                  onChangeText={setAmendLaborCost}
+                  keyboardType="numeric"
+                  placeholderTextColor={COLORS.gray[400]}
+                />
+              </View>
+
+              <View style={{ gap: 6 }}>
+                <Text style={{ fontWeight: '700', color: COLORS.gray[700] }}>
+                  Lý do & Chi tiết hạng mục phát sinh *
+                </Text>
+                <TextInput
+                  style={{
+                    borderWidth: 1.5,
+                    borderColor: COLORS.gray[200],
+                    borderRadius: 14,
+                    padding: 14,
+                    fontSize: 15,
+                    minHeight: 90,
+                    textAlignVertical: 'top',
+                    color: COLORS.gray[900],
+                  }}
+                  placeholder="VD: Thay mới tụ đề máy lạnh 35uF + nạp bổ sung gas R32..."
+                  value={amendReason}
+                  onChangeText={setAmendReason}
+                  multiline
+                  placeholderTextColor={COLORS.gray[400]}
+                />
+              </View>
+
+              <Button
+                title="Gửi đề xuất cho khách duyệt"
+                loading={proposeAmendment.isPending}
+                onPress={handleSubmitAmendment}
+              />
+            </ScrollView>
+          </KeyboardAvoidingView>
+          <Toast />
+        </View>
+      </Modal>
 
       {/* ── Quote Modal ───────────────────────────────────────────────── */}
       <Modal visible={showQuoteModal} animationType="slide" presentationStyle="pageSheet">

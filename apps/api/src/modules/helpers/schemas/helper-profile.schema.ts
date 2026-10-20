@@ -4,7 +4,12 @@ import { HelperStatus, VerificationStatus } from '@homemate/types';
 
 export type HelperProfileDocument = HelperProfile & Document;
 
-@Schema({ timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' }, versionKey: false })
+@Schema({
+  timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' },
+  versionKey: false,
+  toJSON: { virtuals: true },
+  toObject: { virtuals: true },
+})
 export class HelperProfile {
   @Prop({ type: Types.ObjectId, ref: 'User', required: true, unique: true })
   user_id: Types.ObjectId;
@@ -64,7 +69,7 @@ export class HelperProfile {
   @Prop()
   verified_at?: Date;
 
-  // Stats
+  // Stats & Quality / Risk Control
   @Prop({ default: 0, min: 0, max: 5 })
   rating: number;
 
@@ -89,6 +94,15 @@ export class HelperProfile {
   @Prop({ default: 0 })
   cancellation_rate: number;
 
+  @Prop({ default: 0, min: 0, max: 100 })
+  risk_score: number;
+
+  @Prop({ default: 0 })
+  dispute_count: number;
+
+  @Prop({ default: 0 })
+  late_cancellation_count: number;
+
   @Prop({ default: 0 })
   typical_warranty_days: number;
 
@@ -102,6 +116,15 @@ export class HelperProfile {
 }
 
 export const HelperProfileSchema = SchemaFactory.createForClass(HelperProfile);
+
+// Virtual aliases so clients reading average_rating / total_completed or rating / completed_jobs stay consistent
+HelperProfileSchema.virtual('average_rating').get(function (this: HelperProfile) {
+  return this.rating ?? 0;
+});
+HelperProfileSchema.virtual('total_completed').get(function (this: HelperProfile) {
+  return this.completed_jobs ?? 0;
+});
+
 HelperProfileSchema.index({ location: '2dsphere' }, { sparse: true });
 HelperProfileSchema.index({ user_id: 1 }, { unique: true });
 HelperProfileSchema.index({ status: 1, verification_status: 1 });

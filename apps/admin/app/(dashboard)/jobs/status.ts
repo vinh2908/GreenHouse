@@ -11,6 +11,7 @@ export const STATUS_BADGE: Record<string, 'success' | 'danger' | 'warning' | 'in
     completed: 'success',
     cancelled: 'danger',
     disputed: 'danger',
+    refunded: 'secondary',
   };
 
 export const STATUS_VI: Record<string, string> = {
@@ -24,4 +25,5 @@ export const STATUS_VI: Record<string, string> = {
   completed: 'Hoàn thành',
   cancelled: 'Đã hủy',
   disputed: 'Tranh chấp',
+  refunded: 'Đã hoàn tiền',
 };

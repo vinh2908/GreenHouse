@@ -39,7 +39,6 @@ export interface AuthTokens {
 }
 
 export interface JwtPayload {
-  token_version?: number;
   sub: string;
   phone: string;
   roles: string[];

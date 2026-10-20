@@ -1,4 +1,3 @@
-import { queryClient } from '@/services/query-client';
 import { create } from 'zustand';
 import * as SecureStore from '@/services/secure-storage';
 import type { IUser, UserRole } from '@homemate/types';
@@ -54,9 +53,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   logout: async () => {
-    set({ user: null, accessToken: null, refreshToken: null, isAuthenticated: false });
-    await queryClient.cancelQueries();
-    queryClient.clear();
     await SecureStore.deleteItemAsync(TOKEN_KEY);
     await SecureStore.deleteItemAsync(REFRESH_TOKEN_KEY);
     await SecureStore.deleteItemAsync(USER_KEY);

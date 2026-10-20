@@ -96,9 +96,7 @@ export class UsersService {
   }
 
   async updatePassword(id: string, passwordHash: string): Promise<void> {
-    await this.userModel
-      .findByIdAndUpdate(id, { $set: { password_hash: passwordHash }, $inc: { token_version: 1 } })
-      .exec();
+    await this.userModel.findByIdAndUpdate(id, { password_hash: passwordHash }).exec();
   }
 
   async updateFcmToken(id: string, fcmToken: string): Promise<void> {

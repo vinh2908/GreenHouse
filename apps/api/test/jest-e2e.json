@@ -4,10 +4,7 @@
   "testEnvironment": "node",
   "testRegex": ".e2e.spec.ts$",
   "transform": {
-    "^.+\\.ts$": ["ts-jest", { "tsconfig": "<rootDir>/tsconfig.json" }]
-  },
-  "moduleNameMapper": {
-    "^@homemate/(types|constants|utils)$": "<rootDir>/../../../packages/$1/src"
+    "^.+\\.(t|j)s$": "ts-jest"
   },
   "testTimeout": 60000
 }

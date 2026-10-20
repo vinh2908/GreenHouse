@@ -2,25 +2,16 @@ import axios, { AxiosInstance, AxiosError } from 'axios';
 import * as SecureStore from '@/services/secure-storage';
 import Constants from 'expo-constants';
 import Toast from 'react-native-toast-message';
-import { useAuthStore } from '@/stores/auth.store';
 
 const getBaseApiUrl = () => {
-  // 1. Kiểm tra môi trường Web chạy trên Vercel hoặc domain ngoài
-  const webHost = (globalThis as { location?: { hostname?: string } }).location?.hostname;
-  if (
-    webHost &&
-    (webHost.includes('vercel.app') || (webHost !== 'localhost' && webHost !== '127.0.0.1'))
-  ) {
-    return 'https://greenhouse-api-chb9.onrender.com/api/v1';
-  }
-
-  // 2. URL cố định từ env (bỏ qua url tạm của test local)
+  // 1. URL cố định (tunnel / server thật): đặt EXPO_PUBLIC_API_URL trong apps/mobile/.env.
+  //    Không ghi cứng IP LAN vào app.json — IP máy dev đổi theo mạng WiFi.
   const fixedUrl = process.env.EXPO_PUBLIC_API_URL || Constants.expoConfig?.extra?.apiUrl;
-  if (fixedUrl && !fixedUrl.includes('127.0.0.1:3100')) {
+  if (fixedUrl) {
     return fixedUrl;
   }
 
-  // 3. Dò theo debugger host của Expo Go
+  // 2. Dò theo debugger host của Expo Go
   const hostUri =
     Constants.expoConfig?.hostUri ||
     (Constants as any).manifest2?.extra?.expoGo?.debuggerHost ||
@@ -32,7 +23,14 @@ const getBaseApiUrl = () => {
     }
   }
 
-  // 4. Chạy trên trình duyệt dev local
+  // 3. Chạy trên trình duyệt (expo start --web)
+  const webHost = (globalThis as { location?: { hostname?: string } }).location?.hostname;
+  if (
+    webHost &&
+    (webHost.includes('vercel.app') || (webHost !== 'localhost' && webHost !== '127.0.0.1'))
+  ) {
+    return 'https://greenhouse-api-chb9.onrender.com/api/v1';
+  }
   if (webHost) {
     return `http://${webHost}:3000/api/v1`;
   }
@@ -41,23 +39,6 @@ const getBaseApiUrl = () => {
 };
 
 const API_URL = getBaseApiUrl();
-let refreshInFlight: Promise<string> | null = null;
-
-async function refreshSession(): Promise<string> {
-  const refresh = await SecureStore.getItemAsync('homemate_refresh_token');
-  if (!refresh) throw new Error('Missing refresh token');
-  const { data } = await axios.post(
-    `${API_URL}/auth/refresh`,
-    { refresh_token: refresh },
-    { timeout: 20000 },
-  );
-  // A response from the old session must not log the user back in after logout.
-  if ((await SecureStore.getItemAsync('homemate_refresh_token')) !== refresh)
-    throw new Error('Session changed');
-  const { access_token, refresh_token } = data.data;
-  await useAuthStore.getState().setAuth(useAuthStore.getState().user, access_token, refresh_token);
-  return access_token;
-}
 
 const apiClient: AxiosInstance = axios.create({
   baseURL: API_URL,
@@ -65,7 +46,7 @@ const apiClient: AxiosInstance = axios.create({
     'Content-Type': 'application/json',
     'Bypass-Tunnel-Reminder': 'true', // Bỏ qua trang xác thực của localtunnel
   },
-  timeout: 20000,
+  timeout: 35000,
 });
 
 // Request interceptor
@@ -97,29 +78,25 @@ apiClient.interceptors.response.use(
     const originalRequest = error.config as any;
 
     // ── 1. Xử lý lỗi Token 401 Unauthorized (Refresh token) ─────────────────
-    if (
-      error.response?.status === 401 &&
-      originalRequest &&
-      !originalRequest._retry &&
-      !originalRequest.url?.startsWith('/auth/')
-    ) {
+    if (error.response?.status === 401 && originalRequest && !originalRequest._retry) {
       originalRequest._retry = true;
       try {
-        if (!refreshInFlight)
-          refreshInFlight = refreshSession().finally(() => {
-            refreshInFlight = null;
+        const refreshToken = await SecureStore.getItemAsync('homemate_refresh_token');
+        if (refreshToken) {
+          const { data } = await axios.post(`${API_URL}/auth/refresh`, {
+            refresh_token: refreshToken,
           });
-        const token = await refreshInFlight;
-        originalRequest.headers.Authorization = `Bearer ${token}`;
-        return apiClient(originalRequest);
-      } catch (refreshError) {
-        // Network failures do not revoke a still-valid login.
-        if (
-          axios.isAxiosError(refreshError) &&
-          (!refreshError.response || refreshError.response.status >= 500)
-        )
-          return Promise.reject(refreshError);
-        await useAuthStore.getState().logout();
+          const { access_token, refresh_token: newRefreshToken } = data.data;
+          await SecureStore.setItemAsync('homemate_access_token', access_token);
+          if (newRefreshToken) {
+            await SecureStore.setItemAsync('homemate_refresh_token', newRefreshToken);
+          }
+          originalRequest.headers.Authorization = `Bearer ${access_token}`;
+          return apiClient(originalRequest);
+        }
+      } catch {
+        await SecureStore.deleteItemAsync('homemate_access_token');
+        await SecureStore.deleteItemAsync('homemate_refresh_token');
       }
       Toast.show({
         type: 'error',

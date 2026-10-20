@@ -9,13 +9,12 @@
     "dev:watch": "nodemon --exec \"ts-node -r tsconfig-paths/register src/main.ts\" --ext ts --watch src",
     "start": "node dist/apps/api/src/main.js",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
-    "test": "jest --passWithNoTests",
+    "test": "jest --runInBand --passWithNoTests",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:e2e": "jest --config ./test/jest-e2e.json --runInBand"
   },
   "dependencies": {
-    "@google/generative-ai": "^0.24.0",
     "@homemate/constants": "workspace:*",
     "@homemate/types": "workspace:*",
     "@homemate/utils": "workspace:*",
@@ -31,6 +30,7 @@
     "@nestjs/throttler": "^6.0.0",
     "@nestjs/websockets": "^11.0.0",
     "@types/socket.io": "^3.0.2",
+    "@google/generative-ai": "^0.24.0",
     "bcryptjs": "^2.4.3",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.1",
@@ -47,9 +47,9 @@
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
     "socket.io": "^4.8.3",
+    "uuid": "^11.0.5",
     "ts-node": "^10.9.2",
-    "tsconfig-paths": "^4.2.0",
-    "uuid": "^11.0.5"
+    "tsconfig-paths": "^4.2.0"
   },
   "devDependencies": {
     "@faker-js/faker": "^9.4.0",
@@ -68,8 +68,7 @@
     "@typescript-eslint/eslint-plugin": "^8.20.0",
     "@typescript-eslint/parser": "^8.20.0",
     "jest": "^29.7.0",
-    "mongodb-memory-server": "11.3.0",
-    "socket.io-client": "4.8.3",
+    "mongodb-memory-server": "^11.2.0",
     "supertest": "^7.2.2",
     "ts-jest": "^29.2.5",
     "ts-loader": "^9.5.2",
@@ -83,15 +82,19 @@
       "json",
       "ts"
     ],
-    "rootDir": "src",
-    "testRegex": ".*\\.spec\\.ts$",
+    "rootDir": ".",
+    "roots": [
+      "<rootDir>/src",
+      "<rootDir>/test"
+    ],
+    "testRegex": "(src/.*\\.spec\\.ts$|test/qa-regression\\.spec\\.ts$)",
     "transform": {
       "^.+\\.(t|j)s$": "ts-jest"
     },
     "collectCoverageFrom": [
-      "**/*.(t|j)s"
+      "src/**/*.(t|j)s"
     ],
-    "coverageDirectory": "../coverage",
+    "coverageDirectory": "./coverage",
     "testEnvironment": "node"
   }
 }

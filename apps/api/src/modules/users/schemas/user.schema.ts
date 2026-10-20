@@ -53,7 +53,7 @@ export class User {
   is_deleted: boolean;
 
   @Prop({ default: 0 })
-  token_version: number;
+  token_version?: number;
 
   created_at: Date;
   updated_at: Date;
