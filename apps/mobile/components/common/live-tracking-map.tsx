@@ -36,37 +36,52 @@ export function LiveTrackingMap({
   const [mapType, setMapType] = useState<'streets' | 'satellite'>('streets');
 
   const isTracking =
-    (status === 'confirmed' ||
-      status === 'helper_on_the_way' ||
-      status === 'helper_arrived' ||
-      status === 'in_progress') &&
-    !!helperLocation &&
-    (helperLocation.latitude !== 0 || helperLocation.longitude !== 0);
+    status === 'confirmed' ||
+    status === 'helper_on_the_way' ||
+    status === 'helper_arrived' ||
+    status === 'in_progress';
 
   const custLat = customerLocation?.latitude || 10.7725;
   const custLon = customerLocation?.longitude || 106.6983;
 
-  const helpLat = helperLocation?.latitude ?? custLat + 0.009;
-  const helpLon = helperLocation?.longitude ?? custLon + 0.007;
+  const helpLat =
+    helperLocation?.latitude && helperLocation.latitude !== 0
+      ? helperLocation.latitude
+      : custLat + 0.012;
+  const helpLon =
+    helperLocation?.longitude && helperLocation.longitude !== 0
+      ? helperLocation.longitude
+      : custLon + 0.01;
 
   let pillText = title || 'Vị trí điểm hẹn làm việc';
   let pillIcon = '📍';
 
-  if (status === 'helper_on_the_way') {
-    pillText = `🛵 Thợ ${helperName} đang di chuyển tới bạn (~${etaMinutes} phút)`;
-    pillIcon = '🛵';
-  } else if (status === 'helper_arrived') {
-    pillText = `📍 Thợ ${helperName} đã có mặt tại điểm hẹn`;
-    pillIcon = '📍';
-  } else if (status === 'in_progress') {
-    pillText = '▶️ Thợ đang tiến hành công việc tại địa chỉ';
-    pillIcon = '▶️';
-  } else if (status === 'confirmed') {
-    pillText = `🛵 Thợ ${helperName} đã nhận đơn - Sẵn sàng di chuyển`;
-    pillIcon = '🛵';
-  } else if (status === 'open' || status === 'receiving_quotes') {
-    pillText = '📡 Đang quét tìm thợ gần vị trí yêu cầu (bán kính 15km)';
-    pillIcon = '📡';
+  if (!title) {
+    if (status === 'helper_on_the_way') {
+      pillText = `🛵 Thợ ${helperName} đang di chuyển tới bạn (~${etaMinutes} phút)`;
+      pillIcon = '🛵';
+    } else if (status === 'helper_arrived') {
+      pillText = `📍 Thợ ${helperName} đã có mặt tại điểm hẹn`;
+      pillIcon = '📍';
+    } else if (status === 'in_progress') {
+      pillText = '▶️ Thợ đang tiến hành công việc tại địa chỉ';
+      pillIcon = '▶️';
+    } else if (status === 'confirmed') {
+      pillText = `🛵 Thợ ${helperName} đã nhận đơn - Sẵn sàng di chuyển`;
+      pillIcon = '🛵';
+    } else if (status === 'open' || status === 'receiving_quotes') {
+      pillText = '📡 Đang quét tìm thợ gần vị trí yêu cầu (bán kính 15km)';
+      pillIcon = '📡';
+    }
+  } else {
+    pillIcon =
+      status === 'helper_on_the_way' || status === 'confirmed'
+        ? '🛵'
+        : status === 'helper_arrived'
+          ? '📍'
+          : status === 'in_progress'
+            ? '▶️'
+            : '📍';
   }
 
   const handleOpenGoogleMaps = () => {
@@ -140,22 +155,25 @@ export function LiveTrackingMap({
     }
   }, [helperLocation?.latitude, helperLocation?.longitude, etaMinutes]);
 
-  // Mã nguồn HTML Leaflet + OpenStreetMap + OSRM Routing + Grab Visual Styling
+  // Mã nguồn HTML Leaflet + Google Maps Tiles + OSRM Routing + Grab Visual Styling
+  const safeCustAddress = JSON.stringify(customerAddress || 'Vị trí làm việc');
+  const safeHelperName = JSON.stringify(helperName || 'Thợ Green House');
+
   const leafletHtml = `
     <!DOCTYPE html>
     <html>
       <head>
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-        <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
         <style>
           html, body, #map {
             width: 100%;
             height: 100%;
             margin: 0;
             padding: 0;
-            background-color: #f8fafc;
+            background-color: #f1f5f9;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
           }
           .custom-pin {
@@ -247,20 +265,36 @@ export function LiveTrackingMap({
           let curHelpLat = ${helpLat};
           let curHelpLon = ${helpLon};
           const initialType = '${mapType}';
+          const custAddress = ${safeCustAddress};
+          const helperNameStr = ${safeHelperName};
 
           const map = L.map('map', {
             zoomControl: true,
             attributionControl: false
           });
 
-          // OpenStreetMap detail tiles
-          const streetLayer = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 19,
+          // Google Maps Streets Layer (High speed in VN, detail house numbers & landmarks)
+          const streetLayer = L.tileLayer('https://mt{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
+            subdomains: ['0', '1', '2', '3'],
+            maxZoom: 20,
           });
 
-          // Esri Satellite Imagery
-          const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-            maxZoom: 19,
+          // Google Maps Satellite Hybrid (Satellite Imagery + Street Labels)
+          const satelliteLayer = L.tileLayer('https://mt{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
+            subdomains: ['0', '1', '2', '3'],
+            maxZoom: 20,
+          });
+
+          // Fallback CartoDB Voyager if needed
+          const cartoFallback = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+            subdomains: 'abcd',
+            maxZoom: 20,
+          });
+
+          streetLayer.on('tileerror', function() {
+            if (!map.hasLayer(cartoFallback)) {
+              cartoFallback.addTo(map);
+            }
           });
 
           if (initialType === 'satellite') {
@@ -269,12 +303,23 @@ export function LiveTrackingMap({
             streetLayer.addTo(map);
           }
 
+          setTimeout(function() {
+            map.invalidateSize();
+          }, 200);
+          setTimeout(function() {
+            map.invalidateSize();
+          }, 600);
+          window.addEventListener('resize', function() {
+            map.invalidateSize();
+          });
+
           window.switchLayer = function(type) {
             if (type === 'satellite') {
-              map.removeLayer(streetLayer);
+              if (map.hasLayer(streetLayer)) map.removeLayer(streetLayer);
+              if (map.hasLayer(cartoFallback)) map.removeLayer(cartoFallback);
               satelliteLayer.addTo(map);
             } else {
-              map.removeLayer(satelliteLayer);
+              if (map.hasLayer(satelliteLayer)) map.removeLayer(satelliteLayer);
               streetLayer.addTo(map);
             }
           };
@@ -289,7 +334,7 @@ export function LiveTrackingMap({
           const custMarker = L.marker([custLat, custLon], { icon: custIcon }).addTo(map);
           custMarker.bindPopup(
             "<b>📍 Điểm hẹn làm việc</b><br>" +
-            "<b>Địa chỉ:</b> ${customerAddress.replace(/"/g, '')}<br>" +
+            "<b>Địa chỉ:</b> " + custAddress + "<br>" +
             "<b>Tọa độ:</b> " + custLat.toFixed(5) + ", " + custLon.toFixed(5)
           );
 
@@ -358,7 +403,7 @@ export function LiveTrackingMap({
               iconAnchor: [23, 23]
             });
             helpMarker = L.marker([curHelpLat, curHelpLon], { icon: helpIcon }).addTo(map);
-            helpMarker.bindPopup("<b>${helperName.replace(/"/g, '')}</b><br>🛵 Đang di chuyển theo tuyến đường");
+            helpMarker.bindPopup("<b>" + helperNameStr + "</b><br>🛵 Đang di chuyển theo tuyến đường");
 
             renderRoute(curHelpLat, curHelpLon, custLat, custLon);
           } else {

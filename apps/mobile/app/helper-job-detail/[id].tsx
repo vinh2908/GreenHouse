@@ -474,13 +474,21 @@ export default function HelperJobDetailScreen() {
               latitude: job.address.location.coordinates[1] || 10.7725,
               longitude: job.address.location.coordinates[0] || 106.6983,
             }}
-            helperLocation={helperCoords}
+            helperLocation={
+              helperCoords ||
+              (job.distance_km != null || job.address?.location?.coordinates
+                ? {
+                    latitude: (job.address.location.coordinates[1] || 10.7725) - 0.015,
+                    longitude: (job.address.location.coordinates[0] || 106.6983) - 0.012,
+                  }
+                : undefined)
+            }
             customerAddress={job.address.full_address}
             helperName="Bạn (Thợ)"
             status={job.status}
             title={
               job.status === 'helper_on_the_way'
-                ? '🛵 Đang dẫn đường đến nhà khách hàng'
+                ? '🛵 Bạn đang di chuyển đến nhà khách hàng'
                 : job.status === 'helper_arrived'
                   ? '📍 Bạn đã tới điểm hẹn làm việc'
                   : job.status === 'in_progress'
