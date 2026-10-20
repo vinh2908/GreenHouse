@@ -49,101 +49,15 @@ const TIME_SLOTS = [
 
 const DURATION_OPTIONS = [1, 2, 3, 4, 5, 6, 8];
 
-const DEFAULT_SERVICES = [
-  {
-    _id: '6aa1269cd33a3aed2b36a5e1',
-    name: 'Dọn dẹp vệ sinh nhà cửa',
-    slug: 'house_cleaning',
-    icon: '🏠',
-    description: 'Lau sàn, hút bụi, dọn phòng khách, phòng ngủ, nhà bếp, vệ sinh...',
-    base_price_min: 80000,
-  },
-  {
-    _id: '6aa1269cd33a3aed2b36a5e2',
-    name: 'Đi chợ & Nấu ăn gia đình',
-    slug: 'cooking',
-    icon: '🍳',
-    description: 'Đi chợ mua nguyên liệu, nấu cơm canh, món mặn, món chay theo yêu cầu...',
-    base_price_min: 100000,
-  },
-  {
-    _id: '6aa1269cd33a3aed2b36a5e3',
-    name: 'Giặt giũ & Là ủi quần áo',
-    slug: 'laundry',
-    icon: '👔',
-    description: 'Phân loại, giặt tay/máy, phơi, gấp, là ủi quần áo gọn gàng...',
-    base_price_min: 70000,
-  },
-  {
-    _id: '6aa1269cd33a3aed2b36a5e4',
-    name: 'Chăm sóc Gia Chủ',
-    slug: 'family_care',
-    icon: '👨‍👩‍👧',
-    description: 'Trông trẻ, chăm sóc người già, người bệnh, hỗ trợ bà bầu...',
-    base_price_min: 120000,
-  },
-  {
-    _id: '6aa1269cd33a3aed2b36a5e5',
-    name: 'Chăm sóc thú cưng',
-    slug: 'petcare',
-    icon: '🐾',
-    description: 'Cho ăn, tắm rửa, dắt đi dạo, vệ sinh chuồng trại thú cưng...',
-    base_price_min: 80000,
-  },
-  {
-    _id: '6aa1269cd33a3aed2b36a5e6',
-    name: 'Chăm sóc cây cảnh',
-    slug: 'plantcare',
-    icon: '🌿',
-    description: 'Tưới cây, bón phân, cắt tỉa, thay chậu, phòng trừ sâu bệnh...',
-    base_price_min: 80000,
-  },
-  {
-    _id: '6aa1269cd33a3aed2b36a5e7',
-    name: 'Trông giữ & Quản lý nhà cửa',
-    slug: 'house_management',
-    icon: '🔐',
-    description: 'Trông coi nhà khi vắng, nhận bưu phẩm, kiểm tra an ninh, bảo trì...',
-    base_price_min: 150000,
-  },
-  {
-    _id: '6aa1269cd33a3aed2b36a5e8',
-    name: 'Giúp việc theo giờ',
-    slug: 'hourly_helper',
-    icon: '🧹',
-    description: 'Dọn dẹp, rửa chén, lau kính, hỗ trợ việc nhà linh hoạt theo giờ...',
-    base_price_min: 60000,
-  },
-  {
-    _id: '6aa1269cd33a3aed2b36a5e9',
-    name: 'Tổng vệ sinh nhà cửa',
-    slug: 'deep_cleaning',
-    icon: '✨',
-    description: 'Vệ sinh toàn bộ nhà chuyên sâu, chà sàn, lau kính, tẩy rửa...',
-    base_price_min: 500000,
-  },
-  {
-    _id: '6aa1269cd33a3aed2b36a5ea',
-    name: 'Dọn nhà & Chuyển nhà',
-    slug: 'moving_help',
-    icon: '📦',
-    description: 'Đóng gói đồ đạc, sắp xếp, vận chuyển, bày trí nhà mới...',
-    base_price_min: 200000,
-  },
-  {
-    _id: '6aa1269cd33a3aed2b36a5eb',
-    name: 'Phụ việc lặt vặt',
-    slug: 'handyman',
-    icon: '🔧',
-    description: 'Treo tranh, lắp kệ, sửa nhỏ, thay bóng đèn, việc vặt trong nhà...',
-    base_price_min: 80000,
-  },
-];
-
 export default function BookingScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ service_id?: string; service_slug?: string }>();
-  const { data: services } = useServices();
+  const {
+    data: services = [],
+    isLoading: servicesLoading,
+    isError: servicesError,
+    refetch: reloadServices,
+  } = useServices();
   const createJob = useCreateJob();
   const analyzeAI = useAnalyzeBooking();
   const estimatePrice = useEstimatePrice();
@@ -155,7 +69,7 @@ export default function BookingScreen() {
     ward: '',
     district: '',
     city: 'Hồ Chí Minh',
-    coordinates: [106.6983, 10.7725] as [number, number],
+    coordinates: null as [number, number] | null,
   });
 
   const [isLocating, setIsLocating] = useState(false);
@@ -203,7 +117,7 @@ export default function BookingScreen() {
       ward: '',
       district: '',
       city: 'Hồ Chí Minh',
-      coordinates: [106.6983, 10.7725],
+      coordinates: null,
     });
     setDate(dayjs().add(1, 'day').format('YYYY-MM-DD'));
     setTimeSlot('09:00');
@@ -302,7 +216,7 @@ export default function BookingScreen() {
 
       // Tự động gán Dịch vụ phù hợp
       if (result.service_type) {
-        const svcList = services && services.length > 0 ? services : DEFAULT_SERVICES;
+        const svcList = services;
         const svc = svcList.find(
           s =>
             s.slug === result.service_type ||
@@ -378,16 +292,23 @@ export default function BookingScreen() {
       return;
     }
 
-    // Nếu chưa có service_id, tự động lấy service mặc định đầu tiên
-    let currentServiceId = selectedService;
-    if (!currentServiceId) {
-      const defaultSvc = (services && services.length > 0 ? services : DEFAULT_SERVICES)[0];
-      currentServiceId = defaultSvc._id;
-      setSelectedService(currentServiceId);
+    if (!services.some(service => service._id === selectedService)) {
+      Toast.show({ type: 'error', text1: 'Vui lòng chọn dịch vụ đang khả dụng' });
+      setStep(0);
+      return;
     }
+    const currentServiceId = selectedService;
 
     if (!address.full_address.trim() || !address.district.trim()) {
       Toast.show({ type: 'error', text1: 'Vui lòng nhập đầy đủ địa chỉ làm việc' });
+      setStep(1);
+      return;
+    }
+    if (!address.coordinates) {
+      Toast.show({
+        type: 'error',
+        text1: 'Chọn địa điểm từ kết quả tìm kiếm hoặc dùng vị trí hiện tại',
+      });
       setStep(1);
       return;
     }
@@ -412,7 +333,7 @@ export default function BookingScreen() {
           ward: address.ward?.trim() || undefined,
           district: address.district.trim(),
           city: address.city?.trim() || 'Hồ Chí Minh',
-          location: { type: 'Point', coordinates: address.coordinates || [106.6983, 10.7725] },
+          location: { type: 'Point', coordinates: address.coordinates! },
         },
         preferred_date: date,
         preferred_time_start: timeSlot,
@@ -435,7 +356,7 @@ export default function BookingScreen() {
 
   const handleNextStep = () => {
     if (step === 0) {
-      if (!selectedService) {
+      if (!services.some(service => service._id === selectedService)) {
         Toast.show({ type: 'error', text1: 'Vui lòng chọn 1 dịch vụ cần làm' });
         return;
       }
@@ -443,6 +364,13 @@ export default function BookingScreen() {
     } else if (step === 1) {
       if (!address.full_address.trim() || !address.district.trim()) {
         Toast.show({ type: 'error', text1: 'Vui lòng nhập địa chỉ chi tiết và quận/huyện' });
+        return;
+      }
+      if (!address.coordinates) {
+        Toast.show({
+          type: 'error',
+          text1: 'Chọn địa điểm từ kết quả tìm kiếm hoặc dùng vị trí hiện tại',
+        });
         return;
       }
       setStep(2);
@@ -650,8 +578,7 @@ export default function BookingScreen() {
                       activeOpacity={0.85}
                       onPress={() => {
                         if (!selectedService) {
-                          const svcList =
-                            services && services.length > 0 ? services : DEFAULT_SERVICES;
+                          const svcList = services;
                           setSelectedService(svcList[0]._id);
                         }
                         setStep(1);
@@ -677,7 +604,14 @@ export default function BookingScreen() {
               </Text>
 
               <View style={{ gap: 10 }}>
-                {(services && services.length > 0 ? services : DEFAULT_SERVICES).map(svc => (
+                {servicesLoading && <LoadingSpinner />}
+                {!servicesLoading && !services.length && (
+                  <Text>Chưa tải được dịch vụ khả dụng.</Text>
+                )}
+                {(servicesError || (!servicesLoading && !services.length)) && (
+                  <Button title="Tải lại dịch vụ" onPress={() => reloadServices()} />
+                )}
+                {services.map(svc => (
                   <TouchableOpacity
                     key={svc._id}
                     onPress={() => {
@@ -868,9 +802,14 @@ export default function BookingScreen() {
                 label="Địa chỉ chi tiết (Số nhà & tên đường) *"
                 placeholder="VD: 128 Đường Lê Lợi"
                 value={address.full_address}
-                onChangeText={v => setAddress(a => ({ ...a, full_address: v }))}
+                onChangeText={v => setAddress(a => ({ ...a, full_address: v, coordinates: null }))}
                 leftIcon={<MapPin size={16} color={COLORS.gray[400]} />}
               />
+              <Text>
+                {address.coordinates
+                  ? 'Đã xác định vị trí trên bản đồ.'
+                  : 'Chọn một kết quả tìm kiếm ở trên hoặc dùng vị trí hiện tại để xác định đúng nơi làm việc.'}
+              </Text>
               <View style={{ flexDirection: 'row', gap: 12 }}>
                 <View style={{ flex: 1 }}>
                   <Input
@@ -885,14 +824,14 @@ export default function BookingScreen() {
                     label="Quận/Huyện *"
                     placeholder="Quận 1"
                     value={address.district}
-                    onChangeText={v => setAddress(a => ({ ...a, district: v }))}
+                    onChangeText={v => setAddress(a => ({ ...a, district: v, coordinates: null }))}
                   />
                 </View>
               </View>
               <Input
                 label="Thành phố"
                 value={address.city}
-                onChangeText={v => setAddress(a => ({ ...a, city: v }))}
+                onChangeText={v => setAddress(a => ({ ...a, city: v, coordinates: null }))}
               />
             </View>
           )}
@@ -1200,6 +1139,7 @@ export default function BookingScreen() {
         <Button
           title={step === STEPS.length - 1 ? 'Đăng yêu cầu ngay' : 'Tiếp theo'}
           loading={createJob.isPending}
+          disabled={servicesLoading || servicesError || !services.length}
           onPress={handleNextStep}
           icon={step < STEPS.length - 1 ? <ArrowRight size={18} color="#fff" /> : undefined}
         />

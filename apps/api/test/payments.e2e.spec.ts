@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { getModelToken, MongooseModule } from '@nestjs/mongoose';
-import { MongoMemoryServer } from 'mongodb-memory-server';
+import { MongoMemoryReplSet } from 'mongodb-memory-server';
 import { Types } from 'mongoose';
 import { ConfigModule } from '@nestjs/config';
 import { ThrottlerModule } from '@nestjs/throttler';
@@ -20,14 +20,17 @@ const request = require('supertest');
 
 describe('Payments E2E (Phase 7)', () => {
   let app: INestApplication;
-  let mongod: MongoMemoryServer;
+  let mongod: MongoMemoryReplSet;
   let helperToken: string;
   let helperId: string;
   let customerToken: string;
   let customerId: string;
 
   beforeAll(async () => {
-    mongod = await MongoMemoryServer.create();
+    mongod = await MongoMemoryReplSet.create({
+      replSet: { count: 1 },
+      instanceOpts: [{ args: ['--wiredTigerCacheSizeGB', '0.25'] }],
+    });
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [
         ConfigModule.forRoot({ isGlobal: true, load: [appConfig, jwtConfig], ignoreEnvFile: true }),

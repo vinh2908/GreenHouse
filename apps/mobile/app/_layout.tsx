@@ -2,7 +2,7 @@ import { Stack } from 'expo-router';
 import { useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClientProvider } from '@tanstack/react-query';
 import Toast from 'react-native-toast-message';
 import { TouchableOpacity, View, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -10,18 +10,12 @@ import { X } from 'lucide-react-native';
 import { create } from 'zustand';
 import * as SplashScreen from 'expo-splash-screen';
 import '../global.css';
+import { queryClient } from '@/services/query-client';
+import { AppAlertHost } from '@/components/common/app-alert';
+import { useAuthStore } from '@/stores/auth.store';
 import { useSocketConnection, useNotificationSocket } from '@/hooks/use-socket';
 
 SplashScreen.preventAutoHideAsync();
-
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      retry: 1,
-      staleTime: 60 * 1000,
-    },
-  },
-});
 
 // react-native-toast-message keeps the toast state, but its slide animation is not drawn on
 // Android here: the card stays invisible while shown and frozen on screen (untouchable) once
@@ -32,14 +26,15 @@ type ToastState = {
   text1?: string;
   text2?: string;
   hide: () => void;
+  onPress?: () => void;
 };
 
 const useToastStore = create<{ toast: ToastState | null }>(() => ({ toast: null }));
 
-const ToastBridge = ({ isVisible, type, text1, text2, hide }: ToastState) => {
+const ToastBridge = ({ isVisible, type, text1, text2, hide, onPress }: ToastState) => {
   useEffect(() => {
-    useToastStore.setState({ toast: { isVisible, type, text1, text2, hide } });
-  }, [isVisible, type, text1, text2, hide]);
+    useToastStore.setState({ toast: { isVisible, type, text1, text2, hide, onPress } });
+  }, [isVisible, type, text1, text2, hide, onPress]);
   return null;
 };
 
@@ -54,7 +49,7 @@ function ToastCard() {
   const insets = useSafeAreaInsets();
   if (!toast?.isVisible) return null;
 
-  const { type, text1, text2, hide } = toast;
+  const { type, text1, text2, hide, onPress } = toast;
   const borderColor = type === 'success' ? '#4caf50' : type === 'error' ? '#f44336' : '#87CEFA';
   const icon = type === 'success' ? '🎉' : type === 'error' ? '⚠️' : '🔔';
   const iconBackground = type === 'success' ? '#DCFCE7' : type === 'error' ? '#FEF2F2' : '#EFF6FF';
@@ -100,7 +95,15 @@ function ToastCard() {
         >
           <Text style={{ fontSize: 20 }}>{icon}</Text>
         </View>
-        <View style={{ flex: 1, paddingRight: 8 }}>
+        <TouchableOpacity
+          accessibilityRole="button"
+          disabled={!onPress}
+          onPress={() => {
+            hide();
+            onPress?.();
+          }}
+          style={{ flex: 1, paddingRight: 8 }}
+        >
           {text1 ? (
             <Text style={{ fontWeight: '800', fontSize: 14.5, color: '#1f2937' }}>{text1}</Text>
           ) : null}
@@ -112,7 +115,7 @@ function ToastCard() {
               {text2}
             </Text>
           ) : null}
-        </View>
+        </TouchableOpacity>
         <TouchableOpacity
           activeOpacity={0.6}
           onPress={hide}
@@ -134,6 +137,7 @@ function SocketManager() {
 
 export default function RootLayout() {
   useEffect(() => {
+    useAuthStore.getState().loadStoredAuth();
     SplashScreen.hideAsync();
   }, []);
 
@@ -162,6 +166,7 @@ export default function RootLayout() {
         </Stack>
         <Toast config={toastConfig} swipeable={false} />
         <ToastCard />
+        <AppAlertHost />
       </QueryClientProvider>
     </GestureHandlerRootView>
   );

@@ -40,7 +40,10 @@ const POPULAR_BANKS = [
 
 export default function BankAccountScreen() {
   const router = useRouter();
-  const { data: profile, isLoading, refetch } = useHelperProfile();
+  const { user, isLoading: authLoading } = useAuthStore();
+  const insets = useSafeAreaInsets();
+  const isHelper = user?.roles.some(role => role === 'helper');
+  const { data: profile, isLoading, isError, refetch } = useHelperProfile(!!isHelper);
   const updateBank = useUpdateBankAccount();
 
   const [bankName, setBankName] = useState('');
@@ -57,13 +60,9 @@ export default function BankAccountScreen() {
     }
   }, [currentBank]);
 
-  if (isLoading) return <LoadingSpinner />;
-
-  const { user } = useAuthStore();
-
   const handleBack = () => {
     if (router.canGoBack()) {
-      router.back();
+      return router.back();
     }
     router.replace(user?.active_role === 'helper' ? '/(helper)/profile' : '/(customer)/profile');
   };
@@ -91,7 +90,25 @@ export default function BankAccountScreen() {
     }
   };
 
-  const insets = useSafeAreaInsets();
+  if (authLoading || (isHelper && isLoading)) return <LoadingSpinner />;
+  if (!isHelper)
+    return (
+      <View style={{ padding: 24, gap: 16 }}>
+        <Text>
+          Tài khoản ngân hàng nhận tiền dành cho đối tác giúp việc. Khách hàng xem thanh toán trong
+          chi tiết đơn hàng.
+        </Text>
+        <Button title="Xem đơn hàng" onPress={() => router.replace('/(customer)/jobs')} />
+      </View>
+    );
+  if (isError)
+    return (
+      <View style={{ padding: 24, gap: 16 }}>
+        <Text>Chưa tải được tài khoản ngân hàng.</Text>
+        <Button title="Thử lại" onPress={() => refetch()} />
+        <Button title="Quay lại" variant="outline" onPress={handleBack} />
+      </View>
+    );
 
   return (
     <View style={{ flex: 1, backgroundColor: '#F8F9FA' }}>

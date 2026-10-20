@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard,
   Users,
@@ -28,11 +28,11 @@ const navItems = [
   { href: '/reviews', label: 'Đánh giá & Phản hồi', icon: Star },
   { href: '/analytics', label: 'Thống kê & Báo cáo', icon: BarChart3 },
   { href: '/notifications', label: 'Gửi thông báo', icon: Megaphone },
+  { href: '/feedback', label: 'Góp ý ứng dụng', icon: Megaphone },
 ];
 
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const router = useRouter();
   const { user, logout } = useAuthStore();
 
   // Longest matching href wins, so /helpers/kyc does not also highlight /helpers.
@@ -43,7 +43,8 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
 
   const handleLogout = () => {
     logout();
-    router.replace('/login');
+    // A full navigation also disposes the previous administrator's query cache.
+    window.location.assign('/login');
   };
 
   return (

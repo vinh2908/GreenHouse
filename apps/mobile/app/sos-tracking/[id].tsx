@@ -1,3 +1,4 @@
+import { Alert } from '@/components/common/app-alert';
 import { useState, useEffect } from 'react';
 import {
   View,
@@ -7,7 +8,6 @@ import {
   Linking,
   Share,
   ActivityIndicator,
-  Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';

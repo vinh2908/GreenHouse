@@ -22,3 +22,6 @@ tools/
 apps/api/uploads/
 
 .vercel
+apps/mobile/dist-qa/
+reports/**/browser-report/
+reports/**/browser-artifacts/

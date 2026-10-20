@@ -1,9 +1,15 @@
-import { Tabs } from 'expo-router';
+import { Tabs, Redirect } from 'expo-router';
+import { useAuthStore } from '@/stores/auth.store';
+import { LoadingSpinner } from '@/components/ui';
 import { CustomTabBar } from '@/components/common/custom-tab-bar';
 import { useHelperLocationSync } from '@/hooks/use-helper-location-sync';
 
 export default function HelperLayout() {
   useHelperLocationSync();
+  const authenticated = useAuthStore(s => s.isAuthenticated);
+  const loading = useAuthStore(s => s.isLoading);
+  if (loading) return <LoadingSpinner />;
+  if (!authenticated) return <Redirect href="/(auth)/login" />;
 
   return (
     <Tabs

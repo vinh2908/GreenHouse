@@ -9,6 +9,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { JwtAuthOptionalGuard } from './guards/jwt-optional.guard';
 import { UsersModule } from '../users/users.module';
+import { ChatModule } from '../chat/chat.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { UsersModule } from '../users/users.module';
     JwtModule.register({}), // Dynamic config via AuthService.generateTokens
     MongooseModule.forFeature([{ name: Otp.name, schema: OtpSchema }]),
     UsersModule,
+    ChatModule,
   ],
   controllers: [AuthController],
   providers: [AuthService, OtpService, JwtStrategy, JwtAuthGuard, JwtAuthOptionalGuard],

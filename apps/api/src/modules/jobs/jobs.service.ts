@@ -148,6 +148,11 @@ export class JobsService {
   // ─── Customer: Create Job ─────────────────────────────────────────────────
 
   async createJob(customerId: string, dto: CreateJobDto): Promise<JobDocument> {
+    const service = await this.serviceModel.exists({
+      _id: new Types.ObjectId(dto.service_id),
+      status: 'active',
+    });
+    if (!service) throw new BadRequestException('Dịch vụ không tồn tại hoặc đã ngừng nhận yêu cầu');
     const expiresAt = new Date();
     expiresAt.setHours(expiresAt.getHours() + JOB_OPEN_EXPIRY_HOURS);
 
@@ -272,10 +277,7 @@ export class JobsService {
   async createSosJob(customerId: string, dto: CreateSosJobDto): Promise<JobDocument> {
     // 1. Tự động tra cứu Service theo category
     const serviceSlug = dto.category || 'electrician';
-    let service = await this.serviceModel.findOne({ slug: serviceSlug }).exec();
-    if (!service) {
-      service = await this.serviceModel.findOne({}).exec();
-    }
+    const service = await this.serviceModel.findOne({ slug: serviceSlug, status: 'active' }).exec();
     if (!service) throw new BadRequestException('Hệ thống chưa có dịch vụ cứu hộ phù hợp');
 
     const expiresAt = new Date();
@@ -427,81 +429,109 @@ export class JobsService {
     helperId: string,
     jobId: string,
   ): Promise<{ job: JobDocument; contract: ContractDocument }> {
-    const job = await this.jobModel.findById(jobId).populate('service_id').exec();
-    if (!job) throw new NotFoundException('Đơn cứu hộ SOS không tồn tại');
-    if (!job.is_sos) throw new BadRequestException('Đây không phải đơn cứu hộ SOS');
-    if (job.status !== JobStatus.OPEN) {
-      throw new ConflictException('Đơn cứu hộ này đã có thợ khác nhận');
-    }
+    const result = await this.jobModel.db.transaction(async session => {
+      const job = await this.jobModel.findById(jobId).session(session).exec();
+      if (!job) throw new NotFoundException('Đơn cứu hộ SOS không tồn tại');
+      if (!job.is_sos) throw new BadRequestException('Đây không phải đơn cứu hộ SOS');
+      if (job.status !== JobStatus.OPEN) {
+        throw new ConflictException('Đơn cứu hộ này đã có thợ khác nhận');
+      }
 
-    if (job.customer_id.toString() === helperId) {
-      throw new BadRequestException('Bạn không thể tự nhận đơn cứu hộ của chính mình');
-    }
+      if (job.expires_at && job.expires_at <= new Date())
+        throw new BadRequestException('Đơn đã hết hạn nhận báo giá');
 
-    const helperProfile = await this.helperModel
-      .findOne({ user_id: new Types.ObjectId(helperId) })
-      .exec();
-    if (!helperProfile || helperProfile.verification_status !== VerificationStatus.APPROVED) {
-      throw new ForbiddenException('Chỉ thợ đã xác thực e-KYC mới có quyền nhận đơn cứu hộ SOS');
-    }
+      if (job.customer_id.toString() === helperId) {
+        throw new BadRequestException('Bạn không thể tự nhận đơn cứu hộ của chính mình');
+      }
 
-    // Atomic claim first-accept-wins: the loser gets a clean 409 instead of leaving
-    // an orphan quote behind and hitting the contracts unique index.
-    const claimed = await this.jobModel
-      .findOneAndUpdate(
-        { _id: job._id, status: JobStatus.OPEN, helper_id: null },
-        { $set: { helper_id: new Types.ObjectId(helperId) } },
-        { new: true },
-      )
-      .exec();
-    if (!claimed) throw new ConflictException('Đơn cứu hộ này đã có thợ khác nhận');
+      const helperProfile = await this.helperModel
+        .findOne({ user_id: new Types.ObjectId(helperId) })
+        .session(session)
+        .exec();
+      if (!helperProfile || helperProfile.verification_status !== VerificationStatus.APPROVED) {
+        throw new ForbiddenException('Chỉ thợ đã xác thực e-KYC mới có quyền nhận đơn cứu hộ SOS');
+      }
+      if (!helperProfile.service_ids.some(id => String(id) === String(job.service_id))) {
+        throw new ForbiddenException('Bạn chưa đăng ký chuyên môn phù hợp cho đơn cứu hộ này');
+      }
+      const availableHelper = await this.helperModel
+        .findOneAndUpdate(
+          {
+            _id: helperProfile._id,
+            status: HelperStatus.ONLINE,
+            verification_status: VerificationStatus.APPROVED,
+          },
+          { $set: { status: HelperStatus.BUSY } },
+          { new: true, session },
+        )
+        .exec();
+      if (!availableHelper)
+        throw new ConflictException('Bạn cần trực tuyến và không bận để nhận cứu hộ');
 
-    const baseCost = 200000; // Giá công cứu hộ tối thiểu
-    const surcharge = job.sos_surcharge || 100000;
-    const totalPrice = baseCost + surcharge;
-    const platformFee = Math.round(totalPrice * PLATFORM_FEE_BY_SERVICE.default);
-    const helperReceives = totalPrice - platformFee;
+      // Atomic claim first-accept-wins: the loser gets a clean 409 instead of leaving
+      // an orphan quote behind and hitting the contracts unique index.
+      const claimed = await this.jobModel
+        .findOneAndUpdate(
+          { _id: job._id, status: JobStatus.OPEN, helper_id: null },
+          { $set: { helper_id: new Types.ObjectId(helperId) } },
+          { new: true, session },
+        )
+        .exec();
+      if (!claimed) throw new ConflictException('Đơn cứu hộ này đã có thợ khác nhận');
 
-    // 1. Tạo báo giá khẩn cấp tự động (Accepted Quote)
-    const quote = await this.quoteModel.create({
-      job_id: new Types.ObjectId(jobId),
-      helper_id: new Types.ObjectId(helperId),
-      labor_cost: baseCost,
-      materials_cost: surcharge,
-      total_price: totalPrice,
-      platform_fee: platformFee,
-      helper_receives: helperReceives,
-      estimated_duration: 1,
-      warranty_days: 30,
-      notes: '🚨 Đơn cứu hộ khẩn cấp SOS - Thợ có mặt sau 15 phút',
-      status: QuoteStatus.ACCEPTED,
-      expires_at: new Date(Date.now() + 3600 * 1000 * 2),
+      const baseCost = 200000; // Giá công cứu hộ tối thiểu
+      const surcharge = job.sos_surcharge ?? 100000;
+      const totalPrice = baseCost + surcharge;
+      const platformFee = Math.round(totalPrice * PLATFORM_FEE_BY_SERVICE.default);
+      const helperReceives = totalPrice - platformFee;
+
+      // 1. Tạo báo giá khẩn cấp tự động (Accepted Quote)
+      const quote = await new this.quoteModel({
+        job_id: new Types.ObjectId(jobId),
+        helper_id: new Types.ObjectId(helperId),
+        labor_cost: baseCost,
+        materials_cost: surcharge,
+        total_price: totalPrice,
+        platform_fee: platformFee,
+        helper_receives: helperReceives,
+        estimated_duration: 1,
+        warranty_days: 30,
+        notes: '🚨 Đơn cứu hộ khẩn cấp SOS - Thợ có mặt sau 15 phút',
+        status: QuoteStatus.ACCEPTED,
+        expires_at: new Date(Date.now() + 3600 * 1000 * 2),
+      }).save({ session });
+
+      // 2. Tạo hợp đồng khẩn cấp ngay lập tức
+      const contract = await new this.contractModel({
+        job_id: new Types.ObjectId(jobId),
+        quote_id: quote._id,
+        customer_id: job.customer_id,
+        helper_id: new Types.ObjectId(helperId),
+        labor_cost: baseCost,
+        materials_cost: surcharge,
+        total_price: totalPrice,
+        platform_fee: platformFee,
+        helper_receives: helperReceives,
+        warranty_days: 30,
+        scheduled_at: new Date(),
+        signed_by_customer_at: new Date(),
+      }).save({ session });
+
+      // 3. Chuyển trạng thái Job sang CONFIRMED và gán Thợ
+      this.addEvent(job, JobStatus.CONFIRMED, helperId, 'helper', 'Thợ đã nhận cứu hộ SOS');
+      job.helper_id = new Types.ObjectId(helperId);
+      job.selected_quote_id = quote._id as any;
+      await job.save({ session });
+      return { job, contract };
     });
-
-    // 2. Tạo hợp đồng khẩn cấp ngay lập tức
-    const contract = await this.contractModel.create({
-      job_id: new Types.ObjectId(jobId),
-      quote_id: quote._id,
-      customer_id: job.customer_id,
-      helper_id: new Types.ObjectId(helperId),
-      labor_cost: baseCost,
-      materials_cost: surcharge,
-      total_price: totalPrice,
-      platform_fee: platformFee,
-      helper_receives: helperReceives,
-      warranty_days: 30,
-      scheduled_at: new Date(),
-      signed_by_customer_at: new Date(),
-    });
-
-    // 3. Chuyển trạng thái Job sang CONFIRMED và gán Thợ
-    this.addEvent(job, JobStatus.CONFIRMED, helperId, 'helper', 'Thợ đã nhận cứu hộ SOS');
-    job.helper_id = new Types.ObjectId(helperId);
-    job.selected_quote_id = quote._id as any;
-    await job.save();
+    const { job, contract } = result;
 
     // 3. Tự động tạo cuộc trò chuyện khẩn cấp
-    await this.chatService.getOrCreateConversation(jobId, [String(job.customer_id), helperId]);
+    await this.chatService
+      .getOrCreateConversation(jobId, [String(job.customer_id), helperId])
+      .catch(error =>
+        this.logger.warn(`SOS chat initialization failed for ${jobId}: ${error.message}`),
+      );
 
     // 4. Bắn Socket Realtime thông báo cho Khách hàng ngay lập tức
     const payload = {
@@ -519,13 +549,15 @@ export class JobsService {
     });
 
     // 5. Gửi thông báo cho Khách hàng
-    await this.notificationsService.create({
-      userId: String(job.customer_id),
-      type: NOTIFICATION_TYPES.JOB_CONFIRMED,
-      title: '🚨 ĐÃ CÓ THỢ NHẬN CỨU HỘ SOS!',
-      body: `Thợ đang chuẩn bị đồ nghề và di chuyển gấp đến bạn (Dự kiến 15 phút).`,
-      payload: { job_id: jobId },
-    });
+    await this.notificationsService
+      .create({
+        userId: String(job.customer_id),
+        type: NOTIFICATION_TYPES.JOB_CONFIRMED,
+        title: '🚨 ĐÃ CÓ THỢ NHẬN CỨU HỘ SOS!',
+        body: `Thợ đang chuẩn bị đồ nghề và di chuyển gấp đến bạn (Dự kiến 15 phút).`,
+        payload: { job_id: jobId },
+      })
+      .catch(error => this.logger.warn(`SOS notification failed for ${jobId}: ${error.message}`));
 
     return { job, contract };
   }
@@ -677,31 +709,44 @@ export class JobsService {
     const expiresAt = new Date();
     expiresAt.setHours(expiresAt.getHours() + JOB_QUOTE_EXPIRY_HOURS);
 
-    const quote = await this.quoteModel.create({
-      job_id: new Types.ObjectId(jobId),
-      helper_id: new Types.ObjectId(helperId),
-      labor_cost: dto.labor_cost,
-      materials_cost: materialsTotal,
-      total_price: totalPrice,
-      platform_fee: platformFee,
-      helper_receives: helperReceives,
-      estimated_duration: dto.estimated_duration,
-      warranty_days: dto.warranty_days ?? 0,
-      notes: dto.notes,
-      materials_breakdown: dto.materials_breakdown ?? [],
-      available_date: dto.available_date ? new Date(dto.available_date) : undefined,
-      available_time_start: dto.available_time_start,
-      available_time_end: dto.available_time_end,
-      expires_at: expiresAt,
+    const quote = await this.jobModel.db.transaction(async session => {
+      // Claim the job in the same transaction as the quote. A simultaneous
+      // cancellation or selection must never be overwritten back to receiving_quotes.
+      const accepting = await this.jobModel
+        .findOneAndUpdate(
+          {
+            _id: job._id,
+            status: { $in: [JobStatus.OPEN, JobStatus.RECEIVING_QUOTES] },
+            $or: [{ expires_at: { $gt: new Date() } }, { expires_at: null }],
+          },
+          { $set: { status: JobStatus.RECEIVING_QUOTES }, $inc: { total_quotes_count: 1 } },
+          { new: true, session },
+        )
+        .exec();
+      if (!accepting) throw new BadRequestException('Đơn đã hết hạn hoặc không còn nhận báo giá');
+      const duplicate = await this.quoteModel
+        .findOne({ job_id: job._id, helper_id: new Types.ObjectId(helperId) })
+        .session(session)
+        .exec();
+      if (duplicate) throw new ConflictException('Bạn đã gửi báo giá cho job này');
+      return new this.quoteModel({
+        job_id: new Types.ObjectId(jobId),
+        helper_id: new Types.ObjectId(helperId),
+        labor_cost: dto.labor_cost,
+        materials_cost: materialsTotal,
+        total_price: totalPrice,
+        platform_fee: platformFee,
+        helper_receives: helperReceives,
+        estimated_duration: dto.estimated_duration,
+        warranty_days: dto.warranty_days ?? 0,
+        notes: dto.notes,
+        materials_breakdown: dto.materials_breakdown ?? [],
+        available_date: dto.available_date ? new Date(dto.available_date) : undefined,
+        available_time_start: dto.available_time_start,
+        available_time_end: dto.available_time_end,
+        expires_at: expiresAt,
+      }).save({ session });
     });
-
-    // Update job
-    await this.jobModel
-      .findByIdAndUpdate(jobId, {
-        status: JobStatus.RECEIVING_QUOTES,
-        $inc: { total_quotes_count: 1 },
-      })
-      .exec();
 
     // Realtime: notify customer a new quote arrived
     const quotePayload = {
@@ -713,12 +758,14 @@ export class JobsService {
     this.gateway.emitToUser(String(job.customer_id), SOCKET_EVENTS.QUOTE_RECEIVED, quotePayload);
 
     // Notification: push notification to customer
-    await this.notificationsService.notifyNewQuote(
-      String(job.customer_id),
-      (helperProfile.user_id as unknown as { full_name?: string })?.full_name ?? 'Thợ',
-      job.title,
-      jobId,
-    );
+    await this.notificationsService
+      .notifyNewQuote(
+        String(job.customer_id),
+        (helperProfile.user_id as unknown as { full_name?: string })?.full_name ?? 'Thợ',
+        job.title,
+        jobId,
+      )
+      .catch(error => this.logger.warn(`Quote notification failed for ${jobId}: ${error.message}`));
 
     return quote;
   }
@@ -870,87 +917,75 @@ export class JobsService {
     jobId: string,
     dto: SelectQuoteDto,
   ): Promise<{ job: JobDocument; contract: ContractDocument }> {
-    const job = await this.jobModel.findById(jobId).exec();
-    if (!job) throw new NotFoundException('Job không tồn tại');
-    if (job.customer_id.toString() !== customerId) throw new ForbiddenException();
-    if (job.status !== JobStatus.RECEIVING_QUOTES && job.status !== JobStatus.OPEN) {
-      throw new BadRequestException('Job không ở trạng thái nhận báo giá');
-    }
-
-    const quote = await this.quoteModel.findById(dto.quote_id).exec();
-    if (!quote || quote.job_id.toString() !== jobId)
-      throw new NotFoundException('Quote không tồn tại');
-    if (quote.status !== QuoteStatus.PENDING)
-      throw new BadRequestException('Quote không còn hiệu lực');
-    if (!(await this.isVerifiedHelper(quote.helper_id))) {
-      throw new BadRequestException('Thợ này chưa được xác minh e-KYC, không thể chọn báo giá');
-    }
-
-    // Atomic claim so two parallel selections cannot both create a contract.
-    const claimed = await this.jobModel
-      .findOneAndUpdate(
-        { _id: job._id, status: job.status, helper_id: null },
-        { $set: { helper_id: quote.helper_id } },
-        { new: true },
-      )
-      .exec();
-    if (!claimed) throw new ConflictException('Job đã chọn báo giá');
-
-    // Mark quote as accepted
-    quote.status = QuoteStatus.ACCEPTED;
-    await quote.save();
-
-    // Reject other quotes
-    await this.quoteModel
-      .updateMany(
-        { job_id: new Types.ObjectId(jobId), _id: { $ne: new Types.ObjectId(dto.quote_id) } },
-        { status: QuoteStatus.REJECTED },
-      )
-      .exec();
-
-    // Create contract
-    const contract = await this.contractModel.create({
-      job_id: new Types.ObjectId(jobId),
-      quote_id: new Types.ObjectId(dto.quote_id),
-      customer_id: new Types.ObjectId(customerId),
-      helper_id: quote.helper_id,
-      labor_cost: quote.labor_cost,
-      materials_cost: quote.materials_cost,
-      total_price: quote.total_price,
-      platform_fee: quote.platform_fee,
-      helper_receives: quote.helper_receives,
-      warranty_days: quote.warranty_days,
-      scheduled_at: new Date(dto.scheduled_at),
-      signed_by_customer_at: new Date(),
+    const result = await this.jobModel.db.transaction(async session => {
+      const job = await this.jobModel.findById(jobId).session(session).exec();
+      if (!job) throw new NotFoundException('Job không tồn tại');
+      if (String(job.customer_id) !== customerId) throw new ForbiddenException();
+      if (![JobStatus.OPEN, JobStatus.RECEIVING_QUOTES].includes(job.status))
+        throw new BadRequestException('Job không ở trạng thái nhận báo giá');
+      if (job.expires_at && job.expires_at <= new Date())
+        throw new BadRequestException('Đơn đã hết hạn nhận báo giá');
+      const quote = await this.quoteModel.findById(dto.quote_id).session(session).exec();
+      if (!quote || String(quote.job_id) !== jobId)
+        throw new NotFoundException('Quote không tồn tại');
+      if (quote.status !== QuoteStatus.PENDING || quote.expires_at <= new Date())
+        throw new BadRequestException('Báo giá đã hết hiệu lực');
+      if (!(await this.isVerifiedHelper(quote.helper_id)))
+        throw new BadRequestException('Thợ chưa được xác minh e-KYC');
+      const claimed = await this.jobModel
+        .findOneAndUpdate(
+          { _id: job._id, status: job.status, helper_id: null },
+          { $set: { helper_id: quote.helper_id } },
+          { new: true, session },
+        )
+        .exec();
+      if (!claimed) throw new ConflictException('Job đã chọn báo giá');
+      quote.status = QuoteStatus.ACCEPTED;
+      await quote.save({ session });
+      await this.quoteModel
+        .updateMany(
+          { job_id: job._id, _id: { $ne: quote._id }, status: QuoteStatus.PENDING },
+          { status: QuoteStatus.REJECTED },
+          { session },
+        )
+        .exec();
+      const contract = await new this.contractModel({
+        job_id: job._id,
+        quote_id: quote._id,
+        customer_id: job.customer_id,
+        helper_id: quote.helper_id,
+        labor_cost: quote.labor_cost,
+        materials_cost: quote.materials_cost,
+        total_price: quote.total_price,
+        platform_fee: quote.platform_fee,
+        helper_receives: quote.helper_receives,
+        warranty_days: quote.warranty_days,
+        scheduled_at: new Date(dto.scheduled_at),
+        signed_by_customer_at: new Date(),
+      }).save({ session });
+      this.addEvent(job, JobStatus.CONFIRMED, customerId, 'customer', 'Đã chọn báo giá');
+      job.selected_quote_id = quote._id as Types.ObjectId;
+      job.helper_id = quote.helper_id;
+      await job.save({ session });
+      return { job, contract };
     });
-
-    // Update job
-    this.addEvent(job, JobStatus.CONFIRMED, customerId, 'customer', 'Đã chọn báo giá');
-    job.selected_quote_id = quote._id as Types.ObjectId;
-    job.helper_id = quote.helper_id;
-    await job.save();
-
-    // ── Phase 7: Realtime & Notifications ──────────────────────────────────
-
-    const helperId = String(quote.helper_id);
-
-    // Create chat conversation automatically
-    await this.chatService.getOrCreateConversation(jobId, [customerId, helperId]);
-
-    // Realtime: notify helper their quote was accepted
+    const { job, contract } = result;
+    const helperId = String(job.helper_id);
+    await this.chatService
+      .getOrCreateConversation(jobId, [customerId, helperId])
+      .catch(error =>
+        this.logger.warn(`Chat initialization failed for ${jobId}: ${error.message}`),
+      );
     this.gateway.emitToUser(helperId, SOCKET_EVENTS.QUOTE_ACCEPTED, {
       job_id: jobId,
-      quote_id: String(quote._id),
+      quote_id: dto.quote_id,
       contract_id: String(contract._id),
     });
-
-    // Realtime: emit job status change
     this.emitJobStatusChange(job);
-
-    // Notification: push to helper
-    await this.notificationsService.notifyQuoteAccepted(helperId, job.title, jobId);
-
-    return { job, contract };
+    await this.notificationsService
+      .notifyQuoteAccepted(helperId, job.title, jobId)
+      .catch(error => this.logger.warn(`Notification failed for ${jobId}: ${error.message}`));
+    return result;
   }
 
   // ─── Helper: Start navigation ─────────────────────────────────────────────
@@ -1078,64 +1113,71 @@ export class JobsService {
     jobId: string,
     dto: ReviewJobDto,
   ): Promise<JobDocument> {
-    const existing = await this.jobModel.findById(jobId).exec();
-    if (!existing) throw new NotFoundException('Job không tồn tại');
-    if (existing.customer_id.toString() !== customerId) throw new ForbiddenException();
-    this.validateTransition(existing.status, JobStatus.COMPLETED);
+    const job = await this.jobModel.db.transaction(async session => {
+      const existing = await this.jobModel.findById(jobId).session(session).exec();
+      if (!existing) throw new NotFoundException('Job không tồn tại');
+      if (existing.customer_id.toString() !== customerId) throw new ForbiddenException();
+      this.validateTransition(existing.status, JobStatus.COMPLETED);
 
-    // Atomic claim: only one request can move PENDING_REVIEW → COMPLETED, so the
-    // helper wallet is credited exactly once even if the customer double-taps.
-    const job = await this.jobModel
-      .findOneAndUpdate(
-        { _id: existing._id, status: existing.status },
-        {
-          $set: {
-            status: JobStatus.COMPLETED,
-            customer_rating: dto.rating,
-            customer_review: dto.review,
-          },
-          $push: {
-            events: {
+      // Atomic claim: only one request can move PENDING_REVIEW → COMPLETED, so the
+      // helper wallet is credited exactly once even if the customer double-taps.
+      const job = await this.jobModel
+        .findOneAndUpdate(
+          { _id: existing._id, status: existing.status },
+          {
+            $set: {
               status: JobStatus.COMPLETED,
-              note: 'Nghiệm thu hoàn thành',
-              actor_id: new Types.ObjectId(customerId),
-              actor_role: 'customer',
-              timestamp: new Date(),
+              customer_rating: dto.rating,
+              customer_review: dto.review,
+            },
+            $push: {
+              events: {
+                status: JobStatus.COMPLETED,
+                note: 'Nghiệm thu hoàn thành',
+                actor_id: new Types.ObjectId(customerId),
+                actor_role: 'customer',
+                timestamp: new Date(),
+              },
             },
           },
-        },
-        { new: true },
-      )
-      .exec();
-    if (!job) throw new ConflictException('Công việc đã được nghiệm thu');
-
-    await this.contractModel
-      .findOneAndUpdate(
-        { job_id: new Types.ObjectId(jobId) },
-        { status: ContractStatus.COMPLETED, completed_at: new Date() },
-      )
-      .exec();
-
-    if (job.helper_id) {
-      await this.helperModel
-        .updateOne({ user_id: job.helper_id }, { $inc: { completed_jobs: 1 } })
+          { new: true, session },
+        )
         .exec();
-    }
+      if (!job) throw new ConflictException('Công việc đã được nghiệm thu');
 
-    // ── Phase 8: Credit helper wallet ──────────────────────────────────────
-    if (job.helper_id) {
-      const contract = await this.contractModel
-        .findOne({ job_id: new Types.ObjectId(jobId) })
+      await this.contractModel
+        .findOneAndUpdate(
+          { job_id: new Types.ObjectId(jobId) },
+          { status: ContractStatus.COMPLETED, completed_at: new Date() },
+          { session },
+        )
         .exec();
 
-      if (contract && contract.helper_receives > 0) {
-        await this.paymentsService.creditHelper(
-          String(job.helper_id),
-          jobId,
-          contract.helper_receives,
-        );
+      if (job.helper_id) {
+        await this.helperModel
+          .updateOne({ user_id: job.helper_id }, { $inc: { completed_jobs: 1 } }, { session })
+          .exec();
       }
-    }
+
+      // ── Phase 8: Credit helper wallet ──────────────────────────────────────
+      if (job.helper_id) {
+        const contract = await this.contractModel
+          .findOne({ job_id: new Types.ObjectId(jobId) })
+          .session(session)
+          .exec();
+
+        if (contract && contract.helper_receives > 0) {
+          await this.paymentsService.creditHelper(
+            String(job.helper_id),
+            jobId,
+            contract.helper_receives,
+            session,
+          );
+        }
+      }
+
+      return job;
+    });
 
     // Realtime
     this.emitJobStatusChange(job);
@@ -1171,30 +1213,39 @@ export class JobsService {
     jobId: string,
     dto: CancelJobDto,
   ): Promise<JobDocument> {
-    const job = await this.jobModel.findById(jobId).exec();
-    if (!job) throw new NotFoundException('Job không tồn tại');
+    const job = await this.jobModel.db.transaction(async session => {
+      const job = await this.jobModel.findById(jobId).session(session).exec();
+      if (!job) throw new NotFoundException('Job không tồn tại');
 
-    if (actorRole === 'customer' && job.customer_id.toString() !== actorId) {
-      throw new ForbiddenException();
-    }
-    if (actorRole === 'helper' && job.helper_id?.toString() !== actorId) {
-      throw new ForbiddenException();
-    }
+      if (actorRole === 'customer' && job.customer_id.toString() !== actorId) {
+        throw new ForbiddenException();
+      }
+      if (actorRole === 'helper' && job.helper_id?.toString() !== actorId) {
+        throw new ForbiddenException();
+      }
 
-    this.validateTransition(job.status, JobStatus.CANCELLED);
-    job.cancellation_reason = dto.reason;
-    job.cancelled_by = new Types.ObjectId(actorId);
-    this.addEvent(job, JobStatus.CANCELLED, actorId, actorRole, `Hủy: ${dto.reason}`);
+      this.validateTransition(job.status, JobStatus.CANCELLED);
+      job.cancellation_reason = dto.reason;
+      job.cancelled_by = new Types.ObjectId(actorId);
+      this.addEvent(job, JobStatus.CANCELLED, actorId, actorRole, `Hủy: ${dto.reason}`);
 
-    // Reject all pending quotes
-    await this.quoteModel
-      .updateMany(
-        { job_id: new Types.ObjectId(jobId), status: QuoteStatus.PENDING },
-        { status: QuoteStatus.REJECTED },
-      )
-      .exec();
+      // Reject all pending quotes
+      await this.quoteModel
+        .updateMany(
+          { job_id: new Types.ObjectId(jobId), status: QuoteStatus.PENDING },
+          { status: QuoteStatus.REJECTED },
+          { session },
+        )
+        .exec();
 
-    await job.save();
+      await job.save({ session });
+      await this.contractModel.updateOne(
+        { job_id: job._id },
+        { status: ContractStatus.CANCELLED },
+        { session },
+      );
+      return job;
+    });
     if (job.helper_id) await this.setHelperBusy(job.helper_id, false);
 
     // Realtime

@@ -75,6 +75,10 @@ export const TransactionSchema = SchemaFactory.createForClass(Transaction);
 TransactionSchema.index({ user_id: 1, created_at: -1 });
 TransactionSchema.index({ wallet_id: 1 });
 TransactionSchema.index({ job_id: 1 });
+TransactionSchema.index(
+  { job_id: 1, user_id: 1, type: 1 },
+  { unique: true, partialFilterExpression: { type: 'earning' } },
+);
 
 // ─── Withdrawal ───────────────────────────────────────────────────────────────
 

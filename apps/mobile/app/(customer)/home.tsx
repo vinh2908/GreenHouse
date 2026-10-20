@@ -295,6 +295,7 @@ export default function CustomerHomeScreen() {
           >
             {/* Location selector */}
             <TouchableOpacity
+              onPress={() => router.push(user ? '/edit-profile' : '/(auth)/login')}
               activeOpacity={0.7}
               style={{
                 flexDirection: 'row',

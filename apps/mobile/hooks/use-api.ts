@@ -4,6 +4,7 @@ import apiClient from '@/services/api-client';
 import { uploadFile, uploadFiles } from '@/services/upload.service';
 import { syncHelperLocation } from '@/hooks/use-helper-location-sync';
 import Toast from 'react-native-toast-message';
+import { useAuthStore } from '@/stores/auth.store';
 
 // ─── Auth ──────────────────────────────────────────────────────────────────────
 
@@ -35,8 +36,10 @@ export function useResendOtp() {
 // ─── Profile ───────────────────────────────────────────────────────────────────
 
 export function useMyProfile() {
+  const authenticated = useAuthStore(s => s.isAuthenticated);
   return useQuery({
     queryKey: ['profile', 'me'],
+    enabled: authenticated,
     queryFn: async () => {
       const { data } = await apiClient.get('/users/me');
       return data.data;
@@ -356,9 +359,10 @@ export function useCompleteJob() {
 
 // ─── Helper Profile ────────────────────────────────────────────────────────────
 
-export function useHelperProfile() {
+export function useHelperProfile(enabled = true) {
   return useQuery({
     queryKey: ['helper', 'profile'],
+    enabled,
     queryFn: async () => {
       const { data } = await apiClient.get('/helpers/me/profile');
       return data.data;

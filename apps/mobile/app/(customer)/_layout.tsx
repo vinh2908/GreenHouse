@@ -39,13 +39,6 @@ export default function CustomerLayout() {
           title: 'Tài khoản',
         }}
       />
-      {/* Ẩn route notifications khỏi tab bar */}
-      <Tabs.Screen
-        name="notifications"
-        options={{
-          href: null,
-        }}
-      />
     </Tabs>
   );
 }
