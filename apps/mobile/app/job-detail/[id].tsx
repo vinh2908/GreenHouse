@@ -446,7 +446,9 @@ export default function JobDetailScreen() {
           }}
         >
           {/* Header trạng thái phong cách Grab */}
-          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+          <View
+            style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
+          >
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 }}>
               <View
                 style={{
@@ -476,12 +478,20 @@ export default function JobDetailScreen() {
                   {job.status === 'cancelled' && '❌ Yêu cầu đã hủy'}
                 </Text>
                 <Text style={{ fontSize: 12, color: COLORS.gray[500], marginTop: 2 }}>
-                  {job.status === 'open' && 'Hệ thống đang quét các thợ trực tuyến trong bán kính 10km'}
-                  {job.status === 'helper_on_the_way' && 'Khoảng cách ~ 4.1 km • Vui lòng chú ý điện thoại'}
+                  {job.status === 'open' &&
+                    'Hệ thống đang quét các thợ trực tuyến trong bán kính 10km'}
+                  {job.status === 'helper_on_the_way' &&
+                    'Khoảng cách ~ 4.1 km • Vui lòng chú ý điện thoại'}
                   {job.status === 'helper_arrived' && 'Thợ đang đợi bạn tại cổng/cửa nhà'}
                   {job.status === 'in_progress' && 'Công việc đang được tiến hành'}
                   {job.status === 'completed' && 'Cảm ơn bạn đã tin dùng Green House!'}
-                  {!['open', 'helper_on_the_way', 'helper_arrived', 'in_progress', 'completed'].includes(job.status) && 'Cập nhật trực tiếp theo thời gian thực'}
+                  {![
+                    'open',
+                    'helper_on_the_way',
+                    'helper_arrived',
+                    'in_progress',
+                    'completed',
+                  ].includes(job.status) && 'Cập nhật trực tiếp theo thời gian thực'}
                 </Text>
               </View>
             </View>
@@ -490,14 +500,47 @@ export default function JobDetailScreen() {
 
           {/* Grab-like Horizontal Stepper Bar */}
           {job.status !== 'cancelled' && (
-            <View style={{ paddingVertical: 6, borderTopWidth: 1, borderTopColor: COLORS.gray[100] }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <View
+              style={{ paddingVertical: 6, borderTopWidth: 1, borderTopColor: COLORS.gray[100] }}
+            >
+              <View
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                }}
+              >
                 {[
-                  { key: 'post', label: 'Đăng đơn', done: currentStepIdx >= 0, active: currentStepIdx === 0 },
-                  { key: 'match', label: 'Ghép thợ', done: currentStepIdx >= 2, active: currentStepIdx === 1 || currentStepIdx === 2 },
-                  { key: 'onway', label: 'Đang đến', done: currentStepIdx >= 3, active: currentStepIdx === 3 || currentStepIdx === 4 },
-                  { key: 'work', label: 'Đang làm', done: currentStepIdx >= 5, active: currentStepIdx === 5 || currentStepIdx === 6 },
-                  { key: 'done', label: 'Xong', done: currentStepIdx >= 7, active: currentStepIdx >= 7 },
+                  {
+                    key: 'post',
+                    label: 'Đăng đơn',
+                    done: currentStepIdx >= 0,
+                    active: currentStepIdx === 0,
+                  },
+                  {
+                    key: 'match',
+                    label: 'Ghép thợ',
+                    done: currentStepIdx >= 2,
+                    active: currentStepIdx === 1 || currentStepIdx === 2,
+                  },
+                  {
+                    key: 'onway',
+                    label: 'Đang đến',
+                    done: currentStepIdx >= 3,
+                    active: currentStepIdx === 3 || currentStepIdx === 4,
+                  },
+                  {
+                    key: 'work',
+                    label: 'Đang làm',
+                    done: currentStepIdx >= 5,
+                    active: currentStepIdx === 5 || currentStepIdx === 6,
+                  },
+                  {
+                    key: 'done',
+                    label: 'Xong',
+                    done: currentStepIdx >= 7,
+                    active: currentStepIdx >= 7,
+                  },
                 ].map((st, idx, arr) => (
                   <React.Fragment key={st.key}>
                     <View style={{ alignItems: 'center', gap: 3 }}>
@@ -518,7 +561,13 @@ export default function JobDetailScreen() {
                         {st.done ? (
                           <Check size={12} color="#fff" strokeWidth={3} />
                         ) : (
-                          <Text style={{ fontSize: 10, fontWeight: '800', color: st.active ? '#fff' : COLORS.gray[500] }}>
+                          <Text
+                            style={{
+                              fontSize: 10,
+                              fontWeight: '800',
+                              color: st.active ? '#fff' : COLORS.gray[500],
+                            }}
+                          >
                             {idx + 1}
                           </Text>
                         )}
@@ -527,7 +576,11 @@ export default function JobDetailScreen() {
                         style={{
                           fontSize: 10,
                           fontWeight: st.active ? '800' : '600',
-                          color: st.active ? COLORS.primary : st.done ? COLORS.gray[800] : COLORS.gray[400],
+                          color: st.active
+                            ? COLORS.primary
+                            : st.done
+                              ? COLORS.gray[800]
+                              : COLORS.gray[400],
                         }}
                       >
                         {st.label}
@@ -561,11 +614,18 @@ export default function JobDetailScreen() {
                 borderColor: COLORS.gray[200],
               }}
             >
-              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+              <View
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                }}
+              >
                 <TouchableOpacity
                   activeOpacity={0.8}
                   onPress={() => {
-                    const hUserId = typeof job.helper_id === 'string' ? job.helper_id : job.helper_id?._id;
+                    const hUserId =
+                      typeof job.helper_id === 'string' ? job.helper_id : job.helper_id?._id;
                     router.push({ pathname: '/helper-profile/[id]', params: { id: hUserId } });
                   }}
                   style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 }}
@@ -588,19 +648,22 @@ export default function JobDetailScreen() {
                   </View>
                   <View style={{ flex: 1 }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-                      <Text style={{ fontWeight: '900', fontSize: 15, color: COLORS.gray[900] }} numberOfLines={1}>
+                      <Text
+                        style={{ fontWeight: '900', fontSize: 15, color: COLORS.gray[900] }}
+                        numberOfLines={1}
+                      >
                         {helperObj.full_name}
                       </Text>
                       <ShieldCheck size={15} color="#10B981" />
                     </View>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 2 }}>
+                    <View
+                      style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 2 }}
+                    >
                       <Text style={{ fontSize: 12, fontWeight: '700', color: '#D97706' }}>
                         ⭐ 4.9 (128 việc)
                       </Text>
                       <Text style={{ fontSize: 11, color: COLORS.gray[400] }}>•</Text>
-                      <Text style={{ fontSize: 11, color: COLORS.gray[500] }}>
-                        🛵 Xe máy
-                      </Text>
+                      <Text style={{ fontSize: 11, color: COLORS.gray[500] }}>🛵 Xe máy</Text>
                     </View>
                   </View>
                 </TouchableOpacity>
@@ -630,7 +693,9 @@ export default function JobDetailScreen() {
                   )}
                   <TouchableOpacity
                     activeOpacity={0.85}
-                    onPress={() => router.push({ pathname: '/chat/[jobId]', params: { jobId: id } })}
+                    onPress={() =>
+                      router.push({ pathname: '/chat/[jobId]', params: { jobId: id } })
+                    }
                     style={{
                       width: 40,
                       height: 40,
@@ -725,8 +790,6 @@ export default function JobDetailScreen() {
             </Text>
           </View>
         </Card>
-
-
 
         {/* ── Quotes List ────────────────────────────────────────────── */}
         {['open', 'receiving_quotes'].includes(job.status) && (

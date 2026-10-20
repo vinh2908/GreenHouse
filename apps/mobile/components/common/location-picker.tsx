@@ -106,7 +106,12 @@ export function LocationPreview({ coords }: { coords: PickerCoords | null }) {
       <View style={{ flex: 1 }} pointerEvents="none">
         <iframe
           srcDoc={mapHtml(coords, 15, true, false)}
-          style={{ width: '100%', height: '100%', border: 'none', backgroundColor: COLORS.gray[100] }}
+          style={{
+            width: '100%',
+            height: '100%',
+            border: 'none',
+            backgroundColor: COLORS.gray[100],
+          }}
           title="Location Preview"
         />
       </View>
