@@ -5,16 +5,22 @@ import * as SecureStore from '@/services/secure-storage';
 import Constants from 'expo-constants';
 import { SOCKET_EVENTS } from '@homemate/constants';
 import apiClient from '@/services/api-client';
+import { usableEndpoint } from '@/services/endpoint-config';
 
 const getBaseWsUrl = () => {
+  const browserHost = (globalThis as { location?: { hostname?: string } }).location?.hostname;
+  const nativeDev = typeof __DEV__ !== 'undefined' && __DEV__;
   // 1. Fixed URL from apps/mobile/.env or app.json extra; otherwise derived from API URL.
   const apiUrl = process.env.EXPO_PUBLIC_API_URL || Constants.expoConfig?.extra?.apiUrl;
   const extraWsUrl =
     process.env.EXPO_PUBLIC_WS_URL ||
     Constants.expoConfig?.extra?.wsUrl ||
     (apiUrl ? apiUrl.replace(/\/api\/v1\/?$/, '') : undefined);
-  if (extraWsUrl) {
+  if (usableEndpoint(extraWsUrl, browserHost, nativeDev)) {
     return extraWsUrl;
+  }
+  if (usableEndpoint(apiUrl, browserHost, nativeDev)) {
+    return apiUrl!.replace(/\/api\/v1\/?$/, '');
   }
 
   // 2. Expo Go LAN debugger host
