@@ -1,12 +1,5 @@
 import { useState, useEffect } from 'react';
-import {
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-  RefreshControl,
-  Pressable,
-} from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, RefreshControl, Pressable } from 'react-native';
 import Animated, {
   FadeInDown,
   useAnimatedStyle,

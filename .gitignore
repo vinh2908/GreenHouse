@@ -26,3 +26,8 @@ apps/api/uploads/
 # Local backup
 _backup_pre_patch/
 
+# Test reports and QA exports
+reports/
+dist-qa/
+apps/mobile/dist-qa/
+

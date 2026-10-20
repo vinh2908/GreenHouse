@@ -135,9 +135,7 @@ export default function JobDetailScreen() {
   const [reviewText, setReviewText] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('vietqr');
   const [selectedMediaPreview, setSelectedMediaPreview] = useState<string | null>(null);
-  const [selectedDate] = useState(
-    dayjs().add(1, 'day').format('YYYY-MM-DDT09:00:00'),
-  );
+  const [selectedDate] = useState(dayjs().add(1, 'day').format('YYYY-MM-DDT09:00:00'));
 
   // ── Dispute Modal States ─────────────────────────────────────────────────
   const [showDisputeModal, setShowDisputeModal] = useState(false);
@@ -1581,7 +1579,8 @@ export default function JobDetailScreen() {
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                 <CreditCard size={18} color={COLORS.primary} />
                 <Text style={{ fontWeight: '800', fontSize: 15, color: COLORS.gray[900] }}>
-                  Phương thức thanh toán ({new Intl.NumberFormat('vi-VN').format(contract?.total_price ?? 0)}₫)
+                  Phương thức thanh toán (
+                  {new Intl.NumberFormat('vi-VN').format(contract?.total_price ?? 0)}₫)
                 </Text>
               </View>
               <View style={{ gap: 8 }}>

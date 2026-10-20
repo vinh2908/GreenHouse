@@ -52,7 +52,9 @@ describe('GreenHouse / HomeMate — Full QA & Operational Business Logic Regress
       expect(isValidJobTransition(JobStatus.OPEN, JobStatus.COMPLETED)).toBe(false);
       expect(isValidJobTransition(JobStatus.RECEIVING_QUOTES, JobStatus.CONFIRMED)).toBe(true);
       expect(isValidJobTransition(JobStatus.CONFIRMED, JobStatus.HELPER_ON_THE_WAY)).toBe(true);
-      expect(isValidJobTransition(JobStatus.HELPER_ON_THE_WAY, JobStatus.HELPER_ARRIVED)).toBe(true);
+      expect(isValidJobTransition(JobStatus.HELPER_ON_THE_WAY, JobStatus.HELPER_ARRIVED)).toBe(
+        true,
+      );
       expect(isValidJobTransition(JobStatus.HELPER_ARRIVED, JobStatus.IN_PROGRESS)).toBe(true);
       expect(isValidJobTransition(JobStatus.IN_PROGRESS, JobStatus.PENDING_REVIEW)).toBe(true);
       expect(isValidJobTransition(JobStatus.IN_PROGRESS, JobStatus.DISPUTED)).toBe(true);
