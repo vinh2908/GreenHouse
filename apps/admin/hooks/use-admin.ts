@@ -130,11 +130,7 @@ export function useProcessWithdrawal() {
       action: 'approve' | 'reject';
       admin_note?: string;
     }) => apiClient.patch(`/payments/admin/withdrawals/${id}`, { action, admin_note }),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['admin', 'withdrawals'] });
-      qc.invalidateQueries({ queryKey: ['admin', 'transactions'] });
-      qc.invalidateQueries({ queryKey: ['admin', 'dashboard'] });
-    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'withdrawals'] }),
   });
 }
 
@@ -173,7 +169,7 @@ export function useAnalyticsSummary() {
       const { data } = await apiClient.get('/analytics/summary');
       return data.data;
     },
-    staleTime: 5 * 60 * 1000, // 5 min
+    staleTime: 5 * 60 * 1000,
   });
 }
 
@@ -232,7 +228,7 @@ export function useDashboardStats() {
       const { data } = await apiClient.get('/admin/dashboard');
       return data.data;
     },
-    staleTime: 60 * 1000, // 1 min
+    staleTime: 60 * 1000,
   });
 }
 
@@ -257,6 +253,28 @@ export function useAdminCancelJob() {
     onSuccess: (_, { id }) => {
       qc.invalidateQueries({ queryKey: ['admin', 'job', id] });
       qc.invalidateQueries({ queryKey: ['admin', 'jobs'] });
+    },
+  });
+}
+
+export function useAdminResolveDispute() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      id,
+      action,
+      refund_amount,
+      admin_note,
+    }: {
+      id: string;
+      action: 'refund_full' | 'refund_partial' | 'release_to_helper';
+      refund_amount?: number;
+      admin_note: string;
+    }) => apiClient.patch(`/jobs/${id}/resolve-dispute`, { action, refund_amount, admin_note }),
+    onSuccess: (_, { id }) => {
+      qc.invalidateQueries({ queryKey: ['admin', 'job', id] });
+      qc.invalidateQueries({ queryKey: ['admin', 'jobs'] });
+      qc.invalidateQueries({ queryKey: ['admin', 'transactions'] });
     },
   });
 }

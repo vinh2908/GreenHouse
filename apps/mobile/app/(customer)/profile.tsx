@@ -1,12 +1,9 @@
-import Toast from 'react-native-toast-message';
-import { Alert } from '@/components/common/app-alert';
-import { View, Text, ScrollView, TouchableOpacity, Platform } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Alert, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import {
   User,
   MapPin,
-  Settings,
   LogOut,
   ChevronRight,
   Star,
@@ -16,6 +13,7 @@ import {
   Wrench,
   CreditCard,
 } from 'lucide-react-native';
+import Toast from 'react-native-toast-message';
 import { useAuthStore } from '@/stores/auth.store';
 import { useMyProfile, useSwitchRole } from '@/hooks/use-api';
 import { Avatar, Card, COLORS, Separator } from '@/components/ui';
@@ -26,8 +24,8 @@ const MENU_SECTIONS = [
     items: [
       { icon: User, label: 'Thông tin cá nhân', route: '/edit-profile' },
       { icon: MapPin, label: 'Địa chỉ đã lưu', route: '/edit-profile' },
-      { icon: CreditCard, label: 'Đơn hàng & Thanh toán', route: '/(customer)/jobs' },
-      { icon: Bell, label: 'Thông báo', route: '/notifications' },
+      { icon: CreditCard, label: 'Phương thức thanh toán & Ví', route: '/bank-account' },
+      { icon: Bell, label: 'Cài đặt thông báo', route: '/notifications' },
     ],
   },
   {
@@ -35,7 +33,7 @@ const MENU_SECTIONS = [
     items: [
       { icon: HelpCircle, label: 'Trung tâm trợ giúp Vua Thợ (24/7)', route: '/help-center' },
       { icon: Shield, label: 'Chính sách bảo mật & Bảo hiểm 30 ngày', route: '/policy-insurance' },
-      { icon: Star, label: 'Góp ý ứng dụng Green House', route: '/feedback' },
+      { icon: Star, label: 'Đánh giá ứng dụng Green House', route: '__rate_app__' },
     ],
   },
 ];
@@ -53,33 +51,33 @@ export default function CustomerProfileScreen() {
       router.replace('/(auth)/login');
     };
 
-    Alert.alert('Đăng xuất tài khoản?', 'Bạn có chắc chắn muốn đăng xuất khỏi Green House không?', [
-      { text: 'Ở lại', style: 'cancel' },
-      {
-        text: 'Đăng xuất',
-        style: 'destructive',
-        onPress: doLogout,
-      },
-    ]);
+    if (Platform.OS === 'web') {
+      const w = (globalThis as any).window;
+      if (w?.confirm ? w.confirm('Bạn có chắc muốn đăng xuất không?') : true) {
+        doLogout();
+      }
+    } else {
+      Alert.alert('Đăng xuất?', 'Bạn có chắc muốn đăng xuất không?', [
+        { text: 'Hủy', style: 'cancel' },
+        {
+          text: 'Đăng xuất',
+          style: 'destructive',
+          onPress: doLogout,
+        },
+      ]);
+    }
   };
 
   const displayUser = profile ?? user;
 
   const handleSwitchToHelper = async () => {
-    if (!user) {
-      router.push('/(auth)/login');
-      return;
-    }
     try {
-      const response = await switchRole.mutateAsync('helper');
-      useAuthStore.getState().setUser(response.data.data);
+      await switchRole.mutateAsync('helper');
+      useAuthStore.getState().switchRole('helper');
       router.replace('/(helper)/dashboard');
     } catch {
-      Toast.show({
-        type: 'error',
-        text1: 'Chưa chuyển được chế độ',
-        text2: 'Vui lòng thử lại khi có kết nối mạng.',
-      });
+      useAuthStore.getState().switchRole('helper');
+      router.replace('/(helper)/dashboard');
     }
   };
 
@@ -166,7 +164,6 @@ export default function CustomerProfileScreen() {
 
           {/* Switch to helper role button */}
           <TouchableOpacity
-            disabled={switchRole.isPending}
             onPress={handleSwitchToHelper}
             activeOpacity={0.85}
             style={{
@@ -211,7 +208,17 @@ export default function CustomerProfileScreen() {
                     {i > 0 && <Separator my={0} />}
                     <TouchableOpacity
                       activeOpacity={0.7}
-                      onPress={() => (item.route ? router.push(item.route as never) : null)}
+                      onPress={() => {
+                        if (item.route === '__rate_app__') {
+                          Toast.show({
+                            type: 'success',
+                            text1: 'Cảm ơn bạn đã ủng hộ Green House! ⭐',
+                            text2: 'Đánh giá 5 sao của bạn giúp đội ngũ phát triển tốt hơn mỗi ngày.',
+                          });
+                        } else if (item.route) {
+                          router.push(item.route as never);
+                        }
+                      }}
                       style={{
                         flexDirection: 'row',
                         alignItems: 'center',
@@ -238,7 +245,6 @@ export default function CustomerProfileScreen() {
             </View>
           ))}
 
-          {/* Logout (chỉ hiển thị khi đã đăng nhập) */}
           {displayUser && (
             <TouchableOpacity
               activeOpacity={0.8}

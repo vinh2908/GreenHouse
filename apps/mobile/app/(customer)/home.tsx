@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   RefreshControl,
   Pressable,
-  FlatList,
 } from 'react-native';
 import Animated, {
   FadeInDown,
@@ -31,6 +30,7 @@ import {
 import { useAuthStore } from '@/stores/auth.store';
 import { useServices, useMyJobs, useUnreadCount, useMyProfile } from '@/hooks/use-api';
 import { locationService } from '@/services/location.service';
+import { LocationPicker, PickerCoords } from '@/components/common/location-picker';
 import {
   Avatar,
   Card,
@@ -48,7 +48,7 @@ import 'dayjs/locale/vi';
 dayjs.extend(relativeTime);
 dayjs.locale('vi');
 
-// ─── Danh mục dịch vụ nổi bật (15 dịch vụ) ───────────────────────────────────
+// ─── Danh mục dịch vụ nổi bật ───────────────────────────────────────────────
 const SERVICE_CATEGORIES = [
   {
     id: 'house_cleaning',
@@ -131,7 +131,6 @@ const SERVICE_CATEGORIES = [
 
 type ServiceCategory = (typeof SERVICE_CATEGORIES)[number];
 
-// Ô dịch vụ: xuất hiện so le, nhún khi nhấn, emoji lắc nhẹ
 function ServiceCategoryCard({
   category,
   index,
@@ -223,14 +222,15 @@ function ServiceCategoryCard({
 export default function CustomerHomeScreen() {
   const router = useRouter();
   const storedUser = useAuthStore(s => s.user);
-  // Stored login payload has no avatar — prefer the full profile from the API
   const { data: profile } = useMyProfile();
   const user = profile ?? storedUser;
-  const { data: services, isLoading: sLoading } = useServices();
+  const { data: services } = useServices();
   const { data: recentJobs, isLoading: jLoading, refetch } = useMyJobs();
   const { data: unread } = useUnreadCount();
 
   const [currentLocationName, setCurrentLocationName] = useState('Hồ Chí Minh • Quận 1');
+  const [currentCoords, setCurrentCoords] = useState<PickerCoords | null>(null);
+  const [locationPickerOpen, setLocationPickerOpen] = useState(false);
 
   useEffect(() => {
     locationService
@@ -238,6 +238,12 @@ export default function CustomerHomeScreen() {
       .then(details => {
         if (details?.district) {
           setCurrentLocationName(`${details.city || 'Hồ Chí Minh'} • ${details.district}`);
+        }
+        if (details?.coordinates) {
+          setCurrentCoords({
+            latitude: details.coordinates[1],
+            longitude: details.coordinates[0],
+          });
         }
       })
       .catch(() => {});
@@ -251,6 +257,22 @@ export default function CustomerHomeScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: '#F8F9FA' }}>
+      <LocationPicker
+        visible={locationPickerOpen}
+        title="Chọn khu vực của bạn"
+        initial={currentCoords}
+        onClose={() => setLocationPickerOpen(false)}
+        onConfirm={(coords, geo) => {
+          setLocationPickerOpen(false);
+          setCurrentCoords(coords);
+          if (geo) {
+            setCurrentLocationName(
+              `${geo.city || 'Hồ Chí Minh'} • ${geo.district || geo.ward || 'Vị trí đã ghim'}`,
+            );
+          }
+        }}
+      />
+
       <ScrollView
         showsVerticalScrollIndicator={false}
         refreshControl={
@@ -295,8 +317,8 @@ export default function CustomerHomeScreen() {
           >
             {/* Location selector */}
             <TouchableOpacity
-              onPress={() => router.push(user ? '/edit-profile' : '/(auth)/login')}
               activeOpacity={0.7}
+              onPress={() => setLocationPickerOpen(true)}
               style={{
                 flexDirection: 'row',
                 alignItems: 'center',
@@ -317,7 +339,7 @@ export default function CustomerHomeScreen() {
               >
                 <MapPin size={18} color={COLORS.primary} />
               </View>
-              <View>
+              <View style={{ flex: 1 }}>
                 <Text style={{ fontSize: 11, color: COLORS.gray[400], fontWeight: '600' }}>
                   Vị trí của bạn
                 </Text>
@@ -335,7 +357,6 @@ export default function CustomerHomeScreen() {
 
             {/* Notification bell */}
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-              {/* Notification icon */}
               <TouchableOpacity
                 onPress={() => router.push('/notifications')}
                 activeOpacity={0.7}
@@ -533,7 +554,7 @@ export default function CustomerHomeScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* ── 3. Danh mục 8 nghiệp vụ (4x2 Grid chuẩn Vua Thợ) ────────── */}
+        {/* ── 4. Danh mục dịch vụ nổi bật ─────────────────────────────── */}
         <View style={{ paddingHorizontal: 16, marginTop: 22 }}>
           <SectionHeader
             title="Dịch vụ nổi bật"
@@ -562,7 +583,7 @@ export default function CustomerHomeScreen() {
           </ScrollView>
         </View>
 
-        {/* ── 4. Quyền lợi cam kết & Bảo hiểm (Vua Thợ Badge) ──────────── */}
+        {/* ── 5. Quyền lợi cam kết & Bảo hiểm ──────────────────────────── */}
         <View style={{ paddingHorizontal: 16, marginTop: 20 }}>
           <View
             style={{
@@ -597,7 +618,7 @@ export default function CustomerHomeScreen() {
           </View>
         </View>
 
-        {/* ── 5. Công việc đang thực hiện (Active Job Tracker) ────────── */}
+        {/* ── 6. Công việc đang thực hiện (Active Job Tracker) ────────── */}
         {activeJobs.length > 0 && (
           <View style={{ paddingHorizontal: 16, marginTop: 24 }}>
             <SectionHeader
@@ -708,7 +729,7 @@ export default function CustomerHomeScreen() {
           </View>
         )}
 
-        {/* ── 6. Lịch sử đặt việc gần đây ──────────────────────────────── */}
+        {/* ── 7. Lịch sử đặt việc gần đây ──────────────────────────────── */}
         <View style={{ paddingHorizontal: 16, marginTop: 24 }}>
           <SectionHeader
             title="Lịch sử đặt việc"

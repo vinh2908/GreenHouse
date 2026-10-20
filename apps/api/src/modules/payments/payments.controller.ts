@@ -12,7 +12,12 @@ import {
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { PaymentsService } from './payments.service';
-import { MockPayJobDto, RequestWithdrawalDto, ProcessWithdrawalDto } from './dto/payment.dto';
+import {
+  MockPayJobDto,
+  TopupWalletDto,
+  RequestWithdrawalDto,
+  ProcessWithdrawalDto,
+} from './dto/payment.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
@@ -34,6 +39,13 @@ export class PaymentsController {
     return this.paymentsService.getWallet(user.sub);
   }
 
+  @Post('wallet/topup')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Nạp tiền vào ví ký quỹ (Thợ / Khách hàng)' })
+  async topupWallet(@CurrentUser() user: { sub: string }, @Body() dto: TopupWalletDto) {
+    return this.paymentsService.topupWallet(user.sub, dto.amount, dto.payment_method ?? 'vietqr');
+  }
+
   // ─── Transactions ─────────────────────────────────────────────────────────
 
   @Get('transactions')
@@ -48,14 +60,12 @@ export class PaymentsController {
     return this.paymentsService.getTransactions(user.sub, Number(page) || 1, Number(limit) || 20);
   }
 
-  // ─── Mock payment ─────────────────────────────────────────────────────────
+  // ─── Mock / Escrow payment ────────────────────────────────────────────────
 
   @Post('pay')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: '[Mock] Thanh toán cho job (dev only)' })
+  @ApiOperation({ summary: 'Thanh toán cho job (Escrow Online / Tiền mặt)' })
   async mockPayJob(@CurrentUser() user: { sub: string }, @Body() dto: MockPayJobDto) {
-    // In production: integrate real payment gateway (VNPay, MoMo, ZaloPay)
-    // For MVP/dev: mock success
     return this.paymentsService.mockPayJob(user.sub, dto.job_id, 0, dto.payment_method);
   }
 
@@ -108,7 +118,11 @@ export class PaymentsController {
   @UseGuards(RolesGuard)
   @Roles(UserRole.ADMIN)
   @ApiOperation({ summary: '[Admin] Tất cả giao dịch' })
-  @ApiQuery({ name: 'type', required: false, enum: ['payment', 'earning', 'withdrawal', 'refund'] })
+  @ApiQuery({
+    name: 'type',
+    required: false,
+    enum: ['payment', 'earning', 'withdrawal', 'refund', 'commission', 'topup'],
+  })
   @ApiQuery({ name: 'page', required: false, type: Number })
   @ApiQuery({ name: 'limit', required: false, type: Number })
   async getAllTransactions(

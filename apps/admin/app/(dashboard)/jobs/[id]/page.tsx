@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { useAdminCancelJob, useAdminJob } from '@/hooks/use-admin';
+import { useAdminCancelJob, useAdminJob, useAdminResolveDispute } from '@/hooks/use-admin';
 import {
   Badge,
   Button,
@@ -12,6 +12,7 @@ import {
   CardHeader,
   CardTitle,
   Input,
+  Select,
   Loading,
   EmptyState,
 } from '@/components/ui';
@@ -26,6 +27,12 @@ const CANCELLABLE = [
   'quote_selected',
   'confirmed',
   'helper_on_the_way',
+];
+
+const DISPUTE_ACTION_OPTIONS = [
+  { value: 'refund_full', label: 'Hoàn tiền 100% cho Khách hàng (Thợ vi phạm)' },
+  { value: 'refund_partial', label: 'Hoàn tiền một phần cho Khách & Giải ngân phần còn lại' },
+  { value: 'release_to_helper', label: 'Bác khiếu nại & Giải ngân 100% cho Thợ' },
 ];
 
 interface Person {
@@ -61,12 +68,20 @@ export default function JobDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { data: job, isLoading, error } = useAdminJob(id);
   const cancelJob = useAdminCancelJob();
+  const resolveDispute = useAdminResolveDispute();
+
   const [reason, setReason] = useState('');
+  const [disputeAction, setDisputeAction] = useState<
+    'refund_full' | 'refund_partial' | 'release_to_helper'
+  >('refund_full');
+  const [refundAmount, setRefundAmount] = useState('');
+  const [adminNote, setAdminNote] = useState('');
 
   if (isLoading) return <Loading />;
   if (error || !job) return <EmptyState message="Không tìm thấy job" />;
 
   const canCancel = CANCELLABLE.includes(job.status);
+  const isDisputed = job.status === 'disputed';
 
   return (
     <div className="space-y-6">
@@ -88,7 +103,7 @@ export default function JobDetailPage() {
       <div className="grid gap-6 lg:grid-cols-3">
         <Card className="lg:col-span-2">
           <CardHeader>
-            <CardTitle className="text-base">Thông tin công việc</CardTitle>
+            <CardTitle className="text-base">Thông tin công việc & Bằng chứng</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="whitespace-pre-wrap text-sm">{job.description}</p>
@@ -111,19 +126,49 @@ export default function JobDetailPage() {
             )}
             <div>
               <p className="mb-2 text-xs uppercase tracking-wide text-muted-foreground">
-                Ảnh khách gửi
+                Ảnh hiện trạng (Trước khi làm)
               </p>
               <PhotoGrid urls={job.photos} />
             </div>
             <div>
               <p className="mb-2 text-xs uppercase tracking-wide text-muted-foreground">
-                Ảnh hoàn thành
+                Ảnh hoàn thành (Sau khi làm)
               </p>
               <PhotoGrid urls={job.completion_photos} />
               {job.completion_notes && (
                 <p className="mt-2 text-sm text-muted-foreground">{job.completion_notes}</p>
               )}
             </div>
+
+            {job.dispute_reason && (
+              <div className="rounded-lg border border-destructive/40 bg-destructive/5 p-4 space-y-2">
+                <p className="text-xs font-bold uppercase tracking-wide text-destructive">
+                  ⚠️ Hồ sơ Khiếu nại / Tranh chấp
+                </p>
+                <p className="text-sm font-medium">Lý do khiếu nại: {job.dispute_reason}</p>
+                {job.dispute_photos?.length > 0 && (
+                  <div>
+                    <p className="mb-2 text-xs text-muted-foreground">Ảnh bằng chứng sự cố:</p>
+                    <PhotoGrid urls={job.dispute_photos} />
+                  </div>
+                )}
+                {job.dispute_resolution && (
+                  <div className="mt-2 border-t pt-2 text-xs space-y-1">
+                    <p className="font-semibold text-foreground">
+                      Phán quyết của Admin: {job.dispute_resolution.action}
+                    </p>
+                    <p>Ghi chú: {job.dispute_resolution.admin_note}</p>
+                    {job.dispute_resolution.refund_amount > 0 && (
+                      <p>
+                        Đã hoàn ví Khách:{' '}
+                        {job.dispute_resolution.refund_amount.toLocaleString('vi-VN')} ₫
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
             {job.customer_rating && (
               <p className="text-sm">
                 Đánh giá của khách: <b>{job.customer_rating}★</b> {job.customer_review}
@@ -138,7 +183,7 @@ export default function JobDetailPage() {
         <div className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Lịch sử trạng thái</CardTitle>
+              <CardTitle className="text-base">Lịch sử trạng thái (Audit Trail)</CardTitle>
             </CardHeader>
             <CardContent>
               <ol className="space-y-3 border-l pl-4">
@@ -154,6 +199,89 @@ export default function JobDetailPage() {
               </ol>
             </CardContent>
           </Card>
+
+          {isDisputed && (
+            <Card className="border-destructive">
+              <CardHeader>
+                <CardTitle className="text-base text-destructive">
+                  ⚖️ Phân xử Tranh chấp & Hoàn tiền
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="space-y-1">
+                  <p className="text-xs font-medium text-muted-foreground">Hình thức xử lý</p>
+                  <Select
+                    options={DISPUTE_ACTION_OPTIONS}
+                    value={disputeAction}
+                    onChange={e =>
+                      setDisputeAction(
+                        e.target.value as 'refund_full' | 'refund_partial' | 'release_to_helper',
+                      )
+                    }
+                  />
+                </div>
+
+                {disputeAction === 'refund_partial' && (
+                  <div className="space-y-1">
+                    <p className="text-xs font-medium text-muted-foreground">
+                      Số tiền hoàn lại cho Khách (VNĐ) *
+                    </p>
+                    <Input
+                      type="number"
+                      placeholder="VD: 100000"
+                      value={refundAmount}
+                      onChange={e => setRefundAmount(e.target.value)}
+                    />
+                  </div>
+                )}
+
+                <div className="space-y-1">
+                  <p className="text-xs font-medium text-muted-foreground">
+                    Kết luận & Lý do phân xử (gửi cho cả 2 bên) *
+                  </p>
+                  <Input
+                    placeholder="VD: Thợ làm chưa sạch khu vực bếp, hoàn 100,000đ..."
+                    value={adminNote}
+                    onChange={e => setAdminNote(e.target.value)}
+                  />
+                </div>
+
+                {resolveDispute.error && (
+                  <p className="text-xs text-destructive">
+                    {(resolveDispute.error as { response?: { data?: { message?: string } } })
+                      .response?.data?.message ?? 'Xử lý tranh chấp thất bại'}
+                  </p>
+                )}
+
+                <Button
+                  variant="destructive"
+                  className="w-full"
+                  disabled={
+                    !adminNote.trim() ||
+                    (disputeAction === 'refund_partial' && !Number(refundAmount)) ||
+                    resolveDispute.isPending
+                  }
+                  onClick={() => {
+                    if (
+                      confirm(
+                        'Xác nhận phán quyết tranh chấp này? Hệ thống sẽ tự động hoàn tiền/giải ngân và đóng tranh chấp.',
+                      )
+                    ) {
+                      resolveDispute.mutate({
+                        id,
+                        action: disputeAction,
+                        refund_amount:
+                          disputeAction === 'refund_partial' ? Number(refundAmount) : undefined,
+                        admin_note: adminNote.trim(),
+                      });
+                    }
+                  }}
+                >
+                  {resolveDispute.isPending ? 'Đang xử lý…' : 'Xác nhận Phán quyết'}
+                </Button>
+              </CardContent>
+            </Card>
+          )}
 
           {canCancel && (
             <Card>

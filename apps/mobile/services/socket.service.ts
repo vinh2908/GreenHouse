@@ -7,28 +7,17 @@ import { SOCKET_EVENTS } from '@homemate/constants';
 import apiClient from '@/services/api-client';
 
 const getBaseWsUrl = () => {
-  // 1. Nếu chạy trên Vercel hoặc web domain ngoài
-  const webHost = (globalThis as { location?: { hostname?: string } }).location?.hostname;
-  if (
-    webHost &&
-    (webHost.includes('vercel.app') || (webHost !== 'localhost' && webHost !== '127.0.0.1'))
-  ) {
-    return 'https://greenhouse-api-chb9.onrender.com';
-  }
-
-  // 2. Fixed URL from apps/mobile/.env; otherwise derived from the API URL or Metro's host.
-  const apiUrl = process.env.EXPO_PUBLIC_API_URL;
+  // 1. Fixed URL from apps/mobile/.env or app.json extra; otherwise derived from API URL.
+  const apiUrl = process.env.EXPO_PUBLIC_API_URL || Constants.expoConfig?.extra?.apiUrl;
   const extraWsUrl =
     process.env.EXPO_PUBLIC_WS_URL ||
     Constants.expoConfig?.extra?.wsUrl ||
     (apiUrl ? apiUrl.replace(/\/api\/v1\/?$/, '') : undefined);
-  if (extraWsUrl && !extraWsUrl.includes('127.0.0.1:3100')) {
+  if (extraWsUrl) {
     return extraWsUrl;
   }
-  if (apiClient.defaults.baseURL && !apiClient.defaults.baseURL.includes('127.0.0.1:3100')) {
-    return apiClient.defaults.baseURL.replace(/\/api\/v1\/?$/, '');
-  }
 
+  // 2. Expo Go LAN debugger host
   const hostUri =
     Constants.expoConfig?.hostUri ||
     (Constants as any).manifest2?.extra?.expoGo?.debuggerHost ||
@@ -40,10 +29,19 @@ const getBaseWsUrl = () => {
     }
   }
 
+  // 3. Running in a browser (Vercel production/staging vs local dev)
+  const webHost = (globalThis as { location?: { hostname?: string } }).location?.hostname;
+  if (
+    webHost &&
+    (webHost.includes('vercel.app') || (webHost !== 'localhost' && webHost !== '127.0.0.1'))
+  ) {
+    return 'https://greenhouse-api-chb9.onrender.com';
+  }
   if (webHost) {
     return `http://${webHost}:3000`;
   }
 
+  // 4. Default staging/production fallback for standalone APK builds
   return 'https://greenhouse-api-chb9.onrender.com';
 };
 

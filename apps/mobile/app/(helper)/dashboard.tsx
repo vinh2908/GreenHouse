@@ -18,10 +18,8 @@ import {
   MapPin,
   Clock,
   ShieldCheck,
-  AlertTriangle,
   Flame,
   X,
-  PhoneCall,
   Check,
 } from 'lucide-react-native';
 import dayjs from 'dayjs';
@@ -46,7 +44,6 @@ import {
   JobStatusBadge,
   Avatar,
   EmptyState,
-  LoadingSpinner,
   COLORS,
   SectionHeader,
   PriceText,
@@ -91,7 +88,7 @@ export default function HelperDashboardScreen() {
 
   // ── Lắng nghe tín hiệu cứu hộ SOS khẩn cấp qua WebSocket ─────────────────
   useEffect(() => {
-    const unsub = socketService.on(SOCKET_EVENTS.SOS_BROADCAST, (data: any) => {
+    const unsubBroadcast = socketService.on(SOCKET_EVENTS.SOS_BROADCAST, (data: any) => {
       setSosBroadcast(data);
       Toast.show({
         type: 'error',
@@ -100,8 +97,19 @@ export default function HelperDashboardScreen() {
         visibilityTime: 10000,
       });
     });
+
+    const unsubCancelled = socketService.on(SOCKET_EVENTS.SOS_CANCELLED, (data: any) => {
+      setSosBroadcast((prev: any) => (prev?.job_id === data?.job_id ? null : prev));
+    });
+
+    const unsubAccepted = socketService.on(SOCKET_EVENTS.SOS_ACCEPTED, (data: any) => {
+      setSosBroadcast((prev: any) => (prev?.job_id === data?.job_id ? null : prev));
+    });
+
     return () => {
-      unsub();
+      unsubBroadcast();
+      unsubCancelled();
+      unsubAccepted();
     };
   }, []);
 
@@ -149,9 +157,11 @@ export default function HelperDashboardScreen() {
 
   const activeJob = myJobs?.[0];
   const insets = useSafeAreaInsets();
+  const totalCompleted = profile?.total_completed ?? profile?.completed_jobs ?? 0;
+  const avgRating = Number(profile?.average_rating ?? profile?.rating ?? 5.0);
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#FFFF99' }}>
+    <View style={{ flex: 1, backgroundColor: '#F8F9FA' }}>
       <ScrollView
         showsVerticalScrollIndicator={false}
         refreshControl={
@@ -162,7 +172,7 @@ export default function HelperDashboardScreen() {
         {/* ── 1. Top Header Thợ (Safe Insets) ──────────────────────────── */}
         <View
           style={{
-            backgroundColor: '#FFFF99',
+            backgroundColor: '#FFFFFF',
             paddingHorizontal: 18,
             paddingTop: Math.max(insets.top + 8, 20),
             paddingBottom: 16,
@@ -433,7 +443,7 @@ export default function HelperDashboardScreen() {
                   <Briefcase size={16} color={COLORS.secondary} />
                 </View>
                 <Text style={{ fontSize: 17, fontWeight: '800', color: COLORS.gray[900] }}>
-                  {profile?.total_completed ?? 0} đơn
+                  {totalCompleted} đơn
                 </Text>
                 <Text style={{ fontSize: 11, color: COLORS.gray[400], marginTop: 2 }}>
                   Tỷ lệ nhận 100%
@@ -457,7 +467,7 @@ export default function HelperDashboardScreen() {
                   <Star size={16} color="#F59E0B" />
                 </View>
                 <Text style={{ fontSize: 17, fontWeight: '800', color: '#F59E0B' }}>
-                  ★ {profile?.average_rating?.toFixed(1) ?? '5.0'}
+                  ★ {avgRating.toFixed(1)}
                 </Text>
                 <Text style={{ fontSize: 11, color: COLORS.gray[400], marginTop: 2 }}>
                   Thợ xuất sắc

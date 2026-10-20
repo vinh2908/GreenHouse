@@ -13,6 +13,8 @@ export function calculateDistance(lat1: number, lng1: number, lat2: number, lng2
   return R * c;
 }
 
+export const calculateDistanceKm = calculateDistance;
+
 function toRad(deg: number): number {
   return deg * (Math.PI / 180);
 }

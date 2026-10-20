@@ -131,49 +131,57 @@ export default function HelpersPage() {
                     user_id: { _id: string; full_name: string; phone: string } | null;
                     status: string;
                     verification_status: string;
-                    average_rating: number;
-                    total_completed: number;
+                    rating?: number;
+                    average_rating?: number;
+                    completed_jobs?: number;
+                    total_completed?: number;
                     created_at: string;
-                  }) => (
-                    <TableRow key={h._id}>
-                      <TableCell>
-                        {h.user_id ? (
-                          <Link
-                            href={`/users/${h.user_id._id}`}
-                            className="font-medium hover:underline"
-                          >
-                            {h.user_id.full_name}
-                          </Link>
-                        ) : (
-                          <p className="font-medium">—</p>
-                        )}
-                      </TableCell>
-                      <TableCell className="font-mono text-sm">{h.user_id?.phone ?? '—'}</TableCell>
-                      <TableCell>
-                        <Badge variant={HELPER_STATUS_BADGE[h.status] ?? 'secondary'}>
-                          {h.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={KYC_BADGE[h.verification_status] ?? 'secondary'}>
-                          {KYC_VI[h.verification_status] ?? h.verification_status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {h.average_rating ? (
-                          <span className="text-yellow-600 font-medium">
-                            ★ {h.average_rating.toFixed(1)}
-                          </span>
-                        ) : (
-                          <span className="text-muted-foreground text-sm">—</span>
-                        )}
-                      </TableCell>
-                      <TableCell>{h.total_completed ?? 0} jobs</TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
-                        {formatDateTime(h.created_at)}
-                      </TableCell>
-                    </TableRow>
-                  ),
+                  }) => {
+                    const ratingVal = h.average_rating ?? h.rating ?? 0;
+                    const completedVal = h.total_completed ?? h.completed_jobs ?? 0;
+                    return (
+                      <TableRow key={h._id}>
+                        <TableCell>
+                          {h.user_id ? (
+                            <Link
+                              href={`/users/${h.user_id._id}`}
+                              className="font-medium hover:underline"
+                            >
+                              {h.user_id.full_name}
+                            </Link>
+                          ) : (
+                            <p className="font-medium">—</p>
+                          )}
+                        </TableCell>
+                        <TableCell className="font-mono text-sm">
+                          {h.user_id?.phone ?? '—'}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={HELPER_STATUS_BADGE[h.status] ?? 'secondary'}>
+                            {h.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={KYC_BADGE[h.verification_status] ?? 'secondary'}>
+                            {KYC_VI[h.verification_status] ?? h.verification_status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          {ratingVal > 0 ? (
+                            <span className="text-yellow-600 font-medium">
+                              ★ {ratingVal.toFixed(1)}
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground text-sm">—</span>
+                          )}
+                        </TableCell>
+                        <TableCell>{completedVal} jobs</TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          {formatDateTime(h.created_at)}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  },
                 )}
               </TableBody>
             </Table>

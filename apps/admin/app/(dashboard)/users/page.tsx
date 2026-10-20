@@ -133,59 +133,77 @@ export default function UsersPage() {
                     roles: string[];
                     status: string;
                     created_at: string;
-                  }) => (
-                    <TableRow key={user._id}>
-                      <TableCell>
-                        <div>
-                          <Link href={`/users/${user._id}`} className="font-medium hover:underline">
-                            {user.full_name}
-                          </Link>
-                          {user.email && (
-                            <p className="text-xs text-muted-foreground">{user.email}</p>
+                  }) => {
+                    const isAdmin = user.roles?.includes('admin');
+                    return (
+                      <TableRow key={user._id}>
+                        <TableCell>
+                          <div>
+                            <Link
+                              href={`/users/${user._id}`}
+                              className="font-medium hover:underline"
+                            >
+                              {user.full_name}
+                            </Link>
+                            {user.email && (
+                              <p className="text-xs text-muted-foreground">{user.email}</p>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell className="font-mono text-sm">{user.phone}</TableCell>
+                        <TableCell>
+                          <div className="flex gap-1 flex-wrap">
+                            {user.roles.map(r => (
+                              <Badge key={r} variant="outline">
+                                {r}
+                              </Badge>
+                            ))}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={STATUS_BADGE[user.status] ?? 'secondary'}>
+                            {STATUS_VI[user.status] ?? user.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          {formatDateTime(user.created_at)}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {isAdmin ? (
+                            <span className="text-xs text-muted-foreground">Quản trị viên</span>
+                          ) : user.status === 'suspended' ? (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              loading={activate.isPending}
+                              onClick={() => activate.mutate(user._id)}
+                            >
+                              Kích hoạt
+                            </Button>
+                          ) : (
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              loading={suspend.isPending}
+                              onClick={() => {
+                                const reason = prompt(
+                                  `Nhập lý do đình chỉ tài khoản "${user.full_name}":`,
+                                );
+                                if (reason !== null) {
+                                  suspend.mutate({
+                                    id: user._id,
+                                    reason: reason.trim() || 'Vi phạm quy định nền tảng',
+                                  });
+                                }
+                              }}
+                            >
+                              Đình chỉ
+                            </Button>
                           )}
-                        </div>
-                      </TableCell>
-                      <TableCell className="font-mono text-sm">{user.phone}</TableCell>
-                      <TableCell>
-                        <div className="flex gap-1 flex-wrap">
-                          {user.roles.map(r => (
-                            <Badge key={r} variant="outline">
-                              {r}
-                            </Badge>
-                          ))}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={STATUS_BADGE[user.status] ?? 'secondary'}>
-                          {STATUS_VI[user.status] ?? user.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
-                        {formatDateTime(user.created_at)}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {user.status === 'suspended' ? (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            loading={activate.isPending}
-                            onClick={() => activate.mutate(user._id)}
-                          >
-                            Kích hoạt
-                          </Button>
-                        ) : (
-                          <Button
-                            size="sm"
-                            variant="destructive"
-                            loading={suspend.isPending}
-                            onClick={() => suspend.mutate({ id: user._id })}
-                          >
-                            Đình chỉ
-                          </Button>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ),
+                        </TableCell>
+                      </TableRow>
+                    );
+                  },
                 )}
               </TableBody>
             </Table>

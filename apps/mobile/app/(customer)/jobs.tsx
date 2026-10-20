@@ -16,8 +16,8 @@ const TABS = [
   { key: undefined, label: 'Tất cả' },
   { key: 'open,receiving_quotes', label: 'Chờ thợ báo giá' },
   { key: 'confirmed,helper_on_the_way,helper_arrived,in_progress', label: 'Đang làm' },
-  { key: 'pending_review', label: 'Chờ nghiệm thu' },
-  { key: 'completed', label: 'Hoàn thành' },
+  { key: 'pending_review,disputed', label: 'Nghiệm thu / Khiếu nại' },
+  { key: 'completed,refunded', label: 'Hoàn thành / Hoàn tiền' },
   { key: 'cancelled', label: 'Đã hủy' },
 ];
 

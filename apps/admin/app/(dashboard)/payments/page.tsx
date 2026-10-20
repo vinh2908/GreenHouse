@@ -67,24 +67,13 @@ export default function PaymentsPage() {
   const process = useProcessWithdrawal();
 
   const handleApprove = (id: string) => {
-    if (
-      window.confirm(
-        'Chỉ xác nhận sau khi đã kiểm tra và thực hiện chuyển khoản cho người nhận. Bạn đã hoàn tất chuyển khoản?',
-      )
-    )
-      process.mutate({ id, action: 'approve' });
+    process.mutate({ id, action: 'approve' });
   };
 
   const handleReject = (id: string) => {
-    process.mutate(
-      { id, action: 'reject', admin_note: rejectNote },
-      {
-        onSuccess: () => {
-          setRejectingId(null);
-          setRejectNote('');
-        },
-      },
-    );
+    process.mutate({ id, action: 'reject', admin_note: rejectNote });
+    setRejectingId(null);
+    setRejectNote('');
   };
 
   return (

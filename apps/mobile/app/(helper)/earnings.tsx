@@ -11,11 +11,19 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
-import { TrendingUp, ArrowDownCircle, Clock, CheckCircle, X } from 'lucide-react-native';
+import {
+  TrendingUp,
+  ArrowDownCircle,
+  ArrowUpCircle,
+  Clock,
+  CheckCircle,
+  X,
+} from 'lucide-react-native';
 import {
   useWallet,
   useTransactions,
   useRequestWithdrawal,
+  useTopupWallet,
   useHelperProfile,
 } from '@/hooks/use-api';
 import {
@@ -31,13 +39,17 @@ import dayjs from 'dayjs';
 
 const TX_ICONS: Record<string, string> = {
   earning: '💰',
+  topup: '📥',
   payment: '💳',
+  commission: '🧾',
   withdrawal: '📤',
   refund: '↩️',
 };
 
 const TX_COLORS: Record<string, string> = {
   earning: COLORS.success,
+  topup: COLORS.success,
+  commission: COLORS.warning,
   withdrawal: COLORS.error,
   refund: COLORS.secondary,
   payment: COLORS.gray[700],
@@ -48,8 +60,11 @@ export default function HelperEarningsScreen() {
   const { data: txData } = useTransactions(1);
   const { data: profile } = useHelperProfile();
   const withdraw = useRequestWithdrawal();
+  const topup = useTopupWallet();
 
   const [showWithdraw, setShowWithdraw] = useState(false);
+  const [showTopup, setShowTopup] = useState(false);
+  const [topupAmount, setTopupAmount] = useState('200000');
   const [amount, setAmount] = useState('');
   const [bankName, setBankName] = useState('');
   const [accountNumber, setAccountNumber] = useState('');
@@ -101,12 +116,27 @@ export default function HelperEarningsScreen() {
     }
   };
 
+  const handleTopup = async () => {
+    const amt = Number(topupAmount);
+    if (!amt || isNaN(amt) || amt < 50000) {
+      Toast.show({ type: 'error', text1: 'Số tiền nạp tối thiểu là 50,000₫' });
+      return;
+    }
+    try {
+      await topup.mutateAsync({ amount: amt, payment_method: 'vietqr' });
+      setShowTopup(false);
+    } catch (err: any) {
+      const msg = err?.response?.data?.message || 'Nạp tiền thất bại';
+      Toast.show({ type: 'error', text1: msg });
+    }
+  };
+
   const insets = useSafeAreaInsets();
 
   if (isLoading) return <LoadingSpinner />;
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#FFFF99' }}>
+    <View style={{ flex: 1, backgroundColor: '#F8F9FA' }}>
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 110 }}
@@ -130,7 +160,7 @@ export default function HelperEarningsScreen() {
               fontWeight: '600',
             }}
           >
-            Số dư khả dụng trong ví
+            Số dư ví ký quỹ & thu nhập khả dụng
           </Text>
           <PriceText amount={wallet?.balance ?? 0} size={36} color="#fff" />
           <Text
@@ -180,27 +210,38 @@ export default function HelperEarningsScreen() {
           </View>
         </View>
 
-        {/* ── Withdraw button ────────────────────────────────────────── */}
-        <View style={{ paddingHorizontal: 16, marginTop: 20 }}>
-          <Button
-            title="Rút tiền về tài khoản ngân hàng"
-            variant={wallet?.balance >= 50000 ? 'primary' : 'secondary'}
-            disabled={!wallet || wallet.balance < 50000}
-            onPress={() => setShowWithdraw(true)}
-            icon={
-              <ArrowDownCircle
-                size={18}
-                color={wallet?.balance >= 50000 ? '#fff' : COLORS.gray[400]}
-              />
-            }
-          />
-          {wallet?.balance < 50000 && (
-            <Text
-              style={{ fontSize: 12, color: COLORS.gray[500], textAlign: 'center', marginTop: 8 }}
-            >
-              Số dư tối thiểu để rút tiền là 50,000₫
-            </Text>
-          )}
+        {/* ── Top-up & Withdraw buttons ──────────────────────────────── */}
+        <View style={{ paddingHorizontal: 16, marginTop: 20, gap: 10 }}>
+          <View style={{ flexDirection: 'row', gap: 10 }}>
+            <Button
+              title="Nạp ví ký quỹ"
+              variant="outline"
+              fullWidth={false}
+              style={{ flex: 1 }}
+              onPress={() => setShowTopup(true)}
+              icon={<ArrowUpCircle size={18} color={COLORS.primary} />}
+            />
+            <Button
+              title="Rút về ngân hàng"
+              variant={wallet?.balance >= 50000 ? 'primary' : 'secondary'}
+              fullWidth={false}
+              style={{ flex: 1 }}
+              disabled={!wallet || wallet.balance < 50000}
+              onPress={() => setShowWithdraw(true)}
+              icon={
+                <ArrowDownCircle
+                  size={18}
+                  color={wallet?.balance >= 50000 ? '#fff' : COLORS.gray[400]}
+                />
+              }
+            />
+          </View>
+          <Text
+            style={{ fontSize: 12, color: COLORS.gray[500], textAlign: 'center', lineHeight: 18 }}
+          >
+            💡 Đơn thanh toán Online sẽ cộng 85% vào ví. Đơn thu Tiền mặt trực tiếp sẽ khấu trừ 15%
+            phí sàn từ ví ký quỹ.
+          </Text>
         </View>
 
         {/* ── Transactions ───────────────────────────────────────────── */}
@@ -215,7 +256,7 @@ export default function HelperEarningsScreen() {
             <EmptyState
               emoji="💸"
               title="Chưa có giao dịch nào"
-              subtitle="Các khoản thu nhập nhận được từ công việc sẽ hiển thị tại đây"
+              subtitle="Các khoản thu nhập, nạp ký quỹ và khấu trừ hoa hồng sẽ hiển thị tại đây"
             />
           ) : (
             <Card style={{ gap: 0 }}>
@@ -230,76 +271,175 @@ export default function HelperEarningsScreen() {
                     created_at: string;
                   },
                   i: number,
-                ) => (
-                  <View key={tx._id}>
-                    {i > 0 && <Separator my={0} />}
-                    <View
-                      style={{
-                        flexDirection: 'row',
-                        alignItems: 'center',
-                        gap: 12,
-                        paddingVertical: 14,
-                      }}
-                    >
+                ) => {
+                  const isCredit =
+                    tx.type === 'earning' || tx.type === 'refund' || tx.type === 'topup';
+                  return (
+                    <View key={tx._id}>
+                      {i > 0 && <Separator my={0} />}
                       <View
                         style={{
-                          width: 42,
-                          height: 42,
-                          borderRadius: 21,
-                          backgroundColor: tx.type === 'earning' ? '#ECFDF5' : COLORS.gray[100],
+                          flexDirection: 'row',
                           alignItems: 'center',
-                          justifyContent: 'center',
+                          gap: 12,
+                          paddingVertical: 14,
                         }}
                       >
-                        <Text style={{ fontSize: 20 }}>{TX_ICONS[tx.type] ?? '💳'}</Text>
-                      </View>
-                      <View style={{ flex: 1 }}>
-                        <Text style={{ fontWeight: '700', fontSize: 14, color: COLORS.gray[900] }}>
-                          {tx.description}
-                        </Text>
-                        <Text style={{ fontSize: 12, color: COLORS.gray[500], marginTop: 2 }}>
-                          {dayjs(tx.created_at).format('DD/MM/YYYY HH:mm')}
-                        </Text>
-                      </View>
-                      <View style={{ alignItems: 'flex-end' }}>
-                        <Text
-                          style={{
-                            fontSize: 15,
-                            fontWeight: '800',
-                            color: TX_COLORS[tx.type] ?? COLORS.gray[900],
-                          }}
-                        >
-                          {tx.type === 'earning' || tx.type === 'refund' ? '+' : '-'}
-                          {new Intl.NumberFormat('vi-VN').format(tx.amount)}₫
-                        </Text>
                         <View
                           style={{
-                            flexDirection: 'row',
+                            width: 42,
+                            height: 42,
+                            borderRadius: 21,
+                            backgroundColor: isCredit ? '#ECFDF5' : COLORS.gray[100],
                             alignItems: 'center',
-                            gap: 4,
-                            marginTop: 2,
+                            justifyContent: 'center',
                           }}
                         >
-                          {tx.status === 'success' ? (
-                            <CheckCircle size={12} color={COLORS.success} />
-                          ) : (
-                            <Clock size={12} color={COLORS.warning} />
-                          )}
+                          <Text style={{ fontSize: 20 }}>{TX_ICONS[tx.type] ?? '💳'}</Text>
+                        </View>
+                        <View style={{ flex: 1 }}>
                           <Text
-                            style={{ fontSize: 11, color: COLORS.gray[400], fontWeight: '600' }}
+                            style={{ fontWeight: '700', fontSize: 14, color: COLORS.gray[900] }}
                           >
-                            {tx.status === 'success' ? 'Thành công' : 'Đang xử lý'}
+                            {tx.description}
                           </Text>
+                          <Text style={{ fontSize: 12, color: COLORS.gray[500], marginTop: 2 }}>
+                            {dayjs(tx.created_at).format('DD/MM/YYYY HH:mm')}
+                          </Text>
+                        </View>
+                        <View style={{ alignItems: 'flex-end' }}>
+                          <Text
+                            style={{
+                              fontSize: 15,
+                              fontWeight: '800',
+                              color: TX_COLORS[tx.type] ?? COLORS.gray[900],
+                            }}
+                          >
+                            {isCredit ? '+' : '-'}
+                            {new Intl.NumberFormat('vi-VN').format(tx.amount)}₫
+                          </Text>
+                          <View
+                            style={{
+                              flexDirection: 'row',
+                              alignItems: 'center',
+                              gap: 4,
+                              marginTop: 2,
+                            }}
+                          >
+                            {tx.status === 'success' ? (
+                              <CheckCircle size={12} color={COLORS.success} />
+                            ) : (
+                              <Clock size={12} color={COLORS.warning} />
+                            )}
+                            <Text
+                              style={{ fontSize: 11, color: COLORS.gray[400], fontWeight: '600' }}
+                            >
+                              {tx.status === 'success' ? 'Thành công' : 'Đang xử lý'}
+                            </Text>
+                          </View>
                         </View>
                       </View>
                     </View>
-                  </View>
-                ),
+                  );
+                },
               )}
             </Card>
           )}
         </View>
       </ScrollView>
+
+      {/* ── Top-up Deposit Wallet Modal ────────────────────────────────── */}
+      <Modal visible={showTopup} animationType="slide" presentationStyle="pageSheet">
+        <View style={{ flex: 1, backgroundColor: '#fff', paddingTop: Math.max(insets.top, 16) }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', padding: 20 }}>
+            <TouchableOpacity onPress={() => setShowTopup(false)}>
+              <X size={24} color={COLORS.gray[700]} />
+            </TouchableOpacity>
+            <Text
+              style={{ fontSize: 18, fontWeight: '800', marginLeft: 12, color: COLORS.gray[900] }}
+            >
+              Nạp tiền vào ví ký quỹ
+            </Text>
+          </View>
+
+          <KeyboardAvoidingView
+            style={{ flex: 1 }}
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          >
+            <ScrollView contentContainerStyle={{ padding: 20, gap: 18 }}>
+              <Card style={{ backgroundColor: COLORS.primaryLight, gap: 6 }}>
+                <Text style={{ fontSize: 13, color: COLORS.primaryDark, fontWeight: '800' }}>
+                  Số dư ví hiện tại
+                </Text>
+                <PriceText amount={wallet?.balance ?? 0} size={24} />
+                <Text style={{ fontSize: 12, color: COLORS.gray[700], lineHeight: 18 }}>
+                  Duy trì số dư ví giúp tự động quyết toán phí nền tảng (15%) khi bạn nhận các đơn
+                  khách trả tiền mặt trực tiếp.
+                </Text>
+              </Card>
+
+              <View style={{ gap: 8 }}>
+                <Text style={{ fontWeight: '700', color: COLORS.gray[700] }}>
+                  Chọn nhanh mệnh giá nạp
+                </Text>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
+                  {['100000', '200000', '500000', '1000000'].map(preset => (
+                    <TouchableOpacity
+                      key={preset}
+                      onPress={() => setTopupAmount(preset)}
+                      style={{
+                        paddingHorizontal: 14,
+                        paddingVertical: 10,
+                        borderRadius: 12,
+                        borderWidth: 1.5,
+                        borderColor: topupAmount === preset ? COLORS.primary : COLORS.gray[200],
+                        backgroundColor: topupAmount === preset ? COLORS.primaryLight : '#fff',
+                      }}
+                    >
+                      <Text
+                        style={{
+                          fontWeight: '800',
+                          color: topupAmount === preset ? COLORS.primaryDark : COLORS.gray[700],
+                        }}
+                      >
+                        {new Intl.NumberFormat('vi-VN').format(Number(preset))}₫
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+
+              <View style={{ gap: 6 }}>
+                <Text style={{ fontWeight: '700', color: COLORS.gray[700] }}>
+                  Số tiền nạp (₫) *
+                </Text>
+                <TextInput
+                  style={{
+                    borderWidth: 1.5,
+                    borderColor: COLORS.gray[200],
+                    borderRadius: 12,
+                    padding: 14,
+                    fontSize: 22,
+                    fontWeight: '800',
+                    color: COLORS.gray[900],
+                  }}
+                  placeholder="Tối thiểu 50,000₫"
+                  value={topupAmount}
+                  onChangeText={setTopupAmount}
+                  keyboardType="numeric"
+                  placeholderTextColor={COLORS.gray[400]}
+                />
+              </View>
+
+              <Button
+                title="Xác nhận nạp tiền qua VietQR"
+                loading={topup.isPending}
+                onPress={handleTopup}
+              />
+            </ScrollView>
+          </KeyboardAvoidingView>
+        </View>
+      </Modal>
 
       {/* ── Withdraw Modal ─────────────────────────────────────────────── */}
       <Modal visible={showWithdraw} animationType="slide" presentationStyle="pageSheet">
