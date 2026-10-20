@@ -53,6 +53,8 @@ class SocketService {
 
   // Rooms to re-join after every (re)connect; the server forgets them on disconnect.
   private rooms = new Map<string, { event: string; payload: unknown }>();
+  private jobSubscribers = new Map<string, number>();
+  private sentGps = new Map<string, number>();
 
   async connect(): Promise<void> {
     if (this.socket?.connected) return;
@@ -120,6 +122,8 @@ class SocketService {
     this.socket?.disconnect();
     this.socket = null;
     this.rooms.clear();
+    this.jobSubscribers.clear();
+    this.sentGps.clear();
   }
 
   on<T = unknown>(event: string, callback: (data: T) => void): () => void {
@@ -148,10 +152,17 @@ class SocketService {
   }
 
   joinJob(jobId: string): void {
+    this.jobSubscribers.set(jobId, (this.jobSubscribers.get(jobId) || 0) + 1);
     this.join(`job:${jobId}`, 'join:job', { job_id: jobId });
   }
 
   leaveJob(jobId: string): void {
+    const remaining = (this.jobSubscribers.get(jobId) || 1) - 1;
+    if (remaining > 0) {
+      this.jobSubscribers.set(jobId, remaining);
+      return;
+    }
+    this.jobSubscribers.delete(jobId);
     this.rooms.delete(`job:${jobId}`);
     this.emit('leave:job', { job_id: jobId });
   }
@@ -173,8 +184,24 @@ class SocketService {
     this.emit('chat:read', { conversation_id: conversationId });
   }
 
-  updateLocation(jobId: string, lat: number, lng: number): void {
-    this.emit('helper:location', { job_id: jobId, lat, lng });
+  updateLocation(
+    jobId: string,
+    lat: number,
+    lng: number,
+    recordedAt: number,
+    accuracy?: number,
+  ): void {
+    // Do not buffer GPS packets while offline and replay an obsolete journey on reconnect.
+    if (!this.socket?.connected) return;
+    if ((this.sentGps.get(jobId) || 0) >= recordedAt) return;
+    this.sentGps.set(jobId, recordedAt);
+    this.socket.volatile.emit('helper:location', {
+      job_id: jobId,
+      lat,
+      lng,
+      recorded_at: recordedAt,
+      accuracy,
+    });
   }
 
   get isConnected(): boolean {

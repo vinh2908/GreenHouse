@@ -1,0 +1,186 @@
+// This document is constant. Coordinates are delivered through the bridge, never srcDoc/source.
+// Keeping one Leaflet instance preserves zoom, layers and marker animation on both platforms.
+export const TRACKING_MAP_HTML = `<!doctype html>
+<html><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<style>
+html,body,#map{height:100%;width:100%;margin:0;background:#f1f5f9;font-family:system-ui,sans-serif}
+.pin{display:flex;align-items:center;justify-content:center;border:3px solid white;border-radius:50%;font-size:23px;box-shadow:0 3px 10px #0004}
+.home{background:#ef4444}.rider{background:#00b14f}
+.rider.live:after{content:'';position:absolute;inset:-3px;border:3px solid #00b14f;border-radius:50%;animation:radar 1.8s infinite;pointer-events:none}
+@keyframes radar{from{transform:scale(1);opacity:.8}to{transform:scale(1.8);opacity:0}}
+@media(prefers-reduced-motion:reduce){.rider.live:after{animation:none}}
+.leaflet-top{top:100px}.leaflet-control-attribution{font-size:8px}
+#info{position:absolute;bottom:23px;left:10px;right:60px;z-index:900;background:#111827e8;color:white;border-radius:12px;padding:8px 10px;font-size:12px}
+#recenter{position:absolute;bottom:26px;right:10px;z-index:900;background:white;border:0;border-radius:12px;width:40px;height:40px;font-size:20px}
+</style></head><body><div id="map"></div><div id="info" role="status">Đang tải bản đồ…</div>
+<button id="recenter" aria-label="Xem toàn bộ hành trình">🎯</button>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+(function(){
+  var info=document.getElementById('info');
+  function notify(data){
+    data.channel='greenhouse-tracking';
+    if(window.ReactNativeWebView) window.ReactNativeWebView.postMessage(JSON.stringify(data));
+    else window.parent.postMessage(data,'*');
+  }
+  if(!window.L){info.textContent='Không tải được bản đồ. Kiểm tra kết nối mạng.';return;}
+  var map=L.map('map',{zoomControl:true}).setView([16,106],5);
+  var street=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+    maxZoom:19,attribution:'© OpenStreetMap contributors'
+  }).addTo(map);
+  var satellite=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{
+    maxZoom:19,attribution:'Tiles © Esri'
+  });
+  var customer=null, helper=null, dest=null, state=null, route=null, line=null, border=null;
+  var point=null, frame=0, version=0, controller=null, lastFetch=0, lastMetrics='';
+  var lastDrawAt=0, lastLayer='streets', tileErrors=0;
+  function tileError(){if(++tileErrors===4) info.textContent='Không tải được nền bản đồ. Kiểm tra kết nối mạng.';}
+  street.on('tileerror',tileError);satellite.on('tileerror',tileError);
+  function valid(p){return p && Number.isFinite(p.lat) && Math.abs(p.lat)<=90 &&
+    Number.isFinite(p.lng) && Math.abs(p.lng)<=180;}
+  function distance(a,b){var rad=Math.PI/180, dlat=(b.lat-a.lat)*rad, dlng=(b.lng-a.lng)*rad;
+    var h=Math.sin(dlat/2)**2+Math.cos(a.lat*rad)*Math.cos(b.lat*rad)*Math.sin(dlng/2)**2;
+    return 6371000*2*Math.atan2(Math.sqrt(h),Math.sqrt(Math.max(0,1-h)));}
+  function metrics(value){
+    var key=JSON.stringify(value);
+    if(key!==lastMetrics){lastMetrics=key;notify({type:'metrics',value:value});}
+  }
+  function clearRoute(){
+    if(line) map.removeLayer(line);if(border) map.removeLayer(border);
+    line=border=route=null;metrics(null);
+  }
+  function invalidateRoute(){version++;if(controller) controller.abort();controller=null;clearRoute();lastFetch=0;}
+  function icon(kind){return L.divIcon({className:'pin '+kind,html:kind==='home'?'🏠':'🛵',
+    iconSize:[40,40],iconAnchor:[20,20]});}
+  function fit(){
+    if(!dest)return;
+    if(helper) map.fitBounds(L.latLngBounds([dest,helper.getLatLng()]),{paddingTopLeft:[48,104],paddingBottomRight:[48,58],maxZoom:16});
+    else map.setView(dest,16);
+  }
+  document.getElementById('recenter').onclick=fit;
+  function project(p){
+    if(!route)return null;
+    var best=null, cos=Math.cos(p.lat*Math.PI/180);
+    for(var i=0;i<route.points.length-1;i++){
+      var a=route.points[i], b=route.points[i+1];
+      var dx=(b.lng-a.lng)*cos,dy=b.lat-a.lat;
+      var t=Math.max(0,Math.min(1,((p.lng-a.lng)*cos*dx+(p.lat-a.lat)*dy)/(dx*dx+dy*dy||1)));
+      var q={lat:a.lat+(b.lat-a.lat)*t,lng:a.lng+(b.lng-a.lng)*t};
+      var gap=distance(p,q);
+      if(!best||gap<best.gap)best={point:q,gap:gap,index:i,along:route.lengths[i]+distance(a,q)};
+    }
+    return best;
+  }
+  function alongPath(path,t){
+    var total=0,lengths=[0];for(var i=1;i<path.length;i++){total+=distance(path[i-1],path[i]);lengths.push(total);}
+    var target=total*t;
+    for(var j=1;j<path.length;j++)if(lengths[j]>=target){
+      var f=(target-lengths[j-1])/(lengths[j]-lengths[j-1]||1);
+      return {lat:path[j-1].lat+(path[j].lat-path[j-1].lat)*f,lng:path[j-1].lng+(path[j].lng-path[j-1].lng)*f};
+    }
+    return path[path.length-1];
+  }
+  function move(p){
+    var snap=project(p), target=snap&&snap.gap<=60?snap.point:p;
+    if(!helper){helper=L.marker(target,{icon:icon('rider')}).addTo(map);fit();return;}
+    cancelAnimationFrame(frame);
+    var from=helper.getLatLng(), path=[from,target], old=project(from);
+    if(snap&&old&&snap.gap<=60&&old.gap<=60&&snap.along>=old.along&&snap.along-old.along<500){
+      path=[from].concat(route.points.slice(old.index+1,snap.index+1),[target]);
+    }
+    var now=performance.now(), duration=Math.min(3500,Math.max(600,now-lastDrawAt));lastDrawAt=now;
+    // A long GPS gap/jump is not a known travelled route; place the actual fix without inventing a journey.
+    if(distance(from,target)>500 || window.matchMedia('(prefers-reduced-motion: reduce)').matches){helper.setLatLng(target);return;}
+    function step(time){var t=Math.min(1,(time-now)/duration);helper.setLatLng(alongPath(path,t));if(t<1)frame=requestAnimationFrame(step);}
+    frame=requestAnimationFrame(step);
+  }
+  function remaining(){
+    if(!point||!route)return;
+    var snap=project(point);
+    if(!snap||snap.gap>60){metrics(null);info.textContent='Đang tính lại tuyến đường…';return;}
+    var left=Math.max(0,route.total-snap.along);
+    var km=route.distance*(left/(route.total||1))/1000;
+    var mins=Math.max(1,Math.ceil(route.duration*(left/(route.total||1))/60));
+    metrics({distanceKm:Math.round(km*100)/100,etaMinutes:mins});
+    info.textContent='Còn '+km.toFixed(1)+' km · khoảng '+mins+' phút (ước tính)';
+    var rest=[snap.point].concat(route.points.slice(snap.index+1));
+    line.setLatLngs(rest);border.setLatLngs(rest);
+  }
+  function routeRequest(){
+    if(!point||!dest)return;
+    var requestVersion=++version, origin={lat:point.lat,lng:point.lng}, destination={lat:dest.lat,lng:dest.lng};
+    if(controller)controller.abort();controller=new AbortController();
+    var requestController=controller;
+    var timeout=setTimeout(function(){requestController.abort();},10000);
+    lastFetch=Date.now();
+    fetch('https://router.project-osrm.org/route/v1/driving/'+origin.lng+','+origin.lat+';'+destination.lng+','+destination.lat+'?overview=full&geometries=geojson',
+      {signal:requestController.signal}).then(function(res){if(!res.ok)throw Error('route');return res.json();})
+    .then(function(data){
+      if(requestVersion!==version)return;
+      var result=data.routes&&data.routes[0];
+      if(data.code!=='Ok'||!result||!Number.isFinite(result.distance)||!Number.isFinite(result.duration)||
+        !result.geometry||!Array.isArray(result.geometry.coordinates)||result.geometry.coordinates.length<2)throw Error('route');
+      var pts=result.geometry.coordinates.map(function(c){return {lat:c[1],lng:c[0]};});
+      if(!pts.every(valid))throw Error('geometry');
+      // OSRM may snap to a distant road. Never move a GPS fix kilometres to a different road.
+      if(distance(pts[0],origin)>100||distance(pts[pts.length-1],destination)>100)throw Error('snap');
+      clearRoute();
+      var lengths=[0];for(var i=1;i<pts.length;i++)lengths.push(lengths[i-1]+distance(pts[i-1],pts[i]));
+      route={points:pts,lengths:lengths,total:lengths[lengths.length-1],distance:result.distance,duration:result.duration};
+      border=L.polyline(pts,{color:'#00823a',weight:8}).addTo(map);
+      line=L.polyline(pts,{color:'#00b14f',weight:5}).addTo(map);
+      if(point){move(point);refresh();}
+    }).catch(function(){
+      if(requestVersion!==version)return;
+      clearRoute();info.textContent='Chưa tính được tuyến đường · vẫn hiển thị GPS thực';
+    }).finally(function(){clearTimeout(timeout);});
+  }
+  function refresh(){
+    if(!dest){info.textContent='Đơn hàng chưa có tọa độ điểm hẹn hợp lệ';metrics(null);return;}
+    if(!state.tracking){info.textContent='Điểm hẹn làm việc';metrics(null);return;}
+    if(!point){info.textContent='Đang chờ GPS chính xác từ người giúp việc';metrics(null);return;}
+    var age=Date.now()-point.recorded_at;
+    if(helper&&helper.getElement())helper.getElement().classList.toggle('live',age<=30000);
+    if(age>120000){
+      point=null;cancelAnimationFrame(frame);if(helper)map.removeLayer(helper);helper=null;invalidateRoute();
+      info.textContent='Mất cập nhật GPS · đang chờ kết nối lại';return;
+    }
+    if(age>30000){cancelAnimationFrame(frame);metrics(null);info.textContent='GPS chưa cập nhật · vị trí ghi nhận gần nhất';return;}
+    if(route)remaining();
+    else {metrics(null);info.textContent=lastFetch?'Chưa tính được tuyến đường · vẫn hiển thị GPS thực':'Đang tính tuyến đường…';}
+  }
+  window.applyTrackingState=function(next){
+    if(!next||next.channel!=='greenhouse-tracking'||next.type!=='state')return;
+    var incoming=valid(next.customer)?next.customer:null;
+    var changed=(!dest)!==(!incoming)||(dest&&incoming&&(dest.lat!==incoming.lat||dest.lng!==incoming.lng));
+    if(changed){
+      invalidateRoute();dest=incoming;
+      if(customer)map.removeLayer(customer);customer=null;
+      if(dest){customer=L.marker(dest,{icon:icon('home')}).addTo(map);fit();}
+    }
+    state=next;
+    if(next.layer!==lastLayer){lastLayer=next.layer;
+      if(next.layer==='satellite'){map.removeLayer(street);satellite.addTo(map);}
+      else {map.removeLayer(satellite);street.addTo(map);}}
+    var p=next.helper;
+    if(!next.tracking||!dest||!valid(p)||!Number.isFinite(p.recorded_at)||Date.now()-p.recorded_at>120000||p.recorded_at>Date.now()+10000){
+      point=null;cancelAnimationFrame(frame);if(helper)map.removeLayer(helper);helper=null;invalidateRoute();refresh();return;
+    }
+    if(!point||p.recorded_at>point.recorded_at||changed){
+      point=p;move(p);
+      var snap=project(p), now=Date.now();
+      if(!lastFetch||now-lastFetch>=15000||(snap&&snap.gap>60&&now-lastFetch>=5000))routeRequest();
+    }
+    refresh();
+  };
+  window.addEventListener('message',function(event){
+    if(event.source!==window.parent)return;
+    window.applyTrackingState(event.data);
+  });
+  window.addEventListener('resize',function(){map.invalidateSize();});
+  setInterval(refresh,1000);
+  notify({type:'ready'});
+})();
+</script></body></html>`;
