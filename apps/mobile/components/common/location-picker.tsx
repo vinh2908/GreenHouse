@@ -47,9 +47,9 @@ const mapHtml = (center: PickerCoords, zoom: number, hasPin: boolean, interactiv
         boxZoom: interactive,
         keyboard: interactive,
       }).setView([${center.latitude}, ${center.longitude}], ${zoom});
-      L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 19,
-        attribution: '© OpenStreetMap',
+        attribution: '© OpenStreetMap contributors',
       }).addTo(map);
 
       const icon = L.divIcon({ className: 'pin', html: '📍', iconSize: [34, 34], iconAnchor: [17, 32] });
