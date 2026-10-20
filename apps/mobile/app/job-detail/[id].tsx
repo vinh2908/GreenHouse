@@ -1,5 +1,5 @@
 import { Alert } from '@/components/common/app-alert';
-import { useState } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -11,12 +11,14 @@ import {
   Platform,
   ActivityIndicator,
   KeyboardAvoidingView,
+  Linking,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import {
   ArrowLeft,
   MessageCircle,
+  Phone,
   Star,
   ChevronRight,
   MapPin,
@@ -382,108 +384,274 @@ export default function JobDetailScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ padding: 16, gap: 14, paddingBottom: 60 }}
       >
-        {/* ── Status tracker ─────────────────────────────────────────── */}
-        {job.status !== 'cancelled' && (
-          <Card style={{ gap: 12, padding: 16 }}>
-            <Text style={{ fontWeight: '800', fontSize: 15, color: COLORS.gray[900] }}>
-              Tiến trình thực hiện
-            </Text>
-            {STATUS_STEPS.filter(s => s.key !== 'cancelled').map((s, i) => {
-              const done = i < currentStepIdx;
-              const active = i === currentStepIdx;
-              return (
-                <View key={s.key} style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-                  <View
-                    style={{
-                      width: 24,
-                      height: 24,
-                      borderRadius: 12,
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      backgroundColor: done
-                        ? COLORS.success
-                        : active
-                          ? COLORS.primary
-                          : COLORS.gray[200],
-                    }}
-                  >
-                    {done ? (
-                      <Check size={14} color="#fff" strokeWidth={3} />
-                    ) : (
-                      <Text
-                        style={{
-                          fontSize: 11,
-                          color: active ? '#fff' : COLORS.gray[500],
-                          fontWeight: '800',
-                        }}
-                      >
-                        {i + 1}
-                      </Text>
-                    )}
-                  </View>
-                  <Text
-                    style={{
-                      fontSize: 14,
-                      fontWeight: active ? '800' : done ? '600' : '400',
-                      color: active ? COLORS.primary : done ? COLORS.gray[900] : COLORS.gray[400],
-                    }}
-                  >
-                    {s.label}
-                  </Text>
-                  {active && (
-                    <View
-                      style={{
-                        marginLeft: 'auto',
-                        backgroundColor: COLORS.primaryLight,
-                        paddingHorizontal: 8,
-                        paddingVertical: 2,
-                        borderRadius: 6,
-                      }}
-                    >
-                      <Text style={{ color: COLORS.primary, fontSize: 11, fontWeight: '800' }}>
-                        HIỆN TẠI
-                      </Text>
-                    </View>
-                  )}
-                </View>
-              );
-            })}
-          </Card>
+        {/* ── 1. BẢN ĐỒ TRACKING KIỂU GRAB (Full Width & Turn-by-turn) ─── */}
+        {!!job.address && (
+          <View
+            style={{
+              borderRadius: 20,
+              overflow: 'hidden',
+              borderWidth: 1.5,
+              borderColor: COLORS.gray[200],
+              backgroundColor: '#fff',
+            }}
+          >
+            <LiveTrackingMap
+              customerLocation={{
+                latitude: job.address?.location?.coordinates?.[1] || 10.7725,
+                longitude: job.address?.location?.coordinates?.[0] || 106.6983,
+              }}
+              helperLocation={
+                job.status === 'helper_on_the_way' || job.status === 'helper_arrived'
+                  ? helperLocation
+                    ? {
+                        latitude:
+                          'lat' in helperLocation
+                            ? helperLocation.lat
+                            : (helperLocation as any).current?.lat,
+                        longitude:
+                          'lng' in helperLocation
+                            ? helperLocation.lng
+                            : (helperLocation as any).current?.lng,
+                      }
+                    : {
+                        latitude: (job.address?.location?.coordinates?.[1] || 10.7725) + 0.009,
+                        longitude: (job.address?.location?.coordinates?.[0] || 106.6983) + 0.007,
+                      }
+                  : null
+              }
+              status={job.status}
+              customerAddress={job.address?.full_address || job.address?.district}
+              helperName={helperObj?.full_name || 'Thợ Green House'}
+              etaMinutes={12}
+              height={280}
+              showNavigationButton={true}
+            />
+          </View>
         )}
 
-        {/* ── Live Map Tracking & Vị trí làm việc ─── */}
-        {!!job.address && (
-          <LiveTrackingMap
-            customerLocation={{
-              latitude: job.address?.location?.coordinates?.[1] || 10.7725,
-              longitude: job.address?.location?.coordinates?.[0] || 106.6983,
-            }}
-            helperLocation={
-              job.status === 'helper_on_the_way' || job.status === 'helper_arrived'
-                ? helperLocation
-                  ? {
-                      latitude:
-                        'lat' in helperLocation
-                          ? helperLocation.lat
-                          : (helperLocation as any).current?.lat,
-                      longitude:
-                        'lng' in helperLocation
-                          ? helperLocation.lng
-                          : (helperLocation as any).current?.lng,
-                    }
-                  : {
-                      latitude: (job.address?.location?.coordinates?.[1] || 10.7725) + 0.009,
-                      longitude: (job.address?.location?.coordinates?.[0] || 106.6983) + 0.007,
-                    }
-                : null
-            }
-            status={job.status}
-            customerAddress={job.address?.full_address || job.address?.district}
-            helperName={helperObj?.full_name || 'Thợ Green House'}
-            etaMinutes={12}
-            height={240}
-          />
-        )}
+        {/* ── 2. GRAB FLOATING RIDE CARD (Trạng thái, Stepper & Thông tin Thợ) ─── */}
+        <Card
+          style={{
+            padding: 16,
+            gap: 14,
+            borderRadius: 20,
+            backgroundColor: '#ffffff',
+            borderWidth: 1.5,
+            borderColor: COLORS.gray[200],
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.08,
+            shadowRadius: 10,
+            elevation: 4,
+          }}
+        >
+          {/* Header trạng thái phong cách Grab */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 }}>
+              <View
+                style={{
+                  width: 14,
+                  height: 14,
+                  borderRadius: 7,
+                  backgroundColor:
+                    job.status === 'completed'
+                      ? COLORS.success
+                      : job.status === 'cancelled'
+                        ? COLORS.error
+                        : '#10B981',
+                  borderWidth: 2.5,
+                  borderColor: '#A7F3D0',
+                }}
+              />
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 16, fontWeight: '900', color: COLORS.gray[900] }}>
+                  {job.status === 'open' && '🔍 Đang tìm thợ gần bạn...'}
+                  {job.status === 'receiving_quotes' && '📋 Đang nhận báo giá từ thợ'}
+                  {job.status === 'confirmed' && '🤝 Thợ đã nhận đơn hàng'}
+                  {job.status === 'helper_on_the_way' && '🛵 Thợ đang trên đường đến (5 phút)'}
+                  {job.status === 'helper_arrived' && '📍 Thợ đã đến điểm hẹn'}
+                  {job.status === 'in_progress' && '⚡ Đang thực hiện công việc'}
+                  {job.status === 'pending_review' && '🔎 Chờ kiểm tra nghiệm thu'}
+                  {job.status === 'completed' && '🎉 Công việc đã hoàn thành'}
+                  {job.status === 'cancelled' && '❌ Yêu cầu đã hủy'}
+                </Text>
+                <Text style={{ fontSize: 12, color: COLORS.gray[500], marginTop: 2 }}>
+                  {job.status === 'open' && 'Hệ thống đang quét các thợ trực tuyến trong bán kính 10km'}
+                  {job.status === 'helper_on_the_way' && 'Khoảng cách ~ 4.1 km • Vui lòng chú ý điện thoại'}
+                  {job.status === 'helper_arrived' && 'Thợ đang đợi bạn tại cổng/cửa nhà'}
+                  {job.status === 'in_progress' && 'Công việc đang được tiến hành'}
+                  {job.status === 'completed' && 'Cảm ơn bạn đã tin dùng Green House!'}
+                  {!['open', 'helper_on_the_way', 'helper_arrived', 'in_progress', 'completed'].includes(job.status) && 'Cập nhật trực tiếp theo thời gian thực'}
+                </Text>
+              </View>
+            </View>
+            <JobStatusBadge status={job.status} />
+          </View>
+
+          {/* Grab-like Horizontal Stepper Bar */}
+          {job.status !== 'cancelled' && (
+            <View style={{ paddingVertical: 6, borderTopWidth: 1, borderTopColor: COLORS.gray[100] }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                {[
+                  { key: 'post', label: 'Đăng đơn', done: currentStepIdx >= 0, active: currentStepIdx === 0 },
+                  { key: 'match', label: 'Ghép thợ', done: currentStepIdx >= 2, active: currentStepIdx === 1 || currentStepIdx === 2 },
+                  { key: 'onway', label: 'Đang đến', done: currentStepIdx >= 3, active: currentStepIdx === 3 || currentStepIdx === 4 },
+                  { key: 'work', label: 'Đang làm', done: currentStepIdx >= 5, active: currentStepIdx === 5 || currentStepIdx === 6 },
+                  { key: 'done', label: 'Xong', done: currentStepIdx >= 7, active: currentStepIdx >= 7 },
+                ].map((st, idx, arr) => (
+                  <React.Fragment key={st.key}>
+                    <View style={{ alignItems: 'center', gap: 3 }}>
+                      <View
+                        style={{
+                          width: 22,
+                          height: 22,
+                          borderRadius: 11,
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          backgroundColor: st.done
+                            ? '#10B981'
+                            : st.active
+                              ? COLORS.primary
+                              : COLORS.gray[200],
+                        }}
+                      >
+                        {st.done ? (
+                          <Check size={12} color="#fff" strokeWidth={3} />
+                        ) : (
+                          <Text style={{ fontSize: 10, fontWeight: '800', color: st.active ? '#fff' : COLORS.gray[500] }}>
+                            {idx + 1}
+                          </Text>
+                        )}
+                      </View>
+                      <Text
+                        style={{
+                          fontSize: 10,
+                          fontWeight: st.active ? '800' : '600',
+                          color: st.active ? COLORS.primary : st.done ? COLORS.gray[800] : COLORS.gray[400],
+                        }}
+                      >
+                        {st.label}
+                      </Text>
+                    </View>
+                    {idx < arr.length - 1 && (
+                      <View
+                        style={{
+                          flex: 1,
+                          height: 2,
+                          backgroundColor: arr[idx + 1].done ? '#10B981' : COLORS.gray[200],
+                          marginHorizontal: 3,
+                          marginBottom: 12,
+                        }}
+                      />
+                    )}
+                  </React.Fragment>
+                ))}
+              </View>
+            </View>
+          )}
+
+          {/* Grab Helper / Driver Profile Box */}
+          {hasHelperAssigned && helperObj && (
+            <View
+              style={{
+                backgroundColor: '#F8FAFC',
+                borderRadius: 16,
+                padding: 12,
+                borderWidth: 1,
+                borderColor: COLORS.gray[200],
+              }}
+            >
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                <TouchableOpacity
+                  activeOpacity={0.8}
+                  onPress={() => {
+                    const hUserId = typeof job.helper_id === 'string' ? job.helper_id : job.helper_id?._id;
+                    router.push({ pathname: '/helper-profile/[id]', params: { id: hUserId } });
+                  }}
+                  style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 }}
+                >
+                  <View>
+                    <Avatar name={helperObj.full_name} uri={helperObj.avatar} size={48} />
+                    <View
+                      style={{
+                        position: 'absolute',
+                        bottom: -1,
+                        right: -1,
+                        backgroundColor: '#10B981',
+                        width: 14,
+                        height: 14,
+                        borderRadius: 7,
+                        borderWidth: 2,
+                        borderColor: '#fff',
+                      }}
+                    />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                      <Text style={{ fontWeight: '900', fontSize: 15, color: COLORS.gray[900] }} numberOfLines={1}>
+                        {helperObj.full_name}
+                      </Text>
+                      <ShieldCheck size={15} color="#10B981" />
+                    </View>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 2 }}>
+                      <Text style={{ fontSize: 12, fontWeight: '700', color: '#D97706' }}>
+                        ⭐ 4.9 (128 việc)
+                      </Text>
+                      <Text style={{ fontSize: 11, color: COLORS.gray[400] }}>•</Text>
+                      <Text style={{ fontSize: 11, color: COLORS.gray[500] }}>
+                        🛵 Xe máy
+                      </Text>
+                    </View>
+                  </View>
+                </TouchableOpacity>
+
+                {/* Grab Quick Action Buttons: Gọi & Nhắn tin */}
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  {!!helperObj.phone && (
+                    <TouchableOpacity
+                      activeOpacity={0.85}
+                      onPress={() => Linking.openURL(`tel:${helperObj.phone}`)}
+                      style={{
+                        width: 40,
+                        height: 40,
+                        borderRadius: 20,
+                        backgroundColor: '#10B981',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        shadowColor: '#10B981',
+                        shadowOffset: { width: 0, height: 2 },
+                        shadowOpacity: 0.3,
+                        shadowRadius: 4,
+                        elevation: 3,
+                      }}
+                    >
+                      <Phone size={18} color="#FFFFFF" />
+                    </TouchableOpacity>
+                  )}
+                  <TouchableOpacity
+                    activeOpacity={0.85}
+                    onPress={() => router.push({ pathname: '/chat/[jobId]', params: { jobId: id } })}
+                    style={{
+                      width: 40,
+                      height: 40,
+                      borderRadius: 20,
+                      backgroundColor: COLORS.primary,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      shadowColor: COLORS.primary,
+                      shadowOffset: { width: 0, height: 2 },
+                      shadowOpacity: 0.3,
+                      shadowRadius: 4,
+                      elevation: 3,
+                    }}
+                  >
+                    <MessageCircle size={18} color="#FFFFFF" />
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+          )}
+        </Card>
 
         {/* ── Job info ───────────────────────────────────────────────── */}
         <Card style={{ gap: 12, padding: 16 }}>
@@ -558,70 +726,7 @@ export default function JobDetailScreen() {
           </View>
         </Card>
 
-        {/* ── Helper assigned card ───────────────────────────────────── */}
-        {hasHelperAssigned && helperObj && (
-          <Card style={{ padding: 16 }}>
-            <View
-              style={{
-                flexDirection: 'row',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                marginBottom: 12,
-              }}
-            >
-              <Text style={{ fontWeight: '800', fontSize: 15, color: COLORS.gray[900] }}>
-                Thợ phụ trách đơn hàng
-              </Text>
-              <TouchableOpacity
-                onPress={() => {
-                  const hUserId =
-                    typeof job.helper_id === 'string' ? job.helper_id : job.helper_id?._id;
-                  router.push({ pathname: '/helper-profile/[id]', params: { id: hUserId } });
-                }}
-              >
-                <Text style={{ fontSize: 12.5, color: COLORS.primary, fontWeight: '700' }}>
-                  Xem hồ sơ thợ →
-                </Text>
-              </TouchableOpacity>
-            </View>
 
-            <TouchableOpacity
-              activeOpacity={0.8}
-              onPress={() => {
-                const hUserId =
-                  typeof job.helper_id === 'string' ? job.helper_id : job.helper_id?._id;
-                router.push({ pathname: '/helper-profile/[id]', params: { id: hUserId } });
-              }}
-              style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}
-            >
-              <Avatar name={helperObj.full_name} uri={helperObj.avatar} size={48} />
-              <View style={{ flex: 1 }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                  <Text style={{ fontWeight: '800', fontSize: 15, color: COLORS.gray[900] }}>
-                    {helperObj.full_name}
-                  </Text>
-                  <ShieldCheck size={16} color={COLORS.success} />
-                </View>
-                <Text style={{ fontSize: 12, color: COLORS.gray[500], marginTop: 2 }}>
-                  {helperObj.phone}
-                </Text>
-              </View>
-              <TouchableOpacity
-                activeOpacity={0.8}
-                onPress={() => router.push({ pathname: '/chat/[jobId]', params: { jobId: id } })}
-                style={{
-                  backgroundColor: COLORS.primaryLight,
-                  borderRadius: 12,
-                  padding: 10,
-                  borderWidth: 1,
-                  borderColor: '#FFD9C5',
-                }}
-              >
-                <MessageCircle size={20} color={COLORS.primary} />
-              </TouchableOpacity>
-            </TouchableOpacity>
-          </Card>
-        )}
 
         {/* ── Quotes List ────────────────────────────────────────────── */}
         {['open', 'receiving_quotes'].includes(job.status) && (

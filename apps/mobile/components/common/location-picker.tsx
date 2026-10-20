@@ -4,6 +4,7 @@ import {
   FlatList,
   Keyboard,
   Modal,
+  Platform,
   Text,
   TextInput,
   TouchableOpacity,
@@ -19,8 +20,7 @@ export interface PickerCoords {
   longitude: number;
 }
 
-// Leaflet + OpenStreetMap in a WebView: needs no Google Maps key, so it also renders
-// on the emulator and in Expo Go.
+// Leaflet + OpenStreetMap: Web iframe and Native WebView compatible
 const mapHtml = (center: PickerCoords, zoom: number, hasPin: boolean, interactive: boolean) => `
 <!DOCTYPE html>
 <html>
@@ -64,7 +64,11 @@ const mapHtml = (center: PickerCoords, zoom: number, hasPin: boolean, interactiv
       if (interactive) {
         map.on('click', function (e) {
           window.setPin(e.latlng.lat, e.latlng.lng, false);
-          window.ReactNativeWebView.postMessage(JSON.stringify({ lat: e.latlng.lat, lng: e.latlng.lng }));
+          if (window.ReactNativeWebView) {
+            window.ReactNativeWebView.postMessage(JSON.stringify({ lat: e.latlng.lat, lng: e.latlng.lng }));
+          } else if (window.parent) {
+            window.parent.postMessage(JSON.stringify({ type: 'PIN_LOCATION', lat: e.latlng.lat, lng: e.latlng.lng }), '*');
+          }
         });
       }
     </script>
@@ -96,6 +100,19 @@ export function LocationPreview({ coords }: { coords: PickerCoords | null }) {
       </View>
     );
   }
+
+  if (Platform.OS === 'web') {
+    return (
+      <View style={{ flex: 1 }} pointerEvents="none">
+        <iframe
+          srcDoc={mapHtml(coords, 15, true, false)}
+          style={{ width: '100%', height: '100%', border: 'none', backgroundColor: COLORS.gray[100] }}
+          title="Location Preview"
+        />
+      </View>
+    );
+  }
+
   return (
     <View style={{ flex: 1 }} pointerEvents="none">
       <WebView
@@ -180,14 +197,45 @@ export function LocationPicker({
     return () => clearTimeout(timer);
   }, [query]);
 
+  // Web message listener for clicks on interactive map inside iframe
+  useEffect(() => {
+    if (Platform.OS !== 'web') return;
+    const gWindow = typeof globalThis !== 'undefined' ? (globalThis as any).window : null;
+    if (!gWindow) return;
+    const handleWebMsg = (e: any) => {
+      try {
+        const data = typeof e.data === 'string' ? JSON.parse(e.data) : e.data;
+        if (data && typeof data.lat === 'number' && typeof data.lng === 'number') {
+          pick({ latitude: data.lat, longitude: data.lng });
+        }
+      } catch {
+        // ignore
+      }
+    };
+    gWindow.addEventListener('message', handleWebMsg);
+    return () => gWindow.removeEventListener('message', handleWebMsg);
+  }, [visible]);
+
   const selectPlace = (place: OsmPlace) => {
     const coords = { latitude: parseFloat(place.lat), longitude: parseFloat(place.lon) };
     Keyboard.dismiss();
     setResults([]);
     setQuery(place.display_name.split(',').slice(0, 2).join(','));
-    webRef.current?.injectJavaScript(
-      `window.setPin(${coords.latitude}, ${coords.longitude}, true); true;`,
-    );
+    if (Platform.OS === 'web') {
+      try {
+        const gDoc = typeof globalThis !== 'undefined' ? (globalThis as any).document : null;
+        const iframe = gDoc?.getElementById('location-picker-web-iframe') as any;
+        if (iframe?.contentWindow?.setPin) {
+          iframe.contentWindow.setPin(coords.latitude, coords.longitude, true);
+        }
+      } catch {
+        // cross-origin guard
+      }
+    } else {
+      webRef.current?.injectJavaScript(
+        `window.setPin(${coords.latitude}, ${coords.longitude}, true); true;`,
+      );
+    }
     pick(coords);
   };
 
@@ -254,25 +302,34 @@ export function LocationPicker({
 
         {/* Map + search results overlay */}
         <View style={{ flex: 1 }}>
-          <WebView
-            ref={webRef}
-            originWhitelist={['*']}
-            source={{ html }}
-            javaScriptEnabled
-            domStorageEnabled
-            androidLayerType="hardware"
-            onMessage={e => {
-              try {
-                const { lat, lng } = JSON.parse(e.nativeEvent.data);
-                if (typeof lat === 'number' && typeof lng === 'number') {
-                  pick({ latitude: lat, longitude: lng });
+          {Platform.OS === 'web' ? (
+            <iframe
+              id="location-picker-web-iframe"
+              srcDoc={html}
+              style={{ width: '100%', height: '100%', border: 'none' }}
+              title="Location Picker Map"
+            />
+          ) : (
+            <WebView
+              ref={webRef}
+              originWhitelist={['*']}
+              source={{ html }}
+              javaScriptEnabled
+              domStorageEnabled
+              androidLayerType="hardware"
+              onMessage={e => {
+                try {
+                  const { lat, lng } = JSON.parse(e.nativeEvent.data);
+                  if (typeof lat === 'number' && typeof lng === 'number') {
+                    pick({ latitude: lat, longitude: lng });
+                  }
+                } catch {
+                  // not a pin message
                 }
-              } catch {
-                // not a pin message
-              }
-            }}
-            style={{ flex: 1 }}
-          />
+              }}
+              style={{ flex: 1 }}
+            />
+          )}
           {results.length > 0 && (
             <View
               style={{
