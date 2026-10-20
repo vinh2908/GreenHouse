@@ -7,16 +7,27 @@ import { SOCKET_EVENTS } from '@homemate/constants';
 import apiClient from '@/services/api-client';
 
 const getBaseWsUrl = () => {
-  // Fixed URL from apps/mobile/.env; otherwise derived from the API URL or Metro's host.
+  // 1. Nếu chạy trên Vercel hoặc web domain ngoài
+  const webHost = (globalThis as { location?: { hostname?: string } }).location?.hostname;
+  if (
+    webHost &&
+    (webHost.includes('vercel.app') || (webHost !== 'localhost' && webHost !== '127.0.0.1'))
+  ) {
+    return 'https://greenhouse-api-chb9.onrender.com';
+  }
+
+  // 2. Fixed URL from apps/mobile/.env; otherwise derived from the API URL or Metro's host.
   const apiUrl = process.env.EXPO_PUBLIC_API_URL;
   const extraWsUrl =
     process.env.EXPO_PUBLIC_WS_URL ||
     Constants.expoConfig?.extra?.wsUrl ||
     (apiUrl ? apiUrl.replace(/\/api\/v1\/?$/, '') : undefined);
-  if (extraWsUrl) {
+  if (extraWsUrl && !extraWsUrl.includes('127.0.0.1:3100')) {
     return extraWsUrl;
   }
-  if (apiClient.defaults.baseURL) return apiClient.defaults.baseURL.replace(/\/api\/v1\/?$/, '');
+  if (apiClient.defaults.baseURL && !apiClient.defaults.baseURL.includes('127.0.0.1:3100')) {
+    return apiClient.defaults.baseURL.replace(/\/api\/v1\/?$/, '');
+  }
 
   const hostUri =
     Constants.expoConfig?.hostUri ||
@@ -29,14 +40,11 @@ const getBaseWsUrl = () => {
     }
   }
 
-  // In a browser the API runs on the same machine that serves the page.
-  const webHost = (globalThis as { location?: { hostname?: string } }).location?.hostname;
   if (webHost) {
     return `http://${webHost}:3000`;
   }
 
-  // Android emulator alias for the host machine (same fallback as api-client).
-  return 'http://10.0.2.2:3000';
+  return 'https://greenhouse-api-chb9.onrender.com';
 };
 
 const WS_URL = getBaseWsUrl();

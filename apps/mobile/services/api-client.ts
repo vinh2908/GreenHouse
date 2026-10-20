@@ -5,14 +5,22 @@ import Toast from 'react-native-toast-message';
 import { useAuthStore } from '@/stores/auth.store';
 
 const getBaseApiUrl = () => {
-  // 1. URL cố định (tunnel / server thật): đặt EXPO_PUBLIC_API_URL trong apps/mobile/.env.
-  //    Không ghi cứng IP LAN vào app.json — IP máy dev đổi theo mạng WiFi.
+  // 1. Kiểm tra môi trường Web chạy trên Vercel hoặc domain ngoài
+  const webHost = (globalThis as { location?: { hostname?: string } }).location?.hostname;
+  if (
+    webHost &&
+    (webHost.includes('vercel.app') || (webHost !== 'localhost' && webHost !== '127.0.0.1'))
+  ) {
+    return 'https://greenhouse-api-chb9.onrender.com/api/v1';
+  }
+
+  // 2. URL cố định từ env (bỏ qua url tạm của test local)
   const fixedUrl = process.env.EXPO_PUBLIC_API_URL || Constants.expoConfig?.extra?.apiUrl;
-  if (fixedUrl) {
+  if (fixedUrl && !fixedUrl.includes('127.0.0.1:3100')) {
     return fixedUrl;
   }
 
-  // 2. Dò theo debugger host của Expo Go
+  // 3. Dò theo debugger host của Expo Go
   const hostUri =
     Constants.expoConfig?.hostUri ||
     (Constants as any).manifest2?.extra?.expoGo?.debuggerHost ||
@@ -24,14 +32,7 @@ const getBaseApiUrl = () => {
     }
   }
 
-  // 3. Chạy trên trình duyệt (expo start --web)
-  const webHost = (globalThis as { location?: { hostname?: string } }).location?.hostname;
-  if (
-    webHost &&
-    (webHost.includes('vercel.app') || (webHost !== 'localhost' && webHost !== '127.0.0.1'))
-  ) {
-    return 'https://greenhouse-api-chb9.onrender.com/api/v1';
-  }
+  // 4. Chạy trên trình duyệt dev local
   if (webHost) {
     return `http://${webHost}:3000/api/v1`;
   }
