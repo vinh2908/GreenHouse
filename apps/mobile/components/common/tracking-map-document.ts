@@ -29,8 +29,10 @@ html,body,#map{height:100%;width:100%;margin:0;background:#f1f5f9;font-family:sy
   }
   if(!window.L){info.textContent='Không tải được bản đồ. Kiểm tra kết nối mạng.';return;}
   var map=L.map('map',{zoomControl:true}).setView([16,106],5);
-  var street=L.tileLayer('https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',{
-    maxZoom:19,attribution:'© OpenStreetMap contributors © CARTO'
+  // CARTO basemaps now demand an API key; keyless requests get "API KEY REQUIRED"
+  // notice tiles instead of a map. Streets use OpenStreetMap standard tiles instead.
+  var street=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+    maxZoom:19,subdomains:'abc',attribution:'© OpenStreetMap contributors'
   }).addTo(map);
   var streetBackup=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',{
     maxZoom:19,attribution:'Tiles © Esri'
@@ -41,6 +43,7 @@ html,body,#map{height:100%;width:100%;margin:0;background:#f1f5f9;font-family:sy
   var customer=null, helper=null, dest=null, state=null, route=null, line=null, border=null;
   var point=null, frame=0, version=0, controller=null, lastFetch=0, lastMetrics='';
   var lastDrawAt=0, lastLayer='streets', tileErrors=0;
+  var lastRouteOrigin=null, routeFails=0, retryAfter=0, lastMovedAt=0, SNAP_MAX=120;
   var tileWarning=document.getElementById('tile-warning'), backupActive=false;
   function tileError(){
     if(++tileErrors<3)return;
@@ -67,7 +70,7 @@ html,body,#map{height:100%;width:100%;margin:0;background:#f1f5f9;font-family:sy
     if(line) map.removeLayer(line);if(border) map.removeLayer(border);
     line=border=route=null;metrics(null);
   }
-  function invalidateRoute(){version++;if(controller) controller.abort();controller=null;clearRoute();lastFetch=0;}
+  function invalidateRoute(){version++;if(controller) controller.abort();controller=null;clearRoute();lastFetch=0;lastRouteOrigin=null;routeFails=0;retryAfter=0;}
   function icon(kind){return L.divIcon({className:'pin '+kind,html:kind==='home'?'🏠':'🛵',
     iconSize:[40,40],iconAnchor:[20,20]});}
   function fit(){
@@ -98,15 +101,21 @@ html,body,#map{height:100%;width:100%;margin:0;background:#f1f5f9;font-family:sy
     }
     return path[path.length-1];
   }
-  function move(p){
-    var snap=project(p), target=snap&&snap.gap<=60?snap.point:p;
-    if(!helper){helper=L.marker(target,{icon:icon('rider')}).addTo(map);fit();return;}
+  function move(p,prev,force){
+    // The same fix delivered twice (e.g. right after a route reload) must not restart the glide.
+    if(!force&&p.recorded_at&&lastMovedAt===p.recorded_at&&helper)return;
+    var snap=project(p), target=snap&&snap.gap<=SNAP_MAX?snap.point:p;
+    if(!helper){helper=L.marker(target,{icon:icon('rider')}).addTo(map);fit();lastMovedAt=p.recorded_at||0;return;}
     cancelAnimationFrame(frame);
     var from=helper.getLatLng(), path=[from,target], old=project(from);
-    if(snap&&old&&snap.gap<=60&&old.gap<=60&&snap.along>=old.along&&snap.along-old.along<500){
+    if(snap&&old&&snap.gap<=SNAP_MAX&&old.gap<=SNAP_MAX&&snap.along>=old.along&&snap.along-old.along<500){
       path=[from].concat(route.points.slice(old.index+1,snap.index+1),[target]);
     }
-    var now=performance.now(), duration=Math.min(3500,Math.max(600,now-lastDrawAt));lastDrawAt=now;
+    // Glide duration follows the real GPS cadence (gap between successive fixes), so the
+    // marker travels at vehicle speed instead of rubber-banding between samples.
+    var cadence=prev&&p.recorded_at&&prev.recorded_at?p.recorded_at-prev.recorded_at:0;
+    var now=performance.now(), duration=Math.min(5000,Math.max(800,cadence||(now-lastDrawAt)||2000));lastDrawAt=now;
+    lastMovedAt=p.recorded_at||lastMovedAt;
     // A long GPS gap/jump is not a known travelled route; place the actual fix without inventing a journey.
     if(distance(from,target)>500 || window.matchMedia('(prefers-reduced-motion: reduce)').matches){helper.setLatLng(target);return;}
     function step(time){var t=Math.min(1,(time-now)/duration);helper.setLatLng(alongPath(path,t));if(t<1)frame=requestAnimationFrame(step);}
@@ -115,7 +124,7 @@ html,body,#map{height:100%;width:100%;margin:0;background:#f1f5f9;font-family:sy
   function remaining(){
     if(!point||!route)return;
     var snap=project(point);
-    if(!snap||snap.gap>60){metrics(null);info.textContent='Đang tính lại tuyến đường…';return;}
+    if(!snap||snap.gap>SNAP_MAX){metrics(null);info.textContent='Đang tính lại tuyến đường…';return;}
     var left=Math.max(0,route.total-snap.along);
     var km=route.distance*(left/(route.total||1))/1000;
     var mins=Math.max(1,Math.ceil(route.duration*(left/(route.total||1))/60));
@@ -123,6 +132,16 @@ html,body,#map{height:100%;width:100%;margin:0;background:#f1f5f9;font-family:sy
     info.textContent='Còn '+km.toFixed(1)+' km · khoảng '+mins+' phút (ước tính)';
     var rest=[snap.point].concat(route.points.slice(snap.index+1));
     line.setLatLngs(rest);border.setLatLngs(rest);
+  }
+  function maybeRoute(p){
+    var now=Date.now();
+    if(now<retryAfter)return;
+    if(!route){if(!lastFetch||now-lastFetch>=5000)routeRequest();return;}
+    var snap=project(p);
+    if(snap&&snap.gap>60){if(now-lastFetch>=8000)routeRequest();return;}
+    // On-route: rebuild only after the helper has travelled well past the point this
+    // route was calculated from, and at most once a minute. No more 15s refetch churn.
+    if(lastRouteOrigin&&distance(lastRouteOrigin,p)>150&&now-lastFetch>=60000)routeRequest();
   }
   function routeRequest(){
     if(!point||!dest)return;
@@ -142,15 +161,21 @@ html,body,#map{height:100%;width:100%;margin:0;background:#f1f5f9;font-family:sy
       if(!pts.every(valid))throw Error('geometry');
       // OSRM may snap to a distant road. Never move a GPS fix kilometres to a different road.
       if(distance(pts[0],origin)>100||distance(pts[pts.length-1],destination)>100)throw Error('snap');
-      clearRoute();
       var lengths=[0];for(var i=1;i<pts.length;i++)lengths.push(lengths[i-1]+distance(pts[i-1],pts[i]));
-      route={points:pts,lengths:lengths,total:lengths[lengths.length-1],distance:result.distance,duration:result.duration};
+      // Swap, never blink: draw the new route first, only then drop the old polylines.
+      var oldLine=line, oldBorder=border;
       border=L.polyline(pts,{color:'#00823a',weight:8}).addTo(map);
       line=L.polyline(pts,{color:'#00b14f',weight:5}).addTo(map);
-      if(point){move(point);refresh();}
+      if(oldLine)map.removeLayer(oldLine);
+      if(oldBorder)map.removeLayer(oldBorder);
+      route={points:pts,lengths:lengths,total:lengths[lengths.length-1],distance:result.distance,duration:result.duration};
+      lastRouteOrigin=origin;routeFails=0;retryAfter=0;
+      if(point){move(point,null,true);refresh();}
     }).catch(function(){
       if(requestVersion!==version)return;
-      clearRoute();info.textContent='Chưa tính được tuyến đường · vẫn hiển thị GPS thực';
+      // Keep the last good route and ETA on screen; retry later with backoff instead of flickering.
+      routeFails++;retryAfter=Date.now()+Math.min(60000,5000*Math.pow(2,Math.min(4,routeFails-1)));
+      if(!route)info.textContent='Chưa tính được tuyến đường · vẫn hiển thị GPS thực';
     }).finally(function(){clearTimeout(timeout);});
   }
   function refresh(){
@@ -186,9 +211,9 @@ html,body,#map{height:100%;width:100%;margin:0;background:#f1f5f9;font-family:sy
       point=null;cancelAnimationFrame(frame);if(helper)map.removeLayer(helper);helper=null;invalidateRoute();refresh();return;
     }
     if(!point||p.recorded_at>point.recorded_at||changed){
-      point=p;move(p);
-      var snap=project(p), now=Date.now();
-      if(!lastFetch||now-lastFetch>=15000||(snap&&snap.gap>60&&now-lastFetch>=5000))routeRequest();
+      var prevPoint=point;
+      point=p;move(p,prevPoint,changed);
+      maybeRoute(p);
     }
     refresh();
   };
