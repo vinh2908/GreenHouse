@@ -145,14 +145,10 @@ export default function HelperJobDetailScreen() {
           router.push('/kyc');
         }
       } else {
-        Alert.alert(
-          'Yêu cầu xác thực e-KYC',
-          msg,
-          [
-            { text: 'Để sau', style: 'cancel' },
-            { text: 'Xác thực ngay', onPress: () => router.push('/kyc') },
-          ],
-        );
+        Alert.alert('Yêu cầu xác thực e-KYC', msg, [
+          { text: 'Để sau', style: 'cancel' },
+          { text: 'Xác thực ngay', onPress: () => router.push('/kyc') },
+        ]);
       }
       return;
     }
@@ -333,14 +329,10 @@ export default function HelperJobDetailScreen() {
           doSubmit();
         }
       } else {
-        Alert.alert(
-          'Chưa có bằng chứng nghiệm thu',
-          msg,
-          [
-            { text: 'Chụp/Quay ngay', style: 'cancel' },
-            { text: 'Tiếp tục gửi', onPress: doSubmit },
-          ],
-        );
+        Alert.alert('Chưa có bằng chứng nghiệm thu', msg, [
+          { text: 'Chụp/Quay ngay', style: 'cancel' },
+          { text: 'Tiếp tục gửi', onPress: doSubmit },
+        ]);
       }
       return;
     }

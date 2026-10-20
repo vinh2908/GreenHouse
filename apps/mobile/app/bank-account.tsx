@@ -167,8 +167,8 @@ export default function BankAccountScreen() {
               </Text>
             </View>
             <Text style={{ color: 'rgba(255,255,255,0.75)', fontSize: 13, lineHeight: 19 }}>
-              Bạn chỉ thanh toán sau khi thợ đã hoàn thành công việc, gửi ảnh/video nghiệm thu và bạn
-              xác nhận hài lòng.
+              Bạn chỉ thanh toán sau khi thợ đã hoàn thành công việc, gửi ảnh/video nghiệm thu và
+              bạn xác nhận hài lòng.
             </Text>
           </Card>
 
@@ -264,7 +264,9 @@ export default function BankAccountScreen() {
                       <Text style={{ fontWeight: '700', fontSize: 14, color: COLORS.gray[900] }}>
                         {tx.description}
                       </Text>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 }}>
+                      <View
+                        style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 }}
+                      >
                         <Clock size={12} color={COLORS.gray[400]} />
                         <Text style={{ fontSize: 12, color: COLORS.gray[500] }}>
                           {dayjs(tx.created_at).format('DD/MM/YYYY HH:mm')}
@@ -316,7 +318,12 @@ export default function BankAccountScreen() {
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                   <CreditCard size={22} color="#38BDF8" />
                   <Text
-                    style={{ color: '#F8FAFC', fontWeight: '800', fontSize: 16, letterSpacing: 0.5 }}
+                    style={{
+                      color: '#F8FAFC',
+                      fontWeight: '800',
+                      fontSize: 16,
+                      letterSpacing: 0.5,
+                    }}
                   >
                     {bankName || 'NGÂN HÀNG LIÊN KẾT'}
                   </Text>
@@ -513,9 +520,9 @@ export default function BankAccountScreen() {
                 </Text>
               </View>
               <Text style={{ fontSize: 12.5, color: '#1E40AF', lineHeight: 18 }}>
-                • Tên chủ tài khoản ngân hàng nên trùng khớp với họ tên đã xác minh trên CCCD (e-KYC)
-                để quá trình rút tiền diễn ra tự động 24/7.{'\n'}• Tiền rút từ ví thu nhập sẽ được xử
-                lý chuyển khoản liên ngân hàng nhanh chóng.
+                • Tên chủ tài khoản ngân hàng nên trùng khớp với họ tên đã xác minh trên CCCD
+                (e-KYC) để quá trình rút tiền diễn ra tự động 24/7.{'\n'}• Tiền rút từ ví thu nhập
+                sẽ được xử lý chuyển khoản liên ngân hàng nhanh chóng.
               </Text>
             </Card>
 

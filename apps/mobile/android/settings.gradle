@@ -36,3 +36,4 @@ rootProject.name = 'green-house'
 expoAutolinking.useExpoVersionCatalog()
 
 include ':app'
+includeBuild(expoAutolinking.reactNativeGradlePlugin)
