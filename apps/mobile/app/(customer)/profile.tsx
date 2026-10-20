@@ -1,6 +1,7 @@
-import { View, Text, ScrollView, TouchableOpacity, Alert, Platform } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   User,
   MapPin,
@@ -14,6 +15,7 @@ import {
   CreditCard,
 } from 'lucide-react-native';
 import Toast from 'react-native-toast-message';
+import { Alert } from '@/components/common/app-alert';
 import { useAuthStore } from '@/stores/auth.store';
 import { useMyProfile, useSwitchRole } from '@/hooks/use-api';
 import { Avatar, Card, COLORS, Separator } from '@/components/ui';
@@ -40,6 +42,7 @@ const MENU_SECTIONS = [
 
 export default function CustomerProfileScreen() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const logout = useAuthStore(s => s.logout);
   const user = useAuthStore(s => s.user);
   const { data: profile } = useMyProfile();
@@ -47,25 +50,27 @@ export default function CustomerProfileScreen() {
 
   const handleLogout = () => {
     const doLogout = async () => {
-      await logout();
-      router.replace('/(auth)/login');
+      try {
+        await logout();
+        queryClient.clear();
+        router.replace('/(auth)/login');
+      } catch {
+        router.replace('/(auth)/login');
+      }
     };
 
-    if (Platform.OS === 'web') {
-      const w = (globalThis as any).window;
-      if (w?.confirm ? w.confirm('Bạn có chắc muốn đăng xuất không?') : true) {
-        doLogout();
-      }
-    } else {
-      Alert.alert('Đăng xuất?', 'Bạn có chắc muốn đăng xuất không?', [
-        { text: 'Hủy', style: 'cancel' },
+    Alert.alert(
+      'Đăng xuất khỏi Green House?',
+      'Bạn có chắc chắn muốn đăng xuất tài khoản? Lịch sử đặt việc và thông tin thanh toán của bạn luôn được bảo lưu an toàn.',
+      [
+        { text: 'Ở lại', style: 'cancel' },
         {
-          text: 'Đăng xuất',
+          text: 'Đăng xuất ngay',
           style: 'destructive',
           onPress: doLogout,
         },
-      ]);
-    }
+      ],
+    );
   };
 
   const displayUser = profile ?? user;

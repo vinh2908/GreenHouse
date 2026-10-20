@@ -4,7 +4,6 @@ import {
   Text,
   ScrollView,
   TouchableOpacity,
-  Alert,
   TextInput,
   Modal,
   KeyboardAvoidingView,
@@ -32,6 +31,8 @@ import 'dayjs/locale/vi';
 import { useJobSocketUpdates } from '@/hooks/use-socket';
 import { socketService } from '@/services/socket.service';
 import { locationService } from '@/services/location.service';
+import { Alert } from '@/components/common/app-alert';
+import { LiveTrackingMap } from '@/components/common/live-tracking-map';
 
 dayjs.extend(relativeTime);
 dayjs.locale('vi');
@@ -46,6 +47,7 @@ import {
   useCompleteJob,
   useHelperProfile,
   useProposeAmendment,
+  useUpdateHelperLocation,
 } from '@/hooks/use-api';
 import { useAuthStore } from '@/stores/auth.store';
 import {
@@ -82,20 +84,40 @@ export default function HelperJobDetailScreen() {
   const { data: quotes } = useJobQuotes(id);
   const { data: contract } = useJobContract(id);
   const { data: helperProfile } = useHelperProfile();
+  const updateLocation = useUpdateHelperLocation();
 
-  // ── Broadcast GPS vị trí Thợ thời gian thực khi đang di chuyển ───────────
+  const [helperCoords, setHelperCoords] = useState<{ latitude: number; longitude: number } | null>(
+    null,
+  );
+
+  // Lấy tọa độ GPS Thợ ban đầu khi mở màn hình
+  useEffect(() => {
+    let isMounted = true;
+    locationService.getCurrentCoordinates().then(coords => {
+      if (isMounted && coords) {
+        setHelperCoords({ latitude: coords.latitude, longitude: coords.longitude });
+      }
+    });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  // ── Broadcast GPS vị trí Thợ thời gian thực khi đang di chuyển (Grab Live Sync) ──
   useEffect(() => {
     if (job?.status !== 'helper_on_the_way' || !id) return;
 
     const emitCurrentLocation = async () => {
       const coords = await locationService.getCurrentCoordinates();
       if (coords) {
+        setHelperCoords({ latitude: coords.latitude, longitude: coords.longitude });
         socketService.updateLocation(id, coords.latitude, coords.longitude);
+        updateLocation.mutate([coords.longitude, coords.latitude]);
       }
     };
 
     emitCurrentLocation();
-    const interval = setInterval(emitCurrentLocation, 10000); // 10s gửi GPS 1 lần
+    const interval = setInterval(emitCurrentLocation, 6000); // 6s gửi GPS 1 lần
 
     return () => clearInterval(interval);
   }, [job?.status, id]);
@@ -139,17 +161,10 @@ export default function HelperJobDetailScreen() {
     if (helperProfile?.verification_status !== 'approved') {
       const msg =
         'Bạn cần hoàn tất và được duyệt xác thực danh tính e-KYC trước khi có thể gửi báo giá và nhận việc.';
-      if (Platform.OS === 'web') {
-        const w = (globalThis as any).window;
-        if (w?.confirm ? w.confirm(msg + '\n\nBấm OK để chuyển tới trang xác thực e-KYC.') : true) {
-          router.push('/kyc');
-        }
-      } else {
-        Alert.alert('Yêu cầu xác thực e-KYC', msg, [
-          { text: 'Để sau', style: 'cancel' },
-          { text: 'Xác thực ngay', onPress: () => router.push('/kyc') },
-        ]);
-      }
+      Alert.alert('Yêu cầu xác thực e-KYC', msg, [
+        { text: 'Để sau', style: 'cancel' },
+        { text: 'Xác thực ngay', onPress: () => router.push('/kyc') },
+      ]);
       return;
     }
     setShowQuoteModal(true);
@@ -323,17 +338,10 @@ export default function HelperJobDetailScreen() {
         }
       };
 
-      if (Platform.OS === 'web') {
-        const w = (globalThis as any).window;
-        if (w?.confirm ? w.confirm(msg) : true) {
-          doSubmit();
-        }
-      } else {
-        Alert.alert('Chưa có bằng chứng nghiệm thu', msg, [
-          { text: 'Chụp/Quay ngay', style: 'cancel' },
-          { text: 'Tiếp tục gửi', onPress: doSubmit },
-        ]);
-      }
+      Alert.alert('Chưa có bằng chứng nghiệm thu', msg, [
+        { text: 'Chụp/Quay ngay', style: 'cancel' },
+        { text: 'Tiếp tục gửi', onPress: doSubmit },
+      ]);
       return;
     }
 
@@ -357,17 +365,11 @@ export default function HelperJobDetailScreen() {
       return;
     }
 
-    const labels: Record<string, string> = {
-      on_the_way: 'Xác nhận bạn đang di chuyển đến địa chỉ khách hàng?',
-      arrived: 'Xác nhận bạn đã có mặt tại địa điểm?',
-      start: 'Bắt đầu bấm giờ làm việc?',
-    };
-
     const doExecute = async () => {
       try {
         if (action === 'on_the_way') {
           await onTheWay.mutateAsync(id!);
-          Toast.show({ type: 'success', text1: 'Bắt đầu di chuyển đến khách hàng 🚗' });
+          Toast.show({ type: 'success', text1: 'Bắt đầu di chuyển đến khách hàng 🛵' });
         } else if (action === 'arrived') {
           await arrived.mutateAsync(id!);
           Toast.show({ type: 'success', text1: 'Đã đến địa điểm của khách hàng 📍' });
@@ -381,17 +383,36 @@ export default function HelperJobDetailScreen() {
       }
     };
 
-    if (Platform.OS === 'web') {
-      const w = (globalThis as any).window;
-      if (w?.confirm ? w.confirm(labels[action] ?? 'Xác nhận thao tác này?') : true) {
-        doExecute();
-      }
-    } else {
-      Alert.alert(labels[action] ?? 'Xác nhận?', undefined, [
-        { text: 'Hủy', style: 'cancel' },
-        { text: 'Xác nhận', onPress: doExecute },
-      ]);
-    }
+    const config: Record<string, { title: string; message: string; btn: string }> = {
+      on_the_way: {
+        title: 'Bắt đầu di chuyển?',
+        message:
+          'Bạn chuẩn bị xuất phát tới nhà khách hàng? Vị trí GPS của bạn sẽ được đồng bộ trực tiếp để khách hàng theo dõi hành trình như Grab.',
+        btn: 'Bắt đầu xuất phát 🛵',
+      },
+      arrived: {
+        title: 'Đã đến nơi?',
+        message:
+          'Xác nhận bạn đã có mặt tại địa chỉ khách hàng. Khách hàng sẽ nhận được thông báo để chuẩn bị đón tiếp.',
+        btn: 'Tôi đã có mặt 📍',
+      },
+      start: {
+        title: 'Bắt đầu bấm giờ làm việc?',
+        message: 'Bắt đầu tính giờ và thực hiện công việc theo thỏa thuận với khách hàng.',
+        btn: 'Bắt đầu ngay ▶️',
+      },
+    };
+
+    const actionCfg = config[action] || {
+      title: 'Xác nhận thao tác?',
+      message: 'Bạn có chắc chắn muốn cập nhật trạng thái này?',
+      btn: 'Xác nhận',
+    };
+
+    Alert.alert(actionCfg.title, actionCfg.message, [
+      { text: 'Để sau', style: 'cancel' },
+      { text: actionCfg.btn, onPress: doExecute },
+    ]);
   };
 
   const isMyActiveJob =
@@ -446,6 +467,31 @@ export default function HelperJobDetailScreen() {
       </View>
 
       <ScrollView contentContainerStyle={{ padding: 16, gap: 14, paddingBottom: 120 }}>
+        {/* ── Grab-Style Live Route & Map Navigation ─────────────────────── */}
+        {job?.address?.location?.coordinates && (
+          <LiveTrackingMap
+            customerLocation={{
+              latitude: job.address.location.coordinates[1] || 10.7725,
+              longitude: job.address.location.coordinates[0] || 106.6983,
+            }}
+            helperLocation={helperCoords}
+            customerAddress={job.address.full_address}
+            helperName="Bạn (Thợ)"
+            status={job.status}
+            title={
+              job.status === 'helper_on_the_way'
+                ? '🛵 Đang dẫn đường đến nhà khách hàng'
+                : job.status === 'helper_arrived'
+                  ? '📍 Bạn đã tới điểm hẹn làm việc'
+                  : job.status === 'in_progress'
+                    ? '▶️ Đang tiến hành công việc'
+                    : '📍 Điểm hẹn thực hiện công việc'
+            }
+            showNavigationButton={true}
+            height={260}
+          />
+        )}
+
         {/* ── Job info ─────────────────────────────────────────────── */}
         <Card style={{ gap: 12 }}>
           <View style={{ flexDirection: 'row', gap: 10, flexWrap: 'wrap' }}>
