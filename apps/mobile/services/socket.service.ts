@@ -16,6 +16,7 @@ const getBaseWsUrl = () => {
   if (extraWsUrl) {
     return extraWsUrl;
   }
+  if (apiClient.defaults.baseURL) return apiClient.defaults.baseURL.replace(/\/api\/v1\/?$/, '');
 
   const hostUri =
     Constants.expoConfig?.hostUri ||

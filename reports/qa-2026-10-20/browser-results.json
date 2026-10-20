@@ -1,0 +1,1314 @@
+{
+  "config": {
+    "argv": [
+      "D:\\NODEJS\\node.exe",
+      "D:\\GREENHOUSE\\node_modules\\@playwright\\test\\cli.js",
+      "test",
+      "--grep",
+      "customer:|helper:|customer/helper:"
+    ],
+    "configFile": "D:\\GREENHOUSE\\playwright.config.ts",
+    "rootDir": "D:/GREENHOUSE/tests/browser",
+    "failOnFlakyTests": false,
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "D:/GREENHOUSE/reports/qa-2026-10-20/browser-artifacts",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "",
+        "name": "",
+        "testDir": "D:/GREENHOUSE/tests/browser",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 60000
+      }
+    ],
+    "filteredProjects": [
+      {
+        "grep": {},
+        "grepInvert": null,
+        "outputDir": "D:\\GREENHOUSE\\reports\\qa-2026-10-20\\browser-artifacts",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "name": "",
+        "testDir": "D:\\GREENHOUSE\\tests\\browser",
+        "snapshotDir": "D:\\GREENHOUSE\\tests\\browser",
+        "testIgnore": [],
+        "testMatch": "**/*.@(spec|test).?(c|m)[jt]s?(x)",
+        "timeout": 60000,
+        "use": {
+          "headless": true,
+          "screenshot": "only-on-failure",
+          "trace": "retain-on-failure"
+        },
+        "dependencies": [],
+        "ignoreSnapshots": false,
+        "__projectId": ""
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "list",
+        null
+      ],
+      [
+        "json",
+        {
+          "outputFile": "reports/qa-2026-10-20/browser-results.json"
+        }
+      ],
+      [
+        "html",
+        {
+          "outputFolder": "reports/qa-2026-10-20/browser-report",
+          "open": "never"
+        }
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "default",
+    "updateSourceMethod": "patch",
+    "version": "1.64.1",
+    "workers": 1,
+    "webServer": null
+  },
+  "suites": [
+    {
+      "title": "mobile-workflows.spec.ts",
+      "file": "mobile-workflows.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "customer: unavailable services show retry without selectable demo data",
+          "ok": false,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "failed",
+                  "duration": 1849,
+                  "error": {
+                    "message": "Error: browserContext.newPage: Target page, context or browser has been closed\nBrowser logs:\n\n<launching> C:\\Users\\acer\\AppData\\Local\\ms-playwright\\chromium_headless_shell-1248\\chrome-headless-shell-win64\\chrome-headless-shell.exe --disable-field-trial-config --disable-background-networking --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-back-forward-cache --disable-breakpad --disable-client-side-phishing-detection --disable-component-extensions-with-background-pages --disable-component-update --no-default-browser-check --disable-default-apps --disable-dev-shm-usage --disable-edgeupdater --disable-extensions --disable-features=AvoidUnnecessaryBeforeUnloadCheckSync,DestroyProfileOnBrowserClose,DialMediaRouteProvider,GlobalMediaControls,HttpsUpgrades,LensOverlay,MediaRouter,PaintHolding,ThirdPartyStoragePartitioning,BlockOriginHeaderModificationOnRedirect,AvoidCorsURLLoaderRestartOnRedirect,Translate,AutoDeElevate,OptimizationHints,NetworkTimeServiceQuerying,AimEnabled,msForceBrowserSignIn,msEdgeUpdateLaunchServicesPreferredVersion --enable-features=CDPScreenshotNewSurface --allow-pre-commit-input --disable-hang-monitor --disable-ipc-flooding-protection --disable-popup-blocking --disable-prompt-on-repost --disable-renderer-backgrounding --disable-updater-scheduler --force-color-profile=srgb --metrics-recording-only --no-first-run --password-store=basic --use-mock-keychain --no-service-autorun --export-tagged-pdf --disable-search-engine-choice-screen --unsafely-disable-devtools-self-xss-warnings --edge-skip-compat-layer-relaunch --disable-infobars --disable-search-engine-choice-screen --disable-sync --enable-unsafe-swiftshader --headless --hide-scrollbars --mute-audio --blink-settings=primaryHoverType=2,availableHoverTypes=2,primaryPointerType=4,availablePointerTypes=4 --no-sandbox --user-data-dir=C:\\Users\\acer\\AppData\\Local\\Temp\\playwright_chromiumdev_profile-Mzs45x --remote-debugging-pipe --no-startup-window\n<launched> pid=15532\n[pid=15532][err] [1020/090440.385:ERROR:content\\browser\\network_service_instance_impl.cc:652] Network service crashed or was terminated, restarting service.\n[pid=15532][err] [1020/090440.408:ERROR:content\\browser\\network_service_instance_impl.cc:652] Network service crashed or was terminated, restarting service.\n[pid=15532][err] [1020/090440.414:ERROR:content\\browser\\network_service_instance_impl.cc:652] Network service crashed or was terminated, restarting service.\n[pid=15532][err] [1020/090440.422:ERROR:content\\browser\\network_service_instance_impl.cc:652] Network service crashed or was terminated, restarting service.\n[pid=15532][err] [1020/090440.426:ERROR:content\\browser\\network_service_instance_impl.cc:652] Network service crashed or was terminated, restarting service.\n[pid=15532][err] [1020/090440.429:ERROR:content\\browser\\network_service_instance_impl.cc:652] Network service crashed or was terminated, restarting service.\n[pid=15532][err] [1020/090440.434:ERROR:content\\browser\\network_service_instance_impl.cc:652] Network service crashed or was terminated, restarting service.\n[pid=15532][err] [1020/090440.436:ERROR:content\\browser\\network_service_instance_impl.cc:652] Network service crashed or was terminated, restarting service.\n[pid=15532][err] [1020/090440.443:ERROR:content\\browser\\network_service_instance_impl.cc:652] Network service crashed or was terminated, restarting service.\n[pid=15532][err] [1020/090440.445:ERROR:content\\browser\\network_service_instance_impl.cc:652] Network service crashed or was terminated, restarting service.\n[pid=15532][err] [1020/090440.449:ERROR:content\\browser\\network_service_instance_impl.cc:652] Network service crashed or was terminated, restarting service.\n[pid=15532][err] [1020/090440.454:ERROR:content\\browser\\network_service_instance_impl.cc:652] Network service crashed or was terminated, restarting service.\n[pid=15532][err] [1020/090440.460:ERROR:content\\browser\\network_service_instance_impl.cc:652] Network service crashed or was terminated, restarting service.\n[pid=15532][err] [1020/090440.461:ERROR:content\\browser\\network_service_instance_impl.cc:652] Network service crashed or was terminated, restarting service.\n[pid=15532][err] [1020/090440.465:ERROR:content\\browser\\network_service_instance_impl.cc:652] Network service crashed or was terminated, restarting service.\n[pid=15532][err] [1020/090440.470:ERROR:content\\browser\\network_service_instance_impl.cc:652] Network service crashed or was terminated, restarting service.\n[pid=15532][err] [1020/090440.475:ERROR:content\\browser\\network_service_instance_impl.cc:652] Network service crashed or was terminated, restarting service.\n[pid=15532][err] [1020/090440.480:ERROR:content\\browser\\network_service_instance_impl.cc:652] Network service crashed or was terminated, restarting service.\n[pid=15532][err] [1020/090440.486:ERROR:content\\browser\\network_service_instance_impl.cc:652] Network service crashed or was terminated, restarting service.\n[pid=15532][err] [1020/090440.489:ERROR:content\\browser\\network_service_instance_impl.cc:652] Network service crashed or was terminated, restarting service.\n[pid=15532][err] [1020/090440.495:ERROR:content\\browser\\network_service_instance_impl.cc:652] Network service crashed or was terminated, restarting service.\n[pid=15532][err] [1020/090440.499:ERROR:content\\browser\\network_service_instance_impl.cc:652] Network service crashed or was terminated, restarting service.\n[pid=15532][err] [1020/090440.501:ERROR:content\\browser\\network_service_instance_impl.cc:652] Network service crashed or was terminated, restarting service.\n[pid=15532][err] [1020/090440.506:ERROR:content\\browser\\network_service_instance_impl.cc:652] Network service crashed or was terminated, restarting service.\n[pid=15532][err] [low_level_alloc.cc : 590] RAW: Check new_pages != nullptr failed: VirtualAlloc failed\n[pid=15532][err] [1020/090440.616:FATAL:low_level_alloc.cc:590] NOTREACHED hit. Check new_pages != nullptr failed: VirtualAlloc failed\n[pid=15532][err] \n[pid=15532][err] [1020/090440.652:ERROR:media\\base\\win\\mf_initializer.cc:46] Failed to start Media Foundation, accelerated media functionality may be disabled. If you're using Windows N, see https://support.microsoft.com/en-us/topic/media-feature-pack-for-windows-10-n-may-2020-ebbdf559-b84c-0fc2-bd51-e23c9f6a4439 for information on how to install the Media Feature Pack. Error: Could not load mf.dll: A dynamic link library (DLL) initialization routine failed. (0x45A)",
+                    "stack": "Error: browserContext.newPage: Target page, context or browser has been closed\nBrowser logs:\n\n<launching> C:\\Users\\acer\\AppData\\Local\\ms-playwright\\chromium_headless_shell-1248\\chrome-headless-shell-win64\\chrome-headless-shell.exe --disable-field-trial-config --disable-background-networking --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-back-forward-cache --disable-breakpad --disable-client-side-phishing-detection --disable-component-extensions-with-background-pages --disable-component-update --no-default-browser-check --disable-default-apps --disable-dev-shm-usage --disable-edgeupdater --disable-extensions --disable-features=AvoidUnnecessaryBeforeUnloadCheckSync,DestroyProfileOnBrowserClose,DialMediaRouteProvider,GlobalMediaControls,HttpsUpgrades,LensOverlay,MediaRouter,PaintHolding,ThirdPartyStoragePartitioning,BlockOriginHeaderModificationOnRedirect,AvoidCorsURLLoaderRestartOnRedirect,Translate,AutoDeElevate,OptimizationHints,NetworkTimeServiceQuerying,AimEnabled,msForceBrowserSignIn,msEdgeUpdateLaunchServicesPreferredVersion --enable-features=CDPScreenshotNewSurface --allow-pre-commit-input --disable-hang-monitor --disable-ipc-flooding-protection --disable-popup-blocking --disable-prompt-on-repost --disable-renderer-backgrounding --disable-updater-scheduler --force-color-profile=srgb --metrics-recording-only --no-first-run --password-store=basic --use-mock-keychain --no-service-autorun --export-tagged-pdf --disable-search-engine-choice-screen --unsafely-disable-devtools-self-xss-warnings --edge-skip-compat-layer-relaunch --disable-infobars --disable-search-engine-choice-screen --disable-sync --enable-unsafe-swiftshader --headless --hide-scrollbars --mute-audio --blink-settings=primaryHoverType=2,availableHoverTypes=2,primaryPointerType=4,availablePointerTypes=4 --no-sandbox --user-data-dir=C:\\Users\\acer\\AppData\\Local\\Temp\\playwright_chromiumdev_profile-Mzs45x --remote-debugging-pipe --no-startup-window\n<launched> pid=15532\n[pid=15532][err] [1020/090440.385:ERROR:content\\browser\\network_service_instance_impl.cc:652] Network service crashed or was terminated, restarting service.\n[pid=15532][err] [1020/090440.408:ERROR:content\\browser\\network_service_instance_impl.cc:652] Network service crashed or was terminated, restarting service.\n[pid=15532][err] [1020/090440.414:ERROR:content\\browser\\network_service_instance_impl.cc:652] Network service crashed or was terminated, restarting service.\n[pid=15532][err] [1020/090440.422:ERROR:content\\browser\\network_service_instance_impl.cc:652] Network service crashed or was terminated, restarting service.\n[pid=15532][err] [1020/090440.426:ERROR:content\\browser\\network_service_instance_impl.cc:652] Network service crashed or was terminated, restarting service.\n[pid=15532][err] [1020/090440.429:ERROR:content\\browser\\network_service_instance_impl.cc:652] Network service crashed or was terminated, restarting service.\n[pid=15532][err] [1020/090440.434:ERROR:content\\browser\\network_service_instance_impl.cc:652] Network service crashed or was terminated, restarting service.\n[pid=15532][err] [1020/090440.436:ERROR:content\\browser\\network_service_instance_impl.cc:652] Network service crashed or was terminated, restarting service.\n[pid=15532][err] [1020/090440.443:ERROR:content\\browser\\network_service_instance_impl.cc:652] Network service crashed or was terminated, restarting service.\n[pid=15532][err] [1020/090440.445:ERROR:content\\browser\\network_service_instance_impl.cc:652] Network service crashed or was terminated, restarting service.\n[pid=15532][err] [1020/090440.449:ERROR:content\\browser\\network_service_instance_impl.cc:652] Network service crashed or was terminated, restarting service.\n[pid=15532][err] [1020/090440.454:ERROR:content\\browser\\network_service_instance_impl.cc:652] Network service crashed or was terminated, restarting service.\n[pid=15532][err] [1020/090440.460:ERROR:content\\browser\\network_service_instance_impl.cc:652] Network service crashed or was terminated, restarting service.\n[pid=15532][err] [1020/090440.461:ERROR:content\\browser\\network_service_instance_impl.cc:652] Network service crashed or was terminated, restarting service.\n[pid=15532][err] [1020/090440.465:ERROR:content\\browser\\network_service_instance_impl.cc:652] Network service crashed or was terminated, restarting service.\n[pid=15532][err] [1020/090440.470:ERROR:content\\browser\\network_service_instance_impl.cc:652] Network service crashed or was terminated, restarting service.\n[pid=15532][err] [1020/090440.475:ERROR:content\\browser\\network_service_instance_impl.cc:652] Network service crashed or was terminated, restarting service.\n[pid=15532][err] [1020/090440.480:ERROR:content\\browser\\network_service_instance_impl.cc:652] Network service crashed or was terminated, restarting service.\n[pid=15532][err] [1020/090440.486:ERROR:content\\browser\\network_service_instance_impl.cc:652] Network service crashed or was terminated, restarting service.\n[pid=15532][err] [1020/090440.489:ERROR:content\\browser\\network_service_instance_impl.cc:652] Network service crashed or was terminated, restarting service.\n[pid=15532][err] [1020/090440.495:ERROR:content\\browser\\network_service_instance_impl.cc:652] Network service crashed or was terminated, restarting service.\n[pid=15532][err] [1020/090440.499:ERROR:content\\browser\\network_service_instance_impl.cc:652] Network service crashed or was terminated, restarting service.\n[pid=15532][err] [1020/090440.501:ERROR:content\\browser\\network_service_instance_impl.cc:652] Network service crashed or was terminated, restarting service.\n[pid=15532][err] [1020/090440.506:ERROR:content\\browser\\network_service_instance_impl.cc:652] Network service crashed or was terminated, restarting service.\n[pid=15532][err] [low_level_alloc.cc : 590] RAW: Check new_pages != nullptr failed: VirtualAlloc failed\n[pid=15532][err] [1020/090440.616:FATAL:low_level_alloc.cc:590] NOTREACHED hit. Check new_pages != nullptr failed: VirtualAlloc failed\n[pid=15532][err] \n[pid=15532][err] [1020/090440.652:ERROR:media\\base\\win\\mf_initializer.cc:46] Failed to start Media Foundation, accelerated media functionality may be disabled. If you're using Windows N, see https://support.microsoft.com/en-us/topic/media-feature-pack-for-windows-10-n-may-2020-ebbdf559-b84c-0fc2-bd51-e23c9f6a4439 for information on how to install the Media Feature Pack. Error: Could not load mf.dll: A dynamic link library (DLL) initialization routine failed. (0x45A)"
+                  },
+                  "errors": [
+                    {
+                      "message": "Error: browserContext.newPage: Target page, context or browser has been closed\nBrowser logs:\n\n<launching> C:\\Users\\acer\\AppData\\Local\\ms-playwright\\chromium_headless_shell-1248\\chrome-headless-shell-win64\\chrome-headless-shell.exe --disable-field-trial-config --disable-background-networking --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-back-forward-cache --disable-breakpad --disable-client-side-phishing-detection --disable-component-extensions-with-background-pages --disable-component-update --no-default-browser-check --disable-default-apps --disable-dev-shm-usage --disable-edgeupdater --disable-extensions --disable-features=AvoidUnnecessaryBeforeUnloadCheckSync,DestroyProfileOnBrowserClose,DialMediaRouteProvider,GlobalMediaControls,HttpsUpgrades,LensOverlay,MediaRouter,PaintHolding,ThirdPartyStoragePartitioning,BlockOriginHeaderModificationOnRedirect,AvoidCorsURLLoaderRestartOnRedirect,Translate,AutoDeElevate,OptimizationHints,NetworkTimeServiceQuerying,AimEnabled,msForceBrowserSignIn,msEdgeUpdateLaunchServicesPreferredVersion --enable-features=CDPScreenshotNewSurface --allow-pre-commit-input --disable-hang-monitor --disable-ipc-flooding-protection --disable-popup-blocking --disable-prompt-on-repost --disable-renderer-backgrounding --disable-updater-scheduler --force-color-profile=srgb --metrics-recording-only --no-first-run --password-store=basic --use-mock-keychain --no-service-autorun --export-tagged-pdf --disable-search-engine-choice-screen --unsafely-disable-devtools-self-xss-warnings --edge-skip-compat-layer-relaunch --disable-infobars --disable-search-engine-choice-screen --disable-sync --enable-unsafe-swiftshader --headless --hide-scrollbars --mute-audio --blink-settings=primaryHoverType=2,availableHoverTypes=2,primaryPointerType=4,availablePointerTypes=4 --no-sandbox --user-data-dir=C:\\Users\\acer\\AppData\\Local\\Temp\\playwright_chromiumdev_profile-Mzs45x --remote-debugging-pipe --no-startup-window\n<launched> pid=15532\n[pid=15532][err] [1020/090440.385:ERROR:content\\browser\\network_service_instance_impl.cc:652] Network service crashed or was terminated, restarting service.\n[pid=15532][err] [1020/090440.408:ERROR:content\\browser\\network_service_instance_impl.cc:652] Network service crashed or was terminated, restarting service.\n[pid=15532][err] [1020/090440.414:ERROR:content\\browser\\network_service_instance_impl.cc:652] Network service crashed or was terminated, restarting service.\n[pid=15532][err] [1020/090440.422:ERROR:content\\browser\\network_service_instance_impl.cc:652] Network service crashed or was terminated, restarting service.\n[pid=15532][err] [1020/090440.426:ERROR:content\\browser\\network_service_instance_impl.cc:652] Network service crashed or was terminated, restarting service.\n[pid=15532][err] [1020/090440.429:ERROR:content\\browser\\network_service_instance_impl.cc:652] Network service crashed or was terminated, restarting service.\n[pid=15532][err] [1020/090440.434:ERROR:content\\browser\\network_service_instance_impl.cc:652] Network service crashed or was terminated, restarting service.\n[pid=15532][err] [1020/090440.436:ERROR:content\\browser\\network_service_instance_impl.cc:652] Network service crashed or was terminated, restarting service.\n[pid=15532][err] [1020/090440.443:ERROR:content\\browser\\network_service_instance_impl.cc:652] Network service crashed or was terminated, restarting service.\n[pid=15532][err] [1020/090440.445:ERROR:content\\browser\\network_service_instance_impl.cc:652] Network service crashed or was terminated, restarting service.\n[pid=15532][err] [1020/090440.449:ERROR:content\\browser\\network_service_instance_impl.cc:652] Network service crashed or was terminated, restarting service.\n[pid=15532][err] [1020/090440.454:ERROR:content\\browser\\network_service_instance_impl.cc:652] Network service crashed or was terminated, restarting service.\n[pid=15532][err] [1020/090440.460:ERROR:content\\browser\\network_service_instance_impl.cc:652] Network service crashed or was terminated, restarting service.\n[pid=15532][err] [1020/090440.461:ERROR:content\\browser\\network_service_instance_impl.cc:652] Network service crashed or was terminated, restarting service.\n[pid=15532][err] [1020/090440.465:ERROR:content\\browser\\network_service_instance_impl.cc:652] Network service crashed or was terminated, restarting service.\n[pid=15532][err] [1020/090440.470:ERROR:content\\browser\\network_service_instance_impl.cc:652] Network service crashed or was terminated, restarting service.\n[pid=15532][err] [1020/090440.475:ERROR:content\\browser\\network_service_instance_impl.cc:652] Network service crashed or was terminated, restarting service.\n[pid=15532][err] [1020/090440.480:ERROR:content\\browser\\network_service_instance_impl.cc:652] Network service crashed or was terminated, restarting service.\n[pid=15532][err] [1020/090440.486:ERROR:content\\browser\\network_service_instance_impl.cc:652] Network service crashed or was terminated, restarting service.\n[pid=15532][err] [1020/090440.489:ERROR:content\\browser\\network_service_instance_impl.cc:652] Network service crashed or was terminated, restarting service.\n[pid=15532][err] [1020/090440.495:ERROR:content\\browser\\network_service_instance_impl.cc:652] Network service crashed or was terminated, restarting service.\n[pid=15532][err] [1020/090440.499:ERROR:content\\browser\\network_service_instance_impl.cc:652] Network service crashed or was terminated, restarting service.\n[pid=15532][err] [1020/090440.501:ERROR:content\\browser\\network_service_instance_impl.cc:652] Network service crashed or was terminated, restarting service.\n[pid=15532][err] [1020/090440.506:ERROR:content\\browser\\network_service_instance_impl.cc:652] Network service crashed or was terminated, restarting service.\n[pid=15532][err] [low_level_alloc.cc : 590] RAW: Check new_pages != nullptr failed: VirtualAlloc failed\n[pid=15532][err] [1020/090440.616:FATAL:low_level_alloc.cc:590] NOTREACHED hit. Check new_pages != nullptr failed: VirtualAlloc failed\n[pid=15532][err] \n[pid=15532][err] [1020/090440.652:ERROR:media\\base\\win\\mf_initializer.cc:46] Failed to start Media Foundation, accelerated media functionality may be disabled. If you're using Windows N, see https://support.microsoft.com/en-us/topic/media-feature-pack-for-windows-10-n-may-2020-ebbdf559-b84c-0fc2-bd51-e23c9f6a4439 for information on how to install the Media Feature Pack. Error: Could not load mf.dll: A dynamic link library (DLL) initialization routine failed. (0x45A)"
+                    }
+                  ],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T02:04:39.389Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "error-context",
+                      "contentType": "text/markdown",
+                      "path": "D:\\GREENHOUSE\\reports\\qa-2026-10-20\\browser-artifacts\\mobile-workflows-customer--2ffc6-ithout-selectable-demo-data\\error-context.md"
+                    },
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "D:\\GREENHOUSE\\reports\\qa-2026-10-20\\browser-artifacts\\mobile-workflows-customer--2ffc6-ithout-selectable-demo-data\\trace.zip"
+                    }
+                  ]
+                }
+              ],
+              "status": "unexpected"
+            }
+          ],
+          "id": "ba0736241ef63b19d458-faf90c0ef60b6517deb6",
+          "file": "mobile-workflows.spec.ts",
+          "line": 27,
+          "column": 5
+        },
+        {
+          "title": "customer: booking validates address, preserves input on server error, and succeeds on retry",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 3010,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T02:04:43.387Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "ba0736241ef63b19d458-0aa67d1cffa531e3576e",
+          "file": "mobile-workflows.spec.ts",
+          "line": 38,
+          "column": 5
+        },
+        {
+          "title": "customer: cancel dialog can be dismissed and confirmed",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1497,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T02:04:46.589Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "ba0736241ef63b19d458-9a27ec9fcada55b64613",
+          "file": "mobile-workflows.spec.ts",
+          "line": 67,
+          "column": 5
+        },
+        {
+          "title": "helper: new job popup opens the exact job",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1819,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T02:04:48.117Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "ba0736241ef63b19d458-1b3e37bf10bdb575b645",
+          "file": "mobile-workflows.spec.ts",
+          "line": 79,
+          "column": 5
+        },
+        {
+          "title": "customer/helper: full workflow quote, accept, travel, work, approve, and chat",
+          "ok": false,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "failed",
+                  "duration": 13532,
+                  "error": {
+                    "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoHaveCount\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator:  getByText('QA chat delivered once', { exact: true })\nExpected: \u001b[32m1\u001b[39m\nReceived: \u001b[31m0\u001b[39m\nTimeout:  5000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveCount\" getByText('QA chat delivered once', { exact: true }) with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByText('QA chat delivered once', { exact: true })\u001b[22m\n\u001b[2m    14 × locator resolved to 0 elements\u001b[22m\n\u001b[2m       - unexpected value \"0\"\u001b[22m\n",
+                    "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoHaveCount\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator:  getByText('QA chat delivered once', { exact: true })\nExpected: \u001b[32m1\u001b[39m\nReceived: \u001b[31m0\u001b[39m\nTimeout:  5000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveCount\" getByText('QA chat delivered once', { exact: true }) with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByText('QA chat delivered once', { exact: true })\u001b[22m\n\u001b[2m    14 × locator resolved to 0 elements\u001b[22m\n\u001b[2m       - unexpected value \"0\"\u001b[22m\n\n    at D:\\GREENHOUSE\\tests\\browser\\mobile-workflows.spec.ts:124:77",
+                    "location": {
+                      "file": "D:\\GREENHOUSE\\tests\\browser\\mobile-workflows.spec.ts",
+                      "column": 77,
+                      "line": 124
+                    },
+                    "snippet": "  122 |   await page.getByPlaceholder('Nhập tin nhắn trao đổi...').fill('QA chat delivered once');\n  123 |   await page.getByRole('button', { name: 'Gửi tin nhắn' }).click();\n> 124 |   await expect(helper.getByText('QA chat delivered once', { exact: true })).toHaveCount(1);\n      |                                                                             ^\n  125 |   await helperContext.close();\n  126 | });\n  127 |"
+                  },
+                  "errors": [
+                    {
+                      "location": {
+                        "file": "D:\\GREENHOUSE\\tests\\browser\\mobile-workflows.spec.ts",
+                        "column": 77,
+                        "line": 124
+                      },
+                      "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoHaveCount\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator:  getByText('QA chat delivered once', { exact: true })\nExpected: \u001b[32m1\u001b[39m\nReceived: \u001b[31m0\u001b[39m\nTimeout:  5000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveCount\" getByText('QA chat delivered once', { exact: true }) with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByText('QA chat delivered once', { exact: true })\u001b[22m\n\u001b[2m    14 × locator resolved to 0 elements\u001b[22m\n\u001b[2m       - unexpected value \"0\"\u001b[22m\n\n\n  122 |   await page.getByPlaceholder('Nhập tin nhắn trao đổi...').fill('QA chat delivered once');\n  123 |   await page.getByRole('button', { name: 'Gửi tin nhắn' }).click();\n> 124 |   await expect(helper.getByText('QA chat delivered once', { exact: true })).toHaveCount(1);\n      |                                                                             ^\n  125 |   await helperContext.close();\n  126 | });\n  127 |\n    at D:\\GREENHOUSE\\tests\\browser\\mobile-workflows.spec.ts:124:77"
+                    }
+                  ],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T02:04:49.952Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "screenshot",
+                      "contentType": "image/png",
+                      "path": "D:\\GREENHOUSE\\reports\\qa-2026-10-20\\browser-artifacts\\mobile-workflows-customer--ac113-ravel-work-approve-and-chat\\test-failed-2.png"
+                    },
+                    {
+                      "name": "screenshot",
+                      "contentType": "image/png",
+                      "path": "D:\\GREENHOUSE\\reports\\qa-2026-10-20\\browser-artifacts\\mobile-workflows-customer--ac113-ravel-work-approve-and-chat\\test-failed-1.png"
+                    },
+                    {
+                      "name": "error-context",
+                      "contentType": "text/markdown",
+                      "path": "D:\\GREENHOUSE\\reports\\qa-2026-10-20\\browser-artifacts\\mobile-workflows-customer--ac113-ravel-work-approve-and-chat\\error-context.md"
+                    },
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "D:\\GREENHOUSE\\reports\\qa-2026-10-20\\browser-artifacts\\mobile-workflows-customer--ac113-ravel-work-approve-and-chat\\trace.zip"
+                    }
+                  ],
+                  "errorLocation": {
+                    "file": "D:\\GREENHOUSE\\tests\\browser\\mobile-workflows.spec.ts",
+                    "column": 77,
+                    "line": 124
+                  }
+                }
+              ],
+              "status": "unexpected"
+            }
+          ],
+          "id": "ba0736241ef63b19d458-68712798b989e0941838",
+          "file": "mobile-workflows.spec.ts",
+          "line": 93,
+          "column": 5
+        }
+      ]
+    },
+    {
+      "title": "roles.spec.ts",
+      "file": "roles.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "customer: login using visible form, then logout cancel and confirm",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2170,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T02:05:04.833Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "7a25b8aaa0fcc60dba5a-39fcc8a6fce46e87e3d5",
+          "file": "roles.spec.ts",
+          "line": 45,
+          "column": 5
+        },
+        {
+          "title": "customer: feedback menu opens functional form and persists feedback",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1243,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T02:05:07.151Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "7a25b8aaa0fcc60dba5a-6728cd175f32e2ab2540",
+          "file": "roles.spec.ts",
+          "line": 62,
+          "column": 5
+        },
+        {
+          "title": "customer: failed role switch stays on profile and explains error",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1160,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T02:05:08.408Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "7a25b8aaa0fcc60dba5a-761faa1b91c94fa280e3",
+          "file": "roles.spec.ts",
+          "line": 76,
+          "column": 5
+        },
+        {
+          "title": "customer: accept helper updates job and helper popup opens details",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 3859,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T02:05:09.582Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "7a25b8aaa0fcc60dba5a-7f345e78867d93c8c086",
+          "file": "roles.spec.ts",
+          "line": 91,
+          "column": 5
+        },
+        {
+          "title": "helper: reviews menu opens own profile",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1243,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T02:05:13.457Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "7a25b8aaa0fcc60dba5a-5cec863c853cf90a03e8",
+          "file": "roles.spec.ts",
+          "line": 124,
+          "column": 5
+        },
+        {
+          "title": "customer: route renders /(customer)/home",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2506,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T02:05:14.717Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "7a25b8aaa0fcc60dba5a-62a22eff4ed43e2192f6",
+          "file": "roles.spec.ts",
+          "line": 161,
+          "column": 9
+        },
+        {
+          "title": "customer: route renders /(customer)/booking",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2249,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T02:05:17.237Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "7a25b8aaa0fcc60dba5a-606144b8e755c7077130",
+          "file": "roles.spec.ts",
+          "line": 161,
+          "column": 9
+        },
+        {
+          "title": "customer: route renders /(customer)/jobs",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2687,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T02:05:19.499Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "7a25b8aaa0fcc60dba5a-5a885ecb23b8e34c7883",
+          "file": "roles.spec.ts",
+          "line": 161,
+          "column": 9
+        },
+        {
+          "title": "customer: route renders /(customer)/messages",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2572,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T02:05:22.206Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "7a25b8aaa0fcc60dba5a-aa25d9b72e34c584ec9a",
+          "file": "roles.spec.ts",
+          "line": 161,
+          "column": 9
+        },
+        {
+          "title": "customer: route renders /(customer)/profile",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1958,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T02:05:24.792Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "7a25b8aaa0fcc60dba5a-110ec1377f8d2564b83c",
+          "file": "roles.spec.ts",
+          "line": 161,
+          "column": 9
+        },
+        {
+          "title": "customer: route renders /edit-profile",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2160,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T02:05:26.760Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "7a25b8aaa0fcc60dba5a-3a1a2dc94ae6dc8e06d1",
+          "file": "roles.spec.ts",
+          "line": 161,
+          "column": 9
+        },
+        {
+          "title": "customer: route renders /bank-account",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 7788,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T02:05:28.929Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "7a25b8aaa0fcc60dba5a-90f0576bf42bf98bd592",
+          "file": "roles.spec.ts",
+          "line": 161,
+          "column": 9
+        },
+        {
+          "title": "customer: route renders /notifications",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2058,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T02:05:36.727Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "7a25b8aaa0fcc60dba5a-f2f81ff24dac0ebcb075",
+          "file": "roles.spec.ts",
+          "line": 161,
+          "column": 9
+        },
+        {
+          "title": "customer: route renders /help-center",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1941,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T02:05:38.798Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "7a25b8aaa0fcc60dba5a-08f2d1c6d468ddbe7e50",
+          "file": "roles.spec.ts",
+          "line": 161,
+          "column": 9
+        },
+        {
+          "title": "customer: route renders /policy-insurance",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2057,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T02:05:40.749Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "7a25b8aaa0fcc60dba5a-dc6ecb51cfa955763c7a",
+          "file": "roles.spec.ts",
+          "line": 161,
+          "column": 9
+        },
+        {
+          "title": "customer: route renders /feedback",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1969,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T02:05:42.817Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "7a25b8aaa0fcc60dba5a-20f102c4311418e3f85b",
+          "file": "roles.spec.ts",
+          "line": 161,
+          "column": 9
+        },
+        {
+          "title": "customer: route renders /helper-profile/6ad6cc26c5294e96d0aea3c2",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2098,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T02:05:44.796Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "7a25b8aaa0fcc60dba5a-c187eac74b8cf7bc07a1",
+          "file": "roles.spec.ts",
+          "line": 161,
+          "column": 9
+        },
+        {
+          "title": "customer: route renders /job-detail/6ad6cc27c5294e96d0aea3da",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2145,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T02:05:46.906Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "7a25b8aaa0fcc60dba5a-d67ebe4a69145232b96b",
+          "file": "roles.spec.ts",
+          "line": 161,
+          "column": 9
+        },
+        {
+          "title": "customer: route renders /chat/6ad6cc27c5294e96d0aea3da",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2052,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T02:05:49.063Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "7a25b8aaa0fcc60dba5a-a55508e2695d079f4630",
+          "file": "roles.spec.ts",
+          "line": 161,
+          "column": 9
+        },
+        {
+          "title": "helper: route renders /(helper)/dashboard",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2121,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T02:05:51.126Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "7a25b8aaa0fcc60dba5a-53c76e3ff3d92062aa87",
+          "file": "roles.spec.ts",
+          "line": 161,
+          "column": 9
+        },
+        {
+          "title": "helper: route renders /(helper)/jobs",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2421,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T02:05:53.257Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "7a25b8aaa0fcc60dba5a-90bc8b2618d06c121381",
+          "file": "roles.spec.ts",
+          "line": 161,
+          "column": 9
+        },
+        {
+          "title": "helper: route renders /(helper)/profile",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2455,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T02:05:55.694Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "7a25b8aaa0fcc60dba5a-fb994eb7495c93ad5210",
+          "file": "roles.spec.ts",
+          "line": 161,
+          "column": 9
+        },
+        {
+          "title": "helper: route renders /(helper)/earnings",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2271,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T02:05:58.165Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "7a25b8aaa0fcc60dba5a-89e3cb8189bbb6af2464",
+          "file": "roles.spec.ts",
+          "line": 161,
+          "column": 9
+        },
+        {
+          "title": "helper: route renders /kyc",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2216,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T02:06:00.449Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "7a25b8aaa0fcc60dba5a-3edc0a19a94e32a69610",
+          "file": "roles.spec.ts",
+          "line": 161,
+          "column": 9
+        },
+        {
+          "title": "helper: route renders /bank-account",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2390,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T02:06:02.678Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "7a25b8aaa0fcc60dba5a-3a8c0c70c17ae7c7a94b",
+          "file": "roles.spec.ts",
+          "line": 161,
+          "column": 9
+        },
+        {
+          "title": "helper: route renders /helper-job-detail/6ad6cc27c5294e96d0aea3da",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2082,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T02:06:05.077Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "7a25b8aaa0fcc60dba5a-bff5acdad5e5b4d5a1f6",
+          "file": "roles.spec.ts",
+          "line": 161,
+          "column": 9
+        },
+        {
+          "title": "helper: bank account edits persist after reload",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1264,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T02:06:07.170Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "7a25b8aaa0fcc60dba5a-7f7546b911fec42c7194",
+          "file": "roles.spec.ts",
+          "line": 182,
+          "column": 5
+        },
+        {
+          "title": "customer: forgot password form validates and rejects an invalid OTP",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 787,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T02:06:08.445Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "7a25b8aaa0fcc60dba5a-6edc6af919ed037e116a",
+          "file": "roles.spec.ts",
+          "line": 205,
+          "column": 5
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-10-20T02:04:38.130Z",
+    "duration": 91404.629,
+    "expected": 31,
+    "skipped": 0,
+    "unexpected": 2,
+    "flaky": 0
+  }
+}

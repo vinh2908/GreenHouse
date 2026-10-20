@@ -2,6 +2,7 @@ import axios, { AxiosInstance, AxiosError } from 'axios';
 import * as SecureStore from '@/services/secure-storage';
 import Constants from 'expo-constants';
 import Toast from 'react-native-toast-message';
+import { useAuthStore } from '@/stores/auth.store';
 
 const getBaseApiUrl = () => {
   // 1. URL cố định (tunnel / server thật): đặt EXPO_PUBLIC_API_URL trong apps/mobile/.env.
@@ -39,6 +40,23 @@ const getBaseApiUrl = () => {
 };
 
 const API_URL = getBaseApiUrl();
+let refreshInFlight: Promise<string> | null = null;
+
+async function refreshSession(): Promise<string> {
+  const refresh = await SecureStore.getItemAsync('homemate_refresh_token');
+  if (!refresh) throw new Error('Missing refresh token');
+  const { data } = await axios.post(
+    `${API_URL}/auth/refresh`,
+    { refresh_token: refresh },
+    { timeout: 20000 },
+  );
+  // A response from the old session must not log the user back in after logout.
+  if ((await SecureStore.getItemAsync('homemate_refresh_token')) !== refresh)
+    throw new Error('Session changed');
+  const { access_token, refresh_token } = data.data;
+  await useAuthStore.getState().setAuth(useAuthStore.getState().user, access_token, refresh_token);
+  return access_token;
+}
 
 const apiClient: AxiosInstance = axios.create({
   baseURL: API_URL,
@@ -78,22 +96,29 @@ apiClient.interceptors.response.use(
     const originalRequest = error.config as any;
 
     // ── 1. Xử lý lỗi Token 401 Unauthorized (Refresh token) ─────────────────
-    if (error.response?.status === 401 && originalRequest && !originalRequest._retry) {
+    if (
+      error.response?.status === 401 &&
+      originalRequest &&
+      !originalRequest._retry &&
+      !originalRequest.url?.startsWith('/auth/')
+    ) {
       originalRequest._retry = true;
       try {
-        const refreshToken = await SecureStore.getItemAsync('homemate_refresh_token');
-        if (refreshToken) {
-          const { data } = await axios.post(`${API_URL}/auth/refresh`, {
-            refresh_token: refreshToken,
+        if (!refreshInFlight)
+          refreshInFlight = refreshSession().finally(() => {
+            refreshInFlight = null;
           });
-          const { access_token } = data.data;
-          await SecureStore.setItemAsync('homemate_access_token', access_token);
-          originalRequest.headers.Authorization = `Bearer ${access_token}`;
-          return apiClient(originalRequest);
-        }
-      } catch {
-        await SecureStore.deleteItemAsync('homemate_access_token');
-        await SecureStore.deleteItemAsync('homemate_refresh_token');
+        const token = await refreshInFlight;
+        originalRequest.headers.Authorization = `Bearer ${token}`;
+        return apiClient(originalRequest);
+      } catch (refreshError) {
+        // Network failures do not revoke a still-valid login.
+        if (
+          axios.isAxiosError(refreshError) &&
+          (!refreshError.response || refreshError.response.status >= 500)
+        )
+          return Promise.reject(refreshError);
+        await useAuthStore.getState().logout();
       }
       Toast.show({
         type: 'error',

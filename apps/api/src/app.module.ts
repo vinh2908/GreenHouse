@@ -46,6 +46,7 @@ import { AnalyticsModule } from './modules/analytics/analytics.module';
 // ─── Phase 10: AI Features ────────────────────────────────────────────────────
 import { AiModule } from './modules/ai/ai.module';
 import { UploadsModule } from './modules/uploads/uploads.module';
+import { FeedbackModule } from './modules/feedback/feedback.module';
 
 @Module({
   controllers: [HealthController],
@@ -94,6 +95,7 @@ import { UploadsModule } from './modules/uploads/uploads.module';
     AiModule,
     MatchingModule,
     UploadsModule,
+    FeedbackModule,
 
     // Phase 4+ (uncomment as implemented)
     // CustomersModule,
