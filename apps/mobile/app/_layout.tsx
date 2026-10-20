@@ -11,6 +11,7 @@ import { create } from 'zustand';
 import * as SplashScreen from 'expo-splash-screen';
 import '../global.css';
 import { useSocketConnection, useNotificationSocket } from '@/hooks/use-socket';
+import { AppAlertHost } from '@/components/common/app-alert';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -162,6 +163,7 @@ export default function RootLayout() {
         </Stack>
         <Toast config={toastConfig} swipeable={false} />
         <ToastCard />
+        <AppAlertHost />
       </QueryClientProvider>
     </GestureHandlerRootView>
   );
