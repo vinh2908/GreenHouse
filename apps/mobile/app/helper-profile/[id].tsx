@@ -249,10 +249,10 @@ export default function HelperPublicProfileScreen() {
             </Text>
           </View>
           <Text style={{ fontSize: 12.5, color: '#92400E', lineHeight: 18 }}>
-            • Tỷ lệ hoàn thành công việc: {profile?.completion_rate ?? 100}% (Không hủy ngang).{'\n'}•{' '}
-            {profile?.years_experience ? `Hơn ${profile.years_experience} năm` : 'Có'} kinh nghiệm
-            thực tế trong lĩnh vực.{'\n'}• Bảo hành chất lượng dịch vụ và bảo hiểm an toàn trong quá
-            trình làm việc.
+            • Tỷ lệ hoàn thành công việc: {profile?.completion_rate ?? 100}% (Không hủy ngang).
+            {'\n'}• {profile?.years_experience ? `Hơn ${profile.years_experience} năm` : 'Có'} kinh
+            nghiệm thực tế trong lĩnh vực.{'\n'}• Bảo hành chất lượng dịch vụ và bảo hiểm an toàn
+            trong quá trình làm việc.
           </Text>
         </Card>
 

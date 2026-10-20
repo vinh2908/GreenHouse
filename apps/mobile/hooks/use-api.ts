@@ -363,9 +363,7 @@ export function useRespondAmendment() {
       Toast.show({
         type: 'success',
         text1:
-          vars.action === 'accept'
-            ? 'Đã duyệt phụ lục hợp đồng'
-            : 'Đã từ chối khoản phát sinh',
+          vars.action === 'accept' ? 'Đã duyệt phụ lục hợp đồng' : 'Đã từ chối khoản phát sinh',
       });
     },
   });

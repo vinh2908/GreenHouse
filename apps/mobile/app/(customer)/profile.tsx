@@ -213,7 +213,8 @@ export default function CustomerProfileScreen() {
                           Toast.show({
                             type: 'success',
                             text1: 'Cảm ơn bạn đã ủng hộ Green House! ⭐',
-                            text2: 'Đánh giá 5 sao của bạn giúp đội ngũ phát triển tốt hơn mỗi ngày.',
+                            text2:
+                              'Đánh giá 5 sao của bạn giúp đội ngũ phát triển tốt hơn mỗi ngày.',
                           });
                         } else if (item.route) {
                           router.push(item.route as never);

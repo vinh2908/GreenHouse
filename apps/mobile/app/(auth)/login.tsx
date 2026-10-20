@@ -347,7 +347,8 @@ export default function LoginScreen() {
             ) : (
               <>
                 <Text style={{ fontSize: 13.5, color: COLORS.gray[600], lineHeight: 20 }}>
-                  Nhập mã OTP 6 chữ số đã gửi tới <Text style={{ fontWeight: '800' }}>{resetPhone}</Text> và mật khẩu mới.
+                  Nhập mã OTP 6 chữ số đã gửi tới{' '}
+                  <Text style={{ fontWeight: '800' }}>{resetPhone}</Text> và mật khẩu mới.
                 </Text>
                 {__DEV__ && (
                   <TouchableOpacity

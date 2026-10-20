@@ -163,7 +163,10 @@ export class JobsService {
       query['_id'] = { $ne: new Types.ObjectId(excludeJobId) };
     }
 
-    const conflictingJob = await this.jobModel.findOne(query).select('title preferred_time_start').exec();
+    const conflictingJob = await this.jobModel
+      .findOne(query)
+      .select('title preferred_time_start')
+      .exec();
     if (conflictingJob) {
       throw new ConflictException(
         `Thợ đã có công việc "${conflictingJob.title}" trùng vào khung giờ ${preferredTimeStart} ngày này.`,
@@ -988,7 +991,9 @@ export class JobsService {
     if (job.helper_id?.toString() !== helperId) {
       throw new ForbiddenException('Chỉ thợ phụ trách đơn mới có quyền đề xuất phát sinh chi phí');
     }
-    if (![JobStatus.CONFIRMED, JobStatus.HELPER_ARRIVED, JobStatus.IN_PROGRESS].includes(job.status)) {
+    if (
+      ![JobStatus.CONFIRMED, JobStatus.HELPER_ARRIVED, JobStatus.IN_PROGRESS].includes(job.status)
+    ) {
       throw new BadRequestException(
         'Chỉ có thể đề xuất phát sinh vật tư/chi phí khi đã đến nơi hoặc đang làm việc',
       );
@@ -1372,10 +1377,7 @@ export class JobsService {
     await job.save();
 
     await this.contractModel
-      .findOneAndUpdate(
-        { job_id: new Types.ObjectId(jobId) },
-        { status: ContractStatus.DISPUTED },
-      )
+      .findOneAndUpdate({ job_id: new Types.ObjectId(jobId) }, { status: ContractStatus.DISPUTED })
       .exec();
 
     if (job.helper_id) {
@@ -1485,7 +1487,10 @@ export class JobsService {
         }
         // Khôi phục lại 10 điểm risk_score đã tạm cộng khi mở dispute
         await this.helperModel
-          .updateOne({ user_id: job.helper_id, risk_score: { $gte: 10 } }, { $inc: { risk_score: -10 } })
+          .updateOne(
+            { user_id: job.helper_id, risk_score: { $gte: 10 } },
+            { $inc: { risk_score: -10 } },
+          )
           .exec();
       }
     }
@@ -1727,7 +1732,11 @@ export class JobsService {
 
   // ─── Get contract for job ─────────────────────────────────────────────────
 
-  async getContract(jobId: string, requesterId: string, isAdmin = false): Promise<ContractDocument> {
+  async getContract(
+    jobId: string,
+    requesterId: string,
+    isAdmin = false,
+  ): Promise<ContractDocument> {
     const contract = await this.contractModel.findOne({ job_id: new Types.ObjectId(jobId) }).exec();
     if (!contract) throw new NotFoundException('Hợp đồng không tồn tại');
     if (
