@@ -288,21 +288,18 @@ export default function JobDetailScreen() {
       }
     };
 
-    if (Platform.OS === 'web') {
-      const w = (globalThis as any).window;
-      if (w?.confirm ? w.confirm('Bạn có chắc chắn muốn hủy yêu cầu này?') : true) {
-        doCancel();
-      }
-    } else {
-      Alert.alert('Hủy đơn hàng?', 'Bạn có chắc chắn muốn hủy yêu cầu này?', [
-        { text: 'Không', style: 'cancel' },
+    Alert.alert(
+      'Hủy yêu cầu dịch vụ?',
+      'Bạn có chắc chắn muốn hủy yêu cầu này không? Thao tác này không thể hoàn tác.',
+      [
+        { text: 'Không, giữ lại', style: 'cancel' },
         {
-          text: 'Hủy đơn',
+          text: 'Xác nhận hủy',
           style: 'destructive',
           onPress: doCancel,
         },
-      ]);
-    }
+      ],
+    );
   };
 
   const handleSubmitReview = async () => {
