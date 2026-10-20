@@ -183,10 +183,15 @@ export default function KycPendingPage() {
 
   const handleReject = (userId: string) => {
     if (!rejectReason.trim()) return;
-    reject.mutate({ userId, reason: rejectReason }, { onSuccess: () => {
-      setRejectingId(null);
-      setRejectReason('');
-    } });
+    reject.mutate(
+      { userId, reason: rejectReason },
+      {
+        onSuccess: () => {
+          setRejectingId(null);
+          setRejectReason('');
+        },
+      },
+    );
   };
 
   return (

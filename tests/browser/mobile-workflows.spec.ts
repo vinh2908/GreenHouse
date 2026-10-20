@@ -3,9 +3,16 @@ import { readFileSync } from 'node:fs';
 const fixtures = JSON.parse(readFileSync('reports/qa-2026-10-20/ui-fixtures.json', 'utf8'));
 const site = 'http://127.0.0.1:8085';
 const api = 'http://127.0.0.1:3100/api/v1';
-const address = { full_address: 'QA address', district: 'Quan 7', city: 'TP HCM', location: { type: 'Point', coordinates: [106.701, 10.731] } };
+const address = {
+  full_address: 'QA address',
+  district: 'Quan 7',
+  city: 'TP HCM',
+  location: { type: 'Point', coordinates: [106.701, 10.731] },
+};
 async function login(page: Page, helper = false) {
-  const response = await page.request.post(`${api}/auth/login`, { data: { phone: helper ? '0907000001' : '0907000000', password: 'QaOnly123!' } });
+  const response = await page.request.post(`${api}/auth/login`, {
+    data: { phone: helper ? '0907000001' : '0907000000', password: 'QaOnly123!' },
+  });
   expect(response.ok()).toBeTruthy();
   const { data } = await response.json();
   await page.addInitScript(data => {
@@ -18,15 +25,26 @@ async function login(page: Page, helper = false) {
   return { Authorization: `Bearer ${data.access_token}` };
 }
 async function newJob(page: Page, headers: any, title: string) {
-  const response = await page.request.post(`${api}/jobs`, { headers, data: { title, description: 'QA isolated workflow', service_id: fixtures.serviceId, address } });
+  const response = await page.request.post(`${api}/jobs`, {
+    headers,
+    data: { title, description: 'QA isolated workflow', service_id: fixtures.serviceId, address },
+  });
   expect(response.status()).toBe(201);
   return (await response.json()).data._id as string;
 }
-async function status(page: Page, headers: any, id: string) { return (await (await page.request.get(`${api}/jobs/${id}`, { headers })).json()).data.status; }
+async function status(page: Page, headers: any, id: string) {
+  return (await (await page.request.get(`${api}/jobs/${id}`, { headers })).json()).data.status;
+}
 
 test('customer: unavailable services show retry without selectable demo data', async ({ page }) => {
   await login(page);
-  await page.route('**/api/v1/services', r => r.fulfill({ status: 503, contentType: 'application/json', body: '{"message":"QA unavailable"}' }));
+  await page.route('**/api/v1/services', r =>
+    r.fulfill({
+      status: 503,
+      contentType: 'application/json',
+      body: '{"message":"QA unavailable"}',
+    }),
+  );
   await page.goto(`${site}/booking`);
   await expect(page.getByRole('button', { name: 'Tải lại dịch vụ' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Tiếp theo', exact: true })).toBeDisabled();
@@ -35,24 +53,60 @@ test('customer: unavailable services show retry without selectable demo data', a
   await expect(page.getByText('Giúp việc theo giờ', { exact: true })).toBeVisible();
 });
 
-test('customer: booking validates address, preserves input on server error, and succeeds on retry', async ({ page }) => {
+test('customer: booking validates address, preserves input on server error, and succeeds on retry', async ({
+  page,
+}) => {
   const headers = await login(page);
-  await page.route('https://photon.komoot.io/**', r => r.fulfill({ contentType: 'application/json', body: JSON.stringify({ features: [{ geometry: { coordinates: [106.701, 10.731] }, properties: { osm_id: 1, name: 'QA Place', street: 'QA Street', housenumber: '123', district: 'Quan 7', city: 'TP HCM', country: 'Vietnam' } }] }) }));
+  await page.route('https://photon.komoot.io/**', r =>
+    r.fulfill({
+      contentType: 'application/json',
+      body: JSON.stringify({
+        features: [
+          {
+            geometry: { coordinates: [106.701, 10.731] },
+            properties: {
+              osm_id: 1,
+              name: 'QA Place',
+              street: 'QA Street',
+              housenumber: '123',
+              district: 'Quan 7',
+              city: 'TP HCM',
+              country: 'Vietnam',
+            },
+          },
+        ],
+      }),
+    }),
+  );
   await page.goto(`${site}/booking`);
   await page.getByText('Giúp việc theo giờ', { exact: true }).click();
   await page.getByRole('button', { name: 'Tiếp theo', exact: true }).click();
-  await expect(page.getByText('Vui lòng nhập địa chỉ chi tiết và quận/huyện', { exact: true })).toBeVisible();
+  await expect(
+    page.getByText('Vui lòng nhập địa chỉ chi tiết và quận/huyện', { exact: true }),
+  ).toBeVisible();
   await page.getByPlaceholder('Gõ tên đường, tòa nhà, chung cư...').fill('QA Place');
-  await page.getByText(/123 QA Street/).first().click();
+  await page
+    .getByText(/123 QA Street/)
+    .first()
+    .click();
   await page.getByRole('button', { name: 'Tiếp theo', exact: true }).click();
   await page.getByRole('button', { name: 'Tiếp theo', exact: true }).click();
   const title = `QA booking UI ${Date.now()}`;
   await page.getByPlaceholder('VD: Dọn dẹp căn hộ 2 phòng ngủ, giặt rèm cửa...').fill(title);
-  await page.getByPlaceholder('Mô tả chi tiết: diện tích, tình trạng thiết bị, yêu cầu riêng...').fill('QA booking description preserved');
+  await page
+    .getByPlaceholder('Mô tả chi tiết: diện tích, tình trạng thiết bị, yêu cầu riêng...')
+    .fill('QA booking description preserved');
   await page.getByRole('button', { name: 'Tiếp theo', exact: true }).click();
   let fail = true;
   await page.route('**/api/v1/jobs', r => {
-    if (r.request().method() === 'POST' && fail) { fail = false; return r.fulfill({ status: 503, contentType: 'application/json', body: '{"message":"QA retry expected"}' }); }
+    if (r.request().method() === 'POST' && fail) {
+      fail = false;
+      return r.fulfill({
+        status: 503,
+        contentType: 'application/json',
+        body: '{"message":"QA retry expected"}',
+      });
+    }
     return r.continue();
   });
   await page.getByRole('button', { name: 'Đăng yêu cầu ngay' }).click();
@@ -90,10 +144,16 @@ test('helper: new job popup opens the exact job', async ({ page, browser }) => {
   await customerContext.close();
 });
 
-test('customer/helper: full workflow quote, accept, travel, work, approve, and chat', async ({ page, browser }) => {
+test('customer/helper: full workflow quote, accept, travel, work, approve, and chat', async ({
+  page,
+  browser,
+}) => {
   const customerHeaders = await login(page);
   const id = await newJob(page, customerHeaders, 'QA full UI workflow');
-  const helperContext = await browser.newContext({ geolocation: { latitude: 10.731, longitude: 106.701 }, permissions: ['geolocation'] });
+  const helperContext = await browser.newContext({
+    geolocation: { latitude: 10.731, longitude: 106.701 },
+    permissions: ['geolocation'],
+  });
   const helper = await helperContext.newPage();
   helper.on('dialog', d => d.accept());
   await login(helper, true);
