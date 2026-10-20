@@ -25,6 +25,7 @@ import {
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import 'dayjs/locale/vi';
+import { Alert } from '@/components/common/app-alert';
 import { useAuthStore } from '@/stores/auth.store';
 import {
   useHelperProfile,
@@ -77,14 +78,14 @@ export default function HelperDashboardScreen() {
   const acceptSos = useAcceptSosJob();
   const updateLocation = useUpdateHelperLocation();
 
-  const [isOnline, setIsOnline] = useState(false);
-  const [sosBroadcast, setSosBroadcast] = useState<any>(null);
+  const isWorking =
+    profile?.status === 'busy' ||
+    myJobs?.some((j: any) =>
+      ['confirmed', 'helper_on_the_way', 'helper_arrived', 'in_progress'].includes(j.status),
+    );
+  const isOnline = profile?.status === 'online' || isWorking;
 
-  useEffect(() => {
-    if (profile?.status) {
-      setIsOnline(profile.status === 'online' || profile.status === 'busy');
-    }
-  }, [profile?.status]);
+  const [sosBroadcast, setSosBroadcast] = useState<any>(null);
 
   // ── Lắng nghe tín hiệu cứu hộ SOS khẩn cấp qua WebSocket ─────────────────
   useEffect(() => {
@@ -129,12 +130,24 @@ export default function HelperDashboardScreen() {
   };
 
   const handleToggleOnline = async (value: boolean) => {
+    if (isWorking) {
+      Alert.alert(
+        'Đang có công việc diễn ra',
+        'Bạn đang có đơn công việc đang thực hiện. Hãy hoàn thành hoặc kết thúc công việc trước khi tắt nhận việc nhé!',
+        [{ text: 'Đã hiểu', style: 'default' }],
+      );
+      return;
+    }
+
     if (value && profile?.verification_status !== 'approved') {
-      Toast.show({
-        type: 'error',
-        text1: 'Cần xác minh danh tính e-KYC',
-        text2: 'Vui lòng nộp CCCD/CMND trong mục Tài khoản để bật nhận việc.',
-      });
+      Alert.alert(
+        'Yêu cầu xác minh danh tính e-KYC',
+        'Vui lòng hoàn tất xác thực e-KYC trước khi bật chế độ nhận việc.',
+        [
+          { text: 'Để sau', style: 'cancel' },
+          { text: 'Xác thực ngay', onPress: () => router.push('/kyc') },
+        ],
+      );
       return;
     }
 
@@ -142,17 +155,22 @@ export default function HelperDashboardScreen() {
       const coords = await locationService.getCurrentCoordinates();
       if (coords) {
         updateLocation.mutate([coords.longitude, coords.latitude]);
-      } else {
-        Toast.show({
-          type: 'info',
-          text1: 'Không lấy được vị trí GPS',
-          text2: 'Vui lòng bật GPS để hệ thống gửi đơn gần bạn chính xác hơn.',
-        });
       }
     }
 
-    setIsOnline(value);
-    await setStatus.mutateAsync(value ? 'online' : 'offline');
+    try {
+      await setStatus.mutateAsync(value ? 'online' : 'offline');
+      Toast.show({
+        type: 'success',
+        text1: value ? 'Đã bật nhận đơn mới' : 'Đã chuyển sang ngoại tuyến',
+        text2: value
+          ? 'Bạn sẽ nhận được thông báo khi có khách hàng đặt dịch vụ gần bạn'
+          : 'Hệ thống đã tạm dừng nhận việc cho bạn',
+      });
+    } catch (err: any) {
+      const msg = err?.response?.data?.message || 'Không thể cập nhật trạng thái';
+      Toast.show({ type: 'error', text1: msg });
+    }
   };
 
   const activeJob = myJobs?.[0];
@@ -332,11 +350,11 @@ export default function HelperDashboardScreen() {
         <View style={{ paddingHorizontal: 16, marginTop: 14 }}>
           <View
             style={{
-              backgroundColor: isOnline ? '#1E1E24' : '#FFFFFF',
+              backgroundColor: isWorking ? '#FFFBEB' : isOnline ? '#1E1E24' : '#FFFFFF',
               borderRadius: 20,
               padding: 18,
               borderWidth: 1,
-              borderColor: isOnline ? 'transparent' : COLORS.gray[200],
+              borderColor: isWorking ? '#FDE68A' : isOnline ? 'transparent' : COLORS.gray[200],
               shadowColor: '#000',
               shadowOffset: { width: 0, height: 3 },
               shadowOpacity: 0.08,
@@ -358,39 +376,56 @@ export default function HelperDashboardScreen() {
                       width: 10,
                       height: 10,
                       borderRadius: 5,
-                      backgroundColor: isOnline ? '#10B981' : COLORS.gray[400],
+                      backgroundColor: isWorking
+                        ? '#F59E0B'
+                        : isOnline
+                          ? '#10B981'
+                          : COLORS.gray[400],
                     }}
                   />
                   <Text
                     style={{
-                      fontSize: 17,
+                      fontSize: 16.5,
                       fontWeight: '800',
-                      color: isOnline ? '#FFFFFF' : COLORS.gray[900],
+                      color: isWorking ? '#92400E' : isOnline ? '#FFFFFF' : COLORS.gray[900],
                     }}
                   >
-                    {isOnline ? 'Đang nhận đơn mới' : 'Ngoại tuyến (Tắt nhận việc)'}
+                    {isWorking
+                      ? 'Đang bận làm việc (Cuốc đang chạy)'
+                      : isOnline
+                        ? 'Đang nhận đơn mới'
+                        : 'Ngoại tuyến (Đã tắt nhận đơn)'}
                   </Text>
                 </View>
                 <Text
                   style={{
                     fontSize: 13,
-                    color: isOnline ? 'rgba(255,255,255,0.7)' : COLORS.gray[500],
+                    color: isWorking
+                      ? '#B45309'
+                      : isOnline
+                        ? 'rgba(255,255,255,0.7)'
+                        : COLORS.gray[500],
                     marginTop: 4,
                     lineHeight: 18,
                   }}
                 >
-                  {isOnline
-                    ? 'Bạn sẽ nhận được thông báo ngay khi có khách hàng đăng việc gần bạn.'
-                    : 'Gạt công tắc để mở radar quét đơn hàng trong bán kính 15km.'}
+                  {isWorking
+                    ? 'Bạn đang có công việc đang tiến hành. Trạng thái sẽ tự chuyển về Đang nhận đơn khi bạn hoàn tất nghiệm thu.'
+                    : isOnline
+                      ? 'Bạn sẽ nhận được thông báo ngay khi có khách hàng đăng việc gần bạn trong bán kính 15km.'
+                      : 'Gạt công tắc để mở radar quét đơn hàng dịch vụ gần bạn.'}
                 </Text>
               </View>
 
               <Switch
                 value={isOnline}
                 onValueChange={handleToggleOnline}
-                trackColor={{ false: COLORS.gray[300], true: COLORS.primary }}
+                trackColor={{
+                  false: COLORS.gray[300],
+                  true: isWorking ? '#F59E0B' : COLORS.primary,
+                }}
                 thumbColor="#FFFFFF"
-                disabled={setStatus.isPending}
+                disabled={isWorking || setStatus.isPending}
               />
             </View>
           </View>
