@@ -109,7 +109,25 @@ export class AppGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @SubscribeMessage('join:job')
   async handleJoinJob(@ConnectedSocket() client: Socket, @MessageBody() data: { job_id: string }) {
     if (!(await this.canAccessJob(client, data?.job_id))) throw new WsException('Forbidden');
-    client.join(`job:${data.job_id}`);
+    await client.join(`job:${data.job_id}`);
+    const job = await this.jobModel
+      .findById(data.job_id)
+      .select('status helper_id live_helper_location')
+      .lean()
+      .exec();
+    const point = job?.live_helper_location;
+    if (
+      job?.status === 'helper_on_the_way' &&
+      point &&
+      point.helper_id === String(job.helper_id) &&
+      Date.now() - point.recorded_at <= 120_000
+    ) {
+      client.emit(SOCKET_EVENTS.HELPER_LOCATION_UPDATE, {
+        job_id: data.job_id,
+        helper_id: point.helper_id,
+        location: point,
+      });
+    }
     return { event: 'joined', room: `job:${data.job_id}` };
   }
 
@@ -188,15 +206,58 @@ export class AppGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @SubscribeMessage('helper:location')
   async handleLocationUpdate(
     @ConnectedSocket() client: Socket,
-    @MessageBody() data: { job_id: string; lat: number; lng: number },
+    @MessageBody()
+    data: { job_id: string; lat: number; lng: number; recorded_at: number; accuracy?: number },
   ) {
     const helperId = client.data.userId as string;
-    if (!(await this.canAccessJob(client, data?.job_id, true))) throw new WsException('Forbidden');
+    const now = Date.now();
+    if (
+      !data ||
+      !Number.isFinite(data.lat) ||
+      Math.abs(data.lat) > 90 ||
+      !Number.isFinite(data.lng) ||
+      Math.abs(data.lng) > 180 ||
+      !Number.isFinite(data.recorded_at) ||
+      now - data.recorded_at > 30_000 ||
+      data.recorded_at > now + 10_000 ||
+      (data.accuracy != null &&
+        (!Number.isFinite(data.accuracy) || data.accuracy < 0 || data.accuracy > 100))
+    ) {
+      throw new WsException('GPS không hợp lệ hoặc đã cũ');
+    }
+    if (!helperId || !Types.ObjectId.isValid(data.job_id)) throw new WsException('Forbidden');
+    const point = {
+      lat: data.lat,
+      lng: data.lng,
+      recorded_at: data.recorded_at,
+      accuracy: data.accuracy,
+      helper_id: helperId,
+    };
+    // Atomic assignment/status and timestamp check: reject another helper, a finished job,
+    // and out-of-order fixes even when two devices use the same helper account.
+    const saved = await this.jobModel
+      .findOneAndUpdate(
+        {
+          _id: data.job_id,
+          helper_id: new Types.ObjectId(helperId),
+          status: 'helper_on_the_way',
+          $or: [
+            { 'live_helper_location.recorded_at': { $exists: false } },
+            { 'live_helper_location.recorded_at': { $lt: data.recorded_at } },
+          ],
+        },
+        { $set: { live_helper_location: point } },
+        { new: true },
+      )
+      .select('_id')
+      .lean()
+      .exec();
+    if (!saved) throw new WsException('GPS không thuộc chuyến đi hiện tại hoặc đã cũ');
     // Broadcast to job room so customer can see helper moving
     this.server.to(`job:${data.job_id}`).emit(SOCKET_EVENTS.HELPER_LOCATION_UPDATE, {
       helper_id: helperId,
       job_id: data.job_id,
-      location: { lat: data.lat, lng: data.lng },
+      location: point,
       timestamp: new Date().toISOString(),
     });
   }

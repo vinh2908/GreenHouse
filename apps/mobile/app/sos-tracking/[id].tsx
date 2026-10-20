@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import {
   View,
   Text,
@@ -47,19 +47,21 @@ dayjs.locale('vi');
 export default function SosTrackingScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
 
   // ── Realtime Socket Updates ──────────────────────────────────────────────
   useJobSocketUpdates(id);
-  const helperLocation = useHelperLocation(id);
-
   const { data: job, isLoading, refetch } = useJobDetail(id);
+  const helperLocation = useHelperLocation(
+    id,
+    typeof job?.helper_id === 'object' ? job.helper_id?._id : job?.helper_id,
+  );
   const cancelJob = useCancelJob();
-
-  const [eta, setEta] = useState(15);
 
   // Lắng nghe sự kiện sos:accepted trực tiếp
   useEffect(() => {
     const unsub = socketService.on(SOCKET_EVENTS.SOS_ACCEPTED, (data: any) => {
+      if (data?.job_id !== id) return;
       refetch();
       Toast.show({
         type: 'success',
@@ -70,7 +72,7 @@ export default function SosTrackingScreen() {
     return () => {
       unsub();
     };
-  }, [refetch]);
+  }, [refetch, id]);
 
   if (isLoading) return <LoadingSpinner />;
 
@@ -117,8 +119,6 @@ export default function SosTrackingScreen() {
       ],
     );
   };
-
-  const insets = useSafeAreaInsets();
 
   return (
     <View style={{ flex: 1, backgroundColor: '#F8F9FA' }}>
@@ -237,27 +237,19 @@ export default function SosTrackingScreen() {
             {/* 1. Bản đồ Live Tracking thời gian thực (Grab Map Style) */}
             <LiveTrackingMap
               customerLocation={{
-                latitude: job?.address?.location?.coordinates?.[1] || 10.7725,
-                longitude: job?.address?.location?.coordinates?.[0] || 106.6983,
+                latitude: job?.address?.location?.coordinates?.[1],
+                longitude: job?.address?.location?.coordinates?.[0],
               }}
               helperLocation={
                 helperLocation
-                  ? {
-                      latitude:
-                        'lat' in helperLocation
-                          ? helperLocation.lat
-                          : (helperLocation as any).current?.lat,
-                      longitude:
-                        'lng' in helperLocation
-                          ? helperLocation.lng
-                          : (helperLocation as any).current?.lng,
-                    }
-                  : undefined
+                  ? { latitude: helperLocation.lat, longitude: helperLocation.lng }
+                  : null
               }
+              helperRecordedAt={helperLocation?.recorded_at}
+              viewerRole="customer"
               customerAddress={job?.address?.full_address}
               helperName={helperName}
               status={job?.status}
-              etaMinutes={eta}
               height={260}
               showNavigationButton={false}
             />

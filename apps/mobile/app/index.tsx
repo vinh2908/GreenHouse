@@ -18,7 +18,6 @@ const { width, height } = Dimensions.get('window');
 
 export default function SplashScreen() {
   const router = useRouter();
-  const { loadStoredAuth } = useAuthStore();
   const hasNavigated = useRef(false);
 
   // ── Animations ─────────────────────────────────────────────────────────────
@@ -32,8 +31,7 @@ export default function SplashScreen() {
     // 0. Đánh thức server API ngầm ngay khi mở app (tránh cold-start trên Render)
     apiClient.get('/health').catch(() => {});
 
-    // 1. Nạp Auth Token ngầm từ SecureStore
-    loadStoredAuth().catch(() => {});
+    // Auth is restored by the root layout, including when opening a deep link.
 
     // 2. Chạy chuỗi hoạt họa sống động (Choreographed Animations)
     Animated.parallel([
@@ -98,7 +96,7 @@ export default function SplashScreen() {
     return () => {
       clearTimeout(timer);
     };
-  }, [loadStoredAuth, router]);
+  }, [router]);
 
   return (
     <View style={styles.container}>

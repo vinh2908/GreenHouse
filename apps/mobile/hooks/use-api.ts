@@ -423,7 +423,10 @@ export function useHelperOnTheWay() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (jobId: string) => apiClient.patch(`/jobs/${jobId}/on-the-way`),
-    onSuccess: (_, jobId) => qc.invalidateQueries({ queryKey: ['job', jobId] }),
+    onSuccess: (_, jobId) => {
+      qc.invalidateQueries({ queryKey: ['job', jobId] });
+      qc.invalidateQueries({ queryKey: ['jobs'] });
+    },
   });
 }
 
@@ -431,7 +434,10 @@ export function useHelperArrived() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (jobId: string) => apiClient.patch(`/jobs/${jobId}/arrived`),
-    onSuccess: (_, jobId) => qc.invalidateQueries({ queryKey: ['job', jobId] }),
+    onSuccess: (_, jobId) => {
+      qc.invalidateQueries({ queryKey: ['job', jobId] });
+      qc.invalidateQueries({ queryKey: ['jobs'] });
+    },
   });
 }
 
