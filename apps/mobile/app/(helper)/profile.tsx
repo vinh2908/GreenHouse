@@ -74,7 +74,7 @@ export default function HelperProfileScreen() {
           style: 'destructive',
           onPress: doLogout,
         },
-      ]
+      ],
     );
   };
 
@@ -237,7 +237,7 @@ export default function HelperProfileScreen() {
                   Alert.alert(
                     'Đang có công việc diễn ra',
                     'Bạn đang có đơn công việc đang thực hiện. Hãy hoàn thành hoặc kết thúc công việc trước khi tắt nhận việc nhé!',
-                    [{ text: 'Đã hiểu', style: 'default' }]
+                    [{ text: 'Đã hiểu', style: 'default' }],
                   );
                   return;
                 }
@@ -248,7 +248,7 @@ export default function HelperProfileScreen() {
                     [
                       { text: 'Để sau', style: 'cancel' },
                       { text: 'Xác thực ngay', onPress: () => router.push('/kyc') },
-                    ]
+                    ],
                   );
                   return;
                 }
