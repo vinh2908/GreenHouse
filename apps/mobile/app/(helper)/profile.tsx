@@ -56,18 +56,14 @@ export default function HelperProfileScreen() {
       router.replace('/(auth)/login');
     };
 
-    Alert.alert(
-      'Đăng xuất tài khoản?',
-      'Bạn có chắc chắn muốn đăng xuất khỏi Green House không?',
-      [
-        { text: 'Ở lại', style: 'cancel' },
-        {
-          text: 'Đăng xuất',
-          style: 'destructive',
-          onPress: doLogout,
-        },
-      ],
-    );
+    Alert.alert('Đăng xuất tài khoản?', 'Bạn có chắc chắn muốn đăng xuất khỏi Green House không?', [
+      { text: 'Ở lại', style: 'cancel' },
+      {
+        text: 'Đăng xuất',
+        style: 'destructive',
+        onPress: doLogout,
+      },
+    ]);
   };
 
   const KYC_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
