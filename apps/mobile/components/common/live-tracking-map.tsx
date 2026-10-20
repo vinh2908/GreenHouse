@@ -1,49 +1,72 @@
 import React, { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Platform } from 'react-native';
 import { WebView } from 'react-native-webview';
-import { COLORS } from '@/components/ui';
 
-interface Coordinates {
+export interface Coordinates {
   latitude: number;
   longitude: number;
 }
 
-interface LiveTrackingMapProps {
+export interface LiveTrackingMapProps {
   customerLocation: Coordinates;
   helperLocation?: Coordinates | null;
   customerAddress?: string;
   helperName?: string;
   etaMinutes?: number;
   height?: number;
+  status?: string;
+  title?: string;
 }
 
 export function LiveTrackingMap({
   customerLocation,
   helperLocation,
-  customerAddress = 'Vị trí của bạn',
+  customerAddress = 'Vị trí làm việc',
   helperName = 'Thợ Green House',
   etaMinutes = 15,
-  height = 280,
+  height = 240,
+  status = 'open',
+  title,
 }: LiveTrackingMapProps) {
   const webViewRef = useRef<WebView>(null);
 
-  // Vị trí mặc định của Thợ nếu đang di chuyển (cách khách khoảng 1.5km)
-  const activeHelperCoords: Coordinates = helperLocation || {
-    latitude: customerLocation.latitude + 0.011,
-    longitude: customerLocation.longitude + 0.008,
-  };
+  const isTracking =
+    (status === 'helper_on_the_way' || status === 'helper_arrived') && !!helperLocation;
+
+  const custLat = customerLocation?.latitude || 10.7725;
+  const custLon = customerLocation?.longitude || 106.6983;
+
+  const helpLat = helperLocation?.latitude ?? custLat + 0.009;
+  const helpLon = helperLocation?.longitude ?? custLon + 0.007;
+
+  let pillText = title || 'Vị trí điểm hẹn làm việc';
+  let pillIcon = '📍';
+
+  if (status === 'helper_on_the_way') {
+    pillText = `Thợ ${helperName} đang di chuyển (${etaMinutes} phút)`;
+    pillIcon = '🚗';
+  } else if (status === 'helper_arrived') {
+    pillText = `Thợ ${helperName} đã có mặt tại điểm hẹn`;
+    pillIcon = '📍';
+  } else if (status === 'in_progress') {
+    pillText = 'Đang tiến hành công việc tại địa chỉ';
+    pillIcon = '▶️';
+  } else if (status === 'open' || status === 'receiving_quotes') {
+    pillText = 'Vị trí làm việc • Đang kết nối thợ lân cận';
+    pillIcon = '📡';
+  }
 
   // Cập nhật vị trí Thợ thời gian thực trên bản đồ Leaflet
   useEffect(() => {
-    if (webViewRef.current && activeHelperCoords) {
+    if (Platform.OS !== 'web' && webViewRef.current && isTracking && helperLocation) {
       const script = `
         if (window.updateHelperPosition) {
-          window.updateHelperPosition(${activeHelperCoords.latitude}, ${activeHelperCoords.longitude}, ${etaMinutes});
+          window.updateHelperPosition(${helperLocation.latitude}, ${helperLocation.longitude}, ${etaMinutes});
         }
       `;
       webViewRef.current.injectJavaScript(script);
     }
-  }, [activeHelperCoords.latitude, activeHelperCoords.longitude, etaMinutes]);
+  }, [helperLocation?.latitude, helperLocation?.longitude, etaMinutes, isTracking]);
 
   // Mã nguồn HTML Leaflet + OpenStreetMap 100% Free
   const leafletHtml = `
@@ -68,24 +91,24 @@ export function LiveTrackingMap({
             justify-content: center;
             border-radius: 50%;
             border: 3px solid #ffffff;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-            font-size: 18px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            font-size: 20px;
           }
           .customer-pin {
-            background-color: #2563EB;
-            width: 38px;
-            height: 38px;
+            background-color: #10B981;
+            width: 40px;
+            height: 40px;
           }
           .helper-pin {
-            background-color: #22C55E;
+            background-color: #3B82F6;
             width: 42px;
             height: 42px;
-            animation: pulse 1.5s infinite;
+            animation: pulse 1.6s infinite;
           }
           @keyframes pulse {
-            0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.6); }
-            70% { box-shadow: 0 0 0 12px rgba(34, 197, 94, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+            0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7); }
+            70% { box-shadow: 0 0 0 14px rgba(59, 130, 246, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
           }
           .leaflet-control-attribution {
             display: none !important;
@@ -95,61 +118,70 @@ export function LiveTrackingMap({
       <body>
         <div id="map"></div>
         <script>
-          const custLat = ${customerLocation.latitude};
-          const custLon = ${customerLocation.longitude};
-          const helpLat = ${activeHelperCoords.latitude};
-          const helpLon = ${activeHelperCoords.longitude};
+          const custLat = ${custLat};
+          const custLon = ${custLon};
+          const isTracking = ${isTracking};
+          const helpLat = ${helpLat};
+          const helpLon = ${helpLon};
 
-          // Khởi tạo bản đồ OpenStreetMap
           const map = L.map('map', {
-            zoomControl: false,
+            zoomControl: true,
             attributionControl: false
           });
 
-          // Layer ngói bản đồ OpenStreetMap 100% Miễn Phí
           L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 19,
           }).addTo(map);
 
-          // Marker Nhà khách hàng
+          // Marker Điểm hẹn của Khách hàng
           const custIcon = L.divIcon({
             className: 'custom-pin customer-pin',
             html: '🏠',
-            iconSize: [38, 38],
-            iconAnchor: [19, 19]
+            iconSize: [40, 40],
+            iconAnchor: [20, 20]
           });
           const custMarker = L.marker([custLat, custLon], { icon: custIcon }).addTo(map);
+          custMarker.bindPopup("<b>Điểm hẹn làm việc</b><br>${customerAddress.replace(/"/g, '')}").openPopup();
 
-          // Marker Thợ cứu hộ di chuyển
-          const helpIcon = L.divIcon({
-            className: 'custom-pin helper-pin',
-            html: '🛵',
-            iconSize: [42, 42],
-            iconAnchor: [21, 21]
-          });
-          let helpMarker = L.marker([helpLat, helpLon], { icon: helpIcon }).addTo(map);
+          if (isTracking) {
+            // Marker Thợ di chuyển
+            const helpIcon = L.divIcon({
+              className: 'custom-pin helper-pin',
+              html: '🛵',
+              iconSize: [42, 42],
+              iconAnchor: [21, 21]
+            });
+            let helpMarker = L.marker([helpLat, helpLon], { icon: helpIcon }).addTo(map);
+            helpMarker.bindPopup("<b>${helperName.replace(/"/g, '')}</b><br>Đang di chuyển tới bạn");
 
-          // Đường nối lộ trình di chuyển (Màu cam)
-          let routeLine = L.polyline([[helpLat, helpLon], [custLat, custLon]], {
-            color: '#22C55E',
-            weight: 4,
-            dashArray: '8, 6',
-            opacity: 0.9
-          }).addTo(map);
+            // Lộ trình nối liền
+            let routeLine = L.polyline([[helpLat, helpLon], [custLat, custLon]], {
+              color: '#10B981',
+              weight: 5,
+              dashArray: '8, 8',
+              opacity: 0.9
+            }).addTo(map);
 
-          // Căn chỉnh khung hình bao trọn cả 2 vị trí
-          const bounds = L.latLngBounds([[custLat, custLon], [helpLat, helpLon]]);
-          map.fitBounds(bounds, { padding: [40, 40] });
+            const bounds = L.latLngBounds([[custLat, custLon], [helpLat, helpLon]]);
+            map.fitBounds(bounds, { padding: [45, 45] });
 
-          // Hàm cập nhật vị trí thời gian thực từ React Native
-          window.updateHelperPosition = function(newLat, newLon, eta) {
-            if (helpMarker) {
-              helpMarker.setLatLng([newLat, newLon]);
-            }
-            if (routeLine) {
-              routeLine.setLatLngs([[newLat, newLon], [custLat, custLon]]);
-            }
-          };
+            window.updateHelperPosition = function(newLat, newLon, eta) {
+              if (helpMarker) helpMarker.setLatLng([newLat, newLon]);
+              if (routeLine) routeLine.setLatLngs([[newLat, newLon], [custLat, custLon]]);
+            };
+          } else {
+            // Vòng quét bán kính tìm thợ
+            L.circle([custLat, custLon], {
+              radius: 1200,
+              color: '#10B981',
+              fillColor: '#10B981',
+              fillOpacity: 0.12,
+              weight: 2,
+              dashArray: '5, 5'
+            }).addTo(map);
+
+            map.setView([custLat, custLon], 15);
+          }
         </script>
       </body>
     </html>
@@ -157,23 +189,31 @@ export function LiveTrackingMap({
 
   return (
     <View style={[styles.container, { height }]}>
-      <WebView
-        ref={webViewRef}
-        originWhitelist={['*']}
-        source={{ html: leafletHtml }}
-        style={styles.webView}
-        scrollEnabled={false}
-        bounces={false}
-        javaScriptEnabled={true}
-        domStorageEnabled={true}
-        androidLayerType="hardware"
-      />
+      {Platform.OS === 'web' ? (
+        <iframe
+          srcDoc={leafletHtml}
+          style={{ width: '100%', height: '100%', border: 'none' }}
+          title="Green House Map"
+        />
+      ) : (
+        <WebView
+          ref={webViewRef}
+          originWhitelist={['*']}
+          source={{ html: leafletHtml }}
+          style={styles.webView}
+          scrollEnabled={false}
+          bounces={false}
+          javaScriptEnabled={true}
+          domStorageEnabled={true}
+          androidLayerType="hardware"
+        />
+      )}
 
       {/* Floating Status Pill trên bản đồ */}
       <View style={styles.statusPill}>
         <View style={styles.pulseDot} />
         <Text style={styles.statusText}>
-          Thợ đang di chuyển • Cách bạn ~1.5km ({etaMinutes} phút)
+          {pillIcon} {pillText}
         </Text>
       </View>
     </View>
@@ -202,9 +242,9 @@ const styles = StyleSheet.create({
   },
   statusPill: {
     position: 'absolute',
-    top: 14,
-    left: 14,
-    right: 14,
+    top: 12,
+    left: 12,
+    right: 12,
     backgroundColor: 'rgba(17, 24, 39, 0.92)',
     borderRadius: 14,
     paddingHorizontal: 14,
@@ -229,6 +269,5 @@ const styles = StyleSheet.create({
     fontSize: 12.5,
     fontWeight: '800',
     flex: 1,
-    letterSpacing: 0.1,
   },
 });

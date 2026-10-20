@@ -1,4 +1,5 @@
 import { Alert } from '@/components/common/app-alert';
+import { LiveTrackingMap } from '@/components/common/live-tracking-map';
 import { useState, useEffect } from 'react';
 import {
   View,
@@ -451,6 +452,29 @@ export default function HelperJobDetailScreen() {
             </View>
           </View>
         </Card>
+
+        {/* ── Bản đồ vị trí khách hàng ── */}
+        {!!job.address && (
+          <LiveTrackingMap
+            customerLocation={{
+              latitude: job.address?.location?.coordinates?.[1] || 10.7725,
+              longitude: job.address?.location?.coordinates?.[0] || 106.6983,
+            }}
+            helperLocation={
+              job.status === 'helper_on_the_way'
+                ? {
+                    latitude: (job.address?.location?.coordinates?.[1] || 10.7725) + 0.009,
+                    longitude: (job.address?.location?.coordinates?.[0] || 106.6983) + 0.007,
+                  }
+                : null
+            }
+            status={job.status}
+            customerAddress={job.address?.full_address || job.address?.district}
+            helperName={currentUser?.full_name || 'Bạn'}
+            etaMinutes={job.estimated_minutes || 15}
+            height={220}
+          />
+        )}
 
         {/* ── Customer info ─────────────────────────────────────────── */}
         {isMyActiveJob && (
