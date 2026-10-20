@@ -433,7 +433,18 @@ export class JobsService {
     if (dto.is_flexible_time !== undefined) job.is_flexible_time = dto.is_flexible_time;
 
     if (dto.address) {
-      const prevLocation = job.address?.location?.coordinates || [106.6297, 10.8231];
+      const prevLocation = job.address?.location?.coordinates;
+      const coordinates = dto.address.location?.coordinates || prevLocation;
+      if (
+        !coordinates ||
+        coordinates.length !== 2 ||
+        !Number.isFinite(coordinates[0]) ||
+        Math.abs(coordinates[0]) > 180 ||
+        !Number.isFinite(coordinates[1]) ||
+        Math.abs(coordinates[1]) > 90
+      ) {
+        throw new BadRequestException('Địa chỉ cần tọa độ điểm hẹn hợp lệ');
+      }
       job.address = {
         full_address: dto.address.full_address || job.address.full_address,
         ward: dto.address.ward ?? job.address.ward,
@@ -442,7 +453,7 @@ export class JobsService {
         notes: dto.address.notes ?? job.address.notes,
         location: {
           type: 'Point',
-          coordinates: dto.address.location?.coordinates || prevLocation,
+          coordinates,
         },
       } as any;
     }

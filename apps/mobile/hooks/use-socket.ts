@@ -4,6 +4,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { socketService, SOCKET_EVENTS } from '@/services/socket.service';
 import { useAuthStore } from '@/stores/auth.store';
 import Toast from 'react-native-toast-message';
+import { acceptTrackingEvent, GPS_MAX_AGE_MS, TrackingEvent } from '@/services/tracking';
 
 // ─── Connect on auth ─────────────────────────────────────────────────────────
 
@@ -221,21 +222,32 @@ export function useNotificationSocket() {
   }, [qc]);
 }
 
-export function useHelperLocation(jobId?: string) {
-  const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
+export function useHelperLocation(jobId?: string, helperId?: string) {
+  const [sample, setSample] = useState<TrackingEvent | null>(null);
 
   useEffect(() => {
+    setSample(null);
     if (!jobId) return;
-    const unsub = socketService.on<{ helper_id: string; location: { lat: number; lng: number } }>(
-      SOCKET_EVENTS.HELPER_LOCATION_UPDATE,
-      ({ location: loc }) => {
-        if (loc?.lat && loc?.lng) {
-          setLocation(loc);
-        }
-      },
+    const unsub = socketService.on<TrackingEvent>(SOCKET_EVENTS.HELPER_LOCATION_UPDATE, event => {
+      setSample(previous =>
+        acceptTrackingEvent(event, jobId, helperId, previous?.location) ? event : previous,
+      );
+    });
+    // Subscribe before joining: the server immediately replays the last valid GPS fix.
+    socketService.joinJob(jobId);
+    const timer = setInterval(
+      () =>
+        setSample(previous =>
+          previous && Date.now() - previous.location.recorded_at > GPS_MAX_AGE_MS ? null : previous,
+        ),
+      5000,
     );
-    return unsub;
-  }, [jobId]);
+    return () => {
+      unsub();
+      clearInterval(timer);
+      socketService.leaveJob(jobId);
+    };
+  }, [jobId, helperId]);
 
-  return location;
+  return sample && sample.job_id === jobId ? sample.location : null;
 }

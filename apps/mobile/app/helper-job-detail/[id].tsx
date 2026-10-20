@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import {
   View,
   Text,
@@ -29,10 +29,9 @@ import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import 'dayjs/locale/vi';
 import { useJobSocketUpdates } from '@/hooks/use-socket';
-import { socketService } from '@/services/socket.service';
-import { locationService } from '@/services/location.service';
+import { useLiveGpsStore } from '@/hooks/use-live-gps';
 import { Alert } from '@/components/common/app-alert';
-import { LiveTrackingMap } from '@/components/common/live-tracking-map';
+import { LiveTrackingMap, RouteMetrics } from '@/components/common/live-tracking-map';
 
 dayjs.extend(relativeTime);
 dayjs.locale('vi');
@@ -47,7 +46,6 @@ import {
   useCompleteJob,
   useHelperProfile,
   useProposeAmendment,
-  useUpdateHelperLocation,
 } from '@/hooks/use-api';
 import { useAuthStore } from '@/stores/auth.store';
 import {
@@ -84,43 +82,9 @@ export default function HelperJobDetailScreen() {
   const { data: quotes } = useJobQuotes(id);
   const { data: contract } = useJobContract(id);
   const { data: helperProfile } = useHelperProfile();
-  const updateLocation = useUpdateHelperLocation();
-
-  const [helperCoords, setHelperCoords] = useState<{ latitude: number; longitude: number } | null>(
-    null,
-  );
-
-  // Lấy tọa độ GPS Thợ ban đầu khi mở màn hình
-  useEffect(() => {
-    let isMounted = true;
-    locationService.getCurrentCoordinates().then(coords => {
-      if (isMounted && coords) {
-        setHelperCoords({ latitude: coords.latitude, longitude: coords.longitude });
-      }
-    });
-    return () => {
-      isMounted = false;
-    };
-  }, []);
-
-  // ── Broadcast GPS vị trí Thợ thời gian thực khi đang di chuyển (Grab Live Sync) ──
-  useEffect(() => {
-    if (job?.status !== 'helper_on_the_way' || !id) return;
-
-    const emitCurrentLocation = async () => {
-      const coords = await locationService.getCurrentCoordinates();
-      if (coords) {
-        setHelperCoords({ latitude: coords.latitude, longitude: coords.longitude });
-        socketService.updateLocation(id, coords.latitude, coords.longitude);
-        updateLocation.mutate([coords.longitude, coords.latitude]);
-      }
-    };
-
-    emitCurrentLocation();
-    const interval = setInterval(emitCurrentLocation, 6000); // 6s gửi GPS 1 lần
-
-    return () => clearInterval(interval);
-  }, [job?.status, id]);
+  const gps = useLiveGpsStore(s => s.point);
+  const gpsError = useLiveGpsStore(s => s.error);
+  const [routeMetrics, setRouteMetrics] = useState<RouteMetrics | null>(null);
 
   const submitQuote = useSubmitQuote();
   const onTheWay = useHelperOnTheWay();
@@ -471,35 +435,26 @@ export default function HelperJobDetailScreen() {
         {job?.address?.location?.coordinates && (
           <LiveTrackingMap
             customerLocation={{
-              latitude: job.address.location.coordinates[1] || 10.7725,
-              longitude: job.address.location.coordinates[0] || 106.6983,
+              latitude: job.address.location.coordinates[1],
+              longitude: job.address.location.coordinates[0],
             }}
-            helperLocation={
-              helperCoords ||
-              (job.distance_km != null || job.address?.location?.coordinates
-                ? {
-                    latitude: (job.address.location.coordinates[1] || 10.7725) - 0.015,
-                    longitude: (job.address.location.coordinates[0] || 106.6983) - 0.012,
-                  }
-                : undefined)
-            }
+            helperLocation={gps ? { latitude: gps.lat, longitude: gps.lng } : null}
+            helperRecordedAt={gps?.recorded_at}
+            viewerRole="helper"
+            onRouteMetrics={setRouteMetrics}
             customerAddress={job.address.full_address}
             helperName="Bạn (Thợ)"
             status={job.status}
-            title={
-              job.status === 'helper_on_the_way'
-                ? '🛵 Bạn đang di chuyển đến nhà khách hàng'
-                : job.status === 'helper_arrived'
-                  ? '📍 Bạn đã tới điểm hẹn làm việc'
-                  : job.status === 'in_progress'
-                    ? '▶️ Đang tiến hành công việc'
-                    : '📍 Điểm hẹn thực hiện công việc'
-            }
             showNavigationButton={true}
             height={260}
           />
         )}
 
+        {gpsError && job.status === 'helper_on_the_way' && (
+          <Text accessibilityRole="alert" style={{ color: '#92400e' }}>
+            {gpsError}
+          </Text>
+        )}
         {/* ── Job info ─────────────────────────────────────────────── */}
         <Card style={{ gap: 12 }}>
           <View style={{ flexDirection: 'row', gap: 10, flexWrap: 'wrap' }}>
@@ -539,11 +494,12 @@ export default function HelperJobDetailScreen() {
                 {job.address?.full_address}
                 {job.address?.district ? `, ${job.address.district}` : ''}
               </Text>
-              {job.distance_km != null && (
+              {routeMetrics && (
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                   <Navigation size={14} color={COLORS.primary} />
                   <Text style={{ fontSize: 13, color: COLORS.primary, fontWeight: '700' }}>
-                    Cách bạn {job.distance_km} km ~ {job.estimated_minutes ?? '?'} phút di chuyển
+                    Còn {routeMetrics.distanceKm.toFixed(1)} km · khoảng {routeMetrics.etaMinutes}{' '}
+                    phút
                   </Text>
                 </View>
               )}
