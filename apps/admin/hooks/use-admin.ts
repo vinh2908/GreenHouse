@@ -468,3 +468,86 @@ export function useReviewClaim() {
     },
   });
 }
+
+// ─── Support live chat (Feature 18 — Hỗ trợ trực tuyến) ───────────────────────
+
+export interface AdminSupportConversation {
+  _id: string;
+  user_id: string | { _id: string; full_name?: string; phone?: string; avatar?: string } | null;
+  status: 'open' | 'closed';
+  last_message?: string;
+  last_message_at?: string;
+  unread_for_admin: number;
+  unread_for_user: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AdminSupportMessage {
+  _id: string;
+  conversation_id: string;
+  sender_id: string | { _id: string; full_name?: string; avatar?: string } | null;
+  sender_role: 'user' | 'admin';
+  content: string;
+  type: string;
+  created_at: string;
+}
+
+export function useSupportConversations(status: string = 'all') {
+  return useQuery({
+    queryKey: ['admin', 'support', 'conversations', status],
+    queryFn: async () => {
+      const { data } = await apiClient.get('/admin/support/conversations', {
+        params: { status },
+      });
+      return data.data as AdminSupportConversation[];
+    },
+    refetchInterval: 5000,
+  });
+}
+
+export function useSupportThread(id?: string | null) {
+  return useQuery({
+    queryKey: ['admin', 'support', 'thread', id],
+    queryFn: async () => {
+      const { data } = await apiClient.get(`/admin/support/conversations/${id}/messages`, {
+        params: { page: 1, limit: 50 },
+      });
+      return data.data as AdminSupportMessage[];
+    },
+    enabled: !!id,
+    refetchInterval: 5000,
+  });
+}
+
+export function useAdminSupportReply() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, content }: { id: string; content: string }) =>
+      apiClient.post(`/admin/support/conversations/${id}/messages`, { content }),
+    onSuccess: (_, { id }) => {
+      qc.invalidateQueries({ queryKey: ['admin', 'support', 'thread', id] });
+      qc.invalidateQueries({ queryKey: ['admin', 'support', 'conversations'] });
+    },
+  });
+}
+
+export function useAdminSupportClose() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => apiClient.patch(`/admin/support/conversations/${id}/close`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin', 'support', 'conversations'] });
+      qc.invalidateQueries({ queryKey: ['admin', 'support', 'thread'] });
+    },
+  });
+}
+
+export function useAdminSupportRead() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => apiClient.patch(`/admin/support/conversations/${id}/read`),
+    onSuccess: () =>
+      qc.invalidateQueries({ queryKey: ['admin', 'support', 'conversations'] }),
+  });
+}
