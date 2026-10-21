@@ -99,6 +99,11 @@ export function useServices() {
         description?: string;
         base_price_min?: number;
         base_price_max?: number;
+        price_range_min?: number;
+        price_range_max?: number;
+        platform_fee_percent?: number;
+        pricing_model?: 'quote' | 'fixed'; // Feature 7: giá cam kết
+        fixed_price?: number;
       }[];
     },
     staleTime: 10 * 60 * 1000,
@@ -200,6 +205,26 @@ export function useAcceptSosJob() {
         type: 'success',
         text1: '🚨 BẠN ĐÃ NHẬN ĐƠN CỨU HỘ SOS!',
         text2: 'Vui lòng di chuyển khẩn cấp đến địa chỉ khách hàng',
+      });
+    },
+  });
+}
+
+/**
+ * Feature 7 (Giá cam kết) + Feature 9 (Đơn bảo hành): thợ nhận việc trực tiếp
+ * qua POST /jobs/:jobId/accept-fixed — không qua vòng báo giá.
+ */
+export function useAcceptFixedPrice() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (jobId: string) => apiClient.post(`/jobs/${jobId}/accept-fixed`),
+    onSuccess: (_, jobId) => {
+      qc.invalidateQueries({ queryKey: ['job', jobId] });
+      qc.invalidateQueries({ queryKey: ['jobs'] });
+      Toast.show({
+        type: 'success',
+        text1: 'Đã nhận việc thành công! 🎉',
+        text2: 'Hợp đồng đã được tạo — bạn có thể bắt đầu di chuyển đến khách.',
       });
     },
   });

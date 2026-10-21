@@ -70,6 +70,15 @@ export class Service {
   @Prop({ default: 15 })
   platform_fee_percent: number;
 
+  // ── Giá cam kết / Fixed price (Roadmap Phase 1 — Feature 7) ─────────────
+  // 'quote' = thợ gửi báo giá như cũ; 'fixed' = giá cố định sàn công bố,
+  // thợ nhận việc trực tiếp, không qua vòng báo giá.
+  @Prop({ type: String, enum: ['quote', 'fixed'], default: 'quote' })
+  pricing_model: 'quote' | 'fixed';
+
+  @Prop({ default: 0 })
+  fixed_price: number; // Giá cam kết (VNĐ) — chỉ dùng khi pricing_model = 'fixed'
+
   @Prop({ default: false })
   requires_site_visit: boolean;
 
