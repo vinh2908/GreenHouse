@@ -211,6 +211,44 @@ export class PaymentsService {
     });
   }
 
+  // ─── Credit ví dùng chung (không gắn với 1 Job cụ thể) ─────────────────────
+  // Dùng cho các luồng ngoài Job như chốt lương hợp đồng theo tháng
+  // (Feature 08): Transaction.job_id là optional trong schema nên có thể bỏ
+  // trống; định danh nguồn tiền nằm ở `reference` + `metadata` để đối soát.
+
+  async creditWallet(
+    userId: string,
+    amount: number,
+    opts: { description: string; reference: string; type?: string },
+  ): Promise<TransactionDocument> {
+    if (!amount || amount <= 0) {
+      throw new BadRequestException('Số tiền cộng ví phải lớn hơn 0');
+    }
+    const wallet = await this.getOrCreateWallet(userId);
+    const balanceBefore = wallet.balance;
+    const balanceAfter = balanceBefore + amount;
+
+    await this.walletModel
+      .findByIdAndUpdate(wallet._id, {
+        $inc: { balance: amount, total_earned: amount },
+      })
+      .exec();
+
+    return this.transactionModel.create({
+      wallet_id: wallet._id,
+      user_id: new Types.ObjectId(userId),
+      // Không truyền job_id: giao dịch không thuộc về 1 Job nào (schema cho phép)
+      type: opts.type ?? 'earning',
+      status: 'success',
+      amount,
+      balance_before: balanceBefore,
+      balance_after: balanceAfter,
+      description: opts.description,
+      reference: opts.reference,
+      metadata: { reference: opts.reference },
+    });
+  }
+
   // ─── Deduct platform commission for Cash jobs (Helper collected 100% cash) ──
 
   async deductCommissionForCashJob(

@@ -1065,6 +1065,255 @@ export function useCancelRecurringPlan() {
   });
 }
 
+// ─── Monthly Contracts (Feature 08 — Hợp đồng giúp việc theo tháng) ─────────
+
+export type MonthlyContractStatus = 'pending' | 'active' | 'rejected' | 'cancelled' | 'ended';
+export type AttendanceStatus = 'checked_in' | 'confirmed' | 'absent' | 'leave';
+
+export interface MonthlyContractItem {
+  _id: string;
+  customer_id: string | { _id: string; full_name?: string; avatar?: string; phone?: string };
+  helper_id: string | { _id: string; full_name?: string; avatar?: string; phone?: string };
+  service_id?: string | { _id: string; name?: string; icon?: string };
+  title: string;
+  monthly_salary: number;
+  platform_fee_percent: number;
+  address: {
+    full_address: string;
+    ward?: string;
+    district: string;
+    city: string;
+    location: { type: 'Point'; coordinates: [number, number] };
+    notes?: string;
+  };
+  schedule: { days_of_week: number[]; time_start: string; time_end: string };
+  start_date: string;
+  end_date?: string;
+  status: MonthlyContractStatus;
+  responded_at?: string;
+  ended_at?: string;
+  end_reason?: string;
+  created_at: string;
+}
+
+export interface AttendanceRecordItem {
+  _id: string;
+  contract_id: string;
+  date: string; // YYYY-MM-DD
+  status: AttendanceStatus;
+  checkin_at?: string;
+  confirmed_at?: string;
+  note?: string;
+}
+
+export interface LeaveRequestItem {
+  _id: string;
+  contract_id: string;
+  helper_id: string;
+  date: string;
+  reason: string;
+  status: 'pending' | 'approved' | 'rejected';
+  responded_at?: string;
+  created_at: string;
+}
+
+export interface SettlementSummary {
+  contract_id: string;
+  month: string;
+  scheduled_days: number;
+  confirmed_days: number;
+  leave_days: number;
+  absent_days: number;
+  gross_amount: number;
+  platform_fee: number;
+  helper_receives: number;
+  status: 'settled' | 'preview';
+  settled_at?: string;
+  settlement_id?: string;
+}
+
+const monthlyErr = (err: any, fallback: string) => {
+  const msg = err?.response?.data?.message ?? fallback;
+  Toast.show({ type: 'error', text1: typeof msg === 'string' ? msg : fallback });
+};
+
+export function useMonthlyContracts(as: 'customer' | 'helper') {
+  return useQuery({
+    queryKey: ['monthly-contracts', as],
+    queryFn: async () => {
+      const { data } = await apiClient.get('/monthly-contracts', { params: { as } });
+      return data.data as MonthlyContractItem[];
+    },
+  });
+}
+
+export function useMonthlyContract(id?: string) {
+  return useQuery({
+    queryKey: ['monthly-contracts', 'detail', id],
+    queryFn: async () => {
+      const { data } = await apiClient.get(`/monthly-contracts/${id}`);
+      return data.data as MonthlyContractItem;
+    },
+    enabled: !!id,
+  });
+}
+
+export function useCreateMonthlyContract() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (dto: any) => apiClient.post('/monthly-contracts', dto),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['monthly-contracts'] });
+      Toast.show({
+        type: 'success',
+        text1: 'Đã gửi đề nghị hợp đồng 📅',
+        text2: 'Thợ sẽ nhận được thông báo và phản hồi sớm',
+      });
+    },
+    onError: (err: any) => monthlyErr(err, 'Tạo hợp đồng thất bại'),
+  });
+}
+
+function useMonthlyContractAction(successText: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, path, body }: { id: string; path: string; body?: any }) =>
+      apiClient.patch(`/monthly-contracts/${id}/${path}`, body ?? {}),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['monthly-contracts'] });
+      Toast.show({ type: 'success', text1: successText });
+    },
+    onError: (err: any) => monthlyErr(err, 'Thao tác thất bại'),
+  });
+}
+
+export function useRespondMonthlyContract() {
+  return useMonthlyContractAction('Đã phản hồi hợp đồng');
+}
+
+export function useCancelMonthlyContract() {
+  return useMonthlyContractAction('Đã hủy hợp đồng');
+}
+
+export function useEndMonthlyContract() {
+  return useMonthlyContractAction('Đã kết thúc hợp đồng');
+}
+
+export function useMonthlyAttendance(id?: string, month?: string) {
+  return useQuery({
+    queryKey: ['monthly-contracts', id, 'attendance', month],
+    queryFn: async () => {
+      const { data } = await apiClient.get(`/monthly-contracts/${id}/attendance`, {
+        params: { month },
+      });
+      return data.data as {
+        contract_id: string;
+        month: string;
+        scheduled_dates: string[];
+        records: AttendanceRecordItem[];
+        today: string;
+      };
+    },
+    enabled: !!id,
+  });
+}
+
+export function useCheckinMonthly() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => apiClient.post(`/monthly-contracts/${id}/attendance/checkin`),
+    onSuccess: (_, id) => {
+      qc.invalidateQueries({ queryKey: ['monthly-contracts', id] });
+      qc.invalidateQueries({ queryKey: ['monthly-contracts'] });
+      Toast.show({ type: 'success', text1: 'Đã điểm danh hôm nay 🟢' });
+    },
+    onError: (err: any) => monthlyErr(err, 'Điểm danh thất bại'),
+  });
+}
+
+export function useConfirmAttendance() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, date, approve }: { id: string; date: string; approve: boolean }) =>
+      apiClient.patch(`/monthly-contracts/${id}/attendance/${date}/confirm`, { approve }),
+    onSuccess: (_, vars) => {
+      qc.invalidateQueries({ queryKey: ['monthly-contracts', vars.id] });
+      Toast.show({ type: 'success', text1: 'Đã cập nhật điểm danh' });
+    },
+    onError: (err: any) => monthlyErr(err, 'Cập nhật điểm danh thất bại'),
+  });
+}
+
+export function useMonthlyLeaveRequests(id?: string) {
+  return useQuery({
+    queryKey: ['monthly-contracts', id, 'leave-requests'],
+    queryFn: async () => {
+      const { data } = await apiClient.get(`/monthly-contracts/${id}/leave-requests`);
+      return data.data as LeaveRequestItem[];
+    },
+    enabled: !!id,
+  });
+}
+
+export function useRequestLeave() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, date, reason }: { id: string; date: string; reason: string }) =>
+      apiClient.post(`/monthly-contracts/${id}/leave-requests`, { date, reason }),
+    onSuccess: (_, vars) => {
+      qc.invalidateQueries({ queryKey: ['monthly-contracts', vars.id, 'leave-requests'] });
+      Toast.show({ type: 'success', text1: 'Đã gửi đơn xin nghỉ 🌴' });
+    },
+    onError: (err: any) => monthlyErr(err, 'Gửi đơn xin nghỉ thất bại'),
+  });
+}
+
+export function useRespondLeave() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, leaveId, approve }: { id: string; leaveId: string; approve: boolean }) =>
+      apiClient.patch(`/monthly-contracts/${id}/leave-requests/${leaveId}/respond`, { approve }),
+    onSuccess: (_, vars) => {
+      qc.invalidateQueries({ queryKey: ['monthly-contracts', vars.id, 'leave-requests'] });
+      qc.invalidateQueries({ queryKey: ['monthly-contracts', vars.id, 'attendance'] });
+      Toast.show({ type: 'success', text1: 'Đã xử lý đơn xin nghỉ' });
+    },
+    onError: (err: any) => monthlyErr(err, 'Xử lý đơn xin nghỉ thất bại'),
+  });
+}
+
+export function useMonthlySettlement(id?: string, month?: string) {
+  return useQuery({
+    queryKey: ['monthly-contracts', id, 'settlement', month],
+    queryFn: async () => {
+      const { data } = await apiClient.get(`/monthly-contracts/${id}/settlement`, {
+        params: { month },
+      });
+      return data.data as SettlementSummary;
+    },
+    enabled: !!id,
+  });
+}
+
+export function useSettleMonth() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, month }: { id: string; month: string }) =>
+      apiClient.post(`/monthly-contracts/${id}/settlement/settle`, { month }),
+    onSuccess: (_, vars) => {
+      qc.invalidateQueries({ queryKey: ['monthly-contracts', vars.id, 'settlement'] });
+      qc.invalidateQueries({ queryKey: ['monthly-contracts'] });
+      qc.invalidateQueries({ queryKey: ['wallet'] });
+      Toast.show({
+        type: 'success',
+        text1: 'Đã chốt lương tháng 💰',
+        text2: 'Tiền đã được cộng vào ví của thợ',
+      });
+    },
+    onError: (err: any) => monthlyErr(err, 'Chốt lương thất bại'),
+  });
+}
+
 // ─── Vouchers (Roadmap Phase 1 — Mã giảm giá) ────────────────────────────────
 
 export interface VoucherPreview {

@@ -32,6 +32,7 @@ const MENU_SECTIONS = [
       { icon: Bell, label: 'Cài đặt thông báo', route: '/notifications' },
       { icon: Heart, label: 'Thợ yêu thích', route: '/favorites' },
       { icon: CalendarClock, label: 'Gói định kỳ của tôi', route: '/recurring-plans' },
+      { icon: CalendarClock, label: 'Hợp đồng theo tháng', route: '/monthly-contracts' },
     ],
   },
   {
