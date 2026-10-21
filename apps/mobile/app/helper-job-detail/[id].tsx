@@ -633,6 +633,24 @@ export default function HelperJobDetailScreen() {
           </Card>
         )}
 
+        {/* ── Hồ sơ tranh chấp (Roadmap Phase 1) ─────────────────────── */}
+        {(job.status === 'disputed' || (job as any).dispute_resolution) && (
+          <Card style={{ gap: 10, backgroundColor: '#FEF2F2', borderColor: '#FECACA', borderWidth: 1.5 }}>
+            <Text style={{ fontWeight: '800', fontSize: 15, color: '#991B1B' }}>
+              ⚖️ Đơn đang có tranh chấp
+            </Text>
+            <Text style={{ fontSize: 13, color: COLORS.gray[700], lineHeight: 19 }}>
+              Xem toàn bộ diễn biến hồ sơ, bổ sung bằng chứng cho Admin và kháng cáo nếu phán
+              quyết chưa thỏa đáng.
+            </Text>
+            <Button
+              title="Xem hồ sơ tranh chấp"
+              variant="outline"
+              onPress={() => router.push({ pathname: '/dispute/[jobId]', params: { jobId: id } })}
+            />
+          </Card>
+        )}
+
         {/* ── Execution steps (active job) ──────────────────────────── */}
         {isMyActiveJob && (
           <Card style={{ gap: 16 }}>
