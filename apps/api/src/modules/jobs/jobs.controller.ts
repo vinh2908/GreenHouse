@@ -125,6 +125,15 @@ export class JobsController {
     return this.jobsService.getHelperJobs(user.sub, status);
   }
 
+  // ─── Bản đồ nhu cầu (Roadmap Phase 2 — Feature 15) ──────────────────────
+  // LƯU Ý: route tĩnh 'demand-map' phải đứng trước ':jobId'
+
+  @Get('demand-map')
+  @ApiOperation({ summary: '[Helper] Bản đồ nhu cầu: số đơn đang mở theo quận/thành phố' })
+  async getDemandMap() {
+    return this.jobsService.getDemandMap();
+  }
+
   // ─── Team jobs / Đơn nhóm (Roadmap Phase 1 — Feature 5) ─────────────────
   // LƯU Ý: route 'team/invitations' phải đứng trước ':jobId'
 
