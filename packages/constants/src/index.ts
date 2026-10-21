@@ -72,6 +72,15 @@ export const JOB_OPEN_EXPIRY_HOURS = 72; // Job tự đóng nhận báo giá sau
 export const JOB_MAX_QUOTES = 20; // Tối đa 20 báo giá / 1 job
 export const JOB_MIN_QUOTES_BEFORE_SELECT = 1; // Customer cần ít nhất 1 báo giá để chọn
 
+// ─── Roadmap Phase 1: Private Offer / Recurring / Dispute / Team ─────────────
+
+export const PRIVATE_OFFER_DEFAULT_HOURS = 24; // Ưu tiên gửi riêng cho thợ yêu thích (mặc định 24h)
+export const PRIVATE_OFFER_MAX_HOURS = 72;
+export const RECURRING_WINDOW_DAYS = 14; // Tự sinh job trước tối đa 14 ngày (rolling window)
+export const DISPUTE_APPEAL_WINDOW_HOURS = 72; // Kháng cáo trong 72h sau phân xử (env ghi đè được)
+export const TEAM_MIN_HELPERS = 2; // Đơn nhóm: tối thiểu 2 thợ
+export const TEAM_MAX_HELPERS = 4; // Đơn nhóm: tối đa 4 thợ
+
 // ─── Platform Fee (theo model Vua Thợ: 10-25% tùy ngành) ─────────────────────
 
 export const PLATFORM_FEE_BY_SERVICE = {
@@ -126,6 +135,13 @@ export const SOCKET_EVENTS = {
 
   // Notification
   NOTIFICATION_NEW: 'notification:new',
+
+  // Roadmap Phase 1
+  JOB_PRIVATE_OFFER: 'job:private_offer', // Job được gửi riêng cho thợ yêu thích
+  TEAM_INVITATION: 'team:invitation', // Lời mời tham gia đơn nhóm
+  TEAM_UPDATED: 'team:updated', // Đội nhóm của job thay đổi
+  DISPUTE_UPDATED: 'dispute:updated', // Hồ sơ tranh chấp có cập nhật
+  CALL_INCOMING: 'call:incoming', // Cuộc gọi thoại trong app đến
 } as const;
 
 // ─── Cache Keys ────────────────────────────────────────────────────────────────

@@ -18,6 +18,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
 import { CustomersModule } from './modules/customers/customers.module';
 import { HelpersModule } from './modules/helpers/helpers.module';
+import { FavoritesModule } from './modules/favorites/favorites.module';
 
 // ─── Phase 4: Services ────────────────────────────────────────────────────────
 import { ServicesModule } from './modules/services/services.module';
@@ -83,6 +84,7 @@ import { UploadsModule } from './modules/uploads/uploads.module';
     UsersModule,
     CustomersModule,
     HelpersModule,
+    FavoritesModule,
     ServicesModule,
     JobsModule,
     NotificationsModule,

@@ -797,6 +797,118 @@ export function useAiSupport() {
   });
 }
 
+// ─── Favorites (Roadmap Phase 1 — Thợ yêu thích) ─────────────────────────────
+
+export interface FavoriteHelperItem {
+  _id: string;
+  helper_id: string | { _id: string; full_name?: string; phone?: string; avatar?: string };
+  helper_profile?: {
+    rating?: number;
+    total_reviews?: number;
+    completed_jobs?: number;
+    years_experience?: number;
+    verification_status?: string;
+    status?: string;
+  } | null;
+  created_at: string;
+}
+
+export function useFavorites() {
+  return useQuery({
+    queryKey: ['favorites'],
+    queryFn: async () => {
+      const { data } = await apiClient.get('/customers/me/favorites');
+      return data.data as FavoriteHelperItem[];
+    },
+  });
+}
+
+export function useAddFavorite() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (helperId: string) =>
+      apiClient.post('/customers/me/favorites', { helper_id: helperId }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['favorites'] });
+      Toast.show({ type: 'success', text1: 'Đã thêm vào thợ yêu thích ❤️' });
+    },
+    onError: (err: any) => {
+      const msg = err?.response?.data?.message ?? 'Không thể thêm thợ yêu thích';
+      Toast.show({ type: 'error', text1: typeof msg === 'string' ? msg : 'Đã có lỗi xảy ra' });
+    },
+  });
+}
+
+export function useRemoveFavorite() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (helperId: string) => apiClient.delete(`/customers/me/favorites/${helperId}`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['favorites'] });
+      Toast.show({ type: 'success', text1: 'Đã bỏ khỏi danh sách yêu thích' });
+    },
+  });
+}
+
+export function useLastCompletedJobWithHelper(helperId?: string) {
+  return useQuery({
+    queryKey: ['favorites', 'last-job', helperId],
+    queryFn: async () => {
+      const { data } = await apiClient.get(
+        `/customers/me/favorites/${helperId}/last-completed-job`,
+      );
+      return data.data;
+    },
+    enabled: !!helperId,
+    retry: false,
+  });
+}
+
+export function useRebookJob() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      sourceJobId,
+      ...dto
+    }: {
+      sourceJobId: string;
+      preferred_date?: string;
+      preferred_time_start?: string;
+      private_offer?: boolean;
+      private_offer_hours?: number;
+    }) => apiClient.post(`/jobs/rebook/${sourceJobId}`, dto),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['jobs', 'my'] });
+      qc.invalidateQueries({ queryKey: ['jobs'] });
+      Toast.show({
+        type: 'success',
+        text1: 'Đã đặt lại việc thành công!',
+        text2: 'Đơn mới đang ưu tiên cho thợ quen của bạn',
+      });
+    },
+    onError: (err: any) => {
+      const msg = err?.response?.data?.message ?? 'Đặt lại thất bại';
+      Toast.show({ type: 'error', text1: typeof msg === 'string' ? msg : 'Đặt lại thất bại' });
+    },
+  });
+}
+
+export function useReleasePrivateOffer() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (jobId: string) => apiClient.patch(`/jobs/${jobId}/release-offer`),
+    onSuccess: (_, jobId) => {
+      qc.invalidateQueries({ queryKey: ['job', jobId] });
+      qc.invalidateQueries({ queryKey: ['jobs', 'my'] });
+      Toast.show({
+        type: 'success',
+        text1: 'Đã mở công khai đơn hàng',
+        text2: 'Tất cả thợ gần bạn giờ có thể gửi báo giá',
+      });
+    },
+  });
+}
+
 // ─── Reviews ───────────────────────────────────────────────────────────────────
 
 export function useCreateReview() {

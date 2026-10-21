@@ -15,6 +15,7 @@ import { JobsService } from './jobs.service';
 import {
   CreateJobDto,
   CreateSosJobDto,
+  RebookJobDto,
   CreateQuoteDto,
   SelectQuoteDto,
   CompleteJobDto,
@@ -42,6 +43,27 @@ export class JobsController {
   @ApiOperation({ summary: '[Customer] Đăng yêu cầu công việc' })
   async createJob(@CurrentUser() user: { sub: string }, @Body() dto: CreateJobDto) {
     return this.jobsService.createJob(user.sub, dto);
+  }
+
+  // ─── Customer: Đặt lại từ đơn đã hoàn thành ───────────────────────────────
+
+  @Post('rebook/:sourceJobId')
+  @ApiOperation({ summary: '[Customer] Đặt lại việc từ đơn đã hoàn thành (1 chạm)' })
+  async rebookJob(
+    @CurrentUser() user: { sub: string },
+    @Param('sourceJobId') sourceJobId: string,
+    @Body() dto: RebookJobDto,
+  ) {
+    return this.jobsService.rebookJob(user.sub, sourceJobId, dto);
+  }
+
+  // ─── Customer: Mở công khai đơn đang gửi riêng ────────────────────────────
+
+  @Patch(':jobId/release-offer')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: '[Customer] Mở công khai đơn đang ưu tiên cho thợ yêu thích' })
+  async releaseOffer(@CurrentUser() user: { sub: string }, @Param('jobId') jobId: string) {
+    return this.jobsService.releasePrivateOffer(user.sub, jobId);
   }
 
   // ─── Customer: Create SOS Emergency Job ───────────────────────────────────

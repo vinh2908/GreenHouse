@@ -9,6 +9,7 @@ import { HelperProfile, HelperProfileSchema } from '../helpers/schemas/helper-pr
 import { ChatModule } from '../chat/chat.module';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { PaymentsModule } from '../payments/payments.module';
+import { FavoritesModule } from '../favorites/favorites.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { PaymentsModule } from '../payments/payments.module';
     ChatModule,
     NotificationsModule,
     PaymentsModule,
+    FavoritesModule,
   ],
   controllers: [JobsController],
   providers: [JobsService, RoutingService],
