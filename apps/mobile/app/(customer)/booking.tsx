@@ -9,6 +9,7 @@ import {
   Platform,
   ActivityIndicator,
   Image,
+  Switch,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -30,9 +31,17 @@ import {
 import Toast from 'react-native-toast-message';
 import dayjs from 'dayjs';
 import { useAuthStore } from '@/stores/auth.store';
-import { useServices, useCreateJob, useAnalyzeBooking, useEstimatePrice } from '@/hooks/use-api';
+import {
+  useServices,
+  useCreateJob,
+  useAnalyzeBooking,
+  useEstimatePrice,
+  useCreateRecurringPlan,
+} from '@/hooks/use-api';
 import { locationService, OsmPlace } from '@/services/location.service';
 import { Button, Input, Card, COLORS } from '@/components/ui';
+import { VoucherInput } from '@/components/common/voucher-input';
+import type { VoucherPreview } from '@/hooks/use-api';
 
 const STEPS = ['Dịch vụ', 'Địa chỉ', 'Lịch hẹn', 'Mô tả', 'Xác nhận'];
 
@@ -144,11 +153,31 @@ const DEFAULT_SERVICES = [
 
 export default function BookingScreen() {
   const router = useRouter();
-  const params = useLocalSearchParams<{ service_id?: string; service_slug?: string }>();
+  const params = useLocalSearchParams<{
+    service_id?: string;
+    service_slug?: string;
+    favorite_helper_id?: string;
+    favorite_helper_name?: string;
+    prefill_title?: string;
+    prefill_description?: string;
+    package_mode?: string;
+  }>();
   const { data: services } = useServices();
   const createJob = useCreateJob();
+  const createRecurringPlan = useCreateRecurringPlan();
   const analyzeAI = useAnalyzeBooking();
   const estimatePrice = useEstimatePrice();
+
+  // ── Roadmap Phase 1: gửi riêng cho thợ yêu thích + gói định kỳ ────────────
+  const [offerToFavorite, setOfferToFavorite] = useState(!!params.favorite_helper_id);
+  const [isRecurring, setIsRecurring] = useState(false);
+  const [recurringFreq, setRecurringFreq] = useState<'weekly' | 'monthly'>('weekly');
+  const [recurringWeekdays, setRecurringWeekdays] = useState<number[]>([
+    dayjs().add(1, 'day').day(),
+  ]);
+  const [recurringMonthDay, setRecurringMonthDay] = useState(dayjs().add(1, 'day').date());
+  const [voucherCode, setVoucherCode] = useState('');
+  const [voucherPreview, setVoucherPreview] = useState<VoucherPreview | null>(null);
 
   const [step, setStep] = useState(params.service_id ? 1 : 0);
   const [selectedService, setSelectedService] = useState<string>(params.service_id ?? '');
@@ -196,6 +225,10 @@ export default function BookingScreen() {
       setSelectedService('');
       setStep(0);
     }
+    // Đặt lại / đặt từ thợ yêu thích: điền sẵn tiêu đề + mô tả của đơn cũ
+    if (params.prefill_title) setTitle(params.prefill_title);
+    if (params.prefill_description) setDescription(params.prefill_description);
+    if (params.package_mode === 'recurring') setIsRecurring(true);
   }, [params.service_id, params.service_slug]);
 
   const resetForm = () => {
@@ -218,6 +251,10 @@ export default function BookingScreen() {
     setAiInput('');
     setAiSuggestion(null);
     setPriceEstimate(null);
+    setVoucherCode('');
+    setVoucherPreview(null);
+    setIsRecurring(false);
+    setOfferToFavorite(false);
     setSearchQuery('');
     setSearchResults([]);
   };
@@ -448,23 +485,50 @@ export default function BookingScreen() {
       return;
     }
 
+    const jobAddress = {
+      full_address: address.full_address.trim(),
+      ward: address.ward?.trim() || undefined,
+      district: address.district.trim(),
+      city: address.city?.trim() || 'Hồ Chí Minh',
+      notes: address.notes?.trim() || undefined,
+      location: { type: 'Point', coordinates: address.coordinates || [106.6983, 10.7725] },
+    };
+
     try {
+      // ── Gói định kỳ: tạo kế hoạch lặp thay vì 1 đơn lẻ ─────────────────────
+      if (isRecurring) {
+        await createRecurringPlan.mutateAsync({
+          service_id: currentServiceId,
+          title: title.trim(),
+          description: description.trim(),
+          photos: photos.length > 0 ? photos : undefined,
+          address: jobAddress,
+          frequency: recurringFreq,
+          weekdays: recurringFreq === 'weekly' ? recurringWeekdays : undefined,
+          month_days: recurringFreq === 'monthly' ? [recurringMonthDay] : undefined,
+          time_start: timeSlot,
+          duration_hours: duration,
+          start_date: date,
+          preferred_helper_id:
+            offerToFavorite && params.favorite_helper_id ? params.favorite_helper_id : undefined,
+        });
+        resetForm();
+        router.replace('/recurring-plans');
+        return;
+      }
+
       await createJob.mutateAsync({
         service_id: currentServiceId,
         title: title.trim(),
         description: description.trim(),
         photos: photos.length > 0 ? photos : undefined,
-        address: {
-          full_address: address.full_address.trim(),
-          ward: address.ward?.trim() || undefined,
-          district: address.district.trim(),
-          city: address.city?.trim() || 'Hồ Chí Minh',
-          notes: address.notes?.trim() || undefined,
-          location: { type: 'Point', coordinates: address.coordinates || [106.6983, 10.7725] },
-        },
+        address: jobAddress,
         preferred_date: date,
         preferred_time_start: timeSlot,
         is_flexible_time: false,
+        private_offer_helper_id:
+          offerToFavorite && params.favorite_helper_id ? params.favorite_helper_id : undefined,
+        voucher_code: voucherPreview ? voucherCode : undefined,
       });
       resetForm();
       router.replace('/(customer)/jobs');
@@ -1328,6 +1392,169 @@ export default function BookingScreen() {
                   & giá cả trước khi chọn thợ.
                 </Text>
               </Card>
+
+              {/* ── Ưu tiên gửi riêng cho thợ yêu thích ─────────────────── */}
+              {params.favorite_helper_id && (
+                <Card style={{ gap: 8 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                    <Text style={{ fontSize: 20 }}>⭐</Text>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontWeight: '800', fontSize: 15, color: COLORS.gray[900] }}>
+                        Gửi riêng cho {params.favorite_helper_name ?? 'thợ yêu thích'}
+                      </Text>
+                      <Text style={{ fontSize: 12.5, color: COLORS.gray[600], lineHeight: 17 }}>
+                        Đơn chỉ hiển thị với thợ này trong 24 giờ đầu. Hết thời gian chờ, đơn sẽ mở
+                        công khai cho mọi thợ nếu thợ chưa báo giá.
+                      </Text>
+                    </View>
+                    <Switch
+                      value={offerToFavorite}
+                      onValueChange={setOfferToFavorite}
+                      trackColor={{ true: COLORS.primary, false: COLORS.gray[300] }}
+                    />
+                  </View>
+                </Card>
+              )}
+
+              {/* ── Gói định kỳ ─────────────────────────────────────────── */}
+              <Card style={{ gap: 10 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                  <Text style={{ fontSize: 20 }}>🔁</Text>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontWeight: '800', fontSize: 15, color: COLORS.gray[900] }}>
+                      Đặt thành gói định kỳ
+                    </Text>
+                    <Text style={{ fontSize: 12.5, color: COLORS.gray[600], lineHeight: 17 }}>
+                      Hệ thống tự tạo đơn theo lịch lặp — bạn không cần đăng lại mỗi lần.
+                    </Text>
+                  </View>
+                  <Switch
+                    value={isRecurring}
+                    onValueChange={setIsRecurring}
+                    trackColor={{ true: COLORS.primary, false: COLORS.gray[300] }}
+                  />
+                </View>
+
+                {isRecurring && (
+                  <View style={{ gap: 10 }}>
+                    <View style={{ flexDirection: 'row', gap: 8 }}>
+                      {(
+                        [
+                          { key: 'weekly', label: 'Hàng tuần' },
+                          { key: 'monthly', label: 'Hàng tháng' },
+                        ] as const
+                      ).map(opt => (
+                        <TouchableOpacity
+                          key={opt.key}
+                          activeOpacity={0.8}
+                          onPress={() => setRecurringFreq(opt.key)}
+                          style={{
+                            paddingHorizontal: 14,
+                            paddingVertical: 8,
+                            borderRadius: 999,
+                            backgroundColor:
+                              recurringFreq === opt.key ? COLORS.primary : COLORS.gray[100],
+                          }}
+                        >
+                          <Text
+                            style={{
+                              fontWeight: '700',
+                              fontSize: 13,
+                              color: recurringFreq === opt.key ? '#fff' : COLORS.gray[700],
+                            }}
+                          >
+                            {opt.label}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+
+                    {recurringFreq === 'weekly' ? (
+                      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                        {['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'].map((label, idx) => {
+                          const active = recurringWeekdays.includes(idx);
+                          return (
+                            <TouchableOpacity
+                              key={label}
+                              activeOpacity={0.8}
+                              onPress={() =>
+                                setRecurringWeekdays(prev =>
+                                  prev.includes(idx)
+                                    ? prev.filter(d => d !== idx)
+                                    : [...prev, idx].sort(),
+                                )
+                              }
+                              style={{
+                                width: 42,
+                                height: 42,
+                                borderRadius: 21,
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                backgroundColor: active ? COLORS.primary : COLORS.gray[100],
+                              }}
+                            >
+                              <Text
+                                style={{
+                                  fontWeight: '700',
+                                  fontSize: 13,
+                                  color: active ? '#fff' : COLORS.gray[700],
+                                }}
+                              >
+                                {label}
+                              </Text>
+                            </TouchableOpacity>
+                          );
+                        })}
+                      </View>
+                    ) : (
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                        <Text style={{ fontSize: 13.5, color: COLORS.gray[700] }}>Vào ngày</Text>
+                        <TextInput
+                          value={String(recurringMonthDay)}
+                          onChangeText={v => {
+                            const n = parseInt(v.replace(/\D/g, ''), 10);
+                            setRecurringMonthDay(
+                              Number.isFinite(n) ? Math.min(31, Math.max(1, n)) : 1,
+                            );
+                          }}
+                          keyboardType="number-pad"
+                          style={{
+                            width: 56,
+                            borderWidth: 1,
+                            borderColor: COLORS.gray[200],
+                            borderRadius: 10,
+                            paddingHorizontal: 10,
+                            paddingVertical: 8,
+                            fontSize: 14,
+                            fontWeight: '700',
+                            textAlign: 'center',
+                          }}
+                        />
+                        <Text style={{ fontSize: 13.5, color: COLORS.gray[700] }}>hàng tháng</Text>
+                      </View>
+                    )}
+                    <Text style={{ fontSize: 12, color: COLORS.gray[500], lineHeight: 17 }}>
+                      Buổi đầu tiên: {dayjs(date).format('DD/MM/YYYY')} lúc {timeSlot} ({duration}{' '}
+                      giờ). Quản lý, tạm dừng hoặc bỏ qua từng buổi trong mục "Gói định kỳ của tôi".
+                    </Text>
+                  </View>
+                )}
+              </Card>
+
+              {/* ── Mã giảm giá (Roadmap Phase 1 — Voucher) ──────────────── */}
+              <VoucherInput
+                estimatedAmount={priceEstimate?.price_max ?? selectedServiceData?.base_price_min}
+                value={voucherCode}
+                onApplied={(code, preview) => {
+                  setVoucherCode(code);
+                  setVoucherPreview(preview);
+                }}
+                onCleared={() => {
+                  setVoucherCode('');
+                  setVoucherPreview(null);
+                }}
+                preview={voucherPreview}
+              />
             </View>
           )}
         </ScrollView>
