@@ -217,6 +217,31 @@ export default function HelpCenterScreen() {
           </View>
         </Card>
 
+        {/* ── Live chat với đội hỗ trợ (Feature 18) ─────────────────────── */}
+        <TouchableOpacity
+          activeOpacity={0.85}
+          onPress={() => router.push('/support-chat')}
+          style={{
+            backgroundColor: COLORS.primary,
+            borderRadius: 16,
+            padding: 16,
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 12,
+          }}
+        >
+          <Text style={{ fontSize: 26 }}>💬</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={{ fontSize: 15.5, fontWeight: '800', color: '#FFF' }}>
+              Chat với đội hỗ trợ
+            </Text>
+            <Text style={{ fontSize: 12.5, color: 'rgba(255,255,255,0.85)', marginTop: 2 }}>
+              Nhân viên thật phản hồi trực tiếp trong app, 24/7
+            </Text>
+          </View>
+          <Text style={{ fontSize: 18, color: '#FFF', fontWeight: '800' }}>→</Text>
+        </TouchableOpacity>
+
         {/* ── 2. AI Support Assistant Card ─────────────────────────────── */}
         <Card style={{ padding: 16, gap: 12, borderColor: '#FED7AA', borderWidth: 1.5 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>

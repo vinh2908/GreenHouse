@@ -154,6 +154,7 @@ export const SOCKET_EVENTS = {
   TEAM_UPDATED: 'team:updated', // Đội nhóm của job thay đổi
   DISPUTE_UPDATED: 'dispute:updated', // Hồ sơ tranh chấp có cập nhật
   CALL_INCOMING: 'call:incoming', // Cuộc gọi thoại trong app đến
+  SUPPORT_MESSAGE: 'support:message', // Tin nhắn hỗ trợ trực tuyến (Feature 18)
 } as const;
 
 // ─── Cache Keys ────────────────────────────────────────────────────────────────
@@ -198,6 +199,7 @@ export const NOTIFICATION_TYPES = {
   REVIEW_RECEIVED: 'review_received',
   NEW_MESSAGE: 'new_message',
   PROMOTION: 'promotion',
+  SUPPORT_REPLY: 'support_reply', // Đội hỗ trợ phản hồi live chat (Feature 18)
   SYSTEM: 'system',
 } as const;
 

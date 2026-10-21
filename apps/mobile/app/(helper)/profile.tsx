@@ -314,6 +314,11 @@ export default function HelperProfileScreen() {
               { icon: FileText, label: 'Hồ sơ nghề nghiệp & Kỹ năng', route: '/edit-profile' },
               {
                 icon: HelpCircle,
+                label: '💬 Hỗ trợ trực tuyến',
+                route: '/support-chat',
+              },
+              {
+                icon: HelpCircle,
                 label: 'Trung tâm trợ giúp Vua Thợ (24/7)',
                 route: '/help-center',
               },

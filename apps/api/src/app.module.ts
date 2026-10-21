@@ -26,6 +26,7 @@ import { InvoicesModule } from './modules/invoices/invoices.module';
 import { MonthlyContractsModule } from './modules/monthly-contracts/monthly-contracts.module';
 import { ClaimsModule } from './modules/claims/claims.module';
 import { LoyaltyModule } from './modules/loyalty/loyalty.module';
+import { SupportModule } from './modules/support/support.module';
 
 // ─── Phase 4: Services ────────────────────────────────────────────────────────
 import { ServicesModule } from './modules/services/services.module';
@@ -99,6 +100,7 @@ import { UploadsModule } from './modules/uploads/uploads.module';
     MonthlyContractsModule,
     ClaimsModule,
     LoyaltyModule,
+    SupportModule,
     ServicesModule,
     JobsModule,
     NotificationsModule,
