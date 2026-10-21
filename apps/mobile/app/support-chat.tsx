@@ -25,6 +25,7 @@ import {
 } from '@/hooks/use-api';
 import { useSupportSocket } from '@/hooks/use-socket';
 import { SUPPORT_FAQS } from '@/components/common/support-faq';
+import { useTranslation } from '@/hooks/use-i18n';
 import { COLORS, LoadingSpinner } from '@/components/ui';
 
 // Bong bóng cục bộ (FAQ tĩnh, không lưu server)
@@ -41,6 +42,7 @@ type ThreadItem =
 
 export default function SupportChatScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const currentUser = useAuthStore(s => s.user);
   const [text, setText] = useState('');
@@ -218,10 +220,10 @@ export default function SupportChatScreen() {
         </View>
         <View style={{ flex: 1 }}>
           <Text style={{ fontWeight: '800', fontSize: 15, color: COLORS.gray[900] }}>
-            Đội hỗ trợ Green House
+            {t('support_title')}
           </Text>
           <Text style={{ fontSize: 11.5, color: COLORS.success, fontWeight: '700' }}>
-            ● Trực tuyến 24/7
+            {t('support_online')}
           </Text>
         </View>
       </View>
@@ -245,7 +247,7 @@ export default function SupportChatScreen() {
             ListHeaderComponent={
               <View style={{ gap: 8, marginBottom: 4 }}>
                 <Text style={{ fontSize: 14, fontWeight: '800', color: COLORS.gray[900] }}>
-                  Câu hỏi thường gặp — chạm để xem trả lời ngay
+                  {t('support_faq_heading')}
                 </Text>
                 {SUPPORT_FAQS.map(faq => (
                   <TouchableOpacity
@@ -277,8 +279,7 @@ export default function SupportChatScreen() {
                     }}
                   >
                     <Text style={{ fontSize: 13, color: '#92400E', lineHeight: 19 }}>
-                      Hội thoại này đã được đội hỗ trợ đóng. Gửi tin nhắn mới sẽ mở một hội thoại
-                      hỗ trợ mới.
+                      {t('support_closed_notice')}
                     </Text>
                   </View>
                 )}
@@ -287,7 +288,7 @@ export default function SupportChatScreen() {
             ListEmptyComponent={
               <View style={{ alignItems: 'center', paddingVertical: 24, gap: 8 }}>
                 <Text style={{ fontSize: 15, fontWeight: '800', color: COLORS.gray[800] }}>
-                  Xin chào {currentUser?.full_name ?? 'bạn'} 👋
+                  {t('support_greeting', { name: currentUser?.full_name ?? 'bạn' })}
                 </Text>
                 <Text
                   style={{
@@ -298,8 +299,7 @@ export default function SupportChatScreen() {
                     lineHeight: 19,
                   }}
                 >
-                  Chọn một câu hỏi thường gặp ở trên hoặc nhắn trực tiếp — đội hỗ trợ sẽ phản hồi
-                  ngay trong mục này.
+                  {t('support_empty_sub')}
                 </Text>
               </View>
             }
@@ -324,7 +324,7 @@ export default function SupportChatScreen() {
                         <Text
                           style={{ fontSize: 12.5, fontWeight: '700', color: COLORS.primaryDark }}
                         >
-                          Gửi câu này cho đội hỗ trợ
+                          {t('support_send_question')}
                         </Text>
                       </TouchableOpacity>
                     ) : (
@@ -336,7 +336,7 @@ export default function SupportChatScreen() {
                           fontWeight: '600',
                         }}
                       >
-                        ✓ Đã gửi cho đội hỗ trợ
+                        {t('support_sent')}
                       </Text>
                     )}
                   </View>
@@ -377,7 +377,7 @@ export default function SupportChatScreen() {
                 backgroundColor: COLORS.gray[50],
                 color: COLORS.gray[900],
               }}
-              placeholder="Nhắn cho đội hỗ trợ..."
+              placeholder={t('support_placeholder')}
               value={text}
               onChangeText={setText}
               multiline
