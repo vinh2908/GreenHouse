@@ -16,6 +16,7 @@ import {
   useAcceptFixedPrice,
 } from '@/hooks/use-api';
 import { Button, Card, JobStatusBadge, Badge, COLORS, EmptyState } from '@/components/ui';
+import { OfflineBanner } from '@/components/common/offline-banner';
 
 dayjs.extend(relativeTime);
 dayjs.locale('vi');
@@ -69,6 +70,7 @@ export default function HelperJobsScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: '#F8F9FA' }}>
+      <OfflineBanner />
       {/* Header */}
       <View
         style={{

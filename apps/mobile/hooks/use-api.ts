@@ -3,6 +3,17 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import apiClient from '@/services/api-client';
 import { uploadFile, uploadFiles } from '@/services/upload.service';
 import { syncHelperLocation } from '@/hooks/use-helper-location-sync';
+import {
+  cacheActiveJobs,
+  cacheJobDetail,
+  enqueueAction,
+  getCachedActiveJobs,
+  getCachedJobDetail,
+  isNetworkError,
+  QUEUED_OFFLINE,
+  toastQueuedOffline,
+} from '@/services/offline.service';
+import { useOfflineStore } from '@/stores/offline.store';
 import Toast from 'react-native-toast-message';
 
 // ─── Auth ──────────────────────────────────────────────────────────────────────
@@ -126,8 +137,23 @@ export function useJobDetail(jobId?: string) {
   return useQuery({
     queryKey: ['job', jobId],
     queryFn: async () => {
-      const { data } = await apiClient.get(`/jobs/${jobId}`);
-      return data.data;
+      try {
+        const { data } = await apiClient.get(`/jobs/${jobId}`);
+        // Feature 16: lưu cache chi tiết đơn để xem offline
+        void cacheJobDetail(data.data);
+        useOfflineStore.getState().setFromCache(false);
+        return data.data;
+      } catch (err) {
+        // Mất mạng → trả bản cache (nếu có) thay vì màn hình lỗi
+        if (isNetworkError(err) && jobId) {
+          const cached = await getCachedJobDetail(jobId);
+          if (cached) {
+            useOfflineStore.getState().setFromCache(true);
+            return cached;
+          }
+        }
+        throw err;
+      }
     },
     enabled: !!jobId,
   });
@@ -456,8 +482,27 @@ export function useHelperJobs(status?: string) {
   return useQuery({
     queryKey: ['jobs', 'helper', status],
     queryFn: async () => {
-      const { data } = await apiClient.get('/jobs/helper/my', { params: { status } });
-      return data.data;
+      try {
+        const { data } = await apiClient.get('/jobs/helper/my', { params: { status } });
+        // Feature 16: snapshot danh sách đơn đang làm (tab "Đang thực hiện")
+        // làm cache offline chính của thợ.
+        if (!status || status.includes('confirmed')) {
+          void cacheActiveJobs(data.data);
+        }
+        useOfflineStore.getState().setFromCache(false);
+        return data.data;
+      } catch (err) {
+        // Chỉ fallback cho đúng danh sách đã cache (đơn đang làm) — các tab
+        // lọc khác (lịch sử...) không có cache riêng nên giữ nguyên lỗi.
+        if (isNetworkError(err) && (!status || status.includes('confirmed'))) {
+          const cached = await getCachedActiveJobs();
+          if (cached) {
+            useOfflineStore.getState().setFromCache(true);
+            return cached;
+          }
+        }
+        throw err;
+      }
     },
   });
 }
@@ -489,7 +534,19 @@ export function useSubmitQuote() {
 export function useHelperOnTheWay() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (jobId: string) => apiClient.patch(`/jobs/${jobId}/on-the-way`),
+    mutationFn: async (jobId: string) => {
+      try {
+        return await apiClient.patch(`/jobs/${jobId}/on-the-way`);
+      } catch (err) {
+        // Feature 16: mất mạng → xếp hàng offline, trả sentinel thay vì ném lỗi
+        if (isNetworkError(err)) {
+          await enqueueAction('on_the_way', jobId);
+          toastQueuedOffline();
+          return QUEUED_OFFLINE as unknown as Awaited<ReturnType<typeof apiClient.patch>>;
+        }
+        throw err;
+      }
+    },
     onSuccess: (_, jobId) => {
       qc.invalidateQueries({ queryKey: ['job', jobId] });
       qc.invalidateQueries({ queryKey: ['jobs'] });
@@ -500,7 +557,18 @@ export function useHelperOnTheWay() {
 export function useHelperArrived() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (jobId: string) => apiClient.patch(`/jobs/${jobId}/arrived`),
+    mutationFn: async (jobId: string) => {
+      try {
+        return await apiClient.patch(`/jobs/${jobId}/arrived`);
+      } catch (err) {
+        if (isNetworkError(err)) {
+          await enqueueAction('arrived', jobId);
+          toastQueuedOffline();
+          return QUEUED_OFFLINE as unknown as Awaited<ReturnType<typeof apiClient.patch>>;
+        }
+        throw err;
+      }
+    },
     onSuccess: (_, jobId) => {
       qc.invalidateQueries({ queryKey: ['job', jobId] });
       qc.invalidateQueries({ queryKey: ['jobs'] });
@@ -511,7 +579,18 @@ export function useHelperArrived() {
 export function useStartJob() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (jobId: string) => apiClient.patch(`/jobs/${jobId}/start`),
+    mutationFn: async (jobId: string) => {
+      try {
+        return await apiClient.patch(`/jobs/${jobId}/start`);
+      } catch (err) {
+        if (isNetworkError(err)) {
+          await enqueueAction('start', jobId);
+          toastQueuedOffline();
+          return QUEUED_OFFLINE as unknown as Awaited<ReturnType<typeof apiClient.patch>>;
+        }
+        throw err;
+      }
+    },
     onSuccess: (_, jobId) => qc.invalidateQueries({ queryKey: ['job', jobId] }),
   });
 }
@@ -519,7 +598,7 @@ export function useStartJob() {
 export function useCompleteJob() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({
+    mutationFn: async ({
       jobId,
       completion_photos,
       completion_videos,
@@ -529,17 +608,34 @@ export function useCompleteJob() {
       completion_photos?: string[];
       completion_videos?: string[];
       completion_notes?: string;
-    }) =>
-      Promise.all([uploadFiles(completion_photos), uploadFiles(completion_videos)]).then(
-        ([photos, videos]) =>
-          apiClient.patch(`/jobs/${jobId}/complete`, {
-            completion_photos: photos,
-            completion_videos: videos,
-            completion_notes,
-          }),
-      ),
-    onSuccess: (_, vars) => {
+    }) => {
+      // Upload ảnh/video TRƯỚC: bước này cần mạng — nếu upload lỗi mạng thì
+      // ném lỗi như cũ (hàng đợi offline chỉ mang payload đã có URL sẵn).
+      const [photos, videos] = await Promise.all([
+        uploadFiles(completion_photos),
+        uploadFiles(completion_videos),
+      ]);
+      const payload = {
+        completion_photos: photos,
+        completion_videos: videos,
+        completion_notes,
+      };
+      try {
+        return await apiClient.patch(`/jobs/${jobId}/complete`, payload);
+      } catch (err) {
+        // Feature 16: payload đã sẵn sàng (ảnh đã upload) mà PATCH mất mạng
+        // → xếp hàng offline, flush sẽ gửi lại nguyên payload này.
+        if (isNetworkError(err)) {
+          await enqueueAction('complete', jobId, payload as Record<string, unknown>);
+          toastQueuedOffline();
+          return QUEUED_OFFLINE as unknown as Awaited<ReturnType<typeof apiClient.patch>>;
+        }
+        throw err;
+      }
+    },
+    onSuccess: (res, vars) => {
       qc.invalidateQueries({ queryKey: ['job', vars.jobId] });
+      if ((res as unknown as { queued_offline?: boolean })?.queued_offline) return;
       Toast.show({
         type: 'success',
         text1: 'Đã gửi bằng chứng hoàn thành!',

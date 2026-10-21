@@ -34,6 +34,7 @@ import { useLiveGpsStore } from '@/hooks/use-live-gps';
 import { Alert } from '@/components/common/app-alert';
 import { LiveTrackingMap, RouteMetrics } from '@/components/common/live-tracking-map';
 import { TeamCard } from '@/components/common/team-card';
+import { OfflineBanner } from '@/components/common/offline-banner';
 
 dayjs.extend(relativeTime);
 dayjs.locale('vi');
@@ -355,15 +356,21 @@ export default function HelperJobDetailScreen() {
 
     const doExecute = async () => {
       try {
+        // Feature 16: mutation có thể trả sentinel { queued_offline: true } khi
+        // mất mạng — thao tác đã vào hàng đợi (đã có toast riêng), không báo
+        // "thành công" như bình thường.
         if (action === 'on_the_way') {
-          await onTheWay.mutateAsync(id!);
-          Toast.show({ type: 'success', text1: 'Bắt đầu di chuyển đến khách hàng 🛵' });
+          const res: any = await onTheWay.mutateAsync(id!);
+          if (!res?.queued_offline)
+            Toast.show({ type: 'success', text1: 'Bắt đầu di chuyển đến khách hàng 🛵' });
         } else if (action === 'arrived') {
-          await arrived.mutateAsync(id!);
-          Toast.show({ type: 'success', text1: 'Đã đến địa điểm của khách hàng 📍' });
+          const res: any = await arrived.mutateAsync(id!);
+          if (!res?.queued_offline)
+            Toast.show({ type: 'success', text1: 'Đã đến địa điểm của khách hàng 📍' });
         } else if (action === 'start') {
-          await startJob.mutateAsync(id!);
-          Toast.show({ type: 'success', text1: 'Bắt đầu tính giờ làm việc ▶️' });
+          const res: any = await startJob.mutateAsync(id!);
+          if (!res?.queued_offline)
+            Toast.show({ type: 'success', text1: 'Bắt đầu tính giờ làm việc ▶️' });
         }
       } catch (err: any) {
         const msg = err?.response?.data?.message || 'Cập nhật tiến trình thất bại';
@@ -411,6 +418,7 @@ export default function HelperJobDetailScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: COLORS.gray[50] }}>
+      <OfflineBanner />
       {/* Header (Safe Insets) */}
       <View
         style={{
