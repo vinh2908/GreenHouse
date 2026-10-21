@@ -9,6 +9,7 @@ import {
   IsNumber,
   IsInt,
   IsIn,
+  IsEnum,
   IsMongoId,
   Min,
   Max,
@@ -92,6 +93,31 @@ export class CreateJobDto {
   @IsString()
   @MaxLength(40)
   voucher_code?: string;
+
+  @ApiPropertyOptional({ description: 'Số thợ cần cho đơn nhóm (1–4, mặc định 1)', minimum: 1, maximum: 4 })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(4)
+  helpers_needed?: number;
+}
+
+export class InviteTeamMemberDto {
+  @ApiProperty({ description: 'ID thợ được mời vào nhóm' })
+  @IsMongoId()
+  helper_id: string;
+
+  @ApiProperty({ description: '% tiền công thành viên nhận (1–90)', minimum: 1, maximum: 90 })
+  @IsInt()
+  @Min(1)
+  @Max(90)
+  split_percent: number;
+}
+
+export class RespondTeamInvitationDto {
+  @ApiProperty({ enum: ['accept', 'decline'] })
+  @IsEnum(['accept', 'decline'])
+  action: 'accept' | 'decline';
 }
 
 export class RebookJobDto {

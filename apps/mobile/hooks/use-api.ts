@@ -1069,6 +1069,100 @@ export function useDetachVoucherFromJob() {
   });
 }
 
+// ─── Team Jobs (Roadmap Phase 1 — Đơn nhóm) ──────────────────────────────────
+
+export interface TeamInvitation {
+  job_id: string;
+  title: string;
+  status: string;
+  address_text?: string;
+  scheduled_start?: string;
+  helpers_needed: number;
+  split_percent: number;
+  invited_at?: string;
+  lead_id?: string | null;
+  customer_id: string;
+}
+
+export interface TeamCandidate {
+  helper_id: string;
+  full_name: string;
+  avatar?: string | null;
+  rating: number;
+  total_reviews: number;
+  completed_jobs: number;
+  skills: string[];
+}
+
+export function useTeamInvitations(enabled = true) {
+  return useQuery({
+    queryKey: ['team-invitations'],
+    queryFn: async () => {
+      const { data } = await apiClient.get('/jobs/team/invitations');
+      return data.data as TeamInvitation[];
+    },
+    enabled,
+    refetchInterval: 30_000,
+  });
+}
+
+export function useTeamCandidates(jobId?: string, enabled = true) {
+  return useQuery({
+    queryKey: ['team-candidates', jobId],
+    queryFn: async () => {
+      const { data } = await apiClient.get(`/jobs/${jobId}/team/candidates`);
+      return data.data as TeamCandidate[];
+    },
+    enabled: !!jobId && enabled,
+  });
+}
+
+export function useInviteTeamMember() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      jobId,
+      helper_id,
+      split_percent,
+    }: {
+      jobId: string;
+      helper_id: string;
+      split_percent: number;
+    }) => apiClient.post(`/jobs/${jobId}/team/invite`, { helper_id, split_percent }),
+    onSuccess: (_, vars) => {
+      qc.invalidateQueries({ queryKey: ['job', vars.jobId] });
+      qc.invalidateQueries({ queryKey: ['team-candidates', vars.jobId] });
+      Toast.show({ type: 'success', text1: 'Đã gửi lời mời vào nhóm' });
+    },
+    onError: (err: any) => {
+      const msg = err?.response?.data?.message ?? 'Không gửi được lời mời';
+      Toast.show({ type: 'error', text1: typeof msg === 'string' ? msg : 'Đã có lỗi xảy ra' });
+    },
+  });
+}
+
+export function useRespondTeamInvitation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ jobId, action }: { jobId: string; action: 'accept' | 'decline' }) =>
+      apiClient.patch(`/jobs/${jobId}/team/respond`, { action }),
+    onSuccess: (_, vars) => {
+      qc.invalidateQueries({ queryKey: ['team-invitations'] });
+      qc.invalidateQueries({ queryKey: ['job', vars.jobId] });
+      qc.invalidateQueries({ queryKey: ['jobs'] });
+      qc.invalidateQueries({ queryKey: ['helper-jobs'] });
+      Toast.show({
+        type: 'success',
+        text1: vars.action === 'accept' ? 'Đã nhận lời vào nhóm 🎉' : 'Đã từ chối lời mời',
+      });
+    },
+    onError: (err: any) => {
+      const msg = err?.response?.data?.message ?? 'Không phản hồi được lời mời';
+      Toast.show({ type: 'error', text1: typeof msg === 'string' ? msg : 'Đã có lỗi xảy ra' });
+    },
+  });
+}
+
 // ─── Dispute Cases (Roadmap Phase 1 — Hồ sơ tranh chấp) ─────────────────────
 
 export interface DisputeTimelineEntry {
