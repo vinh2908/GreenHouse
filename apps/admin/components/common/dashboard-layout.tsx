@@ -14,6 +14,7 @@ import {
   ShieldCheck,
   Wrench,
   Megaphone,
+  TicketPercent,
 } from 'lucide-react';
 import { useAuthStore } from '@/stores/auth.store';
 
@@ -24,6 +25,7 @@ const navItems = [
   { href: '/helpers/kyc', label: 'Duyệt e-KYC Thợ', icon: ShieldCheck },
   { href: '/jobs', label: 'Quản lý Đơn hàng', icon: Briefcase },
   { href: '/services', label: 'Dịch vụ & Phí', icon: Wrench },
+  { href: '/vouchers', label: 'Mã giảm giá', icon: TicketPercent },
   { href: '/payments', label: 'Thanh toán & Rút tiền', icon: CreditCard },
   { href: '/reviews', label: 'Đánh giá & Phản hồi', icon: Star },
   { href: '/analytics', label: 'Thống kê & Báo cáo', icon: BarChart3 },
