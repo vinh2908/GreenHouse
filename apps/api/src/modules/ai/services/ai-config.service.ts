@@ -9,6 +9,18 @@ export interface ChatMessageParam {
   content: string;
 }
 
+/**
+ * Lỗi chuyên biệt: không có AI provider nào dùng được cho vision (mock mode
+ * hoặc mọi lời gọi đều thất bại). Tầng service phía trên bắt lỗi này để trả
+ * { available: false } cho client thay vì ném 500.
+ */
+export class AiProviderUnavailableError extends Error {
+  constructor(message = 'AI provider unavailable') {
+    super(message);
+    this.name = 'AiProviderUnavailableError';
+  }
+}
+
 @Injectable()
 export class AiConfigService implements OnModuleInit {
   private readonly logger = new Logger(AiConfigService.name);
@@ -141,5 +153,74 @@ export class AiConfigService implements OnModuleInit {
     }
 
     throw new Error('No AI provider available or all API calls failed');
+  }
+
+  /**
+   * Gọi AI Vision (ảnh + text) — Gemini ưu tiên, OpenAI fallback.
+   * Mock mode hoặc mọi provider đều lỗi → ném AiProviderUnavailableError.
+   */
+  async chatWithImage(
+    systemPrompt: string,
+    userText: string,
+    imageBase64: string,
+    mimeType: string,
+  ): Promise<string> {
+    if (this.activeProvider === 'mock') {
+      throw new AiProviderUnavailableError('AI is running in mock mode (no API key configured)');
+    }
+    const visionModel = this.configService.get<string>('ai.visionModel') || 'gemini-2.5-flash';
+
+    // ── 1. Google Gemini Vision ─────────────────────────────────────────────
+    if (this.isGeminiEnabled && this.geminiClient) {
+      try {
+        const model = this.geminiClient.getGenerativeModel({
+          model: visionModel,
+          generationConfig: {
+            temperature: 0.2,
+            maxOutputTokens: 1000,
+            responseMimeType: 'application/json',
+          },
+        });
+        const result = await model.generateContent([
+          { text: `${systemPrompt}\n\n${userText}` },
+          { inlineData: { data: imageBase64, mimeType } },
+        ]);
+        return result.response.text();
+      } catch (err: any) {
+        this.logger.error('Gemini vision call failed, trying fallback...', err?.message || err);
+      }
+    }
+
+    // ── 2. OpenAI Vision (fallback) ─────────────────────────────────────────
+    if (this.isOpenAiEnabled && this.openaiClient) {
+      try {
+        // AI_VISION_MODEL có thể đang trỏ tới model Gemini → chỉ dùng cho
+        // OpenAI khi tên model không phải của Gemini, mặc định gpt-4o-mini.
+        const openAiVisionModel = visionModel.startsWith('gemini') ? 'gpt-4o-mini' : visionModel;
+        const response = await this.openaiClient.chat.completions.create({
+          model: openAiVisionModel,
+          messages: [
+            {
+              role: 'user',
+              content: [
+                { type: 'text', text: `${systemPrompt}\n\n${userText}` },
+                {
+                  type: 'image_url',
+                  image_url: { url: `data:${mimeType};base64,${imageBase64}` },
+                },
+              ],
+            },
+          ],
+          max_tokens: 1000,
+          temperature: 0.2,
+          response_format: { type: 'json_object' },
+        });
+        return response.choices[0]?.message?.content ?? '';
+      } catch (err: any) {
+        this.logger.error('OpenAI vision call failed', err?.message || err);
+      }
+    }
+
+    throw new AiProviderUnavailableError('All vision providers failed or are unavailable');
   }
 }

@@ -18,6 +18,11 @@ async function bootstrap() {
   // Uploaded files (KYC, job photos, completion evidence)
   app.useStaticAssets(UPLOAD_ROOT, { prefix: '/uploads/' });
 
+  // JSON body limit nâng lên 10mb: POST /ai/analyze-photo gửi ảnh base64
+  // (DTO chặn ở 8.000.000 ký tự) — mặc định Express chỉ cho 100kb.
+  app.useBodyParser('json', { limit: '10mb' });
+  app.useBodyParser('urlencoded', { limit: '10mb', extended: true });
+
   const configService = app.get(ConfigService);
   const port = configService.get<number>('PORT', 3000);
   const nodeEnv = configService.get<string>('NODE_ENV', 'development');

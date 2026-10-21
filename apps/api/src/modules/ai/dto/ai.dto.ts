@@ -1,4 +1,13 @@
-import { IsString, IsNotEmpty, IsOptional, IsArray, ValidateNested, IsEnum } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  IsOptional,
+  IsArray,
+  ValidateNested,
+  IsEnum,
+  IsIn,
+  MaxLength,
+} from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 
@@ -35,6 +44,19 @@ export class EstimatePriceDto {
   @IsOptional()
   @IsString()
   service_type?: string;
+}
+
+/** Feature 17: phân tích ảnh sự cố — ảnh gửi dạng base64 (giới hạn ~6MB ảnh thật). */
+export class AnalyzePhotoDto {
+  @ApiProperty({ description: 'Ảnh sự cố mã hoá base64 (không kèm tiền tố data:)' })
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(8_000_000)
+  image_base64: string;
+
+  @ApiProperty({ enum: ['image/jpeg', 'image/png', 'image/webp'] })
+  @IsIn(['image/jpeg', 'image/png', 'image/webp'])
+  mime_type: 'image/jpeg' | 'image/png' | 'image/webp';
 }
 
 export class AiChatMessageDto {
