@@ -106,6 +106,21 @@ export class Job {
   @Prop({ default: 0 })
   total_quotes_count: number;
 
+  // ── Roadmap Phase 1: Private offer cho thợ yêu thích ─────────────────────
+  // Khi còn hiệu lực, job chỉ hiển thị / nhận báo giá từ thợ được chỉ định.
+  @Prop({ type: Types.ObjectId, ref: 'User' })
+  private_offer_helper_id?: Types.ObjectId;
+
+  @Prop()
+  private_offer_expires_at?: Date;
+
+  // ── Roadmap Phase 1: Job sinh từ gói định kỳ ──────────────────────────────
+  @Prop({ type: Types.ObjectId, ref: 'RecurringPlan', index: true })
+  recurring_plan_id?: Types.ObjectId;
+
+  @Prop()
+  occurrence_date?: string; // 'YYYY-MM-DD' — ngày của lượt định kỳ (chống sinh trùng)
+
   @Prop({ type: Types.ObjectId, ref: 'Quote' })
   selected_quote_id?: Types.ObjectId;
 
