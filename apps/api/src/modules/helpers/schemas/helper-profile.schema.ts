@@ -4,6 +4,27 @@ import { HelperStatus, VerificationStatus } from '@homemate/types';
 
 export type HelperProfileDocument = HelperProfile & Document;
 
+/**
+ * Lịch làm việc của thợ (Feature 13).
+ * days_of_week dùng quy ước JS Date.getDay(): 0 = Chủ nhật, 1 = Thứ 2, …, 6 = Thứ 7.
+ * blocked_dates là các ngày nghỉ lẻ theo định dạng 'YYYY-MM-DD' (ngày địa phương).
+ */
+export interface HelperAvailability {
+  enabled: boolean;
+  days_of_week: number[];
+  start_time: string; // 'HH:mm'
+  end_time: string; // 'HH:mm'
+  blocked_dates: string[]; // 'YYYY-MM-DD'
+}
+
+export const DEFAULT_HELPER_AVAILABILITY: HelperAvailability = {
+  enabled: false,
+  days_of_week: [0, 1, 2, 3, 4, 5, 6],
+  start_time: '07:00',
+  end_time: '19:00',
+  blocked_dates: [],
+};
+
 @Schema({
   timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' },
   versionKey: false,
@@ -110,6 +131,26 @@ export class HelperProfile {
     type: { bank_name: String, account_number: String, account_name: String },
   })
   bank_account?: { bank_name: string; account_number: string; account_name: string };
+
+  // ── Lịch làm việc (Feature 13) ────────────────────────────────────────────
+  // enabled=false (mặc định) = không lọc gì cả, thợ nhận mọi đơn như trước.
+  @Prop({
+    type: {
+      enabled: { type: Boolean, default: false },
+      days_of_week: { type: [Number], default: [0, 1, 2, 3, 4, 5, 6] },
+      start_time: { type: String, default: '07:00' },
+      end_time: { type: String, default: '19:00' },
+      blocked_dates: { type: [String], default: [] },
+    },
+    default: () => ({
+      enabled: false,
+      days_of_week: [0, 1, 2, 3, 4, 5, 6],
+      start_time: '07:00',
+      end_time: '19:00',
+      blocked_dates: [],
+    }),
+  })
+  availability: HelperAvailability;
 
   created_at: Date;
   updated_at: Date;

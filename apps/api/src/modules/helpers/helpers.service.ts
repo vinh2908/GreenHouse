@@ -13,7 +13,12 @@ import {
   SubmitKycDto,
   UpdateLocationDto,
   BankAccountDto,
+  UpdateAvailabilityDto,
 } from './dto/helper.dto';
+import {
+  DEFAULT_HELPER_AVAILABILITY,
+  HelperAvailability,
+} from './schemas/helper-profile.schema';
 import { HelperStatus, VerificationStatus } from '@homemate/types';
 import { AppGateway } from '../chat/app.gateway';
 
@@ -150,6 +155,32 @@ export class HelpersService {
     const profile = await this.getOrCreate(userId);
     profile.bank_account = dto;
     return profile.save();
+  }
+
+  // ─── Lịch làm việc (Feature 13) ────────────────────────────────────────────
+
+  async getAvailability(userId: string): Promise<HelperAvailability> {
+    const profile = await this.getOrCreate(userId);
+    return { ...DEFAULT_HELPER_AVAILABILITY, ...(profile.availability ?? {}) };
+  }
+
+  async updateAvailability(
+    userId: string,
+    dto: UpdateAvailabilityDto,
+  ): Promise<HelperAvailability> {
+    if (dto.start_time >= dto.end_time) {
+      throw new BadRequestException('Giờ bắt đầu phải nhỏ hơn giờ kết thúc');
+    }
+    const profile = await this.getOrCreate(userId);
+    profile.availability = {
+      enabled: dto.enabled,
+      days_of_week: [...new Set(dto.days_of_week)].sort((a, b) => a - b),
+      start_time: dto.start_time,
+      end_time: dto.end_time,
+      blocked_dates: [...new Set(dto.blocked_dates ?? [])].sort(),
+    };
+    await profile.save();
+    return profile.availability;
   }
 
   // ─── Admin: verify / reject KYC ──────────────────────────────────────────

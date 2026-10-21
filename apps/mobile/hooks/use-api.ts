@@ -1782,3 +1782,43 @@ export function useRemoveLoyaltyPoints() {
   });
 }
 
+
+// ─── Helper Availability (Feature 13 — Lịch làm việc của thợ) ────────────────
+
+export interface HelperAvailability {
+  enabled: boolean;
+  days_of_week: number[];
+  start_time: string;
+  end_time: string;
+  blocked_dates: string[];
+}
+
+export function useMyAvailability() {
+  return useQuery({
+    queryKey: ['helpers', 'me', 'availability'],
+    queryFn: async () => {
+      const { data } = await apiClient.get('/helpers/me/availability');
+      return data.data as HelperAvailability;
+    },
+  });
+}
+
+export function useUpdateAvailability() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (dto: HelperAvailability) => apiClient.patch('/helpers/me/availability', dto),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['helpers', 'me', 'availability'] });
+      qc.invalidateQueries({ queryKey: ['jobs'] });
+      Toast.show({ type: 'success', text1: 'Đã lưu lịch làm việc 🗓️' });
+    },
+    onError: (err: any) => {
+      const msg = err?.response?.data?.message ?? 'Không lưu được lịch làm việc';
+      Toast.show({
+        type: 'error',
+        text1: Array.isArray(msg) ? msg[0] : typeof msg === 'string' ? msg : 'Đã có lỗi xảy ra',
+      });
+    },
+  });
+}
+
