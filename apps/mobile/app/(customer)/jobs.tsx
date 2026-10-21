@@ -149,6 +149,8 @@ export default function CustomerJobsScreen() {
               total_quotes_count: number;
               created_at: string;
               helper_id?: { full_name: string } | null;
+              recurring_plan_id?: string;
+              private_offer_helper_id?: string;
             }) => (
               <TouchableOpacity
                 key={job._id}
@@ -188,6 +190,12 @@ export default function CustomerJobsScreen() {
                       label={(job.service_id as { name: string } | null)?.name ?? 'Dịch vụ'}
                       size="sm"
                     />
+                    {job.recurring_plan_id ? (
+                      <Badge label="🔁 Định kỳ" size="sm" color="#EFF6FF" textColor="#1D4ED8" />
+                    ) : null}
+                    {job.private_offer_helper_id ? (
+                      <Badge label="⭐ Gửi riêng" size="sm" color="#FDF2F8" textColor="#9D174D" />
+                    ) : null}
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
                       <MapPin size={13} color={COLORS.gray[500]} />
                       <Text style={{ fontSize: 12, color: COLORS.gray[600], fontWeight: '500' }}>
