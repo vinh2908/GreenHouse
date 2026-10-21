@@ -38,6 +38,7 @@ const MENU_SECTIONS = [
   {
     title: 'Hỗ trợ & Pháp lý',
     items: [
+      { icon: HelpCircle, label: '💬 Hỗ trợ trực tuyến', route: '/support-chat' },
       { icon: HelpCircle, label: 'Trung tâm trợ giúp Vua Thợ (24/7)', route: '/help-center' },
       { icon: Shield, label: 'Chính sách bảo mật & Bảo hiểm 30 ngày', route: '/policy-insurance' },
       { icon: Star, label: 'Đánh giá ứng dụng Green House', route: '__rate_app__' },

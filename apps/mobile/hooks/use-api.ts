@@ -856,6 +856,88 @@ export function useSendMessage() {
   });
 }
 
+// ─── Support live chat (Feature 18 — Hỗ trợ trực tuyến) ───────────────────────
+// Admin không có socket room nên phía user dùng polling 4s + invalidate qua
+// socket event 'support:message' (xem useSupportSocket trong hooks/use-socket.ts).
+
+export interface SupportConversation {
+  _id: string;
+  user_id: string;
+  status: 'open' | 'closed';
+  last_message?: string;
+  last_message_at?: string;
+  unread_for_admin: number;
+  unread_for_user: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SupportMessageItem {
+  _id: string;
+  conversation_id: string;
+  sender_id: { _id: string; full_name?: string; avatar?: string } | string;
+  sender_role: 'user' | 'admin';
+  content: string;
+  type: string;
+  created_at: string;
+}
+
+export function useMySupportConversation() {
+  return useQuery({
+    queryKey: ['support', 'mine'],
+    queryFn: async () => {
+      const { data } = await apiClient.get('/support/conversations/me');
+      return data.data as { conversation: SupportConversation; messages: SupportMessageItem[] } | null;
+    },
+  });
+}
+
+export function useEnsureSupportConversation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async () => {
+      const { data } = await apiClient.post('/support/conversations');
+      return data.data as SupportConversation;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['support', 'mine'] }),
+  });
+}
+
+export function useSupportMessages(conversationId?: string) {
+  return useQuery({
+    queryKey: ['support', 'messages', conversationId],
+    queryFn: async () => {
+      const { data } = await apiClient.get(`/support/conversations/${conversationId}/messages`, {
+        params: { page: 1, limit: 50 },
+      });
+      return data.data as SupportMessageItem[];
+    },
+    enabled: !!conversationId,
+    refetchInterval: 4000,
+  });
+}
+
+export function useSendSupportMessage() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ conversationId, content }: { conversationId: string; content: string }) =>
+      apiClient.post(`/support/conversations/${conversationId}/messages`, { content }),
+    onSuccess: (_, vars) => {
+      qc.invalidateQueries({ queryKey: ['support', 'messages', vars.conversationId] });
+      qc.invalidateQueries({ queryKey: ['support', 'mine'] });
+    },
+  });
+}
+
+export function useMarkSupportRead() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (conversationId: string) =>
+      apiClient.patch(`/support/conversations/${conversationId}/read`),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['support', 'mine'] }),
+  });
+}
+
 // ─── Notifications ─────────────────────────────────────────────────────────────
 
 export function useNotifications(unreadOnly = false) {

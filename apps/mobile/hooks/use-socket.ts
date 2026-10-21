@@ -169,6 +169,29 @@ export function useChatSocket(conversationId?: string) {
   }, [conversationId, qc]);
 }
 
+// ─── Support live chat (Feature 18) ───────────────────────────────────────────
+// Admin trả lời qua REST; server emit 'support:message' tới room của user nên
+// invalidate ngay, polling 4s trong useSupportMessages chỉ là lớp dự phòng.
+
+export function useSupportSocket() {
+  const qc = useQueryClient();
+
+  useEffect(() => {
+    const unsub = socketService.on<{ conversation_id?: string }>(
+      SOCKET_EVENTS.SUPPORT_MESSAGE,
+      data => {
+        qc.invalidateQueries({ queryKey: ['support', 'mine'] });
+        if (data?.conversation_id) {
+          qc.invalidateQueries({ queryKey: ['support', 'messages', data.conversation_id] });
+        } else {
+          qc.invalidateQueries({ queryKey: ['support', 'messages'] });
+        }
+      },
+    );
+    return unsub;
+  }, [qc]);
+}
+
 // ─── Notification sound/badge ────────────────────────────────────────────────
 
 export function useNotificationSocket() {
