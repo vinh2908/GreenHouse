@@ -23,6 +23,7 @@ import { RecurringModule } from './modules/recurring/recurring.module';
 import { VouchersModule } from './modules/vouchers/vouchers.module';
 import { CallsModule } from './modules/calls/calls.module';
 import { InvoicesModule } from './modules/invoices/invoices.module';
+import { MonthlyContractsModule } from './modules/monthly-contracts/monthly-contracts.module';
 
 // ─── Phase 4: Services ────────────────────────────────────────────────────────
 import { ServicesModule } from './modules/services/services.module';
@@ -93,6 +94,7 @@ import { UploadsModule } from './modules/uploads/uploads.module';
     VouchersModule,
     CallsModule,
     InvoicesModule,
+    MonthlyContractsModule,
     ServicesModule,
     JobsModule,
     NotificationsModule,
