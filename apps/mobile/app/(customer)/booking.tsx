@@ -14,6 +14,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
+import * as FileSystem from 'expo-file-system/legacy';
 import {
   ArrowLeft,
   ArrowRight,
@@ -36,8 +37,10 @@ import {
   useCreateJob,
   useAnalyzeBooking,
   useEstimatePrice,
+  useAnalyzeIssuePhoto,
   useCreateRecurringPlan,
 } from '@/hooks/use-api';
+import type { IssuePhotoAnalysis } from '@/hooks/use-api';
 import { locationService, OsmPlace } from '@/services/location.service';
 import { Button, Input, Card, COLORS } from '@/components/ui';
 import { VoucherInput } from '@/components/common/voucher-input';
@@ -178,6 +181,7 @@ export default function BookingScreen() {
   const createRecurringPlan = useCreateRecurringPlan();
   const analyzeAI = useAnalyzeBooking();
   const estimatePrice = useEstimatePrice();
+  const analyzeIssuePhoto = useAnalyzeIssuePhoto();
 
   // ── Roadmap Phase 1: gửi riêng cho thợ yêu thích + gói định kỳ ────────────
   const [offerToFavorite, setOfferToFavorite] = useState(!!params.favorite_helper_id);
@@ -228,6 +232,8 @@ export default function BookingScreen() {
     price_min: number;
     price_max: number;
   } | null>(null);
+  // Feature 17: kết quả phân tích ảnh sự cố bằng AI Vision
+  const [photoAnalysis, setPhotoAnalysis] = useState<IssuePhotoAnalysis | null>(null);
 
   useEffect(() => {
     if (params.service_id) {
@@ -263,6 +269,7 @@ export default function BookingScreen() {
     setAiInput('');
     setAiSuggestion(null);
     setPriceEstimate(null);
+    setPhotoAnalysis(null);
     setVoucherCode('');
     setVoucherPreview(null);
     setIsRecurring(false);
@@ -318,6 +325,74 @@ export default function BookingScreen() {
       }
     } catch {
       Toast.show({ type: 'error', text1: 'Không thể chọn ảnh từ thư viện' });
+    }
+  };
+
+  // ── Feature 17: Phân tích ảnh sự cố bằng AI Vision ─────────────────────────
+  // Chọn 1 ảnh → đọc base64 → AI nhận diện vấn đề, gợi ý dịch vụ, điền sẵn mô
+  // tả. Ảnh LUÔN được đính kèm vào đơn kể cả khi AI không phân tích được.
+  const handleAnalyzeIssuePhoto = async () => {
+    const unavailableToast = () =>
+      Toast.show({
+        type: 'info',
+        text1: 'Chưa phân tích được ảnh — ảnh vẫn được đính kèm vào đơn, bạn tự mô tả giúp mình nhé',
+      });
+    try {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        Toast.show({ type: 'error', text1: 'Cần quyền truy cập thư viện ảnh' });
+        return;
+      }
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsMultipleSelection: false,
+        quality: 0.7,
+        base64: true, // dự phòng khi FileSystem không đọc được (web)
+      });
+      if (result.canceled || !result.assets[0]?.uri) return;
+      const asset = result.assets[0];
+      const uri = asset.uri;
+      setPhotos(prev => [...prev, uri].slice(0, 6));
+
+      let base64: string | undefined;
+      try {
+        base64 = await FileSystem.readAsStringAsync(uri, {
+          encoding: FileSystem.EncodingType.Base64,
+        });
+      } catch {
+        base64 = asset.base64 ?? undefined;
+      }
+      if (!base64) {
+        unavailableToast();
+        return;
+      }
+      const mimeType =
+        asset.mimeType && ['image/jpeg', 'image/png', 'image/webp'].includes(asset.mimeType)
+          ? asset.mimeType
+          : 'image/jpeg';
+
+      const { data } = await analyzeIssuePhoto.mutateAsync({
+        image_base64: base64,
+        mime_type: mimeType,
+      });
+      const res = data.data as IssuePhotoAnalysis;
+      if (res?.available) {
+        setPhotoAnalysis(res);
+        if (res.description_draft) setDescription(res.description_draft);
+        if (res.suggested_service_slug) {
+          const svc = svcList.find(s => s.slug === res.suggested_service_slug);
+          if (svc) setSelectedService(svc._id);
+        }
+        Toast.show({
+          type: 'success',
+          text1: 'AI đã nhận diện sự cố trong ảnh!',
+          text2: 'Đã điền sẵn mô tả & gợi ý dịch vụ cho bạn',
+        });
+      } else {
+        unavailableToast();
+      }
+    } catch {
+      unavailableToast();
     }
   };
 
@@ -1332,6 +1407,57 @@ export default function BookingScreen() {
                   </View>
                 )}
               </View>
+
+              {/* Feature 17: Phân tích ảnh sự cố bằng AI */}
+              <TouchableOpacity
+                onPress={handleAnalyzeIssuePhoto}
+                disabled={analyzeIssuePhoto.isPending}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 8,
+                  backgroundColor: '#1E1E24',
+                  borderRadius: 14,
+                  padding: 14,
+                  opacity: analyzeIssuePhoto.isPending ? 0.7 : 1,
+                }}
+              >
+                <Text style={{ fontSize: 16 }}>📷</Text>
+                <Text style={{ color: '#fff', fontWeight: '700', flex: 1 }}>
+                  {analyzeIssuePhoto.isPending
+                    ? 'AI đang phân tích ảnh...'
+                    : 'Phân tích ảnh sự cố bằng AI'}
+                </Text>
+                {analyzeIssuePhoto.isPending ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <ChevronRight size={16} color="rgba(255,255,255,0.4)" />
+                )}
+              </TouchableOpacity>
+
+              {photoAnalysis?.available && (
+                <Card style={{ backgroundColor: COLORS.primaryLight, gap: 6 }}>
+                  <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.primary }}>
+                    🔍 AI nhận diện sự cố
+                  </Text>
+                  <Text style={{ fontSize: 15, fontWeight: '700', color: COLORS.gray[900] }}>
+                    Vấn đề phát hiện: {photoAnalysis.detected_issue ?? '—'}
+                  </Text>
+                  {photoAnalysis.price_min != null && photoAnalysis.price_max != null && (
+                    <Text style={{ fontSize: 13, color: COLORS.gray[700] }}>
+                      Khoảng giá:{' '}
+                      {new Intl.NumberFormat('vi-VN').format(photoAnalysis.price_min)}₫ –{' '}
+                      {new Intl.NumberFormat('vi-VN').format(photoAnalysis.price_max)}₫
+                      {photoAnalysis.confidence != null
+                        ? ` · độ tin cậy ${Math.round(photoAnalysis.confidence * 100)}%`
+                        : ''}
+                    </Text>
+                  )}
+                  <Text style={{ fontSize: 12, color: COLORS.gray[500] }}>
+                    Mô tả đã được điền sẵn từ ảnh — bạn có thể sửa lại trước khi gửi đơn.
+                  </Text>
+                </Card>
+              )}
 
               {/* AI Price estimate */}
               {description.length > 20 && (

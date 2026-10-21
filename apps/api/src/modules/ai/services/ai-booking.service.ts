@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { AiConfigService } from './ai-config.service';
+import { AiConfigService, AiProviderUnavailableError } from './ai-config.service';
 import { AiBookingAnalysis, AiPriceEstimate } from '@homemate/types';
 import { PLATFORM_FEE_BY_SERVICE, SERVICE_SLUG_VI } from '@homemate/constants';
 
@@ -16,6 +16,17 @@ const PRICE_REFERENCE: Record<string, { min: number; max: number; unit: string }
   appliance: { min: 200000, max: 700000, unit: 'job' },
   locksmith: { min: 150000, max: 500000, unit: 'job' },
 };
+
+/** Kết quả phân tích ảnh sự cố (Feature 17). available=false khi AI không dùng được. */
+export interface IssuePhotoAnalysis {
+  available: boolean;
+  detected_issue?: string;
+  suggested_service_slug?: string | null;
+  description_draft?: string;
+  price_min?: number;
+  price_max?: number;
+  confidence?: number;
+}
 
 @Injectable()
 export class AiBookingService {
@@ -216,4 +227,81 @@ Trả về JSON:
       };
     }
   }
+  // ─── Phân tích ảnh sự cố bằng AI Vision (Roadmap Phase 2 — Feature 17) ────
+  // Khách chụp ảnh sự cố (vòi nước rò, máy lạnh chảy nước...) → AI nhận diện
+  // vấn đề, gợi ý dịch vụ + bản nháp mô tả + khoảng giá. AI không khả dụng
+  // (mock mode / lỗi provider / JSON hỏng) → { available: false }, KHÔNG ném
+  // lỗi ra client: app vẫn đính kèm ảnh vào đơn và để khách tự mô tả.
+
+  async analyzeIssuePhoto(imageBase64: string, mimeType: string): Promise<IssuePhotoAnalysis> {
+    const knownSlugs = Object.keys(SERVICE_SLUG_VI);
+    const slugList = knownSlugs
+      .map(slug => {
+        const ref = PRICE_REFERENCE[slug];
+        const price = ref ? ` (${ref.min.toLocaleString('vi-VN')}–${ref.max.toLocaleString('vi-VN')}₫/${ref.unit === 'hour' ? 'giờ' : ref.unit === 'day' ? 'ngày' : 'lần'})` : '';
+        return `- ${slug}: ${(SERVICE_SLUG_VI as Record<string, string>)[slug]}${price}`;
+      })
+      .join('\n');
+
+    const systemPrompt = `Bạn là kỹ thuật viên của nền tảng dịch vụ gia đình Green House (HomeMate) tại Việt Nam. Khách hàng gửi 1 ảnh chụp sự cố trong nhà. Hãy nhìn ảnh, nhận diện vấn đề và trả về DUY NHẤT 1 JSON hợp lệ (không markdown, không giải thích thêm) theo cấu trúc:
+{
+  "detected_issue": string,            // Vấn đề phát hiện trong ảnh, tiếng Việt, ngắn gọn (VD: "Vòi sen bị rò rỉ nước ở khớp nối")
+  "suggested_service_slug": string,    // BẮT BUỘC là 1 trong các slug ở danh sách dưới đây, chọn slug phù hợp nhất
+  "description_draft": string,         // Bản nháp mô tả tiếng Việt viết ở ngôi khách hàng mô tả sự cố (2-4 câu, có chi tiết thấy trong ảnh) để khách dùng làm mô tả đơn
+  "price_min": number,                 // Khoảng giá sửa chữa hợp lý tại VN (VND), bám bảng giá tham khảo
+  "price_max": number,
+  "confidence": number                 // Độ tin cậy nhận diện 0..1
+}
+
+Danh sách dịch vụ hợp lệ (suggested_service_slug CHỈ được là 1 slug trong danh sách này):
+${slugList}
+
+Nếu ảnh không liên quan sự cố gia đình / không nhận diện được: vẫn trả JSON với detected_issue mô tả trung thực những gì thấy, confidence thấp (< 0.4) và suggested_service_slug là slug gần nhất.`;
+
+    try {
+      const content = await this.aiConfig.chatWithImage(
+        systemPrompt,
+        'Hãy phân tích ảnh sự cố này và trả về JSON theo đúng cấu trúc đã yêu cầu.',
+        imageBase64,
+        mimeType,
+      );
+
+      // Parse bền vững: bỏ ``` fences, lấy từ { đầu tiên tới } cuối cùng.
+      const cleaned = content.replace(/```(?:json)?/gi, '').trim();
+      const start = cleaned.indexOf('{');
+      const end = cleaned.lastIndexOf('}');
+      if (start === -1 || end <= start) throw new Error('AI vision returned no JSON object');
+      const parsed = JSON.parse(cleaned.slice(start, end + 1)) as Record<string, unknown>;
+
+      const rawSlug =
+        typeof parsed.suggested_service_slug === 'string' ? parsed.suggested_service_slug : null;
+      const slug = rawSlug && knownSlugs.includes(rawSlug) ? rawSlug : null;
+
+      const priceMin = typeof parsed.price_min === 'number' && parsed.price_min > 0 ? Math.round(parsed.price_min) : undefined;
+      const priceMax = typeof parsed.price_max === 'number' && parsed.price_max > 0 ? Math.round(parsed.price_max) : undefined;
+      const confidenceRaw = typeof parsed.confidence === 'number' ? parsed.confidence : 0.5;
+
+      return {
+        available: true,
+        detected_issue:
+          typeof parsed.detected_issue === 'string' && parsed.detected_issue.trim()
+            ? parsed.detected_issue.trim()
+            : 'Chưa nhận diện rõ vấn đề trong ảnh',
+        suggested_service_slug: slug,
+        description_draft:
+          typeof parsed.description_draft === 'string' ? parsed.description_draft.trim() : '',
+        price_min: priceMin,
+        price_max: priceMax && priceMin && priceMax < priceMin ? priceMin : priceMax,
+        confidence: Math.min(1, Math.max(0, confidenceRaw)),
+      };
+    } catch (err) {
+      if (err instanceof AiProviderUnavailableError) {
+        this.logger.warn(`Issue photo analysis unavailable: ${err.message}`);
+      } else {
+        this.logger.error('Issue photo analysis failed', err as Error);
+      }
+      return { available: false };
+    }
+  }
+
 }

@@ -13,7 +13,12 @@ import { AiBookingService } from './services/ai-booking.service';
 import { AiMatchingService } from './services/ai-matching.service';
 import { AiSupportService } from './services/ai-support.service';
 import { AiConfigService } from './services/ai-config.service';
-import { AnalyzeBookingDto, EstimatePriceDto, SupportChatDto } from './dto/ai.dto';
+import {
+  AnalyzeBookingDto,
+  AnalyzePhotoDto,
+  EstimatePriceDto,
+  SupportChatDto,
+} from './dto/ai.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Public } from '../../common/decorators/public.decorator';
@@ -59,6 +64,24 @@ export class AiController {
   })
   async analyzeBooking(@Body() dto: AnalyzeBookingDto) {
     return this.bookingService.analyzeBookingRequest(dto.text);
+  }
+
+  // ─── Issue Photo Analysis (Feature 17) ────────────────────────────────────
+
+  @Post('analyze-photo')
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: '[AI] Phân tích ảnh sự cố bằng AI Vision',
+    description:
+      'Khách gửi ảnh sự cố (base64) → AI nhận diện vấn đề, gợi ý dịch vụ, nháp mô tả + khoảng giá. AI không khả dụng → { available: false }',
+  })
+  async analyzePhoto(@Body() dto: AnalyzePhotoDto) {
+    // DTO đã chặn bằng @MaxLength — kiểm tra lại tại controller cho chắc chắn.
+    if (!dto.image_base64 || dto.image_base64.length > 8_000_000) {
+      return { available: false };
+    }
+    return this.bookingService.analyzeIssuePhoto(dto.image_base64, dto.mime_type);
   }
 
   // ─── Price Estimator ──────────────────────────────────────────────────────
