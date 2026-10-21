@@ -25,3 +25,12 @@ export const aiConfig = registerAs('ai', () => ({
   matchExplanation: process.env.AI_MATCH_EXPLANATION !== 'false',
   customerSupport: process.env.AI_CUSTOMER_SUPPORT !== 'false',
 }));
+
+// Zalo OA / ZNS config (Feature 19 — thông báo qua Zalo OA).
+// Thiếu access token hoặc template id → enabled=false và ZaloNotificationService
+// tự bỏ qua mọi lần gửi (app chạy bình thường, không lỗi).
+export const zaloConfig = registerAs('zalo', () => ({
+  accessToken: process.env.ZALO_OA_ACCESS_TOKEN || '',
+  znsTemplateId: process.env.ZALO_ZNS_TEMPLATE_ID || '',
+  enabled: !!(process.env.ZALO_OA_ACCESS_TOKEN && process.env.ZALO_ZNS_TEMPLATE_ID),
+}));

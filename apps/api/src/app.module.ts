@@ -3,7 +3,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { ThrottlerModule } from '@nestjs/throttler';
-import appConfig, { aiConfig } from './config/app.config';
+import appConfig, { aiConfig, zaloConfig } from './config/app.config';
 import databaseConfig from './config/database.config';
 import jwtConfig from './config/jwt.config';
 import redisConfig from './config/redis.config';
@@ -63,7 +63,7 @@ import { UploadsModule } from './modules/uploads/uploads.module';
     // Config — global
     ConfigModule.forRoot({
       isGlobal: true,
-      load: [appConfig, aiConfig, databaseConfig, jwtConfig, redisConfig, minioConfig],
+      load: [appConfig, aiConfig, zaloConfig, databaseConfig, jwtConfig, redisConfig, minioConfig],
       envFilePath: ['.env.local', '.env'],
     }),
 

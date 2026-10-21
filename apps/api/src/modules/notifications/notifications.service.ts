@@ -4,6 +4,7 @@ import { Model, Types } from 'mongoose';
 import { Notification, NotificationDocument } from './schemas/notification.schema';
 import { NOTIFICATION_TYPES, SOCKET_EVENTS } from '@homemate/constants';
 import { AppGateway } from '../chat/app.gateway';
+import { ZaloNotificationService } from './zalo.service';
 
 @Injectable()
 export class NotificationsService {
@@ -12,6 +13,7 @@ export class NotificationsService {
     private notificationModel: Model<NotificationDocument>,
     @Inject(forwardRef(() => AppGateway))
     private gateway: AppGateway,
+    private readonly zaloService: ZaloNotificationService,
   ) {}
 
   async create(data: {
@@ -43,6 +45,18 @@ export class NotificationsService {
     } catch {
       // Ignore socket error if user is offline
     }
+
+    // Zalo OA (Feature 19): fire-and-forget — service tự bỏ qua khi chưa cấu
+    // hình OA và không bao giờ throw, nên không thể làm hỏng luồng tạo thông báo.
+    void this.zaloService
+      .sendForNotification({
+        _id: notification._id,
+        user_id: data.userId,
+        type: data.type,
+        title: data.title,
+        body: data.body,
+      })
+      .catch(() => undefined);
 
     return notification;
   }
