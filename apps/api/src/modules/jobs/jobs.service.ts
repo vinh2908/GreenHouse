@@ -1633,6 +1633,18 @@ export class JobsService {
     const totalPrice = contract?.total_price ?? 0;
     const defaultHelperReceives = contract?.helper_receives ?? 0;
 
+    // Phân xử LẦN 2 (sau kháng cáo — Feature 4): tiền đã thực sự di chuyển ở
+    // phán quyết đầu tiên, nên lần này KHÔNG tự động hoàn/giải ngân/khấu trừ
+    // lần nữa (tránh giao dịch trùng). Admin đối soát & điều chỉnh ví thủ công
+    // nếu phán quyết mới khác phán quyết cũ. Xem README Phase 1.
+    const isReResolution = !!job.dispute_resolution;
+    const moveMoney = !isReResolution;
+    if (isReResolution) {
+      this.logger.warn(
+        `Re-resolving dispute for job ${jobId} after appeal — automatic money movement SKIPPED (manual wallet reconciliation required)`,
+      );
+    }
+
     let refundAmount = 0;
     let helperPayout = 0;
     let nextStatus = JobStatus.COMPLETED;
@@ -1643,7 +1655,7 @@ export class JobsService {
       helperPayout = 0;
       job.payment_status = PaymentStatus.REFUNDED;
 
-      if (refundAmount > 0) {
+      if (refundAmount > 0 && moveMoney) {
         await this.paymentsService.refundCustomer(
           String(job.customer_id),
           jobId,
@@ -1651,7 +1663,7 @@ export class JobsService {
           dto.admin_note,
         );
       }
-      if (job.helper_id) {
+      if (job.helper_id && moveMoney) {
         await this.helperModel
           .updateOne({ user_id: job.helper_id }, { $inc: { risk_score: 15 } })
           .exec();
@@ -1663,7 +1675,7 @@ export class JobsService {
       helperPayout = Math.round(remaining * (1 - PLATFORM_FEE_BY_SERVICE.default));
       job.payment_status = PaymentStatus.PAID;
 
-      if (refundAmount > 0) {
+      if (refundAmount > 0 && moveMoney) {
         await this.paymentsService.refundCustomer(
           String(job.customer_id),
           jobId,
@@ -1671,7 +1683,7 @@ export class JobsService {
           dto.admin_note,
         );
       }
-      if (job.helper_id && helperPayout > 0) {
+      if (job.helper_id && helperPayout > 0 && moveMoney) {
         await this.creditJobPayout(job, helperPayout);
       }
     } else {
@@ -1681,7 +1693,7 @@ export class JobsService {
       helperPayout = defaultHelperReceives;
       job.payment_status = PaymentStatus.PAID;
 
-      if (job.helper_id) {
+      if (job.helper_id && moveMoney) {
         if (job.payment_method === 'cash' && contract) {
           await this.paymentsService.deductCommissionForCashJob(
             String(job.helper_id),
@@ -1715,7 +1727,7 @@ export class JobsService {
       nextStatus,
       adminId,
       'admin',
-      `Phân xử tranh chấp (${dto.action}): ${dto.admin_note}`,
+      `Phân xử tranh chấp (${dto.action}): ${dto.admin_note}${isReResolution ? ' [Phân xử lại sau kháng cáo — hệ thống không tự di chuyển tiền lần 2, Admin đối soát ví thủ công]' : ''}`,
     );
     await job.save();
 
@@ -1736,7 +1748,7 @@ export class JobsService {
         userId: String(job.customer_id),
         type: NOTIFICATION_TYPES.SYSTEM,
         title: '⚖️ Kết quả phân xử khiếu nại từ Admin',
-        body: `Đơn "${job.title}": ${dto.admin_note}${refundAmount > 0 ? ` (Hoàn ví: +${refundAmount.toLocaleString('vi-VN')}₫)` : ''}`,
+        body: `Đơn "${job.title}": ${dto.admin_note}${refundAmount > 0 && moveMoney ? ` (Hoàn ví: +${refundAmount.toLocaleString('vi-VN')}₫)` : ''}`,
         payload: { job_id: jobId },
       })
       .catch(() => undefined);
