@@ -58,6 +58,7 @@ import {
   useValidateVoucher,
   useApplyVoucherToJob,
   useDetachVoucherFromJob,
+  useCallConfig,
   type VoucherPreview,
 } from '@/hooks/use-api';
 import { useJobSocketUpdates, useHelperLocation } from '@/hooks/use-socket';
@@ -144,6 +145,7 @@ export default function JobDetailScreen() {
 
   // ── Roadmap Phase 1: thợ yêu thích / gửi riêng / gọi trong app ───────────
   const { data: favorites } = useFavorites();
+  const { data: callConfig } = useCallConfig();
   const addFavorite = useAddFavorite();
   const removeFavorite = useRemoveFavorite();
   const releaseOffer = useReleasePrivateOffer();
@@ -1310,6 +1312,19 @@ export default function JobDetailScreen() {
               variant="outline"
               icon={<MessageCircle size={18} color={COLORS.primary} />}
               onPress={() => router.push({ pathname: '/chat/[jobId]', params: { jobId: id } })}
+            />
+          )}
+          {/* ── Gọi thoại che số (Roadmap Phase 1) — chỉ hiện khi server đã cấu hình VoIP ── */}
+          {hasHelperAssigned && isActive && callConfig?.enabled && (
+            <Button
+              title="📞 Gọi thoại trong app (ẩn số thật)"
+              variant="outline"
+              onPress={() =>
+                router.push({
+                  pathname: '/call/[jobId]',
+                  params: { jobId: id, partnerName: helperObj?.full_name ?? 'Thợ phụ trách' },
+                })
+              }
             />
           )}
           {/* ── Roadmap Phase 1: yêu thích + đặt lại từ đơn hoàn thành ── */}

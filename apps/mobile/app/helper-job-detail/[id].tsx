@@ -23,6 +23,7 @@ import {
   Trash2,
   Sparkles,
   PlusCircle,
+  Phone,
 } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import dayjs from 'dayjs';
@@ -47,6 +48,7 @@ import {
   useCompleteJob,
   useHelperProfile,
   useProposeAmendment,
+  useCallConfig,
 } from '@/hooks/use-api';
 import { useAuthStore } from '@/stores/auth.store';
 import {
@@ -67,6 +69,7 @@ export default function HelperJobDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const currentUser = useAuthStore(s => s.user);
+  const { data: callConfig } = useCallConfig();
 
   const handleBack = () => {
     if (router.canGoBack()) {
@@ -537,6 +540,26 @@ export default function HelperJobDetailScreen() {
             >
               <MessageCircle size={20} color={COLORS.primary} />
             </TouchableOpacity>
+            {/* ── Gọi thoại che số (Roadmap Phase 1) ─────────────────── */}
+            {callConfig?.enabled && (
+              <TouchableOpacity
+                onPress={() =>
+                  router.push({
+                    pathname: '/call/[jobId]',
+                    params: {
+                      jobId: id,
+                      partnerName:
+                        typeof job.customer_id === 'object' && job.customer_id
+                          ? (job.customer_id as { full_name: string }).full_name
+                          : 'Khách hàng',
+                    },
+                  })
+                }
+                style={{ backgroundColor: COLORS.primaryLight, borderRadius: 12, padding: 10 }}
+              >
+                <Phone size={20} color={COLORS.primary} />
+              </TouchableOpacity>
+            )}
           </Card>
         )}
 

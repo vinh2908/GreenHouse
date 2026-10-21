@@ -15,7 +15,7 @@ import { ArrowLeft, Send, ShieldCheck, Phone } from 'lucide-react-native';
 import dayjs from 'dayjs';
 import Toast from 'react-native-toast-message';
 import { useAuthStore } from '@/stores/auth.store';
-import { useMessages, useSendMessage } from '@/hooks/use-api';
+import { useMessages, useSendMessage, useCallConfig } from '@/hooks/use-api';
 import { useChatSocket } from '@/hooks/use-socket';
 import apiClient from '@/services/api-client';
 import { Avatar, COLORS, LoadingSpinner, EmptyState } from '@/components/ui';
@@ -94,6 +94,8 @@ export default function ChatScreen() {
       return pId !== currentUser?._id;
     }) || {};
 
+  const { data: callConfig } = useCallConfig();
+
   const partnerName =
     partner?.full_name || (currentUser?.active_role === 'helper' ? 'Khách hàng' : 'Thợ phụ trách');
   const partnerAvatar = partner?.avatar;
@@ -152,6 +154,30 @@ export default function ChatScreen() {
             </Text>
           </View>
         </View>
+
+        {/* ── Gọi thoại che số (Roadmap Phase 1) — ẩn khi server chưa cấu hình VoIP ── */}
+        {callConfig?.enabled && (
+          <TouchableOpacity
+            activeOpacity={0.7}
+            onPress={() =>
+              router.push({
+                pathname: '/call/[jobId]',
+                params: { jobId, partnerName },
+              })
+            }
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            style={{
+              width: 40,
+              height: 40,
+              borderRadius: 12,
+              backgroundColor: COLORS.primaryLight,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Phone size={19} color={COLORS.primaryDark} />
+          </TouchableOpacity>
+        )}
       </View>
 
       {/* ── Chat Messages List ──────────────────────────────────────── */}
