@@ -43,6 +43,7 @@ import {
   JOB_OPEN_EXPIRY_HOURS,
   JOB_QUOTE_EXPIRY_HOURS,
   PLATFORM_FEE_BY_SERVICE,
+  PRIVATE_OFFER_DEFAULT_HOURS,
   SOCKET_EVENTS,
   NOTIFICATION_TYPES,
 } from '@homemate/constants';
@@ -50,6 +51,8 @@ import { AppGateway } from '../chat/app.gateway';
 import { NotificationsService } from '../notifications/notifications.service';
 import { ChatService } from '../chat/chat.service';
 import { PaymentsService } from '../payments/payments.service';
+import { FavoritesService } from '../favorites/favorites.service';
+import { RebookJobDto } from './dto/job.dto';
 import { Service, ServiceDocument } from '../services/schemas/service.schema';
 import { HelperProfile, HelperProfileDocument } from '../helpers/schemas/helper-profile.schema';
 import { RoutingService } from './routing.service';
@@ -72,7 +75,61 @@ export class JobsService {
     private readonly chatService: ChatService,
     private readonly paymentsService: PaymentsService,
     private readonly routingService: RoutingService,
+    private readonly favoritesService: FavoritesService,
   ) {}
+
+  // ─── Private offer (gửi riêng cho thợ yêu thích) ──────────────────────────
+
+  /** Job đang trong thời gian ưu tiên riêng cho 1 thợ hay không */
+  isPrivateOfferActive(job: {
+    private_offer_helper_id?: Types.ObjectId | string | null;
+    private_offer_expires_at?: Date | null;
+  }): boolean {
+    return Boolean(
+      job.private_offer_helper_id &&
+      job.private_offer_expires_at &&
+      new Date(job.private_offer_expires_at).getTime() > Date.now(),
+    );
+  }
+
+  private async applyPrivateOffer(
+    customerId: string,
+    helperId: string,
+    hours: number | undefined,
+    skipFavoriteCheck: boolean,
+  ): Promise<{ helper_id: Types.ObjectId; expires_at: Date }> {
+    if (!skipFavoriteCheck) {
+      const isFav = await this.favoritesService.isFavorite(customerId, helperId);
+      if (!isFav) {
+        throw new BadRequestException(
+          'Thợ này chưa có trong danh sách yêu thích của bạn. Hãy thêm thợ vào mục Yêu thích trước khi gửi riêng.',
+        );
+      }
+    }
+    if (!(await this.isVerifiedHelper(helperId))) {
+      throw new BadRequestException('Thợ được chọn chưa hoàn tất xác thực e-KYC');
+    }
+    const expiresAt = new Date();
+    expiresAt.setHours(expiresAt.getHours() + (hours ?? PRIVATE_OFFER_DEFAULT_HOURS));
+    return { helper_id: new Types.ObjectId(helperId), expires_at: expiresAt };
+  }
+
+  private async notifyPrivateOfferHelper(job: JobDocument, helperId: string): Promise<void> {
+    this.gateway.emitToUser(helperId, SOCKET_EVENTS.JOB_PRIVATE_OFFER, {
+      job_id: String(job._id),
+      status: job.status,
+      private_offer_expires_at: job.private_offer_expires_at,
+    });
+    await this.notificationsService
+      .create({
+        userId: helperId,
+        type: NOTIFICATION_TYPES.NEW_JOB_NEARBY,
+        title: '⭐ Bạn được khách quen gửi việc riêng!',
+        body: `Đơn "${job.title}" đang ưu tiên dành cho bạn. Hãy gửi báo giá trước khi đơn mở công khai.`,
+        payload: { job_id: String(job._id), is_private_offer: true },
+      })
+      .catch(() => undefined);
+  }
 
   // ─── Helper: add event to job ────────────────────────────────────────────
 
@@ -191,9 +248,30 @@ export class JobsService {
 
   // ─── Customer: Create Job ─────────────────────────────────────────────────
 
-  async createJob(customerId: string, dto: CreateJobDto): Promise<JobDocument> {
+  async createJob(
+    customerId: string,
+    dto: CreateJobDto,
+    opts?: {
+      privateOfferHelperId?: string;
+      privateOfferHours?: number;
+      skipFavoriteCheck?: boolean;
+      recurringPlanId?: string;
+      occurrenceDate?: string;
+    },
+  ): Promise<JobDocument> {
     const expiresAt = new Date();
     expiresAt.setHours(expiresAt.getHours() + JOB_OPEN_EXPIRY_HOURS);
+
+    // Ưu tiên gửi riêng: lấy từ opts (nội bộ / đặt lại / định kỳ) hoặc từ DTO của khách
+    const offerHelperId = opts?.privateOfferHelperId ?? dto.private_offer_helper_id;
+    const offer = offerHelperId
+      ? await this.applyPrivateOffer(
+          customerId,
+          offerHelperId,
+          opts?.privateOfferHours ?? dto.private_offer_hours,
+          opts?.skipFavoriteCheck ?? false,
+        )
+      : null;
 
     const job = await this.jobModel.create({
       customer_id: new Types.ObjectId(customerId),
@@ -215,6 +293,12 @@ export class JobsService {
       preferred_time_start: dto.preferred_time_start,
       preferred_time_end: dto.preferred_time_end,
       is_flexible_time: dto.is_flexible_time ?? false,
+      private_offer_helper_id: offer?.helper_id,
+      private_offer_expires_at: offer?.expires_at,
+      recurring_plan_id: opts?.recurringPlanId
+        ? new Types.ObjectId(opts.recurringPlanId)
+        : undefined,
+      occurrence_date: opts?.occurrenceDate,
       expires_at: expiresAt,
       events: [
         {
@@ -222,12 +306,20 @@ export class JobsService {
           actor_id: new Types.ObjectId(customerId),
           actor_role: 'customer',
           timestamp: new Date(),
-          note: 'Đăng yêu cầu',
+          note: offer
+            ? 'Đăng yêu cầu (ưu tiên gửi riêng cho thợ yêu thích)'
+            : opts?.recurringPlanId
+              ? 'Đăng yêu cầu (từ gói định kỳ)'
+              : 'Đăng yêu cầu',
         },
       ],
     });
 
-    await this.notifyNearbyHelpers(job);
+    if (offer) {
+      await this.notifyPrivateOfferHelper(job, String(offer.helper_id));
+    } else {
+      await this.notifyNearbyHelpers(job);
+    }
 
     this.gateway.emitToUser(customerId, SOCKET_EVENTS.JOB_CREATED, {
       job_id: String(job._id),
@@ -235,6 +327,77 @@ export class JobsService {
     });
 
     return job;
+  }
+
+  // ─── Customer: Mở công khai đơn đang gửi riêng ─────────────────────────────
+
+  async releasePrivateOffer(customerId: string, jobId: string): Promise<JobDocument> {
+    const job = await this.jobModel.findById(jobId).exec();
+    if (!job) throw new NotFoundException('Job không tồn tại');
+    if (job.customer_id.toString() !== customerId) throw new ForbiddenException();
+    if (!this.isPrivateOfferActive(job)) {
+      throw new BadRequestException('Đơn này không còn trong thời gian gửi riêng');
+    }
+
+    job.private_offer_helper_id = undefined;
+    job.private_offer_expires_at = undefined;
+    this.addEvent(job, job.status, customerId, 'customer', 'Mở công khai cho tất cả thợ');
+    await job.save();
+
+    await this.notifyNearbyHelpers(job);
+    this.emitJobStatusChange(job);
+    return job;
+  }
+
+  // ─── Customer: Đặt lại từ 1 đơn đã hoàn thành (1 chạm) ────────────────────
+
+  async rebookJob(
+    customerId: string,
+    sourceJobId: string,
+    dto: RebookJobDto,
+  ): Promise<JobDocument> {
+    const source = await this.jobModel.findById(sourceJobId).exec();
+    if (!source) throw new NotFoundException('Đơn gốc không tồn tại');
+    if (source.customer_id.toString() !== customerId) throw new ForbiddenException();
+    if (source.status !== JobStatus.COMPLETED) {
+      throw new BadRequestException('Chỉ có thể đặt lại từ đơn đã hoàn thành');
+    }
+
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    const createDto: CreateJobDto = {
+      service_id: String(source.service_id),
+      title: source.title,
+      description: source.description,
+      photos: source.photos,
+      videos: source.videos,
+      address: {
+        full_address: source.address.full_address,
+        ward: source.address.ward,
+        district: source.address.district,
+        city: source.address.city,
+        notes: source.address.notes,
+        location: {
+          type: 'Point',
+          coordinates: source.address.location.coordinates,
+        } as CreateJobDto['address']['location'],
+      },
+      preferred_date: (dto.preferred_date ?? tomorrow.toISOString()).slice(0, 10),
+      preferred_time_start: dto.preferred_time_start ?? source.preferred_time_start,
+      preferred_time_end: source.preferred_time_end,
+      is_flexible_time: source.is_flexible_time,
+    };
+
+    // Đặt lại: thợ của đơn cũ được ưu tiên (không bắt buộc phải nằm trong Yêu thích)
+    const offerHelperId =
+      dto.private_offer !== false && source.helper_id ? String(source.helper_id) : undefined;
+
+    return this.createJob(customerId, createDto, {
+      privateOfferHelperId: offerHelperId,
+      privateOfferHours: dto.private_offer_hours,
+      skipFavoriteCheck: true,
+    });
   }
 
   private async notifyNearbyHelpers(job: JobDocument): Promise<void> {
@@ -623,6 +786,10 @@ export class JobsService {
     if (!browsable || !roles.includes('helper')) {
       throw new ForbiddenException('Bạn không có quyền xem công việc này');
     }
+    // Đơn đang gửi riêng: thợ khác (không phải người được ưu tiên) chưa xem được
+    if (this.isPrivateOfferActive(job) && String(job.private_offer_helper_id) !== userId) {
+      throw new ForbiddenException('Đơn này đang được ưu tiên cho một thợ khác');
+    }
     await this.requireVerifiedHelper(userId);
     const preview = job.toObject() as any;
     const a = preview.address ?? {};
@@ -685,6 +852,13 @@ export class JobsService {
 
     if (job.status !== JobStatus.OPEN && job.status !== JobStatus.RECEIVING_QUOTES) {
       throw new BadRequestException('Job không còn nhận báo giá');
+    }
+
+    // Đơn gửi riêng: chỉ thợ được ưu tiên mới gửi báo giá trong thời gian chờ
+    if (this.isPrivateOfferActive(job) && String(job.private_offer_helper_id) !== helperId) {
+      throw new BadRequestException(
+        'Đơn này đang được ưu tiên cho một thợ khác. Vui lòng quay lại sau khi đơn mở công khai.',
+      );
     }
 
     if (job.customer_id.toString() === helperId) {
@@ -1666,9 +1840,17 @@ export class JobsService {
   // ─── Helper: Get available jobs (job feed) ────────────────────────────────
 
   async getAvailableJobs(helperId: string, serviceId?: string, page = 1, limit = 20) {
+    const now = new Date();
     const query: Record<string, unknown> = {
       status: { $in: [JobStatus.OPEN, JobStatus.RECEIVING_QUOTES] },
-      expires_at: { $gt: new Date() },
+      expires_at: { $gt: now },
+      // Ẩn đơn đang gửi riêng cho thợ khác; đơn gửi riêng cho chính mình thì hiện
+      $or: [
+        { private_offer_helper_id: { $exists: false } },
+        { private_offer_helper_id: null },
+        { private_offer_expires_at: { $lte: now } },
+        { private_offer_helper_id: new Types.ObjectId(helperId) },
+      ],
     };
     if (serviceId && Types.ObjectId.isValid(serviceId)) {
       query['service_id'] = new Types.ObjectId(serviceId);
@@ -1691,7 +1873,13 @@ export class JobsService {
     ]);
 
     const helperCoords = helperProfile?.location?.coordinates;
-    const jobObjects = jobs.map(job => job.toObject());
+    const jobObjects = jobs.map(job => {
+      const obj = job.toObject() as any;
+      obj.is_private_offer =
+        this.isPrivateOfferActive(job) && String(job.private_offer_helper_id) === helperId;
+      obj.is_recurring = Boolean(job.recurring_plan_id);
+      return obj;
+    });
 
     if (helperCoords) {
       const destinations = jobObjects

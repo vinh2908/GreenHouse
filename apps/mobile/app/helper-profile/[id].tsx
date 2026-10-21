@@ -11,13 +11,21 @@ import {
   Calendar,
   Award,
   ThumbsUp,
+  Heart,
 } from 'lucide-react-native';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import 'dayjs/locale/vi';
 import Toast from 'react-native-toast-message';
 import { useAuthStore } from '@/stores/auth.store';
-import { useHelperPublicProfile, useHelperReviews, useSelectQuote } from '@/hooks/use-api';
+import {
+  useHelperPublicProfile,
+  useHelperReviews,
+  useSelectQuote,
+  useFavorites,
+  useAddFavorite,
+  useRemoveFavorite,
+} from '@/hooks/use-api';
 import {
   Button,
   Card,
@@ -43,6 +51,21 @@ export default function HelperPublicProfileScreen() {
   const { data: profile, isLoading: pLoading, refetch } = useHelperPublicProfile(id);
   const { data: reviewsData, isLoading: rLoading } = useHelperReviews(id);
   const selectQuote = useSelectQuote();
+
+  // ── Thợ yêu thích ──────────────────────────────────────────────────────
+  const isCustomer = user?.active_role !== 'helper';
+  const { data: favorites } = useFavorites();
+  const addFavorite = useAddFavorite();
+  const removeFavorite = useRemoveFavorite();
+  const isFavorite = (favorites ?? []).some(f => {
+    const hid = typeof f.helper_id === 'string' ? f.helper_id : f.helper_id?._id;
+    return hid === id;
+  });
+  const toggleFavorite = () => {
+    if (!id) return;
+    if (isFavorite) removeFavorite.mutate(id);
+    else addFavorite.mutate(id);
+  };
 
   const handleBack = () => {
     if (router.canGoBack()) {
@@ -135,7 +158,29 @@ export default function HelperPublicProfileScreen() {
         <Text style={{ fontSize: 17, fontWeight: '800', color: COLORS.gray[900] }}>
           Hồ sơ thợ uy tín
         </Text>
-        <View style={{ width: 38 }} />
+        {isCustomer ? (
+          <TouchableOpacity
+            activeOpacity={0.7}
+            onPress={toggleFavorite}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+            style={{
+              width: 40,
+              height: 40,
+              borderRadius: 12,
+              backgroundColor: isFavorite ? '#FDF2F8' : COLORS.gray[100],
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Heart
+              size={20}
+              color={isFavorite ? '#EC4899' : COLORS.gray[500]}
+              fill={isFavorite ? '#EC4899' : 'transparent'}
+            />
+          </TouchableOpacity>
+        ) : (
+          <View style={{ width: 38 }} />
+        )}
       </View>
 
       <ScrollView

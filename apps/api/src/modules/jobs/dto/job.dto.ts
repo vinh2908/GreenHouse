@@ -72,6 +72,47 @@ export class CreateJobDto {
   @ApiPropertyOptional() @IsOptional() @IsString() preferred_time_start?: string;
   @ApiPropertyOptional() @IsOptional() @IsString() preferred_time_end?: string;
   @ApiPropertyOptional({ default: false }) @IsOptional() @IsBoolean() is_flexible_time?: boolean;
+
+  @ApiPropertyOptional({
+    description: 'Gửi riêng cho thợ yêu thích này trước khi mở công khai',
+  })
+  @IsOptional()
+  @IsMongoId({ message: 'private_offer_helper_id không hợp lệ' })
+  private_offer_helper_id?: string;
+
+  @ApiPropertyOptional({ default: 24, description: 'Số giờ ưu tiên riêng (1–72)' })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(72)
+  private_offer_hours?: number;
+}
+
+export class RebookJobDto {
+  @ApiPropertyOptional({ description: 'Ngày làm mới (mặc định: mai)' })
+  @IsOptional()
+  @IsDateString()
+  preferred_date?: string;
+
+  @ApiPropertyOptional({ description: 'Giờ bắt đầu mới (mặc định: giữ giờ của đơn cũ)' })
+  @IsOptional()
+  @IsString()
+  preferred_time_start?: string;
+
+  @ApiPropertyOptional({
+    default: true,
+    description: 'Ưu tiên gửi riêng cho thợ của đơn cũ trong thời gian chờ',
+  })
+  @IsOptional()
+  @IsBoolean()
+  private_offer?: boolean;
+
+  @ApiPropertyOptional({ default: 24 })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(72)
+  private_offer_hours?: number;
 }
 
 export class CreateSosJobDto {

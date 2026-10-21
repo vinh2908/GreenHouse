@@ -51,6 +51,10 @@ import {
   usePayJob,
   useOpenDispute,
   useRespondAmendment,
+  useFavorites,
+  useAddFavorite,
+  useRemoveFavorite,
+  useReleasePrivateOffer,
 } from '@/hooks/use-api';
 import { useJobSocketUpdates, useHelperLocation } from '@/hooks/use-socket';
 import { locationService } from '@/services/location.service';
@@ -133,6 +137,12 @@ export default function JobDetailScreen() {
   const openDispute = useOpenDispute();
   const respondAmendment = useRespondAmendment();
 
+  // ── Roadmap Phase 1: thợ yêu thích / gửi riêng / gọi trong app ───────────
+  const { data: favorites } = useFavorites();
+  const addFavorite = useAddFavorite();
+  const removeFavorite = useRemoveFavorite();
+  const releaseOffer = useReleasePrivateOffer();
+
   const [showReview, setShowReview] = useState(false);
   const [quoteToAccept, setQuoteToAccept] = useState<string | null>(null);
   const [rating, setRating] = useState(5);
@@ -197,6 +207,39 @@ export default function JobDetailScreen() {
 
   const helperObj = typeof job.helper_id === 'object' && job.helper_id ? job.helper_id : null;
   const serviceObj = typeof job.service_id === 'object' && job.service_id ? job.service_id : null;
+
+  // ── Roadmap Phase 1 derived state ─────────────────────────────────────────
+  const assignedHelperId =
+    helperObj?._id ?? (typeof job.helper_id === 'string' ? job.helper_id : undefined);
+  const isHelperFavorite = (favorites ?? []).some(f => {
+    const hid = typeof f.helper_id === 'string' ? f.helper_id : f.helper_id?._id;
+    return hid === assignedHelperId;
+  });
+  const privateOfferActive =
+    !!job.private_offer_helper_id &&
+    !!job.private_offer_expires_at &&
+    new Date(job.private_offer_expires_at).getTime() > Date.now() &&
+    ['open', 'receiving_quotes'].includes(job.status);
+  const isRecurringJob = !!job.recurring_plan_id;
+
+  const handleToggleFavoriteHelper = () => {
+    if (!assignedHelperId) return;
+    if (isHelperFavorite) removeFavorite.mutate(assignedHelperId);
+    else addFavorite.mutate(assignedHelperId);
+  };
+
+  const handleRebookWithHelper = () => {
+    router.push({
+      pathname: '/(customer)/booking',
+      params: {
+        service_id: serviceObj?._id ?? (typeof job.service_id === 'string' ? job.service_id : ''),
+        favorite_helper_id: assignedHelperId ?? '',
+        favorite_helper_name: helperObj?.full_name ?? 'Thợ yêu thích',
+        prefill_title: job.title,
+        prefill_description: job.description,
+      },
+    });
+  };
 
   const handleOpenEdit = () => {
     setEditTitle(job.title || '');
@@ -501,6 +544,39 @@ export default function JobDetailScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ padding: 16, gap: 14, paddingBottom: 60 }}
       >
+        {/* ── Private Offer Banner (Roadmap Phase 1) ─────────────────── */}
+        {privateOfferActive && (
+          <Card
+            style={{ backgroundColor: '#FDF2F8', borderColor: '#FBCFE8', borderWidth: 1.5, gap: 8 }}
+          >
+            <Text style={{ fontWeight: '800', fontSize: 15, color: '#9D174D' }}>
+              ⭐ Đơn đang được gửi riêng cho thợ yêu thích
+            </Text>
+            <Text style={{ fontSize: 13, color: COLORS.gray[700], lineHeight: 19 }}>
+              Chỉ thợ được chọn mới thấy và báo giá đơn này đến{' '}
+              {dayjs(job.private_offer_expires_at).format('HH:mm DD/MM/YYYY')}. Hết thời gian chờ,
+              đơn tự mở công khai cho mọi thợ.
+            </Text>
+            <Button
+              title="Mở công khai ngay cho mọi thợ"
+              variant="outline"
+              loading={releaseOffer.isPending}
+              onPress={() => releaseOffer.mutate(id!)}
+            />
+          </Card>
+        )}
+
+        {isRecurringJob && (
+          <Card style={{ backgroundColor: '#EFF6FF', borderColor: '#BFDBFE', borderWidth: 1.5 }}>
+            <Text style={{ fontWeight: '800', fontSize: 14.5, color: '#1E40AF' }}>
+              🔁 Đơn thuộc gói định kỳ
+            </Text>
+            <Text style={{ fontSize: 13, color: COLORS.gray[700], marginTop: 4, lineHeight: 19 }}>
+              Đơn này được hệ thống tự tạo từ gói định kỳ của bạn.
+            </Text>
+          </Card>
+        )}
+
         {/* ── Dispute / Refund Resolution Banner ─────────────────────── */}
         {(job.status === 'disputed' || job.status === 'refunded' || job.dispute_resolution) && (
           <Card
@@ -1226,6 +1302,33 @@ export default function JobDetailScreen() {
               variant="outline"
               icon={<MessageCircle size={18} color={COLORS.primary} />}
               onPress={() => router.push({ pathname: '/chat/[jobId]', params: { jobId: id } })}
+            />
+          )}
+          {/* ── Roadmap Phase 1: yêu thích + đặt lại từ đơn hoàn thành ── */}
+          {job.status === 'completed' && assignedHelperId && (
+            <>
+              <Button
+                title={
+                  isHelperFavorite
+                    ? '❤️ Đã lưu thợ yêu thích (bấm để bỏ)'
+                    : '🤍 Lưu thợ này vào Yêu thích'
+                }
+                variant="outline"
+                loading={addFavorite.isPending || removeFavorite.isPending}
+                onPress={handleToggleFavoriteHelper}
+              />
+              <Button
+                title="🔁 Đặt lại việc với thợ này"
+                variant="outline"
+                onPress={handleRebookWithHelper}
+              />
+            </>
+          )}
+          {(job.status === 'disputed' || job.dispute_resolution) && (
+            <Button
+              title="⚖️ Xem hồ sơ tranh chấp"
+              variant="outline"
+              onPress={() => router.push({ pathname: '/dispute/[jobId]', params: { jobId: id } })}
             />
           )}
           {canEdit && (
