@@ -139,6 +139,13 @@ export class Job {
     helper_id: string;
   };
 
+  // ── Roadmap Phase 1: Voucher ─────────────────────────────────────────────
+  @Prop()
+  voucher_code?: string; // Mã giảm giá khách gắn vào đơn (viết hoa)
+
+  @Prop({ default: 0 })
+  discount_amount: number; // Số tiền đã giảm chính thức (ghi nhận khi thanh toán)
+
   @Prop({ type: String, enum: PaymentStatus, default: PaymentStatus.UNPAID })
   payment_status: PaymentStatus;
 

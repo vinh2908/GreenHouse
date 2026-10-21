@@ -22,6 +22,7 @@ import { PaymentStatus } from '@homemate/types';
 import { NotificationsService } from '../notifications/notifications.service';
 import { HelperProfile, HelperProfileDocument } from '../helpers/schemas/helper-profile.schema';
 import { Job, JobDocument, Contract, ContractDocument } from '../jobs/schemas/job.schema';
+import { VouchersService } from '../vouchers/vouchers.service';
 
 @Injectable()
 export class PaymentsService {
@@ -31,6 +32,7 @@ export class PaymentsService {
     @InjectModel(Withdrawal.name) private withdrawalModel: Model<WithdrawalDocument>,
     @InjectModel(HelperProfile.name) private helperModel: Model<HelperProfileDocument>,
     private readonly notificationsService: NotificationsService,
+    private readonly vouchersService: VouchersService,
     @Optional() @InjectModel(Job.name) private jobModel?: Model<JobDocument>,
     @Optional() @InjectModel(Contract.name) private contractModel?: Model<ContractDocument>,
   ) {}
@@ -88,12 +90,19 @@ export class PaymentsService {
     jobId: string,
     amount: number,
     paymentMethod: string,
-  ): Promise<{ transaction: TransactionDocument; success: boolean }> {
+  ): Promise<{
+    transaction: TransactionDocument;
+    success: boolean;
+    discount_amount: number;
+    voucher_code?: string;
+  }> {
     if (!Types.ObjectId.isValid(jobId)) {
       throw new BadRequestException('Mã công việc (job_id) không hợp lệ');
     }
 
     let resolvedAmount = amount;
+    let discountAmount = 0;
+    let appliedVoucherCode: string | undefined;
 
     if (this.jobModel) {
       const job = await this.jobModel.findById(jobId).exec();
@@ -114,11 +123,28 @@ export class PaymentsService {
           }
         }
 
+        // ── Voucher: ghi nhận lượt dùng + tính giảm trên giá chốt của đơn ──
+        // Nền tảng chịu phần giảm (thợ vẫn nhận đủ theo hợp đồng). Nếu mã đã
+        // hết hạn/hết lượt ở thời điểm thanh toán → ném lỗi rõ ràng để khách
+        // gỡ mã rồi thanh toán lại, tránh trừ tiền sai.
+        if (job.voucher_code && resolvedAmount > 0 && (job.discount_amount ?? 0) <= 0) {
+          const redeemed = await this.vouchersService.redeemForJob(
+            customerId,
+            jobId,
+            job.voucher_code,
+            resolvedAmount,
+          );
+          discountAmount = redeemed.discount_amount;
+          appliedVoucherCode = redeemed.voucher.code;
+          resolvedAmount = Math.max(0, resolvedAmount - discountAmount);
+        }
+
         await this.jobModel
           .findByIdAndUpdate(job._id, {
             $set: {
               payment_status: PaymentStatus.PAID,
               payment_method: paymentMethod,
+              ...(discountAmount > 0 ? { discount_amount: discountAmount } : {}),
             },
           })
           .exec();
@@ -136,12 +162,22 @@ export class PaymentsService {
       amount: resolvedAmount,
       balance_before: wallet.balance,
       balance_after: wallet.balance, // Customer pays via external method/cash, wallet balance unchanged
-      description: `Thanh toán cho công việc #${jobId.slice(-6)} (${paymentMethod.toUpperCase()})`,
+      description:
+        `Thanh toán cho công việc #${jobId.slice(-6)} (${paymentMethod.toUpperCase()})` +
+        (discountAmount > 0
+          ? ` — đã áp mã ${appliedVoucherCode} giảm ${discountAmount.toLocaleString('vi-VN')}₫`
+          : ''),
       reference: `PAY-${Date.now()}`,
-      metadata: { payment_method: paymentMethod, job_id: jobId },
+      metadata: {
+        payment_method: paymentMethod,
+        job_id: jobId,
+        ...(discountAmount > 0
+          ? { voucher_code: appliedVoucherCode, discount_amount: discountAmount }
+          : {}),
+      },
     });
 
-    return { transaction, success: true };
+    return { transaction, success: true, discount_amount: discountAmount, voucher_code: appliedVoucherCode };
   }
 
   // ─── Credit helper wallet after online-paid job completion ─────────────────
