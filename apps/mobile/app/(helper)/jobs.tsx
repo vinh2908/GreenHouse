@@ -86,6 +86,34 @@ export default function HelperJobsScreen() {
         <Text style={{ fontSize: 12, color: COLORS.gray[500], marginTop: 2 }}>
           Xem các đơn hàng mới cần thợ và theo dõi tiến độ công việc
         </Text>
+        {/* Bản đồ nhu cầu (Feature 15) */}
+        <TouchableOpacity
+          activeOpacity={0.85}
+          onPress={() => router.push('/demand-map')}
+          style={{
+            marginTop: 12,
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 8,
+            backgroundColor: COLORS.primaryLight,
+            borderWidth: 1,
+            borderColor: COLORS.primary,
+            borderRadius: 12,
+            paddingHorizontal: 14,
+            paddingVertical: 10,
+          }}
+        >
+          <Text style={{ fontSize: 15 }}>🗺</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={{ fontWeight: '800', fontSize: 13.5, color: COLORS.gray[900] }}>
+              Bản đồ nhu cầu
+            </Text>
+            <Text style={{ fontSize: 11.5, color: COLORS.gray[500] }}>
+              Xem khu vực nào đang có nhiều đơn chờ báo giá nhất
+            </Text>
+          </View>
+          <ChevronRight size={16} color={COLORS.primary} />
+        </TouchableOpacity>
       </View>
 
       {/* ── Lời mời vào nhóm (Đơn nhóm) ─────────────────────────────────── */}
