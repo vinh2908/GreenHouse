@@ -2045,7 +2045,19 @@ export class JobsService {
         );
       }
       if (job.helper_id && helperPayout > 0 && moveMoney) {
-        await this.creditJobPayout(job, helperPayout);
+        if (job.payment_method === 'cash') {
+          const platformFee = Math.max(0, remaining - helperPayout);
+          if (platformFee > 0) {
+            await this.paymentsService.deductCommissionForCashJob(
+              String(job.helper_id),
+              jobId,
+              platformFee,
+              helperPayout,
+            );
+          }
+        } else {
+          await this.creditJobPayout(job, helperPayout);
+        }
       }
     } else {
       // release_to_helper: bác khiếu nại, giải ngân cho thợ
