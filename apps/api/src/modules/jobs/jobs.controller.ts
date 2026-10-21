@@ -207,6 +207,15 @@ export class JobsController {
     return this.jobsService.submitQuote(user.sub, jobId, dto);
   }
 
+  // ─── Helper: Nhận việc trực tiếp với giá cam kết ─────────────────────────
+
+  @Post(':jobId/accept-fixed')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: '[Helper] Nhận việc ngay với giá cam kết (không cần báo giá)' })
+  async acceptFixedPrice(@CurrentUser() user: { sub: string }, @Param('jobId') jobId: string) {
+    return this.jobsService.acceptFixedPrice(user.sub, jobId);
+  }
+
   // ─── Customer: Select quote (creates contract) ────────────────────────────
 
   @Post(':jobId/select-quote')

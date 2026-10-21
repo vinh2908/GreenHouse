@@ -760,6 +760,13 @@ export default function JobDetailScreen() {
                   textColor={COLORS.gray[700]}
                 />
               )}
+              {job.is_fixed_price && (
+                <Badge
+                  label={`🏷️ Giá cam kết ${new Intl.NumberFormat('vi-VN').format(job.fixed_price ?? 0)}₫`}
+                  color="#ECFDF5"
+                  textColor="#065F46"
+                />
+              )}
             </View>
             {canEdit && (
               <TouchableOpacity
@@ -907,9 +914,29 @@ export default function JobDetailScreen() {
           </Card>
         )}
 
-        {/* ── Quotes List ────────────────────────────────────────────── */}
-        {['open', 'receiving_quotes'].includes(job.status) && (
-          <Card style={{ gap: 12, padding: 16 }}>
+        {/* ── Quotes List / Chờ thợ nhận việc giá cam kết ────────────── */}
+        {['open', 'receiving_quotes'].includes(job.status) &&
+          (job.is_fixed_price ? (
+            <Card
+              style={{
+                gap: 8,
+                padding: 16,
+                backgroundColor: '#ECFDF5',
+                borderColor: '#A7F3D0',
+                borderWidth: 1.5,
+              }}
+            >
+              <Text style={{ fontWeight: '800', fontSize: 16, color: '#065F46' }}>
+                🏷️ Giá cam kết:{' '}
+                {new Intl.NumberFormat('vi-VN').format(job.fixed_price ?? 0)}₫
+              </Text>
+              <Text style={{ fontSize: 13.5, color: COLORS.gray[700], lineHeight: 20 }}>
+                Đang chờ thợ nhận việc với giá cam kết — đơn này không qua vòng báo giá, thợ đầu
+                tiên nhận việc sẽ thực hiện ngay với mức giá đã cam kết.
+              </Text>
+            </Card>
+          ) : (
+            <Card style={{ gap: 12, padding: 16 }}>
             <View
               style={{
                 flexDirection: 'row',
@@ -1006,8 +1033,8 @@ export default function JobDetailScreen() {
                 );
               })
             )}
-          </Card>
-        )}
+            </Card>
+          ))}
 
         {/* ── Contract Details & Amendments ──────────────────────────── */}
         {contract && (

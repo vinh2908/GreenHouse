@@ -60,7 +60,18 @@ const TIME_SLOTS = [
 
 const DURATION_OPTIONS = [1, 2, 3, 4, 5, 6, 8];
 
-const DEFAULT_SERVICES = [
+type BookingServiceOption = {
+  _id: string;
+  name: string;
+  slug: string;
+  icon: string;
+  description: string;
+  base_price_min: number;
+  pricing_model?: 'quote' | 'fixed';
+  fixed_price?: number;
+};
+
+const DEFAULT_SERVICES: BookingServiceOption[] = [
   {
     _id: '6aa1269cd33a3aed2b36a5e1',
     name: 'Dọn dẹp vệ sinh nhà cửa',
@@ -262,6 +273,9 @@ export default function BookingScreen() {
 
   const svcList = services && services.length > 0 ? services : DEFAULT_SERVICES;
   const selectedServiceData = svcList.find(s => s._id === selectedService);
+  // Feature 7: dịch vụ giá cam kết — giá cố định, không qua vòng báo giá
+  const isFixedPriceService =
+    selectedServiceData?.pricing_model === 'fixed' && (selectedServiceData?.fixed_price ?? 0) > 0;
 
   // ── Photo Pickers for Step 3 ───────────────────────────────────────────────
   const handleTakeJobPhoto = async () => {
@@ -836,7 +850,19 @@ export default function BookingScreen() {
                           {svc.description}
                         </Text>
                       )}
-                      {svc.base_price_min && (
+                      {svc.pricing_model === 'fixed' && svc.fixed_price ? (
+                        <Text
+                          style={{
+                            fontSize: 12,
+                            color: COLORS.primary,
+                            marginTop: 4,
+                            fontWeight: '700',
+                          }}
+                        >
+                          🏷️ Giá cam kết: {new Intl.NumberFormat('vi-VN').format(svc.fixed_price)}₫
+                          — nhận việc ngay, không cần báo giá
+                        </Text>
+                      ) : svc.base_price_min ? (
                         <Text
                           style={{
                             fontSize: 12,
@@ -847,7 +873,7 @@ export default function BookingScreen() {
                         >
                           Từ {new Intl.NumberFormat('vi-VN').format(svc.base_price_min)}₫
                         </Text>
-                      )}
+                      ) : null}
                     </View>
                     {selectedService === svc._id && (
                       <View
@@ -1380,6 +1406,28 @@ export default function BookingScreen() {
                 </Text>
               </Card>
 
+              {/* ── Giá cam kết (Feature 7) ─────────────────────────────── */}
+              {isFixedPriceService && (
+                <Card
+                  style={{
+                    backgroundColor: '#ECFDF5',
+                    borderColor: '#A7F3D0',
+                    borderWidth: 1.5,
+                    gap: 6,
+                  }}
+                >
+                  <Text style={{ fontWeight: '800', fontSize: 16, color: '#065F46' }}>
+                    🏷️ Giá cam kết:{' '}
+                    {new Intl.NumberFormat('vi-VN').format(selectedServiceData?.fixed_price ?? 0)}₫
+                  </Text>
+                  <Text style={{ fontSize: 13, color: COLORS.gray[700], lineHeight: 19 }}>
+                    Dịch vụ này có giá cố định do Green House cam kết. Thợ sẽ nhận việc trực tiếp
+                    với đúng mức giá trên — bạn không cần chờ đợi hay so sánh báo giá. Cứ đăng yêu
+                    cầu như bình thường!
+                  </Text>
+                </Card>
+              )}
+
               <Card
                 style={{
                   backgroundColor: '#FFF7ED',
@@ -1390,8 +1438,9 @@ export default function BookingScreen() {
               >
                 <Text style={{ fontSize: 20 }}>💡</Text>
                 <Text style={{ flex: 1, fontSize: 13, color: COLORS.gray[700], lineHeight: 18 }}>
-                  Sau khi đăng, các thợ xung quanh sẽ gửi báo giá. Bạn có thể tự do so sánh tay nghề
-                  & giá cả trước khi chọn thợ.
+                  {isFixedPriceService
+                    ? 'Đơn giá cam kết sẽ được gửi tới các thợ quanh bạn — thợ đầu tiên nhận việc sẽ thực hiện với giá đã cam kết.'
+                    : 'Sau khi đăng, các thợ xung quanh sẽ gửi báo giá. Bạn có thể tự do so sánh tay nghề & giá cả trước khi chọn thợ.'}
                 </Text>
               </Card>
 
