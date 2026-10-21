@@ -1700,3 +1700,85 @@ export function useCreateReview() {
     },
   });
 }
+
+// ─── Loyalty (Feature 12 — Điểm thành viên & hạng khách) ─────────────────────
+
+export interface LoyaltyAccount {
+  user_id: string;
+  points_balance: number;
+  lifetime_points: number;
+  tier: 'regular' | 'silver' | 'gold';
+  tier_label: string;
+  next_tier_at: number | null;
+  points_to_next_tier: number;
+  redemption_cap_percent: number;
+  earn_vnd_per_point: number;
+  point_value_vnd: number;
+  min_redeem_points: number;
+}
+
+export interface LoyaltyTransactionItem {
+  _id: string;
+  type: 'earn' | 'redeem' | 'adjust';
+  points: number;
+  job_id?: string;
+  balance_after: number;
+  note?: string;
+  created_at: string;
+}
+
+export function useLoyaltyAccount() {
+  return useQuery({
+    queryKey: ['loyalty', 'me'],
+    queryFn: async () => {
+      const { data } = await apiClient.get('/loyalty/me');
+      return data.data as LoyaltyAccount;
+    },
+  });
+}
+
+export function useLoyaltyHistory(page = 1, limit = 30) {
+  return useQuery({
+    queryKey: ['loyalty', 'history', page, limit],
+    queryFn: async () => {
+      const { data } = await apiClient.get('/loyalty/me/history', { params: { page, limit } });
+      return data.data as {
+        transactions: LoyaltyTransactionItem[];
+        total: number;
+        page: number;
+        limit: number;
+        total_pages: number;
+      };
+    },
+  });
+}
+
+export function useApplyLoyaltyPoints() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ jobId, points }: { jobId: string; points: number }) =>
+      apiClient.post('/loyalty/apply', { job_id: jobId, points }),
+    onSuccess: (_, vars) => {
+      qc.invalidateQueries({ queryKey: ['job', vars.jobId] });
+      qc.invalidateQueries({ queryKey: ['loyalty'] });
+      Toast.show({ type: 'success', text1: 'Đã áp dụng điểm thành viên ⭐' });
+    },
+    onError: (err: any) => {
+      const msg = err?.response?.data?.message ?? 'Không áp dụng được điểm';
+      Toast.show({ type: 'error', text1: typeof msg === 'string' ? msg : 'Đã có lỗi xảy ra' });
+    },
+  });
+}
+
+export function useRemoveLoyaltyPoints() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (jobId: string) => apiClient.delete(`/loyalty/apply/${jobId}`),
+    onSuccess: (_, jobId) => {
+      qc.invalidateQueries({ queryKey: ['job', jobId] });
+      qc.invalidateQueries({ queryKey: ['loyalty'] });
+      Toast.show({ type: 'success', text1: 'Đã gỡ điểm khỏi đơn' });
+    },
+  });
+}
+

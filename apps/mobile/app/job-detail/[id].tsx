@@ -68,6 +68,7 @@ import { locationService } from '@/services/location.service';
 import { downloadInvoicePdf } from '@/services/invoice.service';
 import { LiveTrackingMap } from '@/components/common/live-tracking-map';
 import { TeamCard } from '@/components/common/team-card';
+import { LoyaltyPointsInput } from '@/components/common/loyalty-points-input';
 import { LocationPicker } from '@/components/common/location-picker';
 import { validCoordinate } from '@/services/tracking';
 import {
@@ -1205,6 +1206,11 @@ export default function JobDetailScreen() {
             {/* ── Voucher (Roadmap Phase 1) — đơn bảo hành miễn phí: ẩn ── */}
             {!job.is_warranty && (
               <JobVoucherRow job={job} contractTotal={contract.total_price} />
+            )}
+
+            {/* ── Loyalty (Feature 12) — dùng điểm khi chưa thanh toán ── */}
+            {!job.is_warranty && job.payment_status !== 'paid' && (
+              <LoyaltyPointsInput job={job} contractTotal={contract.total_price} />
             )}
 
             {/* Danh sách phụ lục phát sinh chi phí / vật tư */}
