@@ -11,6 +11,7 @@ import {
   type TouchableOpacityProps,
   type ViewProps,
 } from 'react-native';
+import { useTranslation } from '@/hooks/use-i18n';
 
 // ─── Green House Color Palette (Banana Green / Lime Fresh) ───────────────────
 export const COLORS = {
@@ -313,11 +314,13 @@ interface SectionHeaderProps {
 }
 
 export function SectionHeader({ title, action, onAction, subtitle }: SectionHeaderProps) {
+  // Feature 20: tiêu đề mục tự phóng theo cài đặt cỡ chữ của user.
+  const { fs } = useTranslation();
   return (
     <View style={{ marginBottom: 12 }}>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
         <Text
-          style={{ fontSize: 18, fontWeight: '800', color: COLORS.gray[900], letterSpacing: -0.3 }}
+          style={{ fontSize: fs(18), fontWeight: '800', color: COLORS.gray[900], letterSpacing: -0.3 }}
         >
           {title}
         </Text>
@@ -425,12 +428,17 @@ const JOB_STATUS_CONFIG: Record<string, { label: string; color: string; textColo
 };
 
 export function JobStatusBadge({ status }: { status: string }) {
+  // Feature 20: nhãn trạng thái dịch qua từ điển theo key `status_<status>`,
+  // fallback về nhãn tiếng Việt cứng nếu status lạ.
+  const { t } = useTranslation();
   const config = JOB_STATUS_CONFIG[status] ?? {
     label: status,
     color: COLORS.gray[100],
     textColor: COLORS.gray[700],
   };
-  return <Badge label={config.label} color={config.color} textColor={config.textColor} />;
+  const translated = t(`status_${status}`);
+  const label = translated === `status_${status}` ? config.label : translated;
+  return <Badge label={label} color={config.color} textColor={config.textColor} />;
 }
 
 // ─── Star Rating ───────────────────────────────────────────────────────────────
