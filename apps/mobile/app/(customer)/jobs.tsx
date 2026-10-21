@@ -7,22 +7,24 @@ import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import 'dayjs/locale/vi';
 import { useMyJobs } from '@/hooks/use-api';
+import { useTranslation } from '@/hooks/use-i18n';
 import { Card, JobStatusBadge, EmptyState, COLORS, Badge } from '@/components/ui';
 
 dayjs.extend(relativeTime);
 dayjs.locale('vi');
 
 const TABS = [
-  { key: undefined, label: 'Tất cả' },
-  { key: 'open,receiving_quotes', label: 'Chờ thợ báo giá' },
-  { key: 'confirmed,helper_on_the_way,helper_arrived,in_progress', label: 'Đang làm' },
-  { key: 'pending_review,disputed', label: 'Nghiệm thu / Khiếu nại' },
-  { key: 'completed,refunded', label: 'Hoàn thành / Hoàn tiền' },
-  { key: 'cancelled', label: 'Đã hủy' },
+  { key: undefined, labelKey: 'jobs_tab_all' },
+  { key: 'open,receiving_quotes', labelKey: 'jobs_tab_waiting' },
+  { key: 'confirmed,helper_on_the_way,helper_arrived,in_progress', labelKey: 'jobs_tab_working' },
+  { key: 'pending_review,disputed', labelKey: 'jobs_tab_review' },
+  { key: 'completed,refunded', labelKey: 'jobs_tab_done' },
+  { key: 'cancelled', labelKey: 'jobs_tab_cancelled' },
 ];
 
 export default function CustomerJobsScreen() {
   const router = useRouter();
+  const { t, fs } = useTranslation();
   const [activeTab, setActiveTab] = useState(0);
   const { data: jobs, isLoading, isRefetching, refetch } = useMyJobs(TABS[activeTab].key);
   const insets = useSafeAreaInsets();
@@ -44,11 +46,11 @@ export default function CustomerJobsScreen() {
         }}
       >
         <View>
-          <Text style={{ fontSize: 20, fontWeight: '800', color: COLORS.gray[900] }}>
-            Quản lý đơn hàng
+          <Text style={{ fontSize: fs(20), fontWeight: '800', color: COLORS.gray[900] }}>
+            {t('jobs_title')}
           </Text>
-          <Text style={{ fontSize: 12, color: COLORS.gray[500], marginTop: 2 }}>
-            Theo dõi và quản lý các yêu cầu của bạn
+          <Text style={{ fontSize: fs(12), color: COLORS.gray[500], marginTop: 2 }}>
+            {t('jobs_subtitle')}
           </Text>
         </View>
         <TouchableOpacity
@@ -104,7 +106,7 @@ export default function CustomerJobsScreen() {
                   color: activeTab === i ? '#fff' : COLORS.gray[600],
                 }}
               >
-                {tab.label}
+                {t(tab.labelKey)}
               </Text>
             </TouchableOpacity>
           ))}
@@ -128,13 +130,13 @@ export default function CustomerJobsScreen() {
           <Card style={{ alignItems: 'center', paddingVertical: 40 }}>
             <EmptyState
               emoji="📋"
-              title="Không có đơn hàng nào"
+              title={t('jobs_empty_title')}
               subtitle={
                 activeTab === 0
-                  ? 'Bạn chưa đăng yêu cầu dịch vụ nào.'
-                  : `Không có đơn hàng nào trong mục "${TABS[activeTab].label}".`
+                  ? t('jobs_empty_sub_all')
+                  : `${t('jobs_empty_title')} — "${t(TABS[activeTab].labelKey)}".`
               }
-              action="Đăng yêu cầu ngay"
+              action={t('jobs_empty_action')}
               onAction={() => router.push('/(customer)/booking')}
             />
           </Card>
@@ -188,18 +190,18 @@ export default function CustomerJobsScreen() {
                     style={{ flexDirection: 'row', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}
                   >
                     <Badge
-                      label={(job.service_id as { name: string } | null)?.name ?? 'Dịch vụ'}
+                      label={(job.service_id as { name: string } | null)?.name ?? t('jobs_service_fallback')}
                       size="sm"
                     />
                     {job.recurring_plan_id ? (
-                      <Badge label="🔁 Định kỳ" size="sm" color="#EFF6FF" textColor="#1D4ED8" />
+                      <Badge label={t('jobs_badge_recurring')} size="sm" color="#EFF6FF" textColor="#1D4ED8" />
                     ) : null}
                     {job.private_offer_helper_id ? (
-                      <Badge label="⭐ Gửi riêng" size="sm" color="#FDF2F8" textColor="#9D174D" />
+                      <Badge label={t('jobs_badge_private')} size="sm" color="#FDF2F8" textColor="#9D174D" />
                     ) : null}
                     {job.is_warranty ? (
                       <Badge
-                        label="🛡 Đơn bảo hành — Miễn phí"
+                        label={t('jobs_badge_warranty')}
                         size="sm"
                         color="#FFFBEB"
                         textColor="#92400E"
@@ -231,7 +233,7 @@ export default function CustomerJobsScreen() {
                   >
                     {job.helper_id ? (
                       <Text style={{ fontSize: 13, color: COLORS.gray[700], fontWeight: '600' }}>
-                        Thợ:{' '}
+                        {t('jobs_helper_label')}{' '}
                         <Text style={{ color: COLORS.gray[900], fontWeight: '700' }}>
                           {(job.helper_id as any).full_name}
                         </Text>
@@ -245,13 +247,13 @@ export default function CustomerJobsScreen() {
                         }}
                       >
                         {job.total_quotes_count > 0
-                          ? `💰 ${job.total_quotes_count} thợ đã báo giá`
-                          : 'Đang chờ thợ báo giá'}
+                          ? t('jobs_quotes_count', { count: job.total_quotes_count })
+                          : t('jobs_waiting_quotes')}
                       </Text>
                     )}
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}>
-                      <Text style={{ fontSize: 12.5, color: COLORS.primary, fontWeight: '700' }}>
-                        Chi tiết
+                      <Text style={{ fontSize: fs(12.5), color: COLORS.primary, fontWeight: '700' }}>
+                        {t('jobs_details')}
                       </Text>
                       <ChevronRight size={14} color={COLORS.primary} />
                     </View>

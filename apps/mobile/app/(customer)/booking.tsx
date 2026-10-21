@@ -45,8 +45,16 @@ import { locationService, OsmPlace } from '@/services/location.service';
 import { Button, Input, Card, COLORS } from '@/components/ui';
 import { VoucherInput } from '@/components/common/voucher-input';
 import type { VoucherPreview } from '@/hooks/use-api';
+import { useTranslation } from '@/hooks/use-i18n';
 
 const STEPS = ['Dịch vụ', 'Địa chỉ', 'Lịch hẹn', 'Mô tả', 'Xác nhận'];
+const STEP_KEYS = [
+  'booking_step_service',
+  'booking_step_address',
+  'booking_step_schedule',
+  'booking_step_description',
+  'booking_step_confirm',
+];
 
 const TIME_SLOTS = [
   '07:00',
@@ -167,6 +175,7 @@ const DEFAULT_SERVICES: BookingServiceOption[] = [
 
 export default function BookingScreen() {
   const router = useRouter();
+  const { t, fs } = useTranslation();
   const params = useLocalSearchParams<{
     service_id?: string;
     service_slug?: string;
@@ -707,8 +716,8 @@ export default function BookingScreen() {
         >
           <ArrowLeft size={20} color={COLORS.gray[800]} />
         </TouchableOpacity>
-        <Text style={{ fontSize: 18, fontWeight: '800', color: COLORS.gray[900], marginLeft: 12 }}>
-          Đăng yêu cầu dịch vụ
+        <Text style={{ fontSize: fs(18), fontWeight: '800', color: COLORS.gray[900], marginLeft: 12 }}>
+          {t('booking_screen_title')}
         </Text>
       </View>
 
@@ -727,8 +736,8 @@ export default function BookingScreen() {
             />
           ))}
         </View>
-        <Text style={{ fontSize: 12, color: COLORS.gray[500], fontWeight: '600' }}>
-          Bước {step + 1}/{STEPS.length}: {STEPS[step]}
+        <Text style={{ fontSize: fs(12), color: COLORS.gray[500], fontWeight: '600' }}>
+          {t('booking_step_indicator', { step: step + 1, total: STEPS.length, name: t(STEP_KEYS[step]) })}
         </Text>
       </View>
 
@@ -866,7 +875,7 @@ export default function BookingScreen() {
                       }}
                     >
                       <Text style={{ color: '#fff', fontWeight: '800', fontSize: 13 }}>
-                        Tiếp tục với gợi ý này →
+                        {t('booking_use_suggestion')}
                       </Text>
                     </TouchableOpacity>
                   </View>
@@ -934,7 +943,7 @@ export default function BookingScreen() {
                             fontWeight: '700',
                           }}
                         >
-                          🏷️ Giá cam kết: {new Intl.NumberFormat('vi-VN').format(svc.fixed_price)}₫
+                          {t('booking_fixed_price')} {new Intl.NumberFormat('vi-VN').format(svc.fixed_price)}₫
                           — nhận việc ngay, không cần báo giá
                         </Text>
                       ) : svc.base_price_min ? (
@@ -1504,8 +1513,8 @@ export default function BookingScreen() {
           {/* ── STEP 4: Xác nhận ─────────────────────────────────────── */}
           {step === 4 && (
             <View style={{ gap: 16 }}>
-              <Text style={{ fontSize: 20, fontWeight: '800', color: COLORS.gray[900] }}>
-                Xác nhận yêu cầu
+              <Text style={{ fontSize: fs(20), fontWeight: '800', color: COLORS.gray[900] }}>
+                {t('booking_confirm_title')}
               </Text>
 
               <Card style={{ gap: 14 }}>
@@ -1543,7 +1552,7 @@ export default function BookingScreen() {
                   }}
                 >
                   <Text style={{ fontWeight: '800', fontSize: 16, color: '#065F46' }}>
-                    🏷️ Giá cam kết:{' '}
+                    {t('booking_fixed_price')}{' '}
                     {new Intl.NumberFormat('vi-VN').format(selectedServiceData?.fixed_price ?? 0)}₫
                   </Text>
                   <Text style={{ fontSize: 13, color: COLORS.gray[700], lineHeight: 19 }}>
@@ -1800,7 +1809,7 @@ export default function BookingScreen() {
         }}
       >
         <Button
-          title={step === STEPS.length - 1 ? 'Đăng yêu cầu ngay' : 'Tiếp theo'}
+          title={step === STEPS.length - 1 ? t('booking_submit') : t('booking_continue')}
           loading={createJob.isPending}
           onPress={handleNextStep}
           icon={step < STEPS.length - 1 ? <ArrowRight size={18} color="#fff" /> : undefined}

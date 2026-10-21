@@ -21,6 +21,7 @@ import {
   CheckCircle2,
 } from 'lucide-react-native';
 import { useAuthStore } from '@/stores/auth.store';
+import { useTranslation } from '@/hooks/use-i18n';
 import { useServices, useMyJobs, useUnreadCount, useMyProfile } from '@/hooks/use-api';
 import { locationService } from '@/services/location.service';
 import { LocationPicker, PickerCoords } from '@/components/common/location-picker';
@@ -214,6 +215,7 @@ function ServiceCategoryCard({
 
 export default function CustomerHomeScreen() {
   const router = useRouter();
+  const { t, fs } = useTranslation();
   const storedUser = useAuthStore(s => s.user);
   const { data: profile } = useMyProfile();
   const user = profile ?? storedUser;
@@ -252,7 +254,7 @@ export default function CustomerHomeScreen() {
     <View style={{ flex: 1, backgroundColor: '#F8F9FA' }}>
       <LocationPicker
         visible={locationPickerOpen}
-        title="Chọn khu vực của bạn"
+        title={t('home_pick_location')}
         initial={currentCoords}
         onClose={() => setLocationPickerOpen(false)}
         onConfirm={(coords, geo) => {
@@ -292,14 +294,14 @@ export default function CustomerHomeScreen() {
           >
             <Avatar name={user?.full_name} uri={user?.avatar} size={42} />
             <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 12, color: COLORS.gray[400], fontWeight: '600' }}>
-                Xin chào 👋
+              <Text style={{ fontSize: fs(12), color: COLORS.gray[400], fontWeight: '600' }}>
+                {t('home_greeting')}
               </Text>
               <Text
                 style={{ fontSize: 16, fontWeight: '800', color: COLORS.gray[900] }}
                 numberOfLines={1}
               >
-                {user?.full_name ?? 'Khách'}
+                {user?.full_name ?? t('home_guest')}
               </Text>
             </View>
             <ChevronRight size={18} color={COLORS.gray[400]} />
@@ -333,8 +335,8 @@ export default function CustomerHomeScreen() {
                 <MapPin size={18} color={COLORS.primary} />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 11, color: COLORS.gray[400], fontWeight: '600' }}>
-                  Vị trí của bạn
+                <Text style={{ fontSize: fs(11), color: COLORS.gray[400], fontWeight: '600' }}>
+                  {t('home_your_location')}
                 </Text>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}>
                   <Text
@@ -398,8 +400,8 @@ export default function CustomerHomeScreen() {
             }}
           >
             <Search size={18} color={COLORS.gray[400]} />
-            <Text style={{ flex: 1, color: COLORS.gray[400], fontSize: 14, fontWeight: '500' }}>
-              Tìm thợ sửa điện, dọn nhà, sửa máy lạnh...
+            <Text style={{ flex: 1, color: COLORS.gray[400], fontSize: fs(14), fontWeight: '500' }}>
+              {t('home_search_placeholder')}
             </Text>
           </TouchableOpacity>
         </View>
@@ -446,7 +448,7 @@ export default function CustomerHomeScreen() {
                       letterSpacing: 0.3,
                     }}
                   >
-                    CỨU HỘ SOS KHẨN CẤP
+                    {t('home_sos_title')}
                   </Text>
                   <View
                     style={{
@@ -457,7 +459,7 @@ export default function CustomerHomeScreen() {
                     }}
                   >
                     <Text style={{ color: '#DC2626', fontSize: 10, fontWeight: '900' }}>
-                      15P CÓ MẶT
+                      {t('home_sos_badge')}
                     </Text>
                   </View>
                 </View>
@@ -469,7 +471,7 @@ export default function CustomerHomeScreen() {
                     fontWeight: '500',
                   }}
                 >
-                  Chập điện, vỡ ống nước, kẹt khóa cửa ngoài...
+                  {t('home_sos_subtitle')}
                 </Text>
               </View>
             </View>
@@ -515,8 +517,8 @@ export default function CustomerHomeScreen() {
               </View>
               <View style={{ flex: 1 }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                  <Text style={{ color: '#fff', fontWeight: '800', fontSize: 16 }}>
-                    Trợ lý AI Green House
+                  <Text style={{ color: '#fff', fontWeight: '800', fontSize: fs(16) }}>
+                    {t('home_ai_title')}
                   </Text>
                   <View
                     style={{
@@ -550,7 +552,7 @@ export default function CustomerHomeScreen() {
         {/* ── 4. Danh mục dịch vụ nổi bật ─────────────────────────────── */}
         <View style={{ paddingHorizontal: 16, marginTop: 22 }}>
           <SectionHeader
-            title="Dịch vụ nổi bật"
+            title={t('home_featured_services')}
             action="Xem thêm"
             onAction={() => router.push('/(customer)/booking')}
           />
@@ -615,8 +617,8 @@ export default function CustomerHomeScreen() {
         {activeJobs.length > 0 && (
           <View style={{ paddingHorizontal: 16, marginTop: 24 }}>
             <SectionHeader
-              title="Đơn đang thực hiện"
-              subtitle="Theo dõi tiến độ thợ theo thời gian thực"
+              title={t('home_active_jobs')}
+              subtitle={t('home_active_jobs_sub')}
               action="Tất cả"
               onAction={() => router.push('/(customer)/jobs')}
             />
@@ -725,7 +727,7 @@ export default function CustomerHomeScreen() {
         {/* ── 7. Lịch sử đặt việc gần đây ──────────────────────────────── */}
         <View style={{ paddingHorizontal: 16, marginTop: 24 }}>
           <SectionHeader
-            title="Lịch sử đặt việc"
+            title={t('home_history')}
             action="Xem tất cả"
             onAction={() => router.push('/(customer)/jobs')}
           />
@@ -735,8 +737,8 @@ export default function CustomerHomeScreen() {
             <Card>
               <EmptyState
                 emoji="🔧"
-                title="Chưa có yêu cầu nào"
-                subtitle="Đăng việc ngay để thợ xung quanh bạn báo giá nhanh chóng!"
+                title={t('home_no_jobs_title')}
+                subtitle={t('home_no_jobs_sub')}
                 action="Đăng việc ngay"
                 onAction={() => router.push('/(customer)/booking')}
               />

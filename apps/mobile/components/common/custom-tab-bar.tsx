@@ -3,6 +3,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity, Platform, StyleSheet } from 'react-native';
 import { Home, Clock, MessageSquare, User, Plus, Briefcase, TrendingUp } from 'lucide-react-native';
 import { COLORS } from '@/components/ui';
+import { useTranslation } from '@/hooks/use-i18n';
 
 interface CustomTabBarProps {
   state: any;
@@ -17,6 +18,7 @@ export function CustomTabBar({
   navigation,
   mode = 'customer',
 }: CustomTabBarProps) {
+  const { t, fs } = useTranslation();
   return (
     <View style={styles.container}>
       <View style={styles.tabBar}>
@@ -52,7 +54,7 @@ export function CustomTabBar({
                   <View style={styles.centerIconWrapper}>
                     <Plus size={26} color="#FFFFFF" strokeWidth={3} />
                   </View>
-                  <Text style={styles.centerLabel}>Đăng việc</Text>
+                  <Text style={[styles.centerLabel, { fontSize: fs(10.5) }]}>{t('tab_booking')}</Text>
                 </TouchableOpacity>
               </View>
             );
@@ -60,12 +62,12 @@ export function CustomTabBar({
 
           // ── Các tab thông thường ─────────────────────────────────────
           let label = options.title !== undefined ? options.title : route.name;
-          if (route.name === 'home') label = 'Trang chủ';
-          if (route.name === 'jobs') label = mode === 'helper' ? 'Nhận việc' : 'Hoạt động';
-          if (route.name === 'messages') label = 'Tin nhắn';
-          if (route.name === 'profile') label = 'Tài khoản';
-          if (route.name === 'dashboard') label = 'Tổng quan';
-          if (route.name === 'earnings') label = 'Thu nhập';
+          if (route.name === 'home') label = t('tab_home');
+          if (route.name === 'jobs') label = mode === 'helper' ? t('tab_helper_jobs') : t('tab_activity');
+          if (route.name === 'messages') label = t('tab_messages');
+          if (route.name === 'profile') label = t('tab_account');
+          if (route.name === 'dashboard') label = t('tab_overview');
+          if (route.name === 'earnings') label = t('tab_earnings');
 
           const iconColor = isFocused ? COLORS.primary : COLORS.gray[400];
           const iconSize = 22;
@@ -127,6 +129,7 @@ export function CustomTabBar({
                 style={[
                   styles.tabLabel,
                   {
+                    fontSize: fs(10.5),
                     color: isFocused ? COLORS.primary : COLORS.gray[500],
                     fontWeight: isFocused ? '800' : '600',
                   },

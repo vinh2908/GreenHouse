@@ -38,6 +38,7 @@ import {
   useAcceptSosJob,
   useUpdateHelperLocation,
 } from '@/hooks/use-api';
+import { useTranslation } from '@/hooks/use-i18n';
 import { locationService } from '@/services/location.service';
 import { socketService, SOCKET_EVENTS } from '@/services/socket.service';
 import {
@@ -59,6 +60,7 @@ dayjs.locale('vi');
 
 export default function HelperDashboardScreen() {
   const router = useRouter();
+  const { t, fs } = useTranslation();
   const storedUser = useAuthStore(s => s.user);
   // Stored login payload has no avatar — prefer the full profile from the API
   const { data: myProfile } = useMyProfile();
@@ -391,10 +393,10 @@ export default function HelperDashboardScreen() {
                     }}
                   >
                     {isWorking
-                      ? 'Đang bận làm việc (Cuốc đang chạy)'
+                      ? t('dash_busy')
                       : isOnline
-                        ? 'Đang nhận đơn mới'
-                        : 'Ngoại tuyến (Đã tắt nhận đơn)'}
+                        ? t('dash_accepting')
+                        : t('dash_paused')}
                   </Text>
                 </View>
                 <Text
@@ -410,10 +412,10 @@ export default function HelperDashboardScreen() {
                   }}
                 >
                   {isWorking
-                    ? 'Bạn đang có công việc đang tiến hành. Trạng thái sẽ tự chuyển về Đang nhận đơn khi bạn hoàn tất nghiệm thu.'
+                    ? t('dash_working_hint')
                     : isOnline
-                      ? 'Bạn sẽ nhận được thông báo ngay khi có khách hàng đăng việc gần bạn trong bán kính 15km.'
-                      : 'Gạt công tắc để mở radar quét đơn hàng dịch vụ gần bạn.'}
+                      ? t('dash_online_hint')
+                      : t('dash_offline_hint')}
                 </Text>
               </View>
 
@@ -448,16 +450,16 @@ export default function HelperDashboardScreen() {
                     alignItems: 'center',
                   }}
                 >
-                  <Text style={{ fontSize: 11, color: COLORS.gray[500], fontWeight: '700' }}>
-                    VÍ THU NHẬP
+                  <Text style={{ fontSize: fs(11), color: COLORS.gray[500], fontWeight: '700' }}>
+                    {t('dash_wallet')}
                   </Text>
                   <TrendingUp size={16} color={COLORS.success} />
                 </View>
                 <PriceText amount={wallet?.balance ?? 0} size={17} color={COLORS.gray[900]} />
                 <Text
-                  style={{ fontSize: 11, color: COLORS.primary, fontWeight: '700', marginTop: 2 }}
+                  style={{ fontSize: fs(11), color: COLORS.primary, fontWeight: '700', marginTop: 2 }}
                 >
-                  Rút tiền →
+                  {t('dash_withdraw')}
                 </Text>
               </Card>
             </TouchableOpacity>
@@ -472,16 +474,16 @@ export default function HelperDashboardScreen() {
                     alignItems: 'center',
                   }}
                 >
-                  <Text style={{ fontSize: 11, color: COLORS.gray[500], fontWeight: '700' }}>
-                    ĐÃ LÀM
+                  <Text style={{ fontSize: fs(11), color: COLORS.gray[500], fontWeight: '700' }}>
+                    {t('dash_done')}
                   </Text>
                   <Briefcase size={16} color={COLORS.secondary} />
                 </View>
-                <Text style={{ fontSize: 17, fontWeight: '800', color: COLORS.gray[900] }}>
-                  {totalCompleted} đơn
+                <Text style={{ fontSize: fs(17), fontWeight: '800', color: COLORS.gray[900] }}>
+                  {t('dash_jobs_unit', { count: totalCompleted })}
                 </Text>
-                <Text style={{ fontSize: 11, color: COLORS.gray[400], marginTop: 2 }}>
-                  Tỷ lệ nhận 100%
+                <Text style={{ fontSize: fs(11), color: COLORS.gray[400], marginTop: 2 }}>
+                  {t('dash_acceptance_rate')}
                 </Text>
               </Card>
             </View>
@@ -496,16 +498,16 @@ export default function HelperDashboardScreen() {
                     alignItems: 'center',
                   }}
                 >
-                  <Text style={{ fontSize: 11, color: COLORS.gray[500], fontWeight: '700' }}>
-                    UY TÍN
+                  <Text style={{ fontSize: fs(11), color: COLORS.gray[500], fontWeight: '700' }}>
+                    {t('dash_reputation')}
                   </Text>
                   <Star size={16} color="#F59E0B" />
                 </View>
                 <Text style={{ fontSize: 17, fontWeight: '800', color: '#F59E0B' }}>
                   ★ {avgRating.toFixed(1)}
                 </Text>
-                <Text style={{ fontSize: 11, color: COLORS.gray[400], marginTop: 2 }}>
-                  Thợ xuất sắc
+                <Text style={{ fontSize: fs(11), color: COLORS.gray[400], marginTop: 2 }}>
+                  {t('dash_top_helper')}
                 </Text>
               </Card>
             </View>
@@ -516,8 +518,8 @@ export default function HelperDashboardScreen() {
         {activeJob && (
           <View style={{ paddingHorizontal: 16, marginTop: 20 }}>
             <SectionHeader
-              title="Công việc đang tiến hành"
-              subtitle="Nhấn để cập nhật trạng thái di chuyển / hoàn thành"
+              title={t('dash_active_job')}
+              subtitle={t('dash_active_job_sub')}
             />
             <TouchableOpacity
               activeOpacity={0.85}

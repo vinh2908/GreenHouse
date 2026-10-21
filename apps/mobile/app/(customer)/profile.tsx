@@ -21,33 +21,36 @@ import { Alert } from '@/components/common/app-alert';
 import { useAuthStore } from '@/stores/auth.store';
 import { useMyProfile, useSwitchRole, useLoyaltyAccount } from '@/hooks/use-api';
 import { Avatar, Card, COLORS, Separator } from '@/components/ui';
+import { useTranslation } from '@/hooks/use-i18n';
+import { DisplaySettingsSection } from '@/components/common/display-settings';
 
 const MENU_SECTIONS = [
   {
-    title: 'Tài khoản & Cá nhân',
+    titleKey: 'profile_section_account',
     items: [
-      { icon: User, label: 'Thông tin cá nhân', route: '/edit-profile' },
-      { icon: MapPin, label: 'Địa chỉ đã lưu', route: '/edit-profile' },
-      { icon: CreditCard, label: 'Phương thức thanh toán & Ví', route: '/bank-account' },
-      { icon: Bell, label: 'Cài đặt thông báo', route: '/notifications' },
-      { icon: Heart, label: 'Thợ yêu thích', route: '/favorites' },
-      { icon: CalendarClock, label: 'Gói định kỳ của tôi', route: '/recurring-plans' },
-      { icon: CalendarClock, label: 'Hợp đồng theo tháng', route: '/monthly-contracts' },
+      { icon: User, labelKey: 'profile_personal_info', route: '/edit-profile' },
+      { icon: MapPin, labelKey: 'profile_saved_addresses', route: '/edit-profile' },
+      { icon: CreditCard, labelKey: 'profile_payment_wallet', route: '/bank-account' },
+      { icon: Bell, labelKey: 'profile_notification_settings', route: '/notifications' },
+      { icon: Heart, labelKey: 'profile_favorite_helpers', route: '/favorites' },
+      { icon: CalendarClock, labelKey: 'profile_recurring_plans', route: '/recurring-plans' },
+      { icon: CalendarClock, labelKey: 'profile_monthly_contracts', route: '/monthly-contracts' },
     ],
   },
   {
-    title: 'Hỗ trợ & Pháp lý',
+    titleKey: 'profile_section_support',
     items: [
-      { icon: HelpCircle, label: '💬 Hỗ trợ trực tuyến', route: '/support-chat' },
-      { icon: HelpCircle, label: 'Trung tâm trợ giúp Vua Thợ (24/7)', route: '/help-center' },
-      { icon: Shield, label: 'Chính sách bảo mật & Bảo hiểm 30 ngày', route: '/policy-insurance' },
-      { icon: Star, label: 'Đánh giá ứng dụng Green House', route: '__rate_app__' },
+      { icon: HelpCircle, labelKey: 'profile_support_online', route: '/support-chat' },
+      { icon: HelpCircle, labelKey: 'profile_help_center', route: '/help-center' },
+      { icon: Shield, labelKey: 'profile_privacy_insurance', route: '/policy-insurance' },
+      { icon: Star, labelKey: 'profile_rate_app', route: '__rate_app__' },
     ],
   },
 ];
 
 export default function CustomerProfileScreen() {
   const router = useRouter();
+  const { t, fs } = useTranslation();
   const queryClient = useQueryClient();
   const logout = useAuthStore(s => s.logout);
   const user = useAuthStore(s => s.user);
@@ -139,8 +142,8 @@ export default function CustomerProfileScreen() {
                   marginTop: 6,
                 }}
               >
-                <Text style={{ fontSize: 12, fontWeight: '700', color: COLORS.primary }}>
-                  Chỉnh sửa hồ sơ ✏️
+                <Text style={{ fontSize: fs(12), fontWeight: '700', color: COLORS.primary }}>
+                  {t('profile_edit')}
                 </Text>
               </View>
             </TouchableOpacity>
@@ -148,14 +151,14 @@ export default function CustomerProfileScreen() {
             <View style={{ alignItems: 'center' }}>
               <Avatar name="Khách" size={80} />
               <Text
-                style={{ fontSize: 20, fontWeight: '800', color: COLORS.gray[900], marginTop: 12 }}
+                style={{ fontSize: fs(20), fontWeight: '800', color: COLORS.gray[900], marginTop: 12 }}
               >
-                Khách trải nghiệm
+                {t('profile_guest_name')}
               </Text>
               <Text
-                style={{ fontSize: 13, color: COLORS.gray[500], marginTop: 4, fontWeight: '500' }}
+                style={{ fontSize: fs(13), color: COLORS.gray[500], marginTop: 4, fontWeight: '500' }}
               >
-                Chưa đăng nhập tài khoản
+                {t('profile_not_logged_in')}
               </Text>
               <TouchableOpacity
                 onPress={() => router.push('/(auth)/login')}
@@ -167,8 +170,8 @@ export default function CustomerProfileScreen() {
                   marginTop: 10,
                 }}
               >
-                <Text style={{ color: '#fff', fontWeight: '700', fontSize: 13 }}>
-                  Đăng nhập / Tạo tài khoản
+                <Text style={{ color: '#fff', fontWeight: '700', fontSize: fs(13) }}>
+                  {t('profile_login')}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -192,8 +195,8 @@ export default function CustomerProfileScreen() {
             }}
           >
             <Wrench size={18} color={COLORS.primary} />
-            <Text style={{ color: COLORS.primary, fontWeight: '800', fontSize: 14 }}>
-              Chuyển sang chế độ Nhận việc / Thợ →
+            <Text style={{ color: COLORS.primary, fontWeight: '800', fontSize: fs(14) }}>
+              {t('profile_switch_helper')}
             </Text>
           </TouchableOpacity>
         </View>
@@ -204,13 +207,15 @@ export default function CustomerProfileScreen() {
             <Card style={{ gap: 6, backgroundColor: '#FFFBEB' }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                 <Star size={20} color="#D97706" />
-                <Text style={{ flex: 1, fontWeight: '800', fontSize: 15, color: '#92400E' }}>
-                  Điểm thành viên — Hạng {loyalty?.tier_label ?? 'Thường'}
+                <Text style={{ flex: 1, fontWeight: '800', fontSize: fs(15), color: '#92400E' }}>
+                  {t('profile_loyalty_title', { tier: loyalty?.tier_label ?? 'Thường' })}
                 </Text>
                 <ChevronRight size={16} color="#92400E" />
               </View>
-              <Text style={{ fontSize: 22, fontWeight: '800', color: COLORS.gray[900] }}>
-                {new Intl.NumberFormat('vi-VN').format(loyalty?.points_balance ?? 0)} điểm
+              <Text style={{ fontSize: fs(22), fontWeight: '800', color: COLORS.gray[900] }}>
+                {t('profile_loyalty_points', {
+                  points: new Intl.NumberFormat('vi-VN').format(loyalty?.points_balance ?? 0),
+                })}
               </Text>
               <Text style={{ fontSize: 12.5, color: COLORS.gray[600] }}>
                 Đổi điểm giảm tối đa {loyalty?.redemption_cap_percent ?? 20}% giá trị đơn · Xem lịch
@@ -223,7 +228,7 @@ export default function CustomerProfileScreen() {
         {/* ── Menu Sections ──────────────────────────────────────────── */}
         <View style={{ padding: 16, gap: 16 }}>
           {MENU_SECTIONS.map(section => (
-            <View key={section.title}>
+            <View key={section.titleKey}>
               <Text
                 style={{
                   fontSize: 12,
@@ -234,11 +239,11 @@ export default function CustomerProfileScreen() {
                   letterSpacing: 0.5,
                 }}
               >
-                {section.title}
+                {t(section.titleKey)}
               </Text>
               <Card style={{ gap: 0 }}>
                 {section.items.map((item, i) => (
-                  <View key={item.label}>
+                  <View key={item.labelKey}>
                     {i > 0 && <Separator my={0} />}
                     <TouchableOpacity
                       activeOpacity={0.7}
@@ -270,7 +275,7 @@ export default function CustomerProfileScreen() {
                           fontWeight: '600',
                         }}
                       >
-                        {item.label}
+                        {t(item.labelKey)}
                       </Text>
                       <ChevronRight size={16} color={COLORS.gray[400]} />
                     </TouchableOpacity>
@@ -279,6 +284,9 @@ export default function CustomerProfileScreen() {
               </Card>
             </View>
           ))}
+
+          {/* ── Display settings (Feature 20) ─────────────────────────── */}
+          <DisplaySettingsSection />
 
           {displayUser && (
             <TouchableOpacity
@@ -297,8 +305,8 @@ export default function CustomerProfileScreen() {
               }}
             >
               <LogOut size={18} color={COLORS.error} />
-              <Text style={{ fontSize: 15, fontWeight: '700', color: COLORS.error }}>
-                Đăng xuất
+              <Text style={{ fontSize: fs(15), fontWeight: '700', color: COLORS.error }}>
+                {t('profile_logout')}
               </Text>
             </TouchableOpacity>
           )}
@@ -311,7 +319,7 @@ export default function CustomerProfileScreen() {
               fontWeight: '500',
             }}
           >
-            Green House v1.0.0 • Dịch vụ gia đình chuyên nghiệp
+            {t('profile_app_version_customer')}
           </Text>
         </View>
       </ScrollView>

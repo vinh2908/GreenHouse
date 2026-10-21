@@ -37,6 +37,7 @@ import {
 } from '@/components/ui';
 import dayjs from 'dayjs';
 import { EarningsReport } from '@/components/helper/earnings-report';
+import { useTranslation } from '@/hooks/use-i18n';
 
 const TX_ICONS: Record<string, string> = {
   earning: '💰',
@@ -57,6 +58,7 @@ const TX_COLORS: Record<string, string> = {
 };
 
 export default function HelperEarningsScreen() {
+  const { t, fs } = useTranslation();
   const { data: wallet, isLoading } = useWallet();
   const { data: txData } = useTransactions(1);
   const { data: profile } = useHelperProfile();
@@ -161,7 +163,7 @@ export default function HelperEarningsScreen() {
               fontWeight: '600',
             }}
           >
-            Số dư ví ký quỹ & thu nhập khả dụng
+            {t('earn_wallet_balance_label')}
           </Text>
           <PriceText amount={wallet?.balance ?? 0} size={36} color="#fff" />
           <Text
@@ -172,7 +174,7 @@ export default function HelperEarningsScreen() {
               fontWeight: '500',
             }}
           >
-            Tổng thu nhập đã nhận:{' '}
+            {t('earn_total_received')}{' '}
             {new Intl.NumberFormat('vi-VN').format(wallet?.total_earned ?? 0)}₫
           </Text>
         </View>
@@ -191,7 +193,7 @@ export default function HelperEarningsScreen() {
                   fontWeight: '600',
                 }}
               >
-                Tổng thu nhập
+                {t('earn_total_income')}
               </Text>
             </Card>
             <Card style={{ flex: 1, alignItems: 'center', gap: 6 }}>
@@ -205,7 +207,7 @@ export default function HelperEarningsScreen() {
                   fontWeight: '600',
                 }}
               >
-                Đã rút về TK
+                {t('earn_withdrawn')}
               </Text>
             </Card>
           </View>
@@ -215,7 +217,7 @@ export default function HelperEarningsScreen() {
         <View style={{ paddingHorizontal: 16, marginTop: 20, gap: 10 }}>
           <View style={{ flexDirection: 'row', gap: 10 }}>
             <Button
-              title="Nạp ví ký quỹ"
+              title={t('earn_topup_wallet')}
               variant="outline"
               fullWidth={false}
               style={{ flex: 1 }}
@@ -223,7 +225,7 @@ export default function HelperEarningsScreen() {
               icon={<ArrowUpCircle size={18} color={COLORS.primary} />}
             />
             <Button
-              title="Rút về ngân hàng"
+              title={t('earn_withdraw_bank')}
               variant={wallet?.balance >= 50000 ? 'primary' : 'secondary'}
               fullWidth={false}
               style={{ flex: 1 }}
@@ -240,8 +242,8 @@ export default function HelperEarningsScreen() {
           <Text
             style={{ fontSize: 12, color: COLORS.gray[500], textAlign: 'center', lineHeight: 18 }}
           >
-            💡 Đơn thanh toán Online sẽ cộng 85% vào ví. Đơn thu Tiền mặt trực tiếp sẽ khấu trừ 15%
-            phí sàn từ ví ký quỹ.
+            {t('earn_note')}
+
           </Text>
         </View>
 
@@ -255,14 +257,14 @@ export default function HelperEarningsScreen() {
           <Text
             style={{ fontSize: 17, fontWeight: '800', color: COLORS.gray[900], marginBottom: 12 }}
           >
-            Lịch sử biến động số dư
+            {t('earn_history_title')}
           </Text>
 
           {!txData?.transactions?.length ? (
             <EmptyState
               emoji="💸"
-              title="Chưa có giao dịch nào"
-              subtitle="Các khoản thu nhập, nạp ký quỹ và khấu trừ hoa hồng sẽ hiển thị tại đây"
+              title={t('earn_no_transactions')}
+              subtitle={t('earn_no_transactions_sub')}
             />
           ) : (
             <Card style={{ gap: 0 }}>
@@ -364,7 +366,7 @@ export default function HelperEarningsScreen() {
             <Text
               style={{ fontSize: 18, fontWeight: '800', marginLeft: 12, color: COLORS.gray[900] }}
             >
-              Nạp tiền vào ví ký quỹ
+              {t('earn_topup_title')}
             </Text>
           </View>
 
@@ -375,7 +377,7 @@ export default function HelperEarningsScreen() {
             <ScrollView contentContainerStyle={{ padding: 20, gap: 18 }}>
               <Card style={{ backgroundColor: COLORS.primaryLight, gap: 6 }}>
                 <Text style={{ fontSize: 13, color: COLORS.primaryDark, fontWeight: '800' }}>
-                  Số dư ví hiện tại
+                  {t('earn_current_balance')}
                 </Text>
                 <PriceText amount={wallet?.balance ?? 0} size={24} />
                 <Text style={{ fontSize: 12, color: COLORS.gray[700], lineHeight: 18 }}>
@@ -457,7 +459,7 @@ export default function HelperEarningsScreen() {
             <Text
               style={{ fontSize: 18, fontWeight: '800', marginLeft: 12, color: COLORS.gray[900] }}
             >
-              Rút tiền về tài khoản
+              {t('earn_withdraw_title')}
             </Text>
           </View>
 
@@ -468,7 +470,7 @@ export default function HelperEarningsScreen() {
             <ScrollView contentContainerStyle={{ padding: 20, gap: 16 }}>
               <Card style={{ backgroundColor: COLORS.primaryLight, gap: 6 }}>
                 <Text style={{ fontSize: 12, color: COLORS.primary, fontWeight: '600' }}>
-                  Số dư hiện tại
+                  {t('earn_current_balance_short')}
                 </Text>
                 <PriceText amount={wallet?.balance ?? 0} size={24} />
               </Card>
