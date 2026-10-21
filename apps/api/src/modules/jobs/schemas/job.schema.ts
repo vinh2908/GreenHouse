@@ -116,6 +116,15 @@ export class Job {
   @Prop({ default: 0 })
   total_quotes_count: number;
 
+  // ── Giá cam kết / Fixed price (Roadmap Phase 1 — Feature 7) ─────────────
+  // Snapshot từ Service tại thời điểm tạo đơn: nếu dịch vụ là giá cam kết,
+  // đơn không nhận báo giá — thợ nhận việc trực tiếp với đúng giá này.
+  @Prop({ default: false })
+  is_fixed_price: boolean;
+
+  @Prop({ default: 0 })
+  fixed_price: number; // Giá cam kết (VNĐ) snapshot từ service.fixed_price
+
   // ── Roadmap Phase 1: Private offer cho thợ yêu thích ─────────────────────
   // Khi còn hiệu lực, job chỉ hiển thị / nhận báo giá từ thợ được chỉ định.
   @Prop({ type: Types.ObjectId, ref: 'User' })

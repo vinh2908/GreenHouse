@@ -38,6 +38,8 @@ type Draft = {
   price_range_min: string;
   price_range_max: string;
   platform_fee_percent: string;
+  pricing_model: 'quote' | 'fixed';
+  fixed_price: string;
 };
 
 const EMPTY: Draft = {
@@ -48,6 +50,8 @@ const EMPTY: Draft = {
   price_range_min: '0',
   price_range_max: '0',
   platform_fee_percent: '15',
+  pricing_model: 'quote',
+  fixed_price: '0',
 };
 
 const slugify = (s: string) =>
@@ -85,6 +89,8 @@ export default function ServicesPage() {
       price_range_min: String(s.price_range_min ?? 0),
       price_range_max: String(s.price_range_max ?? 0),
       platform_fee_percent: String(s.platform_fee_percent ?? 15),
+      pricing_model: s.pricing_model === 'fixed' ? 'fixed' : 'quote',
+      fixed_price: String(s.fixed_price ?? 0),
     });
 
   const submit = (e: React.FormEvent) => {
@@ -101,6 +107,8 @@ export default function ServicesPage() {
         price_range_min: Number(rest.price_range_min),
         price_range_max: Number(rest.price_range_max),
         platform_fee_percent: Number(rest.platform_fee_percent),
+        pricing_model: rest.pricing_model,
+        fixed_price: Number(rest.fixed_price) || 0,
       },
       { onSuccess: () => setDraft(null) },
     );
@@ -215,6 +223,28 @@ export default function ServicesPage() {
                 value={draft.platform_fee_percent}
                 onChange={set('platform_fee_percent')}
               />
+              <Select
+                label="Mô hình giá"
+                value={draft.pricing_model}
+                onChange={e =>
+                  setDraft(d =>
+                    d ? { ...d, pricing_model: e.target.value as 'quote' | 'fixed' } : d,
+                  )
+                }
+                options={[
+                  { value: 'quote', label: 'Báo giá — thợ gửi giá, khách chọn' },
+                  { value: 'fixed', label: 'Giá cam kết — giá cố định, thợ nhận việc ngay' },
+                ]}
+              />
+              {draft.pricing_model === 'fixed' && (
+                <Input
+                  label="Giá cam kết (₫)"
+                  type="number"
+                  min={0}
+                  value={draft.fixed_price}
+                  onChange={set('fixed_price')}
+                />
+              )}
               {(save.error || createCategory.error) && (
                 <p className="text-sm text-destructive sm:col-span-2">
                   {errorMessage(save.error || createCategory.error)}
@@ -262,7 +292,15 @@ export default function ServicesPage() {
                     </p>
                   </TableCell>
                   <TableCell className="text-sm">
-                    {formatVND(s.price_range_min ?? 0)} – {formatVND(s.price_range_max ?? 0)}
+                    {s.pricing_model === 'fixed' ? (
+                      <span className="font-semibold text-emerald-700">
+                        🏷️ Giá cam kết: {formatVND(s.fixed_price ?? 0)}
+                      </span>
+                    ) : (
+                      <>
+                        {formatVND(s.price_range_min ?? 0)} – {formatVND(s.price_range_max ?? 0)}
+                      </>
+                    )}
                   </TableCell>
                   <TableCell className="text-sm">{s.platform_fee_percent ?? 15}%</TableCell>
                   <TableCell>

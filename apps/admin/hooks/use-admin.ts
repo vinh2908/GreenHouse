@@ -290,6 +290,8 @@ export interface AdminService {
   price_range_min: number;
   price_range_max: number;
   platform_fee_percent: number;
+  pricing_model?: 'quote' | 'fixed'; // Feature 7: báo giá | giá cam kết
+  fixed_price?: number;
   category_id: { _id: string; name: string } | null;
 }
 

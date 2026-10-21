@@ -3,6 +3,7 @@ import { View, Text, ScrollView, TouchableOpacity, RefreshControl } from 'react-
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { ChevronRight, MapPin, Clock, Navigation } from 'lucide-react-native';
+import Toast from 'react-native-toast-message';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import 'dayjs/locale/vi';
@@ -12,6 +13,7 @@ import {
   useHelperProfile,
   useTeamInvitations,
   useRespondTeamInvitation,
+  useAcceptFixedPrice,
 } from '@/hooks/use-api';
 import { Button, Card, JobStatusBadge, Badge, COLORS, EmptyState } from '@/components/ui';
 
@@ -30,6 +32,8 @@ export default function HelperJobsScreen() {
   // ── Đơn nhóm: lời mời vào nhóm đang chờ (Roadmap Phase 1) ────────────────
   const { data: teamInvitations } = useTeamInvitations();
   const respondInvitation = useRespondTeamInvitation();
+  // Feature 7/9: nhận việc trực tiếp (giá cam kết / đơn bảo hành)
+  const acceptFixed = useAcceptFixedPrice();
   const { data: helperProfile, isLoading: pLoading } = useHelperProfile();
   const kycStatus = helperProfile?.verification_status as string | undefined;
   const isVerified = kycStatus === 'approved';
@@ -248,6 +252,9 @@ export default function HelperJobsScreen() {
               recurring_plan_id?: string;
               is_recurring?: boolean;
               is_private_offer?: boolean;
+              is_fixed_price?: boolean;
+              fixed_price?: number;
+              is_warranty?: boolean;
             }) => (
               <TouchableOpacity
                 key={job._id}
@@ -292,6 +299,22 @@ export default function HelperJobsScreen() {
                     {job.is_recurring || job.recurring_plan_id ? (
                       <Badge label="🔁 Định kỳ" size="sm" color="#EFF6FF" textColor="#1D4ED8" />
                     ) : null}
+                    {job.is_fixed_price ? (
+                      <Badge
+                        label={`🏷️ Giá cam kết ${new Intl.NumberFormat('vi-VN').format(job.fixed_price ?? 0)}₫`}
+                        size="sm"
+                        color="#ECFDF5"
+                        textColor="#065F46"
+                      />
+                    ) : null}
+                    {job.is_warranty ? (
+                      <Badge
+                        label="🛡 Bảo hành — Miễn phí"
+                        size="sm"
+                        color="#FFFBEB"
+                        textColor="#92400E"
+                      />
+                    ) : null}
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
                       <MapPin size={13} color={COLORS.gray[500]} />
                       <Text style={{ fontSize: 12, color: COLORS.gray[600], fontWeight: '500' }}>
@@ -328,12 +351,45 @@ export default function HelperJobsScreen() {
                     <Text style={{ fontSize: 12, color: COLORS.gray[400] }}>
                       {dayjs(job.created_at).fromNow()}
                     </Text>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}>
-                      <Text style={{ fontSize: 13, fontWeight: '800', color: COLORS.primary }}>
-                        {tab === 0 ? 'Báo giá ngay' : 'Xem chi tiết'}
-                      </Text>
-                      <ChevronRight size={14} color={COLORS.primary} />
-                    </View>
+                    {tab === 0 && (job.is_fixed_price || job.is_warranty) ? (
+                      <TouchableOpacity
+                        activeOpacity={0.85}
+                        disabled={acceptFixed.isPending}
+                        onPress={() =>
+                          acceptFixed.mutate(job._id, {
+                            onSuccess: () =>
+                              router.push({
+                                pathname: '/helper-job-detail/[id]',
+                                params: { id: job._id },
+                              }),
+                            onError: (err: any) => {
+                              const msg =
+                                err?.response?.data?.message || 'Nhận việc thất bại. Thử lại sau.';
+                              Toast.show({ type: 'error', text1: msg });
+                            },
+                          })
+                        }
+                        style={{
+                          backgroundColor: COLORS.primary,
+                          paddingHorizontal: 14,
+                          paddingVertical: 8,
+                          borderRadius: 10,
+                        }}
+                      >
+                        <Text style={{ fontSize: 13, fontWeight: '800', color: '#fff' }}>
+                          {job.is_warranty
+                            ? '🛡 Nhận việc bảo hành'
+                            : `Nhận việc ngay • ${new Intl.NumberFormat('vi-VN').format(job.fixed_price ?? 0)}₫`}
+                        </Text>
+                      </TouchableOpacity>
+                    ) : (
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}>
+                        <Text style={{ fontSize: 13, fontWeight: '800', color: COLORS.primary }}>
+                          {tab === 0 ? 'Báo giá ngay' : 'Xem chi tiết'}
+                        </Text>
+                        <ChevronRight size={14} color={COLORS.primary} />
+                      </View>
+                    )}
                   </View>
                 </Card>
               </TouchableOpacity>

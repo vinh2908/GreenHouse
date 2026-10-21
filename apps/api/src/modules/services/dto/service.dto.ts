@@ -2,6 +2,7 @@ import {
   IsString,
   IsOptional,
   IsEnum,
+  IsIn,
   IsNumber,
   IsBoolean,
   IsArray,
@@ -97,6 +98,21 @@ export class CreateServiceDto {
   @Min(0)
   @Max(50)
   platform_fee_percent?: number;
+
+  @ApiPropertyOptional({
+    enum: ['quote', 'fixed'],
+    default: 'quote',
+    description: 'quote = thợ báo giá; fixed = giá cam kết cố định, thợ nhận việc trực tiếp',
+  })
+  @IsOptional()
+  @IsIn(['quote', 'fixed'])
+  pricing_model?: 'quote' | 'fixed';
+
+  @ApiPropertyOptional({ default: 0, description: 'Giá cam kết (VNĐ) khi pricing_model = fixed' })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  fixed_price?: number;
 
   @ApiPropertyOptional({ default: false })
   @IsOptional()
