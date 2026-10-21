@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { VouchersModule } from '../vouchers/vouchers.module';
+import { LoyaltyModule } from '../loyalty/loyalty.module';
 import { PaymentsController } from './payments.controller';
 import { PaymentsService } from './payments.service';
 import { Wallet, WalletSchema } from './schemas/payment.schema';
@@ -22,6 +23,7 @@ import { Job, JobSchema, Contract, ContractSchema } from '../jobs/schemas/job.sc
     ]),
     NotificationsModule,
     VouchersModule,
+    LoyaltyModule,
   ],
   controllers: [PaymentsController],
   providers: [PaymentsService],

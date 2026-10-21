@@ -174,6 +174,15 @@ export class Job {
   @Prop({ default: 0 })
   discount_amount: number; // Số tiền đã giảm chính thức (ghi nhận khi thanh toán)
 
+  // ── Roadmap Phase 1: Loyalty (Feature 12) ────────────────────────────────
+  // Snapshot ý định dùng điểm do khách gắn trước thanh toán; điểm chỉ bị trừ
+  // thật tại thời điểm thanh toán (LoyaltyService.redeemAtPayment).
+  @Prop({ default: 0 })
+  loyalty_points_requested: number; // Số điểm khách muốn đổi cho đơn này
+
+  @Prop({ default: 0 })
+  loyalty_discount_amount: number; // Số tiền giảm tương ứng (snapshot lúc gắn điểm)
+
   // ── Đơn nhóm / Team jobs (Roadmap Phase 1 — Feature 5) ───────────────────
   @Prop({ default: 1, min: 1, max: 4 })
   helpers_needed: number; // Số thợ cần cho đơn (1 = đơn thường như trước)
