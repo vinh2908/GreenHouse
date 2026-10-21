@@ -287,10 +287,22 @@ export class JobsService {
         )
       : null;
 
+    // Giá cam kết (Feature 7): snapshot mô hình giá của dịch vụ vào đơn.
+    // Dịch vụ 'fixed' + fixed_price > 0 → đơn giá cam kết, thợ nhận trực tiếp.
+    const serviceForPricing = await this.serviceModel
+      .findById(dto.service_id)
+      .select('pricing_model fixed_price')
+      .lean()
+      .exec();
+    const isFixedPrice =
+      serviceForPricing?.pricing_model === 'fixed' && (serviceForPricing?.fixed_price ?? 0) > 0;
+
     const job = await this.jobModel.create({
       customer_id: new Types.ObjectId(customerId),
       service_id: new Types.ObjectId(dto.service_id),
       status: JobStatus.OPEN,
+      is_fixed_price: isFixedPrice,
+      fixed_price: isFixedPrice ? (serviceForPricing?.fixed_price ?? 0) : 0,
       title: dto.title,
       description: dto.description,
       photos: dto.photos ?? [],
@@ -869,6 +881,13 @@ export class JobsService {
       throw new BadRequestException('Job không còn nhận báo giá');
     }
 
+    // Đơn giá cam kết (Feature 7): không qua vòng báo giá — thợ nhận việc trực tiếp
+    if (job.is_fixed_price) {
+      throw new BadRequestException(
+        'Đơn giá cam kết không nhận báo giá — thợ nhận việc trực tiếp với giá đã cam kết',
+      );
+    }
+
     // Đơn gửi riêng: chỉ thợ được ưu tiên mới gửi báo giá trong thời gian chờ
     if (this.isPrivateOfferActive(job) && String(job.private_offer_helper_id) !== helperId) {
       throw new BadRequestException(
@@ -1175,6 +1194,117 @@ export class JobsService {
     this.emitJobStatusChange(job);
 
     await this.notificationsService.notifyQuoteAccepted(helperId, job.title, jobId);
+
+    return { job, contract };
+  }
+
+  // ─── Helper: Nhận việc trực tiếp với giá cam kết (Feature 7) ──────────────
+  // Dành cho đơn is_fixed_price: bỏ qua vòng báo giá, thợ đầu tiên bấm nhận
+  // (thắng claim nguyên tử helper_id: null) sẽ chốt hợp đồng với giá snapshot.
+  // Công thức phí sàn / thợ thực nhận tính đúng như submitQuote tính từ total_price.
+
+  async acceptFixedPrice(
+    helperId: string,
+    jobId: string,
+  ): Promise<{ job: JobDocument; contract: ContractDocument }> {
+    await this.requireVerifiedHelper(helperId);
+
+    const job = await this.jobModel.findById(jobId).exec();
+    if (!job) throw new NotFoundException('Job không tồn tại');
+    if (!job.is_fixed_price) {
+      throw new BadRequestException(
+        'Đơn này không phải đơn giá cam kết — vui lòng gửi báo giá như thông thường',
+      );
+    }
+    if (job.status !== JobStatus.OPEN && job.status !== JobStatus.RECEIVING_QUOTES) {
+      throw new BadRequestException('Đơn không còn ở trạng thái chờ thợ nhận việc');
+    }
+    if (job.customer_id.toString() === helperId) {
+      throw new BadRequestException('Bạn không thể tự nhận đơn của chính mình');
+    }
+    // Đơn đang gửi riêng: chỉ thợ được ưu tiên mới nhận trực tiếp trong thời gian chờ
+    if (this.isPrivateOfferActive(job) && String(job.private_offer_helper_id) !== helperId) {
+      throw new BadRequestException(
+        'Đơn này đang được ưu tiên cho một thợ khác. Vui lòng quay lại sau khi đơn mở công khai.',
+      );
+    }
+
+    // Kiểm tra trùng lịch hẹn của thợ
+    await this.checkHelperScheduleConflict(
+      helperId,
+      job.preferred_date,
+      job.preferred_time_start,
+      jobId,
+    );
+
+    // Claim nguyên tử: chỉ thợ đầu tiên (khi helper_id vẫn null) mới nhận được đơn
+    const claimed = await this.jobModel
+      .findOneAndUpdate(
+        { _id: job._id, status: job.status, helper_id: null },
+        { $set: { helper_id: new Types.ObjectId(helperId) } },
+        { new: true },
+      )
+      .exec();
+    if (!claimed) throw new ConflictException('Đơn giá cam kết này đã có thợ khác nhận');
+
+    // Phí sàn + thợ thực nhận: đúng công thức của submitQuote trên total_price
+    const totalPrice = job.fixed_price;
+    const service = await this.serviceModel
+      .findById(job.service_id)
+      .select('platform_fee_percent')
+      .lean()
+      .exec();
+    const platformFeeRate =
+      typeof service?.platform_fee_percent === 'number'
+        ? service.platform_fee_percent / 100
+        : PLATFORM_FEE_BY_SERVICE.default;
+    const platformFee = Math.round(totalPrice * platformFeeRate);
+    const helperReceives = totalPrice - platformFee;
+
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const contract = await this.contractModel.create({
+      job_id: new Types.ObjectId(jobId),
+      customer_id: job.customer_id,
+      helper_id: new Types.ObjectId(helperId),
+      labor_cost: totalPrice,
+      materials_cost: 0,
+      total_price: totalPrice,
+      platform_fee: platformFee,
+      helper_receives: helperReceives,
+      // Mặc định bảo hành của luồng chốt đơn trực tiếp (như đơn SOS): 30 ngày
+      warranty_days: 30,
+      scheduled_at: job.preferred_date ? new Date(job.preferred_date) : tomorrow,
+      signed_by_customer_at: new Date(),
+    });
+
+    this.addEvent(
+      job,
+      JobStatus.CONFIRMED,
+      helperId,
+      'helper',
+      `Thợ nhận việc trực tiếp với giá cam kết ${totalPrice.toLocaleString('vi-VN')}₫`,
+    );
+    job.helper_id = new Types.ObjectId(helperId);
+    await job.save();
+
+    await this.helperModel
+      .updateOne({ user_id: new Types.ObjectId(helperId) }, { $inc: { accepted_quotes: 1 } })
+      .exec();
+
+    await this.chatService.getOrCreateConversation(jobId, [String(job.customer_id), helperId]);
+
+    this.emitJobStatusChange(job);
+
+    await this.notificationsService
+      .create({
+        userId: String(job.customer_id),
+        type: NOTIFICATION_TYPES.JOB_CONFIRMED,
+        title: '✅ Đã có thợ nhận việc giá cam kết!',
+        body: `Đơn "${job.title}" đã có thợ nhận với giá cam kết ${totalPrice.toLocaleString('vi-VN')}₫.`,
+        payload: { job_id: jobId, contract_id: String(contract._id), is_fixed_price: true },
+      })
+      .catch(() => undefined);
 
     return { job, contract };
   }
@@ -1915,6 +2045,8 @@ export class JobsService {
       obj.is_private_offer =
         this.isPrivateOfferActive(job) && String(job.private_offer_helper_id) === helperId;
       obj.is_recurring = Boolean(job.recurring_plan_id);
+      obj.is_fixed_price = Boolean(job.is_fixed_price);
+      obj.fixed_price = job.fixed_price ?? 0;
       return obj;
     });
 

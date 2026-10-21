@@ -49,6 +49,7 @@ import {
   useHelperProfile,
   useProposeAmendment,
   useCallConfig,
+  useAcceptFixedPrice,
 } from '@/hooks/use-api';
 import { useAuthStore } from '@/stores/auth.store';
 import {
@@ -91,6 +92,7 @@ export default function HelperJobDetailScreen() {
   const [routeMetrics, setRouteMetrics] = useState<RouteMetrics | null>(null);
 
   const submitQuote = useSubmitQuote();
+  const acceptFixed = useAcceptFixedPrice();
   const onTheWay = useHelperOnTheWay();
   const arrived = useHelperArrived();
   const startJob = useStartJob();
@@ -163,6 +165,24 @@ export default function HelperJobDetailScreen() {
       const msg =
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
         'Gửi báo giá thất bại. Vui lòng thử lại.';
+      Toast.show({ type: 'error', text1: msg });
+    }
+  };
+
+  // Feature 7/9: đơn giá cam kết hoặc đơn bảo hành — nhận trực tiếp, ẩn form báo giá
+  const isDirectAcceptJob = !!job.is_fixed_price || !!job.is_warranty;
+  const fixedServiceObj =
+    typeof job.service_id === 'object' && job.service_id ? (job.service_id as any) : null;
+  const fixedFeePercent = fixedServiceObj?.platform_fee_percent ?? 15;
+  const fixedHelperReceives = job.is_fixed_price
+    ? (job.fixed_price ?? 0) - Math.round(((job.fixed_price ?? 0) * fixedFeePercent) / 100)
+    : 0;
+
+  const handleAcceptDirect = async () => {
+    try {
+      await acceptFixed.mutateAsync(id!);
+    } catch (err: any) {
+      const msg = err?.response?.data?.message || 'Nhận việc thất bại. Vui lòng thử lại.';
       Toast.show({ type: 'error', text1: msg });
     }
   };
@@ -463,6 +483,16 @@ export default function HelperJobDetailScreen() {
         <Card style={{ gap: 12 }}>
           <View style={{ flexDirection: 'row', gap: 10, flexWrap: 'wrap' }}>
             <Badge label={(job.service_id as { name: string } | null)?.name ?? 'Dịch vụ'} />
+            {job.is_fixed_price && (
+              <Badge
+                label={`🏷️ Giá cam kết ${new Intl.NumberFormat('vi-VN').format(job.fixed_price ?? 0)}₫`}
+                color="#ECFDF5"
+                textColor="#065F46"
+              />
+            )}
+            {job.is_warranty && (
+              <Badge label="🛡 Đơn bảo hành — Miễn phí" color="#FFFBEB" textColor="#92400E" />
+            )}
             {job.preferred_date && (
               <Badge
                 label={dayjs(job.preferred_date).format('DD/MM/YYYY')}
@@ -730,7 +760,53 @@ export default function HelperJobDetailScreen() {
         {/* ── Quote status / Action ────────────────────────────────── */}
         {['open', 'receiving_quotes'].includes(job.status) && !isMyActiveJob && (
           <View>
-            {myQuote ? (
+            {isDirectAcceptJob ? (
+              <Card
+                style={{
+                  gap: 10,
+                  backgroundColor: job.is_warranty ? '#FFFBEB' : '#ECFDF5',
+                  borderColor: job.is_warranty ? '#FDE68A' : '#A7F3D0',
+                  borderWidth: 1.5,
+                }}
+              >
+                <Text style={{ fontWeight: '800', fontSize: 16, color: COLORS.gray[900] }}>
+                  {job.is_warranty
+                    ? '🛡 Đơn bảo hành — Miễn phí'
+                    : `🏷️ Giá cam kết: ${new Intl.NumberFormat('vi-VN').format(job.fixed_price ?? 0)}₫`}
+                </Text>
+                {job.is_warranty ? (
+                  <Text style={{ fontSize: 13.5, color: COLORS.gray[700], lineHeight: 20 }}>
+                    Đây là đơn bảo hành miễn phí, được gửi riêng cho bạn vì bạn đã thực hiện đơn
+                    gốc. Đơn bảo hành không tính tiền công — hãy hỗ trợ khách trong thời gian bảo
+                    hành nhé.
+                  </Text>
+                ) : (
+                  <>
+                    <View
+                      style={{
+                        flexDirection: 'row',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                      }}
+                    >
+                      <Text style={{ fontSize: 13, color: COLORS.gray[600] }}>
+                        Thực nhận về ví (sau phí sàn {fixedFeePercent}%):
+                      </Text>
+                      <PriceText amount={fixedHelperReceives} size={15} color={COLORS.success} />
+                    </View>
+                    <Text style={{ fontSize: 13, color: COLORS.gray[600], lineHeight: 19 }}>
+                      Đơn giá cam kết không cần gửi báo giá — bấm nhận việc là chốt ngay với mức
+                      giá trên.
+                    </Text>
+                  </>
+                )}
+                <Button
+                  title={job.is_warranty ? '🛡 Nhận việc bảo hành' : '⚡ Nhận việc ngay'}
+                  loading={acceptFixed.isPending}
+                  onPress={handleAcceptDirect}
+                />
+              </Card>
+            ) : myQuote ? (
               <Card
                 style={{
                   backgroundColor: COLORS.successLight,
