@@ -51,6 +51,16 @@ export class ChatService {
       .exec() as Promise<ConversationDocument>;
   }
 
+  /** Thêm thành viên vào cuộc trò chuyện của job (dùng cho đơn nhóm — Feature 5) */
+  async addParticipantByJob(jobId: string, userId: string): Promise<void> {
+    await this.conversationModel
+      .findOneAndUpdate(
+        { job_id: new Types.ObjectId(jobId) },
+        { $addToSet: { participants: new Types.ObjectId(userId) } },
+      )
+      .exec();
+  }
+
   async getConversationByJob(jobId: string, userId: string): Promise<ConversationDocument> {
     let conv: any = await this.conversationModel
       .findOne({ job_id: new Types.ObjectId(jobId) })

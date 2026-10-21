@@ -178,6 +178,7 @@ export default function BookingScreen() {
   const [recurringMonthDay, setRecurringMonthDay] = useState(dayjs().add(1, 'day').date());
   const [voucherCode, setVoucherCode] = useState('');
   const [voucherPreview, setVoucherPreview] = useState<VoucherPreview | null>(null);
+  const [helpersNeeded, setHelpersNeeded] = useState(1); // Đơn nhóm (Feature 5)
 
   const [step, setStep] = useState(params.service_id ? 1 : 0);
   const [selectedService, setSelectedService] = useState<string>(params.service_id ?? '');
@@ -529,6 +530,7 @@ export default function BookingScreen() {
         private_offer_helper_id:
           offerToFavorite && params.favorite_helper_id ? params.favorite_helper_id : undefined,
         voucher_code: voucherPreview ? voucherCode : undefined,
+        helpers_needed: helpersNeeded > 1 ? helpersNeeded : undefined,
       });
       resetForm();
       router.replace('/(customer)/jobs');
@@ -1415,6 +1417,49 @@ export default function BookingScreen() {
                   </View>
                 </Card>
               )}
+
+              {/* ── Đơn nhóm: số thợ cần ────────────────────────────────── */}
+              <Card style={{ gap: 10 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                  <Text style={{ fontSize: 20 }}>👥</Text>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontWeight: '800', fontSize: 15, color: COLORS.gray[900] }}>
+                      Số thợ thực hiện
+                    </Text>
+                    <Text style={{ fontSize: 12.5, color: COLORS.gray[600], lineHeight: 17 }}>
+                      Việc lớn cần nhiều người? Chọn 2–4 thợ — thợ chính sẽ lập nhóm và chia tiền
+                      công minh bạch theo tỉ lệ.
+                    </Text>
+                  </View>
+                </View>
+                <View style={{ flexDirection: 'row', gap: 8 }}>
+                  {[1, 2, 3, 4].map(n => (
+                    <TouchableOpacity
+                      key={n}
+                      onPress={() => setHelpersNeeded(n)}
+                      style={{
+                        flex: 1,
+                        paddingVertical: 10,
+                        borderRadius: 12,
+                        borderWidth: 1.5,
+                        borderColor: helpersNeeded === n ? COLORS.primary : COLORS.gray[200],
+                        backgroundColor: helpersNeeded === n ? COLORS.primaryLight : '#fff',
+                        alignItems: 'center',
+                      }}
+                    >
+                      <Text
+                        style={{
+                          fontWeight: '800',
+                          fontSize: 15,
+                          color: helpersNeeded === n ? COLORS.primaryDark : COLORS.gray[700],
+                        }}
+                      >
+                        {n} thợ
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </Card>
 
               {/* ── Gói định kỳ ─────────────────────────────────────────── */}
               <Card style={{ gap: 10 }}>

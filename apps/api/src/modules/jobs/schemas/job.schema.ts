@@ -37,6 +37,16 @@ const DisputeResolutionSchema = {
   resolved_at: { type: Date },
 };
 
+const TeamMemberSchema = {
+  helper_id: { type: Types.ObjectId, ref: 'User', required: true },
+  role: { type: String, enum: ['lead', 'member'], default: 'member' },
+  status: { type: String, enum: ['invited', 'accepted', 'declined'], default: 'invited' },
+  /** % tiền công thành viên nhận (lead nhận phần còn lại sau khi trừ tổng % của members) */
+  split_percent: { type: Number, default: 0 },
+  invited_at: { type: Date },
+  responded_at: { type: Date },
+};
+
 @Schema({ timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' }, versionKey: '__v' })
 export class Job {
   @Prop({ type: Types.ObjectId, ref: 'User', required: true })
@@ -145,6 +155,25 @@ export class Job {
 
   @Prop({ default: 0 })
   discount_amount: number; // Số tiền đã giảm chính thức (ghi nhận khi thanh toán)
+
+  // ── Đơn nhóm / Team jobs (Roadmap Phase 1 — Feature 5) ───────────────────
+  @Prop({ default: 1, min: 1, max: 4 })
+  helpers_needed: number; // Số thợ cần cho đơn (1 = đơn thường như trước)
+
+  /**
+   * Đội thực hiện: lead = job.helper_id (người nhận đơn chính).
+   * Members do lead mời, mỗi người có split_percent (% tiền công);
+   * lead nhận phần % còn lại. Khi nghiệm thu, tiền công chia theo tỉ lệ này.
+   */
+  @Prop({ type: [TeamMemberSchema], default: [] })
+  team: {
+    helper_id: Types.ObjectId;
+    role: 'lead' | 'member';
+    status: 'invited' | 'accepted' | 'declined';
+    split_percent: number;
+    invited_at?: Date;
+    responded_at?: Date;
+  }[];
 
   @Prop({ type: String, enum: PaymentStatus, default: PaymentStatus.UNPAID })
   payment_status: PaymentStatus;

@@ -26,6 +26,8 @@ import {
   ResolveDisputeDto,
   ProposeAmendmentDto,
   RespondAmendmentDto,
+  InviteTeamMemberDto,
+  RespondTeamInvitationDto,
 } from './dto/job.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
@@ -121,6 +123,44 @@ export class JobsController {
   @ApiQuery({ name: 'status', required: false })
   async getHelperJobs(@CurrentUser() user: { sub: string }, @Query('status') status?: string) {
     return this.jobsService.getHelperJobs(user.sub, status);
+  }
+
+  // ─── Team jobs / Đơn nhóm (Roadmap Phase 1 — Feature 5) ─────────────────
+  // LƯU Ý: route 'team/invitations' phải đứng trước ':jobId'
+
+  @Get('team/invitations')
+  @ApiOperation({ summary: '[Helper] Lời mời vào nhóm đang chờ của tôi' })
+  async getMyTeamInvitations(@CurrentUser() user: { sub: string }) {
+    return this.jobsService.getMyTeamInvitations(user.sub);
+  }
+
+  @Get(':jobId/team/candidates')
+  @ApiOperation({ summary: '[Lead] Danh sách thợ khả dụng để mời vào nhóm' })
+  async getTeamCandidates(
+    @CurrentUser() user: { sub: string },
+    @Param('jobId') jobId: string,
+  ) {
+    return this.jobsService.getTeamCandidates(jobId, user.sub);
+  }
+
+  @Post(':jobId/team/invite')
+  @ApiOperation({ summary: '[Lead] Mời thợ vào nhóm với tỉ lệ chia tiền công' })
+  async inviteTeamMember(
+    @CurrentUser() user: { sub: string },
+    @Param('jobId') jobId: string,
+    @Body() dto: InviteTeamMemberDto,
+  ) {
+    return this.jobsService.inviteTeamMember(jobId, user.sub, dto);
+  }
+
+  @Patch(':jobId/team/respond')
+  @ApiOperation({ summary: '[Helper] Chấp nhận / từ chối lời mời vào nhóm' })
+  async respondTeamInvitation(
+    @CurrentUser() user: { sub: string },
+    @Param('jobId') jobId: string,
+    @Body() dto: RespondTeamInvitationDto,
+  ) {
+    return this.jobsService.respondTeamInvitation(jobId, user.sub, dto.action);
   }
 
   // ─── Get job detail ───────────────────────────────────────────────────────

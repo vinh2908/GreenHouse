@@ -32,6 +32,7 @@ import { useJobSocketUpdates } from '@/hooks/use-socket';
 import { useLiveGpsStore } from '@/hooks/use-live-gps';
 import { Alert } from '@/components/common/app-alert';
 import { LiveTrackingMap, RouteMetrics } from '@/components/common/live-tracking-map';
+import { TeamCard } from '@/components/common/team-card';
 
 dayjs.extend(relativeTime);
 dayjs.locale('vi');
@@ -632,6 +633,9 @@ export default function HelperJobDetailScreen() {
             )}
           </Card>
         )}
+
+        {/* ── Đội nhóm đơn nhóm (Roadmap Phase 1) ────────────────────── */}
+        <TeamCard job={job} currentUserId={currentUser?._id} />
 
         {/* ── Hồ sơ tranh chấp (Roadmap Phase 1) ─────────────────────── */}
         {(job.status === 'disputed' || (job as any).dispute_resolution) && (

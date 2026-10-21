@@ -792,9 +792,9 @@ export class JobsService {
 
     if (roles.includes('admin') || isOwnerOrHelper) {
       if (roles.includes('helper') || helperId === userId) {
-        return this.enrichJobWithDistance(job.toObject(), userId);
+        return this.enrichJobWithDistance(await this.withTeamDisplay(job.toObject()), userId);
       }
-      return job;
+      return this.withTeamDisplay(job.toObject());
     }
 
     const browsable = [JobStatus.OPEN, JobStatus.RECEIVING_QUOTES].includes(job.status);
@@ -1504,12 +1504,10 @@ export class JobsService {
             contract.helper_receives,
           );
         } else if (contract.helper_receives > 0) {
-          // Đơn Online Escrow (VietQR / MoMo): Giải ngân 85% thực nhận vào Ví thợ
-          await this.paymentsService.creditHelper(
-            String(job.helper_id),
-            jobId,
-            contract.helper_receives,
-          );
+          // Đơn Online Escrow (VietQR / MoMo): Giải ngân 85% thực nhận vào Ví thợ.
+          // Đơn nhóm: creditJobPayout chia tiền công cho members theo split_percent,
+          // lead nhận phần còn lại (đơn thường vẫn credit 100% cho lead như trước).
+          await this.creditJobPayout(job, contract.helper_receives);
         }
       }
     }
@@ -1674,7 +1672,7 @@ export class JobsService {
         );
       }
       if (job.helper_id && helperPayout > 0) {
-        await this.paymentsService.creditHelper(String(job.helper_id), jobId, helperPayout);
+        await this.creditJobPayout(job, helperPayout);
       }
     } else {
       // release_to_helper: bác khiếu nại, giải ngân cho thợ
@@ -1692,7 +1690,7 @@ export class JobsService {
             contract.helper_receives,
           );
         } else if (helperPayout > 0) {
-          await this.paymentsService.creditHelper(String(job.helper_id), jobId, helperPayout);
+          await this.creditJobPayout(job, helperPayout);
         }
         // Khôi phục lại 10 điểm risk_score đã tạm cộng khi mở dispute
         await this.helperModel
@@ -1973,6 +1971,288 @@ export class JobsService {
       throw new ForbiddenException();
     }
     return contract;
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // ĐƠN NHÓM / TEAM JOBS (Roadmap Phase 1 — Feature 5)
+  // Lead = job.helper_id. Lead mời thêm thợ (tối đa helpers_needed - 1 người),
+  // mỗi member có split_percent (% tiền công). Khi giải ngân escrow, tiền công
+  // được chia theo tỉ lệ; lead nhận phần còn lại. Đơn thường (helpers_needed=1)
+  // giữ nguyên luồng cũ 100%.
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  /** Cộng tiền vào ví thợ — có chia nhóm nếu job có members đã accept */
+  private async creditJobPayout(job: JobDocument, totalAmount: number): Promise<void> {
+    if (!job.helper_id || totalAmount <= 0) return;
+    const jobId = String(job._id);
+    const acceptedMembers = (job.team ?? []).filter(m => m.status === 'accepted');
+    if (acceptedMembers.length === 0) {
+      await this.paymentsService.creditHelper(String(job.helper_id), jobId, totalAmount);
+      return;
+    }
+    let creditedToMembers = 0;
+    for (const member of acceptedMembers) {
+      const share = Math.floor((totalAmount * member.split_percent) / 100);
+      if (share > 0) {
+        await this.paymentsService.creditHelper(String(member.helper_id), jobId, share);
+        creditedToMembers += share;
+      }
+    }
+    const leadShare = totalAmount - creditedToMembers;
+    if (leadShare > 0) {
+      await this.paymentsService.creditHelper(String(job.helper_id), jobId, leadShare);
+    }
+    this.logger.log(
+      `Team payout job ${jobId}: total=${totalAmount} members=${creditedToMembers} lead=${leadShare}`,
+    );
+  }
+
+  /** Gắn team_display (tên/avatar từng thành viên + lead) vào job object cho mobile render */
+  private async withTeamDisplay(jobObj: any): Promise<any> {
+    if (!jobObj) return jobObj;
+    const team: any[] = Array.isArray(jobObj.team) ? jobObj.team : [];
+    if (!jobObj.helper_id && team.length === 0) return jobObj;
+    const ids = new Set<string>();
+    if (jobObj.helper_id) ids.add(String((jobObj.helper_id as any)?._id ?? jobObj.helper_id));
+    team.forEach(m => ids.add(String(m.helper_id)));
+    const profiles = await this.helperModel
+      .find({ user_id: { $in: [...ids].map(id => new Types.ObjectId(id)) } })
+      .populate('user_id', 'full_name avatar')
+      .lean()
+      .exec();
+    const nameOf = new Map<string, { full_name: string; avatar: string | null }>();
+    for (const p of profiles) {
+      const u: any = p.user_id;
+      if (u?._id) nameOf.set(String(u._id), { full_name: u.full_name ?? 'Thợ GreenHouse', avatar: u.avatar ?? null });
+    }
+    const memberSplitUsed = team
+      .filter(m => m.status !== 'declined')
+      .reduce((sum, m) => sum + (m.split_percent ?? 0), 0);
+    const leadId = jobObj.helper_id
+      ? String((jobObj.helper_id as any)?._id ?? jobObj.helper_id)
+      : null;
+    jobObj.team_display = [
+      ...(leadId
+        ? [
+            {
+              helper_id: leadId,
+              full_name: nameOf.get(leadId)?.full_name ?? 'Thợ chính',
+              avatar: nameOf.get(leadId)?.avatar ?? null,
+              role: 'lead',
+              status: 'accepted',
+              split_percent: Math.max(0, 100 - memberSplitUsed),
+            },
+          ]
+        : []),
+      ...team.map(m => ({
+        helper_id: String(m.helper_id),
+        full_name: nameOf.get(String(m.helper_id))?.full_name ?? 'Thợ GreenHouse',
+        avatar: nameOf.get(String(m.helper_id))?.avatar ?? null,
+        role: m.role,
+        status: m.status,
+        split_percent: m.split_percent,
+      })),
+    ];
+    return jobObj;
+  }
+
+  private emitTeamUpdate(job: JobDocument) {
+    const payload = {
+      job_id: String(job._id),
+      team: (job.team ?? []).map(m => ({
+        helper_id: String(m.helper_id),
+        role: m.role,
+        status: m.status,
+        split_percent: m.split_percent,
+      })),
+    };
+    this.gateway.emitToJob(String(job._id), SOCKET_EVENTS.TEAM_UPDATED, payload);
+    this.gateway.emitToUser(String(job.customer_id), SOCKET_EVENTS.TEAM_UPDATED, payload);
+    if (job.helper_id) {
+      this.gateway.emitToUser(String(job.helper_id), SOCKET_EVENTS.TEAM_UPDATED, payload);
+    }
+  }
+
+  /** Danh sách lời mời vào nhóm đang chờ của 1 thợ */
+  async getMyTeamInvitations(helperId: string) {
+    const jobs = await this.jobModel
+      .find({
+        'team.helper_id': new Types.ObjectId(helperId),
+        'team.status': 'invited',
+        status: { $nin: [JobStatus.CANCELLED, JobStatus.COMPLETED, JobStatus.REFUNDED] },
+      })
+      .sort({ created_at: -1 })
+      .limit(30)
+      .lean()
+      .exec();
+    // Query trên mảng lồng nhau trả về mọi job có ÍT NHẤT 1 entry khớp →
+    // lọc lại chính xác entry của thợ này trong từng job
+    return jobs
+      .map(job => {
+        const entry = (job.team ?? []).find(
+          m => String(m.helper_id) === helperId && m.status === 'invited',
+        );
+        if (!entry) return null;
+        return {
+          job_id: String(job._id),
+          title: job.title,
+          status: job.status,
+          address_text: (job.address as any)?.full_address,
+          scheduled_start: (job as any).scheduled_start,
+          helpers_needed: job.helpers_needed ?? 1,
+          split_percent: entry.split_percent,
+          invited_at: entry.invited_at,
+          lead_id: job.helper_id ? String(job.helper_id) : null,
+          customer_id: String(job.customer_id),
+        };
+      })
+      .filter(Boolean);
+  }
+
+  /** Thợ khả dụng để lead mời vào nhóm (đã duyệt e-KYC, đang online) */
+  async getTeamCandidates(jobId: string, leadId: string) {
+    const job = await this.jobModel.findById(jobId).exec();
+    if (!job) throw new NotFoundException('Job not found');
+    if (!job.helper_id || String(job.helper_id) !== leadId) {
+      throw new ForbiddenException('Chỉ thợ chính (lead) mới được mời thành viên');
+    }
+    const excluded = new Set<string>([
+      leadId,
+      String(job.customer_id),
+      ...(job.team ?? [])
+        .filter(m => m.status !== 'declined')
+        .map(m => String(m.helper_id)),
+    ]);
+    const profiles = await this.helperModel
+      .find({
+        verification_status: VerificationStatus.APPROVED,
+        status: HelperStatus.ONLINE,
+        user_id: { $nin: [...excluded].map(id => new Types.ObjectId(id)) },
+      })
+      .populate('user_id', 'full_name avatar')
+      .sort({ rating: -1, completed_jobs: -1 })
+      .limit(30)
+      .lean()
+      .exec();
+    return profiles.map(p => ({
+      helper_id: String(p.user_id?._id ?? p.user_id),
+      full_name: (p.user_id as any)?.full_name ?? 'Thợ GreenHouse',
+      avatar: (p.user_id as any)?.avatar ?? null,
+      rating: p.rating ?? 0,
+      total_reviews: p.total_reviews ?? 0,
+      completed_jobs: p.completed_jobs ?? 0,
+      skills: p.skills ?? [],
+    }));
+  }
+
+  async inviteTeamMember(
+    jobId: string,
+    leadId: string,
+    dto: { helper_id: string; split_percent: number },
+  ): Promise<JobDocument> {
+    const job = await this.jobModel.findById(jobId).exec();
+    if (!job) throw new NotFoundException('Job not found');
+    if (!job.helper_id || String(job.helper_id) !== leadId) {
+      throw new ForbiddenException('Chỉ thợ chính (lead) mới được mời thành viên');
+    }
+    if ((job.helpers_needed ?? 1) <= 1) {
+      throw new BadRequestException('Đơn này không phải đơn nhóm (chỉ cần 1 thợ)');
+    }
+    const teamStatuses: JobStatus[] = [
+      JobStatus.CONFIRMED,
+      JobStatus.HELPER_ON_THE_WAY,
+      JobStatus.HELPER_ARRIVED,
+    ];
+    if (!teamStatuses.includes(job.status)) {
+      throw new BadRequestException('Chỉ lập nhóm khi đơn đã chốt thợ và chưa bắt đầu làm');
+    }
+    if (dto.helper_id === leadId || dto.helper_id === String(job.customer_id)) {
+      throw new BadRequestException('Không thể mời người này vào nhóm');
+    }
+    const active = (job.team ?? []).filter(m => m.status !== 'declined');
+    if (active.some(m => String(m.helper_id) === dto.helper_id)) {
+      throw new BadRequestException('Thợ này đã có trong nhóm hoặc đang chờ phản hồi');
+    }
+    if (1 + active.length >= (job.helpers_needed ?? 1)) {
+      throw new BadRequestException(`Nhóm đã đủ ${job.helpers_needed} thợ cho đơn này`);
+    }
+    const usedSplit = active.reduce((sum, m) => sum + (m.split_percent ?? 0), 0);
+    if (usedSplit + dto.split_percent > 90) {
+      throw new BadRequestException(
+        `Tổng tỉ lệ chia cho thành viên không vượt quá 90% (lead giữ tối thiểu 10%). Hiện đã dùng ${usedSplit}%.`,
+      );
+    }
+    const ok = await this.isVerifiedHelper(dto.helper_id);
+    if (!ok) {
+      throw new BadRequestException('Thợ được mời chưa hoàn tất xác thực e-KYC');
+    }
+
+    job.team = [
+      ...(job.team ?? []),
+      {
+        helper_id: new Types.ObjectId(dto.helper_id),
+        role: 'member' as const,
+        status: 'invited' as const,
+        split_percent: dto.split_percent,
+        invited_at: new Date(),
+      },
+    ];
+    await job.save();
+
+    this.emitTeamUpdate(job);
+    this.gateway.emitToUser(dto.helper_id, SOCKET_EVENTS.TEAM_INVITATION, {
+      job_id: jobId,
+      split_percent: dto.split_percent,
+    });
+    await this.notificationsService
+      .create({
+        userId: dto.helper_id,
+        type: NOTIFICATION_TYPES.SYSTEM,
+        title: '👥 Lời mời vào nhóm làm việc',
+        body: `Bạn được mời tham gia đơn "${job.title}" với tỉ lệ chia tiền công ${dto.split_percent}%.`,
+        payload: { job_id: jobId },
+      })
+      .catch(() => undefined);
+    return job;
+  }
+
+  async respondTeamInvitation(
+    jobId: string,
+    helperId: string,
+    action: 'accept' | 'decline',
+  ): Promise<JobDocument> {
+    const job = await this.jobModel.findById(jobId).exec();
+    if (!job) throw new NotFoundException('Job not found');
+    const entry = (job.team ?? []).find(
+      m => String(m.helper_id) === helperId && m.status === 'invited',
+    );
+    if (!entry) {
+      throw new BadRequestException('Không tìm thấy lời mời đang chờ cho đơn này');
+    }
+    entry.status = action === 'accept' ? 'accepted' : 'declined';
+    entry.responded_at = new Date();
+    await job.save();
+
+    if (action === 'accept') {
+      // Thành viên vào nhóm chat chung của đơn để trao đổi với khách + lead
+      await this.chatService.addParticipantByJob(jobId, helperId).catch(() => undefined);
+    }
+    this.emitTeamUpdate(job);
+    if (job.helper_id) {
+      await this.notificationsService
+        .create({
+          userId: String(job.helper_id),
+          type: NOTIFICATION_TYPES.SYSTEM,
+          title:
+            action === 'accept'
+              ? '✅ Thành viên đã nhận lời vào nhóm'
+              : '❌ Thành viên từ chối lời mời nhóm',
+          body: `Đơn "${job.title}": một thợ vừa ${action === 'accept' ? 'đồng ý' : 'từ chối'} tham gia nhóm.`,
+          payload: { job_id: jobId },
+        })
+        .catch(() => undefined);
+    }
+    return job;
   }
 
   private haversineKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
