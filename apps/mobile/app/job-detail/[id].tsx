@@ -55,6 +55,7 @@ import {
   useAddFavorite,
   useRemoveFavorite,
   useReleasePrivateOffer,
+  useCreateWarrantyJob,
   useValidateVoucher,
   useApplyVoucherToJob,
   useDetachVoucherFromJob,
@@ -149,6 +150,7 @@ export default function JobDetailScreen() {
   const addFavorite = useAddFavorite();
   const removeFavorite = useRemoveFavorite();
   const releaseOffer = useReleasePrivateOffer();
+  const createWarranty = useCreateWarrantyJob();
 
   const [showReview, setShowReview] = useState(false);
   const [quoteToAccept, setQuoteToAccept] = useState<string | null>(null);
@@ -246,6 +248,35 @@ export default function JobDetailScreen() {
         prefill_description: job.description,
       },
     });
+  };
+
+  const handleCreateWarranty = () => {
+    Alert.alert(
+      '🛡 Tạo đơn bảo hành miễn phí?',
+      'Đơn bảo hành sẽ được gửi riêng cho thợ đã thực hiện đơn này trong 72 giờ. Bạn không phải trả thêm bất kỳ chi phí nào.',
+      [
+        { text: 'Để sau', style: 'cancel' },
+        {
+          text: 'Tạo đơn bảo hành',
+          onPress: async () => {
+            try {
+              const newJob = await createWarranty.mutateAsync(id!);
+              Toast.show({
+                type: 'success',
+                text1: 'Đã tạo đơn bảo hành 🛡',
+                text2: 'Đơn đã được gửi riêng cho thợ của đơn gốc.',
+              });
+              if (newJob?._id) {
+                router.push({ pathname: '/job-detail/[id]', params: { id: newJob._id } });
+              }
+            } catch (err: any) {
+              const msg = err?.response?.data?.message || 'Không tạo được đơn bảo hành';
+              Toast.show({ type: 'error', text1: msg });
+            }
+          },
+        },
+      ],
+    );
   };
 
   const handleOpenEdit = () => {
@@ -385,8 +416,8 @@ export default function JobDetailScreen() {
 
   const handleSubmitReview = async () => {
     try {
-      // 1. Ghi nhận thanh toán nếu đơn chưa thanh toán
-      if (job.payment_status !== 'paid') {
+      // 1. Ghi nhận thanh toán nếu đơn chưa thanh toán (đơn bảo hành miễn phí — bỏ qua)
+      if (job.payment_status !== 'paid' && !job.is_warranty) {
         await payJob
           .mutateAsync({ job_id: id!, payment_method: paymentMethod })
           .catch(() => undefined);
@@ -584,6 +615,52 @@ export default function JobDetailScreen() {
           </Card>
         )}
 
+        {job.is_warranty && (
+          <Card style={{ backgroundColor: '#FFFBEB', borderColor: '#FDE68A', borderWidth: 1.5 }}>
+            <Text style={{ fontWeight: '800', fontSize: 14.5, color: '#92400E' }}>
+              🛡 Đơn bảo hành — Miễn phí
+            </Text>
+            <Text style={{ fontSize: 13, color: COLORS.gray[700], marginTop: 4, lineHeight: 19 }}>
+              Đây là đơn bảo hành phát sinh từ một đơn đã hoàn thành. Bạn không phải thanh toán
+              cho đơn này.
+            </Text>
+          </Card>
+        )}
+
+        {/* ── Bảo hành 1 chạm (Feature 9) ────────────────────────────── */}
+        {job.status === 'completed' && (job.warranty_eligible || job.warranty_job_id) && (
+          <Card
+            style={{ backgroundColor: '#FFFBEB', borderColor: '#FDE68A', borderWidth: 1.5, gap: 8 }}
+          >
+            <Text style={{ fontWeight: '800', fontSize: 15, color: '#92400E' }}>
+              🛡 Bảo hành trong {job.warranty_days ?? 30} ngày
+            </Text>
+            <Text style={{ fontSize: 13, color: COLORS.gray[700], lineHeight: 19 }}>
+              {job.warranty_job_id
+                ? 'Bạn đã tạo đơn bảo hành cho đơn này — thợ của đơn gốc sẽ xử lý miễn phí.'
+                : 'Có vấn đề phát sinh sau khi hoàn thành? Tạo đơn bảo hành miễn phí — đơn sẽ gửi riêng cho thợ đã làm đơn này.'}
+            </Text>
+            {job.warranty_job_id ? (
+              <Button
+                title="Xem đơn bảo hành"
+                variant="outline"
+                onPress={() =>
+                  router.push({
+                    pathname: '/job-detail/[id]',
+                    params: { id: job.warranty_job_id },
+                  })
+                }
+              />
+            ) : (
+              <Button
+                title="Tạo đơn bảo hành (miễn phí)"
+                loading={createWarranty.isPending}
+                onPress={handleCreateWarranty}
+              />
+            )}
+          </Card>
+        )}
+
         {/* ── Dispute / Refund Resolution Banner ─────────────────────── */}
         {(job.status === 'disputed' || job.status === 'refunded' || job.dispute_resolution) && (
           <Card
@@ -766,6 +843,9 @@ export default function JobDetailScreen() {
                   color="#ECFDF5"
                   textColor="#065F46"
                 />
+              )}
+              {job.is_warranty && (
+                <Badge label="🛡 Đơn bảo hành — Miễn phí" color="#FFFBEB" textColor="#92400E" />
               )}
             </View>
             {canEdit && (
@@ -1084,8 +1164,10 @@ export default function JobDetailScreen() {
               <PriceText amount={contract.total_price} size={17} />
             </View>
 
-            {/* ── Voucher (Roadmap Phase 1) ─────────────────────────── */}
-            <JobVoucherRow job={job} contractTotal={contract.total_price} />
+            {/* ── Voucher (Roadmap Phase 1) — đơn bảo hành miễn phí: ẩn ── */}
+            {!job.is_warranty && (
+              <JobVoucherRow job={job} contractTotal={contract.total_price} />
+            )}
 
             {/* Danh sách phụ lục phát sinh chi phí / vật tư */}
             {Array.isArray(contract.amendments) && contract.amendments.length > 0 && (
@@ -1729,8 +1811,18 @@ export default function JobDetailScreen() {
             </Text>
           </View>
           <ScrollView contentContainerStyle={{ padding: 20, gap: 20 }}>
-            {/* Phương thức thanh toán */}
-            <Card style={{ gap: 10, padding: 16, backgroundColor: COLORS.gray[50] }}>
+            {/* Phương thức thanh toán — đơn bảo hành miễn phí thì ẩn */}
+            {job.is_warranty ? (
+              <Card style={{ gap: 6, padding: 16, backgroundColor: '#FFFBEB' }}>
+                <Text style={{ fontWeight: '800', fontSize: 15, color: '#92400E' }}>
+                  🛡 Đơn bảo hành — Miễn phí
+                </Text>
+                <Text style={{ fontSize: 13, color: COLORS.gray[700], lineHeight: 19 }}>
+                  Đơn bảo hành không phát sinh chi phí. Bạn chỉ cần nghiệm thu và đánh giá thợ.
+                </Text>
+              </Card>
+            ) : (
+              <Card style={{ gap: 10, padding: 16, backgroundColor: COLORS.gray[50] }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                 <CreditCard size={18} color={COLORS.primary} />
                 <Text style={{ fontWeight: '800', fontSize: 15, color: COLORS.gray[900] }}>
@@ -1770,7 +1862,8 @@ export default function JobDetailScreen() {
                   );
                 })}
               </View>
-            </Card>
+              </Card>
+            )}
 
             <Text
               style={{
