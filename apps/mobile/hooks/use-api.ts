@@ -1069,6 +1069,103 @@ export function useDetachVoucherFromJob() {
   });
 }
 
+// ─── Dispute Cases (Roadmap Phase 1 — Hồ sơ tranh chấp) ─────────────────────
+
+export interface DisputeTimelineEntry {
+  kind: 'opened' | 'evidence' | 'note' | 'admin_message' | 'resolution' | 'appeal' | 'appeal_resolved';
+  actor_id: string;
+  actor_role: string;
+  text?: string;
+  photos: string[];
+  created_at: string;
+}
+
+export interface DisputeCaseData {
+  _id: string;
+  job_id: string;
+  customer_id: string;
+  helper_id?: string;
+  opened_by: string;
+  opened_by_role: string;
+  status: 'open' | 'resolved' | 'appealed';
+  reason: string;
+  timeline: DisputeTimelineEntry[];
+  resolution?: {
+    action: 'refund_full' | 'refund_partial' | 'release_to_helper';
+    refund_amount?: number;
+    helper_payout?: number;
+    admin_note?: string;
+    resolved_at?: string;
+  };
+  resolved_at?: string;
+  appeal_deadline?: string;
+  appeal?: { by: string; by_role: string; reason: string; created_at: string };
+  can_appeal: boolean;
+  appeal_window_hours: number;
+  created_at: string;
+}
+
+export function useDisputeCase(jobId?: string) {
+  return useQuery({
+    queryKey: ['dispute', jobId],
+    queryFn: async () => {
+      const { data } = await apiClient.get(`/disputes/job/${jobId}`);
+      return data.data as DisputeCaseData;
+    },
+    enabled: !!jobId,
+    retry: false,
+  });
+}
+
+export function useAddDisputeEntry() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      jobId,
+      text,
+      photos,
+    }: {
+      jobId: string;
+      text?: string;
+      photos?: string[];
+    }) => {
+      const uploaded = await uploadFiles(photos);
+      return apiClient.post(`/disputes/job/${jobId}/entries`, { text, photos: uploaded });
+    },
+    onSuccess: (_, vars) => {
+      qc.invalidateQueries({ queryKey: ['dispute', vars.jobId] });
+      qc.invalidateQueries({ queryKey: ['job', vars.jobId] });
+      Toast.show({ type: 'success', text1: 'Đã bổ sung vào hồ sơ tranh chấp' });
+    },
+    onError: (err: any) => {
+      const msg = err?.response?.data?.message ?? 'Không gửi được';
+      Toast.show({ type: 'error', text1: typeof msg === 'string' ? msg : 'Đã có lỗi xảy ra' });
+    },
+  });
+}
+
+export function useAppealDispute() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ jobId, reason }: { jobId: string; reason: string }) =>
+      apiClient.post(`/disputes/job/${jobId}/appeal`, { reason }),
+    onSuccess: (_, vars) => {
+      qc.invalidateQueries({ queryKey: ['dispute', vars.jobId] });
+      qc.invalidateQueries({ queryKey: ['job', vars.jobId] });
+      qc.invalidateQueries({ queryKey: ['jobs'] });
+      Toast.show({
+        type: 'success',
+        text1: 'Đã gửi kháng cáo',
+        text2: 'Admin sẽ xem xét lại hồ sơ và phản hồi sớm nhất',
+      });
+    },
+    onError: (err: any) => {
+      const msg = err?.response?.data?.message ?? 'Kháng cáo thất bại';
+      Toast.show({ type: 'error', text1: typeof msg === 'string' ? msg : 'Đã có lỗi xảy ra' });
+    },
+  });
+}
+
 // ─── Reviews ───────────────────────────────────────────────────────────────────
 
 export function useCreateReview() {

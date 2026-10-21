@@ -53,6 +53,7 @@ import { ChatService } from '../chat/chat.service';
 import { PaymentsService } from '../payments/payments.service';
 import { FavoritesService } from '../favorites/favorites.service';
 import { VouchersService } from '../vouchers/vouchers.service';
+import { DisputesService } from './disputes.service';
 import { RebookJobDto } from './dto/job.dto';
 import { Service, ServiceDocument } from '../services/schemas/service.schema';
 import { HelperProfile, HelperProfileDocument } from '../helpers/schemas/helper-profile.schema';
@@ -78,6 +79,7 @@ export class JobsService {
     private readonly routingService: RoutingService,
     private readonly favoritesService: FavoritesService,
     private readonly vouchersService: VouchersService,
+    private readonly disputesService: DisputesService,
   ) {}
 
   // ─── Private offer (gửi riêng cho thợ yêu thích) ──────────────────────────
@@ -1574,6 +1576,15 @@ export class JobsService {
     );
     await job.save();
 
+    // Tạo hồ sơ tranh chấp (timeline cho 2 bên + admin, bổ sung bằng chứng, kháng cáo)
+    await this.disputesService
+      .createCaseFromJob(job, actorId, isCustomer ? 'customer' : 'helper')
+      .catch(err =>
+        this.logger.error(
+          `Could not create dispute case for job ${jobId}: ${err instanceof Error ? err.message : err}`,
+        ),
+      );
+
     await this.contractModel
       .findOneAndUpdate({ job_id: new Types.ObjectId(jobId) }, { status: ContractStatus.DISPUTED })
       .exec();
@@ -1709,6 +1720,9 @@ export class JobsService {
       `Phân xử tranh chấp (${dto.action}): ${dto.admin_note}`,
     );
     await job.save();
+
+    // Đồng bộ phán quyết vào hồ sơ tranh chấp + mở thời hạn kháng cáo
+    await this.disputesService.recordResolution(job, adminId);
 
     if (contract) {
       contract.status =
