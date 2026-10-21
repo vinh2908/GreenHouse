@@ -401,3 +401,70 @@ export function useToggleVoucher() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'vouchers'] }),
   });
 }
+
+// ─── Insurance Claims (Feature 10 — Bồi thường bảo hiểm) ──────────────────────
+
+export type AdminClaimStatus = 'submitted' | 'under_review' | 'approved' | 'paid' | 'rejected';
+
+export interface AdminClaim {
+  _id: string;
+  job_id: string | { _id: string; title?: string; status?: string; description?: string; address?: any; created_at?: string } | null;
+  customer_id: string | { _id: string; full_name?: string; avatar?: string; phone?: string } | null;
+  helper_id?: string | { _id: string; full_name?: string; phone?: string } | null;
+  description: string;
+  photos: string[];
+  requested_amount?: number;
+  approved_amount: number;
+  status: AdminClaimStatus;
+  reject_reason?: string;
+  payout_transaction_id?: string;
+  timeline: {
+    status: AdminClaimStatus;
+    note?: string;
+    actor_id: string;
+    actor_role: string;
+    at: string;
+  }[];
+  created_at: string;
+  updated_at: string;
+}
+
+export function useAdminClaims(params: { status?: string; page?: number }) {
+  return useQuery({
+    queryKey: ['admin', 'claims', params],
+    queryFn: async () => {
+      const { data } = await apiClient.get('/admin/claims', { params });
+      return data.data as { claims: AdminClaim[]; total: number; total_pages: number };
+    },
+  });
+}
+
+export function useAdminClaim(id?: string | null) {
+  return useQuery({
+    queryKey: ['admin', 'claim', id],
+    queryFn: async () => {
+      const { data } = await apiClient.get(`/admin/claims/${id}`);
+      return data.data as AdminClaim;
+    },
+    enabled: !!id,
+  });
+}
+
+export function useReviewClaim() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      id,
+      ...dto
+    }: {
+      id: string;
+      action: 'approve' | 'reject' | 'start_review';
+      approved_amount?: number;
+      note?: string;
+    }) => apiClient.patch(`/admin/claims/${id}/review`, dto),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin', 'claims'] });
+      qc.invalidateQueries({ queryKey: ['admin', 'claim'] });
+    },
+  });
+}
