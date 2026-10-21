@@ -13,7 +13,9 @@ class InitiateCallDto {
 }
 
 class EndCallDto {
-  @ApiPropertyOptional({ description: 'Lý do kết thúc: ended | missed | rejected | failed' })
+  @ApiPropertyOptional({
+    description: 'Lý do kết thúc: ended | missed | rejected | declined | failed',
+  })
   @IsOptional()
   @IsString()
   reason?: string;
@@ -40,6 +42,16 @@ export class CallsController {
     @Body() dto: InitiateCallDto,
   ) {
     return this.callsService.initiateCall(dto.job_id, user.sub);
+  }
+
+  @Post('sessions/:sessionId/join-token')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Cấp token join phiên gọi cho phía nhận cuộc gọi (callee/caller)' })
+  async joinToken(
+    @CurrentUser() user: { sub: string },
+    @Param('sessionId') sessionId: string,
+  ) {
+    return this.callsService.joinSessionToken(user.sub, sessionId);
   }
 
   @Post('sessions/:sessionId/end')

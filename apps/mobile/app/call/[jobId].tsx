@@ -4,49 +4,65 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Mic, MicOff, PhoneOff, Volume2, ShieldCheck } from 'lucide-react-native';
 import { Avatar, Button, COLORS, LoadingSpinner } from '@/components/ui';
-import { useCallConfig, useInitiateCall, useEndCall, type CallSessionInit } from '@/hooks/use-api';
+import {
+  useCallConfig,
+  useInitiateCall,
+  useEndCall,
+  useJoinCallToken,
+  type CallSessionInit,
+} from '@/hooks/use-api';
+import { stringeeService, type StringeeCallEvents } from '@/services/stringee.service';
 
 /**
  * ════════════════════════════════════════════════════════════════════════════
  *  MÀN HÌNH CUỘC GỌI THOẠI TRONG APP (CHE SỐ THẬT) — Roadmap Phase 1, Feature 6
  * ════════════════════════════════════════════════════════════════════════════
  *
- *  Luồng đã hoàn thiện:
+ *  Thiết kế đã triển khai:
  *    1. GET  /calls/config  → tính năng có bật không (chưa cấu hình Stringee
- *       trên server thì màn hình này báo "chưa kích hoạt" và các nút gọi ở
- *       job-detail/chat bị ẩn).
- *    2. POST /calls/token { job_id } → server kiểm tra người gọi thuộc job,
- *       tạo CallSession, cấp JWT access token của Stringee + room_id theo job,
- *       đồng thời bắn socket CALL_INCOMING cho đối tác.
- *    3. POST /calls/sessions/:id/end khi cúp máy.
+ *       trên server thì màn hình báo "chưa kích hoạt").
+ *    2a. Gọi đi (mặc định): POST /calls/token { job_id } → server tạo
+ *        CallSession, cấp JWT Stringee + room_id, bắn socket CALL_INCOMING
+ *        cho đối tác. Sau đó stringeeService.ensureConnected(token) +
+ *        makeOutgoingCall(partner_id).
+ *    2b. Nhận cuộc gọi (mode='answer' + sessionId): POST
+ *        /calls/sessions/:sessionId/join-token → token join cho callee,
+ *        ensureConnected, chờ SDK báo incoming call (tối đa 20s) rồi
+ *        answerPending().
+ *    3. POST /calls/sessions/:id/end khi cúp máy / kết thúc từ xa.
  *
- *  ── ĐIỂM NỐI SDK (TODO khi có tài khoản Stringee + bản build native) ──────
- *  Phần truyền âm thanh thời gian thực cần Stringee React Native SDK
- *  (package `stringee-react-native` — native module, KHÔNG chạy được trên
- *  Expo Go, cần `expo prebuild`/dev-client hoặc EAS Build):
+ *  Tầng media qua adapter duy nhất `services/stringee.service.ts` — file đó
+ *  là nơi duy nhất require `stringee-react-native`. Adapter là no-op an toàn
+ *  khi SDK không có (web / Expo Go): màn hình giữ hành vi cũ (vào thẳng UI
+ *  cuộc gọi ở mức session, media không hoạt động trong bản build đó).
  *
- *    import { StringeeClient, StringeeCall } from 'stringee-react-native';
- *    // 1) client.connect(accessToken)          — token lấy từ bước 2 ở trên
- *    // 2) const call = new StringeeCall(client, my_user_id, partner_id);
- *    //    call.makeCall(...) / lắng nghe sự kiện 'incoming_call' để nhận cuộc gọi
- *    // 3) Map sự kiện của SDK (didChangeState → connected/ended) vào
- *    //    `callState` bên dưới; nút Mic/Loa gọi call.mute() / setSpeakerphoneOn()
- *
- *  Hiện tại (chưa gắn SDK): màn hình hiển thị đầy đủ UI cuộc gọi + trạng thái
- *  kết nối ở mức phiên (session) — token/phòng gọi là THẬT từ server, chỉ còn
- *  thiếu tầng media của SDK. Xem thêm README ở ~/workspace/greenhouse-phase1.
+ *  ⚠️ Caveat còn lại (không thể kiểm chứng trong sandbox này):
+ *    - Package `stringee-react-native` (@1.5.8, legacy SDK line) chưa được
+ *      cài trong môi trường này; tên method/listener + bảng mã signaling/media
+ *      trong adapter + types/stringee-react-native.d.ts PHẢI được đối chiếu
+ *      lại với README của SDK đã cài ở thời điểm tích hợp.
+ *    - Runtime thật cần: dev build (expo prebuild / EAS, KHÔNG chạy Expo Go)
+ *      + tài khoản Stringee thật với API Key SID/Secret cấu hình trên server.
  * ════════════════════════════════════════════════════════════════════════════
  */
 
 type CallUiState = 'preparing' | 'connecting' | 'in_call' | 'ended' | 'unavailable' | 'error';
 
 export default function CallScreen() {
-  const { jobId, partnerName } = useLocalSearchParams<{ jobId: string; partnerName?: string }>();
+  const { jobId, partnerName, sessionId, mode } = useLocalSearchParams<{
+    jobId: string;
+    partnerName?: string;
+    sessionId?: string;
+    mode?: string;
+  }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
+  const isAnswerMode = mode === 'answer' && !!sessionId;
+
   const { data: config, isLoading: configLoading } = useCallConfig();
   const initiate = useInitiateCall();
+  const joinToken = useJoinCallToken();
   const endCall = useEndCall();
 
   const [session, setSession] = useState<CallSessionInit | null>(null);
@@ -56,6 +72,15 @@ export default function CallScreen() {
   const [seconds, setSeconds] = useState(0);
   const [errorMsg, setErrorMsg] = useState('');
   const startedRef = useRef(false);
+  const sessionRef = useRef<CallSessionInit | null>(null);
+  const endedRef = useRef(false);
+  const answerTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const unsubIncomingRef = useRef<(() => void) | null>(null);
+
+  const setSessionBoth = (s: CallSessionInit | null) => {
+    sessionRef.current = s;
+    setSession(s);
+  };
 
   // Bắt đầu phiên gọi ngay khi mở màn hình (và tính năng đang bật)
   useEffect(() => {
@@ -67,14 +92,85 @@ export default function CallScreen() {
     if (!config) return;
     startedRef.current = true;
     setUiState('connecting');
+
+    const events: StringeeCallEvents = {
+      onConnected: () => setUiState('in_call'),
+      onEnded: () => {
+        if (endedRef.current) return;
+        endedRef.current = true;
+        const s = sessionRef.current;
+        if (s) {
+          void endCall
+            .mutateAsync({ sessionId: s.session_id, reason: 'ended' })
+            .catch(() => undefined);
+        }
+        setUiState('ended');
+      },
+      onError: (message: string) => {
+        setErrorMsg(message || 'Không kết nối được cuộc gọi. Vui lòng thử lại.');
+        setUiState('error');
+      },
+    };
+
+    if (isAnswerMode && sessionId) {
+      joinToken
+        .mutateAsync(sessionId)
+        .then(s => {
+          setSessionBoth(s);
+          const connected = stringeeService.ensureConnected(s.token, s.my_user_id);
+          if (!connected) {
+            // Media inactive in this build (web / Expo Go / SDK not installed):
+            // keep the previous session-only UI behaviour.
+            setUiState('in_call');
+            return;
+          }
+          const tryAnswer = () => {
+            if (stringeeService.hasPendingIncoming()) {
+              if (answerTimerRef.current) clearTimeout(answerTimerRef.current);
+              stringeeService.answerPending(events);
+            }
+          };
+          // Subscribe for the SDK incoming call, and check the already-pending case.
+          unsubIncomingRef.current = stringeeService.setIncomingListener(() => tryAnswer());
+          tryAnswer();
+          answerTimerRef.current = setTimeout(() => {
+            if (endedRef.current) return;
+            // No SDK incoming call arrived — the caller likely hung up / expired.
+            setErrorMsg('Cuộc gọi đã kết thúc hoặc đã bị hủy');
+            setUiState('error');
+            void endCall
+              .mutateAsync({ sessionId, reason: 'missed' })
+              .catch(() => undefined);
+          }, 20_000);
+        })
+        .catch((err: any) => {
+          setErrorMsg(
+            err?.response?.data?.message ?? 'Không bắt đầu được cuộc gọi. Vui lòng thử lại.',
+          );
+          setUiState('error');
+        });
+      return;
+    }
+
     initiate
       .mutateAsync(jobId)
       .then(s => {
-        setSession(s);
-        // TODO(SDK): tại đây connect StringeeClient bằng s.token rồi makeCall
-        // tới s.partner_id trong phòng s.room_id; khi SDK báo connected thì
-        // setUiState('in_call'). Tạm thời chuyển thẳng sang UI cuộc gọi.
-        setUiState('in_call');
+        setSessionBoth(s);
+        const connected = stringeeService.ensureConnected(s.token, s.my_user_id);
+        if (!connected) {
+          // Media inactive in this build (web / Expo Go / SDK not installed):
+          // keep today's behaviour — go straight to the in-call session UI.
+          setUiState('in_call');
+          return;
+        }
+        const started = stringeeService.makeOutgoingCall({
+          myUserId: s.my_user_id,
+          partnerId: s.partner_id,
+          events,
+        });
+        if (!started) {
+          setUiState('in_call');
+        }
       })
       .catch((err: any) => {
         setErrorMsg(
@@ -85,6 +181,15 @@ export default function CallScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [jobId, config, configLoading]);
 
+  // Cleanup: clear answer timer / listener, hang up SDK call on unmount.
+  useEffect(() => {
+    return () => {
+      if (answerTimerRef.current) clearTimeout(answerTimerRef.current);
+      unsubIncomingRef.current?.();
+      stringeeService.hangupCurrent();
+    };
+  }, []);
+
   // Đồng hồ đếm thời lượng (chạy khi đang trong cuộc gọi)
   useEffect(() => {
     if (uiState !== 'in_call') return;
@@ -93,11 +198,32 @@ export default function CallScreen() {
   }, [uiState]);
 
   const handleEnd = async () => {
+    stringeeService.hangupCurrent();
+    stringeeService.rejectPending();
     if (session) {
       await endCall.mutateAsync({ sessionId: session.session_id, reason: 'ended' }).catch(() => undefined);
+    } else if (isAnswerMode && sessionId) {
+      await endCall.mutateAsync({ sessionId, reason: 'ended' }).catch(() => undefined);
     }
+    endedRef.current = true;
     setUiState('ended');
     router.back();
+  };
+
+  const handleToggleMute = () => {
+    setMuted(m => {
+      const next = !m;
+      stringeeService.setMute(next);
+      return next;
+    });
+  };
+
+  const handleToggleSpeaker = () => {
+    setSpeaker(s => {
+      const next = !s;
+      stringeeService.setSpeakerphoneOn(next);
+      return next;
+    });
   };
 
   const mmss = `${String(Math.floor(seconds / 60)).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`;
@@ -116,7 +242,6 @@ export default function CallScreen() {
         alignItems: 'center',
       }}
     >
-      {/* Trạng thái bảo mật */}
       <View
         style={{
           flexDirection: 'row',
@@ -134,7 +259,6 @@ export default function CallScreen() {
         </Text>
       </View>
 
-      {/* Đối tác */}
       <View style={{ alignItems: 'center', marginTop: 56, gap: 14 }}>
         <Avatar name={displayName} size={110} />
         <Text style={{ color: '#fff', fontSize: 24, fontWeight: '800', textAlign: 'center' }}>
@@ -168,9 +292,8 @@ export default function CallScreen() {
       {(uiState === 'connecting' || uiState === 'in_call') && (
         <View style={{ alignItems: 'center', gap: 28 }}>
           <View style={{ flexDirection: 'row', gap: 22 }}>
-            {/* Mic — TODO(SDK): gọi StringeeCall.mute(!muted) */}
             <TouchableOpacity
-              onPress={() => setMuted(m => !m)}
+              onPress={handleToggleMute}
               style={{
                 width: 62,
                 height: 62,
@@ -186,9 +309,8 @@ export default function CallScreen() {
                 <Mic size={24} color="#fff" />
               )}
             </TouchableOpacity>
-            {/* Loa ngoài — TODO(SDK): gọi StringeeClient.setSpeakerphoneOn(speaker) */}
             <TouchableOpacity
-              onPress={() => setSpeaker(s => !s)}
+              onPress={handleToggleSpeaker}
               style={{
                 width: 62,
                 height: 62,
