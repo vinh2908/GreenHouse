@@ -81,6 +81,18 @@ export const DISPUTE_APPEAL_WINDOW_HOURS = 72; // Kháng cáo trong 72h sau phâ
 export const TEAM_MIN_HELPERS = 2; // Đơn nhóm: tối thiểu 2 thợ
 export const TEAM_MAX_HELPERS = 4; // Đơn nhóm: tối đa 4 thợ
 
+// ─── Loyalty (Feature 12 — Điểm thành viên & hạng khách) ────────────────────
+// Service API có thể ghi đè bằng env: LOYALTY_EARN_VND_PER_POINT,
+// LOYALTY_POINT_VALUE_VND, LOYALTY_MIN_REDEEM_POINTS (xem LoyaltyService).
+export const LOYALTY_EARN_VND_PER_POINT = 10000; // 1 điểm / 10.000₫ đã thanh toán
+export const LOYALTY_POINT_VALUE_VND = 1000; // 1 điểm = 1.000₫ khi đổi
+export const LOYALTY_MIN_REDEEM_POINTS = 100; // Đổi tối thiểu 100 điểm / lần
+export const LOYALTY_TIER_SILVER_POINTS = 500; // Bạc: lifetime >= 500
+export const LOYALTY_TIER_GOLD_POINTS = 2000; // Vàng: lifetime >= 2000
+export const LOYALTY_CAP_PERCENT_REGULAR = 20; // Thường: đổi tối đa 20% giá trị đơn
+export const LOYALTY_CAP_PERCENT_SILVER = 30; // Bạc: tối đa 30%
+export const LOYALTY_CAP_PERCENT_GOLD = 50; // Vàng: tối đa 50%
+
 // ─── Platform Fee (theo model Vua Thợ: 10-25% tùy ngành) ─────────────────────
 
 export const PLATFORM_FEE_BY_SERVICE = {

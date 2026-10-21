@@ -23,6 +23,7 @@ import { NotificationsService } from '../notifications/notifications.service';
 import { HelperProfile, HelperProfileDocument } from '../helpers/schemas/helper-profile.schema';
 import { Job, JobDocument, Contract, ContractDocument } from '../jobs/schemas/job.schema';
 import { VouchersService } from '../vouchers/vouchers.service';
+import { LoyaltyService } from '../loyalty/loyalty.service';
 
 @Injectable()
 export class PaymentsService {
@@ -33,6 +34,7 @@ export class PaymentsService {
     @InjectModel(HelperProfile.name) private helperModel: Model<HelperProfileDocument>,
     private readonly notificationsService: NotificationsService,
     private readonly vouchersService: VouchersService,
+    private readonly loyaltyService: LoyaltyService,
     @Optional() @InjectModel(Job.name) private jobModel?: Model<JobDocument>,
     @Optional() @InjectModel(Contract.name) private contractModel?: Model<ContractDocument>,
   ) {}
@@ -95,6 +97,8 @@ export class PaymentsService {
     success: boolean;
     discount_amount: number;
     voucher_code?: string;
+    loyalty_points_redeemed: number;
+    loyalty_discount_amount: number;
   }> {
     if (!Types.ObjectId.isValid(jobId)) {
       throw new BadRequestException('Mã công việc (job_id) không hợp lệ');
@@ -103,6 +107,8 @@ export class PaymentsService {
     let resolvedAmount = amount;
     let discountAmount = 0;
     let appliedVoucherCode: string | undefined;
+    let loyaltyPointsRedeemed = 0;
+    let loyaltyDiscountAmount = 0;
 
     if (this.jobModel) {
       const job = await this.jobModel.findById(jobId).exec();
@@ -139,6 +145,20 @@ export class PaymentsService {
           resolvedAmount = Math.max(0, resolvedAmount - discountAmount);
         }
 
+        // ── Loyalty (Feature 12): trừ điểm thật tại thời điểm thanh toán ──
+        // Mirror voucher: nếu số dư điểm lúc này không còn đủ → redeemAtPayment
+        // ném BadRequest rõ ràng, thanh toán bị chặn để khách gỡ điểm rồi
+        // thanh toán lại. Phần giảm do điểm cũng do sàn chịu (thợ nhận đủ
+        // theo hợp đồng như voucher).
+        if ((job.loyalty_points_requested ?? 0) > 0 && resolvedAmount > 0) {
+          const loyaltyRedeemed = await this.loyaltyService.redeemAtPayment(customerId, jobId);
+          if (loyaltyRedeemed) {
+            loyaltyPointsRedeemed = loyaltyRedeemed.points_redeemed;
+            loyaltyDiscountAmount = loyaltyRedeemed.discount_amount;
+            resolvedAmount = Math.max(0, resolvedAmount - loyaltyDiscountAmount);
+          }
+        }
+
         await this.jobModel
           .findByIdAndUpdate(job._id, {
             $set: {
@@ -166,6 +186,9 @@ export class PaymentsService {
         `Thanh toán cho công việc #${jobId.slice(-6)} (${paymentMethod.toUpperCase()})` +
         (discountAmount > 0
           ? ` — đã áp mã ${appliedVoucherCode} giảm ${discountAmount.toLocaleString('vi-VN')}₫`
+          : '') +
+        (loyaltyDiscountAmount > 0
+          ? ` — đổi ${loyaltyPointsRedeemed} điểm giảm ${loyaltyDiscountAmount.toLocaleString('vi-VN')}₫`
           : ''),
       reference: `PAY-${Date.now()}`,
       metadata: {
@@ -174,10 +197,23 @@ export class PaymentsService {
         ...(discountAmount > 0
           ? { voucher_code: appliedVoucherCode, discount_amount: discountAmount }
           : {}),
+        ...(loyaltyDiscountAmount > 0
+          ? {
+              loyalty_points_redeemed: loyaltyPointsRedeemed,
+              loyalty_discount_amount: loyaltyDiscountAmount,
+            }
+          : {}),
       },
     });
 
-    return { transaction, success: true, discount_amount: discountAmount, voucher_code: appliedVoucherCode };
+    return {
+      transaction,
+      success: true,
+      discount_amount: discountAmount,
+      voucher_code: appliedVoucherCode,
+      loyalty_points_redeemed: loyaltyPointsRedeemed,
+      loyalty_discount_amount: loyaltyDiscountAmount,
+    };
   }
 
   // ─── Credit helper wallet after online-paid job completion ─────────────────
