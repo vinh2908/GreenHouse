@@ -14,6 +14,8 @@ import { useSocketConnection, useNotificationSocket } from '@/hooks/use-socket';
 import { AppAlertHost } from '@/components/common/app-alert';
 import { useLiveGps } from '@/hooks/use-live-gps';
 import { useOfflineSync } from '@/hooks/use-offline';
+import { useIncomingCallListener } from '@/hooks/use-incoming-call';
+import { IncomingCallModal } from '@/components/common/incoming-call-modal';
 import { useBackgroundGps } from '@/hooks/use-background-gps';
 import { useAuthStore } from '@/stores/auth.store';
 
@@ -137,6 +139,7 @@ function SocketManager() {
   useLiveGps();
   useBackgroundGps();
   useOfflineSync(); // Feature 16: vòng lặp flush hàng đợi offline
+  useIncomingCallListener(); // Feature 6: lắng nghe cuộc gọi thoại đến
   return null;
 }
 
@@ -177,6 +180,7 @@ export default function RootLayout() {
         <Toast config={toastConfig} swipeable={false} />
         <ToastCard />
         <AppAlertHost />
+        <IncomingCallModal />
       </QueryClientProvider>
     </GestureHandlerRootView>
   );
