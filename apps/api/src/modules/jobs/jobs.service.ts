@@ -52,6 +52,7 @@ import { NotificationsService } from '../notifications/notifications.service';
 import { ChatService } from '../chat/chat.service';
 import { PaymentsService } from '../payments/payments.service';
 import { FavoritesService } from '../favorites/favorites.service';
+import { VouchersService } from '../vouchers/vouchers.service';
 import { RebookJobDto } from './dto/job.dto';
 import { Service, ServiceDocument } from '../services/schemas/service.schema';
 import { HelperProfile, HelperProfileDocument } from '../helpers/schemas/helper-profile.schema';
@@ -76,6 +77,7 @@ export class JobsService {
     private readonly paymentsService: PaymentsService,
     private readonly routingService: RoutingService,
     private readonly favoritesService: FavoritesService,
+    private readonly vouchersService: VouchersService,
   ) {}
 
   // ─── Private offer (gửi riêng cho thợ yêu thích) ──────────────────────────
@@ -262,6 +264,16 @@ export class JobsService {
     const expiresAt = new Date();
     expiresAt.setHours(expiresAt.getHours() + JOB_OPEN_EXPIRY_HOURS);
 
+    // Voucher: kiểm tra mã hợp lệ ngay khi đăng job (ghi nhận lượt dùng ở bước thanh toán)
+    let voucherCode: string | undefined;
+    if (dto.voucher_code) {
+      const voucher = await this.vouchersService.assertCodeAttachable(
+        dto.voucher_code,
+        customerId,
+      );
+      voucherCode = voucher.code;
+    }
+
     // Ưu tiên gửi riêng: lấy từ opts (nội bộ / đặt lại / định kỳ) hoặc từ DTO của khách
     const offerHelperId = opts?.privateOfferHelperId ?? dto.private_offer_helper_id;
     const offer = offerHelperId
@@ -295,6 +307,7 @@ export class JobsService {
       is_flexible_time: dto.is_flexible_time ?? false,
       private_offer_helper_id: offer?.helper_id,
       private_offer_expires_at: offer?.expires_at,
+      voucher_code: voucherCode,
       recurring_plan_id: opts?.recurringPlanId
         ? new Types.ObjectId(opts.recurringPlanId)
         : undefined,
