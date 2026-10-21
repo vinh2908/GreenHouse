@@ -1069,6 +1069,52 @@ export function useDetachVoucherFromJob() {
   });
 }
 
+// ─── Voice Calls (Roadmap Phase 1 — Gọi thoại che số) ───────────────────────
+
+export interface CallConfig {
+  enabled: boolean;
+  provider: string | null;
+  message?: string;
+}
+
+export interface CallSessionInit {
+  session_id: string;
+  provider: string;
+  token: string;
+  token_expires_at: string;
+  room_id: string;
+  partner_id: string;
+  my_user_id: string;
+}
+
+export function useCallConfig() {
+  return useQuery({
+    queryKey: ['call-config'],
+    queryFn: async () => {
+      const { data } = await apiClient.get('/calls/config');
+      return data.data as CallConfig;
+    },
+    staleTime: 60_000,
+    retry: false,
+  });
+}
+
+export function useInitiateCall() {
+  return useMutation({
+    mutationFn: async (jobId: string) => {
+      const { data } = await apiClient.post('/calls/token', { job_id: jobId });
+      return data.data as CallSessionInit;
+    },
+  });
+}
+
+export function useEndCall() {
+  return useMutation({
+    mutationFn: ({ sessionId, reason }: { sessionId: string; reason?: string }) =>
+      apiClient.post(`/calls/sessions/${sessionId}/end`, { reason }),
+  });
+}
+
 // ─── Team Jobs (Roadmap Phase 1 — Đơn nhóm) ──────────────────────────────────
 
 export interface TeamInvitation {
