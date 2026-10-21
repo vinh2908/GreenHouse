@@ -3,7 +3,10 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { JobsController } from './jobs.controller';
 import { JobsService } from './jobs.service';
 import { RoutingService } from './routing.service';
+import { DisputesController } from './disputes.controller';
+import { DisputesService } from './disputes.service';
 import { Job, JobSchema, Quote, QuoteSchema, Contract, ContractSchema } from './schemas/job.schema';
+import { DisputeCase, DisputeCaseSchema } from './schemas/dispute-case.schema';
 import { Service, ServiceSchema } from '../services/schemas/service.schema';
 import { HelperProfile, HelperProfileSchema } from '../helpers/schemas/helper-profile.schema';
 import { ChatModule } from '../chat/chat.module';
@@ -18,6 +21,7 @@ import { VouchersModule } from '../vouchers/vouchers.module';
       { name: Job.name, schema: JobSchema },
       { name: Quote.name, schema: QuoteSchema },
       { name: Contract.name, schema: ContractSchema },
+      { name: DisputeCase.name, schema: DisputeCaseSchema },
       { name: Service.name, schema: ServiceSchema },
       { name: HelperProfile.name, schema: HelperProfileSchema },
     ]),
@@ -27,8 +31,8 @@ import { VouchersModule } from '../vouchers/vouchers.module';
     FavoritesModule,
     VouchersModule,
   ],
-  controllers: [JobsController],
-  providers: [JobsService, RoutingService],
-  exports: [JobsService],
+  controllers: [JobsController, DisputesController],
+  providers: [JobsService, RoutingService, DisputesService],
+  exports: [JobsService, DisputesService],
 })
 export class JobsModule {}
