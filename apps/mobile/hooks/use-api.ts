@@ -429,6 +429,29 @@ export function useAvailableJobs(serviceId?: string, page = 1, enabled = true) {
   });
 }
 
+// ─── Bản đồ nhu cầu (Roadmap Phase 2 — Feature 15) ──────────────────────────
+
+export interface DemandArea {
+  district: string;
+  city: string;
+  lat: number | null;
+  lng: number | null;
+  open_jobs: number;
+  fixed_price_jobs?: number;
+  ai_priced_jobs?: number;
+}
+
+export function useDemandMap() {
+  return useQuery({
+    queryKey: ['jobs', 'demand-map'],
+    queryFn: async () => {
+      const { data } = await apiClient.get('/jobs/demand-map');
+      return data.data as DemandArea[];
+    },
+    staleTime: 60 * 1000,
+  });
+}
+
 export function useHelperJobs(status?: string) {
   return useQuery({
     queryKey: ['jobs', 'helper', status],
