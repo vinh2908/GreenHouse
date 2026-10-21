@@ -18,7 +18,11 @@ import {
 import { CreateRecurringPlanDto, UpdateRecurringPlanDto } from './dto/recurring.dto';
 import { Job, JobDocument } from '../jobs/schemas/job.schema';
 import { CreateJobDto } from '../jobs/dto/job.dto';
-import { JobsService } from '../jobs/jobs.service';
+import { JobsService, isAvailableForDate } from '../jobs/jobs.service';
+import {
+  HelperProfile,
+  HelperProfileDocument,
+} from '../helpers/schemas/helper-profile.schema';
 import { FavoritesService } from '../favorites/favorites.service';
 import { JobStatus } from '@homemate/types';
 import { RECURRING_WINDOW_DAYS } from '@homemate/constants';
@@ -39,6 +43,8 @@ export class RecurringService implements OnApplicationBootstrap, OnModuleDestroy
     private planModel: Model<RecurringPlanDocument>,
     @InjectModel(Job.name)
     private jobModel: Model<JobDocument>,
+    @InjectModel(HelperProfile.name)
+    private helperModel: Model<HelperProfileDocument>,
     private readonly jobsService: JobsService,
     private readonly favoritesService: FavoritesService,
   ) {}
@@ -154,6 +160,19 @@ export class RecurringService implements OnApplicationBootstrap, OnModuleDestroy
       key => !plan.skipped_dates.includes(key),
     );
 
+    // Lịch làm việc (Feature 13): nếu gói có thợ quen, nạp lịch của thợ 1 lần;
+    // lượt nào thợ không làm (ngày nghỉ / ngoài giờ / ngày chặn) thì lượt đó
+    // được tạo CÔNG KHAI thay vì gửi riêng cho thợ.
+    let preferredHelperAvailability: HelperProfileDocument['availability'] | undefined;
+    if (plan.preferred_helper_id) {
+      const profile = await this.helperModel
+        .findOne({ user_id: plan.preferred_helper_id })
+        .select('availability')
+        .lean()
+        .exec();
+      preferredHelperAvailability = profile?.availability;
+    }
+
     let created = 0;
     for (const key of dates) {
       const exists = await this.jobModel
@@ -183,13 +202,18 @@ export class RecurringService implements OnApplicationBootstrap, OnModuleDestroy
         is_flexible_time: false,
       };
 
+      const helperAvailableForOccurrence = plan.preferred_helper_id
+        ? isAvailableForDate(preferredHelperAvailability, key, plan.time_start)
+        : true;
+
       try {
         await this.jobsService.createJob(String(plan.customer_id), dto, {
           recurringPlanId: String(plan._id),
           occurrenceDate: key,
-          privateOfferHelperId: plan.preferred_helper_id
-            ? String(plan.preferred_helper_id)
-            : undefined,
+          privateOfferHelperId:
+            plan.preferred_helper_id && helperAvailableForOccurrence
+              ? String(plan.preferred_helper_id)
+              : undefined,
           skipFavoriteCheck: true,
         });
         created += 1;

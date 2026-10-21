@@ -2,6 +2,8 @@ import {
   IsString,
   IsOptional,
   IsArray,
+  IsBoolean,
+  IsInt,
   IsNumber,
   IsEnum,
   IsIn,
@@ -125,3 +127,48 @@ export class BankAccountDto {
   @IsNotEmpty()
   account_name: string;
 }
+
+// ─── Lịch làm việc (Feature 13) ──────────────────────────────────────────────
+
+const HH_MM = {
+  pattern: /^([01]\d|2[0-3]):[0-5]\d$/,
+  message: 'Giờ phải theo định dạng HH:mm (00:00–23:59)',
+};
+const YYYY_MM_DD = {
+  pattern: /^\d{4}-\d{2}-\d{2}$/,
+  message: 'Ngày phải theo định dạng YYYY-MM-DD',
+};
+
+export class UpdateAvailabilityDto {
+  @ApiProperty({ description: 'Bật/tắt lịch làm việc' })
+  @IsBoolean()
+  enabled: boolean;
+
+  @ApiProperty({
+    example: [1, 2, 3, 4, 5],
+    description: 'Ngày làm việc trong tuần theo JS getDay(): 0=CN, 1=T2, …, 6=T7',
+  })
+  @IsArray()
+  @IsInt({ each: true })
+  @Min(0, { each: true })
+  @Max(6, { each: true })
+  days_of_week: number[];
+
+  @ApiProperty({ example: '07:00' })
+  @IsString()
+  @Matches(HH_MM.pattern, { message: HH_MM.message })
+  start_time: string;
+
+  @ApiProperty({ example: '19:00' })
+  @IsString()
+  @Matches(HH_MM.pattern, { message: HH_MM.message })
+  end_time: string;
+
+  @ApiPropertyOptional({ example: ['2026-11-01'], description: 'Ngày nghỉ lẻ (YYYY-MM-DD)' })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  @Matches(YYYY_MM_DD.pattern, { each: true, message: YYYY_MM_DD.message })
+  blocked_dates?: string[];
+}
+
