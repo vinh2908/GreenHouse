@@ -309,6 +309,7 @@ export default function HelperProfileScreen() {
           <Card style={{ gap: 0 }}>
             {[
               { icon: CreditCard, label: 'Tài khoản ngân hàng liên kết', route: '/bank-account' },
+              { icon: FileText, label: 'Hợp đồng theo tháng', route: '/monthly-contracts' },
               { icon: FileText, label: 'Hồ sơ nghề nghiệp & Kỹ năng', route: '/edit-profile' },
               {
                 icon: HelpCircle,

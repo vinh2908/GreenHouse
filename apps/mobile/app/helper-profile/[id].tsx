@@ -509,6 +509,19 @@ export default function HelperPublicProfileScreen() {
             icon={<CheckCircle2 size={18} color="#fff" />}
             onPress={handleHireHelper}
           />
+          {isCustomer && !quoteId && (
+            <Button
+              title="📅 Thuê theo tháng"
+              variant="secondary"
+              style={{ flex: 1 }}
+              onPress={() =>
+                router.push({
+                  pathname: '/monthly-contract-create',
+                  params: { helperId: String(id) },
+                })
+              }
+            />
+          )}
         </View>
       )}
     </View>
