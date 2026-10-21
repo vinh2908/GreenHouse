@@ -63,6 +63,7 @@ import {
 import { useJobSocketUpdates, useHelperLocation } from '@/hooks/use-socket';
 import { locationService } from '@/services/location.service';
 import { LiveTrackingMap } from '@/components/common/live-tracking-map';
+import { TeamCard } from '@/components/common/team-card';
 import { LocationPicker } from '@/components/common/location-picker';
 import { validCoordinate } from '@/services/tracking';
 import {
@@ -1338,6 +1339,8 @@ export default function JobDetailScreen() {
               onPress={() => router.push({ pathname: '/dispute/[jobId]', params: { jobId: id } })}
             />
           )}
+          {/* ── Đội nhóm (Roadmap Phase 1): khách xem roster, chỉ đọc ── */}
+          <TeamCard job={job} currentUserId={user?._id} />
           {canEdit && (
             <Button
               title="✏️  Chỉnh sửa vị trí & thông tin yêu cầu"

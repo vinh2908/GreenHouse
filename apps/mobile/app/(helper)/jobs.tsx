@@ -6,8 +6,14 @@ import { ChevronRight, MapPin, Clock, Navigation } from 'lucide-react-native';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import 'dayjs/locale/vi';
-import { useAvailableJobs, useHelperJobs, useHelperProfile } from '@/hooks/use-api';
-import { Card, JobStatusBadge, Badge, COLORS, EmptyState } from '@/components/ui';
+import {
+  useAvailableJobs,
+  useHelperJobs,
+  useHelperProfile,
+  useTeamInvitations,
+  useRespondTeamInvitation,
+} from '@/hooks/use-api';
+import { Button, Card, JobStatusBadge, Badge, COLORS, EmptyState } from '@/components/ui';
 
 dayjs.extend(relativeTime);
 dayjs.locale('vi');
@@ -21,6 +27,9 @@ const TABS = [
 export default function HelperJobsScreen() {
   const router = useRouter();
   const [tab, setTab] = useState(0);
+  // ── Đơn nhóm: lời mời vào nhóm đang chờ (Roadmap Phase 1) ────────────────
+  const { data: teamInvitations } = useTeamInvitations();
+  const respondInvitation = useRespondTeamInvitation();
   const { data: helperProfile, isLoading: pLoading } = useHelperProfile();
   const kycStatus = helperProfile?.verification_status as string | undefined;
   const isVerified = kycStatus === 'approved';
@@ -74,6 +83,56 @@ export default function HelperJobsScreen() {
           Xem các đơn hàng mới cần thợ và theo dõi tiến độ công việc
         </Text>
       </View>
+
+      {/* ── Lời mời vào nhóm (Đơn nhóm) ─────────────────────────────────── */}
+      {(teamInvitations ?? []).length > 0 && (
+        <View style={{ paddingHorizontal: 16, paddingTop: 12, gap: 10 }}>
+          <Text style={{ fontWeight: '800', fontSize: 14.5, color: COLORS.gray[900] }}>
+            👥 Lời mời vào nhóm ({teamInvitations!.length})
+          </Text>
+          {teamInvitations!.map(inv => (
+            <Card key={inv.job_id} style={{ gap: 8 }}>
+              <Text style={{ fontWeight: '800', fontSize: 14, color: COLORS.gray[900] }}>
+                {inv.title}
+              </Text>
+              <Text style={{ fontSize: 12.5, color: COLORS.gray[600], lineHeight: 18 }}>
+                {inv.address_text ? `📍 ${inv.address_text}\n` : ''}Bạn sẽ nhận{' '}
+                {inv.split_percent}% tiền công của đơn (sau phí sàn) khi hoàn thành cùng nhóm{' '}
+                {inv.helpers_needed} thợ.
+              </Text>
+              <View style={{ flexDirection: 'row', gap: 8 }}>
+                <Button
+                  title="✓ Nhận lời"
+                  size="sm"
+                  loading={respondInvitation.isPending}
+                  onPress={() =>
+                    respondInvitation.mutate({ jobId: inv.job_id, action: 'accept' })
+                  }
+                />
+                <Button
+                  title="Từ chối"
+                  size="sm"
+                  variant="outline"
+                  onPress={() =>
+                    respondInvitation.mutate({ jobId: inv.job_id, action: 'decline' })
+                  }
+                />
+                <Button
+                  title="Xem đơn"
+                  size="sm"
+                  variant="ghost"
+                  onPress={() =>
+                    router.push({
+                      pathname: '/helper-job-detail/[id]',
+                      params: { id: inv.job_id },
+                    })
+                  }
+                />
+              </View>
+            </Card>
+          ))}
+        </View>
+      )}
 
       {/* Tabs */}
       <View
