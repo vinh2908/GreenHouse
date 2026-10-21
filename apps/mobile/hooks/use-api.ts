@@ -1314,6 +1314,89 @@ export function useSettleMonth() {
   });
 }
 
+// ─── Insurance Claims (Feature 10 — Yêu cầu bồi thường bảo hiểm) ─────────────
+
+export type InsuranceClaimStatus =
+  | 'submitted'
+  | 'under_review'
+  | 'approved'
+  | 'paid'
+  | 'rejected';
+
+export interface InsuranceClaimItem {
+  _id: string;
+  job_id: string | { _id: string; title?: string; status?: string };
+  customer_id: string;
+  helper_id?: string;
+  description: string;
+  photos: string[];
+  requested_amount?: number;
+  approved_amount: number;
+  status: InsuranceClaimStatus;
+  reject_reason?: string;
+  payout_transaction_id?: string;
+  timeline: {
+    status: InsuranceClaimStatus;
+    note?: string;
+    actor_id: string;
+    actor_role: string;
+    at: string;
+  }[];
+  created_at: string;
+  updated_at: string;
+}
+
+export function useCreateClaim() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (dto: {
+      job_id: string;
+      description: string;
+      photos?: string[];
+      requested_amount?: number;
+    }) => {
+      const uploaded = await uploadFiles(dto.photos);
+      return apiClient.post('/claims', { ...dto, photos: uploaded });
+    },
+    onSuccess: (_, vars) => {
+      qc.invalidateQueries({ queryKey: ['claims'] });
+      qc.invalidateQueries({ queryKey: ['claim-for-job', vars.job_id] });
+      qc.invalidateQueries({ queryKey: ['job', vars.job_id] });
+      Toast.show({
+        type: 'success',
+        text1: 'Đã gửi yêu cầu bồi thường 🛡',
+        text2: 'Đội ngũ Green House sẽ xem xét và phản hồi sớm nhất',
+      });
+    },
+    onError: (err: any) => {
+      const msg = err?.response?.data?.message ?? 'Gửi yêu cầu thất bại';
+      Toast.show({ type: 'error', text1: typeof msg === 'string' ? msg : 'Đã có lỗi xảy ra' });
+    },
+  });
+}
+
+export function useMyClaims() {
+  return useQuery({
+    queryKey: ['claims', 'mine'],
+    queryFn: async () => {
+      const { data } = await apiClient.get('/claims/mine');
+      return data.data as InsuranceClaimItem[];
+    },
+  });
+}
+
+export function useClaimForJob(jobId?: string) {
+  return useQuery({
+    queryKey: ['claim-for-job', jobId],
+    queryFn: async () => {
+      const { data } = await apiClient.get(`/claims/job/${jobId}`);
+      return (data.data ?? null) as InsuranceClaimItem | null;
+    },
+    enabled: !!jobId,
+    retry: false,
+  });
+}
+
 // ─── Vouchers (Roadmap Phase 1 — Mã giảm giá) ────────────────────────────────
 
 export interface VoucherPreview {
