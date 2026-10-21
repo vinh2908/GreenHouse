@@ -26,6 +26,7 @@ const navItems = [
   { href: '/jobs', label: 'Quản lý Đơn hàng', icon: Briefcase },
   { href: '/services', label: 'Dịch vụ & Phí', icon: Wrench },
   { href: '/vouchers', label: 'Mã giảm giá', icon: TicketPercent },
+  { href: '/claims', label: 'Bồi thường bảo hiểm', icon: ShieldCheck },
   { href: '/payments', label: 'Thanh toán & Rút tiền', icon: CreditCard },
   { href: '/reviews', label: 'Đánh giá & Phản hồi', icon: Star },
   { href: '/analytics', label: 'Thống kê & Báo cáo', icon: BarChart3 },

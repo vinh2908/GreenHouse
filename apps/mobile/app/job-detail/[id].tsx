@@ -56,6 +56,7 @@ import {
   useRemoveFavorite,
   useReleasePrivateOffer,
   useCreateWarrantyJob,
+  useClaimForJob,
   useValidateVoucher,
   useApplyVoucherToJob,
   useDetachVoucherFromJob,
@@ -152,6 +153,7 @@ export default function JobDetailScreen() {
   const removeFavorite = useRemoveFavorite();
   const releaseOffer = useReleasePrivateOffer();
   const createWarranty = useCreateWarrantyJob();
+  const { data: jobClaim } = useClaimForJob(job?.status === 'completed' ? id : undefined);
   const [downloadingInvoice, setDownloadingInvoice] = useState(false);
 
   const [showReview, setShowReview] = useState(false);
@@ -673,6 +675,27 @@ export default function JobDetailScreen() {
                 onPress={handleCreateWarranty}
               />
             )}
+          </Card>
+        )}
+
+        {/* ── Bồi thường bảo hiểm (Feature 10) ───────────────────────── */}
+        {job.status === 'completed' && !job.is_warranty && (
+          <Card style={{ gap: 8 }}>
+            <Text style={{ fontWeight: '800', fontSize: 15, color: COLORS.gray[900] }}>
+              🛡 Bồi thường bảo hiểm
+            </Text>
+            <Text style={{ fontSize: 13, color: COLORS.gray[700], lineHeight: 19 }}>
+              {jobClaim
+                ? 'Bạn đã gửi yêu cầu bồi thường cho đơn này — xem trạng thái và diễn biến xử lý tại đây.'
+                : 'Dịch vụ gây thiệt hại sau khi hoàn thành? Gửi yêu cầu bồi thường trong thời hạn bảo hiểm của đơn (mặc định 30 ngày) — tiền duyệt sẽ cộng thẳng vào ví của bạn.'}
+            </Text>
+            <Button
+              title={jobClaim ? 'Xem yêu cầu bồi thường' : '🛡 Yêu cầu bồi thường bảo hiểm'}
+              variant={jobClaim ? 'outline' : 'primary'}
+              onPress={() =>
+                router.push({ pathname: '/claim/[jobId]', params: { jobId: job._id } })
+              }
+            />
           </Card>
         )}
 
