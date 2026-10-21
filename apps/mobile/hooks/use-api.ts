@@ -953,6 +953,25 @@ export function useEstimatePrice() {
   });
 }
 
+// ─── Phân tích ảnh sự cố bằng AI Vision (Roadmap Phase 2 — Feature 17) ─────
+
+export interface IssuePhotoAnalysis {
+  available: boolean;
+  detected_issue?: string;
+  suggested_service_slug?: string | null;
+  description_draft?: string;
+  price_min?: number;
+  price_max?: number;
+  confidence?: number;
+}
+
+export function useAnalyzeIssuePhoto() {
+  return useMutation({
+    mutationFn: (dto: { image_base64: string; mime_type: string }) =>
+      apiClient.post('/ai/analyze-photo', dto),
+  });
+}
+
 export function useAiSupport() {
   return useMutation({
     mutationFn: (dto: { message: string; history?: { role: string; content: string }[] }) =>

@@ -16,6 +16,9 @@ export const aiConfig = registerAs('ai', () => ({
   geminiModel: process.env.GEMINI_MODEL || 'gemini-2.5-flash',
   openaiApiKey: process.env.OPENAI_API_KEY || '',
   openaiModel: process.env.OPENAI_MODEL || 'gpt-4o-mini',
+  // Model vision cho phân tích ảnh sự cố (Feature 17): AI_VISION_MODEL ghi đè;
+  // Gemini mặc định theo GEMINI_MODEL, phía OpenAI mặc định gpt-4o-mini.
+  visionModel: process.env.AI_VISION_MODEL || process.env.GEMINI_MODEL || 'gemini-2.5-flash',
   // Feature flags (read from env, default true)
   bookingAssistant: process.env.AI_BOOKING_ASSISTANT !== 'false',
   priceEstimator: process.env.AI_PRICE_ESTIMATOR !== 'false',
