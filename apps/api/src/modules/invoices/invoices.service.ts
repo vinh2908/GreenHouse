@@ -116,9 +116,11 @@ export class InvoicesService {
     const service = job.service_id as unknown as { name?: string } | null;
     const invoiceNo = `HD-${jobId.slice(-8).toUpperCase()}`;
     const discount = job.discount_amount ?? 0;
+    const loyaltyDiscount = job.loyalty_discount_amount ?? 0;
+    const loyaltyPoints = job.loyalty_points_requested ?? 0;
     const sosSurcharge = job.sos_surcharge ?? 0;
-    // Tổng thanh toán = giá hợp đồng − giảm voucher + phụ phí SOS (nếu có)
-    const grandTotal = contract.total_price - discount + sosSurcharge;
+    // Tổng thanh toán = giá hợp đồng − giảm voucher − giảm điểm thành viên + phụ phí SOS (nếu có)
+    const grandTotal = Math.max(0, contract.total_price - discount - loyaltyDiscount + sosSurcharge);
 
     const buffer = this.renderPdf({
       invoiceNo,
@@ -134,6 +136,8 @@ export class InvoicesService {
       totalPrice: contract.total_price,
       discount,
       voucherCode: job.voucher_code,
+      loyaltyDiscount,
+      loyaltyPoints,
       sosSurcharge,
       grandTotal,
       paymentMethod: job.payment_method ?? '',
@@ -156,6 +160,8 @@ export class InvoicesService {
     totalPrice: number;
     discount: number;
     voucherCode?: string;
+    loyaltyDiscount: number;
+    loyaltyPoints: number;
     sosSurcharge: number;
     grandTotal: number;
     paymentMethod: string;
@@ -221,6 +227,12 @@ export class InvoicesService {
       rows.push({
         label: `Giảm giá voucher${data.voucherCode ? ` (${data.voucherCode})` : ''}`,
         amount: `−${formatVND(data.discount)}`,
+      });
+    }
+    if (data.loyaltyDiscount > 0) {
+      rows.push({
+        label: `Giảm giá điểm thành viên${data.loyaltyPoints > 0 ? ` (${data.loyaltyPoints} điểm)` : ''}`,
+        amount: `−${formatVND(data.loyaltyDiscount)}`,
       });
     }
     if (data.sosSurcharge > 0) {
