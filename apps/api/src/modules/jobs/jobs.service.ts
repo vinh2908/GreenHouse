@@ -2338,6 +2338,57 @@ export class JobsService {
 
   // ─── Helper: Get own active job ───────────────────────────────────────────
 
+  // ─── Bản đồ nhu cầu (Roadmap Phase 2 — Feature 15) ────────────────────────
+  // Gom các đơn đang mở (open / receiving_quotes, chưa hết hạn báo giá) theo
+  // quận + thành phố để thợ xem khu vực nào đang "nóng". lat/lng là trung bình
+  // tọa độ GeoJSON [lng, lat] của các đơn trong nhóm.
+  async getDemandMap() {
+    const rows = await this.jobModel
+      .aggregate([
+        {
+          $match: {
+            status: { $in: [JobStatus.OPEN, JobStatus.RECEIVING_QUOTES] },
+            expires_at: { $gt: new Date() },
+          },
+        },
+        {
+          $group: {
+            _id: { district: '$address.district', city: '$address.city' },
+            open_jobs: { $sum: 1 },
+            fixed_price_jobs: { $sum: { $cond: ['$is_fixed_price', 1, 0] } },
+            ai_priced_jobs: {
+              $sum: { $cond: [{ $ifNull: ['$ai_price_suggestion', false] }, 1, 0] },
+            },
+            lng: { $avg: { $arrayElemAt: ['$address.location.coordinates', 0] } },
+            lat: { $avg: { $arrayElemAt: ['$address.location.coordinates', 1] } },
+          },
+        },
+        { $sort: { open_jobs: -1 } },
+        {
+          $project: {
+            _id: 0,
+            district: '$_id.district',
+            city: '$_id.city',
+            lat: 1,
+            lng: 1,
+            open_jobs: 1,
+            fixed_price_jobs: 1,
+            ai_priced_jobs: 1,
+          },
+        },
+      ])
+      .exec();
+    return rows as {
+      district: string;
+      city: string;
+      lat: number | null;
+      lng: number | null;
+      open_jobs: number;
+      fixed_price_jobs: number;
+      ai_priced_jobs: number;
+    }[];
+  }
+
   async getHelperJobs(helperId: string, status?: string) {
     const query: Record<string, unknown> = { helper_id: new Types.ObjectId(helperId) };
     if (status) {
