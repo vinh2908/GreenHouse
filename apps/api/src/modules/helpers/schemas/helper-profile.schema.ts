@@ -152,6 +152,10 @@ export class HelperProfile {
   })
   availability: HelperAvailability;
 
+  // ── Mục tiêu thu nhập tháng (Feature 14) ──────────────────────────────────
+  @Prop({ default: 0, min: 0 })
+  income_goal_monthly: number; // VNĐ/tháng, 0 = chưa đặt mục tiêu
+
   created_at: Date;
   updated_at: Date;
 }
