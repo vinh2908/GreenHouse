@@ -909,6 +909,166 @@ export function useReleasePrivateOffer() {
   });
 }
 
+// ─── Recurring Plans (Roadmap Phase 1 — Gói định kỳ) ────────────────────────
+
+export interface RecurringPlanItem {
+  _id: string;
+  service_id: string | { _id: string; name?: string; icon?: string };
+  title: string;
+  description: string;
+  frequency: 'weekly' | 'monthly';
+  weekdays: number[];
+  month_days: number[];
+  time_start: string;
+  time_end?: string;
+  duration_hours?: number;
+  start_date: string;
+  end_date?: string;
+  preferred_helper_id?: string | { _id: string; full_name?: string; avatar?: string };
+  status: 'active' | 'paused' | 'cancelled';
+  skipped_dates: string[];
+  next_occurrence_at?: string;
+  jobs_generated: number;
+  created_at: string;
+}
+
+export function useRecurringPlans() {
+  return useQuery({
+    queryKey: ['recurring-plans'],
+    queryFn: async () => {
+      const { data } = await apiClient.get('/recurring-plans');
+      return data.data as RecurringPlanItem[];
+    },
+  });
+}
+
+export function useRecurringPlanDetail(planId?: string) {
+  return useQuery({
+    queryKey: ['recurring-plans', planId],
+    queryFn: async () => {
+      const { data } = await apiClient.get(`/recurring-plans/${planId}`);
+      return data.data as { plan: RecurringPlanItem; jobs: any[]; upcoming_dates: string[] };
+    },
+    enabled: !!planId,
+  });
+}
+
+export function useCreateRecurringPlan() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (dto: any) =>
+      apiClient.post('/recurring-plans', {
+        ...dto,
+        photos: await uploadFiles(dto?.photos),
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['recurring-plans'] });
+      qc.invalidateQueries({ queryKey: ['jobs', 'my'] });
+      Toast.show({
+        type: 'success',
+        text1: 'Đã tạo gói định kỳ 🔁',
+        text2: 'Hệ thống sẽ tự tạo đơn cho từng buổi sắp tới',
+      });
+    },
+    onError: (err: any) => {
+      const msg = err?.response?.data?.message ?? 'Tạo gói định kỳ thất bại';
+      Toast.show({ type: 'error', text1: typeof msg === 'string' ? msg : 'Đã có lỗi xảy ra' });
+    },
+  });
+}
+
+function usePlanAction(path: string, successText: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (planId: string) => apiClient.post(`/recurring-plans/${planId}/${path}`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['recurring-plans'] });
+      qc.invalidateQueries({ queryKey: ['jobs', 'my'] });
+      Toast.show({ type: 'success', text1: successText });
+    },
+    onError: (err: any) => {
+      const msg = err?.response?.data?.message ?? 'Thao tác thất bại';
+      Toast.show({ type: 'error', text1: typeof msg === 'string' ? msg : 'Đã có lỗi xảy ra' });
+    },
+  });
+}
+
+export function usePauseRecurringPlan() {
+  return usePlanAction('pause', 'Đã tạm dừng gói định kỳ');
+}
+
+export function useResumeRecurringPlan() {
+  return usePlanAction('resume', 'Đã tiếp tục gói định kỳ');
+}
+
+export function useSkipNextOccurrence() {
+  return usePlanAction('skip-next', 'Đã bỏ qua buổi gần nhất');
+}
+
+export function useCancelRecurringPlan() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (planId: string) => apiClient.delete(`/recurring-plans/${planId}`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['recurring-plans'] });
+      qc.invalidateQueries({ queryKey: ['jobs', 'my'] });
+      Toast.show({ type: 'success', text1: 'Đã hủy gói định kỳ' });
+    },
+    onError: (err: any) => {
+      const msg = err?.response?.data?.message ?? 'Hủy gói thất bại';
+      Toast.show({ type: 'error', text1: typeof msg === 'string' ? msg : 'Đã có lỗi xảy ra' });
+    },
+  });
+}
+
+// ─── Vouchers (Roadmap Phase 1 — Mã giảm giá) ────────────────────────────────
+
+export interface VoucherPreview {
+  code: string;
+  discount_type: 'percent' | 'fixed';
+  discount_value: number;
+  max_discount_amount?: number;
+  min_order_amount: number;
+  discount_amount: number;
+  final_amount: number;
+}
+
+export function useValidateVoucher() {
+  return useMutation({
+    mutationFn: async (dto: { code: string; amount?: number }) => {
+      const { data } = await apiClient.post('/vouchers/validate', dto);
+      return data.data as VoucherPreview;
+    },
+  });
+}
+
+export function useApplyVoucherToJob() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ jobId, code }: { jobId: string; code: string }) =>
+      apiClient.post(`/vouchers/jobs/${jobId}/apply`, { code }),
+    onSuccess: (_, vars) => {
+      qc.invalidateQueries({ queryKey: ['job', vars.jobId] });
+      Toast.show({ type: 'success', text1: 'Đã áp mã giảm giá 🎟️' });
+    },
+    onError: (err: any) => {
+      const msg = err?.response?.data?.message ?? 'Không áp được mã giảm giá';
+      Toast.show({ type: 'error', text1: typeof msg === 'string' ? msg : 'Đã có lỗi xảy ra' });
+    },
+  });
+}
+
+export function useDetachVoucherFromJob() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (jobId: string) => apiClient.delete(`/vouchers/jobs/${jobId}`),
+    onSuccess: (_, jobId) => {
+      qc.invalidateQueries({ queryKey: ['job', jobId] });
+      Toast.show({ type: 'success', text1: 'Đã gỡ mã giảm giá' });
+    },
+  });
+}
+
 // ─── Reviews ───────────────────────────────────────────────────────────────────
 
 export function useCreateReview() {

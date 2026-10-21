@@ -13,6 +13,8 @@ import {
   Bell,
   Wrench,
   CreditCard,
+  Heart,
+  CalendarClock,
 } from 'lucide-react-native';
 import Toast from 'react-native-toast-message';
 import { Alert } from '@/components/common/app-alert';
@@ -28,6 +30,8 @@ const MENU_SECTIONS = [
       { icon: MapPin, label: 'Địa chỉ đã lưu', route: '/edit-profile' },
       { icon: CreditCard, label: 'Phương thức thanh toán & Ví', route: '/bank-account' },
       { icon: Bell, label: 'Cài đặt thông báo', route: '/notifications' },
+      { icon: Heart, label: 'Thợ yêu thích', route: '/favorites' },
+      { icon: CalendarClock, label: 'Gói định kỳ của tôi', route: '/recurring-plans' },
     ],
   },
   {

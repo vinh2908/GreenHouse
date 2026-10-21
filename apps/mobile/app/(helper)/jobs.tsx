@@ -186,6 +186,9 @@ export default function HelperJobsScreen() {
               preferred_time_start?: string;
               distance_km?: number;
               estimated_minutes?: number;
+              recurring_plan_id?: string;
+              is_recurring?: boolean;
+              is_private_offer?: boolean;
             }) => (
               <TouchableOpacity
                 key={job._id}
@@ -224,6 +227,12 @@ export default function HelperJobsScreen() {
                       label={(job.service_id as { name: string } | null)?.name ?? 'Dịch vụ'}
                       size="sm"
                     />
+                    {job.is_private_offer ? (
+                      <Badge label="⭐ Gửi riêng cho bạn" size="sm" color="#FDF2F8" textColor="#9D174D" />
+                    ) : null}
+                    {job.is_recurring || job.recurring_plan_id ? (
+                      <Badge label="🔁 Định kỳ" size="sm" color="#EFF6FF" textColor="#1D4ED8" />
+                    ) : null}
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
                       <MapPin size={13} color={COLORS.gray[500]} />
                       <Text style={{ fontSize: 12, color: COLORS.gray[600], fontWeight: '500' }}>
