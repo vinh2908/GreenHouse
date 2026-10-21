@@ -13,6 +13,7 @@ import '../global.css';
 import { useSocketConnection, useNotificationSocket } from '@/hooks/use-socket';
 import { AppAlertHost } from '@/components/common/app-alert';
 import { useLiveGps } from '@/hooks/use-live-gps';
+import { useOfflineSync } from '@/hooks/use-offline';
 import { useBackgroundGps } from '@/hooks/use-background-gps';
 import { useAuthStore } from '@/stores/auth.store';
 
@@ -135,6 +136,7 @@ function SocketManager() {
   useNotificationSocket();
   useLiveGps();
   useBackgroundGps();
+  useOfflineSync(); // Feature 16: vòng lặp flush hàng đợi offline
   return null;
 }
 
