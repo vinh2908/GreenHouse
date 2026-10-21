@@ -57,11 +57,65 @@ import { LoyaltyService } from '../loyalty/loyalty.service';
 import { DisputesService } from './disputes.service';
 import { RebookJobDto } from './dto/job.dto';
 import { Service, ServiceDocument } from '../services/schemas/service.schema';
-import { HelperProfile, HelperProfileDocument } from '../helpers/schemas/helper-profile.schema';
+import {
+  HelperProfile,
+  HelperProfileDocument,
+  HelperAvailability,
+} from '../helpers/schemas/helper-profile.schema';
 import { RoutingService } from './routing.service';
 
 // Beyond this straight-line distance a helper is treated as out of the job's area.
 const QUOTE_SERVICE_RADIUS_KM = 30;
+
+/** Chuỗi ngày địa phương 'YYYY-MM-DD' — KHÔNG dùng toISOString() (lệch UTC). */
+export function localDateKey(d: Date): string {
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
+const HH_MM_RE = /^(\d{1,2}):(\d{2})/;
+
+/**
+ * Thợ có sẵn sàng cho 1 ngày/giờ hay không (Feature 13 — Lịch làm việc).
+ * - Chưa bật lịch (enabled=false / chưa có) → luôn sẵn sàng (hành vi cũ).
+ * - Không có ngày → sẵn sàng. Ngày dạng 'YYYY-MM-DD' được parse theo giờ địa phương.
+ * - timeStart chỉ so sánh khi parse được dạng HH:mm (bỏ qua các chuỗi tự do
+ *   như 'Khẩn cấp (Có mặt sau 15p)' của đơn SOS).
+ * Dùng chung: JobsService (feed + notify) và RecurringService (đơn định kỳ).
+ */
+export function isAvailableForDate(
+  availability: HelperAvailability | null | undefined,
+  date?: Date | string | null,
+  timeStart?: string | null,
+): boolean {
+  if (!availability?.enabled) return true;
+  if (!date) return true;
+
+  let d: Date;
+  if (typeof date === 'string') {
+    const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(date);
+    d = m
+      ? new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]))
+      : new Date(date);
+  } else {
+    d = date;
+  }
+  if (Number.isNaN(d.getTime())) return true;
+
+  if (!(availability.days_of_week ?? []).includes(d.getDay())) return false;
+  if ((availability.blocked_dates ?? []).includes(localDateKey(d))) return false;
+
+  if (timeStart && availability.start_time && availability.end_time) {
+    const tm = HH_MM_RE.exec(timeStart.trim());
+    if (tm) {
+      const normalized = `${String(Number(tm[1])).padStart(2, '0')}:${tm[2]}`;
+      if (normalized < availability.start_time || normalized >= availability.end_time) {
+        return false;
+      }
+    }
+  }
+  return true;
+}
 
 @Injectable()
 export class JobsService {
@@ -83,6 +137,15 @@ export class JobsService {
     private readonly loyaltyService: LoyaltyService,
     private readonly disputesService: DisputesService,
   ) {}
+
+  /** Wrapper riêng của JobsService quanh helper dùng chung isAvailableForDate */
+  private isAvailableForDate(
+    availability: HelperAvailability | null | undefined,
+    date?: Date | string | null,
+    timeStart?: string | null,
+  ): boolean {
+    return isAvailableForDate(availability, date, timeStart);
+  }
 
   // ─── Private offer (gửi riêng cho thợ yêu thích) ──────────────────────────
 
@@ -552,8 +615,8 @@ export class JobsService {
     }
 
     try {
-      const helpers = await this.helperModel
-        .aggregate<{ user_id: Types.ObjectId }>([
+      const candidates = await this.helperModel
+        .aggregate<{ user_id: Types.ObjectId; availability?: HelperAvailability }>([
           {
             $geoNear: {
               near: { type: 'Point', coordinates },
@@ -578,10 +641,20 @@ export class JobsService {
           },
           { $unwind: '$user' },
           { $match: { 'user.status': 'active', 'user.is_deleted': { $ne: true } } },
-          { $project: { user_id: 1 } },
+          { $project: { user_id: 1, availability: 1 } },
           { $limit: 100 },
         ])
         .exec();
+
+      // Lịch làm việc (Feature 13): không bắn thông báo cho thợ không làm
+      // vào ngày/giờ của đơn này (chỉ lọc khi thợ đã bật lịch).
+      const helpers = candidates.filter(candidate =>
+        this.isAvailableForDate(
+          candidate.availability,
+          job.preferred_date ?? undefined,
+          job.preferred_time_start,
+        ),
+      );
 
       const district = job.address?.district ? ` tại ${job.address.district}` : '';
       const notifications = await Promise.allSettled(
@@ -2192,13 +2265,31 @@ export class JobsService {
       this.jobModel.countDocuments(query).exec(),
       this.helperModel
         .findOne({ user_id: new Types.ObjectId(helperId) })
-        .select('location')
+        .select('location availability')
         .lean()
         .exec(),
     ]);
 
     const helperCoords = helperProfile?.location?.coordinates;
-    const jobObjects = jobs.map(job => {
+
+    // Lịch làm việc (Feature 13): lọc in-memory trên trang vừa fetch, TRƯỚC
+    // bước enrich khoảng cách. Caveat phân trang (chấp nhận cho scope này):
+    // `total`/`total_pages` vẫn là số của query gốc nên có thể lớn hơn số đơn
+    // thực tế hiển thị sau lọc; feed vốn đã re-sort theo khoảng cách sau khi
+    // fetch nên phân trang ở đây vốn không nghiêm ngặt. Cờ
+    // `availability_filtered` cho mobile biết trang này đã qua lọc lịch.
+    const availabilityFiltered = Boolean(helperProfile?.availability?.enabled);
+    const visibleJobs = availabilityFiltered
+      ? jobs.filter(job =>
+          this.isAvailableForDate(
+            helperProfile?.availability,
+            job.preferred_date ?? undefined,
+            job.preferred_time_start,
+          ),
+        )
+      : jobs;
+
+    const jobObjects = visibleJobs.map(job => {
       const obj = job.toObject() as any;
       obj.is_private_offer =
         this.isPrivateOfferActive(job) && String(job.private_offer_helper_id) === helperId;
@@ -2235,7 +2326,14 @@ export class JobsService {
       jobObjects.sort((a, b) => ((a as any).distance_km ?? 999) - ((b as any).distance_km ?? 999));
     }
 
-    return { jobs: jobObjects, total, page, limit, total_pages: Math.ceil(total / limit) };
+    return {
+      jobs: jobObjects,
+      total,
+      page,
+      limit,
+      total_pages: Math.ceil(total / limit),
+      availability_filtered: availabilityFiltered,
+    };
   }
 
   // ─── Helper: Get own active job ───────────────────────────────────────────

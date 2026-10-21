@@ -19,6 +19,7 @@ import {
   SubmitKycDto,
   UpdateLocationDto,
   BankAccountDto,
+  UpdateAvailabilityDto,
 } from './dto/helper.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
@@ -68,6 +69,24 @@ export class HelpersController {
   @ApiOperation({ summary: 'Cập nhật tài khoản ngân hàng' })
   async updateBankAccount(@CurrentUser() user: { sub: string }, @Body() dto: BankAccountDto) {
     return this.helpersService.updateBankAccount(user.sub, dto);
+  }
+
+  // ─── Lịch làm việc (Feature 13) ────────────────────────────────────────────
+
+  @Get('me/availability')
+  @ApiOperation({ summary: '[Helper] Lấy lịch làm việc của bản thân' })
+  async getMyAvailability(@CurrentUser() user: { sub: string }) {
+    return this.helpersService.getAvailability(user.sub);
+  }
+
+  @Patch('me/availability')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: '[Helper] Cập nhật lịch làm việc (ngày/giờ/ngày nghỉ)' })
+  async updateMyAvailability(
+    @CurrentUser() user: { sub: string },
+    @Body() dto: UpdateAvailabilityDto,
+  ) {
+    return this.helpersService.updateAvailability(user.sub, dto);
   }
 
   // ─── Public: view helper profile ──────────────────────────────────────────
