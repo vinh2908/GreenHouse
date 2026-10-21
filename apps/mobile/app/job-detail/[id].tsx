@@ -55,6 +55,10 @@ import {
   useAddFavorite,
   useRemoveFavorite,
   useReleasePrivateOffer,
+  useValidateVoucher,
+  useApplyVoucherToJob,
+  useDetachVoucherFromJob,
+  type VoucherPreview,
 } from '@/hooks/use-api';
 import { useJobSocketUpdates, useHelperLocation } from '@/hooks/use-socket';
 import { locationService } from '@/services/location.service';
@@ -1050,6 +1054,9 @@ export default function JobDetailScreen() {
               <PriceText amount={contract.total_price} size={17} />
             </View>
 
+            {/* ── Voucher (Roadmap Phase 1) ─────────────────────────── */}
+            <JobVoucherRow job={job} contractTotal={contract.total_price} />
+
             {/* Danh sách phụ lục phát sinh chi phí / vật tư */}
             {Array.isArray(contract.amendments) && contract.amendments.length > 0 && (
               <View style={{ gap: 10, marginTop: 8 }}>
@@ -1950,6 +1957,137 @@ export default function JobDetailScreen() {
           </ScrollView>
         </KeyboardAvoidingView>
       </Modal>
+    </View>
+  );
+}
+
+// ─── Voucher row trong bảng giá hợp đồng (Roadmap Phase 1) ───────────────────
+// Khách gắn/gỡ mã trước khi thanh toán; xem trước số giảm trên tổng giá hợp đồng.
+// Số giảm chính thức được API ghi nhận tại thời điểm thanh toán (POST /payments/pay).
+function JobVoucherRow({ job, contractTotal }: { job: any; contractTotal: number }) {
+  const [code, setCode] = useState('');
+  const [preview, setPreview] = useState<VoucherPreview | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const validate = useValidateVoucher();
+  const apply = useApplyVoucherToJob();
+  const detach = useDetachVoucherFromJob();
+
+  const isPaid = job.payment_status === 'paid';
+  const appliedDiscount = job.discount_amount ?? 0;
+
+  // Đơn đã có mã + đã thanh toán: hiển thị số giảm thực tế
+  if (job.voucher_code && isPaid && appliedDiscount > 0) {
+    return (
+      <View style={{ gap: 4 }}>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+          <Text style={{ color: COLORS.success, fontSize: 13.5, fontWeight: '700' }}>
+            🎟️ Giảm giá ({job.voucher_code})
+          </Text>
+          <Text style={{ color: COLORS.success, fontSize: 14, fontWeight: '800' }}>
+            −{new Intl.NumberFormat('vi-VN').format(appliedDiscount)}₫
+          </Text>
+        </View>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+          <Text style={{ fontWeight: '800', color: COLORS.gray[900], fontSize: 14 }}>
+            Khách thực thanh toán
+          </Text>
+          <Text style={{ fontWeight: '800', color: COLORS.gray[900], fontSize: 14 }}>
+            {new Intl.NumberFormat('vi-VN').format(Math.max(0, contractTotal - appliedDiscount))}₫
+          </Text>
+        </View>
+      </View>
+    );
+  }
+
+  // Đơn đã gắn mã, chưa thanh toán
+  if (job.voucher_code) {
+    return (
+      <View
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 8,
+          backgroundColor: COLORS.successLight,
+          borderRadius: 10,
+          padding: 10,
+        }}
+      >
+        <Text style={{ flex: 1, fontSize: 13, fontWeight: '700', color: '#065F46' }}>
+          🎟️ Đã gắn mã {job.voucher_code} — sẽ áp dụng khi thanh toán
+        </Text>
+        {!isPaid && (
+          <TouchableOpacity onPress={() => detach.mutate(job._id)}>
+            <Text style={{ fontSize: 12.5, fontWeight: '800', color: COLORS.error }}>Gỡ mã</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+    );
+  }
+
+  if (isPaid) return null;
+
+  // Chưa có mã: cho phép nhập + kiểm tra + gắn vào đơn
+  return (
+    <View style={{ gap: 6 }}>
+      <View style={{ flexDirection: 'row', gap: 8 }}>
+        <TextInput
+          value={code}
+          onChangeText={v => {
+            setCode(v.toUpperCase());
+            setPreview(null);
+            setError(null);
+          }}
+          placeholder="🎟️ Nhập mã giảm giá"
+          placeholderTextColor={COLORS.gray[400]}
+          autoCapitalize="characters"
+          autoCorrect={false}
+          style={{
+            flex: 1,
+            borderWidth: 1,
+            borderColor: error ? COLORS.error : COLORS.gray[200],
+            borderRadius: 10,
+            paddingHorizontal: 10,
+            paddingVertical: 8,
+            fontSize: 13,
+            fontWeight: '700',
+            color: COLORS.gray[900],
+          }}
+        />
+        <TouchableOpacity
+          activeOpacity={0.85}
+          disabled={validate.isPending || apply.isPending}
+          onPress={async () => {
+            const trimmed = code.trim();
+            if (!trimmed) return;
+            try {
+              const result = await validate.mutateAsync({ code: trimmed, amount: contractTotal });
+              setPreview(result);
+              await apply.mutateAsync({ jobId: job._id, code: result.code });
+            } catch (err: any) {
+              const msg = err?.response?.data?.message;
+              setError(typeof msg === 'string' ? msg : 'Mã giảm giá không hợp lệ');
+            }
+          }}
+          style={{
+            backgroundColor: COLORS.primary,
+            borderRadius: 10,
+            paddingHorizontal: 14,
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <Text style={{ color: '#fff', fontWeight: '800', fontSize: 12.5 }}>Áp dụng</Text>
+        </TouchableOpacity>
+      </View>
+      {error && (
+        <Text style={{ fontSize: 12, color: COLORS.error, fontWeight: '600' }}>{error}</Text>
+      )}
+      {preview && preview.discount_amount > 0 && (
+        <Text style={{ fontSize: 12.5, color: COLORS.success, fontWeight: '700' }}>
+          Sẽ giảm khoảng {new Intl.NumberFormat('vi-VN').format(preview.discount_amount)}₫ khi
+          thanh toán
+        </Text>
+      )}
     </View>
   );
 }

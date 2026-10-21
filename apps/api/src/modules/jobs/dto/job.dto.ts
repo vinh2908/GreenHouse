@@ -86,6 +86,12 @@ export class CreateJobDto {
   @Min(1)
   @Max(72)
   private_offer_hours?: number;
+
+  @ApiPropertyOptional({ description: 'Mã giảm giá (voucher) gắn kèm đơn' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(40)
+  voucher_code?: string;
 }
 
 export class RebookJobDto {
