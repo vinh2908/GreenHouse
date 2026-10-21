@@ -1711,6 +1711,19 @@ export function useEndCall() {
   });
 }
 
+export interface CallJoinToken extends CallSessionInit {
+  job_id: string;
+}
+
+export function useJoinCallToken() {
+  return useMutation({
+    mutationFn: async (sessionId: string) => {
+      const { data } = await apiClient.post(`/calls/sessions/${sessionId}/join-token`);
+      return data.data as CallJoinToken;
+    },
+  });
+}
+
 // ─── Team Jobs (Roadmap Phase 1 — Đơn nhóm) ──────────────────────────────────
 
 export interface TeamInvitation {

@@ -99,6 +99,38 @@ export class CallsService {
     };
   }
 
+  /**
+   * Cấp token join cho phía nhận cuộc gọi (callee) — hoặc caller join lại.
+   * Callee không đi qua initiateCall nên cần endpoint riêng để lấy token
+   * provider cho đúng session đã được tạo.
+   */
+  async joinSessionToken(userId: string, sessionId: string) {
+    if (!this.provider.isConfigured()) {
+      throw new ServiceUnavailableException(CALL_NOT_CONFIGURED_MESSAGE);
+    }
+    const session = await this.callSessionModel.findById(sessionId).exec();
+    if (!session) throw new NotFoundException('Phiên gọi không tồn tại');
+    if (session.status !== 'initiated' && session.status !== 'ringing') {
+      throw new BadRequestException('Phiên gọi đã kết thúc hoặc không còn khả dụng');
+    }
+    const callerId = String(session.caller_id);
+    const calleeId = String(session.callee_id);
+    if (userId !== callerId && userId !== calleeId) {
+      throw new ForbiddenException('Bạn không thuộc phiên gọi này');
+    }
+    const partnerId = userId === callerId ? calleeId : callerId;
+    const { token, expires_at } = await this.provider.createAccessToken(userId);
+    return {
+      session_id: String(session._id),
+      job_id: String(session.job_id),
+      token,
+      token_expires_at: expires_at,
+      room_id: session.provider_room_id,
+      partner_id: partnerId,
+      my_user_id: userId,
+    };
+  }
+
   /** Kết thúc phiên gọi (mobile gọi khi cúp máy / bị từ chối) */
   async endCall(sessionId: string, userId: string, reason?: string) {
     const session = await this.callSessionModel.findById(sessionId).exec();

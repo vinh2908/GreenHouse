@@ -58,6 +58,7 @@
     "react-native-web": "~0.21.3",
     "react-native-webview": "13.16.1",
     "socket.io-client": "^4.8.1",
+    "stringee-react-native": "^1.5.8",
     "zod": "^3.24.1",
     "zustand": "^5.0.3"
   },
