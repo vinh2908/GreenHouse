@@ -20,6 +20,7 @@ import {
   UpdateLocationDto,
   BankAccountDto,
   UpdateAvailabilityDto,
+  SetIncomeGoalDto,
 } from './dto/helper.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
@@ -87,6 +88,15 @@ export class HelpersController {
     @Body() dto: UpdateAvailabilityDto,
   ) {
     return this.helpersService.updateAvailability(user.sub, dto);
+  }
+
+  // ─── Mục tiêu thu nhập (Feature 14) ────────────────────────────────────────
+
+  @Patch('me/income-goal')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: '[Helper] Đặt mục tiêu thu nhập tháng' })
+  async setIncomeGoal(@CurrentUser() user: { sub: string }, @Body() dto: SetIncomeGoalDto) {
+    return this.helpersService.setIncomeGoal(user.sub, dto);
   }
 
   // ─── Public: view helper profile ──────────────────────────────────────────
