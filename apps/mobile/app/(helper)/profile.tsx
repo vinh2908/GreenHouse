@@ -25,10 +25,13 @@ import {
 } from '@/hooks/use-api';
 import { locationService } from '@/services/location.service';
 import { Avatar, Card, COLORS, Separator } from '@/components/ui';
+import { useTranslation } from '@/hooks/use-i18n';
+import { DisplaySettingsSection } from '@/components/common/display-settings';
 import { useState, useEffect } from 'react';
 
 export default function HelperProfileScreen() {
   const router = useRouter();
+  const { t, fs } = useTranslation();
   const queryClient = useQueryClient();
   const logout = useAuthStore(s => s.logout);
   const storedUser = useAuthStore(s => s.user);
@@ -136,7 +139,7 @@ export default function HelperProfileScreen() {
               }}
             >
               <Text style={{ fontSize: 12, fontWeight: '700', color: COLORS.primary }}>
-                Chỉnh sửa hồ sơ thợ ✏️
+                {t('profile_edit_helper')}
               </Text>
             </View>
           </TouchableOpacity>
@@ -204,7 +207,7 @@ export default function HelperProfileScreen() {
           >
             <Home size={18} color={COLORS.primary} />
             <Text style={{ fontSize: 15, fontWeight: '800', color: COLORS.primary }}>
-              Chuyển sang chế độ Thuê dịch vụ / Khách hàng
+              {t('profile_switch_customer')}
             </Text>
           </TouchableOpacity>
 
@@ -308,28 +311,28 @@ export default function HelperProfileScreen() {
           {/* Menu Items */}
           <Card style={{ gap: 0 }}>
             {[
-              { icon: CreditCard, label: 'Tài khoản ngân hàng liên kết', route: '/bank-account' },
-              { icon: FileText, label: '🗓 Lịch làm việc', route: '/helper-availability' },
-              { icon: FileText, label: 'Hợp đồng theo tháng', route: '/monthly-contracts' },
-              { icon: FileText, label: 'Hồ sơ nghề nghiệp & Kỹ năng', route: '/edit-profile' },
+              { icon: CreditCard, label: t('profile_bank_account'), route: '/bank-account' },
+              { icon: FileText, label: t('profile_work_schedule'), route: '/helper-availability' },
+              { icon: FileText, label: t('profile_monthly_contracts'), route: '/monthly-contracts' },
+              { icon: FileText, label: t('profile_career'), route: '/edit-profile' },
               {
                 icon: HelpCircle,
-                label: '💬 Hỗ trợ trực tuyến',
+                label: t('profile_support_online'),
                 route: '/support-chat',
               },
               {
                 icon: HelpCircle,
-                label: 'Trung tâm trợ giúp Vua Thợ (24/7)',
+                label: t('profile_help_center'),
                 route: '/help-center',
               },
               {
                 icon: Shield,
-                label: 'Chính sách bảo mật & Bảo hiểm 30 ngày',
+                label: t('profile_privacy_insurance'),
                 route: '/policy-insurance',
               },
               {
                 icon: Star,
-                label: 'Đánh giá & Phản hồi từ khách hàng',
+                label: t('profile_reviews'),
                 route: user?._id ? `/helper-profile/${user._id}` : null,
               },
             ].map((item, i) => (
@@ -357,6 +360,9 @@ export default function HelperProfileScreen() {
             ))}
           </Card>
 
+          {/* ── Display settings (Feature 20) ─────────────────────────── */}
+          <DisplaySettingsSection />
+
           {/* Logout */}
           <TouchableOpacity
             activeOpacity={0.8}
@@ -374,7 +380,9 @@ export default function HelperProfileScreen() {
             }}
           >
             <LogOut size={18} color={COLORS.error} />
-            <Text style={{ fontSize: 15, fontWeight: '800', color: COLORS.error }}>Đăng xuất</Text>
+            <Text style={{ fontSize: fs(15), fontWeight: '800', color: COLORS.error }}>
+              {t('profile_logout')}
+            </Text>
           </TouchableOpacity>
 
           <Text
