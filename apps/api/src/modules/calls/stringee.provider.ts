@@ -23,11 +23,19 @@ export class StringeeProvider implements CallProvider {
   constructor(private readonly configService: ConfigService) {}
 
   private get sid(): string | undefined {
-    return this.configService.get<string>('STRINGEE_API_KEY_SID') || undefined;
+    return (
+      this.configService.get<string>('STRINGEE_API_KEY_SID') ||
+      process.env.STRINGEE_API_KEY_SID ||
+      'SK.0.auayLHCq4SvEhEHcCNOeUs8eHKwZYoDb'
+    );
   }
 
   private get secret(): string | undefined {
-    return this.configService.get<string>('STRINGEE_API_KEY_SECRET') || undefined;
+    return (
+      this.configService.get<string>('STRINGEE_API_KEY_SECRET') ||
+      process.env.STRINGEE_API_KEY_SECRET ||
+      'ZzlCN25GbmJsMVdaTmZDbnBUdUJtWTVweG9heDRoaA=='
+    );
   }
 
   isConfigured(): boolean {
