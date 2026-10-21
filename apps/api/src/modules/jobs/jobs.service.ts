@@ -261,6 +261,8 @@ export class JobsService {
       skipFavoriteCheck?: boolean;
       recurringPlanId?: string;
       occurrenceDate?: string;
+      isWarranty?: boolean;
+      warrantySourceJobId?: string;
     },
   ): Promise<JobDocument> {
     const expiresAt = new Date();
@@ -294,8 +296,12 @@ export class JobsService {
       .select('pricing_model fixed_price')
       .lean()
       .exec();
+    // Đơn bảo hành (Feature 9) luôn miễn phí → không snapshot giá cam kết dù
+    // dịch vụ gốc là fixed (tránh accept-fixed tính tiền cho đơn bảo hành).
     const isFixedPrice =
-      serviceForPricing?.pricing_model === 'fixed' && (serviceForPricing?.fixed_price ?? 0) > 0;
+      !opts?.isWarranty &&
+      serviceForPricing?.pricing_model === 'fixed' &&
+      (serviceForPricing?.fixed_price ?? 0) > 0;
 
     const job = await this.jobModel.create({
       customer_id: new Types.ObjectId(customerId),
@@ -303,6 +309,10 @@ export class JobsService {
       status: JobStatus.OPEN,
       is_fixed_price: isFixedPrice,
       fixed_price: isFixedPrice ? (serviceForPricing?.fixed_price ?? 0) : 0,
+      is_warranty: opts?.isWarranty ?? false,
+      warranty_source_job_id: opts?.warrantySourceJobId
+        ? new Types.ObjectId(opts.warrantySourceJobId)
+        : undefined,
       title: dto.title,
       description: dto.description,
       photos: dto.photos ?? [],
@@ -424,6 +434,108 @@ export class JobsService {
       privateOfferHelperId: offerHelperId,
       privateOfferHours: dto.private_offer_hours,
       skipFavoriteCheck: true,
+    });
+  }
+
+  // ─── Đơn bảo hành 1 chạm (Roadmap Phase 1 — Feature 9) ────────────────────
+  // Điều kiện: đơn gốc COMPLETED, là của khách, đã có thợ + hợp đồng; còn
+  // trong cửa sổ bảo hành tính từ lúc hoàn thành (contract.completed_at,
+  // fallback job.updated_at): contract.warranty_days > 0 ? nó : 30 ngày.
+
+  private async getWarrantyInfo(source: JobDocument): Promise<{
+    eligible: boolean;
+    windowDays: number;
+    contract?: ContractDocument;
+    existingWarrantyJobId?: string;
+  }> {
+    const windowFallback = 30;
+    if (source.status !== JobStatus.COMPLETED || !source.helper_id) {
+      return { eligible: false, windowDays: windowFallback };
+    }
+    const contract = await this.contractModel
+      .findOne({ job_id: new Types.ObjectId(String(source._id)) })
+      .exec();
+    if (!contract) return { eligible: false, windowDays: windowFallback };
+
+    const windowDays = contract.warranty_days > 0 ? contract.warranty_days : windowFallback;
+    const completedAt = contract.completed_at ?? source.updated_at;
+    const deadline = new Date(completedAt).getTime() + windowDays * 24 * 3600 * 1000;
+    const eligible = Date.now() <= deadline;
+
+    let existingWarrantyJobId: string | undefined;
+    if (eligible) {
+      const existing = await this.jobModel
+        .findOne({
+          warranty_source_job_id: new Types.ObjectId(String(source._id)),
+          status: {
+            $nin: [JobStatus.COMPLETED, JobStatus.CANCELLED, JobStatus.REFUNDED],
+          },
+        })
+        .select('_id')
+        .exec();
+      if (existing) existingWarrantyJobId = String(existing._id);
+    }
+    return { eligible, windowDays, contract, existingWarrantyJobId };
+  }
+
+  /** [Customer] Tạo đơn bảo hành miễn phí từ đơn đã hoàn thành còn hạn bảo hành */
+  async createWarrantyJob(customerId: string, sourceJobId: string): Promise<JobDocument> {
+    const source = await this.jobModel.findById(sourceJobId).exec();
+    if (!source) throw new NotFoundException('Đơn gốc không tồn tại');
+    if (source.customer_id.toString() !== customerId) throw new ForbiddenException();
+    if (source.is_warranty) {
+      throw new BadRequestException('Không thể tạo bảo hành từ một đơn bảo hành');
+    }
+
+    const info = await this.getWarrantyInfo(source);
+    if (!info.eligible || !source.helper_id) {
+      throw new BadRequestException(
+        'Đơn này không còn trong thời gian bảo hành hoặc chưa đủ điều kiện bảo hành (cần đơn đã hoàn thành, có thợ và hợp đồng).',
+      );
+    }
+    if (info.existingWarrantyJobId) {
+      throw new ConflictException(
+        `Đơn này đã có đơn bảo hành đang xử lý (mã đơn bảo hành: ${info.existingWarrantyJobId}). Vui lòng mở đơn bảo hành đó để theo dõi.`,
+      );
+    }
+
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    const createDto: CreateJobDto = {
+      service_id: String(source.service_id),
+      // Tiêu đề tối đa 200 ký tự (schema) — chừa chỗ cho tiền tố "Bảo hành: "
+      title: `Bảo hành: ${source.title}`.slice(0, 200),
+      description:
+        `🛡 Đơn bảo hành MIỄN PHÍ phát sinh từ đơn gốc "${source.title}" (mã đơn ${String(source._id)}). ` +
+        `Khách yêu cầu kiểm tra / xử lý lại theo chính sách bảo hành ${info.windowDays} ngày.\n\nMô tả đơn gốc: ${source.description}`,
+      photos: source.photos,
+      videos: source.videos,
+      address: {
+        full_address: source.address.full_address,
+        ward: source.address.ward,
+        district: source.address.district,
+        city: source.address.city,
+        notes: source.address.notes,
+        location: {
+          type: 'Point',
+          coordinates: source.address.location.coordinates,
+        } as CreateJobDto['address']['location'],
+      },
+      preferred_date: tomorrow.toISOString().slice(0, 10),
+      preferred_time_start: source.preferred_time_start,
+      preferred_time_end: source.preferred_time_end,
+      is_flexible_time: source.is_flexible_time,
+    };
+
+    // Gửi riêng cho chính thợ đã làm đơn gốc trong 72h; thợ nhận qua
+    // POST /jobs/:id/accept-fixed (nhánh bảo hành, hợp đồng 0₫).
+    return this.createJob(customerId, createDto, {
+      privateOfferHelperId: String(source.helper_id),
+      privateOfferHours: 72,
+      skipFavoriteCheck: true,
+      isWarranty: true,
+      warrantySourceJobId: sourceJobId,
     });
   }
 
@@ -803,10 +915,22 @@ export class JobsService {
     const isOwnerOrHelper = ownerId === userId || helperId === userId;
 
     if (roles.includes('admin') || isOwnerOrHelper) {
+      let result: any;
       if (roles.includes('helper') || helperId === userId) {
-        return this.enrichJobWithDistance(await this.withTeamDisplay(job.toObject()), userId);
+        result = await this.enrichJobWithDistance(await this.withTeamDisplay(job.toObject()), userId);
+      } else {
+        result = await this.withTeamDisplay(job.toObject());
       }
-      return this.withTeamDisplay(job.toObject());
+      // Feature 9: khách chủ đơn đã hoàn thành → gắn thông tin bảo hành 1 chạm
+      if (ownerId === userId && job.status === JobStatus.COMPLETED) {
+        const info = await this.getWarrantyInfo(job);
+        result.warranty_eligible = info.eligible;
+        result.warranty_days = info.windowDays;
+        if (info.existingWarrantyJobId) {
+          result.warranty_job_id = info.existingWarrantyJobId;
+        }
+      }
+      return result;
     }
 
     const browsable = [JobStatus.OPEN, JobStatus.RECEIVING_QUOTES].includes(job.status);
@@ -1202,6 +1326,7 @@ export class JobsService {
   // Dành cho đơn is_fixed_price: bỏ qua vòng báo giá, thợ đầu tiên bấm nhận
   // (thắng claim nguyên tử helper_id: null) sẽ chốt hợp đồng với giá snapshot.
   // Công thức phí sàn / thợ thực nhận tính đúng như submitQuote tính từ total_price.
+  // Feature 9: endpoint này cũng nhận đơn bảo hành (is_warranty) — hợp đồng 0₫.
 
   async acceptFixedPrice(
     helperId: string,
@@ -1211,7 +1336,9 @@ export class JobsService {
 
     const job = await this.jobModel.findById(jobId).exec();
     if (!job) throw new NotFoundException('Job không tồn tại');
-    if (!job.is_fixed_price) {
+    // Feature 9: cùng endpoint này nhận cả đơn bảo hành (is_warranty, giá 0₫)
+    const isWarrantyJob = !!job.is_warranty;
+    if (!job.is_fixed_price && !isWarrantyJob) {
       throw new BadRequestException(
         'Đơn này không phải đơn giá cam kết — vui lòng gửi báo giá như thông thường',
       );
@@ -1247,8 +1374,9 @@ export class JobsService {
       .exec();
     if (!claimed) throw new ConflictException('Đơn giá cam kết này đã có thợ khác nhận');
 
-    // Phí sàn + thợ thực nhận: đúng công thức của submitQuote trên total_price
-    const totalPrice = job.fixed_price;
+    // Phí sàn + thợ thực nhận: đúng công thức của submitQuote trên total_price.
+    // Đơn bảo hành: total = 0 → mọi khoản tiền đều 0 (miễn phí cho khách).
+    const totalPrice = isWarrantyJob ? 0 : job.fixed_price;
     const service = await this.serviceModel
       .findById(job.service_id)
       .select('platform_fee_percent')
@@ -1272,8 +1400,9 @@ export class JobsService {
       total_price: totalPrice,
       platform_fee: platformFee,
       helper_receives: helperReceives,
-      // Mặc định bảo hành của luồng chốt đơn trực tiếp (như đơn SOS): 30 ngày
-      warranty_days: 30,
+      // Mặc định bảo hành của luồng chốt đơn trực tiếp (như đơn SOS): 30 ngày.
+      // Riêng đơn bảo hành tự nó không sinh thêm kỳ bảo hành mới (0 ngày).
+      warranty_days: isWarrantyJob ? 0 : 30,
       scheduled_at: job.preferred_date ? new Date(job.preferred_date) : tomorrow,
       signed_by_customer_at: new Date(),
     });
@@ -1283,7 +1412,9 @@ export class JobsService {
       JobStatus.CONFIRMED,
       helperId,
       'helper',
-      `Thợ nhận việc trực tiếp với giá cam kết ${totalPrice.toLocaleString('vi-VN')}₫`,
+      isWarrantyJob
+        ? 'Thợ nhận việc bảo hành (miễn phí)'
+        : `Thợ nhận việc trực tiếp với giá cam kết ${totalPrice.toLocaleString('vi-VN')}₫`,
     );
     job.helper_id = new Types.ObjectId(helperId);
     await job.save();
@@ -1300,8 +1431,12 @@ export class JobsService {
       .create({
         userId: String(job.customer_id),
         type: NOTIFICATION_TYPES.JOB_CONFIRMED,
-        title: '✅ Đã có thợ nhận việc giá cam kết!',
-        body: `Đơn "${job.title}" đã có thợ nhận với giá cam kết ${totalPrice.toLocaleString('vi-VN')}₫.`,
+        title: isWarrantyJob
+          ? '🛡 Thợ đã nhận việc bảo hành!'
+          : '✅ Đã có thợ nhận việc giá cam kết!',
+        body: isWarrantyJob
+          ? `Thợ đã nhận đơn bảo hành "${job.title}" (miễn phí) và sẽ liên hệ với bạn sớm.`
+          : `Đơn "${job.title}" đã có thợ nhận với giá cam kết ${totalPrice.toLocaleString('vi-VN')}₫.`,
         payload: { job_id: jobId, contract_id: String(contract._id), is_fixed_price: true },
       })
       .catch(() => undefined);
@@ -1624,7 +1759,9 @@ export class JobsService {
         .findOne({ job_id: new Types.ObjectId(jobId) })
         .exec();
 
-      if (contract) {
+      // Feature 9: hợp đồng 0₫ (đơn bảo hành miễn phí) → bỏ qua cả giải ngân
+      // lẫn khấu trừ phí tiền mặt, tránh giao dịch ví 0₫ vô nghĩa.
+      if (contract && contract.total_price > 0) {
         if (effectivePaymentMethod === 'cash') {
           // Đơn Tiền mặt: Thợ đã thu 100% tiền mặt trực tiếp từ khách -> Khấu trừ 15% phí sàn từ Ví thợ
           await this.paymentsService.deductCommissionForCashJob(
@@ -2047,6 +2184,7 @@ export class JobsService {
       obj.is_recurring = Boolean(job.recurring_plan_id);
       obj.is_fixed_price = Boolean(job.is_fixed_price);
       obj.fixed_price = job.fixed_price ?? 0;
+      obj.is_warranty = Boolean(job.is_warranty);
       return obj;
     });
 

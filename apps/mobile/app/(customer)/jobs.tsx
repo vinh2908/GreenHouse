@@ -151,6 +151,7 @@ export default function CustomerJobsScreen() {
               helper_id?: { full_name: string } | null;
               recurring_plan_id?: string;
               private_offer_helper_id?: string;
+              is_warranty?: boolean;
             }) => (
               <TouchableOpacity
                 key={job._id}
@@ -195,6 +196,14 @@ export default function CustomerJobsScreen() {
                     ) : null}
                     {job.private_offer_helper_id ? (
                       <Badge label="⭐ Gửi riêng" size="sm" color="#FDF2F8" textColor="#9D174D" />
+                    ) : null}
+                    {job.is_warranty ? (
+                      <Badge
+                        label="🛡 Đơn bảo hành — Miễn phí"
+                        size="sm"
+                        color="#FFFBEB"
+                        textColor="#92400E"
+                      />
                     ) : null}
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
                       <MapPin size={13} color={COLORS.gray[500]} />

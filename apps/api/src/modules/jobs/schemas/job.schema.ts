@@ -125,6 +125,15 @@ export class Job {
   @Prop({ default: 0 })
   fixed_price: number; // Giá cam kết (VNĐ) snapshot từ service.fixed_price
 
+  // ── Đơn bảo hành 1 chạm (Roadmap Phase 1 — Feature 9) ────────────────────
+  // Đơn bảo hành được tạo từ 1 đơn đã hoàn thành còn trong hạn bảo hành:
+  // miễn phí (hợp đồng 0₫), gửi riêng cho chính thợ đã làm đơn gốc.
+  @Prop({ default: false })
+  is_warranty: boolean;
+
+  @Prop({ type: Types.ObjectId, ref: 'Job', index: true })
+  warranty_source_job_id?: Types.ObjectId; // Đơn gốc mà đơn bảo hành này phát sinh từ đó
+
   // ── Roadmap Phase 1: Private offer cho thợ yêu thích ─────────────────────
   // Khi còn hiệu lực, job chỉ hiển thị / nhận báo giá từ thợ được chỉ định.
   @Prop({ type: Types.ObjectId, ref: 'User' })

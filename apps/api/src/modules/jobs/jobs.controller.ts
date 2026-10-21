@@ -207,6 +207,18 @@ export class JobsController {
     return this.jobsService.submitQuote(user.sub, jobId, dto);
   }
 
+  // ─── Customer: Tạo đơn bảo hành 1 chạm (Feature 9) ────────────────────────
+
+  @Post(':jobId/warranty')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: '[Customer] Tạo đơn bảo hành miễn phí từ đơn đã hoàn thành còn hạn' })
+  async createWarrantyJob(
+    @CurrentUser() user: { sub: string },
+    @Param('jobId') jobId: string,
+  ) {
+    return this.jobsService.createWarrantyJob(user.sub, jobId);
+  }
+
   // ─── Helper: Nhận việc trực tiếp với giá cam kết ─────────────────────────
 
   @Post(':jobId/accept-fixed')

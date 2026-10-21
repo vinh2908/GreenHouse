@@ -230,6 +230,25 @@ export function useAcceptFixedPrice() {
   });
 }
 
+/**
+ * Feature 9 (Đơn bảo hành 1 chạm): khách tạo đơn bảo hành miễn phí từ đơn gốc
+ * đã hoàn thành còn hạn — POST /jobs/:jobId/warranty. Trả về đơn bảo hành mới.
+ */
+export function useCreateWarrantyJob() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (sourceJobId: string) => {
+      const { data } = await apiClient.post(`/jobs/${sourceJobId}/warranty`);
+      return data.data as { _id: string };
+    },
+    onSuccess: (newJob, sourceJobId) => {
+      qc.invalidateQueries({ queryKey: ['job', sourceJobId] });
+      qc.invalidateQueries({ queryKey: ['jobs', 'my'] });
+      qc.invalidateQueries({ queryKey: ['job', newJob?._id] });
+    },
+  });
+}
+
 export function useSelectQuote() {
   const qc = useQueryClient();
   return useMutation({
