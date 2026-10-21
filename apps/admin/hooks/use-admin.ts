@@ -353,3 +353,49 @@ export function useBroadcast() {
     },
   });
 }
+
+// ─── Vouchers (Roadmap Phase 1 — Mã giảm giá) ─────────────────────────────────
+
+export interface AdminVoucher {
+  _id: string;
+  code: string;
+  description?: string;
+  discount_type: 'percent' | 'fixed';
+  discount_value: number;
+  max_discount_amount?: number;
+  min_order_amount: number;
+  total_usage_limit?: number;
+  per_user_limit: number;
+  used_count: number;
+  is_active: boolean;
+  valid_from?: string;
+  valid_to?: string;
+  created_at: string;
+}
+
+export function useAdminVouchers(params: { search?: string; page?: number }) {
+  return useQuery({
+    queryKey: ['admin', 'vouchers', params],
+    queryFn: async () => {
+      const { data } = await apiClient.get('/admin/vouchers', { params });
+      return data.data as { vouchers: AdminVoucher[]; total: number; total_pages: number };
+    },
+  });
+}
+
+export function useSaveVoucher() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, ...dto }: Record<string, unknown> & { id?: string }) =>
+      id ? apiClient.patch(`/admin/vouchers/${id}`, dto) : apiClient.post('/admin/vouchers', dto),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'vouchers'] }),
+  });
+}
+
+export function useToggleVoucher() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => apiClient.patch(`/admin/vouchers/${id}/toggle`),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'vouchers'] }),
+  });
+}
