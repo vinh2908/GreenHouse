@@ -64,6 +64,7 @@ import {
 } from '@/hooks/use-api';
 import { useJobSocketUpdates, useHelperLocation } from '@/hooks/use-socket';
 import { locationService } from '@/services/location.service';
+import { downloadInvoicePdf } from '@/services/invoice.service';
 import { LiveTrackingMap } from '@/components/common/live-tracking-map';
 import { TeamCard } from '@/components/common/team-card';
 import { LocationPicker } from '@/components/common/location-picker';
@@ -151,6 +152,7 @@ export default function JobDetailScreen() {
   const removeFavorite = useRemoveFavorite();
   const releaseOffer = useReleasePrivateOffer();
   const createWarranty = useCreateWarrantyJob();
+  const [downloadingInvoice, setDownloadingInvoice] = useState(false);
 
   const [showReview, setShowReview] = useState(false);
   const [quoteToAccept, setQuoteToAccept] = useState<string | null>(null);
@@ -248,6 +250,19 @@ export default function JobDetailScreen() {
         prefill_description: job.description,
       },
     });
+  };
+
+  const handleDownloadInvoice = async () => {
+    if (!id || downloadingInvoice) return;
+    setDownloadingInvoice(true);
+    try {
+      await downloadInvoicePdf(id);
+    } catch (err: any) {
+      const msg = err?.response?.data?.message || 'Không tải được hóa đơn. Vui lòng thử lại.';
+      Toast.show({ type: 'error', text1: msg });
+    } finally {
+      setDownloadingInvoice(false);
+    }
   };
 
   const handleCreateWarranty = () => {
@@ -1461,6 +1476,15 @@ export default function JobDetailScreen() {
               title="⚖️ Xem hồ sơ tranh chấp"
               variant="outline"
               onPress={() => router.push({ pathname: '/dispute/[jobId]', params: { jobId: id } })}
+            />
+          )}
+          {/* ── Hóa đơn điện tử (Feature 11) — chỉ trong chi tiết đơn ── */}
+          {(job.payment_status === 'paid' || job.status === 'completed') && !job.is_warranty && (
+            <Button
+              title="🧾 Tải hóa đơn (PDF)"
+              variant="outline"
+              loading={downloadingInvoice}
+              onPress={handleDownloadInvoice}
             />
           )}
           {/* ── Đội nhóm (Roadmap Phase 1): khách xem roster, chỉ đọc ── */}

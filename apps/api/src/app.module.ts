@@ -22,6 +22,7 @@ import { FavoritesModule } from './modules/favorites/favorites.module';
 import { RecurringModule } from './modules/recurring/recurring.module';
 import { VouchersModule } from './modules/vouchers/vouchers.module';
 import { CallsModule } from './modules/calls/calls.module';
+import { InvoicesModule } from './modules/invoices/invoices.module';
 
 // ─── Phase 4: Services ────────────────────────────────────────────────────────
 import { ServicesModule } from './modules/services/services.module';
@@ -91,6 +92,7 @@ import { UploadsModule } from './modules/uploads/uploads.module';
     RecurringModule,
     VouchersModule,
     CallsModule,
+    InvoicesModule,
     ServicesModule,
     JobsModule,
     NotificationsModule,
