@@ -19,7 +19,7 @@ import {
 import Toast from 'react-native-toast-message';
 import { Alert } from '@/components/common/app-alert';
 import { useAuthStore } from '@/stores/auth.store';
-import { useMyProfile, useSwitchRole } from '@/hooks/use-api';
+import { useMyProfile, useSwitchRole, useLoyaltyAccount } from '@/hooks/use-api';
 import { Avatar, Card, COLORS, Separator } from '@/components/ui';
 
 const MENU_SECTIONS = [
@@ -51,6 +51,7 @@ export default function CustomerProfileScreen() {
   const logout = useAuthStore(s => s.logout);
   const user = useAuthStore(s => s.user);
   const { data: profile } = useMyProfile();
+  const { data: loyalty } = useLoyaltyAccount();
   const switchRole = useSwitchRole();
 
   const handleLogout = () => {
@@ -193,6 +194,28 @@ export default function CustomerProfileScreen() {
             <Text style={{ color: COLORS.primary, fontWeight: '800', fontSize: 14 }}>
               Chuyển sang chế độ Nhận việc / Thợ →
             </Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* ── Loyalty points summary (Feature 12) ─────────────────────── */}
+        <View style={{ paddingHorizontal: 16, paddingTop: 16 }}>
+          <TouchableOpacity activeOpacity={0.85} onPress={() => router.push('/loyalty' as never)}>
+            <Card style={{ gap: 6, backgroundColor: '#FFFBEB' }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Star size={20} color="#D97706" />
+                <Text style={{ flex: 1, fontWeight: '800', fontSize: 15, color: '#92400E' }}>
+                  Điểm thành viên — Hạng {loyalty?.tier_label ?? 'Thường'}
+                </Text>
+                <ChevronRight size={16} color="#92400E" />
+              </View>
+              <Text style={{ fontSize: 22, fontWeight: '800', color: COLORS.gray[900] }}>
+                {new Intl.NumberFormat('vi-VN').format(loyalty?.points_balance ?? 0)} điểm
+              </Text>
+              <Text style={{ fontSize: 12.5, color: COLORS.gray[600] }}>
+                Đổi điểm giảm tối đa {loyalty?.redemption_cap_percent ?? 20}% giá trị đơn · Xem lịch
+                sử & quyền lợi →
+              </Text>
+            </Card>
           </TouchableOpacity>
         </View>
 

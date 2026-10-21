@@ -53,6 +53,7 @@ import { ChatService } from '../chat/chat.service';
 import { PaymentsService } from '../payments/payments.service';
 import { FavoritesService } from '../favorites/favorites.service';
 import { VouchersService } from '../vouchers/vouchers.service';
+import { LoyaltyService } from '../loyalty/loyalty.service';
 import { DisputesService } from './disputes.service';
 import { RebookJobDto } from './dto/job.dto';
 import { Service, ServiceDocument } from '../services/schemas/service.schema';
@@ -79,6 +80,7 @@ export class JobsService {
     private readonly routingService: RoutingService,
     private readonly favoritesService: FavoritesService,
     private readonly vouchersService: VouchersService,
+    private readonly loyaltyService: LoyaltyService,
     private readonly disputesService: DisputesService,
   ) {}
 
@@ -1804,6 +1806,25 @@ export class JobsService {
             : `Công việc "${job.title}" đã hoàn thành. Thu nhập đã được giải ngân vào ví của bạn.`,
         payload: { job_id: jobId },
       });
+    }
+
+    // ── Loyalty (Feature 12): cộng điểm tích lũy cho khách ─────────────────
+    // Số tiền căn cứ = giá chốt − giảm voucher + phụ phí SOS. Lỗi loyalty
+    // KHÔNG được làm hỏng nghiệm thu nên bọc try/catch + log warn (award
+    // tự nó đã idempotent theo job).
+    try {
+      const loyaltyContract = await this.contractModel
+        .findOne({ job_id: new Types.ObjectId(jobId) })
+        .exec();
+      if (loyaltyContract && loyaltyContract.total_price > 0) {
+        const paidAmount =
+          loyaltyContract.total_price - (job.discount_amount || 0) + (job.sos_surcharge || 0);
+        await this.loyaltyService.awardForJob(customerId, jobId, paidAmount);
+      }
+    } catch (err) {
+      this.logger.warn(
+        `Loyalty award failed for job ${jobId}: ${err instanceof Error ? err.message : err}`,
+      );
     }
 
     return job;

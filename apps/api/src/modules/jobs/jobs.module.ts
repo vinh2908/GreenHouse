@@ -14,6 +14,7 @@ import { NotificationsModule } from '../notifications/notifications.module';
 import { PaymentsModule } from '../payments/payments.module';
 import { FavoritesModule } from '../favorites/favorites.module';
 import { VouchersModule } from '../vouchers/vouchers.module';
+import { LoyaltyModule } from '../loyalty/loyalty.module';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { VouchersModule } from '../vouchers/vouchers.module';
     PaymentsModule,
     FavoritesModule,
     VouchersModule,
+    LoyaltyModule,
   ],
   controllers: [JobsController, DisputesController],
   providers: [JobsService, RoutingService, DisputesService],
