@@ -14,6 +14,7 @@ import {
   UpdateLocationDto,
   BankAccountDto,
   UpdateAvailabilityDto,
+  SetIncomeGoalDto,
 } from './dto/helper.dto';
 import {
   DEFAULT_HELPER_AVAILABILITY,
@@ -181,6 +182,15 @@ export class HelpersService {
     };
     await profile.save();
     return profile.availability;
+  }
+
+  // ─── Mục tiêu thu nhập tháng (Feature 14) ──────────────────────────────────
+
+  async setIncomeGoal(userId: string, dto: SetIncomeGoalDto): Promise<{ income_goal_monthly: number }> {
+    const profile = await this.getOrCreate(userId);
+    profile.income_goal_monthly = Math.floor(dto.amount);
+    await profile.save();
+    return { income_goal_monthly: profile.income_goal_monthly };
   }
 
   // ─── Admin: verify / reject KYC ──────────────────────────────────────────

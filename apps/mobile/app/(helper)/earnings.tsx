@@ -36,6 +36,7 @@ import {
   EmptyState,
 } from '@/components/ui';
 import dayjs from 'dayjs';
+import { EarningsReport } from '@/components/helper/earnings-report';
 
 const TX_ICONS: Record<string, string> = {
   earning: '💰',
@@ -242,6 +243,11 @@ export default function HelperEarningsScreen() {
             💡 Đơn thanh toán Online sẽ cộng 85% vào ví. Đơn thu Tiền mặt trực tiếp sẽ khấu trừ 15%
             phí sàn từ ví ký quỹ.
           </Text>
+        </View>
+
+        {/* ── Earnings report (Feature 14) ───────────────────────────── */}
+        <View style={{ paddingHorizontal: 16, marginTop: 24 }}>
+          <EarningsReport />
         </View>
 
         {/* ── Transactions ───────────────────────────────────────────── */}

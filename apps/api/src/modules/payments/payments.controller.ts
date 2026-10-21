@@ -60,6 +60,14 @@ export class PaymentsController {
     return this.paymentsService.getTransactions(user.sub, Number(page) || 1, Number(limit) || 20);
   }
 
+  // ─── Earnings report (Feature 14) ─────────────────────────────────────────
+
+  @Get('me/earnings-report')
+  @ApiOperation({ summary: '[Helper] Báo cáo thu nhập tuần/tháng + mục tiêu (số liệu NET)' })
+  async getEarningsReport(@CurrentUser() user: { sub: string }) {
+    return this.paymentsService.getEarningsReport(user.sub);
+  }
+
   // ─── Mock / Escrow payment ────────────────────────────────────────────────
 
   @Post('pay')

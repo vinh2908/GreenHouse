@@ -348,6 +348,112 @@ export class PaymentsService {
     });
   }
 
+  // ─── Báo cáo thu nhập nâng cao (Feature 14) ────────────────────────────────
+  //
+  // Định nghĩa thống nhất: mọi tổng trong báo cáo đều là NET =
+  //   sum(type='earning') − sum(type='commission')
+  // tính trên Transaction status='success' của chính thợ. (Phí sàn đơn tiền
+  // mặt được ghi là 1 transaction 'commission' riêng nên trừ ở đây là đúng;
+  // đơn online đã giải ngân số NET vào 'earning' và không có transaction
+  // commission đi kèm nên không bị trừ 2 lần.)
+  // Volume giao dịch của 1 thợ nhỏ → cộng dồn in-memory trên ~2 tháng gần nhất
+  // là đủ và đơn giản hơn aggregation pipeline.
+
+  async getEarningsReport(userId: string) {
+    const pad = (n: number) => String(n).padStart(2, '0');
+    const dateKey = (d: Date) =>
+      `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+    const startOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    const addDays = (d: Date, n: number) =>
+      new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
+
+    const now = new Date();
+    const today = startOfDay(now);
+    // Tuần hiện tại: Thứ 2 – Chủ nhật
+    const monday = addDays(today, -((today.getDay() + 6) % 7));
+    const prevWeekStart = addDays(monday, -7);
+    const nextMonday = addDays(monday, 7);
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const prevMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const nextMonthStart = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+    const fetchSince = prevWeekStart < prevMonthStart ? prevWeekStart : prevMonthStart;
+
+    const txs = await this.transactionModel
+      .find({
+        user_id: new Types.ObjectId(userId),
+        status: 'success',
+        type: { $in: ['earning', 'commission'] },
+        created_at: { $gte: fetchSince, $lt: nextMonthStart > nextMonday ? nextMonthStart : nextMonday },
+      })
+      .sort({ created_at: 1 })
+      .lean()
+      .exec();
+
+    const signed = (tx: (typeof txs)[number]) =>
+      tx.type === 'earning' ? tx.amount : -tx.amount;
+    const sumIn = (from: Date, to: Date) =>
+      txs
+        .filter(tx => tx.created_at >= from && tx.created_at < to)
+        .reduce((sum, tx) => sum + signed(tx), 0);
+    const changePercent = (current: number, previous: number): number | null => {
+      if (previous === 0) return null;
+      return Math.round(((current - previous) / Math.abs(previous)) * 1000) / 10;
+    };
+
+    // Tuần hiện tại theo từng ngày
+    const weekDays = Array.from({ length: 7 }, (_, i) => {
+      const day = addDays(monday, i);
+      return { date: dateKey(day), amount: sumIn(day, addDays(day, 1)) };
+    });
+    const weekTotal = weekDays.reduce((sum, d) => sum + d.amount, 0);
+    const prevWeekTotal = sumIn(prevWeekStart, monday);
+
+    // Tháng hiện tại + theo tuần trong tháng (tuần 1 = ngày 1–7, …)
+    const monthTxs = txs.filter(tx => tx.created_at >= monthStart && tx.created_at < nextMonthStart);
+    const monthTotal = monthTxs.reduce((sum, tx) => sum + signed(tx), 0);
+    const prevMonthTotal = sumIn(prevMonthStart, monthStart);
+    const byWeekMap = new Map<number, number>();
+    for (const tx of monthTxs) {
+      const weekOfMonth = Math.floor((tx.created_at.getDate() - 1) / 7) + 1;
+      byWeekMap.set(weekOfMonth, (byWeekMap.get(weekOfMonth) ?? 0) + signed(tx));
+    }
+    const byWeek = [1, 2, 3, 4, 5].map(week => ({
+      week,
+      amount: byWeekMap.get(week) ?? 0,
+    }));
+
+    const profile = await this.helperModel
+      .findOne({ user_id: new Types.ObjectId(userId) })
+      .select('income_goal_monthly')
+      .lean()
+      .exec();
+    const monthlyGoal = profile?.income_goal_monthly ?? 0;
+
+    return {
+      week: {
+        days: weekDays,
+        total: weekTotal,
+        prev_week_total: prevWeekTotal,
+        change_percent: changePercent(weekTotal, prevWeekTotal),
+      },
+      month: {
+        total: monthTotal,
+        jobs_earning_count: monthTxs.filter(tx => tx.type === 'earning').length,
+        prev_month_total: prevMonthTotal,
+        change_percent: changePercent(monthTotal, prevMonthTotal),
+        by_week: byWeek,
+      },
+      goal: {
+        monthly_goal: monthlyGoal,
+        earned_this_month: monthTotal,
+        progress_percent:
+          monthlyGoal > 0
+            ? Math.round(Math.max(0, Math.min(100, (monthTotal / monthlyGoal) * 100)) * 10) / 10
+            : 0,
+      },
+    };
+  }
+
   // ─── Transactions ─────────────────────────────────────────────────────────
 
   async getTransactions(userId: string, page = 1, limit = 20) {

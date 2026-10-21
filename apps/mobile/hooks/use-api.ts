@@ -1822,3 +1822,52 @@ export function useUpdateAvailability() {
   });
 }
 
+
+// ─── Earnings Report (Feature 14 — Báo cáo thu nhập thợ) ─────────────────────
+
+export interface EarningsReport {
+  week: {
+    days: { date: string; amount: number }[];
+    total: number;
+    prev_week_total: number;
+    change_percent: number | null;
+  };
+  month: {
+    total: number;
+    jobs_earning_count: number;
+    prev_month_total: number;
+    change_percent: number | null;
+    by_week: { week: number; amount: number }[];
+  };
+  goal: {
+    monthly_goal: number;
+    earned_this_month: number;
+    progress_percent: number;
+  };
+}
+
+export function useEarningsReport() {
+  return useQuery({
+    queryKey: ['payments', 'earnings-report'],
+    queryFn: async () => {
+      const { data } = await apiClient.get('/payments/me/earnings-report');
+      return data.data as EarningsReport;
+    },
+  });
+}
+
+export function useSetIncomeGoal() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (amount: number) => apiClient.patch('/helpers/me/income-goal', { amount }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['payments', 'earnings-report'] });
+      qc.invalidateQueries({ queryKey: ['helper', 'profile'] });
+      Toast.show({ type: 'success', text1: 'Đã đặt mục tiêu thu nhập 🎯' });
+    },
+    onError: (err: any) => {
+      const msg = err?.response?.data?.message ?? 'Không đặt được mục tiêu';
+      Toast.show({ type: 'error', text1: typeof msg === 'string' ? msg : 'Đã có lỗi xảy ra' });
+    },
+  });
+}
