@@ -156,6 +156,43 @@ export class HelperProfile {
   @Prop({ default: 0, min: 0 })
   income_goal_monthly: number; // VNĐ/tháng, 0 = chưa đặt mục tiêu
 
+  // ── Điểm hiệu suất (thang 100) + phạt hủy đơn ──────────────────────────────
+  // Xem modules/helpers/utils/helper-score.ts: 4 tiêu chí (đánh giá 40 +
+  // hoàn thành 25 + phản hồi 15 + tin cậy 20). Hủy đơn do thợ khởi xướng
+  // (hủy thường sau khi chốt đơn + gửi SOS Backup) được ghi mốc thời gian;
+  // trong cửa sổ trượt 7 ngày, vượt quá 3 lần thì trừ 5đ/lần vào tiêu chí
+  // Độ tin cậy (sàn 0). Snapshot dưới đây được cập nhật mỗi khi có lần hủy mới.
+  @Prop({ type: [Date], default: [] })
+  cancellation_timestamps: Date[]; // Các mốc hủy do thợ khởi xướng (đã cắt ngoài cửa sổ khi ghi)
+
+  @Prop({ default: 0 })
+  cancellations_last_7_days: number;
+
+  @Prop({ default: 0 })
+  penalty_points: number; // Điểm đang bị trừ ở tiêu chí Độ tin cậy
+
+  @Prop({ default: 100, min: 0, max: 100 })
+  performance_score: number;
+
+  @Prop({
+    type: {
+      rating: { type: Number, default: 40 },
+      completion: { type: Number, default: 25 },
+      responsiveness: { type: Number, default: 15 },
+      reliability: { type: Number, default: 20 },
+    },
+    default: () => ({ rating: 40, completion: 25, responsiveness: 15, reliability: 20 }),
+  })
+  score_breakdown: {
+    rating: number;
+    completion: number;
+    responsiveness: number;
+    reliability: number;
+  };
+
+  @Prop()
+  score_updated_at?: Date;
+
   created_at: Date;
   updated_at: Date;
 }

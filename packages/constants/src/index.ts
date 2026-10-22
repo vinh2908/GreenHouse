@@ -145,6 +145,14 @@ export const SOCKET_EVENTS = {
   SOS_ACCEPTED: 'sos:accepted', // Thợ nhận việc cứu hộ
   SOS_CANCELLED: 'sos:cancelled',
 
+  // SOS Backup (thợ không thể tiếp tục đơn → khách đồng ý mới tìm thợ thay thế, ghép cặp Hungarian)
+  SOS_BACKUP_DECISION_REQUESTED: 'sos:customer_decision_requested', // Gửi tới khách: thợ có sự cố, cần khách quyết định (đổi người / hủy đơn)
+  SOS_BACKUP_DECIDED: 'sos:customer_decided', // Khách đã quyết định (báo thợ gốc + room của đơn)
+  SOS_BACKUP_REQUEST: 'sos:backup_request', // Gửi tới thợ ứng viên: có người cần backup
+  SOS_BACKUP_RESOLVED: 'sos:backup_resolved', // SOS đã kết thúc (đã có người nhận / thu hồi / hết hạn) — báo cho các ứng viên còn lại
+  SOS_BACKUP_HELPER_REPLACED: 'sos:backup_helper_replaced', // Đã thay thợ cho đơn (báo khách + room của đơn)
+  SOS_BACKUP_EXPIRED: 'sos:backup_expired', // Hết hạn mà chưa tìm được người thay (báo khách)
+
   // Notification
   NOTIFICATION_NEW: 'notification:new',
 
@@ -200,6 +208,13 @@ export const NOTIFICATION_TYPES = {
   NEW_MESSAGE: 'new_message',
   PROMOTION: 'promotion',
   SUPPORT_REPLY: 'support_reply', // Đội hỗ trợ phản hồi live chat (Feature 18)
+  // SOS Backup
+  SOS_BACKUP_DECISION_REQUEST: 'sos_backup_decision_request', // Khách: thợ có sự cố, cần bạn quyết định đổi người hay hủy đơn
+  SOS_BACKUP_DECISION_REMINDER: 'sos_backup_decision_reminder', // Khách: nhắc quyết định SOS trước khi hệ thống tự xử lý
+  SOS_BACKUP_JOB_CANCELLED: 'sos_backup_job_cancelled', // Thợ gốc + khách: đơn đã hủy theo chính sách SOS (hoàn tiền 100%)
+  SOS_BACKUP_REQUEST: 'sos_backup_request', // Ứng viên: có thợ cần người thay thế đơn
+  SOS_BACKUP_HELPER_REPLACED: 'sos_backup_helper_replaced', // Khách + thợ cũ: đơn đã được thay thợ
+  SOS_BACKUP_EXPIRED: 'sos_backup_expired', // Khách + admin: SOS backup hết hạn chưa có người thay
   SYSTEM: 'system',
 } as const;
 

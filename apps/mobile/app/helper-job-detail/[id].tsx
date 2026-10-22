@@ -35,6 +35,7 @@ import { Alert } from '@/components/common/app-alert';
 import { LiveTrackingMap, RouteMetrics } from '@/components/common/live-tracking-map';
 import { TeamCard } from '@/components/common/team-card';
 import { OfflineBanner } from '@/components/common/offline-banner';
+import { SosBackupHelperCard } from '@/components/common/sos-backup-helper-card';
 
 dayjs.extend(relativeTime);
 dayjs.locale('vi');
@@ -764,6 +765,9 @@ export default function HelperJobDetailScreen() {
             )}
           </Card>
         )}
+
+        {/* ── SOS Backup: thợ không thể tiếp tục đơn ─────────────────── */}
+        <SosBackupHelperCard job={job} />
 
         {/* ── Quote status / Action ────────────────────────────────── */}
         {['open', 'receiving_quotes'].includes(job.status) && !isMyActiveJob && (
