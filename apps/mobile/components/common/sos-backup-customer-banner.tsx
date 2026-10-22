@@ -6,6 +6,7 @@
 import { View, Text } from 'react-native';
 import dayjs from 'dayjs';
 import { Button, Card, COLORS } from '@/components/ui';
+import { PhotoThumbRow } from '@/components/common/photo-thumbs';
 import { useSosBackupByJob } from '@/hooks/use-api';
 import { useAuthStore } from '@/stores/auth.store';
 import { useSosBackupStore } from '@/stores/sos-backup.store';
@@ -37,6 +38,7 @@ export function SosBackupCustomerBanner({ job }: { job: any }) {
       reason: sos.reason,
       district: sos.district,
       city: sos.city,
+      photo_urls: sos.photo_urls ?? [],
       decision_expires_at_ms: sos.decision_deadline
         ? new Date(sos.decision_deadline).getTime()
         : undefined,
@@ -56,6 +58,9 @@ export function SosBackupCustomerBanner({ job }: { job: any }) {
             Người giúp việc không thể tiếp tục đơn này. Bạn có thể đồng ý đổi người khác (giữ nguyên
             giá) hoặc hủy đơn với hoàn tiền 100%.
           </Text>
+          {sos.photo_urls?.length ? (
+            <PhotoThumbRow urls={sos.photo_urls} size={56} label="📷 Ảnh minh chứng sự cố" />
+          ) : null}
           <Button title="Chọn đổi người hoặc hủy đơn" onPress={openDecision} />
         </Card>
       )}

@@ -27,6 +27,8 @@ export interface SosBackupIncoming {
   payout?: number | null;
   wave?: number;
   expires_at_ms?: number;
+  /** Ảnh minh chứng sự cố của thợ gặp nạn (xe hư, tai nạn…) */
+  photo_urls?: string[];
 }
 
 export interface SosDecisionRequest {
@@ -38,6 +40,8 @@ export interface SosDecisionRequest {
   district?: string;
   city?: string;
   decision_expires_at_ms?: number;
+  /** Ảnh minh chứng sự cố do thợ đính kèm — khách xem trước khi quyết định */
+  photo_urls?: string[];
 }
 
 interface SosBackupState {

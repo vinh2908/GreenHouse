@@ -771,7 +771,7 @@ export class JobsService {
           userId: String(helper.user_id),
           type: NOTIFICATION_TYPES.NEW_JOB_NEARBY,
           title: '🚨 CỨU HỘ KHẨN CẤP SOS GẦN BẠN!',
-          body: `${dto.title} tại ${dto.address.district}. Phụ phí SOS: +${surcharge.toLocaleString()}đ`,
+          body: `${dto.title}${dto.address.district ? ` tại ${dto.address.district}` : ''}. Phụ phí SOS: +${surcharge.toLocaleString()}đ`,
           payload: { job_id: String(job._id), is_sos: true },
         })
         .catch(() => {});

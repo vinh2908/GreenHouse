@@ -36,8 +36,11 @@ export class JobAddressLocationDto {
 export class JobAddressDto {
   @ApiProperty() @IsString() @IsNotEmpty() full_address: string;
   @ApiPropertyOptional() @IsOptional() @IsString() ward?: string;
-  @ApiProperty() @IsString() @IsNotEmpty() district: string;
-  @ApiProperty() @IsString() @IsNotEmpty() city: string;
+  // district/city không bắt buộc: reverse-geocode (OSM/Goong) ở nhiều khu vực
+  // không trả được quận/thành phố — tọa độ + full_address mới là nguồn sự thật,
+  // không được bịa giá trị mặc định để lấp chỗ trống.
+  @ApiPropertyOptional() @IsOptional() @IsString() district?: string;
+  @ApiPropertyOptional() @IsOptional() @IsString() city?: string;
 
   @ApiProperty({ type: JobAddressLocationDto })
   @ValidateNested()

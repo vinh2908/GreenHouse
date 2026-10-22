@@ -20,6 +20,14 @@ import {
   CustomerProfile,
   CustomerProfileSchema,
 } from '../customers/schemas/customer-profile.schema';
+import {
+  SosBackupRequest,
+  SosBackupRequestSchema,
+} from '../sos-backup/schemas/sos-backup.schema';
+import {
+  HelperPenaltyEvent,
+  HelperPenaltyEventSchema,
+} from '../helpers/schemas/helper-penalty-event.schema';
 
 @Module({
   imports: [
@@ -33,6 +41,8 @@ import {
       { name: Withdrawal.name, schema: WithdrawalSchema },
       { name: Review.name, schema: ReviewSchema },
       { name: CustomerProfile.name, schema: CustomerProfileSchema },
+      { name: SosBackupRequest.name, schema: SosBackupRequestSchema },
+      { name: HelperPenaltyEvent.name, schema: HelperPenaltyEventSchema },
     ]),
     NotificationsModule,
   ],

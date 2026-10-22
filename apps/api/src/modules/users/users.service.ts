@@ -102,4 +102,37 @@ export class UsersService {
   async updateFcmToken(id: string, fcmToken: string): Promise<void> {
     await this.userModel.findByIdAndUpdate(id, { fcm_token: fcmToken }).exec();
   }
+
+  /** Lưu Expo push token của 1 thiết bị (không trùng lặp). */
+  async addPushToken(id: string, token: string): Promise<void> {
+    await this.userModel.findByIdAndUpdate(id, { $addToSet: { push_tokens: token } }).exec();
+  }
+
+  /** Gỡ Expo push token khi đăng xuất / tắt thông báo trên thiết bị. */
+  async removePushToken(id: string, token: string): Promise<void> {
+    await this.userModel.findByIdAndUpdate(id, { $pull: { push_tokens: token } }).exec();
+  }
+
+  /**
+   * Lưu VoIP token của thiết bị (đánh thức cuộc gọi đến khi app chạy nền /
+   * bị đóng hẳn). Token là duy nhất trong danh sách — đăng ký lại cùng token
+   * thì cập nhật platform + thời gian (pull trước, push sau).
+   */
+  async addVoipToken(id: string, token: string, platform: 'ios' | 'android'): Promise<void> {
+    await this.userModel
+      .findByIdAndUpdate(id, { $pull: { voip_tokens: { token } } })
+      .exec();
+    await this.userModel
+      .findByIdAndUpdate(id, {
+        $push: { voip_tokens: { token, platform, updated_at: new Date() } },
+      })
+      .exec();
+  }
+
+  /** Gỡ VoIP token khi đăng xuất. */
+  async removeVoipToken(id: string, token: string): Promise<void> {
+    await this.userModel
+      .findByIdAndUpdate(id, { $pull: { voip_tokens: { token } } })
+      .exec();
+  }
 }

@@ -78,6 +78,11 @@ export class SosBackupRequest {
   @Prop({ maxlength: 300 })
   reason_note?: string; // Ghi chú riêng của thợ — KHÔNG hiển thị cho khách
 
+  /** Ảnh minh chứng sự cố do thợ đính kèm (xe hư, tai nạn…) — HIỂN THỊ cho khách
+   *  trong popup quyết định và cho thợ ứng viên trong popup mời nhận thay. Tối đa 4. */
+  @Prop({ type: [String], default: [] })
+  photo_urls: string[];
+
   @Prop({
     type: String,
     enum: SosBackupStatus,

@@ -1,4 +1,10 @@
 import * as Location from 'expo-location';
+import {
+  getGoongApiKey,
+  goongReverseGeocode,
+  mapGoongGeocodeResult,
+  searchPlacesWithGoong,
+} from './goong-geocoding';
 
 type BrowserGeolocationPosition = {
   coords: { latitude: number; longitude: number };
@@ -94,8 +100,12 @@ class LocationService {
   }
 
   /**
-   * Chuyển tọa độ (lat, lon) -> Địa chỉ chi tiết tiếng Việt
-   * (Ưu tiên Expo Native & Photon OSM để lấy chính xác Số nhà & Tên đường, fallback BigDataCloud & Nominatim)
+   * Chuyển tọa độ (lat, lon) -> Địa chỉ chi tiết tiếng Việt.
+   * Thứ tự các lớp: 1) Expo Native (trên máy thật, miễn phí, không cần mạng riêng)
+   * 2) Goong — dữ liệu địa chỉ Việt Nam, có số nhà (chỉ khi có
+   * EXPO_PUBLIC_GOONG_API_KEY) 3) Photon OSM 4) Nominatim OSM 5) BigDataCloud.
+   * Nguyên tắc: lớp nào không tra được Quận/Thành thì để '' — không bao giờ
+   * bịa 'Quận 1'/'Hồ Chí Minh' như trước (người dùng Đà Nẵng từng bị gán sai).
    */
   async reverseGeocode(latitude: number, longitude: number): Promise<LocationResult | null> {
     // 1. Thử Expo Location native (trên Android / iOS APK)
@@ -106,8 +116,8 @@ class LocationService {
         const streetName = geo.street || '';
         const road = [houseNum, streetName].filter(Boolean).join(' ').trim() || geo.name || '';
         const ward = geo.district || '';
-        const district = geo.subregion || geo.district || 'Quận 1';
-        const city = geo.city || geo.region || 'Hồ Chí Minh';
+        const district = geo.subregion || geo.district || '';
+        const city = geo.city || geo.region || '';
         const fullAddress = [road, ward, district, city].filter(Boolean).join(', ');
 
         if (road || district) {
@@ -125,7 +135,24 @@ class LocationService {
       /* ignore native error when on web */
     }
 
-    // 2. Thử Photon OpenStreetMap Reverse Geocode (Có CORS, miễn phí, trả về Số nhà + Tên đường chính xác)
+    // 2. Goong — dữ liệu địa chỉ Việt Nam (có số nhà kể cả nhiều tuyến phố mà
+    // OSM bỏ trống). Bỏ qua hoàn toàn khi chưa cấu hình EXPO_PUBLIC_GOONG_API_KEY.
+    const goongKey = getGoongApiKey();
+    if (goongKey) {
+      try {
+        const goongResult = await goongReverseGeocode(latitude, longitude, goongKey);
+        if (goongResult) {
+          const mapped = mapGoongGeocodeResult(goongResult, latitude, longitude);
+          if (mapped.road || mapped.district) {
+            return mapped;
+          }
+        }
+      } catch (err) {
+        console.warn('Goong reverse geocode error:', err);
+      }
+    }
+
+    // 3. Thử Photon OpenStreetMap Reverse Geocode (Có CORS, miễn phí, trả về Số nhà + Tên đường chính xác)
     try {
       const photonUrl = `https://photon.komoot.io/reverse?lat=${latitude}&lon=${longitude}`;
       const res = await fetch(photonUrl);
@@ -143,8 +170,8 @@ class LocationService {
             road = placeName;
           }
           const ward = p.locality || '';
-          const district = p.district || p.city_district || 'Quận 1';
-          const city = p.city || p.state || 'Hồ Chí Minh';
+          const district = p.district || p.city_district || '';
+          const city = p.city || p.state || '';
           const fullAddress = [road, ward, district, city].filter(Boolean).join(', ');
 
           if (road || district) {
@@ -163,7 +190,7 @@ class LocationService {
       console.warn('Photon reverse geocode error:', err);
     }
 
-    // 3. Fallback Nominatim OpenStreetMap
+    // 4. Fallback Nominatim OpenStreetMap
     try {
       const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1&accept-language=vi`;
       const res = await fetch(url);
@@ -174,10 +201,10 @@ class LocationService {
         const road = addr.road || '';
         const street = `${houseNumber}${road}`.trim() || data.display_name?.split(',')[0] || '';
         const ward = addr.suburb || addr.quarter || addr.neighbourhood || '';
-        const district = addr.city_district || addr.district || addr.county || 'Quận 1';
-        const city = addr.city || addr.state || 'Hồ Chí Minh';
+        const district = addr.city_district || addr.district || addr.county || '';
+        const city = addr.city || addr.state || '';
         const fullAddress = street
-          ? `${street}, ${ward ? ward + ', ' : ''}${district}, ${city}`
+          ? [street, ward, district, city].filter(Boolean).join(', ')
           : data.display_name;
 
         return {
@@ -193,7 +220,7 @@ class LocationService {
       console.warn('OSM Reverse geocoding error:', err);
     }
 
-    // 4. Fallback BigDataCloud (CORS-friendly, trả về phường, quận, thành phố)
+    // 5. Fallback BigDataCloud (CORS-friendly, trả về phường, quận, thành phố)
     try {
       const url = `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=vi`;
       const res = await fetch(url);
@@ -212,8 +239,8 @@ class LocationService {
           data.localityInfo?.informative?.find(
             (a: any) => a.name && (a.name.includes('Quận') || a.name.includes('Huyện')),
           )?.name ||
-          'Quận 1';
-        const city = data.city || data.principalSubdivision || 'Hồ Chí Minh';
+          '';
+        const city = data.city || data.principalSubdivision || '';
 
         const parts = [ward, district, city].filter(Boolean);
         const fullAddress =
@@ -232,11 +259,13 @@ class LocationService {
       console.warn('BigDataCloud reverse geocode error:', err);
     }
 
+    // Không lớp nào tra được: chỉ còn tọa độ là sự thật — district/city để ''
+    // để form phía trên cho người dùng tự điền thay vì nhận dữ liệu bịa.
     return {
       full_address: `Tọa độ: ${latitude.toFixed(4)}, ${longitude.toFixed(4)}`,
       road: `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`,
-      district: 'Vị trí hiện tại',
-      city: 'Việt Nam',
+      district: '',
+      city: '',
       coordinates: [longitude, latitude],
     };
   }
@@ -253,10 +282,27 @@ class LocationService {
   }
 
   /**
-   * Tìm kiếm địa điểm bằng Photon + OpenStreetMap Search API (Autocomplete)
+   * Tìm kiếm địa điểm (Autocomplete). Ưu tiên Goong Place AutoComplete +
+   * Place Detail khi có EXPO_PUBLIC_GOONG_API_KEY (dữ liệu VN, có số nhà);
+   * không có key hoặc Goong không trả kết quả thì dùng Photon + Nominatim
+   * như trước. Giữ nguyên chữ ký Promise<OsmPlace[]> cho location-picker
+   * và booking dùng không đổi.
    */
   async searchPlaces(query: string): Promise<OsmPlace[]> {
     if (!query || query.trim().length < 2) return [];
+
+    // 0. Goong (chỉ khi có API key)
+    const goongKey = getGoongApiKey();
+    if (goongKey) {
+      try {
+        const goongPlaces = await searchPlacesWithGoong(query, goongKey);
+        if (goongPlaces.length) {
+          return goongPlaces as OsmPlace[];
+        }
+      } catch (err) {
+        console.warn('Goong search error, fallback OSM:', err);
+      }
+    }
 
     // 1. Thử Photon search API (nhanh, hỗ trợ CORS trình duyệt)
     try {
