@@ -1,0 +1,88 @@
+name: Auto Deploy GreenHouse Platform
+
+on:
+  push:
+    branches:
+      - master
+      - main
+
+jobs:
+  deploy-admin:
+    name: 🛡️ Deploy Admin Portal (greenhouse-admin-portal.vercel.app)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.29.3
+
+      - name: Install Dependencies
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Build Next.js Admin
+        run: pnpm --filter=@homemate/admin build
+        env:
+          NEXT_PUBLIC_API_URL: https://greenhouse-api-chb9.onrender.com/api/v1
+
+      - name: Deploy Admin to Vercel
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID || 'team_8xQ0A8dTj1SZfs0QzwaJqXRh' }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID_ADMIN || 'prj_TxTQdRWBHKYuU8HkwiQxFQuUY2gT' }}
+        run: |
+          if [ -z "$VERCEL_TOKEN" ]; then
+            echo "::warning ::VERCEL_TOKEN is not set in GitHub Repository Secrets. If you use Vercel Git Integration, Vercel will deploy automatically."
+            exit 0
+          fi
+          DEPLOY_OUTPUT=$(npx --yes vercel deploy apps/admin --prod --yes --token="$VERCEL_TOKEN" --scope="$VERCEL_ORG_ID")
+          echo "Admin deployed successfully to: $DEPLOY_OUTPUT"
+          npx --yes vercel alias set "$DEPLOY_OUTPUT" greenhouse-admin-portal.vercel.app --token="$VERCEL_TOKEN" --scope="$VERCEL_ORG_ID"
+
+  deploy-customer-web:
+    name: 📱 Deploy Customer & Helper Web (greenhouse-customer.vercel.app)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.29.3
+
+      - name: Install Dependencies
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Export Expo Web Bundle
+        run: |
+          cd apps/mobile
+          npx expo export -p web
+        env:
+          EXPO_PUBLIC_API_URL: https://greenhouse-api-chb9.onrender.com/api/v1
+
+      - name: Deploy Customer Web to Vercel
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID || 'team_8xQ0A8dTj1SZfs0QzwaJqXRh' }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID_CUSTOMER || 'prj_jeudkVVORcFaogU5vDQ0p4qm8fWQ' }}
+        run: |
+          if [ -z "$VERCEL_TOKEN" ]; then
+            echo "::warning ::VERCEL_TOKEN is not set in GitHub Repository Secrets. If you use Vercel Git Integration, Vercel will deploy automatically."
+            exit 0
+          fi
+          DEPLOY_OUTPUT=$(npx --yes vercel deploy apps/mobile/dist --prod --yes --token="$VERCEL_TOKEN" --scope="$VERCEL_ORG_ID")
+          echo "Customer Web deployed successfully to: $DEPLOY_OUTPUT"
+          npx --yes vercel alias set "$DEPLOY_OUTPUT" greenhouse-customer.vercel.app --token="$VERCEL_TOKEN" --scope="$VERCEL_ORG_ID"
