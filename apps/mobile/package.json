@@ -9,6 +9,7 @@
     "android": "node --max-old-space-size=4096 ../../node_modules/expo/bin/cli run:android",
     "ios": "node --max-old-space-size=4096 ../../node_modules/expo/bin/cli run:ios",
     "web": "node --max-old-space-size=4096 ../../node_modules/expo/bin/cli start --web",
+    "build:web": "expo export -p web",
     "lint": "tsc --noEmit",
     "typecheck": "tsc --noEmit"
   },
