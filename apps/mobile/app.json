@@ -54,6 +54,8 @@
       "expo-router",
       "expo-font",
       "expo-secure-store",
+      "@config-plugins/react-native-callkeep",
+      "./plugins/with-voip-background-mode.js",
       [
         "expo-location",
         {

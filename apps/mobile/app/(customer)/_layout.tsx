@@ -46,6 +46,13 @@ export default function CustomerLayout() {
           href: null,
         }}
       />
+      {/* Ẩn route favorites khỏi tab bar — Thợ yêu thích mở từ màn Tài khoản */}
+      <Tabs.Screen
+        name="favorites"
+        options={{
+          href: null,
+        }}
+      />
     </Tabs>
   );
 }

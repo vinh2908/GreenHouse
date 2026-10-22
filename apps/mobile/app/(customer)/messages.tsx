@@ -106,7 +106,9 @@ export default function ConversationsScreen() {
                       }}
                       numberOfLines={1}
                     >
-                      {conv.last_message || 'Bắt đầu trao đổi thông tin công việc...'}
+                      {conv.last_message_type === 'image'
+                        ? '📷 Ảnh'
+                        : conv.last_message || 'Bắt đầu trao đổi thông tin công việc...'}
                     </Text>
                   </View>
                   <View style={{ alignItems: 'flex-end', gap: 6 }}>

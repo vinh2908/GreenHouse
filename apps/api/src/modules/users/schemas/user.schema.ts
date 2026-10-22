@@ -49,6 +49,27 @@ export class User {
   @Prop({ select: false })
   fcm_token?: string;
 
+  // Expo push tokens (mỗi thiết bị 1 token) — dùng để gửi OS push notification
+  // qua Expo Push Service khi app không chạy. Không trả ra ngoài qua toJSON.
+  @Prop({ type: [String], default: [] })
+  push_tokens: string[];
+
+  // VoIP tokens để đánh thức cuộc gọi đến khi app chạy nền / bị đóng hẳn
+  // (CallKeep): iOS = PushKit token (gửi qua APNs VoIP), Android = FCM token
+  // (gửi FCM high-priority). Kèm platform để API chọn đúng kênh gửi.
+  // Không trả ra ngoài qua toJSON.
+  @Prop({
+    type: [
+      {
+        token: { type: String, required: true },
+        platform: { type: String, enum: ['ios', 'android'], required: true },
+        updated_at: { type: Date, default: Date.now },
+      },
+    ],
+    default: [],
+  })
+  voip_tokens: { token: string; platform: 'ios' | 'android'; updated_at: Date }[];
+
   @Prop({ default: false })
   is_deleted: boolean;
 
@@ -68,6 +89,8 @@ UserSchema.set('toJSON', {
   transform: (_doc: any, ret: any) => {
     delete ret['password_hash'];
     delete ret['fcm_token'];
+    delete ret['push_tokens'];
+    delete ret['voip_tokens'];
     delete ret['__v'];
     return ret;
   },

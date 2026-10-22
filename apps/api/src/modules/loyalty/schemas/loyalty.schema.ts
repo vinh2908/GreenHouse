@@ -5,7 +5,7 @@ export type LoyaltyAccountDocument = LoyaltyAccount & Document;
 export type LoyaltyTransactionDocument = LoyaltyTransaction & Document;
 
 export type LoyaltyTier = 'regular' | 'silver' | 'gold';
-export type LoyaltyTxType = 'earn' | 'redeem' | 'adjust';
+export type LoyaltyTxType = 'earn' | 'redeem' | 'adjust' | 'reversal';
 
 // ─── LoyaltyAccount (Tài khoản điểm của 1 khách) ─────────────────────────────
 
@@ -35,7 +35,7 @@ export class LoyaltyTransaction {
   @Prop({ type: Types.ObjectId, ref: 'User', required: true, index: true })
   user_id: Types.ObjectId;
 
-  @Prop({ type: String, enum: ['earn', 'redeem', 'adjust'], required: true })
+  @Prop({ type: String, enum: ['earn', 'redeem', 'adjust', 'reversal'], required: true })
   type: LoyaltyTxType;
 
   /** Điểm biến động (có dấu): earn/adjust dương = +, redeem = - */

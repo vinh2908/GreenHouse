@@ -12,7 +12,12 @@ import {
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { AdminService } from './admin.service';
-import { AdminListQueryDto, AdminSuspendDto, AdminKycActionDto } from './dto/admin.dto';
+import {
+  AdminListQueryDto,
+  AdminSuspendDto,
+  AdminKycActionDto,
+  AdminWaivePenaltyDto,
+} from './dto/admin.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
@@ -151,5 +156,49 @@ export class AdminController {
   @ApiOperation({ summary: '[Admin] Gửi thông báo tới tất cả người dùng' })
   async broadcast(@Body() dto: BroadcastDto) {
     return this.adminService.broadcastNotification(dto.title, dto.body);
+  }
+
+  // ─── SOS Backup oversight ─────────────────────────────────────────────────
+
+  @Get('sos-backup/flagged')
+  @ApiOperation({ summary: '[Admin] Yêu cầu SOS bị gắn cờ cần chú ý (admin_attention)' })
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  async getFlaggedSosRequests(@Query('page') page?: number, @Query('limit') limit?: number) {
+    return this.adminService.getFlaggedSosRequests(Number(page) || 1, Number(limit) || 20);
+  }
+
+  @Get('helper-penalty-events')
+  @ApiOperation({ summary: '[Admin] Sổ sự kiện phạt hủy đơn của thợ' })
+  @ApiQuery({ name: 'helper_id', required: false })
+  @ApiQuery({ name: 'status', required: false, description: 'active | waived' })
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  async getHelperPenaltyEvents(
+    @Query('helper_id') helperId?: string,
+    @Query('status') status?: string,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+  ) {
+    return this.adminService.getHelperPenaltyEvents(
+      helperId,
+      status,
+      Number(page) || 1,
+      Number(limit) || 20,
+    );
+  }
+
+  @Post('helper-penalty-events/:id/waive')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary:
+      '[Admin] Miễn 1 sự kiện phạt — sự kiện chuyển waived và điểm thợ được tính lại không còn sự kiện này (idempotent)',
+  })
+  async waivePenaltyEvent(
+    @CurrentUser() user: { sub: string },
+    @Param('id') id: string,
+    @Body() dto: AdminWaivePenaltyDto,
+  ) {
+    return this.adminService.waivePenaltyEvent(user.sub, id, dto.reason);
   }
 }

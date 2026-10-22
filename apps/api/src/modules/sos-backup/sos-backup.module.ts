@@ -13,6 +13,8 @@ import {
 import { ChatModule } from '../chat/chat.module';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { PaymentsModule } from '../payments/payments.module';
+import { VouchersModule } from '../vouchers/vouchers.module';
+import { LoyaltyModule } from '../loyalty/loyalty.module';
 
 @Module({
   imports: [
@@ -27,6 +29,9 @@ import { PaymentsModule } from '../payments/payments.module';
     ChatModule,
     NotificationsModule,
     PaymentsModule,
+    // Khôi phục voucher/điểm cho khách khi hủy đơn theo chính sách SOS
+    VouchersModule,
+    LoyaltyModule,
   ],
   controllers: [SosBackupController],
   providers: [SosBackupService],
