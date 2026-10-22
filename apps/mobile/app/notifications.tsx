@@ -7,6 +7,8 @@ import relativeTime from 'dayjs/plugin/relativeTime';
 import 'dayjs/locale/vi';
 import { useNotifications, useMarkAllRead, useMarkNotificationRead } from '@/hooks/use-api';
 import { useAuthStore } from '@/stores/auth.store';
+import { resolveNotificationRoute } from '@/utils/notification-route';
+import { refreshSosState } from '@/hooks/use-sos-backup';
 import { Card, COLORS, EmptyState, LoadingSpinner } from '@/components/ui';
 
 dayjs.extend(relativeTime);
@@ -29,23 +31,21 @@ const NOTIF_ICONS: Record<string, string> = {
   withdrawal_processed: '🏦',
   promotion: '🎁',
   system: '📢',
+  support_reply: '🛎️',
+  sos_backup_decision_request: '🆘',
+  sos_backup_decision_reminder: '⏰',
+  sos_backup_job_cancelled: '🆘',
+  sos_backup_request: '🆘',
+  sos_backup_helper_replaced: '🔄',
+  sos_backup_expired: '⌛',
+  insurance_claim_update: '🛡️',
 };
 
-// Notifications addressed to the user as a helper open the helper screens, whatever
-// role is currently active; the rest follow the active role.
-const HELPER_TYPES = new Set([
-  'quote_accepted',
-  'payment_success',
-  'review_received',
-  'new_job_nearby',
-]);
-const CUSTOMER_TYPES = new Set([
-  'new_quote_received',
-  'job_confirmed',
-  'helper_on_the_way',
-  'helper_arrived',
-  'job_completed',
-]);
+// Việc "chạm thông báo → mở màn hình nào" nằm hết ở utils/notification-route.ts
+// (dùng chung với đường chạm OS push). Tại đây chỉ còn xử lý riêng của SOS:
+// thông báo chờ quyết định SOS phải kích hoạt làm mới trạng thái để popup
+// quyết định hiện ra trên màn chi tiết đơn.
+const SOS_DECISION_TYPES = new Set(['sos_backup_decision_request', 'sos_backup_decision_reminder']);
 
 export default function NotificationsScreen() {
   const router = useRouter();
@@ -68,31 +68,19 @@ export default function NotificationsScreen() {
       markRead.mutate(n._id);
     }
 
-    const jobId = n.data?.job_id || n.payload?.job_id;
-    if (n.type === 'new_message' && jobId) {
-      router.push({ pathname: '/chat/[jobId]', params: { jobId } });
-      return;
+    // SOS chờ quyết định: làm mới trạng thái SOS để popup quyết định hiện ngay
+    // (kể cả khi sự kiện socket đã bị lỡ lúc app đóng/nền).
+    if (SOS_DECISION_TYPES.has(n.type)) {
+      void refreshSosState();
     }
-    if (n.type === 'kyc_approved' || n.type === 'kyc_rejected') {
-      router.push('/kyc');
-      return;
-    }
-    if (n.type === 'withdrawal_processed') {
-      router.push('/(helper)/earnings');
-      return;
-    }
-    // Điều hướng đến Job tương ứng nếu có job_id
-    if (jobId) {
-      const asHelper = HELPER_TYPES.has(n.type)
-        ? true
-        : CUSTOMER_TYPES.has(n.type)
-          ? false
-          : user?.active_role === 'helper';
-      if (asHelper) {
-        router.push({ pathname: '/helper-job-detail/[id]', params: { id: jobId } });
-      } else {
-        router.push({ pathname: '/job-detail/[id]', params: { id: jobId } });
-      }
+
+    const route = resolveNotificationRoute(
+      { type: n.type, data: n.data, payload: n.payload },
+      user?.active_role,
+      (user as { roles?: string[] } | null)?.roles,
+    );
+    if (route) {
+      router.push(route as never);
     }
   };
 

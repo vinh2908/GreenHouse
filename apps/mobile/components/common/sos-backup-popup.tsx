@@ -7,6 +7,7 @@ import { Modal, View, Text, TouchableOpacity, ActivityIndicator } from 'react-na
 import { useRouter } from 'expo-router';
 import Toast from 'react-native-toast-message';
 import { useSosBackupStore } from '@/stores/sos-backup.store';
+import { PhotoThumbRow } from '@/components/common/photo-thumbs';
 import { useAcceptSosBackup, useDeclineSosBackup } from '@/hooks/use-api';
 import { useNowTick, formatCountdown } from '@/hooks/use-countdown';
 import { COLORS } from '@/components/ui';
@@ -131,6 +132,13 @@ export function SosBackupPopup() {
                   {incoming.payout.toLocaleString('vi-VN')}₫
                 </Text>
               </Text>
+            ) : null}
+            {incoming.photo_urls?.length ? (
+              <PhotoThumbRow
+                urls={incoming.photo_urls}
+                size={56}
+                label="📷 Ảnh hiện trạng từ thợ gặp sự cố"
+              />
             ) : null}
           </View>
 

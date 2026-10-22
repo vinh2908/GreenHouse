@@ -73,6 +73,60 @@ apiClient.interceptors.request.use(
   error => Promise.reject(error),
 );
 
+// ── Refresh token SINGLE-FLIGHT ─────────────────────────────────────────────
+// Mọi request 401 đồng thời (một màn hình bắn 4–6 query lúc access token vừa
+// hết hạn) dùng CHUNG một lần gọi /auth/refresh đang bay, thay vì mỗi request
+// tự refresh và giẫm lên token của nhau.
+class SessionExpiredError extends Error {
+  constructor() {
+    super('SESSION_EXPIRED');
+    this.name = 'SessionExpiredError';
+  }
+}
+
+let refreshPromise: Promise<string> | null = null;
+
+function refreshAccessToken(): Promise<string> {
+  if (!refreshPromise) {
+    refreshPromise = (async (): Promise<string> => {
+      const refreshToken = await SecureStore.getItemAsync('homemate_refresh_token');
+      if (!refreshToken) {
+        // Không còn refresh token = phiên đã kết thúc hẳn.
+        await SecureStore.deleteItemAsync('homemate_access_token');
+        throw new SessionExpiredError();
+      }
+      try {
+        const { data } = await axios.post(
+          `${API_URL}/auth/refresh`,
+          { refresh_token: refreshToken },
+          { timeout: 35000 },
+        );
+        const { access_token, refresh_token: newRefreshToken } = data.data;
+        await SecureStore.setItemAsync('homemate_access_token', access_token);
+        if (newRefreshToken) {
+          await SecureStore.setItemAsync('homemate_refresh_token', newRefreshToken);
+        }
+        return access_token as string;
+      } catch (err) {
+        const status = (err as AxiosError)?.response?.status;
+        if (status === 401 || status === 403) {
+          // Server TỪ CHỐI dứt điểm refresh token (hết hạn/bị thu hồi) → mới
+          // xóa cặp token và coi như hết phiên.
+          await SecureStore.deleteItemAsync('homemate_access_token');
+          await SecureStore.deleteItemAsync('homemate_refresh_token');
+          throw new SessionExpiredError();
+        }
+        // Lỗi mạng / timeout / 5xx (vd Render cold-start): GIỮ NGUYÊN token —
+        // phiên vẫn còn, request này fail nhẹ và lần thao tác sau thử lại được.
+        throw err;
+      }
+    })().finally(() => {
+      refreshPromise = null;
+    });
+  }
+  return refreshPromise;
+}
+
 // Response interceptor
 apiClient.interceptors.response.use(
   response => response,
@@ -83,29 +137,21 @@ apiClient.interceptors.response.use(
     if (error.response?.status === 401 && originalRequest && !originalRequest._retry) {
       originalRequest._retry = true;
       try {
-        const refreshToken = await SecureStore.getItemAsync('homemate_refresh_token');
-        if (refreshToken) {
-          const { data } = await axios.post(`${API_URL}/auth/refresh`, {
-            refresh_token: refreshToken,
+        const accessToken = await refreshAccessToken();
+        originalRequest.headers.Authorization = `Bearer ${accessToken}`;
+        return apiClient(originalRequest);
+      } catch (refreshError) {
+        if (refreshError instanceof SessionExpiredError) {
+          Toast.show({
+            type: 'error',
+            text1: 'Phiên đăng nhập hết hạn',
+            text2: 'Vui lòng đăng nhập lại để tiếp tục',
           });
-          const { access_token, refresh_token: newRefreshToken } = data.data;
-          await SecureStore.setItemAsync('homemate_access_token', access_token);
-          if (newRefreshToken) {
-            await SecureStore.setItemAsync('homemate_refresh_token', newRefreshToken);
-          }
-          originalRequest.headers.Authorization = `Bearer ${access_token}`;
-          return apiClient(originalRequest);
         }
-      } catch {
-        await SecureStore.deleteItemAsync('homemate_access_token');
-        await SecureStore.deleteItemAsync('homemate_refresh_token');
+        // Lỗi refresh thoáng qua (mạng/5xx): không toast hết phiên, không xóa
+        // token — chỉ fail request này.
+        return Promise.reject(error);
       }
-      Toast.show({
-        type: 'error',
-        text1: 'Phiên đăng nhập hết hạn',
-        text2: 'Vui lòng đăng nhập lại để tiếp tục',
-      });
-      return Promise.reject(error);
     }
 
     // ── 2. Xử lý lỗi mất kết nối mạng / Timeout / Server lỗi ─────────────────

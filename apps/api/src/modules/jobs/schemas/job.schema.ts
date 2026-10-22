@@ -11,8 +11,9 @@ export type ContractDocument = Contract & Document;
 const JobAddressSchema = {
   full_address: { type: String, required: true },
   ward: { type: String },
-  district: { type: String, required: true },
-  city: { type: String, required: true },
+  // district/city có thể trống khi geocoder không xác định được (xem JobAddressDto)
+  district: { type: String },
+  city: { type: String },
   location: {
     type: { type: String, enum: ['Point'], default: 'Point' },
     coordinates: { type: [Number], required: true },
@@ -205,6 +206,11 @@ export class Job {
 
   @Prop({ default: 0 })
   loyalty_discount_amount: number; // Số tiền giảm tương ứng (snapshot lúc gắn điểm)
+
+  /** Mốc đã khôi phục voucher + điểm loyalty cho khách khi hủy đơn theo chính
+   *  sách SOS Backup — cờ chống khôi phục 2 lần (claim nguyên tử trước khi trả). */
+  @Prop()
+  benefits_restored_at?: Date;
 
   // ── Đơn nhóm / Team jobs (Roadmap Phase 1 — Feature 5) ───────────────────
   @Prop({ default: 1, min: 1, max: 4 })

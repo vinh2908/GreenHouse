@@ -18,6 +18,21 @@ import {
   CustomerProfile,
   CustomerProfileDocument,
 } from '../customers/schemas/customer-profile.schema';
+import {
+  SosBackupRequest,
+  SosBackupRequestDocument,
+} from '../sos-backup/schemas/sos-backup.schema';
+import {
+  HelperPenaltyEvent,
+  HelperPenaltyEventDocument,
+} from '../helpers/schemas/helper-penalty-event.schema';
+import {
+  computePerformanceScore,
+  countCancellationsInWindow,
+  helperScoreConfigFromEnv,
+  pruneCancellationTimestamps,
+  HelperScoreResult,
+} from '../helpers/utils/helper-score';
 import { HelperStatus, UserRole, UserStatus, VerificationStatus } from '@homemate/types';
 import { NOTIFICATION_TYPES } from '@homemate/constants';
 import { NotificationsService } from '../notifications/notifications.service';
@@ -34,6 +49,10 @@ export class AdminService {
     @InjectModel(Withdrawal.name) private withdrawalModel: Model<WithdrawalDocument>,
     @InjectModel(Review.name) private reviewModel: Model<ReviewDocument>,
     @InjectModel(CustomerProfile.name) private customerModel: Model<CustomerProfileDocument>,
+    @InjectModel(SosBackupRequest.name)
+    private sosModel: Model<SosBackupRequestDocument>,
+    @InjectModel(HelperPenaltyEvent.name)
+    private penaltyEventModel: Model<HelperPenaltyEventDocument>,
     private readonly notificationsService: NotificationsService,
   ) {}
 
@@ -379,5 +398,178 @@ export class AdminService {
         completed: completedJobs,
       },
     };
+  }
+
+  // ─── SOS Backup: giám sát & sổ phạt ───────────────────────────────────────
+
+  /** Các yêu cầu SOS đã bị gắn cờ cần admin chú ý (admin_attention = true), mới nhất trước */
+  async getFlaggedSosRequests(page = 1, limit = 20) {
+    const query = { admin_attention: true };
+    const skip = (page - 1) * limit;
+    const [requests, total] = await Promise.all([
+      this.sosModel
+        .find(query)
+        .populate('job_id', 'title status payment_status payment_method')
+        .populate('customer_id', 'full_name phone')
+        .populate('original_helper_id', 'full_name phone')
+        .populate('replacement_helper_id', 'full_name phone')
+        .sort({ created_at: -1 })
+        .skip(skip)
+        .limit(limit)
+        .exec(),
+      this.sosModel.countDocuments(query).exec(),
+    ]);
+    return { requests, total, page, limit, total_pages: Math.ceil(total / limit) };
+  }
+
+  /** Sổ sự kiện phạt hủy đơn của thợ (lọc theo helper_id / trạng thái nếu có), mới nhất trước */
+  async getHelperPenaltyEvents(helperId?: string, status?: string, page = 1, limit = 20) {
+    const query: Record<string, unknown> = {};
+    if (helperId) {
+      if (!Types.ObjectId.isValid(helperId)) {
+        throw new BadRequestException('helper_id không hợp lệ');
+      }
+      query['helper_id'] = new Types.ObjectId(helperId);
+    }
+    if (status) query['status'] = status;
+    const skip = (page - 1) * limit;
+    const [events, total] = await Promise.all([
+      this.penaltyEventModel
+        .find(query)
+        .populate('helper_id', 'full_name phone')
+        .populate('job_id', 'title status')
+        .sort({ created_at: -1 })
+        .skip(skip)
+        .limit(limit)
+        .exec(),
+      this.penaltyEventModel.countDocuments(query).exec(),
+    ]);
+    return { events, total, page, limit, total_pages: Math.ceil(total / limit) };
+  }
+
+  /**
+   * Miễn 1 sự kiện phạt: sự kiện chuyển status 'waived' (kèm người duyệt, thời
+   * điểm, lý do) và điểm thợ được tính lại KHÔNG còn sự kiện này.
+   *
+   * Cách điểm được tính (helper-score.ts): điểm phạt suy ra từ SỐ MỐC HỦY
+   * trong HelperProfile.cancellation_timestamps ở cửa sổ trượt 7 ngày — mọi
+   * nơi đọc điểm (snapshot trên hồ sơ, chi phí Hungarian của SOS Backup tính
+   * trực tiếp từ cùng danh sách mốc này) đều suy ra từ đó. Vì vậy miễn phạt =
+   * gỡ đúng 1 mốc hủy tương ứng khỏi danh sách (mốc gần nhất với thời điểm
+   * ghi sự kiện — chính là lần hủy đã sinh ra sự kiện này) rồi tính lại
+   * snapshot. Sự kiện đã waived thì không còn mốc nào bị gỡ thêm và không còn
+   * được tính ở bất kỳ đường đọc nào — nhất quán theo cấu trúc dữ liệu.
+   *
+   * Idempotent: claim nguyên tử `status != 'waived'` — chỉ lần miễn đầu tiên
+   * mới gỡ mốc + tính lại điểm; gọi lại trả về nguyên trạng (already_waived).
+   * Số liệu lịch sử trên sự kiện (points_deducted…) KHÔNG bị sửa.
+   */
+  async waivePenaltyEvent(adminId: string, eventId: string, reason: string) {
+    if (!Types.ObjectId.isValid(eventId)) {
+      throw new BadRequestException('event_id không hợp lệ');
+    }
+    const now = new Date();
+    const claimed = await this.penaltyEventModel
+      .findOneAndUpdate(
+        { _id: new Types.ObjectId(eventId), status: { $ne: 'waived' } },
+        {
+          $set: {
+            status: 'waived',
+            waived_by: new Types.ObjectId(adminId),
+            waived_at: now,
+            waive_reason: reason,
+          },
+        },
+        { new: true },
+      )
+      .exec();
+
+    if (!claimed) {
+      const existing = await this.penaltyEventModel.findById(eventId).exec();
+      if (!existing) throw new NotFoundException('Sự kiện phạt không tồn tại');
+      return {
+        event: existing,
+        helper_score: await this.currentScoreSummary(String(existing.helper_id)),
+        already_waived: true,
+      };
+    }
+
+    const helperScore = await this.recomputeScoreAfterWaive(claimed, now);
+    return { event: claimed, helper_score: helperScore, already_waived: false };
+  }
+
+  /** Tính lại điểm từ hồ sơ hiện tại (dùng cho đường đã-miễn: chỉ đọc, không sửa) */
+  private async currentScoreSummary(helperId: string): Promise<HelperScoreResult | null> {
+    const profile = await this.helperModel.findOne({ user_id: new Types.ObjectId(helperId) }).exec();
+    if (!profile) return null;
+    const config = helperScoreConfigFromEnv(key => process.env[key]);
+    const now = new Date();
+    return computePerformanceScore(
+      {
+        rating: profile.rating,
+        totalReviews: profile.total_reviews,
+        completionRate: profile.completion_rate,
+        acceptanceRate: profile.acceptance_rate,
+        cancellationsInWindow: countCancellationsInWindow(
+          profile.cancellation_timestamps ?? [],
+          now,
+          config.windowDays,
+        ),
+      },
+      config,
+    );
+  }
+
+  /** Gỡ mốc hủy của sự kiện vừa miễn khỏi hồ sơ + tính lại snapshot điểm (giống record-cancellation.ts) */
+  private async recomputeScoreAfterWaive(
+    event: HelperPenaltyEventDocument,
+    now: Date,
+  ): Promise<HelperScoreResult | null> {
+    const profile = await this.helperModel
+      .findOne({ user_id: event.helper_id })
+      .exec();
+    if (!profile) return null;
+    const config = helperScoreConfigFromEnv(key => process.env[key]);
+
+    const stamps = [...(profile.cancellation_timestamps ?? [])];
+    if (event.created_at) {
+      // Mốc hủy sinh ra sự kiện nằm gần như trùng thời điểm ghi sự kiện
+      // (recordHelperCancellation ghi mốc rồi mới tạo event). Chỉ gỡ khi tìm
+      // thấy mốc đủ gần (≤ 5 phút) — sự kiện cũ đã rơi khỏi cửa sổ thì mốc
+      // của nó cũng không còn được tính, không được gỡ nhầm mốc khác.
+      const eventMs = new Date(event.created_at).getTime();
+      let removeIdx = -1;
+      let bestDelta = Number.POSITIVE_INFINITY;
+      stamps.forEach((t, i) => {
+        const delta = Math.abs(new Date(t).getTime() - eventMs);
+        if (delta < bestDelta) {
+          bestDelta = delta;
+          removeIdx = i;
+        }
+      });
+      if (removeIdx >= 0 && bestDelta <= 5 * 60 * 1000) stamps.splice(removeIdx, 1);
+    }
+
+    const pruned = pruneCancellationTimestamps(stamps, now, config.windowDays);
+    const count = countCancellationsInWindow(pruned, now, config.windowDays);
+    const result = computePerformanceScore(
+      {
+        rating: profile.rating,
+        totalReviews: profile.total_reviews,
+        completionRate: profile.completion_rate,
+        acceptanceRate: profile.acceptance_rate,
+        cancellationsInWindow: count,
+      },
+      config,
+    );
+
+    profile.cancellation_timestamps = pruned;
+    profile.cancellations_last_7_days = count;
+    profile.penalty_points = result.penaltyPoints;
+    profile.performance_score = result.total;
+    profile.score_breakdown = result.breakdown;
+    profile.score_updated_at = now;
+    await profile.save();
+    return result;
   }
 }

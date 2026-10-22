@@ -39,6 +39,23 @@ export class HelperPenaltyEvent {
   @Prop({ required: true })
   performance_score_after: number;
 
+  // ── Miễn phạt (admin duyệt) ──────────────────────────────────────────────
+  // active = đang tính vào điểm · waived = admin đã miễn, KHÔNG còn tính vào
+  // điểm ở mọi nơi đọc (điểm snapshot trên hồ sơ + chi phí Hungarian của SOS).
+  // Bản ghi gốc KHÔNG bị sửa số liệu lịch sử (points_deducted giữ nguyên) —
+  // chỉ trạng thái thay đổi kèm thông tin người duyệt để đối soát.
+  @Prop({ type: String, enum: ['active', 'waived'], default: 'active', index: true })
+  status: 'active' | 'waived';
+
+  @Prop({ type: Types.ObjectId, ref: 'User' })
+  waived_by?: Types.ObjectId;
+
+  @Prop()
+  waived_at?: Date;
+
+  @Prop({ maxlength: 500 })
+  waive_reason?: string;
+
   created_at: Date;
 }
 

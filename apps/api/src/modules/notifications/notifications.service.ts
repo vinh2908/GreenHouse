@@ -2,15 +2,21 @@ import { Injectable, Inject, NotFoundException, forwardRef } from '@nestjs/commo
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Notification, NotificationDocument } from './schemas/notification.schema';
+import { User, UserDocument } from '../users/schemas/user.schema';
 import { NOTIFICATION_TYPES, SOCKET_EVENTS } from '@homemate/constants';
 import { AppGateway } from '../chat/app.gateway';
 import { ZaloNotificationService } from './zalo.service';
+
+const EXPO_PUSH_URL = 'https://exp.host/--/api/v2/push/send';
+const EXPO_PUSH_RECEIPTS_URL = 'https://exp.host/--/api/v2/push/receipts';
 
 @Injectable()
 export class NotificationsService {
   constructor(
     @InjectModel(Notification.name)
     private notificationModel: Model<NotificationDocument>,
+    @InjectModel(User.name)
+    private userModel: Model<UserDocument>,
     @Inject(forwardRef(() => AppGateway))
     private gateway: AppGateway,
     private readonly zaloService: ZaloNotificationService,
@@ -46,6 +52,14 @@ export class NotificationsService {
       // Ignore socket error if user is offline
     }
 
+    // OS push (Expo Push Service): fire-and-forget — khi app bị đóng/nền, socket
+    // không tới được nên đây là đường duy nhất để user thấy thông báo. Mọi lỗi
+    // (không có token, token hết hạn, mạng...) đều nuốt tại đây, không làm hỏng create().
+    void this.sendExpoPush(data.userId, data.title, data.body, {
+      type: data.type,
+      ...(data.payload ?? {}),
+    }).catch(() => undefined);
+
     // Zalo OA (Feature 19): fire-and-forget — service tự bỏ qua khi chưa cấu
     // hình OA và không bao giờ throw, nên không thể làm hỏng luồng tạo thông báo.
     void this.zaloService
@@ -59,6 +73,119 @@ export class NotificationsService {
       .catch(() => undefined);
 
     return notification;
+  }
+
+  /**
+   * Gửi OS push tới mọi thiết bị của user qua Expo Push Service.
+   * data đính kèm luôn chứa `type` + toàn bộ payload gốc để app deep-link
+   * đúng màn hình khi user chạm vào push (xem utils/notification-route.ts phía mobile).
+   * Không bao giờ throw.
+   */
+  private async sendExpoPush(
+    userId: string,
+    title: string,
+    body: string,
+    data: Record<string, unknown>,
+  ): Promise<void> {
+    try {
+      if (!Types.ObjectId.isValid(userId)) return;
+      const user = await this.userModel
+        .findById(userId)
+        .select('push_tokens')
+        .lean()
+        .exec();
+      const tokens = ((user?.push_tokens ?? []) as string[]).filter(
+        token => typeof token === 'string' && token.startsWith('ExponentPushToken'),
+      );
+      if (tokens.length === 0) return;
+
+      const messages = tokens.map(to => ({
+        to,
+        title,
+        body,
+        data,
+        sound: 'default' as const,
+        priority: 'high' as const,
+      }));
+
+      const res = await fetch(EXPO_PUSH_URL, {
+        method: 'POST',
+        headers: {
+          Accept: 'application/json',
+          'Accept-Encoding': 'gzip, deflate',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(messages),
+      });
+
+      // Dọn token chết: Expo báo DeviceNotRegistered qua ticket (ngay lúc
+      // gửi) hoặc qua receipt (sau khi APNs/FCM từ chối). Token nào bị báo
+      // chết thì gỡ khỏi push_tokens của user để không gửi vào hư không mãi.
+      // Best-effort: mọi lỗi ở bước này đều bị nuốt, không làm hỏng send.
+      try {
+        const deadTokens = new Set<string>();
+        const receiptIdToToken = new Map<string, string>();
+        const sendResult = (await res.json().catch(() => null)) as {
+          data?: Array<{
+            status?: string;
+            id?: string;
+            details?: { error?: string };
+          }>;
+        } | null;
+        const tickets = sendResult?.data ?? [];
+        tickets.forEach((ticket, i) => {
+          const token = messages[i]?.to;
+          if (!token) return;
+          if (ticket?.status === 'error') {
+            if (ticket?.details?.error === 'DeviceNotRegistered') {
+              deadTokens.add(token);
+            }
+          } else if (ticket?.id) {
+            receiptIdToToken.set(ticket.id, token);
+          }
+        });
+
+        if (receiptIdToToken.size > 0) {
+          const receiptRes = await fetch(EXPO_PUSH_RECEIPTS_URL, {
+            method: 'POST',
+            headers: {
+              Accept: 'application/json',
+              'Accept-Encoding': 'gzip, deflate',
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ ids: [...receiptIdToToken.keys()] }),
+          });
+          const receiptResult = (await receiptRes.json().catch(() => null)) as {
+            data?: Record<
+              string,
+              { status?: string; details?: { error?: string } }
+            >;
+          } | null;
+          for (const [receiptId, receipt] of Object.entries(receiptResult?.data ?? {})) {
+            if (
+              receipt?.status === 'error' &&
+              receipt?.details?.error === 'DeviceNotRegistered'
+            ) {
+              const token = receiptIdToToken.get(receiptId);
+              if (token) deadTokens.add(token);
+            }
+          }
+        }
+
+        if (deadTokens.size > 0) {
+          await this.userModel
+            .updateOne(
+              { _id: new Types.ObjectId(userId) },
+              { $pull: { push_tokens: { $in: [...deadTokens] } } },
+            )
+            .exec();
+        }
+      } catch {
+        // Bỏ qua — dọn token là việc phụ, thử lại ở lần gửi sau.
+      }
+    } catch {
+      // Push là kênh phụ trợ — lỗi không được ảnh hưởng luồng nghiệp vụ.
+    }
   }
 
   async getForUser(userId: string, unreadOnly = false) {

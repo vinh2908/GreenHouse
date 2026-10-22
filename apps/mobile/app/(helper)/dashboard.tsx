@@ -7,6 +7,7 @@ import {
   Switch,
   RefreshControl,
   Modal,
+  ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -74,7 +75,11 @@ export default function HelperDashboardScreen() {
   const { data: myJobs, refetch: refetchMyJobs } = useHelperJobs(
     'confirmed,helper_on_the_way,helper_arrived,in_progress',
   );
-  const { data: wallet } = useWallet();
+  const { data: wallet, isLoading: wLoading } = useWallet();
+  // Lần mount đầu (chưa có cache): isLoading=true → gate các khu hiển thị số
+  // liệu/banner/công tắc bằng skeleton thay vì fallback 0 giả. Khi đã có cache
+  // (quay lại tab), isLoading=false nên không nhấp nháy skeleton.
+  const statsLoading = pLoading || wLoading;
   const { data: unread } = useUnreadCount();
   const setStatus = useSetHelperStatus();
   const acceptSos = useAcceptSosJob();
@@ -277,7 +282,7 @@ export default function HelperDashboardScreen() {
         </View>
 
         {/* ── Banner Nhắc nhở e-KYC nếu chưa được duyệt ──────────────── */}
-        {profile?.verification_status !== 'approved' && (
+        {profile && profile.verification_status !== 'approved' && (
           <View style={{ paddingHorizontal: 16, marginTop: 14 }}>
             <TouchableOpacity
               activeOpacity={0.85}
@@ -427,7 +432,7 @@ export default function HelperDashboardScreen() {
                   true: isWorking ? '#F59E0B' : COLORS.primary,
                 }}
                 thumbColor="#FFFFFF"
-                disabled={isWorking || setStatus.isPending}
+                disabled={isWorking || setStatus.isPending || pLoading}
               />
             </View>
           </View>
@@ -435,6 +440,21 @@ export default function HelperDashboardScreen() {
 
         {/* ── 3. Thống kê Ví doanh thu & Hiệu suất ─────────────────────── */}
         <View style={{ paddingHorizontal: 16, marginTop: 14 }}>
+          {statsLoading ? (
+            <View style={{ flexDirection: 'row', gap: 10 }}>
+              {[0, 1, 2].map(i => (
+                <View
+                  key={i}
+                  style={{
+                    flex: 1,
+                    height: 92,
+                    borderRadius: 16,
+                    backgroundColor: COLORS.gray[200],
+                  }}
+                />
+              ))}
+            </View>
+          ) : (
           <View style={{ flexDirection: 'row', gap: 10 }}>
             {/* Ví tiền */}
             <TouchableOpacity
@@ -512,6 +532,7 @@ export default function HelperDashboardScreen() {
               </Card>
             </View>
           </View>
+          )}
         </View>
 
         {/* ── 4. Đơn hàng đang nhận làm (Active Job) ─────────────────── */}
@@ -586,12 +607,25 @@ export default function HelperDashboardScreen() {
         <View style={{ paddingHorizontal: 16, marginTop: 20 }}>
           <SectionHeader
             title="Đơn hàng gần bạn"
-            subtitle={isOnline ? 'Tự động cập nhật đơn mới mỗi 30s' : 'Đang ở chế độ ngoại tuyến'}
+            subtitle={
+              pLoading
+                ? 'Đang tải…'
+                : isOnline
+                  ? 'Tự động cập nhật đơn mới mỗi 30s'
+                  : 'Đang ở chế độ ngoại tuyến'
+            }
             action={isOnline ? 'Xem tất cả' : undefined}
             onAction={() => router.push('/(helper)/jobs')}
           />
 
-          {!isOnline ? (
+          {pLoading ? (
+            <Card style={{ alignItems: 'center', paddingVertical: 28, gap: 10 }}>
+              <ActivityIndicator size="small" color={COLORS.primary} />
+              <Text style={{ fontSize: 13, color: COLORS.gray[500] }}>
+                Đang tải trạng thái nhận việc…
+              </Text>
+            </Card>
+          ) : !isOnline ? (
             <Card style={{ alignItems: 'center', paddingVertical: 28 }}>
               <EmptyState
                 emoji="📴"

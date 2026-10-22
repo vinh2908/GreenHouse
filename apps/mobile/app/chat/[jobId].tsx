@@ -8,16 +8,21 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
+  Image,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { ArrowLeft, Send, ShieldCheck, Phone } from 'lucide-react-native';
+import { ArrowLeft, Send, ShieldCheck, Phone, ImagePlus, X } from 'lucide-react-native';
+import * as ImagePicker from 'expo-image-picker';
 import dayjs from 'dayjs';
 import Toast from 'react-native-toast-message';
 import { useAuthStore } from '@/stores/auth.store';
 import { useMessages, useSendMessage, useCallConfig } from '@/hooks/use-api';
 import { useChatSocket } from '@/hooks/use-socket';
 import apiClient from '@/services/api-client';
+import { uploadFile } from '@/services/upload.service';
+import { ImageViewerModal } from '@/components/common/photo-thumbs';
+import { Alert } from '@/components/common/app-alert';
 import { Avatar, COLORS, LoadingSpinner, EmptyState } from '@/components/ui';
 
 export default function ChatScreen() {
@@ -29,6 +34,10 @@ export default function ChatScreen() {
   const [loadingConv, setLoadingConv] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [text, setText] = useState('');
+  // Ảnh đang gửi (optimistic): hiện bong bóng mờ + spinner; gửi lỗi thì giữ
+  // lại làm "bản nháp" — chạm để thử lại, ✕ để bỏ.
+  const [pendingPhoto, setPendingPhoto] = useState<{ uri: string; failed: boolean } | null>(null);
+  const [viewingImage, setViewingImage] = useState<string | null>(null);
   const listRef = useRef<FlatList>(null);
 
   const conversationId = conversation?._id;
@@ -75,6 +84,65 @@ export default function ChatScreen() {
     } catch (err) {
       Toast.show({ type: 'error', text1: 'Gửi tin nhắn thất bại' });
     }
+  };
+
+  // ── Gửi ảnh: upload qua /uploads → gửi message type 'image' (content = URL) ──
+  const sendPhoto = async (uri: string) => {
+    if (!conversationId) return;
+    setPendingPhoto({ uri, failed: false });
+    try {
+      const url = await uploadFile(uri);
+      await sendMsg.mutateAsync({ conversationId, content: url, type: 'image' });
+      setPendingPhoto(null);
+      setTimeout(() => {
+        listRef.current?.scrollToEnd({ animated: true });
+      }, 100);
+    } catch {
+      setPendingPhoto({ uri, failed: true });
+      Toast.show({
+        type: 'error',
+        text1: 'Gửi ảnh thất bại',
+        text2: 'Chạm vào ảnh để thử gửi lại',
+      });
+    }
+  };
+
+  const pickPhoto = async (source: 'camera' | 'library') => {
+    try {
+      if (source === 'camera') {
+        const { status } = await ImagePicker.requestCameraPermissionsAsync();
+        if (status !== 'granted') {
+          Toast.show({ type: 'error', text1: 'Cần quyền truy cập camera để chụp ảnh' });
+          return;
+        }
+        const result = await ImagePicker.launchCameraAsync({
+          mediaTypes: ['images'],
+          quality: 0.8,
+        });
+        if (!result.canceled && result.assets[0]?.uri) void sendPhoto(result.assets[0].uri);
+      } else {
+        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (status !== 'granted') {
+          Toast.show({ type: 'error', text1: 'Cần quyền truy cập thư viện ảnh' });
+          return;
+        }
+        const result = await ImagePicker.launchImageLibraryAsync({
+          mediaTypes: ['images'],
+          quality: 0.8,
+        });
+        if (!result.canceled && result.assets[0]?.uri) void sendPhoto(result.assets[0].uri);
+      }
+    } catch {
+      Toast.show({ type: 'error', text1: 'Không thể chọn ảnh' });
+    }
+  };
+
+  const handleAttach = () => {
+    Alert.alert('Gửi ảnh', 'Chọn nguồn ảnh', [
+      { text: '📷 Chụp ảnh', onPress: () => void pickPhoto('camera') },
+      { text: '🖼️ Thư viện ảnh', onPress: () => void pickPhoto('library') },
+      { text: 'Hủy', style: 'cancel' },
+    ]);
   };
 
   const handleBack = () => {
@@ -204,6 +272,80 @@ export default function ChatScreen() {
             data={allMessages}
             keyExtractor={(item: { _id: string }) => item._id}
             contentContainerStyle={{ padding: 16, gap: 12, paddingBottom: 20 }}
+            ListFooterComponent={
+              pendingPhoto ? (
+                <View style={{ alignItems: 'flex-end', marginVertical: 2 }}>
+                  <View>
+                    <TouchableOpacity
+                      activeOpacity={0.9}
+                      disabled={!pendingPhoto.failed}
+                      onPress={() => void sendPhoto(pendingPhoto.uri)}
+                    >
+                      <Image
+                        source={{ uri: pendingPhoto.uri }}
+                        style={{
+                          width: 220,
+                          height: 220,
+                          borderRadius: 16,
+                          opacity: 0.55,
+                          backgroundColor: COLORS.gray[100],
+                        }}
+                        resizeMode="cover"
+                      />
+                      <View
+                        style={{
+                          position: 'absolute',
+                          top: 0,
+                          left: 0,
+                          right: 0,
+                          bottom: 0,
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                      >
+                        {pendingPhoto.failed ? (
+                          <Text
+                            style={{
+                              color: '#fff',
+                              fontWeight: '700',
+                              fontSize: 13,
+                              backgroundColor: 'rgba(220,38,38,0.85)',
+                              paddingHorizontal: 10,
+                              paddingVertical: 5,
+                              borderRadius: 8,
+                              overflow: 'hidden',
+                            }}
+                          >
+                            Gửi thất bại — chạm để thử lại
+                          </Text>
+                        ) : (
+                          <ActivityIndicator size="large" color="#fff" />
+                        )}
+                      </View>
+                    </TouchableOpacity>
+                    {pendingPhoto.failed && (
+                      <TouchableOpacity
+                        onPress={() => setPendingPhoto(null)}
+                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                        style={{
+                          position: 'absolute',
+                          top: -8,
+                          left: -8,
+                          width: 24,
+                          height: 24,
+                          borderRadius: 12,
+                          backgroundColor: COLORS.gray[700],
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                      >
+                        <X size={14} color="#fff" />
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                </View>
+              ) : null
+            }
             onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: false })}
             ListEmptyComponent={
               <View style={{ alignItems: 'center', paddingVertical: 40, gap: 8 }}>
@@ -242,12 +384,47 @@ export default function ChatScreen() {
                 _id: string;
                 sender_id: { _id: string; full_name?: string } | string;
                 content: string;
+                type?: string;
                 created_at: string;
               };
             }) => {
               const senderId =
                 typeof item.sender_id === 'string' ? item.sender_id : item.sender_id?._id;
               const isMe = senderId === currentUser?._id;
+              if (item.type === 'image') {
+                return (
+                  <View
+                    style={{ alignItems: isMe ? 'flex-end' : 'flex-start', marginVertical: 2 }}
+                  >
+                    <TouchableOpacity
+                      activeOpacity={0.9}
+                      onPress={() => setViewingImage(item.content)}
+                    >
+                      <Image
+                        source={{ uri: item.content }}
+                        style={{
+                          width: 220,
+                          height: 220,
+                          borderRadius: 16,
+                          backgroundColor: COLORS.gray[100],
+                        }}
+                        resizeMode="cover"
+                      />
+                    </TouchableOpacity>
+                    <Text
+                      style={{
+                        fontSize: 10.5,
+                        color: COLORS.gray[400],
+                        marginTop: 4,
+                        marginHorizontal: 6,
+                        fontWeight: '600',
+                      }}
+                    >
+                      {dayjs(item.created_at).format('HH:mm')}
+                    </Text>
+                  </View>
+                );
+              }
               return (
                 <View style={{ alignItems: isMe ? 'flex-end' : 'flex-start', marginVertical: 2 }}>
                   <View
@@ -308,6 +485,22 @@ export default function ChatScreen() {
               borderTopColor: COLORS.gray[100],
             }}
           >
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={handleAttach}
+              disabled={!!pendingPhoto && !pendingPhoto.failed}
+              style={{
+                width: 44,
+                height: 44,
+                borderRadius: 22,
+                backgroundColor: COLORS.gray[100],
+                alignItems: 'center',
+                justifyContent: 'center',
+                opacity: pendingPhoto && !pendingPhoto.failed ? 0.5 : 1,
+              }}
+            >
+              <ImagePlus size={20} color={COLORS.primary} />
+            </TouchableOpacity>
             <TextInput
               style={{
                 flex: 1,
@@ -354,6 +547,11 @@ export default function ChatScreen() {
           </View>
         </KeyboardAvoidingView>
       )}
+      <ImageViewerModal
+        uri={viewingImage}
+        visible={!!viewingImage}
+        onClose={() => setViewingImage(null)}
+      />
     </View>
   );
 }

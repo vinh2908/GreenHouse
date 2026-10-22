@@ -39,6 +39,8 @@ import { AppGateway } from '../chat/app.gateway';
 import { ChatService } from '../chat/chat.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { PaymentsService } from '../payments/payments.service';
+import { VouchersService } from '../vouchers/vouchers.service';
+import { LoyaltyService } from '../loyalty/loyalty.service';
 import {
   ContractStatus,
   HelperStatus,
@@ -87,6 +89,8 @@ export class SosBackupService implements OnModuleInit, OnModuleDestroy {
     private readonly chatService: ChatService,
     private readonly notificationsService: NotificationsService,
     private readonly paymentsService: PaymentsService,
+    private readonly vouchersService: VouchersService,
+    private readonly loyaltyService: LoyaltyService,
     private readonly configService: ConfigService,
   ) {}
 
@@ -206,6 +210,7 @@ export class SosBackupService implements OnModuleInit, OnModuleDestroy {
         service_id: serviceId,
         reason: dto.reason,
         reason_note: dto.note,
+        photo_urls: (dto.photo_urls ?? []).filter(u => typeof u === 'string' && u).slice(0, 4),
         status: SosBackupStatus.AWAITING_CUSTOMER,
         decision_deadline: new Date(now.getTime() + this.decisionTtlMs),
         job_title: job.title,
@@ -442,6 +447,15 @@ export class SosBackupService implements OnModuleInit, OnModuleDestroy {
       )
       .exec();
 
+    // Khôi phục quyền lợi khách (voucher + điểm loyalty đã trừ lúc thanh
+    // toán) — việc PHỤ, best-effort: chạy sau khi hủy + hoàn tiền đã xong,
+    // lỗi ở đây không bao giờ được lật ngược quyết định hủy.
+    await this.restoreJobBenefitsOnSosCancel(job).catch(err =>
+      this.logger.error(
+        `SOS benefits restore failed for job ${jobId}: ${(err as Error).message}`,
+      ),
+    );
+
     const decidedPayload = {
       sos_id: String(sos._id),
       job_id: jobId,
@@ -486,6 +500,74 @@ export class SosBackupService implements OnModuleInit, OnModuleDestroy {
         payload: { job_id: jobId, sos_id: String(sos._id) },
       })
       .catch(() => undefined);
+  }
+
+  /**
+   * Khôi phục quyền lợi khách khi hủy đơn theo chính sách SOS: trả lượt
+   * voucher (VouchersService.restoreForJob) + hoàn điểm loyalty
+   * (LoyaltyService.reverseRedeemForJob). Chỉ áp dụng khi lúc thanh toán đơn
+   * THẬT SỰ đã ghi nhận lượt/điểm — không có bản ghi thì từng service tự
+   * no-op, nên gọi vô điều kiện cho mọi đơn hủy SOS.
+   *
+   * Chống khôi phục 2 lần, 2 lớp:
+   *  1. Cờ job.benefits_restored_at được claim bằng findOneAndUpdate nguyên
+   *     tử (chỉ khi cờ đang trống) — luồng hủy nào đến sau thấy cờ đã có thì
+   *     dừng ngay, không gọi xuống service nữa.
+   *  2. Chính 2 service khôi phục cũng idempotent (lật trạng thái redemption /
+   *     kiểm tra giao dịch 'reversal' đã tồn tại).
+   * Từng service được bọc try/catch riêng: lỗi trả voucher không chặn hoàn
+   * điểm và ngược lại; lỗi chỉ được log để đối soát, không ném ra ngoài.
+   */
+  private async restoreJobBenefitsOnSosCancel(job: JobDocument): Promise<void> {
+    const jobId = String(job._id);
+    const customerId = String(job.customer_id);
+
+    const claimed = await this.jobModel
+      .findOneAndUpdate(
+        {
+          _id: job._id,
+          $or: [
+            { benefits_restored_at: { $exists: false } },
+            { benefits_restored_at: null },
+          ],
+        },
+        { $set: { benefits_restored_at: new Date() } },
+        { new: true },
+      )
+      .exec();
+    if (!claimed) return; // Đã khôi phục ở một lượt xử lý trước — không làm lại
+    job.benefits_restored_at = claimed.benefits_restored_at;
+
+    const restored: string[] = [];
+    try {
+      const v = await this.vouchersService.restoreForJob(customerId, jobId);
+      if (v.restored) {
+        restored.push(
+          `voucher ${v.code ?? ''} (+1 lượt, giảm ${v.discount_amount.toLocaleString('vi-VN')}₫)`,
+        );
+      }
+    } catch (err) {
+      this.logger.error(
+        `SOS voucher restore failed for job ${jobId}: ${(err as Error).message}`,
+      );
+    }
+
+    try {
+      const l = await this.loyaltyService.reverseRedeemForJob(customerId, jobId);
+      if (l && l.points_restored > 0) {
+        restored.push(`${l.points_restored} điểm loyalty`);
+      }
+    } catch (err) {
+      this.logger.error(
+        `SOS loyalty restore failed for job ${jobId}: ${(err as Error).message}`,
+      );
+    }
+
+    if (restored.length > 0) {
+      this.logger.log(
+        `SOS cancel job ${jobId}: đã khôi phục quyền lợi cho khách — ${restored.join(' + ')}`,
+      );
+    }
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -1380,6 +1462,7 @@ export class SosBackupService implements OnModuleInit, OnModuleDestroy {
       job_title: sos.job_title,
       service_name: sos.service_name,
       reason: sos.reason,
+      photo_urls: sos.photo_urls ?? [],
       district: sos.district,
       city: sos.city,
       status: sos.status,
@@ -1395,6 +1478,7 @@ export class SosBackupService implements OnModuleInit, OnModuleDestroy {
       job_id: String(sos.job_id),
       job_title: sos.job_title,
       service_name: sos.service_name,
+      photo_urls: sos.photo_urls ?? [],
       district: sos.district,
       city: sos.city,
       payout: sos.helper_payout ?? null,

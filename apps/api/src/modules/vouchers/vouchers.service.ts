@@ -89,6 +89,8 @@ export class VouchersService {
       .countDocuments({
         voucher_id: voucher._id,
         user_id: new Types.ObjectId(userId),
+        // Chỉ tính lượt đang giữ — lượt đã reversed (trả lại khi hủy SOS) không chặn dùng lại
+        status: 'redeemed',
       })
       .exec();
     if (userUsed >= (voucher.per_user_limit ?? 1)) {
@@ -166,6 +168,50 @@ export class VouchersService {
     });
 
     return { discount_amount: discount, voucher };
+  }
+
+  // ─── Hủy đơn: trả lại lượt dùng (mirror của redeemForJob) ────────────────
+
+  /**
+   * Trả lại lượt voucher đã ghi nhận cho 1 đơn (dùng khi hủy đơn theo chính
+   * sách SOS Backup). Thao tác:
+   *  1. Lật trạng thái redemption 'redeemed' → 'reversed' bằng findOneAndUpdate
+   *     nguyên tử — chỉ 1 lần gọi thắng, các lần sau không tìm thấy bản ghi
+   *     'redeemed' nữa → idempotent, không trừ used_count 2 lần.
+   *  2. Giảm voucher.used_count đi 1 (không xuống dưới 0).
+   * Bản ghi redemption được GIỮ (status 'reversed') để đối soát. Voucher đã
+   * hết hạn tính đến thời điểm trả lượt vẫn được ghi nhận reversed như thường
+   * nhưng KHÔNG dùng lại được — assertUsable vẫn chặn theo valid_to như cũ.
+   */
+  async restoreForJob(
+    userId: string,
+    jobId: string,
+  ): Promise<{ restored: boolean; discount_amount: number; code?: string }> {
+    const redemption = await this.redemptionModel
+      .findOneAndUpdate(
+        {
+          job_id: new Types.ObjectId(jobId),
+          user_id: new Types.ObjectId(userId),
+          status: 'redeemed',
+        },
+        { $set: { status: 'reversed' } },
+        { new: true },
+      )
+      .exec();
+    if (!redemption) return { restored: false, discount_amount: 0 };
+
+    await this.voucherModel
+      .findOneAndUpdate(
+        { _id: redemption.voucher_id, used_count: { $gt: 0 } },
+        { $inc: { used_count: -1 } },
+      )
+      .exec();
+
+    return {
+      restored: true,
+      discount_amount: redemption.discount_amount,
+      code: redemption.code,
+    };
   }
 
   // ─── Customer: gắn / gỡ mã trên 1 job chưa thanh toán ─────────────────────

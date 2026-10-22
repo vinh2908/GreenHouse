@@ -10,8 +10,10 @@ import {
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Job, JobDocument } from '../jobs/schemas/job.schema';
+import { User, UserDocument } from '../users/schemas/user.schema';
 import { CallSession, CallSessionDocument } from './schemas/call-session.schema';
 import { CallProvider, CALL_PROVIDER } from './call-provider.interface';
+import { VoipPushService } from './voip-push.service';
 import { SOCKET_EVENTS } from '@homemate/constants';
 import { AppGateway } from '../chat/app.gateway';
 
@@ -25,8 +27,10 @@ export class CallsService {
   constructor(
     @InjectModel(CallSession.name) private callSessionModel: Model<CallSessionDocument>,
     @InjectModel(Job.name) private jobModel: Model<JobDocument>,
+    @InjectModel(User.name) private userModel: Model<UserDocument>,
     @Inject(CALL_PROVIDER) private readonly provider: CallProvider,
     private readonly gateway: AppGateway,
+    private readonly voipPush: VoipPushService,
   ) {}
 
   /** Trạng thái tính năng cho mobile (ẩn/disable nút gọi khi chưa cấu hình) */
@@ -86,6 +90,32 @@ export class CallsService {
       room_id: roomId,
       provider: this.provider.name,
     });
+
+    // Đánh thức thiết bị phía nhận khi app chạy nền / đã bị đóng hẳn
+    // (VoIP push → CallKeep). Fire-and-forget + best-effort: service này
+    // no-op êm khi chưa cấu hình APNS_VOIP_*/FIREBASE_SERVICE_ACCOUNT_JSON
+    // và không bao giờ ném lỗi làm hỏng đường gọi chính.
+    void this.userModel
+      .findById(callerId)
+      .select('full_name')
+      .exec()
+      .then(
+        caller =>
+          this.voipPush.notifyIncomingCall(calleeId, {
+            sessionId: String(session._id),
+            callerId,
+            callerName: caller?.full_name ?? 'Đối tác GreenHouse',
+            jobId,
+          }),
+        () =>
+          this.voipPush.notifyIncomingCall(calleeId, {
+            sessionId: String(session._id),
+            callerId,
+            callerName: 'Đối tác GreenHouse',
+            jobId,
+          }),
+      )
+      .catch(() => undefined);
 
     return {
       session_id: String(session._id),

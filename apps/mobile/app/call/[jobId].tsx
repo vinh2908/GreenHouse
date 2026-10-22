@@ -12,6 +12,7 @@ import {
   type CallSessionInit,
 } from '@/hooks/use-api';
 import { stringeeService, type StringeeCallEvents } from '@/services/stringee.service';
+import { callkeepService } from '@/services/callkeep.service';
 
 /**
  * ════════════════════════════════════════════════════════════════════════════
@@ -32,17 +33,20 @@ import { stringeeService, type StringeeCallEvents } from '@/services/stringee.se
  *    3. POST /calls/sessions/:id/end khi cúp máy / kết thúc từ xa.
  *
  *  Tầng media qua adapter duy nhất `services/stringee.service.ts` — file đó
- *  là nơi duy nhất require `stringee-react-native`. Adapter là no-op an toàn
- *  khi SDK không có (web / Expo Go): màn hình giữ hành vi cũ (vào thẳng UI
- *  cuộc gọi ở mức session, media không hoạt động trong bản build đó).
+ *  là nơi duy nhất require `stringee-react-native`; các component SDK được
+ *  render bởi `components/common/stringee-host.tsx` (gắn ở app/_layout.tsx).
+ *  Adapter là no-op an toàn khi SDK không có (web / Expo Go): màn hình giữ
+ *  hành vi cũ (vào thẳng UI cuộc gọi ở mức session, media không hoạt động
+ *  trong bản build đó).
  *
- *  ⚠️ Caveat còn lại (không thể kiểm chứng trong sandbox này):
- *    - Package `stringee-react-native` (@1.5.8, legacy SDK line) chưa được
- *      cài trong môi trường này; tên method/listener + bảng mã signaling/media
- *      trong adapter + types/stringee-react-native.d.ts PHẢI được đối chiếu
- *      lại với README của SDK đã cài ở thời điểm tích hợp.
- *    - Runtime thật cần: dev build (expo prebuild / EAS, KHÔNG chạy Expo Go)
- *      + tài khoản Stringee thật với API Key SID/Secret cấu hình trên server.
+ *  Adapter + types/stringee-react-native.d.ts đã được viết lại theo API thật
+ *  của stringee-react-native@1.5.8 (đối chiếu trực tiếp mã nguồn package:
+ *  StringeeClient/StringeeCall là component React, sự kiện qua prop
+ *  eventHandlers, mọi thao tác cuộc gọi theo callId).
+ *
+ *  ⚠️ Caveat còn lại: runtime thật cần dev build (expo prebuild / EAS,
+ *    KHÔNG chạy Expo Go) + tài khoản Stringee thật với API Key SID/Secret
+ *    cấu hình trên server, và 2 thiết bị để test cuộc gọi thật.
  * ════════════════════════════════════════════════════════════════════════════
  */
 
@@ -100,6 +104,9 @@ export default function CallScreen() {
         endedRef.current = true;
         const s = sessionRef.current;
         if (s) {
+          // Nếu cuộc gọi này đến qua CallKit (app bị đánh thức bởi VoIP
+          // push) thì báo lại để hệ thống dọn giao diện cuộc gọi native.
+          callkeepService.reportSessionEnded(s.session_id);
           void endCall
             .mutateAsync({ sessionId: s.session_id, reason: 'ended' })
             .catch(() => undefined);
@@ -138,9 +145,7 @@ export default function CallScreen() {
             // No SDK incoming call arrived — the caller likely hung up / expired.
             setErrorMsg('Cuộc gọi đã kết thúc hoặc đã bị hủy');
             setUiState('error');
-            void endCall
-              .mutateAsync({ sessionId, reason: 'missed' })
-              .catch(() => undefined);
+            void endCall.mutateAsync({ sessionId, reason: 'missed' }).catch(() => undefined);
           }, 20_000);
         })
         .catch((err: any) => {
@@ -201,7 +206,9 @@ export default function CallScreen() {
     stringeeService.hangupCurrent();
     stringeeService.rejectPending();
     if (session) {
-      await endCall.mutateAsync({ sessionId: session.session_id, reason: 'ended' }).catch(() => undefined);
+      await endCall
+        .mutateAsync({ sessionId: session.session_id, reason: 'ended' })
+        .catch(() => undefined);
     } else if (isAnswerMode && sessionId) {
       await endCall.mutateAsync({ sessionId, reason: 'ended' }).catch(() => undefined);
     }
@@ -278,7 +285,12 @@ export default function CallScreen() {
       {(uiState === 'unavailable' || uiState === 'error') && (
         <View style={{ width: '100%', gap: 12, alignItems: 'center' }}>
           <Text
-            style={{ color: 'rgba(255,255,255,0.85)', fontSize: 13.5, textAlign: 'center', lineHeight: 20 }}
+            style={{
+              color: 'rgba(255,255,255,0.85)',
+              fontSize: 13.5,
+              textAlign: 'center',
+              lineHeight: 20,
+            }}
           >
             {uiState === 'unavailable'
               ? (config?.message ??

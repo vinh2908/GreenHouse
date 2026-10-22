@@ -551,3 +551,128 @@ export function useAdminSupportRead() {
       qc.invalidateQueries({ queryKey: ['admin', 'support', 'conversations'] }),
   });
 }
+
+// ─── SOS Backup oversight & Helper penalty log (Backlog Batch 1 API + Batch 2 UI) ─
+
+export interface AdminSosUserRef {
+  _id: string;
+  full_name: string;
+  phone: string;
+}
+
+/** Yêu cầu SOS bị gắn cờ admin_attention=true (GET /admin/sos-backup/flagged) */
+export interface AdminSosRequest {
+  _id: string;
+  job_id:
+    | {
+        _id: string;
+        title?: string;
+        status?: string;
+        payment_status?: string;
+        payment_method?: string;
+      }
+    | string
+    | null;
+  customer_id: AdminSosUserRef | string | null;
+  original_helper_id: AdminSosUserRef | string | null;
+  replacement_helper_id?: AdminSosUserRef | string | null;
+  /** Snapshot tiêu đề đơn tại thời điểm thợ gửi SOS */
+  job_title: string;
+  service_name?: string;
+  district?: string;
+  city?: string;
+  /** Mã lý do (SosBackupReason) */
+  reason: string;
+  reason_note?: string;
+  /** Trạng thái vòng đời SOS (SosBackupStatus) */
+  status: string;
+  customer_decision?: string;
+  decided_by?: string;
+  admin_attention: boolean;
+  admin_note?: string;
+  /** Số tiền đã hoàn vào ví khách khi hủy theo chính sách SOS */
+  refund_amount: number;
+  photo_urls?: string[];
+  created_at: string;
+  updated_at: string;
+}
+
+export function useFlaggedSosRequests(params: { page?: number }) {
+  return useQuery({
+    queryKey: ['admin', 'sos-backup', 'flagged', params],
+    queryFn: async () => {
+      const { data } = await apiClient.get('/admin/sos-backup/flagged', { params });
+      return data.data as {
+        requests: AdminSosRequest[];
+        total: number;
+        page: number;
+        limit: number;
+        total_pages: number;
+      };
+    },
+  });
+}
+
+/** 1 dòng sổ phạt hủy đơn của thợ (GET /admin/helper-penalty-events) */
+export interface AdminPenaltyEvent {
+  _id: string;
+  helper_id: AdminSosUserRef | string | null;
+  job_id: { _id: string; title?: string; status?: string } | string | null;
+  source: 'job_cancel' | 'sos_initiation';
+  /** Tổng số lần hủy trong cửa sổ 7 ngày ngay sau lần hủy này */
+  cancellations_in_window: number;
+  /** Số lần vượt ngưỡng tại thời điểm ghi */
+  excess_count: number;
+  /** Điểm bị trừ bởi chính lần hủy này */
+  points_deducted: number;
+  /** Điểm hiệu suất tổng sau khi áp phạt (đối soát) */
+  performance_score_after: number;
+  status: 'active' | 'waived';
+  waived_by?: string;
+  waived_at?: string;
+  waive_reason?: string;
+  created_at: string;
+}
+
+export function useHelperPenaltyEvents(params: {
+  helper_id?: string;
+  status?: string;
+  page?: number;
+}) {
+  return useQuery({
+    queryKey: ['admin', 'penalty-events', params],
+    queryFn: async () => {
+      const { data } = await apiClient.get('/admin/helper-penalty-events', { params });
+      return data.data as {
+        events: AdminPenaltyEvent[];
+        total: number;
+        page: number;
+        limit: number;
+        total_pages: number;
+      };
+    },
+  });
+}
+
+export interface WaivePenaltyResult {
+  event: AdminPenaltyEvent;
+  helper_score: { total: number; penaltyPoints?: number } | null;
+  already_waived: boolean;
+}
+
+export function useWaivePenaltyEvent() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, reason }: { id: string; reason: string }) => {
+      const { data } = await apiClient.post(`/admin/helper-penalty-events/${id}/waive`, {
+        reason,
+      });
+      return data.data as WaivePenaltyResult;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin', 'penalty-events'] });
+      // Điểm thợ đã được tính lại phía server — làm mới luôn các list thợ liên quan.
+      qc.invalidateQueries({ queryKey: ['admin', 'helpers'] });
+    },
+  });
+}

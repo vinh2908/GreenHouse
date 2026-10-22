@@ -77,8 +77,10 @@ export class VoucherRedemption {
   @Prop({ required: true, min: 0 })
   discount_amount: number;
 
-  @Prop({ type: String, enum: ['redeemed'], default: 'redeemed' })
-  status: 'redeemed';
+  /** redeemed = đang giữ lượt dùng · reversed = đã trả lại lượt (hủy đơn theo
+   *  chính sách SOS) — bản ghi được GIỮ để đối soát, không xóa lịch sử. */
+  @Prop({ type: String, enum: ['redeemed', 'reversed'], default: 'redeemed' })
+  status: 'redeemed' | 'reversed';
 
   created_at: Date;
   updated_at: Date;

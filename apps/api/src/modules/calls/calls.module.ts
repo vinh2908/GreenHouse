@@ -4,9 +4,11 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { CallsController } from './calls.controller';
 import { CallsService } from './calls.service';
 import { StringeeProvider } from './stringee.provider';
+import { VoipPushService } from './voip-push.service';
 import { CallProvider, CALL_PROVIDER } from './call-provider.interface';
 import { CallSession, CallSessionSchema } from './schemas/call-session.schema';
 import { Job, JobSchema } from '../jobs/schemas/job.schema';
+import { User, UserSchema } from '../users/schemas/user.schema';
 import { ChatModule } from '../chat/chat.module';
 
 /**
@@ -31,11 +33,12 @@ const callProviderFactory = {
     MongooseModule.forFeature([
       { name: CallSession.name, schema: CallSessionSchema },
       { name: Job.name, schema: JobSchema },
+      { name: User.name, schema: UserSchema },
     ]),
     ChatModule, // AppGateway — báo cuộc gọi đến qua socket
   ],
   controllers: [CallsController],
-  providers: [CallsService, StringeeProvider, callProviderFactory],
+  providers: [CallsService, StringeeProvider, VoipPushService, callProviderFactory],
   exports: [CallsService],
 })
 export class CallsModule {}

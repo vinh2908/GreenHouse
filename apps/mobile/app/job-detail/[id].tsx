@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -119,7 +119,7 @@ function isVideoUrl(uri?: string | null): boolean {
 }
 
 export default function JobDetailScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, focus } = useLocalSearchParams<{ id: string; focus?: string }>();
   const router = useRouter();
   const { user } = useAuthStore();
 
@@ -160,6 +160,34 @@ export default function JobDetailScreen() {
 
   const [showReview, setShowReview] = useState(false);
   const [quoteToAccept, setQuoteToAccept] = useState<string | null>(null);
+
+  // ── Deep-link focus (đi từ thông báo): tự cuộn tới khu vực thao tác ──────
+  // focus='quotes'   → mục "Danh sách thợ báo giá" (nơi bấm "Chấp nhận thợ này")
+  // focus='tracking' → bản đồ theo dõi trực tiếp (nơi xem thợ đang tới)
+  // Chỉ cuộn 1 lần, sau khi dữ liệu đã tải và section đã đo được vị trí.
+  // Section không render (vd đơn đã hết nhận báo giá) → bỏ qua, không lỗi.
+  const scrollRef = useRef<ScrollView | null>(null);
+  const quotesSectionY = useRef<number | null>(null);
+  const trackingSectionY = useRef<number | null>(null);
+  const focusScrolled = useRef(false);
+
+  useEffect(() => {
+    if (!focus || focusScrolled.current || !job) return;
+    if (focus !== 'quotes' && focus !== 'tracking') return;
+    let tries = 0;
+    let timer: ReturnType<typeof setTimeout>;
+    const attempt = () => {
+      const y = focus === 'quotes' ? quotesSectionY.current : trackingSectionY.current;
+      if (y != null && scrollRef.current) {
+        focusScrolled.current = true;
+        scrollRef.current.scrollTo({ y: Math.max(0, y - 12), animated: true });
+        return;
+      }
+      if (tries++ < 12) timer = setTimeout(attempt, 150);
+    };
+    timer = setTimeout(attempt, 80);
+    return () => clearTimeout(timer);
+  }, [focus, job, quotes]);
   const [rating, setRating] = useState(5);
   const [reviewText, setReviewText] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('vietqr');
@@ -598,6 +626,7 @@ export default function JobDetailScreen() {
       </View>
 
       <ScrollView
+        ref={scrollRef}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ padding: 16, gap: 14, paddingBottom: 60 }}
       >
@@ -764,6 +793,85 @@ export default function JobDetailScreen() {
           </Card>
         )}
 
+        {/* ── Đơn đã đóng — fallback cho đơn hủy/hoàn tiền ───────────────
+            Đơn SOS cứu hộ bị hủy trước khi có thợ: không hợp đồng, không
+            thợ, tiến trình bị ẩn → mọi section khác đều trống. Thẻ này đảm
+            bảo trang luôn có thông tin đóng đơn thay vì nửa dưới trắng. ── */}
+        {(job.status === 'cancelled' || job.status === 'refunded') && (
+          <Card
+            style={{
+              gap: 10,
+              padding: 16,
+              backgroundColor: '#F9FAFB',
+              borderWidth: 1.5,
+              borderColor: COLORS.gray[200],
+            }}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <View
+                style={{
+                  width: 32,
+                  height: 32,
+                  borderRadius: 16,
+                  backgroundColor: COLORS.gray[200],
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <X size={16} color={COLORS.gray[600]} />
+              </View>
+              <Text style={{ fontWeight: '800', fontSize: 15, color: COLORS.gray[900] }}>
+                Đơn đã đóng
+              </Text>
+              <View style={{ marginLeft: 'auto' }}>
+                <JobStatusBadge status={job.status} />
+              </View>
+            </View>
+
+            {!!job.is_sos && (
+              <Text style={{ fontSize: 13.5, color: '#991B1B', lineHeight: 20, fontWeight: '700' }}>
+                🚨 Đơn cứu hộ khẩn cấp SOS — yêu cầu thợ có mặt trong 15 phút
+                {job.sos_surcharge
+                  ? ` (phụ phí khẩn cấp ${new Intl.NumberFormat('vi-VN').format(job.sos_surcharge)}₫)`
+                  : ''}
+              </Text>
+            )}
+
+            {job.updated_at && (
+              <Text style={{ fontSize: 13.5, color: COLORS.gray[800], lineHeight: 20 }}>
+                <Text style={{ fontWeight: '700' }}>
+                  {job.status === 'refunded' ? 'Thời gian hoàn tiền: ' : 'Thời gian hủy đơn: '}
+                </Text>
+                {dayjs(job.updated_at).format('HH:mm DD/MM/YYYY')}
+              </Text>
+            )}
+
+            {job.cancellation_reason && (
+              <Text style={{ fontSize: 13.5, color: COLORS.gray[800], lineHeight: 20 }}>
+                <Text style={{ fontWeight: '700' }}>Lý do hủy: </Text>
+                {job.cancellation_reason}
+              </Text>
+            )}
+
+            {job.payment_status === 'refunded' && (
+              <Text style={{ fontSize: 13.5, color: COLORS.gray[800], lineHeight: 20 }}>
+                <Text style={{ fontWeight: '700' }}>Hoàn tiền: </Text>
+                Đã hoàn tiền cho khách hàng
+                {job.dispute_resolution?.refund_amount
+                  ? ` (${new Intl.NumberFormat('vi-VN').format(job.dispute_resolution.refund_amount)}₫)`
+                  : ''}
+                .
+              </Text>
+            )}
+            {job.payment_status === 'refunding' && (
+              <Text style={{ fontSize: 13.5, color: COLORS.gray[800], lineHeight: 20 }}>
+                <Text style={{ fontWeight: '700' }}>Hoàn tiền: </Text>
+                Hệ thống đang xử lý hoàn tiền cho khách hàng.
+              </Text>
+            )}
+          </Card>
+        )}
+
         {/* ── Status tracker ─────────────────────────────────────────── */}
         {job.status !== 'cancelled' && (
           <Card style={{ gap: 12, padding: 16 }}>
@@ -835,6 +943,11 @@ export default function JobDetailScreen() {
 
         {/* ── Grab-Style Live Map Tracking & Route ─────────────────────── */}
         {job.address?.location?.coordinates && (
+          <View
+            onLayout={e => {
+              trackingSectionY.current = e.nativeEvent.layout.y;
+            }}
+          >
           <LiveTrackingMap
             customerLocation={{
               latitude: job.address?.location?.coordinates?.[1],
@@ -853,6 +966,7 @@ export default function JobDetailScreen() {
             height={240}
             showNavigationButton={false}
           />
+          </View>
         )}
 
         {/* ── Job info ───────────────────────────────────────────────── */}
@@ -1038,8 +1152,13 @@ export default function JobDetailScreen() {
         )}
 
         {/* ── Quotes List / Chờ thợ nhận việc giá cam kết ────────────── */}
-        {['open', 'receiving_quotes'].includes(job.status) &&
-          (job.is_fixed_price ? (
+        {['open', 'receiving_quotes'].includes(job.status) && (
+          <View
+            onLayout={e => {
+              quotesSectionY.current = e.nativeEvent.layout.y;
+            }}
+          >
+          {job.is_fixed_price ? (
             <Card
               style={{
                 gap: 8,
@@ -1157,7 +1276,9 @@ export default function JobDetailScreen() {
               })
             )}
             </Card>
-          ))}
+            )}
+          </View>
+        )}
 
         {/* ── Contract Details & Amendments ──────────────────────────── */}
         {contract && (

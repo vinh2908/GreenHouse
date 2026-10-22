@@ -6,6 +6,7 @@
 import { Modal, View, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
 import Toast from 'react-native-toast-message';
 import { SOS_BACKUP_REASON_LABELS, useSosBackupStore } from '@/stores/sos-backup.store';
+import { PhotoThumbRow } from '@/components/common/photo-thumbs';
 import { useCustomerSosDecision } from '@/hooks/use-api';
 import { useNowTick, formatCountdown } from '@/hooks/use-countdown';
 import { COLORS } from '@/components/ui';
@@ -90,6 +91,12 @@ export function SosCustomerDecisionPopup() {
             không thể tiếp tục vì: <Text style={{ fontWeight: '700' }}>{reasonLabel}</Text>. Bạn
             muốn xử lý thế nào?
           </Text>
+
+          {decision.photo_urls?.length ? (
+            <View style={{ marginTop: 14, alignItems: 'center' }}>
+              <PhotoThumbRow urls={decision.photo_urls} label="📷 Ảnh minh chứng từ người giúp việc" />
+            </View>
+          ) : null}
 
           <View
             style={{

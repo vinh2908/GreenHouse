@@ -6,10 +6,12 @@
 //  - Cảnh báo điểm uy tín khi số lần hủy/SOS trong 7 ngày gần/vượt ngưỡng 3
 //    (quá 3 lần/7 ngày bị trừ điểm tiêu chí Độ tin cậy — thang 100).
 import { useState } from 'react';
-import { View, Text, TouchableOpacity, Modal, TextInput } from 'react-native';
+import { View, Text, TouchableOpacity, Modal, TextInput, Image } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
 import Toast from 'react-native-toast-message';
 import { Alert } from '@/components/common/app-alert';
 import { Button, Card, COLORS } from '@/components/ui';
+import { uploadFiles } from '@/services/upload.service';
 import {
   useCancelSosBackup,
   useCreateSosBackup,
@@ -36,6 +38,9 @@ export function SosBackupHelperCard({ job }: { job: any }) {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [reason, setReason] = useState<string | null>(null);
   const [note, setNote] = useState('');
+  // Ảnh minh chứng sự cố (URI local) — upload trước khi gửi SOS, tối đa 4
+  const [photos, setPhotos] = useState<string[]>([]);
+  const [uploadingPhotos, setUploadingPhotos] = useState(false);
 
   const isMine = !!myId && helperIdOf(job) === myId;
   const isActive = ACTIVE_STATUSES.includes(job?.status);
@@ -120,17 +125,62 @@ export function SosBackupHelperCard({ job }: { job: any }) {
   }
 
   // ── Chưa có SOS: nút gửi + cảnh báo điểm ───────────────────────────────────
+  const pickPhotos = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Toast.show({ type: 'error', text1: 'Cần quyền truy cập thư viện ảnh' });
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsMultipleSelection: true,
+      selectionLimit: 4,
+      quality: 0.8,
+    });
+    if (!result.canceled) {
+      setPhotos(prev => [...prev, ...result.assets.map(a => a.uri)].slice(0, 4));
+    }
+  };
+
   const handleSubmit = async () => {
+    if (!reason) return;
+    let photoUrls: string[] | undefined;
+    if (photos.length > 0) {
+      setUploadingPhotos(true);
+      try {
+        photoUrls = await uploadFiles(photos);
+      } catch {
+        setUploadingPhotos(false);
+        // Không chặn SOS vì lỗi tải ảnh — cho thợ chọn thử lại hoặc gửi không kèm ảnh
+        Toast.show({
+          type: 'error',
+          text1: 'Tải ảnh minh chứng thất bại',
+          text2: 'Bạn có thể thử lại hoặc vẫn gửi SOS mà không kèm ảnh',
+        });
+        Alert.alert('Không tải được ảnh minh chứng', 'Vẫn gửi yêu cầu SOS mà không kèm ảnh?', [
+          { text: 'Để tôi thử lại', style: 'cancel' },
+          { text: 'Gửi không kèm ảnh', onPress: () => void doSubmit(undefined) },
+        ]);
+        return;
+      }
+      setUploadingPhotos(false);
+    }
+    await doSubmit(photoUrls);
+  };
+
+  const doSubmit = async (photoUrls?: string[]) => {
     if (!reason) return;
     try {
       const res = await createSos.mutateAsync({
         jobId: job._id,
         reason,
         note: note.trim() ? note.trim() : undefined,
+        photo_urls: photoUrls,
       });
       setSheetOpen(false);
       setReason(null);
       setNote('');
+      setPhotos([]);
       const score = (res as any)?.data?.data?.cancellation_score;
       if (score?.warningLevel === 'penalized') {
         Toast.show({
@@ -261,10 +311,68 @@ export function SosBackupHelperCard({ job }: { job: any }) {
                 fontSize: 14,
               }}
             />
+            <View style={{ gap: 6 }}>
+              <Text style={{ fontSize: 13.5, fontWeight: '700', color: COLORS.gray[800] }}>
+                Thêm ảnh minh chứng (không bắt buộc)
+              </Text>
+              <Text style={{ fontSize: 12.5, color: COLORS.gray[500], lineHeight: 17 }}>
+                VD: xe hư, tai nạn — khách hàng sẽ thấy các ảnh này khi quyết định đổi người hay
+                hủy đơn. Tối đa 4 ảnh.
+              </Text>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                {photos.map(uri => (
+                  <View key={uri}>
+                    <Image
+                      source={{ uri }}
+                      style={{ width: 64, height: 64, borderRadius: 10 }}
+                      resizeMode="cover"
+                    />
+                    <TouchableOpacity
+                      onPress={() => setPhotos(prev => prev.filter(p => p !== uri))}
+                      hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                      style={{
+                        position: 'absolute',
+                        top: -7,
+                        right: -7,
+                        width: 22,
+                        height: 22,
+                        borderRadius: 11,
+                        backgroundColor: COLORS.gray[700],
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      <Text style={{ color: '#fff', fontSize: 12, fontWeight: '800' }}>✕</Text>
+                    </TouchableOpacity>
+                  </View>
+                ))}
+                {photos.length < 4 && (
+                  <TouchableOpacity
+                    onPress={() => void pickPhotos()}
+                    style={{
+                      width: 64,
+                      height: 64,
+                      borderRadius: 10,
+                      borderWidth: 1.5,
+                      borderStyle: 'dashed',
+                      borderColor: COLORS.gray[300],
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      backgroundColor: COLORS.gray[50],
+                    }}
+                  >
+                    <Text style={{ fontSize: 20, color: COLORS.gray[500] }}>＋</Text>
+                    <Text style={{ fontSize: 10, color: COLORS.gray[500], fontWeight: '600' }}>
+                      Thêm ảnh
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            </View>
             <Button
-              title="Gửi yêu cầu SOS"
+              title={uploadingPhotos ? 'Đang tải ảnh lên…' : 'Gửi yêu cầu SOS'}
               variant="danger"
-              loading={createSos.isPending}
+              loading={createSos.isPending || uploadingPhotos}
               disabled={!reason}
               onPress={handleSubmit}
             />
