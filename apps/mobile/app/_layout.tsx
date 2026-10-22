@@ -16,6 +16,9 @@ import { useLiveGps } from '@/hooks/use-live-gps';
 import { useOfflineSync } from '@/hooks/use-offline';
 import { useIncomingCallListener } from '@/hooks/use-incoming-call';
 import { IncomingCallModal } from '@/components/common/incoming-call-modal';
+import { useSosBackupListener } from '@/hooks/use-sos-backup';
+import { SosBackupPopup } from '@/components/common/sos-backup-popup';
+import { SosCustomerDecisionPopup } from '@/components/common/sos-customer-decision-popup';
 import { useBackgroundGps } from '@/hooks/use-background-gps';
 import { useAuthStore } from '@/stores/auth.store';
 
@@ -140,6 +143,7 @@ function SocketManager() {
   useBackgroundGps();
   useOfflineSync(); // Feature 16: vòng lặp flush hàng đợi offline
   useIncomingCallListener(); // Feature 6: lắng nghe cuộc gọi thoại đến
+  useSosBackupListener(); // SOS Backup: popup quyết định cho khách + popup backup cho thợ
   return null;
 }
 
@@ -181,6 +185,8 @@ export default function RootLayout() {
         <ToastCard />
         <AppAlertHost />
         <IncomingCallModal />
+        <SosBackupPopup />
+        <SosCustomerDecisionPopup />
       </QueryClientProvider>
     </GestureHandlerRootView>
   );
