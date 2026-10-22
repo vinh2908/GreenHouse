@@ -15,6 +15,10 @@ export class Conversation {
   @Prop()
   last_message?: string;
 
+  /** Loại tin nhắn gần nhất ('text' | 'image' | 'system') — để list preview hiển thị '📷 Ảnh' thay vì URL */
+  @Prop({ default: 'text' })
+  last_message_type?: string;
+
   @Prop()
   last_message_at?: Date;
 

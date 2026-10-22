@@ -83,6 +83,11 @@
       "ts"
     ],
     "rootDir": ".",
+    "moduleNameMapper": {
+      "^@homemate/constants$": "<rootDir>/../../packages/constants/src",
+      "^@homemate/types$": "<rootDir>/../../packages/types/src",
+      "^@homemate/utils$": "<rootDir>/../../packages/utils/src"
+    },
     "roots": [
       "<rootDir>/src",
       "<rootDir>/test"

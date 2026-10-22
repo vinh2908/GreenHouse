@@ -1,5 +1,5 @@
-import { IsOptional, IsString, IsEnum } from 'class-validator';
-import { ApiPropertyOptional } from '@nestjs/swagger';
+import { IsOptional, IsString, IsEnum, IsNotEmpty } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class AdminListQueryDto {
   @ApiPropertyOptional({ description: 'Trang', default: 1 })
@@ -33,4 +33,11 @@ export class AdminKycActionDto {
   @IsOptional()
   @IsString()
   reason?: string;
+}
+
+export class AdminWaivePenaltyDto {
+  @ApiProperty({ description: 'Lý do miễn phạt (bắt buộc, lưu vào sự kiện để đối soát)' })
+  @IsString()
+  @IsNotEmpty()
+  reason: string;
 }

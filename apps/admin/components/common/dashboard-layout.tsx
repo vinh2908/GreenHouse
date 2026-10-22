@@ -16,6 +16,7 @@ import {
   Megaphone,
   TicketPercent,
   Headset,
+  Siren,
 } from 'lucide-react';
 import { useAuthStore } from '@/stores/auth.store';
 
@@ -28,6 +29,7 @@ const navItems = [
   { href: '/services', label: 'Dịch vụ & Phí', icon: Wrench },
   { href: '/vouchers', label: 'Mã giảm giá', icon: TicketPercent },
   { href: '/claims', label: 'Bồi thường bảo hiểm', icon: ShieldCheck },
+  { href: '/sos', label: 'SOS & Điểm phạt', icon: Siren },
   { href: '/support', label: 'Hỗ trợ trực tuyến', icon: Headset },
   { href: '/payments', label: 'Thanh toán & Rút tiền', icon: CreditCard },
   { href: '/reviews', label: 'Đánh giá & Phản hồi', icon: Star },

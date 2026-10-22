@@ -15,8 +15,11 @@ import { AppAlertHost } from '@/components/common/app-alert';
 import { useLiveGps } from '@/hooks/use-live-gps';
 import { useOfflineSync } from '@/hooks/use-offline';
 import { useIncomingCallListener } from '@/hooks/use-incoming-call';
+import { useCallKeep } from '@/hooks/use-callkeep';
 import { IncomingCallModal } from '@/components/common/incoming-call-modal';
+import { StringeeHost } from '@/components/common/stringee-host';
 import { useSosBackupListener } from '@/hooks/use-sos-backup';
+import { usePushNotifications } from '@/hooks/use-push-notifications';
 import { SosBackupPopup } from '@/components/common/sos-backup-popup';
 import { SosCustomerDecisionPopup } from '@/components/common/sos-customer-decision-popup';
 import { useBackgroundGps } from '@/hooks/use-background-gps';
@@ -143,7 +146,9 @@ function SocketManager() {
   useBackgroundGps();
   useOfflineSync(); // Feature 16: vòng lặp flush hàng đợi offline
   useIncomingCallListener(); // Feature 6: lắng nghe cuộc gọi thoại đến
+  useCallKeep(); // VoIP/CallKeep: cuộc gọi đến khi app chạy nền / bị đóng hẳn + đăng ký VoIP token
   useSosBackupListener(); // SOS Backup: popup quyết định cho khách + popup backup cho thợ
+  usePushNotifications(); // OS push: đăng ký Expo token + chạm push → deep-link đúng màn hình
   return null;
 }
 
@@ -185,6 +190,7 @@ export default function RootLayout() {
         <ToastCard />
         <AppAlertHost />
         <IncomingCallModal />
+        <StringeeHost />
         <SosBackupPopup />
         <SosCustomerDecisionPopup />
       </QueryClientProvider>

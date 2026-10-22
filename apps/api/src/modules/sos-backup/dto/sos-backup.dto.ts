@@ -1,4 +1,11 @@
-import { IsEnum, IsOptional, IsString, MaxLength } from 'class-validator';
+import {
+  ArrayMaxSize,
+  IsArray,
+  IsEnum,
+  IsOptional,
+  IsString,
+  MaxLength,
+} from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { SosBackupDecision, SosBackupReason } from '../schemas/sos-backup.schema';
 
@@ -19,6 +26,18 @@ export class CreateSosBackupDto {
   @IsString()
   @MaxLength(300)
   note?: string;
+
+  @ApiPropertyOptional({
+    description:
+      'URL ảnh minh chứng sự cố (đã upload qua /uploads) — hiển thị cho khách khi quyết định và cho thợ ứng viên. Tối đa 4 ảnh.',
+    type: [String],
+    maxItems: 4,
+  })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(4, { message: 'Tối đa 4 ảnh minh chứng' })
+  @IsString({ each: true })
+  photo_urls?: string[];
 }
 
 export class CustomerDecisionDto {

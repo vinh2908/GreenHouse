@@ -416,7 +416,10 @@ export default function BookingScreen() {
           full_address: details.road || details.full_address,
           ward: details.ward || '',
           district: details.district || '',
-          city: details.city || 'Hồ Chí Minh',
+          // Không bịa 'Hồ Chí Minh' khi geocoder không trả city: để '' cho
+          // người dùng tự sửa ở ô Thành phố (trước đây người dùng Đà Nẵng bị
+          // gán cứng Hồ Chí Minh).
+          city: details.city || '',
           coordinates: details.coordinates,
         }));
         Toast.show({
@@ -460,8 +463,10 @@ export default function BookingScreen() {
     const house = addr.house_number ? `${addr.house_number} ` : '';
     const street = `${house}${addr.road || ''}`.trim() || place.display_name.split(',')[0];
     const ward = addr.suburb || addr.quarter || addr.neighbourhood || '';
-    const district = addr.city_district || addr.district || addr.county || 'Quận 1';
-    const city = addr.city || addr.state || 'Hồ Chí Minh';
+    // Không bịa 'Quận 1'/'Hồ Chí Minh' khi kết quả tìm kiếm thiếu quận/thành:
+    // để '' — form bắt buộc nhập Quận/Huyện trước khi qua bước tiếp theo.
+    const district = addr.city_district || addr.district || addr.county || '';
+    const city = addr.city || addr.state || '';
 
     setAddress(prev => ({
       ...prev,

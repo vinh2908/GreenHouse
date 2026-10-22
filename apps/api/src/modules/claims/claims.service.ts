@@ -269,7 +269,13 @@ export class ClaimsService {
       type: 'insurance_claim_update',
       title,
       body,
-      payload: { claim_id: String(claim._id), kind: 'insurance_claim' },
+      // job_id bắt buộc phải có: màn hình claim mở theo job (/claim/[jobId]),
+      // thiếu job_id thì chạm vào thông báo/push không điều hướng được.
+      payload: {
+        claim_id: String(claim._id),
+        job_id: this.idOf(claim.job_id as unknown as Types.ObjectId),
+        kind: 'insurance_claim',
+      },
     });
   }
 }

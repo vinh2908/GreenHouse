@@ -145,6 +145,7 @@ export class ChatService {
     await this.conversationModel
       .findByIdAndUpdate(conversationId, {
         last_message: content,
+        last_message_type: type,
         last_message_at: new Date(),
       })
       .exec();

@@ -73,12 +73,15 @@ export default function SosScreen() {
   const createSos = useCreateSosJob();
 
   const [selectedCategory, setSelectedCategory] = useState('electrician');
+  // Chỉ dùng địa chỉ thật từ GPS/reverse-geocode — không bịa sẵn phường/quận/
+  // thành phố (khách ở Đà Nẵng từng bị gán địa chỉ Hồ Chí Minh). Geocoder
+  // không trả được field nào thì để trống field đó (API đã cho phép).
   const [address, setAddress] = useState({
-    full_address: '128 Đường Lê Lợi, Phường Bến Thành',
-    ward: 'Phường Bến Thành',
-    district: 'Quận 1',
-    city: 'Hồ Chí Minh',
-    coordinates: [106.6983, 10.7725] as [number, number],
+    full_address: '',
+    ward: '',
+    district: '',
+    city: '',
+    coordinates: [0, 0] as [number, number],
   });
   const [description, setDescription] = useState(
     'Sự cố khẩn cấp cần thợ có mặt xử lý ngay lập tức!',
@@ -97,9 +100,9 @@ export default function SosScreen() {
       if (details) {
         setAddress({
           full_address: details.road || details.full_address,
-          ward: details.ward || 'Phường Bến Thành',
-          district: details.district || 'Quận 1',
-          city: details.city || 'Hồ Chí Minh',
+          ward: details.ward || '',
+          district: details.district || '',
+          city: details.city || '',
           coordinates: details.coordinates,
         });
       }
@@ -130,7 +133,7 @@ export default function SosScreen() {
           ward: address.ward,
           district: address.district,
           city: address.city,
-          location: { type: 'Point', coordinates: address.coordinates || [106.6983, 10.7725] },
+          location: { type: 'Point', coordinates: address.coordinates },
         },
         surcharge: surcharge,
       });
@@ -362,11 +365,10 @@ export default function SosScreen() {
               <MapPin size={18} color={COLORS.primary} style={{ marginTop: 2 }} />
               <View style={{ flex: 1 }}>
                 <Text style={{ fontSize: 14, fontWeight: '700', color: COLORS.gray[900] }}>
-                  {address.full_address}
+                  {address.full_address || 'Đang xác định vị trí hiện tại…'}
                 </Text>
                 <Text style={{ fontSize: 12, color: COLORS.gray[500], marginTop: 2 }}>
-                  {address.ward ? address.ward + ', ' : ''}
-                  {address.district}, {address.city}
+                  {[address.ward, address.district, address.city].filter(Boolean).join(', ')}
                 </Text>
               </View>
             </View>

@@ -848,8 +848,15 @@ export function useMessages(conversationId?: string, page = 1) {
 export function useSendMessage() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ conversationId, content }: { conversationId: string; content: string }) =>
-      apiClient.post(`/chat/conversations/${conversationId}/messages`, { content }),
+    mutationFn: ({
+      conversationId,
+      content,
+      type,
+    }: {
+      conversationId: string;
+      content: string;
+      type?: 'text' | 'image';
+    }) => apiClient.post(`/chat/conversations/${conversationId}/messages`, { content, type }),
     onSuccess: (_, vars) => {
       qc.invalidateQueries({ queryKey: ['messages', vars.conversationId] });
     },
@@ -2118,10 +2125,11 @@ const sosErrorToast = (err: any, fallback: string) => {
 export function useCreateSosBackup() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (args: { jobId: string; reason: string; note?: string }) =>
+    mutationFn: (args: { jobId: string; reason: string; note?: string; photo_urls?: string[] }) =>
       apiClient.post(`/sos-backup/jobs/${args.jobId}`, {
         reason: args.reason,
         note: args.note,
+        photo_urls: args.photo_urls?.length ? args.photo_urls : undefined,
       }),
     onSuccess: (_res, args) => {
       qc.invalidateQueries({ queryKey: ['sos-backup', 'by-job', args.jobId] });

@@ -17,8 +17,8 @@ export enum RecurringPlanStatus {
 const PlanAddressSchema = {
   full_address: { type: String, required: true },
   ward: { type: String },
-  district: { type: String, required: true },
-  city: { type: String, required: true },
+  district: { type: String },
+  city: { type: String },
   location: {
     type: { type: String, enum: ['Point'], default: 'Point' },
     coordinates: { type: [Number], required: true },

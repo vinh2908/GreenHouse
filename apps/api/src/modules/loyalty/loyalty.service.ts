@@ -337,6 +337,59 @@ export class LoyaltyService {
     return { points_redeemed: requested, discount_amount: discountAmount };
   }
 
+  // ─── Reversal: hoàn điểm khi hủy đơn (mirror của redeemAtPayment) ────────
+
+  /**
+   * Hoàn lại điểm đã trừ cho 1 đơn khi đơn bị hủy theo chính sách SOS Backup.
+   * Nguyên tắc sổ cái: KHÔNG sửa/xóa giao dịch 'redeem' gốc — ghi 1 giao dịch
+   * MỚI type 'reversal' (điểm dương, gắn job_id) và cộng lại points_balance.
+   * lifetime_points không đổi (redeem vốn không trừ lifetime nên reversal
+   * cũng không cộng). Idempotent: đã có 'reversal' cho đơn → trả lại thông
+   * tin cũ, không cộng điểm 2 lần. Đơn không dùng điểm → null (no-op).
+   */
+  async reverseRedeemForJob(
+    customerId: string,
+    jobId: string,
+  ): Promise<{ points_restored: number } | null> {
+    const userOid = new Types.ObjectId(customerId);
+    const jobOid = new Types.ObjectId(jobId);
+
+    const redeem = await this.txModel
+      .findOne({ user_id: userOid, job_id: jobOid, type: 'redeem' })
+      .exec();
+    if (!redeem) return null;
+
+    const existingReversal = await this.txModel
+      .findOne({ user_id: userOid, job_id: jobOid, type: 'reversal' })
+      .exec();
+    if (existingReversal) {
+      return { points_restored: Math.abs(existingReversal.points) };
+    }
+
+    const points = Math.abs(redeem.points);
+    if (points <= 0) return null;
+
+    const account = await this.getOrCreateAccount(customerId);
+    const updated = await this.accountModel
+      .findOneAndUpdate(
+        { user_id: account.user_id },
+        { $inc: { points_balance: points } },
+        { new: true },
+      )
+      .exec();
+
+    await this.txModel.create({
+      user_id: userOid,
+      type: 'reversal',
+      points,
+      job_id: jobOid,
+      balance_after: updated!.points_balance,
+      note: `Hoàn điểm do hủy đơn theo SOS #${jobId.slice(-6)}`,
+    });
+
+    return { points_restored: points };
+  }
+
   // ─── Admin ─────────────────────────────────────────────────────────────────
 
   async adminGetUser(userId: string) {
