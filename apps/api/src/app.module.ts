@@ -33,6 +33,7 @@ import { ServicesModule } from './modules/services/services.module';
 
 // ─── Phase 5: Job & Quote System ─────────────────────────────────────────────
 import { JobsModule } from './modules/jobs/jobs.module';
+import { SosBackupModule } from './modules/sos-backup/sos-backup.module';
 // import { QuotesModule } from './modules/quotes/quotes.module';
 // import { ContractsModule } from './modules/contracts/contracts.module';
 
@@ -103,6 +104,7 @@ import { UploadsModule } from './modules/uploads/uploads.module';
     SupportModule,
     ServicesModule,
     JobsModule,
+    SosBackupModule,
     NotificationsModule,
     ChatModule,
     PaymentsModule,

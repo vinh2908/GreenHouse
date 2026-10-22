@@ -9,6 +9,10 @@ import { Job, JobSchema, Quote, QuoteSchema, Contract, ContractSchema } from './
 import { DisputeCase, DisputeCaseSchema } from './schemas/dispute-case.schema';
 import { Service, ServiceSchema } from '../services/schemas/service.schema';
 import { HelperProfile, HelperProfileSchema } from '../helpers/schemas/helper-profile.schema';
+import {
+  HelperPenaltyEvent,
+  HelperPenaltyEventSchema,
+} from '../helpers/schemas/helper-penalty-event.schema';
 import { ChatModule } from '../chat/chat.module';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { PaymentsModule } from '../payments/payments.module';
@@ -25,6 +29,7 @@ import { LoyaltyModule } from '../loyalty/loyalty.module';
       { name: DisputeCase.name, schema: DisputeCaseSchema },
       { name: Service.name, schema: ServiceSchema },
       { name: HelperProfile.name, schema: HelperProfileSchema },
+      { name: HelperPenaltyEvent.name, schema: HelperPenaltyEventSchema },
     ]),
     ChatModule,
     NotificationsModule,

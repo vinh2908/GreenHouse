@@ -55,6 +55,11 @@ import { FavoritesService } from '../favorites/favorites.service';
 import { VouchersService } from '../vouchers/vouchers.service';
 import { LoyaltyService } from '../loyalty/loyalty.service';
 import { DisputesService } from './disputes.service';
+import {
+  HelperPenaltyEvent,
+  HelperPenaltyEventDocument,
+} from '../helpers/schemas/helper-penalty-event.schema';
+import { recordHelperCancellation } from '../helpers/utils/record-cancellation';
 import { RebookJobDto } from './dto/job.dto';
 import { Service, ServiceDocument } from '../services/schemas/service.schema';
 import {
@@ -94,9 +99,7 @@ export function isAvailableForDate(
   let d: Date;
   if (typeof date === 'string') {
     const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(date);
-    d = m
-      ? new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]))
-      : new Date(date);
+    d = m ? new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])) : new Date(date);
   } else {
     d = date;
   }
@@ -127,6 +130,8 @@ export class JobsService {
     @InjectModel(Contract.name) private contractModel: Model<ContractDocument>,
     @InjectModel(Service.name) private serviceModel: Model<ServiceDocument>,
     @InjectModel(HelperProfile.name) private helperModel: Model<HelperProfileDocument>,
+    @InjectModel(HelperPenaltyEvent.name)
+    private penaltyEventModel: Model<HelperPenaltyEventDocument>,
     private readonly gateway: AppGateway,
     private readonly notificationsService: NotificationsService,
     private readonly chatService: ChatService,
@@ -336,10 +341,7 @@ export class JobsService {
     // Voucher: kiểm tra mã hợp lệ ngay khi đăng job (ghi nhận lượt dùng ở bước thanh toán)
     let voucherCode: string | undefined;
     if (dto.voucher_code) {
-      const voucher = await this.vouchersService.assertCodeAttachable(
-        dto.voucher_code,
-        customerId,
-      );
+      const voucher = await this.vouchersService.assertCodeAttachable(dto.voucher_code, customerId);
       voucherCode = voucher.code;
     }
 
@@ -992,7 +994,10 @@ export class JobsService {
     if (roles.includes('admin') || isOwnerOrHelper) {
       let result: any;
       if (roles.includes('helper') || helperId === userId) {
-        result = await this.enrichJobWithDistance(await this.withTeamDisplay(job.toObject()), userId);
+        result = await this.enrichJobWithDistance(
+          await this.withTeamDisplay(job.toObject()),
+          userId,
+        );
       } else {
         result = await this.withTeamDisplay(job.toObject());
       }
@@ -2182,6 +2187,23 @@ export class JobsService {
           { $inc: { late_cancellation_count: 1, risk_score: 15, cancellation_rate: 5 } },
         )
         .exec();
+
+      // Điểm hiệu suất (thang 100): ghi mốc hủy vào cửa sổ trượt 7 ngày —
+      // hủy quá 3 đơn/7 ngày thì trừ điểm tiêu chí Độ tin cậy (xem helper-score.ts).
+      // Ghi điểm là việc phụ: lỗi ở đây không được chặn việc hủy đơn.
+      try {
+        await recordHelperCancellation({
+          helperModel: this.helperModel,
+          penaltyEventModel: this.penaltyEventModel,
+          helperId: String(job.helper_id),
+          source: 'job_cancel',
+          jobId: jobId,
+        });
+      } catch (err) {
+        this.logger.warn(
+          `recordHelperCancellation failed for helper ${String(job.helper_id)}: ${(err as Error).message}`,
+        );
+      }
     }
 
     await this.quoteModel
@@ -2487,7 +2509,11 @@ export class JobsService {
     const nameOf = new Map<string, { full_name: string; avatar: string | null }>();
     for (const p of profiles) {
       const u: any = p.user_id;
-      if (u?._id) nameOf.set(String(u._id), { full_name: u.full_name ?? 'Thợ GreenHouse', avatar: u.avatar ?? null });
+      if (u?._id)
+        nameOf.set(String(u._id), {
+          full_name: u.full_name ?? 'Thợ GreenHouse',
+          avatar: u.avatar ?? null,
+        });
     }
     const memberSplitUsed = team
       .filter(m => m.status !== 'declined')
@@ -2583,9 +2609,7 @@ export class JobsService {
     const excluded = new Set<string>([
       leadId,
       String(job.customer_id),
-      ...(job.team ?? [])
-        .filter(m => m.status !== 'declined')
-        .map(m => String(m.helper_id)),
+      ...(job.team ?? []).filter(m => m.status !== 'declined').map(m => String(m.helper_id)),
     ]);
     const profiles = await this.helperModel
       .find({

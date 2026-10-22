@@ -887,7 +887,10 @@ export function useMySupportConversation() {
     queryKey: ['support', 'mine'],
     queryFn: async () => {
       const { data } = await apiClient.get('/support/conversations/me');
-      return data.data as { conversation: SupportConversation; messages: SupportMessageItem[] } | null;
+      return data.data as {
+        conversation: SupportConversation;
+        messages: SupportMessageItem[];
+      } | null;
     },
   });
 }
@@ -1536,12 +1539,7 @@ export function useSettleMonth() {
 
 // ─── Insurance Claims (Feature 10 — Yêu cầu bồi thường bảo hiểm) ─────────────
 
-export type InsuranceClaimStatus =
-  | 'submitted'
-  | 'under_review'
-  | 'approved'
-  | 'paid'
-  | 'rejected';
+export type InsuranceClaimStatus = 'submitted' | 'under_review' | 'approved' | 'paid' | 'rejected';
 
 export interface InsuranceClaimItem {
   _id: string;
@@ -1821,7 +1819,8 @@ export function useRespondTeamInvitation() {
 // ─── Dispute Cases (Roadmap Phase 1 — Hồ sơ tranh chấp) ─────────────────────
 
 export interface DisputeTimelineEntry {
-  kind: 'opened' | 'evidence' | 'note' | 'admin_message' | 'resolution' | 'appeal' | 'appeal_resolved';
+  kind:
+    'opened' | 'evidence' | 'note' | 'admin_message' | 'resolution' | 'appeal' | 'appeal_resolved';
   actor_id: string;
   actor_role: string;
   text?: string;
@@ -2015,7 +2014,6 @@ export function useRemoveLoyaltyPoints() {
   });
 }
 
-
 // ─── Helper Availability (Feature 13 — Lịch làm việc của thợ) ────────────────
 
 export interface HelperAvailability {
@@ -2054,7 +2052,6 @@ export function useUpdateAvailability() {
     },
   });
 }
-
 
 // ─── Earnings Report (Feature 14 — Báo cáo thu nhập thợ) ─────────────────────
 
@@ -2102,5 +2099,108 @@ export function useSetIncomeGoal() {
       const msg = err?.response?.data?.message ?? 'Không đặt được mục tiêu';
       Toast.show({ type: 'error', text1: typeof msg === 'string' ? msg : 'Đã có lỗi xảy ra' });
     },
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SOS Backup — thợ không thể tiếp tục đơn → khách đồng ý mới tìm người thay
+// (ghép cặp Hungarian phía server). Xem modules/sos-backup phía API.
+// ═══════════════════════════════════════════════════════════════════════════
+
+const sosErrorToast = (err: any, fallback: string) => {
+  const msg = err?.response?.data?.message;
+  Toast.show({
+    type: 'error',
+    text1: typeof msg === 'string' ? msg : fallback,
+  });
+};
+
+export function useCreateSosBackup() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (args: { jobId: string; reason: string; note?: string }) =>
+      apiClient.post(`/sos-backup/jobs/${args.jobId}`, {
+        reason: args.reason,
+        note: args.note,
+      }),
+    onSuccess: (_res, args) => {
+      qc.invalidateQueries({ queryKey: ['sos-backup', 'by-job', args.jobId] });
+      Toast.show({
+        type: 'success',
+        text1: 'Đã gửi yêu cầu SOS',
+        text2: 'Đang chờ khách hàng xác nhận đổi người hoặc hủy đơn',
+      });
+    },
+    onError: (err: any) => sosErrorToast(err, 'Không gửi được yêu cầu SOS'),
+  });
+}
+
+export function useCancelSosBackup() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (args: { sosId: string; jobId: string }) =>
+      apiClient.post(`/sos-backup/${args.sosId}/cancel`),
+    onSuccess: (_res, args) => {
+      qc.invalidateQueries({ queryKey: ['sos-backup', 'by-job', args.jobId] });
+      Toast.show({ type: 'success', text1: 'Đã thu hồi yêu cầu SOS' });
+    },
+    onError: (err: any) => sosErrorToast(err, 'Không thu hồi được yêu cầu SOS'),
+  });
+}
+
+export function useAcceptSosBackup() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (sosId: string) => apiClient.post(`/sos-backup/${sosId}/accept`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['jobs'] });
+      qc.invalidateQueries({ queryKey: ['job'] });
+    },
+  });
+}
+
+export function useDeclineSosBackup() {
+  return useMutation({
+    mutationFn: (sosId: string) => apiClient.post(`/sos-backup/${sosId}/decline`),
+  });
+}
+
+export function useCustomerSosDecision() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (args: {
+      sosId: string;
+      jobId: string;
+      decision: 'accept_replacement' | 'cancel_job';
+    }) =>
+      apiClient.post(`/sos-backup/${args.sosId}/customer-decision`, {
+        decision: args.decision,
+      }),
+    onSuccess: (_res, args) => {
+      qc.invalidateQueries({ queryKey: ['job', args.jobId] });
+      qc.invalidateQueries({ queryKey: ['jobs', 'my'] });
+      qc.invalidateQueries({ queryKey: ['sos-backup', 'by-job', args.jobId] });
+      Toast.show({
+        type: 'success',
+        text1:
+          args.decision === 'accept_replacement'
+            ? 'Đã đồng ý đổi người — đang tìm thợ thay thế'
+            : 'Đã hủy đơn — tiền sẽ hoàn 100% vào ví của bạn',
+      });
+    },
+    onError: (err: any) => sosErrorToast(err, 'Không gửi được quyết định'),
+  });
+}
+
+/** Trạng thái SOS đang hoạt động của 1 đơn (cả 2 phía) — poll nhẹ để đồng bộ UI */
+export function useSosBackupByJob(jobId?: string) {
+  return useQuery({
+    queryKey: ['sos-backup', 'by-job', jobId],
+    queryFn: async () => {
+      const { data } = await apiClient.get(`/sos-backup/by-job/${jobId}`);
+      return data.data as { sos: any | null };
+    },
+    enabled: !!jobId,
+    refetchInterval: 15000,
   });
 }

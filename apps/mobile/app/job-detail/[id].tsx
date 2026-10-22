@@ -68,6 +68,7 @@ import { locationService } from '@/services/location.service';
 import { downloadInvoicePdf } from '@/services/invoice.service';
 import { LiveTrackingMap } from '@/components/common/live-tracking-map';
 import { TeamCard } from '@/components/common/team-card';
+import { SosBackupCustomerBanner } from '@/components/common/sos-backup-customer-banner';
 import { LoyaltyPointsInput } from '@/components/common/loyalty-points-input';
 import { LocationPicker } from '@/components/common/location-picker';
 import { validCoordinate } from '@/services/tracking';
@@ -600,6 +601,9 @@ export default function JobDetailScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ padding: 16, gap: 14, paddingBottom: 60 }}
       >
+        {/* ── SOS Backup: chờ quyết định / đã thay thợ ───────────────── */}
+        <SosBackupCustomerBanner job={job} />
+
         {/* ── Private Offer Banner (Roadmap Phase 1) ─────────────────── */}
         {privateOfferActive && (
           <Card

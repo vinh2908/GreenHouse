@@ -167,6 +167,29 @@ export class Job {
     helper_id: string;
   };
 
+  // ── SOS Backup: thay thợ giữa chừng (chỉ khi khách đã đồng ý đổi người) ────
+  // Lưu vết lần thay thợ gần nhất để phía khách hiển thị banner "đã thay người
+  // giúp việc do sự cố". Giá đơn + tiền khách đã trả KHÔNG đổi khi thay thợ.
+  @Prop({
+    type: {
+      sos_request_id: { type: Types.ObjectId, ref: 'SosBackupRequest' },
+      previous_helper_id: { type: Types.ObjectId, ref: 'User' },
+      new_helper_id: { type: Types.ObjectId, ref: 'User' },
+      reason: { type: String },
+      replaced_at: { type: Date },
+    },
+  })
+  sos_backup_replacement?: {
+    sos_request_id: Types.ObjectId;
+    previous_helper_id: Types.ObjectId;
+    new_helper_id: Types.ObjectId;
+    reason?: string;
+    replaced_at: Date;
+  };
+
+  @Prop({ default: 0 })
+  sos_backup_count: number; // Số lần đơn đã thay thợ qua SOS Backup
+
   // ── Roadmap Phase 1: Voucher ─────────────────────────────────────────────
   @Prop()
   voucher_code?: string; // Mã giảm giá khách gắn vào đơn (viết hoa)
