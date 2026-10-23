@@ -60,7 +60,7 @@ const TX_COLORS: Record<string, string> = {
 export default function HelperEarningsScreen() {
   const { t, fs } = useTranslation();
   const { data: wallet, isLoading } = useWallet();
-  const { data: txData } = useTransactions(1);
+  const { data: txData, isLoading: isTxLoading } = useTransactions(1);
   const { data: profile } = useHelperProfile();
   const withdraw = useRequestWithdrawal();
   const topup = useTopupWallet();
@@ -260,7 +260,55 @@ export default function HelperEarningsScreen() {
             {t('earn_history_title')}
           </Text>
 
-          {!txData?.transactions?.length ? (
+          {isTxLoading ? (
+            <Card style={{ gap: 14, padding: 16 }}>
+              {[1, 2, 3].map(i => (
+                <View
+                  key={i}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 12,
+                  }}
+                >
+                  <View
+                    style={{
+                      width: 42,
+                      height: 42,
+                      borderRadius: 12,
+                      backgroundColor: COLORS.gray[200],
+                    }}
+                  />
+                  <View style={{ flex: 1, gap: 6 }}>
+                    <View
+                      style={{
+                        width: '70%',
+                        height: 14,
+                        borderRadius: 4,
+                        backgroundColor: COLORS.gray[200],
+                      }}
+                    />
+                    <View
+                      style={{
+                        width: '40%',
+                        height: 11,
+                        borderRadius: 4,
+                        backgroundColor: COLORS.gray[100],
+                      }}
+                    />
+                  </View>
+                  <View
+                    style={{
+                      width: 60,
+                      height: 16,
+                      borderRadius: 4,
+                      backgroundColor: COLORS.gray[200],
+                    }}
+                  />
+                </View>
+              ))}
+            </Card>
+          ) : !txData?.transactions?.length ? (
             <EmptyState
               emoji="💸"
               title={t('earn_no_transactions')}

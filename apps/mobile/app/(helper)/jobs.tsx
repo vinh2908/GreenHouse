@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, RefreshControl } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -7,6 +7,7 @@ import Toast from 'react-native-toast-message';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import 'dayjs/locale/vi';
+import { useAuthStore } from '@/stores/auth.store';
 import {
   useAvailableJobs,
   useHelperJobs,
@@ -67,6 +68,61 @@ export default function HelperJobsScreen() {
 
   const current = datasets[tab];
   const insets = useSafeAreaInsets();
+  const user = useAuthStore(s => s.user);
+  const isAuthLoading = useAuthStore(s => s.isLoading);
+
+  useEffect(() => {
+    if (!isAuthLoading && user && user.active_role === 'customer') {
+      router.replace('/(customer)/jobs');
+    }
+  }, [isAuthLoading, user?.active_role, router]);
+
+  if (isAuthLoading || (user && user.active_role === 'customer')) {
+    return (
+      <View style={{ flex: 1, backgroundColor: '#F8F9FA' }}>
+        <View
+          style={{
+            paddingHorizontal: 20,
+            paddingTop: Math.max(insets.top + 8, 20),
+            paddingBottom: 14,
+            backgroundColor: '#fff',
+            borderBottomWidth: 1,
+            borderBottomColor: COLORS.gray[100],
+          }}
+        >
+          <View
+            style={{
+              width: 140,
+              height: 24,
+              borderRadius: 6,
+              backgroundColor: COLORS.gray[200],
+            }}
+          />
+          <View
+            style={{
+              width: 200,
+              height: 14,
+              borderRadius: 4,
+              backgroundColor: COLORS.gray[100],
+              marginTop: 6,
+            }}
+          />
+        </View>
+        <View style={{ padding: 16, gap: 12 }}>
+          {[1, 2, 3].map(i => (
+            <View
+              key={i}
+              style={{
+                height: 110,
+                borderRadius: 16,
+                backgroundColor: COLORS.gray[200],
+              }}
+            />
+          ))}
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View style={{ flex: 1, backgroundColor: '#F8F9FA' }}>

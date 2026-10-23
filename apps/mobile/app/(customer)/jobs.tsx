@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, RefreshControl } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -6,6 +6,7 @@ import { ChevronRight, Plus, Clock, MapPin } from 'lucide-react-native';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import 'dayjs/locale/vi';
+import { useAuthStore } from '@/stores/auth.store';
 import { useMyJobs } from '@/hooks/use-api';
 import { useTranslation } from '@/hooks/use-i18n';
 import { Card, JobStatusBadge, EmptyState, COLORS, Badge } from '@/components/ui';
@@ -26,8 +27,91 @@ export default function CustomerJobsScreen() {
   const router = useRouter();
   const { t, fs } = useTranslation();
   const [activeTab, setActiveTab] = useState(0);
+  const user = useAuthStore(s => s.user);
+  const isAuthLoading = useAuthStore(s => s.isLoading);
   const { data: jobs, isLoading, isRefetching, refetch } = useMyJobs(TABS[activeTab].key);
   const insets = useSafeAreaInsets();
+
+  useEffect(() => {
+    if (!isAuthLoading && user?.active_role === 'helper') {
+      router.replace('/(helper)/jobs');
+    }
+  }, [isAuthLoading, user?.active_role, router]);
+
+  if (isAuthLoading || user?.active_role === 'helper') {
+    return (
+      <View style={{ flex: 1, backgroundColor: '#F8F9FA' }}>
+        {/* Header skeleton */}
+        <View
+          style={{
+            paddingHorizontal: 20,
+            paddingTop: Math.max(insets.top + 8, 20),
+            paddingBottom: 14,
+            backgroundColor: '#fff',
+            borderBottomWidth: 1,
+            borderBottomColor: COLORS.gray[100],
+          }}
+        >
+          <View
+            style={{
+              width: 140,
+              height: 24,
+              borderRadius: 6,
+              backgroundColor: COLORS.gray[200],
+            }}
+          />
+          <View
+            style={{
+              width: 200,
+              height: 14,
+              borderRadius: 4,
+              backgroundColor: COLORS.gray[100],
+              marginTop: 6,
+            }}
+          />
+        </View>
+
+        {/* Tab bar skeleton */}
+        <View
+          style={{
+            flexDirection: 'row',
+            paddingHorizontal: 16,
+            paddingVertical: 12,
+            gap: 10,
+            backgroundColor: '#fff',
+            borderBottomWidth: 1,
+            borderBottomColor: COLORS.gray[100],
+          }}
+        >
+          {[80, 100, 90, 80].map((w, i) => (
+            <View
+              key={i}
+              style={{
+                width: w,
+                height: 32,
+                borderRadius: 16,
+                backgroundColor: COLORS.gray[100],
+              }}
+            />
+          ))}
+        </View>
+
+        {/* Content skeleton cards */}
+        <View style={{ padding: 16, gap: 12 }}>
+          {[1, 2, 3].map(i => (
+            <View
+              key={i}
+              style={{
+                height: 110,
+                borderRadius: 16,
+                backgroundColor: COLORS.gray[200],
+              }}
+            />
+          ))}
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View style={{ flex: 1, backgroundColor: '#F8F9FA' }}>
