@@ -51,7 +51,12 @@
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
-      "expo-router",
+      [
+        "expo-router",
+        {
+          "sitemap": false
+        }
+      ],
       "expo-font",
       "expo-secure-store",
       "@config-plugins/react-native-callkeep",
