@@ -1,6 +1,7 @@
+import { useRef, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter, Redirect } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   User,
@@ -56,11 +57,19 @@ export default function CustomerProfileScreen() {
   const queryClient = useQueryClient();
   const logout = useAuthStore(s => s.logout);
   const user = useAuthStore(s => s.user);
+  const isSwitchingRef = useRef(false);
 
-  // [H2 Fix]: Nếu tài khoản đang ở vai trò thợ, lập tức chuyển sang hồ sơ thợ không chớp UI khách
-  if (user?.active_role === 'helper') {
-    return <Redirect href="/(helper)/profile" />;
-  }
+  // [N4 Fix]: Chuyển hướng an toàn trong useEffect nếu đang ở vai trò thợ, tránh chớp trắng/vòng lặp redirect
+  useEffect(() => {
+    if (user?.active_role === 'helper' && !isSwitchingRef.current) {
+      if (Platform.OS === 'web') {
+        router.replace('/(helper)/dashboard');
+      } else {
+        router.replace('/(helper)/profile');
+      }
+    }
+  }, [user?.active_role]);
+
   const { data: profile } = useMyProfile();
   const { data: loyalty, isLoading: isLoyaltyLoading } = useLoyaltyAccount();
   const switchRole = useSwitchRole();
@@ -93,14 +102,15 @@ export default function CustomerProfileScreen() {
   const displayUser = profile ?? user;
 
   const handleSwitchToHelper = async () => {
+    if (isSwitchingRef.current) return;
+    isSwitchingRef.current = true;
     try {
       await switchRole.mutateAsync('helper');
-      useAuthStore.getState().switchRole('helper');
-      router.replace('/(helper)/dashboard');
     } catch {
-      useAuthStore.getState().switchRole('helper');
-      router.replace('/(helper)/dashboard');
+      /* fallback sang local state */
     }
+    useAuthStore.getState().switchRole('helper');
+    router.replace('/(helper)/dashboard');
   };
 
   const insets = useSafeAreaInsets();

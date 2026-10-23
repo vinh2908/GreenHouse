@@ -39,11 +39,10 @@ export default function LoginPage() {
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/logo.svg"
-            alt="Green House"
-            className="mx-auto w-16 h-16 rounded-2xl bg-green-50 mb-4"
+            alt="Green House Admin Portal"
+            className="mx-auto h-14 w-auto mb-3"
           />
-          <CardTitle className="text-2xl">Green House Admin</CardTitle>
-          <p className="text-sm text-muted-foreground mt-1">Đăng nhập vào hệ thống quản trị</p>
+          <p className="text-sm text-muted-foreground">Đăng nhập vào hệ thống quản trị</p>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">

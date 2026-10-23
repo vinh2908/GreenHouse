@@ -39,16 +39,16 @@ export default function CustomerLayout() {
           title: 'Tài khoản',
         }}
       />
-      {/* Ẩn route notifications khỏi tab bar */}
+      {/* Ẩn route favorites khỏi tab bar — Thợ yêu thích mở từ màn Tài khoản */}
       <Tabs.Screen
-        name="notifications"
+        name="favorites"
         options={{
           href: null,
         }}
       />
-      {/* Ẩn route favorites khỏi tab bar — Thợ yêu thích mở từ màn Tài khoản */}
+      {/* Ẩn route vouchers khỏi tab bar — Ưu đãi mở từ màn Tài khoản */}
       <Tabs.Screen
-        name="favorites"
+        name="vouchers"
         options={{
           href: null,
         }}

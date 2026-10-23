@@ -1,6 +1,6 @@
 import { View, Text, ScrollView, TouchableOpacity, Switch, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter, Redirect } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   ShieldCheck,
@@ -27,16 +27,23 @@ import { locationService } from '@/services/location.service';
 import { Avatar, Card, COLORS, Separator } from '@/components/ui';
 import { useTranslation } from '@/hooks/use-i18n';
 import { DisplaySettingsSection } from '@/components/common/display-settings';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 export default function HelperProfileScreen() {
   const router = useRouter();
   const storedUser = useAuthStore(s => s.user);
+  const isSwitchingRef = useRef(false);
 
-  // [H2 Fix]: Nếu tài khoản đang ở vai trò khách, lập tức chuyển sang hồ sơ khách
-  if (storedUser?.active_role === 'customer') {
-    return <Redirect href="/(customer)/profile" />;
-  }
+  // [N4 Fix]: Chuyển hướng an toàn trong useEffect nếu đang ở vai trò khách, tránh chớp trắng/vòng lặp redirect
+  useEffect(() => {
+    if (storedUser?.active_role === 'customer' && !isSwitchingRef.current) {
+      if (Platform.OS === 'web') {
+        router.replace('/(customer)/home');
+      } else {
+        router.replace('/(customer)/profile');
+      }
+    }
+  }, [storedUser?.active_role]);
 
   const { t, fs } = useTranslation();
   const queryClient = useQueryClient();
@@ -52,14 +59,15 @@ export default function HelperProfileScreen() {
   const isOnline = profile?.status === 'online' || isWorking;
 
   const handleSwitchToCustomer = async () => {
+    if (isSwitchingRef.current) return;
+    isSwitchingRef.current = true;
     try {
       await switchRole.mutateAsync('customer');
-      useAuthStore.getState().switchRole('customer');
-      router.replace('/(customer)/home');
     } catch {
-      useAuthStore.getState().switchRole('customer');
-      router.replace('/(customer)/home');
+      /* fallback */
     }
+    useAuthStore.getState().switchRole('customer');
+    router.replace('/(customer)/home');
   };
 
   const handleLogout = () => {
