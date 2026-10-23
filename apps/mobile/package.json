@@ -1,6 +1,7 @@
 {
   "name": "@homemate/mobile",
   "version": "1.0.0",
+  "description": "Green House Mobile & Web application",
   "private": true,
   "main": "expo-router/entry",
   "scripts": {
