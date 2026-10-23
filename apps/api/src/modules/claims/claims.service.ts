@@ -54,9 +54,7 @@ export class ClaimsService {
       throw new ForbiddenException('Bạn chỉ có thể yêu cầu bồi thường cho đơn của mình');
     }
     if (job.status !== JobStatus.COMPLETED) {
-      throw new BadRequestException(
-        'Chỉ đơn đã hoàn thành mới được yêu cầu bồi thường bảo hiểm',
-      );
+      throw new BadRequestException('Chỉ đơn đã hoàn thành mới được yêu cầu bồi thường bảo hiểm');
     }
 
     // ── Cửa sổ bảo hiểm ──
@@ -67,9 +65,7 @@ export class ClaimsService {
     const completedAt = contract?.completed_at ?? job.updated_at;
     const deadline = new Date(completedAt).getTime() + windowDays * 24 * 3600 * 1000;
     if (Date.now() > deadline) {
-      throw new BadRequestException(
-        'Đã quá thời hạn yêu cầu bồi thường (30 ngày sau hoàn thành)',
-      );
+      throw new BadRequestException('Đã quá thời hạn yêu cầu bồi thường (30 ngày sau hoàn thành)');
     }
 
     const open = await this.claimModel
@@ -199,7 +195,11 @@ export class ClaimsService {
       claim.status = 'under_review';
       pushTimeline('under_review', dto.note || 'Admin bắt đầu xem xét hồ sơ');
       await claim.save();
-      await this.notifyCustomer(claim, '🛡 Yêu cầu bồi thường đang được xem xét', 'Đội ngũ Green House đang xem xét hồ sơ bồi thường của bạn.');
+      await this.notifyCustomer(
+        claim,
+        '🛡 Yêu cầu bồi thường đang được xem xét',
+        'Đội ngũ Green House đang xem xét hồ sơ bồi thường của bạn.',
+      );
       return claim;
     }
 
@@ -231,7 +231,10 @@ export class ClaimsService {
     }
     claim.approved_amount = dto.approved_amount;
     claim.status = 'approved';
-    pushTimeline('approved', dto.note || `Duyệt bồi thường ${dto.approved_amount.toLocaleString('vi-VN')}₫`);
+    pushTimeline(
+      'approved',
+      dto.note || `Duyệt bồi thường ${dto.approved_amount.toLocaleString('vi-VN')}₫`,
+    );
     await claim.save();
 
     const jobIdStr = this.idOf(claim.job_id as unknown as Types.ObjectId);
@@ -243,7 +246,10 @@ export class ClaimsService {
     );
     claim.status = 'paid';
     claim.payout_transaction_id = String(tx._id);
-    pushTimeline('paid', `Đã cộng ${dto.approved_amount.toLocaleString('vi-VN')}₫ vào ví khách hàng`);
+    pushTimeline(
+      'paid',
+      `Đã cộng ${dto.approved_amount.toLocaleString('vi-VN')}₫ vào ví khách hàng`,
+    );
     await claim.save();
 
     await this.notifyCustomer(

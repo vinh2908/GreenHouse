@@ -47,7 +47,7 @@ export class ServicesController {
   async getAll(
     @Query('category_id') categoryId?: string,
     @Query('include_inactive') includeInactive?: string,
-  ) {
+  ): Promise<any[]> {
     return this.servicesService.getAll(categoryId, includeInactive === 'true');
   }
 

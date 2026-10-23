@@ -1,4 +1,13 @@
-import { Controller, Get, Post, Body, Param, UseGuards, HttpCode, HttpStatus } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  UseGuards,
+  HttpCode,
+  HttpStatus,
+} from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { IsMongoId, IsOptional, IsString } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
@@ -36,21 +45,17 @@ export class CallsController {
 
   @Post('token')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Bắt đầu phiên gọi cho 1 job: cấp token provider + phòng gọi (che số thật)' })
-  async initiate(
-    @CurrentUser() user: { sub: string },
-    @Body() dto: InitiateCallDto,
-  ) {
+  @ApiOperation({
+    summary: 'Bắt đầu phiên gọi cho 1 job: cấp token provider + phòng gọi (che số thật)',
+  })
+  async initiate(@CurrentUser() user: { sub: string }, @Body() dto: InitiateCallDto) {
     return this.callsService.initiateCall(dto.job_id, user.sub);
   }
 
   @Post('sessions/:sessionId/join-token')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Cấp token join phiên gọi cho phía nhận cuộc gọi (callee/caller)' })
-  async joinToken(
-    @CurrentUser() user: { sub: string },
-    @Param('sessionId') sessionId: string,
-  ) {
+  async joinToken(@CurrentUser() user: { sub: string }, @Param('sessionId') sessionId: string) {
     return this.callsService.joinSessionToken(user.sub, sessionId);
   }
 

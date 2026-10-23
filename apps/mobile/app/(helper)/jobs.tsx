@@ -186,26 +186,21 @@ export default function HelperJobsScreen() {
                 {inv.title}
               </Text>
               <Text style={{ fontSize: 12.5, color: COLORS.gray[600], lineHeight: 18 }}>
-                {inv.address_text ? `📍 ${inv.address_text}\n` : ''}Bạn sẽ nhận{' '}
-                {inv.split_percent}% tiền công của đơn (sau phí sàn) khi hoàn thành cùng nhóm{' '}
-                {inv.helpers_needed} thợ.
+                {inv.address_text ? `📍 ${inv.address_text}\n` : ''}Bạn sẽ nhận {inv.split_percent}%
+                tiền công của đơn (sau phí sàn) khi hoàn thành cùng nhóm {inv.helpers_needed} thợ.
               </Text>
               <View style={{ flexDirection: 'row', gap: 8 }}>
                 <Button
                   title="✓ Nhận lời"
                   size="sm"
                   loading={respondInvitation.isPending}
-                  onPress={() =>
-                    respondInvitation.mutate({ jobId: inv.job_id, action: 'accept' })
-                  }
+                  onPress={() => respondInvitation.mutate({ jobId: inv.job_id, action: 'accept' })}
                 />
                 <Button
                   title="Từ chối"
                   size="sm"
                   variant="outline"
-                  onPress={() =>
-                    respondInvitation.mutate({ jobId: inv.job_id, action: 'decline' })
-                  }
+                  onPress={() => respondInvitation.mutate({ jobId: inv.job_id, action: 'decline' })}
                 />
                 <Button
                   title="Xem đơn"
@@ -380,7 +375,12 @@ export default function HelperJobsScreen() {
                       size="sm"
                     />
                     {job.is_private_offer ? (
-                      <Badge label="⭐ Gửi riêng cho bạn" size="sm" color="#FDF2F8" textColor="#9D174D" />
+                      <Badge
+                        label="⭐ Gửi riêng cho bạn"
+                        size="sm"
+                        color="#FDF2F8"
+                        textColor="#9D174D"
+                      />
                     ) : null}
                     {job.is_recurring || job.recurring_plan_id ? (
                       <Badge label="🔁 Định kỳ" size="sm" color="#EFF6FF" textColor="#1D4ED8" />

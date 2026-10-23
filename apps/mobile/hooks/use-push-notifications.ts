@@ -56,9 +56,7 @@ export function usePushNotifications() {
       const token = savedTokenRef.current;
       savedTokenRef.current = null;
       if (token) {
-        void apiClient
-          .delete('/users/me/push-token', { data: { token } })
-          .catch(() => undefined);
+        void apiClient.delete('/users/me/push-token', { data: { token } }).catch(() => undefined);
       }
     }
   }, [isAuthenticated, userId]);

@@ -48,6 +48,27 @@ export interface OsmPlace {
   };
 }
 
+export function normalizeVietnameseAddress(text?: string | null): string {
+  if (!text) return '';
+  return text
+    .replace(/\bBen Thanh\b/gi, 'Bến Thành')
+    .replace(/\bHo Chi Minh City\b/gi, 'TP. Hồ Chí Minh')
+    .replace(/\bHo Chi Minh\b/gi, 'Hồ Chí Minh')
+    .replace(/\bDistrict (\d+)\b/gi, 'Quận $1')
+    .replace(/\bDa Nang\b/gi, 'Đà Nẵng')
+    .replace(/\bHanoi\b/gi, 'Hà Nội')
+    .replace(/\bHai Phong\b/gi, 'Hải Phòng')
+    .replace(/\bCan Tho\b/gi, 'Cần Thơ')
+    .replace(/\bWard (\d+)\b/gi, 'Phường $1')
+    .replace(/\bThanh Khe\b/gi, 'Thanh Khê')
+    .replace(/\bHai Chau\b/gi, 'Hải Châu')
+    .replace(/\bSon Tra\b/gi, 'Sơn Trà')
+    .replace(/\bNgu Hanh Son\b/gi, 'Ngũ Hành Sơn')
+    .replace(/\bLien Chieu\b/gi, 'Liên Chiểu')
+    .replace(/\bCam Le\b/gi, 'Cẩm Lệ')
+    .replace(/\bHoa Vang\b/gi, 'Hòa Vang');
+}
+
 class LocationService {
   /**
    * Xin quyền GPS và lấy tọa độ hiện tại của thiết bị (hỗ trợ cả Web & Mobile Native)
@@ -154,7 +175,7 @@ class LocationService {
 
     // 3. Thử Photon OpenStreetMap Reverse Geocode (Có CORS, miễn phí, trả về Số nhà + Tên đường chính xác)
     try {
-      const photonUrl = `https://photon.komoot.io/reverse?lat=${latitude}&lon=${longitude}`;
+      const photonUrl = `https://photon.komoot.io/reverse?lat=${latitude}&lon=${longitude}&lang=vi`;
       const res = await fetch(photonUrl);
       if (res.ok) {
         const json = await res.json();

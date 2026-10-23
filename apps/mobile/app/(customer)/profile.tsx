@@ -1,6 +1,6 @@
 import { View, Text, ScrollView, TouchableOpacity, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, Redirect } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   User,
@@ -15,6 +15,7 @@ import {
   CreditCard,
   Heart,
   CalendarClock,
+  Ticket,
 } from 'lucide-react-native';
 import Toast from 'react-native-toast-message';
 import { Alert } from '@/components/common/app-alert';
@@ -33,6 +34,7 @@ const MENU_SECTIONS = [
       { icon: CreditCard, labelKey: 'profile_payment_wallet', route: '/bank-account' },
       { icon: Bell, labelKey: 'profile_notification_settings', route: '/notifications' },
       { icon: Heart, labelKey: 'profile_favorite_helpers', route: '/favorites' },
+      { icon: Ticket, labelKey: 'profile_my_vouchers', route: '/vouchers' },
       { icon: CalendarClock, labelKey: 'profile_recurring_plans', route: '/recurring-plans' },
       { icon: CalendarClock, labelKey: 'profile_monthly_contracts', route: '/monthly-contracts' },
     ],
@@ -54,6 +56,11 @@ export default function CustomerProfileScreen() {
   const queryClient = useQueryClient();
   const logout = useAuthStore(s => s.logout);
   const user = useAuthStore(s => s.user);
+
+  // [H2 Fix]: Nếu tài khoản đang ở vai trò thợ, lập tức chuyển sang hồ sơ thợ không chớp UI khách
+  if (user?.active_role === 'helper') {
+    return <Redirect href="/(helper)/profile" />;
+  }
   const { data: profile } = useMyProfile();
   const { data: loyalty, isLoading: isLoyaltyLoading } = useLoyaltyAccount();
   const switchRole = useSwitchRole();
@@ -151,12 +158,22 @@ export default function CustomerProfileScreen() {
             <View style={{ alignItems: 'center' }}>
               <Avatar name="Khách" size={80} />
               <Text
-                style={{ fontSize: fs(20), fontWeight: '800', color: COLORS.gray[900], marginTop: 12 }}
+                style={{
+                  fontSize: fs(20),
+                  fontWeight: '800',
+                  color: COLORS.gray[900],
+                  marginTop: 12,
+                }}
               >
                 {t('profile_guest_name')}
               </Text>
               <Text
-                style={{ fontSize: fs(13), color: COLORS.gray[500], marginTop: 4, fontWeight: '500' }}
+                style={{
+                  fontSize: fs(13),
+                  color: COLORS.gray[500],
+                  marginTop: 4,
+                  fontWeight: '500',
+                }}
               >
                 {t('profile_not_logged_in')}
               </Text>

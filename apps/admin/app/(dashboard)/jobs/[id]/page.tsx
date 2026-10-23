@@ -3,7 +3,13 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { useAdminCancelJob, useAdminJob, useAdminResolveDispute } from '@/hooks/use-admin';
+import {
+  useAdminCancelJob,
+  useAdminJob,
+  useAdminResolveDispute,
+  useAdminUpdateJobStatus,
+  useAdminDirectRefund,
+} from '@/hooks/use-admin';
 import {
   Badge,
   Button,
@@ -76,6 +82,13 @@ export default function JobDetailPage() {
   >('refund_full');
   const [refundAmount, setRefundAmount] = useState('');
   const [adminNote, setAdminNote] = useState('');
+
+  const updateStatus = useAdminUpdateJobStatus();
+  const directRefund = useAdminDirectRefund();
+  const [manualStatus, setManualStatus] = useState('');
+  const [manualNote, setManualNote] = useState('');
+  const [directRefundAmount, setDirectRefundAmount] = useState('');
+  const [directRefundReason, setDirectRefundReason] = useState('');
 
   if (isLoading) return <Loading />;
   if (error || !job) return <EmptyState message="Không tìm thấy job" />;
@@ -315,6 +328,113 @@ export default function JobDetailPage() {
               </CardContent>
             </Card>
           )}
+
+          {/* Can thiệp Admin (đơn không tranh chấp / can thiệp trực tiếp) */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Can thiệp Admin</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Đổi trạng thái thủ công */}
+              <div className="space-y-2 border-b pb-3">
+                <p className="text-xs font-semibold text-muted-foreground uppercase">
+                  Đổi trạng thái thủ công
+                </p>
+                <Select
+                  value={manualStatus || job.status}
+                  onChange={e => setManualStatus(e.target.value)}
+                  options={[
+                    { value: 'open', label: 'Đăng yêu cầu (open)' },
+                    { value: 'receiving_quotes', label: 'Đang nhận báo giá (receiving_quotes)' },
+                    { value: 'quote_selected', label: 'Đã chọn báo giá (quote_selected)' },
+                    { value: 'confirmed', label: 'Đã chốt thợ (confirmed)' },
+                    { value: 'helper_on_the_way', label: 'Thợ đang di chuyển (helper_on_the_way)' },
+                    { value: 'helper_arrived', label: 'Thợ đã đến nơi (helper_arrived)' },
+                    { value: 'in_progress', label: 'Đang làm việc (in_progress)' },
+                    { value: 'pending_review', label: 'Chờ nghiệm thu (pending_review)' },
+                    { value: 'completed', label: 'Hoàn tất (completed)' },
+                    { value: 'cancelled', label: 'Đã hủy (cancelled)' },
+                  ]}
+                />
+                <Input
+                  placeholder="Ghi chú lý do đổi trạng thái (tùy chọn)"
+                  value={manualNote}
+                  onChange={e => setManualNote(e.target.value)}
+                />
+                <Button
+                  variant="outline"
+                  className="w-full text-xs"
+                  disabled={!manualStatus || manualStatus === job.status || updateStatus.isPending}
+                  onClick={() => {
+                    if (confirm(`Chuyển trạng thái đơn sang "${manualStatus}"?`)) {
+                      updateStatus.mutate(
+                        { id, status: manualStatus, note: manualNote.trim() },
+                        {
+                          onSuccess: () => {
+                            setManualNote('');
+                            alert('Đã cập nhật trạng thái đơn thành công');
+                          },
+                        },
+                      );
+                    }
+                  }}
+                >
+                  {updateStatus.isPending ? 'Đang cập nhật…' : 'Cập nhật trạng thái'}
+                </Button>
+              </div>
+
+              {/* Hoàn tiền trực tiếp cho khách hàng */}
+              <div className="space-y-2">
+                <p className="text-xs font-semibold text-muted-foreground uppercase">
+                  Hoàn tiền ngoài tranh chấp
+                </p>
+                <Input
+                  type="number"
+                  placeholder="Số tiền hoàn (₫)"
+                  value={directRefundAmount}
+                  onChange={e => setDirectRefundAmount(e.target.value)}
+                />
+                <Input
+                  placeholder="Lý do hoàn tiền (bắt buộc)"
+                  value={directRefundReason}
+                  onChange={e => setDirectRefundReason(e.target.value)}
+                />
+                <Button
+                  variant="secondary"
+                  className="w-full text-xs"
+                  disabled={
+                    !Number(directRefundAmount) ||
+                    !directRefundReason.trim() ||
+                    directRefund.isPending
+                  }
+                  onClick={() => {
+                    if (
+                      confirm(
+                        `Hoàn ${Number(directRefundAmount).toLocaleString('vi-VN')}₫ vào ví của khách hàng?`,
+                      )
+                    ) {
+                      directRefund.mutate(
+                        {
+                          id,
+                          amount: Number(directRefundAmount),
+                          reason: directRefundReason.trim(),
+                        },
+                        {
+                          onSuccess: () => {
+                            setDirectRefundAmount('');
+                            setDirectRefundReason('');
+                            alert('Đã hoàn tiền vào ví khách hàng thành công');
+                          },
+                        },
+                      );
+                    }
+                  }}
+                >
+                  {directRefund.isPending ? 'Đang hoàn tiền…' : 'Hoàn tiền vào ví khách'}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>
