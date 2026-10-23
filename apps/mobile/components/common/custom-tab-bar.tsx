@@ -16,7 +16,11 @@ interface CustomTabBarProps {
 // màn hình khác (vd Thợ yêu thích mở từ màn Tài khoản).
 // Kiểm tra theo TÊN route trước: chắc chắn trên mọi nền tảng, kể cả web nơi
 // options.href đôi khi không được resolve đúng lúc render tab bar.
-const HIDDEN_TAB_ROUTES: ReadonlySet<string> = new Set(['notifications', 'favorites']);
+const HIDDEN_TAB_ROUTES: ReadonlySet<string> = new Set([
+  'notifications',
+  'favorites',
+  'vouchers',
+]);
 
 export function CustomTabBar({
   state,
