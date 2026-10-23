@@ -357,11 +357,23 @@ export default function HelperDashboardScreen() {
         <View style={{ paddingHorizontal: 16, marginTop: 14 }}>
           <View
             style={{
-              backgroundColor: isWorking ? '#FFFBEB' : isOnline ? '#1E1E24' : '#FFFFFF',
+              backgroundColor: pLoading
+                ? '#FFFFFF'
+                : isWorking
+                  ? '#FFFBEB'
+                  : isOnline
+                    ? '#1E1E24'
+                    : '#FFFFFF',
               borderRadius: 20,
               padding: 18,
               borderWidth: 1,
-              borderColor: isWorking ? '#FDE68A' : isOnline ? 'transparent' : COLORS.gray[200],
+              borderColor: pLoading
+                ? COLORS.gray[200]
+                : isWorking
+                  ? '#FDE68A'
+                  : isOnline
+                    ? 'transparent'
+                    : COLORS.gray[200],
               shadowColor: '#000',
               shadowOffset: { width: 0, height: 3 },
               shadowOpacity: 0.08,
@@ -369,72 +381,110 @@ export default function HelperDashboardScreen() {
               elevation: 3,
             }}
           >
-            <View
-              style={{
-                flexDirection: 'row',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-              }}
-            >
-              <View style={{ flex: 1, marginRight: 12 }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            {pLoading ? (
+              <View
+                style={{
+                  flexDirection: 'row',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                }}
+              >
+                <View style={{ flex: 1, marginRight: 12 }}>
                   <View
                     style={{
-                      width: 10,
-                      height: 10,
-                      borderRadius: 5,
-                      backgroundColor: isWorking
-                        ? '#F59E0B'
-                        : isOnline
-                          ? '#10B981'
-                          : COLORS.gray[400],
+                      width: 140,
+                      height: 18,
+                      borderRadius: 6,
+                      backgroundColor: COLORS.gray[200],
                     }}
                   />
+                  <View
+                    style={{
+                      width: 200,
+                      height: 13,
+                      borderRadius: 4,
+                      backgroundColor: COLORS.gray[100],
+                      marginTop: 8,
+                    }}
+                  />
+                </View>
+                <View
+                  style={{
+                    width: 48,
+                    height: 28,
+                    borderRadius: 14,
+                    backgroundColor: COLORS.gray[200],
+                  }}
+                />
+              </View>
+            ) : (
+              <View
+                style={{
+                  flexDirection: 'row',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                }}
+              >
+                <View style={{ flex: 1, marginRight: 12 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    <View
+                      style={{
+                        width: 10,
+                        height: 10,
+                        borderRadius: 5,
+                        backgroundColor: isWorking
+                          ? '#F59E0B'
+                          : isOnline
+                            ? '#10B981'
+                            : COLORS.gray[400],
+                      }}
+                    />
+                    <Text
+                      style={{
+                        fontSize: 16.5,
+                        fontWeight: '800',
+                        color: isWorking ? '#92400E' : isOnline ? '#FFFFFF' : COLORS.gray[900],
+                      }}
+                    >
+                      {isWorking
+                        ? t('dash_busy')
+                        : isOnline
+                          ? t('dash_accepting')
+                          : t('dash_paused')}
+                    </Text>
+                  </View>
                   <Text
                     style={{
-                      fontSize: 16.5,
-                      fontWeight: '800',
-                      color: isWorking ? '#92400E' : isOnline ? '#FFFFFF' : COLORS.gray[900],
+                      fontSize: 13,
+                      color: isWorking
+                        ? '#B45309'
+                        : isOnline
+                          ? 'rgba(255,255,255,0.7)'
+                          : COLORS.gray[500],
+                      marginTop: 4,
+                      lineHeight: 18,
                     }}
                   >
                     {isWorking
-                      ? t('dash_busy')
+                      ? t('dash_working_hint')
                       : isOnline
-                        ? t('dash_accepting')
-                        : t('dash_paused')}
+                        ? t('dash_online_hint')
+                        : t('dash_offline_hint')}
                   </Text>
                 </View>
-                <Text
-                  style={{
-                    fontSize: 13,
-                    color: isWorking
-                      ? '#B45309'
-                      : isOnline
-                        ? 'rgba(255,255,255,0.7)'
-                        : COLORS.gray[500],
-                    marginTop: 4,
-                    lineHeight: 18,
-                  }}
-                >
-                  {isWorking
-                    ? t('dash_working_hint')
-                    : isOnline
-                      ? t('dash_online_hint')
-                      : t('dash_offline_hint')}
-                </Text>
-              </View>
 
-              <Switch
-                value={isOnline}
-                onValueChange={handleToggleOnline}
-                trackColor={{
-                  false: COLORS.gray[300],
-                  true: isWorking ? '#F59E0B' : COLORS.primary,
-                }}
-                thumbColor="#FFFFFF"
-                disabled={isWorking || setStatus.isPending || pLoading}
-              />
-            </View>
+                <Switch
+                  value={isOnline}
+                  onValueChange={handleToggleOnline}
+                  trackColor={{
+                    false: COLORS.gray[300],
+                    true: isWorking ? '#F59E0B' : COLORS.primary,
+                  }}
+                  thumbColor="#FFFFFF"
+                  disabled={isWorking || setStatus.isPending || pLoading}
+                />
+              </View>
+            )}
           </View>
         </View>
 
