@@ -902,9 +902,9 @@ export default function BookingScreen() {
       const hasFullAddress = address.full_address.trim().length > 0;
       const hasLocality = Boolean(
         address.district.trim() ||
-          address.ward.trim() ||
-          address.city.trim() ||
-          (address.coordinates && (address.coordinates[0] !== 0 || address.coordinates[1] !== 0)),
+        address.ward.trim() ||
+        address.city.trim() ||
+        (address.coordinates && (address.coordinates[0] !== 0 || address.coordinates[1] !== 0)),
       );
       if (!hasFullAddress || !hasLocality) {
         Toast.show({

@@ -37,7 +37,7 @@ const INNER_GRAPHIC = `
 
 // Icon SVG with rounded rectangle (for standalone icons, favicons, etc.)
 function getIconSvg(size, rx = 224, fullBleed = false) {
-  const bgRect = fullBleed 
+  const bgRect = fullBleed
     ? `<rect width="1024" height="1024" fill="${MINT_BG}"/>`
     : `<rect width="1024" height="1024" rx="${rx}" fill="${MINT_BG}"/>`;
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 1024 1024">
@@ -180,7 +180,10 @@ async function run() {
   console.log('✓ apps/admin/public/favicon-{16,32,48}.png & apple-touch-icon.png (180x180)');
 
   // 8. Admin public/favicon.ico via Python Pillow
-  execSync('python -c "from PIL import Image; im = Image.open(\'apps/admin/public/favicon-48x48.png\'); im.save(\'apps/admin/public/favicon.ico\', format=\'ICO\', sizes=[(16, 16), (32, 32), (48, 48)])"', { stdio: 'inherit' });
+  execSync(
+    "python -c \"from PIL import Image; im = Image.open('apps/admin/public/favicon-48x48.png'); im.save('apps/admin/public/favicon.ico', format='ICO', sizes=[(16, 16), (32, 32), (48, 48)])\"",
+    { stdio: 'inherit' },
+  );
   console.log('✓ apps/admin/public/favicon.ico (multi-size: 16, 32, 48)');
 
   // 9. Admin horizontal lockup: apps/admin/public/logo.svg & apps/admin/public/logo.png
@@ -205,4 +208,3 @@ run().catch(err => {
   console.error(err);
   process.exit(1);
 });
-
