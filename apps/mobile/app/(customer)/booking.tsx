@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -30,6 +30,7 @@ import {
   Trash2,
 } from 'lucide-react-native';
 import Toast from 'react-native-toast-message';
+import { Alert } from '@/components/common/app-alert';
 import dayjs from 'dayjs';
 import { useAuthStore } from '@/stores/auth.store';
 import {
@@ -142,7 +143,7 @@ const DEFAULT_SERVICES: BookingServiceOption[] = [
   {
     _id: '6aa1269cd33a3aed2b36a5e8',
     name: 'Giúp việc theo giờ',
-    slug: 'hourly_helper',
+    slug: 'housekeeping_hourly',
     icon: '🧹',
     description: 'Dọn dẹp, rửa chén, lau kính, hỗ trợ việc nhà linh hoạt theo giờ...',
     base_price_min: 60000,
@@ -185,7 +186,7 @@ export default function BookingScreen() {
     prefill_description?: string;
     package_mode?: string;
   }>();
-  const { data: services } = useServices();
+  const { data: services, isLoading: isLoadingServices } = useServices();
   const createJob = useCreateJob();
   const createRecurringPlan = useCreateRecurringPlan();
   const analyzeAI = useAnalyzeBooking();
@@ -210,15 +211,19 @@ export default function BookingScreen() {
     full_address: '',
     ward: '',
     district: '',
-    city: 'Hồ Chí Minh',
+    city: '',
     notes: '',
-    coordinates: [106.6983, 10.7725] as [number, number],
+    coordinates: [0, 0] as [number, number],
   });
+  const [coordsDerived, setCoordsDerived] = useState(false);
 
   const [isLocating, setIsLocating] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<OsmPlace[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [isAnalyzingPhoto, setIsAnalyzingPhoto] = useState(false);
+  const searchSeqRef = useRef(0);
+  const searchTimeoutRef = useRef<any>(null);
   const [date, setDate] = useState(dayjs().add(1, 'day').format('YYYY-MM-DD'));
   const [timeSlot, setTimeSlot] = useState('09:00');
   const [duration, setDuration] = useState(3);
@@ -265,10 +270,11 @@ export default function BookingScreen() {
       full_address: '',
       ward: '',
       district: '',
-      city: 'Hồ Chí Minh',
+      city: '',
       notes: '',
-      coordinates: [106.6983, 10.7725],
+      coordinates: [0, 0],
     });
+    setCoordsDerived(false);
     setDate(dayjs().add(1, 'day').format('YYYY-MM-DD'));
     setTimeSlot('09:00');
     setDuration(3);
@@ -287,7 +293,8 @@ export default function BookingScreen() {
     setSearchResults([]);
   };
 
-  const svcList = services && services.length > 0 ? services : DEFAULT_SERVICES;
+  const svcList =
+    services && services.length > 0 ? services : isLoadingServices ? [] : DEFAULT_SERVICES;
   const selectedServiceData = svcList.find(s => s._id === selectedService);
   // Feature 7: dịch vụ giá cam kết — giá cố định, không qua vòng báo giá
   const isFixedPriceService =
@@ -341,23 +348,30 @@ export default function BookingScreen() {
   // Chọn 1 ảnh → đọc base64 → AI nhận diện vấn đề, gợi ý dịch vụ, điền sẵn mô
   // tả. Ảnh LUÔN được đính kèm vào đơn kể cả khi AI không phân tích được.
   const handleAnalyzeIssuePhoto = async () => {
-    const unavailableToast = () =>
+    const unavailableToast = (msg?: string) =>
       Toast.show({
         type: 'info',
-        text1: 'Chưa phân tích được ảnh — ảnh vẫn được đính kèm vào đơn, bạn tự mô tả giúp mình nhé',
+        text1: 'Chưa phân tích được ảnh',
+        text2: msg || 'Ảnh vẫn được đính kèm vào đơn, bạn tự mô tả giúp mình nhé',
       });
+
+    setIsAnalyzingPhoto(true);
     try {
-      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (status !== 'granted') {
-        Toast.show({ type: 'error', text1: 'Cần quyền truy cập thư viện ảnh' });
-        return;
+      if (Platform.OS !== 'web') {
+        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (status !== 'granted') {
+          Toast.show({ type: 'error', text1: 'Cần quyền truy cập thư viện ảnh' });
+          return;
+        }
       }
+
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsMultipleSelection: false,
         quality: 0.7,
         base64: true, // dự phòng khi FileSystem không đọc được (web)
       });
+
       if (result.canceled || !result.assets[0]?.uri) return;
       const asset = result.assets[0];
       const uri = asset.uri;
@@ -365,16 +379,47 @@ export default function BookingScreen() {
 
       let base64: string | undefined;
       try {
-        base64 = await FileSystem.readAsStringAsync(uri, {
-          encoding: FileSystem.EncodingType.Base64,
-        });
+        if (Platform.OS !== 'web' && FileSystem.readAsStringAsync) {
+          base64 = await FileSystem.readAsStringAsync(uri, {
+            encoding: FileSystem.EncodingType.Base64,
+          });
+        }
       } catch {
-        base64 = asset.base64 ?? undefined;
+        /* ignore native read error */
       }
+
+      if (!base64 && asset.base64) {
+        base64 = asset.base64;
+      }
+
+      // Dự phòng đọc base64 trên trình duyệt Web (blob URI / data URL)
+      if (!base64 && typeof globalThis !== 'undefined' && (globalThis as any).FileReader && uri) {
+        try {
+          if (uri.startsWith('data:')) {
+            base64 = uri.split(',')[1];
+          } else {
+            const resp = await fetch(uri);
+            const blob = await resp.blob();
+            base64 = await new Promise<string>((resolve, reject) => {
+              const reader = new (globalThis as any).FileReader();
+              reader.onloadend = () => {
+                const resStr = (reader.result as string) || '';
+                resolve(resStr.includes(',') ? resStr.split(',')[1] : resStr);
+              };
+              reader.onerror = reject;
+              reader.readAsDataURL(blob);
+            });
+          }
+        } catch (readErr) {
+          console.warn('Web blob read error:', readErr);
+        }
+      }
+
       if (!base64) {
-        unavailableToast();
+        unavailableToast('Không thể đọc dữ liệu ảnh để phân tích AI');
         return;
       }
+
       const mimeType =
         asset.mimeType && ['image/jpeg', 'image/png', 'image/webp'].includes(asset.mimeType)
           ? asset.mimeType
@@ -390,7 +435,21 @@ export default function BookingScreen() {
         if (res.description_draft) setDescription(res.description_draft);
         if (res.suggested_service_slug) {
           const svc = svcList.find(s => s.slug === res.suggested_service_slug);
-          if (svc) setSelectedService(svc._id);
+          if (svc) {
+            if (selectedService && selectedService !== svc._id) {
+              const currentSvc = svcList.find(s => s._id === selectedService);
+              Alert.alert(
+                'AI gợi ý đổi dịch vụ',
+                `AI nhận diện ảnh phù hợp với "${svc.name}" (hiện đang chọn "${currentSvc?.name || 'khác'}"). Bạn có muốn chuyển sang dịch vụ này không?`,
+                [
+                  { text: 'Giữ dịch vụ hiện tại', style: 'cancel' },
+                  { text: 'Đổi sang ' + svc.name, onPress: () => setSelectedService(svc._id) },
+                ],
+              );
+            } else {
+              setSelectedService(svc._id);
+            }
+          }
         }
         Toast.show({
           type: 'success',
@@ -400,8 +459,11 @@ export default function BookingScreen() {
       } else {
         unavailableToast();
       }
-    } catch {
-      unavailableToast();
+    } catch (err: any) {
+      console.warn('AI issue photo analysis error:', err);
+      unavailableToast(err?.response?.data?.message || err?.message);
+    } finally {
+      setIsAnalyzingPhoto(false);
     }
   };
 
@@ -416,12 +478,10 @@ export default function BookingScreen() {
           full_address: details.road || details.full_address,
           ward: details.ward || '',
           district: details.district || '',
-          // Không bịa 'Hồ Chí Minh' khi geocoder không trả city: để '' cho
-          // người dùng tự sửa ở ô Thành phố (trước đây người dùng Đà Nẵng bị
-          // gán cứng Hồ Chí Minh).
           city: details.city || '',
           coordinates: details.coordinates,
         }));
+        setCoordsDerived(true);
         Toast.show({
           type: 'success',
           text1: 'Đã định vị vị trí của bạn',
@@ -441,32 +501,55 @@ export default function BookingScreen() {
     }
   };
 
-  const handleSearchAddress = async (text: string) => {
+  const handleSearchAddress = (text: string) => {
     setSearchQuery(text);
+    if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
     if (text.trim().length < 2) {
       setSearchResults([]);
+      setIsSearching(false);
       return;
     }
     setIsSearching(true);
-    try {
-      const results = await locationService.searchPlaces(text);
-      setSearchResults(results);
-    } catch {
-      setSearchResults([]);
-    } finally {
-      setIsSearching(false);
-    }
+    const seq = ++searchSeqRef.current;
+    searchTimeoutRef.current = setTimeout(async () => {
+      try {
+        const results = await locationService.searchPlaces(text);
+        if (seq === searchSeqRef.current) {
+          setSearchResults(results);
+        }
+      } catch {
+        if (seq === searchSeqRef.current) {
+          setSearchResults([]);
+        }
+      } finally {
+        if (seq === searchSeqRef.current) {
+          setIsSearching(false);
+        }
+      }
+    }, 300);
   };
 
   const handleSelectOsmPlace = (place: OsmPlace) => {
     const addr = place.address || {};
     const house = addr.house_number ? `${addr.house_number} ` : '';
     const street = `${house}${addr.road || ''}`.trim() || place.display_name.split(',')[0];
-    const ward = addr.suburb || addr.quarter || addr.neighbourhood || '';
-    // Không bịa 'Quận 1'/'Hồ Chí Minh' khi kết quả tìm kiếm thiếu quận/thành:
-    // để '' — form bắt buộc nhập Quận/Huyện trước khi qua bước tiếp theo.
-    const district = addr.city_district || addr.district || addr.county || '';
-    const city = addr.city || addr.state || '';
+    let ward = addr.suburb || addr.quarter || addr.neighbourhood || '';
+    let district = addr.city_district || addr.district || addr.county || '';
+    let city = addr.city || addr.state || '';
+
+    // D1 Fix: Suy luận quận/thành phố từ display_name khi Nominatim không trả city_district (vd Đà Nẵng)
+    if (!district && place.display_name) {
+      const matchDistrict = place.display_name.match(/(?:Quận|Huyện|Thị xã)\s+([^,]+)/i);
+      if (matchDistrict) {
+        district = matchDistrict[0].trim();
+      }
+    }
+    if (!city && place.display_name) {
+      const matchCity = place.display_name.match(/(?:Thành phố|Tỉnh|TP\.?)\s+([^,]+)/i);
+      if (matchCity) {
+        city = matchCity[0].trim();
+      }
+    }
 
     setAddress(prev => ({
       ...prev,
@@ -476,6 +559,7 @@ export default function BookingScreen() {
       city,
       coordinates: [parseFloat(place.lon), parseFloat(place.lat)],
     }));
+    setCoordsDerived(true);
 
     setSearchQuery('');
     setSearchResults([]);
@@ -484,6 +568,39 @@ export default function BookingScreen() {
       text1: 'Đã chọn địa điểm từ bản đồ',
       text2: place.display_name.split(',').slice(0, 2).join(', '),
     });
+  };
+
+  const ensureResolvedCoordinates = async (
+    currentAddr: typeof address,
+  ): Promise<[number, number] | null> => {
+    if (
+      coordsDerived &&
+      currentAddr.coordinates &&
+      (currentAddr.coordinates[0] !== 0 || currentAddr.coordinates[1] !== 0)
+    ) {
+      return currentAddr.coordinates;
+    }
+    const queryParts = [
+      currentAddr.full_address,
+      currentAddr.ward,
+      currentAddr.district,
+      currentAddr.city,
+    ].filter(Boolean);
+    if (!queryParts.length) return null;
+    const queryStr = queryParts.join(', ');
+    try {
+      const places = await locationService.searchPlaces(queryStr);
+      if (places && places.length > 0) {
+        const p = places[0];
+        const newCoords: [number, number] = [parseFloat(p.lon), parseFloat(p.lat)];
+        setAddress(prev => ({ ...prev, coordinates: newCoords }));
+        setCoordsDerived(true);
+        return newCoords;
+      }
+    } catch {
+      /* ignore */
+    }
+    return null;
   };
 
   const handleAiAnalyze = async () => {
@@ -500,7 +617,19 @@ export default function BookingScreen() {
             s.name.toLowerCase().includes(result.service_type.toLowerCase()),
         );
         if (svc) {
-          setSelectedService(svc._id);
+          if (selectedService && selectedService !== svc._id) {
+            const currentSvc = svcList.find(s => s._id === selectedService);
+            Alert.alert(
+              'AI gợi ý đổi dịch vụ',
+              `AI đề xuất dịch vụ "${svc.name}" (hiện đang chọn "${currentSvc?.name || 'khác'}"). Bạn có muốn chuyển sang dịch vụ này không?`,
+              [
+                { text: 'Giữ dịch vụ hiện tại', style: 'cancel' },
+                { text: 'Đổi sang ' + svc.name, onPress: () => setSelectedService(svc._id) },
+              ],
+            );
+          } else {
+            setSelectedService(svc._id);
+          }
         } else {
           const fallbackSvc = svcList.find(s =>
             result.service_type.includes('clean')
@@ -514,7 +643,24 @@ export default function BookingScreen() {
                   ? s.slug.includes('electric') || s.slug.includes('plumb') || s.slug.includes('ac')
                   : true,
           );
-          if (fallbackSvc) setSelectedService(fallbackSvc._id);
+          if (fallbackSvc) {
+            if (selectedService && selectedService !== fallbackSvc._id) {
+              const currentSvc = svcList.find(s => s._id === selectedService);
+              Alert.alert(
+                'AI gợi ý đổi dịch vụ',
+                `AI đề xuất dịch vụ "${fallbackSvc.name}" (hiện đang chọn "${currentSvc?.name || 'khác'}"). Bạn có muốn chuyển sang dịch vụ này không?`,
+                [
+                  { text: 'Giữ dịch vụ hiện tại', style: 'cancel' },
+                  {
+                    text: 'Đổi sang ' + fallbackSvc.name,
+                    onPress: () => setSelectedService(fallbackSvc._id),
+                  },
+                ],
+              );
+            } else {
+              setSelectedService(fallbackSvc._id);
+            }
+          }
         }
       }
 
@@ -573,11 +719,36 @@ export default function BookingScreen() {
       setSelectedService(currentServiceId);
     }
 
-    if (!address.full_address.trim() || !address.district.trim()) {
-      Toast.show({ type: 'error', text1: 'Vui lòng nhập đầy đủ địa chỉ làm việc' });
+    const hasFullAddress = address.full_address.trim().length > 0;
+    const hasDistrictOrFallback =
+      address.district.trim().length > 0 || (address.ward?.trim() && address.city?.trim());
+    if (!hasFullAddress || !hasDistrictOrFallback) {
+      Toast.show({
+        type: 'error',
+        text1: 'Vui lòng nhập đầy đủ địa chỉ làm việc (Địa chỉ, Phường, Quận/Huyện hoặc Thành phố)',
+      });
       setStep(1);
       return;
     }
+
+    // [Lỗi 7 Fix]: Đảm bảo tọa độ được đồng bộ từ địa chỉ, không dùng tọa độ Bến Thành [106.6983, 10.7725]
+    let currentCoords = address.coordinates;
+    if (!coordsDerived || !currentCoords || (currentCoords[0] === 0 && currentCoords[1] === 0)) {
+      const resolved = await ensureResolvedCoordinates(address);
+      if (resolved) {
+        currentCoords = resolved;
+      } else {
+        Toast.show({
+          type: 'error',
+          text1: 'Chưa xác định được tọa độ chính xác',
+          text2:
+            'Vui lòng chọn từ gợi ý tìm kiếm hoặc bấm nút lấy vị trí GPS để ghim đúng điểm cho thợ.',
+        });
+        setStep(1);
+        return;
+      }
+    }
+
     if (!date || !timeSlot) {
       Toast.show({ type: 'error', text1: 'Vui lòng chọn thời gian bắt đầu' });
       setStep(2);
@@ -592,10 +763,10 @@ export default function BookingScreen() {
     const jobAddress = {
       full_address: address.full_address.trim(),
       ward: address.ward?.trim() || undefined,
-      district: address.district.trim(),
-      city: address.city?.trim() || 'Hồ Chí Minh',
+      district: address.district.trim() || address.ward?.trim() || 'Quận',
+      city: address.city?.trim() || 'Việt Nam',
       notes: address.notes?.trim() || undefined,
-      location: { type: 'Point', coordinates: address.coordinates || [106.6983, 10.7725] },
+      location: { type: 'Point', coordinates: currentCoords },
     };
 
     try {
@@ -658,9 +829,19 @@ export default function BookingScreen() {
       }
       setStep(1);
     } else if (step === 1) {
-      if (!address.full_address.trim() || !address.district.trim()) {
-        Toast.show({ type: 'error', text1: 'Vui lòng nhập địa chỉ chi tiết và quận/huyện' });
+      const hasFullAddress = address.full_address.trim().length > 0;
+      const hasDistrictOrFallback =
+        address.district.trim().length > 0 || (address.ward?.trim() && address.city?.trim());
+      if (!hasFullAddress || !hasDistrictOrFallback) {
+        Toast.show({
+          type: 'error',
+          text1:
+            'Vui lòng nhập đầy đủ địa chỉ làm việc (Địa chỉ, Phường, Quận/Huyện hoặc Thành phố)',
+        });
         return;
+      }
+      if (!coordsDerived || (address.coordinates[0] === 0 && address.coordinates[1] === 0)) {
+        ensureResolvedCoordinates(address).catch(() => {});
       }
       setStep(2);
     } else if (step === 2) {
@@ -721,7 +902,9 @@ export default function BookingScreen() {
         >
           <ArrowLeft size={20} color={COLORS.gray[800]} />
         </TouchableOpacity>
-        <Text style={{ fontSize: fs(18), fontWeight: '800', color: COLORS.gray[900], marginLeft: 12 }}>
+        <Text
+          style={{ fontSize: fs(18), fontWeight: '800', color: COLORS.gray[900], marginLeft: 12 }}
+        >
           {t('booking_screen_title')}
         </Text>
       </View>
@@ -742,7 +925,11 @@ export default function BookingScreen() {
           ))}
         </View>
         <Text style={{ fontSize: fs(12), color: COLORS.gray[500], fontWeight: '600' }}>
-          {t('booking_step_indicator', { step: step + 1, total: STEPS.length, name: t(STEP_KEYS[step]) })}
+          {t('booking_step_indicator', {
+            step: step + 1,
+            total: STEPS.length,
+            name: t(STEP_KEYS[step]),
+          })}
         </Text>
       </View>
 
@@ -892,94 +1079,106 @@ export default function BookingScreen() {
               </Text>
 
               <View style={{ gap: 10 }}>
-                {svcList.map(svc => (
-                  <TouchableOpacity
-                    key={svc._id}
-                    onPress={() => {
-                      setSelectedService(svc._id);
-                      setStep(1);
-                    }}
-                    style={{
-                      borderWidth: 2,
-                      borderColor: selectedService === svc._id ? COLORS.primary : COLORS.gray[200],
-                      borderRadius: 16,
-                      padding: 16,
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      gap: 14,
-                      backgroundColor: selectedService === svc._id ? COLORS.primaryLight : '#fff',
-                    }}
-                  >
-                    <Text style={{ fontSize: 32 }}>
-                      {(
-                        {
-                          house_cleaning: '🏠',
-                          cooking: '🍳',
-                          laundry: '👔',
-                          family_care: '👨‍👩‍👧',
-                          petcare: '🐾',
-                          plantcare: '🌿',
-                          house_management: '🔐',
-                          hourly_helper: '🧹',
-                          deep_cleaning: '✨',
-                          moving_help: '📦',
-                          handyman: '🔧',
-                        } as Record<string, string>
-                      )[svc.slug] ?? '🏠'}
+                {isLoadingServices ? (
+                  <View style={{ paddingVertical: 40, alignItems: 'center', gap: 12 }}>
+                    <ActivityIndicator size="large" color={COLORS.primary} />
+                    <Text style={{ fontSize: 13, color: COLORS.gray[500], fontWeight: '600' }}>
+                      Đang tải danh sách dịch vụ...
                     </Text>
-                    <View style={{ flex: 1 }}>
-                      <Text style={{ fontWeight: '800', fontSize: 15, color: COLORS.gray[900] }}>
-                        {svc.name}
+                  </View>
+                ) : (
+                  svcList.map(svc => (
+                    <TouchableOpacity
+                      key={svc._id}
+                      onPress={() => {
+                        setSelectedService(svc._id);
+                        setStep(1);
+                      }}
+                      style={{
+                        borderWidth: 2,
+                        borderColor:
+                          selectedService === svc._id ? COLORS.primary : COLORS.gray[200],
+                        borderRadius: 16,
+                        padding: 16,
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        gap: 14,
+                        backgroundColor: selectedService === svc._id ? COLORS.primaryLight : '#fff',
+                      }}
+                    >
+                      <Text style={{ fontSize: 32 }}>
+                        {(
+                          {
+                            house_cleaning: '🏠',
+                            cooking: '🍳',
+                            laundry: '👔',
+                            family_care: '👨‍👩‍👧',
+                            petcare: '🐾',
+                            plantcare: '🌿',
+                            house_management: '🔐',
+                            housekeeping_hourly: '🧹',
+                            hourly_helper: '🧹',
+                            deep_cleaning: '✨',
+                            moving_help: '📦',
+                            handyman: '🔧',
+                          } as Record<string, string>
+                        )[svc.slug] ?? '🏠'}
                       </Text>
-                      {svc.description && (
-                        <Text
-                          style={{ fontSize: 12, color: COLORS.gray[500], marginTop: 2 }}
-                          numberOfLines={1}
-                        >
-                          {svc.description}
+                      <View style={{ flex: 1 }}>
+                        <Text style={{ fontWeight: '800', fontSize: 15, color: COLORS.gray[900] }}>
+                          {svc.name}
                         </Text>
-                      )}
-                      {svc.pricing_model === 'fixed' && svc.fixed_price ? (
-                        <Text
-                          style={{
-                            fontSize: 12,
-                            color: COLORS.primary,
-                            marginTop: 4,
-                            fontWeight: '700',
-                          }}
-                        >
-                          {t('booking_fixed_price')} {new Intl.NumberFormat('vi-VN').format(svc.fixed_price)}₫
-                          — nhận việc ngay, không cần báo giá
-                        </Text>
-                      ) : svc.base_price_min ? (
-                        <Text
-                          style={{
-                            fontSize: 12,
-                            color: COLORS.primary,
-                            marginTop: 4,
-                            fontWeight: '700',
-                          }}
-                        >
-                          Từ {new Intl.NumberFormat('vi-VN').format(svc.base_price_min)}₫
-                        </Text>
-                      ) : null}
-                    </View>
-                    {selectedService === svc._id && (
-                      <View
-                        style={{
-                          width: 24,
-                          height: 24,
-                          borderRadius: 12,
-                          backgroundColor: COLORS.primary,
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                        }}
-                      >
-                        <Check size={16} color="#fff" />
+                        {svc.description && (
+                          <Text
+                            style={{ fontSize: 12, color: COLORS.gray[500], marginTop: 2 }}
+                            numberOfLines={1}
+                          >
+                            {svc.description}
+                          </Text>
+                        )}
+                        {svc.pricing_model === 'fixed' && svc.fixed_price ? (
+                          <Text
+                            style={{
+                              fontSize: 12,
+                              color: COLORS.primary,
+                              marginTop: 4,
+                              fontWeight: '700',
+                            }}
+                          >
+                            {t('booking_fixed_price')}{' '}
+                            {new Intl.NumberFormat('vi-VN').format(svc.fixed_price)}₫ — nhận việc
+                            ngay, không cần báo giá
+                          </Text>
+                        ) : svc.base_price_min ? (
+                          <Text
+                            style={{
+                              fontSize: 12,
+                              color: COLORS.primary,
+                              marginTop: 4,
+                              fontWeight: '700',
+                            }}
+                          >
+                            Từ {new Intl.NumberFormat('vi-VN').format(svc.base_price_min)}₫
+                          </Text>
+                        ) : null}
                       </View>
-                    )}
-                  </TouchableOpacity>
-                ))}
+                      {selectedService === svc._id && (
+                        <View
+                          style={{
+                            width: 24,
+                            height: 24,
+                            borderRadius: 12,
+                            backgroundColor: COLORS.primary,
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                          }}
+                        >
+                          <Check size={16} color="#fff" />
+                        </View>
+                      )}
+                    </TouchableOpacity>
+                  ))
+                )}
               </View>
             </View>
           )}
@@ -1094,7 +1293,10 @@ export default function BookingScreen() {
                 label="Địa chỉ chi tiết (Số nhà & tên đường) *"
                 placeholder="VD: 128 Đường Lê Lợi"
                 value={address.full_address}
-                onChangeText={v => setAddress(a => ({ ...a, full_address: v }))}
+                onChangeText={v => {
+                  setAddress(a => ({ ...a, full_address: v }));
+                  setCoordsDerived(false);
+                }}
                 leftIcon={<MapPin size={16} color={COLORS.gray[400]} />}
               />
               <View style={{ flexDirection: 'row', gap: 12 }}>
@@ -1103,22 +1305,31 @@ export default function BookingScreen() {
                     label="Phường/Xã"
                     placeholder="Phường 1"
                     value={address.ward}
-                    onChangeText={v => setAddress(a => ({ ...a, ward: v }))}
+                    onChangeText={v => {
+                      setAddress(a => ({ ...a, ward: v }));
+                      setCoordsDerived(false);
+                    }}
                   />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Input
-                    label="Quận/Huyện *"
+                    label="Quận/Huyện"
                     placeholder="Quận 1"
                     value={address.district}
-                    onChangeText={v => setAddress(a => ({ ...a, district: v }))}
+                    onChangeText={v => {
+                      setAddress(a => ({ ...a, district: v }));
+                      setCoordsDerived(false);
+                    }}
                   />
                 </View>
               </View>
               <Input
                 label="Thành phố"
                 value={address.city}
-                onChangeText={v => setAddress(a => ({ ...a, city: v }))}
+                onChangeText={v => {
+                  setAddress(a => ({ ...a, city: v }));
+                  setCoordsDerived(false);
+                }}
               />
               <Input
                 label="Ghi chú hướng dẫn cho thợ (tùy chọn)"
@@ -1425,7 +1636,7 @@ export default function BookingScreen() {
               {/* Feature 17: Phân tích ảnh sự cố bằng AI */}
               <TouchableOpacity
                 onPress={handleAnalyzeIssuePhoto}
-                disabled={analyzeIssuePhoto.isPending}
+                disabled={analyzeIssuePhoto.isPending || isAnalyzingPhoto}
                 style={{
                   flexDirection: 'row',
                   alignItems: 'center',
@@ -1433,16 +1644,16 @@ export default function BookingScreen() {
                   backgroundColor: '#1E1E24',
                   borderRadius: 14,
                   padding: 14,
-                  opacity: analyzeIssuePhoto.isPending ? 0.7 : 1,
+                  opacity: analyzeIssuePhoto.isPending || isAnalyzingPhoto ? 0.7 : 1,
                 }}
               >
                 <Text style={{ fontSize: 16 }}>📷</Text>
                 <Text style={{ color: '#fff', fontWeight: '700', flex: 1 }}>
-                  {analyzeIssuePhoto.isPending
+                  {analyzeIssuePhoto.isPending || isAnalyzingPhoto
                     ? 'AI đang phân tích ảnh...'
                     : 'Phân tích ảnh sự cố bằng AI'}
                 </Text>
-                {analyzeIssuePhoto.isPending ? (
+                {analyzeIssuePhoto.isPending || isAnalyzingPhoto ? (
                   <ActivityIndicator size="small" color="#fff" />
                 ) : (
                   <ChevronRight size={16} color="rgba(255,255,255,0.4)" />
@@ -1459,9 +1670,8 @@ export default function BookingScreen() {
                   </Text>
                   {photoAnalysis.price_min != null && photoAnalysis.price_max != null && (
                     <Text style={{ fontSize: 13, color: COLORS.gray[700] }}>
-                      Khoảng giá:{' '}
-                      {new Intl.NumberFormat('vi-VN').format(photoAnalysis.price_min)}₫ –{' '}
-                      {new Intl.NumberFormat('vi-VN').format(photoAnalysis.price_max)}₫
+                      Khoảng giá: {new Intl.NumberFormat('vi-VN').format(photoAnalysis.price_min)}₫
+                      – {new Intl.NumberFormat('vi-VN').format(photoAnalysis.price_max)}₫
                       {photoAnalysis.confidence != null
                         ? ` · độ tin cậy ${Math.round(photoAnalysis.confidence * 100)}%`
                         : ''}

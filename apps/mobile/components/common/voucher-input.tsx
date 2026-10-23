@@ -82,7 +82,10 @@ export function VoucherInput({
                 ? ` (tối đa ${fmt(preview.max_discount_amount)}₫)`
                 : ''}
             </Text>
-            <TouchableOpacity onPress={handleClear} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+            <TouchableOpacity
+              onPress={handleClear}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
               <X size={17} color="#065F46" />
             </TouchableOpacity>
           </View>

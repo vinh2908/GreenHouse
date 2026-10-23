@@ -94,7 +94,10 @@ export function SosCustomerDecisionPopup() {
 
           {decision.photo_urls?.length ? (
             <View style={{ marginTop: 14, alignItems: 'center' }}>
-              <PhotoThumbRow urls={decision.photo_urls} label="📷 Ảnh minh chứng từ người giúp việc" />
+              <PhotoThumbRow
+                urls={decision.photo_urls}
+                label="📷 Ảnh minh chứng từ người giúp việc"
+              />
             </View>
           ) : null}
 

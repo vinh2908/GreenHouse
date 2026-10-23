@@ -320,7 +320,12 @@ export function SectionHeader({ title, action, onAction, subtitle }: SectionHead
     <View style={{ marginBottom: 12 }}>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
         <Text
-          style={{ fontSize: fs(18), fontWeight: '800', color: COLORS.gray[900], letterSpacing: -0.3 }}
+          style={{
+            fontSize: fs(18),
+            fontWeight: '800',
+            color: COLORS.gray[900],
+            letterSpacing: -0.3,
+          }}
         >
           {title}
         </Text>

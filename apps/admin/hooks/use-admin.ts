@@ -289,6 +289,8 @@ export interface AdminService {
   status: 'active' | 'inactive';
   price_range_min: number;
   price_range_max: number;
+  base_price_min?: number;
+  base_price_max?: number;
   platform_fee_percent: number;
   pricing_model?: 'quote' | 'fixed'; // Feature 7: báo giá | giá cam kết
   fixed_price?: number;
@@ -408,7 +410,17 @@ export type AdminClaimStatus = 'submitted' | 'under_review' | 'approved' | 'paid
 
 export interface AdminClaim {
   _id: string;
-  job_id: string | { _id: string; title?: string; status?: string; description?: string; address?: any; created_at?: string } | null;
+  job_id:
+    | string
+    | {
+        _id: string;
+        title?: string;
+        status?: string;
+        description?: string;
+        address?: any;
+        created_at?: string;
+      }
+    | null;
   customer_id: string | { _id: string; full_name?: string; avatar?: string; phone?: string } | null;
   helper_id?: string | { _id: string; full_name?: string; phone?: string } | null;
   description: string;
@@ -547,8 +559,7 @@ export function useAdminSupportRead() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => apiClient.patch(`/admin/support/conversations/${id}/read`),
-    onSuccess: () =>
-      qc.invalidateQueries({ queryKey: ['admin', 'support', 'conversations'] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'support', 'conversations'] }),
   });
 }
 
@@ -673,6 +684,72 @@ export function useWaivePenaltyEvent() {
       qc.invalidateQueries({ queryKey: ['admin', 'penalty-events'] });
       // Điểm thợ đã được tính lại phía server — làm mới luôn các list thợ liên quan.
       qc.invalidateQueries({ queryKey: ['admin', 'helpers'] });
+    },
+  });
+}
+
+// ─── Monthly Contracts Management ─────────────────────────────────────────────
+
+export interface AdminMonthlyContract {
+  _id: string;
+  customer_id?: { _id: string; full_name?: string; phone?: string; avatar?: string };
+  helper_id?: { _id: string; full_name?: string; phone?: string; avatar?: string };
+  title: string;
+  status: string;
+  monthly_amount: number;
+  start_date: string;
+  end_date?: string;
+  time_start?: string;
+  time_end?: string;
+  created_at: string;
+}
+
+export function useAdminMonthlyContracts(params?: {
+  status?: string;
+  page?: number;
+  limit?: number;
+}) {
+  return useQuery({
+    queryKey: ['admin', 'monthly-contracts', params],
+    queryFn: async () => {
+      const { data } = await apiClient.get('/monthly-contracts/admin/all', { params });
+      return data.data as {
+        contracts: AdminMonthlyContract[];
+        total: number;
+        page: number;
+        limit: number;
+        total_pages: number;
+      };
+    },
+  });
+}
+
+// ─── Manual Job Interventions ──────────────────────────────────────────────────
+
+export function useAdminUpdateJobStatus() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, status, note }: { id: string; status: string; note?: string }) => {
+      const { data } = await apiClient.patch(`/admin/jobs/${id}/status`, { status, note });
+      return data.data;
+    },
+    onSuccess: (_, { id }) => {
+      qc.invalidateQueries({ queryKey: ['admin', 'job', id] });
+      qc.invalidateQueries({ queryKey: ['admin', 'jobs'] });
+    },
+  });
+}
+
+export function useAdminDirectRefund() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, amount, reason }: { id: string; amount: number; reason: string }) => {
+      const { data } = await apiClient.post(`/admin/jobs/${id}/refund`, { amount, reason });
+      return data.data;
+    },
+    onSuccess: (_, { id }) => {
+      qc.invalidateQueries({ queryKey: ['admin', 'job', id] });
+      qc.invalidateQueries({ queryKey: ['admin', 'jobs'] });
     },
   });
 }

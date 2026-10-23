@@ -17,10 +17,7 @@ import {
   MonthlySettlement,
   MonthlySettlementDocument,
 } from './schemas/monthly-contract.schema';
-import {
-  CreateMonthlyContractDto,
-  SettleMonthDto,
-} from './dto/monthly-contract.dto';
+import { CreateMonthlyContractDto, SettleMonthDto } from './dto/monthly-contract.dto';
 import { HelperProfile, HelperProfileDocument } from '../helpers/schemas/helper-profile.schema';
 import { VerificationStatus } from '@homemate/types';
 import { NotificationsService } from '../notifications/notifications.service';
@@ -134,10 +131,7 @@ export class MonthlyContractsService {
   }
 
   private assertParticipant(contract: MonthlyContractDocument, userId: string) {
-    if (
-      contract.customer_id.toString() !== userId &&
-      contract.helper_id.toString() !== userId
-    ) {
+    if (contract.customer_id.toString() !== userId && contract.helper_id.toString() !== userId) {
       throw new ForbiddenException('Bạn không thuộc hợp đồng này');
     }
   }
@@ -238,7 +232,9 @@ export class MonthlyContractsService {
     await this.notificationsService.create({
       userId: contract.customer_id.toString(),
       type: accept ? 'monthly_contract_accepted' : 'monthly_contract_rejected',
-      title: accept ? '✅ Thợ đã nhận hợp đồng theo tháng' : '❌ Thợ đã từ chối hợp đồng theo tháng',
+      title: accept
+        ? '✅ Thợ đã nhận hợp đồng theo tháng'
+        : '❌ Thợ đã từ chối hợp đồng theo tháng',
       body: accept
         ? `Hợp đồng "${contract.title}" đã có hiệu lực từ ${this.toDateStr(new Date(contract.start_date))}.`
         : `Thợ đã từ chối hợp đồng "${contract.title}". Bạn có thể mời thợ khác.`,
@@ -255,7 +251,8 @@ export class MonthlyContractsService {
     }
     contract.status = 'cancelled';
     contract.ended_at = new Date();
-    contract.end_reason = 'Đã hủy bởi ' + (contract.customer_id.toString() === userId ? 'khách hàng' : 'thợ');
+    contract.end_reason =
+      'Đã hủy bởi ' + (contract.customer_id.toString() === userId ? 'khách hàng' : 'thợ');
     await contract.save();
 
     const otherId =
@@ -370,9 +367,7 @@ export class MonthlyContractsService {
     if (contract.customer_id.toString() !== customerId) {
       throw new ForbiddenException('Chỉ khách hàng của hợp đồng mới xác nhận điểm danh được');
     }
-    const record = await this.attendanceModel
-      .findOne({ contract_id: contract._id, date })
-      .exec();
+    const record = await this.attendanceModel.findOne({ contract_id: contract._id, date }).exec();
     if (!record) throw new NotFoundException('Không tìm thấy bản ghi điểm danh của ngày này');
     if (record.status !== 'checked_in') {
       throw new ConflictException('Buổi này đã được xử lý trước đó');
@@ -417,7 +412,8 @@ export class MonthlyContractsService {
         .exec(),
     ]);
     if (existingRecord) throw new ConflictException('Ngày này đã có bản ghi điểm danh/nghỉ');
-    if (pendingLeave) throw new ConflictException('Bạn đã có đơn xin nghỉ đang chờ duyệt cho ngày này');
+    if (pendingLeave)
+      throw new ConflictException('Bạn đã có đơn xin nghỉ đang chờ duyệt cho ngày này');
 
     const leave = await this.leaveModel.create({
       contract_id: contract._id,
@@ -432,7 +428,11 @@ export class MonthlyContractsService {
       type: 'monthly_contract_leave_request',
       title: '🌴 Thợ xin nghỉ 1 buổi',
       body: `Thợ của hợp đồng "${contract.title}" xin nghỉ ngày ${dto.date}: ${dto.reason}`,
-      payload: { contract_id: String(contract._id), leave_id: String(leave._id), kind: 'monthly_contract' },
+      payload: {
+        contract_id: String(contract._id),
+        leave_id: String(leave._id),
+        kind: 'monthly_contract',
+      },
     });
     return leave;
   }
@@ -451,7 +451,8 @@ export class MonthlyContractsService {
     if (contract.customer_id.toString() !== customerId) {
       throw new ForbiddenException('Chỉ khách hàng của hợp đồng mới duyệt nghỉ được');
     }
-    if (!Types.ObjectId.isValid(leaveId)) throw new NotFoundException('Không tìm thấy đơn xin nghỉ');
+    if (!Types.ObjectId.isValid(leaveId))
+      throw new NotFoundException('Không tìm thấy đơn xin nghỉ');
     const leave = await this.leaveModel.findById(leaveId).exec();
     if (!leave || leave.contract_id.toString() !== String(contract._id)) {
       throw new NotFoundException('Không tìm thấy đơn xin nghỉ');
@@ -486,7 +487,11 @@ export class MonthlyContractsService {
       body: `Đơn xin nghỉ ngày ${leave.date} của hợp đồng "${contract.title}" ${
         approve ? 'đã được khách duyệt' : 'đã bị khách từ chối'
       }.`,
-      payload: { contract_id: String(contract._id), leave_id: String(leave._id), kind: 'monthly_contract' },
+      payload: {
+        contract_id: String(contract._id),
+        leave_id: String(leave._id),
+        kind: 'monthly_contract',
+      },
     });
     return leave;
   }
@@ -600,11 +605,15 @@ export class MonthlyContractsService {
     // Cộng tiền vào ví thợ qua PaymentsService.creditWallet (không gắn Job):
     // reference = MONTHLY-<contractId last6>-<month> để đối soát trong ví.
     if (summary.helper_receives > 0) {
-      await this.paymentsService.creditWallet(contract.helper_id.toString(), summary.helper_receives, {
-        description: `Lương tháng ${dto.month} — hợp đồng "${contract.title}" (${summary.confirmed_days}/${summary.scheduled_days} buổi, đã trừ phí sàn ${contract.platform_fee_percent ?? 15}%)`,
-        reference: `MONTHLY-${String(contract._id).slice(-6)}-${dto.month}`,
-        type: 'earning',
-      });
+      await this.paymentsService.creditWallet(
+        contract.helper_id.toString(),
+        summary.helper_receives,
+        {
+          description: `Lương tháng ${dto.month} — hợp đồng "${contract.title}" (${summary.confirmed_days}/${summary.scheduled_days} buổi, đã trừ phí sàn ${contract.platform_fee_percent ?? 15}%)`,
+          reference: `MONTHLY-${String(contract._id).slice(-6)}-${dto.month}`,
+          type: 'earning',
+        },
+      );
     }
 
     await this.notificationsService.create({
@@ -620,6 +629,35 @@ export class MonthlyContractsService {
       status: 'settled' as const,
       settled_at: settlement.settled_at,
       settlement_id: String(settlement._id),
+    };
+  }
+
+  // ─── Admin Management ───────────────────────────────────────────────────────
+
+  async adminListContracts(status?: string, page = 1, limit = 20) {
+    const query: Record<string, unknown> = {};
+    if (status && status !== 'all') {
+      query['status'] = status;
+    }
+    const skip = (page - 1) * limit;
+    const [contracts, total] = await Promise.all([
+      this.contractModel
+        .find(query)
+        .populate('customer_id', 'full_name phone avatar')
+        .populate('helper_id', 'full_name phone avatar')
+        .sort({ created_at: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean()
+        .exec(),
+      this.contractModel.countDocuments(query).exec(),
+    ]);
+    return {
+      contracts,
+      total,
+      page,
+      limit,
+      total_pages: Math.ceil(total / limit),
     };
   }
 }

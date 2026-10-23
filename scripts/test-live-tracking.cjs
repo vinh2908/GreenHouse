@@ -57,7 +57,14 @@ check('local browser QA remains allowed; release native rejects localhost', () =
   assert.equal(endpointConfig.usableEndpoint('http://127.0.0.1:3199', undefined, false), false);
 });
 check('public API endpoint remains allowed', () =>
-  assert.equal(endpointConfig.usableEndpoint('https://greenhouse-api-chb9.onrender.com', 'greenhouse-customer.vercel.app'), true));
+  assert.equal(
+    endpointConfig.usableEndpoint(
+      'https://greenhouse-api-chb9.onrender.com',
+      'greenhouse-customer.vercel.app',
+    ),
+    true,
+  ),
+);
 const now = Date.now(),
   event = {
     job_id: 'job1',

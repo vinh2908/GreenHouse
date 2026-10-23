@@ -119,9 +119,7 @@ export class UsersService {
    * thì cập nhật platform + thời gian (pull trước, push sau).
    */
   async addVoipToken(id: string, token: string, platform: 'ios' | 'android'): Promise<void> {
-    await this.userModel
-      .findByIdAndUpdate(id, { $pull: { voip_tokens: { token } } })
-      .exec();
+    await this.userModel.findByIdAndUpdate(id, { $pull: { voip_tokens: { token } } }).exec();
     await this.userModel
       .findByIdAndUpdate(id, {
         $push: { voip_tokens: { token, platform, updated_at: new Date() } },
@@ -131,8 +129,6 @@ export class UsersService {
 
   /** Gỡ VoIP token khi đăng xuất. */
   async removeVoipToken(id: string, token: string): Promise<void> {
-    await this.userModel
-      .findByIdAndUpdate(id, { $pull: { voip_tokens: { token } } })
-      .exec();
+    await this.userModel.findByIdAndUpdate(id, { $pull: { voip_tokens: { token } } }).exec();
   }
 }

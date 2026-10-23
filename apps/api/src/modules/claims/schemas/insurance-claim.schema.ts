@@ -3,12 +3,7 @@ import { Document, Types } from 'mongoose';
 
 export type InsuranceClaimDocument = InsuranceClaim & Document;
 
-export type InsuranceClaimStatus =
-  | 'submitted'
-  | 'under_review'
-  | 'approved'
-  | 'paid'
-  | 'rejected';
+export type InsuranceClaimStatus = 'submitted' | 'under_review' | 'approved' | 'paid' | 'rejected';
 
 const ClaimTimelineEntrySchema = {
   status: {

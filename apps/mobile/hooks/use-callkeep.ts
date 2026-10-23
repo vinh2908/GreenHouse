@@ -27,9 +27,7 @@ export function useCallKeep() {
       wasAuthenticatedRef.current = true;
       callkeepService.setTokenUploader((token, platform) => {
         savedTokenRef.current = token;
-        void apiClient
-          .patch('/users/me/voip-token', { token, platform })
-          .catch(() => undefined);
+        void apiClient.patch('/users/me/voip-token', { token, platform }).catch(() => undefined);
       });
       callkeepService.requestToken();
       return;
@@ -42,9 +40,7 @@ export function useCallKeep() {
       savedTokenRef.current = null;
       callkeepService.setTokenUploader(null);
       if (token) {
-        void apiClient
-          .delete('/users/me/voip-token', { data: { token } })
-          .catch(() => undefined);
+        void apiClient.delete('/users/me/voip-token', { data: { token } }).catch(() => undefined);
       }
     }
   }, [isAuthenticated, userId]);

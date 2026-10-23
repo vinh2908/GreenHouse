@@ -69,8 +69,7 @@ function makeService(withRedeem: boolean) {
     },
   };
   const txModel = {
-    findOne: (filter: Record<string, unknown>) =>
-      execOf(txs.find(t => matches(t, filter)) ?? null),
+    findOne: (filter: Record<string, unknown>) => execOf(txs.find(t => matches(t, filter)) ?? null),
     create: async (doc: Doc) => {
       const created = { _id: new Types.ObjectId(), ...doc };
       txs.push(created);

@@ -60,13 +60,13 @@ const SOS_TYPES = new Set([
 ]);
 
 const str = (v: unknown): string | undefined =>
-  typeof v === 'string' && v.length > 0 ? v : v != null && typeof v !== 'object' ? String(v) : undefined;
+  typeof v === 'string' && v.length > 0
+    ? v
+    : v != null && typeof v !== 'object'
+      ? String(v)
+      : undefined;
 
-function jobRoute(
-  jobId: string,
-  asHelper: boolean,
-  focus?: string,
-): NotificationRouteDescriptor {
+function jobRoute(jobId: string, asHelper: boolean, focus?: string): NotificationRouteDescriptor {
   return asHelper
     ? { pathname: '/helper-job-detail/[id]', params: { id: jobId } }
     : {

@@ -316,8 +316,8 @@ export function SosBackupHelperCard({ job }: { job: any }) {
                 Thêm ảnh minh chứng (không bắt buộc)
               </Text>
               <Text style={{ fontSize: 12.5, color: COLORS.gray[500], lineHeight: 17 }}>
-                VD: xe hư, tai nạn — khách hàng sẽ thấy các ảnh này khi quyết định đổi người hay
-                hủy đơn. Tối đa 4 ảnh.
+                VD: xe hư, tai nạn — khách hàng sẽ thấy các ảnh này khi quyết định đổi người hay hủy
+                đơn. Tối đa 4 ảnh.
               </Text>
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
                 {photos.map(uri => (

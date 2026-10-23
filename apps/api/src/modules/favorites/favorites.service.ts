@@ -42,21 +42,43 @@ export class FavoritesService {
       .sort({ created_at: -1 })
       .exec();
 
-    const helperIds = favorites.map(f => f.helper_id);
+    const helperUserIds = favorites
+      .map(f => {
+        const h = f.helper_id as any;
+        return h?._id ? h._id : h;
+      })
+      .filter(Boolean);
+
     const profiles = await this.helperModel
-      .find({ user_id: { $in: helperIds } })
+      .find({ user_id: { $in: helperUserIds } })
       .select(
         'user_id rating total_reviews completed_jobs years_experience verification_status status service_ids bio',
       )
       .lean()
       .exec();
+
     const profileMap = new Map(profiles.map(p => [String(p.user_id), p]));
 
-    return favorites.map(f => {
-      const obj = f.toObject() as any;
-      obj.helper_profile = profileMap.get(String(f.helper_id)) ?? null;
-      return obj;
-    });
+    return Promise.all(
+      favorites.map(async f => {
+        const obj = f.toObject() as any;
+        const hId = String(obj.helper_id?._id || obj.helper_id);
+        const prof = profileMap.get(hId) ? { ...profileMap.get(hId) } : null;
+        if (prof) {
+          if (!prof.completed_jobs) {
+            const count = await this.jobModel.countDocuments({
+              helper_id: new Types.ObjectId(hId),
+              status: JobStatus.COMPLETED,
+            });
+            prof.completed_jobs = count;
+          }
+          obj.helper_profile = prof;
+        } else {
+          obj.helper_profile = null;
+        }
+        return obj;
+      }),
+    );
   }
 
   // ─── Add favorite ──────────────────────────────────────────────────────────

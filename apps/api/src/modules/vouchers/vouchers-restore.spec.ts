@@ -74,8 +74,7 @@ function makeService() {
   ];
 
   const voucherModel = {
-    findOne: (filter: Record<string, unknown>) =>
-      execOf(matches(voucher, filter) ? voucher : null),
+    findOne: (filter: Record<string, unknown>) => execOf(matches(voucher, filter) ? voucher : null),
     findOneAndUpdate: (filter: Record<string, unknown>, update: Record<string, unknown>) => {
       if (!matches(voucher, filter)) return execOf(null);
       applyUpdate(voucher, update);
@@ -93,11 +92,7 @@ function makeService() {
       execOf(redemptions.filter(r => matches(r, filter)).length),
   };
 
-  const service = new VouchersService(
-    voucherModel as never,
-    redemptionModel as never,
-    {} as never,
-  );
+  const service = new VouchersService(voucherModel as never, redemptionModel as never, {} as never);
   return { service, userId, jobId, voucher, redemptions };
 }
 

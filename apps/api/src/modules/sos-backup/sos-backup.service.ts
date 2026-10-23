@@ -451,9 +451,7 @@ export class SosBackupService implements OnModuleInit, OnModuleDestroy {
     // toán) — việc PHỤ, best-effort: chạy sau khi hủy + hoàn tiền đã xong,
     // lỗi ở đây không bao giờ được lật ngược quyết định hủy.
     await this.restoreJobBenefitsOnSosCancel(job).catch(err =>
-      this.logger.error(
-        `SOS benefits restore failed for job ${jobId}: ${(err as Error).message}`,
-      ),
+      this.logger.error(`SOS benefits restore failed for job ${jobId}: ${(err as Error).message}`),
     );
 
     const decidedPayload = {
@@ -526,10 +524,7 @@ export class SosBackupService implements OnModuleInit, OnModuleDestroy {
       .findOneAndUpdate(
         {
           _id: job._id,
-          $or: [
-            { benefits_restored_at: { $exists: false } },
-            { benefits_restored_at: null },
-          ],
+          $or: [{ benefits_restored_at: { $exists: false } }, { benefits_restored_at: null }],
         },
         { $set: { benefits_restored_at: new Date() } },
         { new: true },
@@ -547,9 +542,7 @@ export class SosBackupService implements OnModuleInit, OnModuleDestroy {
         );
       }
     } catch (err) {
-      this.logger.error(
-        `SOS voucher restore failed for job ${jobId}: ${(err as Error).message}`,
-      );
+      this.logger.error(`SOS voucher restore failed for job ${jobId}: ${(err as Error).message}`);
     }
 
     try {
@@ -558,9 +551,7 @@ export class SosBackupService implements OnModuleInit, OnModuleDestroy {
         restored.push(`${l.points_restored} điểm loyalty`);
       }
     } catch (err) {
-      this.logger.error(
-        `SOS loyalty restore failed for job ${jobId}: ${(err as Error).message}`,
-      );
+      this.logger.error(`SOS loyalty restore failed for job ${jobId}: ${(err as Error).message}`);
     }
 
     if (restored.length > 0) {
@@ -604,6 +595,27 @@ export class SosBackupService implements OnModuleInit, OnModuleDestroy {
       decidedPayload,
     );
     this.gateway.emitToJob(String(sos.job_id), SOCKET_EVENTS.SOS_BACKUP_DECIDED, decidedPayload);
+
+    // Cập nhật trạng thái bền trên job: đang tìm thợ thay thế (SOS Backup)
+    try {
+      const job = await this.jobModel.findById(sos.job_id).exec();
+      if (job) {
+        (job as any).sos_backup_searching = true;
+        job.events.push({
+          status: job.status,
+          note: 'Khách hàng đã đồng ý đổi người (SOS Backup). Hệ thống đang phát sóng tìm thợ thay thế phù hợp...',
+          actor_id: job.customer_id,
+          actor_role: 'customer',
+          timestamp: now,
+        });
+        job.markModified('events');
+        await job.save();
+      }
+    } catch (jobErr) {
+      this.logger.warn(
+        `Failed to update job events on SOS beginBroadcast: ${(jobErr as Error).message}`,
+      );
+    }
 
     await this.inviteWave(sos, 1);
   }
@@ -1344,11 +1356,30 @@ export class SosBackupService implements OnModuleInit, OnModuleDestroy {
       .create({
         userId: String(sos.original_helper_id),
         type: NOTIFICATION_TYPES.SOS_BACKUP_EXPIRED,
-        title: 'Chưa tìm được người thay thế',
-        body: `Yêu cầu SOS cho đơn "${sos.job_title}" đã hết hạn. Đội ngũ hỗ trợ sẽ liên hệ để xử lý tiếp.`,
+        title: 'Chưa có thợ thay thế phù hợp',
+        body: `Khách hàng đã đồng ý đổi người nhưng hệ thống chưa tìm được thợ thay thế phù hợp cho đơn "${sos.job_title}". Đội ngũ hỗ trợ sẽ liên hệ với khách để hỗ trợ tiếp.`,
         payload: { job_id: String(sos.job_id), sos_id: String(sos._id) },
       })
       .catch(() => undefined);
+
+    // Xóa cờ đang tìm kiếm trên job và lưu event
+    try {
+      const job = await this.jobModel.findById(sos.job_id).exec();
+      if (job) {
+        (job as any).sos_backup_searching = false;
+        job.events.push({
+          status: job.status,
+          note: 'SOS Backup: Chưa tìm được thợ thay thế phù hợp sau các đợt phát sóng. Chuyển hỗ trợ viên can thiệp.',
+          actor_id: (sos.original_helper_id as any) || new Types.ObjectId(),
+          actor_role: 'system',
+          timestamp: new Date(),
+        });
+        job.markModified('events');
+        await job.save();
+      }
+    } catch {
+      /* ignore */
+    }
 
     // Admin: thông báo cho mọi tài khoản admin
     const admins = await this.userModel

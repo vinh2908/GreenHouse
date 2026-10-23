@@ -2,7 +2,15 @@ import { useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, RefreshControl } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { ArrowLeft, Pause, Play, SkipForward, Trash2, Plus, ChevronRight } from 'lucide-react-native';
+import {
+  ArrowLeft,
+  Pause,
+  Play,
+  SkipForward,
+  Trash2,
+  Plus,
+  ChevronRight,
+} from 'lucide-react-native';
 import dayjs from 'dayjs';
 import 'dayjs/locale/vi';
 import { Alert } from '@/components/common/app-alert';
@@ -23,7 +31,10 @@ const WEEKDAY_LABELS = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
 
 export function describeSchedule(plan: RecurringPlanItem): string {
   if (plan.frequency === 'weekly') {
-    const days = (plan.weekdays ?? []).map(d => WEEKDAY_LABELS[d] ?? '').filter(Boolean).join(', ');
+    const days = (plan.weekdays ?? [])
+      .map(d => WEEKDAY_LABELS[d] ?? '')
+      .filter(Boolean)
+      .join(', ');
     return `Hàng tuần · ${days || '—'} · ${plan.time_start}`;
   }
   const days = (plan.month_days ?? []).join(', ');
@@ -53,7 +64,13 @@ export default function RecurringPlansScreen() {
     else router.replace('/(customer)/profile');
   };
 
-  const confirm = (title: string, body: string, actionLabel: string, fn: () => void, destructive = false) =>
+  const confirm = (
+    title: string,
+    body: string,
+    actionLabel: string,
+    fn: () => void,
+    destructive = false,
+  ) =>
     Alert.alert(title, body, [
       { text: 'Để sau', style: 'cancel' },
       { text: actionLabel, style: destructive ? 'destructive' : 'default', onPress: fn },
@@ -123,7 +140,11 @@ export default function RecurringPlansScreen() {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ padding: 16, gap: 12, paddingBottom: 110 }}
           refreshControl={
-            <RefreshControl refreshing={isRefetching} onRefresh={refetch} colors={[COLORS.primary]} />
+            <RefreshControl
+              refreshing={isRefetching}
+              onRefresh={refetch}
+              colors={[COLORS.primary]}
+            />
           }
         >
           {(plans ?? []).length === 0 ? (
@@ -157,7 +178,12 @@ export default function RecurringPlansScreen() {
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                       <Text style={{ fontSize: 20 }}>{service?.icon ?? '🔁'}</Text>
                       <Text
-                        style={{ flex: 1, fontSize: 15.5, fontWeight: '800', color: COLORS.gray[900] }}
+                        style={{
+                          flex: 1,
+                          fontSize: 15.5,
+                          fontWeight: '800',
+                          color: COLORS.gray[900],
+                        }}
                         numberOfLines={1}
                       >
                         {plan.title}
@@ -172,11 +198,21 @@ export default function RecurringPlansScreen() {
                       {service?.name ?? 'Dịch vụ'} · Đã sinh {plan.jobs_generated} đơn
                       {helper ? ` · Thợ quen: ${helper.full_name ?? ''}` : ''}
                     </Text>
-                    {plan.status === 'active' && plan.next_occurrence_at && (
-                      <Text style={{ fontSize: 12.5, color: COLORS.primaryDark, fontWeight: '700', marginTop: 2 }}>
-                        Buổi tới: {dayjs(plan.next_occurrence_at).format('dddd, DD/MM/YYYY HH:mm')}
-                      </Text>
-                    )}
+                    {plan.status === 'active' &&
+                      plan.next_occurrence_at &&
+                      !dayjs(plan.next_occurrence_at).isBefore(dayjs().subtract(1, 'hour')) && (
+                        <Text
+                          style={{
+                            fontSize: 12.5,
+                            color: COLORS.primaryDark,
+                            fontWeight: '700',
+                            marginTop: 2,
+                          }}
+                        >
+                          Buổi tới:{' '}
+                          {dayjs(plan.next_occurrence_at).format('dddd, DD/MM/YYYY HH:mm')}
+                        </Text>
+                      )}
                   </TouchableOpacity>
 
                   {expanded && <PlanDetail planId={plan._id} />}
@@ -188,8 +224,11 @@ export default function RecurringPlansScreen() {
                           icon={<Pause size={14} color={COLORS.gray[700]} />}
                           label="Tạm dừng"
                           onPress={() =>
-                            confirm('Tạm dừng gói?', 'Hệ thống sẽ ngừng sinh đơn mới. Các đơn đã sinh vẫn giữ nguyên.', 'Tạm dừng', () =>
-                              pausePlan.mutate(plan._id),
+                            confirm(
+                              'Tạm dừng gói?',
+                              'Hệ thống sẽ ngừng sinh đơn mới. Các đơn đã sinh vẫn giữ nguyên.',
+                              'Tạm dừng',
+                              () => pausePlan.mutate(plan._id),
                             )
                           }
                         />
@@ -205,8 +244,11 @@ export default function RecurringPlansScreen() {
                           icon={<SkipForward size={14} color={COLORS.gray[700]} />}
                           label="Bỏ qua buổi tới"
                           onPress={() =>
-                            confirm('Bỏ qua buổi tới?', 'Buổi gần nhất sẽ không diễn ra (đơn của buổi đó nếu đã sinh và chưa có thợ chốt sẽ bị hủy).', 'Bỏ qua buổi', () =>
-                              skipNext.mutate(plan._id),
+                            confirm(
+                              'Bỏ qua buổi tới?',
+                              'Buổi gần nhất sẽ không diễn ra (đơn của buổi đó nếu đã sinh và chưa có thợ chốt sẽ bị hủy).',
+                              'Bỏ qua buổi',
+                              () => skipNext.mutate(plan._id),
                             )
                           }
                         />
@@ -216,8 +258,11 @@ export default function RecurringPlansScreen() {
                         label="Hủy gói"
                         danger
                         onPress={() =>
-                          confirm('Hủy gói định kỳ?', 'Các đơn tương lai chưa có thợ chốt sẽ bị hủy theo. Thao tác này không khôi phục được.', 'Hủy gói', () =>
-                            cancelPlan.mutate(plan._id),
+                          confirm(
+                            'Hủy gói định kỳ?',
+                            'Các đơn tương lai chưa có thợ chốt sẽ bị hủy theo. Thao tác này không khôi phục được.',
+                            'Hủy gói',
+                            () => cancelPlan.mutate(plan._id),
                             true,
                           )
                         }
@@ -301,7 +346,9 @@ function PlanDetail({ planId }: { planId: string }) {
             📅 {job.occurrence_date ?? dayjs(job.preferred_date).format('DD/MM/YYYY')} ·{' '}
             {job.preferred_time_start ?? ''}
           </Text>
-          <Text style={{ fontSize: 12, fontWeight: '700', color: COLORS.gray[500] }}>{job.status}</Text>
+          <Text style={{ fontSize: 12, fontWeight: '700', color: COLORS.gray[500] }}>
+            {job.status}
+          </Text>
           <ChevronRight size={15} color={COLORS.gray[400]} />
         </TouchableOpacity>
       ))}

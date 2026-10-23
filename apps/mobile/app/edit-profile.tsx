@@ -43,7 +43,7 @@ import {
 import { useQueryClient } from '@tanstack/react-query';
 import apiClient from '@/services/api-client';
 import { uploadFile } from '@/services/upload.service';
-import { locationService } from '@/services/location.service';
+import { locationService, normalizeVietnameseAddress } from '@/services/location.service';
 import { Button, Card, LoadingSpinner, COLORS, Separator, Avatar } from '@/components/ui';
 
 // Bộ sưu tập avatar chuyên nghiệp có sẵn để người dùng chọn nhanh 1 chạm
@@ -122,12 +122,13 @@ export default function EditProfileScreen() {
       const idx = defaultIdx >= 0 ? defaultIdx : 0;
       const addr = customerAddresses[idx];
       setCustomerAddressIndex(idx);
-      setDefaultAddress(addr.full_address ?? '');
+      const normalized = normalizeVietnameseAddress(addr.full_address ?? '');
+      setDefaultAddress(normalized);
       setHomeNote(addr.notes ?? '');
       if (addr.location?.coordinates) {
         const [lng, lat] = addr.location.coordinates;
         setCustomerCoords({ latitude: lat, longitude: lng });
-        setCustomerLocationText(addr.full_address ?? '');
+        setCustomerLocationText(normalized);
       }
       setCustomerGeoData({
         district: addr.district ?? '',

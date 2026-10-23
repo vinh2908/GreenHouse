@@ -229,9 +229,7 @@ export class LoyaltyService {
       throw new BadRequestException('Đơn đã thanh toán, không thể dùng điểm');
     }
 
-    const contract = await this.contractModel
-      .findOne({ job_id: new Types.ObjectId(jobId) })
-      .exec();
+    const contract = await this.contractModel.findOne({ job_id: new Types.ObjectId(jobId) }).exec();
     if (!contract?.total_price) {
       throw new BadRequestException('Chỉ áp dụng điểm khi đơn đã có giá chốt');
     }

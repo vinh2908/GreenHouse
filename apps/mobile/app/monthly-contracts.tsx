@@ -37,7 +37,7 @@ export function describeMonthlySchedule(c: MonthlyContractItem): string {
 }
 
 export function personName(p: MonthlyContractItem['customer_id']): string {
-  return typeof p === 'object' && p ? p.full_name ?? '—' : '—';
+  return typeof p === 'object' && p ? (p.full_name ?? '—') : '—';
 }
 
 export default function MonthlyContractsScreen() {
@@ -46,9 +46,12 @@ export default function MonthlyContractsScreen() {
   // Vai trò hiện tại lấy từ auth store (active_role) như các màn hình dùng chung khác
   const user = useAuthStore(s => s.user);
   const isHelper = user?.active_role === 'helper';
-  const { data: contracts, isLoading, isRefetching, refetch } = useMonthlyContracts(
-    isHelper ? 'helper' : 'customer',
-  );
+  const {
+    data: contracts,
+    isLoading,
+    isRefetching,
+    refetch,
+  } = useMonthlyContracts(isHelper ? 'helper' : 'customer');
 
   const handleBack = () => {
     if (router.canGoBack()) router.back();
@@ -120,7 +123,11 @@ export default function MonthlyContractsScreen() {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ padding: 16, gap: 12, paddingBottom: 110 }}
           refreshControl={
-            <RefreshControl refreshing={isRefetching} onRefresh={refetch} colors={[COLORS.primary]} />
+            <RefreshControl
+              refreshing={isRefetching}
+              onRefresh={refetch}
+              colors={[COLORS.primary]}
+            />
           }
         >
           {(contracts ?? []).length === 0 ? (
@@ -133,9 +140,7 @@ export default function MonthlyContractsScreen() {
                   : 'Thuê 1 thợ quen theo tháng với lịch cố định: thợ điểm danh từng buổi, cuối tháng chốt lương theo số buổi thực tế — minh bạch cho cả hai bên.'
               }
               action={isHelper ? undefined : 'Tạo hợp đồng mới'}
-              onAction={
-                isHelper ? undefined : () => router.push('/monthly-contract-create')
-              }
+              onAction={isHelper ? undefined : () => router.push('/monthly-contract-create')}
             />
           ) : (
             (contracts ?? []).map(c => {
@@ -153,7 +158,12 @@ export default function MonthlyContractsScreen() {
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                       <Text style={{ fontSize: 20 }}>📅</Text>
                       <Text
-                        style={{ flex: 1, fontSize: 15.5, fontWeight: '800', color: COLORS.gray[900] }}
+                        style={{
+                          flex: 1,
+                          fontSize: 15.5,
+                          fontWeight: '800',
+                          color: COLORS.gray[900],
+                        }}
                         numberOfLines={1}
                       >
                         {c.title}
@@ -170,7 +180,14 @@ export default function MonthlyContractsScreen() {
                       {c.end_date ? ` đến ${dayjs(c.end_date).format('DD/MM/YYYY')}` : ''}
                     </Text>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                      <Text style={{ flex: 1, fontSize: 12.5, color: COLORS.primaryDark, fontWeight: '700' }}>
+                      <Text
+                        style={{
+                          flex: 1,
+                          fontSize: 12.5,
+                          color: COLORS.primaryDark,
+                          fontWeight: '700',
+                        }}
+                      >
                         Xem chi tiết & điểm danh
                       </Text>
                       <ChevronRight size={15} color={COLORS.gray[400]} />

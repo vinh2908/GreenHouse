@@ -61,7 +61,9 @@ export function CustomTabBar({
                   <View style={styles.centerIconWrapper}>
                     <Plus size={26} color="#FFFFFF" strokeWidth={3} />
                   </View>
-                  <Text style={[styles.centerLabel, { fontSize: fs(10.5) }]}>{t('tab_booking')}</Text>
+                  <Text style={[styles.centerLabel, { fontSize: fs(10.5) }]}>
+                    {t('tab_booking')}
+                  </Text>
                 </TouchableOpacity>
               </View>
             );
@@ -70,7 +72,8 @@ export function CustomTabBar({
           // ── Các tab thông thường ─────────────────────────────────────
           let label = options.title !== undefined ? options.title : route.name;
           if (route.name === 'home') label = t('tab_home');
-          if (route.name === 'jobs') label = mode === 'helper' ? t('tab_helper_jobs') : t('tab_activity');
+          if (route.name === 'jobs')
+            label = mode === 'helper' ? t('tab_helper_jobs') : t('tab_activity');
           if (route.name === 'messages') label = t('tab_messages');
           if (route.name === 'profile') label = t('tab_account');
           if (route.name === 'dashboard') label = t('tab_overview');

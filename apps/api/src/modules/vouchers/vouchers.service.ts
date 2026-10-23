@@ -54,9 +54,7 @@ export class VouchersService {
   }
 
   private async findVoucherOrThrow(code: string): Promise<VoucherDocument> {
-    const voucher = await this.voucherModel
-      .findOne({ code: this.normalizeCode(code) })
-      .exec();
+    const voucher = await this.voucherModel.findOne({ code: this.normalizeCode(code) }).exec();
     if (!voucher) throw new BadRequestException('Mã giảm giá không tồn tại');
     return voucher;
   }
@@ -239,6 +237,38 @@ export class VouchersService {
     job.voucher_code = undefined;
     await job.save();
     return { job_id: jobId, voucher_code: null };
+  }
+
+  // ─── Customer: Danh sách voucher khả dụng của tôi ──────────────────────────
+
+  async getMyAvailableVouchers(userId: string) {
+    const now = new Date();
+    const vouchers = await this.voucherModel
+      .find({
+        is_active: true,
+        $or: [{ valid_to: { $exists: false } }, { valid_to: null }, { valid_to: { $gte: now } }],
+      })
+      .sort({ discount_value: -1, created_at: -1 })
+      .lean()
+      .exec();
+
+    const results: any[] = [];
+    for (const v of vouchers) {
+      if (v.total_usage_limit && v.used_count >= v.total_usage_limit) continue;
+      const userUses = await this.redemptionModel.countDocuments({
+        voucher_id: v._id,
+        user_id: new Types.ObjectId(userId),
+        status: 'redeemed',
+      });
+      const perUserLimit = v.per_user_limit ?? 1;
+      if (userUses < perUserLimit) {
+        results.push({
+          ...v,
+          user_remaining_uses: perUserLimit - userUses,
+        });
+      }
+    }
+    return results;
   }
 
   // ─── Admin CRUD ────────────────────────────────────────────────────────────
