@@ -146,23 +146,23 @@ export default function LoginScreen() {
           <View style={{ alignItems: 'center', marginBottom: 36 }}>
             <View
               style={{
-                width: 80,
-                height: 80,
-                borderRadius: 26,
-                backgroundColor: COLORS.primary,
+                width: 84,
+                height: 84,
+                borderRadius: 24,
+                backgroundColor: '#F0FDF4',
                 alignItems: 'center',
                 justifyContent: 'center',
                 marginBottom: 14,
                 shadowColor: COLORS.primary,
-                shadowOffset: { width: 0, height: 8 },
-                shadowOpacity: 0.35,
-                shadowRadius: 14,
-                elevation: 8,
+                shadowOffset: { width: 0, height: 6 },
+                shadowOpacity: 0.15,
+                shadowRadius: 12,
+                elevation: 4,
               }}
             >
               <Image
                 source={require('../../assets/images/logo.png')}
-                style={{ width: 60, height: 60 }}
+                style={{ width: 84, height: 84, borderRadius: 24 }}
                 resizeMode="contain"
               />
             </View>

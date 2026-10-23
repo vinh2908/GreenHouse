@@ -16,6 +16,7 @@ ui*.xml
 *.png
 !apps/mobile/assets/**
 !apps/mobile/android/**
+!apps/admin/public/**
 data/
 tools/
 

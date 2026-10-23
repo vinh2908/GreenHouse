@@ -1,4 +1,7 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024"><g transform="translate(512 512) scale(1.1) translate(-525 -545)">
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <rect width="1024" height="1024" rx="224" fill="#F0FDF4"/>
+  <g transform="translate(512 512) scale(1.1) translate(-525 -545)">
+    
   <rect x="110" y="848" width="820" height="22" rx="11" fill="#15803D" opacity="0.22"/>
   <!-- house -->
   <rect x="520" y="270" width="64" height="150" rx="10" fill="#15803D"/>
@@ -25,4 +28,6 @@
   <circle cx="738" cy="510" r="7" fill="#3F2A1D"/>
   <circle cx="782" cy="510" r="7" fill="#3F2A1D"/>
   <path d="M740 534 q20 18 40 0" fill="none" stroke="#3F2A1D" stroke-width="7" stroke-linecap="round"/>
-</g></svg>
+
+  </g>
+</svg>
