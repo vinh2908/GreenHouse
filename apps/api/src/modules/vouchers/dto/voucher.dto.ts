@@ -70,7 +70,12 @@ export class UpdateVoucherDto {
   @IsIn(['percent', 'fixed'])
   discount_type?: 'percent' | 'fixed';
 
-  @ApiPropertyOptional() @IsOptional() @IsNumber() @Min(0) @Max(100_000_000) discount_value?: number;
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Max(100_000_000)
+  discount_value?: number;
   @ApiPropertyOptional() @IsOptional() @IsNumber() @Min(0) max_discount_amount?: number;
   @ApiPropertyOptional() @IsOptional() @IsNumber() @Min(0) min_order_amount?: number;
   @ApiPropertyOptional() @IsOptional() @IsInt() @Min(1) total_usage_limit?: number;

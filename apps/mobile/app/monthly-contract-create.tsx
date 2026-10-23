@@ -5,12 +5,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { ArrowLeft, Check } from 'lucide-react-native';
 import dayjs from 'dayjs';
 import Toast from 'react-native-toast-message';
-import {
-  useFavorites,
-  useAddresses,
-  useServices,
-  useCreateMonthlyContract,
-} from '@/hooks/use-api';
+import { useFavorites, useAddresses, useServices, useCreateMonthlyContract } from '@/hooks/use-api';
 import { Avatar, Button, Card, COLORS, LoadingSpinner } from '@/components/ui';
 
 // Thứ hiển thị T2..CN → giá trị JS Date.getDay(): T2=1 … T7=6, CN=0
@@ -179,7 +174,9 @@ export default function MonthlyContractCreateScreen() {
       >
         <TouchableOpacity
           activeOpacity={0.7}
-          onPress={() => (router.canGoBack() ? router.back() : router.replace('/monthly-contracts'))}
+          onPress={() =>
+            router.canGoBack() ? router.back() : router.replace('/monthly-contracts')
+          }
           hitSlop={{ top: 14, bottom: 14, left: 14, right: 14 }}
           style={{
             width: 40,
@@ -215,8 +212,8 @@ export default function MonthlyContractCreateScreen() {
             <LoadingSpinner size="small" />
           ) : favoriteHelpers.length === 0 && !params.helperId ? (
             <Text style={{ fontSize: 13, color: COLORS.gray[500], lineHeight: 19 }}>
-              Bạn chưa có thợ yêu thích nào. Hãy lưu ❤️ thợ từ trang hồ sơ thợ hoặc từ đơn đã
-              hoàn thành, rồi quay lại tạo hợp đồng.
+              Bạn chưa có thợ yêu thích nào. Hãy lưu ❤️ thợ từ trang hồ sơ thợ hoặc từ đơn đã hoàn
+              thành, rồi quay lại tạo hợp đồng.
             </Text>
           ) : (
             <View style={{ gap: 8 }}>
@@ -246,7 +243,12 @@ export default function MonthlyContractCreateScreen() {
           <Text style={{ fontSize: 15, fontWeight: '800', color: COLORS.gray[900] }}>
             2. Công việc & lương tháng
           </Text>
-          <TextInput value={title} onChangeText={setTitle} placeholder="Tên hợp đồng" style={inputStyle} />
+          <TextInput
+            value={title}
+            onChangeText={setTitle}
+            placeholder="Tên hợp đồng"
+            style={inputStyle}
+          />
           {(services ?? []).length > 0 && (
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
               {(services ?? []).slice(0, 8).map((s: any) => (
@@ -290,21 +292,40 @@ export default function MonthlyContractCreateScreen() {
           <View style={{ flexDirection: 'row', gap: 10 }}>
             <View style={{ flex: 1, gap: 4 }}>
               <Text style={{ fontSize: 12.5, color: COLORS.gray[500] }}>Giờ bắt đầu</Text>
-              <TextInput value={timeStart} onChangeText={setTimeStart} placeholder="08:00" style={inputStyle} />
+              <TextInput
+                value={timeStart}
+                onChangeText={setTimeStart}
+                placeholder="08:00"
+                style={inputStyle}
+              />
             </View>
             <View style={{ flex: 1, gap: 4 }}>
               <Text style={{ fontSize: 12.5, color: COLORS.gray[500] }}>Giờ kết thúc</Text>
-              <TextInput value={timeEnd} onChangeText={setTimeEnd} placeholder="17:00" style={inputStyle} />
+              <TextInput
+                value={timeEnd}
+                onChangeText={setTimeEnd}
+                placeholder="17:00"
+                style={inputStyle}
+              />
             </View>
           </View>
           <View style={{ flexDirection: 'row', gap: 10 }}>
             <View style={{ flex: 1, gap: 4 }}>
-              <Text style={{ fontSize: 12.5, color: COLORS.gray[500] }}>Ngày bắt đầu (YYYY-MM-DD)</Text>
+              <Text style={{ fontSize: 12.5, color: COLORS.gray[500] }}>
+                Ngày bắt đầu (YYYY-MM-DD)
+              </Text>
               <TextInput value={startDate} onChangeText={setStartDate} style={inputStyle} />
             </View>
             <View style={{ flex: 1, gap: 4 }}>
-              <Text style={{ fontSize: 12.5, color: COLORS.gray[500] }}>Ngày kết thúc (không bắt buộc)</Text>
-              <TextInput value={endDate} onChangeText={setEndDate} placeholder="Để trống = lâu dài" style={inputStyle} />
+              <Text style={{ fontSize: 12.5, color: COLORS.gray[500] }}>
+                Ngày kết thúc (không bắt buộc)
+              </Text>
+              <TextInput
+                value={endDate}
+                onChangeText={setEndDate}
+                placeholder="Để trống = lâu dài"
+                style={inputStyle}
+              />
             </View>
           </View>
         </Card>
@@ -346,9 +367,24 @@ export default function MonthlyContractCreateScreen() {
             </View>
           ) : (
             <View style={{ gap: 8 }}>
-              <TextInput value={fullAddress} onChangeText={setFullAddress} placeholder="Địa chỉ đầy đủ (số nhà, đường…)" style={inputStyle} />
-              <TextInput value={district} onChangeText={setDistrict} placeholder="Quận / Huyện" style={inputStyle} />
-              <TextInput value={city} onChangeText={setCity} placeholder="Tỉnh / Thành phố" style={inputStyle} />
+              <TextInput
+                value={fullAddress}
+                onChangeText={setFullAddress}
+                placeholder="Địa chỉ đầy đủ (số nhà, đường…)"
+                style={inputStyle}
+              />
+              <TextInput
+                value={district}
+                onChangeText={setDistrict}
+                placeholder="Quận / Huyện"
+                style={inputStyle}
+              />
+              <TextInput
+                value={city}
+                onChangeText={setCity}
+                placeholder="Tỉnh / Thành phố"
+                style={inputStyle}
+              />
             </View>
           )}
         </Card>
@@ -358,9 +394,11 @@ export default function MonthlyContractCreateScreen() {
           loading={create.isPending}
           onPress={handleSubmit}
         />
-        <Text style={{ fontSize: 12, color: COLORS.gray[500], textAlign: 'center', lineHeight: 18 }}>
-          Hợp đồng chỉ có hiệu lực sau khi thợ đồng ý. Bạn có thể hủy bất cứ lúc nào trước khi
-          chốt lương tháng đầu tiên.
+        <Text
+          style={{ fontSize: 12, color: COLORS.gray[500], textAlign: 'center', lineHeight: 18 }}
+        >
+          Hợp đồng chỉ có hiệu lực sau khi thợ đồng ý. Bạn có thể hủy bất cứ lúc nào trước khi chốt
+          lương tháng đầu tiên.
         </Text>
       </ScrollView>
     </View>

@@ -315,7 +315,12 @@ export class PaymentsService {
       balance_before: balanceBefore,
       balance_after: balanceAfter,
       description: `Khấu trừ phí sàn (15%) đơn Tiền mặt #${jobId.slice(-6)}`,
-      metadata: { payment_method: 'cash', job_id: jobId, unpaid_fee: platformFee - deducted },
+      metadata: {
+        payment_method: 'cash',
+        job_id: jobId,
+        unpaid_fee: platformFee - deducted,
+        helper_net_earned: helperNetEarned || Math.round((platformFee * 85) / 15),
+      },
     });
   }
 
@@ -361,8 +366,7 @@ export class PaymentsService {
 
   async getEarningsReport(userId: string) {
     const pad = (n: number) => String(n).padStart(2, '0');
-    const dateKey = (d: Date) =>
-      `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+    const dateKey = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
     const startOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
     const addDays = (d: Date, n: number) =>
       new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
@@ -383,14 +387,23 @@ export class PaymentsService {
         user_id: new Types.ObjectId(userId),
         status: 'success',
         type: { $in: ['earning', 'commission'] },
-        created_at: { $gte: fetchSince, $lt: nextMonthStart > nextMonday ? nextMonthStart : nextMonday },
+        created_at: {
+          $gte: fetchSince,
+          $lt: nextMonthStart > nextMonday ? nextMonthStart : nextMonday,
+        },
       })
       .sort({ created_at: 1 })
       .lean()
       .exec();
 
-    const signed = (tx: (typeof txs)[number]) =>
-      tx.type === 'earning' ? tx.amount : -tx.amount;
+    const signed = (tx: (typeof txs)[number]) => {
+      if (tx.type === 'earning') return tx.amount;
+      if (tx.type === 'commission') {
+        const meta = tx.metadata as any;
+        return meta?.helper_net_earned ?? Math.round((tx.amount * 85) / 15);
+      }
+      return 0;
+    };
     const sumIn = (from: Date, to: Date) =>
       txs
         .filter(tx => tx.created_at >= from && tx.created_at < to)
@@ -409,7 +422,9 @@ export class PaymentsService {
     const prevWeekTotal = sumIn(prevWeekStart, monday);
 
     // Tháng hiện tại + theo tuần trong tháng (tuần 1 = ngày 1–7, …)
-    const monthTxs = txs.filter(tx => tx.created_at >= monthStart && tx.created_at < nextMonthStart);
+    const monthTxs = txs.filter(
+      tx => tx.created_at >= monthStart && tx.created_at < nextMonthStart,
+    );
     const monthTotal = monthTxs.reduce((sum, tx) => sum + signed(tx), 0);
     const prevMonthTotal = sumIn(prevMonthStart, monthStart);
     const byWeekMap = new Map<number, number>();
@@ -438,7 +453,8 @@ export class PaymentsService {
       },
       month: {
         total: monthTotal,
-        jobs_earning_count: monthTxs.filter(tx => tx.type === 'earning').length,
+        jobs_earning_count: monthTxs.filter(tx => tx.type === 'earning' || tx.type === 'commission')
+          .length,
         prev_month_total: prevMonthTotal,
         change_percent: changePercent(monthTotal, prevMonthTotal),
         by_week: byWeek,

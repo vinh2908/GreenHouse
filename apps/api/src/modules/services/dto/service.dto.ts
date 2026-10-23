@@ -80,6 +80,18 @@ export class CreateServiceDto {
   @Min(0)
   price_range_max?: number;
 
+  @ApiPropertyOptional({ default: 0 })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  base_price_min?: number;
+
+  @ApiPropertyOptional({ default: 0 })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  base_price_max?: number;
+
   @ApiPropertyOptional({ default: 1 })
   @IsOptional()
   @IsNumber()

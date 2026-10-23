@@ -165,10 +165,7 @@ export class CallsService {
   async endCall(sessionId: string, userId: string, reason?: string) {
     const session = await this.callSessionModel.findById(sessionId).exec();
     if (!session) throw new NotFoundException('Phiên gọi không tồn tại');
-    if (
-      String(session.caller_id) !== userId &&
-      String(session.callee_id) !== userId
-    ) {
+    if (String(session.caller_id) !== userId && String(session.callee_id) !== userId) {
       throw new ForbiddenException('Bạn không thuộc phiên gọi này');
     }
     if (session.status !== 'ended') {

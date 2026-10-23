@@ -86,7 +86,12 @@ export class RecurringPlan {
   @Prop({ type: Types.ObjectId, ref: 'User' })
   preferred_helper_id?: Types.ObjectId;
 
-  @Prop({ type: String, enum: RecurringPlanStatus, default: RecurringPlanStatus.ACTIVE, index: true })
+  @Prop({
+    type: String,
+    enum: RecurringPlanStatus,
+    default: RecurringPlanStatus.ACTIVE,
+    index: true,
+  })
   status: RecurringPlanStatus;
 
   /** Các ngày 'YYYY-MM-DD' khách đã bỏ qua */

@@ -13,12 +13,7 @@ import { AiBookingService } from './services/ai-booking.service';
 import { AiMatchingService } from './services/ai-matching.service';
 import { AiSupportService } from './services/ai-support.service';
 import { AiConfigService } from './services/ai-config.service';
-import {
-  AnalyzeBookingDto,
-  AnalyzePhotoDto,
-  EstimatePriceDto,
-  SupportChatDto,
-} from './dto/ai.dto';
+import { AnalyzeBookingDto, AnalyzePhotoDto, EstimatePriceDto, SupportChatDto } from './dto/ai.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Public } from '../../common/decorators/public.decorator';

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ActivityIndicator } from 'react-native';
 import dayjs from 'dayjs';
 import { useEarningsReport, useSetIncomeGoal } from '@/hooks/use-api';
 import { Card, COLORS } from '@/components/ui';
@@ -26,9 +26,7 @@ function ChangeChip({ percent }: { percent: number | null }) {
         borderRadius: 8,
       }}
     >
-      <Text
-        style={{ fontSize: 12, fontWeight: '800', color: up ? COLORS.success : COLORS.error }}
-      >
+      <Text style={{ fontSize: 12, fontWeight: '800', color: up ? COLORS.success : COLORS.error }}>
         {up ? '▲' : '▼'} {up ? '+' : ''}
         {percent}% so với kỳ trước
       </Text>
@@ -42,7 +40,7 @@ function ChangeChip({ percent }: { percent: number | null }) {
  * Biểu đồ cột vẽ bằng View thuần (không thêm thư viện chart).
  */
 export function EarningsReport() {
-  const { data: report } = useEarningsReport();
+  const { data: report, isLoading } = useEarningsReport();
   const setGoal = useSetIncomeGoal();
   const [goalText, setGoalText] = useState('');
   const [editingGoal, setEditingGoal] = useState(false);
@@ -51,7 +49,21 @@ export function EarningsReport() {
     if (report?.goal.monthly_goal) setGoalText(String(report.goal.monthly_goal));
   }, [report?.goal.monthly_goal]);
 
-  if (!report) return null;
+  if (isLoading || !report) {
+    return (
+      <View style={{ gap: 12 }}>
+        <Text style={{ fontSize: 17, fontWeight: '800', color: COLORS.gray[900] }}>
+          📊 Báo cáo thu nhập
+        </Text>
+        <Card style={{ padding: 24, alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+          <ActivityIndicator size="small" color={COLORS.primary} />
+          <Text style={{ fontSize: 13, color: COLORS.gray[500], fontWeight: '600' }}>
+            Đang tải dữ liệu báo cáo thu nhập...
+          </Text>
+        </Card>
+      </View>
+    );
+  }
 
   const weekMax = Math.max(1, ...report.week.days.map(d => Math.max(0, d.amount)));
   const monthWeekMax = Math.max(1, ...report.month.by_week.map(w => Math.max(0, w.amount)));
@@ -151,7 +163,9 @@ export function EarningsReport() {
         </Text>
         <ChangeChip percent={report.month.change_percent} />
 
-        <View style={{ flexDirection: 'row', alignItems: 'flex-end', height: 64, gap: 8, marginTop: 4 }}>
+        <View
+          style={{ flexDirection: 'row', alignItems: 'flex-end', height: 64, gap: 8, marginTop: 4 }}
+        >
           {report.month.by_week.map(w => {
             const heightPct = Math.max(4, (Math.max(0, w.amount) / monthWeekMax) * 100);
             return (

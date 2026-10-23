@@ -243,7 +243,6 @@ export default function HelperEarningsScreen() {
             style={{ fontSize: 12, color: COLORS.gray[500], textAlign: 'center', lineHeight: 18 }}
           >
             {t('earn_note')}
-
           </Text>
         </View>
 

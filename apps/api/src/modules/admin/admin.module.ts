@@ -20,10 +20,7 @@ import {
   CustomerProfile,
   CustomerProfileSchema,
 } from '../customers/schemas/customer-profile.schema';
-import {
-  SosBackupRequest,
-  SosBackupRequestSchema,
-} from '../sos-backup/schemas/sos-backup.schema';
+import { SosBackupRequest, SosBackupRequestSchema } from '../sos-backup/schemas/sos-backup.schema';
 import {
   HelperPenaltyEvent,
   HelperPenaltyEventSchema,

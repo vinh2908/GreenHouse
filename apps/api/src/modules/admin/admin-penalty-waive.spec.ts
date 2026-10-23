@@ -170,8 +170,7 @@ function makeService() {
     findById: (id: string) => ({
       exec: async () => events.find(e => String(e._id) === String(id)) ?? null,
     }),
-    find: (filter: Record<string, unknown>) =>
-      chainable(events.filter(e => matches(e, filter))),
+    find: (filter: Record<string, unknown>) => chainable(events.filter(e => matches(e, filter))),
     countDocuments: (filter: Record<string, unknown>) => ({
       exec: async () => events.filter(e => matches(e, filter)).length,
     }),

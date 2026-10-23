@@ -342,6 +342,73 @@ export class AdminService {
     return job;
   }
 
+  async updateJobStatus(jobId: string, status: string, note?: string): Promise<JobDocument> {
+    const job = await this.jobModel.findById(jobId).exec();
+    if (!job) throw new NotFoundException('Job không tồn tại');
+    job.status = status as any;
+    job.events.push({
+      status: status as any,
+      note: note || `Admin can thiệp thủ công: chuyển trạng thái sang ${status}`,
+      actor_id: new Types.ObjectId(),
+      actor_role: 'admin',
+      timestamp: new Date(),
+    });
+    await job.save();
+    return job;
+  }
+
+  async directRefund(jobId: string, amount: number, reason: string) {
+    const job = await this.jobModel.findById(jobId).exec();
+    if (!job) throw new NotFoundException('Job không tồn tại');
+    if (!amount || amount <= 0) throw new BadRequestException('Số tiền hoàn phải lớn hơn 0');
+
+    let wallet = await this.walletModel.findOne({ user_id: job.customer_id }).exec();
+    if (!wallet) {
+      wallet = await this.walletModel.create({
+        user_id: job.customer_id,
+        balance: 0,
+      });
+    }
+
+    const balanceBefore = wallet.balance;
+    const balanceAfter = balanceBefore + amount;
+    wallet.balance = balanceAfter;
+    await wallet.save();
+
+    await this.transactionModel.create({
+      wallet_id: wallet._id,
+      user_id: job.customer_id,
+      job_id: job._id,
+      type: 'refund',
+      status: 'success',
+      amount,
+      balance_before: balanceBefore,
+      balance_after: balanceAfter,
+      description: `Admin hoàn tiền trực tiếp cho đơn #${jobId.slice(-6)}: ${reason}`,
+    });
+
+    job.events.push({
+      status: job.status,
+      note: `Admin hoàn tiền trực tiếp ${amount.toLocaleString('vi-VN')}₫ vào ví khách hàng. Lý do: ${reason}`,
+      actor_id: new Types.ObjectId(),
+      actor_role: 'admin',
+      timestamp: new Date(),
+    });
+    await job.save();
+
+    await this.notificationsService
+      .create({
+        userId: String(job.customer_id),
+        type: NOTIFICATION_TYPES.SYSTEM,
+        title: 'Hoàn tiền vào ví Green House',
+        body: `Bạn đã nhận được khoản hoàn tiền ${amount.toLocaleString('vi-VN')}₫ cho đơn hàng #${jobId.slice(-6)}.`,
+        payload: { job_id: jobId },
+      })
+      .catch(() => undefined);
+
+    return { success: true, amount, job_id: jobId, balance_after: balanceAfter };
+  }
+
   // ─── Broadcast notification ───────────────────────────────────────────────
 
   async broadcastNotification(title: string, body: string): Promise<{ sent: number }> {
@@ -500,7 +567,9 @@ export class AdminService {
 
   /** Tính lại điểm từ hồ sơ hiện tại (dùng cho đường đã-miễn: chỉ đọc, không sửa) */
   private async currentScoreSummary(helperId: string): Promise<HelperScoreResult | null> {
-    const profile = await this.helperModel.findOne({ user_id: new Types.ObjectId(helperId) }).exec();
+    const profile = await this.helperModel
+      .findOne({ user_id: new Types.ObjectId(helperId) })
+      .exec();
     if (!profile) return null;
     const config = helperScoreConfigFromEnv(key => process.env[key]);
     const now = new Date();
@@ -525,9 +594,7 @@ export class AdminService {
     event: HelperPenaltyEventDocument,
     now: Date,
   ): Promise<HelperScoreResult | null> {
-    const profile = await this.helperModel
-      .findOne({ user_id: event.helper_id })
-      .exec();
+    const profile = await this.helperModel.findOne({ user_id: event.helper_id }).exec();
     if (!profile) return null;
     const config = helperScoreConfigFromEnv(key => process.env[key]);
 

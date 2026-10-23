@@ -46,7 +46,13 @@ if (Platform.OS !== 'web') {
         continue;
       // Emit to all active jobs (stored in module-level set updated by the hook below)
       for (const jobId of activeJobIds) {
-        socketService.updateLocation(jobId, latitude, longitude, recorded_at, accuracy ?? undefined);
+        socketService.updateLocation(
+          jobId,
+          latitude,
+          longitude,
+          recorded_at,
+          accuracy ?? undefined,
+        );
       }
     }
   });
@@ -58,9 +64,7 @@ const activeJobIds = new Set<string>();
 // ─── Hook ────────────────────────────────────────────────────────────────────
 export function useBackgroundGps() {
   const userId = useAuthStore(s => s.user?._id);
-  const isHelper = useAuthStore(
-    s => s.isAuthenticated && s.user?.roles.some(r => r === 'helper'),
-  );
+  const isHelper = useAuthStore(s => s.isAuthenticated && s.user?.roles.some(r => r === 'helper'));
 
   const { data: jobs } = useQuery<{ _id: string }[]>({
     queryKey: ['jobs', 'live-travel', userId],
@@ -151,4 +155,3 @@ export function useBackgroundGps() {
       .catch(() => {});
   }, [isHelper]);
 }
-

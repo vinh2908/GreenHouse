@@ -238,7 +238,9 @@ Trả về JSON:
     const slugList = knownSlugs
       .map(slug => {
         const ref = PRICE_REFERENCE[slug];
-        const price = ref ? ` (${ref.min.toLocaleString('vi-VN')}–${ref.max.toLocaleString('vi-VN')}₫/${ref.unit === 'hour' ? 'giờ' : ref.unit === 'day' ? 'ngày' : 'lần'})` : '';
+        const price = ref
+          ? ` (${ref.min.toLocaleString('vi-VN')}–${ref.max.toLocaleString('vi-VN')}₫/${ref.unit === 'hour' ? 'giờ' : ref.unit === 'day' ? 'ngày' : 'lần'})`
+          : '';
         return `- ${slug}: ${(SERVICE_SLUG_VI as Record<string, string>)[slug]}${price}`;
       })
       .join('\n');
@@ -277,8 +279,14 @@ Nếu ảnh không liên quan sự cố gia đình / không nhận diện đư�
         typeof parsed.suggested_service_slug === 'string' ? parsed.suggested_service_slug : null;
       const slug = rawSlug && knownSlugs.includes(rawSlug) ? rawSlug : null;
 
-      const priceMin = typeof parsed.price_min === 'number' && parsed.price_min > 0 ? Math.round(parsed.price_min) : undefined;
-      const priceMax = typeof parsed.price_max === 'number' && parsed.price_max > 0 ? Math.round(parsed.price_max) : undefined;
+      const priceMin =
+        typeof parsed.price_min === 'number' && parsed.price_min > 0
+          ? Math.round(parsed.price_min)
+          : undefined;
+      const priceMax =
+        typeof parsed.price_max === 'number' && parsed.price_max > 0
+          ? Math.round(parsed.price_max)
+          : undefined;
       const confidenceRaw = typeof parsed.confidence === 'number' ? parsed.confidence : 0.5;
 
       return {
@@ -303,5 +311,4 @@ Nếu ảnh không liên quan sự cố gia đình / không nhận diện đư�
       return { available: false };
     }
   }
-
 }

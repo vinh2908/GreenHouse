@@ -19,10 +19,7 @@ import { CreateRecurringPlanDto, UpdateRecurringPlanDto } from './dto/recurring.
 import { Job, JobDocument } from '../jobs/schemas/job.schema';
 import { CreateJobDto } from '../jobs/dto/job.dto';
 import { JobsService, isAvailableForDate } from '../jobs/jobs.service';
-import {
-  HelperProfile,
-  HelperProfileDocument,
-} from '../helpers/schemas/helper-profile.schema';
+import { HelperProfile, HelperProfileDocument } from '../helpers/schemas/helper-profile.schema';
 import { FavoritesService } from '../favorites/favorites.service';
 import { JobStatus } from '@homemate/types';
 import { RECURRING_WINDOW_DAYS } from '@homemate/constants';
@@ -55,11 +52,14 @@ export class RecurringService implements OnApplicationBootstrap, OnModuleDestroy
     this.generateForAllActivePlans().catch(err =>
       this.logger.error(`Recurring generation failed at bootstrap: ${err?.message ?? err}`),
     );
-    this.timer = setInterval(() => {
-      this.generateForAllActivePlans().catch(err =>
-        this.logger.error(`Recurring generation failed: ${err?.message ?? err}`),
-      );
-    }, 60 * 60 * 1000);
+    this.timer = setInterval(
+      () => {
+        this.generateForAllActivePlans().catch(err =>
+          this.logger.error(`Recurring generation failed: ${err?.message ?? err}`),
+        );
+      },
+      60 * 60 * 1000,
+    );
     (this.timer as unknown as { unref?: () => void }).unref?.();
   }
 
@@ -68,9 +68,7 @@ export class RecurringService implements OnApplicationBootstrap, OnModuleDestroy
   }
 
   async generateForAllActivePlans(): Promise<void> {
-    const plans = await this.planModel
-      .find({ status: RecurringPlanStatus.ACTIVE })
-      .exec();
+    const plans = await this.planModel.find({ status: RecurringPlanStatus.ACTIVE }).exec();
     for (const plan of plans) {
       try {
         await this.generateJobsForPlan(plan);
@@ -140,13 +138,20 @@ export class RecurringService implements OnApplicationBootstrap, OnModuleDestroy
   }
 
   private nextOccurrenceDate(plan: RecurringPlan, from: Date): Date | undefined {
+    const now = new Date();
     const upcoming = this.occurrenceDates(plan, from, this.addDays(from, 370)).filter(
-      key => !plan.skipped_dates.includes(key),
+      key => !plan.skipped_dates?.includes(key),
     );
     if (upcoming.length === 0) return undefined;
-    const [y, m, d] = upcoming[0].split('-').map(Number);
     const [hh, mm] = (plan.time_start || '09:00').split(':').map(Number);
-    return new Date(y, (m ?? 1) - 1, d ?? 1, hh ?? 9, mm ?? 0, 0, 0);
+    for (const dateKey of upcoming) {
+      const [y, m, d] = dateKey.split('-').map(Number);
+      const cand = new Date(y, (m ?? 1) - 1, d ?? 1, hh ?? 9, mm ?? 0, 0, 0);
+      if (cand.getTime() > now.getTime()) {
+        return cand;
+      }
+    }
+    return undefined;
   }
 
   // ─── Sinh job cho các lượt sắp tới của 1 gói ──────────────────────────────
@@ -271,7 +276,10 @@ export class RecurringService implements OnApplicationBootstrap, OnModuleDestroy
     }
   }
 
-  async createPlan(customerId: string, dto: CreateRecurringPlanDto): Promise<RecurringPlanDocument> {
+  async createPlan(
+    customerId: string,
+    dto: CreateRecurringPlanDto,
+  ): Promise<RecurringPlanDocument> {
     this.validateSchedule(dto);
     await this.validatePreferredHelper(customerId, dto.preferred_helper_id);
 
@@ -314,12 +322,24 @@ export class RecurringService implements OnApplicationBootstrap, OnModuleDestroy
   }
 
   async listMyPlans(customerId: string) {
-    return this.planModel
+    const plans = await this.planModel
       .find({ customer_id: new Types.ObjectId(customerId) })
       .populate('service_id', 'name slug icon')
       .populate('preferred_helper_id', 'full_name avatar')
       .sort({ created_at: -1 })
       .exec();
+
+    const now = new Date();
+    return plans.map(p => {
+      const obj = p.toObject();
+      if (obj.status === RecurringPlanStatus.ACTIVE) {
+        const nextDate = this.nextOccurrenceDate(p, now);
+        if (nextDate) {
+          obj.next_occurrence_at = nextDate;
+        }
+      }
+      return obj;
+    });
   }
 
   private async getOwnedPlan(customerId: string, planId: string): Promise<RecurringPlanDocument> {
@@ -336,18 +356,25 @@ export class RecurringService implements OnApplicationBootstrap, OnModuleDestroy
       .sort({ occurrence_date: 1 })
       .limit(50)
       .exec();
-    const upcomingDates = this.occurrenceDates(
-      plan,
-      new Date(),
-      this.addDays(new Date(), 62),
-    )
+    const now = new Date();
+    const upcomingDates = this.occurrenceDates(plan, now, this.addDays(now, 62))
       .filter(key => !plan.skipped_dates.includes(key))
+      .filter(key => {
+        const [y, m, d] = key.split('-').map(Number);
+        const [hh, mm] = (plan.time_start || '09:00').split(':').map(Number);
+        return new Date(y, (m ?? 1) - 1, d ?? 1, hh ?? 9, mm ?? 0, 0, 0).getTime() > now.getTime();
+      })
       .slice(0, 5);
     const populated = await plan.populate([
       { path: 'service_id', select: 'name slug icon' },
       { path: 'preferred_helper_id', select: 'full_name avatar' },
     ]);
-    return { plan: populated, jobs, upcoming_dates: upcomingDates };
+    const obj = populated.toObject();
+    if (obj.status === RecurringPlanStatus.ACTIVE) {
+      const nextDate = this.nextOccurrenceDate(plan, now);
+      if (nextDate) obj.next_occurrence_at = nextDate;
+    }
+    return { plan: obj, jobs, upcoming_dates: upcomingDates };
   }
 
   async updatePlan(
@@ -429,10 +456,7 @@ export class RecurringService implements OnApplicationBootstrap, OnModuleDestroy
     const existingJob = await this.jobModel
       .findOne({ recurring_plan_id: plan._id, occurrence_date: nextKey })
       .exec();
-    if (
-      existingJob &&
-      ![JobStatus.OPEN, JobStatus.RECEIVING_QUOTES].includes(existingJob.status)
-    ) {
+    if (existingJob && ![JobStatus.OPEN, JobStatus.RECEIVING_QUOTES].includes(existingJob.status)) {
       throw new BadRequestException(
         'Buổi gần nhất đã có thợ nhận/đang thực hiện, không thể bỏ qua. Hãy mở đơn đó để hủy trực tiếp.',
       );

@@ -2,10 +2,10 @@
 
 Gói này gồm tính năng mới **SOS Backup** (7 commit) cộng với toàn bộ gói roadmap 20 tính năng đã bàn giao trước đó (23 commit). Có 2 file patch — chọn ĐÚNG MỘT theo trạng thái repo ở máy bạn:
 
-| File | Khi nào dùng |
-|---|---|
+| File                                     | Khi nào dùng                                                                                                           |
+| ---------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
 | `greenhouse-all-features.patch` (~2,0MB) | Repo máy bạn đang ở master gốc, **chưa áp patch roadmap** lần nào → áp 1 file này là có tất cả (roadmap + SOS Backup). |
-| `greenhouse-sos-backup.patch` (~170KB) | Đã áp `greenhouse-full-roadmap.patch` rồi → chỉ cần áp thêm file này để có SOS Backup. |
+| `greenhouse-sos-backup.patch` (~170KB)   | Đã áp `greenhouse-full-roadmap.patch` rồi → chỉ cần áp thêm file này để có SOS Backup.                                 |
 
 Cả hai đã được kiểm chứng `git apply --check` trên bản master sạch (và kiểm chứng áp nối tiếp roadmap → SOS). Patch có nhúng file nhị phân (font PDF hóa đơn) nên **phải dùng `git apply`, không dùng `git am` từng commit**.
 

@@ -172,7 +172,6 @@ export class UpdateAvailabilityDto {
   blocked_dates?: string[];
 }
 
-
 export class SetIncomeGoalDto {
   @ApiProperty({ example: 15000000, description: 'Mục tiêu thu nhập tháng (VNĐ, >= 0)' })
   @IsNumber()

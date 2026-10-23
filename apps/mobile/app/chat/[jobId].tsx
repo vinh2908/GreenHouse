@@ -393,9 +393,7 @@ export default function ChatScreen() {
               const isMe = senderId === currentUser?._id;
               if (item.type === 'image') {
                 return (
-                  <View
-                    style={{ alignItems: isMe ? 'flex-end' : 'flex-start', marginVertical: 2 }}
-                  >
+                  <View style={{ alignItems: isMe ? 'flex-end' : 'flex-start', marginVertical: 2 }}>
                     <TouchableOpacity
                       activeOpacity={0.9}
                       onPress={() => setViewingImage(item.content)}

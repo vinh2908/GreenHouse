@@ -252,8 +252,7 @@ export class VoipPushService {
       });
       req.on('end', () => {
         client.close();
-        const dead =
-          status === 410 || (status === 400 && data.includes('BadDeviceToken'));
+        const dead = status === 410 || (status === 400 && data.includes('BadDeviceToken'));
         done({ ok: status === 200, dead });
       });
       req.on('error', () => {
@@ -283,9 +282,7 @@ export class VoipPushService {
     const signer = createSign('RSA-SHA256');
     signer.update(signingInput);
     signer.end();
-    const assertion = `${signingInput}.${signer
-      .sign(sa.private_key)
-      .toString('base64url')}`;
+    const assertion = `${signingInput}.${signer.sign(sa.private_key).toString('base64url')}`;
 
     const res = await fetch('https://oauth2.googleapis.com/token', {
       method: 'POST',

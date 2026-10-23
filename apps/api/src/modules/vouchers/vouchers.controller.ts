@@ -34,13 +34,16 @@ import { UserRole } from '@homemate/types';
 export class VouchersController {
   constructor(private readonly vouchersService: VouchersService) {}
 
+  @Get('my')
+  @ApiOperation({ summary: '[Customer] Xem danh sách mã giảm giá khả dụng của tôi' })
+  async myVouchers(@CurrentUser() user: { sub: string }) {
+    return this.vouchersService.getMyAvailableVouchers(user.sub);
+  }
+
   @Post('validate')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: '[Customer] Kiểm tra mã giảm giá + xem trước số tiền giảm' })
-  async validate(
-    @CurrentUser() user: { sub: string },
-    @Body() dto: ValidateVoucherDto,
-  ) {
+  async validate(@CurrentUser() user: { sub: string }, @Body() dto: ValidateVoucherDto) {
     return this.vouchersService.preview(dto.code, user.sub, dto.amount ?? 0);
   }
 

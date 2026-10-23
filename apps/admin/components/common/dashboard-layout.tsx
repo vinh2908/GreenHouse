@@ -17,6 +17,7 @@ import {
   TicketPercent,
   Headset,
   Siren,
+  CalendarClock,
 } from 'lucide-react';
 import { useAuthStore } from '@/stores/auth.store';
 
@@ -26,6 +27,7 @@ const navItems = [
   { href: '/helpers', label: 'Đối tác Thợ & Giúp việc', icon: UserCheck },
   { href: '/helpers/kyc', label: 'Duyệt e-KYC Thợ', icon: ShieldCheck },
   { href: '/jobs', label: 'Quản lý Đơn hàng', icon: Briefcase },
+  { href: '/monthly-contracts', label: 'Hợp đồng tháng', icon: CalendarClock },
   { href: '/services', label: 'Dịch vụ & Phí', icon: Wrench },
   { href: '/vouchers', label: 'Mã giảm giá', icon: TicketPercent },
   { href: '/claims', label: 'Bồi thường bảo hiểm', icon: ShieldCheck },

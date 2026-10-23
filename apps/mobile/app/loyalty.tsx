@@ -109,12 +109,11 @@ export default function LoyaltyScreen() {
             Quyền lợi theo hạng
           </Text>
           <Text style={{ fontSize: 13, color: COLORS.gray[600], lineHeight: 20 }}>
-            • Tích điểm: 1 điểm / {fmt(account?.earn_vnd_per_point ?? 10000)}₫ đã thanh toán{'\n'}
-            • Hạng Thường (dưới 500 điểm): đổi tối đa 20% giá trị đơn{'\n'}
-            • Hạng Bạc (500–1.999 điểm): đổi tối đa 30% giá trị đơn{'\n'}
-            • Hạng Vàng (từ 2.000 điểm): đổi tối đa 50% giá trị đơn{'\n'}• Đổi tối thiểu{' '}
-            {fmt(account?.min_redeem_points ?? 100)} điểm/lần, áp dụng trong chi tiết đơn khi đã có
-            giá chốt.
+            • Tích điểm: 1 điểm / {fmt(account?.earn_vnd_per_point ?? 10000)}₫ đã thanh toán{'\n'}•
+            Hạng Thường (dưới 500 điểm): đổi tối đa 20% giá trị đơn{'\n'}• Hạng Bạc (500–1.999
+            điểm): đổi tối đa 30% giá trị đơn{'\n'}• Hạng Vàng (từ 2.000 điểm): đổi tối đa 50% giá
+            trị đơn{'\n'}• Đổi tối thiểu {fmt(account?.min_redeem_points ?? 100)} điểm/lần, áp dụng
+            trong chi tiết đơn khi đã có giá chốt.
           </Text>
           <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.gray[800] }}>
             Hạng hiện tại của bạn được đổi tối đa {account?.redemption_cap_percent ?? 20}% giá trị

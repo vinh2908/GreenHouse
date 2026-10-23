@@ -120,8 +120,7 @@ class CallKeepService {
       },
       android: {
         alertTitle: 'Quyền tài khoản điện thoại',
-        alertDescription:
-          'Green House cần quyền này để hiển thị cuộc gọi đến như cuộc gọi thường.',
+        alertDescription: 'Green House cần quyền này để hiển thị cuộc gọi đến như cuộc gọi thường.',
         cancelButton: 'Đóng',
         okButton: 'Đồng ý',
         additionalPermissions: [],

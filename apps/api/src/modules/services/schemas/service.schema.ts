@@ -61,6 +61,12 @@ export class Service {
   @Prop({ default: 0 })
   price_range_max: number;
 
+  @Prop({ default: 0 })
+  base_price_min: number;
+
+  @Prop({ default: 0 })
+  base_price_max: number;
+
   @Prop({ default: 1 })
   estimated_duration_min: number;
 

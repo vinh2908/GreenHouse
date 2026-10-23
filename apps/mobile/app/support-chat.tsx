@@ -36,9 +36,7 @@ interface LocalBubble {
   sent: boolean;
 }
 
-type ThreadItem =
-  | { kind: 'msg'; msg: SupportMessageItem }
-  | { kind: 'faq'; faq: LocalBubble };
+type ThreadItem = { kind: 'msg'; msg: SupportMessageItem } | { kind: 'faq'; faq: LocalBubble };
 
 export default function SupportChatScreen() {
   const router = useRouter();
@@ -239,9 +237,7 @@ export default function SupportChatScreen() {
           <FlatList
             ref={listRef}
             data={thread}
-            keyExtractor={item =>
-              item.kind === 'msg' ? item.msg._id : item.faq.id
-            }
+            keyExtractor={item => (item.kind === 'msg' ? item.msg._id : item.faq.id)}
             contentContainerStyle={{ padding: 16, gap: 12, paddingBottom: 20 }}
             onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: false })}
             ListHeaderComponent={

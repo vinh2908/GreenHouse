@@ -52,13 +52,15 @@ function makeJobsService(opts?: { voucherThrows?: boolean }) {
     findById: jest.fn(() => ({
       exec: async () => jobRecord,
     })),
-    findOneAndUpdate: jest.fn((filter: Record<string, unknown>, update: Record<string, unknown>) => ({
-      exec: async () => {
-        if (!matches(jobRecord, filter)) return null;
-        Object.assign(jobRecord, (update['$set'] as Doc) ?? {});
-        return jobRecord;
-      },
-    })),
+    findOneAndUpdate: jest.fn(
+      (filter: Record<string, unknown>, update: Record<string, unknown>) => ({
+        exec: async () => {
+          if (!matches(jobRecord, filter)) return null;
+          Object.assign(jobRecord, (update['$set'] as Doc) ?? {});
+          return jobRecord;
+        },
+      }),
+    ),
   };
 
   const quoteModel = {
@@ -112,33 +114,32 @@ function makeJobsService(opts?: { voucherThrows?: boolean }) {
 
 describe('JobsService.cancelJob - Khôi phục voucher và điểm loyalty', () => {
   it('hủy đơn thường có voucher + điểm: hoàn đúng 1 lần với đúng (customerId, jobId)', async () => {
-    const { service, jobRecord, vouchersService, loyaltyService, customerId, jobId } = makeJobsService();
+    const { service, jobRecord, vouchersService, loyaltyService, customerId, jobId } =
+      makeJobsService();
 
-    const cancelledJob = await service.cancelJob(
-      String(customerId),
-      'customer',
-      String(jobId),
-      { reason: 'Thay đổi kế hoạch cá nhân' },
-    );
+    const cancelledJob = await service.cancelJob(String(customerId), 'customer', String(jobId), {
+      reason: 'Thay đổi kế hoạch cá nhân',
+    });
 
     expect(cancelledJob.status).toBe(JobStatus.CANCELLED);
     expect(jobRecord['benefits_restored_at']).toBeInstanceOf(Date);
     expect(vouchersService.restoreForJob).toHaveBeenCalledTimes(1);
     expect(vouchersService.restoreForJob).toHaveBeenCalledWith(String(customerId), String(jobId));
     expect(loyaltyService.reverseRedeemForJob).toHaveBeenCalledTimes(1);
-    expect(loyaltyService.reverseRedeemForJob).toHaveBeenCalledWith(String(customerId), String(jobId));
+    expect(loyaltyService.reverseRedeemForJob).toHaveBeenCalledWith(
+      String(customerId),
+      String(jobId),
+    );
   });
 
   it('gọi khôi phục lặp lại: cờ benefits_restored_at đã có -> không hoàn thêm lần 2', async () => {
-    const { service, jobRecord, vouchersService, loyaltyService, customerId, jobId } = makeJobsService();
+    const { service, jobRecord, vouchersService, loyaltyService, customerId, jobId } =
+      makeJobsService();
 
     // Lần 1: hủy đơn
-    await service.cancelJob(
-      String(customerId),
-      'customer',
-      String(jobId),
-      { reason: 'Bận việc đột xuất' },
-    );
+    await service.cancelJob(String(customerId), 'customer', String(jobId), {
+      reason: 'Bận việc đột xuất',
+    });
     expect(vouchersService.restoreForJob).toHaveBeenCalledTimes(1);
     expect(loyaltyService.reverseRedeemForJob).toHaveBeenCalledTimes(1);
 
@@ -157,12 +158,9 @@ describe('JobsService.cancelJob - Khôi phục voucher và điểm loyalty', () 
   it('best-effort: nếu trả voucher thất bại, hoàn điểm vẫn chạy và đơn vẫn hủy thành công', async () => {
     const { service, loyaltyService, customerId, jobId } = makeJobsService({ voucherThrows: true });
 
-    const cancelledJob = await service.cancelJob(
-      String(customerId),
-      'customer',
-      String(jobId),
-      { reason: 'Không cần nữa' },
-    );
+    const cancelledJob = await service.cancelJob(String(customerId), 'customer', String(jobId), {
+      reason: 'Không cần nữa',
+    });
 
     expect(cancelledJob.status).toBe(JobStatus.CANCELLED);
     expect(loyaltyService.reverseRedeemForJob).toHaveBeenCalledTimes(1);

@@ -32,6 +32,7 @@ import {
   Camera,
   ImagePlus,
   Trash2,
+  Info,
 } from 'lucide-react-native';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
@@ -72,6 +73,7 @@ import { SosBackupCustomerBanner } from '@/components/common/sos-backup-customer
 import { LoyaltyPointsInput } from '@/components/common/loyalty-points-input';
 import { LocationPicker } from '@/components/common/location-picker';
 import { validCoordinate } from '@/services/tracking';
+import { formatDisplayAddress } from '@/utils/address-formatter';
 import {
   Button,
   Card,
@@ -199,6 +201,12 @@ export default function JobDetailScreen() {
   const [disputeReason, setDisputeReason] = useState('');
   const [disputePhotos, setDisputePhotos] = useState<string[]>([]);
 
+  // ── Warranty Modal States (BH1) ──────────────────────────────────────────
+  const [showWarrantyModal, setShowWarrantyModal] = useState(false);
+  const [warrantyIssue, setWarrantyIssue] = useState('');
+  const [warrantyDate, setWarrantyDate] = useState(dayjs().add(1, 'day').format('YYYY-MM-DD'));
+  const [warrantyTime, setWarrantyTime] = useState('08:00');
+
   // ── Edit Job & Location Modal States ─────────────────────────────────────
   const [showEditModal, setShowEditModal] = useState(false);
   const [editTitle, setEditTitle] = useState('');
@@ -298,32 +306,35 @@ export default function JobDetailScreen() {
   };
 
   const handleCreateWarranty = () => {
-    Alert.alert(
-      '🛡 Tạo đơn bảo hành miễn phí?',
-      'Đơn bảo hành sẽ được gửi riêng cho thợ đã thực hiện đơn này trong 72 giờ. Bạn không phải trả thêm bất kỳ chi phí nào.',
-      [
-        { text: 'Để sau', style: 'cancel' },
-        {
-          text: 'Tạo đơn bảo hành',
-          onPress: async () => {
-            try {
-              const newJob = await createWarranty.mutateAsync(id!);
-              Toast.show({
-                type: 'success',
-                text1: 'Đã tạo đơn bảo hành 🛡',
-                text2: 'Đơn đã được gửi riêng cho thợ của đơn gốc.',
-              });
-              if (newJob?._id) {
-                router.push({ pathname: '/job-detail/[id]', params: { id: newJob._id } });
-              }
-            } catch (err: any) {
-              const msg = err?.response?.data?.message || 'Không tạo được đơn bảo hành';
-              Toast.show({ type: 'error', text1: msg });
-            }
-          },
-        },
-      ],
-    );
+    setShowWarrantyModal(true);
+  };
+
+  const handleConfirmWarranty = async () => {
+    if (!warrantyIssue.trim()) {
+      Toast.show({ type: 'error', text1: 'Vui lòng nhập mô tả vấn đề cần bảo hành' });
+      return;
+    }
+    try {
+      const newJob = await createWarranty.mutateAsync({
+        sourceJobId: id!,
+        issue_description: warrantyIssue.trim(),
+        preferred_date: warrantyDate,
+        preferred_time_start: warrantyTime,
+      });
+      setShowWarrantyModal(false);
+      setWarrantyIssue('');
+      Toast.show({
+        type: 'success',
+        text1: 'Đã tạo đơn bảo hành 🛡',
+        text2: 'Đơn đã được gửi riêng cho thợ của đơn gốc.',
+      });
+      if (newJob?._id) {
+        router.push({ pathname: '/job-detail/[id]', params: { id: newJob._id } });
+      }
+    } catch (err: any) {
+      const msg = err?.response?.data?.message || 'Không tạo được đơn bảo hành';
+      Toast.show({ type: 'error', text1: msg });
+    }
   };
 
   const handleOpenEdit = () => {
@@ -446,6 +457,22 @@ export default function JobDetailScreen() {
         Toast.show({ type: 'error', text1: msg });
       }
     };
+
+    if (job.status === 'helper_on_the_way') {
+      Alert.alert(
+        'Hủy khi thợ đang di chuyển',
+        'Thợ đã bắt đầu di chuyển đến điểm làm việc của bạn. Theo chính sách Green House, bạn sẽ chịu phí di chuyển 30.000₫ hỗ trợ cho thợ. Bạn có chắc chắn muốn hủy đơn không?',
+        [
+          { text: 'Ở lại', style: 'cancel' },
+          {
+            text: 'Đồng ý hủy (-30.000₫)',
+            style: 'destructive',
+            onPress: doCancel,
+          },
+        ],
+      );
+      return;
+    }
 
     Alert.alert(
       'Hủy đơn hàng?',
@@ -672,8 +699,25 @@ export default function JobDetailScreen() {
               🛡 Đơn bảo hành — Miễn phí
             </Text>
             <Text style={{ fontSize: 13, color: COLORS.gray[700], marginTop: 4, lineHeight: 19 }}>
-              Đây là đơn bảo hành phát sinh từ một đơn đã hoàn thành. Bạn không phải thanh toán
-              cho đơn này.
+              Đây là đơn bảo hành phát sinh từ một đơn đã hoàn thành. Bạn không phải thanh toán cho
+              đơn này.
+            </Text>
+          </Card>
+        )}
+
+        {(job as any).sos_backup_searching && (
+          <Card
+            style={{ backgroundColor: '#FEF2F2', borderColor: '#FECACA', borderWidth: 1.5, gap: 6 }}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <ActivityIndicator size="small" color="#DC2626" />
+              <Text style={{ fontWeight: '800', fontSize: 14.5, color: '#991B1B' }}>
+                Đang tìm thợ cứu hộ thay thế...
+              </Text>
+            </View>
+            <Text style={{ fontSize: 13, color: '#7F1D1D', lineHeight: 19 }}>
+              Bạn đã đồng ý đổi thợ sau khi thợ trước báo sự cố. Hệ thống đang tìm kiếm thợ cứu hộ
+              gần nhất để tiếp nhận đơn của bạn.
             </Text>
           </Card>
         )}
@@ -948,24 +992,24 @@ export default function JobDetailScreen() {
               trackingSectionY.current = e.nativeEvent.layout.y;
             }}
           >
-          <LiveTrackingMap
-            customerLocation={{
-              latitude: job.address?.location?.coordinates?.[1],
-              longitude: job.address?.location?.coordinates?.[0],
-            }}
-            helperLocation={
-              helperLocation
-                ? { latitude: helperLocation.lat, longitude: helperLocation.lng }
-                : null
-            }
-            helperRecordedAt={helperLocation?.recorded_at}
-            viewerRole="customer"
-            customerAddress={job.address?.full_address}
-            helperName={helperObj?.full_name || 'Thợ Green House'}
-            status={job.status}
-            height={240}
-            showNavigationButton={false}
-          />
+            <LiveTrackingMap
+              customerLocation={{
+                latitude: job.address?.location?.coordinates?.[1],
+                longitude: job.address?.location?.coordinates?.[0],
+              }}
+              helperLocation={
+                helperLocation
+                  ? { latitude: helperLocation.lat, longitude: helperLocation.lng }
+                  : null
+              }
+              helperRecordedAt={helperLocation?.recorded_at}
+              viewerRole="customer"
+              customerAddress={job.address?.full_address}
+              helperName={helperObj?.full_name || 'Thợ Green House'}
+              status={job.status}
+              height={240}
+              showNavigationButton={false}
+            />
           </View>
         )}
 
@@ -1073,9 +1117,7 @@ export default function JobDetailScreen() {
                 fontWeight: '600',
               }}
             >
-              {job.address?.full_address}
-              {job.address?.district ? `, ${job.address.district}` : ''},{' '}
-              {job.address?.city ?? 'Hồ Chí Minh'}
+              {formatDisplayAddress(job.address)}
             </Text>
           </View>
         </Card>
@@ -1092,7 +1134,9 @@ export default function JobDetailScreen() {
               }}
             >
               <Text style={{ fontWeight: '800', fontSize: 15, color: COLORS.gray[900] }}>
-                Thợ phụ trách đơn hàng
+                {(job as any).sos_backup_searching
+                  ? 'Thợ ban đầu (Báo sự cố)'
+                  : 'Thợ phụ trách đơn hàng'}
               </Text>
               <TouchableOpacity
                 onPress={() => {
@@ -1124,11 +1168,16 @@ export default function JobDetailScreen() {
             >
               <Avatar name={helperObj.full_name} uri={helperObj.avatar} size={48} />
               <View style={{ flex: 1 }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                <View
+                  style={{ flexDirection: 'row', alignItems: 'center', gap: 4, flexWrap: 'wrap' }}
+                >
                   <Text style={{ fontWeight: '800', fontSize: 15, color: COLORS.gray[900] }}>
                     {helperObj.full_name}
                   </Text>
                   <ShieldCheck size={16} color={COLORS.success} />
+                  {(job as any).sos_backup_searching && (
+                    <Badge label="Thợ cũ - Báo sự cố" color="#FEE2E2" textColor="#991B1B" />
+                  )}
                 </View>
                 <Text style={{ fontSize: 12, color: COLORS.gray[500], marginTop: 2 }}>
                   {helperObj.phone}
@@ -1158,124 +1207,127 @@ export default function JobDetailScreen() {
               quotesSectionY.current = e.nativeEvent.layout.y;
             }}
           >
-          {job.is_fixed_price ? (
-            <Card
-              style={{
-                gap: 8,
-                padding: 16,
-                backgroundColor: '#ECFDF5',
-                borderColor: '#A7F3D0',
-                borderWidth: 1.5,
-              }}
-            >
-              <Text style={{ fontWeight: '800', fontSize: 16, color: '#065F46' }}>
-                🏷️ Giá cam kết:{' '}
-                {new Intl.NumberFormat('vi-VN').format(job.fixed_price ?? 0)}₫
-              </Text>
-              <Text style={{ fontSize: 13.5, color: COLORS.gray[700], lineHeight: 20 }}>
-                Đang chờ thợ nhận việc với giá cam kết — đơn này không qua vòng báo giá, thợ đầu
-                tiên nhận việc sẽ thực hiện ngay với mức giá đã cam kết.
-              </Text>
-            </Card>
-          ) : (
-            <Card style={{ gap: 12, padding: 16 }}>
-            <View
-              style={{
-                flexDirection: 'row',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-              }}
-            >
-              <Text style={{ fontWeight: '800', fontSize: 16, color: COLORS.gray[900] }}>
-                Danh sách thợ báo giá ({quotes?.length ?? 0})
-              </Text>
-            </View>
-
-            {!quotes || quotes.length === 0 ? (
-              <View style={{ paddingVertical: 14, alignItems: 'center' }}>
-                <Text style={{ fontSize: 13, color: COLORS.gray[500] }}>
-                  Đang quét và gửi đơn tới các thợ trong khu vực lân cận...
+            {job.is_fixed_price ? (
+              <Card
+                style={{
+                  gap: 8,
+                  padding: 16,
+                  backgroundColor: '#ECFDF5',
+                  borderColor: '#A7F3D0',
+                  borderWidth: 1.5,
+                }}
+              >
+                <Text style={{ fontWeight: '800', fontSize: 16, color: '#065F46' }}>
+                  🏷️ Giá cam kết: {new Intl.NumberFormat('vi-VN').format(job.fixed_price ?? 0)}₫
                 </Text>
-              </View>
+                <Text style={{ fontSize: 13.5, color: COLORS.gray[700], lineHeight: 20 }}>
+                  Đang chờ thợ nhận việc với giá cam kết — đơn này không qua vòng báo giá, thợ đầu
+                  tiên nhận việc sẽ thực hiện ngay với mức giá đã cam kết.
+                </Text>
+              </Card>
             ) : (
-              quotes.map((q: any) => {
-                const hName = q.helper_id?.full_name || 'Thợ đối tác';
-                const hAvatar = q.helper_id?.avatar;
-                return (
-                  <View
-                    key={q._id}
-                    style={{
-                      borderWidth: 1.5,
-                      borderColor: COLORS.gray[200],
-                      borderRadius: 16,
-                      padding: 14,
-                      gap: 10,
-                      backgroundColor: '#fff',
-                    }}
-                  >
-                    <TouchableOpacity
-                      activeOpacity={0.8}
-                      onPress={() => {
-                        const hId =
-                          typeof q.helper_id === 'string' ? q.helper_id : q.helper_id?._id;
-                        if (hId)
-                          router.push({
-                            pathname: '/helper-profile/[id]',
-                            params: { id: hId, jobId: id, quoteId: q._id },
-                          });
-                      }}
-                      style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}
-                    >
-                      <Avatar name={hName} uri={hAvatar} size={42} />
-                      <View style={{ flex: 1 }}>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                          <Text
-                            style={{ fontWeight: '800', fontSize: 14, color: COLORS.gray[900] }}
-                          >
-                            {hName}
-                          </Text>
-                          <ShieldCheck size={14} color={COLORS.success} />
-                        </View>
-                        <Text style={{ fontSize: 12, color: COLORS.gray[500], marginTop: 1 }}>
-                          {q.distance_km != null
-                            ? `Cách ${q.distance_km}km • Dự kiến đến ~${formatTravelTime(q.estimated_minutes)}`
-                            : 'Chưa xác định được vị trí thợ'}
-                          {q.available_date && ` • ${dayjs(q.available_date).format('DD/MM')}`}
-                        </Text>
-                      </View>
-                      <PriceText amount={q.total_price} size={18} />
-                    </TouchableOpacity>
+              <Card style={{ gap: 12, padding: 16 }}>
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                  }}
+                >
+                  <Text style={{ fontWeight: '800', fontSize: 16, color: COLORS.gray[900] }}>
+                    Danh sách thợ báo giá ({quotes?.length ?? 0})
+                  </Text>
+                </View>
 
-                    {q.notes && (
-                      <View
-                        style={{ backgroundColor: COLORS.gray[50], padding: 10, borderRadius: 10 }}
-                      >
-                        <Text
-                          style={{
-                            fontSize: 13,
-                            color: COLORS.gray[700],
-                            fontStyle: 'italic',
-                            lineHeight: 18,
-                          }}
-                        >
-                          "{q.notes}"
-                        </Text>
-                      </View>
-                    )}
-
-                    <Button
-                      title="Chấp nhận thợ này"
-                      size="sm"
-                      fullWidth={false}
-                      style={{ alignSelf: 'flex-end', marginTop: 4 }}
-                      loading={selectQuote.isPending}
-                      onPress={() => setQuoteToAccept(q._id)}
-                    />
+                {!quotes || quotes.length === 0 ? (
+                  <View style={{ paddingVertical: 14, alignItems: 'center' }}>
+                    <Text style={{ fontSize: 13, color: COLORS.gray[500] }}>
+                      Đang quét và gửi đơn tới các thợ trong khu vực lân cận...
+                    </Text>
                   </View>
-                );
-              })
-            )}
-            </Card>
+                ) : (
+                  quotes.map((q: any) => {
+                    const hName = q.helper_id?.full_name || 'Thợ đối tác';
+                    const hAvatar = q.helper_id?.avatar;
+                    return (
+                      <View
+                        key={q._id}
+                        style={{
+                          borderWidth: 1.5,
+                          borderColor: COLORS.gray[200],
+                          borderRadius: 16,
+                          padding: 14,
+                          gap: 10,
+                          backgroundColor: '#fff',
+                        }}
+                      >
+                        <TouchableOpacity
+                          activeOpacity={0.8}
+                          onPress={() => {
+                            const hId =
+                              typeof q.helper_id === 'string' ? q.helper_id : q.helper_id?._id;
+                            if (hId)
+                              router.push({
+                                pathname: '/helper-profile/[id]',
+                                params: { id: hId, jobId: id, quoteId: q._id },
+                              });
+                          }}
+                          style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}
+                        >
+                          <Avatar name={hName} uri={hAvatar} size={42} />
+                          <View style={{ flex: 1 }}>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                              <Text
+                                style={{ fontWeight: '800', fontSize: 14, color: COLORS.gray[900] }}
+                              >
+                                {hName}
+                              </Text>
+                              <ShieldCheck size={14} color={COLORS.success} />
+                            </View>
+                            <Text style={{ fontSize: 12, color: COLORS.gray[500], marginTop: 1 }}>
+                              {q.distance_km != null
+                                ? `Cách ${q.distance_km}km • Dự kiến đến ~${formatTravelTime(q.estimated_minutes)}`
+                                : 'Chưa xác định được vị trí thợ'}
+                              {q.available_date && ` • ${dayjs(q.available_date).format('DD/MM')}`}
+                            </Text>
+                          </View>
+                          <PriceText amount={q.total_price} size={18} />
+                        </TouchableOpacity>
+
+                        {q.notes && (
+                          <View
+                            style={{
+                              backgroundColor: COLORS.gray[50],
+                              padding: 10,
+                              borderRadius: 10,
+                            }}
+                          >
+                            <Text
+                              style={{
+                                fontSize: 13,
+                                color: COLORS.gray[700],
+                                fontStyle: 'italic',
+                                lineHeight: 18,
+                              }}
+                            >
+                              "{q.notes}"
+                            </Text>
+                          </View>
+                        )}
+
+                        <Button
+                          title="Chấp nhận thợ này"
+                          size="sm"
+                          fullWidth={false}
+                          style={{ alignSelf: 'flex-end', marginTop: 4 }}
+                          loading={selectQuote.isPending}
+                          onPress={() => setQuoteToAccept(q._id)}
+                        />
+                      </View>
+                    );
+                  })
+                )}
+              </Card>
             )}
           </View>
         )}
@@ -1329,9 +1381,7 @@ export default function JobDetailScreen() {
             </View>
 
             {/* ── Voucher (Roadmap Phase 1) — đơn bảo hành miễn phí: ẩn ── */}
-            {!job.is_warranty && (
-              <JobVoucherRow job={job} contractTotal={contract.total_price} />
-            )}
+            {!job.is_warranty && <JobVoucherRow job={job} contractTotal={contract.total_price} />}
 
             {/* ── Loyalty (Feature 12) — dùng điểm khi chưa thanh toán ── */}
             {!job.is_warranty && job.payment_status !== 'paid' && (
@@ -1659,6 +1709,29 @@ export default function JobDetailScreen() {
               onPress={handleCancel}
             />
           )}
+
+          {!canCancel &&
+            ['helper_arrived', 'in_progress', 'pending_review'].includes(job.status) && (
+              <View
+                style={{
+                  backgroundColor: '#F8FAFC',
+                  borderColor: COLORS.gray[200],
+                  borderWidth: 1,
+                  borderRadius: 12,
+                  padding: 14,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 10,
+                }}
+              >
+                <Info size={22} color={COLORS.warning || '#D97706'} />
+                <Text style={{ flex: 1, fontSize: 13, color: COLORS.gray[600], lineHeight: 18 }}>
+                  Không thể hủy trực tiếp ở bước này. Thợ đã có mặt tại điểm làm việc hoặc đang tiến
+                  hành công việc. Nếu cần hỗ trợ hoặc giải quyết sự cố, vui lòng liên hệ thợ hoặc
+                  tổng đài hỗ trợ Green House.
+                </Text>
+              </View>
+            )}
         </View>
       </ScrollView>
 
@@ -2000,46 +2073,131 @@ export default function JobDetailScreen() {
                 </Text>
               </Card>
             ) : (
-              <Card style={{ gap: 10, padding: 16, backgroundColor: COLORS.gray[50] }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                <CreditCard size={18} color={COLORS.primary} />
-                <Text style={{ fontWeight: '800', fontSize: 15, color: COLORS.gray[900] }}>
-                  Phương thức thanh toán (
-                  {new Intl.NumberFormat('vi-VN').format(contract?.total_price ?? 0)}₫)
-                </Text>
-              </View>
-              <View style={{ gap: 8 }}>
-                {PAYMENT_METHODS.map(pm => {
-                  const selected = paymentMethod === pm.id;
+              <Card style={{ gap: 12, padding: 16, backgroundColor: COLORS.gray[50] }}>
+                {(() => {
+                  const rawTotal =
+                    contract?.total_price ?? job.final_price ?? job.estimated_price_max ?? 0;
+                  const discount = job.discount_amount ?? 0;
+                  const loyaltyDiscount = job.loyalty_discount_amount ?? 0;
+                  const totalDiscount = discount + loyaltyDiscount;
+                  const finalPayable = Math.max(0, rawTotal - totalDiscount);
+
                   return (
-                    <TouchableOpacity
-                      key={pm.id}
-                      onPress={() => setPaymentMethod(pm.id)}
-                      style={{
-                        flexDirection: 'row',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        padding: 12,
-                        borderRadius: 12,
-                        borderWidth: 1.5,
-                        borderColor: selected ? COLORS.primary : COLORS.gray[200],
-                        backgroundColor: selected ? COLORS.primaryLight : '#fff',
-                      }}
-                    >
-                      <Text
+                    <>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                        <CreditCard size={18} color={COLORS.primary} />
+                        <Text style={{ fontWeight: '800', fontSize: 15, color: COLORS.gray[900] }}>
+                          Phương thức thanh toán (
+                          {new Intl.NumberFormat('vi-VN').format(finalPayable)}₫)
+                        </Text>
+                      </View>
+
+                      {/* Chi tiết chiết khấu & voucher nếu có */}
+                      {(job.voucher_code || totalDiscount > 0) && (
+                        <View
+                          style={{
+                            backgroundColor: '#fff',
+                            padding: 12,
+                            borderRadius: 10,
+                            gap: 6,
+                            borderWidth: 1,
+                            borderColor: COLORS.gray[200],
+                          }}
+                        >
+                          <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                            <Text style={{ fontSize: 13, color: COLORS.gray[600] }}>
+                              Tổng tiền công việc:
+                            </Text>
+                            <Text
+                              style={{ fontSize: 13, fontWeight: '700', color: COLORS.gray[800] }}
+                            >
+                              {new Intl.NumberFormat('vi-VN').format(rawTotal)}₫
+                            </Text>
+                          </View>
+                          {job.voucher_code && discount > 0 && (
+                            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                              <Text
+                                style={{
+                                  fontSize: 13,
+                                  color: COLORS.primaryDark,
+                                  fontWeight: '700',
+                                }}
+                              >
+                                🎟️ Mã giảm giá ({job.voucher_code}):
+                              </Text>
+                              <Text
+                                style={{ fontSize: 13, fontWeight: '800', color: COLORS.primary }}
+                              >
+                                -{new Intl.NumberFormat('vi-VN').format(discount)}₫
+                              </Text>
+                            </View>
+                          )}
+                          {loyaltyDiscount > 0 && (
+                            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                              <Text style={{ fontSize: 13, color: '#D97706', fontWeight: '700' }}>
+                                ⭐ Giảm từ điểm tích lũy:
+                              </Text>
+                              <Text style={{ fontSize: 13, fontWeight: '800', color: '#D97706' }}>
+                                -{new Intl.NumberFormat('vi-VN').format(loyaltyDiscount)}₫
+                              </Text>
+                            </View>
+                          )}
+                          <View
+                            style={{
+                              height: 1,
+                              backgroundColor: COLORS.gray[200],
+                              marginVertical: 4,
+                            }}
+                          />
+                          <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                            <Text
+                              style={{ fontSize: 14, fontWeight: '800', color: COLORS.gray[900] }}
+                            >
+                              Số tiền thực thanh toán:
+                            </Text>
+                            <Text
+                              style={{ fontSize: 15, fontWeight: '900', color: COLORS.primaryDark }}
+                            >
+                              {new Intl.NumberFormat('vi-VN').format(finalPayable)}₫
+                            </Text>
+                          </View>
+                        </View>
+                      )}
+                    </>
+                  );
+                })()}
+                <View style={{ gap: 8 }}>
+                  {PAYMENT_METHODS.map(pm => {
+                    const selected = paymentMethod === pm.id;
+                    return (
+                      <TouchableOpacity
+                        key={pm.id}
+                        onPress={() => setPaymentMethod(pm.id)}
                         style={{
-                          fontSize: 14,
-                          fontWeight: '700',
-                          color: selected ? COLORS.primaryDark : COLORS.gray[800],
+                          flexDirection: 'row',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          padding: 12,
+                          borderRadius: 12,
+                          borderWidth: 1.5,
+                          borderColor: selected ? COLORS.primary : COLORS.gray[200],
+                          backgroundColor: selected ? COLORS.primaryLight : '#fff',
                         }}
                       >
-                        {pm.label}
-                      </Text>
-                      {selected && <Check size={16} color={COLORS.primary} />}
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
+                        <Text
+                          style={{
+                            fontSize: 14,
+                            fontWeight: '700',
+                            color: selected ? COLORS.primaryDark : COLORS.gray[800],
+                          }}
+                        >
+                          {pm.label}
+                        </Text>
+                        {selected && <Check size={16} color={COLORS.primary} />}
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
               </Card>
             )}
 
@@ -2273,6 +2431,143 @@ export default function JobDetailScreen() {
           </ScrollView>
         </KeyboardAvoidingView>
       </Modal>
+
+      {/* ── Modal tạo đơn bảo hành (BH1) ─────────────────────────── */}
+      <Modal
+        visible={showWarrantyModal}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => {
+          if (!createWarranty.isPending) setShowWarrantyModal(false);
+        }}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          style={{ flex: 1, backgroundColor: '#fff', paddingTop: Math.max(insets.top, 16) }}
+        >
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              paddingHorizontal: 20,
+              paddingVertical: 14,
+              borderBottomWidth: 1,
+              borderBottomColor: COLORS.gray[100],
+            }}
+          >
+            <TouchableOpacity
+              onPress={() => setShowWarrantyModal(false)}
+              disabled={createWarranty.isPending}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <X size={22} color={COLORS.gray[700]} />
+            </TouchableOpacity>
+            <Text
+              style={{
+                fontSize: 17,
+                fontWeight: '800',
+                color: COLORS.gray[900],
+                flex: 1,
+                textAlign: 'center',
+                marginRight: 22,
+              }}
+            >
+              🛡️ Yêu cầu bảo hành miễn phí
+            </Text>
+          </View>
+
+          <ScrollView contentContainerStyle={{ padding: 20, gap: 18, paddingBottom: 40 }}>
+            <View
+              style={{
+                backgroundColor: '#FFFBEB',
+                borderColor: '#FDE68A',
+                borderWidth: 1,
+                borderRadius: 12,
+                padding: 14,
+                gap: 4,
+              }}
+            >
+              <Text style={{ fontWeight: '700', fontSize: 13.5, color: '#92400E' }}>
+                Chính sách bảo hành Green House
+              </Text>
+              <Text style={{ fontSize: 12.5, color: '#78350F', lineHeight: 18 }}>
+                Đơn bảo hành được gửi trực tiếp cho thợ đã thực hiện đơn gốc của bạn. Bạn không phải
+                trả thêm bất kỳ chi phí nào.
+              </Text>
+            </View>
+
+            <View style={{ gap: 6 }}>
+              <Text style={{ fontSize: 14, fontWeight: '700', color: COLORS.gray[700] }}>
+                Mô tả sự cố cần kiểm tra / xử lý lại <Text style={{ color: COLORS.error }}>*</Text>
+              </Text>
+              <TextInput
+                style={{
+                  borderWidth: 1.5,
+                  borderColor: COLORS.gray[200],
+                  borderRadius: 14,
+                  padding: 14,
+                  fontSize: 14,
+                  minHeight: 110,
+                  textAlignVertical: 'top',
+                  color: COLORS.gray[900],
+                }}
+                placeholder="Mô tả cụ thể sự cố phát sinh sau khi hoàn thành đơn..."
+                placeholderTextColor={COLORS.gray[400]}
+                value={warrantyIssue}
+                onChangeText={setWarrantyIssue}
+                multiline
+              />
+            </View>
+
+            <View style={{ gap: 6 }}>
+              <Text style={{ fontSize: 14, fontWeight: '700', color: COLORS.gray[700] }}>
+                Ngày hẹn mong muốn (YYYY-MM-DD)
+              </Text>
+              <TextInput
+                style={{
+                  borderWidth: 1.5,
+                  borderColor: COLORS.gray[200],
+                  borderRadius: 14,
+                  padding: 14,
+                  fontSize: 14,
+                  color: COLORS.gray[900],
+                }}
+                placeholder="YYYY-MM-DD"
+                placeholderTextColor={COLORS.gray[400]}
+                value={warrantyDate}
+                onChangeText={setWarrantyDate}
+              />
+            </View>
+
+            <View style={{ gap: 6 }}>
+              <Text style={{ fontSize: 14, fontWeight: '700', color: COLORS.gray[700] }}>
+                Giờ hẹn mong muốn (HH:mm)
+              </Text>
+              <TextInput
+                style={{
+                  borderWidth: 1.5,
+                  borderColor: COLORS.gray[200],
+                  borderRadius: 14,
+                  padding: 14,
+                  fontSize: 14,
+                  color: COLORS.gray[900],
+                }}
+                placeholder="08:00"
+                placeholderTextColor={COLORS.gray[400]}
+                value={warrantyTime}
+                onChangeText={setWarrantyTime}
+              />
+            </View>
+
+            <Button
+              title="Xác nhận gửi yêu cầu bảo hành"
+              loading={createWarranty.isPending}
+              onPress={handleConfirmWarranty}
+              style={{ marginTop: 8 }}
+            />
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </Modal>
     </View>
   );
 }
@@ -2400,8 +2695,8 @@ function JobVoucherRow({ job, contractTotal }: { job: any; contractTotal: number
       )}
       {preview && preview.discount_amount > 0 && (
         <Text style={{ fontSize: 12.5, color: COLORS.success, fontWeight: '700' }}>
-          Sẽ giảm khoảng {new Intl.NumberFormat('vi-VN').format(preview.discount_amount)}₫ khi
-          thanh toán
+          Sẽ giảm khoảng {new Intl.NumberFormat('vi-VN').format(preview.discount_amount)}₫ khi thanh
+          toán
         </Text>
       )}
     </View>

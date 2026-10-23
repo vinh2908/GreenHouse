@@ -67,11 +67,7 @@ export class ZaloNotificationService {
       if (!KEY_TYPES.has(n.type)) return;
       if (!Types.ObjectId.isValid(n.user_id)) return;
 
-      const user = await this.userModel
-        .findById(n.user_id)
-        .select('phone')
-        .lean()
-        .exec();
+      const user = await this.userModel.findById(n.user_id).select('phone').lean().exec();
       const phone = this.normalizePhone(user?.phone);
       if (!phone) return;
 
@@ -86,7 +82,10 @@ export class ZaloNotificationService {
         }),
         signal: AbortSignal.timeout(5000),
       });
-      const json = (await res.json().catch(() => null)) as { error?: number; message?: string } | null;
+      const json = (await res.json().catch(() => null)) as {
+        error?: number;
+        message?: string;
+      } | null;
       if (!json || json.error !== 0) {
         // Chỉ log 4 số cuối SĐT — không log SĐT đầy đủ hay access token.
         this.logger.warn(

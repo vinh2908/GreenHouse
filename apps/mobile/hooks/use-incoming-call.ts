@@ -23,22 +23,19 @@ export function useIncomingCallListener() {
   const setIncoming = useCallStore(s => s.setIncoming);
 
   useEffect(() => {
-    const unsub = socketService.on<CallIncomingPayload>(
-      SOCKET_EVENTS.CALL_INCOMING,
-      payload => {
-        const session_id = payload?.session_id ?? payload?.sessionId;
-        const job_id = payload?.job_id ?? payload?.jobId;
-        const caller_id = payload?.caller_id ?? payload?.callerId ?? '';
-        if (!session_id || !job_id) return;
-        setIncoming({
-          session_id,
-          job_id,
-          caller_id,
-          room_id: payload?.room_id ?? payload?.roomId,
-          provider: payload?.provider,
-        });
-      },
-    );
+    const unsub = socketService.on<CallIncomingPayload>(SOCKET_EVENTS.CALL_INCOMING, payload => {
+      const session_id = payload?.session_id ?? payload?.sessionId;
+      const job_id = payload?.job_id ?? payload?.jobId;
+      const caller_id = payload?.caller_id ?? payload?.callerId ?? '';
+      if (!session_id || !job_id) return;
+      setIncoming({
+        session_id,
+        job_id,
+        caller_id,
+        room_id: payload?.room_id ?? payload?.roomId,
+        provider: payload?.provider,
+      });
+    });
     return unsub;
   }, [setIncoming]);
 }

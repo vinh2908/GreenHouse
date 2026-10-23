@@ -1,11 +1,4 @@
-import {
-  ArrayMaxSize,
-  IsArray,
-  IsEnum,
-  IsOptional,
-  IsString,
-  MaxLength,
-} from 'class-validator';
+import { ArrayMaxSize, IsArray, IsEnum, IsOptional, IsString, MaxLength } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { SosBackupDecision, SosBackupReason } from '../schemas/sos-backup.schema';
 

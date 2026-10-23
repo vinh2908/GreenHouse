@@ -274,14 +274,27 @@ export default function CustomerJobsScreen() {
                     style={{ flexDirection: 'row', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}
                   >
                     <Badge
-                      label={(job.service_id as { name: string } | null)?.name ?? t('jobs_service_fallback')}
+                      label={
+                        (job.service_id as { name: string } | null)?.name ??
+                        t('jobs_service_fallback')
+                      }
                       size="sm"
                     />
                     {job.recurring_plan_id ? (
-                      <Badge label={t('jobs_badge_recurring')} size="sm" color="#EFF6FF" textColor="#1D4ED8" />
+                      <Badge
+                        label={t('jobs_badge_recurring')}
+                        size="sm"
+                        color="#EFF6FF"
+                        textColor="#1D4ED8"
+                      />
                     ) : null}
                     {job.private_offer_helper_id ? (
-                      <Badge label={t('jobs_badge_private')} size="sm" color="#FDF2F8" textColor="#9D174D" />
+                      <Badge
+                        label={t('jobs_badge_private')}
+                        size="sm"
+                        color="#FDF2F8"
+                        textColor="#9D174D"
+                      />
                     ) : null}
                     {job.is_warranty ? (
                       <Badge
@@ -336,7 +349,9 @@ export default function CustomerJobsScreen() {
                       </Text>
                     )}
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}>
-                      <Text style={{ fontSize: fs(12.5), color: COLORS.primary, fontWeight: '700' }}>
+                      <Text
+                        style={{ fontSize: fs(12.5), color: COLORS.primary, fontWeight: '700' }}
+                      >
                         {t('jobs_details')}
                       </Text>
                       <ChevronRight size={14} color={COLORS.primary} />

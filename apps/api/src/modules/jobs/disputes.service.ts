@@ -16,7 +16,11 @@ import {
 } from './schemas/dispute-case.schema';
 import { AddDisputeEntryDto, AppealDisputeDto } from './dto/dispute.dto';
 import { JobStatus, ContractStatus } from '@homemate/types';
-import { DISPUTE_APPEAL_WINDOW_HOURS, NOTIFICATION_TYPES, SOCKET_EVENTS } from '@homemate/constants';
+import {
+  DISPUTE_APPEAL_WINDOW_HOURS,
+  NOTIFICATION_TYPES,
+  SOCKET_EVENTS,
+} from '@homemate/constants';
 import { AppGateway } from '../chat/app.gateway';
 import { NotificationsService } from '../notifications/notifications.service';
 
@@ -111,8 +115,7 @@ export class DisputesService {
       return null;
     }
     const openedBy = job.dispute_opened_by ?? job.customer_id;
-    const openedRole =
-      String(openedBy) === String(job.customer_id) ? 'customer' : 'helper';
+    const openedRole = String(openedBy) === String(job.customer_id) ? 'customer' : 'helper';
     const caseDoc = (await this.caseModel.create({
       job_id: job._id,
       customer_id: job.customer_id,
@@ -203,9 +206,7 @@ export class DisputesService {
     if (!caseDoc) caseDoc = await this.syncCaseFromJob(job);
     if (!caseDoc) throw new NotFoundException('Đơn này chưa có hồ sơ tranh chấp');
 
-    const role = isAdmin
-      ? 'admin'
-      : this.assertParticipant(caseDoc, userId, false);
+    const role = isAdmin ? 'admin' : this.assertParticipant(caseDoc, userId, false);
     if (caseDoc.status === 'resolved') {
       throw new BadRequestException(
         'Hồ sơ đã có phán quyết. Nếu không đồng ý, hãy dùng chức năng Kháng cáo.',
@@ -232,8 +233,10 @@ export class DisputesService {
     }
 
     this.emitUpdate(caseDoc);
-    const targets = [String(caseDoc.customer_id), caseDoc.helper_id ? String(caseDoc.helper_id) : null]
-      .filter((t): t is string => !!t && t !== userId);
+    const targets = [
+      String(caseDoc.customer_id),
+      caseDoc.helper_id ? String(caseDoc.helper_id) : null,
+    ].filter((t): t is string => !!t && t !== userId);
     for (const target of targets) {
       await this.notificationsService
         .create({
@@ -268,12 +271,11 @@ export class DisputesService {
       throw new BadRequestException('Chỉ có thể kháng cáo sau khi Admin đã ra phán quyết');
     }
     if (caseDoc.appeal) {
-      throw new BadRequestException('Hồ sơ này đã được kháng cáo 1 lần — phán quyết sau kháng cáo là cuối cùng');
+      throw new BadRequestException(
+        'Hồ sơ này đã được kháng cáo 1 lần — phán quyết sau kháng cáo là cuối cùng',
+      );
     }
-    if (
-      !caseDoc.appeal_deadline ||
-      new Date(caseDoc.appeal_deadline).getTime() < Date.now()
-    ) {
+    if (!caseDoc.appeal_deadline || new Date(caseDoc.appeal_deadline).getTime() < Date.now()) {
       throw new BadRequestException(
         `Đã hết thời hạn kháng cáo (${this.appealWindowHours()} giờ kể từ phán quyết)`,
       );
@@ -311,8 +313,7 @@ export class DisputesService {
       .exec();
 
     this.emitUpdate(caseDoc);
-    const otherParty =
-      role === 'customer' ? caseDoc.helper_id : caseDoc.customer_id;
+    const otherParty = role === 'customer' ? caseDoc.helper_id : caseDoc.customer_id;
     if (otherParty) {
       await this.notificationsService
         .create({

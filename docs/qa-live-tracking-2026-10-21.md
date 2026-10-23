@@ -32,13 +32,13 @@ Ngày báo cáo: 21/10/2026. Source: `D:\GREENHOUSE`.
 
 ## Bằng chứng kiểm thử
 
-| Nhóm | Kết quả / phạm vi |
-|---|---|
-| Jest API | 17 ca: Socket.IO thật, MongoDB thử riêng; đúng người/đơn, gói cũ, tọa độ sai, mở muộn, kết nối lại, kết thúc di chuyển; thêm kiểm tra cập nhật điểm hẹn |
+| Nhóm                             | Kết quả / phạm vi                                                                                                                                                                           |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Jest API                         | 17 ca: Socket.IO thật, MongoDB thử riêng; đúng người/đơn, gói cũ, tọa độ sai, mở muộn, kết nối lại, kết thúc di chuyển; thêm kiểm tra cập nhật điểm hẹn                                     |
 | Dữ liệu, client socket, renderer | 36 kiểm tra: lọc GPS, phòng socket, không phát lại GPS offline, nội suy qua khúc cua, ETA/khoảng cách, giữ zoom, GPS cũ, lỗi tuyến; Chromium kích thước Android và mô phỏng cầu nối WebView |
-| Giao diện React xuất từ ứng dụng | 6 kiểm tra đạt: khách/thợ/SOS, cập nhật không reload, mở lại đơn, tiếp tục GPS sau khi đổi tab; GPS trình duyệt và Socket.IO thật; REST, tuyến đường và nền bản đồ dùng dữ liệu thử |
-| TypeScript | Mobile và API đều đạt (`tsc --noEmit`) |
-| Android | Xuất bundle bằng Expo; đây không phải APK đã cài/chạy trên thiết bị |
+| Giao diện React xuất từ ứng dụng | 6 kiểm tra đạt: khách/thợ/SOS, cập nhật không reload, mở lại đơn, tiếp tục GPS sau khi đổi tab; GPS trình duyệt và Socket.IO thật; REST, tuyến đường và nền bản đồ dùng dữ liệu thử         |
+| TypeScript                       | Mobile và API đều đạt (`tsc --noEmit`)                                                                                                                                                      |
+| Android                          | Xuất bundle bằng Expo; đây không phải APK đã cài/chạy trên thiết bị                                                                                                                         |
 
 Log tại `reports/qa-map-socket-tests.log`, `qa-map-renderer-tests.log`,
 `qa-map-ui-tests.log`, `qa-map-mobile-types.log`, `qa-map-api-types.log`,

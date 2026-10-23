@@ -1,11 +1,7 @@
 import { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { Star, X } from 'lucide-react-native';
-import {
-  useLoyaltyAccount,
-  useApplyLoyaltyPoints,
-  useRemoveLoyaltyPoints,
-} from '@/hooks/use-api';
+import { useLoyaltyAccount, useApplyLoyaltyPoints, useRemoveLoyaltyPoints } from '@/hooks/use-api';
 import { Card, COLORS } from '@/components/ui';
 
 const fmt = (n: number) => new Intl.NumberFormat('vi-VN').format(n);
@@ -15,13 +11,7 @@ const fmt = (n: number) => new Intl.NumberFormat('vi-VN').format(n);
  * Chỉ hiển thị khi đơn chưa thanh toán + đã có giá chốt (Contract).
  * Điểm CHƯA bị trừ khi gắn; server trừ thật tại thời điểm thanh toán.
  */
-export function LoyaltyPointsInput({
-  job,
-  contractTotal,
-}: {
-  job: any;
-  contractTotal: number;
-}) {
+export function LoyaltyPointsInput({ job, contractTotal }: { job: any; contractTotal: number }) {
   const { data: account } = useLoyaltyAccount();
   const apply = useApplyLoyaltyPoints();
   const remove = useRemoveLoyaltyPoints();
@@ -104,8 +94,7 @@ export function LoyaltyPointsInput({
       </View>
       <Text style={{ fontSize: 12.5, color: COLORS.gray[500] }}>
         Bạn có {fmt(account.points_balance)} điểm · Hạng {account.tier_label} (đổi tối đa{' '}
-        {account.redemption_cap_percent}% giá trị đơn) · 1 điểm ={' '}
-        {fmt(account.point_value_vnd)}₫
+        {account.redemption_cap_percent}% giá trị đơn) · 1 điểm = {fmt(account.point_value_vnd)}₫
       </Text>
       <View style={{ flexDirection: 'row', gap: 8 }}>
         <TextInput

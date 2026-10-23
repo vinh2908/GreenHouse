@@ -64,9 +64,9 @@ export default function HelperDashboardScreen() {
   const { t, fs } = useTranslation();
   const storedUser = useAuthStore(s => s.user);
   // Stored login payload has no avatar — prefer the full profile from the API
-  const { data: myProfile } = useMyProfile();
+  const { data: myProfile, refetch: refetchMyProfile } = useMyProfile();
   const user = myProfile ?? storedUser;
-  const { data: profile, isLoading: pLoading } = useHelperProfile();
+  const { data: profile, isLoading: pLoading, refetch: refetchProfile } = useHelperProfile();
   const { data: availableJobs, refetch: refetchJobs } = useAvailableJobs(
     undefined,
     1,
@@ -182,15 +182,27 @@ export default function HelperDashboardScreen() {
 
   const activeJob = myJobs?.[0];
   const insets = useSafeAreaInsets();
-  const totalCompleted = profile?.total_completed ?? profile?.completed_jobs ?? 0;
+  const completedFromJobs = (myJobs ?? []).filter((j: any) => j.status === 'completed').length;
+  const totalCompleted = Math.max(
+    profile?.total_completed ?? profile?.completed_jobs ?? 0,
+    completedFromJobs,
+  );
   const avgRating = Number(profile?.average_rating ?? profile?.rating ?? 5.0);
+
+  const handleRefresh = async () => {
+    await Promise.all([refetchJobs(), refetchMyJobs(), refetchProfile(), refetchMyProfile()]);
+  };
 
   return (
     <View style={{ flex: 1, backgroundColor: '#F8F9FA' }}>
       <ScrollView
         showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl refreshing={pLoading} onRefresh={refetchJobs} colors={[COLORS.primary]} />
+          <RefreshControl
+            refreshing={pLoading}
+            onRefresh={handleRefresh}
+            colors={[COLORS.primary]}
+          />
         }
         contentContainerStyle={{ paddingBottom: 110 }}
       >
@@ -505,93 +517,95 @@ export default function HelperDashboardScreen() {
               ))}
             </View>
           ) : (
-          <View style={{ flexDirection: 'row', gap: 10 }}>
-            {/* Ví tiền */}
-            <TouchableOpacity
-              activeOpacity={0.8}
-              onPress={() => router.push('/(helper)/earnings')}
-              style={{ flex: 1 }}
-            >
-              <Card style={{ padding: 14, gap: 4 }}>
-                <View
-                  style={{
-                    flexDirection: 'row',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                  }}
-                >
-                  <Text style={{ fontSize: fs(11), color: COLORS.gray[500], fontWeight: '700' }}>
-                    {t('dash_wallet')}
+            <View style={{ flexDirection: 'row', gap: 10 }}>
+              {/* Ví tiền */}
+              <TouchableOpacity
+                activeOpacity={0.8}
+                onPress={() => router.push('/(helper)/earnings')}
+                style={{ flex: 1 }}
+              >
+                <Card style={{ padding: 14, gap: 4 }}>
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                    }}
+                  >
+                    <Text style={{ fontSize: fs(11), color: COLORS.gray[500], fontWeight: '700' }}>
+                      {t('dash_wallet')}
+                    </Text>
+                    <TrendingUp size={16} color={COLORS.success} />
+                  </View>
+                  <PriceText amount={wallet?.balance ?? 0} size={17} color={COLORS.gray[900]} />
+                  <Text
+                    style={{
+                      fontSize: fs(11),
+                      color: COLORS.primary,
+                      fontWeight: '700',
+                      marginTop: 2,
+                    }}
+                  >
+                    {t('dash_withdraw')}
                   </Text>
-                  <TrendingUp size={16} color={COLORS.success} />
-                </View>
-                <PriceText amount={wallet?.balance ?? 0} size={17} color={COLORS.gray[900]} />
-                <Text
-                  style={{ fontSize: fs(11), color: COLORS.primary, fontWeight: '700', marginTop: 2 }}
-                >
-                  {t('dash_withdraw')}
-                </Text>
-              </Card>
-            </TouchableOpacity>
+                </Card>
+              </TouchableOpacity>
 
-            {/* Đơn hoàn thành */}
-            <View style={{ flex: 1 }}>
-              <Card style={{ padding: 14, gap: 4 }}>
-                <View
-                  style={{
-                    flexDirection: 'row',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                  }}
-                >
-                  <Text style={{ fontSize: fs(11), color: COLORS.gray[500], fontWeight: '700' }}>
-                    {t('dash_done')}
+              {/* Đơn hoàn thành */}
+              <View style={{ flex: 1 }}>
+                <Card style={{ padding: 14, gap: 4 }}>
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                    }}
+                  >
+                    <Text style={{ fontSize: fs(11), color: COLORS.gray[500], fontWeight: '700' }}>
+                      {t('dash_done')}
+                    </Text>
+                    <Briefcase size={16} color={COLORS.secondary} />
+                  </View>
+                  <Text style={{ fontSize: fs(17), fontWeight: '800', color: COLORS.gray[900] }}>
+                    {t('dash_jobs_unit', { count: totalCompleted })}
                   </Text>
-                  <Briefcase size={16} color={COLORS.secondary} />
-                </View>
-                <Text style={{ fontSize: fs(17), fontWeight: '800', color: COLORS.gray[900] }}>
-                  {t('dash_jobs_unit', { count: totalCompleted })}
-                </Text>
-                <Text style={{ fontSize: fs(11), color: COLORS.gray[400], marginTop: 2 }}>
-                  {t('dash_acceptance_rate')}
-                </Text>
-              </Card>
-            </View>
+                  <Text style={{ fontSize: fs(11), color: COLORS.gray[400], marginTop: 2 }}>
+                    {t('dash_acceptance_rate')}
+                  </Text>
+                </Card>
+              </View>
 
-            {/* Đánh giá sao */}
-            <View style={{ flex: 1 }}>
-              <Card style={{ padding: 14, gap: 4 }}>
-                <View
-                  style={{
-                    flexDirection: 'row',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                  }}
-                >
-                  <Text style={{ fontSize: fs(11), color: COLORS.gray[500], fontWeight: '700' }}>
-                    {t('dash_reputation')}
+              {/* Đánh giá sao */}
+              <View style={{ flex: 1 }}>
+                <Card style={{ padding: 14, gap: 4 }}>
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                    }}
+                  >
+                    <Text style={{ fontSize: fs(11), color: COLORS.gray[500], fontWeight: '700' }}>
+                      {t('dash_reputation')}
+                    </Text>
+                    <Star size={16} color="#F59E0B" />
+                  </View>
+                  <Text style={{ fontSize: 17, fontWeight: '800', color: '#F59E0B' }}>
+                    ★ {avgRating.toFixed(1)}
                   </Text>
-                  <Star size={16} color="#F59E0B" />
-                </View>
-                <Text style={{ fontSize: 17, fontWeight: '800', color: '#F59E0B' }}>
-                  ★ {avgRating.toFixed(1)}
-                </Text>
-                <Text style={{ fontSize: fs(11), color: COLORS.gray[400], marginTop: 2 }}>
-                  {t('dash_top_helper')}
-                </Text>
-              </Card>
+                  <Text style={{ fontSize: fs(11), color: COLORS.gray[400], marginTop: 2 }}>
+                    {t('dash_top_helper')}
+                  </Text>
+                </Card>
+              </View>
             </View>
-          </View>
           )}
         </View>
 
         {/* ── 4. Đơn hàng đang nhận làm (Active Job) ─────────────────── */}
         {activeJob && (
           <View style={{ paddingHorizontal: 16, marginTop: 20 }}>
-            <SectionHeader
-              title={t('dash_active_job')}
-              subtitle={t('dash_active_job_sub')}
-            />
+            <SectionHeader title={t('dash_active_job')} subtitle={t('dash_active_job_sub')} />
             <TouchableOpacity
               activeOpacity={0.85}
               onPress={() =>

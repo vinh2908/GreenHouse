@@ -1,4 +1,13 @@
-import { Controller, Get, Post, Body, Param, UseGuards, HttpCode, HttpStatus } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  UseGuards,
+  HttpCode,
+  HttpStatus,
+} from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { DisputesService } from './disputes.service';
 import { AddDisputeEntryDto, AppealDisputeDto } from './dto/dispute.dto';
@@ -13,7 +22,9 @@ export class DisputesController {
   constructor(private readonly disputesService: DisputesService) {}
 
   @Get('job/:jobId')
-  @ApiOperation({ summary: 'Xem hồ sơ tranh chấp của 1 job (timeline + phán quyết + quyền kháng cáo)' })
+  @ApiOperation({
+    summary: 'Xem hồ sơ tranh chấp của 1 job (timeline + phán quyết + quyền kháng cáo)',
+  })
   async getCase(
     @CurrentUser() user: { sub: string; roles?: string[] },
     @Param('jobId') jobId: string,

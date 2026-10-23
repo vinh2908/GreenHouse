@@ -119,8 +119,8 @@ export default function VouchersPage() {
         <div>
           <h1 className="text-2xl font-extrabold tracking-tight">Mã giảm giá (Voucher)</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Tạo và quản lý mã giảm giá cho khách hàng. Phần giảm do nền tảng chịu — thợ vẫn nhận
-            đủ theo hợp đồng.
+            Tạo và quản lý mã giảm giá cho khách hàng. Phần giảm do nền tảng chịu — thợ vẫn nhận đủ
+            theo hợp đồng.
           </p>
         </div>
         <Button
@@ -183,7 +183,8 @@ export default function VouchersPage() {
                       )}
                     </TableCell>
                     <TableCell className="text-sm">
-                      Đơn ≥ {formatVND(v.min_order_amount ?? 0)} · tối đa {v.per_user_limit} lần/khách
+                      Đơn ≥ {formatVND(v.min_order_amount ?? 0)} · tối đa {v.per_user_limit}{' '}
+                      lần/khách
                     </TableCell>
                     <TableCell>
                       {v.used_count}
