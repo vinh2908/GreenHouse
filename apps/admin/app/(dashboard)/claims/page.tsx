@@ -50,11 +50,11 @@ const errorMessage = (err: unknown) => {
 };
 
 const personName = (p: AdminClaim['customer_id']) =>
-  p && typeof p === 'object' ? p.full_name ?? '—' : '—';
+  p && typeof p === 'object' ? (p.full_name ?? '—') : '—';
 const personPhone = (p: AdminClaim['customer_id']) =>
-  p && typeof p === 'object' ? p.phone ?? '' : '';
+  p && typeof p === 'object' ? (p.phone ?? '') : '';
 const jobTitle = (j: AdminClaim['job_id']) =>
-  j && typeof j === 'object' ? j.title ?? 'Đơn đã hoàn thành' : 'Đơn đã hoàn thành';
+  j && typeof j === 'object' ? (j.title ?? 'Đơn đã hoàn thành') : 'Đơn đã hoàn thành';
 const jobIdOf = (j: AdminClaim['job_id']) =>
   j && typeof j === 'object' ? j._id : typeof j === 'string' ? j : '';
 
@@ -74,8 +74,8 @@ export default function ClaimsPage() {
             <div>
               <CardTitle>Bồi thường bảo hiểm 🛡</CardTitle>
               <p className="text-sm text-muted-foreground mt-1">
-                Yêu cầu bồi thường của khách cho các đơn đã hoàn thành (cửa sổ bảo hiểm mặc định
-                30 ngày). Duyệt bồi thường = cộng tiền thẳng vào ví của khách.
+                Yêu cầu bồi thường của khách cho các đơn đã hoàn thành (cửa sổ bảo hiểm mặc định 30
+                ngày). Duyệt bồi thường = cộng tiền thẳng vào ví của khách.
               </p>
             </div>
             <div className="w-56">
@@ -122,12 +122,16 @@ export default function ClaimsPage() {
                     <TableCell>
                       {personName(c.customer_id)}
                       {personPhone(c.customer_id) && (
-                        <p className="text-xs text-muted-foreground">{personPhone(c.customer_id)}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {personPhone(c.customer_id)}
+                        </p>
                       )}
                     </TableCell>
                     <TableCell className="text-sm">
                       {jobTitle(c.job_id)}
-                      <p className="text-xs text-muted-foreground">#{jobIdOf(c.job_id).slice(-6)}</p>
+                      <p className="text-xs text-muted-foreground">
+                        #{jobIdOf(c.job_id).slice(-6)}
+                      </p>
                     </TableCell>
                     <TableCell>
                       {c.requested_amount ? formatVND(c.requested_amount) : '—'}
@@ -156,7 +160,12 @@ export default function ClaimsPage() {
 
           {(data?.total_pages ?? 1) > 1 && (
             <div className="flex items-center justify-end gap-2 mt-4">
-              <Button size="sm" variant="outline" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={page <= 1}
+                onClick={() => setPage(p => p - 1)}
+              >
                 Trước
               </Button>
               <span className="text-sm">
@@ -220,7 +229,8 @@ function ClaimDetail({ claimId, onClose }: { claimId: string; onClose: () => voi
               <div>
                 <p className="font-semibold">Khách hàng</p>
                 <p>
-                  {personName(claim.customer_id)} {personPhone(claim.customer_id) && `· ${personPhone(claim.customer_id)}`}
+                  {personName(claim.customer_id)}{' '}
+                  {personPhone(claim.customer_id) && `· ${personPhone(claim.customer_id)}`}
                 </p>
               </div>
               <div>
@@ -250,7 +260,9 @@ function ClaimDetail({ claimId, onClose }: { claimId: string; onClose: () => voi
               {claim.status === 'paid' && (
                 <p className="text-sm mt-1 text-green-700">
                   Đã chi trả {formatVND(claim.approved_amount)} vào ví khách
-                  {claim.payout_transaction_id ? ` · GD #${claim.payout_transaction_id.slice(-6)}` : ''}
+                  {claim.payout_transaction_id
+                    ? ` · GD #${claim.payout_transaction_id.slice(-6)}`
+                    : ''}
                 </p>
               )}
               {claim.status === 'rejected' && claim.reject_reason && (
@@ -303,7 +315,9 @@ function ClaimDetail({ claimId, onClose }: { claimId: string; onClose: () => voi
                 {claim.status === 'submitted' && (
                   <Button
                     disabled={review.isPending}
-                    onClick={() => act(() => review.mutateAsync({ id: claim._id, action: 'start_review' }))}
+                    onClick={() =>
+                      act(() => review.mutateAsync({ id: claim._id, action: 'start_review' }))
+                    }
                   >
                     🔎 Bắt đầu xem xét
                   </Button>
@@ -315,7 +329,9 @@ function ClaimDetail({ claimId, onClose }: { claimId: string; onClose: () => voi
                       type="number"
                       value={amount}
                       onChange={e => setAmount(e.target.value)}
-                      placeholder={claim.requested_amount ? String(claim.requested_amount) : 'VD: 500000'}
+                      placeholder={
+                        claim.requested_amount ? String(claim.requested_amount) : 'VD: 500000'
+                      }
                     />
                     <Button
                       disabled={review.isPending || !amount}
@@ -344,7 +360,11 @@ function ClaimDetail({ claimId, onClose }: { claimId: string; onClose: () => voi
                       disabled={review.isPending || !reason.trim()}
                       onClick={() =>
                         act(() =>
-                          review.mutateAsync({ id: claim._id, action: 'reject', note: reason.trim() }),
+                          review.mutateAsync({
+                            id: claim._id,
+                            action: 'reject',
+                            note: reason.trim(),
+                          }),
                         )
                       }
                     >
