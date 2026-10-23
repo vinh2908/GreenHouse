@@ -2216,6 +2216,8 @@ export class JobsService {
     await job.save();
     if (job.helper_id) await this.setHelperBusy(job.helper_id, false);
 
+    await this.restoreJobBenefitsOnCancel(job);
+
     this.emitJobStatusChange(job);
     const cancelPayload = {
       job_id: jobId,
@@ -2267,6 +2269,73 @@ export class JobsService {
     }
 
     return job;
+  }
+
+  /**
+   * Khôi phục quyền lợi khách khi hủy đơn thường: trả lượt voucher
+   * (VouchersService.restoreForJob) + hoàn điểm loyalty
+   * (LoyaltyService.reverseRedeemForJob). Chỉ áp dụng khi lúc thanh toán đơn
+   * THẬT SỰ đã ghi nhận lượt/điểm — không có bản ghi thì từng service tự
+   * no-op, nên gọi vô điều kiện cho mọi đơn hủy.
+   *
+   * Chống khôi phục 2 lần:
+   *  1. Cờ job.benefits_restored_at được claim bằng findOneAndUpdate nguyên
+   *     tử (chỉ khi cờ đang trống) — luồng hủy nào đến sau thấy cờ đã có thì
+   *     dừng ngay, không gọi xuống service nữa.
+   *  2. Chính 2 service khôi phục cũng idempotent.
+   * Từng service được bọc try/catch riêng: lỗi trả voucher không chặn hoàn
+   * điểm và ngược lại; lỗi chỉ được log để đối soát, không ném ra ngoài.
+   */
+  private async restoreJobBenefitsOnCancel(job: JobDocument): Promise<void> {
+    const jobId = String(job._id);
+    const customerId = String(job.customer_id);
+
+    const claimed = await this.jobModel
+      .findOneAndUpdate(
+        {
+          _id: job._id,
+          $or: [
+            { benefits_restored_at: { $exists: false } },
+            { benefits_restored_at: null },
+          ],
+        },
+        { $set: { benefits_restored_at: new Date() } },
+        { new: true },
+      )
+      .exec();
+    if (!claimed) return; // Đã khôi phục ở một lượt xử lý trước — không làm lại
+    job.benefits_restored_at = claimed.benefits_restored_at;
+
+    const restored: string[] = [];
+    try {
+      const v = await this.vouchersService.restoreForJob(customerId, jobId);
+      if (v.restored) {
+        restored.push(
+          `voucher ${v.code ?? ''} (+1 lượt, giảm ${v.discount_amount.toLocaleString('vi-VN')}₫)`,
+        );
+      }
+    } catch (err) {
+      this.logger.error(
+        `Voucher restore failed for job ${jobId}: ${(err as Error).message}`,
+      );
+    }
+
+    try {
+      const l = await this.loyaltyService.reverseRedeemForJob(customerId, jobId);
+      if (l && l.points_restored > 0) {
+        restored.push(`${l.points_restored} điểm loyalty`);
+      }
+    } catch (err) {
+      this.logger.error(
+        `Loyalty restore failed for job ${jobId}: ${(err as Error).message}`,
+      );
+    }
+
+    if (restored.length > 0) {
+      this.logger.log(
+        `Cancel job ${jobId}: đã khôi phục quyền lợi cho khách — ${restored.join(' + ')}`,
+      );
+    }
   }
 
   // ─── Helper: Get available jobs (job feed) ────────────────────────────────
