@@ -324,10 +324,12 @@ export default function BookingScreen() {
 
   const handlePickJobPhoto = async () => {
     try {
-      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (status !== 'granted') {
-        Toast.show({ type: 'error', text1: 'Cần quyền truy cập thư viện ảnh' });
-        return;
+      if (Platform.OS !== 'web') {
+        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (status !== 'granted') {
+          Toast.show({ type: 'error', text1: 'Cần quyền truy cập thư viện ảnh' });
+          return;
+        }
       }
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
@@ -345,8 +347,8 @@ export default function BookingScreen() {
   };
 
   // ── Feature 17: Phân tích ảnh sự cố bằng AI Vision ─────────────────────────
-  // Chọn 1 ảnh → đọc base64 → AI nhận diện vấn đề, gợi ý dịch vụ, điền sẵn mô
-  // tả. Ảnh LUÔN được đính kèm vào đơn kể cả khi AI không phân tích được.
+  // Nếu đã có ảnh trong photos: phân tích ngay photos[0].
+  // Nếu chưa có ảnh: mở picker để chọn 1 ảnh, thêm vào photos rồi phân tích.
   const handleAnalyzeIssuePhoto = async () => {
     const unavailableToast = (msg?: string) =>
       Toast.show({
@@ -357,61 +359,92 @@ export default function BookingScreen() {
 
     setIsAnalyzingPhoto(true);
     try {
-      if (Platform.OS !== 'web') {
-        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-        if (status !== 'granted') {
-          Toast.show({ type: 'error', text1: 'Cần quyền truy cập thư viện ảnh' });
+      let targetUri: string | undefined;
+      let assetBase64: string | undefined;
+      let assetMimeType: string | undefined;
+
+      if (photos.length > 0) {
+        // Đã có ảnh trong danh sách: phân tích ngay ảnh đầu tiên
+        targetUri = photos[0];
+      } else {
+        // Chưa có ảnh: mở thư viện ảnh
+        if (Platform.OS !== 'web') {
+          const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+          if (status !== 'granted') {
+            Toast.show({ type: 'error', text1: 'Cần quyền truy cập thư viện ảnh' });
+            setIsAnalyzingPhoto(false);
+            return;
+          }
+        }
+
+        const result = await ImagePicker.launchImageLibraryAsync({
+          mediaTypes: ImagePicker.MediaTypeOptions.Images,
+          allowsMultipleSelection: false,
+          quality: 0.7,
+          base64: true,
+        });
+
+        if (result.canceled || !result.assets[0]?.uri) {
+          Toast.show({
+            type: 'info',
+            text1: 'Chưa chọn ảnh',
+            text2: 'Vui lòng chọn ảnh chụp sự cố để AI phân tích',
+          });
+          setIsAnalyzingPhoto(false);
           return;
         }
+
+        const asset = result.assets[0];
+        targetUri = asset.uri;
+        assetBase64 = asset.base64 ?? undefined;
+        assetMimeType = asset.mimeType ?? undefined;
+        setPhotos(prev => [...prev, targetUri!].slice(0, 6));
       }
 
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsMultipleSelection: false,
-        quality: 0.7,
-        base64: true, // dự phòng khi FileSystem không đọc được (web)
-      });
+      if (!targetUri) {
+        unavailableToast('Không tìm thấy đường dẫn ảnh');
+        return;
+      }
 
-      if (result.canceled || !result.assets[0]?.uri) return;
-      const asset = result.assets[0];
-      const uri = asset.uri;
-      setPhotos(prev => [...prev, uri].slice(0, 6));
+      let base64: string | undefined = assetBase64;
+      let mimeType: string = assetMimeType || 'image/jpeg';
 
-      let base64: string | undefined;
-      try {
-        if (Platform.OS !== 'web' && FileSystem.readAsStringAsync) {
-          base64 = await FileSystem.readAsStringAsync(uri, {
+      // 1. Kiểm tra nếu là Data URL
+      if (!base64 && targetUri.startsWith('data:')) {
+        const parts = targetUri.split(',');
+        base64 = parts[1];
+        const matchMime = parts[0].match(/:(.*?);/);
+        if (matchMime) mimeType = matchMime[1];
+      }
+
+      // 2. Thử đọc native FileSystem
+      if (!base64 && Platform.OS !== 'web' && FileSystem.readAsStringAsync) {
+        try {
+          base64 = await FileSystem.readAsStringAsync(targetUri, {
             encoding: FileSystem.EncodingType.Base64,
           });
+        } catch {
+          /* ignore */
         }
-      } catch {
-        /* ignore native read error */
       }
 
-      if (!base64 && asset.base64) {
-        base64 = asset.base64;
-      }
-
-      // Dự phòng đọc base64 trên trình duyệt Web (blob URI / data URL)
-      if (!base64 && typeof globalThis !== 'undefined' && (globalThis as any).FileReader && uri) {
+      // 3. Dự phòng đọc base64 trên trình duyệt Web (blob URI / fetch)
+      if (!base64 && typeof fetch !== 'undefined') {
         try {
-          if (uri.startsWith('data:')) {
-            base64 = uri.split(',')[1];
-          } else {
-            const resp = await fetch(uri);
-            const blob = await resp.blob();
-            base64 = await new Promise<string>((resolve, reject) => {
-              const reader = new (globalThis as any).FileReader();
-              reader.onloadend = () => {
-                const resStr = (reader.result as string) || '';
-                resolve(resStr.includes(',') ? resStr.split(',')[1] : resStr);
-              };
-              reader.onerror = reject;
-              reader.readAsDataURL(blob);
-            });
-          }
-        } catch (readErr) {
-          console.warn('Web blob read error:', readErr);
+          const resp = await fetch(targetUri);
+          const blob = await resp.blob();
+          if (blob.type) mimeType = blob.type;
+          base64 = await new Promise<string>((resolve, reject) => {
+            const reader = new (globalThis as any).FileReader();
+            reader.onloadend = () => {
+              const resStr = (reader.result as string) || '';
+              resolve(resStr.includes(',') ? resStr.split(',')[1] : resStr);
+            };
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+          });
+        } catch (fetchErr) {
+          console.warn('Web blob read error:', fetchErr);
         }
       }
 
@@ -420,10 +453,9 @@ export default function BookingScreen() {
         return;
       }
 
-      const mimeType =
-        asset.mimeType && ['image/jpeg', 'image/png', 'image/webp'].includes(asset.mimeType)
-          ? asset.mimeType
-          : 'image/jpeg';
+      if (!['image/jpeg', 'image/png', 'image/webp'].includes(mimeType)) {
+        mimeType = 'image/jpeg';
+      }
 
       const { data } = await analyzeIssuePhoto.mutateAsync({
         image_base64: base64,
@@ -530,18 +562,25 @@ export default function BookingScreen() {
   };
 
   const handleSelectOsmPlace = (place: OsmPlace) => {
-    const addr = place.address || {};
+    const addr = (place.address || {}) as Record<string, string | undefined>;
     const house = addr.house_number ? `${addr.house_number} ` : '';
-    const street = `${house}${addr.road || ''}`.trim() || place.display_name.split(',')[0];
-    let ward = addr.suburb || addr.quarter || addr.neighbourhood || '';
-    let district = addr.city_district || addr.district || addr.county || '';
-    let city = addr.city || addr.state || '';
+    let road = addr.road || addr.pedestrian || addr.suburb || '';
+    let ward =
+      addr.suburb || addr.quarter || addr.neighbourhood || addr.village || addr.commune || '';
+    let district = addr.city_district || addr.district || addr.county || addr.borough || '';
+    let city = addr.city || addr.state || addr.province || '';
 
-    // D1 Fix: Suy luận quận/thành phố từ display_name khi Nominatim không trả city_district (vd Đà Nẵng)
+    // 1. Nhận diện theo tiền tố hành chính tiếng Việt nếu có
     if (!district && place.display_name) {
       const matchDistrict = place.display_name.match(/(?:Quận|Huyện|Thị xã)\s+([^,]+)/i);
       if (matchDistrict) {
         district = matchDistrict[0].trim();
+      }
+    }
+    if (!ward && place.display_name) {
+      const matchWard = place.display_name.match(/(?:Phường|Xã|Thị trấn)\s+([^,]+)/i);
+      if (matchWard) {
+        ward = matchWard[0].trim();
       }
     }
     if (!city && place.display_name) {
@@ -551,9 +590,40 @@ export default function BookingScreen() {
       }
     }
 
+    // 2. Dự phòng phân tách token từ phải sang trái khi Nominatim/Photon không có tiền tố hành chính (vd Đà Nẵng)
+    // Ví dụ: "254, Nguyễn Văn Linh, Phường Thạc Gián, Thanh Khê, Đà Nẵng, 550000, Việt Nam"
+    if (place.display_name) {
+      const tokens = place.display_name
+        .split(',')
+        .map(s => s.trim())
+        .filter(
+          s =>
+            s.length > 0 &&
+            !/^\d{4,6}$/.test(s) &&
+            !/^Việt\s*Nam$/i.test(s) &&
+            !/^Vietnam$/i.test(s),
+        );
+
+      if (tokens.length >= 1 && !city) {
+        city = tokens[tokens.length - 1];
+      }
+      if (tokens.length >= 2 && !district) {
+        district = tokens[tokens.length - 2];
+      }
+      if (tokens.length >= 3 && !ward) {
+        ward = tokens[tokens.length - 3];
+      }
+      if (!road && tokens.length > 0) {
+        road = tokens[0];
+      }
+    }
+
+    const street = `${house}${road}`.trim() || place.display_name.split(',')[0].trim();
+    const full_address = street || place.display_name.split(',').slice(0, 2).join(', ').trim();
+
     setAddress(prev => ({
       ...prev,
-      full_address: street || place.display_name.split(',').slice(0, 2).join(', '),
+      full_address,
       ward,
       district,
       city,
@@ -566,7 +636,7 @@ export default function BookingScreen() {
     Toast.show({
       type: 'success',
       text1: 'Đã chọn địa điểm từ bản đồ',
-      text2: place.display_name.split(',').slice(0, 2).join(', '),
+      text2: full_address || place.display_name.split(',').slice(0, 2).join(', '),
     });
   };
 
@@ -830,9 +900,13 @@ export default function BookingScreen() {
       setStep(1);
     } else if (step === 1) {
       const hasFullAddress = address.full_address.trim().length > 0;
-      const hasDistrictOrFallback =
-        address.district.trim().length > 0 || (address.ward?.trim() && address.city?.trim());
-      if (!hasFullAddress || !hasDistrictOrFallback) {
+      const hasLocality = Boolean(
+        address.district.trim() ||
+          address.ward.trim() ||
+          address.city.trim() ||
+          (address.coordinates && (address.coordinates[0] !== 0 || address.coordinates[1] !== 0)),
+      );
+      if (!hasFullAddress || !hasLocality) {
         Toast.show({
           type: 'error',
           text1:

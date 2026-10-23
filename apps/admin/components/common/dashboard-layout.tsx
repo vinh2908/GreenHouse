@@ -60,14 +60,10 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
       {/* Sidebar */}
       <aside className="w-64 border-r bg-card flex flex-col">
         {/* Logo */}
-        <div className="p-6 border-b">
-          <div className="flex items-center gap-3">
+        <div className="p-5 border-b">
+          <div className="flex items-center">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/logo.svg" alt="Green House" className="w-11 h-11 rounded-xl bg-green-50" />
-            <div>
-              <span className="font-extrabold text-lg tracking-tight">Green House</span>
-              <p className="text-xs text-muted-foreground">Admin Portal</p>
-            </div>
+            <img src="/logo.svg" alt="Green House Admin Portal" className="h-10 w-auto" />
           </div>
         </div>
 
