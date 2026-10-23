@@ -103,14 +103,10 @@ export class InvoicesService {
     }
 
     if (job.payment_status !== PaymentStatus.PAID && job.status !== JobStatus.COMPLETED) {
-      throw new BadRequestException(
-        'Hóa đơn chỉ được xuất sau khi đơn đã thanh toán / hoàn thành',
-      );
+      throw new BadRequestException('Hóa đơn chỉ được xuất sau khi đơn đã thanh toán / hoàn thành');
     }
 
-    const contract = await this.contractModel
-      .findOne({ job_id: new Types.ObjectId(jobId) })
-      .exec();
+    const contract = await this.contractModel.findOne({ job_id: new Types.ObjectId(jobId) }).exec();
     if (!contract) throw new BadRequestException('Đơn chưa có hợp đồng để xuất hóa đơn');
 
     const service = job.service_id as unknown as { name?: string } | null;
@@ -120,7 +116,10 @@ export class InvoicesService {
     const loyaltyPoints = job.loyalty_points_requested ?? 0;
     const sosSurcharge = job.sos_surcharge ?? 0;
     // Tổng thanh toán = giá hợp đồng − giảm voucher − giảm điểm thành viên + phụ phí SOS (nếu có)
-    const grandTotal = Math.max(0, contract.total_price - discount - loyaltyDiscount + sosSurcharge);
+    const grandTotal = Math.max(
+      0,
+      contract.total_price - discount - loyaltyDiscount + sosSurcharge,
+    );
 
     const buffer = this.renderPdf({
       invoiceNo,
@@ -178,7 +177,12 @@ export class InvoicesService {
     const DARK: [number, number, number] = [0.13, 0.13, 0.13];
     const GRAY: [number, number, number] = [0.42, 0.42, 0.42];
     const LIGHT: [number, number, number] = [0.93, 0.97, 0.94];
-    const right = (x: number, y: number, text: string, opts?: Parameters<PdfBuilder['drawText']>[3]) => {
+    const right = (
+      x: number,
+      y: number,
+      text: string,
+      opts?: Parameters<PdfBuilder['drawText']>[3],
+    ) => {
       const size = opts?.size ?? 11;
       pdf.drawText(x - pdf.textWidth(text, opts?.font, size), y, text, opts);
     };
@@ -266,14 +270,24 @@ export class InvoicesService {
 
     // Footer
     pdf.drawLine(MARGIN, 780, RIGHT - MARGIN, 0.7, [0.8, 0.8, 0.8]);
-    pdf.drawText(MARGIN, 798, 'Hóa đơn được tạo tự động bởi hệ thống Green House — không cần chữ ký.', {
-      size: 9.5,
-      color: GRAY,
-    });
-    pdf.drawText(MARGIN, 813, `Số hóa đơn: ${data.invoiceNo} • Green House — Giúp việc tận tâm, an tâm mọi nhà.`, {
-      size: 9.5,
-      color: GRAY,
-    });
+    pdf.drawText(
+      MARGIN,
+      798,
+      'Hóa đơn được tạo tự động bởi hệ thống Green House — không cần chữ ký.',
+      {
+        size: 9.5,
+        color: GRAY,
+      },
+    );
+    pdf.drawText(
+      MARGIN,
+      813,
+      `Số hóa đơn: ${data.invoiceNo} • Green House — Giúp việc tận tâm, an tâm mọi nhà.`,
+      {
+        size: 9.5,
+        color: GRAY,
+      },
+    );
 
     return pdf.build();
   }

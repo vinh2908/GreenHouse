@@ -16,10 +16,7 @@ import {
   UpdateAvailabilityDto,
   SetIncomeGoalDto,
 } from './dto/helper.dto';
-import {
-  DEFAULT_HELPER_AVAILABILITY,
-  HelperAvailability,
-} from './schemas/helper-profile.schema';
+import { DEFAULT_HELPER_AVAILABILITY, HelperAvailability } from './schemas/helper-profile.schema';
 import { HelperStatus, VerificationStatus } from '@homemate/types';
 import { AppGateway } from '../chat/app.gateway';
 
@@ -186,7 +183,10 @@ export class HelpersService {
 
   // ─── Mục tiêu thu nhập tháng (Feature 14) ──────────────────────────────────
 
-  async setIncomeGoal(userId: string, dto: SetIncomeGoalDto): Promise<{ income_goal_monthly: number }> {
+  async setIncomeGoal(
+    userId: string,
+    dto: SetIncomeGoalDto,
+  ): Promise<{ income_goal_monthly: number }> {
     const profile = await this.getOrCreate(userId);
     profile.income_goal_monthly = Math.floor(dto.amount);
     await profile.save();

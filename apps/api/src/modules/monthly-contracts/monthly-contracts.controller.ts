@@ -23,6 +23,9 @@ import {
 } from './dto/monthly-contract.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { RolesGuard } from '../../common/guards/roles.guard';
+import { Roles } from '../../common/decorators/roles.decorator';
+import { UserRole } from '@homemate/types';
 
 @ApiTags('Monthly Contracts')
 @ApiBearerAuth()
@@ -30,6 +33,21 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 @Controller('monthly-contracts')
 export class MonthlyContractsController {
   constructor(private readonly service: MonthlyContractsService) {}
+
+  @Get('admin/all')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({ summary: '[Admin] Lấy danh sách toàn bộ hợp đồng tháng' })
+  @ApiQuery({ name: 'status', required: false })
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  async adminList(
+    @Query('status') status?: string,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+  ) {
+    return this.service.adminListContracts(status, Number(page) || 1, Number(limit) || 20);
+  }
 
   @Post()
   @ApiOperation({ summary: '[Customer] Tạo hợp đồng giúp việc theo tháng (chờ thợ duyệt)' })

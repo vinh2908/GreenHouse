@@ -154,6 +154,7 @@ export const STRINGS = {
   profile_section_support: { vi: 'Hỗ trợ & Pháp lý', en: 'Support & Legal' },
   profile_personal_info: { vi: 'Thông tin cá nhân', en: 'Personal information' },
   profile_saved_addresses: { vi: 'Địa chỉ đã lưu', en: 'Saved addresses' },
+  profile_my_vouchers: { vi: 'Voucher của tôi', en: 'My vouchers' },
   profile_payment_wallet: {
     vi: 'Phương thức thanh toán & Ví',
     en: 'Payment methods & Wallet',
@@ -182,7 +183,10 @@ export const STRINGS = {
     vi: 'Đánh giá & Phản hồi từ khách hàng',
     en: 'Ratings & Customer feedback',
   },
-  profile_loyalty_title: { vi: 'Điểm thành viên — Hạng {tier}', en: 'Loyalty points — {tier} tier' },
+  profile_loyalty_title: {
+    vi: 'Điểm thành viên — Hạng {tier}',
+    en: 'Loyalty points — {tier} tier',
+  },
   profile_loyalty_points: { vi: '{points} điểm', en: '{points} points' },
 
   // ─── Display settings (mục mới trong cả 2 profile) ────────────────────────

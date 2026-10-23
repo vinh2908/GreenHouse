@@ -89,11 +89,7 @@ export class NotificationsService {
   ): Promise<void> {
     try {
       if (!Types.ObjectId.isValid(userId)) return;
-      const user = await this.userModel
-        .findById(userId)
-        .select('push_tokens')
-        .lean()
-        .exec();
+      const user = await this.userModel.findById(userId).select('push_tokens').lean().exec();
       const tokens = ((user?.push_tokens ?? []) as string[]).filter(
         token => typeof token === 'string' && token.startsWith('ExponentPushToken'),
       );
@@ -156,16 +152,10 @@ export class NotificationsService {
             body: JSON.stringify({ ids: [...receiptIdToToken.keys()] }),
           });
           const receiptResult = (await receiptRes.json().catch(() => null)) as {
-            data?: Record<
-              string,
-              { status?: string; details?: { error?: string } }
-            >;
+            data?: Record<string, { status?: string; details?: { error?: string } }>;
           } | null;
           for (const [receiptId, receipt] of Object.entries(receiptResult?.data ?? {})) {
-            if (
-              receipt?.status === 'error' &&
-              receipt?.details?.error === 'DeviceNotRegistered'
-            ) {
+            if (receipt?.status === 'error' && receipt?.details?.error === 'DeviceNotRegistered') {
               const token = receiptIdToToken.get(receiptId);
               if (token) deadTokens.add(token);
             }

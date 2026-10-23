@@ -9,13 +9,23 @@ import {
   useSupportConversations,
   useSupportThread,
 } from '@/hooks/use-admin';
-import { Badge, Button, Card, CardContent, CardHeader, CardTitle, EmptyState, Loading, Select } from '@/components/ui';
+import {
+  Badge,
+  Button,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  EmptyState,
+  Loading,
+  Select,
+} from '@/components/ui';
 import { formatDateTime } from '@/lib/utils';
 
 const userName = (c: AdminSupportConversation) =>
-  c.user_id && typeof c.user_id === 'object' ? c.user_id.full_name ?? 'Người dùng' : 'Người dùng';
+  c.user_id && typeof c.user_id === 'object' ? (c.user_id.full_name ?? 'Người dùng') : 'Người dùng';
 const userPhone = (c: AdminSupportConversation) =>
-  c.user_id && typeof c.user_id === 'object' ? c.user_id.phone ?? '' : '';
+  c.user_id && typeof c.user_id === 'object' ? (c.user_id.phone ?? '') : '';
 
 export default function SupportPage() {
   const [status, setStatus] = useState('open');
@@ -111,7 +121,9 @@ export default function SupportPage() {
                     <p className="text-sm truncate mt-1">{c.last_message || '—'}</p>
                     <div className="flex items-center justify-between mt-1">
                       <span className="text-[11px] text-muted-foreground">
-                        {c.last_message_at ? formatDateTime(c.last_message_at) : formatDateTime(c.created_at)}
+                        {c.last_message_at
+                          ? formatDateTime(c.last_message_at)
+                          : formatDateTime(c.created_at)}
                       </span>
                       <Badge variant={c.status === 'open' ? 'success' : 'secondary'}>
                         {c.status === 'open' ? 'Đang mở' : 'Đã đóng'}
@@ -154,7 +166,10 @@ export default function SupportPage() {
                   {(messages ?? []).map(m => {
                     const isAdmin = m.sender_role === 'admin';
                     return (
-                      <div key={m._id} className={`flex ${isAdmin ? 'justify-end' : 'justify-start'}`}>
+                      <div
+                        key={m._id}
+                        className={`flex ${isAdmin ? 'justify-end' : 'justify-start'}`}
+                      >
                         <div
                           className={`max-w-[75%] rounded-2xl px-4 py-2.5 ${
                             isAdmin
@@ -193,7 +208,11 @@ export default function SupportPage() {
                         if (e.key === 'Enter') void handleSend();
                       }}
                     />
-                    <Button onClick={() => void handleSend()} loading={reply.isPending} disabled={!draft.trim()}>
+                    <Button
+                      onClick={() => void handleSend()}
+                      loading={reply.isPending}
+                      disabled={!draft.trim()}
+                    >
                       Gửi
                     </Button>
                   </div>

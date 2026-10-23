@@ -150,6 +150,18 @@ export class AdminController {
     return this.adminService.getJobById(id);
   }
 
+  @Patch('jobs/:id/status')
+  @ApiOperation({ summary: '[Admin] Đổi trạng thái job thủ công' })
+  async updateJobStatus(@Param('id') id: string, @Body() dto: { status: string; note?: string }) {
+    return this.adminService.updateJobStatus(id, dto.status, dto.note);
+  }
+
+  @Post('jobs/:id/refund')
+  @ApiOperation({ summary: '[Admin] Hoàn tiền ngoài luồng tranh chấp' })
+  async directRefund(@Param('id') id: string, @Body() dto: { amount: number; reason: string }) {
+    return this.adminService.directRefund(id, Number(dto.amount), dto.reason);
+  }
+
   // ─── Notifications broadcast ──────────────────────────────────────────────
 
   @Post('notifications/broadcast')

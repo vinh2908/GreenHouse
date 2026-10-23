@@ -28,6 +28,7 @@ import {
   RespondAmendmentDto,
   InviteTeamMemberDto,
   RespondTeamInvitationDto,
+  CreateWarrantyDto,
 } from './dto/job.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
@@ -145,10 +146,7 @@ export class JobsController {
 
   @Get(':jobId/team/candidates')
   @ApiOperation({ summary: '[Lead] Danh sách thợ khả dụng để mời vào nhóm' })
-  async getTeamCandidates(
-    @CurrentUser() user: { sub: string },
-    @Param('jobId') jobId: string,
-  ) {
+  async getTeamCandidates(@CurrentUser() user: { sub: string }, @Param('jobId') jobId: string) {
     return this.jobsService.getTeamCandidates(jobId, user.sub);
   }
 
@@ -224,8 +222,9 @@ export class JobsController {
   async createWarrantyJob(
     @CurrentUser() user: { sub: string },
     @Param('jobId') jobId: string,
+    @Body() dto?: CreateWarrantyDto,
   ) {
-    return this.jobsService.createWarrantyJob(user.sub, jobId);
+    return this.jobsService.createWarrantyJob(user.sub, jobId, dto);
   }
 
   // ─── Helper: Nhận việc trực tiếp với giá cam kết ─────────────────────────

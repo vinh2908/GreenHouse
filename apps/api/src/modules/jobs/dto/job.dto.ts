@@ -97,7 +97,11 @@ export class CreateJobDto {
   @MaxLength(40)
   voucher_code?: string;
 
-  @ApiPropertyOptional({ description: 'Số thợ cần cho đơn nhóm (1–4, mặc định 1)', minimum: 1, maximum: 4 })
+  @ApiPropertyOptional({
+    description: 'Số thợ cần cho đơn nhóm (1–4, mặc định 1)',
+    minimum: 1,
+    maximum: 4,
+  })
   @IsOptional()
   @IsInt()
   @Min(1)
@@ -362,4 +366,21 @@ export class UpdateJobDto {
   @IsOptional()
   @IsBoolean()
   is_flexible_time?: boolean;
+}
+
+export class CreateWarrantyDto {
+  @ApiProperty({ description: 'Mô tả vấn đề cần bảo hành' })
+  @IsString()
+  @IsNotEmpty()
+  issue_description: string;
+
+  @ApiPropertyOptional({ description: 'Ngày hẹn bảo hành mong muốn (YYYY-MM-DD)' })
+  @IsOptional()
+  @IsString()
+  preferred_date?: string;
+
+  @ApiPropertyOptional({ description: 'Giờ bắt đầu mong muốn (HH:mm)' })
+  @IsOptional()
+  @IsString()
+  preferred_time_start?: string;
 }

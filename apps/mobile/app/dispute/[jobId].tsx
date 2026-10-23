@@ -166,8 +166,7 @@ export default function DisputeCaseScreen() {
             emoji="⚖️"
             title="Chưa có hồ sơ tranh chấp"
             subtitle={
-              (error as any)?.response?.data?.message ??
-              'Đơn này chưa phát sinh tranh chấp nào.'
+              (error as any)?.response?.data?.message ?? 'Đơn này chưa phát sinh tranh chấp nào.'
             }
             action="Quay lại"
             onAction={handleBack}
@@ -195,7 +194,11 @@ export default function DisputeCaseScreen() {
                   <Badge label="Đang kháng cáo" color="#FFEDD5" textColor="#9A3412" />
                 )}
                 {caseData.status === 'resolved' && (
-                  <Badge label="Đã có phán quyết" color={COLORS.successLight} textColor={COLORS.success} />
+                  <Badge
+                    label="Đã có phán quyết"
+                    color={COLORS.successLight}
+                    textColor={COLORS.success}
+                  />
                 )}
               </View>
               <Text style={{ fontSize: 13.5, color: COLORS.gray[800], lineHeight: 20 }}>
@@ -209,7 +212,14 @@ export default function DisputeCaseScreen() {
 
             {/* ── Phán quyết ───────────────────────────────────────────── */}
             {caseData.resolution && (
-              <Card style={{ gap: 8, backgroundColor: '#EFF6FF', borderColor: '#BFDBFE', borderWidth: 1.5 }}>
+              <Card
+                style={{
+                  gap: 8,
+                  backgroundColor: '#EFF6FF',
+                  borderColor: '#BFDBFE',
+                  borderWidth: 1.5,
+                }}
+              >
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                   <Gavel size={18} color="#1E40AF" />
                   <Text style={{ fontWeight: '800', fontSize: 15, color: '#1E40AF' }}>
@@ -257,8 +267,7 @@ export default function DisputeCaseScreen() {
                 )}
                 {caseData.appeal && (
                   <Text style={{ fontSize: 12.5, color: COLORS.gray[600] }}>
-                    Đã kháng cáo bởi {roleLabel(caseData.appeal.by_role)}:{' '}
-                    {caseData.appeal.reason}
+                    Đã kháng cáo bởi {roleLabel(caseData.appeal.by_role)}: {caseData.appeal.reason}
                   </Text>
                 )}
               </Card>
@@ -295,7 +304,9 @@ export default function DisputeCaseScreen() {
                     </View>
                     <Card style={{ flex: 1, marginBottom: 12, gap: 5 }}>
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                        <Text style={{ fontWeight: '800', fontSize: 13.5, color: COLORS.gray[900] }}>
+                        <Text
+                          style={{ fontWeight: '800', fontSize: 13.5, color: COLORS.gray[900] }}
+                        >
                           {meta.label}
                         </Text>
                         <Badge
@@ -359,7 +370,10 @@ export default function DisputeCaseScreen() {
                         key={i}
                         onPress={() => setPhotos(prev => prev.filter((_, x) => x !== i))}
                       >
-                        <Image source={{ uri }} style={{ width: 60, height: 60, borderRadius: 10 }} />
+                        <Image
+                          source={{ uri }}
+                          style={{ width: 60, height: 60, borderRadius: 10 }}
+                        />
                       </TouchableOpacity>
                     ))}
                   </View>
@@ -382,9 +396,9 @@ export default function DisputeCaseScreen() {
             ) : (
               <Card style={{ backgroundColor: COLORS.gray[50] }}>
                 <Text style={{ fontSize: 13, color: COLORS.gray[600], lineHeight: 19 }}>
-                  Hồ sơ đã đóng sau phán quyết. Nếu chưa đồng ý với kết quả, bạn có thể kháng cáo
-                  1 lần trong {caseData.appeal_window_hours} giờ kể từ lúc có phán quyết (khi còn
-                  thời hạn, nút Kháng cáo sẽ hiện ở thẻ phán quyết phía trên).
+                  Hồ sơ đã đóng sau phán quyết. Nếu chưa đồng ý với kết quả, bạn có thể kháng cáo 1
+                  lần trong {caseData.appeal_window_hours} giờ kể từ lúc có phán quyết (khi còn thời
+                  hạn, nút Kháng cáo sẽ hiện ở thẻ phán quyết phía trên).
                 </Text>
               </Card>
             )}
@@ -394,7 +408,15 @@ export default function DisputeCaseScreen() {
 
       {/* ── Appeal Modal ─────────────────────────────────────────────── */}
       <Modal visible={showAppeal} animationType="slide" presentationStyle="pageSheet">
-        <View style={{ flex: 1, backgroundColor: '#fff', padding: 20, paddingTop: Math.max(insets.top, 20), gap: 14 }}>
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: '#fff',
+            padding: 20,
+            paddingTop: Math.max(insets.top, 20),
+            gap: 14,
+          }}
+        >
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
             <Undo2 size={20} color={COLORS.gray[800]} />
             <Text style={{ fontSize: 18, fontWeight: '800', color: COLORS.gray[900] }}>

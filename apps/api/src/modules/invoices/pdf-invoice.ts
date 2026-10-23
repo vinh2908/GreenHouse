@@ -223,7 +223,13 @@ export class PdfBuilder {
   }
 
   /** Đường kẻ ngang. (x, y) tính từ trên xuống. */
-  drawLine(x: number, y: number, w: number, thickness = 0.7, color: [number, number, number] = [0.6, 0.6, 0.6]): void {
+  drawLine(
+    x: number,
+    y: number,
+    w: number,
+    thickness = 0.7,
+    color: [number, number, number] = [0.6, 0.6, 0.6],
+  ): void {
     this.drawRect(x, y, w, thickness, color);
   }
 
@@ -254,7 +260,14 @@ export class PdfBuilder {
 
     const fontObjIds = new Map<string, { type0: number }>();
     let nextId = 3;
-    const fontObjects: { font: RegisteredFont; fileId: number; descId: number; cidId: number; type0Id: number; tuId: number }[] = [];
+    const fontObjects: {
+      font: RegisteredFont;
+      fileId: number;
+      descId: number;
+      cidId: number;
+      type0Id: number;
+      tuId: number;
+    }[] = [];
     for (const font of this.fonts) {
       const ids = {
         font,
@@ -285,7 +298,11 @@ export class PdfBuilder {
       const gids = [...used.keys()].sort((a, b) => a - b);
 
       // Font file (nén flate)
-      streamObj(fileId, `/Length1 ${font.raw.length} /Filter /FlateDecode`, zlib.deflateSync(font.raw));
+      streamObj(
+        fileId,
+        `/Length1 ${font.raw.length} /Filter /FlateDecode`,
+        zlib.deflateSync(font.raw),
+      );
 
       // FontDescriptor
       beginObj(descId);

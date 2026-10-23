@@ -48,10 +48,7 @@ export class ClaimsController {
 
   @Get(':id')
   @ApiOperation({ summary: 'Chi tiết yêu cầu bồi thường (người thuộc đơn hoặc admin)' })
-  async detail(
-    @CurrentUser() user: { sub: string; roles?: string[] },
-    @Param('id') id: string,
-  ) {
+  async detail(@CurrentUser() user: { sub: string; roles?: string[] }, @Param('id') id: string) {
     return this.claimsService.getClaim(id, user);
   }
 }

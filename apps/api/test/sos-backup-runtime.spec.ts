@@ -33,7 +33,11 @@ import {
   HelperPenaltyEventDocument,
 } from '../src/modules/helpers/schemas/helper-penalty-event.schema';
 import { User, UserSchema, UserDocument } from '../src/modules/users/schemas/user.schema';
-import { Service, ServiceSchema, ServiceDocument } from '../src/modules/services/schemas/service.schema';
+import {
+  Service,
+  ServiceSchema,
+  ServiceDocument,
+} from '../src/modules/services/schemas/service.schema';
 import { AppGateway } from '../src/modules/chat/app.gateway';
 import { ChatService } from '../src/modules/chat/chat.service';
 import { NotificationsService } from '../src/modules/notifications/notifications.service';
@@ -62,7 +66,12 @@ describe('SOS Backup & Roadmap Financial Logic Runtime Suite (Real MongoDB)', ()
   let serviceModel: Model<ServiceDocument>;
 
   const emittedEvents: Array<{ target: string; event: string; data: any }> = [];
-  const refundedCalls: Array<{ customerId: string; jobId: string; amount: number; reason: string }> = [];
+  const refundedCalls: Array<{
+    customerId: string;
+    jobId: string;
+    amount: number;
+    reason: string;
+  }> = [];
   const onlineUsers = new Set<string>();
 
   const mockGateway = {
@@ -87,10 +96,12 @@ describe('SOS Backup & Roadmap Financial Logic Runtime Suite (Real MongoDB)', ()
   };
 
   const mockPaymentsService = {
-    refundCustomer: jest.fn(async (customerId: string, jobId: string, amount: number, reason: string) => {
-      refundedCalls.push({ customerId, jobId, amount, reason });
-      return { success: true, refund_amount: amount };
-    }),
+    refundCustomer: jest.fn(
+      async (customerId: string, jobId: string, amount: number, reason: string) => {
+        refundedCalls.push({ customerId, jobId, amount, reason });
+        return { success: true, refund_amount: amount };
+      },
+    ),
   };
 
   beforeAll(async () => {
@@ -250,7 +261,9 @@ describe('SOS Backup & Roadmap Financial Logic Runtime Suite (Real MongoDB)', ()
 
     // Báo socket cho khách
     const decisionReqEvent = emittedEvents.find(
-      e => e.target === `user:${customerId}` && e.event === SOCKET_EVENTS.SOS_BACKUP_DECISION_REQUESTED,
+      e =>
+        e.target === `user:${customerId}` &&
+        e.event === SOCKET_EVENTS.SOS_BACKUP_DECISION_REQUESTED,
     );
     expect(decisionReqEvent).toBeDefined();
     expect(decisionReqEvent?.data.reason).toBe(SosBackupReason.VEHICLE_BREAKDOWN);
@@ -267,7 +280,9 @@ describe('SOS Backup & Roadmap Financial Logic Runtime Suite (Real MongoDB)', ()
     // Kiểm tra wave 1: Helper B đã được mời
     const sosAfterDecision = await sosModel.findById(sosResult._id).lean();
     expect(sosAfterDecision?.candidates.length).toBeGreaterThanOrEqual(1);
-    const invitedB = sosAfterDecision?.candidates.find(c => c.helper_id.toString() === helperBId.toString());
+    const invitedB = sosAfterDecision?.candidates.find(
+      c => c.helper_id.toString() === helperBId.toString(),
+    );
     expect(invitedB).toBeDefined();
     expect(invitedB?.state).toBe('invited');
 
@@ -279,8 +294,12 @@ describe('SOS Backup & Roadmap Financial Logic Runtime Suite (Real MongoDB)', ()
     // 6. Kiểm tra Job sau khi đổi thợ: chỉ đổi helper_id, giá và tiền không bị ghi đè
     const updatedJob = await jobModel.findById(job._id).lean();
     expect(updatedJob?.helper_id?.toString()).toBe(helperBId.toString());
-    expect(updatedJob?.sos_backup_replacement?.previous_helper_id?.toString()).toBe(helperAId.toString());
-    expect(updatedJob?.sos_backup_replacement?.new_helper_id?.toString()).toBe(helperBId.toString());
+    expect(updatedJob?.sos_backup_replacement?.previous_helper_id?.toString()).toBe(
+      helperAId.toString(),
+    );
+    expect(updatedJob?.sos_backup_replacement?.new_helper_id?.toString()).toBe(
+      helperBId.toString(),
+    );
     expect(updatedJob?.payment_status).toBe(PaymentStatus.PAID); // Tiền đứng yên
 
     // 7. Kiểm tra Hợp đồng: chỉ đổi helper_id, total_price & helper_receives giữ nguyên
@@ -486,8 +505,22 @@ describe('SOS Backup & Roadmap Financial Logic Runtime Suite (Real MongoDB)', ()
       decided_at: new Date(),
       expires_at: new Date(Date.now() + 240000),
       candidates: [
-        { helper_id: helperBId, wave: 1, invited_at: new Date(), state: 'invited', cost: 10, distance_km: 1.2 },
-        { helper_id: helperCId, wave: 1, invited_at: new Date(), state: 'invited', cost: 12, distance_km: 1.5 },
+        {
+          helper_id: helperBId,
+          wave: 1,
+          invited_at: new Date(),
+          state: 'invited',
+          cost: 10,
+          distance_km: 1.2,
+        },
+        {
+          helper_id: helperCId,
+          wave: 1,
+          invited_at: new Date(),
+          state: 'invited',
+          cost: 12,
+          distance_km: 1.5,
+        },
       ],
     });
 
@@ -504,7 +537,9 @@ describe('SOS Backup & Roadmap Financial Logic Runtime Suite (Real MongoDB)', ()
     expect(fulfilled).toHaveLength(1);
     expect(rejected).toHaveLength(1);
 
-    const winningHelperId = ((fulfilled[0] as PromiseFulfilledResult<any>).value).sos.replacement_helper_id.toString();
+    const winningHelperId = (
+      fulfilled[0] as PromiseFulfilledResult<any>
+    ).value.sos.replacement_helper_id.toString();
     expect([helperBId.toString(), helperCId.toString()]).toContain(winningHelperId);
 
     // Job helper_id phải khớp với người thắng
@@ -738,4 +773,3 @@ describe('SOS Backup & Roadmap Financial Logic Runtime Suite (Real MongoDB)', ()
     expect(helperRemainingPayout).toBe(255000);
   });
 });
-

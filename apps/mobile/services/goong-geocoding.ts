@@ -137,10 +137,7 @@ export function newAutocompleteSessionToken(): string {
 
 // ─── Trích xuất thành phần địa chỉ ────────────────────────────────────────────
 
-function componentByType(
-  components: GoongAddressComponent[] | undefined,
-  types: string[],
-): string {
+function componentByType(components: GoongAddressComponent[] | undefined, types: string[]): string {
   if (!components?.length) return '';
   for (const type of types) {
     const found = components.find(c => c.types?.includes(type));
@@ -212,9 +209,7 @@ export function mapGoongGeocodeResult(
     [parts.houseNumber, parts.route].filter(Boolean).join(' ').trim() ||
     result.formatted_address?.split(',')[0]?.trim() ||
     '';
-  const composed = [road, parts.ward, parts.district, parts.city]
-    .filter(Boolean)
-    .join(', ');
+  const composed = [road, parts.ward, parts.district, parts.city].filter(Boolean).join(', ');
   return {
     full_address: result.formatted_address || composed,
     road: road || result.formatted_address || '',
@@ -236,9 +231,7 @@ export async function goongAutocomplete(
     `${GOONG_API_BASE}/Place/AutoComplete?api_key=${encodeURIComponent(apiKey)}` +
     `&input=${encodeURIComponent(input)}&sessiontoken=${encodeURIComponent(sessionToken)}`;
   const json = await fetchJsonWithTimeout(url);
-  const predictions: GoongPrediction[] = Array.isArray(json?.predictions)
-    ? json.predictions
-    : [];
+  const predictions: GoongPrediction[] = Array.isArray(json?.predictions) ? json.predictions : [];
   return predictions.filter(p => p?.place_id).slice(0, 5);
 }
 
@@ -306,11 +299,7 @@ export async function searchPlacesWithGoong(
   const details = await Promise.all(
     predictions.map(async (prediction, idx) => {
       try {
-        const detail = await goongPlaceDetail(
-          prediction.place_id as string,
-          apiKey,
-          sessionToken,
-        );
+        const detail = await goongPlaceDetail(prediction.place_id as string, apiKey, sessionToken);
         return detail ? mapGoongPlaceToOsmPlace(detail, prediction, idx) : null;
       } catch {
         return null;

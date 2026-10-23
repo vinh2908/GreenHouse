@@ -34,16 +34,29 @@ export class ServicesService {
 
   // ─── Services ─────────────────────────────────────────────────────────────
 
-  async getAll(categoryId?: string, includeInactive = false) {
+  async getAll(categoryId?: string, includeInactive = false): Promise<any[]> {
     const query: Record<string, unknown> = includeInactive ? {} : { status: ServiceStatus.ACTIVE };
     if (categoryId && categoryId !== 'undefined' && Types.ObjectId.isValid(categoryId)) {
       query['category_id'] = new Types.ObjectId(categoryId);
     }
-    return this.serviceModel
+    const services = await this.serviceModel
       .find(query)
       .populate('category_id', 'name slug icon')
       .sort({ name: 1 })
+      .lean()
       .exec();
+
+    return services.map(s => {
+      const minP = s.base_price_min || s.price_range_min || 0;
+      const maxP = s.base_price_max || s.price_range_max || 0;
+      return {
+        ...s,
+        price_range_min: minP,
+        price_range_max: maxP,
+        base_price_min: minP,
+        base_price_max: maxP,
+      };
+    });
   }
 
   async getById(id: string) {
@@ -71,15 +84,34 @@ export class ServicesService {
     const category = await this.categoryModel.findById(dto.category_id).exec();
     if (!category) throw new NotFoundException('Danh mục không tồn tại');
 
+    const minP = dto.base_price_min ?? dto.price_range_min ?? 0;
+    const maxP = dto.base_price_max ?? dto.price_range_max ?? 0;
+
     return this.serviceModel.create({
       ...dto,
+      base_price_min: minP,
+      base_price_max: maxP,
+      price_range_min: minP,
+      price_range_max: maxP,
       category_id: new Types.ObjectId(dto.category_id),
     });
   }
 
   async update(id: string, dto: UpdateServiceDto) {
+    const updatePayload: any = { ...dto };
+    if (dto.base_price_min !== undefined || dto.price_range_min !== undefined) {
+      const minP = dto.base_price_min ?? dto.price_range_min;
+      updatePayload.base_price_min = minP;
+      updatePayload.price_range_min = minP;
+    }
+    if (dto.base_price_max !== undefined || dto.price_range_max !== undefined) {
+      const maxP = dto.base_price_max ?? dto.price_range_max;
+      updatePayload.base_price_max = maxP;
+      updatePayload.price_range_max = maxP;
+    }
+
     const service = await this.serviceModel
-      .findByIdAndUpdate(id, { $set: dto }, { new: true, runValidators: true })
+      .findByIdAndUpdate(id, { $set: updatePayload }, { new: true, runValidators: true })
       .exec();
     if (!service) throw new NotFoundException('Dịch vụ không tồn tại');
     return service;

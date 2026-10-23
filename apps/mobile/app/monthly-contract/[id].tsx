@@ -1,12 +1,5 @@
 import { useMemo, useState } from 'react';
-import {
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-  TextInput,
-  RefreshControl,
-} from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, TextInput, RefreshControl } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { ArrowLeft, MapPin } from 'lucide-react-native';
@@ -31,18 +24,18 @@ import {
   type AttendanceStatus,
 } from '@/hooks/use-api';
 import { Badge, Button, Card, COLORS, LoadingSpinner } from '@/components/ui';
-import {
-  MONTHLY_STATUS_META,
-  describeMonthlySchedule,
-  personName,
-} from '../monthly-contracts';
+import { MONTHLY_STATUS_META, describeMonthlySchedule, personName } from '../monthly-contracts';
 
 dayjs.locale('vi');
 
 const fmt = (n?: number) => new Intl.NumberFormat('vi-VN').format(n ?? 0);
 
 const ATT_META: Record<AttendanceStatus, { label: string; bg: string; color: string }> = {
-  checked_in: { label: 'Đã điểm danh — chờ xác nhận', bg: COLORS.warningLight, color: COLORS.warning },
+  checked_in: {
+    label: 'Đã điểm danh — chờ xác nhận',
+    bg: COLORS.warningLight,
+    color: COLORS.warning,
+  },
   confirmed: { label: 'Đã xác nhận có mặt', bg: COLORS.successLight, color: COLORS.success },
   absent: { label: 'Vắng', bg: COLORS.errorLight, color: COLORS.error },
   leave: { label: 'Nghỉ phép', bg: '#EFF6FF', color: '#2563EB' },
@@ -92,14 +85,21 @@ export default function MonthlyContractDetailScreen() {
 
   const todayStr = attendance?.today ?? dayjs().format('YYYY-MM-DD');
   const todayRecord = recordByDate.get(todayStr);
-  const isScheduledToday = (attendance?.scheduled_dates ?? []).includes(todayStr) && month === currentMonth;
+  const isScheduledToday =
+    (attendance?.scheduled_dates ?? []).includes(todayStr) && month === currentMonth;
 
   const handleBack = () => {
     if (router.canGoBack()) router.back();
     else router.replace('/monthly-contracts');
   };
 
-  const confirmDialog = (title: string, body: string, label: string, fn: () => void, destructive = false) =>
+  const confirmDialog = (
+    title: string,
+    body: string,
+    label: string,
+    fn: () => void,
+    destructive = false,
+  ) =>
     Alert.alert(title, body, [
       { text: 'Để sau', style: 'cancel' },
       { text: label, style: destructive ? 'destructive' : 'default', onPress: fn },
@@ -162,10 +162,15 @@ export default function MonthlyContractDetailScreen() {
           <ArrowLeft size={20} color={COLORS.gray[800]} />
         </TouchableOpacity>
         <View style={{ flex: 1 }}>
-          <Text style={{ fontSize: 18, fontWeight: '800', color: COLORS.gray[900] }} numberOfLines={1}>
+          <Text
+            style={{ fontSize: 18, fontWeight: '800', color: COLORS.gray[900] }}
+            numberOfLines={1}
+          >
             {contract.title}
           </Text>
-          <Text style={{ fontSize: 12, color: COLORS.gray[500] }}>Hợp đồng giúp việc theo tháng</Text>
+          <Text style={{ fontSize: 12, color: COLORS.gray[500] }}>
+            Hợp đồng giúp việc theo tháng
+          </Text>
         </View>
         <Badge label={meta.label} color={meta.bg} textColor={meta.color} />
       </View>
@@ -184,12 +189,17 @@ export default function MonthlyContractDetailScreen() {
           </Text>
           <InfoRow label={isHelper ? 'Khách hàng' : 'Thợ thực hiện'} value={personName(partner)} />
           <InfoRow label="Lương tháng" value={`${fmt(contract.monthly_salary)}₫`} strong />
-          <InfoRow label="Phí sàn" value={`${contract.platform_fee_percent ?? 15}% (trừ khi chốt lương)`} />
+          <InfoRow
+            label="Phí sàn"
+            value={`${contract.platform_fee_percent ?? 15}% (trừ khi chốt lương)`}
+          />
           <InfoRow label="Lịch làm việc" value={describeMonthlySchedule(contract)} />
           <InfoRow
             label="Thời gian"
             value={`${dayjs(contract.start_date).format('DD/MM/YYYY')}${
-              contract.end_date ? ` → ${dayjs(contract.end_date).format('DD/MM/YYYY')}` : ' → Chưa ấn định ngày kết thúc'
+              contract.end_date
+                ? ` → ${dayjs(contract.end_date).format('DD/MM/YYYY')}`
+                : ' → Chưa ấn định ngày kết thúc'
             }`}
           />
           <View style={{ flexDirection: 'row', gap: 6, alignItems: 'flex-start' }}>
@@ -219,8 +229,16 @@ export default function MonthlyContractDetailScreen() {
                 style={{ flex: 1 }}
                 loading={respond.isPending}
                 onPress={() =>
-                  confirmDialog('Từ chối hợp đồng?', 'Khách hàng sẽ được thông báo.', 'Từ chối', () =>
-                    respond.mutate({ id: contract._id, path: 'respond', body: { accept: false } }),
+                  confirmDialog(
+                    'Từ chối hợp đồng?',
+                    'Khách hàng sẽ được thông báo.',
+                    'Từ chối',
+                    () =>
+                      respond.mutate({
+                        id: contract._id,
+                        path: 'respond',
+                        body: { accept: false },
+                      }),
                   )
                 }
               />
@@ -233,7 +251,8 @@ export default function MonthlyContractDetailScreen() {
                     'Đồng ý hợp đồng?',
                     'Hợp đồng sẽ có hiệu lực ngay. Bạn cần điểm danh đúng các buổi theo lịch.',
                     'Đồng ý',
-                    () => respond.mutate({ id: contract._id, path: 'respond', body: { accept: true } }),
+                    () =>
+                      respond.mutate({ id: contract._id, path: 'respond', body: { accept: true } }),
                   )
                 }
               />
@@ -272,8 +291,13 @@ export default function MonthlyContractDetailScreen() {
               style={{ flex: 1 }}
               loading={cancel.isPending}
               onPress={() =>
-                confirmDialog('Hủy hợp đồng?', 'Hợp đồng sẽ dừng ngay và bên còn lại được thông báo.', 'Hủy hợp đồng', () =>
-                  cancel.mutate({ id: contract._id, path: 'cancel' }), true)
+                confirmDialog(
+                  'Hủy hợp đồng?',
+                  'Hợp đồng sẽ dừng ngay và bên còn lại được thông báo.',
+                  'Hủy hợp đồng',
+                  () => cancel.mutate({ id: contract._id, path: 'cancel' }),
+                  true,
+                )
               }
             />
             {isActive && (
@@ -283,8 +307,13 @@ export default function MonthlyContractDetailScreen() {
                 style={{ flex: 1 }}
                 loading={end.isPending}
                 onPress={() =>
-                  confirmDialog('Kết thúc hợp đồng?', 'Bạn vẫn có thể chốt lương các tháng chưa chốt sau khi kết thúc.', 'Kết thúc', () =>
-                    end.mutate({ id: contract._id, path: 'end', body: {} }), true)
+                  confirmDialog(
+                    'Kết thúc hợp đồng?',
+                    'Bạn vẫn có thể chốt lương các tháng chưa chốt sau khi kết thúc.',
+                    'Kết thúc',
+                    () => end.mutate({ id: contract._id, path: 'end', body: {} }),
+                    true,
+                  )
                 }
               />
             )}
@@ -299,7 +328,12 @@ export default function MonthlyContractDetailScreen() {
             </Text>
             <TouchableOpacity
               onPress={() => setMonth(dayjs(`${month}-01`).subtract(1, 'month').format('YYYY-MM'))}
-              style={{ paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, backgroundColor: COLORS.gray[100] }}
+              style={{
+                paddingHorizontal: 10,
+                paddingVertical: 6,
+                borderRadius: 8,
+                backgroundColor: COLORS.gray[100],
+              }}
             >
               <Text style={{ fontWeight: '800', color: COLORS.gray[700] }}>‹</Text>
             </TouchableOpacity>
@@ -339,7 +373,9 @@ export default function MonthlyContractDetailScreen() {
                     borderTopColor: COLORS.gray[100],
                   }}
                 >
-                  <Text style={{ width: 118, fontSize: 13, fontWeight: '700', color: COLORS.gray[800] }}>
+                  <Text
+                    style={{ width: 118, fontSize: 13, fontWeight: '700', color: COLORS.gray[800] }}
+                  >
                     {dayjs(date).format('ddd, DD/MM')}
                     {isToday ? ' • Hôm nay' : ''}
                   </Text>
@@ -360,13 +396,27 @@ export default function MonthlyContractDetailScreen() {
                     <View style={{ flexDirection: 'row', gap: 6 }}>
                       <TouchableOpacity
                         onPress={() => confirmAtt.mutate({ id: contract._id, date, approve: true })}
-                        style={{ paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, backgroundColor: COLORS.success }}
+                        style={{
+                          paddingHorizontal: 10,
+                          paddingVertical: 6,
+                          borderRadius: 8,
+                          backgroundColor: COLORS.success,
+                        }}
                       >
-                        <Text style={{ color: '#fff', fontSize: 12, fontWeight: '800' }}>Có mặt</Text>
+                        <Text style={{ color: '#fff', fontSize: 12, fontWeight: '800' }}>
+                          Có mặt
+                        </Text>
                       </TouchableOpacity>
                       <TouchableOpacity
-                        onPress={() => confirmAtt.mutate({ id: contract._id, date, approve: false })}
-                        style={{ paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, backgroundColor: COLORS.error }}
+                        onPress={() =>
+                          confirmAtt.mutate({ id: contract._id, date, approve: false })
+                        }
+                        style={{
+                          paddingHorizontal: 10,
+                          paddingVertical: 6,
+                          borderRadius: 8,
+                          backgroundColor: COLORS.error,
+                        }}
                       >
                         <Text style={{ color: '#fff', fontSize: 12, fontWeight: '800' }}>Vắng</Text>
                       </TouchableOpacity>
@@ -389,9 +439,19 @@ export default function MonthlyContractDetailScreen() {
           {(leaves ?? []).slice(0, 6).map(l => {
             const m = LEAVE_META[l.status];
             return (
-              <View key={l._id} style={{ gap: 4, borderTopWidth: 1, borderTopColor: COLORS.gray[100], paddingTop: 8 }}>
+              <View
+                key={l._id}
+                style={{
+                  gap: 4,
+                  borderTopWidth: 1,
+                  borderTopColor: COLORS.gray[100],
+                  paddingTop: 8,
+                }}
+              >
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                  <Text style={{ flex: 1, fontSize: 13.5, fontWeight: '700', color: COLORS.gray[800] }}>
+                  <Text
+                    style={{ flex: 1, fontSize: 13.5, fontWeight: '700', color: COLORS.gray[800] }}
+                  >
                     Nghỉ ngày {dayjs(l.date).format('DD/MM/YYYY')}
                   </Text>
                   <Badge label={m.label} color={m.bg} textColor={m.color} />
@@ -404,7 +464,9 @@ export default function MonthlyContractDetailScreen() {
                       size="sm"
                       style={{ flex: 1 }}
                       loading={respondLeave.isPending}
-                      onPress={() => respondLeave.mutate({ id: contract._id, leaveId: l._id, approve: true })}
+                      onPress={() =>
+                        respondLeave.mutate({ id: contract._id, leaveId: l._id, approve: true })
+                      }
                     />
                     <Button
                       title="Từ chối"
@@ -412,7 +474,9 @@ export default function MonthlyContractDetailScreen() {
                       variant="outline"
                       style={{ flex: 1 }}
                       loading={respondLeave.isPending}
-                      onPress={() => respondLeave.mutate({ id: contract._id, leaveId: l._id, approve: false })}
+                      onPress={() =>
+                        respondLeave.mutate({ id: contract._id, leaveId: l._id, approve: false })
+                      }
                     />
                   </View>
                 )}
@@ -426,7 +490,14 @@ export default function MonthlyContractDetailScreen() {
           )}
 
           {isHelper && isActive && (
-            <View style={{ gap: 8, borderTopWidth: 1, borderTopColor: COLORS.gray[100], paddingTop: 10 }}>
+            <View
+              style={{
+                gap: 8,
+                borderTopWidth: 1,
+                borderTopColor: COLORS.gray[100],
+                paddingTop: 10,
+              }}
+            >
               <Text style={{ fontSize: 13.5, fontWeight: '800', color: COLORS.gray[800] }}>
                 Xin nghỉ 1 buổi
               </Text>
@@ -480,9 +551,19 @@ export default function MonthlyContractDetailScreen() {
                 <InfoRow label="Buổi đã xác nhận" value={`${settlement.confirmed_days} buổi`} />
                 <InfoRow label="Buổi nghỉ phép" value={`${settlement.leave_days} buổi`} />
                 <InfoRow label="Buổi vắng" value={`${settlement.absent_days} buổi`} />
-                <InfoRow label="Lương theo buổi thực tế" value={`${fmt(settlement.gross_amount)}₫`} />
-                <InfoRow label={`Phí sàn (${contract.platform_fee_percent ?? 15}%)`} value={`−${fmt(settlement.platform_fee)}₫`} />
-                <InfoRow label="Thợ thực nhận" value={`${fmt(settlement.helper_receives)}₫`} strong />
+                <InfoRow
+                  label="Lương theo buổi thực tế"
+                  value={`${fmt(settlement.gross_amount)}₫`}
+                />
+                <InfoRow
+                  label={`Phí sàn (${contract.platform_fee_percent ?? 15}%)`}
+                  value={`−${fmt(settlement.platform_fee)}₫`}
+                />
+                <InfoRow
+                  label="Thợ thực nhận"
+                  value={`${fmt(settlement.helper_receives)}₫`}
+                  strong
+                />
                 {settlement.status === 'settled' ? (
                   <Badge
                     label={`✅ Đã chốt lương${settlement.settled_at ? ` · ${dayjs(settlement.settled_at).format('DD/MM/YYYY HH:mm')}` : ''}`}

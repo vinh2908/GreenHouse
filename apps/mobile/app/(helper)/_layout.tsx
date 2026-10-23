@@ -25,6 +25,12 @@ export default function HelperLayout() {
         }}
       />
       <Tabs.Screen
+        name="messages"
+        options={{
+          title: 'Tin nhắn',
+        }}
+      />
+      <Tabs.Screen
         name="earnings"
         options={{
           title: 'Thu nhập',

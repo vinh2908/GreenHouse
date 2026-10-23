@@ -29,6 +29,7 @@ import {
   ResolveDisputeDto,
   ProposeAmendmentDto,
   RespondAmendmentDto,
+  CreateWarrantyDto,
 } from './dto/job.dto';
 import {
   JobStatus,
@@ -546,7 +547,11 @@ export class JobsService {
   }
 
   /** [Customer] Tạo đơn bảo hành miễn phí từ đơn đã hoàn thành còn hạn bảo hành */
-  async createWarrantyJob(customerId: string, sourceJobId: string): Promise<JobDocument> {
+  async createWarrantyJob(
+    customerId: string,
+    sourceJobId: string,
+    dto?: CreateWarrantyDto,
+  ): Promise<JobDocument> {
     const source = await this.jobModel.findById(sourceJobId).exec();
     if (!source) throw new NotFoundException('Đơn gốc không tồn tại');
     if (source.customer_id.toString() !== customerId) throw new ForbiddenException();
@@ -569,13 +574,20 @@ export class JobsService {
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
 
+    const issueText =
+      dto?.issue_description?.trim() || 'Khách yêu cầu kiểm tra / xử lý lại vấn đề.';
+    const chosenDate = dto?.preferred_date?.trim() || tomorrow.toISOString().slice(0, 10);
+    const chosenTime = dto?.preferred_time_start?.trim() || source.preferred_time_start || '08:00';
+
     const createDto: CreateJobDto = {
       service_id: String(source.service_id),
       // Tiêu đề tối đa 200 ký tự (schema) — chừa chỗ cho tiền tố "Bảo hành: "
       title: `Bảo hành: ${source.title}`.slice(0, 200),
       description:
-        `🛡 Đơn bảo hành MIỄN PHÍ phát sinh từ đơn gốc "${source.title}" (mã đơn ${String(source._id)}). ` +
-        `Khách yêu cầu kiểm tra / xử lý lại theo chính sách bảo hành ${info.windowDays} ngày.\n\nMô tả đơn gốc: ${source.description}`,
+        `🛡 Đơn bảo hành MIỄN PHÍ phát sinh từ đơn gốc "${source.title}" (mã đơn ${String(source._id)}).\n` +
+        `• Mô tả vấn đề cần bảo hành: ${issueText}\n` +
+        `• Hạn bảo hành: ${info.windowDays} ngày\n\n` +
+        `Mô tả đơn gốc: ${source.description}`,
       photos: source.photos,
       videos: source.videos,
       address: {
@@ -589,8 +601,8 @@ export class JobsService {
           coordinates: source.address.location.coordinates,
         } as CreateJobDto['address']['location'],
       },
-      preferred_date: tomorrow.toISOString().slice(0, 10),
-      preferred_time_start: source.preferred_time_start,
+      preferred_date: chosenDate,
+      preferred_time_start: chosenTime,
       preferred_time_end: source.preferred_time_end,
       is_flexible_time: source.is_flexible_time,
     };
@@ -2294,10 +2306,7 @@ export class JobsService {
       .findOneAndUpdate(
         {
           _id: job._id,
-          $or: [
-            { benefits_restored_at: { $exists: false } },
-            { benefits_restored_at: null },
-          ],
+          $or: [{ benefits_restored_at: { $exists: false } }, { benefits_restored_at: null }],
         },
         { $set: { benefits_restored_at: new Date() } },
         { new: true },
@@ -2315,9 +2324,7 @@ export class JobsService {
         );
       }
     } catch (err) {
-      this.logger.error(
-        `Voucher restore failed for job ${jobId}: ${(err as Error).message}`,
-      );
+      this.logger.error(`Voucher restore failed for job ${jobId}: ${(err as Error).message}`);
     }
 
     try {
@@ -2326,9 +2333,7 @@ export class JobsService {
         restored.push(`${l.points_restored} điểm loyalty`);
       }
     } catch (err) {
-      this.logger.error(
-        `Loyalty restore failed for job ${jobId}: ${(err as Error).message}`,
-      );
+      this.logger.error(`Loyalty restore failed for job ${jobId}: ${(err as Error).message}`);
     }
 
     if (restored.length > 0) {

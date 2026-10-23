@@ -24,6 +24,7 @@ import { useAuthStore } from '@/stores/auth.store';
 import { useTranslation } from '@/hooks/use-i18n';
 import { useServices, useMyJobs, useUnreadCount, useMyProfile } from '@/hooks/use-api';
 import { locationService } from '@/services/location.service';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LocationPicker, PickerCoords } from '@/components/common/location-picker';
 import {
   Avatar,
@@ -94,11 +95,11 @@ const SERVICE_CATEGORIES = [
     slug: 'house_management',
   },
   {
-    id: 'hourly_helper',
+    id: 'housekeeping_hourly',
     name: 'Giúp việc\ntheo giờ',
     emoji: '🧹',
     bg: '#F0FDF4',
-    slug: 'hourly_helper',
+    slug: 'housekeeping_hourly',
   },
   {
     id: 'deep_cleaning',
@@ -223,25 +224,81 @@ export default function CustomerHomeScreen() {
   const { data: recentJobs, isLoading: jLoading, refetch } = useMyJobs();
   const { data: unread } = useUnreadCount();
 
-  const [currentLocationName, setCurrentLocationName] = useState('Hồ Chí Minh • Quận 1');
+  const [currentLocationName, setCurrentLocationName] = useState('Đang định vị...');
   const [currentCoords, setCurrentCoords] = useState<PickerCoords | null>(null);
   const [locationPickerOpen, setLocationPickerOpen] = useState(false);
 
+  const inferLocationLabel = (
+    geo?: {
+      city?: string;
+      district?: string;
+      ward?: string;
+      full_address?: string;
+    } | null,
+  ): string => {
+    if (!geo) return 'Vị trí đã chọn';
+    let city = geo.city?.trim();
+    let district = geo.district?.trim() || geo.ward?.trim();
+
+    if (!city || !district) {
+      if (geo.full_address) {
+        const parts = geo.full_address
+          .split(',')
+          .map(s => s.trim())
+          .filter(Boolean);
+        if (parts.length >= 2) {
+          if (!city) city = parts[parts.length - 1];
+          if (!district) district = parts[parts.length - 2];
+        } else if (parts.length === 1) {
+          if (!city) city = parts[0];
+        }
+      }
+    }
+
+    if (city && district) return `${city} • ${district}`;
+    if (city) return city;
+    if (district) return district;
+    return geo.full_address?.slice(0, 32) || 'Vị trí đã chọn';
+  };
+
   useEffect(() => {
-    locationService
-      .getCurrentLocationDetails()
-      .then(details => {
-        if (details?.district) {
-          setCurrentLocationName(`${details.city || 'Hồ Chí Minh'} • ${details.district}`);
+    // 1. Kiểm tra vị trí ghim đã lưu bền vững
+    AsyncStorage.getItem('@homemate_customer_pinned_location')
+      .then(saved => {
+        if (saved) {
+          try {
+            const parsed = JSON.parse(saved);
+            if (parsed.locationName) setCurrentLocationName(parsed.locationName);
+            if (parsed.coords) setCurrentCoords(parsed.coords);
+            return;
+          } catch {
+            /* ignore parse error */
+          }
         }
-        if (details?.coordinates) {
-          setCurrentCoords({
-            latitude: details.coordinates[1],
-            longitude: details.coordinates[0],
+        // 2. Nếu chưa có vị trí ghim: lấy GPS thực tế
+        locationService
+          .getCurrentLocationDetails()
+          .then(details => {
+            if (details) {
+              const label = inferLocationLabel(details);
+              setCurrentLocationName(label);
+              if (details.coordinates) {
+                setCurrentCoords({
+                  latitude: details.coordinates[1],
+                  longitude: details.coordinates[0],
+                });
+              }
+            } else {
+              setCurrentLocationName('Hồ Chí Minh • Quận 1');
+            }
+          })
+          .catch(() => {
+            setCurrentLocationName('Hồ Chí Minh • Quận 1');
           });
-        }
       })
-      .catch(() => {});
+      .catch(() => {
+        setCurrentLocationName('Hồ Chí Minh • Quận 1');
+      });
   }, []);
 
   const activeJobs =
@@ -261,9 +318,12 @@ export default function CustomerHomeScreen() {
           setLocationPickerOpen(false);
           setCurrentCoords(coords);
           if (geo) {
-            setCurrentLocationName(
-              `${geo.city || 'Hồ Chí Minh'} • ${geo.district || geo.ward || 'Vị trí đã ghim'}`,
-            );
+            const label = inferLocationLabel(geo);
+            setCurrentLocationName(label);
+            AsyncStorage.setItem(
+              '@homemate_customer_pinned_location',
+              JSON.stringify({ coords, locationName: label }),
+            ).catch(() => {});
           }
         }}
       />

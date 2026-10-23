@@ -1,6 +1,6 @@
 import { View, Text, ScrollView, TouchableOpacity, Switch, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, Redirect } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   ShieldCheck,
@@ -31,10 +31,16 @@ import { useState, useEffect } from 'react';
 
 export default function HelperProfileScreen() {
   const router = useRouter();
+  const storedUser = useAuthStore(s => s.user);
+
+  // [H2 Fix]: Nếu tài khoản đang ở vai trò khách, lập tức chuyển sang hồ sơ khách
+  if (storedUser?.active_role === 'customer') {
+    return <Redirect href="/(customer)/profile" />;
+  }
+
   const { t, fs } = useTranslation();
   const queryClient = useQueryClient();
   const logout = useAuthStore(s => s.logout);
-  const storedUser = useAuthStore(s => s.user);
   const { data: myProfile } = useMyProfile();
   const user = myProfile ?? storedUser;
   const { data: profile } = useHelperProfile();
@@ -313,7 +319,11 @@ export default function HelperProfileScreen() {
             {[
               { icon: CreditCard, label: t('profile_bank_account'), route: '/bank-account' },
               { icon: FileText, label: t('profile_work_schedule'), route: '/helper-availability' },
-              { icon: FileText, label: t('profile_monthly_contracts'), route: '/monthly-contracts' },
+              {
+                icon: FileText,
+                label: t('profile_monthly_contracts'),
+                route: '/monthly-contracts',
+              },
               { icon: FileText, label: t('profile_career'), route: '/edit-profile' },
               {
                 icon: HelpCircle,

@@ -27,6 +27,7 @@ Lý do SOS (chỉ gửi **mã lý do** cho khách, ghi chú riêng của thợ k
 Ràng buộc hiện tại: SOS chỉ cho **đơn 1 thợ** (đơn nhóm có thành viên khác đã accept → API từ chối, ghi rõ là follow-up). Trạng thái đơn được SOS: `confirmed`, `helper_on_the_way`, `helper_arrived`, `in_progress`.
 
 ### An toàn tiền (đã tự review)
+
 - **Đổi thợ KHÔNG đụng vào tiền**: thao tác swap chỉ `$set helper_id` trên Job + Contract, ghi `job.sos_backup_replacement` (vết hiển thị cho khách) và event. `payment_status`, `contract.total_price`, `contract.helper_receives` **không đổi** — tiền khách giữ đảm bảo đứng yên; khi đơn hoàn thành, tiền công chảy về `job.helper_id` mới với đúng số cũ (luồng `approveCompletion` sẵn có).
 - **Hủy theo chính sách SOS**: hoàn = `total_price − giảm voucher − giảm điểm loyalty` (đúng số khách thực trả; phần giảm do sàn chịu như quy ước dispute hiện hữu), chỉ khi `payment_status = PAID` và không phải tiền mặt (đơn tiền mặt chưa thu tiền → không hoàn). Hoàn qua `PaymentsService.refundCustomer` sẵn có. Nếu hoàn lỗi → vẫn hủy đơn (thợ không thể tiếp tục) + gắn cờ `admin_attention` để đối soát ví thủ công. **Không khôi phục lượt voucher/điểm loyalty** khi hủy SOS — follow-up cho admin (ghi ở §8).
 - Thợ gốc được giải phóng (BUSY → ONLINE nếu không còn đơn active) và **không** bị tăng `late_cancellation_count` / `risk_score` cho đơn SOS này. (Điểm uy tín ở §3 là cơ chế riêng, tính trên tổng số lần không hoàn thành đơn.)
@@ -50,6 +51,7 @@ Mở rộng từ field sẵn có trên `HelperProfile`, không tạo hệ song s
 **4 tiêu chí** (tổng 100): Đánh giá dịch vụ 40đ = `rating/5 × 40` (chưa có review → 40đ trung tính) · Hoàn thành 25đ = `completion_rate/100 × 25` · Phản hồi 15đ = `acceptance_rate/100 × 15` · Độ tin cậy 20đ = `20 − penalty_points` (sàn 0).
 
 **Quy tắc phạt** (ngưỡng + thang 100 do chủ dự án đặt; các con số dưới là **mặc định do người triển khai chọn, chỉnh bằng env**):
+
 - Đếm lần hủy **do thợ khởi xướng** trong **cửa sổ trượt 7 ngày** (`HELPER_SCORE_CANCEL_WINDOW_DAYS`), gồm cả hai nguồn: hủy đơn thường sau khi đã chốt (`confirmed`/`helper_on_the_way`, cùng phạm vi nhánh phạt sẵn có trong `cancelJob`) và **mỗi lần gửi SOS Backup** (dù khách sau đó chọn đổi người hay hủy đơn — vì bản chất thợ đã không hoàn thành đơn). Trước khi chốt đơn (open/receiving_quotes) hủy không tính.
 - **≤ 3 lần/7 ngày: không phạt.** Từ lần thứ 4 trở đi: **−5 điểm/lần vượt** (`HELPER_SCORE_PENALTY_PER_EXCESS`, ngưỡng chỉnh bằng `HELPER_SCORE_CANCEL_THRESHOLD`) trừ vào tiêu chí Độ tin cậy, sàn 0.
 - Lưu vết: `HelperProfile.cancellation_timestamps` (đã cắt ngoài cửa sổ mỗi lần ghi) + snapshot `cancellations_last_7_days`, `penalty_points`, `performance_score`, `score_breakdown`, `score_updated_at`. Mỗi lần hủy **phát sinh điểm trừ** ghi 1 dòng `HelperPenaltyEvent` (helper, nguồn `job_cancel`/`sos_initiation`, job/sos id, số hủy trong cửa sổ, điểm trừ, điểm sau phạt) để admin audit — admin UI xem sổ này là follow-up (§8), dữ liệu đã sẵn trong Mongo (`helperpenaltyevents`).
@@ -60,45 +62,45 @@ Mở rộng từ field sẵn có trên `HelperProfile`, không tạo hệ song s
 
 ## 4. API endpoints (`/api/v1/sos-backup`, đều cần JWT)
 
-| Method | Path | Ai | Mô tả |
-|---|---|---|---|
-| POST | `/sos-backup/jobs/:jobId` | Thợ giữ đơn | Tạo SOS → trạng thái chờ khách. Trả SOS + `cancellation_score` |
-| POST | `/sos-backup/:sosId/customer-decision` | Khách của đơn | `{ decision: 'accept_replacement' \| 'cancel_job' }` |
-| POST | `/sos-backup/:sosId/accept` | Ứng viên được mời | Nhận thay (first-accept-wins; 409 nếu đã có người nhận/hết hạn) |
-| POST | `/sos-backup/:sosId/decline` | Ứng viên | Từ chối — loại khỏi các wave sau |
-| POST | `/sos-backup/:sosId/cancel` | Thợ gốc | Thu hồi SOS (khi chưa có người thay) |
-| GET | `/sos-backup/active` | Thợ | `{ incoming: [popup đang mời], outgoing: [SOS mình đã gửi] }` — bắt kịp khi reconnect |
-| GET | `/sos-backup/customer-pending` | Khách | Các SOS đang chờ mình quyết định — hiện popup khi mở lại app |
-| GET | `/sos-backup/by-job/:jobId` | Các bên liên quan | Trạng thái SOS active của 1 đơn + `my_state` |
+| Method | Path                                   | Ai                | Mô tả                                                                                 |
+| ------ | -------------------------------------- | ----------------- | ------------------------------------------------------------------------------------- |
+| POST   | `/sos-backup/jobs/:jobId`              | Thợ giữ đơn       | Tạo SOS → trạng thái chờ khách. Trả SOS + `cancellation_score`                        |
+| POST   | `/sos-backup/:sosId/customer-decision` | Khách của đơn     | `{ decision: 'accept_replacement' \| 'cancel_job' }`                                  |
+| POST   | `/sos-backup/:sosId/accept`            | Ứng viên được mời | Nhận thay (first-accept-wins; 409 nếu đã có người nhận/hết hạn)                       |
+| POST   | `/sos-backup/:sosId/decline`           | Ứng viên          | Từ chối — loại khỏi các wave sau                                                      |
+| POST   | `/sos-backup/:sosId/cancel`            | Thợ gốc           | Thu hồi SOS (khi chưa có người thay)                                                  |
+| GET    | `/sos-backup/active`                   | Thợ               | `{ incoming: [popup đang mời], outgoing: [SOS mình đã gửi] }` — bắt kịp khi reconnect |
+| GET    | `/sos-backup/customer-pending`         | Khách             | Các SOS đang chờ mình quyết định — hiện popup khi mở lại app                          |
+| GET    | `/sos-backup/by-job/:jobId`            | Các bên liên quan | Trạng thái SOS active của 1 đơn + `my_state`                                          |
 
 ## 5. Socket events (thêm vào `@homemate/constants`)
 
-| Event | Tới ai | Nội dung |
-|---|---|---|
-| `sos:customer_decision_requested` | Khách (user room) | Mở popup quyết định (kèm cờ `reminder: true` ở lần nhắc giữa hạn) |
-| `sos:customer_decided` | Thợ gốc + job room | Khách đã quyết định / SOS bị thu hồi khi đang chờ |
-| `sos:backup_request` | Từng ứng viên wave | Popup "có người cần backup" (kèm `distance_km` riêng từng người) |
-| `sos:backup_resolved` | Ứng viên còn lại | `outcome: taken \| withdrawn \| expired` |
-| `sos:backup_helper_replaced` | Khách + job room | Đã thay thợ (+ emit thêm `job:status_changed` để màn khách refresh) |
-| `sos:backup_expired` | Khách + thợ gốc (+ notification cho admin) | Hết hạn phát sóng |
+| Event                             | Tới ai                                     | Nội dung                                                            |
+| --------------------------------- | ------------------------------------------ | ------------------------------------------------------------------- |
+| `sos:customer_decision_requested` | Khách (user room)                          | Mở popup quyết định (kèm cờ `reminder: true` ở lần nhắc giữa hạn)   |
+| `sos:customer_decided`            | Thợ gốc + job room                         | Khách đã quyết định / SOS bị thu hồi khi đang chờ                   |
+| `sos:backup_request`              | Từng ứng viên wave                         | Popup "có người cần backup" (kèm `distance_km` riêng từng người)    |
+| `sos:backup_resolved`             | Ứng viên còn lại                           | `outcome: taken \| withdrawn \| expired`                            |
+| `sos:backup_helper_replaced`      | Khách + job room                           | Đã thay thợ (+ emit thêm `job:status_changed` để màn khách refresh) |
+| `sos:backup_expired`              | Khách + thợ gốc (+ notification cho admin) | Hết hạn phát sóng                                                   |
 
 Notification types mới: `sos_backup_decision_request`, `sos_backup_decision_reminder`, `sos_backup_job_cancelled`, `sos_backup_request`, `sos_backup_helper_replaced`, `sos_backup_expired`.
 
 ## 6. Cấu hình môi trường (đều có mặc định, không bắt buộc khai báo)
 
-| Env | Mặc định | Ý nghĩa |
-|---|---|---|
-| `SOS_BACKUP_CUSTOMER_DECISION_TTL_SECONDS` | 300 | Hạn khách quyết định (5 phút) |
-| `SOS_BACKUP_DECISION_REMINDER_SECONDS` | 150 | Mốc gửi 1 lần nhắc quyết định |
-| `SOS_BACKUP_ON_DECISION_TIMEOUT` | `cancel_job` | Quá hạn: `cancel_job` (hủy + hoàn tiền) hoặc `accept_replacement` |
-| `SOS_BACKUP_BROADCAST_TTL_SECONDS` | 240 | Tổng thời gian phát sóng tìm người thay (~4 phút) |
-| `SOS_BACKUP_WAVE_SIZE` / `SOS_BACKUP_WAVE_INTERVAL_SECONDS` | 5 / 60 | Số thợ mỗi wave / giãn cách wave |
-| `SOS_BACKUP_MAX_DISTANCE_KM` | 30 | Bán kính ứng viên |
-| `SOS_BACKUP_LOCATION_MAX_AGE_MINUTES` | 120 | Độ tươi tối đa của vị trí GPS ứng viên |
-| `SOS_BACKUP_COST_PENALTY_WEIGHT` | 2 | Trọng số điểm phạt hủy trong chi phí Hungarian |
-| `HELPER_SCORE_CANCEL_WINDOW_DAYS` | 7 | Cửa sổ trượt đếm hủy |
-| `HELPER_SCORE_CANCEL_THRESHOLD` | 3 | Số lần hủy/7 ngày được phép (vượt mới phạt) |
-| `HELPER_SCORE_PENALTY_PER_EXCESS` | 5 | Điểm trừ mỗi lần vượt ngưỡng |
+| Env                                                         | Mặc định     | Ý nghĩa                                                           |
+| ----------------------------------------------------------- | ------------ | ----------------------------------------------------------------- |
+| `SOS_BACKUP_CUSTOMER_DECISION_TTL_SECONDS`                  | 300          | Hạn khách quyết định (5 phút)                                     |
+| `SOS_BACKUP_DECISION_REMINDER_SECONDS`                      | 150          | Mốc gửi 1 lần nhắc quyết định                                     |
+| `SOS_BACKUP_ON_DECISION_TIMEOUT`                            | `cancel_job` | Quá hạn: `cancel_job` (hủy + hoàn tiền) hoặc `accept_replacement` |
+| `SOS_BACKUP_BROADCAST_TTL_SECONDS`                          | 240          | Tổng thời gian phát sóng tìm người thay (~4 phút)                 |
+| `SOS_BACKUP_WAVE_SIZE` / `SOS_BACKUP_WAVE_INTERVAL_SECONDS` | 5 / 60       | Số thợ mỗi wave / giãn cách wave                                  |
+| `SOS_BACKUP_MAX_DISTANCE_KM`                                | 30           | Bán kính ứng viên                                                 |
+| `SOS_BACKUP_LOCATION_MAX_AGE_MINUTES`                       | 120          | Độ tươi tối đa của vị trí GPS ứng viên                            |
+| `SOS_BACKUP_COST_PENALTY_WEIGHT`                            | 2            | Trọng số điểm phạt hủy trong chi phí Hungarian                    |
+| `HELPER_SCORE_CANCEL_WINDOW_DAYS`                           | 7            | Cửa sổ trượt đếm hủy                                              |
+| `HELPER_SCORE_CANCEL_THRESHOLD`                             | 3            | Số lần hủy/7 ngày được phép (vượt mới phạt)                       |
+| `HELPER_SCORE_PENALTY_PER_EXCESS`                           | 5            | Điểm trừ mỗi lần vượt ngưỡng                                      |
 
 Vòng quét nền (sweep) chạy mỗi 15s trong `SosBackupService` (nhắc quyết định → quá hạn quyết định → leo thang wave → hết hạn phát sóng) và chạy ngay 1 vòng khi server khởi động để khôi phục trạng thái sau restart.
 
@@ -121,6 +123,7 @@ Vòng quét nền (sweep) chạy mỗi 15s trong `SosBackupService` (nhắc quy�
 ## 9. Đã verify / chưa runtime-test
 
 **Đã verify trong sandbox:**
+
 - `apps/api`: `tsc --noEmit` sạch.
 - `apps/mobile`: `tsc --noEmit` chỉ còn **1 lỗi có từ trước** (`app/_layout.tsx` TS2882 `../global.css`, tồn tại trước đợt này — không phát sinh lỗi mới).
 - Jest: `hungarian.spec.ts` 10/10 pass (gồm đối chiếu brute-force 300 ma trận), `helper-score.spec.ts` 12/12 pass (3 lần hủy = 0 phạt, lần 4 = −5đ, sàn 0, cửa sổ trượt).

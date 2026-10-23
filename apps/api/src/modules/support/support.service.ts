@@ -72,7 +72,12 @@ export class SupportService {
     return { conversation: conv, messages: messages.reverse() };
   }
 
-  async getMessages(conversationId: string, requester: { sub: string; isAdmin?: boolean }, page = 1, limit = 30) {
+  async getMessages(
+    conversationId: string,
+    requester: { sub: string; isAdmin?: boolean },
+    page = 1,
+    limit = 30,
+  ) {
     const conv = await this.findConversationOrThrow(conversationId);
     if (!requester.isAdmin && conv.user_id.toString() !== requester.sub) {
       throw new ForbiddenException('Bạn không có quyền xem hội thoại này');

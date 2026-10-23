@@ -44,18 +44,13 @@ export function TeamCard({ job, currentUserId }: { job: any; currentUserId?: str
       Alert.alert('Tỉ lệ chưa hợp lệ', 'Nhập % tiền công cho thành viên (1–90%).');
       return;
     }
-    Alert.alert(
-      'Mời vào nhóm',
-      `Mời ${name} tham gia đơn này với tỉ lệ chia tiền công ${pct}%?`,
-      [
-        { text: 'Hủy', style: 'cancel' },
-        {
-          text: 'Gửi lời mời',
-          onPress: () =>
-            invite.mutate({ jobId: job._id, helper_id: helperId, split_percent: pct }),
-        },
-      ],
-    );
+    Alert.alert('Mời vào nhóm', `Mời ${name} tham gia đơn này với tỉ lệ chia tiền công ${pct}%?`, [
+      { text: 'Hủy', style: 'cancel' },
+      {
+        text: 'Gửi lời mời',
+        onPress: () => invite.mutate({ jobId: job._id, helper_id: helperId, split_percent: pct }),
+      },
+    ]);
   };
 
   return (
@@ -65,7 +60,12 @@ export function TeamCard({ job, currentUserId }: { job: any; currentUserId?: str
         <Text style={{ flex: 1, fontWeight: '800', fontSize: 15, color: COLORS.gray[900] }}>
           Đội thực hiện ({activeCount}/{helpersNeeded} thợ)
         </Text>
-        <Badge label="Đơn nhóm" color={COLORS.secondaryLight} textColor={COLORS.secondary} size="sm" />
+        <Badge
+          label="Đơn nhóm"
+          color={COLORS.secondaryLight}
+          textColor={COLORS.secondary}
+          size="sm"
+        />
       </View>
 
       {display.length === 0 && (
@@ -98,12 +98,14 @@ export function TeamCard({ job, currentUserId }: { job: any; currentUserId?: str
       })}
 
       <Text style={{ fontSize: 12, color: COLORS.gray[500], lineHeight: 17 }}>
-        Tiền công (sau phí sàn) được chia tự động theo tỉ lệ trên khi đơn hoàn thành và khách
-        nghiệm thu.
+        Tiền công (sau phí sàn) được chia tự động theo tỉ lệ trên khi đơn hoàn thành và khách nghiệm
+        thu.
       </Text>
 
       {canBuild && slotsLeft > 0 && (
-        <View style={{ gap: 10, borderTopWidth: 1, borderTopColor: COLORS.gray[100], paddingTop: 12 }}>
+        <View
+          style={{ gap: 10, borderTopWidth: 1, borderTopColor: COLORS.gray[100], paddingTop: 12 }}
+        >
           <Text style={{ fontWeight: '800', fontSize: 13.5, color: COLORS.gray[900] }}>
             Mời thêm thợ vào nhóm (còn {slotsLeft} chỗ)
           </Text>
@@ -113,10 +115,7 @@ export function TeamCard({ job, currentUserId }: { job: any; currentUserId?: str
             </Text>
           )}
           {(candidates ?? []).map(c => (
-            <View
-              key={c.helper_id}
-              style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}
-            >
+            <View key={c.helper_id} style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
               <Avatar name={c.full_name} size={36} />
               <View style={{ flex: 1 }}>
                 <Text style={{ fontWeight: '700', fontSize: 13, color: COLORS.gray[900] }}>
@@ -144,7 +143,9 @@ export function TeamCard({ job, currentUserId }: { job: any; currentUserId?: str
                   keyboardType="number-pad"
                   style={{ width: 34, textAlign: 'center', fontWeight: '700', fontSize: 13.5 }}
                 />
-                <Text style={{ fontSize: 12.5, color: COLORS.gray[500], fontWeight: '700' }}>%</Text>
+                <Text style={{ fontSize: 12.5, color: COLORS.gray[500], fontWeight: '700' }}>
+                  %
+                </Text>
               </View>
               <TouchableOpacity
                 onPress={() => handleInvite(c.helper_id, c.full_name)}

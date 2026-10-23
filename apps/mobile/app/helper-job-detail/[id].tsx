@@ -9,6 +9,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Image,
+  ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -36,6 +37,7 @@ import { LiveTrackingMap, RouteMetrics } from '@/components/common/live-tracking
 import { TeamCard } from '@/components/common/team-card';
 import { OfflineBanner } from '@/components/common/offline-banner';
 import { SosBackupHelperCard } from '@/components/common/sos-backup-helper-card';
+import { formatDisplayAddress } from '@/utils/address-formatter';
 
 dayjs.extend(relativeTime);
 dayjs.locale('vi');
@@ -464,6 +466,22 @@ export default function HelperJobDetailScreen() {
       </View>
 
       <ScrollView contentContainerStyle={{ padding: 16, gap: 14, paddingBottom: 120 }}>
+        {(job as any).sos_backup_searching && (
+          <Card
+            style={{ backgroundColor: '#FEF2F2', borderColor: '#FECACA', borderWidth: 1.5, gap: 6 }}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <ActivityIndicator size="small" color="#DC2626" />
+              <Text style={{ fontWeight: '800', fontSize: 14.5, color: '#991B1B' }}>
+                Khách đã đồng ý đổi thợ — Đang tìm thợ cứu hộ thay thế...
+              </Text>
+            </View>
+            <Text style={{ fontSize: 13, color: '#7F1D1D', lineHeight: 19 }}>
+              Bạn đã báo sự cố và khách hàng đã chấp nhận tìm thợ thay thế. Hệ thống đang quét thợ
+              cứu hộ gần nhất để tiếp nhận đơn này.
+            </Text>
+          </Card>
+        )}
         {/* ── Grab-Style Live Route & Map Navigation ─────────────────────── */}
         {job?.address?.location?.coordinates && (
           <LiveTrackingMap
@@ -522,6 +540,27 @@ export default function HelperJobDetailScreen() {
           >
             {job.description}
           </Text>
+          {job.is_warranty && (
+            <View
+              style={{
+                backgroundColor: '#FFFBEB',
+                borderColor: '#FDE68A',
+                borderWidth: 1,
+                borderRadius: 8,
+                padding: 12,
+                gap: 4,
+              }}
+            >
+              <Text style={{ fontWeight: '700', fontSize: 14, color: '#92400E' }}>
+                🛡️ Yêu cầu bảo hành từ khách
+              </Text>
+              <Text style={{ fontSize: 13, color: '#78350F', lineHeight: 18 }}>
+                Ngày hẹn:{' '}
+                {job.preferred_date ? dayjs(job.preferred_date).format('DD/MM/YYYY') : 'Sớm nhất'}
+                {job.preferred_time_start ? ` lúc ${job.preferred_time_start}` : ''}
+              </Text>
+            </View>
+          )}
           <Separator my={4} />
           <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 8 }}>
             <Text style={{ fontSize: 16 }}>📍</Text>
@@ -534,8 +573,7 @@ export default function HelperJobDetailScreen() {
                   fontWeight: '600',
                 }}
               >
-                {job.address?.full_address}
-                {job.address?.district ? `, ${job.address.district}` : ''}
+                {formatDisplayAddress(job.address)}
               </Text>
               {routeMetrics && (
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
@@ -701,13 +739,20 @@ export default function HelperJobDetailScreen() {
 
         {/* ── Hồ sơ tranh chấp (Roadmap Phase 1) ─────────────────────── */}
         {(job.status === 'disputed' || (job as any).dispute_resolution) && (
-          <Card style={{ gap: 10, backgroundColor: '#FEF2F2', borderColor: '#FECACA', borderWidth: 1.5 }}>
+          <Card
+            style={{
+              gap: 10,
+              backgroundColor: '#FEF2F2',
+              borderColor: '#FECACA',
+              borderWidth: 1.5,
+            }}
+          >
             <Text style={{ fontWeight: '800', fontSize: 15, color: '#991B1B' }}>
               ⚖️ Đơn đang có tranh chấp
             </Text>
             <Text style={{ fontSize: 13, color: COLORS.gray[700], lineHeight: 19 }}>
-              Xem toàn bộ diễn biến hồ sơ, bổ sung bằng chứng cho Admin và kháng cáo nếu phán
-              quyết chưa thỏa đáng.
+              Xem toàn bộ diễn biến hồ sơ, bổ sung bằng chứng cho Admin và kháng cáo nếu phán quyết
+              chưa thỏa đáng.
             </Text>
             <Button
               title="Xem hồ sơ tranh chấp"
@@ -807,8 +852,8 @@ export default function HelperJobDetailScreen() {
                       <PriceText amount={fixedHelperReceives} size={15} color={COLORS.success} />
                     </View>
                     <Text style={{ fontSize: 13, color: COLORS.gray[600], lineHeight: 19 }}>
-                      Đơn giá cam kết không cần gửi báo giá — bấm nhận việc là chốt ngay với mức
-                      giá trên.
+                      Đơn giá cam kết không cần gửi báo giá — bấm nhận việc là chốt ngay với mức giá
+                      trên.
                     </Text>
                   </>
                 )}

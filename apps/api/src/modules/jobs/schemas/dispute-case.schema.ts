@@ -17,7 +17,15 @@ export type DisputeTimelineKind =
 const TimelineEntrySchema = {
   kind: {
     type: String,
-    enum: ['opened', 'evidence', 'note', 'admin_message', 'resolution', 'appeal', 'appeal_resolved'],
+    enum: [
+      'opened',
+      'evidence',
+      'note',
+      'admin_message',
+      'resolution',
+      'appeal',
+      'appeal_resolved',
+    ],
     required: true,
   },
   actor_id: { type: Types.ObjectId, ref: 'User', required: true },

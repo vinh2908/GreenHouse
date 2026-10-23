@@ -30,11 +30,7 @@ export function ImageViewerModal({
         }}
       >
         {uri ? (
-          <Image
-            source={{ uri }}
-            style={{ width: '100%', height: '82%' }}
-            resizeMode="contain"
-          />
+          <Image source={{ uri }} style={{ width: '100%', height: '82%' }} resizeMode="contain" />
         ) : null}
         <TouchableOpacity
           onPress={onClose}

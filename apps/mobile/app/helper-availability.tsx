@@ -1,12 +1,5 @@
 import { useEffect, useState } from 'react';
-import {
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-  TextInput,
-  Switch,
-} from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, TextInput, Switch } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { ArrowLeft, Trash2, Plus } from 'lucide-react-native';
@@ -130,8 +123,8 @@ export default function HelperAvailabilityScreen() {
               Bật lịch làm việc
             </Text>
             <Text style={{ fontSize: 13, color: COLORS.gray[500], marginTop: 2, lineHeight: 19 }}>
-              Khi bật, bạn chỉ thấy & được thông báo các đơn rơi vào ngày/giờ làm việc của mình.
-              Khi tắt, bạn nhận mọi đơn như trước.
+              Khi bật, bạn chỉ thấy & được thông báo các đơn rơi vào ngày/giờ làm việc của mình. Khi
+              tắt, bạn nhận mọi đơn như trước.
             </Text>
           </View>
           <Switch
@@ -224,10 +217,7 @@ export default function HelperAvailabilityScreen() {
             </Text>
           ) : (
             blockedDates.map(d => (
-              <View
-                key={d}
-                style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}
-              >
+              <View key={d} style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                 <Text style={{ flex: 1, fontSize: 14, fontWeight: '700', color: COLORS.gray[800] }}>
                   🚫 {d}
                 </Text>

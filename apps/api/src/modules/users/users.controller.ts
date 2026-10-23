@@ -73,10 +73,7 @@ export class UsersController {
   @Delete('me/voip-token')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Gỡ VoIP token của thiết bị (khi đăng xuất)' })
-  async removeVoipToken(
-    @CurrentUser() user: { sub: string },
-    @Body() dto: RemoveVoipTokenDto,
-  ) {
+  async removeVoipToken(@CurrentUser() user: { sub: string }, @Body() dto: RemoveVoipTokenDto) {
     await this.usersService.removeVoipToken(user.sub, dto.token);
     return { success: true };
   }

@@ -263,11 +263,30 @@ export function useAcceptFixedPrice() {
 export function useCreateWarrantyJob() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (sourceJobId: string) => {
-      const { data } = await apiClient.post(`/jobs/${sourceJobId}/warranty`);
+    mutationFn: async (
+      args:
+        | string
+        | {
+            sourceJobId: string;
+            issue_description?: string;
+            preferred_date?: string;
+            preferred_time_start?: string;
+          },
+    ) => {
+      const sourceJobId = typeof args === 'string' ? args : args.sourceJobId;
+      const body =
+        typeof args === 'string'
+          ? {}
+          : {
+              issue_description: args.issue_description,
+              preferred_date: args.preferred_date,
+              preferred_time_start: args.preferred_time_start,
+            };
+      const { data } = await apiClient.post(`/jobs/${sourceJobId}/warranty`, body);
       return data.data as { _id: string };
     },
-    onSuccess: (newJob, sourceJobId) => {
+    onSuccess: (newJob, args) => {
+      const sourceJobId = typeof args === 'string' ? args : args.sourceJobId;
       qc.invalidateQueries({ queryKey: ['job', sourceJobId] });
       qc.invalidateQueries({ queryKey: ['jobs', 'my'] });
       qc.invalidateQueries({ queryKey: ['job', newJob?._id] });
@@ -1666,6 +1685,16 @@ export function useDetachVoucherFromJob() {
     onSuccess: (_, jobId) => {
       qc.invalidateQueries({ queryKey: ['job', jobId] });
       Toast.show({ type: 'success', text1: 'Đã gỡ mã giảm giá' });
+    },
+  });
+}
+
+export function useMyVouchers() {
+  return useQuery({
+    queryKey: ['vouchers', 'my'],
+    queryFn: async () => {
+      const res = await apiClient.get('/vouchers/my');
+      return (res.data?.data ?? res.data ?? []) as any[];
     },
   });
 }

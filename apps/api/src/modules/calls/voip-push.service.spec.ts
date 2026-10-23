@@ -30,7 +30,10 @@ function fakeConfig(env: Record<string, string>) {
   return { get: (key: string) => env[key] };
 }
 
-function makeService(env: Record<string, string>, tokens: { token: string; platform: string }[] = []) {
+function makeService(
+  env: Record<string, string>,
+  tokens: { token: string; platform: string }[] = [],
+) {
   const userModel = fakeUserModel(tokens);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const service = new VoipPushService(userModel as any, fakeConfig(env) as any);

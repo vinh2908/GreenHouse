@@ -87,6 +87,7 @@ export default function SosScreen() {
     'Sự cố khẩn cấp cần thợ có mặt xử lý ngay lập tức!',
   );
   const [isLocating, setIsLocating] = useState(false);
+  const [isEditingAddress, setIsEditingAddress] = useState(false);
 
   // Tự động định vị GPS bằng OpenStreetMap khi mở màn hình SOS
   useEffect(() => {
@@ -123,6 +124,19 @@ export default function SosScreen() {
   };
 
   const handleSendSos = async () => {
+    if (
+      !address.full_address.trim() ||
+      (address.coordinates[0] === 0 && address.coordinates[1] === 0)
+    ) {
+      Toast.show({
+        type: 'error',
+        text1: 'Chưa có địa chỉ cứu hộ',
+        text2:
+          'Vui lòng bấm định vị GPS hoặc nhập địa chỉ cấp cứu bên dưới trước khi phát tín hiệu SOS.',
+      });
+      return;
+    }
+
     try {
       const res = await createSos.mutateAsync({
         category: selectedCategory,
@@ -328,50 +342,122 @@ export default function SosScreen() {
               <Text style={{ fontSize: 14, fontWeight: '800', color: COLORS.gray[900] }}>
                 2. Vị trí cứu hộ (OpenStreetMap)
               </Text>
-              <TouchableOpacity
-                onPress={fetchLiveLocation}
-                disabled={isLocating}
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: 4,
-                  backgroundColor: '#ECFDF5',
-                  paddingHorizontal: 8,
-                  paddingVertical: 4,
-                  borderRadius: 6,
-                }}
-              >
-                {isLocating ? (
-                  <ActivityIndicator size="small" color={COLORS.success} />
-                ) : (
-                  <Navigation size={12} color={COLORS.success} />
-                )}
-                <Text style={{ fontSize: 11, color: COLORS.success, fontWeight: '700' }}>
-                  {isLocating ? 'Đang dò GPS...' : 'Định vị lại'}
-                </Text>
-              </TouchableOpacity>
-            </View>
-
-            <View
-              style={{
-                flexDirection: 'row',
-                alignItems: 'flex-start',
-                gap: 8,
-                backgroundColor: COLORS.gray[50],
-                padding: 12,
-                borderRadius: 12,
-              }}
-            >
-              <MapPin size={18} color={COLORS.primary} style={{ marginTop: 2 }} />
-              <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 14, fontWeight: '700', color: COLORS.gray[900] }}>
-                  {address.full_address || 'Đang xác định vị trí hiện tại…'}
-                </Text>
-                <Text style={{ fontSize: 12, color: COLORS.gray[500], marginTop: 2 }}>
-                  {[address.ward, address.district, address.city].filter(Boolean).join(', ')}
-                </Text>
+              <View style={{ flexDirection: 'row', gap: 6 }}>
+                <TouchableOpacity
+                  onPress={() => setIsEditingAddress(!isEditingAddress)}
+                  style={{
+                    backgroundColor: COLORS.gray[100],
+                    paddingHorizontal: 8,
+                    paddingVertical: 4,
+                    borderRadius: 6,
+                  }}
+                >
+                  <Text style={{ fontSize: 11, color: COLORS.gray[700], fontWeight: '700' }}>
+                    {isEditingAddress ? 'Thu gọn' : 'Nhập tay'}
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={fetchLiveLocation}
+                  disabled={isLocating}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 4,
+                    backgroundColor: '#ECFDF5',
+                    paddingHorizontal: 8,
+                    paddingVertical: 4,
+                    borderRadius: 6,
+                  }}
+                >
+                  {isLocating ? (
+                    <ActivityIndicator size="small" color={COLORS.success} />
+                  ) : (
+                    <Navigation size={12} color={COLORS.success} />
+                  )}
+                  <Text style={{ fontSize: 11, color: COLORS.success, fontWeight: '700' }}>
+                    {isLocating ? 'Đang dò GPS...' : 'Định vị lại'}
+                  </Text>
+                </TouchableOpacity>
               </View>
             </View>
+
+            {isEditingAddress ? (
+              <View style={{ gap: 8, marginTop: 4 }}>
+                <TextInput
+                  style={{
+                    borderWidth: 1.5,
+                    borderColor: COLORS.primary,
+                    borderRadius: 10,
+                    padding: 10,
+                    fontSize: 14,
+                    color: COLORS.gray[900],
+                    backgroundColor: '#fff',
+                  }}
+                  placeholder="Gõ số nhà, tên đường, phường, quận..."
+                  value={address.full_address}
+                  onChangeText={v => setAddress(a => ({ ...a, full_address: v }))}
+                  placeholderTextColor={COLORS.gray[400]}
+                />
+                <TouchableOpacity
+                  onPress={async () => {
+                    if (address.full_address.trim()) {
+                      const places = await locationService.searchPlaces(
+                        address.full_address.trim(),
+                      );
+                      if (places && places.length > 0) {
+                        const p = places[0];
+                        setAddress({
+                          full_address: p.display_name,
+                          ward: p.address?.suburb || '',
+                          district: p.address?.city_district || p.address?.district || '',
+                          city: p.address?.city || p.address?.state || '',
+                          coordinates: [parseFloat(p.lon), parseFloat(p.lat)],
+                        });
+                        setIsEditingAddress(false);
+                        Toast.show({ type: 'success', text1: 'Đã xác định tọa độ từ địa chỉ' });
+                      } else {
+                        Toast.show({
+                          type: 'error',
+                          text1:
+                            'Không tìm thấy tọa độ cho địa chỉ này, vui lòng nhập chi tiết hơn',
+                        });
+                      }
+                    }
+                  }}
+                  style={{
+                    backgroundColor: COLORS.primary,
+                    paddingVertical: 8,
+                    borderRadius: 8,
+                    alignItems: 'center',
+                  }}
+                >
+                  <Text style={{ color: '#fff', fontWeight: '700', fontSize: 13 }}>
+                    Xác nhận địa chỉ này
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <View
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'flex-start',
+                  gap: 8,
+                  backgroundColor: COLORS.gray[50],
+                  padding: 12,
+                  borderRadius: 12,
+                }}
+              >
+                <MapPin size={18} color={COLORS.primary} style={{ marginTop: 2 }} />
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 14, fontWeight: '700', color: COLORS.gray[900] }}>
+                    {address.full_address || 'Chưa có vị trí — bấm "Định vị lại" hoặc "Nhập tay"'}
+                  </Text>
+                  <Text style={{ fontSize: 12, color: COLORS.gray[500], marginTop: 2 }}>
+                    {[address.ward, address.district, address.city].filter(Boolean).join(', ')}
+                  </Text>
+                </View>
+              </View>
+            )}
           </Card>
 
           {/* ── 3. CHI PHÍ SOS & CAM KẾT THỜI GIAN ──────────────────────── */}

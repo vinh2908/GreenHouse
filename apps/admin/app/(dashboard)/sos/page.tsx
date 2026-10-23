@@ -133,9 +133,7 @@ function FlaggedSosTab() {
                       <p className="text-xs text-muted-foreground">
                         #{jobId.slice(-6)}
                         {r.service_name ? ` • ${r.service_name}` : ''}
-                        {r.refund_amount > 0
-                          ? ` • Đã hoàn ${formatVND(r.refund_amount)}`
-                          : ''}
+                        {r.refund_amount > 0 ? ` • Đã hoàn ${formatVND(r.refund_amount)}` : ''}
                       </p>
                     </TableCell>
                     <TableCell>
@@ -143,16 +141,13 @@ function FlaggedSosTab() {
                     </TableCell>
                     <TableCell>
                       <PersonCell person={r.original_helper_id} />
-                      {r.replacement_helper_id &&
-                        typeof r.replacement_helper_id === 'object' && (
-                          <p className="text-xs text-muted-foreground mt-1">
-                            Thay: {r.replacement_helper_id.full_name}
-                          </p>
-                        )}
+                      {r.replacement_helper_id && typeof r.replacement_helper_id === 'object' && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Thay: {r.replacement_helper_id.full_name}
+                        </p>
+                      )}
                     </TableCell>
-                    <TableCell className="text-sm">
-                      {REASON_VI[r.reason] ?? r.reason}
-                    </TableCell>
+                    <TableCell className="text-sm">{REASON_VI[r.reason] ?? r.reason}</TableCell>
                     <TableCell>
                       <Badge variant={SOS_STATUS_BADGE[r.status] ?? 'secondary'}>
                         {SOS_STATUS_VI[r.status] ?? r.status}
@@ -172,21 +167,13 @@ function FlaggedSosTab() {
 
 // ─── Dialog miễn phạt ─────────────────────────────────────────────────────────
 
-function WaiveDialog({
-  event,
-  onClose,
-}: {
-  event: AdminPenaltyEvent;
-  onClose: () => void;
-}) {
+function WaiveDialog({ event, onClose }: { event: AdminPenaltyEvent; onClose: () => void }) {
   const [reason, setReason] = useState('');
   const [notice, setNotice] = useState<string | null>(null);
   const waive = useWaivePenaltyEvent();
 
   const helperName =
-    event.helper_id && typeof event.helper_id === 'object'
-      ? event.helper_id.full_name
-      : 'thợ';
+    event.helper_id && typeof event.helper_id === 'object' ? event.helper_id.full_name : 'thợ';
 
   const handleConfirm = () => {
     if (!reason.trim()) return;
@@ -198,7 +185,9 @@ function WaiveDialog({
             // Sự kiện đã được miễn trước đó — server không gỡ thêm mốc nào.
             setNotice(
               `Sự kiện này đã được miễn trước đó${
-                result.helper_score ? ` — điểm hiệu suất hiện tại: ${result.helper_score.total}` : ''
+                result.helper_score
+                  ? ` — điểm hiệu suất hiện tại: ${result.helper_score.total}`
+                  : ''
               }. Danh sách đã được làm mới.`,
             );
           } else {
@@ -258,11 +247,7 @@ function WaiveDialog({
                 <Button variant="ghost" onClick={onClose}>
                   Hủy
                 </Button>
-                <Button
-                  loading={waive.isPending}
-                  disabled={!reason.trim()}
-                  onClick={handleConfirm}
-                >
+                <Button loading={waive.isPending} disabled={!reason.trim()} onClick={handleConfirm}>
                   Xác nhận miễn phạt
                 </Button>
               </div>

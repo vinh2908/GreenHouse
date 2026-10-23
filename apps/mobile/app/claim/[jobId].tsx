@@ -1,12 +1,5 @@
 import { useState } from 'react';
-import {
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-  TextInput,
-  Image,
-} from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, TextInput, Image } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { ArrowLeft, ImagePlus, ShieldCheck } from 'lucide-react-native';
@@ -21,7 +14,10 @@ dayjs.locale('vi');
 
 const fmt = (n?: number) => new Intl.NumberFormat('vi-VN').format(n ?? 0);
 
-const STATUS_META: Record<InsuranceClaimStatus, { label: string; bg: string; color: string; desc: string }> = {
+const STATUS_META: Record<
+  InsuranceClaimStatus,
+  { label: string; bg: string; color: string; desc: string }
+> = {
   submitted: {
     label: 'Đã gửi — chờ xem xét',
     bg: COLORS.warningLight,
@@ -182,7 +178,9 @@ export default function ClaimScreen() {
               {/* ── Trạng thái yêu cầu ── */}
               <Card style={{ gap: 8 }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                  <Text style={{ flex: 1, fontWeight: '800', fontSize: 15, color: COLORS.gray[900] }}>
+                  <Text
+                    style={{ flex: 1, fontWeight: '800', fontSize: 15, color: COLORS.gray[900] }}
+                  >
                     Trạng thái yêu cầu
                   </Text>
                   {meta && <Badge label={meta.label} color={meta.bg} textColor={meta.color} />}
@@ -281,12 +279,26 @@ export default function ClaimScreen() {
           ) : submitted ? (
             <Card style={{ gap: 10, alignItems: 'center', paddingVertical: 24 }}>
               <Text style={{ fontSize: 40 }}>✅</Text>
-              <Text style={{ fontSize: 16, fontWeight: '800', color: COLORS.gray[900], textAlign: 'center' }}>
+              <Text
+                style={{
+                  fontSize: 16,
+                  fontWeight: '800',
+                  color: COLORS.gray[900],
+                  textAlign: 'center',
+                }}
+              >
                 Đã gửi yêu cầu bồi thường
               </Text>
-              <Text style={{ fontSize: 13, color: COLORS.gray[600], textAlign: 'center', lineHeight: 19 }}>
-                Yêu cầu của bạn đang chờ Admin xem xét. Kết quả sẽ được thông báo trong app —
-                nếu được duyệt, tiền bồi thường sẽ cộng thẳng vào ví của bạn.
+              <Text
+                style={{
+                  fontSize: 13,
+                  color: COLORS.gray[600],
+                  textAlign: 'center',
+                  lineHeight: 19,
+                }}
+              >
+                Yêu cầu của bạn đang chờ Admin xem xét. Kết quả sẽ được thông báo trong app — nếu
+                được duyệt, tiền bồi thường sẽ cộng thẳng vào ví của bạn.
               </Text>
               <Button title="Quay lại chi tiết đơn" onPress={handleBack} />
             </Card>
@@ -294,9 +306,9 @@ export default function ClaimScreen() {
             <>
               <Card style={{ gap: 6 }}>
                 <Text style={{ fontSize: 13.5, color: COLORS.gray[700], lineHeight: 20 }}>
-                  Nếu dịch vụ đã hoàn thành gây thiệt hại (hư hỏng đồ đạc, làm lại không đạt…),
-                  hãy gửi yêu cầu bồi thường kèm ảnh bằng chứng. Yêu cầu phải gửi trong thời hạn
-                  bảo hiểm của đơn (mặc định 30 ngày sau khi hoàn thành).
+                  Nếu dịch vụ đã hoàn thành gây thiệt hại (hư hỏng đồ đạc, làm lại không đạt…), hãy
+                  gửi yêu cầu bồi thường kèm ảnh bằng chứng. Yêu cầu phải gửi trong thời hạn bảo
+                  hiểm của đơn (mặc định 30 ngày sau khi hoàn thành).
                 </Text>
               </Card>
 
@@ -327,7 +339,10 @@ export default function ClaimScreen() {
                 </Text>
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
                   {photos.map((uri, i) => (
-                    <TouchableOpacity key={i} onPress={() => setPhotos(prev => prev.filter((_, idx) => idx !== i))}>
+                    <TouchableOpacity
+                      key={i}
+                      onPress={() => setPhotos(prev => prev.filter((_, idx) => idx !== i))}
+                    >
                       <Image source={{ uri }} style={{ width: 84, height: 84, borderRadius: 10 }} />
                     </TouchableOpacity>
                   ))}

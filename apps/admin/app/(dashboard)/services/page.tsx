@@ -86,8 +86,8 @@ export default function ServicesPage() {
       slug: s.slug,
       description: s.description ?? '',
       category_id: s.category_id?._id ?? '',
-      price_range_min: String(s.price_range_min ?? 0),
-      price_range_max: String(s.price_range_max ?? 0),
+      price_range_min: String(s.price_range_min || s.base_price_min || 0),
+      price_range_max: String(s.price_range_max || s.base_price_max || 0),
       platform_fee_percent: String(s.platform_fee_percent ?? 15),
       pricing_model: s.pricing_model === 'fixed' ? 'fixed' : 'quote',
       fixed_price: String(s.fixed_price ?? 0),
@@ -104,8 +104,10 @@ export default function ServicesPage() {
         // Existing services may point to a missing category; only send one when chosen.
         ...(category_id ? { category_id } : {}),
         ...(description.trim() ? { description: description.trim() } : {}),
-        price_range_min: Number(rest.price_range_min),
-        price_range_max: Number(rest.price_range_max),
+        price_range_min: Number(rest.price_range_min) || 0,
+        price_range_max: Number(rest.price_range_max) || 0,
+        base_price_min: Number(rest.price_range_min) || 0,
+        base_price_max: Number(rest.price_range_max) || 0,
         platform_fee_percent: Number(rest.platform_fee_percent),
         pricing_model: rest.pricing_model,
         fixed_price: Number(rest.fixed_price) || 0,
@@ -298,7 +300,8 @@ export default function ServicesPage() {
                       </span>
                     ) : (
                       <>
-                        {formatVND(s.price_range_min ?? 0)} – {formatVND(s.price_range_max ?? 0)}
+                        {formatVND(s.price_range_min || s.base_price_min || 0)} –{' '}
+                        {formatVND(s.price_range_max || s.base_price_max || 0)}
                       </>
                     )}
                   </TableCell>

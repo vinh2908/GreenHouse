@@ -8,7 +8,7 @@ export class VoipTokenDto {
   @IsString()
   @MinLength(10)
   @MaxLength(4096)
-  token: string
+  token: string;
 
   @ApiProperty({ enum: ['ios', 'android'], description: 'Nền tảng của thiết bị' })
   @IsIn(['ios', 'android'])
@@ -20,5 +20,5 @@ export class RemoveVoipTokenDto {
   @IsString()
   @MinLength(10)
   @MaxLength(4096)
-  token: string
+  token: string;
 }

@@ -15,8 +15,7 @@ export function IncomingCallModal() {
   if (!incoming) return null;
 
   // Đã ở màn hình cuộc gọi cho đúng session này thì không hiện modal nữa.
-  const onCallScreen =
-    pathname?.startsWith('/call/') && pathname.includes(incoming.job_id);
+  const onCallScreen = pathname?.startsWith('/call/') && pathname.includes(incoming.job_id);
   if (onCallScreen) return null;
 
   const shortJob = incoming.job_id ? `#${incoming.job_id.slice(-6)}` : '';
@@ -101,10 +100,24 @@ export function IncomingCallModal() {
             </TouchableOpacity>
           </View>
           <View style={{ flexDirection: 'row', gap: 16, marginTop: 10 }}>
-            <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 12, width: 64, textAlign: 'center' }}>
+            <Text
+              style={{
+                color: 'rgba(255,255,255,0.7)',
+                fontSize: 12,
+                width: 64,
+                textAlign: 'center',
+              }}
+            >
               Từ chối
             </Text>
-            <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 12, width: 64, textAlign: 'center' }}>
+            <Text
+              style={{
+                color: 'rgba(255,255,255,0.7)',
+                fontSize: 12,
+                width: 64,
+                textAlign: 'center',
+              }}
+            >
               Trả lời
             </Text>
           </View>
