@@ -55,7 +55,7 @@ export default function CustomerProfileScreen() {
   const logout = useAuthStore(s => s.logout);
   const user = useAuthStore(s => s.user);
   const { data: profile } = useMyProfile();
-  const { data: loyalty } = useLoyaltyAccount();
+  const { data: loyalty, isLoading: isLoyaltyLoading } = useLoyaltyAccount();
   const switchRole = useSwitchRole();
 
   const handleLogout = () => {
@@ -212,11 +212,23 @@ export default function CustomerProfileScreen() {
                 </Text>
                 <ChevronRight size={16} color="#92400E" />
               </View>
-              <Text style={{ fontSize: fs(22), fontWeight: '800', color: COLORS.gray[900] }}>
-                {t('profile_loyalty_points', {
-                  points: new Intl.NumberFormat('vi-VN').format(loyalty?.points_balance ?? 0),
-                })}
-              </Text>
+              {isLoyaltyLoading || !loyalty ? (
+                <View
+                  style={{
+                    width: 140,
+                    height: 28,
+                    borderRadius: 8,
+                    backgroundColor: '#FDE68A',
+                    marginVertical: 4,
+                  }}
+                />
+              ) : (
+                <Text style={{ fontSize: fs(22), fontWeight: '800', color: COLORS.gray[900] }}>
+                  {t('profile_loyalty_points', {
+                    points: new Intl.NumberFormat('vi-VN').format(loyalty.points_balance ?? 0),
+                  })}
+                </Text>
+              )}
               <Text style={{ fontSize: 12.5, color: COLORS.gray[600] }}>
                 Đổi điểm giảm tối đa {loyalty?.redemption_cap_percent ?? 20}% giá trị đơn · Xem lịch
                 sử & quyền lợi →
