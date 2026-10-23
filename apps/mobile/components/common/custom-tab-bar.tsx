@@ -12,6 +12,12 @@ interface CustomTabBarProps {
   mode?: 'customer' | 'helper';
 }
 
+// Các route không bao giờ hiện trên tab bar — chỉ mở bằng router.push từ
+// màn hình khác (vd Thợ yêu thích mở từ màn Tài khoản).
+// Kiểm tra theo TÊN route trước: chắc chắn trên mọi nền tảng, kể cả web nơi
+// options.href đôi khi không được resolve đúng lúc render tab bar.
+const HIDDEN_TAB_ROUTES: ReadonlySet<string> = new Set(['notifications', 'favorites']);
+
 export function CustomTabBar({
   state,
   descriptors,
@@ -23,9 +29,10 @@ export function CustomTabBar({
     <View style={styles.container}>
       <View style={styles.tabBar}>
         {state.routes.map((route: any, index: number) => {
-          // Bỏ qua các màn hình ẩn
+          // Bỏ qua các màn hình ẩn — theo tên route trước (chắc chắn trên mọi
+          // nền tảng), rồi mới theo options.href === null.
           const { options } = descriptors[route.key];
-          if (options.href === null) return null;
+          if (HIDDEN_TAB_ROUTES.has(route.name) || options.href === null) return null;
 
           const isFocused = state.index === index;
           const isCenterButton = mode === 'customer' && route.name === 'booking';

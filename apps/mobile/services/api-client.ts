@@ -84,6 +84,16 @@ class SessionExpiredError extends Error {
   }
 }
 
+// Chưa từng có phiên nào (khách chưa đăng nhập / đã đăng xuất hẳn):
+// KHÁC với hết phiên — không toast "Phiên đăng nhập hết hạn", chỉ fail
+// request này để màn hình tự hiển thị trạng thái khách/trống.
+class NoSessionError extends Error {
+  constructor() {
+    super('NO_SESSION');
+    this.name = 'NoSessionError';
+  }
+}
+
 let refreshPromise: Promise<string> | null = null;
 
 function refreshAccessToken(): Promise<string> {
@@ -91,9 +101,11 @@ function refreshAccessToken(): Promise<string> {
     refreshPromise = (async (): Promise<string> => {
       const refreshToken = await SecureStore.getItemAsync('homemate_refresh_token');
       if (!refreshToken) {
-        // Không còn refresh token = phiên đã kết thúc hẳn.
+        // Không có refresh token = chưa từng đăng nhập (khách) hoặc đã đăng
+        // xuất. Đây KHÔNG phải "hết phiên" — không toast, màn hình tự xử lý
+        // trạng thái khách.
         await SecureStore.deleteItemAsync('homemate_access_token');
-        throw new SessionExpiredError();
+        throw new NoSessionError();
       }
       try {
         const { data } = await axios.post(
@@ -142,6 +154,9 @@ apiClient.interceptors.response.use(
         return apiClient(originalRequest);
       } catch (refreshError) {
         if (refreshError instanceof SessionExpiredError) {
+          // Chỉ toast khi user THẬT SỰ có phiên mà server từ chối refresh
+          // (hết hạn/bị thu hồi). Khách chưa đăng nhập (NoSessionError) thì
+          // im lặng — màn hình tự hiển thị trạng thái khách.
           Toast.show({
             type: 'error',
             text1: 'Phiên đăng nhập hết hạn',
