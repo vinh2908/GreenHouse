@@ -102,9 +102,9 @@ class CallKeepService {
     return this.loadCallKeep() !== null;
   }
 
-  // ─── Khởi tạo (idempotent — gọi 1 lần ở root app) ─────────────────────────
+  // ─── Khởi tạo (idempotent — gọi 1 lần ở root app sau đăng nhập) ──────────
 
-  init(): void {
+  async init(): Promise<void> {
     if (this.initialized) return;
     const RNCallKeep = this.loadCallKeep();
     if (!RNCallKeep) return;
@@ -128,36 +128,40 @@ class CallKeepService {
       },
     };
     try {
-      RNCallKeep.setup(options).catch(() => undefined);
-    } catch {
-      // Bỏ qua nếu setup thất bại
-    }
-    if (Platform.OS === 'android') {
-      // Đăng ký phone account với Telecom framework (user có thể phải bật
-      // trong Cài đặt cuộc gọi của máy — hasPhoneAccount() kiểm tra được).
-      try {
-        RNCallKeep.registerPhoneAccount(options);
-      } catch {
-        // Không có ConnectionService (máy cũ/thiếu quyền) → bỏ qua êm.
+      await Promise.resolve(RNCallKeep.setup(options));
+      if (Platform.OS === 'android') {
+        try {
+          await Promise.resolve(RNCallKeep.registerPhoneAccount(options));
+        } catch {
+          // Không có ConnectionService (máy cũ/thiếu quyền) → bỏ qua êm.
+        }
       }
+    } catch {
+      // Mọi lỗi/rejection bị nuốt êm, tính năng gọi tự tắt, không văng LogBox
+      this.callkeep = null;
+      return;
     }
 
-    RNCallKeep.addEventListener('answerCall', ({ callUUID }) => {
-      if (callUUID) this.handleAnswer(callUUID);
-    });
-    RNCallKeep.addEventListener('endCall', ({ callUUID }) => {
-      if (callUUID) this.handleEnd(callUUID);
-    });
-    // Sự kiện xảy ra lúc app bị đóng hẳn (user bấm Trả lời/Từ chối trên
-    // CallKit trước khi JS kịp chạy) được iOS phát lại qua kênh này.
-    RNCallKeep.addEventListener('didLoadWithEvents', events => {
-      for (const e of events ?? []) {
-        const data = (e?.data ?? {}) as { callUUID?: string };
-        if (!data.callUUID) continue;
-        if (e.name.includes('AnswerCall')) this.handleAnswer(data.callUUID);
-        else if (e.name.includes('EndCall')) this.handleEnd(data.callUUID);
-      }
-    });
+    try {
+      RNCallKeep.addEventListener('answerCall', ({ callUUID }) => {
+        if (callUUID) this.handleAnswer(callUUID);
+      });
+      RNCallKeep.addEventListener('endCall', ({ callUUID }) => {
+        if (callUUID) this.handleEnd(callUUID);
+      });
+      // Sự kiện xảy ra lúc app bị đóng hẳn (user bấm Trả lời/Từ chối trên
+      // CallKit trước khi JS kịp chạy) được iOS phát lại qua kênh này.
+      RNCallKeep.addEventListener('didLoadWithEvents', events => {
+        for (const e of events ?? []) {
+          const data = (e?.data ?? {}) as { callUUID?: string };
+          if (!data.callUUID) continue;
+          if (e.name.includes('AnswerCall')) this.handleAnswer(data.callUUID);
+          else if (e.name.includes('EndCall')) this.handleEnd(data.callUUID);
+        }
+      });
+    } catch {
+      // Bỏ qua nếu addEventListener lỗi
+    }
 
     // iOS: PushKit — token + payload cuộc gọi đến.
     const Voip = this.loadVoipPush();
