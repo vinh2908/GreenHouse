@@ -19,7 +19,7 @@ export function useCallKeep() {
   useEffect(() => {
     if (isAuthenticated && userId) {
       // Chỉ khởi tạo CallKeep SAU KHI user đã đăng nhập, tránh Alert/Telecom lúc cold-start
-      callkeepService.init();
+      void callkeepService.init().catch(() => undefined);
       wasAuthenticatedRef.current = true;
       callkeepService.setTokenUploader((token, platform) => {
         savedTokenRef.current = token;
