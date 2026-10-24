@@ -1,10 +1,10 @@
 import { Stack } from 'expo-router';
-import { useEffect } from 'react';
+import React, { Component, useEffect, type ReactNode } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import Toast from 'react-native-toast-message';
-import { TouchableOpacity, View, Text } from 'react-native';
+import { TouchableOpacity, View, Text, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { X } from 'lucide-react-native';
 import { create } from 'zustand';
@@ -25,7 +25,50 @@ import { SosCustomerDecisionPopup } from '@/components/common/sos-customer-decis
 import { useBackgroundGps } from '@/hooks/use-background-gps';
 import { useAuthStore } from '@/stores/auth.store';
 
-SplashScreen.preventAutoHideAsync();
+console.warn('[Startup] 0. _layout.tsx module evaluating...');
+
+// Do not hold native splash synchronously — let React draw the animated Splash directly
+SplashScreen.hideAsync().catch(() => {});
+
+class RootErrorBoundary extends Component<
+  { children: ReactNode },
+  { hasError: boolean; error: Error | null }
+> {
+  state = { hasError: false, error: null as Error | null };
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, info: any) {
+    console.error('[Startup] CRITICAL RootErrorBoundary caught render error:', error, info);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <View
+          style={{ flex: 1, backgroundColor: '#FEF2F2', padding: 24, justifyContent: 'center' }}
+        >
+          <Text style={{ fontSize: 20, fontWeight: 'bold', color: '#991B1B', marginBottom: 12 }}>
+            Lỗi hiển thị màn hình (Root Error)
+          </Text>
+          <Text style={{ fontSize: 14, color: '#B91C1C', marginBottom: 16 }}>
+            {this.state.error?.message || 'Lỗi không xác định'}
+          </Text>
+          <ScrollView
+            style={{ maxHeight: 250, backgroundColor: '#FFF', padding: 10, borderRadius: 8 }}
+          >
+            <Text style={{ fontSize: 11, color: '#374151', fontFamily: 'monospace' }}>
+              {this.state.error?.stack}
+            </Text>
+          </ScrollView>
+        </View>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -139,61 +182,104 @@ function ToastCard() {
   );
 }
 
-function SocketManager() {
+function AuthenticatedServices() {
+  console.warn('[Startup] 2a. AuthenticatedServices mounting hooks...');
   useSocketConnection();
   useNotificationSocket();
   useLiveGps();
   useBackgroundGps();
-  useOfflineSync(); // Feature 16: vòng lặp flush hàng đợi offline
   useIncomingCallListener(); // Feature 6: lắng nghe cuộc gọi thoại đến
-  useCallKeep(); // VoIP/CallKeep: cuộc gọi đến khi app chạy nền / bị đóng hẳn + đăng ký VoIP token
+  useCallKeep(); // VoIP/CallKeep: chỉ kích hoạt sau đăng nhập, an toàn với cold start
   useSosBackupListener(); // SOS Backup: popup quyết định cho khách + popup backup cho thợ
   usePushNotifications(); // OS push: đăng ký Expo token + chạm push → deep-link đúng màn hình
+  console.warn('[Startup] 2b. AuthenticatedServices hooks mounted cleanly');
   return null;
 }
 
+function SocketManager() {
+  const isAuthenticated = useAuthStore(s => s.isAuthenticated);
+  useOfflineSync(); // Vòng lặp flush hàng đợi offline an toàn khi chưa đăng nhập
+  if (!isAuthenticated) return null;
+  return <AuthenticatedServices />;
+}
+
 export default function RootLayout() {
+  console.warn('[Startup] 1. RootLayout render start');
+
   useEffect(() => {
-    // Deep links/reloads can skip app/index.tsx. Restore auth here so job tracking
-    // reconnects to Socket.IO even when opened directly from a notification.
-    void useAuthStore
+    console.warn('[Startup] 3. RootLayout useEffect mounted');
+    let hidden = false;
+    const hideSplash = (source: string) => {
+      if (hidden) return;
+      hidden = true;
+      console.warn(`[Startup] Hiding SplashScreen (source: ${source})`);
+      SplashScreen.hideAsync().catch(err => {
+        console.warn('[Startup] SplashScreen.hideAsync warning:', err);
+      });
+    };
+
+    // Hard fallback timeout: always hide splash after 3 seconds regardless of auth
+    const hardTimeout = setTimeout(() => {
+      hideSplash('hard-timeout-3s');
+    }, 3000);
+
+    console.warn('[Startup] 4. Triggering loadStoredAuth()...');
+    useAuthStore
       .getState()
       .loadStoredAuth()
-      .finally(() => SplashScreen.hideAsync());
+      .then(() => {
+        console.warn('[Startup] 4b. loadStoredAuth() finished, state:', {
+          isAuthenticated: useAuthStore.getState().isAuthenticated,
+          userId: useAuthStore.getState().user?._id,
+        });
+      })
+      .catch(err => {
+        console.error('[Startup] 4b. loadStoredAuth() error:', err);
+      })
+      .finally(() => {
+        clearTimeout(hardTimeout);
+        hideSplash('auth-restored');
+      });
+
+    return () => {
+      clearTimeout(hardTimeout);
+    };
   }, []);
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <QueryClientProvider client={queryClient}>
-        <SocketManager />
-        <StatusBar style="auto" />
-        <Stack screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="index" />
-          <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-          <Stack.Screen name="(customer)" options={{ headerShown: false }} />
-          <Stack.Screen name="(helper)" options={{ headerShown: false }} />
-          <Stack.Screen name="notifications" options={{ headerShown: false }} />
-          <Stack.Screen name="edit-profile" options={{ headerShown: false }} />
-          <Stack.Screen name="job-detail/[id]" options={{ headerShown: false }} />
-          <Stack.Screen name="helper-job-detail/[id]" options={{ headerShown: false }} />
-          <Stack.Screen name="helper-profile/[id]" options={{ headerShown: false }} />
-          <Stack.Screen name="kyc" options={{ headerShown: false }} />
-          <Stack.Screen name="bank-account" options={{ headerShown: false }} />
-          <Stack.Screen name="help-center" options={{ headerShown: false }} />
-          <Stack.Screen name="support-chat" options={{ headerShown: false }} />
-          <Stack.Screen name="policy-insurance" options={{ headerShown: false }} />
-          <Stack.Screen name="sos" options={{ headerShown: false }} />
-          <Stack.Screen name="sos-tracking/[id]" options={{ headerShown: false }} />
-          <Stack.Screen name="chat/[jobId]" options={{ headerShown: false }} />
-        </Stack>
-        <Toast config={toastConfig} swipeable={false} />
-        <ToastCard />
-        <AppAlertHost />
-        <IncomingCallModal />
-        <StringeeHost />
-        <SosBackupPopup />
-        <SosCustomerDecisionPopup />
-      </QueryClientProvider>
-    </GestureHandlerRootView>
+    <RootErrorBoundary>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <QueryClientProvider client={queryClient}>
+          <SocketManager />
+          <StatusBar style="auto" />
+          <Stack screenOptions={{ headerShown: false }}>
+            <Stack.Screen name="index" />
+            <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+            <Stack.Screen name="(customer)" options={{ headerShown: false }} />
+            <Stack.Screen name="(helper)" options={{ headerShown: false }} />
+            <Stack.Screen name="notifications" options={{ headerShown: false }} />
+            <Stack.Screen name="edit-profile" options={{ headerShown: false }} />
+            <Stack.Screen name="job-detail/[id]" options={{ headerShown: false }} />
+            <Stack.Screen name="helper-job-detail/[id]" options={{ headerShown: false }} />
+            <Stack.Screen name="helper-profile/[id]" options={{ headerShown: false }} />
+            <Stack.Screen name="kyc" options={{ headerShown: false }} />
+            <Stack.Screen name="bank-account" options={{ headerShown: false }} />
+            <Stack.Screen name="help-center" options={{ headerShown: false }} />
+            <Stack.Screen name="support-chat" options={{ headerShown: false }} />
+            <Stack.Screen name="policy-insurance" options={{ headerShown: false }} />
+            <Stack.Screen name="sos" options={{ headerShown: false }} />
+            <Stack.Screen name="sos-tracking/[id]" options={{ headerShown: false }} />
+            <Stack.Screen name="chat/[jobId]" options={{ headerShown: false }} />
+          </Stack>
+          <Toast config={toastConfig} swipeable={false} />
+          <ToastCard />
+          <AppAlertHost />
+          <IncomingCallModal />
+          <StringeeHost />
+          <SosBackupPopup />
+          <SosCustomerDecisionPopup />
+        </QueryClientProvider>
+      </GestureHandlerRootView>
+    </RootErrorBoundary>
   );
 }

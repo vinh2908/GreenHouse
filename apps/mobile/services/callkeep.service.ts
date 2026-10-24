@@ -119,15 +119,19 @@ class CallKeepService {
         includesCallsInRecents: false,
       },
       android: {
-        alertTitle: 'Quyền tài khoản điện thoại',
-        alertDescription: 'Green House cần quyền này để hiển thị cuộc gọi đến như cuộc gọi thường.',
+        alertTitle: '',
+        alertDescription: '',
         cancelButton: 'Đóng',
         okButton: 'Đồng ý',
         additionalPermissions: [],
-        selfManaged: false,
+        selfManaged: true,
       },
     };
-    RNCallKeep.setup(options).catch(() => undefined);
+    try {
+      RNCallKeep.setup(options).catch(() => undefined);
+    } catch {
+      // Bỏ qua nếu setup thất bại
+    }
     if (Platform.OS === 'android') {
       // Đăng ký phone account với Telecom framework (user có thể phải bật
       // trong Cài đặt cuộc gọi của máy — hasPhoneAccount() kiểm tra được).
