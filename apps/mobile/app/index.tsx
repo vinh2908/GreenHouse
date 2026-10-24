@@ -17,6 +17,7 @@ import apiClient from '@/services/api-client';
 const { width, height } = Dimensions.get('window');
 
 export default function SplashScreen() {
+  console.warn('[Startup] 5. SplashScreen (app/index.tsx) render');
   const router = useRouter();
   const hasNavigated = useRef(false);
 
@@ -28,6 +29,7 @@ export default function SplashScreen() {
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
+    console.warn('[Startup] 6. SplashScreen (app/index.tsx) useEffect mounted');
     // 0. Đánh thức server API ngầm ngay khi mở app (tránh cold-start trên Render)
     apiClient.get('/health').catch(() => {});
 

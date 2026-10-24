@@ -62,9 +62,15 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   loadStoredAuth: async () => {
     set({ isLoading: true });
     try {
-      const accessToken = await SecureStore.getItemAsync(TOKEN_KEY);
-      const refreshToken = await SecureStore.getItemAsync(REFRESH_TOKEN_KEY);
-      const storedUser = await SecureStore.getItemAsync(USER_KEY);
+      const timeoutPromise = new Promise<null>((_, reject) =>
+        setTimeout(() => reject(new Error('SecureStore timeout')), 2500),
+      );
+      const accessToken = await Promise.race([SecureStore.getItemAsync(TOKEN_KEY), timeoutPromise]);
+      const refreshToken = await Promise.race([
+        SecureStore.getItemAsync(REFRESH_TOKEN_KEY),
+        timeoutPromise,
+      ]);
+      const storedUser = await Promise.race([SecureStore.getItemAsync(USER_KEY), timeoutPromise]);
       const parsedUser = storedUser ? JSON.parse(storedUser) : null;
 
       if (accessToken && refreshToken) {

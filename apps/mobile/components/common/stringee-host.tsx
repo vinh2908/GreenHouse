@@ -19,6 +19,7 @@
 import { useCallback, useState } from 'react';
 import type { StringeeCallEventHandlers, StringeeClientEventHandlers } from 'stringee-react-native';
 import { stringeeService } from '@/services/stringee.service';
+import { useAuthStore } from '@/stores/auth.store';
 
 type SdkModule = typeof import('stringee-react-native');
 type StringeeClientInstance = InstanceType<SdkModule['StringeeClient']>;
@@ -40,6 +41,7 @@ const callEventHandlers: StringeeCallEventHandlers = {
 };
 
 export function StringeeHost() {
+  const isAuthenticated = useAuthStore(s => s.isAuthenticated);
   // clientId = StringeeClient.getId(); known synchronously once the client
   // component instance exists (its constructor generates the uuid).
   const [clientId, setClientId] = useState<string | null>(null);
@@ -53,6 +55,8 @@ export function StringeeHost() {
   const handleCallRef = useCallback((instance: StringeeCallInstance | null) => {
     stringeeService._registerCall(instance);
   }, []);
+
+  if (!isAuthenticated) return null;
 
   const sdk = stringeeService.loadSdk();
   if (!sdk) return null;
