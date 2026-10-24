@@ -16,14 +16,10 @@ export function useCallKeep() {
   const savedTokenRef = useRef<string | null>(null);
   const wasAuthenticatedRef = useRef(false);
 
-  // Listeners phải gắn sớm nhất có thể — PushKit có thể đánh thức app trước
-  // khi trạng thái đăng nhập được khôi phục xong.
-  useEffect(() => {
-    callkeepService.init();
-  }, []);
-
   useEffect(() => {
     if (isAuthenticated && userId) {
+      // Chỉ khởi tạo CallKeep SAU KHI user đã đăng nhập, tránh Alert/Telecom lúc cold-start
+      callkeepService.init();
       wasAuthenticatedRef.current = true;
       callkeepService.setTokenUploader((token, platform) => {
         savedTokenRef.current = token;
