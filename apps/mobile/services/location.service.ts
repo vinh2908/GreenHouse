@@ -115,10 +115,7 @@ export function parseVietnameseAddress(
     .map(s => s.trim())
     .filter(
       s =>
-        s.length > 0 &&
-        !/^\d{4,6}$/.test(s) &&
-        !/^Việt\s*Nam$/i.test(s) &&
-        !/^Vietnam$/i.test(s),
+        s.length > 0 && !/^\d{4,6}$/.test(s) && !/^Việt\s*Nam$/i.test(s) && !/^Vietnam$/i.test(s),
     );
 
   if (tokens.length >= 1 && !city) {
