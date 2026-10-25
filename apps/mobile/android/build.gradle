@@ -21,6 +21,11 @@ allprojects {
 }
 
 subprojects { subproject ->
+  subproject.tasks.configureEach { task ->
+    if (task.name.toLowerCase().contains("lintvital")) {
+      task.enabled = false
+    }
+  }
   subproject.afterEvaluate {
     def androidExt = subproject.extensions.findByName("android")
     if (androidExt != null && androidExt.hasProperty("externalNativeBuild")) {

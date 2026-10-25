@@ -43,7 +43,13 @@
     "web": {
       "bundler": "metro",
       "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/images/favicon.png",
+      "name": "Green House",
+      "shortName": "Green House",
+      "themeColor": "#16A34A",
+      "backgroundColor": "#F0FDF4",
+      "display": "standalone",
+      "orientation": "portrait"
     },
     "plugins": [
       [
