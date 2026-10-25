@@ -38,6 +38,9 @@
     { "source": "/helper-profile/:id", "destination": "/helper-profile/%5Bid%5D" },
     { "source": "/sos-tracking/:id", "destination": "/sos-tracking/%5Bid%5D" },
     { "source": "/chat/:jobId", "destination": "/chat/%5BjobId%5D" },
-    { "source": "/((?!_expo|assets|favicon\\.ico|manifest\\.json|sw\\.js|.*\\.png|.*\\.json|.*\\.js).*)", "destination": "/index" }
+    {
+      "source": "/((?!_expo|assets|favicon\\.ico|manifest\\.json|sw\\.js|.*\\.png|.*\\.json|.*\\.js).*)",
+      "destination": "/index"
+    }
   ]
 }
