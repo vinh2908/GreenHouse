@@ -342,14 +342,22 @@ export class AdminService {
     return job;
   }
 
-  async updateJobStatus(jobId: string, status: string, note?: string): Promise<JobDocument> {
+  async updateJobStatus(
+    jobId: string,
+    status: string,
+    note?: string,
+    adminId?: string,
+  ): Promise<JobDocument> {
     const job = await this.jobModel.findById(jobId).exec();
     if (!job) throw new NotFoundException('Job không tồn tại');
     job.status = status as any;
     job.events.push({
       status: status as any,
       note: note || `Admin can thiệp thủ công: chuyển trạng thái sang ${status}`,
-      actor_id: new Types.ObjectId(),
+      actor_id:
+        adminId && Types.ObjectId.isValid(adminId)
+          ? new Types.ObjectId(adminId)
+          : (job.customer_id as any) || new Types.ObjectId(),
       actor_role: 'admin',
       timestamp: new Date(),
     });
@@ -357,7 +365,7 @@ export class AdminService {
     return job;
   }
 
-  async directRefund(jobId: string, amount: number, reason: string) {
+  async directRefund(jobId: string, amount: number, reason: string, adminId?: string) {
     const job = await this.jobModel.findById(jobId).exec();
     if (!job) throw new NotFoundException('Job không tồn tại');
     if (!amount || amount <= 0) throw new BadRequestException('Số tiền hoàn phải lớn hơn 0');
@@ -390,7 +398,10 @@ export class AdminService {
     job.events.push({
       status: job.status,
       note: `Admin hoàn tiền trực tiếp ${amount.toLocaleString('vi-VN')}₫ vào ví khách hàng. Lý do: ${reason}`,
-      actor_id: new Types.ObjectId(),
+      actor_id:
+        adminId && Types.ObjectId.isValid(adminId)
+          ? new Types.ObjectId(adminId)
+          : (job.customer_id as any) || new Types.ObjectId(),
       actor_role: 'admin',
       timestamp: new Date(),
     });

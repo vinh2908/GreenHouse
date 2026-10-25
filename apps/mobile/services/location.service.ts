@@ -69,6 +69,91 @@ export function normalizeVietnameseAddress(text?: string | null): string {
     .replace(/\bHoa Vang\b/gi, 'Hòa Vang');
 }
 
+/**
+ * Tách và map các thành phần địa chỉ Việt Nam (Số nhà, tên đường, phường/xã, quận/huyện, thành phố)
+ * Kể cả khi tên phường/quận không theo mẫu chuẩn "Phường X" / "Quận Y" (như Hòa Khê, Thanh Khê, Đà Nẵng)
+ */
+export function parseVietnameseAddress(
+  rawText?: string | null,
+  fallback?: Partial<LocationResult>,
+): LocationResult {
+  const norm = normalizeVietnameseAddress(rawText || fallback?.full_address || '').trim();
+  let road = fallback?.road ? normalizeVietnameseAddress(fallback.road).trim() : '';
+  let ward = fallback?.ward ? normalizeVietnameseAddress(fallback.ward).trim() : '';
+  let district = fallback?.district ? normalizeVietnameseAddress(fallback.district).trim() : '';
+  let city = fallback?.city ? normalizeVietnameseAddress(fallback.city).trim() : '';
+  const coordinates: [number, number] = fallback?.coordinates || [0, 0];
+
+  if (!norm) {
+    return {
+      full_address: '',
+      road: road || '',
+      ward: ward || '',
+      district: district || '',
+      city: city || '',
+      coordinates,
+    };
+  }
+
+  // 1. Nhận diện các đơn vị hành chính theo tiền tố tiếng Việt nếu có
+  if (!city) {
+    const matchCity = norm.match(/(?:Thành phố|Tỉnh|TP\.?)\s+([^,]+)/i);
+    if (matchCity) city = matchCity[0].trim();
+  }
+  if (!district) {
+    const matchDistrict = norm.match(/(?:Quận|Huyện|Thị xã)\s+([^,]+)/i);
+    if (matchDistrict) district = matchDistrict[0].trim();
+  }
+  if (!ward) {
+    const matchWard = norm.match(/(?:Phường|Xã|Thị trấn)\s+([^,]+)/i);
+    if (matchWard) ward = matchWard[0].trim();
+  }
+
+  // 2. Phân tách token từ phải sang trái khi dữ liệu geocoding không có tiền tố hành chính (VD: "223 Nguyễn Phước Nguyên, Hòa Khê, Thanh Khê, Đà Nẵng")
+  const tokens = norm
+    .split(',')
+    .map(s => s.trim())
+    .filter(
+      s =>
+        s.length > 0 &&
+        !/^\d{4,6}$/.test(s) &&
+        !/^Việt\s*Nam$/i.test(s) &&
+        !/^Vietnam$/i.test(s),
+    );
+
+  if (tokens.length >= 1 && !city) {
+    city = tokens[tokens.length - 1];
+  }
+  if (tokens.length >= 2 && !district) {
+    district = tokens[tokens.length - 2];
+  }
+  if (tokens.length >= 3 && !ward) {
+    ward = tokens[tokens.length - 3];
+  }
+
+  // Tên đường / số nhà: các token bên trái còn lại
+  if (!road || road === norm || road.startsWith('Khu vực')) {
+    if (tokens.length >= 4) {
+      road = tokens.slice(0, tokens.length - 3).join(', ');
+    } else if (tokens.length > 0) {
+      road = tokens[0];
+    }
+  }
+
+  // Dựng lại full_address gọn gàng
+  const parts = [road, ward, district, city].filter(Boolean);
+  const full_address = parts.length > 0 ? parts.join(', ') : norm;
+
+  return {
+    full_address,
+    road: road || full_address,
+    ward,
+    district,
+    city,
+    coordinates,
+  };
+}
+
 class LocationService {
   /**
    * Xin quyền GPS và lấy tọa độ hiện tại của thiết bị (hỗ trợ cả Web & Mobile Native)
@@ -106,9 +191,26 @@ class LocationService {
         return null;
       }
 
-      const location = await Location.getCurrentPositionAsync({
+      // Đặt timeout tối đa 8 giây cho getCurrentPositionAsync trên mobile native tránh treo spinner
+      const posPromise = Location.getCurrentPositionAsync({
         accuracy: Location.Accuracy.Balanced,
       });
+      const timeoutPromise = new Promise<null>((_, reject) =>
+        setTimeout(() => reject(new Error('GPS_TIMEOUT')), 8000),
+      );
+
+      let location = await Promise.race([posPromise, timeoutPromise]).catch(async () => {
+        // Fallback sang last known position nếu getCurrentPositionAsync quá 8s hoặc lỗi
+        return await Location.getLastKnownPositionAsync().catch(() => null);
+      });
+
+      if (!location) {
+        location = await Location.getLastKnownPositionAsync().catch(() => null);
+      }
+
+      if (!location) {
+        return null;
+      }
 
       return {
         latitude: location.coords.latitude,
@@ -142,14 +244,14 @@ class LocationService {
         const fullAddress = [road, ward, district, city].filter(Boolean).join(', ');
 
         if (road || district) {
-          return {
+          return parseVietnameseAddress(fullAddress, {
             full_address: fullAddress,
             road: road || fullAddress,
             ward,
             district,
             city,
             coordinates: [longitude, latitude],
-          };
+          });
         }
       }
     } catch {
@@ -165,7 +267,7 @@ class LocationService {
         if (goongResult) {
           const mapped = mapGoongGeocodeResult(goongResult, latitude, longitude);
           if (mapped.road || mapped.district) {
-            return mapped;
+            return parseVietnameseAddress(mapped.full_address, mapped);
           }
         }
       } catch (err) {
@@ -196,14 +298,14 @@ class LocationService {
           const fullAddress = [road, ward, district, city].filter(Boolean).join(', ');
 
           if (road || district) {
-            return {
+            return parseVietnameseAddress(fullAddress || p.name, {
               full_address: fullAddress,
               road: road || fullAddress,
               ward,
               district,
               city,
               coordinates: [longitude, latitude],
-            };
+            });
           }
         }
       }
@@ -228,14 +330,14 @@ class LocationService {
           ? [street, ward, district, city].filter(Boolean).join(', ')
           : data.display_name;
 
-        return {
+        return parseVietnameseAddress(data.display_name || fullAddress, {
           full_address: fullAddress,
           road: street,
           ward,
           district,
           city,
           coordinates: [longitude, latitude],
-        };
+        });
       }
     } catch (err) {
       console.warn('OSM Reverse geocoding error:', err);
@@ -267,14 +369,14 @@ class LocationService {
         const fullAddress =
           parts.length > 0 ? parts.join(', ') : `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
 
-        return {
+        return parseVietnameseAddress(fullAddress, {
           full_address: fullAddress,
           road: ward ? `Khu vực ${ward}` : fullAddress,
           ward,
           district,
           city,
           coordinates: [longitude, latitude],
-        };
+        });
       }
     } catch (err) {
       console.warn('BigDataCloud reverse geocode error:', err);
@@ -299,7 +401,9 @@ class LocationService {
     if (!coords) {
       return null;
     }
-    return this.reverseGeocode(coords.latitude, coords.longitude);
+    const res = await this.reverseGeocode(coords.latitude, coords.longitude);
+    if (!res) return null;
+    return parseVietnameseAddress(res.full_address || res.road, res);
   }
 
   /**

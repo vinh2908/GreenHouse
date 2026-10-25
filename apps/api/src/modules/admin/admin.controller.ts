@@ -17,6 +17,8 @@ import {
   AdminSuspendDto,
   AdminKycActionDto,
   AdminWaivePenaltyDto,
+  AdminUpdateJobStatusDto,
+  AdminDirectRefundDto,
 } from './dto/admin.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
@@ -152,14 +154,24 @@ export class AdminController {
 
   @Patch('jobs/:id/status')
   @ApiOperation({ summary: '[Admin] Đổi trạng thái job thủ công' })
-  async updateJobStatus(@Param('id') id: string, @Body() dto: { status: string; note?: string }) {
-    return this.adminService.updateJobStatus(id, dto.status, dto.note);
+  async updateJobStatus(
+    @Param('id') id: string,
+    @Body() dto: AdminUpdateJobStatusDto,
+    @CurrentUser() adminUser: any,
+  ) {
+    const adminId = adminUser?.sub || adminUser?._id || adminUser?.id;
+    return this.adminService.updateJobStatus(id, dto.status, dto.note, adminId);
   }
 
   @Post('jobs/:id/refund')
   @ApiOperation({ summary: '[Admin] Hoàn tiền ngoài luồng tranh chấp' })
-  async directRefund(@Param('id') id: string, @Body() dto: { amount: number; reason: string }) {
-    return this.adminService.directRefund(id, Number(dto.amount), dto.reason);
+  async directRefund(
+    @Param('id') id: string,
+    @Body() dto: AdminDirectRefundDto,
+    @CurrentUser() adminUser: any,
+  ) {
+    const adminId = adminUser?.sub || adminUser?._id || adminUser?.id;
+    return this.adminService.directRefund(id, Number(dto.amount), dto.reason, adminId);
   }
 
   // ─── Notifications broadcast ──────────────────────────────────────────────

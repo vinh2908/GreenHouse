@@ -42,7 +42,7 @@ import {
   useCreateRecurringPlan,
 } from '@/hooks/use-api';
 import type { IssuePhotoAnalysis } from '@/hooks/use-api';
-import { locationService, OsmPlace } from '@/services/location.service';
+import { locationService, OsmPlace, parseVietnameseAddress } from '@/services/location.service';
 import { Button, Input, Card, COLORS } from '@/components/ui';
 import { VoucherInput } from '@/components/common/voucher-input';
 import type { VoucherPreview } from '@/hooks/use-api';
@@ -502,33 +502,46 @@ export default function BookingScreen() {
   // ── OpenStreetMap GPS & Search Handlers ────────────────────────────────────
   const handleGetLiveLocation = async () => {
     setIsLocating(true);
+    let timer: any;
     try {
-      const details = await locationService.getCurrentLocationDetails();
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        timer = setTimeout(() => reject(new Error('LOCATION_TIMEOUT')), 12000);
+      });
+      const details = await Promise.race([
+        locationService.getCurrentLocationDetails(),
+        timeoutPromise,
+      ]);
       if (details) {
+        const parsed = parseVietnameseAddress(details.full_address || details.road, details);
         setAddress(prev => ({
           ...prev,
-          full_address: details.road || details.full_address,
-          ward: details.ward || '',
-          district: details.district || '',
-          city: details.city || '',
+          full_address: parsed.road || details.road || details.full_address,
+          ward: parsed.ward || details.ward || '',
+          district: parsed.district || details.district || '',
+          city: parsed.city || details.city || '',
           coordinates: details.coordinates,
         }));
         setCoordsDerived(true);
         Toast.show({
           type: 'success',
           text1: 'Đã định vị vị trí của bạn',
-          text2: details.full_address,
+          text2: parsed.full_address || details.full_address,
         });
       } else {
         Toast.show({
           type: 'info',
-          text1: 'Chưa có quyền vị trí',
-          text2: 'Vui lòng cho phép quyền truy cập Vị trí trên trình duyệt hoặc thiết bị.',
+          text1: 'Không thể định vị tự động',
+          text2: 'Vui lòng kiểm tra GPS hoặc nhập tay địa chỉ của bạn bên dưới.',
         });
       }
     } catch {
-      Toast.show({ type: 'error', text1: 'Không thể lấy vị trí hiện tại' });
+      Toast.show({
+        type: 'info',
+        text1: 'Không thể lấy vị trí hiện tại',
+        text2: 'Vui lòng nhập tay địa chỉ của bạn bên dưới.',
+      });
     } finally {
+      if (timer) clearTimeout(timer);
       setIsLocating(false);
     }
   };
