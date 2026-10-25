@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, Platform, TouchableOpacity, Linking } from 'react-native';
 import { WebView } from 'react-native-webview';
+import * as Location from 'expo-location';
 import { Navigation, Layers } from 'lucide-react-native';
 import { TRACKING_MAP_HTML } from './tracking-map-document';
 import { trackingTitle, validCoordinate } from '@/services/tracking';
@@ -45,25 +46,142 @@ export function LiveTrackingMap({
   const [layer, setLayer] = useState<'streets' | 'satellite'>('streets');
   const [loadError, setLoadError] = useState(false);
   const [retry, setRetry] = useState(0);
+  const [deviceLocation, setDeviceLocation] = useState<{
+    latitude: number;
+    longitude: number;
+    recordedAt: number;
+  } | null>(null);
+
+  // Khi viewer là thợ: tự theo dõi vị trí live của thiết bị mình để hiển thị marker và đường đi ngay lập tức
+  useEffect(() => {
+    if (viewerRole !== 'helper') return;
+    let disposed = false;
+    let removeSub: (() => void) | undefined;
+
+    const startLocalWatch = async () => {
+      // 1. Web browser
+      if (Platform.OS === 'web') {
+        const nav = (globalThis as any).navigator?.geolocation;
+        if (nav?.watchPosition) {
+          const watchId = nav.watchPosition(
+            (pos: any) => {
+              if (disposed) return;
+              if (validCoordinate(pos?.coords?.latitude, pos?.coords?.longitude)) {
+                setDeviceLocation({
+                  latitude: pos.coords.latitude,
+                  longitude: pos.coords.longitude,
+                  recordedAt: pos.timestamp || Date.now(),
+                });
+              }
+            },
+            () => {},
+            { enableHighAccuracy: true, timeout: 10000, maximumAge: 5000 },
+          );
+          removeSub = () => nav.clearWatch(watchId);
+          return;
+        }
+      }
+
+      // 2. Native (Android/iOS APK)
+      try {
+        const { status: permStatus } = await Location.getForegroundPermissionsAsync();
+        if (permStatus !== 'granted') {
+          const req = await Location.requestForegroundPermissionsAsync();
+          if (req.status !== 'granted') return;
+        }
+
+        // Lấy nhanh last known position để marker thợ hiện ra ngay
+        Location.getLastKnownPositionAsync()
+          .then(last => {
+            if (
+              !disposed &&
+              last?.coords &&
+              validCoordinate(last.coords.latitude, last.coords.longitude)
+            ) {
+              setDeviceLocation({
+                latitude: last.coords.latitude,
+                longitude: last.coords.longitude,
+                recordedAt: Date.now(),
+              });
+            }
+          })
+          .catch(() => {});
+
+        const sub = await Location.watchPositionAsync(
+          {
+            accuracy: Location.Accuracy.Balanced,
+            distanceInterval: 5,
+            timeInterval: 4000,
+          },
+          pos => {
+            if (disposed) return;
+            if (validCoordinate(pos?.coords?.latitude, pos?.coords?.longitude)) {
+              setDeviceLocation({
+                latitude: pos.coords.latitude,
+                longitude: pos.coords.longitude,
+                recordedAt: Date.now(),
+              });
+            }
+          },
+        );
+        removeSub = () => sub.remove();
+      } catch (err) {
+        console.warn('LiveTrackingMap helper watch error:', err);
+      }
+    };
+
+    void startLocalWatch();
+    return () => {
+      disposed = true;
+      removeSub?.();
+    };
+  }, [viewerRole]);
+
   const callback = useRef(onRouteMetrics);
   callback.current = onRouteMetrics;
   const validDestination = validCoordinate(customerLocation?.latitude, customerLocation?.longitude);
+
+  let helperPos = null;
+  if (viewerRole === 'helper') {
+    // Màn thợ: hiển thị vị trí live của chính thiết bị thợ kèm marker, không chờ feed GPS từ server
+    if (deviceLocation && validCoordinate(deviceLocation.latitude, deviceLocation.longitude)) {
+      helperPos = {
+        lat: deviceLocation.latitude,
+        lng: deviceLocation.longitude,
+        recorded_at: Date.now(),
+      };
+    } else if (
+      helperLocation &&
+      validCoordinate(helperLocation.latitude, helperLocation.longitude)
+    ) {
+      helperPos = {
+        lat: helperLocation.latitude,
+        lng: helperLocation.longitude,
+        recorded_at: helperRecordedAt || Date.now(),
+      };
+    }
+  } else {
+    // Màn khách: giữ nguyên chờ feed GPS từ server
+    if (
+      helperLocation &&
+      validCoordinate(helperLocation.latitude, helperLocation.longitude) &&
+      helperRecordedAt
+    ) {
+      helperPos = {
+        lat: helperLocation.latitude,
+        lng: helperLocation.longitude,
+        recorded_at: helperRecordedAt,
+      };
+    }
+  }
+
   const state = {
     channel: 'greenhouse-tracking',
     type: 'state',
     customer: validDestination
       ? { lat: customerLocation.latitude, lng: customerLocation.longitude }
       : null,
-    helper:
-      helperLocation &&
-      validCoordinate(helperLocation.latitude, helperLocation.longitude) &&
-      helperRecordedAt
-        ? {
-            lat: helperLocation.latitude,
-            lng: helperLocation.longitude,
-            recorded_at: helperRecordedAt,
-          }
-        : null,
+    helper: helperPos,
     tracking: status === 'helper_on_the_way',
     layer,
   };
@@ -106,6 +224,9 @@ export function LiveTrackingMap({
     helperLocation?.latitude,
     helperLocation?.longitude,
     helperRecordedAt,
+    deviceLocation?.latitude,
+    deviceLocation?.longitude,
+    viewerRole,
     status,
     layer,
     send,
