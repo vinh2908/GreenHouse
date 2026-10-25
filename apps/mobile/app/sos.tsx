@@ -29,7 +29,7 @@ import {
 } from 'lucide-react-native';
 import Toast from 'react-native-toast-message';
 import { useCreateSosJob } from '@/hooks/use-api';
-import { locationService } from '@/services/location.service';
+import { locationService, parseVietnameseAddress } from '@/services/location.service';
 import { Button, Card, LoadingSpinner, COLORS, Separator, PriceText } from '@/components/ui';
 
 // ── Danh sách sự cố SOS khẩn cấp hợp lệ (Whitelist) ──────────────────────────
@@ -96,20 +96,29 @@ export default function SosScreen() {
 
   const fetchLiveLocation = async () => {
     setIsLocating(true);
+    let timer: any;
     try {
-      const details = await locationService.getCurrentLocationDetails();
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        timer = setTimeout(() => reject(new Error('LOCATION_TIMEOUT')), 12000);
+      });
+      const details = await Promise.race([
+        locationService.getCurrentLocationDetails(),
+        timeoutPromise,
+      ]);
       if (details) {
+        const parsed = parseVietnameseAddress(details.full_address || details.road, details);
         setAddress({
-          full_address: details.road || details.full_address,
-          ward: details.ward || '',
-          district: details.district || '',
-          city: details.city || '',
+          full_address: parsed.road || details.road || details.full_address,
+          ward: parsed.ward || details.ward || '',
+          district: parsed.district || details.district || '',
+          city: parsed.city || details.city || '',
           coordinates: details.coordinates,
         });
       }
     } catch {
       /* ignore */
     } finally {
+      if (timer) clearTimeout(timer);
       setIsLocating(false);
     }
   };
