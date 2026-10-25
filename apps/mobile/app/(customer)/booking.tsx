@@ -396,8 +396,8 @@ export default function BookingScreen() {
 
         const asset = result.assets[0];
         targetUri = asset.uri;
-        assetBase64 = asset.base64 ?? undefined;
-        assetMimeType = asset.mimeType ?? undefined;
+        assetBase64 = asset.base64;
+        assetMimeType = asset.mimeType;
         setPhotos(prev => [...prev, targetUri!].slice(0, 6));
       }
 
@@ -575,7 +575,7 @@ export default function BookingScreen() {
   };
 
   const handleSelectOsmPlace = (place: OsmPlace) => {
-    const addr = (place.address || {}) as Record<string, string | undefined>;
+    const addr = place.address || {};
     const house = addr.house_number ? `${addr.house_number} ` : '';
     let road = addr.road || addr.pedestrian || addr.suburb || '';
     let ward =
@@ -915,9 +915,9 @@ export default function BookingScreen() {
       const hasFullAddress = address.full_address.trim().length > 0;
       const hasLocality = Boolean(
         address.district.trim() ||
-        address.ward.trim() ||
-        address.city.trim() ||
-        (address.coordinates && (address.coordinates[0] !== 0 || address.coordinates[1] !== 0)),
+          address.ward.trim() ||
+          address.city.trim() ||
+          (address.coordinates && (address.coordinates[0] !== 0 || address.coordinates[1] !== 0)),
       );
       if (!hasFullAddress || !hasLocality) {
         Toast.show({
