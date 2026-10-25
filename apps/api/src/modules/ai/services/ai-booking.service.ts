@@ -92,7 +92,7 @@ export class AiBookingService {
       return this.mockAnalyze(text);
     }
 
-    const systemPrompt = `Bạn là trợ lý đặt lịch dịch vụ gia đình và sửa chữa HomeMate (Vua Thợ). Phân tích yêu cầu tự do của khách hàng và trả về JSON chuẩn xác.
+    const systemPrompt = `Bạn là trợ lý đặt lịch dịch vụ gia đình và sửa chữa Green House. Phân tích yêu cầu tự do của khách hàng và trả về JSON chuẩn xác.
 
 Danh sách 8 dịch vụ cốt lõi của HomeMate:
 1. housekeeping_hourly: Giúp việc theo giờ, dọn dẹp phòng, lau nhà, giặt ủi (45k - 80k/giờ)
@@ -164,7 +164,7 @@ Trả về duy nhất JSON hợp lệ theo cấu trúc:
       };
     }
 
-    const systemPrompt = `Bạn là chuyên gia định giá dịch vụ gia đình và sửa chữa HomeMate (Vua Thợ) tại Việt Nam.
+    const systemPrompt = `Bạn là chuyên gia định giá dịch vụ gia đình và sửa chữa Green House tại Việt Nam.
 Phân tích mô tả công việc và ước tính khoảng giá thị trường hợp lý.
 
 Bảng giá tham khảo (VND):
