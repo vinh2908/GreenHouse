@@ -361,6 +361,12 @@ export default function JobDetailPage() {
                   value={manualNote}
                   onChange={e => setManualNote(e.target.value)}
                 />
+                {updateStatus.error && (
+                  <p className="text-xs text-destructive">
+                    {(updateStatus.error as { response?: { data?: { message?: string } } })
+                      .response?.data?.message ?? 'Cập nhật trạng thái thất bại'}
+                  </p>
+                )}
                 <Button
                   variant="outline"
                   className="w-full text-xs"
@@ -371,8 +377,15 @@ export default function JobDetailPage() {
                         { id, status: manualStatus, note: manualNote.trim() },
                         {
                           onSuccess: () => {
+                            setManualStatus('');
                             setManualNote('');
                             alert('Đã cập nhật trạng thái đơn thành công');
+                          },
+                          onError: (err: any) => {
+                            alert(
+                              err?.response?.data?.message ||
+                                'Không thể cập nhật trạng thái đơn. Vui lòng kiểm tra lại.',
+                            );
                           },
                         },
                       );
@@ -399,6 +412,12 @@ export default function JobDetailPage() {
                   value={directRefundReason}
                   onChange={e => setDirectRefundReason(e.target.value)}
                 />
+                {directRefund.error && (
+                  <p className="text-xs text-destructive">
+                    {(directRefund.error as { response?: { data?: { message?: string } } })
+                      .response?.data?.message ?? 'Hoàn tiền thất bại'}
+                  </p>
+                )}
                 <Button
                   variant="secondary"
                   className="w-full text-xs"
@@ -424,6 +443,12 @@ export default function JobDetailPage() {
                             setDirectRefundAmount('');
                             setDirectRefundReason('');
                             alert('Đã hoàn tiền vào ví khách hàng thành công');
+                          },
+                          onError: (err: any) => {
+                            alert(
+                              err?.response?.data?.message ||
+                                'Không thể hoàn tiền trực tiếp. Vui lòng thử lại.',
+                            );
                           },
                         },
                       );

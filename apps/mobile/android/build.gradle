@@ -20,5 +20,20 @@ allprojects {
   }
 }
 
+subprojects { subproject ->
+  subproject.afterEvaluate {
+    def androidExt = subproject.extensions.findByName("android")
+    if (androidExt != null && androidExt.hasProperty("externalNativeBuild")) {
+      try {
+        def cmake = androidExt.externalNativeBuild.cmake
+        if (cmake != null && cmake.path != null) {
+          cmake.buildStagingDirectory = file("D:/cxx/${subproject.name}")
+        }
+      } catch (Exception ignored) {
+      }
+    }
+  }
+}
+
 apply plugin: "expo-root-project"
 apply plugin: "com.facebook.react.rootproject"
