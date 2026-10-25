@@ -134,7 +134,7 @@ export default function HelpCenterScreen() {
             flex: 1,
           }}
         >
-          Trợ giúp Vua Thợ
+          Trợ giúp Green House
         </Text>
         <Badge label="24/7 Online" color="#ECFDF5" textColor={COLORS.success} />
       </View>
