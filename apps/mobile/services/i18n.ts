@@ -165,7 +165,7 @@ export const STRINGS = {
   profile_monthly_contracts: { vi: 'Hợp đồng theo tháng', en: 'Monthly contracts' },
   profile_support_online: { vi: '💬 Hỗ trợ trực tuyến', en: '💬 Online support' },
   profile_help_center: {
-    vi: 'Trung tâm trợ giúp Vua Thợ (24/7)',
+    vi: 'Trung tâm trợ giúp Green House (24/7)',
     en: 'Help Center (24/7)',
   },
   profile_privacy_insurance: {
