@@ -363,8 +363,8 @@ export default function JobDetailPage() {
                 />
                 {updateStatus.error && (
                   <p className="text-xs text-destructive">
-                    {(updateStatus.error as { response?: { data?: { message?: string } } })
-                      .response?.data?.message ?? 'Cập nhật trạng thái thất bại'}
+                    {(updateStatus.error as { response?: { data?: { message?: string } } }).response
+                      ?.data?.message ?? 'Cập nhật trạng thái thất bại'}
                   </p>
                 )}
                 <Button
@@ -414,8 +414,8 @@ export default function JobDetailPage() {
                 />
                 {directRefund.error && (
                   <p className="text-xs text-destructive">
-                    {(directRefund.error as { response?: { data?: { message?: string } } })
-                      .response?.data?.message ?? 'Hoàn tiền thất bại'}
+                    {(directRefund.error as { response?: { data?: { message?: string } } }).response
+                      ?.data?.message ?? 'Hoàn tiền thất bại'}
                   </p>
                 )}
                 <Button
