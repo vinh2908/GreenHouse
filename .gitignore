@@ -17,6 +17,7 @@ ui*.xml
 !apps/mobile/assets/**
 !apps/mobile/android/**
 !apps/admin/public/**
+!apps/mobile/public/**
 data/
 tools/
 
