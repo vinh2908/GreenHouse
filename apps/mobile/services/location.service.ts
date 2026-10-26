@@ -7,22 +7,35 @@ import {
 } from './goong-geocoding';
 
 /**
- * Helper fetch bọc AbortController timeout an toàn.
+ * Helper fetch bọc Promise.race + AbortController timeout an toàn.
  * Đảm bảo các request tìm kiếm và geocoding mạng ngoài (Photon, Nominatim, BigDataCloud)
- * luôn settle, không bao giờ treo promise vô tận khi mạng 4G chập chờn.
+ * luôn settle trong tối đa timeoutMs, giải quyết triệt để lỗi treo socket/DNS trên Android/React Native.
  */
 async function fetchWithTimeout(
   url: string,
   options: RequestInit = {},
-  timeoutMs = 8000,
+  timeoutMs = 4000,
 ): Promise<Response> {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  let timer: any;
+
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => {
+      try {
+        controller.abort();
+      } catch {}
+      reject(new Error(`Fetch timeout after ${timeoutMs}ms for ${url}`));
+    }, timeoutMs);
+  });
+
   try {
-    return await fetch(url, {
-      ...options,
-      signal: controller.signal,
-    });
+    return await Promise.race([
+      fetch(url, {
+        ...options,
+        signal: controller.signal,
+      }),
+      timeoutPromise,
+    ]);
   } finally {
     clearTimeout(timer);
   }
@@ -300,9 +313,10 @@ class LocationService {
     }
 
     // 3. Thử Photon OpenStreetMap Reverse Geocode (Có CORS, miễn phí, trả về Số nhà + Tên đường chính xác)
+    // Chú ý: Photon KHÔNG hỗ trợ lang=vi (trả về 400), dùng mặc định sẽ trả về tên tiếng Việt đầy đủ theo OSM.
     try {
-      const photonUrl = `https://photon.komoot.io/reverse?lat=${latitude}&lon=${longitude}&lang=vi`;
-      const res = await fetchWithTimeout(photonUrl, {}, 8000);
+      const photonUrl = `https://photon.komoot.io/reverse?lat=${latitude}&lon=${longitude}`;
+      const res = await fetchWithTimeout(photonUrl, {}, 4000);
       if (res.ok) {
         const json = await res.json();
         const feat = json.features?.[0];
@@ -467,10 +481,10 @@ class LocationService {
       }
     }
 
-    // 1. Thử Photon search API (nhanh, hỗ trợ CORS trình duyệt) - timeout 8s
+    // 1. Thử Photon search API (cực nhanh ~300ms, hỗ trợ CORS, KHÔNG dùng lang=vi vì Photon sẽ trả 400)
     try {
-      const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(query)}&limit=6&lang=vi`;
-      const res = await fetchWithTimeout(url, {}, 8000);
+      const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(query)}&limit=8`;
+      const res = await fetchWithTimeout(url, {}, 4000);
       if (res.ok) {
         const json = await res.json();
         if (json.features?.length) {
@@ -499,12 +513,12 @@ class LocationService {
       }
     } catch (err: any) {
       console.warn(
-        `Photon search ${err?.name === 'AbortError' ? 'timeout (8s)' : 'error'}, fallback OSM:`,
+        `Photon search ${err?.message?.includes('timeout') ? 'timeout (4s)' : 'error'}, fallback OSM:`,
         err?.message || err,
       );
     }
 
-    // 2. Fallback Nominatim OpenStreetMap - timeout 8s + User-Agent
+    // 2. Fallback Nominatim OpenStreetMap - timeout 3.5s + User-Agent
     try {
       const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&countrycodes=vn&addressdetails=1&limit=6&accept-language=vi`;
       const res = await fetchWithTimeout(
@@ -514,7 +528,7 @@ class LocationService {
             'User-Agent': 'GreenHouse-Mobile/1.0 (contact@greenhouse.app)',
           },
         },
-        8000,
+        3500,
       );
       if (!res.ok) return [];
       return (await res.json()) as OsmPlace[];
