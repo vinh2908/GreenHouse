@@ -1,3 +1,4 @@
+import { Platform } from 'react-native';
 import * as Location from 'expo-location';
 import {
   getGoongApiKey,
@@ -191,33 +192,79 @@ export function parseVietnameseAddress(
   };
 }
 
+export function calculateDistanceKm(
+  lat1: number,
+  lon1: number,
+  lat2: number,
+  lon2: number,
+): number {
+  const R = 6371; // Bán kính Trái Đất (km)
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
 class LocationService {
+  private cachedCoords: { latitude: number; longitude: number } | null = null;
+
+  /** Cập nhật thủ công tọa độ gần nhất (ví dụ khi user ghim vị trí hoặc chọn địa chỉ) */
+  setCachedCoordinates(coords: { latitude: number; longitude: number } | null): void {
+    this.cachedCoords = coords;
+  }
+
+  /** Lấy tọa độ đã lưu gần nhất */
+  getCachedCoordinates(): { latitude: number; longitude: number } | null {
+    return this.cachedCoords;
+  }
+
   /**
    * Xin quyền GPS và lấy tọa độ hiện tại của thiết bị (hỗ trợ cả Web & Mobile Native)
    */
   async getCurrentCoordinates(): Promise<{ latitude: number; longitude: number } | null> {
     // 1. Nếu đang chạy trên trình duyệt Web (Chrome, Safari, Edge, Mobile Web).
-    // RN TypeScript không include DOM lib, nên đọc API web qua globalThis có kiểu tường minh.
-    const browserNavigator = (
-      globalThis as typeof globalThis & { navigator?: { geolocation?: BrowserGeolocation } }
-    ).navigator;
-    const browserGeolocation = browserNavigator?.geolocation;
-    if (browserGeolocation) {
-      try {
-        const pos = await new Promise<BrowserGeolocationPosition>((resolve, reject) => {
-          browserGeolocation.getCurrentPosition(resolve, reject, {
-            enableHighAccuracy: true,
-            timeout: 10000,
-            maximumAge: 30000,
+    if (Platform.OS === 'web') {
+      const browserNavigator = (
+        globalThis as typeof globalThis & { navigator?: { geolocation?: BrowserGeolocation } }
+      ).navigator;
+      const browserGeolocation = browserNavigator?.geolocation;
+      if (browserGeolocation) {
+        try {
+          const pos = await new Promise<BrowserGeolocationPosition>((resolve, reject) => {
+            const timer = setTimeout(() => reject(new Error('HTML5_GPS_TIMEOUT')), 5000);
+            browserGeolocation.getCurrentPosition(
+              p => {
+                clearTimeout(timer);
+                resolve(p);
+              },
+              e => {
+                clearTimeout(timer);
+                reject(e);
+              },
+              {
+                enableHighAccuracy: true,
+                timeout: 5000,
+                maximumAge: 30000,
+              },
+            );
           });
-        });
-        return {
-          latitude: pos.coords.latitude,
-          longitude: pos.coords.longitude,
-        };
-      } catch (err) {
-        console.warn('HTML5 Geolocation error, trying Expo Location:', err);
+          const coords = {
+            latitude: pos.coords.latitude,
+            longitude: pos.coords.longitude,
+          };
+          this.cachedCoords = coords;
+          return coords;
+        } catch (err) {
+          console.warn('HTML5 Geolocation error:', err);
+        }
       }
+      return null;
     }
 
     // 2. Môi trường Native (Android/iOS APK): Dùng Expo Location
@@ -228,31 +275,49 @@ class LocationService {
         return null;
       }
 
-      // Đặt timeout tối đa 8 giây cho getCurrentPositionAsync trên mobile native tránh treo spinner
+      // Thử lấy ngay vị trí gần nhất đã lưu trong hệ điều hành (OPPO/Samsung/Pixel cache ~10-50ms)
+      const lastKnown = await Location.getLastKnownPositionAsync().catch(() => null);
+      if (lastKnown?.coords) {
+        const isFresh = lastKnown.timestamp
+          ? Date.now() - lastKnown.timestamp < 10 * 60 * 1000
+          : false;
+        if (isFresh) {
+          const coords = {
+            latitude: lastKnown.coords.latitude,
+            longitude: lastKnown.coords.longitude,
+          };
+          this.cachedCoords = coords;
+          return coords;
+        }
+      }
+
+      // Đặt timeout tối đa 4 giây cho getCurrentPositionAsync trên mobile native tránh treo spinner
       const posPromise = Location.getCurrentPositionAsync({
         accuracy: Location.Accuracy.Balanced,
       });
       const timeoutPromise = new Promise<null>((_, reject) =>
-        setTimeout(() => reject(new Error('GPS_TIMEOUT')), 8000),
+        setTimeout(() => reject(new Error('GPS_TIMEOUT')), 4000),
       );
 
       let location = await Promise.race([posPromise, timeoutPromise]).catch(async () => {
-        // Fallback sang last known position nếu getCurrentPositionAsync quá 8s hoặc lỗi
-        return await Location.getLastKnownPositionAsync().catch(() => null);
+        // Fallback sang last known position nếu getCurrentPositionAsync quá 4s hoặc lỗi
+        return lastKnown || (await Location.getLastKnownPositionAsync().catch(() => null));
       });
 
       if (!location) {
-        location = await Location.getLastKnownPositionAsync().catch(() => null);
+        location = lastKnown || (await Location.getLastKnownPositionAsync().catch(() => null));
       }
 
       if (!location) {
         return null;
       }
 
-      return {
+      const coords = {
         latitude: location.coords.latitude,
         longitude: location.coords.longitude,
       };
+      this.cachedCoords = coords;
+      return coords;
     } catch (err) {
       console.warn('Error getting native location:', err);
       return null;
@@ -462,18 +527,42 @@ class LocationService {
    * Tìm kiếm địa điểm (Autocomplete). Ưu tiên Goong Place AutoComplete +
    * Place Detail khi có EXPO_PUBLIC_GOONG_API_KEY (dữ liệu VN, có số nhà);
    * không có key hoặc Goong không trả kết quả thì dùng Photon + Nominatim
-   * như trước. Giữ nguyên chữ ký Promise<OsmPlace[]> cho location-picker
-   * và booking dùng không đổi.
+   * như trước.
+   *
+   * Tự động ưu tiên (bias) kết quả theo vị trí hiện tại của người dùng (Đà Nẵng,
+   * HCM, HN...) qua tọa độ refCoords (hoặc this.cachedCoords).
    */
-  async searchPlaces(query: string): Promise<OsmPlace[]> {
+  async searchPlaces(
+    query: string,
+    userCoords?: { latitude: number; longitude: number } | null,
+  ): Promise<OsmPlace[]> {
     if (!query || query.trim().length < 2) return [];
 
-    // 0. Goong (chỉ khi có API key)
+    const refCoords = userCoords || this.cachedCoords;
+
+    // 0. Goong (chỉ khi có API key hợp lệ)
     const goongKey = getGoongApiKey();
     if (goongKey) {
       try {
         const goongPlaces = await searchPlacesWithGoong(query, goongKey);
         if (goongPlaces.length) {
+          if (refCoords?.latitude && refCoords?.longitude) {
+            goongPlaces.sort((a, b) => {
+              const distA = calculateDistanceKm(
+                refCoords.latitude,
+                refCoords.longitude,
+                parseFloat(a.lat),
+                parseFloat(a.lon),
+              );
+              const distB = calculateDistanceKm(
+                refCoords.latitude,
+                refCoords.longitude,
+                parseFloat(b.lat),
+                parseFloat(b.lon),
+              );
+              return distA - distB;
+            });
+          }
           return goongPlaces as OsmPlace[];
         }
       } catch (err) {
@@ -482,13 +571,22 @@ class LocationService {
     }
 
     // 1. Thử Photon search API (cực nhanh ~300ms, hỗ trợ CORS, KHÔNG dùng lang=vi vì Photon sẽ trả 400)
+    // Truyền lat/lon để Photon ưu tiên địa điểm gần người dùng nhất lên đầu
     try {
-      const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(query)}&limit=8`;
+      let url = `https://photon.komoot.io/api/?q=${encodeURIComponent(query)}&limit=12`;
+      if (
+        refCoords &&
+        typeof refCoords.latitude === 'number' &&
+        typeof refCoords.longitude === 'number'
+      ) {
+        url += `&lat=${refCoords.latitude}&lon=${refCoords.longitude}`;
+      }
+
       const res = await fetchWithTimeout(url, {}, 4000);
       if (res.ok) {
         const json = await res.json();
         if (json.features?.length) {
-          return json.features.map((f: any, idx: number) => {
+          const mapped: OsmPlace[] = json.features.map((f: any, idx: number) => {
             const p = f.properties || {};
             const streetName = [p.housenumber, p.street || p.name].filter(Boolean).join(' ');
             const full = [streetName, p.locality, p.district, p.city || p.state, p.country]
@@ -509,6 +607,27 @@ class LocationService {
               },
             } as OsmPlace;
           });
+
+          // Sắp xếp chính xác theo khoảng cách từ tọa độ người dùng (gần nhất lên đầu)
+          if (refCoords?.latitude && refCoords?.longitude) {
+            mapped.sort((a, b) => {
+              const distA = calculateDistanceKm(
+                refCoords.latitude,
+                refCoords.longitude,
+                parseFloat(a.lat),
+                parseFloat(a.lon),
+              );
+              const distB = calculateDistanceKm(
+                refCoords.latitude,
+                refCoords.longitude,
+                parseFloat(b.lat),
+                parseFloat(b.lon),
+              );
+              return distA - distB;
+            });
+          }
+
+          return mapped.slice(0, 8);
         }
       }
     } catch (err: any) {
@@ -520,7 +639,7 @@ class LocationService {
 
     // 2. Fallback Nominatim OpenStreetMap - timeout 3.5s + User-Agent
     try {
-      const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&countrycodes=vn&addressdetails=1&limit=6&accept-language=vi`;
+      const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&countrycodes=vn&addressdetails=1&limit=8&accept-language=vi`;
       const res = await fetchWithTimeout(
         url,
         {
@@ -531,7 +650,25 @@ class LocationService {
         3500,
       );
       if (!res.ok) return [];
-      return (await res.json()) as OsmPlace[];
+      const data = ((await res.json()) as OsmPlace[]) || [];
+      if (refCoords?.latitude && refCoords?.longitude && Array.isArray(data)) {
+        data.sort((a, b) => {
+          const distA = calculateDistanceKm(
+            refCoords.latitude,
+            refCoords.longitude,
+            parseFloat(a.lat),
+            parseFloat(a.lon),
+          );
+          const distB = calculateDistanceKm(
+            refCoords.latitude,
+            refCoords.longitude,
+            parseFloat(b.lat),
+            parseFloat(b.lon),
+          );
+          return distA - distB;
+        });
+      }
+      return data.slice(0, 8);
     } catch (err: any) {
       console.warn(
         `OSM Search ${err?.name === 'AbortError' ? 'timeout (8s)' : 'error'}:`,
