@@ -79,6 +79,10 @@ class StringeeService {
   private bufferedConnect: { token: string; userId: string } | null = null;
   /** Outgoing call waiting for the call ref + client onConnect. */
   private pendingOutgoing: OutgoingRequest | null = null;
+  /** Answer request waiting for callRef, client onConnect, or SDK incomingCall. */
+  private pendingAnswer: { events: StringeeCallEvents } | null = null;
+  /** Optional callback to refresh Stringee token when SDK requests it. */
+  private tokenRefresher: (() => Promise<string | null>) | null = null;
   /** Event handlers of the single active call (outgoing or answered). */
   private activeEvents: StringeeCallEvents | null = null;
   /**
@@ -150,6 +154,34 @@ class StringeeService {
     return this.pendingIncoming;
   }
 
+  isClientReady(): boolean {
+    return this.clientReady;
+  }
+
+  getConnectedUserId(): string | null {
+    return this.connectedUserId;
+  }
+
+  getActiveCallId(): string | null {
+    return this.activeCallId;
+  }
+
+  setTokenRefresher(refresher: (() => Promise<string | null>) | null): void {
+    this.tokenRefresher = refresher;
+  }
+
+  getDiagnostics() {
+    return {
+      clientReady: this.clientReady,
+      connectedUserId: this.connectedUserId,
+      hasClientRef: !!this.clientRef,
+      hasCallRef: !!this.callRef,
+      pendingIncoming: this.pendingIncoming?.callId || null,
+      pendingAnswer: !!this.pendingAnswer,
+      activeCallId: this.activeCallId,
+    };
+  }
+
   /**
    * Ask the StringeeClient (rendered by <StringeeHost/>) to connect with
    * `accessToken` for `myUserId`. If the host has not registered the client
@@ -208,6 +240,9 @@ class StringeeService {
   makeOutgoingCall(params: OutgoingRequest): boolean {
     if (!this.loadSdk()) return false;
     if (!params.myUserId || !params.partnerId) return false;
+    console.log(
+      `[Stringee] makeOutgoingCall: myUserId=${params.myUserId}, partnerId=${params.partnerId}, clientReady=${this.clientReady}, hasCallRef=${!!this.callRef}`,
+    );
     this.activeEvents = params.events;
     this.pendingOutgoing = params;
     this.flushOutgoing();
@@ -218,8 +253,18 @@ class StringeeService {
 
   private flushOutgoing(): void {
     const pending = this.pendingOutgoing;
-    if (!pending || !this.callRef || !this.clientReady) return;
-    if (this.connectedUserId !== pending.myUserId) return;
+    if (!pending || !this.callRef || !this.clientReady) {
+      console.log(
+        `[Stringee] flushOutgoing waiting: pending=${!!pending}, callRef=${!!this.callRef}, clientReady=${this.clientReady}`,
+      );
+      return;
+    }
+    if (this.connectedUserId !== pending.myUserId) {
+      console.warn(
+        `[Stringee] flushOutgoing userId mismatch: connectedUserId=${this.connectedUserId}, pending.myUserId=${pending.myUserId}`,
+      );
+      return;
+    }
     this.pendingOutgoing = null;
     // SDK contract: parameters is a JSON STRING { from, to, isVideoCall }.
     const parameters = JSON.stringify({
@@ -227,52 +272,128 @@ class StringeeService {
       to: pending.partnerId,
       isVideoCall: false,
     });
+    console.log(`[Stringee] makeCall calling native SDK with: ${parameters}`);
     try {
       this.callRef.makeCall(parameters, (status, code, message, callId) => {
+        console.log(
+          `[Stringee] makeCall kết quả: status=${status}, code=${code}, message=${message}, callId=${callId}`,
+        );
         if (status) {
           // Outgoing callId arrives here (Android: when signaling reaches
           // CALLING; iOS: in the makeCall completion handler).
           if (callId) this.activeCallId = callId;
         } else {
-          pending.events.onError?.(message || `Không tạo được cuộc gọi (mã ${code})`);
+          const detail = `Không tạo được cuộc gọi (makeCall mã ${code}: ${message || 'Lỗi không xác định'})`;
+          console.warn('[Stringee]', detail);
+          pending.events.onError?.(detail);
           if (this.activeEvents === pending.events) this.activeEvents = null;
         }
       });
     } catch (e) {
-      pending.events.onError?.(e instanceof Error ? e.message : 'Không tạo được cuộc gọi');
+      const errMsg = e instanceof Error ? e.message : 'Không tạo được cuộc gọi';
+      console.warn('[Stringee] makeCall exception:', errMsg);
+      pending.events.onError?.(`Không tạo được cuộc gọi: ${errMsg}`);
     }
   }
 
   /**
-   * Answer the pending incoming call: initAnswer(callId) first (verified in
-   * both native modules: it attaches the call listener and starts ringing),
-   * then answer(callId) once initAnswer reports success.
+   * Trả lời cuộc gọi đến. Hỗ trợ đệm tự động (buffer):
+   * - Nếu client chưa connect xong: đệm chờ onConnect.
+   * - Nếu SDK chưa giao sự kiện incomingCall: đệm chờ onIncomingCall.
+   * - Nếu component StringeeCall chưa sẵn sàng: đệm chờ callRef.
+   * - CHỈ xóa pendingIncoming sau khi initAnswer báo thành công.
    */
   answerPending(events: StringeeCallEvents): boolean {
-    const pending = this.pendingIncoming;
-    if (!pending || !this.callRef) return false;
-    this.pendingIncoming = null;
+    console.log(
+      `[Stringee] answerPending called. clientReady=${this.clientReady}, hasCallRef=${!!this.callRef}, pendingIncoming=${this.pendingIncoming?.callId || 'null'}, connectedUserId=${this.connectedUserId}`,
+    );
     this.activeEvents = events;
-    this.activeCallId = pending.callId;
-    const callId = pending.callId;
+    this.pendingAnswer = { events };
+
+    // Thử thực thi nếu đã đủ điều kiện
+    return this.flushAnswer();
+  }
+
+  private flushAnswer(): boolean {
+    const pendingAns = this.pendingAnswer;
+    if (!pendingAns) return false;
+    const events = pendingAns.events;
+
+    // 1. Kiểm tra CallRef (component StringeeCall đã mount chưa)
+    if (!this.callRef) {
+      console.log('[Stringee] flushAnswer: chờ component StringeeCall ref...');
+      return true;
+    }
+
+    // 2. Kiểm tra ClientReady (StringeeClient đã kết nối thành công chưa)
+    if (!this.clientReady) {
+      console.log('[Stringee] flushAnswer: chờ client onConnect...');
+      // Nếu có pendingToken mà client chưa connect, kích hoạt connect lại
+      if (this.pendingToken && this.clientRef && !this.bufferedConnect) {
+        console.log('[Stringee] flushAnswer: chủ động gọi connect lại client...');
+        try {
+          this.clientRef.connect(this.pendingToken);
+        } catch (e) {
+          console.warn('[Stringee] flushAnswer client.connect error:', e);
+        }
+      }
+      return true;
+    }
+
+    // 3. Kiểm tra PendingIncoming (SDK đã nhận sự kiện incoming call chưa)
+    const incoming = this.pendingIncoming;
+    if (!incoming || !incoming.callId) {
+      console.log('[Stringee] flushAnswer: chờ sự kiện incomingCall từ native SDK...');
+      return true;
+    }
+
+    // ĐÃ ĐỦ ĐIỀU KIỆN: Bắt đầu initAnswer
+    const callId = incoming.callId;
+    console.log(`[Stringee] Đủ điều kiện, bắt đầu initAnswer cho callId=${callId}`);
+
     try {
       this.callRef.initAnswer(callId, (status, code, message) => {
+        console.log(
+          `[Stringee] initAnswer callback: status=${status}, code=${code}, message=${message}`,
+        );
+
         if (!status) {
-          events.onError?.(message || `Không trả lời được cuộc gọi (mã ${code})`);
+          // GIỮ NGUYÊN pendingIncoming để không mất trạng thái, cho phép thử lại
+          const detail = `Không khởi tạo được trả lời cuộc gọi (initAnswer mã ${code}: ${message || 'Lỗi không xác định'})`;
+          console.warn('[Stringee]', detail);
+          events.onError?.(detail);
           return;
         }
+
+        // initAnswer THÀNH CÔNG: Lúc này mới giải phóng pending
+        this.activeCallId = callId;
+        this.pendingIncoming = null;
+        this.pendingAnswer = null;
+
         try {
           this.callRef?.answer(callId, (s2, c2, m2) => {
-            if (!s2) events.onError?.(m2 || `Không trả lời được cuộc gọi (mã ${c2})`);
+            console.log(
+              `[Stringee] answer callback: status=${s2}, code=${c2}, message=${m2}`,
+            );
+            if (!s2) {
+              const detail = `Không bắt máy được (answer mã ${c2}: ${m2 || 'Lỗi trả lời'})`;
+              console.warn('[Stringee]', detail);
+              events.onError?.(detail);
+            }
           });
         } catch (e) {
-          events.onError?.(e instanceof Error ? e.message : 'Không trả lời được cuộc gọi');
+          const errMsg = e instanceof Error ? e.message : 'Lỗi khi gọi answer()';
+          console.warn('[Stringee] answer exception:', errMsg);
+          events.onError?.(`Lỗi khi bắt máy: ${errMsg}`);
         }
       });
     } catch (e) {
-      events.onError?.(e instanceof Error ? e.message : 'Không trả lời được cuộc gọi');
+      const errMsg = e instanceof Error ? e.message : 'Lỗi khi gọi initAnswer()';
+      console.warn('[Stringee] initAnswer exception:', errMsg);
+      events.onError?.(`Lỗi khởi tạo trả lời cuộc gọi: ${errMsg}`);
       return false;
     }
+
     return true;
   }
 
@@ -347,6 +468,7 @@ class StringeeService {
 
   private resetCallState(): void {
     this.pendingOutgoing = null;
+    this.pendingAnswer = null;
     this.activeEvents = null;
     this.activeCallId = null;
     this.pendingIncoming = null;
@@ -367,17 +489,23 @@ class StringeeService {
   /** INTERNAL: the host registers the rendered <StringeeCall> ref here. */
   _registerCall(ref: StringeeCallInstance | null): void {
     this.callRef = ref;
-    if (ref) this.flushOutgoing();
+    if (ref) {
+      this.flushOutgoing();
+      this.flushAnswer();
+    }
   }
 
   /** INTERNAL: client eventHandlers.onConnect. */
   _handleClientConnect(): void {
+    console.log(`[Stringee] Client connected! userId: ${this.connectedUserId}`);
     this.clientReady = true;
     this.flushOutgoing();
+    this.flushAnswer();
   }
 
   /** INTERNAL: client eventHandlers.onDisConnect. */
   _handleClientDisconnect(): void {
+    console.log('[Stringee] Client disconnected');
     // Keep connectedUserId so a later ensureConnected can reconnect if needed.
     this.clientReady = false;
   }
@@ -387,6 +515,7 @@ class StringeeService {
     const message =
       data?.message ||
       (data?.code != null ? `Stringee error ${data.code}` : 'Lỗi kết nối Stringee');
+    console.warn('[Stringee] _handleClientError:', message, data);
     this.errorHandler?.(message);
     // If a call setup was waiting on this connection, surface it there too.
     const waiting = this.pendingOutgoing?.events ?? this.activeEvents;
@@ -395,18 +524,39 @@ class StringeeService {
   }
 
   /** INTERNAL: client eventHandlers.onRequestAccessToken. */
-  _handleTokenRequest(): void {
-    // TODO(token-refresh): fetch a fresh token via POST /calls/token or
-    // /calls/sessions/:sessionId/join-token and call client.connect(newToken).
-    // Left as a disconnect-safe no-op: the current token lasts 1h, which
-    // covers a single call session; do NOT disconnect here.
+  async _handleTokenRequest(): Promise<void> {
+    console.log('[Stringee] onRequestAccessToken event triggered from native SDK');
+    if (this.tokenRefresher) {
+      try {
+        const newToken = await this.tokenRefresher();
+        if (newToken && this.clientRef) {
+          console.log('[Stringee] Refreshed token successfully, reconnecting client...');
+          this.pendingToken = newToken;
+          this.clientRef.connect(newToken);
+          return;
+        }
+      } catch (err) {
+        console.warn('[Stringee] Token refresher failed:', err);
+      }
+    }
+    // Fallback: nếu có pendingToken hiện tại, thử connect lại
+    if (this.pendingToken && this.clientRef) {
+      try {
+        console.log('[Stringee] Reconnecting with current pending token...');
+        this.clientRef.connect(this.pendingToken);
+      } catch (e) {
+        console.warn('[Stringee] Reconnect with pending token failed:', e);
+      }
+    }
   }
 
   /** INTERNAL: client eventHandlers.onIncomingCall — data carries callId + from. */
   _handleIncomingCall(data: StringeeIncomingCallEventData | undefined): void {
+    console.log('[Stringee] onIncomingCall received:', JSON.stringify(data));
     if (!data?.callId) return;
     this.pendingIncoming = { callId: data.callId, from: data.from ?? '' };
     this.subscriber.onIncomingCall?.(this.pendingIncoming);
+    this.flushAnswer();
   }
 
   /** INTERNAL: call eventHandlers.onChangeSignalingState. */

@@ -12,3 +12,9 @@
 -keep class com.facebook.react.turbomodule.** { *; }
 
 # Add any project specific keep options here:
+
+# Stringee SDK keep rules
+-keep class com.stringee.** { *; }
+-keep interface com.stringee.** { *; }
+-keep class com.stringeereactnative.** { *; }
+-dontwarn com.stringee.**
