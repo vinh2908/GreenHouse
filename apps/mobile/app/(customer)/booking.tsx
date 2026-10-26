@@ -396,7 +396,7 @@ export default function BookingScreen() {
 
         const asset = result.assets[0];
         targetUri = asset.uri;
-        assetBase64 = asset.base64;
+        assetBase64 = asset.base64 ?? undefined;
         assetMimeType = asset.mimeType;
         setPhotos(prev => [...prev, targetUri!].slice(0, 6));
       }

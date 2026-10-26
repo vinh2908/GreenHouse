@@ -120,10 +120,23 @@ export default function CallScreen() {
     };
 
     if (isAnswerMode && sessionId) {
+      // Đăng ký token refresher cho callee
+      stringeeService.setTokenRefresher(async () => {
+        try {
+          const fresh = await joinToken.mutateAsync(sessionId);
+          return fresh.token;
+        } catch {
+          return null;
+        }
+      });
+
       joinToken
         .mutateAsync(sessionId)
         .then(s => {
           setSessionBoth(s);
+          console.log(
+            `[CallScreen] Callee fetched token for userId: ${s.my_user_id}, partner: ${s.partner_id}`,
+          );
           const connected = stringeeService.ensureConnected(s.token, s.my_user_id);
           if (!connected) {
             // Media inactive in this build (web / Expo Go / SDK not installed):
@@ -131,36 +144,51 @@ export default function CallScreen() {
             setUiState('in_call');
             return;
           }
-          const tryAnswer = () => {
-            if (stringeeService.hasPendingIncoming()) {
-              if (answerTimerRef.current) clearTimeout(answerTimerRef.current);
-              stringeeService.answerPending(events);
-            }
-          };
-          // Subscribe for the SDK incoming call, and check the already-pending case.
-          unsubIncomingRef.current = stringeeService.setIncomingListener(() => tryAnswer());
-          tryAnswer();
+
+          // Gọi answerPending: cơ chế flushAnswer tự động đệm chờ client kết nối
+          // và chờ SDK event onIncomingCall, sau đó tự động gọi initAnswer + answer.
+          stringeeService.answerPending(events);
+
           answerTimerRef.current = setTimeout(() => {
             if (endedRef.current) return;
-            // No SDK incoming call arrived — the caller likely hung up / expired.
-            setErrorMsg('Cuộc gọi đã kết thúc hoặc đã bị hủy');
+            const diag = stringeeService.getDiagnostics();
+            const diagMsg =
+              `Cuộc gọi đã kết thúc hoặc không nhận được tín hiệu từ SDK ` +
+              `[Chẩn đoán: clientReady=${diag.clientReady}, callRef=${diag.hasCallRef}, incoming=${diag.pendingIncoming || 'null'}]`;
+            console.warn('[CallScreen] Answer timeout:', diagMsg);
+            setErrorMsg(diagMsg);
             setUiState('error');
             void endCall.mutateAsync({ sessionId, reason: 'missed' }).catch(() => undefined);
-          }, 20_000);
+          }, 25_000);
         })
         .catch((err: any) => {
-          setErrorMsg(
-            err?.response?.data?.message ?? 'Không bắt đầu được cuộc gọi. Vui lòng thử lại.',
-          );
+          const serverMsg =
+            err?.response?.data?.message || err?.message || 'Không bắt đầu được cuộc gọi';
+          const diag = `Lỗi lấy token cuộc gọi (${serverMsg})`;
+          console.warn('[CallScreen] joinToken error:', diag);
+          setErrorMsg(diag);
           setUiState('error');
         });
       return;
     }
 
+    // Đăng ký token refresher cho caller
+    stringeeService.setTokenRefresher(async () => {
+      try {
+        const fresh = await initiate.mutateAsync(jobId);
+        return fresh.token;
+      } catch {
+        return null;
+      }
+    });
+
     initiate
       .mutateAsync(jobId)
       .then(s => {
         setSessionBoth(s);
+        console.log(
+          `[CallScreen] Caller fetched token for userId: ${s.my_user_id}, partner: ${s.partner_id}`,
+        );
         const connected = stringeeService.ensureConnected(s.token, s.my_user_id);
         if (!connected) {
           // Media inactive in this build (web / Expo Go / SDK not installed):
@@ -174,13 +202,15 @@ export default function CallScreen() {
           events,
         });
         if (!started) {
-          setUiState('in_call');
+          console.warn('[CallScreen] makeOutgoingCall returned false');
         }
       })
       .catch((err: any) => {
-        setErrorMsg(
-          err?.response?.data?.message ?? 'Không bắt đầu được cuộc gọi. Vui lòng thử lại.',
-        );
+        const serverMsg =
+          err?.response?.data?.message || err?.message || 'Không bắt đầu được cuộc gọi';
+        const diag = `Lỗi khởi tạo cuộc gọi (${serverMsg})`;
+        console.warn('[CallScreen] initiate error:', diag);
+        setErrorMsg(diag);
         setUiState('error');
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -191,6 +221,7 @@ export default function CallScreen() {
     return () => {
       if (answerTimerRef.current) clearTimeout(answerTimerRef.current);
       unsubIncomingRef.current?.();
+      stringeeService.setTokenRefresher(null);
       stringeeService.hangupCurrent();
     };
   }, []);
@@ -283,21 +314,64 @@ export default function CallScreen() {
       <View style={{ flex: 1 }} />
 
       {(uiState === 'unavailable' || uiState === 'error') && (
-        <View style={{ width: '100%', gap: 12, alignItems: 'center' }}>
-          <Text
+        <View style={{ width: '100%', gap: 14, alignItems: 'center', paddingHorizontal: 16 }}>
+          <View
             style={{
-              color: 'rgba(255,255,255,0.85)',
-              fontSize: 13.5,
-              textAlign: 'center',
-              lineHeight: 20,
+              backgroundColor: 'rgba(239, 68, 68, 0.15)',
+              borderColor: 'rgba(239, 68, 68, 0.4)',
+              borderWidth: 1,
+              borderRadius: 12,
+              padding: 14,
+              width: '100%',
             }}
           >
-            {uiState === 'unavailable'
-              ? (config?.message ??
-                'Tính năng gọi thoại chưa được kích hoạt trên hệ thống. Hai bên vui lòng trao đổi qua khung chat của đơn.')
-              : errorMsg}
-          </Text>
-          <Button title="Quay lại" onPress={() => router.back()} />
+            <Text
+              style={{
+                color: '#FCA5A5',
+                fontSize: 13,
+                fontWeight: '600',
+                textAlign: 'center',
+                lineHeight: 19,
+              }}
+            >
+              {uiState === 'unavailable'
+                ? (config?.message ??
+                  'Tính năng gọi thoại chưa được kích hoạt trên hệ thống. Hai bên vui lòng trao đổi qua khung chat của đơn.')
+                : (errorMsg || 'Không kết nối được cuộc gọi. Vui lòng thử lại.')}
+            </Text>
+          </View>
+          <View style={{ flexDirection: 'row', gap: 12, marginTop: 4 }}>
+            {isAnswerMode && (
+              <TouchableOpacity
+                onPress={() => {
+                  setErrorMsg('');
+                  setUiState('connecting');
+                  startedRef.current = false;
+                }}
+                style={{
+                  backgroundColor: '#16A34A',
+                  paddingHorizontal: 18,
+                  paddingVertical: 10,
+                  borderRadius: 8,
+                }}
+              >
+                <Text style={{ color: '#fff', fontWeight: '700', fontSize: 13.5 }}>
+                  Thử kết nối lại
+                </Text>
+              </TouchableOpacity>
+            )}
+            <TouchableOpacity
+              onPress={() => router.back()}
+              style={{
+                backgroundColor: 'rgba(255,255,255,0.2)',
+                paddingHorizontal: 18,
+                paddingVertical: 10,
+                borderRadius: 8,
+              }}
+            >
+              <Text style={{ color: '#fff', fontWeight: '600', fontSize: 13.5 }}>Quay lại</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       )}
 

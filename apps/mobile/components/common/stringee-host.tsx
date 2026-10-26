@@ -31,6 +31,7 @@ const clientEventHandlers: StringeeClientEventHandlers = {
   onFailWithError: data => stringeeService._handleClientError(data),
   onRequestAccessToken: () => stringeeService._handleTokenRequest(),
   onIncomingCall: data => stringeeService._handleIncomingCall(data),
+  onIncomingCall2: data => stringeeService._handleIncomingCall(data),
 };
 
 const callEventHandlers: StringeeCallEventHandlers = {
