@@ -28,7 +28,13 @@ const GOONG_TIMEOUT_MS = 6000;
  * Cần key loại "REST API" (không phải Map tiles key) tạo tại goong.io.
  */
 export function getGoongApiKey(): string {
-  return process.env.EXPO_PUBLIC_GOONG_API_KEY || '';
+  const key = process.env.EXPO_PUBLIC_GOONG_API_KEY || '';
+  // Kiểm tra key hợp lệ: Goong REST API key thường là chuỗi alphanumeric ~30 ký tự.
+  // Nếu key là chuỗi base64 lỗi/dài bất thường (>100 ký tự) hoặc JSON blob thì bỏ qua.
+  if (!key || key.length > 100 || key.startsWith('eyJ') || key.startsWith('{')) {
+    return '';
+  }
+  return key;
 }
 
 // ─── Kiểu dữ liệu theo response của Goong (mô phỏng Google Geocoding/Places) ──
