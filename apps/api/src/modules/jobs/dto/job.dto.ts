@@ -51,7 +51,22 @@ export class JobAddressDto {
 }
 
 export class CreateJobDto {
-  @ApiProperty() @IsMongoId({ message: 'service_id không hợp lệ' }) service_id: string;
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsMongoId({ message: 'service_id không hợp lệ' })
+  service_id?: string;
+
+  @ApiPropertyOptional({ description: 'Tên dịch vụ tùy chỉnh tự ghi' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  custom_service_name?: string;
+
+  @ApiPropertyOptional({ description: 'Giá mở đầu để deal (VNĐ, tối thiểu 50.000)' })
+  @IsOptional()
+  @IsNumber()
+  @Min(50000)
+  target_price?: number;
   @ApiProperty({ maxLength: 200 }) @IsString() @IsNotEmpty() @MaxLength(200) title: string;
   @ApiProperty() @IsString() @IsNotEmpty() description: string;
 
