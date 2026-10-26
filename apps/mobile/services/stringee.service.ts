@@ -372,9 +372,7 @@ class StringeeService {
 
         try {
           this.callRef?.answer(callId, (s2, c2, m2) => {
-            console.log(
-              `[Stringee] answer callback: status=${s2}, code=${c2}, message=${m2}`,
-            );
+            console.log(`[Stringee] answer callback: status=${s2}, code=${c2}, message=${m2}`);
             if (!s2) {
               const detail = `Không bắt máy được (answer mã ${c2}: ${m2 || 'Lỗi trả lời'})`;
               console.warn('[Stringee]', detail);

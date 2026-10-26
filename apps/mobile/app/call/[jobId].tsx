@@ -337,7 +337,7 @@ export default function CallScreen() {
               {uiState === 'unavailable'
                 ? (config?.message ??
                   'Tính năng gọi thoại chưa được kích hoạt trên hệ thống. Hai bên vui lòng trao đổi qua khung chat của đơn.')
-                : (errorMsg || 'Không kết nối được cuộc gọi. Vui lòng thử lại.')}
+                : errorMsg || 'Không kết nối được cuộc gọi. Vui lòng thử lại.'}
             </Text>
           </View>
           <View style={{ flexDirection: 'row', gap: 12, marginTop: 4 }}>

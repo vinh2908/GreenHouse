@@ -359,11 +359,13 @@ export class JobsService {
 
     // Giá cam kết (Feature 7): snapshot mô hình giá của dịch vụ vào đơn.
     // Dịch vụ 'fixed' + fixed_price > 0 → đơn giá cam kết, thợ nhận trực tiếp.
-    const serviceForPricing = await this.serviceModel
-      .findById(dto.service_id)
-      .select('pricing_model fixed_price')
-      .lean()
-      .exec();
+    const serviceForPricing = dto.service_id
+      ? await this.serviceModel
+          .findById(dto.service_id)
+          .select('pricing_model fixed_price')
+          .lean()
+          .exec()
+      : null;
     // Đơn bảo hành (Feature 9) luôn miễn phí → không snapshot giá cam kết dù
     // dịch vụ gốc là fixed (tránh accept-fixed tính tiền cho đơn bảo hành).
     const isFixedPrice =
@@ -373,7 +375,9 @@ export class JobsService {
 
     const job = await this.jobModel.create({
       customer_id: new Types.ObjectId(customerId),
-      service_id: new Types.ObjectId(dto.service_id),
+      service_id: dto.service_id ? new Types.ObjectId(dto.service_id) : undefined,
+      custom_service_name: dto.custom_service_name,
+      target_price: dto.target_price,
       status: JobStatus.OPEN,
       is_fixed_price: isFixedPrice,
       fixed_price: isFixedPrice ? (serviceForPricing?.fixed_price ?? 0) : 0,
@@ -641,7 +645,7 @@ export class JobsService {
               query: {
                 status: HelperStatus.ONLINE,
                 verification_status: VerificationStatus.APPROVED,
-                service_ids: job.service_id,
+                ...(job.service_id ? { service_ids: job.service_id } : {}),
               },
             },
           },
@@ -680,7 +684,7 @@ export class JobsService {
             body: `${job.title}${district}. Mở mục Công việc để xem chi tiết và gửi báo giá.`,
             payload: {
               job_id: String(job._id),
-              service_id: String(job.service_id),
+              service_id: job.service_id ? String(job.service_id) : '',
               is_sos: false,
             },
           }),

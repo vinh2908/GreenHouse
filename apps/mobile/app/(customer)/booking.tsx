@@ -63,11 +63,17 @@ const TIME_SLOTS = [
   '09:00',
   '10:00',
   '11:00',
+  '12:00',
   '13:00',
   '14:00',
   '15:00',
   '16:00',
   '17:00',
+  '18:00',
+  '19:00',
+  '20:00',
+  '21:00',
+  '22:00',
 ];
 
 const DURATION_OPTIONS = [1, 2, 3, 4, 5, 6, 8];
@@ -185,6 +191,12 @@ export default function BookingScreen() {
     prefill_title?: string;
     prefill_description?: string;
     package_mode?: string;
+    custom_service_name?: string;
+    target_price?: string;
+    preferred_date?: string;
+    preferred_time_start?: string;
+    duration_hours?: string;
+    attached_photo?: string;
   }>();
   const { data: services, isLoading: isLoadingServices } = useServices();
   const createJob = useCreateJob();
@@ -205,8 +217,12 @@ export default function BookingScreen() {
   const [voucherPreview, setVoucherPreview] = useState<VoucherPreview | null>(null);
   const [helpersNeeded, setHelpersNeeded] = useState(1); // Đơn nhóm (Feature 5)
 
-  const [step, setStep] = useState(params.service_id ? 1 : 0);
-  const [selectedService, setSelectedService] = useState<string>(params.service_id ?? '');
+  const [step, setStep] = useState(params.service_id || params.custom_service_name ? 1 : 0);
+  const [selectedService, setSelectedService] = useState<string>(
+    params.custom_service_name ? 'custom' : (params.service_id ?? ''),
+  );
+  const [customServiceName, setCustomServiceName] = useState(params.custom_service_name ?? '');
+  const [targetPrice, setTargetPrice] = useState(params.target_price ?? '');
   const [address, setAddress] = useState({
     full_address: '',
     ward: '',
@@ -251,18 +267,37 @@ export default function BookingScreen() {
   const [photoAnalysis, setPhotoAnalysis] = useState<IssuePhotoAnalysis | null>(null);
 
   useEffect(() => {
-    if (params.service_id) {
+    if (params.custom_service_name) {
+      setSelectedService('custom');
+      setCustomServiceName(params.custom_service_name);
+      if (params.target_price) setTargetPrice(params.target_price);
+      setStep(1);
+    } else if (params.service_id) {
       setSelectedService(params.service_id);
       setStep(1);
     } else {
       setSelectedService('');
       setStep(0);
     }
+    // Prefill ngày giờ nếu có
+    if (params.preferred_date) setDate(params.preferred_date);
+    if (params.preferred_time_start) setTimeSlot(params.preferred_time_start);
+    if (params.duration_hours) setDuration(Number(params.duration_hours) || 2);
+    if (params.attached_photo) setPhotos([params.attached_photo]);
     // Đặt lại / đặt từ thợ yêu thích: điền sẵn tiêu đề + mô tả của đơn cũ
     if (params.prefill_title) setTitle(params.prefill_title);
     if (params.prefill_description) setDescription(params.prefill_description);
     if (params.package_mode === 'recurring') setIsRecurring(true);
-  }, [params.service_id, params.service_slug]);
+  }, [
+    params.service_id,
+    params.service_slug,
+    params.custom_service_name,
+    params.target_price,
+    params.preferred_date,
+    params.preferred_time_start,
+    params.duration_hours,
+    params.attached_photo,
+  ]);
 
   const resetForm = () => {
     setStep(0);
@@ -506,7 +541,7 @@ export default function BookingScreen() {
     let timer: any;
     try {
       const timeoutPromise = new Promise<never>((_, reject) => {
-        timer = setTimeout(() => reject(new Error('LOCATION_TIMEOUT')), 12000);
+        timer = setTimeout(() => reject(new Error('LOCATION_TIMEOUT')), 6000);
       });
       const details = await Promise.race([
         locationService.getCurrentLocationDetails(),
@@ -516,11 +551,11 @@ export default function BookingScreen() {
         const parsed = parseVietnameseAddress(details.full_address || details.road, details);
         setAddress(prev => ({
           ...prev,
-          full_address: parsed.road || details.road || details.full_address,
+          full_address: parsed.road || details.road || details.full_address || '',
           ward: parsed.ward || details.ward || '',
           district: parsed.district || details.district || '',
           city: parsed.city || details.city || '',
-          coordinates: details.coordinates,
+          coordinates: details.coordinates || prev.coordinates,
         }));
         setCoordsDerived(true);
         Toast.show({
@@ -561,7 +596,11 @@ export default function BookingScreen() {
     const seq = ++searchSeqRef.current;
     searchTimeoutRef.current = setTimeout(async () => {
       try {
-        const results = await locationService.searchPlaces(text);
+        const currentCoords =
+          address.coordinates?.[0] && address.coordinates?.[1]
+            ? { latitude: address.coordinates[1], longitude: address.coordinates[0] }
+            : locationService.getCachedCoordinates();
+        const results = await locationService.searchPlaces(text, currentCoords);
         if (seq === searchSeqRef.current) {
           setSearchResults(results);
           setHasSearched(true);
@@ -583,6 +622,12 @@ export default function BookingScreen() {
     setSearchResults([]);
     setHasSearched(false);
     setSearchQuery(place.display_name);
+    if (place.lat && place.lon) {
+      locationService.setCachedCoordinates({
+        latitude: parseFloat(place.lat),
+        longitude: parseFloat(place.lon),
+      });
+    }
     const addr = place.address || {};
     const house = addr.house_number ? `${addr.house_number} ` : '';
     let road = addr.road || addr.pedestrian || addr.suburb || '';
@@ -883,14 +928,18 @@ export default function BookingScreen() {
         return;
       }
 
+      const endTime = dayjs(`${date} ${timeSlot}`).add(duration, 'hour').format('HH:mm');
       await createJob.mutateAsync({
-        service_id: currentServiceId,
-        title: title.trim(),
+        service_id: currentServiceId === 'custom' ? undefined : currentServiceId,
+        custom_service_name: customServiceName.trim() || undefined,
+        target_price: targetPrice ? Number(targetPrice) : undefined,
+        title: title.trim() || customServiceName.trim() || 'Yêu cầu dịch vụ',
         description: description.trim(),
         photos: photos.length > 0 ? photos : undefined,
         address: jobAddress,
         preferred_date: date,
         preferred_time_start: timeSlot,
+        preferred_time_end: endTime,
         is_flexible_time: false,
         private_offer_helper_id:
           offerToFavorite && params.favorite_helper_id ? params.favorite_helper_id : undefined,
@@ -1274,6 +1323,99 @@ export default function BookingScreen() {
                     </TouchableOpacity>
                   ))
                 )}
+
+                {/* 12th Service: Dịch vụ khác — tự ghi việc, tự set giá */}
+                <TouchableOpacity
+                  activeOpacity={0.85}
+                  onPress={() => setSelectedService('custom')}
+                  style={{
+                    padding: 16,
+                    borderRadius: 16,
+                    borderWidth: 2,
+                    borderColor: selectedService === 'custom' ? COLORS.primary : '#86EFAC',
+                    backgroundColor:
+                      selectedService === 'custom' ? COLORS.primaryLight : '#F0FDF4',
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 14,
+                  }}
+                >
+                  <Text style={{ fontSize: 28 }}>💡</Text>
+                  <View style={{ flex: 1 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                      <Text style={{ fontWeight: '800', fontSize: 15, color: COLORS.gray[900] }}>
+                        Dịch vụ khác — tự ghi việc, tự set giá
+                      </Text>
+                      <View
+                        style={{
+                          backgroundColor: '#DCFCE7',
+                          paddingHorizontal: 6,
+                          paddingVertical: 2,
+                          borderRadius: 6,
+                        }}
+                      >
+                        <Text style={{ fontSize: 10, fontWeight: '900', color: COLORS.primary }}>
+                          MỚI
+                        </Text>
+                      </View>
+                    </View>
+                    <Text style={{ fontSize: 12, color: COLORS.gray[600], marginTop: 2 }}>
+                      Việc gì cũng đăng được · bạn tự mô tả công việc và đặt giá mong muốn
+                    </Text>
+                    <Text
+                      style={{
+                        fontSize: 12,
+                        color: COLORS.primary,
+                        marginTop: 4,
+                        fontWeight: '700',
+                      }}
+                    >
+                      Deal giá trực tiếp với thợ
+                    </Text>
+                  </View>
+                  {selectedService === 'custom' && (
+                    <View
+                      style={{
+                        width: 24,
+                        height: 24,
+                        borderRadius: 12,
+                        backgroundColor: COLORS.primary,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      <Check size={16} color="#fff" />
+                    </View>
+                  )}
+                </TouchableOpacity>
+
+                {selectedService === 'custom' && (
+                  <View
+                    style={{
+                      backgroundColor: '#FFFFFF',
+                      borderRadius: 16,
+                      padding: 16,
+                      borderWidth: 1.5,
+                      borderColor: COLORS.primary,
+                      gap: 12,
+                      marginTop: 4,
+                    }}
+                  >
+                    <Input
+                      label="Tên công việc / dịch vụ bạn cần *"
+                      placeholder="VD: Bốc hàng từ kho lên xe tải, dọn kho..."
+                      value={customServiceName}
+                      onChangeText={setCustomServiceName}
+                    />
+                    <Input
+                      label="Giá bạn muốn trả (giá mở đầu để deal) *"
+                      placeholder="VD: 200000"
+                      value={targetPrice}
+                      onChangeText={setTargetPrice}
+                      keyboardType="numeric"
+                    />
+                  </View>
+                )}
               </View>
             </View>
           )}
@@ -1552,8 +1694,43 @@ export default function BookingScreen() {
                         borderWidth: 2,
                         borderColor: timeSlot === t ? COLORS.primary : COLORS.gray[200],
                         backgroundColor: timeSlot === t ? COLORS.primaryLight : '#fff',
+                        position: 'relative',
                       }}
                     >
+                      {t === '12:00' && (
+                        <View
+                          style={{
+                            backgroundColor: '#DCFCE7',
+                            paddingHorizontal: 4,
+                            paddingVertical: 1,
+                            borderRadius: 4,
+                            position: 'absolute',
+                            top: -7,
+                            right: -4,
+                          }}
+                        >
+                          <Text style={{ fontSize: 9, fontWeight: '800', color: COLORS.primary }}>
+                            MỚI
+                          </Text>
+                        </View>
+                      )}
+                      {(t === '21:00' || t === '22:00') && (
+                        <View
+                          style={{
+                            backgroundColor: '#FEF2F2',
+                            paddingHorizontal: 4,
+                            paddingVertical: 1,
+                            borderRadius: 4,
+                            position: 'absolute',
+                            top: -7,
+                            right: -4,
+                          }}
+                        >
+                          <Text style={{ fontSize: 9, fontWeight: '800', color: COLORS.error }}>
+                            ĐÊM
+                          </Text>
+                        </View>
+                      )}
                       <Text
                         style={{
                           fontSize: 14,
@@ -1606,6 +1783,32 @@ export default function BookingScreen() {
                     ))}
                   </View>
                 </ScrollView>
+
+                <View
+                  style={{
+                    backgroundColor: '#F0FDF4',
+                    borderRadius: 12,
+                    padding: 12,
+                    borderWidth: 1,
+                    borderColor: '#BBF7D0',
+                    marginTop: 14,
+                  }}
+                >
+                  <Text style={{ fontSize: 13, color: '#166534', fontWeight: '600', lineHeight: 18 }}>
+                    Lịch dự kiến:{' '}
+                    <Text style={{ fontWeight: '800' }}>
+                      {dayjs(date).format('dddd, DD/MM')}, {timeSlot} –{' '}
+                      {dayjs(`${date} ${timeSlot}`).add(duration, 'hour').format('HH:mm')}
+                      {dayjs(`${date} ${timeSlot}`).add(duration, 'hour').date() !== dayjs(date).date()
+                        ? ' (ngày hôm sau)'
+                        : ''}
+                    </Text>{' '}
+                    · thời lượng {duration} giờ.
+                    {targetPrice
+                      ? ` Giá mở đầu để deal: ${new Intl.NumberFormat('vi-VN').format(Number(targetPrice))}₫.`
+                      : ''}
+                  </Text>
+                </View>
               </View>
             </View>
           )}

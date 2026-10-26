@@ -72,7 +72,9 @@ export enum ContractStatus {
 export interface IJob {
   _id: string;
   customer_id: string;
-  service_id: string;
+  service_id?: string;
+  custom_service_name?: string;
+  target_price?: number;
   status: JobStatus;
 
   // Mô tả yêu cầu
