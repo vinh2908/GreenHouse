@@ -221,6 +221,7 @@ export default function BookingScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<OsmPlace[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [hasSearched, setHasSearched] = useState(false);
   const [isAnalyzingPhoto, setIsAnalyzingPhoto] = useState(false);
   const searchSeqRef = useRef(0);
   const searchTimeoutRef = useRef<any>(null);
@@ -552,29 +553,36 @@ export default function BookingScreen() {
     if (text.trim().length < 2) {
       setSearchResults([]);
       setIsSearching(false);
+      setHasSearched(false);
       return;
     }
     setIsSearching(true);
+    setHasSearched(false);
     const seq = ++searchSeqRef.current;
     searchTimeoutRef.current = setTimeout(async () => {
       try {
         const results = await locationService.searchPlaces(text);
         if (seq === searchSeqRef.current) {
           setSearchResults(results);
+          setHasSearched(true);
         }
       } catch {
         if (seq === searchSeqRef.current) {
           setSearchResults([]);
+          setHasSearched(true);
         }
       } finally {
         if (seq === searchSeqRef.current) {
           setIsSearching(false);
         }
       }
-    }, 300);
+    }, 350);
   };
 
   const handleSelectOsmPlace = (place: OsmPlace) => {
+    setSearchResults([]);
+    setHasSearched(false);
+    setSearchQuery(place.display_name);
     const addr = place.address || {};
     const house = addr.house_number ? `${addr.house_number} ` : '';
     let road = addr.road || addr.pedestrian || addr.suburb || '';
@@ -1374,6 +1382,27 @@ export default function BookingScreen() {
                     </ScrollView>
                   </Card>
                 )}
+
+                {!isSearching &&
+                  hasSearched &&
+                  searchResults.length === 0 &&
+                  searchQuery.trim().length >= 2 && (
+                    <View
+                      style={{
+                        padding: 10,
+                        marginTop: 4,
+                        backgroundColor: COLORS.gray[50],
+                        borderRadius: 10,
+                        borderWidth: 1,
+                        borderColor: COLORS.gray[200],
+                      }}
+                    >
+                      <Text style={{ fontSize: 13, color: COLORS.gray[500], lineHeight: 18 }}>
+                        Không tìm thấy địa điểm phù hợp. Vui lòng thử từ khóa khác hoặc nhập trực
+                        tiếp vào các ô bên dưới.
+                      </Text>
+                    </View>
+                  )}
               </View>
 
               <Input
