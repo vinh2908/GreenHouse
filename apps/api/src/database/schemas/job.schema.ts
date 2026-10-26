@@ -34,8 +34,14 @@ export class Job {
   @Prop({ type: Types.ObjectId, ref: 'User', required: true, index: true })
   customer_id: Types.ObjectId;
 
-  @Prop({ type: Types.ObjectId, ref: 'Service', required: true, index: true })
-  service_id: Types.ObjectId;
+  @Prop({ type: Types.ObjectId, ref: 'Service', required: false, index: true })
+  service_id?: Types.ObjectId;
+
+  @Prop({ type: String, required: false })
+  custom_service_name?: string;
+
+  @Prop({ type: Number, required: false })
+  target_price?: number;
 
   @Prop({ type: String, enum: JobStatus, default: JobStatus.DRAFT, index: true })
   status: JobStatus;
