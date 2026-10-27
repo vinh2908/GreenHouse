@@ -11,7 +11,10 @@ import {
   AccessibilityInfo,
   Animated,
   StyleSheet,
+  useWindowDimensions,
 } from 'react-native';
+import { ScalePressable } from '@/components/common/scale-pressable';
+import { WheelTimePicker } from '@/components/common/wheel-time-picker';
 import Svg, { Defs, LinearGradient as SvgLinearGradient, Stop, Rect } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -194,44 +197,6 @@ function calculateDistanceKm(lat1: number, lon1: number, lat2: number, lon2: num
   return R * c;
 }
 
-function ScalePressable({
-  children,
-  onPress,
-  style,
-  activeScale = 0.96,
-  disabled = false,
-  ...props
-}: any) {
-  const scale = useRef(new Animated.Value(1)).current;
-  const onPressIn = () => {
-    Animated.spring(scale, {
-      toValue: activeScale,
-      useNativeDriver: Platform.OS !== 'web',
-      speed: 40,
-      bounciness: 4,
-    }).start();
-  };
-  const onPressOut = () => {
-    Animated.spring(scale, {
-      toValue: 1,
-      useNativeDriver: Platform.OS !== 'web',
-      speed: 40,
-      bounciness: 8,
-    }).start();
-  };
-  return (
-    <Pressable
-      onPress={onPress}
-      onPressIn={onPressIn}
-      onPressOut={onPressOut}
-      disabled={disabled}
-      {...props}
-    >
-      <Animated.View style={[{ transform: [{ scale }] }, style]}>{children}</Animated.View>
-    </Pressable>
-  );
-}
-
 export default function CustomerHomeScreen() {
   const router = useRouter();
   const { t, fs } = useTranslation();
@@ -244,6 +209,7 @@ export default function CustomerHomeScreen() {
   const createJob = useCreateJob();
   const insets = useSafeAreaInsets();
   const scrollViewRef = useRef<ScrollView>(null);
+  const { width: windowWidth } = useWindowDimensions();
 
   // Vị trí người dùng
   const [currentLocationName, setCurrentLocationName] = useState('Đang định vị...');
@@ -446,7 +412,7 @@ export default function CustomerHomeScreen() {
     const pinsJson = JSON.stringify(
       nearbyHelpers.map(h => ({
         id: h.id,
-        name: h.shortName || h.name,
+        name: h.name, // Hiển thị đầy đủ TÊN THỢ, không cắt ngắn, không hiển thị tên loại dịch vụ
         lat: h.lat,
         lon: h.lon,
         selected: h.id === selectedHelperId,
@@ -457,6 +423,7 @@ export default function CustomerHomeScreen() {
 <html>
 <head>
   <meta charset="utf-8" />
+  <base target="_self" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -466,40 +433,45 @@ export default function CustomerHomeScreen() {
     .pin-pill {
       display: inline-flex;
       align-items: center;
-      gap: 5px;
+      gap: 6px;
       background: #FFFFFF;
       border: 2px solid #16A34A;
       color: #166534;
-      padding: 4px 10px;
+      padding: 5px 12px;
       border-radius: 9999px;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       font-size: 11px;
       font-weight: 800;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+      box-shadow: 0 2px 10px rgba(0,0,0,0.18);
       white-space: nowrap;
       cursor: pointer;
       transform: translate(-50%, -50%);
       transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      animation: pin-beat 2.2s ease-in-out infinite;
     }
     .pin-pill.selected {
       background: #16A34A;
       color: #FFFFFF;
       border-color: #FFFFFF;
       transform: translate(-50%, -50%) scale(1.15);
-      box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.45);
+      box-shadow: 0 0 0 4px rgba(22, 163, 74, 0.45);
+    }
+    @keyframes pin-beat {
+      0%, 100% { transform: translate(-50%, -50%) scale(1); }
+      50% { transform: translate(-50%, -50%) scale(1.06); box-shadow: 0 4px 14px rgba(22, 163, 74, 0.35); }
     }
     .pin-pulse-dot {
-      width: 7px;
-      height: 7px;
+      width: 8px;
+      height: 8px;
       border-radius: 50%;
       background: #22C55E;
       display: inline-block;
-      animation: pulse-ring 1.8s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+      animation: pulse-ring 1.6s cubic-bezier(0.4, 0, 0.6, 1) infinite;
     }
     @keyframes pulse-ring {
-      0% { transform: scale(0.95); opacity: 0.95; }
-      50% { transform: scale(1.4); opacity: 0.4; }
-      100% { transform: scale(0.95); opacity: 0.95; }
+      0% { transform: scale(0.9); opacity: 1; box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7); }
+      70% { transform: scale(1.2); opacity: 0.5; box-shadow: 0 0 0 8px rgba(34, 197, 94, 0); }
+      100% { transform: scale(0.9); opacity: 1; box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
     }
     .user-pill {
       display: inline-flex;
@@ -899,7 +871,7 @@ export default function CustomerHomeScreen() {
         refreshControl={
           <RefreshControl refreshing={jLoading} onRefresh={refetch} colors={[COLORS.primary]} />
         }
-        contentContainerStyle={{ paddingBottom: 110 }}
+        contentContainerStyle={{ paddingBottom: 130 }}
       >
         {/* ── 1. HEADER (Top Bar chuẩn Homepage Redesign Demo) ─────────────── */}
         <View
@@ -1121,6 +1093,7 @@ export default function CustomerHomeScreen() {
                 srcDoc={leafletMiniMapHtml}
                 style={{ width: '100%', height: '100%', border: 'none' }}
                 title="Leaflet Mini Map"
+                sandbox="allow-scripts allow-same-origin"
               />
             ) : (
               <WebView
@@ -1689,7 +1662,7 @@ export default function CustomerHomeScreen() {
             </TouchableOpacity>
           </View>
 
-          {/* 3-Column Grid */}
+          {/* Responsive Multi-Column Grid */}
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
             {(() => {
               const q = serviceSearchQuery.trim().toLowerCase();
@@ -1698,6 +1671,11 @@ export default function CustomerHomeScreen() {
                     s => s.name.toLowerCase().includes(q) || s.slug.toLowerCase().includes(q),
                   )
                 : DEMO_SERVICES;
+
+              const containerW = Math.min(windowWidth, 640) - 36; // 18px padding each side
+              const numCols = windowWidth >= 768 ? 4 : 3;
+              const cardGap = 8;
+              const cardW = Math.floor((containerW - (numCols - 1) * cardGap) / numCols);
 
               if (list.length === 0) {
                 return (
@@ -1750,16 +1728,16 @@ export default function CustomerHomeScreen() {
                       }
                     }}
                     style={{
-                      width: '31.5%',
+                      width: cardW,
                       backgroundColor: isCustom ? '#F0FDF4' : '#FFFFFF',
                       borderRadius: 14,
                       paddingVertical: 12,
-                      paddingHorizontal: 8,
+                      paddingHorizontal: 6,
                       alignItems: 'center',
                       borderWidth: 1.5,
                       borderColor: isCustom ? COLORS.primary : '#F1F5F9',
                       position: 'relative',
-                      minHeight: 105,
+                      minHeight: 110,
                       justifyContent: 'space-between',
                     }}
                   >
@@ -1790,7 +1768,7 @@ export default function CustomerHomeScreen() {
                         fontWeight: '800',
                         color: isCustom ? COLORS.primary : COLORS.gray[900],
                         textAlign: 'center',
-                        lineHeight: 14,
+                        lineHeight: 15,
                       }}
                       numberOfLines={2}
                     >
@@ -1801,7 +1779,7 @@ export default function CustomerHomeScreen() {
                       <Text
                         style={{
                           fontSize: 10,
-                          fontWeight: '600',
+                          fontWeight: '700',
                           color: isCustom ? '#15803D' : COLORS.gray[500],
                           textAlign: 'center',
                           marginTop: 4,
@@ -2225,244 +2203,12 @@ export default function CustomerHomeScreen() {
               )}
             </View>
 
-            {/* 4. Giờ bắt đầu */}
-            <View>
-              <View
-                style={{
-                  flexDirection: 'row',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  marginBottom: 8,
-                }}
-              >
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                  <Clock size={16} color={COLORS.primary} />
-                  <Text style={{ fontSize: 14, fontWeight: '700', color: COLORS.gray[800] }}>
-                    Giờ bắt đầu:{' '}
-                    <Text style={{ color: COLORS.primary, fontWeight: '800' }}>
-                      {quickTimeSlot}
-                    </Text>
-                  </Text>
-                </View>
-                <TouchableOpacity
-                  activeOpacity={0.7}
-                  onPress={() => setQuickCustomTimeOpen(prev => !prev)}
-                  style={{
-                    backgroundColor: quickCustomTimeOpen ? '#DCFCE7' : '#F1F5F9',
-                    paddingHorizontal: 8,
-                    paddingVertical: 3,
-                    borderRadius: 6,
-                    borderWidth: 1,
-                    borderColor: quickCustomTimeOpen ? COLORS.primary : '#E2E8F0',
-                  }}
-                >
-                  <Text style={{ fontSize: 12, fontWeight: '700', color: COLORS.primary }}>
-                    {quickCustomTimeOpen ? 'Đóng giờ tùy chọn ▲' : 'Chọn giờ (giờ lẻ) ▼'}
-                  </Text>
-                </TouchableOpacity>
-              </View>
-
-              {/* Custom / Odd time selector panel (Item 10) */}
-              {quickCustomTimeOpen && (
-                <View
-                  style={{
-                    backgroundColor: '#FFFFFF',
-                    borderRadius: 12,
-                    padding: 10,
-                    borderWidth: 1.5,
-                    borderColor: '#E2E8F0',
-                    marginBottom: 10,
-                    gap: 8,
-                  }}
-                >
-                  <Text style={{ fontSize: 12, fontWeight: '700', color: COLORS.gray[700] }}>
-                    Nhập hoặc chọn giờ lẻ mong muốn:
-                  </Text>
-                  <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
-                    <TextInput
-                      style={{
-                        flex: 1,
-                        backgroundColor: '#F8FAFC',
-                        borderWidth: 1,
-                        borderColor: COLORS.primary,
-                        borderRadius: 8,
-                        paddingHorizontal: 10,
-                        paddingVertical: 6,
-                        fontSize: 14,
-                        fontWeight: '800',
-                        color: COLORS.gray[900],
-                      }}
-                      placeholder="VD: 19:30 hoặc 21:30"
-                      value={quickCustomTimeInput}
-                      onChangeText={setQuickCustomTimeInput}
-                      keyboardType="numbers-and-punctuation"
-                    />
-                    <ScalePressable
-                      onPress={() => {
-                        const trimmed = quickCustomTimeInput.trim();
-                        if (/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/.test(trimmed)) {
-                          setQuickTimeSlot(trimmed);
-                          setQuickCustomTimeOpen(false);
-                          Toast.show({ type: 'success', text1: `Đã chọn giờ: ${trimmed}` });
-                        } else {
-                          Toast.show({
-                            type: 'error',
-                            text1: 'Định dạng giờ không hợp lệ (VD: 19:30)',
-                          });
-                        }
-                      }}
-                      style={{
-                        backgroundColor: COLORS.primary,
-                        paddingHorizontal: 12,
-                        paddingVertical: 8,
-                        borderRadius: 8,
-                      }}
-                    >
-                      <Text style={{ color: '#fff', fontWeight: '800', fontSize: 12 }}>
-                        Áp dụng
-                      </Text>
-                    </ScalePressable>
-                  </View>
-
-                  {/* Odd time quick chips */}
-                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
-                    {['07:30', '08:30', '11:30', '13:30', '17:30', '19:30', '20:30', '21:30'].map(
-                      ot => (
-                        <TouchableOpacity
-                          key={ot}
-                          onPress={() => {
-                            setQuickTimeSlot(ot);
-                            setQuickCustomTimeInput(ot);
-                            setQuickCustomTimeOpen(false);
-                          }}
-                          style={{
-                            paddingHorizontal: 8,
-                            paddingVertical: 4,
-                            borderRadius: 6,
-                            backgroundColor: quickTimeSlot === ot ? '#DCFCE7' : '#F1F5F9',
-                            borderWidth: 1,
-                            borderColor: quickTimeSlot === ot ? COLORS.primary : '#E2E8F0',
-                          }}
-                        >
-                          <Text
-                            style={{
-                              fontSize: 11,
-                              fontWeight: '700',
-                              color: quickTimeSlot === ot ? COLORS.primary : COLORS.gray[700],
-                            }}
-                          >
-                            {ot}
-                          </Text>
-                        </TouchableOpacity>
-                      ),
-                    )}
-                  </View>
-                </View>
-              )}
-
-              {/* 2 Rows of Time chips */}
-              <View style={{ gap: 8 }}>
-                {/* Row 1 */}
-                <View style={{ flexDirection: 'row', gap: 6 }}>
-                  {['07:00', '08:00', '09:00', '12:00', '14:00', '17:00'].map(t => {
-                    const isSel = quickTimeSlot === t;
-                    const isNew = t === '12:00';
-                    return (
-                      <TouchableOpacity
-                        key={t}
-                        onPress={() => setQuickTimeSlot(t)}
-                        style={{
-                          flex: 1,
-                          paddingVertical: 7,
-                          borderRadius: 8,
-                          backgroundColor: isSel ? '#DCFCE7' : '#F1F5F9',
-                          borderWidth: 1,
-                          borderColor: isSel ? COLORS.primary : '#E2E8F0',
-                          alignItems: 'center',
-                          position: 'relative',
-                        }}
-                      >
-                        {isNew && (
-                          <View
-                            style={{
-                              position: 'absolute',
-                              top: -6,
-                              right: -2,
-                              backgroundColor: '#DCFCE7',
-                              paddingHorizontal: 3,
-                              borderRadius: 4,
-                            }}
-                          >
-                            <Text style={{ fontSize: 8, fontWeight: '900', color: COLORS.primary }}>
-                              MỚI
-                            </Text>
-                          </View>
-                        )}
-                        <Text
-                          style={{
-                            fontSize: 11,
-                            fontWeight: '700',
-                            color: isSel ? COLORS.primary : COLORS.gray[700],
-                          }}
-                        >
-                          {t}
-                        </Text>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
-
-                {/* Row 2 */}
-                <View style={{ flexDirection: 'row', gap: 6 }}>
-                  {['18:00', '19:00', '20:00', '21:00', '22:00'].map(t => {
-                    const isSel = quickTimeSlot === t;
-                    const isNight = t === '22:00';
-                    return (
-                      <TouchableOpacity
-                        key={t}
-                        onPress={() => setQuickTimeSlot(t)}
-                        style={{
-                          flex: 1,
-                          paddingVertical: 7,
-                          borderRadius: 8,
-                          backgroundColor: isSel ? '#DCFCE7' : '#F1F5F9',
-                          borderWidth: 1,
-                          borderColor: isSel ? COLORS.primary : '#E2E8F0',
-                          alignItems: 'center',
-                          position: 'relative',
-                        }}
-                      >
-                        {isNight && (
-                          <View
-                            style={{
-                              position: 'absolute',
-                              top: -6,
-                              right: -2,
-                              backgroundColor: '#FEF2F2',
-                              paddingHorizontal: 3,
-                              borderRadius: 4,
-                            }}
-                          >
-                            <Text style={{ fontSize: 8, fontWeight: '900', color: COLORS.error }}>
-                              ĐÊM
-                            </Text>
-                          </View>
-                        )}
-                        <Text
-                          style={{
-                            fontSize: 11,
-                            fontWeight: '700',
-                            color: isSel ? COLORS.primary : COLORS.gray[700],
-                          }}
-                        >
-                          {t}
-                        </Text>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
-              </View>
-            </View>
+            {/* 4. Giờ bắt đầu: Bộ chọn giờ cuộn bánh xe (Wheel Time Picker) + Chip nhanh */}
+            <WheelTimePicker
+              value={quickTimeSlot}
+              onChange={setQuickTimeSlot}
+              quickChips={true}
+            />
 
             {/* 5. Thời lượng dự kiến (Hỗ trợ tùy chọn 0–12h + 0/15/30/45p) */}
             <View>

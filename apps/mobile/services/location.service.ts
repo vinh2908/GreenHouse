@@ -1,4 +1,5 @@
 import { Platform } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Location from 'expo-location';
 import {
   getGoongApiKey,
@@ -164,22 +165,62 @@ export function parseVietnameseAddress(
         !/^Huyện$/i.test(s),
     );
 
+  // Helper kiểm tra xem token có phải là tên đường / số nhà (chứ KHÔNG phải phường/xã)
+  const isRoadToken = (t: string) => {
+    if (!t) return false;
+    // Chứa kiệt, hẻm, ngõ, đường, số nhà, hoặc số kèm xuyệt (\d+/\d+)
+    if (/(?:kiệt|hẻm|ngõ|đường|số\s*\d+|\b\d+\/\d+\b|\b\d+[a-zA-Z]?\b)/i.test(t)) {
+      // Ngoại trừ dạng tên hành chính "Phường 1", "Xã 2"
+      if (!/^(?:phường|xã|thị trấn)\s+\d+$/i.test(t.trim())) {
+        return true;
+      }
+    }
+    return false;
+  };
+
   if (tokens.length >= 1 && !city) {
     city = tokens[tokens.length - 1];
   }
   if (tokens.length >= 2 && !district) {
     district = tokens[tokens.length - 2];
   }
-  if (tokens.length >= 3 && !ward) {
-    ward = tokens[tokens.length - 3];
+
+  if (tokens.length >= 4 && !ward) {
+    // Trường hợp đủ 4 token: [Road, Ward, District, City]
+    const candidateWard = tokens[tokens.length - 3];
+    if (!isRoadToken(candidateWard)) {
+      ward = candidateWard;
+    }
+  } else if (tokens.length === 3 && !ward) {
+    // Trường hợp 3 token: phân biệt [Road, District, City] (VD: "Kiệt 49/59 Bình Kỹ, Ngũ Hành Sơn, Đà Nẵng")
+    // và [Ward, District, City] (VD: "Hòa Khê, Thanh Khê, Đà Nẵng")
+    const firstToken = tokens[0];
+    if (isRoadToken(firstToken)) {
+      road = firstToken;
+      ward = '';
+    } else if (!/\d/.test(firstToken)) {
+      ward = firstToken;
+      road = '';
+    }
   }
 
   // Tên đường / số nhà: các token bên trái còn lại
   if (!road || road === norm || road.startsWith('Khu vực')) {
     if (tokens.length >= 4) {
       road = tokens.slice(0, tokens.length - 3).join(', ');
+    } else if (tokens.length === 3) {
+      if (!ward) {
+        road = tokens[0];
+      }
     } else if (tokens.length > 0) {
       road = tokens[0];
+    }
+  }
+
+  // Dọn dẹp tuyệt đối: Phường/Xã không bao giờ chứa kiệt, hẻm, số nhà hoặc trùng road
+  if (ward) {
+    if (isRoadToken(ward) || (road && ward.toLowerCase() === road.toLowerCase())) {
+      ward = '';
     }
   }
 
@@ -365,9 +406,12 @@ class LocationService {
    * bịa 'Quận 1'/'Hồ Chí Minh' như trước (người dùng Đà Nẵng từng bị gán sai).
    */
   async reverseGeocode(latitude: number, longitude: number): Promise<LocationResult | null> {
-    // 1. Thử Expo Location native (trên Android / iOS APK)
+    // 1. Thử Expo Location native (trên Android / iOS APK) với timeout 2.2s chống treo spinner
     try {
-      const [geo] = await Location.reverseGeocodeAsync({ latitude, longitude });
+      const geoPromise = Location.reverseGeocodeAsync({ latitude, longitude });
+      const geoTimeout = new Promise<null>(resolve => setTimeout(() => resolve(null), 2200));
+      const geoRes = await Promise.race([geoPromise, geoTimeout]).catch(() => null);
+      const geo = geoRes?.[0];
       if (geo && (geo.street || geo.name || geo.district)) {
         const houseNum = geo.name && !geo.name.includes(geo.street || '') ? geo.name : '';
         const streetName = geo.street || '';
@@ -572,13 +616,34 @@ class LocationService {
   ): Promise<OsmPlace[]> {
     if (!query || query.trim().length < 2) return [];
 
-    const refCoords = userCoords || this.cachedCoords;
+    let refCoords = userCoords || this.cachedCoords;
+
+    // Nếu chưa có tọa độ tham chiếu: tự động lấy từ vị trí đã lưu hoặc GPS hiện tại
+    if (!refCoords) {
+      try {
+        const saved = await AsyncStorage.getItem('@homemate_customer_pinned_location');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (parsed.coords?.latitude && parsed.coords?.longitude) {
+            refCoords = parsed.coords;
+            this.cachedCoords = parsed.coords;
+          }
+        }
+      } catch {}
+    }
+    if (!refCoords) {
+      const cur = await this.getCurrentCoordinates().catch(() => null);
+      if (cur) {
+        refCoords = cur;
+        this.cachedCoords = cur;
+      }
+    }
 
     // 0. Goong (chỉ khi có API key hợp lệ)
     const goongKey = getGoongApiKey();
     if (goongKey) {
       try {
-        const goongPlaces = await searchPlacesWithGoong(query, goongKey);
+        const goongPlaces = await searchPlacesWithGoong(query, goongKey, refCoords);
         if (goongPlaces.length) {
           if (refCoords?.latitude && refCoords?.longitude) {
             goongPlaces.sort((a, b) => {

@@ -204,7 +204,7 @@ export default function HelperDashboardScreen() {
             colors={[COLORS.primary]}
           />
         }
-        contentContainerStyle={{ paddingBottom: 110 }}
+        contentContainerStyle={{ paddingBottom: 130 }}
       >
         {/* ── 1. Top Header Thợ (Safe Insets) ──────────────────────────── */}
         <View

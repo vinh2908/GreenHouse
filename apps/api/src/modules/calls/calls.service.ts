@@ -174,6 +174,13 @@ export class CallsService {
       session.end_reason = reason;
       await session.save();
     }
+    const callerId = String(session.caller_id);
+    const calleeId = String(session.callee_id);
+    const partnerId = userId === callerId ? calleeId : callerId;
+    this.gateway.emitToUser(partnerId, 'call:ended', {
+      sessionId: String(session._id),
+      reason,
+    });
     return session;
   }
 }
