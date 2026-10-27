@@ -52,13 +52,7 @@ import { socketService } from '@/services/socket.service';
  */
 
 type CallUiState =
-  | 'preparing'
-  | 'connecting'
-  | 'in_call'
-  | 'ended'
-  | 'rejected'
-  | 'unavailable'
-  | 'error';
+  'preparing' | 'connecting' | 'in_call' | 'ended' | 'rejected' | 'unavailable' | 'error';
 
 export default function CallScreen() {
   const { jobId, partnerName, sessionId, mode } = useLocalSearchParams<{

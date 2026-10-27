@@ -2204,11 +2204,7 @@ export default function CustomerHomeScreen() {
             </View>
 
             {/* 4. Giờ bắt đầu: Bộ chọn giờ cuộn bánh xe (Wheel Time Picker) + Chip nhanh */}
-            <WheelTimePicker
-              value={quickTimeSlot}
-              onChange={setQuickTimeSlot}
-              quickChips={true}
-            />
+            <WheelTimePicker value={quickTimeSlot} onChange={setQuickTimeSlot} quickChips={true} />
 
             {/* 5. Thời lượng dự kiến (Hỗ trợ tùy chọn 0–12h + 0/15/30/45p) */}
             <View>
