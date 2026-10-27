@@ -779,7 +779,8 @@ export default function BookingScreen() {
     Toast.show({
       type: 'success',
       text1: 'Đã chọn địa điểm từ bản đồ',
-      text2: parsed.full_address || full_address || place.display_name.split(',').slice(0, 2).join(', '),
+      text2:
+        parsed.full_address || full_address || place.display_name.split(',').slice(0, 2).join(', '),
     });
   };
 
@@ -1968,11 +1969,7 @@ export default function BookingScreen() {
               </View>
 
               {/* 2. Giờ bắt đầu: Bộ chọn giờ cuộn bánh xe (Wheel Time Picker) + Chip nhanh */}
-              <WheelTimePicker
-                value={timeSlot}
-                onChange={setTimeSlot}
-                quickChips={true}
-              />
+              <WheelTimePicker value={timeSlot} onChange={setTimeSlot} quickChips={true} />
 
               {/* 3. Thời gian ước tính: Chip 1/2/3/4h + Tùy chọn... */}
               <View>
