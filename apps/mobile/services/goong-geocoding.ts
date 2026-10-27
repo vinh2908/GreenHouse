@@ -275,14 +275,32 @@ export function mapGoongPlaceToOsmPlace(
     return null;
   }
   const parts = extractGoongAddressParts(detail.address_components);
+  const displayName = detail.formatted_address || prediction?.description || detail.name || '';
+
+  // Nếu parts.houseNumber bị thiếu từ address_components (Goong Place Detail đôi khi để rỗng components),
+  // trích xuất số nhà và đường từ prediction.structured_formatting hoặc displayName
+  let houseNumber = parts.houseNumber;
+  let route = parts.route;
+  if (!houseNumber) {
+    const primaryText =
+      prediction?.structured_formatting?.main_text ||
+      detail.name ||
+      displayName.split(',')[0].trim();
+    const match = primaryText.match(/^(\d+[A-Za-z0-9\/\-]*)\s+(.+)$/);
+    if (match) {
+      houseNumber = match[1];
+      if (!route) route = match[2];
+    }
+  }
+
   return {
     place_id: index,
-    display_name: detail.formatted_address || prediction?.description || detail.name || '',
+    display_name: displayName,
     lat: String(loc.lat),
     lon: String(loc.lng),
     address: {
-      house_number: parts.houseNumber || undefined,
-      road: parts.route || detail.name || undefined,
+      house_number: houseNumber || undefined,
+      road: route || detail.name || undefined,
       suburb: parts.ward || undefined,
       city_district: parts.district || undefined,
       district: parts.district || undefined,
