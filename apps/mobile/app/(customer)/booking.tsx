@@ -36,7 +36,8 @@ import { Alert } from '@/components/common/app-alert';
 import dayjs from 'dayjs';
 import { useAuthStore } from '@/stores/auth.store';
 import { ScalePressable } from '@/components/common/scale-pressable';
-import { WheelTimePicker } from '@/components/common/wheel-time-picker';
+import { DateTimePickerBottomSheet } from '@/components/common/date-time-bottom-sheet';
+import { DurationBottomSheet } from '@/components/common/duration-bottom-sheet';
 import {
   useServices,
   useCreateJob,
@@ -250,6 +251,8 @@ export default function BookingScreen() {
   const [dateChip, setDateChip] = useState<'today' | 'tomorrow' | 'sat' | 'sun' | null>('tomorrow');
   const [timeSlot, setTimeSlot] = useState('09:00');
   const [duration, setDuration] = useState(3);
+  const [dateTimePickerOpen, setDateTimePickerOpen] = useState(false);
+  const [bottomSheetInitialTab, setBottomSheetInitialTab] = useState<'date' | 'time'>('date');
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [calendarMonth, setCalendarMonth] = useState(dayjs());
   const [customTimeOpen, setCustomTimeOpen] = useState(false);
@@ -1692,42 +1695,83 @@ export default function BookingScreen() {
                 Chọn lịch hẹn
               </Text>
 
-              {/* 1. Chọn ngày làm việc: Chip gợi ý + Lịch tháng + Dải 14 ngày */}
-              <View>
-                <View
-                  style={{
-                    flexDirection: 'row',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    marginBottom: 8,
-                  }}
-                >
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                    <Calendar size={15} color={COLORS.primary} />
-                    <Text style={{ fontSize: 14, fontWeight: '700', color: COLORS.gray[800] }}>
-                      {dayjs(date).format('dddd, DD/MM/YYYY')}
-                    </Text>
-                  </View>
+              {/* 1. Lịch làm việc: Ngày & Giờ (Trigger mở Bottom Sheet Item 1) */}
+              <View style={{ gap: 10 }}>
+                <Text style={{ fontSize: 14, fontWeight: '700', color: COLORS.gray[800] }}>
+                  Thời gian bắt đầu làm việc
+                </Text>
+                <View style={{ flexDirection: 'row', gap: 10 }}>
+                  {/* Ngày làm việc trigger card */}
                   <TouchableOpacity
                     activeOpacity={0.8}
-                    onPress={() => setCalendarOpen(prev => !prev)}
+                    onPress={() => {
+                      setBottomSheetInitialTab('date');
+                      setDateTimePickerOpen(true);
+                    }}
                     style={{
-                      backgroundColor: calendarOpen ? '#DCFCE7' : '#F1F5F9',
-                      paddingHorizontal: 8,
-                      paddingVertical: 4,
-                      borderRadius: 8,
-                      borderWidth: 1,
-                      borderColor: calendarOpen ? COLORS.primary : '#E2E8F0',
+                      flex: 1,
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: 8,
+                      paddingVertical: 12,
+                      paddingHorizontal: 12,
+                      borderRadius: 14,
+                      backgroundColor: '#F8FAFC',
+                      borderWidth: 1.5,
+                      borderColor: '#E2E8F0',
                     }}
                   >
-                    <Text style={{ fontSize: 12, fontWeight: '700', color: COLORS.primary }}>
-                      {calendarOpen ? 'Đóng lịch ▲' : 'Lịch tháng ▼'}
-                    </Text>
+                    <Calendar size={18} color={COLORS.primary} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: 11, color: COLORS.gray[500], fontWeight: '600' }}>
+                        Ngày làm việc
+                      </Text>
+                      <Text
+                        style={{ fontSize: 13.5, fontWeight: '800', color: COLORS.gray[900] }}
+                        numberOfLines={1}
+                      >
+                        {dayjs(date).format('dd, DD/MM/YYYY')}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+
+                  {/* Giờ bắt đầu trigger card */}
+                  <TouchableOpacity
+                    activeOpacity={0.8}
+                    onPress={() => {
+                      setBottomSheetInitialTab('time');
+                      setDateTimePickerOpen(true);
+                    }}
+                    style={{
+                      flex: 1,
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: 8,
+                      paddingVertical: 12,
+                      paddingHorizontal: 12,
+                      borderRadius: 14,
+                      backgroundColor: '#F8FAFC',
+                      borderWidth: 1.5,
+                      borderColor: '#E2E8F0',
+                    }}
+                  >
+                    <Clock size={18} color={COLORS.primary} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: 11, color: COLORS.gray[500], fontWeight: '600' }}>
+                        Giờ bắt đầu
+                      </Text>
+                      <Text
+                        style={{ fontSize: 13.5, fontWeight: '800', color: COLORS.primary }}
+                        numberOfLines={1}
+                      >
+                        {timeSlot}
+                      </Text>
+                    </View>
                   </TouchableOpacity>
                 </View>
 
                 {/* Day suggestion chips: Hôm nay / Ngày mai / Thứ 7 / Chủ nhật */}
-                <View style={{ flexDirection: 'row', gap: 8, marginBottom: 10 }}>
+                <View style={{ flexDirection: 'row', gap: 8 }}>
                   {[
                     { key: 'today', label: 'Hôm nay' },
                     { key: 'tomorrow', label: 'Ngày mai' },
@@ -1775,201 +1819,7 @@ export default function BookingScreen() {
                     );
                   })}
                 </View>
-
-                {/* Month Calendar Dropdown / Inline Matrix */}
-                {calendarOpen && (
-                  <View
-                    style={{
-                      backgroundColor: '#FFFFFF',
-                      borderRadius: 14,
-                      padding: 12,
-                      borderWidth: 1.5,
-                      borderColor: '#E2E8F0',
-                      marginBottom: 12,
-                    }}
-                  >
-                    <View
-                      style={{
-                        flexDirection: 'row',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        marginBottom: 10,
-                      }}
-                    >
-                      <TouchableOpacity
-                        onPress={() => setCalendarMonth(prev => prev.subtract(1, 'month'))}
-                        style={{ padding: 6, borderRadius: 8, backgroundColor: '#F1F5F9' }}
-                      >
-                        <ChevronLeft size={16} color={COLORS.gray[700]} />
-                      </TouchableOpacity>
-                      <Text style={{ fontSize: 14, fontWeight: '800', color: COLORS.gray[900] }}>
-                        Tháng {calendarMonth.format('MM/YYYY')}
-                      </Text>
-                      <TouchableOpacity
-                        onPress={() => setCalendarMonth(prev => prev.add(1, 'month'))}
-                        style={{ padding: 6, borderRadius: 8, backgroundColor: '#F1F5F9' }}
-                      >
-                        <ChevronRight size={16} color={COLORS.gray[700]} />
-                      </TouchableOpacity>
-                    </View>
-
-                    <View style={{ flexDirection: 'row', marginBottom: 6 }}>
-                      {['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'].map(wd => (
-                        <Text
-                          key={wd}
-                          style={{
-                            flex: 1,
-                            textAlign: 'center',
-                            fontSize: 11,
-                            fontWeight: '700',
-                            color: COLORS.gray[400],
-                          }}
-                        >
-                          {wd}
-                        </Text>
-                      ))}
-                    </View>
-
-                    <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
-                      {(() => {
-                        const startOfMonth = calendarMonth.startOf('month');
-                        const daysInMonth = calendarMonth.daysInMonth();
-                        const startOffset = (startOfMonth.day() + 6) % 7;
-                        const items: any[] = [];
-                        for (let i = 0; i < startOffset; i++) {
-                          items.push(
-                            <View key={`empty-${i}`} style={{ width: '14.28%', height: 36 }} />,
-                          );
-                        }
-                        const todayStr = dayjs().format('YYYY-MM-DD');
-                        const startOfToday = dayjs().startOf('day');
-                        for (let d = 1; d <= daysInMonth; d++) {
-                          const dObj = calendarMonth.date(d);
-                          const dateStr = dObj.format('YYYY-MM-DD');
-                          const isPast = dObj.isBefore(startOfToday);
-                          const isToday = dateStr === todayStr;
-                          const isSelected = dateStr === date;
-                          items.push(
-                            <TouchableOpacity
-                              key={dateStr}
-                              disabled={isPast}
-                              onPress={() => {
-                                setDate(dateStr);
-                                setDateChip(null);
-                              }}
-                              style={{
-                                width: '14.28%',
-                                height: 36,
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                              }}
-                            >
-                              <View
-                                style={{
-                                  width: 30,
-                                  height: 30,
-                                  borderRadius: 15,
-                                  backgroundColor: isSelected
-                                    ? COLORS.primary
-                                    : isToday
-                                      ? '#DCFCE7'
-                                      : 'transparent',
-                                  borderWidth: isToday && !isSelected ? 1.5 : 0,
-                                  borderColor: COLORS.primary,
-                                  alignItems: 'center',
-                                  justifyContent: 'center',
-                                  opacity: isPast ? 0.3 : 1,
-                                }}
-                              >
-                                <Text
-                                  style={{
-                                    fontSize: 12,
-                                    fontWeight: isSelected || isToday ? '800' : '600',
-                                    color: isSelected
-                                      ? '#FFFFFF'
-                                      : isPast
-                                        ? COLORS.gray[300]
-                                        : COLORS.gray[800],
-                                  }}
-                                >
-                                  {d}
-                                </Text>
-                              </View>
-                            </TouchableOpacity>,
-                          );
-                        }
-                        return items;
-                      })()}
-                    </View>
-                  </View>
-                )}
-
-                {/* 14-day horizontal strip starting from today (i = 0) */}
-                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                  <View style={{ flexDirection: 'row', gap: 10 }}>
-                    {Array.from({ length: 14 }).map((_, i) => {
-                      const d = dayjs().add(i, 'day');
-                      const val = d.format('YYYY-MM-DD');
-                      const isSelected = date === val;
-                      const isToday = i === 0;
-                      return (
-                        <ScalePressable
-                          key={val}
-                          onPress={() => {
-                            setDate(val);
-                            setDateChip(isToday ? 'today' : i === 1 ? 'tomorrow' : null);
-                          }}
-                          style={{
-                            width: 58,
-                            alignItems: 'center',
-                            paddingVertical: 10,
-                            borderRadius: 14,
-                            borderWidth: 2,
-                            borderColor: isSelected ? COLORS.primary : COLORS.gray[200],
-                            backgroundColor: isSelected ? COLORS.primary : '#fff',
-                          }}
-                        >
-                          <Text
-                            style={{
-                              fontSize: 10.5,
-                              color: isSelected
-                                ? 'rgba(255,255,255,0.9)'
-                                : isToday
-                                  ? COLORS.primary
-                                  : COLORS.gray[500],
-                              fontWeight: '700',
-                            }}
-                          >
-                            {isToday ? 'H.NAY' : d.format('ddd').toUpperCase()}
-                          </Text>
-                          <Text
-                            style={{
-                              fontSize: 18,
-                              fontWeight: '800',
-                              color: isSelected ? '#fff' : COLORS.gray[800],
-                              marginTop: 2,
-                            }}
-                          >
-                            {d.format('D')}
-                          </Text>
-                          <Text
-                            style={{
-                              fontSize: 11,
-                              color: isSelected ? 'rgba(255,255,255,0.8)' : COLORS.gray[500],
-                              fontWeight: '600',
-                            }}
-                          >
-                            Th{d.format('M')}
-                          </Text>
-                        </ScalePressable>
-                      );
-                    })}
-                  </View>
-                </ScrollView>
               </View>
-
-              {/* 2. Giờ bắt đầu: Bộ chọn giờ cuộn bánh xe (Wheel Time Picker) + Chip nhanh */}
-              <WheelTimePicker value={timeSlot} onChange={setTimeSlot} quickChips={true} />
 
               {/* 3. Thời gian ước tính: Chip 1/2/3/4h + Tùy chọn... */}
               <View>
@@ -2027,7 +1877,7 @@ export default function BookingScreen() {
                   <ScalePressable
                     onPress={() => {
                       setIsCustomDuration(true);
-                      setDurationPickerOpen(prev => !prev);
+                      setDurationPickerOpen(true);
                     }}
                     style={{
                       flex: isCustomDuration ? 1.4 : 1.2,
@@ -2055,100 +1905,6 @@ export default function BookingScreen() {
                     </Text>
                   </ScalePressable>
                 </View>
-
-                {/* Custom Duration Selector Panel */}
-                {durationPickerOpen && (
-                  <View
-                    style={{
-                      backgroundColor: '#FFFFFF',
-                      borderRadius: 14,
-                      padding: 14,
-                      borderWidth: 1.5,
-                      borderColor: '#E2E8F0',
-                      marginTop: 10,
-                      gap: 12,
-                    }}
-                  >
-                    <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.gray[800] }}>
-                      Chọn số giờ và phút thực tế:
-                    </Text>
-                    <View style={{ flexDirection: 'row', gap: 12, alignItems: 'center' }}>
-                      {/* Hours */}
-                      <View style={{ flex: 1, gap: 4 }}>
-                        <Text style={{ fontSize: 12, color: COLORS.gray[500], fontWeight: '600' }}>
-                          Giờ (0–12h)
-                        </Text>
-                        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
-                          {[0, 1, 2, 3, 4, 5, 6].map(h => (
-                            <TouchableOpacity
-                              key={`h-${h}`}
-                              onPress={() => {
-                                setCustomHours(h);
-                                const newDur = h + customMinutes / 60;
-                                if (newDur >= 0.25) setDuration(newDur);
-                              }}
-                              style={{
-                                width: 34,
-                                height: 34,
-                                borderRadius: 8,
-                                backgroundColor: customHours === h ? COLORS.primary : '#F1F5F9',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                              }}
-                            >
-                              <Text
-                                style={{
-                                  fontSize: 12,
-                                  fontWeight: '700',
-                                  color: customHours === h ? '#fff' : COLORS.gray[800],
-                                }}
-                              >
-                                {h}
-                              </Text>
-                            </TouchableOpacity>
-                          ))}
-                        </View>
-                      </View>
-
-                      {/* Minutes */}
-                      <View style={{ flex: 1, gap: 4 }}>
-                        <Text style={{ fontSize: 12, color: COLORS.gray[500], fontWeight: '600' }}>
-                          Phút (0/15/30/45)
-                        </Text>
-                        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
-                          {[0, 15, 30, 45].map(m => (
-                            <TouchableOpacity
-                              key={`m-${m}`}
-                              onPress={() => {
-                                setCustomMinutes(m);
-                                const newDur = customHours + m / 60;
-                                if (newDur >= 0.25) setDuration(newDur);
-                              }}
-                              style={{
-                                paddingHorizontal: 10,
-                                height: 34,
-                                borderRadius: 8,
-                                backgroundColor: customMinutes === m ? COLORS.primary : '#F1F5F9',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                              }}
-                            >
-                              <Text
-                                style={{
-                                  fontSize: 12,
-                                  fontWeight: '700',
-                                  color: customMinutes === m ? '#fff' : COLORS.gray[800],
-                                }}
-                              >
-                                {m}p
-                              </Text>
-                            </TouchableOpacity>
-                          ))}
-                        </View>
-                      </View>
-                    </View>
-                  </View>
-                )}
 
                 {/* Dynamic Schedule Summary Card with Next-Day notice */}
                 {(() => {
@@ -2775,6 +2531,34 @@ export default function BookingScreen() {
           icon={step < STEPS.length - 1 ? <ArrowRight size={18} color="#fff" /> : undefined}
         />
       </View>
+
+      {/* ── BOTTOM SHEET CHỌN NGÀY & GIỜ (ITEM 1) ── */}
+      <DateTimePickerBottomSheet
+        visible={dateTimePickerOpen}
+        initialDate={date}
+        initialTime={timeSlot}
+        initialTab={bottomSheetInitialTab}
+        onClose={() => setDateTimePickerOpen(false)}
+        onConfirm={(selectedDate: string, selectedTime: string) => {
+          setDate(selectedDate);
+          setTimeSlot(selectedTime);
+          setDateChip(null);
+        }}
+      />
+
+      {/* ── BOTTOM SHEET CHỌN THỜI LƯỢNG TỰ DO (ITEM 2) ── */}
+      <DurationBottomSheet
+        visible={durationPickerOpen}
+        initialHours={Math.floor(duration)}
+        initialMinutes={Math.round((duration - Math.floor(duration)) * 60)}
+        startDate={date}
+        startTime={timeSlot}
+        onClose={() => setDurationPickerOpen(false)}
+        onConfirm={newDur => {
+          setDuration(newDur);
+          setIsCustomDuration(![1, 2, 3, 4].includes(newDur));
+        }}
+      />
     </View>
   );
 }
