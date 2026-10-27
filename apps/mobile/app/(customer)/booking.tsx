@@ -298,7 +298,8 @@ export default function BookingScreen() {
     if (params.preferred_date) {
       setDate(params.preferred_date);
       if (params.preferred_date === dayjs().format('YYYY-MM-DD')) setDateChip('today');
-      else if (params.preferred_date === dayjs().add(1, 'day').format('YYYY-MM-DD')) setDateChip('tomorrow');
+      else if (params.preferred_date === dayjs().add(1, 'day').format('YYYY-MM-DD'))
+        setDateChip('tomorrow');
       else setDateChip(null);
     }
     if (params.preferred_time_start) {
@@ -1727,7 +1728,8 @@ export default function BookingScreen() {
                           setDateChip(c.key as any);
                           const now = dayjs();
                           if (c.key === 'today') setDate(now.format('YYYY-MM-DD'));
-                          else if (c.key === 'tomorrow') setDate(now.add(1, 'day').format('YYYY-MM-DD'));
+                          else if (c.key === 'tomorrow')
+                            setDate(now.add(1, 'day').format('YYYY-MM-DD'));
                           else if (c.key === 'sat') {
                             const nextSat = now.day() <= 6 ? now.day(6) : now.add(1, 'week').day(6);
                             setDate(nextSat.format('YYYY-MM-DD'));
@@ -1821,7 +1823,9 @@ export default function BookingScreen() {
                         const startOffset = (startOfMonth.day() + 6) % 7;
                         const items: any[] = [];
                         for (let i = 0; i < startOffset; i++) {
-                          items.push(<View key={`empty-${i}`} style={{ width: '14.28%', height: 36 }} />);
+                          items.push(
+                            <View key={`empty-${i}`} style={{ width: '14.28%', height: 36 }} />,
+                          );
                         }
                         const todayStr = dayjs().format('YYYY-MM-DD');
                         const startOfToday = dayjs().startOf('day');
@@ -1877,7 +1881,7 @@ export default function BookingScreen() {
                                   {d}
                                 </Text>
                               </View>
-                            </TouchableOpacity>
+                            </TouchableOpacity>,
                           );
                         }
                         return items;
@@ -1914,7 +1918,11 @@ export default function BookingScreen() {
                           <Text
                             style={{
                               fontSize: 10.5,
-                              color: isSelected ? 'rgba(255,255,255,0.9)' : isToday ? COLORS.primary : COLORS.gray[500],
+                              color: isSelected
+                                ? 'rgba(255,255,255,0.9)'
+                                : isToday
+                                  ? COLORS.primary
+                                  : COLORS.gray[500],
                               fontWeight: '700',
                             }}
                           >
@@ -1959,7 +1967,8 @@ export default function BookingScreen() {
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                     <Clock size={15} color={COLORS.primary} />
                     <Text style={{ fontSize: 14, fontWeight: '700', color: COLORS.gray[700] }}>
-                      Giờ bắt đầu: <Text style={{ color: COLORS.primary, fontWeight: '800' }}>{timeSlot}</Text>
+                      Giờ bắt đầu:{' '}
+                      <Text style={{ color: COLORS.primary, fontWeight: '800' }}>{timeSlot}</Text>
                     </Text>
                   </View>
                   <TouchableOpacity
@@ -2023,7 +2032,10 @@ export default function BookingScreen() {
                             setCustomTimeOpen(false);
                             Toast.show({ type: 'success', text1: `Đã chọn giờ: ${trimmed}` });
                           } else {
-                            Toast.show({ type: 'error', text1: 'Định dạng giờ không hợp lệ (VD: 19:30)' });
+                            Toast.show({
+                              type: 'error',
+                              text1: 'Định dạng giờ không hợp lệ (VD: 19:30)',
+                            });
                           }
                         }}
                         style={{
@@ -2033,34 +2045,44 @@ export default function BookingScreen() {
                           borderRadius: 10,
                         }}
                       >
-                        <Text style={{ color: '#fff', fontWeight: '800', fontSize: 13 }}>Áp dụng</Text>
+                        <Text style={{ color: '#fff', fontWeight: '800', fontSize: 13 }}>
+                          Áp dụng
+                        </Text>
                       </ScalePressable>
                     </View>
 
                     {/* Quick odd time chips */}
                     <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
-                      {['07:30', '08:30', '11:30', '13:30', '17:30', '19:30', '20:30', '21:30'].map(ot => (
-                        <TouchableOpacity
-                          key={ot}
-                          onPress={() => {
-                            setTimeSlot(ot);
-                            setCustomTimeInput(ot);
-                            setCustomTimeOpen(false);
-                          }}
-                          style={{
-                            paddingHorizontal: 10,
-                            paddingVertical: 5,
-                            borderRadius: 6,
-                            backgroundColor: timeSlot === ot ? '#DCFCE7' : '#F1F5F9',
-                            borderWidth: 1,
-                            borderColor: timeSlot === ot ? COLORS.primary : '#E2E8F0',
-                          }}
-                        >
-                          <Text style={{ fontSize: 11, fontWeight: '700', color: timeSlot === ot ? COLORS.primary : COLORS.gray[700] }}>
-                            {ot}
-                          </Text>
-                        </TouchableOpacity>
-                      ))}
+                      {['07:30', '08:30', '11:30', '13:30', '17:30', '19:30', '20:30', '21:30'].map(
+                        ot => (
+                          <TouchableOpacity
+                            key={ot}
+                            onPress={() => {
+                              setTimeSlot(ot);
+                              setCustomTimeInput(ot);
+                              setCustomTimeOpen(false);
+                            }}
+                            style={{
+                              paddingHorizontal: 10,
+                              paddingVertical: 5,
+                              borderRadius: 6,
+                              backgroundColor: timeSlot === ot ? '#DCFCE7' : '#F1F5F9',
+                              borderWidth: 1,
+                              borderColor: timeSlot === ot ? COLORS.primary : '#E2E8F0',
+                            }}
+                          >
+                            <Text
+                              style={{
+                                fontSize: 11,
+                                fontWeight: '700',
+                                color: timeSlot === ot ? COLORS.primary : COLORS.gray[700],
+                              }}
+                            >
+                              {ot}
+                            </Text>
+                          </TouchableOpacity>
+                        ),
+                      )}
                     </View>
                   </View>
                 )}
@@ -2145,7 +2167,9 @@ export default function BookingScreen() {
                   <Text style={{ fontSize: 14, fontWeight: '700', color: COLORS.gray[700] }}>
                     Thời gian ước tính:{' '}
                     <Text style={{ color: COLORS.primary, fontWeight: '800' }}>
-                      {duration < 1 ? `${Math.round(duration * 60)} phút` : `${Number(duration.toFixed(2)).toString().replace('.', ',')} giờ`}
+                      {duration < 1
+                        ? `${Math.round(duration * 60)} phút`
+                        : `${Number(duration.toFixed(2)).toString().replace('.', ',')} giờ`}
                     </Text>
                   </Text>
                 </View>
@@ -2164,8 +2188,10 @@ export default function BookingScreen() {
                         paddingVertical: 11,
                         borderRadius: 12,
                         borderWidth: 2,
-                        borderColor: !isCustomDuration && duration === d ? COLORS.primary : COLORS.gray[200],
-                        backgroundColor: !isCustomDuration && duration === d ? COLORS.primaryLight : '#fff',
+                        borderColor:
+                          !isCustomDuration && duration === d ? COLORS.primary : COLORS.gray[200],
+                        backgroundColor:
+                          !isCustomDuration && duration === d ? COLORS.primaryLight : '#fff',
                         alignItems: 'center',
                       }}
                     >
@@ -2173,7 +2199,8 @@ export default function BookingScreen() {
                         style={{
                           fontWeight: '800',
                           fontSize: 14,
-                          color: !isCustomDuration && duration === d ? COLORS.primary : COLORS.gray[700],
+                          color:
+                            !isCustomDuration && duration === d ? COLORS.primary : COLORS.gray[700],
                         }}
                       >
                         {d}h
@@ -2231,7 +2258,9 @@ export default function BookingScreen() {
                     <View style={{ flexDirection: 'row', gap: 12, alignItems: 'center' }}>
                       {/* Hours */}
                       <View style={{ flex: 1, gap: 4 }}>
-                        <Text style={{ fontSize: 12, color: COLORS.gray[500], fontWeight: '600' }}>Giờ (0–12h)</Text>
+                        <Text style={{ fontSize: 12, color: COLORS.gray[500], fontWeight: '600' }}>
+                          Giờ (0–12h)
+                        </Text>
                         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
                           {[0, 1, 2, 3, 4, 5, 6].map(h => (
                             <TouchableOpacity
@@ -2250,7 +2279,13 @@ export default function BookingScreen() {
                                 justifyContent: 'center',
                               }}
                             >
-                              <Text style={{ fontSize: 12, fontWeight: '700', color: customHours === h ? '#fff' : COLORS.gray[800] }}>
+                              <Text
+                                style={{
+                                  fontSize: 12,
+                                  fontWeight: '700',
+                                  color: customHours === h ? '#fff' : COLORS.gray[800],
+                                }}
+                              >
                                 {h}
                               </Text>
                             </TouchableOpacity>
@@ -2260,7 +2295,9 @@ export default function BookingScreen() {
 
                       {/* Minutes */}
                       <View style={{ flex: 1, gap: 4 }}>
-                        <Text style={{ fontSize: 12, color: COLORS.gray[500], fontWeight: '600' }}>Phút (0/15/30/45)</Text>
+                        <Text style={{ fontSize: 12, color: COLORS.gray[500], fontWeight: '600' }}>
+                          Phút (0/15/30/45)
+                        </Text>
                         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
                           {[0, 15, 30, 45].map(m => (
                             <TouchableOpacity
@@ -2279,7 +2316,13 @@ export default function BookingScreen() {
                                 justifyContent: 'center',
                               }}
                             >
-                              <Text style={{ fontSize: 12, fontWeight: '700', color: customMinutes === m ? '#fff' : COLORS.gray[800] }}>
+                              <Text
+                                style={{
+                                  fontSize: 12,
+                                  fontWeight: '700',
+                                  color: customMinutes === m ? '#fff' : COLORS.gray[800],
+                                }}
+                              >
                                 {m}p
                               </Text>
                             </TouchableOpacity>
@@ -2292,12 +2335,15 @@ export default function BookingScreen() {
 
                 {/* Dynamic Schedule Summary Card with Next-Day notice */}
                 {(() => {
-                  const durTotal = typeof duration === 'number' ? duration : parseFloat(String(duration)) || 2;
+                  const durTotal =
+                    typeof duration === 'number' ? duration : parseFloat(String(duration)) || 2;
                   const durMinsTotal = Math.round(durTotal * 60);
                   const startDt = dayjs(`${date} ${timeSlot}`);
                   const endDt = startDt.add(durMinsTotal, 'minute');
                   const isNextDay = endDt.date() !== startDt.date();
-                  const cleanPriceNum = targetPrice ? Number(String(targetPrice).replace(/[^0-9]/g, '')) : 0;
+                  const cleanPriceNum = targetPrice
+                    ? Number(String(targetPrice).replace(/[^0-9]/g, ''))
+                    : 0;
 
                   return (
                     <View
@@ -2310,13 +2356,25 @@ export default function BookingScreen() {
                         marginTop: 14,
                       }}
                     >
-                      <Text style={{ fontSize: 13, color: '#166534', fontWeight: '600', lineHeight: 20 }}>
+                      <Text
+                        style={{
+                          fontSize: 13,
+                          color: '#166534',
+                          fontWeight: '600',
+                          lineHeight: 20,
+                        }}
+                      >
                         Lịch dự kiến:{' '}
                         <Text style={{ fontWeight: '800' }}>
-                          {dayjs(date).format('dddd, DD/MM/YYYY')}, {timeSlot} – {endDt.format('HH:mm')}
+                          {dayjs(date).format('dddd, DD/MM/YYYY')}, {timeSlot} –{' '}
+                          {endDt.format('HH:mm')}
                           {isNextDay ? ' (ngày hôm sau)' : ''}
                         </Text>{' '}
-                        · thời lượng {durTotal < 1 ? `${Math.round(durTotal * 60)} phút` : `${Number(durTotal.toFixed(2)).toString().replace('.', ',')} giờ`}.
+                        · thời lượng{' '}
+                        {durTotal < 1
+                          ? `${Math.round(durTotal * 60)} phút`
+                          : `${Number(durTotal.toFixed(2)).toString().replace('.', ',')} giờ`}
+                        .
                         {cleanPriceNum > 0
                           ? ` Giá mở đầu để deal: ${new Intl.NumberFormat('vi-VN').format(cleanPriceNum)}₫.`
                           : ''}
@@ -2355,7 +2413,8 @@ export default function BookingScreen() {
                       Đã đính kèm {photos.length} ảnh sự cố
                     </Text>
                     <Text style={{ fontSize: 12, color: '#15803D', marginTop: 2 }}>
-                      Bấm nút màu xanh "Phân tích ảnh sự cố bằng AI" bên dưới để hệ thống nhận diện và điền mô tả ngay!
+                      Bấm nút màu xanh "Phân tích ảnh sự cố bằng AI" bên dưới để hệ thống nhận diện
+                      và điền mô tả ngay!
                     </Text>
                   </View>
                 </View>
