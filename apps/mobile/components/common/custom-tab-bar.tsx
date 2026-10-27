@@ -1,6 +1,7 @@
 // apps/mobile/components/common/custom-tab-bar.tsx
-import React from 'react';
-import { View, Text, Platform, StyleSheet } from 'react-native';
+import React, { useMemo } from 'react';
+import { View, Text, Platform, StyleSheet, useWindowDimensions } from 'react-native';
+import { useRouter } from 'expo-router';
 import { Home, Clock, MessageSquare, User, Plus, Briefcase, TrendingUp } from 'lucide-react-native';
 import { COLORS } from '@/components/ui';
 import { useTranslation } from '@/hooks/use-i18n';
@@ -25,10 +26,52 @@ export function CustomTabBar({
   navigation,
   mode = 'customer',
 }: CustomTabBarProps) {
+  const router = useRouter();
   const { t, fs } = useTranslation();
+  const { width } = useWindowDimensions();
+
+  // Tính toán kích thước co giãn theo bề rộng màn hình (360px, 390px, 412px, desktop)
+  const isNarrow = width < 375; // màn hẹp như 360px
+  const isTabletOrDesktop = width > 430;
+
+  const dims = useMemo(() => {
+    if (isNarrow) {
+      return {
+        tabFontSize: 9.5,
+        iconSize: 20,
+        centerIconWrapperSize: 44,
+        centerIconInnerSize: 22,
+        centerButtonTop: -14,
+        letterSpacing: -0.4,
+        tabBarHeight: Platform.OS === 'ios' ? 82 : 64,
+      };
+    }
+    if (isTabletOrDesktop) {
+      return {
+        tabFontSize: 11,
+        iconSize: 22,
+        centerIconWrapperSize: 52,
+        centerIconInnerSize: 26,
+        centerButtonTop: -18,
+        letterSpacing: -0.2,
+        tabBarHeight: Platform.OS === 'ios' ? 86 : 68,
+      };
+    }
+    // Mặc định (375px - 430px, gồm 390px, 412px)
+    return {
+      tabFontSize: 10,
+      iconSize: 21,
+      centerIconWrapperSize: 48,
+      centerIconInnerSize: 24,
+      centerButtonTop: -16,
+      letterSpacing: -0.3,
+      tabBarHeight: Platform.OS === 'ios' ? 84 : 66,
+    };
+  }, [isNarrow, isTabletOrDesktop]);
+
   return (
     <View style={styles.container}>
-      <View style={styles.tabBar}>
+      <View style={[styles.tabBar, { height: dims.tabBarHeight }]}>
         {state.routes.map((route: any, index: number) => {
           // Bỏ qua các màn hình ẩn — theo tên route trước (chắc chắn trên mọi
           // nền tảng), rồi mới theo options.href === null.
@@ -45,8 +88,32 @@ export function CustomTabBar({
               canPreventDefault: true,
             });
 
-            if (!isFocused && !event.defaultPrevented) {
-              navigation.navigate(route.name);
+            if (!event.defaultPrevented) {
+              if (Platform.OS === 'web') {
+                // Điều hướng an toàn trong app trên Web: luôn chuyển trang đích xác,
+                // không bao giờ mở about:srcdoc hoặc khung trống
+                if (route.name === 'home') {
+                  router.push('/(customer)/home');
+                } else if (route.name === 'jobs') {
+                  router.push(mode === 'helper' ? '/(helper)/jobs' : '/(customer)/jobs');
+                } else if (route.name === 'booking') {
+                  router.push('/(customer)/booking');
+                } else if (route.name === 'messages') {
+                  router.push(mode === 'helper' ? '/(helper)/messages' : '/(customer)/messages');
+                } else if (route.name === 'profile') {
+                  router.push(mode === 'helper' ? '/(helper)/profile' : '/(customer)/profile');
+                } else if (route.name === 'dashboard') {
+                  router.push('/(helper)/dashboard');
+                } else if (route.name === 'earnings') {
+                  router.push('/(helper)/earnings');
+                } else {
+                  navigation.navigate(route.name);
+                }
+              } else {
+                if (!isFocused) {
+                  navigation.navigate(route.name);
+                }
+              }
             }
           };
 
@@ -54,11 +121,33 @@ export function CustomTabBar({
           if (isCenterButton) {
             return (
               <View key={route.key} style={styles.centerTabContainer}>
-                <ScalePressable activeScale={0.92} onPress={onPress} style={styles.centerButton}>
-                  <View style={styles.centerIconWrapper}>
-                    <Plus size={26} color="#FFFFFF" strokeWidth={3} />
+                <ScalePressable
+                  activeScale={0.92}
+                  onPress={onPress}
+                  style={[styles.centerButton, { top: dims.centerButtonTop }]}
+                >
+                  <View
+                    style={[
+                      styles.centerIconWrapper,
+                      {
+                        width: dims.centerIconWrapperSize,
+                        height: dims.centerIconWrapperSize,
+                        borderRadius: dims.centerIconWrapperSize / 2,
+                      },
+                    ]}
+                  >
+                    <Plus size={dims.centerIconInnerSize} color="#FFFFFF" strokeWidth={3} />
                   </View>
-                  <Text style={[styles.centerLabel, { fontSize: fs(10.5) }]}>
+                  <Text
+                    style={[
+                      styles.centerLabel,
+                      {
+                        fontSize: fs(dims.tabFontSize),
+                        letterSpacing: dims.letterSpacing,
+                      },
+                    ]}
+                    numberOfLines={1}
+                  >
                     {t('tab_booking')}
                   </Text>
                 </ScalePressable>
@@ -77,7 +166,7 @@ export function CustomTabBar({
           if (route.name === 'earnings') label = t('tab_earnings');
 
           const iconColor = isFocused ? COLORS.primary : COLORS.gray[400];
-          const iconSize = 22;
+          const iconSize = dims.iconSize;
 
           const renderIcon = () => {
             switch (route.name) {
@@ -150,7 +239,8 @@ export function CustomTabBar({
                 style={[
                   styles.tabLabel,
                   {
-                    fontSize: fs(10.5),
+                    fontSize: fs(dims.tabFontSize),
+                    letterSpacing: dims.letterSpacing,
                     color: isFocused ? COLORS.primary : COLORS.gray[500],
                     fontWeight: isFocused ? '800' : '600',
                   },
@@ -174,15 +264,19 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     backgroundColor: 'transparent',
+    alignItems: 'center',
+    zIndex: 999,
   },
   tabBar: {
     flexDirection: 'row',
     backgroundColor: '#FFFFFF',
     borderTopWidth: 1,
     borderTopColor: 'rgba(0, 0, 0, 0.05)',
-    paddingBottom: Platform.OS === 'ios' ? 24 : 10,
-    paddingTop: 8,
-    height: Platform.OS === 'ios' ? 86 : 68,
+    paddingBottom: Platform.OS === 'ios' ? 24 : 8,
+    paddingTop: 6,
+    paddingHorizontal: 4,
+    maxWidth: 640,
+    width: '100%',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -4 },
     shadowOpacity: 0.08,
@@ -191,45 +285,44 @@ const styles = StyleSheet.create({
   },
   tabItem: {
     flex: 1,
+    minWidth: 0,
+    paddingHorizontal: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 3,
+    gap: 2,
   },
   tabLabel: {
-    fontSize: 10.5,
+    fontSize: 10,
     marginTop: 2,
-    letterSpacing: -0.2,
+    textAlign: 'center',
   },
   centerTabContainer: {
     flex: 1,
+    minWidth: 0,
     alignItems: 'center',
     justifyContent: 'flex-start',
   },
   centerButton: {
-    top: -20,
     alignItems: 'center',
     justifyContent: 'center',
   },
   centerIconWrapper: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
     backgroundColor: COLORS.primary,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 4,
+    borderWidth: 3.5,
     borderColor: '#FFFFFF',
     shadowColor: COLORS.primary,
-    shadowOffset: { width: 0, height: 6 },
+    shadowOffset: { width: 0, height: 5 },
     shadowOpacity: 0.45,
-    shadowRadius: 10,
+    shadowRadius: 8,
     elevation: 8,
   },
   centerLabel: {
-    fontSize: 10.5,
+    fontSize: 10,
     fontWeight: '800',
     color: COLORS.primary,
-    marginTop: 3,
-    letterSpacing: -0.2,
+    marginTop: 2,
+    textAlign: 'center',
   },
 });

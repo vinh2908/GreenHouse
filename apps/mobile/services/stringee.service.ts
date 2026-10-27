@@ -43,6 +43,7 @@ export interface StringeeCallEvents {
   onConnected?: () => void;
   onEnded?: () => void;
   onError?: (message: string) => void;
+  onBusyOrRejected?: (reason?: string) => void;
 }
 
 export interface IncomingCallInfo {
@@ -566,8 +567,18 @@ class StringeeService {
       // Defensive: media Connected (below) is the primary onConnected signal;
       // Answered covers builds where media events arrive late.
       this.activeEvents?.onConnected?.();
-    } else if (data.code === 3 || data.code === 4) {
-      // Busy / Ended are both terminal for this single-call UI.
+    } else if (data.code === 3) {
+      // Bên kia từ chối hoặc bận (Busy / Rejected by remote)
+      console.log('[Stringee] SignalingState 3: Người kia đã từ chối hoặc đang bận');
+      const events = this.activeEvents;
+      this.activeCallId = null;
+      this.activeEvents = null;
+      this.pendingOutgoing = null;
+      events?.onBusyOrRejected?.('Người kia đã từ chối cuộc gọi');
+      events?.onEnded?.();
+    } else if (data.code === 4) {
+      // Ended
+      console.log('[Stringee] SignalingState 4: Cuộc gọi đã kết thúc');
       this.finishActiveCall();
     }
   }

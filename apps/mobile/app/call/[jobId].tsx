@@ -13,6 +13,7 @@ import {
 } from '@/hooks/use-api';
 import { stringeeService, type StringeeCallEvents } from '@/services/stringee.service';
 import { callkeepService } from '@/services/callkeep.service';
+import { socketService } from '@/services/socket.service';
 
 /**
  * ════════════════════════════════════════════════════════════════════════════
@@ -50,7 +51,14 @@ import { callkeepService } from '@/services/callkeep.service';
  * ════════════════════════════════════════════════════════════════════════════
  */
 
-type CallUiState = 'preparing' | 'connecting' | 'in_call' | 'ended' | 'unavailable' | 'error';
+type CallUiState =
+  | 'preparing'
+  | 'connecting'
+  | 'in_call'
+  | 'ended'
+  | 'rejected'
+  | 'unavailable'
+  | 'error';
 
 export default function CallScreen() {
   const { jobId, partnerName, sessionId, mode } = useLocalSearchParams<{
@@ -71,6 +79,7 @@ export default function CallScreen() {
 
   const [session, setSession] = useState<CallSessionInit | null>(null);
   const [uiState, setUiState] = useState<CallUiState>('preparing');
+  const [endReason, setEndReason] = useState('');
   const [muted, setMuted] = useState(false);
   const [speaker, setSpeaker] = useState(false);
   const [seconds, setSeconds] = useState(0);
@@ -99,6 +108,19 @@ export default function CallScreen() {
 
     const events: StringeeCallEvents = {
       onConnected: () => setUiState('in_call'),
+      onBusyOrRejected: (reason?: string) => {
+        if (endedRef.current) return;
+        endedRef.current = true;
+        setEndReason(reason || 'Người kia đã từ chối cuộc gọi');
+        setUiState('rejected');
+        const s = sessionRef.current;
+        if (s) {
+          callkeepService.reportSessionEnded(s.session_id);
+          void endCall
+            .mutateAsync({ sessionId: s.session_id, reason: 'rejected' })
+            .catch(() => undefined);
+        }
+      },
       onEnded: () => {
         if (endedRef.current) return;
         endedRef.current = true;
@@ -216,6 +238,23 @@ export default function CallScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [jobId, config, configLoading]);
 
+  // Lắng nghe socket call:ended từ đối phương (hỗ trợ cả Web lẫn Native)
+  useEffect(() => {
+    const unsub = socketService.on('call:ended', (payload: any) => {
+      const s = sessionRef.current;
+      if (!s || (payload?.sessionId && payload.sessionId !== s.session_id)) return;
+      if (endedRef.current) return;
+      endedRef.current = true;
+      if (payload?.reason === 'rejected') {
+        setEndReason('Người kia đã từ chối cuộc gọi');
+        setUiState('rejected');
+      } else {
+        setUiState('ended');
+      }
+    });
+    return () => unsub();
+  }, []);
+
   // Cleanup: clear answer timer / listener, hang up SDK call on unmount.
   useEffect(() => {
     return () => {
@@ -307,11 +346,78 @@ export default function CallScreen() {
           {uiState === 'in_call' && mmss}
           {uiState === 'unavailable' && 'Tính năng chưa kích hoạt'}
           {uiState === 'error' && 'Không kết nối được'}
+          {uiState === 'rejected' && 'Người kia đã từ chối cuộc gọi'}
           {uiState === 'ended' && 'Cuộc gọi đã kết thúc'}
         </Text>
       </View>
 
       <View style={{ flex: 1 }} />
+
+      {(uiState === 'ended' || uiState === 'rejected') && (
+        <View style={{ width: '100%', gap: 14, alignItems: 'center', paddingHorizontal: 16 }}>
+          <View
+            style={{
+              backgroundColor:
+                uiState === 'rejected' ? 'rgba(239, 68, 68, 0.15)' : 'rgba(255, 255, 255, 0.1)',
+              borderColor:
+                uiState === 'rejected' ? 'rgba(239, 68, 68, 0.4)' : 'rgba(255, 255, 255, 0.2)',
+              borderWidth: 1,
+              borderRadius: 16,
+              padding: 16,
+              width: '100%',
+              alignItems: 'center',
+            }}
+          >
+            <Text
+              style={{
+                color: uiState === 'rejected' ? '#FCA5A5' : '#D1FAE5',
+                fontSize: 15,
+                fontWeight: '700',
+                textAlign: 'center',
+              }}
+            >
+              {uiState === 'rejected'
+                ? endReason || 'Người kia đã từ chối cuộc gọi'
+                : seconds > 0
+                  ? `Cuộc gọi đã kết thúc (${mmss})`
+                  : 'Cuộc gọi đã kết thúc'}
+            </Text>
+            <Text
+              style={{
+                color: 'rgba(255,255,255,0.7)',
+                fontSize: 12.5,
+                marginTop: 4,
+                textAlign: 'center',
+              }}
+            >
+              {uiState === 'rejected'
+                ? 'Đối tác hiện đang bận hoặc không thể nghe máy. Bạn có thể gửi tin nhắn qua khung chat.'
+                : 'Cảm ơn bạn đã sử dụng tính năng gọi qua GreenHouse.'}
+            </Text>
+          </View>
+
+          <TouchableOpacity
+            activeOpacity={0.85}
+            onPress={() => router.back()}
+            style={{
+              backgroundColor: '#16A34A',
+              paddingHorizontal: 32,
+              paddingVertical: 14,
+              borderRadius: 12,
+              marginTop: 6,
+              minWidth: 180,
+              alignItems: 'center',
+              shadowColor: '#16A34A',
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: 0.3,
+              shadowRadius: 8,
+              elevation: 4,
+            }}
+          >
+            <Text style={{ color: '#fff', fontWeight: '800', fontSize: 15 }}>Quay lại</Text>
+          </TouchableOpacity>
+        </View>
+      )}
 
       {(uiState === 'unavailable' || uiState === 'error') && (
         <View style={{ width: '100%', gap: 14, alignItems: 'center', paddingHorizontal: 16 }}>
