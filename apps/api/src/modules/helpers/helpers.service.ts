@@ -234,6 +234,10 @@ export class HelpersService {
     if (serviceId) {
       query['service_ids'] = new Types.ObjectId(serviceId);
     }
-    return this.helperModel.find(query).limit(50).exec();
+    return this.helperModel
+      .find(query)
+      .populate('user_id', 'full_name avatar phone')
+      .limit(50)
+      .exec();
   }
 }

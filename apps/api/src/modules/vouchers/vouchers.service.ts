@@ -239,6 +239,20 @@ export class VouchersService {
     return { job_id: jobId, voucher_code: null };
   }
 
+  // ─── Public: Danh sách voucher đang hoạt động ────────────────────────────
+
+  async getActiveVouchers() {
+    const now = new Date();
+    return this.voucherModel
+      .find({
+        is_active: true,
+        $or: [{ valid_to: { $exists: false } }, { valid_to: null }, { valid_to: { $gte: now } }],
+      })
+      .sort({ discount_value: -1, created_at: -1 })
+      .lean()
+      .exec();
+  }
+
   // ─── Customer: Danh sách voucher khả dụng của tôi ──────────────────────────
 
   async getMyAvailableVouchers(userId: string) {

@@ -23,6 +23,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { Public } from '../../common/decorators/public.decorator';
 import { UserRole } from '@homemate/types';
 
 // ─── Customer endpoints ───────────────────────────────────────────────────────
@@ -33,6 +34,13 @@ import { UserRole } from '@homemate/types';
 @Controller('vouchers')
 export class VouchersController {
   constructor(private readonly vouchersService: VouchersService) {}
+
+  @Public()
+  @Get('active')
+  @ApiOperation({ summary: 'Xem danh sách mã giảm giá đang hoạt động (công khai)' })
+  async activeVouchers() {
+    return this.vouchersService.getActiveVouchers();
+  }
 
   @Get('my')
   @ApiOperation({ summary: '[Customer] Xem danh sách mã giảm giá khả dụng của tôi' })

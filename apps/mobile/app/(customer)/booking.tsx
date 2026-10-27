@@ -1333,8 +1333,7 @@ export default function BookingScreen() {
                     borderRadius: 16,
                     borderWidth: 2,
                     borderColor: selectedService === 'custom' ? COLORS.primary : '#86EFAC',
-                    backgroundColor:
-                      selectedService === 'custom' ? COLORS.primaryLight : '#F0FDF4',
+                    backgroundColor: selectedService === 'custom' ? COLORS.primaryLight : '#F0FDF4',
                     flexDirection: 'row',
                     alignItems: 'center',
                     gap: 14,
@@ -1794,12 +1793,15 @@ export default function BookingScreen() {
                     marginTop: 14,
                   }}
                 >
-                  <Text style={{ fontSize: 13, color: '#166534', fontWeight: '600', lineHeight: 18 }}>
+                  <Text
+                    style={{ fontSize: 13, color: '#166534', fontWeight: '600', lineHeight: 18 }}
+                  >
                     Lịch dự kiến:{' '}
                     <Text style={{ fontWeight: '800' }}>
                       {dayjs(date).format('dddd, DD/MM')}, {timeSlot} –{' '}
                       {dayjs(`${date} ${timeSlot}`).add(duration, 'hour').format('HH:mm')}
-                      {dayjs(`${date} ${timeSlot}`).add(duration, 'hour').date() !== dayjs(date).date()
+                      {dayjs(`${date} ${timeSlot}`).add(duration, 'hour').date() !==
+                      dayjs(date).date()
                         ? ' (ngày hôm sau)'
                         : ''}
                     </Text>{' '}

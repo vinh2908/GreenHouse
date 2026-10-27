@@ -24,6 +24,7 @@ import {
 } from './dto/helper.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { Public } from '../../common/decorators/public.decorator';
 
 @ApiTags('Helpers')
 @ApiBearerAuth()
@@ -101,6 +102,7 @@ export class HelpersController {
 
   // ─── Public: view helper profile ──────────────────────────────────────────
 
+  @Public()
   @Get(':userId/profile')
   @ApiOperation({ summary: 'Xem hồ sơ công khai của helper' })
   async getPublicProfile(@Param('userId') userId: string) {
@@ -109,6 +111,7 @@ export class HelpersController {
 
   // ─── Nearby helpers (for customers) ──────────────────────────────────────
 
+  @Public()
   @Get('nearby')
   @ApiOperation({ summary: 'Tìm helpers gần vị trí (cho customer)' })
   @ApiQuery({ name: 'lng', type: Number, example: 106.6297 })
@@ -121,6 +124,9 @@ export class HelpersController {
     @Query('radius') radius: number = 10,
     @Query('service_id') serviceId?: string,
   ) {
-    return this.helpersService.findNearby([+lng, +lat], +radius, serviceId);
+    if (isNaN(+lng) || isNaN(+lat)) {
+      return [];
+    }
+    return this.helpersService.findNearby([+lng, +lat], +radius || 10, serviceId);
   }
 }

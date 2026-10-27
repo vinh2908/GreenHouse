@@ -8,7 +8,11 @@ import {
   Pressable,
   TextInput,
   Platform,
+  AccessibilityInfo,
+  Animated,
+  StyleSheet,
 } from 'react-native';
+import Svg, { Defs, LinearGradient as SvgLinearGradient, Stop, Rect } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
@@ -19,6 +23,7 @@ import {
   MapPin,
   Search,
   ChevronRight,
+  ChevronLeft,
   ShieldCheck,
   CheckCircle2,
   Lock,
@@ -30,10 +35,21 @@ import {
   Check,
   ArrowRight,
   Sparkles,
+  AlertTriangle,
+  Users,
+  Tag,
 } from 'lucide-react-native';
 import { useAuthStore } from '@/stores/auth.store';
 import { useTranslation } from '@/hooks/use-i18n';
-import { useServices, useMyJobs, useUnreadCount, useMyProfile, useCreateJob } from '@/hooks/use-api';
+import {
+  useServices,
+  useMyJobs,
+  useUnreadCount,
+  useMyProfile,
+  useCreateJob,
+  useNearbyHelpers,
+  useMyVouchers,
+} from '@/hooks/use-api';
 import { locationService } from '@/services/location.service';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LocationPicker, PickerCoords } from '@/components/common/location-picker';
@@ -58,7 +74,13 @@ interface ServiceItem {
 }
 
 const DEMO_SERVICES: ServiceItem[] = [
-  { id: '1', name: 'Giúp việc theo giờ', price: 'Từ 60.000₫/giờ', emoji: '🧹', slug: 'housekeeping_hourly' },
+  {
+    id: '1',
+    name: 'Giúp việc theo giờ',
+    price: 'Từ 60.000₫/giờ',
+    emoji: '🧹',
+    slug: 'housekeeping_hourly',
+  },
   { id: '2', name: 'Sửa điện gia dụng', price: 'Báo giá theo việc', emoji: '⚡', slug: 'handyman' },
   { id: '3', name: 'Dọn nhà', price: 'Từ 150.000₫/ca', emoji: '🏠', slug: 'house_cleaning' },
   { id: '4', name: 'Nấu ăn', price: 'Từ 120.000₫/bữa', emoji: '🍳', slug: 'cooking' },
@@ -66,9 +88,21 @@ const DEMO_SERVICES: ServiceItem[] = [
   { id: '6', name: 'Chăm trẻ', price: 'Từ 55.000₫/giờ', emoji: '👶', slug: 'family_care' },
   { id: '7', name: 'Sửa ống nước', price: 'Báo giá theo việc', emoji: '🔧', slug: 'handyman' },
   { id: '8', name: 'Giặt ủi', price: 'Từ 20.000₫/kg', emoji: '👔', slug: 'laundry' },
-  { id: '9', name: 'Vệ sinh máy lạnh', price: 'Từ 250.000₫/máy', emoji: '❄️', slug: 'deep_cleaning' },
+  {
+    id: '9',
+    name: 'Vệ sinh máy lạnh',
+    price: 'Từ 250.000₫/máy',
+    emoji: '❄️',
+    slug: 'deep_cleaning',
+  },
   { id: '10', name: 'Chăm người già', price: 'Từ 70.000₫/giờ', emoji: '👵', slug: 'family_care' },
-  { id: '11', name: 'Bốc hàng, vận chuyển', price: 'Deal giá với thợ', emoji: '🚛', slug: 'moving_help' },
+  {
+    id: '11',
+    name: 'Bốc hàng, vận chuyển',
+    price: 'Deal giá với thợ',
+    emoji: '🚛',
+    slug: 'moving_help',
+  },
   {
     id: '12',
     name: 'Dịch vụ khác — tự ghi việc, tự set giá',
@@ -81,60 +115,74 @@ const DEMO_SERVICES: ServiceItem[] = [
   },
 ];
 
-// ─── Danh sách thợ đang ở gần (Fallback Demo Workers) ───────────────────────────
-interface NearbyHelper {
+// ─── Thợ đang ở gần (Dữ liệu thật từ API) ──────────────────────────────────
+interface NearbyHelperItem {
   id: string;
   name: string;
-  areaHcm: string;
-  areaDaNang: string;
+  shortName: string;
+  phone?: string;
+  avatar?: string;
+  rating: number;
+  completedJobs: number;
+  distKm: number;
   distance: string;
   eta: string;
-  latOffset: number;
-  lonOffset: number;
+  lat: number;
+  lon: number;
+  status: string;
 }
 
-const NEARBY_HELPERS: NearbyHelper[] = [
-  {
-    id: '1',
-    name: 'Nguyễn Văn An',
-    areaHcm: 'Khu Bến Nghé',
-    areaDaNang: 'Khu Hòa Khê',
-    distance: '0,4 km',
-    eta: 'tới trong ~5 phút',
-    latOffset: 0.0028,
-    lonOffset: -0.0022,
-  },
-  {
-    id: '2',
-    name: 'Trần Minh Tuấn',
-    areaHcm: 'Khu Tân Định',
-    areaDaNang: 'Khu Thạc Gián',
-    distance: '0,9 km',
-    eta: 'tới trong ~9 phút',
-    latOffset: -0.0035,
-    lonOffset: 0.0032,
-  },
-  {
-    id: '3',
-    name: 'Lê Hoàng Nam',
-    areaHcm: 'Khu Đa Kao',
-    areaDaNang: 'Khu Hải Châu',
-    distance: '1,3 km',
-    eta: 'tới trong ~13 phút',
-    latOffset: 0.0048,
-    lonOffset: 0.0051,
-  },
-  {
-    id: '4',
-    name: 'Phạm Quốc Huy',
-    areaHcm: 'Khu Cầu Kho',
-    areaDaNang: 'Khu An Khê',
-    distance: '1,7 km',
-    eta: 'tới trong ~17 phút',
-    latOffset: -0.0055,
-    lonOffset: -0.0042,
-  },
-];
+function calculateDistanceKm(lat1: number, lon1: number, lat2: number, lon2: number) {
+  const R = 6371; // km
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
+function ScalePressable({
+  children,
+  onPress,
+  style,
+  activeScale = 0.96,
+  disabled = false,
+  ...props
+}: any) {
+  const scale = useRef(new Animated.Value(1)).current;
+  const onPressIn = () => {
+    Animated.spring(scale, {
+      toValue: activeScale,
+      useNativeDriver: Platform.OS !== 'web',
+      speed: 40,
+      bounciness: 4,
+    }).start();
+  };
+  const onPressOut = () => {
+    Animated.spring(scale, {
+      toValue: 1,
+      useNativeDriver: Platform.OS !== 'web',
+      speed: 40,
+      bounciness: 8,
+    }).start();
+  };
+  return (
+    <Pressable
+      onPress={onPress}
+      onPressIn={onPressIn}
+      onPressOut={onPressOut}
+      disabled={disabled}
+      {...props}
+    >
+      <Animated.View style={[{ transform: [{ scale }] }, style]}>{children}</Animated.View>
+    </Pressable>
+  );
+}
 
 export default function CustomerHomeScreen() {
   const router = useRouter();
@@ -153,22 +201,76 @@ export default function CustomerHomeScreen() {
   const [currentLocationName, setCurrentLocationName] = useState('Đang định vị...');
   const [currentCoords, setCurrentCoords] = useState<PickerCoords | null>(null);
   const [locationPickerOpen, setLocationPickerOpen] = useState(false);
-  const [selectedHelperId, setSelectedHelperId] = useState<string>('1');
+  const [selectedHelperId, setSelectedHelperId] = useState<string>('');
+
+  // API Thợ gần & Vouchers thật
+  const { data: nearbyRaw } = useNearbyHelpers(currentCoords);
+  const { data: vouchersRaw } = useMyVouchers();
+
+  // Accessibility reduce motion
+  const [reduceMotion, setReduceMotion] = useState(false);
+  useEffect(() => {
+    AccessibilityInfo.isReduceMotionEnabled()
+      .then(setReduceMotion)
+      .catch(() => {});
+    const sub = AccessibilityInfo.addEventListener('reduceMotionChanged', setReduceMotion);
+    return () => sub?.remove();
+  }, []);
+
+  // AI Card Shimmer Sweep
+  const shineAnim = useRef(new Animated.Value(-150)).current;
+  useEffect(() => {
+    if (reduceMotion) return;
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(shineAnim, {
+          toValue: 450,
+          duration: 2400,
+          useNativeDriver: Platform.OS !== 'web',
+        }),
+        Animated.delay(1600),
+        Animated.timing(shineAnim, {
+          toValue: -150,
+          duration: 0,
+          useNativeDriver: Platform.OS !== 'web',
+        }),
+      ]),
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [reduceMotion]);
+
+  // Vouchers state & auto-scroll
+  const [copiedVoucher, setCopiedVoucher] = useState<string | null>(null);
+  const voucherScrollRef = useRef<ScrollView>(null);
+  const [activeVoucherIdx, setActiveVoucherIdx] = useState(0);
+  const isUserScrollingVouchers = useRef(false);
+
+  // Month Calendar state
+  const [calendarOpen, setCalendarOpen] = useState(false);
+  const [calendarMonth, setCalendarMonth] = useState(dayjs());
+
+  // Duration Custom Picker state
+  const [durationPickerOpen, setDurationPickerOpen] = useState(false);
+  const [customHours, setCustomHours] = useState(1);
+  const [customMinutes, setCustomMinutes] = useState(30);
+  const [isCustomDuration, setIsCustomDuration] = useState(false);
 
   // Khối Quick Booking Block ("Đăng việc theo ý bạn")
-  const [quickServiceChip, setQuickServiceChip] = useState<'don_nha' | 'boc_hang' | 'may_lanh' | 'khac'>('boc_hang');
+  const [quickServiceChip, setQuickServiceChip] = useState<
+    'don_nha' | 'boc_hang' | 'may_lanh' | 'khac'
+  >('boc_hang');
   const [quickDescription, setQuickDescription] = useState(
     'Bốc hàng từ kho lên xe tải, chở đến nhà mới rồi dỡ xuống',
   );
   const [quickDealPrice, setQuickDealPrice] = useState('200000');
-  const [quickDateChip, setQuickDateChip] = useState<'today' | 'tomorrow' | 'sat' | 'sun'>('tomorrow');
+  const [quickDateChip, setQuickDateChip] = useState<'today' | 'tomorrow' | 'sat' | 'sun' | null>(
+    'tomorrow',
+  );
   const [quickDate, setQuickDate] = useState(dayjs().add(1, 'day').format('YYYY-MM-DD'));
   const [quickTimeSlot, setQuickTimeSlot] = useState('19:00');
   const [quickDuration, setQuickDuration] = useState(2);
   const [isSubmittingQuick, setIsSubmittingQuick] = useState(false);
-
-  // Vouchers state
-  const [copiedVoucher, setCopiedVoucher] = useState<string | null>(null);
 
   // Xác định khu vực hiện tại là Đà Nẵng hay HCM
   const isDaNang = useMemo(() => {
@@ -178,6 +280,101 @@ export default function CustomerHomeScreen() {
       (currentCoords && currentCoords.latitude > 15.5 && currentCoords.latitude < 16.5)
     );
   }, [currentLocationName, currentCoords]);
+
+  // Danh sách thợ gần thật từ API
+  const nearbyHelpers: NearbyHelperItem[] = useMemo(() => {
+    if (!nearbyRaw || !Array.isArray(nearbyRaw) || nearbyRaw.length === 0) return [];
+    return nearbyRaw
+      .filter((h: any) => h.location?.coordinates && h.location.coordinates.length >= 2)
+      .map((h: any, idx: number) => {
+        const coords = h.location.coordinates; // [lng, lat]
+        const helperName = h.user_id?.full_name || 'Thợ chuyên nghiệp';
+        const nameParts = helperName.trim().split(/\s+/);
+        const shortName = nameParts.length > 2 ? nameParts.slice(-2).join(' ') : helperName;
+        let distKm = 0;
+        if (currentCoords) {
+          distKm = calculateDistanceKm(
+            currentCoords.latitude,
+            currentCoords.longitude,
+            coords[1],
+            coords[0],
+          );
+        }
+        const distText =
+          distKm < 1
+            ? `${Math.round(distKm * 1000)} m`
+            : `${distKm.toFixed(1).replace('.', ',')} km`;
+        const etaMinutes = Math.max(5, Math.round(distKm * 3.5) + 3);
+        const etaText = `tới trong ~${etaMinutes} phút`;
+        return {
+          id: String(h._id || idx),
+          name: helperName,
+          shortName,
+          phone: h.user_id?.phone,
+          avatar: h.user_id?.avatar,
+          rating: h.rating || 5.0,
+          completedJobs: h.completed_jobs || 0,
+          distKm,
+          distance: distText,
+          eta: etaText,
+          lat: coords[1],
+          lon: coords[0],
+          status: 'Đang rảnh',
+        };
+      })
+      .sort((a, b) => a.distKm - b.distKm);
+  }, [nearbyRaw, currentCoords]);
+
+  // Vouchers thật còn hiệu lực
+  const vouchers = useMemo(() => {
+    if (!vouchersRaw || !Array.isArray(vouchersRaw) || vouchersRaw.length === 0) return [];
+    return vouchersRaw.filter(v => v.is_active !== false);
+  }, [vouchersRaw]);
+
+  // Auto-scroll vouchers
+  useEffect(() => {
+    if (reduceMotion || vouchers.length <= 1) return;
+    const timer = setInterval(() => {
+      if (isUserScrollingVouchers.current) return;
+      setActiveVoucherIdx(prev => {
+        const next = (prev + 1) % vouchers.length;
+        voucherScrollRef.current?.scrollTo({ x: next * 272, animated: true });
+        return next;
+      });
+    }, 4000);
+    return () => clearInterval(timer);
+  }, [vouchers.length, reduceMotion]);
+
+  // Ma trận ngày của tháng cho bộ chọn lịch
+  const calendarDays = useMemo(() => {
+    const startOfMonth = calendarMonth.startOf('month');
+    const daysInMonth = calendarMonth.daysInMonth();
+    const startOffset = (startOfMonth.day() + 6) % 7; // T2 là 0
+    const items: ({
+      dayNum: number;
+      dateStr: string;
+      isPast: boolean;
+      isToday: boolean;
+      isSelected: boolean;
+    } | null)[] = [];
+    for (let i = 0; i < startOffset; i++) {
+      items.push(null);
+    }
+    const todayStr = dayjs().format('YYYY-MM-DD');
+    const startOfToday = dayjs().startOf('day');
+    for (let d = 1; d <= daysInMonth; d++) {
+      const dObj = calendarMonth.date(d);
+      const dateStr = dObj.format('YYYY-MM-DD');
+      items.push({
+        dayNum: d,
+        dateStr,
+        isPast: dObj.isBefore(startOfToday),
+        isToday: dateStr === todayStr,
+        isSelected: dateStr === quickDate,
+      });
+    }
+    return items;
+  }, [calendarMonth, quickDate]);
 
   // Tọa độ gốc cho mini-map
   const mapCenter = useMemo(() => {
@@ -190,14 +387,14 @@ export default function CustomerHomeScreen() {
     return { latitude: 10.7769, longitude: 106.7009 }; // Quận 1, TP.HCM
   }, [currentCoords, isDaNang]);
 
-  // Sinh HTML Leaflet bản đồ mini có 4 marker số 1, 2, 3, 4
+  // Sinh HTML Leaflet bản đồ mini với ghim hiển thị TÊN THỢ + hiệu ứng pulse trực tiếp
   const leafletMiniMapHtml = useMemo(() => {
     const pinsJson = JSON.stringify(
-      NEARBY_HELPERS.map(h => ({
+      nearbyHelpers.map(h => ({
         id: h.id,
-        name: h.name,
-        lat: mapCenter.latitude + h.latOffset,
-        lon: mapCenter.longitude + h.lonOffset,
+        name: h.shortName || h.name,
+        lat: h.lat,
+        lon: h.lon,
         selected: h.id === selectedHelperId,
       })),
     );
@@ -212,29 +409,58 @@ export default function CustomerHomeScreen() {
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     html, body, #map { width: 100%; height: 100%; background: #f8fafc; }
-    .pin-badge {
-      width: 28px;
-      height: 28px;
-      border-radius: 50%;
+    .pin-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
       background: #FFFFFF;
       border: 2px solid #16A34A;
-      color: #16A34A;
+      color: #166534;
+      padding: 4px 10px;
+      border-radius: 9999px;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      font-size: 13px;
+      font-size: 11px;
       font-weight: 800;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.18);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+      white-space: nowrap;
       cursor: pointer;
+      transform: translate(-50%, -50%);
       transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     }
-    .pin-badge.selected {
+    .pin-pill.selected {
       background: #16A34A;
       color: #FFFFFF;
-      transform: scale(1.22);
       border-color: #FFFFFF;
-      box-shadow: 0 0 0 4px rgba(22, 163, 74, 0.45);
+      transform: translate(-50%, -50%) scale(1.15);
+      box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.45);
+    }
+    .pin-pulse-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #22C55E;
+      display: inline-block;
+      animation: pulse-ring 1.8s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+    @keyframes pulse-ring {
+      0% { transform: scale(0.95); opacity: 0.95; }
+      50% { transform: scale(1.4); opacity: 0.4; }
+      100% { transform: scale(0.95); opacity: 0.95; }
+    }
+    .user-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: #0284C7;
+      color: #FFFFFF;
+      padding: 3px 8px;
+      border-radius: 9999px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-size: 10px;
+      font-weight: 700;
+      border: 2px solid #FFFFFF;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+      transform: translate(-50%, -50%);
     }
     .leaflet-control-attribution { display: none !important; }
   </style>
@@ -258,20 +484,29 @@ export default function CustomerHomeScreen() {
       maxZoom: 19
     }).addTo(map);
 
+    // Marker vị trí người dùng
+    const userIcon = L.divIcon({
+      className: 'custom-user-pin',
+      html: '<div class="user-pill"><span>📍</span><span>Bạn ở đây</span></div>',
+      iconSize: [null, null],
+      iconAnchor: [35, 12]
+    });
+    L.marker(center, { icon: userIcon }).addTo(map);
+
     const pins = ${pinsJson};
     pins.forEach(p => {
       const icon = L.divIcon({
         className: 'custom-pin-container',
-        html: '<div class="pin-badge ' + (p.selected ? 'selected' : '') + '">' + p.id + '</div>',
-        iconSize: [28, 28],
-        iconAnchor: [14, 14]
+        html: '<div class="pin-pill ' + (p.selected ? 'selected' : '') + '"><span class="pin-pulse-dot"></span><span class="pin-name">' + p.name + '</span></div>',
+        iconSize: [null, null],
+        iconAnchor: [30, 15]
       });
       L.marker([p.lat, p.lon], { icon }).addTo(map);
     });
   </script>
 </body>
 </html>`;
-  }, [mapCenter, selectedHelperId]);
+  }, [mapCenter, selectedHelperId, nearbyHelpers]);
 
   // Lời chào theo thời gian trong ngày (khuya / sáng / chiều / tối)
   const greeting = useMemo(() => {
@@ -473,7 +708,7 @@ export default function CustomerHomeScreen() {
   const expectedEndTime = useMemo(() => {
     try {
       const startDateTime = dayjs(`${quickDate} ${quickTimeSlot}`);
-      const endDateTime = startDateTime.add(quickDuration, 'hour');
+      const endDateTime = startDateTime.add(Math.round(quickDuration * 60), 'minute');
       const isNextDay = endDateTime.date() !== startDateTime.date();
       return `${endDateTime.format('HH:mm')}${isNextDay ? ' (ngày hôm sau)' : ''}`;
     } catch {
@@ -515,7 +750,8 @@ export default function CustomerHomeScreen() {
   };
 
   const activeJobs =
-    recentJobs?.filter((j: { status: string }) => !['completed', 'cancelled'].includes(j.status)) ?? [];
+    recentJobs?.filter((j: { status: string }) => !['completed', 'cancelled'].includes(j.status)) ??
+    [];
 
   const completedJobs =
     recentJobs?.filter((j: { status: string }) => j.status === 'completed') ?? [];
@@ -694,7 +930,7 @@ export default function CustomerHomeScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* ── 2. WOW 1: THỢ ĐANG Ở GẦN BẠN (Live Map + Numbered Helper Cards) ─ */}
+        {/* ── 2. WOW 1: THỢ ĐANG Ở GẦN BẠN (Live Map + Real Nearby Helpers) ─ */}
         <View style={{ paddingHorizontal: 16, marginTop: 20 }}>
           {/* Section Header with "Trực tiếp" green pulse badge */}
           <View
@@ -714,12 +950,10 @@ export default function CustomerHomeScreen() {
                   width: 8,
                   height: 8,
                   borderRadius: 4,
-                  backgroundColor: '#DC2626',
+                  backgroundColor: '#22C55E',
                 }}
               />
-              <Text style={{ fontSize: 12, fontWeight: '800', color: '#DC2626' }}>
-                Trực tiếp
-              </Text>
+              <Text style={{ fontSize: 12, fontWeight: '800', color: '#16A34A' }}>Trực tiếp</Text>
             </View>
           </View>
 
@@ -767,114 +1001,209 @@ export default function CustomerHomeScreen() {
             </View>
           </View>
 
-          {/* Worker list cards (1 -> 4) */}
-          <View style={{ marginTop: 12, gap: 8 }}>
-            {NEARBY_HELPERS.map(helper => {
-              const isSelected = helper.id === selectedHelperId;
-              const areaText = isDaNang ? helper.areaDaNang : helper.areaHcm;
+          {/* Worker list cards or Clean Empty State */}
+          {nearbyHelpers.length === 0 ? (
+            <View
+              style={{
+                marginTop: 12,
+                backgroundColor: '#FFFFFF',
+                borderRadius: 16,
+                paddingVertical: 20,
+                paddingHorizontal: 16,
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderWidth: 1,
+                borderColor: '#E2E8F0',
+              }}
+            >
+              <View
+                style={{
+                  width: 44,
+                  height: 44,
+                  borderRadius: 22,
+                  backgroundColor: '#F1F5F9',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginBottom: 8,
+                }}
+              >
+                <Users size={22} color={COLORS.gray[400]} />
+              </View>
+              <Text
+                style={{
+                  fontSize: 14,
+                  fontWeight: '700',
+                  color: COLORS.gray[800],
+                  textAlign: 'center',
+                }}
+              >
+                Hiện chưa có thợ online gần bạn
+              </Text>
+              <Text
+                style={{
+                  fontSize: 12,
+                  color: COLORS.gray[500],
+                  marginTop: 4,
+                  textAlign: 'center',
+                }}
+              >
+                Bạn vẫn có thể đăng việc hoặc đặt lịch hẹn, thợ trong khu vực sẽ nhận việc sớm nhất.
+              </Text>
+            </View>
+          ) : (
+            <View style={{ marginTop: 12, gap: 8 }}>
+              {nearbyHelpers.map(helper => {
+                const isSelected = helper.id === selectedHelperId;
 
-              return (
-                <TouchableOpacity
-                  key={helper.id}
-                  activeOpacity={0.8}
-                  onPress={() => setSelectedHelperId(helper.id)}
-                  style={{
-                    backgroundColor: '#FFFFFF',
-                    borderRadius: 14,
-                    paddingVertical: 12,
-                    paddingHorizontal: 14,
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    borderWidth: 1.5,
-                    borderColor: isSelected ? COLORS.primary : '#F1F5F9',
-                    shadowColor: '#000',
-                    shadowOffset: { width: 0, height: 1 },
-                    shadowOpacity: 0.04,
-                    shadowRadius: 3,
-                    elevation: 1,
-                  }}
-                >
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
-                    {/* Numbered badge */}
-                    <View
-                      style={{
-                        width: 28,
-                        height: 28,
-                        borderRadius: 14,
-                        backgroundColor: isSelected ? COLORS.primary : '#F1F5F9',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }}
-                    >
-                      <Text
+                return (
+                  <TouchableOpacity
+                    key={helper.id}
+                    activeOpacity={0.8}
+                    onPress={() => setSelectedHelperId(helper.id)}
+                    style={{
+                      backgroundColor: '#FFFFFF',
+                      borderRadius: 14,
+                      paddingVertical: 12,
+                      paddingHorizontal: 14,
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      borderWidth: 1.5,
+                      borderColor: isSelected ? COLORS.primary : '#F1F5F9',
+                      shadowColor: '#000',
+                      shadowOffset: { width: 0, height: 1 },
+                      shadowOpacity: 0.04,
+                      shadowRadius: 3,
+                      elevation: 1,
+                    }}
+                  >
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
+                      <View
                         style={{
-                          fontSize: 13,
-                          fontWeight: '800',
-                          color: isSelected ? '#FFFFFF' : COLORS.gray[600],
+                          width: 38,
+                          height: 38,
+                          borderRadius: 19,
+                          backgroundColor: isSelected ? '#DCFCE7' : '#F1F5F9',
+                          alignItems: 'center',
+                          justifyContent: 'center',
                         }}
                       >
-                        {helper.id}
-                      </Text>
+                        <Text
+                          style={{
+                            fontSize: 14,
+                            fontWeight: '800',
+                            color: isSelected ? COLORS.primary : COLORS.gray[600],
+                          }}
+                        >
+                          {helper.name.charAt(0)}
+                        </Text>
+                      </View>
+
+                      <View style={{ flex: 1 }}>
+                        <Text
+                          style={{ fontSize: 15, fontWeight: '800', color: COLORS.gray[900] }}
+                          numberOfLines={1}
+                        >
+                          {helper.name}
+                        </Text>
+                        <Text style={{ fontSize: 12, color: COLORS.gray[500], marginTop: 2 }}>
+                          {helper.status} · ⭐ {helper.rating.toFixed(1)} ({helper.completedJobs}{' '}
+                          việc)
+                        </Text>
+                      </View>
                     </View>
 
-                    <View style={{ flex: 1 }}>
-                      <Text
-                        style={{ fontSize: 15, fontWeight: '800', color: COLORS.gray[900] }}
-                        numberOfLines={1}
-                      >
-                        {helper.name}
+                    <View style={{ alignItems: 'flex-end' }}>
+                      <Text style={{ fontSize: 13, fontWeight: '800', color: COLORS.primary }}>
+                        {helper.distance}
                       </Text>
-                      <Text style={{ fontSize: 12, color: COLORS.gray[500], marginTop: 2 }}>
-                        Đang rảnh · {areaText}
+                      <Text style={{ fontSize: 11, color: COLORS.gray[400], marginTop: 2 }}>
+                        {helper.eta}
                       </Text>
                     </View>
-                  </View>
-
-                  <View style={{ alignItems: 'flex-end' }}>
-                    <Text style={{ fontSize: 13, fontWeight: '800', color: COLORS.primary }}>
-                      {helper.distance}
-                    </Text>
-                    <Text style={{ fontSize: 11, color: COLORS.gray[400], marginTop: 2 }}>
-                      {helper.eta}
-                    </Text>
-                  </View>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          )}
         </View>
 
-        {/* ── 3. WOW 2: THẺ AI QUÉT ẢNH SỰ CỐ (Chụp ảnh đoán việc & báo giá) ─ */}
+        {/* ── 3. WOW 2: THẺ AI QUÉT ẢNH SỰ CỐ (Điểm nhấn nổi bật nhất trang chủ) ─ */}
         <View style={{ paddingHorizontal: 16, marginTop: 20 }}>
           <View
             style={{
-              backgroundColor: '#F0FDF4',
               borderRadius: 20,
-              padding: 18,
-              borderWidth: 1.5,
-              borderColor: '#86EFAC',
+              padding: 20,
+              position: 'relative',
+              overflow: 'hidden',
+              shadowColor: '#16A34A',
+              shadowOffset: { width: 0, height: 6 },
+              shadowOpacity: 0.28,
+              shadowRadius: 10,
+              elevation: 4,
             }}
           >
-            <Text
+            {/* Vibrant SVG Gradient Background */}
+            <Svg height="100%" width="100%" style={StyleSheet.absoluteFill}>
+              <Defs>
+                <SvgLinearGradient id="aiCardGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <Stop offset="0%" stopColor="#15803D" />
+                  <Stop offset="45%" stopColor="#16A34A" />
+                  <Stop offset="100%" stopColor="#22C55E" />
+                </SvgLinearGradient>
+              </Defs>
+              <Rect width="100%" height="100%" rx={20} fill="url(#aiCardGrad)" />
+            </Svg>
+
+            {/* Shimmer light sweep */}
+            {!reduceMotion && (
+              <Animated.View
+                pointerEvents="none"
+                style={{
+                  position: 'absolute',
+                  top: -60,
+                  bottom: -60,
+                  width: 70,
+                  backgroundColor: 'rgba(255, 255, 255, 0.28)',
+                  transform: [{ translateX: shineAnim }, { rotate: '25deg' }],
+                }}
+              />
+            )}
+
+            {/* Badge */}
+            <View
               style={{
-                fontSize: 11,
-                fontWeight: '800',
-                color: COLORS.primary,
-                letterSpacing: 0.5,
-                textTransform: 'uppercase',
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 6,
+                alignSelf: 'flex-start',
+                backgroundColor: 'rgba(255, 255, 255, 0.22)',
+                paddingHorizontal: 10,
+                paddingVertical: 4,
+                borderRadius: 20,
               }}
             >
-              AI QUÉT ẢNH SỰ CỐ
-            </Text>
+              <Sparkles size={13} color="#FFFFFF" />
+              <Text
+                style={{
+                  fontSize: 11,
+                  fontWeight: '800',
+                  color: '#FFFFFF',
+                  letterSpacing: 0.5,
+                  textTransform: 'uppercase',
+                }}
+              >
+                AI QUÉT ẢNH SỰ CỐ
+              </Text>
+            </View>
 
             <Text
               style={{
-                fontSize: 17,
-                fontWeight: '800',
-                color: COLORS.gray[900],
-                marginTop: 6,
-                lineHeight: 22,
+                fontSize: 18,
+                fontWeight: '900',
+                color: '#FFFFFF',
+                marginTop: 10,
+                lineHeight: 24,
               }}
             >
               Chụp ảnh sự cố, AI đoán việc & báo giá ngay
@@ -882,13 +1211,15 @@ export default function CustomerHomeScreen() {
 
             <Text
               style={{
-                fontSize: 12.5,
-                color: COLORS.gray[600],
-                marginTop: 4,
-                lineHeight: 18,
+                fontSize: 13,
+                color: '#DCFCE7',
+                marginTop: 6,
+                lineHeight: 19,
+                fontWeight: '500',
               }}
             >
-              Máy lạnh chảy nước, vòi rò, tường nứt… chỉ cần một tấm ảnh, không cần biết tên dịch vụ.
+              Máy lạnh chảy nước, vòi rò, tường nứt… chỉ cần một tấm ảnh, không cần biết tên dịch
+              vụ.
             </Text>
 
             {/* 3 Steps indicator */}
@@ -897,49 +1228,46 @@ export default function CustomerHomeScreen() {
                 flexDirection: 'row',
                 alignItems: 'center',
                 gap: 8,
-                marginTop: 12,
-                marginBottom: 14,
+                marginTop: 14,
+                marginBottom: 16,
               }}
             >
-              <Text style={{ fontSize: 11, fontWeight: '700', color: COLORS.gray[500] }}>
+              <Text style={{ fontSize: 11.5, fontWeight: '700', color: '#FFFFFF' }}>
                 1 · Chụp ảnh
               </Text>
-              <Text style={{ fontSize: 11, color: COLORS.gray[300] }}>•</Text>
-              <Text style={{ fontSize: 11, fontWeight: '700', color: COLORS.gray[500] }}>
+              <Text style={{ fontSize: 11, color: '#86EFAC' }}>•</Text>
+              <Text style={{ fontSize: 11.5, fontWeight: '700', color: '#FFFFFF' }}>
                 2 · AI phân tích
               </Text>
-              <Text style={{ fontSize: 11, color: COLORS.gray[300] }}>•</Text>
-              <Text style={{ fontSize: 11, fontWeight: '700', color: COLORS.gray[500] }}>
+              <Text style={{ fontSize: 11, color: '#86EFAC' }}>•</Text>
+              <Text style={{ fontSize: 11.5, fontWeight: '700', color: '#FFFFFF' }}>
                 3 · Nhận báo giá
               </Text>
             </View>
 
             {/* Button: Chụp ảnh ngay */}
-            <TouchableOpacity
-              activeOpacity={0.85}
+            <ScalePressable
               onPress={handleTakeIssuePhoto}
               style={{
                 backgroundColor: '#FFFFFF',
                 borderRadius: 14,
-                paddingVertical: 12,
+                paddingVertical: 13,
                 flexDirection: 'row',
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: 8,
-                borderWidth: 1.5,
-                borderColor: COLORS.primary,
-                shadowColor: COLORS.primary,
+                shadowColor: '#000',
                 shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.1,
+                shadowOpacity: 0.12,
                 shadowRadius: 4,
                 elevation: 2,
               }}
             >
-              <Camera size={18} color={COLORS.primary} />
-              <Text style={{ fontSize: 14, fontWeight: '800', color: COLORS.primary }}>
+              <Camera size={18} color="#16A34A" />
+              <Text style={{ fontSize: 14.5, fontWeight: '800', color: '#16A34A' }}>
                 Chụp ảnh ngay
               </Text>
-            </TouchableOpacity>
+            </ScalePressable>
 
             {/* Sub-link: hoặc chọn ảnh sự cố của bạn */}
             <TouchableOpacity
@@ -947,193 +1275,208 @@ export default function CustomerHomeScreen() {
               onPress={handlePickIssuePhoto}
               style={{ alignItems: 'center', marginTop: 10 }}
             >
-              <Text style={{ fontSize: 12, fontWeight: '600', color: COLORS.gray[500] }}>
+              <Text style={{ fontSize: 12, fontWeight: '600', color: '#DCFCE7' }}>
                 hoặc chọn ảnh sự cố của bạn
               </Text>
             </TouchableOpacity>
           </View>
         </View>
 
-        {/* ── 4. VOUCHER CAROUSEL (Ưu đãi dành cho bạn) ──────────────────── */}
-        <View style={{ paddingHorizontal: 16, marginTop: 22 }}>
-          <Text
-            style={{
-              fontSize: 18,
-              fontWeight: '800',
-              color: COLORS.gray[900],
-              marginBottom: 12,
-            }}
-          >
-            Ưu đãi dành cho bạn
-          </Text>
+        {/* ── 4. VOUCHER CAROUSEL (Dữ liệu thật từ hệ thống + Tự chạy) ──── */}
+        <View style={{ marginTop: 24 }}>
+          <View style={{ paddingHorizontal: 16, marginBottom: 12 }}>
+            <Text
+              style={{
+                fontSize: 18,
+                fontWeight: '800',
+                color: COLORS.gray[900],
+              }}
+            >
+              Ưu đãi dành cho bạn
+            </Text>
+          </View>
 
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            <View style={{ flexDirection: 'row', gap: 12 }}>
-              {/* Voucher 1: GH10 */}
-              <View
+          {vouchers.length === 0 ? (
+            <View
+              style={{
+                marginHorizontal: 16,
+                backgroundColor: '#FFFFFF',
+                borderRadius: 16,
+                padding: 20,
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderWidth: 1,
+                borderColor: '#E2E8F0',
+              }}
+            >
+              <Tag size={24} color={COLORS.gray[400]} />
+              <Text
                 style={{
-                  width: 250,
-                  backgroundColor: '#FFFFFF',
-                  borderRadius: 16,
-                  padding: 16,
-                  borderWidth: 1,
-                  borderColor: '#E2E8F0',
-                  justifyContent: 'space-between',
+                  fontSize: 14,
+                  fontWeight: '700',
+                  color: COLORS.gray[700],
+                  marginTop: 6,
                 }}
               >
-                <View>
-                  <Text
-                    style={{
-                      fontSize: 10,
-                      fontWeight: '800',
-                      color: COLORS.gray[400],
-                      letterSpacing: 0.5,
-                    }}
-                  >
-                    KHÁCH HÀNG THÂN THIẾT
-                  </Text>
-                  <Text
-                    style={{
-                      fontSize: 22,
-                      fontWeight: '900',
-                      color: COLORS.gray[900],
-                      marginTop: 4,
-                    }}
-                  >
-                    10%
-                  </Text>
-                  <Text
-                    style={{
-                      fontSize: 12,
-                      color: COLORS.gray[500],
-                      marginTop: 4,
-                      lineHeight: 16,
-                    }}
-                  >
-                    Áp dụng cho đơn đầu tiên trong tháng. Hạn dùng 31/10/2026.
-                  </Text>
-                </View>
-
-                <View
-                  style={{
-                    flexDirection: 'row',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    marginTop: 14,
-                    paddingTop: 10,
-                    borderTopWidth: 1,
-                    borderTopColor: '#F1F5F9',
-                  }}
-                >
-                  <Text style={{ fontSize: 14, fontWeight: '800', color: COLORS.gray[900] }}>
-                    GH10
-                  </Text>
-                  <TouchableOpacity
-                    activeOpacity={0.7}
-                    onPress={() => handleCopyVoucher('GH10')}
-                    style={{
-                      backgroundColor: copiedVoucher === 'GH10' ? '#DCFCE7' : '#F1F5F9',
-                      paddingHorizontal: 10,
-                      paddingVertical: 5,
-                      borderRadius: 8,
-                    }}
-                  >
-                    <Text
-                      style={{
-                        fontSize: 12,
-                        fontWeight: '700',
-                        color: copiedVoucher === 'GH10' ? COLORS.primary : COLORS.gray[700],
-                      }}
-                    >
-                      {copiedVoucher === 'GH10' ? 'Đã chép' : 'Sao chép'}
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-
-              {/* Voucher 2: FREESHIP */}
-              <View
-                style={{
-                  width: 250,
-                  backgroundColor: '#FFFFFF',
-                  borderRadius: 16,
-                  padding: 16,
-                  borderWidth: 1,
-                  borderColor: '#E2E8F0',
-                  justifyContent: 'space-between',
-                }}
-              >
-                <View>
-                  <Text
-                    style={{
-                      fontSize: 10,
-                      fontWeight: '800',
-                      color: COLORS.gray[400],
-                      letterSpacing: 0.5,
-                    }}
-                  >
-                    DI CHUYỂN
-                  </Text>
-                  <Text
-                    style={{
-                      fontSize: 22,
-                      fontWeight: '900',
-                      color: COLORS.gray[900],
-                      marginTop: 4,
-                    }}
-                  >
-                    0₫ phí đi lại
-                  </Text>
-                  <Text
-                    style={{
-                      fontSize: 12,
-                      color: COLORS.gray[500],
-                      marginTop: 4,
-                      lineHeight: 16,
-                    }}
-                  >
-                    Miễn phí di chuyển trong bán kính 5 km quanh {currentLocationName.split(',')[0]}.
-                  </Text>
-                </View>
-
-                <View
-                  style={{
-                    flexDirection: 'row',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    marginTop: 14,
-                    paddingTop: 10,
-                    borderTopWidth: 1,
-                    borderTopColor: '#F1F5F9',
-                  }}
-                >
-                  <Text style={{ fontSize: 14, fontWeight: '800', color: COLORS.gray[900] }}>
-                    FREESHIP
-                  </Text>
-                  <TouchableOpacity
-                    activeOpacity={0.7}
-                    onPress={() => handleCopyVoucher('FREESHIP')}
-                    style={{
-                      backgroundColor: copiedVoucher === 'FREESHIP' ? '#DCFCE7' : '#F1F5F9',
-                      paddingHorizontal: 10,
-                      paddingVertical: 5,
-                      borderRadius: 8,
-                    }}
-                  >
-                    <Text
-                      style={{
-                        fontSize: 12,
-                        fontWeight: '700',
-                        color: copiedVoucher === 'FREESHIP' ? COLORS.primary : COLORS.gray[700],
-                      }}
-                    >
-                      {copiedVoucher === 'FREESHIP' ? 'Đã chép' : 'Sao chép'}
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
+                Hiện chưa có mã ưu đãi mới
+              </Text>
+              <Text style={{ fontSize: 12, color: COLORS.gray[400], marginTop: 2 }}>
+                Các chương trình khuyến mãi tiếp theo sẽ xuất hiện tại đây
+              </Text>
             </View>
-          </ScrollView>
+          ) : (
+            <View>
+              <ScrollView
+                ref={voucherScrollRef}
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={{ paddingHorizontal: 16, gap: 12 }}
+                onScrollBeginDrag={() => {
+                  isUserScrollingVouchers.current = true;
+                }}
+                onScrollEndDrag={() => {
+                  setTimeout(() => {
+                    isUserScrollingVouchers.current = false;
+                  }, 3000);
+                }}
+                onMomentumScrollEnd={e => {
+                  const offsetX = e.nativeEvent.contentOffset.x;
+                  const idx = Math.round(offsetX / 272);
+                  setActiveVoucherIdx(Math.max(0, Math.min(idx, vouchers.length - 1)));
+                }}
+                scrollEventThrottle={16}
+              >
+                {vouchers.map(v => {
+                  const discountDisplay =
+                    v.discount_type === 'percent'
+                      ? `Giảm ${v.discount_value}%`
+                      : `Giảm ${Number(v.discount_value).toLocaleString('vi-VN')}₫`;
+                  const isCopied = copiedVoucher === v.code;
+
+                  return (
+                    <View
+                      key={v.code || v._id}
+                      style={{
+                        width: 260,
+                        backgroundColor: '#FFFFFF',
+                        borderRadius: 16,
+                        padding: 16,
+                        borderWidth: 1,
+                        borderColor: '#E2E8F0',
+                        justifyContent: 'space-between',
+                        shadowColor: '#000',
+                        shadowOffset: { width: 0, height: 1 },
+                        shadowOpacity: 0.05,
+                        shadowRadius: 3,
+                        elevation: 1,
+                      }}
+                    >
+                      <View>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                          <Sparkles size={12} color="#16A34A" />
+                          <Text
+                            style={{
+                              fontSize: 10,
+                              fontWeight: '800',
+                              color: '#16A34A',
+                              letterSpacing: 0.5,
+                              textTransform: 'uppercase',
+                            }}
+                          >
+                            ƯU ĐÃI ĐẶC BIỆT
+                          </Text>
+                        </View>
+                        <Text
+                          style={{
+                            fontSize: 22,
+                            fontWeight: '900',
+                            color: COLORS.gray[900],
+                            marginTop: 6,
+                          }}
+                        >
+                          {discountDisplay}
+                        </Text>
+                        <Text
+                          style={{
+                            fontSize: 12,
+                            color: COLORS.gray[600],
+                            marginTop: 4,
+                            lineHeight: 16,
+                          }}
+                          numberOfLines={2}
+                        >
+                          {v.description ||
+                            (v.min_order_amount
+                              ? `Đơn tối thiểu ${Number(v.min_order_amount).toLocaleString('vi-VN')}₫`
+                              : 'Áp dụng cho mọi dịch vụ')}
+                        </Text>
+                      </View>
+
+                      {/* Code & Copy button */}
+                      <View
+                        style={{
+                          flexDirection: 'row',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          marginTop: 14,
+                          paddingTop: 10,
+                          borderTopWidth: 1,
+                          borderTopColor: '#F1F5F9',
+                        }}
+                      >
+                        <Text style={{ fontSize: 14, fontWeight: '800', color: COLORS.gray[900] }}>
+                          {v.code}
+                        </Text>
+                        <ScalePressable
+                          onPress={() => handleCopyVoucher(v.code)}
+                          style={{
+                            backgroundColor: isCopied ? '#DCFCE7' : '#F1F5F9',
+                            paddingHorizontal: 12,
+                            paddingVertical: 6,
+                            borderRadius: 8,
+                          }}
+                        >
+                          <Text
+                            style={{
+                              fontSize: 12,
+                              fontWeight: '700',
+                              color: isCopied ? COLORS.primary : COLORS.gray[700],
+                            }}
+                          >
+                            {isCopied ? 'Đã chép' : 'Sao chép'}
+                          </Text>
+                        </ScalePressable>
+                      </View>
+                    </View>
+                  );
+                })}
+              </ScrollView>
+
+              {/* Progress Dots */}
+              {vouchers.length > 1 && (
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    justifyContent: 'center',
+                    gap: 6,
+                    marginTop: 12,
+                  }}
+                >
+                  {vouchers.map((_, i) => (
+                    <View
+                      key={i}
+                      style={{
+                        width: i === activeVoucherIdx ? 18 : 6,
+                        height: 6,
+                        borderRadius: 3,
+                        backgroundColor: i === activeVoucherIdx ? COLORS.primary : '#CBD5E1',
+                      }}
+                    />
+                  ))}
+                </View>
+              )}
+            </View>
+          )}
         </View>
 
         {/* ── 5. DỊCH VỤ (3 Cột x 4 Hàng = 12 Items Chuẩn Demo) ──────────── */}
@@ -1250,25 +1593,70 @@ export default function CustomerHomeScreen() {
 
           {/* 2 Callout Cards: SOS & AI Assistant */}
           <View style={{ marginTop: 14, gap: 10 }}>
-            {/* SOS Callout */}
-            <TouchableOpacity
-              activeOpacity={0.85}
+            {/* SOS Callout - Nổi bật khẩn cấp */}
+            <ScalePressable
               onPress={() => router.push('/sos')}
               style={{
-                backgroundColor: '#FEF2F2',
+                backgroundColor: '#DC2626',
                 borderRadius: 16,
-                padding: 14,
-                borderWidth: 1,
-                borderColor: '#FECACA',
+                padding: 15,
+                shadowColor: '#DC2626',
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.25,
+                shadowRadius: 8,
+                elevation: 3,
               }}
             >
-              <Text style={{ fontSize: 14, fontWeight: '800', color: '#B91C1C' }}>
-                SOS — cần người gấp?
+              <View
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                }}
+              >
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <View
+                    style={{
+                      width: 26,
+                      height: 26,
+                      borderRadius: 13,
+                      backgroundColor: 'rgba(255,255,255,0.22)',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <AlertTriangle size={15} color="#FFFFFF" />
+                  </View>
+                  <Text style={{ fontSize: 14.5, fontWeight: '900', color: '#FFFFFF' }}>
+                    SOS — Cần người gấp?
+                  </Text>
+                </View>
+                <View
+                  style={{
+                    backgroundColor: '#FFFFFF',
+                    paddingHorizontal: 7,
+                    paddingVertical: 2,
+                    borderRadius: 6,
+                  }}
+                >
+                  <Text style={{ fontSize: 10.5, fontWeight: '800', color: '#DC2626' }}>
+                    Khẩn cấp
+                  </Text>
+                </View>
+              </View>
+              <Text
+                style={{
+                  fontSize: 12,
+                  color: '#FEE2E2',
+                  marginTop: 6,
+                  lineHeight: 16,
+                  fontWeight: '500',
+                }}
+              >
+                Thợ hủy phút chót hoặc việc khẩn trong ngày: phát tín hiệu SOS, thợ gần nhất nhận
+                thay ngay trong 3 phút.
               </Text>
-              <Text style={{ fontSize: 12, color: '#7F1D1D', marginTop: 2, lineHeight: 16 }}>
-                Thợ hủy phút chót hoặc việc khẩn trong ngày: phát tín hiệu SOS, thợ gần nhất nhận thay ngay.
-              </Text>
-            </TouchableOpacity>
+            </ScalePressable>
 
             {/* AI Callout */}
             <TouchableOpacity
@@ -1286,7 +1674,8 @@ export default function CustomerHomeScreen() {
                 Không biết thuộc dịch vụ nào?
               </Text>
               <Text style={{ fontSize: 12, color: COLORS.gray[600], marginTop: 2, lineHeight: 16 }}>
-                Mô tả bằng lời hoặc chụp ảnh ở thẻ AI phía trên — AI gợi ý đúng dịch vụ và ước tính giá.
+                Mô tả bằng lời hoặc chụp ảnh ở thẻ AI phía trên — AI gợi ý đúng dịch vụ và ước tính
+                giá.
               </Text>
             </TouchableOpacity>
           </View>
@@ -1317,7 +1706,14 @@ export default function CustomerHomeScreen() {
           >
             {/* 1. Bạn cần làm việc gì? */}
             <View>
-              <Text style={{ fontSize: 14, fontWeight: '700', color: COLORS.gray[800], marginBottom: 8 }}>
+              <Text
+                style={{
+                  fontSize: 14,
+                  fontWeight: '700',
+                  color: COLORS.gray[800],
+                  marginBottom: 8,
+                }}
+              >
                 Bạn cần làm việc gì?
               </Text>
               {/* Chips */}
@@ -1380,7 +1776,14 @@ export default function CustomerHomeScreen() {
 
             {/* 2. Giá bạn muốn trả */}
             <View>
-              <Text style={{ fontSize: 14, fontWeight: '700', color: COLORS.gray[800], marginBottom: 8 }}>
+              <Text
+                style={{
+                  fontSize: 14,
+                  fontWeight: '700',
+                  color: COLORS.gray[800],
+                  marginBottom: 8,
+                }}
+              >
                 Giá bạn muốn trả (giá mở đầu để deal)
               </Text>
               <TextInput
@@ -1401,9 +1804,11 @@ export default function CustomerHomeScreen() {
               />
             </View>
 
-            {/* 3. Ngày làm */}
+            {/* 3. Ngày làm việc */}
             <View>
-              <View
+              <TouchableOpacity
+                activeOpacity={0.8}
+                onPress={() => setCalendarOpen(prev => !prev)}
                 style={{
                   flexDirection: 'row',
                   justifyContent: 'space-between',
@@ -1414,16 +1819,25 @@ export default function CustomerHomeScreen() {
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                   <Calendar size={16} color={COLORS.primary} />
                   <Text style={{ fontSize: 14, fontWeight: '700', color: COLORS.gray[800] }}>
-                    {dayjs(quickDate).format('dddd, DD/MM/YYYY')}
+                    {dayjs(quickDate).format('dddd, DD/MM')}
                   </Text>
                 </View>
-                <Text style={{ fontSize: 12, fontWeight: '700', color: COLORS.primary }}>
-                  Chọn ngày
-                </Text>
-              </View>
+                <View
+                  style={{
+                    backgroundColor: calendarOpen ? '#DCFCE7' : '#F1F5F9',
+                    paddingHorizontal: 8,
+                    paddingVertical: 3,
+                    borderRadius: 6,
+                  }}
+                >
+                  <Text style={{ fontSize: 12, fontWeight: '700', color: COLORS.primary }}>
+                    {calendarOpen ? 'Đóng lịch ▲' : 'Lịch tháng ▼'}
+                  </Text>
+                </View>
+              </TouchableOpacity>
 
               {/* Day chips */}
-              <View style={{ flexDirection: 'row', gap: 8 }}>
+              <View style={{ flexDirection: 'row', gap: 8, marginBottom: calendarOpen ? 10 : 0 }}>
                 {[
                   { key: 'today', label: 'Hôm nay' },
                   { key: 'tomorrow', label: 'Ngày mai' },
@@ -1458,6 +1872,131 @@ export default function CustomerHomeScreen() {
                   );
                 })}
               </View>
+
+              {/* Interactive Month Calendar (Requirement 6) */}
+              {calendarOpen && (
+                <View
+                  style={{
+                    backgroundColor: '#FFFFFF',
+                    borderRadius: 14,
+                    padding: 12,
+                    borderWidth: 1.5,
+                    borderColor: '#E2E8F0',
+                    marginTop: 4,
+                  }}
+                >
+                  {/* Calendar Header */}
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      marginBottom: 10,
+                    }}
+                  >
+                    <TouchableOpacity
+                      onPress={() => setCalendarMonth(prev => prev.subtract(1, 'month'))}
+                      style={{
+                        padding: 6,
+                        borderRadius: 8,
+                        backgroundColor: '#F1F5F9',
+                      }}
+                    >
+                      <ChevronLeft size={16} color={COLORS.gray[700]} />
+                    </TouchableOpacity>
+                    <Text style={{ fontSize: 14, fontWeight: '800', color: COLORS.gray[900] }}>
+                      Tháng {calendarMonth.format('MM/YYYY')}
+                    </Text>
+                    <TouchableOpacity
+                      onPress={() => setCalendarMonth(prev => prev.add(1, 'month'))}
+                      style={{
+                        padding: 6,
+                        borderRadius: 8,
+                        backgroundColor: '#F1F5F9',
+                      }}
+                    >
+                      <ChevronRight size={16} color={COLORS.gray[700]} />
+                    </TouchableOpacity>
+                  </View>
+
+                  {/* Weekday headers: T2 - CN */}
+                  <View style={{ flexDirection: 'row', marginBottom: 6 }}>
+                    {['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'].map(wd => (
+                      <Text
+                        key={wd}
+                        style={{
+                          flex: 1,
+                          textAlign: 'center',
+                          fontSize: 11,
+                          fontWeight: '700',
+                          color: COLORS.gray[400],
+                        }}
+                      >
+                        {wd}
+                      </Text>
+                    ))}
+                  </View>
+
+                  {/* Days Matrix */}
+                  <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
+                    {calendarDays.map((item, idx) => {
+                      if (!item) {
+                        return (
+                          <View key={`empty-${idx}`} style={{ width: '14.28%', height: 36 }} />
+                        );
+                      }
+                      return (
+                        <TouchableOpacity
+                          key={item.dateStr}
+                          disabled={item.isPast}
+                          onPress={() => {
+                            setQuickDate(item.dateStr);
+                            setQuickDateChip(null);
+                          }}
+                          style={{
+                            width: '14.28%',
+                            height: 36,
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                          }}
+                        >
+                          <View
+                            style={{
+                              width: 30,
+                              height: 30,
+                              borderRadius: 15,
+                              backgroundColor: item.isSelected
+                                ? COLORS.primary
+                                : item.isToday
+                                  ? '#DCFCE7'
+                                  : 'transparent',
+                              borderWidth: item.isToday && !item.isSelected ? 1.5 : 0,
+                              borderColor: COLORS.primary,
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              opacity: item.isPast ? 0.3 : 1,
+                            }}
+                          >
+                            <Text
+                              style={{
+                                fontSize: 12,
+                                fontWeight: item.isSelected || item.isToday ? '800' : '600',
+                                color: item.isSelected
+                                  ? '#FFFFFF'
+                                  : item.isPast
+                                    ? COLORS.gray[300]
+                                    : COLORS.gray[800],
+                              }}
+                            >
+                              {item.dayNum}
+                            </Text>
+                          </View>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                </View>
+              )}
             </View>
 
             {/* 4. Giờ bắt đầu */}
@@ -1585,9 +2124,16 @@ export default function CustomerHomeScreen() {
               </View>
             </View>
 
-            {/* 5. Thời lượng dự kiến */}
+            {/* 5. Thời lượng dự kiến (Hỗ trợ tùy chọn 0–12h + 0/15/30/45p) */}
             <View>
-              <Text style={{ fontSize: 14, fontWeight: '700', color: COLORS.gray[800], marginBottom: 8 }}>
+              <Text
+                style={{
+                  fontSize: 14,
+                  fontWeight: '700',
+                  color: COLORS.gray[800],
+                  marginBottom: 8,
+                }}
+              >
                 Thời lượng dự kiến
               </Text>
               <View style={{ flexDirection: 'row', gap: 6 }}>
@@ -1596,15 +2142,33 @@ export default function CustomerHomeScreen() {
                   { dur: 2, label: '2 giờ' },
                   { dur: 3, label: '3 giờ' },
                   { dur: 4, label: '4 giờ' },
-                  { dur: 5, label: 'Tùy chọn…' },
+                  {
+                    dur: 'custom',
+                    label: isCustomDuration
+                      ? `Tùy chọn: ${quickDuration < 1 ? `${Math.round(quickDuration * 60)} phút` : `${Number(quickDuration.toFixed(2)).toString().replace('.', ',')} giờ`}`
+                      : 'Tùy chọn…',
+                  },
                 ].map(d => {
-                  const isSel = quickDuration === d.dur;
+                  const isSel =
+                    d.dur === 'custom'
+                      ? isCustomDuration
+                      : !isCustomDuration && quickDuration === d.dur;
                   return (
                     <TouchableOpacity
-                      key={d.label}
-                      onPress={() => setQuickDuration(d.dur)}
+                      key={String(d.dur)}
+                      onPress={() => {
+                        if (d.dur === 'custom') {
+                          setIsCustomDuration(true);
+                          setDurationPickerOpen(true);
+                          setQuickDuration(customHours + customMinutes / 60);
+                        } else {
+                          setIsCustomDuration(false);
+                          setDurationPickerOpen(false);
+                          setQuickDuration(d.dur as number);
+                        }
+                      }}
                       style={{
-                        flex: 1,
+                        flex: d.dur === 'custom' && isCustomDuration ? 1.4 : 1,
                         paddingVertical: 8,
                         borderRadius: 10,
                         backgroundColor: isSel ? '#DCFCE7' : '#F1F5F9',
@@ -1615,10 +2179,11 @@ export default function CustomerHomeScreen() {
                     >
                       <Text
                         style={{
-                          fontSize: 11.5,
+                          fontSize: 11,
                           fontWeight: '700',
                           color: isSel ? COLORS.primary : COLORS.gray[700],
                         }}
+                        numberOfLines={1}
                       >
                         {d.label}
                       </Text>
@@ -1626,6 +2191,158 @@ export default function CustomerHomeScreen() {
                   );
                 })}
               </View>
+
+              {/* Custom Duration Selector Panel (Requirement 7) */}
+              {durationPickerOpen && (
+                <View
+                  style={{
+                    backgroundColor: '#FFFFFF',
+                    borderRadius: 14,
+                    padding: 14,
+                    borderWidth: 1.5,
+                    borderColor: '#E2E8F0',
+                    marginTop: 8,
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontSize: 13,
+                      fontWeight: '800',
+                      color: COLORS.gray[900],
+                      marginBottom: 8,
+                    }}
+                  >
+                    Tùy chọn thời lượng (Tối thiểu 15 phút)
+                  </Text>
+
+                  {/* Hours selector */}
+                  <Text
+                    style={{
+                      fontSize: 12,
+                      fontWeight: '600',
+                      color: COLORS.gray[600],
+                      marginBottom: 4,
+                    }}
+                  >
+                    Số giờ (0–12 giờ):
+                  </Text>
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    style={{ marginBottom: 10 }}
+                  >
+                    <View style={{ flexDirection: 'row', gap: 6 }}>
+                      {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(h => {
+                        const isH = customHours === h;
+                        return (
+                          <TouchableOpacity
+                            key={h}
+                            onPress={() => {
+                              setCustomHours(h);
+                              const minM = h === 0 && customMinutes === 0 ? 15 : customMinutes;
+                              if (h === 0 && customMinutes === 0) setCustomMinutes(15);
+                              setQuickDuration(h + minM / 60);
+                            }}
+                            style={{
+                              paddingHorizontal: 12,
+                              paddingVertical: 6,
+                              borderRadius: 8,
+                              backgroundColor: isH ? COLORS.primary : '#F1F5F9',
+                            }}
+                          >
+                            <Text
+                              style={{
+                                fontSize: 12,
+                                fontWeight: '700',
+                                color: isH ? '#FFFFFF' : COLORS.gray[700],
+                              }}
+                            >
+                              {h}h
+                            </Text>
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </View>
+                  </ScrollView>
+
+                  {/* Minutes selector */}
+                  <Text
+                    style={{
+                      fontSize: 12,
+                      fontWeight: '600',
+                      color: COLORS.gray[600],
+                      marginBottom: 4,
+                    }}
+                  >
+                    Số phút:
+                  </Text>
+                  <View style={{ flexDirection: 'row', gap: 8, marginBottom: 10 }}>
+                    {[0, 15, 30, 45].map(m => {
+                      const isM = customMinutes === m;
+                      const disabled = customHours === 0 && m === 0;
+                      return (
+                        <TouchableOpacity
+                          key={m}
+                          disabled={disabled}
+                          onPress={() => {
+                            setCustomMinutes(m);
+                            setQuickDuration(customHours + m / 60);
+                          }}
+                          style={{
+                            flex: 1,
+                            paddingVertical: 6,
+                            borderRadius: 8,
+                            backgroundColor: disabled
+                              ? '#F8FAFC'
+                              : isM
+                                ? COLORS.primary
+                                : '#F1F5F9',
+                            alignItems: 'center',
+                            opacity: disabled ? 0.35 : 1,
+                          }}
+                        >
+                          <Text
+                            style={{
+                              fontSize: 12,
+                              fontWeight: '700',
+                              color: isM ? '#FFFFFF' : COLORS.gray[700],
+                            }}
+                          >
+                            {m}p
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                    }}
+                  >
+                    <Text style={{ fontSize: 12, fontWeight: '700', color: COLORS.primary }}>
+                      Đã chọn: {customHours > 0 ? `${customHours} giờ ` : ''}
+                      {customMinutes > 0 ? `${customMinutes} phút` : ''}
+                      {customHours === 0 && customMinutes === 0 ? '15 phút' : ''}
+                    </Text>
+                    <TouchableOpacity
+                      onPress={() => setDurationPickerOpen(false)}
+                      style={{
+                        backgroundColor: COLORS.primary,
+                        paddingHorizontal: 14,
+                        paddingVertical: 6,
+                        borderRadius: 8,
+                      }}
+                    >
+                      <Text style={{ fontSize: 12, fontWeight: '700', color: '#FFFFFF' }}>
+                        Xong
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              )}
             </View>
 
             {/* Dynamic Expected Schedule Preview Line */}
@@ -1668,9 +2385,7 @@ export default function CustomerHomeScreen() {
                 elevation: 3,
               }}
             >
-              <Text style={{ fontSize: 15, fontWeight: '800', color: '#FFFFFF' }}>
-                Đăng việc
-              </Text>
+              <Text style={{ fontSize: 15, fontWeight: '800', color: '#FFFFFF' }}>Đăng việc</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -1817,73 +2532,131 @@ export default function CustomerHomeScreen() {
           </Text>
 
           {activeJobs.length > 0 ? (
-            activeJobs.slice(0, 1).map((j: any) => (
-              <TouchableOpacity
-                key={j._id}
-                activeOpacity={0.88}
-                onPress={() => router.push({ pathname: '/job-detail/[id]', params: { id: j._id } })}
-                style={{
-                  backgroundColor: '#FFFFFF',
-                  borderRadius: 18,
-                  padding: 16,
-                  borderWidth: 1.5,
-                  borderColor: '#E2E8F0',
-                }}
-              >
-                <View
+            activeJobs.slice(0, 1).map((j: any) => {
+              // 4 nấc tiến trình: Đã nhận việc -> Đang đến -> Đang làm -> Nghiệm thu
+              const step1Done = [
+                'bidding',
+                'confirmed',
+                'on_the_way',
+                'in_progress',
+                'completed',
+              ].includes(j.status);
+              const step2Done = ['confirmed', 'on_the_way', 'in_progress', 'completed'].includes(
+                j.status,
+              );
+              const step3Done = ['in_progress', 'completed'].includes(j.status);
+              const step4Done = j.status === 'completed';
+
+              const timelineSteps = [
+                { label: 'Đã nhận việc', active: step1Done },
+                { label: 'Đang đến', active: step2Done },
+                { label: 'Đang làm', active: step3Done },
+                { label: 'Nghiệm thu', active: step4Done },
+              ];
+
+              let statusBadgeText = 'Đã nhận việc';
+              let statusBadgeBg = '#DCFCE7';
+              let statusBadgeColor = '#15803D';
+              let statusDesc = 'Thợ đã nhận đơn và đang chuẩn bị dụng cụ đến điểm hẹn.';
+
+              if (j.status === 'pending') {
+                statusBadgeText = 'Đang tìm thợ';
+                statusBadgeBg = '#FEF3C7';
+                statusBadgeColor = '#D97706';
+                statusDesc = 'Hệ thống đang điều phối và tìm thợ phù hợp nhất gần bạn.';
+              } else if (j.status === 'bidding') {
+                statusBadgeText = 'Có báo giá mới';
+                statusBadgeBg = '#E0E7FF';
+                statusBadgeColor = '#4338CA';
+                statusDesc = 'Đã có thợ gửi báo giá, bấm để xem chi tiết và xác nhận thợ.';
+              } else if (j.status === 'confirmed') {
+                statusBadgeText = 'Thợ đã nhận';
+                statusBadgeBg = '#DCFCE7';
+                statusBadgeColor = '#15803D';
+                statusDesc = 'Thợ đã nhận việc và đang chuẩn bị dụng cụ đến điểm hẹn.';
+              } else if (j.status === 'on_the_way') {
+                statusBadgeText = 'Thợ đang đến';
+                statusBadgeBg = '#FFEDD5';
+                statusBadgeColor = '#C2410C';
+                statusDesc = 'Thợ đang trên đường di chuyển đến địa chỉ của bạn.';
+              } else if (j.status === 'in_progress') {
+                statusBadgeText = 'Đang làm';
+                statusBadgeBg = '#DBEAFE';
+                statusBadgeColor = '#1D4ED8';
+                statusDesc = 'Thợ đang thực hiện công việc tại địa chỉ của bạn.';
+              }
+
+              const displayDate = dayjs(j.scheduled_at || j.created_at).format('DD/MM');
+              const displayTime = j.preferred_time_start || dayjs(j.created_at).format('HH:mm');
+              const displayDistrict =
+                j.address?.district || j.address?.city || currentLocationName.split(',')[0];
+
+              return (
+                <TouchableOpacity
+                  key={j._id}
+                  activeOpacity={0.88}
+                  onPress={() =>
+                    router.push({ pathname: '/job-detail/[id]', params: { id: j._id } })
+                  }
                   style={{
-                    flexDirection: 'row',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
+                    backgroundColor: '#FFFFFF',
+                    borderRadius: 18,
+                    padding: 16,
+                    borderWidth: 1.5,
+                    borderColor: '#E2E8F0',
                   }}
                 >
-                  <Text style={{ fontSize: 16, fontWeight: '800', color: COLORS.gray[900], flex: 1 }}>
-                    {j.title}
-                  </Text>
                   <View
                     style={{
-                      backgroundColor: '#FFEDD5',
-                      paddingHorizontal: 8,
-                      paddingVertical: 3,
-                      borderRadius: 8,
+                      flexDirection: 'row',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
                     }}
                   >
-                    <Text style={{ fontSize: 11, fontWeight: '800', color: '#C2410C' }}>
-                      {j.status === 'in_progress'
-                        ? 'Đang làm'
-                        : j.status === 'confirmed'
-                          ? 'Thợ đang đến'
-                          : 'Đã nhận việc'}
+                    <Text
+                      style={{ fontSize: 16, fontWeight: '800', color: COLORS.gray[900], flex: 1 }}
+                      numberOfLines={1}
+                    >
+                      {j.title}
                     </Text>
+                    <View
+                      style={{
+                        backgroundColor: statusBadgeBg,
+                        paddingHorizontal: 8,
+                        paddingVertical: 3,
+                        borderRadius: 8,
+                      }}
+                    >
+                      <Text style={{ fontSize: 11, fontWeight: '800', color: statusBadgeColor }}>
+                        {statusBadgeText}
+                      </Text>
+                    </View>
                   </View>
-                </View>
 
-                <Text style={{ fontSize: 12, color: COLORS.gray[500], marginTop: 4 }}>
-                  Hôm nay · {j.preferred_time_start || '19:00'} · {j.address?.district || 'Quận 1'} · Thợ đã nhận đơn đang trên đường — theo dõi vị trí thợ trên bản đồ ở đầu trang.
-                </Text>
+                  <Text style={{ fontSize: 12, color: COLORS.gray[500], marginTop: 4 }}>
+                    {displayDate} · {displayTime} · {displayDistrict} — {statusDesc}
+                  </Text>
 
-                {/* Timeline Steps */}
-                <View
-                  style={{
-                    flexDirection: 'row',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    marginTop: 14,
-                    paddingTop: 12,
-                    borderTopWidth: 1,
-                    borderTopColor: '#F1F5F9',
-                  }}
-                >
-                  {['Đã nhận việc', 'Đang đến', 'Đang làm', 'Nghiệm thu'].map((st, idx) => {
-                    const isDone = idx <= 1;
-                    return (
-                      <View key={st} style={{ alignItems: 'center', gap: 4 }}>
+                  {/* Timeline Steps */}
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      marginTop: 14,
+                      paddingTop: 12,
+                      borderTopWidth: 1,
+                      borderTopColor: '#F1F5F9',
+                    }}
+                  >
+                    {timelineSteps.map(st => (
+                      <View key={st.label} style={{ alignItems: 'center', gap: 4 }}>
                         <View
                           style={{
                             width: 14,
                             height: 14,
                             borderRadius: 7,
-                            backgroundColor: isDone ? COLORS.primary : '#E2E8F0',
+                            backgroundColor: st.active ? COLORS.primary : '#E2E8F0',
                             borderWidth: 2,
                             borderColor: '#FFFFFF',
                           }}
@@ -1891,101 +2664,66 @@ export default function CustomerHomeScreen() {
                         <Text
                           style={{
                             fontSize: 10,
-                            fontWeight: isDone ? '700' : '500',
-                            color: isDone ? COLORS.primary : COLORS.gray[400],
+                            fontWeight: st.active ? '700' : '500',
+                            color: st.active ? COLORS.primary : COLORS.gray[400],
                           }}
                         >
-                          {st}
+                          {st.label}
                         </Text>
                       </View>
-                    );
-                  })}
-                </View>
-              </TouchableOpacity>
-            ))
+                    ))}
+                  </View>
+                </TouchableOpacity>
+              );
+            })
           ) : (
-            /* Fallback Demo Active Job matching Demo PDF Page 8 */
-            <TouchableOpacity
-              activeOpacity={0.88}
-              onPress={() => router.push('/(customer)/jobs')}
+            /* Clean Empty State khi không có việc đang làm (Requirement 2) */
+            <View
               style={{
                 backgroundColor: '#FFFFFF',
                 borderRadius: 18,
-                padding: 16,
-                borderWidth: 1.5,
+                padding: 22,
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderWidth: 1,
                 borderColor: '#E2E8F0',
+                borderStyle: 'dashed',
               }}
             >
               <View
                 style={{
-                  flexDirection: 'row',
-                  justifyContent: 'space-between',
+                  width: 44,
+                  height: 44,
+                  borderRadius: 22,
+                  backgroundColor: '#F8FAFC',
                   alignItems: 'center',
+                  justifyContent: 'center',
+                  marginBottom: 8,
                 }}
               >
-                <Text style={{ fontSize: 16, fontWeight: '800', color: COLORS.gray[900] }}>
-                  Vệ sinh máy lạnh — 2 máy
-                </Text>
-                <View
-                  style={{
-                    backgroundColor: '#FFEDD5',
-                    paddingHorizontal: 8,
-                    paddingVertical: 3,
-                    borderRadius: 8,
-                  }}
-                >
-                  <Text style={{ fontSize: 11, fontWeight: '800', color: '#C2410C' }}>
-                    Thợ đang đến
-                  </Text>
-                </View>
+                <Clock size={22} color={COLORS.gray[400]} />
               </View>
-
-              <Text style={{ fontSize: 12, color: COLORS.gray[500], marginTop: 4 }}>
-                Hôm nay · 19:00 · {currentLocationName.split(',')[0]} · Thợ đã nhận đơn đang trên đường — theo dõi vị trí thợ trên bản đồ ở đầu trang.
-              </Text>
-
-              {/* Timeline Steps */}
-              <View
+              <Text
                 style={{
-                  flexDirection: 'row',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  marginTop: 14,
-                  paddingTop: 12,
-                  borderTopWidth: 1,
-                  borderTopColor: '#F1F5F9',
+                  fontSize: 14.5,
+                  fontWeight: '700',
+                  color: COLORS.gray[800],
+                  textAlign: 'center',
                 }}
               >
-                {[
-                  { label: 'Đã nhận việc', active: true },
-                  { label: 'Đang đến', active: true },
-                  { label: 'Đang làm', active: false },
-                  { label: 'Nghiệm thu', active: false },
-                ].map(step => (
-                  <View key={step.label} style={{ alignItems: 'center', gap: 4 }}>
-                    <View
-                      style={{
-                        width: 14,
-                        height: 14,
-                        borderRadius: 7,
-                        backgroundColor: step.active ? COLORS.primary : '#CBD5E1',
-                        borderWidth: 2,
-                        borderColor: '#FFFFFF',
-                      }}
-                    />
-                    <Text
-                      style={{
-                        fontSize: 10,
-                        fontWeight: step.active ? '700' : '500',
-                        color: step.active ? COLORS.primary : COLORS.gray[400],
-                      }}
-                    >
-                      {step.label}
-                    </Text>
-                  </View>
-                ))}
-              </View>
-            </TouchableOpacity>
+                Bạn chưa có việc đang thực hiện
+              </Text>
+              <Text
+                style={{
+                  fontSize: 12,
+                  color: COLORS.gray[400],
+                  marginTop: 4,
+                  textAlign: 'center',
+                }}
+              >
+                Chọn dịch vụ hoặc đăng việc mới bên trên để thợ nhận việc ngay
+              </Text>
+            </View>
           )}
         </View>
 
@@ -2002,10 +2740,7 @@ export default function CustomerHomeScreen() {
             <Text style={{ fontSize: 18, fontWeight: '800', color: COLORS.gray[900] }}>
               Đặt gần đây
             </Text>
-            <TouchableOpacity
-              activeOpacity={0.7}
-              onPress={() => router.push('/(customer)/jobs')}
-            >
+            <TouchableOpacity activeOpacity={0.7} onPress={() => router.push('/(customer)/jobs')}>
               <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.primary }}>
                 Xem lịch sử →
               </Text>
@@ -2060,8 +2795,11 @@ export default function CustomerHomeScreen() {
                   pathname: '/(customer)/booking',
                   params: {
                     prefill_title: pastJob?.title || 'Dọn nhà 2 phòng ngủ',
-                    prefill_description: pastJob?.description || 'Dọn dẹp tổng thể 2 phòng ngủ, quét dọn và chùi sàn.',
-                    service_id: pastJob?.service_id ? (pastJob.service_id as any)._id || String(pastJob.service_id) : '',
+                    prefill_description:
+                      pastJob?.description || 'Dọn dẹp tổng thể 2 phòng ngủ, quét dọn và chùi sàn.',
+                    service_id: pastJob?.service_id
+                      ? (pastJob.service_id as any)._id || String(pastJob.service_id)
+                      : '',
                   },
                 });
               }}
