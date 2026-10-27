@@ -17,11 +17,7 @@ interface CustomTabBarProps {
 // màn hình khác (vd Thợ yêu thích mở từ màn Tài khoản).
 // Kiểm tra theo TÊN route trước: chắc chắn trên mọi nền tảng, kể cả web nơi
 // options.href đôi khi không được resolve đúng lúc render tab bar.
-const HIDDEN_TAB_ROUTES: ReadonlySet<string> = new Set([
-  'notifications',
-  'favorites',
-  'vouchers',
-]);
+const HIDDEN_TAB_ROUTES: ReadonlySet<string> = new Set(['notifications', 'favorites', 'vouchers']);
 
 export function CustomTabBar({
   state,
@@ -58,11 +54,7 @@ export function CustomTabBar({
           if (isCenterButton) {
             return (
               <View key={route.key} style={styles.centerTabContainer}>
-                <ScalePressable
-                  activeScale={0.92}
-                  onPress={onPress}
-                  style={styles.centerButton}
-                >
+                <ScalePressable activeScale={0.92} onPress={onPress} style={styles.centerButton}>
                   <View style={styles.centerIconWrapper}>
                     <Plus size={26} color="#FFFFFF" strokeWidth={3} />
                   </View>

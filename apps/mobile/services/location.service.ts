@@ -185,14 +185,25 @@ export function parseVietnameseAddress(
 
   // Dọn dẹp nếu road vô tình chứa cả tên phường/quận ở đuôi
   if (road && ward && road.endsWith(ward)) {
-    road = road.slice(0, -ward.length).replace(/[,\s]+$/, '').trim();
+    road = road
+      .slice(0, -ward.length)
+      .replace(/[,\s]+$/, '')
+      .trim();
   }
   if (road && district && road.endsWith(district)) {
-    road = road.slice(0, -district.length).replace(/[,\s]+$/, '').trim();
+    road = road
+      .slice(0, -district.length)
+      .replace(/[,\s]+$/, '')
+      .trim();
   }
 
   // Chống dữ liệu rác/bịa
-  if (district === 'Quận' || district === 'Huyện' || district === 'Thị xã' || /^Việt\s*Nam$/i.test(district)) {
+  if (
+    district === 'Quận' ||
+    district === 'Huyện' ||
+    district === 'Thị xã' ||
+    /^Việt\s*Nam$/i.test(district)
+  ) {
     district = '';
   }
   if (/^Việt\s*Nam$/i.test(city) || /^Vietnam$/i.test(city)) {
@@ -291,7 +302,7 @@ class LocationService {
     // 2. Môi trường Native (Android/iOS APK): Dùng Expo Location
     try {
       const permissionPromise = Location.requestForegroundPermissionsAsync();
-      const permTimeoutPromise = new Promise<{ status: string }>((resolve) =>
+      const permTimeoutPromise = new Promise<{ status: string }>(resolve =>
         setTimeout(() => resolve({ status: 'timeout' }), 2500),
       );
       const permRes = await Promise.race([permissionPromise, permTimeoutPromise]).catch(() => null);

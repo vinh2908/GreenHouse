@@ -45,10 +45,7 @@ export function ScalePressable({
       disabled={disabled}
       {...props}
     >
-      <Animated.View style={[style, { transform: [{ scale }] }]}>
-        {children}
-      </Animated.View>
+      <Animated.View style={[style, { transform: [{ scale }] }]}>{children}</Animated.View>
     </Pressable>
   );
 }
-

@@ -538,7 +538,9 @@ export default function CustomerHomeScreen() {
       maxZoom: 19
     }).addTo(map);
 
-    ${currentCoords ? `
+    ${
+      currentCoords
+        ? `
     // Marker vị trí người dùng thật
     const userIcon = L.divIcon({
       className: 'custom-user-pin',
@@ -547,7 +549,9 @@ export default function CustomerHomeScreen() {
       iconAnchor: [35, 12]
     });
     L.marker([${currentCoords.latitude}, ${currentCoords.longitude}], { icon: userIcon }).addTo(map);
-    ` : ''}
+    `
+        : ''
+    }
 
     const pins = ${pinsJson};
     pins.forEach(p => {
@@ -823,9 +827,7 @@ export default function CustomerHomeScreen() {
         ['house_cleaning', 'housekeeping_hourly', 'deep_cleaning'].includes(s.slug),
       );
     } else if (quickServiceChip === 'boc_hang') {
-      matchedSvc = services?.find((s: any) =>
-        ['moving_help', 'handyman'].includes(s.slug),
-      );
+      matchedSvc = services?.find((s: any) => ['moving_help', 'handyman'].includes(s.slug));
     } else if (quickServiceChip === 'may_lanh') {
       matchedSvc = services?.find((s: any) =>
         ['ac_repair', 'electrician', 'handyman', 'deep_cleaning'].includes(s.slug),
@@ -1047,7 +1049,10 @@ export default function CustomerHomeScreen() {
               borderColor: serviceSearchQuery.trim() ? COLORS.primary : '#E2E8F0',
             }}
           >
-            <Search size={18} color={serviceSearchQuery.trim() ? COLORS.primary : COLORS.gray[400]} />
+            <Search
+              size={18}
+              color={serviceSearchQuery.trim() ? COLORS.primary : COLORS.gray[400]}
+            />
             <TextInput
               style={{
                 flex: 1,
@@ -2233,7 +2238,10 @@ export default function CustomerHomeScreen() {
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                   <Clock size={16} color={COLORS.primary} />
                   <Text style={{ fontSize: 14, fontWeight: '700', color: COLORS.gray[800] }}>
-                    Giờ bắt đầu: <Text style={{ color: COLORS.primary, fontWeight: '800' }}>{quickTimeSlot}</Text>
+                    Giờ bắt đầu:{' '}
+                    <Text style={{ color: COLORS.primary, fontWeight: '800' }}>
+                      {quickTimeSlot}
+                    </Text>
                   </Text>
                 </View>
                 <TouchableOpacity
@@ -2297,7 +2305,10 @@ export default function CustomerHomeScreen() {
                           setQuickCustomTimeOpen(false);
                           Toast.show({ type: 'success', text1: `Đã chọn giờ: ${trimmed}` });
                         } else {
-                          Toast.show({ type: 'error', text1: 'Định dạng giờ không hợp lệ (VD: 19:30)' });
+                          Toast.show({
+                            type: 'error',
+                            text1: 'Định dạng giờ không hợp lệ (VD: 19:30)',
+                          });
                         }
                       }}
                       style={{
@@ -2307,40 +2318,44 @@ export default function CustomerHomeScreen() {
                         borderRadius: 8,
                       }}
                     >
-                      <Text style={{ color: '#fff', fontWeight: '800', fontSize: 12 }}>Áp dụng</Text>
+                      <Text style={{ color: '#fff', fontWeight: '800', fontSize: 12 }}>
+                        Áp dụng
+                      </Text>
                     </ScalePressable>
                   </View>
 
                   {/* Odd time quick chips */}
                   <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
-                    {['07:30', '08:30', '11:30', '13:30', '17:30', '19:30', '20:30', '21:30'].map(ot => (
-                      <TouchableOpacity
-                        key={ot}
-                        onPress={() => {
-                          setQuickTimeSlot(ot);
-                          setQuickCustomTimeInput(ot);
-                          setQuickCustomTimeOpen(false);
-                        }}
-                        style={{
-                          paddingHorizontal: 8,
-                          paddingVertical: 4,
-                          borderRadius: 6,
-                          backgroundColor: quickTimeSlot === ot ? '#DCFCE7' : '#F1F5F9',
-                          borderWidth: 1,
-                          borderColor: quickTimeSlot === ot ? COLORS.primary : '#E2E8F0',
-                        }}
-                      >
-                        <Text
+                    {['07:30', '08:30', '11:30', '13:30', '17:30', '19:30', '20:30', '21:30'].map(
+                      ot => (
+                        <TouchableOpacity
+                          key={ot}
+                          onPress={() => {
+                            setQuickTimeSlot(ot);
+                            setQuickCustomTimeInput(ot);
+                            setQuickCustomTimeOpen(false);
+                          }}
                           style={{
-                            fontSize: 11,
-                            fontWeight: '700',
-                            color: quickTimeSlot === ot ? COLORS.primary : COLORS.gray[700],
+                            paddingHorizontal: 8,
+                            paddingVertical: 4,
+                            borderRadius: 6,
+                            backgroundColor: quickTimeSlot === ot ? '#DCFCE7' : '#F1F5F9',
+                            borderWidth: 1,
+                            borderColor: quickTimeSlot === ot ? COLORS.primary : '#E2E8F0',
                           }}
                         >
-                          {ot}
-                        </Text>
-                      </TouchableOpacity>
-                    ))}
+                          <Text
+                            style={{
+                              fontSize: 11,
+                              fontWeight: '700',
+                              color: quickTimeSlot === ot ? COLORS.primary : COLORS.gray[700],
+                            }}
+                          >
+                            {ot}
+                          </Text>
+                        </TouchableOpacity>
+                      ),
+                    )}
                   </View>
                 </View>
               )}
@@ -3090,103 +3105,110 @@ export default function CustomerHomeScreen() {
         </View>
 
         {/* Section: Đặt gần đây - Chỉ hiển thị khi có đơn đã hoàn thành thật (Không dùng mock - Item 4) */}
-        {completedJobs.length > 0 && (() => {
-          const pastJob = completedJobs[0];
-          const pastPrice = pastJob.final_price || pastJob.agreed_price || pastJob.target_price;
-          const displayPriceStr = pastPrice ? `${pastPrice.toLocaleString('vi-VN')}₫` : '';
-          const completedDateStr = dayjs(pastJob.completed_at || pastJob.updated_at || pastJob.created_at).format('DD/MM/YYYY');
-          return (
-            <View style={{ paddingHorizontal: 16, marginTop: 24 }}>
-              <View
-                style={{
-                  flexDirection: 'row',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  marginBottom: 12,
-                }}
-              >
-                <Text style={{ fontSize: 18, fontWeight: '800', color: COLORS.gray[900] }}>
-                  Đặt gần đây
-                </Text>
-                <TouchableOpacity activeOpacity={0.7} onPress={() => router.push('/(customer)/jobs')}>
-                  <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.primary }}>
-                    Xem lịch sử →
-                  </Text>
-                </TouchableOpacity>
-              </View>
-
-              {/* Past job with 1-click [Đặt lại] button */}
-              <View
-                style={{
-                  backgroundColor: '#FFFFFF',
-                  borderRadius: 18,
-                  padding: 16,
-                  borderWidth: 1,
-                  borderColor: '#E2E8F0',
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                }}
-              >
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
-                  <View
-                    style={{
-                      width: 44,
-                      height: 44,
-                      borderRadius: 12,
-                      backgroundColor: '#DCFCE7',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    <Text style={{ fontSize: 22 }}>🏠</Text>
-                  </View>
-
-                  <View style={{ flex: 1 }}>
-                    <Text
-                      style={{ fontSize: 15, fontWeight: '800', color: COLORS.gray[900] }}
-                      numberOfLines={1}
-                    >
-                      {pastJob.title}
-                    </Text>
-                    <Text style={{ fontSize: 12, color: COLORS.gray[500], marginTop: 2 }}>
-                      Hoàn thành · {completedDateStr}{displayPriceStr ? ` · ${displayPriceStr}` : ''}
-                    </Text>
-                  </View>
-                </View>
-
-                <TouchableOpacity
-                  activeOpacity={0.8}
-                  onPress={() => {
-                    router.push({
-                      pathname: '/(customer)/booking',
-                      params: {
-                        prefill_title: pastJob.title,
-                        prefill_description: pastJob.description || '',
-                        service_id: pastJob.service_id
-                          ? ((pastJob.service_id as any)._id || String(pastJob.service_id))
-                          : '',
-                        target_price: pastPrice ? String(pastPrice) : '',
-                      },
-                    });
-                  }}
+        {completedJobs.length > 0 &&
+          (() => {
+            const pastJob = completedJobs[0];
+            const pastPrice = pastJob.final_price || pastJob.agreed_price || pastJob.target_price;
+            const displayPriceStr = pastPrice ? `${pastPrice.toLocaleString('vi-VN')}₫` : '';
+            const completedDateStr = dayjs(
+              pastJob.completed_at || pastJob.updated_at || pastJob.created_at,
+            ).format('DD/MM/YYYY');
+            return (
+              <View style={{ paddingHorizontal: 16, marginTop: 24 }}>
+                <View
                   style={{
-                    backgroundColor: '#FFFFFF',
-                    borderWidth: 1.5,
-                    borderColor: COLORS.primary,
-                    paddingHorizontal: 14,
-                    paddingVertical: 8,
-                    borderRadius: 12,
+                    flexDirection: 'row',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    marginBottom: 12,
                   }}
                 >
-                  <Text style={{ fontSize: 13, fontWeight: '800', color: COLORS.primary }}>
-                    Đặt lại
+                  <Text style={{ fontSize: 18, fontWeight: '800', color: COLORS.gray[900] }}>
+                    Đặt gần đây
                   </Text>
-                </TouchableOpacity>
+                  <TouchableOpacity
+                    activeOpacity={0.7}
+                    onPress={() => router.push('/(customer)/jobs')}
+                  >
+                    <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.primary }}>
+                      Xem lịch sử →
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+
+                {/* Past job with 1-click [Đặt lại] button */}
+                <View
+                  style={{
+                    backgroundColor: '#FFFFFF',
+                    borderRadius: 18,
+                    padding: 16,
+                    borderWidth: 1,
+                    borderColor: '#E2E8F0',
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                  }}
+                >
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
+                    <View
+                      style={{
+                        width: 44,
+                        height: 44,
+                        borderRadius: 12,
+                        backgroundColor: '#DCFCE7',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      <Text style={{ fontSize: 22 }}>🏠</Text>
+                    </View>
+
+                    <View style={{ flex: 1 }}>
+                      <Text
+                        style={{ fontSize: 15, fontWeight: '800', color: COLORS.gray[900] }}
+                        numberOfLines={1}
+                      >
+                        {pastJob.title}
+                      </Text>
+                      <Text style={{ fontSize: 12, color: COLORS.gray[500], marginTop: 2 }}>
+                        Hoàn thành · {completedDateStr}
+                        {displayPriceStr ? ` · ${displayPriceStr}` : ''}
+                      </Text>
+                    </View>
+                  </View>
+
+                  <TouchableOpacity
+                    activeOpacity={0.8}
+                    onPress={() => {
+                      router.push({
+                        pathname: '/(customer)/booking',
+                        params: {
+                          prefill_title: pastJob.title,
+                          prefill_description: pastJob.description || '',
+                          service_id: pastJob.service_id
+                            ? (pastJob.service_id as any)._id || String(pastJob.service_id)
+                            : '',
+                          target_price: pastPrice ? String(pastPrice) : '',
+                        },
+                      });
+                    }}
+                    style={{
+                      backgroundColor: '#FFFFFF',
+                      borderWidth: 1.5,
+                      borderColor: COLORS.primary,
+                      paddingHorizontal: 14,
+                      paddingVertical: 8,
+                      borderRadius: 12,
+                    }}
+                  >
+                    <Text style={{ fontSize: 13, fontWeight: '800', color: COLORS.primary }}>
+                      Đặt lại
+                    </Text>
+                  </TouchableOpacity>
+                </View>
               </View>
-            </View>
-          );
-        })()}
+            );
+          })()}
       </ScrollView>
     </View>
   );
