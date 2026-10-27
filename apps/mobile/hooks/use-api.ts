@@ -1693,9 +1693,43 @@ export function useMyVouchers() {
   return useQuery({
     queryKey: ['vouchers', 'my'],
     queryFn: async () => {
-      const res = await apiClient.get('/vouchers/my');
+      try {
+        const res = await apiClient.get('/vouchers/my');
+        const list = (res.data?.data ?? res.data ?? []) as any[];
+        if (list.length > 0) return list;
+      } catch {
+        // Fallback to active vouchers if guest / not logged in
+      }
+      try {
+        const resActive = await apiClient.get('/vouchers/active');
+        return (resActive.data?.data ?? resActive.data ?? []) as any[];
+      } catch {
+        return [];
+      }
+    },
+    staleTime: 60_000,
+  });
+}
+
+export function useNearbyHelpers(
+  coords?: { latitude: number; longitude: number } | null,
+  radius = 20,
+) {
+  return useQuery({
+    queryKey: ['helpers', 'nearby', coords?.latitude, coords?.longitude, radius],
+    queryFn: async () => {
+      if (!coords?.latitude || !coords?.longitude) return [];
+      const res = await apiClient.get('/helpers/nearby', {
+        params: {
+          lat: coords.latitude,
+          lng: coords.longitude,
+          radius,
+        },
+      });
       return (res.data?.data ?? res.data ?? []) as any[];
     },
+    enabled: !!coords?.latitude && !!coords?.longitude,
+    staleTime: 30_000,
   });
 }
 
