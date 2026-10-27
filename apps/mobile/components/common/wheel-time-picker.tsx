@@ -219,42 +219,49 @@ export function WheelTimePicker({ value, onChange, quickChips = true }: WheelTim
         <View style={styles.chipsSection}>
           <Text style={styles.chipsTitle}>Gợi ý nhanh (chạm để bánh xe cuộn tới):</Text>
           <View style={styles.chipsWrap}>
-            {['07:00', '08:00', '09:00', '12:00', '14:00', '17:00', '18:00', '19:00', '20:00', '21:00', '22:00'].map(
-              t => {
-                const isSelected = currentTimeFormatted === t;
-                const isNew = t === '12:00';
-                const isNight = t === '21:00' || t === '22:00';
-                return (
-                  <ScalePressable
-                    key={t}
-                    onPress={() => selectExactTime(t)}
+            {[
+              '07:00',
+              '08:00',
+              '09:00',
+              '12:00',
+              '14:00',
+              '17:00',
+              '18:00',
+              '19:00',
+              '20:00',
+              '21:00',
+              '22:00',
+            ].map(t => {
+              const isSelected = currentTimeFormatted === t;
+              const isNew = t === '12:00';
+              const isNight = t === '21:00' || t === '22:00';
+              return (
+                <ScalePressable
+                  key={t}
+                  onPress={() => selectExactTime(t)}
+                  style={[styles.chip, isSelected ? styles.chipSelected : styles.chipUnselected]}
+                >
+                  {isNew && (
+                    <View style={styles.newBadge}>
+                      <Text style={styles.newBadgeText}>MỚI</Text>
+                    </View>
+                  )}
+                  {isNight && (
+                    <View style={styles.nightBadge}>
+                      <Text style={styles.nightBadgeText}>ĐÊM</Text>
+                    </View>
+                  )}
+                  <Text
                     style={[
-                      styles.chip,
-                      isSelected ? styles.chipSelected : styles.chipUnselected,
+                      styles.chipText,
+                      isSelected ? styles.chipTextSelected : styles.chipTextUnselected,
                     ]}
                   >
-                    {isNew && (
-                      <View style={styles.newBadge}>
-                        <Text style={styles.newBadgeText}>MỚI</Text>
-                      </View>
-                    )}
-                    {isNight && (
-                      <View style={styles.nightBadge}>
-                        <Text style={styles.nightBadgeText}>ĐÊM</Text>
-                      </View>
-                    )}
-                    <Text
-                      style={[
-                        styles.chipText,
-                        isSelected ? styles.chipTextSelected : styles.chipTextUnselected,
-                      ]}
-                    >
-                      {t}
-                    </Text>
-                  </ScalePressable>
-                );
-              },
-            )}
+                    {t}
+                  </Text>
+                </ScalePressable>
+              );
+            })}
           </View>
 
           {/* Giờ lẻ phổ biến */}
