@@ -22,6 +22,8 @@ import {
   Calendar,
   Sparkles,
   ChevronRight,
+  ChevronLeft,
+  Clock,
   Check,
   Search,
   Navigation,
@@ -33,6 +35,7 @@ import Toast from 'react-native-toast-message';
 import { Alert } from '@/components/common/app-alert';
 import dayjs from 'dayjs';
 import { useAuthStore } from '@/stores/auth.store';
+import { ScalePressable } from '@/components/common/scale-pressable';
 import {
   useServices,
   useCreateJob,
@@ -197,6 +200,7 @@ export default function BookingScreen() {
     preferred_time_start?: string;
     duration_hours?: string;
     attached_photo?: string;
+    auto_analyze?: string;
   }>();
   const { data: services, isLoading: isLoadingServices } = useServices();
   const createJob = useCreateJob();
@@ -242,8 +246,19 @@ export default function BookingScreen() {
   const searchSeqRef = useRef(0);
   const searchTimeoutRef = useRef<any>(null);
   const [date, setDate] = useState(dayjs().add(1, 'day').format('YYYY-MM-DD'));
+  const [dateChip, setDateChip] = useState<'today' | 'tomorrow' | 'sat' | 'sun' | null>('tomorrow');
   const [timeSlot, setTimeSlot] = useState('09:00');
   const [duration, setDuration] = useState(3);
+  const [calendarOpen, setCalendarOpen] = useState(false);
+  const [calendarMonth, setCalendarMonth] = useState(dayjs());
+  const [customTimeOpen, setCustomTimeOpen] = useState(false);
+  const [customTimeInput, setCustomTimeInput] = useState('');
+  const [durationPickerOpen, setDurationPickerOpen] = useState(false);
+  const [isCustomDuration, setIsCustomDuration] = useState(false);
+  const [customHours, setCustomHours] = useState(1);
+  const [customMinutes, setCustomMinutes] = useState(30);
+  const autoAnalyzedRef = useRef(false);
+
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [photos, setPhotos] = useState<string[]>([]);
@@ -270,7 +285,7 @@ export default function BookingScreen() {
     if (params.custom_service_name) {
       setSelectedService('custom');
       setCustomServiceName(params.custom_service_name);
-      if (params.target_price) setTargetPrice(params.target_price);
+      if (params.target_price) setTargetPrice(params.target_price.replace(/[^0-9]/g, ''));
       setStep(1);
     } else if (params.service_id) {
       setSelectedService(params.service_id);
@@ -280,10 +295,35 @@ export default function BookingScreen() {
       setStep(0);
     }
     // Prefill ngày giờ nếu có
-    if (params.preferred_date) setDate(params.preferred_date);
-    if (params.preferred_time_start) setTimeSlot(params.preferred_time_start);
-    if (params.duration_hours) setDuration(Number(params.duration_hours) || 2);
-    if (params.attached_photo) setPhotos([params.attached_photo]);
+    if (params.preferred_date) {
+      setDate(params.preferred_date);
+      if (params.preferred_date === dayjs().format('YYYY-MM-DD')) setDateChip('today');
+      else if (params.preferred_date === dayjs().add(1, 'day').format('YYYY-MM-DD')) setDateChip('tomorrow');
+      else setDateChip(null);
+    }
+    if (params.preferred_time_start) {
+      setTimeSlot(params.preferred_time_start);
+      if (!TIME_SLOTS.includes(params.preferred_time_start)) {
+        setCustomTimeInput(params.preferred_time_start);
+      }
+    }
+    if (params.duration_hours) {
+      const parsedDur = parseFloat(params.duration_hours);
+      if (!isNaN(parsedDur) && parsedDur > 0) {
+        setDuration(parsedDur);
+        if (![1, 2, 3, 4].includes(parsedDur)) {
+          setIsCustomDuration(true);
+          const h = Math.floor(parsedDur);
+          const m = Math.round((parsedDur - h) * 60);
+          setCustomHours(h);
+          setCustomMinutes(m);
+        }
+      }
+    }
+    if (params.attached_photo) {
+      setPhotos([params.attached_photo]);
+      setStep(3); // Bước 3: Mô tả & Ảnh sự cố
+    }
     // Đặt lại / đặt từ thợ yêu thích: điền sẵn tiêu đề + mô tả của đơn cũ
     if (params.prefill_title) setTitle(params.prefill_title);
     if (params.prefill_description) setDescription(params.prefill_description);
@@ -298,6 +338,15 @@ export default function BookingScreen() {
     params.duration_hours,
     params.attached_photo,
   ]);
+
+  useEffect(() => {
+    if (params.attached_photo && params.auto_analyze === '1' && !autoAnalyzedRef.current) {
+      autoAnalyzedRef.current = true;
+      setTimeout(() => {
+        handleAnalyzeIssuePhoto();
+      }, 400);
+    }
+  }, [params.attached_photo, params.auto_analyze]);
 
   const resetForm = () => {
     setStep(0);
@@ -517,6 +566,24 @@ export default function BookingScreen() {
             } else {
               setSelectedService(svc._id);
             }
+          } else {
+            // Item 7: AI suggests a service slug not found in catalog -> inform user and switch to custom service
+            const customName = res.suggested_service_name || res.suggested_service_slug;
+            Alert.alert(
+              'Gợi ý dịch vụ từ AI',
+              `AI đề xuất dịch vụ "${customName}". Do danh mục chuẩn chưa có dịch vụ này, hệ thống đã chuyển sang "Dịch vụ theo yêu cầu" và điền sẵn tên dịch vụ cho bạn.`,
+              [
+                {
+                  text: 'Đồng ý',
+                  onPress: () => {
+                    setSelectedService('custom');
+                    setCustomServiceName(customName);
+                  },
+                },
+              ],
+            );
+            setSelectedService('custom');
+            setCustomServiceName(customName);
           }
         }
         Toast.show({
@@ -525,7 +592,7 @@ export default function BookingScreen() {
           text2: 'Đã điền sẵn mô tả & gợi ý dịch vụ cho bạn',
         });
       } else {
-        unavailableToast();
+        unavailableToast(res?.message);
       }
     } catch (err: any) {
       console.warn('AI issue photo analysis error:', err);
@@ -899,8 +966,8 @@ export default function BookingScreen() {
     const jobAddress = {
       full_address: address.full_address.trim(),
       ward: address.ward?.trim() || undefined,
-      district: address.district.trim() || address.ward?.trim() || 'Quận',
-      city: address.city?.trim() || 'Việt Nam',
+      district: address.district?.trim() || undefined,
+      city: address.city?.trim() || undefined,
       notes: address.notes?.trim() || undefined,
       location: { type: 'Point', coordinates: currentCoords },
     };
@@ -928,11 +995,16 @@ export default function BookingScreen() {
         return;
       }
 
-      const endTime = dayjs(`${date} ${timeSlot}`).add(duration, 'hour').format('HH:mm');
+      const durHours = typeof duration === 'number' ? duration : parseFloat(String(duration)) || 2;
+      const durMinsTotal = Math.round(durHours * 60);
+      const startDateTime = dayjs(`${date} ${timeSlot}`);
+      const endTime = startDateTime.add(durMinsTotal, 'minute').format('HH:mm');
+      const cleanNum = targetPrice ? Number(String(targetPrice).replace(/[^0-9]/g, '')) : undefined;
+
       await createJob.mutateAsync({
         service_id: currentServiceId === 'custom' ? undefined : currentServiceId,
         custom_service_name: customServiceName.trim() || undefined,
-        target_price: targetPrice ? Number(targetPrice) : undefined,
+        target_price: cleanNum && cleanNum > 0 ? cleanNum : undefined,
         title: title.trim() || customServiceName.trim() || 'Yêu cầu dịch vụ',
         description: description.trim(),
         photos: photos.length > 0 ? photos : undefined,
@@ -1410,7 +1482,7 @@ export default function BookingScreen() {
                       label="Giá bạn muốn trả (giá mở đầu để deal) *"
                       placeholder="VD: 200000"
                       value={targetPrice}
-                      onChangeText={setTargetPrice}
+                      onChangeText={v => setTargetPrice(v.replace(/[^0-9]/g, ''))}
                       keyboardType="numeric"
                     />
                   </View>
@@ -1560,7 +1632,7 @@ export default function BookingScreen() {
                 <View style={{ flex: 1 }}>
                   <Input
                     label="Phường/Xã"
-                    placeholder="Phường 1"
+                    placeholder="VD: Phường / Xã"
                     value={address.ward}
                     onChangeText={v => {
                       setAddress(a => ({ ...a, ward: v }));
@@ -1571,7 +1643,7 @@ export default function BookingScreen() {
                 <View style={{ flex: 1 }}>
                   <Input
                     label="Quận/Huyện"
-                    placeholder="Quận 1"
+                    placeholder="VD: Quận / Huyện"
                     value={address.district}
                     onChangeText={v => {
                       setAddress(a => ({ ...a, district: v }));
@@ -1582,6 +1654,7 @@ export default function BookingScreen() {
               </View>
               <Input
                 label="Thành phố"
+                placeholder="VD: Tỉnh / Thành phố"
                 value={address.city}
                 onChangeText={v => {
                   setAddress(a => ({ ...a, city: v }));
@@ -1604,29 +1677,232 @@ export default function BookingScreen() {
                 Chọn lịch hẹn
               </Text>
 
+              {/* 1. Chọn ngày làm việc: Chip gợi ý + Lịch tháng + Dải 14 ngày */}
               <View>
-                <Text
+                <View
                   style={{
-                    fontSize: 14,
-                    fontWeight: '700',
-                    color: COLORS.gray[700],
-                    marginBottom: 10,
+                    flexDirection: 'row',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    marginBottom: 8,
                   }}
                 >
-                  <Calendar size={14} color={COLORS.gray[600]} /> Ngày làm việc
-                </Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    <Calendar size={15} color={COLORS.primary} />
+                    <Text style={{ fontSize: 14, fontWeight: '700', color: COLORS.gray[800] }}>
+                      {dayjs(date).format('dddd, DD/MM/YYYY')}
+                    </Text>
+                  </View>
+                  <TouchableOpacity
+                    activeOpacity={0.8}
+                    onPress={() => setCalendarOpen(prev => !prev)}
+                    style={{
+                      backgroundColor: calendarOpen ? '#DCFCE7' : '#F1F5F9',
+                      paddingHorizontal: 8,
+                      paddingVertical: 4,
+                      borderRadius: 8,
+                      borderWidth: 1,
+                      borderColor: calendarOpen ? COLORS.primary : '#E2E8F0',
+                    }}
+                  >
+                    <Text style={{ fontSize: 12, fontWeight: '700', color: COLORS.primary }}>
+                      {calendarOpen ? 'Đóng lịch ▲' : 'Lịch tháng ▼'}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+
+                {/* Day suggestion chips: Hôm nay / Ngày mai / Thứ 7 / Chủ nhật */}
+                <View style={{ flexDirection: 'row', gap: 8, marginBottom: 10 }}>
+                  {[
+                    { key: 'today', label: 'Hôm nay' },
+                    { key: 'tomorrow', label: 'Ngày mai' },
+                    { key: 'sat', label: 'Thứ 7' },
+                    { key: 'sun', label: 'Chủ nhật' },
+                  ].map(c => {
+                    const isSel = dateChip === c.key;
+                    return (
+                      <ScalePressable
+                        key={c.key}
+                        onPress={() => {
+                          setDateChip(c.key as any);
+                          const now = dayjs();
+                          if (c.key === 'today') setDate(now.format('YYYY-MM-DD'));
+                          else if (c.key === 'tomorrow') setDate(now.add(1, 'day').format('YYYY-MM-DD'));
+                          else if (c.key === 'sat') {
+                            const nextSat = now.day() <= 6 ? now.day(6) : now.add(1, 'week').day(6);
+                            setDate(nextSat.format('YYYY-MM-DD'));
+                          } else if (c.key === 'sun') {
+                            const nextSun = now.day() === 0 ? now : now.day(7);
+                            setDate(nextSun.format('YYYY-MM-DD'));
+                          }
+                        }}
+                        style={{
+                          flex: 1,
+                          paddingVertical: 8,
+                          borderRadius: 10,
+                          backgroundColor: isSel ? '#DCFCE7' : '#F1F5F9',
+                          borderWidth: 1,
+                          borderColor: isSel ? COLORS.primary : '#E2E8F0',
+                          alignItems: 'center',
+                        }}
+                      >
+                        <Text
+                          style={{
+                            fontSize: 12,
+                            fontWeight: '700',
+                            color: isSel ? COLORS.primary : COLORS.gray[700],
+                          }}
+                        >
+                          {c.label}
+                        </Text>
+                      </ScalePressable>
+                    );
+                  })}
+                </View>
+
+                {/* Month Calendar Dropdown / Inline Matrix */}
+                {calendarOpen && (
+                  <View
+                    style={{
+                      backgroundColor: '#FFFFFF',
+                      borderRadius: 14,
+                      padding: 12,
+                      borderWidth: 1.5,
+                      borderColor: '#E2E8F0',
+                      marginBottom: 12,
+                    }}
+                  >
+                    <View
+                      style={{
+                        flexDirection: 'row',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        marginBottom: 10,
+                      }}
+                    >
+                      <TouchableOpacity
+                        onPress={() => setCalendarMonth(prev => prev.subtract(1, 'month'))}
+                        style={{ padding: 6, borderRadius: 8, backgroundColor: '#F1F5F9' }}
+                      >
+                        <ChevronLeft size={16} color={COLORS.gray[700]} />
+                      </TouchableOpacity>
+                      <Text style={{ fontSize: 14, fontWeight: '800', color: COLORS.gray[900] }}>
+                        Tháng {calendarMonth.format('MM/YYYY')}
+                      </Text>
+                      <TouchableOpacity
+                        onPress={() => setCalendarMonth(prev => prev.add(1, 'month'))}
+                        style={{ padding: 6, borderRadius: 8, backgroundColor: '#F1F5F9' }}
+                      >
+                        <ChevronRight size={16} color={COLORS.gray[700]} />
+                      </TouchableOpacity>
+                    </View>
+
+                    <View style={{ flexDirection: 'row', marginBottom: 6 }}>
+                      {['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'].map(wd => (
+                        <Text
+                          key={wd}
+                          style={{
+                            flex: 1,
+                            textAlign: 'center',
+                            fontSize: 11,
+                            fontWeight: '700',
+                            color: COLORS.gray[400],
+                          }}
+                        >
+                          {wd}
+                        </Text>
+                      ))}
+                    </View>
+
+                    <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
+                      {(() => {
+                        const startOfMonth = calendarMonth.startOf('month');
+                        const daysInMonth = calendarMonth.daysInMonth();
+                        const startOffset = (startOfMonth.day() + 6) % 7;
+                        const items: any[] = [];
+                        for (let i = 0; i < startOffset; i++) {
+                          items.push(<View key={`empty-${i}`} style={{ width: '14.28%', height: 36 }} />);
+                        }
+                        const todayStr = dayjs().format('YYYY-MM-DD');
+                        const startOfToday = dayjs().startOf('day');
+                        for (let d = 1; d <= daysInMonth; d++) {
+                          const dObj = calendarMonth.date(d);
+                          const dateStr = dObj.format('YYYY-MM-DD');
+                          const isPast = dObj.isBefore(startOfToday);
+                          const isToday = dateStr === todayStr;
+                          const isSelected = dateStr === date;
+                          items.push(
+                            <TouchableOpacity
+                              key={dateStr}
+                              disabled={isPast}
+                              onPress={() => {
+                                setDate(dateStr);
+                                setDateChip(null);
+                              }}
+                              style={{
+                                width: '14.28%',
+                                height: 36,
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                              }}
+                            >
+                              <View
+                                style={{
+                                  width: 30,
+                                  height: 30,
+                                  borderRadius: 15,
+                                  backgroundColor: isSelected
+                                    ? COLORS.primary
+                                    : isToday
+                                      ? '#DCFCE7'
+                                      : 'transparent',
+                                  borderWidth: isToday && !isSelected ? 1.5 : 0,
+                                  borderColor: COLORS.primary,
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  opacity: isPast ? 0.3 : 1,
+                                }}
+                              >
+                                <Text
+                                  style={{
+                                    fontSize: 12,
+                                    fontWeight: isSelected || isToday ? '800' : '600',
+                                    color: isSelected
+                                      ? '#FFFFFF'
+                                      : isPast
+                                        ? COLORS.gray[300]
+                                        : COLORS.gray[800],
+                                  }}
+                                >
+                                  {d}
+                                </Text>
+                              </View>
+                            </TouchableOpacity>
+                          );
+                        }
+                        return items;
+                      })()}
+                    </View>
+                  </View>
+                )}
+
+                {/* 14-day horizontal strip starting from today (i = 0) */}
                 <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                   <View style={{ flexDirection: 'row', gap: 10 }}>
                     {Array.from({ length: 14 }).map((_, i) => {
-                      const d = dayjs().add(i + 1, 'day');
+                      const d = dayjs().add(i, 'day');
                       const val = d.format('YYYY-MM-DD');
                       const isSelected = date === val;
+                      const isToday = i === 0;
                       return (
-                        <TouchableOpacity
+                        <ScalePressable
                           key={val}
-                          onPress={() => setDate(val)}
+                          onPress={() => {
+                            setDate(val);
+                            setDateChip(isToday ? 'today' : i === 1 ? 'tomorrow' : null);
+                          }}
                           style={{
-                            width: 56,
+                            width: 58,
                             alignItems: 'center',
                             paddingVertical: 10,
                             borderRadius: 14,
@@ -1637,12 +1913,12 @@ export default function BookingScreen() {
                         >
                           <Text
                             style={{
-                              fontSize: 11,
-                              color: isSelected ? 'rgba(255,255,255,0.8)' : COLORS.gray[500],
-                              fontWeight: '600',
+                              fontSize: 10.5,
+                              color: isSelected ? 'rgba(255,255,255,0.9)' : isToday ? COLORS.primary : COLORS.gray[500],
+                              fontWeight: '700',
                             }}
                           >
-                            {d.format('ddd').toUpperCase()}
+                            {isToday ? 'H.NAY' : d.format('ddd').toUpperCase()}
                           </Text>
                           <Text
                             style={{
@@ -1663,32 +1939,144 @@ export default function BookingScreen() {
                           >
                             Th{d.format('M')}
                           </Text>
-                        </TouchableOpacity>
+                        </ScalePressable>
                       );
                     })}
                   </View>
                 </ScrollView>
               </View>
 
+              {/* 2. Giờ bắt đầu: Chip giờ + Giờ tùy chọn */}
               <View>
-                <Text
+                <View
                   style={{
-                    fontSize: 14,
-                    fontWeight: '700',
-                    color: COLORS.gray[700],
+                    flexDirection: 'row',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
                     marginBottom: 10,
                   }}
                 >
-                  Giờ bắt đầu
-                </Text>
-                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    <Clock size={15} color={COLORS.primary} />
+                    <Text style={{ fontSize: 14, fontWeight: '700', color: COLORS.gray[700] }}>
+                      Giờ bắt đầu: <Text style={{ color: COLORS.primary, fontWeight: '800' }}>{timeSlot}</Text>
+                    </Text>
+                  </View>
+                  <TouchableOpacity
+                    activeOpacity={0.8}
+                    onPress={() => setCustomTimeOpen(prev => !prev)}
+                    style={{
+                      backgroundColor: customTimeOpen ? '#DCFCE7' : '#F1F5F9',
+                      paddingHorizontal: 8,
+                      paddingVertical: 4,
+                      borderRadius: 8,
+                      borderWidth: 1,
+                      borderColor: customTimeOpen ? COLORS.primary : '#E2E8F0',
+                    }}
+                  >
+                    <Text style={{ fontSize: 12, fontWeight: '700', color: COLORS.primary }}>
+                      {customTimeOpen ? 'Đóng giờ tùy chọn ▲' : 'Giờ tùy chọn (giờ lẻ) ▼'}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+
+                {/* Custom Time Selector Panel */}
+                {customTimeOpen && (
+                  <View
+                    style={{
+                      backgroundColor: '#FFFFFF',
+                      borderRadius: 14,
+                      padding: 12,
+                      borderWidth: 1.5,
+                      borderColor: '#E2E8F0',
+                      marginBottom: 12,
+                      gap: 10,
+                    }}
+                  >
+                    <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.gray[700] }}>
+                      Nhập hoặc chọn giờ lẻ mong muốn:
+                    </Text>
+                    <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
+                      <TextInput
+                        style={{
+                          flex: 1,
+                          backgroundColor: '#F8FAFC',
+                          borderWidth: 1.5,
+                          borderColor: COLORS.primary,
+                          borderRadius: 10,
+                          paddingHorizontal: 12,
+                          paddingVertical: 8,
+                          fontSize: 15,
+                          fontWeight: '800',
+                          color: COLORS.gray[900],
+                        }}
+                        placeholder="VD: 19:30 hoặc 21:30"
+                        value={customTimeInput}
+                        onChangeText={setCustomTimeInput}
+                        keyboardType="numbers-and-punctuation"
+                      />
+                      <ScalePressable
+                        onPress={() => {
+                          const trimmed = customTimeInput.trim();
+                          if (/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/.test(trimmed)) {
+                            setTimeSlot(trimmed);
+                            setCustomTimeOpen(false);
+                            Toast.show({ type: 'success', text1: `Đã chọn giờ: ${trimmed}` });
+                          } else {
+                            Toast.show({ type: 'error', text1: 'Định dạng giờ không hợp lệ (VD: 19:30)' });
+                          }
+                        }}
+                        style={{
+                          backgroundColor: COLORS.primary,
+                          paddingHorizontal: 16,
+                          paddingVertical: 10,
+                          borderRadius: 10,
+                        }}
+                      >
+                        <Text style={{ color: '#fff', fontWeight: '800', fontSize: 13 }}>Áp dụng</Text>
+                      </ScalePressable>
+                    </View>
+
+                    {/* Quick odd time chips */}
+                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+                      {['07:30', '08:30', '11:30', '13:30', '17:30', '19:30', '20:30', '21:30'].map(ot => (
+                        <TouchableOpacity
+                          key={ot}
+                          onPress={() => {
+                            setTimeSlot(ot);
+                            setCustomTimeInput(ot);
+                            setCustomTimeOpen(false);
+                          }}
+                          style={{
+                            paddingHorizontal: 10,
+                            paddingVertical: 5,
+                            borderRadius: 6,
+                            backgroundColor: timeSlot === ot ? '#DCFCE7' : '#F1F5F9',
+                            borderWidth: 1,
+                            borderColor: timeSlot === ot ? COLORS.primary : '#E2E8F0',
+                          }}
+                        >
+                          <Text style={{ fontSize: 11, fontWeight: '700', color: timeSlot === ot ? COLORS.primary : COLORS.gray[700] }}>
+                            {ot}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  </View>
+                )}
+
+                {/* Regular Time Chips */}
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
                   {TIME_SLOTS.map(t => (
-                    <TouchableOpacity
+                    <ScalePressable
                       key={t}
-                      onPress={() => setTimeSlot(t)}
+                      onPress={() => {
+                        setTimeSlot(t);
+                        setCustomTimeInput(t);
+                      }}
                       style={{
-                        paddingHorizontal: 16,
-                        paddingVertical: 10,
+                        paddingHorizontal: 14,
+                        paddingVertical: 9,
                         borderRadius: 12,
                         borderWidth: 2,
                         borderColor: timeSlot === t ? COLORS.primary : COLORS.gray[200],
@@ -1732,85 +2120,210 @@ export default function BookingScreen() {
                       )}
                       <Text
                         style={{
-                          fontSize: 14,
+                          fontSize: 13,
                           fontWeight: '700',
                           color: timeSlot === t ? COLORS.primary : COLORS.gray[700],
                         }}
                       >
                         {t}
                       </Text>
-                    </TouchableOpacity>
+                    </ScalePressable>
                   ))}
                 </View>
               </View>
 
+              {/* 3. Thời gian ước tính: Chip 1/2/3/4h + Tùy chọn... */}
               <View>
-                <Text
+                <View
                   style={{
-                    fontSize: 14,
-                    fontWeight: '700',
-                    color: COLORS.gray[700],
+                    flexDirection: 'row',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
                     marginBottom: 10,
                   }}
                 >
-                  Thời gian ước tính
-                </Text>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                  <View style={{ flexDirection: 'row', gap: 10 }}>
-                    {DURATION_OPTIONS.map(d => (
-                      <TouchableOpacity
-                        key={d}
-                        onPress={() => setDuration(d)}
-                        style={{
-                          paddingHorizontal: 20,
-                          paddingVertical: 12,
-                          borderRadius: 12,
-                          borderWidth: 2,
-                          borderColor: duration === d ? COLORS.primary : COLORS.gray[200],
-                          backgroundColor: duration === d ? COLORS.primaryLight : '#fff',
-                        }}
-                      >
-                        <Text
-                          style={{
-                            fontWeight: '800',
-                            color: duration === d ? COLORS.primary : COLORS.gray[700],
-                          }}
-                        >
-                          {d}h
-                        </Text>
-                      </TouchableOpacity>
-                    ))}
-                  </View>
-                </ScrollView>
-
-                <View
-                  style={{
-                    backgroundColor: '#F0FDF4',
-                    borderRadius: 12,
-                    padding: 12,
-                    borderWidth: 1,
-                    borderColor: '#BBF7D0',
-                    marginTop: 14,
-                  }}
-                >
-                  <Text
-                    style={{ fontSize: 13, color: '#166534', fontWeight: '600', lineHeight: 18 }}
-                  >
-                    Lịch dự kiến:{' '}
-                    <Text style={{ fontWeight: '800' }}>
-                      {dayjs(date).format('dddd, DD/MM')}, {timeSlot} –{' '}
-                      {dayjs(`${date} ${timeSlot}`).add(duration, 'hour').format('HH:mm')}
-                      {dayjs(`${date} ${timeSlot}`).add(duration, 'hour').date() !==
-                      dayjs(date).date()
-                        ? ' (ngày hôm sau)'
-                        : ''}
-                    </Text>{' '}
-                    · thời lượng {duration} giờ.
-                    {targetPrice
-                      ? ` Giá mở đầu để deal: ${new Intl.NumberFormat('vi-VN').format(Number(targetPrice))}₫.`
-                      : ''}
+                  <Text style={{ fontSize: 14, fontWeight: '700', color: COLORS.gray[700] }}>
+                    Thời gian ước tính:{' '}
+                    <Text style={{ color: COLORS.primary, fontWeight: '800' }}>
+                      {duration < 1 ? `${Math.round(duration * 60)} phút` : `${Number(duration.toFixed(2)).toString().replace('.', ',')} giờ`}
+                    </Text>
                   </Text>
                 </View>
+
+                <View style={{ flexDirection: 'row', gap: 8 }}>
+                  {[1, 2, 3, 4].map(d => (
+                    <ScalePressable
+                      key={d}
+                      onPress={() => {
+                        setDuration(d);
+                        setIsCustomDuration(false);
+                        setDurationPickerOpen(false);
+                      }}
+                      style={{
+                        flex: 1,
+                        paddingVertical: 11,
+                        borderRadius: 12,
+                        borderWidth: 2,
+                        borderColor: !isCustomDuration && duration === d ? COLORS.primary : COLORS.gray[200],
+                        backgroundColor: !isCustomDuration && duration === d ? COLORS.primaryLight : '#fff',
+                        alignItems: 'center',
+                      }}
+                    >
+                      <Text
+                        style={{
+                          fontWeight: '800',
+                          fontSize: 14,
+                          color: !isCustomDuration && duration === d ? COLORS.primary : COLORS.gray[700],
+                        }}
+                      >
+                        {d}h
+                      </Text>
+                    </ScalePressable>
+                  ))}
+                  <ScalePressable
+                    onPress={() => {
+                      setIsCustomDuration(true);
+                      setDurationPickerOpen(prev => !prev);
+                    }}
+                    style={{
+                      flex: isCustomDuration ? 1.4 : 1.2,
+                      paddingVertical: 11,
+                      paddingHorizontal: 6,
+                      borderRadius: 12,
+                      borderWidth: 2,
+                      borderColor: isCustomDuration ? COLORS.primary : COLORS.gray[200],
+                      backgroundColor: isCustomDuration ? COLORS.primaryLight : '#fff',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <Text
+                      style={{
+                        fontWeight: '800',
+                        fontSize: 12,
+                        color: isCustomDuration ? COLORS.primary : COLORS.gray[700],
+                      }}
+                      numberOfLines={1}
+                    >
+                      {isCustomDuration
+                        ? `${duration < 1 ? `${Math.round(duration * 60)}p` : `${Number(duration.toFixed(2)).toString().replace('.', ',')}h`}`
+                        : 'Tùy chọn…'}
+                    </Text>
+                  </ScalePressable>
+                </View>
+
+                {/* Custom Duration Selector Panel */}
+                {durationPickerOpen && (
+                  <View
+                    style={{
+                      backgroundColor: '#FFFFFF',
+                      borderRadius: 14,
+                      padding: 14,
+                      borderWidth: 1.5,
+                      borderColor: '#E2E8F0',
+                      marginTop: 10,
+                      gap: 12,
+                    }}
+                  >
+                    <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.gray[800] }}>
+                      Chọn số giờ và phút thực tế:
+                    </Text>
+                    <View style={{ flexDirection: 'row', gap: 12, alignItems: 'center' }}>
+                      {/* Hours */}
+                      <View style={{ flex: 1, gap: 4 }}>
+                        <Text style={{ fontSize: 12, color: COLORS.gray[500], fontWeight: '600' }}>Giờ (0–12h)</Text>
+                        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+                          {[0, 1, 2, 3, 4, 5, 6].map(h => (
+                            <TouchableOpacity
+                              key={`h-${h}`}
+                              onPress={() => {
+                                setCustomHours(h);
+                                const newDur = h + customMinutes / 60;
+                                if (newDur >= 0.25) setDuration(newDur);
+                              }}
+                              style={{
+                                width: 34,
+                                height: 34,
+                                borderRadius: 8,
+                                backgroundColor: customHours === h ? COLORS.primary : '#F1F5F9',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                              }}
+                            >
+                              <Text style={{ fontSize: 12, fontWeight: '700', color: customHours === h ? '#fff' : COLORS.gray[800] }}>
+                                {h}
+                              </Text>
+                            </TouchableOpacity>
+                          ))}
+                        </View>
+                      </View>
+
+                      {/* Minutes */}
+                      <View style={{ flex: 1, gap: 4 }}>
+                        <Text style={{ fontSize: 12, color: COLORS.gray[500], fontWeight: '600' }}>Phút (0/15/30/45)</Text>
+                        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+                          {[0, 15, 30, 45].map(m => (
+                            <TouchableOpacity
+                              key={`m-${m}`}
+                              onPress={() => {
+                                setCustomMinutes(m);
+                                const newDur = customHours + m / 60;
+                                if (newDur >= 0.25) setDuration(newDur);
+                              }}
+                              style={{
+                                paddingHorizontal: 10,
+                                height: 34,
+                                borderRadius: 8,
+                                backgroundColor: customMinutes === m ? COLORS.primary : '#F1F5F9',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                              }}
+                            >
+                              <Text style={{ fontSize: 12, fontWeight: '700', color: customMinutes === m ? '#fff' : COLORS.gray[800] }}>
+                                {m}p
+                              </Text>
+                            </TouchableOpacity>
+                          ))}
+                        </View>
+                      </View>
+                    </View>
+                  </View>
+                )}
+
+                {/* Dynamic Schedule Summary Card with Next-Day notice */}
+                {(() => {
+                  const durTotal = typeof duration === 'number' ? duration : parseFloat(String(duration)) || 2;
+                  const durMinsTotal = Math.round(durTotal * 60);
+                  const startDt = dayjs(`${date} ${timeSlot}`);
+                  const endDt = startDt.add(durMinsTotal, 'minute');
+                  const isNextDay = endDt.date() !== startDt.date();
+                  const cleanPriceNum = targetPrice ? Number(String(targetPrice).replace(/[^0-9]/g, '')) : 0;
+
+                  return (
+                    <View
+                      style={{
+                        backgroundColor: '#F0FDF4',
+                        borderRadius: 14,
+                        padding: 14,
+                        borderWidth: 1.5,
+                        borderColor: '#BBF7D0',
+                        marginTop: 14,
+                      }}
+                    >
+                      <Text style={{ fontSize: 13, color: '#166534', fontWeight: '600', lineHeight: 20 }}>
+                        Lịch dự kiến:{' '}
+                        <Text style={{ fontWeight: '800' }}>
+                          {dayjs(date).format('dddd, DD/MM/YYYY')}, {timeSlot} – {endDt.format('HH:mm')}
+                          {isNextDay ? ' (ngày hôm sau)' : ''}
+                        </Text>{' '}
+                        · thời lượng {durTotal < 1 ? `${Math.round(durTotal * 60)} phút` : `${Number(durTotal.toFixed(2)).toString().replace('.', ',')} giờ`}.
+                        {cleanPriceNum > 0
+                          ? ` Giá mở đầu để deal: ${new Intl.NumberFormat('vi-VN').format(cleanPriceNum)}₫.`
+                          : ''}
+                      </Text>
+                    </View>
+                  );
+                })()}
               </View>
             </View>
           )}
@@ -1821,6 +2334,32 @@ export default function BookingScreen() {
               <Text style={{ fontSize: 20, fontWeight: '800', color: COLORS.gray[900] }}>
                 Chi tiết công việc
               </Text>
+
+              {/* Banner thông báo khi đã có ảnh sự cố được đính kèm */}
+              {photos.length > 0 && !photoAnalysis && (
+                <View
+                  style={{
+                    backgroundColor: '#F0FDF4',
+                    borderColor: '#86EFAC',
+                    borderWidth: 1.5,
+                    borderRadius: 14,
+                    padding: 12,
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 10,
+                  }}
+                >
+                  <Sparkles size={20} color="#16A34A" />
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 13, fontWeight: '800', color: '#166534' }}>
+                      Đã đính kèm {photos.length} ảnh sự cố
+                    </Text>
+                    <Text style={{ fontSize: 12, color: '#15803D', marginTop: 2 }}>
+                      Bấm nút màu xanh "Phân tích ảnh sự cố bằng AI" bên dưới để hệ thống nhận diện và điền mô tả ngay!
+                    </Text>
+                  </View>
+                </View>
+              )}
 
               <Input
                 label="Tiêu đề yêu cầu *"
@@ -1955,21 +2494,26 @@ export default function BookingScreen() {
               </View>
 
               {/* Feature 17: Phân tích ảnh sự cố bằng AI */}
-              <TouchableOpacity
+              <ScalePressable
                 onPress={handleAnalyzeIssuePhoto}
                 disabled={analyzeIssuePhoto.isPending || isAnalyzingPhoto}
                 style={{
                   flexDirection: 'row',
                   alignItems: 'center',
-                  gap: 8,
-                  backgroundColor: '#1E1E24',
+                  gap: 10,
+                  backgroundColor: COLORS.primary,
                   borderRadius: 14,
                   padding: 14,
                   opacity: analyzeIssuePhoto.isPending || isAnalyzingPhoto ? 0.7 : 1,
+                  shadowColor: COLORS.primary,
+                  shadowOffset: { width: 0, height: 4 },
+                  shadowOpacity: 0.25,
+                  shadowRadius: 8,
+                  elevation: 3,
                 }}
               >
-                <Text style={{ fontSize: 16 }}>📷</Text>
-                <Text style={{ color: '#fff', fontWeight: '700', flex: 1 }}>
+                <Sparkles size={20} color="#fff" />
+                <Text style={{ color: '#fff', fontWeight: '800', fontSize: 15, flex: 1 }}>
                   {analyzeIssuePhoto.isPending || isAnalyzingPhoto
                     ? 'AI đang phân tích ảnh...'
                     : 'Phân tích ảnh sự cố bằng AI'}
@@ -1977,9 +2521,9 @@ export default function BookingScreen() {
                 {analyzeIssuePhoto.isPending || isAnalyzingPhoto ? (
                   <ActivityIndicator size="small" color="#fff" />
                 ) : (
-                  <ChevronRight size={16} color="rgba(255,255,255,0.4)" />
+                  <ChevronRight size={18} color="rgba(255,255,255,0.7)" />
                 )}
-              </TouchableOpacity>
+              </ScalePressable>
 
               {photoAnalysis?.available && (
                 <Card style={{ backgroundColor: COLORS.primaryLight, gap: 6 }}>
@@ -2006,27 +2550,27 @@ export default function BookingScreen() {
 
               {/* AI Price estimate */}
               {description.length > 20 && (
-                <TouchableOpacity
+                <ScalePressable
                   onPress={handleEstimatePrice}
                   style={{
                     flexDirection: 'row',
                     alignItems: 'center',
                     gap: 8,
-                    backgroundColor: '#1E1E24',
+                    backgroundColor: '#0F766E',
                     borderRadius: 14,
                     padding: 14,
                   }}
                 >
-                  <Sparkles size={18} color={COLORS.primary} />
+                  <Sparkles size={18} color="#5EEAD4" />
                   <Text style={{ color: '#fff', fontWeight: '700', flex: 1 }}>
                     {estimatePrice.isPending
                       ? 'Đang ước tính giá...'
                       : 'AI ước tính giá thị trường'}
                   </Text>
                   {!estimatePrice.isPending && (
-                    <ChevronRight size={16} color="rgba(255,255,255,0.4)" />
+                    <ChevronRight size={16} color="rgba(255,255,255,0.7)" />
                   )}
-                </TouchableOpacity>
+                </ScalePressable>
               )}
 
               {priceEstimate && (
@@ -2058,7 +2602,11 @@ export default function BookingScreen() {
                 <Row
                   icon="📍"
                   label="Địa chỉ"
-                  value={`${address.full_address}, ${address.district}, ${address.city}`}
+                  value={
+                    [address.full_address, address.ward, address.district, address.city]
+                      .filter(Boolean)
+                      .join(', ') || 'Chưa rõ địa chỉ'
+                  }
                 />
                 {address.notes ? (
                   <Row icon="📝" label="Ghi chú địa chỉ" value={address.notes} />

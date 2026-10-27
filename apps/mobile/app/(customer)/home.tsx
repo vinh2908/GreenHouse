@@ -81,27 +81,75 @@ const DEMO_SERVICES: ServiceItem[] = [
     emoji: '🧹',
     slug: 'housekeeping_hourly',
   },
-  { id: '2', name: 'Sửa điện gia dụng', price: 'Báo giá theo việc', emoji: '⚡', slug: 'handyman' },
-  { id: '3', name: 'Dọn nhà', price: 'Từ 150.000₫/ca', emoji: '🏠', slug: 'house_cleaning' },
-  { id: '4', name: 'Nấu ăn', price: 'Từ 120.000₫/bữa', emoji: '🍳', slug: 'cooking' },
-  { id: '5', name: 'Chuyển nhà', price: 'Báo giá theo chuyến', emoji: '📦', slug: 'moving_help' },
-  { id: '6', name: 'Chăm trẻ', price: 'Từ 55.000₫/giờ', emoji: '👶', slug: 'family_care' },
-  { id: '7', name: 'Sửa ống nước', price: 'Báo giá theo việc', emoji: '🔧', slug: 'handyman' },
-  { id: '8', name: 'Giặt ủi', price: 'Từ 20.000₫/kg', emoji: '👔', slug: 'laundry' },
+  {
+    id: '2',
+    name: 'Sửa điện gia dụng',
+    price: 'Báo giá theo việc',
+    emoji: '⚡',
+    slug: 'electrician',
+  },
+  {
+    id: '3',
+    name: 'Dọn nhà',
+    price: 'Từ 150.000₫/ca',
+    emoji: '🏠',
+    slug: 'house_cleaning',
+  },
+  {
+    id: '4',
+    name: 'Nấu ăn',
+    price: 'Từ 120.000₫/bữa',
+    emoji: '🍳',
+    slug: 'cooking',
+  },
+  {
+    id: '5',
+    name: 'Chuyển nhà',
+    price: 'Báo giá theo chuyến',
+    emoji: '📦',
+    slug: 'moving_help',
+  },
+  {
+    id: '6',
+    name: 'Chăm trẻ',
+    price: 'Từ 55.000₫/giờ',
+    emoji: '👶',
+    slug: 'child_care',
+  },
+  {
+    id: '7',
+    name: 'Sửa ống nước',
+    price: 'Báo giá theo việc',
+    emoji: '🔧',
+    slug: 'plumbing',
+  },
+  {
+    id: '8',
+    name: 'Giặt ủi',
+    price: 'Từ 20.000₫/kg',
+    emoji: '👔',
+    slug: 'laundry',
+  },
   {
     id: '9',
     name: 'Vệ sinh máy lạnh',
-    price: 'Từ 250.000₫/máy',
+    price: 'Từ 150.000₫/máy',
     emoji: '❄️',
-    slug: 'deep_cleaning',
+    slug: 'ac_repair',
   },
-  { id: '10', name: 'Chăm người già', price: 'Từ 70.000₫/giờ', emoji: '👵', slug: 'family_care' },
+  {
+    id: '10',
+    name: 'Chăm người già',
+    price: 'Từ 70.000₫/giờ',
+    emoji: '👵',
+    slug: 'elderly_care',
+  },
   {
     id: '11',
     name: 'Bốc hàng, vận chuyển',
     price: 'Deal giá với thợ',
     emoji: '🚛',
-    slug: 'moving_help',
+    slug: 'handyman',
   },
   {
     id: '12',
@@ -245,6 +293,7 @@ export default function CustomerHomeScreen() {
   const voucherScrollRef = useRef<ScrollView>(null);
   const [activeVoucherIdx, setActiveVoucherIdx] = useState(0);
   const isUserScrollingVouchers = useRef(false);
+  const [voucherCardWidth, setVoucherCardWidth] = useState(272);
 
   // Month Calendar state
   const [calendarOpen, setCalendarOpen] = useState(false);
@@ -269,8 +318,13 @@ export default function CustomerHomeScreen() {
   );
   const [quickDate, setQuickDate] = useState(dayjs().add(1, 'day').format('YYYY-MM-DD'));
   const [quickTimeSlot, setQuickTimeSlot] = useState('19:00');
+  const [quickCustomTimeOpen, setQuickCustomTimeOpen] = useState(false);
+  const [quickCustomTimeInput, setQuickCustomTimeInput] = useState('');
   const [quickDuration, setQuickDuration] = useState(2);
   const [isSubmittingQuick, setIsSubmittingQuick] = useState(false);
+
+  // Tìm kiếm dịch vụ tương tác (Item 8)
+  const [serviceSearchQuery, setServiceSearchQuery] = useState('');
 
   // Xác định khu vực hiện tại là Đà Nẵng hay HCM
   const isDaNang = useMemo(() => {
@@ -338,7 +392,7 @@ export default function CustomerHomeScreen() {
       if (isUserScrollingVouchers.current) return;
       setActiveVoucherIdx(prev => {
         const next = (prev + 1) % vouchers.length;
-        voucherScrollRef.current?.scrollTo({ x: next * 272, animated: true });
+        voucherScrollRef.current?.scrollTo({ x: next * voucherCardWidth, animated: true });
         return next;
       });
     }, 4000);
@@ -484,14 +538,16 @@ export default function CustomerHomeScreen() {
       maxZoom: 19
     }).addTo(map);
 
-    // Marker vị trí người dùng
+    ${currentCoords ? `
+    // Marker vị trí người dùng thật
     const userIcon = L.divIcon({
       className: 'custom-user-pin',
       html: '<div class="user-pill"><span>📍</span><span>Bạn ở đây</span></div>',
       iconSize: [null, null],
       iconAnchor: [35, 12]
     });
-    L.marker(center, { icon: userIcon }).addTo(map);
+    L.marker([${currentCoords.latitude}, ${currentCoords.longitude}], { icon: userIcon }).addTo(map);
+    ` : ''}
 
     const pins = ${pinsJson};
     pins.forEach(p => {
@@ -567,7 +623,7 @@ export default function CustomerHomeScreen() {
     if (district && city) return `${district}, ${city}`;
     if (city) return city;
     if (district) return district;
-    return 'Quận 1, Hồ Chí Minh';
+    return 'Chưa xác định vị trí';
   };
 
   useEffect(() => {
@@ -594,21 +650,38 @@ export default function CustomerHomeScreen() {
                 });
               }
             } else {
-              setCurrentLocationName('Quận 1, Hồ Chí Minh');
+              setCurrentLocationName('Chưa xác định vị trí');
+              setCurrentCoords(null);
             }
           })
           .catch(() => {
-            setCurrentLocationName('Quận 1, Hồ Chí Minh');
+            setCurrentLocationName('Chưa xác định vị trí');
+            setCurrentCoords(null);
           });
       })
       .catch(() => {
-        setCurrentLocationName('Quận 1, Hồ Chí Minh');
+        setCurrentLocationName('Chưa xác định vị trí');
+        setCurrentCoords(null);
       });
   }, []);
 
-  // Xử lý nút Chụp ảnh ngay (WOW 2)
+  // Xử lý nút Chụp ảnh ngay (WOW 2) - hỗ trợ cả app và web
   const handleTakeIssuePhoto = async () => {
     try {
+      if (Platform.OS === 'web') {
+        const result = await ImagePicker.launchImageLibraryAsync({
+          mediaTypes: ImagePicker.MediaTypeOptions.Images,
+          allowsEditing: true,
+          quality: 0.8,
+        });
+        if (!result.canceled && result.assets[0]?.uri) {
+          router.push({
+            pathname: '/(customer)/booking',
+            params: { attached_photo: result.assets[0].uri, auto_analyze: '1' },
+          });
+        }
+        return;
+      }
       const { status } = await ImagePicker.requestCameraPermissionsAsync();
       if (status !== 'granted') {
         Toast.show({ type: 'error', text1: 'Cần quyền camera để chụp ảnh sự cố' });
@@ -621,11 +694,26 @@ export default function CustomerHomeScreen() {
       if (!result.canceled && result.assets[0]?.uri) {
         router.push({
           pathname: '/(customer)/booking',
-          params: { attached_photo: result.assets[0].uri },
+          params: { attached_photo: result.assets[0].uri, auto_analyze: '1' },
         });
       }
     } catch {
-      Toast.show({ type: 'error', text1: 'Không thể mở máy ảnh' });
+      // Fallback mở thư viện ảnh nếu mở camera thất bại
+      try {
+        const result = await ImagePicker.launchImageLibraryAsync({
+          mediaTypes: ImagePicker.MediaTypeOptions.Images,
+          allowsEditing: true,
+          quality: 0.8,
+        });
+        if (!result.canceled && result.assets[0]?.uri) {
+          router.push({
+            pathname: '/(customer)/booking',
+            params: { attached_photo: result.assets[0].uri, auto_analyze: '1' },
+          });
+        }
+      } catch {
+        Toast.show({ type: 'error', text1: 'Không thể mở máy ảnh hoặc thư viện ảnh' });
+      }
     }
   };
 
@@ -640,13 +728,14 @@ export default function CustomerHomeScreen() {
         }
       }
       const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsMultipleSelection: false,
         quality: 0.8,
       });
       if (!result.canceled && result.assets[0]?.uri) {
         router.push({
           pathname: '/(customer)/booking',
-          params: { attached_photo: result.assets[0].uri },
+          params: { attached_photo: result.assets[0].uri, auto_analyze: '1' },
         });
       }
     } catch {
@@ -716,7 +805,7 @@ export default function CustomerHomeScreen() {
     }
   }, [quickDate, quickTimeSlot, quickDuration]);
 
-  // Submit từ khối Quick Booking
+  // Submit từ khối Quick Booking - map chip sang dịch vụ catalog thật (Item 2)
   const handleQuickSubmit = () => {
     if (!quickDescription.trim()) {
       Toast.show({ type: 'error', text1: 'Vui lòng nhập mô tả công việc bạn cần' });
@@ -728,30 +817,55 @@ export default function CustomerHomeScreen() {
       return;
     }
 
+    let matchedSvc: any = undefined;
+    if (quickServiceChip === 'don_nha') {
+      matchedSvc = services?.find((s: any) =>
+        ['house_cleaning', 'housekeeping_hourly', 'deep_cleaning'].includes(s.slug),
+      );
+    } else if (quickServiceChip === 'boc_hang') {
+      matchedSvc = services?.find((s: any) =>
+        ['moving_help', 'handyman'].includes(s.slug),
+      );
+    } else if (quickServiceChip === 'may_lanh') {
+      matchedSvc = services?.find((s: any) =>
+        ['ac_repair', 'electrician', 'handyman', 'deep_cleaning'].includes(s.slug),
+      );
+    }
+
+    const bookingParams: Record<string, string> = {
+      target_price: String(priceNum),
+      preferred_date: quickDate,
+      preferred_time_start: quickTimeSlot,
+      duration_hours: String(quickDuration),
+      prefill_description: quickDescription,
+      prefill_title: quickDescription.slice(0, 48),
+    };
+
+    if (matchedSvc) {
+      bookingParams.service_id = matchedSvc._id;
+      bookingParams.service_slug = matchedSvc.slug;
+    } else {
+      bookingParams.custom_service_name =
+        quickServiceChip === 'boc_hang'
+          ? 'Bốc hàng, vận chuyển'
+          : quickServiceChip === 'don_nha'
+            ? 'Dọn dẹp nhà cửa'
+            : quickServiceChip === 'may_lanh'
+              ? 'Vệ sinh máy lạnh'
+              : 'Dịch vụ theo yêu cầu';
+    }
+
     router.push({
       pathname: '/(customer)/booking',
-      params: {
-        custom_service_name:
-          quickServiceChip === 'boc_hang'
-            ? 'Bốc hàng, vận chuyển'
-            : quickServiceChip === 'don_nha'
-              ? 'Dọn dẹp nhà cửa'
-              : quickServiceChip === 'may_lanh'
-                ? 'Vệ sinh máy lạnh'
-                : 'Dịch vụ theo yêu cầu',
-        target_price: String(priceNum),
-        preferred_date: quickDate,
-        preferred_time_start: quickTimeSlot,
-        duration_hours: String(quickDuration),
-        prefill_description: quickDescription,
-        prefill_title: quickDescription.slice(0, 48),
-      },
+      params: bookingParams,
     });
   };
 
   const activeJobs =
-    recentJobs?.filter((j: { status: string }) => !['completed', 'cancelled'].includes(j.status)) ??
-    [];
+    recentJobs?.filter(
+      (j: { status: string }) =>
+        !['completed', 'cancelled', 'refunded', 'disputed'].includes(j.status),
+    ) ?? [];
 
   const completedJobs =
     recentJobs?.filter((j: { status: string }) => j.status === 'completed') ?? [];
@@ -793,7 +907,14 @@ export default function CustomerHomeScreen() {
             paddingTop: Math.max(insets.top + 8, 20),
             paddingBottom: 18,
             borderBottomWidth: 1,
-            borderBottomColor: '#F1F5F9',
+            borderBottomColor: '#E2E8F0',
+            borderTopWidth: 3,
+            borderTopColor: '#22C55E',
+            shadowColor: '#16A34A',
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.06,
+            shadowRadius: 10,
+            elevation: 2,
           }}
         >
           {/* Top row: Location pill on left, Notification & User Avatar on right */}
@@ -812,20 +933,26 @@ export default function CustomerHomeScreen() {
               style={{
                 flexDirection: 'row',
                 alignItems: 'center',
-                backgroundColor: '#F1F5F9',
+                backgroundColor: currentCoords ? '#F1F5F9' : '#FEF3C7',
                 paddingVertical: 7,
                 paddingHorizontal: 12,
                 borderRadius: 20,
                 gap: 6,
                 maxWidth: '65%',
+                borderWidth: currentCoords ? 0 : 1,
+                borderColor: '#FDE68A',
               }}
             >
-              <MapPin size={15} color={COLORS.primary} />
+              <MapPin size={15} color={currentCoords ? COLORS.primary : '#D97706'} />
               <Text
-                style={{ fontSize: 13, fontWeight: '700', color: COLORS.gray[800] }}
+                style={{
+                  fontSize: 13,
+                  fontWeight: '700',
+                  color: currentCoords ? COLORS.gray[800] : '#B45309',
+                }}
                 numberOfLines={1}
               >
-                {currentLocationName}
+                {currentCoords ? currentLocationName : 'Chưa định vị — Bấm lấy vị trí'}
               </Text>
             </TouchableOpacity>
 
@@ -906,28 +1033,43 @@ export default function CustomerHomeScreen() {
             {greeting.subtitle}
           </Text>
 
-          {/* Search bar */}
-          <TouchableOpacity
-            activeOpacity={0.9}
-            onPress={() => router.push('/(customer)/booking')}
+          {/* Interactive Search Bar (Item 8) */}
+          <View
             style={{
               backgroundColor: '#FFFFFF',
               borderRadius: 14,
               flexDirection: 'row',
               alignItems: 'center',
               paddingHorizontal: 14,
-              paddingVertical: 12,
               marginTop: 16,
               gap: 10,
               borderWidth: 1.5,
-              borderColor: '#E2E8F0',
+              borderColor: serviceSearchQuery.trim() ? COLORS.primary : '#E2E8F0',
             }}
           >
-            <Search size={18} color={COLORS.gray[400]} />
-            <Text style={{ flex: 1, color: COLORS.gray[400], fontSize: fs(14), fontWeight: '500' }}>
-              Tìm dịch vụ... ví dụ: máy lạnh, dọn nhà
-            </Text>
-          </TouchableOpacity>
+            <Search size={18} color={serviceSearchQuery.trim() ? COLORS.primary : COLORS.gray[400]} />
+            <TextInput
+              style={{
+                flex: 1,
+                paddingVertical: 12,
+                fontSize: fs(14),
+                color: COLORS.gray[900],
+                fontWeight: '500',
+              }}
+              placeholder="Tìm dịch vụ... ví dụ: máy lạnh, dọn nhà, điện"
+              placeholderTextColor={COLORS.gray[400]}
+              value={serviceSearchQuery}
+              onChangeText={setServiceSearchQuery}
+            />
+            {serviceSearchQuery.trim().length > 0 && (
+              <TouchableOpacity
+                onPress={() => setServiceSearchQuery('')}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.gray[400] }}>✕</Text>
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
 
         {/* ── 2. WOW 1: THỢ ĐANG Ở GẦN BẠN (Live Map + Real Nearby Helpers) ─ */}
@@ -1113,13 +1255,31 @@ export default function CustomerHomeScreen() {
                       </View>
                     </View>
 
-                    <View style={{ alignItems: 'flex-end' }}>
+                    <View style={{ alignItems: 'flex-end', gap: 5 }}>
                       <Text style={{ fontSize: 13, fontWeight: '800', color: COLORS.primary }}>
                         {helper.distance}
                       </Text>
-                      <Text style={{ fontSize: 11, color: COLORS.gray[400], marginTop: 2 }}>
-                        {helper.eta}
-                      </Text>
+                      <ScalePressable
+                        onPress={() =>
+                          router.push({
+                            pathname: '/(customer)/booking',
+                            params: {
+                              favorite_helper_id: helper.id,
+                              favorite_helper_name: helper.name,
+                            },
+                          })
+                        }
+                        style={{
+                          backgroundColor: isSelected ? '#15803D' : COLORS.primary,
+                          paddingHorizontal: 10,
+                          paddingVertical: 5,
+                          borderRadius: 8,
+                        }}
+                      >
+                        <Text style={{ fontSize: 11, fontWeight: '800', color: '#fff' }}>
+                          Đặt thợ →
+                        </Text>
+                      </ScalePressable>
                     </View>
                   </TouchableOpacity>
                 );
@@ -1156,19 +1316,34 @@ export default function CustomerHomeScreen() {
             </Svg>
 
             {/* Shimmer light sweep */}
-            {!reduceMotion && (
-              <Animated.View
-                pointerEvents="none"
-                style={{
-                  position: 'absolute',
-                  top: -60,
-                  bottom: -60,
-                  width: 70,
-                  backgroundColor: 'rgba(255, 255, 255, 0.28)',
-                  transform: [{ translateX: shineAnim }, { rotate: '25deg' }],
-                }}
-              />
-            )}
+            {!reduceMotion &&
+              (Platform.OS === 'web' ? (
+                <View
+                  pointerEvents="none"
+                  style={{
+                    position: 'absolute',
+                    top: -60,
+                    bottom: -60,
+                    width: 70,
+                    backgroundColor: 'rgba(255, 255, 255, 0.28)',
+                    // @ts-ignore
+                    animation: 'aiSweep 3.6s ease-in-out infinite',
+                    transform: [{ rotate: '25deg' }],
+                  }}
+                />
+              ) : (
+                <Animated.View
+                  pointerEvents="none"
+                  style={{
+                    position: 'absolute',
+                    top: -60,
+                    bottom: -60,
+                    width: 70,
+                    backgroundColor: 'rgba(255, 255, 255, 0.28)',
+                    transform: [{ translateX: shineAnim }, { rotate: '25deg' }],
+                  }}
+                />
+              ))}
 
             {/* Badge */}
             <View
@@ -1341,7 +1516,7 @@ export default function CustomerHomeScreen() {
                 }}
                 onMomentumScrollEnd={e => {
                   const offsetX = e.nativeEvent.contentOffset.x;
-                  const idx = Math.round(offsetX / 272);
+                  const idx = Math.round(offsetX / voucherCardWidth);
                   setActiveVoucherIdx(Math.max(0, Math.min(idx, vouchers.length - 1)));
                 }}
                 scrollEventThrottle={16}
@@ -1356,6 +1531,12 @@ export default function CustomerHomeScreen() {
                   return (
                     <View
                       key={v.code || v._id}
+                      onLayout={e => {
+                        const w = e.nativeEvent.layout.width;
+                        if (w > 0 && Math.abs(w + 12 - voucherCardWidth) > 2) {
+                          setVoucherCardWidth(w + 12);
+                        }
+                      }}
                       style={{
                         width: 260,
                         backgroundColor: '#FFFFFF',
@@ -1505,90 +1686,130 @@ export default function CustomerHomeScreen() {
 
           {/* 3-Column Grid */}
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-            {DEMO_SERVICES.map(svc => {
-              const isCustom = svc.isCustom;
+            {(() => {
+              const q = serviceSearchQuery.trim().toLowerCase();
+              const list = q
+                ? DEMO_SERVICES.filter(
+                    s => s.name.toLowerCase().includes(q) || s.slug.toLowerCase().includes(q),
+                  )
+                : DEMO_SERVICES;
 
-              return (
-                <TouchableOpacity
-                  key={svc.id}
-                  activeOpacity={0.8}
-                  onPress={() => {
-                    if (isCustom) {
-                      router.push({
-                        pathname: '/(customer)/booking',
-                        params: { custom_service_name: 'Dịch vụ theo yêu cầu' },
-                      });
-                    } else {
-                      const matched = services?.find(s => s.slug === svc.slug);
-                      router.push({
-                        pathname: '/(customer)/booking',
-                        params: { service_id: matched?._id ?? '', service_slug: svc.slug },
-                      });
-                    }
-                  }}
-                  style={{
-                    width: '31.5%',
-                    backgroundColor: isCustom ? '#F0FDF4' : '#FFFFFF',
-                    borderRadius: 14,
-                    paddingVertical: 12,
-                    paddingHorizontal: 8,
-                    alignItems: 'center',
-                    borderWidth: 1.5,
-                    borderColor: isCustom ? COLORS.primary : '#F1F5F9',
-                    position: 'relative',
-                    minHeight: 105,
-                    justifyContent: 'space-between',
-                  }}
-                >
-                  {/* Badge MỚI cho item 12 */}
-                  {svc.badge && (
-                    <View
+              if (list.length === 0) {
+                return (
+                  <View style={{ width: '100%', padding: 20, alignItems: 'center' }}>
+                    <Text style={{ fontSize: 13, color: COLORS.gray[500] }}>
+                      Không tìm thấy dịch vụ phù hợp với từ khóa "{serviceSearchQuery}".
+                    </Text>
+                  </View>
+                );
+              }
+
+              return list.map(svc => {
+                const isCustom = svc.isCustom;
+                const matched =
+                  services?.find(s => s.slug === svc.slug) ||
+                  services?.find(s => s.slug.includes(svc.slug.split('_')[0])) ||
+                  services?.find(s =>
+                    s.name.toLowerCase().includes(svc.name.toLowerCase().split(' ')[0]),
+                  );
+                const displayPrice = matched?.base_price_min
+                  ? `Từ ${matched.base_price_min.toLocaleString('vi-VN')}₫`
+                  : svc.isCustom
+                    ? 'Deal giá với thợ'
+                    : '';
+
+                return (
+                  <ScalePressable
+                    key={svc.id}
+                    onPress={() => {
+                      if (isCustom) {
+                        router.push({
+                          pathname: '/(customer)/booking',
+                          params: { custom_service_name: 'Dịch vụ theo yêu cầu' },
+                        });
+                      } else if (matched) {
+                        router.push({
+                          pathname: '/(customer)/booking',
+                          params: { service_id: matched._id, service_slug: matched.slug },
+                        });
+                      } else {
+                        router.push({
+                          pathname: '/(customer)/booking',
+                          params: { custom_service_name: svc.name },
+                        });
+                        Toast.show({
+                          type: 'info',
+                          text1: `Dịch vụ "${svc.name}"`,
+                          text2: 'Đang mở theo yêu cầu riêng để bạn tự thỏa thuận giá với thợ',
+                        });
+                      }
+                    }}
+                    style={{
+                      width: '31.5%',
+                      backgroundColor: isCustom ? '#F0FDF4' : '#FFFFFF',
+                      borderRadius: 14,
+                      paddingVertical: 12,
+                      paddingHorizontal: 8,
+                      alignItems: 'center',
+                      borderWidth: 1.5,
+                      borderColor: isCustom ? COLORS.primary : '#F1F5F9',
+                      position: 'relative',
+                      minHeight: 105,
+                      justifyContent: 'space-between',
+                    }}
+                  >
+                    {/* Badge MỚI cho item 12 */}
+                    {svc.badge && (
+                      <View
+                        style={{
+                          position: 'absolute',
+                          top: 6,
+                          right: 6,
+                          backgroundColor: '#DCFCE7',
+                          paddingHorizontal: 5,
+                          paddingVertical: 2,
+                          borderRadius: 6,
+                        }}
+                      >
+                        <Text style={{ fontSize: 9, fontWeight: '900', color: COLORS.primary }}>
+                          {svc.badge}
+                        </Text>
+                      </View>
+                    )}
+
+                    <Text style={{ fontSize: 26, marginVertical: 4 }}>{svc.emoji}</Text>
+
+                    <Text
                       style={{
-                        position: 'absolute',
-                        top: 6,
-                        right: 6,
-                        backgroundColor: '#DCFCE7',
-                        paddingHorizontal: 5,
-                        paddingVertical: 2,
-                        borderRadius: 6,
+                        fontSize: 11.5,
+                        fontWeight: '800',
+                        color: isCustom ? COLORS.primary : COLORS.gray[900],
+                        textAlign: 'center',
+                        lineHeight: 14,
                       }}
+                      numberOfLines={2}
                     >
-                      <Text style={{ fontSize: 9, fontWeight: '900', color: COLORS.primary }}>
-                        {svc.badge}
+                      {svc.name}
+                    </Text>
+
+                    {displayPrice ? (
+                      <Text
+                        style={{
+                          fontSize: 10,
+                          fontWeight: '600',
+                          color: isCustom ? '#15803D' : COLORS.gray[500],
+                          textAlign: 'center',
+                          marginTop: 4,
+                        }}
+                        numberOfLines={1}
+                      >
+                        {displayPrice}
                       </Text>
-                    </View>
-                  )}
-
-                  <Text style={{ fontSize: 26, marginVertical: 4 }}>{svc.emoji}</Text>
-
-                  <Text
-                    style={{
-                      fontSize: 11.5,
-                      fontWeight: '800',
-                      color: isCustom ? COLORS.primary : COLORS.gray[900],
-                      textAlign: 'center',
-                      lineHeight: 14,
-                    }}
-                    numberOfLines={2}
-                  >
-                    {svc.name}
-                  </Text>
-
-                  <Text
-                    style={{
-                      fontSize: 10,
-                      fontWeight: '600',
-                      color: isCustom ? '#15803D' : COLORS.gray[500],
-                      textAlign: 'center',
-                      marginTop: 4,
-                    }}
-                    numberOfLines={1}
-                  >
-                    {svc.price}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
+                    ) : null}
+                  </ScalePressable>
+                );
+              });
+            })()}
           </View>
 
           {/* 2 Callout Cards: SOS & AI Assistant */}
@@ -2012,13 +2233,117 @@ export default function CustomerHomeScreen() {
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                   <Clock size={16} color={COLORS.primary} />
                   <Text style={{ fontSize: 14, fontWeight: '700', color: COLORS.gray[800] }}>
-                    {quickTimeSlot}
+                    Giờ bắt đầu: <Text style={{ color: COLORS.primary, fontWeight: '800' }}>{quickTimeSlot}</Text>
                   </Text>
                 </View>
-                <Text style={{ fontSize: 12, fontWeight: '700', color: COLORS.primary }}>
-                  Chọn giờ
-                </Text>
+                <TouchableOpacity
+                  activeOpacity={0.7}
+                  onPress={() => setQuickCustomTimeOpen(prev => !prev)}
+                  style={{
+                    backgroundColor: quickCustomTimeOpen ? '#DCFCE7' : '#F1F5F9',
+                    paddingHorizontal: 8,
+                    paddingVertical: 3,
+                    borderRadius: 6,
+                    borderWidth: 1,
+                    borderColor: quickCustomTimeOpen ? COLORS.primary : '#E2E8F0',
+                  }}
+                >
+                  <Text style={{ fontSize: 12, fontWeight: '700', color: COLORS.primary }}>
+                    {quickCustomTimeOpen ? 'Đóng giờ tùy chọn ▲' : 'Chọn giờ (giờ lẻ) ▼'}
+                  </Text>
+                </TouchableOpacity>
               </View>
+
+              {/* Custom / Odd time selector panel (Item 10) */}
+              {quickCustomTimeOpen && (
+                <View
+                  style={{
+                    backgroundColor: '#FFFFFF',
+                    borderRadius: 12,
+                    padding: 10,
+                    borderWidth: 1.5,
+                    borderColor: '#E2E8F0',
+                    marginBottom: 10,
+                    gap: 8,
+                  }}
+                >
+                  <Text style={{ fontSize: 12, fontWeight: '700', color: COLORS.gray[700] }}>
+                    Nhập hoặc chọn giờ lẻ mong muốn:
+                  </Text>
+                  <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
+                    <TextInput
+                      style={{
+                        flex: 1,
+                        backgroundColor: '#F8FAFC',
+                        borderWidth: 1,
+                        borderColor: COLORS.primary,
+                        borderRadius: 8,
+                        paddingHorizontal: 10,
+                        paddingVertical: 6,
+                        fontSize: 14,
+                        fontWeight: '800',
+                        color: COLORS.gray[900],
+                      }}
+                      placeholder="VD: 19:30 hoặc 21:30"
+                      value={quickCustomTimeInput}
+                      onChangeText={setQuickCustomTimeInput}
+                      keyboardType="numbers-and-punctuation"
+                    />
+                    <ScalePressable
+                      onPress={() => {
+                        const trimmed = quickCustomTimeInput.trim();
+                        if (/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/.test(trimmed)) {
+                          setQuickTimeSlot(trimmed);
+                          setQuickCustomTimeOpen(false);
+                          Toast.show({ type: 'success', text1: `Đã chọn giờ: ${trimmed}` });
+                        } else {
+                          Toast.show({ type: 'error', text1: 'Định dạng giờ không hợp lệ (VD: 19:30)' });
+                        }
+                      }}
+                      style={{
+                        backgroundColor: COLORS.primary,
+                        paddingHorizontal: 12,
+                        paddingVertical: 8,
+                        borderRadius: 8,
+                      }}
+                    >
+                      <Text style={{ color: '#fff', fontWeight: '800', fontSize: 12 }}>Áp dụng</Text>
+                    </ScalePressable>
+                  </View>
+
+                  {/* Odd time quick chips */}
+                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+                    {['07:30', '08:30', '11:30', '13:30', '17:30', '19:30', '20:30', '21:30'].map(ot => (
+                      <TouchableOpacity
+                        key={ot}
+                        onPress={() => {
+                          setQuickTimeSlot(ot);
+                          setQuickCustomTimeInput(ot);
+                          setQuickCustomTimeOpen(false);
+                        }}
+                        style={{
+                          paddingHorizontal: 8,
+                          paddingVertical: 4,
+                          borderRadius: 6,
+                          backgroundColor: quickTimeSlot === ot ? '#DCFCE7' : '#F1F5F9',
+                          borderWidth: 1,
+                          borderColor: quickTimeSlot === ot ? COLORS.primary : '#E2E8F0',
+                        }}
+                      >
+                        <Text
+                          style={{
+                            fontSize: 11,
+                            fontWeight: '700',
+                            color: quickTimeSlot === ot ? COLORS.primary : COLORS.gray[700],
+                          }}
+                        >
+                          {ot}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </View>
+              )}
 
               {/* 2 Rows of Time chips */}
               <View style={{ gap: 8 }}>
@@ -2533,19 +2858,31 @@ export default function CustomerHomeScreen() {
 
           {activeJobs.length > 0 ? (
             activeJobs.slice(0, 1).map((j: any) => {
-              // 4 nấc tiến trình: Đã nhận việc -> Đang đến -> Đang làm -> Nghiệm thu
+              // 4 nấc tiến trình: Đã nhận việc -> Đang đến -> Đang làm -> Nghiệm thu (Item 11)
               const step1Done = [
-                'bidding',
                 'confirmed',
+                'helper_on_the_way',
                 'on_the_way',
+                'helper_arrived',
                 'in_progress',
+                'pending_review',
                 'completed',
               ].includes(j.status);
-              const step2Done = ['confirmed', 'on_the_way', 'in_progress', 'completed'].includes(
-                j.status,
-              );
-              const step3Done = ['in_progress', 'completed'].includes(j.status);
-              const step4Done = j.status === 'completed';
+              const step2Done = [
+                'helper_on_the_way',
+                'on_the_way',
+                'helper_arrived',
+                'in_progress',
+                'pending_review',
+                'completed',
+              ].includes(j.status);
+              const step3Done = [
+                'helper_arrived',
+                'in_progress',
+                'pending_review',
+                'completed',
+              ].includes(j.status);
+              const step4Done = ['pending_review', 'completed'].includes(j.status);
 
               const timelineSteps = [
                 { label: 'Đã nhận việc', active: step1Done },
@@ -2554,36 +2891,61 @@ export default function CustomerHomeScreen() {
                 { label: 'Nghiệm thu', active: step4Done },
               ];
 
-              let statusBadgeText = 'Đã nhận việc';
-              let statusBadgeBg = '#DCFCE7';
-              let statusBadgeColor = '#15803D';
-              let statusDesc = 'Thợ đã nhận đơn và đang chuẩn bị dụng cụ đến điểm hẹn.';
+              let statusBadgeText = 'Đang tìm thợ';
+              let statusBadgeBg = '#FEF3C7';
+              let statusBadgeColor = '#D97706';
+              let statusDesc = 'Hệ thống đang điều phối và tìm thợ phù hợp nhất gần bạn.';
 
-              if (j.status === 'pending') {
+              if (j.status === 'open' || j.status === 'pending') {
                 statusBadgeText = 'Đang tìm thợ';
                 statusBadgeBg = '#FEF3C7';
                 statusBadgeColor = '#D97706';
                 statusDesc = 'Hệ thống đang điều phối và tìm thợ phù hợp nhất gần bạn.';
-              } else if (j.status === 'bidding') {
+              } else if (j.status === 'receiving_quotes' || j.status === 'bidding') {
                 statusBadgeText = 'Có báo giá mới';
                 statusBadgeBg = '#E0E7FF';
                 statusBadgeColor = '#4338CA';
                 statusDesc = 'Đã có thợ gửi báo giá, bấm để xem chi tiết và xác nhận thợ.';
+              } else if (j.status === 'quote_selected') {
+                statusBadgeText = 'Đã chọn thợ';
+                statusBadgeBg = '#E0F2FE';
+                statusBadgeColor = '#0369A1';
+                statusDesc = 'Bạn đã chọn báo giá, đang chờ thợ xác nhận tiếp nhận đơn.';
               } else if (j.status === 'confirmed') {
                 statusBadgeText = 'Thợ đã nhận';
                 statusBadgeBg = '#DCFCE7';
                 statusBadgeColor = '#15803D';
                 statusDesc = 'Thợ đã nhận việc và đang chuẩn bị dụng cụ đến điểm hẹn.';
-              } else if (j.status === 'on_the_way') {
+              } else if (j.status === 'helper_on_the_way' || j.status === 'on_the_way') {
                 statusBadgeText = 'Thợ đang đến';
                 statusBadgeBg = '#FFEDD5';
                 statusBadgeColor = '#C2410C';
                 statusDesc = 'Thợ đang trên đường di chuyển đến địa chỉ của bạn.';
+              } else if (j.status === 'helper_arrived') {
+                statusBadgeText = 'Đã đến nơi';
+                statusBadgeBg = '#E0F2FE';
+                statusBadgeColor = '#0284C7';
+                statusDesc = 'Thợ đã có mặt tại địa chỉ của bạn và chuẩn bị tiến hành công việc.';
               } else if (j.status === 'in_progress') {
                 statusBadgeText = 'Đang làm';
                 statusBadgeBg = '#DBEAFE';
                 statusBadgeColor = '#1D4ED8';
                 statusDesc = 'Thợ đang thực hiện công việc tại địa chỉ của bạn.';
+              } else if (j.status === 'pending_review') {
+                statusBadgeText = 'Chờ nghiệm thu';
+                statusBadgeBg = '#FEF3C7';
+                statusBadgeColor = '#B45309';
+                statusDesc = 'Thợ đã làm xong, bạn vui lòng kiểm tra và nghiệm thu công việc.';
+              } else if (j.status === 'completed') {
+                statusBadgeText = 'Đã hoàn thành';
+                statusBadgeBg = '#DCFCE7';
+                statusBadgeColor = '#15803D';
+                statusDesc = 'Công việc đã hoàn thành và thanh toán thành công.';
+              } else {
+                statusBadgeText = 'Đang xử lý';
+                statusBadgeBg = '#F1F5F9';
+                statusBadgeColor = '#475569';
+                statusDesc = 'Đơn dịch vụ đang được hệ thống xử lý.';
               }
 
               const displayDate = dayjs(j.scheduled_at || j.created_at).format('DD/MM');
@@ -2727,97 +3089,104 @@ export default function CustomerHomeScreen() {
           )}
         </View>
 
-        {/* Section: Đặt gần đây */}
-        <View style={{ paddingHorizontal: 16, marginTop: 24 }}>
-          <View
-            style={{
-              flexDirection: 'row',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              marginBottom: 12,
-            }}
-          >
-            <Text style={{ fontSize: 18, fontWeight: '800', color: COLORS.gray[900] }}>
-              Đặt gần đây
-            </Text>
-            <TouchableOpacity activeOpacity={0.7} onPress={() => router.push('/(customer)/jobs')}>
-              <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.primary }}>
-                Xem lịch sử →
-              </Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Past job with 1-click [Đặt lại] button */}
-          <View
-            style={{
-              backgroundColor: '#FFFFFF',
-              borderRadius: 18,
-              padding: 16,
-              borderWidth: 1,
-              borderColor: '#E2E8F0',
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-            }}
-          >
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
+        {/* Section: Đặt gần đây - Chỉ hiển thị khi có đơn đã hoàn thành thật (Không dùng mock - Item 4) */}
+        {completedJobs.length > 0 && (() => {
+          const pastJob = completedJobs[0];
+          const pastPrice = pastJob.final_price || pastJob.agreed_price || pastJob.target_price;
+          const displayPriceStr = pastPrice ? `${pastPrice.toLocaleString('vi-VN')}₫` : '';
+          const completedDateStr = dayjs(pastJob.completed_at || pastJob.updated_at || pastJob.created_at).format('DD/MM/YYYY');
+          return (
+            <View style={{ paddingHorizontal: 16, marginTop: 24 }}>
               <View
                 style={{
-                  width: 44,
-                  height: 44,
-                  borderRadius: 12,
-                  backgroundColor: '#DCFCE7',
+                  flexDirection: 'row',
+                  justifyContent: 'space-between',
                   alignItems: 'center',
-                  justifyContent: 'center',
+                  marginBottom: 12,
                 }}
               >
-                <Text style={{ fontSize: 22 }}>🏠</Text>
+                <Text style={{ fontSize: 18, fontWeight: '800', color: COLORS.gray[900] }}>
+                  Đặt gần đây
+                </Text>
+                <TouchableOpacity activeOpacity={0.7} onPress={() => router.push('/(customer)/jobs')}>
+                  <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.primary }}>
+                    Xem lịch sử →
+                  </Text>
+                </TouchableOpacity>
               </View>
 
-              <View style={{ flex: 1 }}>
-                <Text
-                  style={{ fontSize: 15, fontWeight: '800', color: COLORS.gray[900] }}
-                  numberOfLines={1}
+              {/* Past job with 1-click [Đặt lại] button */}
+              <View
+                style={{
+                  backgroundColor: '#FFFFFF',
+                  borderRadius: 18,
+                  padding: 16,
+                  borderWidth: 1,
+                  borderColor: '#E2E8F0',
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                }}
+              >
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
+                  <View
+                    style={{
+                      width: 44,
+                      height: 44,
+                      borderRadius: 12,
+                      backgroundColor: '#DCFCE7',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <Text style={{ fontSize: 22 }}>🏠</Text>
+                  </View>
+
+                  <View style={{ flex: 1 }}>
+                    <Text
+                      style={{ fontSize: 15, fontWeight: '800', color: COLORS.gray[900] }}
+                      numberOfLines={1}
+                    >
+                      {pastJob.title}
+                    </Text>
+                    <Text style={{ fontSize: 12, color: COLORS.gray[500], marginTop: 2 }}>
+                      Hoàn thành · {completedDateStr}{displayPriceStr ? ` · ${displayPriceStr}` : ''}
+                    </Text>
+                  </View>
+                </View>
+
+                <TouchableOpacity
+                  activeOpacity={0.8}
+                  onPress={() => {
+                    router.push({
+                      pathname: '/(customer)/booking',
+                      params: {
+                        prefill_title: pastJob.title,
+                        prefill_description: pastJob.description || '',
+                        service_id: pastJob.service_id
+                          ? ((pastJob.service_id as any)._id || String(pastJob.service_id))
+                          : '',
+                        target_price: pastPrice ? String(pastPrice) : '',
+                      },
+                    });
+                  }}
+                  style={{
+                    backgroundColor: '#FFFFFF',
+                    borderWidth: 1.5,
+                    borderColor: COLORS.primary,
+                    paddingHorizontal: 14,
+                    paddingVertical: 8,
+                    borderRadius: 12,
+                  }}
                 >
-                  {completedJobs[0]?.title || 'Dọn nhà 2 phòng ngủ'}
-                </Text>
-                <Text style={{ fontSize: 12, color: COLORS.gray[500], marginTop: 2 }}>
-                  Hoàn thành · tuần trước · 390.000₫
-                </Text>
+                  <Text style={{ fontSize: 13, fontWeight: '800', color: COLORS.primary }}>
+                    Đặt lại
+                  </Text>
+                </TouchableOpacity>
               </View>
             </View>
-
-            <TouchableOpacity
-              activeOpacity={0.8}
-              onPress={() => {
-                const pastJob = completedJobs[0];
-                router.push({
-                  pathname: '/(customer)/booking',
-                  params: {
-                    prefill_title: pastJob?.title || 'Dọn nhà 2 phòng ngủ',
-                    prefill_description:
-                      pastJob?.description || 'Dọn dẹp tổng thể 2 phòng ngủ, quét dọn và chùi sàn.',
-                    service_id: pastJob?.service_id
-                      ? (pastJob.service_id as any)._id || String(pastJob.service_id)
-                      : '',
-                  },
-                });
-              }}
-              style={{
-                backgroundColor: '#FFFFFF',
-                borderWidth: 1.5,
-                borderColor: COLORS.primary,
-                paddingHorizontal: 14,
-                paddingVertical: 8,
-                borderRadius: 12,
-              }}
-            >
-              <Text style={{ fontSize: 13, fontWeight: '800', color: COLORS.primary }}>
-                Đặt lại
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </View>
+          );
+        })()}
       </ScrollView>
     </View>
   );

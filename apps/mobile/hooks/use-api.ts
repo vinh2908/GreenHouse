@@ -1068,8 +1068,10 @@ export function useEstimatePrice() {
 
 export interface IssuePhotoAnalysis {
   available: boolean;
+  message?: string;
   detected_issue?: string;
   suggested_service_slug?: string | null;
+  suggested_service_name?: string;
   description_draft?: string;
   price_min?: number;
   price_max?: number;

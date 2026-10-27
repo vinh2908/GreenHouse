@@ -20,8 +20,10 @@ const PRICE_REFERENCE: Record<string, { min: number; max: number; unit: string }
 /** Kết quả phân tích ảnh sự cố (Feature 17). available=false khi AI không dùng được. */
 export interface IssuePhotoAnalysis {
   available: boolean;
+  message?: string;
   detected_issue?: string;
   suggested_service_slug?: string | null;
+  suggested_service_name?: string;
   description_draft?: string;
   price_min?: number;
   price_max?: number;
@@ -289,13 +291,21 @@ Nếu ảnh không liên quan sự cố gia đình / không nhận diện đư�
           : undefined;
       const confidenceRaw = typeof parsed.confidence === 'number' ? parsed.confidence : 0.5;
 
+      const rawName =
+        typeof parsed.suggested_service_name === 'string'
+          ? parsed.suggested_service_name
+          : slug && (SERVICE_SLUG_VI as Record<string, string>)[slug]
+            ? (SERVICE_SLUG_VI as Record<string, string>)[slug]
+            : rawSlug || undefined;
+
       return {
         available: true,
         detected_issue:
           typeof parsed.detected_issue === 'string' && parsed.detected_issue.trim()
             ? parsed.detected_issue.trim()
             : 'Chưa nhận diện rõ vấn đề trong ảnh',
-        suggested_service_slug: slug,
+        suggested_service_slug: slug || rawSlug,
+        suggested_service_name: rawName,
         description_draft:
           typeof parsed.description_draft === 'string' ? parsed.description_draft.trim() : '',
         price_min: priceMin,
@@ -303,12 +313,18 @@ Nếu ảnh không liên quan sự cố gia đình / không nhận diện đư�
         confidence: Math.min(1, Math.max(0, confidenceRaw)),
       };
     } catch (err) {
-      if (err instanceof AiProviderUnavailableError) {
-        this.logger.warn(`Issue photo analysis unavailable: ${err.message}`);
+      const isUnavailable = err instanceof AiProviderUnavailableError;
+      if (isUnavailable) {
+        this.logger.warn(`Issue photo analysis unavailable: ${(err as Error).message}`);
       } else {
         this.logger.error('Issue photo analysis failed', err as Error);
       }
-      return { available: false };
+      return {
+        available: false,
+        message: isUnavailable
+          ? 'Hệ thống AI phân tích sự cố chưa được cấu hình API key trên máy chủ production. Ảnh của bạn đã được đính kèm vào đơn, bạn vui lòng mô tả ngắn gọn giúp mình nhé!'
+          : 'Chưa thể phân tích nội dung ảnh sự cố lúc này. Ảnh của bạn đã được đính kèm vào đơn, bạn vui lòng mô tả thêm chi tiết bên dưới nhé!',
+      };
     }
   }
 }
