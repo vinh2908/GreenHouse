@@ -232,13 +232,17 @@ export async function goongAutocomplete(
   input: string,
   apiKey: string,
   sessionToken: string,
+  location?: { latitude: number; longitude: number } | null,
 ): Promise<GoongPrediction[]> {
-  const url =
+  let url =
     `${GOONG_API_BASE}/Place/AutoComplete?api_key=${encodeURIComponent(apiKey)}` +
     `&input=${encodeURIComponent(input)}&sessiontoken=${encodeURIComponent(sessionToken)}`;
+  if (location && typeof location.latitude === 'number' && typeof location.longitude === 'number') {
+    url += `&location=${location.latitude},${location.longitude}`;
+  }
   const json = await fetchJsonWithTimeout(url);
   const predictions: GoongPrediction[] = Array.isArray(json?.predictions) ? json.predictions : [];
-  return predictions.filter(p => p?.place_id).slice(0, 5);
+  return predictions.filter(p => p?.place_id).slice(0, 8);
 }
 
 export async function goongPlaceDetail(
@@ -298,9 +302,10 @@ export function mapGoongPlaceToOsmPlace(
 export async function searchPlacesWithGoong(
   query: string,
   apiKey: string,
+  location?: { latitude: number; longitude: number } | null,
 ): Promise<GoongOsmPlace[]> {
   const sessionToken = newAutocompleteSessionToken();
-  const predictions = await goongAutocomplete(query, apiKey, sessionToken);
+  const predictions = await goongAutocomplete(query, apiKey, sessionToken, location);
   if (!predictions.length) return [];
   const details = await Promise.all(
     predictions.map(async (prediction, idx) => {

@@ -36,6 +36,7 @@ import { Alert } from '@/components/common/app-alert';
 import dayjs from 'dayjs';
 import { useAuthStore } from '@/stores/auth.store';
 import { ScalePressable } from '@/components/common/scale-pressable';
+import { WheelTimePicker } from '@/components/common/wheel-time-picker';
 import {
   useServices,
   useCreateJob,
@@ -755,12 +756,20 @@ export default function BookingScreen() {
     const street = `${house}${road}`.trim() || place.display_name.split(',')[0].trim();
     const full_address = street || place.display_name.split(',').slice(0, 2).join(', ').trim();
 
-    setAddress(prev => ({
-      ...prev,
-      full_address,
+    const parsed = parseVietnameseAddress(place.display_name, {
+      road: street,
       ward,
       district,
       city,
+      coordinates: [parseFloat(place.lon), parseFloat(place.lat)],
+    });
+
+    setAddress(prev => ({
+      ...prev,
+      full_address: parsed.road || street || '',
+      ward: parsed.ward || ward || '',
+      district: parsed.district || district || '',
+      city: parsed.city || city || '',
       coordinates: [parseFloat(place.lon), parseFloat(place.lat)],
     }));
     setCoordsDerived(true);
@@ -770,7 +779,7 @@ export default function BookingScreen() {
     Toast.show({
       type: 'success',
       text1: 'Đã chọn địa điểm từ bản đồ',
-      text2: full_address || place.display_name.split(',').slice(0, 2).join(', '),
+      text2: parsed.full_address || full_address || place.display_name.split(',').slice(0, 2).join(', '),
     });
   };
 
@@ -792,8 +801,12 @@ export default function BookingScreen() {
     ].filter(Boolean);
     if (!queryParts.length) return null;
     const queryStr = queryParts.join(', ');
+    const currentCoords =
+      currentAddr.coordinates?.[0] && currentAddr.coordinates?.[1]
+        ? { latitude: currentAddr.coordinates[1], longitude: currentAddr.coordinates[0] }
+        : locationService.getCachedCoordinates();
     try {
-      const places = await locationService.searchPlaces(queryStr);
+      const places = await locationService.searchPlaces(queryStr, currentCoords);
       if (places && places.length > 0) {
         const p = places[0];
         const newCoords: [number, number] = [parseFloat(p.lon), parseFloat(p.lat)];
@@ -1954,205 +1967,12 @@ export default function BookingScreen() {
                 </ScrollView>
               </View>
 
-              {/* 2. Giờ bắt đầu: Chip giờ + Giờ tùy chọn */}
-              <View>
-                <View
-                  style={{
-                    flexDirection: 'row',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    marginBottom: 10,
-                  }}
-                >
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                    <Clock size={15} color={COLORS.primary} />
-                    <Text style={{ fontSize: 14, fontWeight: '700', color: COLORS.gray[700] }}>
-                      Giờ bắt đầu:{' '}
-                      <Text style={{ color: COLORS.primary, fontWeight: '800' }}>{timeSlot}</Text>
-                    </Text>
-                  </View>
-                  <TouchableOpacity
-                    activeOpacity={0.8}
-                    onPress={() => setCustomTimeOpen(prev => !prev)}
-                    style={{
-                      backgroundColor: customTimeOpen ? '#DCFCE7' : '#F1F5F9',
-                      paddingHorizontal: 8,
-                      paddingVertical: 4,
-                      borderRadius: 8,
-                      borderWidth: 1,
-                      borderColor: customTimeOpen ? COLORS.primary : '#E2E8F0',
-                    }}
-                  >
-                    <Text style={{ fontSize: 12, fontWeight: '700', color: COLORS.primary }}>
-                      {customTimeOpen ? 'Đóng giờ tùy chọn ▲' : 'Giờ tùy chọn (giờ lẻ) ▼'}
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-
-                {/* Custom Time Selector Panel */}
-                {customTimeOpen && (
-                  <View
-                    style={{
-                      backgroundColor: '#FFFFFF',
-                      borderRadius: 14,
-                      padding: 12,
-                      borderWidth: 1.5,
-                      borderColor: '#E2E8F0',
-                      marginBottom: 12,
-                      gap: 10,
-                    }}
-                  >
-                    <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.gray[700] }}>
-                      Nhập hoặc chọn giờ lẻ mong muốn:
-                    </Text>
-                    <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
-                      <TextInput
-                        style={{
-                          flex: 1,
-                          backgroundColor: '#F8FAFC',
-                          borderWidth: 1.5,
-                          borderColor: COLORS.primary,
-                          borderRadius: 10,
-                          paddingHorizontal: 12,
-                          paddingVertical: 8,
-                          fontSize: 15,
-                          fontWeight: '800',
-                          color: COLORS.gray[900],
-                        }}
-                        placeholder="VD: 19:30 hoặc 21:30"
-                        value={customTimeInput}
-                        onChangeText={setCustomTimeInput}
-                        keyboardType="numbers-and-punctuation"
-                      />
-                      <ScalePressable
-                        onPress={() => {
-                          const trimmed = customTimeInput.trim();
-                          if (/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/.test(trimmed)) {
-                            setTimeSlot(trimmed);
-                            setCustomTimeOpen(false);
-                            Toast.show({ type: 'success', text1: `Đã chọn giờ: ${trimmed}` });
-                          } else {
-                            Toast.show({
-                              type: 'error',
-                              text1: 'Định dạng giờ không hợp lệ (VD: 19:30)',
-                            });
-                          }
-                        }}
-                        style={{
-                          backgroundColor: COLORS.primary,
-                          paddingHorizontal: 16,
-                          paddingVertical: 10,
-                          borderRadius: 10,
-                        }}
-                      >
-                        <Text style={{ color: '#fff', fontWeight: '800', fontSize: 13 }}>
-                          Áp dụng
-                        </Text>
-                      </ScalePressable>
-                    </View>
-
-                    {/* Quick odd time chips */}
-                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
-                      {['07:30', '08:30', '11:30', '13:30', '17:30', '19:30', '20:30', '21:30'].map(
-                        ot => (
-                          <TouchableOpacity
-                            key={ot}
-                            onPress={() => {
-                              setTimeSlot(ot);
-                              setCustomTimeInput(ot);
-                              setCustomTimeOpen(false);
-                            }}
-                            style={{
-                              paddingHorizontal: 10,
-                              paddingVertical: 5,
-                              borderRadius: 6,
-                              backgroundColor: timeSlot === ot ? '#DCFCE7' : '#F1F5F9',
-                              borderWidth: 1,
-                              borderColor: timeSlot === ot ? COLORS.primary : '#E2E8F0',
-                            }}
-                          >
-                            <Text
-                              style={{
-                                fontSize: 11,
-                                fontWeight: '700',
-                                color: timeSlot === ot ? COLORS.primary : COLORS.gray[700],
-                              }}
-                            >
-                              {ot}
-                            </Text>
-                          </TouchableOpacity>
-                        ),
-                      )}
-                    </View>
-                  </View>
-                )}
-
-                {/* Regular Time Chips */}
-                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-                  {TIME_SLOTS.map(t => (
-                    <ScalePressable
-                      key={t}
-                      onPress={() => {
-                        setTimeSlot(t);
-                        setCustomTimeInput(t);
-                      }}
-                      style={{
-                        paddingHorizontal: 14,
-                        paddingVertical: 9,
-                        borderRadius: 12,
-                        borderWidth: 2,
-                        borderColor: timeSlot === t ? COLORS.primary : COLORS.gray[200],
-                        backgroundColor: timeSlot === t ? COLORS.primaryLight : '#fff',
-                        position: 'relative',
-                      }}
-                    >
-                      {t === '12:00' && (
-                        <View
-                          style={{
-                            backgroundColor: '#DCFCE7',
-                            paddingHorizontal: 4,
-                            paddingVertical: 1,
-                            borderRadius: 4,
-                            position: 'absolute',
-                            top: -7,
-                            right: -4,
-                          }}
-                        >
-                          <Text style={{ fontSize: 9, fontWeight: '800', color: COLORS.primary }}>
-                            MỚI
-                          </Text>
-                        </View>
-                      )}
-                      {(t === '21:00' || t === '22:00') && (
-                        <View
-                          style={{
-                            backgroundColor: '#FEF2F2',
-                            paddingHorizontal: 4,
-                            paddingVertical: 1,
-                            borderRadius: 4,
-                            position: 'absolute',
-                            top: -7,
-                            right: -4,
-                          }}
-                        >
-                          <Text style={{ fontSize: 9, fontWeight: '800', color: COLORS.error }}>
-                            ĐÊM
-                          </Text>
-                        </View>
-                      )}
-                      <Text
-                        style={{
-                          fontSize: 13,
-                          fontWeight: '700',
-                          color: timeSlot === t ? COLORS.primary : COLORS.gray[700],
-                        }}
-                      >
-                        {t}
-                      </Text>
-                    </ScalePressable>
-                  ))}
-                </View>
-              </View>
+              {/* 2. Giờ bắt đầu: Bộ chọn giờ cuộn bánh xe (Wheel Time Picker) + Chip nhanh */}
+              <WheelTimePicker
+                value={timeSlot}
+                onChange={setTimeSlot}
+                quickChips={true}
+              />
 
               {/* 3. Thời gian ước tính: Chip 1/2/3/4h + Tùy chọn... */}
               <View>
