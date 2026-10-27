@@ -14,7 +14,8 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import { ScalePressable } from '@/components/common/scale-pressable';
-import { WheelTimePicker } from '@/components/common/wheel-time-picker';
+import { DateTimePickerBottomSheet } from '@/components/common/date-time-bottom-sheet';
+import { DurationBottomSheet } from '@/components/common/duration-bottom-sheet';
 import Svg, { Defs, LinearGradient as SvgLinearGradient, Stop, Rect } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -261,11 +262,15 @@ export default function CustomerHomeScreen() {
   const isUserScrollingVouchers = useRef(false);
   const [voucherCardWidth, setVoucherCardWidth] = useState(272);
 
+  // Date Time Bottom Sheet state (Item 1)
+  const [dateTimePickerOpen, setDateTimePickerOpen] = useState(false);
+  const [bottomSheetInitialTab, setBottomSheetInitialTab] = useState<'date' | 'time'>('date');
+
   // Month Calendar state
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [calendarMonth, setCalendarMonth] = useState(dayjs());
 
-  // Duration Custom Picker state
+  // Duration Bottom Sheet state (Item 2)
   const [durationPickerOpen, setDurationPickerOpen] = useState(false);
   const [customHours, setCustomHours] = useState(1);
   const [customMinutes, setCustomMinutes] = useState(30);
@@ -873,24 +878,37 @@ export default function CustomerHomeScreen() {
         }
         contentContainerStyle={{ paddingBottom: 130 }}
       >
-        {/* ── 1. HEADER (Top Bar chuẩn Homepage Redesign Demo) ─────────────── */}
+        {/* ── 1. HEADER (Top Bar chuẩn Homepage Redesign Demo - Item 6 Nền Gradient) ─ */}
         <View
           style={{
-            backgroundColor: '#FFFFFF',
+            position: 'relative',
             paddingHorizontal: 18,
             paddingTop: Math.max(insets.top + 8, 20),
-            paddingBottom: 18,
+            paddingBottom: 20,
             borderBottomWidth: 1,
-            borderBottomColor: '#E2E8F0',
+            borderBottomColor: '#BBF7D0',
             borderTopWidth: 3,
             borderTopColor: '#22C55E',
             shadowColor: '#16A34A',
             shadowOffset: { width: 0, height: 4 },
-            shadowOpacity: 0.06,
+            shadowOpacity: 0.08,
             shadowRadius: 10,
-            elevation: 2,
+            elevation: 3,
+            backgroundColor: '#F0FDF4',
+            overflow: 'hidden',
           }}
         >
+          {/* Header Gradient Background for App & Web */}
+          <Svg height="100%" width="100%" style={StyleSheet.absoluteFill}>
+            <Defs>
+              <SvgLinearGradient id="headerGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                <Stop offset="0%" stopColor="#DCFCE7" />
+                <Stop offset="65%" stopColor="#F0FDF4" />
+                <Stop offset="100%" stopColor="#FFFFFF" />
+              </SvgLinearGradient>
+            </Defs>
+            <Rect width="100%" height="100%" fill="url(#headerGrad)" />
+          </Svg>
           {/* Top row: Location pill on left, Notification & User Avatar on right */}
           <View
             style={{
@@ -1007,7 +1025,7 @@ export default function CustomerHomeScreen() {
             {greeting.subtitle}
           </Text>
 
-          {/* Interactive Search Bar (Item 8) */}
+          {/* Interactive Search Bar (Item 8 & Item 5 placeholder fix) */}
           <View
             style={{
               backgroundColor: '#FFFFFF',
@@ -1017,8 +1035,14 @@ export default function CustomerHomeScreen() {
               paddingHorizontal: 14,
               marginTop: 16,
               gap: 10,
+              minHeight: 48,
               borderWidth: 1.5,
               borderColor: serviceSearchQuery.trim() ? COLORS.primary : '#E2E8F0',
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.04,
+              shadowRadius: 4,
+              elevation: 2,
             }}
           >
             <Search
@@ -1028,11 +1052,13 @@ export default function CustomerHomeScreen() {
             <TextInput
               style={{
                 flex: 1,
-                paddingVertical: 12,
-                fontSize: fs(14),
+                paddingVertical: Platform.OS === 'ios' ? 12 : 10,
+                fontSize: 13,
                 color: COLORS.gray[900],
                 fontWeight: '500',
               }}
+              numberOfLines={1}
+              multiline={false}
               placeholder="Tìm dịch vụ... ví dụ: máy lạnh, dọn nhà, điện"
               placeholderTextColor={COLORS.gray[400]}
               value={serviceSearchQuery}
@@ -1271,7 +1297,8 @@ export default function CustomerHomeScreen() {
           <View
             style={{
               borderRadius: 20,
-              padding: 20,
+              paddingHorizontal: 16,
+              paddingVertical: 18,
               position: 'relative',
               overflow: 'hidden',
               shadowColor: '#16A34A',
@@ -1357,6 +1384,7 @@ export default function CustomerHomeScreen() {
                 color: '#FFFFFF',
                 marginTop: 10,
                 lineHeight: 24,
+                flexShrink: 1,
               }}
             >
               Chụp ảnh sự cố, AI đoán việc & báo giá ngay
@@ -1369,6 +1397,7 @@ export default function CustomerHomeScreen() {
                 marginTop: 6,
                 lineHeight: 19,
                 fontWeight: '500',
+                flexShrink: 1,
               }}
             >
               Máy lạnh chảy nước, vòi rò, tường nứt… chỉ cần một tấm ảnh, không cần biết tên dịch
@@ -1380,20 +1409,21 @@ export default function CustomerHomeScreen() {
               style={{
                 flexDirection: 'row',
                 alignItems: 'center',
-                gap: 8,
-                marginTop: 14,
+                flexWrap: 'wrap',
+                gap: 6,
+                marginTop: 12,
                 marginBottom: 16,
               }}
             >
-              <Text style={{ fontSize: 11.5, fontWeight: '700', color: '#FFFFFF' }}>
+              <Text style={{ fontSize: 11, fontWeight: '700', color: '#FFFFFF' }}>
                 1 · Chụp ảnh
               </Text>
-              <Text style={{ fontSize: 11, color: '#86EFAC' }}>•</Text>
-              <Text style={{ fontSize: 11.5, fontWeight: '700', color: '#FFFFFF' }}>
+              <Text style={{ fontSize: 10, color: '#86EFAC' }}>•</Text>
+              <Text style={{ fontSize: 11, fontWeight: '700', color: '#FFFFFF' }}>
                 2 · AI phân tích
               </Text>
-              <Text style={{ fontSize: 11, color: '#86EFAC' }}>•</Text>
-              <Text style={{ fontSize: 11.5, fontWeight: '700', color: '#FFFFFF' }}>
+              <Text style={{ fontSize: 10, color: '#86EFAC' }}>•</Text>
+              <Text style={{ fontSize: 11, fontWeight: '700', color: '#FFFFFF' }}>
                 3 · Nhận báo giá
               </Text>
             </View>
@@ -1426,9 +1456,17 @@ export default function CustomerHomeScreen() {
             <TouchableOpacity
               activeOpacity={0.7}
               onPress={handlePickIssuePhoto}
-              style={{ alignItems: 'center', marginTop: 10 }}
+              style={{ alignItems: 'center', marginTop: 10, paddingVertical: 4 }}
             >
-              <Text style={{ fontSize: 12, fontWeight: '600', color: '#DCFCE7' }}>
+              <Text
+                style={{
+                  fontSize: 13,
+                  fontWeight: '700',
+                  color: '#FFFFFF',
+                  textDecorationLine: 'underline',
+                  letterSpacing: 0.2,
+                }}
+              >
                 hoặc chọn ảnh sự cố của bạn
               </Text>
             </TouchableOpacity>
@@ -2008,40 +2046,89 @@ export default function CustomerHomeScreen() {
               />
             </View>
 
-            {/* 3. Ngày làm việc */}
-            <View>
-              <TouchableOpacity
-                activeOpacity={0.8}
-                onPress={() => setCalendarOpen(prev => !prev)}
+            {/* 3. Thời gian làm việc: Ngày & Giờ (Trigger mở Bottom Sheet Item 1) */}
+            <View style={{ gap: 8 }}>
+              <Text
                 style={{
-                  flexDirection: 'row',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  marginBottom: 8,
+                  fontSize: 14,
+                  fontWeight: '700',
+                  color: COLORS.gray[800],
                 }}
               >
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                  <Calendar size={16} color={COLORS.primary} />
-                  <Text style={{ fontSize: 14, fontWeight: '700', color: COLORS.gray[800] }}>
-                    {dayjs(quickDate).format('dddd, DD/MM')}
-                  </Text>
-                </View>
-                <View
+                Thời gian làm việc
+              </Text>
+              <View style={{ flexDirection: 'row', gap: 10 }}>
+                {/* Ngày làm việc trigger card */}
+                <TouchableOpacity
+                  activeOpacity={0.8}
+                  onPress={() => {
+                    setBottomSheetInitialTab('date');
+                    setDateTimePickerOpen(true);
+                  }}
                   style={{
-                    backgroundColor: calendarOpen ? '#DCFCE7' : '#F1F5F9',
-                    paddingHorizontal: 8,
-                    paddingVertical: 3,
-                    borderRadius: 6,
+                    flex: 1,
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 8,
+                    paddingVertical: 11,
+                    paddingHorizontal: 12,
+                    borderRadius: 12,
+                    backgroundColor: '#F8FAFC',
+                    borderWidth: 1.5,
+                    borderColor: '#E2E8F0',
                   }}
                 >
-                  <Text style={{ fontSize: 12, fontWeight: '700', color: COLORS.primary }}>
-                    {calendarOpen ? 'Đóng lịch ▲' : 'Lịch tháng ▼'}
-                  </Text>
-                </View>
-              </TouchableOpacity>
+                  <Calendar size={16} color={COLORS.primary} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 10.5, color: COLORS.gray[500], fontWeight: '600' }}>
+                      Ngày làm việc
+                    </Text>
+                    <Text
+                      style={{ fontSize: 13, fontWeight: '800', color: COLORS.gray[900] }}
+                      numberOfLines={1}
+                    >
+                      {dayjs(quickDate).format('dd, DD/MM')}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
 
-              {/* Day chips */}
-              <View style={{ flexDirection: 'row', gap: 8, marginBottom: calendarOpen ? 10 : 0 }}>
+                {/* Giờ bắt đầu trigger card */}
+                <TouchableOpacity
+                  activeOpacity={0.8}
+                  onPress={() => {
+                    setBottomSheetInitialTab('time');
+                    setDateTimePickerOpen(true);
+                  }}
+                  style={{
+                    flex: 1,
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 8,
+                    paddingVertical: 11,
+                    paddingHorizontal: 12,
+                    borderRadius: 12,
+                    backgroundColor: '#F8FAFC',
+                    borderWidth: 1.5,
+                    borderColor: '#E2E8F0',
+                  }}
+                >
+                  <Clock size={16} color={COLORS.primary} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 10.5, color: COLORS.gray[500], fontWeight: '600' }}>
+                      Giờ bắt đầu
+                    </Text>
+                    <Text
+                      style={{ fontSize: 13, fontWeight: '800', color: COLORS.primary }}
+                      numberOfLines={1}
+                    >
+                      {quickTimeSlot}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              </View>
+
+              {/* Quick day shortcut chips */}
+              <View style={{ flexDirection: 'row', gap: 6 }}>
                 {[
                   { key: 'today', label: 'Hôm nay' },
                   { key: 'tomorrow', label: 'Ngày mai' },
@@ -2055,8 +2142,8 @@ export default function CustomerHomeScreen() {
                       onPress={() => handleSelectQuickDateChip(c.key as any)}
                       style={{
                         flex: 1,
-                        paddingVertical: 8,
-                        borderRadius: 10,
+                        paddingVertical: 7,
+                        borderRadius: 8,
                         backgroundColor: isSel ? '#DCFCE7' : '#F1F5F9',
                         borderWidth: 1,
                         borderColor: isSel ? COLORS.primary : '#E2E8F0',
@@ -2065,7 +2152,7 @@ export default function CustomerHomeScreen() {
                     >
                       <Text
                         style={{
-                          fontSize: 12,
+                          fontSize: 11.5,
                           fontWeight: '700',
                           color: isSel ? COLORS.primary : COLORS.gray[700],
                         }}
@@ -2076,137 +2163,9 @@ export default function CustomerHomeScreen() {
                   );
                 })}
               </View>
-
-              {/* Interactive Month Calendar (Requirement 6) */}
-              {calendarOpen && (
-                <View
-                  style={{
-                    backgroundColor: '#FFFFFF',
-                    borderRadius: 14,
-                    padding: 12,
-                    borderWidth: 1.5,
-                    borderColor: '#E2E8F0',
-                    marginTop: 4,
-                  }}
-                >
-                  {/* Calendar Header */}
-                  <View
-                    style={{
-                      flexDirection: 'row',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      marginBottom: 10,
-                    }}
-                  >
-                    <TouchableOpacity
-                      onPress={() => setCalendarMonth(prev => prev.subtract(1, 'month'))}
-                      style={{
-                        padding: 6,
-                        borderRadius: 8,
-                        backgroundColor: '#F1F5F9',
-                      }}
-                    >
-                      <ChevronLeft size={16} color={COLORS.gray[700]} />
-                    </TouchableOpacity>
-                    <Text style={{ fontSize: 14, fontWeight: '800', color: COLORS.gray[900] }}>
-                      Tháng {calendarMonth.format('MM/YYYY')}
-                    </Text>
-                    <TouchableOpacity
-                      onPress={() => setCalendarMonth(prev => prev.add(1, 'month'))}
-                      style={{
-                        padding: 6,
-                        borderRadius: 8,
-                        backgroundColor: '#F1F5F9',
-                      }}
-                    >
-                      <ChevronRight size={16} color={COLORS.gray[700]} />
-                    </TouchableOpacity>
-                  </View>
-
-                  {/* Weekday headers: T2 - CN */}
-                  <View style={{ flexDirection: 'row', marginBottom: 6 }}>
-                    {['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'].map(wd => (
-                      <Text
-                        key={wd}
-                        style={{
-                          flex: 1,
-                          textAlign: 'center',
-                          fontSize: 11,
-                          fontWeight: '700',
-                          color: COLORS.gray[400],
-                        }}
-                      >
-                        {wd}
-                      </Text>
-                    ))}
-                  </View>
-
-                  {/* Days Matrix */}
-                  <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
-                    {calendarDays.map((item, idx) => {
-                      if (!item) {
-                        return (
-                          <View key={`empty-${idx}`} style={{ width: '14.28%', height: 36 }} />
-                        );
-                      }
-                      return (
-                        <TouchableOpacity
-                          key={item.dateStr}
-                          disabled={item.isPast}
-                          onPress={() => {
-                            setQuickDate(item.dateStr);
-                            setQuickDateChip(null);
-                          }}
-                          style={{
-                            width: '14.28%',
-                            height: 36,
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                          }}
-                        >
-                          <View
-                            style={{
-                              width: 30,
-                              height: 30,
-                              borderRadius: 15,
-                              backgroundColor: item.isSelected
-                                ? COLORS.primary
-                                : item.isToday
-                                  ? '#DCFCE7'
-                                  : 'transparent',
-                              borderWidth: item.isToday && !item.isSelected ? 1.5 : 0,
-                              borderColor: COLORS.primary,
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              opacity: item.isPast ? 0.3 : 1,
-                            }}
-                          >
-                            <Text
-                              style={{
-                                fontSize: 12,
-                                fontWeight: item.isSelected || item.isToday ? '800' : '600',
-                                color: item.isSelected
-                                  ? '#FFFFFF'
-                                  : item.isPast
-                                    ? COLORS.gray[300]
-                                    : COLORS.gray[800],
-                              }}
-                            >
-                              {item.dayNum}
-                            </Text>
-                          </View>
-                        </TouchableOpacity>
-                      );
-                    })}
-                  </View>
-                </View>
-              )}
             </View>
 
-            {/* 4. Giờ bắt đầu: Bộ chọn giờ cuộn bánh xe (Wheel Time Picker) + Chip nhanh */}
-            <WheelTimePicker value={quickTimeSlot} onChange={setQuickTimeSlot} quickChips={true} />
-
-            {/* 5. Thời lượng dự kiến (Hỗ trợ tùy chọn 0–12h + 0/15/30/45p) */}
+            {/* 4. Thời lượng dự kiến: Chips nhanh + Tùy chọn mở Bottom Sheet (Item 2) */}
             <View>
               <Text
                 style={{
@@ -2242,7 +2201,6 @@ export default function CustomerHomeScreen() {
                         if (d.dur === 'custom') {
                           setIsCustomDuration(true);
                           setDurationPickerOpen(true);
-                          setQuickDuration(customHours + customMinutes / 60);
                         } else {
                           setIsCustomDuration(false);
                           setDurationPickerOpen(false);
@@ -2273,158 +2231,6 @@ export default function CustomerHomeScreen() {
                   );
                 })}
               </View>
-
-              {/* Custom Duration Selector Panel (Requirement 7) */}
-              {durationPickerOpen && (
-                <View
-                  style={{
-                    backgroundColor: '#FFFFFF',
-                    borderRadius: 14,
-                    padding: 14,
-                    borderWidth: 1.5,
-                    borderColor: '#E2E8F0',
-                    marginTop: 8,
-                  }}
-                >
-                  <Text
-                    style={{
-                      fontSize: 13,
-                      fontWeight: '800',
-                      color: COLORS.gray[900],
-                      marginBottom: 8,
-                    }}
-                  >
-                    Tùy chọn thời lượng (Tối thiểu 15 phút)
-                  </Text>
-
-                  {/* Hours selector */}
-                  <Text
-                    style={{
-                      fontSize: 12,
-                      fontWeight: '600',
-                      color: COLORS.gray[600],
-                      marginBottom: 4,
-                    }}
-                  >
-                    Số giờ (0–12 giờ):
-                  </Text>
-                  <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    style={{ marginBottom: 10 }}
-                  >
-                    <View style={{ flexDirection: 'row', gap: 6 }}>
-                      {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(h => {
-                        const isH = customHours === h;
-                        return (
-                          <TouchableOpacity
-                            key={h}
-                            onPress={() => {
-                              setCustomHours(h);
-                              const minM = h === 0 && customMinutes === 0 ? 15 : customMinutes;
-                              if (h === 0 && customMinutes === 0) setCustomMinutes(15);
-                              setQuickDuration(h + minM / 60);
-                            }}
-                            style={{
-                              paddingHorizontal: 12,
-                              paddingVertical: 6,
-                              borderRadius: 8,
-                              backgroundColor: isH ? COLORS.primary : '#F1F5F9',
-                            }}
-                          >
-                            <Text
-                              style={{
-                                fontSize: 12,
-                                fontWeight: '700',
-                                color: isH ? '#FFFFFF' : COLORS.gray[700],
-                              }}
-                            >
-                              {h}h
-                            </Text>
-                          </TouchableOpacity>
-                        );
-                      })}
-                    </View>
-                  </ScrollView>
-
-                  {/* Minutes selector */}
-                  <Text
-                    style={{
-                      fontSize: 12,
-                      fontWeight: '600',
-                      color: COLORS.gray[600],
-                      marginBottom: 4,
-                    }}
-                  >
-                    Số phút:
-                  </Text>
-                  <View style={{ flexDirection: 'row', gap: 8, marginBottom: 10 }}>
-                    {[0, 15, 30, 45].map(m => {
-                      const isM = customMinutes === m;
-                      const disabled = customHours === 0 && m === 0;
-                      return (
-                        <TouchableOpacity
-                          key={m}
-                          disabled={disabled}
-                          onPress={() => {
-                            setCustomMinutes(m);
-                            setQuickDuration(customHours + m / 60);
-                          }}
-                          style={{
-                            flex: 1,
-                            paddingVertical: 6,
-                            borderRadius: 8,
-                            backgroundColor: disabled
-                              ? '#F8FAFC'
-                              : isM
-                                ? COLORS.primary
-                                : '#F1F5F9',
-                            alignItems: 'center',
-                            opacity: disabled ? 0.35 : 1,
-                          }}
-                        >
-                          <Text
-                            style={{
-                              fontSize: 12,
-                              fontWeight: '700',
-                              color: isM ? '#FFFFFF' : COLORS.gray[700],
-                            }}
-                          >
-                            {m}p
-                          </Text>
-                        </TouchableOpacity>
-                      );
-                    })}
-                  </View>
-
-                  <View
-                    style={{
-                      flexDirection: 'row',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                    }}
-                  >
-                    <Text style={{ fontSize: 12, fontWeight: '700', color: COLORS.primary }}>
-                      Đã chọn: {customHours > 0 ? `${customHours} giờ ` : ''}
-                      {customMinutes > 0 ? `${customMinutes} phút` : ''}
-                      {customHours === 0 && customMinutes === 0 ? '15 phút' : ''}
-                    </Text>
-                    <TouchableOpacity
-                      onPress={() => setDurationPickerOpen(false)}
-                      style={{
-                        backgroundColor: COLORS.primary,
-                        paddingHorizontal: 14,
-                        paddingVertical: 6,
-                        borderRadius: 8,
-                      }}
-                    >
-                      <Text style={{ fontSize: 12, fontWeight: '700', color: '#FFFFFF' }}>
-                        Xong
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              )}
             </View>
 
             {/* Dynamic Expected Schedule Preview Line */}
@@ -2952,6 +2758,34 @@ export default function CustomerHomeScreen() {
             );
           })()}
       </ScrollView>
+
+      {/* ── BOTTOM SHEET CHỌN NGÀY & GIỜ (ITEM 1) ── */}
+      <DateTimePickerBottomSheet
+        visible={dateTimePickerOpen}
+        initialDate={quickDate}
+        initialTime={quickTimeSlot}
+        initialTab={bottomSheetInitialTab}
+        onClose={() => setDateTimePickerOpen(false)}
+        onConfirm={(selectedDate: string, selectedTime: string) => {
+          setQuickDate(selectedDate);
+          setQuickTimeSlot(selectedTime);
+          setQuickDateChip(null);
+        }}
+      />
+
+      {/* ── BOTTOM SHEET CHỌN THỜI LƯỢNG TỰ DO (ITEM 2) ── */}
+      <DurationBottomSheet
+        visible={durationPickerOpen}
+        initialHours={Math.floor(quickDuration)}
+        initialMinutes={Math.round((quickDuration - Math.floor(quickDuration)) * 60)}
+        startDate={quickDate}
+        startTime={quickTimeSlot}
+        onClose={() => setDurationPickerOpen(false)}
+        onConfirm={newDur => {
+          setQuickDuration(newDur);
+          setIsCustomDuration(![1, 2, 3, 4].includes(newDur));
+        }}
+      />
     </View>
   );
 }
