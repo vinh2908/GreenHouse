@@ -397,8 +397,8 @@ export default function JobDetailScreen() {
           address: {
             full_address: editFullAddress,
             ward: editWard || undefined,
-            district: editDistrict || 'Quận 1',
-            city: editCity || 'Hồ Chí Minh',
+            district: editDistrict || editCity || 'Chưa rõ',
+            city: editCity || 'Chưa rõ',
             notes: editNotes || undefined,
             location: {
               type: 'Point',
@@ -2341,7 +2341,7 @@ export default function JobDetailScreen() {
               <View style={{ flex: 1 }}>
                 <Input
                   label="Phường/Xã"
-                  placeholder="Phường 1"
+                  placeholder="VD: Phường / Xã"
                   value={editWard}
                   onChangeText={value => {
                     setEditWard(value);
@@ -2352,7 +2352,7 @@ export default function JobDetailScreen() {
               <View style={{ flex: 1 }}>
                 <Input
                   label="Quận/Huyện *"
-                  placeholder="Quận 1"
+                  placeholder="VD: Quận / Huyện"
                   value={editDistrict}
                   onChangeText={value => {
                     setEditDistrict(value);

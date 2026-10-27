@@ -763,7 +763,7 @@ export default function HelperDashboardScreen() {
                           size="sm"
                         />
                         <Text style={{ fontSize: 13, color: COLORS.gray[600] }}>
-                          📍 {job.address?.district ?? 'Quận 1'}
+                          📍 {job.address?.district || job.address?.city || 'Chưa rõ'}
                         </Text>
                         {job.preferred_time_start && (
                           <Text style={{ fontSize: 13, color: COLORS.gray[600] }}>

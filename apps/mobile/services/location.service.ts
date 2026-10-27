@@ -156,7 +156,12 @@ export function parseVietnameseAddress(
     .map(s => s.trim())
     .filter(
       s =>
-        s.length > 0 && !/^\d{4,6}$/.test(s) && !/^Việt\s*Nam$/i.test(s) && !/^Vietnam$/i.test(s),
+        s.length > 0 &&
+        !/^\d{4,6}$/.test(s) &&
+        !/^Việt\s*Nam$/i.test(s) &&
+        !/^Vietnam$/i.test(s) &&
+        !/^Quận$/i.test(s) &&
+        !/^Huyện$/i.test(s),
     );
 
   if (tokens.length >= 1 && !city) {
@@ -176,6 +181,22 @@ export function parseVietnameseAddress(
     } else if (tokens.length > 0) {
       road = tokens[0];
     }
+  }
+
+  // Dọn dẹp nếu road vô tình chứa cả tên phường/quận ở đuôi
+  if (road && ward && road.endsWith(ward)) {
+    road = road.slice(0, -ward.length).replace(/[,\s]+$/, '').trim();
+  }
+  if (road && district && road.endsWith(district)) {
+    road = road.slice(0, -district.length).replace(/[,\s]+$/, '').trim();
+  }
+
+  // Chống dữ liệu rác/bịa
+  if (district === 'Quận' || district === 'Huyện' || district === 'Thị xã' || /^Việt\s*Nam$/i.test(district)) {
+    district = '';
+  }
+  if (/^Việt\s*Nam$/i.test(city) || /^Vietnam$/i.test(city)) {
+    city = '';
   }
 
   // Dựng lại full_address gọn gàng
@@ -269,47 +290,47 @@ class LocationService {
 
     // 2. Môi trường Native (Android/iOS APK): Dùng Expo Location
     try {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
-        console.warn('Location permission denied');
-        return null;
+      const permissionPromise = Location.requestForegroundPermissionsAsync();
+      const permTimeoutPromise = new Promise<{ status: string }>((resolve) =>
+        setTimeout(() => resolve({ status: 'timeout' }), 2500),
+      );
+      const permRes = await Promise.race([permissionPromise, permTimeoutPromise]).catch(() => null);
+      if (permRes && permRes.status !== 'granted') {
+        console.warn('Location permission denied or timed out');
       }
 
-      // Thử lấy ngay vị trí gần nhất đã lưu trong hệ điều hành (OPPO/Samsung/Pixel cache ~10-50ms)
+      // Thử lấy ngay vị trí gần nhất đã lưu trong hệ điều hành (OPPO/Samsung/Pixel cache ~5ms)
       const lastKnown = await Location.getLastKnownPositionAsync().catch(() => null);
       if (lastKnown?.coords) {
+        const coords = {
+          latitude: lastKnown.coords.latitude,
+          longitude: lastKnown.coords.longitude,
+        };
+        this.cachedCoords = coords;
+        // Nếu vị trí gần nhất dưới 10 phút thì dùng luôn để phản hồi siêu tốc không treo spinner
         const isFresh = lastKnown.timestamp
           ? Date.now() - lastKnown.timestamp < 10 * 60 * 1000
           : false;
         if (isFresh) {
-          const coords = {
-            latitude: lastKnown.coords.latitude,
-            longitude: lastKnown.coords.longitude,
-          };
-          this.cachedCoords = coords;
           return coords;
         }
       }
 
-      // Đặt timeout tối đa 4 giây cho getCurrentPositionAsync trên mobile native tránh treo spinner
+      // Đặt timeout 2.5 giây cho getCurrentPositionAsync trên mobile native tránh treo spinner trên OPPO/Android
       const posPromise = Location.getCurrentPositionAsync({
         accuracy: Location.Accuracy.Balanced,
       });
       const timeoutPromise = new Promise<null>((_, reject) =>
-        setTimeout(() => reject(new Error('GPS_TIMEOUT')), 4000),
+        setTimeout(() => reject(new Error('GPS_TIMEOUT')), 2500),
       );
 
-      let location = await Promise.race([posPromise, timeoutPromise]).catch(async () => {
-        // Fallback sang last known position nếu getCurrentPositionAsync quá 4s hoặc lỗi
-        return lastKnown || (await Location.getLastKnownPositionAsync().catch(() => null));
-      });
-
+      let location = await Promise.race([posPromise, timeoutPromise]).catch(() => lastKnown);
       if (!location) {
-        location = lastKnown || (await Location.getLastKnownPositionAsync().catch(() => null));
+        location = lastKnown;
       }
 
       if (!location) {
-        return null;
+        return this.cachedCoords;
       }
 
       const coords = {
@@ -320,7 +341,7 @@ class LocationService {
       return coords;
     } catch (err) {
       console.warn('Error getting native location:', err);
-      return null;
+      return this.cachedCoords;
     }
   }
 
@@ -390,20 +411,22 @@ class LocationService {
           const houseNumber = p.housenumber ? `${p.housenumber} ` : '';
           const street = p.street || '';
           const placeName = p.name || '';
-          // Nếu có số nhà và tên đường
           let road = `${houseNumber}${street}`.trim();
-          if (!road && placeName) {
-            road = placeName;
+          if (!road && placeName && !placeName.includes(',')) {
+            road = placeName.trim();
           }
-          const ward = p.locality || '';
-          const district = p.district || p.city_district || '';
+          const ward = p.locality || p.suburb || p.quarter || '';
+          const district = p.district || p.city_district || p.county || '';
           const city = p.city || p.state || '';
+          const composite = [placeName, p.locality, p.district, p.city || p.state, p.country]
+            .filter(Boolean)
+            .join(', ');
           const fullAddress = [road, ward, district, city].filter(Boolean).join(', ');
 
-          if (road || district) {
-            return parseVietnameseAddress(fullAddress || p.name, {
-              full_address: fullAddress,
-              road: road || fullAddress,
+          if (road || district || placeName) {
+            return parseVietnameseAddress(composite || fullAddress || p.name, {
+              full_address: fullAddress || composite,
+              road: road || fullAddress || composite,
               ward,
               district,
               city,

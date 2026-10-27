@@ -404,7 +404,7 @@ export default function HelperJobsScreen() {
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
                       <MapPin size={13} color={COLORS.gray[500]} />
                       <Text style={{ fontSize: 12, color: COLORS.gray[600], fontWeight: '500' }}>
-                        {job.address?.district ?? 'Quận 1'}
+                        {job.address?.district || job.address?.city || 'Chưa rõ'}
                       </Text>
                     </View>
                     {job.distance_km != null && (

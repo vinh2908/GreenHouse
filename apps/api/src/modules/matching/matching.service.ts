@@ -175,7 +175,7 @@ export class MatchingService {
         job: {
           _id: String(j._id),
           title: j.title,
-          district: j.address?.district || 'Quận 1',
+          district: j.address?.district || j.address?.city || 'Chưa rõ',
         },
         helper: {
           _id: String(user?._id || h.user_id),
@@ -220,7 +220,7 @@ export class MatchingService {
         job: {
           _id: String(job._id),
           title: job.title,
-          district: job.address?.district || 'Quận 1',
+          district: job.address?.district || job.address?.city || 'Chưa rõ',
         },
         helper: {
           _id: String(user?._id || h.user_id),

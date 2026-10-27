@@ -348,8 +348,8 @@ export default function EditProfileScreen() {
       full_address: fullAddress.trim(),
       street: geo?.street || undefined,
       ward: geo?.ward || undefined,
-      district: geo?.district || 'Quận 1',
-      city: geo?.city || 'Hồ Chí Minh',
+      district: geo?.district || geo?.city || 'Chưa rõ',
+      city: geo?.city || 'Chưa rõ',
       location: {
         type: 'Point',
         coordinates: [coords.longitude, coords.latitude] as [number, number],
