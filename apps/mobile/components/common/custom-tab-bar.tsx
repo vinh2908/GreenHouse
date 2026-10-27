@@ -1,9 +1,10 @@
 // apps/mobile/components/common/custom-tab-bar.tsx
 import React from 'react';
-import { View, Text, TouchableOpacity, Platform, StyleSheet } from 'react-native';
+import { View, Text, Platform, StyleSheet } from 'react-native';
 import { Home, Clock, MessageSquare, User, Plus, Briefcase, TrendingUp } from 'lucide-react-native';
 import { COLORS } from '@/components/ui';
 import { useTranslation } from '@/hooks/use-i18n';
+import { ScalePressable } from '@/components/common/scale-pressable';
 
 interface CustomTabBarProps {
   state: any;
@@ -16,7 +17,11 @@ interface CustomTabBarProps {
 // màn hình khác (vd Thợ yêu thích mở từ màn Tài khoản).
 // Kiểm tra theo TÊN route trước: chắc chắn trên mọi nền tảng, kể cả web nơi
 // options.href đôi khi không được resolve đúng lúc render tab bar.
-const HIDDEN_TAB_ROUTES: ReadonlySet<string> = new Set(['notifications', 'favorites', 'vouchers']);
+const HIDDEN_TAB_ROUTES: ReadonlySet<string> = new Set([
+  'notifications',
+  'favorites',
+  'vouchers',
+]);
 
 export function CustomTabBar({
   state,
@@ -53,8 +58,8 @@ export function CustomTabBar({
           if (isCenterButton) {
             return (
               <View key={route.key} style={styles.centerTabContainer}>
-                <TouchableOpacity
-                  activeOpacity={0.88}
+                <ScalePressable
+                  activeScale={0.92}
                   onPress={onPress}
                   style={styles.centerButton}
                 >
@@ -64,7 +69,7 @@ export function CustomTabBar({
                   <Text style={[styles.centerLabel, { fontSize: fs(10.5) }]}>
                     {t('tab_booking')}
                   </Text>
-                </TouchableOpacity>
+                </ScalePressable>
               </View>
             );
           }
@@ -128,13 +133,27 @@ export function CustomTabBar({
           };
 
           return (
-            <TouchableOpacity
+            <ScalePressable
               key={route.key}
-              activeOpacity={0.7}
+              activeScale={0.93}
               onPress={onPress}
               style={styles.tabItem}
             >
-              {renderIcon()}
+              <View style={{ alignItems: 'center', justifyContent: 'center' }}>
+                {renderIcon()}
+                {isFocused && (
+                  <View
+                    style={{
+                      width: 4,
+                      height: 4,
+                      borderRadius: 2,
+                      backgroundColor: COLORS.primary,
+                      marginTop: 2,
+                      marginBottom: -6,
+                    }}
+                  />
+                )}
+              </View>
               <Text
                 style={[
                   styles.tabLabel,
@@ -148,7 +167,7 @@ export function CustomTabBar({
               >
                 {label}
               </Text>
-            </TouchableOpacity>
+            </ScalePressable>
           );
         })}
       </View>
