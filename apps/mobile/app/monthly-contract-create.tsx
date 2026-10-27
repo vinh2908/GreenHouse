@@ -201,7 +201,7 @@ export default function MonthlyContractCreateScreen() {
 
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ padding: 16, gap: 12, paddingBottom: 40 }}
+        contentContainerStyle={{ padding: 16, gap: 12, paddingBottom: 130 }}
       >
         {/* ── Chọn thợ ── */}
         <Card style={{ gap: 10 }}>
