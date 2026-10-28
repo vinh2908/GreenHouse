@@ -338,7 +338,9 @@ export default function CustomerJobsScreen() {
                       }
                       if (job.status === 'refunded') {
                         return (
-                          <Text style={{ fontSize: 12.5, color: COLORS.gray[600], fontWeight: '700' }}>
+                          <Text
+                            style={{ fontSize: 12.5, color: COLORS.gray[600], fontWeight: '700' }}
+                          >
                             Đã hoàn tiền
                           </Text>
                         );
@@ -352,7 +354,9 @@ export default function CustomerJobsScreen() {
                       }
                       if (job.status === 'completed') {
                         return (
-                          <Text style={{ fontSize: 12.5, color: COLORS.success, fontWeight: '700' }}>
+                          <Text
+                            style={{ fontSize: 12.5, color: COLORS.success, fontWeight: '700' }}
+                          >
                             {job.helper_id
                               ? `${t('jobs_helper_label')} ${(job.helper_id as any).full_name}`
                               : 'Công việc hoàn thành'}
@@ -361,7 +365,9 @@ export default function CustomerJobsScreen() {
                       }
                       if (job.helper_id) {
                         return (
-                          <Text style={{ fontSize: 13, color: COLORS.gray[700], fontWeight: '600' }}>
+                          <Text
+                            style={{ fontSize: 13, color: COLORS.gray[700], fontWeight: '600' }}
+                          >
                             {t('jobs_helper_label')}{' '}
                             <Text style={{ color: COLORS.gray[900], fontWeight: '700' }}>
                               {(job.helper_id as any).full_name}
