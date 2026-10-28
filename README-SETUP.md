@@ -13,12 +13,12 @@
 
 Sau khi làm xong Bước 1–7 và mục 10 (bản native Android, bắt buộc), phải mở được cả 4 thứ sau, thiếu 1 cái là chưa xong:
 
-| # | Cái gì | Mở ở đâu | Thấy gì là đạt |
-|---|---|---|---|
-| 1 | API | http://localhost:3000/api/v1/health | Trả về JSON có `"status":"ok"` |
-| 2 | Admin | http://localhost:3001 | Trang đăng nhập Admin |
-| 3 | App / Web | http://localhost:8081 (bấm `w` trong terminal Metro để mở web) | Trang chủ app load được, không trắng trang |
-| 4 | App native Android | Máy ảo Android Studio hoặc điện thoại Android (mục 10) | App cài được lên máy, mở được, đăng nhập được (không chỉ xem web) |
+| #   | Cái gì             | Mở ở đâu                                                       | Thấy gì là đạt                                                    |
+| --- | ------------------ | -------------------------------------------------------------- | ----------------------------------------------------------------- |
+| 1   | API                | http://localhost:3000/api/v1/health                            | Trả về JSON có `"status":"ok"`                                    |
+| 2   | Admin              | http://localhost:3001                                          | Trang đăng nhập Admin                                             |
+| 3   | App / Web          | http://localhost:8081 (bấm `w` trong terminal Metro để mở web) | Trang chủ app load được, không trắng trang                        |
+| 4   | App native Android | Máy ảo Android Studio hoặc điện thoại Android (mục 10)         | App cài được lên máy, mở được, đăng nhập được (không chỉ xem web) |
 
 Ngoài ra còn có Swagger để xem API: http://localhost:3000/api/docs .
 
@@ -32,11 +32,11 @@ GreenHouse (tên repo là `homemate`) là sàn dịch vụ gia đình: khách h�
 
 ### 3 vai trò, 3 mặt giao diện
 
-| Vai trò | Dùng mặt nào | Làm gì chính |
-|---|---|---|
-| Khách hàng (customer) | App mobile + bản web của app | Đăng việc, xem báo giá, chọn thợ, chat, theo dõi thợ trên bản đồ, nghiệm thu, đánh giá, khiếu nại |
+| Vai trò                  | Dùng mặt nào                 | Làm gì chính                                                                                      |
+| ------------------------ | ---------------------------- | ------------------------------------------------------------------------------------------------- |
+| Khách hàng (customer)    | App mobile + bản web của app | Đăng việc, xem báo giá, chọn thợ, chat, theo dõi thợ trên bản đồ, nghiệm thu, đánh giá, khiếu nại |
 | Người giúp việc (helper) | App mobile + bản web của app | Nhận việc, báo giá, quản lý lịch, ví thu nhập, e-KYC (xác minh danh tính), SOS khi không làm được |
-| Quản trị viên (admin) | Admin Next.js riêng | Duyệt thợ/KYC, quản lý đơn, thanh toán, voucher, khiếu nại/tranh chấp, thống kê |
+| Quản trị viên (admin)    | Admin Next.js riêng          | Duyệt thợ/KYC, quản lý đơn, thanh toán, voucher, khiếu nại/tranh chấp, thống kê                   |
 
 Một tài khoản có thể mang nhiều vai trò, vai trò đang dùng là `active_role`. Tài khoản test và cách đăng nhập xem mục 11.
 
@@ -116,15 +116,16 @@ GreenHouse/
 
 ## 2. Yêu cầu trước khi bắt đầu — kiểm tra đủ rồi mới sang Bước 1
 
-| Công cụ | Phiên bản yêu cầu | Lệnh kiểm tra | Kết quả phải thấy |
-|---|---|---|---|
-| Git | Bất kỳ bản mới nào | `git --version` | In ra version, không báo lỗi |
-| Node.js | >= 20 | `node -v` | v20.x trở lên |
-| pnpm | 10.29.3 (đúng version trong packageManager của repo) | `pnpm -v` | 10.29.3 |
-| Docker Desktop | Bản mới nhất, đang chạy | `docker --version` và `docker compose version` | In ra version, Docker Desktop đang ở trạng thái Running |
-| Trình duyệt | Chrome / Edge mới nhất | — | — |
+| Công cụ        | Phiên bản yêu cầu                                    | Lệnh kiểm tra                                  | Kết quả phải thấy                                       |
+| -------------- | ---------------------------------------------------- | ---------------------------------------------- | ------------------------------------------------------- |
+| Git            | Bất kỳ bản mới nào                                   | `git --version`                                | In ra version, không báo lỗi                            |
+| Node.js        | >= 20                                                | `node -v`                                      | v20.x trở lên                                           |
+| pnpm           | 10.29.3 (đúng version trong packageManager của repo) | `pnpm -v`                                      | 10.29.3                                                 |
+| Docker Desktop | Bản mới nhất, đang chạy                              | `docker --version` và `docker compose version` | In ra version, Docker Desktop đang ở trạng thái Running |
+| Trình duyệt    | Chrome / Edge mới nhất                               | —                                              | —                                                       |
 
 Cài pnpm nếu chưa có (chỉ làm 1 lần):
+
 ```bash
 corepack enable
 corepack prepare pnpm@10.29.3 --activate
@@ -167,12 +168,14 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 ```
 
 Sau khi điền, 2 dòng đó trông như sau (chuỗi của bạn sẽ khác):
+
 ```env
 JWT_ACCESS_SECRET=<chuỗi-64-ký-tự-hex-bạn-vừa-sinh>
 JWT_REFRESH_SECRET=<chuỗi-64-ký-tự-hex-khác-bạn-vừa-sinh>
 ```
 
 Các giá trị còn lại để nguyên như trong `.env.example` (đã khớp với Docker ở Bước 4):
+
 ```env
 MONGODB_URI=mongodb://admin:password@localhost:27017/homemate?authSource=admin
 REDIS_URL=redis://:password@localhost:6379
@@ -187,10 +190,10 @@ CORS_ORIGINS=http://localhost:3001,http://localhost:8081
 
 ### 5.2. Các biến KHÔNG bắt buộc — thiếu vẫn chạy được, đừng kẹt ở đây
 
-| Biến | Để làm gì | Nếu không có thì sao |
-|---|---|---|
+| Biến                                                   | Để làm gì                     | Nếu không có thì sao                                                                                                                                                                                                 |
+| ------------------------------------------------------ | ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `EXPO_PUBLIC_GOONG_API_KEY` (trong `apps/mobile/.env`) | Tìm địa chỉ có số nhà (Goong) | Tìm địa chỉ vẫn chạy nhưng rớt về Photon, thường không có số nhà VN. Key lấy tại goong.io, để trong `.env` local, không commit. Chỉ tạo file `apps/mobile/.env` khi cần key này hoặc khi cần chỉ định API ở mục 10.4 |
-| Stringee, Gemini, OpenAI, Zalo | Gọi thoại, AI, thông báo Zalo | Nút gọi tự ẩn, tính năng AI tắt, app vẫn chạy bình thường. Đừng đợi xin đủ key mới bắt đầu chạy. |
+| Stringee, Gemini, OpenAI, Zalo                         | Gọi thoại, AI, thông báo Zalo | Nút gọi tự ẩn, tính năng AI tắt, app vẫn chạy bình thường. Đừng đợi xin đủ key mới bắt đầu chạy.                                                                                                                     |
 
 ## 6. Bước 4 — Bật hạ tầng (Mongo / Redis / MinIO) bằng Docker
 
@@ -206,11 +209,13 @@ docker compose ps
 ## 7. Bước 5 — Chạy API (terminal 1)
 
 Mở terminal 1 ở root repo, chạy:
+
 ```bash
 pnpm --filter @homemate/api dev
 ```
 
 **Kiểm tra — phải thấy cả 2:**
+
 1. Trong terminal phải thấy dòng log:
    ```text
    🚀 HomeMate API running on: http://0.0.0.0:3000/api/v1
@@ -227,6 +232,7 @@ Giữ nguyên terminal này chạy trong suốt buổi làm việc. Tắt termin
 ## 8. Bước 6 — Chạy Admin (terminal 2)
 
 Mở terminal 2 ở root repo, chạy:
+
 ```bash
 pnpm --filter @homemate/admin dev
 ```
@@ -236,11 +242,13 @@ pnpm --filter @homemate/admin dev
 ## 9. Bước 7 — Chạy App / Web (terminal 3)
 
 Mở terminal 3 ở root repo, chạy:
+
 ```bash
 pnpm --filter @homemate/mobile dev
 ```
 
 **Kiểm tra:** terminal Metro phải hiện mã QR và dòng chờ kết nối. Sau đó:
+
 - **Xem bản Web (không cần điện thoại, khuyến nghị cho cả nhóm lúc đầu)**: trong terminal Metro bấm phím `w`, trình duyệt sẽ mở `http://localhost:8081`. Muốn xem đúng tỉ lệ điện thoại thì trong Chrome bấm `F12` → `Ctrl+Shift+M` → chọn máy iPhone/Pixel (chiều rộng 360–412px).
 - **Xem trên điện thoại thật qua Expo Go**: điện thoại và máy dev cùng Wi-Fi, mở app Expo Go quét mã QR trong terminal Metro.
 - **Xem bản native trên Android (Android Studio)**: xem mục 10. Đây là bước **BẮT BUỘC cho cả nhóm** — ai cũng phải chạy được bản native, không chỉ xem bản web, vì có những tính năng (gọi thoại, bản đồ, thông báo đẩy...) chỉ test được trên bản native.
@@ -274,6 +282,7 @@ Repo đã có sẵn thư mục `apps/mobile/android` (đã prebuild). **Đừng 
 ### 10.3. Chạy app native
 
 API + Metro (Bước 5 và 7) phải đang chạy trước, rồi chạy từ root repo:
+
 ```bash
 pnpm --filter @homemate/mobile android
 ```
@@ -333,16 +342,16 @@ Tóm lại: **chạy được đủ 4 tick ở local trước, được owner du
 
 ## 13. Lỗi thường gặp — tra bảng này trước khi hỏi nhóm
 
-| Triệu chứng | Nguyên nhân thường gặp nhất | Cách xử lý đúng (làm theo thứ tự) |
-|---|---|---|
-| API báo lỗi kết nối Mongo / MongoNetworkError | Chưa chạy Docker hạ tầng, hoặc sai `MONGODB_URI` | Chạy lại Bước 4, kiểm tra `docker compose ps` thấy Mongo running rồi mới chạy lại API |
-| Admin mở lên nhưng không có dữ liệu / gọi API lỗi | API chưa chạy, hoặc Admin trỏ sai API | API phải đạt kiểm tra ở Bước 5 trước; kiểm tra `NEXT_PUBLIC_API_URL` nếu có set tay |
-| Web/app báo Network Error khi đăng nhập | App trỏ sai API | Xem mục 10.4: máy ảo dùng `10.0.2.2`, điện thoại USB dùng `adb reverse`, điện thoại Wi-Fi dùng IP LAN trong `.env`, rồi khởi động lại Metro |
-| Metro báo lỗi lạ sau khi pull code mới | Cache Metro cũ | Dừng Metro, xóa thư mục `.expo` trong `apps/mobile`, chạy lại lệnh dev |
-| Port 3000 / 3001 / 8081 đã bị chiếm | Còn process cũ chạy ngầm | Tắt process cũ (hoặc tắt Docker api/admin nếu lỡ chạy `docker compose up` trần), rồi chạy lại |
-| Sửa code mà app không đổi | Nhầm nhánh, hoặc Metro/admin chưa load lại | Kiểm tra `git branch --show-current` phải là `master`, lưu file, xem terminal có báo lỗi biên dịch không |
-| Tìm địa chỉ không có số nhà | Thiếu key Goong | Thêm `EXPO_PUBLIC_GOONG_API_KEY` vào `apps/mobile/.env` rồi khởi động lại Metro (mục 5.2) |
-| Build Android lỗi về JDK / Gradle | Dùng JDK cũ, hoặc chưa set `JAVA_HOME` | Set `JAVA_HOME` về thư mục `jbr` của Android Studio, mở lại terminal, chạy lại |
+| Triệu chứng                                       | Nguyên nhân thường gặp nhất                      | Cách xử lý đúng (làm theo thứ tự)                                                                                                           |
+| ------------------------------------------------- | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| API báo lỗi kết nối Mongo / MongoNetworkError     | Chưa chạy Docker hạ tầng, hoặc sai `MONGODB_URI` | Chạy lại Bước 4, kiểm tra `docker compose ps` thấy Mongo running rồi mới chạy lại API                                                       |
+| Admin mở lên nhưng không có dữ liệu / gọi API lỗi | API chưa chạy, hoặc Admin trỏ sai API            | API phải đạt kiểm tra ở Bước 5 trước; kiểm tra `NEXT_PUBLIC_API_URL` nếu có set tay                                                         |
+| Web/app báo Network Error khi đăng nhập           | App trỏ sai API                                  | Xem mục 10.4: máy ảo dùng `10.0.2.2`, điện thoại USB dùng `adb reverse`, điện thoại Wi-Fi dùng IP LAN trong `.env`, rồi khởi động lại Metro |
+| Metro báo lỗi lạ sau khi pull code mới            | Cache Metro cũ                                   | Dừng Metro, xóa thư mục `.expo` trong `apps/mobile`, chạy lại lệnh dev                                                                      |
+| Port 3000 / 3001 / 8081 đã bị chiếm               | Còn process cũ chạy ngầm                         | Tắt process cũ (hoặc tắt Docker api/admin nếu lỡ chạy `docker compose up` trần), rồi chạy lại                                               |
+| Sửa code mà app không đổi                         | Nhầm nhánh, hoặc Metro/admin chưa load lại       | Kiểm tra `git branch --show-current` phải là `master`, lưu file, xem terminal có báo lỗi biên dịch không                                    |
+| Tìm địa chỉ không có số nhà                       | Thiếu key Goong                                  | Thêm `EXPO_PUBLIC_GOONG_API_KEY` vào `apps/mobile/.env` rồi khởi động lại Metro (mục 5.2)                                                   |
+| Build Android lỗi về JDK / Gradle                 | Dùng JDK cũ, hoặc chưa set `JAVA_HOME`           | Set `JAVA_HOME` về thư mục `jbr` của Android Studio, mở lại terminal, chạy lại                                                              |
 
 Khi hỏi nhóm, gửi kèm 3 thứ: **lệnh đã chạy, log lỗi đầy đủ, đang kẹt ở Bước mấy** — đừng chỉ báo "chạy không được".
 

@@ -299,9 +299,7 @@ export function DateTimeBottomSheet({
                 color={activeTab === 'date' ? '#047857' : '#64748B'}
                 strokeWidth={2.2}
               />
-              <Text
-                style={[styles.segBtnText, activeTab === 'date' && styles.segBtnTextActive]}
-              >
+              <Text style={[styles.segBtnText, activeTab === 'date' && styles.segBtnTextActive]}>
                 Ngày
               </Text>
             </TouchableOpacity>
@@ -316,9 +314,7 @@ export function DateTimeBottomSheet({
                 color={activeTab === 'time' ? '#047857' : '#64748B'}
                 strokeWidth={2.2}
               />
-              <Text
-                style={[styles.segBtnText, activeTab === 'time' && styles.segBtnTextActive]}
-              >
+              <Text style={[styles.segBtnText, activeTab === 'time' && styles.segBtnTextActive]}>
                 Giờ
               </Text>
             </TouchableOpacity>
@@ -350,9 +346,7 @@ export function DateTimeBottomSheet({
                   />
                 </TouchableOpacity>
 
-                <Text style={styles.calMonthTitle}>
-                  Tháng {calendarMonth.format('M · YYYY')}
-                </Text>
+                <Text style={styles.calMonthTitle}>Tháng {calendarMonth.format('M · YYYY')}</Text>
 
                 <TouchableOpacity
                   onPress={() => setCalendarMonth(prev => prev.add(1, 'month'))}
@@ -600,9 +594,7 @@ export function DateTimeBottomSheet({
                           </Text>
                         </View>
                       )}
-                      <Text
-                        style={[styles.sheetChipText, isSel && styles.sheetChipTextActive]}
-                      >
+                      <Text style={[styles.sheetChipText, isSel && styles.sheetChipTextActive]}>
                         {item.t}
                       </Text>
                     </TouchableOpacity>
@@ -635,17 +627,12 @@ export function DateTimeBottomSheet({
                             isPastChip && { opacity: 0.35 },
                           ]}
                         >
-                          <Text
-                            style={[
-                              styles.sheetChipText,
-                              isSel && styles.sheetChipTextActive,
-                            ]}
-                          >
+                          <Text style={[styles.sheetChipText, isSel && styles.sheetChipTextActive]}>
                             {t}
                           </Text>
                         </TouchableOpacity>
                       );
-                    }
+                    },
                   )}
                 </ScrollView>
               </View>

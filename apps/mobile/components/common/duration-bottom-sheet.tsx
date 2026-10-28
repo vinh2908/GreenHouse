@@ -233,7 +233,9 @@ export function DurationBottomSheet({
               style={[styles.headBtn, isUnderMinDuration && styles.confirmBtnDisabled]}
               hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
             >
-              <Text style={[styles.confirmBtnText, isUnderMinDuration && styles.confirmBtnTextDisabled]}>
+              <Text
+                style={[styles.confirmBtnText, isUnderMinDuration && styles.confirmBtnTextDisabled]}
+              >
                 Xác nhận
               </Text>
             </TouchableOpacity>
