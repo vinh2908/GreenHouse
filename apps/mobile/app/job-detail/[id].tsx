@@ -40,6 +40,7 @@ import 'dayjs/locale/vi';
 import Toast from 'react-native-toast-message';
 import { Alert } from '@/components/common/app-alert';
 import { useAuthStore } from '@/stores/auth.store';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   useJobDetail,
   useJobQuotes,
@@ -149,6 +150,7 @@ export default function JobDetailScreen() {
   const payJob = usePayJob();
   const openDispute = useOpenDispute();
   const respondAmendment = useRespondAmendment();
+  const queryClient = useQueryClient();
 
   // ── Roadmap Phase 1: thợ yêu thích / gửi riêng / gọi trong app ───────────
   const { data: favorites } = useFavorites();
@@ -343,7 +345,7 @@ export default function JobDetailScreen() {
     setEditFullAddress(job.address?.full_address || '');
     setEditWard(job.address?.ward || '');
     setEditDistrict(job.address?.district || '');
-    setEditCity(job.address?.city || 'Hồ Chí Minh');
+    setEditCity(job.address?.city || '');
     setEditNotes(job.address?.notes || '');
     setEditCoords(job.address?.location?.coordinates || null);
     setShowEditModal(true);
@@ -357,7 +359,7 @@ export default function JobDetailScreen() {
         setEditFullAddress(details.road || details.full_address);
         setEditWard(details.ward || '');
         setEditDistrict(details.district || '');
-        setEditCity(details.city || 'Hồ Chí Minh');
+        setEditCity(details.city || '');
         setEditCoords(details.coordinates);
         Toast.show({
           type: 'success',
@@ -461,11 +463,11 @@ export default function JobDetailScreen() {
     if (job.status === 'helper_on_the_way') {
       Alert.alert(
         'Hủy khi thợ đang di chuyển',
-        'Thợ đã bắt đầu di chuyển đến điểm làm việc của bạn. Theo chính sách Green House, bạn sẽ chịu phí di chuyển 30.000₫ hỗ trợ cho thợ. Bạn có chắc chắn muốn hủy đơn không?',
+        'Thợ đã bắt đầu di chuyển đến điểm làm việc của bạn. Bạn có chắc chắn muốn hủy đơn không?',
         [
           { text: 'Ở lại', style: 'cancel' },
           {
-            text: 'Đồng ý hủy (-30.000₫)',
+            text: 'Đồng ý hủy',
             style: 'destructive',
             onPress: doCancel,
           },
@@ -492,9 +494,7 @@ export default function JobDetailScreen() {
     try {
       // 1. Ghi nhận thanh toán nếu đơn chưa thanh toán (đơn bảo hành miễn phí — bỏ qua)
       if (job.payment_status !== 'paid' && !job.is_warranty) {
-        await payJob
-          .mutateAsync({ job_id: id!, payment_method: paymentMethod })
-          .catch(() => undefined);
+        await payJob.mutateAsync({ job_id: id!, payment_method: paymentMethod });
       }
 
       // 2. Nghiệm thu hoàn thành công việc & quyết toán theo phương thức (Tiền mặt vs Escrow)
@@ -505,7 +505,12 @@ export default function JobDetailScreen() {
         payment_method: paymentMethod,
       });
 
-      // 3. Ghi nhận đánh giá vào bảng Reviews
+      // 3. Invalidate loyalty cache để cập nhật điểm mới ngay lập tức
+      queryClient.invalidateQueries({ queryKey: ['loyalty'] });
+      queryClient.invalidateQueries({ queryKey: ['loyalty-account'] });
+      queryClient.invalidateQueries({ queryKey: ['loyalty-history'] });
+
+      // 4. Ghi nhận đánh giá vào bảng Reviews
       if (job.helper_id) {
         const helperIdStr = typeof job.helper_id === 'string' ? job.helper_id : job.helper_id._id;
         await createReview

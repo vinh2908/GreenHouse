@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -94,6 +94,33 @@ export default function HelperJobDetailScreen() {
   const gps = useLiveGpsStore(s => s.point);
   const gpsError = useLiveGpsStore(s => s.error);
   const [routeMetrics, setRouteMetrics] = useState<RouteMetrics | null>(null);
+
+  // B7: Tính khoảng cách và ETA dự phòng từ tọa độ nếu live map chưa bắn metrics
+  const effectiveMetrics = useMemo(() => {
+    if (routeMetrics) return routeMetrics;
+    const destCoords = job?.address?.location?.coordinates;
+    if (!destCoords || !Array.isArray(destCoords) || destCoords.length < 2) return null;
+    const destLat = destCoords[1];
+    const destLng = destCoords[0];
+    if (!destLat || !destLng) return null;
+
+    const myLat = gps?.lat ?? helperProfile?.location?.coordinates?.[1];
+    const myLng = gps?.lng ?? helperProfile?.location?.coordinates?.[0];
+    if (!myLat || !myLng) return null;
+
+    const rad = Math.PI / 180;
+    const dLat = (destLat - myLat) * rad;
+    const dLng = (destLng - myLng) * rad;
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(myLat * rad) * Math.cos(destLat * rad) * Math.sin(dLng / 2) * Math.sin(dLng / 2);
+    const distKm = 6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    const etaMins = Math.max(1, Math.round((distKm / 25) * 60));
+    return {
+      distanceKm: Math.round(distKm * 10) / 10,
+      etaMinutes: etaMins,
+    };
+  }, [routeMetrics, job?.address?.location?.coordinates, gps, helperProfile?.location?.coordinates]);
 
   const submitQuote = useSubmitQuote();
   const acceptFixed = useAcceptFixedPrice();
@@ -575,11 +602,11 @@ export default function HelperJobDetailScreen() {
               >
                 {formatDisplayAddress(job.address)}
               </Text>
-              {routeMetrics && (
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+              {effectiveMetrics && (
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 }}>
                   <Navigation size={14} color={COLORS.primary} />
                   <Text style={{ fontSize: 13, color: COLORS.primary, fontWeight: '700' }}>
-                    Còn {routeMetrics.distanceKm.toFixed(1)} km · khoảng {routeMetrics.etaMinutes}{' '}
+                    Khoảng cách: ~{effectiveMetrics.distanceKm.toFixed(1)} km · ETA ước tính: ~{effectiveMetrics.etaMinutes}{' '}
                     phút
                   </Text>
                 </View>
@@ -913,11 +940,18 @@ export default function HelperJobDetailScreen() {
                 </Text>
               </Card>
             ) : (
-              <Button
-                title="Gửi báo giá cho khách"
-                onPress={handleOpenQuoteModal}
-                icon={<Text style={{ color: '#fff', fontSize: 18 }}>💰</Text>}
-              />
+              <View style={{ gap: 10 }}>
+                <Button
+                  title="Gửi báo giá cho khách"
+                  onPress={handleOpenQuoteModal}
+                  icon={<Text style={{ color: '#fff', fontSize: 18 }}>💰</Text>}
+                />
+                <Button
+                  title="Từ chối / Bỏ qua đơn này"
+                  variant="outline"
+                  onPress={() => router.back()}
+                />
+              </View>
             )}
           </View>
         )}
@@ -977,6 +1011,19 @@ export default function HelperJobDetailScreen() {
                   keyboardType="numeric"
                   placeholderTextColor={COLORS.gray[400]}
                 />
+                {laborCost !== '' && Number(laborCost) < 50000 && (
+                  <Text
+                    style={{
+                      fontSize: 12,
+                      color: COLORS.error,
+                      fontWeight: '600',
+                      marginTop: 4,
+                    }}
+                  >
+                    ⚠️ Tiền công báo giá tối thiểu là 50.000₫ (hiện tại:{' '}
+                    {Number(laborCost).toLocaleString('vi-VN')}₫)
+                  </Text>
+                )}
               </View>
 
               <View style={{ gap: 6 }}>
@@ -999,6 +1046,19 @@ export default function HelperJobDetailScreen() {
                   keyboardType="numeric"
                   placeholderTextColor={COLORS.gray[400]}
                 />
+                {laborCost !== '' && Number(laborCost) < 50000 && (
+                  <Text
+                    style={{
+                      fontSize: 12,
+                      color: COLORS.error,
+                      fontWeight: '600',
+                      marginTop: 4,
+                    }}
+                  >
+                    ⚠️ Tiền công báo giá tối thiểu là 50.000₫ (hiện tại:{' '}
+                    {Number(laborCost).toLocaleString('vi-VN')}₫)
+                  </Text>
+                )}
               </View>
 
               <View style={{ gap: 6 }}>
@@ -1074,6 +1134,19 @@ export default function HelperJobDetailScreen() {
                   keyboardType="numeric"
                   placeholderTextColor={COLORS.gray[400]}
                 />
+                {laborCost !== '' && Number(laborCost) < 50000 && (
+                  <Text
+                    style={{
+                      fontSize: 12,
+                      color: COLORS.error,
+                      fontWeight: '600',
+                      marginTop: 4,
+                    }}
+                  >
+                    ⚠️ Tiền công báo giá tối thiểu là 50.000₫ (hiện tại:{' '}
+                    {Number(laborCost).toLocaleString('vi-VN')}₫)
+                  </Text>
+                )}
               </View>
 
               {total > 0 && (
@@ -1165,6 +1238,7 @@ export default function HelperJobDetailScreen() {
               <Button
                 title="Xác nhận gửi báo giá"
                 loading={submitQuote.isPending}
+                disabled={!laborCost || Number(laborCost) < 50000 || submitQuote.isPending}
                 onPress={handleSubmitQuote}
               />
             </ScrollView>

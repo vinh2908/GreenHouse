@@ -12,12 +12,9 @@ if (!goongKey && fs.existsSync(envPath)) {
   if (match) goongKey = match[1].trim();
 }
 
-if (!goongKey) {
-  console.warn(
-    '\n⚠️ [METRO BUILD CHECK] EXPO_PUBLIC_GOONG_API_KEY is missing in apps/mobile/.env!',
-  );
-  console.warn(
-    '   Please set EXPO_PUBLIC_GOONG_API_KEY in apps/mobile/.env before building APK.\n',
+if (!goongKey || goongKey.length < 10 || goongKey.startsWith('eyJ') || goongKey.startsWith('{')) {
+  throw new Error(
+    '[METRO BUILD CHECK] EXPO_PUBLIC_GOONG_API_KEY is missing or invalid in apps/mobile/.env! Build aborted.',
   );
 } else {
   console.log('✅ [METRO BUILD CHECK] EXPO_PUBLIC_GOONG_API_KEY is present and validated.');
