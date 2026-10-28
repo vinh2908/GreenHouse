@@ -17,8 +17,17 @@ const TX_META: Record<string, { label: string; emoji: string }> = {
 export default function LoyaltyScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { data: account, isLoading, refetch: refetchAccount, isRefetching: isRefetchingAccount } = useLoyaltyAccount();
-  const { data: history, refetch: refetchHistory, isRefetching: isRefetchingHistory } = useLoyaltyHistory(1, 30);
+  const {
+    data: account,
+    isLoading,
+    refetch: refetchAccount,
+    isRefetching: isRefetchingAccount,
+  } = useLoyaltyAccount();
+  const {
+    data: history,
+    refetch: refetchHistory,
+    isRefetching: isRefetchingHistory,
+  } = useLoyaltyHistory(1, 30);
 
   const handleRefresh = async () => {
     await Promise.all([refetchAccount(), refetchHistory()]);
