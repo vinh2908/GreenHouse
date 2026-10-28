@@ -1,5 +1,5 @@
 // apps/mobile/components/common/date-time-bottom-sheet.tsx
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
@@ -7,27 +7,21 @@ import {
   TouchableOpacity,
   ScrollView,
   StyleSheet,
-  Dimensions,
   Platform,
   TouchableWithoutFeedback,
   type NativeSyntheticEvent,
   type NativeScrollEvent,
 } from 'react-native';
 import dayjs from 'dayjs';
-import {
-  Calendar as CalendarIcon,
-  Clock,
-  ChevronLeft,
-  ChevronRight,
-  X,
-  Check,
-} from 'lucide-react-native';
-import { COLORS } from '@/components/ui';
-import { ScalePressable } from '@/components/common/scale-pressable';
+import 'dayjs/locale/vi';
+import { Calendar as CalendarIcon, Clock, ChevronLeft, ChevronRight } from 'lucide-react-native';
 
-const ITEM_HEIGHT = 44;
-const VISIBLE_ITEMS = 3;
-const WHEEL_HEIGHT = ITEM_HEIGHT * VISIBLE_ITEMS; // 132px
+dayjs.locale('vi');
+
+export const ITEM_HEIGHT = 46;
+export const VISIBLE_ROWS = 5;
+export const WHEEL_HEIGHT = ITEM_HEIGHT * VISIBLE_ROWS; // 230px
+export const SPACER_HEIGHT = ITEM_HEIGHT * 2; // 92px (2 items on top, 2 on bottom, center item active)
 
 export interface DateTimeBottomSheetProps {
   visible: boolean;
@@ -46,125 +40,204 @@ export function DateTimeBottomSheet({
   onClose,
   onConfirm,
 }: DateTimeBottomSheetProps) {
-  // Active Tab: 'date' | 'time'
   const [activeTab, setActiveTab] = useState<'date' | 'time'>(initialTab);
 
-  // Temporary selection state inside sheet (only committed on Confirm)
+  // Temporary selection state inside sheet
   const [tempDate, setTempDate] = useState<string>(initialDate || dayjs().format('YYYY-MM-DD'));
   const [tempTime, setTempTime] = useState<string>(initialTime || '08:00');
 
   // Calendar month state
   const [calendarMonth, setCalendarMonth] = useState(() => dayjs(initialDate || undefined));
 
-  // Parse hour & minute
-  const parsedHour = useMemo(() => {
-    const h = parseInt((tempTime || '08:00').split(':')[0], 10);
+  // Parsed initial indices
+  const parseHour = (t: string) => {
+    const h = parseInt((t || '08:00').split(':')[0], 10);
     return isNaN(h) ? 8 : Math.max(0, Math.min(23, h));
-  }, [tempTime]);
-
-  const parsedMinute = useMemo(() => {
-    const m = parseInt((tempTime || '08:00').split(':')[1], 10);
+  };
+  const parseMinute = (t: string) => {
+    const m = parseInt((t || '08:00').split(':')[1], 10);
     return isNaN(m) ? 0 : Math.max(0, Math.min(59, m));
-  }, [tempTime]);
+  };
 
-  const [selectedH, setSelectedH] = useState(parsedHour);
-  const [selectedM, setSelectedM] = useState(parsedMinute);
+  const [selectedH, setSelectedH] = useState(() => parseHour(initialTime));
+  const [selectedM, setSelectedM] = useState(() => parseMinute(initialTime));
 
   const hoursScrollRef = useRef<ScrollView>(null);
   const minutesScrollRef = useRef<ScrollView>(null);
-  const isUserScrollingRef = useRef(false);
+  const selectedHRef = useRef(selectedH);
+  const selectedMRef = useRef(selectedM);
+  selectedHRef.current = selectedH;
+  selectedMRef.current = selectedM;
 
-  // Reset temp state whenever modal becomes visible
+  // Lists
+  const hoursList = useMemo(() => Array.from({ length: 24 }, (_, i) => i), []);
+  const minutesList = useMemo(() => Array.from({ length: 60 }, (_, i) => i), []);
+
+  const pinWheels = useCallback((h: number, m: number, animated = false) => {
+    try {
+      hoursScrollRef.current?.scrollTo({ y: h * ITEM_HEIGHT, animated });
+      minutesScrollRef.current?.scrollTo({ y: m * ITEM_HEIGHT, animated });
+    } catch {
+      // Safe fallback
+    }
+  }, []);
+
+  // Sync state whenever modal opens or initial values change
   useEffect(() => {
     if (visible) {
       const d = initialDate || dayjs().format('YYYY-MM-DD');
       const t = initialTime || '08:00';
+      const h = parseHour(t);
+      const m = parseMinute(t);
+
       setTempDate(d);
       setTempTime(t);
+      setSelectedH(h);
+      setSelectedM(m);
       setActiveTab(initialTab);
       setCalendarMonth(dayjs(d));
 
-      const parts = t.split(':');
-      const h = parseInt(parts[0], 10) || 8;
-      const m = parseInt(parts[1], 10) || 0;
+      // Multi-phase pin to guarantee Android layout measurements receive the offset
+      requestAnimationFrame(() => pinWheels(h, m, false));
+      const t1 = setTimeout(() => pinWheels(h, m, false), 50);
+      const t2 = setTimeout(() => pinWheels(h, m, false), 150);
+      const t3 = setTimeout(() => pinWheels(h, m, false), 300);
+
+      return () => {
+        clearTimeout(t1);
+        clearTimeout(t2);
+        clearTimeout(t3);
+      };
+    }
+  }, [visible, initialDate, initialTime, initialTab, pinWheels]);
+
+  // When activeTab switches to 'time', ensure wheels are pinned
+  useEffect(() => {
+    if (visible && activeTab === 'time') {
+      const h = selectedHRef.current;
+      const m = selectedMRef.current;
+      requestAnimationFrame(() => pinWheels(h, m, false));
+      const t1 = setTimeout(() => pinWheels(h, m, false), 50);
+      const t2 = setTimeout(() => pinWheels(h, m, false), 150);
+      return () => {
+        clearTimeout(t1);
+        clearTimeout(t2);
+      };
+    }
+  }, [visible, activeTab, pinWheels]);
+
+  // Handlers for scroll wheel events - CRASH-PROOF, SYNCHRONOUS, NO POOLED EVENT LEAKS
+  const handleHourScroll = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    try {
+      const y = e.nativeEvent?.contentOffset?.y ?? 0;
+      const idx = Math.max(0, Math.min(23, Math.round(y / ITEM_HEIGHT)));
+      if (idx !== selectedHRef.current) {
+        selectedHRef.current = idx;
+        setSelectedH(idx);
+        const newTime = `${String(idx).padStart(2, '0')}:${String(selectedMRef.current).padStart(2, '0')}`;
+        setTempTime(newTime);
+      }
+    } catch {
+      // Prevent unhandled errors
+    }
+  }, []);
+
+  const handleHourScrollEnd = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    try {
+      const y = e.nativeEvent?.contentOffset?.y ?? 0;
+      const idx = Math.max(0, Math.min(23, Math.round(y / ITEM_HEIGHT)));
+      selectedHRef.current = idx;
+      setSelectedH(idx);
+      const newTime = `${String(idx).padStart(2, '0')}:${String(selectedMRef.current).padStart(2, '0')}`;
+      setTempTime(newTime);
+      hoursScrollRef.current?.scrollTo({ y: idx * ITEM_HEIGHT, animated: true });
+    } catch {
+      // Prevent unhandled errors
+    }
+  }, []);
+
+  const handleMinuteScroll = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    try {
+      const y = e.nativeEvent?.contentOffset?.y ?? 0;
+      const idx = Math.max(0, Math.min(59, Math.round(y / ITEM_HEIGHT)));
+      if (idx !== selectedMRef.current) {
+        selectedMRef.current = idx;
+        setSelectedM(idx);
+        const newTime = `${String(selectedHRef.current).padStart(2, '0')}:${String(idx).padStart(2, '0')}`;
+        setTempTime(newTime);
+      }
+    } catch {
+      // Prevent unhandled errors
+    }
+  }, []);
+
+  const handleMinuteScrollEnd = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    try {
+      const y = e.nativeEvent?.contentOffset?.y ?? 0;
+      const idx = Math.max(0, Math.min(59, Math.round(y / ITEM_HEIGHT)));
+      selectedMRef.current = idx;
+      setSelectedM(idx);
+      const newTime = `${String(selectedHRef.current).padStart(2, '0')}:${String(idx).padStart(2, '0')}`;
+      setTempTime(newTime);
+      minutesScrollRef.current?.scrollTo({ y: idx * ITEM_HEIGHT, animated: true });
+    } catch {
+      // Prevent unhandled errors
+    }
+  }, []);
+
+  const selectHour = useCallback((h: number) => {
+    selectedHRef.current = h;
+    setSelectedH(h);
+    hoursScrollRef.current?.scrollTo({ y: h * ITEM_HEIGHT, animated: true });
+    const newTime = `${String(h).padStart(2, '0')}:${String(selectedMRef.current).padStart(2, '0')}`;
+    setTempTime(newTime);
+  }, []);
+
+  const selectMinute = useCallback((m: number) => {
+    selectedMRef.current = m;
+    setSelectedM(m);
+    minutesScrollRef.current?.scrollTo({ y: m * ITEM_HEIGHT, animated: true });
+    const newTime = `${String(selectedHRef.current).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+    setTempTime(newTime);
+  }, []);
+
+  const selectExactTime = useCallback((timeStr: string) => {
+    const parts = timeStr.split(':');
+    const h = parseInt(parts[0], 10);
+    const m = parseInt(parts[1], 10);
+    if (!isNaN(h) && !isNaN(m)) {
+      selectedHRef.current = h;
+      selectedMRef.current = m;
       setSelectedH(h);
       setSelectedM(m);
-
-      // Scroll wheel to position after modal renders
-      setTimeout(() => {
-        hoursScrollRef.current?.scrollTo({ y: h * ITEM_HEIGHT, animated: false });
-        minutesScrollRef.current?.scrollTo({ y: m * ITEM_HEIGHT, animated: false });
-      }, 100);
+      setTempTime(timeStr);
+      hoursScrollRef.current?.scrollTo({ y: h * ITEM_HEIGHT, animated: true });
+      minutesScrollRef.current?.scrollTo({ y: m * ITEM_HEIGHT, animated: true });
     }
-  }, [visible, initialDate, initialTime, initialTab]);
+  }, []);
 
-  // Sync scroll position when activeTab switches to 'time'
-  useEffect(() => {
-    if (activeTab === 'time') {
-      setTimeout(() => {
-        hoursScrollRef.current?.scrollTo({ y: selectedH * ITEM_HEIGHT, animated: false });
-        minutesScrollRef.current?.scrollTo({ y: selectedM * ITEM_HEIGHT, animated: false });
-      }, 60);
-    }
-  }, [activeTab]);
-
-  const hoursList = useMemo(() => Array.from({ length: 24 }, (_, i) => i), []);
-  const minutesList = useMemo(() => Array.from({ length: 60 }, (_, i) => i), []);
-
-  const handleHourScrollEnd = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-    const y = e.nativeEvent.contentOffset.y;
-    const idx = Math.max(0, Math.min(23, Math.round(y / ITEM_HEIGHT)));
-    setSelectedH(idx);
-    isUserScrollingRef.current = false;
-    const newTime = `${String(idx).padStart(2, '0')}:${String(selectedM).padStart(2, '0')}`;
-    setTempTime(newTime);
-  };
-
-  const handleMinuteScrollEnd = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-    const y = e.nativeEvent.contentOffset.y;
-    const idx = Math.max(0, Math.min(59, Math.round(y / ITEM_HEIGHT)));
-    setSelectedM(idx);
-    isUserScrollingRef.current = false;
-    const newTime = `${String(selectedH).padStart(2, '0')}:${String(idx).padStart(2, '0')}`;
-    setTempTime(newTime);
-  };
-
-  const selectHour = (h: number) => {
-    setSelectedH(h);
-    hoursScrollRef.current?.scrollTo({ y: h * ITEM_HEIGHT, animated: true });
-    const newTime = `${String(h).padStart(2, '0')}:${String(selectedM).padStart(2, '0')}`;
-    setTempTime(newTime);
-  };
-
-  const selectMinute = (m: number) => {
-    setSelectedM(m);
-    minutesScrollRef.current?.scrollTo({ y: m * ITEM_HEIGHT, animated: true });
-    const newTime = `${String(selectedH).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
-    setTempTime(newTime);
-  };
-
-  const selectExactTime = (t: string) => {
-    const parts = t.split(':');
-    const h = parseInt(parts[0], 10) || 0;
-    const m = parseInt(parts[1], 10) || 0;
-    setSelectedH(h);
-    setSelectedM(m);
-    setTempTime(t);
-    hoursScrollRef.current?.scrollTo({ y: h * ITEM_HEIGHT, animated: true });
-    minutesScrollRef.current?.scrollTo({ y: m * ITEM_HEIGHT, animated: true });
-  };
-
-  const handleConfirm = () => {
+  const handleConfirm = useCallback(() => {
     onConfirm(tempDate, tempTime);
     onClose();
-  };
+  }, [onConfirm, onClose, tempDate, tempTime]);
 
   // Calendar calculations
-  const todayStr = dayjs().format('YYYY-MM-DD');
-  const startOfToday = dayjs().startOf('day');
+  const today = dayjs().startOf('day');
   const startOfMonth = calendarMonth.startOf('month');
   const daysInMonth = calendarMonth.daysInMonth();
   const startOffset = (startOfMonth.day() + 6) % 7; // Monday = 0
+  const curMonthIndex = calendarMonth.year() * 12 + calendarMonth.month();
+  const todayMonthIndex = today.year() * 12 + today.month();
+  const isPrevMonthDisabled = curMonthIndex <= todayMonthIndex;
+  const isNextMonthDisabled = curMonthIndex >= todayMonthIndex + 6;
+
+  // Format date preview matching demo: "Thứ năm, 29/10"
+  const formattedDatePreview = useMemo(() => {
+    const dt = dayjs(tempDate);
+    const dow = dt.format('dddd');
+    const capitalizedDow = dow.charAt(0).toUpperCase() + dow.slice(1);
+    return `${capitalizedDow}, ${dt.format('DD/MM')}`;
+  }, [tempDate]);
 
   return (
     <Modal
@@ -180,201 +253,214 @@ export function DateTimeBottomSheet({
         </TouchableWithoutFeedback>
 
         <View style={styles.sheetContainer}>
-          {/* Top Drag Handle */}
-          <View style={styles.dragHandleContainer}>
-            <View style={styles.dragHandle} />
-          </View>
+          {/* 1. Drag grab handle */}
+          <View style={styles.dragHandle} />
 
-          {/* Header */}
-          <View style={styles.header}>
-            <View>
-              <Text style={styles.sheetTitle}>Chọn lịch làm việc</Text>
-              <Text style={styles.sheetSubtitle}>
-                {dayjs(tempDate).format('dddd, DD/MM/YYYY')} · {tempTime}
-              </Text>
-            </View>
+          {/* 2. Sheet Head: Huỷ (left) | Chọn ngày & giờ (center) | Xác nhận (right green) */}
+          <View style={styles.sheetHead}>
             <TouchableOpacity
+              activeOpacity={0.7}
               onPress={onClose}
-              style={styles.closeButton}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              style={styles.headBtn}
+              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
             >
-              <X size={20} color={COLORS.gray[600]} />
+              <Text style={styles.cancelBtnText}>Huỷ</Text>
+            </TouchableOpacity>
+
+            <Text style={styles.sheetTitle}>Chọn ngày & giờ</Text>
+
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={handleConfirm}
+              style={styles.headBtn}
+              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+            >
+              <Text style={styles.confirmBtnText}>Xác nhận</Text>
             </TouchableOpacity>
           </View>
 
-          {/* Segmented Mode Toggle: Ngày / Giờ */}
-          <View style={styles.segmentedControl}>
+          {/* 3. Segmented Toggle: 📅 Ngày / 🕒 Giờ */}
+          <View style={styles.segToggle}>
             <TouchableOpacity
               activeOpacity={0.8}
               onPress={() => setActiveTab('date')}
-              style={[styles.segmentTab, activeTab === 'date' && styles.segmentTabActive]}
+              style={[styles.segBtn, activeTab === 'date' && styles.segBtnActive]}
             >
               <CalendarIcon
                 size={16}
-                color={activeTab === 'date' ? COLORS.primary : COLORS.gray[500]}
+                color={activeTab === 'date' ? '#047857' : '#64748B'}
+                strokeWidth={2.2}
               />
               <Text
-                style={[styles.segmentLabel, activeTab === 'date' && styles.segmentLabelActive]}
+                style={[styles.segBtnText, activeTab === 'date' && styles.segBtnTextActive]}
               >
-                Ngày: {dayjs(tempDate).format('DD/MM')}
+                Ngày
               </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
               activeOpacity={0.8}
               onPress={() => setActiveTab('time')}
-              style={[styles.segmentTab, activeTab === 'time' && styles.segmentTabActive]}
+              style={[styles.segBtn, activeTab === 'time' && styles.segBtnActive]}
             >
-              <Clock size={16} color={activeTab === 'time' ? COLORS.primary : COLORS.gray[500]} />
+              <Clock
+                size={16}
+                color={activeTab === 'time' ? '#047857' : '#64748B'}
+                strokeWidth={2.2}
+              />
               <Text
-                style={[styles.segmentLabel, activeTab === 'time' && styles.segmentLabelActive]}
+                style={[styles.segBtnText, activeTab === 'time' && styles.segBtnTextActive]}
               >
-                Giờ: {tempTime}
+                Giờ
               </Text>
             </TouchableOpacity>
           </View>
 
-          {/* TAB 1: NGÀY (Month Calendar) */}
-          {activeTab === 'date' && (
-            <View style={styles.tabContent}>
-              {/* Quick Date Chips */}
-              <View style={styles.quickDateRow}>
-                {[
-                  { key: 'today', label: 'Hôm nay', offset: 0 },
-                  { key: 'tomorrow', label: 'Ngày mai', offset: 1 },
-                  { key: 'day2', label: 'Ngày kia', offset: 2 },
-                  { key: 'weekend', label: 'Cuối tuần', offset: (6 - dayjs().day() + 7) % 7 || 7 },
-                ].map(chip => {
-                  const targetDate = dayjs().add(chip.offset, 'day').format('YYYY-MM-DD');
-                  const isSel = tempDate === targetDate;
-                  return (
-                    <ScalePressable
-                      key={chip.key}
-                      onPress={() => {
-                        setTempDate(targetDate);
-                        setCalendarMonth(dayjs(targetDate));
-                      }}
-                      style={[styles.quickDateChip, isSel && styles.quickDateChipActive]}
-                    >
-                      <Text style={[styles.quickDateText, isSel && styles.quickDateTextActive]}>
-                        {chip.label}
-                      </Text>
-                    </ScalePressable>
-                  );
-                })}
-              </View>
+          {/* 4. Big Preview Text (Demo Standard: 30px bold green tabular-nums) */}
+          <View style={styles.previewContainer}>
+            <Text style={styles.previewText} numberOfLines={1}>
+              {activeTab === 'date' ? formattedDatePreview : tempTime}
+            </Text>
+          </View>
 
-              {/* Month Header Navigation */}
-              <View style={styles.calendarHeader}>
+          {/* 5. Panes - BOTH ALWAYS MOUNTED (Offscreen Pane uses position absolute & opacity 0 to preserve Android ScrollView measurements) */}
+          {/* PANE A: NGÀY (Calendar) */}
+          <View style={[styles.pane, activeTab !== 'date' && styles.paneHidden]}>
+            <View style={styles.calBox}>
+              {/* Calendar Month Header */}
+              <View style={styles.calHead}>
                 <TouchableOpacity
                   onPress={() => setCalendarMonth(prev => prev.subtract(1, 'month'))}
-                  style={styles.navArrow}
+                  disabled={isPrevMonthDisabled}
+                  style={[styles.calNavBtn, isPrevMonthDisabled && styles.calNavBtnDisabled]}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                 >
-                  <ChevronLeft size={18} color={COLORS.gray[700]} />
+                  <ChevronLeft
+                    size={18}
+                    color={isPrevMonthDisabled ? '#CBD5E1' : '#334155'}
+                    strokeWidth={2.4}
+                  />
                 </TouchableOpacity>
-                <Text style={styles.monthTitle}>Tháng {calendarMonth.format('MM/YYYY')}</Text>
+
+                <Text style={styles.calMonthTitle}>
+                  Tháng {calendarMonth.format('M · YYYY')}
+                </Text>
+
                 <TouchableOpacity
                   onPress={() => setCalendarMonth(prev => prev.add(1, 'month'))}
-                  style={styles.navArrow}
+                  disabled={isNextMonthDisabled}
+                  style={[styles.calNavBtn, isNextMonthDisabled && styles.calNavBtnDisabled]}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                 >
-                  <ChevronRight size={18} color={COLORS.gray[700]} />
+                  <ChevronRight
+                    size={18}
+                    color={isNextMonthDisabled ? '#CBD5E1' : '#334155'}
+                    strokeWidth={2.4}
+                  />
                 </TouchableOpacity>
               </View>
 
               {/* Day of Week Labels */}
               <View style={styles.weekdaysRow}>
-                {['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'].map(wd => (
-                  <Text key={wd} style={styles.weekdayLabel}>
-                    {wd}
+                {['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'].map(dow => (
+                  <Text key={dow} style={styles.weekdayLabel}>
+                    {dow}
                   </Text>
                 ))}
               </View>
 
-              {/* Calendar Grid Matrix */}
-              <View style={styles.calendarGrid}>
-                {Array.from({ length: startOffset }).map((_, i) => (
+              {/* Days Grid */}
+              <View style={styles.daysGrid}>
+                {Array.from({ length: startOffset }, (_, i) => (
                   <View key={`empty-${i}`} style={styles.dayCell} />
                 ))}
 
-                {Array.from({ length: daysInMonth }).map((_, i) => {
-                  const d = i + 1;
-                  const dObj = calendarMonth.date(d);
-                  const dateStr = dObj.format('YYYY-MM-DD');
-                  const isPast = dObj.isBefore(startOfToday);
-                  const isToday = dateStr === todayStr;
-                  const isSelected = dateStr === tempDate;
+                {Array.from({ length: daysInMonth }, (_, i) => {
+                  const dayNum = i + 1;
+                  const currentCellDate = calendarMonth.date(dayNum).startOf('day');
+                  const currentCellDateStr = currentCellDate.format('YYYY-MM-DD');
+
+                  const isPast = currentCellDate.isBefore(today);
+                  const isToday = currentCellDate.isSame(today);
+                  const isSelected = currentCellDateStr === tempDate;
 
                   return (
                     <TouchableOpacity
-                      key={dateStr}
+                      key={`day-${dayNum}`}
                       disabled={isPast}
-                      onPress={() => setTempDate(dateStr)}
+                      activeOpacity={0.7}
+                      onPress={() => {
+                        setTempDate(currentCellDateStr);
+                      }}
                       style={styles.dayCell}
                     >
                       <View
                         style={[
                           styles.dayCircle,
-                          isSelected && styles.dayCircleSelected,
                           isToday && !isSelected && styles.dayCircleToday,
-                          isPast && styles.dayCirclePast,
+                          isSelected && styles.dayCircleSelected,
                         ]}
                       >
                         <Text
                           style={[
                             styles.dayText,
-                            isSelected && styles.dayTextSelected,
-                            isToday && !isSelected && styles.dayTextToday,
                             isPast && styles.dayTextPast,
+                            isToday && !isSelected && styles.dayTextToday,
+                            isSelected && styles.dayTextSelected,
                           ]}
                         >
-                          {d}
+                          {dayNum}
                         </Text>
                       </View>
                     </TouchableOpacity>
                   );
                 })}
               </View>
-
-              {/* Quick switch to time tab button */}
-              <TouchableOpacity
-                activeOpacity={0.85}
-                onPress={() => setActiveTab('time')}
-                style={styles.nextTabButton}
-              >
-                <Text style={styles.nextTabText}>Tiếp tục chọn giờ làm việc →</Text>
-              </TouchableOpacity>
             </View>
-          )}
+          </View>
 
-          {/* TAB 2: GIỜ (Cupertino 2-Column Wheel + Two-way synced chips) */}
-          {activeTab === 'time' && (
-            <View style={styles.tabContent}>
-              {/* Cupertino 2-Column Wheel Picker */}
-              <View style={styles.wheelCard}>
-                {/* Center Highlight Pill spanning both columns */}
-                <View pointerEvents="none" style={styles.wheelHighlightPill} />
+          {/* PANE B: GIỜ (Cupertino Wheel + Synced Quick Chips) */}
+          <View style={[styles.pane, activeTab !== 'time' && styles.paneHidden]}>
+            {/* Wheel Labels: GIỜ & PHÚT */}
+            <View style={styles.wheelLabelsRow}>
+              <Text style={styles.wheelLabelCol}>GIỜ</Text>
+              <View style={styles.wheelLabelSep} />
+              <Text style={styles.wheelLabelCol}>PHÚT</Text>
+            </View>
 
-                {/* Column 1: Hours (00-23) */}
+            {/* Wheel Box with centered Green Highlight Band */}
+            <View style={styles.wheelBox}>
+              {/* Highlight Band in Center Row (Row 3 / 5) */}
+              <View pointerEvents="none" style={styles.wheelBand} />
+
+              {/* 2 Scroll Columns + Colon */}
+              <View style={styles.wheelsContainer}>
+                {/* Column 1: Hours */}
                 <View style={styles.wheelColumn}>
-                  <Text style={styles.wheelColumnLabel}>Giờ</Text>
                   <ScrollView
                     ref={hoursScrollRef}
                     showsVerticalScrollIndicator={false}
                     nestedScrollEnabled={true}
                     snapToInterval={ITEM_HEIGHT}
+                    disableIntervalMomentum={true}
                     decelerationRate="fast"
-                    contentContainerStyle={styles.wheelScrollContent}
-                    onScrollBeginDrag={() => {
-                      isUserScrollingRef.current = true;
+                    scrollEventThrottle={16}
+                    onScroll={handleHourScroll}
+                    onScrollEndDrag={e => {
+                      const vel = e.nativeEvent?.velocity?.y ?? 0;
+                      if (Math.abs(vel) < 0.1) handleHourScrollEnd(e);
                     }}
                     onMomentumScrollEnd={handleHourScrollEnd}
-                    onScrollEndDrag={e => {
-                      setTimeout(() => handleHourScrollEnd(e), 50);
+                    onLayout={() => {
+                      pinWheels(selectedHRef.current, selectedMRef.current, false);
+                    }}
+                    onContentSizeChange={() => {
+                      pinWheels(selectedHRef.current, selectedMRef.current, false);
                     }}
                   >
+                    <View style={styles.wheelSpacer} />
                     {hoursList.map(h => {
-                      const isSelected = h === selectedH;
-                      const diff = Math.abs(h - selectedH);
+                      const isSel = h === selectedH;
                       return (
                         <TouchableOpacity
                           key={`h-${h}`}
@@ -382,50 +468,47 @@ export function DateTimeBottomSheet({
                           onPress={() => selectHour(h)}
                           style={styles.wheelItem}
                         >
-                          <Text
-                            style={[
-                              styles.wheelItemText,
-                              isSelected
-                                ? styles.wheelItemTextActive
-                                : diff === 1
-                                  ? styles.wheelItemTextAdjacent
-                                  : styles.wheelItemTextFaded,
-                            ]}
-                          >
+                          <Text style={[styles.wheelItemText, isSel && styles.wheelItemTextSel]}>
                             {String(h).padStart(2, '0')}
                           </Text>
                         </TouchableOpacity>
                       );
                     })}
+                    <View style={styles.wheelSpacer} />
                   </ScrollView>
                 </View>
 
                 {/* Colon Separator */}
-                <View style={styles.colonContainer}>
-                  <Text style={styles.colonText}>:</Text>
+                <View pointerEvents="none" style={styles.wheelSep}>
+                  <Text style={styles.wheelSepText}>:</Text>
                 </View>
 
-                {/* Column 2: Minutes (00-59) */}
+                {/* Column 2: Minutes */}
                 <View style={styles.wheelColumn}>
-                  <Text style={styles.wheelColumnLabel}>Phút</Text>
                   <ScrollView
                     ref={minutesScrollRef}
                     showsVerticalScrollIndicator={false}
                     nestedScrollEnabled={true}
                     snapToInterval={ITEM_HEIGHT}
+                    disableIntervalMomentum={true}
                     decelerationRate="fast"
-                    contentContainerStyle={styles.wheelScrollContent}
-                    onScrollBeginDrag={() => {
-                      isUserScrollingRef.current = true;
+                    scrollEventThrottle={16}
+                    onScroll={handleMinuteScroll}
+                    onScrollEndDrag={e => {
+                      const vel = e.nativeEvent?.velocity?.y ?? 0;
+                      if (Math.abs(vel) < 0.1) handleMinuteScrollEnd(e);
                     }}
                     onMomentumScrollEnd={handleMinuteScrollEnd}
-                    onScrollEndDrag={e => {
-                      setTimeout(() => handleMinuteScrollEnd(e), 50);
+                    onLayout={() => {
+                      pinWheels(selectedHRef.current, selectedMRef.current, false);
+                    }}
+                    onContentSizeChange={() => {
+                      pinWheels(selectedHRef.current, selectedMRef.current, false);
                     }}
                   >
+                    <View style={styles.wheelSpacer} />
                     {minutesList.map(m => {
-                      const isSelected = m === selectedM;
-                      const diff = Math.abs(m - selectedM);
+                      const isSel = m === selectedM;
                       return (
                         <TouchableOpacity
                           key={`m-${m}`}
@@ -433,154 +516,138 @@ export function DateTimeBottomSheet({
                           onPress={() => selectMinute(m)}
                           style={styles.wheelItem}
                         >
-                          <Text
-                            style={[
-                              styles.wheelItemText,
-                              isSelected
-                                ? styles.wheelItemTextActive
-                                : diff === 1
-                                  ? styles.wheelItemTextAdjacent
-                                  : styles.wheelItemTextFaded,
-                            ]}
-                          >
+                          <Text style={[styles.wheelItemText, isSel && styles.wheelItemTextSel]}>
                             {String(m).padStart(2, '0')}
                           </Text>
                         </TouchableOpacity>
                       );
                     })}
+                    <View style={styles.wheelSpacer} />
                   </ScrollView>
                 </View>
               </View>
 
-              {/* Status pill showing current selected time */}
-              <View style={styles.statusPillRow}>
-                <Text style={styles.statusLabel}>Giờ đã chọn:</Text>
-                <View style={styles.timeBadge}>
-                  <Text style={styles.timeBadgeText}>{tempTime}</Text>
-                </View>
-              </View>
+              {/* Gradient fade overlay on top and bottom */}
+              <View pointerEvents="none" style={styles.wheelFadeTop} />
+              <View pointerEvents="none" style={styles.wheelFadeBottom} />
+            </View>
 
-              {/* Quick hour chips with 2-way sync */}
-              <View style={styles.chipsSection}>
-                <Text style={styles.chipsSectionTitle}>
-                  Gợi ý nhanh (chạm để bánh xe cuộn tới):
-                </Text>
-                <View style={styles.chipsWrap}>
-                  {[
-                    '07:00',
-                    '08:00',
-                    '09:00',
-                    '12:00',
-                    '14:00',
-                    '17:00',
-                    '18:00',
-                    '19:00',
-                    '20:00',
-                    '21:00',
-                    '22:00',
-                  ].map(t => {
-                    const isSelected = tempTime === t;
-                    const isNew = t === '12:00';
-                    const isNight = t === '21:00' || t === '22:00';
-                    return (
-                      <ScalePressable
-                        key={t}
-                        onPress={() => selectExactTime(t)}
-                        style={[
-                          styles.chip,
-                          isSelected ? styles.chipSelected : styles.chipUnselected,
-                        ]}
-                      >
-                        {isNew && (
-                          <View style={styles.newBadge}>
-                            <Text style={styles.newBadgeText}>MỚI</Text>
-                          </View>
-                        )}
-                        {isNight && (
-                          <View style={styles.nightBadge}>
-                            <Text style={styles.nightBadgeText}>ĐÊM</Text>
-                          </View>
-                        )}
-                        <Text
+            {/* Quick Time Suggestion Chips inside the sheet with 2-way sync */}
+            <View style={styles.sheetChipsContainer}>
+              <Text style={styles.sheetChipsLabel}>
+                Gợi ý nhanh — chạm là bánh xe chạy tới đúng giờ:
+              </Text>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.sheetChipsScroll}
+              >
+                {[
+                  { t: '07:00' },
+                  { t: '08:00' },
+                  { t: '09:00' },
+                  { t: '12:00', tag: 'MỚI', tagType: 'new' },
+                  { t: '14:00' },
+                  { t: '17:00' },
+                  { t: '18:00' },
+                  { t: '19:00' },
+                  { t: '20:00' },
+                  { t: '21:00', tag: 'ĐÊM', tagType: 'night' },
+                  { t: '22:00', tag: 'ĐÊM', tagType: 'night' },
+                ].map(item => {
+                  const isSel = tempTime === item.t;
+                  return (
+                    <TouchableOpacity
+                      key={item.t}
+                      activeOpacity={0.7}
+                      onPress={() => selectExactTime(item.t)}
+                      style={[styles.sheetChip, isSel && styles.sheetChipActive]}
+                    >
+                      {item.tag && (
+                        <View
                           style={[
-                            styles.chipText,
-                            isSelected ? styles.chipTextSelected : styles.chipTextUnselected,
+                            styles.sheetChipTag,
+                            item.tagType === 'night'
+                              ? styles.sheetChipTagNight
+                              : styles.sheetChipTagNew,
                           ]}
                         >
-                          {t}
-                        </Text>
-                      </ScalePressable>
-                    );
-                  })}
-                </View>
-
-                {/* Odd hour chips */}
-                <View style={styles.oddChipsRow}>
-                  <Text style={styles.oddChipsLabel}>Giờ lẻ:</Text>
-                  <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={{ gap: 6 }}
-                  >
-                    {['07:30', '08:30', '11:30', '13:30', '17:30', '19:30', '20:30', '21:30'].map(
-                      ot => {
-                        const isSelected = tempTime === ot;
-                        return (
-                          <TouchableOpacity
-                            key={ot}
-                            activeOpacity={0.7}
-                            onPress={() => selectExactTime(ot)}
+                          <Text
                             style={[
-                              styles.oddChip,
-                              isSelected ? styles.oddChipSelected : styles.oddChipUnselected,
+                              styles.sheetChipTagText,
+                              item.tagType === 'night'
+                                ? styles.sheetChipTagTextNight
+                                : styles.sheetChipTagTextNew,
                             ]}
                           >
-                            <Text
-                              style={[
-                                styles.oddChipText,
-                                isSelected
-                                  ? styles.oddChipTextSelected
-                                  : styles.oddChipTextUnselected,
-                              ]}
-                            >
-                              {ot}
-                            </Text>
-                          </TouchableOpacity>
-                        );
-                      },
-                    )}
-                  </ScrollView>
-                </View>
+                            {item.tag}
+                          </Text>
+                        </View>
+                      )}
+                      <Text
+                        style={[styles.sheetChipText, isSel && styles.sheetChipTextActive]}
+                      >
+                        {item.t}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+
+              <View style={styles.sheetOddRow}>
+                <Text style={styles.sheetOddLabel}>Giờ lẻ:</Text>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.sheetChipsScroll}
+                >
+                  {['07:30', '08:30', '11:30', '13:30', '17:30', '19:30', '20:30', '21:30'].map(
+                    t => {
+                      const isSel = tempTime === t;
+                      return (
+                        <TouchableOpacity
+                          key={t}
+                          activeOpacity={0.7}
+                          onPress={() => selectExactTime(t)}
+                          style={[styles.sheetChip, isSel && styles.sheetChipActive]}
+                        >
+                          <Text
+                            style={[
+                              styles.sheetChipText,
+                              isSel && styles.sheetChipTextActive,
+                            ]}
+                          >
+                            {t}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    }
+                  )}
+                </ScrollView>
               </View>
             </View>
-          )}
-
-          {/* Bottom Actions: HỦY / XÁC NHẬN */}
-          <View style={styles.actionRow}>
-            <TouchableOpacity activeOpacity={0.8} onPress={onClose} style={styles.cancelButton}>
-              <Text style={styles.cancelButtonText}>Hủy</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              activeOpacity={0.85}
-              onPress={handleConfirm}
-              style={styles.confirmButton}
-            >
-              <Check size={18} color="#FFFFFF" strokeWidth={2.5} />
-              <Text style={styles.confirmButtonText}>Xác nhận</Text>
-            </TouchableOpacity>
           </View>
+
+          {/* 6. Footer Note (Demo Standard) */}
+          <Text style={styles.sheetNote}>
+            {activeTab === 'date'
+              ? 'Chọn ngày trên lịch — gạt sang tab Giờ để chỉnh giờ bắt đầu, xong bấm Xác nhận.'
+              : 'Hàng nằm giữa dải xanh là giờ được chọn.'}
+          </Text>
         </View>
       </View>
     </Modal>
   );
 }
 
+// Backwards compatibility alias
+export const DateTimePickerBottomSheet = DateTimeBottomSheet;
+
 const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
     justifyContent: 'flex-end',
-    backgroundColor: 'rgba(0, 0, 0, 0.45)',
+    backgroundColor: 'rgba(10, 18, 13, 0.45)',
   },
   backdrop: {
     position: 'absolute',
@@ -591,132 +658,140 @@ const styles = StyleSheet.create({
   },
   sheetContainer: {
     backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    borderTopLeftRadius: 26,
+    borderTopRightRadius: 26,
     paddingTop: 10,
     paddingHorizontal: 20,
-    paddingBottom: Platform.OS === 'ios' ? 36 : 24,
-    maxHeight: '90%',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 16,
-    elevation: 20,
-  },
-  dragHandleContainer: {
-    alignItems: 'center',
-    paddingVertical: 6,
+    paddingBottom: Platform.OS === 'ios' ? 32 : 24,
+    shadowColor: '#0A1E12',
+    shadowOffset: { width: 0, height: -12 },
+    shadowOpacity: 0.25,
+    shadowRadius: 32,
+    elevation: 24,
   },
   dragHandle: {
-    width: 38,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: '#CBD5E1',
+    width: 42,
+    height: 5,
+    borderRadius: 99,
+    backgroundColor: '#E2E8F0',
+    alignSelf: 'center',
+    marginBottom: 10,
   },
-  header: {
+  sheetHead: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
-    marginTop: 4,
+    justifyContent: 'space-between',
+    height: 38,
+  },
+  headBtn: {
+    paddingVertical: 6,
+    paddingHorizontal: 4,
+  },
+  cancelBtnText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#64748B',
   },
   sheetTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '800',
     color: '#0F172A',
   },
-  sheetSubtitle: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: COLORS.primary,
-    marginTop: 2,
+  confirmBtnText: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#047857',
   },
-  closeButton: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    backgroundColor: '#F1F5F9',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  segmentedControl: {
+  segToggle: {
     flexDirection: 'row',
     backgroundColor: '#F1F5F9',
     borderRadius: 12,
     padding: 4,
-    marginBottom: 16,
+    marginTop: 10,
     gap: 4,
   },
-  segmentTab: {
+  segBtn: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
     paddingVertical: 9,
-    borderRadius: 10,
+    borderRadius: 9,
   },
-  segmentTabActive: {
+  segBtnActive: {
     backgroundColor: '#FFFFFF',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.08,
-    shadowRadius: 3,
+    shadowRadius: 2,
     elevation: 2,
   },
-  segmentLabel: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: COLORS.gray[500],
+  segBtnText: {
+    fontSize: 13.5,
+    fontWeight: '600',
+    color: '#64748B',
   },
-  segmentLabelActive: {
-    color: COLORS.primary,
+  segBtnTextActive: {
+    color: '#047857',
+    fontWeight: '800',
   },
-  tabContent: {
-    paddingBottom: 6,
+  previewContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 10,
+    marginBottom: 4,
+    minHeight: 40,
   },
-  quickDateRow: {
-    flexDirection: 'row',
-    gap: 8,
-    marginBottom: 12,
+  previewText: {
+    fontSize: 28,
+    fontWeight: '800',
+    color: '#047857',
+    fontVariant: ['tabular-nums'],
+    letterSpacing: -0.2,
   },
-  quickDateChip: {
-    flex: 1,
-    paddingVertical: 7,
-    borderRadius: 10,
-    backgroundColor: '#F8FAFC',
+  pane: {
+    width: '100%',
+  },
+  paneHidden: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    opacity: 0,
+    pointerEvents: 'none',
+    zIndex: -1,
+  },
+  // Calendar styles
+  calBox: {
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#E2E8F0',
-    alignItems: 'center',
+    borderRadius: 16,
+    padding: 12,
+    paddingBottom: 8,
   },
-  quickDateChipActive: {
-    backgroundColor: '#DCFCE7',
-    borderColor: COLORS.primary,
-  },
-  quickDateText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: COLORS.gray[600],
-  },
-  quickDateTextActive: {
-    color: COLORS.primary,
-  },
-  calendarHeader: {
+  calHead: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
-    paddingHorizontal: 4,
+    justifyContent: 'space-between',
+    marginBottom: 10,
+    paddingHorizontal: 2,
   },
-  navArrow: {
+  calNavBtn: {
     width: 32,
     height: 32,
     borderRadius: 8,
-    backgroundColor: '#F1F5F9',
+    backgroundColor: '#F8FAFC',
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
   },
-  monthTitle: {
+  calNavBtnDisabled: {
+    opacity: 0.35,
+  },
+  calMonthTitle: {
     fontSize: 15,
     fontWeight: '800',
     color: '#0F172A',
@@ -728,11 +803,11 @@ const styles = StyleSheet.create({
   weekdayLabel: {
     flex: 1,
     textAlign: 'center',
-    fontSize: 11,
+    fontSize: 11.5,
     fontWeight: '700',
-    color: COLORS.gray[400],
+    color: '#94A3B8',
   },
-  calendarGrid: {
+  daysGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
   },
@@ -749,304 +824,205 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  dayCircleSelected: {
-    backgroundColor: COLORS.primary,
-  },
   dayCircleToday: {
-    backgroundColor: '#DCFCE7',
     borderWidth: 1.5,
-    borderColor: COLORS.primary,
+    borderColor: '#0F172A',
   },
-  dayCirclePast: {
-    opacity: 0.35,
+  dayCircleSelected: {
+    backgroundColor: '#16A34A',
   },
   dayText: {
-    fontSize: 13,
+    fontSize: 13.5,
     fontWeight: '600',
-    color: COLORS.gray[800],
+    color: '#0F172A',
+  },
+  dayTextPast: {
+    color: '#CBD5E1',
+  },
+  dayTextToday: {
+    color: '#0F172A',
+    fontWeight: '800',
   },
   dayTextSelected: {
     color: '#FFFFFF',
     fontWeight: '800',
   },
-  dayTextToday: {
-    color: COLORS.primary,
-    fontWeight: '800',
-  },
-  dayTextPast: {
-    color: COLORS.gray[400],
-  },
-  nextTabButton: {
-    marginTop: 10,
-    backgroundColor: '#F0FDF4',
-    borderWidth: 1,
-    borderColor: '#BBF7D0',
-    paddingVertical: 9,
-    borderRadius: 10,
-    alignItems: 'center',
-  },
-  nextTabText: {
-    fontSize: 12.5,
-    fontWeight: '700',
-    color: COLORS.primary,
-  },
   // Wheel styles
-  wheelCard: {
+  wheelLabelsRow: {
     flexDirection: 'row',
-    height: WHEEL_HEIGHT,
-    backgroundColor: '#F8FAFC',
-    borderRadius: 16,
-    borderWidth: 1.5,
-    borderColor: '#E2E8F0',
-    overflow: 'hidden',
-    position: 'relative',
     alignItems: 'center',
+    marginTop: 4,
+    marginBottom: 2,
   },
-  wheelHighlightPill: {
+  wheelLabelCol: {
+    flex: 1,
+    textAlign: 'center',
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 1.2,
+    color: '#94A3B8',
+  },
+  wheelLabelSep: {
+    width: 28,
+  },
+  wheelBox: {
+    height: WHEEL_HEIGHT, // 230px
+    position: 'relative',
+    marginTop: 2,
+    overflow: 'hidden',
+  },
+  wheelBand: {
     position: 'absolute',
-    top: (WHEEL_HEIGHT - ITEM_HEIGHT) / 2,
-    left: 12,
-    right: 12,
-    height: ITEM_HEIGHT,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 10,
+    left: 2,
+    right: 2,
+    top: '50%',
+    height: ITEM_HEIGHT, // 46px
+    marginTop: -ITEM_HEIGHT / 2, // -23px
+    backgroundColor: '#DCFCE7',
     borderWidth: 1.5,
-    borderColor: COLORS.primary,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.08,
-    shadowRadius: 2,
-    elevation: 2,
+    borderColor: '#16A34A',
+    borderRadius: 12,
+    zIndex: 0,
+  },
+  wheelsContainer: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'stretch',
     zIndex: 1,
   },
   wheelColumn: {
     flex: 1,
-    height: '100%',
-    alignItems: 'center',
-    zIndex: 2,
+    height: WHEEL_HEIGHT,
   },
-  wheelColumnLabel: {
-    fontSize: 10.5,
-    fontWeight: '800',
-    color: COLORS.gray[400],
-    textTransform: 'uppercase',
-    letterSpacing: 0.8,
-    position: 'absolute',
-    top: 4,
-    zIndex: 5,
-  },
-  wheelScrollContent: {
-    paddingVertical: (WHEEL_HEIGHT - ITEM_HEIGHT) / 2,
+  wheelSpacer: {
+    height: SPACER_HEIGHT, // 92px
   },
   wheelItem: {
-    height: ITEM_HEIGHT,
+    height: ITEM_HEIGHT, // 46px
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 16,
   },
   wheelItemText: {
-    fontVariant: ['tabular-nums'],
-    textAlign: 'center',
-  },
-  wheelItemTextActive: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: COLORS.primary,
-  },
-  wheelItemTextAdjacent: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: COLORS.gray[500],
-    opacity: 0.65,
-  },
-  wheelItemTextFaded: {
-    fontSize: 14,
+    fontSize: 20,
     fontWeight: '500',
-    color: COLORS.gray[400],
-    opacity: 0.35,
+    color: '#B3BEC9',
+    fontVariant: ['tabular-nums'],
   },
-  colonContainer: {
-    width: 20,
+  wheelItemTextSel: {
+    fontSize: 25,
+    fontWeight: '800',
+    color: '#0F172A',
+  },
+  wheelSep: {
+    width: 28,
     alignItems: 'center',
     justifyContent: 'center',
-    zIndex: 2,
   },
-  colonText: {
+  wheelSepText: {
     fontSize: 24,
     fontWeight: '800',
-    color: COLORS.primary,
+    color: '#047857',
   },
-  statusPillRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginTop: 10,
-    marginBottom: 10,
-    paddingHorizontal: 4,
+  wheelFadeTop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 44,
+    backgroundColor: 'rgba(255, 255, 255, 0.75)',
+    zIndex: 2,
   },
-  statusLabel: {
-    fontSize: 12.5,
-    fontWeight: '700',
-    color: COLORS.gray[600],
+  wheelFadeBottom: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 44,
+    backgroundColor: 'rgba(255, 255, 255, 0.75)',
+    zIndex: 2,
   },
-  timeBadge: {
-    backgroundColor: '#DCFCE7',
-    paddingHorizontal: 10,
-    paddingVertical: 3,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#86EFAC',
+  // Sheet Chips styles
+  sheetChipsContainer: {
+    marginTop: 6,
   },
-  timeBadgeText: {
-    fontSize: 13,
-    fontWeight: '800',
-    color: COLORS.primary,
-    fontVariant: ['tabular-nums'],
+  sheetChipsLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#64748B',
+    marginBottom: 4,
   },
-  chipsSection: {
-    marginTop: 2,
-  },
-  chipsSectionTitle: {
-    fontSize: 11.5,
-    fontWeight: '700',
-    color: COLORS.gray[500],
-    marginBottom: 8,
-  },
-  chipsWrap: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+  sheetChipsScroll: {
     gap: 6,
+    paddingVertical: 2,
   },
-  chip: {
-    paddingHorizontal: 9,
-    paddingVertical: 6,
-    borderRadius: 8,
+  sheetChip: {
     position: 'relative',
-  },
-  chipSelected: {
-    backgroundColor: COLORS.primary,
-    borderColor: COLORS.primary,
-  },
-  chipUnselected: {
-    backgroundColor: '#F1F5F9',
-    borderWidth: 1,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1.5,
     borderColor: '#E2E8F0',
+    borderRadius: 9,
+    paddingHorizontal: 9,
+    paddingVertical: 5,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  chipText: {
+  sheetChipActive: {
+    backgroundColor: '#DCFCE7',
+    borderColor: '#16A34A',
+  },
+  sheetChipText: {
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '600',
+    color: '#334155',
     fontVariant: ['tabular-nums'],
   },
-  chipTextSelected: {
-    color: '#FFFFFF',
+  sheetChipTextActive: {
+    color: '#047857',
+    fontWeight: '800',
   },
-  chipTextUnselected: {
-    color: COLORS.gray[700],
-  },
-  newBadge: {
+  sheetChipTag: {
     position: 'absolute',
-    top: -5,
+    top: -6,
     right: -4,
-    backgroundColor: '#EF4444',
-    paddingHorizontal: 3,
-    borderRadius: 4,
+    paddingHorizontal: 4,
+    paddingVertical: 1,
+    borderRadius: 99,
   },
-  newBadgeText: {
-    fontSize: 7.5,
-    fontWeight: '900',
-    color: '#FFFFFF',
-  },
-  nightBadge: {
-    position: 'absolute',
-    top: -5,
-    right: -4,
-    backgroundColor: '#6366F1',
-    paddingHorizontal: 3,
-    borderRadius: 4,
-  },
-  nightBadgeText: {
-    fontSize: 7.5,
-    fontWeight: '900',
-    color: '#FFFFFF',
-  },
-  oddChipsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginTop: 10,
-  },
-  oddChipsLabel: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: COLORS.gray[500],
-  },
-  oddChip: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-  },
-  oddChipSelected: {
+  sheetChipTagNew: {
     backgroundColor: '#DCFCE7',
     borderWidth: 1,
-    borderColor: COLORS.primary,
+    borderColor: '#16A34A',
   },
-  oddChipUnselected: {
-    backgroundColor: '#F8FAFC',
+  sheetChipTagNight: {
+    backgroundColor: '#FEE2E2',
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: '#FCA5A5',
   },
-  oddChipText: {
-    fontSize: 11,
-    fontWeight: '700',
-    fontVariant: ['tabular-nums'],
-  },
-  oddChipTextSelected: {
-    color: COLORS.primary,
-  },
-  oddChipTextUnselected: {
-    color: COLORS.gray[600],
-  },
-  actionRow: {
-    flexDirection: 'row',
-    gap: 12,
-    marginTop: 18,
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: '#F1F5F9',
-  },
-  cancelButton: {
-    flex: 1,
-    paddingVertical: 13,
-    borderRadius: 14,
-    backgroundColor: '#F1F5F9',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  cancelButtonText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: COLORS.gray[600],
-  },
-  confirmButton: {
-    flex: 1.6,
-    flexDirection: 'row',
-    paddingVertical: 13,
-    borderRadius: 14,
-    backgroundColor: COLORS.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    shadowColor: COLORS.primary,
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.25,
-    shadowRadius: 6,
-    elevation: 4,
-  },
-  confirmButtonText: {
-    fontSize: 14,
+  sheetChipTagText: {
+    fontSize: 8,
     fontWeight: '800',
-    color: '#FFFFFF',
+    letterSpacing: 0.2,
+  },
+  sheetChipTagTextNew: {
+    color: '#047857',
+  },
+  sheetChipTagTextNight: {
+    color: '#DC2626',
+  },
+  sheetOddRow: {
+    marginTop: 4,
+  },
+  sheetOddLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#64748B',
+    marginBottom: 4,
+  },
+  sheetNote: {
+    textAlign: 'center',
+    fontSize: 12,
+    color: '#64748B',
+    marginTop: 8,
+    minHeight: 16,
   },
 });
-
-export const DateTimePickerBottomSheet = DateTimeBottomSheet;
