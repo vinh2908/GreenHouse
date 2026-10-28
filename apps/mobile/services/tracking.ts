@@ -49,9 +49,7 @@ export function acceptTrackingEvent(
 
 export function trackingTitle(status: string, role: 'customer' | 'helper'): string {
   if (status === 'helper_on_the_way')
-    return role === 'helper'
-      ? 'Đang di chuyển đến khách'
-      : 'Đang di chuyển đến bạn';
+    return role === 'helper' ? 'Đang di chuyển đến khách' : 'Đang di chuyển đến bạn';
   if (status === 'helper_arrived')
     return role === 'helper' ? 'Đã tới điểm hẹn' : 'Thợ đã đến điểm hẹn';
   if (status === 'in_progress') return 'Đang thực hiện công việc';

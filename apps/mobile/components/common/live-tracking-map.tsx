@@ -355,7 +355,13 @@ export function LiveTrackingMap({
   );
 }
 const styles = StyleSheet.create({
-  container: { width: '100%', borderRadius: 20, overflow: 'hidden', backgroundColor: '#e2e8f0', position: 'relative' },
+  container: {
+    width: '100%',
+    borderRadius: 20,
+    overflow: 'hidden',
+    backgroundColor: '#e2e8f0',
+    position: 'relative',
+  },
   topStatusCard: {
     backgroundColor: '#111827ed',
     borderRadius: 14,
