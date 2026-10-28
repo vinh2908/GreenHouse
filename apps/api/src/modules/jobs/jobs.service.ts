@@ -902,6 +902,47 @@ export class JobsService {
       throw new BadRequestException('Không thể cập nhật đơn hàng ở trạng thái này');
     }
 
+    // F4: Kiểm tra thời điểm bắt đầu không ở quá khứ và thời lượng 15m - 12h
+    const mergedDate = dto.preferred_date ? new Date(dto.preferred_date) : job.preferred_date;
+    const mergedTimeStart = dto.preferred_time_start ?? job.preferred_time_start;
+    const mergedTimeEnd = dto.preferred_time_end ?? job.preferred_time_end;
+
+    if (mergedDate && mergedTimeStart && /^\d{1,2}:\d{2}$/.test(mergedTimeStart.trim())) {
+      const dateStr =
+        mergedDate instanceof Date
+          ? mergedDate.toISOString().split('T')[0]
+          : String(mergedDate).split('T')[0];
+      const [hours, minutes] = mergedTimeStart.trim().split(':').map(Number);
+      const [year, month, day] = dateStr.split('-').map(Number);
+      // Asia/Ho_Chi_Minh is UTC+7
+      const startTimeUtc = new Date(Date.UTC(year, month - 1, day, hours - 7, minutes, 0, 0));
+      if (startTimeUtc.getTime() < Date.now()) {
+        throw new BadRequestException('Thời điểm bắt đầu không thể ở quá khứ');
+      }
+    }
+
+    if (
+      mergedTimeStart &&
+      mergedTimeEnd &&
+      /^\d{1,2}:\d{2}$/.test(mergedTimeStart.trim()) &&
+      /^\d{1,2}:\d{2}$/.test(mergedTimeEnd.trim())
+    ) {
+      const [sh, sm] = mergedTimeStart.trim().split(':').map(Number);
+      const [eh, em] = mergedTimeEnd.trim().split(':').map(Number);
+      const startMin = sh * 60 + sm;
+      const endMin = eh * 60 + em;
+      if (endMin <= startMin) {
+        throw new BadRequestException('Giờ kết thúc phải sau giờ bắt đầu');
+      }
+      const durMin = endMin - startMin;
+      if (durMin < 15) {
+        throw new BadRequestException('Thời lượng công việc tối thiểu là 15 phút');
+      }
+      if (durMin > 12 * 60) {
+        throw new BadRequestException('Thời lượng công việc tối đa là 12 giờ');
+      }
+    }
+
     if (dto.title) job.title = dto.title;
     if (dto.description) job.description = dto.description;
     if (dto.photos) job.photos = dto.photos;
@@ -2509,17 +2550,34 @@ export class JobsService {
 
   // ─── Helper: Get available jobs (job feed) ────────────────────────────────
 
+  async rejectJob(helperId: string, jobId: string): Promise<{ success: boolean; message: string }> {
+    const job = await this.jobModel.findById(jobId).exec();
+    if (!job) throw new NotFoundException('Đơn hàng không tồn tại');
+    if (job.status !== JobStatus.OPEN && job.status !== JobStatus.RECEIVING_QUOTES) {
+      throw new BadRequestException('Chỉ có thể bỏ qua đơn hàng đang mở');
+    }
+    const helperOid = new Types.ObjectId(helperId);
+    await this.jobModel
+      .findByIdAndUpdate(jobId, {
+        $addToSet: { rejected_helper_ids: helperOid },
+      })
+      .exec();
+    return { success: true, message: 'Đã bỏ qua đơn hàng thành công' };
+  }
+
   async getAvailableJobs(helperId: string, serviceId?: string, page = 1, limit = 20) {
     const now = new Date();
+    const helperOid = new Types.ObjectId(helperId);
     const query: Record<string, unknown> = {
       status: { $in: [JobStatus.OPEN, JobStatus.RECEIVING_QUOTES] },
       expires_at: { $gt: now },
+      rejected_helper_ids: { $ne: helperOid },
       // Ẩn đơn đang gửi riêng cho thợ khác; đơn gửi riêng cho chính mình thì hiện
       $or: [
         { private_offer_helper_id: { $exists: false } },
         { private_offer_helper_id: null },
         { private_offer_expires_at: { $lte: now } },
-        { private_offer_helper_id: new Types.ObjectId(helperId) },
+        { private_offer_helper_id: helperOid },
       ],
     };
     if (serviceId && Types.ObjectId.isValid(serviceId)) {
@@ -2536,7 +2594,7 @@ export class JobsService {
         .exec(),
       this.jobModel.countDocuments(query).exec(),
       this.helperModel
-        .findOne({ user_id: new Types.ObjectId(helperId) })
+        .findOne({ user_id: helperOid })
         .select('location availability')
         .lean()
         .exec(),
@@ -2545,11 +2603,7 @@ export class JobsService {
     const helperCoords = helperProfile?.location?.coordinates;
 
     // Lịch làm việc (Feature 13): lọc in-memory trên trang vừa fetch, TRƯỚC
-    // bước enrich khoảng cách. Caveat phân trang (chấp nhận cho scope này):
-    // `total`/`total_pages` vẫn là số của query gốc nên có thể lớn hơn số đơn
-    // thực tế hiển thị sau lọc; feed vốn đã re-sort theo khoảng cách sau khi
-    // fetch nên phân trang ở đây vốn không nghiêm ngặt. Cờ
-    // `availability_filtered` cho mobile biết trang này đã qua lọc lịch.
+    // bước enrich khoảng cách.
     const availabilityFiltered = Boolean(helperProfile?.availability?.enabled);
     const visibleJobs = availabilityFiltered
       ? jobs.filter(job =>
@@ -2598,6 +2652,17 @@ export class JobsService {
       jobObjects.sort((a, b) => ((a as any).distance_km ?? 999) - ((b as any).distance_km ?? 999));
     }
 
+    let emptyReason: 'none' | 'outside_working_hours' | 'no_jobs' | 'expired_or_private' = 'none';
+    if (jobObjects.length === 0) {
+      if (jobs.length > 0 && availabilityFiltered) {
+        emptyReason = 'outside_working_hours';
+      } else if (total === 0) {
+        emptyReason = 'no_jobs';
+      } else {
+        emptyReason = 'expired_or_private';
+      }
+    }
+
     return {
       jobs: jobObjects,
       total,
@@ -2605,60 +2670,107 @@ export class JobsService {
       limit,
       total_pages: Math.ceil(total / limit),
       availability_filtered: availabilityFiltered,
+      empty_reason: emptyReason,
     };
   }
 
   // ─── Helper: Get own active job ───────────────────────────────────────────
 
   // ─── Bản đồ nhu cầu (Roadmap Phase 2 — Feature 15) ────────────────────────
-  // Gom các đơn đang mở (open / receiving_quotes, chưa hết hạn báo giá) theo
-  // quận + thành phố để thợ xem khu vực nào đang "nóng". lat/lng là trung bình
-  // tọa độ GeoJSON [lng, lat] của các đơn trong nhóm.
-  async getDemandMap() {
-    const rows = await this.jobModel
-      .aggregate([
-        {
-          $match: {
-            status: { $in: [JobStatus.OPEN, JobStatus.RECEIVING_QUOTES] },
-            expires_at: { $gt: new Date() },
-          },
-        },
-        {
-          $group: {
-            _id: { district: '$address.district', city: '$address.city' },
-            open_jobs: { $sum: 1 },
-            fixed_price_jobs: { $sum: { $cond: ['$is_fixed_price', 1, 0] } },
-            ai_priced_jobs: {
-              $sum: { $cond: [{ $ifNull: ['$ai_price_suggestion', false] }, 1, 0] },
-            },
-            lng: { $avg: { $arrayElemAt: ['$address.location.coordinates', 0] } },
-            lat: { $avg: { $arrayElemAt: ['$address.location.coordinates', 1] } },
-          },
-        },
-        { $sort: { open_jobs: -1 } },
-        {
-          $project: {
-            _id: 0,
-            district: '$_id.district',
-            city: '$_id.city',
-            lat: 1,
-            lng: 1,
-            open_jobs: 1,
-            fixed_price_jobs: 1,
-            ai_priced_jobs: 1,
-          },
-        },
-      ])
+  // Gom các đơn đang mở theo cùng bộ lọc với getAvailableJobs để bảo đảm đồng bộ
+  async getDemandMap(helperId?: string) {
+    let helperProfile: any = null;
+    let helperOid: Types.ObjectId | null = null;
+    if (helperId && Types.ObjectId.isValid(helperId)) {
+      helperOid = new Types.ObjectId(helperId);
+      helperProfile = await this.helperModel
+        .findOne({ user_id: helperOid })
+        .select('availability')
+        .lean()
+        .exec();
+    }
+
+    const now = new Date();
+    const query: Record<string, unknown> = {
+      status: { $in: [JobStatus.OPEN, JobStatus.RECEIVING_QUOTES] },
+      expires_at: { $gt: now },
+      ...(helperOid ? { rejected_helper_ids: { $ne: helperOid } } : {}),
+      $or: [
+        { private_offer_helper_id: { $exists: false } },
+        { private_offer_helper_id: null },
+        { private_offer_expires_at: { $lte: now } },
+        ...(helperOid ? [{ private_offer_helper_id: helperOid }] : []),
+      ],
+    };
+
+    const jobs = await this.jobModel
+      .find(query)
+      .select('address preferred_date preferred_time_start is_fixed_price ai_price_suggestion')
+      .lean()
       .exec();
-    return rows as {
-      district: string;
-      city: string;
-      lat: number | null;
-      lng: number | null;
-      open_jobs: number;
-      fixed_price_jobs: number;
-      ai_priced_jobs: number;
-    }[];
+
+    const availabilityFiltered = Boolean(helperProfile?.availability?.enabled);
+    const visibleJobs = availabilityFiltered
+      ? jobs.filter(j =>
+          this.isAvailableForDate(
+            helperProfile?.availability,
+            j.preferred_date ?? undefined,
+            j.preferred_time_start,
+          ),
+        )
+      : jobs;
+
+    const groupMap = new Map<
+      string,
+      {
+        district: string;
+        city: string;
+        open_jobs: number;
+        fixed_price_jobs: number;
+        ai_priced_jobs: number;
+        lats: number[];
+        lngs: number[];
+      }
+    >();
+
+    for (const j of visibleJobs) {
+      const district = j.address?.district || 'Chưa rõ';
+      const city = j.address?.city || 'Chưa rõ';
+      const key = `${district}|${city}`;
+      if (!groupMap.has(key)) {
+        groupMap.set(key, {
+          district,
+          city,
+          open_jobs: 0,
+          fixed_price_jobs: 0,
+          ai_priced_jobs: 0,
+          lats: [],
+          lngs: [],
+        });
+      }
+      const g = groupMap.get(key)!;
+      g.open_jobs++;
+      if (j.is_fixed_price) g.fixed_price_jobs++;
+      if ((j as any).ai_price_suggestion) g.ai_priced_jobs++;
+      if (j.address?.location?.coordinates && j.address.location.coordinates.length >= 2) {
+        g.lngs.push(j.address.location.coordinates[0]);
+        g.lats.push(j.address.location.coordinates[1]);
+      }
+    }
+
+    const rows = Array.from(groupMap.values())
+      .map(g => ({
+        district: g.district,
+        city: g.city,
+        open_jobs: g.open_jobs,
+        fixed_price_jobs: g.fixed_price_jobs,
+        ai_priced_jobs: g.ai_priced_jobs,
+        lat: g.lats.length ? g.lats.reduce((a, b) => a + b, 0) / g.lats.length : null,
+        lng: g.lngs.length ? g.lngs.reduce((a, b) => a + b, 0) / g.lngs.length : null,
+      }))
+      .sort((a, b) => b.open_jobs - a.open_jobs);
+
+    return rows;
   }
 
   async getHelperJobs(helperId: string, status?: string) {

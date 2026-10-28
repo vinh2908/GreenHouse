@@ -712,9 +712,17 @@ export default function HelperDashboardScreen() {
           ) : !availableJobs?.jobs?.length ? (
             <Card style={{ alignItems: 'center', paddingVertical: 28 }}>
               <EmptyState
-                emoji="🔍"
-                title="Chưa có đơn mới xung quanh"
-                subtitle="Hệ thống đang quét đơn trong bán kính 15km. Đơn mới sẽ tự động hiển thị tại đây."
+                emoji={availableJobs?.empty_reason === 'outside_working_hours' ? '⏰' : '🔍'}
+                title={
+                  availableJobs?.empty_reason === 'outside_working_hours'
+                    ? 'Không có việc trong khung giờ làm'
+                    : 'Chưa có đơn mới xung quanh'
+                }
+                subtitle={
+                  availableJobs?.empty_reason === 'outside_working_hours'
+                    ? 'Hiện có việc mới nhưng ngoài khung giờ hoạt động bạn đã đăng ký. Bạn có thể cập nhật Lịch làm việc trong Hồ sơ để nhận thêm đơn.'
+                    : 'Hệ thống đang quét đơn trong bán kính phục vụ. Đơn mới sẽ tự động hiển thị tại đây.'
+                }
               />
             </Card>
           ) : (
