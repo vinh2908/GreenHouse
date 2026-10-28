@@ -162,7 +162,9 @@ export default function CustomerVouchersScreen() {
                     <Text style={{ fontSize: 12, color: COLORS.gray[500] }}>
                       Hết hạn:{' '}
                       {v.valid_to || v.end_date || (v as any).expires_at
-                        ? dayjs(v.valid_to || v.end_date || (v as any).expires_at).format('DD/MM/YYYY')
+                        ? dayjs(v.valid_to || v.end_date || (v as any).expires_at).format(
+                            'DD/MM/YYYY',
+                          )
                         : 'Không thời hạn'}
                     </Text>
                   </View>

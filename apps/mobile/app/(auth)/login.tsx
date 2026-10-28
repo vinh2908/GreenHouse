@@ -66,7 +66,7 @@ export default function LoginScreen() {
       const dataMsg = (err as any)?.response?.data?.message;
       const msg = Array.isArray(dataMsg)
         ? dataMsg[0]
-        : (dataMsg || 'Số điện thoại hoặc mật khẩu không chính xác');
+        : dataMsg || 'Số điện thoại hoặc mật khẩu không chính xác';
       setLoginError(msg);
       Toast.show({ type: 'error', text1: 'Đăng nhập thất bại', text2: msg });
     }
