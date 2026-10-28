@@ -135,7 +135,9 @@ export default function JobDetailScreen() {
   };
 
   useJobSocketUpdates(id);
-  const { data: job, isLoading: jLoading } = useJobDetail(id);
+  const { data: job, isLoading: jLoading, refetch: refetchJob } = useJobDetail(id);
+  const [isCancelling, setIsCancelling] = useState(false);
+  const cancellingRef = useRef(false);
   const helperLocation = useHelperLocation(
     id,
     typeof job?.helper_id === 'object' ? job.helper_id?._id : job?.helper_id,
@@ -451,12 +453,19 @@ export default function JobDetailScreen() {
 
   const handleCancel = () => {
     const doCancel = async () => {
+      if (cancellingRef.current || isCancelling || cancelJob.isPending) return;
+      cancellingRef.current = true;
+      setIsCancelling(true);
       try {
         await cancelJob.mutateAsync({ jobId: id!, reason: 'Khách hàng hủy yêu cầu' });
+        await refetchJob();
         Toast.show({ type: 'success', text1: 'Đã hủy đơn hàng thành công' });
       } catch (err: any) {
         const msg = err?.response?.data?.message || 'Hủy đơn thất bại';
         Toast.show({ type: 'error', text1: msg });
+      } finally {
+        cancellingRef.current = false;
+        setIsCancelling(false);
       }
     };
 
@@ -1710,7 +1719,8 @@ export default function JobDetailScreen() {
               title="Hủy yêu cầu"
               variant="ghost"
               style={{ borderWidth: 1, borderColor: COLORS.gray[200] }}
-              loading={cancelJob.isPending}
+              loading={cancelJob.isPending || isCancelling}
+              disabled={cancelJob.isPending || isCancelling}
               onPress={handleCancel}
             />
           )}

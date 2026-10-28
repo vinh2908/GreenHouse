@@ -90,6 +90,8 @@ export function CustomTabBar({
 
             if (!event.defaultPrevented) {
               if (Platform.OS === 'web') {
+                // Tránh điều hướng lặp lại làm hỏng lịch sử / Safari blank tab
+                if (isFocused) return;
                 // Điều hướng an toàn trong app trên Web: luôn chuyển trang đích xác,
                 // không bao giờ mở about:srcdoc hoặc khung trống
                 if (route.name === 'home') {
