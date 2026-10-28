@@ -363,7 +363,8 @@ export function TimeDropdownPicker({
               {Array.from({ length: 24 }, (_, i) => i).map(h => {
                 const isSelected = h === currentHour;
                 // Nếu hôm nay và giờ < giờ hiện tại (hoặc bằng giờ hiện tại nhưng phút đã 59)
-                const isHourPast = isToday && (h < nowVn.hours || (h === nowVn.hours && nowVn.minutes >= 59));
+                const isHourPast =
+                  isToday && (h < nowVn.hours || (h === nowVn.hours && nowVn.minutes >= 59));
                 return (
                   <TouchableOpacity
                     key={h}
