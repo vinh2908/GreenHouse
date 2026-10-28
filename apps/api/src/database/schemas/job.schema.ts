@@ -156,6 +156,9 @@ export class Job {
   @Prop({ type: Types.ObjectId })
   cancelled_by?: Types.ObjectId;
 
+  @Prop({ type: [{ type: Types.ObjectId, ref: 'User' }], default: [] })
+  rejected_helper_ids?: Types.ObjectId[];
+
   @Prop()
   expires_at?: Date;
 

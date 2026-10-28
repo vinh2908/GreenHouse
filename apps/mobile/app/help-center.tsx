@@ -14,6 +14,7 @@ import {
 } from 'lucide-react-native';
 import { Card, COLORS, Badge, Separator } from '@/components/ui';
 import { useAiSupport } from '@/hooks/use-api';
+import { useAuthStore } from '@/stores/auth.store';
 import Toast from 'react-native-toast-message';
 
 const FAQS = [
@@ -42,6 +43,7 @@ const FAQS = [
 export default function HelpCenterScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const user = useAuthStore(s => s.user);
   const aiSupport = useAiSupport();
   const [expandedFaq, setExpandedFaq] = useState<number | null>(0);
   const [aiQuestion, setAiQuestion] = useState('');
@@ -50,7 +52,11 @@ export default function HelpCenterScreen() {
 
   const handleCallHotline = () => {
     Linking.openURL('tel:19008888').catch(() => {
-      Toast.show({ type: 'info', text1: 'Hotline: 1900 8888 (24/7)' });
+      Toast.show({
+        type: 'info',
+        text1: 'Hotline 1900 8888 (24/7)',
+        text2: 'Tổng đài chăm sóc khách hàng Green House luôn sẵn sàng phục vụ bạn.',
+      });
     });
   };
 
@@ -111,7 +117,11 @@ export default function HelpCenterScreen() {
               router.back();
               return;
             }
-            router.replace('/(customer)/home');
+            if (user?.active_role === 'helper') {
+              router.replace('/(helper)/dashboard');
+            } else {
+              router.replace('/(customer)/home');
+            }
           }}
           hitSlop={{ top: 14, bottom: 14, left: 14, right: 14 }}
           style={{

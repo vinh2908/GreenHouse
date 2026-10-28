@@ -6,6 +6,7 @@ import { ArrowLeft, Trash2, Plus } from 'lucide-react-native';
 import Toast from 'react-native-toast-message';
 import { useMyAvailability, useUpdateAvailability } from '@/hooks/use-api';
 import { Button, Card, COLORS, LoadingSpinner } from '@/components/ui';
+import { TimeDropdownPicker } from '@/components/common/time-dropdown-picker';
 
 // JS getDay(): 0 = Chủ nhật … 6 = Thứ 7
 const DAY_CHIPS: { day: number; label: string }[] = [
@@ -170,40 +171,26 @@ export default function HelperAvailabilityScreen() {
           </View>
         </Card>
 
-        <Card style={{ gap: 12 }}>
+        <Card style={{ gap: 14 }}>
           <Text style={{ fontWeight: '800', fontSize: 15, color: COLORS.gray[900] }}>
             Khung giờ làm việc
           </Text>
-          <View style={{ flexDirection: 'row', gap: 12 }}>
-            {[
-              { label: 'Bắt đầu', value: startTime, set: setStartTime },
-              { label: 'Kết thúc', value: endTime, set: setEndTime },
-            ].map(f => (
-              <View key={f.label} style={{ flex: 1, gap: 6 }}>
-                <Text style={{ fontWeight: '700', color: COLORS.gray[700], fontSize: 13 }}>
-                  {f.label}
-                </Text>
-                <TextInput
-                  value={f.value}
-                  onChangeText={f.set}
-                  placeholder="HH:mm"
-                  placeholderTextColor={COLORS.gray[400]}
-                  style={{
-                    borderWidth: 1.5,
-                    borderColor: COLORS.gray[200],
-                    borderRadius: 12,
-                    padding: 12,
-                    fontSize: 16,
-                    fontWeight: '700',
-                    color: COLORS.gray[900],
-                    textAlign: 'center',
-                  }}
-                />
-              </View>
-            ))}
+          <View style={{ gap: 12 }}>
+            <TimeDropdownPicker
+              label="Giờ bắt đầu làm việc"
+              value={startTime}
+              onChange={setStartTime}
+              showChips={false}
+            />
+            <TimeDropdownPicker
+              label="Giờ kết thúc làm việc"
+              value={endTime}
+              onChange={setEndTime}
+              showChips={false}
+            />
           </View>
           <Text style={{ fontSize: 12, color: COLORS.gray[500] }}>
-            Định dạng 24 giờ, ví dụ 07:00 – 19:00.
+            Hệ thống chỉ phân phối việc mới trong khung giờ hoạt động này.
           </Text>
         </Card>
 
