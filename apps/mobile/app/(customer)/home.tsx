@@ -823,7 +823,6 @@ export default function CustomerHomeScreen() {
     }
   };
 
-
   // Submit từ khối Quick Booking - map chip sang dịch vụ catalog thật (Item 2)
   const handleQuickSubmit = () => {
     if (!quickDescription.trim()) {
@@ -2717,8 +2716,6 @@ export default function CustomerHomeScreen() {
           setQuickDateChip(null);
         }}
       />
-
-
     </View>
   );
 }

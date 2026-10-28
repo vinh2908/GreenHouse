@@ -1798,8 +1798,7 @@ export default function BookingScreen() {
                             if (th * 60 + tm <= nowVn.totalMinutes) {
                               setTimeSlot(getDefaultFutureTimeSlot(todayStr));
                             }
-                          }
-                          else if (c.key === 'tomorrow')
+                          } else if (c.key === 'tomorrow')
                             setDate(now.add(1, 'day').format('YYYY-MM-DD'));
                           else if (c.key === 'sat') {
                             const nextSat = now.day() <= 6 ? now.day(6) : now.add(1, 'week').day(6);
@@ -2449,8 +2448,6 @@ export default function BookingScreen() {
           setDateChip(null);
         }}
       />
-
-
     </View>
   );
 }
