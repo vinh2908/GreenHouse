@@ -319,6 +319,17 @@ export function useCancelJob() {
   });
 }
 
+export function useRejectJob() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (jobId: string) => apiClient.post(`/jobs/${jobId}/reject`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['jobs', 'available'] });
+      qc.invalidateQueries({ queryKey: ['jobs', 'demand-map'] });
+    },
+  });
+}
+
 export function useUpdateJob() {
   const qc = useQueryClient();
   return useMutation({
