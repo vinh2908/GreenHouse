@@ -10,6 +10,7 @@ import {
   Platform,
   ActivityIndicator,
   KeyboardAvoidingView,
+  useWindowDimensions,
 } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -125,6 +126,7 @@ export default function JobDetailScreen() {
   const { id, focus } = useLocalSearchParams<{ id: string; focus?: string }>();
   const router = useRouter();
   const { user } = useAuthStore();
+  const { width } = useWindowDimensions();
 
   const handleBack = () => {
     if (router.canGoBack()) {
@@ -1021,7 +1023,7 @@ export default function JobDetailScreen() {
               customerAddress={job.address?.full_address}
               helperName={helperObj?.full_name || 'Thợ Green House'}
               status={job.status}
-              height={240}
+              height={width < 430 ? 320 : 300}
               showNavigationButton={false}
             />
           </View>
