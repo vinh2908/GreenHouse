@@ -12,13 +12,21 @@ type WebStore = {
 const webStore = (globalThis as { localStorage?: WebStore }).localStorage;
 
 export async function getItemAsync(key: string): Promise<string | null> {
-  if (isWeb) return webStore?.getItem(key) ?? null;
+  if (isWeb) {
+    try {
+      return webStore?.getItem(key) ?? null;
+    } catch {
+      return null;
+    }
+  }
   return SecureStore.getItemAsync(key);
 }
 
 export async function setItemAsync(key: string, value: string): Promise<void> {
   if (isWeb) {
-    webStore?.setItem(key, value);
+    try {
+      webStore?.setItem(key, value);
+    } catch {}
     return;
   }
   await SecureStore.setItemAsync(key, value);
@@ -26,7 +34,9 @@ export async function setItemAsync(key: string, value: string): Promise<void> {
 
 export async function deleteItemAsync(key: string): Promise<void> {
   if (isWeb) {
-    webStore?.removeItem(key);
+    try {
+      webStore?.removeItem(key);
+    } catch {}
     return;
   }
   await SecureStore.deleteItemAsync(key);

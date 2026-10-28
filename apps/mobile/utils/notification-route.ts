@@ -155,8 +155,7 @@ export function resolveNotificationRoute(
 
   // ── Tranh chấp (màn dispute mở theo job) ──────────────────────────────────
   if (type.includes('dispute') || data.dispute_id) {
-    const disputeJobId = jobId ?? str(data.dispute_id);
-    if (disputeJobId) return { pathname: '/dispute/[jobId]', params: { jobId: disputeJobId } };
+    if (jobId) return { pathname: '/dispute/[jobId]', params: { jobId } };
     return null;
   }
 
