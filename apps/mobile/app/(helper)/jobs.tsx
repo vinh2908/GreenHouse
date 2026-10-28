@@ -307,30 +307,30 @@ export default function HelperJobsScreen() {
                   ? !isVerified
                     ? '🪪'
                     : available?.empty_reason === 'outside_working_hours'
-                    ? '⏰'
-                    : '🔍'
+                      ? '⏰'
+                      : '🔍'
                   : tab === 1
-                  ? '📋'
-                  : '📚'
+                    ? '📋'
+                    : '📚'
               }
               title={
                 tab === 0
                   ? !isVerified
                     ? 'Chưa xác thực e-KYC'
                     : available?.empty_reason === 'outside_working_hours'
-                    ? 'Không có việc trong khung giờ làm'
-                    : 'Chưa có đơn mới'
+                      ? 'Không có việc trong khung giờ làm'
+                      : 'Chưa có đơn mới'
                   : tab === 1
-                  ? 'Không có đơn đang làm'
-                  : 'Chưa có lịch sử'
+                    ? 'Không có đơn đang làm'
+                    : 'Chưa có lịch sử'
               }
               subtitle={
                 tab === 0
                   ? !isVerified
                     ? 'Bạn cần hoàn tất xác minh e-KYC (CCCD) để mở khóa xem và nhận đơn mới xung quanh bạn.'
                     : available?.empty_reason === 'outside_working_hours'
-                    ? 'Hiện có việc mới nhưng ngoài khung giờ hoạt động bạn đã đăng ký. Bạn có thể cập nhật Lịch làm việc trong Hồ sơ để nhận thêm đơn.'
-                    : 'Hệ thống đang quét đơn mới. Đơn sẽ xuất hiện ngay khi có khách đăng việc.'
+                      ? 'Hiện có việc mới nhưng ngoài khung giờ hoạt động bạn đã đăng ký. Bạn có thể cập nhật Lịch làm việc trong Hồ sơ để nhận thêm đơn.'
+                      : 'Hệ thống đang quét đơn mới. Đơn sẽ xuất hiện ngay khi có khách đăng việc.'
                   : undefined
               }
             />

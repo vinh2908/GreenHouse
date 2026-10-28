@@ -18,9 +18,10 @@ import {
   TimeDropdownPicker,
   DurationDropdownPicker,
   ScheduledTimePreview,
+  getDefaultFutureTimeSlot,
+  getNowVietnam,
 } from '@/components/common/time-dropdown-picker';
 import { DateTimePickerBottomSheet } from '@/components/common/date-time-bottom-sheet';
-import { DurationBottomSheet } from '@/components/common/duration-bottom-sheet';
 import Svg, { Defs, LinearGradient as SvgLinearGradient, Stop, Rect } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -275,8 +276,6 @@ export default function CustomerHomeScreen() {
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [calendarMonth, setCalendarMonth] = useState(dayjs());
 
-  // Duration Bottom Sheet state (Item 2)
-  const [durationPickerOpen, setDurationPickerOpen] = useState(false);
   const [customHours, setCustomHours] = useState(1);
   const [customMinutes, setCustomMinutes] = useState(30);
   const [isCustomDuration, setIsCustomDuration] = useState(false);
@@ -293,7 +292,9 @@ export default function CustomerHomeScreen() {
     'tomorrow',
   );
   const [quickDate, setQuickDate] = useState(dayjs().add(1, 'day').format('YYYY-MM-DD'));
-  const [quickTimeSlot, setQuickTimeSlot] = useState('19:00');
+  const [quickTimeSlot, setQuickTimeSlot] = useState(() =>
+    getDefaultFutureTimeSlot(dayjs().add(1, 'day').format('YYYY-MM-DD')),
+  );
   const [quickCustomTimeOpen, setQuickCustomTimeOpen] = useState(false);
   const [quickCustomTimeInput, setQuickCustomTimeInput] = useState('');
   const [quickDuration, setQuickDuration] = useState(2);
@@ -516,16 +517,31 @@ export default function CustomerHomeScreen() {
       keyboard: false
     }).setView(center, 14);
 
-    const goongKey = '${process.env.EXPO_PUBLIC_GOONG_API_KEY || ''}';
+    const goongMapKey = '${process.env.EXPO_PUBLIC_GOONG_MAP_KEY || ''}';
+    let consecutiveCenterErrors = 0;
     let fallbackDone = false;
-    if (goongKey) {
-      const goongLayer = L.tileLayer('https://tiles.goong.io/assets/{z}/{x}/{y}.png?api_key=' + encodeURIComponent(goongKey), {
+    if (goongMapKey) {
+      const goongLayer = L.tileLayer('https://tiles.goong.io/assets/{z}/{x}/{y}.png?api_key=' + encodeURIComponent(goongMapKey), {
         maxZoom: 19,
         attribution: 'Map data &copy; <a href="https://goong.io" target="_blank">Goong Maps</a>'
       });
-      goongLayer.on('tileerror', function() {
-        if (!fallbackDone) {
+      goongLayer.on('tileerror', function(errorEvent) {
+        if (fallbackDone) return;
+        const centerPoint = map.project(map.getCenter(), map.getZoom());
+        const centerTileX = Math.floor(centerPoint.x / 256);
+        const centerTileY = Math.floor(centerPoint.y / 256);
+        let isCenter = false;
+        if (errorEvent && errorEvent.coords) {
+          const dx = Math.abs(errorEvent.coords.x - centerTileX);
+          const dy = Math.abs(errorEvent.coords.y - centerTileY);
+          if (dx <= 1 && dy <= 1) isCenter = true;
+        } else {
+          isCenter = true;
+        }
+        if (isCenter) consecutiveCenterErrors++;
+        if (consecutiveCenterErrors >= 3) {
           fallbackDone = true;
+          console.warn('[Map Fallback] Goong tiles failed at map center ' + consecutiveCenterErrors + ' consecutive times (tileerror 404/403/network). Fallback to OpenStreetMap with attribution.');
           map.removeLayer(goongLayer);
           L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 19,
@@ -535,6 +551,7 @@ export default function CustomerHomeScreen() {
       });
       goongLayer.addTo(map);
     } else {
+      console.warn('[Map Warning] Thiếu EXPO_PUBLIC_GOONG_MAP_KEY, dùng OpenStreetMap.');
       L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 19,
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors'
@@ -770,7 +787,13 @@ export default function CustomerHomeScreen() {
     setQuickDateChip(chip);
     const now = dayjs();
     if (chip === 'today') {
-      setQuickDate(now.format('YYYY-MM-DD'));
+      const todayStr = now.format('YYYY-MM-DD');
+      setQuickDate(todayStr);
+      const [th, tm] = quickTimeSlot.split(':').map(Number);
+      const nowVn = getNowVietnam();
+      if (th * 60 + tm <= nowVn.totalMinutes) {
+        setQuickTimeSlot(getDefaultFutureTimeSlot(todayStr));
+      }
     } else if (chip === 'tomorrow') {
       setQuickDate(now.add(1, 'day').format('YYYY-MM-DD'));
     } else if (chip === 'sat') {
@@ -800,17 +823,6 @@ export default function CustomerHomeScreen() {
     }
   };
 
-  // Tính giờ kết thúc dự kiến
-  const expectedEndTime = useMemo(() => {
-    try {
-      const startDateTime = dayjs(`${quickDate} ${quickTimeSlot}`);
-      const endDateTime = startDateTime.add(Math.round(quickDuration * 60), 'minute');
-      const isNextDay = endDateTime.date() !== startDateTime.date();
-      return `${endDateTime.format('HH:mm')}${isNextDay ? ' (ngày hôm sau)' : ''}`;
-    } catch {
-      return '21:00';
-    }
-  }, [quickDate, quickTimeSlot, quickDuration]);
 
   // Submit từ khối Quick Booking - map chip sang dịch vụ catalog thật (Item 2)
   const handleQuickSubmit = () => {
@@ -1171,22 +1183,6 @@ export default function CustomerHomeScreen() {
                 style={{ flex: 1, backgroundColor: '#f8fafc' }}
               />
             )}
-            {/* Legal notice overlay at bottom right */}
-            <View
-              style={{
-                position: 'absolute',
-                bottom: 4,
-                right: 8,
-                backgroundColor: 'rgba(255,255,255,0.7)',
-                paddingHorizontal: 4,
-                paddingVertical: 1,
-                borderRadius: 4,
-              }}
-            >
-              <Text style={{ fontSize: 9, color: COLORS.gray[500] }}>
-                Map data legal notices © OpenStreetMap
-              </Text>
-            </View>
           </View>
 
           {/* Worker list cards or Clean Empty State */}
@@ -2184,30 +2180,30 @@ export default function CustomerHomeScreen() {
               </View>
 
               {/* Giờ bắt đầu — Dropdown Type 12 */}
-            <TimeDropdownPicker
-              value={quickTimeSlot}
-              onChange={setQuickTimeSlot}
-              selectedDate={quickDate}
-              label="Giờ bắt đầu"
-              showChips={true}
-            />
+              <TimeDropdownPicker
+                value={quickTimeSlot}
+                onChange={setQuickTimeSlot}
+                selectedDate={quickDate}
+                label="Giờ bắt đầu"
+                showChips={true}
+              />
 
-            {/* Thời lượng dự kiến — Dropdown Type 12 */}
-            <DurationDropdownPicker
-              valueMinutes={Math.round(quickDuration * 60)}
-              onChangeMinutes={(mins) => {
-                setQuickDuration(mins / 60);
-                setIsCustomDuration(![60, 120, 180, 240].includes(mins));
-              }}
-            />
+              {/* Thời lượng dự kiến — Dropdown Type 12 */}
+              <DurationDropdownPicker
+                valueMinutes={Math.round(quickDuration * 60)}
+                onChangeMinutes={mins => {
+                  setQuickDuration(mins / 60);
+                  setIsCustomDuration(![60, 120, 180, 240].includes(mins));
+                }}
+              />
 
-            {/* Lịch dự kiến — Tóm tắt chuẩn Demo */}
-            <ScheduledTimePreview
-              startDate={quickDate}
-              startTime={quickTimeSlot}
-              durationMinutes={Math.round(quickDuration * 60)}
-              price={Number(quickDealPrice) || 200000}
-            />
+              {/* Lịch dự kiến — Tóm tắt chuẩn Demo */}
+              <ScheduledTimePreview
+                startDate={quickDate}
+                startTime={quickTimeSlot}
+                durationMinutes={Math.round(quickDuration * 60)}
+                price={Number(quickDealPrice) || 200000}
+              />
             </View>
 
             {/* Button: Đăng việc */}
@@ -2722,19 +2718,7 @@ export default function CustomerHomeScreen() {
         }}
       />
 
-      {/* ── BOTTOM SHEET CHỌN THỜI LƯỢNG TỰ DO (ITEM 2) ── */}
-      <DurationBottomSheet
-        visible={durationPickerOpen}
-        initialHours={Math.floor(quickDuration)}
-        initialMinutes={Math.round((quickDuration - Math.floor(quickDuration)) * 60)}
-        startDate={quickDate}
-        startTime={quickTimeSlot}
-        onClose={() => setDurationPickerOpen(false)}
-        onConfirm={newDur => {
-          setQuickDuration(newDur);
-          setIsCustomDuration(![1, 2, 3, 4].includes(newDur));
-        }}
-      />
+
     </View>
   );
 }
