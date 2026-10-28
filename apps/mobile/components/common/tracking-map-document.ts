@@ -11,9 +11,9 @@ html,body,#map{height:100%;width:100%;margin:0;background:#f1f5f9;font-family:sy
 .rider.live:after{content:'';position:absolute;inset:-3px;border:3px solid #00b14f;border-radius:50%;animation:radar 1.8s infinite;pointer-events:none}
 @keyframes radar{from{transform:scale(1);opacity:.8}to{transform:scale(1.8);opacity:0}}
 @media(prefers-reduced-motion:reduce){.rider.live:after{animation:none}}
-.leaflet-top{top:100px}.leaflet-control-attribution{font-size:8px}
-#info{position:absolute;bottom:23px;left:10px;right:60px;z-index:900;background:#111827e8;color:white;border-radius:12px;padding:8px 10px;font-size:12px}
-#recenter{position:absolute;bottom:26px;right:10px;z-index:900;background:white;border:0;border-radius:12px;width:40px;height:40px;font-size:20px}
+.leaflet-top{top:10px}.leaflet-control-attribution{font-size:8px}
+#info{position:absolute;bottom:10px;left:10px;right:56px;z-index:900;background:#111827e8;color:white;border-radius:10px;padding:6px 10px;font-size:11.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:16px}
+#recenter{position:absolute;bottom:10px;right:10px;z-index:900;background:white;border:0;border-radius:10px;width:38px;height:38px;font-size:18px;box-shadow:0 2px 6px rgba(0,0,0,0.25);cursor:pointer}
 #tile-warning{display:none;position:absolute;top:112px;left:12px;right:12px;z-index:900;background:#fff3cd;color:#713f12;padding:8px;border-radius:8px;font-size:12px}
 </style></head><body><div id="map"></div><div id="info" role="status">Đang tải bản đồ…</div>
 <div id="tile-warning" role="status"></div>
@@ -27,24 +27,38 @@ html,body,#map{height:100%;width:100%;margin:0;background:#f1f5f9;font-family:sy
     if(window.ReactNativeWebView) window.ReactNativeWebView.postMessage(JSON.stringify(data));
     else window.parent.postMessage(data,'*');
   }
-  if(!window.L){info.textContent='Không tải được bản đồ. Kiểm tra kết nối mạng.';return;}
+  if(!window.L){info.textContent='Không tải được bản đồ';return;}
   var map=L.map('map',{zoomControl:true,scrollWheelZoom:false,touchZoom:true,minZoom:10}).setView([16,106],14);
-  var goongKey='${process.env.EXPO_PUBLIC_GOONG_API_KEY || ''}';
+  var goongMapKey='${process.env.EXPO_PUBLIC_GOONG_MAP_KEY || ''}';
   var fallbackDone=false;
-  var street=goongKey
-    ? L.tileLayer('https://tiles.goong.io/assets/{z}/{x}/{y}.png?api_key='+encodeURIComponent(goongKey),{
+  var consecutiveCenterErrors=0;
+  var street=goongMapKey
+    ? L.tileLayer('https://tiles.goong.io/assets/{z}/{x}/{y}.png?api_key='+encodeURIComponent(goongMapKey),{
         maxZoom:19,attribution:'Map data &copy; <a href="https://goong.io" target="_blank">Goong Maps</a>'
       })
-    : L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
-        maxZoom:19,subdomains:'abc',attribution:'&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors'
+    : L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{
+        maxZoom:19,attribution:'&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors'
       });
-  street.on('tileerror', function(){
-    if(!fallbackDone && goongKey){
-      fallbackDone=true;
-      map.removeLayer(street);
-      street=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
-        maxZoom:19,subdomains:'abc',attribution:'&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors'
-      }).addTo(map);
+  street.on('tileerror', function(e){
+    if(!fallbackDone && goongMapKey){
+      var centerPoint = map.project(map.getCenter(), map.getZoom());
+      var cx = Math.floor(centerPoint.x / 256);
+      var cy = Math.floor(centerPoint.y / 256);
+      var isCenter = false;
+      if (e && e.coords) {
+        if (Math.abs(e.coords.x - cx) <= 1 && Math.abs(e.coords.y - cy) <= 1) isCenter = true;
+      } else {
+        isCenter = true;
+      }
+      if (isCenter) consecutiveCenterErrors++;
+      if (consecutiveCenterErrors >= 3) {
+        fallbackDone=true;
+        console.warn('[Map Fallback] Goong tiles failed at center ' + consecutiveCenterErrors + ' consecutive times. Fallback to OpenStreetMap with authentic attribution.');
+        map.removeLayer(street);
+        street=L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{
+          maxZoom:19,attribution:'&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors'
+        }).addTo(map);
+      }
     }
   });
   street.addTo(map);
@@ -210,22 +224,22 @@ html,body,#map{height:100%;width:100%;margin:0;background:#f1f5f9;font-family:sy
       }).catch(function(){
         if(requestVersion!==version)return;
         routeFails++;retryAfter=Date.now()+Math.min(60000,5000*Math.pow(2,Math.min(4,routeFails-1)));
-        if(!route)info.textContent='Chưa tính được tuyến đường · vẫn hiển thị GPS thực';
+        if(!route)info.textContent='Chưa tính được đường đi';
       }).finally(function(){clearTimeout(timeout);});
   }
   function refresh(){
-    if(!dest){info.textContent='Đơn hàng chưa có tọa độ điểm hẹn hợp lệ';metrics(null);return;}
+    if(!dest){info.textContent='Chưa có tọa độ điểm hẹn';metrics(null);return;}
     if(!state.tracking){info.textContent='Điểm hẹn làm việc';metrics(null);return;}
-    if(!point){info.textContent='Đang chờ GPS chính xác từ người giúp việc';metrics(null);return;}
+    if(!point){info.textContent='Đang chờ GPS';metrics(null);return;}
     var age=Date.now()-point.recorded_at;
     if(helper&&helper.getElement())helper.getElement().classList.toggle('live',age<=30000);
     if(age>120000){
       point=null;cancelAnimationFrame(frame);if(helper)map.removeLayer(helper);helper=null;invalidateRoute();
-      info.textContent='Mất cập nhật GPS · đang chờ kết nối lại';return;
+      info.textContent='Mất kết nối GPS';return;
     }
-    if(age>30000){cancelAnimationFrame(frame);metrics(null);info.textContent='GPS chưa cập nhật · vị trí ghi nhận gần nhất';return;}
+    if(age>30000){cancelAnimationFrame(frame);metrics(null);info.textContent='GPS chưa cập nhật';return;}
     if(route)remaining();
-    else {metrics(null);info.textContent=lastFetch?'Chưa tính được tuyến đường · vẫn hiển thị GPS thực':'Đang tính tuyến đường…';}
+    else {metrics(null);info.textContent=lastFetch?'Chưa tính được đường đi':'Đang tính tuyến đường…';}
   }
   window.applyTrackingState=function(next){
     if(!next||next.channel!=='greenhouse-tracking'||next.type!=='state')return;

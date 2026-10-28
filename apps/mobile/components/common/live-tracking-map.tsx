@@ -248,7 +248,17 @@ export function LiveTrackingMap({
     ).catch(() => setLoadError(true));
   };
   return (
-    <View style={{ width: '100%', gap: 10 }}>
+    <View style={{ width: '100%', gap: 8 }}>
+      {/* Banner trạng thái đặt TRÊN khung map — Thẻ riêng ngoài map, 1 dòng không cắt chữ */}
+      <View style={styles.topStatusCard}>
+        <View style={styles.dot} />
+        <Text style={styles.statusText} numberOfLines={1}>
+          {status === 'helper_on_the_way'
+            ? trackingTitle(status, viewerRole)
+            : title || trackingTitle(status, viewerRole)}
+        </Text>
+      </View>
+
       <View style={[styles.container, { height }]}>
         {Platform.OS === 'web' ? (
           <iframe
@@ -300,14 +310,6 @@ export function LiveTrackingMap({
             }}
           />
         )}
-        <View style={styles.statusPill} pointerEvents="none">
-          <View style={styles.dot} />
-          <Text style={styles.statusText}>
-            {status === 'helper_on_the_way'
-              ? trackingTitle(status, viewerRole)
-              : title || trackingTitle(status, viewerRole)}
-          </Text>
-        </View>
         <TouchableOpacity
           accessibilityRole="button"
           accessibilityLabel="Đổi lớp bản đồ"
@@ -315,7 +317,9 @@ export function LiveTrackingMap({
           style={styles.layerButton}
         >
           <Layers size={14} color="#1f2937" />
-          <Text>{layer === 'streets' ? 'Vệ tinh' : 'Bản đồ'}</Text>
+          <Text style={{ fontSize: 11, fontWeight: '700', color: '#1f2937' }}>
+            {layer === 'streets' ? 'Vệ tinh' : 'Bản đồ'}
+          </Text>
         </TouchableOpacity>
         {loadError && (
           <TouchableOpacity
@@ -351,32 +355,35 @@ export function LiveTrackingMap({
   );
 }
 const styles = StyleSheet.create({
-  container: { width: '100%', borderRadius: 20, overflow: 'hidden', backgroundColor: '#e2e8f0' },
-  statusPill: {
-    position: 'absolute',
-    top: 10,
-    left: 10,
-    right: 10,
+  container: { width: '100%', borderRadius: 20, overflow: 'hidden', backgroundColor: '#e2e8f0', position: 'relative' },
+  topStatusCard: {
     backgroundColor: '#111827ed',
     borderRadius: 14,
-    paddingHorizontal: 12,
-    paddingVertical: 9,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
   },
-  statusText: { color: 'white', fontSize: 13, lineHeight: 19, fontWeight: '700', flex: 1 },
+  statusText: { color: 'white', fontSize: 13, lineHeight: 18, fontWeight: '700', flex: 1 },
   dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#00b14f' },
   layerButton: {
     position: 'absolute',
-    top: 78,
+    top: 10,
     right: 10,
     backgroundColor: 'white',
     borderRadius: 10,
-    padding: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
+    zIndex: 999,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.15,
+    shadowRadius: 2,
+    elevation: 2,
   },
   error: {
     position: 'absolute',

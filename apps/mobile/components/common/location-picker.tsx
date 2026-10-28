@@ -47,16 +47,31 @@ const mapHtml = (center: PickerCoords, zoom: number, hasPin: boolean, interactiv
         boxZoom: interactive,
         keyboard: interactive,
       }).setView([${center.latitude}, ${center.longitude}], ${zoom});
-      const goongKey = '${process.env.EXPO_PUBLIC_GOONG_API_KEY || ''}';
+      const goongMapKey = '${process.env.EXPO_PUBLIC_GOONG_MAP_KEY || ''}';
+      let consecutiveCenterErrors = 0;
       let fallbackDone = false;
-      if (goongKey) {
-        const goongLayer = L.tileLayer('https://tiles.goong.io/assets/{z}/{x}/{y}.png?api_key=' + encodeURIComponent(goongKey), {
+      if (goongMapKey) {
+        const goongLayer = L.tileLayer('https://tiles.goong.io/assets/{z}/{x}/{y}.png?api_key=' + encodeURIComponent(goongMapKey), {
           maxZoom: 19,
           attribution: 'Map data &copy; <a href="https://goong.io" target="_blank">Goong Maps</a>',
         });
-        goongLayer.on('tileerror', function() {
-          if (!fallbackDone) {
+        goongLayer.on('tileerror', function(errorEvent) {
+          if (fallbackDone) return;
+          const centerPoint = map.project(map.getCenter(), map.getZoom());
+          const centerTileX = Math.floor(centerPoint.x / 256);
+          const centerTileY = Math.floor(centerPoint.y / 256);
+          let isCenter = false;
+          if (errorEvent && errorEvent.coords) {
+            const dx = Math.abs(errorEvent.coords.x - centerTileX);
+            const dy = Math.abs(errorEvent.coords.y - centerTileY);
+            if (dx <= 1 && dy <= 1) isCenter = true;
+          } else {
+            isCenter = true;
+          }
+          if (isCenter) consecutiveCenterErrors++;
+          if (consecutiveCenterErrors >= 3) {
             fallbackDone = true;
+            console.warn('[Map Fallback] Goong tiles failed at center ' + consecutiveCenterErrors + ' consecutive times. Fallback to OpenStreetMap with authentic attribution.');
             map.removeLayer(goongLayer);
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
               maxZoom: 19,
@@ -66,6 +81,7 @@ const mapHtml = (center: PickerCoords, zoom: number, hasPin: boolean, interactiv
         });
         goongLayer.addTo(map);
       } else {
+        console.warn('[Map Warning] Thiếu EXPO_PUBLIC_GOONG_MAP_KEY, dùng OpenStreetMap.');
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
           maxZoom: 19,
           attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors',

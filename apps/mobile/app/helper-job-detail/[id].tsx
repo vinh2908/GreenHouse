@@ -10,6 +10,7 @@ import {
   Platform,
   Image,
   ActivityIndicator,
+  useWindowDimensions,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -87,6 +88,7 @@ export default function HelperJobDetailScreen() {
 
   // ── Realtime Socket Updates ──────────────────────────────────────────────
   useJobSocketUpdates(id);
+  const { width } = useWindowDimensions();
 
   const { data: job, isLoading } = useJobDetail(id);
   const { data: quotes } = useJobQuotes(id);
@@ -159,11 +161,21 @@ export default function HelperJobDetailScreen() {
   if (isLoading) return <LoadingSpinner />;
   if (!job) return null;
 
-  // Kiểm tra xem thợ hiện tại đã gửi báo giá chưa
-  const myQuote = quotes?.find((q: any) => {
-    const helperId = typeof q.helper_id === 'string' ? q.helper_id : q.helper_id?._id;
-    return helperId === currentUser?._id;
-  });
+  // Kiểm tra xem thợ hiện tại đã từ chối đơn này chưa
+  const isRejectedByMe = Boolean(
+    job.rejected_helper_ids?.some((rid: any) => {
+      const rIdStr = typeof rid === 'string' ? rid : rid?._id || rid?.toString?.();
+      return rIdStr === currentUser?._id;
+    }),
+  );
+
+  // Kiểm tra xem thợ hiện tại đã gửi báo giá chưa (ẩn nếu đã từ chối hoặc báo giá không còn pending)
+  const myQuote = isRejectedByMe
+    ? null
+    : quotes?.find((q: any) => {
+        const helperId = typeof q.helper_id === 'string' ? q.helper_id : q.helper_id?._id;
+        return helperId === currentUser?._id && q.status === 'pending';
+      });
 
   const handleOpenQuoteModal = () => {
     if (helperProfile?.verification_status !== 'approved') {
@@ -245,12 +257,14 @@ export default function HelperJobDetailScreen() {
               router.back();
             } catch (err: any) {
               const msg =
-                err?.response?.data?.message || err?.message || 'Từ chối thất bại. Vui lòng thử lại.';
+                err?.response?.data?.message ||
+                err?.message ||
+                'Từ chối thất bại. Vui lòng thử lại.';
               Toast.show({ type: 'error', text1: msg });
             }
           },
         },
-      ]
+      ],
     );
   };
 
@@ -560,7 +574,7 @@ export default function HelperJobDetailScreen() {
             helperName="Bạn (Thợ)"
             status={job.status}
             showNavigationButton={true}
-            height={260}
+            height={width < 430 ? 320 : 300}
           />
         )}
 
@@ -880,7 +894,24 @@ export default function HelperJobDetailScreen() {
         {/* ── Quote status / Action ────────────────────────────────── */}
         {['open', 'receiving_quotes'].includes(job.status) && !isMyActiveJob && (
           <View>
-            {isDirectAcceptJob ? (
+            {isRejectedByMe ? (
+              <Card
+                style={{
+                  backgroundColor: COLORS.gray[100],
+                  padding: 16,
+                  alignItems: 'center',
+                  gap: 6,
+                }}
+              >
+                <Text style={{ fontSize: 16 }}>🚫</Text>
+                <Text style={{ fontSize: 14, fontWeight: '700', color: COLORS.gray[700] }}>
+                  Bạn đã từ chối đơn hàng này
+                </Text>
+                <Text style={{ fontSize: 12, color: COLORS.gray[500], textAlign: 'center' }}>
+                  Đơn đã được ẩn khỏi danh sách việc mới và bản đồ nhu cầu của bạn.
+                </Text>
+              </Card>
+            ) : isDirectAcceptJob ? (
               <Card
                 style={{
                   gap: 10,
@@ -980,6 +1011,13 @@ export default function HelperJobDetailScreen() {
                 >
                   Đang chờ khách hàng xem xét và lựa chọn bạn.
                 </Text>
+                <Button
+                  title="Từ chối / Bỏ qua đơn này"
+                  variant="outline"
+                  loading={rejectJob.isPending}
+                  onPress={handleRejectJob}
+                  style={{ marginTop: 6 }}
+                />
               </Card>
             ) : (
               <View style={{ gap: 10 }}>

@@ -2557,11 +2557,19 @@ export class JobsService {
       throw new BadRequestException('Chỉ có thể bỏ qua đơn hàng đang mở');
     }
     const helperOid = new Types.ObjectId(helperId);
-    await this.jobModel
-      .findByIdAndUpdate(jobId, {
-        $addToSet: { rejected_helper_ids: helperOid },
-      })
-      .exec();
+    await Promise.all([
+      this.jobModel
+        .findByIdAndUpdate(jobId, {
+          $addToSet: { rejected_helper_ids: helperOid },
+        })
+        .exec(),
+      this.quoteModel
+        .updateMany(
+          { job_id: new Types.ObjectId(jobId), helper_id: helperOid, status: QuoteStatus.PENDING },
+          { $set: { status: QuoteStatus.WITHDRAWN } },
+        )
+        .exec(),
+    ]);
     return { success: true, message: 'Đã bỏ qua đơn hàng thành công' };
   }
 
@@ -2583,14 +2591,11 @@ export class JobsService {
     if (serviceId && Types.ObjectId.isValid(serviceId)) {
       query['service_id'] = new Types.ObjectId(serviceId);
     }
-    const skip = (page - 1) * limit;
-    const [jobs, total, helperProfile] = await Promise.all([
+    const [allJobs, rawTotalCount, helperProfile] = await Promise.all([
       this.jobModel
         .find(query)
         .populate('service_id', 'name slug icon')
         .sort({ created_at: -1 })
-        .skip(skip)
-        .limit(limit)
         .exec(),
       this.jobModel.countDocuments(query).exec(),
       this.helperModel
@@ -2602,20 +2607,24 @@ export class JobsService {
 
     const helperCoords = helperProfile?.location?.coordinates;
 
-    // Lịch làm việc (Feature 13): lọc in-memory trên trang vừa fetch, TRƯỚC
-    // bước enrich khoảng cách.
+    // Lịch làm việc (Feature 13): lọc in-memory trên toàn bộ tập đơn khớp truy vấn
     const availabilityFiltered = Boolean(helperProfile?.availability?.enabled);
     const visibleJobs = availabilityFiltered
-      ? jobs.filter(job =>
+      ? allJobs.filter(job =>
           this.isAvailableForDate(
             helperProfile?.availability,
             job.preferred_date ?? undefined,
             job.preferred_time_start,
           ),
         )
-      : jobs;
+      : allJobs;
 
-    const jobObjects = visibleJobs.map(job => {
+    const total = visibleJobs.length;
+    const total_pages = Math.max(1, Math.ceil(total / limit));
+    const skip = (page - 1) * limit;
+    const pagedJobs = visibleJobs.slice(skip, skip + limit);
+
+    const jobObjects = pagedJobs.map(job => {
       const obj = job.toObject() as any;
       obj.is_private_offer =
         this.isPrivateOfferActive(job) && String(job.private_offer_helper_id) === helperId;
@@ -2653,10 +2662,10 @@ export class JobsService {
     }
 
     let emptyReason: 'none' | 'outside_working_hours' | 'no_jobs' | 'expired_or_private' = 'none';
-    if (jobObjects.length === 0) {
-      if (jobs.length > 0 && availabilityFiltered) {
+    if (total === 0) {
+      if (allJobs.length > 0 && availabilityFiltered) {
         emptyReason = 'outside_working_hours';
-      } else if (total === 0) {
+      } else if (rawTotalCount === 0) {
         emptyReason = 'no_jobs';
       } else {
         emptyReason = 'expired_or_private';
@@ -2668,7 +2677,7 @@ export class JobsService {
       total,
       page,
       limit,
-      total_pages: Math.ceil(total / limit),
+      total_pages,
       availability_filtered: availabilityFiltered,
       empty_reason: emptyReason,
     };
@@ -2678,7 +2687,7 @@ export class JobsService {
 
   // ─── Bản đồ nhu cầu (Roadmap Phase 2 — Feature 15) ────────────────────────
   // Gom các đơn đang mở theo cùng bộ lọc với getAvailableJobs để bảo đảm đồng bộ
-  async getDemandMap(helperId?: string) {
+  async getDemandMap(helperId?: string, serviceId?: string) {
     let helperProfile: any = null;
     let helperOid: Types.ObjectId | null = null;
     if (helperId && Types.ObjectId.isValid(helperId)) {
@@ -2702,6 +2711,9 @@ export class JobsService {
         ...(helperOid ? [{ private_offer_helper_id: helperOid }] : []),
       ],
     };
+    if (serviceId && Types.ObjectId.isValid(serviceId)) {
+      query['service_id'] = new Types.ObjectId(serviceId);
+    }
 
     const jobs = await this.jobModel
       .find(query)

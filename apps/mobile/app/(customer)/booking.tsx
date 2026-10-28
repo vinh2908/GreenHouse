@@ -40,9 +40,10 @@ import {
   TimeDropdownPicker,
   DurationDropdownPicker,
   ScheduledTimePreview,
+  getDefaultFutureTimeSlot,
+  getNowVietnam,
 } from '@/components/common/time-dropdown-picker';
 import { DateTimePickerBottomSheet } from '@/components/common/date-time-bottom-sheet';
-import { DurationBottomSheet } from '@/components/common/duration-bottom-sheet';
 import {
   useServices,
   useCreateJob,
@@ -254,7 +255,9 @@ export default function BookingScreen() {
   const searchTimeoutRef = useRef<any>(null);
   const [date, setDate] = useState(dayjs().add(1, 'day').format('YYYY-MM-DD'));
   const [dateChip, setDateChip] = useState<'today' | 'tomorrow' | 'sat' | 'sun' | null>('tomorrow');
-  const [timeSlot, setTimeSlot] = useState('09:00');
+  const [timeSlot, setTimeSlot] = useState(() =>
+    getDefaultFutureTimeSlot(dayjs().add(1, 'day').format('YYYY-MM-DD')),
+  );
   const [duration, setDuration] = useState(3);
   const [dateTimePickerOpen, setDateTimePickerOpen] = useState(false);
   const [bottomSheetInitialTab, setBottomSheetInitialTab] = useState<'date' | 'time'>('date');
@@ -262,7 +265,6 @@ export default function BookingScreen() {
   const [calendarMonth, setCalendarMonth] = useState(dayjs());
   const [customTimeOpen, setCustomTimeOpen] = useState(false);
   const [customTimeInput, setCustomTimeInput] = useState('');
-  const [durationPickerOpen, setDurationPickerOpen] = useState(false);
   const [isCustomDuration, setIsCustomDuration] = useState(false);
   const [customHours, setCustomHours] = useState(1);
   const [customMinutes, setCustomMinutes] = useState(30);
@@ -1788,7 +1790,15 @@ export default function BookingScreen() {
                         onPress={() => {
                           setDateChip(c.key as any);
                           const now = dayjs();
-                          if (c.key === 'today') setDate(now.format('YYYY-MM-DD'));
+                          if (c.key === 'today') {
+                            const todayStr = now.format('YYYY-MM-DD');
+                            setDate(todayStr);
+                            const [th, tm] = timeSlot.split(':').map(Number);
+                            const nowVn = getNowVietnam();
+                            if (th * 60 + tm <= nowVn.totalMinutes) {
+                              setTimeSlot(getDefaultFutureTimeSlot(todayStr));
+                            }
+                          }
                           else if (c.key === 'tomorrow')
                             setDate(now.add(1, 'day').format('YYYY-MM-DD'));
                           else if (c.key === 'sat') {
@@ -1835,7 +1845,7 @@ export default function BookingScreen() {
                 {/* Thời lượng ước tính — Dropdown Type 12 */}
                 <DurationDropdownPicker
                   valueMinutes={Math.round(duration * 60)}
-                  onChangeMinutes={(mins) => {
+                  onChangeMinutes={mins => {
                     setDuration(mins / 60);
                   }}
                 />
@@ -1845,7 +1855,9 @@ export default function BookingScreen() {
                   startDate={date}
                   startTime={timeSlot}
                   durationMinutes={Math.round(duration * 60)}
-                  price={targetPrice ? Number(String(targetPrice).replace(/[^0-9]/g, '')) : undefined}
+                  price={
+                    targetPrice ? Number(String(targetPrice).replace(/[^0-9]/g, '')) : undefined
+                  }
                 />
               </View>
             </View>
@@ -2438,19 +2450,7 @@ export default function BookingScreen() {
         }}
       />
 
-      {/* ── BOTTOM SHEET CHỌN THỜI LƯỢNG TỰ DO (ITEM 2) ── */}
-      <DurationBottomSheet
-        visible={durationPickerOpen}
-        initialHours={Math.floor(duration)}
-        initialMinutes={Math.round((duration - Math.floor(duration)) * 60)}
-        startDate={date}
-        startTime={timeSlot}
-        onClose={() => setDurationPickerOpen(false)}
-        onConfirm={newDur => {
-          setDuration(newDur);
-          setIsCustomDuration(![1, 2, 3, 4].includes(newDur));
-        }}
-      />
+
     </View>
   );
 }

@@ -131,8 +131,12 @@ export class JobsController {
 
   @Get('demand-map')
   @ApiOperation({ summary: '[Helper] Bản đồ nhu cầu: số đơn đang mở theo quận/thành phố' })
-  async getDemandMap(@CurrentUser() user?: { sub: string }) {
-    return this.jobsService.getDemandMap(user?.sub);
+  @ApiQuery({ name: 'service_id', required: false, description: 'Lọc theo dịch vụ cụ thể' })
+  async getDemandMap(
+    @CurrentUser() user?: { sub: string },
+    @Query('service_id') serviceId?: string,
+  ) {
+    return this.jobsService.getDemandMap(user?.sub, serviceId);
   }
 
   // ─── Team jobs / Đơn nhóm (Roadmap Phase 1 — Feature 5) ─────────────────
@@ -378,10 +382,7 @@ export class JobsController {
   @Post(':jobId/reject')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: '[Helper] Bỏ qua / từ chối đơn hàng đang mở' })
-  async rejectJob(
-    @CurrentUser() user: { sub: string },
-    @Param('jobId') jobId: string,
-  ) {
+  async rejectJob(@CurrentUser() user: { sub: string }, @Param('jobId') jobId: string) {
     return this.jobsService.rejectJob(user.sub, jobId);
   }
 }
