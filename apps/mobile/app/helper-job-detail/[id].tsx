@@ -120,7 +120,12 @@ export default function HelperJobDetailScreen() {
       distanceKm: Math.round(distKm * 10) / 10,
       etaMinutes: etaMins,
     };
-  }, [routeMetrics, job?.address?.location?.coordinates, gps, helperProfile?.location?.coordinates]);
+  }, [
+    routeMetrics,
+    job?.address?.location?.coordinates,
+    gps,
+    helperProfile?.location?.coordinates,
+  ]);
 
   const submitQuote = useSubmitQuote();
   const acceptFixed = useAcceptFixedPrice();
@@ -606,8 +611,8 @@ export default function HelperJobDetailScreen() {
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 }}>
                   <Navigation size={14} color={COLORS.primary} />
                   <Text style={{ fontSize: 13, color: COLORS.primary, fontWeight: '700' }}>
-                    Khoảng cách: ~{effectiveMetrics.distanceKm.toFixed(1)} km · ETA ước tính: ~{effectiveMetrics.etaMinutes}{' '}
-                    phút
+                    Khoảng cách: ~{effectiveMetrics.distanceKm.toFixed(1)} km · ETA ước tính: ~
+                    {effectiveMetrics.etaMinutes} phút
                   </Text>
                 </View>
               )}

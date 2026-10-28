@@ -139,9 +139,7 @@ export class PaymentsService {
       // A2: Kiểm tra hợp đồng và chặn giao dịch 0₫ không hợp lệ
       let contract: any = null;
       if (this.contractModel) {
-        contract = await this.contractModel
-          .findOne({ job_id: new Types.ObjectId(jobId) })
-          .exec();
+        contract = await this.contractModel.findOne({ job_id: new Types.ObjectId(jobId) }).exec();
       }
       if (!contract && !job.is_warranty) {
         throw new BadRequestException('Đơn hàng chưa có hợp đồng để thanh toán');
@@ -155,45 +153,45 @@ export class PaymentsService {
         throw new BadRequestException('Số tiền thanh toán phải lớn hơn 0₫');
       }
 
-        // ── Voucher: ghi nhận lượt dùng + tính giảm trên giá chốt của đơn ──
-        // Nền tảng chịu phần giảm (thợ vẫn nhận đủ theo hợp đồng). Nếu mã đã
-        // hết hạn/hết lượt ở thời điểm thanh toán → ném lỗi rõ ràng để khách
-        // gỡ mã rồi thanh toán lại, tránh trừ tiền sai.
-        if (job.voucher_code && resolvedAmount > 0 && (job.discount_amount ?? 0) <= 0) {
-          const redeemed = await this.vouchersService.redeemForJob(
-            customerId,
-            jobId,
-            job.voucher_code,
-            resolvedAmount,
-          );
-          discountAmount = redeemed.discount_amount;
-          appliedVoucherCode = redeemed.voucher.code;
-          resolvedAmount = Math.max(0, resolvedAmount - discountAmount);
-        }
+      // ── Voucher: ghi nhận lượt dùng + tính giảm trên giá chốt của đơn ──
+      // Nền tảng chịu phần giảm (thợ vẫn nhận đủ theo hợp đồng). Nếu mã đã
+      // hết hạn/hết lượt ở thời điểm thanh toán → ném lỗi rõ ràng để khách
+      // gỡ mã rồi thanh toán lại, tránh trừ tiền sai.
+      if (job.voucher_code && resolvedAmount > 0 && (job.discount_amount ?? 0) <= 0) {
+        const redeemed = await this.vouchersService.redeemForJob(
+          customerId,
+          jobId,
+          job.voucher_code,
+          resolvedAmount,
+        );
+        discountAmount = redeemed.discount_amount;
+        appliedVoucherCode = redeemed.voucher.code;
+        resolvedAmount = Math.max(0, resolvedAmount - discountAmount);
+      }
 
-        // ── Loyalty (Feature 12): trừ điểm thật tại thời điểm thanh toán ──
-        // Mirror voucher: nếu số dư điểm lúc này không còn đủ → redeemAtPayment
-        // ném BadRequest rõ ràng, thanh toán bị chặn để khách gỡ điểm rồi
-        // thanh toán lại. Phần giảm do điểm cũng do sàn chịu (thợ nhận đủ
-        // theo hợp đồng như voucher).
-        if ((job.loyalty_points_requested ?? 0) > 0 && resolvedAmount > 0) {
-          const loyaltyRedeemed = await this.loyaltyService.redeemAtPayment(customerId, jobId);
-          if (loyaltyRedeemed) {
-            loyaltyPointsRedeemed = loyaltyRedeemed.points_redeemed;
-            loyaltyDiscountAmount = loyaltyRedeemed.discount_amount;
-            resolvedAmount = Math.max(0, resolvedAmount - loyaltyDiscountAmount);
-          }
+      // ── Loyalty (Feature 12): trừ điểm thật tại thời điểm thanh toán ──
+      // Mirror voucher: nếu số dư điểm lúc này không còn đủ → redeemAtPayment
+      // ném BadRequest rõ ràng, thanh toán bị chặn để khách gỡ điểm rồi
+      // thanh toán lại. Phần giảm do điểm cũng do sàn chịu (thợ nhận đủ
+      // theo hợp đồng như voucher).
+      if ((job.loyalty_points_requested ?? 0) > 0 && resolvedAmount > 0) {
+        const loyaltyRedeemed = await this.loyaltyService.redeemAtPayment(customerId, jobId);
+        if (loyaltyRedeemed) {
+          loyaltyPointsRedeemed = loyaltyRedeemed.points_redeemed;
+          loyaltyDiscountAmount = loyaltyRedeemed.discount_amount;
+          resolvedAmount = Math.max(0, resolvedAmount - loyaltyDiscountAmount);
         }
+      }
 
-        await this.jobModel
-          .findByIdAndUpdate(job._id, {
-            $set: {
-              payment_status: PaymentStatus.PAID,
-              payment_method: paymentMethod,
-              ...(discountAmount > 0 ? { discount_amount: discountAmount } : {}),
-            },
-          })
-          .exec();
+      await this.jobModel
+        .findByIdAndUpdate(job._id, {
+          $set: {
+            payment_status: PaymentStatus.PAID,
+            payment_method: paymentMethod,
+            ...(discountAmount > 0 ? { discount_amount: discountAmount } : {}),
+          },
+        })
+        .exec();
     }
 
     const wallet = await this.getOrCreateWallet(customerId);

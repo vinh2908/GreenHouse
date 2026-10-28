@@ -1759,7 +1759,9 @@ export default function BookingScreen() {
                         return `${capitalizedDow}, ${dt.format('DD/MM/YYYY')}`;
                       })()}
                     </Text>
-                    <Text style={{ fontSize: 11, color: '#64748B', fontWeight: '500', marginTop: 1 }}>
+                    <Text
+                      style={{ fontSize: 11, color: '#64748B', fontWeight: '500', marginTop: 1 }}
+                    >
                       Bấm để mở lịch tháng trong bottom sheet
                     </Text>
                   </View>
@@ -1838,12 +1840,19 @@ export default function BookingScreen() {
                   <Clock size={20} color="#16A34A" />
                   <View style={{ flex: 1 }}>
                     <Text
-                      style={{ fontSize: 22, fontWeight: '800', color: '#047857', fontVariant: ['tabular-nums'] }}
+                      style={{
+                        fontSize: 22,
+                        fontWeight: '800',
+                        color: '#047857',
+                        fontVariant: ['tabular-nums'],
+                      }}
                       numberOfLines={1}
                     >
                       {timeSlot}
                     </Text>
-                    <Text style={{ fontSize: 11, color: '#64748B', fontWeight: '500', marginTop: 1 }}>
+                    <Text
+                      style={{ fontSize: 11, color: '#64748B', fontWeight: '500', marginTop: 1 }}
+                    >
                       Bấm để mở bánh xe cuộn chọn giờ
                     </Text>
                   </View>
@@ -1852,10 +1861,16 @@ export default function BookingScreen() {
 
                 {/* Quick Time Suggestion Chips - Chuẩn Demo */}
                 <View>
-                  <Text style={{ fontSize: 11.5, fontWeight: '600', color: '#64748B', marginBottom: 6 }}>
+                  <Text
+                    style={{ fontSize: 11.5, fontWeight: '600', color: '#64748B', marginBottom: 6 }}
+                  >
                     Gợi ý nhanh — bấm là bánh xe chạy tới đúng giờ đó:
                   </Text>
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6, paddingVertical: 2 }}>
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={{ gap: 6, paddingVertical: 2 }}
+                  >
                     {[
                       { t: '07:00' },
                       { t: '08:00' },
@@ -1929,43 +1944,57 @@ export default function BookingScreen() {
                     })}
                   </ScrollView>
 
-                  <Text style={{ fontSize: 11.5, fontWeight: '600', color: '#64748B', marginTop: 6, marginBottom: 4 }}>
+                  <Text
+                    style={{
+                      fontSize: 11.5,
+                      fontWeight: '600',
+                      color: '#64748B',
+                      marginTop: 6,
+                      marginBottom: 4,
+                    }}
+                  >
                     Giờ lẻ:
                   </Text>
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6, paddingVertical: 2 }}>
-                    {['07:30', '08:30', '11:30', '13:30', '17:30', '19:30', '20:30', '21:30'].map(t => {
-                      const isSel = timeSlot === t;
-                      return (
-                        <TouchableOpacity
-                          key={t}
-                          activeOpacity={0.7}
-                          onPress={() => {
-                            setTimeSlot(t);
-                          }}
-                          style={{
-                            backgroundColor: isSel ? '#DCFCE7' : '#FFFFFF',
-                            borderWidth: 1.5,
-                            borderColor: isSel ? '#16A34A' : '#E2E8F0',
-                            borderRadius: 9,
-                            paddingHorizontal: 10,
-                            paddingVertical: 6,
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                          }}
-                        >
-                          <Text
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={{ gap: 6, paddingVertical: 2 }}
+                  >
+                    {['07:30', '08:30', '11:30', '13:30', '17:30', '19:30', '20:30', '21:30'].map(
+                      t => {
+                        const isSel = timeSlot === t;
+                        return (
+                          <TouchableOpacity
+                            key={t}
+                            activeOpacity={0.7}
+                            onPress={() => {
+                              setTimeSlot(t);
+                            }}
                             style={{
-                              fontSize: 12,
-                              fontWeight: isSel ? '800' : '600',
-                              color: isSel ? '#047857' : '#334155',
-                              fontVariant: ['tabular-nums'],
+                              backgroundColor: isSel ? '#DCFCE7' : '#FFFFFF',
+                              borderWidth: 1.5,
+                              borderColor: isSel ? '#16A34A' : '#E2E8F0',
+                              borderRadius: 9,
+                              paddingHorizontal: 10,
+                              paddingVertical: 6,
+                              alignItems: 'center',
+                              justifyContent: 'center',
                             }}
                           >
-                            {t}
-                          </Text>
-                        </TouchableOpacity>
-                      );
-                    })}
+                            <Text
+                              style={{
+                                fontSize: 12,
+                                fontWeight: isSel ? '800' : '600',
+                                color: isSel ? '#047857' : '#334155',
+                                fontVariant: ['tabular-nums'],
+                              }}
+                            >
+                              {t}
+                            </Text>
+                          </TouchableOpacity>
+                        );
+                      },
+                    )}
                   </ScrollView>
                 </View>
               </View>
