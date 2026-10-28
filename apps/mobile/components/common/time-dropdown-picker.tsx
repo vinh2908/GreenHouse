@@ -34,8 +34,20 @@ export const ORIGINAL_TIME_CHIPS = [
   '22:00',
 ];
 
+/** Nhãn badge cho chip gợi ý theo thiết kế (MỚI cho 12:00, ĐÊM cho 21:00, 21:30, 22:00) */
+export function getChipBadge(chip: string): 'MỚI' | 'ĐÊM' | null {
+  if (chip === '12:00') return 'MỚI';
+  if (chip === '21:00' || chip === '21:30' || chip === '22:00') return 'ĐÊM';
+  return null;
+}
+
 /** Giờ hiện tại theo múi giờ Asia/Ho_Chi_Minh (UTC+7) */
-export function getNowVietnam(): { hours: number; minutes: number; dateStr: string; totalMinutes: number } {
+export function getNowVietnam(): {
+  hours: number;
+  minutes: number;
+  dateStr: string;
+  totalMinutes: number;
+} {
   const now = new Date();
   const utc = now.getTime() + now.getTimezoneOffset() * 60000;
   const vnTime = new Date(utc + 7 * 3600000);
@@ -70,6 +82,18 @@ export function isTodayVietnam(dateInput?: string | Date | null): boolean {
   return inputStr === vn.dateStr;
 }
 
+/** Lấy giờ mặc định tương lai gần nhất theo danh sách ORIGINAL_TIME_CHIPS cho ngày đã chọn */
+export function getDefaultFutureTimeSlot(selectedDate?: string | Date | null): string {
+  const isToday = isTodayVietnam(selectedDate);
+  if (!isToday) return '09:00';
+  const nowVn = getNowVietnam();
+  const nextChip = ORIGINAL_TIME_CHIPS.find(chip => {
+    const [h, m] = chip.split(':').map(Number);
+    return h * 60 + m > nowVn.totalMinutes;
+  });
+  return nextChip || '22:00';
+}
+
 /** Format thời lượng: "1 giờ 10 phút", "2 giờ 20 phút", "30 phút" (không thập phân 1,17 giờ) */
 export function formatDurationVi(totalMinutes: number): string {
   if (!totalMinutes || totalMinutes <= 0) return '0 phút';
@@ -85,7 +109,12 @@ export function calcEndTime(
   timeStart: string,
   durationMinutes: number,
 ): { timeEnd: string; isNextDay: boolean } | null {
-  if (!timeStart || !/^\d{1,2}:\d{2}$/.test(timeStart.trim()) || !durationMinutes || durationMinutes <= 0) {
+  if (
+    !timeStart ||
+    !/^\d{1,2}:\d{2}$/.test(timeStart.trim()) ||
+    !durationMinutes ||
+    durationMinutes <= 0
+  ) {
     return null;
   }
   const [sh, sm] = timeStart.trim().split(':').map(Number);
@@ -140,11 +169,11 @@ export function TimeDropdownPicker({
   const isToday = isTodayVietnam(selectedDate);
   const nowVn = getNowVietnam();
 
-  // Kiểm tra giờ quá khứ
+  // Kiểm tra giờ quá khứ (theo múi giờ Asia/Ho_Chi_Minh)
   const isPast = useMemo(() => {
     if (!isToday) return false;
     const selectedTotal = currentHour * 60 + currentMinute;
-    return selectedTotal < nowVn.totalMinutes;
+    return selectedTotal <= nowVn.totalMinutes;
   }, [isToday, currentHour, currentMinute, nowVn.totalMinutes]);
 
   const isBeforeMinTime = useMemo(() => {
@@ -161,7 +190,7 @@ export function TimeDropdownPicker({
     onValidityChange?.(isValid);
   }, [isValid, onValidityChange]);
 
-  // Lọc và sắp xếp chip gợi ý
+  // Lọc và sắp xếp chip gợi ý (chỉ lớn hơn giờ hiện tại khi chọn hôm nay)
   const { filteredChips, noChipsToday } = useMemo(() => {
     if (!isToday) {
       // Ngày mai trở đi: hiển thị toàn bộ theo thứ tự thời gian
@@ -174,7 +203,7 @@ export function TimeDropdownPicker({
     }).sort((a, b) => {
       const [ah, am] = a.split(':').map(Number);
       const [bh, bm] = b.split(':').map(Number);
-      return (ah * 60 + am) - (bh * 60 + bm);
+      return ah * 60 + am - (bh * 60 + bm);
     });
 
     return {
@@ -183,20 +212,12 @@ export function TimeDropdownPicker({
     };
   }, [isToday, nowVn.totalMinutes]);
 
-  // Tự động chọn chip tương lai gần nhất nếu người dùng đang chọn giờ quá khứ trong hôm nay
-  const autoSwitchedRef = useRef<string | null>(null);
-  useEffect(() => {
-    if (isToday && isPast && filteredChips.length > 0) {
-      const nearestFutureChip = filteredChips[0];
-      if (autoSwitchedRef.current !== nearestFutureChip) {
-        autoSwitchedRef.current = nearestFutureChip;
-        onChange(nearestFutureChip);
-      }
-    }
-  }, [isToday, isPast, filteredChips, onChange]);
-
   const handleSelectHour = (h: number) => {
-    const formatted = `${String(h).padStart(2, '0')}:${String(currentMinute).padStart(2, '0')}`;
+    let nextMinute = currentMinute;
+    if (isToday && h === nowVn.hours && nextMinute <= nowVn.minutes) {
+      nextMinute = Math.min(59, nowVn.minutes + 1);
+    }
+    const formatted = `${String(h).padStart(2, '0')}:${String(nextMinute).padStart(2, '0')}`;
     onChange(formatted);
     setModalType(null);
   };
@@ -270,6 +291,7 @@ export function TimeDropdownPicker({
             >
               {filteredChips.map(chip => {
                 const isSelected = activeChip === chip;
+                const badge = getChipBadge(chip);
                 return (
                   <TouchableOpacity
                     key={chip}
@@ -277,9 +299,36 @@ export function TimeDropdownPicker({
                     onPress={() => handleSelectChip(chip)}
                     style={[styles.timeChip, isSelected && styles.timeChipActive]}
                   >
-                    <Text style={[styles.timeChipText, isSelected && styles.timeChipTextActive]}>
-                      {chip}
-                    </Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                      <Text style={[styles.timeChipText, isSelected && styles.timeChipTextActive]}>
+                        {chip}
+                      </Text>
+                      {badge && (
+                        <View
+                          style={[
+                            styles.chipBadge,
+                            isSelected
+                              ? styles.chipBadgeActive
+                              : badge === 'ĐÊM'
+                                ? styles.chipBadgeNight
+                                : styles.chipBadgeNew,
+                          ]}
+                        >
+                          <Text
+                            style={[
+                              styles.chipBadgeText,
+                              isSelected
+                                ? styles.chipBadgeTextActive
+                                : badge === 'ĐÊM'
+                                  ? styles.chipBadgeTextNight
+                                  : styles.chipBadgeTextNew,
+                            ]}
+                          >
+                            {badge}
+                          </Text>
+                        </View>
+                      )}
+                    </View>
                   </TouchableOpacity>
                 );
               })}
@@ -303,15 +352,18 @@ export function TimeDropdownPicker({
           <View style={styles.modalContent} onStartShouldSetResponder={() => true}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Chọn Giờ (00 – 23)</Text>
-              <TouchableOpacity onPress={() => setModalType(null)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+              <TouchableOpacity
+                onPress={() => setModalType(null)}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
                 <X size={20} color={COLORS.gray[600]} />
               </TouchableOpacity>
             </View>
             <ScrollView style={{ maxHeight: 320 }} showsVerticalScrollIndicator={false}>
               {Array.from({ length: 24 }, (_, i) => i).map(h => {
                 const isSelected = h === currentHour;
-                // Nếu hôm nay và giờ < giờ hiện tại
-                const isHourPast = isToday && h < nowVn.hours;
+                // Nếu hôm nay và giờ < giờ hiện tại (hoặc bằng giờ hiện tại nhưng phút đã 59)
+                const isHourPast = isToday && (h < nowVn.hours || (h === nowVn.hours && nowVn.minutes >= 59));
                 return (
                   <TouchableOpacity
                     key={h}
@@ -357,14 +409,17 @@ export function TimeDropdownPicker({
           <View style={styles.modalContent} onStartShouldSetResponder={() => true}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Chọn Phút (00 – 59)</Text>
-              <TouchableOpacity onPress={() => setModalType(null)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+              <TouchableOpacity
+                onPress={() => setModalType(null)}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
                 <X size={20} color={COLORS.gray[600]} />
               </TouchableOpacity>
             </View>
             <ScrollView style={{ maxHeight: 320 }} showsVerticalScrollIndicator={false}>
               {Array.from({ length: 60 }, (_, i) => i).map(m => {
                 const isSelected = m === currentMinute;
-                const isMinPast = isToday && currentHour === nowVn.hours && m < nowVn.minutes;
+                const isMinPast = isToday && currentHour === nowVn.hours && m <= nowVn.minutes;
                 return (
                   <TouchableOpacity
                     key={m}
@@ -608,7 +663,7 @@ export function ScheduledTimePreview({
   const effectiveStart = timeStart || startTime || '08:00';
   const calc = useMemo(
     () => calcEndTime(effectiveStart, durationMinutes),
-    [effectiveStart, durationMinutes]
+    [effectiveStart, durationMinutes],
   );
 
   const formattedDate = useMemo(() => {
@@ -754,6 +809,33 @@ const styles = StyleSheet.create({
     color: COLORS.gray[700],
   },
   timeChipTextActive: {
+    color: '#FFFFFF',
+  },
+  chipBadge: {
+    paddingHorizontal: 4,
+    paddingVertical: 1,
+    borderRadius: 4,
+  },
+  chipBadgeNew: {
+    backgroundColor: '#DCFCE7',
+  },
+  chipBadgeNight: {
+    backgroundColor: '#FEF3C7',
+  },
+  chipBadgeActive: {
+    backgroundColor: 'rgba(255,255,255,0.25)',
+  },
+  chipBadgeText: {
+    fontSize: 9,
+    fontWeight: '800',
+  },
+  chipBadgeTextNew: {
+    color: '#15803D',
+  },
+  chipBadgeTextNight: {
+    color: '#B45309',
+  },
+  chipBadgeTextActive: {
     color: '#FFFFFF',
   },
   modalOverlay: {

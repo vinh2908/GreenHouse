@@ -20,6 +20,21 @@ if (!goongKey || goongKey.length < 10 || goongKey.startsWith('eyJ') || goongKey.
   console.log('✅ [METRO BUILD CHECK] EXPO_PUBLIC_GOONG_API_KEY is present and validated.');
 }
 
+let goongMapKey = process.env.EXPO_PUBLIC_GOONG_MAP_KEY;
+if (!goongMapKey && fs.existsSync(envPath)) {
+  const content = fs.readFileSync(envPath, 'utf8');
+  const match = content.match(/^EXPO_PUBLIC_GOONG_MAP_KEY=(.+)$/m);
+  if (match) goongMapKey = match[1].trim();
+}
+
+if (!goongMapKey || goongMapKey.length < 10) {
+  console.warn(
+    '[METRO BUILD CHECK] EXPO_PUBLIC_GOONG_MAP_KEY is missing in apps/mobile/.env! Map tiles will fallback to OSM.',
+  );
+} else {
+  console.log('✅ [METRO BUILD CHECK] EXPO_PUBLIC_GOONG_MAP_KEY is present and validated.');
+}
+
 const projectRoot = __dirname;
 const monorepoRoot = path.resolve(projectRoot, '../..');
 
