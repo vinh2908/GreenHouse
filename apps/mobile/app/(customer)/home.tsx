@@ -582,7 +582,7 @@ export default function CustomerHomeScreen() {
       full_address?: string;
     } | null,
   ): string => {
-    if (!geo) return 'Quận 1, Hồ Chí Minh';
+    if (!geo) return 'Chưa rõ vị trí';
     let city = geo.city?.trim();
     let district = geo.district?.trim() || geo.ward?.trim();
 
@@ -604,7 +604,7 @@ export default function CustomerHomeScreen() {
     if (district && city) return `${district}, ${city}`;
     if (city) return city;
     if (district) return district;
-    return 'Chưa xác định vị trí';
+    return 'Chưa rõ vị trí';
   };
 
   useEffect(() => {
@@ -1119,7 +1119,7 @@ export default function CustomerHomeScreen() {
                 srcDoc={leafletMiniMapHtml}
                 style={{ width: '100%', height: '100%', border: 'none' }}
                 title="Leaflet Mini Map"
-                sandbox="allow-scripts allow-same-origin"
+                sandbox="allow-scripts"
               />
             ) : (
               <WebView
@@ -2610,12 +2610,7 @@ export default function CustomerHomeScreen() {
                 statusBadgeBg = '#E0E7FF';
                 statusBadgeColor = '#4338CA';
                 statusDesc = 'Đã có thợ gửi báo giá, bấm để xem chi tiết và xác nhận thợ.';
-              } else if (j.status === 'quote_selected') {
-                statusBadgeText = 'Đã chọn thợ';
-                statusBadgeBg = '#E0F2FE';
-                statusBadgeColor = '#0369A1';
-                statusDesc = 'Bạn đã chọn báo giá, đang chờ thợ xác nhận tiếp nhận đơn.';
-              } else if (j.status === 'confirmed') {
+              } else if (j.status === 'confirmed' || j.status === 'quote_selected') {
                 statusBadgeText = 'Thợ đã nhận';
                 statusBadgeBg = '#DCFCE7';
                 statusBadgeColor = '#15803D';

@@ -17,8 +17,12 @@ const TX_META: Record<string, { label: string; emoji: string }> = {
 export default function LoyaltyScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { data: account, isLoading, refetch, isRefetching } = useLoyaltyAccount();
-  const { data: history } = useLoyaltyHistory(1, 30);
+  const { data: account, isLoading, refetch: refetchAccount, isRefetching: isRefetchingAccount } = useLoyaltyAccount();
+  const { data: history, refetch: refetchHistory, isRefetching: isRefetchingHistory } = useLoyaltyHistory(1, 30);
+
+  const handleRefresh = async () => {
+    await Promise.all([refetchAccount(), refetchHistory()]);
+  };
 
   const handleBack = () => {
     if (router.canGoBack()) router.back();
@@ -58,7 +62,12 @@ export default function LoyaltyScreen() {
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ padding: 16, gap: 16, paddingBottom: 40 }}
-        refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} />}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefetchingAccount || isRefetchingHistory}
+            onRefresh={handleRefresh}
+          />
+        }
       >
         {/* Balance + tier */}
         <Card style={{ gap: 12, backgroundColor: '#FFFBEB' }}>

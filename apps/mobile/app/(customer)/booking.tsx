@@ -1016,8 +1016,16 @@ export default function BookingScreen() {
       const durHours = typeof duration === 'number' ? duration : parseFloat(String(duration)) || 2;
       const durMinsTotal = Math.round(durHours * 60);
       const startDateTime = dayjs(`${date} ${timeSlot}`);
+      if (startDateTime.isBefore(dayjs().subtract(1, 'minute'))) {
+        Toast.show({ type: 'error', text1: 'Thời gian bắt đầu không được ở trong quá khứ' });
+        return;
+      }
       const endTime = startDateTime.add(durMinsTotal, 'minute').format('HH:mm');
       const cleanNum = targetPrice ? Number(String(targetPrice).replace(/[^0-9]/g, '')) : undefined;
+      if (cleanNum !== undefined && cleanNum < 50000) {
+        Toast.show({ type: 'error', text1: 'Giá mong muốn tối thiểu là 50.000₫' });
+        return;
+      }
 
       await createJob.mutateAsync({
         service_id: currentServiceId === 'custom' ? undefined : currentServiceId,
@@ -1057,6 +1065,19 @@ export default function BookingScreen() {
         Toast.show({ type: 'error', text1: 'Vui lòng chọn 1 dịch vụ cần làm' });
         return;
       }
+      if (selectedService === 'custom') {
+        if (!customServiceName.trim()) {
+          Toast.show({ type: 'error', text1: 'Vui lòng nhập tên công việc bạn cần làm' });
+          return;
+        }
+        if (targetPrice) {
+          const cleanP = Number(String(targetPrice).replace(/[^0-9]/g, ''));
+          if (cleanP > 0 && cleanP < 50000) {
+            Toast.show({ type: 'error', text1: 'Giá mong muốn tối thiểu là 50.000₫' });
+            return;
+          }
+        }
+      }
       setStep(1);
     } else if (step === 1) {
       const hasFullAddress = address.full_address.trim().length > 0;
@@ -1081,6 +1102,11 @@ export default function BookingScreen() {
     } else if (step === 2) {
       if (!date || !timeSlot) {
         Toast.show({ type: 'error', text1: 'Vui lòng chọn ngày và giờ bắt đầu làm việc' });
+        return;
+      }
+      const selectedStart = dayjs(`${date} ${timeSlot}`);
+      if (selectedStart.isBefore(dayjs().subtract(1, 'minute'))) {
+        Toast.show({ type: 'error', text1: 'Thời gian bắt đầu không được ở trong quá khứ' });
         return;
       }
       setStep(3);

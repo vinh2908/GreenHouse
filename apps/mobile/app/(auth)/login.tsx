@@ -27,6 +27,7 @@ export default function LoginScreen() {
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [loginError, setLoginError] = useState<string | null>(null);
 
   // ── Forgot Password Modal States ──────────────────────────────────────────
   const [showForgotModal, setShowForgotModal] = useState(false);
@@ -36,9 +37,12 @@ export default function LoginScreen() {
   const [newPassword, setNewPassword] = useState('');
 
   const handleLogin = async () => {
+    setLoginError(null);
     const identifier = phone.trim();
     if (!identifier || !password.trim()) {
-      Toast.show({ type: 'error', text1: 'Vui lòng nhập số điện thoại hoặc email và mật khẩu' });
+      const emptyMsg = 'Vui lòng nhập số điện thoại hoặc email và mật khẩu';
+      setLoginError(emptyMsg);
+      Toast.show({ type: 'error', text1: emptyMsg });
       return;
     }
     const cleanIdentifier = identifier.includes('@')
@@ -59,10 +63,12 @@ export default function LoginScreen() {
         router.replace('/(customer)/home');
       }
     } catch (err: unknown) {
-      const msg =
-        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-        'Đăng nhập không thành công';
-      Toast.show({ type: 'error', text1: msg });
+      const dataMsg = (err as any)?.response?.data?.message;
+      const msg = Array.isArray(dataMsg)
+        ? dataMsg[0]
+        : (dataMsg || 'Số điện thoại hoặc mật khẩu không chính xác');
+      setLoginError(msg);
+      Toast.show({ type: 'error', text1: 'Đăng nhập thất bại', text2: msg });
     }
   };
 
@@ -235,6 +241,30 @@ export default function LoginScreen() {
                 Quên mật khẩu?
               </Text>
             </TouchableOpacity>
+
+            {loginError && (
+              <View
+                style={{
+                  backgroundColor: '#FEF2F2',
+                  borderWidth: 1,
+                  borderColor: '#FCA5A5',
+                  borderRadius: 10,
+                  padding: 10,
+                  marginTop: 6,
+                }}
+              >
+                <Text
+                  style={{
+                    color: '#DC2626',
+                    fontSize: 13,
+                    fontWeight: '600',
+                    textAlign: 'center',
+                  }}
+                >
+                  ⚠️ {loginError}
+                </Text>
+              </View>
+            )}
 
             <Button
               title="Đăng nhập"

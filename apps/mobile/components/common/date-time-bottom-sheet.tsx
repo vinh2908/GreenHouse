@@ -216,10 +216,17 @@ export function DateTimeBottomSheet({
     }
   }, []);
 
+  // A1: Kiểm tra thời điểm chọn có ở trong quá khứ hay không
+  const isSelectionInPast = useMemo(() => {
+    const selected = dayjs(`${tempDate} ${tempTime}`);
+    return selected.isBefore(dayjs().subtract(1, 'minute'));
+  }, [tempDate, tempTime]);
+
   const handleConfirm = useCallback(() => {
+    if (isSelectionInPast) return;
     onConfirm(tempDate, tempTime);
     onClose();
-  }, [onConfirm, onClose, tempDate, tempTime]);
+  }, [onConfirm, onClose, tempDate, tempTime, isSelectionInPast]);
 
   // Calendar calculations
   const today = dayjs().startOf('day');
@@ -270,9 +277,10 @@ export function DateTimeBottomSheet({
             <Text style={styles.sheetTitle}>Chọn ngày & giờ</Text>
 
             <TouchableOpacity
-              activeOpacity={0.7}
+              activeOpacity={isSelectionInPast ? 1 : 0.7}
+              disabled={isSelectionInPast}
               onPress={handleConfirm}
-              style={styles.headBtn}
+              style={[styles.headBtn, isSelectionInPast && { opacity: 0.35 }]}
               hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
             >
               <Text style={styles.confirmBtnText}>Xác nhận</Text>
@@ -556,12 +564,20 @@ export function DateTimeBottomSheet({
                   { t: '22:00', tag: 'ĐÊM', tagType: 'night' },
                 ].map(item => {
                   const isSel = tempTime === item.t;
+                  const isPastChip =
+                    dayjs(tempDate).isSame(dayjs(), 'day') &&
+                    dayjs(`${tempDate} ${item.t}`).isBefore(dayjs().subtract(1, 'minute'));
                   return (
                     <TouchableOpacity
                       key={item.t}
-                      activeOpacity={0.7}
+                      activeOpacity={isPastChip ? 1 : 0.7}
+                      disabled={isPastChip}
                       onPress={() => selectExactTime(item.t)}
-                      style={[styles.sheetChip, isSel && styles.sheetChipActive]}
+                      style={[
+                        styles.sheetChip,
+                        isSel && styles.sheetChipActive,
+                        isPastChip && { opacity: 0.35 },
+                      ]}
                     >
                       {item.tag && (
                         <View
@@ -604,12 +620,20 @@ export function DateTimeBottomSheet({
                   {['07:30', '08:30', '11:30', '13:30', '17:30', '19:30', '20:30', '21:30'].map(
                     t => {
                       const isSel = tempTime === t;
+                      const isPastChip =
+                        dayjs(tempDate).isSame(dayjs(), 'day') &&
+                        dayjs(`${tempDate} ${t}`).isBefore(dayjs().subtract(1, 'minute'));
                       return (
                         <TouchableOpacity
                           key={t}
-                          activeOpacity={0.7}
+                          activeOpacity={isPastChip ? 1 : 0.7}
+                          disabled={isPastChip}
                           onPress={() => selectExactTime(t)}
-                          style={[styles.sheetChip, isSel && styles.sheetChipActive]}
+                          style={[
+                            styles.sheetChip,
+                            isSel && styles.sheetChipActive,
+                            isPastChip && { opacity: 0.35 },
+                          ]}
                         >
                           <Text
                             style={[

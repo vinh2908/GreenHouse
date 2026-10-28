@@ -999,14 +999,19 @@ export class SosBackupService implements OnModuleInit, OnModuleDestroy {
       .exec();
 
     if (!swapped) {
-      // Đơn đã đổi trạng thái ngoài dự kiến (vd vừa bị hủy) → trả claim lại
+      // Đơn đã đổi trạng thái ngoài dự kiến (vd vừa bị hủy) → trả claim lại và đưa ứng viên về lại trạng thái invited
       await this.sosModel
         .updateOne(
           { _id: sos._id, status: SosBackupStatus.ACCEPTED },
           {
-            $set: { status: SosBackupStatus.PENDING, replacement_helper_id: undefined },
-            $unset: { resolved_at: '' },
+            $set: {
+              status: SosBackupStatus.PENDING,
+              replacement_helper_id: undefined,
+              'candidates.$[cand].status': 'invited',
+            },
+            $unset: { resolved_at: '', 'candidates.$[cand].responded_at': '' },
           },
+          { arrayFilters: [{ 'cand.helper_id': new Types.ObjectId(helperId) }] },
         )
         .exec();
       throw new ConflictException('Đơn đã thay đổi trạng thái — không thể thay người lúc này');

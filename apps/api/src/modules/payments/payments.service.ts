@@ -18,7 +18,7 @@ import {
 } from './schemas/payment.schema';
 import { BankAccountInfoDto } from './dto/payment.dto';
 import { NOTIFICATION_TYPES } from '@homemate/constants';
-import { PaymentStatus } from '@homemate/types';
+import { PaymentStatus, JobStatus } from '@homemate/types';
 import { NotificationsService } from '../notifications/notifications.service';
 import { HelperProfile, HelperProfileDocument } from '../helpers/schemas/helper-profile.schema';
 import { Job, JobDocument, Contract, ContractDocument } from '../jobs/schemas/job.schema';
@@ -112,22 +112,48 @@ export class PaymentsService {
 
     if (this.jobModel) {
       const job = await this.jobModel.findById(jobId).exec();
-      if (job) {
-        if (job.customer_id.toString() !== customerId) {
-          throw new ForbiddenException('Bạn không có quyền thanh toán đơn hàng của người khác');
-        }
-        if (job.payment_status === PaymentStatus.PAID) {
-          throw new ConflictException('Đơn hàng này đã được thanh toán trước đó');
-        }
+      if (!job) {
+        throw new NotFoundException('Không tìm thấy đơn hàng cần thanh toán');
+      }
+      if (job.customer_id.toString() !== customerId) {
+        throw new ForbiddenException('Bạn không có quyền thanh toán đơn hàng của người khác');
+      }
+      if (job.payment_status === PaymentStatus.PAID) {
+        throw new ConflictException('Đơn hàng này đã được thanh toán trước đó');
+      }
 
-        if (resolvedAmount <= 0 && this.contractModel) {
-          const contract = await this.contractModel
-            .findOne({ job_id: new Types.ObjectId(jobId) })
-            .exec();
-          if (contract?.total_price) {
-            resolvedAmount = contract.total_price;
-          }
-        }
+      // A2: Chặn thanh toán cho đơn hàng không ở trạng thái hợp lệ
+      const payableStatuses: string[] = [
+        JobStatus.CONFIRMED,
+        JobStatus.HELPER_ON_THE_WAY,
+        JobStatus.HELPER_ARRIVED,
+        JobStatus.IN_PROGRESS,
+        JobStatus.PENDING_REVIEW,
+      ];
+      if (!payableStatuses.includes(job.status)) {
+        throw new BadRequestException(
+          `Đơn hàng ở trạng thái "${job.status}" không thể thực hiện thanh toán`,
+        );
+      }
+
+      // A2: Kiểm tra hợp đồng và chặn giao dịch 0₫ không hợp lệ
+      let contract: any = null;
+      if (this.contractModel) {
+        contract = await this.contractModel
+          .findOne({ job_id: new Types.ObjectId(jobId) })
+          .exec();
+      }
+      if (!contract && !job.is_warranty) {
+        throw new BadRequestException('Đơn hàng chưa có hợp đồng để thanh toán');
+      }
+
+      if (resolvedAmount <= 0 && contract?.total_price) {
+        resolvedAmount = contract.total_price;
+      }
+
+      if (!job.is_warranty && resolvedAmount <= 0) {
+        throw new BadRequestException('Số tiền thanh toán phải lớn hơn 0₫');
+      }
 
         // ── Voucher: ghi nhận lượt dùng + tính giảm trên giá chốt của đơn ──
         // Nền tảng chịu phần giảm (thợ vẫn nhận đủ theo hợp đồng). Nếu mã đã
@@ -168,7 +194,6 @@ export class PaymentsService {
             },
           })
           .exec();
-      }
     }
 
     const wallet = await this.getOrCreateWallet(customerId);
