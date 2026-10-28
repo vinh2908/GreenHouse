@@ -328,26 +328,61 @@ export default function CustomerJobsScreen() {
                       borderTopColor: COLORS.gray[100],
                     }}
                   >
-                    {job.helper_id ? (
-                      <Text style={{ fontSize: 13, color: COLORS.gray[700], fontWeight: '600' }}>
-                        {t('jobs_helper_label')}{' '}
-                        <Text style={{ color: COLORS.gray[900], fontWeight: '700' }}>
-                          {(job.helper_id as any).full_name}
+                    {(() => {
+                      if (job.status === 'cancelled') {
+                        return (
+                          <Text style={{ fontSize: 12.5, color: COLORS.error, fontWeight: '700' }}>
+                            Đã hủy yêu cầu
+                          </Text>
+                        );
+                      }
+                      if (job.status === 'refunded') {
+                        return (
+                          <Text style={{ fontSize: 12.5, color: COLORS.gray[600], fontWeight: '700' }}>
+                            Đã hoàn tiền
+                          </Text>
+                        );
+                      }
+                      if (job.status === 'disputed') {
+                        return (
+                          <Text style={{ fontSize: 12.5, color: COLORS.error, fontWeight: '700' }}>
+                            Đang xử lý khiếu nại
+                          </Text>
+                        );
+                      }
+                      if (job.status === 'completed') {
+                        return (
+                          <Text style={{ fontSize: 12.5, color: COLORS.success, fontWeight: '700' }}>
+                            {job.helper_id
+                              ? `${t('jobs_helper_label')} ${(job.helper_id as any).full_name}`
+                              : 'Công việc hoàn thành'}
+                          </Text>
+                        );
+                      }
+                      if (job.helper_id) {
+                        return (
+                          <Text style={{ fontSize: 13, color: COLORS.gray[700], fontWeight: '600' }}>
+                            {t('jobs_helper_label')}{' '}
+                            <Text style={{ color: COLORS.gray[900], fontWeight: '700' }}>
+                              {(job.helper_id as any).full_name}
+                            </Text>
+                          </Text>
+                        );
+                      }
+                      return (
+                        <Text
+                          style={{
+                            fontSize: 12.5,
+                            color: job.total_quotes_count > 0 ? COLORS.primary : COLORS.gray[500],
+                            fontWeight: '700',
+                          }}
+                        >
+                          {job.total_quotes_count > 0
+                            ? t('jobs_quotes_count', { count: job.total_quotes_count })
+                            : t('jobs_waiting_quotes')}
                         </Text>
-                      </Text>
-                    ) : (
-                      <Text
-                        style={{
-                          fontSize: 12.5,
-                          color: job.total_quotes_count > 0 ? COLORS.primary : COLORS.gray[500],
-                          fontWeight: '700',
-                        }}
-                      >
-                        {job.total_quotes_count > 0
-                          ? t('jobs_quotes_count', { count: job.total_quotes_count })
-                          : t('jobs_waiting_quotes')}
-                      </Text>
-                    )}
+                      );
+                    })()}
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}>
                       <Text
                         style={{ fontSize: fs(12.5), color: COLORS.primary, fontWeight: '700' }}

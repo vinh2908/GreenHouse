@@ -184,6 +184,7 @@ export function LiveTrackingMap({
     helper: helperPos,
     tracking: status === 'helper_on_the_way',
     layer,
+    goongApiKey: process.env.EXPO_PUBLIC_GOONG_API_KEY || '',
   };
   const latest = useRef(state);
   latest.current = state;

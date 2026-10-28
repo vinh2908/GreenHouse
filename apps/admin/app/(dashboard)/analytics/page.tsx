@@ -23,11 +23,16 @@ import { formatVND } from '@/lib/utils';
 
 const STATUS_VI: Record<string, string> = {
   open: 'Mở',
-  receiving_quotes: 'Nhận BG',
+  receiving_quotes: 'Nhận báo giá',
   confirmed: 'Xác nhận',
+  helper_on_the_way: 'Trên đường',
+  helper_arrived: 'Đã đến',
   in_progress: 'Đang làm',
+  pending_review: 'Chờ nghiệm thu',
   completed: 'Hoàn thành',
   cancelled: 'Đã hủy',
+  disputed: 'Tranh chấp',
+  refunded: 'Đã hoàn tiền',
 };
 
 export default function AnalyticsPage() {

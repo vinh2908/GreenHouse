@@ -48,7 +48,7 @@ export class OtpService {
     private readonly configService: ConfigService,
   ) {}
 
-  async sendOtp(phone: string, purpose: 'verify' | 'reset'): Promise<string> {
+  async sendOtp(phone: string, purpose: 'verify' | 'reset'): Promise<string | undefined> {
     // Invalidate old OTPs for this phone+purpose
     await this.otpModel.deleteMany({ phone, purpose });
 
@@ -64,22 +64,29 @@ export class OtpService {
       expires_at: expiresAt,
     });
 
-    const isDev = this.configService.get<string>('app.env') !== 'production';
+    const isProd =
+      this.configService.get<string>('app.env') === 'production' ||
+      process.env['NODE_ENV'] === 'production';
+    const isDev = !isProd && this.configService.get<string>('app.env') !== 'production';
 
     if (isDev) {
       // In dev: log OTP to console (NO real SMS)
       this.logger.warn(`[DEV OTP] Phone: ${phone} | Code: ${code} | Purpose: ${purpose}`);
+      return code;
     } else {
       this.logger.log(`OTP sent to ${phone} for ${purpose}`);
+      return undefined;
     }
-
-    return code; // Return in dev for testing
   }
 
   async verifyOtp(phone: string, code: string, purpose: 'verify' | 'reset'): Promise<boolean> {
+    const isProd =
+      this.configService.get<string>('app.env') === 'production' ||
+      process.env['NODE_ENV'] === 'production';
     const isDevOrDemo =
-      this.configService.get<string>('app.env') !== 'production' ||
-      process.env['ALLOW_DEMO_OTP'] === 'true';
+      !isProd &&
+      (this.configService.get<string>('app.env') !== 'production' ||
+        process.env['ALLOW_DEMO_OTP'] === 'true');
 
     const otp = await this.otpModel
       .findOne({

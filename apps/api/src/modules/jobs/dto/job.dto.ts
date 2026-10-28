@@ -65,7 +65,7 @@ export class CreateJobDto {
   @ApiPropertyOptional({ description: 'Giá mở đầu để deal (VNĐ, tối thiểu 50.000)' })
   @IsOptional()
   @IsNumber()
-  @Min(50000)
+  @Min(50000, { message: 'Giá mở đầu deal tối thiểu là 50.000₫' })
   target_price?: number;
   @ApiProperty({ maxLength: 200 }) @IsString() @IsNotEmpty() @MaxLength(200) title: string;
   @ApiProperty() @IsString() @IsNotEmpty() description: string;
@@ -208,7 +208,11 @@ export class CreateSosJobDto {
 }
 
 export class CreateQuoteDto {
-  @ApiProperty({ example: 200000 }) @IsNumber() @Min(0) @Max(1_000_000_000) labor_cost: number;
+  @ApiProperty({ example: 200000 })
+  @IsNumber()
+  @Min(50000, { message: 'Tiền công báo giá tối thiểu là 50.000₫' })
+  @Max(1_000_000_000)
+  labor_cost: number;
   @ApiPropertyOptional({ default: 0 })
   @IsOptional()
   @IsNumber()
