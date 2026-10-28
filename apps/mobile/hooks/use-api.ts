@@ -323,7 +323,9 @@ export function useRejectJob() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (jobId: string) => apiClient.post(`/jobs/${jobId}/reject`),
-    onSuccess: () => {
+    onSuccess: (_, jobId) => {
+      qc.invalidateQueries({ queryKey: ['job', jobId] });
+      qc.invalidateQueries({ queryKey: ['quotes', jobId] });
       qc.invalidateQueries({ queryKey: ['jobs', 'available'] });
       qc.invalidateQueries({ queryKey: ['jobs', 'demand-map'] });
     },
