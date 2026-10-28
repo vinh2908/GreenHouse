@@ -137,7 +137,8 @@ export class LoyaltyService {
 
   async getHistory(userId: string, page = 1, limit = 20) {
     const skip = (page - 1) * limit;
-    const query = { user_id: new Types.ObjectId(userId) };
+    const userOid = Types.ObjectId.isValid(userId) ? new Types.ObjectId(userId) : null;
+    const query = userOid ? { user_id: { $in: [userOid, userId] } } : { user_id: userId };
     const [transactions, total] = await Promise.all([
       this.txModel.find(query).sort({ created_at: -1 }).skip(skip).limit(limit).exec(),
       this.txModel.countDocuments(query).exec(),

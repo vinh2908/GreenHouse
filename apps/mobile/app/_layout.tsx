@@ -258,6 +258,7 @@ export default function RootLayout() {
             <Stack.Screen name="(customer)" options={{ headerShown: false }} />
             <Stack.Screen name="(helper)" options={{ headerShown: false }} />
             <Stack.Screen name="notifications" options={{ headerShown: false }} />
+            <Stack.Screen name="notification-settings" options={{ headerShown: false }} />
             <Stack.Screen name="edit-profile" options={{ headerShown: false }} />
             <Stack.Screen name="job-detail/[id]" options={{ headerShown: false }} />
             <Stack.Screen name="helper-job-detail/[id]" options={{ headerShown: false }} />

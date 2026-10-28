@@ -379,8 +379,11 @@ export default function HelperPublicProfileScreen() {
           >
             <Text style={{ fontSize: 12.5, color: COLORS.gray[600], fontWeight: '600' }}>
               🕐 Khung giờ làm việc:{' '}
-              <Text style={{ color: COLORS.gray[900], fontWeight: '800' }}>07:30 – 19:30</Text> (Tất
-              cả các ngày trong tuần)
+              <Text style={{ color: COLORS.gray[900], fontWeight: '800' }}>
+                {profile?.availability?.start_time || '07:00'} –{' '}
+                {profile?.availability?.end_time || '19:00'}
+              </Text>{' '}
+              (Tất cả các ngày trong tuần)
             </Text>
           </View>
         </Card>

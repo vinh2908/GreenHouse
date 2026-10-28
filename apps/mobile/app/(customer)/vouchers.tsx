@@ -160,7 +160,10 @@ export default function CustomerVouchersScreen() {
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                     <Clock size={12} color={COLORS.gray[500]} />
                     <Text style={{ fontSize: 12, color: COLORS.gray[500] }}>
-                      Hết hạn: {dayjs(v.end_date).format('DD/MM/YYYY HH:mm')}
+                      Hết hạn:{' '}
+                      {v.valid_to || v.end_date || (v as any).expires_at
+                        ? dayjs(v.valid_to || v.end_date || (v as any).expires_at).format('DD/MM/YYYY')
+                        : 'Không thời hạn'}
                     </Text>
                   </View>
                 </View>

@@ -33,7 +33,7 @@ const MENU_SECTIONS = [
       { icon: User, labelKey: 'profile_personal_info', route: '/edit-profile' },
       { icon: MapPin, labelKey: 'profile_saved_addresses', route: '/edit-profile' },
       { icon: CreditCard, labelKey: 'profile_payment_wallet', route: '/bank-account' },
-      { icon: Bell, labelKey: 'profile_notification_settings', route: '/notifications' },
+      { icon: Bell, labelKey: 'profile_notification_settings', route: '/notification-settings' },
       { icon: Heart, labelKey: 'profile_favorite_helpers', route: '/favorites' },
       { icon: Ticket, labelKey: 'profile_my_vouchers', route: '/vouchers' },
       { icon: CalendarClock, labelKey: 'profile_recurring_plans', route: '/recurring-plans' },

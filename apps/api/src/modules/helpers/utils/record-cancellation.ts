@@ -46,6 +46,38 @@ export async function recordHelperCancellation(args: {
     .exec();
   if (!profile) return null;
 
+  // A7: Thợ kích hoạt SOS hợp lệ không bị tính vào cửa sổ phạt hủy thường ("thợ không bị phạt")
+  if (args.source === 'sos_initiation') {
+    const pruned = pruneCancellationTimestamps(
+      profile.cancellation_timestamps ?? [],
+      now,
+      config.windowDays,
+    );
+    const result = computePerformanceScore(
+      {
+        rating: profile.rating,
+        totalReviews: profile.total_reviews,
+        completionRate: profile.completion_rate,
+        acceptanceRate: profile.acceptance_rate,
+        cancellationsInWindow: pruned.length,
+      },
+      config,
+    );
+    profile.cancellation_timestamps = pruned;
+    profile.cancellations_last_7_days = pruned.length;
+    profile.penalty_points = result.penaltyPoints;
+    profile.performance_score = result.total;
+    profile.score_breakdown = result.breakdown;
+    profile.score_updated_at = now;
+    await profile.save();
+
+    return {
+      ...result,
+      just_penalized: false,
+      points_deducted_now: 0,
+    };
+  }
+
   const pruned = pruneCancellationTimestamps(
     profile.cancellation_timestamps ?? [],
     now,

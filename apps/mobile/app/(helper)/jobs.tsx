@@ -302,17 +302,21 @@ export default function HelperJobsScreen() {
         ) : !current.loading && (!current.data || current.data.length === 0) ? (
           <Card style={{ alignItems: 'center', paddingVertical: 40 }}>
             <EmptyState
-              emoji={tab === 0 ? '🔍' : tab === 1 ? '📋' : '📚'}
+              emoji={tab === 0 ? (!isVerified ? '🪪' : '🔍') : tab === 1 ? '📋' : '📚'}
               title={
                 tab === 0
-                  ? 'Chưa có đơn mới'
+                  ? !isVerified
+                    ? 'Chưa xác thực e-KYC'
+                    : 'Chưa có đơn mới'
                   : tab === 1
                     ? 'Không có đơn đang làm'
                     : 'Chưa có lịch sử'
               }
               subtitle={
                 tab === 0
-                  ? 'Hệ thống đang quét đơn mới. Đơn sẽ xuất hiện ngay khi có khách đăng việc.'
+                  ? !isVerified
+                    ? 'Bạn cần hoàn tất xác minh e-KYC (CCCD) để mở khóa xem và nhận đơn mới xung quanh bạn.'
+                    : 'Hệ thống đang quét đơn mới. Đơn sẽ xuất hiện ngay khi có khách đăng việc.'
                   : undefined
               }
             />

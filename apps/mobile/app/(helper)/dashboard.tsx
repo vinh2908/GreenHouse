@@ -697,6 +697,18 @@ export default function HelperDashboardScreen() {
                 subtitle="Bật công tắc 'Đang nhận đơn mới' ở trên để xem các công việc đang cần thợ xung quanh bạn."
               />
             </Card>
+          ) : profile?.verification_status !== 'approved' ? (
+            <Card style={{ alignItems: 'center', paddingVertical: 28 }}>
+              <EmptyState
+                emoji="🪪"
+                title="Cần xác thực e-KYC để xem đơn"
+                subtitle={
+                  profile?.verification_status === 'pending'
+                    ? 'Hồ sơ CCCD đang chờ Admin duyệt. Bạn sẽ thấy danh sách đơn ngay khi được kích hoạt.'
+                    : 'Vui lòng hoàn tất xác minh e-KYC (CCCD) để mở khóa xem và nhận đơn mới xung quanh bạn.'
+                }
+              />
+            </Card>
           ) : !availableJobs?.jobs?.length ? (
             <Card style={{ alignItems: 'center', paddingVertical: 28 }}>
               <EmptyState

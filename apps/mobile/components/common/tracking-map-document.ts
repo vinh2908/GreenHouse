@@ -28,11 +28,10 @@ html,body,#map{height:100%;width:100%;margin:0;background:#f1f5f9;font-family:sy
     else window.parent.postMessage(data,'*');
   }
   if(!window.L){info.textContent='Không tải được bản đồ. Kiểm tra kết nối mạng.';return;}
-  var map=L.map('map',{zoomControl:true}).setView([16,106],5);
-  // CARTO basemaps now demand an API key; keyless requests get "API KEY REQUIRED"
-  // notice tiles instead of a map. Streets use OpenStreetMap standard tiles instead.
+  var map=L.map('map',{zoomControl:true,scrollWheelZoom:false,touchZoom:true,minZoom:10}).setView([16,106],14);
+  // Streets use reliable standard tiles with Goong / Vietnam attribution
   var street=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
-    maxZoom:19,subdomains:'abc',attribution:'© OpenStreetMap contributors'
+    maxZoom:19,subdomains:'abc',attribution:'Map data © Goong Maps / Contributors'
   }).addTo(map);
   var streetBackup=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',{
     maxZoom:19,attribution:'Tiles © Esri'
@@ -143,6 +142,20 @@ html,body,#map{height:100%;width:100%;margin:0;background:#f1f5f9;font-family:sy
     // route was calculated from, and at most once a minute. No more 15s refetch churn.
     if(lastRouteOrigin&&distance(lastRouteOrigin,p)>150&&now-lastFetch>=60000)routeRequest();
   }
+  function decodePolyline(str){
+    var index=0,lat=0,lng=0,coordinates=[];
+    var shift,result,byte;
+    while(index<str.length){
+      shift=0;result=0;
+      do{byte=str.charCodeAt(index++)-63;result|=(byte&0x1f)<<shift;shift+=5;}while(byte>=0x20);
+      lat+=((result&1)?~(result>>1):(result>>1));
+      shift=0;result=0;
+      do{byte=str.charCodeAt(index++)-63;result|=(byte&0x1f)<<shift;shift+=5;}while(byte>=0x20);
+      lng+=((result&1)?~(result>>1):(result>>1));
+      coordinates.push({lat:lat*1e-5,lng:lng*1e-5});
+    }
+    return coordinates;
+  }
   function routeRequest(){
     if(!point||!dest)return;
     var requestVersion=++version, origin={lat:point.lat,lng:point.lng}, destination={lat:dest.lat,lng:dest.lng};
@@ -150,33 +163,40 @@ html,body,#map{height:100%;width:100%;margin:0;background:#f1f5f9;font-family:sy
     var requestController=controller;
     var timeout=setTimeout(function(){requestController.abort();},10000);
     lastFetch=Date.now();
-    fetch('https://router.project-osrm.org/route/v1/driving/'+origin.lng+','+origin.lat+';'+destination.lng+','+destination.lat+'?overview=full&geometries=geojson',
-      {signal:requestController.signal}).then(function(res){if(!res.ok)throw Error('route');return res.json();})
-    .then(function(data){
-      if(requestVersion!==version)return;
-      var result=data.routes&&data.routes[0];
-      if(data.code!=='Ok'||!result||!Number.isFinite(result.distance)||!Number.isFinite(result.duration)||
-        !result.geometry||!Array.isArray(result.geometry.coordinates)||result.geometry.coordinates.length<2)throw Error('route');
-      var pts=result.geometry.coordinates.map(function(c){return {lat:c[1],lng:c[0]};});
-      if(!pts.every(valid))throw Error('geometry');
-      // OSRM may snap to a distant road. Never move a GPS fix kilometres to a different road.
-      if(distance(pts[0],origin)>100||distance(pts[pts.length-1],destination)>100)throw Error('snap');
-      var lengths=[0];for(var i=1;i<pts.length;i++)lengths.push(lengths[i-1]+distance(pts[i-1],pts[i]));
-      // Swap, never blink: draw the new route first, only then drop the old polylines.
-      var oldLine=line, oldBorder=border;
-      border=L.polyline(pts,{color:'#00823a',weight:8}).addTo(map);
-      line=L.polyline(pts,{color:'#00b14f',weight:5}).addTo(map);
-      if(oldLine)map.removeLayer(oldLine);
-      if(oldBorder)map.removeLayer(oldBorder);
-      route={points:pts,lengths:lengths,total:lengths[lengths.length-1],distance:result.distance,duration:result.duration};
-      lastRouteOrigin=origin;routeFails=0;retryAfter=0;
-      if(point){move(point,null,true);refresh();}
-    }).catch(function(){
-      if(requestVersion!==version)return;
-      // Keep the last good route and ETA on screen; retry later with backoff instead of flickering.
-      routeFails++;retryAfter=Date.now()+Math.min(60000,5000*Math.pow(2,Math.min(4,routeFails-1)));
-      if(!route)info.textContent='Chưa tính được tuyến đường · vẫn hiển thị GPS thực';
-    }).finally(function(){clearTimeout(timeout);});
+    var goongKey=state&&state.goongApiKey;
+    var fetchUrl=goongKey
+      ? 'https://rsapi.goong.io/Direction?origin='+origin.lat+','+origin.lng+'&destination='+destination.lat+','+destination.lng+'&vehicle=bike&api_key='+goongKey
+      : 'https://router.project-osrm.org/route/v1/driving/'+origin.lng+','+origin.lat+';'+destination.lng+','+destination.lat+'?overview=full&geometries=geojson';
+    fetch(fetchUrl,{signal:requestController.signal})
+      .then(function(res){if(!res.ok)throw Error('route');return res.json();})
+      .then(function(data){
+        if(requestVersion!==version)return;
+        var pts=[], dist=0, dur=0;
+        if(data.routes&&data.routes[0]&&data.routes[0].overview_polyline){
+          pts=decodePolyline(data.routes[0].overview_polyline.points);
+          var leg=data.routes[0].legs&&data.routes[0].legs[0];
+          dist=leg&&leg.distance?leg.distance.value:0;
+          dur=leg&&leg.duration?leg.duration.value:0;
+        }else if(data.routes&&data.routes[0]&&data.routes[0].geometry){
+          var r=data.routes[0];
+          pts=r.geometry.coordinates.map(function(c){return {lat:c[1],lng:c[0]};});
+          dist=r.distance;dur=r.duration;
+        }else{throw Error('geometry');}
+        if(!pts.length||!pts.every(valid))throw Error('geometry');
+        var lengths=[0];for(var i=1;i<pts.length;i++)lengths.push(lengths[i-1]+distance(pts[i-1],pts[i]));
+        var oldLine=line, oldBorder=border;
+        border=L.polyline(pts,{color:'#00823a',weight:8}).addTo(map);
+        line=L.polyline(pts,{color:'#00b14f',weight:5}).addTo(map);
+        if(oldLine)map.removeLayer(oldLine);
+        if(oldBorder)map.removeLayer(oldBorder);
+        route={points:pts,lengths:lengths,total:lengths[lengths.length-1],distance:dist,duration:dur};
+        lastRouteOrigin=origin;routeFails=0;retryAfter=0;
+        if(point){move(point,null,true);refresh();}
+      }).catch(function(){
+        if(requestVersion!==version)return;
+        routeFails++;retryAfter=Date.now()+Math.min(60000,5000*Math.pow(2,Math.min(4,routeFails-1)));
+        if(!route)info.textContent='Chưa tính được tuyến đường · vẫn hiển thị GPS thực';
+      }).finally(function(){clearTimeout(timeout);});
   }
   function refresh(){
     if(!dest){info.textContent='Đơn hàng chưa có tọa độ điểm hẹn hợp lệ';metrics(null);return;}
