@@ -1296,9 +1296,11 @@ export default function CustomerHomeScreen() {
         <View style={{ paddingHorizontal: 16, marginTop: 20 }}>
           <View
             style={{
+              backgroundColor: '#16A34A',
               borderRadius: 20,
               paddingHorizontal: 16,
-              paddingVertical: 18,
+              paddingTop: 18,
+              paddingBottom: 20,
               position: 'relative',
               overflow: 'hidden',
               shadowColor: '#16A34A',
@@ -1309,7 +1311,7 @@ export default function CustomerHomeScreen() {
             }}
           >
             {/* Vibrant SVG Gradient Background */}
-            <Svg height="100%" width="100%" style={StyleSheet.absoluteFill}>
+            <Svg height="100%" width="100%" style={StyleSheet.absoluteFill} pointerEvents="none">
               <Defs>
                 <SvgLinearGradient id="aiCardGrad" x1="0%" y1="0%" x2="100%" y2="100%">
                   <Stop offset="0%" stopColor="#15803D" />
@@ -1379,15 +1381,15 @@ export default function CustomerHomeScreen() {
 
             <Text
               style={{
-                fontSize: 18,
+                fontSize: 17,
                 fontWeight: '900',
                 color: '#FFFFFF',
                 marginTop: 10,
-                lineHeight: 24,
+                lineHeight: 23,
                 flexShrink: 1,
               }}
             >
-              Chụp ảnh sự cố, AI đoán việc & báo giá ngay
+              Chụp ảnh sự cố, AI đoán việc
             </Text>
 
             <Text
@@ -1456,7 +1458,7 @@ export default function CustomerHomeScreen() {
             <TouchableOpacity
               activeOpacity={0.7}
               onPress={handlePickIssuePhoto}
-              style={{ alignItems: 'center', marginTop: 10, paddingVertical: 4 }}
+              style={{ alignItems: 'center', justifyContent: 'center', marginTop: 12, paddingVertical: 4 }}
             >
               <Text
                 style={{
@@ -2047,7 +2049,7 @@ export default function CustomerHomeScreen() {
             </View>
 
             {/* 3. Thời gian làm việc: Ngày & Giờ (Trigger mở Bottom Sheet Item 1) */}
-            <View style={{ gap: 8 }}>
+            <View style={{ gap: 10 }}>
               <Text
                 style={{
                   fontSize: 14,
@@ -2057,75 +2059,45 @@ export default function CustomerHomeScreen() {
               >
                 Thời gian làm việc
               </Text>
-              <View style={{ flexDirection: 'row', gap: 10 }}>
-                {/* Ngày làm việc trigger card */}
-                <TouchableOpacity
-                  activeOpacity={0.8}
-                  onPress={() => {
-                    setBottomSheetInitialTab('date');
-                    setDateTimePickerOpen(true);
-                  }}
-                  style={{
-                    flex: 1,
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    gap: 8,
-                    paddingVertical: 11,
-                    paddingHorizontal: 12,
-                    borderRadius: 12,
-                    backgroundColor: '#F8FAFC',
-                    borderWidth: 1.5,
-                    borderColor: '#E2E8F0',
-                  }}
-                >
-                  <Calendar size={16} color={COLORS.primary} />
-                  <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: 10.5, color: COLORS.gray[500], fontWeight: '600' }}>
-                      Ngày làm việc
-                    </Text>
-                    <Text
-                      style={{ fontSize: 13, fontWeight: '800', color: COLORS.gray[900] }}
-                      numberOfLines={1}
-                    >
-                      {dayjs(quickDate).format('dd, DD/MM')}
-                    </Text>
-                  </View>
-                </TouchableOpacity>
 
-                {/* Giờ bắt đầu trigger card */}
-                <TouchableOpacity
-                  activeOpacity={0.8}
-                  onPress={() => {
-                    setBottomSheetInitialTab('time');
-                    setDateTimePickerOpen(true);
-                  }}
-                  style={{
-                    flex: 1,
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    gap: 8,
-                    paddingVertical: 11,
-                    paddingHorizontal: 12,
-                    borderRadius: 12,
-                    backgroundColor: '#F8FAFC',
-                    borderWidth: 1.5,
-                    borderColor: '#E2E8F0',
-                  }}
-                >
-                  <Clock size={16} color={COLORS.primary} />
-                  <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: 10.5, color: COLORS.gray[500], fontWeight: '600' }}>
-                      Giờ bắt đầu
-                    </Text>
-                    <Text
-                      style={{ fontSize: 13, fontWeight: '800', color: COLORS.primary }}
-                      numberOfLines={1}
-                    >
-                      {quickTimeSlot}
-                    </Text>
-                  </View>
-                </TouchableOpacity>
-              </View>
+              {/* Ngày làm việc trigger card - Chuẩn Demo .big-field */}
+              <TouchableOpacity
+                activeOpacity={0.8}
+                onPress={() => {
+                  setBottomSheetInitialTab('date');
+                  setDateTimePickerOpen(true);
+                }}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 10,
+                  paddingVertical: 12,
+                  paddingHorizontal: 14,
+                  borderRadius: 14,
+                  backgroundColor: '#F0FDF4',
+                  borderWidth: 1.5,
+                  borderColor: '#16A34A',
+                }}
+              >
+                <Calendar size={18} color="#16A34A" />
+                <View style={{ flex: 1 }}>
+                  <Text
+                    style={{ fontSize: 15, fontWeight: '700', color: COLORS.gray[900] }}
+                    numberOfLines={1}
+                  >
+                    {(() => {
+                      const dt = dayjs(quickDate);
+                      const dow = dt.format('dddd');
+                      const capitalizedDow = dow.charAt(0).toUpperCase() + dow.slice(1);
+                      return `${capitalizedDow}, ${dt.format('DD/MM')}`;
+                    })()}
+                  </Text>
+                  <Text style={{ fontSize: 11, color: '#64748B', fontWeight: '500', marginTop: 1 }}>
+                    Bấm để mở lịch tháng trong bottom sheet
+                  </Text>
+                </View>
+                <ChevronRight size={18} color="#16A34A" />
+              </TouchableOpacity>
 
               {/* Quick day shortcut chips */}
               <View style={{ flexDirection: 'row', gap: 6 }}>
@@ -2144,9 +2116,9 @@ export default function CustomerHomeScreen() {
                         flex: 1,
                         paddingVertical: 7,
                         borderRadius: 8,
-                        backgroundColor: isSel ? '#DCFCE7' : '#F1F5F9',
-                        borderWidth: 1,
-                        borderColor: isSel ? COLORS.primary : '#E2E8F0',
+                        backgroundColor: isSel ? '#DCFCE7' : '#FFFFFF',
+                        borderWidth: 1.5,
+                        borderColor: isSel ? '#16A34A' : '#E2E8F0',
                         alignItems: 'center',
                       }}
                     >
@@ -2154,7 +2126,7 @@ export default function CustomerHomeScreen() {
                         style={{
                           fontSize: 11.5,
                           fontWeight: '700',
-                          color: isSel ? COLORS.primary : COLORS.gray[700],
+                          color: isSel ? '#047857' : COLORS.gray[700],
                         }}
                       >
                         {c.label}
@@ -2162,6 +2134,159 @@ export default function CustomerHomeScreen() {
                     </TouchableOpacity>
                   );
                 })}
+              </View>
+
+              {/* Giờ bắt đầu trigger card - Chuẩn Demo .big-field.time-field */}
+              <TouchableOpacity
+                activeOpacity={0.8}
+                onPress={() => {
+                  setBottomSheetInitialTab('time');
+                  setDateTimePickerOpen(true);
+                }}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 10,
+                  paddingVertical: 12,
+                  paddingHorizontal: 14,
+                  borderRadius: 14,
+                  backgroundColor: '#F0FDF4',
+                  borderWidth: 1.5,
+                  borderColor: '#16A34A',
+                }}
+              >
+                <Clock size={20} color="#16A34A" />
+                <View style={{ flex: 1 }}>
+                  <Text
+                    style={{ fontSize: 22, fontWeight: '800', color: '#047857', fontVariant: ['tabular-nums'] }}
+                    numberOfLines={1}
+                  >
+                    {quickTimeSlot}
+                  </Text>
+                  <Text style={{ fontSize: 11, color: '#64748B', fontWeight: '500', marginTop: 1 }}>
+                    Bấm để mở bánh xe cuộn chọn giờ
+                  </Text>
+                </View>
+                <ChevronRight size={18} color="#16A34A" />
+              </TouchableOpacity>
+
+              {/* Quick Time Suggestion Chips - Chuẩn Demo */}
+              <View>
+                <Text style={{ fontSize: 11.5, fontWeight: '600', color: '#64748B', marginBottom: 6 }}>
+                  Gợi ý nhanh — bấm là bánh xe chạy tới đúng giờ đó:
+                </Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6, paddingVertical: 2 }}>
+                  {[
+                    { t: '07:00' },
+                    { t: '08:00' },
+                    { t: '09:00' },
+                    { t: '12:00', tag: 'MỚI', tagType: 'new' },
+                    { t: '14:00' },
+                    { t: '17:00' },
+                    { t: '18:00' },
+                    { t: '19:00' },
+                    { t: '20:00' },
+                    { t: '21:00', tag: 'ĐÊM', tagType: 'night' },
+                    { t: '22:00', tag: 'ĐÊM', tagType: 'night' },
+                  ].map(item => {
+                    const isSel = quickTimeSlot === item.t;
+                    return (
+                      <TouchableOpacity
+                        key={item.t}
+                        activeOpacity={0.7}
+                        onPress={() => {
+                          setQuickTimeSlot(item.t);
+                        }}
+                        style={{
+                          position: 'relative',
+                          backgroundColor: isSel ? '#DCFCE7' : '#FFFFFF',
+                          borderWidth: 1.5,
+                          borderColor: isSel ? '#16A34A' : '#E2E8F0',
+                          borderRadius: 9,
+                          paddingHorizontal: 10,
+                          paddingVertical: 6,
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                      >
+                        {item.tag && (
+                          <View
+                            style={{
+                              position: 'absolute',
+                              top: -6,
+                              right: -4,
+                              paddingHorizontal: 4,
+                              paddingVertical: 1,
+                              borderRadius: 99,
+                              backgroundColor: item.tagType === 'night' ? '#FEE2E2' : '#DCFCE7',
+                              borderWidth: 1,
+                              borderColor: item.tagType === 'night' ? '#FCA5A5' : '#16A34A',
+                            }}
+                          >
+                            <Text
+                              style={{
+                                fontSize: 8,
+                                fontWeight: '800',
+                                color: item.tagType === 'night' ? '#DC2626' : '#047857',
+                              }}
+                            >
+                              {item.tag}
+                            </Text>
+                          </View>
+                        )}
+                        <Text
+                          style={{
+                            fontSize: 12,
+                            fontWeight: isSel ? '800' : '600',
+                            color: isSel ? '#047857' : '#334155',
+                            fontVariant: ['tabular-nums'],
+                          }}
+                        >
+                          {item.t}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </ScrollView>
+
+                <Text style={{ fontSize: 11.5, fontWeight: '600', color: '#64748B', marginTop: 6, marginBottom: 4 }}>
+                  Giờ lẻ:
+                </Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6, paddingVertical: 2 }}>
+                  {['07:30', '08:30', '11:30', '13:30', '17:30', '19:30', '20:30', '21:30'].map(t => {
+                    const isSel = quickTimeSlot === t;
+                    return (
+                      <TouchableOpacity
+                        key={t}
+                        activeOpacity={0.7}
+                        onPress={() => {
+                          setQuickTimeSlot(t);
+                        }}
+                        style={{
+                          backgroundColor: isSel ? '#DCFCE7' : '#FFFFFF',
+                          borderWidth: 1.5,
+                          borderColor: isSel ? '#16A34A' : '#E2E8F0',
+                          borderRadius: 9,
+                          paddingHorizontal: 10,
+                          paddingVertical: 6,
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                      >
+                        <Text
+                          style={{
+                            fontSize: 12,
+                            fontWeight: isSel ? '800' : '600',
+                            color: isSel ? '#047857' : '#334155',
+                            fontVariant: ['tabular-nums'],
+                          }}
+                        >
+                          {t}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </ScrollView>
               </View>
             </View>
 
@@ -2233,26 +2358,42 @@ export default function CustomerHomeScreen() {
               </View>
             </View>
 
-            {/* Dynamic Expected Schedule Preview Line */}
+            {/* Dynamic Expected Schedule Preview Line - Chuẩn Demo .summary */}
             <View
               style={{
-                backgroundColor: '#F8FAFC',
-                borderRadius: 12,
-                padding: 12,
-                borderWidth: 1,
-                borderColor: '#E2E8F0',
+                backgroundColor: '#F0FDF4',
+                borderRadius: 14,
+                padding: 14,
+                borderWidth: 1.5,
+                borderColor: '#BBF7D0',
               }}
             >
-              <Text style={{ fontSize: 13, color: COLORS.gray[700], lineHeight: 18 }}>
-                Lịch dự kiến:{' '}
-                <Text style={{ fontWeight: '800', color: COLORS.primary }}>
-                  {dayjs(quickDate).format('dddd, DD/MM')}, {quickTimeSlot} – {expectedEndTime}
-                </Text>{' '}
-                · thời lượng {quickDuration} giờ. Giá mở đầu để deal:{' '}
-                <Text style={{ fontWeight: '800', color: COLORS.primary }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                <CheckCircle2 size={16} color="#16A34A" />
+                <Text style={{ fontSize: 13, fontWeight: '800', color: '#166534' }}>
+                  Lịch dự kiến
+                </Text>
+              </View>
+              <Text style={{ fontSize: 13.5, fontWeight: '800', color: '#0F172A', marginBottom: 2 }}>
+                {(() => {
+                  const dt = dayjs(quickDate);
+                  const dow = dt.format('dddd');
+                  const capDow = dow.charAt(0).toUpperCase() + dow.slice(1);
+                  return `${capDow}, ${dt.format('DD/MM/YYYY')}`;
+                })()}
+              </Text>
+              <Text style={{ fontSize: 12.5, color: '#334155', lineHeight: 18 }}>
+                Bắt đầu <Text style={{ fontWeight: '800', color: '#047857' }}>{quickTimeSlot}</Text> · Kết thúc{' '}
+                <Text style={{ fontWeight: '800', color: '#047857' }}>{expectedEndTime}</Text> · Thời lượng{' '}
+                <Text style={{ fontWeight: '800', color: '#047857' }}>
+                  {quickDuration < 1
+                    ? `${Math.round(quickDuration * 60)} phút`
+                    : `${Number(quickDuration.toFixed(2)).toString().replace('.', ',')} giờ`}
+                </Text>
+                . Giá mở đầu để deal:{' '}
+                <Text style={{ fontWeight: '800', color: '#047857' }}>
                   {new Intl.NumberFormat('vi-VN').format(Number(quickDealPrice) || 200000)}₫
                 </Text>
-                .
               </Text>
             </View>
 

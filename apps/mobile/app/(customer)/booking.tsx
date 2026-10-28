@@ -1700,78 +1700,48 @@ export default function BookingScreen() {
                 <Text style={{ fontSize: 14, fontWeight: '700', color: COLORS.gray[800] }}>
                   Thời gian bắt đầu làm việc
                 </Text>
-                <View style={{ flexDirection: 'row', gap: 10 }}>
-                  {/* Ngày làm việc trigger card */}
-                  <TouchableOpacity
-                    activeOpacity={0.8}
-                    onPress={() => {
-                      setBottomSheetInitialTab('date');
-                      setDateTimePickerOpen(true);
-                    }}
-                    style={{
-                      flex: 1,
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      gap: 8,
-                      paddingVertical: 12,
-                      paddingHorizontal: 12,
-                      borderRadius: 14,
-                      backgroundColor: '#F8FAFC',
-                      borderWidth: 1.5,
-                      borderColor: '#E2E8F0',
-                    }}
-                  >
-                    <Calendar size={18} color={COLORS.primary} />
-                    <View style={{ flex: 1 }}>
-                      <Text style={{ fontSize: 11, color: COLORS.gray[500], fontWeight: '600' }}>
-                        Ngày làm việc
-                      </Text>
-                      <Text
-                        style={{ fontSize: 13.5, fontWeight: '800', color: COLORS.gray[900] }}
-                        numberOfLines={1}
-                      >
-                        {dayjs(date).format('dd, DD/MM/YYYY')}
-                      </Text>
-                    </View>
-                  </TouchableOpacity>
 
-                  {/* Giờ bắt đầu trigger card */}
-                  <TouchableOpacity
-                    activeOpacity={0.8}
-                    onPress={() => {
-                      setBottomSheetInitialTab('time');
-                      setDateTimePickerOpen(true);
-                    }}
-                    style={{
-                      flex: 1,
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      gap: 8,
-                      paddingVertical: 12,
-                      paddingHorizontal: 12,
-                      borderRadius: 14,
-                      backgroundColor: '#F8FAFC',
-                      borderWidth: 1.5,
-                      borderColor: '#E2E8F0',
-                    }}
-                  >
-                    <Clock size={18} color={COLORS.primary} />
-                    <View style={{ flex: 1 }}>
-                      <Text style={{ fontSize: 11, color: COLORS.gray[500], fontWeight: '600' }}>
-                        Giờ bắt đầu
-                      </Text>
-                      <Text
-                        style={{ fontSize: 13.5, fontWeight: '800', color: COLORS.primary }}
-                        numberOfLines={1}
-                      >
-                        {timeSlot}
-                      </Text>
-                    </View>
-                  </TouchableOpacity>
-                </View>
+                {/* Ngày làm việc trigger card - Chuẩn Demo */}
+                <TouchableOpacity
+                  activeOpacity={0.8}
+                  onPress={() => {
+                    setBottomSheetInitialTab('date');
+                    setDateTimePickerOpen(true);
+                  }}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 10,
+                    paddingVertical: 12,
+                    paddingHorizontal: 14,
+                    borderRadius: 14,
+                    backgroundColor: '#F0FDF4',
+                    borderWidth: 1.5,
+                    borderColor: '#16A34A',
+                  }}
+                >
+                  <Calendar size={18} color="#16A34A" />
+                  <View style={{ flex: 1 }}>
+                    <Text
+                      style={{ fontSize: 15, fontWeight: '700', color: COLORS.gray[900] }}
+                      numberOfLines={1}
+                    >
+                      {(() => {
+                        const dt = dayjs(date);
+                        const dow = dt.format('dddd');
+                        const capitalizedDow = dow.charAt(0).toUpperCase() + dow.slice(1);
+                        return `${capitalizedDow}, ${dt.format('DD/MM/YYYY')}`;
+                      })()}
+                    </Text>
+                    <Text style={{ fontSize: 11, color: '#64748B', fontWeight: '500', marginTop: 1 }}>
+                      Bấm để mở lịch tháng trong bottom sheet
+                    </Text>
+                  </View>
+                  <ChevronRight size={18} color="#16A34A" />
+                </TouchableOpacity>
 
                 {/* Day suggestion chips: Hôm nay / Ngày mai / Thứ 7 / Chủ nhật */}
-                <View style={{ flexDirection: 'row', gap: 8 }}>
+                <View style={{ flexDirection: 'row', gap: 6 }}>
                   {[
                     { key: 'today', label: 'Hôm nay' },
                     { key: 'tomorrow', label: 'Ngày mai' },
@@ -1798,19 +1768,19 @@ export default function BookingScreen() {
                         }}
                         style={{
                           flex: 1,
-                          paddingVertical: 8,
-                          borderRadius: 10,
-                          backgroundColor: isSel ? '#DCFCE7' : '#F1F5F9',
-                          borderWidth: 1,
-                          borderColor: isSel ? COLORS.primary : '#E2E8F0',
+                          paddingVertical: 7,
+                          borderRadius: 8,
+                          backgroundColor: isSel ? '#DCFCE7' : '#FFFFFF',
+                          borderWidth: 1.5,
+                          borderColor: isSel ? '#16A34A' : '#E2E8F0',
                           alignItems: 'center',
                         }}
                       >
                         <Text
                           style={{
-                            fontSize: 12,
+                            fontSize: 11.5,
                             fontWeight: '700',
-                            color: isSel ? COLORS.primary : COLORS.gray[700],
+                            color: isSel ? '#047857' : COLORS.gray[700],
                           }}
                         >
                           {c.label}
@@ -1818,6 +1788,159 @@ export default function BookingScreen() {
                       </ScalePressable>
                     );
                   })}
+                </View>
+
+                {/* Giờ bắt đầu trigger card - Chuẩn Demo */}
+                <TouchableOpacity
+                  activeOpacity={0.8}
+                  onPress={() => {
+                    setBottomSheetInitialTab('time');
+                    setDateTimePickerOpen(true);
+                  }}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 10,
+                    paddingVertical: 12,
+                    paddingHorizontal: 14,
+                    borderRadius: 14,
+                    backgroundColor: '#F0FDF4',
+                    borderWidth: 1.5,
+                    borderColor: '#16A34A',
+                  }}
+                >
+                  <Clock size={20} color="#16A34A" />
+                  <View style={{ flex: 1 }}>
+                    <Text
+                      style={{ fontSize: 22, fontWeight: '800', color: '#047857', fontVariant: ['tabular-nums'] }}
+                      numberOfLines={1}
+                    >
+                      {timeSlot}
+                    </Text>
+                    <Text style={{ fontSize: 11, color: '#64748B', fontWeight: '500', marginTop: 1 }}>
+                      Bấm để mở bánh xe cuộn chọn giờ
+                    </Text>
+                  </View>
+                  <ChevronRight size={18} color="#16A34A" />
+                </TouchableOpacity>
+
+                {/* Quick Time Suggestion Chips - Chuẩn Demo */}
+                <View>
+                  <Text style={{ fontSize: 11.5, fontWeight: '600', color: '#64748B', marginBottom: 6 }}>
+                    Gợi ý nhanh — bấm là bánh xe chạy tới đúng giờ đó:
+                  </Text>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6, paddingVertical: 2 }}>
+                    {[
+                      { t: '07:00' },
+                      { t: '08:00' },
+                      { t: '09:00' },
+                      { t: '12:00', tag: 'MỚI', tagType: 'new' },
+                      { t: '14:00' },
+                      { t: '17:00' },
+                      { t: '18:00' },
+                      { t: '19:00' },
+                      { t: '20:00' },
+                      { t: '21:00', tag: 'ĐÊM', tagType: 'night' },
+                      { t: '22:00', tag: 'ĐÊM', tagType: 'night' },
+                    ].map(item => {
+                      const isSel = timeSlot === item.t;
+                      return (
+                        <TouchableOpacity
+                          key={item.t}
+                          activeOpacity={0.7}
+                          onPress={() => {
+                            setTimeSlot(item.t);
+                          }}
+                          style={{
+                            position: 'relative',
+                            backgroundColor: isSel ? '#DCFCE7' : '#FFFFFF',
+                            borderWidth: 1.5,
+                            borderColor: isSel ? '#16A34A' : '#E2E8F0',
+                            borderRadius: 9,
+                            paddingHorizontal: 10,
+                            paddingVertical: 6,
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                          }}
+                        >
+                          {item.tag && (
+                            <View
+                              style={{
+                                position: 'absolute',
+                                top: -6,
+                                right: -4,
+                                paddingHorizontal: 4,
+                                paddingVertical: 1,
+                                borderRadius: 99,
+                                backgroundColor: item.tagType === 'night' ? '#FEE2E2' : '#DCFCE7',
+                                borderWidth: 1,
+                                borderColor: item.tagType === 'night' ? '#FCA5A5' : '#16A34A',
+                              }}
+                            >
+                              <Text
+                                style={{
+                                  fontSize: 8,
+                                  fontWeight: '800',
+                                  color: item.tagType === 'night' ? '#DC2626' : '#047857',
+                                }}
+                              >
+                                {item.tag}
+                              </Text>
+                            </View>
+                          )}
+                          <Text
+                            style={{
+                              fontSize: 12,
+                              fontWeight: isSel ? '800' : '600',
+                              color: isSel ? '#047857' : '#334155',
+                              fontVariant: ['tabular-nums'],
+                            }}
+                          >
+                            {item.t}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </ScrollView>
+
+                  <Text style={{ fontSize: 11.5, fontWeight: '600', color: '#64748B', marginTop: 6, marginBottom: 4 }}>
+                    Giờ lẻ:
+                  </Text>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6, paddingVertical: 2 }}>
+                    {['07:30', '08:30', '11:30', '13:30', '17:30', '19:30', '20:30', '21:30'].map(t => {
+                      const isSel = timeSlot === t;
+                      return (
+                        <TouchableOpacity
+                          key={t}
+                          activeOpacity={0.7}
+                          onPress={() => {
+                            setTimeSlot(t);
+                          }}
+                          style={{
+                            backgroundColor: isSel ? '#DCFCE7' : '#FFFFFF',
+                            borderWidth: 1.5,
+                            borderColor: isSel ? '#16A34A' : '#E2E8F0',
+                            borderRadius: 9,
+                            paddingHorizontal: 10,
+                            paddingVertical: 6,
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                          }}
+                        >
+                          <Text
+                            style={{
+                              fontSize: 12,
+                              fontWeight: isSel ? '800' : '600',
+                              color: isSel ? '#047857' : '#334155',
+                              fontVariant: ['tabular-nums'],
+                            }}
+                          >
+                            {t}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </ScrollView>
                 </View>
               </View>
 
