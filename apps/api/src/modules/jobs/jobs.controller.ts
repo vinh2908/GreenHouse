@@ -131,8 +131,8 @@ export class JobsController {
 
   @Get('demand-map')
   @ApiOperation({ summary: '[Helper] Bản đồ nhu cầu: số đơn đang mở theo quận/thành phố' })
-  async getDemandMap() {
-    return this.jobsService.getDemandMap();
+  async getDemandMap(@CurrentUser() user?: { sub: string }) {
+    return this.jobsService.getDemandMap(user?.sub);
   }
 
   // ─── Team jobs / Đơn nhóm (Roadmap Phase 1 — Feature 5) ─────────────────
@@ -371,5 +371,17 @@ export class JobsController {
   ) {
     const effectiveRole = user.roles?.includes('admin') ? 'admin' : user.active_role;
     return this.jobsService.cancelJob(user.sub, effectiveRole, jobId, dto);
+  }
+
+  // ─── F3: Helper Reject / Dismiss Open Job ───────────────────────────────────
+
+  @Post(':jobId/reject')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: '[Helper] Bỏ qua / từ chối đơn hàng đang mở' })
+  async rejectJob(
+    @CurrentUser() user: { sub: string },
+    @Param('jobId') jobId: string,
+  ) {
+    return this.jobsService.rejectJob(user.sub, jobId);
   }
 }

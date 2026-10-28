@@ -29,10 +29,25 @@ html,body,#map{height:100%;width:100%;margin:0;background:#f1f5f9;font-family:sy
   }
   if(!window.L){info.textContent='Không tải được bản đồ. Kiểm tra kết nối mạng.';return;}
   var map=L.map('map',{zoomControl:true,scrollWheelZoom:false,touchZoom:true,minZoom:10}).setView([16,106],14);
-  // Streets use reliable standard tiles with Goong / Vietnam attribution
-  var street=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
-    maxZoom:19,subdomains:'abc',attribution:'Map data © Goong Maps / Contributors'
-  }).addTo(map);
+  var goongKey='${process.env.EXPO_PUBLIC_GOONG_API_KEY || ''}';
+  var fallbackDone=false;
+  var street=goongKey
+    ? L.tileLayer('https://tiles.goong.io/assets/{z}/{x}/{y}.png?api_key='+encodeURIComponent(goongKey),{
+        maxZoom:19,attribution:'Map data &copy; <a href="https://goong.io" target="_blank">Goong Maps</a>'
+      })
+    : L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+        maxZoom:19,subdomains:'abc',attribution:'&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors'
+      });
+  street.on('tileerror', function(){
+    if(!fallbackDone && goongKey){
+      fallbackDone=true;
+      map.removeLayer(street);
+      street=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+        maxZoom:19,subdomains:'abc',attribution:'&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors'
+      }).addTo(map);
+    }
+  });
+  street.addTo(map);
   var streetBackup=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',{
     maxZoom:19,attribution:'Tiles © Esri'
   });

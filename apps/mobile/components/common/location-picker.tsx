@@ -47,10 +47,30 @@ const mapHtml = (center: PickerCoords, zoom: number, hasPin: boolean, interactiv
         boxZoom: interactive,
         keyboard: interactive,
       }).setView([${center.latitude}, ${center.longitude}], ${zoom});
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 19,
-        attribution: 'Map data © Goong Maps / Contributors',
-      }).addTo(map);
+      const goongKey = '${process.env.EXPO_PUBLIC_GOONG_API_KEY || ''}';
+      let fallbackDone = false;
+      if (goongKey) {
+        const goongLayer = L.tileLayer('https://tiles.goong.io/assets/{z}/{x}/{y}.png?api_key=' + encodeURIComponent(goongKey), {
+          maxZoom: 19,
+          attribution: 'Map data &copy; <a href="https://goong.io" target="_blank">Goong Maps</a>',
+        });
+        goongLayer.on('tileerror', function() {
+          if (!fallbackDone) {
+            fallbackDone = true;
+            map.removeLayer(goongLayer);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+              maxZoom: 19,
+              attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors',
+            }).addTo(map);
+          }
+        });
+        goongLayer.addTo(map);
+      } else {
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          maxZoom: 19,
+          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors',
+        }).addTo(map);
+      }
 
       const icon = L.divIcon({ className: 'pin', html: '📍', iconSize: [34, 34], iconAnchor: [17, 32] });
       let marker = ${hasPin} ? L.marker([${center.latitude}, ${center.longitude}], { icon }).addTo(map) : null;

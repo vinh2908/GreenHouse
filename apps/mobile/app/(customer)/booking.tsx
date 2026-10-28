@@ -36,6 +36,11 @@ import { Alert } from '@/components/common/app-alert';
 import dayjs from 'dayjs';
 import { useAuthStore } from '@/stores/auth.store';
 import { ScalePressable } from '@/components/common/scale-pressable';
+import {
+  TimeDropdownPicker,
+  DurationDropdownPicker,
+  ScheduledTimePreview,
+} from '@/components/common/time-dropdown-picker';
 import { DateTimePickerBottomSheet } from '@/components/common/date-time-bottom-sheet';
 import { DurationBottomSheet } from '@/components/common/duration-bottom-sheet';
 import {
@@ -1105,7 +1110,7 @@ export default function BookingScreen() {
         return;
       }
       const selectedStart = dayjs(`${date} ${timeSlot}`);
-      if (selectedStart.isBefore(dayjs().subtract(1, 'minute'))) {
+      if (selectedStart.isBefore(dayjs())) {
         Toast.show({ type: 'error', text1: 'Thời gian bắt đầu không được ở trong quá khứ' });
         return;
       }
@@ -1818,321 +1823,30 @@ export default function BookingScreen() {
                   })}
                 </View>
 
-                {/* Giờ bắt đầu trigger card - Chuẩn Demo */}
-                <TouchableOpacity
-                  activeOpacity={0.8}
-                  onPress={() => {
-                    setBottomSheetInitialTab('time');
-                    setDateTimePickerOpen(true);
+                {/* Giờ bắt đầu — Dropdown Type 12 */}
+                <TimeDropdownPicker
+                  value={timeSlot}
+                  onChange={setTimeSlot}
+                  selectedDate={date}
+                  label="Giờ bắt đầu"
+                  showChips={true}
+                />
+
+                {/* Thời lượng ước tính — Dropdown Type 12 */}
+                <DurationDropdownPicker
+                  valueMinutes={Math.round(duration * 60)}
+                  onChangeMinutes={(mins) => {
+                    setDuration(mins / 60);
                   }}
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    gap: 10,
-                    paddingVertical: 12,
-                    paddingHorizontal: 14,
-                    borderRadius: 14,
-                    backgroundColor: '#F0FDF4',
-                    borderWidth: 1.5,
-                    borderColor: '#16A34A',
-                  }}
-                >
-                  <Clock size={20} color="#16A34A" />
-                  <View style={{ flex: 1 }}>
-                    <Text
-                      style={{
-                        fontSize: 22,
-                        fontWeight: '800',
-                        color: '#047857',
-                        fontVariant: ['tabular-nums'],
-                      }}
-                      numberOfLines={1}
-                    >
-                      {timeSlot}
-                    </Text>
-                    <Text
-                      style={{ fontSize: 11, color: '#64748B', fontWeight: '500', marginTop: 1 }}
-                    >
-                      Bấm để mở bánh xe cuộn chọn giờ
-                    </Text>
-                  </View>
-                  <ChevronRight size={18} color="#16A34A" />
-                </TouchableOpacity>
+                />
 
-                {/* Quick Time Suggestion Chips - Chuẩn Demo */}
-                <View>
-                  <Text
-                    style={{ fontSize: 11.5, fontWeight: '600', color: '#64748B', marginBottom: 6 }}
-                  >
-                    Gợi ý nhanh — bấm là bánh xe chạy tới đúng giờ đó:
-                  </Text>
-                  <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={{ gap: 6, paddingVertical: 2 }}
-                  >
-                    {[
-                      { t: '07:00' },
-                      { t: '08:00' },
-                      { t: '09:00' },
-                      { t: '12:00', tag: 'MỚI', tagType: 'new' },
-                      { t: '14:00' },
-                      { t: '17:00' },
-                      { t: '18:00' },
-                      { t: '19:00' },
-                      { t: '20:00' },
-                      { t: '21:00', tag: 'ĐÊM', tagType: 'night' },
-                      { t: '22:00', tag: 'ĐÊM', tagType: 'night' },
-                    ].map(item => {
-                      const isSel = timeSlot === item.t;
-                      return (
-                        <TouchableOpacity
-                          key={item.t}
-                          activeOpacity={0.7}
-                          onPress={() => {
-                            setTimeSlot(item.t);
-                          }}
-                          style={{
-                            position: 'relative',
-                            backgroundColor: isSel ? '#DCFCE7' : '#FFFFFF',
-                            borderWidth: 1.5,
-                            borderColor: isSel ? '#16A34A' : '#E2E8F0',
-                            borderRadius: 9,
-                            paddingHorizontal: 10,
-                            paddingVertical: 6,
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                          }}
-                        >
-                          {item.tag && (
-                            <View
-                              style={{
-                                position: 'absolute',
-                                top: -6,
-                                right: -4,
-                                paddingHorizontal: 4,
-                                paddingVertical: 1,
-                                borderRadius: 99,
-                                backgroundColor: item.tagType === 'night' ? '#FEE2E2' : '#DCFCE7',
-                                borderWidth: 1,
-                                borderColor: item.tagType === 'night' ? '#FCA5A5' : '#16A34A',
-                              }}
-                            >
-                              <Text
-                                style={{
-                                  fontSize: 8,
-                                  fontWeight: '800',
-                                  color: item.tagType === 'night' ? '#DC2626' : '#047857',
-                                }}
-                              >
-                                {item.tag}
-                              </Text>
-                            </View>
-                          )}
-                          <Text
-                            style={{
-                              fontSize: 12,
-                              fontWeight: isSel ? '800' : '600',
-                              color: isSel ? '#047857' : '#334155',
-                              fontVariant: ['tabular-nums'],
-                            }}
-                          >
-                            {item.t}
-                          </Text>
-                        </TouchableOpacity>
-                      );
-                    })}
-                  </ScrollView>
-
-                  <Text
-                    style={{
-                      fontSize: 11.5,
-                      fontWeight: '600',
-                      color: '#64748B',
-                      marginTop: 6,
-                      marginBottom: 4,
-                    }}
-                  >
-                    Giờ lẻ:
-                  </Text>
-                  <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={{ gap: 6, paddingVertical: 2 }}
-                  >
-                    {['07:30', '08:30', '11:30', '13:30', '17:30', '19:30', '20:30', '21:30'].map(
-                      t => {
-                        const isSel = timeSlot === t;
-                        return (
-                          <TouchableOpacity
-                            key={t}
-                            activeOpacity={0.7}
-                            onPress={() => {
-                              setTimeSlot(t);
-                            }}
-                            style={{
-                              backgroundColor: isSel ? '#DCFCE7' : '#FFFFFF',
-                              borderWidth: 1.5,
-                              borderColor: isSel ? '#16A34A' : '#E2E8F0',
-                              borderRadius: 9,
-                              paddingHorizontal: 10,
-                              paddingVertical: 6,
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                            }}
-                          >
-                            <Text
-                              style={{
-                                fontSize: 12,
-                                fontWeight: isSel ? '800' : '600',
-                                color: isSel ? '#047857' : '#334155',
-                                fontVariant: ['tabular-nums'],
-                              }}
-                            >
-                              {t}
-                            </Text>
-                          </TouchableOpacity>
-                        );
-                      },
-                    )}
-                  </ScrollView>
-                </View>
-              </View>
-
-              {/* 3. Thời gian ước tính: Chip 1/2/3/4h + Tùy chọn... */}
-              <View>
-                <View
-                  style={{
-                    flexDirection: 'row',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    marginBottom: 10,
-                  }}
-                >
-                  <Text style={{ fontSize: 14, fontWeight: '700', color: COLORS.gray[700] }}>
-                    Thời gian ước tính:{' '}
-                    <Text style={{ color: COLORS.primary, fontWeight: '800' }}>
-                      {duration < 1
-                        ? `${Math.round(duration * 60)} phút`
-                        : `${Number(duration.toFixed(2)).toString().replace('.', ',')} giờ`}
-                    </Text>
-                  </Text>
-                </View>
-
-                <View style={{ flexDirection: 'row', gap: 8 }}>
-                  {[1, 2, 3, 4].map(d => (
-                    <ScalePressable
-                      key={d}
-                      onPress={() => {
-                        setDuration(d);
-                        setIsCustomDuration(false);
-                        setDurationPickerOpen(false);
-                      }}
-                      style={{
-                        flex: 1,
-                        paddingVertical: 11,
-                        borderRadius: 12,
-                        borderWidth: 2,
-                        borderColor:
-                          !isCustomDuration && duration === d ? COLORS.primary : COLORS.gray[200],
-                        backgroundColor:
-                          !isCustomDuration && duration === d ? COLORS.primaryLight : '#fff',
-                        alignItems: 'center',
-                      }}
-                    >
-                      <Text
-                        style={{
-                          fontWeight: '800',
-                          fontSize: 14,
-                          color:
-                            !isCustomDuration && duration === d ? COLORS.primary : COLORS.gray[700],
-                        }}
-                      >
-                        {d}h
-                      </Text>
-                    </ScalePressable>
-                  ))}
-                  <ScalePressable
-                    onPress={() => {
-                      setIsCustomDuration(true);
-                      setDurationPickerOpen(true);
-                    }}
-                    style={{
-                      flex: isCustomDuration ? 1.4 : 1.2,
-                      paddingVertical: 11,
-                      paddingHorizontal: 6,
-                      borderRadius: 12,
-                      borderWidth: 2,
-                      borderColor: isCustomDuration ? COLORS.primary : COLORS.gray[200],
-                      backgroundColor: isCustomDuration ? COLORS.primaryLight : '#fff',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    <Text
-                      style={{
-                        fontWeight: '800',
-                        fontSize: 12,
-                        color: isCustomDuration ? COLORS.primary : COLORS.gray[700],
-                      }}
-                      numberOfLines={1}
-                    >
-                      {isCustomDuration
-                        ? `${duration < 1 ? `${Math.round(duration * 60)}p` : `${Number(duration.toFixed(2)).toString().replace('.', ',')}h`}`
-                        : 'Tùy chọn…'}
-                    </Text>
-                  </ScalePressable>
-                </View>
-
-                {/* Dynamic Schedule Summary Card with Next-Day notice */}
-                {(() => {
-                  const durTotal =
-                    typeof duration === 'number' ? duration : parseFloat(String(duration)) || 2;
-                  const durMinsTotal = Math.round(durTotal * 60);
-                  const startDt = dayjs(`${date} ${timeSlot}`);
-                  const endDt = startDt.add(durMinsTotal, 'minute');
-                  const isNextDay = endDt.date() !== startDt.date();
-                  const cleanPriceNum = targetPrice
-                    ? Number(String(targetPrice).replace(/[^0-9]/g, ''))
-                    : 0;
-
-                  return (
-                    <View
-                      style={{
-                        backgroundColor: '#F0FDF4',
-                        borderRadius: 14,
-                        padding: 14,
-                        borderWidth: 1.5,
-                        borderColor: '#BBF7D0',
-                        marginTop: 14,
-                      }}
-                    >
-                      <Text
-                        style={{
-                          fontSize: 13,
-                          color: '#166534',
-                          fontWeight: '600',
-                          lineHeight: 20,
-                        }}
-                      >
-                        Lịch dự kiến:{' '}
-                        <Text style={{ fontWeight: '800' }}>
-                          {dayjs(date).format('dddd, DD/MM/YYYY')}, {timeSlot} –{' '}
-                          {endDt.format('HH:mm')}
-                          {isNextDay ? ' (ngày hôm sau)' : ''}
-                        </Text>{' '}
-                        · thời lượng{' '}
-                        {durTotal < 1
-                          ? `${Math.round(durTotal * 60)} phút`
-                          : `${Number(durTotal.toFixed(2)).toString().replace('.', ',')} giờ`}
-                        .
-                        {cleanPriceNum > 0
-                          ? ` Giá mở đầu để deal: ${new Intl.NumberFormat('vi-VN').format(cleanPriceNum)}₫.`
-                          : ''}
-                      </Text>
-                    </View>
-                  );
-                })()}
+                {/* Lịch dự kiến — Tóm tắt */}
+                <ScheduledTimePreview
+                  startDate={date}
+                  startTime={timeSlot}
+                  durationMinutes={Math.round(duration * 60)}
+                  price={targetPrice ? Number(String(targetPrice).replace(/[^0-9]/g, '')) : undefined}
+                />
               </View>
             </View>
           )}

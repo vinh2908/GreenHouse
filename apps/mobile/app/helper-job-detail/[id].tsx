@@ -54,6 +54,7 @@ import {
   useProposeAmendment,
   useCallConfig,
   useAcceptFixedPrice,
+  useRejectJob,
 } from '@/hooks/use-api';
 import { useAuthStore } from '@/stores/auth.store';
 import {
@@ -129,6 +130,7 @@ export default function HelperJobDetailScreen() {
 
   const submitQuote = useSubmitQuote();
   const acceptFixed = useAcceptFixedPrice();
+  const rejectJob = useRejectJob();
   const onTheWay = useHelperOnTheWay();
   const arrived = useHelperArrived();
   const startJob = useStartJob();
@@ -221,6 +223,35 @@ export default function HelperJobDetailScreen() {
       const msg = err?.response?.data?.message || 'Nhận việc thất bại. Vui lòng thử lại.';
       Toast.show({ type: 'error', text1: msg });
     }
+  };
+
+  const handleRejectJob = () => {
+    Alert.alert(
+      'Từ chối nhận đơn',
+      'Đơn này sẽ được ẩn khỏi danh sách việc mới và bản đồ của bạn. Bạn có chắc chắn muốn bỏ qua?',
+      [
+        { text: 'Quay lại', style: 'cancel' },
+        {
+          text: 'Từ chối đơn',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await rejectJob.mutateAsync(id!);
+              Toast.show({
+                type: 'success',
+                text1: 'Đã từ chối đơn',
+                text2: 'Đơn đã được ẩn khỏi danh sách của bạn.',
+              });
+              router.back();
+            } catch (err: any) {
+              const msg =
+                err?.response?.data?.message || err?.message || 'Từ chối thất bại. Vui lòng thử lại.';
+              Toast.show({ type: 'error', text1: msg });
+            }
+          },
+        },
+      ]
+    );
   };
 
   const handleSubmitAmendment = async () => {
@@ -894,6 +925,12 @@ export default function HelperJobDetailScreen() {
                   loading={acceptFixed.isPending}
                   onPress={handleAcceptDirect}
                 />
+                <Button
+                  title="Từ chối / Bỏ qua đơn này"
+                  variant="outline"
+                  loading={rejectJob.isPending}
+                  onPress={handleRejectJob}
+                />
               </Card>
             ) : myQuote ? (
               <Card
@@ -954,7 +991,8 @@ export default function HelperJobDetailScreen() {
                 <Button
                   title="Từ chối / Bỏ qua đơn này"
                   variant="outline"
-                  onPress={() => router.back()}
+                  loading={rejectJob.isPending}
+                  onPress={handleRejectJob}
                 />
               </View>
             )}
