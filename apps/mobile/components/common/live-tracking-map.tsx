@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, Platform, TouchableOpacity, Linking } from 'react-native';
 import { WebView } from 'react-native-webview';
 import * as Location from 'expo-location';
-import { Navigation, Layers } from 'lucide-react-native';
+import { Navigation } from 'lucide-react-native';
 import { TRACKING_MAP_HTML } from './tracking-map-document';
 import { trackingTitle, validCoordinate } from '@/services/tracking';
 
@@ -43,7 +43,6 @@ export function LiveTrackingMap({
   const webViewRef = useRef<WebView>(null);
   const iframeRef = useRef<any>(null);
   const ready = useRef(false);
-  const [layer, setLayer] = useState<'streets' | 'satellite'>('streets');
   const [loadError, setLoadError] = useState(false);
   const [retry, setRetry] = useState(0);
   const [deviceLocation, setDeviceLocation] = useState<{
@@ -183,7 +182,6 @@ export function LiveTrackingMap({
       : null,
     helper: helperPos,
     tracking: status === 'helper_on_the_way',
-    layer,
     goongApiKey: process.env.EXPO_PUBLIC_GOONG_API_KEY || '',
   };
   const latest = useRef(state);
@@ -229,7 +227,6 @@ export function LiveTrackingMap({
     deviceLocation?.longitude,
     viewerRole,
     status,
-    layer,
     send,
   ]);
   useEffect(() => {
@@ -310,17 +307,6 @@ export function LiveTrackingMap({
             }}
           />
         )}
-        <TouchableOpacity
-          accessibilityRole="button"
-          accessibilityLabel="Đổi lớp bản đồ"
-          onPress={() => setLayer(value => (value === 'streets' ? 'satellite' : 'streets'))}
-          style={styles.layerButton}
-        >
-          <Layers size={14} color="#1f2937" />
-          <Text style={{ fontSize: 11, fontWeight: '700', color: '#1f2937' }}>
-            {layer === 'streets' ? 'Vệ tinh' : 'Bản đồ'}
-          </Text>
-        </TouchableOpacity>
         {loadError && (
           <TouchableOpacity
             style={styles.error}
@@ -373,24 +359,6 @@ const styles = StyleSheet.create({
   },
   statusText: { color: 'white', fontSize: 13, lineHeight: 18, fontWeight: '700', flex: 1 },
   dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#00b14f' },
-  layerButton: {
-    position: 'absolute',
-    top: 10,
-    right: 10,
-    backgroundColor: 'white',
-    borderRadius: 10,
-    paddingHorizontal: 8,
-    paddingVertical: 6,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    zIndex: 999,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.15,
-    shadowRadius: 2,
-    elevation: 2,
-  },
   error: {
     position: 'absolute',
     bottom: 10,

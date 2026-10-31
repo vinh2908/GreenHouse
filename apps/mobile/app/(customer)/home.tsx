@@ -436,11 +436,51 @@ export default function CustomerHomeScreen() {
   <meta charset="utf-8" />
   <base target="_self" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css" />
+  <script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    html, body, #map { width: 100%; height: 100%; background: #f8fafc; }
+    html, body, #map { width: 100%; height: 100%; background: #f8fafc; overflow: hidden; }
+    .goong-attribution {
+      position: absolute;
+      bottom: 4px;
+      right: 6px;
+      background: rgba(255,255,255,0.88);
+      padding: 1px 6px;
+      border-radius: 4px;
+      font-size: 9px;
+      color: #374151;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      z-index: 10;
+      pointer-events: auto;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    .goong-attribution a { color: #0284c7; text-decoration: none; font-weight: 700; }
+    .map-error-card {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: #f8fafc;
+      padding: 16px;
+      text-align: center;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      color: #64748b;
+      font-size: 12px;
+      gap: 8px;
+    }
+    .map-retry-btn {
+      background: #16a34a;
+      color: #ffffff;
+      border: none;
+      padding: 6px 14px;
+      border-radius: 8px;
+      font-weight: 700;
+      font-size: 12px;
+      cursor: pointer;
+    }
     .pin-pill {
       display: inline-flex;
       align-items: center;
@@ -499,90 +539,50 @@ export default function CustomerHomeScreen() {
       box-shadow: 0 2px 6px rgba(0,0,0,0.2);
       transform: translate(-50%, -50%);
     }
-    .leaflet-control-attribution { font-size: 8px !important; background: rgba(255,255,255,0.7) !important; padding: 0 4px !important; }
   </style>
 </head>
 <body>
   <div id="map"></div>
+  <div class="goong-attribution">© <a href="https://goong.io" target="_blank" rel="noopener">Goong Maps</a></div>
   <script>
-    const center = [${mapCenter.latitude}, ${mapCenter.longitude}];
-    const map = L.map('map', {
-      zoomControl: false,
-      attributionControl: true,
-      dragging: false,
-      touchZoom: false,
-      doubleClickZoom: false,
-      scrollWheelZoom: false,
-      boxZoom: false,
-      keyboard: false
-    }).setView(center, 14);
-
-    const goongMapKey = '${process.env.EXPO_PUBLIC_GOONG_MAP_KEY || ''}';
-    let consecutiveCenterErrors = 0;
-    let fallbackDone = false;
-    if (goongMapKey) {
-      const goongLayer = L.tileLayer('https://tiles.goong.io/assets/{z}/{x}/{y}.png?api_key=' + encodeURIComponent(goongMapKey), {
-        maxZoom: 19,
-        attribution: 'Map data &copy; <a href="https://goong.io" target="_blank">Goong Maps</a>'
-      });
-      goongLayer.on('tileerror', function(errorEvent) {
-        if (fallbackDone) return;
-        const centerPoint = map.project(map.getCenter(), map.getZoom());
-        const centerTileX = Math.floor(centerPoint.x / 256);
-        const centerTileY = Math.floor(centerPoint.y / 256);
-        let isCenter = false;
-        if (errorEvent && errorEvent.coords) {
-          const dx = Math.abs(errorEvent.coords.x - centerTileX);
-          const dy = Math.abs(errorEvent.coords.y - centerTileY);
-          if (dx <= 1 && dy <= 1) isCenter = true;
-        } else {
-          isCenter = true;
-        }
-        if (isCenter) consecutiveCenterErrors++;
-        if (consecutiveCenterErrors >= 3) {
-          fallbackDone = true;
-          console.warn('[Map Fallback] Goong tiles failed at map center ' + consecutiveCenterErrors + ' consecutive times (tileerror 404/403/network). Fallback to OpenStreetMap with attribution.');
-          map.removeLayer(goongLayer);
-          L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 19,
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors'
-          }).addTo(map);
-        }
-      });
-      goongLayer.addTo(map);
+    const mapKey = '${process.env.EXPO_PUBLIC_GOONG_MAP_KEY || ''}';
+    if (!mapKey) {
+      document.getElementById('map').innerHTML = '<div class="map-error-card"><span>Chưa cấu hình khoá bản đồ Goong.</span></div>';
     } else {
-      console.warn('[Map Warning] Thiếu EXPO_PUBLIC_GOONG_MAP_KEY, dùng OpenStreetMap.');
-      L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 19,
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors'
-      }).addTo(map);
-    }
+      try {
+        const map = new maplibregl.Map({
+          container: 'map',
+          style: 'https://tiles.goong.io/assets/goong_map_web.json?api_key=' + encodeURIComponent(mapKey),
+          center: [${mapCenter.longitude}, ${mapCenter.latitude}],
+          zoom: 14,
+          interactive: false,
+          attributionControl: false
+        });
 
-    ${
-      currentCoords
-        ? `
-    // Marker vị trí người dùng thật
-    const userIcon = L.divIcon({
-      className: 'custom-user-pin',
-      html: '<div class="user-pill"><span>📍</span><span>Bạn ở đây</span></div>',
-      iconSize: [null, null],
-      iconAnchor: [35, 12]
-    });
-    L.marker([${currentCoords.latitude}, ${currentCoords.longitude}], { icon: userIcon }).addTo(map);
-    `
-        : ''
-    }
+        ${
+          currentCoords
+            ? `
+        const userEl = document.createElement('div');
+        userEl.innerHTML = '<div class="user-pill"><span>📍</span><span>Bạn ở đây</span></div>';
+        new maplibregl.Marker({ element: userEl })
+          .setLngLat([${currentCoords.longitude}, ${currentCoords.latitude}])
+          .addTo(map);
+        `
+            : ''
+        }
 
-    const pins = ${pinsJson};
-    pins.forEach(p => {
-      const icon = L.divIcon({
-        className: 'custom-pin-container',
-        html: '<div class="pin-pill ' + (p.selected ? 'selected' : '') + '"><span class="pin-pulse-dot"></span><span class="pin-name">' + p.name + '</span></div>',
-        iconSize: [null, null],
-        iconAnchor: [30, 15]
-      });
-      L.marker([p.lat, p.lon], { icon }).addTo(map);
-    });
+        const pins = ${pinsJson};
+        pins.forEach(p => {
+          const pinEl = document.createElement('div');
+          pinEl.innerHTML = '<div class="pin-pill ' + (p.selected ? 'selected' : '') + '"><span class="pin-pulse-dot"></span><span class="pin-name">' + p.name + '</span></div>';
+          new maplibregl.Marker({ element: pinEl })
+            .setLngLat([p.lon, p.lat])
+            .addTo(map);
+        });
+      } catch (e) {
+        document.getElementById('map').innerHTML = '<div class="map-error-card"><span>Không tải được bản đồ Goong.</span><button class="map-retry-btn" onclick="window.location.reload()">Thử lại</button></div>';
+      }
+    }
   </script>
 </body>
 </html>`;
@@ -1169,10 +1169,10 @@ export default function CustomerHomeScreen() {
           >
             {Platform.OS === 'web' ? (
               <iframe
-                src={'data:text/html;charset=utf-8,' + encodeURIComponent(leafletMiniMapHtml)}
+                srcDoc={leafletMiniMapHtml}
                 style={{ width: '100%', height: '100%', border: 'none' }}
-                title="Leaflet Mini Map"
-                sandbox="allow-scripts"
+                title="Goong Mini Map"
+                sandbox="allow-scripts allow-same-origin"
               />
             ) : (
               <WebView

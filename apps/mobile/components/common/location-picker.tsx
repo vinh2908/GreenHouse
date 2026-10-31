@@ -20,92 +20,146 @@ export interface PickerCoords {
   longitude: number;
 }
 
-// Leaflet + OpenStreetMap: Web iframe and Native WebView compatible
+// Goong Vector Map: Web iframe and Native WebView compatible
 const mapHtml = (center: PickerCoords, zoom: number, hasPin: boolean, interactive: boolean) => `
 <!DOCTYPE html>
 <html>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css" />
+    <script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
     <style>
-      html, body, #map { width: 100%; height: 100%; margin: 0; padding: 0; background: #f1f5f9; }
-      .pin { font-size: 34px; line-height: 34px; text-align: center; }
+      html, body, #map { width: 100%; height: 100%; margin: 0; padding: 0; background: #f1f5f9; overflow: hidden; }
+      .pin { font-size: 34px; line-height: 34px; text-align: center; cursor: pointer; user-select: none; }
+      .goong-attribution {
+        position: absolute;
+        bottom: 4px;
+        right: 6px;
+        background: rgba(255,255,255,0.88);
+        padding: 1px 6px;
+        border-radius: 4px;
+        font-size: 9px;
+        color: #374151;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        z-index: 10;
+        pointer-events: auto;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      }
+      .goong-attribution a { color: #0284c7; text-decoration: none; font-weight: 700; }
+      .map-error-card {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        background: #f8fafc;
+        padding: 16px;
+        text-align: center;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        color: #64748b;
+        font-size: 12px;
+        gap: 8px;
+      }
+      .map-retry-btn {
+        background: #16a34a;
+        color: #ffffff;
+        border: none;
+        padding: 6px 14px;
+        border-radius: 8px;
+        font-weight: 700;
+        font-size: 12px;
+        cursor: pointer;
+      }
     </style>
   </head>
   <body>
     <div id="map"></div>
+    <div class="goong-attribution">© <a href="https://goong.io" target="_blank" rel="noopener">Goong Maps</a></div>
     <script>
       const interactive = ${interactive};
-      const map = L.map('map', {
-        zoomControl: interactive,
-        dragging: interactive,
-        touchZoom: interactive,
-        doubleClickZoom: interactive,
-        scrollWheelZoom: interactive,
-        boxZoom: interactive,
-        keyboard: interactive,
-      }).setView([${center.latitude}, ${center.longitude}], ${zoom});
-      const goongMapKey = '${process.env.EXPO_PUBLIC_GOONG_MAP_KEY || ''}';
-      let consecutiveCenterErrors = 0;
-      let fallbackDone = false;
-      if (goongMapKey) {
-        const goongLayer = L.tileLayer('https://tiles.goong.io/assets/{z}/{x}/{y}.png?api_key=' + encodeURIComponent(goongMapKey), {
-          maxZoom: 19,
-          attribution: 'Map data &copy; <a href="https://goong.io" target="_blank">Goong Maps</a>',
-        });
-        goongLayer.on('tileerror', function(errorEvent) {
-          if (fallbackDone) return;
-          const centerPoint = map.project(map.getCenter(), map.getZoom());
-          const centerTileX = Math.floor(centerPoint.x / 256);
-          const centerTileY = Math.floor(centerPoint.y / 256);
-          let isCenter = false;
-          if (errorEvent && errorEvent.coords) {
-            const dx = Math.abs(errorEvent.coords.x - centerTileX);
-            const dy = Math.abs(errorEvent.coords.y - centerTileY);
-            if (dx <= 1 && dy <= 1) isCenter = true;
-          } else {
-            isCenter = true;
-          }
-          if (isCenter) consecutiveCenterErrors++;
-          if (consecutiveCenterErrors >= 3) {
-            fallbackDone = true;
-            console.warn('[Map Fallback] Goong tiles failed at center ' + consecutiveCenterErrors + ' consecutive times. Fallback to OpenStreetMap with authentic attribution.');
-            map.removeLayer(goongLayer);
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-              maxZoom: 19,
-              attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors',
-            }).addTo(map);
-          }
-        });
-        goongLayer.addTo(map);
+      const mapKey = '${process.env.EXPO_PUBLIC_GOONG_MAP_KEY || ''}';
+      if (!mapKey) {
+        document.getElementById('map').innerHTML = '<div class="map-error-card"><span>Chưa cấu hình khoá bản đồ Goong.</span></div>';
       } else {
-        console.warn('[Map Warning] Thiếu EXPO_PUBLIC_GOONG_MAP_KEY, dùng OpenStreetMap.');
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          maxZoom: 19,
-          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors',
-        }).addTo(map);
-      }
+        try {
+          const map = new maplibregl.Map({
+            container: 'map',
+            style: 'https://tiles.goong.io/assets/goong_map_web.json?api_key=' + encodeURIComponent(mapKey),
+            center: [${center.longitude}, ${center.latitude}],
+            zoom: ${zoom},
+            interactive: interactive,
+            attributionControl: false
+          });
 
-      const icon = L.divIcon({ className: 'pin', html: '📍', iconSize: [34, 34], iconAnchor: [17, 32] });
-      let marker = ${hasPin} ? L.marker([${center.latitude}, ${center.longitude}], { icon }).addTo(map) : null;
-
-      window.setPin = function (lat, lng, pan) {
-        if (marker) marker.setLatLng([lat, lng]);
-        else marker = L.marker([lat, lng], { icon }).addTo(map);
-        if (pan) map.setView([lat, lng], Math.max(map.getZoom(), 16));
-      };
-
-      if (interactive) {
-        map.on('click', function (e) {
-          window.setPin(e.latlng.lat, e.latlng.lng, false);
-          if (window.ReactNativeWebView) {
-            window.ReactNativeWebView.postMessage(JSON.stringify({ lat: e.latlng.lat, lng: e.latlng.lng }));
-          } else if (window.parent) {
-            window.parent.postMessage(JSON.stringify({ type: 'PIN_LOCATION', lat: e.latlng.lat, lng: e.latlng.lng }), '*');
+          if (interactive) {
+            map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'bottom-right');
           }
-        });
+
+          const pinEl = document.createElement('div');
+          pinEl.className = 'pin';
+          pinEl.innerHTML = '📍';
+
+          let marker = ${hasPin}
+            ? new maplibregl.Marker({ element: pinEl, draggable: interactive })
+                .setLngLat([${center.longitude}, ${center.latitude}])
+                .addTo(map)
+            : null;
+
+          if (marker && interactive) {
+            marker.on('dragend', function () {
+              const lngLat = marker.getLngLat();
+              if (window.ReactNativeWebView) {
+                window.ReactNativeWebView.postMessage(JSON.stringify({ lat: lngLat.lat, lng: lngLat.lng }));
+              } else if (window.parent) {
+                window.parent.postMessage(JSON.stringify({ type: 'PIN_LOCATION', lat: lngLat.lat, lng: lngLat.lng }), '*');
+              }
+            });
+          }
+
+          window.setPin = function (lat, lng, pan) {
+            if (marker) {
+              marker.setLngLat([lng, lat]);
+            } else {
+              const el = document.createElement('div');
+              el.className = 'pin';
+              el.innerHTML = '📍';
+              marker = new maplibregl.Marker({ element: el, draggable: interactive })
+                .setLngLat([lng, lat])
+                .addTo(map);
+
+              if (interactive) {
+                marker.on('dragend', function () {
+                  const lngLat = marker.getLngLat();
+                  if (window.ReactNativeWebView) {
+                    window.ReactNativeWebView.postMessage(JSON.stringify({ lat: lngLat.lat, lng: lngLat.lng }));
+                  } else if (window.parent) {
+                    window.parent.postMessage(JSON.stringify({ type: 'PIN_LOCATION', lat: lngLat.lat, lng: lngLat.lng }), '*');
+                  }
+                });
+              }
+            }
+            if (pan) {
+              map.flyTo({ center: [lng, lat], zoom: Math.max(map.getZoom(), 16) });
+            }
+          };
+
+          if (interactive) {
+            map.on('click', function (e) {
+              const lat = e.lngLat.lat;
+              const lng = e.lngLat.lng;
+              window.setPin(lat, lng, false);
+              if (window.ReactNativeWebView) {
+                window.ReactNativeWebView.postMessage(JSON.stringify({ lat: lat, lng: lng }));
+              } else if (window.parent) {
+                window.parent.postMessage(JSON.stringify({ type: 'PIN_LOCATION', lat: lat, lng: lng }), '*');
+              }
+            });
+          }
+        } catch (e) {
+          document.getElementById('map').innerHTML = '<div class="map-error-card"><span>Không tải được bản đồ Goong.</span><button class="map-retry-btn" onclick="window.location.reload()">Thử lại</button></div>';
+        }
       }
     </script>
   </body>
@@ -224,7 +278,7 @@ export function LocationPicker({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible]);
 
-  // Debounced address search (OpenStreetMap Nominatim).
+  // Debounced address search (Goong Place AutoComplete).
   useEffect(() => {
     if (query.trim().length < 2) {
       setResults([]);
