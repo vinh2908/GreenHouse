@@ -129,7 +129,7 @@ export default function HelperProfileScreen() {
         >
           <TouchableOpacity
             activeOpacity={0.85}
-            onPress={() => router.push('/edit-profile')}
+            onPress={() => router.push({ pathname: '/edit-profile', params: { role: 'helper' } } as any)}
             style={{ alignItems: 'center' }}
           >
             <Avatar name={user?.full_name} uri={user?.avatar} size={80} />
@@ -325,40 +325,71 @@ export default function HelperProfileScreen() {
           {/* Menu Items */}
           <Card style={{ gap: 0 }}>
             {[
-              { icon: CreditCard, label: t('profile_bank_account'), route: '/bank-account' },
-              { icon: FileText, label: t('profile_work_schedule'), route: '/helper-availability' },
+              {
+                icon: CreditCard,
+                label: t('profile_bank_account'),
+                onPress: () =>
+                  router.push({ pathname: '/bank-account', params: { role: 'helper' } } as any),
+              },
+              {
+                icon: FileText,
+                label: t('profile_work_schedule'),
+                onPress: () => router.push('/helper-availability' as any),
+              },
               {
                 icon: FileText,
                 label: t('profile_monthly_contracts'),
-                route: '/monthly-contracts',
+                onPress: () => router.push('/monthly-contracts' as any),
               },
-              { icon: FileText, label: t('profile_career'), route: '/edit-profile' },
+              {
+                icon: FileText,
+                label: t('profile_career'),
+                onPress: () =>
+                  router.push({
+                    pathname: '/edit-profile',
+                    params: { role: 'helper', tab: 'career' },
+                  } as any),
+              },
               {
                 icon: HelpCircle,
                 label: t('profile_support_online'),
-                route: '/support-chat',
+                onPress: () => router.push('/support-chat' as any),
               },
               {
                 icon: HelpCircle,
                 label: t('profile_help_center'),
-                route: '/help-center',
+                onPress: () => router.push('/help-center' as any),
               },
               {
                 icon: Shield,
                 label: t('profile_privacy_insurance'),
-                route: '/policy-insurance',
+                onPress: () => router.push('/policy-insurance' as any),
               },
               {
                 icon: Star,
                 label: t('profile_reviews'),
-                route: user?._id ? `/helper-profile/${user._id}` : null,
+                onPress: () => {
+                  const targetId =
+                    user?._id ||
+                    (profile?.user_id as any)?._id ||
+                    (typeof profile?.user_id === 'string' ? profile?.user_id : null);
+                  if (targetId) {
+                    router.push(`/helper-profile/${targetId}` as any);
+                  } else {
+                    Toast.show({
+                      type: 'info',
+                      text1: 'Đánh giá & Phản hồi',
+                      text2: 'Chưa có dữ liệu đánh giá từ khách hàng',
+                    });
+                  }
+                },
               },
             ].map((item, i) => (
               <View key={item.label}>
                 {i > 0 && <Separator my={0} />}
                 <TouchableOpacity
                   activeOpacity={0.7}
-                  onPress={() => (item.route ? router.push(item.route as any) : null)}
+                  onPress={item.onPress}
                   style={{
                     flexDirection: 'row',
                     alignItems: 'center',

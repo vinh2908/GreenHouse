@@ -22,7 +22,7 @@ import Toast from 'react-native-toast-message';
 import { Alert } from '@/components/common/app-alert';
 import { useAuthStore } from '@/stores/auth.store';
 import { useMyProfile, useSwitchRole, useLoyaltyAccount } from '@/hooks/use-api';
-import { Avatar, Card, COLORS, Separator } from '@/components/ui';
+import { Avatar, Card, COLORS, Separator, LoadingSpinner } from '@/components/ui';
 import { useTranslation } from '@/hooks/use-i18n';
 import { DisplaySettingsSection } from '@/components/common/display-settings';
 
@@ -57,22 +57,22 @@ export default function CustomerProfileScreen() {
   const queryClient = useQueryClient();
   const logout = useAuthStore(s => s.logout);
   const user = useAuthStore(s => s.user);
+  const isAuthLoading = useAuthStore(s => s.isLoading);
   const isSwitchingRef = useRef(false);
 
-  // [N4 Fix]: Chuyển hướng an toàn trong useEffect nếu đang ở vai trò thợ, tránh chớp trắng/vòng lặp redirect
-  useEffect(() => {
-    if (user?.active_role === 'helper' && !isSwitchingRef.current) {
-      if (Platform.OS === 'web') {
-        router.replace('/(helper)/dashboard');
-      } else {
-        router.replace('/(helper)/profile');
-      }
-    }
-  }, [user?.active_role]);
-
-  const { data: profile } = useMyProfile();
+  const { data: profile, isLoading: isProfileLoading } = useMyProfile();
   const { data: loyalty, isLoading: isLoyaltyLoading } = useLoyaltyAccount();
   const switchRole = useSwitchRole();
+
+  const displayUser = profile ?? user;
+  const effectiveRole = displayUser?.active_role ?? user?.active_role;
+
+  // Khi đang ở chế độ thợ, chuyển ngay sang màn hình tài khoản thợ
+  useEffect(() => {
+    if (!isAuthLoading && effectiveRole === 'helper' && !isSwitchingRef.current) {
+      router.replace('/(helper)/profile');
+    }
+  }, [isAuthLoading, effectiveRole]);
 
   const handleLogout = () => {
     const doLogout = async () => {
@@ -99,8 +99,6 @@ export default function CustomerProfileScreen() {
     );
   };
 
-  const displayUser = profile ?? user;
-
   const handleSwitchToHelper = async () => {
     if (isSwitchingRef.current) return;
     isSwitchingRef.current = true;
@@ -114,6 +112,14 @@ export default function CustomerProfileScreen() {
   };
 
   const insets = useSafeAreaInsets();
+
+  if (isAuthLoading || effectiveRole === 'helper') {
+    return (
+      <View style={{ flex: 1, backgroundColor: COLORS.gray[50], justifyContent: 'center', alignItems: 'center' }}>
+        <LoadingSpinner />
+      </View>
+    );
+  }
 
   return (
     <View style={{ flex: 1, backgroundColor: COLORS.gray[50] }}>
@@ -239,26 +245,15 @@ export default function CustomerProfileScreen() {
                 </Text>
                 <ChevronRight size={16} color="#92400E" />
               </View>
-              {isLoyaltyLoading || !loyalty ? (
-                <View
-                  style={{
-                    width: 140,
-                    height: 28,
-                    borderRadius: 8,
-                    backgroundColor: '#FDE68A',
-                    marginVertical: 4,
-                  }}
-                />
-              ) : (
-                <Text style={{ fontSize: fs(22), fontWeight: '800', color: COLORS.gray[900] }}>
-                  {t('profile_loyalty_points', {
-                    points: new Intl.NumberFormat('vi-VN').format(loyalty.points_balance ?? 0),
-                  })}
-                </Text>
-              )}
+              <Text style={{ fontSize: fs(22), fontWeight: '800', color: COLORS.gray[900] }}>
+                {t('profile_loyalty_points', {
+                  points: new Intl.NumberFormat('vi-VN').format(
+                    loyalty?.points_balance ?? (displayUser as any)?.loyalty_points ?? 0,
+                  ),
+                })}
+              </Text>
               <Text style={{ fontSize: 12.5, color: COLORS.gray[600] }}>
-                Đổi điểm giảm tối đa {loyalty?.redemption_cap_percent ?? 20}% giá trị đơn · Xem lịch
-                sử & quyền lợi →
+                {`Đổi điểm giảm tối đa ${loyalty?.redemption_cap_percent ?? 20}% giá trị đơn · Xem lịch sử & quyền lợi →`}
               </Text>
             </Card>
           </TouchableOpacity>

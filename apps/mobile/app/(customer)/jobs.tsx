@@ -7,7 +7,7 @@ import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import 'dayjs/locale/vi';
 import { useAuthStore } from '@/stores/auth.store';
-import { useMyJobs } from '@/hooks/use-api';
+import { useMyJobs, useMyProfile } from '@/hooks/use-api';
 import { useTranslation } from '@/hooks/use-i18n';
 import { Card, JobStatusBadge, EmptyState, COLORS, Badge } from '@/components/ui';
 
@@ -29,16 +29,19 @@ export default function CustomerJobsScreen() {
   const [activeTab, setActiveTab] = useState(0);
   const user = useAuthStore(s => s.user);
   const isAuthLoading = useAuthStore(s => s.isLoading);
+  const { data: profile } = useMyProfile();
+  const effectiveRole = profile?.active_role ?? user?.active_role;
+
   const { data: jobs, isLoading, isRefetching, refetch } = useMyJobs(TABS[activeTab].key);
   const insets = useSafeAreaInsets();
 
   useEffect(() => {
-    if (!isAuthLoading && user?.active_role === 'helper') {
+    if (!isAuthLoading && effectiveRole === 'helper') {
       router.replace('/(helper)/jobs');
     }
-  }, [isAuthLoading, user?.active_role, router]);
+  }, [isAuthLoading, effectiveRole, router]);
 
-  if (isAuthLoading || user?.active_role === 'helper') {
+  if (isAuthLoading || effectiveRole === 'helper') {
     return (
       <View style={{ flex: 1, backgroundColor: '#F8F9FA' }}>
         {/* Header skeleton */}
