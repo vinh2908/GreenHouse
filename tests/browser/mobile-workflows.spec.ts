@@ -57,27 +57,47 @@ test('customer: booking validates address, preserves input on server error, and 
   page,
 }) => {
   const headers = await login(page);
-  await page.route('https://photon.komoot.io/**', r =>
-    r.fulfill({
-      contentType: 'application/json',
-      body: JSON.stringify({
-        features: [
-          {
-            geometry: { coordinates: [106.701, 10.731] },
-            properties: {
-              osm_id: 1,
-              name: 'QA Place',
-              street: 'QA Street',
-              housenumber: '123',
-              district: 'Quan 7',
-              city: 'TP HCM',
-              country: 'Vietnam',
+  await page.route('https://rsapi.goong.io/**', r => {
+    const url = r.request().url();
+    if (url.includes('/Place/AutoComplete')) {
+      return r.fulfill({
+        contentType: 'application/json',
+        body: JSON.stringify({
+          status: 'OK',
+          predictions: [
+            {
+              description: '123 QA Street, Quan 7, TP HCM',
+              place_id: 'qa_place_123',
+              structured_formatting: {
+                main_text: '123 QA Street',
+                secondary_text: 'Quan 7, TP HCM',
+              },
             },
+          ],
+        }),
+      });
+    }
+    if (url.includes('/Place/Detail')) {
+      return r.fulfill({
+        contentType: 'application/json',
+        body: JSON.stringify({
+          status: 'OK',
+          result: {
+            name: '123 QA Street',
+            formatted_address: '123 QA Street, Quan 7, TP HCM',
+            geometry: { location: { lat: 10.731, lng: 106.701 } },
+            address_components: [
+              { long_name: '123', short_name: '123', types: ['street_number'] },
+              { long_name: 'QA Street', short_name: 'QA Street', types: ['route'] },
+              { long_name: 'Quan 7', short_name: 'Quan 7', types: ['administrative_area_level_2'] },
+              { long_name: 'TP HCM', short_name: 'TP HCM', types: ['administrative_area_level_1'] },
+            ],
           },
-        ],
-      }),
-    }),
-  );
+        }),
+      });
+    }
+    return r.continue();
+  });
   await page.goto(`${site}/booking`);
   await page.getByText('Giúp việc theo giờ', { exact: true }).click();
   await page.getByRole('button', { name: 'Tiếp theo', exact: true }).click();

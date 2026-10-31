@@ -614,7 +614,7 @@ export default function BookingScreen() {
     }
   };
 
-  // ── OpenStreetMap GPS & Search Handlers ────────────────────────────────────
+  // ── Goong Maps GPS & Search Handlers ────────────────────────────────────
   const handleGetLiveLocation = async () => {
     setIsLocating(true);
     let timer: any;
@@ -735,7 +735,7 @@ export default function BookingScreen() {
       }
     }
 
-    // 2. Dự phòng phân tách token từ phải sang trái khi Nominatim/Photon không có tiền tố hành chính (vd Đà Nẵng)
+    // 2. Dự phòng phân tách token từ phải sang trái khi địa chỉ không có tiền tố hành chính (vd Đà Nẵng)
     // Ví dụ: "254, Nguyễn Văn Linh, Phường Thạc Gián, Thanh Khê, Đà Nẵng, 550000, Việt Nam"
     if (place.display_name) {
       const tokens = place.display_name
@@ -1549,7 +1549,7 @@ export default function BookingScreen() {
                 Địa chỉ làm việc
               </Text>
 
-              {/* Nút GPS OpenStreetMap */}
+              {/* Nút GPS Goong Maps */}
               <TouchableOpacity
                 activeOpacity={0.8}
                 disabled={isLocating}
@@ -1573,11 +1573,11 @@ export default function BookingScreen() {
                 <Text style={{ color: COLORS.primary, fontWeight: '800', fontSize: 14 }}>
                   {isLocating
                     ? 'Đang định vị vị trí...'
-                    : 'Lấy vị trí GPS hiện tại (OpenStreetMap)'}
+                    : 'Lấy vị trí GPS hiện tại (Goong Maps)'}
                 </Text>
               </TouchableOpacity>
 
-              {/* Ô Tìm kiếm địa điểm OpenStreetMap */}
+              {/* Ô Tìm kiếm địa điểm Goong Maps */}
               <View style={{ gap: 6, position: 'relative', zIndex: 10 }}>
                 <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.gray[700] }}>
                   Tìm kiếm địa điểm trên bản đồ

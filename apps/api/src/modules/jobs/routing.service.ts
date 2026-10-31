@@ -20,7 +20,7 @@ export class RoutingService {
     if (cached && cached.expires > Date.now()) return cached.result;
 
     try {
-      const result = await this.fetchOSRM(fromLat, fromLng, toLat, toLng);
+      const result = await this.fetchGoongDirections(fromLat, fromLng, toLat, toLng);
       this.cache.set(cacheKey, { result, expires: Date.now() + 10 * 60 * 1000 });
       if (this.cache.size > 500) this.evictOldest();
       return result;
@@ -43,34 +43,39 @@ export class RoutingService {
     return results;
   }
 
-  private async fetchOSRM(
+  private async fetchGoongDirections(
     fromLat: number,
     fromLng: number,
     toLat: number,
     toLng: number,
   ): Promise<RouteResult> {
-    const url = `https://router.project-osrm.org/route/v1/driving/${fromLng},${fromLat};${toLng},${toLat}?overview=false`;
+    const apiKey = process.env.GOONG_API_KEY || process.env.EXPO_PUBLIC_GOONG_API_KEY;
+    if (!apiKey) throw new Error('Missing Goong API key');
+
+    const url = `https://rsapi.goong.io/Direction?origin=${fromLat},${fromLng}&destination=${toLat},${toLng}&vehicle=bike&api_key=${apiKey}`;
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 5000);
+    const timeout = setTimeout(() => controller.abort(), 6000);
 
     try {
       const res = await fetch(url, {
-        headers: { 'User-Agent': 'GreenHouse-App/1.0' },
         signal: controller.signal,
       });
       clearTimeout(timeout);
 
-      if (!res.ok) throw new Error(`OSRM ${res.status}`);
+      if (!res.ok) throw new Error(`Goong Direction HTTP ${res.status}`);
       const data = await res.json();
 
-      if (data.code !== 'Ok' || !data.routes?.length) {
-        throw new Error('No route found');
+      if (!data.routes?.length) {
+        throw new Error('No route found from Goong');
       }
 
-      const route = data.routes[0];
+      const leg = data.routes[0].legs?.[0];
+      const distMeters = leg?.distance?.value ?? 0;
+      const durSeconds = leg?.duration?.value ?? 0;
+
       return {
-        distance_km: Math.round((route.distance / 1000) * 10) / 10,
-        estimated_minutes: Math.round(route.duration / 60),
+        distance_km: Math.round((distMeters / 1000) * 10) / 10,
+        estimated_minutes: Math.max(1, Math.round(durSeconds / 60)),
       };
     } finally {
       clearTimeout(timeout);
