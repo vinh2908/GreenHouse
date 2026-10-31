@@ -403,30 +403,21 @@ export default function HelperPublicProfileScreen() {
           </View>
 
           {reviewsList.length === 0 ? (
-            <View style={{ gap: 12 }}>
-              <View
-                style={{ backgroundColor: COLORS.gray[50], padding: 12, borderRadius: 12, gap: 6 }}
-              >
-                <View
-                  style={{
-                    flexDirection: 'row',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                  }}
-                >
-                  <Text style={{ fontWeight: '800', fontSize: 14, color: COLORS.gray[900] }}>
-                    Chị Mai (Quận 1)
-                  </Text>
-                  <StarRating rating={5} size={12} />
-                </View>
-                <Text style={{ fontSize: 13, color: COLORS.gray[700], lineHeight: 18 }}>
-                  "Làm việc rất chuyên nghiệp, đến đúng giờ hẹn. Dụng cụ mang theo rất đầy đủ và dọn
-                  dẹp sạch sẽ sau khi hoàn tất."
-                </Text>
-                <Text style={{ fontSize: 11, color: COLORS.gray[400], marginTop: 2 }}>
-                  Đánh giá tiêu biểu • Dịch vụ gia đình
-                </Text>
-              </View>
+            <View
+              style={{
+                backgroundColor: COLORS.gray[50],
+                padding: 20,
+                borderRadius: 14,
+                alignItems: 'center',
+                gap: 8,
+              }}
+            >
+              <Text style={{ fontSize: 14, fontWeight: '700', color: COLORS.gray[700] }}>
+                Chưa có đánh giá nào từ khách hàng
+              </Text>
+              <Text style={{ fontSize: 12, color: COLORS.gray[500], textAlign: 'center', lineHeight: 18 }}>
+                Các đánh giá và nhận xét sau khi bạn hoàn thành các đơn hàng sẽ được hiển thị đầy đủ tại đây.
+              </Text>
             </View>
           ) : (
             reviewsList.map((r: any) => (

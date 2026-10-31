@@ -45,6 +45,7 @@ export function LiveTrackingMap({
   const ready = useRef(false);
   const [loadError, setLoadError] = useState(false);
   const [retry, setRetry] = useState(0);
+  const [gpsError, setGpsError] = useState<{ error: boolean; reason: string } | null>(null);
   const [deviceLocation, setDeviceLocation] = useState<{
     latitude: number;
     longitude: number;
@@ -66,6 +67,7 @@ export function LiveTrackingMap({
             (pos: any) => {
               if (disposed) return;
               if (validCoordinate(pos?.coords?.latitude, pos?.coords?.longitude)) {
+                setGpsError(null);
                 setDeviceLocation({
                   latitude: pos.coords.latitude,
                   longitude: pos.coords.longitude,
@@ -73,7 +75,16 @@ export function LiveTrackingMap({
                 });
               }
             },
-            () => {},
+            (err: any) => {
+              if (disposed) return;
+              const reason =
+                err?.code === 1
+                  ? 'Quyền vị trí bị từ chối'
+                  : err?.code === 3
+                    ? 'Hết thời gian chờ GPS'
+                    : 'Lỗi GPS thiết bị';
+              setGpsError({ error: true, reason });
+            },
             { enableHighAccuracy: true, timeout: 10000, maximumAge: 5000 },
           );
           removeSub = () => nav.clearWatch(watchId);
@@ -182,6 +193,8 @@ export function LiveTrackingMap({
       : null,
     helper: helperPos,
     tracking: status === 'helper_on_the_way',
+    gpsError: !!gpsError?.error,
+    gpsErrorReason: gpsError?.reason || '',
     goongApiKey: process.env.EXPO_PUBLIC_GOONG_API_KEY || '',
   };
   const latest = useRef(state);
@@ -203,6 +216,10 @@ export function LiveTrackingMap({
         ready.current = true;
         setLoadError(false);
         send();
+      }
+      if (data.type === 'retry_gps') {
+        setGpsError(null);
+        setRetry(r => r + 1);
       }
       if (data.type === 'metrics') callback.current?.(data.value);
     },

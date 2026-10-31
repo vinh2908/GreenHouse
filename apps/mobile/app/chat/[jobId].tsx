@@ -162,8 +162,21 @@ function ChatImageBubble({ uri, onPress }: { uri: string; onPress: () => void })
             }}
             numberOfLines={2}
           >
-            Liên kết ảnh không tồn tại hoặc đã hết hạn
+            Tệp tin không tồn tại hoặc đã bị xóa khỏi máy chủ
           </Text>
+          <TouchableOpacity
+            activeOpacity={0.7}
+            onPress={() => setStatus('loading')}
+            style={{
+              marginTop: 4,
+              backgroundColor: '#DC2626',
+              paddingHorizontal: 10,
+              paddingVertical: 4,
+              borderRadius: 6,
+            }}
+          >
+            <Text style={{ fontSize: 10, color: '#fff', fontWeight: '700' }}>Thử lại</Text>
+          </TouchableOpacity>
         </View>
       )}
     </TouchableOpacity>

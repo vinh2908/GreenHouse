@@ -93,6 +93,18 @@ const mapHtml = (center: PickerCoords, zoom: number, hasPin: boolean, interactiv
             attributionControl: false
           });
 
+          map.on('styleimagemissing', function (e) {
+            const id = e.id;
+            if (!map.hasImage(id)) {
+              const canvas = document.createElement('canvas');
+              canvas.width = 16;
+              canvas.height = 16;
+              const ctx = canvas.getContext('2d');
+              ctx.clearRect(0, 0, 16, 16);
+              map.addImage(id, ctx.getImageData(0, 0, 16, 16));
+            }
+          });
+
           if (interactive) {
             map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'bottom-right');
           }
