@@ -33,18 +33,15 @@ import { useState, useEffect, useRef } from 'react';
 export default function HelperProfileScreen() {
   const router = useRouter();
   const storedUser = useAuthStore(s => s.user);
-  const isSwitchingRef = useRef(false);
+  const isAuthLoading = useAuthStore(s => s.isLoading);
+  const isSwitchingRole = useAuthStore(s => s.isSwitchingRole);
 
-  // [N4 Fix]: Chuyển hướng an toàn trong useEffect nếu đang ở vai trò khách, tránh chớp trắng/vòng lặp redirect
+  // Chuyển hướng an toàn nếu đang ở vai trò khách và không trong quá trình chuyển vai trò
   useEffect(() => {
-    if (storedUser?.active_role === 'customer' && !isSwitchingRef.current) {
-      if (Platform.OS === 'web') {
-        router.replace('/(customer)/home');
-      } else {
-        router.replace('/(customer)/profile');
-      }
+    if (!isAuthLoading && !isSwitchingRole && storedUser?.active_role === 'customer') {
+      router.replace('/(customer)/home');
     }
-  }, [storedUser?.active_role]);
+  }, [isAuthLoading, isSwitchingRole, storedUser?.active_role]);
 
   const { t, fs } = useTranslation();
   const queryClient = useQueryClient();
@@ -65,15 +62,26 @@ export default function HelperProfileScreen() {
   const isOnline = profile?.status === 'online' || isWorking;
 
   const handleSwitchToCustomer = async () => {
-    if (isSwitchingRef.current) return;
-    isSwitchingRef.current = true;
+    if (useAuthStore.getState().isSwitchingRole) return;
+    useAuthStore.getState().setSwitchingRole(true);
+
+    // 1. Cập nhật ngay auth store và local storage
+    useAuthStore.getState().switchRole('customer');
+
+    // 2. Cập nhật lạc quan cache ['profile', 'me'] để tránh trả về active_role thợ cũ
+    queryClient.setQueryData(['profile', 'me'], (old: any) =>
+      old ? { ...old, active_role: 'customer' } : old,
+    );
+
+    // 3. Chuyển hướng dứt khoát sang trang chủ khách
+    router.replace('/(customer)/home');
+
+    // 4. Đồng bộ lên backend API
     try {
       await switchRole.mutateAsync('customer');
     } catch {
-      /* fallback */
+      /* fallback sang auth store */
     }
-    useAuthStore.getState().switchRole('customer');
-    router.replace('/(customer)/home');
   };
 
   const handleLogout = () => {
