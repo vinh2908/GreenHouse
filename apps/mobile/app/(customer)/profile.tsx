@@ -1,5 +1,12 @@
 import { useRef, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Platform, ActivityIndicator } from 'react-native';
+import {
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  Platform,
+  ActivityIndicator,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
@@ -61,7 +68,11 @@ export default function CustomerProfileScreen() {
   const isSwitchingRef = useRef(false);
 
   const { data: profile, isLoading: isProfileLoading, refetch: refetchProfile } = useMyProfile();
-  const { data: loyalty, isLoading: isLoyaltyLoading, refetch: refetchLoyalty } = useLoyaltyAccount();
+  const {
+    data: loyalty,
+    isLoading: isLoyaltyLoading,
+    refetch: refetchLoyalty,
+  } = useLoyaltyAccount();
   const switchRole = useSwitchRole();
 
   const displayUser = profile ?? user;
