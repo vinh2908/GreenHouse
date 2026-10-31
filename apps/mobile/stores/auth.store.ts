@@ -8,10 +8,12 @@ interface AuthState {
   refreshToken: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  isSwitchingRole: boolean;
 
   setAuth: (user: any, accessToken: string, refreshToken: string) => Promise<void>;
   setUser: (user: any) => void;
   switchRole: (role: any) => void;
+  setSwitchingRole: (val: boolean) => void;
   logout: () => Promise<void>;
   loadStoredAuth: () => Promise<void>;
 }
@@ -52,12 +54,25 @@ const getInitialSyncAuth = () => {
 };
 const initAuth = getInitialSyncAuth();
 
+let switchingRoleTimer: any = null;
+
 export const useAuthStore = create<AuthState>((set, get) => ({
   user: initAuth.user,
   accessToken: initAuth.accessToken,
   refreshToken: initAuth.refreshToken,
   isAuthenticated: initAuth.isAuthenticated,
   isLoading: initAuth.isLoading,
+  isSwitchingRole: false,
+
+  setSwitchingRole: (val: boolean) => {
+    if (switchingRoleTimer) clearTimeout(switchingRoleTimer);
+    set({ isSwitchingRole: val });
+    if (val) {
+      switchingRoleTimer = setTimeout(() => {
+        set({ isSwitchingRole: false });
+      }, 2500);
+    }
+  },
 
   setAuth: async (user, accessToken, refreshToken) => {
     await SecureStore.setItemAsync(TOKEN_KEY, accessToken);
@@ -82,19 +97,35 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   switchRole: role => {
+    if (switchingRoleTimer) clearTimeout(switchingRoleTimer);
     const user = get().user;
+    const g = typeof globalThis !== 'undefined' ? (globalThis as any) : null;
+    if (g?.localStorage) {
+      try {
+        g.localStorage.setItem(ROLE_KEY, role);
+      } catch {}
+    }
     if (user) {
       const updatedRoles = Array.isArray(user.roles) ? [...user.roles] : [];
       if (!updatedRoles.includes(role)) {
         updatedRoles.push(role);
       }
       const updatedUser = { ...user, roles: updatedRoles, active_role: role };
+      if (g?.localStorage) {
+        try {
+          g.localStorage.setItem(USER_KEY, JSON.stringify(updatedUser));
+        } catch {}
+      }
       SecureStore.setItemAsync(USER_KEY, JSON.stringify(updatedUser)).catch(() => {});
       SecureStore.setItemAsync(ROLE_KEY, role).catch(() => {});
-      set({ user: updatedUser });
+      set({ user: updatedUser, isSwitchingRole: true });
     } else {
       SecureStore.setItemAsync(ROLE_KEY, role).catch(() => {});
+      set({ isSwitchingRole: true });
     }
+    switchingRoleTimer = setTimeout(() => {
+      set({ isSwitchingRole: false });
+    }, 2500);
   },
 
   logout: async () => {

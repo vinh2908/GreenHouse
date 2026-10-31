@@ -80,12 +80,42 @@ export default function SplashScreen() {
       ]),
     ).start();
 
-    // 3. Tự động chuyển trang sau khi hết thời gian splash (1.8s)
+    // 3. Tự động chuyển trang sau khi hết thời gian splash (1.8s) và auth đã hydrate xong
     const navigateNext = () => {
       if (hasNavigated.current) return;
-      hasNavigated.current = true;
 
       const state = useAuthStore.getState();
+      if (state.isLoading) {
+        // Đợi auth hydrate xong từ SecureStore nếu đang chạy dở
+        const unsub = useAuthStore.subscribe(curr => {
+          if (!curr.isLoading && !hasNavigated.current) {
+            hasNavigated.current = true;
+            unsub();
+            if (curr.isAuthenticated && curr.user?.active_role === 'helper') {
+              router.replace('/(helper)/dashboard');
+            } else {
+              router.replace('/(customer)/home');
+            }
+          }
+        });
+        setTimeout(() => {
+          if (!hasNavigated.current) {
+            hasNavigated.current = true;
+            try {
+              unsub();
+            } catch {}
+            const latest = useAuthStore.getState();
+            if (latest.isAuthenticated && latest.user?.active_role === 'helper') {
+              router.replace('/(helper)/dashboard');
+            } else {
+              router.replace('/(customer)/home');
+            }
+          }
+        }, 1200);
+        return;
+      }
+
+      hasNavigated.current = true;
       if (state.isAuthenticated && state.user?.active_role === 'helper') {
         router.replace('/(helper)/dashboard');
       } else {
