@@ -9,7 +9,7 @@ import {
   Platform,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import {
   ArrowLeft,
   CreditCard,
@@ -59,8 +59,12 @@ const CUSTOMER_PAYMENT_OPTIONS = [
 
 export default function BankAccountScreen() {
   const router = useRouter();
+  const { role } = useLocalSearchParams<{ role?: string }>();
   const { user } = useAuthStore();
-  const isHelper = user?.active_role === 'helper';
+  const isHelper =
+    role === 'helper' ||
+    user?.active_role === 'helper' ||
+    (Array.isArray(user?.roles) && (user.roles as any[]).includes('helper') && role !== 'customer');
 
   const { data: profile, isLoading, refetch } = useHelperProfile();
   const { data: txData, isLoading: txLoading } = useTransactions(1);

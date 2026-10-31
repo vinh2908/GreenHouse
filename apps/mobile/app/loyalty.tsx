@@ -91,8 +91,7 @@ export default function LoyaltyScreen() {
             <Text style={{ fontSize: 16, color: COLORS.gray[500] }}>điểm</Text>
           </Text>
           <Text style={{ fontSize: 13, color: COLORS.gray[600] }}>
-            Tổng điểm đã tích lũy: {fmt(account?.lifetime_points ?? 0)} điểm · 1 điểm ={' '}
-            {fmt(account?.point_value_vnd ?? 1000)}₫ khi đổi
+            {`Tổng điểm đã tích lũy: ${fmt(account?.lifetime_points ?? 0)} điểm · 1 điểm = ${fmt(account?.point_value_vnd ?? 1000)}₫ khi đổi`}
           </Text>
 
           {account?.next_tier_at ? (
@@ -110,8 +109,7 @@ export default function LoyaltyScreen() {
                 />
               </View>
               <Text style={{ fontSize: 12, color: COLORS.gray[600] }}>
-                Còn {fmt(account.points_to_next_tier)} điểm nữa để lên hạng tiếp theo (
-                {fmt(account.next_tier_at)} điểm)
+                {`Còn ${fmt(account.points_to_next_tier)} điểm nữa để lên hạng tiếp theo (${fmt(account.next_tier_at)} điểm)`}
               </Text>
             </View>
           ) : (
@@ -127,15 +125,10 @@ export default function LoyaltyScreen() {
             Quyền lợi theo hạng
           </Text>
           <Text style={{ fontSize: 13, color: COLORS.gray[600], lineHeight: 20 }}>
-            • Tích điểm: 1 điểm / {fmt(account?.earn_vnd_per_point ?? 10000)}₫ đã thanh toán{'\n'}•
-            Hạng Thường (dưới 500 điểm): đổi tối đa 20% giá trị đơn{'\n'}• Hạng Bạc (500–1.999
-            điểm): đổi tối đa 30% giá trị đơn{'\n'}• Hạng Vàng (từ 2.000 điểm): đổi tối đa 50% giá
-            trị đơn{'\n'}• Đổi tối thiểu {fmt(account?.min_redeem_points ?? 100)} điểm/lần, áp dụng
-            trong chi tiết đơn khi đã có giá chốt.
+            {`• Tích điểm: 1 điểm / ${fmt(account?.earn_vnd_per_point ?? 10000)}₫ đã thanh toán\n• Hạng Thường (dưới 500 điểm): đổi tối đa 20% giá trị đơn\n• Hạng Bạc (500–1.999 điểm): đổi tối đa 30% giá trị đơn\n• Hạng Vàng (từ 2.000 điểm): đổi tối đa 50% giá trị đơn\n• Đổi tối thiểu ${fmt(account?.min_redeem_points ?? 100)} điểm/lần, áp dụng trong chi tiết đơn khi đã có giá chốt.`}
           </Text>
           <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.gray[800] }}>
-            Hạng hiện tại của bạn được đổi tối đa {account?.redemption_cap_percent ?? 20}% giá trị
-            đơn.
+            {`Hạng hiện tại của bạn được đổi tối đa ${account?.redemption_cap_percent ?? 20}% giá trị đơn.`}
           </Text>
         </Card>
 

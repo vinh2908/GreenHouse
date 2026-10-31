@@ -12,6 +12,7 @@ import {
   Animated,
   StyleSheet,
   useWindowDimensions,
+  ActivityIndicator,
 } from 'react-native';
 import { ScalePressable } from '@/components/common/scale-pressable';
 import {
@@ -31,6 +32,7 @@ import Toast from 'react-native-toast-message';
 import {
   Bell,
   MapPin,
+  Navigation,
   Search,
   ChevronRight,
   ChevronLeft,
@@ -223,6 +225,36 @@ export default function CustomerHomeScreen() {
   const [currentCoords, setCurrentCoords] = useState<PickerCoords | null>(null);
   const [locationPickerOpen, setLocationPickerOpen] = useState(false);
   const [selectedHelperId, setSelectedHelperId] = useState<string>('');
+  const [isLocatingLive, setIsLocatingLive] = useState(false);
+
+  // Yêu cầu lấy vị trí GPS thật
+  const handleRequestLiveLocation = async () => {
+    setIsLocatingLive(true);
+    try {
+      const details = await locationService.getCurrentLocationDetails();
+      if (details && details.coordinates && details.coordinates.length >= 2) {
+        const coords = {
+          latitude: details.coordinates[1],
+          longitude: details.coordinates[0],
+        };
+        const label = inferLocationLabel(details);
+        setCurrentCoords(coords);
+        setCurrentLocationName(label);
+        AsyncStorage.setItem(
+          '@homemate_customer_pinned_location',
+          JSON.stringify({ coords, locationName: label }),
+        ).catch(() => {});
+      } else {
+        setCurrentCoords(null);
+        setCurrentLocationName('Chưa xác định vị trí');
+      }
+    } catch {
+      setCurrentCoords(null);
+      setCurrentLocationName('Chưa xác định vị trí');
+    } finally {
+      setIsLocatingLive(false);
+    }
+  };
 
   // API Thợ gần & Vouchers thật
   const { data: nearbyRaw } = useNearbyHelpers(currentCoords);
@@ -312,9 +344,9 @@ export default function CustomerHomeScreen() {
     );
   }, [currentLocationName, currentCoords]);
 
-  // Danh sách thợ gần thật từ API
+  // Danh sách thợ gần thật từ API (chỉ tải khi đã có vị trí thật của người dùng)
   const nearbyHelpers: NearbyHelperItem[] = useMemo(() => {
-    if (!nearbyRaw || !Array.isArray(nearbyRaw) || nearbyRaw.length === 0) return [];
+    if (!currentCoords || !nearbyRaw || !Array.isArray(nearbyRaw) || nearbyRaw.length === 0) return [];
     return nearbyRaw
       .filter((h: any) => h.location?.coordinates && h.location.coordinates.length >= 2)
       .map((h: any, idx: number) => {
@@ -407,19 +439,17 @@ export default function CustomerHomeScreen() {
     return items;
   }, [calendarMonth, quickDate]);
 
-  // Tọa độ gốc cho mini-map
+  // Tọa độ gốc cho mini-map: chỉ trả về khi có vị trí thật, không mặc định Sài Gòn hay Đà Nẵng
   const mapCenter = useMemo(() => {
     if (currentCoords && currentCoords.latitude && currentCoords.longitude) {
       return { latitude: currentCoords.latitude, longitude: currentCoords.longitude };
     }
-    if (isDaNang) {
-      return { latitude: 16.0544, longitude: 108.2022 }; // Đà Nẵng
-    }
-    return { latitude: 10.7769, longitude: 106.7009 }; // Quận 1, TP.HCM
-  }, [currentCoords, isDaNang]);
+    return null;
+  }, [currentCoords]);
 
-  // Sinh HTML Leaflet bản đồ mini với ghim hiển thị TÊN THỢ + hiệu ứng pulse trực tiếp
+  // Sinh HTML Goong bản đồ mini với ghim hiển thị TÊN THỢ + hiệu ứng pulse trực tiếp
   const leafletMiniMapHtml = useMemo(() => {
+    if (!mapCenter) return '';
     const pinsJson = JSON.stringify(
       nearbyHelpers.map(h => ({
         id: h.id,
@@ -1161,26 +1191,115 @@ export default function CustomerHomeScreen() {
               height: 190,
               borderRadius: 18,
               overflow: 'hidden',
-              backgroundColor: '#E2E8F0',
+              backgroundColor: '#F8FAFC',
               borderWidth: 1,
               borderColor: '#CBD5E1',
               position: 'relative',
             }}
           >
-            {Platform.OS === 'web' ? (
-              <iframe
-                srcDoc={leafletMiniMapHtml}
-                style={{ width: '100%', height: '100%', border: 'none' }}
-                title="Goong Mini Map"
-                sandbox="allow-scripts allow-same-origin"
-              />
+            {currentCoords && mapCenter ? (
+              Platform.OS === 'web' ? (
+                <iframe
+                  srcDoc={leafletMiniMapHtml}
+                  style={{ width: '100%', height: '100%', border: 'none' }}
+                  title="Goong Mini Map"
+                  sandbox="allow-scripts allow-same-origin"
+                />
+              ) : (
+                <WebView
+                  originWhitelist={['*']}
+                  source={{ html: leafletMiniMapHtml }}
+                  scrollEnabled={false}
+                  style={{ flex: 1, backgroundColor: '#f8fafc' }}
+                />
+              )
             ) : (
-              <WebView
-                originWhitelist={['*']}
-                source={{ html: leafletMiniMapHtml }}
-                scrollEnabled={false}
-                style={{ flex: 1, backgroundColor: '#f8fafc' }}
-              />
+              <View
+                style={{
+                  flex: 1,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  paddingHorizontal: 20,
+                  backgroundColor: '#F8FAFC',
+                  gap: 8,
+                }}
+              >
+                <View
+                  style={{
+                    width: 44,
+                    height: 44,
+                    borderRadius: 22,
+                    backgroundColor: '#FEF3C7',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <MapPin size={22} color="#D97706" />
+                </View>
+                <Text
+                  style={{
+                    fontSize: 14,
+                    fontWeight: '800',
+                    color: COLORS.gray[800],
+                    textAlign: 'center',
+                  }}
+                >
+                  Chưa xác định vị trí của bạn
+                </Text>
+                <Text
+                  style={{
+                    fontSize: 12,
+                    color: COLORS.gray[500],
+                    textAlign: 'center',
+                    lineHeight: 16,
+                  }}
+                >
+                  Bật định vị GPS hoặc chọn khu vực để tìm thợ lành nghề gần bạn nhất.
+                </Text>
+                <View style={{ flexDirection: 'row', gap: 10, marginTop: 4 }}>
+                  <TouchableOpacity
+                    onPress={handleRequestLiveLocation}
+                    disabled={isLocatingLive}
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: 6,
+                      backgroundColor: COLORS.primary,
+                      paddingVertical: 7,
+                      paddingHorizontal: 14,
+                      borderRadius: 10,
+                    }}
+                  >
+                    {isLocatingLive ? (
+                      <ActivityIndicator size="small" color="#fff" />
+                    ) : (
+                      <Navigation size={14} color="#fff" />
+                    )}
+                    <Text style={{ color: '#fff', fontWeight: '700', fontSize: 12 }}>
+                      {isLocatingLive ? 'Đang lấy vị trí...' : 'Bấm lấy vị trí'}
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => setLocationPickerOpen(true)}
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: 6,
+                      backgroundColor: '#fff',
+                      borderWidth: 1,
+                      borderColor: COLORS.gray[300],
+                      paddingVertical: 7,
+                      paddingHorizontal: 14,
+                      borderRadius: 10,
+                    }}
+                  >
+                    <MapPin size={14} color={COLORS.gray[700]} />
+                    <Text style={{ color: COLORS.gray[800], fontWeight: '700', fontSize: 12 }}>
+                      Chọn thủ công
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
             )}
           </View>
 
@@ -1220,7 +1339,9 @@ export default function CustomerHomeScreen() {
                   textAlign: 'center',
                 }}
               >
-                Hiện chưa có thợ online gần bạn
+                {!currentCoords
+                  ? 'Chưa có vị trí để tìm thợ lân cận'
+                  : 'Hiện chưa có thợ online gần bạn'}
               </Text>
               <Text
                 style={{
@@ -1230,7 +1351,9 @@ export default function CustomerHomeScreen() {
                   textAlign: 'center',
                 }}
               >
-                Bạn vẫn có thể đăng việc hoặc đặt lịch hẹn, thợ trong khu vực sẽ nhận việc sớm nhất.
+                {!currentCoords
+                  ? 'Vui lòng bấm lấy vị trí GPS hoặc chọn khu vực để kết nối thợ xung quanh.'
+                  : 'Bạn vẫn có thể đăng việc hoặc đặt lịch hẹn, thợ trong khu vực sẽ nhận việc sớm nhất.'}
               </Text>
             </View>
           ) : (

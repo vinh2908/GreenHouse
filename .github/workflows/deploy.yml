@@ -72,6 +72,8 @@ jobs:
           npx expo export -p web
         env:
           EXPO_PUBLIC_API_URL: https://greenhouse-api-chb9.onrender.com/api/v1
+          EXPO_PUBLIC_GOONG_API_KEY: ${{ secrets.EXPO_PUBLIC_GOONG_API_KEY }}
+          EXPO_PUBLIC_GOONG_MAP_KEY: ${{ secrets.EXPO_PUBLIC_GOONG_MAP_KEY }}
 
       - name: Deploy Customer Web to Vercel
         env:

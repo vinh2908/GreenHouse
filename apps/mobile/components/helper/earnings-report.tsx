@@ -40,16 +40,16 @@ function ChangeChip({ percent }: { percent: number | null }) {
  * Biểu đồ cột vẽ bằng View thuần (không thêm thư viện chart).
  */
 export function EarningsReport() {
-  const { data: report, isLoading } = useEarningsReport();
+  const { data: report, isLoading, isError, refetch } = useEarningsReport();
   const setGoal = useSetIncomeGoal();
   const [goalText, setGoalText] = useState('');
   const [editingGoal, setEditingGoal] = useState(false);
 
   useEffect(() => {
-    if (report?.goal.monthly_goal) setGoalText(String(report.goal.monthly_goal));
-  }, [report?.goal.monthly_goal]);
+    if (report?.goal?.monthly_goal) setGoalText(String(report.goal.monthly_goal));
+  }, [report?.goal?.monthly_goal]);
 
-  if (isLoading || !report) {
+  if (isLoading) {
     return (
       <View style={{ gap: 12 }}>
         <Text style={{ fontSize: 17, fontWeight: '800', color: COLORS.gray[900] }}>
@@ -60,6 +60,37 @@ export function EarningsReport() {
           <Text style={{ fontSize: 13, color: COLORS.gray[500], fontWeight: '600' }}>
             Đang tải dữ liệu báo cáo thu nhập...
           </Text>
+        </Card>
+      </View>
+    );
+  }
+
+  if (isError || !report) {
+    return (
+      <View style={{ gap: 12 }}>
+        <Text style={{ fontSize: 17, fontWeight: '800', color: COLORS.gray[900] }}>
+          📊 Báo cáo thu nhập
+        </Text>
+        <Card style={{ padding: 24, alignItems: 'center', justifyContent: 'center', gap: 10 }}>
+          <Text style={{ fontSize: 14, color: COLORS.gray[700], fontWeight: '700' }}>
+            Chưa có dữ liệu báo cáo thu nhập
+          </Text>
+          <Text style={{ fontSize: 12, color: COLORS.gray[500], textAlign: 'center' }}>
+            Số liệu sẽ tự động tổng hợp khi bạn hoàn thành các đơn hàng đầu tiên.
+          </Text>
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={() => refetch()}
+            style={{
+              marginTop: 4,
+              backgroundColor: COLORS.primary,
+              paddingHorizontal: 16,
+              paddingVertical: 8,
+              borderRadius: 10,
+            }}
+          >
+            <Text style={{ color: '#fff', fontWeight: '700', fontSize: 13 }}>Thử lại</Text>
+          </TouchableOpacity>
         </Card>
       </View>
     );

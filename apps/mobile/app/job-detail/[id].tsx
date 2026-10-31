@@ -67,7 +67,11 @@ import {
   type VoucherPreview,
 } from '@/hooks/use-api';
 import { useJobSocketUpdates, useHelperLocation } from '@/hooks/use-socket';
-import { locationService } from '@/services/location.service';
+import {
+  locationService,
+  parseVietnameseAddress,
+  type OsmPlace,
+} from '@/services/location.service';
 import { downloadInvoicePdf } from '@/services/invoice.service';
 import { LiveTrackingMap } from '@/components/common/live-tracking-map';
 import { TeamCard } from '@/components/common/team-card';
@@ -226,6 +230,74 @@ export default function JobDetailScreen() {
   const [isLocatingEdit, setIsLocatingEdit] = useState(false);
   const [showEditMap, setShowEditMap] = useState(false);
 
+  // ── Goong Address AutoComplete States for Edit Modal ───────────────────────
+  const [editSearchResults, setEditSearchResults] = useState<OsmPlace[]>([]);
+  const [isSearchingEdit, setIsSearchingEdit] = useState(false);
+  const [hasSearchedEdit, setHasSearchedEdit] = useState(false);
+  const searchEditSeqRef = useRef(0);
+  const searchEditTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleSearchEditAddress = (text: string) => {
+    setEditFullAddress(text);
+    setEditCoords(null);
+    if (searchEditTimeoutRef.current) {
+      clearTimeout(searchEditTimeoutRef.current);
+    }
+    if (!text || text.trim().length < 2) {
+      setEditSearchResults([]);
+      setIsSearchingEdit(false);
+      setHasSearchedEdit(false);
+      return;
+    }
+    setIsSearchingEdit(true);
+    setHasSearchedEdit(false);
+    const seq = ++searchEditSeqRef.current;
+    searchEditTimeoutRef.current = setTimeout(async () => {
+      try {
+        const refCoords = editCoords
+          ? { latitude: editCoords[1], longitude: editCoords[0] }
+          : locationService.getCachedCoordinates();
+        const results = await locationService.searchPlaces(text, refCoords);
+        if (seq === searchEditSeqRef.current) {
+          setEditSearchResults(results);
+          setHasSearchedEdit(true);
+        }
+      } catch {
+        if (seq === searchEditSeqRef.current) {
+          setEditSearchResults([]);
+          setHasSearchedEdit(true);
+        }
+      } finally {
+        if (seq === searchEditSeqRef.current) {
+          setIsSearchingEdit(false);
+        }
+      }
+    }, 350);
+  };
+
+  const handleSelectEditPlace = (place: OsmPlace) => {
+    setEditSearchResults([]);
+    setHasSearchedEdit(false);
+    if (place.lat && place.lon) {
+      const lat = parseFloat(place.lat);
+      const lon = parseFloat(place.lon);
+      setEditCoords([lon, lat]);
+      locationService.setCachedCoordinates({ latitude: lat, longitude: lon });
+    }
+    const parsed = parseVietnameseAddress(place.display_name, {
+      full_address: place.display_name,
+      road: place.address?.road || place.address?.pedestrian || '',
+      city: place.address?.city || place.address?.state || place.address?.province || '',
+      district:
+        place.address?.city_district || place.address?.district || place.address?.county || '',
+      ward: place.address?.suburb || place.address?.quarter || '',
+    });
+    setEditFullAddress(parsed.road || place.display_name.split(',')[0].trim());
+    if (parsed.ward) setEditWard(parsed.ward);
+    if (parsed.district) setEditDistrict(parsed.district);
+    if (parsed.city) setEditCity(parsed.city);
+  };
+
   const insets = useSafeAreaInsets();
 
   if (jLoading) return <LoadingSpinner />;
@@ -352,6 +424,8 @@ export default function JobDetailScreen() {
     setEditCity(job.address?.city || '');
     setEditNotes(job.address?.notes || '');
     setEditCoords(job.address?.location?.coordinates || null);
+    setEditSearchResults([]);
+    setHasSearchedEdit(false);
     setShowEditModal(true);
   };
 
@@ -2308,7 +2382,11 @@ export default function JobDetailScreen() {
               Cập nhật thông tin & vị trí
             </Text>
             <TouchableOpacity
-              onPress={() => setShowEditModal(false)}
+              onPress={() => {
+                setShowEditModal(false);
+                setEditSearchResults([]);
+                setHasSearchedEdit(false);
+              }}
               hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
             >
               <X size={22} color={COLORS.gray[500]} />
@@ -2343,16 +2421,82 @@ export default function JobDetailScreen() {
               </Text>
             </TouchableOpacity>
 
-            <Input
-              label="Địa chỉ chi tiết (Số nhà & tên đường) *"
-              placeholder="VD: 128 Đường Lê Lợi"
-              value={editFullAddress}
-              onChangeText={value => {
-                setEditFullAddress(value);
-                setEditCoords(null);
-              }}
-              leftIcon={<MapPin size={16} color={COLORS.gray[400]} />}
-            />
+            <View style={{ position: 'relative', zIndex: 10 }}>
+              <Input
+                label="Địa chỉ chi tiết (Số nhà & tên đường) *"
+                placeholder="VD: 223 Nguyễn Phước Nguyên"
+                value={editFullAddress}
+                onChangeText={handleSearchEditAddress}
+                leftIcon={<MapPin size={16} color={COLORS.gray[400]} />}
+                rightIcon={
+                  isSearchingEdit ? (
+                    <ActivityIndicator size="small" color={COLORS.primary} />
+                  ) : undefined
+                }
+              />
+
+              {editSearchResults.length > 0 && (
+                <Card
+                  style={{
+                    padding: 6,
+                    gap: 0,
+                    marginTop: 4,
+                    maxHeight: 200,
+                    borderColor: COLORS.primaryLight,
+                    borderWidth: 1.5,
+                  }}
+                >
+                  <ScrollView nestedScrollEnabled style={{ maxHeight: 180 }}>
+                    {editSearchResults.map((place, idx) => (
+                      <TouchableOpacity
+                        key={place.place_id || idx}
+                        onPress={() => handleSelectEditPlace(place)}
+                        style={{
+                          padding: 10,
+                          borderBottomWidth: idx < editSearchResults.length - 1 ? 1 : 0,
+                          borderBottomColor: COLORS.gray[100],
+                          flexDirection: 'row',
+                          alignItems: 'flex-start',
+                          gap: 8,
+                        }}
+                      >
+                        <MapPin size={16} color={COLORS.primary} style={{ marginTop: 2 }} />
+                        <Text
+                          style={{
+                            fontSize: 13,
+                            color: COLORS.gray[800],
+                            flex: 1,
+                            lineHeight: 18,
+                          }}
+                        >
+                          {place.display_name}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </ScrollView>
+                </Card>
+              )}
+
+              {!isSearchingEdit &&
+                hasSearchedEdit &&
+                editSearchResults.length === 0 &&
+                editFullAddress.trim().length >= 2 && (
+                  <View
+                    style={{
+                      padding: 10,
+                      marginTop: 4,
+                      backgroundColor: COLORS.gray[50],
+                      borderRadius: 10,
+                      borderWidth: 1,
+                      borderColor: COLORS.gray[200],
+                    }}
+                  >
+                    <Text style={{ fontSize: 12, color: COLORS.gray[500] }}>
+                      Không tìm thấy địa điểm phù hợp trên bản đồ Goong. Bạn vẫn có thể nhập địa chỉ thủ công bên dưới.
+                    </Text>
+                  </View>
+                )}
+            </View>
 
             <View style={{ flexDirection: 'row', gap: 12 }}>
               <View style={{ flex: 1 }}>

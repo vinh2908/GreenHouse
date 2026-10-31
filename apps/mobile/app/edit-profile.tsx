@@ -15,7 +15,7 @@ import { LocationPicker, LocationPreview, PickerCoords } from '@/components/comm
 import type { LocationResult } from '@/services/location.service';
 import * as ImagePicker from 'expo-image-picker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import {
   ArrowLeft,
   Camera,
@@ -64,7 +64,11 @@ export default function EditProfileScreen() {
   const { data: helperProfile } = useHelperProfile();
   const updateProfileMutation = useUpdateProfile();
 
-  const isHelper = user?.active_role === 'helper';
+  const { role, tab } = useLocalSearchParams<{ role?: string; tab?: string }>();
+  const isHelper =
+    role === 'helper' ||
+    user?.active_role === 'helper' ||
+    (Array.isArray(user?.roles) && (user.roles as any[]).includes('helper') && role !== 'customer');
   const updateLocation = useUpdateHelperLocation();
   const { data: customerAddresses } = useAddresses();
   const [pickerFor, setPickerFor] = useState<'helper' | 'customer' | null>(null);
