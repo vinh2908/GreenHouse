@@ -7,7 +7,6 @@ import appConfig, { aiConfig, zaloConfig } from './config/app.config';
 import databaseConfig from './config/database.config';
 import jwtConfig from './config/jwt.config';
 import redisConfig from './config/redis.config';
-import minioConfig from './config/minio.config';
 import { HealthController } from './common/health.controller';
 import { HttpThrottlerGuard } from './common/guards/http-throttler.guard';
 
@@ -64,7 +63,7 @@ import { UploadsModule } from './modules/uploads/uploads.module';
     // Config — global
     ConfigModule.forRoot({
       isGlobal: true,
-      load: [appConfig, aiConfig, zaloConfig, databaseConfig, jwtConfig, redisConfig, minioConfig],
+      load: [appConfig, aiConfig, zaloConfig, databaseConfig, jwtConfig, redisConfig],
       envFilePath: ['.env.local', '.env'],
     }),
 
