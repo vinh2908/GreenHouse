@@ -65,10 +65,23 @@ export default function EditProfileScreen() {
   const updateProfileMutation = useUpdateProfile();
 
   const { role, tab } = useLocalSearchParams<{ role?: string; tab?: string }>();
+  const searchRole =
+    typeof globalThis !== 'undefined' && (globalThis as any).location?.search
+      ? new URLSearchParams((globalThis as any).location.search).get('role')
+      : null;
+  const localRole =
+    typeof globalThis !== 'undefined'
+      ? (globalThis as any).localStorage?.getItem('homemate_active_role')
+      : null;
   const isHelper =
     role === 'helper' ||
+    searchRole === 'helper' ||
     user?.active_role === 'helper' ||
-    (Array.isArray(user?.roles) && (user.roles as any[]).includes('helper') && role !== 'customer');
+    localRole === 'helper' ||
+    (Array.isArray(user?.roles) &&
+      (user.roles as any[]).includes('helper') &&
+      role !== 'customer' &&
+      searchRole !== 'customer');
   const updateLocation = useUpdateHelperLocation();
   const { data: customerAddresses } = useAddresses();
   const [pickerFor, setPickerFor] = useState<'helper' | 'customer' | null>(null);

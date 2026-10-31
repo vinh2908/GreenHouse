@@ -1,5 +1,5 @@
 import { useRef, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Platform } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Platform, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
@@ -60,12 +60,18 @@ export default function CustomerProfileScreen() {
   const isAuthLoading = useAuthStore(s => s.isLoading);
   const isSwitchingRef = useRef(false);
 
-  const { data: profile, isLoading: isProfileLoading } = useMyProfile();
-  const { data: loyalty, isLoading: isLoyaltyLoading } = useLoyaltyAccount();
+  const { data: profile, isLoading: isProfileLoading, refetch: refetchProfile } = useMyProfile();
+  const { data: loyalty, isLoading: isLoyaltyLoading, refetch: refetchLoyalty } = useLoyaltyAccount();
   const switchRole = useSwitchRole();
 
   const displayUser = profile ?? user;
   const effectiveRole = displayUser?.active_role ?? user?.active_role;
+
+  useEffect(() => {
+    if (useAuthStore.getState().isAuthenticated) {
+      refetchLoyalty();
+    }
+  }, [refetchLoyalty]);
 
   // Khi đang ở chế độ thợ, chuyển ngay sang màn hình tài khoản thợ
   useEffect(() => {
@@ -253,11 +259,13 @@ export default function CustomerProfileScreen() {
                 <ChevronRight size={16} color="#92400E" />
               </View>
               <Text style={{ fontSize: fs(22), fontWeight: '800', color: COLORS.gray[900] }}>
-                {t('profile_loyalty_points', {
-                  points: new Intl.NumberFormat('vi-VN').format(
-                    loyalty?.points_balance ?? (displayUser as any)?.loyalty_points ?? 0,
-                  ),
-                })}
+                {isLoyaltyLoading && !loyalty ? (
+                  <ActivityIndicator size="small" color="#D97706" />
+                ) : (
+                  t('profile_loyalty_points', {
+                    points: new Intl.NumberFormat('vi-VN').format(loyalty?.points_balance ?? 0),
+                  })
+                )}
               </Text>
               <Text style={{ fontSize: 12.5, color: COLORS.gray[600] }}>
                 {`Đổi điểm giảm tối đa ${loyalty?.redemption_cap_percent ?? 20}% giá trị đơn · Xem lịch sử & quyền lợi →`}

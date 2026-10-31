@@ -129,9 +129,7 @@ export default function HelperProfileScreen() {
         >
           <TouchableOpacity
             activeOpacity={0.85}
-            onPress={() =>
-              router.push({ pathname: '/edit-profile', params: { role: 'helper' } } as any)
-            }
+            onPress={() => router.push('/edit-profile?role=helper' as any)}
             style={{ alignItems: 'center' }}
           >
             <Avatar name={user?.full_name} uri={user?.avatar} size={80} />
@@ -330,8 +328,7 @@ export default function HelperProfileScreen() {
               {
                 icon: CreditCard,
                 label: t('profile_bank_account'),
-                onPress: () =>
-                  router.push({ pathname: '/bank-account', params: { role: 'helper' } } as any),
+                onPress: () => router.push('/bank-account?role=helper' as any),
               },
               {
                 icon: FileText,
@@ -346,11 +343,7 @@ export default function HelperProfileScreen() {
               {
                 icon: FileText,
                 label: t('profile_career'),
-                onPress: () =>
-                  router.push({
-                    pathname: '/edit-profile',
-                    params: { role: 'helper', tab: 'career' },
-                  } as any),
+                onPress: () => router.push('/edit-profile?role=helper&tab=career' as any),
               },
               {
                 icon: HelpCircle,
@@ -373,10 +366,15 @@ export default function HelperProfileScreen() {
                 onPress: () => {
                   const targetId =
                     user?._id ||
+                    user?.id ||
                     (profile?.user_id as any)?._id ||
-                    (typeof profile?.user_id === 'string' ? profile?.user_id : null);
+                    (typeof profile?.user_id === 'string' ? profile?.user_id : null) ||
+                    profile?._id;
                   if (targetId) {
-                    router.push(`/helper-profile/${targetId}` as any);
+                    router.push({
+                      pathname: '/helper-profile/[id]',
+                      params: { id: String(targetId) },
+                    });
                   } else {
                     Toast.show({
                       type: 'info',

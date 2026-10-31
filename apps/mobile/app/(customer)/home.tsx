@@ -220,8 +220,8 @@ export default function CustomerHomeScreen() {
   const scrollViewRef = useRef<ScrollView>(null);
   const { width: windowWidth } = useWindowDimensions();
 
-  // Vị trí người dùng
-  const [currentLocationName, setCurrentLocationName] = useState('Đang định vị...');
+  // Vị trí người dùng (chỉ nhận vị trí thật, không mặc định Sài Gòn/Đà Nẵng)
+  const [currentLocationName, setCurrentLocationName] = useState('Chưa xác định vị trí');
   const [currentCoords, setCurrentCoords] = useState<PickerCoords | null>(null);
   const [locationPickerOpen, setLocationPickerOpen] = useState(false);
   const [selectedHelperId, setSelectedHelperId] = useState<string>('');
@@ -242,7 +242,7 @@ export default function CustomerHomeScreen() {
         setCurrentLocationName(label);
         AsyncStorage.setItem(
           '@homemate_customer_pinned_location',
-          JSON.stringify({ coords, locationName: label }),
+          JSON.stringify({ coords, locationName: label, is_gps: true }),
         ).catch(() => {});
       } else {
         setCurrentCoords(null);
@@ -590,6 +590,18 @@ export default function CustomerHomeScreen() {
           attributionControl: false
         });
 
+        map.on('styleimagemissing', function(e) {
+          const id = e.id;
+          if (!map.hasImage(id)) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 16;
+            canvas.height = 16;
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, 16, 16);
+            map.addImage(id, ctx.getImageData(0, 0, 16, 16));
+          }
+        });
+
         ${
           currentCoords
             ? `
@@ -687,27 +699,47 @@ export default function CustomerHomeScreen() {
         if (saved) {
           try {
             const parsed = JSON.parse(saved);
-            if (parsed.locationName) setCurrentLocationName(parsed.locationName);
-            if (parsed.coords) setCurrentCoords(parsed.coords);
-            return;
+            const isOldFakeSaigon =
+              !parsed.coords ||
+              (Math.abs(parsed.coords.latitude - 10.7769) < 0.015 &&
+                Math.abs(parsed.coords.longitude - 106.7009) < 0.015) ||
+              (Math.abs(parsed.coords.latitude - 10.7725) < 0.015 &&
+                Math.abs(parsed.coords.longitude - 106.6983) < 0.015);
+
+            // Vị trí đã ghim chỉ được tính nếu là do chính khách chủ động chọn thủ công hoặc đã lấy GPS thật
+            if (!isOldFakeSaigon && parsed.coords && (parsed.is_manual_pick || parsed.is_gps)) {
+              if (parsed.locationName) setCurrentLocationName(parsed.locationName);
+              setCurrentCoords(parsed.coords);
+              return;
+            } else if (isOldFakeSaigon || !parsed.is_manual_pick) {
+              // Tọa độ mặc định cũ bị lưu sai: xóa ngay khỏi bộ nhớ lưu trữ
+              AsyncStorage.removeItem('@homemate_customer_pinned_location').catch(() => {});
+            }
           } catch {}
         }
+        // Thử lấy vị trí GPS thật từ thiết bị/trình duyệt
         locationService
           .getCurrentLocationDetails()
           .then(details => {
-            if (details) {
-              const label = inferLocationLabel(details);
-              setCurrentLocationName(label);
-              if (details.coordinates) {
-                setCurrentCoords({
-                  latitude: details.coordinates[1],
-                  longitude: details.coordinates[0],
-                });
+            if (details && details.coordinates && details.coordinates.length >= 2) {
+              const coords = {
+                latitude: details.coordinates[1],
+                longitude: details.coordinates[0],
+              };
+              const isOldFakeSaigon =
+                (Math.abs(coords.latitude - 10.7769) < 0.015 &&
+                  Math.abs(coords.longitude - 106.7009) < 0.015) ||
+                (Math.abs(coords.latitude - 10.7725) < 0.015 &&
+                  Math.abs(coords.longitude - 106.6983) < 0.015);
+              if (!isOldFakeSaigon) {
+                const label = inferLocationLabel(details);
+                setCurrentLocationName(label);
+                setCurrentCoords(coords);
+                return;
               }
-            } else {
-              setCurrentLocationName('Chưa xác định vị trí');
-              setCurrentCoords(null);
             }
+            setCurrentLocationName('Chưa xác định vị trí');
+            setCurrentCoords(null);
           })
           .catch(() => {
             setCurrentLocationName('Chưa xác định vị trí');
@@ -943,14 +975,12 @@ export default function CustomerHomeScreen() {
         onConfirm={(coords, geo) => {
           setLocationPickerOpen(false);
           setCurrentCoords(coords);
-          if (geo) {
-            const label = inferLocationLabel(geo);
-            setCurrentLocationName(label);
-            AsyncStorage.setItem(
-              '@homemate_customer_pinned_location',
-              JSON.stringify({ coords, locationName: label }),
-            ).catch(() => {});
-          }
+          const label = geo ? inferLocationLabel(geo) : 'Vị trí đã chọn';
+          setCurrentLocationName(label);
+          AsyncStorage.setItem(
+            '@homemate_customer_pinned_location',
+            JSON.stringify({ coords, locationName: label, is_manual_pick: true }),
+          ).catch(() => {});
         }}
       />
 
