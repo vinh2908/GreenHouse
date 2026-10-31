@@ -76,7 +76,7 @@ export class SubmitKycDto {
   @IsNotEmpty()
   id_card_number: string;
 
-  @ApiProperty({ description: 'URL ảnh mặt trước CCCD (sau khi upload lên MinIO)' })
+  @ApiProperty({ description: 'URL ảnh mặt trước CCCD (sau khi upload)' })
   @IsString()
   @IsNotEmpty()
   @Matches(UPLOADED_URL.pattern, { message: UPLOADED_URL.message })

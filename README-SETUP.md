@@ -101,7 +101,7 @@ GreenHouse/
 
 - **Single source of truth là `packages/`**: type, enum, hằng số, event socket đã có ở đó thì dùng lại, đừng định nghĩa lại ở từng app rồi để 2 nơi lệch nhau.
 - **API**: base URL `http://localhost:3000/api/v1` (local) — mọi request đều qua `api-client` của từng app, đừng gọi axios trực tiếp với URL ghi cứng. Auth bằng JWT (access 15 phút, refresh 7 ngày).
-- **Dữ liệu**: MongoDB (đơn, user, thợ...), Redis (cache/queue), MinIO (lưu ảnh: avatar, CMND, ảnh đơn). Ảnh không lưu trực tiếp trong Mongo.
+- **Dữ liệu**: MongoDB (đơn, user, thợ... và MongoDB GridFS để lưu trữ bền vững ảnh avatar, CCCD, ảnh đơn hàng), Redis (cache/queue). Không dùng MinIO.
 - **Bản đồ**: tìm địa chỉ/geocoding dùng Goong (dữ liệu Việt Nam, có số nhà); hiển thị bản đồ dùng Leaflet/OSM, route dùng OSRM. Nếu còn dùng dữ liệu/tile OSM thì phải giữ dòng ghi nguồn OSM (yêu cầu giấy phép) — đừng xóa nó chỉ vì "cho đẹp".
 - **Ngôn ngữ và đơn vị**: giao diện tiếng Việt, tiền VND, múi giờ `Asia/Ho_Chi_Minh`, địa chỉ Việt Nam. Code và comment có thể viết tiếng Việt kèm thuật ngữ tiếng Anh chuyên ngành.
 - **OTP thật chưa bật**: hệ thống hiện chỉ sinh và lưu OTP, chưa gửi OTP thật — đây là quyết định của owner, đừng tự bật gửi OTP thật.
@@ -179,10 +179,6 @@ Các giá trị còn lại để nguyên như trong `.env.example` (đã khớp 
 ```env
 MONGODB_URI=mongodb://admin:password@localhost:27017/homemate?authSource=admin
 REDIS_URL=redis://:password@localhost:6379
-MINIO_ENDPOINT=localhost
-MINIO_PORT=9000
-MINIO_ACCESS_KEY=minioadmin
-MINIO_SECRET_KEY=minioadmin123
 CORS_ORIGINS=http://localhost:3001,http://localhost:8081
 ```
 
@@ -207,15 +203,16 @@ EXPO_PUBLIC_GOONG_MAP_KEY=<key-goong-map-nhóm-cấp>
 ### 5.3. Các biến không bắt buộc khác
 - Stringee, Gemini, OpenAI: Nút gọi thoại và tính năng AI chỉ là phụ. Thiếu các biến này hệ thống tự ẩn nút gọi, app vẫn hoạt động bình thường. Không cần đợi xin đủ key để bắt đầu chạy.
 
-## 6. Bước 4 — Bật hạ tầng (Mongo / Redis / MinIO) bằng Docker & Seed dữ liệu ban đầu
+## 6. Bước 4 — Bật hạ tầng (MongoDB & Redis) bằng Docker & Seed dữ liệu ban đầu
 
 ### 4.1. Bật container
 ```bash
-docker compose up -d mongodb redis minio minio-init
+docker compose up -d mongodb redis
 docker compose ps
 ```
 
-**Kiểm tra:** `docker compose ps` phải thấy `homemate-mongodb`, `homemate-redis`, `homemate-minio` ở trạng thái running (hoặc healthy). Riêng `homemate-minio-init` hiện `Exited (0)` là bình thường.
+**Kiểm tra:** `docker compose ps` phải thấy `homemate-mongodb` và `homemate-redis` ở trạng thái running (hoặc healthy).
+> **Lưu ý:** Hệ thống đã chuyển hoàn toàn sang dùng MongoDB GridFS kết hợp bộ đệm ổ đĩa cho luồng upload file (không còn dùng MinIO hay minio-init, và không cần tạo bucket nữa). Toàn bộ ảnh đại diện, ảnh CCCD, ảnh đơn hàng được lưu trữ bền vững trực tiếp trong MongoDB và vẫn đọc lại được bình thường sau khi API khởi động lại.
 
 Đợi thêm khoảng 10 giây sau khi container chạy để Mongo sẵn sàng nhận kết nối.
 
