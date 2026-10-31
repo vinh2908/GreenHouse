@@ -28,9 +28,7 @@ if (!goongMapKey && fs.existsSync(envPath)) {
 }
 
 if (!goongMapKey || goongMapKey.length < 10) {
-  console.warn(
-    '[METRO BUILD CHECK] EXPO_PUBLIC_GOONG_MAP_KEY is missing in apps/mobile/.env!',
-  );
+  console.warn('[METRO BUILD CHECK] EXPO_PUBLIC_GOONG_MAP_KEY is missing in apps/mobile/.env!');
 } else {
   console.log('✅ [METRO BUILD CHECK] EXPO_PUBLIC_GOONG_MAP_KEY is present and validated.');
 }

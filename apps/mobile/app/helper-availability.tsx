@@ -181,12 +181,14 @@ export default function HelperAvailabilityScreen() {
               value={startTime}
               onChange={setStartTime}
               showChips={false}
+              checkPast={false}
             />
             <TimeDropdownPicker
               label="Giờ kết thúc làm việc"
               value={endTime}
               onChange={setEndTime}
               showChips={false}
+              checkPast={false}
             />
           </View>
           <Text style={{ fontSize: 12, color: COLORS.gray[500] }}>
