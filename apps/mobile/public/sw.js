@@ -35,15 +35,21 @@ self.addEventListener('activate', event => {
 
 self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET') return;
-  const url = new URL(event.request.url);
+  let url;
+  try {
+    url = new URL(event.request.url);
+  } catch {
+    return;
+  }
 
-  // Bỏ qua các API requests, websocket và bên thứ 3
+  // Chỉ can thiệp các request cùng origin (same-origin), bỏ qua cross-origin (Goong, Render, unpkg...)
+  if (url.origin !== self.location.origin) return;
+
+  // Bỏ qua các API requests, uploads và websocket
   if (
     url.pathname.startsWith('/api/') ||
     url.pathname.startsWith('/socket.io/') ||
-    url.hostname.includes('render.com') ||
-    url.hostname.includes('goong.io') ||
-    url.hostname.includes('unpkg.com')
+    url.pathname.startsWith('/uploads/')
   ) {
     return;
   }
@@ -76,9 +82,7 @@ self.addEventListener('fetch', event => {
             statusText: 'Service Unavailable',
             headers: {
               'Content-Type':
-                event.request.mode === 'navigate'
-                  ? 'text/html; charset=utf-8'
-                  : 'text/plain',
+                event.request.mode === 'navigate' ? 'text/html; charset=utf-8' : 'text/plain',
             },
           },
         );

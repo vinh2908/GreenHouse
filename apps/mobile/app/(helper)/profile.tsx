@@ -18,6 +18,7 @@ import { Alert } from '@/components/common/app-alert';
 import { useAuthStore } from '@/stores/auth.store';
 import {
   useHelperProfile,
+  useHelperJobs,
   useMyProfile,
   useSetHelperStatus,
   useSwitchRole,
@@ -50,12 +51,17 @@ export default function HelperProfileScreen() {
   const logout = useAuthStore(s => s.logout);
   const { data: myProfile } = useMyProfile();
   const user = myProfile ?? storedUser;
-  const { data: profile } = useHelperProfile();
+  const { data: profile, isLoading: pLoading } = useHelperProfile();
+  const { data: activeJobs } = useHelperJobs(
+    'confirmed,helper_on_the_way,helper_arrived,in_progress',
+  );
   const setStatus = useSetHelperStatus();
   const updateLocation = useUpdateHelperLocation();
   const switchRole = useSwitchRole();
 
-  const isWorking = profile?.status === 'busy';
+  const isWorking =
+    profile?.status === 'busy' ||
+    Boolean(activeJobs && Array.isArray(activeJobs) && activeJobs.length > 0);
   const isOnline = profile?.status === 'online' || isWorking;
 
   const handleSwitchToCustomer = async () => {
@@ -96,14 +102,15 @@ export default function HelperProfileScreen() {
   };
 
   const KYC_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
+    loading: { label: 'Đang tải trạng thái...', color: COLORS.gray[500], bg: COLORS.gray[100] },
     unsubmitted: { label: 'Chưa xác minh', color: COLORS.error, bg: '#FEF2F2' },
     pending: { label: 'Chờ duyệt hồ sơ', color: '#D97706', bg: '#FFFBEB' },
     approved: { label: 'Đã xác thực e-KYC ✓', color: COLORS.success, bg: '#ECFDF5' },
     rejected: { label: 'Hồ sơ bị từ chối', color: COLORS.error, bg: '#FEF2F2' },
   };
 
-  const KYC_STATUS =
-    KYC_CONFIG[profile?.verification_status || 'unsubmitted'] || KYC_CONFIG['unsubmitted'];
+  const statusKey = pLoading ? 'loading' : profile?.verification_status || 'unsubmitted';
+  const KYC_STATUS = KYC_CONFIG[statusKey] || KYC_CONFIG['unsubmitted'];
   const insets = useSafeAreaInsets();
 
   const completedCount = profile?.completed_jobs ?? profile?.total_completed ?? 0;
@@ -239,16 +246,18 @@ export default function HelperProfileScreen() {
                   marginTop: 2,
                 }}
               >
-                {isWorking
-                  ? '🟡 Đang bận làm việc (Cuốc đang chạy)'
-                  : isOnline
-                    ? '🟢 Đang nhận đơn mới'
-                    : '⚫ Ngoại tuyến (Đã tắt nhận đơn)'}
+                {pLoading
+                  ? 'Đang tải trạng thái...'
+                  : isWorking
+                    ? '🟡 Đang bận làm việc (Cuốc đang chạy)'
+                    : isOnline
+                      ? '🟢 Đang nhận đơn mới'
+                      : '⚫ Ngoại tuyến (Đã tắt nhận đơn)'}
               </Text>
             </View>
             <Switch
               value={isOnline}
-              disabled={isWorking || setStatus.isPending}
+              disabled={isWorking || setStatus.isPending || pLoading}
               onValueChange={async v => {
                 if (isWorking) {
                   Alert.alert(
