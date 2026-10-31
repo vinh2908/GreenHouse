@@ -53,8 +53,8 @@ html,body,#map{height:100%;width:100%;margin:0;background:#f1f5f9;font-family:sy
     map = new maplibregl.Map({
       container: 'map',
       style: 'https://tiles.goong.io/assets/goong_map_web.json?api_key=' + encodeURIComponent(goongMapKey),
-      center: [106.7009, 10.7769],
-      zoom: 14,
+      center: [107.5, 16.0],
+      zoom: 12,
       attributionControl: false
     });
   } catch(e) {
@@ -62,6 +62,19 @@ html,body,#map{height:100%;width:100%;margin:0;background:#f1f5f9;font-family:sy
     errorCard.style.display = 'flex';
     return;
   }
+
+  // Khắc phục cảnh báo thiếu icon sprite (mountain-11, mountain-15) trong style Goong
+  map.on('styleimagemissing', function(e){
+    var id = e.id;
+    if(!map.hasImage(id)){
+      var canvas = document.createElement('canvas');
+      canvas.width = 16;
+      canvas.height = 16;
+      var ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, 16, 16);
+      map.addImage(id, ctx.getImageData(0, 0, 16, 16));
+    }
+  });
 
   map.on('error', function(e){
     console.warn('[Goong Tracking Map] Lỗi:', e);
@@ -95,7 +108,7 @@ html,body,#map{height:100%;width:100%;margin:0;background:#f1f5f9;font-family:sy
 
   var customerMarker = null, helperMarker = null, dest = null, state = null, route = null;
   var point = null, frame = 0, version = 0, controller = null, lastFetch = 0, lastMetrics = '';
-  var lastDrawAt = 0;
+  var lastDrawAt = 0, initGpsTime = Date.now();
   var lastRouteOrigin = null, routeFails = 0, retryAfter = 0, lastMovedAt = 0, SNAP_MAX = 120;
 
   function valid(p){
@@ -375,7 +388,20 @@ html,body,#map{height:100%;width:100%;margin:0;background:#f1f5f9;font-family:sy
   function refresh(){
     if(!dest){ info.textContent = 'Chưa có tọa độ điểm hẹn'; metrics(null); return; }
     if(!state.tracking){ info.textContent = 'Điểm hẹn làm việc'; metrics(null); return; }
-    if(!point){ info.textContent = 'Đang chờ GPS'; metrics(null); return; }
+    if(!point){
+      if(state && state.gpsError){
+        info.innerHTML = '<span style="color:#fca5a5;">Chưa lấy được GPS: ' + (state.gpsErrorReason || 'Lỗi thiết bị') + '</span> <button onclick="window.retryGps && window.retryGps()" style="background:#22c55e;color:#fff;border:none;padding:2px 8px;border-radius:6px;cursor:pointer;font-size:11px;font-weight:700;margin-left:6px;">Thử lại</button>';
+      } else {
+        var waitSec = Math.floor((Date.now() - initGpsTime) / 1000);
+        if(waitSec > 10){
+          info.innerHTML = '<span style="color:#fde047;">Chưa nhận được tín hiệu GPS thật</span> <button onclick="window.retryGps && window.retryGps()" style="background:#22c55e;color:#fff;border:none;padding:2px 8px;border-radius:6px;cursor:pointer;font-size:11px;font-weight:700;margin-left:6px;">Thử lại</button>';
+        } else {
+          info.textContent = 'Đang chờ GPS (' + (10 - waitSec) + 's)…';
+        }
+      }
+      metrics(null);
+      return;
+    }
     var age = Date.now() - point.recorded_at;
     if(helperMarker && helperMarker.getElement()){
       helperMarker.getElement().classList.toggle('live', age <= 30000);
@@ -432,6 +458,12 @@ html,body,#map{height:100%;width:100%;margin:0;background:#f1f5f9;font-family:sy
       maybeRoute(p);
     }
     refresh();
+  };
+
+  window.retryGps = function(){
+    initGpsTime = Date.now();
+    info.textContent = 'Đang thử kết nối lại GPS…';
+    notify({type: 'retry_gps'});
   };
 
   window.addEventListener('message', function(event){

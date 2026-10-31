@@ -21,12 +21,31 @@ const REFRESH_TOKEN_KEY = 'homemate_refresh_token';
 const USER_KEY = 'homemate_user';
 const ROLE_KEY = 'homemate_active_role';
 
+const getInitialSyncAuth = () => {
+  const g = typeof globalThis !== 'undefined' ? (globalThis as any) : null;
+  if (g?.localStorage) {
+    try {
+      const token = g.localStorage.getItem(TOKEN_KEY);
+      const refresh = g.localStorage.getItem(REFRESH_TOKEN_KEY);
+      const userStr = g.localStorage.getItem(USER_KEY);
+      const role = g.localStorage.getItem(ROLE_KEY);
+      if (token && refresh) {
+        const u = userStr ? JSON.parse(userStr) : null;
+        if (u && role) u.active_role = role;
+        return { user: u, accessToken: token, refreshToken: refresh, isAuthenticated: true, isLoading: false };
+      }
+    } catch {}
+  }
+  return { user: null, accessToken: null, refreshToken: null, isAuthenticated: false, isLoading: true };
+};
+const initAuth = getInitialSyncAuth();
+
 export const useAuthStore = create<AuthState>((set, get) => ({
-  user: null,
-  accessToken: null,
-  refreshToken: null,
-  isAuthenticated: false,
-  isLoading: true,
+  user: initAuth.user,
+  accessToken: initAuth.accessToken,
+  refreshToken: initAuth.refreshToken,
+  isAuthenticated: initAuth.isAuthenticated,
+  isLoading: initAuth.isLoading,
 
   setAuth: async (user, accessToken, refreshToken) => {
     await SecureStore.setItemAsync(TOKEN_KEY, accessToken);
