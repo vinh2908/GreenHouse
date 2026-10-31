@@ -89,7 +89,7 @@ export default function SosScreen() {
   const [isLocating, setIsLocating] = useState(false);
   const [isEditingAddress, setIsEditingAddress] = useState(false);
 
-  // Tự động định vị GPS bằng OpenStreetMap khi mở màn hình SOS
+  // Tự động định vị GPS bằng Goong Maps khi mở màn hình SOS
   useEffect(() => {
     fetchLiveLocation();
   }, []);
@@ -349,7 +349,7 @@ export default function SosScreen() {
               }}
             >
               <Text style={{ fontSize: 14, fontWeight: '800', color: COLORS.gray[900] }}>
-                2. Vị trí cứu hộ (OpenStreetMap)
+                2. Vị trí cứu hộ (Bản đồ Goong)
               </Text>
               <View style={{ flexDirection: 'row', gap: 6 }}>
                 <TouchableOpacity
