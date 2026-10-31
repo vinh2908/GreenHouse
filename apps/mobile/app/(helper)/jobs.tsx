@@ -78,14 +78,15 @@ export default function HelperJobsScreen() {
   const insets = useSafeAreaInsets();
   const user = useAuthStore(s => s.user);
   const isAuthLoading = useAuthStore(s => s.isLoading);
+  const isSwitchingRole = useAuthStore(s => s.isSwitchingRole);
 
   useEffect(() => {
-    if (!isAuthLoading && user && user.active_role === 'customer') {
+    if (!isAuthLoading && !isSwitchingRole && user && user.active_role === 'customer') {
       router.replace('/(customer)/jobs');
     }
-  }, [isAuthLoading, user?.active_role, router]);
+  }, [isAuthLoading, isSwitchingRole, user?.active_role, router]);
 
-  if (isAuthLoading || (user && user.active_role === 'customer')) {
+  if (isAuthLoading || (!isSwitchingRole && user && user.active_role === 'customer')) {
     return (
       <View style={{ flex: 1, backgroundColor: '#F8F9FA' }}>
         <View

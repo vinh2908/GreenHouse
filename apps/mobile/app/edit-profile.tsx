@@ -76,12 +76,12 @@ export default function EditProfileScreen() {
   const isHelper =
     role === 'helper' ||
     searchRole === 'helper' ||
-    user?.active_role === 'helper' ||
-    localRole === 'helper' ||
-    (Array.isArray(user?.roles) &&
-      (user.roles as any[]).includes('helper') &&
-      role !== 'customer' &&
-      searchRole !== 'customer');
+    (role !== 'customer' &&
+      searchRole !== 'customer' &&
+      (user?.active_role === 'helper' ||
+        (!user?.active_role &&
+          (localRole === 'helper' ||
+            (Array.isArray(user?.roles) && (user.roles as any[]).includes('helper'))))));
   const updateLocation = useUpdateHelperLocation();
   const { data: customerAddresses } = useAddresses();
   const [pickerFor, setPickerFor] = useState<'helper' | 'customer' | null>(null);
