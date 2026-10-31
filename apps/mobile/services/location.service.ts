@@ -8,40 +8,6 @@ import {
   searchPlacesWithGoong,
 } from './goong-geocoding';
 
-/**
- * Helper fetch bọc Promise.race + AbortController timeout an toàn.
- * Đảm bảo các request tìm kiếm và geocoding mạng ngoài (Photon, Nominatim, BigDataCloud)
- * luôn settle trong tối đa timeoutMs, giải quyết triệt để lỗi treo socket/DNS trên Android/React Native.
- */
-async function fetchWithTimeout(
-  url: string,
-  options: RequestInit = {},
-  timeoutMs = 4000,
-): Promise<Response> {
-  const controller = new AbortController();
-  let timer: any;
-
-  const timeoutPromise = new Promise<never>((_, reject) => {
-    timer = setTimeout(() => {
-      try {
-        controller.abort();
-      } catch {}
-      reject(new Error(`Fetch timeout after ${timeoutMs}ms for ${url}`));
-    }, timeoutMs);
-  });
-
-  try {
-    return await Promise.race([
-      fetch(url, {
-        ...options,
-        signal: controller.signal,
-      }),
-      timeoutPromise,
-    ]);
-  } finally {
-    clearTimeout(timer);
-  }
-}
 
 type BrowserGeolocationPosition = {
   coords: { latitude: number; longitude: number };
@@ -399,186 +365,29 @@ class LocationService {
 
   /**
    * Chuyển tọa độ (lat, lon) -> Địa chỉ chi tiết tiếng Việt.
-   * Thứ tự các lớp: 1) Expo Native (trên máy thật, miễn phí, không cần mạng riêng)
-   * 2) Goong — dữ liệu địa chỉ Việt Nam, có số nhà (chỉ khi có
-   * EXPO_PUBLIC_GOONG_API_KEY) 3) Photon OSM 4) Nominatim OSM 5) BigDataCloud.
-   * Nguyên tắc: lớp nào không tra được Quận/Thành thì để '' — không bao giờ
-   * bịa 'Quận 1'/'Hồ Chí Minh' như trước (người dùng Đà Nẵng từng bị gán sai).
+   * Nguồn duy nhất: Goong REST API (dữ liệu địa chỉ Việt Nam, có số nhà).
+   * Tuyệt đối không fallback sang Photon, Nominatim, BigDataCloud hay OSM.
+   * Nguyên tắc: trường nào không tra được thì để '' — không bao giờ bịa giá trị.
    */
   async reverseGeocode(latitude: number, longitude: number): Promise<LocationResult | null> {
-    // 1. Thử Expo Location native (trên Android / iOS APK) với timeout 2.2s chống treo spinner
-    try {
-      const geoPromise = Location.reverseGeocodeAsync({ latitude, longitude });
-      const geoTimeout = new Promise<null>(resolve => setTimeout(() => resolve(null), 2200));
-      const geoRes = await Promise.race([geoPromise, geoTimeout]).catch(() => null);
-      const geo = geoRes?.[0];
-      if (geo && (geo.street || geo.name || geo.district)) {
-        const houseNum = geo.name && !geo.name.includes(geo.street || '') ? geo.name : '';
-        const streetName = geo.street || '';
-        const road = [houseNum, streetName].filter(Boolean).join(' ').trim() || geo.name || '';
-        const ward = geo.district || '';
-        const district = geo.subregion || geo.district || '';
-        const city = geo.city || geo.region || '';
-        const fullAddress = [road, ward, district, city].filter(Boolean).join(', ');
-
-        if (road || district) {
-          return parseVietnameseAddress(fullAddress, {
-            full_address: fullAddress,
-            road: road || fullAddress,
-            ward,
-            district,
-            city,
-            coordinates: [longitude, latitude],
-          });
-        }
-      }
-    } catch {
-      /* ignore native error when on web */
-    }
-
-    // 2. Goong — dữ liệu địa chỉ Việt Nam (có số nhà kể cả nhiều tuyến phố mà
-    // OSM bỏ trống). Bỏ qua hoàn toàn khi chưa cấu hình EXPO_PUBLIC_GOONG_API_KEY.
     const goongKey = getGoongApiKey();
     if (goongKey) {
       try {
         const goongResult = await goongReverseGeocode(latitude, longitude, goongKey);
         if (goongResult) {
           const mapped = mapGoongGeocodeResult(goongResult, latitude, longitude);
-          if (mapped.road || mapped.district) {
+          if (mapped.road || mapped.district || mapped.city) {
             return parseVietnameseAddress(mapped.full_address, mapped);
           }
         }
       } catch (err) {
-        console.warn('Goong reverse geocode error:', err);
+        console.warn('[Goong Geocode] Lỗi reverse geocode:', err);
       }
+    } else {
+      console.warn('[Goong Geocode] Thiếu EXPO_PUBLIC_GOONG_API_KEY');
     }
 
-    // 3. Thử Photon OpenStreetMap Reverse Geocode (Có CORS, miễn phí, trả về Số nhà + Tên đường chính xác)
-    // Chú ý: Photon KHÔNG hỗ trợ lang=vi (trả về 400), dùng mặc định sẽ trả về tên tiếng Việt đầy đủ theo OSM.
-    try {
-      const photonUrl = `https://photon.komoot.io/reverse?lat=${latitude}&lon=${longitude}`;
-      const res = await fetchWithTimeout(photonUrl, {}, 4000);
-      if (res.ok) {
-        const json = await res.json();
-        const feat = json.features?.[0];
-        if (feat && feat.properties) {
-          const p = feat.properties;
-          const houseNumber = p.housenumber ? `${p.housenumber} ` : '';
-          const street = p.street || '';
-          const placeName = p.name || '';
-          let road = `${houseNumber}${street}`.trim();
-          if (!road && placeName && !placeName.includes(',')) {
-            road = placeName.trim();
-          }
-          const ward = p.locality || p.suburb || p.quarter || '';
-          const district = p.district || p.city_district || p.county || '';
-          const city = p.city || p.state || '';
-          const composite = [placeName, p.locality, p.district, p.city || p.state, p.country]
-            .filter(Boolean)
-            .join(', ');
-          const fullAddress = [road, ward, district, city].filter(Boolean).join(', ');
-
-          if (road || district || placeName) {
-            return parseVietnameseAddress(composite || fullAddress || p.name, {
-              full_address: fullAddress || composite,
-              road: road || fullAddress || composite,
-              ward,
-              district,
-              city,
-              coordinates: [longitude, latitude],
-            });
-          }
-        }
-      }
-    } catch (err: any) {
-      console.warn(
-        `Photon reverse geocode ${err?.name === 'AbortError' ? 'timeout (8s)' : 'error'}:`,
-        err?.message || err,
-      );
-    }
-
-    // 4. Fallback Nominatim OpenStreetMap
-    try {
-      const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1&accept-language=vi`;
-      const res = await fetchWithTimeout(
-        url,
-        {
-          headers: {
-            'User-Agent': 'GreenHouse-Mobile/1.0 (contact@greenhouse.app)',
-          },
-        },
-        8000,
-      );
-      if (res.ok) {
-        const data: OsmPlace = await res.json();
-        const addr = data.address || {};
-        const houseNumber = addr.house_number ? `${addr.house_number} ` : '';
-        const road = addr.road || '';
-        const street = `${houseNumber}${road}`.trim() || data.display_name?.split(',')[0] || '';
-        const ward = addr.suburb || addr.quarter || addr.neighbourhood || '';
-        const district = addr.city_district || addr.district || addr.county || '';
-        const city = addr.city || addr.state || '';
-        const fullAddress = street
-          ? [street, ward, district, city].filter(Boolean).join(', ')
-          : data.display_name;
-
-        return parseVietnameseAddress(data.display_name || fullAddress, {
-          full_address: fullAddress,
-          road: street,
-          ward,
-          district,
-          city,
-          coordinates: [longitude, latitude],
-        });
-      }
-    } catch (err: any) {
-      console.warn(
-        `OSM Reverse geocoding ${err?.name === 'AbortError' ? 'timeout (8s)' : 'error'}:`,
-        err?.message || err,
-      );
-    }
-
-    // 5. Fallback BigDataCloud (CORS-friendly, trả về phường, quận, thành phố)
-    try {
-      const url = `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=vi`;
-      const res = await fetchWithTimeout(url, {}, 8000);
-      if (res.ok) {
-        const data = await res.json();
-        const ward = data.locality || '';
-        const adminList = data.localityInfo?.administrative || [];
-        const districtObj = adminList.find(
-          (a: any) =>
-            a.adminLevel === 6 ||
-            (a.name &&
-              (a.name.includes('Quận') || a.name.includes('Huyện') || a.name.includes('Thị xã'))),
-        );
-        const district =
-          districtObj?.name ||
-          data.localityInfo?.informative?.find(
-            (a: any) => a.name && (a.name.includes('Quận') || a.name.includes('Huyện')),
-          )?.name ||
-          '';
-        const city = data.city || data.principalSubdivision || '';
-
-        const parts = [ward, district, city].filter(Boolean);
-        const fullAddress =
-          parts.length > 0 ? parts.join(', ') : `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
-
-        return parseVietnameseAddress(fullAddress, {
-          full_address: fullAddress,
-          road: ward ? `Khu vực ${ward}` : fullAddress,
-          ward,
-          district,
-          city,
-          coordinates: [longitude, latitude],
-        });
-      }
-    } catch (err) {
-      console.warn('BigDataCloud reverse geocode error:', err);
-    }
-
-    // Không lớp nào tra được: chỉ còn tọa độ là sự thật — district/city để ''
-    // để form phía trên cho người dùng tự điền thay vì nhận dữ liệu bịa.
+    // Không tra được hoặc lỗi: chỉ còn tọa độ thực tế, không bịa địa chỉ
     return {
       full_address: `Tọa độ: ${latitude.toFixed(4)}, ${longitude.toFixed(4)}`,
       road: `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`,
@@ -602,13 +411,11 @@ class LocationService {
   }
 
   /**
-   * Tìm kiếm địa điểm (Autocomplete). Ưu tiên Goong Place AutoComplete +
-   * Place Detail khi có EXPO_PUBLIC_GOONG_API_KEY (dữ liệu VN, có số nhà);
-   * không có key hoặc Goong không trả kết quả thì dùng Photon + Nominatim
-   * như trước.
+   * Tìm kiếm địa điểm (Autocomplete) chỉ sử dụng Goong Place AutoComplete + Place Detail.
+   * Dữ liệu Việt Nam, có số nhà, ngõ/hẻm, tên đường chuẩn xác.
+   * Tuyệt đối không fallback sang Photon hay Nominatim.
    *
-   * Tự động ưu tiên (bias) kết quả theo vị trí hiện tại của người dùng (Đà Nẵng,
-   * HCM, HN...) qua tọa độ refCoords (hoặc this.cachedCoords).
+   * Tự động xếp hạng kết quả theo khoảng cách tới vị trí GPS thực của người dùng.
    */
   async searchPlaces(
     query: string,
@@ -639,142 +446,39 @@ class LocationService {
       }
     }
 
-    // 0. Goong (chỉ khi có API key hợp lệ)
     const goongKey = getGoongApiKey();
-    if (goongKey) {
-      try {
-        const goongPlaces = await searchPlacesWithGoong(query, goongKey, refCoords);
-        if (goongPlaces.length) {
-          if (refCoords?.latitude && refCoords?.longitude) {
-            goongPlaces.sort((a, b) => {
-              const distA = calculateDistanceKm(
-                refCoords.latitude,
-                refCoords.longitude,
-                parseFloat(a.lat),
-                parseFloat(a.lon),
-              );
-              const distB = calculateDistanceKm(
-                refCoords.latitude,
-                refCoords.longitude,
-                parseFloat(b.lat),
-                parseFloat(b.lon),
-              );
-              return distA - distB;
-            });
-          }
-          return goongPlaces as OsmPlace[];
-        }
-      } catch (err) {
-        console.warn('Goong search error, fallback OSM:', err);
-      }
-    }
-
-    // 1. Thử Photon search API (cực nhanh ~300ms, hỗ trợ CORS, KHÔNG dùng lang=vi vì Photon sẽ trả 400)
-    // Truyền lat/lon để Photon ưu tiên địa điểm gần người dùng nhất lên đầu
-    try {
-      let url = `https://photon.komoot.io/api/?q=${encodeURIComponent(query)}&limit=12`;
-      if (
-        refCoords &&
-        typeof refCoords.latitude === 'number' &&
-        typeof refCoords.longitude === 'number'
-      ) {
-        url += `&lat=${refCoords.latitude}&lon=${refCoords.longitude}`;
-      }
-
-      const res = await fetchWithTimeout(url, {}, 4000);
-      if (res.ok) {
-        const json = await res.json();
-        if (json.features?.length) {
-          const mapped: OsmPlace[] = json.features.map((f: any, idx: number) => {
-            const p = f.properties || {};
-            const streetName = [p.housenumber, p.street || p.name].filter(Boolean).join(' ');
-            const full = [streetName, p.locality, p.district, p.city || p.state, p.country]
-              .filter(Boolean)
-              .join(', ');
-            return {
-              place_id: p.osm_id || idx,
-              display_name: full || p.name || query,
-              lat: String(f.geometry.coordinates[1]),
-              lon: String(f.geometry.coordinates[0]),
-              address: {
-                house_number: p.housenumber,
-                road: p.street || p.name,
-                suburb: p.locality,
-                district: p.district,
-                city: p.city || p.state,
-                country: p.country,
-              },
-            } as OsmPlace;
-          });
-
-          // Sắp xếp chính xác theo khoảng cách từ tọa độ người dùng (gần nhất lên đầu)
-          if (refCoords?.latitude && refCoords?.longitude) {
-            mapped.sort((a, b) => {
-              const distA = calculateDistanceKm(
-                refCoords.latitude,
-                refCoords.longitude,
-                parseFloat(a.lat),
-                parseFloat(a.lon),
-              );
-              const distB = calculateDistanceKm(
-                refCoords.latitude,
-                refCoords.longitude,
-                parseFloat(b.lat),
-                parseFloat(b.lon),
-              );
-              return distA - distB;
-            });
-          }
-
-          return mapped.slice(0, 8);
-        }
-      }
-    } catch (err: any) {
-      console.warn(
-        `Photon search ${err?.message?.includes('timeout') ? 'timeout (4s)' : 'error'}, fallback OSM:`,
-        err?.message || err,
-      );
-    }
-
-    // 2. Fallback Nominatim OpenStreetMap - timeout 3.5s + User-Agent
-    try {
-      const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&countrycodes=vn&addressdetails=1&limit=8&accept-language=vi`;
-      const res = await fetchWithTimeout(
-        url,
-        {
-          headers: {
-            'User-Agent': 'GreenHouse-Mobile/1.0 (contact@greenhouse.app)',
-          },
-        },
-        3500,
-      );
-      if (!res.ok) return [];
-      const data = ((await res.json()) as OsmPlace[]) || [];
-      if (refCoords?.latitude && refCoords?.longitude && Array.isArray(data)) {
-        data.sort((a, b) => {
-          const distA = calculateDistanceKm(
-            refCoords.latitude,
-            refCoords.longitude,
-            parseFloat(a.lat),
-            parseFloat(a.lon),
-          );
-          const distB = calculateDistanceKm(
-            refCoords.latitude,
-            refCoords.longitude,
-            parseFloat(b.lat),
-            parseFloat(b.lon),
-          );
-          return distA - distB;
-        });
-      }
-      return data.slice(0, 8);
-    } catch (err: any) {
-      console.warn(
-        `OSM Search ${err?.name === 'AbortError' ? 'timeout (8s)' : 'error'}:`,
-        err?.message || err,
-      );
+    if (!goongKey) {
+      console.warn('[Goong Search] Thiếu EXPO_PUBLIC_GOONG_API_KEY');
       return [];
     }
+
+    try {
+      const goongPlaces = await searchPlacesWithGoong(query, goongKey, refCoords);
+      if (goongPlaces.length > 0) {
+        if (refCoords?.latitude && refCoords?.longitude) {
+          goongPlaces.sort((a, b) => {
+            const distA = calculateDistanceKm(
+              refCoords.latitude,
+              refCoords.longitude,
+              parseFloat(a.lat),
+              parseFloat(a.lon),
+            );
+            const distB = calculateDistanceKm(
+              refCoords.latitude,
+              refCoords.longitude,
+              parseFloat(b.lat),
+              parseFloat(b.lon),
+            );
+            return distA - distB;
+          });
+        }
+        return goongPlaces as OsmPlace[];
+      }
+    } catch (err) {
+      console.warn('[Goong Search] Lỗi tìm kiếm địa điểm:', err);
+    }
+
+    return [];
   }
 }
 
