@@ -58,12 +58,11 @@ export function LoyaltyPointsInput({ job, contractTotal }: { job: any; contractT
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
           <Star size={18} color={COLORS.gray[400]} />
           <Text style={{ fontWeight: '800', fontSize: 14, color: COLORS.gray[700] }}>
-            Điểm thành viên: {fmt(account.points_balance ?? 0)} điểm
+            {`Điểm thành viên: ${fmt(account.points_balance ?? 0)} điểm`}
           </Text>
         </View>
         <Text style={{ fontSize: 12, color: COLORS.gray[500] }}>
-          Cần tối thiểu {fmt(minRedeem)} điểm để đổi. Tích điểm: 1 điểm /{' '}
-          {fmt(account.earn_vnd_per_point ?? 10000)}₫ đã thanh toán.
+          {`Cần tối thiểu ${fmt(minRedeem)} điểm để đổi. Tích điểm: 1 điểm / ${fmt(account.earn_vnd_per_point ?? 10000)}₫ đã thanh toán.`}
         </Text>
       </Card>
     );
@@ -93,8 +92,7 @@ export function LoyaltyPointsInput({ job, contractTotal }: { job: any; contractT
         </Text>
       </View>
       <Text style={{ fontSize: 12.5, color: COLORS.gray[500] }}>
-        Bạn có {fmt(account.points_balance)} điểm · Hạng {account.tier_label} (đổi tối đa{' '}
-        {account.redemption_cap_percent}% giá trị đơn) · 1 điểm = {fmt(account.point_value_vnd)}₫
+        {`Bạn có ${fmt(account.points_balance)} điểm · Hạng ${account.tier_label} (đổi tối đa ${account.redemption_cap_percent}% giá trị đơn) · 1 điểm = ${fmt(account.point_value_vnd)}₫`}
       </Text>
       <View style={{ flexDirection: 'row', gap: 8 }}>
         <TextInput

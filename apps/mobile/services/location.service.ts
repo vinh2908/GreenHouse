@@ -8,7 +8,6 @@ import {
   searchPlacesWithGoong,
 } from './goong-geocoding';
 
-
 type BrowserGeolocationPosition = {
   coords: { latitude: number; longitude: number };
 };

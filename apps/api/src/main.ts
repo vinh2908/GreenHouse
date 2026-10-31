@@ -15,6 +15,9 @@ import { TransformInterceptor } from './common/interceptors/transform.intercepto
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
+  // Trust reverse proxy (Render / Cloudflare / Nginx) so req.protocol is correctly 'https'
+  app.set('trust proxy', 1);
+
   // Uploaded files (KYC, job photos, completion evidence)
   app.useStaticAssets(UPLOAD_ROOT, { prefix: '/uploads/' });
 
