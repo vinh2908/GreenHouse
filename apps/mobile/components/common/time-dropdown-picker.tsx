@@ -144,6 +144,7 @@ export interface TimeDropdownPickerProps {
   showChips?: boolean;
   minTime?: string; // e.g. '07:00' cho màn hình thợ bắt đầu < kết thúc
   onValidityChange?: (isValid: boolean) => void;
+  checkPast?: boolean;
 }
 
 export function TimeDropdownPicker({
@@ -154,6 +155,7 @@ export function TimeDropdownPicker({
   showChips = true,
   minTime,
   onValidityChange,
+  checkPast = true,
 }: TimeDropdownPickerProps) {
   const [modalType, setModalType] = useState<'hour' | 'minute' | null>(null);
 
@@ -171,10 +173,11 @@ export function TimeDropdownPicker({
 
   // Kiểm tra giờ quá khứ (theo múi giờ Asia/Ho_Chi_Minh)
   const isPast = useMemo(() => {
+    if (checkPast === false) return false;
     if (!isToday) return false;
     const selectedTotal = currentHour * 60 + currentMinute;
     return selectedTotal <= nowVn.totalMinutes;
-  }, [isToday, currentHour, currentMinute, nowVn.totalMinutes]);
+  }, [checkPast, isToday, currentHour, currentMinute, nowVn.totalMinutes]);
 
   const isBeforeMinTime = useMemo(() => {
     if (!minTime || !/^\d{1,2}:\d{2}$/.test(minTime.trim())) return false;

@@ -70,7 +70,11 @@ export class UploadsController {
   upload(@UploadedFile() file: Express.Multer.File | undefined, @Req() req: Request) {
     if (!file) throw new BadRequestException('Thiếu file (field "file")');
     const path = `/uploads/${relative(UPLOAD_ROOT, file.path).split(sep).join('/')}`;
-    const base = this.config.get<string>('PUBLIC_URL') || `${req.protocol}://${req.get('host')}`;
+    const configuredBase = this.config.get<string>('PUBLIC_URL');
+    let base = configuredBase || `${req.protocol}://${req.get('host')}`;
+    if (!configuredBase && (req.get('x-forwarded-proto') === 'https' || !base.includes('localhost'))) {
+      base = base.replace(/^http:\/\//i, 'https://');
+    }
     return { url: `${base}${path}`, path, size: file.size, mimetype: file.mimetype };
   }
 }

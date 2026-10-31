@@ -1571,9 +1571,7 @@ export default function BookingScreen() {
                   <Navigation size={18} color={COLORS.primary} />
                 )}
                 <Text style={{ color: COLORS.primary, fontWeight: '800', fontSize: 14 }}>
-                  {isLocating
-                    ? 'Đang định vị vị trí...'
-                    : 'Lấy vị trí GPS hiện tại (Goong Maps)'}
+                  {isLocating ? 'Đang định vị vị trí...' : 'Lấy vị trí GPS hiện tại (Goong Maps)'}
                 </Text>
               </TouchableOpacity>
 

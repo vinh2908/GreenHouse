@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { ArrowLeft, Send, ShieldCheck, Phone, ImagePlus, X } from 'lucide-react-native';
+import { ArrowLeft, Send, ShieldCheck, Phone, ImagePlus, X, AlertCircle } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import dayjs from 'dayjs';
 import Toast from 'react-native-toast-message';
@@ -24,6 +24,149 @@ import { uploadFile } from '@/services/upload.service';
 import { ImageViewerModal } from '@/components/common/photo-thumbs';
 import { Alert } from '@/components/common/app-alert';
 import { Avatar, COLORS, LoadingSpinner, EmptyState } from '@/components/ui';
+
+export function resolveMediaUrl(rawUrl: string): string {
+  if (!rawUrl || typeof rawUrl !== 'string') return '';
+  let url = rawUrl.trim();
+
+  // Data URLs or Blob URLs pass through
+  if (url.startsWith('data:') || url.startsWith('blob:')) return url;
+
+  // Determine current server origin from apiClient baseURL
+  const apiBase =
+    apiClient.defaults.baseURL ||
+    process.env.EXPO_PUBLIC_API_URL ||
+    'https://greenhouse-api-chb9.onrender.com/api/v1';
+  const origin = apiBase.replace(/\/api\/v1\/?$/, '').replace(/\/$/, '');
+
+  // Relative URL (e.g. /uploads/2026-10/xxx.jpg)
+  if (url.startsWith('/')) {
+    url = `${origin}${url}`;
+  }
+
+  // Localhost or LAN IP URLs in production/web/mobile
+  if (/^https?:\/\/(localhost|127\.0\.0\.1|10\.0\.2\.2)(:\d+)?(\/.*)?$/i.test(url)) {
+    const path = url.replace(/^https?:\/\/(localhost|127\.0\.0\.1|10\.0\.2\.2)(:\d+)?/i, '');
+    url = `${origin}${path}`;
+  }
+
+  // Mixed content fix: promote http:// to https:// for any remote URL
+  if (url.startsWith('http://') && !url.includes('localhost') && !url.includes('127.0.0.1')) {
+    url = url.replace(/^http:\/\//i, 'https://');
+  }
+
+  return url;
+}
+
+function ChatImageBubble({
+  uri,
+  onPress,
+}: {
+  uri: string;
+  onPress: () => void;
+}) {
+  const resolvedUrl = useMemo(() => resolveMediaUrl(uri), [uri]);
+  const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
+
+  return (
+    <TouchableOpacity
+      activeOpacity={0.88}
+      onPress={() => {
+        if (status === 'success') {
+          onPress();
+        }
+      }}
+      style={{
+        width: 220,
+        height: 220,
+        borderRadius: 16,
+        overflow: 'hidden',
+        backgroundColor: '#F1F5F9',
+        borderWidth: 1,
+        borderColor: status === 'error' ? '#FECACA' : COLORS.gray[200],
+        position: 'relative',
+        justifyContent: 'center',
+        alignItems: 'center',
+      }}
+    >
+      {status !== 'error' && (
+        <Image
+          source={{ uri: resolvedUrl }}
+          style={{
+            width: '100%',
+            height: '100%',
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+          }}
+          resizeMode="cover"
+          onLoadStart={() => setStatus('loading')}
+          onLoad={() => setStatus('success')}
+          onError={() => setStatus('error')}
+        />
+      )}
+
+      {status === 'loading' && (
+        <View style={{ alignItems: 'center', gap: 6, zIndex: 2 }}>
+          <ActivityIndicator size="small" color={COLORS.primary} />
+          <Text style={{ fontSize: 11, color: COLORS.gray[500], fontWeight: '600' }}>
+            Đang tải ảnh...
+          </Text>
+        </View>
+      )}
+
+      {status === 'error' && (
+        <View
+          style={{
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 14,
+            gap: 6,
+            backgroundColor: '#FEF2F2',
+            width: '100%',
+            height: '100%',
+          }}
+        >
+          <View
+            style={{
+              width: 36,
+              height: 36,
+              borderRadius: 18,
+              backgroundColor: '#FEE2E2',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <AlertCircle size={20} color="#DC2626" />
+          </View>
+          <Text
+            style={{
+              fontSize: 12,
+              fontWeight: '700',
+              color: '#DC2626',
+              textAlign: 'center',
+            }}
+          >
+            Không tải được ảnh
+          </Text>
+          <Text
+            style={{
+              fontSize: 10.5,
+              color: COLORS.gray[500],
+              textAlign: 'center',
+              lineHeight: 14,
+            }}
+            numberOfLines={2}
+          >
+            Liên kết ảnh không tồn tại hoặc đã hết hạn
+          </Text>
+        </View>
+      )}
+    </TouchableOpacity>
+  );
+}
 
 export default function ChatScreen() {
   const { jobId } = useLocalSearchParams<{ jobId: string }>();
@@ -394,21 +537,10 @@ export default function ChatScreen() {
               if (item.type === 'image') {
                 return (
                   <View style={{ alignItems: isMe ? 'flex-end' : 'flex-start', marginVertical: 2 }}>
-                    <TouchableOpacity
-                      activeOpacity={0.9}
+                    <ChatImageBubble
+                      uri={item.content}
                       onPress={() => setViewingImage(item.content)}
-                    >
-                      <Image
-                        source={{ uri: item.content }}
-                        style={{
-                          width: 220,
-                          height: 220,
-                          borderRadius: 16,
-                          backgroundColor: COLORS.gray[100],
-                        }}
-                        resizeMode="cover"
-                      />
-                    </TouchableOpacity>
+                    />
                     <Text
                       style={{
                         fontSize: 10.5,
@@ -546,7 +678,7 @@ export default function ChatScreen() {
         </KeyboardAvoidingView>
       )}
       <ImageViewerModal
-        uri={viewingImage}
+        uri={viewingImage ? resolveMediaUrl(viewingImage) : null}
         visible={!!viewingImage}
         onClose={() => setViewingImage(null)}
       />
