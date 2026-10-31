@@ -129,7 +129,9 @@ export default function HelperProfileScreen() {
         >
           <TouchableOpacity
             activeOpacity={0.85}
-            onPress={() => router.push({ pathname: '/edit-profile', params: { role: 'helper' } } as any)}
+            onPress={() =>
+              router.push({ pathname: '/edit-profile', params: { role: 'helper' } } as any)
+            }
             style={{ alignItems: 'center' }}
           >
             <Avatar name={user?.full_name} uri={user?.avatar} size={80} />

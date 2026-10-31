@@ -115,7 +115,14 @@ export default function CustomerProfileScreen() {
 
   if (isAuthLoading || effectiveRole === 'helper') {
     return (
-      <View style={{ flex: 1, backgroundColor: COLORS.gray[50], justifyContent: 'center', alignItems: 'center' }}>
+      <View
+        style={{
+          flex: 1,
+          backgroundColor: COLORS.gray[50],
+          justifyContent: 'center',
+          alignItems: 'center',
+        }}
+      >
         <LoadingSpinner />
       </View>
     );
