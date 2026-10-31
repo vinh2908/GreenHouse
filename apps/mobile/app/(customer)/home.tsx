@@ -590,16 +590,43 @@ export default function CustomerHomeScreen() {
           attributionControl: false
         });
 
+        function addMountainFallbacks() {
+          try {
+            var canvas = document.createElement('canvas');
+            canvas.width = 16;
+            canvas.height = 16;
+            var ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, 16, 16);
+            var emptyData = ctx.getImageData(0, 0, 16, 16);
+            if (!map.hasImage('mountain-11')) map.addImage('mountain-11', emptyData);
+            if (!map.hasImage('mountain-15')) map.addImage('mountain-15', emptyData);
+          } catch(e){}
+          try {
+            if (map.getLayer && map.getLayer('poi-mountain')) {
+              map.setLayoutProperty('poi-mountain', 'icon-image', '');
+            }
+          } catch(e){}
+        }
+
         map.on('styleimagemissing', function(e) {
           const id = e.id;
           if (!map.hasImage(id)) {
-            const canvas = document.createElement('canvas');
-            canvas.width = 16;
-            canvas.height = 16;
-            const ctx = canvas.getContext('2d');
-            ctx.clearRect(0, 0, 16, 16);
-            map.addImage(id, ctx.getImageData(0, 0, 16, 16));
+            try {
+              const canvas = document.createElement('canvas');
+              canvas.width = 16;
+              canvas.height = 16;
+              const ctx = canvas.getContext('2d');
+              ctx.clearRect(0, 0, 16, 16);
+              map.addImage(id, ctx.getImageData(0, 0, 16, 16));
+            } catch(err) {}
           }
+        });
+
+        map.on('styledata', function() {
+          addMountainFallbacks();
+        });
+        map.on('load', function() {
+          addMountainFallbacks();
         });
 
         ${

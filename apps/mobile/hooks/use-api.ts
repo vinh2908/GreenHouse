@@ -681,12 +681,15 @@ export function useCompleteJob() {
 // ─── Helper Profile ────────────────────────────────────────────────────────────
 
 export function useHelperProfile() {
+  const isAuth = useAuthStore(s => s.isAuthenticated);
   return useQuery({
     queryKey: ['helper', 'profile'],
     queryFn: async () => {
       const { data } = await apiClient.get('/helpers/me/profile');
       return data.data;
     },
+    enabled: !!isAuth,
+    staleTime: 30000,
   });
 }
 
