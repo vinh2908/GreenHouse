@@ -284,18 +284,78 @@ export default function JobDetailScreen() {
       setEditCoords([lon, lat]);
       locationService.setCachedCoordinates({ latitude: lat, longitude: lon });
     }
-    const parsed = parseVietnameseAddress(place.display_name, {
-      full_address: place.display_name,
-      road: place.address?.road || place.address?.pedestrian || '',
-      city: place.address?.city || place.address?.state || place.address?.province || '',
-      district:
-        place.address?.city_district || place.address?.district || place.address?.county || '',
-      ward: place.address?.suburb || place.address?.quarter || '',
-    });
-    setEditFullAddress(parsed.road || place.display_name.split(',')[0].trim());
-    if (parsed.ward) setEditWard(parsed.ward);
-    if (parsed.district) setEditDistrict(parsed.district);
-    if (parsed.city) setEditCity(parsed.city);
+
+    const addr = place.address || {};
+    const house = addr.house_number ? `${addr.house_number} ` : '';
+    let road = addr.road || addr.pedestrian || addr.suburb || '';
+    let ward =
+      addr.suburb || addr.quarter || addr.neighbourhood || addr.village || addr.commune || '';
+    let district = addr.city_district || addr.district || addr.county || addr.borough || '';
+    let city = addr.city || addr.state || addr.province || '';
+
+    // 1. Nhận diện theo tiền tố hành chính tiếng Việt nếu có
+    if (!district && place.display_name) {
+      const matchDistrict = place.display_name.match(/(?:Quận|Huyện|Thị xã)\s+([^,]+)/i);
+      if (matchDistrict) {
+        district = matchDistrict[0].trim();
+      }
+    }
+    if (!ward && place.display_name) {
+      const matchWard = place.display_name.match(/(?:Phường|Xã|Thị trấn)\s+([^,]+)/i);
+      if (matchWard) {
+        ward = matchWard[0].trim();
+      }
+    }
+    if (!city && place.display_name) {
+      const matchCity = place.display_name.match(/(?:Thành phố|Tỉnh|TP\.?)\s+([^,]+)/i);
+      if (matchCity) {
+        city = matchCity[0].trim();
+      }
+    }
+
+    // 2. Dự phòng phân tách token từ phải sang trái khi địa chỉ không có tiền tố hành chính (vd Đà Nẵng)
+    if (place.display_name) {
+      const tokens = place.display_name
+        .split(',')
+        .map(s => s.trim())
+        .filter(
+          s =>
+            s.length > 0 &&
+            !/^\d{4,6}$/.test(s) &&
+            !/^Việt\s*Nam$/i.test(s) &&
+            !/^Vietnam$/i.test(s),
+        );
+
+      if (tokens.length >= 1 && !city) {
+        city = tokens[tokens.length - 1];
+      }
+      if (tokens.length >= 2 && !district) {
+        district = tokens[tokens.length - 2];
+      }
+      if (tokens.length >= 3 && !ward) {
+        ward = tokens[tokens.length - 3];
+      }
+      if (!road && tokens.length > 0) {
+        road = tokens[0];
+      }
+    }
+
+    // Ghép số nhà + tên đường giống wizard Đăng việc, đảm bảo giữ nguyên số nhà
+    let street = `${house}${road}`.trim();
+    if (!street || !/\d/.test(street)) {
+      const firstToken = place.display_name.split(',')[0].trim();
+      if (/\d/.test(firstToken)) {
+        street = firstToken;
+      }
+    }
+    if (!street) {
+      street = place.display_name.split(',')[0].trim();
+    }
+
+    setEditFullAddress(street);
+    if (ward) setEditWard(ward);
+    if (district) setEditDistrict(district);
+    if (city) setEditCity(city);
   };
 
   const insets = useSafeAreaInsets();

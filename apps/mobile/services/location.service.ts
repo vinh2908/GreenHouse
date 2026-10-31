@@ -430,7 +430,13 @@ class LocationService {
         const saved = await AsyncStorage.getItem('@homemate_customer_pinned_location');
         if (saved) {
           const parsed = JSON.parse(saved);
-          if (parsed.coords?.latitude && parsed.coords?.longitude) {
+          const isFake =
+            !parsed.coords ||
+            (Math.abs(parsed.coords.latitude - 10.7769) < 0.015 &&
+              Math.abs(parsed.coords.longitude - 106.7009) < 0.015) ||
+            (Math.abs(parsed.coords.latitude - 10.7725) < 0.015 &&
+              Math.abs(parsed.coords.longitude - 106.6983) < 0.015);
+          if (!isFake && parsed.coords?.latitude && parsed.coords?.longitude) {
             refCoords = parsed.coords;
             this.cachedCoords = parsed.coords;
           }

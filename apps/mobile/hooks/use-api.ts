@@ -14,6 +14,7 @@ import {
   toastQueuedOffline,
 } from '@/services/offline.service';
 import { useOfflineStore } from '@/stores/offline.store';
+import { useAuthStore } from '@/stores/auth.store';
 import Toast from 'react-native-toast-message';
 
 // ─── Auth ──────────────────────────────────────────────────────────────────────
@@ -2045,8 +2046,11 @@ export interface LoyaltyTransactionItem {
 }
 
 export function useLoyaltyAccount() {
+  const isAuth = useAuthStore(s => s.isAuthenticated);
   return useQuery({
     queryKey: ['loyalty', 'me'],
+    enabled: !!isAuth,
+    staleTime: 30000,
     queryFn: async () => {
       const { data } = await apiClient.get('/loyalty/me');
       return data.data as LoyaltyAccount;
@@ -2055,8 +2059,11 @@ export function useLoyaltyAccount() {
 }
 
 export function useLoyaltyHistory(page = 1, limit = 30) {
+  const isAuth = useAuthStore(s => s.isAuthenticated);
   return useQuery({
     queryKey: ['loyalty', 'history', page, limit],
+    enabled: !!isAuth,
+    staleTime: 30000,
     queryFn: async () => {
       const { data } = await apiClient.get('/loyalty/me/history', { params: { page, limit } });
       return data.data as {
@@ -2162,12 +2169,20 @@ export interface EarningsReport {
 }
 
 export function useEarningsReport() {
+  const isAuth = useAuthStore(s => s.isAuthenticated);
   return useQuery({
     queryKey: ['payments', 'earnings-report'],
     queryFn: async () => {
-      const { data } = await apiClient.get('/payments/me/earnings-report');
-      return data.data as EarningsReport;
+      try {
+        const { data } = await apiClient.get('/payments/me/earnings-report', { timeout: 10000 });
+        return (data?.data ?? data) as EarningsReport;
+      } catch {
+        return null;
+      }
     },
+    enabled: !!isAuth,
+    retry: 1,
+    staleTime: 30000,
   });
 }
 

@@ -61,10 +61,23 @@ export default function BankAccountScreen() {
   const router = useRouter();
   const { role } = useLocalSearchParams<{ role?: string }>();
   const { user } = useAuthStore();
+  const searchRole =
+    typeof globalThis !== 'undefined' && (globalThis as any).location?.search
+      ? new URLSearchParams((globalThis as any).location.search).get('role')
+      : null;
+  const localRole =
+    typeof globalThis !== 'undefined'
+      ? (globalThis as any).localStorage?.getItem('homemate_active_role')
+      : null;
   const isHelper =
     role === 'helper' ||
+    searchRole === 'helper' ||
     user?.active_role === 'helper' ||
-    (Array.isArray(user?.roles) && (user.roles as any[]).includes('helper') && role !== 'customer');
+    localRole === 'helper' ||
+    (Array.isArray(user?.roles) &&
+      (user.roles as any[]).includes('helper') &&
+      role !== 'customer' &&
+      searchRole !== 'customer');
 
   const { data: profile, isLoading, refetch } = useHelperProfile();
   const { data: txData, isLoading: txLoading } = useTransactions(1);
