@@ -12,7 +12,15 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { ArrowLeft, Send, ShieldCheck, Phone, ImagePlus, X, AlertCircle } from 'lucide-react-native';
+import {
+  ArrowLeft,
+  Send,
+  ShieldCheck,
+  Phone,
+  ImagePlus,
+  X,
+  AlertCircle,
+} from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import dayjs from 'dayjs';
 import Toast from 'react-native-toast-message';
@@ -58,13 +66,7 @@ export function resolveMediaUrl(rawUrl: string): string {
   return url;
 }
 
-function ChatImageBubble({
-  uri,
-  onPress,
-}: {
-  uri: string;
-  onPress: () => void;
-}) {
+function ChatImageBubble({ uri, onPress }: { uri: string; onPress: () => void }) {
   const resolvedUrl = useMemo(() => resolveMediaUrl(uri), [uri]);
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
 
