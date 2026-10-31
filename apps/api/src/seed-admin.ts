@@ -2,7 +2,9 @@ import mongoose from 'mongoose';
 import * as bcrypt from 'bcryptjs';
 
 async function checkAndCreateAdmin() {
-  await mongoose.connect('mongodb://localhost:27017/homemate');
+  const mongoUri =
+    process.env.MONGODB_URI || 'mongodb://admin:password@localhost:27017/homemate?authSource=admin';
+  await mongoose.connect(mongoUri);
   const db = mongoose.connection.db;
   if (!db) throw new Error('No DB');
 
