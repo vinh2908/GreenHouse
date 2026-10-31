@@ -12,7 +12,9 @@
     "test": "jest --runInBand --passWithNoTests",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
-    "test:e2e": "jest --config ./test/jest-e2e.json --runInBand"
+    "test:e2e": "jest --config ./test/jest-e2e.json --runInBand",
+    "seed": "ts-node -r tsconfig-paths/register src/seed.ts",
+    "seed:admin": "ts-node -r tsconfig-paths/register src/seed-admin.ts"
   },
   "dependencies": {
     "@homemate/constants": "workspace:*",

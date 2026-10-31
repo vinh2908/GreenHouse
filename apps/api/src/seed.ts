@@ -4,7 +4,9 @@ import mongoose from 'mongoose';
 const PASSWORD_HASH_123456 = '$2b$10$epRzVl.X3fI4xL2KkWZzOuQY0e1M21V8O.WwM4n3N8e5P0w7Z4q6i';
 
 async function seed() {
-  await mongoose.connect('mongodb://localhost:27017/homemate');
+  const mongoUri =
+    process.env.MONGODB_URI || 'mongodb://admin:password@localhost:27017/homemate?authSource=admin';
+  await mongoose.connect(mongoUri);
   console.log('Connected to MongoDB');
 
   const db = mongoose.connection.db;
