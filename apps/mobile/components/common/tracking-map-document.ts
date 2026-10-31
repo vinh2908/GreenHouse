@@ -64,6 +64,24 @@ html,body,#map{height:100%;width:100%;margin:0;background:#f1f5f9;font-family:sy
   }
 
   // Khắc phục cảnh báo thiếu icon sprite (mountain-11, mountain-15) trong style Goong
+  function addMountainFallbacks() {
+    try {
+      var canvas = document.createElement('canvas');
+      canvas.width = 16;
+      canvas.height = 16;
+      var ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, 16, 16);
+      var emptyData = ctx.getImageData(0, 0, 16, 16);
+      if (!map.hasImage('mountain-11')) map.addImage('mountain-11', emptyData);
+      if (!map.hasImage('mountain-15')) map.addImage('mountain-15', emptyData);
+    } catch(e){}
+    try {
+      if (map.getLayer && map.getLayer('poi-mountain')) {
+        map.setLayoutProperty('poi-mountain', 'icon-image', '');
+      }
+    } catch(e){}
+  }
+
   map.on('styleimagemissing', function(e){
     var id = e.id;
     if(!map.hasImage(id)){
@@ -76,6 +94,10 @@ html,body,#map{height:100%;width:100%;margin:0;background:#f1f5f9;font-family:sy
     }
   });
 
+  map.on('styledata', function(){
+    addMountainFallbacks();
+  });
+
   map.on('error', function(e){
     console.warn('[Goong Tracking Map] Lỗi:', e);
   });
@@ -84,6 +106,7 @@ html,body,#map{height:100%;width:100%;margin:0;background:#f1f5f9;font-family:sy
   var pendingRouteGeoJson = null;
 
   map.on('load', function(){
+    addMountainFallbacks();
     mapLoaded = true;
     map.addSource('route', {
       type: 'geojson',
