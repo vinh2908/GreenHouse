@@ -247,7 +247,7 @@ export function DemandMapView({ areas, focus, height = 300, userCoords }: Props)
   const activeFocus = focus && focus.lat != null && focus.lng != null ? focus : withCoords[0];
   const center = activeFocus
     ? { latitude: activeFocus.lat as number, longitude: activeFocus.lng as number }
-    : userCoords ?? DANANG_CENTER;
+    : (userCoords ?? DANANG_CENTER);
   const zoom = activeFocus ? 13 : 12;
   const totalJobs = withCoords.reduce((sum, a) => sum + (a.open_jobs || 0), 0);
   const statusText =
