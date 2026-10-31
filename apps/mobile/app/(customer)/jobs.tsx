@@ -29,19 +29,19 @@ export default function CustomerJobsScreen() {
   const [activeTab, setActiveTab] = useState(0);
   const user = useAuthStore(s => s.user);
   const isAuthLoading = useAuthStore(s => s.isLoading);
-  const { data: profile } = useMyProfile();
-  const effectiveRole = profile?.active_role ?? user?.active_role;
+  const isSwitchingRole = useAuthStore(s => s.isSwitchingRole);
+  const isHelper = user?.active_role === 'helper';
 
   const { data: jobs, isLoading, isRefetching, refetch } = useMyJobs(TABS[activeTab].key);
   const insets = useSafeAreaInsets();
 
   useEffect(() => {
-    if (!isAuthLoading && effectiveRole === 'helper') {
+    if (!isAuthLoading && !isSwitchingRole && isHelper) {
       router.replace('/(helper)/jobs');
     }
-  }, [isAuthLoading, effectiveRole, router]);
+  }, [isAuthLoading, isSwitchingRole, isHelper, router]);
 
-  if (isAuthLoading || effectiveRole === 'helper') {
+  if (isAuthLoading || (!isSwitchingRole && isHelper)) {
     return (
       <View style={{ flex: 1, backgroundColor: '#F8F9FA' }}>
         {/* Header skeleton */}
