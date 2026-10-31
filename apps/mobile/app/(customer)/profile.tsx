@@ -65,7 +65,7 @@ export default function CustomerProfileScreen() {
   const logout = useAuthStore(s => s.logout);
   const user = useAuthStore(s => s.user);
   const isAuthLoading = useAuthStore(s => s.isLoading);
-  const isSwitchingRef = useRef(false);
+  const isSwitchingRole = useAuthStore(s => s.isSwitchingRole);
 
   const { data: profile, isLoading: isProfileLoading, refetch: refetchProfile } = useMyProfile();
   const {
@@ -76,7 +76,7 @@ export default function CustomerProfileScreen() {
   const switchRole = useSwitchRole();
 
   const displayUser = profile ?? user;
-  const effectiveRole = displayUser?.active_role ?? user?.active_role;
+  const effectiveRole = user?.active_role ?? displayUser?.active_role;
 
   useEffect(() => {
     if (useAuthStore.getState().isAuthenticated) {
@@ -84,12 +84,12 @@ export default function CustomerProfileScreen() {
     }
   }, [refetchLoyalty]);
 
-  // Khi đang ở chế độ thợ, chuyển ngay sang màn hình tài khoản thợ
+  // Khi đang ở chế độ thợ và không trong quá trình đổi vai trò, chuyển ngay sang dashboard thợ
   useEffect(() => {
-    if (!isAuthLoading && effectiveRole === 'helper' && !isSwitchingRef.current) {
-      router.replace('/(helper)/profile');
+    if (!isAuthLoading && !isSwitchingRole && effectiveRole === 'helper') {
+      router.replace('/(helper)/dashboard');
     }
-  }, [isAuthLoading, effectiveRole]);
+  }, [isAuthLoading, isSwitchingRole, effectiveRole]);
 
   const handleLogout = () => {
     const doLogout = async () => {
@@ -117,20 +117,31 @@ export default function CustomerProfileScreen() {
   };
 
   const handleSwitchToHelper = async () => {
-    if (isSwitchingRef.current) return;
-    isSwitchingRef.current = true;
+    if (useAuthStore.getState().isSwitchingRole) return;
+    useAuthStore.getState().setSwitchingRole(true);
+
+    // 1. Cập nhật ngay auth store và local storage
+    useAuthStore.getState().switchRole('helper');
+
+    // 2. Cập nhật lạc quan cache ['profile', 'me'] để tránh trả về active_role khách cũ
+    queryClient.setQueryData(['profile', 'me'], (old: any) =>
+      old ? { ...old, active_role: 'helper' } : old,
+    );
+
+    // 3. Chuyển hướng dứt khoát sang dashboard thợ
+    router.replace('/(helper)/dashboard');
+
+    // 4. Đồng bộ lên backend API
     try {
       await switchRole.mutateAsync('helper');
     } catch {
-      /* fallback sang local state */
+      /* fallback sang auth store */
     }
-    useAuthStore.getState().switchRole('helper');
-    router.replace('/(helper)/dashboard');
   };
 
   const insets = useSafeAreaInsets();
 
-  if (isAuthLoading || effectiveRole === 'helper') {
+  if (isAuthLoading || (!isSwitchingRole && effectiveRole === 'helper')) {
     return (
       <View
         style={{

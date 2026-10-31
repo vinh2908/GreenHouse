@@ -90,7 +90,29 @@ export function useSwitchRole() {
   return useMutation({
     mutationFn: (activeRole: 'customer' | 'helper') =>
       apiClient.patch('/users/me/role', { active_role: activeRole }),
-    onSuccess: () => {
+    onMutate: async (activeRole: 'customer' | 'helper') => {
+      qc.setQueryData(['profile', 'me'], (old: any) => {
+        if (!old) return old;
+        const updatedRoles = Array.isArray(old.roles) ? [...old.roles] : [];
+        if (!updatedRoles.includes(activeRole)) updatedRoles.push(activeRole);
+        return {
+          ...old,
+          roles: updatedRoles,
+          active_role: activeRole,
+        };
+      });
+    },
+    onSuccess: (_data, activeRole) => {
+      qc.setQueryData(['profile', 'me'], (old: any) => {
+        if (!old) return old;
+        const updatedRoles = Array.isArray(old.roles) ? [...old.roles] : [];
+        if (!updatedRoles.includes(activeRole)) updatedRoles.push(activeRole);
+        return {
+          ...old,
+          roles: updatedRoles,
+          active_role: activeRole,
+        };
+      });
       qc.invalidateQueries({ queryKey: ['profile', 'me'] });
     },
   });

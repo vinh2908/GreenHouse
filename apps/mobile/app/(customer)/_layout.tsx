@@ -1,8 +1,7 @@
 import { Tabs, useRouter, usePathname } from 'expo-router';
 import { CustomTabBar } from '@/components/common/custom-tab-bar';
 import { useAuthStore } from '@/stores/auth.store';
-import { useEffect, useState } from 'react';
-import * as SecureStore from '@/services/secure-storage';
+import { useEffect } from 'react';
 import { View, ActivityIndicator } from 'react-native';
 import { COLORS } from '@/components/ui';
 
@@ -11,28 +10,12 @@ export default function CustomerLayout() {
   const pathname = usePathname();
   const user = useAuthStore(s => s.user);
   const isAuthLoading = useAuthStore(s => s.isLoading);
-  const [persistedRole, setPersistedRole] = useState<string | null>(() => {
-    const g = typeof globalThis !== 'undefined' ? (globalThis as any) : null;
-    if (g?.localStorage) {
-      try {
-        return g.localStorage.getItem('homemate_active_role');
-      } catch {}
-    }
-    return null;
-  });
+  const isSwitchingRole = useAuthStore(s => s.isSwitchingRole);
+
+  const isHelper = user?.active_role === 'helper';
 
   useEffect(() => {
-    SecureStore.getItemAsync('homemate_active_role')
-      .then(role => {
-        if (role) setPersistedRole(role);
-      })
-      .catch(() => {});
-  }, []);
-
-  const effectiveRole = user?.active_role || persistedRole;
-
-  useEffect(() => {
-    if (!isAuthLoading && effectiveRole === 'helper') {
+    if (!isAuthLoading && !isSwitchingRole && isHelper) {
       if (pathname.includes('profile')) {
         router.replace('/(helper)/profile');
       } else if (pathname.includes('jobs')) {
@@ -43,9 +26,9 @@ export default function CustomerLayout() {
         router.replace('/(helper)/dashboard');
       }
     }
-  }, [isAuthLoading, effectiveRole, pathname, router]);
+  }, [isAuthLoading, isSwitchingRole, isHelper, pathname, router]);
 
-  if (isAuthLoading || effectiveRole === 'helper') {
+  if (isAuthLoading || (!isSwitchingRole && isHelper)) {
     return (
       <View
         style={{
