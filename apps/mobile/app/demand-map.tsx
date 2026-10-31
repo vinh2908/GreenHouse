@@ -1,19 +1,28 @@
 // app/demand-map.tsx — Bản đồ nhu cầu cho thợ (Roadmap Phase 2 — Feature 15)
 // Xem khu vực nào đang có nhiều đơn chờ báo giá nhất để chủ động di chuyển tới.
 import { useMemo, useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, RefreshControl } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, RefreshControl, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { ArrowLeft, MapPin } from 'lucide-react-native';
-import { useDemandMap, type DemandArea } from '@/hooks/use-api';
+import { useDemandMap, useHelperProfile, type DemandArea } from '@/hooks/use-api';
 import { Card, COLORS, EmptyState } from '@/components/ui';
 import { DemandMapView } from '@/components/common/demand-map-view';
 
 export default function DemandMapScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { data: helperProfile } = useHelperProfile();
   const { data: areas, isLoading, isRefetching, refetch } = useDemandMap();
   const [focus, setFocus] = useState<DemandArea | null>(null);
+
+  const helperCoords = useMemo(() => {
+    const coords = helperProfile?.location?.coordinates;
+    if (coords && Array.isArray(coords) && coords.length >= 2 && coords[0] && coords[1]) {
+      return { latitude: coords[1], longitude: coords[0] };
+    }
+    return null;
+  }, [helperProfile]);
 
   const sorted = useMemo(
     () => [...(areas ?? [])].sort((a, b) => b.open_jobs - a.open_jobs),
@@ -76,19 +85,22 @@ export default function DemandMapScreen() {
           />
         }
       >
-        {/* Bản đồ (tự ẩn trên web — chỉ còn danh sách) */}
-        <DemandMapView areas={sorted} focus={activeFocus} />
+        {/* Bản đồ Goong nhu cầu (dùng chung Web + App) */}
+        <DemandMapView areas={sorted} focus={activeFocus} userCoords={helperCoords} />
 
         {isLoading ? (
-          <Card style={{ alignItems: 'center', paddingVertical: 32 }}>
-            <EmptyState emoji="⏳" title="Đang tải bản đồ nhu cầu..." />
+          <Card style={{ alignItems: 'center', paddingVertical: 24, gap: 10 }}>
+            <ActivityIndicator size="small" color={COLORS.primary} />
+            <Text style={{ fontSize: 13, color: COLORS.gray[500] }}>
+              Đang tải dữ liệu bản đồ nhu cầu...
+            </Text>
           </Card>
         ) : sorted.length === 0 ? (
           <Card style={{ alignItems: 'center', paddingVertical: 32 }}>
             <EmptyState
               emoji="🌙"
               title="Chưa có đơn nào đang mở"
-              subtitle="Hiện không có đơn chờ báo giá. Quay lại sau ít phút nhé."
+              subtitle="Hiện không có đơn chờ báo giá trong khu vực. Bản đồ đang hiển thị vị trí của bạn, đơn mới sẽ xuất hiện ngay khi có khách đăng việc."
             />
           </Card>
         ) : (
