@@ -346,7 +346,8 @@ export default function CustomerHomeScreen() {
 
   // Danh sách thợ gần thật từ API (chỉ tải khi đã có vị trí thật của người dùng)
   const nearbyHelpers: NearbyHelperItem[] = useMemo(() => {
-    if (!currentCoords || !nearbyRaw || !Array.isArray(nearbyRaw) || nearbyRaw.length === 0) return [];
+    if (!currentCoords || !nearbyRaw || !Array.isArray(nearbyRaw) || nearbyRaw.length === 0)
+      return [];
     return nearbyRaw
       .filter((h: any) => h.location?.coordinates && h.location.coordinates.length >= 2)
       .map((h: any, idx: number) => {

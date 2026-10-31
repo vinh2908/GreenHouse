@@ -2492,7 +2492,8 @@ export default function JobDetailScreen() {
                     }}
                   >
                     <Text style={{ fontSize: 12, color: COLORS.gray[500] }}>
-                      Không tìm thấy địa điểm phù hợp trên bản đồ Goong. Bạn vẫn có thể nhập địa chỉ thủ công bên dưới.
+                      Không tìm thấy địa điểm phù hợp trên bản đồ Goong. Bạn vẫn có thể nhập địa chỉ
+                      thủ công bên dưới.
                     </Text>
                   </View>
                 )}
