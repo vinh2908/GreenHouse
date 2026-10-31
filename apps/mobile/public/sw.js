@@ -1,5 +1,5 @@
 // Green House PWA Service Worker
-const CACHE_NAME = 'greenhouse-pwa-v1';
+const CACHE_NAME = 'greenhouse-pwa-v2';
 const PRECACHE_URLS = [
   '/',
   '/manifest.json',
@@ -34,7 +34,54 @@ self.addEventListener('activate', event => {
 });
 
 self.addEventListener('fetch', event => {
-  // Let network take precedence, fallback to cache
   if (event.request.method !== 'GET') return;
-  event.respondWith(fetch(event.request).catch(() => caches.match(event.request)));
+  const url = new URL(event.request.url);
+
+  // Bỏ qua các API requests, websocket và bên thứ 3
+  if (
+    url.pathname.startsWith('/api/') ||
+    url.pathname.startsWith('/socket.io/') ||
+    url.hostname.includes('render.com') ||
+    url.hostname.includes('goong.io') ||
+    url.hostname.includes('unpkg.com')
+  ) {
+    return;
+  }
+
+  // Luôn đảm bảo event.respondWith trả về một Response hợp lệ, không bao giờ undefined hoặc rejected
+  event.respondWith(
+    fetch(event.request)
+      .then(response => {
+        return response;
+      })
+      .catch(async () => {
+        try {
+          const cached = await caches.match(event.request);
+          if (cached) return cached;
+
+          // Nếu là navigation request (HTML trang như /job-detail/...), trả về shell SPA '/'
+          if (event.request.mode === 'navigate' || event.request.destination === 'document') {
+            const rootShell = await caches.match('/');
+            if (rootShell) return rootShell;
+          }
+        } catch {}
+
+        // Trả về Response fallback hợp lệ thay vì throw hoặc undefined
+        return new Response(
+          event.request.mode === 'navigate'
+            ? '<!DOCTYPE html><html><head><meta charset="utf-8"><title>Green House</title></head><body style="font-family:sans-serif;text-align:center;padding:40px;background:#f8fafc;"><div style="max-width:400px;margin:0 auto;background:#fff;padding:24px;border-radius:16px;box-shadow:0 4px 12px rgba(0,0,0,0.08);"><h3 style="color:#1f2937;margin-bottom:8px;">Kết nối mạng không ổn định</h3><p style="color:#6b7280;font-size:14px;line-height:20px;">Vui lòng kiểm tra lại kết nối Internet của thiết bị để tiếp tục.</p><button onclick="location.reload()" style="margin-top:16px;padding:10px 24px;background:#16a34a;color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer;">Tải lại trang</button></div></body></html>'
+            : '',
+          {
+            status: 503,
+            statusText: 'Service Unavailable',
+            headers: {
+              'Content-Type':
+                event.request.mode === 'navigate'
+                  ? 'text/html; charset=utf-8'
+                  : 'text/plain',
+            },
+          },
+        );
+      }),
+  );
 });

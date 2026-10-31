@@ -1,8 +1,12 @@
 import {
   BadRequestException,
   Controller,
+  Get,
+  NotFoundException,
+  Param,
   Post,
   Req,
+  Res,
   UploadedFile,
   UseGuards,
   UseInterceptors,
@@ -10,12 +14,15 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiBearerAuth, ApiBody, ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
+import { InjectConnection } from '@nestjs/mongoose';
+import { Connection, mongo } from 'mongoose';
 import { randomBytes } from 'node:crypto';
-import { mkdirSync } from 'node:fs';
-import { extname, join, relative, sep } from 'node:path';
+import { createReadStream, createWriteStream, existsSync, mkdirSync } from 'node:fs';
+import { dirname, extname, join, relative, sep } from 'node:path';
 import { diskStorage } from 'multer';
-import type { Request } from 'express';
+import type { Request, Response } from 'express';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { Public } from '../../common/decorators/public.decorator';
 
 export const UPLOAD_ROOT = join(process.cwd(), 'uploads');
 
@@ -46,7 +53,10 @@ const storage = diskStorage({
 @UseGuards(JwtAuthGuard)
 @Controller('uploads')
 export class UploadsController {
-  constructor(private readonly config: ConfigService) {}
+  constructor(
+    private readonly config: ConfigService,
+    @InjectConnection() private readonly connection: Connection,
+  ) {}
 
   @Post()
   @ApiOperation({ summary: 'Upload ảnh/video (field "file"), trả về URL công khai' })
@@ -69,7 +79,20 @@ export class UploadsController {
   )
   upload(@UploadedFile() file: Express.Multer.File | undefined, @Req() req: Request) {
     if (!file) throw new BadRequestException('Thiếu file (field "file")');
-    const path = `/uploads/${relative(UPLOAD_ROOT, file.path).split(sep).join('/')}`;
+    const relPath = relative(UPLOAD_ROOT, file.path).split(sep).join('/');
+    const path = `/uploads/${relPath}`;
+
+    // Lưu bền vững vào MongoDB GridFS để không bị mất khi Render sleep/restart
+    try {
+      if (this.connection?.db) {
+        const bucket = new mongo.GridFSBucket(this.connection.db, { bucketName: 'uploads' });
+        const uploadStream = bucket.openUploadStream(relPath, {
+          metadata: { mimetype: file.mimetype, size: file.size },
+        });
+        createReadStream(file.path).pipe(uploadStream);
+      }
+    } catch {}
+
     const configuredBase = this.config.get<string>('PUBLIC_URL');
     let base = configuredBase || `${req.protocol}://${req.get('host')}`;
     if (
@@ -79,5 +102,53 @@ export class UploadsController {
       base = base.replace(/^http:\/\//i, 'https://');
     }
     return { url: `${base}${path}`, path, size: file.size, mimetype: file.mimetype };
+  }
+
+  @Public()
+  @Get(':folder/:filename')
+  @ApiOperation({ summary: 'Tải và xem file tĩnh công khai (vĩnh viễn qua GridFS)' })
+  async serveFile(
+    @Param('folder') folder: string,
+    @Param('filename') filename: string,
+    @Res() res: Response,
+  ) {
+    const relPath = `${folder}/${filename}`;
+    const localPath = join(UPLOAD_ROOT, relPath);
+
+    // 1. Nếu file đã có sẵn trên ổ đĩa local, trả về ngay
+    if (existsSync(localPath)) {
+      return res.sendFile(localPath);
+    }
+
+    // 2. Nếu file không có trên ổ đĩa (do Render xoá ổ tạm), khôi phục từ MongoDB GridFS
+    if (this.connection?.db) {
+      try {
+        const bucket = new mongo.GridFSBucket(this.connection.db, { bucketName: 'uploads' });
+        const files = await bucket.find({ filename: relPath }).limit(1).toArray();
+        if (files && files.length > 0) {
+          const fileMeta = files[0];
+          const ext = extname(filename).toLowerCase();
+          const contentType =
+            (fileMeta.metadata as any)?.mimetype ||
+            (ext === '.jpg' || ext === '.jpeg'
+              ? 'image/jpeg'
+              : ext === '.png'
+                ? 'image/png'
+                : 'application/octet-stream');
+          res.setHeader('Content-Type', contentType);
+          res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+
+          try {
+            mkdirSync(dirname(localPath), { recursive: true });
+            const writeCache = createWriteStream(localPath);
+            bucket.openDownloadStreamByName(relPath).pipe(writeCache);
+          } catch {}
+
+          return bucket.openDownloadStreamByName(relPath).pipe(res);
+        }
+      } catch {}
+    }
+
+    throw new NotFoundException('Tệp tin không tồn tại hoặc đã bị xóa');
   }
 }

@@ -447,6 +447,7 @@ export class PaymentsService {
             $lt: nextMonthStart > nextMonday ? nextMonthStart : nextMonday,
           },
         })
+        .maxTimeMS(5000)
         .sort({ created_at: 1 })
         .lean()
         .exec();
@@ -499,6 +500,7 @@ export class PaymentsService {
 
       const profile = await this.helperModel
         .findOne({ user_id: new Types.ObjectId(userId) })
+        .maxTimeMS(5000)
         .select('income_goal_monthly')
         .lean()
         .exec();

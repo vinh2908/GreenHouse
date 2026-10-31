@@ -6,6 +6,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
+import { Public } from '../../common/decorators/public.decorator';
 import { UserRole } from '@homemate/types';
 
 @ApiTags('Reviews')
@@ -37,6 +38,7 @@ export class ReviewsController {
 
   // ─── Get reviews for a helper (public) ────────────────────────────────────
 
+  @Public()
   @Get('helpers/:helperId')
   @ApiOperation({ summary: 'Lấy danh sách đánh giá của một helper' })
   @ApiQuery({ name: 'page', required: false, type: Number })
@@ -51,6 +53,7 @@ export class ReviewsController {
 
   // ─── Get rating stats for a helper ────────────────────────────────────────
 
+  @Public()
   @Get('helpers/:helperId/stats')
   @ApiOperation({ summary: 'Thống kê rating của helper' })
   async getHelperStats(@Param('helperId') helperId: string) {
