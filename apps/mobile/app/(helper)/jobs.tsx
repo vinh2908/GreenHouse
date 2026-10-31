@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, RefreshControl } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, RefreshControl, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { ChevronRight, MapPin, Clock, Navigation } from 'lucide-react-native';
@@ -36,6 +36,7 @@ export default function HelperJobsScreen() {
   const respondInvitation = useRespondTeamInvitation();
   // Feature 7/9: nhận việc trực tiếp (giá cam kết / đơn bảo hành)
   const acceptFixed = useAcceptFixedPrice();
+  const isAuth = useAuthStore(s => s.isAuthenticated);
   const { data: helperProfile, isLoading: pLoading } = useHelperProfile();
   const kycStatus = helperProfile?.verification_status as string | undefined;
   const isVerified = kycStatus === 'approved';
@@ -44,7 +45,7 @@ export default function HelperJobsScreen() {
     isLoading: aLoading,
     isRefetching: aRefetching,
     refetch: ra,
-  } = useAvailableJobs(undefined, 1, isVerified);
+  } = useAvailableJobs(undefined, 1, Boolean(isAuth && isVerified !== false));
   const {
     data: active,
     isLoading: acLoading,
@@ -267,7 +268,14 @@ export default function HelperJobsScreen() {
           />
         }
       >
-        {tab === 0 && !pLoading && !isVerified ? (
+        {tab === 0 && (pLoading || (aLoading && !available)) ? (
+          <Card style={{ alignItems: 'center', paddingVertical: 40, gap: 12 }}>
+            <ActivityIndicator size="small" color={COLORS.primary} />
+            <Text style={{ fontSize: 13, color: COLORS.gray[500] }}>
+              Đang kiểm tra trạng thái và tải đơn mới...
+            </Text>
+          </Card>
+        ) : tab === 0 && !pLoading && helperProfile && !isVerified ? (
           <Card style={{ alignItems: 'center', paddingVertical: 32, gap: 12 }}>
             <EmptyState
               emoji={kycStatus === 'pending' ? '⏳' : '🪪'}
@@ -304,33 +312,27 @@ export default function HelperJobsScreen() {
             <EmptyState
               emoji={
                 tab === 0
-                  ? !isVerified
-                    ? '🪪'
-                    : available?.empty_reason === 'outside_working_hours'
-                      ? '⏰'
-                      : '🔍'
+                  ? available?.empty_reason === 'outside_working_hours'
+                    ? '⏰'
+                    : '🔍'
                   : tab === 1
                     ? '📋'
                     : '📚'
               }
               title={
                 tab === 0
-                  ? !isVerified
-                    ? 'Chưa xác thực e-KYC'
-                    : available?.empty_reason === 'outside_working_hours'
-                      ? 'Không có việc trong khung giờ làm'
-                      : 'Chưa có đơn mới'
+                  ? available?.empty_reason === 'outside_working_hours'
+                    ? 'Không có việc trong khung giờ làm'
+                    : 'Chưa có đơn mới'
                   : tab === 1
                     ? 'Không có đơn đang làm'
                     : 'Chưa có lịch sử'
               }
               subtitle={
                 tab === 0
-                  ? !isVerified
-                    ? 'Bạn cần hoàn tất xác minh e-KYC (CCCD) để mở khóa xem và nhận đơn mới xung quanh bạn.'
-                    : available?.empty_reason === 'outside_working_hours'
-                      ? 'Hiện có việc mới nhưng ngoài khung giờ hoạt động bạn đã đăng ký. Bạn có thể cập nhật Lịch làm việc trong Hồ sơ để nhận thêm đơn.'
-                      : 'Hệ thống đang quét đơn mới. Đơn sẽ xuất hiện ngay khi có khách đăng việc.'
+                  ? available?.empty_reason === 'outside_working_hours'
+                    ? 'Hiện có việc mới nhưng ngoài khung giờ hoạt động bạn đã đăng ký. Bạn có thể cập nhật Lịch làm việc trong Hồ sơ để nhận thêm đơn.'
+                    : 'Hệ thống đang quét đơn mới. Đơn sẽ xuất hiện ngay khi có khách đăng việc.'
                   : undefined
               }
             />
