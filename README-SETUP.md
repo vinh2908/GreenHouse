@@ -201,22 +201,26 @@ EXPO_PUBLIC_GOONG_MAP_KEY=<key-goong-map-nhóm-cấp>
 > **Lưu ý:** `apps/mobile/metro.config.js` kiểm tra bắt buộc biến `EXPO_PUBLIC_GOONG_API_KEY` (độ dài >= 10 ký tự, không bắt đầu bằng eyJ hay {). Nếu thiếu biến này trong `apps/mobile/.env`, Metro bundler sẽ dừng build ngay lập tức. Vì vậy bước tạo file này là **bắt buộc**.
 
 ### 5.3. Các biến không bắt buộc khác
+
 - Stringee, Gemini, OpenAI: Nút gọi thoại và tính năng AI chỉ là phụ. Thiếu các biến này hệ thống tự ẩn nút gọi, app vẫn hoạt động bình thường. Không cần đợi xin đủ key để bắt đầu chạy.
 
 ## 6. Bước 4 — Bật hạ tầng (MongoDB & Redis) bằng Docker & Seed dữ liệu ban đầu
 
 ### 4.1. Bật container
+
 ```bash
 docker compose up -d mongodb redis
 docker compose ps
 ```
 
 **Kiểm tra:** `docker compose ps` phải thấy `homemate-mongodb` và `homemate-redis` ở trạng thái running (hoặc healthy).
+
 > **Lưu ý:** Hệ thống đã chuyển hoàn toàn sang dùng MongoDB GridFS kết hợp bộ đệm ổ đĩa cho luồng upload file (không còn dùng MinIO hay minio-init, và không cần tạo bucket nữa). Toàn bộ ảnh đại diện, ảnh CCCD, ảnh đơn hàng được lưu trữ bền vững trực tiếp trong MongoDB và vẫn đọc lại được bình thường sau khi API khởi động lại.
 
 Đợi thêm khoảng 10 giây sau khi container chạy để Mongo sẵn sàng nhận kết nối.
 
 ### 4.2. Nạp dữ liệu mẫu ban đầu (Seed Database)
+
 Lần đầu tiên clone về, cơ sở dữ liệu MongoDB hoàn toàn trống. Chạy lệnh sau ở root repo để tạo dịch vụ và tài khoản Quản trị viên (Admin):
 
 ```bash
@@ -224,7 +228,8 @@ pnpm --filter @homemate/api seed
 pnpm --filter @homemate/api seed:admin
 ```
 
-**Kiểm tra:** 
+**Kiểm tra:**
+
 - Lệnh `seed` in ra `Seeded 8 services` và tài khoản mẫu.
 - Lệnh `seed:admin` in ra `Admin user created: 0999999999 / admin123`.
 
