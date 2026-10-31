@@ -225,24 +225,64 @@ export default function HelperPublicProfileScreen() {
             )}
           </View>
 
-          <View
-            style={{
-              backgroundColor: '#ECFDF5',
-              borderWidth: 1.5,
-              borderColor: '#A7F3D0',
-              borderRadius: 14,
-              paddingHorizontal: 14,
-              paddingVertical: 8,
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: 8,
-            }}
-          >
-            <ShieldCheck size={18} color={COLORS.success} />
-            <Text style={{ fontSize: 12.5, fontWeight: '800', color: COLORS.success }}>
-              Đã xác minh nhân thân & Hồ sơ tư pháp (e-KYC 100%)
-            </Text>
-          </View>
+          {profile?.verification_status === 'approved' ? (
+            <View
+              style={{
+                backgroundColor: '#ECFDF5',
+                borderWidth: 1.5,
+                borderColor: '#A7F3D0',
+                borderRadius: 14,
+                paddingHorizontal: 14,
+                paddingVertical: 8,
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 8,
+              }}
+            >
+              <ShieldCheck size={18} color={COLORS.success} />
+              <Text style={{ fontSize: 12.5, fontWeight: '800', color: COLORS.success }}>
+                Đã xác minh nhân thân & Hồ sơ tư pháp (e-KYC 100%)
+              </Text>
+            </View>
+          ) : profile?.verification_status === 'pending' ? (
+            <View
+              style={{
+                backgroundColor: '#FFFBEB',
+                borderWidth: 1.5,
+                borderColor: '#FDE68A',
+                borderRadius: 14,
+                paddingHorizontal: 14,
+                paddingVertical: 8,
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 8,
+              }}
+            >
+              <ShieldCheck size={18} color="#D97706" />
+              <Text style={{ fontSize: 12.5, fontWeight: '800', color: '#D97706' }}>
+                Hồ sơ e-KYC đang chờ duyệt
+              </Text>
+            </View>
+          ) : (
+            <View
+              style={{
+                backgroundColor: '#FEF2F2',
+                borderWidth: 1.5,
+                borderColor: '#FECACA',
+                borderRadius: 14,
+                paddingHorizontal: 14,
+                paddingVertical: 8,
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 8,
+              }}
+            >
+              <ShieldCheck size={18} color={COLORS.error} />
+              <Text style={{ fontSize: 12.5, fontWeight: '800', color: COLORS.error }}>
+                Chưa xác minh danh tính e-KYC
+              </Text>
+            </View>
+          )}
         </Card>
 
         {/* ── 2. KHỐI CHỈ SỐ UY TÍN & KINH NGHIỆM ──────────────────────── */}
@@ -415,8 +455,16 @@ export default function HelperPublicProfileScreen() {
               <Text style={{ fontSize: 14, fontWeight: '700', color: COLORS.gray[700] }}>
                 Chưa có đánh giá nào từ khách hàng
               </Text>
-              <Text style={{ fontSize: 12, color: COLORS.gray[500], textAlign: 'center', lineHeight: 18 }}>
-                Các đánh giá và nhận xét sau khi bạn hoàn thành các đơn hàng sẽ được hiển thị đầy đủ tại đây.
+              <Text
+                style={{
+                  fontSize: 12,
+                  color: COLORS.gray[500],
+                  textAlign: 'center',
+                  lineHeight: 18,
+                }}
+              >
+                Các đánh giá và nhận xét sau khi bạn hoàn thành các đơn hàng sẽ được hiển thị đầy đủ
+                tại đây.
               </Text>
             </View>
           ) : (

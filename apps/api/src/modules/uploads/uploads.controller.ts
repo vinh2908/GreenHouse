@@ -77,7 +77,7 @@ export class UploadsController {
             ),
     }),
   )
-  upload(@UploadedFile() file: Express.Multer.File | undefined, @Req() req: Request) {
+  async upload(@UploadedFile() file: Express.Multer.File | undefined, @Req() req: Request) {
     if (!file) throw new BadRequestException('Thiếu file (field "file")');
     const relPath = relative(UPLOAD_ROOT, file.path).split(sep).join('/');
     const path = `/uploads/${relPath}`;
@@ -86,12 +86,22 @@ export class UploadsController {
     try {
       if (this.connection?.db) {
         const bucket = new mongo.GridFSBucket(this.connection.db, { bucketName: 'uploads' });
-        const uploadStream = bucket.openUploadStream(relPath, {
-          metadata: { mimetype: file.mimetype, size: file.size },
+        await new Promise<void>((resolve, reject) => {
+          const uploadStream = bucket.openUploadStream(relPath, {
+            metadata: { mimetype: file.mimetype, size: file.size },
+          });
+          createReadStream(file.path)
+            .pipe(uploadStream)
+            .on('error', err => {
+              console.error('[Uploads] Lỗi pipe vào GridFS:', err);
+              resolve(); // Không chặn upload thành công trên đĩa nếu GridFS lỗi
+            })
+            .on('finish', () => resolve());
         });
-        createReadStream(file.path).pipe(uploadStream);
       }
-    } catch {}
+    } catch (err) {
+      console.error('[Uploads] Lỗi lưu GridFS:', err);
+    }
 
     const configuredBase = this.config.get<string>('PUBLIC_URL');
     let base = configuredBase || `${req.protocol}://${req.get('host')}`;
