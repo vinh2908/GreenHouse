@@ -32,11 +32,23 @@ const getInitialSyncAuth = () => {
       if (token && refresh) {
         const u = userStr ? JSON.parse(userStr) : null;
         if (u && role) u.active_role = role;
-        return { user: u, accessToken: token, refreshToken: refresh, isAuthenticated: true, isLoading: false };
+        return {
+          user: u,
+          accessToken: token,
+          refreshToken: refresh,
+          isAuthenticated: true,
+          isLoading: false,
+        };
       }
     } catch {}
   }
-  return { user: null, accessToken: null, refreshToken: null, isAuthenticated: false, isLoading: true };
+  return {
+    user: null,
+    accessToken: null,
+    refreshToken: null,
+    isAuthenticated: false,
+    isLoading: true,
+  };
 };
 const initAuth = getInitialSyncAuth();
 
