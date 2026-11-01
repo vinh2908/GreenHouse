@@ -46,7 +46,11 @@ function createMockEnvironment() {
     updateOne: jest.fn((filter: Record<string, unknown>, update: Record<string, unknown>) => {
       const apply = () => {
         if (filter['user_id'] && String(filter['user_id']) === String(helperUserId)) {
-          if (filter['status'] && typeof filter['status'] === 'object' && '$ne' in (filter['status'] as any)) {
+          if (
+            filter['status'] &&
+            typeof filter['status'] === 'object' &&
+            '$ne' in (filter['status'] as any)
+          ) {
             if (helperProfile['status'] === (filter['status'] as any).$ne) {
               return { modifiedCount: 0 };
             }
@@ -119,14 +123,18 @@ function createMockEnvironment() {
         return contractsStore.find(c => String(c['job_id']) === String(filter['job_id'])) || null;
       },
     })),
-    findOneAndUpdate: jest.fn((filter: Record<string, unknown>, update: Record<string, unknown>) => ({
-      exec: async () => {
-        const c = contractsStore.find(item => String(item['job_id']) === String(filter['job_id']));
-        if (!c) return null;
-        Object.assign(c, update);
-        return c;
-      },
-    })),
+    findOneAndUpdate: jest.fn(
+      (filter: Record<string, unknown>, update: Record<string, unknown>) => ({
+        exec: async () => {
+          const c = contractsStore.find(
+            item => String(item['job_id']) === String(filter['job_id']),
+          );
+          if (!c) return null;
+          Object.assign(c, update);
+          return c;
+        },
+      }),
+    ),
   };
 
   const gateway = {

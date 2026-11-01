@@ -74,7 +74,9 @@ async function checkManualAdminJobs() {
   if (adminCompletedUnpaidJobs.length > 0) {
     console.table(adminCompletedUnpaidJobs);
   } else {
-    console.log('✓ Không phát hiện đơn nào admin đổi thủ công sang hoàn thành mà thợ bị thiếu tiền công.');
+    console.log(
+      '✓ Không phát hiện đơn nào admin đổi thủ công sang hoàn thành mà thợ bị thiếu tiền công.',
+    );
   }
   console.log('────────────────────────────────────────────────────────\n');
 
