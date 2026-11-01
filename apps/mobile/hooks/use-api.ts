@@ -719,7 +719,42 @@ export function useSetHelperStatus() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (status: 'online' | 'offline') => apiClient.patch('/helpers/me/status', { status }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['helper', 'profile'] }),
+    onMutate: async (newStatus: 'online' | 'offline') => {
+      // 1. Hủy bất kỳ refetch nào đang chạy để không ghi đè cập nhật lạc quan
+      await qc.cancelQueries({ queryKey: ['helper', 'profile'] });
+
+      // 2. Snapshot giá trị cache hiện tại để rollback nếu có lỗi
+      const previousProfile = qc.getQueryData<any>(['helper', 'profile']);
+
+      // 3. Cập nhật lạc quan ngay lập tức trong cache
+      qc.setQueryData(['helper', 'profile'], (old: any) => ({
+        ...old,
+        status: newStatus,
+      }));
+
+      return { previousProfile };
+    },
+    onError: (err: any, _newStatus, context: any) => {
+      // Rollback lại trạng thái cũ nếu server trả về lỗi
+      if (context?.previousProfile !== undefined) {
+        qc.setQueryData(['helper', 'profile'], context.previousProfile);
+      }
+      const msg = err?.response?.data?.message || 'Không thể cập nhật trạng thái';
+      Toast.show({ type: 'error', text1: msg });
+    },
+    onSuccess: (res: any) => {
+      const serverProfile = res?.data?.data;
+      if (serverProfile) {
+        qc.setQueryData(['helper', 'profile'], (old: any) => ({
+          ...(old || {}),
+          ...serverProfile,
+        }));
+      }
+    },
+    onSettled: () => {
+      // Đồng bộ lại dữ liệu chính xác từ backend
+      qc.invalidateQueries({ queryKey: ['helper', 'profile'] });
+    },
   });
 }
 
