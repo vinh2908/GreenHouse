@@ -73,6 +73,18 @@ import { RoutingService } from './routing.service';
 // Beyond this straight-line distance a helper is treated as out of the job's area.
 const QUOTE_SERVICE_RADIUS_KM = 30;
 
+/**
+ * Danh sách trạng thái đơn mà thợ đang bận làm việc (không thể nhận việc mới).
+ * Bao gồm cả PENDING_REVIEW (chờ khách nghiệm thu).
+ */
+export const ACTIVE_HELPER_JOB_STATUSES: JobStatus[] = [
+  JobStatus.CONFIRMED,
+  JobStatus.HELPER_ON_THE_WAY,
+  JobStatus.HELPER_ARRIVED,
+  JobStatus.IN_PROGRESS,
+  JobStatus.PENDING_REVIEW,
+];
+
 /** Chuỗi ngày địa phương 'YYYY-MM-DD' — KHÔNG dùng toISOString() (lệch UTC). */
 export function localDateKey(d: Date): string {
   const pad = (n: number) => String(n).padStart(2, '0');
@@ -225,7 +237,19 @@ export class JobsService {
     job.status = status;
   }
 
-  private async setHelperBusy(helperId: string | Types.ObjectId, busy: boolean) {
+  /**
+   * Danh sách trạng thái đơn mà thợ đang bận làm việc (không thể nhận việc mới).
+   * Bao gồm cả PENDING_REVIEW (chờ khách nghiệm thu).
+   */
+  static readonly ACTIVE_HELPER_JOB_STATUSES: JobStatus[] = [
+    JobStatus.CONFIRMED,
+    JobStatus.HELPER_ON_THE_WAY,
+    JobStatus.HELPER_ARRIVED,
+    JobStatus.IN_PROGRESS,
+    JobStatus.PENDING_REVIEW,
+  ];
+
+  async setHelperBusy(helperId: string | Types.ObjectId, busy: boolean) {
     const helperObjId = new Types.ObjectId(String(helperId));
     if (busy) {
       await this.helperModel
@@ -242,13 +266,7 @@ export class JobsService {
       const otherActiveJobsCount = await this.jobModel.countDocuments({
         helper_id: helperObjId,
         status: {
-          $in: [
-            JobStatus.CONFIRMED,
-            JobStatus.HELPER_ON_THE_WAY,
-            JobStatus.HELPER_ARRIVED,
-            JobStatus.IN_PROGRESS,
-            JobStatus.PENDING_REVIEW,
-          ],
+          $in: JobsService.ACTIVE_HELPER_JOB_STATUSES,
         },
       });
 
@@ -262,6 +280,9 @@ export class JobsService {
             { status: HelperStatus.ONLINE },
           )
           .exec();
+        this.gateway.emitToUser(String(helperObjId), 'helper:status_changed', {
+          status: HelperStatus.ONLINE,
+        });
       }
     }
   }
@@ -337,7 +358,7 @@ export class JobsService {
 
   // ─── Realtime: emit job status change to all participants ─────────────────
 
-  private emitJobStatusChange(job: JobDocument) {
+  emitJobStatusChange(job: JobDocument) {
     const payload = {
       job_id: String(job._id),
       status: job.status,
@@ -347,6 +368,32 @@ export class JobsService {
     this.gateway.emitToUser(String(job.customer_id), SOCKET_EVENTS.JOB_STATUS_CHANGED, payload);
     if (job.helper_id) {
       this.gateway.emitToUser(String(job.helper_id), SOCKET_EVENTS.JOB_STATUS_CHANGED, payload);
+    }
+  }
+
+  emitJobCompleted(job: JobDocument) {
+    const jobId = String(job._id);
+    this.gateway.emitToJob(jobId, SOCKET_EVENTS.JOB_COMPLETED, {
+      job_id: jobId,
+      completed_at: new Date().toISOString(),
+    });
+    if (job.helper_id) {
+      this.gateway.emitToUser(String(job.helper_id), SOCKET_EVENTS.JOB_COMPLETED, {
+        job_id: jobId,
+      });
+    }
+  }
+
+  emitJobCancelled(job: JobDocument, reason?: string, cancelledBy = 'admin') {
+    const jobId = String(job._id);
+    const cancelPayload = {
+      job_id: jobId,
+      cancelled_by: cancelledBy,
+      reason: reason || 'Đã hủy',
+    };
+    this.gateway.emitToJob(jobId, SOCKET_EVENTS.JOB_CANCELLED, cancelPayload);
+    if (job.is_sos) {
+      this.gateway.emitToJob(jobId, SOCKET_EVENTS.SOS_CANCELLED, cancelPayload);
     }
   }
 
@@ -2025,12 +2072,17 @@ export class JobsService {
       .exec();
     if (!job) throw new ConflictException('Công việc đã được nghiệm thu');
 
-    await this.contractModel
-      .findOneAndUpdate(
-        { job_id: new Types.ObjectId(jobId) },
-        { status: ContractStatus.COMPLETED, completed_at: new Date() },
-      )
-      .exec();
+    const contract = this.contractModel?.findOne
+      ? await this.contractModel
+          .findOne({ job_id: new Types.ObjectId(jobId) })
+          .exec()
+      : null;
+
+    if (contract) {
+      contract.status = ContractStatus.COMPLETED;
+      contract.completed_at = new Date();
+      await contract.save();
+    }
 
     if (job.helper_id) {
       await this.helperModel
@@ -2039,10 +2091,6 @@ export class JobsService {
     }
 
     if (job.helper_id) {
-      const contract = await this.contractModel
-        .findOne({ job_id: new Types.ObjectId(jobId) })
-        .exec();
-
       // Feature 9: hợp đồng 0₫ (đơn bảo hành miễn phí) → bỏ qua cả giải ngân
       // lẫn khấu trừ phí tiền mặt, tránh giao dịch ví 0₫ vô nghĩa.
       if (contract && contract.total_price > 0) {
@@ -2336,6 +2384,10 @@ export class JobsService {
       await contract.save();
     }
 
+    if (job.helper_id) {
+      await this.setHelperBusy(job.helper_id, false);
+    }
+
     this.emitJobStatusChange(job);
 
     await this.notificationsService
@@ -2431,6 +2483,17 @@ export class JobsService {
       .exec();
 
     await job.save();
+
+    if (this.contractModel?.findOne) {
+      const contract = await this.contractModel
+        .findOne({ job_id: new Types.ObjectId(jobId) })
+        .exec();
+      if (contract && contract.status !== ContractStatus.CANCELLED) {
+        contract.status = ContractStatus.CANCELLED;
+        await contract.save();
+      }
+    }
+
     if (job.helper_id) await this.setHelperBusy(job.helper_id, false);
 
     await this.restoreJobBenefitsOnCancel(job);
