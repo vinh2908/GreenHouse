@@ -2073,9 +2073,7 @@ export class JobsService {
     if (!job) throw new ConflictException('Công việc đã được nghiệm thu');
 
     const contract = this.contractModel?.findOne
-      ? await this.contractModel
-          .findOne({ job_id: new Types.ObjectId(jobId) })
-          .exec()
+      ? await this.contractModel.findOne({ job_id: new Types.ObjectId(jobId) }).exec()
       : null;
 
     if (contract) {
