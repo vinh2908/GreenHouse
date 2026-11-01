@@ -135,6 +135,7 @@ export const SOCKET_EVENTS = {
   JOB_STARTED: 'job:started',
   JOB_COMPLETION_UPLOADED: 'job:completion_uploaded', // Helper upload ảnh xong
   JOB_COMPLETED: 'job:completed',
+  HELPER_STATUS_CHANGED: 'helper:status_changed',
 
   // Chat
   CHAT_NEW_MESSAGE: 'chat:new_message',

@@ -265,8 +265,8 @@ export default function HelperProfileScreen() {
             </View>
             <Switch
               value={isOnline}
-              disabled={isWorking || setStatus.isPending || pLoading}
-              onValueChange={async v => {
+              disabled={isWorking || pLoading}
+              onValueChange={v => {
                 if (isWorking) {
                   Alert.alert(
                     'Đang có công việc diễn ra',
@@ -286,25 +286,28 @@ export default function HelperProfileScreen() {
                   );
                   return;
                 }
+                // Lấy toạ độ GPS chạy nền (non-blocking), không await để phản hồi tức thì
                 if (v) {
-                  const coords = await locationService.getCurrentCoordinates();
-                  if (coords) {
-                    updateLocation.mutate([coords.longitude, coords.latitude]);
-                  }
+                  locationService
+                    .getCurrentCoordinates()
+                    .then(coords => {
+                      if (coords) {
+                        updateLocation.mutate([coords.longitude, coords.latitude]);
+                      }
+                    })
+                    .catch(() => {});
                 }
-                try {
-                  await setStatus.mutateAsync(v ? 'online' : 'offline');
-                  Toast.show({
-                    type: 'success',
-                    text1: v ? 'Đã bật nhận đơn mới' : 'Đã chuyển sang ngoại tuyến',
-                    text2: v
-                      ? 'Bạn sẽ nhận được thông báo khi có khách hàng đặt dịch vụ gần bạn'
-                      : 'Hệ thống đã tạm dừng nhận việc cho bạn',
-                  });
-                } catch (err: any) {
-                  const msg = err?.response?.data?.message || 'Không thể cập nhật trạng thái';
-                  Toast.show({ type: 'error', text1: msg });
-                }
+                setStatus.mutate(v ? 'online' : 'offline', {
+                  onSuccess: () => {
+                    Toast.show({
+                      type: 'success',
+                      text1: v ? 'Đã bật nhận đơn mới' : 'Đã chuyển sang ngoại tuyến',
+                      text2: v
+                        ? 'Bạn sẽ nhận được thông báo khi có khách hàng đặt dịch vụ gần bạn'
+                        : 'Hệ thống đã tạm dừng nhận việc cho bạn',
+                    });
+                  },
+                });
               }}
               trackColor={{ false: COLORS.gray[300], true: isWorking ? '#F59E0B' : COLORS.primary }}
               thumbColor="#fff"

@@ -53,8 +53,21 @@ export function useSocketConnection() {
         qc.invalidateQueries({ queryKey: ['notifications', 'count'] });
       });
 
+      const unsubStatus = socketService.on<{ helper_id?: string; status?: string }>(
+        SOCKET_EVENTS.HELPER_STATUS_CHANGED,
+        data => {
+          if (data?.status) {
+            qc.setQueryData(['helper', 'profile'], (old: any) =>
+              old ? { ...old, status: data.status } : old,
+            );
+          }
+          qc.invalidateQueries({ queryKey: ['helper', 'profile'] });
+        },
+      );
+
       return () => {
         unsubChat();
+        unsubStatus();
       };
     } else {
       socketService.disconnect();
