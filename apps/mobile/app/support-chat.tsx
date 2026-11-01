@@ -226,8 +226,33 @@ export default function SupportChatScreen() {
         </View>
       </View>
 
-      {isLoading ? (
-        <LoadingSpinner />
+      {!messages && isLoading ? (
+        <View style={{ flex: 1, padding: 16, gap: 12 }}>
+          <View
+            style={{ height: 40, width: '60%', backgroundColor: '#E2E8F0', borderRadius: 12 }}
+          />
+          <View
+            style={{
+              height: 60,
+              width: '75%',
+              backgroundColor: '#E2E8F0',
+              borderRadius: 12,
+              alignSelf: 'flex-end',
+            }}
+          />
+          <View
+            style={{ height: 50, width: '70%', backgroundColor: '#E2E8F0', borderRadius: 12 }}
+          />
+          <View
+            style={{
+              height: 60,
+              width: '80%',
+              backgroundColor: '#E2E8F0',
+              borderRadius: 12,
+              alignSelf: 'flex-end',
+            }}
+          />
+        </View>
       ) : (
         <KeyboardAvoidingView
           style={{ flex: 1 }}

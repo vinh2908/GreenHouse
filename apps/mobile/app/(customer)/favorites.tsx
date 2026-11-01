@@ -143,8 +143,39 @@ export default function FavoriteHelpersScreen() {
         </View>
       </View>
 
-      {isLoading ? (
-        <LoadingSpinner />
+      {!favorites && isLoading ? (
+        <View style={{ padding: 16, gap: 12 }}>
+          {[1, 2, 3].map(i => (
+            <Card key={i} style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+              <View
+                style={{
+                  width: 56,
+                  height: 56,
+                  borderRadius: 28,
+                  backgroundColor: COLORS.gray[200],
+                }}
+              />
+              <View style={{ flex: 1, gap: 8 }}>
+                <View
+                  style={{
+                    width: '60%',
+                    height: 16,
+                    backgroundColor: COLORS.gray[200],
+                    borderRadius: 4,
+                  }}
+                />
+                <View
+                  style={{
+                    width: '40%',
+                    height: 12,
+                    backgroundColor: COLORS.gray[100],
+                    borderRadius: 4,
+                  }}
+                />
+              </View>
+            </Card>
+          ))}
+        </View>
       ) : (
         <ScrollView
           showsVerticalScrollIndicator={false}

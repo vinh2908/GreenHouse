@@ -116,7 +116,62 @@ export default function DisputeCaseScreen() {
     }
   };
 
-  if (isLoading) return <LoadingSpinner />;
+  if (isLoading && !caseData) {
+    return (
+      <View style={{ flex: 1, backgroundColor: '#F8F9FA' }}>
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 12,
+            paddingHorizontal: 16,
+            paddingTop: Math.max(insets.top + 6, 18),
+            paddingBottom: 14,
+            backgroundColor: '#fff',
+            borderBottomWidth: 1,
+            borderBottomColor: COLORS.gray[100],
+          }}
+        >
+          <TouchableOpacity
+            onPress={() => router.back()}
+            style={{
+              width: 38,
+              height: 38,
+              borderRadius: 12,
+              backgroundColor: COLORS.gray[100],
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <ArrowLeft size={20} color={COLORS.gray[800]} />
+          </TouchableOpacity>
+          <Text style={{ fontSize: 18, fontWeight: '800', color: COLORS.gray[900] }}>
+            Hồ sơ khiếu nại & tranh chấp
+          </Text>
+        </View>
+        <ScrollView contentContainerStyle={{ padding: 16, gap: 14 }}>
+          <View style={{ backgroundColor: '#fff', borderRadius: 16, padding: 16, gap: 10 }}>
+            <View
+              style={{
+                width: '40%',
+                height: 16,
+                backgroundColor: COLORS.gray[200],
+                borderRadius: 4,
+              }}
+            />
+            <View
+              style={{
+                width: '70%',
+                height: 14,
+                backgroundColor: COLORS.gray[100],
+                borderRadius: 4,
+              }}
+            />
+          </View>
+        </ScrollView>
+      </View>
+    );
+  }
 
   return (
     <View style={{ flex: 1, backgroundColor: '#F8F9FA' }}>
