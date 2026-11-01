@@ -73,8 +73,37 @@ export default function CustomerVouchersScreen() {
           <RefreshControl refreshing={isLoading} onRefresh={refetch} colors={[COLORS.primary]} />
         }
       >
-        {isLoading ? (
-          <LoadingSpinner />
+        {!vouchers && isLoading ? (
+          <View style={{ gap: 12 }}>
+            {[1, 2, 3].map(i => (
+              <Card key={i} style={{ gap: 8 }}>
+                <View
+                  style={{
+                    width: '50%',
+                    height: 18,
+                    backgroundColor: COLORS.gray[200],
+                    borderRadius: 4,
+                  }}
+                />
+                <View
+                  style={{
+                    width: '80%',
+                    height: 13,
+                    backgroundColor: COLORS.gray[100],
+                    borderRadius: 4,
+                  }}
+                />
+                <View
+                  style={{
+                    width: '30%',
+                    height: 12,
+                    backgroundColor: COLORS.gray[100],
+                    borderRadius: 4,
+                  }}
+                />
+              </Card>
+            ))}
+          </View>
         ) : !vouchers?.length ? (
           <EmptyState
             emoji="🎟️"

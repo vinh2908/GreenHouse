@@ -190,7 +190,7 @@ export function useJobQuotes(jobId?: string) {
       return data.data;
     },
     enabled: !!jobId,
-    refetchInterval: 15000,
+    refetchInterval: 30000,
   });
 }
 
@@ -506,7 +506,7 @@ export function useAvailableJobs(serviceId?: string, page = 1, enabled = true) {
       });
       return data.data;
     },
-    refetchInterval: 30000,
+    refetchInterval: 60000,
   });
 }
 
@@ -807,8 +807,15 @@ export function useUpdateHelperLocation() {
         '/helpers/me/location',
         Array.isArray(loc) ? { coordinates: loc, source: 'auto' } : loc,
       ),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['helper', 'profile'] });
+    onSuccess: (res: any) => {
+      // Cập nhật vị trí vào cache nhưng KHÔNG invalidate ['helper', 'profile']
+      // để tránh race condition kéo về status cũ ghi đè lên lệnh đổi trạng thái đang bay
+      const locData = res?.data?.data?.location;
+      if (locData) {
+        qc.setQueryData(['helper', 'profile'], (old: any) =>
+          old ? { ...old, location: locData } : old,
+        );
+      }
       qc.invalidateQueries({ queryKey: ['helper', 'public'] });
     },
   });
@@ -921,7 +928,7 @@ export function useConversations() {
       const { data } = await apiClient.get('/chat/conversations');
       return data.data;
     },
-    refetchInterval: 10000,
+    refetchInterval: 30000,
   });
 }
 
@@ -1016,7 +1023,7 @@ export function useSupportMessages(conversationId?: string) {
       return data.data as SupportMessageItem[];
     },
     enabled: !!conversationId,
-    refetchInterval: 4000,
+    refetchInterval: 15000,
   });
 }
 
@@ -1052,7 +1059,7 @@ export function useNotifications(unreadOnly = false) {
       });
       return data.data;
     },
-    refetchInterval: 30000,
+    refetchInterval: 60000,
   });
 }
 
@@ -1063,7 +1070,7 @@ export function useUnreadCount() {
       const { data } = await apiClient.get('/notifications/unread-count');
       return data.data.count as number;
     },
-    refetchInterval: 15000,
+    refetchInterval: 60000,
   });
 }
 
@@ -1901,7 +1908,7 @@ export function useTeamInvitations(enabled = true) {
       return data.data as TeamInvitation[];
     },
     enabled,
-    refetchInterval: 30_000,
+    refetchInterval: 60_000,
   });
 }
 
@@ -2362,6 +2369,6 @@ export function useSosBackupByJob(jobId?: string) {
       return data.data as { sos: any | null };
     },
     enabled: !!jobId,
-    refetchInterval: 15000,
+    refetchInterval: 30000,
   });
 }

@@ -124,7 +124,102 @@ export default function MonthlyContractDetailScreen() {
     }
   };
 
-  if (isLoading || !contract) return <LoadingSpinner />;
+  if (isLoading && !contract) {
+    return (
+      <View style={{ flex: 1, backgroundColor: '#F8F9FA' }}>
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 12,
+            paddingHorizontal: 16,
+            paddingTop: Math.max(insets.top + 6, 18),
+            paddingBottom: 14,
+            backgroundColor: '#fff',
+            borderBottomWidth: 1,
+            borderBottomColor: COLORS.gray[100],
+          }}
+        >
+          <TouchableOpacity
+            activeOpacity={0.7}
+            onPress={handleBack}
+            hitSlop={{ top: 14, bottom: 14, left: 14, right: 14 }}
+            style={{
+              width: 40,
+              height: 40,
+              borderRadius: 12,
+              backgroundColor: COLORS.gray[100],
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <ArrowLeft size={20} color={COLORS.gray[800]} />
+          </TouchableOpacity>
+          <View style={{ flex: 1 }}>
+            <View
+              style={{ height: 18, width: '60%', backgroundColor: '#E2E8F0', borderRadius: 4 }}
+            />
+            <View
+              style={{
+                height: 12,
+                width: '40%',
+                backgroundColor: '#E2E8F0',
+                borderRadius: 4,
+                marginTop: 4,
+              }}
+            />
+          </View>
+        </View>
+        <View style={{ padding: 16, gap: 12 }}>
+          <View style={{ height: 120, backgroundColor: '#E2E8F0', borderRadius: 12 }} />
+          <View style={{ height: 180, backgroundColor: '#E2E8F0', borderRadius: 12 }} />
+          <View style={{ height: 100, backgroundColor: '#E2E8F0', borderRadius: 12 }} />
+        </View>
+      </View>
+    );
+  }
+
+  if (!contract) {
+    return (
+      <View style={{ flex: 1, backgroundColor: '#F8F9FA' }}>
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 12,
+            paddingHorizontal: 16,
+            paddingTop: Math.max(insets.top + 6, 18),
+            paddingBottom: 14,
+            backgroundColor: '#fff',
+            borderBottomWidth: 1,
+            borderBottomColor: COLORS.gray[100],
+          }}
+        >
+          <TouchableOpacity
+            activeOpacity={0.7}
+            onPress={handleBack}
+            hitSlop={{ top: 14, bottom: 14, left: 14, right: 14 }}
+            style={{
+              width: 40,
+              height: 40,
+              borderRadius: 12,
+              backgroundColor: COLORS.gray[100],
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <ArrowLeft size={20} color={COLORS.gray[800]} />
+          </TouchableOpacity>
+          <Text style={{ fontSize: 18, fontWeight: '800', color: COLORS.gray[900] }}>Hợp đồng</Text>
+        </View>
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 }}>
+          <Text style={{ fontSize: 15, color: COLORS.gray[600] }}>
+            Không tìm thấy thông tin hợp đồng
+          </Text>
+        </View>
+      </View>
+    );
+  }
 
   const meta = MONTHLY_STATUS_META[contract.status];
   const partner = isHelper ? contract.customer_id : contract.helper_id;
