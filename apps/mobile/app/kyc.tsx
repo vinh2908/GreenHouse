@@ -40,6 +40,7 @@ const SAMPLE_SELFIE = 'https://images.unsplash.com/photo-1507003211169-0a1dd7228
 
 export default function KycScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { data: profile, isLoading, refetch } = useHelperProfile();
   const submitKyc = useSubmitKyc();
 
@@ -62,7 +63,72 @@ export default function KycScreen() {
   const [pickerModalVisible, setPickerModalVisible] = useState(false);
   const [activeImageType, setActiveImageType] = useState<'front' | 'back' | 'selfie'>('front');
 
-  if (isLoading) return <LoadingSpinner />;
+  if (isLoading && !profile) {
+    return (
+      <View style={{ flex: 1, backgroundColor: '#F8F9FA' }}>
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            paddingHorizontal: 20,
+            paddingTop: Math.max(insets.top + 6, 18),
+            paddingBottom: 14,
+            backgroundColor: '#fff',
+            borderBottomWidth: 1,
+            borderBottomColor: COLORS.gray[100],
+          }}
+        >
+          <TouchableOpacity
+            onPress={handleBack}
+            style={{
+              width: 38,
+              height: 38,
+              borderRadius: 12,
+              backgroundColor: COLORS.gray[100],
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <ArrowLeft size={20} color={COLORS.gray[800]} />
+          </TouchableOpacity>
+          <Text
+            style={{ fontSize: 18, fontWeight: '800', color: COLORS.gray[900], marginLeft: 12 }}
+          >
+            Xác minh danh tính (e-KYC)
+          </Text>
+        </View>
+        <ScrollView contentContainerStyle={{ padding: 16, gap: 14 }}>
+          <View style={{ backgroundColor: '#fff', borderRadius: 16, padding: 20, gap: 12 }}>
+            <View
+              style={{
+                width: '50%',
+                height: 18,
+                backgroundColor: COLORS.gray[200],
+                borderRadius: 4,
+              }}
+            />
+            <View
+              style={{
+                width: '80%',
+                height: 14,
+                backgroundColor: COLORS.gray[100],
+                borderRadius: 4,
+              }}
+            />
+            <View
+              style={{
+                width: '100%',
+                height: 44,
+                backgroundColor: COLORS.gray[100],
+                borderRadius: 10,
+                marginTop: 8,
+              }}
+            />
+          </View>
+        </ScrollView>
+      </View>
+    );
+  }
 
   const kycStatus = profile?.verification_status || 'unsubmitted';
 
@@ -163,8 +229,6 @@ export default function KycScreen() {
       Toast.show({ type: 'error', text1: msg });
     }
   };
-
-  const insets = useSafeAreaInsets();
 
   const getTargetTitle = () => {
     if (activeImageType === 'front') return 'Mặt trước CCCD/CMND';
