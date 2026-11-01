@@ -1,4 +1,10 @@
-import { BadRequestException, Injectable, NotFoundException, forwardRef, Inject } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+  forwardRef,
+  Inject,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { User, UserDocument } from '../users/schemas/user.schema';
@@ -33,7 +39,14 @@ import {
   pruneCancellationTimestamps,
   HelperScoreResult,
 } from '../helpers/utils/helper-score';
-import { ContractStatus, HelperStatus, JobStatus, UserRole, UserStatus, VerificationStatus } from '@homemate/types';
+import {
+  ContractStatus,
+  HelperStatus,
+  JobStatus,
+  UserRole,
+  UserStatus,
+  VerificationStatus,
+} from '@homemate/types';
 import { NOTIFICATION_TYPES } from '@homemate/constants';
 import { NotificationsService } from '../notifications/notifications.service';
 import { JobsService, ACTIVE_HELPER_JOB_STATUSES } from '../jobs/jobs.service';
@@ -368,9 +381,7 @@ export class AdminService {
     await job.save();
 
     // 1. Đồng bộ hợp đồng nếu chuyển sang trạng thái kết thúc
-    const contract = await this.contractModel
-      .findOne({ job_id: new Types.ObjectId(jobId) })
-      .exec();
+    const contract = await this.contractModel.findOne({ job_id: new Types.ObjectId(jobId) }).exec();
     if (contract) {
       if (status === JobStatus.COMPLETED) {
         contract.status = ContractStatus.COMPLETED;

@@ -131,14 +131,18 @@ export class AdminController {
 
   @Post('helpers/sync-busy-status')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: '[Admin] Đồng bộ lại trạng thái bận cho toàn bộ thợ theo đơn hoạt động thực tế' })
+  @ApiOperation({
+    summary: '[Admin] Đồng bộ lại trạng thái bận cho toàn bộ thợ theo đơn hoạt động thực tế',
+  })
   async syncAllHelpersBusyStatus() {
     return this.adminService.syncAllHelpersBusyStatus();
   }
 
   @Post('helpers/:userId/sync-busy-status')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: '[Admin] Đồng bộ lại trạng thái bận cho 1 thợ theo đơn hoạt động thực tế' })
+  @ApiOperation({
+    summary: '[Admin] Đồng bộ lại trạng thái bận cho 1 thợ theo đơn hoạt động thực tế',
+  })
   async syncHelperBusyStatus(@Param('userId') userId: string) {
     return this.adminService.syncSingleHelperBusyStatus(userId);
   }
