@@ -11,6 +11,8 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { useQueryClient } from '@tanstack/react-query';
+import apiClient from '@/services/api-client';
 import {
   Bell,
   Briefcase,
@@ -92,6 +94,40 @@ export default function HelperDashboardScreen() {
     );
   const isOnline = profile?.status === 'online' || isWorking;
 
+  // State cục bộ để nút Switch và thẻ nhận việc nhảy tức thì 0ms trên app native
+  const [localOnline, setLocalOnline] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    if (profile?.status) {
+      setLocalOnline(profile.status === 'online');
+    }
+  }, [profile?.status]);
+
+  const effectiveOnline = isWorking ? true : (localOnline ?? isOnline);
+
+  const qc = useQueryClient();
+
+  // Tải trước danh sách thông báo và giao dịch ví ngay từ dashboard để khi bấm vào là có sẵn
+  useEffect(() => {
+    qc.prefetchQuery({
+      queryKey: ['notifications', false],
+      queryFn: async () => {
+        const { data } = await apiClient.get('/notifications', {
+          params: { unread_only: false },
+        });
+        return data.data;
+      },
+    }).catch(() => {});
+
+    qc.prefetchQuery({
+      queryKey: ['transactions', 1],
+      queryFn: async () => {
+        const { data } = await apiClient.get('/payments/transactions', { params: { page: 1 } });
+        return data.data;
+      },
+    }).catch(() => {});
+  }, [qc]);
+
   const [sosBroadcast, setSosBroadcast] = useState<any>(null);
 
   // ── Lắng nghe tín hiệu cứu hộ SOS khẩn cấp qua WebSocket ─────────────────
@@ -158,7 +194,10 @@ export default function HelperDashboardScreen() {
       return;
     }
 
-    // Lấy toạ độ GPS chạy nền (non-blocking), không await để phản hồi tức thì
+    // 1. Nhảy giao diện ngay lập tức bằng state cục bộ native
+    setLocalOnline(value);
+
+    // 2. Lấy toạ độ GPS chạy nền (non-blocking), không await để phản hồi tức thì
     if (value) {
       locationService
         .getCurrentCoordinates()
@@ -170,6 +209,7 @@ export default function HelperDashboardScreen() {
         .catch(() => {});
     }
 
+    // 3. Gửi mutation lên server, rollback nếu lỗi
     setStatus.mutate(value ? 'online' : 'offline', {
       onSuccess: () => {
         Toast.show({
@@ -179,6 +219,9 @@ export default function HelperDashboardScreen() {
             ? 'Bạn sẽ nhận được thông báo khi có khách hàng đặt dịch vụ gần bạn'
             : 'Hệ thống đã tạm dừng nhận việc cho bạn',
         });
+      },
+      onError: () => {
+        setLocalOnline(!value);
       },
     });
   };
@@ -376,7 +419,7 @@ export default function HelperDashboardScreen() {
                 ? '#FFFFFF'
                 : isWorking
                   ? '#FFFBEB'
-                  : isOnline
+                  : effectiveOnline
                     ? '#1E1E24'
                     : '#FFFFFF',
               borderRadius: 20,
@@ -386,7 +429,7 @@ export default function HelperDashboardScreen() {
                 ? COLORS.gray[200]
                 : isWorking
                   ? '#FDE68A'
-                  : isOnline
+                  : effectiveOnline
                     ? 'transparent'
                     : COLORS.gray[200],
               shadowColor: '#000',
@@ -449,7 +492,7 @@ export default function HelperDashboardScreen() {
                         borderRadius: 5,
                         backgroundColor: isWorking
                           ? '#F59E0B'
-                          : isOnline
+                          : effectiveOnline
                             ? '#10B981'
                             : COLORS.gray[400],
                       }}
@@ -458,12 +501,16 @@ export default function HelperDashboardScreen() {
                       style={{
                         fontSize: 16.5,
                         fontWeight: '800',
-                        color: isWorking ? '#92400E' : isOnline ? '#FFFFFF' : COLORS.gray[900],
+                        color: isWorking
+                          ? '#92400E'
+                          : effectiveOnline
+                            ? '#FFFFFF'
+                            : COLORS.gray[900],
                       }}
                     >
                       {isWorking
                         ? t('dash_busy')
-                        : isOnline
+                        : effectiveOnline
                           ? t('dash_accepting')
                           : t('dash_paused')}
                     </Text>
@@ -473,7 +520,7 @@ export default function HelperDashboardScreen() {
                       fontSize: 13,
                       color: isWorking
                         ? '#B45309'
-                        : isOnline
+                        : effectiveOnline
                           ? 'rgba(255,255,255,0.7)'
                           : COLORS.gray[500],
                       marginTop: 4,
@@ -482,14 +529,14 @@ export default function HelperDashboardScreen() {
                   >
                     {isWorking
                       ? t('dash_working_hint')
-                      : isOnline
+                      : effectiveOnline
                         ? t('dash_online_hint')
                         : t('dash_offline_hint')}
                   </Text>
                 </View>
 
                 <Switch
-                  value={isOnline}
+                  value={effectiveOnline}
                   onValueChange={handleToggleOnline}
                   trackColor={{
                     false: COLORS.gray[300],
@@ -677,11 +724,11 @@ export default function HelperDashboardScreen() {
             subtitle={
               pLoading
                 ? 'Đang tải…'
-                : isOnline
+                : effectiveOnline
                   ? 'Tự động cập nhật đơn mới mỗi 30s'
                   : 'Đang ở chế độ ngoại tuyến'
             }
-            action={isOnline ? 'Xem tất cả' : undefined}
+            action={effectiveOnline ? 'Xem tất cả' : undefined}
             onAction={() => router.push('/(helper)/jobs')}
           />
 
@@ -692,7 +739,7 @@ export default function HelperDashboardScreen() {
                 Đang tải trạng thái nhận việc…
               </Text>
             </Card>
-          ) : !isOnline ? (
+          ) : !effectiveOnline ? (
             <Card style={{ alignItems: 'center', paddingVertical: 28 }}>
               <EmptyState
                 emoji="📴"

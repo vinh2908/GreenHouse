@@ -61,6 +61,17 @@ export default function HelperProfileScreen() {
     Boolean(activeJobs && Array.isArray(activeJobs) && activeJobs.length > 0);
   const isOnline = profile?.status === 'online' || isWorking;
 
+  // State cục bộ để nút Switch và nhãn trạng thái nhảy tức thì 0ms trên app native
+  const [localOnline, setLocalOnline] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    if (profile?.status) {
+      setLocalOnline(profile.status === 'online');
+    }
+  }, [profile?.status]);
+
+  const effectiveOnline = isWorking ? true : (localOnline ?? isOnline);
+
   const handleSwitchToCustomer = async () => {
     if (useAuthStore.getState().isSwitchingRole) return;
     useAuthStore.getState().setSwitchingRole(true);
@@ -249,8 +260,12 @@ export default function HelperProfileScreen() {
               <Text
                 style={{
                   fontSize: 13,
-                  color: isWorking ? '#D97706' : isOnline ? COLORS.success : COLORS.gray[500],
-                  fontWeight: isOnline ? '700' : '500',
+                  color: isWorking
+                    ? '#D97706'
+                    : effectiveOnline
+                      ? COLORS.success
+                      : COLORS.gray[500],
+                  fontWeight: effectiveOnline ? '700' : '500',
                   marginTop: 2,
                 }}
               >
@@ -258,13 +273,13 @@ export default function HelperProfileScreen() {
                   ? 'Đang tải trạng thái...'
                   : isWorking
                     ? '🟡 Đang bận làm việc (Cuốc đang chạy)'
-                    : isOnline
+                    : effectiveOnline
                       ? '🟢 Đang nhận đơn mới'
                       : '⚫ Ngoại tuyến (Đã tắt nhận đơn)'}
               </Text>
             </View>
             <Switch
-              value={isOnline}
+              value={effectiveOnline}
               disabled={isWorking || pLoading}
               onValueChange={v => {
                 if (isWorking) {
@@ -286,7 +301,11 @@ export default function HelperProfileScreen() {
                   );
                   return;
                 }
-                // Lấy toạ độ GPS chạy nền (non-blocking), không await để phản hồi tức thì
+
+                // 1. Nhảy giao diện ngay lập tức bằng state cục bộ native
+                setLocalOnline(v);
+
+                // 2. Lấy toạ độ GPS chạy nền (non-blocking), không await để phản hồi tức thì
                 if (v) {
                   locationService
                     .getCurrentCoordinates()
@@ -297,6 +316,8 @@ export default function HelperProfileScreen() {
                     })
                     .catch(() => {});
                 }
+
+                // 3. Gửi mutation lên server, rollback nếu lỗi
                 setStatus.mutate(v ? 'online' : 'offline', {
                   onSuccess: () => {
                     Toast.show({
@@ -306,6 +327,9 @@ export default function HelperProfileScreen() {
                         ? 'Bạn sẽ nhận được thông báo khi có khách hàng đặt dịch vụ gần bạn'
                         : 'Hệ thống đã tạm dừng nhận việc cho bạn',
                     });
+                  },
+                  onError: () => {
+                    setLocalOnline(!v);
                   },
                 });
               }}

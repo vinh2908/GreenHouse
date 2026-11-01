@@ -38,7 +38,37 @@ export default function LoyaltyScreen() {
     else router.replace('/(customer)/profile');
   };
 
-  if (isLoading) return <LoadingSpinner />;
+  if (isLoading && !account) {
+    return (
+      <View style={{ flex: 1, backgroundColor: '#F8F9FA' }}>
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 12,
+            paddingHorizontal: 16,
+            paddingTop: Math.max(insets.top + 6, 18),
+            paddingBottom: 14,
+            backgroundColor: '#fff',
+            borderBottomWidth: 1,
+            borderBottomColor: COLORS.gray[100],
+          }}
+        >
+          <TouchableOpacity activeOpacity={0.7} onPress={handleBack}>
+            <ArrowLeft size={22} color={COLORS.gray[800]} />
+          </TouchableOpacity>
+          <Text style={{ fontSize: 17, fontWeight: '800', color: COLORS.gray[900] }}>
+            Điểm thành viên
+          </Text>
+        </View>
+        <View style={{ padding: 16, gap: 16 }}>
+          <View style={{ height: 140, backgroundColor: '#E2E8F0', borderRadius: 12 }} />
+          <View style={{ height: 90, backgroundColor: '#E2E8F0', borderRadius: 12 }} />
+          <View style={{ height: 180, backgroundColor: '#E2E8F0', borderRadius: 12 }} />
+        </View>
+      </View>
+    );
+  }
 
   const progress =
     account && account.next_tier_at
