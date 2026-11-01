@@ -188,6 +188,7 @@ function makeService() {
     dummy, // userModel
     helperModel as never, // helperModel
     dummy, // jobModel
+    dummy, // contractModel
     dummy, // notificationModel
     dummy, // walletModel
     dummy, // transactionModel
@@ -197,6 +198,7 @@ function makeService() {
     sosModel as never, // sosModel
     penaltyEventModel as never, // penaltyEventModel
     dummy, // notificationsService
+    dummy, // jobsService
   );
 
   return { service, adminId, helperId, otherHelperId, profile, events, targetEvent: events[1]! };

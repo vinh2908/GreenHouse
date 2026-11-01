@@ -1,9 +1,9 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException, forwardRef, Inject } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { User, UserDocument } from '../users/schemas/user.schema';
 import { HelperProfile, HelperProfileDocument } from '../helpers/schemas/helper-profile.schema';
-import { Job, JobDocument } from '../jobs/schemas/job.schema';
+import { Job, JobDocument, Contract, ContractDocument } from '../jobs/schemas/job.schema';
 import { Notification, NotificationDocument } from '../notifications/schemas/notification.schema';
 import {
   Wallet,
@@ -33,9 +33,10 @@ import {
   pruneCancellationTimestamps,
   HelperScoreResult,
 } from '../helpers/utils/helper-score';
-import { HelperStatus, UserRole, UserStatus, VerificationStatus } from '@homemate/types';
+import { ContractStatus, HelperStatus, JobStatus, UserRole, UserStatus, VerificationStatus } from '@homemate/types';
 import { NOTIFICATION_TYPES } from '@homemate/constants';
 import { NotificationsService } from '../notifications/notifications.service';
+import { JobsService, ACTIVE_HELPER_JOB_STATUSES } from '../jobs/jobs.service';
 
 @Injectable()
 export class AdminService {
@@ -43,6 +44,7 @@ export class AdminService {
     @InjectModel(User.name) private userModel: Model<UserDocument>,
     @InjectModel(HelperProfile.name) private helperModel: Model<HelperProfileDocument>,
     @InjectModel(Job.name) private jobModel: Model<JobDocument>,
+    @InjectModel(Contract.name) private contractModel: Model<ContractDocument>,
     @InjectModel(Notification.name) private notificationModel: Model<NotificationDocument>,
     @InjectModel(Wallet.name) private walletModel: Model<WalletDocument>,
     @InjectModel(Transaction.name) private transactionModel: Model<TransactionDocument>,
@@ -54,6 +56,8 @@ export class AdminService {
     @InjectModel(HelperPenaltyEvent.name)
     private penaltyEventModel: Model<HelperPenaltyEventDocument>,
     private readonly notificationsService: NotificationsService,
+    @Inject(forwardRef(() => JobsService))
+    private readonly jobsService: JobsService,
   ) {}
 
   // ─── Users ────────────────────────────────────────────────────────────────
@@ -362,7 +366,155 @@ export class AdminService {
       timestamp: new Date(),
     });
     await job.save();
+
+    // 1. Đồng bộ hợp đồng nếu chuyển sang trạng thái kết thúc
+    const contract = await this.contractModel
+      .findOne({ job_id: new Types.ObjectId(jobId) })
+      .exec();
+    if (contract) {
+      if (status === JobStatus.COMPLETED) {
+        contract.status = ContractStatus.COMPLETED;
+        contract.completed_at = new Date();
+        await contract.save();
+      } else if (status === JobStatus.CANCELLED || status === JobStatus.REFUNDED) {
+        contract.status = ContractStatus.CANCELLED;
+        await contract.save();
+      }
+    }
+
+    // 2. Đồng bộ trạng thái bận của thợ khi chuyển sang trạng thái kết thúc (completed, refunded, cancelled)
+    if (
+      job.helper_id &&
+      [JobStatus.COMPLETED, JobStatus.REFUNDED, JobStatus.CANCELLED].includes(status as JobStatus)
+    ) {
+      await this.jobsService.setHelperBusy(job.helper_id, false);
+    }
+
+    // 3. Gửi tín hiệu realtime
+    this.jobsService.emitJobStatusChange(job);
+    if (status === JobStatus.COMPLETED) {
+      this.jobsService.emitJobCompleted(job);
+    } else if (status === JobStatus.CANCELLED) {
+      this.jobsService.emitJobCancelled(job, note);
+    }
+
     return job;
+  }
+
+  /**
+   * Đồng bộ lại trạng thái bận cho toàn bộ thợ đang có status = BUSY:
+   * Đếm số đơn đang hoạt động (confirmed, helper_on_the_way, helper_arrived, in_progress, pending_review).
+   * Nếu không còn đơn nào (count === 0) -> chuyển về ONLINE.
+   * Nếu còn đơn -> giữ nguyên BUSY.
+   */
+  async syncAllHelpersBusyStatus(): Promise<{
+    total_checked: number;
+    released_to_online: number;
+    remained_busy: number;
+    details: Array<{
+      helper_id: string;
+      user_id: string;
+      full_name?: string;
+      phone?: string;
+      active_jobs_count: number;
+      old_status: string;
+      new_status: string;
+    }>;
+  }> {
+    const busyHelpers = await this.helperModel
+      .find({ status: HelperStatus.BUSY })
+      .populate('user_id', 'full_name phone')
+      .exec();
+
+    let releasedCount = 0;
+    let remainedCount = 0;
+    const details: Array<{
+      helper_id: string;
+      user_id: string;
+      full_name?: string;
+      phone?: string;
+      active_jobs_count: number;
+      old_status: string;
+      new_status: string;
+    }> = [];
+
+    for (const helper of busyHelpers) {
+      const helperUserId = (helper.user_id as any)?._id || helper.user_id;
+      const activeCount = await this.jobModel.countDocuments({
+        helper_id: helperUserId,
+        status: { $in: ACTIVE_HELPER_JOB_STATUSES },
+      });
+
+      if (activeCount === 0) {
+        helper.status = HelperStatus.ONLINE;
+        await helper.save();
+        await this.jobsService.setHelperBusy(helperUserId, false);
+        releasedCount++;
+        details.push({
+          helper_id: String(helper._id),
+          user_id: String(helperUserId),
+          full_name: (helper.user_id as any)?.full_name,
+          phone: (helper.user_id as any)?.phone,
+          active_jobs_count: 0,
+          old_status: HelperStatus.BUSY,
+          new_status: HelperStatus.ONLINE,
+        });
+      } else {
+        remainedCount++;
+        details.push({
+          helper_id: String(helper._id),
+          user_id: String(helperUserId),
+          full_name: (helper.user_id as any)?.full_name,
+          phone: (helper.user_id as any)?.phone,
+          active_jobs_count: activeCount,
+          old_status: HelperStatus.BUSY,
+          new_status: HelperStatus.BUSY,
+        });
+      }
+    }
+
+    return {
+      total_checked: busyHelpers.length,
+      released_to_online: releasedCount,
+      remained_busy: remainedCount,
+      details,
+    };
+  }
+
+  /**
+   * Đồng bộ trạng thái bận cho 1 thợ cụ thể theo user_id:
+   */
+  async syncSingleHelperBusyStatus(userId: string) {
+    const helper = await this.helperModel
+      .findOne({ user_id: new Types.ObjectId(userId) })
+      .populate('user_id', 'full_name phone')
+      .exec();
+    if (!helper) throw new NotFoundException('Hồ sơ thợ không tồn tại');
+
+    const activeCount = await this.jobModel.countDocuments({
+      helper_id: new Types.ObjectId(userId),
+      status: { $in: ACTIVE_HELPER_JOB_STATUSES },
+    });
+
+    const oldStatus = helper.status;
+    let newStatus = oldStatus;
+
+    if (activeCount === 0 && helper.status === HelperStatus.BUSY) {
+      helper.status = HelperStatus.ONLINE;
+      await helper.save();
+      await this.jobsService.setHelperBusy(userId, false);
+      newStatus = HelperStatus.ONLINE;
+    }
+
+    return {
+      helper_id: String(helper._id),
+      user_id: userId,
+      full_name: (helper.user_id as any)?.full_name,
+      phone: (helper.user_id as any)?.phone,
+      active_jobs_count: activeCount,
+      old_status: oldStatus,
+      new_status: newStatus,
+    };
   }
 
   async directRefund(jobId: string, amount: number, reason: string, adminId?: string) {
