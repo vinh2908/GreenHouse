@@ -10,6 +10,7 @@ import {
   Easing,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Sparkles, ShieldCheck, Zap } from 'lucide-react-native';
 import { useAuthStore } from '@/stores/auth.store';
 import apiClient from '@/services/api-client';
@@ -19,6 +20,7 @@ const { width, height } = Dimensions.get('window');
 export default function SplashScreen() {
   console.warn('[Startup] 5. SplashScreen (app/index.tsx) render');
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const hasNavigated = useRef(false);
 
   // ── Animations ─────────────────────────────────────────────────────────────
@@ -195,7 +197,15 @@ export default function SplashScreen() {
       </View>
 
       {/* ── Footer Loading Indicator & Copyright ─────────────────────── */}
-      <Animated.View style={[styles.footer, { opacity: opacityAnim }]}>
+      <Animated.View
+        style={[
+          styles.footer,
+          {
+            opacity: opacityAnim,
+            bottom: Math.max(height * 0.05, insets.bottom + 16),
+          },
+        ]}
+      >
         <View style={styles.dotsContainer}>
           <View style={[styles.dot, styles.dotActive]} />
           <View style={[styles.dot, { opacity: 0.6 }]} />
@@ -211,7 +221,8 @@ export default function SplashScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#22C55E',
+    minHeight: '100%',
+    backgroundColor: '#16A34A',
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',

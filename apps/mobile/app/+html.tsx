@@ -48,6 +48,33 @@ export default function Root({ children }: PropsWithChildren) {
         />
 
         <ScrollViewStyleReset />
+
+        {/* Style cho html, body và #root lấp đầy chiều cao màn hình động của trình duyệt (chống khúc trắng trên iPhone) */}
+        <style
+          dangerouslySetInnerHTML={{
+            __html: `
+              html, body {
+                height: 100%;
+                width: 100%;
+                margin: 0;
+                padding: 0;
+                background-color: #16A34A;
+                -webkit-text-size-adjust: 100%;
+                overscroll-behavior-y: none;
+              }
+              #root {
+                display: flex;
+                flex-direction: column;
+                height: 100%;
+                min-height: 100%;
+                min-height: 100dvh;
+                min-height: -webkit-fill-available;
+                width: 100%;
+                background-color: #16A34A;
+              }
+            `,
+          }}
+        />
       </head>
       <body>{children}</body>
     </html>

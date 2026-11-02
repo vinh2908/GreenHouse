@@ -22,7 +22,7 @@
         "backgroundColor": "#F0FDF4"
       },
       "package": "com.homemate.app",
-      "versionCode": 4,
+      "versionCode": 5,
       "permissions": [
         "ACCESS_FINE_LOCATION",
         "ACCESS_COARSE_LOCATION",
