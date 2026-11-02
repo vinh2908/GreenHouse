@@ -3,7 +3,12 @@
 // mỗi 20 giây, và mỗi khi app quay lại foreground (AppState 'active').
 import { useEffect } from 'react';
 import { AppState } from 'react-native';
-import { checkOnline, flushQueue, loadPendingCount } from '@/services/offline.service';
+import {
+  checkOnline,
+  flushQueue,
+  loadPendingCount,
+  updateOnlineStatus,
+} from '@/services/offline.service';
 import { useOfflineStore } from '@/stores/offline.store';
 
 export function useOfflineSync() {
@@ -16,15 +21,15 @@ export function useOfflineSync() {
 
     const tick = async () => {
       await loadPendingCount();
-      await flushQueue(); // flushQueue tự checkOnline + cập nhật store.isOnline
+      await flushQueue(); // flushQueue tự checkOnline + cập nhật store.isOnline qua updateOnlineStatus
       if (cancelled) return;
     };
 
     void tick();
     const interval = setInterval(() => {
       void (async () => {
-        const online = await checkOnline();
-        useOfflineStore.getState().setOnline(online);
+        const isHealthy = await checkOnline();
+        const online = updateOnlineStatus(isHealthy);
         if (online) await flushQueue();
       })();
     }, 20_000);

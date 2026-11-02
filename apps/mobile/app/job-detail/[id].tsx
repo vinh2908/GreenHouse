@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -148,6 +148,23 @@ export default function JobDetailScreen() {
     id,
     typeof job?.helper_id === 'object' ? job.helper_id?._id : job?.helper_id,
   );
+
+  const customerLocation = useMemo(() => {
+    const coords = job?.address?.location?.coordinates;
+    if (!coords || !Array.isArray(coords) || coords.length < 2) return null;
+    return {
+      latitude: coords[1],
+      longitude: coords[0],
+    };
+  }, [job?.address?.location?.coordinates?.[0], job?.address?.location?.coordinates?.[1]]);
+
+  const trackingHelperLocation = useMemo(() => {
+    if (!helperLocation?.lat || !helperLocation?.lng) return null;
+    return {
+      latitude: helperLocation.lat,
+      longitude: helperLocation.lng,
+    };
+  }, [helperLocation?.lat, helperLocation?.lng]);
   const { data: quotes } = useJobQuotes(id);
   const { data: contract } = useJobContract(id);
   const selectQuote = useSelectQuote();
@@ -1136,28 +1153,21 @@ export default function JobDetailScreen() {
         )}
 
         {/* ── Grab-Style Live Map Tracking & Route ─────────────────────── */}
-        {job.address?.location?.coordinates && (
+        {customerLocation && (
           <View
             onLayout={e => {
               trackingSectionY.current = e.nativeEvent.layout.y;
             }}
           >
             <LiveTrackingMap
-              customerLocation={{
-                latitude: job.address?.location?.coordinates?.[1],
-                longitude: job.address?.location?.coordinates?.[0],
-              }}
-              helperLocation={
-                helperLocation
-                  ? { latitude: helperLocation.lat, longitude: helperLocation.lng }
-                  : null
-              }
+              customerLocation={customerLocation}
+              helperLocation={trackingHelperLocation}
               helperRecordedAt={helperLocation?.recorded_at}
               viewerRole="customer"
               customerAddress={job.address?.full_address}
               helperName={helperObj?.full_name || 'Thợ Green House'}
               status={job.status}
-              height={width < 430 ? 320 : 300}
+              height={300}
               showNavigationButton={false}
             />
           </View>

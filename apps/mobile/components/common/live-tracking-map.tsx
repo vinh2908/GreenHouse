@@ -29,7 +29,19 @@ export interface LiveTrackingMapProps {
 }
 const WEBVIEW_SOURCE = { html: TRACKING_MAP_HTML };
 
-export function LiveTrackingMap({
+function haversineMeters(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371e3;
+  const p1 = (lat1 * Math.PI) / 180;
+  const p2 = (lat2 * Math.PI) / 180;
+  const dp = ((lat2 - lat1) * Math.PI) / 180;
+  const dl = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(dp / 2) * Math.sin(dp / 2) +
+    Math.cos(p1) * Math.cos(p2) * Math.sin(dl / 2) * Math.sin(dl / 2);
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function LiveTrackingMapComponent({
   customerLocation,
   helperLocation,
   helperRecordedAt,
@@ -53,10 +65,32 @@ export function LiveTrackingMap({
   } | null>(null);
 
   // Khi viewer là thợ: tự theo dõi vị trí live của thiết bị mình để hiển thị marker và đường đi ngay lập tức
+  // Chống giật: chỉ cập nhật khi vị trí thợ di chuyển thực sự đáng kể (>= 15 mét) hoặc sau mỗi 30 giây
   useEffect(() => {
     if (viewerRole !== 'helper') return;
     let disposed = false;
     let removeSub: (() => void) | undefined;
+    let lastDispatched: { lat: number; lng: number; time: number } | null = null;
+
+    const handleNewPosition = (lat: number, lng: number, timestamp?: number) => {
+      if (disposed) return;
+      if (!validCoordinate(lat, lng)) return;
+      setGpsError(null);
+
+      const now = Date.now();
+      if (
+        !lastDispatched ||
+        haversineMeters(lastDispatched.lat, lastDispatched.lng, lat, lng) >= 15 ||
+        now - lastDispatched.time >= 30000
+      ) {
+        lastDispatched = { lat, lng, time: now };
+        setDeviceLocation({
+          latitude: lat,
+          longitude: lng,
+          recordedAt: timestamp || now,
+        });
+      }
+    };
 
     const startLocalWatch = async () => {
       // 1. Web browser
@@ -65,15 +99,7 @@ export function LiveTrackingMap({
         if (nav?.watchPosition) {
           const watchId = nav.watchPosition(
             (pos: any) => {
-              if (disposed) return;
-              if (validCoordinate(pos?.coords?.latitude, pos?.coords?.longitude)) {
-                setGpsError(null);
-                setDeviceLocation({
-                  latitude: pos.coords.latitude,
-                  longitude: pos.coords.longitude,
-                  recordedAt: pos.timestamp || Date.now(),
-                });
-              }
+              handleNewPosition(pos?.coords?.latitude, pos?.coords?.longitude, pos?.timestamp);
             },
             (err: any) => {
               if (disposed) return;
@@ -103,16 +129,8 @@ export function LiveTrackingMap({
         // Lấy nhanh last known position để marker thợ hiện ra ngay
         Location.getLastKnownPositionAsync()
           .then(last => {
-            if (
-              !disposed &&
-              last?.coords &&
-              validCoordinate(last.coords.latitude, last.coords.longitude)
-            ) {
-              setDeviceLocation({
-                latitude: last.coords.latitude,
-                longitude: last.coords.longitude,
-                recordedAt: Date.now(),
-              });
+            if (last?.coords && validCoordinate(last.coords.latitude, last.coords.longitude)) {
+              handleNewPosition(last.coords.latitude, last.coords.longitude, Date.now());
             }
           })
           .catch(() => {});
@@ -120,18 +138,11 @@ export function LiveTrackingMap({
         const sub = await Location.watchPositionAsync(
           {
             accuracy: Location.Accuracy.Balanced,
-            distanceInterval: 5,
-            timeInterval: 4000,
+            distanceInterval: 15,
+            timeInterval: 5000,
           },
           pos => {
-            if (disposed) return;
-            if (validCoordinate(pos?.coords?.latitude, pos?.coords?.longitude)) {
-              setDeviceLocation({
-                latitude: pos.coords.latitude,
-                longitude: pos.coords.longitude,
-                recordedAt: Date.now(),
-              });
-            }
+            handleNewPosition(pos.coords.latitude, pos.coords.longitude, Date.now());
           },
         );
         removeSub = () => sub.remove();
@@ -151,39 +162,54 @@ export function LiveTrackingMap({
   callback.current = onRouteMetrics;
   const validDestination = validCoordinate(customerLocation?.latitude, customerLocation?.longitude);
 
-  let helperPos = null;
+  const lastHelperRef = useRef<{ lat: number; lng: number; recorded_at: number } | null>(null);
+
+  let candidatePos: { lat: number; lng: number; recorded_at: number } | null = null;
   if (viewerRole === 'helper') {
-    // Màn thợ: hiển thị vị trí live của chính thiết bị thợ kèm marker, không chờ feed GPS từ server
     if (deviceLocation && validCoordinate(deviceLocation.latitude, deviceLocation.longitude)) {
-      helperPos = {
+      candidatePos = {
         lat: deviceLocation.latitude,
         lng: deviceLocation.longitude,
-        recorded_at: Date.now(),
+        recorded_at: deviceLocation.recordedAt || Date.now(),
       };
     } else if (
       helperLocation &&
       validCoordinate(helperLocation.latitude, helperLocation.longitude)
     ) {
-      helperPos = {
+      candidatePos = {
         lat: helperLocation.latitude,
         lng: helperLocation.longitude,
         recorded_at: helperRecordedAt || Date.now(),
       };
     }
   } else {
-    // Màn khách: giữ nguyên chờ feed GPS từ server
     if (
       helperLocation &&
       validCoordinate(helperLocation.latitude, helperLocation.longitude) &&
       helperRecordedAt
     ) {
-      helperPos = {
+      candidatePos = {
         lat: helperLocation.latitude,
         lng: helperLocation.longitude,
         recorded_at: helperRecordedAt,
       };
     }
   }
+
+  // Lọc chỉ đổi reference khi di chuyển >= 15 mét hoặc sau 30 giây
+  if (candidatePos) {
+    const prev = lastHelperRef.current;
+    if (
+      !prev ||
+      haversineMeters(prev.lat, prev.lng, candidatePos.lat, candidatePos.lng) >= 15 ||
+      candidatePos.recorded_at - prev.recorded_at >= 30000
+    ) {
+      lastHelperRef.current = candidatePos;
+    }
+  } else {
+    lastHelperRef.current = null;
+  }
+  const helperPos = lastHelperRef.current;
 
   const state = {
     channel: 'greenhouse-tracking',
@@ -199,16 +225,25 @@ export function LiveTrackingMap({
   };
   const latest = useRef(state);
   latest.current = state;
+
+  const lastSentPayload = useRef<string>('');
   const send = useCallback(() => {
     if (!ready.current) return;
+    const payloadStr = JSON.stringify(latest.current);
+    if (payloadStr === lastSentPayload.current) return;
+    lastSentPayload.current = payloadStr;
+
     if (Platform.OS === 'web') {
       iframeRef.current?.contentWindow?.postMessage(latest.current, '*');
     } else {
       webViewRef.current?.injectJavaScript(
-        `window.applyTrackingState && window.applyTrackingState(${JSON.stringify(latest.current)}); true;`,
+        `window.applyTrackingState && window.applyTrackingState(${payloadStr}); true;`,
       );
     }
   }, []);
+
+  const lastReportedMetrics = useRef<{ distanceKm: number; etaMinutes: number } | null>(null);
+
   const receive = useCallback(
     (data: any) => {
       if (data?.channel !== 'greenhouse-tracking') return;
@@ -221,7 +256,30 @@ export function LiveTrackingMap({
         setGpsError(null);
         setRetry(r => r + 1);
       }
-      if (data.type === 'metrics') callback.current?.(data.value);
+      if (data.type === 'metrics') {
+        const m = data.value;
+        if (!m) {
+          if (lastReportedMetrics.current !== null) {
+            lastReportedMetrics.current = null;
+            callback.current?.(null);
+          }
+          return;
+        }
+        const prev = lastReportedMetrics.current;
+        // Chỉ gọi callback cập nhật số liệu khi khoảng cách đổi >= 0.1km hoặc ETA đổi phút
+        if (
+          !prev ||
+          Math.abs(prev.distanceKm - m.distanceKm) >= 0.1 ||
+          prev.etaMinutes !== m.etaMinutes
+        ) {
+          const rounded = {
+            distanceKm: Math.round(m.distanceKm * 10) / 10,
+            etaMinutes: Math.round(m.etaMinutes),
+          };
+          lastReportedMetrics.current = rounded;
+          callback.current?.(rounded);
+        }
+      }
     },
     [send],
   );
@@ -237,11 +295,9 @@ export function LiveTrackingMap({
   useEffect(send, [
     customerLocation?.latitude,
     customerLocation?.longitude,
-    helperLocation?.latitude,
-    helperLocation?.longitude,
-    helperRecordedAt,
-    deviceLocation?.latitude,
-    deviceLocation?.longitude,
+    helperPos?.lat,
+    helperPos?.lng,
+    helperPos?.recorded_at,
     viewerRole,
     status,
     send,
@@ -357,6 +413,8 @@ export function LiveTrackingMap({
     </View>
   );
 }
+
+export const LiveTrackingMap = React.memo(LiveTrackingMapComponent);
 const styles = StyleSheet.create({
   container: {
     width: '100%',
