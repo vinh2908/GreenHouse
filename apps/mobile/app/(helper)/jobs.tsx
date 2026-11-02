@@ -42,24 +42,37 @@ export default function HelperJobsScreen() {
   const router = useRouter();
   const [tab, setTab] = useState(0);
   const pagerRef = useRef<ScrollView>(null);
+  const tabBarScrollRef = useRef<ScrollView>(null);
   const { width: windowWidth } = useWindowDimensions();
   const [containerWidth, setContainerWidth] = useState(windowWidth);
+  const pageWidth = Math.round(containerWidth || windowWidth);
 
   const handleSelectTab = (index: number) => {
     setTab(index);
-    pagerRef.current?.scrollTo({ x: index * containerWidth, animated: true });
+    pagerRef.current?.scrollTo({ x: index * pageWidth, animated: true });
+    if (index === 0) {
+      tabBarScrollRef.current?.scrollTo({ x: 0, animated: true });
+    } else if (index === TABS.length - 1) {
+      tabBarScrollRef.current?.scrollToEnd({ animated: true });
+    }
   };
 
   const handleScrollEnd = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-    const pageIndex = Math.round(e.nativeEvent.contentOffset.x / (containerWidth || 1));
+    const offsetX = e.nativeEvent.contentOffset.x;
+    const pageIndex = Math.round(offsetX / (pageWidth || 1));
     if (pageIndex >= 0 && pageIndex < TABS.length && pageIndex !== tab) {
       setTab(pageIndex);
+      if (pageIndex === 0) {
+        tabBarScrollRef.current?.scrollTo({ x: 0, animated: true });
+      } else if (pageIndex === TABS.length - 1) {
+        tabBarScrollRef.current?.scrollToEnd({ animated: true });
+      }
     }
   };
 
   useEffect(() => {
-    pagerRef.current?.scrollTo({ x: tab * containerWidth, animated: false });
-  }, [containerWidth]);
+    pagerRef.current?.scrollTo({ x: tab * pageWidth, animated: true });
+  }, [tab, pageWidth]);
 
   // ── Đơn nhóm: lời mời vào nhóm đang chờ (Roadmap Phase 1) ────────────────
   const { data: teamInvitations } = useTeamInvitations();
@@ -513,6 +526,7 @@ export default function HelperJobsScreen() {
         }}
       >
         <ScrollView
+          ref={tabBarScrollRef}
           horizontal
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={{
@@ -552,7 +566,7 @@ export default function HelperJobsScreen() {
       <View
         style={{ flex: 1 }}
         onLayout={e => {
-          const w = e.nativeEvent.layout.width;
+          const w = Math.round(e.nativeEvent.layout.width);
           if (w > 0 && w !== containerWidth) {
             setContainerWidth(w);
           }
@@ -562,13 +576,15 @@ export default function HelperJobsScreen() {
           ref={pagerRef}
           horizontal
           pagingEnabled
+          nestedScrollEnabled={true}
           showsHorizontalScrollIndicator={false}
           onMomentumScrollEnd={handleScrollEnd}
           onScrollEndDrag={handleScrollEnd}
           style={{ flex: 1 }}
+          contentContainerStyle={{ width: pageWidth * TABS.length }}
         >
           {TABS.map((_, i) => (
-            <View key={i} style={{ width: containerWidth, flex: 1 }}>
+            <View key={i} style={{ width: pageWidth, height: '100%' }}>
               {renderTabContent(i)}
             </View>
           ))}
