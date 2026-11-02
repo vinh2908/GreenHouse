@@ -31,7 +31,6 @@ export function CustomTabBar({
   const insets = useSafeAreaInsets();
   const { t, fs } = useTranslation();
   const { width } = useWindowDimensions();
-  const webBottomInset = Platform.OS === 'web' ? insets.bottom : 0;
 
   // Tính toán kích thước co giãn theo bề rộng màn hình (360px, 390px, 412px, desktop)
   const isNarrow = width < 375; // màn hẹp như 360px
@@ -78,9 +77,16 @@ export function CustomTabBar({
         style={[
           styles.tabBar,
           {
-            height: dims.tabBarHeight + webBottomInset,
+            height:
+              Platform.OS === 'web'
+                ? (`calc(${dims.tabBarHeight}px + env(safe-area-inset-bottom, ${insets.bottom || 0}px))` as any)
+                : dims.tabBarHeight,
             paddingBottom:
-              Platform.OS === 'ios' ? 24 : Platform.OS === 'web' ? 8 + webBottomInset : 8,
+              Platform.OS === 'web'
+                ? (`calc(8px + env(safe-area-inset-bottom, ${insets.bottom || 0}px))` as any)
+                : Platform.OS === 'ios'
+                  ? 24
+                  : 8,
           },
         ]}
       >
@@ -273,7 +279,7 @@ export function CustomTabBar({
 
 const styles = StyleSheet.create({
   container: {
-    position: 'absolute',
+    position: (Platform.OS === 'web' ? 'fixed' : 'absolute') as any,
     bottom: 0,
     left: 0,
     right: 0,
