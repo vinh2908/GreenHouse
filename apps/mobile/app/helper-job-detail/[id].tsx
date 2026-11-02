@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
@@ -97,6 +97,34 @@ export default function HelperJobDetailScreen() {
   const gps = useLiveGpsStore(s => s.point);
   const gpsError = useLiveGpsStore(s => s.error);
   const [routeMetrics, setRouteMetrics] = useState<RouteMetrics | null>(null);
+
+  const handleRouteMetrics = useCallback((metrics: RouteMetrics | null) => {
+    setRouteMetrics(prev => {
+      if (!prev && !metrics) return prev;
+      if (!prev || !metrics) return metrics;
+      if (
+        Math.abs(prev.distanceKm - metrics.distanceKm) >= 0.1 ||
+        prev.etaMinutes !== metrics.etaMinutes
+      ) {
+        return metrics;
+      }
+      return prev;
+    });
+  }, []);
+
+  const customerLocation = useMemo(() => {
+    const coords = job?.address?.location?.coordinates;
+    if (!coords || !Array.isArray(coords) || coords.length < 2) return null;
+    return {
+      latitude: coords[1],
+      longitude: coords[0],
+    };
+  }, [job?.address?.location?.coordinates?.[0], job?.address?.location?.coordinates?.[1]]);
+
+  const helperLocation = useMemo(() => {
+    if (!gps?.lat || !gps?.lng) return null;
+    return { latitude: gps.lat, longitude: gps.lng };
+  }, [gps?.lat, gps?.lng]);
 
   // B7: Tính khoảng cách và ETA dự phòng từ tọa độ nếu live map chưa bắn metrics
   const effectiveMetrics = useMemo(() => {
@@ -560,21 +588,18 @@ export default function HelperJobDetailScreen() {
           </Card>
         )}
         {/* ── Grab-Style Live Route & Map Navigation ─────────────────────── */}
-        {job?.address?.location?.coordinates && (
+        {customerLocation && (
           <LiveTrackingMap
-            customerLocation={{
-              latitude: job.address.location.coordinates[1],
-              longitude: job.address.location.coordinates[0],
-            }}
-            helperLocation={gps ? { latitude: gps.lat, longitude: gps.lng } : null}
+            customerLocation={customerLocation}
+            helperLocation={helperLocation}
             helperRecordedAt={gps?.recorded_at}
             viewerRole="helper"
-            onRouteMetrics={setRouteMetrics}
-            customerAddress={job.address.full_address}
+            onRouteMetrics={handleRouteMetrics}
+            customerAddress={job.address?.full_address}
             helperName="Bạn (Thợ)"
             status={job.status}
             showNavigationButton={true}
-            height={width < 430 ? 320 : 300}
+            height={300}
           />
         )}
 

@@ -145,11 +145,12 @@ export function toastQueuedOffline(): void {
  * Ping GET /health (route HealthController, qua global prefix /api/v1 đã có
  * trong baseURL). Dùng fetch thuần thay vì apiClient để tránh interceptor
  * (toast lỗi / refresh token) chạy mỗi 20 giây.
+ * Tăng thời gian chờ lên 12s để tránh báo offline giả khi server Render mới tỉnh giấc.
  */
 export async function checkOnline(): Promise<boolean> {
   const base = (apiClient.defaults.baseURL ?? '').replace(/\/$/, '');
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 4000);
+  const timer = setTimeout(() => controller.abort(), 12000);
   try {
     const res = await fetch(`${base}/health`, { signal: controller.signal });
     return res.ok;
@@ -157,6 +158,29 @@ export async function checkOnline(): Promise<boolean> {
     return false;
   } finally {
     clearTimeout(timer);
+  }
+}
+
+let consecutiveFailures = 0;
+
+/**
+ * Cập nhật trạng thái online theo cơ chế chống nhấp nháy:
+ * - Khi kết nối thành công: reset đếm lỗi về 0, chuyển ngay sang online.
+ * - Khi thất bại: tăng số lần thất bại liên tiếp; CHỈ chuyển sang offline sau 2 lần
+ *   thất bại liên tiếp (không đổi trạng thái vì 1 lần kiểm tra chậm hay server Render lúc mới tỉnh).
+ */
+export function updateOnlineStatus(isHealthy: boolean): boolean {
+  if (isHealthy) {
+    consecutiveFailures = 0;
+    useOfflineStore.getState().setOnline(true);
+    return true;
+  } else {
+    consecutiveFailures += 1;
+    if (consecutiveFailures >= 2) {
+      useOfflineStore.getState().setOnline(false);
+      return false;
+    }
+    return useOfflineStore.getState().isOnline;
   }
 }
 
@@ -180,8 +204,8 @@ export async function flushQueue(): Promise<number> {
   flushing = true;
   let flushed = 0;
   try {
-    const online = await checkOnline();
-    useOfflineStore.getState().setOnline(online);
+    const isHealthy = await checkOnline();
+    const online = updateOnlineStatus(isHealthy);
     if (!online) return 0;
 
     let queue = await readQueue();

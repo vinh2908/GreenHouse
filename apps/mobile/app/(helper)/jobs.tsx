@@ -512,7 +512,16 @@ export default function HelperJobsScreen() {
           borderBottomColor: COLORS.gray[100],
         }}
       >
-        <View style={{ flexDirection: 'row', paddingHorizontal: 16, paddingVertical: 10, gap: 8 }}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{
+            flexDirection: 'row',
+            paddingHorizontal: 16,
+            paddingVertical: 10,
+            gap: 8,
+          }}
+        >
           {TABS.map((t, i) => (
             <TouchableOpacity
               key={i}
@@ -536,7 +545,7 @@ export default function HelperJobsScreen() {
               </Text>
             </TouchableOpacity>
           ))}
-        </View>
+        </ScrollView>
       </View>
 
       {/* Swipeable Tabs Container */}
