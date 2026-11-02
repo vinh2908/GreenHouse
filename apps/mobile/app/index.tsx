@@ -8,6 +8,7 @@ import {
   StyleSheet,
   StatusBar,
   Easing,
+  Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -221,7 +222,10 @@ export default function SplashScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    width: '100%',
+    height: '100%',
     minHeight: '100%',
+    ...(Platform.OS === 'web' ? { minHeight: '100dvh' as any } : {}),
     backgroundColor: '#16A34A',
     alignItems: 'center',
     justifyContent: 'center',
