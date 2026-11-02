@@ -133,33 +133,8 @@ export default function RecurringPlansScreen() {
         </TouchableOpacity>
       </View>
 
-      {!plans && isLoading ? (
-        <View style={{ padding: 16, gap: 12 }}>
-          {[1, 2, 3].map(i => (
-            <View
-              key={i}
-              style={{
-                height: 110,
-                backgroundColor: '#fff',
-                borderRadius: 14,
-                borderWidth: 1,
-                borderColor: COLORS.gray[200],
-                padding: 14,
-                gap: 10,
-              }}
-            >
-              <View
-                style={{ height: 18, width: '60%', backgroundColor: '#E2E8F0', borderRadius: 4 }}
-              />
-              <View
-                style={{ height: 14, width: '40%', backgroundColor: '#E2E8F0', borderRadius: 4 }}
-              />
-              <View
-                style={{ height: 14, width: '80%', backgroundColor: '#E2E8F0', borderRadius: 4 }}
-              />
-            </View>
-          ))}
-        </View>
+      {isLoading ? (
+        <LoadingSpinner />
       ) : (
         <ScrollView
           showsVerticalScrollIndicator={false}

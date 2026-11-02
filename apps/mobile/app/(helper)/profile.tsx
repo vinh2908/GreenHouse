@@ -260,11 +260,7 @@ export default function HelperProfileScreen() {
               <Text
                 style={{
                   fontSize: 13,
-                  color: isWorking
-                    ? '#D97706'
-                    : effectiveOnline
-                      ? COLORS.success
-                      : COLORS.gray[500],
+                  color: isWorking ? '#D97706' : effectiveOnline ? COLORS.success : COLORS.gray[500],
                   fontWeight: effectiveOnline ? '700' : '500',
                   marginTop: 2,
                 }}

@@ -75,66 +75,7 @@ export default function HelperPublicProfileScreen() {
     router.replace(user?.active_role === 'helper' ? '/(helper)/dashboard' : '/(customer)/home');
   };
 
-  const insets = useSafeAreaInsets();
-
-  if (pLoading && !profile) {
-    return (
-      <View style={{ flex: 1, backgroundColor: '#F8F9FA' }}>
-        <View
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            paddingHorizontal: 20,
-            paddingTop: Math.max(insets.top + 6, 18),
-            paddingBottom: 14,
-            backgroundColor: '#fff',
-            borderBottomWidth: 1,
-            borderBottomColor: COLORS.gray[100],
-          }}
-        >
-          <TouchableOpacity
-            onPress={handleBack}
-            style={{
-              width: 38,
-              height: 38,
-              borderRadius: 12,
-              backgroundColor: COLORS.gray[100],
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <ArrowLeft size={20} color={COLORS.gray[800]} />
-          </TouchableOpacity>
-          <Text
-            style={{ fontSize: 18, fontWeight: '800', color: COLORS.gray[900], marginLeft: 12 }}
-          >
-            Hồ sơ thợ
-          </Text>
-        </View>
-        <ScrollView contentContainerStyle={{ padding: 20, alignItems: 'center', gap: 16 }}>
-          <View
-            style={{ width: 88, height: 88, borderRadius: 44, backgroundColor: COLORS.gray[200] }}
-          />
-          <View
-            style={{ width: 160, height: 20, borderRadius: 6, backgroundColor: COLORS.gray[200] }}
-          />
-          <View
-            style={{ width: 100, height: 14, borderRadius: 4, backgroundColor: COLORS.gray[100] }}
-          />
-          <View
-            style={{
-              width: '100%',
-              height: 80,
-              borderRadius: 16,
-              backgroundColor: '#fff',
-              borderWidth: 1,
-              borderColor: COLORS.gray[100],
-            }}
-          />
-        </ScrollView>
-      </View>
-    );
-  }
+  if (pLoading) return <LoadingSpinner />;
 
   const helperUser =
     typeof profile?.user_id === 'object' && profile?.user_id ? profile.user_id : {};
@@ -145,6 +86,7 @@ export default function HelperPublicProfileScreen() {
   const isVerified = profile?.verification_status === 'approved';
 
   const reviewsList = reviewsData?.reviews || [];
+  const insets = useSafeAreaInsets();
 
   const handleMessageHelper = () => {
     if (jobId) {

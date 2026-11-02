@@ -190,7 +190,7 @@ export function useJobQuotes(jobId?: string) {
       return data.data;
     },
     enabled: !!jobId,
-    refetchInterval: 30000,
+    refetchInterval: 15000,
   });
 }
 
@@ -506,7 +506,7 @@ export function useAvailableJobs(serviceId?: string, page = 1, enabled = true) {
       });
       return data.data;
     },
-    refetchInterval: 60000,
+    refetchInterval: 30000,
   });
 }
 
@@ -928,7 +928,7 @@ export function useConversations() {
       const { data } = await apiClient.get('/chat/conversations');
       return data.data;
     },
-    refetchInterval: 30000,
+    refetchInterval: 10000,
   });
 }
 
@@ -1023,7 +1023,7 @@ export function useSupportMessages(conversationId?: string) {
       return data.data as SupportMessageItem[];
     },
     enabled: !!conversationId,
-    refetchInterval: 15000,
+    refetchInterval: 4000,
   });
 }
 
@@ -1059,7 +1059,7 @@ export function useNotifications(unreadOnly = false) {
       });
       return data.data;
     },
-    refetchInterval: 60000,
+    refetchInterval: 30000,
   });
 }
 
@@ -1070,7 +1070,7 @@ export function useUnreadCount() {
       const { data } = await apiClient.get('/notifications/unread-count');
       return data.data.count as number;
     },
-    refetchInterval: 60000,
+    refetchInterval: 15000,
   });
 }
 
@@ -1908,7 +1908,7 @@ export function useTeamInvitations(enabled = true) {
       return data.data as TeamInvitation[];
     },
     enabled,
-    refetchInterval: 60_000,
+    refetchInterval: 30_000,
   });
 }
 
@@ -2369,6 +2369,6 @@ export function useSosBackupByJob(jobId?: string) {
       return data.data as { sos: any | null };
     },
     enabled: !!jobId,
-    refetchInterval: 30000,
+    refetchInterval: 15000,
   });
 }

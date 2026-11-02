@@ -11,8 +11,6 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { useQueryClient } from '@tanstack/react-query';
-import apiClient from '@/services/api-client';
 import {
   Bell,
   Briefcase,
@@ -104,29 +102,6 @@ export default function HelperDashboardScreen() {
   }, [profile?.status]);
 
   const effectiveOnline = isWorking ? true : (localOnline ?? isOnline);
-
-  const qc = useQueryClient();
-
-  // Tải trước danh sách thông báo và giao dịch ví ngay từ dashboard để khi bấm vào là có sẵn
-  useEffect(() => {
-    qc.prefetchQuery({
-      queryKey: ['notifications', false],
-      queryFn: async () => {
-        const { data } = await apiClient.get('/notifications', {
-          params: { unread_only: false },
-        });
-        return data.data;
-      },
-    }).catch(() => {});
-
-    qc.prefetchQuery({
-      queryKey: ['transactions', 1],
-      queryFn: async () => {
-        const { data } = await apiClient.get('/payments/transactions', { params: { page: 1 } });
-        return data.data;
-      },
-    }).catch(() => {});
-  }, [qc]);
 
   const [sosBroadcast, setSosBroadcast] = useState<any>(null);
 
