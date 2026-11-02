@@ -74,46 +74,7 @@ export default function SosTrackingScreen() {
     };
   }, [refetch, id]);
 
-  if (isLoading && !job) {
-    return (
-      <View style={{ flex: 1, backgroundColor: '#F8F9FA' }}>
-        <View
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            paddingHorizontal: 16,
-            paddingTop: Math.max(insets.top + 6, 18),
-            paddingBottom: 14,
-            backgroundColor: '#DC2626',
-          }}
-        >
-          <TouchableOpacity
-            activeOpacity={0.7}
-            onPress={() => router.replace('/(customer)/home')}
-            style={{
-              width: 38,
-              height: 38,
-              borderRadius: 12,
-              backgroundColor: 'rgba(255, 255, 255, 0.2)',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <ArrowLeft size={20} color="#fff" />
-          </TouchableOpacity>
-          <Text style={{ fontSize: 16, fontWeight: '800', color: '#fff' }}>
-            Theo dõi cứu hộ SOS
-          </Text>
-          <View style={{ width: 38 }} />
-        </View>
-        <View style={{ padding: 16, gap: 16 }}>
-          <View style={{ height: 160, backgroundColor: '#E2E8F0', borderRadius: 16 }} />
-          <View style={{ height: 120, backgroundColor: '#E2E8F0', borderRadius: 16 }} />
-        </View>
-      </View>
-    );
-  }
+  if (isLoading) return <LoadingSpinner />;
 
   const isMatched =
     job?.status === 'confirmed' ||

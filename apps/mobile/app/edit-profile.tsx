@@ -175,6 +175,8 @@ export default function EditProfileScreen() {
 
   const insets = useSafeAreaInsets();
 
+  if (uLoading) return <LoadingSpinner />;
+
   const handleBack = () => {
     if (router.canGoBack()) {
       router.back();
@@ -182,65 +184,6 @@ export default function EditProfileScreen() {
       router.replace(isHelper ? '/(helper)/profile' : '/(customer)/profile');
     }
   };
-
-  if (uLoading && !user) {
-    return (
-      <View style={{ flex: 1, backgroundColor: '#F8F9FA' }}>
-        <View
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            paddingHorizontal: 20,
-            paddingTop: Math.max(insets.top + 6, 18),
-            paddingBottom: 14,
-            backgroundColor: '#fff',
-            borderBottomWidth: 1,
-            borderBottomColor: COLORS.gray[100],
-          }}
-        >
-          <TouchableOpacity
-            onPress={handleBack}
-            style={{
-              width: 38,
-              height: 38,
-              borderRadius: 12,
-              backgroundColor: COLORS.gray[100],
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <ArrowLeft size={20} color={COLORS.gray[800]} />
-          </TouchableOpacity>
-          <Text
-            style={{ fontSize: 18, fontWeight: '800', color: COLORS.gray[900], marginLeft: 12 }}
-          >
-            Sửa thông tin cá nhân
-          </Text>
-        </View>
-        <ScrollView contentContainerStyle={{ padding: 20, alignItems: 'center', gap: 16 }}>
-          <View
-            style={{ width: 88, height: 88, borderRadius: 44, backgroundColor: COLORS.gray[200] }}
-          />
-          <View
-            style={{
-              width: '100%',
-              height: 48,
-              borderRadius: 12,
-              backgroundColor: COLORS.gray[100],
-            }}
-          />
-          <View
-            style={{
-              width: '100%',
-              height: 48,
-              borderRadius: 12,
-              backgroundColor: COLORS.gray[100],
-            }}
-          />
-        </ScrollView>
-      </View>
-    );
-  }
 
   // Square crop, small file: avatars are shown at <= 90px.
   const pickAvatar = async (source: 'camera' | 'library') => {

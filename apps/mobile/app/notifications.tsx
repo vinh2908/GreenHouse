@@ -138,59 +138,8 @@ export default function NotificationsScreen() {
           <RefreshControl refreshing={isLoading} onRefresh={refetch} colors={[COLORS.primary]} />
         }
       >
-        {!notifications && isLoading ? (
-          <View style={{ gap: 10 }}>
-            {[1, 2, 3, 4, 5].map(i => (
-              <View
-                key={i}
-                style={{
-                  flexDirection: 'row',
-                  gap: 12,
-                  padding: 14,
-                  backgroundColor: '#fff',
-                  borderRadius: 16,
-                  borderWidth: 1,
-                  borderColor: COLORS.gray[100],
-                  alignItems: 'center',
-                }}
-              >
-                <View
-                  style={{
-                    width: 44,
-                    height: 44,
-                    borderRadius: 14,
-                    backgroundColor: COLORS.gray[200],
-                  }}
-                />
-                <View style={{ flex: 1, gap: 8 }}>
-                  <View
-                    style={{
-                      width: '70%',
-                      height: 14,
-                      borderRadius: 4,
-                      backgroundColor: COLORS.gray[200],
-                    }}
-                  />
-                  <View
-                    style={{
-                      width: '90%',
-                      height: 12,
-                      borderRadius: 4,
-                      backgroundColor: COLORS.gray[100],
-                    }}
-                  />
-                  <View
-                    style={{
-                      width: '35%',
-                      height: 10,
-                      borderRadius: 4,
-                      backgroundColor: COLORS.gray[100],
-                    }}
-                  />
-                </View>
-              </View>
-            ))}
-          </View>
+        {isLoading ? (
+          <LoadingSpinner />
         ) : !notifications?.length ? (
           <EmptyState
             emoji="🔔"

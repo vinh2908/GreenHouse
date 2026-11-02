@@ -131,6 +131,8 @@ export default function BankAccountScreen() {
 
   const insets = useSafeAreaInsets();
 
+  if (isHelper && isLoading) return <LoadingSpinner />;
+
   return (
     <View style={{ flex: 1, backgroundColor: '#F8F9FA' }}>
       {/* ── Top Header (Safe Insets) ─────────────────────────────────── */}

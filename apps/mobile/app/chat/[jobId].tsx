@@ -407,36 +407,8 @@ export default function ChatScreen() {
       </View>
 
       {/* ── Chat Messages List ──────────────────────────────────────── */}
-      {loadingConv && !conversationId ? (
-        <View style={{ flex: 1, padding: 16, gap: 12 }}>
-          <View
-            style={{
-              width: '60%',
-              height: 42,
-              backgroundColor: COLORS.gray[200],
-              borderRadius: 16,
-              alignSelf: 'flex-start',
-            }}
-          />
-          <View
-            style={{
-              width: '50%',
-              height: 42,
-              backgroundColor: '#FFEADF',
-              borderRadius: 16,
-              alignSelf: 'flex-end',
-            }}
-          />
-          <View
-            style={{
-              width: '70%',
-              height: 42,
-              backgroundColor: COLORS.gray[200],
-              borderRadius: 16,
-              alignSelf: 'flex-start',
-            }}
-          />
-        </View>
+      {loadingConv ? (
+        <LoadingSpinner />
       ) : errorMsg ? (
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 }}>
           <EmptyState

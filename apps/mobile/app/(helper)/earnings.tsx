@@ -136,6 +136,8 @@ export default function HelperEarningsScreen() {
 
   const insets = useSafeAreaInsets();
 
+  if (isLoading) return <LoadingSpinner />;
+
   return (
     <View style={{ flex: 1, backgroundColor: '#F8F9FA' }}>
       <ScrollView
@@ -163,41 +165,18 @@ export default function HelperEarningsScreen() {
           >
             {t('earn_wallet_balance_label')}
           </Text>
-          {isLoading && !wallet ? (
-            <View style={{ gap: 8, marginVertical: 6 }}>
-              <View
-                style={{
-                  width: 160,
-                  height: 38,
-                  borderRadius: 8,
-                  backgroundColor: 'rgba(255,255,255,0.25)',
-                }}
-              />
-              <View
-                style={{
-                  width: 200,
-                  height: 14,
-                  borderRadius: 4,
-                  backgroundColor: 'rgba(255,255,255,0.2)',
-                }}
-              />
-            </View>
-          ) : (
-            <>
-              <PriceText amount={wallet?.balance ?? 0} size={36} color="#fff" />
-              <Text
-                style={{
-                  color: 'rgba(255,255,255,0.8)',
-                  fontSize: 13,
-                  marginTop: 6,
-                  fontWeight: '500',
-                }}
-              >
-                {t('earn_total_received')}{' '}
-                {new Intl.NumberFormat('vi-VN').format(wallet?.total_earned ?? 0)}₫
-              </Text>
-            </>
-          )}
+          <PriceText amount={wallet?.balance ?? 0} size={36} color="#fff" />
+          <Text
+            style={{
+              color: 'rgba(255,255,255,0.8)',
+              fontSize: 13,
+              marginTop: 6,
+              fontWeight: '500',
+            }}
+          >
+            {t('earn_total_received')}{' '}
+            {new Intl.NumberFormat('vi-VN').format(wallet?.total_earned ?? 0)}₫
+          </Text>
         </View>
 
         {/* ── Stats ─────────────────────────────────────────────────── */}

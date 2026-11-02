@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -6,6 +6,9 @@ import {
   TouchableOpacity,
   RefreshControl,
   ActivityIndicator,
+  useWindowDimensions,
+  NativeSyntheticEvent,
+  NativeScrollEvent,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -38,6 +41,26 @@ const TABS = [
 export default function HelperJobsScreen() {
   const router = useRouter();
   const [tab, setTab] = useState(0);
+  const pagerRef = useRef<ScrollView>(null);
+  const { width: windowWidth } = useWindowDimensions();
+  const [containerWidth, setContainerWidth] = useState(windowWidth);
+
+  const handleSelectTab = (index: number) => {
+    setTab(index);
+    pagerRef.current?.scrollTo({ x: index * containerWidth, animated: true });
+  };
+
+  const handleScrollEnd = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const pageIndex = Math.round(e.nativeEvent.contentOffset.x / (containerWidth || 1));
+    if (pageIndex >= 0 && pageIndex < TABS.length && pageIndex !== tab) {
+      setTab(pageIndex);
+    }
+  };
+
+  useEffect(() => {
+    pagerRef.current?.scrollTo({ x: tab * containerWidth, animated: false });
+  }, [containerWidth]);
+
   // ── Đơn nhóm: lời mời vào nhóm đang chờ (Roadmap Phase 1) ────────────────
   const { data: teamInvitations } = useTeamInvitations();
   const respondInvitation = useRespondTeamInvitation();
@@ -74,7 +97,6 @@ export default function HelperJobsScreen() {
     { data: history, loading: hLoading, refetching: hRefetching, refetch: rh },
   ];
 
-  const current = datasets[tab];
   const insets = useSafeAreaInsets();
   const user = useAuthStore(s => s.user);
   const isAuthLoading = useAuthStore(s => s.isLoading);
@@ -133,157 +155,30 @@ export default function HelperJobsScreen() {
     );
   }
 
-  return (
-    <View style={{ flex: 1, backgroundColor: '#F8F9FA' }}>
-      <OfflineBanner />
-      {/* Header */}
-      <View
-        style={{
-          backgroundColor: '#FFFFFF',
-          borderBottomWidth: 1,
-          borderBottomColor: COLORS.gray[100],
-          paddingHorizontal: 20,
-          paddingTop: Math.max(insets.top + 8, 20),
-          paddingBottom: 14,
-        }}
-      >
-        <Text style={{ fontSize: 20, fontWeight: '800', color: COLORS.gray[900] }}>
-          Quản lý công việc
-        </Text>
-        <Text style={{ fontSize: 12, color: COLORS.gray[500], marginTop: 2 }}>
-          Xem các đơn hàng mới cần thợ và theo dõi tiến độ công việc
-        </Text>
-        {/* Bản đồ nhu cầu (Feature 15) */}
-        <TouchableOpacity
-          activeOpacity={0.85}
-          onPress={() => router.push('/demand-map')}
-          style={{
-            marginTop: 12,
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: 8,
-            backgroundColor: COLORS.primaryLight,
-            borderWidth: 1,
-            borderColor: COLORS.primary,
-            borderRadius: 12,
-            paddingHorizontal: 14,
-            paddingVertical: 10,
-          }}
-        >
-          <Text style={{ fontSize: 15 }}>🗺</Text>
-          <View style={{ flex: 1 }}>
-            <Text style={{ fontWeight: '800', fontSize: 13.5, color: COLORS.gray[900] }}>
-              Bản đồ nhu cầu
-            </Text>
-            <Text style={{ fontSize: 11.5, color: COLORS.gray[500] }}>
-              Xem khu vực nào đang có nhiều đơn chờ báo giá nhất
-            </Text>
-          </View>
-          <ChevronRight size={16} color={COLORS.primary} />
-        </TouchableOpacity>
-      </View>
-
-      {/* ── Lời mời vào nhóm (Đơn nhóm) ─────────────────────────────────── */}
-      {(teamInvitations ?? []).length > 0 && (
-        <View style={{ paddingHorizontal: 16, paddingTop: 12, gap: 10 }}>
-          <Text style={{ fontWeight: '800', fontSize: 14.5, color: COLORS.gray[900] }}>
-            👥 Lời mời vào nhóm ({teamInvitations!.length})
-          </Text>
-          {teamInvitations!.map(inv => (
-            <Card key={inv.job_id} style={{ gap: 8 }}>
-              <Text style={{ fontWeight: '800', fontSize: 14, color: COLORS.gray[900] }}>
-                {inv.title}
-              </Text>
-              <Text style={{ fontSize: 12.5, color: COLORS.gray[600], lineHeight: 18 }}>
-                {inv.address_text ? `📍 ${inv.address_text}\n` : ''}Bạn sẽ nhận {inv.split_percent}%
-                tiền công của đơn (sau phí sàn) khi hoàn thành cùng nhóm {inv.helpers_needed} thợ.
-              </Text>
-              <View style={{ flexDirection: 'row', gap: 8 }}>
-                <Button
-                  title="✓ Nhận lời"
-                  size="sm"
-                  loading={respondInvitation.isPending}
-                  onPress={() => respondInvitation.mutate({ jobId: inv.job_id, action: 'accept' })}
-                />
-                <Button
-                  title="Từ chối"
-                  size="sm"
-                  variant="outline"
-                  onPress={() => respondInvitation.mutate({ jobId: inv.job_id, action: 'decline' })}
-                />
-                <Button
-                  title="Xem đơn"
-                  size="sm"
-                  variant="ghost"
-                  onPress={() =>
-                    router.push({
-                      pathname: '/helper-job-detail/[id]',
-                      params: { id: inv.job_id },
-                    })
-                  }
-                />
-              </View>
-            </Card>
-          ))}
-        </View>
-      )}
-
-      {/* Tabs */}
-      <View
-        style={{
-          backgroundColor: '#FFFFFF',
-          borderBottomWidth: 1,
-          borderBottomColor: COLORS.gray[100],
-        }}
-      >
-        <View style={{ flexDirection: 'row', paddingHorizontal: 16, paddingVertical: 10, gap: 8 }}>
-          {TABS.map((t, i) => (
-            <TouchableOpacity
-              key={i}
-              activeOpacity={0.8}
-              onPress={() => setTab(i)}
-              style={{
-                paddingHorizontal: 16,
-                paddingVertical: 8,
-                borderRadius: 20,
-                backgroundColor: tab === i ? COLORS.primary : COLORS.gray[100],
-              }}
-            >
-              <Text
-                style={{
-                  fontSize: 13,
-                  fontWeight: tab === i ? '800' : '600',
-                  color: tab === i ? '#fff' : COLORS.gray[600],
-                }}
-              >
-                {t.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      </View>
-
-      {/* List */}
+  const renderTabContent = (tabIndex: number) => {
+    const ds = datasets[tabIndex];
+    return (
       <ScrollView
         showsVerticalScrollIndicator={false}
+        nestedScrollEnabled={true}
         contentContainerStyle={{ padding: 16, gap: 10, paddingBottom: 110 }}
         refreshControl={
           <RefreshControl
-            refreshing={current.loading || current.refetching}
-            onRefresh={current.refetch}
+            refreshing={ds.loading || ds.refetching}
+            onRefresh={ds.refetch}
             colors={[COLORS.primary]}
             tintColor={COLORS.primary}
           />
         }
       >
-        {tab === 0 && (pLoading || (aLoading && !available)) ? (
+        {tabIndex === 0 && (pLoading || (aLoading && !available)) ? (
           <Card style={{ alignItems: 'center', paddingVertical: 40, gap: 12 }}>
             <ActivityIndicator size="small" color={COLORS.primary} />
             <Text style={{ fontSize: 13, color: COLORS.gray[500] }}>
               Đang kiểm tra trạng thái và tải đơn mới...
             </Text>
           </Card>
-        ) : tab === 0 && !pLoading && helperProfile && !isVerified ? (
+        ) : tabIndex === 0 && !pLoading && helperProfile && !isVerified ? (
           <Card style={{ alignItems: 'center', paddingVertical: 32, gap: 12 }}>
             <EmptyState
               emoji={kycStatus === 'pending' ? '⏳' : '🪪'}
@@ -315,29 +210,29 @@ export default function HelperJobsScreen() {
               </TouchableOpacity>
             )}
           </Card>
-        ) : !current.loading && (!current.data || current.data.length === 0) ? (
+        ) : !ds.loading && (!ds.data || ds.data.length === 0) ? (
           <Card style={{ alignItems: 'center', paddingVertical: 40 }}>
             <EmptyState
               emoji={
-                tab === 0
+                tabIndex === 0
                   ? available?.empty_reason === 'outside_working_hours'
                     ? '⏰'
                     : '🔍'
-                  : tab === 1
+                  : tabIndex === 1
                     ? '📋'
                     : '📚'
               }
               title={
-                tab === 0
+                tabIndex === 0
                   ? available?.empty_reason === 'outside_working_hours'
                     ? 'Không có việc trong khung giờ làm'
                     : 'Chưa có đơn mới'
-                  : tab === 1
+                  : tabIndex === 1
                     ? 'Không có đơn đang làm'
                     : 'Chưa có lịch sử'
               }
               subtitle={
-                tab === 0
+                tabIndex === 0
                   ? available?.empty_reason === 'outside_working_hours'
                     ? 'Hiện có việc mới nhưng ngoài khung giờ hoạt động bạn đã đăng ký. Bạn có thể cập nhật Lịch làm việc trong Hồ sơ để nhận thêm đơn.'
                     : 'Hệ thống đang quét đơn mới. Đơn sẽ xuất hiện ngay khi có khách đăng việc.'
@@ -346,7 +241,7 @@ export default function HelperJobsScreen() {
             />
           </Card>
         ) : (
-          (current.data ?? []).map(
+          (ds.data ?? []).map(
             (job: {
               _id: string;
               title: string;
@@ -465,7 +360,7 @@ export default function HelperJobsScreen() {
                     <Text style={{ fontSize: 12, color: COLORS.gray[400] }}>
                       {dayjs(job.created_at).fromNow()}
                     </Text>
-                    {tab === 0 && (job.is_fixed_price || job.is_warranty) ? (
+                    {tabIndex === 0 && (job.is_fixed_price || job.is_warranty) ? (
                       <TouchableOpacity
                         activeOpacity={0.85}
                         disabled={acceptFixed.isPending}
@@ -499,7 +394,7 @@ export default function HelperJobsScreen() {
                     ) : (
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}>
                         <Text style={{ fontSize: 13, fontWeight: '800', color: COLORS.primary }}>
-                          {tab === 0 ? 'Báo giá ngay' : 'Xem chi tiết'}
+                          {tabIndex === 0 ? 'Báo giá ngay' : 'Xem chi tiết'}
                         </Text>
                         <ChevronRight size={14} color={COLORS.primary} />
                       </View>
@@ -511,6 +406,165 @@ export default function HelperJobsScreen() {
           )
         )}
       </ScrollView>
+    );
+  };
+
+  return (
+    <View style={{ flex: 1, backgroundColor: '#F8F9FA' }}>
+      <OfflineBanner />
+      {/* Header */}
+      <View
+        style={{
+          backgroundColor: '#FFFFFF',
+          borderBottomWidth: 1,
+          borderBottomColor: COLORS.gray[100],
+          paddingHorizontal: 20,
+          paddingTop: Math.max(insets.top + 8, 20),
+          paddingBottom: 14,
+        }}
+      >
+        <Text style={{ fontSize: 20, fontWeight: '800', color: COLORS.gray[900] }}>
+          Quản lý công việc
+        </Text>
+        <Text style={{ fontSize: 12, color: COLORS.gray[500], marginTop: 2 }}>
+          Xem các đơn hàng mới cần thợ và theo dõi tiến độ công việc
+        </Text>
+        {/* Bản đồ nhu cầu (Feature 15) */}
+        <TouchableOpacity
+          activeOpacity={0.85}
+          onPress={() => router.push('/demand-map')}
+          style={{
+            marginTop: 12,
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 8,
+            backgroundColor: COLORS.primaryLight,
+            borderWidth: 1,
+            borderColor: COLORS.primary,
+            borderRadius: 12,
+            paddingHorizontal: 14,
+            paddingVertical: 10,
+          }}
+        >
+          <Text style={{ fontSize: 15 }}>🗺</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={{ fontWeight: '800', fontSize: 13.5, color: COLORS.gray[900] }}>
+              Bản đồ nhu cầu
+            </Text>
+            <Text style={{ fontSize: 11.5, color: COLORS.gray[500] }}>
+              Xem khu vực nào đang có nhiều đơn chờ báo giá nhất
+            </Text>
+          </View>
+          <ChevronRight size={16} color={COLORS.primary} />
+        </TouchableOpacity>
+      </View>
+
+      {/* ── Lời mời vào nhóm (Đơn nhóm) ─────────────────────────────────── */}
+      {(teamInvitations ?? []).length > 0 && (
+        <View style={{ paddingHorizontal: 16, paddingTop: 12, gap: 10 }}>
+          <Text style={{ fontWeight: '800', fontSize: 14.5, color: COLORS.gray[900] }}>
+            👥 Lời mời vào nhóm ({teamInvitations!.length})
+          </Text>
+          {teamInvitations!.map(inv => (
+            <Card key={inv.job_id} style={{ gap: 8 }}>
+              <Text style={{ fontWeight: '800', fontSize: 14, color: COLORS.gray[900] }}>
+                {inv.title}
+              </Text>
+              <Text style={{ fontSize: 12.5, color: COLORS.gray[600], lineHeight: 18 }}>
+                {inv.address_text ? `📍 ${inv.address_text}\n` : ''}Bạn sẽ nhận {inv.split_percent}%
+                tiền công của đơn (sau phí sàn) khi hoàn thành cùng nhóm {inv.helpers_needed} thợ.
+              </Text>
+              <View style={{ flexDirection: 'row', gap: 8 }}>
+                <Button
+                  title="✓ Nhận lời"
+                  size="sm"
+                  loading={respondInvitation.isPending}
+                  onPress={() => respondInvitation.mutate({ jobId: inv.job_id, action: 'accept' })}
+                />
+                <Button
+                  title="Từ chối"
+                  size="sm"
+                  variant="outline"
+                  onPress={() => respondInvitation.mutate({ jobId: inv.job_id, action: 'decline' })}
+                />
+                <Button
+                  title="Xem đơn"
+                  size="sm"
+                  variant="ghost"
+                  onPress={() =>
+                    router.push({
+                      pathname: '/helper-job-detail/[id]',
+                      params: { id: inv.job_id },
+                    })
+                  }
+                />
+              </View>
+            </Card>
+          ))}
+        </View>
+      )}
+
+      {/* Tabs */}
+      <View
+        style={{
+          backgroundColor: '#FFFFFF',
+          borderBottomWidth: 1,
+          borderBottomColor: COLORS.gray[100],
+        }}
+      >
+        <View style={{ flexDirection: 'row', paddingHorizontal: 16, paddingVertical: 10, gap: 8 }}>
+          {TABS.map((t, i) => (
+            <TouchableOpacity
+              key={i}
+              activeOpacity={0.8}
+              onPress={() => handleSelectTab(i)}
+              style={{
+                paddingHorizontal: 16,
+                paddingVertical: 8,
+                borderRadius: 20,
+                backgroundColor: tab === i ? COLORS.primary : COLORS.gray[100],
+              }}
+            >
+              <Text
+                style={{
+                  fontSize: 13,
+                  fontWeight: tab === i ? '800' : '600',
+                  color: tab === i ? '#fff' : COLORS.gray[600],
+                }}
+              >
+                {t.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </View>
+
+      {/* Swipeable Tabs Container */}
+      <View
+        style={{ flex: 1 }}
+        onLayout={e => {
+          const w = e.nativeEvent.layout.width;
+          if (w > 0 && w !== containerWidth) {
+            setContainerWidth(w);
+          }
+        }}
+      >
+        <ScrollView
+          ref={pagerRef}
+          horizontal
+          pagingEnabled
+          showsHorizontalScrollIndicator={false}
+          onMomentumScrollEnd={handleScrollEnd}
+          onScrollEndDrag={handleScrollEnd}
+          style={{ flex: 1 }}
+        >
+          {TABS.map((_, i) => (
+            <View key={i} style={{ width: containerWidth, flex: 1 }}>
+              {renderTabContent(i)}
+            </View>
+          ))}
+        </ScrollView>
+      </View>
     </View>
   );
 }
