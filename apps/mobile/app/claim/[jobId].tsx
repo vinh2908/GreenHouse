@@ -166,27 +166,8 @@ export default function ClaimScreen() {
         <ShieldCheck size={22} color={COLORS.gray[400]} />
       </View>
 
-      {!claim && isLoading ? (
-        <View style={{ padding: 16, gap: 14 }}>
-          <Card style={{ gap: 10 }}>
-            <View
-              style={{
-                width: '50%',
-                height: 18,
-                backgroundColor: COLORS.gray[200],
-                borderRadius: 4,
-              }}
-            />
-            <View
-              style={{
-                width: '80%',
-                height: 14,
-                backgroundColor: COLORS.gray[100],
-                borderRadius: 4,
-              }}
-            />
-          </Card>
-        </View>
+      {isLoading ? (
+        <LoadingSpinner />
       ) : (
         <ScrollView
           showsVerticalScrollIndicator={false}

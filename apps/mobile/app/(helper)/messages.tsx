@@ -45,39 +45,8 @@ export default function HelperConversationsScreen() {
           <RefreshControl refreshing={isLoading} onRefresh={refetch} colors={[COLORS.primary]} />
         }
       >
-        {!conversations && isLoading ? (
-          <View style={{ gap: 10 }}>
-            {[1, 2, 3, 4].map(i => (
-              <Card key={i} style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-                <View
-                  style={{
-                    width: 48,
-                    height: 48,
-                    borderRadius: 24,
-                    backgroundColor: COLORS.gray[200],
-                  }}
-                />
-                <View style={{ flex: 1, gap: 6 }}>
-                  <View
-                    style={{
-                      width: '50%',
-                      height: 15,
-                      backgroundColor: COLORS.gray[200],
-                      borderRadius: 4,
-                    }}
-                  />
-                  <View
-                    style={{
-                      width: '80%',
-                      height: 12,
-                      backgroundColor: COLORS.gray[100],
-                      borderRadius: 4,
-                    }}
-                  />
-                </View>
-              </Card>
-            ))}
-          </View>
+        {isLoading ? (
+          <LoadingSpinner />
         ) : !conversations?.length ? (
           <EmptyState
             emoji="💬"
