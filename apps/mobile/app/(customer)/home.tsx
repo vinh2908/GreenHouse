@@ -26,8 +26,6 @@ import { DateTimePickerBottomSheet } from '@/components/common/date-time-bottom-
 import Svg, { Defs, LinearGradient as SvgLinearGradient, Stop, Rect } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { useQueryClient } from '@tanstack/react-query';
-import apiClient from '@/services/api-client';
 import * as ImagePicker from 'expo-image-picker';
 import { WebView } from 'react-native-webview';
 import Toast from 'react-native-toast-message';
@@ -336,19 +334,6 @@ export default function CustomerHomeScreen() {
 
   // Tìm kiếm dịch vụ tương tác (Item 8)
   const [serviceSearchQuery, setServiceSearchQuery] = useState('');
-
-  const qc = useQueryClient();
-  useEffect(() => {
-    qc.prefetchQuery({
-      queryKey: ['notifications', false],
-      queryFn: async () => {
-        const { data } = await apiClient.get('/notifications', {
-          params: { unread_only: false },
-        });
-        return data.data;
-      },
-    }).catch(() => {});
-  }, [qc]);
 
   // Xác định khu vực hiện tại là Đà Nẵng hay HCM
   const isDaNang = useMemo(() => {

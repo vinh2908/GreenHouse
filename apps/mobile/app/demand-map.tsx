@@ -95,7 +95,7 @@ export default function DemandMapScreen() {
         {/* Bản đồ Goong nhu cầu (dùng chung Web + App) */}
         <DemandMapView areas={sorted} focus={activeFocus} userCoords={helperCoords} />
 
-        {!areas && isLoading ? (
+        {isLoading ? (
           <Card style={{ alignItems: 'center', paddingVertical: 24, gap: 10 }}>
             <ActivityIndicator size="small" color={COLORS.primary} />
             <Text style={{ fontSize: 13, color: COLORS.gray[500] }}>
