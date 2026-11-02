@@ -11,13 +11,24 @@ export function OfflineBanner() {
 
   return (
     <View
+      pointerEvents="none"
       style={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        zIndex: 9999,
+        elevation: 9999,
         backgroundColor: '#FEF3C7',
         borderBottomWidth: 1,
         borderBottomColor: '#FDE68A',
         paddingHorizontal: 16,
-        paddingVertical: 8,
+        paddingVertical: 7,
         gap: 2,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 3,
       }}
     >
       {!isOnline && (
