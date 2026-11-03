@@ -23,24 +23,26 @@ import {
   useRespondTeamInvitation,
   useAcceptFixedPrice,
 } from '@/hooks/use-api';
+import { useTranslation } from '@/hooks/use-i18n';
 import { Button, Card, JobStatusBadge, Badge, COLORS, EmptyState } from '@/components/ui';
 import { OfflineBanner } from '@/components/common/offline-banner';
 
 dayjs.extend(relativeTime);
 dayjs.locale('vi');
 
-const TABS = [
-  { key: 'available', label: 'Đơn mới quanh đây' },
-  { key: 'active', label: 'Đang thực hiện' },
-  { key: 'history', label: 'Lịch sử hoàn tất' },
-];
-
 export default function HelperJobsScreen() {
   const router = useRouter();
+  const { t, fs } = useTranslation();
   const [tab, setTab] = useState(0);
   const tabBarScrollRef = useRef<ScrollView>(null);
   const tabLayouts = useRef<{ [key: number]: { x: number; width: number } }>({});
   const containerWidthRef = useRef<number>(360);
+
+  const tabs = [
+    { key: 'available', label: t('helper_jobs_tab_available') },
+    { key: 'active', label: t('helper_jobs_tab_active') },
+    { key: 'history', label: t('helper_jobs_tab_history') },
+  ];
 
   const handleSelectTab = (index: number) => {
     setTab(index);
@@ -51,7 +53,7 @@ export default function HelperJobsScreen() {
     } else {
       if (index === 0) {
         tabBarScrollRef.current?.scrollTo({ x: 0, animated: true });
-      } else if (index === TABS.length - 1) {
+      } else if (index === tabs.length - 1) {
         tabBarScrollRef.current?.scrollToEnd({ animated: true });
       }
     }
@@ -222,17 +224,19 @@ export default function HelperJobsScreen() {
                 tabIndex === 0
                   ? available?.empty_reason === 'outside_working_hours'
                     ? 'Không có việc trong khung giờ làm'
-                    : 'Chưa có đơn mới'
+                    : t('helper_jobs_empty_available')
                   : tabIndex === 1
-                    ? 'Không có đơn đang làm'
-                    : 'Chưa có lịch sử'
+                    ? t('helper_jobs_empty_active')
+                    : t('helper_jobs_empty_history')
               }
               subtitle={
                 tabIndex === 0
                   ? available?.empty_reason === 'outside_working_hours'
                     ? 'Hiện có việc mới nhưng ngoài khung giờ hoạt động bạn đã đăng ký. Bạn có thể cập nhật Lịch làm việc trong Hồ sơ để nhận thêm đơn.'
-                    : 'Hệ thống đang quét đơn mới. Đơn sẽ xuất hiện ngay khi có khách đăng việc.'
-                  : undefined
+                    : t('helper_jobs_empty_available_sub')
+                  : tabIndex === 1
+                    ? t('helper_jobs_empty_active_sub')
+                    : t('helper_jobs_empty_history_sub')
               }
             />
           </Card>
@@ -389,8 +393,8 @@ export default function HelperJobsScreen() {
                       </TouchableOpacity>
                     ) : (
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}>
-                        <Text style={{ fontSize: 13, fontWeight: '800', color: COLORS.primary }}>
-                          {tabIndex === 0 ? 'Báo giá ngay' : 'Xem chi tiết'}
+                        <Text style={{ fontSize: fs(13), fontWeight: '800', color: COLORS.primary }}>
+                          {tabIndex === 0 ? t('helper_jobs_quote_now') : t('helper_jobs_view_detail')}
                         </Text>
                         <ChevronRight size={14} color={COLORS.primary} />
                       </View>
@@ -419,11 +423,11 @@ export default function HelperJobsScreen() {
           paddingBottom: 14,
         }}
       >
-        <Text style={{ fontSize: 20, fontWeight: '800', color: COLORS.gray[900] }}>
-          Quản lý công việc
+        <Text style={{ fontSize: fs(20), fontWeight: '800', color: COLORS.gray[900] }}>
+          {t('helper_jobs_title')}
         </Text>
-        <Text style={{ fontSize: 12, color: COLORS.gray[500], marginTop: 2 }}>
-          Xem các đơn hàng mới cần thợ và theo dõi tiến độ công việc
+        <Text style={{ fontSize: fs(12), color: COLORS.gray[500], marginTop: 2 }}>
+          {t('helper_jobs_subtitle')}
         </Text>
         {/* Bản đồ nhu cầu (Feature 15) */}
         <TouchableOpacity
@@ -444,11 +448,11 @@ export default function HelperJobsScreen() {
         >
           <Text style={{ fontSize: 15 }}>🗺</Text>
           <View style={{ flex: 1 }}>
-            <Text style={{ fontWeight: '800', fontSize: 13.5, color: COLORS.gray[900] }}>
-              Bản đồ nhu cầu
+            <Text style={{ fontWeight: '800', fontSize: fs(13.5), color: COLORS.gray[900] }}>
+              {t('helper_jobs_demand_map')}
             </Text>
-            <Text style={{ fontSize: 11.5, color: COLORS.gray[500] }}>
-              Xem khu vực nào đang có nhiều đơn chờ báo giá nhất
+            <Text style={{ fontSize: fs(11.5), color: COLORS.gray[500] }}>
+              {t('helper_jobs_demand_map_sub')}
             </Text>
           </View>
           <ChevronRight size={16} color={COLORS.primary} />
@@ -526,7 +530,7 @@ export default function HelperJobsScreen() {
             gap: 8,
           }}
         >
-          {TABS.map((t, i) => (
+          {tabs.map((tItem, i) => (
             <TouchableOpacity
               key={i}
               activeOpacity={0.8}
@@ -543,12 +547,12 @@ export default function HelperJobsScreen() {
             >
               <Text
                 style={{
-                  fontSize: 13,
+                  fontSize: fs(13),
                   fontWeight: tab === i ? '800' : '600',
                   color: tab === i ? '#fff' : COLORS.gray[600],
                 }}
               >
-                {t.label}
+                {tItem.label}
               </Text>
             </TouchableOpacity>
           ))}

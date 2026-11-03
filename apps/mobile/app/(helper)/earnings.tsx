@@ -240,7 +240,7 @@ export default function HelperEarningsScreen() {
             />
           </View>
           <Text
-            style={{ fontSize: 12, color: COLORS.gray[500], textAlign: 'center', lineHeight: 18 }}
+            style={{ fontSize: fs(12), color: COLORS.gray[500], textAlign: 'center', lineHeight: 18 }}
           >
             {t('earn_note')}
           </Text>
@@ -254,7 +254,7 @@ export default function HelperEarningsScreen() {
         {/* ── Transactions ───────────────────────────────────────────── */}
         <View style={{ paddingHorizontal: 16, marginTop: 24, marginBottom: 40 }}>
           <Text
-            style={{ fontSize: 17, fontWeight: '800', color: COLORS.gray[900], marginBottom: 12 }}
+            style={{ fontSize: fs(17), fontWeight: '800', color: COLORS.gray[900], marginBottom: 12 }}
           >
             {t('earn_history_title')}
           </Text>

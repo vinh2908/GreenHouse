@@ -190,13 +190,104 @@ export const STRINGS = {
   profile_loyalty_points: { vi: '{points} điểm', en: '{points} points' },
 
   // ─── Display settings (mục mới trong cả 2 profile) ────────────────────────
-  settings_section: { vi: 'Cài đặt hiển thị / Display', en: 'Display / Cài đặt hiển thị' },
-  settings_language: { vi: 'Ngôn ngữ / Language', en: 'Language / Ngôn ngữ' },
+  settings_section: { vi: 'Cài đặt hiển thị', en: 'Display Settings' },
+  settings_language: { vi: 'Ngôn ngữ', en: 'Language' },
   settings_language_vi: { vi: 'Tiếng Việt', en: 'Tiếng Việt' },
   settings_language_en: { vi: 'English', en: 'English' },
-  settings_text_size: { vi: 'Cỡ chữ / Text size', en: 'Text size / Cỡ chữ' },
+  settings_text_size: { vi: 'Cỡ chữ', en: 'Text Size' },
   settings_text_normal: { vi: 'Thường', en: 'Normal' },
   settings_text_large: { vi: 'Lớn', en: 'Large' },
+
+  // ─── Messages ─────────────────────────────────────────────────────────────
+  messages_title: { vi: 'Tin nhắn & Trao đổi', en: 'Messages & Chat' },
+  messages_subtitle: {
+    vi: 'Trò chuyện trực tiếp với thợ và khách hàng',
+    en: 'Direct chat with helpers and customers',
+  },
+  messages_empty_title: { vi: 'Chưa có cuộc trò chuyện nào', en: 'No conversations yet' },
+  messages_empty_sub: {
+    vi: 'Khi bạn chấp nhận báo giá hoặc nhận đơn công việc, cuộc trò chuyện sẽ tự động được mở tại đây để hai bên trao đổi.',
+    en: 'When you accept a quote or take a job, a conversation will automatically appear here.',
+  },
+  messages_partner_helper: { vi: 'Thợ đối tác', en: 'Partner helper' },
+  messages_partner_customer: { vi: 'Khách hàng', en: 'Customer' },
+  messages_job_fallback: { vi: 'Công việc', en: 'Job' },
+  messages_photo: { vi: '📷 Ảnh', en: '📷 Photo' },
+  messages_chat_hint: {
+    vi: 'Bắt đầu trao đổi thông tin công việc...',
+    en: 'Start discussing job details...',
+  },
+
+  // ─── Helper jobs ──────────────────────────────────────────────────────────
+  helper_jobs_title: { vi: 'Quản lý công việc', en: 'Job Management' },
+  helper_jobs_subtitle: {
+    vi: 'Xem các đơn hàng mới cần thợ và theo dõi tiến độ công việc',
+    en: 'View new jobs needing helpers and track ongoing work',
+  },
+  helper_jobs_tab_available: { vi: 'Đơn mới quanh đây', en: 'New jobs nearby' },
+  helper_jobs_tab_active: { vi: 'Đang thực hiện', en: 'In progress' },
+  helper_jobs_tab_history: { vi: 'Lịch sử hoàn tất', en: 'Completed history' },
+  helper_jobs_demand_map: { vi: 'Bản đồ nhu cầu', en: 'Demand map' },
+  helper_jobs_demand_map_sub: {
+    vi: 'Xem khu vực nào đang có nhiều đơn chờ báo giá nhất',
+    en: 'See which areas have the most jobs waiting for quotes',
+  },
+  helper_jobs_quote_now: { vi: 'Báo giá ngay', en: 'Quote now' },
+  helper_jobs_view_detail: { vi: 'Xem chi tiết', en: 'View details' },
+  helper_jobs_empty_available: { vi: 'Chưa có đơn mới quanh đây', en: 'No new jobs nearby' },
+  helper_jobs_empty_available_sub: {
+    vi: 'Bật nhận đơn và mở định vị để nhận thông báo việc mới sớm nhất.',
+    en: 'Turn on accepting jobs and GPS to get notified of new jobs immediately.',
+  },
+  helper_jobs_empty_active: { vi: 'Không có việc đang thực hiện', en: 'No active jobs' },
+  helper_jobs_empty_active_sub: {
+    vi: 'Các đơn hàng bạn đang nhận làm sẽ hiển thị ở đây.',
+    en: 'Jobs you are currently working on will appear here.',
+  },
+  helper_jobs_empty_history: { vi: 'Chưa có lịch sử công việc', en: 'No job history yet' },
+  helper_jobs_empty_history_sub: {
+    vi: 'Các công việc đã hoàn thành hoặc đã hủy sẽ hiển thị ở đây.',
+    en: 'Completed or cancelled jobs will appear here.',
+  },
+
+  // ─── Customer Home Extra ──────────────────────────────────────────────────
+  home_nearby_helpers_title: { vi: 'Thợ đang ở gần bạn', en: 'Helpers near you' },
+  home_nearby_helpers_sub: {
+    vi: 'Sẵn sàng nhận việc và có mặt nhanh chóng',
+    en: 'Ready to take jobs and arrive quickly',
+  },
+  home_vouchers_title: { vi: 'Ưu đãi dành cho bạn', en: 'Offers for you' },
+  home_vouchers_sub: {
+    vi: 'Mã giảm giá dịch vụ Green House',
+    en: 'Green House service discount codes',
+  },
+  home_all_services_title: { vi: 'Dịch vụ', en: 'Services' },
+  home_all_services_sub: {
+    vi: 'Chọn dịch vụ gia đình bạn cần phục vụ hôm nay',
+    en: 'Choose the home service you need today',
+  },
+  home_quick_booking_title: { vi: 'Đặt dịch vụ nhanh', en: 'Quick Booking' },
+  home_quick_booking_sub: {
+    vi: 'Chọn nhanh thời gian để thợ xung quanh báo giá',
+    en: 'Pick a time for nearby helpers to quote',
+  },
+  home_search_empty_title: { vi: 'Không tìm thấy dịch vụ', en: 'No service found' },
+  home_search_empty_sub: {
+    vi: 'Thử tìm với từ khóa khác (ví dụ: máy lạnh, điện, dọn nhà)',
+    en: 'Try searching with other keywords (e.g. AC, electricity, cleaning)',
+  },
+  home_view_all: { vi: 'Xem tất cả', en: 'View all' },
+  home_call_now: { vi: 'Gọi thợ ngay', en: 'Call helper' },
+  home_choose_service: { vi: 'Chọn dịch vụ này', en: 'Select service' },
+
+  // ─── Profile Extra ────────────────────────────────────────────────────────
+  profile_title: { vi: 'Hồ sơ & Tài khoản', en: 'Profile & Account' },
+  profile_title_helper: { vi: 'Hồ sơ thợ', en: 'Helper Profile' },
+  profile_emergency_contact: { vi: 'Liên hệ khẩn cấp', en: 'Emergency contact' },
+  profile_permissions: { vi: 'Quyền ứng dụng', en: 'App permissions' },
+  profile_open_settings: { vi: 'Mở Cài đặt', en: 'Open Settings' },
+  profile_status_granted: { vi: 'Đã cấp', en: 'Granted' },
+  profile_status_denied: { vi: 'Chưa cấp', en: 'Not granted' },
 
   booking_screen_title: { vi: 'Đăng yêu cầu dịch vụ', en: 'Post a service request' },
   dash_accepting: { vi: 'Đang nhận đơn mới', en: 'Accepting new jobs' },
