@@ -67,6 +67,12 @@ type StringeeCallInstance = InstanceType<SdkModule['StringeeCall']>;
 
 const noopCallback = () => undefined;
 
+const getGlobalWin = () => (typeof globalThis !== 'undefined' ? (globalThis as any) : null);
+const getGlobalDoc = () => {
+  const g = getGlobalWin();
+  return g && g.document ? g.document : null;
+};
+
 class StringeeService {
   private sdk: SdkModule | null | undefined = undefined; // undefined = not tried yet
   // Refs owned by <StringeeHost/> (components/common/stringee-host.tsx).
@@ -96,6 +102,11 @@ class StringeeService {
   private pendingIncoming: IncomingCallInfo | null = null;
   private subscriber: IncomingSubscriber = {};
   private errorHandler: ((message: string) => void) | null = null;
+
+  // Web / PWA specific properties
+  private webClient: any = null;
+  private webCall: any = null;
+  private webRemoteAudio: any = null;
 
   /**
    * Lazy-load the SDK. Returns null on web / Expo Go / not installed.
@@ -128,6 +139,10 @@ class StringeeService {
   }
 
   get isAvailable(): boolean {
+    if (Platform.OS === 'web') {
+      const win = getGlobalWin();
+      return !!win?.StringeeClient;
+    }
     return this.loadSdk() !== null;
   }
 
@@ -190,7 +205,13 @@ class StringeeService {
    * Returns false only when the SDK is unavailable or args are invalid.
    */
   ensureConnected(accessToken: string, myUserId: string): boolean {
-    if (!this.loadSdk() || !accessToken || !myUserId) return false;
+    if (!accessToken || !myUserId) return false;
+
+    if (Platform.OS === 'web') {
+      return this.ensureConnectedWeb(accessToken, myUserId);
+    }
+
+    if (!this.loadSdk()) return false;
 
     // Reconnect when the connected identity changes.
     if (this.connectedUserId && this.connectedUserId !== myUserId) {
@@ -239,8 +260,11 @@ class StringeeService {
    * always calls ensureConnected() first).
    */
   makeOutgoingCall(params: OutgoingRequest): boolean {
-    if (!this.loadSdk()) return false;
     if (!params.myUserId || !params.partnerId) return false;
+    if (Platform.OS === 'web') {
+      return this.makeOutgoingCallWeb(params);
+    }
+    if (!this.loadSdk()) return false;
     console.log(
       `[Stringee] makeOutgoingCall: myUserId=${params.myUserId}, partnerId=${params.partnerId}, clientReady=${this.clientReady}, hasCallRef=${!!this.callRef}`,
     );
@@ -308,6 +332,9 @@ class StringeeService {
     console.log(
       `[Stringee] answerPending called. clientReady=${this.clientReady}, hasCallRef=${!!this.callRef}, pendingIncoming=${this.pendingIncoming?.callId || 'null'}, connectedUserId=${this.connectedUserId}`,
     );
+    if (Platform.OS === 'web') {
+      return this.answerPendingWeb(events);
+    }
     this.activeEvents = events;
     this.pendingAnswer = { events };
 
@@ -397,6 +424,9 @@ class StringeeService {
   }
 
   rejectPending(): boolean {
+    if (Platform.OS === 'web') {
+      return this.rejectPendingWeb();
+    }
     const pending = this.pendingIncoming;
     if (!pending) return false;
     this.pendingIncoming = null;
@@ -410,6 +440,9 @@ class StringeeService {
   }
 
   hangupCurrent(): boolean {
+    if (Platform.OS === 'web') {
+      return this.hangupCurrentWeb();
+    }
     let acted = false;
     // Cancel an outgoing call that is still buffered behind connect().
     if (this.pendingOutgoing) {
@@ -431,6 +464,10 @@ class StringeeService {
   }
 
   setMute(muted: boolean): void {
+    if (Platform.OS === 'web') {
+      this.setMuteWeb(muted);
+      return;
+    }
     // SDK method is mute(callId, muted, cb). Safe no-op until the active
     // callId is known (see activeCallId note above).
     if (!this.activeCallId || !this.callRef) return;
@@ -442,6 +479,7 @@ class StringeeService {
   }
 
   setSpeakerphoneOn(on: boolean): void {
+    if (Platform.OS === 'web') return;
     if (!this.activeCallId || !this.callRef) return;
     try {
       this.callRef.setSpeakerphoneOn(this.activeCallId, on, noopCallback);
@@ -451,10 +489,20 @@ class StringeeService {
   }
 
   disconnect(): void {
-    try {
-      this.clientRef?.disconnect();
-    } catch {
-      // ignore
+    if (Platform.OS === 'web') {
+      try {
+        this.webClient?.disconnect();
+      } catch {
+        // ignore
+      }
+      this.webClient = null;
+      this.webCall = null;
+    } else {
+      try {
+        this.clientRef?.disconnect();
+      } catch {
+        // ignore
+      }
     }
     // The refs belong to <StringeeHost/> and stay registered; only the
     // connection + call session state is reset here.
@@ -593,6 +641,240 @@ class StringeeService {
     } else if (data.code === 1) {
       this.finishActiveCall();
     }
+  }
+
+  // ─── Web / PWA Stringee Implementation ───────────────────────────────────
+
+  private ensureConnectedWeb(accessToken: string, myUserId: string): boolean {
+    const win = getGlobalWin();
+    if (!win?.StringeeClient) {
+      console.warn('[Stringee Web] window.StringeeClient is not available');
+      return false;
+    }
+    if (this.clientReady && this.connectedUserId === myUserId && this.webClient) {
+      return true;
+    }
+    if (this.connectedUserId && this.connectedUserId !== myUserId && this.webClient) {
+      try {
+        this.webClient.disconnect();
+      } catch {
+        // ignore
+      }
+      this.webClient = null;
+      this.clientReady = false;
+      this.resetCallState();
+    }
+
+    this.connectedUserId = myUserId;
+    this.pendingToken = accessToken;
+
+    if (!this.webClient) {
+      const client = new win.StringeeClient();
+      client.on('connect', () => {
+        console.log('[Stringee Web] client onConnect');
+        this.clientReady = true;
+        this.flushOutgoingWeb();
+        this.flushAnswerWeb();
+      });
+      client.on('authen', (res: any) => {
+        console.log('[Stringee Web] client onAuthen:', res);
+        if (res && res.r === 0) {
+          this.clientReady = true;
+          this.flushOutgoingWeb();
+          this.flushAnswerWeb();
+        } else {
+          this.errorHandler?.(res?.message || 'Lỗi xác thực Stringee');
+        }
+      });
+      client.on('disconnect', () => {
+        console.log('[Stringee Web] client onDisconnect');
+        this.clientReady = false;
+      });
+      client.on('incomingcall', (call: any) => {
+        console.log('[Stringee Web] onIncomingCall received:', call?.callId);
+        this.webCall = call;
+        this.pendingIncoming = { callId: call?.callId || 'web-call', from: call?.from || '' };
+        this.subscriber.onIncomingCall?.(this.pendingIncoming);
+        this.flushAnswerWeb();
+      });
+      client.on('requestnewtoken', () => {
+        void this._handleTokenRequest();
+      });
+      this.webClient = client;
+    }
+
+    try {
+      this.webClient.connect(accessToken);
+      return true;
+    } catch (err: any) {
+      this.errorHandler?.(err?.message || 'Không kết nối được Stringee');
+      return false;
+    }
+  }
+
+  private makeOutgoingCallWeb(params: OutgoingRequest): boolean {
+    const win = getGlobalWin();
+    if (!win?.StringeeCall) return false;
+    this.activeEvents = params.events;
+    this.pendingOutgoing = params;
+    this.flushOutgoingWeb();
+    return true;
+  }
+
+  private flushOutgoingWeb(): void {
+    const pending = this.pendingOutgoing;
+    if (!pending || !this.clientReady || !this.webClient) return;
+    const win = getGlobalWin();
+    if (!win?.StringeeCall) return;
+    this.pendingOutgoing = null;
+    try {
+      const call = new win.StringeeCall(
+        this.webClient,
+        pending.myUserId,
+        pending.partnerId,
+      );
+      this.webCall = call;
+      this.activeCallId = call?.callId || 'web-call';
+      this.setupWebCallEvents(call);
+      call.makeCall((res: any) => {
+        console.log('[Stringee Web] makeCall callback:', res);
+        if (res && res.r !== 0) {
+          pending.events.onError?.(res.message || 'Lỗi khi gọi đi trên web');
+        }
+      });
+    } catch (e: any) {
+      console.warn('[Stringee Web] makeCall exception:', e);
+      pending.events.onError?.(`Không tạo được cuộc gọi: ${e?.message || e}`);
+    }
+  }
+
+  private setupWebCallEvents(call: any): void {
+    if (!call) return;
+    call.on('addremotestream', (stream: any) => {
+      console.log('[Stringee Web] addremotestream received');
+      this.ensureWebAudioElement();
+      if (this.webRemoteAudio) {
+        if (typeof call.attachMediaStream === 'function') {
+          call.attachMediaStream(this.webRemoteAudio, stream);
+        } else {
+          this.webRemoteAudio.srcObject = stream;
+        }
+        this.webRemoteAudio.play().catch(() => undefined);
+      }
+    });
+
+    call.on('signalingstate', (state: any) => {
+      console.log('[Stringee Web] signalingstate:', state);
+      // state.code: 2: Answered, 3: Busy, 4: Ended, 5: Rejected
+      if (state?.code === 2) {
+        this.activeEvents?.onConnected?.();
+      } else if (state?.code === 3 || state?.code === 5) {
+        const events = this.activeEvents;
+        this.finishActiveCall();
+        events?.onBusyOrRejected?.('Người kia đã từ chối cuộc gọi');
+      } else if (state?.code === 4) {
+        this.finishActiveCall();
+      }
+    });
+
+    call.on('mediastate', (state: any) => {
+      console.log('[Stringee Web] mediastate:', state);
+      // state.code: 0: Connected, 1: Disconnected
+      if (state?.code === 0) {
+        this.activeEvents?.onConnected?.();
+      } else if (state?.code === 1) {
+        this.finishActiveCall();
+      }
+    });
+
+    call.on('error', (err: any) => {
+      console.warn('[Stringee Web] call error:', err);
+      this.activeEvents?.onError?.(err?.message || 'Lỗi kết nối cuộc gọi');
+    });
+  }
+
+  private answerPendingWeb(events: StringeeCallEvents): boolean {
+    this.activeEvents = events;
+    this.pendingAnswer = { events };
+    return this.flushAnswerWeb();
+  }
+
+  private flushAnswerWeb(): boolean {
+    if (!this.pendingAnswer) return false;
+    if (!this.clientReady || !this.webCall) return true;
+    const events = this.pendingAnswer.events;
+    this.pendingAnswer = null;
+    this.setupWebCallEvents(this.webCall);
+    try {
+      this.webCall.answer((res: any) => {
+        console.log('[Stringee Web] answer callback:', res);
+        if (res && res.r !== 0) {
+          events.onError?.(res.message || 'Lỗi bắt máy cuộc gọi');
+        }
+      });
+      return true;
+    } catch (e: any) {
+      events.onError?.(`Lỗi bắt máy: ${e?.message || e}`);
+      return false;
+    }
+  }
+
+  private rejectPendingWeb(): boolean {
+    if (this.webCall) {
+      try {
+        this.webCall.reject(() => undefined);
+      } catch {
+        // ignore
+      }
+      this.webCall = null;
+      this.pendingIncoming = null;
+      return true;
+    }
+    return false;
+  }
+
+  private hangupCurrentWeb(): boolean {
+    let acted = false;
+    if (this.pendingOutgoing) {
+      this.pendingOutgoing = null;
+      acted = true;
+    }
+    if (this.webCall) {
+      try {
+        this.webCall.hangup(() => undefined);
+        acted = true;
+      } catch {
+        // ignore
+      }
+      this.webCall = null;
+    }
+    this.activeCallId = null;
+    this.activeEvents = null;
+    return acted;
+  }
+
+  private setMuteWeb(muted: boolean): void {
+    if (this.webCall) {
+      try {
+        this.webCall.mute(muted);
+      } catch {
+        // ignore
+      }
+    }
+  }
+
+  private ensureWebAudioElement(): void {
+    const doc = getGlobalDoc();
+    if (!doc) return;
+    let audio = doc.getElementById('stringee-remote-audio');
+    if (!audio) {
+      audio = doc.createElement('audio');
+      audio.id = 'stringee-remote-audio';
+      audio.autoplay = true;
+      audio.playsInline = true;
+      doc.body?.appendChild(audio);
+    }
+    this.webRemoteAudio = audio;
   }
 
   /**
