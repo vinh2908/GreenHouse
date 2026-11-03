@@ -117,7 +117,8 @@ export function SosCustomerDecisionPopup() {
             </Text>
             <Text style={{ fontSize: 13.5, color: COLORS.gray[800], lineHeight: 19 }}>
               ↩️ <Text style={{ fontWeight: '700' }}>Hủy đơn:</Text> hoàn{' '}
-              <Text style={{ fontWeight: '700' }}>100% tiền</Text> vào ví của bạn, không mất phí.
+              <Text style={{ fontWeight: '700' }}>100% số tiền bạn đã thực trả</Text> (sau voucher
+              và điểm) vào ví. Đơn chưa thanh toán hoặc trả tiền mặt sẽ không phát sinh hoàn tiền ví.
             </Text>
           </View>
 
@@ -171,7 +172,7 @@ export function SosCustomerDecisionPopup() {
             }}
           >
             <Text style={{ color: '#DC2626', fontWeight: '800', fontSize: 15 }}>
-              Hủy đơn — hoàn tiền 100%
+              Hủy đơn — hoàn tiền thực trả
             </Text>
           </TouchableOpacity>
         </View>

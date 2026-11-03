@@ -363,6 +363,7 @@ export class SosBackupService implements OnModuleInit, OnModuleDestroy {
     if (!job) return;
 
     let refundAmount = 0;
+    let refundFailed = false;
     const contract = await this.contractModel.findOne({ job_id: job._id }).exec();
     if (
       job.payment_status === PaymentStatus.PAID &&
@@ -387,6 +388,7 @@ export class SosBackupService implements OnModuleInit, OnModuleDestroy {
           );
           job.payment_status = PaymentStatus.REFUNDED;
         } catch (err) {
+          refundFailed = true;
           // Hoàn tiền lỗi KHÔNG được chặn việc hủy (thợ không thể tiếp tục) —
           // gắn cờ admin đối soát ví thủ công.
           this.logger.error(
@@ -490,9 +492,12 @@ export class SosBackupService implements OnModuleInit, OnModuleDestroy {
       .create({
         userId: String(job.customer_id),
         type: NOTIFICATION_TYPES.SOS_BACKUP_JOB_CANCELLED,
-        title: 'Đơn đã hủy & hoàn tiền theo chính sách SOS',
-        body:
-          refundAmount > 0
+        title: refundFailed
+          ? 'Đơn đã hủy — Khoản hoàn tiền đang chờ đối soát'
+          : 'Đơn đã hủy & hoàn tiền theo chính sách SOS',
+        body: refundFailed
+          ? `Đơn "${sos.job_title}" đã hủy. Khoản hoàn ${refundAmount.toLocaleString('vi-VN')}₫ đang chờ quản trị viên đối soát ví thủ công.`
+          : refundAmount > 0
             ? `Đơn "${sos.job_title}" đã hủy. ${refundAmount.toLocaleString('vi-VN')}₫ đã được hoàn vào ví của bạn.`
             : `Đơn "${sos.job_title}" đã hủy theo chính sách SOS.`,
         payload: { job_id: jobId, sos_id: String(sos._id) },
