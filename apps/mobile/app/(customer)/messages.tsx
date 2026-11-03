@@ -5,6 +5,7 @@ import { MessageCircle, ChevronRight, ShieldCheck } from 'lucide-react-native';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import 'dayjs/locale/vi';
+import { formatConversationTime } from '@/utils/date-format';
 import { useConversations } from '@/hooks/use-api';
 import { useAuthStore } from '@/stores/auth.store';
 import { Card, Avatar, COLORS, EmptyState, LoadingSpinner, Badge } from '@/components/ui';
@@ -114,7 +115,7 @@ export default function ConversationsScreen() {
                   <View style={{ alignItems: 'flex-end', gap: 6 }}>
                     {conv.last_message_at && (
                       <Text style={{ fontSize: 11, color: COLORS.gray[400], fontWeight: '600' }}>
-                        {dayjs(conv.last_message_at).format('HH:mm')}
+                        {formatConversationTime(conv.last_message_at)}
                       </Text>
                     )}
                     <ChevronRight size={14} color={COLORS.gray[300]} />
