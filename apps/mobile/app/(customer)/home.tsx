@@ -66,6 +66,7 @@ import { locationService } from '@/services/location.service';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LocationPicker, PickerCoords } from '@/components/common/location-picker';
 import { Avatar, COLORS } from '@/components/ui';
+import { removeVietnameseDiacritics } from '@/utils/search';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import 'dayjs/locale/vi';
@@ -332,8 +333,19 @@ export default function CustomerHomeScreen() {
   const [quickDuration, setQuickDuration] = useState(2);
   const [isSubmittingQuick, setIsSubmittingQuick] = useState(false);
 
-  // Tìm kiếm dịch vụ tương tác (Item 8)
+  // Tìm kiếm dịch vụ tương tác (Item 8 & Bug 5: không phân biệt dấu + tự cuộn)
   const [serviceSearchQuery, setServiceSearchQuery] = useState('');
+  const servicesSectionYRef = useRef<number>(0);
+
+  const handleSearchChange = (text: string) => {
+    setServiceSearchQuery(text);
+    if (text.trim().length > 0 && servicesSectionYRef.current > 0) {
+      scrollViewRef.current?.scrollTo({
+        y: Math.max(0, servicesSectionYRef.current - 40),
+        animated: true,
+      });
+    }
+  };
 
   // Xác định khu vực hiện tại là Đà Nẵng hay HCM
   const isDaNang = useMemo(() => {
@@ -1194,7 +1206,7 @@ export default function CustomerHomeScreen() {
               style={{
                 flex: 1,
                 paddingVertical: Platform.OS === 'ios' ? 12 : 10,
-                fontSize: 13,
+                fontSize: fs(13),
                 color: COLORS.gray[900],
                 fontWeight: '500',
               }}
@@ -1203,14 +1215,14 @@ export default function CustomerHomeScreen() {
               placeholder="Tìm dịch vụ... ví dụ: máy lạnh, dọn nhà, điện"
               placeholderTextColor={COLORS.gray[400]}
               value={serviceSearchQuery}
-              onChangeText={setServiceSearchQuery}
+              onChangeText={handleSearchChange}
             />
             {serviceSearchQuery.trim().length > 0 && (
               <TouchableOpacity
                 onPress={() => setServiceSearchQuery('')}
                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               >
-                <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.gray[400] }}>✕</Text>
+                <Text style={{ fontSize: fs(13), fontWeight: '700', color: COLORS.gray[400] }}>✕</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -1902,7 +1914,12 @@ export default function CustomerHomeScreen() {
         </View>
 
         {/* ── 5. DỊCH VỤ (3 Cột x 4 Hàng = 12 Items Chuẩn Demo) ──────────── */}
-        <View style={{ paddingHorizontal: 16, marginTop: 24 }}>
+        <View
+          onLayout={e => {
+            servicesSectionYRef.current = e.nativeEvent.layout.y;
+          }}
+          style={{ paddingHorizontal: 16, marginTop: 24 }}
+        >
           <View
             style={{
               flexDirection: 'row',
@@ -1928,11 +1945,14 @@ export default function CustomerHomeScreen() {
           {/* Responsive Multi-Column Grid */}
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
             {(() => {
-              const q = serviceSearchQuery.trim().toLowerCase();
+              const q = removeVietnameseDiacritics(serviceSearchQuery);
               const list = q
-                ? DEMO_SERVICES.filter(
-                    s => s.name.toLowerCase().includes(q) || s.slug.toLowerCase().includes(q),
-                  )
+                ? DEMO_SERVICES.filter(s => {
+                    const normName = removeVietnameseDiacritics(s.name);
+                    const normSlug = removeVietnameseDiacritics(s.slug.replace(/_/g, ' '));
+                    const normSub = removeVietnameseDiacritics(s.subtitle || '');
+                    return normName.includes(q) || normSlug.includes(q) || normSub.includes(q);
+                  })
                 : DEMO_SERVICES;
 
               const containerW = Math.min(windowWidth, 640) - 36; // 18px padding each side
@@ -1942,9 +1962,26 @@ export default function CustomerHomeScreen() {
 
               if (list.length === 0) {
                 return (
-                  <View style={{ width: '100%', padding: 20, alignItems: 'center' }}>
-                    <Text style={{ fontSize: 13, color: COLORS.gray[500] }}>
-                      Không tìm thấy dịch vụ phù hợp với từ khóa "{serviceSearchQuery}".
+                  <View style={{ width: '100%', padding: 24, alignItems: 'center' }}>
+                    <Text
+                      style={{
+                        fontSize: fs(14),
+                        fontWeight: '700',
+                        color: COLORS.gray[700],
+                        textAlign: 'center',
+                      }}
+                    >
+                      {t('home_search_empty_title')}
+                    </Text>
+                    <Text
+                      style={{
+                        fontSize: fs(12),
+                        color: COLORS.gray[400],
+                        marginTop: 4,
+                        textAlign: 'center',
+                      }}
+                    >
+                      {t('home_search_empty_sub')}
                     </Text>
                   </View>
                 );
