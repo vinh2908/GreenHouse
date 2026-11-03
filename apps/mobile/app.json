@@ -13,7 +13,8 @@
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "Green House cần quyền truy cập vị trí để tìm dịch vụ và người giúp việc gần bạn.",
         "NSCameraUsageDescription": "Green House cần quyền truy cập camera để chụp ảnh công việc và xác thực e-KYC.",
-        "NSPhotoLibraryUsageDescription": "Green House cần quyền truy cập thư viện ảnh để upload hình ảnh."
+        "NSPhotoLibraryUsageDescription": "Green House cần quyền truy cập thư viện ảnh để upload hình ảnh.",
+        "NSMicrophoneUsageDescription": "Green House cần quyền truy cập micro để gọi điện giữa thợ và khách hàng."
       }
     },
     "android": {
@@ -30,6 +31,7 @@
         "FOREGROUND_SERVICE",
         "FOREGROUND_SERVICE_LOCATION",
         "CAMERA",
+        "RECORD_AUDIO",
         "POST_NOTIFICATIONS",
         "READ_EXTERNAL_STORAGE",
         "WRITE_EXTERNAL_STORAGE",
@@ -38,7 +40,8 @@
         "android.permission.ACCESS_BACKGROUND_LOCATION",
         "android.permission.FOREGROUND_SERVICE",
         "android.permission.FOREGROUND_SERVICE_LOCATION",
-        "android.permission.POST_NOTIFICATIONS"
+        "android.permission.POST_NOTIFICATIONS",
+        "android.permission.RECORD_AUDIO"
       ]
     },
     "web": {
