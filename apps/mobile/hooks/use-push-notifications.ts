@@ -38,12 +38,20 @@ export function usePushNotifications() {
       let cancelled = false;
       (async () => {
         const token = await registerForPushNotifications();
-        if (cancelled || !token) return;
+        if (cancelled || !token) {
+          if (!token) console.warn('[usePushNotifications] No push token available to register');
+          return;
+        }
         savedTokenRef.current = token;
         try {
+          console.log('[usePushNotifications] Registering push token to server:', token);
           await apiClient.patch('/users/me/push-token', { token });
-        } catch {
-          // Lưu token thất bại không quan trọng — lần mở app sau sẽ thử lại.
+          console.log('[usePushNotifications] Push token registered to server successfully');
+        } catch (err: any) {
+          console.warn(
+            '[usePushNotifications] Failed to patch push token to server:',
+            err?.message || err,
+          );
         }
       })();
       return () => {
@@ -56,7 +64,15 @@ export function usePushNotifications() {
       const token = savedTokenRef.current;
       savedTokenRef.current = null;
       if (token) {
-        void apiClient.delete('/users/me/push-token', { data: { token } }).catch(() => undefined);
+        console.log('[usePushNotifications] Unregistering push token from server:', token);
+        void apiClient
+          .delete('/users/me/push-token', { data: { token } })
+          .catch((err: any) => {
+            console.warn(
+              '[usePushNotifications] Failed to unregister push token:',
+              err?.message || err,
+            );
+          });
       }
     }
   }, [isAuthenticated, userId]);
