@@ -225,7 +225,17 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
     minHeight: '100%',
-    ...(Platform.OS === 'web' ? { minHeight: '100dvh' as any } : {}),
+    ...(Platform.OS === 'web'
+      ? {
+          position: 'fixed' as any,
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          minHeight: '100dvh' as any,
+          zIndex: 9999,
+        }
+      : {}),
     backgroundColor: '#16A34A',
     alignItems: 'center',
     justifyContent: 'center',
