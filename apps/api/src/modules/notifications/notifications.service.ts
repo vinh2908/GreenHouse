@@ -1,4 +1,4 @@
-import { Injectable, Inject, NotFoundException, forwardRef } from '@nestjs/common';
+import { Injectable, Inject, NotFoundException, forwardRef, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Notification, NotificationDocument } from './schemas/notification.schema';
@@ -12,6 +12,8 @@ const EXPO_PUSH_RECEIPTS_URL = 'https://exp.host/--/api/v2/push/receipts';
 
 @Injectable()
 export class NotificationsService {
+  private readonly logger = new Logger(NotificationsService.name);
+
   constructor(
     @InjectModel(Notification.name)
     private notificationModel: Model<NotificationDocument>,
@@ -88,12 +90,28 @@ export class NotificationsService {
     data: Record<string, unknown>,
   ): Promise<void> {
     try {
-      if (!Types.ObjectId.isValid(userId)) return;
+      if (!Types.ObjectId.isValid(userId)) {
+        this.logger.warn(`[sendExpoPush] Invalid userId: ${userId}`);
+        return;
+      }
       const user = await this.userModel.findById(userId).select('push_tokens').lean().exec();
-      const tokens = ((user?.push_tokens ?? []) as string[]).filter(
-        token => typeof token === 'string' && token.startsWith('ExponentPushToken'),
+      const rawTokens = (user?.push_tokens ?? []) as string[];
+      const tokens = rawTokens.filter(
+        token =>
+          typeof token === 'string' &&
+          (token.startsWith('ExponentPushToken') || token.startsWith('ExpoPushToken')),
       );
-      if (tokens.length === 0) return;
+
+      if (tokens.length === 0) {
+        this.logger.log(
+          `[sendExpoPush] No push tokens registered for userId=${userId} (raw tokens count: ${rawTokens.length})`,
+        );
+        return;
+      }
+
+      this.logger.log(
+        `[sendExpoPush] Dispatching push to userId=${userId}, tokens=${tokens.length}, title="${title}"`,
+      );
 
       const messages = tokens.map(to => ({
         to,
@@ -102,6 +120,7 @@ export class NotificationsService {
         data,
         sound: 'default' as const,
         priority: 'high' as const,
+        channelId: 'default',
       }));
 
       const res = await fetch(EXPO_PUSH_URL, {
@@ -114,10 +133,11 @@ export class NotificationsService {
         body: JSON.stringify(messages),
       });
 
+      this.logger.log(`[sendExpoPush] Expo push HTTP status: ${res.status}`);
+
       // Dọn token chết: Expo báo DeviceNotRegistered qua ticket (ngay lúc
       // gửi) hoặc qua receipt (sau khi APNs/FCM từ chối). Token nào bị báo
       // chết thì gỡ khỏi push_tokens của user để không gửi vào hư không mãi.
-      // Best-effort: mọi lỗi ở bước này đều bị nuốt, không làm hỏng send.
       try {
         const deadTokens = new Set<string>();
         const receiptIdToToken = new Map<string, string>();
@@ -125,18 +145,31 @@ export class NotificationsService {
           data?: Array<{
             status?: string;
             id?: string;
+            message?: string;
             details?: { error?: string };
           }>;
+          errors?: Array<{ message?: string; code?: string }>;
         } | null;
+
+        if (sendResult?.errors && sendResult.errors.length > 0) {
+          this.logger.warn(
+            `[sendExpoPush] Expo service errors: ${JSON.stringify(sendResult.errors)}`,
+          );
+        }
+
         const tickets = sendResult?.data ?? [];
         tickets.forEach((ticket, i) => {
           const token = messages[i]?.to;
           if (!token) return;
           if (ticket?.status === 'error') {
+            this.logger.warn(
+              `[sendExpoPush] Ticket error for token ${token}: ${ticket.message || ticket.details?.error}`,
+            );
             if (ticket?.details?.error === 'DeviceNotRegistered') {
               deadTokens.add(token);
             }
           } else if (ticket?.id) {
+            this.logger.log(`[sendExpoPush] Ticket OK for token ${token}, receiptId=${ticket.id}`);
             receiptIdToToken.set(ticket.id, token);
           }
         });
@@ -152,17 +185,29 @@ export class NotificationsService {
             body: JSON.stringify({ ids: [...receiptIdToToken.keys()] }),
           });
           const receiptResult = (await receiptRes.json().catch(() => null)) as {
-            data?: Record<string, { status?: string; details?: { error?: string } }>;
+            data?: Record<
+              string,
+              { status?: string; message?: string; details?: { error?: string } }
+            >;
           } | null;
+
           for (const [receiptId, receipt] of Object.entries(receiptResult?.data ?? {})) {
-            if (receipt?.status === 'error' && receipt?.details?.error === 'DeviceNotRegistered') {
-              const token = receiptIdToToken.get(receiptId);
-              if (token) deadTokens.add(token);
+            if (receipt?.status === 'error') {
+              this.logger.warn(
+                `[sendExpoPush] Receipt error for receiptId ${receiptId}: ${receipt.message || receipt.details?.error}`,
+              );
+              if (receipt?.details?.error === 'DeviceNotRegistered') {
+                const token = receiptIdToToken.get(receiptId);
+                if (token) deadTokens.add(token);
+              }
             }
           }
         }
 
         if (deadTokens.size > 0) {
+          this.logger.warn(
+            `[sendExpoPush] Pruning ${deadTokens.size} dead token(s) for userId=${userId}`,
+          );
           await this.userModel
             .updateOne(
               { _id: new Types.ObjectId(userId) },
@@ -170,11 +215,15 @@ export class NotificationsService {
             )
             .exec();
         }
-      } catch {
-        // Bỏ qua — dọn token là việc phụ, thử lại ở lần gửi sau.
+      } catch (err: any) {
+        this.logger.warn(
+          `[sendExpoPush] Error processing Expo tickets/receipts: ${err?.message || err}`,
+        );
       }
-    } catch {
-      // Push là kênh phụ trợ — lỗi không được ảnh hưởng luồng nghiệp vụ.
+    } catch (err: any) {
+      this.logger.error(
+        `[sendExpoPush] Unexpected error for userId=${userId}: ${err?.message || err}`,
+      );
     }
   }
 
