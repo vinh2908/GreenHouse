@@ -1,9 +1,12 @@
 // components/common/incoming-call-modal.tsx — Modal nhận/từ chối cuộc gọi đến (Phase 1, F6)
+import { useEffect } from 'react';
 import { Modal, View, Text, TouchableOpacity } from 'react-native';
 import { usePathname, useRouter } from 'expo-router';
 import { Phone, PhoneOff } from 'lucide-react-native';
 import { useCallStore } from '@/stores/call.store';
 import { useEndCall } from '@/hooks/use-api';
+import apiClient from '@/services/api-client';
+import { stringeeService } from '@/services/stringee.service';
 
 export function IncomingCallModal() {
   const incoming = useCallStore(s => s.incoming);
@@ -11,6 +14,24 @@ export function IncomingCallModal() {
   const router = useRouter();
   const pathname = usePathname();
   const endCall = useEndCall();
+
+  // Chủ động kết nối Stringee client ngay khi modal chuông hiện lên
+  useEffect(() => {
+    if (!incoming?.session_id) return;
+    let cancelled = false;
+    apiClient
+      .post<{ token: string; my_user_id: string }>(
+        `/calls/sessions/${incoming.session_id}/join-token`,
+      )
+      .then(res => {
+        if (cancelled || !res.data?.token) return;
+        stringeeService.ensureConnected(res.data.token, res.data.my_user_id);
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [incoming?.session_id]);
 
   if (!incoming) return null;
 
@@ -31,6 +52,7 @@ export function IncomingCallModal() {
 
   const handleDecline = () => {
     const { session_id } = incoming;
+    stringeeService.rejectPending();
     endCall.mutate({ sessionId: session_id, reason: 'declined' });
     clearIncoming();
   };

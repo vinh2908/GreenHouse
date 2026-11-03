@@ -155,9 +155,10 @@ export default function CallScreen() {
           );
           const connected = stringeeService.ensureConnected(s.token, s.my_user_id);
           if (!connected) {
-            // Media inactive in this build (web / Expo Go / SDK not installed):
-            // keep the previous session-only UI behaviour.
-            setUiState('in_call');
+            setErrorMsg(
+              'Không thể kết nối đến hệ thống cuộc gọi. Vui lòng kiểm tra quyền micro và kết nối mạng.',
+            );
+            setUiState('error');
             return;
           }
 
@@ -207,9 +208,10 @@ export default function CallScreen() {
         );
         const connected = stringeeService.ensureConnected(s.token, s.my_user_id);
         if (!connected) {
-          // Media inactive in this build (web / Expo Go / SDK not installed):
-          // keep today's behaviour — go straight to the in-call session UI.
-          setUiState('in_call');
+          setErrorMsg(
+            'Không thể kết nối đến hệ thống cuộc gọi. Vui lòng kiểm tra quyền micro và kết nối mạng.',
+          );
+          setUiState('error');
           return;
         }
         const started = stringeeService.makeOutgoingCall({
@@ -218,7 +220,9 @@ export default function CallScreen() {
           events,
         });
         if (!started) {
-          console.warn('[CallScreen] makeOutgoingCall returned false');
+          setErrorMsg('Không thể khởi tạo cuộc gọi đi. Vui lòng thử lại.');
+          setUiState('error');
+          return;
         }
       })
       .catch((err: any) => {
@@ -265,6 +269,16 @@ export default function CallScreen() {
     const t = setInterval(() => setSeconds(s => s + 1), 1000);
     return () => clearInterval(t);
   }, [uiState]);
+
+  // Tự động thoát màn hình sau khi cuộc gọi kết thúc hoặc bị từ chối
+  useEffect(() => {
+    if (uiState === 'ended' || uiState === 'rejected') {
+      const t = setTimeout(() => {
+        router.back();
+      }, 3500);
+      return () => clearTimeout(t);
+    }
+  }, [uiState, router]);
 
   const handleEnd = async () => {
     stringeeService.hangupCurrent();
