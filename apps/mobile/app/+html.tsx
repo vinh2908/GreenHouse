@@ -23,7 +23,7 @@ export default function Root({ children }: PropsWithChildren) {
 
         {/* Apple iOS PWA Meta Tags */}
         <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="apple-mobile-web-app-title" content="Green House" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
         <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
@@ -40,7 +40,9 @@ export default function Root({ children }: PropsWithChildren) {
             __html: `
               if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
                 window.addEventListener('load', function() {
-                  navigator.serviceWorker.register('/sw.js').catch(function() {});
+                  navigator.serviceWorker.register('/sw.js').then(function(reg) {
+                    reg.update();
+                  }).catch(function() {});
                 });
               }
             `,
@@ -71,6 +73,16 @@ export default function Root({ children }: PropsWithChildren) {
                 min-height: -webkit-fill-available;
                 width: 100%;
                 background-color: #FFFFFF;
+              }
+              @media all and (display-mode: standalone) {
+                html, body {
+                  min-height: 100%;
+                  min-height: calc(100% + env(safe-area-inset-bottom, 0px));
+                }
+                #root {
+                  min-height: 100%;
+                  min-height: calc(100% + env(safe-area-inset-bottom, 0px));
+                }
               }
             `,
           }}

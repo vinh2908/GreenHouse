@@ -1,5 +1,5 @@
 // Green House PWA Service Worker
-const CACHE_NAME = 'greenhouse-pwa-v2';
+const CACHE_NAME = 'greenhouse-pwa-v7';
 const PRECACHE_URLS = [
   '/',
   '/manifest.json',
@@ -58,6 +58,16 @@ self.addEventListener('fetch', event => {
   event.respondWith(
     fetch(event.request)
       .then(response => {
+        if (
+          response &&
+          response.status === 200 &&
+          (event.request.mode === 'navigate' || event.request.destination === 'document')
+        ) {
+          const responseToCache = response.clone();
+          caches.open(CACHE_NAME).then(cache => {
+            cache.put('/', responseToCache);
+          }).catch(() => {});
+        }
         return response;
       })
       .catch(async () => {
