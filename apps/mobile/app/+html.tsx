@@ -34,6 +34,9 @@ export default function Root({ children }: PropsWithChildren) {
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="application-name" content="Green House" />
 
+        {/* Stringee Web SDK for PWA & Browser audio calling */}
+        <script src="https://cdn.stringee.com/sdk/web/latest/stringee-web-sdk.min.js" />
+
         {/* PWA Service Worker Registration */}
         <script
           dangerouslySetInnerHTML={{
