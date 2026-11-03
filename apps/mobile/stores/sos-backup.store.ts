@@ -45,19 +45,119 @@ export interface SosDecisionRequest {
 }
 
 interface SosBackupState {
+  incomingQueue: SosBackupIncoming[];
+  decisionQueue: SosDecisionRequest[];
   incoming: SosBackupIncoming | null;
   decision: SosDecisionRequest | null;
   setIncoming: (incoming: SosBackupIncoming) => void;
+  setIncomingQueue: (list: SosBackupIncoming[]) => void;
+  removeIncoming: (sosId: string) => void;
   clearIncoming: () => void;
+  clearAllIncoming: () => void;
   setDecision: (decision: SosDecisionRequest) => void;
+  setDecisionQueue: (list: SosDecisionRequest[]) => void;
+  removeDecision: (sosId: string) => void;
   clearDecision: () => void;
+  clearAllDecisions: () => void;
 }
 
 export const useSosBackupStore = create<SosBackupState>(set => ({
+  incomingQueue: [],
+  decisionQueue: [],
   incoming: null,
   decision: null,
-  setIncoming: incoming => set({ incoming }),
-  clearIncoming: () => set({ incoming: null }),
-  setDecision: decision => set({ decision }),
-  clearDecision: () => set({ decision: null }),
+
+  setIncoming: incoming => {
+    set(state => {
+      const exists = state.incomingQueue.some(i => i.sos_id === incoming.sos_id);
+      const queue = exists
+        ? state.incomingQueue.map(i => (i.sos_id === incoming.sos_id ? incoming : i))
+        : [...state.incomingQueue, incoming];
+      return {
+        incomingQueue: queue,
+        incoming: state.incoming || queue[0] || null,
+      };
+    });
+  },
+
+  setIncomingQueue: list => {
+    set({
+      incomingQueue: list,
+      incoming: list[0] || null,
+    });
+  },
+
+  removeIncoming: sosId => {
+    set(state => {
+      const nextQueue = state.incomingQueue.filter(i => i.sos_id !== sosId);
+      return {
+        incomingQueue: nextQueue,
+        incoming: nextQueue[0] || null,
+      };
+    });
+  },
+
+  clearIncoming: () => {
+    set(state => {
+      const current = state.incoming;
+      const nextQueue = current
+        ? state.incomingQueue.filter(i => i.sos_id !== current.sos_id)
+        : state.incomingQueue.slice(1);
+      return {
+        incomingQueue: nextQueue,
+        incoming: nextQueue[0] || null,
+      };
+    });
+  },
+
+  clearAllIncoming: () => {
+    set({ incomingQueue: [], incoming: null });
+  },
+
+  setDecision: decision => {
+    set(state => {
+      const exists = state.decisionQueue.some(d => d.sos_id === decision.sos_id);
+      const queue = exists
+        ? state.decisionQueue.map(d => (d.sos_id === decision.sos_id ? decision : d))
+        : [...state.decisionQueue, decision];
+      return {
+        decisionQueue: queue,
+        decision: state.decision || queue[0] || null,
+      };
+    });
+  },
+
+  setDecisionQueue: list => {
+    set({
+      decisionQueue: list,
+      decision: list[0] || null,
+    });
+  },
+
+  removeDecision: sosId => {
+    set(state => {
+      const nextQueue = state.decisionQueue.filter(d => d.sos_id !== sosId);
+      return {
+        decisionQueue: nextQueue,
+        decision: nextQueue[0] || null,
+      };
+    });
+  },
+
+  clearDecision: () => {
+    set(state => {
+      const current = state.decision;
+      const nextQueue = current
+        ? state.decisionQueue.filter(d => d.sos_id !== current.sos_id)
+        : state.decisionQueue.slice(1);
+      return {
+        decisionQueue: nextQueue,
+        decision: nextQueue[0] || null,
+      };
+    });
+  },
+
+  clearAllDecisions: () => {
+    set({ decisionQueue: [], decision: null });
+  },
 }));

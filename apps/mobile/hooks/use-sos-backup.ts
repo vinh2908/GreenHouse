@@ -36,28 +36,38 @@ export async function refreshSosState(): Promise<void> {
       apiClient.get('/sos-backup/active'),
       apiClient.get('/sos-backup/customer-pending'),
     ]);
-    const { setIncoming, setDecision } = useSosBackupStore.getState();
+    const { setIncomingQueue, clearAllIncoming, setDecisionQueue, clearAllDecisions } =
+      useSosBackupStore.getState();
     if (activeRes.status === 'fulfilled') {
       const incoming = activeRes.value?.data?.data?.incoming;
-      if (Array.isArray(incoming) && incoming.length > 0) {
-        setIncoming(incoming[0]);
+      if (Array.isArray(incoming)) {
+        if (incoming.length === 0) {
+          clearAllIncoming();
+        } else {
+          setIncomingQueue(incoming);
+        }
       }
     }
     if (pendingRes.status === 'fulfilled') {
       const items = pendingRes.value?.data?.data?.items;
-      if (Array.isArray(items) && items.length > 0) {
-        const it = items[0];
-        setDecision({
-          sos_id: it.sos_id,
-          job_id: it.job_id,
-          job_title: it.job_title,
-          service_name: it.service_name,
-          reason: it.reason,
-          district: it.district,
-          city: it.city,
-          decision_expires_at_ms: it.decision_expires_at_ms,
-          photo_urls: it.photo_urls ?? [],
-        });
+      if (Array.isArray(items)) {
+        if (items.length === 0) {
+          clearAllDecisions();
+        } else {
+          setDecisionQueue(
+            items.map((it: any) => ({
+              sos_id: it.sos_id,
+              job_id: it.job_id,
+              job_title: it.job_title,
+              service_name: it.service_name,
+              reason: it.reason,
+              district: it.district,
+              city: it.city,
+              decision_expires_at_ms: it.decision_expires_at_ms,
+              photo_urls: it.photo_urls ?? [],
+            })),
+          );
+        }
       }
     }
   } catch {
@@ -69,9 +79,9 @@ export async function refreshSosState(): Promise<void> {
 
 export function useSosBackupListener() {
   const setIncoming = useSosBackupStore(s => s.setIncoming);
-  const clearIncoming = useSosBackupStore(s => s.clearIncoming);
+  const removeIncoming = useSosBackupStore(s => s.removeIncoming);
   const setDecision = useSosBackupStore(s => s.setDecision);
-  const clearDecision = useSosBackupStore(s => s.clearDecision);
+  const removeDecision = useSosBackupStore(s => s.removeDecision);
   const userId = useAuthStore(s => s.user?._id);
   const qc = useQueryClient();
 
@@ -115,9 +125,8 @@ export function useSosBackupListener() {
         });
       }),
       socketService.on<any>(SOCKET_EVENTS.SOS_BACKUP_RESOLVED, payload => {
-        const current = useSosBackupStore.getState().incoming;
-        if (current && payload?.sos_id === current.sos_id) {
-          clearIncoming();
+        if (payload?.sos_id) {
+          removeIncoming(payload.sos_id);
           if (payload?.outcome === 'taken') {
             Toast.show({
               type: 'info',
@@ -141,8 +150,7 @@ export function useSosBackupListener() {
         });
       }),
       socketService.on<any>(SOCKET_EVENTS.SOS_BACKUP_DECIDED, payload => {
-        const current = useSosBackupStore.getState().decision;
-        if (current && payload?.sos_id === current.sos_id) clearDecision();
+        if (payload?.sos_id) removeDecision(payload.sos_id);
         if (payload?.job_id) {
           qc.invalidateQueries({ queryKey: ['job', payload.job_id] });
           qc.invalidateQueries({
@@ -151,8 +159,7 @@ export function useSosBackupListener() {
         }
       }),
       socketService.on<any>(SOCKET_EVENTS.SOS_BACKUP_HELPER_REPLACED, payload => {
-        const inc = useSosBackupStore.getState().incoming;
-        if (inc && payload?.sos_id === inc.sos_id) clearIncoming();
+        if (payload?.sos_id) removeIncoming(payload.sos_id);
         if (payload?.job_id) {
           qc.invalidateQueries({ queryKey: ['job', payload.job_id] });
           qc.invalidateQueries({
@@ -161,15 +168,15 @@ export function useSosBackupListener() {
         }
       }),
       socketService.on<any>(SOCKET_EVENTS.SOS_BACKUP_EXPIRED, payload => {
-        const inc = useSosBackupStore.getState().incoming;
-        if (inc && payload?.sos_id === inc.sos_id) clearIncoming();
-        const dec = useSosBackupStore.getState().decision;
-        if (dec && payload?.sos_id === dec.sos_id) clearDecision();
+        if (payload?.sos_id) {
+          removeIncoming(payload.sos_id);
+          removeDecision(payload.sos_id);
+        }
         if (payload?.job_id) {
           qc.invalidateQueries({ queryKey: ['job', payload.job_id] });
         }
       }),
     ];
     return () => unsubs.forEach(u => u());
-  }, [setIncoming, clearIncoming, setDecision, clearDecision, qc]);
+  }, [setIncoming, removeIncoming, setDecision, removeDecision, qc]);
 }
