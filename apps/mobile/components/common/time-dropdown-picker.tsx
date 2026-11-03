@@ -158,6 +158,8 @@ export function TimeDropdownPicker({
   checkPast = true,
 }: TimeDropdownPickerProps) {
   const [modalType, setModalType] = useState<'hour' | 'minute' | null>(null);
+  const hourScrollRef = useRef<ScrollView>(null);
+  const minuteScrollRef = useRef<ScrollView>(null);
 
   // Parse current value
   const [currentHour, currentMinute] = useMemo(() => {
@@ -170,6 +172,22 @@ export function TimeDropdownPicker({
 
   const isToday = isTodayVietnam(selectedDate);
   const nowVn = getNowVietnam();
+
+  useEffect(() => {
+    if (modalType === 'hour') {
+      const timer = setTimeout(() => {
+        const targetY = Math.max(0, (currentHour - 1) * 44);
+        hourScrollRef.current?.scrollTo({ y: targetY, animated: false });
+      }, 60);
+      return () => clearTimeout(timer);
+    } else if (modalType === 'minute') {
+      const timer = setTimeout(() => {
+        const targetY = Math.max(0, (currentMinute - 1) * 44);
+        minuteScrollRef.current?.scrollTo({ y: targetY, animated: false });
+      }, 60);
+      return () => clearTimeout(timer);
+    }
+  }, [modalType, currentHour, currentMinute]);
 
   // Kiểm tra giờ quá khứ (theo múi giờ Asia/Ho_Chi_Minh)
   const isPast = useMemo(() => {
@@ -347,12 +365,13 @@ export function TimeDropdownPicker({
         animationType="fade"
         onRequestClose={() => setModalType(null)}
       >
-        <TouchableOpacity
-          style={styles.modalOverlay}
-          activeOpacity={1}
-          onPress={() => setModalType(null)}
-        >
-          <View style={styles.modalContent} onStartShouldSetResponder={() => true}>
+        <View style={styles.modalOverlay}>
+          <TouchableOpacity
+            style={StyleSheet.absoluteFill}
+            activeOpacity={1}
+            onPress={() => setModalType(null)}
+          />
+          <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Chọn Giờ (00 – 23)</Text>
               <TouchableOpacity
@@ -362,7 +381,13 @@ export function TimeDropdownPicker({
                 <X size={20} color={COLORS.gray[600]} />
               </TouchableOpacity>
             </View>
-            <ScrollView style={{ maxHeight: 320 }} showsVerticalScrollIndicator={false}>
+            <ScrollView
+              ref={hourScrollRef}
+              style={{ maxHeight: 320 }}
+              showsVerticalScrollIndicator={false}
+              nestedScrollEnabled={true}
+              keyboardShouldPersistTaps="handled"
+            >
               {Array.from({ length: 24 }, (_, i) => i).map(h => {
                 const isSelected = h === currentHour;
                 // Nếu hôm nay và giờ < giờ hiện tại (hoặc bằng giờ hiện tại nhưng phút đã 59)
@@ -395,7 +420,7 @@ export function TimeDropdownPicker({
               })}
             </ScrollView>
           </View>
-        </TouchableOpacity>
+        </View>
       </Modal>
 
       {/* Modal Chọn Phút (00–59) */}
@@ -405,12 +430,13 @@ export function TimeDropdownPicker({
         animationType="fade"
         onRequestClose={() => setModalType(null)}
       >
-        <TouchableOpacity
-          style={styles.modalOverlay}
-          activeOpacity={1}
-          onPress={() => setModalType(null)}
-        >
-          <View style={styles.modalContent} onStartShouldSetResponder={() => true}>
+        <View style={styles.modalOverlay}>
+          <TouchableOpacity
+            style={StyleSheet.absoluteFill}
+            activeOpacity={1}
+            onPress={() => setModalType(null)}
+          />
+          <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Chọn Phút (00 – 59)</Text>
               <TouchableOpacity
@@ -420,7 +446,13 @@ export function TimeDropdownPicker({
                 <X size={20} color={COLORS.gray[600]} />
               </TouchableOpacity>
             </View>
-            <ScrollView style={{ maxHeight: 320 }} showsVerticalScrollIndicator={false}>
+            <ScrollView
+              ref={minuteScrollRef}
+              style={{ maxHeight: 320 }}
+              showsVerticalScrollIndicator={false}
+              nestedScrollEnabled={true}
+              keyboardShouldPersistTaps="handled"
+            >
               {Array.from({ length: 60 }, (_, i) => i).map(m => {
                 const isSelected = m === currentMinute;
                 const isMinPast = isToday && currentHour === nowVn.hours && m <= nowVn.minutes;
@@ -451,7 +483,7 @@ export function TimeDropdownPicker({
               })}
             </ScrollView>
           </View>
-        </TouchableOpacity>
+        </View>
       </Modal>
     </View>
   );
@@ -487,9 +519,27 @@ export function DurationDropdownPicker({
   maxMinutes = 720, // 12h
 }: DurationDropdownPickerProps) {
   const [modalType, setModalType] = useState<'hour' | 'minute' | null>(null);
+  const hourScrollRef = useRef<ScrollView>(null);
+  const minuteScrollRef = useRef<ScrollView>(null);
 
   const durationHours = Math.floor(valueMinutes / 60);
   const durationMinutes = valueMinutes % 60;
+
+  useEffect(() => {
+    if (modalType === 'hour') {
+      const timer = setTimeout(() => {
+        const targetY = Math.max(0, (durationHours - 1) * 44);
+        hourScrollRef.current?.scrollTo({ y: targetY, animated: false });
+      }, 60);
+      return () => clearTimeout(timer);
+    } else if (modalType === 'minute') {
+      const timer = setTimeout(() => {
+        const targetY = Math.max(0, (durationMinutes - 1) * 44);
+        minuteScrollRef.current?.scrollTo({ y: targetY, animated: false });
+      }, 60);
+      return () => clearTimeout(timer);
+    }
+  }, [modalType, durationHours, durationMinutes]);
 
   const handleSelectHour = (h: number) => {
     const newTotal = h * 60 + durationMinutes;
@@ -565,19 +615,26 @@ export function DurationDropdownPicker({
         animationType="fade"
         onRequestClose={() => setModalType(null)}
       >
-        <TouchableOpacity
-          style={styles.modalOverlay}
-          activeOpacity={1}
-          onPress={() => setModalType(null)}
-        >
-          <View style={styles.modalContent} onStartShouldSetResponder={() => true}>
+        <View style={styles.modalOverlay}>
+          <TouchableOpacity
+            style={StyleSheet.absoluteFill}
+            activeOpacity={1}
+            onPress={() => setModalType(null)}
+          />
+          <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Thời lượng (Giờ: 0 – 12)</Text>
               <TouchableOpacity onPress={() => setModalType(null)}>
                 <X size={20} color={COLORS.gray[600]} />
               </TouchableOpacity>
             </View>
-            <ScrollView style={{ maxHeight: 300 }} showsVerticalScrollIndicator={false}>
+            <ScrollView
+              ref={hourScrollRef}
+              style={{ maxHeight: 300 }}
+              showsVerticalScrollIndicator={false}
+              nestedScrollEnabled={true}
+              keyboardShouldPersistTaps="handled"
+            >
               {Array.from({ length: 13 }, (_, i) => i).map(h => {
                 const isSelected = h === durationHours;
                 return (
@@ -596,7 +653,7 @@ export function DurationDropdownPicker({
               })}
             </ScrollView>
           </View>
-        </TouchableOpacity>
+        </View>
       </Modal>
 
       {/* Modal Chọn Phút thời lượng (00–59) */}
@@ -606,19 +663,26 @@ export function DurationDropdownPicker({
         animationType="fade"
         onRequestClose={() => setModalType(null)}
       >
-        <TouchableOpacity
-          style={styles.modalOverlay}
-          activeOpacity={1}
-          onPress={() => setModalType(null)}
-        >
-          <View style={styles.modalContent} onStartShouldSetResponder={() => true}>
+        <View style={styles.modalOverlay}>
+          <TouchableOpacity
+            style={StyleSheet.absoluteFill}
+            activeOpacity={1}
+            onPress={() => setModalType(null)}
+          />
+          <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Thời lượng (Phút: 00 – 59)</Text>
               <TouchableOpacity onPress={() => setModalType(null)}>
                 <X size={20} color={COLORS.gray[600]} />
               </TouchableOpacity>
             </View>
-            <ScrollView style={{ maxHeight: 300 }} showsVerticalScrollIndicator={false}>
+            <ScrollView
+              ref={minuteScrollRef}
+              style={{ maxHeight: 300 }}
+              showsVerticalScrollIndicator={false}
+              nestedScrollEnabled={true}
+              keyboardShouldPersistTaps="handled"
+            >
               {Array.from({ length: 60 }, (_, i) => i).map(m => {
                 const isSelected = m === durationMinutes;
                 return (
@@ -637,7 +701,7 @@ export function DurationDropdownPicker({
               })}
             </ScrollView>
           </View>
-        </TouchableOpacity>
+        </View>
       </Modal>
     </View>
   );
