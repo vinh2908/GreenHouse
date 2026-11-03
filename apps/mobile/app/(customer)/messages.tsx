@@ -8,6 +8,7 @@ import 'dayjs/locale/vi';
 import { formatConversationTime } from '@/utils/date-format';
 import { useConversations } from '@/hooks/use-api';
 import { useAuthStore } from '@/stores/auth.store';
+import { useTranslation } from '@/hooks/use-i18n';
 import { Card, Avatar, COLORS, EmptyState, LoadingSpinner, Badge } from '@/components/ui';
 
 dayjs.extend(relativeTime);
@@ -15,6 +16,7 @@ dayjs.locale('vi');
 
 export default function ConversationsScreen() {
   const router = useRouter();
+  const { t, fs } = useTranslation();
   const currentUser = useAuthStore(s => s.user);
   const { data: conversations, isLoading, refetch } = useConversations();
   const insets = useSafeAreaInsets();
@@ -31,11 +33,11 @@ export default function ConversationsScreen() {
           borderBottomColor: COLORS.gray[100],
         }}
       >
-        <Text style={{ fontSize: 20, fontWeight: '800', color: COLORS.gray[900] }}>
-          Tin nhắn & Trao đổi
+        <Text style={{ fontSize: fs(20), fontWeight: '800', color: COLORS.gray[900] }}>
+          {t('messages_title')}
         </Text>
-        <Text style={{ fontSize: 12, color: COLORS.gray[500], marginTop: 2 }}>
-          Trò chuyện trực tiếp với thợ và khách hàng
+        <Text style={{ fontSize: fs(12), color: COLORS.gray[500], marginTop: 2 }}>
+          {t('messages_subtitle')}
         </Text>
       </View>
 
@@ -51,8 +53,8 @@ export default function ConversationsScreen() {
         ) : !conversations?.length ? (
           <EmptyState
             emoji="💬"
-            title="Chưa có cuộc trò chuyện nào"
-            subtitle="Khi bạn chấp nhận báo giá hoặc nhận đơn công việc, cuộc trò chuyện sẽ tự động được mở tại đây để hai bên trao đổi."
+            title={t('messages_empty_title')}
+            subtitle={t('messages_empty_sub')}
           />
         ) : (
           conversations.map((conv: any) => {
@@ -64,13 +66,13 @@ export default function ConversationsScreen() {
               conv.participants?.[0] ||
               {};
 
-            const partnerName = partner?.full_name || 'Thợ đối tác';
+            const partnerName = partner?.full_name || t('messages_partner_helper');
             const partnerAvatar = partner?.avatar;
             const jobTitle =
               conv.job_id?.title ||
               (typeof conv.job_id === 'string'
                 ? `Đơn hàng #${conv.job_id.slice(-6)}`
-                : 'Công việc');
+                : t('messages_job_fallback'));
             const targetJobId = typeof conv.job_id === 'object' ? conv.job_id?._id : conv.job_id;
 
             return (
@@ -86,7 +88,7 @@ export default function ConversationsScreen() {
                   <View style={{ flex: 1, gap: 2 }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                       <Text
-                        style={{ fontWeight: '800', fontSize: 15, color: COLORS.gray[900] }}
+                        style={{ fontWeight: '800', fontSize: fs(15), color: COLORS.gray[900] }}
                         numberOfLines={1}
                       >
                         {partnerName}
@@ -94,27 +96,27 @@ export default function ConversationsScreen() {
                       <ShieldCheck size={14} color={COLORS.success} />
                     </View>
                     <Text
-                      style={{ fontSize: 12, color: COLORS.primary, fontWeight: '700' }}
+                      style={{ fontSize: fs(12), color: COLORS.primary, fontWeight: '700' }}
                       numberOfLines={1}
                     >
                       📌 {jobTitle}
                     </Text>
                     <Text
                       style={{
-                        fontSize: 13,
+                        fontSize: fs(13),
                         color: conv.last_message ? COLORS.gray[700] : COLORS.gray[400],
                         marginTop: 2,
                       }}
                       numberOfLines={1}
                     >
                       {conv.last_message_type === 'image'
-                        ? '📷 Ảnh'
-                        : conv.last_message || 'Bắt đầu trao đổi thông tin công việc...'}
+                        ? t('messages_photo')
+                        : conv.last_message || t('messages_chat_hint')}
                     </Text>
                   </View>
                   <View style={{ alignItems: 'flex-end', gap: 6 }}>
                     {conv.last_message_at && (
-                      <Text style={{ fontSize: 11, color: COLORS.gray[400], fontWeight: '600' }}>
+                      <Text style={{ fontSize: fs(11), color: COLORS.gray[400], fontWeight: '600' }}>
                         {formatConversationTime(conv.last_message_at)}
                       </Text>
                     )}

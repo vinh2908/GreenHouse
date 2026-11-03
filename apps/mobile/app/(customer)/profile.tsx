@@ -302,7 +302,7 @@ export default function CustomerProfileScreen() {
             <View key={section.titleKey}>
               <Text
                 style={{
-                  fontSize: 12,
+                  fontSize: fs(12),
                   fontWeight: '700',
                   color: COLORS.gray[400],
                   marginBottom: 8,
@@ -341,7 +341,7 @@ export default function CustomerProfileScreen() {
                       <Text
                         style={{
                           flex: 1,
-                          fontSize: 15,
+                          fontSize: fs(15),
                           color: COLORS.gray[900],
                           fontWeight: '600',
                         }}
