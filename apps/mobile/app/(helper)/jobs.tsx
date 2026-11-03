@@ -39,13 +39,21 @@ export default function HelperJobsScreen() {
   const router = useRouter();
   const [tab, setTab] = useState(0);
   const tabBarScrollRef = useRef<ScrollView>(null);
+  const tabLayouts = useRef<{ [key: number]: { x: number; width: number } }>({});
+  const containerWidthRef = useRef<number>(360);
 
   const handleSelectTab = (index: number) => {
     setTab(index);
-    if (index === 0) {
-      tabBarScrollRef.current?.scrollTo({ x: 0, animated: true });
-    } else if (index === TABS.length - 1) {
-      tabBarScrollRef.current?.scrollToEnd({ animated: true });
+    const layout = tabLayouts.current[index];
+    if (layout && containerWidthRef.current > 0) {
+      const targetX = Math.max(0, layout.x - (containerWidthRef.current - layout.width) / 2);
+      tabBarScrollRef.current?.scrollTo({ x: targetX, animated: true });
+    } else {
+      if (index === 0) {
+        tabBarScrollRef.current?.scrollTo({ x: 0, animated: true });
+      } else if (index === TABS.length - 1) {
+        tabBarScrollRef.current?.scrollToEnd({ animated: true });
+      }
     }
   };
 
@@ -504,6 +512,13 @@ export default function HelperJobsScreen() {
           ref={tabBarScrollRef}
           horizontal
           showsHorizontalScrollIndicator={false}
+          nestedScrollEnabled={true}
+          directionalLockEnabled={true}
+          scrollEventThrottle={16}
+          keyboardShouldPersistTaps="handled"
+          onLayout={e => {
+            containerWidthRef.current = e.nativeEvent.layout.width;
+          }}
           contentContainerStyle={{
             flexDirection: 'row',
             paddingHorizontal: 16,
@@ -516,6 +531,9 @@ export default function HelperJobsScreen() {
               key={i}
               activeOpacity={0.8}
               onPress={() => handleSelectTab(i)}
+              onLayout={e => {
+                tabLayouts.current[i] = e.nativeEvent.layout;
+              }}
               style={{
                 paddingHorizontal: 16,
                 paddingVertical: 8,
@@ -538,9 +556,7 @@ export default function HelperJobsScreen() {
       </View>
 
       {/* Tab Content */}
-      <View style={{ flex: 1 }}>
-        {renderTabContent(tab)}
-      </View>
+      <View style={{ flex: 1 }}>{renderTabContent(tab)}</View>
     </View>
   );
 }
