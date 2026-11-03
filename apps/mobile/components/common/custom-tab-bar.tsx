@@ -79,11 +79,11 @@ export function CustomTabBar({
           {
             height:
               Platform.OS === 'web'
-                ? (`calc(${dims.tabBarHeight}px + env(safe-area-inset-bottom, ${insets.bottom || 0}px))` as any)
+                ? (`calc(${dims.tabBarHeight}px + env(safe-area-inset-bottom, 0px))` as any)
                 : dims.tabBarHeight,
             paddingBottom:
               Platform.OS === 'web'
-                ? (`calc(8px + env(safe-area-inset-bottom, ${insets.bottom || 0}px))` as any)
+                ? (`calc(8px + env(safe-area-inset-bottom, 0px))` as any)
                 : Platform.OS === 'ios'
                   ? 24
                   : 8,
@@ -283,7 +283,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: 'transparent',
+    backgroundColor: Platform.OS === 'web' ? '#FFFFFF' : 'transparent',
     alignItems: 'center',
     zIndex: 999,
   },
