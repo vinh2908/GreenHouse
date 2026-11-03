@@ -25,8 +25,8 @@ function configureForegroundHandler() {
         shouldSetBadge: false,
       }),
     });
-  } catch {
-    // Không cấu hình được handler → push vẫn tới khi app nền/đóng.
+  } catch (err) {
+    console.warn('[PushService] setNotificationHandler error:', err);
   }
 }
 
@@ -45,9 +45,12 @@ export async function registerForPushNotifications(): Promise<string | null> {
           name: 'Thông báo GreenHouse',
           importance: Notifications.AndroidImportance.MAX,
           vibrationPattern: [0, 250, 250, 250],
+          sound: 'default',
+          enableVibrate: true,
+          showBadge: true,
         });
-      } catch {
-        // Kênh mặc định của Expo vẫn dùng được.
+      } catch (err) {
+        console.warn('[PushService] setNotificationChannelAsync error:', err);
       }
     }
 
@@ -57,15 +60,23 @@ export async function registerForPushNotifications(): Promise<string | null> {
       const requested = await Notifications.requestPermissionsAsync();
       status = requested.status;
     }
-    if (status !== 'granted') return null;
+    if (status !== 'granted') {
+      console.warn('[PushService] Push permission not granted. Status:', status);
+      return null;
+    }
 
     const projectId =
-      Constants.expoConfig?.extra?.eas?.projectId ?? Constants.easConfig?.projectId ?? undefined;
-    const tokenResponse = await Notifications.getExpoPushTokenAsync(
-      projectId ? { projectId } : undefined,
-    );
-    return tokenResponse?.data ?? null;
-  } catch {
+      Constants.expoConfig?.extra?.eas?.projectId ??
+      Constants.easConfig?.projectId ??
+      '00bd43d9-3219-4c63-85af-0964f8651091';
+
+    console.log('[PushService] Getting Expo push token with projectId:', projectId);
+    const tokenResponse = await Notifications.getExpoPushTokenAsync({ projectId });
+    const token = tokenResponse?.data ?? null;
+    console.log('[PushService] Expo push token obtained:', token);
+    return token;
+  } catch (err: any) {
+    console.warn('[PushService] registerForPushNotifications error:', err?.message || err);
     return null;
   }
 }
