@@ -1229,7 +1229,7 @@ export default function BookingScreen() {
                     minHeight: 80,
                     textAlignVertical: 'top',
                   }}
-                  placeholder="VD: Tôi cần người dọn căn hộ 2 phòng ngủ vào chiều mai..."
+                  placeholder=""
                   placeholderTextColor="rgba(255,255,255,0.4)"
                   value={aiInput}
                   onChangeText={setAiInput}
@@ -1525,13 +1525,13 @@ export default function BookingScreen() {
                   >
                     <Input
                       label="Tên công việc / dịch vụ bạn cần *"
-                      placeholder="VD: Bốc hàng từ kho lên xe tải, dọn kho..."
+                      placeholder=""
                       value={customServiceName}
                       onChangeText={setCustomServiceName}
                     />
                     <Input
                       label="Giá bạn muốn trả (giá mở đầu để deal) *"
-                      placeholder="VD: 200000"
+                      placeholder=""
                       value={targetPrice}
                       onChangeText={v => setTargetPrice(v.replace(/[^0-9]/g, ''))}
                       keyboardType="numeric"
@@ -1669,7 +1669,7 @@ export default function BookingScreen() {
 
               <Input
                 label="Địa chỉ chi tiết (Số nhà & tên đường) *"
-                placeholder="VD: 128 Đường Lê Lợi"
+                placeholder=""
                 value={address.full_address}
                 onChangeText={v => {
                   setAddress(a => ({ ...a, full_address: v }));
@@ -1681,7 +1681,7 @@ export default function BookingScreen() {
                 <View style={{ flex: 1 }}>
                   <Input
                     label="Phường/Xã"
-                    placeholder="VD: Phường / Xã"
+                    placeholder=""
                     value={address.ward}
                     onChangeText={v => {
                       setAddress(a => ({ ...a, ward: v }));
@@ -1692,7 +1692,7 @@ export default function BookingScreen() {
                 <View style={{ flex: 1 }}>
                   <Input
                     label="Quận/Huyện"
-                    placeholder="VD: Quận / Huyện"
+                    placeholder=""
                     value={address.district}
                     onChangeText={v => {
                       setAddress(a => ({ ...a, district: v }));
@@ -1703,7 +1703,7 @@ export default function BookingScreen() {
               </View>
               <Input
                 label="Thành phố"
-                placeholder="VD: Tỉnh / Thành phố"
+                placeholder=""
                 value={address.city}
                 onChangeText={v => {
                   setAddress(a => ({ ...a, city: v }));
@@ -1712,7 +1712,7 @@ export default function BookingScreen() {
               />
               <Input
                 label="Ghi chú hướng dẫn cho thợ (tùy chọn)"
-                placeholder="VD: Chung cư lô B, mã sảnh #1234, gửi xe hầm B1..."
+                placeholder=""
                 value={address.notes}
                 onChangeText={v => setAddress(a => ({ ...a, notes: v }))}
               />
@@ -1896,7 +1896,7 @@ export default function BookingScreen() {
 
               <Input
                 label="Tiêu đề yêu cầu *"
-                placeholder="VD: Dọn dẹp căn hộ 2 phòng ngủ, giặt rèm cửa..."
+                placeholder=""
                 value={title}
                 onChangeText={setTitle}
               />
@@ -1917,7 +1917,7 @@ export default function BookingScreen() {
                     minHeight: 120,
                     textAlignVertical: 'top',
                   }}
-                  placeholder="Mô tả chi tiết: diện tích, tình trạng thiết bị, yêu cầu riêng..."
+                  placeholder=""
                   value={description}
                   onChangeText={setDescription}
                   multiline
