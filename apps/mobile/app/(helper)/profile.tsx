@@ -28,6 +28,7 @@ import { locationService } from '@/services/location.service';
 import { Avatar, Card, COLORS, Separator } from '@/components/ui';
 import { useTranslation } from '@/hooks/use-i18n';
 import { DisplaySettingsSection } from '@/components/common/display-settings';
+import { AppPermissionsSection } from '@/components/common/initial-permissions-modal';
 import { useState, useEffect, useRef } from 'react';
 
 export default function HelperProfileScreen() {
@@ -455,6 +456,9 @@ export default function HelperProfileScreen() {
 
           {/* ── Display settings (Feature 20) ─────────────────────────── */}
           <DisplaySettingsSection />
+
+          {/* ── App Permissions (Bug 10) ─────────────────────────────────── */}
+          <AppPermissionsSection />
 
           {/* Logout */}
           <TouchableOpacity

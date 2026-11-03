@@ -22,6 +22,7 @@ import { useSosBackupListener } from '@/hooks/use-sos-backup';
 import { usePushNotifications } from '@/hooks/use-push-notifications';
 import { SosBackupPopup } from '@/components/common/sos-backup-popup';
 import { SosCustomerDecisionPopup } from '@/components/common/sos-customer-decision-popup';
+import { InitialPermissionsModal } from '@/components/common/initial-permissions-modal';
 import { useBackgroundGps } from '@/hooks/use-background-gps';
 import { useAuthStore } from '@/stores/auth.store';
 
@@ -279,6 +280,7 @@ export default function RootLayout() {
           <StringeeHost />
           <SosBackupPopup />
           <SosCustomerDecisionPopup />
+          <InitialPermissionsModal />
         </QueryClientProvider>
       </GestureHandlerRootView>
     </RootErrorBoundary>
