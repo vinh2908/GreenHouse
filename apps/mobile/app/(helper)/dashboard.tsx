@@ -474,7 +474,7 @@ export default function HelperDashboardScreen() {
                     />
                     <Text
                       style={{
-                        fontSize: 16.5,
+                        fontSize: fs(16.5),
                         fontWeight: '800',
                         color: isWorking
                           ? '#92400E'
@@ -492,7 +492,7 @@ export default function HelperDashboardScreen() {
                   </View>
                   <Text
                     style={{
-                      fontSize: 13,
+                      fontSize: fs(13),
                       color: isWorking
                         ? '#B45309'
                         : effectiveOnline
