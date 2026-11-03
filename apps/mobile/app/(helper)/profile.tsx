@@ -246,7 +246,7 @@ export default function HelperProfileScreen() {
             }}
           >
             <Home size={18} color={COLORS.primary} />
-            <Text style={{ fontSize: 15, fontWeight: '800', color: COLORS.primary }}>
+            <Text style={{ fontSize: fs(15), fontWeight: '800', color: COLORS.primary }}>
               {t('profile_switch_customer')}
             </Text>
           </TouchableOpacity>
@@ -254,13 +254,17 @@ export default function HelperProfileScreen() {
           {/* Online toggle */}
           <Card style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
             <View style={{ flex: 1 }}>
-              <Text style={{ fontWeight: '800', fontSize: 15, color: COLORS.gray[900] }}>
+              <Text style={{ fontWeight: '800', fontSize: fs(15), color: COLORS.gray[900] }}>
                 Trạng thái nhận đơn
               </Text>
               <Text
                 style={{
-                  fontSize: 13,
-                  color: isWorking ? '#D97706' : effectiveOnline ? COLORS.success : COLORS.gray[500],
+                  fontSize: fs(13),
+                  color: isWorking
+                    ? '#D97706'
+                    : effectiveOnline
+                      ? COLORS.success
+                      : COLORS.gray[500],
                   fontWeight: effectiveOnline ? '700' : '500',
                   marginTop: 2,
                 }}
@@ -439,7 +443,7 @@ export default function HelperProfileScreen() {
                 >
                   <item.icon size={20} color={COLORS.gray[600]} />
                   <Text
-                    style={{ flex: 1, fontSize: 15, color: COLORS.gray[900], fontWeight: '600' }}
+                    style={{ flex: 1, fontSize: fs(15), color: COLORS.gray[900], fontWeight: '600' }}
                   >
                     {item.label}
                   </Text>

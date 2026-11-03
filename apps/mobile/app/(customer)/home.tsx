@@ -1147,7 +1147,7 @@ export default function CustomerHomeScreen() {
           {/* Greeting Text: Chào Vinh, khuya rồi */}
           <Text
             style={{
-              fontSize: 24,
+              fontSize: fs(24),
               fontWeight: '900',
               color: COLORS.gray[900],
               letterSpacing: -0.3,
@@ -1157,7 +1157,7 @@ export default function CustomerHomeScreen() {
           </Text>
           <Text
             style={{
-              fontSize: 14,
+              fontSize: fs(14),
               color: COLORS.gray[500],
               marginTop: 4,
               fontWeight: '500',
@@ -1227,8 +1227,8 @@ export default function CustomerHomeScreen() {
               marginBottom: 12,
             }}
           >
-            <Text style={{ fontSize: 18, fontWeight: '800', color: COLORS.gray[900] }}>
-              Thợ đang ở gần bạn
+            <Text style={{ fontSize: fs(18), fontWeight: '800', color: COLORS.gray[900] }}>
+              {t('home_nearby_helpers_title')}
             </Text>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
               <View
@@ -1703,12 +1703,12 @@ export default function CustomerHomeScreen() {
           <View style={{ paddingHorizontal: 16, marginBottom: 12 }}>
             <Text
               style={{
-                fontSize: 18,
+                fontSize: fs(18),
                 fontWeight: '800',
                 color: COLORS.gray[900],
               }}
             >
-              Ưu đãi dành cho bạn
+              {t('home_vouchers_title')}
             </Text>
           </View>
 
@@ -1911,16 +1911,16 @@ export default function CustomerHomeScreen() {
               marginBottom: 14,
             }}
           >
-            <Text style={{ fontSize: 18, fontWeight: '800', color: COLORS.gray[900] }}>
-              Dịch vụ
+            <Text style={{ fontSize: fs(18), fontWeight: '800', color: COLORS.gray[900] }}>
+              {t('home_all_services_title')}
             </Text>
             <TouchableOpacity
               activeOpacity={0.7}
               onPress={() => router.push('/(customer)/booking')}
               style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}
             >
-              <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.primary }}>
-                Đặt dịch vụ khác →
+              <Text style={{ fontSize: fs(13), fontWeight: '700', color: COLORS.primary }}>
+                {t('home_choose_service')} →
               </Text>
             </TouchableOpacity>
           </View>
@@ -2152,13 +2152,13 @@ export default function CustomerHomeScreen() {
         <View style={{ paddingHorizontal: 16, marginTop: 24 }}>
           <Text
             style={{
-              fontSize: 18,
+              fontSize: fs(18),
               fontWeight: '800',
               color: COLORS.gray[900],
               marginBottom: 12,
             }}
           >
-            Đăng việc theo ý bạn
+            {t('home_quick_booking_title')}
           </Text>
 
           <View
