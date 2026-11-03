@@ -45,22 +45,36 @@ export function SosBackupPopup() {
       router.push({ pathname: '/helper-job-detail/[id]', params: { id: jobId } });
     } catch (err: any) {
       const status = err?.response?.status;
-      clearIncoming();
       if (status === 409) {
+        clearIncoming();
         Toast.show({ type: 'info', text1: 'Đã có người khác nhận đơn này rồi' });
       } else {
         const msg = err?.response?.data?.message;
         Toast.show({
           type: 'error',
-          text1: typeof msg === 'string' ? msg : 'Không nhận được đơn — thử lại sau',
+          text1:
+            typeof msg === 'string'
+              ? msg
+              : 'Không nhận được đơn (lỗi mạng hoặc hệ thống). Vui lòng thử lại!',
         });
       }
     }
   };
 
-  const handleDismiss = () => {
-    decline.mutate(incoming.sos_id);
-    clearIncoming();
+  const handleDismiss = async () => {
+    try {
+      await decline.mutateAsync(incoming.sos_id);
+      clearIncoming();
+    } catch (err: any) {
+      const msg = err?.response?.data?.message;
+      Toast.show({
+        type: 'error',
+        text1:
+          typeof msg === 'string'
+            ? msg
+            : 'Không thể từ chối lúc này. Vui lòng kiểm tra mạng và thử lại!',
+      });
+    }
   };
 
   return (
@@ -158,14 +172,14 @@ export function SosBackupPopup() {
 
           <TouchableOpacity
             onPress={handleAccept}
-            disabled={accept.isPending}
+            disabled={accept.isPending || decline.isPending}
             style={{
               backgroundColor: COLORS.success,
               borderRadius: 14,
               paddingVertical: 14,
               alignItems: 'center',
               marginTop: 14,
-              opacity: accept.isPending ? 0.7 : 1,
+              opacity: accept.isPending || decline.isPending ? 0.7 : 1,
             }}
           >
             {accept.isPending ? (
@@ -178,10 +192,18 @@ export function SosBackupPopup() {
           </TouchableOpacity>
           <TouchableOpacity
             onPress={handleDismiss}
-            disabled={accept.isPending}
-            style={{ paddingVertical: 12, alignItems: 'center' }}
+            disabled={accept.isPending || decline.isPending}
+            style={{
+              paddingVertical: 12,
+              alignItems: 'center',
+              opacity: accept.isPending || decline.isPending ? 0.7 : 1,
+            }}
           >
-            <Text style={{ color: COLORS.gray[500], fontWeight: '700', fontSize: 14 }}>Bỏ qua</Text>
+            {decline.isPending ? (
+              <ActivityIndicator color={COLORS.gray[500]} size="small" />
+            ) : (
+              <Text style={{ color: COLORS.gray[500], fontWeight: '700', fontSize: 14 }}>Bỏ qua</Text>
+            )}
           </TouchableOpacity>
         </View>
       </View>
