@@ -211,11 +211,11 @@ export default function CustomerHomeScreen() {
   const router = useRouter();
   const { t, fs } = useTranslation();
   const storedUser = useAuthStore(s => s.user);
-  const { data: profile } = useMyProfile();
+  const { data: profile, refetch: refetchProfile } = useMyProfile();
   const user = profile ?? storedUser;
-  const { data: services } = useServices();
-  const { data: recentJobs, isLoading: jLoading, refetch } = useMyJobs();
-  const { data: unread } = useUnreadCount();
+  const { data: services, refetch: refetchServices } = useServices();
+  const { data: recentJobs, isLoading: jLoading, refetch: refetchJobs } = useMyJobs();
+  const { data: unread, refetch: refetchUnread } = useUnreadCount();
   const createJob = useCreateJob();
   const insets = useSafeAreaInsets();
   const scrollViewRef = useRef<ScrollView>(null);
@@ -258,8 +258,25 @@ export default function CustomerHomeScreen() {
   };
 
   // API Thợ gần & Vouchers thật
-  const { data: nearbyRaw } = useNearbyHelpers(currentCoords);
-  const { data: vouchersRaw } = useMyVouchers();
+  const { data: nearbyRaw, refetch: refetchNearby } = useNearbyHelpers(currentCoords);
+  const { data: vouchersRaw, refetch: refetchVouchers } = useMyVouchers();
+  const [isPullRefreshing, setIsPullRefreshing] = useState(false);
+
+  const handlePullRefresh = async () => {
+    setIsPullRefreshing(true);
+    try {
+      await Promise.allSettled([
+        refetchProfile(),
+        refetchServices(),
+        refetchJobs(),
+        refetchUnread(),
+        refetchNearby(),
+        refetchVouchers(),
+      ]);
+    } finally {
+      setIsPullRefreshing(false);
+    }
+  };
 
   // Accessibility reduce motion
   const [reduceMotion, setReduceMotion] = useState(false);
@@ -1027,7 +1044,12 @@ export default function CustomerHomeScreen() {
         ref={scrollViewRef}
         showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl refreshing={jLoading} onRefresh={refetch} colors={[COLORS.primary]} />
+          <RefreshControl
+            refreshing={isPullRefreshing}
+            onRefresh={handlePullRefresh}
+            colors={[COLORS.primary]}
+            tintColor={COLORS.primary}
+          />
         }
         contentContainerStyle={{ paddingBottom: 130 }}
       >
