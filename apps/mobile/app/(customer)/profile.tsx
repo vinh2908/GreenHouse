@@ -32,6 +32,7 @@ import { useMyProfile, useSwitchRole, useLoyaltyAccount } from '@/hooks/use-api'
 import { Avatar, Card, COLORS, Separator, LoadingSpinner } from '@/components/ui';
 import { useTranslation } from '@/hooks/use-i18n';
 import { DisplaySettingsSection } from '@/components/common/display-settings';
+import { AppPermissionsSection } from '@/components/common/initial-permissions-modal';
 
 const MENU_SECTIONS = [
   {
@@ -358,6 +359,9 @@ export default function CustomerProfileScreen() {
 
           {/* ── Display settings (Feature 20) ─────────────────────────── */}
           <DisplaySettingsSection />
+
+          {/* ── App Permissions (Bug 10) ─────────────────────────────────── */}
+          <AppPermissionsSection />
 
           {displayUser && (
             <TouchableOpacity
