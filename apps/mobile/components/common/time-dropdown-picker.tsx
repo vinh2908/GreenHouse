@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { Clock, ChevronDown, Check, X } from 'lucide-react-native';
 import { COLORS } from '@/components/ui';
+import { useTranslation } from '@/hooks/use-i18n';
 
 export const ORIGINAL_TIME_CHIPS = [
   '07:00',
@@ -258,6 +259,8 @@ export function TimeDropdownPicker({
     return ORIGINAL_TIME_CHIPS.includes(currentFormatted) ? currentFormatted : null;
   }, [currentHour, currentMinute]);
 
+  const { t, fs, lang } = useTranslation();
+
   return (
     <View style={styles.container}>
       {label ? <Text style={styles.fieldLabel}>{label}</Text> : null}
@@ -272,7 +275,7 @@ export function TimeDropdownPicker({
         >
           <Clock size={16} color={isPast ? COLORS.error : COLORS.primary} />
           <Text style={styles.dropdownValue}>{String(currentHour).padStart(2, '0')}</Text>
-          <Text style={styles.dropdownUnit}>giờ</Text>
+          <Text style={styles.dropdownUnit}>{t('picker_unit_hour')}</Text>
           <ChevronDown size={16} color={COLORS.gray[500]} />
         </TouchableOpacity>
 
@@ -285,25 +288,25 @@ export function TimeDropdownPicker({
           style={[styles.dropdownPill, isPast && styles.dropdownPillError]}
         >
           <Text style={styles.dropdownValue}>{String(currentMinute).padStart(2, '0')}</Text>
-          <Text style={styles.dropdownUnit}>phút</Text>
+          <Text style={styles.dropdownUnit}>{t('picker_unit_min')}</Text>
           <ChevronDown size={16} color={COLORS.gray[500]} />
         </TouchableOpacity>
       </View>
 
       {/* Cảnh báo giờ quá khứ hoặc trước minTime */}
       {isPast ? (
-        <Text style={styles.errorText}>⚠️ Thời điểm bắt đầu không thể ở quá khứ</Text>
+        <Text style={styles.errorText}>{t('picker_err_past_time')}</Text>
       ) : isBeforeMinTime ? (
-        <Text style={styles.errorText}>⚠️ Giờ kết thúc phải lớn hơn giờ bắt đầu</Text>
+        <Text style={styles.errorText}>{t('picker_err_end_before_start')}</Text>
       ) : null}
 
       {/* Chip gợi ý khung giờ */}
       {showChips && (
         <View style={styles.chipsSection}>
-          <Text style={styles.chipsInstruction}>bấm là chọn đúng giờ đó</Text>
+          <Text style={styles.chipsInstruction}>{t('picker_chips_instruction')}</Text>
 
           {noChipsToday ? (
-            <Text style={styles.noChipsText}>Hôm nay đã hết khung giờ gợi ý</Text>
+            <Text style={styles.noChipsText}>{t('picker_no_chips')}</Text>
           ) : (
             <ScrollView
               horizontal
@@ -373,7 +376,7 @@ export function TimeDropdownPicker({
           />
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Chọn Giờ (00 – 23)</Text>
+              <Text style={styles.modalTitle}>{t('picker_select_hour')}</Text>
               <TouchableOpacity
                 onPress={() => setModalType(null)}
                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
@@ -412,7 +415,7 @@ export function TimeDropdownPicker({
                         isHourPast && styles.modalItemTextDisabled,
                       ]}
                     >
-                      {String(h).padStart(2, '0')}:00 {isHourPast ? '(đã qua)' : ''}
+                      {String(h).padStart(2, '0')}:00 {isHourPast ? (lang === 'en' ? '(past)' : '(đã qua)') : ''}
                     </Text>
                     {isSelected && <Check size={18} color={COLORS.primary} />}
                   </TouchableOpacity>
@@ -438,7 +441,7 @@ export function TimeDropdownPicker({
           />
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Chọn Phút (00 – 59)</Text>
+              <Text style={styles.modalTitle}>{t('picker_select_minute')}</Text>
               <TouchableOpacity
                 onPress={() => setModalType(null)}
                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
@@ -475,7 +478,7 @@ export function TimeDropdownPicker({
                         isMinPast && styles.modalItemTextDisabled,
                       ]}
                     >
-                      {String(m).padStart(2, '0')} phút {isMinPast ? '(đã qua)' : ''}
+                      {String(m).padStart(2, '0')} {t('picker_unit_min')} {isMinPast ? (lang === 'en' ? '(past)' : '(đã qua)') : ''}
                     </Text>
                     {isSelected && <Check size={18} color={COLORS.primary} />}
                   </TouchableOpacity>
@@ -728,6 +731,7 @@ export function ScheduledTimePreview({
   durationMinutes,
   price,
 }: ScheduledTimePreviewProps) {
+  const { t, fs, lang } = useTranslation();
   const effectiveStart = timeStart || startTime || '08:00';
   const calc = useMemo(
     () => calcEndTime(effectiveStart, durationMinutes),
@@ -746,35 +750,44 @@ export function ScheduledTimePreview({
         return startDate;
       }
     }
-    return 'Chưa chọn ngày';
-  }, [dateLabel, startDate]);
+    return lang === 'en' ? 'No date selected' : 'Chưa chọn ngày';
+  }, [dateLabel, startDate, lang]);
 
-  const durationStr = formatDurationVi(durationMinutes);
+  const durationStr = useMemo(() => {
+    const h = Math.floor(durationMinutes / 60);
+    const m = durationMinutes % 60;
+    if (lang === 'en') {
+      if (h === 0) return `${m} mins`;
+      if (m === 0) return `${h} hrs`;
+      return `${h}h ${m}m`;
+    }
+    return formatDurationVi(durationMinutes);
+  }, [durationMinutes, lang]);
 
   return (
     <View style={styles.previewBox}>
-      <Text style={styles.previewTitle}>Lịch dự kiến</Text>
+      <Text style={styles.previewTitle}>{t('picker_preview_title')}</Text>
       <View style={styles.previewRow}>
-        <Text style={styles.previewLabel}>Ngày:</Text>
+        <Text style={styles.previewLabel}>{t('picker_date_label')}</Text>
         <Text style={styles.previewValue}>{formattedDate}</Text>
       </View>
       <View style={styles.previewRow}>
-        <Text style={styles.previewLabel}>Khung giờ:</Text>
+        <Text style={styles.previewLabel}>{t('picker_time_slot_label')}</Text>
         {calc ? (
           <Text style={styles.previewValue}>
-            {effectiveStart} – {calc.timeEnd} {calc.isNextDay ? '(ngày hôm sau)' : ''}
+            {effectiveStart} – {calc.timeEnd} {calc.isNextDay ? t('picker_next_day') : ''}
           </Text>
         ) : (
-          <Text style={[styles.previewValue, { color: COLORS.gray[500] }]}>Chưa tính được</Text>
+          <Text style={[styles.previewValue, { color: COLORS.gray[500] }]}>{t('picker_cannot_calc')}</Text>
         )}
       </View>
       <View style={styles.previewRow}>
-        <Text style={styles.previewLabel}>Thời lượng:</Text>
+        <Text style={styles.previewLabel}>{t('picker_duration_label')}</Text>
         <Text style={styles.previewValue}>{durationStr}</Text>
       </View>
       {price != null && price > 0 && (
         <View style={styles.previewRow}>
-          <Text style={styles.previewLabel}>Giá deal:</Text>
+          <Text style={styles.previewLabel}>{t('picker_deal_price')}</Text>
           <Text style={[styles.previewValue, { color: COLORS.primary }]}>
             {new Intl.NumberFormat('vi-VN').format(price)}₫
           </Text>
