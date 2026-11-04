@@ -13,6 +13,7 @@ import {
 } from 'lucide-react-native';
 import dayjs from 'dayjs';
 import 'dayjs/locale/vi';
+import 'dayjs/locale/en';
 import { Alert } from '@/components/common/app-alert';
 import {
   useRecurringPlans,
@@ -23,33 +24,59 @@ import {
   useCancelRecurringPlan,
   type RecurringPlanItem,
 } from '@/hooks/use-api';
+import { useTranslation } from '@/hooks/use-i18n';
 import { Badge, Card, COLORS, EmptyState, LoadingSpinner } from '@/components/ui';
 
-const WEEKDAY_LABELS = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
+const WEEKDAY_LABELS_VI = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
+const WEEKDAY_LABELS_EN = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-export function describeSchedule(plan: RecurringPlanItem): string {
+export function describeSchedule(plan: RecurringPlanItem, lang: string = 'vi'): string {
+  const labels = lang === 'en' ? WEEKDAY_LABELS_EN : WEEKDAY_LABELS_VI;
   if (plan.frequency === 'weekly') {
     const days = (plan.weekdays ?? [])
-      .map(d => WEEKDAY_LABELS[d] ?? '')
+      .map(d => labels[d] ?? '')
       .filter(Boolean)
       .join(', ');
-    return `Hàng tuần · ${days || '—'} · ${plan.time_start}`;
+    return lang === 'en'
+      ? `Weekly · ${days || '—'} · ${plan.time_start}`
+      : `Hàng tuần · ${days || '—'} · ${plan.time_start}`;
   }
   const days = (plan.month_days ?? []).join(', ');
-  return `Hàng tháng · ngày ${days || '—'} · ${plan.time_start}`;
+  return lang === 'en'
+    ? `Monthly · day ${days || '—'} · ${plan.time_start}`
+    : `Hàng tháng · ngày ${days || '—'} · ${plan.time_start}`;
 }
 
-function statusBadge(status: RecurringPlanItem['status']) {
+function statusBadge(status: RecurringPlanItem['status'], lang: string = 'vi') {
   if (status === 'active')
-    return <Badge label="Đang chạy" color={COLORS.successLight} textColor={COLORS.success} />;
+    return (
+      <Badge
+        label={lang === 'en' ? 'Active' : 'Đang chạy'}
+        color={COLORS.successLight}
+        textColor={COLORS.success}
+      />
+    );
   if (status === 'paused')
-    return <Badge label="Tạm dừng" color={COLORS.warningLight} textColor={COLORS.warning} />;
-  return <Badge label="Đã hủy" color={COLORS.errorLight} textColor={COLORS.error} />;
+    return (
+      <Badge
+        label={lang === 'en' ? 'Paused' : 'Tạm dừng'}
+        color={COLORS.warningLight}
+        textColor={COLORS.warning}
+      />
+    );
+  return (
+    <Badge
+      label={lang === 'en' ? 'Cancelled' : 'Đã hủy'}
+      color={COLORS.errorLight}
+      textColor={COLORS.error}
+    />
+  );
 }
 
 export default function RecurringPlansScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { t, fs, lang } = useTranslation();
   const { data: plans, isLoading, isRefetching, refetch } = useRecurringPlans();
   const pausePlan = usePauseRecurringPlan();
   const resumePlan = useResumeRecurringPlan();
@@ -70,7 +97,7 @@ export default function RecurringPlansScreen() {
     destructive = false,
   ) =>
     Alert.alert(title, body, [
-      { text: 'Để sau', style: 'cancel' },
+      { text: lang === 'en' ? 'Not now' : 'Để sau', style: 'cancel' },
       { text: actionLabel, style: destructive ? 'destructive' : 'default', onPress: fn },
     ]);
 
@@ -107,10 +134,12 @@ export default function RecurringPlansScreen() {
         </TouchableOpacity>
         <View style={{ flex: 1 }}>
           <Text style={{ fontSize: 18, fontWeight: '800', color: COLORS.gray[900] }}>
-            Gói định kỳ của tôi 🔁
+            {lang === 'en' ? 'My Recurring Plans 🔁' : 'Gói định kỳ của tôi 🔁'}
           </Text>
           <Text style={{ fontSize: 12, color: COLORS.gray[500] }}>
-            Việc lặp lại tự động — không cần đăng lại mỗi lần
+            {lang === 'en'
+              ? 'Automated repeating service — no need to repost each time'
+              : 'Việc lặp lại tự động — không cần đăng lại mỗi lần'}
           </Text>
         </View>
         <TouchableOpacity
@@ -148,9 +177,13 @@ export default function RecurringPlansScreen() {
           {(plans ?? []).length === 0 ? (
             <EmptyState
               emoji="🔁"
-              title="Chưa có gói định kỳ nào"
-              subtitle="Việc nhà lặp lại hàng tuần/hàng tháng? Tạo gói định kỳ một lần, hệ thống tự đăng đơn cho từng buổi — có thể ưu tiên thợ quen cho mọi buổi."
-              action="Tạo gói định kỳ"
+              title={lang === 'en' ? 'No recurring plans yet' : 'Chưa có gói định kỳ nào'}
+              subtitle={
+                lang === 'en'
+                  ? 'Chores repeating weekly or monthly? Set up a recurring plan once and the system posts jobs automatically for each session — with option to prioritize preferred helpers.'
+                  : 'Việc nhà lặp lại hàng tuần/hàng tháng? Tạo gói định kỳ một lần, hệ thống tự đăng đơn cho từng buổi — có thể ưu tiên thợ quen cho mọi buổi.'
+              }
+              action={lang === 'en' ? 'Create Recurring Plan' : 'Tạo gói định kỳ'}
               onAction={() =>
                 router.push({
                   pathname: '/(customer)/booking',
@@ -186,15 +219,26 @@ export default function RecurringPlansScreen() {
                       >
                         {plan.title}
                       </Text>
-                      {statusBadge(plan.status)}
+                      {statusBadge(plan.status, lang)}
                     </View>
                     <Text style={{ fontSize: 13, color: COLORS.gray[600], marginTop: 6 }}>
-                      {describeSchedule(plan)}
-                      {plan.duration_hours ? ` · ${plan.duration_hours} giờ/buổi` : ''}
+                      {describeSchedule(plan, lang)}
+                      {plan.duration_hours
+                        ? lang === 'en'
+                          ? ` · ${plan.duration_hours} hrs/session`
+                          : ` · ${plan.duration_hours} giờ/buổi`
+                        : ''}
                     </Text>
                     <Text style={{ fontSize: 12.5, color: COLORS.gray[500], marginTop: 2 }}>
-                      {service?.name ?? 'Dịch vụ'} · Đã sinh {plan.jobs_generated} đơn
-                      {helper ? ` · Thợ quen: ${helper.full_name ?? ''}` : ''}
+                      {(service?.name ?? (lang === 'en' ? 'Service' : 'Dịch vụ')) +
+                        (lang === 'en'
+                          ? ` · ${plan.jobs_generated} jobs created`
+                          : ` · Đã sinh ${plan.jobs_generated} đơn`)}
+                      {helper
+                        ? lang === 'en'
+                          ? ` · Preferred helper: ${helper.full_name ?? ''}`
+                          : ` · Thợ quen: ${helper.full_name ?? ''}`
+                        : ''}
                     </Text>
                     {plan.status === 'active' &&
                       plan.next_occurrence_at &&
@@ -207,25 +251,29 @@ export default function RecurringPlansScreen() {
                             marginTop: 2,
                           }}
                         >
-                          Buổi tới:{' '}
-                          {dayjs(plan.next_occurrence_at).format('dddd, DD/MM/YYYY HH:mm')}
+                          {lang === 'en' ? 'Next session: ' : 'Buổi tới: '}
+                          {dayjs(plan.next_occurrence_at)
+                            .locale(lang === 'en' ? 'en' : 'vi')
+                            .format('dddd, DD/MM/YYYY HH:mm')}
                         </Text>
                       )}
                   </TouchableOpacity>
 
-                  {expanded && <PlanDetail planId={plan._id} />}
+                  {expanded && <PlanDetail planId={plan._id} lang={lang} />}
 
                   {plan.status !== 'cancelled' && (
                     <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
                       {plan.status === 'active' ? (
                         <ActionChip
                           icon={<Pause size={14} color={COLORS.gray[700]} />}
-                          label="Tạm dừng"
+                          label={lang === 'en' ? 'Pause' : 'Tạm dừng'}
                           onPress={() =>
                             confirm(
-                              'Tạm dừng gói?',
-                              'Hệ thống sẽ ngừng sinh đơn mới. Các đơn đã sinh vẫn giữ nguyên.',
-                              'Tạm dừng',
+                              lang === 'en' ? 'Pause plan?' : 'Tạm dừng gói?',
+                              lang === 'en'
+                                ? 'The system will stop generating new jobs. Already created jobs will remain.'
+                                : 'Hệ thống sẽ ngừng sinh đơn mới. Các đơn đã sinh vẫn giữ nguyên.',
+                              lang === 'en' ? 'Pause' : 'Tạm dừng',
                               () => pausePlan.mutate(plan._id),
                             )
                           }
@@ -233,19 +281,21 @@ export default function RecurringPlansScreen() {
                       ) : (
                         <ActionChip
                           icon={<Play size={14} color={COLORS.primaryDark} />}
-                          label="Tiếp tục"
+                          label={lang === 'en' ? 'Resume' : 'Tiếp tục'}
                           onPress={() => resumePlan.mutate(plan._id)}
                         />
                       )}
                       {plan.status === 'active' && (
                         <ActionChip
                           icon={<SkipForward size={14} color={COLORS.gray[700]} />}
-                          label="Bỏ qua buổi tới"
+                          label={lang === 'en' ? 'Skip next session' : 'Bỏ qua buổi tới'}
                           onPress={() =>
                             confirm(
-                              'Bỏ qua buổi tới?',
-                              'Buổi gần nhất sẽ không diễn ra (đơn của buổi đó nếu đã sinh và chưa có thợ chốt sẽ bị hủy).',
-                              'Bỏ qua buổi',
+                              lang === 'en' ? 'Skip next session?' : 'Bỏ qua buổi tới?',
+                              lang === 'en'
+                                ? 'The upcoming session will not occur (its job will be cancelled if not yet accepted by a helper).'
+                                : 'Buổi gần nhất sẽ không diễn ra (đơn của buổi đó nếu đã sinh và chưa có thợ chốt sẽ bị hủy).',
+                              lang === 'en' ? 'Skip session' : 'Bỏ qua buổi',
                               () => skipNext.mutate(plan._id),
                             )
                           }
@@ -253,13 +303,15 @@ export default function RecurringPlansScreen() {
                       )}
                       <ActionChip
                         icon={<Trash2 size={14} color={COLORS.error} />}
-                        label="Hủy gói"
+                        label={lang === 'en' ? 'Cancel plan' : 'Hủy gói'}
                         danger
                         onPress={() =>
                           confirm(
-                            'Hủy gói định kỳ?',
-                            'Các đơn tương lai chưa có thợ chốt sẽ bị hủy theo. Thao tác này không khôi phục được.',
-                            'Hủy gói',
+                            lang === 'en' ? 'Cancel recurring plan?' : 'Hủy gói định kỳ?',
+                            lang === 'en'
+                              ? 'Future unassigned jobs will be cancelled. This action cannot be undone.'
+                              : 'Các đơn tương lai chưa có thợ chốt sẽ bị hủy theo. Thao tác này không khôi phục được.',
+                            lang === 'en' ? 'Cancel plan' : 'Hủy gói',
                             () => cancelPlan.mutate(plan._id),
                             true,
                           )
@@ -316,7 +368,7 @@ function ActionChip({
   );
 }
 
-function PlanDetail({ planId }: { planId: string }) {
+function PlanDetail({ planId, lang = 'vi' }: { planId: string; lang?: string }) {
   const router = useRouter();
   const { data, isLoading } = useRecurringPlanDetail(planId);
   if (isLoading) return <LoadingSpinner size="small" />;
@@ -324,14 +376,16 @@ function PlanDetail({ planId }: { planId: string }) {
   if (jobs.length === 0) {
     return (
       <Text style={{ fontSize: 12.5, color: COLORS.gray[500] }}>
-        Chưa có đơn nào được sinh từ gói này.
+        {lang === 'en'
+          ? 'No jobs generated from this plan yet.'
+          : 'Chưa có đơn nào được sinh từ gói này.'}
       </Text>
     );
   }
   return (
     <View style={{ gap: 6, borderTopWidth: 1, borderTopColor: COLORS.gray[100], paddingTop: 10 }}>
       <Text style={{ fontSize: 13, fontWeight: '800', color: COLORS.gray[800] }}>
-        Các đơn đã sinh
+        {lang === 'en' ? 'Generated Jobs' : 'Các đơn đã sinh'}
       </Text>
       {jobs.slice(0, 8).map((job: any) => (
         <TouchableOpacity

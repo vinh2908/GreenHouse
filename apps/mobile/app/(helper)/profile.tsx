@@ -108,12 +108,12 @@ export default function HelperProfileScreen() {
     };
 
     Alert.alert(
-      'Đăng xuất khỏi Green House?',
-      'Bạn có chắc chắn muốn đăng xuất tài khoản Thợ? Dữ liệu công việc và số dư ví của bạn luôn được bảo lưu an toàn.',
+      t('helper_profile.logout_title'),
+      t('helper_profile.logout_msg'),
       [
-        { text: 'Ở lại', style: 'cancel' },
+        { text: t('helper_profile.stay'), style: 'cancel' },
         {
-          text: 'Đăng xuất ngay',
+          text: t('helper_profile.logout_now'),
           style: 'destructive',
           onPress: doLogout,
         },
@@ -122,11 +122,11 @@ export default function HelperProfileScreen() {
   };
 
   const KYC_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
-    loading: { label: 'Đang tải trạng thái...', color: COLORS.gray[500], bg: COLORS.gray[100] },
-    unsubmitted: { label: 'Chưa xác minh', color: COLORS.error, bg: '#FEF2F2' },
-    pending: { label: 'Chờ duyệt hồ sơ', color: '#D97706', bg: '#FFFBEB' },
-    approved: { label: 'Đã xác thực e-KYC ✓', color: COLORS.success, bg: '#ECFDF5' },
-    rejected: { label: 'Hồ sơ bị từ chối', color: COLORS.error, bg: '#FEF2F2' },
+    loading: { label: t('kyc_status_loading'), color: COLORS.gray[500], bg: COLORS.gray[100] },
+    unsubmitted: { label: t('kyc_status_unsubmitted'), color: COLORS.error, bg: '#FEF2F2' },
+    pending: { label: t('kyc_status_pending'), color: '#D97706', bg: '#FFFBEB' },
+    approved: { label: t('kyc_status_approved'), color: COLORS.success, bg: '#ECFDF5' },
+    rejected: { label: t('kyc_status_rejected'), color: COLORS.error, bg: '#FEF2F2' },
   };
 
   const statusKey = pLoading ? 'loading' : profile?.verification_status || 'unsubmitted';
@@ -204,7 +204,7 @@ export default function HelperProfileScreen() {
                   {completedCount}
                 </Text>
                 <Text style={{ fontSize: fs(12), color: COLORS.gray[500], fontWeight: '600' }}>
-                  Đơn hoàn tất
+                  {t('helper_profile.completed_jobs')}
                 </Text>
               </View>
               <View style={{ width: 1, backgroundColor: COLORS.gray[200] }} />
@@ -213,7 +213,7 @@ export default function HelperProfileScreen() {
                   ★ {ratingScore > 0 ? ratingScore.toFixed(1) : '5.0'}
                 </Text>
                 <Text style={{ fontSize: fs(12), color: COLORS.gray[500], fontWeight: '600' }}>
-                  Điểm uy tín
+                  {t('helper_profile.reputation_points')}
                 </Text>
               </View>
               <View style={{ width: 1, backgroundColor: COLORS.gray[200] }} />
@@ -222,7 +222,7 @@ export default function HelperProfileScreen() {
                   {profile.completion_rate ?? 100}%
                 </Text>
                 <Text style={{ fontSize: fs(12), color: COLORS.gray[500], fontWeight: '600' }}>
-                  Nhận việc
+                  {t('helper_profile.acceptance_rate')}
                 </Text>
               </View>
             </View>
@@ -256,7 +256,7 @@ export default function HelperProfileScreen() {
           <Card style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
             <View style={{ flex: 1 }}>
               <Text style={{ fontWeight: '800', fontSize: fs(15), color: COLORS.gray[900] }}>
-                Trạng thái nhận đơn
+                {t('helper_profile.receiving_status')}
               </Text>
               <Text
                 style={{
@@ -271,12 +271,12 @@ export default function HelperProfileScreen() {
                 }}
               >
                 {pLoading
-                  ? 'Đang tải trạng thái...'
+                  ? t('helper_profile.loading_status')
                   : isWorking
-                    ? '🟡 Đang bận làm việc (Cuốc đang chạy)'
+                    ? t('helper_profile.status_busy_working')
                     : effectiveOnline
-                      ? '🟢 Đang nhận đơn mới'
-                      : '⚫ Ngoại tuyến (Đã tắt nhận đơn)'}
+                      ? t('helper_profile.status_online')
+                      : t('helper_profile.status_offline')}
               </Text>
             </View>
             <Switch
@@ -285,19 +285,19 @@ export default function HelperProfileScreen() {
               onValueChange={v => {
                 if (isWorking) {
                   Alert.alert(
-                    'Đang có công việc diễn ra',
-                    'Bạn đang có đơn công việc đang thực hiện. Hãy hoàn thành hoặc kết thúc công việc trước khi tắt nhận việc nhé!',
-                    [{ text: 'Đã hiểu', style: 'default' }],
+                    t('helper_profile.job_in_progress_title'),
+                    t('helper_profile.job_in_progress_msg'),
+                    [{ text: t('helper_profile.i_understand'), style: 'default' }],
                   );
                   return;
                 }
                 if (v && profile?.verification_status !== 'approved') {
                   Alert.alert(
-                    'Yêu cầu xác minh danh tính e-KYC',
-                    'Vui lòng hoàn tất xác thực e-KYC trước khi bật chế độ nhận việc.',
+                    t('helper_profile.kyc_required_title'),
+                    t('helper_profile.kyc_required_msg'),
                     [
-                      { text: 'Để sau', style: 'cancel' },
-                      { text: 'Xác thực ngay', onPress: () => router.push('/kyc') },
+                      { text: t('helper_profile.later'), style: 'cancel' },
+                      { text: t('helper_profile.verify_now'), onPress: () => router.push('/kyc') },
                     ],
                   );
                   return;
@@ -323,10 +323,12 @@ export default function HelperProfileScreen() {
                   onSuccess: () => {
                     Toast.show({
                       type: 'success',
-                      text1: v ? 'Đã bật nhận đơn mới' : 'Đã chuyển sang ngoại tuyến',
+                      text1: v
+                        ? t('helper_profile.toast_online_title')
+                        : t('helper_profile.toast_offline_title'),
                       text2: v
-                        ? 'Bạn sẽ nhận được thông báo khi có khách hàng đặt dịch vụ gần bạn'
-                        : 'Hệ thống đã tạm dừng nhận việc cho bạn',
+                        ? t('helper_profile.toast_online_sub')
+                        : t('helper_profile.toast_offline_sub'),
                     });
                   },
                   onError: () => {
@@ -355,7 +357,7 @@ export default function HelperProfileScreen() {
               <ShieldCheck size={24} color={KYC_STATUS.color} />
               <View style={{ flex: 1 }}>
                 <Text style={{ fontWeight: '800', fontSize: fs(14), color: KYC_STATUS.color }}>
-                  Xác minh danh tính Thợ (e-KYC)
+                  {t('helper_profile.kyc_title')}
                 </Text>
                 <Text
                   style={{ fontSize: fs(13), color: KYC_STATUS.color, marginTop: 2, fontWeight: '600' }}
@@ -423,8 +425,8 @@ export default function HelperProfileScreen() {
                   } else {
                     Toast.show({
                       type: 'info',
-                      text1: 'Đánh giá & Phản hồi',
-                      text2: 'Chưa có dữ liệu đánh giá từ khách hàng',
+                      text1: t('profile_reviews'),
+                      text2: t('helper_profile.no_reviews_yet'),
                     });
                   }
                 },
@@ -490,7 +492,7 @@ export default function HelperProfileScreen() {
               fontWeight: '500',
             }}
           >
-            Green House Đối Tác v1.0.0 • Verified Ecosystem
+            {t('helper_profile.footer_version')}
           </Text>
         </View>
       </ScrollView>

@@ -61,7 +61,7 @@ const MENU_SECTIONS = [
 
 export default function CustomerProfileScreen() {
   const router = useRouter();
-  const { t, fs } = useTranslation();
+  const { t, fs, lang, tLoyaltyTier } = useTranslation();
   const queryClient = useQueryClient();
   const logout = useAuthStore(s => s.logout);
   const user = useAuthStore(s => s.user);
@@ -104,12 +104,12 @@ export default function CustomerProfileScreen() {
     };
 
     Alert.alert(
-      'Đăng xuất khỏi Green House?',
-      'Bạn có chắc chắn muốn đăng xuất tài khoản? Lịch sử đặt việc và thông tin thanh toán của bạn luôn được bảo lưu an toàn.',
+      t('profile_logout_confirm_title'),
+      t('profile_logout_confirm_desc'),
       [
-        { text: 'Ở lại', style: 'cancel' },
+        { text: t('profile_logout_stay'), style: 'cancel' },
         {
-          text: 'Đăng xuất ngay',
+          text: t('profile_logout_now'),
           style: 'destructive',
           onPress: doLogout,
         },
@@ -208,7 +208,7 @@ export default function CustomerProfileScreen() {
             </TouchableOpacity>
           ) : (
             <View style={{ alignItems: 'center' }}>
-              <Avatar name="Khách" size={80} />
+              <Avatar name={lang === 'en' ? 'Guest' : 'Khách'} size={80} />
               <Text
                 style={{
                   fontSize: fs(20),
@@ -277,7 +277,7 @@ export default function CustomerProfileScreen() {
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                 <Star size={20} color="#D97706" />
                 <Text style={{ flex: 1, fontWeight: '800', fontSize: fs(15), color: '#92400E' }}>
-                  {t('profile_loyalty_title', { tier: loyalty?.tier_label ?? 'Thường' })}
+                  {t('profile_loyalty_title', { tier: tLoyaltyTier(loyalty?.tier_label) })}
                 </Text>
                 <ChevronRight size={16} color="#92400E" />
               </View>
@@ -286,12 +286,12 @@ export default function CustomerProfileScreen() {
                   <ActivityIndicator size="small" color="#D97706" />
                 ) : (
                   t('profile_loyalty_points', {
-                    points: new Intl.NumberFormat('vi-VN').format(loyalty?.points_balance ?? 0),
+                    points: new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'vi-VN').format(loyalty?.points_balance ?? 0),
                   })
                 )}
               </Text>
               <Text style={{ fontSize: fs(12.5), color: COLORS.gray[600] }}>
-                {`Đổi điểm giảm tối đa ${loyalty?.redemption_cap_percent ?? 20}% giá trị đơn · Xem lịch sử & quyền lợi →`}
+                {t('profile_loyalty_redeem_desc', { cap: loyalty?.redemption_cap_percent ?? 20 })}
               </Text>
             </Card>
           </TouchableOpacity>
@@ -323,9 +323,8 @@ export default function CustomerProfileScreen() {
                         if (item.route === '__rate_app__') {
                           Toast.show({
                             type: 'success',
-                            text1: 'Cảm ơn bạn đã ủng hộ Green House! ⭐',
-                            text2:
-                              'Đánh giá 5 sao của bạn giúp đội ngũ phát triển tốt hơn mỗi ngày.',
+                            text1: t('profile_rate_app_thanks_title'),
+                            text2: t('profile_rate_app_thanks_desc'),
                           });
                         } else if (item.route) {
                           router.push(item.route as never);

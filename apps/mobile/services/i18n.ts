@@ -182,6 +182,12 @@ export const STRINGS = {
     en: 'Privacy policy & 30-day insurance',
   },
   profile_rate_app: { vi: 'Đánh giá ứng dụng Green House', en: 'Rate the Green House app' },
+  profile_rate_app_thanks_title: { vi: 'Cảm ơn bạn đã ủng hộ Green House! ⭐', en: 'Thank you for supporting Green House! ⭐' },
+  profile_rate_app_thanks_desc: { vi: 'Đánh giá 5 sao của bạn giúp đội ngũ phát triển tốt hơn mỗi ngày.', en: 'Your 5-star rating helps our team improve every day.' },
+  profile_logout_confirm_title: { vi: 'Đăng xuất khỏi Green House?', en: 'Log out of Green House?' },
+  profile_logout_confirm_desc: { vi: 'Bạn có chắc chắn muốn đăng xuất tài khoản? Lịch sử đặt việc và thông tin thanh toán của bạn luôn được bảo lưu an toàn.', en: 'Are you sure you want to log out? Your booking history and payment info remain safe.' },
+  profile_logout_stay: { vi: 'Ở lại', en: 'Stay' },
+  profile_logout_now: { vi: 'Đăng xuất ngay', en: 'Log out now' },
   profile_logout: { vi: 'Đăng xuất', en: 'Log out' },
   profile_edit: { vi: 'Chỉnh sửa hồ sơ ✏️', en: 'Edit profile ✏️' },
   profile_bank_account: { vi: 'Tài khoản ngân hàng liên kết', en: 'Linked bank account' },
@@ -700,6 +706,360 @@ export const STRINGS = {
     en: 'New jobs are available but outside your registered hours. Update your Work Schedule in Profile to receive them.',
   },
   jobs_customer_cancelled: { vi: 'Đã hủy yêu cầu', en: 'Request cancelled' },
+
+  // ─── Common Actions & Units ────────────────────────────────────────────────
+  common_apply: { vi: 'Áp dụng', en: 'Apply' },
+  common_save: { vi: 'Lưu', en: 'Save' },
+  common_delete: { vi: 'Xóa', en: 'Delete' },
+  common_edit: { vi: 'Chỉnh sửa', en: 'Edit' },
+  common_retry: { vi: 'Thử lại', en: 'Retry' },
+  common_continue: { vi: 'Tiếp tục', en: 'Continue' },
+  common_loading: { vi: 'Đang tải...', en: 'Loading...' },
+  common_empty: { vi: 'Không có dữ liệu', en: 'No data' },
+  common_hours: { vi: 'giờ', en: 'hours' },
+  common_photos: { vi: 'ảnh', en: 'photos' },
+  common_helper: { vi: 'thợ', en: 'helper' },
+  common_helpers_plural: { vi: 'thợ', en: 'helpers' },
+
+  // ─── Điểm 1: Helper Profile ────────────────────────────────────────────────
+  'helper_profile.completed_jobs': { vi: 'Đơn hoàn tất', en: 'Completed jobs' },
+  'helper_profile.reputation_points': { vi: 'Điểm uy tín', en: 'Reputation score' },
+  'helper_profile.acceptance_rate': { vi: 'Nhận việc', en: 'Accept jobs' },
+  'helper_profile.receiving_status': { vi: 'Trạng thái nhận đơn', en: 'Job receiving status' },
+  'helper_profile.status_busy_working': { vi: '🟡 Đang bận làm việc (Cuốc đang chạy)', en: '🟡 Busy working (Ongoing job)' },
+  'helper_profile.status_online': { vi: '🟢 Đang nhận đơn mới', en: '🟢 Accepting new jobs' },
+  'helper_profile.status_offline': { vi: '⚫ Ngoại tuyến (Đã tắt nhận đơn)', en: '⚫ Offline (Job receiving off)' },
+  'helper_profile.loading_status': { vi: 'Đang tải trạng thái...', en: 'Loading status...' },
+  'helper_profile.kyc_title': { vi: 'Xác minh danh tính Thợ (e-KYC)', en: 'Helper identity verification (e-KYC)' },
+  'helper_profile.no_reviews_yet': { vi: 'Chưa có dữ liệu đánh giá từ khách hàng', en: 'No customer reviews yet' },
+  'helper_profile.footer_version': { vi: 'Green House Đối Tác v1.0.0 • Verified Ecosystem', en: 'Green House Partner v1.0.0 • Verified Ecosystem' },
+  'helper_profile.logout_title': { vi: 'Đăng xuất khỏi Green House?', en: 'Log out of Green House?' },
+  'helper_profile.logout_msg': { vi: 'Bạn có chắc chắn muốn đăng xuất tài khoản Thợ? Dữ liệu công việc và số dư ví của bạn luôn được bảo lưu an toàn.', en: 'Are you sure you want to log out of your Helper account? Your job history and wallet balance remain safe.' },
+  'helper_profile.stay': { vi: 'Ở lại', en: 'Stay' },
+  'helper_profile.logout_now': { vi: 'Đăng xuất ngay', en: 'Log out now' },
+  'helper_profile.job_in_progress_title': { vi: 'Đang có công việc diễn ra', en: 'Job in progress' },
+  'helper_profile.job_in_progress_msg': { vi: 'Bạn đang có đơn công việc đang thực hiện. Hãy hoàn thành hoặc kết thúc công việc trước khi tắt nhận việc nhé!', en: 'You have an ongoing job. Please complete or finish the job before turning off job reception!' },
+  'helper_profile.i_understand': { vi: 'Đã hiểu', en: 'Understood' },
+  'helper_profile.kyc_required_title': { vi: 'Yêu cầu xác minh danh tính e-KYC', en: 'e-KYC identity verification required' },
+  'helper_profile.kyc_required_msg': { vi: 'Vui lòng hoàn tất xác thực e-KYC trước khi bật chế độ nhận việc.', en: 'Please complete e-KYC verification before turning on job reception.' },
+  'helper_profile.later': { vi: 'Để sau', en: 'Later' },
+  'helper_profile.verify_now': { vi: 'Xác thực ngay', en: 'Verify now' },
+  'helper_profile.toast_online_title': { vi: 'Đã bật nhận đơn mới', en: 'Receiving new jobs enabled' },
+  'helper_profile.toast_offline_title': { vi: 'Đã chuyển sang ngoại tuyến', en: 'Switched to offline' },
+  'helper_profile.toast_online_sub': { vi: 'Bạn sẽ nhận được thông báo khi có khách hàng đặt dịch vụ gần bạn', en: 'You will receive notifications when customers book nearby services' },
+  'helper_profile.toast_offline_sub': { vi: 'Hệ thống đã tạm dừng nhận việc cho bạn', en: 'System paused receiving jobs for you' },
+  kyc_status_loading: { vi: 'Đang tải trạng thái...', en: 'Loading status...' },
+  kyc_status_unsubmitted: { vi: 'Chưa xác minh', en: 'Unverified' },
+  kyc_status_pending: { vi: 'Chờ duyệt hồ sơ', en: 'Pending approval' },
+  kyc_status_approved: { vi: 'Đã xác thực e-KYC ✓', en: 'e-KYC verified ✓' },
+  kyc_status_rejected: { vi: 'Hồ sơ bị từ chối', en: 'Application rejected' },
+
+  // ─── Điểm 2: Booking Wizard 5 bước ─────────────────────────────────────────
+  booking_from_price: { vi: 'Từ {price}₫', en: 'From {price}₫' },
+  booking_fixed_price_sub: { vi: 'nhận việc ngay, không cần báo giá', en: 'instant match, no bidding needed' },
+  booking_step_address_title: { vi: 'Địa chỉ làm việc', en: 'Work address' },
+  booking_step_schedule_title: { vi: 'Chọn lịch hẹn', en: 'Select schedule' },
+  booking_start_time_title: { vi: 'Thời gian bắt đầu làm việc', en: 'Work start time' },
+  booking_tap_to_open_calendar: { vi: 'Bấm để mở lịch tháng trong bottom sheet', en: 'Tap to open monthly calendar sheet' },
+  booking_address_notes_guide: { vi: 'Ghi chú hướng dẫn cho thợ (tùy chọn)', en: 'Guide notes for helper (optional)' },
+  booking_toast_camera_perm: { vi: 'Cần quyền truy cập camera để chụp ảnh hiện trạng', en: 'Camera permission required to take issue photos' },
+  booking_toast_camera_error: { vi: 'Không thể mở máy ảnh', en: 'Unable to open camera' },
+  booking_toast_gallery_perm: { vi: 'Cần quyền truy cập thư viện ảnh', en: 'Photo library permission required' },
+  booking_toast_gallery_error: { vi: 'Không thể chọn ảnh từ thư viện', en: 'Unable to select photo from library' },
+  booking_ai_photo_failed_title: { vi: 'Chưa phân tích được ảnh', en: 'Photo analysis unsuccessful' },
+  booking_ai_photo_failed_desc: { vi: 'Ảnh vẫn được đính kèm vào đơn, bạn tự mô tả giúp mình nhé', en: 'Photo is still attached, please write description manually' },
+  booking_ai_photo_no_select_title: { vi: 'Chưa chọn ảnh', en: 'No photo selected' },
+  booking_ai_photo_no_select_desc: { vi: 'Vui lòng chọn ảnh chụp sự cố để AI phân tích', en: 'Please select an issue photo for AI to analyze' },
+  booking_ai_photo_path_error: { vi: 'Không tìm thấy đường dẫn ảnh', en: 'Photo path not found' },
+  booking_ai_photo_read_error: { vi: 'Không thể đọc dữ liệu ảnh để phân tích AI', en: 'Unable to read photo data for AI analysis' },
+  booking_toast_map_selected: { vi: 'Đã chọn địa điểm từ bản đồ', en: 'Selected location from map' },
+  booking_ai_suggest_desc: { vi: 'AI đề xuất dịch vụ "{newSvc}" (hiện đang chọn "{currentSvc}"). Bạn có muốn chuyển sang dịch vụ này không?', en: 'AI suggested service "{newSvc}" (currently "{currentSvc}"). Do you want to switch to this service?' },
+  booking_ai_suggest_change_title: { vi: 'AI gợi ý đổi dịch vụ', en: 'AI suggests service change' },
+  booking_ai_suggest_change_desc: { vi: 'AI nhận diện ảnh phù hợp với "{newSvc}" (hiện đang chọn "{oldSvc}"). Bạn có muốn chuyển sang dịch vụ này không?', en: 'AI identified photo matches "{newSvc}" (currently "{oldSvc}"). Do you want to switch to this service?' },
+  booking_keep_current_svc: { vi: 'Giữ dịch vụ hiện tại', en: 'Keep current service' },
+  booking_change_to_svc: { vi: 'Đổi sang {name}', en: 'Switch to {name}' },
+  booking_ai_service_tip_title: { vi: 'Gợi ý dịch vụ từ AI', en: 'AI Service Suggestion' },
+  booking_ai_service_tip_desc: { vi: 'AI đề xuất dịch vụ "{name}". Do danh mục chuẩn chưa có dịch vụ này, hệ thống đã chuyển sang "Dịch vụ theo yêu cầu" và điền sẵn tên dịch vụ cho bạn.', en: 'AI suggested "{name}". As this is not in standard catalog, system switched to "Custom Service" and prefilled it for you.' },
+  booking_ai_photo_success_title: { vi: 'AI đã nhận diện sự cố trong ảnh!', en: 'AI diagnosed the issue in your photo!' },
+  booking_ai_photo_success_desc: { vi: 'Đã điền sẵn mô tả & gợi ý dịch vụ cho bạn', en: 'Prefilled description & suggested service for you' },
+  booking_gps_located_title: { vi: 'Đã định vị vị trí của bạn', en: 'Your location was determined' },
+  booking_gps_auto_fail_title: { vi: 'Không thể định vị tự động', en: 'Automatic location failed' },
+  booking_gps_auto_fail_desc: { vi: 'Vui lòng kiểm tra GPS hoặc nhập tay địa chỉ của bạn bên dưới.', en: 'Please check GPS or enter your address manually below.' },
+  booking_gps_fail_title: { vi: 'Không thể lấy vị trí hiện tại', en: 'Unable to get current location' },
+  booking_gps_fail_desc: { vi: 'Vui lòng nhập tay địa chỉ của bạn bên dưới.', en: 'Please enter your address manually below.' },
+  booking_ai_desc_success_title: { vi: 'AI đã phân tích xong!', en: 'AI analysis complete!' },
+  booking_ai_desc_success_desc: { vi: 'Đã tự động chọn dịch vụ & tạo chi tiết công việc', en: 'Automatically selected service & created job details' },
+  booking_ai_desc_fail: { vi: 'Phân tích thất bại, vui lòng thử lại', en: 'Analysis failed, please try again' },
+  booking_login_required_title: { vi: 'Yêu cầu đăng nhập', en: 'Login required' },
+  booking_login_required_desc: { vi: 'Vui lòng đăng nhập hoặc tạo tài khoản để gửi đơn đặt thợ', en: 'Please log in or create an account to post a job' },
+  booking_coords_unconfirmed_title: { vi: 'Chưa xác định được tọa độ chính xác', en: 'Exact coordinates not confirmed' },
+  booking_coords_unconfirmed_desc: { vi: 'Vui lòng chọn từ gợi ý tìm kiếm hoặc bấm nút lấy vị trí GPS để ghim đúng điểm cho thợ.', en: 'Please pick from search suggestions or tap GPS button to pinpoint location for helper.' },
+  booking_min_price_error: { vi: 'Giá mong muốn tối thiểu là 50.000₫', en: 'Minimum expected price is 50,000₫' },
+  booking_default_title: { vi: 'Yêu cầu dịch vụ', en: 'Service request' },
+  booking_create_failed: { vi: 'Đăng việc thất bại. Vui lòng thử lại', en: 'Job posting failed. Please try again' },
+  booking_select_service_error: { vi: 'Vui lòng chọn 1 dịch vụ cần làm', en: 'Please select a service' },
+  booking_enter_service_name_error: { vi: 'Vui lòng nhập tên công việc bạn cần làm', en: 'Please enter job name needed' },
+  booking_ai_desc_title: { vi: 'Mô tả để AI hỗ trợ', en: 'Describe for AI assistant' },
+  booking_ai_analyze_btn: { vi: 'Phân tích với AI', en: 'Analyze with AI' },
+  booking_ai_done: { vi: 'Đã phân tích xong', en: 'Analysis completed' },
+  booking_ai_est_duration: { vi: 'Ước tính: {hours}h', en: 'Estimated: {hours}h' },
+  booking_ai_tasks_needed: { vi: 'Hạng mục cần làm:', en: 'Tasks to perform:' },
+  booking_ai_est_price: { vi: 'Ước giá thị trường:', en: 'Estimated market price:' },
+  booking_or_choose_below: { vi: 'Hoặc chọn dịch vụ bên dưới:', en: 'Or choose service below:' },
+  booking_loading_services: { vi: 'Đang tải danh sách dịch vụ...', en: 'Loading service catalog...' },
+  booking_other_service_title: { vi: 'Dịch vụ khác — tự ghi việc, tự set giá', en: 'Other — custom task & custom price' },
+  booking_new_badge: { vi: 'MỚI', en: 'NEW' },
+  booking_other_service_desc: { vi: 'Việc gì cũng đăng được · bạn tự mô tả công việc và đặt giá mong muốn', en: 'Post any task · describe what you need and set expected price' },
+  booking_other_service_sub: { vi: 'Deal giá trực tiếp với thợ', en: 'Negotiate price directly with helpers' },
+  booking_other_service_name_label: { vi: 'Tên công việc / dịch vụ bạn cần *', en: 'Job / service name you need *' },
+  booking_other_service_price_label: { vi: 'Giá bạn muốn trả (giá mở đầu để deal) *', en: 'Price you want to pay (starting deal price) *' },
+  booking_no_location_found: { vi: 'Không tìm thấy địa điểm phù hợp. Vui lòng thử từ khóa khác hoặc nhập trực tiếp vào các ô bên dưới.', en: 'No matching location found. Please try other keywords or enter directly below.' },
+  booking_get_gps: { vi: 'Lấy vị trí GPS hiện tại (Goong Maps)', en: 'Get current GPS location (Goong Maps)' },
+  booking_locating_gps: { vi: 'Đang định vị vị trí...', en: 'Locating current position...' },
+  booking_search_map_title: { vi: 'Tìm kiếm địa điểm trên bản đồ', en: 'Search location on map' },
+  booking_search_address_placeholder: { vi: 'Gõ tên đường, tòa nhà, chung cư...', en: 'Enter street, building, apartment name...' },
+  booking_detail_address_label: { vi: 'Địa chỉ chi tiết (Số nhà & tên đường) *', en: 'Detailed address (House number & street name) *' },
+  booking_ward_label: { vi: 'Phường/Xã', en: 'Ward' },
+  booking_district_label: { vi: 'Quận/Huyện', en: 'District' },
+  booking_city_label: { vi: 'Thành phố', en: 'City' },
+  booking_address_validation_error: { vi: 'Vui lòng nhập đầy đủ địa chỉ làm việc (Địa chỉ, Phường, Quận/Huyện hoặc Thành phố)', en: 'Please enter full work address (Address, Ward, District or City)' },
+  booking_time_validation_error: { vi: 'Vui lòng chọn ngày và giờ bắt đầu làm việc', en: 'Please select work start date and time' },
+  booking_time_past_error: { vi: 'Thời gian bắt đầu không được ở trong quá khứ', en: 'Start time cannot be in the past' },
+  booking_title_desc_required: { vi: 'Vui lòng điền tiêu đề và mô tả công việc', en: 'Please enter job title and description' },
+  chip_today: { vi: 'Hôm nay', en: 'Today' },
+  chip_tomorrow: { vi: 'Ngày mai', en: 'Tomorrow' },
+  chip_saturday: { vi: 'Thứ 7', en: 'Saturday' },
+  chip_sunday: { vi: 'Chủ nhật', en: 'Sunday' },
+  booking_step_details_title: { vi: 'Chi tiết công việc', en: 'Job details' },
+  booking_photos_attached: { vi: 'Đã đính kèm {count} ảnh sự cố', en: '{count} issue photos attached' },
+  booking_photos_attached_hint: { vi: 'Bấm nút màu xanh "Phân tích ảnh sự cố bằng AI" bên dưới để hệ thống nhận diện và điền mô tả ngay!', en: 'Tap the green button "AI Photo Diagnosis" below to auto-fill description!' },
+  booking_title_label: { vi: 'Tiêu đề yêu cầu *', en: 'Request title *' },
+  booking_description_label: { vi: 'Mô tả chi tiết *', en: 'Detailed description *' },
+  booking_photos_label: { vi: '📸 Ảnh hiện trạng công việc ({count}/6)', en: '📸 Issue photos ({count}/6)' },
+  booking_optional: { vi: 'Không bắt buộc', en: 'Optional' },
+  booking_take_photo: { vi: 'Chụp ảnh', en: 'Take photo' },
+  booking_pick_gallery: { vi: 'Chọn từ thư viện', en: 'Choose from library' },
+  booking_ai_analyzing_photo: { vi: 'AI đang phân tích ảnh...', en: 'AI is analyzing photo...' },
+  booking_ai_analyze_photo: { vi: 'Phân tích ảnh sự cố bằng AI', en: 'AI Photo Diagnosis' },
+  booking_ai_detected_title: { vi: '🔍 AI nhận diện sự cố', en: '🔍 AI Issue Detection' },
+  booking_ai_issue_label: { vi: 'Vấn đề phát hiện:', en: 'Detected issue:' },
+  booking_ai_price_range: { vi: 'Khoảng giá:', en: 'Price range:' },
+  booking_ai_confidence: { vi: 'độ tin cậy', en: 'confidence' },
+  booking_ai_desc_hint: { vi: 'Mô tả đã được điền sẵn từ ảnh — bạn có thể sửa lại trước khi gửi đơn.', en: 'Description prefilled from photo — you can edit before submitting.' },
+  booking_ai_estimating: { vi: 'Đang ước tính giá...', en: 'Estimating price...' },
+  booking_ai_estimate_market: { vi: 'AI ước tính giá thị trường', en: 'AI Market Price Estimate' },
+  booking_ai_estimate_title: { vi: 'Ước tính giá (AI)', en: 'Price Estimate (AI)' },
+  booking_ai_market_note: { vi: 'Giá thực tế do thợ tự do báo giá cụ thể', en: 'Actual price quoted by helpers' },
+  booking_address_unknown: { vi: 'Chưa rõ địa chỉ', en: 'Address unspecified' },
+  booking_address_notes_label: { vi: 'Ghi chú địa chỉ', en: 'Address notes' },
+  booking_date_label: { vi: 'Ngày', en: 'Date' },
+  booking_time_label: { vi: 'Giờ', en: 'Time' },
+  booking_attached_photos_label: { vi: 'Hình ảnh đính kèm', en: 'Attached photos' },
+  booking_fixed_price_desc: { vi: 'Dịch vụ này có giá cố định do Green House cam kết. Thợ sẽ nhận việc trực tiếp với đúng mức giá trên — bạn không cần chờ đợi hay so sánh báo giá. Cứ đăng yêu cầu như bình thường!', en: 'This service has a fixed price guaranteed by Green House. Helpers accept directly at this price — no bidding or waiting needed!' },
+  booking_quote_tip_fixed: { vi: 'Đơn giá cam kết sẽ được gửi tới các thợ quanh bạn — thợ đầu tiên nhận việc sẽ thực hiện với giá đã cam kết.', en: 'Guaranteed price job will be sent to nearby helpers — first helper to accept will perform it.' },
+  booking_quote_tip_regular: { vi: 'Sau khi đăng, các thợ xung quanh sẽ gửi báo giá. Bạn có thể tự do so sánh tay nghề & giá cả trước khi chọn thợ.', en: 'After posting, nearby helpers will quote. Compare skill & prices before choosing.' },
+  booking_send_private_to: { vi: 'Gửi riêng cho {name}', en: 'Send privately to {name}' },
+  booking_private_offer_desc: { vi: 'Đơn chỉ hiển thị với thợ này trong 24 giờ đầu. Hết thời gian chờ, đơn sẽ mở công khai cho mọi thợ nếu thợ chưa báo giá.', en: 'Job only visible to this helper for the first 24 hours. After that, it opens publicly if unquoted.' },
+  booking_helpers_needed_title: { vi: 'Số thợ thực hiện', en: 'Number of helpers' },
+  booking_helpers_needed_desc: { vi: 'Việc lớn cần nhiều người? Chọn 2–4 thợ — thợ chính sẽ lập nhóm và chia tiền công minh bạch theo tỉ lệ.', en: 'Big task needing a team? Pick 2–4 helpers — the lead helper forms a team and splits pay transparently.' },
+  booking_set_recurring: { vi: 'Đặt thành gói định kỳ', en: 'Set as recurring plan' },
+  booking_recurring_desc: { vi: 'Hệ thống tự tạo đơn theo lịch lặp — bạn không cần đăng lại mỗi lần.', en: 'System automatically creates recurring jobs — no need to re-post every time.' },
+  booking_weekly: { vi: 'Hàng tuần', en: 'Weekly' },
+  booking_monthly: { vi: 'Hàng tháng', en: 'Monthly' },
+  booking_on_day: { vi: 'Vào ngày', en: 'On day' },
+  booking_every_month: { vi: 'hàng tháng', en: 'every month' },
+  booking_recurring_preview: { vi: 'Buổi đầu tiên: {date} lúc {time} ({duration} giờ). Quản lý, tạm dừng hoặc bỏ qua từng buổi trong mục "Gói định kỳ của tôi".', en: 'First session: {date} at {time} ({duration} hrs). Manage, pause or skip sessions in "My Recurring Plans".' },
+
+  // ─── Điểm 6: Loyalty & Điểm thưởng ─────────────────────────────────────────
+  profile_loyalty_redeem_desc: { vi: 'Đổi điểm giảm tối đa {cap}% giá trị đơn · Xem lịch sử & quyền lợi →', en: 'Redeem points up to {cap}% off order · View history & benefits →' },
+  'loyalty.title': { vi: 'Tích điểm & Hạng thành viên', en: 'Loyalty Points & Tiers' },
+  'loyalty.tier_label_prefix': { vi: 'Hạng {tier}', en: 'Tier {tier}' },
+  'loyalty.points_unit': { vi: 'điểm', en: 'points' },
+  'loyalty.lifetime_summary': { vi: 'Tổng điểm đã tích lũy: {lifetime} điểm · 1 điểm = {value}₫ khi đổi', en: 'Total lifetime points: {lifetime} pts · 1 pt = {value}₫ on redemption' },
+  'loyalty.points_to_next': { vi: 'Còn {points} điểm nữa để lên hạng tiếp theo ({next} điểm)', en: '{points} more points to reach next tier ({next} pts)' },
+  'loyalty.highest_tier': { vi: '🎉 Bạn đang ở hạng cao nhất!', en: '🎉 You are at the highest tier!' },
+  'loyalty.perks_title': { vi: 'Quyền lợi theo hạng', en: 'Tier Benefits' },
+  'loyalty.perks_body': { vi: '• Tích điểm: 1 điểm / {earn}₫ đã thanh toán\n• Hạng Thường (dưới 500 điểm): đổi tối đa 20% giá trị đơn\n• Hạng Bạc (500–1.999 điểm): đổi tối đa 30% giá trị đơn\n• Hạng Vàng (từ 2.000 điểm): đổi tối đa 50% giá trị đơn\n• Đổi tối thiểu {min} điểm/lần, áp dụng trong chi tiết đơn khi đã có giá chốt.', en: '• Earn: 1 point / {earn}₫ paid\n• Standard Tier (under 500 pts): redeem up to 20% off order\n• Silver Tier (500–1,999 pts): redeem up to 30% off order\n• Gold Tier (from 2,000 pts): redeem up to 50% off order\n• Min redeem {min} pts/time, applied in job details once price is fixed.' },
+  'loyalty.current_cap': { vi: 'Hạng hiện tại của bạn được đổi tối đa {cap}% giá trị đơn.', en: 'Your current tier allows up to {cap}% order discount.' },
+  'loyalty.history_title': { vi: 'Lịch sử điểm', en: 'Points History' },
+  'loyalty.empty_title': { vi: 'Chưa có biến động điểm', en: 'No points transactions yet' },
+  'loyalty.empty_desc': { vi: 'Hoàn thành đơn và thanh toán để bắt đầu tích điểm', en: 'Complete jobs and pay to start earning points' },
+  'loyalty.balance_after': { vi: 'Số dư sau: {balance} điểm', en: 'Balance after: {balance} pts' },
+  'loyalty.tx_earn': { vi: 'Tích điểm từ đơn', en: 'Earned from job' },
+  'loyalty.tx_redeem': { vi: 'Đổi điểm giảm giá đơn', en: 'Redeemed for job discount' },
+  'loyalty.tx_reversal': { vi: 'Hoàn điểm do hủy đơn', en: 'Points refunded due to cancellation' },
+  'loyalty.tx_adjust': { vi: 'Điều chỉnh bởi quản trị viên', en: 'Adjusted by admin' },
+  loyalty_title: { vi: 'Điểm thành viên', en: 'Loyalty Points' },
+  loyalty_tier_name: { vi: 'Hạng {tier}', en: 'Tier {tier}' },
+  loyalty_points_unit: { vi: 'điểm', en: 'pts' },
+  loyalty_lifetime_summary: { vi: 'Tổng điểm đã tích lũy: {lifetime} điểm · 1 điểm = {value}₫ khi đổi', en: 'Lifetime points: {lifetime} pts · 1 pt = {value}₫ when redeemed' },
+  loyalty_next_tier_hint: { vi: 'Còn {points} điểm nữa để lên hạng tiếp theo ({target} điểm)', en: '{points} more pts to reach next tier ({target} pts)' },
+  loyalty_max_tier: { vi: '🎉 Bạn đang ở hạng cao nhất!', en: '🎉 You have reached the highest tier!' },
+  loyalty_perks_title: { vi: 'Quyền lợi theo hạng', en: 'Tier Benefits' },
+  loyalty_perks_body: { vi: '• Tích điểm: 1 điểm / {earn}₫ đã thanh toán\n• Hạng Thường (dưới 500 điểm): đổi tối đa 20% giá trị đơn\n• Hạng Bạc (500–1.999 điểm): đổi tối đa 30% giá trị đơn\n• Hạng Vàng (từ 2.000 điểm): đổi tối đa 50% giá trị đơn\n• Đổi tối thiểu {min} điểm/lần, áp dụng trong chi tiết đơn khi đã có giá chốt.', en: '• Earn points: 1 pt / {earn}₫ paid\n• Standard tier (under 500 pts): redeem up to 20% order value\n• Silver tier (500–1,999 pts): redeem up to 30% order value\n• Gold tier (from 2,000 pts): redeem up to 50% order value\n• Min redemption {min} pts/time, applicable in order detail when final price is fixed.' },
+  loyalty_current_cap_desc: { vi: 'Hạng hiện tại của bạn được đổi tối đa {cap}% giá trị đơn.', en: 'Your current tier allows redeeming up to {cap}% of order value.' },
+  loyalty_history_title: { vi: 'Lịch sử điểm', en: 'Point History' },
+  loyalty_history_empty_title: { vi: 'Chưa có biến động điểm', en: 'No point activity yet' },
+  loyalty_history_empty_sub: { vi: 'Hoàn thành đơn và thanh toán để bắt đầu tích điểm', en: 'Complete orders and pay to start earning points' },
+  loyalty_tx_earn: { vi: 'Tích điểm', en: 'Earn points' },
+  loyalty_tx_redeem: { vi: 'Đổi điểm', en: 'Redeem points' },
+  loyalty_tx_adjust: { vi: 'Điều chỉnh', en: 'Adjustment' },
+  loyalty_balance_after: { vi: '{time} · Số dư sau: {balance} điểm', en: '{time} · Balance after: {balance} pts' },
+  'loyalty_input.apply_btn': { vi: 'Dùng điểm', en: 'Apply' },
+  'loyalty_input.applied_summary': { vi: 'Đã dùng {points} điểm — giảm {discount}₫', en: 'Used {points} pts — discount {discount}₫' },
+  'loyalty_input.payment_note': { vi: 'Điểm sẽ bị trừ khi bạn thanh toán. Cần thanh toán khoảng {amount}₫.', en: 'Points will be deducted at payment. Need to pay approx {amount}₫.' },
+  'loyalty_input.remove_btn': { vi: 'Gỡ điểm', en: 'Remove points' },
+  'loyalty_input.balance_summary': { vi: 'Điểm thành viên: {points} điểm', en: 'Loyalty balance: {points} pts' },
+  'loyalty_input.min_notice': { vi: 'Cần tối thiểu {min} điểm để đổi. Tích điểm: 1 điểm / {earn}₫ đã thanh toán.', en: 'Min {min} pts needed to redeem. Earn: 1 pt / {earn}₫ paid.' },
+  'loyalty_input.title': { vi: 'Dùng điểm thành viên', en: 'Use loyalty points' },
+  'loyalty_input.summary_line': { vi: 'Bạn có {points} điểm · Hạng {tier} (đổi tối đa {cap}% giá trị đơn) · 1 điểm = {value}₫', en: 'You have {points} pts · Tier {tier} (max {cap}% order discount) · 1 pt = {value}₫' },
+  'loyalty_input.placeholder': { vi: 'Số điểm (tối thiểu {min})', en: 'Points amount (min {min})' },
+  'loyalty_input.min_error': { vi: 'Vui lòng nhập ít nhất {min} điểm', en: 'Please enter at least {min} points' },
+  'loyalty_input.generic_error': { vi: 'Không áp dụng được điểm', en: 'Could not apply points' },
+
+  // ─── Điểm 7: Demand Map + Live Tracking + Helper Details + SOS Card ────────
+  'demand_map.title': { vi: 'Bản đồ nhu cầu', en: 'Demand map' },
+  'demand_map.total_summary': { vi: '{count} đơn đang chờ báo giá tại {areas} khu vực', en: '{count} jobs waiting for quotes across {areas} areas' },
+  'demand_map.subtitle_empty': { vi: 'Khu vực nào đang cần thợ nhất lúc này', en: 'Which areas need helpers the most right now' },
+  'demand_map.loading': { vi: 'Đang tải dữ liệu bản đồ nhu cầu...', en: 'Loading demand map data...' },
+  'demand_map.no_jobs_title': { vi: 'Chưa có đơn nào đang mở', en: 'No open jobs right now' },
+  'demand_map.no_jobs_desc': { vi: 'Hiện không có đơn chờ báo giá trong khu vực. Bản đồ đang hiển thị vị trí của bạn, đơn mới sẽ xuất hiện ngay khi có khách đăng việc.', en: 'No jobs waiting for quotes in this area right now. The map shows your position, new jobs will appear as soon as posted.' },
+  'demand_map.jobs_waiting_quotes': { vi: 'đơn đang chờ báo giá', en: 'jobs waiting for quotes' },
+  'demand_map.fixed_price_count': { vi: '{count} giá cam kết', en: '{count} guaranteed price' },
+  'tracking.google_maps_directions': { vi: 'Chỉ đường bằng Google Maps', en: 'Directions with Google Maps' },
+  'tracking.gps_note': { vi: 'GPS được chia sẻ khi Green House đang mở. Khi chuyển sang ứng dụng khác, cập nhật có thể tạm dừng.', en: 'GPS is shared while Green House is open. When switching apps, updates may pause.' },
+  'tracking.arrived_helper': { vi: 'Đã tới điểm hẹn', en: 'Arrived at meeting location' },
+  'tracking.arrived_customer': { vi: 'Thợ đã đến điểm hẹn', en: 'Helper has arrived at meeting location' },
+  'tracking.heading_helper': { vi: 'Đang di chuyển đến khách', en: 'Heading to customer location' },
+  'tracking.heading_customer': { vi: 'Đang di chuyển đến bạn', en: 'Helper is heading to you' },
+  'tracking.in_progress': { vi: 'Đang thực hiện công việc', en: 'Work in progress' },
+  'tracking.confirmed_prep': { vi: 'Đã nhận đơn — chuẩn bị đi', en: 'Job confirmed — preparing to head out' },
+  'tracking.meeting_location': { vi: 'Vị trí điểm hẹn làm việc', en: 'Work meeting location' },
+  'helper_job_detail.contract_amendments_title': { vi: 'Hợp đồng & Phụ lục chi phí', en: 'Contract & Cost Addendum' },
+  'helper_job_detail.estimated_payout': { vi: 'Thực nhận dự kiến ({percent}%):', en: 'Estimated net payout ({percent}%):' },
+  'helper_job_detail.propose_amendment_btn': { vi: '➕ Đề xuất phát sinh vật tư / chi phí', en: '➕ Propose additional materials / costs' },
+  'helper_job_detail.update_progress_title': { vi: 'Cập nhật tiến trình làm việc', en: 'Update work progress' },
+  'helper_job_detail.start_moving_btn': { vi: '🚗  Bắt đầu di chuyển đến khách', en: '🚗  Start heading to customer' },
+  'helper_job_detail.i_arrived_btn': { vi: '📍  Tôi đã đến nơi', en: '📍  I have arrived' },
+  'helper_job_detail.start_work_btn': { vi: '▶️  Bắt đầu làm việc', en: '▶️  Start work' },
+  'helper_job_detail.complete_work_btn': { vi: '✅  Hoàn thành công việc', en: '✅  Complete work' },
+  'sos_helper.replacement_title': { vi: '🔄 Bạn đang thay thế đơn này qua SOS Backup', en: '🔄 You are replacing this job via SOS Backup' },
+  'sos_helper.replacement_desc': { vi: 'Thợ trước gặp sự cố nên khách hàng đã đồng ý đổi người. Hãy tiếp tục đơn như bình thường — tiền công giữ nguyên theo hợp đồng.', en: 'Previous helper had an issue so customer agreed to switch. Continue job normally — contract payout remains unchanged.' },
+  'sos_helper.withdraw_title': { vi: 'Thu hồi yêu cầu SOS?', en: 'Withdraw SOS request?' },
+  'sos_helper.withdraw_desc': { vi: 'Đơn sẽ tiếp tục với bạn như bình thường.', en: 'The job will continue with you normally.' },
+  'sos_helper.withdraw_confirm': { vi: 'Thu hồi SOS', en: 'Withdraw SOS' },
+  'sos_helper.awaiting_customer': { vi: '⏳ Đang chờ khách xác nhận…', en: '⏳ Awaiting customer confirmation…' },
+  'sos_helper.finding_replacement': { vi: '🔍 Đang tìm người thay thế…', en: '🔍 Finding replacement helper…' },
+  'sos_helper.awaiting_desc': { vi: 'Bạn đã gửi SOS (lý do: {reason}). Khách hàng cần đồng ý đổi người thì hệ thống mới tìm thợ thay thế.{deadline} Nếu khách không phản hồi, đơn sẽ tự hủy và hoàn tiền 100% theo chính sách.', en: 'You submitted SOS (reason: {reason}). Customer must agree to switch before system finds replacement.{deadline} If customer does not respond, job will auto-cancel and refund 100%.' },
+  'sos_helper.deadline_text': { vi: ' Thời hạn khách quyết định còn {countdown}.', en: ' Customer decision window remaining {countdown}.' },
+  'sos_helper.searching_desc': { vi: 'Khách hàng đã đồng ý đổi người. Hệ thống đang mời các thợ đang online gần đây — bạn vẫn phụ trách đơn cho tới khi có thợ nhận thay.', en: 'Customer agreed to switch. System is inviting nearby online helpers — you remain responsible until a helper accepts.' },
+  'sos_helper.withdraw_btn': { vi: 'Thu hồi yêu cầu SOS', en: 'Withdraw SOS request' },
+  'sos_helper.perm_gallery': { vi: 'Cần quyền truy cập thư viện ảnh', en: 'Photo library permission required' },
+  'sos_helper.upload_fail_title': { vi: 'Tải ảnh minh chứng thất bại', en: 'Failed to upload proof photo' },
+  'sos_helper.upload_fail_sub': { vi: 'Bạn có thể thử lại hoặc vẫn gửi SOS mà không kèm ảnh', en: 'You can retry or submit SOS without photo' },
+  'sos_helper.upload_fail_alert_title': { vi: 'Không tải được ảnh minh chứng', en: 'Could not upload proof photo' },
+  'sos_helper.upload_fail_alert_msg': { vi: 'Vẫn gửi yêu cầu SOS mà không kèm ảnh?', en: 'Submit SOS request without photos?' },
+  'sos_helper.retry': { vi: 'Để tôi thử lại', en: 'Let me retry' },
+  'sos_helper.submit_without_photo': { vi: 'Gửi không kèm ảnh', en: 'Submit without photo' },
+  'sos_helper.penalty_exceeded_title': { vi: 'Bạn đã vượt ngưỡng hủy đơn tuần này', en: 'You exceeded weekly cancellation limit' },
+  'sos_helper.penalty_exceeded_msg': { vi: 'Lần SOS này bị trừ {pts} điểm tin cậy. Điểm uy tín hiện tại: {total}/100', en: 'This SOS deducts {pts} reliability points. Current score: {total}/100' },
+  'sos_helper.reputation_notice_title': { vi: 'Lưu ý điểm uy tín', en: 'Reputation score notice' },
+  'sos_helper.reputation_notice_msg': { vi: 'Bạn đã hủy/SOS {count} đơn trong 7 ngày — hủy quá 3 đơn sẽ bị trừ điểm tin cậy', en: 'You cancelled/SOS {count} jobs in 7 days — over 3 will deduct reliability points' },
+  'sos_helper.trigger_title': { vi: '🆘 Gặp sự cố không thể tiếp tục đơn?', en: '🆘 Encountered an issue and cannot continue?' },
+  'sos_helper.trigger_desc': { vi: 'Gửi SOS để xin đổi người: khách hàng sẽ xác nhận đổi thợ khác (giữ nguyên giá) hoặc hủy đơn. Bạn không bị tính phạt trễ/hủy cho đơn này khi dùng SOS.', en: 'Submit SOS to request replacement: customer confirms switching helpers (price kept) or cancels. You will not receive late/cancel penalties for this job when using SOS.' },
+  'sos_helper.trigger_reputation_warning': { vi: '⚠️ Điểm uy tín: bạn đã hủy/SOS {cancels} đơn trong 7 ngày qua{score}. Hủy quá 3 đơn/7 ngày sẽ bị trừ điểm tiêu chí Độ tin cậy.', en: '⚠️ Reputation: you cancelled/SOS {cancels} jobs in past 7 days{score}. Over 3 jobs/7 days will deduct Reliability score.' },
+  'sos_helper.score_suffix': { vi: ' — điểm hiện tại {score}/100', en: ' — current score {score}/100' },
+  'sos_helper.open_modal_btn': { vi: '🆘 Gửi SOS — xin đổi người', en: '🆘 Submit SOS — request replacement' },
+  'sos_helper.modal_title': { vi: 'Lý do không thể tiếp tục đơn', en: 'Reason for being unable to continue' },
+  'sos_helper.modal_subtitle': { vi: 'Chỉ lý do này được gửi cho khách hàng — ghi chú thêm (nếu có) chỉ đội hỗ trợ xem.', en: 'Only this reason is sent to customer — additional notes (if any) are viewed by support team only.' },
+  'sos_helper.notes_placeholder': { vi: 'Ghi chú thêm (không bắt buộc)', en: 'Additional notes (optional)' },
+  'sos_helper.photos_label': { vi: 'Thêm ảnh minh chứng (không bắt buộc)', en: 'Attach proof photos (optional)' },
+  'sos_helper.photos_hint': { vi: 'VD: xe hư, tai nạn — khách hàng sẽ thấy các ảnh này khi quyết định đổi người hay hủy đơn. Tối đa 4 ảnh.', en: 'E.g., broken vehicle, accident — customer sees these photos when deciding. Max 4 photos.' },
+  'sos_helper.add_photo': { vi: 'Thêm ảnh', en: 'Add photo' },
+  'sos_helper.uploading': { vi: 'Đang tải ảnh lên…', en: 'Uploading photos…' },
+  'sos_helper.submit_btn': { vi: 'Gửi yêu cầu SOS', en: 'Submit SOS Request' },
+  'helper_job.kyc_required_title': { vi: 'Yêu cầu xác thực e-KYC', en: 'e-KYC Verification Required' },
+  'helper_job.kyc_required_msg': { vi: 'Bạn cần hoàn tất và được duyệt xác thực danh tính e-KYC trước khi có thể gửi báo giá và nhận việc.', en: 'You must complete and get approved for e-KYC identity verification before bidding or accepting jobs.' },
+  'helper_job.kyc_verify_now': { vi: 'Xác thực ngay', en: 'Verify now' },
+  'helper_job.min_quote_toast': { vi: 'Báo giá tối thiểu 50,000₫', en: 'Minimum quote is 50,000₫' },
+  'helper_job.quote_success_title': { vi: 'Gửi báo giá thành công!', en: 'Quote submitted successfully!' },
+  'helper_job.quote_success_desc': { vi: 'Chờ khách hàng duyệt và chọn bạn', en: 'Waiting for customer review and selection' },
+  'helper_job.quote_fail': { vi: 'Gửi báo giá thất bại. Vui lòng thử lại.', en: 'Quote submission failed. Please try again.' },
+  'helper_job.accept_fail': { vi: 'Nhận việc thất bại. Vui lòng thử lại.', en: 'Job acceptance failed. Please try again.' },
+  'helper_job.reject_title': { vi: 'Từ chối nhận đơn', en: 'Decline job offer' },
+  'helper_job.reject_desc': { vi: 'Đơn này sẽ được ẩn khỏi danh sách việc mới và bản đồ của bạn. Bạn có chắc chắn muốn bỏ qua?', en: 'This job will be hidden from your new job list and map. Are you sure you want to pass?' },
+  'helper_job.reject_confirm': { vi: 'Từ chối đơn', en: 'Decline job' },
+  'helper_job.reject_success_title': { vi: 'Đã từ chối đơn', en: 'Job declined' },
+  'helper_job.reject_success_desc': { vi: 'Đơn đã được ẩn khỏi danh sách của bạn.', en: 'Job has been hidden from your list.' },
+  'helper_job.reject_fail': { vi: 'Từ chối thất bại. Vui lòng thử lại.', en: 'Decline failed. Please try again.' },
+  'helper_job.amendment_amount_err': { vi: 'Vui lòng nhập số tiền công hoặc vật tư phát sinh lớn hơn 0₫', en: 'Please enter additional labor or materials amount greater than 0₫' },
+  'helper_job.amendment_reason_err': { vi: 'Vui lòng nhập lý do phát sinh cụ thể để khách hàng duyệt', en: 'Please enter specific reason for customer approval' },
+  'helper_job.amendment_submit_fail': { vi: 'Gửi đề xuất phụ lục thất bại', en: 'Failed to submit addendum proposal' },
+  'helper_job.evidence_camera_perm': { vi: 'Cần quyền truy cập camera để chụp ảnh', en: 'Camera permission required to take photos' },
+  'helper_job.evidence_camera_err': { vi: 'Không thể mở máy ảnh', en: 'Unable to open camera' },
+  'helper_job.evidence_gallery_perm': { vi: 'Cần quyền truy cập thư viện để chọn ảnh', en: 'Gallery permission required to select photos' },
+  'helper_job.evidence_gallery_err': { vi: 'Không thể chọn ảnh từ thư viện', en: 'Unable to select photos from gallery' },
+  'helper_job.evidence_video_camera_perm': { vi: 'Cần quyền truy cập camera để quay video', en: 'Camera permission required to record video' },
+  'helper_job.evidence_video_record_err': { vi: 'Không thể quay video', en: 'Unable to record video' },
+  'helper_job.evidence_video_gallery_perm': { vi: 'Cần quyền truy cập thư viện để chọn video', en: 'Gallery permission required to select video' },
+  'helper_job.evidence_video_gallery_err': { vi: 'Không thể chọn video từ thư viện', en: 'Unable to select video from gallery' },
+  'helper_job.evidence_no_media_title': { vi: 'Chưa có bằng chứng nghiệm thu', en: 'No acceptance evidence yet' },
+  'helper_job.evidence_no_media_msg': { vi: 'Khách hàng cần xem ảnh/video kết quả công việc để kiểm tra và nghiệm thu nhanh chóng. Bạn có chắc muốn tiếp tục gửi mà không có ảnh/video?', en: 'Customer needs to view photos/videos of completed work to review and accept promptly. Are you sure you want to proceed without photos/videos?' },
+  'helper_job.evidence_capture_now': { vi: 'Chụp/Quay ngay', en: 'Capture now' },
+  'helper_job.evidence_submit_anyway': { vi: 'Tiếp tục gửi', en: 'Submit anyway' },
+  'helper_job.step_moving_toast': { vi: 'Bắt đầu di chuyển đến khách hàng 🛵', en: 'Heading to customer location 🛵' },
+  'helper_job.step_arrived_toast': { vi: 'Đã đến địa điểm của khách hàng 📍', en: 'Arrived at customer location 📍' },
+  'helper_job.step_working_toast': { vi: 'Bắt đầu tính giờ làm việc ▶️', en: 'Timer started & working ▶️' },
+  'helper_job.step_moving_title': { vi: 'Bắt đầu di chuyển?', en: 'Start heading out?' },
+  'helper_job.step_moving_msg': { vi: 'Bạn chuẩn bị xuất phát tới nhà khách hàng? Vị trí GPS của bạn sẽ được đồng bộ trực tiếp để khách hàng theo dõi hành trình như Grab.', en: 'Ready to depart for customer address? Your GPS location will sync live for customer to track like Grab.' },
+  'helper_job.step_moving_btn': { vi: 'Bắt đầu xuất phát 🛵', en: 'Start heading out 🛵' },
+  'helper_job.step_arrived_title': { vi: 'Đã đến nơi?', en: 'Arrived at location?' },
+  'helper_job.step_arrived_msg': { vi: 'Xác nhận bạn đã có mặt tại địa chỉ khách hàng. Khách hàng sẽ nhận được thông báo để chuẩn bị đón tiếp.', en: 'Confirm you have arrived at customer address. Customer will receive a notification to welcome you.' },
+  'helper_job.step_arrived_btn': { vi: 'Tôi đã có mặt 📍', en: 'I have arrived 📍' },
+  'helper_job.step_working_title': { vi: 'Bắt đầu bấm giờ làm việc?', en: 'Start working timer?' },
+  'helper_job.step_working_msg': { vi: 'Bắt đầu tính giờ và thực hiện công việc theo thỏa thuận với khách hàng.', en: 'Start timer and perform work as agreed with customer.' },
+  'helper_job.step_working_btn': { vi: 'Bắt đầu ngay ▶️', en: 'Start now ▶️' },
+  'helper_job.sos_replacement_accepted_title': { vi: 'Khách đã đồng ý đổi thợ — Đang tìm thợ cứu hộ thay thế...', en: 'Customer agreed to switch helper — Finding replacement helper...' },
+  'helper_job.sos_replacement_accepted_desc': { vi: 'Bạn đã báo sự cố và khách hàng đã chấp nhận tìm thợ thay thế. Hệ thống đang quét thợ cứu hộ gần nhất để tiếp nhận đơn này.', en: 'You reported an issue and customer accepted replacement. System is scanning nearest rescue helpers to take over.' },
+  'helper_job.warranty_badge': { vi: '🛡 Đơn bảo hành — Miễn phí', en: '🛡 Warranty Job — Free' },
+  'helper_job.warranty_header': { vi: '🛡️ Yêu cầu bảo hành từ khách', en: '🛡️ Warranty request from customer' },
+  'helper_job.quote_modal_title': { vi: 'Gửi báo giá dịch vụ', en: 'Submit Service Quote' },
+  'helper_job.labor_price_label': { vi: 'Giá công thợ (₫) *', en: 'Helper labor price (₫) *' },
+  'helper_job.min_quote_warning': { vi: '⚠️ Tiền công báo giá tối thiểu là 50.000₫', en: '⚠️ Minimum quote price is 50,000₫' },
+  'helper_job.cust_pays': { vi: 'Giá khách hàng trả', en: 'Customer pays' },
+  'helper_job.platform_fee': { vi: 'Phí nền tảng (15%)', en: 'Platform fee (15%)' },
+  'helper_job.net_payout': { vi: 'Thực nhận về ví', en: 'Net wallet payout' },
+  'helper_job.est_hours': { vi: 'Thời gian ước tính (giờ)', en: 'Estimated time (hours)' },
+  'helper_job.quote_notes_label': { vi: 'Ghi chú gửi khách (tuỳ chọn)', en: 'Notes to customer (optional)' },
+  'helper_job.quote_notes_placeholder': { vi: 'VD: Tôi có đầy đủ đồ nghề chuyên dụng, có thể đến ngay...', en: 'E.g., I have professional tools and can arrive promptly...' },
+  'helper_job.submit_quote_btn': { vi: 'Xác nhận gửi báo giá', en: 'Confirm quote submission' },
+  'helper_job.evidence_title': { vi: 'Bằng chứng hoàn thành', en: 'Completion Evidence' },
+  'helper_job.evidence_badge': { vi: 'Nghiệm thu', en: 'Acceptance' },
+  'helper_job.evidence_sub': { vi: 'Gửi kết quả để khách nghiệm thu', en: 'Submit results for customer acceptance' },
+  'helper_job.evidence_hint': { vi: 'Chụp 1-4 hình ảnh hoặc quay video ngắn thể hiện kết quả sạch sẽ, đã sửa chữa xong để khách hàng kiểm tra và bấm hoàn thành nhanh chóng.', en: 'Capture 1-4 photos or short video showing clean, finished repair work for customer to verify and complete quickly.' },
+  'helper_job.evidence_photos_count': { vi: '📸 Ảnh kết quả ({count})', en: '📸 Result photos ({count})' },
+  'helper_job.evidence_max_photos': { vi: 'Tối đa 6 ảnh', en: 'Max 6 photos' },
+  'helper_job.evidence_take_photo': { vi: 'Chụp ảnh ngay', en: 'Take photo' },
+  'helper_job.evidence_pick_album': { vi: 'Chọn từ album', en: 'Choose from album' },
+  'helper_job.evidence_videos_count': { vi: '🎥 Video nghiệm thu ({count})', en: '🎥 Acceptance video ({count})' },
+  'helper_job.evidence_video_limit': { vi: '1-2 video ngắn', en: '1-2 short videos' },
+  'helper_job.evidence_pick_video': { vi: 'Chọn video', en: 'Choose video' },
+  'helper_job.evidence_notes_label': { vi: 'Ghi chú bàn giao cho khách (tuỳ chọn)', en: 'Handover notes for customer (optional)' },
+  'helper_job.evidence_notes_placeholder': { vi: 'VD: Đã dọn dẹp sạch sẽ toàn bộ khu bếp, kiểm tra khóa và van nước an toàn...', en: 'E.g., Fully cleaned kitchen, checked all valves safely...' },
+  'helper_job.evidence_submit_btn': { vi: 'Gửi kết quả & Báo hoàn thành', en: 'Submit results & report completion' },
+  'sos_helper.issue_title': { vi: 'Gặp sự cố không thể tiếp tục đơn?', en: 'Encountered an issue and cannot continue?' },
+  'sos_helper.issue_desc': { vi: 'Gửi SOS để xin đổi người: khách hàng sẽ xác nhận đổi thợ khác (giữ nguyên giá) hoặc hủy đơn. Bạn không bị tính phạt trễ/hủy cho đơn này khi dùng SOS.', en: 'Send SOS to request a replacement: customer will confirm another helper (same price) or cancel. You won’t be penalized for delays/cancellation.' },
+  'sos_helper.reputation_warning': { vi: '⚠️ Điểm uy tín: bạn đã hủy/SOS {count} đơn trong 7 ngày qua{score}. Hủy quá 3 đơn/7 ngày sẽ bị trừ điểm tiêu chí Độ tin cậy.', en: '⚠️ Reputation: you cancelled/SOS {count} jobs in the last 7 days{score}. Over 3 cancellations in 7 days reduces Reliability score.' },
+  'sos_helper.score_info': { vi: ' — điểm hiện tại {score}/100', en: ' — current score {score}/100' },
+  'sos_helper.send_sos_btn': { vi: 'Gửi SOS — xin đổi người', en: 'Send SOS — Request replacement' },
+  'sos_helper.reason_title': { vi: 'Lý do không thể tiếp tục đơn', en: 'Reason unable to continue job' },
+  'sos_helper.reason_desc': { vi: 'Chỉ lý do này được gửi cho khách hàng — ghi chú thêm (nếu có) chỉ đội hỗ trợ xem.', en: 'Only this reason is sent to the customer — additional notes are visible only to support.' },
+  'sos_helper.note_placeholder': { vi: 'Ghi chú thêm (không bắt buộc)', en: 'Additional notes (optional)' },
+  'sos_helper.add_photos_title': { vi: 'Thêm ảnh minh chứng (không bắt buộc)', en: 'Add evidence photos (optional)' },
+  'sos_helper.add_photos_desc': { vi: 'VD: xe hư, tai nạn — khách hàng sẽ thấy các ảnh này khi quyết định đổi người hay hủy đơn. Tối đa 4 ảnh.', en: 'E.g. broken vehicle, accident — customer sees these when deciding replacement or cancellation. Up to 4 photos.' },
+  'sos_helper.add_photo_btn': { vi: 'Thêm ảnh', en: 'Add photo' },
+  'sos_helper.uploading_photos': { vi: 'Đang tải ảnh lên…', en: 'Uploading photos…' },
+  'sos_helper.submit_sos_btn': { vi: 'Gửi yêu cầu SOS', en: 'Submit SOS request' },
 } as const;
 
 export type I18nKey = keyof typeof STRINGS;
@@ -727,6 +1087,7 @@ export const SERVICE_NAME_EN_MAP: Record<string, string> = {
   'giúp việc định kỳ': 'Periodic housekeeping',
   'dọn nhà': 'House cleaning',
   'dọn dẹp nhà': 'House cleaning',
+  'dọn dẹp vệ sinh nhà cửa': 'House cleaning',
   'tổng vệ sinh nhà cửa': 'Deep house cleaning',
   'tổng vệ sinh': 'Deep cleaning',
   'vệ sinh nhà': 'House cleaning',
@@ -742,6 +1103,7 @@ export const SERVICE_NAME_EN_MAP: Record<string, string> = {
   'sửa máy lạnh': 'AC repair',
   'máy lạnh': 'Air conditioning',
   'nấu ăn gia đình': 'Home cooking',
+  'đi chợ & nấu ăn gia đình': 'Grocery shopping & Home cooking',
   'nấu ăn': 'Home cooking',
   'sửa máy giặt & tủ lạnh': 'Washing machine & Fridge repair',
   'sửa máy giặt': 'Washing machine repair',
@@ -752,11 +1114,25 @@ export const SERVICE_NAME_EN_MAP: Record<string, string> = {
   'lắp camera': 'Camera setup',
   'chuyển nhà': 'Home moving',
   'chuyển nhà trọn gói': 'Full moving service',
+  'dọn nhà & chuyển nhà': 'Home moving & packing',
   'chăm trẻ': 'Babysitting',
   'trông trẻ': 'Babysitting',
   'giặt ủi': 'Laundry',
+  'giặt ủi quần áo': 'Laundry & Ironing',
+  'giặt giũ & là ủi quần áo': 'Laundry & Ironing',
   'chăm người già': 'Elderly care',
   'chăm sóc người già': 'Elderly care',
+  'chăm sóc người già & trẻ nhỏ': 'Elderly & Child care',
+  'chăm sóc người già & trẻ em': 'Elderly & Child care',
+  'chăm sóc gia chủ': 'Family & Elderly care',
+  'chăm sóc cây cảnh': 'Plant & Garden care',
+  'trông giữ & quản lý nhà cửa': 'House-sitting & Property management',
+  'phụ việc lặt vặt': 'Handyman & Odd jobs',
+  'sơn nhà': 'House painting',
+  'rửa xe tận nơi': 'Mobile vehicle wash',
+  'diệt côn trùng': 'Pest control',
+  'cứu hộ khẩn cấp': 'Emergency rescue (SOS)',
+  'cứu hộ sos': 'Emergency SOS rescue',
   'bốc hàng, vận chuyển': 'Cargo & logistics',
   'bốc hàng': 'Cargo moving',
   'vận chuyển': 'Logistics & Moving',
@@ -780,17 +1156,27 @@ export const SERVICE_SLUG_EN_MAP: Record<string, string> = {
   electrician: 'Home electrician',
   electrical: 'Electrical',
   plumbing: 'Plumbing repair',
-  ac_repair: 'AC cleaning',
+  plumber: 'Plumbing repair',
+  ac_repair: 'AC cleaning & repair',
   cooking: 'Home cooking',
   appliance: 'Appliance repair',
   appliances: 'Home appliances',
   locksmith: 'Locksmith & Camera',
   moving_help: 'Home moving',
   child_care: 'Babysitting',
-  laundry: 'Laundry',
+  caregiving: 'Elderly & Child care',
+  family_care: 'Family & Elderly care',
+  laundry: 'Laundry & Ironing',
   elderly_care: 'Elderly care',
-  handyman: 'Cargo & logistics',
+  handyman: 'Handyman & Odd jobs',
+  petcare: 'Pet care',
   pet_care: 'Pet care',
+  plantcare: 'Plant & Garden care',
+  house_management: 'House-sitting & Property management',
+  painting: 'House painting',
+  car_wash: 'Mobile vehicle wash',
+  pest_control: 'Pest control',
+  sos: 'Emergency SOS rescue',
   custom: 'Other service',
 };
 
@@ -821,3 +1207,188 @@ export function translateServiceName(
   // 3. Fallback: return rawName as-is if out of catalog
   return rawName;
 }
+
+// ─── Service Description Translation (Điểm 3) ────────────────────────────────
+export const SERVICE_DESC_SLUG_EN_MAP: Record<string, string> = {
+  house_cleaning: 'Mopping, vacuuming, living room, bedroom, kitchen cleaning...',
+  cooking: 'Grocery shopping, home-style meals, savory and vegetarian dishes...',
+  laundry: 'Sorting, hand/machine wash, drying, folding, neat ironing...',
+  family_care: 'Babysitting, elder care, patient care, pregnancy support...',
+  caregiving: 'Watching over, feeding, medicine reminders, walking assistance...',
+  petcare: 'Feeding, bathing, dog walking, pet cage cleaning...',
+  pet_care: 'Feeding, bathing, dog walking, pet cage cleaning...',
+  plantcare: 'Watering, fertilizing, pruning, repotting, pest control...',
+  house_management: 'Watching home while away, receiving parcels, security checks, maintenance...',
+  housekeeping_hourly: 'Cleaning, dishwashing, window cleaning, flexible hourly housework...',
+  deep_cleaning: 'Intensive deep home cleaning, floor scrubbing, glass polishing, sanitizing...',
+  moving_help: 'Packing belongings, moving, organizing and setting up new home...',
+  handyman: 'Hanging frames, shelf mounting, minor repairs, changing lightbulbs, household odd jobs...',
+  electrician: 'Fixing electrical shorts, replacing switches, sockets, lights, safe wiring...',
+  plumbing: 'Unclogging toilets, sinks, fixing leaks, replacing faucets and valves...',
+  plumber: 'Fixing leaking faucets, unclogging toilets, sinks and pipes...',
+  ac_repair: 'Cleaning filters, coils, checking gas pressure and refilling refrigerant...',
+  appliance: 'Repairing washers, fridges, noisy motors, replacing genuine parts...',
+  locksmith: 'Opening locked doors, cutting keys, installing home security cameras...',
+};
+
+export const SERVICE_DESC_TEXT_EN_MAP: Record<string, string> = {
+  'lau sàn, hút bụi, dọn phòng khách, phòng ngủ, nhà bếp, vệ sinh...':
+    'Mopping, vacuuming, living room, bedroom, kitchen cleaning...',
+  'đi chợ mua nguyên liệu, nấu cơm canh, món mặn, món chay theo yêu cầu...':
+    'Grocery shopping, home-style meals, savory and vegetarian dishes...',
+  'phân loại, giặt tay/máy, phơi, gấp, là ủi quần áo gọn gàng...':
+    'Sorting, hand/machine wash, drying, folding, neat ironing...',
+  'trông trẻ, chăm sóc người già, người bệnh, hỗ trợ bà bầu...':
+    'Babysitting, elder care, patient care, pregnancy support...',
+  'cho ăn, tắm rửa, dắt đi dạo, vệ sinh chuồng trại thú cưng...':
+    'Feeding, bathing, dog walking, pet cage cleaning...',
+  'tưới cây, bón phân, cắt tỉa, thay chậu, phòng trừ sâu bệnh...':
+    'Watering, fertilizing, pruning, repotting, pest control...',
+  'trông coi nhà khi vắng, nhận bưu phẩm, kiểm tra an ninh, bảo trì...':
+    'Watching home while away, receiving parcels, security checks, maintenance...',
+  'dọn dẹp, rửa chén, lau kính, hỗ trợ việc nhà linh hoạt theo giờ...':
+    'Cleaning, dishwashing, window cleaning, flexible hourly housework...',
+  'vệ sinh toàn bộ nhà chuyên sâu, chà sàn, lau kính, tẩy rửa...':
+    'Intensive deep home cleaning, floor scrubbing, glass polishing, sanitizing...',
+  'đóng gói đồ đạc, sắp xếp, vận chuyển, bày trí nhà mới...':
+    'Packing belongings, moving, organizing and setting up new home...',
+  'treo tranh, lắp kệ, sửa nhỏ, thay bóng đèn, việc vặt trong nhà...':
+    'Hanging frames, shelf mounting, minor repairs, changing lightbulbs, household odd jobs...',
+  'dọn dẹp phòng khách, phòng ngủ, lau sàn, rửa chén bát...':
+    'Cleaning living room, bedroom, mopping, washing dishes...',
+  'tổng vệ sinh toàn bộ nhà, chà sàn, lau kính chuyên sâu...':
+    'Full house deep cleaning, floor scrubbing, deep window cleaning...',
+  'sửa chập điện, thay công tắc, ổ cắm, lắp đèn...':
+    'Fixing power faults, replacing switches, sockets, installing lights...',
+  'sửa vòi nước rò rỉ, thông tắc bồn cầu, chậu rửa...':
+    'Fixing leaky faucets, unclogging toilets, sinks and drains...',
+  'trông nom, cho ăn, nhắc nhở uống thuốc, đi dạo...':
+    'Looking after, feeding, medication reminders, walking accompaniment...',
+  'giặt giũ, phơi đồ, gấp và ủi phẳng quần áo...':
+    'Laundry, drying, folding and pressing clothes...',
+  'đi chợ, chuẩn bị thực phẩm, nấu các món ăn theo khẩu vị...':
+    'Grocery shopping, prepping ingredients, cooking customized home meals...',
+};
+
+export function translateServiceDescription(
+  service: { description?: string; slug?: string } | string | null | undefined,
+  lang: AppLanguage,
+): string {
+  if (!service) return '';
+  const rawDesc = typeof service === 'string' ? service : service.description || '';
+  const slug = typeof service === 'object' && service ? service.slug : undefined;
+
+  if (lang !== 'en') {
+    return rawDesc;
+  }
+
+  if (slug && SERVICE_DESC_SLUG_EN_MAP[slug]) {
+    return SERVICE_DESC_SLUG_EN_MAP[slug];
+  }
+
+  const trimmed = rawDesc.trim().toLowerCase();
+  if (SERVICE_DESC_TEXT_EN_MAP[trimmed]) {
+    return SERVICE_DESC_TEXT_EN_MAP[trimmed];
+  }
+
+  return rawDesc;
+}
+
+// ─── Voucher Description Formatter (Điểm 4) ──────────────────────────────────
+export function formatVoucherDescription(
+  voucher: {
+    code?: string;
+    description?: string;
+    discount_type?: 'percent' | 'fixed' | string;
+    discount_value?: number;
+    max_discount_amount?: number;
+    min_order_amount?: number;
+    scope?: string;
+    applicable_services?: string[];
+  } | null | undefined,
+  lang: AppLanguage,
+): string {
+  if (!voucher) return '';
+
+  const { discount_type, discount_value, max_discount_amount, min_order_amount, description } =
+    voucher;
+
+  // If essential numeric data is missing, fallback to saved description
+  if (discount_value == null || !discount_type) {
+    return description || (lang === 'en' ? 'Discount voucher' : 'Mã giảm giá');
+  }
+
+  if (lang === 'en') {
+    let text = '';
+    if (discount_type === 'percent') {
+      text = `${discount_value}% off`;
+      if (max_discount_amount && max_discount_amount > 0) {
+        text += ` up to ${Number(max_discount_amount).toLocaleString('en-US')}₫`;
+      }
+    } else {
+      text = `${Number(discount_value).toLocaleString('en-US')}₫ off`;
+    }
+
+    if (min_order_amount && min_order_amount > 0) {
+      text += ` · Min order ${Number(min_order_amount).toLocaleString('en-US')}₫`;
+    } else {
+      text += ' for all services';
+    }
+    return text;
+  }
+
+  // Vietnamese rendering
+  if (description) return description;
+  let viText = '';
+  if (discount_type === 'percent') {
+    viText = `Giảm ${discount_value}%`;
+    if (max_discount_amount && max_discount_amount > 0) {
+      viText += ` tối đa ${Number(max_discount_amount).toLocaleString('vi-VN')}₫`;
+    }
+  } else {
+    viText = `Giảm ${Number(discount_value).toLocaleString('vi-VN')}₫`;
+  }
+
+  if (min_order_amount && min_order_amount > 0) {
+    viText += ` · Đơn tối thiểu ${Number(min_order_amount).toLocaleString('vi-VN')}₫`;
+  } else {
+    viText += ' cho mọi dịch vụ';
+  }
+  return viText;
+}
+
+// ─── Loyalty Tier Name Translation (Điểm 6) ──────────────────────────────────
+export const LOYALTY_TIER_EN_MAP: Record<string, string> = {
+  vàng: 'Gold',
+  gold: 'Gold',
+  bạc: 'Silver',
+  silver: 'Silver',
+  thường: 'Standard',
+  thưởng: 'Standard',
+  regular: 'Standard',
+  standard: 'Standard',
+  'kim cương': 'Diamond',
+  diamond: 'Diamond',
+  đồng: 'Bronze',
+  bronze: 'Bronze',
+};
+
+export function translateLoyaltyTier(tier: string | null | undefined, lang: AppLanguage): string {
+  if (!tier) return lang === 'en' ? 'Standard' : 'Thường';
+  if (lang !== 'en') return tier;
+  const key = String(tier).trim().toLowerCase();
+  return LOYALTY_TIER_EN_MAP[key] || tier;
+}
+
+// ─── SOS Backup Reasons (Điểm 7) ─────────────────────────────────────────────
+export const SOS_BACKUP_REASONS_I18N: Record<string, { vi: string; en: string }> = {
+  accident: { vi: 'Tai nạn trên đường', en: 'Traffic accident on the way' },
+  vehicle_breakdown: { vi: 'Hỏng xe giữa đường', en: 'Vehicle breakdown' },
+  health_emergency: { vi: 'Sự cố sức khỏe đột xuất', en: 'Sudden health emergency' },
+  family_emergency: { vi: 'Việc gia đình khẩn cấp', en: 'Urgent family emergency' },
+  equipment_failure: {
+    vi: 'Hỏng dụng cụ chuyên dụng không thể làm tiếp',
+    en: 'Specialized equipment failure',
+  },
+  other: { vi: 'Lý do bất khả kháng khác', en: 'Other force majeure reason' },
+};

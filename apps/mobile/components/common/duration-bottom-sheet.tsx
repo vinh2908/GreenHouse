@@ -12,6 +12,7 @@ import {
   type NativeSyntheticEvent,
   type NativeScrollEvent,
 } from 'react-native';
+import { useTranslation } from '@/hooks/use-i18n';
 
 export const ITEM_HEIGHT = 46;
 export const VISIBLE_ROWS = 5;
@@ -35,6 +36,7 @@ export function DurationBottomSheet({
   onClose,
   onConfirm,
 }: DurationBottomSheetProps) {
+  const { lang } = useTranslation();
   const normH = Math.max(0, Math.min(12, Math.floor(initialHours)));
   const normM = Math.max(0, Math.min(59, Math.floor(initialMinutes)));
 
@@ -190,11 +192,17 @@ export function DurationBottomSheet({
 
   // Preview formatted text matching demo: "2 giờ", "45 phút", "2 giờ 15 phút"
   const formattedPreview = useMemo(() => {
+    if (lang === 'en') {
+      if (selectedH === 0 && selectedM === 0) return '0 mins';
+      if (selectedH === 0) return `${selectedM} mins`;
+      if (selectedM === 0) return selectedH === 1 ? '1 hr' : `${selectedH} hrs`;
+      return `${selectedH} ${selectedH === 1 ? 'hr' : 'hrs'} ${selectedM} mins`;
+    }
     if (selectedH === 0 && selectedM === 0) return '0 phút';
     if (selectedH === 0) return `${selectedM} phút`;
     if (selectedM === 0) return `${selectedH} giờ`;
     return `${selectedH} giờ ${selectedM} phút`;
-  }, [selectedH, selectedM]);
+  }, [selectedH, selectedM, lang]);
 
   return (
     <Modal
@@ -213,7 +221,7 @@ export function DurationBottomSheet({
           {/* Drag grab handle */}
           <View style={styles.dragHandle} />
 
-          {/* Sheet Head: Huỷ (left) | Thời lượng tuỳ chỉnh (center) | Xác nhận (right) */}
+          {/* Sheet Head */}
           <View style={styles.sheetHead}>
             <TouchableOpacity
               activeOpacity={0.7}
@@ -221,10 +229,12 @@ export function DurationBottomSheet({
               style={styles.headBtn}
               hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
             >
-              <Text style={styles.cancelBtnText}>Huỷ</Text>
+              <Text style={styles.cancelBtnText}>{lang === 'en' ? 'Cancel' : 'Huỷ'}</Text>
             </TouchableOpacity>
 
-            <Text style={styles.sheetTitle}>Thời lượng tuỳ chỉnh</Text>
+            <Text style={styles.sheetTitle}>
+              {lang === 'en' ? 'Custom Duration' : 'Thời lượng tuỳ chỉnh'}
+            </Text>
 
             <TouchableOpacity
               activeOpacity={0.7}
@@ -236,7 +246,7 @@ export function DurationBottomSheet({
               <Text
                 style={[styles.confirmBtnText, isUnderMinDuration && styles.confirmBtnTextDisabled]}
               >
-                Xác nhận
+                {lang === 'en' ? 'Confirm' : 'Xác nhận'}
               </Text>
             </TouchableOpacity>
           </View>
@@ -250,9 +260,9 @@ export function DurationBottomSheet({
 
           {/* Wheel Labels: GIỜ & PHÚT */}
           <View style={styles.wheelLabelsRow}>
-            <Text style={styles.wheelLabelCol}>GIỜ</Text>
+            <Text style={styles.wheelLabelCol}>{lang === 'en' ? 'HOURS' : 'GIỜ'}</Text>
             <View style={styles.wheelLabelSep} />
-            <Text style={styles.wheelLabelCol}>PHÚT</Text>
+            <Text style={styles.wheelLabelCol}>{lang === 'en' ? 'MINUTES' : 'PHÚT'}</Text>
           </View>
 
           {/* Wheel Box with centered Green Highlight Band */}
@@ -359,20 +369,20 @@ export function DurationBottomSheet({
 
           {/* Quick preset duration chips */}
           <View style={styles.sheetChipsContainer}>
-            <Text style={styles.sheetChipsLabel}>Gợi ý nhanh:</Text>
+            <Text style={styles.sheetChipsLabel}>{lang === 'en' ? 'Quick suggestions:' : 'Gợi ý nhanh:'}</Text>
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.sheetChipsScroll}
             >
               {[
-                { label: '1 giờ', h: 1, m: 0 },
-                { label: '1h 30p', h: 1, m: 30 },
-                { label: '2 giờ', h: 2, m: 0 },
-                { label: '3 giờ', h: 3, m: 0 },
-                { label: '4 giờ', h: 4, m: 0 },
-                { label: 'Nửa ngày (4h)', h: 4, m: 0 },
-                { label: 'Cả ngày (8h)', h: 8, m: 0 },
+                { label: '1 giờ', label_en: '1 hr', h: 1, m: 0 },
+                { label: '1h 30p', label_en: '1h 30m', h: 1, m: 30 },
+                { label: '2 giờ', label_en: '2 hrs', h: 2, m: 0 },
+                { label: '3 giờ', label_en: '3 hrs', h: 3, m: 0 },
+                { label: '4 giờ', label_en: '4 hrs', h: 4, m: 0 },
+                { label: 'Nửa ngày (4h)', label_en: 'Half day (4h)', h: 4, m: 0 },
+                { label: 'Cả ngày (8h)', label_en: 'Full day (8h)', h: 8, m: 0 },
               ].map(item => {
                 const isSel = selectedH === item.h && selectedM === item.m;
                 return (
@@ -383,7 +393,7 @@ export function DurationBottomSheet({
                     style={[styles.sheetChip, isSel && styles.sheetChipActive]}
                   >
                     <Text style={[styles.sheetChipText, isSel && styles.sheetChipTextActive]}>
-                      {item.label}
+                      {lang === 'en' ? item.label_en : item.label}
                     </Text>
                   </TouchableOpacity>
                 );
@@ -394,10 +404,10 @@ export function DurationBottomSheet({
           {/* Footer Note */}
           <Text style={[styles.sheetNote, isUnderMinDuration && styles.sheetNoteErr]}>
             {isUnderMinDuration
-              ? 'Thời lượng tối thiểu là 15 phút — chọn thêm giờ hoặc phút.'
+              ? (lang === 'en' ? 'Minimum duration is 15 minutes — please select more time.' : 'Thời lượng tối thiểu là 15 phút — chọn thêm giờ hoặc phút.')
               : isMaxDuration
-                ? 'Mức tối đa cho một lần đặt: 12 giờ.'
-                : 'Chỉnh tự do: giờ 0–12, phút 00–59.'}
+                ? (lang === 'en' ? 'Maximum booking duration: 12 hours.' : 'Mức tối đa cho một lần đặt: 12 giờ.')
+                : (lang === 'en' ? 'Flexible selection: 0–12 hours, 00–59 minutes.' : 'Chỉnh tự do: giờ 0–12, phút 00–59.')}
           </Text>
         </View>
       </View>

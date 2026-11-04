@@ -47,7 +47,16 @@ export function acceptTrackingEvent(
   );
 }
 
-export function trackingTitle(status: string, role: 'customer' | 'helper'): string {
+export function trackingTitle(status: string, role: 'customer' | 'helper', lang = 'vi'): string {
+  if (lang === 'en') {
+    if (status === 'helper_on_the_way')
+      return role === 'helper' ? 'Moving towards customer' : 'Moving towards you';
+    if (status === 'helper_arrived')
+      return role === 'helper' ? 'Arrived at destination' : 'Helper arrived at meeting point';
+    if (status === 'in_progress') return 'Job in progress';
+    if (status === 'confirmed') return 'Order accepted — preparing';
+    return 'Work meeting location';
+  }
   if (status === 'helper_on_the_way')
     return role === 'helper' ? 'Đang di chuyển đến khách' : 'Đang di chuyển đến bạn';
   if (status === 'helper_arrived')

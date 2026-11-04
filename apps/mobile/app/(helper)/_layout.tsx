@@ -1,8 +1,10 @@
 import { Tabs } from 'expo-router';
 import { CustomTabBar } from '@/components/common/custom-tab-bar';
 import { useHelperLocationSync } from '@/hooks/use-helper-location-sync';
+import { useTranslation } from '@/hooks/use-i18n';
 
 export default function HelperLayout() {
+  const { t } = useTranslation();
   useHelperLocationSync();
 
   return (
@@ -15,31 +17,31 @@ export default function HelperLayout() {
       <Tabs.Screen
         name="dashboard"
         options={{
-          title: 'Tổng quan',
+          title: t('tab_overview'),
         }}
       />
       <Tabs.Screen
         name="jobs"
         options={{
-          title: 'Nhận việc',
+          title: t('tab_helper_jobs'),
         }}
       />
       <Tabs.Screen
         name="messages"
         options={{
-          title: 'Tin nhắn',
+          title: t('tab_messages'),
         }}
       />
       <Tabs.Screen
         name="earnings"
         options={{
-          title: 'Thu nhập',
+          title: t('tab_earnings'),
         }}
       />
       <Tabs.Screen
         name="profile"
         options={{
-          title: 'Tài khoản',
+          title: t('tab_account'),
         }}
       />
     </Tabs>

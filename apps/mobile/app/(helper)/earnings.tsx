@@ -58,7 +58,7 @@ const TX_COLORS: Record<string, string> = {
 };
 
 export default function HelperEarningsScreen() {
-  const { t, fs } = useTranslation();
+  const { t, fs, lang } = useTranslation();
   const { data: wallet, isLoading } = useWallet();
   const { data: txData, isLoading: isTxLoading } = useTransactions(1);
   const { data: profile } = useHelperProfile();
@@ -86,19 +86,21 @@ export default function HelperEarningsScreen() {
   const handleWithdraw = async () => {
     const amt = Number(amount);
     if (!amt || isNaN(amt) || amt < 50000) {
-      Toast.show({ type: 'error', text1: 'Số tiền rút tối thiểu là 50,000₫' });
+      Toast.show({ type: 'error', text1: lang === 'en' ? 'Minimum withdrawal amount is 50,000₫' : 'Số tiền rút tối thiểu là 50,000₫' });
       return;
     }
     if (wallet && amt > wallet.balance) {
       Toast.show({
         type: 'error',
-        text1: 'Số dư không đủ',
-        text2: `Số dư ví hiện tại là: ${new Intl.NumberFormat('vi-VN').format(wallet.balance)}₫`,
+        text1: lang === 'en' ? 'Insufficient balance' : 'Số dư không đủ',
+        text2: lang === 'en'
+          ? `Current wallet balance is: ${new Intl.NumberFormat('vi-VN').format(wallet.balance)}₫`
+          : `Số dư ví hiện tại là: ${new Intl.NumberFormat('vi-VN').format(wallet.balance)}₫`,
       });
       return;
     }
     if (!bankName.trim() || !accountNumber.trim() || !accountName.trim()) {
-      Toast.show({ type: 'error', text1: 'Vui lòng điền đầy đủ thông tin tài khoản ngân hàng' });
+      Toast.show({ type: 'error', text1: lang === 'en' ? 'Please fill in full bank account details' : 'Vui lòng điền đầy đủ thông tin tài khoản ngân hàng' });
       return;
     }
 
@@ -114,7 +116,7 @@ export default function HelperEarningsScreen() {
       setShowWithdraw(false);
       setAmount('');
     } catch (err: any) {
-      const msg = err?.response?.data?.message || 'Yêu cầu rút tiền thất bại';
+      const msg = err?.response?.data?.message || (lang === 'en' ? 'Withdrawal request failed' : 'Yêu cầu rút tiền thất bại');
       Toast.show({ type: 'error', text1: msg });
     }
   };
@@ -122,14 +124,14 @@ export default function HelperEarningsScreen() {
   const handleTopup = async () => {
     const amt = Number(topupAmount);
     if (!amt || isNaN(amt) || amt < 50000) {
-      Toast.show({ type: 'error', text1: 'Số tiền nạp tối thiểu là 50,000₫' });
+      Toast.show({ type: 'error', text1: lang === 'en' ? 'Minimum top-up amount is 50,000₫' : 'Số tiền nạp tối thiểu là 50,000₫' });
       return;
     }
     try {
       await topup.mutateAsync({ amount: amt, payment_method: 'vietqr' });
       setShowTopup(false);
     } catch (err: any) {
-      const msg = err?.response?.data?.message || 'Nạp tiền thất bại';
+      const msg = err?.response?.data?.message || (lang === 'en' ? 'Top-up failed' : 'Nạp tiền thất bại');
       Toast.show({ type: 'error', text1: msg });
     }
   };
@@ -389,7 +391,7 @@ export default function HelperEarningsScreen() {
                             <Text
                               style={{ fontSize: fs(11), color: COLORS.gray[400], fontWeight: '600' }}
                             >
-                              {tx.status === 'success' ? 'Thành công' : 'Đang xử lý'}
+                              {tx.status === 'success' ? (lang === 'en' ? 'Success' : 'Thành công') : (lang === 'en' ? 'Processing' : 'Đang xử lý')}
                             </Text>
                           </View>
                         </View>
@@ -428,14 +430,15 @@ export default function HelperEarningsScreen() {
                 </Text>
                 <PriceText amount={wallet?.balance ?? 0} size={24} />
                 <Text style={{ fontSize: fs(12), color: COLORS.gray[700], lineHeight: Math.round(fs(18)) }}>
-                  Duy trì số dư ví giúp tự động quyết toán phí nền tảng (15%) khi bạn nhận các đơn
-                  khách trả tiền mặt trực tiếp.
+                  {lang === 'en'
+                    ? 'Maintaining a wallet balance helps automatically settle platform fees (15%) when customers pay you in cash.'
+                    : 'Duy trì số dư ví giúp tự động quyết toán phí nền tảng (15%) khi bạn nhận các đơn khách trả tiền mặt trực tiếp.'}
                 </Text>
               </Card>
 
               <View style={{ gap: 8 }}>
                 <Text style={{ fontWeight: '700', color: COLORS.gray[700] }}>
-                  Chọn nhanh mệnh giá nạp
+                  {lang === 'en' ? 'Quick select amount' : 'Chọn nhanh mệnh giá nạp'}
                 </Text>
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
                   {['100000', '200000', '500000', '1000000'].map(preset => (
@@ -466,7 +469,7 @@ export default function HelperEarningsScreen() {
 
               <View style={{ gap: 6 }}>
                 <Text style={{ fontWeight: '700', color: COLORS.gray[700] }}>
-                  Số tiền nạp (₫) *
+                  {lang === 'en' ? 'Top-up amount (₫) *' : 'Số tiền nạp (₫) *'}
                 </Text>
                 <TextInput
                   style={{
@@ -478,7 +481,7 @@ export default function HelperEarningsScreen() {
                     fontWeight: '800',
                     color: COLORS.gray[900],
                   }}
-                  placeholder="Tối thiểu 50,000₫"
+                  placeholder={lang === 'en' ? 'Minimum 50,000₫' : 'Tối thiểu 50,000₫'}
                   value={topupAmount}
                   onChangeText={setTopupAmount}
                   keyboardType="numeric"
@@ -487,7 +490,7 @@ export default function HelperEarningsScreen() {
               </View>
 
               <Button
-                title="Xác nhận nạp tiền qua VietQR"
+                title={lang === 'en' ? 'Confirm VietQR Top-up' : 'Xác nhận nạp tiền qua VietQR'}
                 loading={topup.isPending}
                 onPress={handleTopup}
               />
@@ -524,7 +527,7 @@ export default function HelperEarningsScreen() {
 
               <View style={{ gap: 6 }}>
                 <Text style={{ fontWeight: '700', color: COLORS.gray[700] }}>
-                  Số tiền rút (₫) *
+                  {lang === 'en' ? 'Withdrawal amount (₫) *' : 'Số tiền rút (₫) *'}
                 </Text>
                 <TextInput
                   style={{
@@ -536,7 +539,7 @@ export default function HelperEarningsScreen() {
                     fontWeight: '800',
                     color: COLORS.gray[900],
                   }}
-                  placeholder="Tối thiểu 50,000₫"
+                  placeholder={lang === 'en' ? 'Minimum 50,000₫' : 'Tối thiểu 50,000₫'}
                   value={amount}
                   onChangeText={setAmount}
                   keyboardType="numeric"
@@ -546,22 +549,22 @@ export default function HelperEarningsScreen() {
 
               {[
                 {
-                  label: 'Tên ngân hàng *',
+                  label: lang === 'en' ? 'Bank name *' : 'Tên ngân hàng *',
                   value: bankName,
                   set: setBankName,
-                  placeholder: 'VD: Vietcombank, MB Bank',
+                  placeholder: lang === 'en' ? 'E.g. Vietcombank, MB Bank' : 'VD: Vietcombank, MB Bank',
                 },
                 {
-                  label: 'Số tài khoản *',
+                  label: lang === 'en' ? 'Account number *' : 'Số tài khoản *',
                   value: accountNumber,
                   set: setAccountNumber,
-                  placeholder: 'VD: 0123456789',
+                  placeholder: lang === 'en' ? 'E.g. 0123456789' : 'VD: 0123456789',
                 },
                 {
-                  label: 'Tên chủ tài khoản (in hoa) *',
+                  label: lang === 'en' ? 'Account holder name (uppercase) *' : 'Tên chủ tài khoản (in hoa) *',
                   value: accountName,
                   set: setAccountName,
-                  placeholder: 'VD: NGUYEN VAN A',
+                  placeholder: lang === 'en' ? 'E.g. NGUYEN VAN A' : 'VD: NGUYEN VAN A',
                 },
               ].map(f => (
                 <View key={f.label} style={{ gap: 6 }}>
@@ -579,13 +582,13 @@ export default function HelperEarningsScreen() {
                     value={f.value}
                     onChangeText={f.set}
                     placeholderTextColor={COLORS.gray[400]}
-                    autoCapitalize={f.label.includes('chủ') ? 'characters' : 'none'}
+                    autoCapitalize={f.label.includes('chủ') || f.label.includes('holder') ? 'characters' : 'none'}
                   />
                 </View>
               ))}
 
               <Button
-                title="Xác nhận yêu cầu rút tiền"
+                title={lang === 'en' ? 'Confirm withdrawal request' : 'Xác nhận yêu cầu rút tiền'}
                 loading={withdraw.isPending}
                 disabled={
                   !amount || Number(amount) < 50000 || !bankName || !accountNumber || !accountName

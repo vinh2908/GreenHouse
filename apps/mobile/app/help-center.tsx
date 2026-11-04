@@ -15,9 +15,10 @@ import {
 import { Card, COLORS, Badge, Separator } from '@/components/ui';
 import { useAiSupport } from '@/hooks/use-api';
 import { useAuthStore } from '@/stores/auth.store';
+import { useTranslation } from '@/hooks/use-i18n';
 import Toast from 'react-native-toast-message';
 
-const FAQS = [
+const FAQS_VI = [
   {
     q: 'Làm thế nào để đặt dịch vụ và chọn thợ phù hợp?',
     a: 'Bạn vào mục "Đăng việc" ở menu dưới, chọn ngành nghề cần làm (điện nước, sửa máy lạnh, vệ sinh...), điền mô tả công việc và thời gian mong muốn. Hệ thống sẽ phát thông tin đến các thợ uy tín gần bạn để gửi báo giá cạnh tranh nhất. Bạn có thể xem hồ sơ thợ, điểm đánh giá và chọn thợ ưng ý.',
@@ -40,28 +41,70 @@ const FAQS = [
   },
 ];
 
+const FAQS_EN = [
+  {
+    q: 'How do I book a service and select a suitable helper?',
+    a: 'Go to "Post Job" in the bottom menu, choose your service category (electrical/plumbing, AC repair, cleaning...), provide a job description and desired schedule. The system notifies verified helpers near you to submit competitive quotes. You can review helper profiles, ratings, and choose your favorite.',
+  },
+  {
+    q: 'How is service payment processed and protected?',
+    a: 'Green House holds funds securely in Escrow. After you select a quote and the helper finishes the work, they submit proof photos/videos. Payment is released to the helper\'s wallet only after you inspect and tap "Accept Work".',
+  },
+  {
+    q: 'How does the Emergency SOS service work?',
+    a: 'For urgent issues like indoor flooding, electrical shorts, or lockouts, tap "15m Emergency SOS" on the home screen. The system assigns the highest priority to dispatch the nearest emergency helper within 15–20 minutes.',
+  },
+  {
+    q: 'What verifications do helpers on the platform undergo?',
+    a: '100% of helper partners undergo strict identity verification (e-KYC): 2-sided chip ID cards, live face matching, skills assessment, and adherence to safety code of conduct.',
+  },
+  {
+    q: 'What if I am unsatisfied with the quality or there is property damage?',
+    a: 'Green House guarantees 30-day service warranty and insurance. If the job does not meet standards, the helper will fix it free of charge, or we provide a 100% refund plus compensation according to our insurance policy.',
+  },
+];
+
 export default function HelpCenterScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const user = useAuthStore(s => s.user);
+  const { t, fs, lang } = useTranslation();
   const aiSupport = useAiSupport();
   const [expandedFaq, setExpandedFaq] = useState<number | null>(0);
   const [aiQuestion, setAiQuestion] = useState('');
   const [aiAnswer, setAiAnswer] = useState<string | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
 
+  const faqs = lang === 'en' ? FAQS_EN : FAQS_VI;
+
   const handleCallHotline = () => {
     Linking.openURL('tel:19008888').catch(() => {
       Toast.show({
         type: 'info',
         text1: 'Hotline 1900 8888 (24/7)',
-        text2: 'Tổng đài chăm sóc khách hàng Green House luôn sẵn sàng phục vụ bạn.',
+        text2:
+          lang === 'en'
+            ? 'Green House customer support hotline is always ready to serve you.'
+            : 'Tổng đài chăm sóc khách hàng Green House luôn sẵn sàng phục vụ bạn.',
       });
     });
   };
 
   const getFallbackAiAnswer = (question: string) => {
     const q = question.toLowerCase();
+    if (lang === 'en') {
+      if (q.includes('price') || q.includes('cost') || q.includes('fee')) {
+        return '💡 Service prices on Green House are transparent based on direct quotes from helpers or AI standard estimates. You always know labor and material costs upfront before confirming!';
+      }
+      if (q.includes('cancel') || q.includes('refund')) {
+        return '💡 You can cancel your request for free before the helper begins traveling. In case of dispute, Green House reviews and processes refunds within 24 working hours.';
+      }
+      if (q.includes('helper') || q.includes('kyc') || q.includes('trust') || q.includes('verified')) {
+        return '💡 100% of helpers undergo chip ID e-KYC verification and have real customer ratings from previous jobs. You are completely protected!';
+      }
+      return `💡 Green House AI Assistant received your question: "${question}". If you need urgent assistance, please call our 24/7 hotline 1900 8888 for immediate support!`;
+    }
+
     if (q.includes('giá') || q.includes('tiền') || q.includes('chi phí')) {
       return '💡 Giá dịch vụ trên Green House được tính minh bạch dựa trên báo giá trực tiếp từ thợ hoặc biểu phí ước tính chuẩn của AI. Bạn luôn biết rõ giá công và vật tư trước khi xác nhận!';
     }
@@ -144,7 +187,7 @@ export default function HelpCenterScreen() {
             flex: 1,
           }}
         >
-          Trợ giúp Green House
+          {lang === 'en' ? 'Green House Help Center' : 'Trợ giúp Green House'}
         </Text>
         <Badge label="24/7 Online" color="#ECFDF5" textColor={COLORS.success} />
       </View>
@@ -181,10 +224,12 @@ export default function HelpCenterScreen() {
               </View>
               <View>
                 <Text style={{ fontSize: 16, fontWeight: '800', color: '#FFF' }}>
-                  Tổng đài Hỗ trợ 24/7
+                  {lang === 'en' ? '24/7 Support Hotline' : 'Tổng đài Hỗ trợ 24/7'}
                 </Text>
                 <Text style={{ fontSize: 12.5, color: 'rgba(255,255,255,0.7)', marginTop: 2 }}>
-                  Giải quyết khiếu nại & Cứu hộ sự cố
+                  {lang === 'en'
+                    ? 'Dispute Resolution & Emergency Dispatch'
+                    : 'Giải quyết khiếu nại & Cứu hộ sự cố'}
                 </Text>
               </View>
             </View>
@@ -202,7 +247,7 @@ export default function HelpCenterScreen() {
           >
             <View>
               <Text style={{ fontSize: 11.5, color: 'rgba(255,255,255,0.6)', fontWeight: '600' }}>
-                HOTLINE MIỄN PHÍ CƯỚC
+                {lang === 'en' ? 'TOLL-FREE HOTLINE' : 'HOTLINE MIỄN PHÍ CƯỚC'}
               </Text>
               <Text style={{ fontSize: 20, fontWeight: '900', color: '#34D399', marginTop: 2 }}>
                 1900 8888
@@ -222,7 +267,9 @@ export default function HelpCenterScreen() {
               }}
             >
               <PhoneCall size={16} color="#FFF" />
-              <Text style={{ color: '#FFF', fontWeight: '800', fontSize: 13.5 }}>Gọi ngay</Text>
+              <Text style={{ color: '#FFF', fontWeight: '800', fontSize: 13.5 }}>
+                {lang === 'en' ? 'Call Now' : 'Gọi ngay'}
+              </Text>
             </TouchableOpacity>
           </View>
         </Card>
@@ -243,10 +290,12 @@ export default function HelpCenterScreen() {
           <Text style={{ fontSize: 26 }}>💬</Text>
           <View style={{ flex: 1 }}>
             <Text style={{ fontSize: 15.5, fontWeight: '800', color: '#FFF' }}>
-              Chat với đội hỗ trợ
+              {lang === 'en' ? 'Chat with Support Team' : 'Chat với đội hỗ trợ'}
             </Text>
             <Text style={{ fontSize: 12.5, color: 'rgba(255,255,255,0.85)', marginTop: 2 }}>
-              Nhân viên thật phản hồi trực tiếp trong app, 24/7
+              {lang === 'en'
+                ? 'Real agents responding directly in-app, 24/7'
+                : 'Nhân viên thật phản hồi trực tiếp trong app, 24/7'}
             </Text>
           </View>
           <Text style={{ fontSize: 18, color: '#FFF', fontWeight: '800' }}>→</Text>
@@ -269,10 +318,12 @@ export default function HelpCenterScreen() {
             </View>
             <View style={{ flex: 1 }}>
               <Text style={{ fontSize: 15, fontWeight: '800', color: COLORS.gray[900] }}>
-                Hỏi đáp nhanh cùng Trợ lý AI
+                {lang === 'en' ? 'Quick Q&A with AI Assistant' : 'Hỏi đáp nhanh cùng Trợ lý AI'}
               </Text>
               <Text style={{ fontSize: 12, color: COLORS.gray[500] }}>
-                Giải đáp quy trình, hướng dẫn thao tác tức thì
+                {lang === 'en'
+                  ? 'Instant procedure answers and app guidance'
+                  : 'Giải đáp quy trình, hướng dẫn thao tác tức thì'}
               </Text>
             </View>
           </View>
@@ -296,7 +347,11 @@ export default function HelpCenterScreen() {
                 color: COLORS.gray[900],
                 paddingVertical: 11,
               }}
-              placeholder="Nhập thắc mắc của bạn (VD: cách thanh toán, bảo hành...)"
+              placeholder={
+                lang === 'en'
+                  ? 'Ask a question (e.g. payment methods, warranty...)'
+                  : 'Nhập thắc mắc của bạn (VD: cách thanh toán, bảo hành...)'
+              }
               placeholderTextColor={COLORS.gray[400]}
               value={aiQuestion}
               onChangeText={setAiQuestion}
@@ -337,7 +392,7 @@ export default function HelpCenterScreen() {
         {/* ── 3. Quick Action Topics ──────────────────────────────────── */}
         <View style={{ gap: 10 }}>
           <Text style={{ fontSize: 15, fontWeight: '800', color: COLORS.gray[900] }}>
-            Chủ đề trợ giúp phổ biến
+            {lang === 'en' ? 'Popular Support Topics' : 'Chủ đề trợ giúp phổ biến'}
           </Text>
 
           <View style={{ flexDirection: 'row', gap: 10 }}>
@@ -356,10 +411,12 @@ export default function HelpCenterScreen() {
             >
               <Zap size={22} color={COLORS.error} />
               <Text style={{ fontWeight: '800', fontSize: 14, color: COLORS.error }}>
-                Cứu hộ SOS 15p
+                {lang === 'en' ? '15m Emergency SOS' : 'Cứu hộ SOS 15p'}
               </Text>
               <Text style={{ fontSize: 11.5, color: COLORS.gray[600], lineHeight: 16 }}>
-                Sự cố khẩn cấp điện nước, khóa cửa
+                {lang === 'en'
+                  ? 'Urgent plumbing, electrical, and lockouts'
+                  : 'Sự cố khẩn cấp điện nước, khóa cửa'}
               </Text>
             </TouchableOpacity>
 
@@ -378,10 +435,12 @@ export default function HelpCenterScreen() {
             >
               <ShieldCheck size={22} color={COLORS.success} />
               <Text style={{ fontWeight: '800', fontSize: 14, color: COLORS.success }}>
-                Bảo hiểm 30 ngày
+                {lang === 'en' ? '30-Day Insurance' : 'Bảo hiểm 30 ngày'}
               </Text>
               <Text style={{ fontSize: 11.5, color: COLORS.gray[600], lineHeight: 16 }}>
-                Cam kết bảo hành và bồi thường 100%
+                {lang === 'en'
+                  ? 'Warranty guarantee & 100% compensation'
+                  : 'Cam kết bảo hành và bồi thường 100%'}
               </Text>
             </TouchableOpacity>
           </View>
@@ -390,11 +449,11 @@ export default function HelpCenterScreen() {
         {/* ── 4. Frequently Asked Questions (Accordion) ───────────────── */}
         <View style={{ gap: 10 }}>
           <Text style={{ fontSize: 15, fontWeight: '800', color: COLORS.gray[900] }}>
-            Câu hỏi thường gặp (FAQ)
+            {lang === 'en' ? 'Frequently Asked Questions (FAQ)' : 'Câu hỏi thường gặp (FAQ)'}
           </Text>
 
           <Card style={{ gap: 0, padding: 0 }}>
-            {FAQS.map((faq, index) => {
+            {faqs.map((faq, index) => {
               const isOpen = expandedFaq === index;
               return (
                 <View key={index}>

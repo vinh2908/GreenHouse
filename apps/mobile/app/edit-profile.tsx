@@ -45,6 +45,7 @@ import apiClient from '@/services/api-client';
 import { uploadFile } from '@/services/upload.service';
 import { locationService, normalizeVietnameseAddress } from '@/services/location.service';
 import { Button, Card, LoadingSpinner, COLORS, Separator, Avatar } from '@/components/ui';
+import { useTranslation } from '@/hooks/use-i18n';
 
 // Bộ sưu tập avatar chuyên nghiệp có sẵn để người dùng chọn nhanh 1 chạm
 const PRESET_AVATARS = [
@@ -58,6 +59,7 @@ const PRESET_AVATARS = [
 
 export default function EditProfileScreen() {
   const router = useRouter();
+  const { t, fs, lang } = useTranslation();
   const queryClient = useQueryClient();
   const { user, setUser } = useAuthStore();
   const { data: myProfile, isLoading: uLoading } = useMyProfile();
@@ -197,8 +199,8 @@ export default function EditProfileScreen() {
           type: 'error',
           text1:
             source === 'camera'
-              ? 'Cần cấp quyền camera để chụp ảnh'
-              : 'Cần cấp quyền truy cập thư viện ảnh',
+              ? (lang === 'en' ? 'Camera permission required to take photo' : 'Cần cấp quyền camera để chụp ảnh')
+              : (lang === 'en' ? 'Photo library permission required' : 'Cần cấp quyền truy cập thư viện ảnh'),
         });
         return;
       }
@@ -219,21 +221,27 @@ export default function EditProfileScreen() {
     } catch {
       Toast.show({
         type: 'error',
-        text1: source === 'camera' ? 'Không thể mở máy ảnh' : 'Không thể mở thư viện ảnh',
+        text1: source === 'camera'
+          ? (lang === 'en' ? 'Unable to open camera' : 'Không thể mở máy ảnh')
+          : (lang === 'en' ? 'Unable to open photo library' : 'Không thể mở thư viện ảnh'),
       });
     }
   };
 
   const openAvatarMenu = () =>
-    Alert.alert('Ảnh đại diện', 'Chọn nguồn ảnh', [
-      { text: 'Chụp ảnh', onPress: () => pickAvatar('camera') },
-      { text: 'Chọn từ thư viện', onPress: () => pickAvatar('library') },
-      { text: 'Hủy', style: 'cancel' },
-    ]);
+    Alert.alert(
+      lang === 'en' ? 'Profile Photo' : 'Ảnh đại diện',
+      lang === 'en' ? 'Choose photo source' : 'Chọn nguồn ảnh',
+      [
+        { text: lang === 'en' ? 'Take photo' : 'Chụp ảnh', onPress: () => pickAvatar('camera') },
+        { text: lang === 'en' ? 'Choose from gallery' : 'Chọn từ thư viện', onPress: () => pickAvatar('library') },
+        { text: lang === 'en' ? 'Cancel' : 'Hủy', style: 'cancel' },
+      ]
+    );
 
   const handleSave = async () => {
     if (!fullName.trim()) {
-      Toast.show({ type: 'error', text1: 'Vui lòng nhập họ và tên' });
+      Toast.show({ type: 'error', text1: lang === 'en' ? 'Please enter your full name' : 'Vui lòng nhập họ và tên' });
       return;
     }
 
@@ -247,8 +255,8 @@ export default function EditProfileScreen() {
         } catch {
           Toast.show({
             type: 'error',
-            text1: 'Tải ảnh đại diện thất bại',
-            text2: 'Vui lòng thử lại',
+            text1: lang === 'en' ? 'Failed to upload avatar' : 'Tải ảnh đại diện thất bại',
+            text2: lang === 'en' ? 'Please try again' : 'Vui lòng thử lại',
           });
           return;
         }
@@ -301,10 +309,10 @@ export default function EditProfileScreen() {
       queryClient.invalidateQueries({ queryKey: ['addresses'] });
       queryClient.invalidateQueries({ queryKey: ['customer', 'profile'] });
 
-      Toast.show({ type: 'success', text1: 'Đã lưu thông tin hồ sơ thành công!' });
+      Toast.show({ type: 'success', text1: lang === 'en' ? 'Profile saved successfully!' : 'Đã lưu thông tin hồ sơ thành công!' });
       handleBack();
     } catch (err: any) {
-      const msg = err?.response?.data?.message || 'Cập nhật hồ sơ thất bại';
+      const msg = err?.response?.data?.message || (lang === 'en' ? 'Profile update failed' : 'Cập nhật hồ sơ thất bại');
       Toast.show({ type: 'error', text1: msg });
     } finally {
       setSaving(false);
@@ -352,21 +360,21 @@ export default function EditProfileScreen() {
         source,
       });
       setCoordsSource(null);
-      Toast.show({ type: 'success', text1: 'Đã lưu vị trí hoạt động' });
+      Toast.show({ type: 'success', text1: lang === 'en' ? 'Working location saved' : 'Đã lưu vị trí hoạt động' });
     } catch {
       // Giữ coordsSource để nút Lưu gửi lại.
-      Toast.show({ type: 'error', text1: 'Chưa lưu được vị trí', text2: 'Bấm Lưu để thử lại' });
+      Toast.show({ type: 'error', text1: lang === 'en' ? 'Failed to save location' : 'Chưa lưu được vị trí', text2: lang === 'en' ? 'Tap Save to retry' : 'Bấm Lưu để thử lại' });
     }
   };
 
   const persistCustomerAddress = async (coords: Coords, fullAddress: string, geo: GeoData) => {
     const addressDto = {
-      label: 'Nhà',
+      label: lang === 'en' ? 'Home' : 'Nhà',
       full_address: fullAddress.trim(),
       street: geo?.street || undefined,
       ward: geo?.ward || undefined,
-      district: geo?.district || geo?.city || 'Chưa rõ',
-      city: geo?.city || 'Chưa rõ',
+      district: geo?.district || geo?.city || (lang === 'en' ? 'Unspecified' : 'Chưa rõ'),
+      city: geo?.city || (lang === 'en' ? 'Unspecified' : 'Chưa rõ'),
       location: {
         type: 'Point',
         coordinates: [coords.longitude, coords.latitude] as [number, number],
@@ -389,9 +397,9 @@ export default function EditProfileScreen() {
     if (!fullAddress.trim()) return;
     try {
       await persistCustomerAddress(coords, fullAddress, geo);
-      Toast.show({ type: 'success', text1: 'Đã lưu địa chỉ hiện tại' });
+      Toast.show({ type: 'success', text1: lang === 'en' ? 'Current address saved' : 'Đã lưu địa chỉ hiện tại' });
     } catch {
-      Toast.show({ type: 'error', text1: 'Chưa lưu được địa chỉ', text2: 'Bấm Lưu để thử lại' });
+      Toast.show({ type: 'error', text1: lang === 'en' ? 'Failed to save address' : 'Chưa lưu được địa chỉ', text2: lang === 'en' ? 'Tap Save to retry' : 'Bấm Lưu để thử lại' });
     }
   };
 
@@ -399,7 +407,7 @@ export default function EditProfileScreen() {
     <View style={{ flex: 1, backgroundColor: '#F8F9FA' }}>
       <LocationPicker
         visible={pickerFor !== null}
-        title={pickerFor === 'customer' ? 'Chọn địa chỉ nhà' : 'Chọn vị trí hoạt động'}
+        title={pickerFor === 'customer' ? (lang === 'en' ? 'Select home address' : 'Chọn địa chỉ nhà') : (lang === 'en' ? 'Select working base location' : 'Chọn vị trí hoạt động')}
         initial={pickerFor === 'customer' ? customerCoords : helperCoords}
         onClose={() => setPickerFor(null)}
         onConfirm={handlePickerConfirm}
@@ -434,7 +442,7 @@ export default function EditProfileScreen() {
           <ArrowLeft size={20} color={COLORS.gray[800]} />
         </TouchableOpacity>
         <Text style={{ fontSize: 17, fontWeight: '800', color: COLORS.gray[900] }}>
-          Chỉnh sửa thông tin cá nhân
+          {lang === 'en' ? 'Edit Profile' : 'Chỉnh sửa thông tin cá nhân'}
         </Text>
         <View style={{ width: 40 }} />
       </View>
@@ -456,7 +464,7 @@ export default function EditProfileScreen() {
               <TouchableOpacity
                 activeOpacity={0.8}
                 onPress={openAvatarMenu}
-                accessibilityLabel="Đổi ảnh đại diện"
+                accessibilityLabel={lang === 'en' ? 'Change avatar' : 'Đổi ảnh đại diện'}
                 style={{
                   position: 'absolute',
                   bottom: 0,
@@ -482,10 +490,10 @@ export default function EditProfileScreen() {
 
             <View style={{ alignItems: 'center' }}>
               <Text style={{ fontSize: 14, fontWeight: '800', color: COLORS.gray[800] }}>
-                Ảnh đại diện tài khoản
+                {lang === 'en' ? 'Account Avatar' : 'Ảnh đại diện tài khoản'}
               </Text>
               <Text style={{ fontSize: 12, color: COLORS.gray[400], marginTop: 2 }}>
-                Chụp ảnh, chọn từ thư viện hoặc chọn nhanh bên dưới:
+                {lang === 'en' ? 'Take photo, pick from gallery, or select a preset below:' : 'Chụp ảnh, chọn từ thư viện hoặc chọn nhanh bên dưới:'}
               </Text>
             </View>
 
@@ -541,12 +549,12 @@ export default function EditProfileScreen() {
           {/* ── 2. THÔNG TIN ĐỊNH DANH CƠ BẢN ─────────────────────────── */}
           <Card style={{ padding: 16, gap: 14 }}>
             <Text style={{ fontSize: 15, fontWeight: '800', color: COLORS.gray[900] }}>
-              Thông tin liên hệ
+              {lang === 'en' ? 'Contact Information' : 'Thông tin liên hệ'}
             </Text>
 
             <View style={{ gap: 6 }}>
               <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.gray[700] }}>
-                Họ và tên *
+                {lang === 'en' ? 'Full Name *' : 'Họ và tên *'}
               </Text>
               <TextInput
                 style={{
@@ -559,7 +567,7 @@ export default function EditProfileScreen() {
                   backgroundColor: COLORS.gray[50],
                   fontWeight: '600',
                 }}
-                placeholder="Nhập họ và tên đầy đủ"
+                placeholder={lang === 'en' ? 'Enter full name' : 'Nhập họ và tên đầy đủ'}
                 value={fullName}
                 onChangeText={setFullName}
                 placeholderTextColor={COLORS.gray[400]}
@@ -575,7 +583,7 @@ export default function EditProfileScreen() {
                 }}
               >
                 <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.gray[700] }}>
-                  Số điện thoại đăng ký
+                  {lang === 'en' ? 'Registered Phone Number' : 'Số điện thoại đăng ký'}
                 </Text>
                 <View
                   style={{
@@ -590,7 +598,7 @@ export default function EditProfileScreen() {
                 >
                   <ShieldCheck size={12} color={COLORS.success} />
                   <Text style={{ fontSize: 11, color: COLORS.success, fontWeight: '700' }}>
-                    Đã xác thực OTP
+                    {lang === 'en' ? 'OTP Verified' : 'Đã xác thực OTP'}
                   </Text>
                 </View>
               </View>
@@ -611,7 +619,7 @@ export default function EditProfileScreen() {
 
             <View style={{ gap: 6 }}>
               <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.gray[700] }}>
-                Email liên hệ (Nhận hóa đơn điện tử)
+                {lang === 'en' ? 'Contact Email (Electronic Invoices)' : 'Email liên hệ (Nhận hóa đơn điện tử)'}
               </Text>
               <TextInput
                 style={{
@@ -635,13 +643,13 @@ export default function EditProfileScreen() {
             {/* Giới tính */}
             <View style={{ gap: 6 }}>
               <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.gray[700] }}>
-                Giới tính
+                {lang === 'en' ? 'Gender' : 'Giới tính'}
               </Text>
               <View style={{ flexDirection: 'row', gap: 10 }}>
                 {[
-                  { id: 'male', label: 'Nam' },
-                  { id: 'female', label: 'Nữ' },
-                  { id: 'other', label: 'Khác' },
+                  { id: 'male', label: 'Nam', label_en: 'Male' },
+                  { id: 'female', label: 'Nữ', label_en: 'Female' },
+                  { id: 'other', label: 'Khác', label_en: 'Other' },
                 ].map(g => (
                   <TouchableOpacity
                     key={g.id}
@@ -664,7 +672,7 @@ export default function EditProfileScreen() {
                         color: gender === g.id ? COLORS.primary : COLORS.gray[700],
                       }}
                     >
-                      {g.label}
+                      {lang === 'en' ? g.label_en : g.label}
                     </Text>
                   </TouchableOpacity>
                 ))}
@@ -679,13 +687,13 @@ export default function EditProfileScreen() {
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                 <Briefcase size={18} color={COLORS.primary} />
                 <Text style={{ fontSize: 15, fontWeight: '800', color: COLORS.gray[900] }}>
-                  Hồ sơ nghề nghiệp & Khu vực làm việc
+                  {lang === 'en' ? 'Professional Profile & Work Area' : 'Hồ sơ nghề nghiệp & Khu vực làm việc'}
                 </Text>
               </View>
 
               <View style={{ gap: 6 }}>
                 <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.gray[700] }}>
-                  Số năm kinh nghiệm
+                  {lang === 'en' ? 'Years of Experience' : 'Số năm kinh nghiệm'}
                 </Text>
                 <TextInput
                   style={{
@@ -697,7 +705,7 @@ export default function EditProfileScreen() {
                     color: COLORS.gray[900],
                     backgroundColor: COLORS.gray[50],
                   }}
-                  placeholder="VD: 3 năm"
+                  placeholder={lang === 'en' ? 'e.g. 3 years' : 'VD: 3 năm'}
                   value={experienceYears}
                   onChangeText={setExperienceYears}
                   keyboardType="numeric"
@@ -707,7 +715,7 @@ export default function EditProfileScreen() {
 
               <View style={{ gap: 6 }}>
                 <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.gray[700] }}>
-                  Khu vực hoạt động ưu tiên
+                  {lang === 'en' ? 'Preferred Work Districts' : 'Khu vực hoạt động ưu tiên'}
                 </Text>
                 <TextInput
                   style={{
@@ -719,7 +727,7 @@ export default function EditProfileScreen() {
                     color: COLORS.gray[900],
                     backgroundColor: COLORS.gray[50],
                   }}
-                  placeholder="VD: Quận 1, Quận 3, Bình Thạnh..."
+                  placeholder={lang === 'en' ? 'e.g. District 1, District 3, Binh Thanh...' : 'VD: Quận 1, Quận 3, Bình Thạnh...'}
                   value={workingAreas}
                   onChangeText={setWorkingAreas}
                   placeholderTextColor={COLORS.gray[400]}
@@ -729,7 +737,7 @@ export default function EditProfileScreen() {
               {/* ── Vị trí GPS trên bản đồ ──────────────────────────── */}
               <View style={{ gap: 8 }}>
                 <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.gray[700] }}>
-                  Vị trí hoạt động của bạn
+                  {lang === 'en' ? 'Your Working Base Location' : 'Vị trí hoạt động của bạn'}
                 </Text>
 
                 <View
@@ -763,7 +771,7 @@ export default function EditProfileScreen() {
                     >
                       <MapPin size={13} color="#fff" />
                       <Text style={{ color: '#fff', fontSize: 12, fontWeight: '700' }}>
-                        Mở bản đồ chọn địa chỉ
+                        {lang === 'en' ? 'Open map to select address' : 'Mở bản đồ chọn địa chỉ'}
                       </Text>
                     </View>
                   </TouchableOpacity>
@@ -804,8 +812,8 @@ export default function EditProfileScreen() {
                       } else {
                         Toast.show({
                           type: 'error',
-                          text1: 'Không lấy được vị trí',
-                          text2: 'Vui lòng bật GPS/Dịch vụ vị trí trên điện thoại',
+                          text1: lang === 'en' ? 'Could not get location' : 'Không lấy được vị trí',
+                          text2: lang === 'en' ? 'Please enable GPS / Location services on your phone' : 'Vui lòng bật GPS/Dịch vụ vị trí trên điện thoại',
                         });
                       }
                     } finally {
@@ -830,19 +838,20 @@ export default function EditProfileScreen() {
                     <Navigation size={16} color={COLORS.primary} />
                   )}
                   <Text style={{ fontSize: 14, fontWeight: '800', color: COLORS.primary }}>
-                    {gpsLoading ? 'Đang lấy vị trí...' : 'Lấy vị trí GPS hiện tại'}
+                    {gpsLoading ? (lang === 'en' ? 'Getting location...' : 'Đang lấy vị trí...') : (lang === 'en' ? 'Get current GPS location' : 'Lấy vị trí GPS hiện tại')}
                   </Text>
                 </TouchableOpacity>
 
                 <Text style={{ fontSize: 11, color: COLORS.gray[400], lineHeight: 16 }}>
-                  Mở bản đồ để tìm và ghim vị trí hoạt động cố định — khoảng cách tới khách được
-                  tính từ điểm này. Nếu dùng GPS, vị trí sẽ tự cập nhật theo điện thoại.
+                  {lang === 'en'
+                    ? 'Open map to pin your base location — distance to customers is calculated from this point. GPS updates with your phone location.'
+                    : 'Mở bản đồ để tìm và ghim vị trí hoạt động cố định — khoảng cách tới khách được tính từ điểm này. Nếu dùng GPS, vị trí sẽ tự cập nhật theo điện thoại.'}
                 </Text>
               </View>
 
               <View style={{ gap: 6 }}>
                 <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.gray[700] }}>
-                  Lời giới thiệu bản thân (Hiển thị tới khách hàng)
+                  {lang === 'en' ? 'Bio / Introduction (Shown to customers)' : 'Lời giới thiệu bản thân (Hiển thị tới khách hàng)'}
                 </Text>
                 <TextInput
                   style={{
@@ -856,7 +865,7 @@ export default function EditProfileScreen() {
                     minHeight: 80,
                     textAlignVertical: 'top',
                   }}
-                  placeholder="Giới thiệu về kỹ năng, đồ nghề và phong cách làm việc..."
+                  placeholder={lang === 'en' ? 'Introduce your skills, tools, and work ethic...' : 'Giới thiệu về kỹ năng, đồ nghề và phong cách làm việc...'} 
                   value={bio}
                   onChangeText={setBio}
                   multiline
@@ -870,14 +879,14 @@ export default function EditProfileScreen() {
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                 <MapPin size={18} color={COLORS.primary} />
                 <Text style={{ fontSize: 15, fontWeight: '800', color: COLORS.gray[900] }}>
-                  Địa chỉ & Ghi chú nhà riêng
+                  {lang === 'en' ? 'Home Address & Notes' : 'Địa chỉ & Ghi chú nhà riêng'}
                 </Text>
               </View>
 
               {/* ── Bản đồ GPS chọn vị trí nhà ──────────────────────── */}
               <View style={{ gap: 8 }}>
                 <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.gray[700] }}>
-                  Vị trí nhà của bạn trên bản đồ
+                  {lang === 'en' ? 'Your Home Location on Map' : 'Vị trí nhà của bạn trên bản đồ'}
                 </Text>
 
                 <View
@@ -983,19 +992,20 @@ export default function EditProfileScreen() {
                     <Navigation size={16} color={COLORS.primary} />
                   )}
                   <Text style={{ fontSize: 14, fontWeight: '800', color: COLORS.primary }}>
-                    {customerGpsLoading ? 'Đang lấy vị trí...' : 'Lấy vị trí GPS hiện tại'}
+                    {customerGpsLoading ? (lang === 'en' ? 'Getting location...' : 'Đang lấy vị trí...') : (lang === 'en' ? 'Get current GPS location' : 'Lấy vị trí GPS hiện tại')}
                   </Text>
                 </TouchableOpacity>
 
                 <Text style={{ fontSize: 11, color: COLORS.gray[400], lineHeight: 16 }}>
-                  Mở bản đồ để tìm và ghim địa chỉ nhà, hoặc bấm nút GPS. Địa chỉ sẽ được tự động
-                  điền và lưu ngay.
+                  {lang === 'en'
+                    ? 'Open map to pin your home address, or tap GPS. The address will be auto-filled and saved immediately.'
+                    : 'Mở bản đồ để tìm và ghim địa chỉ nhà, hoặc bấm nút GPS. Địa chỉ sẽ được tự động điền và lưu ngay.'}
                 </Text>
               </View>
 
               <View style={{ gap: 6 }}>
                 <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.gray[700] }}>
-                  Địa chỉ chi tiết
+                  {lang === 'en' ? 'Detailed Address' : 'Địa chỉ chi tiết'}
                 </Text>
                 <TextInput
                   style={{
@@ -1007,7 +1017,11 @@ export default function EditProfileScreen() {
                     color: COLORS.gray[900],
                     backgroundColor: COLORS.gray[50],
                   }}
-                  placeholder="Nhập địa chỉ nhà riêng hoặc chung cư..."
+                  placeholder={
+                    lang === 'en'
+                      ? 'Enter private house or apartment address...'
+                      : 'Nhập địa chỉ nhà riêng hoặc chung cư...'
+                  }
                   value={defaultAddress}
                   onChangeText={setDefaultAddress}
                   placeholderTextColor={COLORS.gray[400]}
@@ -1016,7 +1030,7 @@ export default function EditProfileScreen() {
 
               <View style={{ gap: 6 }}>
                 <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.gray[700] }}>
-                  Ghi chú chỉ dẫn cho Thợ khi đến nhà
+                  {lang === 'en' ? 'Arrival Notes for Helper' : 'Ghi chú chỉ dẫn cho Thợ khi đến nhà'}
                 </Text>
                 <TextInput
                   style={{
@@ -1030,7 +1044,7 @@ export default function EditProfileScreen() {
                     minHeight: 70,
                     textAlignVertical: 'top',
                   }}
-                  placeholder="VD: Gửi xe ở hầm B1, bấm chuông số 12.04..."
+                  placeholder={lang === 'en' ? 'e.g. Park in basement B1, ring apartment bell 12.04...' : 'VD: Gửi xe ở hầm B1, bấm chuông số 12.04...'}
                   value={homeNote}
                   onChangeText={setHomeNote}
                   multiline
@@ -1042,7 +1056,7 @@ export default function EditProfileScreen() {
 
           {/* ── 4. NÚT LƯU THAY ĐỔI ────────────────────────────────────── */}
           <Button
-            title="Lưu thông tin hồ sơ"
+            title={lang === 'en' ? 'Save Profile Details' : 'Lưu thông tin hồ sơ'}
             loading={saving}
             onPress={handleSave}
             icon={<CheckCircle2 size={18} color="#fff" />}

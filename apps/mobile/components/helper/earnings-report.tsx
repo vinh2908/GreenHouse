@@ -2,16 +2,18 @@ import { useEffect, useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ActivityIndicator } from 'react-native';
 import dayjs from 'dayjs';
 import { useEarningsReport, useSetIncomeGoal } from '@/hooks/use-api';
+import { useTranslation } from '@/hooks/use-i18n';
 import { Card, COLORS } from '@/components/ui';
 
 const fmt = (n: number) => new Intl.NumberFormat('vi-VN').format(n);
-const WEEKDAY_LABELS = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN']; // days[] bắt đầu từ Thứ 2
+const WEEKDAY_LABELS_VI = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN']; // days[] bắt đầu từ Thứ 2
+const WEEKDAY_LABELS_EN = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
-function ChangeChip({ percent }: { percent: number | null }) {
+function ChangeChip({ percent, lang }: { percent: number | null; lang?: string }) {
   if (percent === null || percent === undefined) {
     return (
       <Text style={{ fontSize: 12, color: COLORS.gray[500], fontWeight: '600' }}>
-        Chưa có dữ liệu kỳ trước để so sánh
+        {lang === 'en' ? 'No prior period data for comparison' : 'Chưa có dữ liệu kỳ trước để so sánh'}
       </Text>
     );
   }
@@ -28,7 +30,7 @@ function ChangeChip({ percent }: { percent: number | null }) {
     >
       <Text style={{ fontSize: 12, fontWeight: '800', color: up ? COLORS.success : COLORS.error }}>
         {up ? '▲' : '▼'} {up ? '+' : ''}
-        {percent}% so với kỳ trước
+        {percent}% {lang === 'en' ? 'vs prior period' : 'so với kỳ trước'}
       </Text>
     </View>
   );
@@ -40,6 +42,7 @@ function ChangeChip({ percent }: { percent: number | null }) {
  * Biểu đồ cột vẽ bằng View thuần (không thêm thư viện chart).
  */
 export function EarningsReport() {
+  const { t, fs, lang } = useTranslation();
   const { data: report, isLoading, isError, refetch } = useEarningsReport();
   const setGoal = useSetIncomeGoal();
   const [goalText, setGoalText] = useState('');
@@ -53,12 +56,12 @@ export function EarningsReport() {
     return (
       <View style={{ gap: 12 }}>
         <Text style={{ fontSize: 17, fontWeight: '800', color: COLORS.gray[900] }}>
-          📊 Báo cáo thu nhập
+          {lang === 'en' ? '📊 Income Report' : '📊 Báo cáo thu nhập'}
         </Text>
         <Card style={{ padding: 24, alignItems: 'center', justifyContent: 'center', gap: 8 }}>
           <ActivityIndicator size="small" color={COLORS.primary} />
           <Text style={{ fontSize: 13, color: COLORS.gray[500], fontWeight: '600' }}>
-            Đang tải dữ liệu báo cáo thu nhập...
+            {lang === 'en' ? 'Loading income report data...' : 'Đang tải dữ liệu báo cáo thu nhập...'}
           </Text>
         </Card>
       </View>
@@ -69,14 +72,16 @@ export function EarningsReport() {
     return (
       <View style={{ gap: 12 }}>
         <Text style={{ fontSize: 17, fontWeight: '800', color: COLORS.gray[900] }}>
-          📊 Báo cáo thu nhập
+          {lang === 'en' ? '📊 Income Report' : '📊 Báo cáo thu nhập'}
         </Text>
         <Card style={{ padding: 24, alignItems: 'center', justifyContent: 'center', gap: 10 }}>
           <Text style={{ fontSize: 14, color: COLORS.gray[700], fontWeight: '700' }}>
-            Chưa có dữ liệu báo cáo thu nhập
+            {lang === 'en' ? 'No income report data' : 'Chưa có dữ liệu báo cáo thu nhập'}
           </Text>
           <Text style={{ fontSize: 12, color: COLORS.gray[500], textAlign: 'center' }}>
-            Số liệu sẽ tự động tổng hợp khi bạn hoàn thành các đơn hàng đầu tiên.
+            {lang === 'en'
+              ? 'Figures will aggregate automatically after completing your first jobs.'
+              : 'Số liệu sẽ tự động tổng hợp khi bạn hoàn thành các đơn hàng đầu tiên.'}
           </Text>
           <TouchableOpacity
             activeOpacity={0.8}
@@ -89,13 +94,16 @@ export function EarningsReport() {
               borderRadius: 10,
             }}
           >
-            <Text style={{ color: '#fff', fontWeight: '700', fontSize: 13 }}>Thử lại</Text>
+            <Text style={{ color: '#fff', fontWeight: '700', fontSize: 13 }}>
+              {lang === 'en' ? 'Retry' : 'Thử lại'}
+            </Text>
           </TouchableOpacity>
         </Card>
       </View>
     );
   }
 
+  const weekLabels = lang === 'en' ? WEEKDAY_LABELS_EN : WEEKDAY_LABELS_VI;
   const weekMax = Math.max(1, ...report.week.days.map(d => Math.max(0, d.amount)));
   const monthWeekMax = Math.max(1, ...report.month.by_week.map(w => Math.max(0, w.amount)));
   const goal = report.goal;
@@ -110,7 +118,7 @@ export function EarningsReport() {
   return (
     <View style={{ gap: 16 }}>
       <Text style={{ fontSize: 17, fontWeight: '800', color: COLORS.gray[900] }}>
-        📊 Báo cáo thu nhập
+        {lang === 'en' ? '📊 Income Report' : '📊 Báo cáo thu nhập'}
       </Text>
 
       {/* ── Tuần này ─────────────────────────────────────────────────── */}
@@ -119,7 +127,7 @@ export function EarningsReport() {
           style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}
         >
           <Text style={{ fontWeight: '800', fontSize: 15, color: COLORS.gray[900] }}>
-            Tuần này (T2 – CN)
+            {lang === 'en' ? 'This Week (Mon – Sun)' : 'Tuần này (T2 – CN)'}
           </Text>
           <Text style={{ fontWeight: '800', fontSize: 15, color: COLORS.primaryDark }}>
             {fmt(report.week.total)}₫
@@ -167,13 +175,13 @@ export function EarningsReport() {
                     color: isToday ? COLORS.primaryDark : COLORS.gray[500],
                   }}
                 >
-                  {WEEKDAY_LABELS[i]}
+                  {weekLabels[i]}
                 </Text>
               </View>
             );
           })}
         </View>
-        <ChangeChip percent={report.week.change_percent} />
+        <ChangeChip percent={report.week.change_percent} lang={lang} />
       </Card>
 
       {/* ── Tháng này ────────────────────────────────────────────────── */}
@@ -182,17 +190,16 @@ export function EarningsReport() {
           style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}
         >
           <Text style={{ fontWeight: '800', fontSize: 15, color: COLORS.gray[900] }}>
-            Tháng này
+            {lang === 'en' ? 'This Month' : 'Tháng này'}
           </Text>
           <Text style={{ fontWeight: '800', fontSize: 15, color: COLORS.primaryDark }}>
             {fmt(report.month.total)}₫
           </Text>
         </View>
         <Text style={{ fontSize: 13, color: COLORS.gray[600] }}>
-          Từ {report.month.jobs_earning_count} khoản thu nhập · Tháng trước:{' '}
-          {fmt(report.month.prev_month_total)}₫
+          {lang === 'en' ? 'From ' : 'Từ '}{report.month.jobs_earning_count} {lang === 'en' ? 'income entries · Prev month: ' : 'khoản thu nhập · Tháng trước: '}{fmt(report.month.prev_month_total)}₫
         </Text>
-        <ChangeChip percent={report.month.change_percent} />
+        <ChangeChip percent={report.month.change_percent} lang={lang} />
 
         <View
           style={{ flexDirection: 'row', alignItems: 'flex-end', height: 64, gap: 8, marginTop: 4 }}
@@ -220,7 +227,7 @@ export function EarningsReport() {
                   />
                 </View>
                 <Text style={{ fontSize: 11, fontWeight: '600', color: COLORS.gray[500] }}>
-                  Tuần {w.week}
+                  {lang === 'en' ? 'Wk ' : 'Tuần '}{w.week}
                 </Text>
               </View>
             );
@@ -234,11 +241,15 @@ export function EarningsReport() {
           style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}
         >
           <Text style={{ fontWeight: '800', fontSize: 15, color: COLORS.gray[900] }}>
-            🎯 Mục tiêu tháng
+            {lang === 'en' ? '🎯 Monthly Goal' : '🎯 Mục tiêu tháng'}
           </Text>
           <TouchableOpacity onPress={() => setEditingGoal(v => !v)}>
             <Text style={{ fontSize: 13, fontWeight: '800', color: COLORS.primaryDark }}>
-              {editingGoal ? 'Hủy' : goal.monthly_goal > 0 ? 'Sửa mục tiêu' : 'Đặt mục tiêu'}
+              {editingGoal
+                ? (lang === 'en' ? 'Cancel' : 'Hủy')
+                : goal.monthly_goal > 0
+                  ? (lang === 'en' ? 'Edit goal' : 'Sửa mục tiêu')
+                  : (lang === 'en' ? 'Set goal' : 'Đặt mục tiêu')}
             </Text>
           </TouchableOpacity>
         </View>
@@ -246,7 +257,7 @@ export function EarningsReport() {
         {goal.monthly_goal > 0 ? (
           <>
             <Text style={{ fontSize: 13.5, color: COLORS.gray[700] }}>
-              Đã đạt {fmt(goal.earned_this_month)}₫ / {fmt(goal.monthly_goal)}₫ (
+              {lang === 'en' ? 'Achieved ' : 'Đã đạt '}{fmt(goal.earned_this_month)}₫ / {fmt(goal.monthly_goal)}₫ (
               {goal.progress_percent}%)
             </Text>
             <View
@@ -268,7 +279,9 @@ export function EarningsReport() {
           </>
         ) : (
           <Text style={{ fontSize: 13, color: COLORS.gray[500] }}>
-            Chưa đặt mục tiêu. Đặt mục tiêu thu nhập tháng để theo dõi tiến độ mỗi ngày.
+            {lang === 'en'
+              ? 'No goal set yet. Set a monthly income goal to track daily progress.'
+              : 'Chưa đặt mục tiêu. Đặt mục tiêu thu nhập tháng để theo dõi tiến độ mỗi ngày.'}
           </Text>
         )}
 
@@ -305,14 +318,18 @@ export function EarningsReport() {
                 justifyContent: 'center',
               }}
             >
-              <Text style={{ color: '#fff', fontWeight: '800', fontSize: 13.5 }}>Lưu</Text>
+              <Text style={{ color: '#fff', fontWeight: '800', fontSize: 13.5 }}>
+                {lang === 'en' ? 'Save' : 'Lưu'}
+              </Text>
             </TouchableOpacity>
           </View>
         )}
       </Card>
 
       <Text style={{ fontSize: 11.5, color: COLORS.gray[400] }}>
-        * Số liệu là thu nhập ròng (đã trừ phí sàn đối với đơn tiền mặt).
+        {lang === 'en'
+          ? '* Figures represent net earnings (platform fees deducted).'
+          : '* Số liệu là thu nhập ròng (đã trừ phí sàn đối với đơn tiền mặt).'}
       </Text>
     </View>
   );

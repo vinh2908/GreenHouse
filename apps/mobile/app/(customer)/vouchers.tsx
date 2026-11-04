@@ -12,7 +12,7 @@ import { useState } from 'react';
 export default function CustomerVouchersScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { t, fs, lang } = useTranslation();
+  const { t, fs, lang, formatVoucherDesc } = useTranslation();
   const { data: vouchers, isLoading, refetch } = useMyVouchers();
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
 
@@ -129,11 +129,9 @@ export default function CustomerVouchersScreen() {
                       <Text style={{ fontSize: 16, fontWeight: '800', color: COLORS.gray[900] }}>
                         {discountLabel}
                       </Text>
-                      {v.description && (
-                        <Text style={{ fontSize: 13, color: COLORS.gray[600], lineHeight: 18 }}>
-                          {v.description}
-                        </Text>
-                      )}
+                      <Text style={{ fontSize: 13, color: COLORS.gray[600], lineHeight: 18 }}>
+                        {formatVoucherDesc(v)}
+                      </Text>
                     </View>
                   </View>
                 </View>

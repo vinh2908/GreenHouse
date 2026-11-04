@@ -29,6 +29,7 @@ import {
 } from 'lucide-react-native';
 import Toast from 'react-native-toast-message';
 import { useCreateSosJob } from '@/hooks/use-api';
+import { useTranslation } from '@/hooks/use-i18n';
 import { locationService, parseVietnameseAddress } from '@/services/location.service';
 import { Button, Card, LoadingSpinner, COLORS, Separator, PriceText } from '@/components/ui';
 
@@ -70,7 +71,67 @@ const SOS_CATEGORIES = [
 
 export default function SosScreen() {
   const router = useRouter();
+  const { t, fs, lang } = useTranslation();
   const createSos = useCreateSosJob();
+
+  const sosCategories = [
+    {
+      id: 'electrician',
+      name:
+        lang === 'en'
+          ? 'Electrical Short & Burning Smell'
+          : 'Chập điện & Cháy khét ổ cắm',
+      emoji: '⚡',
+      desc:
+        lang === 'en'
+          ? 'Total blackout, sparking sockets, burning wires smell'
+          : 'Mất điện toàn nhà, ổ cắm tóe lửa, mùi khét dây điện',
+      color: '#EF4444',
+      bg: '#FEF2F2',
+    },
+    {
+      id: 'plumbing',
+      name:
+        lang === 'en'
+          ? 'Burst Pipe & Floor Flooding'
+          : 'Vỡ đường ống nước & Ngập sàn',
+      emoji: '🚰',
+      desc:
+        lang === 'en'
+          ? 'Pipe burst, main valve stuck, severe indoor flooding'
+          : 'Bục ống nước, van tổng không khóa được, nước tràn ngập nhà',
+      color: '#3B82F6',
+      bg: '#EFF6FF',
+    },
+    {
+      id: 'locksmith',
+      name:
+        lang === 'en'
+          ? 'Jammed Lock & Lost Key Emergency'
+          : 'Kẹt khóa & Mất chìa khẩn cấp',
+      emoji: '🔑',
+      desc:
+        lang === 'en'
+          ? 'Stuck door lock, child or elderly locked inside room'
+          : 'Kẹt khóa cửa ngoài, trẻ nhỏ/người già bị kẹt bên trong phòng',
+      color: '#F59E0B',
+      bg: '#FFFBEB',
+    },
+    {
+      id: 'ac_repair',
+      name:
+        lang === 'en'
+          ? 'AC Gas Leak & Heavy Vibration'
+          : 'Rò rỉ khí gas máy lạnh',
+      emoji: '❄️',
+      desc:
+        lang === 'en'
+          ? 'Strong gas odor in closed room, AC unit loose/falling'
+          : 'Mùi gas nồng nặc trong phòng kín, rung lắc rơi dàn lạnh',
+      color: '#06B6D4',
+      bg: '#ECFEFF',
+    },
+  ];
 
   const [selectedCategory, setSelectedCategory] = useState('electrician');
   // Chỉ dùng địa chỉ thật từ GPS/reverse-geocode — không bịa sẵn phường/quận/
@@ -84,7 +145,9 @@ export default function SosScreen() {
     coordinates: [0, 0] as [number, number],
   });
   const [description, setDescription] = useState(
-    'Sự cố khẩn cấp cần thợ có mặt xử lý ngay lập tức!',
+    lang === 'en'
+      ? 'Emergency incident requiring immediate helper dispatch!'
+      : 'Sự cố khẩn cấp cần thợ có mặt xử lý ngay lập tức!',
   );
   const [isLocating, setIsLocating] = useState(false);
   const [isEditingAddress, setIsEditingAddress] = useState(false);
@@ -123,7 +186,8 @@ export default function SosScreen() {
     }
   };
 
-  const selectedCatObj = SOS_CATEGORIES.find(c => c.id === selectedCategory) || SOS_CATEGORIES[0];
+  const selectedCatObj =
+    sosCategories.find(c => c.id === selectedCategory) || sosCategories[0];
   const surcharge = 100000;
   const baseCost = 200000;
   const totalEstimate = baseCost + surcharge;
@@ -139,9 +203,11 @@ export default function SosScreen() {
     ) {
       Toast.show({
         type: 'error',
-        text1: 'Chưa có địa chỉ cứu hộ',
+        text1: lang === 'en' ? 'Rescue address missing' : 'Chưa có địa chỉ cứu hộ',
         text2:
-          'Vui lòng bấm định vị GPS hoặc nhập địa chỉ cấp cứu bên dưới trước khi phát tín hiệu SOS.',
+          lang === 'en'
+            ? 'Please tap GPS locate or enter address below before sending SOS signal.'
+            : 'Vui lòng bấm định vị GPS hoặc nhập địa chỉ cấp cứu bên dưới trước khi phát tín hiệu SOS.',
       });
       return;
     }
@@ -165,8 +231,14 @@ export default function SosScreen() {
         (res as any)?.data?.data?._id || (res as any)?.data?._id || (res as any)?._id;
       Toast.show({
         type: 'success',
-        text1: '🚨 ĐÃ PHÁT TÍN HIỆU CỨU HỘ SOS!',
-        text2: 'Hệ thống đang điều phối các thợ gần nhất có mặt sau 15 phút.',
+        text1:
+          lang === 'en'
+            ? '🚨 SOS EMERGENCY SIGNAL SENT!'
+            : '🚨 ĐÃ PHÁT TÍN HIỆU CỨU HỘ SOS!',
+        text2:
+          lang === 'en'
+            ? 'The system is dispatching nearest helpers to arrive within 15 minutes.'
+            : 'Hệ thống đang điều phối các thợ gần nhất có mặt sau 15 phút.',
       });
 
       if (newJobId) {
@@ -175,7 +247,9 @@ export default function SosScreen() {
         router.replace('/(customer)/jobs');
       }
     } catch (err: any) {
-      const msg = err?.response?.data?.message || 'Gửi yêu cầu cứu hộ thất bại';
+      const msg =
+        err?.response?.data?.message ||
+        (lang === 'en' ? 'Failed to send SOS request' : 'Gửi yêu cầu cứu hộ thất bại');
       Toast.show({ type: 'error', text1: msg });
     }
   };
@@ -213,7 +287,7 @@ export default function SosScreen() {
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
           <ShieldAlert size={22} color="#FFFFFF" />
           <Text style={{ fontSize: 18, fontWeight: '900', color: '#FFFFFF' }}>
-            CỨU HỘ KHẨN CẤP SOS
+            {lang === 'en' ? 'EMERGENCY SOS DISPATCH' : 'CỨU HỘ KHẨN CẤP SOS'}
           </Text>
         </View>
         <View style={{ width: 38 }} />
@@ -240,12 +314,15 @@ export default function SosScreen() {
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
               <AlertTriangle size={20} color="#DC2626" />
               <Text style={{ fontSize: 14, fontWeight: '900', color: '#B91C1C' }}>
-                CẢNH BÁO NGUY HIỂM TÍNH MẠNG / HỎA HOẠN
+                {lang === 'en'
+                  ? 'LIFE THREATENING / FIRE HAZARD WARNING'
+                  : 'CẢNH BÁO NGUY HIỂM TÍNH MẠNG / HỎA HOẠN'}
               </Text>
             </View>
             <Text style={{ fontSize: 12.5, color: '#991B1B', lineHeight: 18 }}>
-              Nếu sự cố có nguy cơ cháy nổ lớn hoặc đe dọa tính mạng, vui lòng gọi cơ quan cứu hộ
-              quốc gia ngay:
+              {lang === 'en'
+                ? 'If the incident poses high fire risk or threatens life, please immediately call national emergency authorities:'
+                : 'Nếu sự cố có nguy cơ cháy nổ lớn hoặc đe dọa tính mạng, vui lòng gọi cơ quan cứu hộ quốc gia ngay:'}
             </Text>
             <View style={{ flexDirection: 'row', gap: 10, marginTop: 2 }}>
               <TouchableOpacity
@@ -263,7 +340,7 @@ export default function SosScreen() {
               >
                 <PhoneCall size={16} color="#fff" />
                 <Text style={{ color: '#fff', fontWeight: '800', fontSize: 13 }}>
-                  Gọi 114 (Cứu hỏa)
+                  {lang === 'en' ? 'Call 114 (Firefighters)' : 'Gọi 114 (Cứu hỏa)'}
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
@@ -281,7 +358,7 @@ export default function SosScreen() {
               >
                 <PhoneCall size={16} color="#fff" />
                 <Text style={{ color: '#fff', fontWeight: '800', fontSize: 13 }}>
-                  Gọi 115 (Cấp cứu)
+                  {lang === 'en' ? 'Call 115 (Ambulance)' : 'Gọi 115 (Cấp cứu)'}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -289,11 +366,13 @@ export default function SosScreen() {
 
           {/* ── 1. CHỌN NHANH SỰ CỐ KHẨN CẤP (1 CHẠM) ─────────────────── */}
           <Text style={{ fontSize: 16, fontWeight: '900', color: COLORS.gray[900] }}>
-            1. Chọn loại sự cố khẩn cấp (1 chạm):
+            {lang === 'en'
+              ? '1. Select Emergency Type (1-Tap):'
+              : '1. Chọn loại sự cố khẩn cấp (1 chạm):'}
           </Text>
 
           <View style={{ gap: 10 }}>
-            {SOS_CATEGORIES.map(cat => {
+            {sosCategories.map(cat => {
               const isSelected = selectedCategory === cat.id;
               return (
                 <TouchableOpacity
@@ -349,7 +428,9 @@ export default function SosScreen() {
               }}
             >
               <Text style={{ fontSize: 14, fontWeight: '800', color: COLORS.gray[900] }}>
-                2. Vị trí cứu hộ (Bản đồ Goong)
+                {lang === 'en'
+                  ? '2. Rescue Location (Goong Maps)'
+                  : '2. Vị trí cứu hộ (Bản đồ Goong)'}
               </Text>
               <View style={{ flexDirection: 'row', gap: 6 }}>
                 <TouchableOpacity
@@ -362,7 +443,13 @@ export default function SosScreen() {
                   }}
                 >
                   <Text style={{ fontSize: 11, color: COLORS.gray[700], fontWeight: '700' }}>
-                    {isEditingAddress ? 'Thu gọn' : 'Nhập tay'}
+                    {isEditingAddress
+                      ? lang === 'en'
+                        ? 'Collapse'
+                        : 'Thu gọn'
+                      : lang === 'en'
+                        ? 'Enter manually'
+                        : 'Nhập tay'}
                   </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
@@ -384,7 +471,13 @@ export default function SosScreen() {
                     <Navigation size={12} color={COLORS.success} />
                   )}
                   <Text style={{ fontSize: 11, color: COLORS.success, fontWeight: '700' }}>
-                    {isLocating ? 'Đang dò GPS...' : 'Định vị lại'}
+                    {isLocating
+                      ? lang === 'en'
+                        ? 'Locating GPS...'
+                        : 'Đang dò GPS...'
+                      : lang === 'en'
+                        ? 'Relocate'
+                        : 'Định vị lại'}
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -402,7 +495,11 @@ export default function SosScreen() {
                     color: COLORS.gray[900],
                     backgroundColor: '#fff',
                   }}
-                  placeholder="Gõ số nhà, tên đường, phường, quận..."
+                  placeholder={
+                    lang === 'en'
+                      ? 'House number, street, ward, district...'
+                      : 'Gõ số nhà, tên đường, phường, quận...'
+                  }
                   value={address.full_address}
                   onChangeText={v => setAddress(a => ({ ...a, full_address: v }))}
                   placeholderTextColor={COLORS.gray[400]}
@@ -423,12 +520,20 @@ export default function SosScreen() {
                           coordinates: [parseFloat(p.lon), parseFloat(p.lat)],
                         });
                         setIsEditingAddress(false);
-                        Toast.show({ type: 'success', text1: 'Đã xác định tọa độ từ địa chỉ' });
+                        Toast.show({
+                          type: 'success',
+                          text1:
+                            lang === 'en'
+                              ? 'Coordinates found for address'
+                              : 'Đã xác định tọa độ từ địa chỉ',
+                        });
                       } else {
                         Toast.show({
                           type: 'error',
                           text1:
-                            'Không tìm thấy tọa độ cho địa chỉ này, vui lòng nhập chi tiết hơn',
+                            lang === 'en'
+                              ? 'Could not find coordinates for this address, please enter more details'
+                              : 'Không tìm thấy tọa độ cho địa chỉ này, vui lòng nhập chi tiết hơn',
                         });
                       }
                     }
@@ -441,7 +546,7 @@ export default function SosScreen() {
                   }}
                 >
                   <Text style={{ color: '#fff', fontWeight: '700', fontSize: 13 }}>
-                    Xác nhận địa chỉ này
+                    {lang === 'en' ? 'Confirm this address' : 'Xác nhận địa chỉ này'}
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -459,7 +564,10 @@ export default function SosScreen() {
                 <MapPin size={18} color={COLORS.primary} style={{ marginTop: 2 }} />
                 <View style={{ flex: 1 }}>
                   <Text style={{ fontSize: 14, fontWeight: '700', color: COLORS.gray[900] }}>
-                    {address.full_address || 'Chưa có vị trí — bấm "Định vị lại" hoặc "Nhập tay"'}
+                    {address.full_address ||
+                      (lang === 'en'
+                        ? 'No location yet — tap "Relocate" or "Enter manually"'
+                        : 'Chưa có vị trí — bấm "Định vị lại" hoặc "Nhập tay"')}
                   </Text>
                   <Text style={{ fontSize: 12, color: COLORS.gray[500], marginTop: 2 }}>
                     {[address.ward, address.district, address.city].filter(Boolean).join(', ')}
@@ -489,7 +597,7 @@ export default function SosScreen() {
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                 <Clock size={18} color={COLORS.primary} />
                 <Text style={{ fontSize: 15, fontWeight: '900', color: COLORS.gray[900] }}>
-                  Thời gian thợ có mặt
+                  {lang === 'en' ? 'Helper Arrival Time' : 'Thời gian thợ có mặt'}
                 </Text>
               </View>
               <View
@@ -500,7 +608,9 @@ export default function SosScreen() {
                   borderRadius: 8,
                 }}
               >
-                <Text style={{ color: '#fff', fontSize: 13, fontWeight: '900' }}>15 - 20 PHÚT</Text>
+                <Text style={{ color: '#fff', fontSize: 13, fontWeight: '900' }}>
+                  {lang === 'en' ? '15 - 20 MINUTES' : '15 - 20 PHÚT'}
+                </Text>
               </View>
             </View>
 
@@ -509,28 +619,31 @@ export default function SosScreen() {
             <View style={{ gap: 6 }}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
                 <Text style={{ fontSize: 13, color: COLORS.gray[600] }}>
-                  Công thợ cứu hộ cơ bản:
+                  {lang === 'en' ? 'Base rescue fee:' : 'Công thợ cứu hộ cơ bản:'}
                 </Text>
                 <PriceText amount={baseCost} size={14} color={COLORS.gray[900]} bold={false} />
               </View>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
                 <Text style={{ fontSize: 13, color: COLORS.gray[600] }}>
-                  Phụ phí cứu hộ khẩn cấp (+50%):
+                  {lang === 'en'
+                    ? 'Emergency dispatch surcharge (+50%):'
+                    : 'Phụ phí cứu hộ khẩn cấp (+50%):'}
                 </Text>
                 <PriceText amount={surcharge} size={14} color="#DC2626" bold={false} />
               </View>
               <Separator my={2} />
               <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
                 <Text style={{ fontSize: 15, fontWeight: '900', color: COLORS.gray[900] }}>
-                  Ước tính tổng cộng:
+                  {lang === 'en' ? 'Estimated Total:' : 'Ước tính tổng cộng:'}
                 </Text>
                 <PriceText amount={totalEstimate} size={18} color="#DC2626" />
               </View>
             </View>
 
             <Text style={{ fontSize: 11.5, color: COLORS.gray[500], lineHeight: 16 }}>
-              * Phụ phí khẩn cấp dùng để ưu tiên thợ di chuyển ngay lập tức. Khách hàng chỉ thanh
-              toán sau khi thợ hoàn tất xử lý sự cố.
+              {lang === 'en'
+                ? '* Emergency surcharge is used to prioritize immediate helper dispatch. You only pay after helper completes the resolution.'
+                : '* Phụ phí khẩn cấp dùng để ưu tiên thợ di chuyển ngay lập tức. Khách hàng chỉ thanh toán sau khi thợ hoàn tất xử lý sự cố.'}
             </Text>
           </Card>
         </ScrollView>
@@ -576,7 +689,13 @@ export default function SosScreen() {
         >
           <Flame size={24} color="#FFFFFF" />
           <Text style={{ color: '#FFFFFF', fontSize: 17, fontWeight: '900', letterSpacing: 0.5 }}>
-            {createSos.isPending ? 'ĐANG PHÁT TÍN HIỆU...' : 'GỌI CỨU HỘ SOS NGAY (15P CÓ MẶT)'}
+            {createSos.isPending
+              ? lang === 'en'
+                ? 'DISPATCHING SIGNAL...'
+                : 'ĐANG PHÁT TÍN HIỆU...'
+              : lang === 'en'
+                ? 'CALL EMERGENCY SOS NOW (15M ARRIVAL)'
+                : 'GỌI CỨU HỘ SOS NGAY (15P CÓ MẶT)'}
           </Text>
         </TouchableOpacity>
       </View>

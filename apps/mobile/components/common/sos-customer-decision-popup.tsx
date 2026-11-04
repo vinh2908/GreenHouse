@@ -11,19 +11,23 @@ import { useCustomerSosDecision } from '@/hooks/use-api';
 import { useNowTick, formatCountdown } from '@/hooks/use-countdown';
 import { COLORS } from '@/components/ui';
 import { useTranslation } from '@/hooks/use-i18n';
+import { SOS_BACKUP_REASONS_I18N } from '@/services/i18n';
 
 export function SosCustomerDecisionPopup() {
   const decision = useSosBackupStore(s => s.decision);
   const clearDecision = useSosBackupStore(s => s.clearDecision);
   const decide = useCustomerSosDecision();
   const now = useNowTick(!!decision);
-  const { t, tService, fs } = useTranslation();
+  const { t, tService, fs, lang } = useTranslation();
 
   if (!decision) return null;
 
   const remainingMs = decision.decision_expires_at_ms ? decision.decision_expires_at_ms - now : 0;
   const expired = decision.decision_expires_at_ms ? remainingMs <= 0 : false;
-  const reasonLabel = SOS_BACKUP_REASON_LABELS[decision.reason ?? 'other'] ?? 'Sự cố khẩn cấp';
+  const reasonKey = decision.reason ?? 'other';
+  const reasonLabel =
+    SOS_BACKUP_REASONS_I18N[reasonKey]?.[lang] ??
+    (lang === 'en' ? 'Emergency incident' : (SOS_BACKUP_REASON_LABELS[reasonKey] ?? 'Sự cố khẩn cấp'));
 
   const handle = async (choice: 'accept_replacement' | 'cancel_job') => {
     try {
@@ -38,12 +42,15 @@ export function SosCustomerDecisionPopup() {
       if (status === 409) {
         // Đã được xử lý (bấm trùng / đã quá hạn và hệ thống tự xử lý)
         clearDecision();
-        Toast.show({ type: 'info', text1: 'Yêu cầu này đã được xử lý' });
+        Toast.show({
+          type: 'info',
+          text1: lang === 'en' ? 'This request has already been processed' : 'Yêu cầu này đã được xử lý',
+        });
       } else {
         const msg = err?.response?.data?.message;
         Toast.show({
           type: 'error',
-          text1: typeof msg === 'string' ? msg : 'Không gửi được quyết định — thử lại',
+          text1: typeof msg === 'string' ? msg : (lang === 'en' ? 'Could not submit decision — try again' : 'Không gửi được quyết định — thử lại'),
         });
       }
     }
@@ -95,7 +102,7 @@ export function SosCustomerDecisionPopup() {
             <View style={{ marginTop: 14, alignItems: 'center' }}>
               <PhotoThumbRow
                 urls={decision.photo_urls}
-                label="📷 Ảnh minh chứng từ người giúp việc"
+                label={lang === 'en' ? '📷 Incident evidence from helper' : '📷 Ảnh minh chứng từ người giúp việc'}
               />
             </View>
           ) : null}
@@ -128,7 +135,7 @@ export function SosCustomerDecisionPopup() {
               }}
             >
               {expired
-                ? 'Đã quá hạn quyết định — hệ thống đang xử lý theo chính sách mặc định'
+                ? (lang === 'en' ? 'Decision window expired — system processing by default policy' : 'Đã quá hạn quyết định — hệ thống đang xử lý theo chính sách mặc định')
                 : `⏱ ${t('sos_popup_auto_skip', { sec: Math.ceil(remainingMs / 1000) })}`}
             </Text>
           ) : null}

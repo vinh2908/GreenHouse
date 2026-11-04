@@ -52,10 +52,10 @@ class RootErrorBoundary extends Component<
           style={{ flex: 1, backgroundColor: '#FEF2F2', padding: 24, justifyContent: 'center' }}
         >
           <Text style={{ fontSize: 20, fontWeight: 'bold', color: '#991B1B', marginBottom: 12 }}>
-            Lỗi hiển thị màn hình (Root Error)
+            Root Error / Lỗi hiển thị màn hình
           </Text>
           <Text style={{ fontSize: 14, color: '#B91C1C', marginBottom: 16 }}>
-            {this.state.error?.message || 'Lỗi không xác định'}
+            {this.state.error?.message || 'Unknown error / Lỗi không xác định'}
           </Text>
           <ScrollView
             style={{ maxHeight: 250, backgroundColor: '#FFF', padding: 10, borderRadius: 8 }}

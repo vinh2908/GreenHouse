@@ -32,6 +32,7 @@ import Toast from 'react-native-toast-message';
 import { useAuthStore } from '@/stores/auth.store';
 import { useHelperProfile, useSubmitKyc } from '@/hooks/use-api';
 import { Button, Card, LoadingSpinner, COLORS, Separator, Input } from '@/components/ui';
+import { useTranslation } from '@/hooks/use-i18n';
 
 // Ảnh mẫu demo e-KYC (phục vụ test nhanh)
 const SAMPLE_FRONT = 'https://images.unsplash.com/photo-1544717305-2782549b5136';
@@ -40,6 +41,7 @@ const SAMPLE_SELFIE = 'https://images.unsplash.com/photo-1507003211169-0a1dd7228
 
 export default function KycScreen() {
   const router = useRouter();
+  const { t, fs, lang } = useTranslation();
   const { data: profile, isLoading, refetch } = useHelperProfile();
   const submitKyc = useSubmitKyc();
 
@@ -82,7 +84,7 @@ export default function KycScreen() {
     try {
       const { status } = await ImagePicker.requestCameraPermissionsAsync();
       if (status !== 'granted') {
-        Toast.show({ type: 'error', text1: 'Cần cấp quyền camera để chụp ảnh e-KYC' });
+        Toast.show({ type: 'error', text1: lang === 'en' ? 'Camera permission required for e-KYC' : 'Cần cấp quyền camera để chụp ảnh e-KYC' });
         return;
       }
       const result = await ImagePicker.launchCameraAsync({
@@ -93,10 +95,10 @@ export default function KycScreen() {
       });
       if (!result.canceled && result.assets[0]?.uri) {
         applyImage(activeImageType, result.assets[0].uri);
-        Toast.show({ type: 'success', text1: 'Đã chụp ảnh thành công' });
+        Toast.show({ type: 'success', text1: lang === 'en' ? 'Photo captured successfully' : 'Đã chụp ảnh thành công' });
       }
     } catch {
-      Toast.show({ type: 'error', text1: 'Không thể mở máy ảnh' });
+      Toast.show({ type: 'error', text1: lang === 'en' ? 'Unable to open camera' : 'Không thể mở máy ảnh' });
     }
   };
 
@@ -105,7 +107,7 @@ export default function KycScreen() {
     try {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (status !== 'granted') {
-        Toast.show({ type: 'error', text1: 'Cần cấp quyền thư viện để chọn ảnh' });
+        Toast.show({ type: 'error', text1: lang === 'en' ? 'Photo library permission required' : 'Cần cấp quyền thư viện để chọn ảnh' });
         return;
       }
       const result = await ImagePicker.launchImageLibraryAsync({
@@ -116,10 +118,10 @@ export default function KycScreen() {
       });
       if (!result.canceled && result.assets[0]?.uri) {
         applyImage(activeImageType, result.assets[0].uri);
-        Toast.show({ type: 'success', text1: 'Đã chọn ảnh từ thư viện' });
+        Toast.show({ type: 'success', text1: lang === 'en' ? 'Photo selected from library' : 'Đã chọn ảnh từ thư viện' });
       }
     } catch {
-      Toast.show({ type: 'error', text1: 'Không thể mở thư viện ảnh' });
+      Toast.show({ type: 'error', text1: lang === 'en' ? 'Unable to open photo library' : 'Không thể mở thư viện ảnh' });
     }
   };
 
@@ -127,25 +129,25 @@ export default function KycScreen() {
     setPickerModalVisible(false);
     if (activeImageType === 'front') {
       setFrontImage(SAMPLE_FRONT);
-      Toast.show({ type: 'info', text1: 'Đã dùng ảnh mẫu: Mặt trước CCCD' });
+      Toast.show({ type: 'info', text1: lang === 'en' ? 'Sample used: ID Card Front' : 'Đã dùng ảnh mẫu: Mặt trước CCCD' });
     } else if (activeImageType === 'back') {
       setBackImage(SAMPLE_BACK);
-      Toast.show({ type: 'info', text1: 'Đã dùng ảnh mẫu: Mặt sau CCCD' });
+      Toast.show({ type: 'info', text1: lang === 'en' ? 'Sample used: ID Card Back' : 'Đã dùng ảnh mẫu: Mặt sau CCCD' });
     } else {
       setSelfieImage(SAMPLE_SELFIE);
-      Toast.show({ type: 'info', text1: 'Đã dùng ảnh mẫu: Chân dung selfie' });
+      Toast.show({ type: 'info', text1: lang === 'en' ? 'Sample used: Selfie Portrait' : 'Đã dùng ảnh mẫu: Chân dung selfie' });
     }
   };
 
   const handleSubmit = async () => {
     if (!idCardNumber.trim() || idCardNumber.length < 9) {
-      Toast.show({ type: 'error', text1: 'Vui lòng nhập đúng số CCCD/CMND (9-12 số)' });
+      Toast.show({ type: 'error', text1: lang === 'en' ? 'Please enter valid Citizen ID (9-12 digits)' : 'Vui lòng nhập đúng số CCCD/CMND (9-12 số)' });
       return;
     }
     if (!frontImage || !backImage || !selfieImage) {
       Toast.show({
         type: 'error',
-        text1: 'Vui lòng cung cấp đủ 3 ảnh (Mặt trước, mặt sau và chân dung)',
+        text1: lang === 'en' ? 'Please provide all 3 photos (Front, Back and Selfie)' : 'Vui lòng cung cấp đủ 3 ảnh (Mặt trước, mặt sau và chân dung)',
       });
       return;
     }
@@ -159,7 +161,7 @@ export default function KycScreen() {
       });
       refetch();
     } catch (err: any) {
-      const msg = err?.response?.data?.message || 'Nộp hồ sơ e-KYC thất bại';
+      const msg = err?.response?.data?.message || (lang === 'en' ? 'e-KYC submission failed' : 'Nộp hồ sơ e-KYC thất bại');
       Toast.show({ type: 'error', text1: msg });
     }
   };
@@ -167,9 +169,9 @@ export default function KycScreen() {
   const insets = useSafeAreaInsets();
 
   const getTargetTitle = () => {
-    if (activeImageType === 'front') return 'Mặt trước CCCD/CMND';
-    if (activeImageType === 'back') return 'Mặt sau CCCD/CMND';
-    return 'Ảnh chân dung selfie cầm CCCD';
+    if (activeImageType === 'front') return lang === 'en' ? 'Front of Citizen ID' : 'Mặt trước CCCD/CMND';
+    if (activeImageType === 'back') return lang === 'en' ? 'Back of Citizen ID' : 'Mặt sau CCCD/CMND';
+    return lang === 'en' ? 'Selfie holding Citizen ID' : 'Ảnh chân dung selfie cầm CCCD';
   };
 
   return (
@@ -204,7 +206,7 @@ export default function KycScreen() {
           <ArrowLeft size={20} color={COLORS.gray[800]} />
         </TouchableOpacity>
         <Text style={{ fontSize: 17, fontWeight: '800', color: COLORS.gray[900] }}>
-          Xác thực danh tính (e-KYC)
+          {lang === 'en' ? 'Identity Verification (e-KYC)' : 'Xác thực danh tính (e-KYC)'}
         </Text>
         <View style={{ width: 38 }} />
       </View>
@@ -244,13 +246,14 @@ export default function KycScreen() {
               <Text
                 style={{ fontSize: 20, fontWeight: '900', color: '#065F46', textAlign: 'center' }}
               >
-                Hồ sơ đã được xác thực e-KYC 100%
+                {lang === 'en' ? 'e-KYC Profile 100% Verified' : 'Hồ sơ đã được xác thực e-KYC 100%'}
               </Text>
               <Text
                 style={{ fontSize: 13.5, color: '#047857', textAlign: 'center', lineHeight: 20 }}
               >
-                Danh tính và hồ sơ tư pháp của bạn đã được kiểm duyệt hợp lệ. Bạn đang có quyền ưu
-                tiên nhận việc và hiển thị huy hiệu thợ uy tín tới khách hàng.
+                {lang === 'en'
+                  ? 'Your identity and records have been verified. You now have priority job dispatch and a verified partner badge shown to customers.'
+                  : 'Danh tính và hồ sơ tư pháp của bạn đã được kiểm duyệt hợp lệ. Bạn đang có quyền ưu tiên nhận việc và hiển thị huy hiệu thợ uy tín tới khách hàng.'}
               </Text>
               <View
                 style={{
@@ -262,7 +265,7 @@ export default function KycScreen() {
                 }}
               >
                 <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.gray[800] }}>
-                  Số CCCD: {profile?.id_card_number || '—'}
+                  {lang === 'en' ? 'Citizen ID: ' : 'Số CCCD: '}{profile?.id_card_number || '—'}
                 </Text>
               </View>
             </Card>
@@ -295,13 +298,14 @@ export default function KycScreen() {
               <Text
                 style={{ fontSize: 20, fontWeight: '900', color: '#92400E', textAlign: 'center' }}
               >
-                Hồ sơ đang được xét duyệt
+                {lang === 'en' ? 'Application Under Review' : 'Hồ sơ đang được xét duyệt'}
               </Text>
               <Text
                 style={{ fontSize: 13.5, color: '#B45309', textAlign: 'center', lineHeight: 20 }}
               >
-                Hồ sơ e-KYC của bạn đã được gửi thành công và đang được ban quản trị Green House đối
-                chiếu trong vòng 24 giờ làm việc.
+                {lang === 'en'
+                  ? 'Your e-KYC profile has been submitted and is being verified by Green House administrators within 24 working hours.'
+                  : 'Hồ sơ e-KYC của bạn đã được gửi thành công và đang được ban quản trị Green House đối chiếu trong vòng 24 giờ làm việc.'}
               </Text>
               <View
                 style={{
@@ -314,15 +318,15 @@ export default function KycScreen() {
                 }}
               >
                 <Text style={{ fontSize: 12.5, color: COLORS.gray[600] }}>
-                  • Số CCCD nộp:{' '}
+                  {lang === 'en' ? '• Submitted ID: ' : '• Số CCCD nộp: '}
                   <Text style={{ fontWeight: '700', color: COLORS.gray[900] }}>
                     {profile?.id_card_number || idCardNumber || '—'}
                   </Text>
                 </Text>
                 <Text style={{ fontSize: 12.5, color: COLORS.gray[600] }}>
-                  • Trạng thái:{' '}
+                  {lang === 'en' ? '• Status: ' : '• Trạng thái: '}
                   <Text style={{ fontWeight: '700', color: '#D97706' }}>
-                    Đang kiểm tra dữ liệu hình ảnh
+                    {lang === 'en' ? 'Verifying photo evidence' : 'Đang kiểm tra dữ liệu hình ảnh'}
                   </Text>
                 </Text>
               </View>
@@ -343,16 +347,20 @@ export default function KycScreen() {
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                 <AlertCircle size={24} color={COLORS.error} />
                 <Text style={{ fontSize: 17, fontWeight: '900', color: '#991B1B' }}>
-                  Hồ sơ bị từ chối xét duyệt
+                  {lang === 'en' ? 'Application Rejected' : 'Hồ sơ bị từ chối xét duyệt'}
                 </Text>
               </View>
               <Text style={{ fontSize: 13.5, color: '#B91C1C', lineHeight: 20 }}>
-                Lý do:{' '}
+                {lang === 'en' ? 'Reason: ' : 'Lý do: '}
                 {profile?.rejection_reason ||
-                  'Ảnh chụp CCCD bị mờ, lóa sáng hoặc mất góc. Vui lòng chụp lại rõ nét.'}
+                  (lang === 'en'
+                    ? 'ID photos are blurry, glared, or corners cut off. Please retake clearly.'
+                    : 'Ảnh chụp CCCD bị mờ, lóa sáng hoặc mất góc. Vui lòng chụp lại rõ nét.')}
               </Text>
               <Text style={{ fontSize: 12.5, color: COLORS.gray[600], fontWeight: '600' }}>
-                Vui lòng cập nhật lại thông tin và chụp lại ảnh bên dưới:
+                {lang === 'en'
+                  ? 'Please update information and retake photos below:'
+                  : 'Vui lòng cập nhật lại thông tin và chụp lại ảnh bên dưới:'}
               </Text>
             </Card>
           )}
@@ -365,19 +373,20 @@ export default function KycScreen() {
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                   <ShieldCheck size={20} color={COLORS.primary} />
                   <Text style={{ color: '#fff', fontWeight: '800', fontSize: 16 }}>
-                    Quy chuẩn chụp ảnh e-KYC
+                    {lang === 'en' ? 'e-KYC Photo Guidelines' : 'Quy chuẩn chụp ảnh e-KYC'}
                   </Text>
                 </View>
                 <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 12.5, lineHeight: 18 }}>
-                  1. Chụp rõ 4 góc của thẻ CCCD/CMND gốc, không lóa sáng.{'\n'}
-                  2. Ảnh chân dung chụp rõ mặt, không đeo kính râm hoặc khẩu trang.
+                  {lang === 'en'
+                    ? '1. Clearly capture all 4 corners of original Citizen ID, without glare.\n2. Portrait selfie clearly shows face, without sunglasses or masks.'
+                    : '1. Chụp rõ 4 góc của thẻ CCCD/CMND gốc, không lóa sáng.\n2. Ảnh chân dung chụp rõ mặt, không đeo kính râm hoặc khẩu trang.'}
                 </Text>
               </Card>
 
               {/* 1. Nhập số CCCD */}
               <Card style={{ padding: 16, gap: 10 }}>
                 <Text style={{ fontSize: 14, fontWeight: '800', color: COLORS.gray[900] }}>
-                  1. Số Căn cước công dân (CCCD) *
+                  {lang === 'en' ? '1. Citizen ID Number *' : '1. Số Căn cước công dân (CCCD) *'}
                 </Text>
                 <TextInput
                   style={{
@@ -390,7 +399,7 @@ export default function KycScreen() {
                     color: COLORS.gray[900],
                     backgroundColor: COLORS.gray[50],
                   }}
-                  placeholder="Nhập 12 số CCCD (VD: 079090123456)"
+                  placeholder={lang === 'en' ? 'Enter 12-digit ID (e.g. 079090123456)' : 'Nhập 12 số CCCD (VD: 079090123456)'}
                   value={idCardNumber}
                   onChangeText={setIdCardNumber}
                   keyboardType="numeric"
@@ -409,13 +418,13 @@ export default function KycScreen() {
                   }}
                 >
                   <Text style={{ fontSize: 14, fontWeight: '800', color: COLORS.gray[900] }}>
-                    2. Mặt trước CCCD/CMND *
+                    {lang === 'en' ? '2. Citizen ID Front Side *' : '2. Mặt trước CCCD/CMND *'}
                   </Text>
                   {frontImage && (
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                       <Check size={16} color={COLORS.success} />
                       <Text style={{ fontSize: 12, fontWeight: '700', color: COLORS.success }}>
-                        Đã có ảnh
+                        {lang === 'en' ? 'Photo added' : 'Đã có ảnh'}
                       </Text>
                     </View>
                   )}
@@ -455,7 +464,7 @@ export default function KycScreen() {
                         }}
                       >
                         <Text style={{ color: '#fff', fontSize: 12, fontWeight: '700' }}>
-                          Bấm để đổi ảnh khác
+                          {lang === 'en' ? 'Tap to change photo' : 'Bấm để đổi ảnh khác'}
                         </Text>
                       </View>
                     </View>
@@ -474,7 +483,7 @@ export default function KycScreen() {
                         <Camera size={24} color={COLORS.primary} />
                       </View>
                       <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.gray[700] }}>
-                        Chụp hoặc chọn ảnh mặt trước
+                        {lang === 'en' ? 'Capture or select front photo' : 'Chụp hoặc chọn ảnh mặt trước'}
                       </Text>
                     </View>
                   )}
@@ -491,13 +500,13 @@ export default function KycScreen() {
                   }}
                 >
                   <Text style={{ fontSize: 14, fontWeight: '800', color: COLORS.gray[900] }}>
-                    3. Mặt sau CCCD/CMND *
+                    {lang === 'en' ? '3. Citizen ID Back Side *' : '3. Mặt sau CCCD/CMND *'}
                   </Text>
                   {backImage && (
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                       <Check size={16} color={COLORS.success} />
                       <Text style={{ fontSize: 12, fontWeight: '700', color: COLORS.success }}>
-                        Đã có ảnh
+                        {lang === 'en' ? 'Photo added' : 'Đã có ảnh'}
                       </Text>
                     </View>
                   )}
@@ -537,7 +546,7 @@ export default function KycScreen() {
                         }}
                       >
                         <Text style={{ color: '#fff', fontSize: 12, fontWeight: '700' }}>
-                          Bấm để đổi ảnh khác
+                          {lang === 'en' ? 'Tap to change photo' : 'Bấm để đổi ảnh khác'}
                         </Text>
                       </View>
                     </View>
@@ -556,7 +565,7 @@ export default function KycScreen() {
                         <Camera size={24} color={COLORS.primary} />
                       </View>
                       <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.gray[700] }}>
-                        Chụp hoặc chọn ảnh mặt sau
+                        {lang === 'en' ? 'Capture or select back photo' : 'Chụp hoặc chọn ảnh mặt sau'}
                       </Text>
                     </View>
                   )}
@@ -573,13 +582,13 @@ export default function KycScreen() {
                   }}
                 >
                   <Text style={{ fontSize: 14, fontWeight: '800', color: COLORS.gray[900] }}>
-                    4. Ảnh chân dung selfie cầm CCCD *
+                    {lang === 'en' ? '4. Portrait selfie holding Citizen ID *' : '4. Ảnh chân dung selfie cầm CCCD *'}
                   </Text>
                   {selfieImage && (
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                       <Check size={16} color={COLORS.success} />
                       <Text style={{ fontSize: 12, fontWeight: '700', color: COLORS.success }}>
-                        Đã có ảnh
+                        {lang === 'en' ? 'Photo added' : 'Đã có ảnh'}
                       </Text>
                     </View>
                   )}
@@ -619,7 +628,7 @@ export default function KycScreen() {
                         }}
                       >
                         <Text style={{ color: '#fff', fontSize: 12, fontWeight: '700' }}>
-                          Bấm để đổi ảnh khác
+                          {lang === 'en' ? 'Tap to change photo' : 'Bấm để đổi ảnh khác'}
                         </Text>
                       </View>
                     </View>
@@ -638,7 +647,7 @@ export default function KycScreen() {
                         <Camera size={24} color={COLORS.primary} />
                       </View>
                       <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.gray[700] }}>
-                        Chụp ảnh selfie chân dung
+                        {lang === 'en' ? 'Take portrait selfie photo' : 'Chụp ảnh selfie chân dung'}
                       </Text>
                     </View>
                   )}
@@ -647,7 +656,7 @@ export default function KycScreen() {
 
               {/* Submit Button */}
               <Button
-                title="Gửi hồ sơ xét duyệt e-KYC"
+                title={lang === 'en' ? 'Submit e-KYC for Review' : 'Gửi hồ sơ xét duyệt e-KYC'}
                 loading={submitKyc.isPending}
                 onPress={handleSubmit}
                 style={{ marginTop: 8 }}
@@ -694,10 +703,10 @@ export default function KycScreen() {
             >
               <View>
                 <Text style={{ fontSize: 17, fontWeight: '800', color: COLORS.gray[900] }}>
-                  Tải ảnh {getTargetTitle()}
+                  {lang === 'en' ? `Upload ${getTargetTitle()}` : `Tải ảnh ${getTargetTitle()}`}
                 </Text>
                 <Text style={{ fontSize: 12.5, color: COLORS.gray[500], marginTop: 2 }}>
-                  Chọn phương thức cung cấp ảnh
+                  {lang === 'en' ? 'Choose photo upload method' : 'Chọn phương thức cung cấp ảnh'}
                 </Text>
               </View>
               <TouchableOpacity
@@ -744,10 +753,10 @@ export default function KycScreen() {
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={{ fontSize: 15, fontWeight: '700', color: COLORS.gray[900] }}>
-                  Chụp ảnh trực tiếp (Camera)
+                  {lang === 'en' ? 'Take photo directly (Camera)' : 'Chụp ảnh trực tiếp (Camera)'}
                 </Text>
                 <Text style={{ fontSize: 12, color: COLORS.gray[500], marginTop: 2 }}>
-                  Mở máy ảnh thiết bị để chụp ảnh ngay
+                  {lang === 'en' ? 'Open device camera to capture now' : 'Mở máy ảnh thiết bị để chụp ảnh ngay'}
                 </Text>
               </View>
               <ChevronRight size={18} color={COLORS.gray[400]} />
@@ -782,10 +791,10 @@ export default function KycScreen() {
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={{ fontSize: 15, fontWeight: '700', color: COLORS.gray[900] }}>
-                  Chọn từ Thư viện ảnh
+                  {lang === 'en' ? 'Choose from Photo Library' : 'Chọn từ Thư viện ảnh'}
                 </Text>
                 <Text style={{ fontSize: 12, color: COLORS.gray[500], marginTop: 2 }}>
-                  Tải lên ảnh có sẵn trong thư viện
+                  {lang === 'en' ? 'Upload existing photo from gallery' : 'Tải lên ảnh có sẵn trong thư viện'}
                 </Text>
               </View>
               <ChevronRight size={18} color={COLORS.gray[400]} />
@@ -821,10 +830,10 @@ export default function KycScreen() {
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={{ fontSize: 15, fontWeight: '700', color: '#5B21B6' }}>
-                    Dùng ảnh mẫu thử nghiệm (Test nhanh)
+                    {lang === 'en' ? 'Use sample test photo (Quick test)' : 'Dùng ảnh mẫu thử nghiệm (Test nhanh)'}
                   </Text>
                   <Text style={{ fontSize: 12, color: '#7C3AED', marginTop: 2 }}>
-                    Tự động điền ảnh chuẩn để nộp duyệt nhanh
+                    {lang === 'en' ? 'Auto-fills valid ID photos for quick testing' : 'Tự động điền ảnh chuẩn để nộp duyệt nhanh'}
                   </Text>
                 </View>
                 <ChevronRight size={18} color="#A78BFA" />

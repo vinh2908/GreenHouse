@@ -5,11 +5,13 @@ import { useRouter } from 'expo-router';
 import { ArrowRight, CheckCircle2 } from 'lucide-react-native';
 import Toast from 'react-native-toast-message';
 import { useAuthStore } from '@/stores/auth.store';
+import { useTranslation } from '@/hooks/use-i18n';
 import { useSwitchRole } from '@/hooks/use-api';
 import { Button, Card, COLORS } from '@/components/ui';
 
 export default function SelectRoleScreen() {
   const router = useRouter();
+  const { t, fs, lang } = useTranslation();
   const { user, switchRole: updateStoreRole } = useAuthStore();
   const switchRoleMutation = useSwitchRole();
   const [selectedRole, setSelectedRole] = useState<'customer' | 'helper'>('customer');
@@ -25,12 +27,12 @@ export default function SelectRoleScreen() {
         type: 'success',
         text1:
           selectedRole === 'customer'
-            ? 'Chào mừng bạn đến với Green House!'
-            : 'Chào mừng đối tác Green House!',
+            ? (lang === 'en' ? 'Welcome to Green House!' : 'Chào mừng bạn đến với Green House!')
+            : (lang === 'en' ? 'Welcome Green House Partner!' : 'Chào mừng đối tác Green House!'),
         text2:
           selectedRole === 'customer'
-            ? 'Bắt đầu tìm kiếm dịch vụ tiện ích'
-            : 'Bắt đầu nhận công việc và gia tăng thu nhập',
+            ? (lang === 'en' ? 'Start searching for handy services' : 'Bắt đầu tìm kiếm dịch vụ tiện ích')
+            : (lang === 'en' ? 'Start receiving jobs and earning income' : 'Bắt đầu nhận công việc và gia tăng thu nhập'),
       });
 
       if (selectedRole === 'helper') {
@@ -41,7 +43,7 @@ export default function SelectRoleScreen() {
     } catch (err: unknown) {
       const msg =
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-        'Đã có lỗi xảy ra';
+        (lang === 'en' ? 'An error occurred' : 'Đã có lỗi xảy ra');
       Toast.show({ type: 'error', text1: msg });
       // Fallback redirect
       if (selectedRole === 'helper') {
@@ -97,7 +99,7 @@ export default function SelectRoleScreen() {
                 textAlign: 'center',
               }}
             >
-              Chào mừng, {user?.full_name?.split(' ').slice(-1)[0] ?? 'bạn'}!
+              {lang === 'en' ? `Welcome, ${user?.full_name?.split(' ').slice(-1)[0] ?? 'friend'}!` : `Chào mừng, ${user?.full_name?.split(' ').slice(-1)[0] ?? 'bạn'}!`}
             </Text>
             <Text
               style={{
@@ -108,9 +110,9 @@ export default function SelectRoleScreen() {
                 lineHeight: 22,
               }}
             >
-              Bạn muốn sử dụng Green House như thế nào?{'\n'}
+              {lang === 'en' ? 'How would you like to use Green House?\n' : 'Bạn muốn sử dụng Green House như thế nào?\n'}
               <Text style={{ fontSize: 13, color: COLORS.gray[400] }}>
-                (Bạn có thể chuyển đổi linh hoạt bất kỳ lúc nào)
+                {lang === 'en' ? '(You can switch anytime in settings)' : '(Bạn có thể chuyển đổi linh hoạt bất kỳ lúc nào)'}
               </Text>
             </Text>
           </View>
@@ -165,13 +167,14 @@ export default function SelectRoleScreen() {
                 </View>
                 <View>
                   <Text style={{ fontSize: 18, fontWeight: '700', color: COLORS.gray[900] }}>
-                    Tôi cần thuê dịch vụ
+                    {lang === 'en' ? 'I need services' : 'Tôi cần thuê dịch vụ'}
                   </Text>
                   <Text
                     style={{ fontSize: 14, color: COLORS.gray[600], marginTop: 4, lineHeight: 20 }}
                   >
-                    Tìm người giúp việc, tổng vệ sinh, nấu ăn, sửa chữa điện nước gia đình nhanh
-                    chóng, tin cậy.
+                    {lang === 'en'
+                      ? 'Find home cleaners, cooks, electricians and plumbers quickly and reliably.'
+                      : 'Tìm người giúp việc, tổng vệ sinh, nấu ăn, sửa chữa điện nước gia đình nhanh chóng, tin cậy.'}
                   </Text>
                 </View>
               </Card>
@@ -225,13 +228,14 @@ export default function SelectRoleScreen() {
                 </View>
                 <View>
                   <Text style={{ fontSize: 18, fontWeight: '700', color: COLORS.gray[900] }}>
-                    Tôi muốn nhận việc
+                    {lang === 'en' ? 'I want to work' : 'Tôi muốn nhận việc'}
                   </Text>
                   <Text
                     style={{ fontSize: 14, color: COLORS.gray[600], marginTop: 4, lineHeight: 20 }}
                   >
-                    Trở thành đối tác giúp việc, thợ sửa chữa để kết nối với hàng nghìn khách hàng
-                    xung quanh bạn.
+                    {lang === 'en'
+                      ? 'Become a helper partner to connect with thousands of customers around you.'
+                      : 'Trở thành đối tác giúp việc, thợ sửa chữa để kết nối với hàng nghìn khách hàng xung quanh bạn.'}
                   </Text>
                 </View>
               </Card>
@@ -242,7 +246,7 @@ export default function SelectRoleScreen() {
         {/* Action Button */}
         <View style={{ marginTop: 24 }}>
           <Button
-            title="Bắt đầu trải nghiệm"
+            title={lang === 'en' ? 'Get Started' : 'Bắt đầu trải nghiệm'}
             loading={loading}
             onPress={handleConfirmRole}
             icon={<ArrowRight size={18} color="#fff" />}

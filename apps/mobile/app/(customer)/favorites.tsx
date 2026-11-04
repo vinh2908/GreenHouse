@@ -10,6 +10,7 @@ import {
   useRebookJob,
   type FavoriteHelperItem,
 } from '@/hooks/use-api';
+import { useTranslation } from '@/hooks/use-i18n';
 import apiClient from '@/services/api-client';
 import { Avatar, Card, COLORS, EmptyState, LoadingSpinner } from '@/components/ui';
 
@@ -20,6 +21,7 @@ function helperOf(fav: FavoriteHelperItem) {
 export default function FavoriteHelpersScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { t, fs, lang } = useTranslation();
   const { data: favorites, isLoading, isRefetching, refetch } = useFavorites();
   const removeFavorite = useRemoveFavorite();
   const rebookJob = useRebookJob();
@@ -37,7 +39,7 @@ export default function FavoriteHelpersScreen() {
       pathname: '/(customer)/booking',
       params: {
         favorite_helper_id: helper._id,
-        favorite_helper_name: helper.full_name ?? 'Thợ yêu thích',
+        favorite_helper_name: helper.full_name ?? (lang === 'en' ? 'Favorite Helper' : 'Thợ yêu thích'),
       },
     });
   };
@@ -52,14 +54,18 @@ export default function FavoriteHelpersScreen() {
       );
       const lastJob = data.data;
       Alert.alert(
-        'Đặt lại việc với thợ này?',
-        `Đơn mới sẽ giống đơn "${lastJob.title}" (ngày mai, ${
-          lastJob.preferred_time_start ?? '09:00'
-        }) và được ưu tiên gửi riêng cho ${helper.full_name ?? 'thợ'} trong 24 giờ.`,
+        lang === 'en' ? 'Rebook with this helper?' : 'Đặt lại việc với thợ này?',
+        lang === 'en'
+          ? `New job will be similar to "${lastJob.title}" (tomorrow, ${
+              lastJob.preferred_time_start ?? '09:00'
+            }) and prioritized exclusively for ${helper.full_name ?? 'helper'} for 24 hours.`
+          : `Đơn mới sẽ giống đơn "${lastJob.title}" (ngày mai, ${
+              lastJob.preferred_time_start ?? '09:00'
+            }) và được ưu tiên gửi riêng cho ${helper.full_name ?? 'thợ'} trong 24 giờ.`,
         [
-          { text: 'Để sau', style: 'cancel' },
+          { text: lang === 'en' ? 'Not now' : 'Để sau', style: 'cancel' },
           {
-            text: 'Đặt lại ngay',
+            text: lang === 'en' ? 'Rebook Now' : 'Đặt lại ngay',
             onPress: async () => {
               try {
                 const res = await rebookJob.mutateAsync({ sourceJobId: lastJob._id });
@@ -79,8 +85,14 @@ export default function FavoriteHelpersScreen() {
     } catch {
       Toast.show({
         type: 'info',
-        text1: 'Chưa có đơn hoàn thành với thợ này',
-        text2: 'Hãy dùng "Đặt việc mới" để tạo đơn đầu tiên với thợ.',
+        text1:
+          lang === 'en'
+            ? 'No completed job with this helper yet'
+            : 'Chưa có đơn hoàn thành với thợ này',
+        text2:
+          lang === 'en'
+            ? 'Use "Book New Job" to create your first order with this helper.'
+            : 'Hãy dùng "Đặt việc mới" để tạo đơn đầu tiên với thợ.',
       });
     }
   };
@@ -89,12 +101,14 @@ export default function FavoriteHelpersScreen() {
     const helper = helperOf(fav);
     if (!helper) return;
     Alert.alert(
-      'Bỏ thợ yêu thích?',
-      `Bỏ ${helper.full_name ?? 'thợ này'} khỏi danh sách yêu thích?`,
+      lang === 'en' ? 'Remove favorite helper?' : 'Bỏ thợ yêu thích?',
+      lang === 'en'
+        ? `Remove ${helper.full_name ?? 'this helper'} from your favorites list?`
+        : `Bỏ ${helper.full_name ?? 'thợ này'} khỏi danh sách yêu thích?`,
       [
-        { text: 'Ở lại', style: 'cancel' },
+        { text: lang === 'en' ? 'Stay' : 'Ở lại', style: 'cancel' },
         {
-          text: 'Bỏ yêu thích',
+          text: lang === 'en' ? 'Remove' : 'Bỏ yêu thích',
           style: 'destructive',
           onPress: () => removeFavorite.mutate(helper._id),
         },
@@ -135,10 +149,12 @@ export default function FavoriteHelpersScreen() {
         </TouchableOpacity>
         <View style={{ flex: 1 }}>
           <Text style={{ fontSize: 18, fontWeight: '800', color: COLORS.gray[900] }}>
-            Thợ yêu thích ❤️
+            {lang === 'en' ? 'Favorite Helpers ❤️' : 'Thợ yêu thích ❤️'}
           </Text>
           <Text style={{ fontSize: 12, color: COLORS.gray[500] }}>
-            Đặt việc nhanh và ưu tiên gửi riêng cho thợ quen
+            {lang === 'en'
+              ? 'Quick rebooking and exclusive dispatch priority for trusted helpers'
+              : 'Đặt việc nhanh và ưu tiên gửi riêng cho thợ quen'}
           </Text>
         </View>
       </View>
@@ -160,9 +176,13 @@ export default function FavoriteHelpersScreen() {
           {(favorites ?? []).length === 0 ? (
             <EmptyState
               emoji="❤️"
-              title="Chưa có thợ yêu thích"
-              subtitle="Khi gặp thợ làm tốt, hãy bấm trái tim ở hồ sơ thợ hoặc ở đơn đã hoàn thành để lưu lại và đặt việc nhanh lần sau."
-              action="Đăng việc ngay"
+              title={lang === 'en' ? 'No favorite helpers yet' : 'Chưa có thợ yêu thích'}
+              subtitle={
+                lang === 'en'
+                  ? 'When you find a great helper, tap the heart icon on their profile or on a completed job to save them for easy rebooking.'
+                  : 'Khi gặp thợ làm tốt, hãy bấm trái tim ở hồ sơ thợ hoặc ở đơn đã hoàn thành để lưu lại và đặt việc nhanh lần sau.'
+              }
+              action={lang === 'en' ? 'Post a Job Now' : 'Đăng việc ngay'}
               onAction={() => router.push('/(customer)/booking')}
             />
           ) : (
@@ -185,7 +205,7 @@ export default function FavoriteHelpersScreen() {
                     <Avatar name={helper.full_name} uri={helper.avatar} size={54} />
                     <View style={{ flex: 1 }}>
                       <Text style={{ fontSize: 16, fontWeight: '800', color: COLORS.gray[900] }}>
-                        {helper.full_name ?? 'Thợ'}
+                        {helper.full_name ?? (lang === 'en' ? 'Helper' : 'Thợ')}
                       </Text>
                       <View
                         style={{
@@ -206,7 +226,8 @@ export default function FavoriteHelpersScreen() {
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
                           <Briefcase size={13} color={COLORS.gray[500]} />
                           <Text style={{ fontSize: 12.5, color: COLORS.gray[600] }}>
-                            {p?.completed_jobs ?? 0} đơn đã xong
+                            {(p?.completed_jobs ?? 0) +
+                              (lang === 'en' ? ' jobs done' : ' đơn đã xong')}
                           </Text>
                         </View>
                       </View>
@@ -236,7 +257,7 @@ export default function FavoriteHelpersScreen() {
                     >
                       <RotateCcw size={15} color="#fff" />
                       <Text style={{ color: '#fff', fontWeight: '700', fontSize: 13 }}>
-                        Đặt lại 1 chạm
+                        {lang === 'en' ? '1-Tap Rebook' : 'Đặt lại 1 chạm'}
                       </Text>
                     </TouchableOpacity>
                     <TouchableOpacity
@@ -255,7 +276,7 @@ export default function FavoriteHelpersScreen() {
                     >
                       <CalendarPlus size={15} color={COLORS.primaryDark} />
                       <Text style={{ color: COLORS.primaryDark, fontWeight: '700', fontSize: 13 }}>
-                        Đặt việc mới
+                        {lang === 'en' ? 'Book New Job' : 'Đặt việc mới'}
                       </Text>
                     </TouchableOpacity>
                   </View>
