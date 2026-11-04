@@ -11,6 +11,7 @@ import { PhotoThumbRow } from '@/components/common/photo-thumbs';
 import { useAcceptSosBackup, useDeclineSosBackup } from '@/hooks/use-api';
 import { useNowTick, formatCountdown } from '@/hooks/use-countdown';
 import { COLORS } from '@/components/ui';
+import { useTranslation } from '@/hooks/use-i18n';
 
 export function SosBackupPopup() {
   const incoming = useSosBackupStore(s => s.incoming);
@@ -19,6 +20,7 @@ export function SosBackupPopup() {
   const accept = useAcceptSosBackup();
   const decline = useDeclineSosBackup();
   const now = useNowTick(!!incoming);
+  const { t } = useTranslation();
 
   // Hết hạn đếm ngược phía client → tự đóng (server cũng sẽ gửi resolved/expired)
   useEffect(() => {
@@ -39,15 +41,15 @@ export function SosBackupPopup() {
       clearIncoming();
       Toast.show({
         type: 'success',
-        text1: 'Bạn đã nhận thay đơn này!',
-        text2: 'Hãy di chuyển đến khách hàng như đơn thường',
+        text1: t('sos_popup_accepted_success'),
+        text2: t('sos_popup_accepted_sub'),
       });
       router.push({ pathname: '/helper-job-detail/[id]', params: { id: jobId } });
     } catch (err: any) {
       const status = err?.response?.status;
       if (status === 409) {
         clearIncoming();
-        Toast.show({ type: 'info', text1: 'Đã có người khác nhận đơn này rồi' });
+        Toast.show({ type: 'info', text1: t('sos_popup_already_taken') });
       } else {
         const msg = err?.response?.data?.message;
         Toast.show({
@@ -109,13 +111,12 @@ export function SosBackupPopup() {
               marginBottom: 6,
             }}
           >
-            Có người cần backup!
+            {t('sos_popup_title')}
           </Text>
           <Text
             style={{ fontSize: 14, color: COLORS.gray[700], textAlign: 'center', lineHeight: 20 }}
           >
-            Một thợ khác gặp sự cố và khách hàng đã đồng ý đổi người. Bạn có thể nhận thay đơn này
-            không?
+            {t('sos_popup_desc')}
           </Text>
 
           <View
@@ -128,20 +129,20 @@ export function SosBackupPopup() {
             }}
           >
             <Text style={{ fontWeight: '800', fontSize: 15, color: COLORS.gray[900] }}>
-              {incoming.service_name ?? 'Dịch vụ tại nhà'}
+              {incoming.service_name ?? t('sos_popup_service_fallback')}
               {incoming.job_title ? ` — ${incoming.job_title}` : ''}
             </Text>
             {area ? (
-              <Text style={{ fontSize: 13.5, color: COLORS.gray[700] }}>📍 Khu vực: {area}</Text>
+              <Text style={{ fontSize: 13.5, color: COLORS.gray[700] }}>{t('sos_popup_area')} {area}</Text>
             ) : null}
             {incoming.distance_km != null ? (
               <Text style={{ fontSize: 13.5, color: COLORS.gray[700] }}>
-                📏 Cách bạn khoảng {incoming.distance_km} km
+                {t('sos_popup_distance', { dist: incoming.distance_km })}
               </Text>
             ) : null}
             {incoming.payout != null ? (
               <Text style={{ fontSize: 13.5, color: COLORS.gray[700] }}>
-                💰 Thực nhận:{' '}
+                {t('sos_popup_payout')}{' '}
                 <Text style={{ fontWeight: '800', color: COLORS.success }}>
                   {incoming.payout.toLocaleString('vi-VN')}₫
                 </Text>
@@ -166,7 +167,7 @@ export function SosBackupPopup() {
                 color: remainingMs <= 60_000 ? '#DC2626' : COLORS.gray[500],
               }}
             >
-              ⏱ Còn {formatCountdown(remainingMs)} để nhận đơn
+              ⏱ {t('sos_popup_auto_skip', { sec: Math.ceil(remainingMs / 1000) })}
             </Text>
           ) : null}
 
@@ -186,7 +187,7 @@ export function SosBackupPopup() {
               <ActivityIndicator color="#fff" />
             ) : (
               <Text style={{ color: '#fff', fontWeight: '800', fontSize: 15.5 }}>
-                ✓ Nhận thay ngay
+                {t('sos_popup_accept')}
               </Text>
             )}
           </TouchableOpacity>
@@ -202,7 +203,7 @@ export function SosBackupPopup() {
             {decline.isPending ? (
               <ActivityIndicator color={COLORS.gray[500]} size="small" />
             ) : (
-              <Text style={{ color: COLORS.gray[500], fontWeight: '700', fontSize: 14 }}>Bỏ qua</Text>
+              <Text style={{ color: COLORS.gray[500], fontWeight: '700', fontSize: 14 }}>{t('sos_popup_skip')}</Text>
             )}
           </TouchableOpacity>
         </View>

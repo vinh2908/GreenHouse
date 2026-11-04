@@ -29,6 +29,8 @@ import {
 } from 'lucide-react-native';
 import { useAuthStore } from '@/stores/auth.store';
 import { Card, COLORS } from '@/components/ui';
+import { useTranslation } from '@/hooks/use-i18n';
+import { I18nKey } from '@/services/i18n';
 
 export const PERMISSION_STORAGE_KEY = 'gh_initial_permissions_requested_v1';
 
@@ -36,6 +38,8 @@ export interface PermissionItem {
   id: 'notifications' | 'location' | 'camera' | 'microphone' | 'photos';
   title: string;
   description: string;
+  titleKey: I18nKey;
+  descKey: I18nKey;
   icon: typeof Bell;
   granted: boolean;
 }
@@ -45,30 +49,40 @@ const INITIAL_PERMISSIONS: Omit<PermissionItem, 'granted'>[] = [
     id: 'notifications',
     title: 'Thông báo',
     description: 'Để nhận thông báo việc mới, báo giá, tin nhắn khi out app.',
+    titleKey: 'perm_notifications_title',
+    descKey: 'perm_notifications_desc',
     icon: Bell,
   },
   {
     id: 'location',
     title: 'Vị trí khi dùng app',
     description: 'Để tìm thợ gần bạn và định vị địa chỉ làm việc.',
+    titleKey: 'perm_location_title',
+    descKey: 'perm_location_desc',
     icon: MapPin,
   },
   {
     id: 'camera',
     title: 'Camera',
     description: 'Để chụp ảnh e-KYC và ảnh sự cố.',
+    titleKey: 'perm_camera_title',
+    descKey: 'perm_camera_desc',
     icon: Camera,
   },
   {
     id: 'microphone',
     title: 'Microphone',
     description: 'Để gọi điện cho thợ và khách.',
+    titleKey: 'perm_microphone_title',
+    descKey: 'perm_microphone_desc',
     icon: Mic,
   },
   {
     id: 'photos',
     title: 'Thư viện ảnh',
     description: 'Để chọn ảnh có sẵn khi cần gửi ảnh.',
+    titleKey: 'perm_photos_title',
+    descKey: 'perm_photos_desc',
     icon: ImageIcon,
   },
 ];
@@ -244,6 +258,8 @@ export function InitialPermissionsModal() {
     setStatusMap(updated);
   };
 
+  const { t, fs } = useTranslation();
+
   if (!visible) return null;
 
   return (
@@ -295,7 +311,7 @@ export function InitialPermissionsModal() {
                 textAlign: 'center',
               }}
             >
-              Chào mừng bạn đến Green House!
+              {t('perm_modal_title')}
             </Text>
             <Text
               style={{
@@ -306,8 +322,7 @@ export function InitialPermissionsModal() {
                 lineHeight: 18,
               }}
             >
-              Để ứng dụng hoạt động đầy đủ và chính xác nhất, vui lòng cho phép các quyền cơ bản dưới
-              đây:
+              {t('perm_modal_subtitle')}
             </Text>
           </View>
 
@@ -355,7 +370,7 @@ export function InitialPermissionsModal() {
                         color: COLORS.gray[900],
                       }}
                     >
-                      {item.title}
+                      {t(item.titleKey)}
                     </Text>
                     <Text
                       style={{
@@ -365,14 +380,14 @@ export function InitialPermissionsModal() {
                         lineHeight: 16,
                       }}
                     >
-                      {item.description}
+                      {t(item.descKey)}
                     </Text>
                   </View>
 
                   {isGranted ? (
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                       <CheckCircle2 size={18} color="#16A34A" />
-                      <Text style={{ fontSize: 12, fontWeight: '700', color: '#16A34A' }}>Đã cấp</Text>
+                      <Text style={{ fontSize: 12, fontWeight: '700', color: '#16A34A' }}>{t('perm_granted')}</Text>
                     </View>
                   ) : (
                     <TouchableOpacity
@@ -384,7 +399,7 @@ export function InitialPermissionsModal() {
                         backgroundColor: '#16A34A',
                       }}
                     >
-                      <Text style={{ fontSize: 11.5, fontWeight: '700', color: '#fff' }}>Cấp quyền</Text>
+                      <Text style={{ fontSize: 11.5, fontWeight: '700', color: '#fff' }}>{t('perm_grant_btn')}</Text>
                     </TouchableOpacity>
                   )}
                 </View>
@@ -415,7 +430,7 @@ export function InitialPermissionsModal() {
                 <ActivityIndicator color="#fff" size="small" />
               ) : (
                 <Text style={{ color: '#fff', fontSize: 15, fontWeight: '800' }}>
-                  Cấp tất cả quyền
+                  {t('perm_grant_all')}
                 </Text>
               )}
             </TouchableOpacity>
@@ -430,7 +445,7 @@ export function InitialPermissionsModal() {
               }}
             >
               <Text style={{ color: COLORS.gray[500], fontSize: 13.5, fontWeight: '600' }}>
-                Để sau / Bỏ qua
+                {t('perm_skip')}
               </Text>
             </TouchableOpacity>
           </View>
@@ -446,6 +461,7 @@ export function InitialPermissionsModal() {
 export function AppPermissionsSection() {
   const [statuses, setStatuses] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(true);
+  const { t } = useTranslation();
 
   const loadStatuses = useCallback(async () => {
     setLoading(true);
@@ -473,7 +489,7 @@ export function AppPermissionsSection() {
           letterSpacing: 0.5,
         }}
       >
-        Quyền ứng dụng
+        {t('profile_permissions')}
       </Text>
 
       <Card style={{ padding: 14, gap: 12 }}>
@@ -493,9 +509,9 @@ export function AppPermissionsSection() {
                 <Icon size={17} color={isGranted ? '#16A34A' : COLORS.gray[500]} />
                 <View style={{ flex: 1 }}>
                   <Text style={{ fontSize: 13.5, fontWeight: '600', color: COLORS.gray[800] }}>
-                    {item.title}
+                    {t(item.titleKey)}
                   </Text>
-                  <Text style={{ fontSize: 11, color: COLORS.gray[500] }}>{item.description}</Text>
+                  <Text style={{ fontSize: 11, color: COLORS.gray[500] }}>{t(item.descKey)}</Text>
                 </View>
               </View>
 
@@ -515,7 +531,7 @@ export function AppPermissionsSection() {
                     }}
                   >
                     <CheckCircle2 size={13} color="#16A34A" />
-                    <Text style={{ fontSize: 11, fontWeight: '700', color: '#16A34A' }}>Đã bật</Text>
+                    <Text style={{ fontSize: 11, fontWeight: '700', color: '#16A34A' }}>{t('profile_status_granted')}</Text>
                   </View>
                 ) : (
                   <View
@@ -530,7 +546,7 @@ export function AppPermissionsSection() {
                     }}
                   >
                     <AlertCircle size={13} color="#9CA3AF" />
-                    <Text style={{ fontSize: 11, fontWeight: '600', color: '#6B7280' }}>Chưa cấp</Text>
+                    <Text style={{ fontSize: 11, fontWeight: '600', color: '#6B7280' }}>{t('profile_status_denied')}</Text>
                   </View>
                 )}
               </View>
@@ -556,7 +572,7 @@ export function AppPermissionsSection() {
         >
           <ExternalLink size={15} color="#16A34A" />
           <Text style={{ fontSize: 13, fontWeight: '700', color: '#16A34A' }}>
-            Mở Cài đặt hệ thống để thay đổi quyền
+            {t('perm_open_settings_desc')}
           </Text>
         </TouchableOpacity>
       </Card>
