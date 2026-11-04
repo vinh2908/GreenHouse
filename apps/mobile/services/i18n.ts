@@ -224,9 +224,9 @@ export const STRINGS = {
     vi: 'Xem các đơn hàng mới cần thợ và theo dõi tiến độ công việc',
     en: 'View new jobs needing helpers and track ongoing work',
   },
-  helper_jobs_tab_available: { vi: 'Đơn mới quanh đây', en: 'New jobs nearby' },
-  helper_jobs_tab_active: { vi: 'Đang thực hiện', en: 'In progress' },
-  helper_jobs_tab_history: { vi: 'Lịch sử hoàn tất', en: 'Completed history' },
+  helper_jobs_tab_available: { vi: 'Đơn mới', en: 'New' },
+  helper_jobs_tab_active: { vi: 'Đang làm', en: 'Active' },
+  helper_jobs_tab_history: { vi: 'Lịch sử', en: 'History' },
   helper_jobs_demand_map: { vi: 'Bản đồ nhu cầu', en: 'Demand map' },
   helper_jobs_demand_map_sub: {
     vi: 'Xem khu vực nào đang có nhiều đơn chờ báo giá nhất',
