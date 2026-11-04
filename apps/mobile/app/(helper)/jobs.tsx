@@ -525,9 +525,9 @@ export default function HelperJobsScreen() {
           }}
           contentContainerStyle={{
             flexDirection: 'row',
-            paddingHorizontal: 16,
-            paddingVertical: 10,
-            gap: 8,
+            paddingHorizontal: 8,
+            paddingVertical: 8,
+            gap: 6,
           }}
         >
           {tabs.map((tItem, i) => (
@@ -539,7 +539,7 @@ export default function HelperJobsScreen() {
                 tabLayouts.current[i] = e.nativeEvent.layout;
               }}
               style={{
-                paddingHorizontal: 16,
+                paddingHorizontal: 12,
                 paddingVertical: 8,
                 borderRadius: 20,
                 backgroundColor: tab === i ? COLORS.primary : COLORS.gray[100],
