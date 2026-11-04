@@ -58,7 +58,7 @@ const TX_COLORS: Record<string, string> = {
 };
 
 export default function HelperEarningsScreen() {
-  const { t, fs, lang } = useTranslation();
+  const { t, fs, lang, formatTxDesc } = useTranslation();
   const { data: wallet, isLoading } = useWallet();
   const { data: txData, isLoading: isTxLoading } = useTransactions(1);
   const { data: profile } = useHelperProfile();
@@ -358,7 +358,7 @@ export default function HelperEarningsScreen() {
                           <Text
                             style={{ fontWeight: '700', fontSize: fs(14), color: COLORS.gray[900] }}
                           >
-                            {tx.description}
+                            {formatTxDesc(tx.description)}
                           </Text>
                           <Text style={{ fontSize: fs(12), color: COLORS.gray[500], marginTop: 2 }}>
                             {dayjs(tx.created_at).format('DD/MM/YYYY HH:mm')}

@@ -7,6 +7,9 @@ import {
   translateServiceDescription,
   formatVoucherDescription,
   translateLoyaltyTier,
+  formatNotificationTitle,
+  formatNotificationBody,
+  formatTransactionDescription,
   syncDayjsLocale,
   type I18nKey,
 } from '@/services/i18n';
@@ -47,6 +50,21 @@ export function useTranslation() {
     [language],
   );
 
+  const formatNotifTitle = useCallback(
+    (title: string | undefined | null) => formatNotificationTitle(title, language),
+    [language],
+  );
+
+  const formatNotifBody = useCallback(
+    (body: string | undefined | null) => formatNotificationBody(body, language),
+    [language],
+  );
+
+  const formatTxDesc = useCallback(
+    (desc: string | undefined | null) => formatTransactionDescription(desc, language),
+    [language],
+  );
+
   const textScale = textScaleFor(textSize);
   /** Nhân cỡ chữ theo cài đặt: fs(14) → 14 (thường) hoặc 17.5 (lớn). */
   const fs = useCallback((base: number) => Math.round(base * textScale * 10) / 10, [textScale]);
@@ -57,6 +75,9 @@ export function useTranslation() {
     tServiceDesc,
     formatVoucherDesc,
     tLoyaltyTier,
+    formatNotifTitle,
+    formatNotifBody,
+    formatTxDesc,
     language,
     lang: language,
     setLanguage,

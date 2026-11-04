@@ -366,9 +366,7 @@ export default function CustomerHomeScreen() {
   const [quickServiceChip, setQuickServiceChip] = useState<
     'don_nha' | 'boc_hang' | 'may_lanh' | 'khac'
   >('boc_hang');
-  const [quickDescription, setQuickDescription] = useState(
-    'Bốc hàng từ kho lên xe tải, chở đến nhà mới rồi dỡ xuống',
-  );
+  const [quickDescription, setQuickDescription] = useState('');
   const [quickDealPrice, setQuickDealPrice] = useState('200000');
   const [quickDateChip, setQuickDateChip] = useState<'today' | 'tomorrow' | 'sat' | 'sun' | null>(
     'tomorrow',
@@ -987,17 +985,14 @@ export default function CustomerHomeScreen() {
   // Chọn loại công việc chip trong Quick Booking
   const handleSelectQuickServiceChip = (chip: 'don_nha' | 'boc_hang' | 'may_lanh' | 'khac') => {
     setQuickServiceChip(chip);
+    setQuickDescription('');
     if (chip === 'don_nha') {
-      setQuickDescription('Dọn dẹp nhà cửa 2 phòng ngủ, lau sàn, rửa chén bát và lau kính.');
       setQuickDealPrice('150000');
     } else if (chip === 'boc_hang') {
-      setQuickDescription('Bốc hàng từ kho lên xe tải, chở đến nhà mới rồi dỡ xuống');
       setQuickDealPrice('200000');
     } else if (chip === 'may_lanh') {
-      setQuickDescription('Vệ sinh bảo dưỡng 2 máy lạnh treo tường phòng khách và phòng ngủ');
       setQuickDealPrice('250000');
     } else {
-      setQuickDescription('');
       setQuickDealPrice('100000');
     }
   };

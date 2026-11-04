@@ -328,8 +328,8 @@ function LiveTrackingMapComponent({
         <View style={styles.dot} />
         <Text style={styles.statusText} numberOfLines={1}>
           {status === 'helper_on_the_way'
-            ? trackingTitle(status, viewerRole)
-            : title || trackingTitle(status, viewerRole)}
+            ? trackingTitle(status, viewerRole, lang)
+            : title || trackingTitle(status, viewerRole, lang)}
         </Text>
       </View>
 

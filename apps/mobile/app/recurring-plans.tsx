@@ -76,7 +76,7 @@ function statusBadge(status: RecurringPlanItem['status'], lang: string = 'vi') {
 export default function RecurringPlansScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { t, fs, lang } = useTranslation();
+  const { t, fs, lang, tService } = useTranslation();
   const { data: plans, isLoading, isRefetching, refetch } = useRecurringPlans();
   const pausePlan = usePauseRecurringPlan();
   const resumePlan = useResumeRecurringPlan();
@@ -230,10 +230,10 @@ export default function RecurringPlansScreen() {
                         : ''}
                     </Text>
                     <Text style={{ fontSize: 12.5, color: COLORS.gray[500], marginTop: 2 }}>
-                      {(service?.name ?? (lang === 'en' ? 'Service' : 'Dịch vụ')) +
+                      {(tService(service) || (lang === 'en' ? 'Service' : 'Dịch vụ')) +
                         (lang === 'en'
-                          ? ` · ${plan.jobs_generated} jobs created`
-                          : ` · Đã sinh ${plan.jobs_generated} đơn`)}
+                          ? ` · ${plan.jobs_generated || 0} ${plan.jobs_generated === 1 ? 'job' : 'jobs'} created`
+                          : ` · Đã sinh ${plan.jobs_generated || 0} đơn`)}
                       {helper
                         ? lang === 'en'
                           ? ` · Preferred helper: ${helper.full_name ?? ''}`
