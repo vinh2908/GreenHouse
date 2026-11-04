@@ -17,7 +17,7 @@ export function SosCustomerDecisionPopup() {
   const clearDecision = useSosBackupStore(s => s.clearDecision);
   const decide = useCustomerSosDecision();
   const now = useNowTick(!!decision);
-  const { t } = useTranslation();
+  const { t, fs } = useTranslation();
 
   if (!decision) return null;
 
@@ -74,7 +74,7 @@ export function SosCustomerDecisionPopup() {
           <Text style={{ fontSize: 34, textAlign: 'center', marginBottom: 6 }}>⚠️</Text>
           <Text
             style={{
-              fontSize: 18,
+              fontSize: fs(18),
               fontWeight: '800',
               color: COLORS.gray[900],
               textAlign: 'center',
@@ -84,7 +84,7 @@ export function SosCustomerDecisionPopup() {
             {t('sos_customer_popup_title')}
           </Text>
           <Text
-            style={{ fontSize: 14, color: COLORS.gray[700], textAlign: 'center', lineHeight: 20 }}
+            style={{ fontSize: fs(14), color: COLORS.gray[700], textAlign: 'center', lineHeight: Math.round(fs(20)) }}
           >
             {decision.service_name ?? decision.job_title ?? ''}{' '}
             {t('sos_customer_popup_reason_prefix')} <Text style={{ fontWeight: '700' }}>{reasonLabel}</Text>
@@ -109,10 +109,10 @@ export function SosCustomerDecisionPopup() {
               gap: 8,
             }}
           >
-            <Text style={{ fontSize: 13.5, color: COLORS.gray[800], lineHeight: 19 }}>
+            <Text style={{ fontSize: fs(13.5), color: COLORS.gray[800], lineHeight: Math.round(fs(19)) }}>
               {t('sos_customer_popup_replace_desc')}
             </Text>
-            <Text style={{ fontSize: 13.5, color: COLORS.gray[800], lineHeight: 19 }}>
+            <Text style={{ fontSize: fs(13.5), color: COLORS.gray[800], lineHeight: Math.round(fs(19)) }}>
               {t('sos_customer_popup_cancel_desc')}
             </Text>
           </View>
@@ -122,7 +122,7 @@ export function SosCustomerDecisionPopup() {
               style={{
                 textAlign: 'center',
                 marginTop: 14,
-                fontSize: 13,
+                fontSize: fs(13),
                 fontWeight: '700',
                 color: expired || remainingMs <= 60_000 ? '#DC2626' : COLORS.gray[500],
               }}
@@ -148,7 +148,7 @@ export function SosCustomerDecisionPopup() {
             {decide.isPending ? (
               <ActivityIndicator color="#fff" />
             ) : (
-              <Text style={{ color: '#fff', fontWeight: '800', fontSize: 15.5 }}>
+              <Text style={{ color: '#fff', fontWeight: '800', fontSize: fs(15.5) }}>
                 {t('sos_customer_popup_accept_btn')}
               </Text>
             )}
@@ -166,7 +166,7 @@ export function SosCustomerDecisionPopup() {
               opacity: decide.isPending || expired ? 0.6 : 1,
             }}
           >
-            <Text style={{ color: '#DC2626', fontWeight: '800', fontSize: 15 }}>
+            <Text style={{ color: '#DC2626', fontWeight: '800', fontSize: fs(15) }}>
               {t('sos_customer_popup_cancel_btn')}
             </Text>
           </TouchableOpacity>

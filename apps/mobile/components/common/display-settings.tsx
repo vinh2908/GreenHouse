@@ -14,6 +14,7 @@ function Segmented<T extends string>({
   value: T;
   onChange: (v: T) => void;
 }) {
+  const { fs } = useTranslation();
   return (
     <View
       style={{
@@ -41,7 +42,7 @@ function Segmented<T extends string>({
           >
             <Text
               style={{
-                fontSize: 13.5,
+                fontSize: fs(13.5),
                 fontWeight: '800',
                 color: active ? '#fff' : COLORS.gray[600],
               }}

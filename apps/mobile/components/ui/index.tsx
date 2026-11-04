@@ -86,8 +86,9 @@ export function Button({
           ? COLORS.gray[800]
           : COLORS.primary;
 
+  const { fs } = useTranslation();
   const paddingY = { sm: 9, md: 13, lg: 16 }[size];
-  const fontSize = { sm: 13, md: 15, lg: 16 }[size];
+  const fontSize = fs({ sm: 13, md: 15, lg: 16 }[size]);
 
   return (
     <TouchableOpacity
@@ -145,10 +146,11 @@ interface InputProps extends TextInputProps {
 }
 
 export function Input({ label, error, leftIcon, rightIcon, style, ...props }: InputProps) {
+  const { fs } = useTranslation();
   return (
     <View style={{ gap: 6 }}>
       {label && (
-        <Text style={{ fontSize: 13, fontWeight: '600', color: COLORS.gray[700] }}>{label}</Text>
+        <Text style={{ fontSize: fs(13), fontWeight: '600', color: COLORS.gray[700] }}>{label}</Text>
       )}
       <View
         style={{
@@ -167,7 +169,7 @@ export function Input({ label, error, leftIcon, rightIcon, style, ...props }: In
           style={[
             {
               flex: 1,
-              fontSize: 15,
+              fontSize: fs(15),
               color: COLORS.gray[900],
               paddingVertical: 13,
             },
@@ -178,7 +180,7 @@ export function Input({ label, error, leftIcon, rightIcon, style, ...props }: In
         />
         {rightIcon}
       </View>
-      {error && <Text style={{ fontSize: 12, color: COLORS.error, marginTop: -2 }}>{error}</Text>}
+      {error && <Text style={{ fontSize: fs(12), color: COLORS.error, marginTop: -2 }}>{error}</Text>}
     </View>
   );
 }
@@ -233,6 +235,7 @@ export function Badge({
   textColor = COLORS.primary,
   size = 'md',
 }: BadgeProps) {
+  const { fs } = useTranslation();
   return (
     <View
       style={{
@@ -243,7 +246,7 @@ export function Badge({
         alignSelf: 'flex-start',
       }}
     >
-      <Text style={{ fontSize: size === 'sm' ? 11 : 12, fontWeight: '700', color: textColor }}>
+      <Text style={{ fontSize: fs(size === 'sm' ? 11 : 12), fontWeight: '700', color: textColor }}>
         {label}
       </Text>
     </View>
@@ -331,12 +334,12 @@ export function SectionHeader({ title, action, onAction, subtitle }: SectionHead
         </Text>
         {action && (
           <TouchableOpacity activeOpacity={0.7} onPress={onAction}>
-            <Text style={{ fontSize: 13, color: COLORS.primary, fontWeight: '700' }}>{action}</Text>
+            <Text style={{ fontSize: fs(13), color: COLORS.primary, fontWeight: '700' }}>{action}</Text>
           </TouchableOpacity>
         )}
       </View>
       {subtitle && (
-        <Text style={{ fontSize: 12, color: COLORS.gray[500], marginTop: 2 }}>{subtitle}</Text>
+        <Text style={{ fontSize: fs(12), color: COLORS.gray[500], marginTop: 2 }}>{subtitle}</Text>
       )}
     </View>
   );
@@ -353,6 +356,7 @@ interface EmptyStateProps {
 }
 
 export function EmptyState({ emoji = '📋', title, subtitle, action, onAction }: EmptyStateProps) {
+  const { fs } = useTranslation();
   return (
     <View style={{ alignItems: 'center', paddingVertical: 36, paddingHorizontal: 20 }}>
       <View
@@ -366,21 +370,21 @@ export function EmptyState({ emoji = '📋', title, subtitle, action, onAction }
           marginBottom: 14,
         }}
       >
-        <Text style={{ fontSize: 36 }}>{emoji}</Text>
+        <Text style={{ fontSize: fs(36) }}>{emoji}</Text>
       </View>
       <Text
-        style={{ fontSize: 16, fontWeight: '700', color: COLORS.gray[800], textAlign: 'center' }}
+        style={{ fontSize: fs(16), fontWeight: '700', color: COLORS.gray[800], textAlign: 'center' }}
       >
         {title}
       </Text>
       {subtitle && (
         <Text
           style={{
-            fontSize: 13,
+            fontSize: fs(13),
             color: COLORS.gray[500],
             textAlign: 'center',
             marginTop: 6,
-            lineHeight: 19,
+            lineHeight: Math.round(fs(19)),
           }}
         >
           {subtitle}
@@ -398,7 +402,7 @@ export function EmptyState({ emoji = '📋', title, subtitle, action, onAction }
             borderRadius: 12,
           }}
         >
-          <Text style={{ color: '#fff', fontWeight: '700', fontSize: 14 }}>{action}</Text>
+          <Text style={{ color: '#fff', fontWeight: '700', fontSize: fs(14) }}>{action}</Text>
         </TouchableOpacity>
       )}
     </View>
@@ -449,10 +453,11 @@ export function JobStatusBadge({ status }: { status: string }) {
 // ─── Star Rating ───────────────────────────────────────────────────────────────
 
 export function StarRating({ rating, size = 13 }: { rating: number; size?: number }) {
+  const { fs } = useTranslation();
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}>
-      <Text style={{ fontSize: size, color: '#F59E0B' }}>★</Text>
-      <Text style={{ fontSize: size + 1, fontWeight: '700', color: COLORS.gray[800] }}>
+      <Text style={{ fontSize: fs(size), color: '#F59E0B' }}>★</Text>
+      <Text style={{ fontSize: fs(size + 1), fontWeight: '700', color: COLORS.gray[800] }}>
         {rating > 0 ? rating.toFixed(1) : '5.0'}
       </Text>
     </View>
@@ -472,8 +477,9 @@ export function PriceText({
   color?: string;
   bold?: boolean;
 }) {
+  const { fs } = useTranslation();
   return (
-    <Text style={{ fontSize: size, color, fontWeight: bold ? '800' : '500' }}>
+    <Text style={{ fontSize: fs(size), color, fontWeight: bold ? '800' : '500' }}>
       {new Intl.NumberFormat('vi-VN').format(amount)}₫
     </Text>
   );

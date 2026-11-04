@@ -20,7 +20,7 @@ export function SosBackupPopup() {
   const accept = useAcceptSosBackup();
   const decline = useDeclineSosBackup();
   const now = useNowTick(!!incoming);
-  const { t } = useTranslation();
+  const { t, fs } = useTranslation();
 
   // Hết hạn đếm ngược phía client → tự đóng (server cũng sẽ gửi resolved/expired)
   useEffect(() => {
@@ -101,10 +101,10 @@ export function SosBackupPopup() {
             borderColor: '#FECACA',
           }}
         >
-          <Text style={{ fontSize: 34, textAlign: 'center', marginBottom: 6 }}>🆘</Text>
+          <Text style={{ fontSize: fs(34), textAlign: 'center', marginBottom: 6 }}>🆘</Text>
           <Text
             style={{
-              fontSize: 18,
+              fontSize: fs(18),
               fontWeight: '800',
               color: '#991B1B',
               textAlign: 'center',
@@ -114,7 +114,7 @@ export function SosBackupPopup() {
             {t('sos_popup_title')}
           </Text>
           <Text
-            style={{ fontSize: 14, color: COLORS.gray[700], textAlign: 'center', lineHeight: 20 }}
+            style={{ fontSize: fs(14), color: COLORS.gray[700], textAlign: 'center', lineHeight: Math.round(fs(20)) }}
           >
             {t('sos_popup_desc')}
           </Text>
@@ -128,20 +128,20 @@ export function SosBackupPopup() {
               gap: 6,
             }}
           >
-            <Text style={{ fontWeight: '800', fontSize: 15, color: COLORS.gray[900] }}>
+            <Text style={{ fontWeight: '800', fontSize: fs(15), color: COLORS.gray[900] }}>
               {incoming.service_name ?? t('sos_popup_service_fallback')}
               {incoming.job_title ? ` — ${incoming.job_title}` : ''}
             </Text>
             {area ? (
-              <Text style={{ fontSize: 13.5, color: COLORS.gray[700] }}>{t('sos_popup_area')} {area}</Text>
+              <Text style={{ fontSize: fs(13.5), color: COLORS.gray[700] }}>{t('sos_popup_area')} {area}</Text>
             ) : null}
             {incoming.distance_km != null ? (
-              <Text style={{ fontSize: 13.5, color: COLORS.gray[700] }}>
+              <Text style={{ fontSize: fs(13.5), color: COLORS.gray[700] }}>
                 {t('sos_popup_distance', { dist: incoming.distance_km })}
               </Text>
             ) : null}
             {incoming.payout != null ? (
-              <Text style={{ fontSize: 13.5, color: COLORS.gray[700] }}>
+              <Text style={{ fontSize: fs(13.5), color: COLORS.gray[700] }}>
                 {t('sos_popup_payout')}{' '}
                 <Text style={{ fontWeight: '800', color: COLORS.success }}>
                   {incoming.payout.toLocaleString('vi-VN')}₫
@@ -162,7 +162,7 @@ export function SosBackupPopup() {
               style={{
                 textAlign: 'center',
                 marginTop: 14,
-                fontSize: 13,
+                fontSize: fs(13),
                 fontWeight: '700',
                 color: remainingMs <= 60_000 ? '#DC2626' : COLORS.gray[500],
               }}
@@ -186,7 +186,7 @@ export function SosBackupPopup() {
             {accept.isPending ? (
               <ActivityIndicator color="#fff" />
             ) : (
-              <Text style={{ color: '#fff', fontWeight: '800', fontSize: 15.5 }}>
+              <Text style={{ color: '#fff', fontWeight: '800', fontSize: fs(15.5) }}>
                 {t('sos_popup_accept')}
               </Text>
             )}
@@ -203,7 +203,7 @@ export function SosBackupPopup() {
             {decline.isPending ? (
               <ActivityIndicator color={COLORS.gray[500]} size="small" />
             ) : (
-              <Text style={{ color: COLORS.gray[500], fontWeight: '700', fontSize: 14 }}>{t('sos_popup_skip')}</Text>
+              <Text style={{ color: COLORS.gray[500], fontWeight: '700', fontSize: fs(14) }}>{t('sos_popup_skip')}</Text>
             )}
           </TouchableOpacity>
         </View>
