@@ -28,11 +28,10 @@ import { Button, Card, JobStatusBadge, Badge, COLORS, EmptyState } from '@/compo
 import { OfflineBanner } from '@/components/common/offline-banner';
 
 dayjs.extend(relativeTime);
-dayjs.locale('vi');
 
 export default function HelperJobsScreen() {
   const router = useRouter();
-  const { t, fs } = useTranslation();
+  const { t, tService, fs, lang } = useTranslation();
   const [tab, setTab] = useState(0);
   const tabBarScrollRef = useRef<ScrollView>(null);
   const tabLayouts = useRef<{ [key: number]: { x: number; width: number } }>({});
@@ -173,7 +172,7 @@ export default function HelperJobsScreen() {
           <Card style={{ alignItems: 'center', paddingVertical: 40, gap: 12 }}>
             <ActivityIndicator size="small" color={COLORS.primary} />
             <Text style={{ fontSize: fs(13), color: COLORS.gray[500] }}>
-              Đang kiểm tra trạng thái và tải đơn mới...
+              {lang === 'en' ? 'Checking status and loading new jobs...' : 'Đang kiểm tra trạng thái và tải đơn mới...'}
             </Text>
           </Card>
         ) : tabIndex === 0 && !pLoading && helperProfile && !isVerified ? (
@@ -182,15 +181,25 @@ export default function HelperJobsScreen() {
               emoji={kycStatus === 'pending' ? '⏳' : '🪪'}
               title={
                 kycStatus === 'pending'
-                  ? 'Hồ sơ e-KYC đang chờ duyệt'
-                  : 'Cần xác thực e-KYC để nhận việc'
+                  ? lang === 'en'
+                    ? 'e-KYC profile pending approval'
+                    : 'Hồ sơ e-KYC đang chờ duyệt'
+                  : lang === 'en'
+                    ? 'e-KYC verification required'
+                    : 'Cần xác thực e-KYC để nhận việc'
               }
               subtitle={
                 kycStatus === 'pending'
-                  ? 'Bạn sẽ thấy đơn mới ngay khi hồ sơ được duyệt (thường trong 24h).'
+                  ? lang === 'en'
+                    ? 'You will see new jobs once your profile is approved (usually within 24h).'
+                    : 'Bạn sẽ thấy đơn mới ngay khi hồ sơ được duyệt (thường trong 24h).'
                   : kycStatus === 'rejected'
-                    ? `Hồ sơ bị từ chối${helperProfile?.rejection_reason ? ': ' + helperProfile.rejection_reason : ''}. Vui lòng nộp lại.`
-                    : 'Chỉ thợ đã xác thực danh tính mới được xem đơn và gửi báo giá cho khách.'
+                    ? lang === 'en'
+                      ? `Profile rejected${helperProfile?.rejection_reason ? ': ' + helperProfile.rejection_reason : ''}. Please resubmit.`
+                      : `Hồ sơ bị từ chối${helperProfile?.rejection_reason ? ': ' + helperProfile.rejection_reason : ''}. Vui lòng nộp lại.`
+                    : lang === 'en'
+                      ? 'Only verified helpers can view jobs and submit quotes.'
+                      : 'Chỉ thợ đã xác thực danh tính mới được xem đơn và gửi báo giá cho khách.'
               }
             />
             {kycStatus !== 'pending' && (
@@ -204,7 +213,7 @@ export default function HelperJobsScreen() {
                   borderRadius: 12,
                 }}
               >
-                <Text style={{ color: '#fff', fontWeight: '700' }}>Xác thực ngay</Text>
+                <Text style={{ color: '#fff', fontWeight: '700' }}>{t('jobs_verify_now')}</Text>
               </TouchableOpacity>
             )}
           </Card>
@@ -223,7 +232,7 @@ export default function HelperJobsScreen() {
               title={
                 tabIndex === 0
                   ? available?.empty_reason === 'outside_working_hours'
-                    ? 'Không có việc trong khung giờ làm'
+                    ? t('jobs_outside_hours_title')
                     : t('helper_jobs_empty_available')
                   : tabIndex === 1
                     ? t('helper_jobs_empty_active')
@@ -232,7 +241,7 @@ export default function HelperJobsScreen() {
               subtitle={
                 tabIndex === 0
                   ? available?.empty_reason === 'outside_working_hours'
-                    ? 'Hiện có việc mới nhưng ngoài khung giờ hoạt động bạn đã đăng ký. Bạn có thể cập nhật Lịch làm việc trong Hồ sơ để nhận thêm đơn.'
+                    ? t('jobs_outside_hours_sub')
                     : t('helper_jobs_empty_available_sub')
                   : tabIndex === 1
                     ? t('helper_jobs_empty_active_sub')
@@ -294,23 +303,25 @@ export default function HelperJobsScreen() {
                     style={{ flexDirection: 'row', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}
                   >
                     <Badge
-                      label={(job.service_id as { name: string } | null)?.name ?? 'Dịch vụ'}
+                      label={tService(job.service_id) || t('common_service')}
                       size="sm"
                     />
                     {job.is_private_offer ? (
                       <Badge
-                        label="⭐ Gửi riêng cho bạn"
+                        label={t('jobs_badge_private_for_you')}
                         size="sm"
                         color="#FDF2F8"
                         textColor="#9D174D"
                       />
                     ) : null}
                     {job.is_recurring || job.recurring_plan_id ? (
-                      <Badge label="🔁 Định kỳ" size="sm" color="#EFF6FF" textColor="#1D4ED8" />
+                      <Badge label={t('jobs_badge_recurring')} size="sm" color="#EFF6FF" textColor="#1D4ED8" />
                     ) : null}
                     {job.is_fixed_price ? (
                       <Badge
-                        label={`🏷️ Giá cam kết ${new Intl.NumberFormat('vi-VN').format(job.fixed_price ?? 0)}₫`}
+                        label={t('jobs_badge_fixed_price', {
+                          price: new Intl.NumberFormat('vi-VN').format(job.fixed_price ?? 0),
+                        })}
                         size="sm"
                         color="#ECFDF5"
                         textColor="#065F46"
@@ -318,7 +329,7 @@ export default function HelperJobsScreen() {
                     ) : null}
                     {job.is_warranty ? (
                       <Badge
-                        label="🛡 Bảo hành — Miễn phí"
+                        label={t('jobs_badge_warranty')}
                         size="sm"
                         color="#FFFBEB"
                         textColor="#92400E"
@@ -327,14 +338,14 @@ export default function HelperJobsScreen() {
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
                       <MapPin size={13} color={COLORS.gray[500]} />
                       <Text style={{ fontSize: fs(12), color: COLORS.gray[600], fontWeight: '500' }}>
-                        {job.address?.district || job.address?.city || 'Chưa rõ'}
+                        {job.address?.district || job.address?.city || t('jobs_unspecified')}
                       </Text>
                     </View>
                     {job.distance_km != null && (
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
                         <Navigation size={13} color={COLORS.primary} />
                         <Text style={{ fontSize: fs(12), color: COLORS.primary, fontWeight: '700' }}>
-                          {job.distance_km} km ~ {job.estimated_minutes ?? '?'} phút
+                          {job.distance_km} km ~ {job.estimated_minutes ?? '?'} {t('jobs_minutes_unit')}
                         </Text>
                       </View>
                     )}
@@ -373,7 +384,7 @@ export default function HelperJobsScreen() {
                               }),
                             onError: (err: any) => {
                               const msg =
-                                err?.response?.data?.message || 'Nhận việc thất bại. Thử lại sau.';
+                                err?.response?.data?.message || (lang === 'en' ? 'Failed to accept job. Try again later.' : 'Nhận việc thất bại. Thử lại sau.');
                               Toast.show({ type: 'error', text1: msg });
                             },
                           })
@@ -387,8 +398,10 @@ export default function HelperJobsScreen() {
                       >
                         <Text style={{ fontSize: fs(13), fontWeight: '800', color: '#fff' }}>
                           {job.is_warranty
-                            ? '🛡 Nhận việc bảo hành'
-                            : `Nhận việc ngay • ${new Intl.NumberFormat('vi-VN').format(job.fixed_price ?? 0)}₫`}
+                            ? lang === 'en' ? '🛡 Accept warranty job' : '🛡 Nhận việc bảo hành'
+                            : lang === 'en'
+                              ? `Accept now • ${new Intl.NumberFormat('en-US').format(job.fixed_price ?? 0)}₫`
+                              : `Nhận việc ngay • ${new Intl.NumberFormat('vi-VN').format(job.fixed_price ?? 0)}₫`}
                         </Text>
                       </TouchableOpacity>
                     ) : (
@@ -463,7 +476,7 @@ export default function HelperJobsScreen() {
       {(teamInvitations ?? []).length > 0 && (
         <View style={{ paddingHorizontal: 16, paddingTop: 12, gap: 10 }}>
           <Text style={{ fontWeight: '800', fontSize: fs(14.5), color: COLORS.gray[900] }}>
-            👥 Lời mời vào nhóm ({teamInvitations!.length})
+            👥 {lang === 'en' ? 'Team Invitations' : 'Lời mời vào nhóm'} ({teamInvitations!.length})
           </Text>
           {teamInvitations!.map(inv => (
             <Card key={inv.job_id} style={{ gap: 8 }}>
@@ -471,24 +484,26 @@ export default function HelperJobsScreen() {
                 {inv.title}
               </Text>
               <Text style={{ fontSize: fs(12.5), color: COLORS.gray[600], lineHeight: Math.round(fs(18)) }}>
-                {inv.address_text ? `📍 ${inv.address_text}\n` : ''}Bạn sẽ nhận {inv.split_percent}%
-                tiền công của đơn (sau phí sàn) khi hoàn thành cùng nhóm {inv.helpers_needed} thợ.
+                {inv.address_text ? `📍 ${inv.address_text}\n` : ''}
+                {lang === 'en'
+                  ? `You will receive ${inv.split_percent}% of job pay (after platform fee) when completed with team of ${inv.helpers_needed} helpers.`
+                  : `Bạn sẽ nhận ${inv.split_percent}% tiền công của đơn (sau phí sàn) khi hoàn thành cùng nhóm ${inv.helpers_needed} thợ.`}
               </Text>
               <View style={{ flexDirection: 'row', gap: 8 }}>
                 <Button
-                  title="✓ Nhận lời"
+                  title={lang === 'en' ? '✓ Accept' : '✓ Nhận lời'}
                   size="sm"
                   loading={respondInvitation.isPending}
                   onPress={() => respondInvitation.mutate({ jobId: inv.job_id, action: 'accept' })}
                 />
                 <Button
-                  title="Từ chối"
+                  title={lang === 'en' ? 'Decline' : 'Từ chối'}
                   size="sm"
                   variant="outline"
                   onPress={() => respondInvitation.mutate({ jobId: inv.job_id, action: 'decline' })}
                 />
                 <Button
-                  title="Xem đơn"
+                  title={lang === 'en' ? 'View Job' : 'Xem đơn'}
                   size="sm"
                   variant="ghost"
                   onPress={() =>

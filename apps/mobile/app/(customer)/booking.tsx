@@ -193,7 +193,7 @@ const DEFAULT_SERVICES: BookingServiceOption[] = [
 
 export default function BookingScreen() {
   const router = useRouter();
-  const { t, fs } = useTranslation();
+  const { t, tService, fs } = useTranslation();
   const params = useLocalSearchParams<{
     service_id?: string;
     service_slug?: string;
@@ -1393,7 +1393,7 @@ export default function BookingScreen() {
                       </Text>
                       <View style={{ flex: 1 }}>
                         <Text style={{ fontWeight: '800', fontSize: fs(15), color: COLORS.gray[900] }}>
-                          {svc.name}
+                          {tService(svc)}
                         </Text>
                         {svc.description && (
                           <Text
@@ -2131,7 +2131,7 @@ export default function BookingScreen() {
               </Text>
 
               <Card style={{ gap: 14 }}>
-                <Row icon="🏠" label="Dịch vụ" value={selectedServiceData?.name ?? '—'} />
+                <Row icon="🏠" label={t('common_service')} value={tService(selectedServiceData) || '—'} />
                 <Row
                   icon="📍"
                   label="Địa chỉ"

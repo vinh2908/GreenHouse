@@ -12,7 +12,6 @@ import { useTranslation } from '@/hooks/use-i18n';
 import { Card, Avatar, COLORS, EmptyState, LoadingSpinner, Badge } from '@/components/ui';
 
 dayjs.extend(relativeTime);
-dayjs.locale('vi');
 
 export default function ConversationsScreen() {
   const router = useRouter();

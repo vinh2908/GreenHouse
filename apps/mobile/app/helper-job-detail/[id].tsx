@@ -41,7 +41,7 @@ import { SosBackupHelperCard } from '@/components/common/sos-backup-helper-card'
 import { formatDisplayAddress } from '@/utils/address-formatter';
 
 dayjs.extend(relativeTime);
-dayjs.locale('vi');
+
 import {
   useJobDetail,
   useJobQuotes,
@@ -76,7 +76,7 @@ const PLATFORM_FEE = 0.15;
 export default function HelperJobDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const { t, fs } = useTranslation();
+  const { t, tService, fs } = useTranslation();
   const currentUser = useAuthStore(s => s.user);
   const { data: callConfig } = useCallConfig();
 
@@ -613,7 +613,7 @@ export default function HelperJobDetailScreen() {
         {/* ── Job info ─────────────────────────────────────────────── */}
         <Card style={{ gap: 12 }}>
           <View style={{ flexDirection: 'row', gap: 10, flexWrap: 'wrap' }}>
-            <Badge label={(job.service_id as { name: string } | null)?.name ?? 'Dịch vụ'} />
+            <Badge label={tService(job.service_id) || t('common_service')} />
             {job.is_fixed_price && (
               <Badge
                 label={`🏷️ Giá cam kết ${new Intl.NumberFormat('vi-VN').format(job.fixed_price ?? 0)}₫`}

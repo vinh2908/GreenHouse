@@ -57,11 +57,10 @@ import {
 import Toast from 'react-native-toast-message';
 
 dayjs.extend(relativeTime);
-dayjs.locale('vi');
 
 export default function HelperDashboardScreen() {
   const router = useRouter();
-  const { t, fs } = useTranslation();
+  const { t, tService, fs, lang } = useTranslation();
   const storedUser = useAuthStore(s => s.user);
   // Stored login payload has no avatar — prefer the full profile from the API
   const { data: myProfile, refetch: refetchMyProfile } = useMyProfile();
@@ -274,7 +273,7 @@ export default function HelperDashboardScreen() {
                   style={{ fontSize: fs(12), color: COLORS.gray[500], marginTop: 1 }}
                   numberOfLines={1}
                 >
-                  Đối tác Thợ / Người giúp việc
+                  {t('dash_helper_role_label')}
                 </Text>
               </View>
             </TouchableOpacity>
@@ -357,8 +356,8 @@ export default function HelperDashboardScreen() {
                   }}
                 >
                   {profile?.verification_status === 'pending'
-                    ? 'Hồ sơ e-KYC đang được xét duyệt'
-                    : 'Yêu cầu xác thực e-KYC để nhận việc'}
+                    ? t('dash_kyc_pending')
+                    : t('dash_kyc_required')}
                 </Text>
                 <Text
                   style={{
@@ -369,8 +368,8 @@ export default function HelperDashboardScreen() {
                   }}
                 >
                   {profile?.verification_status === 'pending'
-                    ? 'Admin đang kiểm tra CCCD. Bạn sẽ có thể nhận việc ngay khi được duyệt.'
-                    : 'Vui lòng chụp CCCD để mở khóa tính năng nhận việc và gửi báo giá.'}
+                    ? t('dash_kyc_pending_desc')
+                    : t('dash_kyc_required_desc')}
                 </Text>
               </View>
               <Text
@@ -380,7 +379,9 @@ export default function HelperDashboardScreen() {
                   color: profile?.verification_status === 'pending' ? '#D97706' : '#DC2626',
                 }}
               >
-                {profile?.verification_status === 'pending' ? 'Xem →' : 'Xác thực →'}
+                {profile?.verification_status === 'pending'
+                  ? t('dash_kyc_view')
+                  : t('dash_kyc_verify')}
               </Text>
             </TouchableOpacity>
           </View>
@@ -678,7 +679,7 @@ export default function HelperDashboardScreen() {
                 </View>
 
                 <Button
-                  title="Cập nhật tiến độ & Nghiệm thu →"
+                  title={t('dash_update_progress_btn')}
                   size="sm"
                   onPress={() =>
                     router.push({
@@ -695,15 +696,15 @@ export default function HelperDashboardScreen() {
         {/* ── 5. Đơn hàng mới có thể nhận ─────────────────────────────── */}
         <View style={{ paddingHorizontal: 16, marginTop: 20 }}>
           <SectionHeader
-            title="Đơn hàng gần bạn"
+            title={t('dash_nearby_jobs_title')}
             subtitle={
               pLoading
-                ? 'Đang tải…'
+                ? t('dash_loading_status')
                 : effectiveOnline
-                  ? 'Tự động cập nhật đơn mới mỗi 30s'
-                  : 'Đang ở chế độ ngoại tuyến'
+                  ? t('dash_auto_update_30s')
+                  : t('dash_offline_sub')
             }
-            action={effectiveOnline ? 'Xem tất cả' : undefined}
+            action={effectiveOnline ? t('dash_view_all') : undefined}
             onAction={() => router.push('/(helper)/jobs')}
           />
 
@@ -711,26 +712,26 @@ export default function HelperDashboardScreen() {
             <Card style={{ alignItems: 'center', paddingVertical: 28, gap: 10 }}>
               <ActivityIndicator size="small" color={COLORS.primary} />
               <Text style={{ fontSize: fs(13), color: COLORS.gray[500] }}>
-                Đang tải trạng thái nhận việc…
+                {t('dash_loading_status')}
               </Text>
             </Card>
           ) : !effectiveOnline ? (
             <Card style={{ alignItems: 'center', paddingVertical: 28 }}>
               <EmptyState
                 emoji="📴"
-                title="Đang tắt nhận việc"
-                subtitle="Bật công tắc 'Đang nhận đơn mới' ở trên để xem các công việc đang cần thợ xung quanh bạn."
+                title={t('dash_offline_empty_title')}
+                subtitle={t('dash_offline_empty_sub')}
               />
             </Card>
           ) : profile?.verification_status !== 'approved' ? (
             <Card style={{ alignItems: 'center', paddingVertical: 28 }}>
               <EmptyState
                 emoji="🪪"
-                title="Cần xác thực e-KYC để xem đơn"
+                title={t('dash_kyc_needed_title')}
                 subtitle={
                   profile?.verification_status === 'pending'
-                    ? 'Hồ sơ CCCD đang chờ Admin duyệt. Bạn sẽ thấy danh sách đơn ngay khi được kích hoạt.'
-                    : 'Vui lòng hoàn tất xác minh e-KYC (CCCD) để mở khóa xem và nhận đơn mới xung quanh bạn.'
+                    ? t('dash_kyc_pending_sub')
+                    : t('dash_kyc_not_done_sub')
                 }
               />
             </Card>
@@ -740,13 +741,13 @@ export default function HelperDashboardScreen() {
                 emoji={availableJobs?.empty_reason === 'outside_working_hours' ? '⏰' : '🔍'}
                 title={
                   availableJobs?.empty_reason === 'outside_working_hours'
-                    ? 'Không có việc trong khung giờ làm'
-                    : 'Chưa có đơn mới xung quanh'
+                    ? t('jobs_outside_hours_title')
+                    : t('dash_no_jobs_nearby')
                 }
                 subtitle={
                   availableJobs?.empty_reason === 'outside_working_hours'
-                    ? 'Hiện có việc mới nhưng ngoài khung giờ hoạt động bạn đã đăng ký. Bạn có thể cập nhật Lịch làm việc trong Hồ sơ để nhận thêm đơn.'
-                    : 'Hệ thống đang quét đơn trong bán kính phục vụ. Đơn mới sẽ tự động hiển thị tại đây.'
+                    ? t('jobs_outside_hours_sub')
+                    : t('dash_no_jobs_nearby_sub')
                 }
               />
             </Card>
@@ -791,7 +792,7 @@ export default function HelperDashboardScreen() {
                           {job.title}
                         </Text>
                         <Text style={{ fontSize: fs(12), color: COLORS.primary, fontWeight: '700' }}>
-                          {dayjs(job.created_at).fromNow()}
+                          {dayjs(job.created_at).locale(lang === 'en' ? 'en' : 'vi').fromNow()}
                         </Text>
                       </View>
 
@@ -804,11 +805,11 @@ export default function HelperDashboardScreen() {
                         }}
                       >
                         <Badge
-                          label={(job.service_id as { name: string } | null)?.name ?? 'Dịch vụ'}
+                          label={tService(job.service_id) || t('common_service')}
                           size="sm"
                         />
                         <Text style={{ fontSize: fs(13), color: COLORS.gray[600] }}>
-                          📍 {job.address?.district || job.address?.city || 'Chưa rõ'}
+                          📍 {job.address?.district || job.address?.city || t('jobs_unspecified')}
                         </Text>
                         {job.preferred_time_start && (
                           <Text style={{ fontSize: fs(13), color: COLORS.gray[600] }}>
@@ -829,11 +830,11 @@ export default function HelperDashboardScreen() {
                       >
                         <Text style={{ fontSize: fs(12), color: COLORS.gray[500] }}>
                           {job.total_quotes_count > 0
-                            ? `${job.total_quotes_count} thợ đã báo giá`
-                            : 'Chưa có báo giá nào'}
+                            ? t('dash_quotes_count', { count: job.total_quotes_count })
+                            : t('dash_no_quotes')}
                         </Text>
                         <Text style={{ fontSize: fs(13), fontWeight: '800', color: COLORS.primary }}>
-                          Gửi báo giá ngay →
+                          {t('dash_send_quote_now')}
                         </Text>
                       </View>
                     </Card>
@@ -882,10 +883,10 @@ export default function HelperDashboardScreen() {
                 </View>
                 <View>
                   <Text style={{ fontSize: fs(18), fontWeight: '900', color: '#DC2626' }}>
-                    YÊU CẦU CỨU HỘ SOS!
+                    {t('dash_sos_modal_title')}
                   </Text>
                   <Text style={{ fontSize: fs(12), color: COLORS.gray[500], fontWeight: '600' }}>
-                    Có mặt khẩn cấp sau 15 - 20 phút
+                    {t('dash_sos_modal_sub')}
                   </Text>
                 </View>
               </View>
@@ -952,14 +953,14 @@ export default function HelperDashboardScreen() {
                 }}
               >
                 <Text style={{ fontSize: fs(13.5), color: '#065F46', fontWeight: '700' }}>
-                  Thu nhập tối thiểu nhận về ví:
+                  {t('dash_sos_modal_min_payout')}
                 </Text>
                 <Text style={{ fontSize: fs(18), fontWeight: '900', color: COLORS.success }}>
                   255.000₫
                 </Text>
               </View>
               <Text style={{ fontSize: fs(11.5), color: '#047857' }}>
-                (Bao gồm công cơ bản 200.000₫ + Phụ phí khẩn cấp 100.000₫ - phí sàn 15%)
+                {t('dash_sos_modal_breakdown')}
               </Text>
             </View>
 
@@ -987,7 +988,7 @@ export default function HelperDashboardScreen() {
               <Text
                 style={{ color: '#FFFFFF', fontSize: fs(17), fontWeight: '900', letterSpacing: 0.5 }}
               >
-                {acceptSos.isPending ? 'ĐANG KHỚP ĐƠN...' : '🚨 NHẬN CỨU HỘ SOS NGAY'}
+                {acceptSos.isPending ? t('dash_sos_modal_matching') : t('dash_sos_modal_accept')}
               </Text>
             </TouchableOpacity>
           </View>

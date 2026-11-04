@@ -25,8 +25,6 @@ import {
 } from '@/hooks/use-api';
 import { Badge, Card, COLORS, EmptyState, LoadingSpinner } from '@/components/ui';
 
-dayjs.locale('vi');
-
 const WEEKDAY_LABELS = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
 
 export function describeSchedule(plan: RecurringPlanItem): string {

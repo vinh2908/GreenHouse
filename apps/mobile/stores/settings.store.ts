@@ -5,6 +5,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { syncDayjsLocale } from '@/services/i18n';
 
 export type AppLanguage = 'vi' | 'en';
 export type TextSize = 'normal' | 'large';
@@ -21,12 +22,20 @@ export const useSettingsStore = create<SettingsState>()(
     set => ({
       language: 'vi',
       textSize: 'normal',
-      setLanguage: language => set({ language }),
+      setLanguage: language => {
+        syncDayjsLocale(language);
+        set({ language });
+      },
       setTextSize: textSize => set({ textSize }),
     }),
     {
       name: 'gh_settings_v1',
       storage: createJSONStorage(() => AsyncStorage),
+      onRehydrateStorage: () => state => {
+        if (state?.language) {
+          syncDayjsLocale(state.language);
+        }
+      },
     },
   ),
 );
