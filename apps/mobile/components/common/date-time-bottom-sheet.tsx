@@ -433,9 +433,9 @@ export function DateTimeBottomSheet({
           <View style={[styles.pane, activeTab !== 'time' && styles.paneHidden]}>
             {/* Wheel Labels: GIỜ & PHÚT */}
             <View style={styles.wheelLabelsRow}>
-              <Text style={styles.wheelLabelCol}>GIỜ</Text>
+              <Text style={styles.wheelLabelCol}>{lang === 'en' ? 'HOURS' : 'GIỜ'}</Text>
               <View style={styles.wheelLabelSep} />
-              <Text style={styles.wheelLabelCol}>PHÚT</Text>
+              <Text style={styles.wheelLabelCol}>{lang === 'en' ? 'MINUTES' : 'PHÚT'}</Text>
             </View>
 
             {/* Wheel Box with centered Green Highlight Band */}

@@ -21,6 +21,8 @@ import {
 import { useAuthStore } from '@/stores/auth.store';
 import { SOS_BACKUP_REASON_LABELS } from '@/stores/sos-backup.store';
 import { useNowTick, formatCountdown } from '@/hooks/use-countdown';
+import { useTranslation } from '@/hooks/use-i18n';
+import { SOS_BACKUP_REASONS_I18N } from '@/services/i18n';
 
 const ACTIVE_STATUSES = ['confirmed', 'helper_on_the_way', 'helper_arrived', 'in_progress'];
 const REASON_CODES = Object.keys(SOS_BACKUP_REASON_LABELS);
@@ -31,6 +33,13 @@ function helperIdOf(job: any): string | null {
 }
 
 export function SosBackupHelperCard({ job }: { job: any }) {
+  const { t, lang } = useTranslation();
+  const getReasonLabel = (code: string) => {
+    if (SOS_BACKUP_REASONS_I18N[code]) {
+      return SOS_BACKUP_REASONS_I18N[code][lang === 'en' ? 'en' : 'vi'];
+    }
+    return SOS_BACKUP_REASON_LABELS[code] ?? code;
+  };
   const myId = useAuthStore(s => s.user?._id);
   const { data: profile } = useHelperProfile();
   const createSos = useCreateSosBackup();
@@ -59,11 +68,10 @@ export function SosBackupHelperCard({ job }: { job: any }) {
         style={{ backgroundColor: '#EFF6FF', borderColor: '#BFDBFE', borderWidth: 1.5, gap: 6 }}
       >
         <Text style={{ fontWeight: '800', fontSize: 15, color: '#1E40AF' }}>
-          🔄 Bạn đang thay thế đơn này qua SOS Backup
+          {t('sos_helper.replacement_title')}
         </Text>
         <Text style={{ fontSize: 13, color: COLORS.gray[700], lineHeight: 19 }}>
-          Thợ trước gặp sự cố nên khách hàng đã đồng ý đổi người. Hãy tiếp tục đơn như bình thường —
-          tiền công giữ nguyên theo hợp đồng.
+          {t('sos_helper.replacement_desc')}
         </Text>
       </Card>
     );
@@ -76,10 +84,10 @@ export function SosBackupHelperCard({ job }: { job: any }) {
 
   const handleWithdraw = () => {
     if (!outgoing) return;
-    Alert.alert('Thu hồi yêu cầu SOS?', 'Đơn sẽ tiếp tục với bạn như bình thường.', [
-      { text: 'Để sau', style: 'cancel' },
+    Alert.alert(t('sos_helper.withdraw_title'), t('sos_helper.withdraw_desc'), [
+      { text: t('cancel'), style: 'cancel' },
       {
-        text: 'Thu hồi SOS',
+        text: t('sos_helper.withdraw_confirm'),
         onPress: () => cancelSos.mutate({ sosId: outgoing._id ?? outgoing.sos_id, jobId: job._id }),
       },
     ]);
@@ -103,19 +111,20 @@ export function SosBackupHelperCard({ job }: { job: any }) {
         <Text
           style={{ fontWeight: '800', fontSize: 15, color: isAwaiting ? '#92400E' : '#1E40AF' }}
         >
-          {isAwaiting ? '⏳ Đang chờ khách xác nhận…' : '🔍 Đang tìm người thay thế…'}
+          {isAwaiting ? t('sos_helper.awaiting_customer') : t('sos_helper.finding_replacement')}
         </Text>
         <Text style={{ fontSize: 13, color: COLORS.gray[700], lineHeight: 19 }}>
           {isAwaiting
-            ? `Bạn đã gửi SOS (lý do: ${SOS_BACKUP_REASON_LABELS[outgoing.reason] ?? 'khẩn cấp'}). Khách hàng cần đồng ý đổi người thì hệ thống mới tìm thợ thay thế.${
-                deadlineMs
-                  ? ` Thời hạn khách quyết định còn ${formatCountdown(deadlineMs - now)}.`
-                  : ''
-              } Nếu khách không phản hồi, đơn sẽ tự hủy và hoàn tiền 100% theo chính sách.`
-            : 'Khách hàng đã đồng ý đổi người. Hệ thống đang mời các thợ đang online gần đây — bạn vẫn phụ trách đơn cho tới khi có thợ nhận thay.'}
+            ? t('sos_helper.awaiting_desc', {
+                reason: getReasonLabel(outgoing.reason),
+                deadline: deadlineMs
+                  ? t('sos_helper.deadline_text', { countdown: formatCountdown(deadlineMs - now) })
+                  : '',
+              })
+            : t('sos_helper.searching_desc')}
         </Text>
         <Button
-          title="Thu hồi yêu cầu SOS"
+          title={t('sos_helper.withdraw_btn')}
           variant="outline"
           loading={cancelSos.isPending}
           onPress={handleWithdraw}
@@ -128,7 +137,7 @@ export function SosBackupHelperCard({ job }: { job: any }) {
   const pickPhotos = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
-      Toast.show({ type: 'error', text1: 'Cần quyền truy cập thư viện ảnh' });
+      Toast.show({ type: 'error', text1: t('sos_helper.perm_gallery') });
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -154,12 +163,12 @@ export function SosBackupHelperCard({ job }: { job: any }) {
         // Không chặn SOS vì lỗi tải ảnh — cho thợ chọn thử lại hoặc gửi không kèm ảnh
         Toast.show({
           type: 'error',
-          text1: 'Tải ảnh minh chứng thất bại',
-          text2: 'Bạn có thể thử lại hoặc vẫn gửi SOS mà không kèm ảnh',
+          text1: t('sos_helper.upload_fail_title'),
+          text2: t('sos_helper.upload_fail_sub'),
         });
-        Alert.alert('Không tải được ảnh minh chứng', 'Vẫn gửi yêu cầu SOS mà không kèm ảnh?', [
-          { text: 'Để tôi thử lại', style: 'cancel' },
-          { text: 'Gửi không kèm ảnh', onPress: () => void doSubmit(undefined) },
+        Alert.alert(t('sos_helper.upload_fail_alert_title'), t('sos_helper.upload_fail_alert_msg'), [
+          { text: t('sos_helper.retry'), style: 'cancel' },
+          { text: t('sos_helper.submit_without_photo'), onPress: () => void doSubmit(undefined) },
         ]);
         return;
       }
@@ -185,14 +194,17 @@ export function SosBackupHelperCard({ job }: { job: any }) {
       if (score?.warningLevel === 'penalized') {
         Toast.show({
           type: 'error',
-          text1: 'Bạn đã vượt ngưỡng hủy đơn tuần này',
-          text2: `Lần SOS này bị trừ ${score.points_deducted_now ?? 5} điểm tin cậy. Điểm uy tín hiện tại: ${score.total}/100`,
+          text1: t('sos_helper.penalty_exceeded_title'),
+          text2: t('sos_helper.penalty_exceeded_msg', {
+            pts: score.points_deducted_now ?? 5,
+            total: score.total,
+          }),
         });
       } else if (score?.warningLevel === 'approaching') {
         Toast.show({
           type: 'info',
-          text1: 'Lưu ý điểm uy tín',
-          text2: `Bạn đã hủy/SOS ${score.cancellationsInWindow} đơn trong 7 ngày — hủy quá 3 đơn sẽ bị trừ điểm tin cậy`,
+          text1: t('sos_helper.reputation_notice_title'),
+          text2: t('sos_helper.reputation_notice_msg', { count: score.cancellationsInWindow }),
         });
       }
     } catch {
@@ -206,21 +218,24 @@ export function SosBackupHelperCard({ job }: { job: any }) {
         style={{ gap: 10, backgroundColor: '#FEF2F2', borderColor: '#FECACA', borderWidth: 1.5 }}
       >
         <Text style={{ fontWeight: '800', fontSize: 15, color: '#991B1B' }}>
-          🆘 Gặp sự cố không thể tiếp tục đơn?
+          {t('sos_helper.trigger_title')}
         </Text>
         <Text style={{ fontSize: 13, color: COLORS.gray[700], lineHeight: 19 }}>
-          Gửi SOS để xin đổi người: khách hàng sẽ xác nhận đổi thợ khác (giữ nguyên giá) hoặc hủy
-          đơn. Bạn không bị tính phạt trễ/hủy cho đơn này khi dùng SOS.
+          {t('sos_helper.trigger_desc')}
         </Text>
         {cancels7d >= 2 && (
           <Text style={{ fontSize: 12.5, color: '#B45309', lineHeight: 18 }}>
-            ⚠️ Điểm uy tín: bạn đã hủy/SOS {cancels7d} đơn trong 7 ngày qua
-            {performanceScore != null ? ` — điểm hiện tại ${performanceScore}/100` : ''}. Hủy quá 3
-            đơn/7 ngày sẽ bị trừ điểm tiêu chí Độ tin cậy.
+            {t('sos_helper.trigger_reputation_warning', {
+              cancels: cancels7d,
+              score:
+                performanceScore != null
+                  ? t('sos_helper.score_suffix', { score: performanceScore })
+                  : '',
+            })}
           </Text>
         )}
         <Button
-          title="🆘 Gửi SOS — xin đổi người"
+          title={t('sos_helper.open_modal_btn')}
           variant="danger"
           onPress={() => setSheetOpen(true)}
         />
@@ -246,10 +261,10 @@ export function SosBackupHelperCard({ job }: { job: any }) {
             }}
           >
             <Text style={{ fontWeight: '800', fontSize: 16, color: COLORS.gray[900] }}>
-              Lý do không thể tiếp tục đơn
+              {t('sos_helper.modal_title')}
             </Text>
             <Text style={{ fontSize: 13, color: COLORS.gray[500], lineHeight: 18 }}>
-              Chỉ lý do này được gửi cho khách hàng — ghi chú thêm (nếu có) chỉ đội hỗ trợ xem.
+              {t('sos_helper.modal_subtitle')}
             </Text>
             {REASON_CODES.map(code => {
               const selected = reason === code;
@@ -292,7 +307,7 @@ export function SosBackupHelperCard({ job }: { job: any }) {
                     )}
                   </View>
                   <Text style={{ fontSize: 14.5, fontWeight: '600', color: COLORS.gray[800] }}>
-                    {SOS_BACKUP_REASON_LABELS[code]}
+                    {getReasonLabel(code)}
                   </Text>
                 </TouchableOpacity>
               );
@@ -300,7 +315,7 @@ export function SosBackupHelperCard({ job }: { job: any }) {
             <TextInput
               value={note}
               onChangeText={setNote}
-              placeholder="Ghi chú thêm (không bắt buộc)"
+              placeholder={t('sos_helper.notes_placeholder')}
               maxLength={300}
               style={{
                 borderWidth: 1,
@@ -313,11 +328,10 @@ export function SosBackupHelperCard({ job }: { job: any }) {
             />
             <View style={{ gap: 6 }}>
               <Text style={{ fontSize: 13.5, fontWeight: '700', color: COLORS.gray[800] }}>
-                Thêm ảnh minh chứng (không bắt buộc)
+                {t('sos_helper.photos_label')}
               </Text>
               <Text style={{ fontSize: 12.5, color: COLORS.gray[500], lineHeight: 17 }}>
-                VD: xe hư, tai nạn — khách hàng sẽ thấy các ảnh này khi quyết định đổi người hay hủy
-                đơn. Tối đa 4 ảnh.
+                {t('sos_helper.photos_hint')}
               </Text>
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
                 {photos.map(uri => (
@@ -363,14 +377,14 @@ export function SosBackupHelperCard({ job }: { job: any }) {
                   >
                     <Text style={{ fontSize: 20, color: COLORS.gray[500] }}>＋</Text>
                     <Text style={{ fontSize: 10, color: COLORS.gray[500], fontWeight: '600' }}>
-                      Thêm ảnh
+                      {t('sos_helper.add_photo')}
                     </Text>
                   </TouchableOpacity>
                 )}
               </View>
             </View>
             <Button
-              title={uploadingPhotos ? 'Đang tải ảnh lên…' : 'Gửi yêu cầu SOS'}
+              title={uploadingPhotos ? t('sos_helper.uploading') : t('sos_helper.submit_btn')}
               variant="danger"
               loading={createSos.isPending || uploadingPhotos}
               disabled={!reason}
@@ -380,7 +394,7 @@ export function SosBackupHelperCard({ job }: { job: any }) {
               onPress={() => setSheetOpen(false)}
               style={{ paddingVertical: 8, alignItems: 'center' }}
             >
-              <Text style={{ color: COLORS.gray[500], fontWeight: '700' }}>Đóng</Text>
+              <Text style={{ color: COLORS.gray[500], fontWeight: '700' }}>{t('close')}</Text>
             </TouchableOpacity>
           </View>
         </View>

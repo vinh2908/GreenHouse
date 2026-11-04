@@ -4,31 +4,35 @@ import { useRouter } from 'expo-router';
 import { ArrowLeft, Plus, ChevronRight } from 'lucide-react-native';
 import dayjs from 'dayjs';
 import 'dayjs/locale/vi';
+import 'dayjs/locale/en';
 import {
   useMonthlyContracts,
   type MonthlyContractItem,
   type MonthlyContractStatus,
 } from '@/hooks/use-api';
 import { useAuthStore } from '@/stores/auth.store';
+import { useTranslation } from '@/hooks/use-i18n';
 import { Badge, Card, COLORS, EmptyState, LoadingSpinner } from '@/components/ui';
 
-const WEEKDAY_LABELS = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
+const WEEKDAY_LABELS_VI = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
+const WEEKDAY_LABELS_EN = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const fmt = (n?: number) => new Intl.NumberFormat('vi-VN').format(n ?? 0);
 
 export const MONTHLY_STATUS_META: Record<
   MonthlyContractStatus,
-  { label: string; bg: string; color: string }
+  { label: string; label_en: string; bg: string; color: string }
 > = {
-  pending: { label: 'Chờ duyệt', bg: COLORS.warningLight, color: COLORS.warning },
-  active: { label: 'Đang hiệu lực', bg: COLORS.successLight, color: COLORS.success },
-  rejected: { label: 'Đã từ chối', bg: COLORS.errorLight, color: COLORS.error },
-  cancelled: { label: 'Đã hủy', bg: COLORS.gray[100], color: COLORS.gray[500] },
-  ended: { label: 'Đã kết thúc', bg: COLORS.gray[100], color: COLORS.gray[600] },
+  pending: { label: 'Chờ duyệt', label_en: 'Pending', bg: COLORS.warningLight, color: COLORS.warning },
+  active: { label: 'Đang hiệu lực', label_en: 'Active', bg: COLORS.successLight, color: COLORS.success },
+  rejected: { label: 'Đã từ chối', label_en: 'Rejected', bg: COLORS.errorLight, color: COLORS.error },
+  cancelled: { label: 'Đã hủy', label_en: 'Cancelled', bg: COLORS.gray[100], color: COLORS.gray[500] },
+  ended: { label: 'Đã kết thúc', label_en: 'Ended', bg: COLORS.gray[100], color: COLORS.gray[600] },
 };
 
-export function describeMonthlySchedule(c: MonthlyContractItem): string {
+export function describeMonthlySchedule(c: MonthlyContractItem, lang?: string): string {
+  const labels = lang === 'en' ? WEEKDAY_LABELS_EN : WEEKDAY_LABELS_VI;
   const days = (c.schedule?.days_of_week ?? [])
-    .map(d => WEEKDAY_LABELS[d] ?? '')
+    .map(d => labels[d] ?? '')
     .filter(Boolean)
     .join(', ');
   return `${days || '—'} · ${c.schedule?.time_start ?? ''}–${c.schedule?.time_end ?? ''}`;
@@ -41,6 +45,7 @@ export function personName(p: MonthlyContractItem['customer_id']): string {
 export default function MonthlyContractsScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { t, fs, lang } = useTranslation();
   // Vai trò hiện tại lấy từ auth store (active_role) như các màn hình dùng chung khác
   const user = useAuthStore(s => s.user);
   const isHelper = user?.active_role === 'helper';
@@ -88,12 +93,16 @@ export default function MonthlyContractsScreen() {
         </TouchableOpacity>
         <View style={{ flex: 1 }}>
           <Text style={{ fontSize: 18, fontWeight: '800', color: COLORS.gray[900] }}>
-            Hợp đồng theo tháng 📅
+            {lang === 'en' ? 'Monthly Contracts 📅' : 'Hợp đồng theo tháng 📅'}
           </Text>
           <Text style={{ fontSize: 12, color: COLORS.gray[500] }}>
-            {isHelper
-              ? 'Các hợp đồng giúp việc dài hạn bạn đang thực hiện'
-              : 'Thuê 1 thợ cố định theo tháng — điểm danh & chốt lương trong app'}
+            {lang === 'en'
+              ? isHelper
+                ? 'Long-term helper contracts you are handling'
+                : 'Hire a dedicated monthly helper — check-in & finalize wages in app'
+              : isHelper
+                ? 'Các hợp đồng giúp việc dài hạn bạn đang thực hiện'
+                : 'Thuê 1 thợ cố định theo tháng — điểm danh & chốt lương trong app'}
           </Text>
         </View>
         {!isHelper && (
@@ -131,13 +140,17 @@ export default function MonthlyContractsScreen() {
           {(contracts ?? []).length === 0 ? (
             <EmptyState
               emoji="📅"
-              title="Chưa có hợp đồng theo tháng nào"
+              title={lang === 'en' ? 'No monthly contracts yet' : 'Chưa có hợp đồng theo tháng nào'}
               subtitle={
-                isHelper
-                  ? 'Khi khách hàng mời bạn làm giúp việc theo tháng, hợp đồng sẽ hiện ở đây để bạn duyệt và điểm danh hằng ngày.'
-                  : 'Thuê 1 thợ quen theo tháng với lịch cố định: thợ điểm danh từng buổi, cuối tháng chốt lương theo số buổi thực tế — minh bạch cho cả hai bên.'
+                lang === 'en'
+                  ? isHelper
+                    ? 'When customers invite you for monthly home services, contracts will appear here for your review and daily attendance.'
+                    : 'Hire a regular helper monthly on a fixed schedule: helper checks in each session, wages finalized monthly based on actual sessions — transparent for both parties.'
+                  : isHelper
+                    ? 'Khi khách hàng mời bạn làm giúp việc theo tháng, hợp đồng sẽ hiện ở đây để bạn duyệt và điểm danh hằng ngày.'
+                    : 'Thuê 1 thợ quen theo tháng với lịch cố định: thợ điểm danh từng buổi, cuối tháng chốt lương theo số buổi thực tế — minh bạch cho cả hai bên.'
               }
-              action={isHelper ? undefined : 'Tạo hợp đồng mới'}
+              action={isHelper ? undefined : (lang === 'en' ? 'Create new contract' : 'Tạo hợp đồng mới')}
               onAction={isHelper ? undefined : () => router.push('/monthly-contract-create')}
             />
           ) : (
@@ -166,16 +179,20 @@ export default function MonthlyContractsScreen() {
                       >
                         {c.title}
                       </Text>
-                      <Badge label={meta.label} color={meta.bg} textColor={meta.color} />
+                      <Badge
+                        label={lang === 'en' ? meta.label_en : meta.label}
+                        color={meta.bg}
+                        textColor={meta.color}
+                      />
                     </View>
                     <Text style={{ fontSize: 13, color: COLORS.gray[600] }}>
-                      {isHelper ? 'Khách hàng' : 'Thợ'}: {personName(partner)} · Lương{' '}
-                      {fmt(c.monthly_salary)}₫/tháng
+                      {isHelper ? (lang === 'en' ? 'Customer' : 'Khách hàng') : (lang === 'en' ? 'Helper' : 'Thợ')}: {personName(partner)} · {lang === 'en' ? 'Salary ' : 'Lương '}
+                      {fmt(c.monthly_salary)}₫/{lang === 'en' ? 'month' : 'tháng'}
                     </Text>
                     <Text style={{ fontSize: 12.5, color: COLORS.gray[500] }}>
-                      Lịch: {describeMonthlySchedule(c)} · Từ{' '}
+                      {lang === 'en' ? 'Schedule: ' : 'Lịch: '}{describeMonthlySchedule(c, lang)} · {lang === 'en' ? 'From ' : 'Từ '}
                       {dayjs(c.start_date).format('DD/MM/YYYY')}
-                      {c.end_date ? ` đến ${dayjs(c.end_date).format('DD/MM/YYYY')}` : ''}
+                      {c.end_date ? (lang === 'en' ? ` to ${dayjs(c.end_date).format('DD/MM/YYYY')}` : ` đến ${dayjs(c.end_date).format('DD/MM/YYYY')}`) : ''}
                     </Text>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                       <Text
@@ -186,7 +203,7 @@ export default function MonthlyContractsScreen() {
                           fontWeight: '700',
                         }}
                       >
-                        Xem chi tiết & điểm danh
+                        {lang === 'en' ? 'View details & attendance' : 'Xem chi tiết & điểm danh'}
                       </Text>
                       <ChevronRight size={15} color={COLORS.gray[400]} />
                     </View>

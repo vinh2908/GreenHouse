@@ -3,10 +3,12 @@ import { ScrollView, Text } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useMutation } from '@tanstack/react-query';
 import { Button, Input } from '@/components/ui';
+import { useTranslation } from '@/hooks/use-i18n';
 import apiClient from '@/services/api-client';
 
 export default function ForgotPasswordScreen() {
   const router = useRouter();
+  const { t, fs, lang } = useTranslation();
   const [phone, setPhone] = useState('');
   const [otp, setOtp] = useState('');
   const [password, setPassword] = useState('');
@@ -28,20 +30,20 @@ export default function ForgotPasswordScreen() {
   return (
     <ScrollView contentContainerStyle={{ padding: 24, paddingTop: 64, gap: 16 }}>
       <Text accessibilityRole="header" style={{ fontWeight: '700', fontSize: 24 }}>
-        Đặt lại mật khẩu
+        {lang === 'en' ? 'Reset Password' : 'Đặt lại mật khẩu'}
       </Text>
       <Input
-        label="Số điện thoại"
+        label={lang === 'en' ? 'Phone Number' : 'Số điện thoại'}
         value={phone}
         onChangeText={v => {
           setPhone(v);
           setRequested(false);
         }}
         keyboardType="phone-pad"
-        placeholder="Số điện thoại đã đăng ký"
+        placeholder={lang === 'en' ? 'Registered phone number' : 'Số điện thoại đã đăng ký'}
       />
       <Button
-        title={requested ? 'Gửi lại mã xác minh' : 'Gửi mã xác minh'}
+        title={requested ? (lang === 'en' ? 'Resend verification code' : 'Gửi lại mã xác minh') : (lang === 'en' ? 'Send verification code' : 'Gửi mã xác minh')}
         disabled={!/^0\d{9}$/.test(phone.trim())}
         loading={send.isPending}
         onPress={() => send.mutate()}
@@ -49,24 +51,31 @@ export default function ForgotPasswordScreen() {
       {requested && (
         <>
           <Text>
-            Nếu số điện thoại đã đăng ký và dịch vụ gửi mã khả dụng, bạn sẽ nhận được mã xác minh.
+            {lang === 'en'
+              ? 'If the phone number is registered, you will receive a verification code.'
+              : 'Nếu số điện thoại đã đăng ký và dịch vụ gửi mã khả dụng, bạn sẽ nhận được mã xác minh.'}
           </Text>
           <Input
-            label="Mã xác minh"
+            label={lang === 'en' ? 'Verification Code' : 'Mã xác minh'}
             value={otp}
             onChangeText={setOtp}
             keyboardType="number-pad"
             maxLength={6}
           />
-          <Input label="Mật khẩu mới" value={password} onChangeText={setPassword} secureTextEntry />
           <Input
-            label="Nhập lại mật khẩu mới"
+            label={lang === 'en' ? 'New Password' : 'Mật khẩu mới'}
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry
+          />
+          <Input
+            label={lang === 'en' ? 'Confirm New Password' : 'Nhập lại mật khẩu mới'}
             value={confirm}
             onChangeText={setConfirm}
             secureTextEntry
           />
           <Button
-            title="Đổi mật khẩu"
+            title={lang === 'en' ? 'Change Password' : 'Đổi mật khẩu'}
             disabled={!/^\d{6}$/.test(otp) || password.length < 8 || password !== confirm}
             loading={reset.isPending}
             onPress={() => reset.mutate()}
@@ -75,16 +84,18 @@ export default function ForgotPasswordScreen() {
       )}
       {!!error && (
         <Text accessibilityRole="alert">
-          {error.response?.data?.message || 'Chưa thực hiện được. Vui lòng thử lại.'}
+          {error.response?.data?.message || (lang === 'en' ? 'Action failed. Please try again.' : 'Chưa thực hiện được. Vui lòng thử lại.')}
         </Text>
       )}
       {reset.isSuccess && (
         <Text accessibilityRole="alert">
-          Đã đổi mật khẩu. Bạn có thể đăng nhập bằng mật khẩu mới.
+          {lang === 'en'
+            ? 'Password changed. You can now log in with your new password.'
+            : 'Đã đổi mật khẩu. Bạn có thể đăng nhập bằng mật khẩu mới.'}
         </Text>
       )}
       <Button
-        title="Về đăng nhập"
+        title={lang === 'en' ? 'Back to Login' : 'Về đăng nhập'}
         variant="outline"
         onPress={() => router.replace('/(auth)/login')}
       />

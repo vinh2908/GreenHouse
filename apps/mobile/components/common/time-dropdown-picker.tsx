@@ -96,10 +96,15 @@ export function getDefaultFutureTimeSlot(selectedDate?: string | Date | null): s
 }
 
 /** Format thời lượng: "1 giờ 10 phút", "2 giờ 20 phút", "30 phút" (không thập phân 1,17 giờ) */
-export function formatDurationVi(totalMinutes: number): string {
-  if (!totalMinutes || totalMinutes <= 0) return '0 phút';
+export function formatDurationVi(totalMinutes: number, lang: string = 'vi'): string {
+  if (!totalMinutes || totalMinutes <= 0) return lang === 'en' ? '0 mins' : '0 phút';
   const h = Math.floor(totalMinutes / 60);
   const m = totalMinutes % 60;
+  if (lang === 'en') {
+    if (h === 0) return `${m} mins`;
+    if (m === 0) return h === 1 ? '1 hr' : `${h} hrs`;
+    return `${h} ${h === 1 ? 'hr' : 'hrs'} ${m} mins`;
+  }
   if (h === 0) return `${m} phút`;
   if (m === 0) return `${h} giờ`;
   return `${h} giờ ${m} phút`;
@@ -349,7 +354,7 @@ export function TimeDropdownPicker({
                               { fontSize: fs(9) },
                             ]}
                           >
-                            {badge}
+                            {lang === 'en' ? (badge === 'ĐÊM' ? 'NIGHT' : 'NEW') : badge}
                           </Text>
                         </View>
                       )}
@@ -508,22 +513,24 @@ export interface DurationDropdownPickerProps {
 }
 
 const PRESET_DURATIONS = [
-  { label: '30 phút', minutes: 30 },
-  { label: '1 giờ', minutes: 60 },
-  { label: '1h 10p', minutes: 70 },
-  { label: '2 giờ', minutes: 120 },
-  { label: '2h 20p', minutes: 140 },
-  { label: '3 giờ', minutes: 180 },
-  { label: '4 giờ', minutes: 240 },
+  { label: '30 phút', label_en: '30 mins', minutes: 30 },
+  { label: '1 giờ', label_en: '1 hr', minutes: 60 },
+  { label: '1h 10p', label_en: '1h 10m', minutes: 70 },
+  { label: '2 giờ', label_en: '2 hrs', minutes: 120 },
+  { label: '2h 20p', label_en: '2h 20m', minutes: 140 },
+  { label: '3 giờ', label_en: '3 hrs', minutes: 180 },
+  { label: '4 giờ', label_en: '4 hrs', minutes: 240 },
 ];
 
 export function DurationDropdownPicker({
   valueMinutes,
   onChangeMinutes,
-  label = 'Thời lượng',
+  label,
   minMinutes = 15,
   maxMinutes = 720, // 12h
 }: DurationDropdownPickerProps) {
+  const { lang, fs } = useTranslation();
+  const effectiveLabel = label ?? (lang === 'en' ? 'Duration' : 'Thời lượng');
   const [modalType, setModalType] = useState<'hour' | 'minute' | null>(null);
   const hourScrollRef = useRef<ScrollView>(null);
   const minuteScrollRef = useRef<ScrollView>(null);
@@ -563,7 +570,7 @@ export function DurationDropdownPicker({
 
   return (
     <View style={styles.container}>
-      {label ? <Text style={styles.fieldLabel}>{label}</Text> : null}
+      {effectiveLabel ? <Text style={styles.fieldLabel}>{effectiveLabel}</Text> : null}
 
       {/* 2 Ô Dropdown Giờ & Phút thời lượng */}
       <View style={styles.dropdownRow}>
@@ -574,7 +581,7 @@ export function DurationDropdownPicker({
         >
           <Clock size={16} color={COLORS.primary} />
           <Text style={styles.dropdownValue}>{durationHours}</Text>
-          <Text style={styles.dropdownUnit}>giờ</Text>
+          <Text style={styles.dropdownUnit}>{lang === 'en' ? (durationHours === 1 ? 'hr' : 'hrs') : 'giờ'}</Text>
           <ChevronDown size={16} color={COLORS.gray[500]} />
         </TouchableOpacity>
 
@@ -586,7 +593,7 @@ export function DurationDropdownPicker({
           style={styles.dropdownPill}
         >
           <Text style={styles.dropdownValue}>{String(durationMinutes).padStart(2, '0')}</Text>
-          <Text style={styles.dropdownUnit}>phút</Text>
+          <Text style={styles.dropdownUnit}>{lang === 'en' ? 'mins' : 'phút'}</Text>
           <ChevronDown size={16} color={COLORS.gray[500]} />
         </TouchableOpacity>
       </View>
@@ -607,7 +614,7 @@ export function DurationDropdownPicker({
               style={[styles.timeChip, isSelected && styles.timeChipActive]}
             >
               <Text style={[styles.timeChipText, isSelected && styles.timeChipTextActive]}>
-                {d.label}
+                {lang === 'en' ? d.label_en : d.label}
               </Text>
             </TouchableOpacity>
           );
@@ -629,7 +636,9 @@ export function DurationDropdownPicker({
           />
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Thời lượng (Giờ: 0 – 12)</Text>
+              <Text style={styles.modalTitle}>
+                {lang === 'en' ? 'Duration (Hours: 0 – 12)' : 'Thời lượng (Giờ: 0 – 12)'}
+              </Text>
               <TouchableOpacity onPress={() => setModalType(null)}>
                 <X size={20} color={COLORS.gray[600]} />
               </TouchableOpacity>
@@ -651,7 +660,7 @@ export function DurationDropdownPicker({
                     style={[styles.modalItem, isSelected && styles.modalItemActive]}
                   >
                     <Text style={[styles.modalItemText, isSelected && styles.modalItemTextActive]}>
-                      {h} giờ
+                      {h} {lang === 'en' ? (h === 1 ? 'hr' : 'hrs') : 'giờ'}
                     </Text>
                     {isSelected && <Check size={18} color={COLORS.primary} />}
                   </TouchableOpacity>
@@ -677,7 +686,9 @@ export function DurationDropdownPicker({
           />
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Thời lượng (Phút: 00 – 59)</Text>
+              <Text style={styles.modalTitle}>
+                {lang === 'en' ? 'Duration (Minutes: 00 – 59)' : 'Thời lượng (Phút: 00 – 59)'}
+              </Text>
               <TouchableOpacity onPress={() => setModalType(null)}>
                 <X size={20} color={COLORS.gray[600]} />
               </TouchableOpacity>
@@ -699,7 +710,7 @@ export function DurationDropdownPicker({
                     style={[styles.modalItem, isSelected && styles.modalItemActive]}
                   >
                     <Text style={[styles.modalItemText, isSelected && styles.modalItemTextActive]}>
-                      {String(m).padStart(2, '0')} phút
+                      {String(m).padStart(2, '0')} {lang === 'en' ? 'mins' : 'phút'}
                     </Text>
                     {isSelected && <Check size={18} color={COLORS.primary} />}
                   </TouchableOpacity>

@@ -59,14 +59,14 @@ import { VoucherInput } from '@/components/common/voucher-input';
 import type { VoucherPreview } from '@/hooks/use-api';
 import { useTranslation } from '@/hooks/use-i18n';
 
-const STEPS = ['Dịch vụ', 'Địa chỉ', 'Lịch hẹn', 'Mô tả', 'Xác nhận'];
-const STEP_KEYS = [
+const STEPS = [
   'booking_step_service',
   'booking_step_address',
   'booking_step_schedule',
   'booking_step_description',
   'booking_step_confirm',
 ];
+const STEP_KEYS = STEPS;
 
 const TIME_SLOTS = [
   '07:00',
@@ -193,7 +193,7 @@ const DEFAULT_SERVICES: BookingServiceOption[] = [
 
 export default function BookingScreen() {
   const router = useRouter();
-  const { t, tService, fs } = useTranslation();
+  const { t, tService, tServiceDesc, lang, fs } = useTranslation();
   const params = useLocalSearchParams<{
     service_id?: string;
     service_slug?: string;
@@ -402,7 +402,7 @@ export default function BookingScreen() {
     try {
       const { status } = await ImagePicker.requestCameraPermissionsAsync();
       if (status !== 'granted') {
-        Toast.show({ type: 'error', text1: 'Cần quyền truy cập camera để chụp ảnh hiện trạng' });
+        Toast.show({ type: 'error', text1: t('booking_toast_camera_perm') });
         return;
       }
       const result = await ImagePicker.launchCameraAsync({
@@ -415,7 +415,7 @@ export default function BookingScreen() {
         setPhotos(prev => [...prev, result.assets[0].uri].slice(0, 6));
       }
     } catch {
-      Toast.show({ type: 'error', text1: 'Không thể mở máy ảnh' });
+      Toast.show({ type: 'error', text1: t('booking_toast_camera_error') });
     }
   };
 
@@ -424,7 +424,7 @@ export default function BookingScreen() {
       if (Platform.OS !== 'web') {
         const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
         if (status !== 'granted') {
-          Toast.show({ type: 'error', text1: 'Cần quyền truy cập thư viện ảnh' });
+          Toast.show({ type: 'error', text1: t('booking_toast_gallery_perm') });
           return;
         }
       }
@@ -439,7 +439,7 @@ export default function BookingScreen() {
         setPhotos(prev => [...prev, ...uris].slice(0, 6));
       }
     } catch {
-      Toast.show({ type: 'error', text1: 'Không thể chọn ảnh từ thư viện' });
+      Toast.show({ type: 'error', text1: t('booking_toast_gallery_error') });
     }
   };
 
@@ -450,8 +450,8 @@ export default function BookingScreen() {
     const unavailableToast = (msg?: string) =>
       Toast.show({
         type: 'info',
-        text1: 'Chưa phân tích được ảnh',
-        text2: msg || 'Ảnh vẫn được đính kèm vào đơn, bạn tự mô tả giúp mình nhé',
+        text1: t('booking_ai_photo_failed_title'),
+        text2: msg || t('booking_ai_photo_failed_desc'),
       });
 
     setIsAnalyzingPhoto(true);
@@ -468,7 +468,7 @@ export default function BookingScreen() {
         if (Platform.OS !== 'web') {
           const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
           if (status !== 'granted') {
-            Toast.show({ type: 'error', text1: 'Cần quyền truy cập thư viện ảnh' });
+            Toast.show({ type: 'error', text1: t('booking_toast_gallery_perm') });
             setIsAnalyzingPhoto(false);
             return;
           }
@@ -484,8 +484,8 @@ export default function BookingScreen() {
         if (result.canceled || !result.assets[0]?.uri) {
           Toast.show({
             type: 'info',
-            text1: 'Chưa chọn ảnh',
-            text2: 'Vui lòng chọn ảnh chụp sự cố để AI phân tích',
+            text1: t('booking_ai_photo_no_select_title'),
+            text2: t('booking_ai_photo_no_select_desc'),
           });
           setIsAnalyzingPhoto(false);
           return;
@@ -499,7 +499,7 @@ export default function BookingScreen() {
       }
 
       if (!targetUri) {
-        unavailableToast('Không tìm thấy đường dẫn ảnh');
+        unavailableToast(t('booking_ai_photo_path_error'));
         return;
       }
 
@@ -546,7 +546,7 @@ export default function BookingScreen() {
       }
 
       if (!base64) {
-        unavailableToast('Không thể đọc dữ liệu ảnh để phân tích AI');
+        unavailableToast(t('booking_ai_photo_read_error'));
         return;
       }
 
@@ -568,11 +568,17 @@ export default function BookingScreen() {
             if (selectedService && selectedService !== svc._id) {
               const currentSvc = svcList.find(s => s._id === selectedService);
               Alert.alert(
-                'AI gợi ý đổi dịch vụ',
-                `AI nhận diện ảnh phù hợp với "${svc.name}" (hiện đang chọn "${currentSvc?.name || 'khác'}"). Bạn có muốn chuyển sang dịch vụ này không?`,
+                t('booking_ai_suggest_change_title'),
+                t('booking_ai_suggest_change_desc', {
+                  newSvc: tService(svc),
+                  oldSvc: tService(currentSvc) || (lang === 'en' ? 'other' : 'khác'),
+                }),
                 [
-                  { text: 'Giữ dịch vụ hiện tại', style: 'cancel' },
-                  { text: 'Đổi sang ' + svc.name, onPress: () => setSelectedService(svc._id) },
+                  { text: t('booking_keep_current_svc'), style: 'cancel' },
+                  {
+                    text: t('booking_change_to_svc', { name: tService(svc) }),
+                    onPress: () => setSelectedService(svc._id),
+                  },
                 ],
               );
             } else {
@@ -582,11 +588,11 @@ export default function BookingScreen() {
             // Item 7: AI suggests a service slug not found in catalog -> inform user and switch to custom service
             const customName = res.suggested_service_name || res.suggested_service_slug;
             Alert.alert(
-              'Gợi ý dịch vụ từ AI',
-              `AI đề xuất dịch vụ "${customName}". Do danh mục chuẩn chưa có dịch vụ này, hệ thống đã chuyển sang "Dịch vụ theo yêu cầu" và điền sẵn tên dịch vụ cho bạn.`,
+              t('booking_ai_service_tip_title'),
+              t('booking_ai_service_tip_desc', { name: customName }),
               [
                 {
-                  text: 'Đồng ý',
+                  text: t('common_confirm'),
                   onPress: () => {
                     setSelectedService('custom');
                     setCustomServiceName(customName);
@@ -600,8 +606,8 @@ export default function BookingScreen() {
         }
         Toast.show({
           type: 'success',
-          text1: 'AI đã nhận diện sự cố trong ảnh!',
-          text2: 'Đã điền sẵn mô tả & gợi ý dịch vụ cho bạn',
+          text1: t('booking_ai_photo_success_title'),
+          text2: t('booking_ai_photo_success_desc'),
         });
       } else {
         unavailableToast(res?.message);
@@ -639,21 +645,21 @@ export default function BookingScreen() {
         setCoordsDerived(true);
         Toast.show({
           type: 'success',
-          text1: 'Đã định vị vị trí của bạn',
+          text1: t('booking_gps_located_title'),
           text2: parsed.full_address || details.full_address,
         });
       } else {
         Toast.show({
           type: 'info',
-          text1: 'Không thể định vị tự động',
-          text2: 'Vui lòng kiểm tra GPS hoặc nhập tay địa chỉ của bạn bên dưới.',
+          text1: t('booking_gps_auto_fail_title'),
+          text2: t('booking_gps_auto_fail_desc'),
         });
       }
     } catch {
       Toast.show({
         type: 'info',
-        text1: 'Không thể lấy vị trí hiện tại',
-        text2: 'Vui lòng nhập tay địa chỉ của bạn bên dưới.',
+        text1: t('booking_gps_fail_title'),
+        text2: t('booking_gps_fail_desc'),
       });
     } finally {
       if (timer) clearTimeout(timer);
@@ -788,7 +794,7 @@ export default function BookingScreen() {
     setSearchResults([]);
     Toast.show({
       type: 'success',
-      text1: 'Đã chọn địa điểm từ bản đồ',
+      text1: t('booking_toast_map_selected'),
       text2:
         parsed.full_address || full_address || place.display_name.split(',').slice(0, 2).join(', '),
     });
@@ -848,11 +854,17 @@ export default function BookingScreen() {
           if (selectedService && selectedService !== svc._id) {
             const currentSvc = svcList.find(s => s._id === selectedService);
             Alert.alert(
-              'AI gợi ý đổi dịch vụ',
-              `AI đề xuất dịch vụ "${svc.name}" (hiện đang chọn "${currentSvc?.name || 'khác'}"). Bạn có muốn chuyển sang dịch vụ này không?`,
+              t('booking_ai_suggest_change_title'),
+              t('booking_ai_suggest_desc', {
+                newSvc: tService(svc),
+                currentSvc: currentSvc ? tService(currentSvc) : (lang === 'en' ? 'other' : 'khác'),
+              }),
               [
-                { text: 'Giữ dịch vụ hiện tại', style: 'cancel' },
-                { text: 'Đổi sang ' + svc.name, onPress: () => setSelectedService(svc._id) },
+                { text: t('booking_keep_current_svc'), style: 'cancel' },
+                {
+                  text: t('booking_change_to_svc', { name: tService(svc) }),
+                  onPress: () => setSelectedService(svc._id),
+                },
               ],
             );
           } else {
@@ -875,12 +887,15 @@ export default function BookingScreen() {
             if (selectedService && selectedService !== fallbackSvc._id) {
               const currentSvc = svcList.find(s => s._id === selectedService);
               Alert.alert(
-                'AI gợi ý đổi dịch vụ',
-                `AI đề xuất dịch vụ "${fallbackSvc.name}" (hiện đang chọn "${currentSvc?.name || 'khác'}"). Bạn có muốn chuyển sang dịch vụ này không?`,
+                t('booking_ai_suggest_change_title'),
+                t('booking_ai_suggest_desc', {
+                  newSvc: tService(fallbackSvc),
+                  currentSvc: currentSvc ? tService(currentSvc) : (lang === 'en' ? 'other' : 'khác'),
+                }),
                 [
-                  { text: 'Giữ dịch vụ hiện tại', style: 'cancel' },
+                  { text: t('booking_keep_current_svc'), style: 'cancel' },
                   {
-                    text: 'Đổi sang ' + fallbackSvc.name,
+                    text: t('booking_change_to_svc', { name: tService(fallbackSvc) }),
                     onPress: () => setSelectedService(fallbackSvc._id),
                   },
                 ],
@@ -898,20 +913,22 @@ export default function BookingScreen() {
 
       if (result.service_name || result.tasks) {
         setTitle(result.service_name || aiInput.slice(0, 60));
+        const tasksPrefix = lang === 'en' ? '\n\nTasks to perform:\n• ' : '\n\nCác hạng mục cần làm:\n• ';
+        const notesPrefix = lang === 'en' ? '\n\nGhi chú: ' : '\n\nGhi chú: ';
         const tasksList = result.tasks?.length
-          ? `\n\nCác hạng mục cần làm:\n• ${result.tasks.join('\n• ')}`
+          ? `${tasksPrefix}${result.tasks.join('\n• ')}`
           : '';
-        const notesStr = result.notes ? `\n\nGhi chú: ${result.notes}` : '';
+        const notesStr = result.notes ? `${notesPrefix}${result.notes}` : '';
         setDescription(`${aiInput}${tasksList}${notesStr}`);
       }
 
       Toast.show({
         type: 'success',
-        text1: 'AI đã phân tích thành công!',
-        text2: 'Đã tự động chọn dịch vụ & tạo chi tiết công việc',
+        text1: t('booking_ai_desc_success_title'),
+        text2: t('booking_ai_desc_success_desc'),
       });
     } catch {
-      Toast.show({ type: 'error', text1: 'Phân tích thất bại, vui lòng thử lại' });
+      Toast.show({ type: 'error', text1: t('booking_ai_desc_fail') });
     }
   };
 
@@ -933,8 +950,8 @@ export default function BookingScreen() {
     if (!useAuthStore.getState().isAuthenticated) {
       Toast.show({
         type: 'info',
-        text1: 'Yêu cầu đăng nhập',
-        text2: 'Vui lòng đăng nhập hoặc tạo tài khoản để gửi đơn đặt thợ',
+        text1: t('booking_login_required_title'),
+        text2: t('booking_login_required_desc'),
       });
       router.push('/(auth)/login');
       return;
@@ -953,7 +970,7 @@ export default function BookingScreen() {
     if (!hasFullAddress || !hasDistrictOrFallback) {
       Toast.show({
         type: 'error',
-        text1: 'Vui lòng nhập đầy đủ địa chỉ làm việc (Địa chỉ, Phường, Quận/Huyện hoặc Thành phố)',
+        text1: t('booking_address_validation_error'),
       });
       setStep(1);
       return;
@@ -968,9 +985,8 @@ export default function BookingScreen() {
       } else {
         Toast.show({
           type: 'error',
-          text1: 'Chưa xác định được tọa độ chính xác',
-          text2:
-            'Vui lòng chọn từ gợi ý tìm kiếm hoặc bấm nút lấy vị trí GPS để ghim đúng điểm cho thợ.',
+          text1: t('booking_coords_unconfirmed_title'),
+          text2: t('booking_coords_unconfirmed_desc'),
         });
         setStep(1);
         return;
@@ -978,12 +994,12 @@ export default function BookingScreen() {
     }
 
     if (!date || !timeSlot) {
-      Toast.show({ type: 'error', text1: 'Vui lòng chọn thời gian bắt đầu' });
+      Toast.show({ type: 'error', text1: t('booking_time_validation_error') });
       setStep(2);
       return;
     }
     if (!title.trim() || !description.trim()) {
-      Toast.show({ type: 'error', text1: 'Vui lòng điền tiêu đề và mô tả công việc' });
+      Toast.show({ type: 'error', text1: t('booking_title_desc_required') });
       setStep(3);
       return;
     }
@@ -1024,13 +1040,13 @@ export default function BookingScreen() {
       const durMinsTotal = Math.round(durHours * 60);
       const startDateTime = dayjs(`${date} ${timeSlot}`);
       if (startDateTime.isBefore(dayjs().subtract(1, 'minute'))) {
-        Toast.show({ type: 'error', text1: 'Thời gian bắt đầu không được ở trong quá khứ' });
+        Toast.show({ type: 'error', text1: t('booking_time_past_error') });
         return;
       }
       const endTime = startDateTime.add(durMinsTotal, 'minute').format('HH:mm');
       const cleanNum = targetPrice ? Number(String(targetPrice).replace(/[^0-9]/g, '')) : undefined;
       if (cleanNum !== undefined && cleanNum < 50000) {
-        Toast.show({ type: 'error', text1: 'Giá mong muốn tối thiểu là 50.000₫' });
+        Toast.show({ type: 'error', text1: t('booking_min_price_error') });
         return;
       }
 
@@ -1038,7 +1054,7 @@ export default function BookingScreen() {
         service_id: currentServiceId === 'custom' ? undefined : currentServiceId,
         custom_service_name: customServiceName.trim() || undefined,
         target_price: cleanNum && cleanNum > 0 ? cleanNum : undefined,
-        title: title.trim() || customServiceName.trim() || 'Yêu cầu dịch vụ',
+        title: title.trim() || customServiceName.trim() || t('booking_default_title'),
         description: description.trim(),
         photos: photos.length > 0 ? photos : undefined,
         address: jobAddress,
@@ -1058,10 +1074,10 @@ export default function BookingScreen() {
         err?.response?.data?.message ||
         (Array.isArray(err?.response?.data?.message)
           ? err.response.data.message[0]
-          : 'Đăng việc thất bại. Vui lòng thử lại');
+          : t('booking_create_failed'));
       Toast.show({
         type: 'error',
-        text1: typeof msg === 'string' ? msg : 'Đăng việc không thành công',
+        text1: typeof msg === 'string' ? msg : t('booking_create_failed'),
       });
     }
   };
@@ -1069,18 +1085,18 @@ export default function BookingScreen() {
   const handleNextStep = () => {
     if (step === 0) {
       if (!selectedService) {
-        Toast.show({ type: 'error', text1: 'Vui lòng chọn 1 dịch vụ cần làm' });
+        Toast.show({ type: 'error', text1: t('booking_select_service_error') });
         return;
       }
       if (selectedService === 'custom') {
         if (!customServiceName.trim()) {
-          Toast.show({ type: 'error', text1: 'Vui lòng nhập tên công việc bạn cần làm' });
+          Toast.show({ type: 'error', text1: t('booking_enter_service_name_error') });
           return;
         }
         if (targetPrice) {
           const cleanP = Number(String(targetPrice).replace(/[^0-9]/g, ''));
           if (cleanP > 0 && cleanP < 50000) {
-            Toast.show({ type: 'error', text1: 'Giá mong muốn tối thiểu là 50.000₫' });
+            Toast.show({ type: 'error', text1: t('booking_min_price_error') });
             return;
           }
         }
@@ -1097,8 +1113,7 @@ export default function BookingScreen() {
       if (!hasFullAddress || !hasLocality) {
         Toast.show({
           type: 'error',
-          text1:
-            'Vui lòng nhập đầy đủ địa chỉ làm việc (Địa chỉ, Phường, Quận/Huyện hoặc Thành phố)',
+          text1: t('booking_address_validation_error'),
         });
         return;
       }
@@ -1108,18 +1123,18 @@ export default function BookingScreen() {
       setStep(2);
     } else if (step === 2) {
       if (!date || !timeSlot) {
-        Toast.show({ type: 'error', text1: 'Vui lòng chọn ngày và giờ bắt đầu làm việc' });
+        Toast.show({ type: 'error', text1: t('booking_time_validation_error') });
         return;
       }
       const selectedStart = dayjs(`${date} ${timeSlot}`);
       if (selectedStart.isBefore(dayjs())) {
-        Toast.show({ type: 'error', text1: 'Thời gian bắt đầu không được ở trong quá khứ' });
+        Toast.show({ type: 'error', text1: t('booking_time_past_error') });
         return;
       }
       setStep(3);
     } else if (step === 3) {
       if (!title.trim() || !description.trim()) {
-        Toast.show({ type: 'error', text1: 'Vui lòng điền tiêu đề và mô tả công việc' });
+        Toast.show({ type: 'error', text1: t('booking_title_desc_required') });
         return;
       }
       setStep(4);
@@ -1216,7 +1231,7 @@ export default function BookingScreen() {
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                   <Sparkles size={20} color={COLORS.primary} />
                   <Text style={{ color: '#fff', fontWeight: '800', fontSize: fs(16) }}>
-                    Mô tả để AI hỗ trợ
+                    {t('booking_ai_desc_title')}
                   </Text>
                 </View>
                 <TextInput
@@ -1236,7 +1251,7 @@ export default function BookingScreen() {
                   multiline
                 />
                 <Button
-                  title="Phân tích với AI"
+                  title={t('booking_ai_analyze_btn')}
                   loading={analyzeAI.isPending}
                   onPress={handleAiAnalyze}
                   size="sm"
@@ -1262,11 +1277,13 @@ export default function BookingScreen() {
                       }}
                     >
                       <Text style={{ color: '#34D399', fontWeight: '800', fontSize: fs(13.5) }}>
-                        ✓ {aiSuggestion.service_name || 'Đã phân tích xong'}
+                        ✓ {aiSuggestion.service_name || t('booking_ai_done')}
                       </Text>
                       {aiSuggestion.estimated_duration_hours && (
                         <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: fs(12) }}>
-                          Ước tính: {aiSuggestion.estimated_duration_hours}h
+                          {t('booking_ai_est_duration', {
+                            hours: aiSuggestion.estimated_duration_hours,
+                          })}
                         </Text>
                       )}
                     </View>
@@ -1280,7 +1297,7 @@ export default function BookingScreen() {
                             fontWeight: '700',
                           }}
                         >
-                          Hạng mục cần làm:
+                          {t('booking_ai_tasks_needed')}
                         </Text>
                         {aiSuggestion.tasks.map((t, i) => (
                           <Text key={i} style={{ color: '#fff', fontSize: fs(12.5) }}>
@@ -1299,9 +1316,15 @@ export default function BookingScreen() {
                           marginTop: 2,
                         }}
                       >
-                        Ước giá thị trường:{' '}
-                        {new Intl.NumberFormat('vi-VN').format(aiSuggestion.price_min)}₫ –{' '}
-                        {new Intl.NumberFormat('vi-VN').format(aiSuggestion.price_max ?? 0)}₫
+                        {t('booking_ai_est_price')}{' '}
+                        {new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'vi-VN').format(
+                          aiSuggestion.price_min,
+                        )}
+                        ₫ –{' '}
+                        {new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'vi-VN').format(
+                          aiSuggestion.price_max ?? 0,
+                        )}
+                        ₫
                       </Text>
                     )}
 
@@ -1342,7 +1365,7 @@ export default function BookingScreen() {
               </Card>
 
               <Text style={{ fontSize: fs(16), fontWeight: '800', color: COLORS.gray[800] }}>
-                Hoặc chọn dịch vụ bên dưới:
+                {t('booking_or_choose_below')}
               </Text>
 
               <View style={{ gap: 10 }}>
@@ -1350,7 +1373,7 @@ export default function BookingScreen() {
                   <View style={{ paddingVertical: 40, alignItems: 'center', gap: 12 }}>
                     <ActivityIndicator size="large" color={COLORS.primary} />
                     <Text style={{ fontSize: fs(13), color: COLORS.gray[500], fontWeight: '600' }}>
-                      Đang tải danh sách dịch vụ...
+                      {t('booking_loading_services')}
                     </Text>
                   </View>
                 ) : (
@@ -1400,7 +1423,7 @@ export default function BookingScreen() {
                             style={{ fontSize: fs(12), color: COLORS.gray[500], marginTop: 2 }}
                             numberOfLines={1}
                           >
-                            {svc.description}
+                            {tServiceDesc(svc)}
                           </Text>
                         )}
                         {svc.pricing_model === 'fixed' && svc.fixed_price ? (
@@ -1413,8 +1436,10 @@ export default function BookingScreen() {
                             }}
                           >
                             {t('booking_fixed_price')}{' '}
-                            {new Intl.NumberFormat('vi-VN').format(svc.fixed_price)}₫ — nhận việc
-                            ngay, không cần báo giá
+                            {new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'vi-VN').format(
+                              svc.fixed_price,
+                            )}
+                            ₫ — {t('booking_fixed_price_sub')}
                           </Text>
                         ) : svc.base_price_min ? (
                           <Text
@@ -1425,7 +1450,9 @@ export default function BookingScreen() {
                               fontWeight: '700',
                             }}
                           >
-                            Từ {new Intl.NumberFormat('vi-VN').format(svc.base_price_min)}₫
+                            {lang === 'en'
+                              ? `From ${new Intl.NumberFormat('en-US').format(svc.base_price_min)}₫`
+                              : `Từ ${new Intl.NumberFormat('vi-VN').format(svc.base_price_min)}₫`}
                           </Text>
                         ) : null}
                       </View>
@@ -1466,7 +1493,7 @@ export default function BookingScreen() {
                   <View style={{ flex: 1 }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                       <Text style={{ fontWeight: '800', fontSize: fs(15), color: COLORS.gray[900] }}>
-                        Dịch vụ khác — tự ghi việc, tự set giá
+                        {t('booking_other_service_title')}
                       </Text>
                       <View
                         style={{
@@ -1477,12 +1504,12 @@ export default function BookingScreen() {
                         }}
                       >
                         <Text style={{ fontSize: fs(10), fontWeight: '900', color: COLORS.primary }}>
-                          MỚI
+                          {t('booking_new_badge')}
                         </Text>
                       </View>
                     </View>
                     <Text style={{ fontSize: fs(12), color: COLORS.gray[600], marginTop: 2 }}>
-                      Việc gì cũng đăng được · bạn tự mô tả công việc và đặt giá mong muốn
+                      {t('booking_other_service_desc')}
                     </Text>
                     <Text
                       style={{
@@ -1492,7 +1519,7 @@ export default function BookingScreen() {
                         fontWeight: '700',
                       }}
                     >
-                      Deal giá trực tiếp với thợ
+                      {t('booking_other_service_sub')}
                     </Text>
                   </View>
                   {selectedService === 'custom' && (
@@ -1524,13 +1551,13 @@ export default function BookingScreen() {
                     }}
                   >
                     <Input
-                      label="Tên công việc / dịch vụ bạn cần *"
+                      label={t('booking_other_service_name_label')}
                       placeholder=""
                       value={customServiceName}
                       onChangeText={setCustomServiceName}
                     />
                     <Input
-                      label="Giá bạn muốn trả (giá mở đầu để deal) *"
+                      label={t('booking_other_service_price_label')}
                       placeholder=""
                       value={targetPrice}
                       onChangeText={v => setTargetPrice(v.replace(/[^0-9]/g, ''))}
@@ -1546,7 +1573,7 @@ export default function BookingScreen() {
           {step === 1 && (
             <View style={{ gap: 14 }}>
               <Text style={{ fontSize: 20, fontWeight: '800', color: COLORS.gray[900] }}>
-                Địa chỉ làm việc
+                {t('booking_step_address_title')}
               </Text>
 
               {/* Nút GPS Goong Maps */}
@@ -1571,14 +1598,14 @@ export default function BookingScreen() {
                   <Navigation size={18} color={COLORS.primary} />
                 )}
                 <Text style={{ color: COLORS.primary, fontWeight: '800', fontSize: 14 }}>
-                  {isLocating ? 'Đang định vị vị trí...' : 'Lấy vị trí GPS hiện tại (Goong Maps)'}
+                  {isLocating ? t('booking_locating_gps') : t('booking_get_gps')}
                 </Text>
               </TouchableOpacity>
 
               {/* Ô Tìm kiếm địa điểm Goong Maps */}
               <View style={{ gap: 6, position: 'relative', zIndex: 10 }}>
                 <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.gray[700] }}>
-                  Tìm kiếm địa điểm trên bản đồ
+                  {t('booking_search_map_title')}
                 </Text>
                 <View
                   style={{
@@ -1595,7 +1622,7 @@ export default function BookingScreen() {
                   <Search size={18} color={COLORS.gray[400]} />
                   <TextInput
                     style={{ flex: 1, paddingVertical: 12, fontSize: 14, color: COLORS.gray[900] }}
-                    placeholder="Gõ tên đường, tòa nhà, chung cư..."
+                    placeholder={t('booking_search_address_placeholder')}
                     value={searchQuery}
                     onChangeText={handleSearchAddress}
                     placeholderTextColor={COLORS.gray[400]}
@@ -1660,15 +1687,14 @@ export default function BookingScreen() {
                       }}
                     >
                       <Text style={{ fontSize: 13, color: COLORS.gray[500], lineHeight: 18 }}>
-                        Không tìm thấy địa điểm phù hợp. Vui lòng thử từ khóa khác hoặc nhập trực
-                        tiếp vào các ô bên dưới.
+                        {t('booking_no_location_found')}
                       </Text>
                     </View>
                   )}
               </View>
 
               <Input
-                label="Địa chỉ chi tiết (Số nhà & tên đường) *"
+                label={t('booking_detail_address_label')}
                 placeholder=""
                 value={address.full_address}
                 onChangeText={v => {
@@ -1680,7 +1706,7 @@ export default function BookingScreen() {
               <View style={{ flexDirection: 'row', gap: 12 }}>
                 <View style={{ flex: 1 }}>
                   <Input
-                    label="Phường/Xã"
+                    label={t('booking_ward_label')}
                     placeholder=""
                     value={address.ward}
                     onChangeText={v => {
@@ -1691,7 +1717,7 @@ export default function BookingScreen() {
                 </View>
                 <View style={{ flex: 1 }}>
                   <Input
-                    label="Quận/Huyện"
+                    label={t('booking_district_label')}
                     placeholder=""
                     value={address.district}
                     onChangeText={v => {
@@ -1702,7 +1728,7 @@ export default function BookingScreen() {
                 </View>
               </View>
               <Input
-                label="Thành phố"
+                label={t('booking_city_label')}
                 placeholder=""
                 value={address.city}
                 onChangeText={v => {
@@ -1711,7 +1737,7 @@ export default function BookingScreen() {
                 }}
               />
               <Input
-                label="Ghi chú hướng dẫn cho thợ (tùy chọn)"
+                label={t('booking_address_notes_guide')}
                 placeholder=""
                 value={address.notes}
                 onChangeText={v => setAddress(a => ({ ...a, notes: v }))}
@@ -1723,13 +1749,13 @@ export default function BookingScreen() {
           {step === 2 && (
             <View style={{ gap: 20 }}>
               <Text style={{ fontSize: 20, fontWeight: '800', color: COLORS.gray[900] }}>
-                Chọn lịch hẹn
+                {t('booking_step_schedule_title')}
               </Text>
 
               {/* 1. Lịch làm việc: Ngày & Giờ (Trigger mở Bottom Sheet Item 1) */}
               <View style={{ gap: 10 }}>
                 <Text style={{ fontSize: 14, fontWeight: '700', color: COLORS.gray[800] }}>
-                  Thời gian bắt đầu làm việc
+                  {t('booking_start_time_title')}
                 </Text>
 
                 {/* Ngày làm việc trigger card - Chuẩn Demo */}
@@ -1758,7 +1784,7 @@ export default function BookingScreen() {
                       numberOfLines={1}
                     >
                       {(() => {
-                        const dt = dayjs(date);
+                        const dt = dayjs(date).locale(lang === 'en' ? 'en' : 'vi');
                         const dow = dt.format('dddd');
                         const capitalizedDow = dow.charAt(0).toUpperCase() + dow.slice(1);
                         return `${capitalizedDow}, ${dt.format('DD/MM/YYYY')}`;
@@ -1767,7 +1793,7 @@ export default function BookingScreen() {
                     <Text
                       style={{ fontSize: 11, color: '#64748B', fontWeight: '500', marginTop: 1 }}
                     >
-                      Bấm để mở lịch tháng trong bottom sheet
+                      {t('booking_tap_to_open_calendar')}
                     </Text>
                   </View>
                   <ChevronRight size={18} color="#16A34A" />
@@ -1776,10 +1802,10 @@ export default function BookingScreen() {
                 {/* Day suggestion chips: Hôm nay / Ngày mai / Thứ 7 / Chủ nhật */}
                 <View style={{ flexDirection: 'row', gap: 6 }}>
                   {[
-                    { key: 'today', label: 'Hôm nay' },
-                    { key: 'tomorrow', label: 'Ngày mai' },
-                    { key: 'sat', label: 'Thứ 7' },
-                    { key: 'sun', label: 'Chủ nhật' },
+                    { key: 'today', labelKey: 'chip_today' },
+                    { key: 'tomorrow', labelKey: 'chip_tomorrow' },
+                    { key: 'sat', labelKey: 'chip_saturday' },
+                    { key: 'sun', labelKey: 'chip_sunday' },
                   ].map(c => {
                     const isSel = dateChip === c.key;
                     return (
@@ -1823,7 +1849,7 @@ export default function BookingScreen() {
                             color: isSel ? '#047857' : COLORS.gray[700],
                           }}
                         >
-                          {c.label}
+                          {t(c.labelKey)}
                         </Text>
                       </ScalePressable>
                     );
@@ -1835,7 +1861,7 @@ export default function BookingScreen() {
                   value={timeSlot}
                   onChange={setTimeSlot}
                   selectedDate={date}
-                  label="Giờ bắt đầu"
+                  label={t('booking_time_label')}
                   showChips={true}
                 />
 
@@ -1864,7 +1890,7 @@ export default function BookingScreen() {
           {step === 3 && (
             <View style={{ gap: 16 }}>
               <Text style={{ fontSize: 20, fontWeight: '800', color: COLORS.gray[900] }}>
-                Chi tiết công việc
+                {t('booking_step_details_title')}
               </Text>
 
               {/* Banner thông báo khi đã có ảnh sự cố được đính kèm */}
@@ -1884,18 +1910,17 @@ export default function BookingScreen() {
                   <Sparkles size={20} color="#16A34A" />
                   <View style={{ flex: 1 }}>
                     <Text style={{ fontSize: 13, fontWeight: '800', color: '#166534' }}>
-                      Đã đính kèm {photos.length} ảnh sự cố
+                      {t('booking_photos_attached', { count: photos.length })}
                     </Text>
                     <Text style={{ fontSize: 12, color: '#15803D', marginTop: 2 }}>
-                      Bấm nút màu xanh "Phân tích ảnh sự cố bằng AI" bên dưới để hệ thống nhận diện
-                      và điền mô tả ngay!
+                      {t('booking_photos_attached_hint')}
                     </Text>
                   </View>
                 </View>
               )}
 
               <Input
-                label="Tiêu đề yêu cầu *"
+                label={t('booking_title_label')}
                 placeholder=""
                 value={title}
                 onChangeText={setTitle}
@@ -1903,7 +1928,7 @@ export default function BookingScreen() {
 
               <View style={{ gap: 6 }}>
                 <Text style={{ fontSize: 14, fontWeight: '700', color: COLORS.gray[700] }}>
-                  Mô tả chi tiết *
+                  {t('booking_description_label')}
                 </Text>
                 <TextInput
                   style={{
@@ -1935,9 +1960,9 @@ export default function BookingScreen() {
                   }}
                 >
                   <Text style={{ fontSize: 14, fontWeight: '700', color: COLORS.gray[700] }}>
-                    📸 Ảnh hiện trạng công việc ({photos.length}/6)
+                    {t('booking_photos_label', { count: photos.length })}
                   </Text>
-                  <Text style={{ fontSize: 12, color: COLORS.gray[400] }}>Không bắt buộc</Text>
+                  <Text style={{ fontSize: 12, color: COLORS.gray[400] }}>{t('booking_optional')}</Text>
                 </View>
 
                 <View style={{ flexDirection: 'row', gap: 10 }}>
@@ -1959,7 +1984,7 @@ export default function BookingScreen() {
                   >
                     <Camera size={18} color={COLORS.primary} />
                     <Text style={{ fontWeight: '700', fontSize: 13, color: COLORS.primary }}>
-                      Chụp ảnh
+                      {t('booking_take_photo')}
                     </Text>
                   </TouchableOpacity>
 
@@ -1979,7 +2004,7 @@ export default function BookingScreen() {
                   >
                     <ImagePlus size={18} color={COLORS.gray[700]} />
                     <Text style={{ fontWeight: '700', fontSize: 13, color: COLORS.gray[800] }}>
-                      Chọn từ thư viện
+                      {t('booking_pick_gallery')}
                     </Text>
                   </TouchableOpacity>
                 </View>
@@ -2048,8 +2073,8 @@ export default function BookingScreen() {
                 <Sparkles size={20} color="#fff" />
                 <Text style={{ color: '#fff', fontWeight: '800', fontSize: 15, flex: 1 }}>
                   {analyzeIssuePhoto.isPending || isAnalyzingPhoto
-                    ? 'AI đang phân tích ảnh...'
-                    : 'Phân tích ảnh sự cố bằng AI'}
+                    ? t('booking_ai_analyzing_photo')
+                    : t('booking_ai_analyze_photo')}
                 </Text>
                 {analyzeIssuePhoto.isPending || isAnalyzingPhoto ? (
                   <ActivityIndicator size="small" color="#fff" />
@@ -2061,22 +2086,29 @@ export default function BookingScreen() {
               {photoAnalysis?.available && (
                 <Card style={{ backgroundColor: COLORS.primaryLight, gap: 6 }}>
                   <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.primary }}>
-                    🔍 AI nhận diện sự cố
+                    {t('booking_ai_detected_title')}
                   </Text>
                   <Text style={{ fontSize: 15, fontWeight: '700', color: COLORS.gray[900] }}>
-                    Vấn đề phát hiện: {photoAnalysis.detected_issue ?? '—'}
+                    {t('booking_ai_issue_label')} {photoAnalysis.detected_issue ?? '—'}
                   </Text>
                   {photoAnalysis.price_min != null && photoAnalysis.price_max != null && (
                     <Text style={{ fontSize: 13, color: COLORS.gray[700] }}>
-                      Khoảng giá: {new Intl.NumberFormat('vi-VN').format(photoAnalysis.price_min)}₫
-                      – {new Intl.NumberFormat('vi-VN').format(photoAnalysis.price_max)}₫
+                      {t('booking_ai_price_range')}{' '}
+                      {new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'vi-VN').format(
+                        photoAnalysis.price_min,
+                      )}
+                      ₫ –{' '}
+                      {new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'vi-VN').format(
+                        photoAnalysis.price_max,
+                      )}
+                      ₫
                       {photoAnalysis.confidence != null
-                        ? ` · độ tin cậy ${Math.round(photoAnalysis.confidence * 100)}%`
+                        ? ` · ${t('booking_ai_confidence')} ${Math.round(photoAnalysis.confidence * 100)}%`
                         : ''}
                     </Text>
                   )}
                   <Text style={{ fontSize: 12, color: COLORS.gray[500] }}>
-                    Mô tả đã được điền sẵn từ ảnh — bạn có thể sửa lại trước khi gửi đơn.
+                    {t('booking_ai_desc_hint')}
                   </Text>
                 </Card>
               )}
@@ -2097,8 +2129,8 @@ export default function BookingScreen() {
                   <Sparkles size={18} color="#5EEAD4" />
                   <Text style={{ color: '#fff', fontWeight: '700', flex: 1 }}>
                     {estimatePrice.isPending
-                      ? 'Đang ước tính giá...'
-                      : 'AI ước tính giá thị trường'}
+                      ? t('booking_ai_estimating')
+                      : t('booking_ai_estimate_market')}
                   </Text>
                   {!estimatePrice.isPending && (
                     <ChevronRight size={16} color="rgba(255,255,255,0.7)" />
@@ -2109,14 +2141,20 @@ export default function BookingScreen() {
               {priceEstimate && (
                 <Card style={{ backgroundColor: COLORS.primaryLight, gap: 6 }}>
                   <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.primary }}>
-                    Ước tính giá (AI)
+                    {t('booking_ai_estimate_title')}
                   </Text>
                   <Text style={{ fontSize: 22, fontWeight: '800', color: COLORS.gray[900] }}>
-                    {new Intl.NumberFormat('vi-VN').format(priceEstimate.price_min)}₫ –
-                    {new Intl.NumberFormat('vi-VN').format(priceEstimate.price_max)}₫
+                    {new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'vi-VN').format(
+                      priceEstimate.price_min,
+                    )}
+                    ₫ –
+                    {new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'vi-VN').format(
+                      priceEstimate.price_max,
+                    )}
+                    ₫
                   </Text>
                   <Text style={{ fontSize: 12, color: COLORS.gray[500] }}>
-                    Giá thực tế do thợ tự do báo giá cụ thể
+                    {t('booking_ai_market_note')}
                   </Text>
                 </Card>
               )}
@@ -2134,20 +2172,20 @@ export default function BookingScreen() {
                 <Row icon="🏠" label={t('common_service')} value={tService(selectedServiceData) || '—'} />
                 <Row
                   icon="📍"
-                  label="Địa chỉ"
+                  label={t('booking_step_address')}
                   value={
                     [address.full_address, address.ward, address.district, address.city]
                       .filter(Boolean)
-                      .join(', ') || 'Chưa rõ địa chỉ'
+                      .join(', ') || t('booking_address_unknown')
                   }
                 />
                 {address.notes ? (
-                  <Row icon="📝" label="Ghi chú địa chỉ" value={address.notes} />
+                  <Row icon="📝" label={t('booking_address_notes_label')} value={address.notes} />
                 ) : null}
-                <Row icon="📅" label="Ngày" value={dayjs(date).format('dddd, DD/MM/YYYY')} />
-                <Row icon="🕐" label="Giờ" value={`${timeSlot} • ${duration} giờ`} />
+                <Row icon="📅" label={t('booking_date_label')} value={dayjs(date).locale(lang === 'en' ? 'en' : 'vi').format('dddd, DD/MM/YYYY')} />
+                <Row icon="🕐" label={t('booking_time_label')} value={`${timeSlot} • ${duration} ${t('common_hours')}`} />
                 {photos.length > 0 && (
-                  <Row icon="📸" label="Hình ảnh đính kèm" value={`${photos.length} ảnh`} />
+                  <Row icon="📸" label={t('booking_attached_photos_label')} value={`${photos.length} ${t('common_photos')}`} />
                 )}
                 <View style={{ height: 1, backgroundColor: COLORS.gray[100] }} />
                 <Text style={{ fontWeight: '800', fontSize: 16, color: COLORS.gray[900] }}>
@@ -2170,12 +2208,13 @@ export default function BookingScreen() {
                 >
                   <Text style={{ fontWeight: '800', fontSize: 16, color: '#065F46' }}>
                     {t('booking_fixed_price')}{' '}
-                    {new Intl.NumberFormat('vi-VN').format(selectedServiceData?.fixed_price ?? 0)}₫
+                    {new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'vi-VN').format(
+                      selectedServiceData?.fixed_price ?? 0,
+                    )}
+                    ₫
                   </Text>
                   <Text style={{ fontSize: 13, color: COLORS.gray[700], lineHeight: 19 }}>
-                    Dịch vụ này có giá cố định do Green House cam kết. Thợ sẽ nhận việc trực tiếp
-                    với đúng mức giá trên — bạn không cần chờ đợi hay so sánh báo giá. Cứ đăng yêu
-                    cầu như bình thường!
+                    {t('booking_fixed_price_desc')}
                   </Text>
                 </Card>
               )}
@@ -2191,8 +2230,8 @@ export default function BookingScreen() {
                 <Text style={{ fontSize: 20 }}>💡</Text>
                 <Text style={{ flex: 1, fontSize: 13, color: COLORS.gray[700], lineHeight: 18 }}>
                   {isFixedPriceService
-                    ? 'Đơn giá cam kết sẽ được gửi tới các thợ quanh bạn — thợ đầu tiên nhận việc sẽ thực hiện với giá đã cam kết.'
-                    : 'Sau khi đăng, các thợ xung quanh sẽ gửi báo giá. Bạn có thể tự do so sánh tay nghề & giá cả trước khi chọn thợ.'}
+                    ? t('booking_quote_tip_fixed')
+                    : t('booking_quote_tip_regular')}
                 </Text>
               </Card>
 
@@ -2203,11 +2242,14 @@ export default function BookingScreen() {
                     <Text style={{ fontSize: 20 }}>⭐</Text>
                     <View style={{ flex: 1 }}>
                       <Text style={{ fontWeight: '800', fontSize: 15, color: COLORS.gray[900] }}>
-                        Gửi riêng cho {params.favorite_helper_name ?? 'thợ yêu thích'}
+                        {t('booking_send_private_to', {
+                          name:
+                            params.favorite_helper_name ??
+                            (lang === 'en' ? 'favorite helper' : 'thợ yêu thích'),
+                        })}
                       </Text>
                       <Text style={{ fontSize: 12.5, color: COLORS.gray[600], lineHeight: 17 }}>
-                        Đơn chỉ hiển thị với thợ này trong 24 giờ đầu. Hết thời gian chờ, đơn sẽ mở
-                        công khai cho mọi thợ nếu thợ chưa báo giá.
+                        {t('booking_private_offer_desc')}
                       </Text>
                     </View>
                     <Switch
@@ -2225,11 +2267,10 @@ export default function BookingScreen() {
                   <Text style={{ fontSize: 20 }}>👥</Text>
                   <View style={{ flex: 1 }}>
                     <Text style={{ fontWeight: '800', fontSize: 15, color: COLORS.gray[900] }}>
-                      Số thợ thực hiện
+                      {t('booking_helpers_needed_title')}
                     </Text>
                     <Text style={{ fontSize: 12.5, color: COLORS.gray[600], lineHeight: 17 }}>
-                      Việc lớn cần nhiều người? Chọn 2–4 thợ — thợ chính sẽ lập nhóm và chia tiền
-                      công minh bạch theo tỉ lệ.
+                      {t('booking_helpers_needed_desc')}
                     </Text>
                   </View>
                 </View>
@@ -2255,7 +2296,7 @@ export default function BookingScreen() {
                           color: helpersNeeded === n ? COLORS.primaryDark : COLORS.gray[700],
                         }}
                       >
-                        {n} thợ
+                        {n} {t(n > 1 ? 'common_helpers_plural' : 'common_helper')}
                       </Text>
                     </TouchableOpacity>
                   ))}
@@ -2268,10 +2309,10 @@ export default function BookingScreen() {
                   <Text style={{ fontSize: 20 }}>🔁</Text>
                   <View style={{ flex: 1 }}>
                     <Text style={{ fontWeight: '800', fontSize: 15, color: COLORS.gray[900] }}>
-                      Đặt thành gói định kỳ
+                      {t('booking_set_recurring')}
                     </Text>
                     <Text style={{ fontSize: 12.5, color: COLORS.gray[600], lineHeight: 17 }}>
-                      Hệ thống tự tạo đơn theo lịch lặp — bạn không cần đăng lại mỗi lần.
+                      {t('booking_recurring_desc')}
                     </Text>
                   </View>
                   <Switch
@@ -2286,8 +2327,8 @@ export default function BookingScreen() {
                     <View style={{ flexDirection: 'row', gap: 8 }}>
                       {(
                         [
-                          { key: 'weekly', label: 'Hàng tuần' },
-                          { key: 'monthly', label: 'Hàng tháng' },
+                          { key: 'weekly', label: t('booking_weekly') },
+                          { key: 'monthly', label: t('booking_monthly') },
                         ] as const
                       ).map(opt => (
                         <TouchableOpacity
@@ -2317,7 +2358,10 @@ export default function BookingScreen() {
 
                     {recurringFreq === 'weekly' ? (
                       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-                        {['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'].map((label, idx) => {
+                        {(lang === 'en'
+                          ? ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+                          : ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7']
+                        ).map((label, idx) => {
                           const active = recurringWeekdays.includes(idx);
                           return (
                             <TouchableOpacity
@@ -2354,7 +2398,9 @@ export default function BookingScreen() {
                       </View>
                     ) : (
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                        <Text style={{ fontSize: 13.5, color: COLORS.gray[700] }}>Vào ngày</Text>
+                        <Text style={{ fontSize: 13.5, color: COLORS.gray[700] }}>
+                          {t('booking_on_day')}
+                        </Text>
                         <TextInput
                           value={String(recurringMonthDay)}
                           onChangeText={v => {
@@ -2376,12 +2422,17 @@ export default function BookingScreen() {
                             textAlign: 'center',
                           }}
                         />
-                        <Text style={{ fontSize: 13.5, color: COLORS.gray[700] }}>hàng tháng</Text>
+                        <Text style={{ fontSize: 13.5, color: COLORS.gray[700] }}>
+                          {t('booking_every_month')}
+                        </Text>
                       </View>
                     )}
                     <Text style={{ fontSize: 12, color: COLORS.gray[500], lineHeight: 17 }}>
-                      Buổi đầu tiên: {dayjs(date).format('DD/MM/YYYY')} lúc {timeSlot} ({duration}{' '}
-                      giờ). Quản lý, tạm dừng hoặc bỏ qua từng buổi trong mục "Gói định kỳ của tôi".
+                      {t('booking_recurring_preview', {
+                        date: dayjs(date).format('DD/MM/YYYY'),
+                        time: timeSlot,
+                        duration,
+                      })}
                     </Text>
                   </View>
                 )}

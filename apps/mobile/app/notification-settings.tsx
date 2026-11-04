@@ -5,6 +5,7 @@ import { useRouter } from 'expo-router';
 import { ArrowLeft, Bell, Tag, Volume2, Shield, Smartphone } from 'lucide-react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Toast from 'react-native-toast-message';
+import { useTranslation } from '@/hooks/use-i18n';
 import { Card, COLORS, Separator } from '@/components/ui';
 
 const STORAGE_KEY = '@greenhouse_notification_settings';
@@ -30,6 +31,7 @@ const DEFAULT_SETTINGS: SettingsState = {
 export default function NotificationSettingsScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { t, fs, lang } = useTranslation();
   const [settings, setSettings] = useState<SettingsState>(DEFAULT_SETTINGS);
   const [loaded, setLoaded] = useState(false);
 
@@ -52,7 +54,7 @@ export default function NotificationSettingsScreen() {
       await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
       Toast.show({
         type: 'success',
-        text1: 'Đã lưu cài đặt thông báo',
+        text1: lang === 'en' ? 'Notification settings saved' : 'Đã lưu cài đặt thông báo',
         visibilityTime: 1500,
       });
     } catch {}
@@ -105,7 +107,7 @@ export default function NotificationSettingsScreen() {
             flex: 1,
           }}
         >
-          Cài đặt thông báo
+          {lang === 'en' ? 'Notification Settings' : 'Cài đặt thông báo'}
         </Text>
       </View>
 
@@ -125,7 +127,7 @@ export default function NotificationSettingsScreen() {
               letterSpacing: 0.5,
             }}
           >
-            Đơn hàng & Công việc
+            {lang === 'en' ? 'Orders & Tasks' : 'Đơn hàng & Công việc'}
           </Text>
           <Card style={{ gap: 0, paddingHorizontal: 16 }}>
             <View
@@ -138,10 +140,12 @@ export default function NotificationSettingsScreen() {
             >
               <View style={{ flex: 1, marginRight: 12 }}>
                 <Text style={{ fontSize: 15, fontWeight: '700', color: COLORS.gray[900] }}>
-                  Cập nhật tiến độ đơn hàng
+                  {lang === 'en' ? 'Order Progress Updates' : 'Cập nhật tiến độ đơn hàng'}
                 </Text>
                 <Text style={{ fontSize: 13, color: COLORS.gray[500], marginTop: 2 }}>
-                  Nhận tin khi thợ nhận việc, bắt đầu di chuyển, đã đến nơi hoặc hoàn thành.
+                  {lang === 'en'
+                    ? 'Get notified when helper accepts job, starts moving, arrives, or finishes.'
+                    : 'Nhận tin khi thợ nhận việc, bắt đầu di chuyển, đã đến nơi hoặc hoàn thành.'}
                 </Text>
               </View>
               <Switch
@@ -163,10 +167,12 @@ export default function NotificationSettingsScreen() {
             >
               <View style={{ flex: 1, marginRight: 12 }}>
                 <Text style={{ fontSize: 15, fontWeight: '700', color: COLORS.gray[900] }}>
-                  Tin nhắn & Trao đổi
+                  {lang === 'en' ? 'Messages & Chat' : 'Tin nhắn & Trao đổi'}
                 </Text>
                 <Text style={{ fontSize: 13, color: COLORS.gray[500], marginTop: 2 }}>
-                  Thông báo tin nhắn trò chuyện trực tiếp từ khách hàng hoặc thợ.
+                  {lang === 'en'
+                    ? 'Direct chat message notifications from customers or helpers.'
+                    : 'Thông báo tin nhắn trò chuyện trực tiếp từ khách hàng hoặc thợ.'}
                 </Text>
               </View>
               <Switch
@@ -190,7 +196,7 @@ export default function NotificationSettingsScreen() {
               letterSpacing: 0.5,
             }}
           >
-            Khuyến mãi & Mã giảm giá
+            {lang === 'en' ? 'Promotions & Vouchers' : 'Khuyến mãi & Mã giảm giá'}
           </Text>
           <Card style={{ gap: 0, paddingHorizontal: 16 }}>
             <View
@@ -203,10 +209,12 @@ export default function NotificationSettingsScreen() {
             >
               <View style={{ flex: 1, marginRight: 12 }}>
                 <Text style={{ fontSize: 15, fontWeight: '700', color: COLORS.gray[900] }}>
-                  Chương trình ưu đãi mới
+                  {lang === 'en' ? 'New Promotional Deals' : 'Chương trình ưu đãi mới'}
                 </Text>
                 <Text style={{ fontSize: 13, color: COLORS.gray[500], marginTop: 2 }}>
-                  Thông báo các chương trình giảm giá dịch vụ định kỳ và mùa lễ.
+                  {lang === 'en'
+                    ? 'Notifications about periodic service discounts and holiday deals.'
+                    : 'Thông báo các chương trình giảm giá dịch vụ định kỳ và mùa lễ.'}
                 </Text>
               </View>
               <Switch
@@ -228,10 +236,12 @@ export default function NotificationSettingsScreen() {
             >
               <View style={{ flex: 1, marginRight: 12 }}>
                 <Text style={{ fontSize: 15, fontWeight: '700', color: COLORS.gray[900] }}>
-                  Nhắc nhở voucher sắp hết hạn
+                  {lang === 'en' ? 'Expiring Voucher Reminders' : 'Nhắc nhở voucher sắp hết hạn'}
                 </Text>
                 <Text style={{ fontSize: 13, color: COLORS.gray[500], marginTop: 2 }}>
-                  Nhắc sử dụng các voucher giảm giá trước khi hết hạn sử dụng.
+                  {lang === 'en'
+                    ? 'Reminders to use discount vouchers before they expire.'
+                    : 'Nhắc sử dụng các voucher giảm giá trước khi hết hạn sử dụng.'}
                 </Text>
               </View>
               <Switch
@@ -255,7 +265,7 @@ export default function NotificationSettingsScreen() {
               letterSpacing: 0.5,
             }}
           >
-            Hệ thống & Âm báo
+            {lang === 'en' ? 'System & Alerts' : 'Hệ thống & Âm báo'}
           </Text>
           <Card style={{ gap: 0, paddingHorizontal: 16 }}>
             <View
@@ -268,10 +278,12 @@ export default function NotificationSettingsScreen() {
             >
               <View style={{ flex: 1, marginRight: 12 }}>
                 <Text style={{ fontSize: 15, fontWeight: '700', color: COLORS.gray[900] }}>
-                  Âm thanh thông báo
+                  {lang === 'en' ? 'Notification Sound' : 'Âm thanh thông báo'}
                 </Text>
                 <Text style={{ fontSize: 13, color: COLORS.gray[500], marginTop: 2 }}>
-                  Phát âm thanh chuông khi có thông báo mới đến.
+                  {lang === 'en'
+                    ? 'Play chime when a new notification arrives.'
+                    : 'Phát âm thanh chuông khi có thông báo mới đến.'}
                 </Text>
               </View>
               <Switch
@@ -293,10 +305,12 @@ export default function NotificationSettingsScreen() {
             >
               <View style={{ flex: 1, marginRight: 12 }}>
                 <Text style={{ fontSize: 15, fontWeight: '700', color: COLORS.gray[900] }}>
-                  Rung thiết bị
+                  {lang === 'en' ? 'Device Vibration' : 'Rung thiết bị'}
                 </Text>
                 <Text style={{ fontSize: 13, color: COLORS.gray[500], marginTop: 2 }}>
-                  Rung nhẹ điện thoại khi nhận tín hiệu hoặc đơn cứu hộ khẩn cấp.
+                  {lang === 'en'
+                    ? 'Gently vibrate device upon incoming messages or emergency SOS jobs.'
+                    : 'Rung nhẹ điện thoại khi nhận tín hiệu hoặc đơn cứu hộ khẩn cấp.'}
                 </Text>
               </View>
               <Switch

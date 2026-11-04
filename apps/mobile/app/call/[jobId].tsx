@@ -64,7 +64,7 @@ export default function CallScreen() {
   }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { t, fs } = useTranslation();
+  const { t, fs, lang } = useTranslation();
 
   const isAnswerMode = mode === 'answer' && !!sessionId;
 
@@ -107,7 +107,12 @@ export default function CallScreen() {
       onBusyOrRejected: (reason?: string) => {
         if (endedRef.current) return;
         endedRef.current = true;
-        setEndReason(reason || 'Người kia đã từ chối cuộc gọi');
+        setEndReason(
+          reason ||
+            (lang === 'en'
+              ? 'The other party declined the call'
+              : 'Người kia đã từ chối cuộc gọi'),
+        );
         setUiState('rejected');
         const s = sessionRef.current;
         if (s) {
@@ -132,7 +137,12 @@ export default function CallScreen() {
         setUiState('ended');
       },
       onError: (message: string) => {
-        setErrorMsg(message || 'Không kết nối được cuộc gọi. Vui lòng thử lại.');
+        setErrorMsg(
+          message ||
+            (lang === 'en'
+              ? 'Could not connect the call. Please try again.'
+              : 'Không kết nối được cuộc gọi. Vui lòng thử lại.'),
+        );
         setUiState('error');
       },
     };
@@ -158,7 +168,9 @@ export default function CallScreen() {
           const connected = stringeeService.ensureConnected(s.token, s.my_user_id);
           if (!connected) {
             setErrorMsg(
-              'Không thể kết nối đến hệ thống cuộc gọi. Vui lòng kiểm tra quyền micro và kết nối mạng.',
+              lang === 'en'
+                ? 'Could not connect to the call system. Please check microphone permissions and network connection.'
+                : 'Không thể kết nối đến hệ thống cuộc gọi. Vui lòng kiểm tra quyền micro và kết nối mạng.',
             );
             setUiState('error');
             return;
@@ -172,8 +184,10 @@ export default function CallScreen() {
             if (endedRef.current) return;
             const diag = stringeeService.getDiagnostics();
             const diagMsg =
-              `Cuộc gọi đã kết thúc hoặc không nhận được tín hiệu từ SDK ` +
-              `[Chẩn đoán: clientReady=${diag.clientReady}, callRef=${diag.hasCallRef}, incoming=${diag.pendingIncoming || 'null'}]`;
+              (lang === 'en'
+                ? 'Call ended or no signal received from SDK '
+                : 'Cuộc gọi đã kết thúc hoặc không nhận được tín hiệu từ SDK ') +
+              `[Diagnostics: clientReady=${diag.clientReady}, callRef=${diag.hasCallRef}, incoming=${diag.pendingIncoming || 'null'}]`;
             console.warn('[CallScreen] Answer timeout:', diagMsg);
             setErrorMsg(diagMsg);
             setUiState('error');
@@ -182,8 +196,10 @@ export default function CallScreen() {
         })
         .catch((err: any) => {
           const serverMsg =
-            err?.response?.data?.message || err?.message || 'Không bắt đầu được cuộc gọi';
-          const diag = `Lỗi lấy token cuộc gọi (${serverMsg})`;
+            err?.response?.data?.message ||
+            err?.message ||
+            (lang === 'en' ? 'Could not start call' : 'Không bắt đầu được cuộc gọi');
+          const diag = `${lang === 'en' ? 'Call token fetch error' : 'Lỗi lấy token cuộc gọi'} (${serverMsg})`;
           console.warn('[CallScreen] joinToken error:', diag);
           setErrorMsg(diag);
           setUiState('error');
@@ -211,7 +227,9 @@ export default function CallScreen() {
         const connected = stringeeService.ensureConnected(s.token, s.my_user_id);
         if (!connected) {
           setErrorMsg(
-            'Không thể kết nối đến hệ thống cuộc gọi. Vui lòng kiểm tra quyền micro và kết nối mạng.',
+            lang === 'en'
+              ? 'Could not connect to the call system. Please check microphone permissions and network connection.'
+              : 'Không thể kết nối đến hệ thống cuộc gọi. Vui lòng kiểm tra quyền micro và kết nối mạng.',
           );
           setUiState('error');
           return;
@@ -222,15 +240,21 @@ export default function CallScreen() {
           events,
         });
         if (!started) {
-          setErrorMsg('Không thể khởi tạo cuộc gọi đi. Vui lòng thử lại.');
+          setErrorMsg(
+            lang === 'en'
+              ? 'Could not initiate outgoing call. Please try again.'
+              : 'Không thể khởi tạo cuộc gọi đi. Vui lòng thử lại.',
+          );
           setUiState('error');
           return;
         }
       })
       .catch((err: any) => {
         const serverMsg =
-          err?.response?.data?.message || err?.message || 'Không bắt đầu được cuộc gọi';
-        const diag = `Lỗi khởi tạo cuộc gọi (${serverMsg})`;
+          err?.response?.data?.message ||
+          err?.message ||
+          (lang === 'en' ? 'Could not start call' : 'Không bắt đầu được cuộc gọi');
+        const diag = `${lang === 'en' ? 'Call initiation error' : 'Lỗi khởi tạo cuộc gọi'} (${serverMsg})`;
         console.warn('[CallScreen] initiate error:', diag);
         setErrorMsg(diag);
         setUiState('error');
@@ -246,7 +270,11 @@ export default function CallScreen() {
       if (endedRef.current) return;
       endedRef.current = true;
       if (payload?.reason === 'rejected') {
-        setEndReason('Người kia đã từ chối cuộc gọi');
+        setEndReason(
+          lang === 'en'
+            ? 'The other party declined the call'
+            : 'Người kia đã từ chối cuộc gọi',
+        );
         setUiState('rejected');
       } else {
         setUiState('ended');
@@ -314,7 +342,7 @@ export default function CallScreen() {
   };
 
   const mmss = `${String(Math.floor(seconds / 60)).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`;
-  const displayName = partnerName ?? 'Đối tác của đơn';
+  const displayName = partnerName ?? (lang === 'en' ? 'Job Partner' : 'Đối tác của đơn');
 
   if (configLoading || uiState === 'preparing') return <LoadingSpinner />;
 
@@ -342,7 +370,9 @@ export default function CallScreen() {
       >
         <ShieldCheck size={14} color="#A7F3C7" />
         <Text style={{ color: '#D1FAE5', fontSize: fs(12), fontWeight: '700' }}>
-          Cuộc gọi qua GreenHouse — số thật của bạn được ẩn
+          {lang === 'en'
+            ? 'GreenHouse call — your real phone number is masked'
+            : 'Cuộc gọi qua GreenHouse — số thật của bạn được ẩn'}
         </Text>
       </View>
 
@@ -352,12 +382,14 @@ export default function CallScreen() {
           {displayName}
         </Text>
         <Text style={{ color: '#A7F3C7', fontSize: fs(15), fontWeight: '600' }}>
-          {uiState === 'connecting' && 'Đang kết nối…'}
+          {uiState === 'connecting' && (lang === 'en' ? 'Connecting…' : 'Đang kết nối…')}
           {uiState === 'in_call' && mmss}
-          {uiState === 'unavailable' && 'Tính năng chưa kích hoạt'}
-          {uiState === 'error' && 'Không kết nối được'}
-          {uiState === 'rejected' && 'Người kia đã từ chối cuộc gọi'}
-          {uiState === 'ended' && 'Cuộc gọi đã kết thúc'}
+          {uiState === 'unavailable' &&
+            (lang === 'en' ? 'Feature unavailable' : 'Tính năng chưa kích hoạt')}
+          {uiState === 'error' && (lang === 'en' ? 'Could not connect' : 'Không kết nối được')}
+          {uiState === 'rejected' &&
+            (lang === 'en' ? 'The other party declined the call' : 'Người kia đã từ chối cuộc gọi')}
+          {uiState === 'ended' && (lang === 'en' ? 'Call ended' : 'Cuộc gọi đã kết thúc')}
         </Text>
       </View>
 
@@ -452,8 +484,13 @@ export default function CallScreen() {
             >
               {uiState === 'unavailable'
                 ? (config?.message ??
-                  'Tính năng gọi thoại chưa được kích hoạt trên hệ thống. Hai bên vui lòng trao đổi qua khung chat của đơn.')
-                : errorMsg || 'Không kết nối được cuộc gọi. Vui lòng thử lại.'}
+                  (lang === 'en'
+                    ? 'Voice call feature is not yet enabled on the system. Both parties please communicate via the in-app job chat.'
+                    : 'Tính năng gọi thoại chưa được kích hoạt trên hệ thống. Hai bên vui lòng trao đổi qua khung chat của đơn.'))
+                : errorMsg ||
+                  (lang === 'en'
+                    ? 'Could not connect the call. Please try again.'
+                    : 'Không kết nối được cuộc gọi. Vui lòng thử lại.')}
             </Text>
           </View>
           <View style={{ flexDirection: 'row', gap: 12, marginTop: 4 }}>

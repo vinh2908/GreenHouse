@@ -13,10 +13,10 @@ function idOf(v: any): string {
   return String(v?._id ?? v);
 }
 
-const STATUS_META: Record<string, { label: string; color: string; textColor: string }> = {
-  accepted: { label: 'Đã nhận', color: '#D1FAE5', textColor: '#065F46' },
-  invited: { label: 'Chờ phản hồi', color: '#FEF3C7', textColor: '#92400E' },
-  declined: { label: 'Đã từ chối', color: '#FEE2E2', textColor: '#991B1B' },
+const STATUS_META: Record<string, { label: string; label_en: string; color: string; textColor: string }> = {
+  accepted: { label: 'Đã nhận', label_en: 'Accepted', color: '#D1FAE5', textColor: '#065F46' },
+  invited: { label: 'Chờ phản hồi', label_en: 'Awaiting response', color: '#FEF3C7', textColor: '#92400E' },
+  declined: { label: 'Đã từ chối', label_en: 'Declined', color: '#FEE2E2', textColor: '#991B1B' },
 };
 
 /**
@@ -32,7 +32,7 @@ export function TeamCard({ job, currentUserId }: { job: any; currentUserId?: str
   const display: any[] = job?.team_display ?? [];
   const activeCount = display.filter(m => m.status !== 'declined').length;
   const slotsLeft = helpersNeeded - activeCount;
-  const { fs } = useTranslation();
+  const { fs, lang } = useTranslation();
 
   const { data: candidates } = useTeamCandidates(job?._id, canBuild && slotsLeft > 0);
   const invite = useInviteTeamMember();
@@ -43,16 +43,25 @@ export function TeamCard({ job, currentUserId }: { job: any; currentUserId?: str
   const handleInvite = (helperId: string, name: string) => {
     const pct = parseInt(splits[helperId] ?? '30', 10);
     if (!pct || pct < 1 || pct > 90) {
-      Alert.alert('Tỉ lệ chưa hợp lệ', 'Nhập % tiền công cho thành viên (1–90%).');
+      Alert.alert(
+        lang === 'en' ? 'Invalid ratio' : 'Tỉ lệ chưa hợp lệ',
+        lang === 'en' ? 'Enter payout % for member (1–90%).' : 'Nhập % tiền công cho thành viên (1–90%).',
+      );
       return;
     }
-    Alert.alert('Mời vào nhóm', `Mời ${name} tham gia đơn này với tỉ lệ chia tiền công ${pct}%?`, [
-      { text: 'Hủy', style: 'cancel' },
-      {
-        text: 'Gửi lời mời',
-        onPress: () => invite.mutate({ jobId: job._id, helper_id: helperId, split_percent: pct }),
-      },
-    ]);
+    Alert.alert(
+      lang === 'en' ? 'Invite to team' : 'Mời vào nhóm',
+      lang === 'en'
+        ? `Invite ${name} to join this job with a ${pct}% payout split?`
+        : `Mời ${name} tham gia đơn này với tỉ lệ chia tiền công ${pct}%?`,
+      [
+        { text: lang === 'en' ? 'Cancel' : 'Hủy', style: 'cancel' },
+        {
+          text: lang === 'en' ? 'Send invitation' : 'Gửi lời mời',
+          onPress: () => invite.mutate({ jobId: job._id, helper_id: helperId, split_percent: pct }),
+        },
+      ],
+    );
   };
 
   return (
@@ -60,10 +69,12 @@ export function TeamCard({ job, currentUserId }: { job: any; currentUserId?: str
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
         <Users size={18} color={COLORS.primary} />
         <Text style={{ flex: 1, fontWeight: '800', fontSize: fs(15), color: COLORS.gray[900] }}>
-          Đội thực hiện ({activeCount}/{helpersNeeded} thợ)
+          {lang === 'en'
+            ? `Team Roster (${activeCount}/${helpersNeeded} helpers)`
+            : `Đội thực hiện (${activeCount}/${helpersNeeded} thợ)`}
         </Text>
         <Badge
-          label="Đơn nhóm"
+          label={lang === 'en' ? 'Team Job' : 'Đơn nhóm'}
           color={COLORS.secondaryLight}
           textColor={COLORS.secondary}
           size="sm"
@@ -72,7 +83,9 @@ export function TeamCard({ job, currentUserId }: { job: any; currentUserId?: str
 
       {display.length === 0 && (
         <Text style={{ fontSize: fs(13), color: COLORS.gray[500] }}>
-          Chưa có thợ chính — nhóm sẽ hình thành khi một thợ nhận đơn làm lead.
+          {lang === 'en'
+            ? 'No lead helper yet — team will form when a helper accepts the job as lead.'
+            : 'Chưa có thợ chính — nhóm sẽ hình thành khi một thợ nhận đơn làm lead.'}
         </Text>
       )}
 
@@ -87,21 +100,29 @@ export function TeamCard({ job, currentUserId }: { job: any; currentUserId?: str
             <View style={{ flex: 1 }}>
               <Text style={{ fontWeight: '700', fontSize: fs(13.5), color: COLORS.gray[900] }}>
                 {member.full_name}
-                {member.helper_id === currentUserId ? ' (bạn)' : ''}
+                {member.helper_id === currentUserId ? (lang === 'en' ? ' (you)' : ' (bạn)') : ''}
               </Text>
               <Text style={{ fontSize: fs(12), color: COLORS.gray[500] }}>
-                {member.role === 'lead' ? '⭐ Thợ chính (lead)' : 'Thành viên'} · Nhận{' '}
-                {member.split_percent}% tiền công
+                {member.role === 'lead'
+                  ? (lang === 'en' ? '⭐ Lead helper' : '⭐ Thợ chính (lead)')
+                  : (lang === 'en' ? 'Member' : 'Thành viên')}{' '}
+                · {lang === 'en' ? `Receives ${member.split_percent}% payout` : `Nhận ${member.split_percent}% tiền công`}
               </Text>
             </View>
-            <Badge label={meta.label} color={meta.color} textColor={meta.textColor} size="sm" />
+            <Badge
+              label={lang === 'en' ? meta.label_en : meta.label}
+              color={meta.color}
+              textColor={meta.textColor}
+              size="sm"
+            />
           </View>
         );
       })}
 
       <Text style={{ fontSize: fs(12), color: COLORS.gray[500], lineHeight: Math.round(fs(17)) }}>
-        Tiền công (sau phí sàn) được chia tự động theo tỉ lệ trên khi đơn hoàn thành và khách nghiệm
-        thu.
+        {lang === 'en'
+          ? 'Payout (after platform fee) is automatically distributed by above split once job is completed and accepted.'
+          : 'Tiền công (sau phí sàn) được chia tự động theo tỉ lệ trên khi đơn hoàn thành và khách nghiệm thu.'}
       </Text>
 
       {canBuild && slotsLeft > 0 && (
@@ -109,11 +130,11 @@ export function TeamCard({ job, currentUserId }: { job: any; currentUserId?: str
           style={{ gap: 10, borderTopWidth: 1, borderTopColor: COLORS.gray[100], paddingTop: 12 }}
         >
           <Text style={{ fontWeight: '800', fontSize: fs(13.5), color: COLORS.gray[900] }}>
-            Mời thêm thợ vào nhóm (còn {slotsLeft} chỗ)
+            {lang === 'en' ? `Invite helpers to team (${slotsLeft} slots left)` : `Mời thêm thợ vào nhóm (còn ${slotsLeft} chỗ)`}
           </Text>
           {(candidates ?? []).length === 0 && (
             <Text style={{ fontSize: fs(12.5), color: COLORS.gray[500] }}>
-              Chưa có thợ đang sẵn sàng để mời. Thử lại sau ít phút.
+              {lang === 'en' ? 'No helpers currently available to invite. Try again later.' : 'Chưa có thợ đang sẵn sàng để mời. Thử lại sau ít phút.'}
             </Text>
           )}
           {(candidates ?? []).map(c => (
@@ -124,7 +145,8 @@ export function TeamCard({ job, currentUserId }: { job: any; currentUserId?: str
                   {c.full_name}
                 </Text>
                 <Text style={{ fontSize: fs(11.5), color: COLORS.gray[500] }}>
-                  ⭐ {c.rating?.toFixed?.(1) ?? c.rating} · {c.completed_jobs} đơn hoàn thành
+                  ⭐ {c.rating?.toFixed?.(1) ?? c.rating} ·{' '}
+                  {lang === 'en' ? `${c.completed_jobs} completed jobs` : `${c.completed_jobs} đơn hoàn thành`}
                 </Text>
               </View>
               <View
@@ -158,7 +180,9 @@ export function TeamCard({ job, currentUserId }: { job: any; currentUserId?: str
                   borderRadius: 10,
                 }}
               >
-                <Text style={{ color: '#fff', fontWeight: '800', fontSize: fs(12.5) }}>Mời</Text>
+                <Text style={{ color: '#fff', fontWeight: '800', fontSize: fs(12.5) }}>
+                  {lang === 'en' ? 'Invite' : 'Mời'}
+                </Text>
               </TouchableOpacity>
             </View>
           ))}
@@ -167,7 +191,9 @@ export function TeamCard({ job, currentUserId }: { job: any; currentUserId?: str
 
       {isLead && !TEAM_BUILDABLE_STATUSES.includes(job?.status) && (
         <Text style={{ fontSize: fs(12.5), color: COLORS.gray[500] }}>
-          Nhóm chỉ lập được trước khi bắt đầu làm việc.
+          {lang === 'en'
+            ? 'Team can only be formed before starting work.'
+            : 'Nhóm chỉ lập được trước khi bắt đầu làm việc.'}
         </Text>
       )}
     </Card>

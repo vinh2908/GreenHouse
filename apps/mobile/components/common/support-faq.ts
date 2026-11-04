@@ -41,3 +41,42 @@ export const SUPPORT_FAQS: SupportFaq[] = [
     a: 'Sự cố khẩn cấp (rò rỉ nước, chập điện, kẹt khóa...): dùng nút "Cứu hộ SOS" trên trang chủ để được ưu tiên tìm thợ trong 15–20 phút, hoặc gọi hotline 1900 8888 (24/7). Nếu có nguy hiểm tới tính mạng, hãy gọi 113/114/115 trước tiên.',
   },
 ];
+
+export const SUPPORT_FAQS_EN: SupportFaq[] = [
+  {
+    q: 'How do I book or rebook a service?',
+    a: 'Go to the "Post Job" tab in the bottom menu, select a service, address, time, and job description — nearby helpers will send you quotes. To rebook a past job: open a completed job in "Activity" and tap "Rebook", or save the helper to Favorites for 1-tap rebooking.',
+  },
+  {
+    q: 'How does Escrow payment protection work?',
+    a: 'When you accept a quote and pay online (VietQR / MoMo / ZaloPay), funds are SECURELY HELD by Green House and not released to the helper yet. Only after you tap "Approve" upon completion is payment disbursed to the helper. In case of dispute, funds remain securely held until resolved.',
+  },
+  {
+    q: 'How do I cancel a job? Are there any fees?',
+    a: 'You can cancel for free before a helper accepts the job or begins traveling. Open job details → "Cancel Job" and select a reason. If Escrow has been paid, funds are refunded to the original payment method according to the refund policy. Late cancellation fees may apply once a helper is en route.',
+  },
+  {
+    q: 'What is the Helper Deposit Wallet? How to deposit / withdraw?',
+    a: 'The Deposit Wallet is the helper security balance on Green House: cash jobs deduct a 15% platform fee from this wallet, and helpers must maintain a minimum balance to receive cash jobs. Top up via VietQR (min 50,000₫) and withdraw to linked bank accounts in Earnings → Deposit Wallet.',
+  },
+  {
+    q: 'What are the steps for helper e-KYC verification?',
+    a: 'Helpers must scan both sides of their chip-based ID card, take a live facial selfie (liveness check), and await admin review. 100% of helpers visible on the platform are verified via e-KYC. Unapproved helpers cannot accept jobs until approved.',
+  },
+  {
+    q: 'How does the 30-day warranty work?',
+    a: 'All completed jobs include a 30-day warranty from the date of sign-off. If the issue recurs within this period, open job details and create a "1-Tap Warranty Job" — free of charge, prioritized to the original helper. You can also file insurance claims directly from the job details.',
+  },
+  {
+    q: 'How are complaints and disputes resolved?',
+    a: 'Open job details → "Dispute" and submit evidence (text + photos). Escrow funds remain safely held during the dispute. Admin reviews and issues a resolution (full refund / release / partial refund); you may appeal once within 72 hours of the decision.',
+  },
+  {
+    q: 'Who should I contact in an emergency?',
+    a: 'For urgent emergencies (water leaks, short circuits, lockouts, etc.): use the "SOS Emergency" button on the home screen to find priority helpers in 15–20 minutes, or call hotline 1900 8888 (24/7). For life-threatening emergencies, call 113/114/115 immediately.',
+  },
+];
+
+export function getSupportFaqs(lang?: string): SupportFaq[] {
+  return lang === 'en' ? SUPPORT_FAQS_EN : SUPPORT_FAQS;
+}

@@ -6,6 +6,7 @@ import { Platform, View } from 'react-native';
 import { WebView } from 'react-native-webview';
 import type { DemandArea } from '@/hooks/use-api';
 import { COLORS } from '@/components/ui';
+import { useTranslation } from '@/hooks/use-i18n';
 
 export const DANANG_CENTER = { latitude: 16.0544, longitude: 108.2022 };
 
@@ -22,8 +23,12 @@ const demandMapHtml = (
   areas: DemandArea[],
   focusedDistrict?: string | null,
   statusText = 'Bản đồ nhu cầu khu vực',
+  lang = 'vi',
 ) => {
   const mapKey = process.env.EXPO_PUBLIC_GOONG_MAP_KEY || '';
+  const noKeyMsg = lang === 'en' ? 'Goong map key not configured.' : 'Chưa cấu hình khoá bản đồ Goong.';
+  const loadFailMsg = lang === 'en' ? 'Unable to load Goong map.' : 'Không tải được bản đồ Goong.';
+  const jobsWord = lang === 'en' ? 'jobs' : 'việc';
   const areasJson = JSON.stringify(
     areas
       .filter(a => a.lat != null && a.lng != null)
@@ -136,7 +141,7 @@ const demandMapHtml = (
     <script>
       const mapKey = '${mapKey}';
       if (!mapKey) {
-        document.getElementById('map').innerHTML = '<div class="map-error-card"><span>Chưa cấu hình khoá bản đồ Goong.</span></div>';
+        document.getElementById('map').innerHTML = '<div class="map-error-card"><span>${noKeyMsg}</span></div>';
       } else {
         try {
           const map = new maplibregl.Map({
@@ -223,7 +228,7 @@ const demandMapHtml = (
               areas.forEach(function (a) {
                 const el = document.createElement('div');
                 el.className = 'demand-pill' + (a.isFocused ? ' focused' : '');
-                el.innerHTML = '<span>🔥</span><span>' + a.open_jobs + ' việc · ' + a.district + '</span>';
+                el.innerHTML = '<span>🔥</span><span>' + a.open_jobs + ' ' + '${jobsWord}' + ' · ' + a.district + '</span>';
                 new maplibregl.Marker({ element: el })
                   .setLngLat([a.lng, a.lat])
                   .addTo(map);
@@ -231,7 +236,7 @@ const demandMapHtml = (
             }
           });
         } catch (e) {
-          document.getElementById('map').innerHTML = '<div class="map-error-card"><span>Không tải được bản đồ Goong.</span></div>';
+          document.getElementById('map').innerHTML = '<div class="map-error-card"><span>${loadFailMsg}</span></div>';
         }
       }
     </script>
@@ -240,6 +245,7 @@ const demandMapHtml = (
 };
 
 export function DemandMapView({ areas, focus, height = 300, userCoords }: Props) {
+  const { lang } = useTranslation();
   const withCoords = useMemo(
     () => (areas ?? []).filter(a => a.lat != null && a.lng != null),
     [areas],
@@ -252,12 +258,14 @@ export function DemandMapView({ areas, focus, height = 300, userCoords }: Props)
   const totalJobs = withCoords.reduce((sum, a) => sum + (a.open_jobs || 0), 0);
   const statusText =
     totalJobs > 0
-      ? `${totalJobs} đơn chờ tại ${withCoords.length} khu vực`
-      : 'Bản đồ nhu cầu việc quanh bạn';
+      ? (lang === 'en'
+          ? `${totalJobs} jobs waiting across ${withCoords.length} areas`
+          : `${totalJobs} đơn chờ tại ${withCoords.length} khu vực`)
+      : (lang === 'en' ? 'Demand map around you' : 'Bản đồ nhu cầu việc quanh bạn');
 
   const html = useMemo(
-    () => demandMapHtml(center, zoom, withCoords, activeFocus?.district, statusText),
-    [center.latitude, center.longitude, zoom, withCoords, activeFocus?.district, statusText],
+    () => demandMapHtml(center, zoom, withCoords, activeFocus?.district, statusText, lang),
+    [center.latitude, center.longitude, zoom, withCoords, activeFocus?.district, statusText, lang],
   );
 
   const mapKey = `${center.latitude},${center.longitude},${zoom},${activeFocus?.district || 'all'}`;
@@ -281,7 +289,7 @@ export function DemandMapView({ areas, focus, height = 300, userCoords }: Props)
             border: 'none',
             backgroundColor: COLORS.gray[100],
           }}
-          title="Bản đồ nhu cầu"
+          title={lang === 'en' ? 'Demand map' : 'Bản đồ nhu cầu'}
         />
       ) : (
         <WebView

@@ -14,6 +14,7 @@ import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Sparkles, ShieldCheck, Zap } from 'lucide-react-native';
 import { useAuthStore } from '@/stores/auth.store';
+import { useTranslation } from '@/hooks/use-i18n';
 import apiClient from '@/services/api-client';
 
 const { width, height } = Dimensions.get('window');
@@ -22,6 +23,7 @@ export default function SplashScreen() {
   console.warn('[Startup] 5. SplashScreen (app/index.tsx) render');
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { lang } = useTranslation();
   const hasNavigated = useRef(false);
 
   // ── Animations ─────────────────────────────────────────────────────────────
@@ -177,22 +179,32 @@ export default function SplashScreen() {
             <Text style={styles.brandWhite}>HOUSE</Text>
           </View>
 
-          <Text style={styles.slogan}>Dịch vụ gia đình & Thợ chuyên nghiệp 24/7</Text>
+          <Text style={styles.slogan}>
+            {lang === 'en'
+              ? 'Home Services & 24/7 Professional Helpers'
+              : 'Dịch vụ gia đình & Thợ chuyên nghiệp 24/7'}
+          </Text>
         </Animated.View>
 
         {/* ── Feature Highlights Badges ──────────────────────────────── */}
         <Animated.View style={[styles.badgeRow, { opacity: badgeFadeAnim }]}>
           <View style={styles.featureBadge}>
             <ShieldCheck size={14} color="#FFF" />
-            <Text style={styles.featureText}>Thợ e-KYC 100%</Text>
+            <Text style={styles.featureText}>
+              {lang === 'en' ? '100% e-KYC' : 'Thợ e-KYC 100%'}
+            </Text>
           </View>
           <View style={styles.featureBadge}>
             <Zap size={14} color="#FFF" />
-            <Text style={styles.featureText}>Cứu hộ SOS 15p</Text>
+            <Text style={styles.featureText}>
+              {lang === 'en' ? '15m SOS Rescue' : 'Cứu hộ SOS 15p'}
+            </Text>
           </View>
           <View style={styles.featureBadge}>
             <Sparkles size={14} color="#FFF" />
-            <Text style={styles.featureText}>Trợ lý AI</Text>
+            <Text style={styles.featureText}>
+              {lang === 'en' ? 'AI Assistant' : 'Trợ lý AI'}
+            </Text>
           </View>
         </Animated.View>
       </View>
@@ -213,7 +225,11 @@ export default function SplashScreen() {
           <View style={[styles.dot, { opacity: 0.3 }]} />
         </View>
 
-        <Text style={styles.footerText}>GREEN HOUSE ECOSYSTEM • PHIÊN BẢN 1.0.0</Text>
+        <Text style={styles.footerText}>
+          {lang === 'en'
+            ? 'GREEN HOUSE ECOSYSTEM • VERSION 1.0.0'
+            : 'GREEN HOUSE ECOSYSTEM • PHIÊN BẢN 1.0.0'}
+        </Text>
       </Animated.View>
     </View>
   );
