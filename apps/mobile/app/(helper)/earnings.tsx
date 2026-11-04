@@ -158,7 +158,7 @@ export default function HelperEarningsScreen() {
           <Text
             style={{
               color: 'rgba(255,255,255,0.75)',
-              fontSize: 13,
+              fontSize: fs(13),
               marginBottom: 4,
               fontWeight: '600',
             }}
@@ -169,7 +169,7 @@ export default function HelperEarningsScreen() {
           <Text
             style={{
               color: 'rgba(255,255,255,0.8)',
-              fontSize: 13,
+              fontSize: fs(13),
               marginTop: 6,
               fontWeight: '500',
             }}
@@ -187,7 +187,7 @@ export default function HelperEarningsScreen() {
               <PriceText amount={wallet?.total_earned ?? 0} size={14} color={COLORS.gray[900]} />
               <Text
                 style={{
-                  fontSize: 11,
+                  fontSize: fs(11),
                   color: COLORS.gray[500],
                   textAlign: 'center',
                   fontWeight: '600',
@@ -201,7 +201,7 @@ export default function HelperEarningsScreen() {
               <PriceText amount={wallet?.total_withdrawn ?? 0} size={14} color={COLORS.gray[900]} />
               <Text
                 style={{
-                  fontSize: 11,
+                  fontSize: fs(11),
                   color: COLORS.gray[500],
                   textAlign: 'center',
                   fontWeight: '600',
@@ -350,22 +350,22 @@ export default function HelperEarningsScreen() {
                             justifyContent: 'center',
                           }}
                         >
-                          <Text style={{ fontSize: 20 }}>{TX_ICONS[tx.type] ?? '💳'}</Text>
+                          <Text style={{ fontSize: fs(20) }}>{TX_ICONS[tx.type] ?? '💳'}</Text>
                         </View>
                         <View style={{ flex: 1 }}>
                           <Text
-                            style={{ fontWeight: '700', fontSize: 14, color: COLORS.gray[900] }}
+                            style={{ fontWeight: '700', fontSize: fs(14), color: COLORS.gray[900] }}
                           >
                             {tx.description}
                           </Text>
-                          <Text style={{ fontSize: 12, color: COLORS.gray[500], marginTop: 2 }}>
+                          <Text style={{ fontSize: fs(12), color: COLORS.gray[500], marginTop: 2 }}>
                             {dayjs(tx.created_at).format('DD/MM/YYYY HH:mm')}
                           </Text>
                         </View>
                         <View style={{ alignItems: 'flex-end' }}>
                           <Text
                             style={{
-                              fontSize: 15,
+                              fontSize: fs(15),
                               fontWeight: '800',
                               color: TX_COLORS[tx.type] ?? COLORS.gray[900],
                             }}
@@ -387,7 +387,7 @@ export default function HelperEarningsScreen() {
                               <Clock size={12} color={COLORS.warning} />
                             )}
                             <Text
-                              style={{ fontSize: 11, color: COLORS.gray[400], fontWeight: '600' }}
+                              style={{ fontSize: fs(11), color: COLORS.gray[400], fontWeight: '600' }}
                             >
                               {tx.status === 'success' ? 'Thành công' : 'Đang xử lý'}
                             </Text>
@@ -411,7 +411,7 @@ export default function HelperEarningsScreen() {
               <X size={24} color={COLORS.gray[700]} />
             </TouchableOpacity>
             <Text
-              style={{ fontSize: 18, fontWeight: '800', marginLeft: 12, color: COLORS.gray[900] }}
+              style={{ fontSize: fs(18), fontWeight: '800', marginLeft: 12, color: COLORS.gray[900] }}
             >
               {t('earn_topup_title')}
             </Text>
@@ -423,11 +423,11 @@ export default function HelperEarningsScreen() {
           >
             <ScrollView contentContainerStyle={{ padding: 20, gap: 18 }}>
               <Card style={{ backgroundColor: COLORS.primaryLight, gap: 6 }}>
-                <Text style={{ fontSize: 13, color: COLORS.primaryDark, fontWeight: '800' }}>
+                <Text style={{ fontSize: fs(13), color: COLORS.primaryDark, fontWeight: '800' }}>
                   {t('earn_current_balance')}
                 </Text>
                 <PriceText amount={wallet?.balance ?? 0} size={24} />
-                <Text style={{ fontSize: 12, color: COLORS.gray[700], lineHeight: 18 }}>
+                <Text style={{ fontSize: fs(12), color: COLORS.gray[700], lineHeight: Math.round(fs(18)) }}>
                   Duy trì số dư ví giúp tự động quyết toán phí nền tảng (15%) khi bạn nhận các đơn
                   khách trả tiền mặt trực tiếp.
                 </Text>
@@ -474,7 +474,7 @@ export default function HelperEarningsScreen() {
                     borderColor: COLORS.gray[200],
                     borderRadius: 12,
                     padding: 14,
-                    fontSize: 22,
+                    fontSize: fs(22),
                     fontWeight: '800',
                     color: COLORS.gray[900],
                   }}
@@ -504,7 +504,7 @@ export default function HelperEarningsScreen() {
               <X size={24} color={COLORS.gray[700]} />
             </TouchableOpacity>
             <Text
-              style={{ fontSize: 18, fontWeight: '800', marginLeft: 12, color: COLORS.gray[900] }}
+              style={{ fontSize: fs(18), fontWeight: '800', marginLeft: 12, color: COLORS.gray[900] }}
             >
               {t('earn_withdraw_title')}
             </Text>
@@ -516,7 +516,7 @@ export default function HelperEarningsScreen() {
           >
             <ScrollView contentContainerStyle={{ padding: 20, gap: 16 }}>
               <Card style={{ backgroundColor: COLORS.primaryLight, gap: 6 }}>
-                <Text style={{ fontSize: 12, color: COLORS.primary, fontWeight: '600' }}>
+                <Text style={{ fontSize: fs(12), color: COLORS.primary, fontWeight: '600' }}>
                   {t('earn_current_balance_short')}
                 </Text>
                 <PriceText amount={wallet?.balance ?? 0} size={24} />
@@ -532,7 +532,7 @@ export default function HelperEarningsScreen() {
                     borderColor: COLORS.gray[200],
                     borderRadius: 12,
                     padding: 14,
-                    fontSize: 22,
+                    fontSize: fs(22),
                     fontWeight: '800',
                     color: COLORS.gray[900],
                   }}
@@ -572,7 +572,7 @@ export default function HelperEarningsScreen() {
                       borderColor: COLORS.gray[200],
                       borderRadius: 12,
                       padding: 14,
-                      fontSize: 15,
+                      fontSize: fs(15),
                       color: COLORS.gray[900],
                     }}
                     placeholder={f.placeholder}

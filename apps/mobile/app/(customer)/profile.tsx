@@ -183,12 +183,12 @@ export default function CustomerProfileScreen() {
             >
               <Avatar name={displayUser?.full_name} uri={displayUser?.avatar} size={80} />
               <Text
-                style={{ fontSize: 20, fontWeight: '800', color: COLORS.gray[900], marginTop: 12 }}
+                style={{ fontSize: fs(20), fontWeight: '800', color: COLORS.gray[900], marginTop: 12 }}
               >
                 {displayUser?.full_name}
               </Text>
               <Text
-                style={{ fontSize: 14, color: COLORS.gray[500], marginTop: 4, fontWeight: '600' }}
+                style={{ fontSize: fs(14), color: COLORS.gray[500], marginTop: 4, fontWeight: '600' }}
               >
                 {displayUser?.phone}
               </Text>
@@ -290,7 +290,7 @@ export default function CustomerProfileScreen() {
                   })
                 )}
               </Text>
-              <Text style={{ fontSize: 12.5, color: COLORS.gray[600] }}>
+              <Text style={{ fontSize: fs(12.5), color: COLORS.gray[600] }}>
                 {`Đổi điểm giảm tối đa ${loyalty?.redemption_cap_percent ?? 20}% giá trị đơn · Xem lịch sử & quyền lợi →`}
               </Text>
             </Card>
@@ -389,7 +389,7 @@ export default function CustomerProfileScreen() {
           <Text
             style={{
               textAlign: 'center',
-              fontSize: 12,
+              fontSize: fs(12),
               color: COLORS.gray[400],
               fontWeight: '500',
             }}

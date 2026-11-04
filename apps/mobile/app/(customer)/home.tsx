@@ -242,7 +242,7 @@ function calculateDistanceKm(lat1: number, lon1: number, lat2: number, lon2: num
 
 export default function CustomerHomeScreen() {
   const router = useRouter();
-  const { t, fs, lang } = useTranslation();
+  const { t, fs, lang, textScale } = useTranslation();
   const storedUser = useAuthStore(s => s.user);
   const { data: profile, refetch: refetchProfile } = useMyProfile();
   const user = profile ?? storedUser;
@@ -1146,7 +1146,7 @@ export default function CustomerHomeScreen() {
               <MapPin size={15} color={currentCoords ? COLORS.primary : '#D97706'} />
               <Text
                 style={{
-                  fontSize: 13,
+                  fontSize: fs(13),
                   fontWeight: '700',
                   color: currentCoords ? COLORS.gray[800] : '#B45309',
                 }}
@@ -1204,7 +1204,7 @@ export default function CustomerHomeScreen() {
                   borderColor: '#86EFAC',
                 }}
               >
-                <Text style={{ fontSize: 16, fontWeight: '800', color: '#16A34A' }}>
+                <Text style={{ fontSize: fs(16), fontWeight: '800', color: '#16A34A' }}>
                   {user?.full_name ? user.full_name.charAt(0).toUpperCase() : 'V'}
                 </Text>
               </TouchableOpacity>
@@ -1306,7 +1306,7 @@ export default function CustomerHomeScreen() {
                   backgroundColor: '#22C55E',
                 }}
               />
-              <Text style={{ fontSize: 12, fontWeight: '800', color: '#16A34A' }}>Trực tiếp</Text>
+              <Text style={{ fontSize: fs(12), fontWeight: '800', color: '#16A34A' }}>Trực tiếp</Text>
             </View>
           </View>
 
@@ -1363,7 +1363,7 @@ export default function CustomerHomeScreen() {
                 </View>
                 <Text
                   style={{
-                    fontSize: 14,
+                    fontSize: fs(14),
                     fontWeight: '800',
                     color: COLORS.gray[800],
                     textAlign: 'center',
@@ -1373,10 +1373,10 @@ export default function CustomerHomeScreen() {
                 </Text>
                 <Text
                   style={{
-                    fontSize: 12,
+                    fontSize: fs(12),
                     color: COLORS.gray[500],
                     textAlign: 'center',
-                    lineHeight: 16,
+                    lineHeight: Math.round(fs(16)),
                   }}
                 >
                   Bật định vị GPS hoặc chọn khu vực để tìm thợ lành nghề gần bạn nhất.
@@ -1400,7 +1400,7 @@ export default function CustomerHomeScreen() {
                     ) : (
                       <Navigation size={14} color="#fff" />
                     )}
-                    <Text style={{ color: '#fff', fontWeight: '700', fontSize: 12 }}>
+                    <Text style={{ color: '#fff', fontWeight: '700', fontSize: fs(12) }}>
                       {isLocatingLive ? 'Đang lấy vị trí...' : 'Bấm lấy vị trí'}
                     </Text>
                   </TouchableOpacity>
@@ -1419,7 +1419,7 @@ export default function CustomerHomeScreen() {
                     }}
                   >
                     <MapPin size={14} color={COLORS.gray[700]} />
-                    <Text style={{ color: COLORS.gray[800], fontWeight: '700', fontSize: 12 }}>
+                    <Text style={{ color: COLORS.gray[800], fontWeight: '700', fontSize: fs(12) }}>
                       Chọn thủ công
                     </Text>
                   </TouchableOpacity>
@@ -1458,7 +1458,7 @@ export default function CustomerHomeScreen() {
               </View>
               <Text
                 style={{
-                  fontSize: 14,
+                  fontSize: fs(14),
                   fontWeight: '700',
                   color: COLORS.gray[800],
                   textAlign: 'center',
@@ -1470,7 +1470,7 @@ export default function CustomerHomeScreen() {
               </Text>
               <Text
                 style={{
-                  fontSize: 12,
+                  fontSize: fs(12),
                   color: COLORS.gray[500],
                   marginTop: 4,
                   textAlign: 'center',
@@ -1521,7 +1521,7 @@ export default function CustomerHomeScreen() {
                       >
                         <Text
                           style={{
-                            fontSize: 14,
+                            fontSize: fs(14),
                             fontWeight: '800',
                             color: isSelected ? COLORS.primary : COLORS.gray[600],
                           }}
@@ -1532,12 +1532,12 @@ export default function CustomerHomeScreen() {
 
                       <View style={{ flex: 1 }}>
                         <Text
-                          style={{ fontSize: 15, fontWeight: '800', color: COLORS.gray[900] }}
+                          style={{ fontSize: fs(15), fontWeight: '800', color: COLORS.gray[900] }}
                           numberOfLines={1}
                         >
                           {helper.name}
                         </Text>
-                        <Text style={{ fontSize: 12, color: COLORS.gray[500], marginTop: 2 }}>
+                        <Text style={{ fontSize: fs(12), color: COLORS.gray[500], marginTop: 2 }}>
                           {helper.status} · ⭐ {helper.rating.toFixed(1)} ({helper.completedJobs}{' '}
                           việc)
                         </Text>
@@ -1545,7 +1545,7 @@ export default function CustomerHomeScreen() {
                     </View>
 
                     <View style={{ alignItems: 'flex-end', gap: 5 }}>
-                      <Text style={{ fontSize: 13, fontWeight: '800', color: COLORS.primary }}>
+                      <Text style={{ fontSize: fs(13), fontWeight: '800', color: COLORS.primary }}>
                         {helper.distance}
                       </Text>
                       <ScalePressable
@@ -1565,7 +1565,7 @@ export default function CustomerHomeScreen() {
                           borderRadius: 8,
                         }}
                       >
-                        <Text style={{ fontSize: 11, fontWeight: '800', color: '#fff' }}>
+                        <Text style={{ fontSize: fs(11), fontWeight: '800', color: '#fff' }}>
                           Đặt thợ →
                         </Text>
                       </ScalePressable>
@@ -1653,7 +1653,7 @@ export default function CustomerHomeScreen() {
               <Sparkles size={13} color="#FFFFFF" />
               <Text
                 style={{
-                  fontSize: 11,
+                  fontSize: fs(11),
                   fontWeight: '800',
                   color: '#FFFFFF',
                   letterSpacing: 0.5,
@@ -1666,11 +1666,11 @@ export default function CustomerHomeScreen() {
 
             <Text
               style={{
-                fontSize: 17,
+                fontSize: fs(17),
                 fontWeight: '900',
                 color: '#FFFFFF',
                 marginTop: 10,
-                lineHeight: 23,
+                lineHeight: Math.round(fs(23)),
                 flexShrink: 1,
               }}
             >
@@ -1679,10 +1679,10 @@ export default function CustomerHomeScreen() {
 
             <Text
               style={{
-                fontSize: 13,
+                fontSize: fs(13),
                 color: '#DCFCE7',
                 marginTop: 6,
-                lineHeight: 19,
+                lineHeight: Math.round(fs(19)),
                 fontWeight: '500',
                 flexShrink: 1,
               }}
@@ -1702,15 +1702,15 @@ export default function CustomerHomeScreen() {
                 marginBottom: 16,
               }}
             >
-              <Text style={{ fontSize: 11, fontWeight: '700', color: '#FFFFFF' }}>
+              <Text style={{ fontSize: fs(11), fontWeight: '700', color: '#FFFFFF' }}>
                 1 · Chụp ảnh
               </Text>
-              <Text style={{ fontSize: 10, color: '#86EFAC' }}>•</Text>
-              <Text style={{ fontSize: 11, fontWeight: '700', color: '#FFFFFF' }}>
+              <Text style={{ fontSize: fs(10), color: '#86EFAC' }}>•</Text>
+              <Text style={{ fontSize: fs(11), fontWeight: '700', color: '#FFFFFF' }}>
                 2 · AI phân tích
               </Text>
-              <Text style={{ fontSize: 10, color: '#86EFAC' }}>•</Text>
-              <Text style={{ fontSize: 11, fontWeight: '700', color: '#FFFFFF' }}>
+              <Text style={{ fontSize: fs(10), color: '#86EFAC' }}>•</Text>
+              <Text style={{ fontSize: fs(11), fontWeight: '700', color: '#FFFFFF' }}>
                 3 · Nhận báo giá
               </Text>
             </View>
@@ -1734,7 +1734,7 @@ export default function CustomerHomeScreen() {
               }}
             >
               <Camera size={18} color="#16A34A" />
-              <Text style={{ fontSize: 14.5, fontWeight: '800', color: '#16A34A' }}>
+              <Text style={{ fontSize: fs(14.5), fontWeight: '800', color: '#16A34A' }}>
                 Chụp ảnh ngay
               </Text>
             </ScalePressable>
@@ -1752,7 +1752,7 @@ export default function CustomerHomeScreen() {
             >
               <Text
                 style={{
-                  fontSize: 13,
+                  fontSize: fs(13),
                   fontWeight: '700',
                   color: '#FFFFFF',
                   textDecorationLine: 'underline',
@@ -1795,7 +1795,7 @@ export default function CustomerHomeScreen() {
               <Tag size={24} color={COLORS.gray[400]} />
               <Text
                 style={{
-                  fontSize: 14,
+                  fontSize: fs(14),
                   fontWeight: '700',
                   color: COLORS.gray[700],
                   marginTop: 6,
@@ -1803,7 +1803,7 @@ export default function CustomerHomeScreen() {
               >
                 Hiện chưa có mã ưu đãi mới
               </Text>
-              <Text style={{ fontSize: 12, color: COLORS.gray[400], marginTop: 2 }}>
+              <Text style={{ fontSize: fs(12), color: COLORS.gray[400], marginTop: 2 }}>
                 Các chương trình khuyến mãi tiếp theo sẽ xuất hiện tại đây
               </Text>
             </View>
@@ -1865,7 +1865,7 @@ export default function CustomerHomeScreen() {
                           <Sparkles size={12} color="#16A34A" />
                           <Text
                             style={{
-                              fontSize: 10,
+                              fontSize: fs(10),
                               fontWeight: '800',
                               color: '#16A34A',
                               letterSpacing: 0.5,
@@ -1877,7 +1877,7 @@ export default function CustomerHomeScreen() {
                         </View>
                         <Text
                           style={{
-                            fontSize: 22,
+                            fontSize: fs(22),
                             fontWeight: '900',
                             color: COLORS.gray[900],
                             marginTop: 6,
@@ -1887,10 +1887,10 @@ export default function CustomerHomeScreen() {
                         </Text>
                         <Text
                           style={{
-                            fontSize: 12,
+                            fontSize: fs(12),
                             color: COLORS.gray[600],
                             marginTop: 4,
-                            lineHeight: 16,
+                            lineHeight: Math.round(fs(16)),
                           }}
                           numberOfLines={2}
                         >
@@ -1913,7 +1913,7 @@ export default function CustomerHomeScreen() {
                           borderTopColor: '#F1F5F9',
                         }}
                       >
-                        <Text style={{ fontSize: 14, fontWeight: '800', color: COLORS.gray[900] }}>
+                        <Text style={{ fontSize: fs(14), fontWeight: '800', color: COLORS.gray[900] }}>
                           {v.code}
                         </Text>
                         <ScalePressable
@@ -1927,7 +1927,7 @@ export default function CustomerHomeScreen() {
                         >
                           <Text
                             style={{
-                              fontSize: 12,
+                              fontSize: fs(12),
                               fontWeight: '700',
                               color: isCopied ? COLORS.primary : COLORS.gray[700],
                             }}
@@ -2099,13 +2099,13 @@ export default function CustomerHomeScreen() {
                       width: cardW,
                       backgroundColor: isCustom ? '#F0FDF4' : '#FFFFFF',
                       borderRadius: 14,
-                      paddingVertical: 12,
+                      paddingVertical: Math.max(10, Math.round(10 * textScale)),
                       paddingHorizontal: 6,
                       alignItems: 'center',
                       borderWidth: 1.5,
                       borderColor: isCustom ? COLORS.primary : '#F1F5F9',
                       position: 'relative',
-                      minHeight: 110,
+                      minHeight: Math.max(110, Math.round(110 * textScale)),
                       justifyContent: 'space-between',
                     }}
                   >
@@ -2114,11 +2114,11 @@ export default function CustomerHomeScreen() {
                       <View
                         style={{
                           position: 'absolute',
-                          top: 6,
-                          right: 6,
+                          top: 4,
+                          right: 4,
                           backgroundColor: '#DCFCE7',
-                          paddingHorizontal: 5,
-                          paddingVertical: 2,
+                          paddingHorizontal: Math.round(5 * textScale),
+                          paddingVertical: Math.round(2 * textScale),
                           borderRadius: 6,
                         }}
                       >
@@ -2128,7 +2128,7 @@ export default function CustomerHomeScreen() {
                       </View>
                     )}
 
-                    <Text style={{ fontSize: fs(26), marginVertical: 4 }}>{svc.emoji}</Text>
+                    <Text style={{ fontSize: fs(24), marginVertical: 2 }}>{svc.emoji}</Text>
 
                     <Text
                       style={{

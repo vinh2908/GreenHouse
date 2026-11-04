@@ -305,7 +305,7 @@ export function InitialPermissionsModal() {
             </View>
             <Text
               style={{
-                fontSize: 19,
+                fontSize: fs(19),
                 fontWeight: '800',
                 color: COLORS.gray[900],
                 textAlign: 'center',
@@ -315,11 +315,11 @@ export function InitialPermissionsModal() {
             </Text>
             <Text
               style={{
-                fontSize: 13,
+                fontSize: fs(13),
                 color: COLORS.gray[600],
                 textAlign: 'center',
                 marginTop: 4,
-                lineHeight: 18,
+                lineHeight: Math.round(fs(18)),
               }}
             >
               {t('perm_modal_subtitle')}
@@ -365,7 +365,7 @@ export function InitialPermissionsModal() {
                   <View style={{ flex: 1 }}>
                     <Text
                       style={{
-                        fontSize: 14,
+                        fontSize: fs(14),
                         fontWeight: '700',
                         color: COLORS.gray[900],
                       }}
@@ -374,10 +374,10 @@ export function InitialPermissionsModal() {
                     </Text>
                     <Text
                       style={{
-                        fontSize: 12,
+                        fontSize: fs(12),
                         color: COLORS.gray[500],
                         marginTop: 2,
-                        lineHeight: 16,
+                        lineHeight: Math.round(fs(16)),
                       }}
                     >
                       {t(item.descKey)}
@@ -387,7 +387,7 @@ export function InitialPermissionsModal() {
                   {isGranted ? (
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                       <CheckCircle2 size={18} color="#16A34A" />
-                      <Text style={{ fontSize: 12, fontWeight: '700', color: '#16A34A' }}>{t('perm_granted')}</Text>
+                      <Text style={{ fontSize: fs(12), fontWeight: '700', color: '#16A34A' }}>{t('perm_granted')}</Text>
                     </View>
                   ) : (
                     <TouchableOpacity
@@ -399,7 +399,7 @@ export function InitialPermissionsModal() {
                         backgroundColor: '#16A34A',
                       }}
                     >
-                      <Text style={{ fontSize: 11.5, fontWeight: '700', color: '#fff' }}>{t('perm_grant_btn')}</Text>
+                      <Text style={{ fontSize: fs(11.5), fontWeight: '700', color: '#fff' }}>{t('perm_grant_btn')}</Text>
                     </TouchableOpacity>
                   )}
                 </View>
@@ -429,7 +429,7 @@ export function InitialPermissionsModal() {
               {requesting ? (
                 <ActivityIndicator color="#fff" size="small" />
               ) : (
-                <Text style={{ color: '#fff', fontSize: 15, fontWeight: '800' }}>
+                <Text style={{ color: '#fff', fontSize: fs(15), fontWeight: '800' }}>
                   {t('perm_grant_all')}
                 </Text>
               )}
@@ -444,7 +444,7 @@ export function InitialPermissionsModal() {
                 justifyContent: 'center',
               }}
             >
-              <Text style={{ color: COLORS.gray[500], fontSize: 13.5, fontWeight: '600' }}>
+              <Text style={{ color: COLORS.gray[500], fontSize: fs(13.5), fontWeight: '600' }}>
                 {t('perm_skip')}
               </Text>
             </TouchableOpacity>
@@ -461,7 +461,7 @@ export function InitialPermissionsModal() {
 export function AppPermissionsSection() {
   const [statuses, setStatuses] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(true);
-  const { t } = useTranslation();
+  const { t, fs } = useTranslation();
 
   const loadStatuses = useCallback(async () => {
     setLoading(true);
@@ -482,7 +482,7 @@ export function AppPermissionsSection() {
     <View style={{ gap: 8 }}>
       <Text
         style={{
-          fontSize: 12,
+          fontSize: fs(12),
           fontWeight: '700',
           color: COLORS.gray[400],
           textTransform: 'uppercase',
@@ -508,10 +508,10 @@ export function AppPermissionsSection() {
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 }}>
                 <Icon size={17} color={isGranted ? '#16A34A' : COLORS.gray[500]} />
                 <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: 13.5, fontWeight: '600', color: COLORS.gray[800] }}>
+                  <Text style={{ fontSize: fs(13.5), fontWeight: '600', color: COLORS.gray[800] }}>
                     {t(item.titleKey)}
                   </Text>
-                  <Text style={{ fontSize: 11, color: COLORS.gray[500] }}>{t(item.descKey)}</Text>
+                  <Text style={{ fontSize: fs(11), color: COLORS.gray[500] }}>{t(item.descKey)}</Text>
                 </View>
               </View>
 
@@ -531,7 +531,7 @@ export function AppPermissionsSection() {
                     }}
                   >
                     <CheckCircle2 size={13} color="#16A34A" />
-                    <Text style={{ fontSize: 11, fontWeight: '700', color: '#16A34A' }}>{t('profile_status_granted')}</Text>
+                    <Text style={{ fontSize: fs(11), fontWeight: '700', color: '#16A34A' }}>{t('profile_status_granted')}</Text>
                   </View>
                 ) : (
                   <View
@@ -546,7 +546,7 @@ export function AppPermissionsSection() {
                     }}
                   >
                     <AlertCircle size={13} color="#9CA3AF" />
-                    <Text style={{ fontSize: 11, fontWeight: '600', color: '#6B7280' }}>{t('profile_status_denied')}</Text>
+                    <Text style={{ fontSize: fs(11), fontWeight: '600', color: '#6B7280' }}>{t('profile_status_denied')}</Text>
                   </View>
                 )}
               </View>

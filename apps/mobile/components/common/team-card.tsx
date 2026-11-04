@@ -4,6 +4,7 @@ import { Users } from 'lucide-react-native';
 import { Avatar, Badge, Button, Card, COLORS } from '@/components/ui';
 import { useTeamCandidates, useInviteTeamMember } from '@/hooks/use-api';
 import { Alert } from '@/components/common/app-alert';
+import { useTranslation } from '@/hooks/use-i18n';
 
 const TEAM_BUILDABLE_STATUSES = ['confirmed', 'helper_on_the_way', 'helper_arrived'];
 
@@ -31,6 +32,7 @@ export function TeamCard({ job, currentUserId }: { job: any; currentUserId?: str
   const display: any[] = job?.team_display ?? [];
   const activeCount = display.filter(m => m.status !== 'declined').length;
   const slotsLeft = helpersNeeded - activeCount;
+  const { fs } = useTranslation();
 
   const { data: candidates } = useTeamCandidates(job?._id, canBuild && slotsLeft > 0);
   const invite = useInviteTeamMember();
@@ -57,7 +59,7 @@ export function TeamCard({ job, currentUserId }: { job: any; currentUserId?: str
     <Card style={{ gap: 12 }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
         <Users size={18} color={COLORS.primary} />
-        <Text style={{ flex: 1, fontWeight: '800', fontSize: 15, color: COLORS.gray[900] }}>
+        <Text style={{ flex: 1, fontWeight: '800', fontSize: fs(15), color: COLORS.gray[900] }}>
           Đội thực hiện ({activeCount}/{helpersNeeded} thợ)
         </Text>
         <Badge
@@ -69,7 +71,7 @@ export function TeamCard({ job, currentUserId }: { job: any; currentUserId?: str
       </View>
 
       {display.length === 0 && (
-        <Text style={{ fontSize: 13, color: COLORS.gray[500] }}>
+        <Text style={{ fontSize: fs(13), color: COLORS.gray[500] }}>
           Chưa có thợ chính — nhóm sẽ hình thành khi một thợ nhận đơn làm lead.
         </Text>
       )}
@@ -83,11 +85,11 @@ export function TeamCard({ job, currentUserId }: { job: any; currentUserId?: str
           >
             <Avatar name={member.full_name} size={38} />
             <View style={{ flex: 1 }}>
-              <Text style={{ fontWeight: '700', fontSize: 13.5, color: COLORS.gray[900] }}>
+              <Text style={{ fontWeight: '700', fontSize: fs(13.5), color: COLORS.gray[900] }}>
                 {member.full_name}
                 {member.helper_id === currentUserId ? ' (bạn)' : ''}
               </Text>
-              <Text style={{ fontSize: 12, color: COLORS.gray[500] }}>
+              <Text style={{ fontSize: fs(12), color: COLORS.gray[500] }}>
                 {member.role === 'lead' ? '⭐ Thợ chính (lead)' : 'Thành viên'} · Nhận{' '}
                 {member.split_percent}% tiền công
               </Text>
@@ -97,7 +99,7 @@ export function TeamCard({ job, currentUserId }: { job: any; currentUserId?: str
         );
       })}
 
-      <Text style={{ fontSize: 12, color: COLORS.gray[500], lineHeight: 17 }}>
+      <Text style={{ fontSize: fs(12), color: COLORS.gray[500], lineHeight: Math.round(fs(17)) }}>
         Tiền công (sau phí sàn) được chia tự động theo tỉ lệ trên khi đơn hoàn thành và khách nghiệm
         thu.
       </Text>
@@ -106,11 +108,11 @@ export function TeamCard({ job, currentUserId }: { job: any; currentUserId?: str
         <View
           style={{ gap: 10, borderTopWidth: 1, borderTopColor: COLORS.gray[100], paddingTop: 12 }}
         >
-          <Text style={{ fontWeight: '800', fontSize: 13.5, color: COLORS.gray[900] }}>
+          <Text style={{ fontWeight: '800', fontSize: fs(13.5), color: COLORS.gray[900] }}>
             Mời thêm thợ vào nhóm (còn {slotsLeft} chỗ)
           </Text>
           {(candidates ?? []).length === 0 && (
-            <Text style={{ fontSize: 12.5, color: COLORS.gray[500] }}>
+            <Text style={{ fontSize: fs(12.5), color: COLORS.gray[500] }}>
               Chưa có thợ đang sẵn sàng để mời. Thử lại sau ít phút.
             </Text>
           )}
@@ -118,10 +120,10 @@ export function TeamCard({ job, currentUserId }: { job: any; currentUserId?: str
             <View key={c.helper_id} style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
               <Avatar name={c.full_name} size={36} />
               <View style={{ flex: 1 }}>
-                <Text style={{ fontWeight: '700', fontSize: 13, color: COLORS.gray[900] }}>
+                <Text style={{ fontWeight: '700', fontSize: fs(13), color: COLORS.gray[900] }}>
                   {c.full_name}
                 </Text>
-                <Text style={{ fontSize: 11.5, color: COLORS.gray[500] }}>
+                <Text style={{ fontSize: fs(11.5), color: COLORS.gray[500] }}>
                   ⭐ {c.rating?.toFixed?.(1) ?? c.rating} · {c.completed_jobs} đơn hoàn thành
                 </Text>
               </View>
@@ -141,9 +143,9 @@ export function TeamCard({ job, currentUserId }: { job: any; currentUserId?: str
                     setSplits(prev => ({ ...prev, [c.helper_id]: v.replace(/[^0-9]/g, '') }))
                   }
                   keyboardType="number-pad"
-                  style={{ width: 34, textAlign: 'center', fontWeight: '700', fontSize: 13.5 }}
+                  style={{ width: 34, textAlign: 'center', fontWeight: '700', fontSize: fs(13.5) }}
                 />
-                <Text style={{ fontSize: 12.5, color: COLORS.gray[500], fontWeight: '700' }}>
+                <Text style={{ fontSize: fs(12.5), color: COLORS.gray[500], fontWeight: '700' }}>
                   %
                 </Text>
               </View>
@@ -156,7 +158,7 @@ export function TeamCard({ job, currentUserId }: { job: any; currentUserId?: str
                   borderRadius: 10,
                 }}
               >
-                <Text style={{ color: '#fff', fontWeight: '800', fontSize: 12.5 }}>Mời</Text>
+                <Text style={{ color: '#fff', fontWeight: '800', fontSize: fs(12.5) }}>Mời</Text>
               </TouchableOpacity>
             </View>
           ))}
@@ -164,7 +166,7 @@ export function TeamCard({ job, currentUserId }: { job: any; currentUserId?: str
       )}
 
       {isLead && !TEAM_BUILDABLE_STATUSES.includes(job?.status) && (
-        <Text style={{ fontSize: 12.5, color: COLORS.gray[500] }}>
+        <Text style={{ fontSize: fs(12.5), color: COLORS.gray[500] }}>
           Nhóm chỉ lập được trước khi bắt đầu làm việc.
         </Text>
       )}
