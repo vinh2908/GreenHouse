@@ -37,7 +37,6 @@ import {
 } from '@/components/ui';
 
 dayjs.extend(relativeTime);
-dayjs.locale('vi');
 
 export default function HelperPublicProfileScreen() {
   const { id, jobId, quoteId } = useLocalSearchParams<{

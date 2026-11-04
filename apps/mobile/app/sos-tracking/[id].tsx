@@ -42,7 +42,6 @@ import {
 } from '@/components/ui';
 
 dayjs.extend(relativeTime);
-dayjs.locale('vi');
 
 export default function SosTrackingScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();

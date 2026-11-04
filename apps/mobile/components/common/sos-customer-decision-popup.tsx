@@ -17,7 +17,7 @@ export function SosCustomerDecisionPopup() {
   const clearDecision = useSosBackupStore(s => s.clearDecision);
   const decide = useCustomerSosDecision();
   const now = useNowTick(!!decision);
-  const { t, fs } = useTranslation();
+  const { t, tService, fs } = useTranslation();
 
   if (!decision) return null;
 
@@ -86,7 +86,7 @@ export function SosCustomerDecisionPopup() {
           <Text
             style={{ fontSize: fs(14), color: COLORS.gray[700], textAlign: 'center', lineHeight: Math.round(fs(20)) }}
           >
-            {decision.service_name ?? decision.job_title ?? ''}{' '}
+            {tService(decision.service_name) || decision.job_title || ''}{' '}
             {t('sos_customer_popup_reason_prefix')} <Text style={{ fontWeight: '700' }}>{reasonLabel}</Text>
             {t('sos_customer_popup_reason_suffix')}
           </Text>

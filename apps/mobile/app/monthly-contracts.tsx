@@ -12,8 +12,6 @@ import {
 import { useAuthStore } from '@/stores/auth.store';
 import { Badge, Card, COLORS, EmptyState, LoadingSpinner } from '@/components/ui';
 
-dayjs.locale('vi');
-
 const WEEKDAY_LABELS = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
 const fmt = (n?: number) => new Intl.NumberFormat('vi-VN').format(n ?? 0);
 

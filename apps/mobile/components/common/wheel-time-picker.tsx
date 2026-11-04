@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { COLORS } from '@/components/ui';
 import { ScalePressable } from '@/components/common/scale-pressable';
+import { useTranslation } from '@/hooks/use-i18n';
 
 const ITEM_HEIGHT = 40;
 const VISIBLE_ITEMS = 3;
@@ -23,6 +24,7 @@ interface WheelTimePickerProps {
 }
 
 export function WheelTimePicker({ value, onChange, quickChips = true }: WheelTimePickerProps) {
+  const { lang } = useTranslation();
   // Parse hour & minute from value
   const { hour, minute } = useMemo(() => {
     const parts = (value || '08:00').split(':');
@@ -121,7 +123,7 @@ export function WheelTimePicker({ value, onChange, quickChips = true }: WheelTim
 
         {/* Cột chọn Giờ (00 - 23) */}
         <View style={styles.wheelColumn}>
-          <Text style={styles.columnHeader}>Giờ</Text>
+          <Text style={styles.columnHeader}>{lang === 'en' ? 'Hour' : 'Giờ'}</Text>
           <ScrollView
             ref={hoursScrollRef}
             showsVerticalScrollIndicator={false}
@@ -167,7 +169,7 @@ export function WheelTimePicker({ value, onChange, quickChips = true }: WheelTim
 
         {/* Cột chọn Phút (00 - 59) */}
         <View style={styles.wheelColumn}>
-          <Text style={styles.columnHeader}>Phút</Text>
+          <Text style={styles.columnHeader}>{lang === 'en' ? 'Min' : 'Phút'}</Text>
           <ScrollView
             ref={minutesScrollRef}
             showsVerticalScrollIndicator={false}
@@ -208,7 +210,7 @@ export function WheelTimePicker({ value, onChange, quickChips = true }: WheelTim
 
       {/* Hiển thị thời gian đã chọn rõ ràng */}
       <View style={styles.statusRow}>
-        <Text style={styles.statusLabel}>Giờ đã chọn:</Text>
+        <Text style={styles.statusLabel}>{lang === 'en' ? 'Selected time:' : 'Giờ đã chọn:'}</Text>
         <View style={styles.statusPill}>
           <Text style={styles.statusTimeText}>{currentTimeFormatted}</Text>
         </View>
@@ -217,7 +219,9 @@ export function WheelTimePicker({ value, onChange, quickChips = true }: WheelTim
       {/* ── 2. CÁC CHIP GỢI Ý ĐỒNG BỘ 2 CHIỀU ── */}
       {quickChips && (
         <View style={styles.chipsSection}>
-          <Text style={styles.chipsTitle}>Gợi ý nhanh (chạm để bánh xe cuộn tới):</Text>
+          <Text style={styles.chipsTitle}>
+            {lang === 'en' ? 'Quick suggestions (tap to scroll):' : 'Gợi ý nhanh (chạm để bánh xe cuộn tới):'}
+          </Text>
           <View style={styles.chipsWrap}>
             {[
               '07:00',
@@ -243,12 +247,12 @@ export function WheelTimePicker({ value, onChange, quickChips = true }: WheelTim
                 >
                   {isNew && (
                     <View style={styles.newBadge}>
-                      <Text style={styles.newBadgeText}>MỚI</Text>
+                      <Text style={styles.newBadgeText}>{lang === 'en' ? 'NEW' : 'MỚI'}</Text>
                     </View>
                   )}
                   {isNight && (
                     <View style={styles.nightBadge}>
-                      <Text style={styles.nightBadgeText}>ĐÊM</Text>
+                      <Text style={styles.nightBadgeText}>{lang === 'en' ? 'NIGHT' : 'ĐÊM'}</Text>
                     </View>
                   )}
                   <Text
@@ -266,7 +270,7 @@ export function WheelTimePicker({ value, onChange, quickChips = true }: WheelTim
 
           {/* Giờ lẻ phổ biến */}
           <View style={styles.oddChipsRow}>
-            <Text style={styles.oddChipsLabel}>Giờ lẻ:</Text>
+            <Text style={styles.oddChipsLabel}>{lang === 'en' ? 'Half-hour:' : 'Giờ lẻ:'}</Text>
             {['07:30', '08:30', '11:30', '13:30', '17:30', '19:30', '20:30', '21:30'].map(ot => {
               const isSelected = currentTimeFormatted === ot;
               return (
