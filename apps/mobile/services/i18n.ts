@@ -1,8 +1,17 @@
 // services/i18n.ts — Từ điển song ngữ phẳng cho Feature 20 (Tiếng Anh + cỡ chữ lớn)
 // Tiếng Việt là ngôn ngữ mặc định và là fallback: thiếu key ở 'en' → dùng 'vi',
 // thiếu cả hai → trả về chính key để không bao giờ crash giao diện.
-// Chỉ các màn hình được liệt kê trong README Feature 20 mới wire t(); phạm vi có
-// chủ đích hẹp, không dịch toàn bộ app.
+import dayjs from 'dayjs';
+import relativeTime from 'dayjs/plugin/relativeTime';
+import 'dayjs/locale/vi';
+import 'dayjs/locale/en';
+
+dayjs.extend(relativeTime);
+
+export function syncDayjsLocale(lang: AppLanguage) {
+  dayjs.locale(lang === 'en' ? 'en' : 'vi');
+}
+
 export const STRINGS = {
   // ─── Tab bar ──────────────────────────────────────────────────────────────
   tab_home: { vi: 'Trang chủ', en: 'Home' },
@@ -559,6 +568,138 @@ export const STRINGS = {
   common_confirm: { vi: 'Xác nhận', en: 'Confirm' },
   common_cancel: { vi: 'Hủy', en: 'Cancel' },
   common_yesterday: { vi: 'Hôm qua', en: 'Yesterday' },
+
+  // ─── Helper Dashboard (Điểm 1) ─────────────────────────────────────────────
+  dash_update_progress_btn: { vi: 'Cập nhật tiến độ & Nghiệm thu →', en: 'Update progress & Acceptance →' },
+  dash_nearby_jobs_title: { vi: 'Đơn hàng gần bạn', en: 'Orders near you' },
+  dash_auto_update_30s: { vi: 'Tự động cập nhật đơn mới mỗi 30s', en: 'Auto updates new jobs every 30s' },
+  dash_offline_sub: { vi: 'Đang ở chế độ ngoại tuyến', en: 'Currently in offline mode' },
+  dash_loading_status: { vi: 'Đang tải trạng thái nhận việc…', en: 'Loading job acceptance status…' },
+  dash_offline_empty_title: { vi: 'Đang tắt nhận việc', en: 'Job acceptance paused' },
+  dash_offline_empty_sub: {
+    vi: "Bật công tắc 'Đang nhận đơn mới' ở trên để xem các công việc đang cần thợ xung quanh bạn.",
+    en: "Turn on 'Accepting new jobs' above to view jobs needing helpers near you.",
+  },
+  dash_kyc_needed_title: { vi: 'Cần xác thực e-KYC để xem đơn', en: 'e-KYC verification required to view jobs' },
+  dash_kyc_pending_sub: {
+    vi: 'Hồ sơ CCCD đang chờ Admin duyệt. Bạn sẽ thấy danh sách đơn ngay khi được kích hoạt.',
+    en: 'ID verification is pending admin review. Jobs will appear once activated.',
+  },
+  dash_kyc_not_done_sub: {
+    vi: 'Vui lòng hoàn tất xác minh e-KYC (CCCD) để mở khóa xem và nhận đơn mới xung quanh bạn.',
+    en: 'Please complete e-KYC verification to unlock and accept jobs near you.',
+  },
+  dash_no_jobs_nearby: { vi: 'Chưa có đơn mới xung quanh', en: 'No new jobs nearby' },
+  dash_no_jobs_nearby_sub: {
+    vi: 'Hệ thống đang quét đơn trong bán kính phục vụ. Đơn mới sẽ tự động hiển thị tại đây.',
+    en: 'Scanning for jobs within service area. New jobs will appear automatically.',
+  },
+  dash_quotes_count: { vi: '{count} thợ đã báo giá', en: '{count} helpers quoted' },
+  dash_no_quotes: { vi: 'Chưa có báo giá nào', en: 'No quotes yet' },
+  dash_send_quote_now: { vi: 'Gửi báo giá ngay →', en: 'Send quote now →' },
+  dash_helper_role_label: { vi: 'Đối tác Thợ / Người giúp việc', en: 'Partner Helper / Worker' },
+  dash_kyc_pending: { vi: 'Hồ sơ e-KYC đang được xét duyệt', en: 'e-KYC profile under review' },
+  dash_kyc_required: { vi: 'Yêu cầu xác thực e-KYC để nhận việc', en: 'e-KYC required to accept jobs' },
+  dash_kyc_pending_desc: {
+    vi: 'Admin đang kiểm tra CCCD. Bạn sẽ có thể nhận việc ngay khi được duyệt.',
+    en: 'Admin is verifying ID. You can accept jobs as soon as approved.',
+  },
+  dash_kyc_required_desc: {
+    vi: 'Vui lòng chụp CCCD để mở khóa tính năng nhận việc và gửi báo giá.',
+    en: 'Please upload ID to unlock accepting jobs and sending quotes.',
+  },
+  dash_kyc_view: { vi: 'Xem →', en: 'View →' },
+  dash_kyc_verify: { vi: 'Xác thực →', en: 'Verify →' },
+  dash_sos_modal_title: { vi: 'YÊU CẦU CỨU HỘ SOS!', en: 'SOS RESCUE REQUEST!' },
+  dash_sos_modal_sub: { vi: 'Có mặt khẩn cấp sau 15 - 20 phút', en: 'Urgent arrival in 15 - 20 minutes' },
+  dash_sos_modal_min_payout: { vi: 'Thu nhập tối thiểu nhận về ví:', en: 'Minimum wallet net payout:' },
+  dash_sos_modal_breakdown: {
+    vi: '(Bao gồm công cơ bản 200.000₫ + Phụ phí khẩn cấp 100.000₫ - phí sàn 15%)',
+    en: '(Includes base 200,000₫ + Emergency bonus 100,000₫ - 15% platform fee)',
+  },
+  dash_sos_modal_matching: { vi: 'ĐANG KHỚP ĐƠN...', en: 'MATCHING JOB...' },
+  dash_sos_modal_accept: { vi: '🚨 NHẬN CỨU HỘ SOS NGAY', en: '🚨 ACCEPT SOS RESCUE NOW' },
+
+  // ─── Customer Home (Điểm 2) ────────────────────────────────────────────────
+  home_greeting_night: { vi: 'Chào {name}, khuya rồi', en: 'Hello {name}, it is late' },
+  home_greeting_night_sub: { vi: 'Cần giúp việc gì trong đêm?', en: 'Need any help tonight?' },
+  home_greeting_morning: { vi: 'Chào {name}, buổi sáng', en: 'Good morning {name}' },
+  home_greeting_morning_sub: { vi: 'Hôm nay bạn cần hỗ trợ việc gì?', en: 'What do you need help with today?' },
+  home_greeting_afternoon: { vi: 'Chào {name}, buổi chiều', en: 'Good afternoon {name}' },
+  home_greeting_afternoon_sub: { vi: 'Chiều nay nhà mình cần việc gì?', en: 'What do you need done this afternoon?' },
+  home_greeting_evening: { vi: 'Chào {name}, buổi tối', en: 'Good evening {name}' },
+  home_greeting_evening_sub: { vi: 'Tối nay cần hỗ trợ việc gì?', en: 'What do you need help with this evening?' },
+  home_live_badge: { vi: 'Trực tiếp', en: 'Live' },
+  home_no_helpers_online: { vi: 'Hiện chưa có thợ online gần bạn', en: 'No online helpers near you yet' },
+  home_no_helpers_online_sub: {
+    vi: 'Bạn vẫn có thể đăng việc hoặc đặt lịch hẹn, thợ trong khu vực sẽ nhận việc sớm nhất.',
+    en: 'You can still post a job or schedule an appointment, local helpers will accept it soon.',
+  },
+  home_no_location_helpers: { vi: 'Chưa có vị trí để tìm thợ lân cận', en: 'No location to find nearby helpers' },
+  home_no_location_helpers_sub: {
+    vi: 'Vui lòng bấm lấy vị trí GPS hoặc chọn khu vực để kết nối thợ xung quanh.',
+    en: 'Please enable GPS or pick an area to connect with nearby helpers.',
+  },
+  home_map_you_are_here: { vi: 'Bạn ở đây', en: 'You are here' },
+  home_map_no_key: { vi: 'Chưa cấu hình khoá bản đồ Goong.', en: 'Goong Map key not configured.' },
+  home_map_error: { vi: 'Không tải được bản đồ Goong.', en: 'Failed to load Goong Map.' },
+  home_map_retry: { vi: 'Thử lại', en: 'Retry' },
+  home_ai_scan_badge: { vi: 'AI QUÉT ẢNH SỰ CỐ', en: 'AI ISSUE PHOTO SCAN' },
+  home_ai_scan_title: { vi: 'Chụp ảnh sự cố, AI đoán việc', en: 'Snap the issue, AI diagnoses the job' },
+  home_ai_scan_desc: {
+    vi: 'Máy lạnh chảy nước, vòi rò, tường nứt… chỉ cần một tấm ảnh, không cần biết tên dịch vụ.',
+    en: 'Leaking AC, dripping pipe, cracked wall… just one photo, no need to know the service name.',
+  },
+  home_ai_scan_step1: { vi: '1 · Chụp ảnh', en: '1 · Take photo' },
+  home_ai_scan_step2: { vi: '2 · AI phân tích', en: '2 · AI analyze' },
+  home_ai_scan_step3: { vi: '3 · Nhận báo giá', en: '3 · Get quotes' },
+  home_ai_scan_btn: { vi: 'Chụp ảnh ngay', en: 'Snap photo now' },
+  home_ai_scan_pick: { vi: 'hoặc chọn ảnh sự cố của bạn', en: 'or choose your issue photo' },
+  home_location_unidentified: { vi: 'Chưa xác định vị trí của bạn', en: 'Location not identified' },
+  home_location_unidentified_sub: {
+    vi: 'Bật định vị GPS hoặc chọn khu vực để tìm thợ lành nghề gần bạn nhất.',
+    en: 'Turn on GPS or pick an area to find skilled helpers near you.',
+  },
+  home_no_location_tap: { vi: 'Chưa định vị — Bấm lấy vị trí', en: 'No location — Tap to locate' },
+  home_locating: { vi: 'Đang lấy vị trí...', en: 'Getting location...' },
+  home_get_location_btn: { vi: 'Bấm lấy vị trí', en: 'Get current location' },
+  home_select_manual: { vi: 'Chọn thủ công', en: 'Choose manually' },
+  home_helper_fallback: { vi: 'Thợ chuyên nghiệp', en: 'Professional helper' },
+  home_eta_min: { vi: 'tới trong ~{min} phút', en: 'arrives in ~{min} mins' },
+  home_book_helper_btn: { vi: 'Đặt thợ →', en: 'Book helper →' },
+  voucher_discount_percent: { vi: 'Giảm {pct}%', en: '{pct}% OFF' },
+  voucher_discount_amount: { vi: 'Giảm {amount}₫', en: '{amount}₫ OFF' },
+  voucher_special_badge: { vi: 'ƯU ĐÃI ĐẶC BIỆT', en: 'SPECIAL OFFER' },
+  voucher_min_order: { vi: 'Đơn tối thiểu {amount}₫', en: 'Min order {amount}₫' },
+  voucher_all_services: { vi: 'Áp dụng cho mọi dịch vụ', en: 'All services eligible' },
+
+  // ─── Voucher & Time (Điểm 5) ───────────────────────────────────────────────
+  voucher_copy: { vi: 'Sao chép', en: 'Copy' },
+  voucher_copied: { vi: 'Đã chép', en: 'Copied' },
+  voucher_title: { vi: 'Voucher của bạn', en: 'Your Vouchers' },
+  voucher_empty_title: { vi: 'Chưa có voucher nào', en: 'No vouchers yet' },
+  voucher_empty_sub: {
+    vi: 'Các mã ưu đãi sẽ xuất hiện tại đây khi có chương trình khuyến mãi.',
+    en: 'Discount codes will appear here when promotions are available.',
+  },
+  voucher_copy_toast_title: { vi: 'Đã sao chép mã "{code}"', en: 'Copied code "{code}"' },
+  voucher_copy_toast_sub: {
+    vi: 'Dán mã vào ô Voucher khi tạo hoặc thanh toán đơn hàng.',
+    en: 'Paste code into Voucher field when creating or paying for jobs.',
+  },
+
+  // ─── Helper Jobs & Badges ──────────────────────────────────────────────────
+  jobs_badge_private_for_you: { vi: '⭐ Gửi riêng cho bạn', en: '⭐ Private offer for you' },
+  jobs_badge_fixed_price: { vi: '🏷️ Giá cam kết {price}₫', en: '🏷️ Fixed price {price}₫' },
+  jobs_unspecified: { vi: 'Chưa rõ', en: 'Unspecified' },
+  jobs_minutes_unit: { vi: 'phút', en: 'mins' },
+  jobs_verify_now: { vi: 'Xác thực ngay', en: 'Verify now' },
+  jobs_outside_hours_title: { vi: 'Không có việc trong khung giờ làm', en: 'No jobs during your working hours' },
+  jobs_outside_hours_sub: {
+    vi: 'Hiện có việc mới nhưng ngoài khung giờ hoạt động bạn đã đăng ký. Bạn có thể cập nhật Lịch làm việc trong Hồ sơ để nhận thêm đơn.',
+    en: 'New jobs are available but outside your registered hours. Update your Work Schedule in Profile to receive them.',
+  },
+  jobs_customer_cancelled: { vi: 'Đã hủy yêu cầu', en: 'Request cancelled' },
 } as const;
 
 export type I18nKey = keyof typeof STRINGS;
@@ -577,4 +718,106 @@ export function translate(
     }
   }
   return text;
+}
+
+// ─── Service Catalog Name Translation (Điểm 3) ───────────────────────────────
+export const SERVICE_NAME_EN_MAP: Record<string, string> = {
+  'giúp việc theo giờ': 'Hourly housekeeping',
+  'giúp việc theo ngày': 'Daily housekeeping',
+  'giúp việc định kỳ': 'Periodic housekeeping',
+  'dọn nhà': 'House cleaning',
+  'dọn dẹp nhà': 'House cleaning',
+  'tổng vệ sinh nhà cửa': 'Deep house cleaning',
+  'tổng vệ sinh': 'Deep cleaning',
+  'vệ sinh nhà': 'House cleaning',
+  'sửa điện gia dụng': 'Home electrician',
+  'sửa điện': 'Home electrician',
+  'thợ điện': 'Electrician',
+  'điện': 'Electrical',
+  'sửa ống nước & thông cống': 'Plumbing & Drain unblocking',
+  'sửa ống nước': 'Plumbing repair',
+  'thông cống': 'Drain unblocking',
+  'vệ sinh & bơm gas máy lạnh': 'AC cleaning & Gas refilling',
+  'vệ sinh máy lạnh': 'AC cleaning',
+  'sửa máy lạnh': 'AC repair',
+  'máy lạnh': 'Air conditioning',
+  'nấu ăn gia đình': 'Home cooking',
+  'nấu ăn': 'Home cooking',
+  'sửa máy giặt & tủ lạnh': 'Washing machine & Fridge repair',
+  'sửa máy giặt': 'Washing machine repair',
+  'sửa tủ lạnh': 'Fridge repair',
+  'thiết bị gia dụng': 'Home appliances',
+  'sửa khóa & lắp camera': 'Locksmith & Camera setup',
+  'sửa khóa': 'Locksmith',
+  'lắp camera': 'Camera setup',
+  'chuyển nhà': 'Home moving',
+  'chuyển nhà trọn gói': 'Full moving service',
+  'chăm trẻ': 'Babysitting',
+  'trông trẻ': 'Babysitting',
+  'giặt ủi': 'Laundry',
+  'chăm người già': 'Elderly care',
+  'chăm sóc người già': 'Elderly care',
+  'bốc hàng, vận chuyển': 'Cargo & logistics',
+  'bốc hàng': 'Cargo moving',
+  'vận chuyển': 'Logistics & Moving',
+  'chăm sóc thú cưng': 'Pet care',
+  'thú cưng': 'Pet care',
+  'chăm sóc chó mèo': 'Pet care',
+  'tắm thú cưng': 'Pet grooming',
+  'cắt tỉa lông thú cưng': 'Pet grooming',
+  'dịch vụ khác — tự ghi việc, tự set giá': 'Other — custom task & price',
+  'dịch vụ khác': 'Other services',
+  'dịch vụ': 'Service',
+};
+
+export const SERVICE_SLUG_EN_MAP: Record<string, string> = {
+  housekeeping_hourly: 'Hourly housekeeping',
+  housekeeping_daily: 'Daily housekeeping',
+  housekeeping_periodic: 'Periodic housekeeping',
+  deep_cleaning: 'Deep cleaning',
+  house_cleaning: 'House cleaning',
+  cleaning: 'Cleaning',
+  electrician: 'Home electrician',
+  electrical: 'Electrical',
+  plumbing: 'Plumbing repair',
+  ac_repair: 'AC cleaning',
+  cooking: 'Home cooking',
+  appliance: 'Appliance repair',
+  appliances: 'Home appliances',
+  locksmith: 'Locksmith & Camera',
+  moving_help: 'Home moving',
+  child_care: 'Babysitting',
+  laundry: 'Laundry',
+  elderly_care: 'Elderly care',
+  handyman: 'Cargo & logistics',
+  pet_care: 'Pet care',
+  custom: 'Other service',
+};
+
+export function translateServiceName(
+  service: { name?: string; slug?: string; title?: string } | string | null | undefined,
+  lang: AppLanguage,
+): string {
+  if (!service) return '';
+  const rawName = typeof service === 'string' ? service : service.name || service.title || '';
+  const slug = typeof service === 'object' && service ? service.slug : undefined;
+
+  if (lang !== 'en') {
+    return rawName || (slug ? SERVICE_SLUG_EN_MAP[slug] || slug : '');
+  }
+
+  // 1. Look up by slug if available
+  if (slug && SERVICE_SLUG_EN_MAP[slug]) {
+    return SERVICE_SLUG_EN_MAP[slug];
+  }
+
+  // 2. Look up by normalized Vietnamese name
+  const trimmed = rawName.trim();
+  const lower = trimmed.toLowerCase();
+  if (SERVICE_NAME_EN_MAP[lower]) {
+    return SERVICE_NAME_EN_MAP[lower];
+  }
+
+  // 3. Fallback: return rawName as-is if out of catalog
+  return rawName;
 }

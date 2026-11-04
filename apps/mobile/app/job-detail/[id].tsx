@@ -67,6 +67,7 @@ import {
   type VoucherPreview,
 } from '@/hooks/use-api';
 import { useJobSocketUpdates, useHelperLocation } from '@/hooks/use-socket';
+import { useTranslation } from '@/hooks/use-i18n';
 import {
   locationService,
   parseVietnameseAddress,
@@ -94,7 +95,6 @@ import {
 } from '@/components/ui';
 
 dayjs.extend(relativeTime);
-dayjs.locale('vi');
 
 const STATUS_STEPS = [
   { key: 'open', label: 'Đăng yêu cầu' },
@@ -115,8 +115,12 @@ const PAYMENT_METHODS = [
   { id: 'momo', label: '📱 Ví MoMo / ZaloPay (Escrow)' },
 ];
 
-function formatTravelTime(minutes?: number): string {
+function formatTravelTime(minutes?: number, lang: string = 'vi'): string {
   const m = Math.max(1, Math.round(minutes ?? 0));
+  if (lang === 'en') {
+    if (m < 60) return `${m} mins`;
+    return m % 60 ? `${Math.floor(m / 60)} hrs ${m % 60} mins` : `${m / 60} hrs`;
+  }
   if (m < 60) return `${m} phút`;
   return m % 60 ? `${Math.floor(m / 60)} giờ ${m % 60} phút` : `${m / 60} giờ`;
 }
@@ -131,6 +135,7 @@ export default function JobDetailScreen() {
   const router = useRouter();
   const { user } = useAuthStore();
   const { width } = useWindowDimensions();
+  const { t, tService, lang } = useTranslation();
 
   const handleBack = () => {
     if (router.canGoBack()) {
@@ -1087,7 +1092,7 @@ export default function JobDetailScreen() {
         {job.status !== 'cancelled' && (
           <Card style={{ gap: 12, padding: 16 }}>
             <Text style={{ fontWeight: '800', fontSize: 15, color: COLORS.gray[900] }}>
-              Tiến trình thực hiện
+              {lang === 'en' ? 'Job Progress' : 'Tiến trình thực hiện'}
             </Text>
             {STATUS_STEPS.filter(s => s.key !== 'cancelled').map((s, i) => {
               const done = i < currentStepIdx;
@@ -1129,7 +1134,7 @@ export default function JobDetailScreen() {
                       color: active ? COLORS.primary : done ? COLORS.gray[900] : COLORS.gray[400],
                     }}
                   >
-                    {s.label}
+                    {t(`status_${s.key}`) || s.label}
                   </Text>
                   {active && (
                     <View
@@ -1142,7 +1147,7 @@ export default function JobDetailScreen() {
                       }}
                     >
                       <Text style={{ color: COLORS.primary, fontSize: 11, fontWeight: '800' }}>
-                        HIỆN TẠI
+                        {lang === 'en' ? 'CURRENT' : 'HIỆN TẠI'}
                       </Text>
                     </View>
                   )}
@@ -1183,7 +1188,7 @@ export default function JobDetailScreen() {
             }}
           >
             <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap', flex: 1 }}>
-              <Badge label={serviceObj?.name ?? 'Dịch vụ'} />
+              <Badge label={tService(serviceObj) || t('common_service')} />
               {job.preferred_date && (
                 <Badge
                   label={dayjs(job.preferred_date).format('DD/MM/YYYY')}
@@ -1446,8 +1451,12 @@ export default function JobDetailScreen() {
                             </View>
                             <Text style={{ fontSize: 12, color: COLORS.gray[500], marginTop: 1 }}>
                               {q.distance_km != null
-                                ? `Cách ${q.distance_km}km • Dự kiến đến ~${formatTravelTime(q.estimated_minutes)}`
-                                : 'Chưa xác định được vị trí thợ'}
+                                ? lang === 'en'
+                                  ? `~${q.distance_km}km away • Est. arrival ~${formatTravelTime(q.estimated_minutes, 'en')}`
+                                  : `Cách ${q.distance_km}km • Dự kiến đến ~${formatTravelTime(q.estimated_minutes, 'vi')}`
+                                : lang === 'en'
+                                  ? 'Helper location unavailable'
+                                  : 'Chưa xác định được vị trí thợ'}
                               {q.available_date && ` • ${dayjs(q.available_date).format('DD/MM')}`}
                             </Text>
                           </View>

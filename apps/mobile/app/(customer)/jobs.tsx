@@ -12,7 +12,6 @@ import { useTranslation } from '@/hooks/use-i18n';
 import { Card, JobStatusBadge, EmptyState, COLORS, Badge } from '@/components/ui';
 
 dayjs.extend(relativeTime);
-dayjs.locale('vi');
 
 const TABS = [
   { key: undefined, labelKey: 'jobs_tab_all' },
@@ -25,7 +24,7 @@ const TABS = [
 
 export default function CustomerJobsScreen() {
   const router = useRouter();
-  const { t, fs } = useTranslation();
+  const { t, tService, fs, lang } = useTranslation();
   const [activeTab, setActiveTab] = useState(0);
   const user = useAuthStore(s => s.user);
   const isAuthLoading = useAuthStore(s => s.isLoading);
@@ -278,7 +277,7 @@ export default function CustomerJobsScreen() {
                   >
                     <Badge
                       label={
-                        (job.service_id as { name: string } | null)?.name ??
+                        tService(job.service_id) ||
                         t('jobs_service_fallback')
                       }
                       size="sm"
@@ -310,13 +309,13 @@ export default function CustomerJobsScreen() {
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
                       <MapPin size={13} color={COLORS.gray[500]} />
                       <Text style={{ fontSize: fs(12), color: COLORS.gray[600], fontWeight: '500' }}>
-                        {job.address?.district || job.address?.city || 'Chưa rõ'}
+                        {job.address?.district || job.address?.city || t('jobs_unspecified')}
                       </Text>
                     </View>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
                       <Clock size={13} color={COLORS.gray[400]} />
                       <Text style={{ fontSize: fs(12), color: COLORS.gray[400] }}>
-                        {dayjs(job.created_at).fromNow()}
+                        {dayjs(job.created_at).locale(lang === 'en' ? 'en' : 'vi').fromNow()}
                       </Text>
                     </View>
                   </View>
@@ -335,7 +334,7 @@ export default function CustomerJobsScreen() {
                       if (job.status === 'cancelled') {
                         return (
                           <Text style={{ fontSize: fs(12.5), color: COLORS.error, fontWeight: '700' }}>
-                            Đã hủy yêu cầu
+                            {t('jobs_customer_cancelled')}
                           </Text>
                         );
                       }
@@ -344,14 +343,14 @@ export default function CustomerJobsScreen() {
                           <Text
                             style={{ fontSize: fs(12.5), color: COLORS.gray[600], fontWeight: '700' }}
                           >
-                            Đã hoàn tiền
+                            {t('status_refunded')}
                           </Text>
                         );
                       }
                       if (job.status === 'disputed') {
                         return (
                           <Text style={{ fontSize: fs(12.5), color: COLORS.error, fontWeight: '700' }}>
-                            Đang xử lý khiếu nại
+                            {t('status_disputed')}
                           </Text>
                         );
                       }
@@ -362,7 +361,7 @@ export default function CustomerJobsScreen() {
                           >
                             {job.helper_id
                               ? `${t('jobs_helper_label')} ${(job.helper_id as any).full_name}`
-                              : 'Công việc hoàn thành'}
+                              : t('status_completed')}
                           </Text>
                         );
                       }

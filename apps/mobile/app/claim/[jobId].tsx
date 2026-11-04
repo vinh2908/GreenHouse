@@ -10,8 +10,6 @@ import Toast from 'react-native-toast-message';
 import { useClaimForJob, useCreateClaim, type InsuranceClaimStatus } from '@/hooks/use-api';
 import { Badge, Button, Card, COLORS, LoadingSpinner } from '@/components/ui';
 
-dayjs.locale('vi');
-
 const fmt = (n?: number) => new Intl.NumberFormat('vi-VN').format(n ?? 0);
 
 const STATUS_META: Record<

@@ -26,8 +26,6 @@ import {
 import { Badge, Button, Card, COLORS, LoadingSpinner } from '@/components/ui';
 import { MONTHLY_STATUS_META, describeMonthlySchedule, personName } from '../monthly-contracts';
 
-dayjs.locale('vi');
-
 const fmt = (n?: number) => new Intl.NumberFormat('vi-VN').format(n ?? 0);
 
 const ATT_META: Record<AttendanceStatus, { label: string; bg: string; color: string }> = {

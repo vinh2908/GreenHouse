@@ -14,9 +14,9 @@ import {
 } from 'react-native';
 import dayjs from 'dayjs';
 import 'dayjs/locale/vi';
+import 'dayjs/locale/en';
 import { Calendar as CalendarIcon, Clock, ChevronLeft, ChevronRight } from 'lucide-react-native';
-
-dayjs.locale('vi');
+import { useTranslation } from '@/hooks/use-i18n';
 
 export const ITEM_HEIGHT = 46;
 export const VISIBLE_ROWS = 5;
@@ -40,6 +40,7 @@ export function DateTimeBottomSheet({
   onClose,
   onConfirm,
 }: DateTimeBottomSheetProps) {
+  const { lang, t } = useTranslation();
   const [activeTab, setActiveTab] = useState<'date' | 'time'>(initialTab);
 
   // Temporary selection state inside sheet
@@ -240,11 +241,11 @@ export function DateTimeBottomSheet({
 
   // Format date preview matching demo: "Thứ năm, 29/10"
   const formattedDatePreview = useMemo(() => {
-    const dt = dayjs(tempDate);
+    const dt = dayjs(tempDate).locale(lang === 'en' ? 'en' : 'vi');
     const dow = dt.format('dddd');
     const capitalizedDow = dow.charAt(0).toUpperCase() + dow.slice(1);
     return `${capitalizedDow}, ${dt.format('DD/MM')}`;
-  }, [tempDate]);
+  }, [tempDate, lang]);
 
   return (
     <Modal
@@ -271,10 +272,10 @@ export function DateTimeBottomSheet({
               style={styles.headBtn}
               hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
             >
-              <Text style={styles.cancelBtnText}>Huỷ</Text>
+              <Text style={styles.cancelBtnText}>{t('common_cancel') || 'Huỷ'}</Text>
             </TouchableOpacity>
 
-            <Text style={styles.sheetTitle}>Chọn ngày & giờ</Text>
+            <Text style={styles.sheetTitle}>{lang === 'en' ? 'Select Date & Time' : 'Chọn ngày & giờ'}</Text>
 
             <TouchableOpacity
               activeOpacity={isSelectionInPast ? 1 : 0.7}
@@ -283,7 +284,7 @@ export function DateTimeBottomSheet({
               style={[styles.headBtn, isSelectionInPast && { opacity: 0.35 }]}
               hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
             >
-              <Text style={styles.confirmBtnText}>Xác nhận</Text>
+              <Text style={styles.confirmBtnText}>{t('common_confirm') || 'Xác nhận'}</Text>
             </TouchableOpacity>
           </View>
 
@@ -300,7 +301,7 @@ export function DateTimeBottomSheet({
                 strokeWidth={2.2}
               />
               <Text style={[styles.segBtnText, activeTab === 'date' && styles.segBtnTextActive]}>
-                Ngày
+                {lang === 'en' ? 'Date' : 'Ngày'}
               </Text>
             </TouchableOpacity>
 
@@ -315,7 +316,7 @@ export function DateTimeBottomSheet({
                 strokeWidth={2.2}
               />
               <Text style={[styles.segBtnText, activeTab === 'time' && styles.segBtnTextActive]}>
-                Giờ
+                {lang === 'en' ? 'Time' : 'Giờ'}
               </Text>
             </TouchableOpacity>
           </View>
@@ -346,7 +347,11 @@ export function DateTimeBottomSheet({
                   />
                 </TouchableOpacity>
 
-                <Text style={styles.calMonthTitle}>Tháng {calendarMonth.format('M · YYYY')}</Text>
+                <Text style={styles.calMonthTitle}>
+                  {lang === 'en'
+                    ? calendarMonth.locale('en').format('MMMM YYYY')
+                    : `Tháng ${calendarMonth.format('M · YYYY')}`}
+                </Text>
 
                 <TouchableOpacity
                   onPress={() => setCalendarMonth(prev => prev.add(1, 'month'))}
@@ -364,7 +369,10 @@ export function DateTimeBottomSheet({
 
               {/* Day of Week Labels */}
               <View style={styles.weekdaysRow}>
-                {['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'].map(dow => (
+                {(lang === 'en'
+                  ? ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su']
+                  : ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN']
+                ).map(dow => (
                   <Text key={dow} style={styles.weekdayLabel}>
                     {dow}
                   </Text>
@@ -537,7 +545,9 @@ export function DateTimeBottomSheet({
             {/* Quick Time Suggestion Chips inside the sheet with 2-way sync */}
             <View style={styles.sheetChipsContainer}>
               <Text style={styles.sheetChipsLabel}>
-                Gợi ý nhanh — chạm là bánh xe chạy tới đúng giờ:
+                {lang === 'en'
+                  ? 'Quick suggestions — tap to jump to exact time:'
+                  : 'Gợi ý nhanh — chạm là bánh xe chạy tới đúng giờ:'}
               </Text>
               <ScrollView
                 horizontal
@@ -548,14 +558,14 @@ export function DateTimeBottomSheet({
                   { t: '07:00' },
                   { t: '08:00' },
                   { t: '09:00' },
-                  { t: '12:00', tag: 'MỚI', tagType: 'new' },
+                  { t: '12:00', tag: lang === 'en' ? 'NEW' : 'MỚI', tagType: 'new' },
                   { t: '14:00' },
                   { t: '17:00' },
                   { t: '18:00' },
                   { t: '19:00' },
                   { t: '20:00' },
-                  { t: '21:00', tag: 'ĐÊM', tagType: 'night' },
-                  { t: '22:00', tag: 'ĐÊM', tagType: 'night' },
+                  { t: '21:00', tag: lang === 'en' ? 'NIGHT' : 'ĐÊM', tagType: 'night' },
+                  { t: '22:00', tag: lang === 'en' ? 'NIGHT' : 'ĐÊM', tagType: 'night' },
                 ].map(item => {
                   const isSel = tempTime === item.t;
                   const isPastChip =
@@ -603,7 +613,7 @@ export function DateTimeBottomSheet({
               </ScrollView>
 
               <View style={styles.sheetOddRow}>
-                <Text style={styles.sheetOddLabel}>Giờ lẻ:</Text>
+                <Text style={styles.sheetOddLabel}>{lang === 'en' ? 'Half-hour:' : 'Giờ lẻ:'}</Text>
                 <ScrollView
                   horizontal
                   showsHorizontalScrollIndicator={false}
@@ -642,8 +652,12 @@ export function DateTimeBottomSheet({
           {/* 6. Footer Note (Demo Standard) */}
           <Text style={styles.sheetNote}>
             {activeTab === 'date'
-              ? 'Chọn ngày trên lịch — gạt sang tab Giờ để chỉnh giờ bắt đầu, xong bấm Xác nhận.'
-              : 'Hàng nằm giữa dải xanh là giờ được chọn.'}
+              ? lang === 'en'
+                ? 'Select a date on calendar — switch to Time tab to adjust start time, then tap Confirm.'
+                : 'Chọn ngày trên lịch — gạt sang tab Giờ để chỉnh giờ bắt đầu, xong bấm Xác nhận.'
+              : lang === 'en'
+                ? 'The row inside the green band is the selected time.'
+                : 'Hàng nằm giữa dải xanh là giờ được chọn.'}
           </Text>
         </View>
       </View>

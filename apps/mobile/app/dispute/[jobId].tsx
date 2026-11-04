@@ -26,8 +26,6 @@ import {
 } from '@/hooks/use-api';
 import { Badge, Button, Card, COLORS, EmptyState, LoadingSpinner } from '@/components/ui';
 
-dayjs.locale('vi');
-
 const fmt = (n?: number) => new Intl.NumberFormat('vi-VN').format(n ?? 0);
 
 const KIND_META: Record<DisputeTimelineEntry['kind'], { icon: string; label: string }> = {
