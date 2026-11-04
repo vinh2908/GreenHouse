@@ -1215,7 +1215,7 @@ export default function BookingScreen() {
               <Card style={{ backgroundColor: '#1E1E24', gap: 12, padding: 16 }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                   <Sparkles size={20} color={COLORS.primary} />
-                  <Text style={{ color: '#fff', fontWeight: '800', fontSize: 16 }}>
+                  <Text style={{ color: '#fff', fontWeight: '800', fontSize: fs(16) }}>
                     Mô tả để AI hỗ trợ
                   </Text>
                 </View>
@@ -1225,7 +1225,7 @@ export default function BookingScreen() {
                     borderRadius: 12,
                     padding: 12,
                     color: '#fff',
-                    fontSize: 14,
+                    fontSize: fs(14),
                     minHeight: 80,
                     textAlignVertical: 'top',
                   }}
@@ -1261,11 +1261,11 @@ export default function BookingScreen() {
                         alignItems: 'center',
                       }}
                     >
-                      <Text style={{ color: '#34D399', fontWeight: '800', fontSize: 13.5 }}>
+                      <Text style={{ color: '#34D399', fontWeight: '800', fontSize: fs(13.5) }}>
                         ✓ {aiSuggestion.service_name || 'Đã phân tích xong'}
                       </Text>
                       {aiSuggestion.estimated_duration_hours && (
-                        <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 12 }}>
+                        <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: fs(12) }}>
                           Ước tính: {aiSuggestion.estimated_duration_hours}h
                         </Text>
                       )}
@@ -1276,14 +1276,14 @@ export default function BookingScreen() {
                         <Text
                           style={{
                             color: 'rgba(255,255,255,0.6)',
-                            fontSize: 11.5,
+                            fontSize: fs(11.5),
                             fontWeight: '700',
                           }}
                         >
                           Hạng mục cần làm:
                         </Text>
                         {aiSuggestion.tasks.map((t, i) => (
-                          <Text key={i} style={{ color: '#fff', fontSize: 12.5 }}>
+                          <Text key={i} style={{ color: '#fff', fontSize: fs(12.5) }}>
                             • {t}
                           </Text>
                         ))}
@@ -1295,7 +1295,7 @@ export default function BookingScreen() {
                         style={{
                           color: '#FBBF24',
                           fontWeight: '800',
-                          fontSize: 13.5,
+                          fontSize: fs(13.5),
                           marginTop: 2,
                         }}
                       >
@@ -1309,7 +1309,7 @@ export default function BookingScreen() {
                       <Text
                         style={{
                           color: 'rgba(255,255,255,0.5)',
-                          fontSize: 11.5,
+                          fontSize: fs(11.5),
                           fontStyle: 'italic',
                         }}
                       >
@@ -1333,7 +1333,7 @@ export default function BookingScreen() {
                         marginTop: 4,
                       }}
                     >
-                      <Text style={{ color: '#fff', fontWeight: '800', fontSize: 13 }}>
+                      <Text style={{ color: '#fff', fontWeight: '800', fontSize: fs(13) }}>
                         {t('booking_use_suggestion')}
                       </Text>
                     </TouchableOpacity>
@@ -1341,7 +1341,7 @@ export default function BookingScreen() {
                 )}
               </Card>
 
-              <Text style={{ fontSize: 16, fontWeight: '800', color: COLORS.gray[800] }}>
+              <Text style={{ fontSize: fs(16), fontWeight: '800', color: COLORS.gray[800] }}>
                 Hoặc chọn dịch vụ bên dưới:
               </Text>
 
@@ -1349,7 +1349,7 @@ export default function BookingScreen() {
                 {isLoadingServices ? (
                   <View style={{ paddingVertical: 40, alignItems: 'center', gap: 12 }}>
                     <ActivityIndicator size="large" color={COLORS.primary} />
-                    <Text style={{ fontSize: 13, color: COLORS.gray[500], fontWeight: '600' }}>
+                    <Text style={{ fontSize: fs(13), color: COLORS.gray[500], fontWeight: '600' }}>
                       Đang tải danh sách dịch vụ...
                     </Text>
                   </View>
@@ -1373,7 +1373,7 @@ export default function BookingScreen() {
                         backgroundColor: selectedService === svc._id ? COLORS.primaryLight : '#fff',
                       }}
                     >
-                      <Text style={{ fontSize: 32 }}>
+                      <Text style={{ fontSize: fs(32) }}>
                         {(
                           {
                             house_cleaning: '🏠',
@@ -1392,12 +1392,12 @@ export default function BookingScreen() {
                         )[svc.slug] ?? '🏠'}
                       </Text>
                       <View style={{ flex: 1 }}>
-                        <Text style={{ fontWeight: '800', fontSize: 15, color: COLORS.gray[900] }}>
+                        <Text style={{ fontWeight: '800', fontSize: fs(15), color: COLORS.gray[900] }}>
                           {svc.name}
                         </Text>
                         {svc.description && (
                           <Text
-                            style={{ fontSize: 12, color: COLORS.gray[500], marginTop: 2 }}
+                            style={{ fontSize: fs(12), color: COLORS.gray[500], marginTop: 2 }}
                             numberOfLines={1}
                           >
                             {svc.description}
@@ -1406,7 +1406,7 @@ export default function BookingScreen() {
                         {svc.pricing_model === 'fixed' && svc.fixed_price ? (
                           <Text
                             style={{
-                              fontSize: 12,
+                              fontSize: fs(12),
                               color: COLORS.primary,
                               marginTop: 4,
                               fontWeight: '700',
@@ -1419,7 +1419,7 @@ export default function BookingScreen() {
                         ) : svc.base_price_min ? (
                           <Text
                             style={{
-                              fontSize: 12,
+                              fontSize: fs(12),
                               color: COLORS.primary,
                               marginTop: 4,
                               fontWeight: '700',
@@ -1462,10 +1462,10 @@ export default function BookingScreen() {
                     gap: 14,
                   }}
                 >
-                  <Text style={{ fontSize: 28 }}>💡</Text>
+                  <Text style={{ fontSize: fs(28) }}>💡</Text>
                   <View style={{ flex: 1 }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                      <Text style={{ fontWeight: '800', fontSize: 15, color: COLORS.gray[900] }}>
+                      <Text style={{ fontWeight: '800', fontSize: fs(15), color: COLORS.gray[900] }}>
                         Dịch vụ khác — tự ghi việc, tự set giá
                       </Text>
                       <View
@@ -1476,17 +1476,17 @@ export default function BookingScreen() {
                           borderRadius: 6,
                         }}
                       >
-                        <Text style={{ fontSize: 10, fontWeight: '900', color: COLORS.primary }}>
+                        <Text style={{ fontSize: fs(10), fontWeight: '900', color: COLORS.primary }}>
                           MỚI
                         </Text>
                       </View>
                     </View>
-                    <Text style={{ fontSize: 12, color: COLORS.gray[600], marginTop: 2 }}>
+                    <Text style={{ fontSize: fs(12), color: COLORS.gray[600], marginTop: 2 }}>
                       Việc gì cũng đăng được · bạn tự mô tả công việc và đặt giá mong muốn
                     </Text>
                     <Text
                       style={{
-                        fontSize: 12,
+                        fontSize: fs(12),
                         color: COLORS.primary,
                         marginTop: 4,
                         fontWeight: '700',

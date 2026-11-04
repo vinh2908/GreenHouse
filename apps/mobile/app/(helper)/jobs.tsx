@@ -172,7 +172,7 @@ export default function HelperJobsScreen() {
         {tabIndex === 0 && (pLoading || (aLoading && !available)) ? (
           <Card style={{ alignItems: 'center', paddingVertical: 40, gap: 12 }}>
             <ActivityIndicator size="small" color={COLORS.primary} />
-            <Text style={{ fontSize: 13, color: COLORS.gray[500] }}>
+            <Text style={{ fontSize: fs(13), color: COLORS.gray[500] }}>
               Đang kiểm tra trạng thái và tải đơn mới...
             </Text>
           </Card>
@@ -278,11 +278,11 @@ export default function HelperJobsScreen() {
                     <Text
                       style={{
                         fontWeight: '800',
-                        fontSize: 15,
+                        fontSize: fs(15),
                         color: COLORS.gray[900],
                         flex: 1,
                         marginRight: 8,
-                        lineHeight: 20,
+                        lineHeight: Math.round(fs(20)),
                       }}
                       numberOfLines={2}
                     >
@@ -326,14 +326,14 @@ export default function HelperJobsScreen() {
                     ) : null}
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
                       <MapPin size={13} color={COLORS.gray[500]} />
-                      <Text style={{ fontSize: 12, color: COLORS.gray[600], fontWeight: '500' }}>
+                      <Text style={{ fontSize: fs(12), color: COLORS.gray[600], fontWeight: '500' }}>
                         {job.address?.district || job.address?.city || 'Chưa rõ'}
                       </Text>
                     </View>
                     {job.distance_km != null && (
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
                         <Navigation size={13} color={COLORS.primary} />
-                        <Text style={{ fontSize: 12, color: COLORS.primary, fontWeight: '700' }}>
+                        <Text style={{ fontSize: fs(12), color: COLORS.primary, fontWeight: '700' }}>
                           {job.distance_km} km ~ {job.estimated_minutes ?? '?'} phút
                         </Text>
                       </View>
@@ -341,7 +341,7 @@ export default function HelperJobsScreen() {
                     {job.preferred_time_start && (
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
                         <Clock size={13} color={COLORS.gray[400]} />
-                        <Text style={{ fontSize: 12, color: COLORS.gray[500] }}>
+                        <Text style={{ fontSize: fs(12), color: COLORS.gray[500] }}>
                           🕐 {job.preferred_time_start}
                         </Text>
                       </View>
@@ -357,7 +357,7 @@ export default function HelperJobsScreen() {
                       borderTopColor: COLORS.gray[100],
                     }}
                   >
-                    <Text style={{ fontSize: 12, color: COLORS.gray[400] }}>
+                    <Text style={{ fontSize: fs(12), color: COLORS.gray[400] }}>
                       {dayjs(job.created_at).fromNow()}
                     </Text>
                     {tabIndex === 0 && (job.is_fixed_price || job.is_warranty) ? (
@@ -385,7 +385,7 @@ export default function HelperJobsScreen() {
                           borderRadius: 10,
                         }}
                       >
-                        <Text style={{ fontSize: 13, fontWeight: '800', color: '#fff' }}>
+                        <Text style={{ fontSize: fs(13), fontWeight: '800', color: '#fff' }}>
                           {job.is_warranty
                             ? '🛡 Nhận việc bảo hành'
                             : `Nhận việc ngay • ${new Intl.NumberFormat('vi-VN').format(job.fixed_price ?? 0)}₫`}
@@ -462,15 +462,15 @@ export default function HelperJobsScreen() {
       {/* ── Lời mời vào nhóm (Đơn nhóm) ─────────────────────────────────── */}
       {(teamInvitations ?? []).length > 0 && (
         <View style={{ paddingHorizontal: 16, paddingTop: 12, gap: 10 }}>
-          <Text style={{ fontWeight: '800', fontSize: 14.5, color: COLORS.gray[900] }}>
+          <Text style={{ fontWeight: '800', fontSize: fs(14.5), color: COLORS.gray[900] }}>
             👥 Lời mời vào nhóm ({teamInvitations!.length})
           </Text>
           {teamInvitations!.map(inv => (
             <Card key={inv.job_id} style={{ gap: 8 }}>
-              <Text style={{ fontWeight: '800', fontSize: 14, color: COLORS.gray[900] }}>
+              <Text style={{ fontWeight: '800', fontSize: fs(14), color: COLORS.gray[900] }}>
                 {inv.title}
               </Text>
-              <Text style={{ fontSize: 12.5, color: COLORS.gray[600], lineHeight: 18 }}>
+              <Text style={{ fontSize: fs(12.5), color: COLORS.gray[600], lineHeight: Math.round(fs(18)) }}>
                 {inv.address_text ? `📍 ${inv.address_text}\n` : ''}Bạn sẽ nhận {inv.split_percent}%
                 tiền công của đơn (sau phí sàn) khi hoàn thành cùng nhóm {inv.helpers_needed} thợ.
               </Text>

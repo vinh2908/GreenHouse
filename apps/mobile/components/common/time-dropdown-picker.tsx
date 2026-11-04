@@ -263,7 +263,7 @@ export function TimeDropdownPicker({
 
   return (
     <View style={styles.container}>
-      {label ? <Text style={styles.fieldLabel}>{label}</Text> : null}
+      {label ? <Text style={[styles.fieldLabel, { fontSize: fs(13) }]}>{label}</Text> : null}
 
       {/* 2 Ô Dropdown Giờ & Phút */}
       <View style={styles.dropdownRow}>
@@ -274,12 +274,12 @@ export function TimeDropdownPicker({
           style={[styles.dropdownPill, isPast && styles.dropdownPillError]}
         >
           <Clock size={16} color={isPast ? COLORS.error : COLORS.primary} />
-          <Text style={styles.dropdownValue}>{String(currentHour).padStart(2, '0')}</Text>
-          <Text style={styles.dropdownUnit}>{t('picker_unit_hour')}</Text>
+          <Text style={[styles.dropdownValue, { fontSize: fs(16) }]}>{String(currentHour).padStart(2, '0')}</Text>
+          <Text style={[styles.dropdownUnit, { fontSize: fs(12) }]}>{t('picker_unit_hour')}</Text>
           <ChevronDown size={16} color={COLORS.gray[500]} />
         </TouchableOpacity>
 
-        <Text style={styles.separatorColon}>:</Text>
+        <Text style={[styles.separatorColon, { fontSize: fs(16) }]}>:</Text>
 
         {/* Ô Phút */}
         <TouchableOpacity
@@ -287,26 +287,26 @@ export function TimeDropdownPicker({
           onPress={() => setModalType('minute')}
           style={[styles.dropdownPill, isPast && styles.dropdownPillError]}
         >
-          <Text style={styles.dropdownValue}>{String(currentMinute).padStart(2, '0')}</Text>
-          <Text style={styles.dropdownUnit}>{t('picker_unit_min')}</Text>
+          <Text style={[styles.dropdownValue, { fontSize: fs(16) }]}>{String(currentMinute).padStart(2, '0')}</Text>
+          <Text style={[styles.dropdownUnit, { fontSize: fs(12) }]}>{t('picker_unit_min')}</Text>
           <ChevronDown size={16} color={COLORS.gray[500]} />
         </TouchableOpacity>
       </View>
 
       {/* Cảnh báo giờ quá khứ hoặc trước minTime */}
       {isPast ? (
-        <Text style={styles.errorText}>{t('picker_err_past_time')}</Text>
+        <Text style={[styles.errorText, { fontSize: fs(12) }]}>{t('picker_err_past_time')}</Text>
       ) : isBeforeMinTime ? (
-        <Text style={styles.errorText}>{t('picker_err_end_before_start')}</Text>
+        <Text style={[styles.errorText, { fontSize: fs(12) }]}>{t('picker_err_end_before_start')}</Text>
       ) : null}
 
       {/* Chip gợi ý khung giờ */}
       {showChips && (
         <View style={styles.chipsSection}>
-          <Text style={styles.chipsInstruction}>{t('picker_chips_instruction')}</Text>
+          <Text style={[styles.chipsInstruction, { fontSize: fs(11.5) }]}>{t('picker_chips_instruction')}</Text>
 
           {noChipsToday ? (
-            <Text style={styles.noChipsText}>{t('picker_no_chips')}</Text>
+            <Text style={[styles.noChipsText, { fontSize: fs(12) }]}>{t('picker_no_chips')}</Text>
           ) : (
             <ScrollView
               horizontal
@@ -324,7 +324,7 @@ export function TimeDropdownPicker({
                     style={[styles.timeChip, isSelected && styles.timeChipActive]}
                   >
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-                      <Text style={[styles.timeChipText, isSelected && styles.timeChipTextActive]}>
+                      <Text style={[styles.timeChipText, isSelected && styles.timeChipTextActive, { fontSize: fs(13) }]}>
                         {chip}
                       </Text>
                       {badge && (
@@ -346,6 +346,7 @@ export function TimeDropdownPicker({
                                 : badge === 'ĐÊM'
                                   ? styles.chipBadgeTextNight
                                   : styles.chipBadgeTextNew,
+                              { fontSize: fs(9) },
                             ]}
                           >
                             {badge}
@@ -376,7 +377,7 @@ export function TimeDropdownPicker({
           />
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>{t('picker_select_hour')}</Text>
+              <Text style={[styles.modalTitle, { fontSize: fs(16) }]}>{t('picker_select_hour')}</Text>
               <TouchableOpacity
                 onPress={() => setModalType(null)}
                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
@@ -413,6 +414,7 @@ export function TimeDropdownPicker({
                         styles.modalItemText,
                         isSelected && styles.modalItemTextActive,
                         isHourPast && styles.modalItemTextDisabled,
+                        { fontSize: fs(15) },
                       ]}
                     >
                       {String(h).padStart(2, '0')}:00 {isHourPast ? (lang === 'en' ? '(past)' : '(đã qua)') : ''}
@@ -441,7 +443,7 @@ export function TimeDropdownPicker({
           />
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>{t('picker_select_minute')}</Text>
+              <Text style={[styles.modalTitle, { fontSize: fs(16) }]}>{t('picker_select_minute')}</Text>
               <TouchableOpacity
                 onPress={() => setModalType(null)}
                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
@@ -476,6 +478,7 @@ export function TimeDropdownPicker({
                         styles.modalItemText,
                         isSelected && styles.modalItemTextActive,
                         isMinPast && styles.modalItemTextDisabled,
+                        { fontSize: fs(15) },
                       ]}
                     >
                       {String(m).padStart(2, '0')} {t('picker_unit_min')} {isMinPast ? (lang === 'en' ? '(past)' : '(đã qua)') : ''}
@@ -766,29 +769,29 @@ export function ScheduledTimePreview({
 
   return (
     <View style={styles.previewBox}>
-      <Text style={styles.previewTitle}>{t('picker_preview_title')}</Text>
+      <Text style={[styles.previewTitle, { fontSize: fs(13) }]}>{t('picker_preview_title')}</Text>
       <View style={styles.previewRow}>
-        <Text style={styles.previewLabel}>{t('picker_date_label')}</Text>
-        <Text style={styles.previewValue}>{formattedDate}</Text>
+        <Text style={[styles.previewLabel, { fontSize: fs(12) }]}>{t('picker_date_label')}</Text>
+        <Text style={[styles.previewValue, { fontSize: fs(12.5) }]}>{formattedDate}</Text>
       </View>
       <View style={styles.previewRow}>
-        <Text style={styles.previewLabel}>{t('picker_time_slot_label')}</Text>
+        <Text style={[styles.previewLabel, { fontSize: fs(12) }]}>{t('picker_time_slot_label')}</Text>
         {calc ? (
-          <Text style={styles.previewValue}>
+          <Text style={[styles.previewValue, { fontSize: fs(12.5) }]}>
             {effectiveStart} – {calc.timeEnd} {calc.isNextDay ? t('picker_next_day') : ''}
           </Text>
         ) : (
-          <Text style={[styles.previewValue, { color: COLORS.gray[500] }]}>{t('picker_cannot_calc')}</Text>
+          <Text style={[styles.previewValue, { color: COLORS.gray[500], fontSize: fs(12.5) }]}>{t('picker_cannot_calc')}</Text>
         )}
       </View>
       <View style={styles.previewRow}>
-        <Text style={styles.previewLabel}>{t('picker_duration_label')}</Text>
-        <Text style={styles.previewValue}>{durationStr}</Text>
+        <Text style={[styles.previewLabel, { fontSize: fs(12) }]}>{t('picker_duration_label')}</Text>
+        <Text style={[styles.previewValue, { fontSize: fs(12.5) }]}>{durationStr}</Text>
       </View>
       {price != null && price > 0 && (
         <View style={styles.previewRow}>
-          <Text style={styles.previewLabel}>{t('picker_deal_price')}</Text>
-          <Text style={[styles.previewValue, { color: COLORS.primary }]}>
+          <Text style={[styles.previewLabel, { fontSize: fs(12) }]}>{t('picker_deal_price')}</Text>
+          <Text style={[styles.previewValue, { color: COLORS.primary, fontSize: fs(12.5) }]}>
             {new Intl.NumberFormat('vi-VN').format(price)}₫
           </Text>
         </View>
