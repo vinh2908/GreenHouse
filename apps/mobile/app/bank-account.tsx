@@ -39,7 +39,7 @@ const POPULAR_BANKS = [
 
 export default function BankAccountScreen() {
   const router = useRouter();
-  const { t, fs, lang } = useTranslation();
+  const { t, fs, lang, formatTxDesc } = useTranslation();
   const { role } = useLocalSearchParams<{ role?: string }>();
 
   const customerPaymentOptions = [
@@ -325,7 +325,7 @@ export default function BankAccountScreen() {
                   >
                     <View style={{ flex: 1, marginRight: 10 }}>
                       <Text style={{ fontWeight: '700', fontSize: 14, color: COLORS.gray[900] }}>
-                        {tx.description}
+                        {formatTxDesc(tx.description)}
                       </Text>
                       <View
                         style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 }}

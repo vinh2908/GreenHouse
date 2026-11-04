@@ -1392,3 +1392,390 @@ export const SOS_BACKUP_REASONS_I18N: Record<string, { vi: string; en: string }>
   },
   other: { vi: 'Lý do bất khả kháng khác', en: 'Other force majeure reason' },
 };
+
+// ─── Notification Localization Mapping (Điểm 3) ──────────────────────────────
+export function formatNotificationTitle(
+  title: string | undefined | null,
+  lang: AppLanguage = 'vi',
+): string {
+  if (!title) return '';
+  if (lang !== 'en') return title;
+  const t = title.trim();
+
+  if (/^Báo giá được chọn!?$/i.test(t)) return 'Quote Accepted!';
+  if (/^Công việc bị hủy$/i.test(t)) return 'Job Cancelled';
+  if (/^Đơn hàng đã bị hủy bởi Quản trị viên$/i.test(t)) return 'Order Cancelled by Admin';
+  if (/^Báo giá mới$/i.test(t)) return 'New Quote Received';
+  if (/^Có đơn mới gần bạn\s*(🎉|🔔)?$/i.test(t)) return 'New job near you 🎉';
+  if (/^⭐\s*Bạn được khách quen gửi việc riêng!$/i.test(t))
+    return '⭐ You received a private job from a regular customer!';
+  if (/^Hoàn thành công việc$/i.test(t)) return 'Job Completed';
+  if (/^Người giúp việc đang trên đường$/i.test(t)) return 'Helper is on the way';
+  if (/^Người giúp việc đã đến$/i.test(t)) return 'Helper has arrived';
+  if (/^Người giúp việc có sự cố khẩn cấp$/i.test(t)) return 'Helper Emergency Reported';
+  if (/^Đã có người giúp việc thay thế$/i.test(t)) return 'Replacement Helper Assigned';
+  if (/^Đã có người thay thế bạn$/i.test(t)) return 'You Have Been Replaced';
+  if (/^Đơn đã hủy\s*[—–-]\s*bạn được giải phóng$/i.test(t)) return 'Job Cancelled — You Are Released';
+  if (/^Đơn đã hủy & hoàn tiền theo chính sách SOS$/i.test(t))
+    return 'Job Cancelled & Refunded under SOS Policy';
+  if (/^Đơn đã hủy\s*[—–-]\s*Khoản hoàn tiền đang chờ đối soát$/i.test(t))
+    return 'Job Cancelled — Refund Pending Review';
+  if (/^Người giúp việc đã thu hồi yêu cầu SOS$/i.test(t)) return 'Helper Retracted SOS Request';
+  if (/^Chưa tìm được người thay thế$/i.test(t)) return 'No Replacement Helper Found Yet';
+  if (/^Chưa có thợ thay thế phù hợp$/i.test(t)) return 'No Suitable Replacement Helper Yet';
+  if (/^SOS backup hết hạn\s*[—–-]\s*cần xử lý thủ công$/i.test(t))
+    return 'SOS Backup Expired — Manual Review Required';
+  if (/^Nhắc:\s*cần bạn quyết định cho đơn đang chờ$/i.test(t))
+    return 'Reminder: Action Required for Pending Job';
+  if (/^(?:🚨|🆘)\s*CỨU HỘ KHẨN CẤP SOS GẦN BẠN!?$/i.test(t)) return '🚨 URGENT SOS EMERGENCY NEAR YOU!';
+  if (/^(?:🚨|🆘)\s*ĐÃ CÓ THỢ NHẬN CỨU HỘ SOS!?$/i.test(t)) return '🚨 A HELPER ACCEPTED SOS RESCUE!';
+  if (/^🚨\s*\[SOS CỨU HỘ\]\s*(.*)$/i.test(t)) {
+    const rest = t.replace(/^🚨\s*\[SOS CỨU HỘ\]\s*/i, '');
+    return `🚨 [SOS RESCUE] ${rest}`;
+  }
+  if (/^Hồ sơ e-KYC đã được duyệt$/i.test(t)) return 'e-KYC Profile Approved';
+  if (/^Hồ sơ e-KYC bị từ chối$/i.test(t)) return 'e-KYC Profile Rejected';
+  if (/^Hoàn tiền vào ví Green House$/i.test(t)) return 'Refund Credited to Green House Wallet';
+  if (/^Rút tiền thành công$/i.test(t)) return 'Withdrawal Successful';
+  if (/^Yêu cầu rút tiền bị từ chối$/i.test(t)) return 'Withdrawal Request Rejected';
+  if (/^Tin nhắn mới$/i.test(t)) return 'New Message';
+  if (/^Đội hỗ trợ đã phản hồi$/i.test(t)) return 'Support Team Replied';
+  if (/^Bạn nhận được đánh giá\s*(\d+)★$/i.test(t)) {
+    return t.replace(/^Bạn nhận được đánh giá\s*(\d+)★$/i, 'You received a $1★ review');
+  }
+  if (/^📋\s*Đề xuất phát sinh vật tư \/ chi phí$/i.test(t)) return '📋 Extra Supplies / Costs Proposal';
+  if (/^⚠️\s*Đơn hàng đang có khiếu nại \/ tranh chấp$/i.test(t))
+    return '⚠️ Order Has Dispute / Complaint';
+  if (/^⚖️\s*Kết quả phân xử khiếu nại từ Admin$/i.test(t)) return '⚖️ Dispute Resolution from Admin';
+  if (/^⚖️\s*Hồ sơ tranh chấp có cập nhật$/i.test(t)) return '⚖️ Dispute Case Updated';
+  if (/^⚖️\s*Phán quyết tranh chấp bị kháng cáo$/i.test(t)) return '⚖️ Dispute Decision Appealed';
+  if (/^👥\s*Lời mời vào nhóm làm việc$/i.test(t)) return '👥 Invitation to Work Team';
+  if (/^[📅📑]\s*Đề nghị hợp đồng theo tháng mới$/i.test(t)) return '📅 New Monthly Contract Offer';
+  if (/^[🚫🛑❌]\s*Hợp đồng theo tháng đã bị hủy$/i.test(t)) return '🚫 Monthly Contract Cancelled';
+  if (/^🏁\s*Hợp đồng theo tháng đã kết thúc$/i.test(t)) return '🏁 Monthly Contract Ended';
+  if (/^[🟢📍]\s*Thợ đã điểm danh hôm nay$/i.test(t)) return '🟢 Helper Checked In Today';
+  if (/^✅\s*Buổi làm đã được xác nhận$/i.test(t)) return '✅ Work Session Confirmed';
+  if (/^❌\s*Buổi làm bị đánh dấu vắng$/i.test(t)) return '❌ Work Session Marked Absent';
+  if (/^[🌴📝]\s*Thợ xin nghỉ 1 buổi$/i.test(t)) return '🌴 Helper Requested 1 Day Leave';
+  if (/^✅\s*Đơn xin nghỉ đã được duyệt$/i.test(t)) return '✅ Leave Request Approved';
+  if (/^❌\s*Đơn xin nghỉ bị từ chối$/i.test(t)) return '❌ Leave Request Rejected';
+  if (/^💰\s*Đã chốt lương tháng\s*(.*)$/i.test(t)) {
+    return t.replace(/^💰\s*Đã chốt lương tháng\s*(.*)$/i, '💰 Monthly Salary Finalized for $1');
+  }
+  if (/^🛡️?\s*Yêu cầu bồi thường đang được xem xét$/i.test(t))
+    return '🛡 Insurance Claim Under Review';
+  if (/^❌\s*Yêu cầu bồi thường bị từ chối$/i.test(t)) return '❌ Insurance Claim Rejected';
+  if (/^[💰✅]\s*Bồi thường bảo hiểm đã được chi trả$/i.test(t))
+    return '💰 Insurance Claim Payout Approved';
+  if (/^Bảo hành:\s*(.*)$/i.test(t)) {
+    return t.replace(/^Bảo hành:\s*/i, 'Warranty: ');
+  }
+
+  return title;
+}
+
+export function formatNotificationBody(
+  body: string | undefined | null,
+  lang: AppLanguage = 'vi',
+): string {
+  if (!body) return '';
+  if (lang !== 'en') return body;
+  const b = body.trim();
+
+  const quoteAccepted = b.match(
+    /^Chúc mừng!\s*Khách hàng đã chọn báo giá của bạn cho\s*(".*?"|'.*?'|“.*?”)$/i,
+  );
+  if (quoteAccepted) return `Congratulations! The customer has selected your quote for ${quoteAccepted[1]}`;
+
+  const custCancel = b.match(/^Khách hàng đã hủy công việc\s*(".*?"|'.*?'|“.*?”)$/i);
+  if (custCancel) return `The customer has cancelled the job ${custCancel[1]}`;
+
+  const helperCancel = b.match(/^Người giúp việc đã hủy công việc\s*(".*?"|'.*?'|“.*?”)$/i);
+  if (helperCancel) return `The helper has cancelled the job ${helperCancel[1]}`;
+
+  const adminCancel = b.match(/^Công việc\s*(".*?"|'.*?'|“.*?”)\s*đã bị hủy\.\s*Lý do:\s*(.*)$/i);
+  if (adminCancel) return `Job ${adminCancel[1]} has been cancelled. Reason: ${adminCancel[2]}`;
+
+  const newQuote = b.match(/^(.*?)\s+đã gửi báo giá cho công việc\s*(".*?"|'.*?'|“.*?”)$/i);
+  if (newQuote) return `${newQuote[1]} submitted a quote for job ${newQuote[2]}`;
+
+  const newJobWithLoc = b.match(
+    /^(.*?)\s+tại\s+(.*?)\.\s*Mở mục Công việc để xem chi tiết và gửi báo giá\.?$/i,
+  );
+  if (newJobWithLoc)
+    return `${newJobWithLoc[1]} in ${newJobWithLoc[2]}. Open Jobs tab to view details and send quote.`;
+
+  const newJobSimple = b.match(/^(.*?)\.\s*Mở mục Công việc để xem chi tiết và gửi báo giá\.?$/i);
+  if (newJobSimple) return `${newJobSimple[1]}. Open Jobs tab to view details and send quote.`;
+
+  const newJobToast = b.match(/^(.*?)\.\s*Mở mục Công việc để xem\.?$/i);
+  if (newJobToast) return `${newJobToast[1]}. Open Jobs tab to view.`;
+
+  const privateJob = b.match(
+    /^Đơn\s*(".*?"|'.*?'|“.*?”)\s*đang ưu tiên dành cho bạn\.\s*Hãy gửi báo giá trước khi đơn mở công khai\.?$/i,
+  );
+  if (privateJob)
+    return `Job ${privateJob[1]} is reserved for you. Please submit a quote before it opens publicly.`;
+
+  const jobComplete = b.match(
+    /^Công việc\s*(".*?"|'.*?'|“.*?”)\s*đã được hoàn thành\.\s*Vui lòng nghiệm thu\.?$/i,
+  );
+  if (jobComplete) return `Job ${jobComplete[1]} has been completed. Please inspect and approve.`;
+
+  const sosEmergency = b.match(
+    /^Người giúp việc của đơn\s*(".*?"|'.*?'|“.*?”)\s*gặp sự cố và không thể tiếp tục\.\s*Vui lòng chọn đổi người khác \(giữ nguyên giá\) hoặc hủy đơn \(hoàn tiền 100%\)\.?$/i,
+  );
+  if (sosEmergency)
+    return `The helper for job ${sosEmergency[1]} had an emergency and cannot continue. Please choose a replacement helper (price unchanged) or cancel job (100% refund).`;
+
+  const sosReplaced = b.match(
+    /^Một người giúp việc khác sẽ tiếp tục đơn\s*(".*?"|'.*?'|“.*?”)\s*của bạn\.\s*Giá và số tiền đang giữ đảm bảo không thay đổi\.?$/i,
+  );
+  if (sosReplaced)
+    return `Another helper will continue your job ${sosReplaced[1]}. Price and escrow deposit remain unchanged.`;
+
+  const sosReleased = b.match(
+    /^Đơn\s*(".*?"|'.*?'|“.*?”)\s*đã được bàn giao cho thợ khác\.\s*Bạn được giải phóng và không bị tính phạt\.?$/i,
+  );
+  if (sosReleased)
+    return `Job ${sosReleased[1]} has been transferred to another helper. You are released without penalty.`;
+
+  const sosCustCancelled = b.match(
+    /^Khách hàng đã chọn hủy đơn\s*(".*?"|'.*?'|“.*?”)\s*sau yêu cầu SOS của bạn\.\s*Bạn không bị tính phạt cho lần hủy này\.?$/i,
+  );
+  if (sosCustCancelled)
+    return `The customer chose to cancel job ${sosCustCancelled[1]} following your SOS request. You are not penalized.`;
+
+  const sosAutoCancelled = b.match(
+    /^Đơn\s*(".*?"|'.*?'|“.*?”)\s*đã tự động hủy do khách không phản hồi yêu cầu SOS trong thời hạn\.\s*Bạn không bị tính phạt cho lần hủy này\.?$/i,
+  );
+  if (sosAutoCancelled)
+    return `Job ${sosAutoCancelled[1]} was auto-cancelled as customer did not respond to SOS in time. You are not penalized.`;
+
+  const sosRefundPending = b.match(
+    /^Đơn\s*(".*?"|'.*?'|“.*?”)\s*đã hủy\.\s*Khoản hoàn\s*(.*?₫?)\s*đang chờ quản trị viên đối soát ví thủ công\.?$/i,
+  );
+  if (sosRefundPending)
+    return `Job ${sosRefundPending[1]} has been cancelled. Refund ${sosRefundPending[2]} is pending manual review by admin.`;
+
+  const sosRefunded = b.match(
+    /^Đơn\s*(".*?"|'.*?'|“.*?”)\s*đã hủy\.\s*(.*?₫?)\s*đã được hoàn vào ví của bạn\.?$/i,
+  );
+  if (sosRefunded)
+    return `Job ${sosRefunded[1]} has been cancelled. ${sosRefunded[2]} was refunded to your wallet.`;
+
+  const sosPolicyCancel = b.match(/^Đơn\s*(".*?"|'.*?'|“.*?”)\s*đã hủy theo chính sách SOS\.?$/i);
+  if (sosPolicyCancel) return `Job ${sosPolicyCancel[1]} has been cancelled under SOS policy.`;
+
+  const sosRetracted = b.match(
+    /^Đơn\s*(".*?"|'.*?'|“.*?”)\s*vẫn tiếp tục với người giúp việc hiện tại như bình thường\.?$/i,
+  );
+  if (sosRetracted)
+    return `Job ${sosRetracted[1]} continues with the current helper as normal.`;
+
+  const sosNotFound = b.match(
+    /^Hiện chưa có người giúp việc khác nhận thay đơn\s*(".*?"|'.*?'|“.*?”)\.\s*Đội ngũ hỗ trợ sẽ liên hệ để xử lý tiếp\.?$/i,
+  );
+  if (sosNotFound)
+    return `Currently no helper has accepted to replace job ${sosNotFound[1]}. Support team will contact you.`;
+
+  const sosNoMatch = b.match(
+    /^Khách hàng đã đồng ý đổi người nhưng hệ thống chưa tìm được thợ thay thế phù hợp cho đơn\s*(".*?"|'.*?'|“.*?”)\.\s*Đội ngũ hỗ trợ sẽ liên hệ với khách để hỗ trợ tiếp\.?$/i,
+  );
+  if (sosNoMatch)
+    return `Customer agreed to replacement but system has not found a suitable helper for job ${sosNoMatch[1]}. Support will contact customer.`;
+
+  const sosDecisionWait = b.match(
+    /^Người giúp việc của đơn\s*(".*?"|'.*?'|“.*?”)\s*đang chờ bạn chọn đổi người hoặc hủy đơn\.\s*Nếu quá hạn, hệ thống sẽ tự hủy đơn và hoàn tiền 100%\.?$/i,
+  );
+  if (sosDecisionWait)
+    return `The helper for job ${sosDecisionWait[1]} is waiting for your decision to replace or cancel. If expired, the job will be cancelled with 100% refund.`;
+
+  const sosExpiredAdmin = b.match(
+    /^Đơn\s*(".*?"|'.*?'|“.*?”)\s*\(SOS của thợ\s*(.*?)\)\s*không tìm được người thay\.\s*Khách:\s*(.*?)\.?$/i,
+  );
+  if (sosExpiredAdmin)
+    return `Job ${sosExpiredAdmin[1]} (SOS by helper ${sosExpiredAdmin[2]}) found no replacement. Customer: ${sosExpiredAdmin[3]}.`;
+
+  const sosBroadcastWithLoc = b.match(/^(.*?)\s+tại\s+(.*?)\.\s*Phụ phí SOS:\s*\+(.*?)$/i);
+  if (sosBroadcastWithLoc)
+    return `${sosBroadcastWithLoc[1]} in ${sosBroadcastWithLoc[2]}. SOS surcharge: +${sosBroadcastWithLoc[3]}`;
+
+  const sosBroadcastSimple = b.match(/^(.*?)\.\s*Phụ phí SOS:\s*\+(.*?)$/i);
+  if (sosBroadcastSimple)
+    return `${sosBroadcastSimple[1]}. SOS surcharge: +${sosBroadcastSimple[2]}`;
+
+  if (/^Thợ đang chuẩn bị đồ nghề và di chuyển gấp đến bạn \(Dự kiến 15 phút\)\.?$/i.test(b)) {
+    return 'Helper is preparing tools and travelling urgently to you (ETA 15 mins).';
+  }
+  if (/^Người giúp việc đang di chuyển đến nơi của bạn\.?$/i.test(b)) {
+    return 'Helper is travelling to your location.';
+  }
+  if (/^Người giúp việc đã có mặt tại địa điểm của bạn\.?$/i.test(b)) {
+    return 'Helper has arrived at your location.';
+  }
+  if (/^Bạn đã có thể bật trạng thái sẵn sàng và gửi báo giá cho khách hàng\.?$/i.test(b)) {
+    return 'You can now toggle availability and submit quotes to customers.';
+  }
+  const kycReject = b.match(/^Lý do:\s*(.*?)\.\s*Vui lòng cập nhật và nộp lại hồ sơ\.?$/i);
+  if (kycReject) return `Reason: ${kycReject[1]}. Please update and resubmit your profile.`;
+
+  const refundBody = b.match(
+    /^Bạn đã nhận được khoản hoàn tiền\s*(.*?₫?)\s*cho đơn hàng\s*#([a-zA-Z0-9]+)\.?$/i,
+  );
+  if (refundBody) return `You received a refund of ${refundBody[1]} for order #${refundBody[2]}.`;
+
+  const withdrawSuccess = b.match(/^(.*?₫?)\s*đã được chuyển về tài khoản ngân hàng của bạn\.?$/i);
+  if (withdrawSuccess) return `${withdrawSuccess[1]} has been transferred to your bank account.`;
+
+  const withdrawFailReason = b.match(
+    /^(.*?₫?)\s*đã được hoàn lại vào ví\.\s*Lý do:\s*(.*?)$/i,
+  );
+  if (withdrawFailReason)
+    return `${withdrawFailReason[1]} was refunded to your wallet. Reason: ${withdrawFailReason[2]}`;
+
+  const withdrawFail = b.match(/^(.*?₫?)\s*đã được hoàn lại vào ví\.?$/i);
+  if (withdrawFail) return `${withdrawFail[1]} was refunded to your wallet.`;
+
+  const extraSupply = b.match(
+    /^Thợ đề xuất bổ sung\s*\+([0-9.,]+₫?)\s*cho\s*(".*?"|'.*?'|“.*?”)\.\s*Lý do:\s*(.*)$/i,
+  );
+  if (extraSupply)
+    return `Helper proposed an additional +${extraSupply[1]} for ${extraSupply[2]}. Reason: ${extraSupply[3]}`;
+
+  const disputeWait = b.match(
+    /^Công việc\s*(".*?"|'.*?'|“.*?”)\s*đã chuyển sang trạng thái chờ Admin phân xử\.\s*Lý do:\s*(.*)$/i,
+  );
+  if (disputeWait)
+    return `Job ${disputeWait[1]} is now awaiting Admin dispute resolution. Reason: ${disputeWait[2]}`;
+
+  const disputeResult = b.match(/^Đơn\s*(".*?"|'.*?'|“.*?”):\s*(.*)$/i);
+  if (disputeResult) return `Job ${disputeResult[1]}: ${disputeResult[2]}`;
+
+  if (/^Đội ngũ Green House đang xem xét hồ sơ bồi thường của bạn\.?$/i.test(b)) {
+    return 'Green House team is reviewing your insurance claim.';
+  }
+  const claimApproved = b.match(
+    /^Yêu cầu bồi thường cho đơn\s*#([a-zA-Z0-9]+)\s*đã được duyệt:\s*(.*?₫?)\s*đã cộng vào ví của bạn\.?$/i,
+  );
+  if (claimApproved)
+    return `Claim for order #${claimApproved[1]} was approved: ${claimApproved[2]} credited to your wallet.`;
+
+  const teamInvite = b.match(
+    /^Bạn được mời tham gia đơn\s*(".*?"|'.*?'|“.*?”)\s*với tỉ lệ chia tiền công\s*(\d+%?)\.?$/i,
+  );
+  if (teamInvite)
+    return `You are invited to join job ${teamInvite[1]} with wage share of ${teamInvite[2]}.`;
+
+  const monthlyOffer = b.match(
+    /^Khách hàng mời bạn làm giúp việc theo tháng:\s*(".*?"|'.*?'|“.*?”)\s*[—–-]\s*lương\s*(.*?)\/tháng\.\s*Mở app để xem và phản hồi\.?$/i,
+  );
+  if (monthlyOffer)
+    return `Customer invited you for monthly contract: ${monthlyOffer[1]} — salary ${monthlyOffer[2]}/month. Open app to respond.`;
+
+  const monthlyCancel = b.match(/^Hợp đồng\s*(".*?"|'.*?'|“.*?”)\s*đã bị hủy\.?$/i);
+  if (monthlyCancel) return `Monthly contract ${monthlyCancel[1]} has been cancelled.`;
+
+  const monthlyEnded = b.match(
+    /^Hợp đồng\s*(".*?"|'.*?'|“.*?”)\s*đã kết thúc(?::\s*(.*))?\.?$/i,
+  );
+  if (monthlyEnded)
+    return `Monthly contract ${monthlyEnded[1]} has ended${monthlyEnded[2] ? `: ${monthlyEnded[2]}` : ''}.`;
+
+  const monthlyCheckin = b.match(
+    /^Thợ của hợp đồng\s*(".*?"|'.*?'|“.*?”)\s*đã điểm danh ngày\s*(.*?)\.\s*Vui lòng xác nhận buổi làm\.?$/i,
+  );
+  if (monthlyCheckin)
+    return `Helper of contract ${monthlyCheckin[1]} checked in on ${monthlyCheckin[2]}. Please confirm work session.`;
+
+  const monthlyLeave = b.match(
+    /^Thợ của hợp đồng\s*(".*?"|'.*?'|“.*?”)\s*xin nghỉ ngày\s*(.*?):\s*(.*)$/i,
+  );
+  if (monthlyLeave)
+    return `Helper of contract ${monthlyLeave[1]} requested leave on ${monthlyLeave[2]}: ${monthlyLeave[3]}`;
+
+  const monthlySalary = b.match(
+    /^Hợp đồng\s*(".*?"|'.*?'|“.*?”):\s*(\d+\/\d+)\s*buổi\s*[—–-]\s*bạn nhận\s*(.*?₫?)\s*vào ví\.?$/i,
+  );
+  if (monthlySalary)
+    return `Contract ${monthlySalary[1]}: ${monthlySalary[2]} sessions — you received ${monthlySalary[3]} into wallet.`;
+
+  if (/^Một khách hàng vừa đăng công việc phù hợp\.?$/i.test(b))
+    return 'A customer just posted a matching job.';
+  if (/^Một thợ vừa gửi báo giá\.?$/i.test(b)) return 'A helper just submitted a quote.';
+  if (/^Bạn có tin nhắn mới từ đối tác\.?$/i.test(b))
+    return 'You have a new message from partner';
+  if (
+    /^Đã có thợ nhận đơn của bạn\. Mở đơn hàng để xem thông tin và theo dõi\.?$/i.test(
+      b,
+    )
+  ) {
+    return 'A helper has accepted your order. Open order to view details and track.';
+  }
+  if (/^Khách hàng đã chọn báo giá của bạn\. Mở đơn để xem hợp đồng\.?$/i.test(b)) {
+    return 'The customer has accepted your quote. Open order to view details.';
+  }
+
+  return body;
+}
+
+// ─── Transaction Description Localization Mapping (Điểm 4) ────────────────────
+export function formatTransactionDescription(
+  desc: string | undefined | null,
+  lang: AppLanguage = 'vi',
+): string {
+  if (!desc) return '';
+  if (lang !== 'en') return desc;
+  const d = desc.trim();
+
+  const feeMatch = d.match(
+    /^Khấu trừ phí sàn\s*\(([^)]+)\)\s*đơn Tiền mặt\s*#([a-zA-Z0-9]+)$/i,
+  );
+  if (feeMatch) return `Platform fee (${feeMatch[1]}) deducted for Cash job #${feeMatch[2]}`;
+
+  const incomeMatch = d.match(/^Thu nhập từ công việc\s*#([a-zA-Z0-9]+)$/i);
+  if (incomeMatch) return `Income from job #${incomeMatch[1]}`;
+
+  const topupMatch = d.match(/^Nạp tiền ví ký quỹ qua\s*([a-zA-Z0-9_]+)$/i);
+  if (topupMatch) return `Deposit wallet top-up via ${topupMatch[1]}`;
+
+  const payMatch = d.match(
+    /^Thanh toán cho công việc\s*#([a-zA-Z0-9]+)\s*\(([^)]+)\)(.*)$/i,
+  );
+  if (payMatch) {
+    let suffix = payMatch[3] || '';
+    suffix = suffix.replace(
+      /—\s*đã áp mã\s*(\S+)\s*giảm\s*([^—]+)/gi,
+      '— applied voucher $1 discount $2',
+    );
+    suffix = suffix.replace(
+      /—\s*đổi\s*(\d+)\s*điểm\s*giảm\s*([^—]+)/gi,
+      '— redeemed $1 points discount $2',
+    );
+    return `Payment for job #${payMatch[1]} (${payMatch[2]})${suffix}`;
+  }
+
+  const disputeRefund = d.match(
+    /^Hoàn tiền khiếu nại công việc\s*#([a-zA-Z0-9]+):\s*(.*)$/i,
+  );
+  if (disputeRefund) return `Dispute refund for job #${disputeRefund[1]}: ${disputeRefund[2]}`;
+
+  const adminRefund = d.match(
+    /^Admin hoàn tiền trực tiếp cho đơn\s*#([a-zA-Z0-9]+):\s*(.*)$/i,
+  );
+  if (adminRefund) return `Admin direct refund for job #${adminRefund[1]}: ${adminRefund[2]}`;
+
+  if (/^Yêu cầu rút tiền$/i.test(d)) return 'Withdrawal request';
+  if (/^Hoàn tiền rút thất bại$/i.test(d)) return 'Failed withdrawal refund';
+
+  const salaryMatch = d.match(
+    /^Lương tháng\s*(\S+)\s*[—–-]\s*hợp đồng\s*(".*?"|'.*?'|“.*?”)\s*\((.*?)\s*buổi,\s*đã trừ phí sàn\s*([^)]+)\)$/i,
+  );
+  if (salaryMatch)
+    return `Salary for month ${salaryMatch[1]} — contract ${salaryMatch[2]} (${salaryMatch[3]} sessions, after ${salaryMatch[4]} platform fee)`;
+
+  const teamMatch = d.match(/^Chia tiền công nhóm đơn\s*#([a-zA-Z0-9]+)$/i);
+  if (teamMatch) return `Team wage split for job #${teamMatch[1]}`;
+
+  return desc;
+}
