@@ -337,6 +337,228 @@ export const STRINGS = {
     vi: 'Hội thoại này đã được đội hỗ trợ đóng. Gửi tin nhắn mới sẽ mở một hội thoại hỗ trợ mới.',
     en: 'This conversation was closed by support. Sending a new message opens a new support conversation.',
   },
+
+  // ─── 12 Demo Services & Badges ─────────────────────────────────────────────
+  svc_housekeeping_hourly: { vi: 'Giúp việc theo giờ', en: 'Hourly housekeeping' },
+  svc_electrician: { vi: 'Sửa điện gia dụng', en: 'Home electrician' },
+  svc_house_cleaning: { vi: 'Dọn nhà', en: 'House cleaning' },
+  svc_cooking: { vi: 'Nấu ăn', en: 'Home cooking' },
+  svc_moving_help: { vi: 'Chuyển nhà', en: 'Home moving' },
+  svc_child_care: { vi: 'Chăm trẻ', en: 'Babysitting' },
+  svc_plumbing: { vi: 'Sửa ống nước', en: 'Plumbing repair' },
+  svc_laundry: { vi: 'Giặt ủi', en: 'Laundry' },
+  svc_ac_repair: { vi: 'Vệ sinh máy lạnh', en: 'AC cleaning' },
+  svc_elderly_care: { vi: 'Chăm người già', en: 'Elderly care' },
+  svc_handyman: { vi: 'Bốc hàng, vận chuyển', en: 'Cargo & logistics' },
+  svc_custom: { vi: 'Dịch vụ khác — tự ghi việc, tự set giá', en: 'Other — custom task & price' },
+  svc_custom_sub: { vi: 'Việc gì cũng đăng được', en: 'Post any task' },
+  badge_new: { vi: 'MỚI', en: 'NEW' },
+  badge_urgent: { vi: 'Khẩn cấp', en: 'Urgent' },
+
+  // ─── Prices & Units ────────────────────────────────────────────────────────
+  price_from_prefix: { vi: 'Từ ', en: 'From ' },
+  price_per_hour: { vi: '/giờ', en: '/hr' },
+  price_per_shift: { vi: '/ca', en: '/shift' },
+  price_per_meal: { vi: '/bữa', en: '/meal' },
+  price_per_trip: { vi: 'Báo giá theo chuyến', en: 'Quote per trip' },
+  price_per_task: { vi: 'Báo giá theo việc', en: 'Quote per job' },
+  price_per_kg: { vi: '/kg', en: '/kg' },
+  price_per_unit: { vi: '/máy', en: '/unit' },
+  price_negotiate: { vi: 'Deal giá với thợ', en: 'Negotiate price' },
+
+  // ─── Home SOS & AI Callout ─────────────────────────────────────────────────
+  home_sos_callout_title: { vi: 'SOS — Cần người gấp?', en: 'SOS — Need help fast?' },
+  home_sos_callout_urgent: { vi: 'Khẩn cấp', en: 'Urgent' },
+  home_sos_callout_desc: {
+    vi: 'Thợ hủy phút chót hoặc việc khẩn trong ngày: phát tín hiệu SOS, thợ gần nhất nhận thay ngay trong 3 phút.',
+    en: 'Last-minute cancellation or urgent job: broadcast SOS, nearest helper accepts within 3 minutes.',
+  },
+  home_ai_callout_title: { vi: 'Không biết thuộc dịch vụ nào?', en: 'Not sure which service you need?' },
+  home_ai_callout_desc: {
+    vi: 'Mô tả bằng lời hoặc chụp ảnh ở thẻ AI phía trên — AI gợi ý đúng dịch vụ và ước tính giá.',
+    en: 'Describe or snap a photo in the AI card above — AI suggests the right service and price estimate.',
+  },
+
+  // ─── Quick Booking Form on Home ────────────────────────────────────────────
+  home_quick_need_work: { vi: 'Bạn cần làm việc gì?', en: 'What do you need done?' },
+  home_quick_chip_cleaning: { vi: 'Dọn nhà', en: 'Cleaning' },
+  home_quick_chip_moving: { vi: 'Bốc hàng', en: 'Moving' },
+  home_quick_chip_ac: { vi: 'Vệ sinh máy lạnh', en: 'AC cleaning' },
+  home_quick_chip_other: { vi: 'Dịch vụ khác…', en: 'Other…' },
+  home_quick_desc_placeholder: { vi: 'Mô tả công việc của bạn...', en: 'Describe your job...' },
+  home_quick_price_title: { vi: 'Giá bạn muốn trả (giá mở đầu để deal)', en: 'Your target price (starting offer)' },
+  home_quick_time_title: { vi: 'Thời gian làm việc', en: 'Working time' },
+  home_quick_calendar_hint: { vi: 'Bấm để mở lịch tháng trong bottom sheet', en: 'Tap to open monthly calendar sheet' },
+  home_quick_chip_today: { vi: 'Hôm nay', en: 'Today' },
+  home_quick_chip_tomorrow: { vi: 'Ngày mai', en: 'Tomorrow' },
+  home_quick_chip_sat: { vi: 'Thứ 7', en: 'Saturday' },
+  home_quick_chip_sun: { vi: 'Chủ nhật', en: 'Sunday' },
+  home_quick_post_btn: { vi: 'Đăng việc', en: 'Post job' },
+
+  // ─── Benefits & Guarantees ─────────────────────────────────────────────────
+  home_benefits_title: { vi: 'Quyền lợi & cam kết', en: 'Benefits & Guarantees' },
+  home_benefit_verified: { vi: 'Thợ đã xác thực', en: 'Verified helpers' },
+  home_benefit_verified_sub: { vi: 'CCCD & lý lịch rõ ràng', en: 'ID & background checked' },
+  home_benefit_insurance: { vi: 'Bảo hiểm công việc', en: 'Job insurance' },
+  home_benefit_insurance_sub: { vi: 'Bồi thường hư hỏng, mất mát', en: 'Damage & loss covered' },
+  home_benefit_escrow: { vi: 'Giữ tiền bảo đảm', en: 'Escrow protection' },
+  home_benefit_escrow_sub: { vi: 'Chỉ trả khi bạn nghiệm thu xong', en: 'Pay only upon satisfaction' },
+
+  // ─── Active Job Timeline & Statuses on Home ────────────────────────────────
+  home_timeline_confirmed: { vi: 'Đã nhận việc', en: 'Confirmed' },
+  home_timeline_arriving: { vi: 'Đang đến', en: 'Arriving' },
+  home_timeline_working: { vi: 'Đang làm', en: 'Working' },
+  home_timeline_review: { vi: 'Nghiệm thu', en: 'Review' },
+  home_status_finding_desc: {
+    vi: 'Hệ thống đang điều phối và tìm thợ phù hợp nhất gần bạn.',
+    en: 'System is finding the best matching helper near you.',
+  },
+  home_status_quotes_desc: {
+    vi: 'Đã có thợ gửi báo giá, bấm để xem chi tiết và xác nhận thợ.',
+    en: 'Helpers have quoted, tap to view details and confirm.',
+  },
+  home_status_helper_accepted_desc: {
+    vi: 'Thợ đã nhận việc và đang chuẩn bị dụng cụ đến điểm hẹn.',
+    en: 'Helper accepted the job and is preparing tools to depart.',
+  },
+  home_status_helper_coming_desc: {
+    vi: 'Thợ đang trên đường di chuyển đến địa chỉ của bạn.',
+    en: 'Helper is traveling to your address.',
+  },
+  home_status_arrived_desc: {
+    vi: 'Thợ đã có mặt tại địa chỉ của bạn và chuẩn bị tiến hành công việc.',
+    en: 'Helper has arrived at your address.',
+  },
+  home_status_in_progress_desc: {
+    vi: 'Thợ đang thực hiện công việc tại địa chỉ của bạn.',
+    en: 'Helper is performing the job at your address.',
+  },
+  home_status_pending_review_desc: {
+    vi: 'Thợ đã làm xong, bạn vui lòng kiểm tra và nghiệm thu công việc.',
+    en: 'Job is done, please inspect and accept the work.',
+  },
+  home_status_done_desc: {
+    vi: 'Công việc đã hoàn thành và thanh toán thành công.',
+    en: 'Job completed and payment settled.',
+  },
+  home_status_processing: { vi: 'Đang xử lý', en: 'Processing' },
+  home_status_processing_desc: {
+    vi: 'Đơn dịch vụ đang được hệ thống xử lý.',
+    en: 'Job order is being processed by the system.',
+  },
+  home_active_empty_title: { vi: 'Bạn chưa có việc đang thực hiện', en: 'No jobs in progress' },
+  home_active_empty_sub: {
+    vi: 'Chọn dịch vụ hoặc đăng việc mới bên trên để thợ nhận việc ngay',
+    en: 'Choose a service or post a job above to get a helper fast',
+  },
+
+  // ─── Recent Jobs on Home ───────────────────────────────────────────────────
+  home_recent_title: { vi: 'Đặt gần đây', en: 'Recently booked' },
+  home_view_history: { vi: 'Xem lịch sử →', en: 'View history →' },
+  home_rebook_btn: { vi: 'Đặt lại', en: 'Rebook' },
+
+  // ─── Time Picker & Schedule ───────────────────────────────────────────────
+  picker_start_time: { vi: 'Giờ bắt đầu', en: 'Start time' },
+  picker_unit_hour: { vi: 'giờ', en: 'hrs' },
+  picker_unit_min: { vi: 'phút', en: 'mins' },
+  picker_err_past_time: { vi: '⚠️ Thời điểm bắt đầu không thể ở quá khứ', en: '⚠️ Start time cannot be in the past' },
+  picker_err_end_before_start: { vi: '⚠️ Giờ kết thúc phải lớn hơn giờ bắt đầu', en: '⚠️ End time must be after start time' },
+  picker_chips_instruction: { vi: 'bấm là chọn đúng giờ đó', en: 'tap to select exact time' },
+  picker_no_chips: { vi: 'Hôm nay đã hết khung giờ gợi ý', en: 'No suggested times left today' },
+  picker_select_hour: { vi: 'Chọn Giờ (00 - 23)', en: 'Select Hour (00 - 23)' },
+  picker_select_minute: { vi: 'Chọn Phút (00 - 59)', en: 'Select Minute (00 - 59)' },
+  picker_duration_title: { vi: 'Thời lượng dự kiến', en: 'Estimated duration' },
+  picker_duration_sub: { vi: 'Bấm để chọn số giờ và phút theo ý bạn', en: 'Tap to select hours and minutes' },
+  picker_preview_title: { vi: 'Lịch dự kiến', en: 'Schedule preview' },
+  picker_date_label: { vi: 'Ngày:', en: 'Date:' },
+  picker_time_slot_label: { vi: 'Khung giờ:', en: 'Time frame:' },
+  picker_duration_label: { vi: 'Thời lượng:', en: 'Duration:' },
+  picker_deal_price: { vi: 'Giá deal:', en: 'Deal price:' },
+  picker_next_day: { vi: '(ngày hôm sau)', en: '(next day)' },
+  picker_cannot_calc: { vi: 'Chưa tính được', en: 'Unavailable' },
+  picker_close: { vi: 'Đóng', en: 'Close' },
+
+  // ─── SOS Backup & Decision Popups ──────────────────────────────────────────
+  sos_popup_title: { vi: 'YÊU CẦU NHẬN THAY SOS', en: 'SOS BACKUP REQUEST' },
+  sos_popup_desc: {
+    vi: 'Thợ trước không thể tiếp tục công việc này. Bạn có muốn nhận thay không?',
+    en: 'The previous helper cannot continue this job. Would you like to take over?',
+  },
+  sos_popup_service_fallback: { vi: 'Dịch vụ tại nhà', en: 'Home service' },
+  sos_popup_area: { vi: '📍 Khu vực:', en: '📍 Area:' },
+  sos_popup_distance: { vi: '🚗 Cách bạn khoảng {dist} km', en: '🚗 About {dist} km from you' },
+  sos_popup_payout: { vi: '💰 Thực nhận:', en: '💰 Net payout:' },
+  sos_popup_accept: { vi: '⚡ Nhận thay ngay', en: '⚡ Accept takeover' },
+  sos_popup_skip: { vi: 'Bỏ qua', en: 'Skip' },
+  sos_popup_auto_skip: { vi: 'Tự động bỏ qua sau {sec}s', en: 'Auto skip in {sec}s' },
+  sos_popup_accepted_success: { vi: 'Bạn đã nhận thay đơn này!', en: 'You accepted this takeover!' },
+  sos_popup_accepted_sub: { vi: 'Hãy di chuyển đến khách hàng như đơn thường', en: 'Please travel to customer like a standard job' },
+  sos_popup_already_taken: { vi: 'Đã có người khác nhận đơn này rồi', en: 'Another helper has already taken this job' },
+
+  sos_customer_popup_title: { vi: 'SỰ CỐ ĐƠN HÀNG SOS', en: 'SOS ORDER INCIDENT' },
+  sos_customer_popup_reason_prefix: { vi: 'không thể tiếp tục vì:', en: 'cannot continue due to:' },
+  sos_customer_popup_reason_suffix: { vi: '. Bạn muốn xử lý thế nào?', en: '. How would you like to proceed?' },
+  sos_customer_popup_replace_desc: {
+    vi: '🔄 Đổi người: một thợ khác sẽ tiếp tục đơn - giá và số tiền giữ đảm bảo không thay đổi.',
+    en: '🔄 Replace helper: another helper will take over - guaranteed price and escrow deposit remain unchanged.',
+  },
+  sos_customer_popup_cancel_desc: {
+    vi: '❌ Hủy đơn: hoàn 100% số tiền bạn đã thực trả (sau voucher và điểm) vào ví. Đơn chưa thanh toán hoặc trả tiền mặt sẽ không phát sinh hoàn tiền ví.',
+    en: '❌ Cancel order: 100% refund of your actual paid amount (after vouchers and points) to wallet. Unpaid or cash orders have no wallet refund.',
+  },
+  sos_customer_popup_accept_btn: { vi: '🔄 Chấp nhận đổi người', en: '🔄 Accept replacement helper' },
+  sos_customer_popup_cancel_btn: { vi: 'Hủy đơn - hoàn tiền thực trả', en: 'Cancel order - refund paid amount' },
+
+  // ─── In-app Voice Call ─────────────────────────────────────────────────────
+  call_incoming_title: { vi: 'Cuộc gọi đến', en: 'Incoming call' },
+  call_incoming_sub: { vi: 'Đối tác đang gọi cho bạn', en: 'Partner is calling you' },
+  call_incoming_sub_job: { vi: 'Đơn {job} — đối tác đang gọi cho bạn', en: 'Job {job} — partner is calling you' },
+  call_decline: { vi: 'Từ chối', en: 'Decline' },
+  call_answer: { vi: 'Trả lời', en: 'Answer' },
+  call_state_preparing: { vi: 'Đang chuẩn bị kết nối...', en: 'Preparing connection...' },
+  call_state_connecting: { vi: 'Đang kết nối...', en: 'Connecting...' },
+  call_state_ended: { vi: 'Cuộc gọi đã kết thúc', en: 'Call ended' },
+  call_state_rejected: { vi: 'Cuộc gọi bị từ chối', en: 'Call declined' },
+  call_rejected_hint: {
+    vi: 'Đối tác hiện đang bận hoặc không thể nghe máy. Bạn có thể gửi tin nhắn qua khung chat.',
+    en: 'Partner is busy or cannot answer. You can leave a message in chat.',
+  },
+  call_thank_you: {
+    vi: 'Cảm ơn bạn đã sử dụng tính năng gọi qua GreenHouse.',
+    en: 'Thank you for calling via GreenHouse.',
+  },
+  call_muted_notice: { vi: 'Bạn đang tắt mic', en: 'Microphone is muted' },
+  call_end_hint: { vi: 'Chạm nút đỏ để kết thúc cuộc gọi', en: 'Tap red button to end call' },
+  call_retry: { vi: 'Thử kết nối lại', en: 'Retry connection' },
+
+  // ─── Initial Permissions Modal ─────────────────────────────────────────────
+  perm_modal_title: { vi: 'Cấp quyền ứng dụng', en: 'App Permissions' },
+  perm_modal_subtitle: {
+    vi: 'Để Green House hoạt động tốt nhất, vui lòng cấp các quyền cần thiết bên dưới',
+    en: 'For the best Green House experience, please grant the necessary permissions below',
+  },
+  perm_granted: { vi: 'Đã cấp', en: 'Granted' },
+  perm_grant_btn: { vi: 'Cấp quyền', en: 'Grant' },
+  perm_grant_all: { vi: 'Cấp tất cả quyền', en: 'Grant all permissions' },
+  perm_skip: { vi: 'Để sau / Bỏ qua', en: 'Later / Skip' },
+  perm_open_settings_desc: { vi: 'Mở Cài đặt hệ thống để thay đổi quyền', en: 'Open system settings to change permissions' },
+  perm_notifications_title: { vi: 'Thông báo đẩy', en: 'Push notifications' },
+  perm_notifications_desc: { vi: 'Nhận thông báo khi có đơn mới, báo giá hoặc tin nhắn', en: 'Get notified for new jobs, quotes or messages' },
+  perm_location_title: { vi: 'Vị trí & GPS', en: 'Location & GPS' },
+  perm_location_desc: { vi: 'Tìm thợ xung quanh và hiển thị khoảng cách di chuyển', en: 'Find nearby helpers and show travel distance' },
+  perm_camera_title: { vi: 'Máy ảnh', en: 'Camera' },
+  perm_camera_desc: { vi: 'Chụp ảnh hiện trường công việc và giấy tờ xác thực KYC', en: 'Capture job photos and KYC verification IDs' },
+  perm_microphone_title: { vi: 'Micro thoại', en: 'Microphone' },
+  perm_microphone_desc: { vi: 'Gọi điện liên lạc miễn phí che số giữa khách và thợ', en: 'Free masked calling between customers and helpers' },
+  perm_photos_title: { vi: 'Thư viện ảnh', en: 'Photo library' },
+  perm_photos_desc: { vi: 'Tải ảnh từ máy để gửi tin nhắn hoặc cập nhật ảnh đại diện', en: 'Upload photos for chat or profile avatars' },
+
+  // ─── Common general strings ────────────────────────────────────────────────
+  common_back: { vi: 'Quay lại', en: 'Back' },
+  common_close: { vi: 'Đóng', en: 'Close' },
+  common_confirm: { vi: 'Xác nhận', en: 'Confirm' },
+  common_cancel: { vi: 'Hủy', en: 'Cancel' },
+  common_yesterday: { vi: 'Hôm qua', en: 'Yesterday' },
 } as const;
 
 export type I18nKey = keyof typeof STRINGS;

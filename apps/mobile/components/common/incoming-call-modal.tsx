@@ -7,6 +7,7 @@ import { useCallStore } from '@/stores/call.store';
 import { useEndCall } from '@/hooks/use-api';
 import apiClient from '@/services/api-client';
 import { stringeeService } from '@/services/stringee.service';
+import { useTranslation } from '@/hooks/use-i18n';
 
 export function IncomingCallModal() {
   const incoming = useCallStore(s => s.incoming);
@@ -14,6 +15,7 @@ export function IncomingCallModal() {
   const router = useRouter();
   const pathname = usePathname();
   const endCall = useEndCall();
+  const { t } = useTranslation();
 
   // Chủ động kết nối Stringee client ngay khi modal chuông hiện lên
   useEffect(() => {
@@ -88,10 +90,10 @@ export function IncomingCallModal() {
               marginBottom: 8,
             }}
           >
-            Cuộc gọi đến qua GreenHouse
+            {t('call_incoming_title')}
           </Text>
           <Text style={{ fontSize: 14, color: '#A7F3C7', textAlign: 'center', marginBottom: 24 }}>
-            {shortJob ? `Đơn ${shortJob} — đối tác đang gọi cho bạn` : 'Đối tác đang gọi cho bạn'}
+            {shortJob ? t('call_incoming_sub_job', { job: shortJob }) : t('call_incoming_sub')}
           </Text>
           <View style={{ flexDirection: 'row', gap: 16 }}>
             <TouchableOpacity
@@ -130,7 +132,7 @@ export function IncomingCallModal() {
                 textAlign: 'center',
               }}
             >
-              Từ chối
+              {t('call_decline')}
             </Text>
             <Text
               style={{
@@ -140,7 +142,7 @@ export function IncomingCallModal() {
                 textAlign: 'center',
               }}
             >
-              Trả lời
+              {t('call_answer')}
             </Text>
           </View>
         </View>

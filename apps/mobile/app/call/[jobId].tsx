@@ -14,6 +14,7 @@ import {
 import { stringeeService, type StringeeCallEvents } from '@/services/stringee.service';
 import { callkeepService } from '@/services/callkeep.service';
 import { socketService } from '@/services/socket.service';
+import { useTranslation } from '@/hooks/use-i18n';
 
 /**
  * ════════════════════════════════════════════════════════════════════════════
@@ -63,6 +64,7 @@ export default function CallScreen() {
   }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation();
 
   const isAnswerMode = mode === 'answer' && !!sessionId;
 
@@ -385,10 +387,10 @@ export default function CallScreen() {
               }}
             >
               {uiState === 'rejected'
-                ? endReason || 'Người kia đã từ chối cuộc gọi'
+                ? endReason || t('call_state_rejected')
                 : seconds > 0
-                  ? `Cuộc gọi đã kết thúc (${mmss})`
-                  : 'Cuộc gọi đã kết thúc'}
+                  ? `${t('call_state_ended')} (${mmss})`
+                  : t('call_state_ended')}
             </Text>
             <Text
               style={{
@@ -399,8 +401,8 @@ export default function CallScreen() {
               }}
             >
               {uiState === 'rejected'
-                ? 'Đối tác hiện đang bận hoặc không thể nghe máy. Bạn có thể gửi tin nhắn qua khung chat.'
-                : 'Cảm ơn bạn đã sử dụng tính năng gọi qua GreenHouse.'}
+                ? t('call_rejected_hint')
+                : t('call_thank_you')}
             </Text>
           </View>
 
@@ -422,7 +424,7 @@ export default function CallScreen() {
               elevation: 4,
             }}
           >
-            <Text style={{ color: '#fff', fontWeight: '800', fontSize: 15 }}>Quay lại</Text>
+            <Text style={{ color: '#fff', fontWeight: '800', fontSize: 15 }}>{t('common_back')}</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -470,7 +472,7 @@ export default function CallScreen() {
                 }}
               >
                 <Text style={{ color: '#fff', fontWeight: '700', fontSize: 13.5 }}>
-                  Thử kết nối lại
+                  {t('call_retry')}
                 </Text>
               </TouchableOpacity>
             )}
@@ -483,7 +485,7 @@ export default function CallScreen() {
                 borderRadius: 8,
               }}
             >
-              <Text style={{ color: '#fff', fontWeight: '600', fontSize: 13.5 }}>Quay lại</Text>
+              <Text style={{ color: '#fff', fontWeight: '600', fontSize: 13.5 }}>{t('common_back')}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -537,7 +539,7 @@ export default function CallScreen() {
             <PhoneOff size={30} color="#fff" />
           </TouchableOpacity>
           <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 12.5 }}>
-            {muted ? 'Bạn đang tắt mic' : 'Chạm nút đỏ để kết thúc cuộc gọi'}
+            {muted ? t('call_muted_notice') : t('call_end_hint')}
           </Text>
         </View>
       )}

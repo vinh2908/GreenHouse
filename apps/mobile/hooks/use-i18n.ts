@@ -19,5 +19,5 @@ export function useTranslation() {
   /** Nhân cỡ chữ theo cài đặt: fs(14) → 14 (thường) hoặc 17.5 (lớn). */
   const fs = useCallback((base: number) => Math.round(base * textScale * 10) / 10, [textScale]);
 
-  return { t, language, setLanguage, textSize, setTextSize, textScale, fs };
+  return { t, language, lang: language, setLanguage, textSize, setTextSize, textScale, fs };
 }

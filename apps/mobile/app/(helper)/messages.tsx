@@ -16,7 +16,7 @@ dayjs.locale('vi');
 
 export default function HelperConversationsScreen() {
   const router = useRouter();
-  const { t, fs } = useTranslation();
+  const { t, fs, lang } = useTranslation();
   const currentUser = useAuthStore(s => s.user);
   const { data: conversations, isLoading, refetch } = useConversations();
   const insets = useSafeAreaInsets();
@@ -117,7 +117,7 @@ export default function HelperConversationsScreen() {
                   <View style={{ alignItems: 'flex-end', gap: 6 }}>
                     {conv.last_message_at && (
                       <Text style={{ fontSize: fs(11), color: COLORS.gray[400], fontWeight: '600' }}>
-                        {formatConversationTime(conv.last_message_at)}
+                        {formatConversationTime(conv.last_message_at, undefined, lang)}
                       </Text>
                     )}
                     <ChevronRight size={14} color={COLORS.gray[300]} />
