@@ -161,12 +161,12 @@ export default function HelperProfileScreen() {
           >
             <Avatar name={user?.full_name} uri={user?.avatar} size={80} />
             <Text
-              style={{ fontSize: 20, fontWeight: '800', color: COLORS.gray[900], marginTop: 12 }}
+              style={{ fontSize: fs(20), fontWeight: '800', color: COLORS.gray[900], marginTop: 12 }}
             >
               {user?.full_name}
             </Text>
             <Text
-              style={{ fontSize: 14, color: COLORS.gray[500], marginTop: 4, fontWeight: '600' }}
+              style={{ fontSize: fs(14), color: COLORS.gray[500], marginTop: 4, fontWeight: '600' }}
             >
               {user?.phone}
             </Text>
@@ -179,7 +179,7 @@ export default function HelperProfileScreen() {
                 marginTop: 6,
               }}
             >
-              <Text style={{ fontSize: 12, fontWeight: '700', color: COLORS.primary }}>
+              <Text style={{ fontSize: fs(12), fontWeight: '700', color: COLORS.primary }}>
                 {t('profile_edit_helper')}
               </Text>
             </View>
@@ -200,28 +200,28 @@ export default function HelperProfileScreen() {
               }}
             >
               <View style={{ alignItems: 'center' }}>
-                <Text style={{ fontSize: 20, fontWeight: '800', color: COLORS.gray[900] }}>
+                <Text style={{ fontSize: fs(20), fontWeight: '800', color: COLORS.gray[900] }}>
                   {completedCount}
                 </Text>
-                <Text style={{ fontSize: 12, color: COLORS.gray[500], fontWeight: '600' }}>
+                <Text style={{ fontSize: fs(12), color: COLORS.gray[500], fontWeight: '600' }}>
                   Đơn hoàn tất
                 </Text>
               </View>
               <View style={{ width: 1, backgroundColor: COLORS.gray[200] }} />
               <View style={{ alignItems: 'center' }}>
-                <Text style={{ fontSize: 20, fontWeight: '800', color: '#D97706' }}>
+                <Text style={{ fontSize: fs(20), fontWeight: '800', color: '#D97706' }}>
                   ★ {ratingScore > 0 ? ratingScore.toFixed(1) : '5.0'}
                 </Text>
-                <Text style={{ fontSize: 12, color: COLORS.gray[500], fontWeight: '600' }}>
+                <Text style={{ fontSize: fs(12), color: COLORS.gray[500], fontWeight: '600' }}>
                   Điểm uy tín
                 </Text>
               </View>
               <View style={{ width: 1, backgroundColor: COLORS.gray[200] }} />
               <View style={{ alignItems: 'center' }}>
-                <Text style={{ fontSize: 20, fontWeight: '800', color: COLORS.success }}>
+                <Text style={{ fontSize: fs(20), fontWeight: '800', color: COLORS.success }}>
                   {profile.completion_rate ?? 100}%
                 </Text>
-                <Text style={{ fontSize: 12, color: COLORS.gray[500], fontWeight: '600' }}>
+                <Text style={{ fontSize: fs(12), color: COLORS.gray[500], fontWeight: '600' }}>
                   Nhận việc
                 </Text>
               </View>
@@ -354,11 +354,11 @@ export default function HelperProfileScreen() {
             >
               <ShieldCheck size={24} color={KYC_STATUS.color} />
               <View style={{ flex: 1 }}>
-                <Text style={{ fontWeight: '800', fontSize: 14, color: KYC_STATUS.color }}>
+                <Text style={{ fontWeight: '800', fontSize: fs(14), color: KYC_STATUS.color }}>
                   Xác minh danh tính Thợ (e-KYC)
                 </Text>
                 <Text
-                  style={{ fontSize: 13, color: KYC_STATUS.color, marginTop: 2, fontWeight: '600' }}
+                  style={{ fontSize: fs(13), color: KYC_STATUS.color, marginTop: 2, fontWeight: '600' }}
                 >
                   {KYC_STATUS.label}
                 </Text>
@@ -485,7 +485,7 @@ export default function HelperProfileScreen() {
           <Text
             style={{
               textAlign: 'center',
-              fontSize: 12,
+              fontSize: fs(12),
               color: COLORS.gray[400],
               fontWeight: '500',
             }}

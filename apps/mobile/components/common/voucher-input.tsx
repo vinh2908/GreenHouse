@@ -3,6 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, ActivityIndicator } from 'reac
 import { TicketPercent, X } from 'lucide-react-native';
 import { useValidateVoucher, type VoucherPreview } from '@/hooks/use-api';
 import { Card, COLORS } from '@/components/ui';
+import { useTranslation } from '@/hooks/use-i18n';
 
 const fmt = (n: number) => new Intl.NumberFormat('vi-VN').format(n);
 
@@ -27,6 +28,7 @@ export function VoucherInput({
   const [code, setCode] = useState(value ?? '');
   const [error, setError] = useState<string | null>(null);
   const validate = useValidateVoucher();
+  const { fs } = useTranslation();
 
   const handleApply = async () => {
     const trimmed = code.trim();
@@ -58,7 +60,7 @@ export function VoucherInput({
     <Card style={{ gap: 10 }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
         <TicketPercent size={19} color={COLORS.primaryDark} />
-        <Text style={{ fontWeight: '800', fontSize: 15, color: COLORS.gray[900] }}>
+        <Text style={{ fontWeight: '800', fontSize: fs(15), color: COLORS.gray[900] }}>
           Mã giảm giá
         </Text>
       </View>
@@ -73,7 +75,7 @@ export function VoucherInput({
           }}
         >
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <Text style={{ flex: 1, fontWeight: '800', fontSize: 14.5, color: '#065F46' }}>
+            <Text style={{ flex: 1, fontWeight: '800', fontSize: fs(14.5), color: '#065F46' }}>
               🎟️ {preview.code} —{' '}
               {preview.discount_type === 'percent'
                 ? `giảm ${preview.discount_value}%`
@@ -90,12 +92,12 @@ export function VoucherInput({
             </TouchableOpacity>
           </View>
           {preview.discount_amount > 0 ? (
-            <Text style={{ fontSize: 13, color: '#065F46' }}>
+            <Text style={{ fontSize: fs(13), color: '#065F46' }}>
               Giảm tạm tính: −{fmt(preview.discount_amount)}₫
               {estimatedAmount ? ` · Cần thanh toán khoảng ${fmt(preview.final_amount)}₫` : ''}
             </Text>
           ) : (
-            <Text style={{ fontSize: 12.5, color: '#065F46' }}>
+            <Text style={{ fontSize: fs(12.5), color: '#065F46' }}>
               Mã hợp lệ. Số tiền giảm chính thức sẽ được tính theo giá chốt khi thanh toán.
             </Text>
           )}
@@ -120,7 +122,7 @@ export function VoucherInput({
                 borderRadius: 12,
                 paddingHorizontal: 12,
                 paddingVertical: 10,
-                fontSize: 14,
+                fontSize: fs(14),
                 fontWeight: '700',
                 color: COLORS.gray[900],
                 backgroundColor: '#fff',
@@ -142,14 +144,14 @@ export function VoucherInput({
               {validate.isPending ? (
                 <ActivityIndicator color="#fff" size="small" />
               ) : (
-                <Text style={{ color: '#fff', fontWeight: '800', fontSize: 13.5 }}>Áp dụng</Text>
+                <Text style={{ color: '#fff', fontWeight: '800', fontSize: fs(13.5) }}>Áp dụng</Text>
               )}
             </TouchableOpacity>
           </View>
           {error ? (
-            <Text style={{ fontSize: 12.5, color: COLORS.error, fontWeight: '600' }}>{error}</Text>
+            <Text style={{ fontSize: fs(12.5), color: COLORS.error, fontWeight: '600' }}>{error}</Text>
           ) : (
-            <Text style={{ fontSize: 12, color: COLORS.gray[500] }}>
+            <Text style={{ fontSize: fs(12), color: COLORS.gray[500] }}>
               Số tiền giảm chính thức được tính theo giá chốt của đơn khi thanh toán.
             </Text>
           )}

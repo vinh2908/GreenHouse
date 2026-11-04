@@ -64,7 +64,7 @@ export default function CallScreen() {
   }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { t } = useTranslation();
+  const { t, fs } = useTranslation();
 
   const isAnswerMode = mode === 'answer' && !!sessionId;
 
@@ -341,17 +341,17 @@ export default function CallScreen() {
         }}
       >
         <ShieldCheck size={14} color="#A7F3C7" />
-        <Text style={{ color: '#D1FAE5', fontSize: 12, fontWeight: '700' }}>
+        <Text style={{ color: '#D1FAE5', fontSize: fs(12), fontWeight: '700' }}>
           Cuộc gọi qua GreenHouse — số thật của bạn được ẩn
         </Text>
       </View>
 
       <View style={{ alignItems: 'center', marginTop: 56, gap: 14 }}>
         <Avatar name={displayName} size={110} />
-        <Text style={{ color: '#fff', fontSize: 24, fontWeight: '800', textAlign: 'center' }}>
+        <Text style={{ color: '#fff', fontSize: fs(24), fontWeight: '800', textAlign: 'center' }}>
           {displayName}
         </Text>
-        <Text style={{ color: '#A7F3C7', fontSize: 15, fontWeight: '600' }}>
+        <Text style={{ color: '#A7F3C7', fontSize: fs(15), fontWeight: '600' }}>
           {uiState === 'connecting' && 'Đang kết nối…'}
           {uiState === 'in_call' && mmss}
           {uiState === 'unavailable' && 'Tính năng chưa kích hoạt'}
@@ -381,7 +381,7 @@ export default function CallScreen() {
             <Text
               style={{
                 color: uiState === 'rejected' ? '#FCA5A5' : '#D1FAE5',
-                fontSize: 15,
+                fontSize: fs(15),
                 fontWeight: '700',
                 textAlign: 'center',
               }}
@@ -395,7 +395,7 @@ export default function CallScreen() {
             <Text
               style={{
                 color: 'rgba(255,255,255,0.7)',
-                fontSize: 12.5,
+                fontSize: fs(12.5),
                 marginTop: 4,
                 textAlign: 'center',
               }}
@@ -424,7 +424,7 @@ export default function CallScreen() {
               elevation: 4,
             }}
           >
-            <Text style={{ color: '#fff', fontWeight: '800', fontSize: 15 }}>{t('common_back')}</Text>
+            <Text style={{ color: '#fff', fontWeight: '800', fontSize: fs(15) }}>{t('common_back')}</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -444,10 +444,10 @@ export default function CallScreen() {
             <Text
               style={{
                 color: '#FCA5A5',
-                fontSize: 13,
+                fontSize: fs(13),
                 fontWeight: '600',
                 textAlign: 'center',
-                lineHeight: 19,
+                lineHeight: Math.round(fs(19)),
               }}
             >
               {uiState === 'unavailable'
@@ -471,7 +471,7 @@ export default function CallScreen() {
                   borderRadius: 8,
                 }}
               >
-                <Text style={{ color: '#fff', fontWeight: '700', fontSize: 13.5 }}>
+                <Text style={{ color: '#fff', fontWeight: '700', fontSize: fs(13.5) }}>
                   {t('call_retry')}
                 </Text>
               </TouchableOpacity>
@@ -485,7 +485,7 @@ export default function CallScreen() {
                 borderRadius: 8,
               }}
             >
-              <Text style={{ color: '#fff', fontWeight: '600', fontSize: 13.5 }}>{t('common_back')}</Text>
+              <Text style={{ color: '#fff', fontWeight: '600', fontSize: fs(13.5) }}>{t('common_back')}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -538,7 +538,7 @@ export default function CallScreen() {
           >
             <PhoneOff size={30} color="#fff" />
           </TouchableOpacity>
-          <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 12.5 }}>
+          <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: fs(12.5) }}>
             {muted ? t('call_muted_notice') : t('call_end_hint')}
           </Text>
         </View>

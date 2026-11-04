@@ -188,7 +188,7 @@ export default function CustomerJobsScreen() {
             >
               <Text
                 style={{
-                  fontSize: 13,
+                  fontSize: fs(13),
                   fontWeight: activeTab === i ? '800' : '600',
                   color: activeTab === i ? '#fff' : COLORS.gray[600],
                 }}
@@ -260,11 +260,11 @@ export default function CustomerJobsScreen() {
                     <Text
                       style={{
                         fontWeight: '800',
-                        fontSize: 15,
+                        fontSize: fs(15),
                         color: COLORS.gray[900],
                         flex: 1,
                         marginRight: 8,
-                        lineHeight: 20,
+                        lineHeight: Math.round(fs(20)),
                       }}
                       numberOfLines={2}
                     >
@@ -309,13 +309,13 @@ export default function CustomerJobsScreen() {
                     ) : null}
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
                       <MapPin size={13} color={COLORS.gray[500]} />
-                      <Text style={{ fontSize: 12, color: COLORS.gray[600], fontWeight: '500' }}>
+                      <Text style={{ fontSize: fs(12), color: COLORS.gray[600], fontWeight: '500' }}>
                         {job.address?.district || job.address?.city || 'Chưa rõ'}
                       </Text>
                     </View>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
                       <Clock size={13} color={COLORS.gray[400]} />
-                      <Text style={{ fontSize: 12, color: COLORS.gray[400] }}>
+                      <Text style={{ fontSize: fs(12), color: COLORS.gray[400] }}>
                         {dayjs(job.created_at).fromNow()}
                       </Text>
                     </View>
@@ -334,7 +334,7 @@ export default function CustomerJobsScreen() {
                     {(() => {
                       if (job.status === 'cancelled') {
                         return (
-                          <Text style={{ fontSize: 12.5, color: COLORS.error, fontWeight: '700' }}>
+                          <Text style={{ fontSize: fs(12.5), color: COLORS.error, fontWeight: '700' }}>
                             Đã hủy yêu cầu
                           </Text>
                         );
@@ -342,7 +342,7 @@ export default function CustomerJobsScreen() {
                       if (job.status === 'refunded') {
                         return (
                           <Text
-                            style={{ fontSize: 12.5, color: COLORS.gray[600], fontWeight: '700' }}
+                            style={{ fontSize: fs(12.5), color: COLORS.gray[600], fontWeight: '700' }}
                           >
                             Đã hoàn tiền
                           </Text>
@@ -350,7 +350,7 @@ export default function CustomerJobsScreen() {
                       }
                       if (job.status === 'disputed') {
                         return (
-                          <Text style={{ fontSize: 12.5, color: COLORS.error, fontWeight: '700' }}>
+                          <Text style={{ fontSize: fs(12.5), color: COLORS.error, fontWeight: '700' }}>
                             Đang xử lý khiếu nại
                           </Text>
                         );
@@ -358,7 +358,7 @@ export default function CustomerJobsScreen() {
                       if (job.status === 'completed') {
                         return (
                           <Text
-                            style={{ fontSize: 12.5, color: COLORS.success, fontWeight: '700' }}
+                            style={{ fontSize: fs(12.5), color: COLORS.success, fontWeight: '700' }}
                           >
                             {job.helper_id
                               ? `${t('jobs_helper_label')} ${(job.helper_id as any).full_name}`
@@ -369,7 +369,7 @@ export default function CustomerJobsScreen() {
                       if (job.helper_id) {
                         return (
                           <Text
-                            style={{ fontSize: 13, color: COLORS.gray[700], fontWeight: '600' }}
+                            style={{ fontSize: fs(13), color: COLORS.gray[700], fontWeight: '600' }}
                           >
                             {t('jobs_helper_label')}{' '}
                             <Text style={{ color: COLORS.gray[900], fontWeight: '700' }}>
@@ -381,7 +381,7 @@ export default function CustomerJobsScreen() {
                       return (
                         <Text
                           style={{
-                            fontSize: 12.5,
+                            fontSize: fs(12.5),
                             color: job.total_quotes_count > 0 ? COLORS.primary : COLORS.gray[500],
                             fontWeight: '700',
                           }}

@@ -58,6 +58,7 @@ import {
   useRejectJob,
 } from '@/hooks/use-api';
 import { useAuthStore } from '@/stores/auth.store';
+import { useTranslation } from '@/hooks/use-i18n';
 import {
   Button,
   Card,
@@ -75,6 +76,7 @@ const PLATFORM_FEE = 0.15;
 export default function HelperJobDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
+  const { t, fs } = useTranslation();
   const currentUser = useAuthStore(s => s.user);
   const { data: callConfig } = useCallConfig();
 
@@ -557,7 +559,7 @@ export default function HelperJobDetailScreen() {
         </TouchableOpacity>
         <Text
           style={{
-            fontSize: 17,
+            fontSize: fs(17),
             fontWeight: '800',
             color: COLORS.gray[900],
             flex: 1,
@@ -577,11 +579,11 @@ export default function HelperJobDetailScreen() {
           >
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
               <ActivityIndicator size="small" color="#DC2626" />
-              <Text style={{ fontWeight: '800', fontSize: 14.5, color: '#991B1B' }}>
+              <Text style={{ fontWeight: '800', fontSize: fs(14.5), color: '#991B1B' }}>
                 Khách đã đồng ý đổi thợ — Đang tìm thợ cứu hộ thay thế...
               </Text>
             </View>
-            <Text style={{ fontSize: 13, color: '#7F1D1D', lineHeight: 19 }}>
+            <Text style={{ fontSize: fs(13), color: '#7F1D1D', lineHeight: Math.round(fs(19)) }}>
               Bạn đã báo sự cố và khách hàng đã chấp nhận tìm thợ thay thế. Hệ thống đang quét thợ
               cứu hộ gần nhất để tiếp nhận đơn này.
             </Text>

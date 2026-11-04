@@ -15,7 +15,7 @@ export function IncomingCallModal() {
   const router = useRouter();
   const pathname = usePathname();
   const endCall = useEndCall();
-  const { t } = useTranslation();
+  const { t, fs } = useTranslation();
 
   // Chủ động kết nối Stringee client ngay khi modal chuông hiện lên
   useEffect(() => {
@@ -80,10 +80,10 @@ export function IncomingCallModal() {
             alignItems: 'center',
           }}
         >
-          <Text style={{ fontSize: 40, marginBottom: 12 }}>📞</Text>
+          <Text style={{ fontSize: fs(40), marginBottom: 12 }}>📞</Text>
           <Text
             style={{
-              fontSize: 18,
+              fontSize: fs(18),
               fontWeight: '800',
               color: '#fff',
               textAlign: 'center',
@@ -92,7 +92,7 @@ export function IncomingCallModal() {
           >
             {t('call_incoming_title')}
           </Text>
-          <Text style={{ fontSize: 14, color: '#A7F3C7', textAlign: 'center', marginBottom: 24 }}>
+          <Text style={{ fontSize: fs(14), color: '#A7F3C7', textAlign: 'center', marginBottom: 24 }}>
             {shortJob ? t('call_incoming_sub_job', { job: shortJob }) : t('call_incoming_sub')}
           </Text>
           <View style={{ flexDirection: 'row', gap: 16 }}>
@@ -127,7 +127,7 @@ export function IncomingCallModal() {
             <Text
               style={{
                 color: 'rgba(255,255,255,0.7)',
-                fontSize: 12,
+                fontSize: fs(12),
                 width: 64,
                 textAlign: 'center',
               }}
@@ -137,7 +137,7 @@ export function IncomingCallModal() {
             <Text
               style={{
                 color: 'rgba(255,255,255,0.7)',
-                fontSize: 12,
+                fontSize: fs(12),
                 width: 64,
                 textAlign: 'center',
               }}

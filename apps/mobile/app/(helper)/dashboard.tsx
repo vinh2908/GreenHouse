@@ -257,7 +257,7 @@ export default function HelperDashboardScreen() {
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                   <Text
                     style={{
-                      fontSize: 16,
+                      fontSize: fs(16),
                       fontWeight: '800',
                       color: COLORS.gray[900],
                       flexShrink: 1,
@@ -271,7 +271,7 @@ export default function HelperDashboardScreen() {
                   )}
                 </View>
                 <Text
-                  style={{ fontSize: 12, color: COLORS.gray[500], marginTop: 1 }}
+                  style={{ fontSize: fs(12), color: COLORS.gray[500], marginTop: 1 }}
                   numberOfLines={1}
                 >
                   Đối tác Thợ / Người giúp việc
@@ -351,7 +351,7 @@ export default function HelperDashboardScreen() {
               <View style={{ flex: 1 }}>
                 <Text
                   style={{
-                    fontSize: 14,
+                    fontSize: fs(14),
                     fontWeight: '800',
                     color: profile?.verification_status === 'pending' ? '#92400E' : '#991B1B',
                   }}
@@ -362,10 +362,10 @@ export default function HelperDashboardScreen() {
                 </Text>
                 <Text
                   style={{
-                    fontSize: 12,
+                    fontSize: fs(12),
                     color: profile?.verification_status === 'pending' ? '#B45309' : '#B91C1C',
                     marginTop: 2,
-                    lineHeight: 16,
+                    lineHeight: Math.round(fs(16)),
                   }}
                 >
                   {profile?.verification_status === 'pending'
@@ -375,7 +375,7 @@ export default function HelperDashboardScreen() {
               </View>
               <Text
                 style={{
-                  fontSize: 13,
+                  fontSize: fs(13),
                   fontWeight: '800',
                   color: profile?.verification_status === 'pending' ? '#D97706' : '#DC2626',
                 }}
@@ -615,7 +615,7 @@ export default function HelperDashboardScreen() {
                     </Text>
                     <Star size={16} color="#F59E0B" />
                   </View>
-                  <Text style={{ fontSize: 17, fontWeight: '800', color: '#F59E0B' }}>
+                  <Text style={{ fontSize: fs(17), fontWeight: '800', color: '#F59E0B' }}>
                     ★ {avgRating.toFixed(1)}
                   </Text>
                   <Text style={{ fontSize: fs(11), color: COLORS.gray[400], marginTop: 2 }}>
@@ -648,7 +648,7 @@ export default function HelperDashboardScreen() {
                   <Text
                     style={{
                       fontWeight: '800',
-                      fontSize: 15,
+                      fontSize: fs(15),
                       color: COLORS.gray[900],
                       flex: 1,
                       marginRight: 8,
@@ -663,14 +663,14 @@ export default function HelperDashboardScreen() {
                 <View style={{ flexDirection: 'row', gap: 12 }}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                     <MapPin size={14} color={COLORS.gray[500]} />
-                    <Text style={{ fontSize: 13, color: COLORS.gray[700] }}>
+                    <Text style={{ fontSize: fs(13), color: COLORS.gray[700] }}>
                       {activeJob.address?.district}
                     </Text>
                   </View>
                   {activeJob.preferred_time_start && (
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                       <Clock size={14} color={COLORS.gray[500]} />
-                      <Text style={{ fontSize: 13, color: COLORS.gray[700] }}>
+                      <Text style={{ fontSize: fs(13), color: COLORS.gray[700] }}>
                         {activeJob.preferred_time_start}
                       </Text>
                     </View>
@@ -710,7 +710,7 @@ export default function HelperDashboardScreen() {
           {pLoading ? (
             <Card style={{ alignItems: 'center', paddingVertical: 28, gap: 10 }}>
               <ActivityIndicator size="small" color={COLORS.primary} />
-              <Text style={{ fontSize: 13, color: COLORS.gray[500] }}>
+              <Text style={{ fontSize: fs(13), color: COLORS.gray[500] }}>
                 Đang tải trạng thái nhận việc…
               </Text>
             </Card>
@@ -781,7 +781,7 @@ export default function HelperDashboardScreen() {
                         <Text
                           style={{
                             fontWeight: '800',
-                            fontSize: 15,
+                            fontSize: fs(15),
                             color: COLORS.gray[900],
                             flex: 1,
                             marginRight: 8,
@@ -790,7 +790,7 @@ export default function HelperDashboardScreen() {
                         >
                           {job.title}
                         </Text>
-                        <Text style={{ fontSize: 12, color: COLORS.primary, fontWeight: '700' }}>
+                        <Text style={{ fontSize: fs(12), color: COLORS.primary, fontWeight: '700' }}>
                           {dayjs(job.created_at).fromNow()}
                         </Text>
                       </View>
@@ -807,11 +807,11 @@ export default function HelperDashboardScreen() {
                           label={(job.service_id as { name: string } | null)?.name ?? 'Dịch vụ'}
                           size="sm"
                         />
-                        <Text style={{ fontSize: 13, color: COLORS.gray[600] }}>
+                        <Text style={{ fontSize: fs(13), color: COLORS.gray[600] }}>
                           📍 {job.address?.district || job.address?.city || 'Chưa rõ'}
                         </Text>
                         {job.preferred_time_start && (
-                          <Text style={{ fontSize: 13, color: COLORS.gray[600] }}>
+                          <Text style={{ fontSize: fs(13), color: COLORS.gray[600] }}>
                             • 🕐 {job.preferred_time_start}
                           </Text>
                         )}
@@ -827,12 +827,12 @@ export default function HelperDashboardScreen() {
                           borderTopColor: COLORS.gray[100],
                         }}
                       >
-                        <Text style={{ fontSize: 12, color: COLORS.gray[500] }}>
+                        <Text style={{ fontSize: fs(12), color: COLORS.gray[500] }}>
                           {job.total_quotes_count > 0
                             ? `${job.total_quotes_count} thợ đã báo giá`
                             : 'Chưa có báo giá nào'}
                         </Text>
-                        <Text style={{ fontSize: 13, fontWeight: '800', color: COLORS.primary }}>
+                        <Text style={{ fontSize: fs(13), fontWeight: '800', color: COLORS.primary }}>
                           Gửi báo giá ngay →
                         </Text>
                       </View>
@@ -881,10 +881,10 @@ export default function HelperDashboardScreen() {
                   <Flame size={24} color="#DC2626" />
                 </View>
                 <View>
-                  <Text style={{ fontSize: 18, fontWeight: '900', color: '#DC2626' }}>
+                  <Text style={{ fontSize: fs(18), fontWeight: '900', color: '#DC2626' }}>
                     YÊU CẦU CỨU HỘ SOS!
                   </Text>
-                  <Text style={{ fontSize: 12, color: COLORS.gray[500], fontWeight: '600' }}>
+                  <Text style={{ fontSize: fs(12), color: COLORS.gray[500], fontWeight: '600' }}>
                     Có mặt khẩn cấp sau 15 - 20 phút
                   </Text>
                 </View>
@@ -915,17 +915,17 @@ export default function HelperDashboardScreen() {
                 gap: 8,
               }}
             >
-              <Text style={{ fontSize: 16, fontWeight: '800', color: '#991B1B' }}>
+              <Text style={{ fontSize: fs(16), fontWeight: '800', color: '#991B1B' }}>
                 {sosBroadcast?.title}
               </Text>
-              <Text style={{ fontSize: 13, color: '#B91C1C', lineHeight: 18 }}>
+              <Text style={{ fontSize: fs(13), color: '#B91C1C', lineHeight: Math.round(fs(18)) }}>
                 {sosBroadcast?.description}
               </Text>
               <Separator my={2} />
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                 <MapPin size={16} color="#DC2626" />
                 <Text
-                  style={{ fontSize: 13, fontWeight: '700', color: COLORS.gray[900], flex: 1 }}
+                  style={{ fontSize: fs(13), fontWeight: '700', color: COLORS.gray[900], flex: 1 }}
                   numberOfLines={1}
                 >
                   {sosBroadcast?.address}
@@ -951,14 +951,14 @@ export default function HelperDashboardScreen() {
                   alignItems: 'center',
                 }}
               >
-                <Text style={{ fontSize: 13.5, color: '#065F46', fontWeight: '700' }}>
+                <Text style={{ fontSize: fs(13.5), color: '#065F46', fontWeight: '700' }}>
                   Thu nhập tối thiểu nhận về ví:
                 </Text>
-                <Text style={{ fontSize: 18, fontWeight: '900', color: COLORS.success }}>
+                <Text style={{ fontSize: fs(18), fontWeight: '900', color: COLORS.success }}>
                   255.000₫
                 </Text>
               </View>
-              <Text style={{ fontSize: 11.5, color: '#047857' }}>
+              <Text style={{ fontSize: fs(11.5), color: '#047857' }}>
                 (Bao gồm công cơ bản 200.000₫ + Phụ phí khẩn cấp 100.000₫ - phí sàn 15%)
               </Text>
             </View>
@@ -985,7 +985,7 @@ export default function HelperDashboardScreen() {
             >
               <Check size={22} color="#FFFFFF" strokeWidth={3} />
               <Text
-                style={{ color: '#FFFFFF', fontSize: 17, fontWeight: '900', letterSpacing: 0.5 }}
+                style={{ color: '#FFFFFF', fontSize: fs(17), fontWeight: '900', letterSpacing: 0.5 }}
               >
                 {acceptSos.isPending ? 'ĐANG KHỚP ĐƠN...' : '🚨 NHẬN CỨU HỘ SOS NGAY'}
               </Text>

@@ -11,6 +11,7 @@ import {
 import type { AlertButton, AlertOptions } from 'react-native';
 import { create } from 'zustand';
 import Toast from 'react-native-toast-message';
+import { useTranslation } from '@/hooks/use-i18n';
 
 export type Dialog = {
   title: string;
@@ -62,6 +63,7 @@ export const Alert = {
 
 export function AppAlertHost() {
   const dialog = useDialogs(s => s.queue[0]);
+  const { fs, textScale } = useTranslation();
   if (!dialog) return null;
 
   const dismiss = (button?: AlertButton) => {
@@ -142,19 +144,19 @@ export function AppAlertHost() {
                   marginBottom: 16,
                 }}
               >
-                <Text style={{ fontSize: 28 }}>{dialog.icon || '🔔'}</Text>
+                <Text style={{ fontSize: fs(28) }}>{dialog.icon || '🔔'}</Text>
               </View>
 
               {/* Title */}
               <Text
                 accessibilityRole="header"
                 style={{
-                  fontSize: 18.5,
+                  fontSize: fs(18.5),
                   fontWeight: '800',
                   color: '#111827',
                   textAlign: 'center',
                   marginBottom: 8,
-                  lineHeight: 25,
+                  lineHeight: Math.round(fs(25)),
                 }}
               >
                 {dialog.title}
@@ -168,10 +170,10 @@ export function AppAlertHost() {
                 >
                   <Text
                     style={{
-                      fontSize: 14.5,
+                      fontSize: fs(14.5),
                       color: '#4B5563',
                       textAlign: 'center',
-                      lineHeight: 22,
+                      lineHeight: Math.round(fs(22)),
                     }}
                   >
                     {dialog.message}
@@ -211,7 +213,8 @@ export function AppAlertHost() {
                       onPress={() => dismiss(button)}
                       style={{
                         flex: isTwoButtons ? 1 : undefined,
-                        height: 46,
+                        minHeight: Math.max(46, Math.round(46 * textScale)),
+                        paddingVertical: 8,
                         borderRadius: 14,
                         backgroundColor: btnBg,
                         alignItems: 'center',
@@ -221,7 +224,7 @@ export function AppAlertHost() {
                     >
                       <Text
                         style={{
-                          fontSize: 15,
+                          fontSize: fs(15),
                           fontWeight: '700',
                           color: textColor,
                         }}
