@@ -31,6 +31,7 @@ import apiClient from '@/services/api-client';
 import { uploadFile } from '@/services/upload.service';
 import { ImageViewerModal } from '@/components/common/photo-thumbs';
 import { Alert } from '@/components/common/app-alert';
+import { useTranslation } from '@/hooks/use-i18n';
 import { Avatar, COLORS, LoadingSpinner, EmptyState } from '@/components/ui';
 
 export function resolveMediaUrl(rawUrl: string): string {
@@ -67,6 +68,7 @@ export function resolveMediaUrl(rawUrl: string): string {
 }
 
 function ChatImageBubble({ uri, onPress }: { uri: string; onPress: () => void }) {
+  const { lang } = useTranslation();
   const resolvedUrl = useMemo(() => resolveMediaUrl(uri), [uri]);
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
 
@@ -114,7 +116,7 @@ function ChatImageBubble({ uri, onPress }: { uri: string; onPress: () => void })
         <View style={{ alignItems: 'center', gap: 6, zIndex: 2 }}>
           <ActivityIndicator size="small" color={COLORS.primary} />
           <Text style={{ fontSize: 11, color: COLORS.gray[500], fontWeight: '600' }}>
-            Đang tải ảnh...
+            {lang === 'en' ? 'Loading image...' : 'Đang tải ảnh...'}
           </Text>
         </View>
       )}
@@ -151,7 +153,7 @@ function ChatImageBubble({ uri, onPress }: { uri: string; onPress: () => void })
               textAlign: 'center',
             }}
           >
-            Không tải được ảnh
+            {lang === 'en' ? 'Failed to load image' : 'Không tải được ảnh'}
           </Text>
           <Text
             style={{
@@ -162,7 +164,9 @@ function ChatImageBubble({ uri, onPress }: { uri: string; onPress: () => void })
             }}
             numberOfLines={2}
           >
-            Tệp tin không tồn tại hoặc đã bị xóa khỏi máy chủ
+            {lang === 'en'
+              ? 'File does not exist or was deleted from server'
+              : 'Tệp tin không tồn tại hoặc đã bị xóa khỏi máy chủ'}
           </Text>
           <TouchableOpacity
             activeOpacity={0.7}
@@ -175,7 +179,9 @@ function ChatImageBubble({ uri, onPress }: { uri: string; onPress: () => void })
               borderRadius: 6,
             }}
           >
-            <Text style={{ fontSize: 10, color: '#fff', fontWeight: '700' }}>Thử lại</Text>
+            <Text style={{ fontSize: 10, color: '#fff', fontWeight: '700' }}>
+              {lang === 'en' ? 'Retry' : 'Thử lại'}
+            </Text>
           </TouchableOpacity>
         </View>
       )}
@@ -187,6 +193,7 @@ export default function ChatScreen() {
   const { jobId } = useLocalSearchParams<{ jobId: string }>();
   const router = useRouter();
   const currentUser = useAuthStore(s => s.user);
+  const { t, fs, lang } = useTranslation();
 
   const [conversation, setConversation] = useState<any>(null);
   const [loadingConv, setLoadingConv] = useState(true);
@@ -218,7 +225,9 @@ export default function ChatScreen() {
         (globalThis as any).__activeConversationId = data.data?._id;
       })
       .catch(err => {
-        const msg = err?.response?.data?.message || 'Không thể mở cuộc trò chuyện';
+        const msg =
+          err?.response?.data?.message ||
+          (lang === 'en' ? 'Could not open conversation' : 'Không thể mở cuộc trò chuyện');
         setErrorMsg(msg);
       })
       .finally(() => {
@@ -240,7 +249,10 @@ export default function ChatScreen() {
         listRef.current?.scrollToEnd({ animated: true });
       }, 100);
     } catch (err) {
-      Toast.show({ type: 'error', text1: 'Gửi tin nhắn thất bại' });
+      Toast.show({
+        type: 'error',
+        text1: lang === 'en' ? 'Failed to send message' : 'Gửi tin nhắn thất bại',
+      });
     }
   };
 
@@ -259,8 +271,8 @@ export default function ChatScreen() {
       setPendingPhoto({ uri, failed: true });
       Toast.show({
         type: 'error',
-        text1: 'Gửi ảnh thất bại',
-        text2: 'Chạm vào ảnh để thử gửi lại',
+        text1: lang === 'en' ? 'Failed to send photo' : 'Gửi ảnh thất bại',
+        text2: lang === 'en' ? 'Tap photo to retry sending' : 'Chạm vào ảnh để thử gửi lại',
       });
     }
   };
@@ -270,7 +282,13 @@ export default function ChatScreen() {
       if (source === 'camera') {
         const { status } = await ImagePicker.requestCameraPermissionsAsync();
         if (status !== 'granted') {
-          Toast.show({ type: 'error', text1: 'Cần quyền truy cập camera để chụp ảnh' });
+          Toast.show({
+            type: 'error',
+            text1:
+              lang === 'en'
+                ? 'Camera permission required to take photo'
+                : 'Cần quyền truy cập camera để chụp ảnh',
+          });
           return;
         }
         const result = await ImagePicker.launchCameraAsync({
@@ -281,7 +299,13 @@ export default function ChatScreen() {
       } else {
         const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
         if (status !== 'granted') {
-          Toast.show({ type: 'error', text1: 'Cần quyền truy cập thư viện ảnh' });
+          Toast.show({
+            type: 'error',
+            text1:
+              lang === 'en'
+                ? 'Photo library permission required'
+                : 'Cần quyền truy cập thư viện ảnh',
+          });
           return;
         }
         const result = await ImagePicker.launchImageLibraryAsync({
@@ -291,16 +315,29 @@ export default function ChatScreen() {
         if (!result.canceled && result.assets[0]?.uri) void sendPhoto(result.assets[0].uri);
       }
     } catch {
-      Toast.show({ type: 'error', text1: 'Không thể chọn ảnh' });
+      Toast.show({
+        type: 'error',
+        text1: lang === 'en' ? 'Could not select photo' : 'Không thể chọn ảnh',
+      });
     }
   };
 
   const handleAttach = () => {
-    Alert.alert('Gửi ảnh', 'Chọn nguồn ảnh', [
-      { text: '📷 Chụp ảnh', onPress: () => void pickPhoto('camera') },
-      { text: '🖼️ Thư viện ảnh', onPress: () => void pickPhoto('library') },
-      { text: 'Hủy', style: 'cancel' },
-    ]);
+    Alert.alert(
+      lang === 'en' ? 'Send Photo' : 'Gửi ảnh',
+      lang === 'en' ? 'Select photo source' : 'Chọn nguồn ảnh',
+      [
+        {
+          text: lang === 'en' ? '📷 Take Photo' : '📷 Chụp ảnh',
+          onPress: () => void pickPhoto('camera'),
+        },
+        {
+          text: lang === 'en' ? '🖼️ Photo Library' : '🖼️ Thư viện ảnh',
+          onPress: () => void pickPhoto('library'),
+        },
+        { text: lang === 'en' ? 'Cancel' : 'Hủy', style: 'cancel' },
+      ],
+    );
   };
 
   const handleBack = () => {
@@ -323,7 +360,14 @@ export default function ChatScreen() {
   const { data: callConfig } = useCallConfig();
 
   const partnerName =
-    partner?.full_name || (currentUser?.active_role === 'helper' ? 'Khách hàng' : 'Thợ phụ trách');
+    partner?.full_name ||
+    (currentUser?.active_role === 'helper'
+      ? lang === 'en'
+        ? 'Customer'
+        : 'Khách hàng'
+      : lang === 'en'
+        ? 'Assigned Helper'
+        : 'Thợ phụ trách');
   const partnerAvatar = partner?.avatar;
   const partnerPhone = partner?.phone;
 
@@ -376,7 +420,7 @@ export default function ChatScreen() {
               <ShieldCheck size={15} color={COLORS.success} />
             </View>
             <Text style={{ fontSize: 11.5, color: COLORS.success, fontWeight: '700' }}>
-              ● Đang hoạt động
+              {lang === 'en' ? '● Online' : '● Đang hoạt động'}
             </Text>
           </View>
         </View>
@@ -413,9 +457,9 @@ export default function ChatScreen() {
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 }}>
           <EmptyState
             emoji="💬"
-            title="Chưa thể mở cuộc trò chuyện"
+            title={lang === 'en' ? 'Could not open conversation' : 'Chưa thể mở cuộc trò chuyện'}
             subtitle={errorMsg}
-            action="Quay lại"
+            action={lang === 'en' ? 'Back' : 'Quay lại'}
             onAction={() => router.back()}
           />
         </View>
@@ -474,7 +518,9 @@ export default function ChatScreen() {
                               overflow: 'hidden',
                             }}
                           >
-                            Gửi thất bại — chạm để thử lại
+                            {lang === 'en'
+                              ? 'Sending failed — tap to retry'
+                              : 'Gửi thất bại — chạm để thử lại'}
                           </Text>
                         ) : (
                           <ActivityIndicator size="large" color="#fff" />
@@ -520,7 +566,7 @@ export default function ChatScreen() {
                   <Text style={{ fontSize: 28 }}>💬</Text>
                 </View>
                 <Text style={{ fontSize: 16, fontWeight: '800', color: COLORS.gray[800] }}>
-                  Bắt đầu cuộc trò chuyện
+                  {lang === 'en' ? 'Start the conversation' : 'Bắt đầu cuộc trò chuyện'}
                 </Text>
                 <Text
                   style={{
@@ -530,8 +576,9 @@ export default function ChatScreen() {
                     paddingHorizontal: 20,
                   }}
                 >
-                  Gửi tin nhắn để trao đổi chi tiết về địa chỉ, sự cố và thời gian làm việc với đối
-                  phương.
+                  {lang === 'en'
+                    ? 'Send a message to discuss location, details, and schedule with your partner.'
+                    : 'Gửi tin nhắn để trao đổi chi tiết về địa chỉ, sự cố và thời gian làm việc với đối phương.'}
                 </Text>
               </View>
             }
@@ -659,7 +706,7 @@ export default function ChatScreen() {
                 backgroundColor: COLORS.gray[50],
                 color: COLORS.gray[900],
               }}
-              placeholder="Nhập tin nhắn trao đổi..."
+              placeholder={lang === 'en' ? 'Type a message...' : 'Nhập tin nhắn trao đổi...'}
               value={text}
               onChangeText={setText}
               multiline

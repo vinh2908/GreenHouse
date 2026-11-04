@@ -15,10 +15,12 @@ import { ArrowLeft, MapPin } from 'lucide-react-native';
 import { useDemandMap, useHelperProfile, type DemandArea } from '@/hooks/use-api';
 import { Card, COLORS, EmptyState } from '@/components/ui';
 import { DemandMapView } from '@/components/common/demand-map-view';
+import { useTranslation } from '@/hooks/use-i18n';
 
 export default function DemandMapScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation();
   const { data: helperProfile } = useHelperProfile();
   const { data: areas, isLoading, isRefetching, refetch } = useDemandMap();
   const [focus, setFocus] = useState<DemandArea | null>(null);
@@ -70,12 +72,12 @@ export default function DemandMapScreen() {
         </TouchableOpacity>
         <View style={{ flex: 1 }}>
           <Text style={{ fontSize: 19, fontWeight: '800', color: COLORS.gray[900] }}>
-            🗺 Bản đồ nhu cầu
+            🗺 {t('demand_map.title')}
           </Text>
           <Text style={{ fontSize: 12, color: COLORS.gray[500], marginTop: 2 }}>
             {totalJobs > 0
-              ? `${totalJobs} đơn đang chờ báo giá tại ${sorted.length} khu vực`
-              : 'Khu vực nào đang cần thợ nhất lúc này'}
+              ? t('demand_map.total_summary', { count: totalJobs, areas: sorted.length })
+              : t('demand_map.subtitle_empty')}
           </Text>
         </View>
       </View>
@@ -99,15 +101,15 @@ export default function DemandMapScreen() {
           <Card style={{ alignItems: 'center', paddingVertical: 24, gap: 10 }}>
             <ActivityIndicator size="small" color={COLORS.primary} />
             <Text style={{ fontSize: 13, color: COLORS.gray[500] }}>
-              Đang tải dữ liệu bản đồ nhu cầu...
+              {t('demand_map.loading')}
             </Text>
           </Card>
         ) : sorted.length === 0 ? (
           <Card style={{ alignItems: 'center', paddingVertical: 32 }}>
             <EmptyState
               emoji="🌙"
-              title="Chưa có đơn nào đang mở"
-              subtitle="Hiện không có đơn chờ báo giá trong khu vực. Bản đồ đang hiển thị vị trí của bạn, đơn mới sẽ xuất hiện ngay khi có khách đăng việc."
+              title={t('demand_map.no_jobs_title')}
+              subtitle={t('demand_map.no_jobs_desc')}
             />
           </Card>
         ) : (
@@ -148,8 +150,10 @@ export default function DemandMapScreen() {
                       {area.city ? `, ${area.city}` : ''}
                     </Text>
                     <Text style={{ fontSize: 12.5, color: COLORS.gray[500], marginTop: 2 }}>
-                      {area.open_jobs} đơn đang chờ báo giá
-                      {area.fixed_price_jobs ? ` · ${area.fixed_price_jobs} giá cam kết` : ''}
+                      {area.open_jobs} {t('demand_map.jobs_waiting_quotes')}
+                      {area.fixed_price_jobs
+                        ? ` · ${t('demand_map.fixed_price_count', { count: area.fixed_price_jobs })}`
+                        : ''}
                     </Text>
                   </View>
                   <MapPin size={18} color={isFocused ? COLORS.primary : COLORS.gray[300]} />

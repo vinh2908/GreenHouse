@@ -20,7 +20,7 @@ export function SosBackupPopup() {
   const accept = useAcceptSosBackup();
   const decline = useDeclineSosBackup();
   const now = useNowTick(!!incoming);
-  const { t, tService, fs } = useTranslation();
+  const { t, tService, fs, lang } = useTranslation();
 
   // Hết hạn đếm ngược phía client → tự đóng (server cũng sẽ gửi resolved/expired)
   useEffect(() => {
@@ -57,7 +57,7 @@ export function SosBackupPopup() {
           text1:
             typeof msg === 'string'
               ? msg
-              : 'Không nhận được đơn (lỗi mạng hoặc hệ thống). Vui lòng thử lại!',
+              : (lang === 'en' ? 'Could not accept job (network or system error). Please retry!' : 'Không nhận được đơn (lỗi mạng hoặc hệ thống). Vui lòng thử lại!'),
         });
       }
     }
@@ -74,7 +74,7 @@ export function SosBackupPopup() {
         text1:
           typeof msg === 'string'
             ? msg
-            : 'Không thể từ chối lúc này. Vui lòng kiểm tra mạng và thử lại!',
+            : (lang === 'en' ? 'Could not decline right now. Please check network and retry!' : 'Không thể từ chối lúc này. Vui lòng kiểm tra mạng và thử lại!'),
       });
     }
   };
@@ -152,7 +152,7 @@ export function SosBackupPopup() {
               <PhotoThumbRow
                 urls={incoming.photo_urls}
                 size={56}
-                label="📷 Ảnh hiện trạng từ thợ gặp sự cố"
+                label={lang === 'en' ? '📷 Incident photo from helper' : '📷 Ảnh hiện trạng từ thợ gặp sự cố'}
               />
             ) : null}
           </View>

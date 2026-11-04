@@ -12,6 +12,9 @@ import type { AlertButton, AlertOptions } from 'react-native';
 import { create } from 'zustand';
 import Toast from 'react-native-toast-message';
 import { useTranslation } from '@/hooks/use-i18n';
+import { useSettingsStore } from '@/stores/settings.store';
+
+const getLanguage = () => useSettingsStore.getState().language;
 
 export type Dialog = {
   title: string;
@@ -44,7 +47,9 @@ const getDialogIcon = (title: string, message?: string, buttons?: AlertButton[])
 
 export const Alert = {
   alert(title: string, message?: string, buttons?: AlertButton[], options?: AlertOptions) {
-    const defaultButtons: AlertButton[] = [{ text: 'Đồng ý', style: 'default' }];
+    const defaultButtons: AlertButton[] = [
+      { text: getLanguage() === 'en' ? 'OK' : 'Đồng ý', style: 'default' },
+    ];
     const icon = getDialogIcon(title, message, buttons);
     useDialogs.setState(s => ({
       queue: [
@@ -72,8 +77,16 @@ export function AppAlertHost() {
     Promise.resolve()
       .then(() => (button ? button.onPress?.() : dialog.options?.onDismiss?.()))
       .catch(err => {
-        const msg = err?.message || 'Chưa thực hiện được. Vui lòng thử lại.';
-        Toast.show({ type: 'error', text1: 'Lỗi', text2: msg });
+        const msg =
+          err?.message ||
+          (getLanguage() === 'en'
+            ? 'Operation failed. Please try again.'
+            : 'Chưa thực hiện được. Vui lòng thử lại.');
+        Toast.show({
+          type: 'error',
+          text1: getLanguage() === 'en' ? 'Error' : 'Lỗi',
+          text2: msg,
+        });
       });
   };
 
@@ -229,7 +242,7 @@ export function AppAlertHost() {
                           color: textColor,
                         }}
                       >
-                        {button.text || 'Đồng ý'}
+                        {button.text || (getLanguage() === 'en' ? 'OK' : 'Đồng ý')}
                       </Text>
                     </TouchableOpacity>
                   );

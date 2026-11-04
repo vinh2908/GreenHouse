@@ -2,10 +2,12 @@
 // Hiện khi mất mạng (đang xem dữ liệu đã lưu) hoặc còn thao tác chờ đồng bộ.
 import { View, Text } from 'react-native';
 import { useOfflineStore } from '@/stores/offline.store';
+import { useTranslation } from '@/hooks/use-i18n';
 
 export function OfflineBanner() {
   const isOnline = useOfflineStore(s => s.isOnline);
   const pendingCount = useOfflineStore(s => s.pendingCount);
+  const { lang } = useTranslation();
 
   if (isOnline && pendingCount === 0) return null;
 
@@ -33,12 +35,14 @@ export function OfflineBanner() {
     >
       {!isOnline && (
         <Text style={{ fontSize: 12.5, fontWeight: '700', color: '#92400E' }}>
-          📴 Chế độ offline — đang xem dữ liệu đã lưu
+          {lang === 'en' ? '📴 Offline mode — viewing saved data' : '📴 Chế độ offline — đang xem dữ liệu đã lưu'}
         </Text>
       )}
       {pendingCount > 0 && (
         <Text style={{ fontSize: 12.5, fontWeight: '600', color: '#92400E' }}>
-          ⏳ {pendingCount} thao tác đang chờ đồng bộ
+          {lang === 'en'
+            ? `⏳ ${pendingCount} operation(s) pending sync`
+            : `⏳ ${pendingCount} thao tác đang chờ đồng bộ`}
         </Text>
       )}
     </View>

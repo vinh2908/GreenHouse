@@ -5,18 +5,38 @@ import { ArrowLeft, Star } from 'lucide-react-native';
 import dayjs from 'dayjs';
 import { useLoyaltyAccount, useLoyaltyHistory } from '@/hooks/use-api';
 import { Card, COLORS, EmptyState, LoadingSpinner, Separator } from '@/components/ui';
-
-const fmt = (n: number) => new Intl.NumberFormat('vi-VN').format(n);
-
-const TX_META: Record<string, { label: string; emoji: string }> = {
-  earn: { label: 'Tích điểm', emoji: '⭐' },
-  redeem: { label: 'Đổi điểm', emoji: '🎁' },
-  adjust: { label: 'Điều chỉnh', emoji: '🛠️' },
-};
+import { useTranslation } from '@/hooks/use-i18n';
 
 export default function LoyaltyScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { t, lang, tLoyaltyTier } = useTranslation();
+  const fmt = (n: number) => new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'vi-VN').format(n);
+
+  const getTxLabel = (tx: any) => {
+    if (lang === 'en') {
+      if (tx.note) {
+        return tx.note
+          .replace(/^Tích điểm cho đơn/i, 'Earn points for order')
+          .replace(/^Đổi điểm cho đơn/i, 'Redeem points for order')
+          .replace(/^Hoàn điểm cho đơn/i, 'Refund points for order')
+          .replace(/^Điều chỉnh/i, 'Adjustment');
+      }
+      if (tx.type === 'earn') return t('loyalty_tx_earn');
+      if (tx.type === 'redeem') return t('loyalty_tx_redeem');
+      return t('loyalty_tx_adjust');
+    }
+    if (tx.note) return tx.note;
+    if (tx.type === 'earn') return t('loyalty_tx_earn');
+    if (tx.type === 'redeem') return t('loyalty_tx_redeem');
+    return t('loyalty_tx_adjust');
+  };
+
+  const getTxEmoji = (type: string) => {
+    if (type === 'earn') return '⭐';
+    if (type === 'redeem') return '🎁';
+    return '🛠️';
+  };
   const {
     data: account,
     isLoading,
@@ -64,7 +84,7 @@ export default function LoyaltyScreen() {
           <ArrowLeft size={22} color={COLORS.gray[800]} />
         </TouchableOpacity>
         <Text style={{ fontSize: 17, fontWeight: '800', color: COLORS.gray[900] }}>
-          Điểm thành viên
+          {t('loyalty_title')}
         </Text>
       </View>
 
@@ -83,15 +103,18 @@ export default function LoyaltyScreen() {
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
             <Star size={22} color="#D97706" />
             <Text style={{ fontSize: 15, fontWeight: '800', color: '#92400E' }}>
-              Hạng {account?.tier_label ?? 'Thường'}
+              {t('loyalty_tier_name', { tier: tLoyaltyTier(account?.tier_label) })}
             </Text>
           </View>
           <Text style={{ fontSize: 32, fontWeight: '800', color: COLORS.gray[900] }}>
             {fmt(account?.points_balance ?? 0)}{' '}
-            <Text style={{ fontSize: 16, color: COLORS.gray[500] }}>điểm</Text>
+            <Text style={{ fontSize: 16, color: COLORS.gray[500] }}>{t('loyalty_points_unit')}</Text>
           </Text>
           <Text style={{ fontSize: 13, color: COLORS.gray[600] }}>
-            {`Tổng điểm đã tích lũy: ${fmt(account?.lifetime_points ?? 0)} điểm · 1 điểm = ${fmt(account?.point_value_vnd ?? 1000)}₫ khi đổi`}
+            {t('loyalty_lifetime_summary', {
+              lifetime: fmt(account?.lifetime_points ?? 0),
+              value: fmt(account?.point_value_vnd ?? 1000),
+            })}
           </Text>
 
           {account?.next_tier_at ? (
@@ -109,12 +132,15 @@ export default function LoyaltyScreen() {
                 />
               </View>
               <Text style={{ fontSize: 12, color: COLORS.gray[600] }}>
-                {`Còn ${fmt(account.points_to_next_tier)} điểm nữa để lên hạng tiếp theo (${fmt(account.next_tier_at)} điểm)`}
+                {t('loyalty_next_tier_hint', {
+                  points: fmt(account.points_to_next_tier),
+                  target: fmt(account.next_tier_at),
+                })}
               </Text>
             </View>
           ) : (
             <Text style={{ fontSize: 12, fontWeight: '700', color: '#92400E' }}>
-              🎉 Bạn đang ở hạng cao nhất!
+              {t('loyalty_max_tier')}
             </Text>
           )}
         </Card>
@@ -122,13 +148,16 @@ export default function LoyaltyScreen() {
         {/* Perks */}
         <Card style={{ gap: 8 }}>
           <Text style={{ fontWeight: '800', fontSize: 15, color: COLORS.gray[900] }}>
-            Quyền lợi theo hạng
+            {t('loyalty_perks_title')}
           </Text>
           <Text style={{ fontSize: 13, color: COLORS.gray[600], lineHeight: 20 }}>
-            {`• Tích điểm: 1 điểm / ${fmt(account?.earn_vnd_per_point ?? 10000)}₫ đã thanh toán\n• Hạng Thường (dưới 500 điểm): đổi tối đa 20% giá trị đơn\n• Hạng Bạc (500–1.999 điểm): đổi tối đa 30% giá trị đơn\n• Hạng Vàng (từ 2.000 điểm): đổi tối đa 50% giá trị đơn\n• Đổi tối thiểu ${fmt(account?.min_redeem_points ?? 100)} điểm/lần, áp dụng trong chi tiết đơn khi đã có giá chốt.`}
+            {t('loyalty_perks_body', {
+              earn: fmt(account?.earn_vnd_per_point ?? 10000),
+              min: fmt(account?.min_redeem_points ?? 100),
+            })}
           </Text>
           <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.gray[800] }}>
-            {`Hạng hiện tại của bạn được đổi tối đa ${account?.redemption_cap_percent ?? 20}% giá trị đơn.`}
+            {t('loyalty_current_cap_desc', { cap: account?.redemption_cap_percent ?? 20 })}
           </Text>
         </Card>
 
@@ -137,18 +166,17 @@ export default function LoyaltyScreen() {
           <Text
             style={{ fontSize: 16, fontWeight: '800', color: COLORS.gray[900], marginBottom: 10 }}
           >
-            Lịch sử điểm
+            {t('loyalty_history_title')}
           </Text>
           {!history?.transactions?.length ? (
             <EmptyState
               emoji="⭐"
-              title="Chưa có biến động điểm"
-              subtitle="Hoàn thành đơn và thanh toán để bắt đầu tích điểm"
+              title={t('loyalty_history_empty_title')}
+              subtitle={t('loyalty_history_empty_sub')}
             />
           ) : (
             <Card style={{ gap: 0 }}>
               {history.transactions.map((tx, i) => {
-                const meta = TX_META[tx.type] ?? TX_META['adjust'];
                 const positive = tx.points > 0;
                 return (
                   <View key={tx._id}>
@@ -161,14 +189,16 @@ export default function LoyaltyScreen() {
                         paddingVertical: 12,
                       }}
                     >
-                      <Text style={{ fontSize: 20 }}>{meta?.emoji}</Text>
+                      <Text style={{ fontSize: 20 }}>{getTxEmoji(tx.type)}</Text>
                       <View style={{ flex: 1 }}>
                         <Text style={{ fontWeight: '700', fontSize: 14, color: COLORS.gray[900] }}>
-                          {tx.note ?? meta?.label}
+                          {getTxLabel(tx)}
                         </Text>
                         <Text style={{ fontSize: 12, color: COLORS.gray[500], marginTop: 2 }}>
-                          {dayjs(tx.created_at).format('DD/MM/YYYY HH:mm')} · Số dư sau:{' '}
-                          {fmt(tx.balance_after)} điểm
+                          {t('loyalty_balance_after', {
+                            time: dayjs(tx.created_at).format('DD/MM/YYYY HH:mm'),
+                            balance: fmt(tx.balance_after),
+                          })}
                         </Text>
                       </View>
                       <Text

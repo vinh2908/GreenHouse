@@ -5,12 +5,14 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { ArrowLeft } from 'lucide-react-native';
 import Toast from 'react-native-toast-message';
 import { useAuthStore } from '@/stores/auth.store';
+import { useTranslation } from '@/hooks/use-i18n';
 import { useVerifyOtp, useResendOtp } from '@/hooks/use-api';
 import { Button, COLORS } from '@/components/ui';
 
 export default function OtpScreen() {
   const router = useRouter();
   const { phone } = useLocalSearchParams<{ phone: string }>();
+  const { t, fs, lang } = useTranslation();
   const setAuth = useAuthStore(s => s.setAuth);
 
   const verifyOtp = useVerifyOtp();
@@ -41,7 +43,7 @@ export default function OtpScreen() {
   const handleVerify = async (code?: string) => {
     const otpCode = code ?? otp.join('');
     if (otpCode.length !== 6) {
-      Toast.show({ type: 'error', text1: 'Nhập đủ 6 ký tự OTP' });
+      Toast.show({ type: 'error', text1: lang === 'en' ? 'Enter 6-digit OTP code' : 'Nhập đủ 6 ký tự OTP' });
       return;
     }
     try {
@@ -52,13 +54,17 @@ export default function OtpScreen() {
         // Sau khi đăng ký & OTP xong, đưa sang màn hình chọn Role
         router.replace('/(auth)/select-role');
       } else {
-        Toast.show({ type: 'success', text1: 'Xác minh thành công', text2: 'Vui lòng đăng nhập' });
+        Toast.show({
+          type: 'success',
+          text1: lang === 'en' ? 'Verified successfully' : 'Xác minh thành công',
+          text2: lang === 'en' ? 'Please log in' : 'Vui lòng đăng nhập',
+        });
         router.replace('/(auth)/login');
       }
     } catch (err: unknown) {
       const msg =
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-        'Mã OTP không đúng hoặc đã hết hạn';
+        (lang === 'en' ? 'Invalid or expired OTP code' : 'Mã OTP không đúng hoặc đã hết hạn');
       Toast.show({ type: 'error', text1: msg });
       setOtp(['', '', '', '', '', '']);
       inputs.current[0]?.focus();
@@ -70,9 +76,9 @@ export default function OtpScreen() {
     try {
       await resendOtp.mutateAsync(phone!);
       setCountdown(60);
-      Toast.show({ type: 'success', text1: 'Đã gửi lại OTP' });
+      Toast.show({ type: 'success', text1: lang === 'en' ? 'OTP resent' : 'Đã gửi lại OTP' });
     } catch {
-      Toast.show({ type: 'error', text1: 'Gửi lại OTP thất bại' });
+      Toast.show({ type: 'error', text1: lang === 'en' ? 'Failed to resend OTP' : 'Gửi lại OTP thất bại' });
     }
   };
 
@@ -112,7 +118,7 @@ export default function OtpScreen() {
           <ArrowLeft size={20} color={COLORS.gray[800]} />
         </TouchableOpacity>
         <Text style={{ fontSize: 18, fontWeight: '700', color: COLORS.gray[900], marginLeft: 12 }}>
-          Xác minh OTP
+          {lang === 'en' ? 'Verify OTP' : 'Xác minh OTP'}
         </Text>
       </View>
 
@@ -139,7 +145,7 @@ export default function OtpScreen() {
               textAlign: 'center',
             }}
           >
-            Nhập mã xác minh
+            {lang === 'en' ? 'Enter Verification Code' : 'Nhập mã xác minh'}
           </Text>
           <Text
             style={{
@@ -150,7 +156,7 @@ export default function OtpScreen() {
               lineHeight: 20,
             }}
           >
-            Mã OTP 6 số đã được gửi đến số{'\n'}
+            {lang === 'en' ? 'A 6-digit OTP was sent to\n' : 'Mã OTP 6 số đã được gửi đến số\n'}
             <Text style={{ fontWeight: '700', color: COLORS.gray[800] }}>{phone}</Text>
           </Text>
 
@@ -175,8 +181,9 @@ export default function OtpScreen() {
             }}
           >
             <Text style={{ fontSize: 13, color: '#16A34A', fontWeight: '600' }}>
-              💡 Mã OTP thử nghiệm: <Text style={{ fontWeight: '800' }}>123456</Text> (Bấm để điền
-              nhanh)
+              {lang === 'en' ? '💡 Dev test OTP: ' : '💡 Mã OTP thử nghiệm: '}
+              <Text style={{ fontWeight: '800' }}>123456</Text>{' '}
+              {lang === 'en' ? '(Tap to fill)' : '(Bấm để điền nhanh)'}
             </Text>
           </TouchableOpacity>
         </View>
@@ -209,19 +216,23 @@ export default function OtpScreen() {
           ))}
         </View>
 
-        <Button title="Xác nhận" loading={verifyOtp.isPending} onPress={() => handleVerify()} />
+        <Button
+          title={lang === 'en' ? 'Confirm' : 'Xác nhận'}
+          loading={verifyOtp.isPending}
+          onPress={() => handleVerify()}
+        />
 
         {/* Resend */}
         <View style={{ alignItems: 'center', marginTop: 24 }}>
           {countdown > 0 ? (
             <Text style={{ color: COLORS.gray[500], fontSize: 14 }}>
-              Gửi lại sau{' '}
+              {lang === 'en' ? 'Resend in ' : 'Gửi lại sau '}
               <Text style={{ color: COLORS.primary, fontWeight: '600' }}>{countdown}s</Text>
             </Text>
           ) : (
             <TouchableOpacity onPress={handleResend}>
               <Text style={{ color: COLORS.primary, fontWeight: '600', fontSize: 14 }}>
-                Gửi lại OTP
+                {lang === 'en' ? 'Resend OTP' : 'Gửi lại OTP'}
               </Text>
             </TouchableOpacity>
           )}

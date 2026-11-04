@@ -14,6 +14,7 @@ import { WebView } from 'react-native-webview';
 import { MapPin, Search, X } from 'lucide-react-native';
 import { COLORS } from '@/components/ui';
 import { locationService, LocationResult, OsmPlace } from '@/services/location.service';
+import { useTranslation } from '@/hooks/use-i18n';
 
 export interface PickerCoords {
   latitude: number;
@@ -21,7 +22,7 @@ export interface PickerCoords {
 }
 
 // Goong Vector Map: Web iframe and Native WebView compatible
-const mapHtml = (center: PickerCoords, zoom: number, hasPin: boolean, interactive: boolean) => `
+const mapHtml = (center: PickerCoords, zoom: number, hasPin: boolean, interactive: boolean, lang: 'vi' | 'en' = 'vi') => `
 <!DOCTYPE html>
 <html>
   <head>
@@ -81,7 +82,7 @@ const mapHtml = (center: PickerCoords, zoom: number, hasPin: boolean, interactiv
       const interactive = ${interactive};
       const mapKey = '${process.env.EXPO_PUBLIC_GOONG_MAP_KEY || ''}';
       if (!mapKey) {
-        document.getElementById('map').innerHTML = '<div class="map-error-card"><span>Chưa cấu hình khoá bản đồ Goong.</span></div>';
+        document.getElementById('map').innerHTML = '<div class="map-error-card"><span>' + ${JSON.stringify(lang === 'en' ? 'Goong map key is not configured.' : 'Chưa cấu hình khoá bản đồ Goong.')} + '</span></div>';
       } else {
         try {
           const map = new maplibregl.Map({
@@ -197,7 +198,7 @@ const mapHtml = (center: PickerCoords, zoom: number, hasPin: boolean, interactiv
             });
           }
         } catch (e) {
-          document.getElementById('map').innerHTML = '<div class="map-error-card"><span>Không tải được bản đồ Goong.</span><button class="map-retry-btn" onclick="window.location.reload()">Thử lại</button></div>';
+          document.getElementById('map').innerHTML = '<div class="map-error-card"><span>' + ${JSON.stringify(lang === 'en' ? 'Unable to load Goong map.' : 'Không tải được bản đồ Goong.')} + '</span><button class="map-retry-btn" onclick="window.location.reload()">' + ${JSON.stringify(lang === 'en' ? 'Retry' : 'Thử lại')} + '</button></div>';
         }
       }
     </script>
@@ -213,6 +214,7 @@ const DEFAULT_CENTER: PickerCoords = { latitude: 16.0, longitude: 107.5 };
 
 /** Static map thumbnail of a pinned location. */
 export function LocationPreview({ coords }: { coords: PickerCoords | null }) {
+  const { lang } = useTranslation();
   if (!coords) {
     return (
       <View
@@ -225,7 +227,9 @@ export function LocationPreview({ coords }: { coords: PickerCoords | null }) {
         }}
       >
         <MapPin size={22} color={COLORS.gray[400]} />
-        <Text style={{ fontSize: 12.5, color: COLORS.gray[500] }}>Chưa chọn vị trí</Text>
+        <Text style={{ fontSize: 12.5, color: COLORS.gray[500] }}>
+          {lang === 'en' ? 'No location selected' : 'Chưa chọn vị trí'}
+        </Text>
       </View>
     );
   }
@@ -234,7 +238,7 @@ export function LocationPreview({ coords }: { coords: PickerCoords | null }) {
     return (
       <View style={{ flex: 1 }} pointerEvents="none">
         <iframe
-          srcDoc={mapHtml(coords, 15, true, false)}
+          srcDoc={mapHtml(coords, 15, true, false, lang)}
           style={{
             width: '100%',
             height: '100%',
@@ -252,7 +256,7 @@ export function LocationPreview({ coords }: { coords: PickerCoords | null }) {
       <WebView
         key={`${coords.latitude},${coords.longitude}`}
         originWhitelist={['*']}
-        source={{ html: mapHtml(coords, 15, true, false) }}
+        source={{ html: mapHtml(coords, 15, true, false, lang) }}
         scrollEnabled={false}
         javaScriptEnabled
         domStorageEnabled
@@ -280,6 +284,7 @@ export function LocationPicker({
   onClose,
   onConfirm,
 }: LocationPickerProps) {
+  const { lang } = useTranslation();
   const webRef = useRef<WebView>(null);
 
   // A stored pin outside Vietnam is ignored: open on the whole country instead of
@@ -294,9 +299,9 @@ export function LocationPicker({
 
   // Built once per opening so typing in the search box does not reload the map.
   const html = useMemo(
-    () => mapHtml(start ?? DEFAULT_CENTER, start ? 16 : 6, !!start, true),
+    () => mapHtml(start ?? DEFAULT_CENTER, start ? 16 : 6, !!start, true, lang),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [visible],
+    [visible, lang],
   );
 
   const pick = async (coords: PickerCoords) => {
@@ -424,7 +429,11 @@ export function LocationPicker({
             <Search size={16} color={COLORS.gray[400]} />
             <TextInput
               style={{ flex: 1, paddingVertical: 10, fontSize: 14.5, color: COLORS.gray[900] }}
-              placeholder="Tìm địa chỉ: số nhà, đường, phường, quận..."
+              placeholder={
+                lang === 'en'
+                  ? 'Search address: street, ward, district...'
+                  : 'Tìm địa chỉ: số nhà, đường, phường, quận...'
+              }
               placeholderTextColor={COLORS.gray[400]}
               value={query}
               onChangeText={setQuery}
@@ -519,11 +528,17 @@ export function LocationPicker({
             <MapPin size={15} color={COLORS.primary} style={{ marginTop: 2 }} />
             <Text style={{ flex: 1, fontSize: 13, color: COLORS.gray[700] }} numberOfLines={2}>
               {!picked
-                ? 'Chạm vào bản đồ hoặc tìm địa chỉ để đặt ghim'
+                ? lang === 'en'
+                  ? 'Tap on map or search address to drop pin'
+                  : 'Chạm vào bản đồ hoặc tìm địa chỉ để đặt ghim'
                 : outside
-                  ? 'Vị trí này nằm ngoài Việt Nam, hãy chọn lại'
+                  ? lang === 'en'
+                    ? 'This location is outside Vietnam, please reselect'
+                    : 'Vị trí này nằm ngoài Việt Nam, hãy chọn lại'
                   : resolving
-                    ? 'Đang tra địa chỉ...'
+                    ? lang === 'en'
+                      ? 'Looking up address...'
+                      : 'Đang tra địa chỉ...'
                     : (geo?.full_address ??
                       `${picked.latitude.toFixed(5)}, ${picked.longitude.toFixed(5)}`)}
             </Text>
@@ -539,7 +554,9 @@ export function LocationPicker({
               backgroundColor: canSave ? COLORS.primary : COLORS.gray[300],
             }}
           >
-            <Text style={{ color: '#fff', fontSize: 15, fontWeight: '800' }}>Lưu vị trí này</Text>
+            <Text style={{ color: '#fff', fontSize: 15, fontWeight: '800' }}>
+              {lang === 'en' ? 'Save this location' : 'Lưu vị trí này'}
+            </Text>
           </TouchableOpacity>
         </View>
       </View>

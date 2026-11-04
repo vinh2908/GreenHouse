@@ -241,7 +241,7 @@ function calculateDistanceKm(lat1: number, lon1: number, lat2: number, lon2: num
 
 export default function CustomerHomeScreen() {
   const router = useRouter();
-  const { t, tService, fs, lang, textScale } = useTranslation();
+  const { t, tService, fs, lang, textScale, formatVoucherDesc } = useTranslation();
   const storedUser = useAuthStore(s => s.user);
   const { data: profile, refetch: refetchProfile } = useMyProfile();
   const user = profile ?? storedUser;
@@ -863,7 +863,13 @@ export default function CustomerHomeScreen() {
       }
       const { status } = await ImagePicker.requestCameraPermissionsAsync();
       if (status !== 'granted') {
-        Toast.show({ type: 'error', text1: 'Cần quyền camera để chụp ảnh sự cố' });
+        Toast.show({
+          type: 'error',
+          text1:
+            lang === 'en'
+              ? 'Camera permission required to take photo'
+              : 'Cần quyền camera để chụp ảnh sự cố',
+        });
         return;
       }
       const result = await ImagePicker.launchCameraAsync({
@@ -891,7 +897,13 @@ export default function CustomerHomeScreen() {
           });
         }
       } catch {
-        Toast.show({ type: 'error', text1: 'Không thể mở máy ảnh hoặc thư viện ảnh' });
+        Toast.show({
+          type: 'error',
+          text1:
+            lang === 'en'
+              ? 'Unable to open camera or photo library'
+              : 'Không thể mở máy ảnh hoặc thư viện ảnh',
+        });
       }
     }
   };
@@ -902,7 +914,13 @@ export default function CustomerHomeScreen() {
       if (Platform.OS !== 'web') {
         const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
         if (status !== 'granted') {
-          Toast.show({ type: 'error', text1: 'Cần quyền thư viện ảnh' });
+          Toast.show({
+            type: 'error',
+            text1:
+              lang === 'en'
+                ? 'Photo library permission required'
+                : 'Cần quyền thư viện ảnh',
+          });
           return;
         }
       }
@@ -918,7 +936,13 @@ export default function CustomerHomeScreen() {
         });
       }
     } catch {
-      Toast.show({ type: 'error', text1: 'Không thể chọn ảnh từ thư viện' });
+      Toast.show({
+        type: 'error',
+        text1:
+          lang === 'en'
+            ? 'Unable to select photo from library'
+            : 'Không thể chọn ảnh từ thư viện',
+      });
     }
   };
 
@@ -981,12 +1005,24 @@ export default function CustomerHomeScreen() {
   // Submit từ khối Quick Booking - map chip sang dịch vụ catalog thật (Item 2)
   const handleQuickSubmit = () => {
     if (!quickDescription.trim()) {
-      Toast.show({ type: 'error', text1: 'Vui lòng nhập mô tả công việc bạn cần' });
+      Toast.show({
+        type: 'error',
+        text1:
+          lang === 'en'
+            ? 'Please enter a description for the job'
+            : 'Vui lòng nhập mô tả công việc bạn cần',
+      });
       return;
     }
     const priceNum = Number(quickDealPrice.replace(/[^0-9]/g, ''));
     if (!priceNum || priceNum < 50000) {
-      Toast.show({ type: 'error', text1: 'Giá mở đầu deal tối thiểu là 50.000₫' });
+      Toast.show({
+        type: 'error',
+        text1:
+          lang === 'en'
+            ? 'Minimum opening deal price is 50,000₫'
+            : 'Giá mở đầu deal tối thiểu là 50.000₫',
+      });
       return;
     }
 
@@ -998,9 +1034,11 @@ export default function CustomerHomeScreen() {
       if (slotTime.isBefore(now)) {
         Toast.show({
           type: 'error',
-          text1: 'Giờ bắt đầu không hợp lệ',
+          text1: lang === 'en' ? 'Invalid start time' : 'Giờ bắt đầu không hợp lệ',
           text2:
-            'Không thể chọn giờ trong quá khứ của ngày hôm nay. Vui lòng chọn giờ sau thời điểm hiện tại.',
+            lang === 'en'
+              ? 'Cannot select a past time for today. Please select a future time.'
+              : 'Không thể chọn giờ trong quá khứ của ngày hôm nay. Vui lòng chọn giờ sau thời điểm hiện tại.',
         });
         return;
       }
@@ -1907,12 +1945,7 @@ export default function CustomerHomeScreen() {
                           }}
                           numberOfLines={2}
                         >
-                          {v.description ||
-                            (v.min_order_amount
-                              ? (lang === 'en'
-                                  ? `Min order ${Number(v.min_order_amount).toLocaleString('en-US')}₫`
-                                  : `Đơn tối thiểu ${Number(v.min_order_amount).toLocaleString('vi-VN')}₫`)
-                              : t('voucher_all_services'))}
+                          {formatVoucherDesc(v)}
                         </Text>
                       </View>
 

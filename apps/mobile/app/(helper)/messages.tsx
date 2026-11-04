@@ -70,7 +70,7 @@ export default function HelperConversationsScreen() {
             const jobTitle =
               conv.job_id?.title ||
               (typeof conv.job_id === 'string'
-                ? `Đơn hàng #${conv.job_id.slice(-6)}`
+                ? `${lang === 'en' ? 'Order #' : 'Đơn hàng #'}${conv.job_id.slice(-6)}`
                 : t('messages_job_fallback'));
             const targetJobId = typeof conv.job_id === 'object' ? conv.job_id?._id : conv.job_id;
 

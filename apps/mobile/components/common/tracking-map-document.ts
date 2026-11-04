@@ -1,6 +1,8 @@
 // This document is constant. Coordinates are delivered through the bridge, never srcDoc/source.
 // Keeping one MapLibre vector instance preserves zoom, layers and marker animation on both platforms.
-export const TRACKING_MAP_HTML = `<!doctype html>
+export function buildTrackingMapHtml(lang: 'vi' | 'en' = 'vi'): string {
+  const isEn = lang === 'en';
+  return `<!doctype html>
 <html><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
 <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css">
@@ -20,12 +22,13 @@ html,body,#map{height:100%;width:100%;margin:0;background:#f1f5f9;font-family:sy
 </style></head><body>
 <div id="map"></div>
 <div class="goong-attribution">© <a href="https://goong.io" target="_blank" rel="noopener">Goong Maps</a></div>
-<div id="info" role="status">Đang tải bản đồ…</div>
-<div id="error-card"><span id="error-msg">Không tải được bản đồ Goong.</span><button class="map-retry-btn" onclick="window.location.reload()">Thử lại</button></div>
-<button id="recenter" aria-label="Xem toàn bộ hành trình">🎯</button>
+<div id="info" role="status">${isEn ? 'Loading map…' : 'Đang tải bản đồ…'}</div>
+<div id="error-card"><span id="error-msg">${isEn ? 'Unable to load Goong map.' : 'Không tải được bản đồ Goong.'}</span><button class="map-retry-btn" onclick="window.location.reload()">${isEn ? 'Retry' : 'Thử lại'}</button></div>
+<button id="recenter" aria-label="${isEn ? 'View entire route' : 'Xem toàn bộ hành trình'}">🎯</button>
 <script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
 <script>
 (function(){
+  var isEn = ${isEn ? 'true' : 'false'};
   var info = document.getElementById('info');
   var errorCard = document.getElementById('error-card');
   var errorMsg = document.getElementById('error-msg');
@@ -35,15 +38,15 @@ html,body,#map{height:100%;width:100%;margin:0;background:#f1f5f9;font-family:sy
     else window.parent.postMessage(data, '*');
   }
   if(!window.maplibregl){
-    info.textContent = 'Không tải được thư viện bản đồ';
+    info.textContent = isEn ? 'Unable to load map library' : 'Không tải được thư viện bản đồ';
     errorCard.style.display = 'flex';
     return;
   }
 
   var goongMapKey = '${process.env.EXPO_PUBLIC_GOONG_MAP_KEY || ''}';
   if(!goongMapKey){
-    info.textContent = 'Chưa cấu hình khoá bản đồ Goong';
-    errorMsg.textContent = 'Chưa cấu hình EXPO_PUBLIC_GOONG_MAP_KEY.';
+    info.textContent = isEn ? 'Goong map key not configured' : 'Chưa cấu hình khoá bản đồ Goong';
+    errorMsg.textContent = isEn ? 'EXPO_PUBLIC_GOONG_MAP_KEY is not configured.' : 'Chưa cấu hình EXPO_PUBLIC_GOONG_MAP_KEY.';
     errorCard.style.display = 'flex';
     return;
   }
@@ -58,7 +61,7 @@ html,body,#map{height:100%;width:100%;margin:0;background:#f1f5f9;font-family:sy
       attributionControl: false
     });
   } catch(e) {
-    info.textContent = 'Lỗi khởi tạo bản đồ Goong';
+    info.textContent = isEn ? 'Goong map initialization error' : 'Lỗi khởi tạo bản đồ Goong';
     errorCard.style.display = 'flex';
     return;
   }
@@ -284,16 +287,19 @@ html,body,#map{height:100%;width:100%;margin:0;background:#f1f5f9;font-family:sy
   function remaining(){
     if(!point || !route) return;
     var snap = project(point);
+    var isEn = state && state.lang === 'en';
     if(!snap || snap.gap > SNAP_MAX){
       metrics(null);
-      info.textContent = 'Đang tính lại tuyến đường…';
+      info.textContent = isEn ? 'Recalculating route…' : 'Đang tính lại tuyến đường…';
       return;
     }
     var left = Math.max(0, route.total - snap.along);
     var km = route.distance * (left / (route.total || 1)) / 1000;
     var mins = Math.max(1, Math.ceil(route.duration * (left / (route.total || 1)) / 60));
     metrics({ distanceKm: Math.round(km * 100) / 100, etaMinutes: mins });
-    info.textContent = 'Còn ' + km.toFixed(1) + ' km · khoảng ' + mins + ' phút (ước tính)';
+    info.textContent = isEn
+      ? ('Remaining ' + km.toFixed(1) + ' km · approx ' + mins + ' mins (estimated)')
+      : ('Còn ' + km.toFixed(1) + ' km · khoảng ' + mins + ' phút (ước tính)');
 
     var restPoints = [snap.point].concat(route.points.slice(snap.index + 1));
     var restCoords = restPoints.map(function(pt){ return [pt.lng, pt.lat]; });
@@ -354,7 +360,7 @@ html,body,#map{height:100%;width:100%;margin:0;background:#f1f5f9;font-family:sy
     var goongApiKey = (state && state.goongApiKey) || '${process.env.EXPO_PUBLIC_GOONG_API_KEY || ''}';
     if(!goongApiKey){
       routeFails++;
-      info.textContent = 'Chưa cấu hình API chỉ đường Goong';
+      info.textContent = isEn ? 'Goong routing API not configured' : 'Chưa cấu hình API chỉ đường Goong';
       return;
     }
 
@@ -401,7 +407,7 @@ html,body,#map{height:100%;width:100%;margin:0;background:#f1f5f9;font-family:sy
         if(requestVersion !== version) return;
         routeFails++;
         retryAfter = Date.now() + Math.min(60000, 5000 * Math.pow(2, Math.min(4, routeFails - 1)));
-        if(!route) info.textContent = 'Chưa tính được đường đi';
+        if(!route) info.textContent = (state && state.lang === 'en') ? 'Could not calculate route' : 'Chưa tính được đường đi';
       })
       .finally(function(){
         clearTimeout(timeout);
@@ -409,17 +415,22 @@ html,body,#map{height:100%;width:100%;margin:0;background:#f1f5f9;font-family:sy
   }
 
   function refresh(){
-    if(!dest){ info.textContent = 'Chưa có tọa độ điểm hẹn'; metrics(null); return; }
-    if(!state.tracking){ info.textContent = 'Điểm hẹn làm việc'; metrics(null); return; }
+    var isEn = state && state.lang === 'en';
+    if(!dest){ info.textContent = isEn ? 'Meeting location coordinates missing' : 'Chưa có tọa độ điểm hẹn'; metrics(null); return; }
+    if(!state.tracking){ info.textContent = isEn ? 'Work meeting location' : 'Điểm hẹn làm việc'; metrics(null); return; }
     if(!point){
+      var retryBtnText = isEn ? 'Retry' : 'Thử lại';
       if(state && state.gpsError){
-        info.innerHTML = '<span style="color:#fca5a5;">Chưa lấy được GPS: ' + (state.gpsErrorReason || 'Lỗi thiết bị') + '</span> <button onclick="window.retryGps && window.retryGps()" style="background:#22c55e;color:#fff;border:none;padding:2px 8px;border-radius:6px;cursor:pointer;font-size:11px;font-weight:700;margin-left:6px;">Thử lại</button>';
+        var errorPrefix = isEn ? 'GPS unavailable: ' : 'Chưa lấy được GPS: ';
+        var defaultErr = isEn ? 'Device error' : 'Lỗi thiết bị';
+        info.innerHTML = '<span style="color:#fca5a5;">' + errorPrefix + (state.gpsErrorReason || defaultErr) + '</span> <button onclick="window.retryGps && window.retryGps()" style="background:#22c55e;color:#fff;border:none;padding:2px 8px;border-radius:6px;cursor:pointer;font-size:11px;font-weight:700;margin-left:6px;">' + retryBtnText + '</button>';
       } else {
         var waitSec = Math.floor((Date.now() - initGpsTime) / 1000);
         if(waitSec > 10){
-          info.innerHTML = '<span style="color:#fde047;">Chưa nhận được tín hiệu GPS thật</span> <button onclick="window.retryGps && window.retryGps()" style="background:#22c55e;color:#fff;border:none;padding:2px 8px;border-radius:6px;cursor:pointer;font-size:11px;font-weight:700;margin-left:6px;">Thử lại</button>';
+          var noGpsMsg = isEn ? 'Real GPS signal not received yet' : 'Chưa nhận được tín hiệu GPS thật';
+          info.innerHTML = '<span style="color:#fde047;">' + noGpsMsg + '</span> <button onclick="window.retryGps && window.retryGps()" style="background:#22c55e;color:#fff;border:none;padding:2px 8px;border-radius:6px;cursor:pointer;font-size:11px;font-weight:700;margin-left:6px;">' + retryBtnText + '</button>';
         } else {
-          info.textContent = 'Đang chờ GPS (' + (10 - waitSec) + 's)…';
+          info.textContent = isEn ? ('Waiting for GPS (' + (10 - waitSec) + 's)…') : ('Đang chờ GPS (' + (10 - waitSec) + 's)…');
         }
       }
       metrics(null);
@@ -434,19 +445,19 @@ html,body,#map{height:100%;width:100%;margin:0;background:#f1f5f9;font-family:sy
       cancelAnimationFrame(frame);
       if(helperMarker){ helperMarker.remove(); helperMarker = null; }
       invalidateRoute();
-      info.textContent = 'Mất kết nối GPS';
+      info.textContent = isEn ? 'GPS connection lost' : 'Mất kết nối GPS';
       return;
     }
     if(age > 30000){
       cancelAnimationFrame(frame);
       metrics(null);
-      info.textContent = 'GPS chưa cập nhật';
+      info.textContent = isEn ? 'GPS not updated' : 'GPS chưa cập nhật';
       return;
     }
     if(route) remaining();
     else {
       metrics(null);
-      info.textContent = lastFetch ? 'Chưa tính được đường đi' : 'Đang tính tuyến đường…';
+      info.textContent = lastFetch ? (isEn ? 'Could not calculate route' : 'Chưa tính được đường đi') : (isEn ? 'Calculating route…' : 'Đang tính tuyến đường…');
     }
   }
 
@@ -485,7 +496,7 @@ html,body,#map{height:100%;width:100%;margin:0;background:#f1f5f9;font-family:sy
 
   window.retryGps = function(){
     initGpsTime = Date.now();
-    info.textContent = 'Đang thử kết nối lại GPS…';
+    info.textContent = (state && state.lang === 'en') ? 'Attempting to reconnect GPS…' : 'Đang thử kết nối lại GPS…';
     notify({type: 'retry_gps'});
   };
 
@@ -500,3 +511,6 @@ html,body,#map{height:100%;width:100%;margin:0;background:#f1f5f9;font-family:sy
   if(mapLoaded) notify({type: 'ready'});
 })();
 </script></body></html>`;
+}
+
+export const TRACKING_MAP_HTML = buildTrackingMapHtml('vi');
