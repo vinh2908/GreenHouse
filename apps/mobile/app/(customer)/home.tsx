@@ -74,7 +74,6 @@ import 'dayjs/locale/vi';
 import 'dayjs/locale/en';
 
 dayjs.extend(relativeTime);
-dayjs.locale('vi');
 
 // ─── Danh mục dịch vụ chuẩn theo Homepage Redesign Demo (12 items) ─────────────
 interface ServiceItem {
@@ -242,7 +241,7 @@ function calculateDistanceKm(lat1: number, lon1: number, lat2: number, lon2: num
 
 export default function CustomerHomeScreen() {
   const router = useRouter();
-  const { t, fs, lang, textScale } = useTranslation();
+  const { t, tService, fs, lang, textScale } = useTranslation();
   const storedUser = useAuthStore(s => s.user);
   const { data: profile, refetch: refetchProfile } = useMyProfile();
   const user = profile ?? storedUser;
@@ -414,7 +413,7 @@ export default function CustomerHomeScreen() {
       .filter((h: any) => h.location?.coordinates && h.location.coordinates.length >= 2)
       .map((h: any, idx: number) => {
         const coords = h.location.coordinates; // [lng, lat]
-        const helperName = h.user_id?.full_name || 'Thợ chuyên nghiệp';
+        const helperName = h.user_id?.full_name || t('home_helper_fallback');
         const nameParts = helperName.trim().split(/\s+/);
         const shortName = nameParts.length > 2 ? nameParts.slice(-2).join(' ') : helperName;
         let distKm = 0;
@@ -431,7 +430,7 @@ export default function CustomerHomeScreen() {
             ? `${Math.round(distKm * 1000)} m`
             : `${distKm.toFixed(1).replace('.', ',')} km`;
         const etaMinutes = Math.max(5, Math.round(distKm * 3.5) + 3);
-        const etaText = `tới trong ~${etaMinutes} phút`;
+        const etaText = t('home_eta_min', { min: etaMinutes });
         return {
           id: String(h._id || idx),
           name: helperName,
@@ -449,7 +448,7 @@ export default function CustomerHomeScreen() {
         };
       })
       .sort((a, b) => a.distKm - b.distKm);
-  }, [nearbyRaw, currentCoords]);
+  }, [nearbyRaw, currentCoords, lang, t]);
 
   // Vouchers thật còn hiệu lực
   const vouchers = useMemo(() => {
@@ -640,7 +639,7 @@ export default function CustomerHomeScreen() {
   <script>
     const mapKey = '${process.env.EXPO_PUBLIC_GOONG_MAP_KEY || ''}';
     if (!mapKey) {
-      document.getElementById('map').innerHTML = '<div class="map-error-card"><span>Chưa cấu hình khoá bản đồ Goong.</span></div>';
+      document.getElementById('map').innerHTML = '<div class="map-error-card"><span>' + ${JSON.stringify(t('home_map_no_key'))} + '</span></div>';
     } else {
       try {
         const map = new maplibregl.Map({
@@ -695,7 +694,7 @@ export default function CustomerHomeScreen() {
           currentCoords
             ? `
         const userEl = document.createElement('div');
-        userEl.innerHTML = '<div class="user-pill"><span>📍</span><span>Bạn ở đây</span></div>';
+        userEl.innerHTML = '<div class="user-pill"><span>📍</span><span>' + ${JSON.stringify(t('home_map_you_are_here'))} + '</span></div>';
         new maplibregl.Marker({ element: userEl })
           .setLngLat([${currentCoords.longitude}, ${currentCoords.latitude}])
           .addTo(map);
@@ -712,41 +711,45 @@ export default function CustomerHomeScreen() {
             .addTo(map);
         });
       } catch (e) {
-        document.getElementById('map').innerHTML = '<div class="map-error-card"><span>Không tải được bản đồ Goong.</span><button class="map-retry-btn" onclick="window.location.reload()">Thử lại</button></div>';
+        document.getElementById('map').innerHTML = '<div class="map-error-card"><span>' + ${JSON.stringify(t('home_map_error'))} + '</span><button class="map-retry-btn" onclick="window.location.reload()">' + ${JSON.stringify(t('home_map_retry'))} + '</button></div>';
       }
     }
   </script>
 </body>
 </html>`;
-  }, [mapCenter, selectedHelperId, nearbyHelpers]);
+  }, [mapCenter, selectedHelperId, nearbyHelpers, lang, t]);
 
   // Lời chào theo thời gian trong ngày (khuya / sáng / chiều / tối)
   const greeting = useMemo(() => {
     const hour = dayjs().hour();
-    const name = user?.full_name ? user.full_name.split(' ').pop() || user.full_name : 'bạn';
+    const name = user?.full_name
+      ? user.full_name.split(' ').pop() || user.full_name
+      : lang === 'en'
+        ? 'there'
+        : 'bạn';
 
     if (hour >= 22 || hour < 5) {
       return {
-        title: `Chào ${name}, khuya rồi`,
-        subtitle: 'Cần giúp việc gì trong đêm?',
+        title: t('home_greeting_night', { name }),
+        subtitle: t('home_greeting_night_sub'),
       };
     } else if (hour >= 5 && hour < 12) {
       return {
-        title: `Chào ${name}, buổi sáng`,
-        subtitle: 'Hôm nay bạn cần hỗ trợ việc gì?',
+        title: t('home_greeting_morning', { name }),
+        subtitle: t('home_greeting_morning_sub'),
       };
     } else if (hour >= 12 && hour < 18) {
       return {
-        title: `Chào ${name}, buổi chiều`,
-        subtitle: 'Chiều nay nhà mình cần việc gì?',
+        title: t('home_greeting_afternoon', { name }),
+        subtitle: t('home_greeting_afternoon_sub'),
       };
     } else {
       return {
-        title: `Chào ${name}, buổi tối`,
-        subtitle: 'Tối nay cần hỗ trợ việc gì?',
+        title: t('home_greeting_evening', { name }),
+        subtitle: t('home_greeting_evening_sub'),
       };
     }
-  }, [user]);
+  }, [user, lang, t]);
 
   // Tách nhãn vị trí ngắn gọn
   const inferLocationLabel = (
@@ -1152,7 +1155,11 @@ export default function CustomerHomeScreen() {
                 }}
                 numberOfLines={1}
               >
-                {currentCoords ? currentLocationName : 'Chưa định vị — Bấm lấy vị trí'}
+                {currentCoords
+                  ? currentLocationName === 'Chưa xác định vị trí'
+                    ? t('home_location_unidentified')
+                    : currentLocationName
+                  : t('home_no_location_tap')}
               </Text>
             </TouchableOpacity>
 
@@ -1267,7 +1274,7 @@ export default function CustomerHomeScreen() {
               }}
               numberOfLines={1}
               multiline={false}
-              placeholder="Tìm dịch vụ... ví dụ: máy lạnh, dọn nhà, điện"
+              placeholder={t('home_search_placeholder')}
               placeholderTextColor={COLORS.gray[400]}
               value={serviceSearchQuery}
               onChangeText={handleSearchChange}
@@ -1306,7 +1313,9 @@ export default function CustomerHomeScreen() {
                   backgroundColor: '#22C55E',
                 }}
               />
-              <Text style={{ fontSize: fs(12), fontWeight: '800', color: '#16A34A' }}>Trực tiếp</Text>
+              <Text style={{ fontSize: fs(12), fontWeight: '800', color: '#16A34A' }}>
+                {t('home_live_badge')}
+              </Text>
             </View>
           </View>
 
@@ -1369,7 +1378,7 @@ export default function CustomerHomeScreen() {
                     textAlign: 'center',
                   }}
                 >
-                  Chưa xác định vị trí của bạn
+                  {t('home_location_unidentified')}
                 </Text>
                 <Text
                   style={{
@@ -1379,7 +1388,7 @@ export default function CustomerHomeScreen() {
                     lineHeight: Math.round(fs(16)),
                   }}
                 >
-                  Bật định vị GPS hoặc chọn khu vực để tìm thợ lành nghề gần bạn nhất.
+                  {t('home_location_unidentified_sub')}
                 </Text>
                 <View style={{ flexDirection: 'row', gap: 10, marginTop: 4 }}>
                   <TouchableOpacity
@@ -1401,7 +1410,7 @@ export default function CustomerHomeScreen() {
                       <Navigation size={14} color="#fff" />
                     )}
                     <Text style={{ color: '#fff', fontWeight: '700', fontSize: fs(12) }}>
-                      {isLocatingLive ? 'Đang lấy vị trí...' : 'Bấm lấy vị trí'}
+                      {isLocatingLive ? t('home_locating') : t('home_get_location_btn')}
                     </Text>
                   </TouchableOpacity>
                   <TouchableOpacity
@@ -1420,7 +1429,7 @@ export default function CustomerHomeScreen() {
                   >
                     <MapPin size={14} color={COLORS.gray[700]} />
                     <Text style={{ color: COLORS.gray[800], fontWeight: '700', fontSize: fs(12) }}>
-                      Chọn thủ công
+                      {t('home_select_manual')}
                     </Text>
                   </TouchableOpacity>
                 </View>
@@ -1465,8 +1474,8 @@ export default function CustomerHomeScreen() {
                 }}
               >
                 {!currentCoords
-                  ? 'Chưa có vị trí để tìm thợ lân cận'
-                  : 'Hiện chưa có thợ online gần bạn'}
+                  ? t('home_no_location_helpers')
+                  : t('home_no_helpers_online')}
               </Text>
               <Text
                 style={{
@@ -1477,8 +1486,8 @@ export default function CustomerHomeScreen() {
                 }}
               >
                 {!currentCoords
-                  ? 'Vui lòng bấm lấy vị trí GPS hoặc chọn khu vực để kết nối thợ xung quanh.'
-                  : 'Bạn vẫn có thể đăng việc hoặc đặt lịch hẹn, thợ trong khu vực sẽ nhận việc sớm nhất.'}
+                  ? t('home_no_location_helpers_sub')
+                  : t('home_no_helpers_online_sub')}
               </Text>
             </View>
           ) : (
@@ -1538,8 +1547,13 @@ export default function CustomerHomeScreen() {
                           {helper.name}
                         </Text>
                         <Text style={{ fontSize: fs(12), color: COLORS.gray[500], marginTop: 2 }}>
-                          {helper.status} · ⭐ {helper.rating.toFixed(1)} ({helper.completedJobs}{' '}
-                          việc)
+                          {helper.status === 'Đang rảnh' || helper.status === 'Sẵn sàng'
+                            ? lang === 'en'
+                              ? 'Available'
+                              : helper.status
+                            : helper.status}{' '}
+                          · ⭐ {helper.rating.toFixed(1)} ({helper.completedJobs}{' '}
+                          {lang === 'en' ? (helper.completedJobs === 1 ? 'job' : 'jobs') : 'việc'})
                         </Text>
                       </View>
                     </View>
@@ -1566,7 +1580,7 @@ export default function CustomerHomeScreen() {
                         }}
                       >
                         <Text style={{ fontSize: fs(11), fontWeight: '800', color: '#fff' }}>
-                          Đặt thợ →
+                          {t('home_book_helper_btn')}
                         </Text>
                       </ScalePressable>
                     </View>
@@ -1660,7 +1674,7 @@ export default function CustomerHomeScreen() {
                   textTransform: 'uppercase',
                 }}
               >
-                AI QUÉT ẢNH SỰ CỐ
+                {t('home_ai_scan_badge')}
               </Text>
             </View>
 
@@ -1674,7 +1688,7 @@ export default function CustomerHomeScreen() {
                 flexShrink: 1,
               }}
             >
-              Chụp ảnh sự cố, AI đoán việc
+              {t('home_ai_scan_title')}
             </Text>
 
             <Text
@@ -1687,8 +1701,7 @@ export default function CustomerHomeScreen() {
                 flexShrink: 1,
               }}
             >
-              Máy lạnh chảy nước, vòi rò, tường nứt… chỉ cần một tấm ảnh, không cần biết tên dịch
-              vụ.
+              {t('home_ai_scan_desc')}
             </Text>
 
             {/* 3 Steps indicator */}
@@ -1703,15 +1716,15 @@ export default function CustomerHomeScreen() {
               }}
             >
               <Text style={{ fontSize: fs(11), fontWeight: '700', color: '#FFFFFF' }}>
-                1 · Chụp ảnh
+                {t('home_ai_scan_step1')}
               </Text>
               <Text style={{ fontSize: fs(10), color: '#86EFAC' }}>•</Text>
               <Text style={{ fontSize: fs(11), fontWeight: '700', color: '#FFFFFF' }}>
-                2 · AI phân tích
+                {t('home_ai_scan_step2')}
               </Text>
               <Text style={{ fontSize: fs(10), color: '#86EFAC' }}>•</Text>
               <Text style={{ fontSize: fs(11), fontWeight: '700', color: '#FFFFFF' }}>
-                3 · Nhận báo giá
+                {t('home_ai_scan_step3')}
               </Text>
             </View>
 
@@ -1735,7 +1748,7 @@ export default function CustomerHomeScreen() {
             >
               <Camera size={18} color="#16A34A" />
               <Text style={{ fontSize: fs(14.5), fontWeight: '800', color: '#16A34A' }}>
-                Chụp ảnh ngay
+                {t('home_ai_scan_btn')}
               </Text>
             </ScalePressable>
 
@@ -1759,7 +1772,7 @@ export default function CustomerHomeScreen() {
                   letterSpacing: 0.2,
                 }}
               >
-                hoặc chọn ảnh sự cố của bạn
+                {t('home_ai_scan_pick')}
               </Text>
             </TouchableOpacity>
           </View>
@@ -1801,10 +1814,10 @@ export default function CustomerHomeScreen() {
                   marginTop: 6,
                 }}
               >
-                Hiện chưa có mã ưu đãi mới
+                {t('voucher_empty_title')}
               </Text>
               <Text style={{ fontSize: fs(12), color: COLORS.gray[400], marginTop: 2 }}>
-                Các chương trình khuyến mãi tiếp theo sẽ xuất hiện tại đây
+                {t('voucher_empty_sub')}
               </Text>
             </View>
           ) : (
@@ -1832,8 +1845,8 @@ export default function CustomerHomeScreen() {
                 {vouchers.map(v => {
                   const discountDisplay =
                     v.discount_type === 'percent'
-                      ? `Giảm ${v.discount_value}%`
-                      : `Giảm ${Number(v.discount_value).toLocaleString('vi-VN')}₫`;
+                      ? (lang === 'en' ? `${v.discount_value}% OFF` : `Giảm ${v.discount_value}%`)
+                      : (lang === 'en' ? `${Number(v.discount_value).toLocaleString('en-US')}₫ OFF` : `Giảm ${Number(v.discount_value).toLocaleString('vi-VN')}₫`);
                   const isCopied = copiedVoucher === v.code;
 
                   return (
@@ -1872,7 +1885,7 @@ export default function CustomerHomeScreen() {
                               textTransform: 'uppercase',
                             }}
                           >
-                            ƯU ĐÃI ĐẶC BIỆT
+                            {t('voucher_special_badge')}
                           </Text>
                         </View>
                         <Text
@@ -1896,8 +1909,10 @@ export default function CustomerHomeScreen() {
                         >
                           {v.description ||
                             (v.min_order_amount
-                              ? `Đơn tối thiểu ${Number(v.min_order_amount).toLocaleString('vi-VN')}₫`
-                              : 'Áp dụng cho mọi dịch vụ')}
+                              ? (lang === 'en'
+                                  ? `Min order ${Number(v.min_order_amount).toLocaleString('en-US')}₫`
+                                  : `Đơn tối thiểu ${Number(v.min_order_amount).toLocaleString('vi-VN')}₫`)
+                              : t('voucher_all_services'))}
                         </Text>
                       </View>
 
@@ -1932,7 +1947,7 @@ export default function CustomerHomeScreen() {
                               color: isCopied ? COLORS.primary : COLORS.gray[700],
                             }}
                           >
-                            {isCopied ? 'Đã chép' : 'Sao chép'}
+                            {isCopied ? t('voucher_copied') : t('voucher_copy')}
                           </Text>
                         </ScalePressable>
                       </View>

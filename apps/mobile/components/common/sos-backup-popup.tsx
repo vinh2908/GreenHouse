@@ -20,7 +20,7 @@ export function SosBackupPopup() {
   const accept = useAcceptSosBackup();
   const decline = useDeclineSosBackup();
   const now = useNowTick(!!incoming);
-  const { t, fs } = useTranslation();
+  const { t, tService, fs } = useTranslation();
 
   // Hết hạn đếm ngược phía client → tự đóng (server cũng sẽ gửi resolved/expired)
   useEffect(() => {
@@ -129,7 +129,7 @@ export function SosBackupPopup() {
             }}
           >
             <Text style={{ fontWeight: '800', fontSize: fs(15), color: COLORS.gray[900] }}>
-              {incoming.service_name ?? t('sos_popup_service_fallback')}
+              {tService(incoming.service_name) || t('sos_popup_service_fallback')}
               {incoming.job_title ? ` — ${incoming.job_title}` : ''}
             </Text>
             {area ? (

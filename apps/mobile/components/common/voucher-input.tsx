@@ -28,12 +28,12 @@ export function VoucherInput({
   const [code, setCode] = useState(value ?? '');
   const [error, setError] = useState<string | null>(null);
   const validate = useValidateVoucher();
-  const { fs } = useTranslation();
+  const { fs, lang } = useTranslation();
 
   const handleApply = async () => {
     const trimmed = code.trim();
     if (!trimmed) {
-      setError('Vui lòng nhập mã giảm giá');
+      setError(lang === 'en' ? 'Please enter discount code' : 'Vui lòng nhập mã giảm giá');
       return;
     }
     setError(null);
@@ -45,7 +45,7 @@ export function VoucherInput({
       onApplied(result.code, result);
     } catch (err: any) {
       const msg = err?.response?.data?.message;
-      setError(typeof msg === 'string' ? msg : 'Mã giảm giá không hợp lệ');
+      setError(typeof msg === 'string' ? msg : (lang === 'en' ? 'Invalid discount code' : 'Mã giảm giá không hợp lệ'));
       onCleared();
     }
   };
@@ -61,7 +61,7 @@ export function VoucherInput({
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
         <TicketPercent size={19} color={COLORS.primaryDark} />
         <Text style={{ fontWeight: '800', fontSize: fs(15), color: COLORS.gray[900] }}>
-          Mã giảm giá
+          {lang === 'en' ? 'Discount Voucher' : 'Mã giảm giá'}
         </Text>
       </View>
 
@@ -78,10 +78,14 @@ export function VoucherInput({
             <Text style={{ flex: 1, fontWeight: '800', fontSize: fs(14.5), color: '#065F46' }}>
               🎟️ {preview.code} —{' '}
               {preview.discount_type === 'percent'
-                ? `giảm ${preview.discount_value}%`
-                : `giảm ${fmt(preview.discount_value)}₫`}
+                ? lang === 'en'
+                  ? `${preview.discount_value}% OFF`
+                  : `giảm ${preview.discount_value}%`
+                : lang === 'en'
+                  ? `${fmt(preview.discount_value)}₫ OFF`
+                  : `giảm ${fmt(preview.discount_value)}₫`}
               {preview.discount_type === 'percent' && preview.max_discount_amount
-                ? ` (tối đa ${fmt(preview.max_discount_amount)}₫)`
+                ? ` (${lang === 'en' ? 'up to' : 'tối đa'} ${fmt(preview.max_discount_amount)}₫)`
                 : ''}
             </Text>
             <TouchableOpacity
@@ -93,12 +97,18 @@ export function VoucherInput({
           </View>
           {preview.discount_amount > 0 ? (
             <Text style={{ fontSize: fs(13), color: '#065F46' }}>
-              Giảm tạm tính: −{fmt(preview.discount_amount)}₫
-              {estimatedAmount ? ` · Cần thanh toán khoảng ${fmt(preview.final_amount)}₫` : ''}
+              {lang === 'en' ? 'Est. discount: −' : 'Giảm tạm tính: −'}{fmt(preview.discount_amount)}₫
+              {estimatedAmount
+                ? lang === 'en'
+                  ? ` · Est. payment ~${fmt(preview.final_amount)}₫`
+                  : ` · Cần thanh toán khoảng ${fmt(preview.final_amount)}₫`
+                : ''}
             </Text>
           ) : (
             <Text style={{ fontSize: fs(12.5), color: '#065F46' }}>
-              Mã hợp lệ. Số tiền giảm chính thức sẽ được tính theo giá chốt khi thanh toán.
+              {lang === 'en'
+                ? 'Valid code. Official discount will be calculated at final checkout.'
+                : 'Mã hợp lệ. Số tiền giảm chính thức sẽ được tính theo giá chốt khi thanh toán.'}
             </Text>
           )}
         </View>
@@ -111,7 +121,7 @@ export function VoucherInput({
                 setCode(v.toUpperCase());
                 if (error) setError(null);
               }}
-              placeholder="Nhập mã (VD: GIAM10)"
+              placeholder={lang === 'en' ? 'Enter code (e.g. DISCOUNT10)' : 'Nhập mã (VD: GIAM10)'}
               placeholderTextColor={COLORS.gray[400]}
               autoCapitalize="characters"
               autoCorrect={false}
@@ -144,7 +154,9 @@ export function VoucherInput({
               {validate.isPending ? (
                 <ActivityIndicator color="#fff" size="small" />
               ) : (
-                <Text style={{ color: '#fff', fontWeight: '800', fontSize: fs(13.5) }}>Áp dụng</Text>
+                <Text style={{ color: '#fff', fontWeight: '800', fontSize: fs(13.5) }}>
+                  {lang === 'en' ? 'Apply' : 'Áp dụng'}
+                </Text>
               )}
             </TouchableOpacity>
           </View>
@@ -152,7 +164,9 @@ export function VoucherInput({
             <Text style={{ fontSize: fs(12.5), color: COLORS.error, fontWeight: '600' }}>{error}</Text>
           ) : (
             <Text style={{ fontSize: fs(12), color: COLORS.gray[500] }}>
-              Số tiền giảm chính thức được tính theo giá chốt của đơn khi thanh toán.
+              {lang === 'en'
+                ? 'Official discount will be calculated at checkout based on agreed price.'
+                : 'Số tiền giảm chính thức được tính theo giá chốt của đơn khi thanh toán.'}
             </Text>
           )}
         </>

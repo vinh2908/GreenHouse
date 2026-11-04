@@ -9,10 +9,10 @@ import { useNotifications, useMarkAllRead, useMarkNotificationRead } from '@/hoo
 import { useAuthStore } from '@/stores/auth.store';
 import { resolveNotificationRoute } from '@/utils/notification-route';
 import { refreshSosState } from '@/hooks/use-sos-backup';
+import { useTranslation } from '@/hooks/use-i18n';
 import { Card, COLORS, EmptyState, LoadingSpinner } from '@/components/ui';
 
 dayjs.extend(relativeTime);
-dayjs.locale('vi');
 
 const NOTIF_ICONS: Record<string, string> = {
   new_quote_received: '💰',
@@ -49,6 +49,7 @@ const SOS_DECISION_TYPES = new Set(['sos_backup_decision_request', 'sos_backup_d
 
 export default function NotificationsScreen() {
   const router = useRouter();
+  const { t, fs, lang } = useTranslation();
   const user = useAuthStore(s => s.user);
   const { data: notifications, isLoading, refetch } = useNotifications();
   const markAll = useMarkAllRead();
@@ -207,7 +208,7 @@ export default function NotificationsScreen() {
                       fontWeight: '600',
                     }}
                   >
-                    {dayjs(n.created_at).fromNow()}
+                    {dayjs(n.created_at).locale(lang === 'en' ? 'en' : 'vi').fromNow()}
                   </Text>
                 </View>
                 {!n.is_read && (

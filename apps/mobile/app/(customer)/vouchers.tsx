@@ -5,12 +5,14 @@ import { ArrowLeft, Ticket, Copy, Check, Clock, Sparkles } from 'lucide-react-na
 import Toast from 'react-native-toast-message';
 import dayjs from 'dayjs';
 import { useMyVouchers } from '@/hooks/use-api';
+import { useTranslation } from '@/hooks/use-i18n';
 import { Card, COLORS, EmptyState, LoadingSpinner, Badge } from '@/components/ui';
 import { useState } from 'react';
 
 export default function CustomerVouchersScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { t, fs, lang } = useTranslation();
   const { data: vouchers, isLoading, refetch } = useMyVouchers();
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
 
@@ -19,8 +21,8 @@ export default function CustomerVouchersScreen() {
     setCopiedCode(code);
     Toast.show({
       type: 'success',
-      text1: `Đã sao chép mã "${code}"`,
-      text2: 'Dán mã vào ô Voucher khi tạo hoặc thanh toán đơn hàng.',
+      text1: t('voucher_copy_toast_title', { code }),
+      text2: t('voucher_copy_toast_sub'),
     });
     setTimeout(() => {
       setCopiedCode(null);
@@ -57,11 +59,11 @@ export default function CustomerVouchersScreen() {
           <ArrowLeft size={20} color={COLORS.gray[800]} />
         </TouchableOpacity>
         <View style={{ flex: 1 }}>
-          <Text style={{ fontSize: 18, fontWeight: '800', color: COLORS.gray[900] }}>
-            Voucher của tôi
+          <Text style={{ fontSize: fs(18), fontWeight: '800', color: COLORS.gray[900] }}>
+            {t('voucher_title')}
           </Text>
-          <Text style={{ fontSize: 12, color: COLORS.gray[500] }}>
-            Mã ưu đãi & giảm giá dịch vụ khả dụng
+          <Text style={{ fontSize: fs(12), color: COLORS.gray[500] }}>
+            {t('home_vouchers_sub')}
           </Text>
         </View>
       </View>
@@ -78,15 +80,19 @@ export default function CustomerVouchersScreen() {
         ) : !vouchers?.length ? (
           <EmptyState
             emoji="🎟️"
-            title="Chưa có mã giảm giá nào"
-            subtitle="Các chương trình khuyến mãi và ưu đãi dành riêng cho bạn sẽ hiển thị tại đây khi hệ thống phát hành."
+            title={t('voucher_empty_title')}
+            subtitle={t('voucher_empty_sub')}
           />
         ) : (
           vouchers.map((v: any) => {
             const isPercent = v.discount_type === 'percent';
             const discountLabel = isPercent
-              ? `Giảm ${v.discount_value}%`
-              : `Giảm ${new Intl.NumberFormat('vi-VN').format(v.discount_value)}₫`;
+              ? lang === 'en'
+                ? `${v.discount_value}% OFF`
+                : `Giảm ${v.discount_value}%`
+              : lang === 'en'
+                ? `${new Intl.NumberFormat('en-US').format(v.discount_value)}₫ OFF`
+                : `Giảm ${new Intl.NumberFormat('vi-VN').format(v.discount_value)}₫`;
 
             return (
               <Card
@@ -143,29 +149,31 @@ export default function CustomerVouchersScreen() {
                 >
                   {v.min_order_amount > 0 && (
                     <Text style={{ fontSize: 12, color: COLORS.gray[700] }}>
-                      • Đơn tối thiểu:{' '}
+                      • {lang === 'en' ? 'Min order: ' : 'Đơn tối thiểu: '}
                       <Text style={{ fontWeight: '700' }}>
-                        {new Intl.NumberFormat('vi-VN').format(v.min_order_amount)}₫
+                        {new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'vi-VN').format(v.min_order_amount)}₫
                       </Text>
                     </Text>
                   )}
                   {v.max_discount_amount && isPercent && (
                     <Text style={{ fontSize: 12, color: COLORS.gray[700] }}>
-                      • Giảm tối đa:{' '}
+                      • {lang === 'en' ? 'Max discount: ' : 'Giảm tối đa: '}
                       <Text style={{ fontWeight: '700' }}>
-                        {new Intl.NumberFormat('vi-VN').format(v.max_discount_amount)}₫
+                        {new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'vi-VN').format(v.max_discount_amount)}₫
                       </Text>
                     </Text>
                   )}
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                     <Clock size={12} color={COLORS.gray[500]} />
                     <Text style={{ fontSize: 12, color: COLORS.gray[500] }}>
-                      Hết hạn:{' '}
+                      {lang === 'en' ? 'Expires: ' : 'Hết hạn: '}
                       {v.valid_to || v.end_date || (v as any).expires_at
                         ? dayjs(v.valid_to || v.end_date || (v as any).expires_at).format(
                             'DD/MM/YYYY',
                           )
-                        : 'Không thời hạn'}
+                        : lang === 'en'
+                          ? 'No expiration'
+                          : 'Không thời hạn'}
                     </Text>
                   </View>
                 </View>
@@ -219,15 +227,15 @@ export default function CustomerVouchersScreen() {
                     {copiedCode === v.code ? (
                       <>
                         <Check size={14} color="#fff" />
-                        <Text style={{ color: '#fff', fontWeight: '700', fontSize: 12 }}>
-                          Đã chép
+                        <Text style={{ color: '#fff', fontWeight: '700', fontSize: fs(12) }}>
+                          {t('voucher_copied')}
                         </Text>
                       </>
                     ) : (
                       <>
                         <Copy size={14} color="#fff" />
-                        <Text style={{ color: '#fff', fontWeight: '700', fontSize: 12 }}>
-                          Sao chép
+                        <Text style={{ color: '#fff', fontWeight: '700', fontSize: fs(12) }}>
+                          {t('voucher_copy')}
                         </Text>
                       </>
                     )}
