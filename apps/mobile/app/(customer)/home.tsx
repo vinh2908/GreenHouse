@@ -53,6 +53,7 @@ import {
 } from 'lucide-react-native';
 import { useAuthStore } from '@/stores/auth.store';
 import { useTranslation } from '@/hooks/use-i18n';
+import { I18nKey } from '@/services/i18n';
 import {
   useServices,
   useMyJobs,
@@ -70,6 +71,7 @@ import { removeVietnameseDiacritics } from '@/utils/search';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import 'dayjs/locale/vi';
+import 'dayjs/locale/en';
 
 dayjs.extend(relativeTime);
 dayjs.locale('vi');
@@ -78,100 +80,131 @@ dayjs.locale('vi');
 interface ServiceItem {
   id: string;
   name: string;
-  price: string;
+  nameKey: I18nKey;
+  priceType: 'fixed_from' | 'custom_deal' | 'quote_job' | 'quote_trip';
+  baseAmount?: number;
+  unitKey?: I18nKey;
   emoji: string;
   slug: string;
   isCustom?: boolean;
-  badge?: string;
+  badgeKey?: I18nKey;
   subtitle?: string;
+  subtitleKey?: I18nKey;
 }
 
 const DEMO_SERVICES: ServiceItem[] = [
   {
     id: '1',
     name: 'Giúp việc theo giờ',
-    price: 'Từ 60.000₫/giờ',
+    nameKey: 'svc_housekeeping_hourly',
+    priceType: 'fixed_from',
+    baseAmount: 60000,
+    unitKey: 'price_per_hour',
     emoji: '🧹',
     slug: 'housekeeping_hourly',
   },
   {
     id: '2',
     name: 'Sửa điện gia dụng',
-    price: 'Báo giá theo việc',
+    nameKey: 'svc_electrician',
+    priceType: 'quote_job',
     emoji: '⚡',
     slug: 'electrician',
   },
   {
     id: '3',
     name: 'Dọn nhà',
-    price: 'Từ 150.000₫/ca',
+    nameKey: 'svc_house_cleaning',
+    priceType: 'fixed_from',
+    baseAmount: 150000,
+    unitKey: 'price_per_shift',
     emoji: '🏠',
     slug: 'house_cleaning',
   },
   {
     id: '4',
     name: 'Nấu ăn',
-    price: 'Từ 120.000₫/bữa',
+    nameKey: 'svc_cooking',
+    priceType: 'fixed_from',
+    baseAmount: 120000,
+    unitKey: 'price_per_meal',
     emoji: '🍳',
     slug: 'cooking',
   },
   {
     id: '5',
     name: 'Chuyển nhà',
-    price: 'Báo giá theo chuyến',
+    nameKey: 'svc_moving_help',
+    priceType: 'quote_trip',
     emoji: '📦',
     slug: 'moving_help',
   },
   {
     id: '6',
     name: 'Chăm trẻ',
-    price: 'Từ 55.000₫/giờ',
+    nameKey: 'svc_child_care',
+    priceType: 'fixed_from',
+    baseAmount: 55000,
+    unitKey: 'price_per_hour',
     emoji: '👶',
     slug: 'child_care',
   },
   {
     id: '7',
     name: 'Sửa ống nước',
-    price: 'Báo giá theo việc',
+    nameKey: 'svc_plumbing',
+    priceType: 'quote_job',
     emoji: '🔧',
     slug: 'plumbing',
   },
   {
     id: '8',
     name: 'Giặt ủi',
-    price: 'Từ 20.000₫/kg',
+    nameKey: 'svc_laundry',
+    priceType: 'fixed_from',
+    baseAmount: 20000,
+    unitKey: 'price_per_kg',
     emoji: '👔',
     slug: 'laundry',
   },
   {
     id: '9',
     name: 'Vệ sinh máy lạnh',
-    price: 'Từ 150.000₫/máy',
+    nameKey: 'svc_ac_repair',
+    priceType: 'fixed_from',
+    baseAmount: 150000,
+    unitKey: 'price_per_unit',
     emoji: '❄️',
     slug: 'ac_repair',
   },
   {
     id: '10',
     name: 'Chăm người già',
-    price: 'Từ 70.000₫/giờ',
+    nameKey: 'svc_elderly_care',
+    priceType: 'fixed_from',
+    baseAmount: 70000,
+    unitKey: 'price_per_hour',
     emoji: '👵',
     slug: 'elderly_care',
   },
   {
     id: '11',
     name: 'Bốc hàng, vận chuyển',
-    price: 'Deal giá với thợ',
+    nameKey: 'svc_handyman',
+    priceType: 'custom_deal',
     emoji: '🚛',
     slug: 'handyman',
   },
   {
     id: '12',
     name: 'Dịch vụ khác — tự ghi việc, tự set giá',
-    price: 'Deal giá với thợ',
+    nameKey: 'svc_custom',
+    priceType: 'custom_deal',
     emoji: '💡',
     slug: 'custom',
     isCustom: true,
-    badge: 'MỚI',
+    badgeKey: 'badge_new',
+    subtitleKey: 'svc_custom_sub',
     subtitle: 'Việc gì cũng đăng được',
   },
 ];
@@ -209,7 +242,7 @@ function calculateDistanceKm(lat1: number, lon1: number, lat2: number, lon2: num
 
 export default function CustomerHomeScreen() {
   const router = useRouter();
-  const { t, fs } = useTranslation();
+  const { t, fs, lang } = useTranslation();
   const storedUser = useAuthStore(s => s.user);
   const { data: profile, refetch: refetchProfile } = useMyProfile();
   const user = profile ?? storedUser;
@@ -1971,9 +2004,15 @@ export default function CustomerHomeScreen() {
               const list = q
                 ? DEMO_SERVICES.filter(s => {
                     const normName = removeVietnameseDiacritics(s.name);
+                    const normTranslated = removeVietnameseDiacritics(t(s.nameKey));
                     const normSlug = removeVietnameseDiacritics(s.slug.replace(/_/g, ' '));
                     const normSub = removeVietnameseDiacritics(s.subtitle || '');
-                    return normName.includes(q) || normSlug.includes(q) || normSub.includes(q);
+                    return (
+                      normName.includes(q) ||
+                      normTranslated.includes(q) ||
+                      normSlug.includes(q) ||
+                      normSub.includes(q)
+                    );
                   })
                 : DEMO_SERVICES;
 
@@ -2017,11 +2056,18 @@ export default function CustomerHomeScreen() {
                   services?.find(s =>
                     s.name.toLowerCase().includes(svc.name.toLowerCase().split(' ')[0]),
                   );
+                const fromPrefix = t('price_from_prefix');
                 const displayPrice = matched?.base_price_min
-                  ? `Từ ${matched.base_price_min.toLocaleString('vi-VN')}₫`
-                  : svc.isCustom
-                    ? 'Deal giá với thợ'
-                    : '';
+                  ? `${fromPrefix}${matched.base_price_min.toLocaleString('vi-VN')}₫`
+                  : svc.isCustom || svc.priceType === 'custom_deal'
+                    ? t('price_negotiate')
+                    : svc.priceType === 'quote_job'
+                      ? t('price_per_task')
+                      : svc.priceType === 'quote_trip'
+                        ? t('price_per_trip')
+                        : svc.baseAmount
+                          ? `${fromPrefix}${svc.baseAmount.toLocaleString('vi-VN')}₫${svc.unitKey ? t(svc.unitKey) : ''}`
+                          : '';
 
                 return (
                   <ScalePressable
@@ -2030,7 +2076,7 @@ export default function CustomerHomeScreen() {
                       if (isCustom) {
                         router.push({
                           pathname: '/(customer)/booking',
-                          params: { custom_service_name: 'Dịch vụ theo yêu cầu' },
+                          params: { custom_service_name: t(svc.nameKey) },
                         });
                       } else if (matched) {
                         router.push({
@@ -2040,12 +2086,12 @@ export default function CustomerHomeScreen() {
                       } else {
                         router.push({
                           pathname: '/(customer)/booking',
-                          params: { custom_service_name: svc.name },
+                          params: { custom_service_name: t(svc.nameKey) },
                         });
                         Toast.show({
                           type: 'info',
-                          text1: `Dịch vụ "${svc.name}"`,
-                          text2: 'Đang mở theo yêu cầu riêng để bạn tự thỏa thuận giá với thợ',
+                          text1: `${t('common_service')} "${t(svc.nameKey)}"`,
+                          text2: t('home_quick_booking_sub'),
                         });
                       }
                     }}
@@ -2064,7 +2110,7 @@ export default function CustomerHomeScreen() {
                     }}
                   >
                     {/* Badge MỚI cho item 12 */}
-                    {svc.badge && (
+                    {svc.badgeKey && (
                       <View
                         style={{
                           position: 'absolute',
@@ -2076,31 +2122,31 @@ export default function CustomerHomeScreen() {
                           borderRadius: 6,
                         }}
                       >
-                        <Text style={{ fontSize: 9, fontWeight: '900', color: COLORS.primary }}>
-                          {svc.badge}
+                        <Text style={{ fontSize: fs(9), fontWeight: '900', color: COLORS.primary }}>
+                          {t(svc.badgeKey)}
                         </Text>
                       </View>
                     )}
 
-                    <Text style={{ fontSize: 26, marginVertical: 4 }}>{svc.emoji}</Text>
+                    <Text style={{ fontSize: fs(26), marginVertical: 4 }}>{svc.emoji}</Text>
 
                     <Text
                       style={{
-                        fontSize: 11.5,
+                        fontSize: fs(11.5),
                         fontWeight: '800',
                         color: isCustom ? COLORS.primary : COLORS.gray[900],
                         textAlign: 'center',
-                        lineHeight: 15,
+                        lineHeight: Math.round(fs(15)),
                       }}
                       numberOfLines={2}
                     >
-                      {svc.name}
+                      {t(svc.nameKey)}
                     </Text>
 
                     {displayPrice ? (
                       <Text
                         style={{
-                          fontSize: 10,
+                          fontSize: fs(10),
                           fontWeight: '700',
                           color: isCustom ? '#15803D' : COLORS.gray[500],
                           textAlign: 'center',
@@ -2153,8 +2199,8 @@ export default function CustomerHomeScreen() {
                   >
                     <AlertTriangle size={15} color="#FFFFFF" />
                   </View>
-                  <Text style={{ fontSize: 14.5, fontWeight: '900', color: '#FFFFFF' }}>
-                    SOS — Cần người gấp?
+                  <Text style={{ fontSize: fs(14.5), fontWeight: '900', color: '#FFFFFF' }}>
+                    {t('home_sos_callout_title')}
                   </Text>
                 </View>
                 <View
@@ -2165,22 +2211,21 @@ export default function CustomerHomeScreen() {
                     borderRadius: 6,
                   }}
                 >
-                  <Text style={{ fontSize: 10.5, fontWeight: '800', color: '#DC2626' }}>
-                    Khẩn cấp
+                  <Text style={{ fontSize: fs(10.5), fontWeight: '800', color: '#DC2626' }}>
+                    {t('home_sos_callout_urgent')}
                   </Text>
                 </View>
               </View>
               <Text
                 style={{
-                  fontSize: 12,
+                  fontSize: fs(12),
                   color: '#FEE2E2',
                   marginTop: 6,
-                  lineHeight: 16,
+                  lineHeight: Math.round(fs(16)),
                   fontWeight: '500',
                 }}
               >
-                Thợ hủy phút chót hoặc việc khẩn trong ngày: phát tín hiệu SOS, thợ gần nhất nhận
-                thay ngay trong 3 phút.
+                {t('home_sos_callout_desc')}
               </Text>
             </ScalePressable>
 
@@ -2196,12 +2241,11 @@ export default function CustomerHomeScreen() {
                 borderColor: '#E2E8F0',
               }}
             >
-              <Text style={{ fontSize: 14, fontWeight: '800', color: COLORS.gray[900] }}>
-                Không biết thuộc dịch vụ nào?
+              <Text style={{ fontSize: fs(14), fontWeight: '800', color: COLORS.gray[900] }}>
+                {t('home_ai_callout_title')}
               </Text>
-              <Text style={{ fontSize: 12, color: COLORS.gray[600], marginTop: 2, lineHeight: 16 }}>
-                Mô tả bằng lời hoặc chụp ảnh ở thẻ AI phía trên — AI gợi ý đúng dịch vụ và ước tính
-                giá.
+              <Text style={{ fontSize: fs(12), color: COLORS.gray[600], marginTop: 2, lineHeight: Math.round(fs(16)) }}>
+                {t('home_ai_callout_desc')}
               </Text>
             </TouchableOpacity>
           </View>
@@ -2234,21 +2278,21 @@ export default function CustomerHomeScreen() {
             <View>
               <Text
                 style={{
-                  fontSize: 14,
+                  fontSize: fs(14),
                   fontWeight: '700',
                   color: COLORS.gray[800],
                   marginBottom: 8,
                 }}
               >
-                Bạn cần làm việc gì?
+                {t('home_quick_need_work')}
               </Text>
               {/* Chips */}
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 10 }}>
                 {[
-                  { key: 'don_nha', label: 'Dọn nhà' },
-                  { key: 'boc_hang', label: 'Bốc hàng' },
-                  { key: 'may_lanh', label: 'Vệ sinh máy lạnh' },
-                  { key: 'khac', label: 'Dịch vụ khác…' },
+                  { key: 'don_nha', label: t('home_quick_chip_cleaning') },
+                  { key: 'boc_hang', label: t('home_quick_chip_moving') },
+                  { key: 'may_lanh', label: t('home_quick_chip_ac') },
+                  { key: 'khac', label: t('home_quick_chip_other') },
                 ].map(c => {
                   const isSel = quickServiceChip === c.key;
                   return (
@@ -2266,7 +2310,7 @@ export default function CustomerHomeScreen() {
                     >
                       <Text
                         style={{
-                          fontSize: 12.5,
+                          fontSize: fs(12.5),
                           fontWeight: '700',
                           color: isSel ? COLORS.primary : COLORS.gray[700],
                         }}
@@ -2282,7 +2326,7 @@ export default function CustomerHomeScreen() {
               <TextInput
                 value={quickDescription}
                 onChangeText={setQuickDescription}
-                placeholder="Mô tả công việc của bạn..."
+                placeholder={t('home_quick_desc_placeholder')}
                 placeholderTextColor={COLORS.gray[400]}
                 multiline
                 numberOfLines={3}
@@ -2290,7 +2334,7 @@ export default function CustomerHomeScreen() {
                   backgroundColor: '#F8FAFC',
                   borderRadius: 12,
                   padding: 12,
-                  fontSize: 14,
+                  fontSize: fs(14),
                   color: COLORS.gray[900],
                   borderWidth: 1,
                   borderColor: '#E2E8F0',
@@ -2304,13 +2348,13 @@ export default function CustomerHomeScreen() {
             <View>
               <Text
                 style={{
-                  fontSize: 14,
+                  fontSize: fs(14),
                   fontWeight: '700',
                   color: COLORS.gray[800],
                   marginBottom: 8,
                 }}
               >
-                Giá bạn muốn trả (giá mở đầu để deal)
+                {t('home_quick_price_title')}
               </Text>
               <TextInput
                 value={quickDealPrice}
@@ -2321,7 +2365,7 @@ export default function CustomerHomeScreen() {
                   borderRadius: 12,
                   paddingHorizontal: 14,
                   paddingVertical: 12,
-                  fontSize: 16,
+                  fontSize: fs(16),
                   fontWeight: '800',
                   color: COLORS.gray[900],
                   borderWidth: 1,
@@ -2334,12 +2378,12 @@ export default function CustomerHomeScreen() {
             <View style={{ gap: 10 }}>
               <Text
                 style={{
-                  fontSize: 14,
+                  fontSize: fs(14),
                   fontWeight: '700',
                   color: COLORS.gray[800],
                 }}
               >
-                Thời gian làm việc
+                {t('home_quick_time_title')}
               </Text>
 
               {/* Ngày làm việc trigger card - Chuẩn Demo .big-field */}
@@ -2364,18 +2408,18 @@ export default function CustomerHomeScreen() {
                 <Calendar size={18} color="#16A34A" />
                 <View style={{ flex: 1 }}>
                   <Text
-                    style={{ fontSize: 15, fontWeight: '700', color: COLORS.gray[900] }}
+                    style={{ fontSize: fs(15), fontWeight: '700', color: COLORS.gray[900] }}
                     numberOfLines={1}
                   >
                     {(() => {
-                      const dt = dayjs(quickDate);
+                      const dt = dayjs(quickDate).locale(lang === 'en' ? 'en' : 'vi');
                       const dow = dt.format('dddd');
                       const capitalizedDow = dow.charAt(0).toUpperCase() + dow.slice(1);
                       return `${capitalizedDow}, ${dt.format('DD/MM')}`;
                     })()}
                   </Text>
-                  <Text style={{ fontSize: 11, color: '#64748B', fontWeight: '500', marginTop: 1 }}>
-                    Bấm để mở lịch tháng trong bottom sheet
+                  <Text style={{ fontSize: fs(11), color: '#64748B', fontWeight: '500', marginTop: 1 }}>
+                    {t('home_quick_calendar_hint')}
                   </Text>
                 </View>
                 <ChevronRight size={18} color="#16A34A" />
@@ -2384,10 +2428,10 @@ export default function CustomerHomeScreen() {
               {/* Quick day shortcut chips */}
               <View style={{ flexDirection: 'row', gap: 6 }}>
                 {[
-                  { key: 'today', label: 'Hôm nay' },
-                  { key: 'tomorrow', label: 'Ngày mai' },
-                  { key: 'sat', label: 'Thứ 7' },
-                  { key: 'sun', label: 'Chủ nhật' },
+                  { key: 'today', label: t('home_quick_chip_today') },
+                  { key: 'tomorrow', label: t('home_quick_chip_tomorrow') },
+                  { key: 'sat', label: t('home_quick_chip_sat') },
+                  { key: 'sun', label: t('home_quick_chip_sun') },
                 ].map(c => {
                   const isSel = quickDateChip === c.key;
                   return (
@@ -2406,7 +2450,7 @@ export default function CustomerHomeScreen() {
                     >
                       <Text
                         style={{
-                          fontSize: 11.5,
+                          fontSize: fs(11.5),
                           fontWeight: '700',
                           color: isSel ? '#047857' : COLORS.gray[700],
                         }}
@@ -2423,7 +2467,7 @@ export default function CustomerHomeScreen() {
                 value={quickTimeSlot}
                 onChange={setQuickTimeSlot}
                 selectedDate={quickDate}
-                label="Giờ bắt đầu"
+                label={t('picker_start_time')}
                 showChips={true}
               />
 
@@ -2462,7 +2506,7 @@ export default function CustomerHomeScreen() {
                 elevation: 3,
               }}
             >
-              <Text style={{ fontSize: 15, fontWeight: '800', color: '#FFFFFF' }}>Đăng việc</Text>
+              <Text style={{ fontSize: fs(15), fontWeight: '800', color: '#FFFFFF' }}>{t('home_quick_post_btn')}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -2471,13 +2515,13 @@ export default function CustomerHomeScreen() {
         <View style={{ paddingHorizontal: 16, marginTop: 24 }}>
           <Text
             style={{
-              fontSize: 18,
+              fontSize: fs(18),
               fontWeight: '800',
               color: COLORS.gray[900],
               marginBottom: 12,
             }}
           >
-            Quyền lợi & cam kết
+            {t('home_benefits_title')}
           </Text>
 
           <View style={{ flexDirection: 'row', gap: 8 }}>
@@ -2497,24 +2541,24 @@ export default function CustomerHomeScreen() {
               <ShieldCheck size={22} color={COLORS.primary} />
               <Text
                 style={{
-                  fontSize: 12,
+                  fontSize: fs(12),
                   fontWeight: '800',
                   color: COLORS.gray[900],
                   marginTop: 6,
                   textAlign: 'center',
                 }}
               >
-                Thợ đã xác thực
+                {t('home_benefit_verified')}
               </Text>
               <Text
                 style={{
-                  fontSize: 10,
+                  fontSize: fs(10),
                   color: COLORS.gray[500],
                   marginTop: 2,
                   textAlign: 'center',
                 }}
               >
-                CCCD & lý lịch rõ ràng
+                {t('home_benefit_verified_sub')}
               </Text>
             </View>
 
@@ -2534,24 +2578,24 @@ export default function CustomerHomeScreen() {
               <CheckCircle2 size={22} color={COLORS.primary} />
               <Text
                 style={{
-                  fontSize: 12,
+                  fontSize: fs(12),
                   fontWeight: '800',
                   color: COLORS.gray[900],
                   marginTop: 6,
                   textAlign: 'center',
                 }}
               >
-                Bảo hiểm công việc
+                {t('home_benefit_insurance')}
               </Text>
               <Text
                 style={{
-                  fontSize: 10,
+                  fontSize: fs(10),
                   color: COLORS.gray[500],
                   marginTop: 2,
                   textAlign: 'center',
                 }}
               >
-                Bồi thường hư hỏng, mất mát
+                {t('home_benefit_insurance_sub')}
               </Text>
             </View>
 
@@ -2571,24 +2615,24 @@ export default function CustomerHomeScreen() {
               <Lock size={22} color={COLORS.primary} />
               <Text
                 style={{
-                  fontSize: 12,
+                  fontSize: fs(12),
                   fontWeight: '800',
                   color: COLORS.gray[900],
                   marginTop: 6,
                   textAlign: 'center',
                 }}
               >
-                Giữ tiền bảo đảm
+                {t('home_benefit_escrow')}
               </Text>
               <Text
                 style={{
-                  fontSize: 10,
+                  fontSize: fs(10),
                   color: COLORS.gray[500],
                   marginTop: 2,
                   textAlign: 'center',
                 }}
               >
-                Chỉ trả khi bạn nghiệm thu xong
+                {t('home_benefit_escrow_sub')}
               </Text>
             </View>
           </View>
@@ -2599,13 +2643,13 @@ export default function CustomerHomeScreen() {
         <View style={{ paddingHorizontal: 16, marginTop: 24 }}>
           <Text
             style={{
-              fontSize: 18,
+              fontSize: fs(18),
               fontWeight: '800',
               color: COLORS.gray[900],
               marginBottom: 12,
             }}
           >
-            Việc đang thực hiện
+            {t('home_active_jobs')}
           </Text>
 
           {activeJobs.length > 0 ? (
@@ -2637,62 +2681,62 @@ export default function CustomerHomeScreen() {
               const step4Done = ['pending_review', 'completed'].includes(j.status);
 
               const timelineSteps = [
-                { label: 'Đã nhận việc', active: step1Done },
-                { label: 'Đang đến', active: step2Done },
-                { label: 'Đang làm', active: step3Done },
-                { label: 'Nghiệm thu', active: step4Done },
+                { label: t('home_timeline_confirmed'), active: step1Done },
+                { label: t('home_timeline_arriving'), active: step2Done },
+                { label: t('home_timeline_working'), active: step3Done },
+                { label: t('home_timeline_review'), active: step4Done },
               ];
 
-              let statusBadgeText = 'Đang tìm thợ';
+              let statusBadgeText = t('status_open');
               let statusBadgeBg = '#FEF3C7';
               let statusBadgeColor = '#D97706';
-              let statusDesc = 'Hệ thống đang điều phối và tìm thợ phù hợp nhất gần bạn.';
+              let statusDesc = t('home_status_finding_desc');
 
               if (j.status === 'open' || j.status === 'pending') {
-                statusBadgeText = 'Đang tìm thợ';
+                statusBadgeText = t('status_open');
                 statusBadgeBg = '#FEF3C7';
                 statusBadgeColor = '#D97706';
-                statusDesc = 'Hệ thống đang điều phối và tìm thợ phù hợp nhất gần bạn.';
+                statusDesc = t('home_status_finding_desc');
               } else if (j.status === 'receiving_quotes' || j.status === 'bidding') {
-                statusBadgeText = 'Có báo giá mới';
+                statusBadgeText = t('status_receiving_quotes');
                 statusBadgeBg = '#E0E7FF';
                 statusBadgeColor = '#4338CA';
-                statusDesc = 'Đã có thợ gửi báo giá, bấm để xem chi tiết và xác nhận thợ.';
+                statusDesc = t('home_status_quotes_desc');
               } else if (j.status === 'confirmed' || j.status === 'quote_selected') {
-                statusBadgeText = 'Thợ đã nhận';
+                statusBadgeText = t('status_confirmed');
                 statusBadgeBg = '#DCFCE7';
                 statusBadgeColor = '#15803D';
-                statusDesc = 'Thợ đã nhận việc và đang chuẩn bị dụng cụ đến điểm hẹn.';
+                statusDesc = t('home_status_helper_accepted_desc');
               } else if (j.status === 'helper_on_the_way' || j.status === 'on_the_way') {
-                statusBadgeText = 'Thợ đang đến';
+                statusBadgeText = t('status_helper_on_the_way');
                 statusBadgeBg = '#FFEDD5';
                 statusBadgeColor = '#C2410C';
-                statusDesc = 'Thợ đang trên đường di chuyển đến địa chỉ của bạn.';
+                statusDesc = t('home_status_helper_coming_desc');
               } else if (j.status === 'helper_arrived') {
-                statusBadgeText = 'Đã đến nơi';
+                statusBadgeText = t('status_helper_arrived');
                 statusBadgeBg = '#E0F2FE';
                 statusBadgeColor = '#0284C7';
-                statusDesc = 'Thợ đã có mặt tại địa chỉ của bạn và chuẩn bị tiến hành công việc.';
+                statusDesc = t('home_status_arrived_desc');
               } else if (j.status === 'in_progress') {
-                statusBadgeText = 'Đang làm';
+                statusBadgeText = t('status_in_progress');
                 statusBadgeBg = '#DBEAFE';
                 statusBadgeColor = '#1D4ED8';
-                statusDesc = 'Thợ đang thực hiện công việc tại địa chỉ của bạn.';
+                statusDesc = t('home_status_in_progress_desc');
               } else if (j.status === 'pending_review') {
-                statusBadgeText = 'Chờ nghiệm thu';
+                statusBadgeText = t('status_pending_review');
                 statusBadgeBg = '#FEF3C7';
                 statusBadgeColor = '#B45309';
-                statusDesc = 'Thợ đã làm xong, bạn vui lòng kiểm tra và nghiệm thu công việc.';
+                statusDesc = t('home_status_pending_review_desc');
               } else if (j.status === 'completed') {
-                statusBadgeText = 'Đã hoàn thành';
+                statusBadgeText = t('status_completed');
                 statusBadgeBg = '#DCFCE7';
                 statusBadgeColor = '#15803D';
-                statusDesc = 'Công việc đã hoàn thành và thanh toán thành công.';
+                statusDesc = t('home_status_done_desc');
               } else {
-                statusBadgeText = 'Đang xử lý';
+                statusBadgeText = t('home_status_processing');
                 statusBadgeBg = '#F1F5F9';
                 statusBadgeColor = '#475569';
-                statusDesc = 'Đơn dịch vụ đang được hệ thống xử lý.';
+                statusDesc = t('home_status_processing_desc');
               }
 
               const displayDate = dayjs(j.scheduled_at || j.created_at).format('DD/MM');
@@ -2723,7 +2767,7 @@ export default function CustomerHomeScreen() {
                     }}
                   >
                     <Text
-                      style={{ fontSize: 16, fontWeight: '800', color: COLORS.gray[900], flex: 1 }}
+                      style={{ fontSize: fs(16), fontWeight: '800', color: COLORS.gray[900], flex: 1 }}
                       numberOfLines={1}
                     >
                       {j.title}
@@ -2736,13 +2780,13 @@ export default function CustomerHomeScreen() {
                         borderRadius: 8,
                       }}
                     >
-                      <Text style={{ fontSize: 11, fontWeight: '800', color: statusBadgeColor }}>
+                      <Text style={{ fontSize: fs(11), fontWeight: '800', color: statusBadgeColor }}>
                         {statusBadgeText}
                       </Text>
                     </View>
                   </View>
 
-                  <Text style={{ fontSize: 12, color: COLORS.gray[500], marginTop: 4 }}>
+                  <Text style={{ fontSize: fs(12), color: COLORS.gray[500], marginTop: 4 }}>
                     {displayDate} · {displayTime} · {displayDistrict} — {statusDesc}
                   </Text>
 
@@ -2772,7 +2816,7 @@ export default function CustomerHomeScreen() {
                         />
                         <Text
                           style={{
-                            fontSize: 10,
+                            fontSize: fs(10),
                             fontWeight: st.active ? '700' : '500',
                             color: st.active ? COLORS.primary : COLORS.gray[400],
                           }}
@@ -2814,23 +2858,23 @@ export default function CustomerHomeScreen() {
               </View>
               <Text
                 style={{
-                  fontSize: 14.5,
+                  fontSize: fs(14.5),
                   fontWeight: '700',
                   color: COLORS.gray[800],
                   textAlign: 'center',
                 }}
               >
-                Bạn chưa có việc đang thực hiện
+                {t('home_active_empty_title')}
               </Text>
               <Text
                 style={{
-                  fontSize: 12,
+                  fontSize: fs(12),
                   color: COLORS.gray[400],
                   marginTop: 4,
                   textAlign: 'center',
                 }}
               >
-                Chọn dịch vụ hoặc đăng việc mới bên trên để thợ nhận việc ngay
+                {t('home_active_empty_sub')}
               </Text>
             </View>
           )}
@@ -2855,15 +2899,15 @@ export default function CustomerHomeScreen() {
                     marginBottom: 12,
                   }}
                 >
-                  <Text style={{ fontSize: 18, fontWeight: '800', color: COLORS.gray[900] }}>
-                    Đặt gần đây
+                  <Text style={{ fontSize: fs(18), fontWeight: '800', color: COLORS.gray[900] }}>
+                    {t('home_recent_title')}
                   </Text>
                   <TouchableOpacity
                     activeOpacity={0.7}
                     onPress={() => router.push('/(customer)/jobs')}
                   >
-                    <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.primary }}>
-                      Xem lịch sử →
+                    <Text style={{ fontSize: fs(13), fontWeight: '700', color: COLORS.primary }}>
+                      {t('home_view_history')}
                     </Text>
                   </TouchableOpacity>
                 </View>
@@ -2897,13 +2941,13 @@ export default function CustomerHomeScreen() {
 
                     <View style={{ flex: 1 }}>
                       <Text
-                        style={{ fontSize: 15, fontWeight: '800', color: COLORS.gray[900] }}
+                        style={{ fontSize: fs(15), fontWeight: '800', color: COLORS.gray[900] }}
                         numberOfLines={1}
                       >
                         {pastJob.title}
                       </Text>
-                      <Text style={{ fontSize: 12, color: COLORS.gray[500], marginTop: 2 }}>
-                        Hoàn thành · {completedDateStr}
+                      <Text style={{ fontSize: fs(12), color: COLORS.gray[500], marginTop: 2 }}>
+                        {t('status_completed')} · {completedDateStr}
                         {displayPriceStr ? ` · ${displayPriceStr}` : ''}
                       </Text>
                     </View>
@@ -2933,8 +2977,8 @@ export default function CustomerHomeScreen() {
                       borderRadius: 12,
                     }}
                   >
-                    <Text style={{ fontSize: 13, fontWeight: '800', color: COLORS.primary }}>
-                      Đặt lại
+                    <Text style={{ fontSize: fs(13), fontWeight: '800', color: COLORS.primary }}>
+                      {t('home_rebook_btn')}
                     </Text>
                   </TouchableOpacity>
                 </View>

@@ -3,7 +3,7 @@ const assert = require('node:assert');
 const dayjs = require('dayjs');
 
 // Simple JS mirror or load compiled/transpiled
-function formatConversationTime(dateInput, nowInput) {
+function formatConversationTime(dateInput, nowInput, lang = 'vi') {
   if (!dateInput) return '';
   const date = dayjs(dateInput);
   if (!date.isValid()) return '';
@@ -15,7 +15,7 @@ function formatConversationTime(dateInput, nowInput) {
 
   const yesterday = now.subtract(1, 'day');
   if (date.isSame(yesterday, 'day')) {
-    return 'Hôm qua';
+    return lang === 'en' ? 'Yesterday' : 'Hôm qua';
   }
 
   if (date.isSame(now, 'year')) {
@@ -35,6 +35,7 @@ test('formatConversationTime: HÔM QUA -> Hôm qua', () => {
   const now = dayjs('2026-11-03T10:00:00');
   const msgTime = dayjs('2026-11-02T16:48:00');
   assert.strictEqual(formatConversationTime(msgTime, now), 'Hôm qua');
+  assert.strictEqual(formatConversationTime(msgTime, now, 'en'), 'Yesterday');
 });
 
 test('formatConversationTime: Cũ hơn cùng năm -> DD/MM', () => {

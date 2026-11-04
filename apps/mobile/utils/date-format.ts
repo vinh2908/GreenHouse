@@ -10,6 +10,7 @@ import dayjs from 'dayjs';
 export function formatConversationTime(
   dateInput: string | Date | number | dayjs.Dayjs | undefined | null,
   nowInput?: dayjs.Dayjs,
+  lang: 'vi' | 'en' = 'vi',
 ): string {
   if (!dateInput) return '';
   const date = dayjs(dateInput);
@@ -22,7 +23,7 @@ export function formatConversationTime(
 
   const yesterday = now.subtract(1, 'day');
   if (date.isSame(yesterday, 'day')) {
-    return 'Hôm qua';
+    return lang === 'en' ? 'Yesterday' : 'Hôm qua';
   }
 
   if (date.isSame(now, 'year')) {

@@ -10,12 +10,14 @@ import { PhotoThumbRow } from '@/components/common/photo-thumbs';
 import { useCustomerSosDecision } from '@/hooks/use-api';
 import { useNowTick, formatCountdown } from '@/hooks/use-countdown';
 import { COLORS } from '@/components/ui';
+import { useTranslation } from '@/hooks/use-i18n';
 
 export function SosCustomerDecisionPopup() {
   const decision = useSosBackupStore(s => s.decision);
   const clearDecision = useSosBackupStore(s => s.clearDecision);
   const decide = useCustomerSosDecision();
   const now = useNowTick(!!decision);
+  const { t } = useTranslation();
 
   if (!decision) return null;
 
@@ -79,17 +81,14 @@ export function SosCustomerDecisionPopup() {
               marginBottom: 6,
             }}
           >
-            Người giúp việc có sự cố khẩn cấp
+            {t('sos_customer_popup_title')}
           </Text>
           <Text
             style={{ fontSize: 14, color: COLORS.gray[700], textAlign: 'center', lineHeight: 20 }}
           >
-            Người giúp việc của đơn{' '}
-            <Text style={{ fontWeight: '700' }}>
-              {decision.service_name ?? decision.job_title ?? ''}
-            </Text>{' '}
-            không thể tiếp tục vì: <Text style={{ fontWeight: '700' }}>{reasonLabel}</Text>. Bạn
-            muốn xử lý thế nào?
+            {decision.service_name ?? decision.job_title ?? ''}{' '}
+            {t('sos_customer_popup_reason_prefix')} <Text style={{ fontWeight: '700' }}>{reasonLabel}</Text>
+            {t('sos_customer_popup_reason_suffix')}
           </Text>
 
           {decision.photo_urls?.length ? (
@@ -111,14 +110,10 @@ export function SosCustomerDecisionPopup() {
             }}
           >
             <Text style={{ fontSize: 13.5, color: COLORS.gray[800], lineHeight: 19 }}>
-              🔄 <Text style={{ fontWeight: '700' }}>Đổi người:</Text> một thợ khác sẽ tiếp tục đơn
-              — giá và số tiền giữ đảm bảo <Text style={{ fontWeight: '700' }}>không thay đổi</Text>
-              .
+              {t('sos_customer_popup_replace_desc')}
             </Text>
             <Text style={{ fontSize: 13.5, color: COLORS.gray[800], lineHeight: 19 }}>
-              ↩️ <Text style={{ fontWeight: '700' }}>Hủy đơn:</Text> hoàn{' '}
-              <Text style={{ fontWeight: '700' }}>100% số tiền bạn đã thực trả</Text> (sau voucher
-              và điểm) vào ví. Đơn chưa thanh toán hoặc trả tiền mặt sẽ không phát sinh hoàn tiền ví.
+              {t('sos_customer_popup_cancel_desc')}
             </Text>
           </View>
 
@@ -134,7 +129,7 @@ export function SosCustomerDecisionPopup() {
             >
               {expired
                 ? 'Đã quá hạn quyết định — hệ thống đang xử lý theo chính sách mặc định'
-                : `⏱ Vui lòng quyết định trong ${formatCountdown(remainingMs)}`}
+                : `⏱ ${t('sos_popup_auto_skip', { sec: Math.ceil(remainingMs / 1000) })}`}
             </Text>
           ) : null}
 
@@ -154,7 +149,7 @@ export function SosCustomerDecisionPopup() {
               <ActivityIndicator color="#fff" />
             ) : (
               <Text style={{ color: '#fff', fontWeight: '800', fontSize: 15.5 }}>
-                🔄 Chấp nhận đổi người
+                {t('sos_customer_popup_accept_btn')}
               </Text>
             )}
           </TouchableOpacity>
@@ -172,7 +167,7 @@ export function SosCustomerDecisionPopup() {
             }}
           >
             <Text style={{ color: '#DC2626', fontWeight: '800', fontSize: 15 }}>
-              Hủy đơn — hoàn tiền thực trả
+              {t('sos_customer_popup_cancel_btn')}
             </Text>
           </TouchableOpacity>
         </View>
