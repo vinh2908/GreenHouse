@@ -417,7 +417,7 @@ html,body,#map{height:100%;width:100%;margin:0;background:#f1f5f9;font-family:sy
   function refresh(){
     var isEn = state && state.lang === 'en';
     if(!dest){ info.textContent = isEn ? 'Meeting location coordinates missing' : 'Chưa có tọa độ điểm hẹn'; metrics(null); return; }
-    if(!state.tracking){ info.textContent = isEn ? 'Work meeting location' : 'Điểm hẹn làm việc'; metrics(null); return; }
+    if(!state.tracking){ info.textContent = isEn ? 'Work meeting location' : 'Vị trí điểm hẹn làm việc'; metrics(null); return; }
     if(!point){
       var retryBtnText = isEn ? 'Retry' : 'Thử lại';
       if(state && state.gpsError){

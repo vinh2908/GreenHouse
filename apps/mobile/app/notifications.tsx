@@ -49,7 +49,7 @@ const SOS_DECISION_TYPES = new Set(['sos_backup_decision_request', 'sos_backup_d
 
 export default function NotificationsScreen() {
   const router = useRouter();
-  const { t, fs, lang } = useTranslation();
+  const { t, fs, lang, formatNotifTitle, formatNotifBody } = useTranslation();
   const user = useAuthStore(s => s.user);
   const { data: notifications, isLoading, refetch } = useNotifications();
   const markAll = useMarkAllRead();
@@ -199,12 +199,12 @@ export default function NotificationsScreen() {
                       color: COLORS.gray[900],
                     }}
                   >
-                    {n.title}
+                    {formatNotifTitle(n.title)}
                   </Text>
                   <Text
                     style={{ fontSize: 13, color: COLORS.gray[600], marginTop: 3, lineHeight: 18 }}
                   >
-                    {n.body}
+                    {formatNotifBody(n.body)}
                   </Text>
                   <Text
                     style={{

@@ -3,8 +3,10 @@ import { useEffect, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { socketService, SOCKET_EVENTS } from '@/services/socket.service';
 import { useAuthStore } from '@/stores/auth.store';
+import { useSettingsStore } from '@/stores/settings.store';
 import Toast from 'react-native-toast-message';
 import { acceptTrackingEvent, GPS_MAX_AGE_MS, TrackingEvent } from '@/services/tracking';
+import { formatNotificationTitle, formatNotificationBody } from '@/services/i18n';
 
 // ─── Connect on auth ─────────────────────────────────────────────────────────
 
@@ -220,31 +222,51 @@ export function useNotificationSocket() {
       qc.invalidateQueries({ queryKey: ['notifications'] });
       qc.invalidateQueries({ queryKey: ['notifications', 'count'] });
       if (n?.title && !(n.type === 'new_job_nearby' && n.data?.is_sos)) {
+        const lang = useSettingsStore.getState().language || 'vi';
         const isNewJob = n.type === 'new_job_nearby';
         const isAccepted = n.type === 'job_confirmed' || n.type === 'quote_accepted';
         const isNewQuote = n.type === 'new_quote_received';
         const isNewMsg = n.type === 'new_message';
 
         const title = isNewJob
-          ? 'Có đơn mới gần bạn 🎉'
+          ? lang === 'en'
+            ? 'New job near you 🎉'
+            : 'Có đơn mới gần bạn 🎉'
           : isAccepted
-            ? 'Tin vui về đơn hàng 🎉'
+            ? lang === 'en'
+              ? 'Great news about your order 🎉'
+              : 'Tin vui về đơn hàng 🎉'
             : isNewQuote
-              ? 'Có báo giá mới 💬'
+              ? lang === 'en'
+                ? 'New quote received 💬'
+                : 'Có báo giá mới 💬'
               : isNewMsg
-                ? '💬 ' + (n.title || 'Tin nhắn mới')
-                : n.title;
+                ? '💬 ' +
+                  (formatNotificationTitle(n.title, lang) ||
+                    (lang === 'en' ? 'New message' : 'Tin nhắn mới'))
+                : formatNotificationTitle(n.title, lang);
         const body = isNewJob
-          ? `${n.body || 'Một khách hàng vừa đăng công việc phù hợp.'} Mở mục Công việc để xem.`
+          ? lang === 'en'
+            ? `${formatNotificationBody(n.body, lang) || 'A customer just posted a matching job.'} Open Jobs tab to view.`
+            : `${n.body || 'Một khách hàng vừa đăng công việc phù hợp.'} Mở mục Công việc để xem.`
           : isAccepted && n.type === 'job_confirmed'
-            ? 'Đã có thợ nhận đơn của bạn. Mở đơn hàng để xem thông tin và theo dõi.'
+            ? lang === 'en'
+              ? 'A helper has accepted your order. Open order to view details and track.'
+              : 'Đã có thợ nhận đơn của bạn. Mở đơn hàng để xem thông tin và theo dõi.'
             : isAccepted && n.type === 'quote_accepted'
-              ? 'Khách hàng đã chọn báo giá của bạn. Mở đơn để xem hợp đồng.'
+              ? lang === 'en'
+                ? 'The customer has accepted your quote. Open order to view contract.'
+                : 'Khách hàng đã chọn báo giá của bạn. Mở đơn để xem hợp đồng.'
               : isNewQuote
-                ? `${n.body || 'Một thợ vừa gửi báo giá.'} Chạm vào thông báo để xem chi tiết.`
+                ? lang === 'en'
+                  ? `${formatNotificationBody(n.body, lang) || 'A helper just submitted a quote.'} Tap notification to view details.`
+                  : `${n.body || 'Một thợ vừa gửi báo giá.'} Chạm vào thông báo để xem chi tiết.`
                 : isNewMsg
-                  ? n.body || 'Bạn có tin nhắn mới từ đối tác'
-                  : n.body;
+                  ? lang === 'en'
+                    ? formatNotificationBody(n.body, lang) ||
+                      'You have a new message from partner'
+                    : n.body || 'Bạn có tin nhắn mới từ đối tác'
+                  : formatNotificationBody(n.body, lang);
 
         Toast.show({
           type: isNewJob || isAccepted || isNewQuote ? 'success' : 'info',
