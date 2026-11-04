@@ -1,10 +1,11 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { View, Text, StyleSheet, Platform, TouchableOpacity, Linking } from 'react-native';
 import { WebView } from 'react-native-webview';
 import * as Location from 'expo-location';
 import { Navigation } from 'lucide-react-native';
-import { TRACKING_MAP_HTML } from './tracking-map-document';
+import { TRACKING_MAP_HTML, buildTrackingMapHtml } from './tracking-map-document';
 import { trackingTitle, validCoordinate } from '@/services/tracking';
+import { useTranslation } from '@/hooks/use-i18n';
 
 export interface Coordinates {
   latitude: number;
@@ -27,7 +28,6 @@ export interface LiveTrackingMapProps {
   showNavigationButton?: boolean;
   onRouteMetrics?: (value: RouteMetrics | null) => void;
 }
-const WEBVIEW_SOURCE = { html: TRACKING_MAP_HTML };
 
 function haversineMeters(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const R = 6371e3;
@@ -52,6 +52,9 @@ function LiveTrackingMapComponent({
   showNavigationButton = false,
   onRouteMetrics,
 }: LiveTrackingMapProps) {
+  const { lang } = useTranslation();
+  const mapHtml = useMemo(() => buildTrackingMapHtml(lang), [lang]);
+  const webviewSource = useMemo(() => ({ html: mapHtml }), [mapHtml]);
   const webViewRef = useRef<WebView>(null);
   const iframeRef = useRef<any>(null);
   const ready = useRef(false);
@@ -105,10 +108,10 @@ function LiveTrackingMapComponent({
               if (disposed) return;
               const reason =
                 err?.code === 1
-                  ? 'Quyền vị trí bị từ chối'
+                  ? (lang === 'en' ? 'Location permission denied' : 'Quyền vị trí bị từ chối')
                   : err?.code === 3
-                    ? 'Hết thời gian chờ GPS'
-                    : 'Lỗi GPS thiết bị';
+                    ? (lang === 'en' ? 'GPS timeout' : 'Hết thời gian chờ GPS')
+                    : (lang === 'en' ? 'Device GPS error' : 'Lỗi GPS thiết bị');
               setGpsError({ error: true, reason });
             },
             { enableHighAccuracy: true, timeout: 10000, maximumAge: 5000 },
@@ -222,6 +225,7 @@ function LiveTrackingMapComponent({
     gpsError: !!gpsError?.error,
     gpsErrorReason: gpsError?.reason || '',
     goongApiKey: process.env.EXPO_PUBLIC_GOONG_API_KEY || '',
+    lang,
   };
   const latest = useRef(state);
   latest.current = state;
@@ -332,9 +336,9 @@ function LiveTrackingMapComponent({
       <View style={[styles.container, { height }]}>
         {Platform.OS === 'web' ? (
           <iframe
-            key={retry}
+            key={`${retry}-${lang}`}
             ref={iframeRef}
-            srcDoc={TRACKING_MAP_HTML}
+            srcDoc={mapHtml}
             onLoad={() => {
               // Recover the initial ready message if it preceded React's listener.
               const frame = iframeRef.current?.contentWindow;
@@ -345,13 +349,13 @@ function LiveTrackingMapComponent({
               }
             }}
             style={{ width: '100%', height: '100%', border: 'none' }}
-            title="Bản đồ theo dõi người giúp việc"
+            title={lang === 'en' ? 'Helper live tracking map' : 'Bản đồ theo dõi người giúp việc'}
           />
         ) : (
           <WebView
-            key={retry}
+            key={`${retry}-${lang}`}
             ref={webViewRef}
-            source={WEBVIEW_SOURCE}
+            source={webviewSource}
             originWhitelist={['*']}
             style={{ flex: 1 }}
             javaScriptEnabled
@@ -390,7 +394,7 @@ function LiveTrackingMapComponent({
               setRetry(value => value + 1);
             }}
           >
-            <Text>Không tải được bản đồ. Chạm để thử lại.</Text>
+            <Text>{lang === 'en' ? 'Unable to load map. Tap to retry.' : 'Không tải được bản đồ. Chạm để thử lại.'}</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -402,11 +406,14 @@ function LiveTrackingMapComponent({
             accessibilityRole="button"
           >
             <Navigation size={18} color="white" />
-            <Text style={styles.navText}>Chỉ đường bằng Google Maps</Text>
+            <Text style={styles.navText}>
+              {lang === 'en' ? 'Directions via Google Maps' : 'Chỉ đường bằng Google Maps'}
+            </Text>
           </TouchableOpacity>
           <Text style={styles.note}>
-            GPS được chia sẻ khi Green House đang mở. Khi chuyển sang ứng dụng khác, cập nhật có thể
-            tạm dừng.
+            {lang === 'en'
+              ? 'GPS is shared while Green House is open. When switching to other apps, updates may pause.'
+              : 'GPS được chia sẻ khi Green House đang mở. Khi chuyển sang ứng dụng khác, cập nhật có thể tạm dừng.'}
           </Text>
         </>
       )}

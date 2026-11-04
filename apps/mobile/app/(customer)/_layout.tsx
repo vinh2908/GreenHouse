@@ -3,11 +3,13 @@ import { CustomTabBar } from '@/components/common/custom-tab-bar';
 import { useAuthStore } from '@/stores/auth.store';
 import { useEffect } from 'react';
 import { View, ActivityIndicator } from 'react-native';
+import { useTranslation } from '@/hooks/use-i18n';
 import { COLORS } from '@/components/ui';
 
 export default function CustomerLayout() {
   const router = useRouter();
   const pathname = usePathname();
+  const { t } = useTranslation();
   const user = useAuthStore(s => s.user);
   const isAuthLoading = useAuthStore(s => s.isLoading);
   const isSwitchingRole = useAuthStore(s => s.isSwitchingRole);
@@ -53,31 +55,31 @@ export default function CustomerLayout() {
       <Tabs.Screen
         name="home"
         options={{
-          title: 'Trang chủ',
+          title: t('tab_home'),
         }}
       />
       <Tabs.Screen
         name="jobs"
         options={{
-          title: 'Hoạt động',
+          title: t('tab_activity'),
         }}
       />
       <Tabs.Screen
         name="booking"
         options={{
-          title: 'Đăng việc',
+          title: t('tab_booking'),
         }}
       />
       <Tabs.Screen
         name="messages"
         options={{
-          title: 'Tin nhắn',
+          title: t('tab_messages'),
         }}
       />
       <Tabs.Screen
         name="profile"
         options={{
-          title: 'Tài khoản',
+          title: t('tab_account'),
         }}
       />
       {/* Ẩn route favorites khỏi tab bar — Thợ yêu thích mở từ màn Tài khoản */}

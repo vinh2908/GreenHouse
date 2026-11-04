@@ -120,7 +120,7 @@ export default function NotificationsScreen() {
             <ArrowLeft size={20} color={COLORS.gray[800]} />
           </TouchableOpacity>
           <Text style={{ fontSize: 18, fontWeight: '800', color: COLORS.gray[900] }}>
-            Thông báo
+            {lang === 'en' ? 'Notifications' : 'Thông báo'}
           </Text>
         </View>
 
@@ -129,7 +129,9 @@ export default function NotificationsScreen() {
           style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}
         >
           <CheckCheck size={16} color={COLORS.primary} />
-          <Text style={{ color: COLORS.primary, fontSize: 13, fontWeight: '700' }}>Đọc tất cả</Text>
+          <Text style={{ color: COLORS.primary, fontSize: 13, fontWeight: '700' }}>
+            {lang === 'en' ? 'Mark all as read' : 'Đọc tất cả'}
+          </Text>
         </TouchableOpacity>
       </View>
 
@@ -144,8 +146,12 @@ export default function NotificationsScreen() {
         ) : !notifications?.length ? (
           <EmptyState
             emoji="🔔"
-            title="Chưa có thông báo nào"
-            subtitle="Các cập nhật báo giá, tình trạng đơn hàng và thanh toán sẽ xuất hiện tại đây"
+            title={lang === 'en' ? 'No notifications yet' : 'Chưa có thông báo nào'}
+            subtitle={
+              lang === 'en'
+                ? 'Quotes updates, order status, and payments will appear here'
+                : 'Các cập nhật báo giá, tình trạng đơn hàng và thanh toán sẽ xuất hiện tại đây'
+            }
           />
         ) : (
           notifications.map(

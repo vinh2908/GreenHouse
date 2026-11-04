@@ -24,7 +24,7 @@ import {
   type SupportMessageItem,
 } from '@/hooks/use-api';
 import { useSupportSocket } from '@/hooks/use-socket';
-import { SUPPORT_FAQS } from '@/components/common/support-faq';
+import { getSupportFaqs } from '@/components/common/support-faq';
 import { useTranslation } from '@/hooks/use-i18n';
 import { COLORS, LoadingSpinner } from '@/components/ui';
 
@@ -40,7 +40,7 @@ type ThreadItem = { kind: 'msg'; msg: SupportMessageItem } | { kind: 'faq'; faq:
 
 export default function SupportChatScreen() {
   const router = useRouter();
-  const { t } = useTranslation();
+  const { t, lang } = useTranslation();
   const insets = useSafeAreaInsets();
   const currentUser = useAuthStore(s => s.user);
   const [text, setText] = useState('');
@@ -89,7 +89,13 @@ export default function SupportChatScreen() {
     if (!content || sendMsg.isPending) return;
     const id = await ensureId();
     if (!id) {
-      Toast.show({ type: 'error', text1: 'Không mở được hội thoại hỗ trợ' });
+      Toast.show({
+        type: 'error',
+        text1:
+          lang === 'en'
+            ? 'Could not open support conversation'
+            : 'Không mở được hội thoại hỗ trợ',
+      });
       return;
     }
     if (!raw) setText('');
@@ -99,7 +105,7 @@ export default function SupportChatScreen() {
     } catch (err) {
       const msg =
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-        'Gửi tin nhắn thất bại';
+        (lang === 'en' ? 'Failed to send message' : 'Gửi tin nhắn thất bại');
       Toast.show({ type: 'error', text1: msg });
     }
   };
@@ -245,7 +251,7 @@ export default function SupportChatScreen() {
                 <Text style={{ fontSize: 14, fontWeight: '800', color: COLORS.gray[900] }}>
                   {t('support_faq_heading')}
                 </Text>
-                {SUPPORT_FAQS.map(faq => (
+                {getSupportFaqs(lang).map(faq => (
                   <TouchableOpacity
                     key={faq.q}
                     activeOpacity={0.75}
@@ -284,7 +290,9 @@ export default function SupportChatScreen() {
             ListEmptyComponent={
               <View style={{ alignItems: 'center', paddingVertical: 24, gap: 8 }}>
                 <Text style={{ fontSize: 15, fontWeight: '800', color: COLORS.gray[800] }}>
-                  {t('support_greeting', { name: currentUser?.full_name ?? 'bạn' })}
+                  {t('support_greeting', {
+                    name: currentUser?.full_name ?? (lang === 'en' ? 'you' : 'bạn'),
+                  })}
                 </Text>
                 <Text
                   style={{

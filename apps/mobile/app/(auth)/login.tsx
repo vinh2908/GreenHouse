@@ -14,11 +14,13 @@ import { useRouter } from 'expo-router';
 import { Phone, Lock, Eye, EyeOff, X, KeyRound } from 'lucide-react-native';
 import Toast from 'react-native-toast-message';
 import { useAuthStore } from '@/stores/auth.store';
+import { useTranslation } from '@/hooks/use-i18n';
 import { useLogin, useForgotPassword, useResetPassword } from '@/hooks/use-api';
 import { Button, Input, COLORS } from '@/components/ui';
 
 export default function LoginScreen() {
   const router = useRouter();
+  const { t, fs, lang } = useTranslation();
   const setAuth = useAuthStore(s => s.setAuth);
   const login = useLogin();
   const forgotPassword = useForgotPassword();
@@ -40,7 +42,7 @@ export default function LoginScreen() {
     setLoginError(null);
     const identifier = phone.trim();
     if (!identifier || !password.trim()) {
-      const emptyMsg = 'Vui lòng nhập số điện thoại hoặc email và mật khẩu';
+      const emptyMsg = lang === 'en' ? 'Please enter phone number or email and password' : 'Vui lòng nhập số điện thoại hoặc email và mật khẩu';
       setLoginError(emptyMsg);
       Toast.show({ type: 'error', text1: emptyMsg });
       return;
@@ -54,7 +56,7 @@ export default function LoginScreen() {
       const { access_token, refresh_token, user } = data.data;
       await setAuth(user, access_token, refresh_token);
 
-      Toast.show({ type: 'success', text1: `Xin chào ${user.full_name ?? 'bạn'}!` });
+      Toast.show({ type: 'success', text1: lang === 'en' ? `Welcome ${user.full_name ?? ''}!` : `Xin chào ${user.full_name ?? 'bạn'}!` });
 
       // Redirect by active role
       if (user.active_role === 'helper') {
@@ -66,16 +68,16 @@ export default function LoginScreen() {
       const dataMsg = (err as any)?.response?.data?.message;
       const msg = Array.isArray(dataMsg)
         ? dataMsg[0]
-        : dataMsg || 'Số điện thoại hoặc mật khẩu không chính xác';
+        : dataMsg || (lang === 'en' ? 'Incorrect phone number or password' : 'Số điện thoại hoặc mật khẩu không chính xác');
       setLoginError(msg);
-      Toast.show({ type: 'error', text1: 'Đăng nhập thất bại', text2: msg });
+      Toast.show({ type: 'error', text1: lang === 'en' ? 'Login failed' : 'Đăng nhập thất bại', text2: msg });
     }
   };
 
   const handleSendResetOtp = async () => {
     const cleanPhone = resetPhone.trim().replace(/\s+/g, '').replace(/^\+84/, '0');
     if (!/^(0[3|5|7|8|9])+([0-9]{8})$/.test(cleanPhone)) {
-      Toast.show({ type: 'error', text1: 'Vui lòng nhập số điện thoại 10 số hợp lệ' });
+      Toast.show({ type: 'error', text1: lang === 'en' ? 'Please enter a valid 10-digit phone number' : 'Vui lòng nhập số điện thoại 10 số hợp lệ' });
       return;
     }
     try {
@@ -84,24 +86,24 @@ export default function LoginScreen() {
       setForgotStep('reset');
       Toast.show({
         type: 'success',
-        text1: 'Đã gửi mã OTP đặt lại mật khẩu',
-        text2: 'Kiểm tra tin nhắn điện thoại của bạn',
+        text1: lang === 'en' ? 'Password reset OTP sent' : 'Đã gửi mã OTP đặt lại mật khẩu',
+        text2: lang === 'en' ? 'Check your text messages' : 'Kiểm tra tin nhắn điện thoại của bạn',
       });
     } catch (err: unknown) {
       const msg =
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-        'Không thể gửi OTP lúc này';
+        (lang === 'en' ? 'Unable to send OTP at this time' : 'Không thể gửi OTP lúc này');
       Toast.show({ type: 'error', text1: msg });
     }
   };
 
   const handleConfirmResetPassword = async () => {
     if (resetOtp.trim().length !== 6) {
-      Toast.show({ type: 'error', text1: 'Vui lòng nhập mã OTP gồm 6 chữ số' });
+      Toast.show({ type: 'error', text1: lang === 'en' ? 'Please enter 6-digit OTP' : 'Vui lòng nhập mã OTP gồm 6 chữ số' });
       return;
     }
     if (newPassword.trim().length < 8) {
-      Toast.show({ type: 'error', text1: 'Mật khẩu mới phải có ít nhất 8 ký tự' });
+      Toast.show({ type: 'error', text1: lang === 'en' ? 'New password must have at least 8 characters' : 'Mật khẩu mới phải có ít nhất 8 ký tự' });
       return;
     }
     try {
@@ -118,13 +120,13 @@ export default function LoginScreen() {
       setNewPassword('');
       Toast.show({
         type: 'success',
-        text1: 'Đặt lại mật khẩu thành công!',
-        text2: 'Bạn có thể đăng nhập bằng mật khẩu mới',
+        text1: lang === 'en' ? 'Password reset successful!' : 'Đặt lại mật khẩu thành công!',
+        text2: lang === 'en' ? 'You can now log in with your new password' : 'Bạn có thể đăng nhập bằng mật khẩu mới',
       });
     } catch (err: unknown) {
       const msg =
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-        'Mã OTP không đúng hoặc đã hết hạn';
+        (lang === 'en' ? 'Invalid or expired OTP' : 'Mã OTP không đúng hoặc đã hết hạn');
       Toast.show({ type: 'error', text1: msg });
     }
   };
@@ -197,23 +199,23 @@ export default function LoginScreen() {
             <Text
               style={{ fontSize: 14, color: COLORS.gray[500], marginTop: 4, fontWeight: '600' }}
             >
-              Dịch vụ gia đình & Thợ chuyên nghiệp 24/7
+              {lang === 'en' ? 'Home Services & Professional Helpers 24/7' : 'Dịch vụ gia đình & Thợ chuyên nghiệp 24/7'}
             </Text>
           </View>
 
           {/* ── Form Inputs ────────────────────────────────────────────── */}
           <View style={{ gap: 14 }}>
             <Input
-              label="Số điện thoại hoặc Email"
-              placeholder="Nhập SĐT hoặc email của bạn"
+              label={lang === 'en' ? 'Phone Number or Email' : 'Số điện thoại hoặc Email'}
+              placeholder={lang === 'en' ? 'Enter phone number or email' : 'Nhập SĐT hoặc email của bạn'}
               autoCapitalize="none"
               value={phone}
               onChangeText={setPhone}
               leftIcon={<Phone size={18} color={COLORS.gray[400]} />}
             />
             <Input
-              label="Mật khẩu"
-              placeholder="Nhập mật khẩu"
+              label={lang === 'en' ? 'Password' : 'Mật khẩu'}
+              placeholder={lang === 'en' ? 'Enter password' : 'Nhập mật khẩu'}
               secureTextEntry={!showPassword}
               value={password}
               onChangeText={setPassword}
@@ -238,7 +240,7 @@ export default function LoginScreen() {
               style={{ alignSelf: 'flex-end', marginTop: -2 }}
             >
               <Text style={{ color: COLORS.primary, fontSize: 13, fontWeight: '700' }}>
-                Quên mật khẩu?
+                {lang === 'en' ? 'Forgot password?' : 'Quên mật khẩu?'}
               </Text>
             </TouchableOpacity>
 
@@ -267,7 +269,7 @@ export default function LoginScreen() {
             )}
 
             <Button
-              title="Đăng nhập"
+              title={lang === 'en' ? 'Log in' : 'Đăng nhập'}
               loading={login.isPending}
               onPress={handleLogin}
               style={{ marginTop: 8 }}
@@ -285,7 +287,7 @@ export default function LoginScreen() {
                 fontWeight: '500',
               }}
             >
-              hoặc
+              {lang === 'en' ? 'or' : 'hoặc'}
             </Text>
             <View style={{ flex: 1, height: 1, backgroundColor: COLORS.gray[200] }} />
           </View>
@@ -294,10 +296,12 @@ export default function LoginScreen() {
           <View
             style={{ flexDirection: 'row', justifyContent: 'center', gap: 6, marginBottom: 16 }}
           >
-            <Text style={{ color: COLORS.gray[600], fontSize: 14 }}>Chưa có tài khoản?</Text>
+            <Text style={{ color: COLORS.gray[600], fontSize: 14 }}>
+              {lang === 'en' ? "Don't have an account?" : 'Chưa có tài khoản?'}
+            </Text>
             <TouchableOpacity onPress={() => router.push('/(auth)/register')}>
               <Text style={{ color: COLORS.primary, fontWeight: '800', fontSize: 14 }}>
-                Đăng ký ngay
+                {lang === 'en' ? 'Register now' : 'Đăng ký ngay'}
               </Text>
             </TouchableOpacity>
           </View>
@@ -307,7 +311,7 @@ export default function LoginScreen() {
             style={{ alignSelf: 'center', paddingVertical: 8, paddingHorizontal: 16 }}
           >
             <Text style={{ color: COLORS.gray[500], fontSize: 13, fontWeight: '700' }}>
-              Bỏ qua, khám phá dịch vụ ngay →
+              {lang === 'en' ? 'Skip, explore services now →' : 'Bỏ qua, khám phá dịch vụ ngay →'}
             </Text>
           </TouchableOpacity>
         </ScrollView>
@@ -347,7 +351,9 @@ export default function LoginScreen() {
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                 <KeyRound size={20} color={COLORS.primary} />
                 <Text style={{ fontSize: 18, fontWeight: '800', color: COLORS.gray[900] }}>
-                  {forgotStep === 'phone' ? 'Quên mật khẩu' : 'Đặt lại mật khẩu mới'}
+                  {forgotStep === 'phone'
+                    ? (lang === 'en' ? 'Forgot Password' : 'Quên mật khẩu')
+                    : (lang === 'en' ? 'Reset New Password' : 'Đặt lại mật khẩu mới')}
                 </Text>
               </View>
               <TouchableOpacity onPress={() => setShowForgotModal(false)}>
@@ -358,18 +364,20 @@ export default function LoginScreen() {
             {forgotStep === 'phone' ? (
               <>
                 <Text style={{ fontSize: 13.5, color: COLORS.gray[600], lineHeight: 20 }}>
-                  Nhập số điện thoại đã đăng ký tài khoản để nhận mã xác thực OTP đặt lại mật khẩu.
+                  {lang === 'en'
+                    ? 'Enter your registered phone number to receive a verification OTP for password reset.'
+                    : 'Nhập số điện thoại đã đăng ký tài khoản để nhận mã xác thực OTP đặt lại mật khẩu.'}
                 </Text>
                 <Input
-                  label="Số điện thoại đăng ký *"
-                  placeholder="VD: 0901234567"
+                  label={lang === 'en' ? 'Registered Phone Number *' : 'Số điện thoại đăng ký *'}
+                  placeholder={lang === 'en' ? 'E.g. 0901234567' : 'VD: 0901234567'}
                   keyboardType="phone-pad"
                   value={resetPhone}
                   onChangeText={setResetPhone}
                   leftIcon={<Phone size={18} color={COLORS.gray[400]} />}
                 />
                 <Button
-                  title="Gửi mã OTP"
+                  title={lang === 'en' ? 'Send OTP code' : 'Gửi mã OTP'}
                   loading={forgotPassword.isPending}
                   onPress={handleSendResetOtp}
                 />
@@ -377,8 +385,11 @@ export default function LoginScreen() {
             ) : (
               <>
                 <Text style={{ fontSize: 13.5, color: COLORS.gray[600], lineHeight: 20 }}>
-                  Nhập mã OTP 6 chữ số đã gửi tới{' '}
-                  <Text style={{ fontWeight: '800' }}>{resetPhone}</Text> và mật khẩu mới.
+                  {lang === 'en' ? (
+                    <>Enter the 6-digit OTP sent to <Text style={{ fontWeight: '800' }}>{resetPhone}</Text> and your new password.</>
+                  ) : (
+                    <>Nhập mã OTP 6 chữ số đã gửi tới <Text style={{ fontWeight: '800' }}>{resetPhone}</Text> và mật khẩu mới.</>
+                  )}
                 </Text>
                 {__DEV__ && (
                   <TouchableOpacity
@@ -393,21 +404,21 @@ export default function LoginScreen() {
                     }}
                   >
                     <Text style={{ fontSize: 12.5, color: '#16A34A', fontWeight: '700' }}>
-                      💡 Mã OTP thử nghiệm (Dev): 123456 (Chạm để điền)
+                      {lang === 'en' ? '💡 Dev test OTP: 123456 (Tap to fill)' : '💡 Mã OTP thử nghiệm (Dev): 123456 (Chạm để điền)'}
                     </Text>
                   </TouchableOpacity>
                 )}
                 <Input
-                  label="Mã OTP (6 số) *"
-                  placeholder="Nhập 6 chữ số OTP"
+                  label={lang === 'en' ? 'OTP Code (6 digits) *' : 'Mã OTP (6 số) *'}
+                  placeholder={lang === 'en' ? 'Enter 6-digit OTP' : 'Nhập 6 chữ số OTP'}
                   keyboardType="number-pad"
                   maxLength={6}
                   value={resetOtp}
                   onChangeText={setResetOtp}
                 />
                 <Input
-                  label="Mật khẩu mới (tối thiểu 8 ký tự) *"
-                  placeholder="Nhập mật khẩu mới"
+                  label={lang === 'en' ? 'New Password (min 8 characters) *' : 'Mật khẩu mới (tối thiểu 8 ký tự) *'}
+                  placeholder={lang === 'en' ? 'Enter new password' : 'Nhập mật khẩu mới'}
                   secureTextEntry
                   value={newPassword}
                   onChangeText={setNewPassword}
@@ -415,14 +426,14 @@ export default function LoginScreen() {
                 />
                 <View style={{ flexDirection: 'row', gap: 10 }}>
                   <Button
-                    title="Quay lại"
+                    title={lang === 'en' ? 'Back' : 'Quay lại'}
                     variant="outline"
                     fullWidth={false}
                     style={{ flex: 1 }}
                     onPress={() => setForgotStep('phone')}
                   />
                   <Button
-                    title="Xác nhận đổi"
+                    title={lang === 'en' ? 'Confirm Reset' : 'Xác nhận đổi'}
                     fullWidth={false}
                     style={{ flex: 1 }}
                     loading={resetPassword.isPending}

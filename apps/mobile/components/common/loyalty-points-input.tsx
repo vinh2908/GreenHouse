@@ -3,8 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, ActivityIndicator } from 'reac
 import { Star, X } from 'lucide-react-native';
 import { useLoyaltyAccount, useApplyLoyaltyPoints, useRemoveLoyaltyPoints } from '@/hooks/use-api';
 import { Card, COLORS } from '@/components/ui';
-
-const fmt = (n: number) => new Intl.NumberFormat('vi-VN').format(n);
+import { useTranslation } from '@/hooks/use-i18n';
 
 /**
  * Dùng điểm thành viên cho 1 đơn (Feature 12) — mirror VoucherInput.
@@ -17,6 +16,8 @@ export function LoyaltyPointsInput({ job, contractTotal }: { job: any; contractT
   const remove = useRemoveLoyaltyPoints();
   const [pointsText, setPointsText] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const { t, lang, tLoyaltyTier } = useTranslation();
+  const fmt = (n: number) => new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'vi-VN').format(n);
 
   const isPaid = job.payment_status === 'paid';
   if (isPaid) return null;
@@ -30,7 +31,10 @@ export function LoyaltyPointsInput({ job, contractTotal }: { job: any; contractT
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
           <Star size={18} color="#D97706" />
           <Text style={{ flex: 1, fontWeight: '800', fontSize: 14, color: '#92400E' }}>
-            Đã dùng {fmt(appliedPoints)} điểm — giảm {fmt(appliedDiscount)}₫
+            {t('loyalty_input.applied_summary', {
+              points: fmt(appliedPoints),
+              discount: fmt(appliedDiscount),
+            })}
           </Text>
           <TouchableOpacity
             onPress={() => remove.mutate(job._id)}
@@ -40,11 +44,14 @@ export function LoyaltyPointsInput({ job, contractTotal }: { job: any; contractT
           </TouchableOpacity>
         </View>
         <Text style={{ fontSize: 12, color: '#92400E' }}>
-          Điểm sẽ bị trừ khi bạn thanh toán. Cần thanh toán khoảng{' '}
-          {fmt(Math.max(0, contractTotal - appliedDiscount - (job.discount_amount ?? 0)))}₫.
+          {t('loyalty_input.payment_note', {
+            amount: fmt(Math.max(0, contractTotal - appliedDiscount - (job.discount_amount ?? 0))),
+          })}
         </Text>
         <TouchableOpacity onPress={() => remove.mutate(job._id)}>
-          <Text style={{ fontSize: 12.5, fontWeight: '800', color: COLORS.error }}>Gỡ điểm</Text>
+          <Text style={{ fontSize: 12.5, fontWeight: '800', color: COLORS.error }}>
+            {t('loyalty_input.remove_btn')}
+          </Text>
         </TouchableOpacity>
       </Card>
     );
@@ -58,11 +65,14 @@ export function LoyaltyPointsInput({ job, contractTotal }: { job: any; contractT
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
           <Star size={18} color={COLORS.gray[400]} />
           <Text style={{ fontWeight: '800', fontSize: 14, color: COLORS.gray[700] }}>
-            {`Điểm thành viên: ${fmt(account.points_balance ?? 0)} điểm`}
+            {t('loyalty_input.balance_summary', { points: fmt(account.points_balance ?? 0) })}
           </Text>
         </View>
         <Text style={{ fontSize: 12, color: COLORS.gray[500] }}>
-          {`Cần tối thiểu ${fmt(minRedeem)} điểm để đổi. Tích điểm: 1 điểm / ${fmt(account.earn_vnd_per_point ?? 10000)}₫ đã thanh toán.`}
+          {t('loyalty_input.min_notice', {
+            min: fmt(minRedeem),
+            earn: fmt(account.earn_vnd_per_point ?? 10000),
+          })}
         </Text>
       </Card>
     );
@@ -71,7 +81,7 @@ export function LoyaltyPointsInput({ job, contractTotal }: { job: any; contractT
   const handleApply = async () => {
     const points = Number(pointsText.replace(/[^\d]/g, ''));
     if (!points || points < minRedeem) {
-      setError(`Vui lòng nhập ít nhất ${fmt(minRedeem)} điểm`);
+      setError(t('loyalty_input.min_error', { min: fmt(minRedeem) }));
       return;
     }
     setError(null);
@@ -79,7 +89,7 @@ export function LoyaltyPointsInput({ job, contractTotal }: { job: any; contractT
       await apply.mutateAsync({ jobId: job._id, points });
     } catch (err: any) {
       const msg = err?.response?.data?.message;
-      setError(typeof msg === 'string' ? msg : 'Không áp dụng được điểm');
+      setError(typeof msg === 'string' ? msg : t('loyalty_input.generic_error'));
     }
   };
 
@@ -88,11 +98,16 @@ export function LoyaltyPointsInput({ job, contractTotal }: { job: any; contractT
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
         <Star size={19} color="#D97706" />
         <Text style={{ fontWeight: '800', fontSize: 15, color: COLORS.gray[900] }}>
-          Dùng điểm thành viên
+          {t('loyalty_input.title')}
         </Text>
       </View>
       <Text style={{ fontSize: 12.5, color: COLORS.gray[500] }}>
-        {`Bạn có ${fmt(account.points_balance)} điểm · Hạng ${account.tier_label} (đổi tối đa ${account.redemption_cap_percent}% giá trị đơn) · 1 điểm = ${fmt(account.point_value_vnd)}₫`}
+        {t('loyalty_input.summary_line', {
+          points: fmt(account.points_balance),
+          tier: tLoyaltyTier(account.tier_label),
+          cap: account.redemption_cap_percent,
+          value: fmt(account.point_value_vnd),
+        })}
       </Text>
       <View style={{ flexDirection: 'row', gap: 8 }}>
         <TextInput
@@ -101,7 +116,7 @@ export function LoyaltyPointsInput({ job, contractTotal }: { job: any; contractT
             setPointsText(v.replace(/[^\d]/g, ''));
             if (error) setError(null);
           }}
-          placeholder={`Số điểm (tối thiểu ${fmt(minRedeem)})`}
+          placeholder={t('loyalty_input.placeholder', { min: fmt(minRedeem) })}
           placeholderTextColor={COLORS.gray[400]}
           keyboardType="numeric"
           style={{
@@ -133,7 +148,9 @@ export function LoyaltyPointsInput({ job, contractTotal }: { job: any; contractT
           {apply.isPending ? (
             <ActivityIndicator color="#fff" size="small" />
           ) : (
-            <Text style={{ color: '#fff', fontWeight: '800', fontSize: 13.5 }}>Dùng điểm</Text>
+            <Text style={{ color: '#fff', fontWeight: '800', fontSize: 13.5 }}>
+              {t('loyalty_input.apply_btn')}
+            </Text>
           )}
         </TouchableOpacity>
       </View>

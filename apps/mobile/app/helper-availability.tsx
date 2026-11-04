@@ -5,6 +5,7 @@ import { useRouter } from 'expo-router';
 import { ArrowLeft, Trash2, Plus } from 'lucide-react-native';
 import Toast from 'react-native-toast-message';
 import { useMyAvailability, useUpdateAvailability } from '@/hooks/use-api';
+import { useTranslation } from '@/hooks/use-i18n';
 import { Button, Card, COLORS, LoadingSpinner } from '@/components/ui';
 import { TimeDropdownPicker } from '@/components/common/time-dropdown-picker';
 
@@ -25,8 +26,19 @@ const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 export default function HelperAvailabilityScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { t, fs, lang } = useTranslation();
   const { data, isLoading } = useMyAvailability();
   const update = useUpdateAvailability();
+
+  const dayChips = [
+    { day: 0, label: lang === 'en' ? 'Sun' : 'CN' },
+    { day: 1, label: lang === 'en' ? 'Mon' : 'T2' },
+    { day: 2, label: lang === 'en' ? 'Tue' : 'T3' },
+    { day: 3, label: lang === 'en' ? 'Wed' : 'T4' },
+    { day: 4, label: lang === 'en' ? 'Thu' : 'T5' },
+    { day: 5, label: lang === 'en' ? 'Fri' : 'T6' },
+    { day: 6, label: lang === 'en' ? 'Sat' : 'T7' },
+  ];
 
   const [enabled, setEnabled] = useState(false);
   const [days, setDays] = useState<number[]>([0, 1, 2, 3, 4, 5, 6]);
@@ -56,11 +68,23 @@ export default function HelperAvailabilityScreen() {
   const addBlockedDate = () => {
     const value = newDate.trim();
     if (!DATE_RE.test(value)) {
-      Toast.show({ type: 'error', text1: 'Ngày nghỉ phải theo định dạng YYYY-MM-DD' });
+      Toast.show({
+        type: 'error',
+        text1:
+          lang === 'en'
+            ? 'Off date must be in YYYY-MM-DD format'
+            : 'Ngày nghỉ phải theo định dạng YYYY-MM-DD',
+      });
       return;
     }
     if (blockedDates.includes(value)) {
-      Toast.show({ type: 'error', text1: 'Ngày này đã có trong danh sách nghỉ' });
+      Toast.show({
+        type: 'error',
+        text1:
+          lang === 'en'
+            ? 'This date is already in the blocked list'
+            : 'Ngày này đã có trong danh sách nghỉ',
+      });
       return;
     }
     setBlockedDates(prev => [...prev, value].sort());
@@ -69,15 +93,33 @@ export default function HelperAvailabilityScreen() {
 
   const handleSave = async () => {
     if (enabled && days.length === 0) {
-      Toast.show({ type: 'error', text1: 'Hãy chọn ít nhất 1 ngày làm việc trong tuần' });
+      Toast.show({
+        type: 'error',
+        text1:
+          lang === 'en'
+            ? 'Please select at least 1 working day per week'
+            : 'Hãy chọn ít nhất 1 ngày làm việc trong tuần',
+      });
       return;
     }
     if (!HH_MM_RE.test(startTime) || !HH_MM_RE.test(endTime)) {
-      Toast.show({ type: 'error', text1: 'Giờ làm việc phải theo định dạng HH:mm' });
+      Toast.show({
+        type: 'error',
+        text1:
+          lang === 'en'
+            ? 'Working hours must be in HH:mm format'
+            : 'Giờ làm việc phải theo định dạng HH:mm',
+      });
       return;
     }
     if (startTime >= endTime) {
-      Toast.show({ type: 'error', text1: 'Giờ bắt đầu phải nhỏ hơn giờ kết thúc' });
+      Toast.show({
+        type: 'error',
+        text1:
+          lang === 'en'
+            ? 'Start time must be before end time'
+            : 'Giờ bắt đầu phải nhỏ hơn giờ kết thúc',
+      });
       return;
     }
     await update.mutateAsync({
@@ -110,7 +152,7 @@ export default function HelperAvailabilityScreen() {
           <ArrowLeft size={22} color={COLORS.gray[800]} />
         </TouchableOpacity>
         <Text style={{ fontSize: 17, fontWeight: '800', color: COLORS.gray[900] }}>
-          🗓 Lịch làm việc
+          {lang === 'en' ? '🗓 Working Schedule' : '🗓 Lịch làm việc'}
         </Text>
       </View>
 
@@ -121,11 +163,12 @@ export default function HelperAvailabilityScreen() {
         <Card style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
           <View style={{ flex: 1 }}>
             <Text style={{ fontWeight: '800', fontSize: 15, color: COLORS.gray[900] }}>
-              Bật lịch làm việc
+              {lang === 'en' ? 'Enable Working Schedule' : 'Bật lịch làm việc'}
             </Text>
             <Text style={{ fontSize: 13, color: COLORS.gray[500], marginTop: 2, lineHeight: 19 }}>
-              Khi bật, bạn chỉ thấy & được thông báo các đơn rơi vào ngày/giờ làm việc của mình. Khi
-              tắt, bạn nhận mọi đơn như trước.
+              {lang === 'en'
+                ? 'When enabled, you only see & get notified for jobs during your working days/hours. When disabled, you receive all jobs as usual.'
+                : 'Khi bật, bạn chỉ thấy & được thông báo các đơn rơi vào ngày/giờ làm việc của mình. Khi tắt, bạn nhận mọi đơn như trước.'}
             </Text>
           </View>
           <Switch
@@ -138,10 +181,10 @@ export default function HelperAvailabilityScreen() {
 
         <Card style={{ gap: 12 }}>
           <Text style={{ fontWeight: '800', fontSize: 15, color: COLORS.gray[900] }}>
-            Ngày làm việc trong tuần
+            {lang === 'en' ? 'Working Days of Week' : 'Ngày làm việc trong tuần'}
           </Text>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-            {DAY_CHIPS.map(({ day, label }) => {
+            {dayChips.map(({ day, label }) => {
               const active = days.includes(day);
               return (
                 <TouchableOpacity
@@ -173,18 +216,18 @@ export default function HelperAvailabilityScreen() {
 
         <Card style={{ gap: 14 }}>
           <Text style={{ fontWeight: '800', fontSize: 15, color: COLORS.gray[900] }}>
-            Khung giờ làm việc
+            {lang === 'en' ? 'Working Hours' : 'Khung giờ làm việc'}
           </Text>
           <View style={{ gap: 12 }}>
             <TimeDropdownPicker
-              label="Giờ bắt đầu làm việc"
+              label={lang === 'en' ? 'Start work time' : 'Giờ bắt đầu làm việc'}
               value={startTime}
               onChange={setStartTime}
               showChips={false}
               checkPast={false}
             />
             <TimeDropdownPicker
-              label="Giờ kết thúc làm việc"
+              label={lang === 'en' ? 'End work time' : 'Giờ kết thúc làm việc'}
               value={endTime}
               onChange={setEndTime}
               showChips={false}
@@ -192,17 +235,21 @@ export default function HelperAvailabilityScreen() {
             />
           </View>
           <Text style={{ fontSize: 12, color: COLORS.gray[500] }}>
-            Hệ thống chỉ phân phối việc mới trong khung giờ hoạt động này.
+            {lang === 'en'
+              ? 'The system only dispatches new jobs during this active timeframe.'
+              : 'Hệ thống chỉ phân phối việc mới trong khung giờ hoạt động này.'}
           </Text>
         </Card>
 
         <Card style={{ gap: 12 }}>
           <Text style={{ fontWeight: '800', fontSize: 15, color: COLORS.gray[900] }}>
-            Ngày nghỉ lẻ
+            {lang === 'en' ? 'Custom Days Off' : 'Ngày nghỉ lẻ'}
           </Text>
           {blockedDates.length === 0 ? (
             <Text style={{ fontSize: 13, color: COLORS.gray[500] }}>
-              Chưa có ngày nghỉ nào. Thêm ngày bạn bận (đi chơi, lễ, việc riêng…).
+              {lang === 'en'
+                ? 'No days off added. Add days when you are unavailable (trips, holidays, personal events...).'
+                : 'Chưa có ngày nghỉ nào. Thêm ngày bạn bận (đi chơi, lễ, việc riêng…).'}
             </Text>
           ) : (
             blockedDates.map(d => (
@@ -223,7 +270,7 @@ export default function HelperAvailabilityScreen() {
             <TextInput
               value={newDate}
               onChangeText={setNewDate}
-              placeholder="YYYY-MM-DD (VD: 2026-11-01)"
+              placeholder={lang === 'en' ? 'YYYY-MM-DD (e.g. 2026-11-01)' : 'YYYY-MM-DD (VD: 2026-11-01)'}
               placeholderTextColor={COLORS.gray[400]}
               style={{
                 flex: 1,
@@ -252,12 +299,18 @@ export default function HelperAvailabilityScreen() {
               }}
             >
               <Plus size={16} color="#fff" />
-              <Text style={{ color: '#fff', fontWeight: '800', fontSize: 13.5 }}>Thêm</Text>
+              <Text style={{ color: '#fff', fontWeight: '800', fontSize: 13.5 }}>
+                {lang === 'en' ? 'Add' : 'Thêm'}
+              </Text>
             </TouchableOpacity>
           </View>
         </Card>
 
-        <Button title="Lưu lịch làm việc" loading={update.isPending} onPress={handleSave} />
+        <Button
+          title={lang === 'en' ? 'Save Schedule' : 'Lưu lịch làm việc'}
+          loading={update.isPending}
+          onPress={handleSave}
+        />
       </ScrollView>
     </View>
   );

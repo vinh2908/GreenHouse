@@ -16,8 +16,10 @@ import {
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import 'dayjs/locale/vi';
+import 'dayjs/locale/en';
 import Toast from 'react-native-toast-message';
 import { useAuthStore } from '@/stores/auth.store';
+import { useTranslation } from '@/hooks/use-i18n';
 import {
   useHelperPublicProfile,
   useHelperReviews,
@@ -45,6 +47,8 @@ export default function HelperPublicProfileScreen() {
     quoteId?: string;
   }>();
   const router = useRouter();
+  const { t, fs, lang } = useTranslation();
+  dayjs.locale(lang === 'vi' ? 'vi' : 'en');
 
   const { user } = useAuthStore();
   const { data: profile, isLoading: pLoading, refetch } = useHelperPublicProfile(id);
@@ -78,7 +82,7 @@ export default function HelperPublicProfileScreen() {
 
   const helperUser =
     typeof profile?.user_id === 'object' && profile?.user_id ? profile.user_id : {};
-  const helperName = helperUser?.full_name || profile?.full_name || 'Thợ';
+  const helperName = helperUser?.full_name || profile?.full_name || (lang === 'en' ? 'Helper' : 'Thợ');
   const helperAvatar = helperUser?.avatar || profile?.avatar;
   const ratingScore = profile?.average_rating || profile?.rating || 0;
   const totalCompleted = profile?.total_completed || profile?.completed_jobs || 0;
@@ -94,8 +98,8 @@ export default function HelperPublicProfileScreen() {
     }
     Toast.show({
       type: 'info',
-      text1: 'Chọn hoặc tạo đơn hàng để nhắn tin',
-      text2: 'Cuộc trò chuyện sẽ tự động mở khi bạn chọn báo giá của thợ.',
+      text1: lang === 'en' ? 'Select or create a job to chat' : 'Chọn hoặc tạo đơn hàng để nhắn tin',
+      text2: lang === 'en' ? 'The chat will automatically open when you select helper quote.' : 'Cuộc trò chuyện sẽ tự động mở khi bạn chọn báo giá của thợ.',
     });
     router.push('/(customer)/booking');
   };
@@ -110,12 +114,12 @@ export default function HelperPublicProfileScreen() {
         });
         Toast.show({
           type: 'success',
-          text1: `Đã chọn ${helperName}! 🎉`,
-          text2: 'Hợp đồng số đã được tạo thành công.',
+          text1: lang === 'en' ? `Selected ${helperName}! 🎉` : `Đã chọn ${helperName}! 🎉`,
+          text2: lang === 'en' ? 'Digital contract created successfully.' : 'Hợp đồng số đã được tạo thành công.',
         });
         router.replace({ pathname: '/job-detail/[id]', params: { id: jobId } });
       } catch (err: any) {
-        const msg = err?.response?.data?.message || 'Chưa thể chọn báo giá này';
+        const msg = err?.response?.data?.message || (lang === 'en' ? 'Unable to select this quote' : 'Chưa thể chọn báo giá này');
         Toast.show({ type: 'error', text1: msg });
       }
       return;
@@ -155,7 +159,7 @@ export default function HelperPublicProfileScreen() {
           <ArrowLeft size={20} color={COLORS.gray[800]} />
         </TouchableOpacity>
         <Text style={{ fontSize: 17, fontWeight: '800', color: COLORS.gray[900] }}>
-          Hồ sơ thợ uy tín
+          {lang === 'en' ? 'Verified Helper Profile' : 'Hồ sơ thợ uy tín'}
         </Text>
         {isCustomer ? (
           <TouchableOpacity
@@ -219,7 +223,7 @@ export default function HelperPublicProfileScreen() {
             </Text>
             {profile?.working_areas?.length > 0 && (
               <Text style={{ fontSize: 13, color: COLORS.gray[500], fontWeight: '500' }}>
-                Hoạt động: {profile.working_areas.join(', ')}
+                {lang === 'en' ? 'Operating in: ' : 'Hoạt động: '}{profile.working_areas.join(', ')}
               </Text>
             )}
           </View>
@@ -240,7 +244,7 @@ export default function HelperPublicProfileScreen() {
             >
               <ShieldCheck size={18} color={COLORS.success} />
               <Text style={{ fontSize: 12.5, fontWeight: '800', color: COLORS.success }}>
-                Đã xác minh nhân thân & Hồ sơ tư pháp (e-KYC 100%)
+                {lang === 'en' ? 'Identity & Judicial Records Verified (e-KYC 100%)' : 'Đã xác minh nhân thân & Hồ sơ tư pháp (e-KYC 100%)'}
               </Text>
             </View>
           ) : profile?.verification_status === 'pending' ? (
@@ -259,7 +263,7 @@ export default function HelperPublicProfileScreen() {
             >
               <ShieldCheck size={18} color="#D97706" />
               <Text style={{ fontSize: 12.5, fontWeight: '800', color: '#D97706' }}>
-                Hồ sơ e-KYC đang chờ duyệt
+                {lang === 'en' ? 'e-KYC Verification Pending' : 'Hồ sơ e-KYC đang chờ duyệt'}
               </Text>
             </View>
           ) : (
@@ -278,7 +282,7 @@ export default function HelperPublicProfileScreen() {
             >
               <ShieldCheck size={18} color={COLORS.error} />
               <Text style={{ fontSize: 12.5, fontWeight: '800', color: COLORS.error }}>
-                Chưa xác minh danh tính e-KYC
+                {lang === 'en' ? 'e-KYC Identity Not Verified' : 'Chưa xác minh danh tính e-KYC'}
               </Text>
             </View>
           )}
@@ -294,7 +298,7 @@ export default function HelperPublicProfileScreen() {
               </Text>
             </View>
             <Text style={{ fontSize: 11, color: COLORS.gray[500], fontWeight: '700' }}>
-              {profile?.total_reviews || reviewsList.length || 0} đánh giá
+              {profile?.total_reviews || reviewsList.length || 0} {lang === 'en' ? 'reviews' : 'đánh giá'}
             </Text>
           </Card>
 
@@ -303,7 +307,7 @@ export default function HelperPublicProfileScreen() {
               {totalCompleted}
             </Text>
             <Text style={{ fontSize: 11, color: COLORS.gray[500], fontWeight: '700' }}>
-              Đơn hoàn tất
+              {lang === 'en' ? 'Jobs done' : 'Đơn hoàn tất'}
             </Text>
           </Card>
 
@@ -312,7 +316,7 @@ export default function HelperPublicProfileScreen() {
               {profile?.completion_rate ?? 100}%
             </Text>
             <Text style={{ fontSize: 11, color: COLORS.gray[500], fontWeight: '700' }}>
-              Đúng giờ hẹn
+              {lang === 'en' ? 'On time' : 'Đúng giờ hẹn'}
             </Text>
           </Card>
         </View>
@@ -329,14 +333,13 @@ export default function HelperPublicProfileScreen() {
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
             <Award size={18} color="#D97706" />
             <Text style={{ fontSize: 14, fontWeight: '800', color: '#B45309' }}>
-              Cam kết dịch vụ từ đối tác
+              {lang === 'en' ? 'Partner Service Commitment' : 'Cam kết dịch vụ từ đối tác'}
             </Text>
           </View>
           <Text style={{ fontSize: 12.5, color: '#92400E', lineHeight: 18 }}>
-            • Tỷ lệ hoàn thành công việc: {profile?.completion_rate ?? 100}% (Không hủy ngang).
-            {'\n'}• {profile?.years_experience ? `Hơn ${profile.years_experience} năm` : 'Có'} kinh
-            nghiệm thực tế trong lĩnh vực.{'\n'}• Bảo hành chất lượng dịch vụ và bảo hiểm an toàn
-            trong quá trình làm việc.
+            {lang === 'en'
+              ? `• Job completion rate: ${profile?.completion_rate ?? 100}% (No arbitrary cancellation).\n• ${profile?.years_experience ? `Over ${profile.years_experience} years` : 'Proven'} practical experience.\n• Service quality warranty and safety insurance during work.`
+              : `• Tỷ lệ hoàn thành công việc: ${profile?.completion_rate ?? 100}% (Không hủy ngang).\n• ${profile?.years_experience ? `Hơn ${profile.years_experience} năm` : 'Có'} kinh nghiệm thực tế trong lĩnh vực.\n• Bảo hành chất lượng dịch vụ và bảo hiểm an toàn trong quá trình làm việc.`}
           </Text>
         </Card>
 
@@ -345,7 +348,7 @@ export default function HelperPublicProfileScreen() {
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
             <Wrench size={18} color={COLORS.primary} />
             <Text style={{ fontSize: 16, fontWeight: '800', color: COLORS.gray[900] }}>
-              Kỹ năng chuyên sâu
+              {lang === 'en' ? 'Specialized Skills' : 'Kỹ năng chuyên sâu'}
             </Text>
           </View>
 
@@ -384,16 +387,7 @@ export default function HelperPublicProfileScreen() {
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
             <Calendar size={18} color={COLORS.primary} />
             <Text style={{ fontSize: 16, fontWeight: '800', color: COLORS.gray[900] }}>
-              Bảng giá tham khảo & Khung giờ rảnh
-            </Text>
-          </View>
-
-          <View
-            style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4 }}
-          >
-            <Text style={{ fontSize: 13.5, color: COLORS.gray[600] }}>Công thợ theo giờ:</Text>
-            <Text style={{ fontSize: 14, fontWeight: '800', color: COLORS.primary }}>
-              70.000₫ – 100.000₫ / giờ
+              {lang === 'en' ? 'Reference Pricing & Working Hours' : 'Bảng giá tham khảo & Khung giờ rảnh'}
             </Text>
           </View>
 
@@ -401,10 +395,21 @@ export default function HelperPublicProfileScreen() {
             style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4 }}
           >
             <Text style={{ fontSize: 13.5, color: COLORS.gray[600] }}>
-              Gói sửa điện nước cơ bản:
+              {lang === 'en' ? 'Hourly wage:' : 'Công thợ theo giờ:'}
             </Text>
             <Text style={{ fontSize: 14, fontWeight: '800', color: COLORS.primary }}>
-              Từ 150.000₫ / ca
+              {lang === 'en' ? '70,000₫ – 100,000₫ / hr' : '70.000₫ – 100.000₫ / giờ'}
+            </Text>
+          </View>
+
+          <View
+            style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4 }}
+          >
+            <Text style={{ fontSize: 13.5, color: COLORS.gray[600] }}>
+              {lang === 'en' ? 'Basic electrical & plumbing package:' : 'Gói sửa điện nước cơ bản:'}
+            </Text>
+            <Text style={{ fontSize: 14, fontWeight: '800', color: COLORS.primary }}>
+              {lang === 'en' ? 'From 150,000₫ / job' : 'Từ 150.000₫ / ca'}
             </Text>
           </View>
 
@@ -417,12 +422,12 @@ export default function HelperPublicProfileScreen() {
             }}
           >
             <Text style={{ fontSize: 12.5, color: COLORS.gray[600], fontWeight: '600' }}>
-              🕐 Khung giờ làm việc:{' '}
+              {lang === 'en' ? '🕐 Working hours: ' : '🕐 Khung giờ làm việc: '}
               <Text style={{ color: COLORS.gray[900], fontWeight: '800' }}>
                 {profile?.availability?.start_time || '07:00'} –{' '}
                 {profile?.availability?.end_time || '19:00'}
               </Text>{' '}
-              (Tất cả các ngày trong tuần)
+              {lang === 'en' ? '(Every day of the week)' : '(Tất cả các ngày trong tuần)'}
             </Text>
           </View>
         </Card>
@@ -435,7 +440,7 @@ export default function HelperPublicProfileScreen() {
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
               <ThumbsUp size={18} color={COLORS.primary} />
               <Text style={{ fontSize: 16, fontWeight: '800', color: COLORS.gray[900] }}>
-                Khách hàng đánh giá ({profile?.total_reviews || reviewsList.length || 0})
+                {lang === 'en' ? 'Customer Reviews' : 'Khách hàng đánh giá'} ({profile?.total_reviews || reviewsList.length || 0})
               </Text>
             </View>
             <StarRating rating={ratingScore} />
@@ -452,7 +457,7 @@ export default function HelperPublicProfileScreen() {
               }}
             >
               <Text style={{ fontSize: 14, fontWeight: '700', color: COLORS.gray[700] }}>
-                Chưa có đánh giá nào từ khách hàng
+                {lang === 'en' ? 'No reviews from customers yet' : 'Chưa có đánh giá nào từ khách hàng'}
               </Text>
               <Text
                 style={{
@@ -462,8 +467,9 @@ export default function HelperPublicProfileScreen() {
                   lineHeight: 18,
                 }}
               >
-                Các đánh giá và nhận xét sau khi bạn hoàn thành các đơn hàng sẽ được hiển thị đầy đủ
-                tại đây.
+                {lang === 'en'
+                  ? 'Reviews and ratings after completed jobs will be displayed here.'
+                  : 'Các đánh giá và nhận xét sau khi bạn hoàn thành các đơn hàng sẽ được hiển thị đầy đủ tại đây.'}
               </Text>
             </View>
           ) : (
@@ -480,7 +486,7 @@ export default function HelperPublicProfileScreen() {
                   }}
                 >
                   <Text style={{ fontWeight: '800', fontSize: 14, color: COLORS.gray[900] }}>
-                    {r.customer_id?.full_name || 'Khách hàng ẩn danh'}
+                    {r.customer_id?.full_name || (lang === 'en' ? 'Anonymous Customer' : 'Khách hàng ẩn danh')}
                   </Text>
                   <StarRating rating={r.rating} size={12} />
                 </View>
@@ -501,7 +507,7 @@ export default function HelperPublicProfileScreen() {
                     }}
                   >
                     <Text style={{ fontSize: 12, color: COLORS.gray[600], fontStyle: 'italic' }}>
-                      Thợ phản hồi: "{r.helper_reply}"
+                      {lang === 'en' ? 'Helper replied: ' : 'Thợ phản hồi: '}"{r.helper_reply}"
                     </Text>
                   </View>
                 )}
@@ -537,14 +543,14 @@ export default function HelperPublicProfileScreen() {
           }}
         >
           <Button
-            title="Nhắn tin với thợ"
+            title={lang === 'en' ? 'Chat with helper' : 'Nhắn tin với thợ'}
             variant="outline"
             style={{ flex: 1 }}
             icon={<MessageCircle size={18} color={COLORS.primary} />}
             onPress={handleMessageHelper}
           />
           <Button
-            title={quoteId ? 'Chấp nhận báo giá' : 'Thuê thợ này'}
+            title={quoteId ? (lang === 'en' ? 'Accept quote' : 'Chấp nhận báo giá') : (lang === 'en' ? 'Hire this helper' : 'Thuê thợ này')}
             style={{ flex: 1 }}
             loading={selectQuote.isPending}
             icon={<CheckCircle2 size={18} color="#fff" />}
@@ -552,7 +558,7 @@ export default function HelperPublicProfileScreen() {
           />
           {isCustomer && !quoteId && (
             <Button
-              title="📅 Thuê theo tháng"
+              title={lang === 'en' ? '📅 Monthly contract' : '📅 Thuê theo tháng'}
               variant="secondary"
               style={{ flex: 1 }}
               onPress={() =>

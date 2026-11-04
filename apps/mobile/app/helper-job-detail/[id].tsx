@@ -76,7 +76,7 @@ const PLATFORM_FEE = 0.15;
 export default function HelperJobDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const { t, tService, fs } = useTranslation();
+  const { t, tService, fs, lang } = useTranslation();
   const currentUser = useAuthStore(s => s.user);
   const { data: callConfig } = useCallConfig();
 
@@ -209,11 +209,10 @@ export default function HelperJobDetailScreen() {
 
   const handleOpenQuoteModal = () => {
     if (helperProfile?.verification_status !== 'approved') {
-      const msg =
-        'Bạn cần hoàn tất và được duyệt xác thực danh tính e-KYC trước khi có thể gửi báo giá và nhận việc.';
-      Alert.alert('Yêu cầu xác thực e-KYC', msg, [
-        { text: 'Để sau', style: 'cancel' },
-        { text: 'Xác thực ngay', onPress: () => router.push('/kyc') },
+      const msg = t('helper_job.kyc_required_msg');
+      Alert.alert(t('helper_job.kyc_required_title'), msg, [
+        { text: t('cancel'), style: 'cancel' },
+        { text: t('helper_job.kyc_verify_now'), onPress: () => router.push('/kyc') },
       ]);
       return;
     }
@@ -225,7 +224,7 @@ export default function HelperJobDetailScreen() {
 
   const handleSubmitQuote = async () => {
     if (!laborCost || Number(laborCost) < 50000) {
-      Toast.show({ type: 'error', text1: 'Báo giá tối thiểu 50,000₫' });
+      Toast.show({ type: 'error', text1: t('helper_job.min_quote_toast') });
       return;
     }
     try {
@@ -237,14 +236,14 @@ export default function HelperJobDetailScreen() {
       });
       Toast.show({
         type: 'success',
-        text1: 'Gửi báo giá thành công!',
-        text2: 'Chờ khách hàng duyệt và chọn bạn',
+        text1: t('helper_job.quote_success_title'),
+        text2: t('helper_job.quote_success_desc'),
       });
       setShowQuoteModal(false);
     } catch (err: unknown) {
       const msg =
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-        'Gửi báo giá thất bại. Vui lòng thử lại.';
+        t('helper_job.quote_fail');
       Toast.show({ type: 'error', text1: msg });
     }
   };
@@ -262,34 +261,34 @@ export default function HelperJobDetailScreen() {
     try {
       await acceptFixed.mutateAsync(id!);
     } catch (err: any) {
-      const msg = err?.response?.data?.message || 'Nhận việc thất bại. Vui lòng thử lại.';
+      const msg = err?.response?.data?.message || t('helper_job.accept_fail');
       Toast.show({ type: 'error', text1: msg });
     }
   };
 
   const handleRejectJob = () => {
     Alert.alert(
-      'Từ chối nhận đơn',
-      'Đơn này sẽ được ẩn khỏi danh sách việc mới và bản đồ của bạn. Bạn có chắc chắn muốn bỏ qua?',
+      t('helper_job.reject_title'),
+      t('helper_job.reject_desc'),
       [
-        { text: 'Quay lại', style: 'cancel' },
+        { text: t('cancel'), style: 'cancel' },
         {
-          text: 'Từ chối đơn',
+          text: t('helper_job.reject_confirm'),
           style: 'destructive',
           onPress: async () => {
             try {
               await rejectJob.mutateAsync(id!);
               Toast.show({
                 type: 'success',
-                text1: 'Đã từ chối đơn',
-                text2: 'Đơn đã được ẩn khỏi danh sách của bạn.',
+                text1: t('helper_job.reject_success_title'),
+                text2: t('helper_job.reject_success_desc'),
               });
               router.back();
             } catch (err: any) {
               const msg =
                 err?.response?.data?.message ||
                 err?.message ||
-                'Từ chối thất bại. Vui lòng thử lại.';
+                t('helper_job.reject_fail');
               Toast.show({ type: 'error', text1: msg });
             }
           },
@@ -304,14 +303,14 @@ export default function HelperJobDetailScreen() {
     if (addLabor + addMat <= 0) {
       Toast.show({
         type: 'error',
-        text1: 'Vui lòng nhập số tiền công hoặc vật tư phát sinh lớn hơn 0₫',
+        text1: t('helper_job.amendment_amount_err'),
       });
       return;
     }
     if (!amendReason.trim() || amendReason.trim().length < 5) {
       Toast.show({
         type: 'error',
-        text1: 'Vui lòng nhập lý do phát sinh cụ thể để khách hàng duyệt',
+        text1: t('helper_job.amendment_reason_err'),
       });
       return;
     }
@@ -327,7 +326,7 @@ export default function HelperJobDetailScreen() {
       setAmendMaterialsCost('');
       setAmendReason('');
     } catch (err: any) {
-      const msg = err?.response?.data?.message || 'Gửi đề xuất phụ lục thất bại';
+      const msg = err?.response?.data?.message || t('helper_job.amendment_submit_fail');
       Toast.show({ type: 'error', text1: msg });
     }
   };
@@ -337,7 +336,7 @@ export default function HelperJobDetailScreen() {
     try {
       const { status } = await ImagePicker.requestCameraPermissionsAsync();
       if (status !== 'granted') {
-        Toast.show({ type: 'error', text1: 'Cần quyền truy cập camera để chụp ảnh' });
+        Toast.show({ type: 'error', text1: t('helper_job.evidence_camera_perm') });
         return;
       }
       const result = await ImagePicker.launchCameraAsync({
@@ -350,7 +349,7 @@ export default function HelperJobDetailScreen() {
         setCompletionPhotos(prev => [...prev, result.assets[0].uri]);
       }
     } catch {
-      Toast.show({ type: 'error', text1: 'Không thể mở máy ảnh' });
+      Toast.show({ type: 'error', text1: t('helper_job.evidence_camera_err') });
     }
   };
 
@@ -358,7 +357,7 @@ export default function HelperJobDetailScreen() {
     try {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (status !== 'granted') {
-        Toast.show({ type: 'error', text1: 'Cần quyền truy cập thư viện để chọn ảnh' });
+        Toast.show({ type: 'error', text1: t('helper_job.evidence_gallery_perm') });
         return;
       }
       const result = await ImagePicker.launchImageLibraryAsync({
@@ -372,7 +371,7 @@ export default function HelperJobDetailScreen() {
         setCompletionPhotos(prev => [...prev, ...newUris]);
       }
     } catch {
-      Toast.show({ type: 'error', text1: 'Không thể chọn ảnh từ thư viện' });
+      Toast.show({ type: 'error', text1: t('helper_job.evidence_gallery_err') });
     }
   };
 
@@ -380,7 +379,7 @@ export default function HelperJobDetailScreen() {
     try {
       const { status } = await ImagePicker.requestCameraPermissionsAsync();
       if (status !== 'granted') {
-        Toast.show({ type: 'error', text1: 'Cần quyền truy cập camera để quay video' });
+        Toast.show({ type: 'error', text1: t('helper_job.evidence_video_camera_perm') });
         return;
       }
       const result = await ImagePicker.launchCameraAsync({
@@ -392,7 +391,7 @@ export default function HelperJobDetailScreen() {
         setCompletionVideos(prev => [...prev, result.assets[0].uri]);
       }
     } catch {
-      Toast.show({ type: 'error', text1: 'Không thể quay video' });
+      Toast.show({ type: 'error', text1: t('helper_job.evidence_video_record_err') });
     }
   };
 
@@ -400,7 +399,7 @@ export default function HelperJobDetailScreen() {
     try {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (status !== 'granted') {
-        Toast.show({ type: 'error', text1: 'Cần quyền truy cập thư viện để chọn video' });
+        Toast.show({ type: 'error', text1: t('helper_job.evidence_video_gallery_perm') });
         return;
       }
       const result = await ImagePicker.launchImageLibraryAsync({
@@ -414,14 +413,13 @@ export default function HelperJobDetailScreen() {
         setCompletionVideos(prev => [...prev, ...newUris]);
       }
     } catch {
-      Toast.show({ type: 'error', text1: 'Không thể chọn video từ thư viện' });
+      Toast.show({ type: 'error', text1: t('helper_job.evidence_video_gallery_err') });
     }
   };
 
   const handleCompleteSubmission = async () => {
     if (completionPhotos.length === 0 && completionVideos.length === 0) {
-      const msg =
-        'Khách hàng cần xem ảnh/video kết quả công việc để kiểm tra và nghiệm thu nhanh chóng. Bạn có chắc muốn tiếp tục gửi mà không có ảnh/video?';
+      const msg = t('helper_job.evidence_no_media_msg');
       const doSubmit = async () => {
         try {
           await completeJob.mutateAsync({
@@ -432,14 +430,14 @@ export default function HelperJobDetailScreen() {
           });
           setShowCompleteModal(false);
         } catch (err: any) {
-          const m = err?.response?.data?.message || 'Cập nhật thất bại';
+          const m = err?.response?.data?.message || (lang === 'en' ? 'Update failed' : 'Cập nhật thất bại');
           Toast.show({ type: 'error', text1: m });
         }
       };
 
-      Alert.alert('Chưa có bằng chứng nghiệm thu', msg, [
-        { text: 'Chụp/Quay ngay', style: 'cancel' },
-        { text: 'Tiếp tục gửi', onPress: doSubmit },
+      Alert.alert(t('helper_job.evidence_no_media_title'), msg, [
+        { text: t('helper_job.evidence_capture_now'), style: 'cancel' },
+        { text: t('helper_job.evidence_submit_anyway'), onPress: doSubmit },
       ]);
       return;
     }
@@ -453,7 +451,7 @@ export default function HelperJobDetailScreen() {
       });
       setShowCompleteModal(false);
     } catch (err: any) {
-      const msg = err?.response?.data?.message || 'Cập nhật thất bại';
+      const msg = err?.response?.data?.message || (lang === 'en' ? 'Update failed' : 'Cập nhật thất bại');
       Toast.show({ type: 'error', text1: msg });
     }
   };
@@ -472,50 +470,48 @@ export default function HelperJobDetailScreen() {
         if (action === 'on_the_way') {
           const res: any = await onTheWay.mutateAsync(id!);
           if (!res?.queued_offline)
-            Toast.show({ type: 'success', text1: 'Bắt đầu di chuyển đến khách hàng 🛵' });
+            Toast.show({ type: 'success', text1: t('helper_job.step_moving_toast') });
         } else if (action === 'arrived') {
           const res: any = await arrived.mutateAsync(id!);
           if (!res?.queued_offline)
-            Toast.show({ type: 'success', text1: 'Đã đến địa điểm của khách hàng 📍' });
+            Toast.show({ type: 'success', text1: t('helper_job.step_arrived_toast') });
         } else if (action === 'start') {
           const res: any = await startJob.mutateAsync(id!);
           if (!res?.queued_offline)
-            Toast.show({ type: 'success', text1: 'Bắt đầu tính giờ làm việc ▶️' });
+            Toast.show({ type: 'success', text1: t('helper_job.step_working_toast') });
         }
       } catch (err: any) {
-        const msg = err?.response?.data?.message || 'Cập nhật tiến trình thất bại';
+        const msg = err?.response?.data?.message || (lang === 'en' ? 'Progress update failed' : 'Cập nhật tiến trình thất bại');
         Toast.show({ type: 'error', text1: msg });
       }
     };
 
     const config: Record<string, { title: string; message: string; btn: string }> = {
       on_the_way: {
-        title: 'Bắt đầu di chuyển?',
-        message:
-          'Bạn chuẩn bị xuất phát tới nhà khách hàng? Vị trí GPS của bạn sẽ được đồng bộ trực tiếp để khách hàng theo dõi hành trình như Grab.',
-        btn: 'Bắt đầu xuất phát 🛵',
+        title: t('helper_job.step_moving_title'),
+        message: t('helper_job.step_moving_msg'),
+        btn: t('helper_job.step_moving_btn'),
       },
       arrived: {
-        title: 'Đã đến nơi?',
-        message:
-          'Xác nhận bạn đã có mặt tại địa chỉ khách hàng. Khách hàng sẽ nhận được thông báo để chuẩn bị đón tiếp.',
-        btn: 'Tôi đã có mặt 📍',
+        title: t('helper_job.step_arrived_title'),
+        message: t('helper_job.step_arrived_msg'),
+        btn: t('helper_job.step_arrived_btn'),
       },
       start: {
-        title: 'Bắt đầu bấm giờ làm việc?',
-        message: 'Bắt đầu tính giờ và thực hiện công việc theo thỏa thuận với khách hàng.',
-        btn: 'Bắt đầu ngay ▶️',
+        title: t('helper_job.step_working_title'),
+        message: t('helper_job.step_working_msg'),
+        btn: t('helper_job.step_working_btn'),
       },
     };
 
     const actionCfg = config[action] || {
-      title: 'Xác nhận thao tác?',
-      message: 'Bạn có chắc chắn muốn cập nhật trạng thái này?',
-      btn: 'Xác nhận',
+      title: lang === 'en' ? 'Confirm action?' : 'Xác nhận thao tác?',
+      message: lang === 'en' ? 'Are you sure you want to update this status?' : 'Bạn có chắc chắn muốn cập nhật trạng thái này?',
+      btn: lang === 'en' ? 'Confirm' : 'Xác nhận',
     };
 
     Alert.alert(actionCfg.title, actionCfg.message, [
-      { text: 'Để sau', style: 'cancel' },
+      { text: t('cancel'), style: 'cancel' },
       { text: actionCfg.btn, onPress: doExecute },
     ]);
   };
@@ -580,12 +576,11 @@ export default function HelperJobDetailScreen() {
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
               <ActivityIndicator size="small" color="#DC2626" />
               <Text style={{ fontWeight: '800', fontSize: fs(14.5), color: '#991B1B' }}>
-                Khách đã đồng ý đổi thợ — Đang tìm thợ cứu hộ thay thế...
+                {t('helper_job.sos_replacement_accepted_title')}
               </Text>
             </View>
             <Text style={{ fontSize: fs(13), color: '#7F1D1D', lineHeight: Math.round(fs(19)) }}>
-              Bạn đã báo sự cố và khách hàng đã chấp nhận tìm thợ thay thế. Hệ thống đang quét thợ
-              cứu hộ gần nhất để tiếp nhận đơn này.
+              {t('helper_job.sos_replacement_accepted_desc')}
             </Text>
           </Card>
         )}
@@ -598,7 +593,7 @@ export default function HelperJobDetailScreen() {
             viewerRole="helper"
             onRouteMetrics={handleRouteMetrics}
             customerAddress={job.address?.full_address}
-            helperName="Bạn (Thợ)"
+            helperName={lang === 'en' ? 'You (Helper)' : 'Bạn (Thợ)'}
             status={job.status}
             showNavigationButton={true}
             height={300}
@@ -616,13 +611,17 @@ export default function HelperJobDetailScreen() {
             <Badge label={tService(job.service_id) || t('common_service')} />
             {job.is_fixed_price && (
               <Badge
-                label={`🏷️ Giá cam kết ${new Intl.NumberFormat('vi-VN').format(job.fixed_price ?? 0)}₫`}
+                label={
+                  lang === 'en'
+                    ? `🏷️ Fixed price: ${new Intl.NumberFormat('en-US').format(job.fixed_price ?? 0)}₫`
+                    : `🏷️ Giá cam kết ${new Intl.NumberFormat('vi-VN').format(job.fixed_price ?? 0)}₫`
+                }
                 color="#ECFDF5"
                 textColor="#065F46"
               />
             )}
             {job.is_warranty && (
-              <Badge label="🛡 Đơn bảo hành — Miễn phí" color="#FFFBEB" textColor="#92400E" />
+              <Badge label={t('helper_job.warranty_badge')} color="#FFFBEB" textColor="#92400E" />
             )}
             {job.preferred_date && (
               <Badge
@@ -656,12 +655,14 @@ export default function HelperJobDetailScreen() {
               }}
             >
               <Text style={{ fontWeight: '700', fontSize: 14, color: '#92400E' }}>
-                🛡️ Yêu cầu bảo hành từ khách
+                {t('helper_job.warranty_header')}
               </Text>
               <Text style={{ fontSize: 13, color: '#78350F', lineHeight: 18 }}>
-                Ngày hẹn:{' '}
-                {job.preferred_date ? dayjs(job.preferred_date).format('DD/MM/YYYY') : 'Sớm nhất'}
-                {job.preferred_time_start ? ` lúc ${job.preferred_time_start}` : ''}
+                {lang === 'en' ? 'Scheduled: ' : 'Ngày hẹn: '}
+                {job.preferred_date
+                  ? dayjs(job.preferred_date).format('DD/MM/YYYY')
+                  : (lang === 'en' ? 'Earliest' : 'Sớm nhất')}
+                {job.preferred_time_start ? ` ${lang === 'en' ? 'at' : 'lúc'} ${job.preferred_time_start}` : ''}
               </Text>
             </View>
           )}
@@ -683,8 +684,9 @@ export default function HelperJobDetailScreen() {
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 }}>
                   <Navigation size={14} color={COLORS.primary} />
                   <Text style={{ fontSize: 13, color: COLORS.primary, fontWeight: '700' }}>
-                    Khoảng cách: ~{effectiveMetrics.distanceKm.toFixed(1)} km · ETA ước tính: ~
-                    {effectiveMetrics.etaMinutes} phút
+                    {lang === 'en'
+                      ? `Distance: ~${effectiveMetrics.distanceKm.toFixed(1)} km · Est ETA: ~${effectiveMetrics.etaMinutes} mins`
+                      : `Khoảng cách: ~${effectiveMetrics.distanceKm.toFixed(1)} km · ETA ước tính: ~${effectiveMetrics.etaMinutes} phút`}
                   </Text>
                 </View>
               )}
@@ -711,9 +713,11 @@ export default function HelperJobDetailScreen() {
               <Text style={{ fontWeight: '800', fontSize: 15, color: COLORS.gray[900] }}>
                 {typeof job.customer_id === 'object' && job.customer_id
                   ? (job.customer_id as { full_name: string }).full_name
-                  : 'Khách hàng'}
+                  : (lang === 'en' ? 'Customer' : 'Khách hàng')}
               </Text>
-              <Text style={{ fontSize: 13, color: COLORS.gray[500] }}>Chủ đơn đặt dịch vụ</Text>
+              <Text style={{ fontSize: 13, color: COLORS.gray[500] }}>
+                {lang === 'en' ? 'Service requester' : 'Chủ đơn đặt dịch vụ'}
+              </Text>
             </View>
             <TouchableOpacity
               onPress={() => router.push({ pathname: '/chat/[jobId]', params: { jobId: id } })}
@@ -732,7 +736,7 @@ export default function HelperJobDetailScreen() {
                       partnerName:
                         typeof job.customer_id === 'object' && job.customer_id
                           ? (job.customer_id as { full_name: string }).full_name
-                          : 'Khách hàng',
+                          : (lang === 'en' ? 'Customer' : 'Khách hàng'),
                     },
                   })
                 }
@@ -755,13 +759,13 @@ export default function HelperJobDetailScreen() {
               }}
             >
               <Text style={{ fontWeight: '800', fontSize: 15, color: COLORS.gray[900] }}>
-                Hợp đồng & Phụ lục chi phí
+                {t('helper_job_detail.contract_amendments_title')}
               </Text>
               <PriceText amount={contract.total_price} size={16} />
             </View>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
               <Text style={{ fontSize: 13, color: COLORS.gray[600] }}>
-                Thực nhận dự kiến (85%):
+                {t('helper_job_detail.estimated_payout', { percent: 85 })}
               </Text>
               <PriceText amount={contract.helper_receives} size={14} color={COLORS.success} />
             </View>
@@ -792,15 +796,15 @@ export default function HelperJobDetailScreen() {
                         }}
                       >
                         <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.gray[800] }}>
-                          +{new Intl.NumberFormat('vi-VN').format(addAmt)}₫
+                          +{new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'vi-VN').format(addAmt)}₫
                         </Text>
                         <Badge
                           label={
                             am.status === 'pending'
-                              ? '⏳ Chờ khách duyệt'
+                              ? (lang === 'en' ? '⏳ Awaiting customer' : '⏳ Chờ khách duyệt')
                               : am.status === 'accepted'
-                                ? '✓ Khách đã đồng ý'
-                                : '✕ Khách từ chối'
+                                ? (lang === 'en' ? '✓ Customer agreed' : '✓ Khách đã đồng ý')
+                                : (lang === 'en' ? '✕ Customer declined' : '✕ Khách từ chối')
                           }
                           color={
                             am.status === 'pending'
@@ -828,7 +832,7 @@ export default function HelperJobDetailScreen() {
 
             {canProposeAmendment && (
               <Button
-                title="➕ Đề xuất phát sinh vật tư / chi phí"
+                title={t('helper_job_detail.propose_amendment_btn')}
                 variant="outline"
                 size="sm"
                 icon={<PlusCircle size={16} color={COLORS.primary} />}
@@ -852,14 +856,15 @@ export default function HelperJobDetailScreen() {
             }}
           >
             <Text style={{ fontWeight: '800', fontSize: 15, color: '#991B1B' }}>
-              ⚖️ Đơn đang có tranh chấp
+              {lang === 'en' ? '⚖️ Job has an open dispute' : '⚖️ Đơn đang có tranh chấp'}
             </Text>
             <Text style={{ fontSize: 13, color: COLORS.gray[700], lineHeight: 19 }}>
-              Xem toàn bộ diễn biến hồ sơ, bổ sung bằng chứng cho Admin và kháng cáo nếu phán quyết
-              chưa thỏa đáng.
+              {lang === 'en'
+                ? 'View dispute case history, provide additional evidence to Admin, and appeal if judgment is unsatisfactory.'
+                : 'Xem toàn bộ diễn biến hồ sơ, bổ sung bằng chứng cho Admin và kháng cáo nếu phán quyết chưa thỏa đáng.'}
             </Text>
             <Button
-              title="Xem hồ sơ tranh chấp"
+              title={lang === 'en' ? 'View dispute file' : 'Xem hồ sơ tranh chấp'}
               variant="outline"
               onPress={() => router.push({ pathname: '/dispute/[jobId]', params: { jobId: id } })}
             />
@@ -870,33 +875,33 @@ export default function HelperJobDetailScreen() {
         {isMyActiveJob && (
           <Card style={{ gap: 16 }}>
             <Text style={{ fontWeight: '800', fontSize: 15, color: COLORS.gray[900] }}>
-              Cập nhật tiến trình làm việc
+              {t('helper_job_detail.update_progress_title')}
             </Text>
 
             {job.status === 'confirmed' && (
               <Button
-                title="🚗  Bắt đầu di chuyển đến khách"
+                title={t('helper_job_detail.start_moving_btn')}
                 loading={onTheWay.isPending}
                 onPress={() => handleAction('on_the_way')}
               />
             )}
             {job.status === 'helper_on_the_way' && (
               <Button
-                title="📍  Tôi đã đến nơi"
+                title={t('helper_job_detail.i_arrived_btn')}
                 loading={arrived.isPending}
                 onPress={() => handleAction('arrived')}
               />
             )}
             {job.status === 'helper_arrived' && (
               <Button
-                title="▶️  Bắt đầu làm việc"
+                title={t('helper_job_detail.start_work_btn')}
                 loading={startJob.isPending}
                 onPress={() => handleAction('start')}
               />
             )}
             {job.status === 'in_progress' && (
               <Button
-                title="✅  Hoàn thành công việc"
+                title={t('helper_job_detail.complete_work_btn')}
                 loading={completeJob.isPending}
                 onPress={() => handleAction('complete')}
               />
@@ -905,10 +910,12 @@ export default function HelperJobDetailScreen() {
               <View style={{ alignItems: 'center', gap: 8, paddingVertical: 10 }}>
                 <Text style={{ fontSize: 36 }}>⏳</Text>
                 <Text style={{ fontWeight: '800', fontSize: 15, color: COLORS.gray[800] }}>
-                  Đang chờ khách hàng nghiệm thu
+                  {lang === 'en' ? 'Awaiting customer acceptance' : 'Đang chờ khách hàng nghiệm thu'}
                 </Text>
                 <Text style={{ fontSize: 13, color: COLORS.gray[500], textAlign: 'center' }}>
-                  Khách hàng sẽ xác nhận và tiền công sẽ tự động cộng vào ví của bạn.
+                  {lang === 'en'
+                    ? 'Customer will confirm and payout will be automatically credited to your wallet.'
+                    : 'Khách hàng sẽ xác nhận và tiền công sẽ tự động cộng vào ví của bạn.'}
                 </Text>
               </View>
             )}
@@ -932,10 +939,12 @@ export default function HelperJobDetailScreen() {
               >
                 <Text style={{ fontSize: 16 }}>🚫</Text>
                 <Text style={{ fontSize: 14, fontWeight: '700', color: COLORS.gray[700] }}>
-                  Bạn đã từ chối đơn hàng này
+                  {lang === 'en' ? 'You declined this job offer' : 'Bạn đã từ chối đơn hàng này'}
                 </Text>
                 <Text style={{ fontSize: 12, color: COLORS.gray[500], textAlign: 'center' }}>
-                  Đơn đã được ẩn khỏi danh sách việc mới và bản đồ nhu cầu của bạn.
+                  {lang === 'en'
+                    ? 'Job has been hidden from your new job list and demand map.'
+                    : 'Đơn đã được ẩn khỏi danh sách việc mới và bản đồ nhu cầu của bạn.'}
                 </Text>
               </Card>
             ) : isDirectAcceptJob ? (
@@ -949,14 +958,16 @@ export default function HelperJobDetailScreen() {
               >
                 <Text style={{ fontWeight: '800', fontSize: 16, color: COLORS.gray[900] }}>
                   {job.is_warranty
-                    ? '🛡 Đơn bảo hành — Miễn phí'
-                    : `🏷️ Giá cam kết: ${new Intl.NumberFormat('vi-VN').format(job.fixed_price ?? 0)}₫`}
+                    ? t('helper_job.warranty_badge')
+                    : (lang === 'en'
+                        ? `🏷️ Fixed price: ${new Intl.NumberFormat('en-US').format(job.fixed_price ?? 0)}₫`
+                        : `🏷️ Giá cam kết: ${new Intl.NumberFormat('vi-VN').format(job.fixed_price ?? 0)}₫`)}
                 </Text>
                 {job.is_warranty ? (
                   <Text style={{ fontSize: 13.5, color: COLORS.gray[700], lineHeight: 20 }}>
-                    Đây là đơn bảo hành miễn phí, được gửi riêng cho bạn vì bạn đã thực hiện đơn
-                    gốc. Đơn bảo hành không tính tiền công — hãy hỗ trợ khách trong thời gian bảo
-                    hành nhé.
+                    {lang === 'en'
+                      ? 'This is a free warranty job sent directly to you because you completed the original job. Warranty jobs do not charge labor — please support the customer during warranty period.'
+                      : 'Đây là đơn bảo hành miễn phí, được gửi riêng cho bạn vì bạn đã thực hiện đơn gốc. Đơn bảo hành không tính tiền công — hãy hỗ trợ khách trong thời gian bảo hành nhé.'}
                   </Text>
                 ) : (
                   <>
@@ -968,23 +979,30 @@ export default function HelperJobDetailScreen() {
                       }}
                     >
                       <Text style={{ fontSize: 13, color: COLORS.gray[600] }}>
-                        Thực nhận về ví (sau phí sàn {fixedFeePercent}%):
+                        {lang === 'en'
+                          ? `Net wallet payout (after ${fixedFeePercent}% platform fee):`
+                          : `Thực nhận về ví (sau phí sàn ${fixedFeePercent}%):`}
                       </Text>
                       <PriceText amount={fixedHelperReceives} size={15} color={COLORS.success} />
                     </View>
                     <Text style={{ fontSize: 13, color: COLORS.gray[600], lineHeight: 19 }}>
-                      Đơn giá cam kết không cần gửi báo giá — bấm nhận việc là chốt ngay với mức giá
-                      trên.
+                      {lang === 'en'
+                        ? 'Fixed price jobs require no bidding — tap accept to confirm immediately at the price above.'
+                        : 'Đơn giá cam kết không cần gửi báo giá — bấm nhận việc là chốt ngay với mức giá trên.'}
                     </Text>
                   </>
                 )}
                 <Button
-                  title={job.is_warranty ? '🛡 Nhận việc bảo hành' : '⚡ Nhận việc ngay'}
+                  title={
+                    job.is_warranty
+                      ? (lang === 'en' ? '🛡 Accept warranty job' : '🛡 Nhận việc bảo hành')
+                      : (lang === 'en' ? '⚡ Accept job now' : '⚡ Nhận việc ngay')
+                  }
                   loading={acceptFixed.isPending}
                   onPress={handleAcceptDirect}
                 />
                 <Button
-                  title="Từ chối / Bỏ qua đơn này"
+                  title={lang === 'en' ? 'Decline / Skip this job' : 'Từ chối / Bỏ qua đơn này'}
                   variant="outline"
                   loading={rejectJob.isPending}
                   onPress={handleRejectJob}
@@ -1002,7 +1020,7 @@ export default function HelperJobDetailScreen() {
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                   <Text style={{ fontSize: 16 }}>✅</Text>
                   <Text style={{ fontWeight: '800', fontSize: 15, color: COLORS.success }}>
-                    Bạn đã gửi báo giá cho đơn này
+                    {lang === 'en' ? 'You submitted a quote for this job' : 'Bạn đã gửi báo giá cho đơn này'}
                   </Text>
                 </View>
                 <View
@@ -1013,7 +1031,9 @@ export default function HelperJobDetailScreen() {
                     marginTop: 4,
                   }}
                 >
-                  <Text style={{ fontSize: 13, color: COLORS.gray[600] }}>Giá công đã báo:</Text>
+                  <Text style={{ fontSize: 13, color: COLORS.gray[600] }}>
+                    {lang === 'en' ? 'Quoted labor price:' : 'Giá công đã báo:'}
+                  </Text>
                   <PriceText amount={myQuote.total_price} size={16} />
                 </View>
                 <View
@@ -1024,7 +1044,7 @@ export default function HelperJobDetailScreen() {
                   }}
                 >
                   <Text style={{ fontSize: 13, color: COLORS.gray[600] }}>
-                    Thực nhận về ví (trừ 15%):
+                    {lang === 'en' ? 'Net wallet payout (-15%):' : 'Thực nhận về ví (trừ 15%):'}
                   </Text>
                   <PriceText amount={myQuote.helper_receives} size={15} color={COLORS.success} />
                 </View>
@@ -1036,10 +1056,12 @@ export default function HelperJobDetailScreen() {
                     fontStyle: 'italic',
                   }}
                 >
-                  Đang chờ khách hàng xem xét và lựa chọn bạn.
+                  {lang === 'en'
+                    ? 'Waiting for customer review and selection.'
+                    : 'Đang chờ khách hàng xem xét và lựa chọn bạn.'}
                 </Text>
                 <Button
-                  title="Từ chối / Bỏ qua đơn này"
+                  title={lang === 'en' ? 'Decline / Skip this job' : 'Từ chối / Bỏ qua đơn này'}
                   variant="outline"
                   loading={rejectJob.isPending}
                   onPress={handleRejectJob}
@@ -1049,12 +1071,12 @@ export default function HelperJobDetailScreen() {
             ) : (
               <View style={{ gap: 10 }}>
                 <Button
-                  title="Gửi báo giá cho khách"
+                  title={lang === 'en' ? 'Send quote to customer' : 'Gửi báo giá cho khách'}
                   onPress={handleOpenQuoteModal}
                   icon={<Text style={{ color: '#fff', fontSize: 18 }}>💰</Text>}
                 />
                 <Button
-                  title="Từ chối / Bỏ qua đơn này"
+                  title={lang === 'en' ? 'Decline / Skip this job' : 'Từ chối / Bỏ qua đơn này'}
                   variant="outline"
                   loading={rejectJob.isPending}
                   onPress={handleRejectJob}
@@ -1080,7 +1102,7 @@ export default function HelperJobDetailScreen() {
             <Text
               style={{ fontSize: 18, fontWeight: '800', marginLeft: 12, color: COLORS.gray[900] }}
             >
-              Đề xuất phụ lục phát sinh
+              {lang === 'en' ? 'Propose Cost Addendum' : 'Đề xuất phụ lục phát sinh'}
             </Text>
           </View>
 
@@ -1091,17 +1113,18 @@ export default function HelperJobDetailScreen() {
             <ScrollView contentContainerStyle={{ padding: 20, gap: 18 }}>
               <Card style={{ backgroundColor: COLORS.primaryLight, gap: 6 }}>
                 <Text style={{ fontWeight: '800', fontSize: 13.5, color: COLORS.primaryDark }}>
-                  💡 Minh bạch chi phí & Vật tư ngoài
+                  {lang === 'en' ? '💡 Transparent Costs & Additional Materials' : '💡 Minh bạch chi phí & Vật tư ngoài'}
                 </Text>
                 <Text style={{ fontSize: 12.5, color: COLORS.gray[700], lineHeight: 18 }}>
-                  Nếu cần mua thêm vật tư/linh kiện hoặc phát sinh khối lượng công việc ngoài dự
-                  kiến, hãy gửi đề xuất để khách bấm Đồng ý trên ứng dụng trước khi thực hiện.
+                  {lang === 'en'
+                    ? 'If you need to purchase extra parts/materials or encounter unexpected work, submit a proposal for customer approval on app before proceeding.'
+                    : 'Nếu cần mua thêm vật tư/linh kiện hoặc phát sinh khối lượng công việc ngoài dự kiến, hãy gửi đề xuất để khách bấm Đồng ý trên ứng dụng trước khi thực hiện.'}
                 </Text>
               </Card>
 
               <View style={{ gap: 6 }}>
                 <Text style={{ fontWeight: '700', color: COLORS.gray[700] }}>
-                  Tiền vật tư / linh kiện phát sinh (₫)
+                  {lang === 'en' ? 'Additional parts / materials cost (₫)' : 'Tiền vật tư / linh kiện phát sinh (₫)'}
                 </Text>
                 <TextInput
                   style={{
@@ -1113,30 +1136,17 @@ export default function HelperJobDetailScreen() {
                     fontWeight: '700',
                     color: COLORS.gray[900],
                   }}
-                  placeholder="VD: 150000"
+                  placeholder={lang === 'en' ? 'E.g., 150000' : 'VD: 150000'}
                   value={amendMaterialsCost}
                   onChangeText={setAmendMaterialsCost}
                   keyboardType="numeric"
                   placeholderTextColor={COLORS.gray[400]}
                 />
-                {laborCost !== '' && Number(laborCost) < 50000 && (
-                  <Text
-                    style={{
-                      fontSize: 12,
-                      color: COLORS.error,
-                      fontWeight: '600',
-                      marginTop: 4,
-                    }}
-                  >
-                    ⚠️ Tiền công báo giá tối thiểu là 50.000₫ (hiện tại:{' '}
-                    {Number(laborCost).toLocaleString('vi-VN')}₫)
-                  </Text>
-                )}
               </View>
 
               <View style={{ gap: 6 }}>
                 <Text style={{ fontWeight: '700', color: COLORS.gray[700] }}>
-                  Tiền công làm thêm (₫)
+                  {lang === 'en' ? 'Extra labor fee (₫)' : 'Tiền công làm thêm (₫)'}
                 </Text>
                 <TextInput
                   style={{
@@ -1148,30 +1158,17 @@ export default function HelperJobDetailScreen() {
                     fontWeight: '700',
                     color: COLORS.gray[900],
                   }}
-                  placeholder="VD: 100000"
+                  placeholder={lang === 'en' ? 'E.g., 100000' : 'VD: 100000'}
                   value={amendLaborCost}
                   onChangeText={setAmendLaborCost}
                   keyboardType="numeric"
                   placeholderTextColor={COLORS.gray[400]}
                 />
-                {laborCost !== '' && Number(laborCost) < 50000 && (
-                  <Text
-                    style={{
-                      fontSize: 12,
-                      color: COLORS.error,
-                      fontWeight: '600',
-                      marginTop: 4,
-                    }}
-                  >
-                    ⚠️ Tiền công báo giá tối thiểu là 50.000₫ (hiện tại:{' '}
-                    {Number(laborCost).toLocaleString('vi-VN')}₫)
-                  </Text>
-                )}
               </View>
 
               <View style={{ gap: 6 }}>
                 <Text style={{ fontWeight: '700', color: COLORS.gray[700] }}>
-                  Lý do & Chi tiết hạng mục phát sinh *
+                  {lang === 'en' ? 'Reason & details of additional items *' : 'Lý do & Chi tiết hạng mục phát sinh *'}
                 </Text>
                 <TextInput
                   style={{
@@ -1184,7 +1181,11 @@ export default function HelperJobDetailScreen() {
                     textAlignVertical: 'top',
                     color: COLORS.gray[900],
                   }}
-                  placeholder="VD: Thay mới tụ đề máy lạnh 35uF + nạp bổ sung gas R32..."
+                  placeholder={
+                    lang === 'en'
+                      ? 'E.g., Replacement 35uF AC capacitor + R32 gas refill...'
+                      : 'VD: Thay mới tụ đề máy lạnh 35uF + nạp bổ sung gas R32...'
+                  }
                   value={amendReason}
                   onChangeText={setAmendReason}
                   multiline
@@ -1193,7 +1194,7 @@ export default function HelperJobDetailScreen() {
               </View>
 
               <Button
-                title="Gửi đề xuất cho khách duyệt"
+                title={lang === 'en' ? 'Send proposal for customer approval' : 'Gửi đề xuất cho khách duyệt'}
                 loading={proposeAmendment.isPending}
                 onPress={handleSubmitAmendment}
               />
@@ -1213,7 +1214,7 @@ export default function HelperJobDetailScreen() {
             <Text
               style={{ fontSize: 18, fontWeight: '800', marginLeft: 12, color: COLORS.gray[900] }}
             >
-              Gửi báo giá dịch vụ
+              {t('helper_job.quote_modal_title')}
             </Text>
           </View>
 
@@ -1224,7 +1225,7 @@ export default function HelperJobDetailScreen() {
             <ScrollView contentContainerStyle={{ padding: 20, gap: 20 }}>
               <View style={{ gap: 8 }}>
                 <Text style={{ fontWeight: '700', color: COLORS.gray[700] }}>
-                  Giá công thợ (₫) *
+                  {t('helper_job.labor_price_label')}
                 </Text>
                 <TextInput
                   style={{
@@ -1236,7 +1237,7 @@ export default function HelperJobDetailScreen() {
                     fontWeight: '800',
                     color: COLORS.gray[900],
                   }}
-                  placeholder="VD: 300000"
+                  placeholder={lang === 'en' ? 'E.g., 300000' : 'VD: 300000'}
                   value={laborCost}
                   onChangeText={setLaborCost}
                   keyboardType="numeric"
@@ -1251,8 +1252,8 @@ export default function HelperJobDetailScreen() {
                       marginTop: 4,
                     }}
                   >
-                    ⚠️ Tiền công báo giá tối thiểu là 50.000₫ (hiện tại:{' '}
-                    {Number(laborCost).toLocaleString('vi-VN')}₫)
+                    {t('helper_job.min_quote_warning')} ({lang === 'en' ? 'current: ' : 'hiện tại: '}
+                    {Number(laborCost).toLocaleString(lang === 'en' ? 'en-US' : 'vi-VN')}₫)
                   </Text>
                 )}
               </View>
@@ -1261,13 +1262,13 @@ export default function HelperJobDetailScreen() {
                 <Card style={{ backgroundColor: COLORS.primaryLight, gap: 10 }}>
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
                     <Text style={{ color: COLORS.gray[700], fontWeight: '600' }}>
-                      Giá khách hàng trả
+                      {t('helper_job.cust_pays')}
                     </Text>
                     <PriceText amount={total} size={14} color={COLORS.gray[900]} bold={false} />
                   </View>
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
                     <Text style={{ color: COLORS.gray[500], fontWeight: '500' }}>
-                      Phí nền tảng (15%)
+                      {t('helper_job.platform_fee')}
                     </Text>
                     <PriceText
                       amount={platformFee}
@@ -1279,7 +1280,7 @@ export default function HelperJobDetailScreen() {
                   <Separator my={4} />
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
                     <Text style={{ fontWeight: '800', color: COLORS.gray[900] }}>
-                      Thực nhận về ví
+                      {t('helper_job.net_payout')}
                     </Text>
                     <PriceText amount={helperReceives} size={17} />
                   </View>
@@ -1288,7 +1289,7 @@ export default function HelperJobDetailScreen() {
 
               <View style={{ gap: 8 }}>
                 <Text style={{ fontWeight: '700', color: COLORS.gray[700] }}>
-                  Thời gian ước tính (giờ)
+                  {t('helper_job.est_hours')}
                 </Text>
                 <View style={{ flexDirection: 'row', gap: 10 }}>
                   {[1, 2, 3, 4, 5, 6, 8].map(h => (
@@ -1322,7 +1323,7 @@ export default function HelperJobDetailScreen() {
 
               <View style={{ gap: 8 }}>
                 <Text style={{ fontWeight: '700', color: COLORS.gray[700] }}>
-                  Ghi chú gửi khách (tuỳ chọn)
+                  {t('helper_job.quote_notes_label')}
                 </Text>
                 <TextInput
                   style={{
@@ -1335,7 +1336,7 @@ export default function HelperJobDetailScreen() {
                     textAlignVertical: 'top',
                     color: COLORS.gray[900],
                   }}
-                  placeholder="VD: Tôi có đầy đủ đồ nghề chuyên dụng, có thể đến ngay..."
+                  placeholder={t('helper_job.quote_notes_placeholder')}
                   value={notes}
                   onChangeText={setNotes}
                   multiline
@@ -1344,7 +1345,7 @@ export default function HelperJobDetailScreen() {
               </View>
 
               <Button
-                title="Xác nhận gửi báo giá"
+                title={t('helper_job.submit_quote_btn')}
                 loading={submitQuote.isPending}
                 disabled={!laborCost || Number(laborCost) < 50000 || submitQuote.isPending}
                 onPress={handleSubmitQuote}
@@ -1374,10 +1375,10 @@ export default function HelperJobDetailScreen() {
                 <X size={24} color={COLORS.gray[700]} />
               </TouchableOpacity>
               <Text style={{ fontSize: 18, fontWeight: '800', color: COLORS.gray[900] }}>
-                Bằng chứng hoàn thành
+                {t('helper_job.evidence_title')}
               </Text>
             </View>
-            <Badge label="Nghiệm thu" color={COLORS.primaryLight} textColor={COLORS.primary} />
+            <Badge label={t('helper_job.evidence_badge')} color={COLORS.primaryLight} textColor={COLORS.primary} />
           </View>
 
           <KeyboardAvoidingView
@@ -1398,12 +1399,11 @@ export default function HelperJobDetailScreen() {
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                   <Sparkles size={16} color={COLORS.primary} />
                   <Text style={{ fontWeight: '800', fontSize: 14, color: COLORS.primaryDark }}>
-                    Gửi kết quả để khách nghiệm thu
+                    {t('helper_job.evidence_sub')}
                   </Text>
                 </View>
                 <Text style={{ fontSize: 12.5, color: COLORS.gray[700], lineHeight: 18 }}>
-                  Chụp 1-4 hình ảnh hoặc quay video ngắn thể hiện kết quả sạch sẽ, đã sửa chữa xong
-                  để khách hàng kiểm tra và bấm hoàn thành nhanh chóng.
+                  {t('helper_job.evidence_hint')}
                 </Text>
               </View>
 
@@ -1417,9 +1417,11 @@ export default function HelperJobDetailScreen() {
                   }}
                 >
                   <Text style={{ fontWeight: '800', fontSize: 15, color: COLORS.gray[800] }}>
-                    📸 Ảnh kết quả ({completionPhotos.length})
+                    {t('helper_job.evidence_photos_count', { count: completionPhotos.length })}
                   </Text>
-                  <Text style={{ fontSize: 12, color: COLORS.gray[500] }}>Tối đa 6 ảnh</Text>
+                  <Text style={{ fontSize: 12, color: COLORS.gray[500] }}>
+                    {t('helper_job.evidence_max_photos')}
+                  </Text>
                 </View>
 
                 {/* Photo Action Buttons */}
@@ -1442,7 +1444,7 @@ export default function HelperJobDetailScreen() {
                   >
                     <Camera size={18} color={COLORS.primary} />
                     <Text style={{ fontWeight: '700', fontSize: 13.5, color: COLORS.primary }}>
-                      Chụp ảnh ngay
+                      {t('helper_job.evidence_take_photo')}
                     </Text>
                   </TouchableOpacity>
 
@@ -1462,7 +1464,7 @@ export default function HelperJobDetailScreen() {
                   >
                     <ImagePlus size={18} color={COLORS.gray[700]} />
                     <Text style={{ fontWeight: '700', fontSize: 13.5, color: COLORS.gray[800] }}>
-                      Chọn từ album
+                      {t('helper_job.evidence_pick_album')}
                     </Text>
                   </TouchableOpacity>
                 </View>
@@ -1523,9 +1525,11 @@ export default function HelperJobDetailScreen() {
                   }}
                 >
                   <Text style={{ fontWeight: '800', fontSize: 15, color: COLORS.gray[800] }}>
-                    🎥 Video nghiệm thu ({completionVideos.length})
+                    {t('helper_job.evidence_videos_count', { count: completionVideos.length })}
                   </Text>
-                  <Text style={{ fontSize: 12, color: COLORS.gray[500] }}>1-2 video ngắn</Text>
+                  <Text style={{ fontSize: 12, color: COLORS.gray[500] }}>
+                    {t('helper_job.evidence_video_limit')}
+                  </Text>
                 </View>
 
                 {/* Video Action Buttons */}
@@ -1548,7 +1552,7 @@ export default function HelperJobDetailScreen() {
                   >
                     <Video size={18} color={COLORS.secondary} />
                     <Text style={{ fontWeight: '700', fontSize: 13.5, color: COLORS.secondary }}>
-                      Quay video
+                      {lang === 'en' ? 'Record video' : 'Quay video'}
                     </Text>
                   </TouchableOpacity>
 
@@ -1568,7 +1572,7 @@ export default function HelperJobDetailScreen() {
                   >
                     <Video size={18} color={COLORS.gray[700]} />
                     <Text style={{ fontWeight: '700', fontSize: 13.5, color: COLORS.gray[800] }}>
-                      Chọn video
+                      {t('helper_job.evidence_pick_video')}
                     </Text>
                   </TouchableOpacity>
                 </View>
@@ -1610,10 +1614,10 @@ export default function HelperJobDetailScreen() {
                               style={{ fontSize: 13, fontWeight: '700', color: COLORS.gray[800] }}
                               numberOfLines={1}
                             >
-                              Video nghiệm thu #{index + 1}
+                              {lang === 'en' ? `Acceptance video #${index + 1}` : `Video nghiệm thu #${index + 1}`}
                             </Text>
                             <Text style={{ fontSize: 11, color: COLORS.gray[500] }}>
-                              Đã sẵn sàng gửi cho khách
+                              {lang === 'en' ? 'Ready to send to customer' : 'Đã sẵn sàng gửi cho khách'}
                             </Text>
                           </View>
                         </View>
@@ -1638,7 +1642,7 @@ export default function HelperJobDetailScreen() {
               {/* ── 3. Notes Section ──────────────────────────────────── */}
               <View style={{ gap: 8, marginTop: 4 }}>
                 <Text style={{ fontWeight: '700', color: COLORS.gray[700], fontSize: 13.5 }}>
-                  Ghi chú bàn giao cho khách (tuỳ chọn)
+                  {t('helper_job.evidence_notes_label')}
                 </Text>
                 <TextInput
                   style={{
@@ -1651,7 +1655,7 @@ export default function HelperJobDetailScreen() {
                     textAlignVertical: 'top',
                     color: COLORS.gray[900],
                   }}
-                  placeholder="VD: Đã dọn dẹp sạch sẽ toàn bộ khu bếp, kiểm tra khóa và van nước an toàn..."
+                  placeholder={t('helper_job.evidence_notes_placeholder')}
                   value={completionNotes}
                   onChangeText={setCompletionNotes}
                   multiline
@@ -1660,7 +1664,7 @@ export default function HelperJobDetailScreen() {
               </View>
 
               <Button
-                title="Gửi kết quả & Báo hoàn thành"
+                title={t('helper_job.evidence_submit_btn')}
                 loading={completeJob.isPending}
                 onPress={handleCompleteSubmission}
                 style={{ marginTop: 10 }}

@@ -31,6 +31,7 @@ import { useJobDetail, useCancelJob } from '@/hooks/use-api';
 import { useJobSocketUpdates, useHelperLocation } from '@/hooks/use-socket';
 import { socketService, SOCKET_EVENTS } from '@/services/socket.service';
 import { LiveTrackingMap } from '@/components/common/live-tracking-map';
+import { useTranslation } from '@/hooks/use-i18n';
 import {
   Button,
   Card,
@@ -47,6 +48,7 @@ export default function SosTrackingScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { t, fs, lang } = useTranslation();
 
   // ── Realtime Socket Updates ──────────────────────────────────────────────
   useJobSocketUpdates(id);
@@ -64,8 +66,14 @@ export default function SosTrackingScreen() {
       refetch();
       Toast.show({
         type: 'success',
-        text1: '🚨 ĐÃ CÓ THỢ NHẬN CỨU HỘ!',
-        text2: 'Thợ đang chuẩn bị đồ nghề và di chuyển gấp đến bạn.',
+        text1:
+          lang === 'en'
+            ? '🚨 HELPER ACCEPTED RESCUE REQUEST!'
+            : '🚨 ĐÃ CÓ THỢ NHẬN CỨU HỘ!',
+        text2:
+          lang === 'en'
+            ? 'Helper is packing tools and rushing to your location.'
+            : 'Thợ đang chuẩn bị đồ nghề và di chuyển gấp đến bạn.',
       });
     });
     return () => {
@@ -81,7 +89,9 @@ export default function SosTrackingScreen() {
     job?.status === 'helper_arrived' ||
     job?.status === 'in_progress';
   const helperObj = typeof job?.helper_id === 'object' && job?.helper_id ? job.helper_id : null;
-  const helperName = helperObj?.full_name || 'Anh Tuấn (Thợ Điện Nước)';
+  const helperName =
+    helperObj?.full_name ||
+    (lang === 'en' ? 'Anh Tuan (Electrician/Plumber)' : 'Anh Tuấn (Thợ Điện Nước)');
   const helperPhone = helperObj?.phone || '0902222222';
   const helperAvatar = helperObj?.avatar;
 
@@ -92,7 +102,10 @@ export default function SosTrackingScreen() {
   const handleShareSos = async () => {
     try {
       await Share.share({
-        message: `🚨 Tôi đang gọi cứu hộ sự cố khẩn cấp "${job?.title}" tại địa chỉ: ${job?.address?.full_address}. Thợ phụ trách: ${helperName} (${helperPhone}). Theo dõi qua Green House.`,
+        message:
+          lang === 'en'
+            ? `🚨 I am requesting emergency SOS rescue for "${job?.title}" at address: ${job?.address?.full_address}. Assigned helper: ${helperName} (${helperPhone}). Track via Green House.`
+            : `🚨 Tôi đang gọi cứu hộ sự cố khẩn cấp "${job?.title}" tại địa chỉ: ${job?.address?.full_address}. Thợ phụ trách: ${helperName} (${helperPhone}). Theo dõi qua Green House.`,
       });
     } catch {
       /* ignore */
@@ -101,17 +114,27 @@ export default function SosTrackingScreen() {
 
   const handleCancel = () => {
     Alert.alert(
-      'Hủy yêu cầu cứu hộ?',
+      lang === 'en' ? 'Cancel rescue request?' : 'Hủy yêu cầu cứu hộ?',
       isMatched
-        ? 'Thợ đang trên đường di chuyển khẩn cấp đến bạn. Hủy lúc này có thể phát sinh phí di chuyển của thợ.'
-        : 'Bạn có chắc chắn muốn hủy yêu cầu cứu hộ?',
+        ? lang === 'en'
+          ? 'Helper is rushing to your location. Cancelling now may incur helper travel fee.'
+          : 'Thợ đang trên đường di chuyển khẩn cấp đến bạn. Hủy lúc này có thể phát sinh phí di chuyển của thợ.'
+        : lang === 'en'
+          ? 'Are you sure you want to cancel the rescue request?'
+          : 'Bạn có chắc chắn muốn hủy yêu cầu cứu hộ?',
       [
-        { text: 'Tiếp tục chờ', style: 'cancel' },
+        { text: lang === 'en' ? 'Keep waiting' : 'Tiếp tục chờ', style: 'cancel' },
         {
-          text: 'Xác nhận hủy',
+          text: lang === 'en' ? 'Confirm cancel' : 'Xác nhận hủy',
           style: 'destructive',
           onPress: async () => {
-            await cancelJob.mutateAsync({ jobId: id!, reason: 'Khách hàng hủy yêu cầu SOS' });
+            await cancelJob.mutateAsync({
+              jobId: id!,
+              reason:
+                lang === 'en'
+                  ? 'Customer cancelled SOS request'
+                  : 'Khách hàng hủy yêu cầu SOS',
+            });
             router.replace('/(customer)/home');
           },
         },
@@ -148,7 +171,13 @@ export default function SosTrackingScreen() {
           <ArrowLeft size={20} color="#FFFFFF" />
         </TouchableOpacity>
         <Text style={{ fontSize: 17, fontWeight: '900', color: '#FFFFFF' }}>
-          {isMatched ? 'THỢ ĐANG ĐẾN CỨU HỘ' : 'RADAR QUÉT TÌM THỢ KHẨN CẤP'}
+          {isMatched
+            ? lang === 'en'
+              ? 'HELPER ON THE WAY TO RESCUE'
+              : 'THỢ ĐANG ĐẾN CỨU HỘ'
+            : lang === 'en'
+              ? 'RADAR SCANNING FOR EMERGENCY HELPERS'
+              : 'RADAR QUÉT TÌM THỢ KHẨN CẤP'}
         </Text>
         <TouchableOpacity
           activeOpacity={0.7}
@@ -197,11 +226,14 @@ export default function SosTrackingScreen() {
             <Text
               style={{ fontSize: 19, fontWeight: '900', color: '#991B1B', textAlign: 'center' }}
             >
-              Đang broadcast tín hiệu tới 5 thợ gần bạn nhất
+              {lang === 'en'
+                ? 'Broadcasting signal to 5 nearest helpers'
+                : 'Đang broadcast tín hiệu tới 5 thợ gần bạn nhất'}
             </Text>
             <Text style={{ fontSize: 13, color: '#B91C1C', textAlign: 'center', lineHeight: 19 }}>
-              Hệ thống đang quét các đối tác thợ online trong bán kính 10km đã xác minh e-KYC. Thợ
-              đầu tiên bấm nhận sẽ lập tức di chuyển đến bạn.
+              {lang === 'en'
+                ? 'System is scanning verified online helper partners within 10km radius. First helper to accept will immediately rush to you.'
+                : 'Hệ thống đang quét các đối tác thợ online trong bán kính 10km đã xác minh e-KYC. Thợ đầu tiên bấm nhận sẽ lập tức di chuyển đến bạn.'}
             </Text>
 
             <View
@@ -215,15 +247,19 @@ export default function SosTrackingScreen() {
               }}
             >
               <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                <Text style={{ fontSize: 12.5, color: COLORS.gray[600] }}>Sự cố khẩn cấp:</Text>
+                <Text style={{ fontSize: 12.5, color: COLORS.gray[600] }}>
+                  {lang === 'en' ? 'Emergency issue:' : 'Sự cố khẩn cấp:'}
+                </Text>
                 <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.gray[900] }}>
                   {job?.title}
                 </Text>
               </View>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                <Text style={{ fontSize: 12.5, color: COLORS.gray[600] }}>Thời gian cam kết:</Text>
+                <Text style={{ fontSize: 12.5, color: COLORS.gray[600] }}>
+                  {lang === 'en' ? 'Arrival commitment:' : 'Thời gian cam kết:'}
+                </Text>
                 <Text style={{ fontSize: 13, fontWeight: '900', color: '#DC2626' }}>
-                  Có mặt sau 15 phút
+                  {lang === 'en' ? 'Arriving in 15 minutes' : 'Có mặt sau 15 phút'}
                 </Text>
               </View>
             </View>
@@ -256,7 +292,7 @@ export default function SosTrackingScreen() {
             {/* 2. Thẻ định danh Thợ cứu hộ */}
             <Card style={{ padding: 16, gap: 14 }}>
               <Text style={{ fontSize: 15, fontWeight: '900', color: COLORS.gray[900] }}>
-                Thông tin thợ cứu hộ phụ trách
+                {lang === 'en' ? 'Assigned Rescue Helper' : 'Thông tin thợ cứu hộ phụ trách'}
               </Text>
 
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
@@ -287,7 +323,7 @@ export default function SosTrackingScreen() {
                       </Text>
                     </View>
                     <Text style={{ fontSize: 12, color: '#F59E0B', fontWeight: '800' }}>
-                      ★ 4.9 (48 đơn)
+                      {lang === 'en' ? '★ 4.9 (48 jobs)' : '★ 4.9 (48 đơn)'}
                     </Text>
                   </View>
                 </View>
@@ -313,7 +349,7 @@ export default function SosTrackingScreen() {
                 >
                   <Phone size={18} color="#fff" />
                   <Text style={{ color: '#fff', fontWeight: '800', fontSize: 14 }}>
-                    Gọi điện ngay
+                    {lang === 'en' ? 'Call Now' : 'Gọi điện ngay'}
                   </Text>
                 </TouchableOpacity>
 
@@ -335,7 +371,7 @@ export default function SosTrackingScreen() {
                 >
                   <MessageCircle size={18} color={COLORS.primary} />
                   <Text style={{ color: COLORS.primary, fontWeight: '800', fontSize: 14 }}>
-                    Nhắn tin
+                    {lang === 'en' ? 'Message' : 'Nhắn tin'}
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -346,7 +382,7 @@ export default function SosTrackingScreen() {
         {/* ── Thông tin địa chỉ & sự cố ────────────────────────────────── */}
         <Card style={{ padding: 16, gap: 10 }}>
           <Text style={{ fontSize: 14, fontWeight: '800', color: COLORS.gray[900] }}>
-            Địa chỉ cứu hộ
+            {lang === 'en' ? 'Rescue Address' : 'Địa chỉ cứu hộ'}
           </Text>
           <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 8 }}>
             <MapPin size={16} color={COLORS.primary} style={{ marginTop: 2 }} />
@@ -372,14 +408,18 @@ export default function SosTrackingScreen() {
         {/* ── Nút chia sẻ cho người thân & Hủy yêu cầu ─────────────────── */}
         <View style={{ gap: 10 }}>
           <Button
-            title="Chia sẻ vị trí cứu hộ cho người thân"
+            title={
+              lang === 'en'
+                ? 'Share rescue location with family'
+                : 'Chia sẻ vị trí cứu hộ cho người thân'
+            }
             variant="outline"
             icon={<Share2 size={18} color={COLORS.primary} />}
             onPress={handleShareSos}
           />
 
           <Button
-            title="Hủy yêu cầu cứu hộ"
+            title={lang === 'en' ? 'Cancel rescue request' : 'Hủy yêu cầu cứu hộ'}
             variant="ghost"
             style={{ borderWidth: 1, borderColor: COLORS.gray[200] }}
             onPress={handleCancel}

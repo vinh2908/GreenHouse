@@ -23,6 +23,7 @@ import Toast from 'react-native-toast-message';
 import dayjs from 'dayjs';
 import { useAuthStore } from '@/stores/auth.store';
 import { useHelperProfile, useUpdateBankAccount, useTransactions } from '@/hooks/use-api';
+import { useTranslation } from '@/hooks/use-i18n';
 import { Button, Card, LoadingSpinner, COLORS, Separator, EmptyState } from '@/components/ui';
 
 const POPULAR_BANKS = [
@@ -36,30 +37,40 @@ const POPULAR_BANKS = [
   { code: 'TPB', name: 'TPBank', shortName: 'TPB' },
 ];
 
-const CUSTOMER_PAYMENT_OPTIONS = [
-  {
-    id: 'vietqr',
-    title: 'Chuyển khoản ngân hàng 24/7 (VietQR)',
-    subtitle: 'Quét mã QR thanh toán nhanh sau khi nghiệm thu công việc',
-    badge: 'Khuyên dùng',
-  },
-  {
-    id: 'momo',
-    title: 'Ví điện tử MoMo / ZaloPay',
-    subtitle: 'Thanh toán không tiền mặt an toàn, tự động giữ tiền bảo đảm (Escrow)',
-    badge: 'Miễn phí',
-  },
-  {
-    id: 'cash',
-    title: 'Tiền mặt trực tiếp cho thợ',
-    subtitle: 'Thanh toán trực tiếp sau khi kiểm tra chất lượng bàn giao',
-    badge: 'Linh hoạt',
-  },
-];
-
 export default function BankAccountScreen() {
   const router = useRouter();
+  const { t, fs, lang } = useTranslation();
   const { role } = useLocalSearchParams<{ role?: string }>();
+
+  const customerPaymentOptions = [
+    {
+      id: 'vietqr',
+      title: lang === 'en' ? '24/7 Bank Transfer (VietQR)' : 'Chuyển khoản ngân hàng 24/7 (VietQR)',
+      subtitle:
+        lang === 'en'
+          ? 'Scan QR code for quick payment after job completion'
+          : 'Quét mã QR thanh toán nhanh sau khi nghiệm thu công việc',
+      badge: lang === 'en' ? 'Recommended' : 'Khuyên dùng',
+    },
+    {
+      id: 'momo',
+      title: lang === 'en' ? 'E-Wallet (MoMo / ZaloPay)' : 'Ví điện tử MoMo / ZaloPay',
+      subtitle:
+        lang === 'en'
+          ? 'Safe cashless payment with automatic Escrow protection'
+          : 'Thanh toán không tiền mặt an toàn, tự động giữ tiền bảo đảm (Escrow)',
+      badge: lang === 'en' ? 'Free' : 'Miễn phí',
+    },
+    {
+      id: 'cash',
+      title: lang === 'en' ? 'Direct Cash to Helper' : 'Tiền mặt trực tiếp cho thợ',
+      subtitle:
+        lang === 'en'
+          ? 'Pay cash directly upon inspection and handover'
+          : 'Thanh toán trực tiếp sau khi kiểm tra chất lượng bàn giao',
+      badge: lang === 'en' ? 'Flexible' : 'Linh hoạt',
+    },
+  ];
   const { user } = useAuthStore();
   const searchRole =
     typeof globalThis !== 'undefined' && (globalThis as any).location?.search
@@ -108,11 +119,23 @@ export default function BankAccountScreen() {
 
   const handleSave = async () => {
     if (!bankName.trim() || !accountNumber.trim() || !accountName.trim()) {
-      Toast.show({ type: 'error', text1: 'Vui lòng điền đầy đủ thông tin ngân hàng' });
+      Toast.show({
+        type: 'error',
+        text1:
+          lang === 'en'
+            ? 'Please fill in all bank details'
+            : 'Vui lòng điền đầy đủ thông tin ngân hàng',
+      });
       return;
     }
     if (accountNumber.trim().length < 6) {
-      Toast.show({ type: 'error', text1: 'Số tài khoản ngân hàng không hợp lệ' });
+      Toast.show({
+        type: 'error',
+        text1:
+          lang === 'en'
+            ? 'Invalid bank account number'
+            : 'Số tài khoản ngân hàng không hợp lệ',
+      });
       return;
     }
 
@@ -122,9 +145,18 @@ export default function BankAccountScreen() {
         account_number: accountNumber.trim(),
         account_name: accountName.trim().toUpperCase(),
       });
+      Toast.show({
+        type: 'success',
+        text1:
+          lang === 'en'
+            ? 'Bank account updated successfully'
+            : 'Cập nhật tài khoản thành công',
+      });
       refetch();
     } catch (err: any) {
-      const msg = err?.response?.data?.message || 'Cập nhật tài khoản thất bại';
+      const msg =
+        err?.response?.data?.message ||
+        (lang === 'en' ? 'Failed to update bank account' : 'Cập nhật tài khoản thất bại');
       Toast.show({ type: 'error', text1: msg });
     }
   };
@@ -165,7 +197,13 @@ export default function BankAccountScreen() {
           <ArrowLeft size={20} color={COLORS.gray[800]} />
         </TouchableOpacity>
         <Text style={{ fontSize: 17, fontWeight: '800', color: COLORS.gray[900] }}>
-          {isHelper ? 'Tài khoản ngân hàng liên kết' : 'Phương thức thanh toán & Ví'}
+          {isHelper
+            ? lang === 'en'
+              ? 'Linked Bank Account'
+              : 'Tài khoản ngân hàng liên kết'
+            : lang === 'en'
+              ? 'Payment Methods & Wallet'
+              : 'Phương thức thanh toán & Ví'}
         </Text>
         <View style={{ width: 38 }} />
       </View>
@@ -180,21 +218,22 @@ export default function BankAccountScreen() {
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
               <ShieldCheck size={20} color="#34D399" />
               <Text style={{ color: '#fff', fontWeight: '800', fontSize: 15 }}>
-                Bảo vệ thanh toán Escrow 100%
+                {lang === 'en' ? '100% Escrow Payment Protection' : 'Bảo vệ thanh toán Escrow 100%'}
               </Text>
             </View>
             <Text style={{ color: 'rgba(255,255,255,0.75)', fontSize: 13, lineHeight: 19 }}>
-              Bạn chỉ thanh toán sau khi thợ đã hoàn thành công việc, gửi ảnh/video nghiệm thu và
-              bạn xác nhận hài lòng.
+              {lang === 'en'
+                ? 'You only pay after the helper completes the job, submits completion photos/videos, and you confirm your satisfaction.'
+                : 'Bạn chỉ thanh toán sau khi thợ đã hoàn thành công việc, gửi ảnh/video nghiệm thu và bạn xác nhận hài lòng.'}
             </Text>
           </Card>
 
           <Text style={{ fontSize: 15, fontWeight: '800', color: COLORS.gray[900] }}>
-            Phương thức thanh toán mặc định
+            {lang === 'en' ? 'Default Payment Method' : 'Phương thức thanh toán mặc định'}
           </Text>
 
           <View style={{ gap: 10 }}>
-            {CUSTOMER_PAYMENT_OPTIONS.map(opt => {
+            {customerPaymentOptions.map(opt => {
               const selected = preferredMethod === opt.id;
               return (
                 <TouchableOpacity
@@ -204,7 +243,10 @@ export default function BankAccountScreen() {
                     setPreferredMethod(opt.id);
                     Toast.show({
                       type: 'success',
-                      text1: 'Đã chọn phương thức mặc định',
+                      text1:
+                        lang === 'en'
+                          ? 'Default method selected'
+                          : 'Đã chọn phương thức mặc định',
                       text2: opt.title,
                     });
                   }}
@@ -251,7 +293,7 @@ export default function BankAccountScreen() {
           </View>
 
           <Text style={{ fontSize: 15, fontWeight: '800', color: COLORS.gray[900], marginTop: 6 }}>
-            Lịch sử giao dịch gần đây
+            {lang === 'en' ? 'Recent Transactions' : 'Lịch sử giao dịch gần đây'}
           </Text>
 
           {txLoading ? (
@@ -260,8 +302,12 @@ export default function BankAccountScreen() {
             <Card>
               <EmptyState
                 emoji="💳"
-                title="Chưa có giao dịch thanh toán"
-                subtitle="Các hóa đơn thanh toán công việc của bạn sẽ được lưu trữ tại đây."
+                title={lang === 'en' ? 'No transactions yet' : 'Chưa có giao dịch thanh toán'}
+                subtitle={
+                  lang === 'en'
+                    ? 'Your job payment receipts and history will appear here.'
+                    : 'Các hóa đơn thanh toán công việc của bạn sẽ được lưu trữ tại đây.'
+                }
               />
             </Card>
           ) : (
@@ -291,7 +337,7 @@ export default function BankAccountScreen() {
                       </View>
                     </View>
                     <Text style={{ fontWeight: '800', fontSize: 14.5, color: COLORS.gray[900] }}>
-                      {new Intl.NumberFormat('vi-VN').format(tx.amount)}₫
+                      {new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'vi-VN').format(tx.amount)}₫
                     </Text>
                   </View>
                 </View>
@@ -342,7 +388,7 @@ export default function BankAccountScreen() {
                       letterSpacing: 0.5,
                     }}
                   >
-                    {bankName || 'NGÂN HÀNG LIÊN KẾT'}
+                    {bankName || (lang === 'en' ? 'LINKED BANK' : 'NGÂN HÀNG LIÊN KẾT')}
                   </Text>
                 </View>
                 {currentBank?.account_number && (
@@ -355,7 +401,7 @@ export default function BankAccountScreen() {
                     }}
                   >
                     <Text style={{ color: '#34D399', fontSize: 11, fontWeight: '800' }}>
-                      ● ĐÃ LIÊN KẾT
+                      {lang === 'en' ? '● LINKED' : '● ĐÃ LIÊN KẾT'}
                     </Text>
                   </View>
                 )}
@@ -365,7 +411,7 @@ export default function BankAccountScreen() {
                 <Text
                   style={{ color: '#94A3B8', fontSize: 11, fontWeight: '600', letterSpacing: 1 }}
                 >
-                  SỐ TÀI KHOẢN
+                  {lang === 'en' ? 'ACCOUNT NUMBER' : 'SỐ TÀI KHOẢN'}
                 </Text>
                 <Text
                   style={{
@@ -391,7 +437,7 @@ export default function BankAccountScreen() {
               >
                 <View>
                   <Text style={{ color: '#94A3B8', fontSize: 10, fontWeight: '600' }}>
-                    CHỦ TÀI KHOẢN
+                    {lang === 'en' ? 'ACCOUNT HOLDER' : 'CHỦ TÀI KHOẢN'}
                   </Text>
                   <Text
                     style={{
@@ -411,7 +457,7 @@ export default function BankAccountScreen() {
 
             <Card style={{ padding: 16, gap: 10 }}>
               <Text style={{ fontSize: 14, fontWeight: '800', color: COLORS.gray[900] }}>
-                Chọn ngân hàng thụ hưởng
+                {lang === 'en' ? 'Select Beneficiary Bank' : 'Chọn ngân hàng thụ hưởng'}
               </Text>
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
                 {POPULAR_BANKS.map(bank => {
@@ -449,12 +495,12 @@ export default function BankAccountScreen() {
 
             <Card style={{ padding: 16, gap: 14 }}>
               <Text style={{ fontSize: 15, fontWeight: '800', color: COLORS.gray[900] }}>
-                Thông tin tài khoản nhận tiền
+                {lang === 'en' ? 'Receiving Bank Account Details' : 'Thông tin tài khoản nhận tiền'}
               </Text>
 
               <View style={{ gap: 6 }}>
                 <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.gray[700] }}>
-                  Tên ngân hàng *
+                  {lang === 'en' ? 'Bank name *' : 'Tên ngân hàng *'}
                 </Text>
                 <TextInput
                   style={{
@@ -466,7 +512,7 @@ export default function BankAccountScreen() {
                     color: COLORS.gray[900],
                     backgroundColor: COLORS.gray[50],
                   }}
-                  placeholder="VD: Vietcombank, MB Bank..."
+                  placeholder={lang === 'en' ? 'e.g. Vietcombank, MB Bank...' : 'VD: Vietcombank, MB Bank...'}
                   value={bankName}
                   onChangeText={setBankName}
                   placeholderTextColor={COLORS.gray[400]}
@@ -475,7 +521,7 @@ export default function BankAccountScreen() {
 
               <View style={{ gap: 6 }}>
                 <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.gray[700] }}>
-                  Số tài khoản ngân hàng *
+                  {lang === 'en' ? 'Bank account number *' : 'Số tài khoản ngân hàng *'}
                 </Text>
                 <TextInput
                   style={{
@@ -489,7 +535,7 @@ export default function BankAccountScreen() {
                     backgroundColor: COLORS.gray[50],
                     letterSpacing: 1,
                   }}
-                  placeholder="Nhập số tài khoản ngân hàng"
+                  placeholder={lang === 'en' ? 'Enter bank account number' : 'Nhập số tài khoản ngân hàng'}
                   value={accountNumber}
                   onChangeText={setAccountNumber}
                   keyboardType="numeric"
@@ -499,7 +545,9 @@ export default function BankAccountScreen() {
 
               <View style={{ gap: 6 }}>
                 <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.gray[700] }}>
-                  Tên chủ tài khoản (in hoa, không dấu) *
+                  {lang === 'en'
+                    ? 'Account holder name (UPPERCASE, unaccented) *'
+                    : 'Tên chủ tài khoản (in hoa, không dấu) *'}
                 </Text>
                 <TextInput
                   style={{
@@ -512,7 +560,7 @@ export default function BankAccountScreen() {
                     color: COLORS.gray[900],
                     backgroundColor: COLORS.gray[50],
                   }}
-                  placeholder="VD: NGUYEN VAN A"
+                  placeholder={lang === 'en' ? 'e.g. NGUYEN VAN A' : 'VD: NGUYEN VAN A'}
                   value={accountName}
                   onChangeText={text => setAccountName(text.toUpperCase())}
                   autoCapitalize="characters"
@@ -533,21 +581,25 @@ export default function BankAccountScreen() {
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                 <Lock size={16} color={COLORS.secondary} />
                 <Text style={{ fontSize: 13.5, fontWeight: '800', color: COLORS.secondary }}>
-                  Bảo mật & Quy chuẩn rút tiền
+                  {lang === 'en' ? 'Security & Payout Rules' : 'Bảo mật & Quy chuẩn rút tiền'}
                 </Text>
               </View>
               <Text style={{ fontSize: 12.5, color: '#1E40AF', lineHeight: 18 }}>
-                • Tên chủ tài khoản ngân hàng nên trùng khớp với họ tên đã xác minh trên CCCD
-                (e-KYC) để quá trình rút tiền diễn ra tự động 24/7.{'\n'}• Tiền rút từ ví thu nhập
-                sẽ được xử lý chuyển khoản liên ngân hàng nhanh chóng.
+                {lang === 'en'
+                  ? `• The bank account holder name should match your verified ID (e-KYC) for 24/7 automated payouts.\n• Payouts from your earnings wallet are processed quickly via interbank transfer.`
+                  : `• Tên chủ tài khoản ngân hàng nên trùng khớp với họ tên đã xác minh trên CCCD (e-KYC) để quá trình rút tiền diễn ra tự động 24/7.\n• Tiền rút từ ví thu nhập sẽ được xử lý chuyển khoản liên ngân hàng nhanh chóng.`}
               </Text>
             </Card>
 
             <Button
               title={
                 currentBank?.account_number
-                  ? 'Cập nhật tài khoản ngân hàng'
-                  : 'Lưu & Liên kết tài khoản'
+                  ? lang === 'en'
+                    ? 'Update Bank Account'
+                    : 'Cập nhật tài khoản ngân hàng'
+                  : lang === 'en'
+                    ? 'Save & Link Account'
+                    : 'Lưu & Liên kết tài khoản'
               }
               loading={updateBank.isPending}
               onPress={handleSave}
