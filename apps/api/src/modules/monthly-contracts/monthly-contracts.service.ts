@@ -22,6 +22,7 @@ import {
 import { CreateMonthlyContractDto, SettleMonthDto } from './dto/monthly-contract.dto';
 import { HelperProfile, HelperProfileDocument } from '../helpers/schemas/helper-profile.schema';
 import { VerificationStatus } from '@homemate/types';
+import { NOTIFICATION_TYPES } from '@homemate/constants';
 import { NotificationsService } from '../notifications/notifications.service';
 import { PaymentsService } from '../payments/payments.service';
 import { AppGateway } from '../chat/app.gateway';
@@ -746,6 +747,71 @@ export class MonthlyContractsService {
   }
 
   // ─── Admin Management ───────────────────────────────────────────────────────
+
+  // ─── Admin can thiệp (B3) ─────────────────────────────────────────────────
+
+  /** Admin duyệt hợp đồng đang chờ (tương đương thợ đồng ý). */
+  async adminApprove(id: string) {
+    const contract = await this.getContractOrFail(id);
+    if (contract.status !== 'pending') {
+      throw new ConflictException('Chỉ hợp đồng đang chờ duyệt mới duyệt được');
+    }
+    contract.status = 'active';
+    contract.responded_at = new Date();
+    await contract.save();
+    await this.notifyBoth(contract, NOTIFICATION_TYPES.MONTHLY_CONTRACT_ACCEPTED,
+      'Hợp đồng theo tháng đã được duyệt',
+      `Hợp đồng "${contract.title}" đã được Admin duyệt và có hiệu lực.`);
+    return this.populate(contract);
+  }
+
+  /** Admin hủy hợp đồng đang chờ hoặc đang hiệu lực. */
+  async adminCancel(id: string, reason?: string) {
+    const contract = await this.getContractOrFail(id);
+    if (contract.status !== 'pending' && contract.status !== 'active') {
+      throw new ConflictException('Hợp đồng này không thể hủy ở trạng thái hiện tại');
+    }
+    contract.status = 'cancelled';
+    contract.ended_at = new Date();
+    contract.end_reason = reason || 'Đã hủy bởi Quản trị viên';
+    await contract.save();
+    await this.notifyBoth(contract, NOTIFICATION_TYPES.MONTHLY_CONTRACT_CANCELLED,
+      'Hợp đồng theo tháng đã bị hủy',
+      `Hợp đồng "${contract.title}" đã bị Admin hủy${reason ? `: ${reason}` : '.'}`);
+    return this.populate(contract);
+  }
+
+  /** Admin kết thúc hợp đồng đang hiệu lực. */
+  async adminEnd(id: string, reason?: string) {
+    const contract = await this.getContractOrFail(id);
+    if (contract.status !== 'active') {
+      throw new ConflictException('Chỉ hợp đồng đang hiệu lực mới kết thúc được');
+    }
+    contract.status = 'ended';
+    contract.ended_at = new Date();
+    contract.end_date = new Date();
+    contract.end_reason = reason;
+    await contract.save();
+    await this.notifyBoth(contract, NOTIFICATION_TYPES.MONTHLY_CONTRACT_ENDED,
+      'Hợp đồng theo tháng đã kết thúc',
+      `Hợp đồng "${contract.title}" đã được Admin kết thúc${reason ? `: ${reason}` : '.'}`);
+    return this.populate(contract);
+  }
+
+  private async notifyBoth(contract: any, type: string, title: string, body: string) {
+    for (const userId of [contract.customer_id, contract.helper_id]) {
+      if (!userId) continue;
+      await this.notificationsService
+        .create({
+          userId: String(userId._id ?? userId),
+          type,
+          title,
+          body,
+          payload: { contract_id: String(contract._id), kind: 'monthly_contract' },
+        })
+        .catch(() => undefined);
+    }
+  }
 
   async adminListContracts(status?: string, page = 1, limit = 20) {
     const query: Record<string, unknown> = {};
