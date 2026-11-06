@@ -1,5 +1,6 @@
 import { Platform } from 'react-native';
 import * as FileSystem from 'expo-file-system/legacy';
+import * as Sharing from 'expo-sharing';
 import Toast from 'react-native-toast-message';
 import apiClient from './api-client';
 
@@ -8,7 +9,7 @@ import apiClient from './api-client';
  * GET /jobs/:jobId/invoice.pdf (kèm JWT qua apiClient, responseType arraybuffer).
  * - Web: tạo Blob URL + thẻ <a download> để trình duyệt tải file.
  * - Native: ghi file vào cacheDirectory bằng expo-file-system (legacy API)
- *   và báo đường dẫn qua Toast. (expo-sharing chưa được cài — không dùng.)
+ *   rồi mở share intent bằng expo-sharing để mở/lưu/chia sẻ PDF.
  */
 
 const BASE64_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
@@ -68,6 +69,15 @@ export async function downloadInvoicePdf(jobId: string): Promise<void> {
   await FileSystem.writeAsStringAsync(fileUri, base64, {
     encoding: FileSystem.EncodingType.Base64,
   });
+  // B15: native mở share intent để người dùng mở/lưu/chia sẻ PDF thay vì chỉ Toast đường dẫn
+  if (await Sharing.isAvailableAsync()) {
+    await Sharing.shareAsync(fileUri, {
+      mimeType: 'application/pdf',
+      dialogTitle: fileName,
+      UTI: 'com.adobe.pdf',
+    });
+    return;
+  }
   Toast.show({
     type: 'success',
     text1: 'Đã tải hóa đơn PDF 🧾',
