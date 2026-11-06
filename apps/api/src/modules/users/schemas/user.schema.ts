@@ -76,6 +76,12 @@ export class User {
   @Prop({ default: 0 })
   token_version?: number;
 
+  @Prop({ type: [String], default: [] })
+  tokens: string[];
+
+  @Prop({ type: [String], default: [] })
+  invalid_tokens: string[];
+
   @Prop({
     type: {
       order_updates: { type: Boolean, default: true },
@@ -118,6 +124,8 @@ UserSchema.set('toJSON', {
     delete ret['fcm_token'];
     delete ret['push_tokens'];
     delete ret['voip_tokens'];
+    delete ret['tokens'];
+    delete ret['invalid_tokens'];
     delete ret['__v'];
     return ret;
   },

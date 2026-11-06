@@ -104,4 +104,19 @@ export class AuthController {
   async me(@CurrentUser() user: unknown) {
     return user;
   }
+
+  // ─── Logout ─────────────────────────────────────────────────────────────────
+
+  @UseGuards(JwtAuthGuard)
+  @Post('logout')
+  @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Đăng xuất và thu hồi refresh token' })
+  async logout(
+    @CurrentUser() user: any,
+    @Body() body: { refresh_token?: string },
+  ) {
+    const userId = user?.sub ?? user?.id ?? user?._id;
+    return this.authService.logout(String(userId), body?.refresh_token);
+  }
 }
