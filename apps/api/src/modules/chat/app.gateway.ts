@@ -34,6 +34,30 @@ export class AppGateway implements OnGatewayConnection, OnGatewayDisconnect {
   // Map userId → Set of socketIds (one user can have multiple connections)
   private userSockets = new Map<string, Set<string>>();
 
+  // B115: refcount phòng chat — conversationId → Set<socketId> đang ở trong room.
+  // Rời phòng giảm refcount; còn 0 người thì đánh dấu phòng đã đóng (không xóa tin nhắn).
+  private conversationOccupancy = new Map<string, Set<string>>();
+
+  private async trackConversationJoin(conversationId: string, socketId: string) {
+    let set = this.conversationOccupancy.get(conversationId);
+    if (!set) {
+      set = new Set();
+      this.conversationOccupancy.set(conversationId, set);
+    }
+    set.add(socketId);
+    await this.chatService.markConversationOpen(conversationId);
+  }
+
+  private async trackConversationLeave(conversationId: string, socketId: string) {
+    const set = this.conversationOccupancy.get(conversationId);
+    if (!set) return;
+    set.delete(socketId);
+    if (set.size === 0) {
+      this.conversationOccupancy.delete(conversationId);
+      await this.chatService.markConversationClosed(conversationId);
+    }
+  }
+
   constructor(
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
@@ -96,6 +120,10 @@ export class AppGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   handleDisconnect(client: Socket) {
+    // B115: ngắt kết nối cũng tính là rời phòng — cập nhật refcount cho mọi room đang ở
+    for (const conversationId of [...this.conversationOccupancy.keys()]) {
+      void this.trackConversationLeave(conversationId, client.id);
+    }
     const userId = client.data.userId as string;
     if (userId) {
       const sockets = this.userSockets.get(userId);
@@ -141,6 +169,20 @@ export class AppGateway implements OnGatewayConnection, OnGatewayDisconnect {
     client.leave(`job:${data.job_id}`);
   }
 
+  // B113: khách đang xem hồ sơ thợ thì vào room helper:<id> để nhận
+  // helper:status_changed (trạng thái thợ là thông tin công khai trên hồ sơ).
+  @SubscribeMessage('join:helper')
+  handleJoinHelper(@ConnectedSocket() client: Socket, @MessageBody() data: { helper_id: string }) {
+    if (!data?.helper_id) throw new WsException('helper_id bắt buộc');
+    client.join(`helper:${data.helper_id}`);
+    return { event: 'joined', room: `helper:${data.helper_id}` };
+  }
+
+  @SubscribeMessage('leave:helper')
+  handleLeaveHelper(@ConnectedSocket() client: Socket, @MessageBody() data: { helper_id: string }) {
+    client.leave(`helper:${data?.helper_id}`);
+  }
+
   @SubscribeMessage('join:conversation')
   async handleJoinConversation(
     @ConnectedSocket() client: Socket,
@@ -151,6 +193,7 @@ export class AppGateway implements OnGatewayConnection, OnGatewayDisconnect {
       throw new WsException('Forbidden');
     }
     client.join(`chat:${data.conversation_id}`);
+    await this.trackConversationJoin(data.conversation_id, client.id);
     return { event: 'joined', room: `chat:${data.conversation_id}` };
   }
 
@@ -160,6 +203,9 @@ export class AppGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @MessageBody() data: { conversation_id: string },
   ) {
     client.leave(`chat:${data?.conversation_id}`);
+    if (data?.conversation_id) {
+      void this.trackConversationLeave(data.conversation_id, client.id);
+    }
   }
 
   // ─── Chat messages (REST only — socket send path removed, B40) ─────────────
@@ -248,6 +294,32 @@ export class AppGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   emitToJob(jobId: string, event: string, data: unknown) {
     this.server.to(`job:${jobId}`).emit(event, data);
+  }
+
+  // B113: phát helper:status_changed cho thợ + khách đang xem hồ sơ thợ
+  // (room helper:<id>) + khách có đơn đang hoạt động với thợ đó (room job +
+  // phòng riêng của khách). Không phát cho khách không liên quan.
+  async broadcastHelperStatus(helperId: string, status: string) {
+    const payload = { helper_id: helperId, status };
+    this.emitToUser(helperId, SOCKET_EVENTS.HELPER_STATUS_CHANGED, payload);
+    this.server.to(`helper:${helperId}`).emit(SOCKET_EVENTS.HELPER_STATUS_CHANGED, payload);
+    const jobs = await this.jobModel
+      .find({
+        helper_id: new Types.ObjectId(helperId),
+        status: {
+          $in: ['confirmed', 'helper_on_the_way', 'helper_arrived', 'in_progress', 'pending_review'],
+        },
+      })
+      .select('customer_id')
+      .lean()
+      .exec();
+    const customerIds = [...new Set(jobs.map(j => String(j.customer_id)))];
+    for (const customerId of customerIds) {
+      this.emitToUser(customerId, SOCKET_EVENTS.HELPER_STATUS_CHANGED, payload);
+    }
+    for (const job of jobs) {
+      this.emitToJob(String((job as any)._id), SOCKET_EVENTS.HELPER_STATUS_CHANGED, payload);
+    }
   }
 
   emitToConversation(conversationId: string, event: string, data: unknown) {

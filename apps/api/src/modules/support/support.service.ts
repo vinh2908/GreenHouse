@@ -47,20 +47,33 @@ export class SupportService {
 
   // ─── User ─────────────────────────────────────────────────────────────────
 
-  /** Get-or-create hội thoại OPEN của user; thread mới nhất đã closed → tạo mới. */
-  async getOrCreateOpen(userId: string) {
+  /** Get-or-create hội thoại OPEN của user; thread mới nhất đã closed → tạo mới.
+   * B77: tạo từ màn đơn thì gắn job_id; thread mở sẵn chưa gắn đơn thì gắn thêm. */
+  async getOrCreateOpen(userId: string, jobId?: string) {
     const open = await this.conversationModel
       .findOne({ user_id: new Types.ObjectId(userId), status: 'open' })
       .sort({ created_at: -1 })
       .exec();
-    if (open) return open;
-    return this.conversationModel.create({ user_id: new Types.ObjectId(userId) });
+    if (open) {
+      if (jobId && Types.ObjectId.isValid(jobId) && !open.job_id) {
+        open.job_id = new Types.ObjectId(jobId);
+        await open.save();
+      }
+      return open;
+    }
+    return this.conversationModel.create({
+      user_id: new Types.ObjectId(userId),
+      ...(jobId && Types.ObjectId.isValid(jobId)
+        ? { job_id: new Types.ObjectId(jobId) }
+        : {}),
+    });
   }
 
   /** Hội thoại mới nhất của tôi (kèm tóm tắt tin nhắn cuối) hoặc null. */
   async getMyLatest(userId: string) {
     const conv = await this.conversationModel
       .findOne({ user_id: new Types.ObjectId(userId) })
+      .populate('job_id', 'title status')
       .sort({ created_at: -1 })
       .exec();
     if (!conv) return null;
@@ -97,7 +110,8 @@ export class SupportService {
     const conv = await this.findConversationOrThrow(conversationId);
     if (conv.user_id.toString() !== userId) throw new ForbiddenException();
     if (conv.status !== 'open') {
-      throw new BadRequestException('Hội thoại đã đóng. Hãy mở hội thoại hỗ trợ mới.');
+      // B75: lỗi ghi rõ cách mở lại; KHÔNG tự mở lại thread
+      throw new BadRequestException("Thread đã đóng. Bấm 'Mở lại' để tiếp tục trò chuyện.");
     }
     const message = await this.messageModel.create({
       conversation_id: new Types.ObjectId(conversationId),
@@ -147,6 +161,7 @@ export class SupportService {
     return this.conversationModel
       .find(query)
       .populate('user_id', 'full_name phone avatar')
+      .populate('job_id', 'title status')
       .sort({ last_message_at: -1, created_at: -1 })
       .limit(100)
       .exec();
@@ -156,9 +171,8 @@ export class SupportService {
     const conv = await this.findConversationOrThrow(conversationId);
     // A69: Không cho phép trả lời thread đã đóng
     if (conv.status === 'closed') {
-      throw new BadRequestException(
-        'Phiên hỗ trợ đã đóng. Vui lòng mở lại phiên trước khi gửi tin nhắn.',
-      );
+      // B75: lỗi ghi rõ cách mở lại; KHÔNG tự mở lại thread
+      throw new BadRequestException("Thread đã đóng. Bấm 'Mở lại' để tiếp tục trò chuyện.");
     }
     const message = await this.messageModel.create({
       conversation_id: new Types.ObjectId(conversationId),
@@ -208,10 +222,38 @@ export class SupportService {
     return { message: 'Đã đọc' };
   }
 
+  // B75: Mở lại thread đã đóng (chủ thread hoặc admin) — chỉ mở lại khi bấm nút
+  async reopenConversation(
+    conversationId: string,
+    requester: { sub: string; isAdmin?: boolean },
+  ) {
+    const conv = await this.findConversationOrThrow(conversationId);
+    if (!requester.isAdmin && conv.user_id.toString() !== requester.sub) {
+      throw new ForbiddenException('Bạn không có quyền mở lại hội thoại này');
+    }
+    if (conv.status === 'open') return conv;
+    conv.status = 'open';
+    await conv.save();
+    return conv;
+  }
+
   async adminClose(conversationId: string) {
     const conv = await this.findConversationOrThrow(conversationId);
+    const wasOpen = conv.status === 'open';
     conv.status = 'closed';
     await conv.save();
+    // B76: admin đóng thread thì khách nhận thông báo (chỉ khi thread đang mở)
+    if (wasOpen) {
+      await this.notificationsService
+        .create({
+          userId: String(conv.user_id),
+          type: NOTIFICATION_TYPES.SUPPORT_REPLY,
+          title: 'Yêu cầu hỗ trợ đã được đóng',
+          body: 'Yêu cầu hỗ trợ của bạn đã được đóng. Bạn có thể mở lại để tiếp tục trò chuyện.',
+          payload: { support_conversation_id: conversationId },
+        })
+        .catch(() => undefined);
+    }
     return conv;
   }
 }

@@ -38,6 +38,29 @@ export function useSuspendUser() {
   });
 }
 
+// B107: xoá mềm / khôi phục tài khoản
+export function useDeleteUser() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => apiClient.patch(`/admin/users/${id}/delete`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin', 'users'] });
+      qc.invalidateQueries({ queryKey: ['admin', 'user'] });
+    },
+  });
+}
+
+export function useRestoreUser() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => apiClient.patch(`/admin/users/${id}/restore`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin', 'users'] });
+      qc.invalidateQueries({ queryKey: ['admin', 'user'] });
+    },
+  });
+}
+
 export function useActivateUser() {
   const qc = useQueryClient();
   return useMutation({
@@ -178,11 +201,28 @@ export function useAdminHideReview() {
   });
 }
 
+// B71: Admin ẩn/hiện đánh giá + quyết định kháng nghị
+export function useSetReviewVisibility() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, hidden }: { id: string; hidden: boolean }) =>
+      apiClient.patch(`/reviews/${id}/visibility`, { hidden }),    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'reviews'] }),
+  });
+}
+
 export function useAdminDeleteReview() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => apiClient.delete(`/reviews/admin/${id}`),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'reviews'] }),
+  });
+}
+
+export function useResolveReviewAppeal() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, decision }: { id: string; decision: 'upheld' | 'rejected' }) =>
+      apiClient.patch(`/reviews/${id}/appeal`, { decision }),    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'reviews'] }),
   });
 }
 
@@ -235,7 +275,6 @@ export function useAdminAdjustLoyalty() {
     },
   });
 }
-
 // ─── Analytics ────────────────────────────────────────────────────────────────
 
 export function useAnalyticsSummary() {
@@ -425,6 +464,17 @@ export function useToggleService() {
 
 // ─── Broadcast ──────────────────────────────────────────────────────────────────
 
+// B108: lịch sử thông báo đã gửi
+export function useAdminSentNotifications(params: { page?: number; type?: string }) {
+  return useQuery({
+    queryKey: ['admin', 'notifications', 'sent', params],
+    queryFn: async () => {
+      const { data } = await apiClient.get('/admin/notifications', { params });
+      return data.data;
+    },
+  });
+}
+
 export function useBroadcast() {
   return useMutation({
     mutationFn: async (dto: { title: string; body: string }) => {
@@ -569,6 +619,8 @@ export function useReviewClaim() {
 
 export interface AdminSupportConversation {
   _id: string;
+  // B77: đơn liên quan (populated { _id, title, status } hoặc ObjectId string)
+  job_id?: string | { _id: string; title?: string; status?: string };
   user_id: string | { _id: string; full_name?: string; phone?: string; avatar?: string } | null;
   status: 'open' | 'closed';
   last_message?: string;

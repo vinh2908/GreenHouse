@@ -509,6 +509,17 @@ export class RecurringService implements OnApplicationBootstrap, OnModuleDestroy
     }
     plan.status = RecurringPlanStatus.PAUSED;
     await plan.save();
+    // B117: báo cho khách — chỉ gửi khi trạng thái thật sự đổi (guard trên đã
+    // chặn mọi trường hợp không đổi), gửi đúng 1 lần sau khi lưu thành công.
+    await this.notificationsService
+      .create({
+        userId: customerId,
+        type: NOTIFICATION_TYPES.RECURRING_PLAN_PAUSED,
+        title: 'Gói định kỳ đã tạm dừng',
+        body: `Gói định kỳ "${plan.title}" đã được tạm dừng. Bạn có thể tiếp tục lại bất cứ lúc nào.`,
+        payload: { plan_id: planId },
+      })
+      .catch(() => undefined);
     return plan;
   }
 
@@ -520,6 +531,16 @@ export class RecurringService implements OnApplicationBootstrap, OnModuleDestroy
     plan.status = RecurringPlanStatus.ACTIVE;
     await plan.save();
     await this.generateJobsForPlan(plan);
+    // B117: báo cho khách — chỉ khi trạng thái thật sự đổi, đúng 1 lần.
+    await this.notificationsService
+      .create({
+        userId: customerId,
+        type: NOTIFICATION_TYPES.RECURRING_PLAN_RESUMED,
+        title: 'Gói định kỳ đã tiếp tục',
+        body: `Gói định kỳ "${plan.title}" đã hoạt động trở lại. Các buổi tiếp theo sẽ được tạo như lịch.`,
+        payload: { plan_id: planId },
+      })
+      .catch(() => undefined);
     return plan;
   }
 
@@ -602,6 +623,17 @@ export class RecurringService implements OnApplicationBootstrap, OnModuleDestroy
         })
         .catch(() => undefined);
     }
+
+    // B117: báo cho khách — chỉ khi hủy thật sự (guard trên chặn hủy lần 2), đúng 1 lần.
+    await this.notificationsService
+      .create({
+        userId: customerId,
+        type: NOTIFICATION_TYPES.RECURRING_PLAN_CANCELLED,
+        title: 'Gói định kỳ đã hủy',
+        body: `Gói định kỳ "${plan.title}" đã được hủy${reason ? `. Lý do: ${reason}` : '.'} Các buổi chưa bắt đầu đã được hủy theo.`,
+        payload: { plan_id: planId },
+      })
+      .catch(() => undefined);
 
     return plan;
   }

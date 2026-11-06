@@ -4,7 +4,13 @@ import {
   BadRequestException,
   ForbiddenException,
   ConflictException,
+  Logger,
+  Inject,
+  forwardRef,
 } from '@nestjs/common';
+import { Cron } from '@nestjs/schedule';
+import { NOTIFICATION_TYPES } from '@homemate/constants';
+import { NotificationsService } from '../notifications/notifications.service';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import {
@@ -29,11 +35,15 @@ export interface VoucherPreview {
 
 @Injectable()
 export class VouchersService {
+  private readonly logger = new Logger(VouchersService.name);
+
   constructor(
     @InjectModel(Voucher.name) private voucherModel: Model<VoucherDocument>,
     @InjectModel(VoucherRedemption.name)
     private redemptionModel: Model<VoucherRedemptionDocument>,
     @InjectModel(Job.name) private jobModel: Model<JobDocument>,
+    @Inject(forwardRef(() => NotificationsService))
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   private normalizeCode(code: string): string {
@@ -401,5 +411,65 @@ export class VouchersService {
       this.redemptionModel.countDocuments({ voucher_id: voucher._id }).exec(),
     ]);
     return { redemptions, total, page, limit, total_pages: Math.ceil(total / limit) };
+  }
+
+  /**
+   * B99: nhắc voucher sắp hết hạn trong 3 ngày — 1 lần/voucher.
+   * Chỉ nhắc voucher còn hạn (chưa hết hạn), còn active; người nhận là khách
+   * đã từng dùng mã và vẫn còn lượt dùng. Ghi cờ expiry_reminder_sent_at để
+   * cron ngày hôm sau không nhắc lại.
+   */
+  @Cron('0 9 * * *')
+  async remindExpiringVouchers(): Promise<{ reminded: number }> {
+    const now = new Date();
+    const in3Days = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000);
+    const vouchers = await this.voucherModel
+      .find({
+        is_active: true,
+        valid_to: { $gt: now, $lte: in3Days },
+        expiry_reminder_sent_at: null,
+      })
+      .exec();
+    let reminded = 0;
+    for (const v of vouchers) {
+      const daysLeft = Math.max(
+        1,
+        Math.ceil((new Date(v.valid_to!).getTime() - now.getTime()) / (24 * 60 * 60 * 1000)),
+      );
+      // Người nhận: khách đã từng dùng mã và chưa hết lượt dùng cá nhân
+      const userIds = (v.used_user_ids ?? []).map(String);
+      const redemptions = userIds.length
+        ? await this.redemptionModel
+            .find({ voucher_id: v._id, user_id: { $in: userIds } })
+            .lean()
+            .exec()
+        : [];
+      const usedByUser = new Map<string, number>();
+      for (const r of redemptions) {
+        usedByUser.set(String(r.user_id), (usedByUser.get(String(r.user_id)) ?? 0) + 1);
+      }
+      const recipients = userIds.filter(
+        id => (usedByUser.get(id) ?? 0) < (v.per_user_limit ?? 1),
+      );
+      for (const userId of recipients) {
+        await this.notificationsService
+          .create({
+            userId,
+            type: NOTIFICATION_TYPES.VOUCHER_EXPIRING_SOON,
+            title: 'Voucher sắp hết hạn',
+            body: `Voucher ${v.code} sắp hết hạn (còn ${daysLeft} ngày). Hãy dùng trước khi hết hạn nhé!`,
+            payload: { voucher_code: v.code, days_left: daysLeft },
+          })
+          .catch(() => undefined);
+        reminded++;
+      }
+      await this.voucherModel
+        .updateOne({ _id: v._id }, { $set: { expiry_reminder_sent_at: now } })
+        .exec();
+    }
+    if (reminded > 0) {
+      this.logger.log(`[remindExpiringVouchers] Reminded ${reminded} user(s) about expiring vouchers`);
+    }
+    return { reminded };
   }
 }

@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Controller,
   Get,
   Post,
@@ -33,6 +34,22 @@ class BroadcastDto {
   @ApiProperty() @IsString() @IsNotEmpty() body: string;
 }
 
+// B90: phân trang admin — page >= 1, limit 1-100; sai -> 400 (không lặng lẽ mặc định)
+export function parseAdminPagination(
+  page?: number | string,
+  limit?: number | string,
+): { page: number; limit: number } {
+  const p = page === undefined || page === '' ? 1 : Number(page);
+  const l = limit === undefined || limit === '' ? 20 : Number(limit);
+  if (!Number.isInteger(p) || p < 1) {
+    throw new BadRequestException('page phải là số nguyên >= 1');
+  }
+  if (!Number.isInteger(l) || l < 1 || l > 100) {
+    throw new BadRequestException('limit phải là số nguyên trong khoảng 1-100');
+  }
+  return { page: p, limit: l };
+}
+
 @ApiTags('Admin')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -51,6 +68,22 @@ export class AdminController {
 
   // ─── Users ────────────────────────────────────────────────────────────────
 
+  @Get('notifications')
+  @ApiOperation({ summary: '[Admin] B108: Lịch sử thông báo đã gửi' })
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  @ApiQuery({ name: 'type', required: false, type: String })
+  @ApiQuery({ name: 'user_id', required: false, type: String })
+  async getSentNotifications(
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+    @Query('type') type?: string,
+    @Query('user_id') userId?: string,
+  ) {
+    const { page: p, limit: l } = parseAdminPagination(page, limit);
+    return this.adminService.getSentNotifications(p, l, type, userId);
+  }
+
   @Get('users')
   @ApiOperation({ summary: '[Admin] Danh sách người dùng' })
   @ApiQuery({ name: 'search', required: false })
@@ -63,7 +96,8 @@ export class AdminController {
     @Query('page') page?: number,
     @Query('limit') limit?: number,
   ) {
-    return this.adminService.getUsers(search, status, Number(page) || 1, Number(limit) || 20);
+    const { page: pg, limit: lm } = parseAdminPagination(page, limit);
+    return this.adminService.getUsers(search, status, pg, lm);
   }
 
   @Get('users/:id')
@@ -86,6 +120,20 @@ export class AdminController {
     return this.adminService.activateUser(id);
   }
 
+  @Patch('users/:id/delete')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: '[Admin] B107: Xoá mềm tài khoản (không xoá cứng, không xoá admin)' })
+  async deleteUser(@Param('id') id: string) {
+    return this.adminService.deleteUser(id);
+  }
+
+  @Patch('users/:id/restore')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: '[Admin] B107: Khôi phục tài khoản đã xoá mềm' })
+  async restoreUser(@Param('id') id: string) {
+    return this.adminService.restoreUser(id);
+  }
+
   // ─── Helpers / KYC ───────────────────────────────────────────────────────
 
   @Get('helpers')
@@ -104,7 +152,8 @@ export class AdminController {
     @Query('page') page?: number,
     @Query('limit') limit?: number,
   ) {
-    return this.adminService.getHelpers(search, status, Number(page) || 1, Number(limit) || 20);
+    const { page: pg, limit: lm } = parseAdminPagination(page, limit);
+    return this.adminService.getHelpers(search, status, pg, lm);
   }
 
   @Get('helpers/kyc/pending')
@@ -112,7 +161,8 @@ export class AdminController {
   @ApiQuery({ name: 'page', required: false, type: Number })
   @ApiQuery({ name: 'limit', required: false, type: Number })
   async getPendingKyc(@Query('page') page?: number, @Query('limit') limit?: number) {
-    return this.adminService.getPendingKyc(Number(page) || 1, Number(limit) || 20);
+    const { page: pg, limit: lm } = parseAdminPagination(page, limit);
+    return this.adminService.getPendingKyc(pg, lm);
   }
 
   @Patch('helpers/:userId/kyc/approve')
@@ -143,7 +193,8 @@ export class AdminController {
     @Query('page') page?: number,
     @Query('limit') limit?: number,
   ) {
-    return this.adminService.getJobs(status, search, Number(page) || 1, Number(limit) || 20);
+    const { page: pg, limit: lm } = parseAdminPagination(page, limit);
+    return this.adminService.getJobs(status, search, pg, lm);
   }
 
   @Get('jobs/:id')
@@ -189,7 +240,8 @@ export class AdminController {
   @ApiQuery({ name: 'page', required: false, type: Number })
   @ApiQuery({ name: 'limit', required: false, type: Number })
   async getFlaggedSosRequests(@Query('page') page?: number, @Query('limit') limit?: number) {
-    return this.adminService.getFlaggedSosRequests(Number(page) || 1, Number(limit) || 20);
+    const { page: pg, limit: lm } = parseAdminPagination(page, limit);
+    return this.adminService.getFlaggedSosRequests(pg, lm);
   }
 
   @Get('helper-penalty-events')
@@ -204,12 +256,8 @@ export class AdminController {
     @Query('page') page?: number,
     @Query('limit') limit?: number,
   ) {
-    return this.adminService.getHelperPenaltyEvents(
-      helperId,
-      status,
-      Number(page) || 1,
-      Number(limit) || 20,
-    );
+    const { page: pg, limit: lm } = parseAdminPagination(page, limit);
+    return this.adminService.getHelperPenaltyEvents(helperId, status, pg, lm);
   }
 
   @Post('helper-penalty-events/:id/waive')

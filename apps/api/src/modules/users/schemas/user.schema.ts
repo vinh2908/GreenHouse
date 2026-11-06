@@ -73,6 +73,10 @@ export class User {
   @Prop({ default: false })
   is_deleted: boolean;
 
+  // B107: thời điểm xoá mềm (null = chưa xoá)
+  @Prop({ type: Date, default: null })
+  deleted_at?: Date | null;
+
   @Prop({ default: 0 })
   token_version?: number;
 

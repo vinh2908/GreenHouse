@@ -988,7 +988,14 @@ export class SosBackupService implements OnModuleInit, OnModuleDestroy {
     }
 
     const candidate = sos.candidates.find(c => String(c.helper_id) === helperId);
-    if (!candidate || candidate.state !== 'invited') {
+    if (!candidate) {
+      throw new ForbiddenException('Bạn không nằm trong đợt mời hiện tại của yêu cầu này');
+    }
+    // B80: thợ đã rút/từ chối khỏi SOS (state 'declined') thì không chọn/nhận lại được nữa → 409
+    if (candidate.state === 'declined') {
+      throw new ConflictException('Thợ này đã rút khỏi SOS, không thể chọn nữa');
+    }
+    if (candidate.state !== 'invited') {
       throw new ForbiddenException('Bạn không nằm trong đợt mời hiện tại của yêu cầu này');
     }
 
@@ -1207,7 +1214,9 @@ export class SosBackupService implements OnModuleInit, OnModuleDestroy {
     return { sos: this.serialize(claimed), job: swapped };
   }
 
-  async declineSos(helperId: string, sosId: string) {
+  // B105: từ chối lời mời SOS kèm lý do (lưu lại); thợ đã từ chối không được
+  // mời lại trong cùng lần SOS (findCandidates loại trừ state 'declined').
+  async declineSos(helperId: string, sosId: string, reason?: string) {
     if (!Types.ObjectId.isValid(sosId)) throw new BadRequestException('sos_id không hợp lệ');
     const sos = await this.sosModel.findById(sosId).exec();
     if (!sos) throw new NotFoundException('Yêu cầu SOS không tồn tại');
@@ -1224,12 +1233,25 @@ export class SosBackupService implements OnModuleInit, OnModuleDestroy {
           $set: {
             'candidates.$[c].state': 'declined',
             'candidates.$[c].responded_at': now,
+            ...(reason?.trim()
+              ? { 'candidates.$[c].decline_reason': reason.trim().slice(0, 300) }
+              : {}),
           },
         },
         { arrayFilters: [{ 'c.helper_id': new Types.ObjectId(helperId) }] },
       )
       .exec();
     candidate.state = 'declined';
+    if (reason?.trim()) (candidate as any).decline_reason = reason.trim().slice(0, 300);
+
+    // B80: thợ rút/từ chối → cập nhật danh sách trên màn khách ngay
+    const withdrawnPayload = {
+      sos_id: String(sos._id),
+      job_id: String(sos.job_id),
+      helper_id: helperId,
+    };
+    this.gateway.emitToUser(String(sos.customer_id), SOCKET_EVENTS.SOS_BACKUP_CANDIDATE_WITHDRAWN, withdrawnPayload);
+    this.gateway.emitToJob(String(sos.job_id), SOCKET_EVENTS.SOS_BACKUP_CANDIDATE_WITHDRAWN, withdrawnPayload);
 
     // Mọi người được mời đều từ chối → leo thang đợt tiếp ngay (hoặc hết hạn nếu cạn ứng viên)
     const anyoneLeftInvited = sos.candidates.some(c => c.state === 'invited');
@@ -1364,32 +1386,42 @@ export class SosBackupService implements OnModuleInit, OnModuleDestroy {
     return { items: list.map(sos => this.decisionPayload(sos)) };
   }
 
-  /** Trạng thái SOS đang hoạt động của 1 đơn (cho màn hình chi tiết đơn 2 phía) */
-  async getByJob(userId: string, jobId: string) {
-    if (!Types.ObjectId.isValid(jobId)) return { sos: null };
-    const sos = await this.sosModel
-      .findOne({
-        job_id: new Types.ObjectId(jobId),
-        status: { $in: [SosBackupStatus.AWAITING_CUSTOMER, SosBackupStatus.PENDING] },
-        $or: [
-          { original_helper_id: new Types.ObjectId(userId) },
-          { customer_id: new Types.ObjectId(userId) },
-          { 'candidates.helper_id': new Types.ObjectId(userId) },
-        ],
-      })
-      .exec();
-    if (!sos) return { sos: null };
-    return {
-      sos: this.serialize(sos, {
+  /** B81: Trả về mọi SOS của 1 đơn (đang chờ + đã xử lý xong), mới nhất trước.
+   * `status` lọc khi cần. `sos` giữ tương thích cũ = SOS mới nhất khớp lọc
+   * (mặc định là SOS đang hoạt động); `sos_list` là toàn bộ lịch sử. */
+  async getByJob(userId: string, jobId: string, status?: string) {
+    if (!Types.ObjectId.isValid(jobId)) return { sos: null, sos_list: [] };
+    const query: Record<string, unknown> = {
+      job_id: new Types.ObjectId(jobId),
+      $or: [
+        { original_helper_id: new Types.ObjectId(userId) },
+        { customer_id: new Types.ObjectId(userId) },
+        { 'candidates.helper_id': new Types.ObjectId(userId) },
+      ],
+    };
+    if (status && Object.values(SosBackupStatus).includes(status as SosBackupStatus)) {
+      query['status'] = status;
+    }
+    const list = await this.sosModel.find(query).sort({ created_at: -1 }).exec();
+    if (!list.length) return { sos: null, sos_list: [] };
+    const serialized = list.map(s =>
+      this.serialize(s, {
         my_state:
-          sos.original_helper_id.toString() === userId
+          s.original_helper_id.toString() === userId
             ? 'originator'
-            : sos.customer_id.toString() === userId
+            : s.customer_id.toString() === userId
               ? 'customer'
               : 'candidate',
-        my_candidate_state: sos.candidates.find(c => String(c.helper_id) === userId)?.state,
+        my_candidate_state: s.candidates.find(c => String(c.helper_id) === userId)?.state,
       }),
-    };
+    );
+    // Mặc định (không lọc status): sos = SOS đang hoạt động mới nhất, nếu có
+    const active =
+      !status &&
+      serialized.find(
+        s => s.status === SosBackupStatus.AWAITING_CUSTOMER || s.status === SosBackupStatus.PENDING,
+      );
+    return { sos: active ?? serialized[0], sos_list: serialized };
   }
 
   // A95: Lấy toàn bộ lịch sử các lần SOS của đơn hàng

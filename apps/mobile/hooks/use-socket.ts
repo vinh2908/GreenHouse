@@ -237,12 +237,17 @@ export function useJobSocketUpdates(jobId?: string) {
       },
     );
 
-    const unsub2 = socketService.on<{ quote_id: string }>(SOCKET_EVENTS.QUOTE_RECEIVED, () => {
-      qc.invalidateQueries({ queryKey: ['job', jobId, 'quotes'] });
-      Toast.show({ type: 'success', text1: ' Có báo giá mới!' });
-    });
+    const unsub2 = socketService.on<{ job_id?: string; quote_id: string }>(
+      SOCKET_EVENTS.QUOTE_RECEIVED,
+      data => {
+        if (data?.job_id && data.job_id !== jobId) return;
+        qc.invalidateQueries({ queryKey: ['job', jobId, 'quotes'] });
+        Toast.show({ type: 'success', text1: 'Có báo giá mới!' });
+      },
+    );
 
-    const unsub3 = socketService.on<{ job_id: string }>(SOCKET_EVENTS.CONTRACT_AMENDED, () => {
+    const unsub3 = socketService.on<{ job_id?: string }>(SOCKET_EVENTS.CONTRACT_AMENDED, data => {
+      if (data?.job_id && data.job_id !== jobId) return;
       qc.invalidateQueries({ queryKey: ['job', jobId, 'contract'] });
       qc.invalidateQueries({ queryKey: ['job', jobId] });
       Toast.show({
@@ -252,9 +257,10 @@ export function useJobSocketUpdates(jobId?: string) {
       });
     });
 
-    const unsub4 = socketService.on<{ job_id: string; status: string }>(
+    const unsub4 = socketService.on<{ job_id?: string; status: string }>(
       SOCKET_EVENTS.CONTRACT_AMENDMENT_ACCEPTED,
       data => {
+        if (data?.job_id && data.job_id !== jobId) return;
         qc.invalidateQueries({ queryKey: ['job', jobId, 'contract'] });
         qc.invalidateQueries({ queryKey: ['job', jobId] });
         Toast.show({
@@ -264,6 +270,29 @@ export function useJobSocketUpdates(jobId?: string) {
               ? ' Khách hàng đã đồng ý chi phí phát sinh!'
               : 'ℹ Khách hàng đã từ chối khoản phát sinh',
         });
+      },
+    );
+
+    // B116: matching:suggestion_updated — có thợ mới phù hợp với đơn đang mở
+    const unsubMatching = socketService.on<{
+      job_id?: string;
+      helper_id?: string;
+      match_score?: number;
+    }>(SOCKET_EVENTS.MATCHING_SUGGESTION_UPDATED, data => {
+      if (data?.job_id && data.job_id !== jobId) return;
+      qc.invalidateQueries({ queryKey: ['job', jobId, 'suggestions'] });
+      qc.invalidateQueries({ queryKey: ['job', jobId] });
+      qc.invalidateQueries({ queryKey: ['helpers', 'nearby'] });
+    });
+
+    // B114: team:updated — cập nhật ngay khi đội nhóm của đơn thay đổi
+    const unsubTeam = socketService.on<{ job_id?: string }>(
+      SOCKET_EVENTS.TEAM_UPDATED,
+      data => {
+        if (data?.job_id && data.job_id !== jobId) return;
+        qc.invalidateQueries({ queryKey: ['job', jobId] });
+        qc.invalidateQueries({ queryKey: ['jobs'] });
+        qc.invalidateQueries({ queryKey: ['team-invitations'] });
       },
     );
 
@@ -283,9 +312,51 @@ export function useJobSocketUpdates(jobId?: string) {
       unsub3();
       unsub4();
       unsub5();
+      unsubTeam();
+      unsubMatching();
       socketService.leaveJob(jobId);
     };
   }, [jobId, qc]);
+}
+
+// ─── B113: theo dõi trạng thái thợ đang xem (hồ sơ công khai) ────────────────
+export function useHelperStatusSocket(helperId?: string) {
+  const qc = useQueryClient();
+
+  useEffect(() => {
+    if (!helperId) return;
+    socketService.joinHelper(helperId);
+    const unsub = socketService.on<{ helper_id?: string; status?: string }>(
+      SOCKET_EVENTS.HELPER_STATUS_CHANGED,
+      data => {
+        if (data?.helper_id && data.helper_id !== helperId) return;
+        qc.invalidateQueries({ queryKey: ['helper', 'public', helperId] });
+      },
+    );
+    return () => {
+      unsub();
+      socketService.leaveHelper(helperId);
+    };
+  }, [helperId, qc]);
+}
+
+// ─── B116: thợ mới phù hợp — cập nhật danh sách gợi ý/thợ gần đây ────────────
+export function useMatchingSuggestionSocket() {
+  const qc = useQueryClient();
+
+  useEffect(() => {
+    const unsub = socketService.on<{
+      job_id?: string;
+      helper_id?: string;
+    }>(SOCKET_EVENTS.MATCHING_SUGGESTION_UPDATED, data => {
+      qc.invalidateQueries({ queryKey: ['helpers', 'nearby'] });
+      if (data?.job_id) {
+        qc.invalidateQueries({ queryKey: ['job', data.job_id, 'suggestions'] });
+        qc.invalidateQueries({ queryKey: ['job', data.job_id] });
+      }
+    });
+    return () => unsub();
+  }, [qc]);
 }
 
 // ─── Chat messages ───────────────────────────────────────────────────────────
@@ -327,7 +398,9 @@ export function useMonthlyContractSocket(contractId?: string) {
   const qc = useQueryClient();
 
   useEffect(() => {
-    const handleUpdate = () => {
+    // B111: chỉ cập nhật khi event thuộc hợp đồng đang mở (hoặc đang xem danh sách)
+    const handleUpdate = (data?: { contract_id?: string }) => {
+      if (contractId && data?.contract_id && data.contract_id !== contractId) return;
       qc.invalidateQueries({ queryKey: ['monthly-contracts'] });
       if (contractId) {
         qc.invalidateQueries({ queryKey: ['monthly-contract', contractId] });

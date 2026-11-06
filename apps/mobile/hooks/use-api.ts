@@ -90,6 +90,29 @@ export function useMyProfile() {
   });
 }
 
+// B95: đổi email có xác minh mã gửi tới email mới
+export function useRequestEmailChange() {
+  return useMutation({
+    mutationFn: (newEmail: string) =>
+      apiClient.post('/auth/email/change-request', { new_email: newEmail }),
+    onSuccess: () => {
+      Toast.show({ type: 'success', text1: 'Mã xác nhận đã gửi tới email mới' });
+    },
+  });
+}
+
+export function useConfirmEmailChange() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ newEmail, otp }: { newEmail: string; otp: string }) =>
+      apiClient.post('/auth/email/change-confirm', { new_email: newEmail, otp }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['me'] });
+      Toast.show({ type: 'success', text1: 'Đổi email thành công' });
+    },
+  });
+}
+
 export function useUpdateProfile() {
   const qc = useQueryClient();
   return useMutation({
@@ -1034,6 +1057,8 @@ export interface SupportConversation {
   _id: string;
   user_id: string;
   status: 'open' | 'closed';
+  // B77: đơn liên quan (populated { _id, title, status } hoặc ObjectId string)
+  job_id?: string | { _id: string; title?: string; status?: string };
   last_message?: string;
   last_message_at?: string;
   unread_for_admin: number;
@@ -1068,8 +1093,11 @@ export function useMySupportConversation() {
 export function useEnsureSupportConversation() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async () => {
-      const { data } = await apiClient.post('/support/conversations');
+    mutationFn: async (jobId?: string) => {
+      const { data } = await apiClient.post(
+        '/support/conversations',
+        jobId ? { job_id: jobId } : {},
+      );
       return data.data as SupportConversation;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['support', 'mine'] }),
@@ -1098,6 +1126,19 @@ export function useSendSupportMessage() {
     onSuccess: (_, vars) => {
       qc.invalidateQueries({ queryKey: ['support', 'messages', vars.conversationId] });
       qc.invalidateQueries({ queryKey: ['support', 'mine'] });
+    },
+  });
+}
+
+// B75: Mở lại thread hỗ trợ đã đóng
+export function useReopenSupportConversation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (conversationId: string) =>
+      apiClient.patch(`/support/conversations/${conversationId}/reopen`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['support', 'mine'] });
+      qc.invalidateQueries({ queryKey: ['support', 'messages'] });
     },
   });
 }
@@ -1239,8 +1280,12 @@ export function useEstimatePrice() {
 
 // ─── Phân tích ảnh sự cố bằng AI Vision (Roadmap Phase 2 — Feature 17) ─────
 
+// B78: lý do AI không phân tích được ảnh (đồng bộ với backend IssuePhotoUnavailableReason)
+export type IssuePhotoUnavailableReason = 'no_api_key' | 'invalid_image' | 'unsupported' | 'provider_error';
+
 export interface IssuePhotoAnalysis {
   available: boolean;
+  reason?: IssuePhotoUnavailableReason;
   message?: string;
   detected_issue?: string;
   suggested_service_slug?: string | null;
@@ -2196,6 +2241,18 @@ export function useReplyReview() {
   });
 }
 
+// B71: Thợ kháng nghị đánh giá (ghi lý do, gửi admin)
+export function useAppealReview() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ reviewId, reason }: { reviewId: string; reason: string }) =>
+      apiClient.post(`/reviews/${reviewId}/appeal`, { reason }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['reviews'] });
+      Toast.show({ type: 'success', text1: 'Đã gửi kháng nghị cho quản trị viên' });    },
+  });
+}
+
 // ─── Loyalty (Feature 12 — Điểm thành viên & hạng khách) ─────────────────────
 
 export interface LoyaltyAccount {
@@ -2437,9 +2494,11 @@ export function useAcceptSosBackup() {
   });
 }
 
+// B105: từ chối lời mời SOS kèm lý do (qua màn xác nhận)
 export function useDeclineSosBackup() {
   return useMutation({
-    mutationFn: (sosId: string) => apiClient.post(`/sos-backup/${sosId}/decline`),
+    mutationFn: ({ sosId, reason }: { sosId: string; reason?: string }) =>
+      apiClient.post(`/sos-backup/${sosId}/decline`, reason ? { reason } : {}),
   });
 }
 

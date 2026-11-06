@@ -83,6 +83,7 @@ function makeService(withRedeem: boolean) {
     {} as never,
     {} as never,
     { get: () => undefined } as never,
+    {} as never, // B97: NotificationsService
   );
   return { service, userId, jobId, account, txs };
 }

@@ -123,6 +123,31 @@ export class AdminService {
 
   // ─── Users ────────────────────────────────────────────────────────────────
 
+  // B108: lịch sử thông báo đã gửi (mới nhất trước) — nội dung, người nhận,
+  // thời gian, đã đọc/chưa đọc. Dùng chung parseAdminPagination (B90).
+  async getSentNotifications(
+    page = 1,
+    limit = 20,
+    type?: string,
+    userId?: string,
+  ) {
+    const query: Record<string, unknown> = {};
+    if (type) query['type'] = type;
+    if (userId) query['user_id'] = new Types.ObjectId(userId);
+    const [rows, total] = await Promise.all([
+      this.notificationModel
+        .find(query)
+        .populate('user_id', 'full_name phone email')
+        .sort({ created_at: -1 })
+        .skip((page - 1) * limit)
+        .limit(limit)
+        .lean()
+        .exec(),
+      this.notificationModel.countDocuments(query).exec(),
+    ]);
+    return { notifications: rows, total, page, limit, total_pages: Math.ceil(total / limit) };
+  }
+
   async getUsers(search?: string, status?: string, page = 1, limit = 20) {
     const query: Record<string, unknown> = { is_deleted: false };
     if (status) query['status'] = status;
@@ -281,6 +306,49 @@ export class AdminService {
     return user;
   }
 
+  // B107: xoá mềm — không xoá cứng, không xoá admin khác. Người đã xoá không
+  // đăng nhập được (findByPhone/findByEmail lọc is_deleted: false). Hồ sơ thợ
+  // (nếu có) cũng được đánh dấu deleted_at để không còn được đếm (B83).
+  async deleteUser(id: string): Promise<UserDocument> {
+    const target = await this.userModel.findById(id).select('roles is_deleted').exec();
+    if (!target) throw new NotFoundException('Người dùng không tồn tại');
+    if (target.roles?.includes(UserRole.ADMIN)) {
+      throw new BadRequestException('Không thể xóa tài khoản quản trị viên');
+    }
+    if (target.is_deleted) throw new BadRequestException('Tài khoản đã bị xóa trước đó');
+    const user = await this.userModel
+      .findByIdAndUpdate(
+        id,
+        { is_deleted: true, deleted_at: new Date(), status: UserStatus.SUSPENDED },
+        { new: true },
+      )
+      .exec();
+    if (!user) throw new NotFoundException('Người dùng không tồn tại');
+    await this.helperModel
+      .updateOne(
+        { user_id: user._id },
+        { status: HelperStatus.OFFLINE, deleted_at: new Date() },
+      )
+      .exec();
+    return user;
+  }
+
+  // B107: khôi phục tài khoản đã xoá mềm.
+  async restoreUser(id: string): Promise<UserDocument> {
+    const user = await this.userModel
+      .findByIdAndUpdate(
+        id,
+        { is_deleted: false, status: UserStatus.ACTIVE, $unset: { deleted_at: 1 } },
+        { new: true },
+      )
+      .exec();
+    if (!user) throw new NotFoundException('Người dùng không tồn tại');
+    await this.helperModel
+      .updateOne({ user_id: user._id }, { $unset: { deleted_at: 1 } })
+      .exec();
+    return user;
+  }
+
   // ─── Helpers ──────────────────────────────────────────────────────────────
 
   async getHelpers(search?: string, verificationStatus?: string, page = 1, limit = 20) {
@@ -365,6 +433,10 @@ export class AdminService {
       : { user_id: userId };
     const profile = await this.helperModel.findOne(query).exec();
     if (!profile) throw new NotFoundException('Helper profile not found');
+    // B82: chỉ từ chối được e-KYC đang chờ duyệt; đã duyệt/từ chối rồi → 400
+    if (profile.verification_status !== VerificationStatus.PENDING) {
+      throw new BadRequestException('Hồ sơ không ở trạng thái chờ duyệt (PENDING), không thể từ chối');
+    }
     profile.verification_status = VerificationStatus.REJECTED;
     profile.rejection_reason = reason;
     // A helper who loses verification must stop receiving jobs and SOS broadcasts.
@@ -375,6 +447,8 @@ export class AdminService {
       type: NOTIFICATION_TYPES.KYC_REJECTED,
       title: 'Hồ sơ e-KYC bị từ chối',
       body: `Lý do: ${reason}. Vui lòng cập nhật và nộp lại hồ sơ.`,
+      // B104: bấm thông báo mở đúng màn nộp lại e-KYC
+      payload: { screen: 'kyc', route: '/kyc', reason },
     });
     return saved;
   }
@@ -655,42 +729,82 @@ export class AdminService {
       );
     }
 
-    let wallet = await this.walletModel.findOne({ user_id: job.customer_id }).exec();
-    if (!wallet) {
-      wallet = await this.walletModel.create({
-        user_id: job.customer_id,
-        balance: 0,
-      });
+    // B91: hoàn tiền trực tiếp (cộng ví + ghi giao dịch + ghi event đơn) trong 1 transaction
+    const conn: any = (this.walletModel as any)?.db;
+    let session: any = null;
+    if (conn && typeof conn.startSession === 'function') {
+      try {
+        session = await conn.startSession();
+      } catch {
+        session = null;
+      }
     }
+    const doRefund = async (sess?: any) => {
+      let wallet = await this.walletModel
+        .findOne({ user_id: job.customer_id })
+        .session(sess ?? null)
+        .exec();
+      if (!wallet) {
+        [wallet] = await this.walletModel.create(
+          [{ user_id: job.customer_id, balance: 0 }],
+          { session: sess ?? undefined },
+        );
+      }
 
-    const balanceBefore = wallet.balance;
-    const balanceAfter = balanceBefore + amount;
-    wallet.balance = balanceAfter;
-    await wallet.save();
+      const balanceBefore = wallet.balance;
+      const balanceAfter = balanceBefore + amount;
+      wallet.balance = balanceAfter;
+      await wallet.save({ session: sess ?? undefined });
 
-    await this.transactionModel.create({
-      wallet_id: wallet._id,
-      user_id: job.customer_id,
-      job_id: job._id,
-      type: 'refund',
-      status: 'success',
-      amount,
-      balance_before: balanceBefore,
-      balance_after: balanceAfter,
-      description: `Admin hoàn tiền trực tiếp cho đơn #${jobId.slice(-6)}: ${reason}`,
-    });
+      await this.transactionModel.create(
+        [
+          {
+            wallet_id: wallet._id,
+            user_id: job.customer_id,
+            job_id: job._id,
+            type: 'refund',
+            status: 'success',
+            amount,
+            balance_before: balanceBefore,
+            balance_after: balanceAfter,
+            description: `Admin hoàn tiền trực tiếp cho đơn #${jobId.slice(-6)}: ${reason}`,
+          },
+        ],
+        { session: sess ?? undefined },
+      );
 
-    job.events.push({
-      status: job.status,
-      note: `Admin hoàn tiền trực tiếp ${amount.toLocaleString('vi-VN')}₫ vào ví khách hàng. Lý do: ${reason}`,
-      actor_id:
-        adminId && Types.ObjectId.isValid(adminId)
-          ? new Types.ObjectId(adminId)
-          : (job.customer_id as any) || new Types.ObjectId(),
-      actor_role: 'admin',
-      timestamp: new Date(),
-    });
-    await job.save();
+      job.events.push({
+        status: job.status,
+        note: `Admin hoàn tiền trực tiếp ${amount.toLocaleString('vi-VN')}₫ vào ví khách hàng. Lý do: ${reason}`,
+        actor_id:
+          adminId && Types.ObjectId.isValid(adminId)
+            ? new Types.ObjectId(adminId)
+            : (job.customer_id as any) || new Types.ObjectId(),
+        actor_role: 'admin',
+        timestamp: new Date(),
+      });
+      await job.save({ session: sess ?? undefined });
+      return balanceAfter;
+    };
+    let balanceAfter: number;
+    if (session) {
+      try {
+        balanceAfter = await session.withTransaction(async () => doRefund(session));
+      } catch (txErr: any) {
+        if (
+          txErr?.message?.includes('replica set member') ||
+          txErr?.message?.includes('Transaction numbers')
+        ) {
+          balanceAfter = await doRefund(undefined);
+        } else {
+          throw txErr;
+        }
+      } finally {
+        try { await session.endSession(); } catch { /* ignore */ }
+      }
+    } else {
+      balanceAfter = await doRefund(undefined);
+    }
 
     await this.notificationsService
       .create({
@@ -719,6 +833,23 @@ export class AdminService {
     );
   }
 
+  // B83: đếm thợ đang hoạt động — loại trừ hồ sơ đã xoá mềm (deleted_at != null)
+  // và thợ có tài khoản user đã xoá (is_deleted).
+  private async countActiveHelpers(): Promise<number> {
+    const deletedUsers = await this.userModel
+      .find({ is_deleted: true })
+      .select('_id')
+      .lean()
+      .exec();
+    const deletedIds = deletedUsers.map(u => u._id);
+    return this.helperModel
+      .countDocuments({
+        deleted_at: null,
+        ...(deletedIds.length ? { user_id: { $nin: deletedIds } } : {}),
+      })
+      .exec();
+  }
+
   // ─── Dashboard stats ──────────────────────────────────────────────────────
 
   async getDashboardStats() {
@@ -741,14 +872,17 @@ export class AdminService {
       pendingWithdrawals,
     ] = await Promise.all([
       this.userModel.countDocuments({ is_deleted: false }).exec(),
-      this.helperModel.countDocuments().exec(),
+      // B83: tổng thợ loại trừ thợ đã xoá mềm (deleted_at != null hoặc user đã xoá)
+      this.countActiveHelpers(),
       this.helperModel.countDocuments({ verification_status: VerificationStatus.APPROVED }).exec(),
       this.jobModel.countDocuments().exec(),
       this.jobModel.countDocuments({ created_at: { $gte: startOfDay } }).exec(),
       this.jobModel.countDocuments({ created_at: { $gte: startOfMonth } }).exec(),
+      // B84: đơn đang hoạt động = chưa xong và chưa huỷ (loại trừ completed,
+      // cancelled, expired, refunded — kể cả pending_review/disputed còn dở)
       this.jobModel
         .countDocuments({
-          status: { $in: ['confirmed', 'helper_on_the_way', 'helper_arrived', 'in_progress'] },
+          status: { $nin: ['completed', 'cancelled', 'expired', 'refunded'] },
         })
         .exec(),
       this.jobModel.countDocuments({ status: 'completed' }).exec(),

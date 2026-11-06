@@ -19,6 +19,7 @@ import {
 import { DEFAULT_HELPER_AVAILABILITY, HelperAvailability } from './schemas/helper-profile.schema';
 import { HelperStatus, VerificationStatus } from '@homemate/types';
 import { AppGateway } from '../chat/app.gateway';
+import { MatchingService } from '../matching/matching.service';
 
 @Injectable()
 export class HelpersService {
@@ -26,6 +27,8 @@ export class HelpersService {
     @InjectModel(HelperProfile.name)
     private helperModel: Model<HelperProfileDocument>,
     private readonly gateway: AppGateway,
+    // B116: MatchingService không phụ thuộc HelpersModule nên không tạo chu trình
+    private readonly matchingService: MatchingService,
   ) {}
 
   async getOrCreate(userId: string): Promise<HelperProfileDocument> {
@@ -132,11 +135,15 @@ export class HelpersService {
     profile.status = dto.status;
     await profile.save();
 
-    // Realtime: broadcast helper availability change to personal room
-    this.gateway.emitToUser(userId, SOCKET_EVENTS.HELPER_STATUS_CHANGED, {
-      helper_id: userId,
-      status: dto.status,
-    });
+    // B113: phát cho thợ + khách đang xem hồ sơ thợ + khách có đơn đang
+    // hoạt động với thợ đó; không phát cho khách không liên quan.
+    void this.gateway.broadcastHelperStatus(userId, dto.status);
+
+    // B116: thợ vừa ONLINE (đủ điều kiện) → báo cho khách của các đơn đang mở
+    // mà thợ này phù hợp để cập nhật danh sách gợi ý.
+    if (dto.status === HelperStatus.ONLINE) {
+      void this.matchingService.notifyNewSuitableHelper(userId);
+    }
 
     return profile;
   }
@@ -253,6 +260,10 @@ export class HelpersService {
   async rejectKyc(userId: string, reason: string): Promise<HelperProfileDocument> {
     const profile = await this.helperModel.findOne({ user_id: new Types.ObjectId(userId) }).exec();
     if (!profile) throw new NotFoundException('Helper không tồn tại');
+    // B82: chỉ từ chối được e-KYC đang chờ duyệt
+    if (profile.verification_status !== VerificationStatus.PENDING) {
+      throw new BadRequestException('Hồ sơ không ở trạng thái chờ duyệt (PENDING), không thể từ chối');
+    }
     profile.verification_status = VerificationStatus.REJECTED;
     profile.rejection_reason = reason;
     return profile.save();

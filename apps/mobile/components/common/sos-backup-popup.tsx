@@ -2,8 +2,8 @@
 // Hiện trên mọi màn hình khi server phát sóng SOS Backup (khách đã đồng ý đổi
 // người). Ai bấm "Nhận thay" trước (và thắng claim nguyên tử ở server) sẽ nhận
 // đơn; nếu chậm tay server trả 409 → toast "Đã có người khác nhận".
-import { useEffect } from 'react';
-import { Modal, View, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { useEffect, useState } from 'react';
+import { Modal, View, Text, TouchableOpacity, ActivityIndicator, TextInput } from 'react-native';
 import { AlertCircle } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import Toast from 'react-native-toast-message';
@@ -67,9 +67,16 @@ export function SosBackupPopup() {
     }
   };
 
-  const handleDismiss = async () => {
+  // B105: từ chối phải qua màn xác nhận có ô lý do — không từ chối ngay khi bấm
+  const [confirmingDecline, setConfirmingDecline] = useState(false);
+  const [declineReason, setDeclineReason] = useState('');
+
+  const handleConfirmDecline = async () => {
     try {
-      await decline.mutateAsync(incoming.sos_id);
+      await decline.mutateAsync({
+        sosId: incoming.sos_id,
+        reason: declineReason.trim() || undefined,
+      });
       clearIncoming();
     } catch (err: any) {
       const msg = err?.response?.data?.message;
@@ -86,7 +93,7 @@ export function SosBackupPopup() {
   };
 
   return (
-    <Modal transparent animationType="fade" visible onRequestClose={handleDismiss}>
+    <Modal transparent animationType="fade" visible onRequestClose={() => clearIncoming()}>
       <View
         style={{
           flex: 1,
@@ -208,8 +215,64 @@ export function SosBackupPopup() {
               </Text>
             )}
           </TouchableOpacity>
+          {confirmingDecline && (
+            <View style={{ marginTop: 14, gap: 8 }}>
+              <Text style={{ fontSize: fs(14), fontWeight: '800', color: COLORS.gray[900] }}>
+                {lang === 'en'
+                  ? 'Are you sure you want to decline this SOS invitation?'
+                  : 'Bạn chắc chắn muốn từ chối lời mời SOS này?'}
+              </Text>
+              <TextInput
+                value={declineReason}
+                onChangeText={setDeclineReason}
+                placeholder={lang === 'en' ? 'Reason (optional)...' : 'Lý do từ chối (không bắt buộc)...'}
+                multiline
+                style={{
+                  borderWidth: 1,
+                  borderColor: COLORS.gray[300],
+                  borderRadius: 10,
+                  padding: 10,
+                  fontSize: fs(14),
+                  minHeight: 56,
+                  textAlignVertical: 'top',
+                }}
+              />
+              <View style={{ flexDirection: 'row', gap: 8 }}>
+                <TouchableOpacity
+                  onPress={handleConfirmDecline}
+                  disabled={decline.isPending}
+                  style={{
+                    flex: 1,
+                    backgroundColor: '#DC2626',
+                    borderRadius: 12,
+                    paddingVertical: 12,
+                    alignItems: 'center',
+                  }}
+                >
+                  <Text style={{ color: '#fff', fontWeight: '800', fontSize: fs(14) }}>
+                    {lang === 'en' ? 'Confirm decline' : 'Xác nhận từ chối'}
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => setConfirmingDecline(false)}
+                  style={{
+                    flex: 1,
+                    borderWidth: 1,
+                    borderColor: COLORS.gray[300],
+                    borderRadius: 12,
+                    paddingVertical: 12,
+                    alignItems: 'center',
+                  }}
+                >
+                  <Text style={{ fontWeight: '700', fontSize: fs(14), color: COLORS.gray[700] }}>
+                    {lang === 'en' ? 'Back' : 'Quay lại'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
           <TouchableOpacity
-            onPress={handleDismiss}
+            onPress={() => setConfirmingDecline(true)}
             disabled={accept.isPending || decline.isPending}
             style={{
               paddingVertical: 12,

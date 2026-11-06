@@ -156,6 +156,22 @@ export default function SupportPage() {
             </div>
           </CardHeader>
           <CardContent>
+            {selected?.job_id && (
+              <div className="mb-3 rounded-lg bg-blue-50 border border-blue-200 px-3 py-2 text-sm">
+                Đơn liên quan:{' '}
+                <a
+                  href={`/jobs/${typeof selected.job_id === 'object' ? selected.job_id._id : selected.job_id}`}
+                  className="font-medium text-blue-700 underline"
+                >
+                  {typeof selected.job_id === 'object'
+                    ? (selected.job_id.title ?? selected.job_id._id)
+                    : selected.job_id}
+                </a>
+                {typeof selected.job_id === 'object' && selected.job_id.status
+                  ? ` (${selected.job_id.status})`
+                  : ''}
+              </div>
+            )}
             {!selectedId ? (
               <EmptyState message="Chọn một hội thoại ở cột trái để xem và phản hồi." />
             ) : threadLoading ? (

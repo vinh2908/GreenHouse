@@ -9,6 +9,8 @@ import {
   LoyaltyTransactionSchema,
 } from './schemas/loyalty.schema';
 import { Job, JobSchema, Contract, ContractSchema } from '../jobs/schemas/job.schema';
+import { forwardRef } from '@nestjs/common';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 /**
  * LoyaltyModule KHÔNG import JobsModule/PaymentsModule (tránh circular):
@@ -18,6 +20,7 @@ import { Job, JobSchema, Contract, ContractSchema } from '../jobs/schemas/job.sc
  */
 @Module({
   imports: [
+    forwardRef(() => NotificationsModule),
     MongooseModule.forFeature([
       { name: LoyaltyAccount.name, schema: LoyaltyAccountSchema },
       { name: LoyaltyTransaction.name, schema: LoyaltyTransactionSchema },
