@@ -3,8 +3,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { ArrowLeft, Ticket, Copy, Check, Clock, Sparkles } from 'lucide-react-native';
 import Toast from 'react-native-toast-message';
-import dayjs from 'dayjs';
 import { useMyVouchers } from '@/hooks/use-api';
+import { formatDate } from '@/utils/date-format';
 import { useTranslation } from '@/hooks/use-i18n';
 import { Card, COLORS, EmptyState, ErrorState, LoadingSpinner, Badge, useThemeColors } from '@/components/ui';
 import { useState } from 'react';
@@ -185,9 +185,7 @@ export default function CustomerVouchersScreen() {
                     <Text style={{ fontSize: fs(12), color: tc.textMuted }}>
                       {lang === 'en' ? 'Expires: ' : 'Hết hạn: '}
                       {v.valid_to || v.end_date || (v as any).expires_at
-                        ? dayjs(v.valid_to || v.end_date || (v as any).expires_at).format(
-                            'DD/MM/YYYY',
-                          )
+                        ? formatDate(v.valid_to || v.end_date || (v as any).expires_at)
                         : lang === 'en'
                           ? 'No expiration'
                           : 'Không thời hạn'}

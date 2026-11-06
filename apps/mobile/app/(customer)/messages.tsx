@@ -2,10 +2,7 @@ import { View, Text, ScrollView, TouchableOpacity, RefreshControl } from 'react-
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { MessageCircle, ChevronRight, ShieldCheck } from 'lucide-react-native';
-import dayjs from 'dayjs';
-import relativeTime from 'dayjs/plugin/relativeTime';
-import 'dayjs/locale/vi';
-import { formatConversationTime } from '@/utils/date-format';
+import { formatConversationTime, formatTime } from '@/utils/date-format';
 import { useConversations } from '@/hooks/use-api';
 import { useAuthStore } from '@/stores/auth.store';
 import { useTranslation } from '@/hooks/use-i18n';
@@ -20,7 +17,6 @@ import {
   useThemeColors,
 } from '@/components/ui';
 
-dayjs.extend(relativeTime);
 
 export default function ConversationsScreen() {
   const router = useRouter();
@@ -51,7 +47,7 @@ export default function ConversationsScreen() {
         {/* A97: Thời gian cập nhật lần cuối — đổi mỗi khi tải lại dữ liệu */}
         {dataUpdatedAt ? (
           <Text style={{ fontSize: fs(11), color: tc.textMuted, marginTop: 2 }}>
-            {lang === 'en' ? 'Updated at' : 'Cập nhật lúc'} {dayjs(dataUpdatedAt).format('HH:mm')}
+            {lang === 'en' ? 'Updated at' : 'Cập nhật lúc'} {formatTime(dataUpdatedAt)}
           </Text>
         ) : null}
       </View>

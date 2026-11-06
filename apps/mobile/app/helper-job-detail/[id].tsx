@@ -755,7 +755,7 @@ export default function HelperJobDetailScreen() {
             )}
             {job.preferred_date && (
               <Badge
-                label={formatDate(dayjs(job.preferred_date))}
+                label={formatDate(job.preferred_date)}
                 color={COLORS.gray[100]}
                 textColor={COLORS.gray[700]}
               />
@@ -790,7 +790,7 @@ export default function HelperJobDetailScreen() {
               <Text style={{ fontSize: fs(13), color: '#78350F', lineHeight: 18 }}>
                 {lang === 'en' ? 'Scheduled: ' : 'Ngày hẹn: '}
                 {job.preferred_date
-                  ? formatDate(dayjs(job.preferred_date))
+                  ? formatDate(job.preferred_date)
                   : lang === 'en'
                     ? 'Earliest'
                     : 'Sớm nhất'}

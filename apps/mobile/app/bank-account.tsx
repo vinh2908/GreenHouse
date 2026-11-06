@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { formatDateTime } from '@/utils/date-format';
+import { formatDateTime, formatTime } from '@/utils/date-format';
 import {
   View,
   Text,
@@ -431,7 +431,7 @@ export default function BankAccountScreen() {
           {/* A97: Thời gian cập nhật lần cuối */}
           {txUpdatedAt ? (
             <Text style={{ fontSize: fs(11), color: tc.textMuted, marginTop: 2 }}>
-              {lang === 'en' ? 'Updated at' : 'Cập nhật lúc'} {dayjs(txUpdatedAt).format('HH:mm')}
+              {lang === 'en' ? 'Updated at' : 'Cập nhật lúc'} {formatTime(txUpdatedAt)}
             </Text>
           ) : null}
 
