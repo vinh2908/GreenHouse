@@ -158,78 +158,80 @@ export default function VouchersPage() {
           ) : vouchers.length === 0 ? (
             <EmptyState message="Chưa có mã giảm giá nào — bấm “Tạo mã mới” để bắt đầu." />
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Mã</TableHead>
-                  <TableHead>Ưu đãi</TableHead>
-                  <TableHead>Điều kiện</TableHead>
-                  <TableHead>Đã dùng</TableHead>
-                  <TableHead>Hiệu lực</TableHead>
-                  <TableHead>Trạng thái</TableHead>
-                  <TableHead className="text-right">Thao tác</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {vouchers.map(v => (
-                  <TableRow key={v._id}>
-                    <TableCell className="font-bold">{v.code}</TableCell>
-                    <TableCell>
-                      {v.discount_type === 'percent'
-                        ? `Giảm ${v.discount_value}%${
-                            v.max_discount_amount
-                              ? ` (tối đa ${formatVND(v.max_discount_amount)})`
-                              : ''
-                          }`
-                        : `Giảm ${formatVND(v.discount_value)}`}
-                      {v.description && (
-                        <p className="text-xs text-muted-foreground">{v.description}</p>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-sm">
-                      Đơn ≥ {formatVND(v.min_order_amount ?? 0)} · tối đa {v.per_user_limit}{' '}
-                      lần/khách
-                    </TableCell>
-                    <TableCell>
-                      {v.used_count}
-                      {v.total_usage_limit ? ` / ${v.total_usage_limit}` : ' / ∞'}
-                    </TableCell>
-                    <TableCell className="text-sm">
-                      {v.valid_from ? new Date(v.valid_from).toLocaleDateString('vi-VN') : '—'}
-                      {' → '}
-                      {v.valid_to ? new Date(v.valid_to).toLocaleDateString('vi-VN') : '—'}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={v.is_active ? 'default' : 'secondary'}>
-                        {v.is_active ? 'Đang bật' : 'Đã tắt'}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right space-x-2">
-                      <Button size="sm" variant="outline" onClick={() => edit(v)}>
-                        Sửa
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant={v.is_active ? 'destructive' : 'default'}
-                        onClick={() => setToggleVoucherTarget(v)}
-                      >
-                        {v.is_active ? 'Tắt' : 'Bật'}
-                      </Button>
-                      {v.used_count === 0 && (
+            <div className="overflow-x-auto w-full">
+              <Table className="min-w-[700px]">
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Mã</TableHead>
+                    <TableHead>Ưu đãi</TableHead>
+                    <TableHead>Điều kiện</TableHead>
+                    <TableHead>Đã dùng</TableHead>
+                    <TableHead>Hiệu lực</TableHead>
+                    <TableHead>Trạng thái</TableHead>
+                    <TableHead className="text-right">Thao tác</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {vouchers.map(v => (
+                    <TableRow key={v._id}>
+                      <TableCell className="font-bold">{v.code}</TableCell>
+                      <TableCell>
+                        {v.discount_type === 'percent'
+                          ? `Giảm ${v.discount_value}%${
+                              v.max_discount_amount
+                                ? ` (tối đa ${formatVND(v.max_discount_amount)})`
+                                : ''
+                            }`
+                          : `Giảm ${formatVND(v.discount_value)}`}
+                        {v.description && (
+                          <p className="text-xs text-muted-foreground">{v.description}</p>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-sm">
+                        Đơn ≥ {formatVND(v.min_order_amount ?? 0)} · tối đa {v.per_user_limit}{' '}
+                        lần/khách
+                      </TableCell>
+                      <TableCell>
+                        {v.used_count}
+                        {v.total_usage_limit ? ` / ${v.total_usage_limit}` : ' / ∞'}
+                      </TableCell>
+                      <TableCell className="text-sm">
+                        {v.valid_from ? new Date(v.valid_from).toLocaleDateString('vi-VN') : '—'}
+                        {' → '}
+                        {v.valid_to ? new Date(v.valid_to).toLocaleDateString('vi-VN') : '—'}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={v.is_active ? 'default' : 'secondary'}>
+                          {v.is_active ? 'Đang bật' : 'Đã tắt'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right space-x-2">
+                        <Button size="sm" variant="outline" onClick={() => edit(v)}>
+                          Sửa
+                        </Button>
                         <Button
                           size="sm"
-                          variant="ghost"
-                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                          onClick={() => setDeleteVoucherTarget(v)}
+                          variant={v.is_active ? 'destructive' : 'default'}
+                          onClick={() => setToggleVoucherTarget(v)}
                         >
-                          Xóa
+                          {v.is_active ? 'Tắt' : 'Bật'}
                         </Button>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                        {v.used_count === 0 && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                            onClick={() => setDeleteVoucherTarget(v)}
+                          >
+                            Xóa
+                          </Button>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           )}
 
           {(data?.total_pages ?? 1) > 1 && (
@@ -416,7 +418,8 @@ export default function VouchersPage() {
               <strong className="text-foreground font-mono">{deleteVoucherTarget.code}</strong>?
             </p>
             <div className="rounded-lg bg-amber-500/10 p-3 text-xs text-amber-700">
-              Voucher này chưa có lượt sử dụng nào ({deleteVoucherTarget.used_count} lượt dùng). Hành động này không thể hoàn tác.
+              Voucher này chưa có lượt sử dụng nào ({deleteVoucherTarget.used_count} lượt dùng).
+              Hành động này không thể hoàn tác.
             </div>
             <div className="flex justify-end gap-2 pt-2">
               <Button variant="outline" onClick={() => setDeleteVoucherTarget(null)}>

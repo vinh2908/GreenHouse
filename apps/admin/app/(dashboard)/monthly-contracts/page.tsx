@@ -82,64 +82,66 @@ export default function AdminMonthlyContractsPage() {
           ) : !contracts.length ? (
             <EmptyState message="Không có hợp đồng tháng nào được tạo theo tiêu chí lọc này." />
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Hợp đồng</TableHead>
-                  <TableHead>Khách hàng</TableHead>
-                  <TableHead>Thợ phụ trách</TableHead>
-                  <TableHead>Lương tháng</TableHead>
-                  <TableHead>Khung giờ</TableHead>
-                  <TableHead>Trạng thái</TableHead>
-                  <TableHead>Ngày tạo</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {contracts.map(c => {
-                  const st = STATUS_MAP[c.status] ?? {
-                    label: c.status,
-                    variant: 'secondary' as const,
-                  };
-                  return (
-                    <TableRow key={c._id}>
-                      <TableCell className="font-semibold text-primary">{c.title}</TableCell>
-                      <TableCell>
-                        {c.customer_id ? (
-                          <div>
-                            <p className="font-medium">{c.customer_id.full_name || 'Khách'}</p>
-                            <p className="text-xs text-muted-foreground">{c.customer_id.phone}</p>
-                          </div>
-                        ) : (
-                          <span className="text-xs text-muted-foreground">—</span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {c.helper_id ? (
-                          <div>
-                            <p className="font-medium">{c.helper_id.full_name || 'Thợ'}</p>
-                            <p className="text-xs text-muted-foreground">{c.helper_id.phone}</p>
-                          </div>
-                        ) : (
-                          <span className="text-xs text-muted-foreground">—</span>
-                        )}
-                      </TableCell>
-                      <TableCell className="font-bold text-emerald-600">
-                        {formatVND(c.monthly_amount ?? 0)}
-                      </TableCell>
-                      <TableCell className="text-xs text-muted-foreground">
-                        {c.time_start || '08:00'} – {c.time_end || '12:00'}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={st.variant}>{st.label}</Badge>
-                      </TableCell>
-                      <TableCell className="text-xs text-muted-foreground">
-                        {formatDateTime(c.created_at)}
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
+            <div className="overflow-x-auto w-full">
+              <Table className="min-w-[700px]">
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Hợp đồng</TableHead>
+                    <TableHead>Khách hàng</TableHead>
+                    <TableHead>Thợ phụ trách</TableHead>
+                    <TableHead>Lương tháng</TableHead>
+                    <TableHead>Khung giờ</TableHead>
+                    <TableHead>Trạng thái</TableHead>
+                    <TableHead>Ngày tạo</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {contracts.map(c => {
+                    const st = STATUS_MAP[c.status] ?? {
+                      label: c.status,
+                      variant: 'secondary' as const,
+                    };
+                    return (
+                      <TableRow key={c._id}>
+                        <TableCell className="font-semibold text-primary">{c.title}</TableCell>
+                        <TableCell>
+                          {c.customer_id ? (
+                            <div>
+                              <p className="font-medium">{c.customer_id.full_name || 'Khách'}</p>
+                              <p className="text-xs text-muted-foreground">{c.customer_id.phone}</p>
+                            </div>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">—</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {c.helper_id ? (
+                            <div>
+                              <p className="font-medium">{c.helper_id.full_name || 'Thợ'}</p>
+                              <p className="text-xs text-muted-foreground">{c.helper_id.phone}</p>
+                            </div>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">—</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="font-bold text-emerald-600">
+                          {formatVND(c.monthly_amount ?? 0)}
+                        </TableCell>
+                        <TableCell className="text-xs text-muted-foreground">
+                          {c.time_start || '08:00'} – {c.time_end || '12:00'}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={st.variant}>{st.label}</Badge>
+                        </TableCell>
+                        <TableCell className="text-xs text-muted-foreground">
+                          {formatDateTime(c.created_at)}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
           )}
 
           {data && data.total_pages > 1 && (

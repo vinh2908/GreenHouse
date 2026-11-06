@@ -81,86 +81,88 @@ export default function JobsPage() {
         </Button>
       </form>
 
-      <div className="rounded-lg border bg-card">
+      <div className="rounded-lg border bg-card overflow-hidden max-w-full">
         {isLoading ? (
           <Loading />
         ) : !data?.jobs?.length ? (
           <EmptyState message="Không tìm thấy job nào" />
         ) : (
           <>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Tiêu đề</TableHead>
-                  <TableHead>Khách hàng</TableHead>
-                  <TableHead>Helper</TableHead>
-                  <TableHead>Dịch vụ</TableHead>
-                  <TableHead>Trạng thái</TableHead>
-                  <TableHead>Ngày tạo</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {data.jobs.map(
-                  (job: {
-                    _id: string;
-                    title: string;
-                    customer_id: { full_name: string; phone: string } | null;
-                    helper_id: { full_name: string; phone: string } | null;
-                    service_id: { name: string } | null;
-                    status: string;
-                    address: { district: string; city: string };
-                    created_at: string;
-                  }) => (
-                    <TableRow key={job._id}>
-                      <TableCell>
-                        <div>
-                          <Link
-                            href={`/jobs/${job._id}`}
-                            className="block font-medium max-w-[200px] truncate hover:underline"
-                          >
-                            {job.title}
-                          </Link>
-                          <p className="text-xs text-muted-foreground">
-                            {job.address?.district}, {job.address?.city}
-                          </p>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div>
-                          <p className="text-sm">{job.customer_id?.full_name ?? '—'}</p>
-                          <p className="text-xs text-muted-foreground font-mono">
-                            {job.customer_id?.phone}
-                          </p>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        {job.helper_id ? (
+            <div className="overflow-x-auto w-full">
+              <Table className="min-w-[700px]">
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Tiêu đề</TableHead>
+                    <TableHead>Khách hàng</TableHead>
+                    <TableHead>Helper</TableHead>
+                    <TableHead>Dịch vụ</TableHead>
+                    <TableHead>Trạng thái</TableHead>
+                    <TableHead>Ngày tạo</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {data.jobs.map(
+                    (job: {
+                      _id: string;
+                      title: string;
+                      customer_id: { full_name: string; phone: string } | null;
+                      helper_id: { full_name: string; phone: string } | null;
+                      service_id: { name: string } | null;
+                      status: string;
+                      address: { district: string; city: string };
+                      created_at: string;
+                    }) => (
+                      <TableRow key={job._id}>
+                        <TableCell>
                           <div>
-                            <p className="text-sm">{job.helper_id.full_name}</p>
-                            <p className="text-xs text-muted-foreground font-mono">
-                              {job.helper_id.phone}
+                            <Link
+                              href={`/jobs/${job._id}`}
+                              className="block font-medium max-w-[200px] truncate hover:underline"
+                            >
+                              {job.title}
+                            </Link>
+                            <p className="text-xs text-muted-foreground">
+                              {job.address?.district}, {job.address?.city}
                             </p>
                           </div>
-                        ) : (
-                          <span className="text-muted-foreground text-sm">—</span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <span className="text-sm">{job.service_id?.name ?? '—'}</span>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={STATUS_BADGE[job.status] ?? 'secondary'}>
-                          {STATUS_VI[job.status] ?? job.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
-                        {formatDateTime(job.created_at)}
-                      </TableCell>
-                    </TableRow>
-                  ),
-                )}
-              </TableBody>
-            </Table>
+                        </TableCell>
+                        <TableCell>
+                          <div>
+                            <p className="text-sm">{job.customer_id?.full_name ?? '—'}</p>
+                            <p className="text-xs text-muted-foreground font-mono">
+                              {job.customer_id?.phone}
+                            </p>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          {job.helper_id ? (
+                            <div>
+                              <p className="text-sm">{job.helper_id.full_name}</p>
+                              <p className="text-xs text-muted-foreground font-mono">
+                                {job.helper_id.phone}
+                              </p>
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground text-sm">—</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <span className="text-sm">{job.service_id?.name ?? '—'}</span>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={STATUS_BADGE[job.status] ?? 'secondary'}>
+                            {STATUS_VI[job.status] ?? job.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          {formatDateTime(job.created_at)}
+                        </TableCell>
+                      </TableRow>
+                    ),
+                  )}
+                </TableBody>
+              </Table>
+            </div>
             <Pagination page={page} totalPages={data.total_pages ?? 1} onPageChange={setPage} />
           </>
         )}

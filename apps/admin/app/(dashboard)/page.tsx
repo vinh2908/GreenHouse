@@ -79,9 +79,14 @@ export default function DashboardPage() {
               {(stats as any)?.pending_actions_count}
             </span>
             <div>
-              <p className="font-semibold text-sm">{(stats as any)?.pending_actions_count} việc đang chờ Admin xử lý</p>
+              <p className="font-semibold text-sm">
+                {(stats as any)?.pending_actions_count} việc đang chờ Admin xử lý
+              </p>
               <p className="text-xs text-amber-700">
-                {(stats as any)?.jobs?.pending ?? 0} đơn chờ báo giá • {(stats as any)?.jobs?.disputed ?? 0} tranh chấp • {(stats as any)?.helpers?.pending_kyc ?? 0} hồ sơ e-KYC • {(stats as any)?.pending_withdrawals ?? 0} yêu cầu rút tiền
+                {(stats as any)?.jobs?.pending ?? 0} đơn chờ báo giá •{' '}
+                {(stats as any)?.jobs?.disputed ?? 0} tranh chấp •{' '}
+                {(stats as any)?.helpers?.pending_kyc ?? 0} hồ sơ e-KYC •{' '}
+                {(stats as any)?.pending_withdrawals ?? 0} yêu cầu rút tiền
               </p>
             </div>
           </div>

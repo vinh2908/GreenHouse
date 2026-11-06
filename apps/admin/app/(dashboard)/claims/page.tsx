@@ -103,59 +103,61 @@ export default function ClaimsPage() {
           ) : claims.length === 0 ? (
             <EmptyState message="Chưa có yêu cầu bồi thường nào." />
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Mã đơn</TableHead>
-                  <TableHead>Khách</TableHead>
-                  <TableHead>Đơn gốc</TableHead>
-                  <TableHead>Số tiền yêu cầu</TableHead>
-                  <TableHead>Trạng thái</TableHead>
-                  <TableHead>Ngày gửi</TableHead>
-                  <TableHead className="text-right">Thao tác</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {claims.map(c => (
-                  <TableRow key={c._id}>
-                    <TableCell className="font-bold">#{c._id.slice(-6).toUpperCase()}</TableCell>
-                    <TableCell>
-                      {personName(c.customer_id)}
-                      {personPhone(c.customer_id) && (
-                        <p className="text-xs text-muted-foreground">
-                          {personPhone(c.customer_id)}
-                        </p>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-sm">
-                      {jobTitle(c.job_id)}
-                      <p className="text-xs text-muted-foreground">
-                        #{jobIdOf(c.job_id).slice(-6)}
-                      </p>
-                    </TableCell>
-                    <TableCell>
-                      {c.requested_amount ? formatVND(c.requested_amount) : '—'}
-                      {c.status === 'paid' && (
-                        <p className="text-xs text-green-700">
-                          Đã trả {formatVND(c.approved_amount)}
-                        </p>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={STATUS_META[c.status].variant}>
-                        {STATUS_META[c.status].label}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-sm">{formatDateTime(c.created_at)}</TableCell>
-                    <TableCell className="text-right">
-                      <Button size="sm" variant="outline" onClick={() => setSelectedId(c._id)}>
-                        Xem & xử lý
-                      </Button>
-                    </TableCell>
+            <div className="overflow-x-auto w-full">
+              <Table className="min-w-[700px]">
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Mã đơn</TableHead>
+                    <TableHead>Khách</TableHead>
+                    <TableHead>Đơn gốc</TableHead>
+                    <TableHead>Số tiền yêu cầu</TableHead>
+                    <TableHead>Trạng thái</TableHead>
+                    <TableHead>Ngày gửi</TableHead>
+                    <TableHead className="text-right">Thao tác</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {claims.map(c => (
+                    <TableRow key={c._id}>
+                      <TableCell className="font-bold">#{c._id.slice(-6).toUpperCase()}</TableCell>
+                      <TableCell>
+                        {personName(c.customer_id)}
+                        {personPhone(c.customer_id) && (
+                          <p className="text-xs text-muted-foreground">
+                            {personPhone(c.customer_id)}
+                          </p>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-sm">
+                        {jobTitle(c.job_id)}
+                        <p className="text-xs text-muted-foreground">
+                          #{jobIdOf(c.job_id).slice(-6)}
+                        </p>
+                      </TableCell>
+                      <TableCell>
+                        {c.requested_amount ? formatVND(c.requested_amount) : '—'}
+                        {c.status === 'paid' && (
+                          <p className="text-xs text-green-700">
+                            Đã trả {formatVND(c.approved_amount)}
+                          </p>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={STATUS_META[c.status].variant}>
+                          {STATUS_META[c.status].label}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-sm">{formatDateTime(c.created_at)}</TableCell>
+                      <TableCell className="text-right">
+                        <Button size="sm" variant="outline" onClick={() => setSelectedId(c._id)}>
+                          Xem & xử lý
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           )}
 
           {(data?.total_pages ?? 1) > 1 && (

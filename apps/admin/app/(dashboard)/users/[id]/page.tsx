@@ -114,8 +114,8 @@ function JobsTable({
 }) {
   if (!jobs.length) return <EmptyState message="Chưa có công việc" />;
   return (
-    <div className="overflow-x-auto">
-      <Table>
+    <div className="overflow-x-auto w-full">
+      <Table className="min-w-[600px]">
         <TableHeader>
           <TableRow>
             <TableHead>Công việc</TableHead>
@@ -425,11 +425,11 @@ export default function UserDetailPage() {
             <CardHeader>
               <CardTitle className="text-base">Giao dịch gần đây</CardTitle>
             </CardHeader>
-            <CardContent className="overflow-x-auto">
+            <CardContent className="overflow-x-auto w-full">
               {!data.transactions.length ? (
                 <EmptyState message="Chưa có giao dịch" />
               ) : (
-                <Table>
+                <Table className="min-w-[600px]">
                   <TableHeader>
                     <TableRow>
                       <TableHead>Loại</TableHead>
