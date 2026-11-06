@@ -123,6 +123,31 @@ export class AdminService {
 
   // ─── Users ────────────────────────────────────────────────────────────────
 
+  // B108: lịch sử thông báo đã gửi (mới nhất trước) — nội dung, người nhận,
+  // thời gian, đã đọc/chưa đọc. Dùng chung parseAdminPagination (B90).
+  async getSentNotifications(
+    page = 1,
+    limit = 20,
+    type?: string,
+    userId?: string,
+  ) {
+    const query: Record<string, unknown> = {};
+    if (type) query['type'] = type;
+    if (userId) query['user_id'] = new Types.ObjectId(userId);
+    const [rows, total] = await Promise.all([
+      this.notificationModel
+        .find(query)
+        .populate('user_id', 'full_name phone email')
+        .sort({ created_at: -1 })
+        .skip((page - 1) * limit)
+        .limit(limit)
+        .lean()
+        .exec(),
+      this.notificationModel.countDocuments(query).exec(),
+    ]);
+    return { notifications: rows, total, page, limit, total_pages: Math.ceil(total / limit) };
+  }
+
   async getUsers(search?: string, status?: string, page = 1, limit = 20) {
     const query: Record<string, unknown> = { is_deleted: false };
     if (status) query['status'] = status;

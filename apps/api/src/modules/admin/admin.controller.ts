@@ -68,6 +68,22 @@ export class AdminController {
 
   // ─── Users ────────────────────────────────────────────────────────────────
 
+  @Get('notifications')
+  @ApiOperation({ summary: '[Admin] B108: Lịch sử thông báo đã gửi' })
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  @ApiQuery({ name: 'type', required: false, type: String })
+  @ApiQuery({ name: 'user_id', required: false, type: String })
+  async getSentNotifications(
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+    @Query('type') type?: string,
+    @Query('user_id') userId?: string,
+  ) {
+    const { page: p, limit: l } = parseAdminPagination(page, limit);
+    return this.adminService.getSentNotifications(p, l, type, userId);
+  }
+
   @Get('users')
   @ApiOperation({ summary: '[Admin] Danh sách người dùng' })
   @ApiQuery({ name: 'search', required: false })
