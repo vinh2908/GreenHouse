@@ -17,7 +17,10 @@ import {
   RefreshTokenDto,
   SendOtpDto,
   VerifyOtpDto,
+  ForgotPasswordDto,
   ResetPasswordDto,
+  VerifyEmailDto,
+  ResendEmailOtpDto,
 } from './dto/auth.dto';
 import { OtpService } from './otp.service';
 import { JwtPayload, UserRole } from '@homemate/types';
@@ -52,6 +55,14 @@ export class AuthService {
       password_hash: passwordHash,
       email: dto.email,
     });
+
+    if (dto.email) {
+      try {
+        await this.otpService.sendOtp(dto.email, 'verify');
+      } catch (err: any) {
+        this.logger.warn(`Failed to send verification OTP on register: ${err?.message ?? err}`);
+      }
+    }
 
     const tokens = await this.generateTokens(user);
 
@@ -171,27 +182,106 @@ export class AuthService {
 
   // ─── Forgot / Reset Password ───────────────────────────────────────────────
 
-  async forgotPassword(phone: string) {
-    const user = await this.usersService.findByPhone(phone);
-    if (!user) {
-      // Don't reveal if phone exists
-      return { message: 'Nếu số điện thoại tồn tại, OTP đã được gửi.' };
+  async forgotPassword(input: ForgotPasswordDto | string) {
+    let email: string | undefined;
+    let phone: string | undefined;
+
+    if (typeof input === 'string') {
+      const trimmed = input.trim();
+      if (trimmed.includes('@')) {
+        email = trimmed.toLowerCase();
+      } else {
+        phone = trimmed;
+      }
+    } else if (input) {
+      email = input.email?.trim()?.toLowerCase();
+      phone = input.phone?.trim();
     }
-    await this.otpService.sendOtp(phone, 'reset');
-    return { message: 'OTP đặt lại mật khẩu đã được gửi.' };
+
+    if (!email && !phone) {
+      throw new BadRequestException('Vui lòng cung cấp email hoặc số điện thoại đã đăng ký');
+    }
+
+    if (email) {
+      const user = await this.usersService.findByEmail(email);
+      if (user) {
+        await this.otpService.sendOtp(email, 'reset');
+      }
+      return { message: 'Nếu email tồn tại trong hệ thống, mã OTP đã được gửi đến email của bạn.' };
+    }
+
+    if (phone) {
+      const user = await this.usersService.findByPhone(phone);
+      if (user) {
+        const target = user.email || user.phone;
+        await this.otpService.sendOtp(target, 'reset');
+      }
+      return { message: 'Nếu số điện thoại tồn tại, mã OTP đã được gửi.' };
+    }
   }
 
   async resetPassword(dto: ResetPasswordDto) {
-    const isValid = await this.otpService.verifyOtp(dto.phone, dto.otp, 'reset');
-    if (!isValid) throw new BadRequestException('OTP không đúng hoặc đã hết hạn');
+    const email = dto.email?.trim()?.toLowerCase();
+    const phone = dto.phone?.trim();
 
-    const user = await this.usersService.findByPhone(dto.phone);
-    if (!user) throw new BadRequestException('Số điện thoại không tồn tại');
+    if (!email && !phone) {
+      throw new BadRequestException('Vui lòng cung cấp email hoặc số điện thoại đã nhận mã OTP');
+    }
+
+    let user = email ? await this.usersService.findByEmail(email) : null;
+    if (!user && phone) {
+      user = await this.usersService.findByPhone(phone);
+    }
+    if (!user) throw new BadRequestException('Tài khoản không tồn tại trong hệ thống');
+
+    const targetsToTry = [
+      email,
+      phone,
+      user.email,
+      user.phone,
+    ].filter(Boolean) as string[];
+
+    let isValid = false;
+    for (const target of targetsToTry) {
+      if (await this.otpService.verifyOtp(target, dto.otp, 'reset')) {
+        isValid = true;
+        break;
+      }
+    }
+
+    if (!isValid) throw new BadRequestException('Mã OTP không đúng hoặc đã hết hạn');
 
     const passwordHash = await bcrypt.hash(dto.new_password, 12);
     await this.usersService.updatePassword(user.id as string, passwordHash);
 
     return { message: 'Đặt lại mật khẩu thành công' };
+  }
+
+  // ─── Email Verification ───────────────────────────────────────────────────
+
+  async verifyEmail(dto: VerifyEmailDto) {
+    const email = dto.email.trim().toLowerCase();
+    const isValid = await this.otpService.verifyOtp(email, dto.otp, 'verify');
+    if (!isValid) throw new BadRequestException('Mã OTP không đúng hoặc đã hết hạn');
+
+    const user = await this.usersService.findByEmail(email);
+    if (!user) throw new BadRequestException('Email chưa được đăng ký trong hệ thống');
+
+    await this.usersService.markVerified(user.id as string);
+
+    return {
+      message: 'Xác minh email thành công',
+      is_verified: true,
+    };
+  }
+
+  async resendEmailOtp(dto: ResendEmailOtpDto) {
+    const email = dto.email.trim().toLowerCase();
+    const user = await this.usersService.findByEmail(email);
+    if (!user) throw new BadRequestException('Email chưa được đăng ký trong hệ thống');
+
+    await this.otpService.sendOtp(email, 'verify');
+    return { message: 'Mã xác minh OTP đã được gửi đến email của bạn.' };
   }
 
   // ─── Token Generation ──────────────────────────────────────────────────────

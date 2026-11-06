@@ -5,6 +5,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { OtpService, Otp, OtpSchema } from './otp.service';
+import { MailService } from './mail.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { JwtAuthOptionalGuard } from './guards/jwt-optional.guard';
@@ -18,7 +19,7 @@ import { UsersModule } from '../users/users.module';
     UsersModule,
   ],
   controllers: [AuthController],
-  providers: [AuthService, OtpService, JwtStrategy, JwtAuthGuard, JwtAuthOptionalGuard],
-  exports: [AuthService, JwtAuthGuard, JwtAuthOptionalGuard, JwtStrategy],
+  providers: [AuthService, OtpService, MailService, JwtStrategy, JwtAuthGuard, JwtAuthOptionalGuard],
+  exports: [AuthService, OtpService, MailService, JwtAuthGuard, JwtAuthOptionalGuard, JwtStrategy],
 })
 export class AuthModule {}

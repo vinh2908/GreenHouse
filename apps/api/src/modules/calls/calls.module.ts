@@ -10,6 +10,7 @@ import { CallSession, CallSessionSchema } from './schemas/call-session.schema';
 import { Job, JobSchema } from '../jobs/schemas/job.schema';
 import { User, UserSchema } from '../users/schemas/user.schema';
 import { ChatModule } from '../chat/chat.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 /**
  * Chọn adapter theo env CALL_PROVIDER (mặc định 'stringee').
@@ -36,6 +37,7 @@ const callProviderFactory = {
       { name: User.name, schema: UserSchema },
     ]),
     ChatModule, // AppGateway — báo cuộc gọi đến qua socket
+    NotificationsModule,
   ],
   controllers: [CallsController],
   providers: [CallsService, StringeeProvider, VoipPushService, callProviderFactory],

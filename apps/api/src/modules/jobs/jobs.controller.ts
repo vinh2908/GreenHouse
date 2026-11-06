@@ -206,6 +206,18 @@ export class JobsController {
     return this.jobsService.getJobQuotes(jobId, user.sub, user.active_role);
   }
 
+  @Post(':jobId/quotes/:quoteId/reject')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: '[Customer] Từ chối một báo giá cụ thể của thợ' })
+  async rejectQuote(
+    @CurrentUser() user: { sub: string },
+    @Param('jobId') jobId: string,
+    @Param('quoteId') quoteId: string,
+    @Body() dto?: { reason?: string },
+  ) {
+    return this.jobsService.rejectQuote(user.sub, jobId, quoteId, dto?.reason);
+  }
+
   // ─── Helper: Submit quote ─────────────────────────────────────────────────
 
   @Post(':jobId/quotes')

@@ -31,7 +31,7 @@ export default function CustomerJobsScreen() {
   const isSwitchingRole = useAuthStore(s => s.isSwitchingRole);
   const isHelper = user?.active_role === 'helper';
 
-  const { data: jobs, isLoading, isError, isRefetching, refetch } = useMyJobs(TABS[activeTab].key);
+  const { data: jobs, isLoading, isError, isRefetching, refetch, dataUpdatedAt } = useMyJobs(TABS[activeTab].key);
   const insets = useSafeAreaInsets();
 
   useEffect(() => {
@@ -136,7 +136,7 @@ export default function CustomerJobsScreen() {
             {t('jobs_title')}
           </Text>
           <Text style={{ fontSize: fs(12), color: COLORS.gray[500], marginTop: 2 }}>
-            {t('jobs_subtitle')}
+            {t('jobs_subtitle')} {dataUpdatedAt ? `• ${lang === 'en' ? 'Updated' : 'Cập nhật'} lúc ${dayjs(dataUpdatedAt).format('HH:mm')}` : ''}
           </Text>
         </View>
         <TouchableOpacity

@@ -176,10 +176,40 @@ export default function KycPendingPage() {
   const [rejectingId, setRejectingId] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState('');
   const [viewer, setViewer] = useState<Viewer | null>(null);
+  const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
+  const [showBatchModal, setShowBatchModal] = useState(false);
+  const [approvingSingle, setApprovingSingle] = useState<KycHelper | null>(null);
 
   const { data, isLoading } = usePendingKyc({ page });
   const approve = useApproveKyc();
   const reject = useRejectKyc();
+
+  const helpers = data?.helpers ?? [];
+  const eligibleHelpers = helpers.filter(
+    (h: KycHelper) => h.user_id?._id && h.id_card_front && h.id_card_back && h.selfie_photo,
+  );
+
+  const toggleSelectAll = () => {
+    if (selectedUserIds.length === eligibleHelpers.length) {
+      setSelectedUserIds([]);
+    } else {
+      setSelectedUserIds(eligibleHelpers.map((h: KycHelper) => h.user_id!._id));
+    }
+  };
+
+  const toggleSelectOne = (userId: string) => {
+    setSelectedUserIds(prev =>
+      prev.includes(userId) ? prev.filter(id => id !== userId) : [...prev, userId],
+    );
+  };
+
+  const handleBatchApprove = async () => {
+    for (const uid of selectedUserIds) {
+      await approve.mutateAsync(uid).catch(() => undefined);
+    }
+    setSelectedUserIds([]);
+    setShowBatchModal(false);
+  };
 
   const handleReject = (userId: string) => {
     if (!rejectReason.trim()) return;
@@ -190,24 +220,45 @@ export default function KycPendingPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">KYC chờ duyệt</h1>
-        <p className="text-muted-foreground">
-          <span className="font-semibold text-foreground">{data?.total ?? 0}</span> hồ sơ đang chờ
-          xét duyệt
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">KYC chờ duyệt</h1>
+          <p className="text-muted-foreground">
+            <span className="font-semibold text-foreground">{data?.total ?? 0}</span> hồ sơ đang
+            chờ xét duyệt
+          </p>
+        </div>
+        {selectedUserIds.length > 0 && (
+          <Button
+            className="bg-green-600 hover:bg-green-700 text-white"
+            onClick={() => setShowBatchModal(true)}
+          >
+            Duyệt hàng loạt ({selectedUserIds.length} thợ)
+          </Button>
+        )}
       </div>
 
       <div className="rounded-lg border bg-card">
         {isLoading ? (
           <Loading />
-        ) : !data?.helpers?.length ? (
+        ) : !helpers.length ? (
           <EmptyState message="Không có hồ sơ KYC nào chờ duyệt" />
         ) : (
           <>
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-10">
+                    <input
+                      type="checkbox"
+                      className="rounded"
+                      checked={
+                        eligibleHelpers.length > 0 &&
+                        selectedUserIds.length === eligibleHelpers.length
+                      }
+                      onChange={toggleSelectAll}
+                    />
+                  </TableHead>
                   <TableHead>Họ tên</TableHead>
                   <TableHead>SĐT</TableHead>
                   <TableHead>CCCD</TableHead>
@@ -216,87 +267,109 @@ export default function KycPendingPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {data.helpers.map((h: KycHelper) => (
-                  <Fragment key={h._id}>
-                    <TableRow>
-                      <TableCell>
-                        {h.user_id ? (
-                          <Link
-                            href={`/users/${h.user_id._id}`}
-                            className="font-medium hover:underline"
-                          >
-                            {h.user_id.full_name}
-                          </Link>
-                        ) : (
-                          <p className="font-medium">—</p>
-                        )}
-                      </TableCell>
-                      <TableCell className="font-mono text-sm">{h.user_id?.phone ?? '—'}</TableCell>
-                      <TableCell className="font-mono text-sm">{h.id_card_number ?? '—'}</TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
-                        {formatDateTime(h.created_at)}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex gap-2 justify-end">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="text-green-600 border-green-300 hover:bg-green-50"
-                            loading={approve.isPending}
-                            onClick={() => h.user_id && approve.mutate(h.user_id._id)}
-                          >
-                            <CheckCircle className="mr-1 h-3 w-3" />
-                            Duyệt
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="text-red-600 border-red-300 hover:bg-red-50"
-                            onClick={() => setRejectingId(rejectingId === h._id ? null : h._id)}
-                          >
-                            <XCircle className="mr-1 h-3 w-3" />
-                            Từ chối
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                    {/* KYC Images row */}
-                    <TableRow>
-                      <TableCell colSpan={5} className="py-2 px-4 bg-muted/30">
-                        <KycImages helper={h} onOpen={setViewer} />
-                        {/* Reject form */}
-                        {rejectingId === h._id && (
-                          <div className="mt-3 flex gap-2 items-center">
-                            <input
-                              className="flex-1 h-8 rounded border border-input px-2 text-sm"
-                              placeholder="Lý do từ chối..."
-                              value={rejectReason}
-                              onChange={e => setRejectReason(e.target.value)}
-                            />
+                {helpers.map((h: KycHelper) => {
+                  const uid = h.user_id?._id;
+                  const isEligible = Boolean(
+                    uid && h.id_card_front && h.id_card_back && h.selfie_photo,
+                  );
+                  const isSelected = uid ? selectedUserIds.includes(uid) : false;
+
+                  return (
+                    <Fragment key={h._id}>
+                      <TableRow>
+                        <TableCell>
+                          <input
+                            type="checkbox"
+                            className="rounded"
+                            disabled={!isEligible}
+                            checked={isSelected}
+                            onChange={() => uid && toggleSelectOne(uid)}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          {h.user_id ? (
+                            <Link
+                              href={`/users/${h.user_id._id}`}
+                              className="font-medium hover:underline"
+                            >
+                              {h.user_id.full_name}
+                            </Link>
+                          ) : (
+                            <p className="font-medium">—</p>
+                          )}
+                          {!isEligible && (
+                            <p className="text-xs text-amber-600 font-medium">Thiếu giấy tờ</p>
+                          )}
+                        </TableCell>
+                        <TableCell className="font-mono text-sm">{h.user_id?.phone ?? '—'}</TableCell>
+                        <TableCell className="font-mono text-sm">
+                          {h.id_card_number ?? '—'}
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          {formatDateTime(h.created_at)}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex gap-2 justify-end">
                             <Button
                               size="sm"
-                              variant="destructive"
-                              loading={reject.isPending}
-                              onClick={() => h.user_id && handleReject(h.user_id._id)}
+                              variant="outline"
+                              className="text-green-600 border-green-300 hover:bg-green-50"
+                              disabled={!isEligible}
+                              onClick={() => setApprovingSingle(h)}
                             >
-                              Xác nhận từ chối
+                              <CheckCircle className="mr-1 h-3 w-3" />
+                              Duyệt
                             </Button>
                             <Button
                               size="sm"
-                              variant="ghost"
-                              onClick={() => {
-                                setRejectingId(null);
-                                setRejectReason('');
-                              }}
+                              variant="outline"
+                              className="text-red-600 border-red-300 hover:bg-red-50"
+                              onClick={() => setRejectingId(rejectingId === h._id ? null : h._id)}
                             >
-                              Hủy
+                              <XCircle className="mr-1 h-3 w-3" />
+                              Từ chối
                             </Button>
                           </div>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  </Fragment>
-                ))}
+                        </TableCell>
+                      </TableRow>
+                      {/* KYC Images row */}
+                      <TableRow>
+                        <TableCell colSpan={6} className="py-2 px-4 bg-muted/30">
+                          <KycImages helper={h} onOpen={setViewer} />
+                          {/* Reject form */}
+                          {rejectingId === h._id && (
+                            <div className="mt-3 flex gap-2 items-center">
+                              <input
+                                className="flex-1 h-8 rounded border border-input px-2 text-sm"
+                                placeholder="Lý do từ chối..."
+                                value={rejectReason}
+                                onChange={e => setRejectReason(e.target.value)}
+                              />
+                              <Button
+                                size="sm"
+                                variant="destructive"
+                                loading={reject.isPending}
+                                onClick={() => h.user_id && handleReject(h.user_id._id)}
+                              >
+                                Xác nhận từ chối
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => {
+                                  setRejectingId(null);
+                                  setRejectReason('');
+                                }}
+                              >
+                                Hủy
+                              </Button>
+                            </div>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    </Fragment>
+                  );
+                })}
               </TableBody>
             </Table>
             <Pagination page={page} totalPages={data.total_pages ?? 1} onPageChange={setPage} />
@@ -305,6 +378,89 @@ export default function KycPendingPage() {
       </div>
 
       {viewer && <KycViewer viewer={viewer} onChange={setViewer} />}
+
+      {/* A99: Màn xác nhận duyệt e-KYC hàng loạt */}
+      {showBatchModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-lg rounded-xl bg-card p-6 shadow-xl border space-y-4">
+            <h3 className="text-lg font-bold">Xác nhận duyệt e-KYC hàng loạt</h3>
+            <p className="text-sm text-muted-foreground">
+              Bạn đang chuẩn bị duyệt e-KYC cho{' '}
+              <strong className="text-foreground">{selectedUserIds.length}</strong> thợ sau đây:
+            </p>
+            <div className="max-h-48 overflow-y-auto rounded-lg bg-muted/40 p-3 text-sm space-y-1">
+              {helpers
+                .filter((h: KycHelper) => h.user_id?._id && selectedUserIds.includes(h.user_id._id))
+                .map((h: KycHelper, idx: number) => (
+                  <div key={h._id} className="flex justify-between items-center py-1 border-b last:border-none">
+                    <span className="font-medium">
+                      {idx + 1}. {h.user_id?.full_name}
+                    </span>
+                    <span className="text-xs text-muted-foreground font-mono">{h.user_id?.phone}</span>
+                  </div>
+                ))}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Tất cả thợ được chọn đã được kiểm tra đủ 3 loại giấy tờ (CCCD trước/sau + chân dung) và đang ở trạng thái chờ duyệt.
+            </p>
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="outline" onClick={() => setShowBatchModal(false)}>
+                Hủy bỏ
+              </Button>
+              <Button
+                className="bg-green-600 hover:bg-green-700 text-white"
+                loading={approve.isPending}
+                onClick={handleBatchApprove}
+              >
+                Xác nhận duyệt {selectedUserIds.length} thợ
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* A99: Màn xác nhận duyệt đơn lẻ */}
+      {approvingSingle && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-md rounded-xl bg-card p-6 shadow-xl border space-y-4">
+            <h3 className="text-lg font-bold">Xác nhận duyệt hồ sơ e-KYC</h3>
+            <div className="rounded-lg bg-muted/40 p-4 space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Họ tên thợ:</span>
+                <span className="font-semibold">{approvingSingle.user_id?.full_name}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Số điện thoại:</span>
+                <span className="font-mono">{approvingSingle.user_id?.phone}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Số CCCD:</span>
+                <span className="font-mono">{approvingSingle.id_card_number || '—'}</span>
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Hồ sơ đã được kiểm tra đầy đủ giấy tờ hợp lệ. Sau khi duyệt, thợ có thể bắt đầu nhận việc trên hệ thống.
+            </p>
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="outline" onClick={() => setApprovingSingle(null)}>
+                Hủy bỏ
+              </Button>
+              <Button
+                className="bg-green-600 hover:bg-green-700 text-white"
+                loading={approve.isPending}
+                onClick={async () => {
+                  if (approvingSingle.user_id) {
+                    await approve.mutateAsync(approvingSingle.user_id._id);
+                    setApprovingSingle(null);
+                  }
+                }}
+              >
+                Đồng ý duyệt
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

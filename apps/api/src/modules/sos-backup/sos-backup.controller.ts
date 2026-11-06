@@ -71,6 +71,13 @@ export class SosBackupController {
     return this.sosService.getByJob(user.sub, jobId);
   }
 
+  // A95: Lịch sử các lần SOS của đơn hàng
+  @Get('history/by-job/:jobId')
+  @ApiOperation({ summary: 'Toàn bộ lịch sử các lần SOS của 1 đơn hàng' })
+  async historyByJob(@CurrentUser() user: { sub: string }, @Param('jobId') jobId: string) {
+    return this.sosService.getHistoryByJob(user.sub, jobId);
+  }
+
   @Post(':sosId/accept')
   @ApiOperation({
     summary:

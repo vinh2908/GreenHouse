@@ -371,6 +371,25 @@ export class VouchersService {
     return voucher;
   }
 
+  // A100: Xóa voucher (chỉ khi chưa có người dùng)
+  async adminDelete(id: string): Promise<{ message: string }> {
+    const voucher = await this.voucherModel.findById(id).exec();
+    if (!voucher) throw new NotFoundException('Voucher không tồn tại');
+    if (voucher.used_count > 0) {
+      throw new BadRequestException(
+        'Không thể xóa voucher đã có người sử dụng. Bạn có thể tắt voucher thay vì xóa.',
+      );
+    }
+    const redemptionsCount = await this.redemptionModel
+      .countDocuments({ voucher_id: voucher._id })
+      .exec();
+    if (redemptionsCount > 0) {
+      throw new BadRequestException('Không thể xóa voucher đã có lịch sử áp dụng');
+    }
+    await this.voucherModel.findByIdAndDelete(id).exec();
+    return { message: 'Đã xóa voucher thành công' };
+  }
+
   async adminRedemptions(id: string, page = 1, limit = 20) {
     const voucher = await this.voucherModel.findById(id).exec();
     if (!voucher) throw new NotFoundException('Voucher không tồn tại');

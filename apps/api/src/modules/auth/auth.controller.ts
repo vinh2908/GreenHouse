@@ -10,6 +10,8 @@ import {
   VerifyOtpDto,
   ForgotPasswordDto,
   ResetPasswordDto,
+  VerifyEmailDto,
+  ResendEmailOtpDto,
 } from './dto/auth.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
@@ -81,9 +83,9 @@ export class AuthController {
   @Post('forgot-password')
   @HttpCode(HttpStatus.OK)
   @Throttle({ default: { ttl: 60000, limit: 3 } })
-  @ApiOperation({ summary: 'Yêu cầu đặt lại mật khẩu — gửi OTP' })
+  @ApiOperation({ summary: 'Yêu cầu đặt lại mật khẩu — gửi OTP qua email' })
   async forgotPassword(@Body() dto: ForgotPasswordDto) {
-    return this.authService.forgotPassword(dto.phone);
+    return this.authService.forgotPassword(dto);
   }
 
   @Public()
@@ -93,6 +95,26 @@ export class AuthController {
   @ApiOperation({ summary: 'Đặt lại mật khẩu bằng OTP' })
   async resetPassword(@Body() dto: ResetPasswordDto) {
     return this.authService.resetPassword(dto);
+  }
+
+  // ─── Email Verification ───────────────────────────────────────────────────
+
+  @Public()
+  @Post('verify-email')
+  @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { ttl: 60000, limit: 5 } })
+  @ApiOperation({ summary: 'Xác minh tài khoản bằng mã OTP gửi về email' })
+  async verifyEmail(@Body() dto: VerifyEmailDto) {
+    return this.authService.verifyEmail(dto);
+  }
+
+  @Public()
+  @Post('verify-email/resend')
+  @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { ttl: 60000, limit: 3 } })
+  @ApiOperation({ summary: 'Gửi lại mã OTP xác minh email' })
+  async resendEmailOtp(@Body() dto: ResendEmailOtpDto) {
+    return this.authService.resendEmailOtp(dto);
   }
 
   // ─── Verify session ────────────────────────────────────────────────────────

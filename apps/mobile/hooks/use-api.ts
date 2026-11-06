@@ -46,14 +46,36 @@ export function useResendOtp() {
 
 export function useForgotPassword() {
   return useMutation({
-    mutationFn: (phone: string) => apiClient.post('/auth/forgot-password', { phone }),
+    mutationFn: (data: { email?: string; phone?: string } | string) => {
+      const payload =
+        typeof data === 'string'
+          ? data.includes('@')
+            ? { email: data.trim() }
+            : { phone: data.trim() }
+          : data;
+      return apiClient.post('/auth/forgot-password', payload);
+    },
   });
 }
 
 export function useResetPassword() {
   return useMutation({
-    mutationFn: (data: { phone: string; otp: string; new_password: string }) =>
+    mutationFn: (data: { email?: string; phone?: string; otp: string; new_password: string }) =>
       apiClient.post('/auth/reset-password', data),
+  });
+}
+
+export function useVerifyEmail() {
+  return useMutation({
+    mutationFn: (data: { email: string; otp: string }) =>
+      apiClient.post('/auth/verify-email', data),
+  });
+}
+
+export function useResendEmailOtp() {
+  return useMutation({
+    mutationFn: (email: string) =>
+      apiClient.post('/auth/verify-email/resend', { email }),
   });
 }
 
@@ -329,6 +351,40 @@ export function useSelectQuote() {
   });
 }
 
+// A89: Khách hàng từ chối báo giá của thợ
+export function useRejectQuote() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      jobId,
+      quoteId,
+      reason,
+    }: {
+      jobId: string;
+      quoteId: string;
+      reason?: string;
+    }) => apiClient.post(`/jobs/${jobId}/quotes/${quoteId}/reject`, { reason }),
+    onSuccess: (_, vars) => {
+      qc.invalidateQueries({ queryKey: ['job', vars.jobId] });
+      qc.invalidateQueries({ queryKey: ['job-quotes', vars.jobId] });
+      qc.invalidateQueries({ queryKey: ['jobs', 'my'] });
+    },
+  });
+}
+
+// A95: Lấy toàn bộ lịch sử SOS của đơn hàng
+export function useJobSosHistory(jobId?: string) {
+  return useQuery({
+    queryKey: ['sos-history', jobId],
+    queryFn: async () => {
+      if (!jobId) return [];
+      const { data } = await apiClient.get(`/sos-backup/history/by-job/${jobId}`);
+      return data.data ?? data;
+    },
+    enabled: Boolean(jobId),
+  });
+}
+
 export function useCancelJob() {
   const qc = useQueryClient();
   return useMutation({
@@ -473,14 +529,17 @@ export function useRespondAmendment() {
       amendmentId,
       action,
       decision,
+      reason,
     }: {
       jobId: string;
       amendmentId: string;
       action?: 'accept' | 'reject';
       decision?: 'accept' | 'reject';
+      reason?: string;
     }) =>
       apiClient.patch(`/jobs/${jobId}/contract/amendments/${amendmentId}`, {
         action: action || decision || 'reject',
+        reason,
       }),
     onSuccess: (_, vars) => {
       qc.invalidateQueries({ queryKey: ['job', vars.jobId, 'contract'] });

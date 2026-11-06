@@ -258,6 +258,12 @@ export class Job {
   @Prop({ min: 1, max: 5 })
   customer_rating?: number;
 
+  @Prop({ type: [String], default: [] })
+  reminders_sent?: string[];
+
+  @Prop({ default: false })
+  review_reminder_sent?: boolean;
+
   @Prop()
   customer_review?: string;
 
@@ -366,6 +372,9 @@ export class Quote {
   @Prop()
   notes?: string;
 
+  @Prop()
+  rejection_reason?: string;
+
   @Prop({ type: [MaterialsBreakdownSchema], default: [] })
   materials_breakdown: { name: string; quantity: number; unit_price: number }[];
 
@@ -401,6 +410,7 @@ const ContractAmendmentSchema = {
   reason: { type: String, required: true },
   photos: { type: [String], default: [] },
   status: { type: String, enum: ['pending', 'accepted', 'rejected'], default: 'pending' },
+  rejection_reason: { type: String },
   created_at: { type: Date, default: Date.now },
   responded_at: { type: Date },
 };
@@ -459,6 +469,7 @@ export class Contract {
     reason: string;
     photos: string[];
     status: 'pending' | 'accepted' | 'rejected';
+    rejection_reason?: string;
     created_at: Date;
     responded_at?: Date;
   }[];

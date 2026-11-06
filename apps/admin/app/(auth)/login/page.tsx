@@ -50,7 +50,7 @@ export default function LoginPage() {
               id="phone"
               label="Số điện thoại"
               type="tel"
-              placeholder="0901234567"
+              placeholder="09xxxxxxxx"
               value={phone}
               onChange={e => setPhone(e.target.value)}
               required

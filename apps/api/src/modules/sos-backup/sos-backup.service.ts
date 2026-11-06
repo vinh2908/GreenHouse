@@ -1355,6 +1355,21 @@ export class SosBackupService implements OnModuleInit, OnModuleDestroy {
     };
   }
 
+  // A95: Lấy toàn bộ lịch sử các lần SOS của đơn hàng
+  async getHistoryByJob(userId: string, jobId: string) {
+    if (!Types.ObjectId.isValid(jobId)) return [];
+    const list = await this.sosModel
+      .find({
+        job_id: new Types.ObjectId(jobId),
+      })
+      .populate('original_helper_id', 'full_name phone avatar')
+      .populate('replacement_helper_id', 'full_name phone avatar')
+      .sort({ created_at: -1 })
+      .lean()
+      .exec();
+    return list;
+  }
+
   // ═══════════════════════════════════════════════════════════════════════════
   // 7) Leo thang / hết hạn / sweep định kỳ
   // ═══════════════════════════════════════════════════════════════════════════

@@ -234,6 +234,8 @@ export const NOTIFICATION_TYPES = {
   SOS_BACKUP_REQUEST: 'sos_backup_request', // Ứng viên: có thợ cần người thay thế đơn
   SOS_BACKUP_HELPER_REPLACED: 'sos_backup_helper_replaced', // Khách + thợ cũ: đơn đã được thay thợ
   SOS_BACKUP_EXPIRED: 'sos_backup_expired', // Khách + admin: SOS backup hết hạn chưa có người thay
+  JOB_CREATED: 'job_created',
+  JOB_STATUS_CHANGED: 'job_status_changed',
   SYSTEM: 'system',
 } as const;
 

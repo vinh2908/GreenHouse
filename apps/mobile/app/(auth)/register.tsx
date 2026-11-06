@@ -62,12 +62,22 @@ export default function RegisterScreen() {
         Toast.show({
           type: 'success',
           text1: lang === 'en' ? 'Registration successful!' : 'Đăng ký thành công!',
-          text2: lang === 'en' ? `Welcome ${data.user.full_name} to Green House` : `Chào mừng ${data.user.full_name} đến với Green House`,
+          text2:
+            lang === 'en'
+              ? 'A verification code has been sent to your email'
+              : 'Mã xác minh OTP đã được gửi đến email của bạn',
         });
-        router.replace('/(auth)/select-role');
+        router.replace({ pathname: '/(auth)/otp', params: { email: cleanEmail, phone: cleanPhone } });
       } else {
-        Toast.show({ type: 'success', text1: lang === 'en' ? 'Registration successful! Please log in' : 'Đăng ký thành công! Vui lòng đăng nhập' });
-        router.replace('/(auth)/login');
+        Toast.show({
+          type: 'success',
+          text1: lang === 'en' ? 'Registration successful!' : 'Đăng ký thành công!',
+          text2:
+            lang === 'en'
+              ? 'Please check your email for the verification code'
+              : 'Vui lòng kiểm tra email để nhận mã OTP',
+        });
+        router.replace({ pathname: '/(auth)/otp', params: { email: cleanEmail, phone: cleanPhone } });
       }
     } catch (err: unknown) {
       const responseData = (err as any)?.response?.data;

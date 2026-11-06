@@ -56,7 +56,7 @@ export class UsersService {
       ...data,
       roles: [UserRole.CUSTOMER],
       active_role: UserRole.CUSTOMER,
-      is_verified: true, // Kích hoạt ngay khi tạo tài khoản
+      is_verified: false, // A103: Bắt buộc xác minh email trước khi tạo đơn/nhận việc
     });
     return user.save();
   }

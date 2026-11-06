@@ -7,6 +7,7 @@ import { Job, JobSchema } from '../jobs/schemas/job.schema';
 import { HelperProfile, HelperProfileSchema } from '../helpers/schemas/helper-profile.schema';
 import { JobsModule } from '../jobs/jobs.module';
 import { FavoritesModule } from '../favorites/favorites.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { FavoritesModule } from '../favorites/favorites.module';
     ]),
     JobsModule,
     FavoritesModule,
+    NotificationsModule,
   ],
   controllers: [RecurringController],
   providers: [RecurringService],

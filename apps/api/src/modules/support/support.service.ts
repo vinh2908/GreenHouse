@@ -116,9 +116,13 @@ export class SupportService {
       .findById(message._id)
       .populate('sender_id', 'full_name avatar')
       .exec();
-    // Đồng bộ đa thiết bị cho chính user; admin web sẽ poll thấy tin mới.
+    // Đồng bộ đa thiết bị cho chính user và phát tức thì tới phòng admin (A86)
     try {
       this.gateway.emitToUser(userId, SOCKET_EVENTS.SUPPORT_MESSAGE, {
+        conversation_id: conversationId,
+        message: populated,
+      });
+      this.gateway.emitToAdmins(SOCKET_EVENTS.SUPPORT_MESSAGE, {
         conversation_id: conversationId,
         message: populated,
       });
@@ -174,6 +178,10 @@ export class SupportService {
     const userId = conv.user_id.toString();
     try {
       this.gateway.emitToUser(userId, SOCKET_EVENTS.SUPPORT_MESSAGE, {
+        conversation_id: conversationId,
+        message: populated,
+      });
+      this.gateway.emitToAdmins(SOCKET_EVENTS.SUPPORT_MESSAGE, {
         conversation_id: conversationId,
         message: populated,
       });

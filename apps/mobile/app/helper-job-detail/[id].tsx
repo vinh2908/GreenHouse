@@ -186,6 +186,11 @@ export default function HelperJobDetailScreen() {
   const [amendMaterialsCost, setAmendMaterialsCost] = useState('');
   const [amendReason, setAmendReason] = useState('');
 
+  // ── Cancellation States (A76) ─────────────────────────────────────────
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [cancelReasonChip, setCancelReasonChip] = useState('');
+  const [cancelReasonText, setCancelReasonText] = useState('');
+
   // ── Completion Evidence States ───────────────────────────────────────────
   const [showCompleteModal, setShowCompleteModal] = useState(false);
   const [completionPhotos, setCompletionPhotos] = useState<string[]>([]);
@@ -304,36 +309,40 @@ export default function HelperJobDetailScreen() {
   };
 
   const handleHelperCancelJob = () => {
-    Alert.alert(
-      lang === 'en' ? 'Cancel assigned job?' : 'Hủy nhận công việc?',
-      lang === 'en'
-        ? 'Are you sure you want to cancel this job? Cancelling after confirmation may affect your reliability rating.'
-        : 'Bạn có chắc chắn muốn hủy đơn hàng này? Việc hủy đơn sau khi nhận có thể ảnh hưởng đến điểm đánh giá và tỷ lệ hoàn thành của bạn.',
-      [
-        { text: t('common_cancel'), style: 'cancel' },
-        {
-          text: lang === 'en' ? 'Confirm cancel' : 'Xác nhận hủy',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await cancelJobMutation.mutateAsync({
-                jobId: id!,
-                reason: lang === 'en' ? 'Helper cancelled due to emergency' : 'Thợ có việc đột xuất không thể tiếp tục',
-              });
-              Toast.show({
-                type: 'success',
-                text1: lang === 'en' ? 'Job cancelled' : 'Đã hủy đơn hàng thành công',
-              });
-            } catch (err: any) {
-              Alert.alert(
-                t('common_error'),
-                err?.response?.data?.message || err?.message || (lang === 'en' ? 'Failed to cancel job' : 'Không thể hủy đơn hàng'),
-              );
-            }
-          },
-        },
-      ],
-    );
+    setCancelReasonChip('');
+    setCancelReasonText('');
+    setShowCancelModal(true);
+  };
+
+  const handleConfirmHelperCancel = async () => {
+    const finalReason = cancelReasonChip
+      ? cancelReasonText.trim()
+        ? `${cancelReasonChip}: ${cancelReasonText.trim()}`
+        : cancelReasonChip
+      : cancelReasonText.trim();
+    if (!finalReason) {
+      Toast.show({
+        type: 'error',
+        text1: lang === 'en' ? 'Please select or enter a cancellation reason' : 'Vui lòng chọn hoặc nhập lý do hủy đơn',
+      });
+      return;
+    }
+    try {
+      await cancelJobMutation.mutateAsync({
+        jobId: id!,
+        reason: finalReason,
+      });
+      setShowCancelModal(false);
+      Toast.show({
+        type: 'success',
+        text1: lang === 'en' ? 'Job cancelled' : 'Đã hủy đơn hàng thành công',
+      });
+    } catch (err: any) {
+      Alert.alert(
+        t('common_error'),
+        err?.response?.data?.message || err?.message || (lang === 'en' ? 'Failed to cancel job' : 'Không thể hủy đơn hàng'),
+      );
+    }
   };
 
   const handleSubmitAmendment = async () => {
@@ -1175,6 +1184,131 @@ export default function HelperJobDetailScreen() {
           </View>
         )}
       </ScrollView>
+
+      {/* A76: Modal xác nhận hủy nhận việc của thợ */}
+      <Modal
+        visible={showCancelModal}
+        transparent
+        animationType="fade"
+        statusBarTranslucent
+        onRequestClose={() => {
+          if (!cancelJobMutation.isPending) setShowCancelModal(false);
+        }}
+      >
+        <View
+          style={{
+            flex: 1,
+            justifyContent: 'center',
+            alignItems: 'center',
+            backgroundColor: 'rgba(17,24,39,0.5)',
+            padding: 20,
+          }}
+        >
+          <View
+            style={{
+              width: '100%',
+              maxWidth: 420,
+              backgroundColor: '#fff',
+              borderRadius: 20,
+              padding: 20,
+              gap: 14,
+            }}
+          >
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Text style={{ fontSize: fs(18), fontWeight: '800', color: COLORS.gray[900] }}>
+                {lang === 'en' ? 'Cancel Assigned Job' : 'Hủy nhận công việc'}
+              </Text>
+              <TouchableOpacity onPress={() => setShowCancelModal(false)} disabled={cancelJobMutation.isPending}>
+                <X size={22} color={COLORS.gray[500]} />
+              </TouchableOpacity>
+            </View>
+
+            <Text style={{ fontSize: fs(13), color: COLORS.gray[600], lineHeight: 19 }}>
+              {lang === 'en'
+                ? 'Cancelling after accepting may affect your completion rate. Please provide a clear reason.'
+                : 'Việc hủy đơn sau khi đã nhận có thể ảnh hưởng đến điểm uy tín và tỷ lệ hoàn thành. Vui lòng cung cấp lý do rõ ràng.'}
+            </Text>
+
+            {/* Quick Reason Chips */}
+            <View style={{ gap: 8 }}>
+              <Text style={{ fontSize: fs(13), fontWeight: '700', color: COLORS.gray[800] }}>
+                {lang === 'en' ? 'Cancellation reason (required) *' : 'Lý do hủy đơn (bắt buộc) *'}
+              </Text>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+                {[
+                  lang === 'en' ? 'Personal emergency' : 'Việc gia đình đột xuất',
+                  lang === 'en' ? 'Vehicle / tool breakdown' : 'Hỏng xe / công cụ làm việc',
+                  lang === 'en' ? 'Schedule conflict' : 'Trùng lịch công việc',
+                  lang === 'en' ? 'Customer unreachable' : 'Không liên hệ được khách hàng',
+                  lang === 'en' ? 'Other reason' : 'Lý do khác',
+                ].map(r => {
+                  const sel = cancelReasonChip === r;
+                  return (
+                    <TouchableOpacity
+                      key={r}
+                      onPress={() => setCancelReasonChip(sel ? '' : r)}
+                      style={{
+                        paddingHorizontal: 10,
+                        paddingVertical: 6,
+                        borderRadius: 8,
+                        borderWidth: 1,
+                        borderColor: sel ? COLORS.primary : COLORS.gray[200],
+                        backgroundColor: sel ? COLORS.primaryLight : COLORS.gray[50],
+                      }}
+                    >
+                      <Text
+                        style={{
+                          fontSize: fs(12),
+                          fontWeight: sel ? '700' : '500',
+                          color: sel ? COLORS.primary : COLORS.gray[700],
+                        }}
+                      >
+                        {r}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+
+              <TextInput
+                style={{
+                  borderWidth: 1,
+                  borderColor: COLORS.gray[200],
+                  borderRadius: 10,
+                  padding: 10,
+                  fontSize: fs(13.5),
+                  color: COLORS.gray[900],
+                  minHeight: 54,
+                  textAlignVertical: 'top',
+                }}
+                placeholder={lang === 'en' ? 'Enter detailed reason...' : 'Nhập chi tiết lý do hủy việc...'}
+                placeholderTextColor={COLORS.gray[400]}
+                value={cancelReasonText}
+                onChangeText={setCancelReasonText}
+                multiline
+              />
+            </View>
+
+            <View style={{ flexDirection: 'row', gap: 10, marginTop: 4 }}>
+              <Button
+                title={lang === 'en' ? 'Keep Job' : 'Giữ đơn'}
+                variant="outline"
+                style={{ flex: 1 }}
+                disabled={cancelJobMutation.isPending}
+                onPress={() => setShowCancelModal(false)}
+              />
+              <Button
+                title={lang === 'en' ? 'Confirm Cancel' : 'Xác nhận hủy'}
+                variant="danger"
+                style={{ flex: 1 }}
+                loading={cancelJobMutation.isPending}
+                disabled={!cancelReasonChip && !cancelReasonText.trim()}
+                onPress={handleConfirmHelperCancel}
+              />
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       {/* ── Propose Contract Amendment Modal ──────────────────────────── */}
       <Modal

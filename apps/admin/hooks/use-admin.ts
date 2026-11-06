@@ -404,6 +404,14 @@ export function useToggleVoucher() {
   });
 }
 
+export function useDeleteVoucher() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => apiClient.delete(`/admin/vouchers/${id}`),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'vouchers'] }),
+  });
+}
+
 // ─── Insurance Claims (Feature 10 — Bồi thường bảo hiểm) ──────────────────────
 
 export type AdminClaimStatus = 'submitted' | 'under_review' | 'approved' | 'paid' | 'rejected';

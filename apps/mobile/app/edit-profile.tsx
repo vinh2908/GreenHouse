@@ -694,7 +694,8 @@ export default function EditProfileScreen() {
                   color: COLORS.gray[500],
                   backgroundColor: COLORS.gray[100],
                 }}
-                value={user?.phone || ''}
+                value={myProfile?.phone || user?.phone || ''}
+                placeholder={uLoading ? (lang === 'en' ? 'Loading phone...' : 'Đang tải số điện thoại...') : ''}
                 editable={false}
               />
             </View>
