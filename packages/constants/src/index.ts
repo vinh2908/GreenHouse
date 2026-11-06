@@ -153,6 +153,7 @@ export const SOCKET_EVENTS = {
   SOS_BACKUP_RESOLVED: 'sos:backup_resolved', // SOS đã kết thúc (đã có người nhận / thu hồi / hết hạn) — báo cho các ứng viên còn lại
   SOS_BACKUP_HELPER_REPLACED: 'sos:backup_helper_replaced', // Đã thay thợ cho đơn (báo khách + room của đơn)
   SOS_BACKUP_EXPIRED: 'sos:backup_expired', // Hết hạn mà chưa tìm được người thay (báo khách)
+  SOS_BACKUP_CANDIDATE_WITHDRAWN: 'sos:backup_candidate_withdrawn', // B80: ứng viên rút/từ chối — khách đang xem cập nhật danh sách ngay
 
   // Notification
   NOTIFICATION_NEW: 'notification:new',

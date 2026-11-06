@@ -953,7 +953,14 @@ export class SosBackupService implements OnModuleInit, OnModuleDestroy {
     }
 
     const candidate = sos.candidates.find(c => String(c.helper_id) === helperId);
-    if (!candidate || candidate.state !== 'invited') {
+    if (!candidate) {
+      throw new ForbiddenException('Bạn không nằm trong đợt mời hiện tại của yêu cầu này');
+    }
+    // B80: thợ đã rút/từ chối khỏi SOS thì không chọn/nhận lại được nữa → 409
+    if (candidate.state === 'declined' || candidate.state === 'withdrawn') {
+      throw new ConflictException('Thợ này đã rút khỏi SOS, không thể chọn nữa');
+    }
+    if (candidate.state !== 'invited') {
       throw new ForbiddenException('Bạn không nằm trong đợt mời hiện tại của yêu cầu này');
     }
 
@@ -1195,6 +1202,15 @@ export class SosBackupService implements OnModuleInit, OnModuleDestroy {
       )
       .exec();
     candidate.state = 'declined';
+
+    // B80: thợ rút/từ chối → cập nhật danh sách trên màn khách ngay
+    const withdrawnPayload = {
+      sos_id: String(sos._id),
+      job_id: String(sos.job_id),
+      helper_id: helperId,
+    };
+    this.gateway.emitToUser(String(sos.customer_id), SOCKET_EVENTS.SOS_BACKUP_CANDIDATE_WITHDRAWN, withdrawnPayload);
+    this.gateway.emitToJob(String(sos.job_id), SOCKET_EVENTS.SOS_BACKUP_CANDIDATE_WITHDRAWN, withdrawnPayload);
 
     // Mọi người được mời đều từ chối → leo thang đợt tiếp ngay (hoặc hết hạn nếu cạn ứng viên)
     const anyoneLeftInvited = sos.candidates.some(c => c.state === 'invited');
