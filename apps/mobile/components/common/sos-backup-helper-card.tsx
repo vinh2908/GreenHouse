@@ -85,7 +85,7 @@ export function SosBackupHelperCard({ job }: { job: any }) {
   const handleWithdraw = () => {
     if (!outgoing) return;
     Alert.alert(t('sos_helper.withdraw_title'), t('sos_helper.withdraw_desc'), [
-      { text: t('cancel'), style: 'cancel' },
+      { text: t('common_cancel'), style: 'cancel' },
       {
         text: t('sos_helper.withdraw_confirm'),
         onPress: () => cancelSos.mutate({ sosId: outgoing._id ?? outgoing.sos_id, jobId: job._id }),
@@ -394,7 +394,7 @@ export function SosBackupHelperCard({ job }: { job: any }) {
               onPress={() => setSheetOpen(false)}
               style={{ paddingVertical: 8, alignItems: 'center' }}
             >
-              <Text style={{ color: COLORS.gray[500], fontWeight: '700' }}>{t('close')}</Text>
+              <Text style={{ color: COLORS.gray[500], fontWeight: '700' }}>{t('common_close')}</Text>
             </TouchableOpacity>
           </View>
         </View>
