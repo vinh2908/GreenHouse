@@ -269,6 +269,41 @@ export default function CustomerHomeScreen() {
   const [locationPickerOpen, setLocationPickerOpen] = useState(false);
   const [selectedHelperId, setSelectedHelperId] = useState<string>('');
   const [isLocatingLive, setIsLocatingLive] = useState(false);
+  const mapWebViewRef = useRef<WebView>(null);
+  const mapIframeRef = useRef<any>(null);
+
+  useEffect(() => {
+    if (!selectedHelperId) return;
+    if (Platform.OS === 'web') {
+      mapIframeRef.current?.contentWindow?.postMessage(
+        JSON.stringify({ type: 'SELECT_HELPER', id: selectedHelperId }),
+        '*',
+      );
+    } else {
+      mapWebViewRef.current?.injectJavaScript(`
+        if (typeof window.selectHelper === 'function') {
+          window.selectHelper("${selectedHelperId}", true);
+        }
+        true;
+      `);
+    }
+  }, [selectedHelperId]);
+
+  useEffect(() => {
+    if (Platform.OS !== 'web') return;
+    const globalRef: any = typeof globalThis !== 'undefined' ? globalThis : null;
+    if (!globalRef?.addEventListener) return;
+    const handleMsg = (e: any) => {
+      try {
+        const data = typeof e.data === 'string' ? JSON.parse(e.data) : e.data;
+        if (data?.type === 'SELECT_HELPER' && data.id) {
+          setSelectedHelperId(data.id);
+        }
+      } catch {}
+    };
+    globalRef.addEventListener('message', handleMsg);
+    return () => globalRef.removeEventListener('message', handleMsg);
+  }, []);
 
   // Yêu cầu lấy vị trí GPS thật
   const handleRequestLiveLocation = async () => {
@@ -517,16 +552,15 @@ export default function CustomerHomeScreen() {
     return null;
   }, [currentCoords]);
 
-  // Sinh HTML Goong bản đồ mini với ghim hiển thị TÊN THỢ + hiệu ứng pulse trực tiếp
+  // Sinh HTML Goong bản đồ mini với ghim gọn, tương tác kéo/zoom/chọn thợ không reload
   const leafletMiniMapHtml = useMemo(() => {
     if (!mapCenter) return '';
     const pinsJson = JSON.stringify(
       nearbyHelpers.map(h => ({
         id: h.id,
-        name: h.name, // Hiển thị đầy đủ TÊN THỢ, không cắt ngắn, không hiển thị tên loại dịch vụ
+        name: h.name, // Hiển thị đầy đủ TÊN THỢ khi chọn
         lat: h.lat,
         lon: h.lon,
-        selected: h.id === selectedHelperId,
       })),
     );
 
@@ -581,62 +615,47 @@ export default function CustomerHomeScreen() {
       font-size: 12px;
       cursor: pointer;
     }
-    .pin-pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      background: #FFFFFF;
-      border: 2px solid #16A34A;
-      color: #166534;
-      padding: 5px 12px;
-      border-radius: 9999px;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      font-size: 11px;
-      font-weight: 800;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.18);
-      white-space: nowrap;
+    .pin-dot {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #16A34A;
+      border: 2.5px solid #FFFFFF;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.28);
       cursor: pointer;
       transform: translate(-50%, -50%);
-      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-      animation: pin-beat 2.2s ease-in-out infinite;
+      transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     }
-    .pin-pill.selected {
-      background: #16A34A;
-      color: #FFFFFF;
-      border-color: #FFFFFF;
-      transform: translate(-50%, -50%) scale(1.15);
-      box-shadow: 0 0 0 4px rgba(22, 163, 74, 0.45);
-    }
-    @keyframes pin-beat {
-      0%, 100% { transform: translate(-50%, -50%) scale(1); }
-      50% { transform: translate(-50%, -50%) scale(1.06); box-shadow: 0 4px 14px rgba(22, 163, 74, 0.35); }
-    }
-    .pin-pulse-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: #22C55E;
-      display: inline-block;
-      animation: pulse-ring 1.6s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-    }
-    @keyframes pulse-ring {
-      0% { transform: scale(0.9); opacity: 1; box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7); }
-      70% { transform: scale(1.2); opacity: 0.5; box-shadow: 0 0 0 8px rgba(34, 197, 94, 0); }
-      100% { transform: scale(0.9); opacity: 1; box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
-    }
-    .user-pill {
+    .pin-pill-selected {
       display: inline-flex;
       align-items: center;
       gap: 4px;
-      background: #0284C7;
+      background: #16A34A;
+      border: 2px solid #FFFFFF;
       color: #FFFFFF;
       padding: 3px 8px;
       border-radius: 9999px;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-size: 11px;
+      font-weight: 800;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+      white-space: nowrap;
+      cursor: pointer;
+      transform: translate(-50%, -50%);
+    }
+    .user-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      background: #0284C7;
+      color: #FFFFFF;
+      padding: 2px 7px;
+      border-radius: 9999px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       font-size: 10px;
       font-weight: 700;
-      border: 2px solid #FFFFFF;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+      border: 1.5px solid #FFFFFF;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.2);
       transform: translate(-50%, -50%);
     }
   </style>
@@ -655,7 +674,8 @@ export default function CustomerHomeScreen() {
           style: 'https://tiles.goong.io/assets/goong_map_web.json?api_key=' + encodeURIComponent(mapKey),
           center: [${mapCenter.longitude}, ${mapCenter.latitude}],
           zoom: 14,
-          interactive: false,
+          interactive: true,
+          cooperativeGestures: true,
           attributionControl: false
         });
 
@@ -710,14 +730,61 @@ export default function CustomerHomeScreen() {
             : ''
         }
 
+        window.__markers = {};
         const pins = ${pinsJson};
         pins.forEach(p => {
           const pinEl = document.createElement('div');
-          pinEl.innerHTML = '<div class="pin-pill ' + (p.selected ? 'selected' : '') + '"><span class="pin-pulse-dot"></span><span class="pin-name">' + p.name + '</span></div>';
-          new maplibregl.Marker({ element: pinEl })
+          pinEl.style.cursor = 'pointer';
+          pinEl.innerHTML = '<div class="pin-dot"></div>';
+          pinEl.onclick = function() {
+            window.selectHelper(p.id, true);
+          };
+          const marker = new maplibregl.Marker({ element: pinEl })
             .setLngLat([p.lon, p.lat])
             .addTo(map);
+
+          window.__markers[p.id] = {
+            id: p.id,
+            name: p.name,
+            lat: p.lat,
+            lon: p.lon,
+            el: pinEl,
+            marker: marker
+          };
         });
+
+        window.selectHelper = function(id, fly) {
+          Object.keys(window.__markers).forEach(k => {
+            const item = window.__markers[k];
+            if (k === id) {
+              item.el.innerHTML = '<div class="pin-pill-selected"><span>' + item.name + '</span></div>';
+              if (fly && map) {
+                map.flyTo({ center: [item.lon, item.lat], zoom: 15, essential: true });
+              }
+            } else {
+              item.el.innerHTML = '<div class="pin-dot"></div>';
+            }
+          });
+          const msg = JSON.stringify({ type: 'SELECT_HELPER', id: id });
+          if (window.ReactNativeWebView) {
+            window.ReactNativeWebView.postMessage(msg);
+          } else if (window.parent) {
+            window.parent.postMessage(msg, '*');
+          }
+        };
+
+        window.addEventListener('message', function(e) {
+          try {
+            const data = typeof e.data === 'string' ? JSON.parse(e.data) : e.data;
+            if (data && data.type === 'SELECT_HELPER' && data.id) {
+              window.selectHelper(data.id, true);
+            }
+          } catch(err) {}
+        });
+
+        if (${JSON.stringify(selectedHelperId || '')}) {
+          window.selectHelper(${JSON.stringify(selectedHelperId || '')}, false);
+        }
       } catch (e) {
         document.getElementById('map').innerHTML = '<div class="map-error-card"><span>' + ${JSON.stringify(t('home_map_error'))} + '</span><button class="map-retry-btn" onclick="window.location.reload()">' + ${JSON.stringify(t('home_map_retry'))} + '</button></div>';
       }
@@ -725,7 +792,7 @@ export default function CustomerHomeScreen() {
   </script>
 </body>
 </html>`;
-  }, [mapCenter, selectedHelperId, nearbyHelpers, lang, t]);
+  }, [mapCenter, nearbyHelpers, lang, t]);
 
   // Lời chào theo thời gian trong ngày (khuya / sáng / chiều / tối)
   const greeting = useMemo(() => {
@@ -1395,6 +1462,7 @@ export default function CustomerHomeScreen() {
             {currentCoords && mapCenter ? (
               Platform.OS === 'web' ? (
                 <iframe
+                  ref={mapIframeRef}
                   srcDoc={leafletMiniMapHtml}
                   style={{ width: '100%', height: '100%', border: 'none' }}
                   title="Goong Mini Map"
@@ -1402,10 +1470,19 @@ export default function CustomerHomeScreen() {
                 />
               ) : (
                 <WebView
+                  ref={mapWebViewRef}
                   originWhitelist={['*']}
                   source={{ html: leafletMiniMapHtml }}
                   scrollEnabled={false}
                   style={{ flex: 1, backgroundColor: '#f8fafc' }}
+                  onMessage={event => {
+                    try {
+                      const data = JSON.parse(event.nativeEvent.data);
+                      if (data?.type === 'SELECT_HELPER' && data.id) {
+                        setSelectedHelperId(data.id);
+                      }
+                    } catch {}
+                  }}
                 />
               )
             ) : (
