@@ -55,7 +55,15 @@ describe('JobsService.selectQuote (B58)', () => {
         { provide: getModelToken(Service.name), useValue: {} },
         { provide: getModelToken(HelperProfile.name), useValue: {} },
         { provide: getModelToken(HelperPenaltyEvent.name), useValue: {} },
-        { provide: getModelToken(User.name), useValue: {} },
+        {
+          provide: getModelToken(User.name),
+          // F16: selectQuote kiểm tra is_verified của khách — mock trả về null (không có user) để qua cổng kiểm tra
+          useValue: {
+            findById: jest.fn().mockReturnValue({
+              select: jest.fn().mockReturnValue({ lean: jest.fn().mockResolvedValue(null) }),
+            }),
+          },
+        },
         {
           provide: AppGateway,
           useValue: { emitToJob: jest.fn(), emitToUser: jest.fn(), emitToAdmins: jest.fn() },

@@ -20,7 +20,13 @@ describe('PaymentsService - B41/B42/B43/B44 validation', () => {
     };
     const createdTx: any[] = [];
     const transactionModel: any = {
+      // Mongoose: create(obj) -> 1 doc, create([obj]) -> [doc] (refundCustomer dùng dạng mảng + { session })
       create: jest.fn(async (doc: any) => {
+        if (Array.isArray(doc)) {
+          const txs = doc.map((d: any) => ({ _id: new Types.ObjectId(), ...d }));
+          createdTx.push(...txs);
+          return txs;
+        }
         const tx = { _id: new Types.ObjectId(), ...doc };
         createdTx.push(tx);
         return tx;
@@ -46,7 +52,7 @@ describe('PaymentsService - B41/B42/B43/B44 validation', () => {
       transactionModel,
       withdrawalModel,
       helperModel,
-      { create: jest.fn() } as any,
+      { create: jest.fn().mockResolvedValue(undefined) } as any,
       {} as any,
       {} as any,
       undefined,
@@ -104,9 +110,12 @@ describe('PaymentsService - B41/B42/B43/B44 validation', () => {
       const { service, walletModel, createdTx } = makeService();
       const tx = await service.refundCustomer(customerId, jobId, 350_000, 'Hoàn do hủy đơn');
       expect(tx.amount).toBe(350_000);
-      expect(walletModel.findByIdAndUpdate).toHaveBeenCalledWith(expect.anything(), {
-        $inc: { balance: 350_000 },
-      });
+      expect(walletModel.findByIdAndUpdate).toHaveBeenCalledWith(
+        expect.anything(),
+        { $inc: { balance: 350_000 } },
+        // B91: refundCustomer chạy trong transaction nên truyền thêm { session } làm đối số thứ 3
+        expect.anything(),
+      );
       expect(createdTx[0].balance_after).toBe(1_350_000);
     });
 
