@@ -77,6 +77,20 @@ export class RespondMonthlyContractDto {
   @ApiProperty({ description: 'true = đồng ý nhận hợp đồng, false = từ chối' })
   @IsBoolean()
   accept: boolean;
+
+  @ApiPropertyOptional({ description: 'Lý do từ chối (khi accept = false)' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  reason?: string;
+}
+
+export class CancelMonthlyContractDto {
+  @ApiPropertyOptional({ description: 'Lý do hủy hợp đồng' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  reason?: string;
 }
 
 export class EndMonthlyContractDto {

@@ -55,6 +55,7 @@ export default function PaymentsPage() {
   const [txPage, setTxPage] = useState(1);
   const [rejectingId, setRejectingId] = useState<string | null>(null);
   const [rejectNote, setRejectNote] = useState('');
+  const [approvingItem, setApprovingItem] = useState<any | null>(null);
 
   const { data: withdrawals, isLoading: wLoading } = useAdminWithdrawals({
     status: wStatus || undefined,
@@ -176,8 +177,8 @@ export default function PaymentsPage() {
                                   size="sm"
                                   variant="outline"
                                   className="text-green-600 border-green-300"
-                                  loading={process.isPending}
-                                  onClick={() => handleApprove(w._id)}
+                                  loading={process.isPending && approvingItem?._id === w._id}
+                                  onClick={() => setApprovingItem(w)}
                                 >
                                   Duyệt
                                 </Button>
@@ -326,6 +327,68 @@ export default function PaymentsPage() {
           )}
         </div>
       </div>
+
+      {/* A98: Màn xác nhận duyệt rút tiền */}
+      {approvingItem && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-md rounded-xl bg-card p-6 shadow-xl border space-y-4">
+            <h3 className="text-lg font-bold">Xác nhận duyệt rút tiền</h3>
+            <div className="rounded-lg bg-muted/40 p-4 space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Người nhận:</span>
+                <span className="font-semibold">
+                  {typeof approvingItem.user_id === 'object'
+                    ? approvingItem.user_id?.full_name
+                    : approvingItem.user_id}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Số tiền rút:</span>
+                <span className="font-bold text-green-600">{formatVND(approvingItem.amount)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Phí rút:</span>
+                <span className="font-semibold text-muted-foreground">0₫ (Miễn phí)</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Ngân hàng:</span>
+                <span className="font-medium">{approvingItem.bank_account?.bank_name}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Số tài khoản:</span>
+                <span className="font-mono font-medium">
+                  {approvingItem.bank_account?.account_number}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Tên thụ hưởng:</span>
+                <span className="font-medium">{approvingItem.bank_account?.account_name}</span>
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Vui lòng kiểm tra kỹ thông tin trước khi xác nhận. Sau khi duyệt, hệ thống sẽ trừ số
+              dư ví và gửi thông báo tới thợ.
+            </p>
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="outline" onClick={() => setApprovingItem(null)}>
+                Hủy bỏ
+              </Button>
+              <Button
+                className="bg-green-600 hover:bg-green-700 text-white"
+                loading={process.isPending}
+                onClick={() => {
+                  process.mutate(
+                    { id: approvingItem._id, action: 'approve' },
+                    { onSettled: () => setApprovingItem(null) },
+                  );
+                }}
+              >
+                Xác nhận duyệt chuyển khoản
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

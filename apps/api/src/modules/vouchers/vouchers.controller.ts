@@ -124,6 +124,14 @@ export class AdminVouchersController {
     return this.vouchersService.adminToggle(id);
   }
 
+  // A100: Xóa voucher chưa dùng
+  @Delete(':id')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: '[Admin] Xóa mã giảm giá chưa có lượt dùng' })
+  async delete(@Param('id') id: string) {
+    return this.vouchersService.adminDelete(id);
+  }
+
   @Get(':id/redemptions')
   @ApiOperation({ summary: '[Admin] Lịch sử sử dụng mã' })
   @ApiQuery({ name: 'page', required: false, type: Number })

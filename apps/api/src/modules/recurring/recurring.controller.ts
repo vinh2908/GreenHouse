@@ -75,7 +75,11 @@ export class RecurringController {
   @Delete(':id')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: '[Customer] Hủy gói định kỳ (+ hủy job tương lai chưa chốt)' })
-  async cancel(@CurrentUser() user: { sub: string }, @Param('id') id: string) {
-    return this.recurringService.cancelPlan(user.sub, id);
+  async cancel(
+    @CurrentUser() user: { sub: string },
+    @Param('id') id: string,
+    @Body() dto?: { reason?: string },
+  ) {
+    return this.recurringService.cancelPlan(user.sub, id, dto?.reason);
   }
 }

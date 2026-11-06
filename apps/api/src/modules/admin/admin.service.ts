@@ -475,6 +475,23 @@ export class AdminService {
     this.jobsService.emitJobStatusChange(job);
     if (status === JobStatus.COMPLETED) {
       this.jobsService.emitJobCompleted(job);
+      // A81: Đơn do admin hoàn thành -> gửi nhắc đánh giá cho khách nếu chưa gửi và chưa đánh giá
+      if (!job.review_reminder_sent) {
+        const hasReviewed = await this.reviewModel.exists({ job_id: job._id });
+        if (!hasReviewed) {
+          job.review_reminder_sent = true;
+          await job.save();
+          await this.notificationsService
+            .create({
+              userId: String(job.customer_id),
+              type: NOTIFICATION_TYPES.JOB_COMPLETED,
+              title: 'Đánh giá dịch vụ',
+              body: `Công việc "${job.title}" đã hoàn thành. Hãy chia sẻ đánh giá của bạn về chất lượng dịch vụ!`,
+              payload: { job_id: String(job._id) },
+            })
+            .catch(() => undefined);
+        }
+      }
     } else if (status === JobStatus.CANCELLED) {
       this.jobsService.emitJobCancelled(job, note);
     }
@@ -706,6 +723,10 @@ export class AdminService {
       monthJobs,
       activeJobs,
       completedJobs,
+      pendingJobs,
+      disputedJobs,
+      pendingKyc,
+      pendingWithdrawals,
     ] = await Promise.all([
       this.userModel.countDocuments({ is_deleted: false }).exec(),
       this.helperModel.countDocuments().exec(),
@@ -719,18 +740,28 @@ export class AdminService {
         })
         .exec(),
       this.jobModel.countDocuments({ status: 'completed' }).exec(),
+      this.jobModel.countDocuments({ status: { $in: ['open', 'receiving_quotes'] } }).exec(),
+      this.jobModel.countDocuments({ status: 'disputed' }).exec(),
+      this.helperModel.countDocuments({ verification_status: VerificationStatus.PENDING }).exec(),
+      this.withdrawalModel.countDocuments({ status: 'pending' }).exec(),
     ]);
+
+    const pendingActionsCount = pendingJobs + disputedJobs + pendingKyc + pendingWithdrawals;
 
     return {
       users: { total: totalUsers },
-      helpers: { total: totalHelpers, approved: approvedHelpers },
+      helpers: { total: totalHelpers, approved: approvedHelpers, pending_kyc: pendingKyc },
       jobs: {
         total: totalJobs,
         today: todayJobs,
         this_month: monthJobs,
         active: activeJobs,
         completed: completedJobs,
+        pending: pendingJobs,
+        disputed: disputedJobs,
       },
+      pending_actions_count: pendingActionsCount,
+      pending_withdrawals: pendingWithdrawals,
     };
   }
 

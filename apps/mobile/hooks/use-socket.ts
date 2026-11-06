@@ -219,6 +219,32 @@ export function useChatSocket(conversationId?: string) {
   }, [conversationId, qc]);
 }
 
+// ─── Monthly Contract socket updates (A85) ──────────────────────────────────
+export function useMonthlyContractSocket(contractId?: string) {
+  const qc = useQueryClient();
+
+  useEffect(() => {
+    const handleUpdate = () => {
+      qc.invalidateQueries({ queryKey: ['monthly-contracts'] });
+      if (contractId) {
+        qc.invalidateQueries({ queryKey: ['monthly-contract', contractId] });
+      }
+    };
+
+    const unsub1 = socketService.on('contract:created', handleUpdate);
+    const unsub2 = socketService.on('contract:checked_in', handleUpdate);
+    const unsub3 = socketService.on('contract:ended', handleUpdate);
+    const unsub4 = socketService.on('contract:settled', handleUpdate);
+
+    return () => {
+      unsub1();
+      unsub2();
+      unsub3();
+      unsub4();
+    };
+  }, [contractId, qc]);
+}
+
 // ─── Support live chat (Feature 18) ───────────────────────────────────────────
 // Admin trả lời qua REST; server emit 'support:message' tới room của user nên
 // invalidate ngay, polling 4s trong useSupportMessages chỉ là lớp dự phòng.

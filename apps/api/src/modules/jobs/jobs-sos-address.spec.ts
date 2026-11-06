@@ -46,6 +46,7 @@ function makeJobsService() {
     serviceModel as never, // serviceModel
     helperModel as never, // helperModel
     dummy, // penaltyEventModel
+    dummy, // userModel
     gateway as never, // gateway
     dummy, // notificationsService
     dummy, // chatService

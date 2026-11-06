@@ -4,6 +4,8 @@ import {
   BadRequestException,
   ConflictException,
   ForbiddenException,
+  Inject,
+  forwardRef,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
@@ -22,6 +24,7 @@ import { HelperProfile, HelperProfileDocument } from '../helpers/schemas/helper-
 import { VerificationStatus } from '@homemate/types';
 import { NotificationsService } from '../notifications/notifications.service';
 import { PaymentsService } from '../payments/payments.service';
+import { AppGateway } from '../chat/app.gateway';
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const MONTH_RE = /^\d{4}-(0[1-9]|1[0-2])$/;
@@ -68,6 +71,8 @@ export class MonthlyContractsService {
     private helperModel: Model<HelperProfileDocument>,
     private readonly notificationsService: NotificationsService,
     private readonly paymentsService: PaymentsService,
+    @Inject(forwardRef(() => AppGateway))
+    private readonly gateway: AppGateway,
   ) {}
 
   // ─── Helpers ──────────────────────────────────────────────────────────────
@@ -193,6 +198,11 @@ export class MonthlyContractsService {
       payload: { contract_id: String(contract._id), kind: 'monthly_contract' },
     });
 
+    // A85: Socket event cập nhật tức thì hợp đồng tháng
+    const eventPayload = { contract_id: String(contract._id), status: contract.status };
+    this.gateway.emitToUser(customerId, 'contract:created', eventPayload);
+    this.gateway.emitToUser(dto.helper_id, 'contract:created', eventPayload);
+
     return this.populate(contract);
   }
 
@@ -217,7 +227,7 @@ export class MonthlyContractsService {
     return this.populate(contract);
   }
 
-  async respond(helperId: string, id: string, accept: boolean) {
+  async respond(helperId: string, id: string, accept: boolean, reason?: string) {
     const contract = await this.getContractOrFail(id);
     if (contract.helper_id.toString() !== helperId) {
       throw new ForbiddenException('Chỉ thợ được mời mới phản hồi được hợp đồng này');
@@ -227,6 +237,9 @@ export class MonthlyContractsService {
     }
     contract.status = accept ? 'active' : 'rejected';
     contract.responded_at = new Date();
+    if (!accept && reason) {
+      contract.end_reason = reason;
+    }
     await contract.save();
 
     await this.notificationsService.create({
@@ -237,13 +250,15 @@ export class MonthlyContractsService {
         : '❌ Thợ đã từ chối hợp đồng theo tháng',
       body: accept
         ? `Hợp đồng "${contract.title}" đã có hiệu lực từ ${this.toDateStr(new Date(contract.start_date))}.`
-        : `Thợ đã từ chối hợp đồng "${contract.title}". Bạn có thể mời thợ khác.`,
+        : (reason
+            ? `Thợ đã từ chối hợp đồng "${contract.title}": ${reason}`
+            : `Thợ đã từ chối hợp đồng "${contract.title}". Bạn có thể mời thợ khác.`),
       payload: { contract_id: String(contract._id), kind: 'monthly_contract' },
     });
     return this.populate(contract);
   }
 
-  async cancel(userId: string, id: string) {
+  async cancel(userId: string, id: string, reason?: string) {
     const contract = await this.getContractOrFail(id);
     this.assertParticipant(contract, userId);
     if (contract.status !== 'pending' && contract.status !== 'active') {
@@ -252,7 +267,7 @@ export class MonthlyContractsService {
     contract.status = 'cancelled';
     contract.ended_at = new Date();
     contract.end_reason =
-      'Đã hủy bởi ' + (contract.customer_id.toString() === userId ? 'khách hàng' : 'thợ');
+      reason || ('Đã hủy bởi ' + (contract.customer_id.toString() === userId ? 'khách hàng' : 'thợ'));
     await contract.save();
 
     const otherId =
@@ -263,7 +278,9 @@ export class MonthlyContractsService {
       userId: otherId,
       type: 'monthly_contract_cancelled',
       title: '🚫 Hợp đồng theo tháng đã bị hủy',
-      body: `Hợp đồng "${contract.title}" đã bị hủy.`,
+      body: reason
+        ? `Hợp đồng "${contract.title}" đã bị hủy: ${reason}`
+        : `Hợp đồng "${contract.title}" đã bị hủy.`,
       payload: { contract_id: String(contract._id), kind: 'monthly_contract' },
     });
     return this.populate(contract);
@@ -292,6 +309,12 @@ export class MonthlyContractsService {
       body: `Hợp đồng "${contract.title}" đã kết thúc${reason ? `: ${reason}` : ''}.`,
       payload: { contract_id: String(contract._id), kind: 'monthly_contract' },
     });
+
+    // A85: Socket event cập nhật tức thì khi kết thúc hợp đồng
+    const endPayload = { contract_id: String(contract._id), status: 'ended', reason };
+    this.gateway.emitToUser(contract.customer_id.toString(), 'contract:ended', endPayload);
+    this.gateway.emitToUser(contract.helper_id.toString(), 'contract:ended', endPayload);
+
     return this.populate(contract);
   }
 
@@ -382,6 +405,12 @@ export class MonthlyContractsService {
       body: `Thợ của hợp đồng "${contract.title}" đã điểm danh ngày ${today}. Vui lòng xác nhận buổi làm.`,
       payload: { contract_id: String(contract._id), date: today, kind: 'monthly_contract' },
     });
+
+    // A85: Socket event cập nhật tức thì điểm danh
+    const checkinPayload = { contract_id: String(contract._id), date: today, status: 'checked_in' };
+    this.gateway.emitToUser(contract.customer_id.toString(), 'contract:checked_in', checkinPayload);
+    this.gateway.emitToUser(contract.helper_id.toString(), 'contract:checked_in', checkinPayload);
+
     return record;
   }
 
@@ -697,6 +726,15 @@ export class MonthlyContractsService {
       body: `Hợp đồng "${contract.title}": ${summary.confirmed_days}/${summary.scheduled_days} buổi — bạn nhận ${summary.helper_receives.toLocaleString('vi-VN')}₫ vào ví.`,
       payload: { contract_id: String(contract._id), month: dto.month, kind: 'monthly_contract' },
     });
+
+    // A85: Socket event cập nhật tức thì chốt lương
+    const settlePayload = {
+      contract_id: String(contract._id),
+      month: dto.month,
+      status: 'settled',
+    };
+    this.gateway.emitToUser(customerId, 'contract:settled', settlePayload);
+    this.gateway.emitToUser(contract.helper_id.toString(), 'contract:settled', settlePayload);
 
     return {
       ...summary,

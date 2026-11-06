@@ -71,6 +71,23 @@ export default function DashboardPage() {
         <p className="text-muted-foreground">Tổng quan hệ thống Green House</p>
       </div>
 
+      {/* A77: Đếm số việc chờ xử lý */}
+      {Number((stats as any)?.pending_actions_count || 0) > 0 && (
+        <div className="flex items-center justify-between rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-amber-900 shadow-sm">
+          <div className="flex items-center gap-3">
+            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-amber-200 font-bold text-amber-800 text-sm">
+              {(stats as any)?.pending_actions_count}
+            </span>
+            <div>
+              <p className="font-semibold text-sm">{(stats as any)?.pending_actions_count} việc đang chờ Admin xử lý</p>
+              <p className="text-xs text-amber-700">
+                {(stats as any)?.jobs?.pending ?? 0} đơn chờ báo giá • {(stats as any)?.jobs?.disputed ?? 0} tranh chấp • {(stats as any)?.helpers?.pending_kyc ?? 0} hồ sơ e-KYC • {(stats as any)?.pending_withdrawals ?? 0} yêu cầu rút tiền
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Stat Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatCard

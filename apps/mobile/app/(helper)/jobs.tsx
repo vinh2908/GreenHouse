@@ -84,6 +84,7 @@ export default function HelperJobsScreen() {
     isError: aError,
     isRefetching: aRefetching,
     refetch: ra,
+    dataUpdatedAt: aUpdatedAt,
   } = useAvailableJobs(undefined, 1, Boolean(isAuth && isVerified !== false));
   const {
     data: active,
@@ -91,6 +92,7 @@ export default function HelperJobsScreen() {
     isError: acError,
     isRefetching: acRefetching,
     refetch: rac,
+    dataUpdatedAt: acUpdatedAt,
   } = useHelperJobs(
     'confirmed,helper_on_the_way,helper_arrived,in_progress,pending_review,disputed',
   );
@@ -100,6 +102,7 @@ export default function HelperJobsScreen() {
     isError: hError,
     isRefetching: hRefetching,
     refetch: rh,
+    dataUpdatedAt: hUpdatedAt,
   } = useHelperJobs('completed,cancelled,refunded');
 
   const datasets = [
@@ -470,7 +473,7 @@ export default function HelperJobsScreen() {
           {t('helper_jobs_title')}
         </Text>
         <Text style={{ fontSize: fs(12), color: COLORS.gray[500], marginTop: 2 }}>
-          {t('helper_jobs_subtitle')}
+          {t('helper_jobs_subtitle')} • {lang === 'en' ? 'Updated' : 'Cập nhật'} lúc {dayjs(Math.max(aUpdatedAt || 0, acUpdatedAt || 0, hUpdatedAt || 0) || Date.now()).format('HH:mm')}
         </Text>
         {/* Bản đồ nhu cầu (Feature 15) */}
         <TouchableOpacity

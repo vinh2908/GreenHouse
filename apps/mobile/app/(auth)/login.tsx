@@ -370,7 +370,7 @@ export default function LoginScreen() {
                 </Text>
                 <Input
                   label={lang === 'en' ? 'Registered Phone Number *' : 'Số điện thoại đăng ký *'}
-                  placeholder={lang === 'en' ? 'E.g. 0901234567' : 'VD: 0901234567'}
+                  placeholder={lang === 'en' ? 'E.g. 0365290805' : 'VD: 0365290805'}
                   keyboardType="phone-pad"
                   value={resetPhone}
                   onChangeText={setResetPhone}

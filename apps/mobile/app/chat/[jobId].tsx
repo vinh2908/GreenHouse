@@ -379,7 +379,19 @@ export default function ChatScreen() {
   const partnerAvatar = partner?.avatar;
   const partnerPhone = partner?.phone;
 
-  const allMessages = Array.isArray(messages) ? messages : [];
+  // A82: Loại bỏ tin nhắn trùng lặp theo _id
+  const allMessages = useMemo(() => {
+    if (!Array.isArray(messages)) return [];
+    const seen = new Set<string>();
+    const res: any[] = [];
+    for (const m of messages) {
+      const id = String(m._id || m.id || '');
+      if (id && seen.has(id)) continue;
+      if (id) seen.add(id);
+      res.push(m);
+    }
+    return res;
+  }, [messages]);
   const insets = useSafeAreaInsets();
 
   return (

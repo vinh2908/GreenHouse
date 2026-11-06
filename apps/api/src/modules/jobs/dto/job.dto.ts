@@ -334,6 +334,11 @@ export class RespondAmendmentDto {
   @ApiProperty({ enum: ['accept', 'reject'] })
   @IsIn(['accept', 'reject'])
   action: 'accept' | 'reject';
+
+  @ApiPropertyOptional({ description: 'Lý do từ chối sửa đổi hợp đồng (bắt buộc khi action = reject)' })
+  @IsOptional()
+  @IsString()
+  reason?: string;
 }
 
 export class UpdateJobDto {

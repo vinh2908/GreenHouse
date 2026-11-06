@@ -155,20 +155,12 @@ export class ChatService {
       .populate('sender_id', 'full_name avatar')
       .exec();
 
-    // ── Realtime: emit message via WebSocket to conversation room & each participant
+    // ── Realtime: A82: Chỉ emit 1 lần tới phòng hội thoại để tránh nhân đôi tin nhắn
     try {
       this.gateway.emitToConversation(conversationId, SOCKET_EVENTS.CHAT_NEW_MESSAGE, {
         conversation_id: conversationId,
         message: populatedMsg,
       });
-
-      // Emit to each participant room
-      for (const pId of conv.participants) {
-        this.gateway.emitToUser(String(pId), SOCKET_EVENTS.CHAT_NEW_MESSAGE, {
-          conversation_id: conversationId,
-          message: populatedMsg,
-        });
-      }
     } catch {
       // Ignore socket error if offline
     }

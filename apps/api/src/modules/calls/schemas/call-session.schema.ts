@@ -37,6 +37,9 @@ export class CallSession {
   started_at?: Date;
 
   @Prop()
+  answered_at?: Date;
+
+  @Prop()
   ended_at?: Date;
 
   @Prop()

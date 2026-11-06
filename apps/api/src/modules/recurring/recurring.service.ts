@@ -22,7 +22,9 @@ import { CreateJobDto } from '../jobs/dto/job.dto';
 import { JobsService, isAvailableForDate } from '../jobs/jobs.service';
 import { HelperProfile, HelperProfileDocument } from '../helpers/schemas/helper-profile.schema';
 import { FavoritesService } from '../favorites/favorites.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { JobStatus } from '@homemate/types';
+import { NOTIFICATION_TYPES } from '@homemate/constants';
 import { RECURRING_WINDOW_DAYS } from '@homemate/constants';
 
 /**
@@ -45,6 +47,7 @@ export class RecurringService implements OnApplicationBootstrap, OnModuleDestroy
     private helperModel: Model<HelperProfileDocument>,
     private readonly jobsService: JobsService,
     private readonly favoritesService: FavoritesService,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   // ─── Scheduler (interval 1 giờ, chạy 1 lần khi API khởi động) ─────────────
@@ -223,6 +226,19 @@ export class RecurringService implements OnApplicationBootstrap, OnModuleDestroy
         ? isAvailableForDate(preferredHelperAvailability, key, plan.time_start)
         : true;
 
+      // A79: Nếu thợ ưa thích bận -> báo cho khách biết đơn chuyển công khai
+      if (plan.preferred_helper_id && !helperAvailableForOccurrence) {
+        await this.notificationsService
+          .create({
+            userId: String(plan.customer_id),
+            type: NOTIFICATION_TYPES.SYSTEM,
+            title: 'Đơn định kỳ đã chuyển công khai',
+            body: 'Thợ ưa thích đang bận, đơn đã chuyển công khai để các thợ khác nhận việc.',
+            payload: { plan_id: String(plan._id), occurrence_date: key },
+          })
+          .catch(() => undefined);
+      }
+
       try {
         await this.jobsService.createJob(String(plan.customer_id), dto, {
           recurringPlanId: String(plan._id),
@@ -234,6 +250,17 @@ export class RecurringService implements OnApplicationBootstrap, OnModuleDestroy
           skipFavoriteCheck: true,
         });
         created += 1;
+
+        // A79: Thông báo bền cho khách khi đơn định kỳ tự sinh
+        await this.notificationsService
+          .create({
+            userId: String(plan.customer_id),
+            type: NOTIFICATION_TYPES.SYSTEM,
+            title: 'Đơn định kỳ đã được tạo',
+            body: `Đơn định kỳ cho ngày ${key} đã được tạo thành công: "${plan.title}".`,
+            payload: { plan_id: String(plan._id), occurrence_date: key },
+          })
+          .catch(() => undefined);
       } catch (err) {
         // VD: thợ quen chưa xác thực e-KYC → thử lại không kèm ưu tiên riêng
         if (plan.preferred_helper_id) {
@@ -246,6 +273,17 @@ export class RecurringService implements OnApplicationBootstrap, OnModuleDestroy
               occurrenceDate: key,
             });
             created += 1;
+
+            // A79: Báo cho khách biết đã chuyển công khai do lỗi gửi riêng
+            await this.notificationsService
+              .create({
+                userId: String(plan.customer_id),
+                type: NOTIFICATION_TYPES.SYSTEM,
+                title: 'Đơn định kỳ đã chuyển công khai',
+                body: 'Thợ ưa thích đang bận, đơn đã chuyển công khai để các thợ khác nhận việc.',
+                payload: { plan_id: String(plan._id), occurrence_date: key },
+              })
+              .catch(() => undefined);
           } catch (pubErr) {
             this.logger.warn(
               `Plan ${String(plan._id)}: public job creation failed for date ${key}: ${pubErr instanceof Error ? pubErr.message : pubErr}`,
@@ -528,13 +566,15 @@ export class RecurringService implements OnApplicationBootstrap, OnModuleDestroy
     return refreshed ?? plan;
   }
 
-  async cancelPlan(customerId: string, planId: string): Promise<RecurringPlanDocument> {
+  async cancelPlan(customerId: string, planId: string, reason?: string): Promise<RecurringPlanDocument> {
     const plan = await this.getOwnedPlan(customerId, planId);
     if (plan.status === RecurringPlanStatus.CANCELLED) {
       throw new BadRequestException('Gói đã được hủy trước đó');
     }
     plan.status = RecurringPlanStatus.CANCELLED;
     await plan.save();
+
+    const cancelReason = reason ? `Khách hủy gói định kỳ: ${reason}` : 'Khách hủy gói định kỳ';
 
     // Hủy các job tương lai chưa có thợ chốt
     const todayKey = this.dateKey(new Date());
@@ -547,9 +587,22 @@ export class RecurringService implements OnApplicationBootstrap, OnModuleDestroy
       .exec();
     for (const job of futureJobs) {
       await this.jobsService
-        .cancelJob(customerId, 'customer', String(job._id), { reason: 'Khách hủy gói định kỳ' })
+        .cancelJob(customerId, 'customer', String(job._id), { reason: cancelReason })
         .catch(() => undefined);
     }
+
+    if (plan.preferred_helper_id) {
+      await this.notificationsService
+        .create({
+          userId: String(plan.preferred_helper_id),
+          type: NOTIFICATION_TYPES.SYSTEM,
+          title: 'Gói định kỳ đã bị hủy',
+          body: `Khách hàng đã hủy gói định kỳ${reason ? `. Lý do: ${reason}` : '.'}`,
+          payload: { plan_id: planId },
+        })
+        .catch(() => undefined);
+    }
+
     return plan;
   }
 }

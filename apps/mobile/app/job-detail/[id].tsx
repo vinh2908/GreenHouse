@@ -49,6 +49,8 @@ import {
   FileText,
   Ticket,
   Star,
+  Receipt,
+  AlertOctagon,
 } from 'lucide-react-native';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
@@ -79,6 +81,8 @@ import {
   useApplyVoucherToJob,
   useDetachVoucherFromJob,
   useCallConfig,
+  useRejectQuote,
+  useJobSosHistory,
   type VoucherPreview,
 } from '@/hooks/use-api';
 import { useJobSocketUpdates, useHelperLocation } from '@/hooks/use-socket';
@@ -107,6 +111,7 @@ import {
   PriceText,
   Badge,
   Input,
+  EmptyState,
 } from '@/components/ui';
 
 dayjs.extend(relativeTime);
@@ -219,7 +224,26 @@ export default function JobDetailScreen() {
   const payJob = usePayJob();
   const openDispute = useOpenDispute();
   const respondAmendment = useRespondAmendment();
+  const rejectQuote = useRejectQuote();
+  const { data: sosHistory } = useJobSosHistory(id);
   const queryClient = useQueryClient();
+
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [cancelReasonChip, setCancelReasonChip] = useState('');
+  const [cancelReasonText, setCancelReasonText] = useState('');
+  const [quoteToReject, setQuoteToReject] = useState<string | null>(null);
+  const [quoteRejectReason, setQuoteRejectReason] = useState('');
+  const [amendmentToReject, setAmendmentToReject] = useState<string | null>(null);
+  const [amendmentRejectReason, setAmendmentRejectReason] = useState('');
+  const [showSosHistoryModal, setShowSosHistoryModal] = useState(false);
+
+  const netPaidForCancel = useMemo(() => {
+    if (!job || job.payment_status !== 'paid' || job.payment_method === 'cash') return 0;
+    const base = contract?.total_price ?? job.total_price ?? job.fixed_price ?? 0;
+    const discount = job.discount_amount ?? 0;
+    const loyalty = job.loyalty_discount_amount ?? 0;
+    return Math.max(0, base - discount - loyalty);
+  }, [job, contract]);
 
   // ── Roadmap Phase 1: thợ yêu thích / gửi riêng / gọi trong app ───────────
   const { data: favorites } = useFavorites();
@@ -649,56 +673,65 @@ export default function JobDetailScreen() {
     }
   };
 
+  // A76 & A88: Mở modal xác nhận hủy với tính toán tiền hoàn và bắt buộc nhập lý do
   const handleCancel = () => {
-    const doCancel = async () => {
-      if (cancellingRef.current || isCancelling || cancelJob.isPending) return;
-      cancellingRef.current = true;
-      setIsCancelling(true);
-      try {
-        await cancelJob.mutateAsync({ jobId: id!, reason: lang === 'en' ? 'Customer cancelled request' : 'Khách hàng hủy yêu cầu' });
-        await refetchJob();
-        Toast.show({ type: 'success', text1: lang === 'en' ? 'Job cancelled successfully' : 'Đã hủy đơn hàng thành công' });
-      } catch (err: any) {
-        const msg = err?.response?.data?.message || (lang === 'en' ? 'Cancellation failed' : 'Hủy đơn thất bại');
-        Toast.show({ type: 'error', text1: msg });
-      } finally {
-        cancellingRef.current = false;
-        setIsCancelling(false);
-      }
-    };
+    setCancelReasonChip('');
+    setCancelReasonText('');
+    setShowCancelModal(true);
+  };
 
-    if (job.status === 'helper_on_the_way' || job.status === 'helper_arrived') {
-      Alert.alert(
-        lang === 'en' ? 'Cancel when helper is on the way or arrived' : 'Hủy khi thợ đang di chuyển hoặc đã đến',
-        lang === 'en'
-          ? 'Helper has started traveling or has arrived. Are you sure you want to cancel?'
-          : 'Thợ đã bắt đầu di chuyển hoặc đã có mặt tại địa điểm. Bạn có chắc chắn muốn hủy đơn không?',
-        [
-          { text: lang === 'en' ? 'Stay' : 'Ở lại', style: 'cancel' },
-          {
-            text: lang === 'en' ? 'Confirm cancel' : 'Đồng ý hủy',
-            style: 'destructive',
-            onPress: doCancel,
-          },
-        ],
-      );
+  const handleConfirmCancel = async () => {
+    const finalReason = cancelReasonChip
+      ? cancelReasonText.trim()
+        ? `${cancelReasonChip}: ${cancelReasonText.trim()}`
+        : cancelReasonChip
+      : cancelReasonText.trim();
+    if (!finalReason) {
+      Toast.show({
+        type: 'error',
+        text1: lang === 'en' ? 'Please select or enter a cancellation reason' : 'Vui lòng chọn hoặc nhập lý do hủy đơn',
+      });
       return;
     }
+    if (cancellingRef.current || isCancelling || cancelJob.isPending) return;
+    cancellingRef.current = true;
+    setIsCancelling(true);
+    try {
+      await cancelJob.mutateAsync({ jobId: id!, reason: finalReason });
+      setShowCancelModal(false);
+      await refetchJob();
+      Toast.show({
+        type: 'success',
+        text1: lang === 'en' ? 'Job cancelled successfully' : 'Đã hủy đơn hàng thành công',
+      });
+    } catch (err: any) {
+      const msg = err?.response?.data?.message || (lang === 'en' ? 'Cancellation failed' : 'Hủy đơn thất bại');
+      Toast.show({ type: 'error', text1: msg });
+    } finally {
+      cancellingRef.current = false;
+      setIsCancelling(false);
+    }
+  };
 
-    Alert.alert(
-      lang === 'en' ? 'Cancel job request?' : 'Hủy đơn hàng?',
-      lang === 'en'
-        ? 'Are you sure you want to cancel this request? If a helper was already assigned, please contact them first.'
-        : 'Bạn có chắc chắn muốn hủy yêu cầu này không? Nếu đã có thợ nhận việc, vui lòng liên hệ trước với thợ.',
-      [
-        { text: lang === 'en' ? 'Stay' : 'Ở lại', style: 'cancel' },
-        {
-          text: lang === 'en' ? 'Confirm cancel' : 'Xác nhận hủy',
-          style: 'destructive',
-          onPress: doCancel,
-        },
-      ],
-    );
+  // A89: Khách từ chối báo giá
+  const handleConfirmRejectQuote = async () => {
+    if (!id || !quoteToReject) return;
+    try {
+      await rejectQuote.mutateAsync({
+        jobId: id,
+        quoteId: quoteToReject,
+        reason: quoteRejectReason.trim() || undefined,
+      });
+      setQuoteToReject(null);
+      setQuoteRejectReason('');
+      Toast.show({
+        type: 'success',
+        text1: lang === 'en' ? 'Quote rejected' : 'Đã từ chối báo giá thành công',
+      });
+    } catch (err: any) {
+      const msg = err?.response?.data?.message || (lang === 'en' ? 'Failed to reject quote' : 'Từ chối báo giá thất bại');
+      Toast.show({ type: 'error', text1: msg });
+    }
   };
 
   const handleSubmitReview = async () => {
@@ -745,16 +778,47 @@ export default function JobDetailScreen() {
     }
   };
 
+  // A90: Từ chối sửa đổi hợp đồng có xác nhận và lý do
   const handleRespondAmendment = async (amendmentId: string, decision: 'accept' | 'reject') => {
     if (!id) return;
+    if (decision === 'reject') {
+      setAmendmentToReject(amendmentId);
+      setAmendmentRejectReason('');
+      return;
+    }
     try {
       await respondAmendment.mutateAsync({
         jobId: id,
         amendmentId,
-        action: decision,
+        action: 'accept',
+      });
+      Toast.show({
+        type: 'success',
+        text1: lang === 'en' ? 'Addendum accepted' : 'Đã chấp thuận chi phí phát sinh',
       });
     } catch (err: any) {
       const msg = err?.response?.data?.message || (lang === 'en' ? 'Failed to update addendum' : 'Cập nhật phụ lục thất bại');
+      Toast.show({ type: 'error', text1: msg });
+    }
+  };
+
+  const handleConfirmRejectAmendment = async () => {
+    if (!id || !amendmentToReject) return;
+    try {
+      await respondAmendment.mutateAsync({
+        jobId: id,
+        amendmentId: amendmentToReject,
+        action: 'reject',
+        reason: amendmentRejectReason.trim() || undefined,
+      });
+      setAmendmentToReject(null);
+      setAmendmentRejectReason('');
+      Toast.show({
+        type: 'success',
+        text1: lang === 'en' ? 'Addendum rejected' : 'Đã từ chối chi phí phát sinh',
+      });
+    } catch (err: any) {
+      const msg = err?.response?.data?.message || (lang === 'en' ? 'Failed to reject addendum' : 'Từ chối phụ lục thất bại');
       Toast.show({ type: 'error', text1: msg });
     }
   };
@@ -1158,6 +1222,19 @@ export default function JobDetailScreen() {
             {STATUS_STEPS.filter(s => s.key !== 'cancelled').map((s, i) => {
               const done = i < currentStepIdx;
               const active = i === currentStepIdx;
+              const stepEvent = Array.isArray(job.events)
+                ? job.events.find(
+                    (ev: any) =>
+                      ev.to_status === s.key || (s.key === 'open' && !ev.from_status),
+                  )
+                : null;
+              const stepTime =
+                s.key === 'open' && job.created_at
+                  ? dayjs(job.created_at).format('HH:mm DD/MM')
+                  : stepEvent?.created_at
+                    ? dayjs(stepEvent.created_at).format('HH:mm DD/MM')
+                    : null;
+
               return (
                 <View key={s.key} style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
                   <View
@@ -1188,15 +1265,27 @@ export default function JobDetailScreen() {
                       </Text>
                     )}
                   </View>
-                  <Text
-                    style={{
-                      fontSize: fs(14),
-                      fontWeight: active ? '800' : done ? '600' : '400',
-                      color: active ? COLORS.primary : done ? COLORS.gray[900] : COLORS.gray[400],
-                    }}
-                  >
-                    {lang === 'en' ? (s.label_en || t(`status_${s.key}`)) : s.label}
-                  </Text>
+                  <View style={{ flex: 1 }}>
+                    <Text
+                      style={{
+                        fontSize: fs(14),
+                        fontWeight: active ? '800' : done ? '600' : '400',
+                        color: active ? COLORS.primary : done ? COLORS.gray[900] : COLORS.gray[400],
+                      }}
+                    >
+                      {lang === 'en' ? (s.label_en || t(`status_${s.key}`)) : s.label}
+                      {done ? ' ✓' : ''}
+                    </Text>
+                    {stepTime && (done || active) ? (
+                      <Text style={{ fontSize: fs(11), color: COLORS.gray[500], marginTop: 1 }}>
+                        {stepTime}
+                      </Text>
+                    ) : !done && !active ? (
+                      <Text style={{ fontSize: fs(11), color: COLORS.gray[400], marginTop: 1 }}>
+                        {lang === 'en' ? 'Upcoming' : 'Chưa tới'}
+                      </Text>
+                    ) : null}
+                  </View>
                   {active && (
                     <View
                       style={{
@@ -1549,14 +1638,51 @@ export default function JobDetailScreen() {
                           </View>
                         )}
 
-                        <Button
-                          title={lang === 'en' ? 'Accept this helper' : 'Chấp nhận thợ này'}
-                          size="sm"
-                          fullWidth={false}
-                          style={{ alignSelf: 'flex-end', marginTop: 4 }}
-                          loading={selectQuote.isPending}
-                          onPress={() => setQuoteToAccept(q._id)}
-                        />
+                        {q.status === 'rejected' ? (
+                          <View
+                            style={{
+                              flexDirection: 'row',
+                              justifyContent: 'space-between',
+                              alignItems: 'center',
+                              marginTop: 6,
+                              backgroundColor: COLORS.gray[100],
+                              padding: 8,
+                              borderRadius: 8,
+                            }}
+                          >
+                            <Badge
+                              label={lang === 'en' ? 'Rejected' : 'Đã từ chối'}
+                              color={COLORS.gray[200]}
+                              textColor={COLORS.gray[600]}
+                              size="sm"
+                            />
+                            {q.rejection_reason && (
+                              <Text style={{ fontSize: fs(12), color: COLORS.gray[600], fontStyle: 'italic', flex: 1, marginLeft: 8 }}>
+                                {q.rejection_reason}
+                              </Text>
+                            )}
+                          </View>
+                        ) : (
+                          <View style={{ flexDirection: 'row', gap: 8, justifyContent: 'flex-end', marginTop: 4 }}>
+                            <Button
+                              title={lang === 'en' ? 'Decline' : 'Từ chối'}
+                              size="sm"
+                              variant="outline"
+                              fullWidth={false}
+                              onPress={() => {
+                                setQuoteToReject(q._id);
+                                setQuoteRejectReason('');
+                              }}
+                            />
+                            <Button
+                              title={lang === 'en' ? 'Accept helper' : 'Chấp nhận thợ này'}
+                              size="sm"
+                              fullWidth={false}
+                              loading={selectQuote.isPending && quoteToAccept === q._id}
+                              onPress={() => setQuoteToAccept(q._id)}
+                            />
+                          </View>
+                        )}
                       </View>
                     );
                   })
@@ -1695,6 +1821,11 @@ export default function JobDetailScreen() {
                         {lang === 'en' ? 'Materials: +' : 'Vật tư: +'}
                         {new Intl.NumberFormat('vi-VN').format(am.additional_materials_cost || 0)}₫
                       </Text>
+                      {am.status === 'rejected' && am.rejection_reason && (
+                        <Text style={{ fontSize: fs(12), color: '#991B1B', fontStyle: 'italic' }}>
+                          {lang === 'en' ? 'Rejection reason: ' : 'Lý do từ chối: '}{am.rejection_reason}
+                        </Text>
+                      )}
                       {isPending && (
                         <View style={{ flexDirection: 'row', gap: 10, marginTop: 4 }}>
                           <Button
@@ -1941,14 +2072,32 @@ export default function JobDetailScreen() {
               onPress={() => router.push({ pathname: '/dispute/[jobId]', params: { jobId: id } })}
             />
           )}
-          {/* ── Hóa đơn điện tử (Feature 11) — chỉ trong chi tiết đơn ── */}
+          {/* ── Hóa đơn điện tử (Feature 11) & Biên lai (A96) ── */}
           {(job.payment_status === 'paid' || job.status === 'completed') && !job.is_warranty && (
+            <>
+              <Button
+                title={lang === 'en' ? 'View payment receipt' : 'Xem biên lai thanh toán điện tử'}
+                variant="outline"
+                icon={<Receipt size={18} color={COLORS.primary} />}
+                onPress={() => router.push(`/receipt/${id}` as never)}
+              />
+              <Button
+                title={lang === 'en' ? 'Download invoice (PDF)' : 'Tải hóa đơn (PDF)'}
+                variant="outline"
+                icon={<FileDown size={18} color={COLORS.primary} />}
+                loading={downloadingInvoice}
+                onPress={handleDownloadInvoice}
+              />
+            </>
+          )}
+
+          {/* A95: Lịch sử điều phối khẩn cấp SOS */}
+          {(job.is_sos || (job.sos_backup_count ?? 0) > 0 || (Array.isArray(sosHistory) && sosHistory.length > 0)) && (
             <Button
-              title={lang === 'en' ? 'Download invoice (PDF)' : 'Tải hóa đơn (PDF)'}
+              title={lang === 'en' ? 'SOS emergency dispatch history' : 'Lịch sử điều phối khẩn cấp (SOS)'}
               variant="outline"
-              icon={<FileDown size={18} color={COLORS.primary} />}
-              loading={downloadingInvoice}
-              onPress={handleDownloadInvoice}
+              icon={<AlertOctagon size={18} color={COLORS.warning} />}
+              onPress={() => setShowSosHistoryModal(true)}
             />
           )}
           {/* ── Đội nhóm (Roadmap Phase 1): khách xem roster, chỉ đọc ── */}
@@ -2941,6 +3090,423 @@ export default function JobDetailScreen() {
             />
           </ScrollView>
         </KeyboardAvoidingView>
+      </Modal>
+
+      {/* A76 & A88: Modal xác nhận hủy đơn hàng + tính toán hoàn tiền */}
+      <Modal
+        visible={showCancelModal}
+        transparent
+        animationType="fade"
+        statusBarTranslucent
+        onRequestClose={() => {
+          if (!cancelJob.isPending && !isCancelling) setShowCancelModal(false);
+        }}
+      >
+        <View
+          style={{
+            flex: 1,
+            justifyContent: 'center',
+            alignItems: 'center',
+            backgroundColor: 'rgba(17,24,39,0.5)',
+            padding: 20,
+          }}
+        >
+          <View
+            style={{
+              width: '100%',
+              maxWidth: 420,
+              backgroundColor: '#fff',
+              borderRadius: 20,
+              padding: 20,
+              gap: 14,
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: 8 },
+              shadowOpacity: 0.15,
+              shadowRadius: 16,
+              elevation: 8,
+            }}
+          >
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Text style={{ fontSize: fs(18), fontWeight: '800', color: COLORS.gray[900] }}>
+                {lang === 'en' ? 'Cancel Job Request' : 'Xác nhận hủy đơn hàng'}
+              </Text>
+              <TouchableOpacity
+                onPress={() => setShowCancelModal(false)}
+                disabled={cancelJob.isPending || isCancelling}
+              >
+                <X size={22} color={COLORS.gray[500]} />
+              </TouchableOpacity>
+            </View>
+
+            {/* Refund Estimate Card */}
+            <View
+              style={{
+                backgroundColor: netPaidForCancel > 0 ? '#ECFDF5' : '#F9FAFB',
+                borderWidth: 1,
+                borderColor: netPaidForCancel > 0 ? '#A7F3D0' : COLORS.gray[200],
+                borderRadius: 14,
+                padding: 14,
+                gap: 6,
+              }}
+            >
+              <Text style={{ fontSize: fs(13), fontWeight: '700', color: netPaidForCancel > 0 ? '#065F46' : COLORS.gray[700] }}>
+                {lang === 'en' ? 'Estimated Refund Policy' : 'Chính sách hoàn tiền dự kiến'}
+              </Text>
+              {netPaidForCancel > 0 ? (
+                <>
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Text style={{ fontSize: fs(13), color: '#047857' }}>
+                      {lang === 'en' ? 'Refund to wallet:' : 'Số tiền hoàn vào ví:'}
+                    </Text>
+                    <PriceText amount={netPaidForCancel} size={16} color="#047857" />
+                  </View>
+                  <Text style={{ fontSize: fs(11.5), color: '#059669', fontStyle: 'italic' }}>
+                    {lang === 'en'
+                      ? '100% of net paid amount returned to your GreenHouse wallet (0₫ fee).'
+                      : 'Hoàn 100% số tiền thực trả vào ví GreenHouse (Phí hủy: 0₫).'}
+                  </Text>
+                </>
+              ) : (
+                <Text style={{ fontSize: fs(12.5), color: COLORS.gray[600], lineHeight: 18 }}>
+                  {lang === 'en'
+                    ? 'This job is unpaid or cash on delivery. No wallet refund is processed.'
+                    : 'Đơn hàng chưa thanh toán điện tử hoặc thanh toán tiền mặt. Không phát sinh hoàn tiền hay phí hủy.'}
+                </Text>
+              )}
+            </View>
+
+            {/* Quick Reason Chips */}
+            <View style={{ gap: 8 }}>
+              <Text style={{ fontSize: fs(13), fontWeight: '700', color: COLORS.gray[800] }}>
+                {lang === 'en' ? 'Cancellation reason (required) *' : 'Lý do hủy đơn (bắt buộc) *'}
+              </Text>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+                {[
+                  lang === 'en' ? 'Unexpected personal schedule' : 'Bận việc đột xuất',
+                  lang === 'en' ? 'Change of time / plan' : 'Thay đổi thời gian / kế hoạch',
+                  lang === 'en' ? 'Found another solution' : 'Đã tìm được người khác',
+                  lang === 'en' ? 'Cost issue' : 'Chi phí chưa phù hợp',
+                  lang === 'en' ? 'Other reason' : 'Lý do khác',
+                ].map(r => {
+                  const sel = cancelReasonChip === r;
+                  return (
+                    <TouchableOpacity
+                      key={r}
+                      onPress={() => setCancelReasonChip(sel ? '' : r)}
+                      style={{
+                        paddingHorizontal: 10,
+                        paddingVertical: 6,
+                        borderRadius: 8,
+                        borderWidth: 1,
+                        borderColor: sel ? COLORS.primary : COLORS.gray[200],
+                        backgroundColor: sel ? COLORS.primaryLight : COLORS.gray[50],
+                      }}
+                    >
+                      <Text
+                        style={{
+                          fontSize: fs(12),
+                          fontWeight: sel ? '700' : '500',
+                          color: sel ? COLORS.primary : COLORS.gray[700],
+                        }}
+                      >
+                        {r}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+
+              <TextInput
+                style={{
+                  borderWidth: 1,
+                  borderColor: COLORS.gray[200],
+                  borderRadius: 10,
+                  padding: 10,
+                  fontSize: fs(13.5),
+                  color: COLORS.gray[900],
+                  minHeight: 54,
+                  textAlignVertical: 'top',
+                }}
+                placeholder={
+                  lang === 'en'
+                    ? 'Enter detailed reason (or type custom)...'
+                    : 'Nhập chi tiết lý do (hoặc tự nhập lý do khác)...'
+                }
+                placeholderTextColor={COLORS.gray[400]}
+                value={cancelReasonText}
+                onChangeText={setCancelReasonText}
+                multiline
+              />
+            </View>
+
+            <View style={{ flexDirection: 'row', gap: 10, marginTop: 4 }}>
+              <Button
+                title={lang === 'en' ? 'Keep Job' : 'Ở lại'}
+                variant="outline"
+                style={{ flex: 1 }}
+                disabled={cancelJob.isPending || isCancelling}
+                onPress={() => setShowCancelModal(false)}
+              />
+              <Button
+                title={lang === 'en' ? 'Confirm Cancel' : 'Xác nhận hủy'}
+                variant="danger"
+                style={{ flex: 1 }}
+                loading={cancelJob.isPending || isCancelling}
+                disabled={!cancelReasonChip && !cancelReasonText.trim()}
+                onPress={handleConfirmCancel}
+              />
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* A89: Modal xác nhận từ chối báo giá */}
+      <Modal
+        visible={Boolean(quoteToReject)}
+        transparent
+        animationType="fade"
+        statusBarTranslucent
+        onRequestClose={() => {
+          if (!rejectQuote.isPending) setQuoteToReject(null);
+        }}
+      >
+        <View
+          style={{
+            flex: 1,
+            justifyContent: 'center',
+            alignItems: 'center',
+            backgroundColor: 'rgba(17,24,39,0.5)',
+            padding: 20,
+          }}
+        >
+          <View
+            style={{
+              width: '100%',
+              maxWidth: 400,
+              backgroundColor: '#fff',
+              borderRadius: 20,
+              padding: 20,
+              gap: 14,
+            }}
+          >
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Text style={{ fontSize: fs(17), fontWeight: '800', color: COLORS.gray[900] }}>
+                {lang === 'en' ? 'Decline Helper Quote' : 'Từ chối báo giá của thợ'}
+              </Text>
+              <TouchableOpacity onPress={() => setQuoteToReject(null)} disabled={rejectQuote.isPending}>
+                <X size={20} color={COLORS.gray[500]} />
+              </TouchableOpacity>
+            </View>
+
+            <Text style={{ fontSize: fs(13), color: COLORS.gray[600], lineHeight: 18 }}>
+              {lang === 'en'
+                ? 'Are you sure you want to decline this quote? The helper will be notified with your feedback.'
+                : 'Bạn có chắc chắn muốn từ chối báo giá này? Thợ sẽ nhận được thông báo phản hồi từ bạn.'}
+            </Text>
+
+            <TextInput
+              style={{
+                borderWidth: 1,
+                borderColor: COLORS.gray[200],
+                borderRadius: 10,
+                padding: 10,
+                fontSize: fs(13.5),
+                color: COLORS.gray[900],
+                minHeight: 50,
+                textAlignVertical: 'top',
+              }}
+              placeholder={lang === 'en' ? 'Reason (optional, e.g. price too high)...' : 'Lý do từ chối (không bắt buộc, VD: giá chưa phù hợp)...'}
+              placeholderTextColor={COLORS.gray[400]}
+              value={quoteRejectReason}
+              onChangeText={setQuoteRejectReason}
+              multiline
+            />
+
+            <View style={{ flexDirection: 'row', gap: 10 }}>
+              <Button
+                title={lang === 'en' ? 'Back' : 'Quay lại'}
+                variant="outline"
+                style={{ flex: 1 }}
+                disabled={rejectQuote.isPending}
+                onPress={() => setQuoteToReject(null)}
+              />
+              <Button
+                title={lang === 'en' ? 'Confirm Decline' : 'Xác nhận từ chối'}
+                variant="danger"
+                style={{ flex: 1 }}
+                loading={rejectQuote.isPending}
+                onPress={handleConfirmRejectQuote}
+              />
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* A90: Modal xác nhận từ chối phụ lục phát sinh */}
+      <Modal
+        visible={Boolean(amendmentToReject)}
+        transparent
+        animationType="fade"
+        statusBarTranslucent
+        onRequestClose={() => {
+          if (!respondAmendment.isPending) setAmendmentToReject(null);
+        }}
+      >
+        <View
+          style={{
+            flex: 1,
+            justifyContent: 'center',
+            alignItems: 'center',
+            backgroundColor: 'rgba(17,24,39,0.5)',
+            padding: 20,
+          }}
+        >
+          <View
+            style={{
+              width: '100%',
+              maxWidth: 400,
+              backgroundColor: '#fff',
+              borderRadius: 20,
+              padding: 20,
+              gap: 14,
+            }}
+          >
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Text style={{ fontSize: fs(17), fontWeight: '800', color: COLORS.gray[900] }}>
+                {lang === 'en' ? 'Decline Cost Addendum' : 'Từ chối chi phí phát sinh'}
+              </Text>
+              <TouchableOpacity onPress={() => setAmendmentToReject(null)} disabled={respondAmendment.isPending}>
+                <X size={20} color={COLORS.gray[500]} />
+              </TouchableOpacity>
+            </View>
+
+            <Text style={{ fontSize: fs(13), color: COLORS.gray[600], lineHeight: 18 }}>
+              {lang === 'en'
+                ? 'Please provide a reason for declining this addendum so the helper understands.'
+                : 'Vui lòng cung cấp lý do từ chối để thợ hiểu rõ và điều chỉnh phương án thi công.'}
+            </Text>
+
+            <TextInput
+              style={{
+                borderWidth: 1,
+                borderColor: COLORS.gray[200],
+                borderRadius: 10,
+                padding: 10,
+                fontSize: fs(13.5),
+                color: COLORS.gray[900],
+                minHeight: 50,
+                textAlignVertical: 'top',
+              }}
+              placeholder={lang === 'en' ? 'Reason for decline (required)...' : 'Lý do từ chối (bắt buộc)...'}
+              placeholderTextColor={COLORS.gray[400]}
+              value={amendmentRejectReason}
+              onChangeText={setAmendmentRejectReason}
+              multiline
+            />
+
+            <View style={{ flexDirection: 'row', gap: 10 }}>
+              <Button
+                title={lang === 'en' ? 'Back' : 'Quay lại'}
+                variant="outline"
+                style={{ flex: 1 }}
+                disabled={respondAmendment.isPending}
+                onPress={() => setAmendmentToReject(null)}
+              />
+              <Button
+                title={lang === 'en' ? 'Confirm Decline' : 'Xác nhận từ chối'}
+                variant="danger"
+                style={{ flex: 1 }}
+                loading={respondAmendment.isPending}
+                disabled={!amendmentRejectReason.trim()}
+                onPress={handleConfirmRejectAmendment}
+              />
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* A95: Modal lịch sử điều phối khẩn cấp SOS */}
+      <Modal
+        visible={showSosHistoryModal}
+        transparent
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setShowSosHistoryModal(false)}
+      >
+        <View style={{ flex: 1, backgroundColor: '#fff', paddingTop: Math.max(insets.top, 16) }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: COLORS.gray[100] }}>
+            <Text style={{ fontSize: fs(18), fontWeight: '800', color: COLORS.gray[900] }}>
+              {lang === 'en' ? 'SOS Emergency Dispatch History' : 'Lịch sử điều phối khẩn cấp SOS'}
+            </Text>
+            <TouchableOpacity onPress={() => setShowSosHistoryModal(false)}>
+              <X size={22} color={COLORS.gray[700]} />
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView contentContainerStyle={{ padding: 16, gap: 12 }}>
+            {!Array.isArray(sosHistory) || sosHistory.length === 0 ? (
+              <Card style={{ alignItems: 'center', padding: 24 }}>
+                <EmptyState
+                  emoji="🛡️"
+                  title={lang === 'en' ? 'No SOS dispatch history' : 'Chưa có lịch sử SOS'}
+                  subtitle={lang === 'en' ? 'No emergency helper backup has occurred on this job.' : 'Đơn hàng này không phát sinh điều phối thợ thay thế.'}
+                />
+              </Card>
+            ) : (
+              sosHistory.map((s: any, idx: number) => {
+                const rep = typeof s.replacement_helper_id === 'object' ? s.replacement_helper_id : null;
+                const orig = typeof s.original_helper_id === 'object' ? s.original_helper_id : null;
+                const statusLabel = (() => {
+                  switch (s.status) {
+                    case 'completed':
+                    case 'matched':
+                      return lang === 'en' ? 'Replacement assigned' : 'Đã có thợ thay';
+                    case 'cancelled':
+                      return lang === 'en' ? 'Cancelled' : 'Đã hủy';
+                    case 'expired':
+                      return lang === 'en' ? 'Expired' : 'Hết hạn tìm thợ';
+                    default:
+                      return lang === 'en' ? 'Searching' : 'Đang xử lý';
+                  }
+                })();
+
+                return (
+                  <Card key={s._id ?? idx} style={{ gap: 8, padding: 14 }}>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <Text style={{ fontSize: fs(14), fontWeight: '800', color: COLORS.gray[900] }}>
+                        {lang === 'en' ? `SOS Dispatch #${idx + 1}` : `Lần điều phối #${idx + 1}`}
+                      </Text>
+                      <Badge
+                        label={statusLabel}
+                        color={s.status === 'completed' || s.status === 'matched' ? '#D1FAE5' : '#F3F4F6'}
+                        textColor={s.status === 'completed' || s.status === 'matched' ? '#065F46' : COLORS.gray[700]}
+                        size="sm"
+                      />
+                    </View>
+                    <Text style={{ fontSize: fs(12), color: COLORS.gray[500] }}>
+                      {lang === 'en' ? 'Created at: ' : 'Thời gian: '}{dayjs(s.created_at).format('HH:mm DD/MM/YYYY')}
+                    </Text>
+                    {orig && (
+                      <Text style={{ fontSize: fs(13), color: COLORS.gray[700] }}>
+                        {lang === 'en' ? 'Original Helper: ' : 'Thợ ban đầu: '}<Text style={{ fontWeight: '700' }}>{orig.full_name}</Text>
+                      </Text>
+                    )}
+                    {rep && (
+                      <Text style={{ fontSize: fs(13), color: COLORS.primaryDark }}>
+                        {lang === 'en' ? 'Replacement Helper: ' : 'Thợ thay thế: '}<Text style={{ fontWeight: '800' }}>{rep.full_name}</Text>
+                      </Text>
+                    )}
+                    {s.reason && (
+                      <Text style={{ fontSize: fs(12.5), color: COLORS.gray[600], fontStyle: 'italic' }}>
+                        {lang === 'en' ? 'Reason: ' : 'Lý do: '}{s.reason}
+                      </Text>
+                    )}
+                  </Card>
+                );
+              })
+            )}
+          </ScrollView>
+        </View>
       </Modal>
     </View>
   );

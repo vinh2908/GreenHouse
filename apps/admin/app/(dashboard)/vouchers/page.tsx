@@ -6,6 +6,7 @@ import {
   useAdminVouchers,
   useSaveVoucher,
   useToggleVoucher,
+  useDeleteVoucher,
 } from '@/hooks/use-admin';
 import {
   Badge,
@@ -69,8 +70,11 @@ export default function VouchersPage() {
   const { data, isLoading } = useAdminVouchers({ search: search || undefined, page });
   const save = useSaveVoucher();
   const toggle = useToggleVoucher();
+  const deleteVoucher = useDeleteVoucher();
   const [draft, setDraft] = useState<Draft | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [toggleVoucherTarget, setToggleVoucherTarget] = useState<AdminVoucher | null>(null);
+  const [deleteVoucherTarget, setDeleteVoucherTarget] = useState<AdminVoucher | null>(null);
 
   const vouchers = data?.vouchers ?? [];
 
@@ -207,10 +211,20 @@ export default function VouchersPage() {
                       <Button
                         size="sm"
                         variant={v.is_active ? 'destructive' : 'default'}
-                        onClick={() => toggle.mutate(v._id)}
+                        onClick={() => setToggleVoucherTarget(v)}
                       >
                         {v.is_active ? 'Tắt' : 'Bật'}
                       </Button>
+                      {v.used_count === 0 && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          onClick={() => setDeleteVoucherTarget(v)}
+                        >
+                          Xóa
+                        </Button>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))}
@@ -355,6 +369,72 @@ export default function VouchersPage() {
             </div>
           </CardContent>
         </Card>
+      )}
+
+      {/* A100: Màn xác nhận Bật/Tắt voucher */}
+      {toggleVoucherTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-md rounded-xl bg-card p-6 shadow-xl border space-y-4">
+            <h3 className="text-lg font-bold">
+              {toggleVoucherTarget.is_active ? 'Xác nhận tắt voucher' : 'Xác nhận bật voucher'}
+            </h3>
+            <p className="text-sm text-muted-foreground">
+              Bạn có chắc chắn muốn {toggleVoucherTarget.is_active ? 'tắt' : 'bật'} mã giảm giá{' '}
+              <strong className="text-foreground font-mono">{toggleVoucherTarget.code}</strong>?
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {toggleVoucherTarget.is_active
+                ? 'Sau khi tắt, khách hàng sẽ không thể nhập hoặc áp dụng mã này cho đơn hàng mới.'
+                : 'Sau khi bật, mã giảm giá sẽ có hiệu lực và khách hàng có thể áp dụng theo điều kiện quy định.'}
+            </p>
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="outline" onClick={() => setToggleVoucherTarget(null)}>
+                Hủy bỏ
+              </Button>
+              <Button
+                variant={toggleVoucherTarget.is_active ? 'destructive' : 'default'}
+                loading={toggle.isPending}
+                onClick={async () => {
+                  await toggle.mutateAsync(toggleVoucherTarget._id);
+                  setToggleVoucherTarget(null);
+                }}
+              >
+                {toggleVoucherTarget.is_active ? 'Đồng ý tắt voucher' : 'Đồng ý bật voucher'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* A100: Màn xác nhận Xóa voucher */}
+      {deleteVoucherTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-md rounded-xl bg-card p-6 shadow-xl border space-y-4">
+            <h3 className="text-lg font-bold text-destructive">Xác nhận xóa voucher</h3>
+            <p className="text-sm text-muted-foreground">
+              Bạn có chắc chắn muốn xóa vĩnh viễn voucher{' '}
+              <strong className="text-foreground font-mono">{deleteVoucherTarget.code}</strong>?
+            </p>
+            <div className="rounded-lg bg-amber-500/10 p-3 text-xs text-amber-700">
+              Voucher này chưa có lượt sử dụng nào ({deleteVoucherTarget.used_count} lượt dùng). Hành động này không thể hoàn tác.
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="outline" onClick={() => setDeleteVoucherTarget(null)}>
+                Hủy bỏ
+              </Button>
+              <Button
+                variant="destructive"
+                loading={deleteVoucher.isPending}
+                onClick={async () => {
+                  await deleteVoucher.mutateAsync(deleteVoucherTarget._id);
+                  setDeleteVoucherTarget(null);
+                }}
+              >
+                Xác nhận xóa vĩnh viễn
+              </Button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

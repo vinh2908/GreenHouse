@@ -77,6 +77,37 @@ export class NotificationsService {
     return notification;
   }
 
+  // A77: Gửi thông báo bền + phát socket tới toàn bộ Quản trị viên
+  async notifyAdmins(data: {
+    type: string;
+    title: string;
+    body: string;
+    payload?: Record<string, unknown>;
+  }): Promise<void> {
+    try {
+      const admins = await this.userModel.find({ roles: 'admin' }).select('_id').lean().exec();
+      await Promise.allSettled(
+        admins.map(admin =>
+          this.create({
+            userId: String(admin._id),
+            type: data.type,
+            title: data.title,
+            body: data.body,
+            payload: data.payload,
+          }),
+        ),
+      );
+      // A83: this.create đã emit NOTIFICATION_NEW và gửi Expo Push tới từng admin riêng biệt.
+      // Chỉ emit admin:pending_update tới room:admins để cập nhật badge/counter tức thì, tránh nhận 2 lần.
+      this.gateway.emitToAdmins('admin:pending_update', {
+        type: data.type,
+        timestamp: new Date().toISOString(),
+      });
+    } catch (err) {
+      this.logger.warn(`Failed to notify admins: ${(err as Error).message}`);
+    }
+  }
+
   /**
    * Gửi OS push tới mọi thiết bị của user qua Expo Push Service.
    * data đính kèm luôn chứa `type` + toàn bộ payload gốc để app deep-link
@@ -305,7 +336,7 @@ export class NotificationsService {
       .exec();
   }
 
-  // System message to every active user, pushed live to everyone connected.
+  // System message to every active user, pushed live to everyone connected without broadcast leakage.
   async broadcastAll(userIds: Types.ObjectId[], title: string, body: string) {
     await this.notificationModel.insertMany(
       userIds.map(id => ({
@@ -316,12 +347,20 @@ export class NotificationsService {
         is_read: false,
       })),
     );
-    this.gateway.server?.emit(SOCKET_EVENTS.NOTIFICATION_NEW, {
-      type: NOTIFICATION_TYPES.SYSTEM,
-      title,
-      body,
-      is_read: false,
-      created_at: new Date(),
+    // A83: Gửi theo room riêng của từng user và push Expo, không broadcast toàn cục
+    const now = new Date();
+    userIds.forEach(id => {
+      const uid = String(id);
+      this.gateway.emitToUser(uid, SOCKET_EVENTS.NOTIFICATION_NEW, {
+        type: NOTIFICATION_TYPES.SYSTEM,
+        title,
+        body,
+        is_read: false,
+        created_at: now,
+      });
+      void this.sendExpoPush(uid, title, body, {
+        type: NOTIFICATION_TYPES.SYSTEM,
+      }).catch(() => undefined);
     });
     return { sent: userIds.length };
   }

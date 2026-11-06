@@ -103,7 +103,7 @@ export default function NotificationsScreen() {
   const router = useRouter();
   const { t, fs, lang, formatNotifTitle, formatNotifBody } = useTranslation();
   const user = useAuthStore(s => s.user);
-  const { data: notifications, isLoading, isError, refetch } = useNotifications();
+  const { data: notifications, isLoading, isError, refetch, dataUpdatedAt } = useNotifications();
   const markAll = useMarkAllRead();
   const markRead = useMarkNotificationRead();
 
@@ -171,9 +171,16 @@ export default function NotificationsScreen() {
           >
             <ArrowLeft size={20} color={COLORS.gray[800]} />
           </TouchableOpacity>
-          <Text style={{ fontSize: fs(18), fontWeight: '800', color: COLORS.gray[900] }}>
-            {lang === 'en' ? 'Notifications' : 'Thông báo'}
-          </Text>
+          <View>
+            <Text style={{ fontSize: fs(18), fontWeight: '800', color: COLORS.gray[900] }}>
+              {lang === 'en' ? 'Notifications' : 'Thông báo'}
+            </Text>
+            {dataUpdatedAt ? (
+              <Text style={{ fontSize: fs(11), color: COLORS.gray[500] }}>
+                {lang === 'en' ? 'Updated at' : 'Cập nhật lúc'} {dayjs(dataUpdatedAt).format('HH:mm')}
+              </Text>
+            ) : null}
+          </View>
         </View>
 
         <TouchableOpacity

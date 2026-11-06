@@ -10,6 +10,7 @@ import {
   type MonthlyContractItem,
   type MonthlyContractStatus,
 } from '@/hooks/use-api';
+import { useMonthlyContractSocket } from '@/hooks/use-socket';
 import { useAuthStore } from '@/stores/auth.store';
 import { useTranslation } from '@/hooks/use-i18n';
 import { Badge, Card, COLORS, EmptyState, LoadingSpinner } from '@/components/ui';
@@ -49,6 +50,9 @@ export default function MonthlyContractsScreen() {
   // Vai trò hiện tại lấy từ auth store (active_role) như các màn hình dùng chung khác
   const user = useAuthStore(s => s.user);
   const isHelper = user?.active_role === 'helper';
+
+  // A85: Lắng nghe socket event cập nhật hợp đồng tháng tức thì
+  useMonthlyContractSocket();
   const {
     data: contracts,
     isLoading,

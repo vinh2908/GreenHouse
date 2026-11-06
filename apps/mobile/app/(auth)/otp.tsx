@@ -7,11 +7,12 @@ import Toast from 'react-native-toast-message';
 import { useAuthStore } from '@/stores/auth.store';
 import { useTranslation } from '@/hooks/use-i18n';
 import { useVerifyOtp, useResendOtp } from '@/hooks/use-api';
+import apiClient from '@/services/api-client';
 import { Button, COLORS } from '@/components/ui';
 
 export default function OtpScreen() {
   const router = useRouter();
-  const { phone } = useLocalSearchParams<{ phone: string }>();
+  const { phone, email } = useLocalSearchParams<{ phone?: string; email?: string }>();
   const { t, fs, lang } = useTranslation();
   const setAuth = useAuthStore(s => s.setAuth);
 
@@ -47,19 +48,28 @@ export default function OtpScreen() {
       return;
     }
     try {
-      const res = await verifyOtp.mutateAsync({ phone: phone!, otp: otpCode });
-      const data = res.data?.data;
-      if (data?.access_token && data?.user) {
-        await setAuth(data.user, data.access_token, data.refresh_token);
-        // Sau khi đăng ký & OTP xong, đưa sang màn hình chọn Role
-        router.replace('/(auth)/select-role');
-      } else {
+      if (email) {
+        await apiClient.post('/auth/verify-email', { email: email.trim(), otp: otpCode });
         Toast.show({
           type: 'success',
-          text1: lang === 'en' ? 'Verified successfully' : 'Xác minh thành công',
-          text2: lang === 'en' ? 'Please log in' : 'Vui lòng đăng nhập',
+          text1: lang === 'en' ? 'Email verified successfully!' : 'Xác minh email thành công!',
         });
-        router.replace('/(auth)/login');
+        router.replace('/(auth)/select-role');
+      } else {
+        const res = await verifyOtp.mutateAsync({ phone: phone!, otp: otpCode });
+        const data = res.data?.data;
+        if (data?.access_token && data?.user) {
+          await setAuth(data.user, data.access_token, data.refresh_token);
+          // Sau khi đăng ký & OTP xong, đưa sang màn hình chọn Role
+          router.replace('/(auth)/select-role');
+        } else {
+          Toast.show({
+            type: 'success',
+            text1: lang === 'en' ? 'Verified successfully' : 'Xác minh thành công',
+            text2: lang === 'en' ? 'Please log in' : 'Vui lòng đăng nhập',
+          });
+          router.replace('/(auth)/login');
+        }
       }
     } catch (err: unknown) {
       const msg =
@@ -74,7 +84,11 @@ export default function OtpScreen() {
   const handleResend = async () => {
     if (countdown > 0) return;
     try {
-      await resendOtp.mutateAsync(phone!);
+      if (email) {
+        await apiClient.post('/auth/verify-email/resend', { email: email.trim() });
+      } else {
+        await resendOtp.mutateAsync(phone!);
+      }
       setCountdown(60);
       Toast.show({ type: 'success', text1: lang === 'en' ? 'OTP resent' : 'Đã gửi lại OTP' });
     } catch {
@@ -156,8 +170,10 @@ export default function OtpScreen() {
               lineHeight: 20,
             }}
           >
-            {lang === 'en' ? 'A 6-digit OTP was sent to\n' : 'Mã OTP 6 số đã được gửi đến số\n'}
-            <Text style={{ fontWeight: '700', color: COLORS.gray[800] }}>{phone}</Text>
+            {lang === 'en'
+              ? `A 6-digit OTP was sent to\n`
+              : `Mã OTP 6 số đã được gửi đến ${email ? 'email' : 'số điện thoại'}\n`}
+            <Text style={{ fontWeight: '700', color: COLORS.gray[800] }}>{email || phone}</Text>
           </Text>
 
           {/* Demo OTP Helper Badge */}

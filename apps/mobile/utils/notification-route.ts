@@ -15,6 +15,8 @@ export interface NotificationRouteDescriptor {
 
 export interface NotificationLike {
   type?: string;
+  title?: string;
+  body?: string;
   data?: Record<string, unknown> | null;
   payload?: Record<string, unknown> | null;
 }
@@ -154,7 +156,12 @@ export function resolveNotificationRoute(
   }
 
   // ── Tranh chấp (màn dispute mở theo job) ──────────────────────────────────
-  if (type.includes('dispute') || data.dispute_id) {
+  if (
+    type.includes('dispute') ||
+    data.dispute_id ||
+    (typeof n.title === 'string' && (n.title.toLowerCase().includes('tranh chấp') || n.title.toLowerCase().includes('khiếu nại'))) ||
+    (typeof n.body === 'string' && (n.body.toLowerCase().includes('tranh chấp') || n.body.toLowerCase().includes('khiếu nại')))
+  ) {
     if (jobId) return { pathname: '/dispute/[jobId]', params: { jobId } };
     return null;
   }

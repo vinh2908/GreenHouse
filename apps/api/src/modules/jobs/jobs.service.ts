@@ -66,6 +66,7 @@ import {
 import { recordHelperCancellation } from '../helpers/utils/record-cancellation';
 import { RebookJobDto } from './dto/job.dto';
 import { Service, ServiceDocument } from '../services/schemas/service.schema';
+import { User, UserDocument } from '../users/schemas/user.schema';
 import {
   HelperProfile,
   HelperProfileDocument,
@@ -168,6 +169,7 @@ export class JobsService implements OnModuleInit, OnModuleDestroy {
     @InjectModel(HelperProfile.name) private helperModel: Model<HelperProfileDocument>,
     @InjectModel(HelperPenaltyEvent.name)
     private penaltyEventModel: Model<HelperPenaltyEventDocument>,
+    @InjectModel(User.name) private userModel: Model<UserDocument>,
     private readonly gateway: AppGateway,
     private readonly notificationsService: NotificationsService,
     private readonly chatService: ChatService,
@@ -183,13 +185,19 @@ export class JobsService implements OnModuleInit, OnModuleDestroy {
     this.sweepExpiredJobsAndQuotes().catch(err =>
       this.logger.error(`Initial expired sweep failed: ${err?.message ?? err}`),
     );
+    this.sweepUpcomingJobReminders().catch(err =>
+      this.logger.error(`Initial reminder sweep failed: ${err?.message ?? err}`),
+    );
     this.expiryTimer = setInterval(
       () => {
         this.sweepExpiredJobsAndQuotes().catch(err =>
           this.logger.error(`Periodic expired sweep failed: ${err?.message ?? err}`),
         );
+        this.sweepUpcomingJobReminders().catch(err =>
+          this.logger.error(`Periodic reminder sweep failed: ${err?.message ?? err}`),
+        );
       },
-      10 * 60 * 1000,
+      5 * 60 * 1000,
     );
     (this.expiryTimer as unknown as { unref?: () => void }).unref?.();
   }
@@ -280,6 +288,90 @@ export class JobsService implements OnModuleInit, OnModuleDestroy {
     timeStart?: string | null,
   ): boolean {
     return isAvailableForDate(availability, date, timeStart);
+  }
+
+  /**
+   * A80: Quét các đơn sắp đến giờ làm (CONFIRMED) để gửi nhắc hẹn trước 60 phút và 30 phút.
+   */
+  async sweepUpcomingJobReminders(): Promise<void> {
+    try {
+      const now = new Date();
+      const jobs = await this.jobModel
+        .find({
+          status: JobStatus.CONFIRMED,
+          helper_id: { $ne: null },
+          preferred_date: { $exists: true, $ne: '' },
+          preferred_time_start: { $exists: true, $ne: '' },
+        })
+        .populate('customer_id', 'full_name')
+        .populate('helper_id', 'full_name')
+        .exec();
+
+      for (const job of jobs) {
+        if (!job.preferred_date || !job.preferred_time_start) continue;
+
+        const parts = job.preferred_time_start.split(':').map(Number);
+        const hours = parts[0] ?? 0;
+        const minutes = parts[1] ?? 0;
+        const startTime = new Date(job.preferred_date);
+        startTime.setHours(hours, minutes, 0, 0);
+
+        const diffMinutes = Math.round((startTime.getTime() - now.getTime()) / 60000);
+        const reminders = [...(job.reminders_sent || [])];
+
+        const customerName = (job.customer_id as any)?.full_name || 'Khách hàng';
+        const helperName = (job.helper_id as any)?.full_name || 'Thợ';
+        const address = job.address?.full_address || 'Địa chỉ công việc';
+
+        // Mốc 60 phút: trong khoảng 45 - 75 phút
+        if (diffMinutes >= 45 && diffMinutes <= 75 && !reminders.includes('60m')) {
+          reminders.push('60m');
+          await this.jobModel.updateOne({ _id: job._id }, { $set: { reminders_sent: reminders } });
+
+          await Promise.allSettled([
+            this.notificationsService.create({
+              userId: String((job.customer_id as any)?._id || job.customer_id),
+              type: NOTIFICATION_TYPES.JOB_STATUS_CHANGED,
+              title: '⏰ Nhắc hẹn: Đơn sắp bắt đầu sau 60 phút',
+              body: `Công việc "${job.title}" tại ${address} sẽ bắt đầu lúc ${job.preferred_time_start}. Thợ phụ trách: ${helperName}.`,
+              payload: { job_id: String(job._id) },
+            }),
+            this.notificationsService.create({
+              userId: String((job.helper_id as any)?._id || job.helper_id),
+              type: NOTIFICATION_TYPES.JOB_STATUS_CHANGED,
+              title: '⏰ Nhắc hẹn: Đơn sắp bắt đầu sau 60 phút',
+              body: `Công việc "${job.title}" tại ${address} sẽ bắt đầu lúc ${job.preferred_time_start}. Khách hàng: ${customerName}.`,
+              payload: { job_id: String(job._id) },
+            }),
+          ]);
+        }
+
+        // Mốc 30 phút: trong khoảng 15 - 35 phút
+        if (diffMinutes >= 15 && diffMinutes <= 35 && !reminders.includes('30m')) {
+          reminders.push('30m');
+          await this.jobModel.updateOne({ _id: job._id }, { $set: { reminders_sent: reminders } });
+
+          await Promise.allSettled([
+            this.notificationsService.create({
+              userId: String((job.customer_id as any)?._id || job.customer_id),
+              type: NOTIFICATION_TYPES.JOB_STATUS_CHANGED,
+              title: '⏰ Nhắc hẹn: Đơn sắp bắt đầu sau 30 phút',
+              body: `Công việc "${job.title}" tại ${address} sẽ bắt đầu lúc ${job.preferred_time_start}. Thợ phụ trách: ${helperName}.`,
+              payload: { job_id: String(job._id) },
+            }),
+            this.notificationsService.create({
+              userId: String((job.helper_id as any)?._id || job.helper_id),
+              type: NOTIFICATION_TYPES.JOB_STATUS_CHANGED,
+              title: '⏰ Nhắc hẹn: Đơn sắp bắt đầu sau 30 phút',
+              body: `Công việc "${job.title}" tại ${address} sẽ bắt đầu lúc ${job.preferred_time_start}. Khách hàng: ${customerName}.`,
+              payload: { job_id: String(job._id) },
+            }),
+          ]);
+        }
+      }
+    } catch (err) {
+      this.logger.warn(`sweepUpcomingJobReminders failed: ${(err as Error).message}`);
+    }
   }
 
   // ─── Private offer (gửi riêng cho thợ yêu thích) ──────────────────────────
@@ -415,6 +507,12 @@ export class JobsService implements OnModuleInit, OnModuleDestroy {
   }
 
   async requireVerifiedHelper(userId: string): Promise<void> {
+    const user = await this.userModel.findById(userId).select('is_verified').lean();
+    if (user && user.is_verified === false) {
+      throw new BadRequestException(
+        'Tài khoản thợ chưa được xác minh qua email. Vui lòng xác minh email trước khi nhận việc hoặc gửi báo giá.',
+      );
+    }
     if (!(await this.isVerifiedHelper(userId))) {
       throw new ForbiddenException(
         'Bạn cần hoàn tất xác thực danh tính (e-KYC) để xem và nhận việc.',
@@ -566,6 +664,14 @@ export class JobsService implements OnModuleInit, OnModuleDestroy {
       warrantySourceJobId?: string;
     },
   ): Promise<JobDocument> {
+    // A103: Chặn đặt đơn khi tài khoản chưa xác minh email
+    const customerUser = await this.userModel.findById(customerId).select('is_verified').lean();
+    if (customerUser && customerUser.is_verified === false) {
+      throw new BadRequestException(
+        'Tài khoản chưa được xác minh qua email. Vui lòng xác minh email trước khi tạo đơn.',
+      );
+    }
+
     // A10: Đơn yêu cầu bắt buộc phải có ít nhất dịch vụ trong danh mục hoặc tên dịch vụ tùy chỉnh
     if (!dto.service_id && !dto.custom_service_name?.trim()) {
       throw new BadRequestException(
@@ -719,6 +825,14 @@ export class JobsService implements OnModuleInit, OnModuleDestroy {
       job_id: String(job._id),
       status: job.status,
     });
+
+    // A77: Thông báo cho Admin khi có đơn mới được tạo
+    void this.notificationsService.notifyAdmins({
+      type: NOTIFICATION_TYPES.JOB_CREATED,
+      title: 'Có công việc mới',
+      body: `Khách hàng vừa tạo công việc "${job.title}".`,
+      payload: { job_id: String(job._id) },
+    }).catch(() => undefined);
 
     return job;
   }
@@ -962,6 +1076,15 @@ export class JobsService implements OnModuleInit, OnModuleDestroy {
           job.preferred_time_start,
         ),
       );
+
+      // A84: Chỉ phát sự kiện JOB_CREATED tới các thợ phù hợp (đúng dịch vụ, trong khu vực)
+      for (const helper of helpers) {
+        this.gateway.emitToUser(String(helper.user_id), SOCKET_EVENTS.JOB_CREATED, {
+          job_id: String(job._id),
+          service_id: job.service_id ? String(job.service_id) : '',
+          status: job.status,
+        });
+      }
 
       const district = job.address?.district ? ` tại ${job.address.district}` : '';
       const notifications = await Promise.allSettled(
@@ -1249,6 +1372,13 @@ export class JobsService implements OnModuleInit, OnModuleDestroy {
       throw new BadRequestException('Bạn không thể tự nhận đơn cứu hộ của chính mình');
     }
 
+    const user = await this.userModel.findById(helperId).select('is_verified').lean();
+    if (user && user.is_verified === false) {
+      throw new BadRequestException(
+        'Tài khoản thợ chưa được xác minh qua email. Vui lòng xác minh email trước khi nhận đơn cứu hộ SOS.',
+      );
+    }
+
     const helperProfile = await this.helperModel
       .findOne({ user_id: new Types.ObjectId(helperId) })
       .exec();
@@ -1460,7 +1590,7 @@ export class JobsService implements OnModuleInit, OnModuleDestroy {
 
     const helperProfile = await this.helperModel
       .findOne({ user_id: new Types.ObjectId(helperId) })
-      .populate('user_id', 'full_name status')
+      .populate('user_id', 'full_name status is_verified')
       .exec();
     if (!helperProfile || helperProfile.verification_status !== VerificationStatus.APPROVED) {
       throw new ForbiddenException(
@@ -1468,8 +1598,14 @@ export class JobsService implements OnModuleInit, OnModuleDestroy {
       );
     }
 
-    // A46: Kiểm tra thợ bận / tạm khoá / ngoại tuyến
     const helperUser = helperProfile.user_id as any;
+    if (helperUser?.is_verified === false) {
+      throw new BadRequestException(
+        'Tài khoản thợ chưa được xác minh qua email. Vui lòng xác minh email trước khi gửi báo giá.',
+      );
+    }
+
+    // A46: Kiểm tra thợ bận / tạm khoá / ngoại tuyến
     if (helperUser?.status === UserStatus.SUSPENDED || helperUser?.status === UserStatus.INACTIVE) {
       throw new ForbiddenException('Tài khoản của bạn đang bị tạm khoá hoặc ngừng hoạt động');
     }
@@ -1592,6 +1728,14 @@ export class JobsService implements OnModuleInit, OnModuleDestroy {
       jobId,
     );
 
+    // A77: Báo cho Admin khi có báo giá mới
+    void this.notificationsService.notifyAdmins({
+      type: NOTIFICATION_TYPES.NEW_QUOTE_RECEIVED,
+      title: 'Có báo giá mới',
+      body: `Thợ đã gửi báo giá ${totalPrice.toLocaleString('vi-VN')}₫ cho công việc "${job.title}".`,
+      payload: { job_id: jobId, quote_id: String(quote._id) },
+    }).catch(() => undefined);
+
     return quote;
   }
 
@@ -1607,7 +1751,10 @@ export class JobsService implements OnModuleInit, OnModuleDestroy {
 
     const query: Record<string, unknown> = {
       job_id: new Types.ObjectId(jobId),
-      status: QuoteStatus.PENDING,
+      status:
+        requesterRole === 'customer'
+          ? { $in: [QuoteStatus.PENDING, QuoteStatus.REJECTED, QuoteStatus.ACCEPTED] }
+          : QuoteStatus.PENDING,
     };
     if (requesterRole === 'helper') {
       query['helper_id'] = new Types.ObjectId(requesterId);
@@ -1721,6 +1868,55 @@ export class JobsService implements OnModuleInit, OnModuleDestroy {
       (obj as any).helper_completed_jobs = profile?.completed_jobs ?? 0;
       return obj;
     });
+  }
+
+  // A89: Khách từ chối từng báo giá riêng biệt
+  async rejectQuote(
+    customerId: string,
+    jobId: string,
+    quoteId: string,
+    reason?: string,
+  ): Promise<QuoteDocument> {
+    const job = await this.jobModel.findById(jobId).exec();
+    if (!job) throw new NotFoundException('Job không tồn tại');
+    if (job.customer_id.toString() !== customerId) throw new ForbiddenException();
+
+    const quote = await this.quoteModel.findById(quoteId).exec();
+    if (!quote || quote.job_id.toString() !== jobId) {
+      throw new NotFoundException('Quote không tồn tại');
+    }
+    if (quote.status === QuoteStatus.ACCEPTED) {
+      throw new BadRequestException('Không thể từ chối báo giá đã được chọn');
+    }
+    if (quote.status === QuoteStatus.REJECTED) {
+      throw new BadRequestException('Báo giá này đã được từ chối trước đó');
+    }
+
+    quote.status = QuoteStatus.REJECTED;
+    if (reason) {
+      (quote as any).rejection_reason = reason;
+    }
+    await quote.save();
+
+    const helperId = String(quote.helper_id);
+    this.gateway.emitToUser(helperId, SOCKET_EVENTS.QUOTE_REJECTED, {
+      job_id: jobId,
+      quote_id: quoteId,
+      reason: reason || 'Khách hàng đã từ chối báo giá',
+    });
+    await this.notificationsService
+      .create({
+        userId: helperId,
+        type: NOTIFICATION_TYPES.QUOTE_REJECTED,
+        title: 'Báo giá đã bị từ chối',
+        body: reason
+          ? `Báo giá của bạn cho đơn "${job.title}" đã bị từ chối: ${reason}`
+          : `Báo giá của bạn cho đơn "${job.title}" đã bị từ chối.`,
+        payload: { job_id: jobId, quote_id: quoteId },
+      })
+      .catch(() => undefined);
+
+    return quote;
   }
 
   // ─── Customer: Select quote → create Contract ─────────────────────────────
@@ -2137,6 +2333,9 @@ export class JobsService implements OnModuleInit, OnModuleDestroy {
 
     amendment.status = dto.action === 'accept' ? 'accepted' : 'rejected';
     amendment.responded_at = new Date();
+    if (dto.action === 'reject' && dto.reason) {
+      (amendment as any).rejection_reason = dto.reason;
+    }
 
     if (dto.action === 'accept') {
       const extraLabor = amendment.additional_labor_cost || 0;
@@ -2168,6 +2367,15 @@ export class JobsService implements OnModuleInit, OnModuleDestroy {
         `Đồng ý phụ lục phát sinh +${extraTotal.toLocaleString('vi-VN')}₫ (${amendment.reason})`,
       );
       await job.save();
+    } else {
+      this.addEvent(
+        job,
+        job.status,
+        customerId,
+        'customer',
+        `Từ chối phụ lục phát sinh (${amendment.reason})${dto.reason ? `: ${dto.reason}` : ''}`,
+      );
+      await job.save();
     }
 
     await contract.save();
@@ -2197,7 +2405,9 @@ export class JobsService implements OnModuleInit, OnModuleDestroy {
           body:
             dto.action === 'accept'
               ? `Tổng giá trị hợp đồng mới: ${contract.total_price.toLocaleString('vi-VN')}₫`
-              : `Khách hàng không đồng ý khoản phát sinh (${amendment.reason}).`,
+              : (dto.reason
+                  ? `Khách hàng đã từ chối khoản phát sinh (${amendment.reason}). Lý do: ${dto.reason}`
+                  : `Khách hàng không đồng ý khoản phát sinh (${amendment.reason}).`),
           payload: { job_id: jobId },
         })
         .catch(() => undefined);
@@ -2276,6 +2486,24 @@ export class JobsService implements OnModuleInit, OnModuleDestroy {
       job_id: jobId,
       started_at: new Date().toISOString(),
     });
+
+    // A75: Thông báo cho khách và thợ khi bắt đầu làm
+    await Promise.allSettled([
+      this.notificationsService.create({
+        userId: String(job.customer_id),
+        type: NOTIFICATION_TYPES.JOB_STATUS_CHANGED,
+        title: 'Thợ đã bắt đầu làm việc',
+        body: `Thợ đã bắt đầu thực hiện công việc "${job.title}".`,
+        payload: { job_id: jobId, status: JobStatus.IN_PROGRESS },
+      }),
+      this.notificationsService.create({
+        userId: helperId,
+        type: NOTIFICATION_TYPES.JOB_STATUS_CHANGED,
+        title: 'Bắt đầu làm việc thành công',
+        body: `Bạn đã bắt đầu thực hiện công việc "${job.title}". Chúc bạn hoàn thành tốt!`,
+        payload: { job_id: jobId, status: JobStatus.IN_PROGRESS },
+      }),
+    ]);
 
     return job;
   }
@@ -2458,6 +2686,21 @@ export class JobsService implements OnModuleInit, OnModuleDestroy {
       });
     }
 
+    // A81: Gửi thông báo nhắc đánh giá cho khách nếu chưa gửi
+    if (!job.review_reminder_sent) {
+      job.review_reminder_sent = true;
+      await this.jobModel.updateOne({ _id: job._id }, { $set: { review_reminder_sent: true } }).exec();
+      await this.notificationsService
+        .create({
+          userId: customerId,
+          type: NOTIFICATION_TYPES.JOB_COMPLETED,
+          title: 'Đánh giá dịch vụ',
+          body: `Công việc "${job.title}" đã nghiệm thu thành công. Hãy chia sẻ đánh giá của bạn về thợ nhé!`,
+          payload: { job_id: jobId },
+        })
+        .catch(() => undefined);
+    }
+
     // ── Loyalty (Feature 12): cộng điểm tích lũy cho khách ─────────────────
     // Số tiền căn cứ = giá chốt − giảm voucher + phụ phí SOS. Lỗi loyalty
     // KHÔNG được làm hỏng nghiệm thu nên bọc try/catch + log warn (award
@@ -2539,13 +2782,21 @@ export class JobsService implements OnModuleInit, OnModuleDestroy {
       await this.notificationsService
         .create({
           userId: targetNotifyId,
-          type: NOTIFICATION_TYPES.SYSTEM,
+          type: 'dispute_opened',
           title: '⚠️ Đơn hàng đang có khiếu nại / tranh chấp',
           body: `Công việc "${job.title}" đã chuyển sang trạng thái chờ Admin phân xử. Lý do: ${dto.reason}`,
-          payload: { job_id: jobId },
+          payload: { job_id: jobId, dispute_id: jobId },
         })
         .catch(() => undefined);
     }
+
+    // A77: Báo cho Admin khi có tranh chấp mới
+    void this.notificationsService.notifyAdmins({
+      type: 'dispute_opened',
+      title: 'Có tranh chấp mới cần xử lý',
+      body: `Đơn "${job.title}" có khiếu nại mới từ ${isCustomer ? 'khách hàng' : 'thợ'}: ${dto.reason}`,
+      payload: { job_id: jobId, dispute_id: jobId },
+    }).catch(() => undefined);
 
     return job;
   }
@@ -2729,10 +2980,10 @@ export class JobsService implements OnModuleInit, OnModuleDestroy {
     await this.notificationsService
       .create({
         userId: String(job.customer_id),
-        type: NOTIFICATION_TYPES.SYSTEM,
+        type: 'dispute_resolved',
         title: '⚖️ Kết quả phân xử khiếu nại từ Admin',
         body: `Đơn "${job.title}": ${dto.admin_note}${refundAmount > 0 && moveMoney ? ` (Hoàn ví: +${refundAmount.toLocaleString('vi-VN')}₫)` : ''}`,
-        payload: { job_id: jobId },
+        payload: { job_id: jobId, dispute_id: jobId },
       })
       .catch(() => undefined);
 
@@ -2750,10 +3001,10 @@ export class JobsService implements OnModuleInit, OnModuleDestroy {
       await this.notificationsService
         .create({
           userId: String(job.helper_id),
-          type: NOTIFICATION_TYPES.SYSTEM,
+          type: 'dispute_resolved',
           title: '⚖️ Kết quả phân xử khiếu nại từ Admin',
           body: helperBody,
-          payload: { job_id: jobId },
+          payload: { job_id: jobId, dispute_id: jobId },
         })
         .catch(() => undefined);
     }
@@ -2771,6 +3022,11 @@ export class JobsService implements OnModuleInit, OnModuleDestroy {
   ): Promise<JobDocument> {
     const job = await this.jobModel.findById(jobId).exec();
     if (!job) throw new NotFoundException('Job không tồn tại');
+
+    // A76: Huỷ đơn bắt buộc chọn/nhập lý do
+    if (!dto?.reason?.trim()) {
+      throw new BadRequestException('Vui lòng cung cấp lý do hủy đơn');
+    }
 
     if (actorRole !== 'admin') {
       if (actorRole === 'customer' && job.customer_id.toString() !== actorId) {
@@ -2914,16 +3170,16 @@ export class JobsService implements OnModuleInit, OnModuleDestroy {
         userId: String(job.helper_id),
         type: NOTIFICATION_TYPES.SYSTEM,
         title: 'Công việc bị hủy',
-        body: `Khách hàng đã hủy công việc "${job.title}"`,
-        payload: { job_id: jobId },
+        body: `Khách hàng đã hủy công việc "${job.title}". Lý do: ${dto.reason}`,
+        payload: { job_id: jobId, reason: dto.reason },
       });
     } else if (actorRole === 'helper') {
       await this.notificationsService.create({
         userId: String(job.customer_id),
         type: NOTIFICATION_TYPES.SYSTEM,
         title: 'Công việc bị hủy',
-        body: `Người giúp việc đã hủy công việc "${job.title}"`,
-        payload: { job_id: jobId },
+        body: `Người giúp việc đã hủy công việc "${job.title}". Lý do: ${dto.reason}`,
+        payload: { job_id: jobId, reason: dto.reason },
       });
     }
 

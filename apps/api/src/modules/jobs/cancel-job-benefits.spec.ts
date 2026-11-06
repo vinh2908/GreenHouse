@@ -98,6 +98,7 @@ function makeJobsService(opts?: { voucherThrows?: boolean }) {
     dummy, // serviceModel
     dummy, // helperModel
     dummy, // penaltyEventModel
+    dummy, // userModel
     gateway as never,
     notificationsService as never,
     dummy, // chatService

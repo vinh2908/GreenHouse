@@ -25,6 +25,7 @@ import {
 } from '@/hooks/use-api';
 import { Badge, Button, Card, COLORS, LoadingSpinner } from '@/components/ui';
 import { useTranslation } from '@/hooks/use-i18n';
+import { useMonthlyContractSocket } from '@/hooks/use-socket';
 import { MONTHLY_STATUS_META, describeMonthlySchedule, personName } from '../monthly-contracts';
 
 const fmt = (n?: number) => new Intl.NumberFormat('vi-VN').format(n ?? 0);
@@ -54,6 +55,9 @@ export default function MonthlyContractDetailScreen() {
   const { t, fs, lang } = useTranslation();
   const user = useAuthStore(s => s.user);
   const isHelper = user?.active_role === 'helper';
+
+  // A85: Lắng nghe socket event cập nhật hợp đồng tháng tức thì
+  useMonthlyContractSocket(id);
 
   const currentMonth = dayjs().format('YYYY-MM');
   const [month, setMonth] = useState(currentMonth);

@@ -80,18 +80,27 @@ export class VerifyOtpDto {
 }
 
 export class ForgotPasswordDto {
-  @ApiProperty({ example: '0901234567' })
+  @ApiPropertyOptional({ example: '0901234567' })
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
-  @Matches(/^(0[3|5|7|8|9])+([0-9]{8})$/)
-  phone: string;
+  phone?: string;
+
+  @ApiPropertyOptional({ example: 'user@example.com' })
+  @IsOptional()
+  @IsString()
+  email?: string;
 }
 
 export class ResetPasswordDto {
-  @ApiProperty({ example: '0901234567' })
+  @ApiPropertyOptional({ example: '0901234567' })
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
-  phone: string;
+  phone?: string;
+
+  @ApiPropertyOptional({ example: 'user@example.com' })
+  @IsOptional()
+  @IsString()
+  email?: string;
 
   @ApiProperty({ example: '123456' })
   @IsString()
@@ -104,4 +113,24 @@ export class ResetPasswordDto {
   @MinLength(8)
   @MaxLength(64)
   new_password: string;
+}
+
+export class VerifyEmailDto {
+  @ApiProperty({ example: 'user@example.com' })
+  @IsEmail({}, { message: 'Email không hợp lệ' })
+  @IsNotEmpty({ message: 'Vui lòng cung cấp email' })
+  email: string;
+
+  @ApiProperty({ example: '123456' })
+  @IsString()
+  @IsNotEmpty()
+  @Matches(/^[0-9]{6}$/)
+  otp: string;
+}
+
+export class ResendEmailOtpDto {
+  @ApiProperty({ example: 'user@example.com' })
+  @IsEmail({}, { message: 'Email không hợp lệ' })
+  @IsNotEmpty({ message: 'Vui lòng cung cấp email' })
+  email: string;
 }

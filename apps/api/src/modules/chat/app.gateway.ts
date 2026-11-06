@@ -77,6 +77,11 @@ export class AppGateway implements OnGatewayConnection, OnGatewayDisconnect {
       // Join personal room
       client.join(`user:${userId}`);
 
+      // A77: Admin tự động tham gia room:admins để nhận thông báo công việc mới tức thì
+      if (Array.isArray(payload.roles) && payload.roles.includes('admin')) {
+        client.join('room:admins');
+      }
+
       // Track socket
       if (!this.userSockets.has(userId)) {
         this.userSockets.set(userId, new Set());
@@ -266,6 +271,11 @@ export class AppGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   emitToUser(userId: string, event: string, data: unknown) {
     this.server.to(`user:${userId}`).emit(event, data);
+  }
+
+  // A77: Phát sự kiện realtime tới toàn bộ Quản trị viên
+  emitToAdmins(event: string, data: unknown) {
+    this.server.to('room:admins').emit(event, data);
   }
 
   emitToJob(jobId: string, event: string, data: unknown) {

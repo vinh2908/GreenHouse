@@ -15,6 +15,7 @@ import { MonthlyContractsService } from './monthly-contracts.service';
 import {
   CreateMonthlyContractDto,
   RespondMonthlyContractDto,
+  CancelMonthlyContractDto,
   EndMonthlyContractDto,
   ConfirmAttendanceDto,
   CreateLeaveRequestDto,
@@ -76,14 +77,18 @@ export class MonthlyContractsController {
     @Param('id') id: string,
     @Body() dto: RespondMonthlyContractDto,
   ) {
-    return this.service.respond(user.sub, id, dto.accept);
+    return this.service.respond(user.sub, id, dto.accept, dto.reason);
   }
 
   @Patch(':id/cancel')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Hủy hợp đồng (khách hoặc thợ, khi đang chờ duyệt/đang hiệu lực)' })
-  async cancel(@CurrentUser() user: { sub: string }, @Param('id') id: string) {
-    return this.service.cancel(user.sub, id);
+  async cancel(
+    @CurrentUser() user: { sub: string },
+    @Param('id') id: string,
+    @Body() dto?: CancelMonthlyContractDto,
+  ) {
+    return this.service.cancel(user.sub, id, dto?.reason);
   }
 
   @Patch(':id/end')

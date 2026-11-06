@@ -115,6 +115,9 @@ function createMockEnvironment() {
       }
       return count;
     }),
+    updateOne: jest.fn(() => ({
+      exec: async () => ({ modifiedCount: 1 }),
+    })),
   };
 
   const contractModel = {
@@ -164,6 +167,7 @@ function createMockEnvironment() {
     {}, // serviceModel
     helperModel,
     {}, // penaltyEventModel
+    {}, // userModel
     gateway,
     notificationsService,
     {}, // chatService
@@ -184,7 +188,7 @@ function createMockEnvironment() {
     {}, // walletModel
     {}, // transactionModel
     {}, // withdrawalModel
-    {}, // reviewModel
+    { exists: jest.fn().mockResolvedValue(false) }, // reviewModel
     {}, // customerModel
     {}, // sosModel
     {}, // penaltyEventModel
