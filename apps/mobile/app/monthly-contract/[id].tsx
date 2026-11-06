@@ -1,5 +1,14 @@
 import { useMemo, useState } from 'react';
-import { formatDate, formatDateTime } from '@/utils/date-format';
+import {
+  formatDate,
+  formatDateTime,
+  formatMonthKey,
+  formatMonthSlash,
+  formatShortDay,
+  toVnDayjs,
+  vnDateKey,
+  vnNow,
+} from '@/utils/date-format';
 import {
   View,
   Text,
@@ -92,7 +101,7 @@ export default function MonthlyContractDetailScreen() {
   // A85: Lắng nghe socket event cập nhật hợp đồng tháng tức thì
   useMonthlyContractSocket(id);
 
-  const currentMonth = dayjs().format('YYYY-MM');
+  const currentMonth = formatMonthKey(vnNow());
   const [month, setMonth] = useState(currentMonth);
 
   const { data: contract, isLoading, refetch, isRefetching } = useMonthlyContract(id);
@@ -124,7 +133,7 @@ export default function MonthlyContractDetailScreen() {
     return map;
   }, [attendance]);
 
-  const todayStr = attendance?.today ?? dayjs().format('YYYY-MM-DD');
+  const todayStr = attendance?.today ?? vnDateKey();
   const todayRecord = recordByDate.get(todayStr);
   const isScheduledToday =
     (attendance?.scheduled_dates ?? []).includes(todayStr) && month === currentMonth;
@@ -295,9 +304,9 @@ export default function MonthlyContractDetailScreen() {
           />
           <InfoRow
             label={lang === 'en' ? 'Duration' : 'Thời gian'}
-            value={`${formatDate(dayjs(contract.start_date))}${
+            value={`${formatDate(contract.start_date)}${
               contract.end_date
-                ? ` → ${formatDate(dayjs(contract.end_date))}`
+                ? ` → ${formatDate(contract.end_date)}`
                 : lang === 'en'
                   ? ' → Ongoing'
                   : ' → Chưa ấn định ngày kết thúc'
@@ -421,11 +430,11 @@ export default function MonthlyContractDetailScreen() {
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
             <Text style={{ flex: 1, fontSize: fs(15), fontWeight: '800', color: tc.text }}>
               {lang === 'en'
-                ? `Attendance for Month ${dayjs(`${month}-01`).format('MM/YYYY')}`
-                : `Điểm danh tháng ${dayjs(`${month}-01`).format('MM/YYYY')}`}
+                ? `Attendance for Month ${formatMonthSlash(`${month}-01`)}`
+                : `Điểm danh tháng ${formatMonthSlash(`${month}-01`)}`}
             </Text>
             <TouchableOpacity
-              onPress={() => setMonth(dayjs(`${month}-01`).subtract(1, 'month').format('YYYY-MM'))}
+              onPress={() => setMonth(formatMonthKey(toVnDayjs(`${month}-01`).subtract(1, 'month')))}
               style={{
                 paddingHorizontal: 10,
                 paddingVertical: 6,
@@ -437,7 +446,7 @@ export default function MonthlyContractDetailScreen() {
             </TouchableOpacity>
             <TouchableOpacity
               disabled={month >= currentMonth}
-              onPress={() => setMonth(dayjs(`${month}-01`).add(1, 'month').format('YYYY-MM'))}
+              onPress={() => setMonth(formatMonthKey(toVnDayjs(`${month}-01`).add(1, 'month')))}
               style={{
                 paddingHorizontal: 10,
                 paddingVertical: 6,
@@ -481,7 +490,7 @@ export default function MonthlyContractDetailScreen() {
                       color: tc.text,
                     }}
                   >
-                    {dayjs(date).format('ddd, DD/MM')}
+                    {formatShortDay(date, lang)}
                     {isToday ? (lang === 'en' ? ' • Today' : ' • Hôm nay') : ''}
                   </Text>
                   <View style={{ flex: 1 }}>
@@ -573,8 +582,8 @@ export default function MonthlyContractDetailScreen() {
                     }}
                   >
                     {lang === 'en'
-                      ? `Leave on ${formatDate(dayjs(l.date))}`
-                      : `Nghỉ ngày ${formatDate(dayjs(l.date))}`}
+                      ? `Leave on ${formatDate(l.date)}`
+                      : `Nghỉ ngày ${formatDate(l.date)}`}
                   </Text>
                   <Badge
                     label={lang === 'en' ? m.label_en : m.label}
@@ -679,8 +688,8 @@ export default function MonthlyContractDetailScreen() {
           <Card style={{ gap: 8 }}>
             <Text style={{ fontSize: fs(15), fontWeight: '800', color: tc.text }}>
               {lang === 'en'
-                ? `Wage Settlement for Month ${dayjs(`${month}-01`).format('MM/YYYY')}`
-                : `Chốt lương tháng ${dayjs(`${month}-01`).format('MM/YYYY')}`}
+                ? `Wage Settlement for Month ${formatMonthSlash(`${month}-01`)}`
+                : `Chốt lương tháng ${formatMonthSlash(`${month}-01`)}`}
             </Text>
             {settlement ? (
               <>

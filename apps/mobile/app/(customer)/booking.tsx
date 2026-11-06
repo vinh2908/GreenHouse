@@ -1,5 +1,13 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
-import { formatDate, formatTime } from '@/utils/date-format';
+import {
+  formatDate,
+  formatDateKey,
+  formatDateWithWeekday,
+  formatTime,
+  toVnDayjs,
+  vnDateKey,
+  vnNow,
+} from '@/utils/date-format';
 import {
   View,
   Text,
@@ -275,9 +283,9 @@ export default function BookingScreen() {
   const [isRecurring, setIsRecurring] = useState(false);
   const [recurringFreq, setRecurringFreq] = useState<'weekly' | 'monthly'>('weekly');
   const [recurringWeekdays, setRecurringWeekdays] = useState<number[]>([
-    dayjs().add(1, 'day').day(),
+    vnNow().add(1, 'day').day(),
   ]);
-  const [recurringMonthDay, setRecurringMonthDay] = useState(dayjs().add(1, 'day').date());
+  const [recurringMonthDay, setRecurringMonthDay] = useState(vnNow().add(1, 'day').date());
   const [voucherCode, setVoucherCode] = useState('');
   const [voucherPreview, setVoucherPreview] = useState<VoucherPreview | null>(null);
   const [helpersNeeded, setHelpersNeeded] = useState(1); // Đơn nhóm (Feature 5)
@@ -306,16 +314,16 @@ export default function BookingScreen() {
   const [isAnalyzingPhoto, setIsAnalyzingPhoto] = useState(false);
   const searchSeqRef = useRef(0);
   const searchTimeoutRef = useRef<any>(null);
-  const [date, setDate] = useState(dayjs().add(1, 'day').format('YYYY-MM-DD'));
+  const [date, setDate] = useState(vnDateKey(1));
   const [dateChip, setDateChip] = useState<'today' | 'tomorrow' | 'sat' | 'sun' | null>('tomorrow');
   const [timeSlot, setTimeSlot] = useState(() =>
-    getDefaultFutureTimeSlot(dayjs().add(1, 'day').format('YYYY-MM-DD')),
+    getDefaultFutureTimeSlot(vnDateKey(1)),
   );
   const [duration, setDuration] = useState(3);
   const [dateTimePickerOpen, setDateTimePickerOpen] = useState(false);
   const [bottomSheetInitialTab, setBottomSheetInitialTab] = useState<'date' | 'time'>('date');
   const [calendarOpen, setCalendarOpen] = useState(false);
-  const [calendarMonth, setCalendarMonth] = useState(dayjs());
+  const [calendarMonth, setCalendarMonth] = useState(vnNow());
   const [customTimeOpen, setCustomTimeOpen] = useState(false);
   const [customTimeInput, setCustomTimeInput] = useState('');
   const [isCustomDuration, setIsCustomDuration] = useState(false);
@@ -372,8 +380,8 @@ export default function BookingScreen() {
     // Prefill ngày giờ nếu có
     if (params.preferred_date) {
       setDate(params.preferred_date);
-      if (params.preferred_date === dayjs().format('YYYY-MM-DD')) setDateChip('today');
-      else if (params.preferred_date === dayjs().add(1, 'day').format('YYYY-MM-DD'))
+      if (params.preferred_date === vnDateKey()) setDateChip('today');
+      else if (params.preferred_date === vnDateKey(1))
         setDateChip('tomorrow');
       else setDateChip(null);
     }
@@ -436,7 +444,7 @@ export default function BookingScreen() {
       coordinates: [0, 0],
     });
     setCoordsDerived(false);
-    setDate(dayjs().add(1, 'day').format('YYYY-MM-DD'));
+    setDate(vnDateKey(1));
     setTimeSlot('09:00');
     setDuration(3);
     setTitle('');
@@ -1155,8 +1163,8 @@ export default function BookingScreen() {
 
       const durHours = typeof duration === 'number' ? duration : parseFloat(String(duration)) || 2;
       const durMinsTotal = Math.round(durHours * 60);
-      const startDateTime = dayjs(`${date} ${timeSlot}`);
-      if (startDateTime.isBefore(dayjs().subtract(1, 'minute'))) {
+      const startDateTime = toVnDayjs(`${date} ${timeSlot}`);
+      if (startDateTime.isBefore(vnNow().subtract(1, 'minute'))) {
         Toast.show({ type: 'error', text1: t('booking_time_past_error') });
         return;
       }
@@ -1255,8 +1263,8 @@ export default function BookingScreen() {
         Toast.show({ type: 'error', text1: t('booking_time_validation_error') });
         return;
       }
-      const selectedStart = dayjs(`${date} ${timeSlot}`);
-      if (selectedStart.isBefore(dayjs())) {
+      const selectedStart = toVnDayjs(`${date} ${timeSlot}`);
+      if (selectedStart.isBefore(vnNow())) {
         Toast.show({ type: 'error', text1: t('booking_time_past_error') });
         return;
       }
@@ -1961,12 +1969,7 @@ export default function BookingScreen() {
                       style={{ fontSize: fs(15), fontWeight: '700', color: tc.text }}
                       numberOfLines={1}
                     >
-                      {(() => {
-                        const dt = dayjs(date).locale(lang === 'en' ? 'en' : 'vi');
-                        const dow = dt.format('dddd');
-                        const capitalizedDow = dow.charAt(0).toUpperCase() + dow.slice(1);
-                        return `${capitalizedDow}, ${formatDate(dt)}`;
-                      })()}
+                      {formatDateWithWeekday(date, lang)}
                     </Text>
                     <Text
                       style={{
@@ -1996,9 +1999,9 @@ export default function BookingScreen() {
                         key={c.key}
                         onPress={() => {
                           setDateChip(c.key as any);
-                          const now = dayjs();
+                          const now = vnNow();
                           if (c.key === 'today') {
-                            const todayStr = now.format('YYYY-MM-DD');
+                            const todayStr = vnDateKey();
                             setDate(todayStr);
                             const [th, tm] = timeSlot.split(':').map(Number);
                             const nowVn = getNowVietnam();
@@ -2006,13 +2009,13 @@ export default function BookingScreen() {
                               setTimeSlot(getDefaultFutureTimeSlot(todayStr));
                             }
                           } else if (c.key === 'tomorrow')
-                            setDate(now.add(1, 'day').format('YYYY-MM-DD'));
+                            setDate(vnDateKey(1));
                           else if (c.key === 'sat') {
                             const nextSat = now.day() <= 6 ? now.day(6) : now.add(1, 'week').day(6);
-                            setDate(nextSat.format('YYYY-MM-DD'));
+                            setDate(formatDateKey(nextSat));
                           } else if (c.key === 'sun') {
                             const nextSun = now.day() === 0 ? now : now.day(7);
-                            setDate(nextSun.format('YYYY-MM-DD'));
+                            setDate(formatDateKey(nextSun));
                           }
                         }}
                         style={{
@@ -2390,9 +2393,7 @@ export default function BookingScreen() {
                 <Row
                   icon={<Calendar size={16} color={COLORS.primary} />}
                   label={t('booking_date_label')}
-                  value={dayjs(date)
-                    .locale(lang === 'en' ? 'en' : 'vi')
-                    .format('dddd, DD/MM/YYYY')}
+                  value={formatDateWithWeekday(date, lang)}
                 />
                 <Row
                   icon={<Clock size={16} color={COLORS.primary} />}
@@ -2652,7 +2653,7 @@ export default function BookingScreen() {
                     )}
                     <Text style={{ fontSize: fs(12), color: tc.textMuted, lineHeight: 17 }}>
                       {t('booking_recurring_preview', {
-                        date: formatDate(dayjs(date)),
+                        date: formatDate(date),
                         time: timeSlot,
                         duration,
                       })}

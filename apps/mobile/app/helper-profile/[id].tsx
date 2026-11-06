@@ -15,6 +15,7 @@ import {
   Heart,
 } from 'lucide-react-native';
 import dayjs from 'dayjs';
+import { vnDateTimeKey } from '@/utils/date-format';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import 'dayjs/locale/vi';
 import 'dayjs/locale/en';
@@ -122,7 +123,7 @@ export default function HelperPublicProfileScreen() {
         await selectQuote.mutateAsync({
           jobId,
           quote_id: quoteId,
-          scheduled_at: dayjs().add(1, 'day').format('YYYY-MM-DDT09:00:00'),
+          scheduled_at: vnDateTimeKey(1),
         });
         Toast.show({
           type: 'success',

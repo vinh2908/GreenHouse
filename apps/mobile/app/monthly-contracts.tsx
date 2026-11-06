@@ -3,9 +3,6 @@ import { formatDate } from '@/utils/date-format';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { ArrowLeft, Plus, ChevronRight, Calendar } from 'lucide-react-native';
-import dayjs from 'dayjs';
-import 'dayjs/locale/vi';
-import 'dayjs/locale/en';
 import {
   useMonthlyContracts,
   type MonthlyContractItem,
@@ -227,11 +224,11 @@ export default function MonthlyContractsScreen() {
                     <Text style={{ fontSize: fs(12.5), color: tc.textMuted }}>
                       {lang === 'en' ? 'Schedule: ' : 'Lịch: '}
                       {describeMonthlySchedule(c, lang)} · {lang === 'en' ? 'From ' : 'Từ '}
-                      {formatDate(dayjs(c.start_date))}
+                      {formatDate(c.start_date)}
                       {c.end_date
                         ? lang === 'en'
-                          ? ` to ${formatDate(dayjs(c.end_date))}`
-                          : ` đến ${formatDate(dayjs(c.end_date))}`
+                          ? ` to ${formatDate(c.end_date)}`
+                          : ` đến ${formatDate(c.end_date)}`
                         : ''}
                     </Text>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>

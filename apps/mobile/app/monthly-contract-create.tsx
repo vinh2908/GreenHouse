@@ -3,9 +3,9 @@ import { View, Text, ScrollView, TouchableOpacity, TextInput } from 'react-nativ
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { ArrowLeft, Check, Star } from 'lucide-react-native';
-import dayjs from 'dayjs';
 import Toast from 'react-native-toast-message';
 import { useFavorites, useAddresses, useServices, useCreateMonthlyContract } from '@/hooks/use-api';
+import { vnDateKey } from '@/utils/date-format';
 import { useTranslation } from '@/hooks/use-i18n';
 import { Avatar, Button, Card, COLORS, LoadingSpinner, useThemeColors } from '@/components/ui';
 
@@ -52,7 +52,7 @@ export default function MonthlyContractCreateScreen() {
   const [days, setDays] = useState<number[]>([1, 2, 3, 4, 5]);
   const [timeStart, setTimeStart] = useState('08:00');
   const [timeEnd, setTimeEnd] = useState('17:00');
-  const [startDate, setStartDate] = useState(dayjs().add(1, 'day').format('YYYY-MM-DD'));
+  const [startDate, setStartDate] = useState(vnDateKey(1));
   const [endDate, setEndDate] = useState('');
   const [addressIdx, setAddressIdx] = useState(0);
   const [fullAddress, setFullAddress] = useState('');

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useMemo } from 'react';
-import { formatDate, formatDateTime } from '@/utils/date-format';
+import { formatDate, formatDateTime, vnDateKey, vnDateTimeKey } from '@/utils/date-format';
 import {
   View,
   Text,
@@ -279,7 +279,7 @@ export default function JobDetailScreen() {
   const [reviewText, setReviewText] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('vietqr');
   const [selectedMediaPreview, setSelectedMediaPreview] = useState<string | null>(null);
-  const [selectedDate] = useState(dayjs().add(1, 'day').format('YYYY-MM-DDT09:00:00'));
+  const [selectedDate] = useState(vnDateTimeKey(1));
 
   // ── Dispute Modal States ─────────────────────────────────────────────────
   const [showDisputeModal, setShowDisputeModal] = useState(false);
@@ -289,7 +289,7 @@ export default function JobDetailScreen() {
   // ── Warranty Modal States (BH1) ──────────────────────────────────────────
   const [showWarrantyModal, setShowWarrantyModal] = useState(false);
   const [warrantyIssue, setWarrantyIssue] = useState('');
-  const [warrantyDate, setWarrantyDate] = useState(dayjs().add(1, 'day').format('YYYY-MM-DD'));
+  const [warrantyDate, setWarrantyDate] = useState(vnDateKey(1));
   const [warrantyTime, setWarrantyTime] = useState('08:00');
 
   // ── Edit Job & Location Modal States ─────────────────────────────────────
@@ -1500,7 +1500,7 @@ export default function JobDetailScreen() {
               <Badge label={tService(serviceObj) || t('common_service')} />
               {job.preferred_date && (
                 <Badge
-                  label={formatDate(dayjs(job.preferred_date))}
+                  label={formatDate(job.preferred_date)}
                   color={COLORS.gray[100]}
                   textColor={COLORS.gray[700]}
                 />
@@ -1799,7 +1799,7 @@ export default function JobDetailScreen() {
                                 : lang === 'en'
                                   ? 'Helper location unavailable'
                                   : 'Chưa xác định được vị trí thợ'}
-                              {q.available_date && ` • ${formatDate(dayjs(q.available_date))}`}
+                              {q.available_date && ` • ${formatDate(q.available_date)}`}
                             </Text>
                           </View>
                           <PriceText amount={q.total_price} size={18} />

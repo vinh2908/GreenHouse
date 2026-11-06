@@ -1,5 +1,10 @@
 import { useState } from 'react';
-import { formatDate } from '@/utils/date-format';
+import {
+  formatDate,
+  formatDateTimeWithWeekday,
+  toVnDayjs,
+  vnNow,
+} from '@/utils/date-format';
 import {
   View,
   Text,
@@ -22,9 +27,6 @@ import {
   Repeat,
   Calendar,
 } from 'lucide-react-native';
-import dayjs from 'dayjs';
-import 'dayjs/locale/vi';
-import 'dayjs/locale/en';
 import { Alert } from '@/components/common/app-alert';
 import Toast from 'react-native-toast-message';
 import {
@@ -284,7 +286,7 @@ export default function RecurringPlansScreen() {
                     </Text>
                     {plan.status === 'active' &&
                       plan.next_occurrence_at &&
-                      !dayjs(plan.next_occurrence_at).isBefore(dayjs().subtract(1, 'hour')) && (
+                      !toVnDayjs(plan.next_occurrence_at).isBefore(vnNow().subtract(1, 'hour')) && (
                         <Text
                           style={{
                             fontSize: fs(12.5),
@@ -294,9 +296,7 @@ export default function RecurringPlansScreen() {
                           }}
                         >
                           {lang === 'en' ? 'Next session: ' : 'Buổi tới: '}
-                          {dayjs(plan.next_occurrence_at)
-                            .locale(lang === 'en' ? 'en' : 'vi')
-                            .format('dddd, DD/MM/YYYY HH:mm')}
+                          {formatDateTimeWithWeekday(plan.next_occurrence_at, lang)}
                         </Text>
                       )}
                   </TouchableOpacity>
@@ -504,7 +504,7 @@ function PlanDetail({ planId, lang = 'vi' }: { planId: string; lang?: string }) 
           style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 4 }}
         >
           <Text style={{ flex: 1, fontSize: fs(13), color: tc.textSecondary }}>
-            {job.occurrence_date ?? formatDate(dayjs(job.preferred_date))} ·{' '}
+            {job.occurrence_date ?? formatDate(job.preferred_date)} ·{' '}
             {job.preferred_time_start ?? ''}
           </Text>
           <Text style={{ fontSize: fs(12), fontWeight: '700', color: tc.textMuted }}>

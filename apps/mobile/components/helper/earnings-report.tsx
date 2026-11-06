@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
+import { vnDateKey } from '@/utils/date-format';
 import { View, Text, TextInput, TouchableOpacity, ActivityIndicator } from 'react-native';
-import dayjs from 'dayjs';
 import { useEarningsReport, useSetIncomeGoal } from '@/hooks/use-api';
 import { useTranslation } from '@/hooks/use-i18n';
 import { Card, COLORS, useThemeColors } from '@/components/ui';
@@ -153,7 +153,7 @@ export function EarningsReport() {
         >
           {report.week.days.map((d, i) => {
             const heightPct = Math.max(3, (Math.max(0, d.amount) / weekMax) * 100);
-            const isToday = d.date === dayjs().format('YYYY-MM-DD');
+            const isToday = d.date === vnDateKey();
             return (
               <View key={d.date} style={{ flex: 1, alignItems: 'center', gap: 4 }}>
                 <Text style={{ fontSize: fs(9.5), color: tc.textMuted, fontWeight: '600' }}>

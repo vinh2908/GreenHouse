@@ -1,5 +1,12 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { formatDate, formatTime } from '@/utils/date-format';
+import {
+  formatDate,
+  formatDateKey,
+  formatDateWithWeekday,
+  formatTime,
+  vnDateKey,
+  vnNow,
+} from '@/utils/date-format';
 import {
   View,
   Text,
@@ -412,7 +419,7 @@ export default function CustomerHomeScreen() {
 
   // Month Calendar state
   const [calendarOpen, setCalendarOpen] = useState(false);
-  const [calendarMonth, setCalendarMonth] = useState(dayjs());
+  const [calendarMonth, setCalendarMonth] = useState(vnNow());
 
   const [customHours, setCustomHours] = useState(1);
   const [customMinutes, setCustomMinutes] = useState(30);
@@ -427,9 +434,9 @@ export default function CustomerHomeScreen() {
   const [quickDateChip, setQuickDateChip] = useState<'today' | 'tomorrow' | 'sat' | 'sun' | null>(
     'tomorrow',
   );
-  const [quickDate, setQuickDate] = useState(dayjs().add(1, 'day').format('YYYY-MM-DD'));
+  const [quickDate, setQuickDate] = useState(vnDateKey(1));
   const [quickTimeSlot, setQuickTimeSlot] = useState(() =>
-    getDefaultFutureTimeSlot(dayjs().add(1, 'day').format('YYYY-MM-DD')),
+    getDefaultFutureTimeSlot(vnDateKey(1)),
   );
   const [quickCustomTimeOpen, setQuickCustomTimeOpen] = useState(false);
   const [quickCustomTimeInput, setQuickCustomTimeInput] = useState('');
@@ -539,11 +546,11 @@ export default function CustomerHomeScreen() {
     for (let i = 0; i < startOffset; i++) {
       items.push(null);
     }
-    const todayStr = dayjs().format('YYYY-MM-DD');
-    const startOfToday = dayjs().startOf('day');
+    const todayStr = vnDateKey();
+    const startOfToday = vnNow().startOf('day');
     for (let d = 1; d <= daysInMonth; d++) {
       const dObj = calendarMonth.date(d);
-      const dateStr = dObj.format('YYYY-MM-DD');
+      const dateStr = formatDateKey(dObj);
       items.push({
         dayNum: d,
         dateStr,
@@ -807,7 +814,7 @@ export default function CustomerHomeScreen() {
 
   // Lời chào theo thời gian trong ngày (khuya / sáng / chiều / tối)
   const greeting = useMemo(() => {
-    const hour = dayjs().hour();
+    const hour = vnNow().hour();
     const name = user?.full_name
       ? user.full_name.split(' ').pop() || user.full_name
       : lang === 'en'
@@ -1045,9 +1052,9 @@ export default function CustomerHomeScreen() {
   // Chọn ngày nhanh cho khối Quick Booking
   const handleSelectQuickDateChip = (chip: 'today' | 'tomorrow' | 'sat' | 'sun') => {
     setQuickDateChip(chip);
-    const now = dayjs();
+    const now = vnNow();
     if (chip === 'today') {
-      const todayStr = now.format('YYYY-MM-DD');
+      const todayStr = vnDateKey();
       setQuickDate(todayStr);
       const [th, tm] = quickTimeSlot.split(':').map(Number);
       const nowVn = getNowVietnam();
@@ -1055,13 +1062,13 @@ export default function CustomerHomeScreen() {
         setQuickTimeSlot(getDefaultFutureTimeSlot(todayStr));
       }
     } else if (chip === 'tomorrow') {
-      setQuickDate(now.add(1, 'day').format('YYYY-MM-DD'));
+      setQuickDate(vnDateKey(1));
     } else if (chip === 'sat') {
       const nextSat = now.day() <= 6 ? now.day(6) : now.add(1, 'week').day(6);
-      setQuickDate(nextSat.format('YYYY-MM-DD'));
+      setQuickDate(formatDateKey(nextSat));
     } else if (chip === 'sun') {
       const nextSun = now.day() === 0 ? now : now.day(7);
-      setQuickDate(nextSun.format('YYYY-MM-DD'));
+      setQuickDate(formatDateKey(nextSun));
     }
   };
 
@@ -1104,8 +1111,8 @@ export default function CustomerHomeScreen() {
       return;
     }
 
-    const now = dayjs();
-    const isToday = quickDate === now.format('YYYY-MM-DD');
+    const now = vnNow();
+    const isToday = quickDate === vnDateKey();
     if (isToday) {
       const [h, m] = quickTimeSlot.split(':').map(Number);
       const slotTime = now.hour(h).minute(m).second(0);
@@ -2640,12 +2647,7 @@ export default function CustomerHomeScreen() {
                         style={{ fontSize: fs(15), fontWeight: '700', color: tc.text }}
                         numberOfLines={1}
                       >
-                        {(() => {
-                          const dt = dayjs(quickDate).locale(lang === 'en' ? 'en' : 'vi');
-                          const dow = dt.format('dddd');
-                          const capitalizedDow = dow.charAt(0).toUpperCase() + dow.slice(1);
-                          return `${capitalizedDow}, ${formatDate(dt)}`;
-                        })()}
+                        {formatDateWithWeekday(quickDate, lang)}
                       </Text>
                       <Text
                         style={{
