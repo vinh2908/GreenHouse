@@ -512,6 +512,8 @@ export function useReviewClaim() {
 
 export interface AdminSupportConversation {
   _id: string;
+  // B77: đơn liên quan (populated { _id, title, status } hoặc ObjectId string)
+  job_id?: string | { _id: string; title?: string; status?: string };
   user_id: string | { _id: string; full_name?: string; phone?: string; avatar?: string } | null;
   status: 'open' | 'closed';
   last_message?: string;
