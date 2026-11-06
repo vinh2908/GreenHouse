@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { ArrowLeft, MapPin } from 'lucide-react-native';
+import { ArrowLeft, MapPin, Moon, Flame } from 'lucide-react-native';
 import { useDemandMap, useHelperProfile, type DemandArea } from '@/hooks/use-api';
 import { Card, COLORS, EmptyState } from '@/components/ui';
 import { DemandMapView } from '@/components/common/demand-map-view';
@@ -72,7 +72,7 @@ export default function DemandMapScreen() {
         </TouchableOpacity>
         <View style={{ flex: 1 }}>
           <Text style={{ fontSize: fs(19), fontWeight: '800', color: COLORS.gray[900] }}>
-            🗺 {t('demand_map.title')}
+            {t('demand_map.title')}
           </Text>
           <Text style={{ fontSize: fs(12), color: COLORS.gray[500], marginTop: 2 }}>
             {totalJobs > 0
@@ -107,7 +107,7 @@ export default function DemandMapScreen() {
         ) : sorted.length === 0 ? (
           <Card style={{ alignItems: 'center', paddingVertical: 32 }}>
             <EmptyState
-              emoji="🌙"
+              icon={<Moon size={36} color={COLORS.gray[400]} />}
               title={t('demand_map.no_jobs_title')}
               subtitle={t('demand_map.no_jobs_desc')}
             />
@@ -142,7 +142,11 @@ export default function DemandMapScreen() {
                       justifyContent: 'center',
                     }}
                   >
-                    <Text style={{ fontSize: fs(17) }}>{idx === 0 ? '🔥' : '📍'}</Text>
+                    {idx === 0 ? (
+                      <Flame size={20} color="#16A34A" />
+                    ) : (
+                      <MapPin size={20} color={COLORS.gray[500]} />
+                    )}
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={{ fontWeight: '800', fontSize: fs(15), color: COLORS.gray[900] }}>

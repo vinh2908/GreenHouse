@@ -96,27 +96,32 @@ export default function HelpCenterScreen() {
     const q = question.toLowerCase();
     if (lang === 'en') {
       if (q.includes('price') || q.includes('cost') || q.includes('fee')) {
-        return '💡 Service prices on Green House are transparent based on direct quotes from helpers or AI standard estimates. You always know labor and material costs upfront before confirming!';
+        return 'Service prices on Green House are transparent based on direct quotes from helpers or AI standard estimates. You always know labor and material costs upfront before confirming!';
       }
       if (q.includes('cancel') || q.includes('refund')) {
-        return '💡 You can cancel your request for free before the helper begins traveling. In case of dispute, Green House reviews and processes refunds within 24 working hours.';
+        return 'You can cancel your request for free before the helper begins traveling. In case of dispute, Green House reviews and processes refunds within 24 working hours.';
       }
-      if (q.includes('helper') || q.includes('kyc') || q.includes('trust') || q.includes('verified')) {
-        return '💡 100% of helpers undergo chip ID e-KYC verification and have real customer ratings from previous jobs. You are completely protected!';
+      if (
+        q.includes('helper') ||
+        q.includes('kyc') ||
+        q.includes('trust') ||
+        q.includes('verified')
+      ) {
+        return '100% of helpers undergo chip ID e-KYC verification and have real customer ratings from previous jobs. You are completely protected!';
       }
-      return `💡 Green House AI Assistant received your question: "${question}". If you need urgent assistance, please call our 24/7 hotline ${OFFICIAL_CONTACT_PHONE_DISPLAY} for immediate support!`;
+      return `Green House AI Assistant received your question: "${question}". If you need urgent assistance, please call our 24/7 hotline ${OFFICIAL_CONTACT_PHONE_DISPLAY} for immediate support!`;
     }
 
     if (q.includes('giá') || q.includes('tiền') || q.includes('chi phí')) {
-      return '💡 Giá dịch vụ trên Green House được tính minh bạch dựa trên báo giá trực tiếp từ thợ hoặc biểu phí ước tính chuẩn của AI. Bạn luôn biết rõ giá công và vật tư trước khi xác nhận!';
+      return 'Giá dịch vụ trên Green House được tính minh bạch dựa trên báo giá trực tiếp từ thợ hoặc biểu phí ước tính chuẩn của AI. Bạn luôn biết rõ giá công và vật tư trước khi xác nhận!';
     }
     if (q.includes('hủy') || q.includes('hoàn tiền')) {
-      return '💡 Bạn có thể hủy yêu cầu miễn phí trước khi thợ di chuyển đến. Nếu đơn có phát sinh tranh chấp, Green House sẽ đối soát và hoàn tiền trong 24h làm việc.';
+      return 'Bạn có thể hủy yêu cầu miễn phí trước khi thợ di chuyển đến. Nếu đơn có phát sinh tranh chấp, Green House sẽ đối soát và hoàn tiền trong 24h làm việc.';
     }
     if (q.includes('thợ') || q.includes('kyc') || q.includes('uy tín')) {
-      return '💡 100% thợ đều được xác thực danh tính e-KYC CCCD và điểm sao đánh giá thực tế từ các đơn hàng trước đó. Bạn hoàn toàn an tâm nhé!';
+      return '100% thợ đều được xác thực danh tính e-KYC CCCD và điểm sao đánh giá thực tế từ các đơn hàng trước đó. Bạn hoàn toàn an tâm nhé!';
     }
-    return `💡 Trợ lý AI Green House ghi nhận câu hỏi: "${question}". Nếu cần hỗ trợ khẩn cấp, bạn vui lòng gọi hotline ${OFFICIAL_CONTACT_PHONE_DISPLAY} để được tổng đài viên phục vụ ngay lập tức 24/7!`;
+    return `Trợ lý AI Green House ghi nhận câu hỏi: "${question}". Nếu cần hỗ trợ khẩn cấp, bạn vui lòng gọi hotline ${OFFICIAL_CONTACT_PHONE_DISPLAY} để được tổng đài viên phục vụ ngay lập tức 24/7!`;
   };
 
   const handleAskAi = async () => {
@@ -248,7 +253,9 @@ export default function HelpCenterScreen() {
             }}
           >
             <View>
-              <Text style={{ fontSize: fs(11.5), color: 'rgba(255,255,255,0.6)', fontWeight: '600' }}>
+              <Text
+                style={{ fontSize: fs(11.5), color: 'rgba(255,255,255,0.6)', fontWeight: '600' }}
+              >
                 {lang === 'en' ? 'TOLL-FREE HOTLINE' : 'HOTLINE MIỄN PHÍ CƯỚC'}
               </Text>
               <Text style={{ fontSize: fs(20), fontWeight: '900', color: '#34D399', marginTop: 2 }}>

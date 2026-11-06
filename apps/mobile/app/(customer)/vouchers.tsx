@@ -89,7 +89,7 @@ export default function CustomerVouchersScreen() {
           <LoadingSpinner />
         ) : !vouchers?.length ? (
           <EmptyState
-            emoji="🎟️"
+            icon={<Ticket size={36} color={COLORS.gray[400]} />}
             title={t('voucher_empty_title')}
             subtitle={t('voucher_empty_sub')}
           />
@@ -136,7 +136,9 @@ export default function CustomerVouchersScreen() {
                       <Ticket size={22} color={COLORS.primary} />
                     </View>
                     <View style={{ flex: 1, gap: 2 }}>
-                      <Text style={{ fontSize: fs(16), fontWeight: '800', color: COLORS.gray[900] }}>
+                      <Text
+                        style={{ fontSize: fs(16), fontWeight: '800', color: COLORS.gray[900] }}
+                      >
                         {discountLabel}
                       </Text>
                       <Text style={{ fontSize: fs(13), color: COLORS.gray[600], lineHeight: 18 }}>
@@ -159,7 +161,10 @@ export default function CustomerVouchersScreen() {
                     <Text style={{ fontSize: fs(12), color: COLORS.gray[700] }}>
                       • {lang === 'en' ? 'Min order: ' : 'Đơn tối thiểu: '}
                       <Text style={{ fontWeight: '700' }}>
-                        {new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'vi-VN').format(v.min_order_amount)}₫
+                        {new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'vi-VN').format(
+                          v.min_order_amount,
+                        )}
+                        ₫
                       </Text>
                     </Text>
                   )}
@@ -167,7 +172,10 @@ export default function CustomerVouchersScreen() {
                     <Text style={{ fontSize: fs(12), color: COLORS.gray[700] }}>
                       • {lang === 'en' ? 'Max discount: ' : 'Giảm tối đa: '}
                       <Text style={{ fontWeight: '700' }}>
-                        {new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'vi-VN').format(v.max_discount_amount)}₫
+                        {new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'vi-VN').format(
+                          v.max_discount_amount,
+                        )}
+                        ₫
                       </Text>
                     </Text>
                   )}

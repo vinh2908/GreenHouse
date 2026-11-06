@@ -728,11 +728,7 @@ class StringeeService {
     if (!win?.StringeeCall) return;
     this.pendingOutgoing = null;
     try {
-      const call = new win.StringeeCall(
-        this.webClient,
-        pending.myUserId,
-        pending.partnerId,
-      );
+      const call = new win.StringeeCall(this.webClient, pending.myUserId, pending.partnerId);
       this.webCall = call;
       this.activeCallId = call?.callId || 'web-call';
       this.setupWebCallEvents(call);

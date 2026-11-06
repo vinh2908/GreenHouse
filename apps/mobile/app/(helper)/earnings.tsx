@@ -75,7 +75,12 @@ const TX_COLORS: Record<string, string> = {
 export default function HelperEarningsScreen() {
   const { t, fs, lang, formatTxDesc } = useTranslation();
   const { data: wallet, isLoading, isError: isWalletError, refetch: refetchWallet } = useWallet();
-  const { data: txData, isLoading: isTxLoading, isError: isTxError, refetch: refetchTx } = useTransactions(1);
+  const {
+    data: txData,
+    isLoading: isTxLoading,
+    isError: isTxError,
+    refetch: refetchTx,
+  } = useTransactions(1);
   const { data: profile } = useHelperProfile();
   const withdraw = useRequestWithdrawal();
   const topup = useTopupWallet();
@@ -101,21 +106,34 @@ export default function HelperEarningsScreen() {
   const handleWithdraw = async () => {
     const amt = Number(amount);
     if (!amt || isNaN(amt) || amt < 50000) {
-      Toast.show({ type: 'error', text1: lang === 'en' ? 'Minimum withdrawal amount is 50,000₫' : 'Số tiền rút tối thiểu là 50,000₫' });
+      Toast.show({
+        type: 'error',
+        text1:
+          lang === 'en'
+            ? 'Minimum withdrawal amount is 50,000₫'
+            : 'Số tiền rút tối thiểu là 50,000₫',
+      });
       return;
     }
     if (wallet && amt > wallet.balance) {
       Toast.show({
         type: 'error',
         text1: lang === 'en' ? 'Insufficient balance' : 'Số dư không đủ',
-        text2: lang === 'en'
-          ? `Current wallet balance is: ${new Intl.NumberFormat('vi-VN').format(wallet.balance)}₫`
-          : `Số dư ví hiện tại là: ${new Intl.NumberFormat('vi-VN').format(wallet.balance)}₫`,
+        text2:
+          lang === 'en'
+            ? `Current wallet balance is: ${new Intl.NumberFormat('vi-VN').format(wallet.balance)}₫`
+            : `Số dư ví hiện tại là: ${new Intl.NumberFormat('vi-VN').format(wallet.balance)}₫`,
       });
       return;
     }
     if (!bankName.trim() || !accountNumber.trim() || !accountName.trim()) {
-      Toast.show({ type: 'error', text1: lang === 'en' ? 'Please fill in full bank account details' : 'Vui lòng điền đầy đủ thông tin tài khoản ngân hàng' });
+      Toast.show({
+        type: 'error',
+        text1:
+          lang === 'en'
+            ? 'Please fill in full bank account details'
+            : 'Vui lòng điền đầy đủ thông tin tài khoản ngân hàng',
+      });
       return;
     }
 
@@ -131,7 +149,9 @@ export default function HelperEarningsScreen() {
       setShowWithdraw(false);
       setAmount('');
     } catch (err: any) {
-      const msg = err?.response?.data?.message || (lang === 'en' ? 'Withdrawal request failed' : 'Yêu cầu rút tiền thất bại');
+      const msg =
+        err?.response?.data?.message ||
+        (lang === 'en' ? 'Withdrawal request failed' : 'Yêu cầu rút tiền thất bại');
       Toast.show({ type: 'error', text1: msg });
     }
   };
@@ -139,14 +159,19 @@ export default function HelperEarningsScreen() {
   const handleTopup = async () => {
     const amt = Number(topupAmount);
     if (!amt || isNaN(amt) || amt < 50000) {
-      Toast.show({ type: 'error', text1: lang === 'en' ? 'Minimum top-up amount is 50,000₫' : 'Số tiền nạp tối thiểu là 50,000₫' });
+      Toast.show({
+        type: 'error',
+        text1:
+          lang === 'en' ? 'Minimum top-up amount is 50,000₫' : 'Số tiền nạp tối thiểu là 50,000₫',
+      });
       return;
     }
     try {
       await topup.mutateAsync({ amount: amt, payment_method: 'vietqr' });
       setShowTopup(false);
     } catch (err: any) {
-      const msg = err?.response?.data?.message || (lang === 'en' ? 'Top-up failed' : 'Nạp tiền thất bại');
+      const msg =
+        err?.response?.data?.message || (lang === 'en' ? 'Top-up failed' : 'Nạp tiền thất bại');
       Toast.show({ type: 'error', text1: msg });
     }
   };
@@ -257,7 +282,12 @@ export default function HelperEarningsScreen() {
             />
           </View>
           <Text
-            style={{ fontSize: fs(12), color: COLORS.gray[500], textAlign: 'center', lineHeight: 18 }}
+            style={{
+              fontSize: fs(12),
+              color: COLORS.gray[500],
+              textAlign: 'center',
+              lineHeight: 18,
+            }}
           >
             {t('earn_note')}
           </Text>
@@ -271,7 +301,12 @@ export default function HelperEarningsScreen() {
         {/* ── Transactions ───────────────────────────────────────────── */}
         <View style={{ paddingHorizontal: 16, marginTop: 24, marginBottom: 40 }}>
           <Text
-            style={{ fontSize: fs(17), fontWeight: '800', color: COLORS.gray[900], marginBottom: 12 }}
+            style={{
+              fontSize: fs(17),
+              fontWeight: '800',
+              color: COLORS.gray[900],
+              marginBottom: 12,
+            }}
           >
             {t('earn_history_title')}
           </Text>
@@ -279,7 +314,9 @@ export default function HelperEarningsScreen() {
           {isTxError ? (
             <Card style={{ alignItems: 'center', paddingVertical: 20 }}>
               <ErrorState
-                title={lang === 'en' ? 'Unable to load transactions' : 'Không thể tải lịch sử giao dịch'}
+                title={
+                  lang === 'en' ? 'Unable to load transactions' : 'Không thể tải lịch sử giao dịch'
+                }
                 subtitle={
                   lang === 'en'
                     ? 'Connection to server failed. Please check your network and retry.'
@@ -419,9 +456,19 @@ export default function HelperEarningsScreen() {
                               <Clock size={12} color={COLORS.warning} />
                             )}
                             <Text
-                              style={{ fontSize: fs(11), color: COLORS.gray[500], fontWeight: '600' }}
+                              style={{
+                                fontSize: fs(11),
+                                color: COLORS.gray[500],
+                                fontWeight: '600',
+                              }}
                             >
-                              {tx.status === 'success' ? (lang === 'en' ? 'Success' : 'Thành công') : (lang === 'en' ? 'Processing' : 'Đang xử lý')}
+                              {tx.status === 'success'
+                                ? lang === 'en'
+                                  ? 'Success'
+                                  : 'Thành công'
+                                : lang === 'en'
+                                  ? 'Processing'
+                                  : 'Đang xử lý'}
                             </Text>
                           </View>
                         </View>
@@ -443,7 +490,12 @@ export default function HelperEarningsScreen() {
               <X size={24} color={COLORS.gray[700]} />
             </TouchableOpacity>
             <Text
-              style={{ fontSize: fs(18), fontWeight: '800', marginLeft: 12, color: COLORS.gray[900] }}
+              style={{
+                fontSize: fs(18),
+                fontWeight: '800',
+                marginLeft: 12,
+                color: COLORS.gray[900],
+              }}
             >
               {t('earn_topup_title')}
             </Text>
@@ -459,7 +511,13 @@ export default function HelperEarningsScreen() {
                   {t('earn_current_balance')}
                 </Text>
                 <PriceText amount={wallet?.balance ?? 0} size={24} />
-                <Text style={{ fontSize: fs(12), color: COLORS.gray[700], lineHeight: Math.round(fs(18)) }}>
+                <Text
+                  style={{
+                    fontSize: fs(12),
+                    color: COLORS.gray[700],
+                    lineHeight: Math.round(fs(18)),
+                  }}
+                >
                   {lang === 'en'
                     ? 'Maintaining a wallet balance helps automatically settle platform fees (15%) when customers pay you in cash.'
                     : 'Duy trì số dư ví giúp tự động quyết toán phí nền tảng (15%) khi bạn nhận các đơn khách trả tiền mặt trực tiếp.'}
@@ -537,7 +595,12 @@ export default function HelperEarningsScreen() {
               <X size={24} color={COLORS.gray[700]} />
             </TouchableOpacity>
             <Text
-              style={{ fontSize: fs(18), fontWeight: '800', marginLeft: 12, color: COLORS.gray[900] }}
+              style={{
+                fontSize: fs(18),
+                fontWeight: '800',
+                marginLeft: 12,
+                color: COLORS.gray[900],
+              }}
             >
               {t('earn_withdraw_title')}
             </Text>
@@ -582,7 +645,8 @@ export default function HelperEarningsScreen() {
                   label: lang === 'en' ? 'Bank name *' : 'Tên ngân hàng *',
                   value: bankName,
                   set: setBankName,
-                  placeholder: lang === 'en' ? 'E.g. Vietcombank, MB Bank' : 'VD: Vietcombank, MB Bank',
+                  placeholder:
+                    lang === 'en' ? 'E.g. Vietcombank, MB Bank' : 'VD: Vietcombank, MB Bank',
                 },
                 {
                   label: lang === 'en' ? 'Account number *' : 'Số tài khoản *',
@@ -591,7 +655,10 @@ export default function HelperEarningsScreen() {
                   placeholder: lang === 'en' ? 'E.g. 0123456789' : 'VD: 0123456789',
                 },
                 {
-                  label: lang === 'en' ? 'Account holder name (uppercase) *' : 'Tên chủ tài khoản (in hoa) *',
+                  label:
+                    lang === 'en'
+                      ? 'Account holder name (uppercase) *'
+                      : 'Tên chủ tài khoản (in hoa) *',
                   value: accountName,
                   set: setAccountName,
                   placeholder: lang === 'en' ? 'E.g. NGUYEN VAN A' : 'VD: NGUYEN VAN A',
@@ -612,7 +679,9 @@ export default function HelperEarningsScreen() {
                     value={f.value}
                     onChangeText={f.set}
                     placeholderTextColor={COLORS.gray[400]}
-                    autoCapitalize={f.label.includes('chủ') || f.label.includes('holder') ? 'characters' : 'none'}
+                    autoCapitalize={
+                      f.label.includes('chủ') || f.label.includes('holder') ? 'characters' : 'none'
+                    }
                   />
                 </View>
               ))}

@@ -22,7 +22,13 @@ export interface PickerCoords {
 }
 
 // Goong Vector Map: Web iframe and Native WebView compatible
-const mapHtml = (center: PickerCoords, zoom: number, hasPin: boolean, interactive: boolean, lang: 'vi' | 'en' = 'vi') => `
+const mapHtml = (
+  center: PickerCoords,
+  zoom: number,
+  hasPin: boolean,
+  interactive: boolean,
+  lang: 'vi' | 'en' = 'vi',
+) => `
 <!DOCTYPE html>
 <html>
   <head>
@@ -137,9 +143,10 @@ const mapHtml = (center: PickerCoords, zoom: number, hasPin: boolean, interactiv
             map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'bottom-right');
           }
 
+          const pinSvg = '<svg width=\"32\" height=\"32\" viewBox=\"0 0 24 24\" fill=\"#047857\" stroke=\"#ffffff\" stroke-width=\"2\"><path d=\"M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z\"/><circle cx=\"12\" cy=\"9\" r=\"2.5\" fill=\"#ffffff\"/></svg>';
           const pinEl = document.createElement('div');
           pinEl.className = 'pin';
-          pinEl.innerHTML = '📍';
+          pinEl.innerHTML = pinSvg;
 
           let marker = ${hasPin}
             ? new maplibregl.Marker({ element: pinEl, draggable: interactive })
@@ -164,7 +171,7 @@ const mapHtml = (center: PickerCoords, zoom: number, hasPin: boolean, interactiv
             } else {
               const el = document.createElement('div');
               el.className = 'pin';
-              el.innerHTML = '📍';
+              el.innerHTML = pinSvg;
               marker = new maplibregl.Marker({ element: el, draggable: interactive })
                 .setLngLat([lng, lat])
                 .addTo(map);

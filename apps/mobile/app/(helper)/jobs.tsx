@@ -20,6 +20,7 @@ import {
   Search,
   ClipboardList,
   BookOpen,
+  ShieldCheck,
 } from 'lucide-react-native';
 import Toast from 'react-native-toast-message';
 import dayjs from 'dayjs';
@@ -35,7 +36,15 @@ import {
   useAcceptFixedPrice,
 } from '@/hooks/use-api';
 import { useTranslation } from '@/hooks/use-i18n';
-import { Button, Card, JobStatusBadge, Badge, COLORS, EmptyState, ErrorState } from '@/components/ui';
+import {
+  Button,
+  Card,
+  JobStatusBadge,
+  Badge,
+  COLORS,
+  EmptyState,
+  ErrorState,
+} from '@/components/ui';
 import { OfflineBanner } from '@/components/common/offline-banner';
 
 dayjs.extend(relativeTime);
@@ -106,7 +115,13 @@ export default function HelperJobsScreen() {
   } = useHelperJobs('completed,cancelled,refunded');
 
   const datasets = [
-    { data: available?.jobs, loading: aLoading, isError: aError, refetching: aRefetching, refetch: ra },
+    {
+      data: available?.jobs,
+      loading: aLoading,
+      isError: aError,
+      refetching: aRefetching,
+      refetch: ra,
+    },
     { data: active, loading: acLoading, isError: acError, refetching: acRefetching, refetch: rac },
     { data: history, loading: hLoading, isError: hError, refetching: hRefetching, refetch: rh },
   ];
@@ -189,13 +204,21 @@ export default function HelperJobsScreen() {
           <Card style={{ alignItems: 'center', paddingVertical: 40, gap: 12 }}>
             <ActivityIndicator size="small" color={COLORS.primary} />
             <Text style={{ fontSize: fs(13), color: COLORS.gray[500] }}>
-              {lang === 'en' ? 'Checking status and loading new jobs...' : 'Đang kiểm tra trạng thái và tải đơn mới...'}
+              {lang === 'en'
+                ? 'Checking status and loading new jobs...'
+                : 'Đang kiểm tra trạng thái và tải đơn mới...'}
             </Text>
           </Card>
         ) : tabIndex === 0 && !pLoading && helperProfile && !isVerified ? (
           <Card style={{ alignItems: 'center', paddingVertical: 32, gap: 12 }}>
             <EmptyState
-              emoji={kycStatus === 'pending' ? '⏳' : '🪪'}
+              icon={
+                kycStatus === 'pending' ? (
+                  <Clock size={36} color={COLORS.gray[400]} />
+                ) : (
+                  <ShieldCheck size={36} color={COLORS.gray[400]} />
+                )
+              }
               title={
                 kycStatus === 'pending'
                   ? lang === 'en'
@@ -335,10 +358,7 @@ export default function HelperJobsScreen() {
                   <View
                     style={{ flexDirection: 'row', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}
                   >
-                    <Badge
-                      label={tService(job.service_id) || t('common_service')}
-                      size="sm"
-                    />
+                    <Badge label={tService(job.service_id) || t('common_service')} size="sm" />
                     {job.is_private_offer ? (
                       <Badge
                         label={t('jobs_badge_private_for_you')}
@@ -348,7 +368,12 @@ export default function HelperJobsScreen() {
                       />
                     ) : null}
                     {job.is_recurring || job.recurring_plan_id ? (
-                      <Badge label={t('jobs_badge_recurring')} size="sm" color="#EFF6FF" textColor="#1D4ED8" />
+                      <Badge
+                        label={t('jobs_badge_recurring')}
+                        size="sm"
+                        color="#EFF6FF"
+                        textColor="#1D4ED8"
+                      />
                     ) : null}
                     {job.is_fixed_price ? (
                       <Badge
@@ -370,15 +395,20 @@ export default function HelperJobsScreen() {
                     ) : null}
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
                       <MapPin size={13} color={COLORS.gray[500]} />
-                      <Text style={{ fontSize: fs(12), color: COLORS.gray[600], fontWeight: '500' }}>
+                      <Text
+                        style={{ fontSize: fs(12), color: COLORS.gray[600], fontWeight: '500' }}
+                      >
                         {job.address?.district || job.address?.city || t('jobs_unspecified')}
                       </Text>
                     </View>
                     {job.distance_km != null && (
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
                         <Navigation size={13} color={COLORS.primary} />
-                        <Text style={{ fontSize: fs(12), color: COLORS.primary, fontWeight: '700' }}>
-                          {job.distance_km} km ~ {job.estimated_minutes ?? '?'} {t('jobs_minutes_unit')}
+                        <Text
+                          style={{ fontSize: fs(12), color: COLORS.primary, fontWeight: '700' }}
+                        >
+                          {job.distance_km} km ~ {job.estimated_minutes ?? '?'}{' '}
+                          {t('jobs_minutes_unit')}
                         </Text>
                       </View>
                     )}
@@ -417,7 +447,10 @@ export default function HelperJobsScreen() {
                               }),
                             onError: (err: any) => {
                               const msg =
-                                err?.response?.data?.message || (lang === 'en' ? 'Failed to accept job. Try again later.' : 'Nhận việc thất bại. Thử lại sau.');
+                                err?.response?.data?.message ||
+                                (lang === 'en'
+                                  ? 'Failed to accept job. Try again later.'
+                                  : 'Nhận việc thất bại. Thử lại sau.');
                               Toast.show({ type: 'error', text1: msg });
                             },
                           })
@@ -431,7 +464,9 @@ export default function HelperJobsScreen() {
                       >
                         <Text style={{ fontSize: fs(13), fontWeight: '800', color: '#fff' }}>
                           {job.is_warranty
-                            ? lang === 'en' ? 'Accept warranty job' : 'Nhận việc bảo hành'
+                            ? lang === 'en'
+                              ? 'Accept warranty job'
+                              : 'Nhận việc bảo hành'
                             : lang === 'en'
                               ? `Accept now • ${new Intl.NumberFormat('en-US').format(job.fixed_price ?? 0)}₫`
                               : `Nhận việc ngay • ${new Intl.NumberFormat('vi-VN').format(job.fixed_price ?? 0)}₫`}
@@ -439,8 +474,12 @@ export default function HelperJobsScreen() {
                       </TouchableOpacity>
                     ) : (
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}>
-                        <Text style={{ fontSize: fs(13), fontWeight: '800', color: COLORS.primary }}>
-                          {tabIndex === 0 ? t('helper_jobs_quote_now') : t('helper_jobs_view_detail')}
+                        <Text
+                          style={{ fontSize: fs(13), fontWeight: '800', color: COLORS.primary }}
+                        >
+                          {tabIndex === 0
+                            ? t('helper_jobs_quote_now')
+                            : t('helper_jobs_view_detail')}
                         </Text>
                         <ChevronRight size={14} color={COLORS.primary} />
                       </View>
@@ -473,7 +512,10 @@ export default function HelperJobsScreen() {
           {t('helper_jobs_title')}
         </Text>
         <Text style={{ fontSize: fs(12), color: COLORS.gray[500], marginTop: 2 }}>
-          {t('helper_jobs_subtitle')} • {lang === 'en' ? 'Updated' : 'Cập nhật'} lúc {dayjs(Math.max(aUpdatedAt || 0, acUpdatedAt || 0, hUpdatedAt || 0) || Date.now()).format('HH:mm')}
+          {t('helper_jobs_subtitle')} • {lang === 'en' ? 'Updated' : 'Cập nhật'} lúc{' '}
+          {dayjs(Math.max(aUpdatedAt || 0, acUpdatedAt || 0, hUpdatedAt || 0) || Date.now()).format(
+            'HH:mm',
+          )}
         </Text>
         {/* Bản đồ nhu cầu (Feature 15) */}
         <TouchableOpacity
@@ -519,7 +561,13 @@ export default function HelperJobsScreen() {
               <Text style={{ fontWeight: '800', fontSize: fs(14), color: COLORS.gray[900] }}>
                 {inv.title}
               </Text>
-              <Text style={{ fontSize: fs(12.5), color: COLORS.gray[600], lineHeight: Math.round(fs(18)) }}>
+              <Text
+                style={{
+                  fontSize: fs(12.5),
+                  color: COLORS.gray[600],
+                  lineHeight: Math.round(fs(18)),
+                }}
+              >
                 {inv.address_text ? `${inv.address_text}\n` : ''}
                 {lang === 'en'
                   ? `You will receive ${inv.split_percent}% of job pay (after platform fee) when completed with team of ${inv.helpers_needed} helpers.`

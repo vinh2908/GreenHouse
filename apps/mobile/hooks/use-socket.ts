@@ -324,8 +324,7 @@ export function useNotificationSocket() {
                   : `${n.body || 'Một thợ vừa gửi báo giá.'} Chạm vào thông báo để xem chi tiết.`
                 : isNewMsg
                   ? lang === 'en'
-                    ? formatNotificationBody(n.body, lang) ||
-                      'You have a new message from partner'
+                    ? formatNotificationBody(n.body, lang) || 'You have a new message from partner'
                     : n.body || 'Bạn có tin nhắn mới từ đối tác'
                   : formatNotificationBody(n.body, lang, n.type, n.data);
 

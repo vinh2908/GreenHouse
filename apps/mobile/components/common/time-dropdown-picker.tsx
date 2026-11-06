@@ -279,7 +279,9 @@ export function TimeDropdownPicker({
           style={[styles.dropdownPill, isPast && styles.dropdownPillError]}
         >
           <Clock size={16} color={isPast ? COLORS.error : COLORS.primary} />
-          <Text style={[styles.dropdownValue, { fontSize: fs(16) }]}>{String(currentHour).padStart(2, '0')}</Text>
+          <Text style={[styles.dropdownValue, { fontSize: fs(16) }]}>
+            {String(currentHour).padStart(2, '0')}
+          </Text>
           <Text style={[styles.dropdownUnit, { fontSize: fs(12) }]}>{t('picker_unit_hour')}</Text>
           <ChevronDown size={16} color={COLORS.gray[500]} />
         </TouchableOpacity>
@@ -292,7 +294,9 @@ export function TimeDropdownPicker({
           onPress={() => setModalType('minute')}
           style={[styles.dropdownPill, isPast && styles.dropdownPillError]}
         >
-          <Text style={[styles.dropdownValue, { fontSize: fs(16) }]}>{String(currentMinute).padStart(2, '0')}</Text>
+          <Text style={[styles.dropdownValue, { fontSize: fs(16) }]}>
+            {String(currentMinute).padStart(2, '0')}
+          </Text>
           <Text style={[styles.dropdownUnit, { fontSize: fs(12) }]}>{t('picker_unit_min')}</Text>
           <ChevronDown size={16} color={COLORS.gray[500]} />
         </TouchableOpacity>
@@ -302,13 +306,17 @@ export function TimeDropdownPicker({
       {isPast ? (
         <Text style={[styles.errorText, { fontSize: fs(12) }]}>{t('picker_err_past_time')}</Text>
       ) : isBeforeMinTime ? (
-        <Text style={[styles.errorText, { fontSize: fs(12) }]}>{t('picker_err_end_before_start')}</Text>
+        <Text style={[styles.errorText, { fontSize: fs(12) }]}>
+          {t('picker_err_end_before_start')}
+        </Text>
       ) : null}
 
       {/* Chip gợi ý khung giờ */}
       {showChips && (
         <View style={styles.chipsSection}>
-          <Text style={[styles.chipsInstruction, { fontSize: fs(11.5) }]}>{t('picker_chips_instruction')}</Text>
+          <Text style={[styles.chipsInstruction, { fontSize: fs(11.5) }]}>
+            {t('picker_chips_instruction')}
+          </Text>
 
           {noChipsToday ? (
             <Text style={[styles.noChipsText, { fontSize: fs(12) }]}>{t('picker_no_chips')}</Text>
@@ -329,7 +337,13 @@ export function TimeDropdownPicker({
                     style={[styles.timeChip, isSelected && styles.timeChipActive]}
                   >
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-                      <Text style={[styles.timeChipText, isSelected && styles.timeChipTextActive, { fontSize: fs(13) }]}>
+                      <Text
+                        style={[
+                          styles.timeChipText,
+                          isSelected && styles.timeChipTextActive,
+                          { fontSize: fs(13) },
+                        ]}
+                      >
                         {chip}
                       </Text>
                       {badge && (
@@ -382,7 +396,9 @@ export function TimeDropdownPicker({
           />
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={[styles.modalTitle, { fontSize: fs(16) }]}>{t('picker_select_hour')}</Text>
+              <Text style={[styles.modalTitle, { fontSize: fs(16) }]}>
+                {t('picker_select_hour')}
+              </Text>
               <TouchableOpacity
                 onPress={() => setModalType(null)}
                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
@@ -422,7 +438,8 @@ export function TimeDropdownPicker({
                         { fontSize: fs(15) },
                       ]}
                     >
-                      {String(h).padStart(2, '0')}:00 {isHourPast ? (lang === 'en' ? '(past)' : '(đã qua)') : ''}
+                      {String(h).padStart(2, '0')}:00{' '}
+                      {isHourPast ? (lang === 'en' ? '(past)' : '(đã qua)') : ''}
                     </Text>
                     {isSelected && <Check size={18} color={COLORS.primary} />}
                   </TouchableOpacity>
@@ -448,7 +465,9 @@ export function TimeDropdownPicker({
           />
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={[styles.modalTitle, { fontSize: fs(16) }]}>{t('picker_select_minute')}</Text>
+              <Text style={[styles.modalTitle, { fontSize: fs(16) }]}>
+                {t('picker_select_minute')}
+              </Text>
               <TouchableOpacity
                 onPress={() => setModalType(null)}
                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
@@ -486,7 +505,8 @@ export function TimeDropdownPicker({
                         { fontSize: fs(15) },
                       ]}
                     >
-                      {String(m).padStart(2, '0')} {t('picker_unit_min')} {isMinPast ? (lang === 'en' ? '(past)' : '(đã qua)') : ''}
+                      {String(m).padStart(2, '0')} {t('picker_unit_min')}{' '}
+                      {isMinPast ? (lang === 'en' ? '(past)' : '(đã qua)') : ''}
                     </Text>
                     {isSelected && <Check size={18} color={COLORS.primary} />}
                   </TouchableOpacity>
@@ -581,7 +601,9 @@ export function DurationDropdownPicker({
         >
           <Clock size={16} color={COLORS.primary} />
           <Text style={styles.dropdownValue}>{durationHours}</Text>
-          <Text style={styles.dropdownUnit}>{lang === 'en' ? (durationHours === 1 ? 'hr' : 'hrs') : 'giờ'}</Text>
+          <Text style={styles.dropdownUnit}>
+            {lang === 'en' ? (durationHours === 1 ? 'hr' : 'hrs') : 'giờ'}
+          </Text>
           <ChevronDown size={16} color={COLORS.gray[500]} />
         </TouchableOpacity>
 
@@ -786,17 +808,23 @@ export function ScheduledTimePreview({
         <Text style={[styles.previewValue, { fontSize: fs(12.5) }]}>{formattedDate}</Text>
       </View>
       <View style={styles.previewRow}>
-        <Text style={[styles.previewLabel, { fontSize: fs(12) }]}>{t('picker_time_slot_label')}</Text>
+        <Text style={[styles.previewLabel, { fontSize: fs(12) }]}>
+          {t('picker_time_slot_label')}
+        </Text>
         {calc ? (
           <Text style={[styles.previewValue, { fontSize: fs(12.5) }]}>
             {effectiveStart} – {calc.timeEnd} {calc.isNextDay ? t('picker_next_day') : ''}
           </Text>
         ) : (
-          <Text style={[styles.previewValue, { color: COLORS.gray[500], fontSize: fs(12.5) }]}>{t('picker_cannot_calc')}</Text>
+          <Text style={[styles.previewValue, { color: COLORS.gray[500], fontSize: fs(12.5) }]}>
+            {t('picker_cannot_calc')}
+          </Text>
         )}
       </View>
       <View style={styles.previewRow}>
-        <Text style={[styles.previewLabel, { fontSize: fs(12) }]}>{t('picker_duration_label')}</Text>
+        <Text style={[styles.previewLabel, { fontSize: fs(12) }]}>
+          {t('picker_duration_label')}
+        </Text>
         <Text style={[styles.previewValue, { fontSize: fs(12.5) }]}>{durationStr}</Text>
       </View>
       {price != null && price > 0 && (

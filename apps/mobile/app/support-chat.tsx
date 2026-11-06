@@ -92,9 +92,7 @@ export default function SupportChatScreen() {
       Toast.show({
         type: 'error',
         text1:
-          lang === 'en'
-            ? 'Could not open support conversation'
-            : 'Không mở được hội thoại hỗ trợ',
+          lang === 'en' ? 'Could not open support conversation' : 'Không mở được hội thoại hỗ trợ',
       });
       return;
     }
@@ -265,7 +263,9 @@ export default function SupportChatScreen() {
                       paddingVertical: 11,
                     }}
                   >
-                    <Text style={{ fontSize: fs(13.5), fontWeight: '600', color: COLORS.gray[800] }}>
+                    <Text
+                      style={{ fontSize: fs(13.5), fontWeight: '600', color: COLORS.gray[800] }}
+                    >
                       {faq.q}
                     </Text>
                   </TouchableOpacity>
@@ -326,7 +326,11 @@ export default function SupportChatScreen() {
                         }}
                       >
                         <Text
-                          style={{ fontSize: fs(12.5), fontWeight: '700', color: COLORS.primaryDark }}
+                          style={{
+                            fontSize: fs(12.5),
+                            fontWeight: '700',
+                            color: COLORS.primaryDark,
+                          }}
                         >
                           {t('support_send_question')}
                         </Text>

@@ -202,9 +202,7 @@ export default function SplashScreen() {
           </View>
           <View style={styles.featureBadge}>
             <Sparkles size={14} color="#FFF" />
-            <Text style={styles.featureText}>
-              {lang === 'en' ? 'AI Assistant' : 'Trợ lý AI'}
-            </Text>
+            <Text style={styles.featureText}>{lang === 'en' ? 'AI Assistant' : 'Trợ lý AI'}</Text>
           </View>
         </Animated.View>
       </View>

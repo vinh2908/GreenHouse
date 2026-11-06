@@ -67,7 +67,7 @@ export default function SupportPage() {
         <CardHeader>
           <div className="flex items-center justify-between gap-4 flex-wrap">
             <div>
-              <CardTitle>Hỗ trợ trực tuyến 💬</CardTitle>
+              <CardTitle>Hỗ trợ trực tuyến</CardTitle>
               <p className="text-sm text-muted-foreground mt-1">
                 Live chat với người dùng trong app. Danh sách và tin nhắn tự làm mới mỗi 5 giây;
                 phản hồi sẽ đẩy thông báo chuông + realtime tới app của người dùng.

@@ -48,7 +48,8 @@ const getDialogIcon = (title: string, message?: string, buttons?: AlertButton[])
     t.includes('bảo mật')
   )
     return 'shield';
-  if (t.includes('thành công') || t.includes('hoàn tất') || t.includes('nghiệm thu')) return 'success';
+  if (t.includes('thành công') || t.includes('hoàn tất') || t.includes('nghiệm thu'))
+    return 'success';
   if (t.includes('ảnh') || t.includes('camera') || t.includes('chứng từ')) return 'camera';
   if (t.includes('sos') || t.includes('khẩn cấp') || t.includes('cứu hộ')) return 'sos';
   if (buttons?.some(b => b.style === 'destructive')) return 'warning';

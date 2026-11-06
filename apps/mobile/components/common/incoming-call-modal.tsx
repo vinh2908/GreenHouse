@@ -126,7 +126,9 @@ export function IncomingCallModal() {
           >
             {t('call_incoming_title')}
           </Text>
-          <Text style={{ fontSize: fs(14), color: '#A7F3C7', textAlign: 'center', marginBottom: 24 }}>
+          <Text
+            style={{ fontSize: fs(14), color: '#A7F3C7', textAlign: 'center', marginBottom: 24 }}
+          >
             {shortJob ? t('call_incoming_sub_job', { job: shortJob }) : t('call_incoming_sub')}
           </Text>
           <View style={{ flexDirection: 'row', gap: 16 }}>

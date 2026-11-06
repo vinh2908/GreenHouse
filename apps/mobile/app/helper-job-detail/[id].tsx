@@ -30,6 +30,7 @@ import {
   CheckCircle2,
   DollarSign,
   MapPin,
+  Clock,
 } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import dayjs from 'dayjs';
@@ -278,34 +279,27 @@ export default function HelperJobDetailScreen() {
   };
 
   const handleRejectJob = () => {
-    Alert.alert(
-      t('helper_job.reject_title'),
-      t('helper_job.reject_desc'),
-      [
-        { text: t('common_cancel'), style: 'cancel' },
-        {
-          text: t('helper_job.reject_confirm'),
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await rejectJob.mutateAsync(id!);
-              Toast.show({
-                type: 'success',
-                text1: t('helper_job.reject_success_title'),
-                text2: t('helper_job.reject_success_desc'),
-              });
-              router.back();
-            } catch (err: any) {
-              const msg =
-                err?.response?.data?.message ||
-                err?.message ||
-                t('helper_job.reject_fail');
-              Toast.show({ type: 'error', text1: msg });
-            }
-          },
+    Alert.alert(t('helper_job.reject_title'), t('helper_job.reject_desc'), [
+      { text: t('common_cancel'), style: 'cancel' },
+      {
+        text: t('helper_job.reject_confirm'),
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await rejectJob.mutateAsync(id!);
+            Toast.show({
+              type: 'success',
+              text1: t('helper_job.reject_success_title'),
+              text2: t('helper_job.reject_success_desc'),
+            });
+            router.back();
+          } catch (err: any) {
+            const msg = err?.response?.data?.message || err?.message || t('helper_job.reject_fail');
+            Toast.show({ type: 'error', text1: msg });
+          }
         },
-      ],
-    );
+      },
+    ]);
   };
 
   const handleHelperCancelJob = () => {
@@ -323,7 +317,10 @@ export default function HelperJobDetailScreen() {
     if (!finalReason) {
       Toast.show({
         type: 'error',
-        text1: lang === 'en' ? 'Please select or enter a cancellation reason' : 'Vui lòng chọn hoặc nhập lý do hủy đơn',
+        text1:
+          lang === 'en'
+            ? 'Please select or enter a cancellation reason'
+            : 'Vui lòng chọn hoặc nhập lý do hủy đơn',
       });
       return;
     }
@@ -340,7 +337,9 @@ export default function HelperJobDetailScreen() {
     } catch (err: any) {
       Alert.alert(
         t('common_error'),
-        err?.response?.data?.message || err?.message || (lang === 'en' ? 'Failed to cancel job' : 'Không thể hủy đơn hàng'),
+        err?.response?.data?.message ||
+          err?.message ||
+          (lang === 'en' ? 'Failed to cancel job' : 'Không thể hủy đơn hàng'),
       );
     }
   };
@@ -478,7 +477,8 @@ export default function HelperJobDetailScreen() {
           });
           setShowCompleteModal(false);
         } catch (err: any) {
-          const m = err?.response?.data?.message || (lang === 'en' ? 'Update failed' : 'Cập nhật thất bại');
+          const m =
+            err?.response?.data?.message || (lang === 'en' ? 'Update failed' : 'Cập nhật thất bại');
           Toast.show({ type: 'error', text1: m });
         }
       };
@@ -499,7 +499,8 @@ export default function HelperJobDetailScreen() {
       });
       setShowCompleteModal(false);
     } catch (err: any) {
-      const msg = err?.response?.data?.message || (lang === 'en' ? 'Update failed' : 'Cập nhật thất bại');
+      const msg =
+        err?.response?.data?.message || (lang === 'en' ? 'Update failed' : 'Cập nhật thất bại');
       Toast.show({ type: 'error', text1: msg });
     }
   };
@@ -529,7 +530,9 @@ export default function HelperJobDetailScreen() {
             Toast.show({ type: 'success', text1: t('helper_job.step_working_toast') });
         }
       } catch (err: any) {
-        const msg = err?.response?.data?.message || (lang === 'en' ? 'Progress update failed' : 'Cập nhật tiến trình thất bại');
+        const msg =
+          err?.response?.data?.message ||
+          (lang === 'en' ? 'Progress update failed' : 'Cập nhật tiến trình thất bại');
         Toast.show({ type: 'error', text1: msg });
       }
     };
@@ -554,7 +557,10 @@ export default function HelperJobDetailScreen() {
 
     const actionCfg = config[action] || {
       title: lang === 'en' ? 'Confirm action?' : 'Xác nhận thao tác?',
-      message: lang === 'en' ? 'Are you sure you want to update this status?' : 'Bạn có chắc chắn muốn cập nhật trạng thái này?',
+      message:
+        lang === 'en'
+          ? 'Are you sure you want to update this status?'
+          : 'Bạn có chắc chắn muốn cập nhật trạng thái này?',
       btn: lang === 'en' ? 'Confirm' : 'Xác nhận',
     };
 
@@ -638,8 +644,12 @@ export default function HelperJobDetailScreen() {
               <Ban size={22} color="#DC2626" />
               <Text style={{ fontSize: fs(16), fontWeight: '800', color: '#991B1B' }}>
                 {String(job.cancelled_by) === String(currentUser?._id)
-                  ? (lang === 'en' ? 'You cancelled this job' : 'Bạn đã hủy đơn hàng này')
-                  : (lang === 'en' ? 'Customer cancelled this job' : 'Khách hàng đã hủy đơn hàng')}
+                  ? lang === 'en'
+                    ? 'You cancelled this job'
+                    : 'Bạn đã hủy đơn hàng này'
+                  : lang === 'en'
+                    ? 'Customer cancelled this job'
+                    : 'Khách hàng đã hủy đơn hàng'}
               </Text>
             </View>
             {job.cancellation_reason ? (
@@ -748,8 +758,12 @@ export default function HelperJobDetailScreen() {
                 {lang === 'en' ? 'Scheduled: ' : 'Ngày hẹn: '}
                 {job.preferred_date
                   ? dayjs(job.preferred_date).format('DD/MM/YYYY')
-                  : (lang === 'en' ? 'Earliest' : 'Sớm nhất')}
-                {job.preferred_time_start ? ` ${lang === 'en' ? 'at' : 'lúc'} ${job.preferred_time_start}` : ''}
+                  : lang === 'en'
+                    ? 'Earliest'
+                    : 'Sớm nhất'}
+                {job.preferred_time_start
+                  ? ` ${lang === 'en' ? 'at' : 'lúc'} ${job.preferred_time_start}`
+                  : ''}
               </Text>
             </View>
           )}
@@ -800,7 +814,9 @@ export default function HelperJobDetailScreen() {
               <Text style={{ fontWeight: '800', fontSize: fs(15), color: COLORS.gray[900] }}>
                 {typeof job.customer_id === 'object' && job.customer_id
                   ? (job.customer_id as { full_name: string }).full_name
-                  : (lang === 'en' ? 'Customer' : 'Khách hàng')}
+                  : lang === 'en'
+                    ? 'Customer'
+                    : 'Khách hàng'}
               </Text>
               <Text style={{ fontSize: fs(13), color: COLORS.gray[500] }}>
                 {lang === 'en' ? 'Service requester' : 'Chủ đơn đặt dịch vụ'}
@@ -823,7 +839,9 @@ export default function HelperJobDetailScreen() {
                       partnerName:
                         typeof job.customer_id === 'object' && job.customer_id
                           ? (job.customer_id as { full_name: string }).full_name
-                          : (lang === 'en' ? 'Customer' : 'Khách hàng'),
+                          : lang === 'en'
+                            ? 'Customer'
+                            : 'Khách hàng',
                     },
                   })
                 }
@@ -882,16 +900,25 @@ export default function HelperJobDetailScreen() {
                           alignItems: 'center',
                         }}
                       >
-                        <Text style={{ fontSize: fs(13), fontWeight: '700', color: COLORS.gray[800] }}>
-                          +{new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'vi-VN').format(addAmt)}₫
+                        <Text
+                          style={{ fontSize: fs(13), fontWeight: '700', color: COLORS.gray[800] }}
+                        >
+                          +{new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'vi-VN').format(addAmt)}
+                          ₫
                         </Text>
                         <Badge
                           label={
                             am.status === 'pending'
-                              ? (lang === 'en' ? 'Awaiting customer' : 'Chờ khách duyệt')
+                              ? lang === 'en'
+                                ? 'Awaiting customer'
+                                : 'Chờ khách duyệt'
                               : am.status === 'accepted'
-                                ? (lang === 'en' ? 'Customer agreed' : 'Khách đã đồng ý')
-                                : (lang === 'en' ? 'Customer declined' : 'Khách từ chối')
+                                ? lang === 'en'
+                                  ? 'Customer agreed'
+                                  : 'Khách đã đồng ý'
+                                : lang === 'en'
+                                  ? 'Customer declined'
+                                  : 'Khách từ chối'
                           }
                           color={
                             am.status === 'pending'
@@ -910,7 +937,9 @@ export default function HelperJobDetailScreen() {
                           size="sm"
                         />
                       </View>
-                      <Text style={{ fontSize: fs(12.5), color: COLORS.gray[600] }}>{am.reason}</Text>
+                      <Text style={{ fontSize: fs(12.5), color: COLORS.gray[600] }}>
+                        {am.reason}
+                      </Text>
                     </View>
                   );
                 })}
@@ -1005,9 +1034,11 @@ export default function HelperJobDetailScreen() {
             )}
             {job.status === 'pending_review' && (
               <View style={{ alignItems: 'center', gap: 8, paddingVertical: 10 }}>
-                <Text style={{ fontSize: fs(36) }}>⏳</Text>
+                <Clock size={36} color={COLORS.gray[400]} />
                 <Text style={{ fontWeight: '800', fontSize: fs(15), color: COLORS.gray[800] }}>
-                  {lang === 'en' ? 'Awaiting customer acceptance' : 'Đang chờ khách hàng nghiệm thu'}
+                  {lang === 'en'
+                    ? 'Awaiting customer acceptance'
+                    : 'Đang chờ khách hàng nghiệm thu'}
                 </Text>
                 <Text style={{ fontSize: fs(13), color: COLORS.gray[500], textAlign: 'center' }}>
                   {lang === 'en'
@@ -1056,9 +1087,9 @@ export default function HelperJobDetailScreen() {
                 <Text style={{ fontWeight: '800', fontSize: fs(16), color: COLORS.gray[900] }}>
                   {job.is_warranty
                     ? t('helper_job.warranty_badge')
-                    : (lang === 'en'
-                        ? `Fixed price: ${new Intl.NumberFormat('en-US').format(job.fixed_price ?? 0)}₫`
-                        : `Giá cam kết: ${new Intl.NumberFormat('vi-VN').format(job.fixed_price ?? 0)}₫`)}
+                    : lang === 'en'
+                      ? `Fixed price: ${new Intl.NumberFormat('en-US').format(job.fixed_price ?? 0)}₫`
+                      : `Giá cam kết: ${new Intl.NumberFormat('vi-VN').format(job.fixed_price ?? 0)}₫`}
                 </Text>
                 {job.is_warranty ? (
                   <Text style={{ fontSize: fs(13.5), color: COLORS.gray[700], lineHeight: 20 }}>
@@ -1092,8 +1123,12 @@ export default function HelperJobDetailScreen() {
                 <Button
                   title={
                     job.is_warranty
-                      ? (lang === 'en' ? 'Accept warranty job' : 'Nhận việc bảo hành')
-                      : (lang === 'en' ? 'Accept job now' : 'Nhận việc ngay')
+                      ? lang === 'en'
+                        ? 'Accept warranty job'
+                        : 'Nhận việc bảo hành'
+                      : lang === 'en'
+                        ? 'Accept job now'
+                        : 'Nhận việc ngay'
                   }
                   icon={<CheckCircle2 size={16} color="#fff" />}
                   loading={acceptFixed.isPending}
@@ -1118,7 +1153,9 @@ export default function HelperJobDetailScreen() {
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                   <CheckCircle2 size={16} color={COLORS.success} />
                   <Text style={{ fontWeight: '800', fontSize: fs(15), color: COLORS.success }}>
-                    {lang === 'en' ? 'You submitted a quote for this job' : 'Bạn đã gửi báo giá cho đơn này'}
+                    {lang === 'en'
+                      ? 'You submitted a quote for this job'
+                      : 'Bạn đã gửi báo giá cho đơn này'}
                   </Text>
                 </View>
                 <View
@@ -1214,11 +1251,20 @@ export default function HelperJobDetailScreen() {
               gap: 14,
             }}
           >
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+            <View
+              style={{
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+              }}
+            >
               <Text style={{ fontSize: fs(18), fontWeight: '800', color: COLORS.gray[900] }}>
                 {lang === 'en' ? 'Cancel Assigned Job' : 'Hủy nhận công việc'}
               </Text>
-              <TouchableOpacity onPress={() => setShowCancelModal(false)} disabled={cancelJobMutation.isPending}>
+              <TouchableOpacity
+                onPress={() => setShowCancelModal(false)}
+                disabled={cancelJobMutation.isPending}
+              >
                 <X size={22} color={COLORS.gray[500]} />
               </TouchableOpacity>
             </View>
@@ -1281,7 +1327,9 @@ export default function HelperJobDetailScreen() {
                   minHeight: 54,
                   textAlignVertical: 'top',
                 }}
-                placeholder={lang === 'en' ? 'Enter detailed reason...' : 'Nhập chi tiết lý do hủy việc...'}
+                placeholder={
+                  lang === 'en' ? 'Enter detailed reason...' : 'Nhập chi tiết lý do hủy việc...'
+                }
                 placeholderTextColor={COLORS.gray[400]}
                 value={cancelReasonText}
                 onChangeText={setCancelReasonText}
@@ -1323,7 +1371,12 @@ export default function HelperJobDetailScreen() {
               <X size={24} color={COLORS.gray[700]} />
             </TouchableOpacity>
             <Text
-              style={{ fontSize: fs(18), fontWeight: '800', marginLeft: 12, color: COLORS.gray[900] }}
+              style={{
+                fontSize: fs(18),
+                fontWeight: '800',
+                marginLeft: 12,
+                color: COLORS.gray[900],
+              }}
             >
               {lang === 'en' ? 'Propose Cost Addendum' : 'Đề xuất phụ lục phát sinh'}
             </Text>
@@ -1336,7 +1389,9 @@ export default function HelperJobDetailScreen() {
             <ScrollView contentContainerStyle={{ padding: 20, gap: 18 }}>
               <Card style={{ backgroundColor: COLORS.primaryLight, gap: 6 }}>
                 <Text style={{ fontWeight: '800', fontSize: fs(13.5), color: COLORS.primaryDark }}>
-                  {lang === 'en' ? 'Transparent Costs & Additional Materials' : 'Minh bạch chi phí & Vật tư ngoài'}
+                  {lang === 'en'
+                    ? 'Transparent Costs & Additional Materials'
+                    : 'Minh bạch chi phí & Vật tư ngoài'}
                 </Text>
                 <Text style={{ fontSize: fs(12.5), color: COLORS.gray[700], lineHeight: 18 }}>
                   {lang === 'en'
@@ -1347,7 +1402,9 @@ export default function HelperJobDetailScreen() {
 
               <View style={{ gap: 6 }}>
                 <Text style={{ fontWeight: '700', color: COLORS.gray[700] }}>
-                  {lang === 'en' ? 'Additional parts / materials cost (₫)' : 'Tiền vật tư / linh kiện phát sinh (₫)'}
+                  {lang === 'en'
+                    ? 'Additional parts / materials cost (₫)'
+                    : 'Tiền vật tư / linh kiện phát sinh (₫)'}
                 </Text>
                 <TextInput
                   style={{
@@ -1391,7 +1448,9 @@ export default function HelperJobDetailScreen() {
 
               <View style={{ gap: 6 }}>
                 <Text style={{ fontWeight: '700', color: COLORS.gray[700] }}>
-                  {lang === 'en' ? 'Reason & details of additional items *' : 'Lý do & Chi tiết hạng mục phát sinh *'}
+                  {lang === 'en'
+                    ? 'Reason & details of additional items *'
+                    : 'Lý do & Chi tiết hạng mục phát sinh *'}
                 </Text>
                 <TextInput
                   style={{
@@ -1417,7 +1476,11 @@ export default function HelperJobDetailScreen() {
               </View>
 
               <Button
-                title={lang === 'en' ? 'Send proposal for customer approval' : 'Gửi đề xuất cho khách duyệt'}
+                title={
+                  lang === 'en'
+                    ? 'Send proposal for customer approval'
+                    : 'Gửi đề xuất cho khách duyệt'
+                }
                 loading={proposeAmendment.isPending}
                 onPress={handleSubmitAmendment}
               />
@@ -1435,7 +1498,12 @@ export default function HelperJobDetailScreen() {
               <X size={24} color={COLORS.gray[700]} />
             </TouchableOpacity>
             <Text
-              style={{ fontSize: fs(18), fontWeight: '800', marginLeft: 12, color: COLORS.gray[900] }}
+              style={{
+                fontSize: fs(18),
+                fontWeight: '800',
+                marginLeft: 12,
+                color: COLORS.gray[900],
+              }}
             >
               {t('helper_job.quote_modal_title')}
             </Text>
@@ -1475,7 +1543,8 @@ export default function HelperJobDetailScreen() {
                       marginTop: 4,
                     }}
                   >
-                    {t('helper_job.min_quote_warning')} ({lang === 'en' ? 'current: ' : 'hiện tại: '}
+                    {t('helper_job.min_quote_warning')} (
+                    {lang === 'en' ? 'current: ' : 'hiện tại: '}
                     {Number(laborCost).toLocaleString(lang === 'en' ? 'en-US' : 'vi-VN')}₫)
                   </Text>
                 )}
@@ -1601,7 +1670,11 @@ export default function HelperJobDetailScreen() {
                 {t('helper_job.evidence_title')}
               </Text>
             </View>
-            <Badge label={t('helper_job.evidence_badge')} color={COLORS.primaryLight} textColor={COLORS.primary} />
+            <Badge
+              label={t('helper_job.evidence_badge')}
+              color={COLORS.primaryLight}
+              textColor={COLORS.primary}
+            />
           </View>
 
           <KeyboardAvoidingView
@@ -1686,7 +1759,9 @@ export default function HelperJobDetailScreen() {
                     }}
                   >
                     <ImagePlus size={18} color={COLORS.gray[700]} />
-                    <Text style={{ fontWeight: '700', fontSize: fs(13.5), color: COLORS.gray[800] }}>
+                    <Text
+                      style={{ fontWeight: '700', fontSize: fs(13.5), color: COLORS.gray[800] }}
+                    >
                       {t('helper_job.evidence_pick_album')}
                     </Text>
                   </TouchableOpacity>
@@ -1774,7 +1849,9 @@ export default function HelperJobDetailScreen() {
                     }}
                   >
                     <Video size={18} color={COLORS.secondary} />
-                    <Text style={{ fontWeight: '700', fontSize: fs(13.5), color: COLORS.secondary }}>
+                    <Text
+                      style={{ fontWeight: '700', fontSize: fs(13.5), color: COLORS.secondary }}
+                    >
                       {lang === 'en' ? 'Record video' : 'Quay video'}
                     </Text>
                   </TouchableOpacity>
@@ -1794,7 +1871,9 @@ export default function HelperJobDetailScreen() {
                     }}
                   >
                     <Video size={18} color={COLORS.gray[700]} />
-                    <Text style={{ fontWeight: '700', fontSize: fs(13.5), color: COLORS.gray[800] }}>
+                    <Text
+                      style={{ fontWeight: '700', fontSize: fs(13.5), color: COLORS.gray[800] }}
+                    >
                       {t('helper_job.evidence_pick_video')}
                     </Text>
                   </TouchableOpacity>
@@ -1834,13 +1913,21 @@ export default function HelperJobDetailScreen() {
                           </View>
                           <View style={{ flex: 1 }}>
                             <Text
-                              style={{ fontSize: fs(13), fontWeight: '700', color: COLORS.gray[800] }}
+                              style={{
+                                fontSize: fs(13),
+                                fontWeight: '700',
+                                color: COLORS.gray[800],
+                              }}
                               numberOfLines={1}
                             >
-                              {lang === 'en' ? `Acceptance video #${index + 1}` : `Video nghiệm thu #${index + 1}`}
+                              {lang === 'en'
+                                ? `Acceptance video #${index + 1}`
+                                : `Video nghiệm thu #${index + 1}`}
                             </Text>
                             <Text style={{ fontSize: fs(11), color: COLORS.gray[500] }}>
-                              {lang === 'en' ? 'Ready to send to customer' : 'Đã sẵn sàng gửi cho khách'}
+                              {lang === 'en'
+                                ? 'Ready to send to customer'
+                                : 'Đã sẵn sàng gửi cho khách'}
                             </Text>
                           </View>
                         </View>

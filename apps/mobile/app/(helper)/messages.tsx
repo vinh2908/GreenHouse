@@ -61,7 +61,7 @@ export default function HelperConversationsScreen() {
           <LoadingSpinner />
         ) : !conversations?.length ? (
           <EmptyState
-            emoji="💬"
+            icon={<MessageCircle size={36} color={COLORS.gray[400]} />}
             title={t('messages_empty_title')}
             subtitle={t('messages_empty_sub')}
           />
@@ -107,7 +107,11 @@ export default function HelperConversationsScreen() {
                   <View style={{ flex: 1, gap: 2 }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                       <Text
-                        style={{ fontWeight: isUnread ? '900' : '800', fontSize: fs(15), color: COLORS.gray[900] }}
+                        style={{
+                          fontWeight: isUnread ? '900' : '800',
+                          fontSize: fs(15),
+                          color: COLORS.gray[900],
+                        }}
                         numberOfLines={1}
                       >
                         {partnerName}

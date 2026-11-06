@@ -60,6 +60,7 @@ import {
   HeartHandshake,
   Truck,
   Lightbulb,
+  Star,
 } from 'lucide-react-native';
 import { useAuthStore } from '@/stores/auth.store';
 import { useTranslation } from '@/hooks/use-i18n';
@@ -256,7 +257,12 @@ export default function CustomerHomeScreen() {
   const { data: profile, refetch: refetchProfile } = useMyProfile();
   const user = profile ?? storedUser;
   const { data: services, isError: sError, refetch: refetchServices } = useServices();
-  const { data: recentJobs, isLoading: jLoading, isError: jError, refetch: refetchJobs } = useMyJobs();
+  const {
+    data: recentJobs,
+    isLoading: jLoading,
+    isError: jError,
+    refetch: refetchJobs,
+  } = useMyJobs();
   const { data: unread, refetch: refetchUnread } = useUnreadCount();
   const createJob = useCreateJob();
   const insets = useSafeAreaInsets();
@@ -722,7 +728,7 @@ export default function CustomerHomeScreen() {
           currentCoords
             ? `
         const userEl = document.createElement('div');
-        userEl.innerHTML = '<div class="user-pill"><span>📍</span><span>' + ${JSON.stringify(t('home_map_you_are_here'))} + '</span></div>';
+        userEl.innerHTML = '<div class="user-pill"><span>' + ${JSON.stringify(t('home_map_you_are_here'))} + '</span></div>';
         new maplibregl.Marker({ element: userEl })
           .setLngLat([${currentCoords.longitude}, ${currentCoords.latitude}])
           .addTo(map);
@@ -991,10 +997,7 @@ export default function CustomerHomeScreen() {
         if (status !== 'granted') {
           Toast.show({
             type: 'error',
-            text1:
-              lang === 'en'
-                ? 'Photo library permission required'
-                : 'Cần quyền thư viện ảnh',
+            text1: lang === 'en' ? 'Photo library permission required' : 'Cần quyền thư viện ảnh',
           });
           return;
         }
@@ -1014,9 +1017,7 @@ export default function CustomerHomeScreen() {
       Toast.show({
         type: 'error',
         text1:
-          lang === 'en'
-            ? 'Unable to select photo from library'
-            : 'Không thể chọn ảnh từ thư viện',
+          lang === 'en' ? 'Unable to select photo from library' : 'Không thể chọn ảnh từ thư viện',
       });
     }
   };
@@ -1394,14 +1395,25 @@ export default function CustomerHomeScreen() {
                 onPress={() => setServiceSearchQuery('')}
                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               >
-                <Text style={{ fontSize: fs(13), fontWeight: '700', color: COLORS.gray[500] }}>✕</Text>
+                <Text style={{ fontSize: fs(13), fontWeight: '700', color: COLORS.gray[500] }}>
+                  ✕
+                </Text>
               </TouchableOpacity>
             )}
           </View>
         </View>
 
         {sError && jError ? (
-          <View style={{ padding: 24, margin: 16, backgroundColor: '#fff', borderRadius: 16, borderWidth: 1, borderColor: '#E2E8F0' }}>
+          <View
+            style={{
+              padding: 24,
+              margin: 16,
+              backgroundColor: '#fff',
+              borderRadius: 16,
+              borderWidth: 1,
+              borderColor: '#E2E8F0',
+            }}
+          >
             <ErrorState
               title={lang === 'en' ? 'Unable to load home data' : 'Không thể tải dữ liệu trang chủ'}
               subtitle={
@@ -1418,1726 +1430,1810 @@ export default function CustomerHomeScreen() {
           </View>
         ) : (
           <>
-        {/* ── 2. WOW 1: THỢ ĐANG Ở GẦN BẠN (Live Map + Real Nearby Helpers) ─ */}
-        <View style={{ paddingHorizontal: 16, marginTop: 20 }}>
-          {/* Section Header with "Trực tiếp" green pulse badge */}
-          <View
-            style={{
-              flexDirection: 'row',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              marginBottom: 12,
-            }}
-          >
-            <Text style={{ fontSize: fs(18), fontWeight: '800', color: COLORS.gray[900] }}>
-              {t('home_nearby_helpers_title')}
-            </Text>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            {/* ── 2. WOW 1: THỢ ĐANG Ở GẦN BẠN (Live Map + Real Nearby Helpers) ─ */}
+            <View style={{ paddingHorizontal: 16, marginTop: 20 }}>
+              {/* Section Header with "Trực tiếp" green pulse badge */}
               <View
                 style={{
-                  width: 8,
-                  height: 8,
-                  borderRadius: 4,
-                  backgroundColor: '#22C55E',
-                }}
-              />
-              <Text style={{ fontSize: fs(12), fontWeight: '800', color: '#16A34A' }}>
-                {t('home_live_badge')}
-              </Text>
-            </View>
-          </View>
-
-          {/* Interactive Mini Map */}
-          <View
-            style={{
-              height: 190,
-              borderRadius: 18,
-              overflow: 'hidden',
-              backgroundColor: '#F8FAFC',
-              borderWidth: 1,
-              borderColor: '#CBD5E1',
-              position: 'relative',
-            }}
-          >
-            {currentCoords && mapCenter ? (
-              Platform.OS === 'web' ? (
-                <iframe
-                  ref={mapIframeRef}
-                  srcDoc={leafletMiniMapHtml}
-                  style={{ width: '100%', height: '100%', border: 'none' }}
-                  title="Goong Mini Map"
-                  sandbox="allow-scripts allow-same-origin"
-                />
-              ) : (
-                <WebView
-                  ref={mapWebViewRef}
-                  originWhitelist={['*']}
-                  source={{ html: leafletMiniMapHtml }}
-                  scrollEnabled={false}
-                  style={{ flex: 1, backgroundColor: '#f8fafc' }}
-                  onMessage={event => {
-                    try {
-                      const data = JSON.parse(event.nativeEvent.data);
-                      if (data?.type === 'SELECT_HELPER' && data.id) {
-                        setSelectedHelperId(data.id);
-                      }
-                    } catch {}
-                  }}
-                />
-              )
-            ) : (
-              <View
-                style={{
-                  flex: 1,
+                  flexDirection: 'row',
+                  justifyContent: 'space-between',
                   alignItems: 'center',
-                  justifyContent: 'center',
-                  paddingHorizontal: 20,
-                  backgroundColor: '#F8FAFC',
-                  gap: 8,
+                  marginBottom: 12,
                 }}
               >
-                <View
-                  style={{
-                    width: 44,
-                    height: 44,
-                    borderRadius: 22,
-                    backgroundColor: '#FEF3C7',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <MapPin size={22} color="#D97706" />
-                </View>
-                <Text
-                  style={{
-                    fontSize: fs(14),
-                    fontWeight: '800',
-                    color: COLORS.gray[800],
-                    textAlign: 'center',
-                  }}
-                >
-                  {t('home_location_unidentified')}
+                <Text style={{ fontSize: fs(18), fontWeight: '800', color: COLORS.gray[900] }}>
+                  {t('home_nearby_helpers_title')}
                 </Text>
-                <Text
-                  style={{
-                    fontSize: fs(12),
-                    color: COLORS.gray[500],
-                    textAlign: 'center',
-                    lineHeight: Math.round(fs(16)),
-                  }}
-                >
-                  {t('home_location_unidentified_sub')}
-                </Text>
-                <View style={{ flexDirection: 'row', gap: 10, marginTop: 4 }}>
-                  <TouchableOpacity
-                    onPress={handleRequestLiveLocation}
-                    disabled={isLocatingLive}
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <View
                     style={{
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      gap: 6,
-                      backgroundColor: COLORS.primary,
-                      paddingVertical: 7,
-                      paddingHorizontal: 14,
-                      borderRadius: 10,
+                      width: 8,
+                      height: 8,
+                      borderRadius: 4,
+                      backgroundColor: '#22C55E',
                     }}
-                  >
-                    {isLocatingLive ? (
-                      <ActivityIndicator size="small" color="#fff" />
-                    ) : (
-                      <Navigation size={14} color="#fff" />
-                    )}
-                    <Text style={{ color: '#fff', fontWeight: '700', fontSize: fs(12) }}>
-                      {isLocatingLive ? t('home_locating') : t('home_get_location_btn')}
-                    </Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={() => setLocationPickerOpen(true)}
-                    style={{
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      gap: 6,
-                      backgroundColor: '#fff',
-                      borderWidth: 1,
-                      borderColor: COLORS.gray[300],
-                      paddingVertical: 7,
-                      paddingHorizontal: 14,
-                      borderRadius: 10,
-                    }}
-                  >
-                    <MapPin size={14} color={COLORS.gray[700]} />
-                    <Text style={{ color: COLORS.gray[800], fontWeight: '700', fontSize: fs(12) }}>
-                      {t('home_select_manual')}
-                    </Text>
-                  </TouchableOpacity>
+                  />
+                  <Text style={{ fontSize: fs(12), fontWeight: '800', color: '#16A34A' }}>
+                    {t('home_live_badge')}
+                  </Text>
                 </View>
               </View>
-            )}
-          </View>
 
-          {/* Worker list cards or Clean Empty State */}
-          {nearbyHelpers.length === 0 ? (
+              {/* Interactive Mini Map */}
+              <View
+                style={{
+                  height: 190,
+                  borderRadius: 18,
+                  overflow: 'hidden',
+                  backgroundColor: '#F8FAFC',
+                  borderWidth: 1,
+                  borderColor: '#CBD5E1',
+                  position: 'relative',
+                }}
+              >
+                {currentCoords && mapCenter ? (
+                  Platform.OS === 'web' ? (
+                    <iframe
+                      ref={mapIframeRef}
+                      srcDoc={leafletMiniMapHtml}
+                      style={{ width: '100%', height: '100%', border: 'none' }}
+                      title="Goong Mini Map"
+                      sandbox="allow-scripts allow-same-origin"
+                    />
+                  ) : (
+                    <WebView
+                      ref={mapWebViewRef}
+                      originWhitelist={['*']}
+                      source={{ html: leafletMiniMapHtml }}
+                      scrollEnabled={false}
+                      style={{ flex: 1, backgroundColor: '#f8fafc' }}
+                      onMessage={event => {
+                        try {
+                          const data = JSON.parse(event.nativeEvent.data);
+                          if (data?.type === 'SELECT_HELPER' && data.id) {
+                            setSelectedHelperId(data.id);
+                          }
+                        } catch {}
+                      }}
+                    />
+                  )
+                ) : (
+                  <View
+                    style={{
+                      flex: 1,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      paddingHorizontal: 20,
+                      backgroundColor: '#F8FAFC',
+                      gap: 8,
+                    }}
+                  >
+                    <View
+                      style={{
+                        width: 44,
+                        height: 44,
+                        borderRadius: 22,
+                        backgroundColor: '#FEF3C7',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      <MapPin size={22} color="#D97706" />
+                    </View>
+                    <Text
+                      style={{
+                        fontSize: fs(14),
+                        fontWeight: '800',
+                        color: COLORS.gray[800],
+                        textAlign: 'center',
+                      }}
+                    >
+                      {t('home_location_unidentified')}
+                    </Text>
+                    <Text
+                      style={{
+                        fontSize: fs(12),
+                        color: COLORS.gray[500],
+                        textAlign: 'center',
+                        lineHeight: Math.round(fs(16)),
+                      }}
+                    >
+                      {t('home_location_unidentified_sub')}
+                    </Text>
+                    <View style={{ flexDirection: 'row', gap: 10, marginTop: 4 }}>
+                      <TouchableOpacity
+                        onPress={handleRequestLiveLocation}
+                        disabled={isLocatingLive}
+                        style={{
+                          flexDirection: 'row',
+                          alignItems: 'center',
+                          gap: 6,
+                          backgroundColor: COLORS.primary,
+                          paddingVertical: 7,
+                          paddingHorizontal: 14,
+                          borderRadius: 10,
+                        }}
+                      >
+                        {isLocatingLive ? (
+                          <ActivityIndicator size="small" color="#fff" />
+                        ) : (
+                          <Navigation size={14} color="#fff" />
+                        )}
+                        <Text style={{ color: '#fff', fontWeight: '700', fontSize: fs(12) }}>
+                          {isLocatingLive ? t('home_locating') : t('home_get_location_btn')}
+                        </Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        onPress={() => setLocationPickerOpen(true)}
+                        style={{
+                          flexDirection: 'row',
+                          alignItems: 'center',
+                          gap: 6,
+                          backgroundColor: '#fff',
+                          borderWidth: 1,
+                          borderColor: COLORS.gray[300],
+                          paddingVertical: 7,
+                          paddingHorizontal: 14,
+                          borderRadius: 10,
+                        }}
+                      >
+                        <MapPin size={14} color={COLORS.gray[700]} />
+                        <Text
+                          style={{ color: COLORS.gray[800], fontWeight: '700', fontSize: fs(12) }}
+                        >
+                          {t('home_select_manual')}
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                )}
+              </View>
+
+              {/* Worker list cards or Clean Empty State */}
+              {nearbyHelpers.length === 0 ? (
+                <View
+                  style={{
+                    marginTop: 12,
+                    backgroundColor: '#FFFFFF',
+                    borderRadius: 16,
+                    paddingVertical: 20,
+                    paddingHorizontal: 16,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    borderWidth: 1,
+                    borderColor: '#E2E8F0',
+                  }}
+                >
+                  <View
+                    style={{
+                      width: 44,
+                      height: 44,
+                      borderRadius: 22,
+                      backgroundColor: '#F1F5F9',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      marginBottom: 8,
+                    }}
+                  >
+                    <Users size={22} color={COLORS.gray[400]} />
+                  </View>
+                  <Text
+                    style={{
+                      fontSize: fs(14),
+                      fontWeight: '700',
+                      color: COLORS.gray[800],
+                      textAlign: 'center',
+                    }}
+                  >
+                    {!currentCoords ? t('home_no_location_helpers') : t('home_no_helpers_online')}
+                  </Text>
+                  <Text
+                    style={{
+                      fontSize: fs(12),
+                      color: COLORS.gray[500],
+                      marginTop: 4,
+                      textAlign: 'center',
+                    }}
+                  >
+                    {!currentCoords
+                      ? t('home_no_location_helpers_sub')
+                      : t('home_no_helpers_online_sub')}
+                  </Text>
+                </View>
+              ) : (
+                <View style={{ marginTop: 12, gap: 8 }}>
+                  {nearbyHelpers.map(helper => {
+                    const isSelected = helper.id === selectedHelperId;
+
+                    return (
+                      <TouchableOpacity
+                        key={helper.id}
+                        activeOpacity={0.8}
+                        onPress={() => setSelectedHelperId(helper.id)}
+                        style={{
+                          backgroundColor: '#FFFFFF',
+                          borderRadius: 14,
+                          paddingVertical: 12,
+                          paddingHorizontal: 14,
+                          flexDirection: 'row',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          borderWidth: 1.5,
+                          borderColor: isSelected ? COLORS.primary : '#F1F5F9',
+                          shadowColor: '#000',
+                          shadowOffset: { width: 0, height: 1 },
+                          shadowOpacity: 0.04,
+                          shadowRadius: 3,
+                          elevation: 1,
+                        }}
+                      >
+                        <View
+                          style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}
+                        >
+                          <View
+                            style={{
+                              width: 38,
+                              height: 38,
+                              borderRadius: 19,
+                              backgroundColor: isSelected ? '#DCFCE7' : '#F1F5F9',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                            }}
+                          >
+                            <Text
+                              style={{
+                                fontSize: fs(14),
+                                fontWeight: '800',
+                                color: isSelected ? COLORS.primary : COLORS.gray[600],
+                              }}
+                            >
+                              {helper.name.charAt(0)}
+                            </Text>
+                          </View>
+
+                          <View style={{ flex: 1 }}>
+                            <Text
+                              style={{
+                                fontSize: fs(15),
+                                fontWeight: '800',
+                                color: COLORS.gray[900],
+                              }}
+                              numberOfLines={1}
+                            >
+                              {helper.name}
+                            </Text>
+                            <View
+                              style={{
+                                flexDirection: 'row',
+                                alignItems: 'center',
+                                gap: 4,
+                                marginTop: 2,
+                              }}
+                            >
+                              <Text style={{ fontSize: fs(12), color: COLORS.gray[500] }}>
+                                {helper.status === 'Đang rảnh' || helper.status === 'Sẵn sàng'
+                                  ? lang === 'en'
+                                    ? 'Available'
+                                    : helper.status
+                                  : helper.status}{' '}
+                                ·
+                              </Text>
+                              <Star size={12} color="#F59E0B" fill="#F59E0B" />
+                              <Text style={{ fontSize: fs(12), color: COLORS.gray[500] }}>
+                                {helper.rating.toFixed(1)} ({helper.completedJobs}{' '}
+                                {lang === 'en'
+                                  ? helper.completedJobs === 1
+                                    ? 'job'
+                                    : 'jobs'
+                                  : 'việc'}
+                                )
+                              </Text>
+                            </View>
+                          </View>
+                        </View>
+
+                        <View style={{ alignItems: 'flex-end', gap: 5 }}>
+                          <Text
+                            style={{ fontSize: fs(13), fontWeight: '800', color: COLORS.primary }}
+                          >
+                            {helper.distance}
+                          </Text>
+                          <ScalePressable
+                            onPress={() =>
+                              router.push({
+                                pathname: '/(customer)/booking',
+                                params: {
+                                  favorite_helper_id: helper.id,
+                                  favorite_helper_name: helper.name,
+                                },
+                              })
+                            }
+                            style={{
+                              backgroundColor: isSelected ? '#15803D' : COLORS.primary,
+                              paddingHorizontal: 10,
+                              paddingVertical: 5,
+                              borderRadius: 8,
+                            }}
+                          >
+                            <Text style={{ fontSize: fs(11), fontWeight: '800', color: '#fff' }}>
+                              {t('home_book_helper_btn')}
+                            </Text>
+                          </ScalePressable>
+                        </View>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              )}
+            </View>
+
+            {/* ── 3. WOW 2: THẺ AI QUÉT ẢNH SỰ CỐ (Điểm nhấn nổi bật nhất trang chủ) ─ */}
+            <View style={{ paddingHorizontal: 16, marginTop: 20 }}>
+              <View
+                style={{
+                  backgroundColor: '#16A34A',
+                  borderRadius: 20,
+                  paddingHorizontal: 16,
+                  paddingTop: 18,
+                  paddingBottom: 20,
+                  position: 'relative',
+                  overflow: 'hidden',
+                  shadowColor: '#16A34A',
+                  shadowOffset: { width: 0, height: 6 },
+                  shadowOpacity: 0.28,
+                  shadowRadius: 10,
+                  elevation: 4,
+                }}
+              >
+                {/* Vibrant SVG Gradient Background */}
+                <Svg
+                  height="100%"
+                  width="100%"
+                  style={StyleSheet.absoluteFill}
+                  pointerEvents="none"
+                >
+                  <Defs>
+                    <SvgLinearGradient id="aiCardGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <Stop offset="0%" stopColor="#15803D" />
+                      <Stop offset="45%" stopColor="#16A34A" />
+                      <Stop offset="100%" stopColor="#22C55E" />
+                    </SvgLinearGradient>
+                  </Defs>
+                  <Rect width="100%" height="100%" rx={20} fill="url(#aiCardGrad)" />
+                </Svg>
+
+                {/* Shimmer light sweep */}
+                {!reduceMotion &&
+                  (Platform.OS === 'web' ? (
+                    <View
+                      pointerEvents="none"
+                      style={{
+                        position: 'absolute',
+                        top: -60,
+                        bottom: -60,
+                        width: 70,
+                        backgroundColor: 'rgba(255, 255, 255, 0.28)',
+                        // @ts-ignore
+                        animation: 'aiSweep 3.6s ease-in-out infinite',
+                        transform: [{ rotate: '25deg' }],
+                      }}
+                    />
+                  ) : (
+                    <Animated.View
+                      pointerEvents="none"
+                      style={{
+                        position: 'absolute',
+                        top: -60,
+                        bottom: -60,
+                        width: 70,
+                        backgroundColor: 'rgba(255, 255, 255, 0.28)',
+                        transform: [{ translateX: shineAnim }, { rotate: '25deg' }],
+                      }}
+                    />
+                  ))}
+
+                {/* Badge */}
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 6,
+                    alignSelf: 'flex-start',
+                    backgroundColor: 'rgba(255, 255, 255, 0.22)',
+                    paddingHorizontal: 10,
+                    paddingVertical: 4,
+                    borderRadius: 20,
+                  }}
+                >
+                  <Sparkles size={13} color="#FFFFFF" />
+                  <Text
+                    style={{
+                      fontSize: fs(11),
+                      fontWeight: '800',
+                      color: '#FFFFFF',
+                      letterSpacing: 0.5,
+                      textTransform: 'uppercase',
+                    }}
+                  >
+                    {t('home_ai_scan_badge')}
+                  </Text>
+                </View>
+
+                <Text
+                  style={{
+                    fontSize: fs(17),
+                    fontWeight: '900',
+                    color: '#FFFFFF',
+                    marginTop: 10,
+                    lineHeight: Math.round(fs(23)),
+                    flexShrink: 1,
+                  }}
+                >
+                  {t('home_ai_scan_title')}
+                </Text>
+
+                <Text
+                  style={{
+                    fontSize: fs(13),
+                    color: '#DCFCE7',
+                    marginTop: 6,
+                    lineHeight: Math.round(fs(19)),
+                    fontWeight: '500',
+                    flexShrink: 1,
+                  }}
+                >
+                  {t('home_ai_scan_desc')}
+                </Text>
+
+                {/* 3 Steps indicator */}
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    flexWrap: 'wrap',
+                    gap: 6,
+                    marginTop: 12,
+                    marginBottom: 16,
+                  }}
+                >
+                  <Text style={{ fontSize: fs(11), fontWeight: '700', color: '#FFFFFF' }}>
+                    {t('home_ai_scan_step1')}
+                  </Text>
+                  <Text style={{ fontSize: fs(10), color: '#86EFAC' }}>•</Text>
+                  <Text style={{ fontSize: fs(11), fontWeight: '700', color: '#FFFFFF' }}>
+                    {t('home_ai_scan_step2')}
+                  </Text>
+                  <Text style={{ fontSize: fs(10), color: '#86EFAC' }}>•</Text>
+                  <Text style={{ fontSize: fs(11), fontWeight: '700', color: '#FFFFFF' }}>
+                    {t('home_ai_scan_step3')}
+                  </Text>
+                </View>
+
+                {/* Button: Chụp ảnh ngay */}
+                <ScalePressable
+                  onPress={handleTakeIssuePhoto}
+                  style={{
+                    backgroundColor: '#FFFFFF',
+                    borderRadius: 14,
+                    paddingVertical: 13,
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 8,
+                    shadowColor: '#000',
+                    shadowOffset: { width: 0, height: 2 },
+                    shadowOpacity: 0.12,
+                    shadowRadius: 4,
+                    elevation: 2,
+                  }}
+                >
+                  <Camera size={18} color="#16A34A" />
+                  <Text style={{ fontSize: fs(14.5), fontWeight: '800', color: '#16A34A' }}>
+                    {t('home_ai_scan_btn')}
+                  </Text>
+                </ScalePressable>
+
+                {/* Sub-link: hoặc chọn ảnh sự cố của bạn */}
+                <TouchableOpacity
+                  activeOpacity={0.7}
+                  onPress={handlePickIssuePhoto}
+                  style={{
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    marginTop: 12,
+                    paddingVertical: 4,
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontSize: fs(13),
+                      fontWeight: '700',
+                      color: '#FFFFFF',
+                      textDecorationLine: 'underline',
+                      letterSpacing: 0.2,
+                    }}
+                  >
+                    {t('home_ai_scan_pick')}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* ── 4. VOUCHER CAROUSEL (Dữ liệu thật từ hệ thống + Tự chạy) ──── */}
+            <View style={{ marginTop: 24 }}>
+              <View style={{ paddingHorizontal: 16, marginBottom: 12 }}>
+                <Text
+                  style={{
+                    fontSize: fs(18),
+                    fontWeight: '800',
+                    color: COLORS.gray[900],
+                  }}
+                >
+                  {t('home_vouchers_title')}
+                </Text>
+              </View>
+
+              {vouchers.length === 0 ? (
+                <View
+                  style={{
+                    marginHorizontal: 16,
+                    backgroundColor: '#FFFFFF',
+                    borderRadius: 16,
+                    padding: 20,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    borderWidth: 1,
+                    borderColor: '#E2E8F0',
+                  }}
+                >
+                  <Tag size={24} color={COLORS.gray[400]} />
+                  <Text
+                    style={{
+                      fontSize: fs(14),
+                      fontWeight: '700',
+                      color: COLORS.gray[700],
+                      marginTop: 6,
+                    }}
+                  >
+                    {t('voucher_empty_title')}
+                  </Text>
+                  <Text style={{ fontSize: fs(12), color: COLORS.gray[500], marginTop: 2 }}>
+                    {t('voucher_empty_sub')}
+                  </Text>
+                </View>
+              ) : (
+                <View>
+                  <ScrollView
+                    ref={voucherScrollRef}
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={{ paddingHorizontal: 16, gap: 12 }}
+                    onScrollBeginDrag={() => {
+                      isUserScrollingVouchers.current = true;
+                    }}
+                    onScrollEndDrag={() => {
+                      setTimeout(() => {
+                        isUserScrollingVouchers.current = false;
+                      }, 3000);
+                    }}
+                    onMomentumScrollEnd={e => {
+                      const offsetX = e.nativeEvent.contentOffset.x;
+                      const idx = Math.round(offsetX / voucherCardWidth);
+                      setActiveVoucherIdx(Math.max(0, Math.min(idx, vouchers.length - 1)));
+                    }}
+                    scrollEventThrottle={16}
+                  >
+                    {vouchers.map(v => {
+                      const discountDisplay =
+                        v.discount_type === 'percent'
+                          ? lang === 'en'
+                            ? `${v.discount_value}% OFF`
+                            : `Giảm ${v.discount_value}%`
+                          : lang === 'en'
+                            ? `${Number(v.discount_value).toLocaleString('en-US')}₫ OFF`
+                            : `Giảm ${Number(v.discount_value).toLocaleString('vi-VN')}₫`;
+                      const isCopied = copiedVoucher === v.code;
+
+                      return (
+                        <View
+                          key={v.code || v._id}
+                          onLayout={e => {
+                            const w = e.nativeEvent.layout.width;
+                            if (w > 0 && Math.abs(w + 12 - voucherCardWidth) > 2) {
+                              setVoucherCardWidth(w + 12);
+                            }
+                          }}
+                          style={{
+                            width: 260,
+                            backgroundColor: '#FFFFFF',
+                            borderRadius: 16,
+                            padding: 16,
+                            borderWidth: 1,
+                            borderColor: '#E2E8F0',
+                            justifyContent: 'space-between',
+                            shadowColor: '#000',
+                            shadowOffset: { width: 0, height: 1 },
+                            shadowOpacity: 0.05,
+                            shadowRadius: 3,
+                            elevation: 1,
+                          }}
+                        >
+                          <View>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                              <Sparkles size={12} color="#16A34A" />
+                              <Text
+                                style={{
+                                  fontSize: fs(10),
+                                  fontWeight: '800',
+                                  color: '#16A34A',
+                                  letterSpacing: 0.5,
+                                  textTransform: 'uppercase',
+                                }}
+                              >
+                                {t('voucher_special_badge')}
+                              </Text>
+                            </View>
+                            <Text
+                              style={{
+                                fontSize: fs(22),
+                                fontWeight: '900',
+                                color: COLORS.gray[900],
+                                marginTop: 6,
+                              }}
+                            >
+                              {discountDisplay}
+                            </Text>
+                            <Text
+                              style={{
+                                fontSize: fs(12),
+                                color: COLORS.gray[600],
+                                marginTop: 4,
+                                lineHeight: Math.round(fs(16)),
+                              }}
+                              numberOfLines={2}
+                            >
+                              {formatVoucherDesc(v)}
+                            </Text>
+                          </View>
+
+                          {/* Code & Copy button */}
+                          <View
+                            style={{
+                              flexDirection: 'row',
+                              justifyContent: 'space-between',
+                              alignItems: 'center',
+                              marginTop: 14,
+                              paddingTop: 10,
+                              borderTopWidth: 1,
+                              borderTopColor: '#F1F5F9',
+                            }}
+                          >
+                            <Text
+                              style={{
+                                fontSize: fs(14),
+                                fontWeight: '800',
+                                color: COLORS.gray[900],
+                              }}
+                            >
+                              {v.code}
+                            </Text>
+                            <ScalePressable
+                              onPress={() => handleCopyVoucher(v.code)}
+                              style={{
+                                backgroundColor: isCopied ? '#DCFCE7' : '#F1F5F9',
+                                paddingHorizontal: 12,
+                                paddingVertical: 6,
+                                borderRadius: 8,
+                              }}
+                            >
+                              <Text
+                                style={{
+                                  fontSize: fs(12),
+                                  fontWeight: '700',
+                                  color: isCopied ? COLORS.primary : COLORS.gray[700],
+                                }}
+                              >
+                                {isCopied ? t('voucher_copied') : t('voucher_copy')}
+                              </Text>
+                            </ScalePressable>
+                          </View>
+                        </View>
+                      );
+                    })}
+                  </ScrollView>
+
+                  {/* Progress Dots */}
+                  {vouchers.length > 1 && (
+                    <View
+                      style={{
+                        flexDirection: 'row',
+                        justifyContent: 'center',
+                        gap: 6,
+                        marginTop: 12,
+                      }}
+                    >
+                      {vouchers.map((_, i) => (
+                        <View
+                          key={i}
+                          style={{
+                            width: i === activeVoucherIdx ? 18 : 6,
+                            height: 6,
+                            borderRadius: 3,
+                            backgroundColor: i === activeVoucherIdx ? COLORS.primary : '#CBD5E1',
+                          }}
+                        />
+                      ))}
+                    </View>
+                  )}
+                </View>
+              )}
+            </View>
+
+            {/* ── 5. DỊCH VỤ (3 Cột x 4 Hàng = 12 Items Chuẩn Demo) ──────────── */}
             <View
-              style={{
-                marginTop: 12,
-                backgroundColor: '#FFFFFF',
-                borderRadius: 16,
-                paddingVertical: 20,
-                paddingHorizontal: 16,
-                alignItems: 'center',
-                justifyContent: 'center',
-                borderWidth: 1,
-                borderColor: '#E2E8F0',
+              onLayout={e => {
+                servicesSectionYRef.current = e.nativeEvent.layout.y;
               }}
+              style={{ paddingHorizontal: 16, marginTop: 24 }}
             >
               <View
                 style={{
-                  width: 44,
-                  height: 44,
-                  borderRadius: 22,
-                  backgroundColor: '#F1F5F9',
+                  flexDirection: 'row',
+                  justifyContent: 'space-between',
                   alignItems: 'center',
-                  justifyContent: 'center',
-                  marginBottom: 8,
+                  marginBottom: 14,
                 }}
               >
-                <Users size={22} color={COLORS.gray[400]} />
+                <Text style={{ fontSize: fs(18), fontWeight: '800', color: COLORS.gray[900] }}>
+                  {t('home_all_services_title')}
+                </Text>
+                <TouchableOpacity
+                  activeOpacity={0.7}
+                  onPress={() => router.push('/(customer)/booking')}
+                  style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}
+                >
+                  <Text style={{ fontSize: fs(13), fontWeight: '700', color: COLORS.primary }}>
+                    {t('home_choose_service')} →
+                  </Text>
+                </TouchableOpacity>
               </View>
-              <Text
-                style={{
-                  fontSize: fs(14),
-                  fontWeight: '700',
-                  color: COLORS.gray[800],
-                  textAlign: 'center',
-                }}
-              >
-                {!currentCoords
-                  ? t('home_no_location_helpers')
-                  : t('home_no_helpers_online')}
-              </Text>
-              <Text
-                style={{
-                  fontSize: fs(12),
-                  color: COLORS.gray[500],
-                  marginTop: 4,
-                  textAlign: 'center',
-                }}
-              >
-                {!currentCoords
-                  ? t('home_no_location_helpers_sub')
-                  : t('home_no_helpers_online_sub')}
-              </Text>
-            </View>
-          ) : (
-            <View style={{ marginTop: 12, gap: 8 }}>
-              {nearbyHelpers.map(helper => {
-                const isSelected = helper.id === selectedHelperId;
 
-                return (
-                  <TouchableOpacity
-                    key={helper.id}
-                    activeOpacity={0.8}
-                    onPress={() => setSelectedHelperId(helper.id)}
-                    style={{
-                      backgroundColor: '#FFFFFF',
-                      borderRadius: 14,
-                      paddingVertical: 12,
-                      paddingHorizontal: 14,
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      borderWidth: 1.5,
-                      borderColor: isSelected ? COLORS.primary : '#F1F5F9',
-                      shadowColor: '#000',
-                      shadowOffset: { width: 0, height: 1 },
-                      shadowOpacity: 0.04,
-                      shadowRadius: 3,
-                      elevation: 1,
-                    }}
-                  >
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
-                      <View
-                        style={{
-                          width: 38,
-                          height: 38,
-                          borderRadius: 19,
-                          backgroundColor: isSelected ? '#DCFCE7' : '#F1F5F9',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                        }}
-                      >
+              {/* Responsive Multi-Column Grid */}
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                {(() => {
+                  const q = removeVietnameseDiacritics(serviceSearchQuery);
+                  const list = q
+                    ? SERVICES_CATALOG.filter(s => {
+                        const normName = removeVietnameseDiacritics(s.name);
+                        const normTranslated = removeVietnameseDiacritics(t(s.nameKey));
+                        const normSlug = removeVietnameseDiacritics(s.slug.replace(/_/g, ' '));
+                        const normSub = removeVietnameseDiacritics(s.subtitle || '');
+                        return (
+                          normName.includes(q) ||
+                          normTranslated.includes(q) ||
+                          normSlug.includes(q) ||
+                          normSub.includes(q)
+                        );
+                      })
+                    : SERVICES_CATALOG;
+
+                  const containerW = Math.min(windowWidth, 640) - 36; // 18px padding each side
+                  const numCols = windowWidth >= 768 ? 4 : 3;
+                  const cardGap = 8;
+                  const cardW = Math.floor((containerW - (numCols - 1) * cardGap) / numCols);
+
+                  if (list.length === 0) {
+                    return (
+                      <View style={{ width: '100%', padding: 24, alignItems: 'center' }}>
                         <Text
                           style={{
                             fontSize: fs(14),
-                            fontWeight: '800',
-                            color: isSelected ? COLORS.primary : COLORS.gray[600],
+                            fontWeight: '700',
+                            color: COLORS.gray[700],
+                            textAlign: 'center',
                           }}
                         >
-                          {helper.name.charAt(0)}
-                        </Text>
-                      </View>
-
-                      <View style={{ flex: 1 }}>
-                        <Text
-                          style={{ fontSize: fs(15), fontWeight: '800', color: COLORS.gray[900] }}
-                          numberOfLines={1}
-                        >
-                          {helper.name}
-                        </Text>
-                        <Text style={{ fontSize: fs(12), color: COLORS.gray[500], marginTop: 2 }}>
-                          {helper.status === 'Đang rảnh' || helper.status === 'Sẵn sàng'
-                            ? lang === 'en'
-                              ? 'Available'
-                              : helper.status
-                            : helper.status}{' '}
-                          · ⭐ {helper.rating.toFixed(1)} ({helper.completedJobs}{' '}
-                          {lang === 'en' ? (helper.completedJobs === 1 ? 'job' : 'jobs') : 'việc'})
-                        </Text>
-                      </View>
-                    </View>
-
-                    <View style={{ alignItems: 'flex-end', gap: 5 }}>
-                      <Text style={{ fontSize: fs(13), fontWeight: '800', color: COLORS.primary }}>
-                        {helper.distance}
-                      </Text>
-                      <ScalePressable
-                        onPress={() =>
-                          router.push({
-                            pathname: '/(customer)/booking',
-                            params: {
-                              favorite_helper_id: helper.id,
-                              favorite_helper_name: helper.name,
-                            },
-                          })
-                        }
-                        style={{
-                          backgroundColor: isSelected ? '#15803D' : COLORS.primary,
-                          paddingHorizontal: 10,
-                          paddingVertical: 5,
-                          borderRadius: 8,
-                        }}
-                      >
-                        <Text style={{ fontSize: fs(11), fontWeight: '800', color: '#fff' }}>
-                          {t('home_book_helper_btn')}
-                        </Text>
-                      </ScalePressable>
-                    </View>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          )}
-        </View>
-
-        {/* ── 3. WOW 2: THẺ AI QUÉT ẢNH SỰ CỐ (Điểm nhấn nổi bật nhất trang chủ) ─ */}
-        <View style={{ paddingHorizontal: 16, marginTop: 20 }}>
-          <View
-            style={{
-              backgroundColor: '#16A34A',
-              borderRadius: 20,
-              paddingHorizontal: 16,
-              paddingTop: 18,
-              paddingBottom: 20,
-              position: 'relative',
-              overflow: 'hidden',
-              shadowColor: '#16A34A',
-              shadowOffset: { width: 0, height: 6 },
-              shadowOpacity: 0.28,
-              shadowRadius: 10,
-              elevation: 4,
-            }}
-          >
-            {/* Vibrant SVG Gradient Background */}
-            <Svg height="100%" width="100%" style={StyleSheet.absoluteFill} pointerEvents="none">
-              <Defs>
-                <SvgLinearGradient id="aiCardGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <Stop offset="0%" stopColor="#15803D" />
-                  <Stop offset="45%" stopColor="#16A34A" />
-                  <Stop offset="100%" stopColor="#22C55E" />
-                </SvgLinearGradient>
-              </Defs>
-              <Rect width="100%" height="100%" rx={20} fill="url(#aiCardGrad)" />
-            </Svg>
-
-            {/* Shimmer light sweep */}
-            {!reduceMotion &&
-              (Platform.OS === 'web' ? (
-                <View
-                  pointerEvents="none"
-                  style={{
-                    position: 'absolute',
-                    top: -60,
-                    bottom: -60,
-                    width: 70,
-                    backgroundColor: 'rgba(255, 255, 255, 0.28)',
-                    // @ts-ignore
-                    animation: 'aiSweep 3.6s ease-in-out infinite',
-                    transform: [{ rotate: '25deg' }],
-                  }}
-                />
-              ) : (
-                <Animated.View
-                  pointerEvents="none"
-                  style={{
-                    position: 'absolute',
-                    top: -60,
-                    bottom: -60,
-                    width: 70,
-                    backgroundColor: 'rgba(255, 255, 255, 0.28)',
-                    transform: [{ translateX: shineAnim }, { rotate: '25deg' }],
-                  }}
-                />
-              ))}
-
-            {/* Badge */}
-            <View
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                gap: 6,
-                alignSelf: 'flex-start',
-                backgroundColor: 'rgba(255, 255, 255, 0.22)',
-                paddingHorizontal: 10,
-                paddingVertical: 4,
-                borderRadius: 20,
-              }}
-            >
-              <Sparkles size={13} color="#FFFFFF" />
-              <Text
-                style={{
-                  fontSize: fs(11),
-                  fontWeight: '800',
-                  color: '#FFFFFF',
-                  letterSpacing: 0.5,
-                  textTransform: 'uppercase',
-                }}
-              >
-                {t('home_ai_scan_badge')}
-              </Text>
-            </View>
-
-            <Text
-              style={{
-                fontSize: fs(17),
-                fontWeight: '900',
-                color: '#FFFFFF',
-                marginTop: 10,
-                lineHeight: Math.round(fs(23)),
-                flexShrink: 1,
-              }}
-            >
-              {t('home_ai_scan_title')}
-            </Text>
-
-            <Text
-              style={{
-                fontSize: fs(13),
-                color: '#DCFCE7',
-                marginTop: 6,
-                lineHeight: Math.round(fs(19)),
-                fontWeight: '500',
-                flexShrink: 1,
-              }}
-            >
-              {t('home_ai_scan_desc')}
-            </Text>
-
-            {/* 3 Steps indicator */}
-            <View
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                flexWrap: 'wrap',
-                gap: 6,
-                marginTop: 12,
-                marginBottom: 16,
-              }}
-            >
-              <Text style={{ fontSize: fs(11), fontWeight: '700', color: '#FFFFFF' }}>
-                {t('home_ai_scan_step1')}
-              </Text>
-              <Text style={{ fontSize: fs(10), color: '#86EFAC' }}>•</Text>
-              <Text style={{ fontSize: fs(11), fontWeight: '700', color: '#FFFFFF' }}>
-                {t('home_ai_scan_step2')}
-              </Text>
-              <Text style={{ fontSize: fs(10), color: '#86EFAC' }}>•</Text>
-              <Text style={{ fontSize: fs(11), fontWeight: '700', color: '#FFFFFF' }}>
-                {t('home_ai_scan_step3')}
-              </Text>
-            </View>
-
-            {/* Button: Chụp ảnh ngay */}
-            <ScalePressable
-              onPress={handleTakeIssuePhoto}
-              style={{
-                backgroundColor: '#FFFFFF',
-                borderRadius: 14,
-                paddingVertical: 13,
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 8,
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.12,
-                shadowRadius: 4,
-                elevation: 2,
-              }}
-            >
-              <Camera size={18} color="#16A34A" />
-              <Text style={{ fontSize: fs(14.5), fontWeight: '800', color: '#16A34A' }}>
-                {t('home_ai_scan_btn')}
-              </Text>
-            </ScalePressable>
-
-            {/* Sub-link: hoặc chọn ảnh sự cố của bạn */}
-            <TouchableOpacity
-              activeOpacity={0.7}
-              onPress={handlePickIssuePhoto}
-              style={{
-                alignItems: 'center',
-                justifyContent: 'center',
-                marginTop: 12,
-                paddingVertical: 4,
-              }}
-            >
-              <Text
-                style={{
-                  fontSize: fs(13),
-                  fontWeight: '700',
-                  color: '#FFFFFF',
-                  textDecorationLine: 'underline',
-                  letterSpacing: 0.2,
-                }}
-              >
-                {t('home_ai_scan_pick')}
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* ── 4. VOUCHER CAROUSEL (Dữ liệu thật từ hệ thống + Tự chạy) ──── */}
-        <View style={{ marginTop: 24 }}>
-          <View style={{ paddingHorizontal: 16, marginBottom: 12 }}>
-            <Text
-              style={{
-                fontSize: fs(18),
-                fontWeight: '800',
-                color: COLORS.gray[900],
-              }}
-            >
-              {t('home_vouchers_title')}
-            </Text>
-          </View>
-
-          {vouchers.length === 0 ? (
-            <View
-              style={{
-                marginHorizontal: 16,
-                backgroundColor: '#FFFFFF',
-                borderRadius: 16,
-                padding: 20,
-                alignItems: 'center',
-                justifyContent: 'center',
-                borderWidth: 1,
-                borderColor: '#E2E8F0',
-              }}
-            >
-              <Tag size={24} color={COLORS.gray[400]} />
-              <Text
-                style={{
-                  fontSize: fs(14),
-                  fontWeight: '700',
-                  color: COLORS.gray[700],
-                  marginTop: 6,
-                }}
-              >
-                {t('voucher_empty_title')}
-              </Text>
-              <Text style={{ fontSize: fs(12), color: COLORS.gray[500], marginTop: 2 }}>
-                {t('voucher_empty_sub')}
-              </Text>
-            </View>
-          ) : (
-            <View>
-              <ScrollView
-                ref={voucherScrollRef}
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={{ paddingHorizontal: 16, gap: 12 }}
-                onScrollBeginDrag={() => {
-                  isUserScrollingVouchers.current = true;
-                }}
-                onScrollEndDrag={() => {
-                  setTimeout(() => {
-                    isUserScrollingVouchers.current = false;
-                  }, 3000);
-                }}
-                onMomentumScrollEnd={e => {
-                  const offsetX = e.nativeEvent.contentOffset.x;
-                  const idx = Math.round(offsetX / voucherCardWidth);
-                  setActiveVoucherIdx(Math.max(0, Math.min(idx, vouchers.length - 1)));
-                }}
-                scrollEventThrottle={16}
-              >
-                {vouchers.map(v => {
-                  const discountDisplay =
-                    v.discount_type === 'percent'
-                      ? (lang === 'en' ? `${v.discount_value}% OFF` : `Giảm ${v.discount_value}%`)
-                      : (lang === 'en' ? `${Number(v.discount_value).toLocaleString('en-US')}₫ OFF` : `Giảm ${Number(v.discount_value).toLocaleString('vi-VN')}₫`);
-                  const isCopied = copiedVoucher === v.code;
-
-                  return (
-                    <View
-                      key={v.code || v._id}
-                      onLayout={e => {
-                        const w = e.nativeEvent.layout.width;
-                        if (w > 0 && Math.abs(w + 12 - voucherCardWidth) > 2) {
-                          setVoucherCardWidth(w + 12);
-                        }
-                      }}
-                      style={{
-                        width: 260,
-                        backgroundColor: '#FFFFFF',
-                        borderRadius: 16,
-                        padding: 16,
-                        borderWidth: 1,
-                        borderColor: '#E2E8F0',
-                        justifyContent: 'space-between',
-                        shadowColor: '#000',
-                        shadowOffset: { width: 0, height: 1 },
-                        shadowOpacity: 0.05,
-                        shadowRadius: 3,
-                        elevation: 1,
-                      }}
-                    >
-                      <View>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                          <Sparkles size={12} color="#16A34A" />
-                          <Text
-                            style={{
-                              fontSize: fs(10),
-                              fontWeight: '800',
-                              color: '#16A34A',
-                              letterSpacing: 0.5,
-                              textTransform: 'uppercase',
-                            }}
-                          >
-                            {t('voucher_special_badge')}
-                          </Text>
-                        </View>
-                        <Text
-                          style={{
-                            fontSize: fs(22),
-                            fontWeight: '900',
-                            color: COLORS.gray[900],
-                            marginTop: 6,
-                          }}
-                        >
-                          {discountDisplay}
+                          {t('home_search_empty_title')}
                         </Text>
                         <Text
                           style={{
                             fontSize: fs(12),
-                            color: COLORS.gray[600],
+                            color: COLORS.gray[500],
                             marginTop: 4,
-                            lineHeight: Math.round(fs(16)),
+                            textAlign: 'center',
+                          }}
+                        >
+                          {t('home_search_empty_sub')}
+                        </Text>
+                      </View>
+                    );
+                  }
+
+                  return list.map(svc => {
+                    const isCustom = svc.isCustom;
+                    const matched =
+                      services?.find(s => s.slug === svc.slug) ||
+                      services?.find(s => s.slug.includes(svc.slug.split('_')[0])) ||
+                      services?.find(s =>
+                        s.name.toLowerCase().includes(svc.name.toLowerCase().split(' ')[0]),
+                      );
+                    const fromPrefix = t('price_from_prefix');
+                    const displayPrice = matched?.base_price_min
+                      ? `${fromPrefix}${matched.base_price_min.toLocaleString('vi-VN')}₫`
+                      : svc.isCustom || svc.priceType === 'custom_deal'
+                        ? t('price_negotiate')
+                        : svc.priceType === 'quote_job'
+                          ? t('price_per_task')
+                          : svc.priceType === 'quote_trip'
+                            ? t('price_per_trip')
+                            : svc.baseAmount
+                              ? `${fromPrefix}${svc.baseAmount.toLocaleString('vi-VN')}₫${svc.unitKey ? t(svc.unitKey) : ''}`
+                              : '';
+
+                    return (
+                      <ScalePressable
+                        key={svc.id}
+                        onPress={() => {
+                          if (isCustom) {
+                            router.push({
+                              pathname: '/(customer)/booking',
+                              params: { custom_service_name: t(svc.nameKey) },
+                            });
+                          } else if (matched) {
+                            router.push({
+                              pathname: '/(customer)/booking',
+                              params: { service_id: matched._id, service_slug: matched.slug },
+                            });
+                          } else {
+                            router.push({
+                              pathname: '/(customer)/booking',
+                              params: { custom_service_name: t(svc.nameKey) },
+                            });
+                            Toast.show({
+                              type: 'info',
+                              text1: `${t('common_service')} "${t(svc.nameKey)}"`,
+                              text2: t('home_quick_booking_sub'),
+                            });
+                          }
+                        }}
+                        style={{
+                          width: cardW,
+                          backgroundColor: isCustom ? '#F0FDF4' : '#FFFFFF',
+                          borderRadius: 14,
+                          paddingVertical: Math.max(10, Math.round(10 * textScale)),
+                          paddingHorizontal: 6,
+                          alignItems: 'center',
+                          borderWidth: 1.5,
+                          borderColor: isCustom ? COLORS.primary : '#F1F5F9',
+                          position: 'relative',
+                          minHeight: Math.max(110, Math.round(110 * textScale)),
+                          justifyContent: 'space-between',
+                        }}
+                      >
+                        {/* Badge MỚI cho item 12 */}
+                        {svc.badgeKey && (
+                          <View
+                            style={{
+                              position: 'absolute',
+                              top: 4,
+                              right: 4,
+                              backgroundColor: '#DCFCE7',
+                              paddingHorizontal: Math.round(5 * textScale),
+                              paddingVertical: Math.round(2 * textScale),
+                              borderRadius: 6,
+                            }}
+                          >
+                            <Text
+                              style={{ fontSize: fs(9), fontWeight: '900', color: COLORS.primary }}
+                            >
+                              {t(svc.badgeKey)}
+                            </Text>
+                          </View>
+                        )}
+
+                        <View
+                          style={{
+                            height: 28,
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            marginVertical: 2,
+                          }}
+                        >
+                          {React.createElement(svc.icon, {
+                            size: 24,
+                            color: isCustom ? COLORS.primary : COLORS.gray[800],
+                          })}
+                        </View>
+
+                        <Text
+                          style={{
+                            fontSize: fs(11.5),
+                            fontWeight: '800',
+                            color: isCustom ? COLORS.primary : COLORS.gray[900],
+                            textAlign: 'center',
+                            lineHeight: Math.round(fs(15)),
                           }}
                           numberOfLines={2}
                         >
-                          {formatVoucherDesc(v)}
+                          {t(svc.nameKey)}
                         </Text>
+
+                        {displayPrice ? (
+                          <Text
+                            style={{
+                              fontSize: fs(10),
+                              fontWeight: '700',
+                              color: isCustom ? '#15803D' : COLORS.gray[500],
+                              textAlign: 'center',
+                              marginTop: 4,
+                            }}
+                            numberOfLines={1}
+                          >
+                            {displayPrice}
+                          </Text>
+                        ) : null}
+                      </ScalePressable>
+                    );
+                  });
+                })()}
+              </View>
+
+              {/* 2 Callout Cards: SOS & AI Assistant */}
+              <View style={{ marginTop: 14, gap: 10 }}>
+                {/* SOS Callout - Nổi bật khẩn cấp */}
+                <ScalePressable
+                  onPress={() => router.push('/sos')}
+                  style={{
+                    backgroundColor: '#DC2626',
+                    borderRadius: 16,
+                    padding: 15,
+                    shadowColor: '#DC2626',
+                    shadowOffset: { width: 0, height: 4 },
+                    shadowOpacity: 0.25,
+                    shadowRadius: 8,
+                    elevation: 3,
+                  }}
+                >
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                    }}
+                  >
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                      <View
+                        style={{
+                          width: 26,
+                          height: 26,
+                          borderRadius: 13,
+                          backgroundColor: 'rgba(255,255,255,0.22)',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                      >
+                        <AlertTriangle size={15} color="#FFFFFF" />
+                      </View>
+                      <Text style={{ fontSize: fs(14.5), fontWeight: '900', color: '#FFFFFF' }}>
+                        {t('home_sos_callout_title')}
+                      </Text>
+                    </View>
+                    <View
+                      style={{
+                        backgroundColor: '#FFFFFF',
+                        paddingHorizontal: 7,
+                        paddingVertical: 2,
+                        borderRadius: 6,
+                      }}
+                    >
+                      <Text style={{ fontSize: fs(10.5), fontWeight: '800', color: '#DC2626' }}>
+                        {t('home_sos_callout_urgent')}
+                      </Text>
+                    </View>
+                  </View>
+                  <Text
+                    style={{
+                      fontSize: fs(12),
+                      color: '#FEE2E2',
+                      marginTop: 6,
+                      lineHeight: Math.round(fs(16)),
+                      fontWeight: '500',
+                    }}
+                  >
+                    {t('home_sos_callout_desc')}
+                  </Text>
+                </ScalePressable>
+
+                {/* AI Callout */}
+                <TouchableOpacity
+                  activeOpacity={0.85}
+                  onPress={() => router.push('/(customer)/booking')}
+                  style={{
+                    backgroundColor: '#F8FAFC',
+                    borderRadius: 16,
+                    padding: 14,
+                    borderWidth: 1,
+                    borderColor: '#E2E8F0',
+                  }}
+                >
+                  <Text style={{ fontSize: fs(14), fontWeight: '800', color: COLORS.gray[900] }}>
+                    {t('home_ai_callout_title')}
+                  </Text>
+                  <Text
+                    style={{
+                      fontSize: fs(12),
+                      color: COLORS.gray[600],
+                      marginTop: 2,
+                      lineHeight: Math.round(fs(16)),
+                    }}
+                  >
+                    {t('home_ai_callout_desc')}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* ── 6. ĐĂNG VIỆC THEO Ý BẠN (Quick Booking Block Form) ───────────── */}
+            <View style={{ paddingHorizontal: 16, marginTop: 24 }}>
+              <Text
+                style={{
+                  fontSize: fs(18),
+                  fontWeight: '800',
+                  color: COLORS.gray[900],
+                  marginBottom: 12,
+                }}
+              >
+                {t('home_quick_booking_title')}
+              </Text>
+
+              <View
+                style={{
+                  backgroundColor: '#FFFFFF',
+                  borderRadius: 20,
+                  padding: 18,
+                  borderWidth: 1,
+                  borderColor: '#E2E8F0',
+                  gap: 16,
+                }}
+              >
+                {/* 1. Bạn cần làm việc gì? */}
+                <View>
+                  <Text
+                    style={{
+                      fontSize: fs(14),
+                      fontWeight: '700',
+                      color: COLORS.gray[800],
+                      marginBottom: 8,
+                    }}
+                  >
+                    {t('home_quick_need_work')}
+                  </Text>
+                  {/* Chips */}
+                  <View
+                    style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 10 }}
+                  >
+                    {[
+                      { key: 'don_nha', label: t('home_quick_chip_cleaning') },
+                      { key: 'boc_hang', label: t('home_quick_chip_moving') },
+                      { key: 'may_lanh', label: t('home_quick_chip_ac') },
+                      { key: 'khac', label: t('home_quick_chip_other') },
+                    ].map(c => {
+                      const isSel = quickServiceChip === c.key;
+                      return (
+                        <TouchableOpacity
+                          key={c.key}
+                          onPress={() => handleSelectQuickServiceChip(c.key as any)}
+                          style={{
+                            paddingHorizontal: 14,
+                            paddingVertical: 7,
+                            borderRadius: 20,
+                            backgroundColor: isSel ? '#DCFCE7' : '#F1F5F9',
+                            borderWidth: 1,
+                            borderColor: isSel ? COLORS.primary : '#E2E8F0',
+                          }}
+                        >
+                          <Text
+                            style={{
+                              fontSize: fs(12.5),
+                              fontWeight: '700',
+                              color: isSel ? COLORS.primary : COLORS.gray[700],
+                            }}
+                          >
+                            {c.label}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+
+                  {/* Text input description */}
+                  <TextInput
+                    value={quickDescription}
+                    onChangeText={setQuickDescription}
+                    placeholder={t('home_quick_desc_placeholder')}
+                    placeholderTextColor={COLORS.gray[400]}
+                    multiline
+                    numberOfLines={3}
+                    style={{
+                      backgroundColor: '#F8FAFC',
+                      borderRadius: 12,
+                      padding: 12,
+                      fontSize: fs(14),
+                      color: COLORS.gray[900],
+                      borderWidth: 1,
+                      borderColor: '#E2E8F0',
+                      minHeight: 70,
+                      textAlignVertical: 'top',
+                    }}
+                  />
+                </View>
+
+                {/* 2. Giá bạn muốn trả */}
+                <View>
+                  <Text
+                    style={{
+                      fontSize: fs(14),
+                      fontWeight: '700',
+                      color: COLORS.gray[800],
+                      marginBottom: 8,
+                    }}
+                  >
+                    {t('home_quick_price_title')}
+                  </Text>
+                  <TextInput
+                    value={quickDealPrice}
+                    onChangeText={setQuickDealPrice}
+                    keyboardType="numeric"
+                    style={{
+                      backgroundColor: '#F8FAFC',
+                      borderRadius: 12,
+                      paddingHorizontal: 14,
+                      paddingVertical: 12,
+                      fontSize: fs(16),
+                      fontWeight: '800',
+                      color: COLORS.gray[900],
+                      borderWidth: 1,
+                      borderColor: '#E2E8F0',
+                    }}
+                  />
+                </View>
+
+                {/* 3. Thời gian làm việc: Ngày & Giờ (Trigger mở Bottom Sheet Item 1) */}
+                <View style={{ gap: 10 }}>
+                  <Text
+                    style={{
+                      fontSize: fs(14),
+                      fontWeight: '700',
+                      color: COLORS.gray[800],
+                    }}
+                  >
+                    {t('home_quick_time_title')}
+                  </Text>
+
+                  {/* Ngày làm việc trigger card - Chuẩn Demo .big-field */}
+                  <TouchableOpacity
+                    activeOpacity={0.8}
+                    onPress={() => {
+                      setBottomSheetInitialTab('date');
+                      setDateTimePickerOpen(true);
+                    }}
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: 10,
+                      paddingVertical: 12,
+                      paddingHorizontal: 14,
+                      borderRadius: 14,
+                      backgroundColor: '#F0FDF4',
+                      borderWidth: 1.5,
+                      borderColor: '#16A34A',
+                    }}
+                  >
+                    <Calendar size={18} color="#16A34A" />
+                    <View style={{ flex: 1 }}>
+                      <Text
+                        style={{ fontSize: fs(15), fontWeight: '700', color: COLORS.gray[900] }}
+                        numberOfLines={1}
+                      >
+                        {(() => {
+                          const dt = dayjs(quickDate).locale(lang === 'en' ? 'en' : 'vi');
+                          const dow = dt.format('dddd');
+                          const capitalizedDow = dow.charAt(0).toUpperCase() + dow.slice(1);
+                          return `${capitalizedDow}, ${dt.format('DD/MM')}`;
+                        })()}
+                      </Text>
+                      <Text
+                        style={{
+                          fontSize: fs(11),
+                          color: '#64748B',
+                          fontWeight: '500',
+                          marginTop: 1,
+                        }}
+                      >
+                        {t('home_quick_calendar_hint')}
+                      </Text>
+                    </View>
+                    <ChevronRight size={18} color="#16A34A" />
+                  </TouchableOpacity>
+
+                  {/* Quick day shortcut chips */}
+                  <View style={{ flexDirection: 'row', gap: 6 }}>
+                    {[
+                      { key: 'today', label: t('home_quick_chip_today') },
+                      { key: 'tomorrow', label: t('home_quick_chip_tomorrow') },
+                      { key: 'sat', label: t('home_quick_chip_sat') },
+                      { key: 'sun', label: t('home_quick_chip_sun') },
+                    ].map(c => {
+                      const isSel = quickDateChip === c.key;
+                      return (
+                        <TouchableOpacity
+                          key={c.key}
+                          onPress={() => handleSelectQuickDateChip(c.key as any)}
+                          style={{
+                            flex: 1,
+                            paddingVertical: 7,
+                            borderRadius: 8,
+                            backgroundColor: isSel ? '#DCFCE7' : '#FFFFFF',
+                            borderWidth: 1.5,
+                            borderColor: isSel ? '#16A34A' : '#E2E8F0',
+                            alignItems: 'center',
+                          }}
+                        >
+                          <Text
+                            style={{
+                              fontSize: fs(11.5),
+                              fontWeight: '700',
+                              color: isSel ? '#047857' : COLORS.gray[700],
+                            }}
+                          >
+                            {c.label}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+
+                  {/* Giờ bắt đầu — Dropdown Type 12 */}
+                  <TimeDropdownPicker
+                    value={quickTimeSlot}
+                    onChange={setQuickTimeSlot}
+                    selectedDate={quickDate}
+                    label={t('picker_start_time')}
+                    showChips={true}
+                  />
+
+                  {/* Thời lượng dự kiến — Dropdown Type 12 */}
+                  <DurationDropdownPicker
+                    valueMinutes={Math.round(quickDuration * 60)}
+                    onChangeMinutes={mins => {
+                      setQuickDuration(mins / 60);
+                      setIsCustomDuration(![60, 120, 180, 240].includes(mins));
+                    }}
+                  />
+
+                  {/* Lịch dự kiến — Tóm tắt chuẩn Demo */}
+                  <ScheduledTimePreview
+                    startDate={quickDate}
+                    startTime={quickTimeSlot}
+                    durationMinutes={Math.round(quickDuration * 60)}
+                    price={Number(quickDealPrice) || 200000}
+                  />
+                </View>
+
+                {/* Button: Đăng việc */}
+                <TouchableOpacity
+                  activeOpacity={0.88}
+                  onPress={handleQuickSubmit}
+                  disabled={isSubmittingQuick}
+                  style={{
+                    backgroundColor: COLORS.primary,
+                    borderRadius: 14,
+                    paddingVertical: 14,
+                    alignItems: 'center',
+                    shadowColor: COLORS.primary,
+                    shadowOffset: { width: 0, height: 3 },
+                    shadowOpacity: 0.25,
+                    shadowRadius: 6,
+                    elevation: 3,
+                  }}
+                >
+                  <Text style={{ fontSize: fs(15), fontWeight: '800', color: '#FFFFFF' }}>
+                    {t('home_quick_post_btn')}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* ── 7. QUYỀN LỢI & CAM KẾT (3 Thẻ Chuẩn Demo) ──────────────────── */}
+            <View style={{ paddingHorizontal: 16, marginTop: 24 }}>
+              <Text
+                style={{
+                  fontSize: fs(18),
+                  fontWeight: '800',
+                  color: COLORS.gray[900],
+                  marginBottom: 12,
+                }}
+              >
+                {t('home_benefits_title')}
+              </Text>
+
+              <View style={{ flexDirection: 'row', gap: 8 }}>
+                {/* Card 1: Thợ đã xác thực */}
+                <View
+                  style={{
+                    flex: 1,
+                    backgroundColor: '#FFFFFF',
+                    borderRadius: 16,
+                    padding: 12,
+                    borderWidth: 1,
+                    borderColor: '#E2E8F0',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <ShieldCheck size={22} color={COLORS.primary} />
+                  <Text
+                    style={{
+                      fontSize: fs(12),
+                      fontWeight: '800',
+                      color: COLORS.gray[900],
+                      marginTop: 6,
+                      textAlign: 'center',
+                    }}
+                  >
+                    {t('home_benefit_verified')}
+                  </Text>
+                  <Text
+                    style={{
+                      fontSize: fs(10),
+                      color: COLORS.gray[500],
+                      marginTop: 2,
+                      textAlign: 'center',
+                    }}
+                  >
+                    {t('home_benefit_verified_sub')}
+                  </Text>
+                </View>
+
+                {/* Card 2: Bảo hiểm công việc */}
+                <View
+                  style={{
+                    flex: 1,
+                    backgroundColor: '#FFFFFF',
+                    borderRadius: 16,
+                    padding: 12,
+                    borderWidth: 1,
+                    borderColor: '#E2E8F0',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <CheckCircle2 size={22} color={COLORS.primary} />
+                  <Text
+                    style={{
+                      fontSize: fs(12),
+                      fontWeight: '800',
+                      color: COLORS.gray[900],
+                      marginTop: 6,
+                      textAlign: 'center',
+                    }}
+                  >
+                    {t('home_benefit_insurance')}
+                  </Text>
+                  <Text
+                    style={{
+                      fontSize: fs(10),
+                      color: COLORS.gray[500],
+                      marginTop: 2,
+                      textAlign: 'center',
+                    }}
+                  >
+                    {t('home_benefit_insurance_sub')}
+                  </Text>
+                </View>
+
+                {/* Card 3: Giữ tiền bảo đảm */}
+                <View
+                  style={{
+                    flex: 1,
+                    backgroundColor: '#FFFFFF',
+                    borderRadius: 16,
+                    padding: 12,
+                    borderWidth: 1,
+                    borderColor: '#E2E8F0',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <Lock size={22} color={COLORS.primary} />
+                  <Text
+                    style={{
+                      fontSize: fs(12),
+                      fontWeight: '800',
+                      color: COLORS.gray[900],
+                      marginTop: 6,
+                      textAlign: 'center',
+                    }}
+                  >
+                    {t('home_benefit_escrow')}
+                  </Text>
+                  <Text
+                    style={{
+                      fontSize: fs(10),
+                      color: COLORS.gray[500],
+                      marginTop: 2,
+                      textAlign: 'center',
+                    }}
+                  >
+                    {t('home_benefit_escrow_sub')}
+                  </Text>
+                </View>
+              </View>
+            </View>
+
+            {/* ── 8. VIỆC ĐANG THỰC HIỆN & ĐẶT GẦN ĐÂY ───────────────────────── */}
+            {/* Section: Việc đang thực hiện */}
+            <View style={{ paddingHorizontal: 16, marginTop: 24 }}>
+              <Text
+                style={{
+                  fontSize: fs(18),
+                  fontWeight: '800',
+                  color: COLORS.gray[900],
+                  marginBottom: 12,
+                }}
+              >
+                {t('home_active_jobs')}
+              </Text>
+
+              {activeJobs.length > 0 ? (
+                activeJobs.slice(0, 1).map((j: any) => {
+                  // 4 nấc tiến trình: Đã nhận việc -> Đang đến -> Đang làm -> Nghiệm thu (Item 11)
+                  const step1Done = [
+                    'confirmed',
+                    'helper_on_the_way',
+                    'on_the_way',
+                    'helper_arrived',
+                    'in_progress',
+                    'pending_review',
+                    'completed',
+                  ].includes(j.status);
+                  const step2Done = [
+                    'helper_on_the_way',
+                    'on_the_way',
+                    'helper_arrived',
+                    'in_progress',
+                    'pending_review',
+                    'completed',
+                  ].includes(j.status);
+                  const step3Done = [
+                    'helper_arrived',
+                    'in_progress',
+                    'pending_review',
+                    'completed',
+                  ].includes(j.status);
+                  const step4Done = ['pending_review', 'completed'].includes(j.status);
+
+                  const timelineSteps = [
+                    { label: t('home_timeline_confirmed'), active: step1Done },
+                    { label: t('home_timeline_arriving'), active: step2Done },
+                    { label: t('home_timeline_working'), active: step3Done },
+                    { label: t('home_timeline_review'), active: step4Done },
+                  ];
+
+                  let statusBadgeText = t('status_open');
+                  let statusBadgeBg = '#FEF3C7';
+                  let statusBadgeColor = '#D97706';
+                  let statusDesc = t('home_status_finding_desc');
+
+                  if (j.status === 'open' || j.status === 'pending') {
+                    statusBadgeText = t('status_open');
+                    statusBadgeBg = '#FEF3C7';
+                    statusBadgeColor = '#D97706';
+                    statusDesc = t('home_status_finding_desc');
+                  } else if (j.status === 'receiving_quotes' || j.status === 'bidding') {
+                    statusBadgeText = t('status_receiving_quotes');
+                    statusBadgeBg = '#E0E7FF';
+                    statusBadgeColor = '#4338CA';
+                    statusDesc = t('home_status_quotes_desc');
+                  } else if (j.status === 'confirmed' || j.status === 'quote_selected') {
+                    statusBadgeText = t('status_confirmed');
+                    statusBadgeBg = '#DCFCE7';
+                    statusBadgeColor = '#15803D';
+                    statusDesc = t('home_status_helper_accepted_desc');
+                  } else if (j.status === 'helper_on_the_way' || j.status === 'on_the_way') {
+                    statusBadgeText = t('status_helper_on_the_way');
+                    statusBadgeBg = '#FFEDD5';
+                    statusBadgeColor = '#C2410C';
+                    statusDesc = t('home_status_helper_coming_desc');
+                  } else if (j.status === 'helper_arrived') {
+                    statusBadgeText = t('status_helper_arrived');
+                    statusBadgeBg = '#E0F2FE';
+                    statusBadgeColor = '#0284C7';
+                    statusDesc = t('home_status_arrived_desc');
+                  } else if (j.status === 'in_progress') {
+                    statusBadgeText = t('status_in_progress');
+                    statusBadgeBg = '#DBEAFE';
+                    statusBadgeColor = '#1D4ED8';
+                    statusDesc = t('home_status_in_progress_desc');
+                  } else if (j.status === 'pending_review') {
+                    statusBadgeText = t('status_pending_review');
+                    statusBadgeBg = '#FEF3C7';
+                    statusBadgeColor = '#B45309';
+                    statusDesc = t('home_status_pending_review_desc');
+                  } else if (j.status === 'completed') {
+                    statusBadgeText = t('status_completed');
+                    statusBadgeBg = '#DCFCE7';
+                    statusBadgeColor = '#15803D';
+                    statusDesc = t('home_status_done_desc');
+                  } else {
+                    statusBadgeText = t('home_status_processing');
+                    statusBadgeBg = '#F1F5F9';
+                    statusBadgeColor = '#475569';
+                    statusDesc = t('home_status_processing_desc');
+                  }
+
+                  const displayDate = dayjs(j.scheduled_at || j.created_at).format('DD/MM');
+                  const displayTime = j.preferred_time_start || dayjs(j.created_at).format('HH:mm');
+                  const displayDistrict =
+                    j.address?.district || j.address?.city || currentLocationName.split(',')[0];
+
+                  return (
+                    <TouchableOpacity
+                      key={j._id}
+                      activeOpacity={0.88}
+                      onPress={() =>
+                        router.push({ pathname: '/job-detail/[id]', params: { id: j._id } })
+                      }
+                      style={{
+                        backgroundColor: '#FFFFFF',
+                        borderRadius: 18,
+                        padding: 16,
+                        borderWidth: 1.5,
+                        borderColor: '#E2E8F0',
+                      }}
+                    >
+                      <View
+                        style={{
+                          flexDirection: 'row',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                        }}
+                      >
+                        <Text
+                          style={{
+                            fontSize: fs(16),
+                            fontWeight: '800',
+                            color: COLORS.gray[900],
+                            flex: 1,
+                          }}
+                          numberOfLines={1}
+                        >
+                          {j.title}
+                        </Text>
+                        <View
+                          style={{
+                            backgroundColor: statusBadgeBg,
+                            paddingHorizontal: 8,
+                            paddingVertical: 3,
+                            borderRadius: 8,
+                          }}
+                        >
+                          <Text
+                            style={{ fontSize: fs(11), fontWeight: '800', color: statusBadgeColor }}
+                          >
+                            {statusBadgeText}
+                          </Text>
+                        </View>
                       </View>
 
-                      {/* Code & Copy button */}
+                      <Text style={{ fontSize: fs(12), color: COLORS.gray[500], marginTop: 4 }}>
+                        {displayDate} · {displayTime} · {displayDistrict} — {statusDesc}
+                      </Text>
+
+                      {/* Timeline Steps */}
                       <View
                         style={{
                           flexDirection: 'row',
                           justifyContent: 'space-between',
                           alignItems: 'center',
                           marginTop: 14,
-                          paddingTop: 10,
+                          paddingTop: 12,
                           borderTopWidth: 1,
                           borderTopColor: '#F1F5F9',
                         }}
                       >
-                        <Text style={{ fontSize: fs(14), fontWeight: '800', color: COLORS.gray[900] }}>
-                          {v.code}
-                        </Text>
-                        <ScalePressable
-                          onPress={() => handleCopyVoucher(v.code)}
-                          style={{
-                            backgroundColor: isCopied ? '#DCFCE7' : '#F1F5F9',
-                            paddingHorizontal: 12,
-                            paddingVertical: 6,
-                            borderRadius: 8,
-                          }}
-                        >
-                          <Text
-                            style={{
-                              fontSize: fs(12),
-                              fontWeight: '700',
-                              color: isCopied ? COLORS.primary : COLORS.gray[700],
-                            }}
-                          >
-                            {isCopied ? t('voucher_copied') : t('voucher_copy')}
-                          </Text>
-                        </ScalePressable>
+                        {timelineSteps.map(st => (
+                          <View key={st.label} style={{ alignItems: 'center', gap: 4 }}>
+                            <View
+                              style={{
+                                width: 14,
+                                height: 14,
+                                borderRadius: 7,
+                                backgroundColor: st.active ? COLORS.primary : '#E2E8F0',
+                                borderWidth: 2,
+                                borderColor: '#FFFFFF',
+                              }}
+                            />
+                            <Text
+                              style={{
+                                fontSize: fs(10),
+                                fontWeight: st.active ? '700' : '500',
+                                color: st.active ? COLORS.primary : COLORS.gray[400],
+                              }}
+                            >
+                              {st.label}
+                            </Text>
+                          </View>
+                        ))}
                       </View>
-                    </View>
+                    </TouchableOpacity>
                   );
-                })}
-              </ScrollView>
-
-              {/* Progress Dots */}
-              {vouchers.length > 1 && (
+                })
+              ) : (
+                /* Clean Empty State khi không có việc đang làm (Requirement 2) */
                 <View
                   style={{
-                    flexDirection: 'row',
+                    backgroundColor: '#FFFFFF',
+                    borderRadius: 18,
+                    padding: 22,
+                    alignItems: 'center',
                     justifyContent: 'center',
-                    gap: 6,
-                    marginTop: 12,
+                    borderWidth: 1,
+                    borderColor: '#E2E8F0',
+                    borderStyle: 'dashed',
                   }}
                 >
-                  {vouchers.map((_, i) => (
-                    <View
-                      key={i}
-                      style={{
-                        width: i === activeVoucherIdx ? 18 : 6,
-                        height: 6,
-                        borderRadius: 3,
-                        backgroundColor: i === activeVoucherIdx ? COLORS.primary : '#CBD5E1',
-                      }}
-                    />
-                  ))}
+                  <View
+                    style={{
+                      width: 44,
+                      height: 44,
+                      borderRadius: 22,
+                      backgroundColor: '#F8FAFC',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      marginBottom: 8,
+                    }}
+                  >
+                    <Clock size={22} color={COLORS.gray[400]} />
+                  </View>
+                  <Text
+                    style={{
+                      fontSize: fs(14.5),
+                      fontWeight: '700',
+                      color: COLORS.gray[800],
+                      textAlign: 'center',
+                    }}
+                  >
+                    {t('home_active_empty_title')}
+                  </Text>
+                  <Text
+                    style={{
+                      fontSize: fs(12),
+                      color: COLORS.gray[500],
+                      marginTop: 4,
+                      textAlign: 'center',
+                    }}
+                  >
+                    {t('home_active_empty_sub')}
+                  </Text>
                 </View>
               )}
             </View>
-          )}
-        </View>
 
-        {/* ── 5. DỊCH VỤ (3 Cột x 4 Hàng = 12 Items Chuẩn Demo) ──────────── */}
-        <View
-          onLayout={e => {
-            servicesSectionYRef.current = e.nativeEvent.layout.y;
-          }}
-          style={{ paddingHorizontal: 16, marginTop: 24 }}
-        >
-          <View
-            style={{
-              flexDirection: 'row',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              marginBottom: 14,
-            }}
-          >
-            <Text style={{ fontSize: fs(18), fontWeight: '800', color: COLORS.gray[900] }}>
-              {t('home_all_services_title')}
-            </Text>
-            <TouchableOpacity
-              activeOpacity={0.7}
-              onPress={() => router.push('/(customer)/booking')}
-              style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}
-            >
-              <Text style={{ fontSize: fs(13), fontWeight: '700', color: COLORS.primary }}>
-                {t('home_choose_service')} →
-              </Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Responsive Multi-Column Grid */}
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-            {(() => {
-              const q = removeVietnameseDiacritics(serviceSearchQuery);
-              const list = q
-                ? SERVICES_CATALOG.filter(s => {
-                    const normName = removeVietnameseDiacritics(s.name);
-                    const normTranslated = removeVietnameseDiacritics(t(s.nameKey));
-                    const normSlug = removeVietnameseDiacritics(s.slug.replace(/_/g, ' '));
-                    const normSub = removeVietnameseDiacritics(s.subtitle || '');
-                    return (
-                      normName.includes(q) ||
-                      normTranslated.includes(q) ||
-                      normSlug.includes(q) ||
-                      normSub.includes(q)
-                    );
-                  })
-                : SERVICES_CATALOG;
-
-              const containerW = Math.min(windowWidth, 640) - 36; // 18px padding each side
-              const numCols = windowWidth >= 768 ? 4 : 3;
-              const cardGap = 8;
-              const cardW = Math.floor((containerW - (numCols - 1) * cardGap) / numCols);
-
-              if (list.length === 0) {
+            {/* Section: Đặt gần đây - Chỉ hiển thị khi có đơn đã hoàn thành thật (Không dùng mock - Item 4) */}
+            {completedJobs.length > 0 &&
+              (() => {
+                const pastJob = completedJobs[0];
+                const pastPrice =
+                  pastJob.final_price || pastJob.agreed_price || pastJob.target_price;
+                const displayPriceStr = pastPrice ? `${pastPrice.toLocaleString('vi-VN')}₫` : '';
+                const completedDateStr = dayjs(
+                  pastJob.completed_at || pastJob.updated_at || pastJob.created_at,
+                ).format('DD/MM/YYYY');
                 return (
-                  <View style={{ width: '100%', padding: 24, alignItems: 'center' }}>
-                    <Text
-                      style={{
-                        fontSize: fs(14),
-                        fontWeight: '700',
-                        color: COLORS.gray[700],
-                        textAlign: 'center',
-                      }}
-                    >
-                      {t('home_search_empty_title')}
-                    </Text>
-                    <Text
-                      style={{
-                        fontSize: fs(12),
-                        color: COLORS.gray[500],
-                        marginTop: 4,
-                        textAlign: 'center',
-                      }}
-                    >
-                      {t('home_search_empty_sub')}
-                    </Text>
-                  </View>
-                );
-              }
-
-              return list.map(svc => {
-                const isCustom = svc.isCustom;
-                const matched =
-                  services?.find(s => s.slug === svc.slug) ||
-                  services?.find(s => s.slug.includes(svc.slug.split('_')[0])) ||
-                  services?.find(s =>
-                    s.name.toLowerCase().includes(svc.name.toLowerCase().split(' ')[0]),
-                  );
-                const fromPrefix = t('price_from_prefix');
-                const displayPrice = matched?.base_price_min
-                  ? `${fromPrefix}${matched.base_price_min.toLocaleString('vi-VN')}₫`
-                  : svc.isCustom || svc.priceType === 'custom_deal'
-                    ? t('price_negotiate')
-                    : svc.priceType === 'quote_job'
-                      ? t('price_per_task')
-                      : svc.priceType === 'quote_trip'
-                        ? t('price_per_trip')
-                        : svc.baseAmount
-                          ? `${fromPrefix}${svc.baseAmount.toLocaleString('vi-VN')}₫${svc.unitKey ? t(svc.unitKey) : ''}`
-                          : '';
-
-                return (
-                  <ScalePressable
-                    key={svc.id}
-                    onPress={() => {
-                      if (isCustom) {
-                        router.push({
-                          pathname: '/(customer)/booking',
-                          params: { custom_service_name: t(svc.nameKey) },
-                        });
-                      } else if (matched) {
-                        router.push({
-                          pathname: '/(customer)/booking',
-                          params: { service_id: matched._id, service_slug: matched.slug },
-                        });
-                      } else {
-                        router.push({
-                          pathname: '/(customer)/booking',
-                          params: { custom_service_name: t(svc.nameKey) },
-                        });
-                        Toast.show({
-                          type: 'info',
-                          text1: `${t('common_service')} "${t(svc.nameKey)}"`,
-                          text2: t('home_quick_booking_sub'),
-                        });
-                      }
-                    }}
-                    style={{
-                      width: cardW,
-                      backgroundColor: isCustom ? '#F0FDF4' : '#FFFFFF',
-                      borderRadius: 14,
-                      paddingVertical: Math.max(10, Math.round(10 * textScale)),
-                      paddingHorizontal: 6,
-                      alignItems: 'center',
-                      borderWidth: 1.5,
-                      borderColor: isCustom ? COLORS.primary : '#F1F5F9',
-                      position: 'relative',
-                      minHeight: Math.max(110, Math.round(110 * textScale)),
-                      justifyContent: 'space-between',
-                    }}
-                  >
-                    {/* Badge MỚI cho item 12 */}
-                    {svc.badgeKey && (
-                      <View
-                        style={{
-                          position: 'absolute',
-                          top: 4,
-                          right: 4,
-                          backgroundColor: '#DCFCE7',
-                          paddingHorizontal: Math.round(5 * textScale),
-                          paddingVertical: Math.round(2 * textScale),
-                          borderRadius: 6,
-                        }}
-                      >
-                        <Text style={{ fontSize: fs(9), fontWeight: '900', color: COLORS.primary }}>
-                          {t(svc.badgeKey)}
-                        </Text>
-                      </View>
-                    )}
-
-                    <View style={{ height: 28, alignItems: 'center', justifyContent: 'center', marginVertical: 2 }}>
-                      {React.createElement(svc.icon, {
-                        size: 24,
-                        color: isCustom ? COLORS.primary : COLORS.gray[800],
-                      })}
-                    </View>
-
-                    <Text
-                      style={{
-                        fontSize: fs(11.5),
-                        fontWeight: '800',
-                        color: isCustom ? COLORS.primary : COLORS.gray[900],
-                        textAlign: 'center',
-                        lineHeight: Math.round(fs(15)),
-                      }}
-                      numberOfLines={2}
-                    >
-                      {t(svc.nameKey)}
-                    </Text>
-
-                    {displayPrice ? (
-                      <Text
-                        style={{
-                          fontSize: fs(10),
-                          fontWeight: '700',
-                          color: isCustom ? '#15803D' : COLORS.gray[500],
-                          textAlign: 'center',
-                          marginTop: 4,
-                        }}
-                        numberOfLines={1}
-                      >
-                        {displayPrice}
-                      </Text>
-                    ) : null}
-                  </ScalePressable>
-                );
-              });
-            })()}
-          </View>
-
-          {/* 2 Callout Cards: SOS & AI Assistant */}
-          <View style={{ marginTop: 14, gap: 10 }}>
-            {/* SOS Callout - Nổi bật khẩn cấp */}
-            <ScalePressable
-              onPress={() => router.push('/sos')}
-              style={{
-                backgroundColor: '#DC2626',
-                borderRadius: 16,
-                padding: 15,
-                shadowColor: '#DC2626',
-                shadowOffset: { width: 0, height: 4 },
-                shadowOpacity: 0.25,
-                shadowRadius: 8,
-                elevation: 3,
-              }}
-            >
-              <View
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                }}
-              >
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                  <View
-                    style={{
-                      width: 26,
-                      height: 26,
-                      borderRadius: 13,
-                      backgroundColor: 'rgba(255,255,255,0.22)',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    <AlertTriangle size={15} color="#FFFFFF" />
-                  </View>
-                  <Text style={{ fontSize: fs(14.5), fontWeight: '900', color: '#FFFFFF' }}>
-                    {t('home_sos_callout_title')}
-                  </Text>
-                </View>
-                <View
-                  style={{
-                    backgroundColor: '#FFFFFF',
-                    paddingHorizontal: 7,
-                    paddingVertical: 2,
-                    borderRadius: 6,
-                  }}
-                >
-                  <Text style={{ fontSize: fs(10.5), fontWeight: '800', color: '#DC2626' }}>
-                    {t('home_sos_callout_urgent')}
-                  </Text>
-                </View>
-              </View>
-              <Text
-                style={{
-                  fontSize: fs(12),
-                  color: '#FEE2E2',
-                  marginTop: 6,
-                  lineHeight: Math.round(fs(16)),
-                  fontWeight: '500',
-                }}
-              >
-                {t('home_sos_callout_desc')}
-              </Text>
-            </ScalePressable>
-
-            {/* AI Callout */}
-            <TouchableOpacity
-              activeOpacity={0.85}
-              onPress={() => router.push('/(customer)/booking')}
-              style={{
-                backgroundColor: '#F8FAFC',
-                borderRadius: 16,
-                padding: 14,
-                borderWidth: 1,
-                borderColor: '#E2E8F0',
-              }}
-            >
-              <Text style={{ fontSize: fs(14), fontWeight: '800', color: COLORS.gray[900] }}>
-                {t('home_ai_callout_title')}
-              </Text>
-              <Text style={{ fontSize: fs(12), color: COLORS.gray[600], marginTop: 2, lineHeight: Math.round(fs(16)) }}>
-                {t('home_ai_callout_desc')}
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* ── 6. ĐĂNG VIỆC THEO Ý BẠN (Quick Booking Block Form) ───────────── */}
-        <View style={{ paddingHorizontal: 16, marginTop: 24 }}>
-          <Text
-            style={{
-              fontSize: fs(18),
-              fontWeight: '800',
-              color: COLORS.gray[900],
-              marginBottom: 12,
-            }}
-          >
-            {t('home_quick_booking_title')}
-          </Text>
-
-          <View
-            style={{
-              backgroundColor: '#FFFFFF',
-              borderRadius: 20,
-              padding: 18,
-              borderWidth: 1,
-              borderColor: '#E2E8F0',
-              gap: 16,
-            }}
-          >
-            {/* 1. Bạn cần làm việc gì? */}
-            <View>
-              <Text
-                style={{
-                  fontSize: fs(14),
-                  fontWeight: '700',
-                  color: COLORS.gray[800],
-                  marginBottom: 8,
-                }}
-              >
-                {t('home_quick_need_work')}
-              </Text>
-              {/* Chips */}
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 10 }}>
-                {[
-                  { key: 'don_nha', label: t('home_quick_chip_cleaning') },
-                  { key: 'boc_hang', label: t('home_quick_chip_moving') },
-                  { key: 'may_lanh', label: t('home_quick_chip_ac') },
-                  { key: 'khac', label: t('home_quick_chip_other') },
-                ].map(c => {
-                  const isSel = quickServiceChip === c.key;
-                  return (
-                    <TouchableOpacity
-                      key={c.key}
-                      onPress={() => handleSelectQuickServiceChip(c.key as any)}
-                      style={{
-                        paddingHorizontal: 14,
-                        paddingVertical: 7,
-                        borderRadius: 20,
-                        backgroundColor: isSel ? '#DCFCE7' : '#F1F5F9',
-                        borderWidth: 1,
-                        borderColor: isSel ? COLORS.primary : '#E2E8F0',
-                      }}
-                    >
-                      <Text
-                        style={{
-                          fontSize: fs(12.5),
-                          fontWeight: '700',
-                          color: isSel ? COLORS.primary : COLORS.gray[700],
-                        }}
-                      >
-                        {c.label}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-
-              {/* Text input description */}
-              <TextInput
-                value={quickDescription}
-                onChangeText={setQuickDescription}
-                placeholder={t('home_quick_desc_placeholder')}
-                placeholderTextColor={COLORS.gray[400]}
-                multiline
-                numberOfLines={3}
-                style={{
-                  backgroundColor: '#F8FAFC',
-                  borderRadius: 12,
-                  padding: 12,
-                  fontSize: fs(14),
-                  color: COLORS.gray[900],
-                  borderWidth: 1,
-                  borderColor: '#E2E8F0',
-                  minHeight: 70,
-                  textAlignVertical: 'top',
-                }}
-              />
-            </View>
-
-            {/* 2. Giá bạn muốn trả */}
-            <View>
-              <Text
-                style={{
-                  fontSize: fs(14),
-                  fontWeight: '700',
-                  color: COLORS.gray[800],
-                  marginBottom: 8,
-                }}
-              >
-                {t('home_quick_price_title')}
-              </Text>
-              <TextInput
-                value={quickDealPrice}
-                onChangeText={setQuickDealPrice}
-                keyboardType="numeric"
-                style={{
-                  backgroundColor: '#F8FAFC',
-                  borderRadius: 12,
-                  paddingHorizontal: 14,
-                  paddingVertical: 12,
-                  fontSize: fs(16),
-                  fontWeight: '800',
-                  color: COLORS.gray[900],
-                  borderWidth: 1,
-                  borderColor: '#E2E8F0',
-                }}
-              />
-            </View>
-
-            {/* 3. Thời gian làm việc: Ngày & Giờ (Trigger mở Bottom Sheet Item 1) */}
-            <View style={{ gap: 10 }}>
-              <Text
-                style={{
-                  fontSize: fs(14),
-                  fontWeight: '700',
-                  color: COLORS.gray[800],
-                }}
-              >
-                {t('home_quick_time_title')}
-              </Text>
-
-              {/* Ngày làm việc trigger card - Chuẩn Demo .big-field */}
-              <TouchableOpacity
-                activeOpacity={0.8}
-                onPress={() => {
-                  setBottomSheetInitialTab('date');
-                  setDateTimePickerOpen(true);
-                }}
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: 10,
-                  paddingVertical: 12,
-                  paddingHorizontal: 14,
-                  borderRadius: 14,
-                  backgroundColor: '#F0FDF4',
-                  borderWidth: 1.5,
-                  borderColor: '#16A34A',
-                }}
-              >
-                <Calendar size={18} color="#16A34A" />
-                <View style={{ flex: 1 }}>
-                  <Text
-                    style={{ fontSize: fs(15), fontWeight: '700', color: COLORS.gray[900] }}
-                    numberOfLines={1}
-                  >
-                    {(() => {
-                      const dt = dayjs(quickDate).locale(lang === 'en' ? 'en' : 'vi');
-                      const dow = dt.format('dddd');
-                      const capitalizedDow = dow.charAt(0).toUpperCase() + dow.slice(1);
-                      return `${capitalizedDow}, ${dt.format('DD/MM')}`;
-                    })()}
-                  </Text>
-                  <Text style={{ fontSize: fs(11), color: '#64748B', fontWeight: '500', marginTop: 1 }}>
-                    {t('home_quick_calendar_hint')}
-                  </Text>
-                </View>
-                <ChevronRight size={18} color="#16A34A" />
-              </TouchableOpacity>
-
-              {/* Quick day shortcut chips */}
-              <View style={{ flexDirection: 'row', gap: 6 }}>
-                {[
-                  { key: 'today', label: t('home_quick_chip_today') },
-                  { key: 'tomorrow', label: t('home_quick_chip_tomorrow') },
-                  { key: 'sat', label: t('home_quick_chip_sat') },
-                  { key: 'sun', label: t('home_quick_chip_sun') },
-                ].map(c => {
-                  const isSel = quickDateChip === c.key;
-                  return (
-                    <TouchableOpacity
-                      key={c.key}
-                      onPress={() => handleSelectQuickDateChip(c.key as any)}
-                      style={{
-                        flex: 1,
-                        paddingVertical: 7,
-                        borderRadius: 8,
-                        backgroundColor: isSel ? '#DCFCE7' : '#FFFFFF',
-                        borderWidth: 1.5,
-                        borderColor: isSel ? '#16A34A' : '#E2E8F0',
-                        alignItems: 'center',
-                      }}
-                    >
-                      <Text
-                        style={{
-                          fontSize: fs(11.5),
-                          fontWeight: '700',
-                          color: isSel ? '#047857' : COLORS.gray[700],
-                        }}
-                      >
-                        {c.label}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-
-              {/* Giờ bắt đầu — Dropdown Type 12 */}
-              <TimeDropdownPicker
-                value={quickTimeSlot}
-                onChange={setQuickTimeSlot}
-                selectedDate={quickDate}
-                label={t('picker_start_time')}
-                showChips={true}
-              />
-
-              {/* Thời lượng dự kiến — Dropdown Type 12 */}
-              <DurationDropdownPicker
-                valueMinutes={Math.round(quickDuration * 60)}
-                onChangeMinutes={mins => {
-                  setQuickDuration(mins / 60);
-                  setIsCustomDuration(![60, 120, 180, 240].includes(mins));
-                }}
-              />
-
-              {/* Lịch dự kiến — Tóm tắt chuẩn Demo */}
-              <ScheduledTimePreview
-                startDate={quickDate}
-                startTime={quickTimeSlot}
-                durationMinutes={Math.round(quickDuration * 60)}
-                price={Number(quickDealPrice) || 200000}
-              />
-            </View>
-
-            {/* Button: Đăng việc */}
-            <TouchableOpacity
-              activeOpacity={0.88}
-              onPress={handleQuickSubmit}
-              disabled={isSubmittingQuick}
-              style={{
-                backgroundColor: COLORS.primary,
-                borderRadius: 14,
-                paddingVertical: 14,
-                alignItems: 'center',
-                shadowColor: COLORS.primary,
-                shadowOffset: { width: 0, height: 3 },
-                shadowOpacity: 0.25,
-                shadowRadius: 6,
-                elevation: 3,
-              }}
-            >
-              <Text style={{ fontSize: fs(15), fontWeight: '800', color: '#FFFFFF' }}>{t('home_quick_post_btn')}</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* ── 7. QUYỀN LỢI & CAM KẾT (3 Thẻ Chuẩn Demo) ──────────────────── */}
-        <View style={{ paddingHorizontal: 16, marginTop: 24 }}>
-          <Text
-            style={{
-              fontSize: fs(18),
-              fontWeight: '800',
-              color: COLORS.gray[900],
-              marginBottom: 12,
-            }}
-          >
-            {t('home_benefits_title')}
-          </Text>
-
-          <View style={{ flexDirection: 'row', gap: 8 }}>
-            {/* Card 1: Thợ đã xác thực */}
-            <View
-              style={{
-                flex: 1,
-                backgroundColor: '#FFFFFF',
-                borderRadius: 16,
-                padding: 12,
-                borderWidth: 1,
-                borderColor: '#E2E8F0',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <ShieldCheck size={22} color={COLORS.primary} />
-              <Text
-                style={{
-                  fontSize: fs(12),
-                  fontWeight: '800',
-                  color: COLORS.gray[900],
-                  marginTop: 6,
-                  textAlign: 'center',
-                }}
-              >
-                {t('home_benefit_verified')}
-              </Text>
-              <Text
-                style={{
-                  fontSize: fs(10),
-                  color: COLORS.gray[500],
-                  marginTop: 2,
-                  textAlign: 'center',
-                }}
-              >
-                {t('home_benefit_verified_sub')}
-              </Text>
-            </View>
-
-            {/* Card 2: Bảo hiểm công việc */}
-            <View
-              style={{
-                flex: 1,
-                backgroundColor: '#FFFFFF',
-                borderRadius: 16,
-                padding: 12,
-                borderWidth: 1,
-                borderColor: '#E2E8F0',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <CheckCircle2 size={22} color={COLORS.primary} />
-              <Text
-                style={{
-                  fontSize: fs(12),
-                  fontWeight: '800',
-                  color: COLORS.gray[900],
-                  marginTop: 6,
-                  textAlign: 'center',
-                }}
-              >
-                {t('home_benefit_insurance')}
-              </Text>
-              <Text
-                style={{
-                  fontSize: fs(10),
-                  color: COLORS.gray[500],
-                  marginTop: 2,
-                  textAlign: 'center',
-                }}
-              >
-                {t('home_benefit_insurance_sub')}
-              </Text>
-            </View>
-
-            {/* Card 3: Giữ tiền bảo đảm */}
-            <View
-              style={{
-                flex: 1,
-                backgroundColor: '#FFFFFF',
-                borderRadius: 16,
-                padding: 12,
-                borderWidth: 1,
-                borderColor: '#E2E8F0',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <Lock size={22} color={COLORS.primary} />
-              <Text
-                style={{
-                  fontSize: fs(12),
-                  fontWeight: '800',
-                  color: COLORS.gray[900],
-                  marginTop: 6,
-                  textAlign: 'center',
-                }}
-              >
-                {t('home_benefit_escrow')}
-              </Text>
-              <Text
-                style={{
-                  fontSize: fs(10),
-                  color: COLORS.gray[500],
-                  marginTop: 2,
-                  textAlign: 'center',
-                }}
-              >
-                {t('home_benefit_escrow_sub')}
-              </Text>
-            </View>
-          </View>
-        </View>
-
-        {/* ── 8. VIỆC ĐANG THỰC HIỆN & ĐẶT GẦN ĐÂY ───────────────────────── */}
-        {/* Section: Việc đang thực hiện */}
-        <View style={{ paddingHorizontal: 16, marginTop: 24 }}>
-          <Text
-            style={{
-              fontSize: fs(18),
-              fontWeight: '800',
-              color: COLORS.gray[900],
-              marginBottom: 12,
-            }}
-          >
-            {t('home_active_jobs')}
-          </Text>
-
-          {activeJobs.length > 0 ? (
-            activeJobs.slice(0, 1).map((j: any) => {
-              // 4 nấc tiến trình: Đã nhận việc -> Đang đến -> Đang làm -> Nghiệm thu (Item 11)
-              const step1Done = [
-                'confirmed',
-                'helper_on_the_way',
-                'on_the_way',
-                'helper_arrived',
-                'in_progress',
-                'pending_review',
-                'completed',
-              ].includes(j.status);
-              const step2Done = [
-                'helper_on_the_way',
-                'on_the_way',
-                'helper_arrived',
-                'in_progress',
-                'pending_review',
-                'completed',
-              ].includes(j.status);
-              const step3Done = [
-                'helper_arrived',
-                'in_progress',
-                'pending_review',
-                'completed',
-              ].includes(j.status);
-              const step4Done = ['pending_review', 'completed'].includes(j.status);
-
-              const timelineSteps = [
-                { label: t('home_timeline_confirmed'), active: step1Done },
-                { label: t('home_timeline_arriving'), active: step2Done },
-                { label: t('home_timeline_working'), active: step3Done },
-                { label: t('home_timeline_review'), active: step4Done },
-              ];
-
-              let statusBadgeText = t('status_open');
-              let statusBadgeBg = '#FEF3C7';
-              let statusBadgeColor = '#D97706';
-              let statusDesc = t('home_status_finding_desc');
-
-              if (j.status === 'open' || j.status === 'pending') {
-                statusBadgeText = t('status_open');
-                statusBadgeBg = '#FEF3C7';
-                statusBadgeColor = '#D97706';
-                statusDesc = t('home_status_finding_desc');
-              } else if (j.status === 'receiving_quotes' || j.status === 'bidding') {
-                statusBadgeText = t('status_receiving_quotes');
-                statusBadgeBg = '#E0E7FF';
-                statusBadgeColor = '#4338CA';
-                statusDesc = t('home_status_quotes_desc');
-              } else if (j.status === 'confirmed' || j.status === 'quote_selected') {
-                statusBadgeText = t('status_confirmed');
-                statusBadgeBg = '#DCFCE7';
-                statusBadgeColor = '#15803D';
-                statusDesc = t('home_status_helper_accepted_desc');
-              } else if (j.status === 'helper_on_the_way' || j.status === 'on_the_way') {
-                statusBadgeText = t('status_helper_on_the_way');
-                statusBadgeBg = '#FFEDD5';
-                statusBadgeColor = '#C2410C';
-                statusDesc = t('home_status_helper_coming_desc');
-              } else if (j.status === 'helper_arrived') {
-                statusBadgeText = t('status_helper_arrived');
-                statusBadgeBg = '#E0F2FE';
-                statusBadgeColor = '#0284C7';
-                statusDesc = t('home_status_arrived_desc');
-              } else if (j.status === 'in_progress') {
-                statusBadgeText = t('status_in_progress');
-                statusBadgeBg = '#DBEAFE';
-                statusBadgeColor = '#1D4ED8';
-                statusDesc = t('home_status_in_progress_desc');
-              } else if (j.status === 'pending_review') {
-                statusBadgeText = t('status_pending_review');
-                statusBadgeBg = '#FEF3C7';
-                statusBadgeColor = '#B45309';
-                statusDesc = t('home_status_pending_review_desc');
-              } else if (j.status === 'completed') {
-                statusBadgeText = t('status_completed');
-                statusBadgeBg = '#DCFCE7';
-                statusBadgeColor = '#15803D';
-                statusDesc = t('home_status_done_desc');
-              } else {
-                statusBadgeText = t('home_status_processing');
-                statusBadgeBg = '#F1F5F9';
-                statusBadgeColor = '#475569';
-                statusDesc = t('home_status_processing_desc');
-              }
-
-              const displayDate = dayjs(j.scheduled_at || j.created_at).format('DD/MM');
-              const displayTime = j.preferred_time_start || dayjs(j.created_at).format('HH:mm');
-              const displayDistrict =
-                j.address?.district || j.address?.city || currentLocationName.split(',')[0];
-
-              return (
-                <TouchableOpacity
-                  key={j._id}
-                  activeOpacity={0.88}
-                  onPress={() =>
-                    router.push({ pathname: '/job-detail/[id]', params: { id: j._id } })
-                  }
-                  style={{
-                    backgroundColor: '#FFFFFF',
-                    borderRadius: 18,
-                    padding: 16,
-                    borderWidth: 1.5,
-                    borderColor: '#E2E8F0',
-                  }}
-                >
-                  <View
-                    style={{
-                      flexDirection: 'row',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                    }}
-                  >
-                    <Text
-                      style={{ fontSize: fs(16), fontWeight: '800', color: COLORS.gray[900], flex: 1 }}
-                      numberOfLines={1}
-                    >
-                      {j.title}
-                    </Text>
+                  <View style={{ paddingHorizontal: 16, marginTop: 24 }}>
                     <View
                       style={{
-                        backgroundColor: statusBadgeBg,
-                        paddingHorizontal: 8,
-                        paddingVertical: 3,
-                        borderRadius: 8,
+                        flexDirection: 'row',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        marginBottom: 12,
                       }}
                     >
-                      <Text style={{ fontSize: fs(11), fontWeight: '800', color: statusBadgeColor }}>
-                        {statusBadgeText}
+                      <Text
+                        style={{ fontSize: fs(18), fontWeight: '800', color: COLORS.gray[900] }}
+                      >
+                        {t('home_recent_title')}
                       </Text>
+                      <TouchableOpacity
+                        activeOpacity={0.7}
+                        onPress={() => router.push('/(customer)/jobs')}
+                      >
+                        <Text
+                          style={{ fontSize: fs(13), fontWeight: '700', color: COLORS.primary }}
+                        >
+                          {t('home_view_history')}
+                        </Text>
+                      </TouchableOpacity>
                     </View>
-                  </View>
 
-                  <Text style={{ fontSize: fs(12), color: COLORS.gray[500], marginTop: 4 }}>
-                    {displayDate} · {displayTime} · {displayDistrict} — {statusDesc}
-                  </Text>
-
-                  {/* Timeline Steps */}
-                  <View
-                    style={{
-                      flexDirection: 'row',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      marginTop: 14,
-                      paddingTop: 12,
-                      borderTopWidth: 1,
-                      borderTopColor: '#F1F5F9',
-                    }}
-                  >
-                    {timelineSteps.map(st => (
-                      <View key={st.label} style={{ alignItems: 'center', gap: 4 }}>
+                    {/* Past job with 1-click [Đặt lại] button */}
+                    <View
+                      style={{
+                        backgroundColor: '#FFFFFF',
+                        borderRadius: 18,
+                        padding: 16,
+                        borderWidth: 1,
+                        borderColor: '#E2E8F0',
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                      }}
+                    >
+                      <View
+                        style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}
+                      >
                         <View
                           style={{
-                            width: 14,
-                            height: 14,
-                            borderRadius: 7,
-                            backgroundColor: st.active ? COLORS.primary : '#E2E8F0',
-                            borderWidth: 2,
-                            borderColor: '#FFFFFF',
-                          }}
-                        />
-                        <Text
-                          style={{
-                            fontSize: fs(10),
-                            fontWeight: st.active ? '700' : '500',
-                            color: st.active ? COLORS.primary : COLORS.gray[400],
+                            width: 44,
+                            height: 44,
+                            borderRadius: 12,
+                            backgroundColor: '#DCFCE7',
+                            alignItems: 'center',
+                            justifyContent: 'center',
                           }}
                         >
-                          {st.label}
-                        </Text>
+                          <Home size={22} color={COLORS.primary} />
+                        </View>
+
+                        <View style={{ flex: 1 }}>
+                          <Text
+                            style={{ fontSize: fs(15), fontWeight: '800', color: COLORS.gray[900] }}
+                            numberOfLines={1}
+                          >
+                            {pastJob.title}
+                          </Text>
+                          <Text style={{ fontSize: fs(12), color: COLORS.gray[500], marginTop: 2 }}>
+                            {t('status_completed')} · {completedDateStr}
+                            {displayPriceStr ? ` · ${displayPriceStr}` : ''}
+                          </Text>
+                        </View>
                       </View>
-                    ))}
-                  </View>
-                </TouchableOpacity>
-              );
-            })
-          ) : (
-            /* Clean Empty State khi không có việc đang làm (Requirement 2) */
-            <View
-              style={{
-                backgroundColor: '#FFFFFF',
-                borderRadius: 18,
-                padding: 22,
-                alignItems: 'center',
-                justifyContent: 'center',
-                borderWidth: 1,
-                borderColor: '#E2E8F0',
-                borderStyle: 'dashed',
-              }}
-            >
-              <View
-                style={{
-                  width: 44,
-                  height: 44,
-                  borderRadius: 22,
-                  backgroundColor: '#F8FAFC',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  marginBottom: 8,
-                }}
-              >
-                <Clock size={22} color={COLORS.gray[400]} />
-              </View>
-              <Text
-                style={{
-                  fontSize: fs(14.5),
-                  fontWeight: '700',
-                  color: COLORS.gray[800],
-                  textAlign: 'center',
-                }}
-              >
-                {t('home_active_empty_title')}
-              </Text>
-              <Text
-                style={{
-                  fontSize: fs(12),
-                  color: COLORS.gray[500],
-                  marginTop: 4,
-                  textAlign: 'center',
-                }}
-              >
-                {t('home_active_empty_sub')}
-              </Text>
-            </View>
-          )}
-        </View>
 
-        {/* Section: Đặt gần đây - Chỉ hiển thị khi có đơn đã hoàn thành thật (Không dùng mock - Item 4) */}
-        {completedJobs.length > 0 &&
-          (() => {
-            const pastJob = completedJobs[0];
-            const pastPrice = pastJob.final_price || pastJob.agreed_price || pastJob.target_price;
-            const displayPriceStr = pastPrice ? `${pastPrice.toLocaleString('vi-VN')}₫` : '';
-            const completedDateStr = dayjs(
-              pastJob.completed_at || pastJob.updated_at || pastJob.created_at,
-            ).format('DD/MM/YYYY');
-            return (
-              <View style={{ paddingHorizontal: 16, marginTop: 24 }}>
-                <View
-                  style={{
-                    flexDirection: 'row',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    marginBottom: 12,
-                  }}
-                >
-                  <Text style={{ fontSize: fs(18), fontWeight: '800', color: COLORS.gray[900] }}>
-                    {t('home_recent_title')}
-                  </Text>
-                  <TouchableOpacity
-                    activeOpacity={0.7}
-                    onPress={() => router.push('/(customer)/jobs')}
-                  >
-                    <Text style={{ fontSize: fs(13), fontWeight: '700', color: COLORS.primary }}>
-                      {t('home_view_history')}
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-
-                {/* Past job with 1-click [Đặt lại] button */}
-                <View
-                  style={{
-                    backgroundColor: '#FFFFFF',
-                    borderRadius: 18,
-                    padding: 16,
-                    borderWidth: 1,
-                    borderColor: '#E2E8F0',
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                  }}
-                >
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
-                    <View
-                      style={{
-                        width: 44,
-                        height: 44,
-                        borderRadius: 12,
-                        backgroundColor: '#DCFCE7',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }}
-                    >
-                      <Home size={22} color={COLORS.primary} />
-                    </View>
-
-                    <View style={{ flex: 1 }}>
-                      <Text
-                        style={{ fontSize: fs(15), fontWeight: '800', color: COLORS.gray[900] }}
-                        numberOfLines={1}
+                      <TouchableOpacity
+                        activeOpacity={0.8}
+                        onPress={() => {
+                          router.push({
+                            pathname: '/(customer)/booking',
+                            params: {
+                              prefill_title: pastJob.title,
+                              prefill_description: pastJob.description || '',
+                              service_id: pastJob.service_id
+                                ? (pastJob.service_id as any)._id || String(pastJob.service_id)
+                                : '',
+                              target_price: pastPrice ? String(pastPrice) : '',
+                            },
+                          });
+                        }}
+                        style={{
+                          backgroundColor: '#FFFFFF',
+                          borderWidth: 1.5,
+                          borderColor: COLORS.primary,
+                          paddingHorizontal: 14,
+                          paddingVertical: 8,
+                          borderRadius: 12,
+                        }}
                       >
-                        {pastJob.title}
-                      </Text>
-                      <Text style={{ fontSize: fs(12), color: COLORS.gray[500], marginTop: 2 }}>
-                        {t('status_completed')} · {completedDateStr}
-                        {displayPriceStr ? ` · ${displayPriceStr}` : ''}
-                      </Text>
+                        <Text
+                          style={{ fontSize: fs(13), fontWeight: '800', color: COLORS.primary }}
+                        >
+                          {t('home_rebook_btn')}
+                        </Text>
+                      </TouchableOpacity>
                     </View>
                   </View>
-
-                  <TouchableOpacity
-                    activeOpacity={0.8}
-                    onPress={() => {
-                      router.push({
-                        pathname: '/(customer)/booking',
-                        params: {
-                          prefill_title: pastJob.title,
-                          prefill_description: pastJob.description || '',
-                          service_id: pastJob.service_id
-                            ? (pastJob.service_id as any)._id || String(pastJob.service_id)
-                            : '',
-                          target_price: pastPrice ? String(pastPrice) : '',
-                        },
-                      });
-                    }}
-                    style={{
-                      backgroundColor: '#FFFFFF',
-                      borderWidth: 1.5,
-                      borderColor: COLORS.primary,
-                      paddingHorizontal: 14,
-                      paddingVertical: 8,
-                      borderRadius: 12,
-                    }}
-                  >
-                    <Text style={{ fontSize: fs(13), fontWeight: '800', color: COLORS.primary }}>
-                      {t('home_rebook_btn')}
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            );
-          })()}
+                );
+              })()}
           </>
         )}
       </ScrollView>

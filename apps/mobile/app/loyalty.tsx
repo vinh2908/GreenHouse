@@ -1,7 +1,7 @@
 import { View, Text, ScrollView, TouchableOpacity, RefreshControl } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { ArrowLeft, Star } from 'lucide-react-native';
+import { ArrowLeft, Star, Gift, Wrench } from 'lucide-react-native';
 import dayjs from 'dayjs';
 import { useLoyaltyAccount, useLoyaltyHistory } from '@/hooks/use-api';
 import { Card, COLORS, EmptyState, LoadingSpinner, Separator } from '@/components/ui';
@@ -32,10 +32,10 @@ export default function LoyaltyScreen() {
     return t('loyalty_tx_adjust');
   };
 
-  const getTxEmoji = (type: string) => {
-    if (type === 'earn') return '⭐';
-    if (type === 'redeem') return '🎁';
-    return '🛠️';
+  const getTxIcon = (type: string) => {
+    if (type === 'earn') return <Star size={18} color="#F59E0B" fill="#F59E0B" />;
+    if (type === 'redeem') return <Gift size={18} color={COLORS.primary} />;
+    return <Wrench size={18} color={COLORS.gray[500]} />;
   };
   const {
     data: account,
@@ -108,7 +108,9 @@ export default function LoyaltyScreen() {
           </View>
           <Text style={{ fontSize: fs(32), fontWeight: '800', color: COLORS.gray[900] }}>
             {fmt(account?.points_balance ?? 0)}{' '}
-            <Text style={{ fontSize: fs(16), color: COLORS.gray[500] }}>{t('loyalty_points_unit')}</Text>
+            <Text style={{ fontSize: fs(16), color: COLORS.gray[500] }}>
+              {t('loyalty_points_unit')}
+            </Text>
           </Text>
           <Text style={{ fontSize: fs(13), color: COLORS.gray[600] }}>
             {t('loyalty_lifetime_summary', {
@@ -164,13 +166,18 @@ export default function LoyaltyScreen() {
         {/* History */}
         <View>
           <Text
-            style={{ fontSize: fs(16), fontWeight: '800', color: COLORS.gray[900], marginBottom: 10 }}
+            style={{
+              fontSize: fs(16),
+              fontWeight: '800',
+              color: COLORS.gray[900],
+              marginBottom: 10,
+            }}
           >
             {t('loyalty_history_title')}
           </Text>
           {!history?.transactions?.length ? (
             <EmptyState
-              emoji="⭐"
+              icon={<Star size={36} color={COLORS.gray[400]} />}
               title={t('loyalty_history_empty_title')}
               subtitle={t('loyalty_history_empty_sub')}
             />
@@ -189,9 +196,22 @@ export default function LoyaltyScreen() {
                         paddingVertical: 12,
                       }}
                     >
-                      <Text style={{ fontSize: fs(20) }}>{getTxEmoji(tx.type)}</Text>
+                      <View
+                        style={{
+                          width: 36,
+                          height: 36,
+                          borderRadius: 18,
+                          backgroundColor: COLORS.gray[100],
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                      >
+                        {getTxIcon(tx.type)}
+                      </View>
                       <View style={{ flex: 1 }}>
-                        <Text style={{ fontWeight: '700', fontSize: fs(14), color: COLORS.gray[900] }}>
+                        <Text
+                          style={{ fontWeight: '700', fontSize: fs(14), color: COLORS.gray[900] }}
+                        >
                           {getTxLabel(tx)}
                         </Text>
                         <Text style={{ fontSize: fs(12), color: COLORS.gray[500], marginTop: 2 }}>

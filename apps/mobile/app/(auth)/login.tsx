@@ -42,7 +42,10 @@ export default function LoginScreen() {
     setLoginError(null);
     const identifier = phone.trim();
     if (!identifier || !password.trim()) {
-      const emptyMsg = lang === 'en' ? 'Please enter phone number or email and password' : 'Vui lòng nhập số điện thoại hoặc email và mật khẩu';
+      const emptyMsg =
+        lang === 'en'
+          ? 'Please enter phone number or email and password'
+          : 'Vui lòng nhập số điện thoại hoặc email và mật khẩu';
       setLoginError(emptyMsg);
       Toast.show({ type: 'error', text1: emptyMsg });
       return;
@@ -56,7 +59,13 @@ export default function LoginScreen() {
       const { access_token, refresh_token, user } = data.data;
       await setAuth(user, access_token, refresh_token);
 
-      Toast.show({ type: 'success', text1: lang === 'en' ? `Welcome ${user.full_name ?? ''}!` : `Xin chào ${user.full_name ?? 'bạn'}!` });
+      Toast.show({
+        type: 'success',
+        text1:
+          lang === 'en'
+            ? `Welcome ${user.full_name ?? ''}!`
+            : `Xin chào ${user.full_name ?? 'bạn'}!`,
+      });
 
       // Redirect by active role
       if (user.active_role === 'helper') {
@@ -68,16 +77,29 @@ export default function LoginScreen() {
       const dataMsg = (err as any)?.response?.data?.message;
       const msg = Array.isArray(dataMsg)
         ? dataMsg[0]
-        : dataMsg || (lang === 'en' ? 'Incorrect phone number or password' : 'Số điện thoại hoặc mật khẩu không chính xác');
+        : dataMsg ||
+          (lang === 'en'
+            ? 'Incorrect phone number or password'
+            : 'Số điện thoại hoặc mật khẩu không chính xác');
       setLoginError(msg);
-      Toast.show({ type: 'error', text1: lang === 'en' ? 'Login failed' : 'Đăng nhập thất bại', text2: msg });
+      Toast.show({
+        type: 'error',
+        text1: lang === 'en' ? 'Login failed' : 'Đăng nhập thất bại',
+        text2: msg,
+      });
     }
   };
 
   const handleSendResetOtp = async () => {
     const cleanPhone = resetPhone.trim().replace(/\s+/g, '').replace(/^\+84/, '0');
     if (!/^(0[3|5|7|8|9])+([0-9]{8})$/.test(cleanPhone)) {
-      Toast.show({ type: 'error', text1: lang === 'en' ? 'Please enter a valid 10-digit phone number' : 'Vui lòng nhập số điện thoại 10 số hợp lệ' });
+      Toast.show({
+        type: 'error',
+        text1:
+          lang === 'en'
+            ? 'Please enter a valid 10-digit phone number'
+            : 'Vui lòng nhập số điện thoại 10 số hợp lệ',
+      });
       return;
     }
     try {
@@ -99,11 +121,20 @@ export default function LoginScreen() {
 
   const handleConfirmResetPassword = async () => {
     if (resetOtp.trim().length !== 6) {
-      Toast.show({ type: 'error', text1: lang === 'en' ? 'Please enter 6-digit OTP' : 'Vui lòng nhập mã OTP gồm 6 chữ số' });
+      Toast.show({
+        type: 'error',
+        text1: lang === 'en' ? 'Please enter 6-digit OTP' : 'Vui lòng nhập mã OTP gồm 6 chữ số',
+      });
       return;
     }
     if (newPassword.trim().length < 8) {
-      Toast.show({ type: 'error', text1: lang === 'en' ? 'New password must have at least 8 characters' : 'Mật khẩu mới phải có ít nhất 8 ký tự' });
+      Toast.show({
+        type: 'error',
+        text1:
+          lang === 'en'
+            ? 'New password must have at least 8 characters'
+            : 'Mật khẩu mới phải có ít nhất 8 ký tự',
+      });
       return;
     }
     try {
@@ -121,7 +152,10 @@ export default function LoginScreen() {
       Toast.show({
         type: 'success',
         text1: lang === 'en' ? 'Password reset successful!' : 'Đặt lại mật khẩu thành công!',
-        text2: lang === 'en' ? 'You can now log in with your new password' : 'Bạn có thể đăng nhập bằng mật khẩu mới',
+        text2:
+          lang === 'en'
+            ? 'You can now log in with your new password'
+            : 'Bạn có thể đăng nhập bằng mật khẩu mới',
       });
     } catch (err: unknown) {
       const msg =
@@ -199,7 +233,9 @@ export default function LoginScreen() {
             <Text
               style={{ fontSize: fs(14), color: COLORS.gray[500], marginTop: 4, fontWeight: '600' }}
             >
-              {lang === 'en' ? 'Home Services & Professional Helpers 24/7' : 'Dịch vụ gia đình & Thợ chuyên nghiệp 24/7'}
+              {lang === 'en'
+                ? 'Home Services & Professional Helpers 24/7'
+                : 'Dịch vụ gia đình & Thợ chuyên nghiệp 24/7'}
             </Text>
           </View>
 
@@ -207,7 +243,9 @@ export default function LoginScreen() {
           <View style={{ gap: 14 }}>
             <Input
               label={lang === 'en' ? 'Phone Number or Email' : 'Số điện thoại hoặc Email'}
-              placeholder={lang === 'en' ? 'Enter phone number or email' : 'Nhập SĐT hoặc email của bạn'}
+              placeholder={
+                lang === 'en' ? 'Enter phone number or email' : 'Nhập SĐT hoặc email của bạn'
+              }
               autoCapitalize="none"
               value={phone}
               onChangeText={setPhone}
@@ -263,7 +301,7 @@ export default function LoginScreen() {
                     textAlign: 'center',
                   }}
                 >
-                  ⚠️ {loginError}
+                  {loginError}
                 </Text>
               </View>
             )}
@@ -352,8 +390,12 @@ export default function LoginScreen() {
                 <KeyRound size={20} color={COLORS.primary} />
                 <Text style={{ fontSize: fs(18), fontWeight: '800', color: COLORS.gray[900] }}>
                   {forgotStep === 'phone'
-                    ? (lang === 'en' ? 'Forgot Password' : 'Quên mật khẩu')
-                    : (lang === 'en' ? 'Reset New Password' : 'Đặt lại mật khẩu mới')}
+                    ? lang === 'en'
+                      ? 'Forgot Password'
+                      : 'Quên mật khẩu'
+                    : lang === 'en'
+                      ? 'Reset New Password'
+                      : 'Đặt lại mật khẩu mới'}
                 </Text>
               </View>
               <TouchableOpacity onPress={() => setShowForgotModal(false)}>
@@ -386,9 +428,15 @@ export default function LoginScreen() {
               <>
                 <Text style={{ fontSize: fs(13.5), color: COLORS.gray[600], lineHeight: 20 }}>
                   {lang === 'en' ? (
-                    <>Enter the 6-digit OTP sent to <Text style={{ fontWeight: '800' }}>{resetPhone}</Text> and your new password.</>
+                    <>
+                      Enter the 6-digit OTP sent to{' '}
+                      <Text style={{ fontWeight: '800' }}>{resetPhone}</Text> and your new password.
+                    </>
                   ) : (
-                    <>Nhập mã OTP 6 chữ số đã gửi tới <Text style={{ fontWeight: '800' }}>{resetPhone}</Text> và mật khẩu mới.</>
+                    <>
+                      Nhập mã OTP 6 chữ số đã gửi tới{' '}
+                      <Text style={{ fontWeight: '800' }}>{resetPhone}</Text> và mật khẩu mới.
+                    </>
                   )}
                 </Text>
                 {__DEV__ && (
@@ -404,7 +452,9 @@ export default function LoginScreen() {
                     }}
                   >
                     <Text style={{ fontSize: fs(12.5), color: '#16A34A', fontWeight: '700' }}>
-                      {lang === 'en' ? '💡 Dev test OTP: 123456 (Tap to fill)' : '💡 Mã OTP thử nghiệm (Dev): 123456 (Chạm để điền)'}
+                      {lang === 'en'
+                        ? 'Dev test OTP: 123456 (Tap to fill)'
+                        : 'Mã OTP thử nghiệm (Dev): 123456 (Chạm để điền)'}
                     </Text>
                   </TouchableOpacity>
                 )}
@@ -417,7 +467,11 @@ export default function LoginScreen() {
                   onChangeText={setResetOtp}
                 />
                 <Input
-                  label={lang === 'en' ? 'New Password (min 8 characters) *' : 'Mật khẩu mới (tối thiểu 8 ký tự) *'}
+                  label={
+                    lang === 'en'
+                      ? 'New Password (min 8 characters) *'
+                      : 'Mật khẩu mới (tối thiểu 8 ký tự) *'
+                  }
                   placeholder={lang === 'en' ? 'Enter new password' : 'Nhập mật khẩu mới'}
                   secureTextEntry
                   value={newPassword}

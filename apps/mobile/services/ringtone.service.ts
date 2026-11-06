@@ -45,10 +45,10 @@ class RingtoneService {
         this.sound = null;
       }
 
-      const { sound } = await Audio.Sound.createAsync(
-        require('@/assets/sounds/ringtone.wav'),
-        { isLooping: true, volume: 1.0 },
-      );
+      const { sound } = await Audio.Sound.createAsync(require('@/assets/sounds/ringtone.wav'), {
+        isLooping: true,
+        volume: 1.0,
+      });
       this.sound = sound;
       if (this.isPlaying) {
         await sound.playAsync();

@@ -65,14 +65,12 @@ export function usePushNotifications() {
       savedTokenRef.current = null;
       if (token) {
         console.log('[usePushNotifications] Unregistering push token from server:', token);
-        void apiClient
-          .delete('/users/me/push-token', { data: { token } })
-          .catch((err: any) => {
-            console.warn(
-              '[usePushNotifications] Failed to unregister push token:',
-              err?.message || err,
-            );
-          });
+        void apiClient.delete('/users/me/push-token', { data: { token } }).catch((err: any) => {
+          console.warn(
+            '[usePushNotifications] Failed to unregister push token:',
+            err?.message || err,
+          );
+        });
       }
     }
   }, [isAuthenticated, userId]);

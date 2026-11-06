@@ -59,9 +59,7 @@ export default function FeedbackScreen() {
             }}
             maxLength={2000}
             placeholder={
-              lang === 'en'
-                ? 'Describe in at least 10 characters'
-                : 'Mô tả ít nhất 10 ký tự'
+              lang === 'en' ? 'Describe in at least 10 characters' : 'Mô tả ít nhất 10 ký tự'
             }
           />
           <Button

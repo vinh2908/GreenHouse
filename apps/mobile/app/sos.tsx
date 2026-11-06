@@ -78,10 +78,7 @@ export default function SosScreen() {
   const sosCategories = [
     {
       id: 'electrician',
-      name:
-        lang === 'en'
-          ? 'Electrical Short & Burning Smell'
-          : 'Chập điện & Cháy khét ổ cắm',
+      name: lang === 'en' ? 'Electrical Short & Burning Smell' : 'Chập điện & Cháy khét ổ cắm',
       icon: Zap,
       desc:
         lang === 'en'
@@ -92,10 +89,7 @@ export default function SosScreen() {
     },
     {
       id: 'plumbing',
-      name:
-        lang === 'en'
-          ? 'Burst Pipe & Floor Flooding'
-          : 'Vỡ đường ống nước & Ngập sàn',
+      name: lang === 'en' ? 'Burst Pipe & Floor Flooding' : 'Vỡ đường ống nước & Ngập sàn',
       icon: Droplets,
       desc:
         lang === 'en'
@@ -106,10 +100,7 @@ export default function SosScreen() {
     },
     {
       id: 'locksmith',
-      name:
-        lang === 'en'
-          ? 'Jammed Lock & Lost Key Emergency'
-          : 'Kẹt khóa & Mất chìa khẩn cấp',
+      name: lang === 'en' ? 'Jammed Lock & Lost Key Emergency' : 'Kẹt khóa & Mất chìa khẩn cấp',
       icon: Key,
       desc:
         lang === 'en'
@@ -120,10 +111,7 @@ export default function SosScreen() {
     },
     {
       id: 'ac_repair',
-      name:
-        lang === 'en'
-          ? 'AC Gas Leak & Heavy Vibration'
-          : 'Rò rỉ khí gas máy lạnh',
+      name: lang === 'en' ? 'AC Gas Leak & Heavy Vibration' : 'Rò rỉ khí gas máy lạnh',
       icon: Wind,
       desc:
         lang === 'en'
@@ -187,8 +175,7 @@ export default function SosScreen() {
     }
   };
 
-  const selectedCatObj =
-    sosCategories.find(c => c.id === selectedCategory) || sosCategories[0];
+  const selectedCatObj = sosCategories.find(c => c.id === selectedCategory) || sosCategories[0];
   const surcharge = 100000;
   const baseCost = 200000;
   const totalEstimate = baseCost + surcharge;
@@ -217,10 +204,7 @@ export default function SosScreen() {
         (res as any)?.data?.data?._id || (res as any)?.data?._id || (res as any)?._id;
       Toast.show({
         type: 'success',
-        text1:
-          lang === 'en'
-            ? 'SOS Emergency Signal Sent!'
-            : 'Đã phát tín hiệu cứu hộ SOS!',
+        text1: lang === 'en' ? 'SOS Emergency Signal Sent!' : 'Đã phát tín hiệu cứu hộ SOS!',
         text2:
           lang === 'en'
             ? 'The system is dispatching nearest helpers to arrive within 15 minutes.'
@@ -411,7 +395,16 @@ export default function SosScreen() {
                     gap: 12,
                   }}
                 >
-                  <View style={{ width: 44, height: 44, borderRadius: 12, backgroundColor: cat.bg, alignItems: 'center', justifyContent: 'center' }}>
+                  <View
+                    style={{
+                      width: 44,
+                      height: 44,
+                      borderRadius: 12,
+                      backgroundColor: cat.bg,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
                     {React.createElement(cat.icon, { size: 26, color: cat.color })}
                   </View>
                   <View style={{ flex: 1 }}>
@@ -711,7 +704,9 @@ export default function SosScreen() {
           }}
         >
           <Flame size={24} color="#FFFFFF" />
-          <Text style={{ color: '#FFFFFF', fontSize: fs(17), fontWeight: '900', letterSpacing: 0.5 }}>
+          <Text
+            style={{ color: '#FFFFFF', fontSize: fs(17), fontWeight: '900', letterSpacing: 0.5 }}
+          >
             {createSos.isPending
               ? lang === 'en'
                 ? 'DISPATCHING SIGNAL...'

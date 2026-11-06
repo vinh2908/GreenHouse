@@ -74,8 +74,7 @@ export function useVerifyEmail() {
 
 export function useResendEmailOtp() {
   return useMutation({
-    mutationFn: (email: string) =>
-      apiClient.post('/auth/verify-email/resend', { email }),
+    mutationFn: (email: string) => apiClient.post('/auth/verify-email/resend', { email }),
   });
 }
 
@@ -355,15 +354,8 @@ export function useSelectQuote() {
 export function useRejectQuote() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({
-      jobId,
-      quoteId,
-      reason,
-    }: {
-      jobId: string;
-      quoteId: string;
-      reason?: string;
-    }) => apiClient.post(`/jobs/${jobId}/quotes/${quoteId}/reject`, { reason }),
+    mutationFn: ({ jobId, quoteId, reason }: { jobId: string; quoteId: string; reason?: string }) =>
+      apiClient.post(`/jobs/${jobId}/quotes/${quoteId}/reject`, { reason }),
     onSuccess: (_, vars) => {
       qc.invalidateQueries({ queryKey: ['job', vars.jobId] });
       qc.invalidateQueries({ queryKey: ['job-quotes', vars.jobId] });

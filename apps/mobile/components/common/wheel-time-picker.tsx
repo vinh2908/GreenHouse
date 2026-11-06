@@ -220,7 +220,9 @@ export function WheelTimePicker({ value, onChange, quickChips = true }: WheelTim
       {quickChips && (
         <View style={styles.chipsSection}>
           <Text style={styles.chipsTitle}>
-            {lang === 'en' ? 'Quick suggestions (tap to scroll):' : 'Gợi ý nhanh (chạm để bánh xe cuộn tới):'}
+            {lang === 'en'
+              ? 'Quick suggestions (tap to scroll):'
+              : 'Gợi ý nhanh (chạm để bánh xe cuộn tới):'}
           </Text>
           <View style={styles.chipsWrap}>
             {[

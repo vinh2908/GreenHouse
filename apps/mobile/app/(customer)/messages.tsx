@@ -9,7 +9,15 @@ import { formatConversationTime } from '@/utils/date-format';
 import { useConversations } from '@/hooks/use-api';
 import { useAuthStore } from '@/stores/auth.store';
 import { useTranslation } from '@/hooks/use-i18n';
-import { Card, Avatar, COLORS, EmptyState, ErrorState, LoadingSpinner, Badge } from '@/components/ui';
+import {
+  Card,
+  Avatar,
+  COLORS,
+  EmptyState,
+  ErrorState,
+  LoadingSpinner,
+  Badge,
+} from '@/components/ui';
 
 dayjs.extend(relativeTime);
 
@@ -61,7 +69,7 @@ export default function ConversationsScreen() {
           <LoadingSpinner />
         ) : !conversations?.length ? (
           <EmptyState
-            emoji="💬"
+            icon={<MessageCircle size={36} color={COLORS.gray[400]} />}
             title={t('messages_empty_title')}
             subtitle={t('messages_empty_sub')}
           />
@@ -107,7 +115,11 @@ export default function ConversationsScreen() {
                   <View style={{ flex: 1, gap: 2 }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                       <Text
-                        style={{ fontWeight: isUnread ? '900' : '800', fontSize: fs(15), color: COLORS.gray[900] }}
+                        style={{
+                          fontWeight: isUnread ? '900' : '800',
+                          fontSize: fs(15),
+                          color: COLORS.gray[900],
+                        }}
                         numberOfLines={1}
                       >
                         {partnerName}

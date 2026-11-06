@@ -387,7 +387,9 @@ export function InitialPermissionsModal() {
                   {isGranted ? (
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                       <CheckCircle2 size={18} color="#16A34A" />
-                      <Text style={{ fontSize: fs(12), fontWeight: '700', color: '#16A34A' }}>{t('perm_granted')}</Text>
+                      <Text style={{ fontSize: fs(12), fontWeight: '700', color: '#16A34A' }}>
+                        {t('perm_granted')}
+                      </Text>
                     </View>
                   ) : (
                     <TouchableOpacity
@@ -399,7 +401,9 @@ export function InitialPermissionsModal() {
                         backgroundColor: '#16A34A',
                       }}
                     >
-                      <Text style={{ fontSize: fs(11.5), fontWeight: '700', color: '#fff' }}>{t('perm_grant_btn')}</Text>
+                      <Text style={{ fontSize: fs(11.5), fontWeight: '700', color: '#fff' }}>
+                        {t('perm_grant_btn')}
+                      </Text>
                     </TouchableOpacity>
                   )}
                 </View>
@@ -511,7 +515,9 @@ export function AppPermissionsSection() {
                   <Text style={{ fontSize: fs(13.5), fontWeight: '600', color: COLORS.gray[800] }}>
                     {t(item.titleKey)}
                   </Text>
-                  <Text style={{ fontSize: fs(11), color: COLORS.gray[500] }}>{t(item.descKey)}</Text>
+                  <Text style={{ fontSize: fs(11), color: COLORS.gray[500] }}>
+                    {t(item.descKey)}
+                  </Text>
                 </View>
               </View>
 
@@ -531,7 +537,9 @@ export function AppPermissionsSection() {
                     }}
                   >
                     <CheckCircle2 size={13} color="#16A34A" />
-                    <Text style={{ fontSize: fs(11), fontWeight: '700', color: '#16A34A' }}>{t('profile_status_granted')}</Text>
+                    <Text style={{ fontSize: fs(11), fontWeight: '700', color: '#16A34A' }}>
+                      {t('profile_status_granted')}
+                    </Text>
                   </View>
                 ) : (
                   <View
@@ -546,7 +554,9 @@ export function AppPermissionsSection() {
                     }}
                   >
                     <AlertCircle size={13} color="#9CA3AF" />
-                    <Text style={{ fontSize: fs(11), fontWeight: '600', color: '#6B7280' }}>{t('profile_status_denied')}</Text>
+                    <Text style={{ fontSize: fs(11), fontWeight: '600', color: '#6B7280' }}>
+                      {t('profile_status_denied')}
+                    </Text>
                   </View>
                 )}
               </View>

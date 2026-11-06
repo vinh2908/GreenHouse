@@ -156,7 +156,7 @@ export default function JobDetailPage() {
             {job.dispute_reason && (
               <div className="rounded-lg border border-destructive/40 bg-destructive/5 p-4 space-y-2">
                 <p className="text-xs font-bold uppercase tracking-wide text-destructive">
-                  ⚠️ Hồ sơ Khiếu nại / Tranh chấp
+                  Hồ sơ Khiếu nại / Tranh chấp
                 </p>
                 <p className="text-sm font-medium">Lý do khiếu nại: {job.dispute_reason}</p>
                 {job.dispute_photos?.length > 0 && (
@@ -217,7 +217,7 @@ export default function JobDetailPage() {
             <Card className="border-destructive">
               <CardHeader>
                 <CardTitle className="text-base text-destructive">
-                  ⚖️ Phân xử Tranh chấp & Hoàn tiền
+                  Phân xử Tranh chấp & Hoàn tiền
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
