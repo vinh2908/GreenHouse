@@ -24,33 +24,12 @@ export const STRINGS = {
   tab_earnings: { vi: 'Thu nhập', en: 'Earnings' },
 
   // ─── Customer home ────────────────────────────────────────────────────────
-  home_greeting: { vi: 'Xin chào 👋', en: 'Hello 👋' },
-  home_guest: { vi: 'Khách', en: 'Guest' },
-  home_your_location: { vi: 'Vị trí của bạn', en: 'Your location' },
   home_pick_location: { vi: 'Chọn khu vực của bạn', en: 'Pick your area' },
   home_search_placeholder: {
     vi: 'Tìm thợ sửa điện, dọn nhà, sửa máy lạnh...',
     en: 'Find an electrician, cleaner, AC repair...',
   },
-  home_sos_title: { vi: 'CỨU HỘ SOS KHẨN CẤP', en: 'EMERGENCY SOS RESCUE' },
-  home_sos_badge: { vi: '15P CÓ MẶT', en: 'ARRIVES IN 15M' },
-  home_sos_subtitle: {
-    vi: 'Chập điện, vỡ ống nước, kẹt khóa cửa ngoài...',
-    en: 'Power faults, burst pipes, locked doors...',
-  },
-  home_ai_title: { vi: 'Trợ lý AI Green House', en: 'Green House AI Assistant' },
-  home_featured_services: { vi: 'Dịch vụ nổi bật', en: 'Featured services' },
   home_active_jobs: { vi: 'Đơn đang thực hiện', en: 'Jobs in progress' },
-  home_active_jobs_sub: {
-    vi: 'Theo dõi tiến độ thợ theo thời gian thực',
-    en: 'Track your helper in real time',
-  },
-  home_history: { vi: 'Lịch sử đặt việc', en: 'Booking history' },
-  home_no_jobs_title: { vi: 'Chưa có yêu cầu nào', en: 'No requests yet' },
-  home_no_jobs_sub: {
-    vi: 'Đăng việc ngay để thợ xung quanh bạn báo giá nhanh chóng!',
-    en: 'Post a job now and nearby helpers will quote fast!',
-  },
 
   // ─── Job statuses (dùng qua JobStatusBadge) ───────────────────────────────
   status_open: { vi: 'Đang tìm thợ', en: 'Finding helper' },
@@ -101,7 +80,6 @@ export const STRINGS = {
   booking_step_confirm: { vi: 'Xác nhận', en: 'Confirm' },
   booking_step_indicator: { vi: 'Bước {step}/{total}: {name}', en: 'Step {step}/{total}: {name}' },
   booking_continue: { vi: 'Tiếp theo', en: 'Continue' },
-  booking_back: { vi: 'Quay lại', en: 'Back' },
   booking_confirm_title: { vi: 'Xác nhận yêu cầu', en: 'Confirm your request' },
   booking_submit: { vi: 'Đăng yêu cầu ngay', en: 'Post request now' },
   booking_fixed_price: { vi: '🏷️ Giá cam kết:', en: '🏷️ Fixed price:' },
@@ -141,14 +119,10 @@ export const STRINGS = {
   earn_total_received: { vi: 'Tổng thu nhập đã nhận:', en: 'Total earnings received:' },
   earn_total_income: { vi: 'Tổng thu nhập', en: 'Total income' },
   earn_withdrawn: { vi: 'Đã rút về TK', en: 'Withdrawn to bank' },
-  earn_wallet_balance: { vi: 'Số dư ví', en: 'Wallet balance' },
-  earn_topup: { vi: 'Nạp tiền', en: 'Top up' },
   earn_topup_wallet: { vi: 'Nạp ví ký quỹ', en: 'Top up escrow wallet' },
   earn_topup_title: { vi: 'Nạp tiền vào ví ký quỹ', en: 'Top up escrow wallet' },
-  earn_withdraw: { vi: 'Rút tiền', en: 'Withdraw' },
   earn_withdraw_bank: { vi: 'Rút về ngân hàng', en: 'Withdraw to bank' },
   earn_withdraw_title: { vi: 'Rút tiền về tài khoản', en: 'Withdraw to your bank account' },
-  earn_history: { vi: 'Lịch sử giao dịch', en: 'Transaction history' },
   earn_history_title: { vi: 'Lịch sử biến động số dư', en: 'Balance history' },
   earn_no_transactions: { vi: 'Chưa có giao dịch nào', en: 'No transactions yet' },
   earn_no_transactions_sub: {
@@ -279,20 +253,12 @@ export const STRINGS = {
 
   // ─── Customer Home Extra ──────────────────────────────────────────────────
   home_nearby_helpers_title: { vi: 'Thợ đang ở gần bạn', en: 'Helpers near you' },
-  home_nearby_helpers_sub: {
-    vi: 'Sẵn sàng nhận việc và có mặt nhanh chóng',
-    en: 'Ready to take jobs and arrive quickly',
-  },
   home_vouchers_title: { vi: 'Ưu đãi dành cho bạn', en: 'Offers for you' },
   home_vouchers_sub: {
     vi: 'Mã giảm giá dịch vụ Green House',
     en: 'Green House service discount codes',
   },
   home_all_services_title: { vi: 'Dịch vụ', en: 'Services' },
-  home_all_services_sub: {
-    vi: 'Chọn dịch vụ gia đình bạn cần phục vụ hôm nay',
-    en: 'Choose the home service you need today',
-  },
   home_quick_booking_title: { vi: 'Đặt dịch vụ nhanh', en: 'Quick Booking' },
   home_quick_booking_sub: {
     vi: 'Chọn nhanh thời gian để thợ xung quanh báo giá',
@@ -304,15 +270,10 @@ export const STRINGS = {
     en: 'Try searching with other keywords (e.g. AC, electricity, cleaning)',
   },
   home_view_all: { vi: 'Xem tất cả', en: 'View all' },
-  home_call_now: { vi: 'Gọi thợ ngay', en: 'Call helper' },
   home_choose_service: { vi: 'Chọn dịch vụ này', en: 'Select service' },
 
   // ─── Profile Extra ────────────────────────────────────────────────────────
-  profile_title: { vi: 'Hồ sơ & Tài khoản', en: 'Profile & Account' },
-  profile_title_helper: { vi: 'Hồ sơ thợ', en: 'Helper Profile' },
-  profile_emergency_contact: { vi: 'Liên hệ khẩn cấp', en: 'Emergency contact' },
   profile_permissions: { vi: 'Quyền ứng dụng', en: 'App permissions' },
-  profile_open_settings: { vi: 'Mở Cài đặt', en: 'Open Settings' },
   profile_status_granted: { vi: 'Đã cấp', en: 'Granted' },
   profile_status_denied: { vi: 'Chưa cấp', en: 'Not granted' },
 
@@ -344,8 +305,6 @@ export const STRINGS = {
     vi: '💡 Đơn thanh toán Online sẽ cộng 85% vào ví. Đơn thu Tiền mặt trực tiếp sẽ khấu trừ 15% phí sàn từ ví ký quỹ.',
     en: '💡 Online-paid jobs credit 85% to your wallet. Cash jobs deduct the 15% platform fee from your escrow wallet.',
   },
-  home_notifications: { vi: 'Thông báo', en: 'Notifications' },
-  common_details: { vi: 'Chi tiết', en: 'Details' },
   common_service: { vi: 'Dịch vụ', en: 'Service' },
   // ─── Support chat ─────────────────────────────────────────────────────────
   support_title: { vi: 'Đội hỗ trợ Green House', en: 'Green House Support Team' },
@@ -380,7 +339,6 @@ export const STRINGS = {
   svc_custom: { vi: 'Dịch vụ khác — tự ghi việc, tự set giá', en: 'Other — custom task & price' },
   svc_custom_sub: { vi: 'Việc gì cũng đăng được', en: 'Post any task' },
   badge_new: { vi: 'MỚI', en: 'NEW' },
-  badge_urgent: { vi: 'Khẩn cấp', en: 'Urgent' },
 
   // ─── Prices & Units ────────────────────────────────────────────────────────
   price_from_prefix: { vi: 'Từ ', en: 'From ' },
@@ -512,11 +470,6 @@ export const STRINGS = {
   picker_no_chips: { vi: 'Hôm nay đã hết khung giờ gợi ý', en: 'No suggested times left today' },
   picker_select_hour: { vi: 'Chọn Giờ (00 - 23)', en: 'Select Hour (00 - 23)' },
   picker_select_minute: { vi: 'Chọn Phút (00 - 59)', en: 'Select Minute (00 - 59)' },
-  picker_duration_title: { vi: 'Thời lượng dự kiến', en: 'Estimated duration' },
-  picker_duration_sub: {
-    vi: 'Bấm để chọn số giờ và phút theo ý bạn',
-    en: 'Tap to select hours and minutes',
-  },
   picker_preview_title: { vi: 'Lịch dự kiến', en: 'Schedule preview' },
   picker_date_label: { vi: 'Ngày:', en: 'Date:' },
   picker_time_slot_label: { vi: 'Khung giờ:', en: 'Time frame:' },
@@ -524,7 +477,6 @@ export const STRINGS = {
   picker_deal_price: { vi: 'Giá deal:', en: 'Deal price:' },
   picker_next_day: { vi: '(ngày hôm sau)', en: '(next day)' },
   picker_cannot_calc: { vi: 'Chưa tính được', en: 'Unavailable' },
-  picker_close: { vi: 'Đóng', en: 'Close' },
 
   // ─── SOS Backup & Decision Popups ──────────────────────────────────────────
   sos_popup_title: { vi: 'YÊU CẦU NHẬN THAY SOS', en: 'SOS BACKUP REQUEST' },
@@ -584,8 +536,6 @@ export const STRINGS = {
   },
   call_decline: { vi: 'Từ chối', en: 'Decline' },
   call_answer: { vi: 'Trả lời', en: 'Answer' },
-  call_state_preparing: { vi: 'Đang chuẩn bị kết nối...', en: 'Preparing connection...' },
-  call_state_connecting: { vi: 'Đang kết nối...', en: 'Connecting...' },
   call_state_ended: { vi: 'Cuộc gọi đã kết thúc', en: 'Call ended' },
   call_state_rejected: { vi: 'Cuộc gọi bị từ chối', en: 'Call declined' },
   call_rejected_hint: {
@@ -645,7 +595,6 @@ export const STRINGS = {
   common_close: { vi: 'Đóng', en: 'Close' },
   common_confirm: { vi: 'Xác nhận', en: 'Confirm' },
   common_cancel: { vi: 'Hủy', en: 'Cancel' },
-  common_yesterday: { vi: 'Hôm qua', en: 'Yesterday' },
 
   // ─── Helper Dashboard (Điểm 1) ─────────────────────────────────────────────
   dash_update_progress_btn: {
@@ -784,11 +733,7 @@ export const STRINGS = {
   home_helper_fallback: { vi: 'Thợ chuyên nghiệp', en: 'Professional helper' },
   home_eta_min: { vi: 'tới trong ~{min} phút', en: 'arrives in ~{min} mins' },
   home_book_helper_btn: { vi: 'Đặt thợ →', en: 'Book helper →' },
-  voucher_discount_percent: { vi: 'Giảm {pct}%', en: '{pct}% OFF' },
-  voucher_discount_amount: { vi: 'Giảm {amount}₫', en: '{amount}₫ OFF' },
   voucher_special_badge: { vi: 'ƯU ĐÃI ĐẶC BIỆT', en: 'SPECIAL OFFER' },
-  voucher_min_order: { vi: 'Đơn tối thiểu {amount}₫', en: 'Min order {amount}₫' },
-  voucher_all_services: { vi: 'Áp dụng cho mọi dịch vụ', en: 'All services eligible' },
 
   // ─── Voucher & Time (Điểm 5) ───────────────────────────────────────────────
   voucher_copy: { vi: 'Sao chép', en: 'Copy' },
@@ -822,14 +767,6 @@ export const STRINGS = {
   jobs_customer_cancelled: { vi: 'Đã hủy yêu cầu', en: 'Request cancelled' },
 
   // ─── Common Actions & Units ────────────────────────────────────────────────
-  common_apply: { vi: 'Áp dụng', en: 'Apply' },
-  common_save: { vi: 'Lưu', en: 'Save' },
-  common_delete: { vi: 'Xóa', en: 'Delete' },
-  common_edit: { vi: 'Chỉnh sửa', en: 'Edit' },
-  common_retry: { vi: 'Thử lại', en: 'Retry' },
-  common_continue: { vi: 'Tiếp tục', en: 'Continue' },
-  common_loading: { vi: 'Đang tải...', en: 'Loading...' },
-  common_empty: { vi: 'Không có dữ liệu', en: 'No data' },
   common_hours: { vi: 'giờ', en: 'hours' },
   common_photos: { vi: 'ảnh', en: 'photos' },
   common_helper: { vi: 'thợ', en: 'helper' },
@@ -914,7 +851,6 @@ export const STRINGS = {
   kyc_status_rejected: { vi: 'Hồ sơ bị từ chối', en: 'Application rejected' },
 
   // ─── Điểm 2: Booking Wizard 5 bước ─────────────────────────────────────────
-  booking_from_price: { vi: 'Từ {price}₫', en: 'From {price}₫' },
   booking_fixed_price_sub: {
     vi: 'nhận việc ngay, không cần báo giá',
     en: 'instant match, no bidding needed',
