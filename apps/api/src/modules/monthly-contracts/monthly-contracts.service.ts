@@ -193,7 +193,7 @@ export class MonthlyContractsService {
 
     await this.notificationsService.create({
       userId: dto.helper_id,
-      type: 'monthly_contract_new',
+      type: NOTIFICATION_TYPES.MONTHLY_CONTRACT_NEW,
       title: '📅 Đề nghị hợp đồng theo tháng mới',
       body: `Khách hàng mời bạn làm giúp việc theo tháng: "${dto.title}" — lương ${dto.monthly_salary.toLocaleString('vi-VN')}₫/tháng. Mở app để xem và phản hồi.`,
       payload: { contract_id: String(contract._id), kind: 'monthly_contract' },
@@ -277,7 +277,7 @@ export class MonthlyContractsService {
         : contract.customer_id.toString();
     await this.notificationsService.create({
       userId: otherId,
-      type: 'monthly_contract_cancelled',
+      type: NOTIFICATION_TYPES.MONTHLY_CONTRACT_CANCELLED,
       title: '🚫 Hợp đồng theo tháng đã bị hủy',
       body: reason
         ? `Hợp đồng "${contract.title}" đã bị hủy: ${reason}`
@@ -305,7 +305,7 @@ export class MonthlyContractsService {
         : contract.customer_id.toString();
     await this.notificationsService.create({
       userId: otherId,
-      type: 'monthly_contract_ended',
+      type: NOTIFICATION_TYPES.MONTHLY_CONTRACT_ENDED,
       title: '🏁 Hợp đồng theo tháng đã kết thúc',
       body: `Hợp đồng "${contract.title}" đã kết thúc${reason ? `: ${reason}` : ''}.`,
       payload: { contract_id: String(contract._id), kind: 'monthly_contract' },
@@ -401,7 +401,7 @@ export class MonthlyContractsService {
 
     await this.notificationsService.create({
       userId: contract.customer_id.toString(),
-      type: 'monthly_contract_checkin',
+      type: NOTIFICATION_TYPES.MONTHLY_CONTRACT_CHECKIN,
       title: '🟢 Thợ đã điểm danh hôm nay',
       body: `Thợ của hợp đồng "${contract.title}" đã điểm danh ngày ${today}. Vui lòng xác nhận buổi làm.`,
       payload: { contract_id: String(contract._id), date: today, kind: 'monthly_contract' },
@@ -450,7 +450,7 @@ export class MonthlyContractsService {
 
     await this.notificationsService.create({
       userId: contract.helper_id.toString(),
-      type: 'monthly_contract_attendance',
+      type: NOTIFICATION_TYPES.MONTHLY_CONTRACT_ATTENDANCE,
       title: approve ? '✅ Buổi làm đã được xác nhận' : '❌ Buổi làm bị đánh dấu vắng',
       body: `Buổi làm ngày ${date} của hợp đồng "${contract.title}" ${
         approve ? 'đã được khách xác nhận có mặt' : 'đã bị khách đánh dấu vắng'
@@ -497,7 +497,7 @@ export class MonthlyContractsService {
 
     await this.notificationsService.create({
       userId: contract.customer_id.toString(),
-      type: 'monthly_contract_leave_request',
+      type: NOTIFICATION_TYPES.MONTHLY_CONTRACT_LEAVE_REQUEST,
       title: '🌴 Thợ xin nghỉ 1 buổi',
       body: `Thợ của hợp đồng "${contract.title}" xin nghỉ ngày ${dto.date}: ${dto.reason}`,
       payload: {
@@ -554,7 +554,7 @@ export class MonthlyContractsService {
 
     await this.notificationsService.create({
       userId: contract.helper_id.toString(),
-      type: 'monthly_contract_leave_response',
+      type: NOTIFICATION_TYPES.MONTHLY_CONTRACT_LEAVE_RESPONSE,
       title: approve ? '✅ Đơn xin nghỉ đã được duyệt' : '❌ Đơn xin nghỉ bị từ chối',
       body: `Đơn xin nghỉ ngày ${leave.date} của hợp đồng "${contract.title}" ${
         approve ? 'đã được khách duyệt' : 'đã bị khách từ chối'
@@ -723,7 +723,7 @@ export class MonthlyContractsService {
 
     await this.notificationsService.create({
       userId: contract.helper_id.toString(),
-      type: 'monthly_contract_settled',
+      type: NOTIFICATION_TYPES.MONTHLY_CONTRACT_SETTLED,
       title: '💰 Đã chốt lương tháng ' + dto.month,
       body: `Hợp đồng "${contract.title}": ${summary.confirmed_days}/${summary.scheduled_days} buổi — bạn nhận ${summary.helper_receives.toLocaleString('vi-VN')}₫ vào ví.`,
       payload: { contract_id: String(contract._id), month: dto.month, kind: 'monthly_contract' },

@@ -28,6 +28,15 @@ import {
   Hourglass,
   Shield,
   RotateCcw,
+  ClipboardList,
+  Receipt,
+  Scale,
+  Users,
+  CalendarClock,
+  CalendarX,
+  Undo2,
+  FileWarning,
+  PhoneMissed,
 } from 'lucide-react-native';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
@@ -76,6 +85,31 @@ function renderNotificationIcon(type: string) {
       return <Building2 size={size} color="#6366F1" />;
     case 'promotion':
       return <Gift size={size} color="#EC4899" />;
+    case 'job_cancelled':
+      return <XCircle size={size} color="#EF4444" />;
+    case 'job_updated':
+      return <ClipboardList size={size} color="#3B82F6" />;
+    case 'cost_proposal':
+    case 'cost_proposal_response':
+      return <Receipt size={size} color="#F59E0B" />;
+    case 'dispute_updated':
+    case 'dispute_appealed':
+    case 'dispute_opened':
+    case 'dispute_resolved':
+      return <Scale size={size} color="#EF4444" />;
+    case 'claim_submitted':
+      return <FileWarning size={size} color="#F59E0B" />;
+    case 'call_missed':
+      return <PhoneMissed size={size} color="#EF4444" />;
+    case 'team_invitation':
+    case 'team_response':
+      return <Users size={size} color="#8B5CF6" />;
+    case 'recurring_job_created':
+      return <CalendarClock size={size} color="#22C55E" />;
+    case 'recurring_plan_cancelled':
+      return <CalendarX size={size} color="#EF4444" />;
+    case 'sos_backup_withdrawn':
+      return <Undo2 size={size} color="#6B7280" />;
     case 'system':
       return <Megaphone size={size} color="#3B82F6" />;
     case 'support_reply':

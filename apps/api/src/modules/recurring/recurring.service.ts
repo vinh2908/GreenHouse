@@ -231,7 +231,7 @@ export class RecurringService implements OnApplicationBootstrap, OnModuleDestroy
         await this.notificationsService
           .create({
             userId: String(plan.customer_id),
-            type: NOTIFICATION_TYPES.SYSTEM,
+            type: NOTIFICATION_TYPES.RECURRING_JOB_CREATED,
             title: 'Đơn định kỳ đã chuyển công khai',
             body: 'Thợ ưa thích đang bận, đơn đã chuyển công khai để các thợ khác nhận việc.',
             payload: { plan_id: String(plan._id), occurrence_date: key },
@@ -255,7 +255,7 @@ export class RecurringService implements OnApplicationBootstrap, OnModuleDestroy
         await this.notificationsService
           .create({
             userId: String(plan.customer_id),
-            type: NOTIFICATION_TYPES.SYSTEM,
+            type: NOTIFICATION_TYPES.RECURRING_JOB_CREATED,
             title: 'Đơn định kỳ đã được tạo',
             body: `Đơn định kỳ cho ngày ${key} đã được tạo thành công: "${plan.title}".`,
             payload: { plan_id: String(plan._id), occurrence_date: key },
@@ -278,7 +278,7 @@ export class RecurringService implements OnApplicationBootstrap, OnModuleDestroy
             await this.notificationsService
               .create({
                 userId: String(plan.customer_id),
-                type: NOTIFICATION_TYPES.SYSTEM,
+                type: NOTIFICATION_TYPES.RECURRING_JOB_CREATED,
                 title: 'Đơn định kỳ đã chuyển công khai',
                 body: 'Thợ ưa thích đang bận, đơn đã chuyển công khai để các thợ khác nhận việc.',
                 payload: { plan_id: String(plan._id), occurrence_date: key },
@@ -595,7 +595,7 @@ export class RecurringService implements OnApplicationBootstrap, OnModuleDestroy
       await this.notificationsService
         .create({
           userId: String(plan.preferred_helper_id),
-          type: NOTIFICATION_TYPES.SYSTEM,
+          type: NOTIFICATION_TYPES.RECURRING_PLAN_CANCELLED,
           title: 'Gói định kỳ đã bị hủy',
           body: `Khách hàng đã hủy gói định kỳ${reason ? `. Lý do: ${reason}` : '.'}`,
           payload: { plan_id: planId },
