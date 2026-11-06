@@ -140,7 +140,11 @@ export default function NotificationsScreen() {
   const router = useRouter();
   const { t, fs, lang, formatNotifTitle, formatNotifBody } = useTranslation();
   const user = useAuthStore(s => s.user);
-  const { data: notifications, isLoading, isError, refetch, dataUpdatedAt } = useNotifications();
+  // B23: 2 tab Tất cả / Chưa đọc dùng đúng hook useNotifications(unreadOnly)
+  const [tab, setTab] = useState<'all' | 'unread'>('all');
+  const { data: notifications, isLoading, isError, refetch, dataUpdatedAt } = useNotifications(
+    tab === 'unread',
+  );
   const markAll = useMarkAllRead();
   const markRead = useMarkNotificationRead();
 
@@ -232,6 +236,50 @@ export default function NotificationsScreen() {
         </TouchableOpacity>
       </View>
 
+      {/* B23: tab lọc Tất cả / Chưa đọc */}
+      <View
+        style={{
+          flexDirection: 'row',
+          gap: 8,
+          paddingHorizontal: 16,
+          paddingTop: 12,
+          backgroundColor: '#fff',
+        }}
+      >
+        {(
+          [
+            { key: 'all', label: lang === 'en' ? 'All' : 'Tất cả' },
+            { key: 'unread', label: lang === 'en' ? 'Unread' : 'Chưa đọc' },
+          ] as const
+        ).map(tabItem => {
+          const active = tab === tabItem.key;
+          return (
+            <TouchableOpacity
+              key={tabItem.key}
+              activeOpacity={0.8}
+              onPress={() => setTab(tabItem.key)}
+              style={{
+                flex: 1,
+                paddingVertical: 10,
+                borderRadius: 999,
+                alignItems: 'center',
+                backgroundColor: active ? COLORS.primary : COLORS.gray[100],
+              }}
+            >
+              <Text
+                style={{
+                  fontSize: fs(13.5),
+                  fontWeight: '800',
+                  color: active ? '#fff' : COLORS.gray[700],
+                }}
+              >
+                {tabItem.label}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+
       <ScrollView
         contentContainerStyle={{ padding: 16, gap: 10, paddingBottom: 40 }}
         refreshControl={
@@ -253,7 +301,15 @@ export default function NotificationsScreen() {
         ) : !notifications?.length ? (
           <EmptyState
             icon={<Bell size={36} color={COLORS.gray[400]} />}
-            title={lang === 'en' ? 'No notifications yet' : 'Chưa có thông báo nào'}
+            title={
+              tab === 'unread'
+                ? lang === 'en'
+                  ? 'No unread notifications'
+                  : 'Không có thông báo chưa đọc'
+                : lang === 'en'
+                  ? 'No notifications yet'
+                  : 'Chưa có thông báo nào'
+            }
             subtitle={
               lang === 'en'
                 ? 'Quotes updates, order status, and payments will appear here'
