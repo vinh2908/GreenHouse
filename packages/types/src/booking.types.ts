@@ -15,6 +15,7 @@ export enum JobStatus {
   PENDING_REVIEW = 'pending_review', // Helper upload ảnh hoàn thành, chờ customer nghiệm thu
   COMPLETED = 'completed',
   CANCELLED = 'cancelled',
+  EXPIRED = 'expired',
   DISPUTED = 'disputed',
   REFUNDED = 'refunded',
 }
@@ -22,16 +23,18 @@ export enum JobStatus {
 // Valid state transitions
 export const JOB_STATUS_TRANSITIONS: Record<JobStatus, JobStatus[]> = {
   [JobStatus.DRAFT]: [JobStatus.OPEN, JobStatus.CANCELLED],
-  [JobStatus.OPEN]: [JobStatus.RECEIVING_QUOTES, JobStatus.CONFIRMED, JobStatus.CANCELLED],
+  [JobStatus.OPEN]: [JobStatus.RECEIVING_QUOTES, JobStatus.CONFIRMED, JobStatus.CANCELLED, JobStatus.EXPIRED],
   [JobStatus.RECEIVING_QUOTES]: [
     JobStatus.QUOTE_SELECTED,
     JobStatus.CONFIRMED,
     JobStatus.CANCELLED,
+    JobStatus.EXPIRED,
   ],
   [JobStatus.QUOTE_SELECTED]: [
     JobStatus.CONFIRMED,
     JobStatus.RECEIVING_QUOTES,
     JobStatus.CANCELLED,
+    JobStatus.EXPIRED,
   ],
   [JobStatus.CONFIRMED]: [JobStatus.HELPER_ON_THE_WAY, JobStatus.CANCELLED],
   [JobStatus.HELPER_ON_THE_WAY]: [JobStatus.HELPER_ARRIVED, JobStatus.CANCELLED],
@@ -40,6 +43,7 @@ export const JOB_STATUS_TRANSITIONS: Record<JobStatus, JobStatus[]> = {
   [JobStatus.PENDING_REVIEW]: [JobStatus.COMPLETED, JobStatus.DISPUTED],
   [JobStatus.COMPLETED]: [],
   [JobStatus.CANCELLED]: [JobStatus.REFUNDED],
+  [JobStatus.EXPIRED]: [JobStatus.OPEN], // Repost
   [JobStatus.DISPUTED]: [JobStatus.COMPLETED, JobStatus.REFUNDED],
   [JobStatus.REFUNDED]: [],
 };
@@ -246,6 +250,7 @@ export interface IJobEvent {
 
 export enum PaymentStatus {
   UNPAID = 'unpaid',
+  PROCESSING = 'processing',
   PAID = 'paid',
   REFUNDING = 'refunding',
   REFUNDED = 'refunded',

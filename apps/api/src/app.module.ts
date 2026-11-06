@@ -3,6 +3,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { ThrottlerModule } from '@nestjs/throttler';
+import { ScheduleModule } from '@nestjs/schedule';
 import appConfig, { aiConfig, zaloConfig } from './config/app.config';
 import databaseConfig from './config/database.config';
 import jwtConfig from './config/jwt.config';
@@ -87,6 +88,9 @@ import { UploadsModule } from './modules/uploads/uploads.module';
         },
       ],
     }),
+
+    // Task Scheduling
+    ScheduleModule.forRoot(),
 
     // Feature modules
     AuthModule,

@@ -5,9 +5,11 @@ import {
   ConflictException,
   ForbiddenException,
   Optional,
+  Logger,
 } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
+import { InjectModel, InjectConnection } from '@nestjs/mongoose';
+import { Model, Types, Connection } from 'mongoose';
+import { Cron } from '@nestjs/schedule';
 import {
   Wallet,
   WalletDocument,
@@ -27,6 +29,8 @@ import { LoyaltyService } from '../loyalty/loyalty.service';
 
 @Injectable()
 export class PaymentsService {
+  private readonly logger = new Logger(PaymentsService.name);
+
   constructor(
     @InjectModel(Wallet.name) private walletModel: Model<WalletDocument>,
     @InjectModel(Transaction.name) private transactionModel: Model<TransactionDocument>,
@@ -37,7 +41,35 @@ export class PaymentsService {
     private readonly loyaltyService: LoyaltyService,
     @Optional() @InjectModel(Job.name) private jobModel?: Model<JobDocument>,
     @Optional() @InjectModel(Contract.name) private contractModel?: Model<ContractDocument>,
+    @Optional() @InjectConnection() private connection?: Connection,
   ) {}
+
+  /**
+   * F19 (R5): Tự động gỡ các thanh toán bị kẹt trạng thái 'processing' quá 15 phút về 'unpaid'
+   */
+  @Cron('*/5 * * * *')
+  async clearStuckProcessingPayments(): Promise<number> {
+    if (!this.jobModel) return 0;
+    const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000);
+    const result = await this.jobModel
+      .updateMany(
+        {
+          payment_status: PaymentStatus.PROCESSING,
+          $or: [
+            { updatedAt: { $lt: fifteenMinutesAgo } },
+            { updated_at: { $lt: fifteenMinutesAgo } },
+          ],
+        },
+        { $set: { payment_status: PaymentStatus.UNPAID } },
+      )
+      .exec();
+    if (result.modifiedCount > 0) {
+      this.logger.warn(
+        `Đã tự động gỡ ${result.modifiedCount} đơn kẹt processing quá 15 phút về UNPAID`,
+      );
+    }
+    return result.modifiedCount;
+  }
 
   // ─── Wallet ───────────────────────────────────────────────────────────────
 
@@ -109,6 +141,7 @@ export class PaymentsService {
     let appliedVoucherCode: string | undefined;
     let loyaltyPointsRedeemed = 0;
     let loyaltyDiscountAmount = 0;
+    let transaction: TransactionDocument | undefined;
 
     if (this.jobModel) {
       const job = await this.jobModel.findById(jobId).exec();
@@ -122,15 +155,25 @@ export class PaymentsService {
         throw new ConflictException('Đơn hàng này đã được thanh toán trước đó');
       }
 
-      // A33: Khóa nguyên tử đơn hàng để chặn request thanh toán song song trừ tiền 2 lần
+      // A33 + R5: Khóa nguyên tử đơn hàng chống thanh toán trùng, cho phép tái chiếm nếu bị kẹt processing > 15 phút
+      const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000);
       const claimedJob = await this.jobModel
         .findOneAndUpdate(
           {
             _id: job._id,
-            payment_status: { $nin: [PaymentStatus.PAID, 'processing'] },
+            $or: [
+              { payment_status: { $nin: [PaymentStatus.PAID, PaymentStatus.PROCESSING] } },
+              {
+                payment_status: PaymentStatus.PROCESSING,
+                $or: [
+                  { updatedAt: { $lt: fifteenMinutesAgo } },
+                  { updated_at: { $lt: fifteenMinutesAgo } },
+                ],
+              },
+            ],
           },
           {
-            $set: { payment_status: 'processing' },
+            $set: { payment_status: PaymentStatus.PROCESSING },
           },
           { new: true },
         )
@@ -142,7 +185,17 @@ export class PaymentsService {
         );
       }
 
-      try {
+      const conn = this.connection ?? this.walletModel?.db ?? this.jobModel?.db;
+      let session: any = null;
+      if (conn && typeof conn.startSession === 'function') {
+        try {
+          session = await conn.startSession();
+        } catch (sErr) {
+          this.logger.warn(`Could not start mongoose session: ${sErr}`);
+        }
+      }
+
+      const executePaymentFlow = async (sess?: any) => {
         // A2: Chặn thanh toán cho đơn hàng không ở trạng thái hợp lệ
         const payableStatuses: string[] = [
           JobStatus.CONFIRMED,
@@ -160,7 +213,10 @@ export class PaymentsService {
         // A2: Kiểm tra hợp đồng và chặn giao dịch 0₫ không hợp lệ
         let contract: any = null;
         if (this.contractModel) {
-          contract = await this.contractModel.findOne({ job_id: new Types.ObjectId(jobId) }).exec();
+          contract = await this.contractModel
+            .findOne({ job_id: new Types.ObjectId(jobId) })
+            .session(sess ?? null)
+            .exec();
         }
         if (!contract && !job.is_warranty) {
           throw new BadRequestException('Đơn hàng chưa có hợp đồng để thanh toán');
@@ -174,10 +230,7 @@ export class PaymentsService {
           throw new BadRequestException('Số tiền thanh toán phải lớn hơn 0₫');
         }
 
-        // ── Voucher: ghi nhận lượt dùng + tính giảm trên giá chốt của đơn ──
-        // Nền tảng chịu phần giảm (thợ vẫn nhận đủ theo hợp đồng). Nếu mã đã
-        // hết hạn/hết lượt ở thời điểm thanh toán → ném lỗi rõ ràng để khách
-        // gỡ mã rồi thanh toán lại, tránh trừ tiền sai.
+        // Voucher: ghi nhận lượt dùng + tính giảm trên giá chốt của đơn
         if (job.voucher_code && resolvedAmount > 0 && (job.discount_amount ?? 0) <= 0) {
           const redeemed = await this.vouchersService.redeemForJob(
             customerId,
@@ -190,11 +243,7 @@ export class PaymentsService {
           resolvedAmount = Math.max(0, resolvedAmount - discountAmount);
         }
 
-        // ── Loyalty (Feature 12): trừ điểm thật tại thời điểm thanh toán ──
-        // Mirror voucher: nếu số dư điểm lúc này không còn đủ → redeemAtPayment
-        // ném BadRequest rõ ràng, thanh toán bị chặn để khách gỡ điểm rồi
-        // thanh toán lại. Phần giảm do điểm cũng do sàn chịu (thợ nhận đủ
-        // theo hợp đồng như voucher).
+        // Loyalty: trừ điểm thật tại thời điểm thanh toán
         if ((job.loyalty_points_requested ?? 0) > 0 && resolvedAmount > 0) {
           const loyaltyRedeemed = await this.loyaltyService.redeemAtPayment(customerId, jobId);
           if (loyaltyRedeemed) {
@@ -204,65 +253,125 @@ export class PaymentsService {
           }
         }
 
-        await this.jobModel
-          .findByIdAndUpdate(job._id, {
-            $set: {
-              payment_status: PaymentStatus.PAID,
-              payment_method: paymentMethod,
-              ...(discountAmount > 0 ? { discount_amount: discountAmount } : {}),
+        await this.jobModel!
+          .findByIdAndUpdate(
+            job._id,
+            {
+              $set: {
+                payment_status: PaymentStatus.PAID,
+                payment_method: paymentMethod,
+                ...(discountAmount > 0 ? { discount_amount: discountAmount } : {}),
+              },
             },
-          })
+            { session: sess ?? undefined },
+          )
           .exec();
+
+        const wallet = await this.getOrCreateWallet(customerId);
+
+        const [createdTx] = await this.transactionModel.create(
+          [
+            {
+              wallet_id: wallet._id,
+              user_id: new Types.ObjectId(customerId),
+              job_id: new Types.ObjectId(jobId),
+              type: 'payment',
+              status: 'success',
+              amount: resolvedAmount,
+              balance_before: wallet.balance,
+              balance_after: wallet.balance,
+              description:
+                `Thanh toán cho công việc #${jobId.slice(-6)} (${paymentMethod.toUpperCase()})` +
+                (discountAmount > 0
+                  ? ` — đã áp mã ${appliedVoucherCode} giảm ${discountAmount.toLocaleString('vi-VN')}₫`
+                  : '') +
+                (loyaltyDiscountAmount > 0
+                  ? ` — đổi ${loyaltyPointsRedeemed} điểm giảm ${loyaltyDiscountAmount.toLocaleString('vi-VN')}₫`
+                  : ''),
+              reference: `PAY-${Date.now()}`,
+              metadata: {
+                payment_method: paymentMethod,
+                job_id: jobId,
+                ...(discountAmount > 0
+                  ? { voucher_code: appliedVoucherCode, discount_amount: discountAmount }
+                  : {}),
+                ...(loyaltyDiscountAmount > 0
+                  ? {
+                      loyalty_points_redeemed: loyaltyPointsRedeemed,
+                      loyalty_discount_amount: loyaltyDiscountAmount,
+                    }
+                  : {}),
+              },
+            },
+          ],
+          { session: sess ?? undefined },
+        );
+        transaction = createdTx;
+      };
+
+      try {
+        if (session) {
+          try {
+            await session.withTransaction(async () => {
+              await executePaymentFlow(session);
+            });
+          } catch (txErr: any) {
+            if (
+              txErr?.message?.includes('replica set member') ||
+              txErr?.message?.includes('Transaction numbers')
+            ) {
+              await executePaymentFlow();
+            } else {
+              throw txErr;
+            }
+          }
+        } else {
+          await executePaymentFlow();
+        }
       } catch (err) {
-        // Rollback cờ processing về unpaid nếu xảy ra lỗi trong quá trình xử lý
+        // F5: Rollback hoàn tác voucher và điểm loyalty khi có lỗi giữa chừng
+        try {
+          await this.vouchersService.restoreForJob(customerId, jobId);
+        } catch (voucherErr) {
+          this.logger.error(`Failed to rollback voucher for job ${jobId}: ${voucherErr}`);
+        }
+        try {
+          await this.loyaltyService.reverseRedeemForJob(customerId, jobId);
+        } catch (loyaltyErr) {
+          this.logger.error(`Failed to rollback loyalty for job ${jobId}: ${loyaltyErr}`);
+        }
         await this.jobModel
           .updateOne(
-            { _id: job._id, payment_status: 'processing' },
+            { _id: job._id, payment_status: PaymentStatus.PROCESSING },
             { $set: { payment_status: PaymentStatus.UNPAID } },
           )
           .exec()
           .catch(() => undefined);
         throw err;
+      } finally {
+        if (session) {
+          await session.endSession().catch(() => undefined);
+        }
       }
+    } else {
+      const wallet = await this.getOrCreateWallet(customerId);
+      transaction = await this.transactionModel.create({
+        wallet_id: wallet._id,
+        user_id: new Types.ObjectId(customerId),
+        job_id: new Types.ObjectId(jobId),
+        type: 'payment',
+        status: 'success',
+        amount: resolvedAmount,
+        balance_before: wallet.balance,
+        balance_after: wallet.balance,
+        description: `Thanh toán cho công việc #${jobId.slice(-6)} (${paymentMethod.toUpperCase()})`,
+        reference: `PAY-${Date.now()}`,
+        metadata: { payment_method: paymentMethod, job_id: jobId },
+      });
     }
 
-    const wallet = await this.getOrCreateWallet(customerId);
-
-    const transaction = await this.transactionModel.create({
-      wallet_id: wallet._id,
-      user_id: new Types.ObjectId(customerId),
-      job_id: new Types.ObjectId(jobId),
-      type: 'payment',
-      status: 'success',
-      amount: resolvedAmount,
-      balance_before: wallet.balance,
-      balance_after: wallet.balance, // Customer pays via external method/cash, wallet balance unchanged
-      description:
-        `Thanh toán cho công việc #${jobId.slice(-6)} (${paymentMethod.toUpperCase()})` +
-        (discountAmount > 0
-          ? ` — đã áp mã ${appliedVoucherCode} giảm ${discountAmount.toLocaleString('vi-VN')}₫`
-          : '') +
-        (loyaltyDiscountAmount > 0
-          ? ` — đổi ${loyaltyPointsRedeemed} điểm giảm ${loyaltyDiscountAmount.toLocaleString('vi-VN')}₫`
-          : ''),
-      reference: `PAY-${Date.now()}`,
-      metadata: {
-        payment_method: paymentMethod,
-        job_id: jobId,
-        ...(discountAmount > 0
-          ? { voucher_code: appliedVoucherCode, discount_amount: discountAmount }
-          : {}),
-        ...(loyaltyDiscountAmount > 0
-          ? {
-              loyalty_points_redeemed: loyaltyPointsRedeemed,
-              loyalty_discount_amount: loyaltyDiscountAmount,
-            }
-          : {}),
-      },
-    });
-
     return {
-      transaction,
+      transaction: transaction!,
       success: true,
       discount_amount: discountAmount,
       voucher_code: appliedVoucherCode,
