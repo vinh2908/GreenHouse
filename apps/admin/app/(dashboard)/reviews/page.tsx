@@ -16,6 +16,7 @@ import { useAdminReviews, useAdminReplyReview, useAdminDeleteReview, useSetRevie
   Select,
 } from '@/components/ui';
 import { formatDateTime } from '@/lib/utils';
+import { PromptDialog } from '@/components/common/prompt-dialog';
 
 const RATING_OPTIONS = [
   { value: '', label: 'Tất cả sao' },
@@ -52,6 +53,8 @@ export default function ReviewsPage() {
   const deleteMutation = useAdminDeleteReview();
   const [replyingId, setReplyingId] = useState<string | null>(null);
   const [replyText, setReplyText] = useState('');
+  // B106: xác nhận bằng PromptDialog thay cho hộp thoại confirm của trình duyệt.
+  const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
 
   // B71: ẩn/hiện đánh giá + quyết định kháng nghị
   const setVisibility = useSetReviewVisibility();
@@ -283,15 +286,7 @@ export default function ReviewsPage() {
                               size="sm"
                               variant="destructive"
                               disabled={deleteMutation.isPending}
-                              onClick={() => {
-                                if (
-                                  window.confirm(
-                                    'Xoá vĩnh viễn đánh giá này? Khách sẽ không còn thấy nó.',
-                                  )
-                                ) {
-                                  deleteMutation.mutate(r._id);
-                                }
-                              }}
+                              onClick={() => setDeleteTargetId(r._id)}
                             >
                               Xoá
                             </Button>                          </div>
@@ -306,6 +301,21 @@ export default function ReviewsPage() {
           </>
         )}
       </div>
+
+      {deleteTargetId && (
+        <PromptDialog
+          title="Xoá đánh giá"
+          message="Xoá vĩnh viễn đánh giá này? Khách sẽ không còn thấy nó."
+          confirmLabel="Xoá"
+          requireInput={false}
+          onSubmit={() => {
+            const id = deleteTargetId;
+            setDeleteTargetId(null);
+            deleteMutation.mutate(id);
+          }}
+          onClose={() => setDeleteTargetId(null)}
+        />
+      )}
     </div>
   );
 }
