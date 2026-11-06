@@ -40,13 +40,13 @@ describe('JobsService.createJob (B62)', () => {
     return service;
   }
 
-  function dto(address: any) {
+  function dto(address: any, preferred_time_start = '09:00') {
     return {
       service_id: String(serviceId),
       title: 'Dọn nhà',
       description: 'Dọn dẹp căn hộ 2 phòng ngủ',
       preferred_date: '2099-01-01',
-      preferred_time_start: '09:00',
+      preferred_time_start,
       preferred_time_end: '11:00',
       target_price: 300_000,
       address,
@@ -80,5 +80,40 @@ describe('JobsService.createJob (B62)', () => {
     }
     expect(err).toBeDefined();
     expect(err.message).not.toContain('địa chỉ');
+  });
+
+  it('G3: giờ bắt đầu 23:00 → 400 khung 07:00–22:00', async () => {
+    const service = makeService();
+    await expect(
+      service.createJob(
+        String(customerId),
+        dto({ full_address: '12 Nguyễn Văn Linh, Đà Nẵng' }, '23:00'),
+      ),
+    ).rejects.toThrow('07:00–22:00');
+  });
+
+  it('G3: giờ bắt đầu 06:00 → 400 khung 07:00–22:00', async () => {
+    const service = makeService();
+    await expect(
+      service.createJob(
+        String(customerId),
+        dto({ full_address: '12 Nguyễn Văn Linh, Đà Nẵng' }, '06:00'),
+      ),
+    ).rejects.toThrow('07:00–22:00');
+  });
+
+  it('G3: giờ bắt đầu 09:00 → qua được gate giờ làm việc (lỗi sau đó không phải lỗi giờ)', async () => {
+    const service = makeService();
+    let err: any;
+    try {
+      await service.createJob(
+        String(customerId),
+        dto({ full_address: '12 Nguyễn Văn Linh, Đà Nẵng' }, '09:00'),
+      );
+    } catch (e) {
+      err = e;
+    }
+    expect(err).toBeDefined();
+    expect(err.message).not.toContain('07:00–22:00');
   });
 });

@@ -788,6 +788,23 @@ export class JobsService implements OnModuleInit {
       }
     }
 
+    // G3 (R1): Giờ bắt đầu phải trong giờ làm việc 07:00–22:00 — cùng khung
+    // với gate ở selectQuote. Không chặn ở đây thì đơn tạo hợp lệ lúc
+    // 23:00/06:00 vẫn nhận báo giá bình thường, tới lúc chọn mới bị 400
+    // và kẹt vĩnh viễn.
+    if (
+      dto.preferred_time_start &&
+      /^\d{1,2}:\d{2}$/.test(dto.preferred_time_start.trim())
+    ) {
+      const [sh, sm] = dto.preferred_time_start.trim().split(':').map(Number);
+      const startMin = sh * 60 + sm;
+      if (startMin < 7 * 60 || startMin >= 22 * 60) {
+        throw new BadRequestException(
+          'Giờ làm việc phải trong khung 07:00–22:00. Vui lòng chọn giờ bắt đầu trong khung giờ này.',
+        );
+      }
+    }
+
     // A9: Kiểm tra thời lượng tối thiểu 15 phút, tối đa 12 giờ, và giờ kết thúc sau giờ bắt đầu
     if (
       dto.preferred_time_start &&
