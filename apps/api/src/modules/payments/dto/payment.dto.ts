@@ -3,6 +3,7 @@ import {
   IsNotEmpty,
   IsString,
   IsIn,
+  IsInt,
   Min,
   Max,
   IsOptional,
@@ -17,9 +18,13 @@ export class MockPayJobDto {
   @IsNotEmpty()
   job_id: string;
 
-  @ApiProperty({ description: 'Phương thức thanh toán (cash | vietqr | momo)', example: 'vietqr' })
+  @ApiProperty({
+    description: 'Phương thức thanh toán (wallet | cash | vietqr | momo | zalopay)',
+    example: 'vietqr',
+  })
   @IsString()
   @IsNotEmpty()
+  @IsIn(['wallet', 'cash', 'vietqr', 'momo', 'zalopay'])
   payment_method: string;
 }
 
@@ -54,8 +59,12 @@ export class BankAccountInfoDto {
 }
 
 export class RequestWithdrawalDto {
-  @ApiProperty({ description: 'Số tiền rút (tối thiểu 50,000₫)', minimum: 50000 })
+  @ApiProperty({
+    description: 'Số tiền rút (tối thiểu 50,000₫, phải là số nguyên)',
+    minimum: 50000,
+  })
   @IsNumber()
+  @IsInt({ message: 'Số tiền rút phải là số nguyên' })
   @Min(50000)
   @Max(500_000_000)
   amount: number;

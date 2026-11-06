@@ -53,7 +53,9 @@ export interface SettlementSummary {
  *   Date.getDay(): 0 = Chủ nhật … 6 = Thứ 7) giao với [start_date, end_date]
  *   — không cần cron/bảng lịch riêng.
  * - Ngày theo giờ server (định dạng 'YYYY-MM-DD' bằng thành phần ngày local).
- * - Chốt lương: gross = round(lương tháng × buổi confirmed / buổi theo lịch).
+ * - Chốt lương: gross = round(lương tháng × buổi đã làm / buổi theo lịch).
+ *   Buổi đã làm = 'confirmed' (khách đã xác nhận) + 'checked_in' (thợ đã chấm
+ *   công thực tế, kể cả khi khách chưa kịp xác nhận — B50).
  *   Buổi theo lịch trong quá khứ mà KHÔNG có bản ghi điểm danh được tính là
  *   vắng (absent) trong bản tóm tắt — thợ quên check-in thì khách vẫn có thể
  *   xác nhận/vắng khi có bản ghi 'checked_in'; buổi không có bản ghi chỉ ảnh
@@ -169,6 +171,35 @@ export class MonthlyContractsService {
     const end = dto.end_date ? new Date(dto.end_date) : undefined;
     if (end && end < start) {
       throw new BadRequestException('Ngày kết thúc phải sau ngày bắt đầu');
+    }
+    // B49: Ngày bắt đầu không được trong quá khứ (so theo ngày)
+    if (dto.start_date.slice(0, 10) < this.todayStr()) {
+      throw new BadRequestException('Ngày bắt đầu hợp đồng không được trong quá khứ');
+    }
+    // B49: Lương tháng tối đa 20.000.000₫
+    if (dto.monthly_salary > 20_000_000) {
+      throw new BadRequestException('Lương tháng tối đa là 20.000.000₫');
+    }
+    // B49: Không trùng lịch với hợp đồng đang chạy/chờ duyệt của cùng thợ.
+    // So sánh khoảng [start, end] (end trống = không thời hạn). Hợp đồng của
+    // 1 thợ ít nên lọc bằng JS cho rõ, tránh query ngày phức tạp.
+    const running = await this.contractModel
+      .find({
+        helper_id: new Types.ObjectId(dto.helper_id),
+        status: { $in: ['active', 'pending'] },
+      })
+      .select('start_date end_date')
+      .exec();
+    for (const other of running) {
+      const otherStart = new Date(other.start_date);
+      const otherEnd = other.end_date ? new Date(other.end_date) : null;
+      const overlaps =
+        (otherEnd === null || start <= otherEnd) && (end === undefined || otherStart <= end);
+      if (overlaps) {
+        throw new ConflictException(
+          'Thợ đã có hợp đồng theo tháng trùng lịch trong khoảng thời gian này',
+        );
+      }
     }
 
     const contract = await this.contractModel.create({
@@ -536,6 +567,19 @@ export class MonthlyContractsService {
     if (leave.status !== 'pending') {
       throw new ConflictException('Đơn xin nghỉ này đã được xử lý');
     }
+    // B51: Ngày đã chấm công thì không duyệt nghỉ được — thợ có thể đã check-in
+    // sau khi gửi đơn xin nghỉ (trước khi khách duyệt). Kiểm tra trước khi
+    // tạo bản ghi 'leave' để không ghi đè buổi đã làm thành buổi nghỉ.
+    if (approve) {
+      const attendance = await this.attendanceModel
+        .findOne({ contract_id: contract._id, date: leave.date })
+        .exec();
+      if (attendance && (attendance.status === 'checked_in' || attendance.status === 'confirmed')) {
+        throw new BadRequestException(
+          `Ngày ${leave.date} thợ đã chấm công, không thể duyệt nghỉ phép`,
+        );
+      }
+    }
     leave.status = approve ? 'approved' : 'rejected';
     leave.responded_at = new Date();
     await leave.save();
@@ -604,11 +648,15 @@ export class MonthlyContractsService {
     let absent = 0;
     for (const date of scheduled) {
       const st = byDate.get(date);
-      if (st === 'confirmed') confirmed += 1;
+      // B50: Buổi đã chấm công thực tế ('checked_in') tính như buổi đã làm,
+      // kể cả khi khách chưa kịp bấm xác nhận — lương tính theo buổi làm thật,
+      // không phải buổi dự kiến. Chỉ 'confirmed' thì lương đã thiếu khi khách
+      // chưa xác nhận kịp lúc chốt lương.
+      if (st === 'confirmed' || st === 'checked_in') confirmed += 1;
       else if (st === 'leave') leave += 1;
       else if (st === 'absent') absent += 1;
       else if (!st && date < today) absent += 1; // quá khứ không có record = vắng
-      // 'checked_in' chưa xác nhận & ngày hôm nay/tương lai: chưa tính
+      // Ngày hôm nay/tương lai chưa có record: chưa tính
     }
 
     // A39: Tính lương theo tỷ lệ số buổi đã xác nhận / tổng số buổi theo lịch trọn tháng

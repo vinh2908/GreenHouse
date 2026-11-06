@@ -94,6 +94,10 @@ export class AiBookingService {
   // ─── Phân tích yêu cầu tự nhiên ngữ của khách hàng ───────────────────────
 
   async analyzeBookingRequest(text: string): Promise<AiBookingAnalysis> {
+    // B69: Giới hạn văn bản đầu vào ≤ 2000 ký tự (tránh prompt quá dài / lạm dụng)
+    if (typeof text !== 'string' || text.length > 2000) {
+      throw new BadRequestException('Văn bản đầu vào tối đa 2000 ký tự');
+    }
     if (!this.aiConfig.isFeatureEnabled('BOOKING_ASSISTANT')) {
       this.logger.debug('Booking assistant disabled — returning mock');
       return this.mockAnalyze(text);
@@ -160,6 +164,10 @@ Trả về duy nhất JSON hợp lệ theo cấu trúc:
     duration?: number,
     serviceId?: string,
   ): Promise<AiPriceEstimate> {
+    // B69: Giới hạn mô tả công việc ≤ 2000 ký tự
+    if (typeof description !== 'string' || description.length > 2000) {
+      throw new BadRequestException('Mô tả công việc tối đa 2000 ký tự');
+    }
     // A70: Kiểm tra dữ liệu đầu vào - không cho phép diện tích <= 0 hoặc thời lượng <= 0
     if (area !== undefined && (!Number.isFinite(area) || area <= 0)) {
       throw new BadRequestException('Diện tích (area) phải lớn hơn 0');

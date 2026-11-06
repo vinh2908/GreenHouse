@@ -115,13 +115,19 @@ export class SosBackupService implements OnModuleInit, OnModuleDestroy {
     return this.cfgNum('SOS_BACKUP_DECISION_REMINDER_SECONDS', 150) * 1000;
   }
   private get broadcastTtlMs(): number {
-    return this.cfgNum('SOS_BACKUP_BROADCAST_TTL_SECONDS', 240) * 1000;
+    // B66: 360s — 3 đợt phát ở phút 0/2/4 + 2 phút cho đợt cuối trả lời
+    return this.cfgNum('SOS_BACKUP_BROADCAST_TTL_SECONDS', 360) * 1000;
   }
   private get waveSize(): number {
     return Math.max(1, Math.floor(this.cfgNum('SOS_BACKUP_WAVE_SIZE', 5)));
   }
   private get waveIntervalMs(): number {
-    return this.cfgNum('SOS_BACKUP_WAVE_INTERVAL_SECONDS', 60) * 1000;
+    // B66: mỗi đợt phát cách nhau 2 phút
+    return this.cfgNum('SOS_BACKUP_WAVE_INTERVAL_SECONDS', 120) * 1000;
+  }
+  /** B66: Tối đa 3 đợt phát sóng cho 1 lần SOS (env SOS_BACKUP_MAX_WAVES) */
+  private get maxWaves(): number {
+    return Math.max(1, Math.floor(this.cfgNum('SOS_BACKUP_MAX_WAVES', 3)));
   }
   private get maxDistanceKm(): number {
     return this.cfgNum('SOS_BACKUP_MAX_DISTANCE_KM', 30);
@@ -702,6 +708,8 @@ export class SosBackupService implements OnModuleInit, OnModuleDestroy {
    * đang là ghép tối ưu của SOS khác (họ nhận popup của SOS kia trước).
    */
   private async inviteWave(sos: SosBackupRequestDocument, wave: number): Promise<void> {
+    // B66: Tối đa 3 đợt phát — quá giới hạn thì không mời thêm
+    if (wave > this.maxWaves) return;
     const matching = await this.runGlobalMatching(sos, wave);
     const mine = matching.get(String(sos._id));
     if (!mine) return;
@@ -1106,7 +1114,7 @@ export class SosBackupService implements OnModuleInit, OnModuleDestroy {
             $set: {
               status: SosBackupStatus.PENDING,
               replacement_helper_id: undefined,
-              'candidates.$[cand].status': 'invited',
+              'candidates.$[cand].state': 'invited',
             },
             $unset: { resolved_at: '', 'candidates.$[cand].responded_at': '' },
           },
@@ -1449,6 +1457,11 @@ export class SosBackupService implements OnModuleInit, OnModuleDestroy {
       await this.expireSos(sos, 'ttl');
       return;
     }
+    // B66: Đã phát đủ số đợt tối đa mà chưa ai nhận → dừng, báo khách
+    if (sos.current_wave >= this.maxWaves) {
+      await this.expireSos(sos, 'max_waves');
+      return;
+    }
     const invitedCount = sos.candidates.filter(c => c.wave > 0).length;
     await this.inviteWave(sos, sos.current_wave + 1);
     const fresh = await this.sosModel.findById(sos._id).exec();
@@ -1464,7 +1477,7 @@ export class SosBackupService implements OnModuleInit, OnModuleDestroy {
   /** Hết hạn phát sóng: khách + thợ gốc được báo, gắn cờ admin xử lý thủ công */
   private async expireSos(
     sos: SosBackupRequestDocument,
-    reason: 'ttl' | 'no_candidates',
+    reason: 'ttl' | 'no_candidates' | 'max_waves',
   ): Promise<void> {
     const claimed = await this.sosModel
       .findOneAndUpdate(
@@ -1477,7 +1490,9 @@ export class SosBackupService implements OnModuleInit, OnModuleDestroy {
             admin_note:
               reason === 'ttl'
                 ? 'SOS backup hết hạn phát sóng — chưa có thợ thay thế, cần admin hỗ trợ thủ công'
-                : 'SOS backup cạn ứng viên phù hợp — cần admin hỗ trợ thủ công',
+                : reason === 'max_waves'
+                  ? 'SOS backup đã phát đủ 3 đợt — chưa có thợ thay thế, cần admin hỗ trợ thủ công'
+                  : 'SOS backup cạn ứng viên phù hợp — cần admin hỗ trợ thủ công',
           },
         },
         { new: true },
@@ -1492,6 +1507,28 @@ export class SosBackupService implements OnModuleInit, OnModuleDestroy {
           job_id: String(sos.job_id),
           outcome: 'expired',
         });
+      }
+    }
+
+    // B65: Ứng viên đã bấm nhận nhưng chưa được xác nhận (state 'accepted'
+    // còn sót lại — vd claim bị rollback khi đơn đổi trạng thái) cũng phải
+    // nhận thông báo khi SOS hết hạn, không chỉ socket.
+    for (const c of sos.candidates) {
+      if (c.state === 'accepted') {
+        this.gateway.emitToUser(String(c.helper_id), SOCKET_EVENTS.SOS_BACKUP_RESOLVED, {
+          sos_id: String(sos._id),
+          job_id: String(sos.job_id),
+          outcome: 'expired',
+        });
+        await this.notificationsService
+          .create({
+            userId: String(c.helper_id),
+            type: NOTIFICATION_TYPES.SOS_BACKUP_EXPIRED,
+            title: 'SOS đã hết hạn',
+            body: `Yêu cầu thay thế cho đơn "${sos.job_title}" đã hết hạn. Cảm ơn bạn đã sẵn sàng hỗ trợ.`,
+            payload: { job_id: String(sos.job_id), sos_id: String(sos._id) },
+          })
+          .catch(() => undefined);
       }
     }
 
@@ -1641,6 +1678,11 @@ export class SosBackupService implements OnModuleInit, OnModuleDestroy {
           ? now.getTime() - sos.wave_started_at.getTime()
           : Number.POSITIVE_INFINITY;
         const anyoneInvited = sos.candidates.some(c => c.state === 'invited');
+        // B66: Đã phát đủ 3 đợt mà vẫn chưa có thợ nhận → dừng, báo khách
+        if (sos.current_wave >= this.maxWaves && waveAge >= this.waveIntervalMs) {
+          await this.expireSos(sos, 'max_waves');
+          continue;
+        }
         if (waveAge >= this.waveIntervalMs && anyoneInvited) {
           await this.inviteWave(sos, sos.current_wave + 1);
         } else if (!anyoneInvited) {

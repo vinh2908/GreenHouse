@@ -372,6 +372,19 @@ export class RecurringService implements OnApplicationBootstrap, OnModuleDestroy
     if (Number.isNaN(startDate.getTime())) {
       throw new BadRequestException('start_date không hợp lệ');
     }
+    // B52: Gói phải tôn trọng ngày kết thúc — end_date phải sau start_date,
+    // nếu không sẽ không sinh được buổi nào mà khách không hiểu lý do.
+    if (dto.end_date) {
+      const endDate = new Date(dto.end_date);
+      if (Number.isNaN(endDate.getTime())) {
+        throw new BadRequestException('end_date không hợp lệ');
+      }
+      if (endDate <= startDate) {
+        throw new BadRequestException(
+          `Ngày kết thúc (${dto.end_date}) phải sau ngày bắt đầu (${dto.start_date})`,
+        );
+      }
+    }
 
     const plan = await this.planModel.create({
       customer_id: new Types.ObjectId(customerId),
@@ -402,7 +415,15 @@ export class RecurringService implements OnApplicationBootstrap, OnModuleDestroy
       skipped_dates: [],
     });
 
-    await this.generateJobsForPlan(plan);
+    // B52: Sinh đơn lần đầu — lỗi sinh đơn không được làm mất gói vừa tạo:
+    // gói vẫn lưu, ca sinh đơn theo giờ sẽ thử lại; lý do lỗi được log rõ.
+    try {
+      await this.generateJobsForPlan(plan);
+    } catch (err) {
+      this.logger.warn(
+        `Plan ${String(plan._id)}: sinh đơn lần đầu thất bại (${err instanceof Error ? err.message : err}) — gói vẫn được tạo, ca sinh đơn theo giờ sẽ thử lại`,
+      );
+    }
     return plan;
   }
 
@@ -486,7 +507,17 @@ export class RecurringService implements OnApplicationBootstrap, OnModuleDestroy
     if (dto.month_days) plan.month_days = [...new Set(dto.month_days)];
     if (dto.time_start) plan.time_start = dto.time_start;
     if (dto.time_end !== undefined) plan.time_end = dto.time_end;
-    if (dto.end_date) plan.end_date = new Date(dto.end_date);
+    if (dto.end_date) {
+      // B52: Ngày kết thúc sửa đổi cũng phải sau ngày bắt đầu của gói
+      const newEnd = new Date(dto.end_date);
+      if (Number.isNaN(newEnd.getTime())) {
+        throw new BadRequestException('end_date không hợp lệ');
+      }
+      if (newEnd <= new Date(plan.start_date)) {
+        throw new BadRequestException('Ngày kết thúc phải sau ngày bắt đầu của gói');
+      }
+      plan.end_date = newEnd;
+    }
     if (dto.preferred_helper_id !== undefined) {
       await this.validatePreferredHelper(customerId, dto.preferred_helper_id ?? undefined);
       plan.preferred_helper_id = dto.preferred_helper_id
@@ -551,11 +582,19 @@ export class RecurringService implements OnApplicationBootstrap, OnModuleDestroy
     }
 
     const today = this.startOfDay(new Date());
-    const upcoming = this.occurrenceDates(plan, today, this.addDays(today, 370)).filter(
-      key => !plan.skipped_dates.includes(key),
-    );
+    // B53: Chỉ bỏ qua lần trong TƯƠNG LAI gần nhất — so theo cả ngày + giờ
+    // bắt đầu (giống nextOccurrenceDate). Lượt hôm nay mà giờ làm đã qua thì
+    // không còn là "lần tới" nữa, phải bỏ qua lượt kế tiếp.
+    const now = new Date();
+    const [hh, mm] = (plan.time_start || '09:00').split(':').map(Number);
+    const upcoming = this.occurrenceDates(plan, today, this.addDays(today, 370))
+      .filter(key => !plan.skipped_dates.includes(key))
+      .filter(key => {
+        const [y, m, d] = key.split('-').map(Number);
+        return new Date(y, (m ?? 1) - 1, d ?? 1, hh ?? 9, mm ?? 0, 0, 0).getTime() > now.getTime();
+      });
     if (upcoming.length === 0) {
-      throw new BadRequestException('Không còn lượt nào sắp tới để bỏ qua');
+      throw new BadRequestException('Không còn lượt nào trong tương lai để bỏ qua');
     }
     const nextKey = upcoming[0];
 

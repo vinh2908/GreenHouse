@@ -325,6 +325,43 @@ export class VouchersService {
     return { vouchers, total, page, limit, total_pages: Math.ceil(total / limit) };
   }
 
+  // B45: Voucher admin tạo/sửa phải luôn hợp lệ — dùng chung cho create + update.
+  private validateAdminVoucherInput(input: {
+    discount_type?: 'percent' | 'fixed';
+    discount_value?: number;
+    max_discount_amount?: number;
+    min_order_amount?: number;
+    valid_from?: string | Date;
+    valid_to?: string | Date;
+  }): void {
+    if (
+      input.discount_type === 'percent' &&
+      input.discount_value !== undefined &&
+      (input.discount_value < 0 || input.discount_value > 100)
+    ) {
+      throw new BadRequestException('Giảm theo % phải nằm trong khoảng 0–100');
+    }
+    if (input.discount_value !== undefined && input.discount_value < 0) {
+      throw new BadRequestException('Giá trị giảm không được âm');
+    }
+    if (input.max_discount_amount !== undefined && input.max_discount_amount < 0) {
+      throw new BadRequestException('Mức giảm tối đa không được âm');
+    }
+    if (input.min_order_amount !== undefined && input.min_order_amount < 0) {
+      throw new BadRequestException('Giá trị đơn tối thiểu không được âm');
+    }
+    if (input.valid_from && input.valid_to) {
+      const from = new Date(input.valid_from);
+      const to = new Date(input.valid_to);
+      if (Number.isNaN(from.getTime()) || Number.isNaN(to.getTime())) {
+        throw new BadRequestException('Ngày bắt đầu / ngày hết hạn không hợp lệ');
+      }
+      if (to <= from) {
+        throw new BadRequestException('Ngày hết hạn phải sau ngày bắt đầu');
+      }
+    }
+  }
+
   async adminCreate(adminId: string, dto: CreateVoucherDto): Promise<VoucherDocument> {
     const code = this.normalizeCode(dto.code);
     const existing = await this.voucherModel.findOne({ code }).exec();
@@ -332,6 +369,8 @@ export class VouchersService {
     if (dto.discount_type === 'percent' && (dto.discount_value < 1 || dto.discount_value > 100)) {
       throw new BadRequestException('Giảm theo % phải nằm trong khoảng 1–100');
     }
+    // B45: min_order ≥ 0, ngày hết hạn sau ngày bắt đầu
+    this.validateAdminVoucherInput(dto);
     return this.voucherModel.create({
       code,
       description: dto.description,
@@ -365,6 +404,15 @@ export class VouchersService {
     if (voucher.discount_type === 'percent' && voucher.discount_value > 100) {
       throw new BadRequestException('Giảm theo % không được vượt quá 100');
     }
+    // B45: Kiểm tra lại trạng thái gộp sau khi sửa (min_order, ngày hết hạn)
+    this.validateAdminVoucherInput({
+      discount_type: voucher.discount_type,
+      discount_value: voucher.discount_value,
+      max_discount_amount: voucher.max_discount_amount,
+      min_order_amount: voucher.min_order_amount,
+      valid_from: voucher.valid_from,
+      valid_to: voucher.valid_to,
+    });
     await voucher.save();
     return voucher;
   }
