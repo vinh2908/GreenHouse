@@ -295,6 +295,7 @@ export default function RootLayout() {
             <Stack.Screen name="kyc" options={{ headerShown: false }} />
             <Stack.Screen name="bank-account" options={{ headerShown: false }} />
             <Stack.Screen name="delete-account" options={{ headerShown: false }} />
+            <Stack.Screen name="onboarding" options={{ headerShown: false }} />
             <Stack.Screen name="help-center" options={{ headerShown: false }} />
             <Stack.Screen name="support-chat" options={{ headerShown: false }} />
             <Stack.Screen name="policy-insurance" options={{ headerShown: false }} />
