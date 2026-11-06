@@ -3041,12 +3041,19 @@ export class JobsService implements OnModuleInit {
 
     this.emitJobStatusChange(job);
 
+    // B55: Hoàn 0₫ vẫn phải báo khách rõ ràng "không hoàn tiền" + lý do —
+    // khách không được để tưởng đã hoàn. Giao dịch hoàn 0₫ KHÔNG được ghi
+    // vào ví (refundCustomer chỉ gọi khi refundAmount > 0, xem khối trên).
+    const customerBody =
+      refundAmount === 0
+        ? `Đơn "${job.title}": Kết quả phân xử: không hoàn tiền. Lý do: ${dto.admin_note}`
+        : `Đơn "${job.title}": ${dto.admin_note}${moveMoney ? ` (Hoàn ví: +${refundAmount.toLocaleString('vi-VN')}₫)` : ''}`;
     await this.notificationsService
       .create({
         userId: String(job.customer_id),
         type: 'dispute_resolved',
         title: '⚖️ Kết quả phân xử khiếu nại từ Admin',
-        body: `Đơn "${job.title}": ${dto.admin_note}${refundAmount > 0 && moveMoney ? ` (Hoàn ví: +${refundAmount.toLocaleString('vi-VN')}₫)` : ''}`,
+        body: customerBody,
         payload: { job_id: jobId, dispute_id: jobId },
       })
       .catch(() => undefined);
