@@ -1,5 +1,5 @@
 import { useTranslation, fs } from '@/hooks/use-i18n';
-import { Stack } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import React, { Component, useEffect, type ReactNode } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -26,6 +26,7 @@ import { SosCustomerDecisionPopup } from '@/components/common/sos-customer-decis
 import { InitialPermissionsModal } from '@/components/common/initial-permissions-modal';
 import { useBackgroundGps } from '@/hooks/use-background-gps';
 import { useAuthStore } from '@/stores/auth.store';
+import { takePendingToastRoute } from '@/services/toast-navigation';
 
 console.warn('[Startup] 0. _layout.tsx module evaluating...');
 
@@ -112,9 +113,19 @@ const toastConfig = {
 function ToastCard() {
   const toast = useToastStore(s => s.toast);
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   if (!toast?.isVisible) return null;
 
   const { type, text1, text2, hide } = toast;
+  // B10: chạm vào Toast → mở đúng màn hình của thông báo (nếu có route);
+  // Toast không có route thì chạm vào không làm gì (không lỗi).
+  const handlePress = () => {
+    const route = takePendingToastRoute();
+    if (route) {
+      hide();
+      router.push(route as never);
+    }
+  };
   const borderColor = type === 'success' ? '#4caf50' : type === 'error' ? '#f44336' : '#87CEFA';
   const iconBackground = type === 'success' ? '#DCFCE7' : type === 'error' ? '#FEF2F2' : '#EFF6FF';
   const renderIcon = () => {
@@ -133,7 +144,9 @@ function ToastCard() {
         alignItems: 'center',
       }}
     >
-      <View
+      <TouchableOpacity
+        activeOpacity={0.85}
+        onPress={handlePress}
         style={{
           width: '90%',
           backgroundColor: '#fff',
@@ -185,7 +198,7 @@ function ToastCard() {
         >
           <X size={20} color="#9ca3af" />
         </TouchableOpacity>
-      </View>
+      </TouchableOpacity>
     </View>
   );
 }
