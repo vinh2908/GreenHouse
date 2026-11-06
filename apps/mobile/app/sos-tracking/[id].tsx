@@ -40,8 +40,9 @@ import {
   LoadingSpinner,
   COLORS,
   Separator,
-  PriceText,,
-  Skeleton,} from '@/components/ui';
+  PriceText,
+  Skeleton,
+} from '@/components/ui';
 
 dayjs.extend(relativeTime);
 
