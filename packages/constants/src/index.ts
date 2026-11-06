@@ -36,6 +36,7 @@ export const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
 export const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 export const ALLOWED_VIDEO_TYPES = ['video/mp4', 'video/quicktime'];
 export const MAX_JOB_PHOTOS = 10; // Customer upload ảnh hiện trạng
+export const MAX_UPLOADS_PER_USER = 100; // B86: giới hạn 100 ảnh/người dùng
 export const MAX_JOB_VIDEOS = 3; // Customer upload video
 export const MAX_COMPLETION_PHOTOS = 10; // Helper upload ảnh sau khi hoàn thành
 
