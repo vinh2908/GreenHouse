@@ -83,10 +83,11 @@ export class OtpService {
     const isProd =
       this.configService.get<string>('app.env') === 'production' ||
       process.env['NODE_ENV'] === 'production';
-    const isDevOrDemo =
+    // A71: Nhánh bypass tắt mặc định; chỉ bật khi ở dev và có biến môi trường OTP_BYPASS=true rõ ràng
+    const allowBypass =
       !isProd &&
-      (this.configService.get<string>('app.env') !== 'production' ||
-        process.env['ALLOW_DEMO_OTP'] === 'true');
+      (process.env['OTP_BYPASS'] === 'true' ||
+        this.configService.get<string>('auth.otpBypass') === 'true');
 
     const otp = await this.otpModel
       .findOne({
@@ -98,9 +99,8 @@ export class OtpService {
       .sort({ created_at: -1 })
       .exec();
 
-    // Chỉ chấp nhận mã OTP thử nghiệm trong môi trường dev/demo.
-    // Với mục đích đặt lại mật khẩu ('reset'), bắt buộc phải có yêu cầu gửi OTP hợp lệ trước đó.
-    if (isDevOrDemo && (code === '123456' || code === '888888')) {
+    // Chỉ chấp nhận mã OTP thử nghiệm khi dev bật cờ OTP_BYPASS tường minh
+    if (allowBypass && (code === '123456' || code === '888888')) {
       if (purpose === 'reset' && !otp) {
         return false;
       }

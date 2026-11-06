@@ -9,6 +9,7 @@ import {
   Query,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { AiBookingService } from './services/ai-booking.service';
 import { AiMatchingService } from './services/ai-matching.service';
 import { AiSupportService } from './services/ai-support.service';
@@ -20,6 +21,7 @@ import { Public } from '../../common/decorators/public.decorator';
 import { AI_FEATURE_FLAGS } from '@homemate/constants';
 
 @ApiTags('AI')
+@ApiBearerAuth()
 @Controller('ai')
 export class AiController {
   constructor(
@@ -50,7 +52,8 @@ export class AiController {
   // ─── Booking Assistant ────────────────────────────────────────────────────
 
   @Post('booking/analyze')
-  @Public()
+  @UseGuards(JwtAuthGuard)
+  @Throttle({ default: { ttl: 60000, limit: 20 } })
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: '[AI] Phân tích yêu cầu đặt lịch bằng ngôn ngữ tự nhiên',
@@ -64,7 +67,8 @@ export class AiController {
   // ─── Issue Photo Analysis (Feature 17) ────────────────────────────────────
 
   @Post('analyze-photo')
-  @Public()
+  @UseGuards(JwtAuthGuard)
+  @Throttle({ default: { ttl: 60000, limit: 20 } })
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: '[AI] Phân tích ảnh sự cố bằng AI Vision',
@@ -82,19 +86,28 @@ export class AiController {
   // ─── Price Estimator ──────────────────────────────────────────────────────
 
   @Post('price/estimate')
-  @Public()
+  @UseGuards(JwtAuthGuard)
+  @Throttle({ default: { ttl: 60000, limit: 20 } })
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: '[AI] Ước tính giá dịch vụ từ mô tả công việc',
     description: 'Khách mô tả công việc → AI ước tính giá min/max, thời gian, độ phức tạp',
   })
   async estimatePrice(@Body() dto: EstimatePriceDto) {
-    return this.bookingService.estimatePrice(dto.description, dto.service_type);
+    return this.bookingService.estimatePrice(
+      dto.description,
+      dto.service_type,
+      dto.area,
+      dto.duration,
+      dto.service_id,
+    );
   }
 
   // ─── Customer Support ─────────────────────────────────────────────────────
 
   @Post('support/chat')
+  @UseGuards(JwtAuthGuard)
+  @Throttle({ default: { ttl: 60000, limit: 20 } })
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: '[AI] Chat hỗ trợ khách hàng',

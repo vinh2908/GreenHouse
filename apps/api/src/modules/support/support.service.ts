@@ -150,6 +150,10 @@ export class SupportService {
 
   async adminSendMessage(conversationId: string, adminId: string, content: string) {
     const conv = await this.findConversationOrThrow(conversationId);
+    // A69: Không cho phép trả lời thread đã đóng
+    if (conv.status === 'closed') {
+      throw new BadRequestException('Phiên hỗ trợ đã đóng. Vui lòng mở lại phiên trước khi gửi tin nhắn.');
+    }
     const message = await this.messageModel.create({
       conversation_id: new Types.ObjectId(conversationId),
       sender_id: new Types.ObjectId(adminId),

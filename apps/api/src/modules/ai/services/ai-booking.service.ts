@@ -1,4 +1,5 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, BadRequestException } from '@nestjs/common';
+import { Types } from 'mongoose';
 import { AiConfigService, AiProviderUnavailableError } from './ai-config.service';
 import { AiBookingAnalysis, AiPriceEstimate } from '@homemate/types';
 import { PLATFORM_FEE_BY_SERVICE, SERVICE_SLUG_VI } from '@homemate/constants';
@@ -148,8 +149,35 @@ Trả về duy nhất JSON hợp lệ theo cấu trúc:
 
   // ─── Ước tính giá từ mô tả công việc ─────────────────────────────────────
 
-  async estimatePrice(description: string, serviceType?: string): Promise<AiPriceEstimate> {
-    const ref = serviceType ? PRICE_REFERENCE[serviceType] : PRICE_REFERENCE['housekeeping_hourly'];
+  async estimatePrice(
+    description: string,
+    serviceType?: string,
+    area?: number,
+    duration?: number,
+    serviceId?: string,
+  ): Promise<AiPriceEstimate> {
+    // A70: Kiểm tra dữ liệu đầu vào - không cho phép diện tích <= 0 hoặc thời lượng <= 0
+    if (area !== undefined && (!Number.isFinite(area) || area <= 0)) {
+      throw new BadRequestException('Diện tích (area) phải lớn hơn 0');
+    }
+    if (duration !== undefined && (!Number.isFinite(duration) || duration <= 0)) {
+      throw new BadRequestException('Thời lượng (duration) phải lớn hơn 0');
+    }
+    if (serviceId && !Types.ObjectId.isValid(serviceId)) {
+      throw new BadRequestException('Dịch vụ không tồn tại');
+    }
+    const invalidAreaRegex = /(?:diện\s*tích|area)\s*(?:là|:|\s)\s*-\s*\d+/i;
+    const invalidDurationRegex = /(?:thời\s*(?:lượng|gian)|duration)\s*(?:là|:|\s)\s*0\s*(?:giờ|h|tiếng)/i;
+    if (description && invalidAreaRegex.test(description)) {
+      throw new BadRequestException('Diện tích không được nhỏ hơn hoặc bằng 0');
+    }
+    if (description && invalidDurationRegex.test(description)) {
+      throw new BadRequestException('Thời lượng không được nhỏ hơn hoặc bằng 0');
+    }
+
+    const ref = serviceType && PRICE_REFERENCE[serviceType]
+      ? PRICE_REFERENCE[serviceType]
+      : PRICE_REFERENCE['housekeeping_hourly'];
 
     if (!this.aiConfig.isFeatureEnabled('PRICE_ESTIMATOR')) {
       const hours = 3;

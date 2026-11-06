@@ -7,6 +7,7 @@ import {
   IsEnum,
   IsIn,
   MaxLength,
+  IsNumber,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
@@ -44,6 +45,21 @@ export class EstimatePriceDto {
   @IsOptional()
   @IsString()
   service_type?: string;
+
+  @ApiPropertyOptional({ description: 'Diện tích (m2)', example: 50 })
+  @IsOptional()
+  @IsNumber()
+  area?: number;
+
+  @ApiPropertyOptional({ description: 'Thời lượng (giờ)', example: 2 })
+  @IsOptional()
+  @IsNumber()
+  duration?: number;
+
+  @ApiPropertyOptional({ description: 'ID dịch vụ', example: '660f9e1234567890abcdef12' })
+  @IsOptional()
+  @IsString()
+  service_id?: string;
 }
 
 /** Feature 17: phân tích ảnh sự cố — ảnh gửi dạng base64 (giới hạn ~6MB ảnh thật). */
