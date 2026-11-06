@@ -132,11 +132,9 @@ export class HelpersService {
     profile.status = dto.status;
     await profile.save();
 
-    // Realtime: broadcast helper availability change to personal room
-    this.gateway.emitToUser(userId, 'helper:status_changed', {
-      helper_id: userId,
-      status: dto.status,
-    });
+    // B113: phát cho thợ + khách đang xem hồ sơ thợ + khách có đơn đang
+    // hoạt động với thợ đó; không phát cho khách không liên quan.
+    void this.gateway.broadcastHelperStatus(userId, dto.status);
 
     return profile;
   }

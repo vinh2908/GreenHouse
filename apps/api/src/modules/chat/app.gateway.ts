@@ -141,6 +141,20 @@ export class AppGateway implements OnGatewayConnection, OnGatewayDisconnect {
     client.leave(`job:${data.job_id}`);
   }
 
+  // B113: khách đang xem hồ sơ thợ thì vào room helper:<id> để nhận
+  // helper:status_changed (trạng thái thợ là thông tin công khai trên hồ sơ).
+  @SubscribeMessage('join:helper')
+  handleJoinHelper(@ConnectedSocket() client: Socket, @MessageBody() data: { helper_id: string }) {
+    if (!data?.helper_id) throw new WsException('helper_id bắt buộc');
+    client.join(`helper:${data.helper_id}`);
+    return { event: 'joined', room: `helper:${data.helper_id}` };
+  }
+
+  @SubscribeMessage('leave:helper')
+  handleLeaveHelper(@ConnectedSocket() client: Socket, @MessageBody() data: { helper_id: string }) {
+    client.leave(`helper:${data?.helper_id}`);
+  }
+
   @SubscribeMessage('join:conversation')
   async handleJoinConversation(
     @ConnectedSocket() client: Socket,
@@ -280,6 +294,32 @@ export class AppGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   emitToJob(jobId: string, event: string, data: unknown) {
     this.server.to(`job:${jobId}`).emit(event, data);
+  }
+
+  // B113: phát helper:status_changed cho thợ + khách đang xem hồ sơ thợ
+  // (room helper:<id>) + khách có đơn đang hoạt động với thợ đó (room job +
+  // phòng riêng của khách). Không phát cho khách không liên quan.
+  async broadcastHelperStatus(helperId: string, status: string) {
+    const payload = { helper_id: helperId, status };
+    this.emitToUser(helperId, SOCKET_EVENTS.HELPER_STATUS_CHANGED, payload);
+    this.server.to(`helper:${helperId}`).emit(SOCKET_EVENTS.HELPER_STATUS_CHANGED, payload);
+    const jobs = await this.jobModel
+      .find({
+        helper_id: new Types.ObjectId(helperId),
+        status: {
+          $in: ['confirmed', 'helper_on_the_way', 'helper_arrived', 'in_progress', 'pending_review'],
+        },
+      })
+      .select('customer_id')
+      .lean()
+      .exec();
+    const customerIds = [...new Set(jobs.map(j => String(j.customer_id)))];
+    for (const customerId of customerIds) {
+      this.emitToUser(customerId, SOCKET_EVENTS.HELPER_STATUS_CHANGED, payload);
+    }
+    for (const job of jobs) {
+      this.emitToJob(String((job as any)._id), SOCKET_EVENTS.HELPER_STATUS_CHANGED, payload);
+    }
   }
 
   emitToConversation(conversationId: string, event: string, data: unknown) {
