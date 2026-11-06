@@ -222,7 +222,9 @@ export class HelpersService {
     }
     // A72: Bắt buộc đủ giấy tờ e-KYC
     if (!profile.id_card_front || !profile.id_card_back || !profile.selfie_photo) {
-      throw new BadRequestException('Hồ sơ thiếu giấy tờ xác minh (CCCD mặt trước, mặt sau hoặc ảnh chân dung)');
+      throw new BadRequestException(
+        'Hồ sơ thiếu giấy tờ xác minh (CCCD mặt trước, mặt sau hoặc ảnh chân dung)',
+      );
     }
     profile.verification_status = VerificationStatus.APPROVED;
     profile.verified_at = new Date();
@@ -259,12 +261,14 @@ export class HelpersService {
     }
     const profiles = await this.helperModel
       .find(query)
-      .select('-id_card_number -id_card_front -id_card_back -selfie_photo -bank_account -rejection_reason')
+      .select(
+        '-id_card_number -id_card_front -id_card_back -selfie_photo -bank_account -rejection_reason',
+      )
       .populate('user_id', 'full_name avatar')
       .populate('service_ids', 'name slug icon base_price_min base_price_max')
       .limit(50)
       .exec();
 
-    return profiles.map((p) => this.toSafePublicProfile(p));
+    return profiles.map(p => this.toSafePublicProfile(p));
   }
 }

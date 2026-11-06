@@ -134,10 +134,7 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Đăng xuất và thu hồi refresh token' })
-  async logout(
-    @CurrentUser() user: any,
-    @Body() body: { refresh_token?: string },
-  ) {
+  async logout(@CurrentUser() user: any, @Body() body: { refresh_token?: string }) {
     const userId = user?.sub ?? user?.id ?? user?._id;
     return this.authService.logout(String(userId), body?.refresh_token);
   }

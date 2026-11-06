@@ -167,7 +167,8 @@ Trả về duy nhất JSON hợp lệ theo cấu trúc:
       throw new BadRequestException('Dịch vụ không tồn tại');
     }
     const invalidAreaRegex = /(?:diện\s*tích|area)\s*(?:là|:|\s)\s*-\s*\d+/i;
-    const invalidDurationRegex = /(?:thời\s*(?:lượng|gian)|duration)\s*(?:là|:|\s)\s*0\s*(?:giờ|h|tiếng)/i;
+    const invalidDurationRegex =
+      /(?:thời\s*(?:lượng|gian)|duration)\s*(?:là|:|\s)\s*0\s*(?:giờ|h|tiếng)/i;
     if (description && invalidAreaRegex.test(description)) {
       throw new BadRequestException('Diện tích không được nhỏ hơn hoặc bằng 0');
     }
@@ -175,9 +176,10 @@ Trả về duy nhất JSON hợp lệ theo cấu trúc:
       throw new BadRequestException('Thời lượng không được nhỏ hơn hoặc bằng 0');
     }
 
-    const ref = serviceType && PRICE_REFERENCE[serviceType]
-      ? PRICE_REFERENCE[serviceType]
-      : PRICE_REFERENCE['housekeeping_hourly'];
+    const ref =
+      serviceType && PRICE_REFERENCE[serviceType]
+        ? PRICE_REFERENCE[serviceType]
+        : PRICE_REFERENCE['housekeeping_hourly'];
 
     if (!this.aiConfig.isFeatureEnabled('PRICE_ESTIMATOR')) {
       const hours = 3;

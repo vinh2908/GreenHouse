@@ -188,7 +188,10 @@ export class CallsService {
     const durationSeconds = (Date.now() - startedAt) / 1000;
     const isMissed =
       !session.answered_at &&
-      (durationSeconds > 3 || reason === 'missed' || reason === 'no_answer' || reason === 'timeout');
+      (durationSeconds > 3 ||
+        reason === 'missed' ||
+        reason === 'no_answer' ||
+        reason === 'timeout');
 
     if (session.status !== 'ended') {
       session.status = isMissed ? 'missed' : 'ended';

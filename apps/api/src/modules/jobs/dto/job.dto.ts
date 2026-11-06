@@ -335,7 +335,9 @@ export class RespondAmendmentDto {
   @IsIn(['accept', 'reject'])
   action: 'accept' | 'reject';
 
-  @ApiPropertyOptional({ description: 'Lý do từ chối sửa đổi hợp đồng (bắt buộc khi action = reject)' })
+  @ApiPropertyOptional({
+    description: 'Lý do từ chối sửa đổi hợp đồng (bắt buộc khi action = reject)',
+  })
   @IsOptional()
   @IsString()
   reason?: string;

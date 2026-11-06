@@ -50,7 +50,11 @@ import {
 } from '@homemate/types';
 import { NOTIFICATION_TYPES } from '@homemate/constants';
 import { NotificationsService } from '../notifications/notifications.service';
-import { JobsService, ACTIVE_HELPER_JOB_STATUSES, computeNetPaidAmount } from '../jobs/jobs.service';
+import {
+  JobsService,
+  ACTIVE_HELPER_JOB_STATUSES,
+  computeNetPaidAmount,
+} from '../jobs/jobs.service';
 
 const ADMIN_JOB_STATUS_TRANSITIONS: Record<string, string[]> = {
   [JobStatus.DRAFT]: [JobStatus.OPEN, JobStatus.CANCELLED],
@@ -65,11 +69,7 @@ const ADMIN_JOB_STATUS_TRANSITIONS: Record<string, string[]> = {
     JobStatus.RECEIVING_QUOTES,
     JobStatus.CANCELLED,
   ],
-  [JobStatus.CONFIRMED]: [
-    JobStatus.HELPER_ON_THE_WAY,
-    JobStatus.IN_PROGRESS,
-    JobStatus.CANCELLED,
-  ],
+  [JobStatus.CONFIRMED]: [JobStatus.HELPER_ON_THE_WAY, JobStatus.IN_PROGRESS, JobStatus.CANCELLED],
   [JobStatus.HELPER_ON_THE_WAY]: [
     JobStatus.HELPER_ARRIVED,
     JobStatus.IN_PROGRESS,
@@ -342,7 +342,9 @@ export class AdminService {
       throw new BadRequestException('Hồ sơ không ở trạng thái chờ duyệt (PENDING)');
     }
     if (!profile.id_card_front || !profile.id_card_back || !profile.selfie_photo) {
-      throw new BadRequestException('Hồ sơ thiếu giấy tờ xác minh (CCCD mặt trước, mặt sau hoặc ảnh chân dung)');
+      throw new BadRequestException(
+        'Hồ sơ thiếu giấy tờ xác minh (CCCD mặt trước, mặt sau hoặc ảnh chân dung)',
+      );
     }
 
     profile.verification_status = VerificationStatus.APPROVED;
@@ -629,11 +631,13 @@ export class AdminService {
     const netPaid = computeNetPaidAmount(job, contract?.total_price);
 
     // Tính tổng số tiền đã hoàn trước đó cho đơn này
-    const previousRefunds = await this.transactionModel.find({
-      job_id: job._id,
-      type: 'refund',
-      status: 'success',
-    }).exec();
+    const previousRefunds = await this.transactionModel
+      .find({
+        job_id: job._id,
+        type: 'refund',
+        status: 'success',
+      })
+      .exec();
     const totalRefunded = previousRefunds.reduce((sum, tx) => sum + (tx.amount || 0), 0);
     const maxRefundable = Math.max(0, netPaid - totalRefunded);
 

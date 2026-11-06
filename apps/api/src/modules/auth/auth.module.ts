@@ -19,7 +19,14 @@ import { UsersModule } from '../users/users.module';
     UsersModule,
   ],
   controllers: [AuthController],
-  providers: [AuthService, OtpService, MailService, JwtStrategy, JwtAuthGuard, JwtAuthOptionalGuard],
+  providers: [
+    AuthService,
+    OtpService,
+    MailService,
+    JwtStrategy,
+    JwtAuthGuard,
+    JwtAuthOptionalGuard,
+  ],
   exports: [AuthService, OtpService, MailService, JwtAuthGuard, JwtAuthOptionalGuard, JwtStrategy],
 })
 export class AuthModule {}

@@ -773,7 +773,9 @@ export class SosBackupService implements OnModuleInit, OnModuleDestroy {
 
       // A11: Tạo notification + push cho ứng viên khi có lời mời thay thế SOS
       const locStr = [sos.district, sos.city].filter(Boolean).join(', ');
-      const payoutStr = sos.helper_payout ? `${sos.helper_payout.toLocaleString('vi-VN')}₫` : 'Theo đơn';
+      const payoutStr = sos.helper_payout
+        ? `${sos.helper_payout.toLocaleString('vi-VN')}₫`
+        : 'Theo đơn';
       void this.notificationsService
         .create({
           userId: c.helperId,
@@ -1442,7 +1444,9 @@ export class SosBackupService implements OnModuleInit, OnModuleDestroy {
     try {
       await this.cancelJobWithSosPolicy(claimed, 'timeout');
     } catch (cancelErr) {
-      this.logger.error(`Failed to cancel and refund job on SOS expiry: ${(cancelErr as Error).message}`);
+      this.logger.error(
+        `Failed to cancel and refund job on SOS expiry: ${(cancelErr as Error).message}`,
+      );
     }
 
     await this.notificationsService
