@@ -317,6 +317,10 @@ export class Job {
   @Prop({ default: false })
   expiry_reminder_sent?: boolean;
 
+  // B101: đã gửi thông báo ưu đãi riêng hết hạn cho thợ (1 lần)
+  @Prop({ default: false })
+  private_offer_expiry_notified?: boolean;
+
   // F7: Cờ thử lại hoàn tiền cho khách khi hủy đơn
   @Prop({ default: false })
   refund_pending_retry?: boolean;

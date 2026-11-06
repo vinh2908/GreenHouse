@@ -259,6 +259,29 @@ export class JobsService implements OnModuleInit {
         { $set: { status: QuoteStatus.EXPIRED } },
       )
       .exec();
+
+    // 4. B101: ưu đãi riêng (private offer) hết hạn → báo cho thợ được mời, 1 lần
+    const expiredOffers = await this.jobModel
+      .find({
+        status: { $in: [JobStatus.OPEN, JobStatus.RECEIVING_QUOTES] },
+        private_offer_helper_id: { $exists: true, $ne: null },
+        private_offer_expires_at: { $lte: now },
+        private_offer_expiry_notified: { $ne: true },
+      })
+      .exec();
+    for (const job of expiredOffers) {
+      await this.notificationsService
+        .create({
+          userId: String(job.private_offer_helper_id),
+          type: NOTIFICATION_TYPES.JOB_PRIVATE_OFFER,
+          title: 'Ưu đãi riêng đã hết hạn',
+          body: `Ưu đãi riêng cho đơn "${job.title}" đã hết hạn.`,
+          payload: { job_id: String(job._id), is_private_offer: true },
+        })
+        .catch(() => undefined);
+      job.private_offer_expiry_notified = true;
+      await job.save();
+    }
   }
 
   /** Wrapper riêng của JobsService quanh helper dùng chung isAvailableForDate */
