@@ -116,7 +116,6 @@ export const SOCKET_EVENTS = {
   JOB_CREATED: 'job:created', // Broadcast to nearby helpers
   JOB_STATUS_CHANGED: 'job:status_changed',
   JOB_CANCELLED: 'job:cancelled',
-  JOB_EXPIRED: 'job:expired',
 
   // Quote
   QUOTE_RECEIVED: 'quote:received', // Customer nhận được báo giá mới
@@ -124,7 +123,6 @@ export const SOCKET_EVENTS = {
   QUOTE_REJECTED: 'quote:rejected', // Helper biết quote bị từ chối
 
   // Contract
-  CONTRACT_CREATED: 'contract:created',
   CONTRACT_AMENDED: 'contract:amended', // Đề xuất thay đổi hợp đồng
   CONTRACT_AMENDMENT_ACCEPTED: 'contract:amendment_accepted',
 
