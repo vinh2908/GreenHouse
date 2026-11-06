@@ -51,3 +51,28 @@ export function formatConversationTime(
 
   return date.format('DD/MM/YYYY');
 }
+
+/**
+ * B29 — chuẩn hiển thị ngày giờ dùng chung cho toàn app:
+ * - formatDateTime: thời điểm cụ thể -> 'HH:mm DD/MM/YYYY'
+ * - formatDate: ngày -> 'DD/MM/YYYY'
+ * - formatTime: giờ -> 'HH:mm'
+ * Giá trị không hợp lệ trả về '' (không ném lỗi, không hiện Invalid Date).
+ */
+export function formatDateTime(dateInput: string | Date | number | dayjs.Dayjs | undefined | null): string {
+  if (!dateInput) return '';
+  const date = dayjs(dateInput);
+  return date.isValid() ? date.format('HH:mm DD/MM/YYYY') : '';
+}
+
+export function formatDate(dateInput: string | Date | number | dayjs.Dayjs | undefined | null): string {
+  if (!dateInput) return '';
+  const date = dayjs(dateInput);
+  return date.isValid() ? date.format('DD/MM/YYYY') : '';
+}
+
+export function formatTime(dateInput: string | Date | number | dayjs.Dayjs | undefined | null): string {
+  if (!dateInput) return '';
+  const date = dayjs(dateInput);
+  return date.isValid() ? date.format('HH:mm') : '';
+}

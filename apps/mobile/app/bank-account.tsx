@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { formatDateTime } from '@/utils/date-format';
 import {
   View,
   Text,
@@ -441,7 +442,7 @@ export default function BankAccountScreen() {
                       >
                         <Clock size={12} color={COLORS.gray[400]} />
                         <Text style={{ fontSize: fs(12), color: COLORS.gray[500] }}>
-                          {dayjs(tx.created_at).format('DD/MM/YYYY HH:mm')}
+                          {formatDateTime(dayjs(tx.created_at))}
                         </Text>
                       </View>
                     </View>

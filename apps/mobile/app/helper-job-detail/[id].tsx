@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback } from 'react';
+import { formatDate } from '@/utils/date-format';
 import {
   View,
   Text,
@@ -746,7 +747,7 @@ export default function HelperJobDetailScreen() {
             )}
             {job.preferred_date && (
               <Badge
-                label={dayjs(job.preferred_date).format('DD/MM/YYYY')}
+                label={formatDate(dayjs(job.preferred_date))}
                 color={COLORS.gray[100]}
                 textColor={COLORS.gray[700]}
               />
@@ -781,7 +782,7 @@ export default function HelperJobDetailScreen() {
               <Text style={{ fontSize: fs(13), color: '#78350F', lineHeight: 18 }}>
                 {lang === 'en' ? 'Scheduled: ' : 'Ngày hẹn: '}
                 {job.preferred_date
-                  ? dayjs(job.preferred_date).format('DD/MM/YYYY')
+                  ? formatDate(dayjs(job.preferred_date))
                   : lang === 'en'
                     ? 'Earliest'
                     : 'Sớm nhất'}

@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { formatDate, formatDateTime } from '@/utils/date-format';
 import { View, Text, ScrollView, TouchableOpacity, TextInput, RefreshControl } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -255,9 +256,9 @@ export default function MonthlyContractDetailScreen() {
           />
           <InfoRow
             label={lang === 'en' ? 'Duration' : 'Thời gian'}
-            value={`${dayjs(contract.start_date).format('DD/MM/YYYY')}${
+            value={`${formatDate(dayjs(contract.start_date))}${
               contract.end_date
-                ? ` → ${dayjs(contract.end_date).format('DD/MM/YYYY')}`
+                ? ` → ${formatDate(dayjs(contract.end_date))}`
                 : lang === 'en'
                   ? ' → Ongoing'
                   : ' → Chưa ấn định ngày kết thúc'
@@ -330,8 +331,8 @@ export default function MonthlyContractDetailScreen() {
           <Card style={{ gap: 8 }}>
             <Text style={{ fontSize: fs(14.5), fontWeight: '800', color: COLORS.gray[900] }}>
               {lang === 'en'
-                ? `Today's Attendance (${dayjs().format('DD/MM/YYYY')})`
-                : `Điểm danh hôm nay (${dayjs().format('DD/MM/YYYY')})`}
+                ? `Today's Attendance (${formatDate(dayjs())})`
+                : `Điểm danh hôm nay (${formatDate(dayjs())})`}
             </Text>
             {todayRecord ? (
               <Text style={{ fontSize: fs(13), color: COLORS.gray[600] }}>
@@ -553,8 +554,8 @@ export default function MonthlyContractDetailScreen() {
                     }}
                   >
                     {lang === 'en'
-                      ? `Leave on ${dayjs(l.date).format('DD/MM/YYYY')}`
-                      : `Nghỉ ngày ${dayjs(l.date).format('DD/MM/YYYY')}`}
+                      ? `Leave on ${formatDate(dayjs(l.date))}`
+                      : `Nghỉ ngày ${formatDate(dayjs(l.date))}`}
                   </Text>
                   <Badge
                     label={lang === 'en' ? m.label_en : m.label}
@@ -701,8 +702,8 @@ export default function MonthlyContractDetailScreen() {
                   <Badge
                     label={
                       lang === 'en'
-                        ? `Wages settled${settlement.settled_at ? ` · ${dayjs(settlement.settled_at).format('DD/MM/YYYY HH:mm')}` : ''}`
-                        : `Đã chốt lương${settlement.settled_at ? ` · ${dayjs(settlement.settled_at).format('DD/MM/YYYY HH:mm')}` : ''}`
+                        ? `Wages settled${settlement.settled_at ? ` · ${formatDateTime(dayjs(settlement.settled_at))}` : ''}`
+                        : `Đã chốt lương${settlement.settled_at ? ` · ${formatDateTime(dayjs(settlement.settled_at))}` : ''}`
                     }
                     color={COLORS.successLight}
                     textColor={COLORS.success}

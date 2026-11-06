@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { formatDateTime } from '@/utils/date-format';
 import {
   View,
   Text,
@@ -273,7 +274,7 @@ export default function DisputeCaseScreen() {
               <Text style={{ fontSize: fs(12), color: COLORS.gray[500] }}>
                 {lang === 'en' ? 'Opened by ' : 'Mở bởi '}
                 {roleLabel(caseData.opened_by_role, lang)} ·{' '}
-                {dayjs(caseData.created_at).format('HH:mm DD/MM/YYYY')}
+                {formatDateTime(dayjs(caseData.created_at))}
               </Text>
             </Card>
 
@@ -316,7 +317,7 @@ export default function DisputeCaseScreen() {
                 )}
                 {caseData.resolution.resolved_at && (
                   <Text style={{ fontSize: fs(12), color: COLORS.gray[500] }}>
-                    {dayjs(caseData.resolution.resolved_at).format('HH:mm DD/MM/YYYY')}
+                    {formatDateTime(dayjs(caseData.resolution.resolved_at))}
                   </Text>
                 )}
                 {caseData.can_appeal && (
@@ -326,7 +327,7 @@ export default function DisputeCaseScreen() {
                         ? 'You may appeal once before '
                         : 'Bạn có thể kháng cáo 1 lần trước '}
                       {caseData.appeal_deadline
-                        ? dayjs(caseData.appeal_deadline).format('HH:mm DD/MM/YYYY')
+                        ? formatDateTime(dayjs(caseData.appeal_deadline))
                         : ''}
                       .
                     </Text>
@@ -388,7 +389,7 @@ export default function DisputeCaseScreen() {
                         />
                       </View>
                       <Text style={{ fontSize: fs(11.5), color: COLORS.gray[500] }}>
-                        {dayjs(entry.created_at).format('HH:mm DD/MM/YYYY')}
+                        {formatDateTime(dayjs(entry.created_at))}
                       </Text>
                       {entry.text ? (
                         <Text

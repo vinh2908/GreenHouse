@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { formatTime } from '@/utils/date-format';
 import { View, Text, ScrollView, TouchableOpacity, RefreshControl } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -145,7 +146,7 @@ export default function CustomerJobsScreen() {
           <Text style={{ fontSize: fs(12), color: COLORS.gray[500], marginTop: 2 }}>
             {t('jobs_subtitle')}{' '}
             {dataUpdatedAt
-              ? `• ${lang === 'en' ? 'Updated' : 'Cập nhật'} lúc ${dayjs(dataUpdatedAt).format('HH:mm')}`
+              ? `• ${lang === 'en' ? 'Updated' : 'Cập nhật'} lúc ${formatTime(dayjs(dataUpdatedAt))}`
               : ''}
           </Text>
         </View>

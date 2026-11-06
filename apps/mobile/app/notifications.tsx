@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { formatTime } from '@/utils/date-format';
 import { View, Text, ScrollView, TouchableOpacity, RefreshControl } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -220,7 +221,7 @@ export default function NotificationsScreen() {
             {dataUpdatedAt ? (
               <Text style={{ fontSize: fs(11), color: COLORS.gray[500] }}>
                 {lang === 'en' ? 'Updated at' : 'Cập nhật lúc'}{' '}
-                {dayjs(dataUpdatedAt).format('HH:mm')}
+                {formatTime(dayjs(dataUpdatedAt))}
               </Text>
             ) : null}
           </View>

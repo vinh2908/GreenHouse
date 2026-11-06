@@ -38,7 +38,7 @@ import { uploadFile } from '@/services/upload.service';
 import { ImageViewerModal } from '@/components/common/photo-thumbs';
 import { Alert } from '@/components/common/app-alert';
 import { useTranslation } from '@/hooks/use-i18n';
-import { formatDayLabel } from '@/utils/date-format';
+import { formatDayLabel, formatTime } from '@/utils/date-format';
 import { Avatar, COLORS, LoadingSpinner, EmptyState, Skeleton } from '@/components/ui';
 
 export function resolveMediaUrl(rawUrl: string): string {
@@ -682,7 +682,7 @@ export default function ChatScreen() {
                         fontWeight: '600',
                       }}
                     >
-                      {dayjs(item.created_at).format('HH:mm')}
+                      {formatTime(dayjs(item.created_at))}
                     </Text>
                     </View>
                   </>
@@ -730,7 +730,7 @@ export default function ChatScreen() {
                       fontWeight: '600',
                     }}
                   >
-                    {dayjs(item.created_at).format('HH:mm')}
+                    {formatTime(dayjs(item.created_at))}
                   </Text>
                   </View>
                 </>

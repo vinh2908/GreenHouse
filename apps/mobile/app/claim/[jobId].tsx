@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { formatDateTime } from '@/utils/date-format';
 import { View, Text, ScrollView, TouchableOpacity, TextInput, Image } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -256,7 +257,7 @@ export default function ClaimScreen() {
                 )}
                 <Text style={{ fontSize: fs(12), color: COLORS.gray[500] }}>
                   {lang === 'en' ? 'Submitted at ' : 'Gửi lúc '}
-                  {dayjs(claim.created_at).format('HH:mm DD/MM/YYYY')}
+                  {formatDateTime(dayjs(claim.created_at))}
                 </Text>
               </Card>
 
@@ -316,7 +317,7 @@ export default function ClaimScreen() {
                       ) : null}
                       <Text style={{ fontSize: fs(11.5), color: COLORS.gray[500] }}>
                         {entry.actor_role === 'admin' ? 'Admin' : lang === 'en' ? 'You' : 'Bạn'} ·{' '}
-                        {dayjs(entry.at).format('HH:mm DD/MM/YYYY')}
+                        {formatDateTime(dayjs(entry.at))}
                       </Text>
                     </View>
                   </View>
