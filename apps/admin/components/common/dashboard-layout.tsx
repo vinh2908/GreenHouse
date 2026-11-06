@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
@@ -18,6 +19,8 @@ import {
   Headset,
   Siren,
   CalendarClock,
+  Menu,
+  X,
 } from 'lucide-react';
 import { useAuthStore } from '@/stores/auth.store';
 
@@ -43,6 +46,11 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const { user, logout } = useAuthStore();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  useEffect(() => {
+    setSidebarOpen(false);
+  }, [pathname]);
 
   // Longest matching href wins, so /helpers/kyc does not also highlight /helpers.
   const activeHref = navItems
@@ -56,15 +64,34 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <div className="flex h-screen bg-background">
+    <div className="flex h-screen bg-background overflow-hidden relative">
+      {/* Mobile backdrop */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-40 md:hidden backdrop-blur-sm"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
       {/* Sidebar */}
-      <aside className="w-64 border-r bg-card flex flex-col">
-        {/* Logo */}
-        <div className="p-5 border-b">
+      <aside
+        className={`fixed inset-y-0 left-0 z-50 w-64 border-r bg-card flex flex-col transition-transform duration-200 ease-in-out md:static md:translate-x-0 ${
+          sidebarOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full'
+        }`}
+      >
+        {/* Logo & Mobile Close */}
+        <div className="p-5 border-b flex items-center justify-between">
           <div className="flex items-center">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/logo.svg" alt="Green House Admin Portal" className="h-10 w-auto" />
           </div>
+          <button
+            onClick={() => setSidebarOpen(false)}
+            className="md:hidden p-1.5 rounded-md hover:bg-muted text-muted-foreground"
+            title="Đóng menu"
+          >
+            <X className="h-5 w-5" />
+          </button>
         </div>
 
         {/* Navigation */}
@@ -75,6 +102,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
               <Link
                 key={href}
                 href={href}
+                onClick={() => setSidebarOpen(false)}
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold transition-colors ${
                   isActive
                     ? 'bg-primary text-primary-foreground shadow-sm'
@@ -111,10 +139,35 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
         </div>
       </aside>
 
-      {/* Main content */}
-      <main className="flex-1 overflow-auto bg-muted/20">
-        <div className="p-8 max-w-7xl mx-auto">{children}</div>
-      </main>
+      {/* Main content wrapper with Mobile Header */}
+      <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
+        {/* Mobile top bar */}
+        <header className="flex items-center justify-between px-4 py-3 border-b bg-card md:hidden shrink-0">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setSidebarOpen(true)}
+              className="p-2 rounded-lg border bg-background hover:bg-muted text-foreground transition-colors"
+              title="Mở menu"
+            >
+              <Menu className="h-5 w-5" />
+            </button>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logo.svg" alt="Green House Admin" className="h-7 w-auto" />
+          </div>
+          <button
+            onClick={handleLogout}
+            title="Đăng xuất"
+            className="p-2 rounded-lg border bg-background hover:bg-destructive/10 text-destructive transition-colors"
+          >
+            <LogOut className="h-4 w-4" />
+          </button>
+        </header>
+
+        {/* Content area */}
+        <main className="flex-1 overflow-auto bg-muted/20">
+          <div className="p-4 sm:p-6 md:p-8 max-w-7xl mx-auto w-full">{children}</div>
+        </main>
+      </div>
     </div>
   );
 }
