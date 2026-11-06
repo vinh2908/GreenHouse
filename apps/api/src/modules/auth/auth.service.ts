@@ -47,20 +47,21 @@ export class AuthService {
 
     const passwordHash = await bcrypt.hash(dto.password, 12);
 
+    // G5 (F16): gửi mail OTP TRƯỚC khi tạo user. OtpService.sendOtp ở prod
+    // ném 502 khi gửi mail thất bại (xem otp.service.ts + otp-mail-failure.spec)
+    // — lỗi phải lan ra client thay vì bị nuốt rồi trả "Đăng ký thành công!"
+    // trong khi không có mail nào được gửi (báo gửi giả). Ở dev sendOtp mô
+    // phỏng qua log nên đăng ký vẫn chạy bình thường khi chưa cấu hình Gmail.
+    if (dto.email) {
+      await this.otpService.sendOtp(dto.email, 'verify');
+    }
+
     const user = await this.usersService.create({
       phone: dto.phone,
       full_name: dto.full_name,
       password_hash: passwordHash,
       email: dto.email,
     });
-
-    if (dto.email) {
-      try {
-        await this.otpService.sendOtp(dto.email, 'verify');
-      } catch (err: any) {
-        this.logger.warn(`Failed to send verification OTP on register: ${err?.message ?? err}`);
-      }
-    }
 
     const tokens = await this.generateTokens(user);
 
