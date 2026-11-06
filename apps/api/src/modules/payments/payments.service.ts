@@ -263,19 +263,17 @@ export class PaymentsService {
           }
         }
 
-        await this.jobModel!
-          .findByIdAndUpdate(
-            job._id,
-            {
-              $set: {
-                payment_status: PaymentStatus.PAID,
-                payment_method: paymentMethod,
-                ...(discountAmount > 0 ? { discount_amount: discountAmount } : {}),
-              },
+        await this.jobModel!.findByIdAndUpdate(
+          job._id,
+          {
+            $set: {
+              payment_status: PaymentStatus.PAID,
+              payment_method: paymentMethod,
+              ...(discountAmount > 0 ? { discount_amount: discountAmount } : {}),
             },
-            { session: sess ?? undefined },
-          )
-          .exec();
+          },
+          { session: sess ?? undefined },
+        ).exec();
 
         const wallet = await this.getOrCreateWallet(customerId);
 

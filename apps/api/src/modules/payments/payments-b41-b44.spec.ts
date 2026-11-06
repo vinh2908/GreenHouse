@@ -87,4 +87,47 @@ describe('PaymentsService - B41/B42/B43/B44 validation', () => {
       expect(result.success).toBe(true);
     });
   });
+
+  describe('B42: refundCustomer / creditHelper chỉ nhận số tiền dương', () => {
+    it('hoàn tiền -100.000₫ → 400', async () => {
+      const { service } = makeService();
+      await expect(
+        service.refundCustomer(customerId, jobId, -100_000, 'test'),
+      ).rejects.toBeInstanceOf(BadRequestException);
+    });
+
+    it('hoàn tiền 0₫ → 400', async () => {
+      const { service } = makeService();
+      await expect(service.refundCustomer(customerId, jobId, 0, 'test')).rejects.toBeInstanceOf(
+        BadRequestException,
+      );
+    });
+
+    it('hoàn tiền 350.000₫ → thành công, ví tăng đúng 350.000₫', async () => {
+      const { service, walletModel, createdTx } = makeService();
+      const tx = await service.refundCustomer(customerId, jobId, 350_000, 'Hoàn do hủy đơn');
+      expect(tx.amount).toBe(350_000);
+      expect(walletModel.findByIdAndUpdate).toHaveBeenCalledWith(expect.anything(), {
+        $inc: { balance: 350_000 },
+      });
+      expect(createdTx[0].balance_after).toBe(1_350_000);
+    });
+
+    it('cộng tiền thợ -50.000₫ / 0₫ → 400', async () => {
+      const { service } = makeService();
+      await expect(service.creditHelper(helperId, jobId, -50_000)).rejects.toBeInstanceOf(
+        BadRequestException,
+      );
+      await expect(service.creditHelper(helperId, jobId, 0)).rejects.toBeInstanceOf(
+        BadRequestException,
+      );
+    });
+
+    it('cộng tiền thợ 200.000₫ → thành công', async () => {
+      const { service } = makeService();
+      const tx = await service.creditHelper(helperId, jobId, 200_000);
+      expect(tx.amount).toBe(200_000);
+      expect(tx.type).toBe('earning');
+    });
+  });
 });
