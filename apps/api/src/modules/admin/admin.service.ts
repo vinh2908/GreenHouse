@@ -33,9 +33,10 @@ import {
   HelperPenaltyEventDocument,
 } from '../helpers/schemas/helper-penalty-event.schema';
 import {
-  computePerformanceScore,
+  computeHelperScore,
   countCancellationsInWindow,
   helperScoreConfigFromEnv,
+  helperScoreInputFromProfile,
   pruneCancellationTimestamps,
   HelperScoreResult,
 } from '../helpers/utils/helper-score';
@@ -1017,18 +1018,15 @@ export class AdminService {
     if (!profile) return null;
     const config = helperScoreConfigFromEnv(key => process.env[key]);
     const now = new Date();
-    return computePerformanceScore(
-      {
-        rating: profile.rating,
-        totalReviews: profile.total_reviews,
-        completionRate: profile.completion_rate,
-        acceptanceRate: profile.acceptance_rate,
-        cancellationsInWindow: countCancellationsInWindow(
+    return computeHelperScore(
+      helperScoreInputFromProfile(
+        profile,
+        countCancellationsInWindow(
           profile.cancellation_timestamps ?? [],
           now,
           config.windowDays,
         ),
-      },
+      ),
       config,
     );
   }
@@ -1063,14 +1061,8 @@ export class AdminService {
 
     const pruned = pruneCancellationTimestamps(stamps, now, config.windowDays);
     const count = countCancellationsInWindow(pruned, now, config.windowDays);
-    const result = computePerformanceScore(
-      {
-        rating: profile.rating,
-        totalReviews: profile.total_reviews,
-        completionRate: profile.completion_rate,
-        acceptanceRate: profile.acceptance_rate,
-        cancellationsInWindow: count,
-      },
+    const result = computeHelperScore(
+      helperScoreInputFromProfile(profile, count),
       config,
     );
 

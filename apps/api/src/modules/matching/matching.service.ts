@@ -14,7 +14,11 @@ import { AppGateway } from '../chat/app.gateway';
 import { NotificationsService } from '../notifications/notifications.service';
 import { MatchingCacheService } from './matching-cache.service';
 import { SOCKET_EVENTS } from '@homemate/constants';
-import { computeJobFitScore } from '../helpers/utils/helper-score';
+import {
+  DEFAULT_HELPER_SCORE_CONFIG,
+  computeHelperScore,
+  countCancellationsInWindow,
+} from '../helpers/utils/helper-score';
 
 export interface MatchPair {
   job: {
@@ -65,10 +69,10 @@ export class MatchingService {
   /**
    * Tính điểm số tương thích giữa 1 Thợ và 1 Công việc (0 - 100 điểm)
    */
-  // B87: công thức điểm phù hợp đơn sống trong module dùng chung
-  // helpers/utils/helper-score.ts (computeJobFitScore) — giữ nguyên trọng số
-  // Distance 40% + Skill 30% + Rating 20% + KYC 10%. Hàm này chỉ trích xuất
-  // đầu vào từ helper/job rồi gọi hàm dùng chung.
+  // G8/B87: 1 công thức điểm thợ duy nhất — helpers/utils/helper-score.ts
+  // (computeHelperScore, Distance 40 + Skill 30 + Rating 20 + KYC 10).
+  // Hàm này chỉ trích xuất đầu vào từ helper/job rồi gọi hàm dùng chung
+  // (cùng hàm mà đường xếp hạng admin dùng).
   public computeUtilityScore(
     helper: any,
     job: any,
@@ -83,12 +87,20 @@ export class MatchingService {
     const hasService = (helper.service_ids || []).some(
       (sId: any) => sId.toString() === jobServiceId,
     );
-    return computeJobFitScore({
+    const result = computeHelperScore({
       distanceKm,
       hasService,
       rating: helper.rating || 0,
       isVerified: helper.verification_status === VerificationStatus.APPROVED,
+      // G8: gợi ý và xếp hạng dùng cùng 1 hàm + cùng quy tắc phạt hủy đơn —
+      // thợ đang bị phạt phải bị trừ điểm ở cả 2 nơi (≤ ngưỡng → 0, không đổi điểm).
+      cancellationsInWindow: countCancellationsInWindow(
+        helper.cancellation_timestamps ?? [],
+        new Date(),
+        DEFAULT_HELPER_SCORE_CONFIG.windowDays,
+      ),
     });
+    return { score: result.total, distance_km: distanceKm, reasons: result.reasons };
   }
 
   /**
