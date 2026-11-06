@@ -214,6 +214,7 @@ export const NOTIFICATION_TYPES = {
   REFUND_RECEIVED: 'refund_received',
   REVIEW_RECEIVED: 'review_received',
   LOYALTY_POINTS_EARNED: 'loyalty_points_earned', // B97: cộng điểm thưởng
+  VOUCHER_RESTORED: 'voucher_restored', // B98: huỷ đơn hoàn voucher/điểm
   REVIEW_APPEAL: 'review_appeal', // B71: thợ kháng nghị đánh giá → admin xử lý
   NEW_MESSAGE: 'new_message',
   PROMOTION: 'promotion',

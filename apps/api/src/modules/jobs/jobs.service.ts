@@ -3287,9 +3287,12 @@ export class JobsService implements OnModuleInit {
     job.benefits_restored_at = claimed.benefits_restored_at;
 
     const restored: string[] = [];
+    let restoredVoucherCode: string | undefined;
+    let restoredPoints = 0;
     try {
       const v = await this.vouchersService.restoreForJob(customerId, jobId);
       if (v.restored) {
+        restoredVoucherCode = v.code;
         restored.push(
           `voucher ${v.code ?? ''} (+1 lượt, giảm ${v.discount_amount.toLocaleString('vi-VN')}₫)`,
         );
@@ -3301,6 +3304,7 @@ export class JobsService implements OnModuleInit {
     try {
       const l = await this.loyaltyService.reverseRedeemForJob(customerId, jobId);
       if (l && l.points_restored > 0) {
+        restoredPoints = l.points_restored;
         restored.push(`${l.points_restored} điểm loyalty`);
       }
     } catch (err) {
@@ -3311,6 +3315,20 @@ export class JobsService implements OnModuleInit {
       this.logger.log(
         `Cancel job ${jobId}: đã khôi phục quyền lợi cho khách — ${restored.join(' + ')}`,
       );
+      // B98: huỷ đơn hoàn voucher/điểm thật thì báo cho khách (chỉ khi có hoàn trả thật, 1 lần)
+      await this.notificationsService
+        .create({
+          userId: customerId,
+          type: NOTIFICATION_TYPES.VOUCHER_RESTORED,
+          title: 'Đã hoàn lại voucher và điểm',
+          body: `Đơn #${jobId.slice(-6)} đã huỷ — đã hoàn lại ${restored.join(' và ')} cho bạn.`,
+          payload: {
+            job_id: jobId,
+            ...(restoredVoucherCode ? { voucher_code: restoredVoucherCode } : {}),
+            ...(restoredPoints > 0 ? { points_restored: restoredPoints } : {}),
+          },
+        })
+        .catch(() => undefined);
     }
   }
 
