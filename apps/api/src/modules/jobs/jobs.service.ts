@@ -2668,6 +2668,8 @@ export class JobsService implements OnModuleInit {
               status: JobStatus.COMPLETED,
               payment_status: PaymentStatus.PAID,
               payment_method: effectivePaymentMethod,
+              // B56: Ghi mốc hoàn thành để tính cửa sổ mở tranh chấp 72 giờ
+              completed_at: new Date(),
               customer_rating: dto.rating,
               customer_review: dto.review,
             },
@@ -2783,6 +2785,26 @@ export class JobsService implements OnModuleInit {
 
   // ─── Customer / Helper: Open Dispute (Báo sự cố / Khiếu nại nghiệm thu) ──
 
+  /**
+   * Mốc hoàn thành của 1 đơn để tính cửa sổ mở tranh chấp 72 giờ (B56).
+   * Ưu tiên job.completed_at (ghi từ approveCompletion), sau đó
+   * contract.completed_at (đơn hoàn thành trước khi có job.completed_at),
+   * cuối cùng là updated_at.
+   */
+  private async getJobCompletedAt(job: JobDocument): Promise<Date | null> {
+    if ((job as any).completed_at) return new Date((job as any).completed_at);
+    try {
+      const contract = await this.contractModel
+        ?.findOne({ job_id: new Types.ObjectId(String(job._id)) })
+        .select('completed_at')
+        .exec();
+      if ((contract as any)?.completed_at) return new Date((contract as any).completed_at);
+    } catch {
+      // Không đọc được hợp đồng thì dùng updated_at
+    }
+    return (job as any).updated_at ? new Date((job as any).updated_at) : null;
+  }
+
   async openDispute(
     actorId: string,
     actorRole: string,
@@ -2798,7 +2820,22 @@ export class JobsService implements OnModuleInit {
       throw new ForbiddenException('Bạn không có quyền mở khiếu nại cho công việc này');
     }
 
-    this.validateTransition(job.status, JobStatus.DISPUTED);
+    // B56: Đơn COMPLETED vẫn mở được tranh chấp trong 72 giờ sau khi hoàn
+    // thành (phát hiện lỗi sau nghiệm thu). Quá 72 giờ → lỗi rõ + hướng dẫn
+    // liên hệ hỗ trợ. Đơn đã hủy vẫn không mở được (validateTransition chặn).
+    if (job.status === JobStatus.COMPLETED) {
+      const completedAt = await this.getJobCompletedAt(job);
+      const hoursSinceCompletion = completedAt
+        ? (Date.now() - completedAt.getTime()) / 3_600_000
+        : Number.POSITIVE_INFINITY;
+      if (hoursSinceCompletion > 72) {
+        throw new BadRequestException(
+          'Đơn đã hoàn thành quá 72 giờ nên không thể mở tranh chấp trực tuyến. Vui lòng liên hệ bộ phận hỗ trợ qua hotline 0365290805 hoặc mục Hỗ trợ trong app để được xử lý.',
+        );
+      }
+    } else {
+      this.validateTransition(job.status, JobStatus.DISPUTED);
+    }
 
     job.dispute_reason = dto.reason.trim();
     job.dispute_photos = dto.photos ?? [];
