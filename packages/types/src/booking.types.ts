@@ -35,7 +35,7 @@ export const JOB_STATUS_TRANSITIONS: Record<JobStatus, JobStatus[]> = {
   ],
   [JobStatus.CONFIRMED]: [JobStatus.HELPER_ON_THE_WAY, JobStatus.CANCELLED],
   [JobStatus.HELPER_ON_THE_WAY]: [JobStatus.HELPER_ARRIVED, JobStatus.CANCELLED],
-  [JobStatus.HELPER_ARRIVED]: [JobStatus.IN_PROGRESS],
+  [JobStatus.HELPER_ARRIVED]: [JobStatus.IN_PROGRESS, JobStatus.CANCELLED],
   [JobStatus.IN_PROGRESS]: [JobStatus.PENDING_REVIEW, JobStatus.DISPUTED],
   [JobStatus.PENDING_REVIEW]: [JobStatus.COMPLETED, JobStatus.DISPUTED],
   [JobStatus.COMPLETED]: [],

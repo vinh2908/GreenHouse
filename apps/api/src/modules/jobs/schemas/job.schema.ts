@@ -53,8 +53,17 @@ export class Job {
   @Prop({ type: Types.ObjectId, ref: 'User', required: true })
   customer_id: Types.ObjectId;
 
-  @Prop({ type: Types.ObjectId, ref: 'Service', required: true })
-  service_id: Types.ObjectId;
+  @Prop({ type: Types.ObjectId, ref: 'Service', required: false })
+  service_id?: Types.ObjectId;
+
+  @Prop()
+  custom_service_name?: string;
+
+  @Prop()
+  target_price?: number;
+
+  @Prop()
+  estimated_duration?: number;
 
   @Prop({ type: String, enum: JobStatus, default: JobStatus.DRAFT })
   status: JobStatus;
@@ -298,6 +307,9 @@ export class Job {
 
   @Prop()
   expires_at?: Date;
+
+  @Prop({ default: false })
+  expiry_reminder_sent?: boolean;
 
   created_at: Date;
   updated_at: Date;

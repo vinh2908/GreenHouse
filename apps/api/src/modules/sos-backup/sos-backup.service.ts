@@ -821,14 +821,20 @@ export class SosBackupService implements OnModuleInit, OnModuleDestroy {
     const jobCoords = job.address?.location?.coordinates; // [lng, lat]
     if (!jobCoords) return [];
 
-    const profiles = await this.helperModel
-      .find({
-        status: HelperStatus.ONLINE,
-        verification_status: VerificationStatus.APPROVED,
-        user_id: { $ne: sos.original_helper_id },
-        service_ids: job.service_id,
-      })
-      .exec();
+    const helperFilter: Record<string, unknown> = {
+      status: HelperStatus.ONLINE,
+      verification_status: VerificationStatus.APPROVED,
+      user_id: { $ne: sos.original_helper_id },
+    };
+    // A65: Nếu đơn có service_id thì lọc theo service, đơn tự viết cho phép mọi thợ online đủ điều kiện
+    if (job.service_id) {
+      helperFilter['service_ids'] = job.service_id;
+    }
+
+    const profiles = await this.helperModel.find(helperFilter).exec();
+    this.logger.log(
+      `SOS candidate search for job ${job._id}: found ${profiles.length} online, verified helpers.`,
+    );
     if (profiles.length === 0) return [];
 
     const userIds = profiles.map(p => String(p.user_id));
@@ -848,10 +854,13 @@ export class SosBackupService implements OnModuleInit, OnModuleDestroy {
 
     const nowMs = Date.now();
     const pool: CandidateInfo[] = [];
+    const maxGpsAgeMs = 12 * 60 * 60 * 1000; // A64: nới lỏng GPS 12 giờ
+    const maxAllowedDist = Math.max(this.maxDistanceKm, 30);
+
     for (const profile of profiles) {
       const helperId = String(profile.user_id);
       if (helperId === String(job.customer_id)) continue;
-      if (!this.gateway.isUserOnline(helperId)) continue; // phải đang mở app
+      // A64: Không yêu cầu socket đang mở — thợ đang chạy nền vẫn nhận notification + push
 
       const coords = profile.location?.coordinates;
       if (!coords) continue;
@@ -859,11 +868,11 @@ export class SosBackupService implements OnModuleInit, OnModuleDestroy {
         const age = profile.last_location_update
           ? nowMs - new Date(profile.last_location_update).getTime()
           : Number.POSITIVE_INFINITY;
-        if (age > this.locationMaxAgeMs) continue; // vị trí GPS quá cũ
+        if (age > maxGpsAgeMs) continue; // vị trí GPS quá 12 giờ
       }
 
       const distanceKm = this.haversineKm(coords[1], coords[0], jobCoords[1], jobCoords[0]);
-      if (distanceKm > this.maxDistanceKm) continue;
+      if (distanceKm > maxAllowedDist) continue;
 
       const activeJobsCount = activeCountByHelper.get(helperId) ?? 0;
       if (activeJobsCount > 0) continue; // đang bận đơn khác
@@ -903,6 +912,9 @@ export class SosBackupService implements OnModuleInit, OnModuleDestroy {
         activeJobs: activeJobsCount,
       });
     }
+    this.logger.log(
+      `SOS candidate search for job ${job._id}: ${pool.length} candidates qualified in pool within ${maxAllowedDist}km.`,
+    );
     return pool.sort((a, b) => a.cost - b.cost);
   }
 
@@ -941,6 +953,22 @@ export class SosBackupService implements OnModuleInit, OnModuleDestroy {
     const candidate = sos.candidates.find(c => String(c.helper_id) === helperId);
     if (!candidate || candidate.state !== 'invited') {
       throw new ForbiddenException('Bạn không nằm trong đợt mời hiện tại của yêu cầu này');
+    }
+
+    // A62: Kiểm tra lại thợ có đang bận / ngoại tuyến / chưa KYC không
+    const helperProfile = await this.helperModel
+      .findOne({ user_id: new Types.ObjectId(helperId) })
+      .select('status verification_status')
+      .lean()
+      .exec();
+    if (!helperProfile || helperProfile.status === HelperStatus.OFFLINE) {
+      throw new ConflictException('Bạn đang ở trạng thái Ngoại tuyến, không thể nhận đơn thay thế');
+    }
+    if (helperProfile.status === HelperStatus.BUSY) {
+      throw new ConflictException('Bạn đang ở trạng thái Bận, không thể nhận đơn thay thế');
+    }
+    if (helperProfile.verification_status !== VerificationStatus.APPROVED) {
+      throw new ConflictException('Tài khoản chưa hoàn tất xác thực e-KYC');
     }
 
     // Thợ vừa nhận 1 đơn active khác trong lúc chờ → không đủ điều kiện nữa
@@ -1229,6 +1257,26 @@ export class SosBackupService implements OnModuleInit, OnModuleDestroy {
         })
         .catch(() => undefined);
     }
+
+    // A61: Rollback trạng thái đơn gốc khi thợ thu hồi SOS
+    try {
+      const job = await this.jobModel.findById(sos.job_id).exec();
+      if (job) {
+        (job as any).sos_backup_searching = false;
+        job.events.push({
+          status: job.status,
+          note: 'Người giúp việc đã thu hồi yêu cầu SOS. Đơn tiếp tục bình thường.',
+          actor_id: new Types.ObjectId(helperId),
+          actor_role: 'helper',
+          timestamp: new Date(),
+        });
+        job.markModified('events');
+        await job.save();
+      }
+    } catch {
+      /* ignore */
+    }
+
     return this.serialize(claimed);
   }
 
@@ -1375,12 +1423,19 @@ export class SosBackupService implements OnModuleInit, OnModuleDestroy {
       payload,
     );
 
+    // A60: Khi SOS hết hạn phát sóng không có thợ thay, tự động huỷ đơn + hoàn tiền 100% số thực trả cho khách
+    try {
+      await this.cancelJobWithSosPolicy(claimed, 'timeout');
+    } catch (cancelErr) {
+      this.logger.error(`Failed to cancel and refund job on SOS expiry: ${(cancelErr as Error).message}`);
+    }
+
     await this.notificationsService
       .create({
         userId: String(sos.customer_id),
         type: NOTIFICATION_TYPES.SOS_BACKUP_EXPIRED,
-        title: 'Chưa tìm được người thay thế',
-        body: `Hiện chưa có người giúp việc khác nhận thay đơn "${sos.job_title}". Đội ngũ hỗ trợ sẽ liên hệ để xử lý tiếp.`,
+        title: 'Không tìm được thợ thay, đã hoàn tiền',
+        body: `Không tìm được người giúp việc thay thế cho đơn "${sos.job_title}". Đơn đã tự động hủy và hoàn tiền vào ví của bạn.`,
         payload: { job_id: String(sos.job_id), sos_id: String(sos._id) },
       })
       .catch(() => undefined);
