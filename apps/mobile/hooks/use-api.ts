@@ -1280,8 +1280,12 @@ export function useEstimatePrice() {
 
 // ─── Phân tích ảnh sự cố bằng AI Vision (Roadmap Phase 2 — Feature 17) ─────
 
+// B78: lý do AI không phân tích được ảnh (đồng bộ với backend IssuePhotoUnavailableReason)
+export type IssuePhotoUnavailableReason = 'no_api_key' | 'invalid_image' | 'unsupported' | 'provider_error';
+
 export interface IssuePhotoAnalysis {
   available: boolean;
+  reason?: IssuePhotoUnavailableReason;
   message?: string;
   detected_issue?: string;
   suggested_service_slug?: string | null;
