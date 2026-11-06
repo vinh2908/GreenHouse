@@ -57,15 +57,17 @@ export class AnalyticsService {
 
   // ─── Revenue per month (last 6 months) ────────────────────────────────────
 
+  // B89: doanh thu theo tháng = tổng thu (payment) − tiền hoàn (refund) − phí
+  // (commission/phí sàn). Trả cả gross và net để admin đối soát.
   async getRevenuePerMonth(months = 6) {
     const since = new Date();
     since.setMonth(since.getMonth() - months);
 
-    return this.transactionModel
+    const rows = await this.transactionModel
       .aggregate([
         {
           $match: {
-            type: 'payment',
+            type: { $in: ['payment', 'refund', 'commission'] },
             status: 'success',
             created_at: { $gte: since },
           },
@@ -73,16 +75,58 @@ export class AnalyticsService {
         {
           $group: {
             _id: {
-              $dateToString: { format: '%Y-%m', date: '$created_at' },
+              month: { $dateToString: { format: '%Y-%m', date: '$created_at' } },
+              type: '$type',
             },
             total: { $sum: '$amount' },
             count: { $sum: 1 },
           },
         },
-        { $sort: { _id: 1 } },
-        { $project: { month: '$_id', total: 1, count: 1, _id: 0 } },
+        { $sort: { '_id.month': 1 } },
       ])
       .exec();
+    const byMonth = new Map<string, { gross: number; refunds: number; fees: number; count: number }>();
+    for (const r of rows as any[]) {
+      const m = r._id.month as string;
+      const cur = byMonth.get(m) ?? { gross: 0, refunds: 0, fees: 0, count: 0 };
+      if (r._id.type === 'payment') { cur.gross += r.total; cur.count += r.count; }
+      else if (r._id.type === 'refund') cur.refunds += r.total;
+      else if (r._id.type === 'commission') cur.fees += r.total;
+      byMonth.set(m, cur);
+    }
+    return [...byMonth.entries()]
+      .sort((a, b) => a[0].localeCompare(b[0]))
+      .map(([month, v]) => ({
+        month,
+        total: v.gross - v.refunds - v.fees, // net — giữ key 'total' cho client cũ
+        gross: v.gross,
+        refunds: v.refunds,
+        fees: v.fees,
+        net: v.gross - v.refunds - v.fees,
+        count: v.count,
+      }));
+  }
+
+  /** B89: cộng dồn 1 kỳ: { gross, refunds, fees, net } */
+  private async sumRevenue(from: Date, to?: Date): Promise<{ gross: number; refunds: number; fees: number; net: number }> {
+    const match: Record<string, unknown> = {
+      type: { $in: ['payment', 'refund', 'commission'] },
+      status: 'success',
+      created_at: to ? { $gte: from, $lte: to } : { $gte: from },
+    };
+    const rows = await this.transactionModel
+      .aggregate([
+        { $match: match },
+        { $group: { _id: '$type', total: { $sum: '$amount' } } },
+      ])
+      .exec();
+    let gross = 0, refunds = 0, fees = 0;
+    for (const r of rows as any[]) {
+      if (r._id === 'payment') gross = r.total;
+      else if (r._id === 'refund') refunds = r.total;
+      else if (r._id === 'commission') fees = r.total;
+    }
+    return { gross, refunds, fees, net: gross - refunds - fees };
   }
 
   // ─── New users per day ─────────────────────────────────────────────────────
@@ -207,24 +251,8 @@ export class AnalyticsService {
       this.jobModel
         .countDocuments({ created_at: { $gte: startOfLastMonth, $lte: endOfLastMonth } })
         .exec(),
-      this.transactionModel
-        .aggregate([
-          { $match: { type: 'payment', status: 'success', created_at: { $gte: startOfMonth } } },
-          { $group: { _id: null, total: { $sum: '$amount' } } },
-        ])
-        .exec(),
-      this.transactionModel
-        .aggregate([
-          {
-            $match: {
-              type: 'payment',
-              status: 'success',
-              created_at: { $gte: startOfLastMonth, $lte: endOfLastMonth },
-            },
-          },
-          { $group: { _id: null, total: { $sum: '$amount' } } },
-        ])
-        .exec(),
+      this.sumRevenue(startOfMonth),
+      this.sumRevenue(startOfLastMonth, endOfLastMonth),
       this.userModel
         .countDocuments({ created_at: { $gte: startOfMonth }, is_deleted: false })
         .exec(),
@@ -237,8 +265,10 @@ export class AnalyticsService {
       this.reviewModel.aggregate([{ $group: { _id: null, avg: { $avg: '$rating' } } }]).exec(),
     ]);
 
-    const thisMonthRev = thisMonthRevenue[0]?.total ?? 0;
-    const lastMonthRev = lastMonthRevenue[0]?.total ?? 0;
+    // B89: this_month/last_month giữ nghĩa thu ròng (net) như trước;
+    // gross/refunds/fees/net trả thêm để hiển thị đối soát.
+    const thisMonthRev = (thisMonthRevenue as { net: number }).net;
+    const lastMonthRev = (lastMonthRevenue as { net: number }).net;
     const avg = avgRating[0]?.avg ?? 0;
 
     return {
@@ -253,6 +283,14 @@ export class AnalyticsService {
       revenue: {
         this_month: thisMonthRev,
         last_month: lastMonthRev,
+        gross_this_month: (thisMonthRevenue as { gross: number }).gross,
+        refunds_this_month: (thisMonthRevenue as { refunds: number }).refunds,
+        fees_this_month: (thisMonthRevenue as { fees: number }).fees,
+        net_this_month: thisMonthRev,
+        gross_last_month: (lastMonthRevenue as { gross: number }).gross,
+        refunds_last_month: (lastMonthRevenue as { refunds: number }).refunds,
+        fees_last_month: (lastMonthRevenue as { fees: number }).fees,
+        net_last_month: lastMonthRev,
         growth_pct:
           lastMonthRev > 0 ? Math.round(((thisMonthRev - lastMonthRev) / lastMonthRev) * 100) : 0,
       },
