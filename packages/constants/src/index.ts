@@ -163,6 +163,9 @@ export const SOCKET_EVENTS = {
   TEAM_UPDATED: 'team:updated', // Đội nhóm của job thay đổi
   DISPUTE_UPDATED: 'dispute:updated', // Hồ sơ tranh chấp có cập nhật
   CALL_INCOMING: 'call:incoming', // Cuộc gọi thoại trong app đến
+  CALL_ENDED: 'call:ended', // Cuộc gọi thoại kết thúc / cúp máy
+  CALL_MISSED: 'call:missed', // Cuộc gọi nhỡ
+  CALL_DECLINED: 'call:declined', // Cuộc gọi bị từ chối
   SUPPORT_MESSAGE: 'support:message', // Tin nhắn hỗ trợ trực tuyến (Feature 18)
 } as const;
 

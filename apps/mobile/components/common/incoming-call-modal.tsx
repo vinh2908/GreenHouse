@@ -1,6 +1,6 @@
 // components/common/incoming-call-modal.tsx — Modal nhận/từ chối cuộc gọi đến (Phase 1, F6)
 import { useEffect } from 'react';
-import { Modal, View, Text, TouchableOpacity } from 'react-native';
+import { Modal, View, Text, TouchableOpacity, Platform } from 'react-native';
 import { usePathname, useRouter } from 'expo-router';
 import { Phone, PhoneOff, PhoneCall } from 'lucide-react-native';
 import { useCallStore } from '@/stores/call.store';
@@ -9,6 +9,8 @@ import apiClient from '@/services/api-client';
 import { stringeeService } from '@/services/stringee.service';
 import { useTranslation } from '@/hooks/use-i18n';
 import { ringtoneService } from '@/services/ringtone.service';
+import { socketService, SOCKET_EVENTS } from '@/services/socket.service';
+import { callkeepService } from '@/services/callkeep.service';
 
 export function IncomingCallModal() {
   const incoming = useCallStore(s => s.incoming);
@@ -68,10 +70,25 @@ export function IncomingCallModal() {
 
   const handleDecline = () => {
     ringtoneService.stop();
-    const { session_id } = incoming;
-    stringeeService.rejectPending();
-    endCall.mutate({ sessionId: session_id, reason: 'declined' });
+    const session_id = incoming?.session_id;
+    const job_id = incoming?.job_id;
     clearIncoming();
+    if (session_id) {
+      try {
+        stringeeService.rejectPending();
+      } catch {}
+      try {
+        socketService.emit(SOCKET_EVENTS.CALL_DECLINED, { session_id, job_id });
+      } catch {}
+      try {
+        endCall.mutate({ sessionId: session_id, reason: 'declined' });
+      } catch {}
+    }
+    if (Platform.OS !== 'web') {
+      try {
+        callkeepService.endAllCalls();
+      } catch {}
+    }
   };
 
   return (
