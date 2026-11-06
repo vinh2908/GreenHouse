@@ -182,10 +182,6 @@ class SocketService {
     this.emit('leave:conversation', { conversation_id: conversationId });
   }
 
-  sendMessage(conversationId: string, content: string): void {
-    this.emit('chat:send', { conversation_id: conversationId, content });
-  }
-
   markRead(conversationId: string): void {
     this.emit('chat:read', { conversation_id: conversationId });
   }

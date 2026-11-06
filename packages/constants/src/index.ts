@@ -137,7 +137,6 @@ export const SOCKET_EVENTS = {
 
   // Chat
   CHAT_NEW_MESSAGE: 'chat:new_message',
-  CHAT_MESSAGE_READ: 'chat:message_read',
 
   // SOS Emergency
   SOS_BROADCAST: 'sos:broadcast', // Gửi khẩn cấp tới thợ xung quanh
