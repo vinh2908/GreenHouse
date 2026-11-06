@@ -232,15 +232,29 @@ export class MatchingService {
     const cached = await this.cache.get<MatchPair[]>(jobId, take);
     if (cached) return cached;
 
+    // B68: Lọc trước rồi mới tính điểm — chỉ thợ đúng service của đơn
+    // (bỏ lọc khi đơn không gắn service, vd đơn tự viết) và trong khu vực.
+    const jobServiceId = (job.service_id as any)?._id ?? job.service_id;
+    const helperFilter: Record<string, unknown> = {
+      status: HelperStatus.ONLINE,
+      verification_status: VerificationStatus.APPROVED,
+    };
+    if (jobServiceId) helperFilter.service_ids = jobServiceId;
     const helpers = await this.helperModel
-      .find({
-        status: HelperStatus.ONLINE,
-        verification_status: VerificationStatus.APPROVED,
-      })
+      .find(helperFilter)
       .populate('user_id', 'full_name phone avatar')
       .exec();
 
-    const scored = helpers.map(h => {
+    // Trong khu vực: ≤ 20km khi cả 2 bên đều có tọa độ; thợ chưa có tọa độ
+    // vẫn giữ lại để tính điểm (không tự loại vì thiếu vị trí).
+    const jobCoords = job.address?.location?.coordinates; // [lon, lat]
+    const inArea = helpers.filter(h => {
+      const coords = (h as any).location?.coordinates;
+      if (!jobCoords || !coords) return true;
+      return this.calculateDistanceKm(coords[1], coords[0], jobCoords[1], jobCoords[0]) <= 20;
+    });
+
+    const scored = inArea.map(h => {
       const { score, distance_km, reasons } = this.computeUtilityScore(h, job);
       const user = h.user_id as any;
       return {
