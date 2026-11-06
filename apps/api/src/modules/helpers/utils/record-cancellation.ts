@@ -5,8 +5,9 @@ import {
   HelperScoreConfig,
   HelperScoreResult,
   cancellationPenaltyPoints,
-  computePerformanceScore,
+  computeHelperScore,
   helperScoreConfigFromEnv,
+  helperScoreInputFromProfile,
   pruneCancellationTimestamps,
 } from './helper-score';
 
@@ -19,7 +20,9 @@ export interface CancellationScoreSummary extends HelperScoreResult {
 
 /**
  * Ghi nhận 1 lần hủy DO THỢ KHỞI XƯỚNG (hủy đơn thường sau khi chốt, hoặc gửi
- * SOS Backup) rồi tính lại điểm hiệu suất:
+ * SOS Backup) rồi tính lại điểm thợ bằng CÔNG THỨC DUY NHẤT (G8/B87 —
+ * computeHelperScore, Distance 40 / Skill 30 / Rating 20 / KYC 10, trừ phạt
+ * hủy đơn vượt ngưỡng):
  *  1. Cắt các mốc hủy ngoài cửa sổ trượt, thêm mốc mới vào HelperProfile.
  *  2. Tính lại penalty + performance_score (snapshot) trên hồ sơ.
  *  3. Nếu lần hủy này làm phát sinh điểm trừ → ghi HelperPenaltyEvent (audit admin).
@@ -53,14 +56,8 @@ export async function recordHelperCancellation(args: {
       now,
       config.windowDays,
     );
-    const result = computePerformanceScore(
-      {
-        rating: profile.rating,
-        totalReviews: profile.total_reviews,
-        completionRate: profile.completion_rate,
-        acceptanceRate: profile.acceptance_rate,
-        cancellationsInWindow: pruned.length,
-      },
+    const result = computeHelperScore(
+      helperScoreInputFromProfile(profile, pruned.length),
       config,
     );
     profile.cancellation_timestamps = pruned;
@@ -85,14 +82,8 @@ export async function recordHelperCancellation(args: {
   );
   const penaltyBefore = cancellationPenaltyPoints(pruned.length, config);
   const timestamps = [...pruned, now];
-  const result = computePerformanceScore(
-    {
-      rating: profile.rating,
-      totalReviews: profile.total_reviews,
-      completionRate: profile.completion_rate,
-      acceptanceRate: profile.acceptance_rate,
-      cancellationsInWindow: timestamps.length,
-    },
+  const result = computeHelperScore(
+    helperScoreInputFromProfile(profile, timestamps.length),
     config,
   );
   const pointsDeductedNow = Math.max(0, result.penaltyPoints - penaltyBefore);

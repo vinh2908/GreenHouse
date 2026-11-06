@@ -1,7 +1,8 @@
 import {
   DEFAULT_HELPER_SCORE_CONFIG,
+  HELPER_SCORE_WEIGHTS,
   cancellationPenaltyPoints,
-  computePerformanceScore,
+  computeHelperScore,
   countCancellationsInWindow,
   excessCancellations,
   scoreWarningLevel,
@@ -54,60 +55,87 @@ describe('quy tắc phạt hủy đơn (ngưỡng 3 lần / 7 ngày, −5đ mỗ
   });
 });
 
-describe('computePerformanceScore — thang 100, 4 tiêu chí', () => {
+describe('computeHelperScore — MỘT công thức duy nhất (G8/B87: Distance 40 / Skill 30 / Rating 20 / KYC 10 − phạt hủy)', () => {
   const perfect = {
+    distanceKm: 0,
+    hasService: true,
     rating: 5,
-    totalReviews: 12,
-    completionRate: 100,
-    acceptanceRate: 100,
+    isVerified: true,
+    cancellationsInWindow: 0,
   };
 
+  it('trọng số do chủ chốt: 40/30/20/10', () => {
+    expect(HELPER_SCORE_WEIGHTS).toEqual({ distance: 40, skill: 30, rating: 20, kyc: 10 });
+  });
+
   it('hồ sơ hoàn hảo, không hủy quá ngưỡng → 100 điểm', () => {
-    const r = computePerformanceScore({ ...perfect, cancellationsInWindow: 0 });
-    expect(r.breakdown).toEqual({
-      rating: 40,
-      completion: 25,
-      responsiveness: 15,
-      reliability: 20,
-    });
+    const r = computeHelperScore(perfect);
+    expect(r.breakdown).toEqual({ distance: 40, skill: 30, rating: 20, kyc: 10 });
     expect(r.total).toBe(100);
     expect(r.penaltyPoints).toBe(0);
   });
 
-  it('hủy 3 lần → vẫn 100 điểm ở tiêu chí tin cậy (chưa phạt)', () => {
-    const r = computePerformanceScore({ ...perfect, cancellationsInWindow: 3 });
-    expect(r.breakdown.reliability).toBe(20);
+  it('thợ A 85 điểm: cách 6km (28đ) + đúng chuyên môn (30đ) + rating 4.25 (17đ) + e-KYC (10đ)', () => {
+    const r = computeHelperScore({
+      distanceKm: 6,
+      hasService: true,
+      rating: 4.25,
+      isVerified: true,
+      cancellationsInWindow: 0,
+    });
+    expect(r.breakdown).toEqual({ distance: 28, skill: 30, rating: 17, kyc: 10 });
+    expect(r.total).toBe(85);
+  });
+
+  it('thiếu tọa độ → 0đ khoảng cách; không đúng chuyên môn → 12đ kỹ năng', () => {
+    const r = computeHelperScore({
+      distanceKm: -1,
+      hasService: false,
+      rating: 0,
+      isVerified: false,
+      cancellationsInWindow: 0,
+    });
+    expect(r.breakdown).toEqual({ distance: 0, skill: 12, rating: 0, kyc: 0 });
+    expect(r.total).toBe(12);
+  });
+
+  it('hủy 3 lần → vẫn đủ điểm (chưa phạt)', () => {
+    const r = computeHelperScore({ ...perfect, cancellationsInWindow: 3 });
+    expect(r.penaltyPoints).toBe(0);
     expect(r.total).toBe(100);
   });
 
-  it('hủy lần 4 → tin cậy mất 5đ, tổng còn 95', () => {
-    const r = computePerformanceScore({ ...perfect, cancellationsInWindow: 4 });
+  it('hủy lần 4 → tổng mất 5đ, còn 95', () => {
+    const r = computeHelperScore({ ...perfect, cancellationsInWindow: 4 });
     expect(r.penaltyPoints).toBe(5);
-    expect(r.breakdown.reliability).toBe(15);
     expect(r.total).toBe(95);
   });
 
-  it('trừ điểm có SÀN 0 ở tiêu chí tin cậy — hủy rất nhiều cũng không âm', () => {
-    const r = computePerformanceScore({ ...perfect, cancellationsInWindow: 30 });
-    expect(r.breakdown.reliability).toBe(0);
-    expect(r.total).toBe(80); // 3 tiêu chí còn lại giữ nguyên
+  it('trừ phạt vào TỔNG, sàn 0 — hủy rất nhiều cũng không âm (30 lần → phạt 135đ → tổng 0)', () => {
+    const r = computeHelperScore({ ...perfect, cancellationsInWindow: 30 });
+    expect(r.penaltyPoints).toBe(135);
+    expect(r.total).toBe(0);
   });
 
-  it('thợ mới chưa có review → tiêu chí đánh giá ở mức trung tính (đầy điểm)', () => {
-    const r = computePerformanceScore({
+  it('thợ mới chưa có rating → tiêu chí đánh giá 0đ (giống gợi ý, không còn trung tính đầy điểm)', () => {
+    const r = computeHelperScore({
+      distanceKm: -1,
+      hasService: true,
       rating: 0,
-      totalReviews: 0,
-      completionRate: 100,
-      acceptanceRate: 100,
+      isVerified: true,
       cancellationsInWindow: 0,
     });
-    expect(r.breakdown.rating).toBe(DEFAULT_HELPER_SCORE_CONFIG.weights.rating);
-    expect(r.total).toBe(100);
+    expect(r.breakdown.rating).toBe(0);
+    expect(r.total).toBe(40); // 0 + 30 + 0 + 10
   });
 
   it('rating thấp kéo tiêu chí đánh giá xuống tương ứng', () => {
-    const r = computePerformanceScore({ ...perfect, rating: 2.5, cancellationsInWindow: 0 });
-    expect(r.breakdown.rating).toBe(20); // 2.5/5 × 40
-    expect(r.total).toBe(80);
+    const r = computeHelperScore({ ...perfect, rating: 2.5 });
+    expect(r.breakdown.rating).toBe(10); // 2.5/5 × 20
+    expect(r.total).toBe(90);
+  });
+
+  it('cấu hình phạt vẫn đọc từ env (ngưỡng/phạt/cửa sổ)', () => {
+    expect(DEFAULT_HELPER_SCORE_CONFIG).toEqual({ windowDays: 7, threshold: 3, pointsPerExcess: 5 });
   });
 });

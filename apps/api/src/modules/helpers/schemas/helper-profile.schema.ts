@@ -159,12 +159,14 @@ export class HelperProfile {
   @Prop({ default: 0, min: 0 })
   income_goal_monthly: number; // VNĐ/tháng, 0 = chưa đặt mục tiêu
 
-  // ── Điểm hiệu suất (thang 100) + phạt hủy đơn ──────────────────────────────
-  // Xem modules/helpers/utils/helper-score.ts: 4 tiêu chí (đánh giá 40 +
-  // hoàn thành 25 + phản hồi 15 + tin cậy 20). Hủy đơn do thợ khởi xướng
-  // (hủy thường sau khi chốt đơn + gửi SOS Backup) được ghi mốc thời gian;
-  // trong cửa sổ trượt 7 ngày, vượt quá 3 lần thì trừ 5đ/lần vào tiêu chí
-  // Độ tin cậy (sàn 0). Snapshot dưới đây được cập nhật mỗi khi có lần hủy mới.
+  // ── Điểm thợ (thang 100) + phạt hủy đơn ───────────────────────────────────
+  // Xem modules/helpers/utils/helper-score.ts: 1 công thức duy nhất
+  // (Distance 40 + Skill 30 + Rating 20 + KYC 10 − phạt hủy đơn vượt ngưỡng).
+  // Hủy đơn do thợ khởi xướng (hủy thường sau khi chốt đơn + gửi SOS Backup)
+  // được ghi mốc thời gian; trong cửa sổ trượt 7 ngày, vượt quá 3 lần thì
+  // trừ 5đ/lần vào TỔNG điểm (sàn 0). Snapshot dưới đây được cập nhật mỗi khi
+  // có lần hủy mới. Mặc định hồ sơ mới = 12đ (chưa có dịch vụ đăng ký → kỹ
+  // năng 12đ, chưa có rating/KYC/vị trí → 0đ — đúng công thức, không mặc định 100).
   @Prop({ type: [Date], default: [] })
   cancellation_timestamps: Date[]; // Các mốc hủy do thợ khởi xướng (đã cắt ngoài cửa sổ khi ghi)
 
@@ -174,23 +176,23 @@ export class HelperProfile {
   @Prop({ default: 0 })
   penalty_points: number; // Điểm đang bị trừ ở tiêu chí Độ tin cậy
 
-  @Prop({ default: 100, min: 0, max: 100 })
+  @Prop({ default: 12, min: 0, max: 100 })
   performance_score: number;
 
   @Prop({
     type: {
-      rating: { type: Number, default: 40 },
-      completion: { type: Number, default: 25 },
-      responsiveness: { type: Number, default: 15 },
-      reliability: { type: Number, default: 20 },
+      distance: { type: Number, default: 0 },
+      skill: { type: Number, default: 12 },
+      rating: { type: Number, default: 0 },
+      kyc: { type: Number, default: 0 },
     },
-    default: () => ({ rating: 40, completion: 25, responsiveness: 15, reliability: 20 }),
+    default: () => ({ distance: 0, skill: 12, rating: 0, kyc: 0 }),
   })
   score_breakdown: {
+    distance: number;
+    skill: number;
     rating: number;
-    completion: number;
-    responsiveness: number;
-    reliability: number;
+    kyc: number;
   };
 
   @Prop()
