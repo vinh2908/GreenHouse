@@ -173,6 +173,16 @@ class SocketService {
     this.emit('leave:job', { job_id: jobId });
   }
 
+  // B113: vào room helper:<id> để nhận helper:status_changed khi đang xem hồ sơ thợ
+  joinHelper(helperId: string): void {
+    this.join(`helper:${helperId}`, 'join:helper', { helper_id: helperId });
+  }
+
+  leaveHelper(helperId: string): void {
+    this.rooms.delete(`helper:${helperId}`);
+    this.emit('leave:helper', { helper_id: helperId });
+  }
+
   joinConversation(conversationId: string): void {
     this.join(`chat:${conversationId}`, 'join:conversation', { conversation_id: conversationId });
   }

@@ -30,6 +30,7 @@ import {
   useRemoveFavorite,
   useAppealReview,
 } from '@/hooks/use-api';
+import { useHelperStatusSocket } from '@/hooks/use-socket';
 import {
   Button,
   Card,
@@ -59,6 +60,8 @@ export default function HelperPublicProfileScreen() {
   const [appealReason, setAppealReason] = React.useState('');
   const isOwnProfile = user?._id === id;
   const { data: profile, isLoading: pLoading, refetch } = useHelperPublicProfile(id);
+  // B113: đang xem hồ sơ thợ → nhận helper:status_changed để cập nhật trạng thái ngay
+  useHelperStatusSocket(id);
   const { data: reviewsData, isLoading: rLoading } = useHelperReviews(id);
   const selectQuote = useSelectQuote();
 

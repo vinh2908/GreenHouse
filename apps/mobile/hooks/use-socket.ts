@@ -191,6 +191,27 @@ export function useJobSocketUpdates(jobId?: string) {
   }, [jobId, qc]);
 }
 
+// ─── B113: theo dõi trạng thái thợ đang xem (hồ sơ công khai) ────────────────
+export function useHelperStatusSocket(helperId?: string) {
+  const qc = useQueryClient();
+
+  useEffect(() => {
+    if (!helperId) return;
+    socketService.joinHelper(helperId);
+    const unsub = socketService.on<{ helper_id?: string; status?: string }>(
+      SOCKET_EVENTS.HELPER_STATUS_CHANGED,
+      data => {
+        if (data?.helper_id && data.helper_id !== helperId) return;
+        qc.invalidateQueries({ queryKey: ['helper', 'public', helperId] });
+      },
+    );
+    return () => {
+      unsub();
+      socketService.leaveHelper(helperId);
+    };
+  }, [helperId, qc]);
+}
+
 // ─── Chat messages ───────────────────────────────────────────────────────────
 
 export function useChatSocket(conversationId?: string) {
