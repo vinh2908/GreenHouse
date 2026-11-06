@@ -162,35 +162,7 @@ export class AppGateway implements OnGatewayConnection, OnGatewayDisconnect {
     client.leave(`chat:${data?.conversation_id}`);
   }
 
-  // ─── Chat messages ────────────────────────────────────────────────────────
-
-  @SubscribeMessage('chat:send')
-  async handleChatMessage(
-    @ConnectedSocket() client: Socket,
-    @MessageBody() data: { conversation_id: string; content: string; type?: string },
-  ) {
-    const senderId = client.data.userId as string;
-    if (!senderId) throw new WsException('Unauthorized');
-
-    try {
-      const message = await this.chatService.sendMessage(
-        data.conversation_id,
-        senderId,
-        data.content,
-        data.type ?? 'text',
-      );
-
-      // Broadcast to all in conversation room
-      this.server.to(`chat:${data.conversation_id}`).emit(SOCKET_EVENTS.CHAT_NEW_MESSAGE, {
-        message,
-        conversation_id: data.conversation_id,
-      });
-
-      return { success: true, message_id: String(message._id) };
-    } catch (err) {
-      throw new WsException((err as Error).message);
-    }
-  }
+  // ─── Chat messages (REST only — socket send path removed, B40) ─────────────
 
   @SubscribeMessage('chat:read')
   async handleReadReceipt(
@@ -200,10 +172,6 @@ export class AppGateway implements OnGatewayConnection, OnGatewayDisconnect {
     const userId = client.data.userId as string;
     if (!(await this.chatService.isParticipant(data?.conversation_id, userId))) return;
     await this.chatService.markRead(data.conversation_id, userId);
-    this.server.to(`chat:${data.conversation_id}`).emit(SOCKET_EVENTS.CHAT_MESSAGE_READ, {
-      conversation_id: data.conversation_id,
-      user_id: userId,
-    });
   }
 
   // ─── Helper location update ────────────────────────────────────────────────

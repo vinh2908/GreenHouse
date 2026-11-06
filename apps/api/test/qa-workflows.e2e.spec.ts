@@ -314,21 +314,25 @@ describe('QA extended workflows: SOS, admin actions, live sockets', () => {
     await new Promise(resolve => setTimeout(resolve, 150));
     expect(received).toHaveLength(1);
   });
-  it('suspended users cannot send over an already connected socket', async () => {
+  it('suspended users cannot send chat messages (REST)', async () => {
     const conv = await qa.app
       .get(ChatService)
       .getOrCreateConversation(new Types.ObjectId().toHexString(), [
         qa.accounts.customer.id,
         qa.accounts.outsider.id,
       ]);
-    const socket = await connect('outsider');
     await api()
       .patch(`/api/v1/admin/users/${qa.accounts.outsider.id}/suspend`)
       .set('Authorization', auth('admin'))
       .send({ reason: 'QA socket revocation' })
       .expect(200);
-    socket.emit('chat:send', { conversation_id: String(conv._id), content: 'Must not be saved' });
-    await new Promise(resolve => setTimeout(resolve, 150));
+    // B40: chat is REST-only now (socket send path removed); a suspended
+    // account is rejected by JwtStrategy, so nothing is saved.
+    await api()
+      .post(`/api/v1/chat/conversations/${conv._id}/messages`)
+      .set('Authorization', auth('outsider'))
+      .send({ content: 'Must not be saved' })
+      .expect(401);
     expect(
       await qa.app.get(getModelToken('Message')).countDocuments({ conversation_id: conv._id }),
     ).toBe(0);
