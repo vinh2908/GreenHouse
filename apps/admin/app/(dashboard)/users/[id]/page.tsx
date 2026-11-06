@@ -28,6 +28,7 @@ import {
   TableRow,
 } from '@/components/ui';
 import { PhotoGrid } from '@/components/common/photo-grid';
+import { PromptDialog } from '@/components/common/prompt-dialog';
 import { formatDate, formatDateTime, formatVND } from '@/lib/utils';
 import { STATUS_BADGE, STATUS_VI } from '../../jobs/status';
 
@@ -188,6 +189,10 @@ const TABS = [
 ] as const;
 
 export default function UserDetailPage() {
+  // B106: dialog nhập lý do thay cho prompt() của trình duyệt
+  const [suspendDialogOpen, setSuspendDialogOpen] = useState(false);
+  const [rejectKycDialogOpen, setRejectKycDialogOpen] = useState(false);
+  const [approveKycDialogOpen, setApproveKycDialogOpen] = useState(false);
   const { id } = useParams<{ id: string }>();
   const { data, isLoading, error } = useAdminUser(id);
   const suspend = useSuspendUser();
@@ -245,8 +250,7 @@ export default function UserDetailPage() {
               if (suspended) {
                 activate.mutate(user._id);
               } else {
-                const reason = prompt('Lý do khóa tài khoản?');
-                if (reason?.trim()) suspend.mutate({ id: user._id, reason: reason.trim() });
+                setSuspendDialogOpen(true);
               }
             }}
           >
@@ -260,6 +264,45 @@ export default function UserDetailPage() {
           Tài khoản bị khóa{user.suspended_at ? ` lúc ${formatDateTime(user.suspended_at)}` : ''}.
           {user.suspension_reason && <> Lý do: {user.suspension_reason}</>}
         </div>
+      )}
+
+      {suspendDialogOpen && (
+        <PromptDialog
+          title="Khóa tài khoản"
+          label="Lý do khóa tài khoản"
+          placeholder="Nhập lý do khóa tài khoản..."
+          confirmLabel="Khóa tài khoản"
+          onSubmit={reason => {
+            setSuspendDialogOpen(false);
+            suspend.mutate({ id: user._id, reason });
+          }}
+          onClose={() => setSuspendDialogOpen(false)}
+        />
+      )}
+      {rejectKycDialogOpen && (
+        <PromptDialog
+          title="Từ chối e-KYC"
+          label="Lý do từ chối"
+          placeholder="Nhập lý do từ chối hồ sơ..."
+          confirmLabel="Từ chối"
+          onSubmit={reason => {
+            setRejectKycDialogOpen(false);
+            rejectKyc.mutate({ userId: user._id, reason });
+          }}
+          onClose={() => setRejectKycDialogOpen(false)}
+        />
+      )}
+      {approveKycDialogOpen && (
+        <PromptDialog
+          title="Duyệt e-KYC"
+          confirmLabel="Duyệt"
+          requireInput={false}
+          onSubmit={() => {
+            setApproveKycDialogOpen(false);
+            approveKyc.mutate(user._id);
+          }}
+          onClose={() => setApproveKycDialogOpen(false)}
+        />
       )}
 
       {/* Stats */}
@@ -373,20 +416,14 @@ export default function UserDetailPage() {
                     <div className="flex gap-2">
                       <Button
                         disabled={approveKyc.isPending}
-                        onClick={() =>
-                          confirm('Duyệt e-KYC cho thợ này?') && approveKyc.mutate(user._id)
-                        }
+                        onClick={() => setApproveKycDialogOpen(true)}
                       >
                         Duyệt KYC
                       </Button>
                       <Button
                         variant="outline"
                         disabled={rejectKyc.isPending}
-                        onClick={() => {
-                          const reason = prompt('Lý do từ chối?');
-                          if (reason?.trim())
-                            rejectKyc.mutate({ userId: user._id, reason: reason.trim() });
-                        }}
+                        onClick={() => setRejectKycDialogOpen(true)}
                       >
                         Từ chối
                       </Button>
