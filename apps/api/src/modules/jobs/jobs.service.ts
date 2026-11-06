@@ -524,7 +524,7 @@ export class JobsService implements OnModuleInit {
             { status: HelperStatus.ONLINE },
           )
           .exec();
-        this.gateway.emitToUser(String(helperObjId), 'helper:status_changed', {
+        this.gateway.emitToUser(String(helperObjId), SOCKET_EVENTS.HELPER_STATUS_CHANGED, {
           status: HelperStatus.ONLINE,
         });
       }
