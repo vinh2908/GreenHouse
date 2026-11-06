@@ -288,6 +288,10 @@ export class Job {
   @Prop({ type: Types.ObjectId })
   cancelled_by?: Types.ObjectId;
 
+  /** Vai trò của người hủy đơn ('customer' | 'helper' | 'admin') — F15: banner hiển thị đúng người hủy */
+  @Prop()
+  cancelled_by_role?: string;
+
   // ── Dispute & Refund Evidence Fields ──────────────────────────────────────
   @Prop()
   dispute_reason?: string;
