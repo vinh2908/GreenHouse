@@ -11,7 +11,8 @@ import { Model, Types } from 'mongoose';
 import * as fs from 'fs';
 import * as path from 'path';
 import { Job, JobDocument, Contract, ContractDocument } from '../jobs/schemas/job.schema';
-import { JobStatus, PaymentStatus } from '@homemate/types';
+import { Invoice, InvoiceDocument } from './schemas/invoice.schema';
+import { PaymentStatus } from '@homemate/types';
 import { PdfBuilder, PDF_PAGE } from './pdf-invoice';
 
 const FONT_FILES = { regular: 'DejaVuSans.ttf', bold: 'DejaVuSans-Bold.ttf' } as const;
@@ -50,6 +51,27 @@ function formatDate(d: Date): string {
   return `${dd}/${mm}/${d.getFullYear()}`;
 }
 
+/**
+ * Nhãn phương thức thanh toán hiển thị trên hóa đơn — ghi đúng thực tế.
+ * MoMo/ZaloPay chưa tích hợp cổng thật: mọi thanh toán điện tử mô phỏng đều
+ * đi qua ví/ký quỹ GreenHouse nên nhãn là "Ví GreenHouse", không ghi tên
+ * cổng chưa tích hợp (B54).
+ */
+export function paymentMethodLabel(method?: string): string {
+  switch (method) {
+    case 'cash':
+      return 'Tiền mặt';
+    case 'vietqr':
+      return 'Chuyển khoản VietQR';
+    case 'wallet':
+    case 'momo':
+    case 'zalopay':
+      return 'Ví GreenHouse';
+    default:
+      return method || '—';
+  }
+}
+
 @Injectable()
 export class InvoicesService {
   private readonly logger = new Logger(InvoicesService.name);
@@ -58,6 +80,7 @@ export class InvoicesService {
   constructor(
     @InjectModel(Job.name) private jobModel: Model<JobDocument>,
     @InjectModel(Contract.name) private contractModel: Model<ContractDocument>,
+    @InjectModel(Invoice.name) private invoiceModel: Model<InvoiceDocument>,
   ) {}
 
   private loadFonts(): { regular: Buffer; bold: Buffer } {
@@ -73,7 +96,9 @@ export class InvoicesService {
   /**
    * Sinh PDF hóa đơn điện tử cho 1 job.
    * Quyền xem: khách của đơn, thợ của đơn, hoặc admin.
-   * Chỉ xuất khi đơn đã thanh toán (payment_status = paid) hoặc đã COMPLETED.
+   * B54: Chỉ xuất khi đơn đã thanh toán (payment_status = paid) — đơn chưa
+   * thanh toán (kể cả đã COMPLETED mà chưa PAID) không xuất được. Mỗi job chỉ
+   * có 1 số hóa đơn duy nhất, lưu bản ghi trong DB; tải lại dùng lại số cũ.
    */
   async generateInvoicePdf(
     jobId: string,
@@ -102,15 +127,16 @@ export class InvoicesService {
       throw new ForbiddenException('Bạn không có quyền xem hóa đơn của đơn này');
     }
 
-    if (job.payment_status !== PaymentStatus.PAID && job.status !== JobStatus.COMPLETED) {
-      throw new BadRequestException('Hóa đơn chỉ được xuất sau khi đơn đã thanh toán / hoàn thành');
+    if (job.payment_status !== PaymentStatus.PAID) {
+      throw new BadRequestException(
+        'Hóa đơn chỉ được xuất sau khi đơn đã thanh toán (payment_status phải là paid)',
+      );
     }
 
     const contract = await this.contractModel.findOne({ job_id: new Types.ObjectId(jobId) }).exec();
     if (!contract) throw new BadRequestException('Đơn chưa có hợp đồng để xuất hóa đơn');
 
     const service = job.service_id as unknown as { name?: string } | null;
-    const invoiceNo = `HD-${jobId.slice(-8).toUpperCase()}`;
     const discount = job.discount_amount ?? 0;
     const loyaltyDiscount = job.loyalty_discount_amount ?? 0;
     const loyaltyPoints = job.loyalty_points_requested ?? 0;
@@ -121,9 +147,12 @@ export class InvoicesService {
       contract.total_price - discount - loyaltyDiscount + sosSurcharge,
     );
 
+    const invoice = await this.getOrCreateInvoice(job, grandTotal);
+    const invoiceNo = invoice.invoice_no;
+
     const buffer = this.renderPdf({
       invoiceNo,
-      issuedAt: new Date(),
+      issuedAt: invoice.issued_at ?? new Date(),
       customerName: customer?.full_name ?? 'Khách hàng Green House',
       customerPhone: customer?.phone ?? '',
       helperName: helper?.full_name ?? '—',
@@ -142,7 +171,57 @@ export class InvoicesService {
       paymentMethod: job.payment_method ?? '',
     });
 
-    return { buffer, fileName: `hoa-don-${jobId.slice(-8)}.pdf` };
+    return { buffer, fileName: `hoa-don-${invoiceNo}.pdf` };
+  }
+
+  /**
+   * Cấp số hóa đơn duy nhất cho 1 job (idempotent): đã có bản ghi thì dùng
+   * lại số cũ; chưa có thì cấp INV-YYYYMMDD-XXXX (XXXX = thứ tự trong ngày).
+   * Unique index trên (invoice_no) và (job_id) chặn trùng khi 2 request cấp
+   * số song song — request thua thử lại với số kế tiếp.
+   */
+  private async getOrCreateInvoice(
+    job: JobDocument,
+    totalAmount: number,
+  ): Promise<InvoiceDocument> {
+    const existing = await this.invoiceModel.findOne({ job_id: job._id }).exec();
+    if (existing) return existing;
+
+    const now = new Date();
+    const day = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(
+      now.getDate(),
+    ).padStart(2, '0')}`;
+    const dayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const dayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const todayCount = await this.invoiceModel
+        .countDocuments({ created_at: { $gte: dayStart, $lt: dayEnd } })
+        .exec();
+      const seq = todayCount + 1 + attempt;
+      const invoiceNo = `INV-${day}-${String(seq).padStart(4, '0')}`;
+      try {
+        return await this.invoiceModel.create({
+          invoice_no: invoiceNo,
+          job_id: job._id,
+          customer_id: job.customer_id,
+          helper_id: job.helper_id ?? undefined,
+          total_amount: totalAmount,
+          payment_method: job.payment_method ?? '',
+          payment_status: job.payment_status,
+          issued_at: now,
+        });
+      } catch (err) {
+        if ((err as { code?: number })?.code === 11000) {
+          // Trùng số (hoặc đã có hóa đơn cho job này) → đọc lại / thử số kế
+          const raced = await this.invoiceModel.findOne({ job_id: job._id }).exec();
+          if (raced) return raced;
+          continue;
+        }
+        throw err;
+      }
+    }
+    throw new BadRequestException('Không thể cấp số hóa đơn, vui lòng thử lại');
   }
 
   // ─── Layout hóa đơn (A4, hệ tọa độ gốc trên-trái của PdfBuilder) ──────────
@@ -256,14 +335,8 @@ export class InvoicesService {
     right(RIGHT - 10, y, formatVND(data.grandTotal), { font: 'F2', size: 12.5, color: GREEN });
     y += 34;
 
-    const methodLabel =
-      data.paymentMethod === 'cash'
-        ? 'Tiền mặt'
-        : data.paymentMethod === 'momo'
-          ? 'Ví MoMo / ZaloPay'
-          : data.paymentMethod === 'vietqr'
-            ? 'Chuyển khoản VietQR'
-            : data.paymentMethod || '—';
+    // B54: Nhãn phương thức ghi đúng thực tế — xem paymentMethodLabel().
+    const methodLabel = paymentMethodLabel(data.paymentMethod);
     pdf.drawText(MARGIN, y, `Phương thức thanh toán: ${methodLabel}`, { size: 11, color: DARK });
     y += 18;
     pdf.drawText(MARGIN, y, 'Trạng thái: ĐÃ THANH TOÁN', { font: 'F2', size: 11, color: GREEN });
