@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import {
   View,
   Text,
@@ -67,6 +67,7 @@ import {
   useEstimatePrice,
   useAnalyzeIssuePhoto,
   useCreateRecurringPlan,
+  useValidateVoucher,
 } from '@/hooks/use-api';
 import type { IssuePhotoAnalysis } from '@/hooks/use-api';
 import { locationService, OsmPlace, parseVietnameseAddress } from '@/services/location.service';
@@ -265,6 +266,7 @@ export default function BookingScreen() {
   const analyzeAI = useAnalyzeBooking();
   const estimatePrice = useEstimatePrice();
   const analyzeIssuePhoto = useAnalyzeIssuePhoto();
+  const validateVoucher = useValidateVoucher();
 
   // ── Roadmap Phase 1: gửi riêng cho thợ yêu thích + gói định kỳ ────────────
   const [offerToFavorite, setOfferToFavorite] = useState(!!params.favorite_helper_id);
@@ -456,6 +458,32 @@ export default function BookingScreen() {
   // Feature 7: dịch vụ giá cam kết — giá cố định, không qua vòng báo giá
   const isFixedPriceService =
     selectedServiceData?.pricing_model === 'fixed' && (selectedServiceData?.fixed_price ?? 0) > 0;
+
+  const currentEstimateAmount = useMemo(() => {
+    if (selectedServiceData?.fixed_price) return selectedServiceData.fixed_price;
+    if (priceEstimate?.price_max) return priceEstimate.price_max;
+    if (selectedServiceData?.base_price_min) return selectedServiceData.base_price_min;
+    if (targetPrice) {
+      const p = Number(String(targetPrice).replace(/[^0-9]/g, ''));
+      if (p > 0) return p;
+    }
+    return 0;
+  }, [selectedServiceData, priceEstimate, targetPrice]);
+
+  // Khi giá ước tính thay đổi sau khi đã áp voucher thì tính lại preview ngay
+  useEffect(() => {
+    if (voucherCode && voucherPreview) {
+      validateVoucher
+        .mutateAsync({
+          code: voucherCode,
+          amount: currentEstimateAmount || 0,
+        })
+        .then(res => {
+          setVoucherPreview(res);
+        })
+        .catch(() => {});
+    }
+  }, [currentEstimateAmount]);
 
   // ── Photo Pickers for Step 3 ───────────────────────────────────────────────
   const handleTakeJobPhoto = async () => {
@@ -2555,9 +2583,168 @@ export default function BookingScreen() {
                 )}
               </Card>
 
+              {/* ── Bảng tóm tắt giá (Tạm tính − Tiền giảm = Còn phải trả) ── */}
+              {(() => {
+                const fmtNum = (n: number) =>
+                  new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'vi-VN').format(n);
+
+                let subtotalText = '';
+                if (priceEstimate) {
+                  subtotalText = `${fmtNum(priceEstimate.price_min)}₫ – ${fmtNum(priceEstimate.price_max)}₫`;
+                } else if (currentEstimateAmount > 0) {
+                  subtotalText = `${fmtNum(currentEstimateAmount)}₫`;
+                } else {
+                  subtotalText = lang === 'en' ? 'Quoted upon offer' : 'Thợ báo giá theo thực tế';
+                }
+
+                const calcDiscount = voucherPreview
+                  ? voucherPreview.discount_amount > 0
+                    ? voucherPreview.discount_amount
+                    : currentEstimateAmount > 0
+                      ? voucherPreview.discount_type === 'percent'
+                        ? Math.min(
+                            Math.round(
+                              (currentEstimateAmount * voucherPreview.discount_value) / 100,
+                            ),
+                            voucherPreview.max_discount_amount ?? Infinity,
+                          )
+                        : voucherPreview.discount_value
+                      : 0
+                  : 0;
+
+                let discountText = '0₫';
+                if (voucherPreview) {
+                  if (calcDiscount > 0) {
+                    discountText = `−${fmtNum(calcDiscount)}₫`;
+                  } else if (voucherPreview.discount_type === 'percent') {
+                    discountText = `−${voucherPreview.discount_value}%${voucherPreview.max_discount_amount ? ` (${lang === 'en' ? 'max' : 'tối đa'} ${fmtNum(voucherPreview.max_discount_amount)}₫)` : ''}`;
+                  } else {
+                    discountText = `−${fmtNum(voucherPreview.discount_value)}₫`;
+                  }
+                }
+
+                let netToPayText = '';
+                if (priceEstimate) {
+                  if (calcDiscount > 0) {
+                    netToPayText = `${fmtNum(Math.max(0, priceEstimate.price_min - calcDiscount))}₫ – ${fmtNum(Math.max(0, priceEstimate.price_max - calcDiscount))}₫`;
+                  } else if (voucherPreview?.discount_type === 'percent') {
+                    const factor = 1 - voucherPreview.discount_value / 100;
+                    netToPayText = `~${fmtNum(Math.max(0, Math.round(priceEstimate.price_min * factor)))}₫ – ${fmtNum(Math.max(0, Math.round(priceEstimate.price_max * factor)))}₫`;
+                  } else {
+                    netToPayText = `${fmtNum(priceEstimate.price_min)}₫ – ${fmtNum(priceEstimate.price_max)}₫`;
+                  }
+                } else if (currentEstimateAmount > 0) {
+                  netToPayText = `${fmtNum(Math.max(0, currentEstimateAmount - calcDiscount))}₫`;
+                } else {
+                  netToPayText = voucherPreview
+                    ? lang === 'en'
+                      ? 'Calculated on final quote'
+                      : 'Tính theo giá chốt trừ voucher'
+                    : lang === 'en'
+                      ? 'Quoted upon offer'
+                      : 'Theo giá chốt của thợ';
+                }
+
+                return (
+                  <Card
+                    style={{
+                      backgroundColor: '#F9FAFB',
+                      borderColor: COLORS.gray[200],
+                      borderWidth: 1,
+                      gap: 12,
+                      padding: 16,
+                    }}
+                  >
+                    <Text
+                      style={{ fontSize: fs(15), fontWeight: '800', color: COLORS.gray[900] }}
+                    >
+                      {lang === 'en' ? 'Price Summary' : 'Tóm tắt chi phí'}
+                    </Text>
+                    <View style={{ gap: 8 }}>
+                      {/* Dòng 1: Tạm tính */}
+                      <View
+                        style={{
+                          flexDirection: 'row',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                        }}
+                      >
+                        <Text style={{ fontSize: fs(13.5), color: COLORS.gray[600] }}>
+                          {lang === 'en' ? 'Subtotal (est.)' : 'Tạm tính'}
+                        </Text>
+                        <Text
+                          style={{ fontSize: fs(14), fontWeight: '700', color: COLORS.gray[900] }}
+                        >
+                          {subtotalText}
+                        </Text>
+                      </View>
+
+                      {/* Dòng 2: Tiền giảm */}
+                      <View
+                        style={{
+                          flexDirection: 'row',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                        }}
+                      >
+                        <Text
+                          style={{
+                            fontSize: fs(13.5),
+                            color: voucherPreview ? '#16A34A' : COLORS.gray[600],
+                          }}
+                        >
+                          {lang === 'en' ? 'Voucher discount' : 'Tiền giảm'}
+                        </Text>
+                        <Text
+                          style={{
+                            fontSize: fs(14),
+                            fontWeight: '700',
+                            color: voucherPreview ? '#16A34A' : COLORS.gray[900],
+                          }}
+                        >
+                          {discountText}
+                        </Text>
+                      </View>
+
+                      <View
+                        style={{
+                          height: 1,
+                          backgroundColor: COLORS.gray[200],
+                          marginVertical: 2,
+                        }}
+                      />
+
+                      {/* Dòng 3: Còn phải trả */}
+                      <View
+                        style={{
+                          flexDirection: 'row',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                        }}
+                      >
+                        <Text
+                          style={{ fontSize: fs(14.5), fontWeight: '800', color: COLORS.gray[900] }}
+                        >
+                          {lang === 'en' ? 'Est. payment' : 'Còn phải trả'}
+                        </Text>
+                        <Text
+                          style={{
+                            fontSize: fs(16),
+                            fontWeight: '900',
+                            color: COLORS.primaryDark,
+                          }}
+                        >
+                          {netToPayText}
+                        </Text>
+                      </View>
+                    </View>
+                  </Card>
+                );
+              })()}
+
               {/* ── Mã giảm giá (Roadmap Phase 1 — Voucher) ──────────────── */}
               <VoucherInput
-                estimatedAmount={priceEstimate?.price_max ?? selectedServiceData?.base_price_min}
+                estimatedAmount={currentEstimateAmount || undefined}
                 value={voucherCode}
                 onApplied={(code, preview) => {
                   setVoucherCode(code);
