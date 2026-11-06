@@ -43,7 +43,25 @@ export class HelpersService {
     return this.getOrCreate(userId);
   }
 
-  async getPublicProfile(idOrUserId: string): Promise<HelperProfileDocument> {
+  toSafePublicProfile(profile: any): any {
+    if (!profile) return null;
+    const doc = typeof profile.toObject === 'function' ? profile.toObject() : { ...profile };
+    delete doc.id_card_number;
+    delete doc.id_card_front;
+    delete doc.id_card_back;
+    delete doc.selfie_photo;
+    delete doc.bank_account;
+    delete doc.rejection_reason;
+    if (doc.user_id && typeof doc.user_id === 'object') {
+      delete doc.user_id.phone;
+      delete doc.user_id.password;
+      delete doc.user_id.tokens;
+      delete doc.user_id.invalid_tokens;
+    }
+    return doc;
+  }
+
+  async getPublicProfile(idOrUserId: string): Promise<any> {
     const query = Types.ObjectId.isValid(idOrUserId)
       ? {
           $or: [
@@ -64,7 +82,7 @@ export class HelpersService {
       .exec();
 
     if (!profile) throw new NotFoundException('Helper không tồn tại');
-    return profile;
+    return this.toSafePublicProfile(profile);
   }
 
   async updateProfile(userId: string, dto: UpdateHelperProfileDto): Promise<HelperProfileDocument> {
@@ -220,7 +238,7 @@ export class HelpersService {
     coordinates: [number, number],
     radiusKm: number,
     serviceId?: string,
-  ): Promise<HelperProfileDocument[]> {
+  ): Promise<any[]> {
     const query: Record<string, unknown> = {
       status: HelperStatus.ONLINE,
       verification_status: VerificationStatus.APPROVED,
@@ -234,10 +252,14 @@ export class HelpersService {
     if (serviceId) {
       query['service_ids'] = new Types.ObjectId(serviceId);
     }
-    return this.helperModel
+    const profiles = await this.helperModel
       .find(query)
-      .populate('user_id', 'full_name avatar phone')
+      .select('-id_card_number -id_card_front -id_card_back -selfie_photo -bank_account -rejection_reason')
+      .populate('user_id', 'full_name avatar')
+      .populate('service_ids', 'name slug icon base_price_min base_price_max')
       .limit(50)
       .exec();
+
+    return profiles.map((p) => this.toSafePublicProfile(p));
   }
 }
