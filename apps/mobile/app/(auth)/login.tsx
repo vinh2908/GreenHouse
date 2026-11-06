@@ -16,6 +16,7 @@ import Toast from 'react-native-toast-message';
 import { useAuthStore } from '@/stores/auth.store';
 import { useTranslation } from '@/hooks/use-i18n';
 import { useLogin, useForgotPassword, useResetPassword } from '@/hooks/use-api';
+import { VIETNAMESE_PHONE_REGEX } from '@homemate/utils';
 import { Button, Input, COLORS } from '@/components/ui';
 
 export default function LoginScreen() {
@@ -92,7 +93,7 @@ export default function LoginScreen() {
 
   const handleSendResetOtp = async () => {
     const cleanPhone = resetPhone.trim().replace(/\s+/g, '').replace(/^\+84/, '0');
-    if (!/^(0[3|5|7|8|9])+([0-9]{8})$/.test(cleanPhone)) {
+    if (!VIETNAMESE_PHONE_REGEX.test(cleanPhone)) {
       Toast.show({
         type: 'error',
         text1:
