@@ -770,6 +770,28 @@ export class SosBackupService implements OnModuleInit, OnModuleDestroy {
         ...this.popupPayload(sos),
         distance_km: c.distanceKm,
       });
+
+      // A11: Tạo notification + push cho ứng viên khi có lời mời thay thế SOS
+      const locStr = [sos.district, sos.city].filter(Boolean).join(', ');
+      const payoutStr = sos.helper_payout ? `${sos.helper_payout.toLocaleString('vi-VN')}₫` : 'Theo đơn';
+      void this.notificationsService
+        .create({
+          userId: c.helperId,
+          type: NOTIFICATION_TYPES.SOS_BACKUP_REQUEST,
+          title: '🚨 Lời mời hỗ trợ khẩn cấp (SOS Backup)',
+          body: `Có đơn SOS "${sos.job_title}" tại ${locStr || 'khu vực của bạn'} đang cần bạn hỗ trợ thay thế. Thu nhập: ${payoutStr}.`,
+          payload: {
+            ...this.popupPayload(sos),
+            job_id: String(sos.job_id),
+            sos_id: String(sos._id),
+            distance_km: c.distanceKm,
+          },
+        })
+        .catch(err => {
+          this.logger.warn(
+            `Failed to create notification for SOS candidate ${c.helperId}: ${(err as Error).message}`,
+          );
+        });
     }
     if (invitees.length > 0) {
       this.logger.log(
