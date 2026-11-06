@@ -365,9 +365,12 @@ export class JobsController {
 
   // ─── Cancel ───────────────────────────────────────────────────────────────
 
+  @Post(':jobId/cancel')
   @Patch(':jobId/cancel')
+  @Post(':jobId/cancel-request')
+  @Patch(':jobId/cancel-request')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Hủy job' })
+  @ApiOperation({ summary: 'Hủy job hoặc gửi yêu cầu hủy đơn' })
   async cancelJob(
     @CurrentUser() user: { sub: string; active_role: string; roles?: string[] },
     @Param('jobId') jobId: string,

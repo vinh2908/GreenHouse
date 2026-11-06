@@ -60,6 +60,7 @@ import {
   useCallConfig,
   useAcceptFixedPrice,
   useRejectJob,
+  useCancelJob,
 } from '@/hooks/use-api';
 import { useAuthStore } from '@/stores/auth.store';
 import { useTranslation } from '@/hooks/use-i18n';
@@ -167,6 +168,7 @@ export default function HelperJobDetailScreen() {
   const submitQuote = useSubmitQuote();
   const acceptFixed = useAcceptFixedPrice();
   const rejectJob = useRejectJob();
+  const cancelJobMutation = useCancelJob();
   const onTheWay = useHelperOnTheWay();
   const arrived = useHelperArrived();
   const startJob = useStartJob();
@@ -294,6 +296,39 @@ export default function HelperJobDetailScreen() {
                 err?.message ||
                 t('helper_job.reject_fail');
               Toast.show({ type: 'error', text1: msg });
+            }
+          },
+        },
+      ],
+    );
+  };
+
+  const handleHelperCancelJob = () => {
+    Alert.alert(
+      lang === 'en' ? 'Cancel assigned job?' : 'Hủy nhận công việc?',
+      lang === 'en'
+        ? 'Are you sure you want to cancel this job? Cancelling after confirmation may affect your reliability rating.'
+        : 'Bạn có chắc chắn muốn hủy đơn hàng này? Việc hủy đơn sau khi nhận có thể ảnh hưởng đến điểm đánh giá và tỷ lệ hoàn thành của bạn.',
+      [
+        { text: t('common_cancel'), style: 'cancel' },
+        {
+          text: lang === 'en' ? 'Confirm cancel' : 'Xác nhận hủy',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await cancelJobMutation.mutateAsync({
+                jobId: id!,
+                reason: lang === 'en' ? 'Helper cancelled due to emergency' : 'Thợ có việc đột xuất không thể tiếp tục',
+              });
+              Toast.show({
+                type: 'success',
+                text1: lang === 'en' ? 'Job cancelled' : 'Đã hủy đơn hàng thành công',
+              });
+            } catch (err: any) {
+              Alert.alert(
+                t('common_error'),
+                err?.response?.data?.message || err?.message || (lang === 'en' ? 'Failed to cancel job' : 'Không thể hủy đơn hàng'),
+              );
             }
           },
         },
@@ -520,8 +555,14 @@ export default function HelperJobDetailScreen() {
     ]);
   };
 
+  const helperIdStr = job.helper_id
+    ? typeof job.helper_id === 'string'
+      ? job.helper_id
+      : job.helper_id._id || job.helper_id.toString?.()
+    : null;
+  const isAssignedToMe = Boolean(helperIdStr && String(helperIdStr) === String(currentUser?._id));
   const isMyActiveJob =
-    job.helper_id && (typeof job.helper_id === 'string' ? job.helper_id : job.helper_id._id);
+    isAssignedToMe && !['cancelled', 'completed', 'refunded'].includes(job.status);
   const canProposeAmendment =
     isMyActiveJob &&
     ['confirmed', 'helper_on_the_way', 'helper_arrived', 'in_progress'].includes(job.status);
@@ -573,6 +614,39 @@ export default function HelperJobDetailScreen() {
       </View>
 
       <ScrollView contentContainerStyle={{ padding: 16, gap: 14, paddingBottom: 120 }}>
+        {/* ── Cancelled Status Banner ─────────────────────────────── */}
+        {job.status === 'cancelled' && (
+          <Card
+            style={{
+              backgroundColor: '#FEF2F2',
+              borderColor: '#FECACA',
+              borderWidth: 1.5,
+              padding: 16,
+              gap: 8,
+            }}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <Ban size={22} color="#DC2626" />
+              <Text style={{ fontSize: fs(16), fontWeight: '800', color: '#991B1B' }}>
+                {String(job.cancelled_by) === String(currentUser?._id)
+                  ? (lang === 'en' ? 'You cancelled this job' : 'Bạn đã hủy đơn hàng này')
+                  : (lang === 'en' ? 'Customer cancelled this job' : 'Khách hàng đã hủy đơn hàng')}
+              </Text>
+            </View>
+            {job.cancellation_reason ? (
+              <Text style={{ fontSize: fs(14), color: '#7F1D1D', lineHeight: 20 }}>
+                {lang === 'en' ? 'Reason: ' : 'Lý do: '}
+                <Text style={{ fontWeight: '600' }}>{job.cancellation_reason}</Text>
+              </Text>
+            ) : null}
+            <Text style={{ fontSize: fs(12), color: COLORS.gray[500] }}>
+              {lang === 'en'
+                ? 'This job is no longer active. No further actions are needed.'
+                : 'Đơn hàng này đã bị hủy và không còn hiệu lực. Bạn không cần thực hiện thêm thao tác nào.'}
+            </Text>
+          </Card>
+        )}
+
         {(job as any).sos_backup_searching && (
           <Card
             style={{ backgroundColor: '#FEF2F2', borderColor: '#FECACA', borderWidth: 1.5, gap: 6 }}
@@ -908,6 +982,16 @@ export default function HelperJobDetailScreen() {
                 title={t('helper_job_detail.complete_work_btn')}
                 loading={completeJob.isPending}
                 onPress={() => handleAction('complete')}
+              />
+            )}
+            {['confirmed', 'helper_on_the_way'].includes(job.status) && (
+              <Button
+                title={lang === 'en' ? 'Cancel job' : 'Hủy nhận đơn'}
+                variant="outline"
+                style={{ borderColor: '#FECACA', marginTop: 4 }}
+                textStyle={{ color: '#DC2626' }}
+                loading={cancelJobMutation.isPending}
+                onPress={handleHelperCancelJob}
               />
             )}
             {job.status === 'pending_review' && (
