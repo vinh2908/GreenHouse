@@ -76,3 +76,14 @@ LoyaltyTransactionSchema.index(
     partialFilterExpression: { type: 'redeem', job_id: { $exists: true } },
   },
 );
+// B47: Chống hoàn điểm 2 lần cho cùng 1 đơn: chỉ cho phép 1 giao dịch 'reversal' / 1 job.
+// Đây là chốt chặn nguyên tử ở tầng DB cho race 2 request hủy song song đều
+// qua bước kiểm tra tồn tại — request thua sẽ vấp duplicate key và hoàn lại
+// phần điểm vừa cộng thừa (xem LoyaltyService.reverseRedeemForJob).
+LoyaltyTransactionSchema.index(
+  { user_id: 1, job_id: 1, type: 1 },
+  {
+    unique: true,
+    partialFilterExpression: { type: 'reversal', job_id: { $exists: true } },
+  },
+);

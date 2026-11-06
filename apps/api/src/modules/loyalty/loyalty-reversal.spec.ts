@@ -71,6 +71,23 @@ function makeService(withRedeem: boolean) {
   const txModel = {
     findOne: (filter: Record<string, unknown>) => execOf(txs.find(t => matches(t, filter)) ?? null),
     create: async (doc: Doc) => {
+      // Mô phỏng unique partial index (user_id, job_id, type='reversal') ở tầng DB:
+      // reversal thứ 2 cho cùng đơn vấp duplicate key E11000.
+      if (
+        doc['type'] === 'reversal' &&
+        txs.some(
+          t =>
+            t['type'] === 'reversal' &&
+            String(t['job_id']) === String(doc['job_id']) &&
+            String(t['user_id']) === String(doc['user_id']),
+        )
+      ) {
+        const err = new Error(
+          'E11000 duplicate key error collection: loyaltytransactions index: user_id_1_job_id_1_type_1 dup key',
+        ) as Error & { code: number };
+        err.code = 11000;
+        throw err;
+      }
       const created = { _id: new Types.ObjectId(), ...doc };
       txs.push(created);
       return created;
@@ -127,5 +144,19 @@ describe('LoyaltyService.reverseRedeemForJob (hủy đơn theo SOS)', () => {
     expect(result).toBeNull();
     expect(account['points_balance']).toBe(350);
     expect(txs).toHaveLength(0);
+  });
+
+  it('B47: 2 request hủy song song → điểm chỉ tăng 1 lần (unique index + rollback)', async () => {
+    const { service, userId, jobId, account, txs } = makeService(true);
+
+    const [first, second] = await Promise.all([
+      service.reverseRedeemForJob(String(userId), String(jobId)),
+      service.reverseRedeemForJob(String(userId), String(jobId)),
+    ]);
+
+    expect(first).toEqual({ points_restored: 150 });
+    expect(second).toEqual({ points_restored: 150 });
+    expect(account['points_balance']).toBe(500);
+    expect(txs.filter(t => t['type'] === 'reversal')).toHaveLength(1);
   });
 });
