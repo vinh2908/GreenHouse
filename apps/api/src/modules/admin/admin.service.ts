@@ -51,6 +51,53 @@ import { NOTIFICATION_TYPES } from '@homemate/constants';
 import { NotificationsService } from '../notifications/notifications.service';
 import { JobsService, ACTIVE_HELPER_JOB_STATUSES } from '../jobs/jobs.service';
 
+const ADMIN_JOB_STATUS_TRANSITIONS: Record<string, string[]> = {
+  [JobStatus.DRAFT]: [JobStatus.OPEN, JobStatus.CANCELLED],
+  [JobStatus.OPEN]: [JobStatus.RECEIVING_QUOTES, JobStatus.CONFIRMED, JobStatus.CANCELLED],
+  [JobStatus.RECEIVING_QUOTES]: [
+    JobStatus.QUOTE_SELECTED,
+    JobStatus.CONFIRMED,
+    JobStatus.CANCELLED,
+  ],
+  [JobStatus.QUOTE_SELECTED]: [
+    JobStatus.CONFIRMED,
+    JobStatus.RECEIVING_QUOTES,
+    JobStatus.CANCELLED,
+  ],
+  [JobStatus.CONFIRMED]: [
+    JobStatus.HELPER_ON_THE_WAY,
+    JobStatus.IN_PROGRESS,
+    JobStatus.CANCELLED,
+  ],
+  [JobStatus.HELPER_ON_THE_WAY]: [
+    JobStatus.HELPER_ARRIVED,
+    JobStatus.IN_PROGRESS,
+    JobStatus.CANCELLED,
+  ],
+  [JobStatus.HELPER_ARRIVED]: [JobStatus.IN_PROGRESS, JobStatus.CANCELLED],
+  [JobStatus.IN_PROGRESS]: [
+    JobStatus.PENDING_REVIEW,
+    JobStatus.COMPLETED,
+    JobStatus.DISPUTED,
+    JobStatus.CANCELLED,
+  ],
+  [JobStatus.PENDING_REVIEW]: [
+    JobStatus.COMPLETED,
+    JobStatus.DISPUTED,
+    JobStatus.IN_PROGRESS,
+    JobStatus.CANCELLED,
+  ],
+  [JobStatus.DISPUTED]: [
+    JobStatus.IN_PROGRESS,
+    JobStatus.COMPLETED,
+    JobStatus.REFUNDED,
+    JobStatus.CANCELLED,
+  ],
+  [JobStatus.COMPLETED]: [],
+  [JobStatus.CANCELLED]: [JobStatus.REFUNDED],
+  [JobStatus.REFUNDED]: [],
+};
+
 @Injectable()
 export class AdminService {
   constructor(
@@ -367,6 +414,19 @@ export class AdminService {
   ): Promise<JobDocument> {
     const job = await this.jobModel.findById(jobId).exec();
     if (!job) throw new NotFoundException('Job không tồn tại');
+
+    if (job.status === status) {
+      return job;
+    }
+
+    const currentStatus = String(job.status || '');
+    const allowed = ADMIN_JOB_STATUS_TRANSITIONS[currentStatus] || [];
+    if (!allowed.includes(status)) {
+      throw new BadRequestException(
+        `Không thể chuyển trạng thái từ "${currentStatus}" sang "${status}". Chuyển đổi trạng thái không hợp lệ.`,
+      );
+    }
+
     job.status = status as any;
     job.events.push({
       status: status as any,
