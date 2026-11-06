@@ -1,4 +1,5 @@
-import { View, Text, ScrollView, TouchableOpacity, RefreshControl } from 'react-native';
+import React from 'react';
+import { View, Text, ScrollView, TouchableOpacity, RefreshControl, TextInput } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import {
@@ -27,6 +28,7 @@ import {
   useFavorites,
   useAddFavorite,
   useRemoveFavorite,
+  useAppealReview,
 } from '@/hooks/use-api';
 import {
   Button,
@@ -51,6 +53,11 @@ export default function HelperPublicProfileScreen() {
   dayjs.locale(lang === 'vi' ? 'vi' : 'en');
 
   const { user } = useAuthStore();
+  // B71: kháng nghị đánh giá (chỉ thợ xem hồ sơ của chính mình)
+  const appealReview = useAppealReview();
+  const [appealFor, setAppealFor] = React.useState<string | null>(null);
+  const [appealReason, setAppealReason] = React.useState('');
+  const isOwnProfile = user?._id === id;
   const { data: profile, isLoading: pLoading, refetch } = useHelperPublicProfile(id);
   const { data: reviewsData, isLoading: rLoading } = useHelperReviews(id);
   const selectQuote = useSelectQuote();
@@ -536,6 +543,68 @@ export default function HelperPublicProfileScreen() {
                 <Text style={{ fontSize: fs(11), color: COLORS.gray[500], marginTop: 2 }}>
                   {dayjs(r.created_at).fromNow()}
                 </Text>
+                {isOwnProfile && r.appeal_status === 'pending' && (
+                  <Text style={{ fontSize: fs(12), color: COLORS.primary, marginTop: 4 }}>
+                    {lang === 'en'
+                      ? 'Appeal pending admin review'
+                      : 'Kháng nghị đang chờ quản trị viên xử lý'}
+                  </Text>
+                )}
+                {isOwnProfile && r.appeal_status !== 'pending' && (
+                  <>
+                    {appealFor === r._id ? (
+                      <View style={{ gap: 8, marginTop: 6 }}>
+                        <TextInput
+                          value={appealReason}
+                          onChangeText={setAppealReason}
+                          placeholder={
+                            lang === 'en'
+                              ? 'Reason for appeal...'
+                              : 'Lý do kháng nghị đánh giá này...'
+                          }
+                          multiline
+                          style={{
+                            borderWidth: 1,
+                            borderColor: COLORS.gray[300],
+                            borderRadius: 8,
+                            padding: 8,
+                            fontSize: fs(13),
+                            minHeight: 56,
+                            textAlignVertical: 'top',
+                          }}
+                        />
+                        <View style={{ flexDirection: 'row', gap: 8 }}>
+                          <Button
+                            title={lang === 'en' ? 'Send appeal' : 'Gửi kháng nghị'}
+                            size="sm"
+                            disabled={!appealReason.trim() || appealReview.isPending}
+                            onPress={() => {
+                              appealReview.mutate(
+                                { reviewId: r._id, reason: appealReason.trim() },
+                                { onSuccess: () => { setAppealFor(null); setAppealReason(''); } },
+                              );
+                            }}
+                          />
+                          <Button
+                            title={lang === 'en' ? 'Cancel' : 'Huỷ'}
+                            size="sm"
+                            variant="outline"
+                            onPress={() => { setAppealFor(null); setAppealReason(''); }}
+                          />
+                        </View>
+                      </View>
+                    ) : (
+                      <TouchableOpacity
+                        onPress={() => setAppealFor(r._id)}
+                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                      >
+                        <Text style={{ fontSize: fs(13), color: COLORS.primary, fontWeight: '700', marginTop: 4 }}>
+                          {lang === 'en' ? 'Appeal this review' : 'Kháng nghị đánh giá này'}
+                        </Text>
+                      </TouchableOpacity>
+                    )}
+                  </>
+                )}
               </View>
             ))
           )}

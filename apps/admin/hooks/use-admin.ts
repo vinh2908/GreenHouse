@@ -160,6 +160,25 @@ export function useAdminReviews(params: {
   });
 }
 
+// B71: Admin ẩn/hiện đánh giá + quyết định kháng nghị
+export function useSetReviewVisibility() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, hidden }: { id: string; hidden: boolean }) =>
+      apiClient.patch(`/reviews/${id}/visibility`, { hidden }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'reviews'] }),
+  });
+}
+
+export function useResolveReviewAppeal() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, decision }: { id: string; decision: 'upheld' | 'rejected' }) =>
+      apiClient.patch(`/reviews/${id}/appeal`, { decision }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'reviews'] }),
+  });
+}
+
 // ─── Analytics ────────────────────────────────────────────────────────────────
 
 export function useAnalyticsSummary() {

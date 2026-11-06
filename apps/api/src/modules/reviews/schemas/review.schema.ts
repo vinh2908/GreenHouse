@@ -40,6 +40,23 @@ export class Review {
   @Prop()
   helper_replied_at?: Date;
 
+  // B71: kháng nghị đánh giá — thợ khiếu nại, admin quyết định ẩn/hiện.
+  // Không tự ẩn khi thợ kháng nghị; không xoá đánh giá.
+  @Prop({ default: false })
+  is_hidden?: boolean;
+
+  @Prop({ maxlength: 1000 })
+  appeal_reason?: string;
+
+  @Prop({ type: String, enum: ['none', 'pending', 'upheld', 'rejected'], default: 'none' })
+  appeal_status?: 'none' | 'pending' | 'upheld' | 'rejected';
+
+  @Prop()
+  appealed_at?: Date;
+
+  @Prop({ type: [{ reply: String, edited_at: Date }], default: [] })
+  reply_history?: { reply: string; edited_at: Date }[];
+
   created_at: Date;
   updated_at: Date;
 }

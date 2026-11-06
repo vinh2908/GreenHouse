@@ -212,6 +212,7 @@ export const NOTIFICATION_TYPES = {
   PAYMENT_SUCCESS: 'payment_success',
   REFUND_RECEIVED: 'refund_received',
   REVIEW_RECEIVED: 'review_received',
+  REVIEW_APPEAL: 'review_appeal', // B71: thợ kháng nghị đánh giá → admin xử lý
   NEW_MESSAGE: 'new_message',
   PROMOTION: 'promotion',
   SUPPORT_REPLY: 'support_reply', // Đội hỗ trợ phản hồi live chat (Feature 18)
