@@ -562,6 +562,19 @@ export class MonthlyContractsService {
     if (leave.status !== 'pending') {
       throw new ConflictException('Đơn xin nghỉ này đã được xử lý');
     }
+    // B51: Ngày đã chấm công thì không duyệt nghỉ được — thợ có thể đã check-in
+    // sau khi gửi đơn xin nghỉ (trước khi khách duyệt). Kiểm tra trước khi
+    // tạo bản ghi 'leave' để không ghi đè buổi đã làm thành buổi nghỉ.
+    if (approve) {
+      const attendance = await this.attendanceModel
+        .findOne({ contract_id: contract._id, date: leave.date })
+        .exec();
+      if (attendance && (attendance.status === 'checked_in' || attendance.status === 'confirmed')) {
+        throw new BadRequestException(
+          `Ngày ${leave.date} thợ đã chấm công, không thể duyệt nghỉ phép`,
+        );
+      }
+    }
     leave.status = approve ? 'approved' : 'rejected';
     leave.responded_at = new Date();
     await leave.save();
