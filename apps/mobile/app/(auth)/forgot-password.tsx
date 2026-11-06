@@ -51,21 +51,41 @@ export default function ForgotPasswordScreen() {
         {lang === 'en' ? 'Reset Password' : 'Đặt lại mật khẩu'}
       </Text>
       <Text style={{ fontSize: fs(14), color: '#4B5563', lineHeight: 20 }}>
-        {lang === 'en'
-          ? 'Enter your registered email address to receive a 6-digit verification code.'
-          : 'Nhập email đã đăng ký của bạn để nhận mã xác minh OTP 6 số qua email.'}
+        {isEmail
+          ? lang === 'en'
+            ? 'Enter your registered email address to receive a 6-digit verification code.'
+            : 'Nhập email đã đăng ký của bạn để nhận mã xác minh OTP 6 số qua email.'
+          : lang === 'en'
+            ? 'Enter your registered phone number — the 6-digit verification code will be sent to the email registered with this phone number.'
+            : 'Nhập số điện thoại đã đăng ký — mã xác minh OTP 6 số sẽ được gửi tới email đã đăng ký với số điện thoại này.'}
       </Text>
 
       <Input
-        label={lang === 'en' ? 'Registered Email' : 'Email đã đăng ký'}
+        label={
+          isEmail
+            ? lang === 'en'
+              ? 'Registered Email'
+              : 'Email đã đăng ký'
+            : lang === 'en'
+              ? 'Registered Phone Number'
+              : 'Số điện thoại đã đăng ký'
+        }
         value={identifier}
         onChangeText={v => {
           setIdentifier(v);
           setRequested(false);
         }}
-        keyboardType="email-address"
+        keyboardType={isEmail ? 'email-address' : 'phone-pad'}
         autoCapitalize="none"
-        placeholder={lang === 'en' ? 'example@email.com' : 'vd: yourname@gmail.com'}
+        placeholder={
+          isEmail
+            ? lang === 'en'
+              ? 'example@email.com'
+              : 'vd: yourname@gmail.com'
+            : lang === 'en'
+              ? 'e.g. 09xxxxxxxx'
+              : 'VD: 09xxxxxxxx'
+        }
       />
 
       <Button
@@ -95,9 +115,13 @@ export default function ForgotPasswordScreen() {
             }}
           >
             <Text style={{ fontSize: fs(13), color: '#166534', fontWeight: '500', lineHeight: 18 }}>
-              {lang === 'en'
-                ? `A 6-digit verification code has been sent to ${cleanId}. Please check your inbox (and spam folder). Code expires in 5 minutes.`
-                : `Mã xác minh 6 số đã được gửi tới email ${cleanId}. Vui lòng kiểm tra hộp thư đến (hoặc thư rác). Mã có hiệu lực trong 5 phút.`}
+              {isEmail
+                ? lang === 'en'
+                  ? `A 6-digit verification code has been sent to ${cleanId}. Please check your inbox (and spam folder). Code expires in 5 minutes.`
+                  : `Mã xác minh 6 số đã được gửi tới email ${cleanId}. Vui lòng kiểm tra hộp thư đến (hoặc thư rác). Mã có hiệu lực trong 5 phút.`
+                : lang === 'en'
+                  ? `A 6-digit verification code has been sent to the email registered with phone number ${cleanId}. Please check your inbox (and spam folder). Code expires in 5 minutes.`
+                  : `Mã xác minh 6 số đã được gửi tới email đã đăng ký với số điện thoại ${cleanId}. Vui lòng kiểm tra hộp thư đến (hoặc thư rác). Mã có hiệu lực trong 5 phút.`}
             </Text>
           </View>
 

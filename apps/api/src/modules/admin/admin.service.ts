@@ -440,6 +440,14 @@ export class AdminService {
     }
 
     job.status = status as any;
+    // F15: admin chuyển đơn sang CANCELLED thì ghi rõ người hủy là admin
+    // để banner phía thợ/khách hiển thị đúng, không gán nhầm thành khách hủy.
+    if (status === JobStatus.CANCELLED) {
+      if (adminId && Types.ObjectId.isValid(adminId)) {
+        job.cancelled_by = new Types.ObjectId(adminId);
+      }
+      job.cancelled_by_role = 'admin';
+    }
     job.events.push({
       status: status as any,
       note: note || `Admin can thiệp thủ công: chuyển trạng thái sang ${status}`,

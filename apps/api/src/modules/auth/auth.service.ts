@@ -214,7 +214,14 @@ export class AuthService {
     if (phone) {
       const user = await this.usersService.findByPhone(phone);
       if (user) {
-        const target = user.email || user.phone;
+        // F16: tài khoản chỉ có SĐT (không có email) thì không có kênh nào
+        // gửi được mã OTP (không gửi SMS) — báo lỗi rõ thay vì báo "đã gửi" giả.
+        if (!user.email) {
+          throw new BadRequestException(
+            'Tài khoản chưa đăng ký email nên không thể gửi mã OTP qua email. Vui lòng liên hệ hỗ trợ để cập nhật email.',
+          );
+        }
+        const target = user.email;
         await this.otpService.sendOtp(target, 'reset');
       }
       return { message: 'Nếu số điện thoại tồn tại, mã OTP đã được gửi.' };

@@ -8,7 +8,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { InjectModel, InjectConnection } from '@nestjs/mongoose';
-import { Model, Types, Connection } from 'mongoose';
+import { Model, Types, Connection, ClientSession } from 'mongoose';
 import { Cron } from '@nestjs/schedule';
 import {
   Wallet,
@@ -73,12 +73,12 @@ export class PaymentsService {
 
   // ─── Wallet ───────────────────────────────────────────────────────────────
 
-  async getOrCreateWallet(userId: string): Promise<WalletDocument> {
+  async getOrCreateWallet(userId: string, session?: ClientSession | null): Promise<WalletDocument> {
     const wallet = await this.walletModel
       .findOneAndUpdate(
         { user_id: new Types.ObjectId(userId) },
         { $setOnInsert: { user_id: new Types.ObjectId(userId) } },
-        { upsert: true, new: true },
+        { upsert: true, new: true, session: session ?? undefined },
       )
       .exec();
     return wallet!;
@@ -346,7 +346,12 @@ export class PaymentsService {
             { $set: { payment_status: PaymentStatus.UNPAID } },
           )
           .exec()
-          .catch(() => undefined);
+          .catch((resetErr) => {
+            // F20: lỗi reset trạng thái phải được log rõ, không nuốt im lặng.
+            this.logger.error(
+              `Failed to reset job ${jobId} payment_status to UNPAID after payment error: ${resetErr}`,
+            );
+          });
         throw err;
       } finally {
         if (session) {
@@ -420,33 +425,44 @@ export class PaymentsService {
     userId: string,
     amount: number,
     opts: { description: string; reference: string; type?: string },
+    session?: ClientSession | null,
   ): Promise<TransactionDocument> {
     if (!amount || amount <= 0) {
       throw new BadRequestException('Số tiền cộng ví phải lớn hơn 0');
     }
-    const wallet = await this.getOrCreateWallet(userId);
+    const wallet = await this.getOrCreateWallet(userId, session);
     const balanceBefore = wallet.balance;
     const balanceAfter = balanceBefore + amount;
 
     await this.walletModel
-      .findByIdAndUpdate(wallet._id, {
-        $inc: { balance: amount, total_earned: amount },
-      })
+      .findByIdAndUpdate(
+        wallet._id,
+        {
+          $inc: { balance: amount, total_earned: amount },
+        },
+        { session: session ?? undefined },
+      )
       .exec();
 
-    return this.transactionModel.create({
-      wallet_id: wallet._id,
-      user_id: new Types.ObjectId(userId),
-      // Không truyền job_id: giao dịch không thuộc về 1 Job nào (schema cho phép)
-      type: opts.type ?? 'earning',
-      status: 'success',
-      amount,
-      balance_before: balanceBefore,
-      balance_after: balanceAfter,
-      description: opts.description,
-      reference: opts.reference,
-      metadata: { reference: opts.reference },
-    });
+    const [tx] = await this.transactionModel.create(
+      [
+        {
+          wallet_id: wallet._id,
+          user_id: new Types.ObjectId(userId),
+          // Không truyền job_id: giao dịch không thuộc về 1 Job nào (schema cho phép)
+          type: opts.type ?? 'earning',
+          status: 'success',
+          amount,
+          balance_before: balanceBefore,
+          balance_after: balanceAfter,
+          description: opts.description,
+          reference: opts.reference,
+          metadata: { reference: opts.reference },
+        },
+      ],
+      { session: session ?? undefined },
+    );
+    return tx;
   }
 
   /** Trừ tiền ví dùng chung (dùng cho hoàn tác hoặc điều chỉnh) */
@@ -782,7 +798,12 @@ export class PaymentsService {
       await this.walletModel
         .updateOne({ _id: wallet._id }, { $inc: { balance: amount } })
         .exec()
-        .catch(() => undefined);
+        .catch((refundErr) => {
+          // F20: hoàn tiền vào ví lỗi thì phải log rõ (tiền rút đã trừ nhưng chưa hoàn lại).
+          this.logger.error(
+            `Failed to refund ${amount} to wallet ${String(wallet._id)} after withdrawal failure: ${refundErr}`,
+          );
+        });
       throw err;
     }
   }
@@ -885,7 +906,12 @@ export class PaymentsService {
             : `${amount}₫ đã được hoàn lại vào ví.${adminNote ? ' Lý do: ' + adminNote : ''}`,
         payload: { withdrawal_id: String(withdrawal._id) },
       })
-      .catch(() => undefined);
+      .catch((notifyErr) => {
+        // F20: lỗi gửi thông báo rút tiền phải được log rõ, không nuốt im lặng.
+        this.logger.warn(
+          `Failed to send withdrawal notification for ${String(withdrawal._id)}: ${(notifyErr as Error)?.message ?? notifyErr}`,
+        );
+      });
     return saved;
   }
 

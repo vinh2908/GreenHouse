@@ -97,8 +97,24 @@ export class OtpService {
     });
 
     if (isEmail) {
-      // Gửi qua Gmail SMTP nếu có tài khoản, hoặc fallback log mô phỏng
-      await this.mailService.sendOtpEmail(target, code, purpose);
+      // F16: gửi mail lỗi thì phải báo lỗi rõ về client — không được tạo mã
+      // rồi trả "đã gửi" giả khi không có mail nào được gửi đi. Ở dev (chưa
+      // cấu hình Gmail) vẫn giữ mô phỏng qua log + trả mã để test.
+      const sent = await this.mailService.sendOtpEmail(target, code, purpose);
+      const isProd =
+        this.configService.get<string>('app.env') === 'production' ||
+        process.env['NODE_ENV'] === 'production';
+      const isDev = !isProd && this.configService.get<string>('app.env') !== 'production';
+      if (!sent && !isDev) {
+        await this.otpModel.deleteOne({ target, code }).exec();
+        this.logger.error(
+          `OTP email failed for ${target} (${purpose}) — Gmail not configured or send failed`,
+        );
+        throw new HttpException(
+          'Gửi mã OTP thất bại. Vui lòng thử lại sau.',
+          HttpStatus.BAD_GATEWAY,
+        );
+      }
     }
 
     const isProd =

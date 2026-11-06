@@ -135,7 +135,7 @@ export async function loadPendingCount(): Promise<number> {
 export function toastQueuedOffline(): void {
   Toast.show({
     type: 'info',
-    text1: '📴 Đã lưu thao tác — sẽ tự đồng bộ khi có mạng',
+    text1: ' Đã lưu thao tác — sẽ tự đồng bộ khi có mạng',
   });
 }
 
@@ -244,7 +244,7 @@ export async function flushQueue(): Promise<number> {
     if (flushed > 0) {
       Toast.show({
         type: 'success',
-        text1: `☁️ Đã đồng bộ ${flushed} thao tác offline`,
+        text1: ` Đã đồng bộ ${flushed} thao tác offline`,
       });
     }
     return flushed;

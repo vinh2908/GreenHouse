@@ -6,6 +6,7 @@ import {
   ForbiddenException,
   Inject,
   forwardRef,
+  Logger,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
@@ -58,6 +59,8 @@ export interface SettlementSummary {
  */
 @Injectable()
 export class MonthlyContractsService {
+  private readonly logger = new Logger(MonthlyContractsService.name);
+
   constructor(
     @InjectModel(MonthlyContract.name)
     private contractModel: Model<MonthlyContractDocument>,
@@ -678,46 +681,88 @@ export class MonthlyContractsService {
 
     const summary = await this.computeSummary(contract, dto.month);
 
-    // A43: Cộng tiền vào ví thợ TRƯỚC, lưu settlement record SAU (rollback nếu tạo settlement lỗi)
-    if (summary.helper_receives > 0) {
-      await this.paymentsService.creditWallet(
-        contract.helper_id.toString(),
-        summary.helper_receives,
-        {
-          description: `Lương tháng ${dto.month} — hợp đồng "${contract.title}" (${summary.confirmed_days}/${summary.scheduled_days} buổi, đã trừ phí sàn ${contract.platform_fee_percent ?? 15}%)`,
-          reference: `MONTHLY-${String(contract._id).slice(-6)}-${dto.month}`,
-          type: 'earning',
-        },
-      );
+    // F20: bọc toàn bộ chốt lương trong MongoDB transaction — tạo bản ghi
+    // chốt lương + cộng tiền vào ví thợ cùng commit hoặc cùng rollback.
+    // Không còn cộng tiền trước rồi rollback tay bằng deductWallet (lỗi
+    // rollback từng bị nuốt im lặng, tiền đã cộng mà không có record).
+    // Index unique (contract_id, month) chặn chốt trùng 2 lần.
+    const conn = this.settlementModel.db;
+    let session: any = null;
+    try {
+      session = await conn.startSession();
+    } catch (sErr) {
+      this.logger.warn(`Could not start mongoose session for settle: ${sErr}`);
     }
 
-    let settlement: MonthlySettlementDocument;
-    try {
-      settlement = await this.settlementModel.create({
-        contract_id: contract._id,
-        month: dto.month,
-        scheduled_days: summary.scheduled_days,
-        confirmed_days: summary.confirmed_days,
-        leave_days: summary.leave_days,
-        absent_days: summary.absent_days,
-        gross_amount: summary.gross_amount,
-        platform_fee: summary.platform_fee,
-        helper_receives: summary.helper_receives,
-        status: 'settled',
-        settled_at: new Date(),
-        settled_by: new Types.ObjectId(customerId),
-      });
-    } catch (err) {
+    const doSettle = async (sess: any): Promise<MonthlySettlementDocument> => {
+      const [settlement] = await this.settlementModel.create(
+        [
+          {
+            contract_id: contract._id,
+            month: dto.month,
+            scheduled_days: summary.scheduled_days,
+            confirmed_days: summary.confirmed_days,
+            leave_days: summary.leave_days,
+            absent_days: summary.absent_days,
+            gross_amount: summary.gross_amount,
+            platform_fee: summary.platform_fee,
+            helper_receives: summary.helper_receives,
+            status: 'settled',
+            settled_at: new Date(),
+            settled_by: new Types.ObjectId(customerId),
+          },
+        ],
+        { session: sess ?? undefined },
+      );
       if (summary.helper_receives > 0) {
-        await this.paymentsService
-          .deductWallet(
-            contract.helper_id.toString(),
-            summary.helper_receives,
-            `Rollback lương tháng ${dto.month} do lỗi tạo bản ghi chốt lương`,
-          )
-          .catch(() => undefined);
+        await this.paymentsService.creditWallet(
+          contract.helper_id.toString(),
+          summary.helper_receives,
+          {
+            description: `Lương tháng ${dto.month} — hợp đồng "${contract.title}" (${summary.confirmed_days}/${summary.scheduled_days} buổi, đã trừ phí sàn ${contract.platform_fee_percent ?? 15}%)`,
+            reference: `MONTHLY-${String(contract._id).slice(-6)}-${dto.month}`,
+            type: 'earning',
+          },
+          sess,
+        );
       }
+      return settlement;
+    };
+
+    let settlement!: MonthlySettlementDocument;
+    try {
+      if (session) {
+        try {
+          await session.withTransaction(async () => {
+            settlement = await doSettle(session);
+          });
+        } catch (txErr: any) {
+          if (
+            txErr?.message?.includes('replica set member') ||
+            txErr?.message?.includes('Transaction numbers')
+          ) {
+            // Môi trường không hỗ trợ transaction (standalone MongoDB):
+            // chạy không transaction, index unique vẫn chặn chốt trùng.
+            settlement = await doSettle(undefined);
+          } else {
+            throw txErr;
+          }
+        }
+      } else {
+        settlement = await doSettle(undefined);
+      }
+    } catch (err: any) {
+      if (err?.code === 11000) {
+        throw new ConflictException(`Tháng ${dto.month} đã được chốt lương rồi`);
+      }
+      this.logger.error(
+        `Settle ${dto.month} for contract ${id} failed: ${err?.message ?? err}`,
+      );
       throw err;
+    } finally {
+      if (session) {
+        await session.endSession().catch(() => undefined);
+      }
     }
 
     await this.notificationsService.create({

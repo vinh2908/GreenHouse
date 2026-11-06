@@ -407,8 +407,8 @@ export default function LoginScreen() {
               <>
                 <Text style={{ fontSize: fs(13.5), color: COLORS.gray[600], lineHeight: 20 }}>
                   {lang === 'en'
-                    ? 'Enter your registered phone number to receive a verification OTP for password reset.'
-                    : 'Nhập số điện thoại đã đăng ký tài khoản để nhận mã xác thực OTP đặt lại mật khẩu.'}
+                    ? 'Enter your registered phone number — the verification OTP will be sent to the email registered with this phone number.'
+                    : 'Nhập số điện thoại đã đăng ký tài khoản — mã OTP sẽ được gửi tới email đã đăng ký với số điện thoại này.'}
                 </Text>
                 <Input
                   label={lang === 'en' ? 'Registered Phone Number *' : 'Số điện thoại đăng ký *'}
@@ -429,12 +429,12 @@ export default function LoginScreen() {
                 <Text style={{ fontSize: fs(13.5), color: COLORS.gray[600], lineHeight: 20 }}>
                   {lang === 'en' ? (
                     <>
-                      Enter the 6-digit OTP sent to{' '}
+                      Enter the 6-digit OTP sent to the email registered with{' '}
                       <Text style={{ fontWeight: '800' }}>{resetPhone}</Text> and your new password.
                     </>
                   ) : (
                     <>
-                      Nhập mã OTP 6 chữ số đã gửi tới{' '}
+                      Nhập mã OTP 6 chữ số đã gửi tới email đăng ký với số{' '}
                       <Text style={{ fontWeight: '800' }}>{resetPhone}</Text> và mật khẩu mới.
                     </>
                   )}

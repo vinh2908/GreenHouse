@@ -207,7 +207,13 @@ export class JobsService implements OnModuleInit {
     for (const job of expiredJobs) {
       job.status = JobStatus.EXPIRED;
       job.cancellation_reason = 'Đơn đã hết hạn nhận báo giá (quá 72 giờ)';
-      this.addEvent(job, JobStatus.EXPIRED, 'system', 'system', 'Đơn đã hết hạn nhận báo giá (quá 72 giờ)');
+      this.addEvent(
+        job,
+        JobStatus.EXPIRED,
+        'system',
+        'system',
+        'Đơn đã hết hạn nhận báo giá (quá 72 giờ)',
+      );
       await job.save();
 
       // Cập nhật các báo giá của job sang EXPIRED
@@ -1501,7 +1507,7 @@ export class JobsService implements OnModuleInit {
       type: NOTIFICATION_TYPES.JOB_CONFIRMED,
       title: '🚨 ĐÃ CÓ THỢ NHẬN CỨU HỘ SOS!',
       body: `Thợ đang chuẩn bị đồ nghề và di chuyển gấp đến bạn (Dự kiến 15 phút).`,
-      payload: { job_id: jobId },
+      payload: { job_id: jobId, is_sos: true, job_title: job.title },
     });
 
     return { job, contract };
@@ -1972,6 +1978,13 @@ export class JobsService implements OnModuleInit {
     const job = await this.jobModel.findById(jobId).exec();
     if (!job) throw new NotFoundException('Job không tồn tại');
     if (job.customer_id.toString() !== customerId) throw new ForbiddenException();
+    // F16: chặn chọn báo giá khi tài khoản chưa xác minh email (như chặn đặt đơn A103).
+    const customerUser = await this.userModel.findById(customerId).select('is_verified').lean();
+    if (customerUser && customerUser.is_verified === false) {
+      throw new BadRequestException(
+        'Tài khoản chưa được xác minh qua email. Vui lòng xác minh email trước khi chọn báo giá.',
+      );
+    }
     if (job.status !== JobStatus.RECEIVING_QUOTES && job.status !== JobStatus.OPEN) {
       throw new BadRequestException('Job không ở trạng thái nhận báo giá');
     }
@@ -2274,7 +2287,15 @@ export class JobsService implements OnModuleInit {
         body: isWarrantyJob
           ? `Thợ đã nhận đơn bảo hành "${job.title}" (miễn phí) và sẽ liên hệ với bạn sớm.`
           : `Đơn "${job.title}" đã có thợ nhận với giá cam kết ${totalPrice.toLocaleString('vi-VN')}₫.`,
-        payload: { job_id: jobId, contract_id: String(contract._id), is_fixed_price: true },
+        payload: {
+          job_id: jobId,
+          contract_id: String(contract._id),
+          is_fixed_price: true,
+          is_warranty: isWarrantyJob,
+          is_sos: false,
+          job_title: job.title,
+          total_price: totalPrice,
+        },
       })
       .catch(() => undefined);
 
@@ -2691,7 +2712,12 @@ export class JobsService implements OnModuleInit {
             contract.helper_receives,
             `Hoàn tác tiền công đơn ${jobId} do lỗi nghiệm thu`,
           )
-          .catch(() => undefined);
+          .catch((rollbackErr) => {
+            // F20: lỗi hoàn tác tiền công phải được log rõ, không nuốt im lặng.
+            this.logger.error(
+              `Failed to roll back payout for job ${jobId} after approval error: ${rollbackErr}`,
+            );
+          });
       }
       throw saveErr;
     }
@@ -2732,7 +2758,11 @@ export class JobsService implements OnModuleInit {
           effectivePaymentMethod === 'cash'
             ? `Công việc "${job.title}" đã nghiệm thu. Phí nền tảng đã được đối soát.`
             : `Công việc "${job.title}" đã hoàn thành. Thu nhập đã được giải ngân vào ví của bạn.`,
-        payload: { job_id: jobId },
+        payload: {
+          job_id: jobId,
+          payment_method: effectivePaymentMethod,
+          job_title: job.title,
+        },
       });
     }
 
@@ -3102,6 +3132,7 @@ export class JobsService implements OnModuleInit {
     this.validateTransition(job.status, JobStatus.CANCELLED);
     job.cancellation_reason = dto.reason;
     job.cancelled_by = new Types.ObjectId(actorId);
+    job.cancelled_by_role = actorRole;
     this.addEvent(job, JobStatus.CANCELLED, actorId, actorRole, `Hủy: ${dto.reason}`);
 
     // Nếu Thợ tự ý hủy đơn sau khi đã chốt hợp đồng (confirmed / helper_on_the_way / helper_arrived) -> phạt điểm rủi ro (No-Show / Late Cancel)
