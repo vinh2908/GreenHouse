@@ -56,10 +56,11 @@ export class CallsService {
     }
     const job = await this.jobModel.findById(jobId).exec();
     if (!job) throw new NotFoundException('Job không tồn tại');
-    // B85: chỉ gọi được khi đơn còn hoạt động — đơn đã xong/hủy/hết hạn thì 400
-    if (['completed', 'cancelled', 'expired', 'refunded'].includes(job.status)) {
+    // G10/R2 (quyết định của chủ 2026-11-07): CHO PHÉP gọi sau khi đơn hoàn
+    // thành (khách/thợ hỏi bảo hành); vẫn chặn đơn đã hủy/hết hạn/hoàn tiền.
+    if (['cancelled', 'expired', 'refunded'].includes(job.status)) {
       throw new BadRequestException(
-        'Đơn đã kết thúc (hoàn thành/hủy/hết hạn) nên không thể gọi điện',
+        'Đơn đã hủy/hết hạn/hoàn tiền nên không thể gọi điện',
       );
     }
     if (!job.helper_id) {
