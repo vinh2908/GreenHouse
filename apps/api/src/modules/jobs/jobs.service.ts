@@ -1978,6 +1978,13 @@ export class JobsService implements OnModuleInit {
     const job = await this.jobModel.findById(jobId).exec();
     if (!job) throw new NotFoundException('Job không tồn tại');
     if (job.customer_id.toString() !== customerId) throw new ForbiddenException();
+    // F16: chặn chọn báo giá khi tài khoản chưa xác minh email (như chặn đặt đơn A103).
+    const customerUser = await this.userModel.findById(customerId).select('is_verified').lean();
+    if (customerUser && customerUser.is_verified === false) {
+      throw new BadRequestException(
+        'Tài khoản chưa được xác minh qua email. Vui lòng xác minh email trước khi chọn báo giá.',
+      );
+    }
     if (job.status !== JobStatus.RECEIVING_QUOTES && job.status !== JobStatus.OPEN) {
       throw new BadRequestException('Job không ở trạng thái nhận báo giá');
     }
