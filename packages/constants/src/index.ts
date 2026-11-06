@@ -162,6 +162,7 @@ export const SOCKET_EVENTS = {
   JOB_PRIVATE_OFFER: 'job:private_offer', // Job được gửi riêng cho thợ yêu thích
   TEAM_INVITATION: 'team:invitation', // Lời mời tham gia đơn nhóm
   TEAM_UPDATED: 'team:updated', // Đội nhóm của job thay đổi
+  MATCHING_SUGGESTION_UPDATED: 'matching:suggestion_updated', // B116: có thợ mới phù hợp với đơn
   DISPUTE_UPDATED: 'dispute:updated', // Hồ sơ tranh chấp có cập nhật
   CALL_INCOMING: 'call:incoming', // Cuộc gọi thoại trong app đến
   CALL_ENDED: 'call:ended', // Cuộc gọi thoại kết thúc / cúp máy

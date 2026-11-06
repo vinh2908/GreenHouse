@@ -19,6 +19,7 @@ import {
 import { DEFAULT_HELPER_AVAILABILITY, HelperAvailability } from './schemas/helper-profile.schema';
 import { HelperStatus, VerificationStatus } from '@homemate/types';
 import { AppGateway } from '../chat/app.gateway';
+import { MatchingService } from '../matching/matching.service';
 
 @Injectable()
 export class HelpersService {
@@ -26,6 +27,8 @@ export class HelpersService {
     @InjectModel(HelperProfile.name)
     private helperModel: Model<HelperProfileDocument>,
     private readonly gateway: AppGateway,
+    // B116: MatchingService không phụ thuộc HelpersModule nên không tạo chu trình
+    private readonly matchingService: MatchingService,
   ) {}
 
   async getOrCreate(userId: string): Promise<HelperProfileDocument> {
@@ -135,6 +138,12 @@ export class HelpersService {
     // B113: phát cho thợ + khách đang xem hồ sơ thợ + khách có đơn đang
     // hoạt động với thợ đó; không phát cho khách không liên quan.
     void this.gateway.broadcastHelperStatus(userId, dto.status);
+
+    // B116: thợ vừa ONLINE (đủ điều kiện) → báo cho khách của các đơn đang mở
+    // mà thợ này phù hợp để cập nhật danh sách gợi ý.
+    if (dto.status === HelperStatus.ONLINE) {
+      void this.matchingService.notifyNewSuitableHelper(userId);
+    }
 
     return profile;
   }

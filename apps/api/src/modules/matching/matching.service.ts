@@ -205,6 +205,51 @@ export class MatchingService {
   }
 
   /**
+   * B116: khi một thợ mới trở nên phù hợp (vừa ONLINE / vừa đủ điều kiện),
+   * phát event cập nhật danh sách gợi ý cho khách của các đơn đang mở mà thợ
+   * đó phù hợp. Chỉ phát cho khách của đơn liên quan — không broadcast.
+   */
+  async notifyNewSuitableHelper(helperId: string): Promise<void> {
+    const helper = await this.helperModel
+      .findOne({ user_id: new Types.ObjectId(helperId) })
+      .exec();
+    if (!helper) return;
+    if (
+      helper.status !== HelperStatus.ONLINE ||
+      helper.verification_status !== VerificationStatus.APPROVED
+    ) {
+      return;
+    }
+    const openJobs = await this.jobModel
+      .find({
+        status: { $in: [JobStatus.OPEN, JobStatus.RECEIVING_QUOTES] },
+        service_id: { $in: helper.service_ids ?? [] },
+      })
+      .limit(20)
+      .exec();
+    for (const job of openJobs) {
+      const { score, distance_km } = this.computeUtilityScore(helper, job);
+      // Chỉ báo khi thợ thật sự phù hợp: điểm >= 50 hoặc (không có GPS thì
+      // chỉ cần đúng dịch vụ). Tránh spam khách với thợ ở xa/điểm thấp.
+      // computeUtilityScore trả distance_km = -1 khi thiếu tọa độ
+      const hasLocation = distance_km != null && distance_km >= 0;
+      if (score < 50 && hasLocation) continue;
+      const payload = {
+        job_id: String(job._id),
+        helper_id: helperId,
+        match_score: score,
+        distance_km,
+      };
+      this.gateway.emitToJob(String(job._id), SOCKET_EVENTS.MATCHING_SUGGESTION_UPDATED, payload);
+      this.gateway.emitToUser(
+        String(job.customer_id),
+        SOCKET_EVENTS.MATCHING_SUGGESTION_UPDATED,
+        payload,
+      );
+    }
+  }
+
+  /**
    * Tìm và xếp hạng các thợ tối ưu nhất cho 1 công việc cụ thể
    */
   async findOptimalHelpersForJob(
