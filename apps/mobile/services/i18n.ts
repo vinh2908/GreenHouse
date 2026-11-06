@@ -2163,6 +2163,12 @@ export function formatNotificationTitle(
         return 'Monthly Contract Started';
       case 'monthly_contract_expiring_soon':
         return 'Monthly Contract Expiring Soon';
+      case 'recurring_plan_paused':
+        return 'Recurring Plan Paused';
+      case 'recurring_plan_resumed':
+        return 'Recurring Plan Resumed';
+      case 'recurring_plan_cancelled':
+        return 'Recurring Plan Cancelled';
       case 'job_private_offer':
         return 'Private Job Offer';
       case 'call_missed':
@@ -2337,6 +2343,18 @@ export function formatNotificationBody(
   if (type === 'monthly_contract_expiring_soon') {
     const m = b.match(/Hợp đồng\s*(".*?"|'.*?'|“.*?”).*?vào\s*(.*?)\.?$/i);
     return `Contract ${m ? m[1] : ''} expires soon${m && m[2] ? ` on ${m[2]}` : ''}.`;
+  }
+  if (type === 'recurring_plan_paused') {
+    const m = b.match(/Gói định kỳ\s*(".*?"|'.*?'|“.*?”)/i);
+    return `Recurring plan ${m ? m[1] : ''} has been paused. You can resume it anytime.`;
+  }
+  if (type === 'recurring_plan_resumed') {
+    const m = b.match(/Gói định kỳ\s*(".*?"|'.*?'|“.*?”)/i);
+    return `Recurring plan ${m ? m[1] : ''} is active again.`;
+  }
+  if (type === 'recurring_plan_cancelled') {
+    const m = b.match(/Gói định kỳ\s*(".*?"|'.*?'|“.*?”)/i);
+    return `Recurring plan ${m ? m[1] : ''} has been cancelled.`;
   }
   if (type === 'job_private_offer') {
     return 'A private job offer has expired.';
