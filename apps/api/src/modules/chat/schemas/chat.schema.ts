@@ -22,6 +22,14 @@ export class Conversation {
   @Prop()
   last_message_at?: Date;
 
+  // B115: phòng chat đang "đóng" khi không còn ai ở trong room (refcount = 0).
+  // Chỉ là cờ hiện diện — tin nhắn KHÔNG bao giờ bị xóa khi phòng đóng.
+  @Prop({ default: false })
+  is_closed?: boolean;
+
+  @Prop()
+  closed_at?: Date;
+
   created_at: Date;
   updated_at: Date;
 }

@@ -104,6 +104,26 @@ export class ChatService {
     return !!found;
   }
 
+  // B115: đánh dấu phòng chat mở/đóng theo số người đang ở trong room.
+  // Không xóa tin nhắn khi đóng — chỉ đổi cờ hiện diện.
+  async markConversationClosed(conversationId: string) {
+    await this.conversationModel
+      .updateOne(
+        { _id: new Types.ObjectId(conversationId) },
+        { is_closed: true, closed_at: new Date() },
+      )
+      .exec();
+  }
+
+  async markConversationOpen(conversationId: string) {
+    await this.conversationModel
+      .updateOne(
+        { _id: new Types.ObjectId(conversationId) },
+        { is_closed: false, $unset: { closed_at: 1 } },
+      )
+      .exec();
+  }
+
   async getMessages(conversationId: string, userId: string, page = 1, limit = 50) {
     const conv = await this.conversationModel.findById(conversationId).exec();
     if (!conv) throw new NotFoundException('Không tìm thấy cuộc trò chuyện');
