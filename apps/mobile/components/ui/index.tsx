@@ -10,6 +10,8 @@ import {
   type TextInputProps,
   type TouchableOpacityProps,
   type ViewProps,
+  type StyleProp,
+  type TextStyle,
 } from 'react-native';
 import { AlertTriangle, RotateCw, ClipboardList } from 'lucide-react-native';
 import { useTranslation } from '@/hooks/use-i18n';
@@ -52,6 +54,7 @@ interface ButtonProps extends TouchableOpacityProps {
   loading?: boolean;
   icon?: React.ReactNode;
   fullWidth?: boolean;
+  textStyle?: StyleProp<TextStyle>;
 }
 
 export function Button({
@@ -63,6 +66,7 @@ export function Button({
   fullWidth = true,
   disabled,
   style,
+  textStyle,
   ...props
 }: ButtonProps) {
   const isPrimary = variant === 'primary' || variant === 'gradient';
@@ -128,7 +132,7 @@ export function Button({
       ) : (
         <>
           {icon}
-          <Text style={{ color: textColor, fontSize, fontWeight: '700', letterSpacing: 0.2 }}>
+          <Text style={[{ color: textColor, fontSize, fontWeight: '700', letterSpacing: 0.2 }, textStyle]}>
             {title}
           </Text>
         </>
