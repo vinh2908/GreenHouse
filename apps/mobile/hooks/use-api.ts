@@ -1281,7 +1281,8 @@ export function useEstimatePrice() {
 // ─── Phân tích ảnh sự cố bằng AI Vision (Roadmap Phase 2 — Feature 17) ─────
 
 // B78: lý do AI không phân tích được ảnh (đồng bộ với backend IssuePhotoUnavailableReason)
-export type IssuePhotoUnavailableReason = 'no_api_key' | 'invalid_image' | 'unsupported' | 'provider_error';
+export type IssuePhotoUnavailableReason =
+  'no_api_key' | 'invalid_image' | 'unsupported' | 'provider_error';
 
 export interface IssuePhotoAnalysis {
   available: boolean;
@@ -1521,7 +1522,12 @@ export function useSkipNextOccurrence() {
 export function useCancelRecurringPlan() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (planId: string) => apiClient.delete(`/recurring-plans/${planId}`),
+    // A102: Hủy gói định kỳ kèm lý do (backend DELETE nhận body { reason }).
+    mutationFn: (args: string | { planId: string; reason?: string }) => {
+      const planId = typeof args === 'string' ? args : args.planId;
+      const reason = typeof args === 'string' ? undefined : args.reason;
+      return apiClient.delete(`/recurring-plans/${planId}`, { data: { reason } });
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['recurring-plans'] });
       qc.invalidateQueries({ queryKey: ['jobs', 'my'] });
@@ -2249,7 +2255,8 @@ export function useAppealReview() {
       apiClient.post(`/reviews/${reviewId}/appeal`, { reason }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['reviews'] });
-      Toast.show({ type: 'success', text1: 'Đã gửi kháng nghị cho quản trị viên' });    },
+      Toast.show({ type: 'success', text1: 'Đã gửi kháng nghị cho quản trị viên' });
+    },
   });
 }
 
