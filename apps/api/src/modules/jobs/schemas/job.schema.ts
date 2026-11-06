@@ -317,6 +317,19 @@ export class Job {
   @Prop({ default: false })
   expiry_reminder_sent?: boolean;
 
+  // F7: Cờ thử lại hoàn tiền cho khách khi hủy đơn
+  @Prop({ default: false })
+  refund_pending_retry?: boolean;
+
+  @Prop({ default: 0 })
+  refund_retry_count?: number;
+
+  @Prop({ type: Number })
+  refund_pending_amount?: number;
+
+  @Prop({ type: String })
+  refund_pending_reason?: string;
+
   created_at: Date;
   updated_at: Date;
 }
