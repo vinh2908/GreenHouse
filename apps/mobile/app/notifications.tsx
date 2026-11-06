@@ -28,6 +28,11 @@ import {
   Hourglass,
   Shield,
   RotateCcw,
+  CalendarClock,
+  Users,
+  Ticket,
+  Award,
+  Scale,
 } from 'lucide-react-native';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
@@ -91,6 +96,34 @@ function renderNotificationIcon(type: string) {
       return <Hourglass size={size} color="#F59E0B" />;
     case 'insurance_claim_update':
       return <Shield size={size} color="#10B981" />;
+    // B103: thông báo hợp đồng tháng có icon lịch/tháng riêng (không dùng chuông chung)
+    case 'monthly_contract_new':
+    case 'monthly_contract_accepted':
+    case 'monthly_contract_rejected':
+    case 'monthly_contract_cancelled':
+    case 'monthly_contract_ended':
+    case 'monthly_contract_checkin':
+    case 'monthly_contract_attendance':
+    case 'monthly_contract_leave_request':
+    case 'monthly_contract_leave_response':
+    case 'monthly_contract_settled':
+    case 'monthly_contract_started':
+    case 'monthly_contract_expiring_soon':
+      return <CalendarClock size={size} color="#0EA5E9" />;
+    // B102: các nhóm mới cũng có icon riêng
+    case 'team_invitation':
+    case 'team_invitation_response':
+      return <Users size={size} color="#8B5CF6" />;
+    case 'dispute_evidence':
+    case 'dispute_appealed':
+      return <Scale size={size} color="#F59E0B" />;
+    case 'loyalty_points_earned':
+      return <Award size={size} color="#F59E0B" />;
+    case 'voucher_restored':
+    case 'voucher_expiring_soon':
+      return <Ticket size={size} color="#EC4899" />;
+    case 'review_appeal':
+      return <Star size={size} color="#F59E0B" />;
     default:
       return <Bell size={size} color="#6B7280" />;
   }
