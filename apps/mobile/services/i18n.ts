@@ -74,6 +74,33 @@ export const STRINGS = {
     en: 'You have a job in progress. Please finish or end it before turning off job receiving.',
   },
   helper_dash_understood: { vi: 'Đã hiểu', en: 'Understood' },
+  delete_account: { vi: 'Xoá tài khoản', en: 'Delete account' },
+  delete_account_title: { vi: 'Xoá tài khoản của bạn', en: 'Delete your account' },
+  delete_account_warn: {
+    vi: 'Tài khoản của bạn sẽ bị xoá vĩnh viễn và không thể đăng nhập lại bằng số điện thoại/email này. Lịch sử đơn hàng cũ vẫn được lưu cho quản trị viên tra cứu.',
+    en: 'Your account will be permanently deleted and you will not be able to sign in again with this phone/email. Past order history is kept for admin records.',
+  },
+  delete_account_confirm_title: {
+    vi: 'Chắc chắn xoá tài khoản?',
+    en: 'Are you sure you want to delete your account?',
+  },
+  delete_account_confirm_desc: {
+    vi: 'Hành động này không thể hoàn tác. Bạn sẽ bị đăng xuất ngay và không đăng nhập lại được.',
+    en: 'This cannot be undone. You will be signed out immediately and cannot sign in again.',
+  },
+  delete_account_password_label: {
+    vi: 'Nhập mật khẩu để xác nhận',
+    en: 'Enter your password to confirm',
+  },
+  delete_account_password_placeholder: { vi: 'Mật khẩu hiện tại', en: 'Current password' },
+  delete_account_success: {
+    vi: 'Tài khoản đã được xoá.',
+    en: 'Your account has been deleted.',
+  },
+  delete_account_wrong_password: {
+    vi: 'Mật khẩu không đúng. Vui lòng thử lại.',
+    en: 'Wrong password. Please try again.',
+  },
   time_badge_new: { vi: 'MỚI', en: 'NEW' },
   time_badge_night: { vi: 'ĐÊM', en: 'NIGHT' },
 

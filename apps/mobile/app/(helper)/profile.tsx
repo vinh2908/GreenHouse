@@ -97,6 +97,18 @@ export default function HelperProfileScreen() {
     }
   };
 
+  // B24 lớp 1: xác nhận xoá tài khoản → màn nhập mật khẩu (lớp 2)
+  const handleDeleteAccount = () => {
+    Alert.alert(t('delete_account_confirm_title'), t('delete_account_confirm_desc'), [
+      { text: t('helper_profile.stay'), style: 'cancel' },
+      {
+        text: t('delete_account'),
+        style: 'destructive',
+        onPress: () => router.push('/delete-account' as never),
+      },
+    ]);
+  };
+
   const handleLogout = () => {
     const doLogout = async () => {
       try {
@@ -498,6 +510,22 @@ export default function HelperProfileScreen() {
             <LogOut size={18} color={COLORS.error} />
             <Text style={{ fontSize: fs(15), fontWeight: '800', color: COLORS.error }}>
               {t('profile_logout')}
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={handleDeleteAccount}
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 8,
+              padding: 14,
+            }}
+          >
+            <Text style={{ fontSize: fs(14), fontWeight: '700', color: COLORS.error }}>
+              {t('delete_account')}
             </Text>
           </TouchableOpacity>
 
