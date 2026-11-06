@@ -34,6 +34,30 @@ export class AppGateway implements OnGatewayConnection, OnGatewayDisconnect {
   // Map userId → Set of socketIds (one user can have multiple connections)
   private userSockets = new Map<string, Set<string>>();
 
+  // B115: refcount phòng chat — conversationId → Set<socketId> đang ở trong room.
+  // Rời phòng giảm refcount; còn 0 người thì đánh dấu phòng đã đóng (không xóa tin nhắn).
+  private conversationOccupancy = new Map<string, Set<string>>();
+
+  private async trackConversationJoin(conversationId: string, socketId: string) {
+    let set = this.conversationOccupancy.get(conversationId);
+    if (!set) {
+      set = new Set();
+      this.conversationOccupancy.set(conversationId, set);
+    }
+    set.add(socketId);
+    await this.chatService.markConversationOpen(conversationId);
+  }
+
+  private async trackConversationLeave(conversationId: string, socketId: string) {
+    const set = this.conversationOccupancy.get(conversationId);
+    if (!set) return;
+    set.delete(socketId);
+    if (set.size === 0) {
+      this.conversationOccupancy.delete(conversationId);
+      await this.chatService.markConversationClosed(conversationId);
+    }
+  }
+
   constructor(
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
@@ -96,6 +120,10 @@ export class AppGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   handleDisconnect(client: Socket) {
+    // B115: ngắt kết nối cũng tính là rời phòng — cập nhật refcount cho mọi room đang ở
+    for (const conversationId of [...this.conversationOccupancy.keys()]) {
+      void this.trackConversationLeave(conversationId, client.id);
+    }
     const userId = client.data.userId as string;
     if (userId) {
       const sockets = this.userSockets.get(userId);
@@ -165,6 +193,7 @@ export class AppGateway implements OnGatewayConnection, OnGatewayDisconnect {
       throw new WsException('Forbidden');
     }
     client.join(`chat:${data.conversation_id}`);
+    await this.trackConversationJoin(data.conversation_id, client.id);
     return { event: 'joined', room: `chat:${data.conversation_id}` };
   }
 
@@ -174,6 +203,9 @@ export class AppGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @MessageBody() data: { conversation_id: string },
   ) {
     client.leave(`chat:${data?.conversation_id}`);
+    if (data?.conversation_id) {
+      void this.trackConversationLeave(data.conversation_id, client.id);
+    }
   }
 
   // ─── Chat messages ────────────────────────────────────────────────────────
