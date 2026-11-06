@@ -2056,6 +2056,7 @@ export function formatNotificationTitle(
   title: string | undefined | null,
   lang: AppLanguage = 'vi',
   type?: string,
+  data?: any,
 ): string {
   if (!title && !type) return '';
   if (lang !== 'en') return title || '';
@@ -2064,10 +2065,19 @@ export function formatNotificationTitle(
   if (type) {
     switch (type) {
       case 'payment_success':
+        // F11: map theo type + payload, không theo chuỗi tiêu đề.
+        if (data?.payment_method === 'cash') return 'Cash Order Completed!';
+        if (data?.payment_method) return 'Earnings Credited to Wallet!';
+        // Fallback cho thông báo cũ (chưa có payment_method trong payload).
         if (/tiền mặt/i.test(t) || /phí sàn/i.test(t) || /đối soát/i.test(t)) return 'Cash Order Completed!';
         if (/ví|thu nhập|tiền công/i.test(t)) return 'Earnings Credited to Wallet!';
         return 'Payment Successful';
       case 'job_confirmed':
+        // F11: map theo type + payload, không theo chuỗi tiêu đề.
+        if (data?.is_sos) return 'Helper Accepted SOS Rescue!';
+        if (data?.is_warranty) return 'Helper Accepted Warranty Job!';
+        if (data?.is_fixed_price) return 'Helper Accepted Fixed-Price Job!';
+        // Fallback cho thông báo cũ (chưa có cờ trong payload).
         if (/bảo hành/i.test(t)) return 'Helper Accepted Warranty Job!';
         if (/giá cam kết/i.test(t)) return 'Helper Accepted Fixed-Price Job!';
         if (/cứu hộ|sos/i.test(t)) return 'Helper Accepted SOS Rescue!';
@@ -2145,16 +2155,16 @@ export function formatNotificationTitle(
 
   if (/^Hoàn tất đơn Tiền mặt!?$/i.test(t)) return 'Cash Order Completed!';
   if (/^Tiền công đã cộng vào ví!?$/i.test(t)) return 'Earnings Credited to Wallet!';
-  if (/^?\s*Thợ đã nhận việc bảo hành!?$/i.test(t)) return 'Helper Accepted Warranty Job!';
-  if (/^?\s*Đã có thợ nhận việc giá cam kết!?$/i.test(t))
+  if (/^\s*Thợ đã nhận việc bảo hành!?$/i.test(t)) return 'Helper Accepted Warranty Job!';
+  if (/^\s*Đã có thợ nhận việc giá cam kết!?$/i.test(t))
     return 'Helper Accepted Fixed-Price Job!';
-  if (/^?\s*Khách đã duyệt chi phí phát sinh!?$/i.test(t))
+  if (/^\s*Khách đã duyệt chi phí phát sinh!?$/i.test(t))
     return 'Customer Approved Extra Expenses';
-  if (/^?\s*Khách từ chối chi phí phát sinh!?$/i.test(t))
+  if (/^\s*Khách từ chối chi phí phát sinh!?$/i.test(t))
     return 'Customer Rejected Extra Expenses';
-  if (/^?\s*Thợ đã nhận hợp đồng theo tháng!?$/i.test(t))
+  if (/^\s*Thợ đã nhận hợp đồng theo tháng!?$/i.test(t))
     return 'Helper Accepted Monthly Contract';
-  if (/^?\s*Thợ đã từ chối hợp đồng theo tháng!?$/i.test(t))
+  if (/^\s*Thợ đã từ chối hợp đồng theo tháng!?$/i.test(t))
     return 'Helper Declined Monthly Contract';
 
   if (/^Báo giá được chọn!?$/i.test(t)) return 'Quote Accepted!';
@@ -2183,11 +2193,11 @@ export function formatNotificationTitle(
     return 'SOS Backup Expired — Manual Review Required';
   if (/^Nhắc:\s*cần bạn quyết định cho đơn đang chờ$/i.test(t))
     return 'Reminder: Action Required for Pending Job';
-  if (/^?\s*Lời mời hỗ trợ khẩn cấp\s*\(SOS Backup\)/i.test(t))
+  if (/^\s*Lời mời hỗ trợ khẩn cấp\s*\(SOS Backup\)/i.test(t))
     return 'Emergency Backup Invitation (SOS)';
-  if (/^(?:|)\s*CỨU HỘ KHẨN CẤP SOS GẦN BẠN!?$/i.test(t))
+  if (/^\s*CỨU HỘ KHẨN CẤP SOS GẦN BẠN!?$/i.test(t))
     return 'URGENT SOS EMERGENCY NEAR YOU!';
-  if (/^(?:|)\s*ĐÃ CÓ THỢ NHẬN CỨU HỘ SOS!?$/i.test(t))
+  if (/^\s*ĐÃ CÓ THỢ NHẬN CỨU HỘ SOS!?$/i.test(t))
     return 'A HELPER ACCEPTED SOS RESCUE!';
   if (/^\s*\[SOS CỨU HỘ\]\s*(.*)$/i.test(t)) {
     const rest = t.replace(/^\s*\[SOS CỨU HỘ\]\s*/i, '');
@@ -2212,22 +2222,22 @@ export function formatNotificationTitle(
   if (/^\s*Hồ sơ tranh chấp có cập nhật$/i.test(t)) return 'Dispute Case Updated';
   if (/^\s*Phán quyết tranh chấp bị kháng cáo$/i.test(t)) return 'Dispute Decision Appealed';
   if (/^\s*Lời mời vào nhóm làm việc$/i.test(t)) return 'Invitation to Work Team';
-  if (/^[]\s*Đề nghị hợp đồng theo tháng mới$/i.test(t)) return 'New Monthly Contract Offer';
-  if (/^[]\s*Hợp đồng theo tháng đã bị hủy$/i.test(t)) return 'Monthly Contract Cancelled';
+  if (/^\s*Đề nghị hợp đồng theo tháng mới$/i.test(t)) return 'New Monthly Contract Offer';
+  if (/^\s*Hợp đồng theo tháng đã bị hủy$/i.test(t)) return 'Monthly Contract Cancelled';
   if (/^\s*Hợp đồng theo tháng đã kết thúc$/i.test(t)) return 'Monthly Contract Ended';
-  if (/^[]\s*Thợ đã điểm danh hôm nay$/i.test(t)) return 'Helper Checked In Today';
+  if (/^\s*Thợ đã điểm danh hôm nay$/i.test(t)) return 'Helper Checked In Today';
   if (/^\s*Buổi làm đã được xác nhận$/i.test(t)) return 'Work Session Confirmed';
   if (/^\s*Buổi làm bị đánh dấu vắng$/i.test(t)) return 'Work Session Marked Absent';
-  if (/^[]\s*Thợ xin nghỉ 1 buổi$/i.test(t)) return 'Helper Requested 1 Day Leave';
+  if (/^\s*Thợ xin nghỉ 1 buổi$/i.test(t)) return 'Helper Requested 1 Day Leave';
   if (/^\s*Đơn xin nghỉ đã được duyệt$/i.test(t)) return 'Leave Request Approved';
   if (/^\s*Đơn xin nghỉ bị từ chối$/i.test(t)) return 'Leave Request Rejected';
   if (/^\s*Đã chốt lương tháng\s*(.*)$/i.test(t)) {
     return t.replace(/^\s*Đã chốt lương tháng\s*(.*)$/i, 'Monthly Salary Finalized for $1');
   }
-  if (/^?\s*Yêu cầu bồi thường đang được xem xét$/i.test(t))
+  if (/^\s*Yêu cầu bồi thường đang được xem xét$/i.test(t))
     return 'Insurance Claim Under Review';
   if (/^\s*Yêu cầu bồi thường bị từ chối$/i.test(t)) return 'Insurance Claim Rejected';
-  if (/^[]\s*Bồi thường bảo hiểm đã được chi trả$/i.test(t))
+  if (/^\s*Bồi thường bảo hiểm đã được chi trả$/i.test(t))
     return 'Insurance Claim Payout Approved';
   if (/^Bảo hành:\s*(.*)$/i.test(t)) {
     return t.replace(/^Bảo hành:\s*/i, 'Warranty: ');
@@ -2246,7 +2256,15 @@ export function formatNotificationBody(
   if (lang !== 'en') return body;
   const b = body.trim();
 
-  // 1. payment_success (cash & escrow)
+  // 1. payment_success (cash & escrow) — F11: map theo type + payload trước,
+  // chỉ dùng regex bóc tiêu đề VI làm fallback cho thông báo cũ.
+  if (type === 'payment_success' && data?.payment_method) {
+    const jobName = data?.job_title ? `"${data.job_title}"` : 'Your job';
+    if (data.payment_method === 'cash')
+      return `Job ${jobName} has been inspected and approved. Platform fee settled.`;
+    return `Job ${jobName} is completed. Earnings disbursed to your wallet.`;
+  }
+
   const cashComplete = b.match(
     /^Công việc\s*(".*?"|'.*?'|“.*?”)\s*đã nghiệm thu\.\s*Phí nền tảng đã được đối soát\.?$/i,
   );
@@ -2263,7 +2281,23 @@ export function formatNotificationBody(
     return 'Payment has been processed successfully.';
   }
 
-  // 2. job_confirmed (warranty & fixed price)
+  // 2. job_confirmed (warranty & fixed price) — F11: map theo type + payload
+  // trước, chỉ dùng regex bóc tiêu đề VI làm fallback cho thông báo cũ.
+  if (
+    type === 'job_confirmed' &&
+    (data?.is_sos || data?.is_warranty || data?.is_fixed_price)
+  ) {
+    const jobName = data?.job_title ? `"${data.job_title}"` : 'your job';
+    if (data.is_sos)
+      return `A helper accepted your SOS rescue for ${jobName} and is on the way (ETA 15 minutes).`;
+    if (data.is_warranty)
+      return `Helper accepted warranty order ${jobName} (free of charge) and will contact you shortly.`;
+    const price = data?.total_price
+      ? ` at fixed price ${Number(data.total_price).toLocaleString('en-US')}₫`
+      : '';
+    return `Job ${jobName} has been accepted by a helper${price}.`;
+  }
+
   const warrantyAccepted = b.match(
     /^Thợ đã nhận đơn bảo hành\s*(".*?"|'.*?'|“.*?”)\s*\(miễn phí\)\s*và sẽ liên hệ với bạn sớm\.?$/i,
   );

@@ -48,8 +48,8 @@ export function useTranslation() {
   const tLoyaltyTier = useCallback((tier: any) => translateLoyaltyTier(tier, language), [language]);
 
   const formatNotifTitle = useCallback(
-    (title: string | undefined | null, type?: string) =>
-      formatNotificationTitle(title, language, type),
+    (title: string | undefined | null, type?: string, data?: any) =>
+      formatNotificationTitle(title, language, type, data),
     [language],
   );
 
