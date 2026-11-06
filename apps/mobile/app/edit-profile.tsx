@@ -694,7 +694,7 @@ export default function EditProfileScreen() {
                   color: COLORS.gray[500],
                   backgroundColor: COLORS.gray[100],
                 }}
-                value={user?.phone || '0901234567'}
+                value={user?.phone || ''}
                 editable={false}
               />
             </View>

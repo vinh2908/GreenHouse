@@ -280,3 +280,9 @@ export const SERVICE_SLUG_VI: Record<string, string> = {
   appliance: 'Sửa máy giặt & Tủ lạnh',
   locksmith: 'Sửa khóa & Lắp Camera',
 } as const;
+
+// ─── Contact & Support Hotline ────────────────────────────────────────────────
+
+export const OFFICIAL_CONTACT_PHONE = '0365290805';
+export const OFFICIAL_CONTACT_PHONE_DISPLAY = '0365 290 805';
+export const OFFICIAL_CONTACT_EMAIL = 'support@greenhouse.vn';

@@ -17,6 +17,7 @@ import { Card, COLORS, Badge, Separator } from '@/components/ui';
 import { useAiSupport } from '@/hooks/use-api';
 import { useAuthStore } from '@/stores/auth.store';
 import { useTranslation } from '@/hooks/use-i18n';
+import { OFFICIAL_CONTACT_PHONE, OFFICIAL_CONTACT_PHONE_DISPLAY } from '@homemate/constants';
 import Toast from 'react-native-toast-message';
 
 const FAQS_VI = [
@@ -79,10 +80,10 @@ export default function HelpCenterScreen() {
   const faqs = lang === 'en' ? FAQS_EN : FAQS_VI;
 
   const handleCallHotline = () => {
-    Linking.openURL('tel:19008888').catch(() => {
+    Linking.openURL(`tel:${OFFICIAL_CONTACT_PHONE}`).catch(() => {
       Toast.show({
         type: 'info',
-        text1: 'Hotline 1900 8888 (24/7)',
+        text1: `Hotline ${OFFICIAL_CONTACT_PHONE_DISPLAY} (24/7)`,
         text2:
           lang === 'en'
             ? 'Green House customer support hotline is always ready to serve you.'
@@ -103,7 +104,7 @@ export default function HelpCenterScreen() {
       if (q.includes('helper') || q.includes('kyc') || q.includes('trust') || q.includes('verified')) {
         return '💡 100% of helpers undergo chip ID e-KYC verification and have real customer ratings from previous jobs. You are completely protected!';
       }
-      return `💡 Green House AI Assistant received your question: "${question}". If you need urgent assistance, please call our 24/7 hotline 1900 8888 for immediate support!`;
+      return `💡 Green House AI Assistant received your question: "${question}". If you need urgent assistance, please call our 24/7 hotline ${OFFICIAL_CONTACT_PHONE_DISPLAY} for immediate support!`;
     }
 
     if (q.includes('giá') || q.includes('tiền') || q.includes('chi phí')) {
@@ -115,7 +116,7 @@ export default function HelpCenterScreen() {
     if (q.includes('thợ') || q.includes('kyc') || q.includes('uy tín')) {
       return '💡 100% thợ đều được xác thực danh tính e-KYC CCCD và điểm sao đánh giá thực tế từ các đơn hàng trước đó. Bạn hoàn toàn an tâm nhé!';
     }
-    return `💡 Trợ lý AI Green House ghi nhận câu hỏi: "${question}". Nếu cần hỗ trợ khẩn cấp, bạn vui lòng gọi hotline 1900 8888 để được tổng đài viên phục vụ ngay lập tức 24/7!`;
+    return `💡 Trợ lý AI Green House ghi nhận câu hỏi: "${question}". Nếu cần hỗ trợ khẩn cấp, bạn vui lòng gọi hotline ${OFFICIAL_CONTACT_PHONE_DISPLAY} để được tổng đài viên phục vụ ngay lập tức 24/7!`;
   };
 
   const handleAskAi = async () => {
@@ -251,7 +252,7 @@ export default function HelpCenterScreen() {
                 {lang === 'en' ? 'TOLL-FREE HOTLINE' : 'HOTLINE MIỄN PHÍ CƯỚC'}
               </Text>
               <Text style={{ fontSize: fs(20), fontWeight: '900', color: '#34D399', marginTop: 2 }}>
-                1900 8888
+                {OFFICIAL_CONTACT_PHONE_DISPLAY}
               </Text>
             </View>
             <TouchableOpacity

@@ -7,13 +7,15 @@ import {
   ActivityIndicator,
   TextInput,
   Image,
+  Linking,
   type TextInputProps,
   type TouchableOpacityProps,
   type ViewProps,
   type StyleProp,
   type TextStyle,
 } from 'react-native';
-import { AlertTriangle, RotateCw, ClipboardList } from 'lucide-react-native';
+import { AlertTriangle, RotateCw, ClipboardList, Phone } from 'lucide-react-native';
+import { OFFICIAL_CONTACT_PHONE, OFFICIAL_CONTACT_PHONE_DISPLAY } from '@homemate/constants';
 import { useTranslation } from '@/hooks/use-i18n';
 
 // ─── Green House Color Palette (Banana Green / Lime Fresh) ───────────────────
@@ -500,6 +502,20 @@ export function ErrorState({ title, subtitle, onRetry, retryText }: ErrorStatePr
           </Text>
         </TouchableOpacity>
       )}
+
+      <TouchableOpacity
+        onPress={() => Linking.openURL(`tel:${OFFICIAL_CONTACT_PHONE}`).catch(() => {})}
+        activeOpacity={0.7}
+        style={{ marginTop: 16, flexDirection: 'row', alignItems: 'center', gap: 6 }}
+      >
+        <Phone size={14} color={COLORS.gray[500]} />
+        <Text style={{ fontSize: fs(12.5), color: COLORS.gray[500] }}>
+          {lang === 'en' ? 'Support Hotline: ' : 'Tổng đài hỗ trợ: '}
+          <Text style={{ color: COLORS.primaryDark, fontWeight: '700' }}>
+            {OFFICIAL_CONTACT_PHONE_DISPLAY}
+          </Text>
+        </Text>
+      </TouchableOpacity>
     </View>
   );
 }
