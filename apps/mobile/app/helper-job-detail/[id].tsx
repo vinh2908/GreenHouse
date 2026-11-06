@@ -211,7 +211,7 @@ export default function HelperJobDetailScreen() {
     if (helperProfile?.verification_status !== 'approved') {
       const msg = t('helper_job.kyc_required_msg');
       Alert.alert(t('helper_job.kyc_required_title'), msg, [
-        { text: t('cancel'), style: 'cancel' },
+        { text: t('common_cancel'), style: 'cancel' },
         { text: t('helper_job.kyc_verify_now'), onPress: () => router.push('/kyc') },
       ]);
       return;
@@ -271,7 +271,7 @@ export default function HelperJobDetailScreen() {
       t('helper_job.reject_title'),
       t('helper_job.reject_desc'),
       [
-        { text: t('cancel'), style: 'cancel' },
+        { text: t('common_cancel'), style: 'cancel' },
         {
           text: t('helper_job.reject_confirm'),
           style: 'destructive',
@@ -511,7 +511,7 @@ export default function HelperJobDetailScreen() {
     };
 
     Alert.alert(actionCfg.title, actionCfg.message, [
-      { text: t('cancel'), style: 'cancel' },
+      { text: t('common_cancel'), style: 'cancel' },
       { text: actionCfg.btn, onPress: doExecute },
     ]);
   };

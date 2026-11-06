@@ -705,7 +705,7 @@ export default function HelperDashboardScreen() {
                   ? t('dash_auto_update_30s')
                   : t('dash_offline_sub')
             }
-            action={effectiveOnline ? t('dash_view_all') : undefined}
+            action={effectiveOnline ? t('home_view_all') : undefined}
             onAction={() => router.push('/(helper)/jobs')}
           />
 
