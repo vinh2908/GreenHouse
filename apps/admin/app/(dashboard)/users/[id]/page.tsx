@@ -248,9 +248,10 @@ export default function UserDetailPage() {
           </div>
         </div>
         {!isAdmin && (
-          <Button
-            variant={suspended ? 'default' : 'destructive'}
-            disabled={suspend.isPending || activate.isPending}
+          <>
+            <Button
+              variant={suspended ? 'default' : 'destructive'}
+              disabled={suspend.isPending || activate.isPending}
             onClick={() => {
               if (suspended) {
                 activate.mutate(user._id);
@@ -278,6 +279,7 @@ export default function UserDetailPage() {
               Xóa tài khoản
             </Button>
           )}
+          </>
         )}
       </div>
 
