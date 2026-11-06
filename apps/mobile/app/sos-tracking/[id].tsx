@@ -89,23 +89,27 @@ export default function SosTrackingScreen() {
     job?.status === 'helper_arrived' ||
     job?.status === 'in_progress';
   const helperObj = typeof job?.helper_id === 'object' && job?.helper_id ? job.helper_id : null;
-  const helperName =
-    helperObj?.full_name ||
-    (lang === 'en' ? 'Anh Tuan (Electrician/Plumber)' : 'Anh Tuấn (Thợ Điện Nước)');
-  const helperPhone = helperObj?.phone || '0902222222';
+  const hasRealHelper = Boolean(helperObj && (helperObj.full_name || helperObj.phone));
+  const helperName = hasRealHelper
+    ? (helperObj?.full_name || '')
+    : (lang === 'en' ? 'Finding replacement helper...' : 'Đang tìm thợ thay thế...');
+  const helperPhone = helperObj?.phone || '';
   const helperAvatar = helperObj?.avatar;
 
   const handleCallHelper = () => {
-    Linking.openURL(`tel:${helperPhone}`);
+    if (helperPhone) {
+      Linking.openURL(`tel:${helperPhone}`);
+    }
   };
 
   const handleShareSos = async () => {
     try {
+      const helperInfo = hasRealHelper && helperPhone ? ` (${helperPhone})` : '';
       await Share.share({
         message:
           lang === 'en'
-            ? `🚨 I am requesting emergency SOS rescue for "${job?.title}" at address: ${job?.address?.full_address}. Assigned helper: ${helperName} (${helperPhone}). Track via Green House.`
-            : `🚨 Tôi đang gọi cứu hộ sự cố khẩn cấp "${job?.title}" tại địa chỉ: ${job?.address?.full_address}. Thợ phụ trách: ${helperName} (${helperPhone}). Theo dõi qua Green House.`,
+            ? `🚨 I am requesting emergency SOS rescue for "${job?.title}" at address: ${job?.address?.full_address}. Helper: ${helperName}${helperInfo}. Track via Green House.`
+            : `🚨 Tôi đang gọi cứu hộ sự cố khẩn cấp "${job?.title}" tại địa chỉ: ${job?.address?.full_address}. Thợ phụ trách: ${helperName}${helperInfo}. Theo dõi qua Green House.`,
       });
     } catch {
       /* ignore */
@@ -302,30 +306,36 @@ export default function SosTrackingScreen() {
                     <Text style={{ fontWeight: '800', fontSize: 16, color: COLORS.gray[900] }}>
                       {helperName}
                     </Text>
-                    <ShieldCheck size={18} color={COLORS.success} />
+                    {hasRealHelper && <ShieldCheck size={18} color={COLORS.success} />}
                   </View>
                   <Text style={{ fontSize: 13, color: COLORS.gray[500], marginTop: 2 }}>
-                    {helperPhone}
+                    {hasRealHelper && helperPhone
+                      ? helperPhone
+                      : lang === 'en'
+                        ? 'Finding replacement helper...'
+                        : 'Đang tìm thợ thay thế...'}
                   </Text>
-                  <View
-                    style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 }}
-                  >
+                  {hasRealHelper && (
                     <View
-                      style={{
-                        backgroundColor: '#ECFDF5',
-                        paddingHorizontal: 6,
-                        paddingVertical: 2,
-                        borderRadius: 6,
-                      }}
+                      style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 }}
                     >
-                      <Text style={{ fontSize: 11, color: COLORS.success, fontWeight: '700' }}>
-                        e-KYC 100%
+                      <View
+                        style={{
+                          backgroundColor: '#ECFDF5',
+                          paddingHorizontal: 6,
+                          paddingVertical: 2,
+                          borderRadius: 6,
+                        }}
+                      >
+                        <Text style={{ fontSize: 11, color: COLORS.success, fontWeight: '700' }}>
+                          e-KYC 100%
+                        </Text>
+                      </View>
+                      <Text style={{ fontSize: 12, color: '#F59E0B', fontWeight: '800' }}>
+                        {lang === 'en' ? '★ 4.9 (48 jobs)' : '★ 4.9 (48 đơn)'}
                       </Text>
                     </View>
-                    <Text style={{ fontSize: 12, color: '#F59E0B', fontWeight: '800' }}>
-                      {lang === 'en' ? '★ 4.9 (48 jobs)' : '★ 4.9 (48 đơn)'}
-                    </Text>
-                  </View>
+                  )}
                 </View>
               </View>
 
@@ -333,25 +343,27 @@ export default function SosTrackingScreen() {
 
               {/* Nút Gọi điện & Nhắn tin */}
               <View style={{ flexDirection: 'row', gap: 10 }}>
-                <TouchableOpacity
-                  activeOpacity={0.8}
-                  onPress={handleCallHelper}
-                  style={{
-                    flex: 1,
-                    backgroundColor: '#10B981',
-                    borderRadius: 14,
-                    paddingVertical: 12,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    flexDirection: 'row',
-                    gap: 8,
-                  }}
-                >
-                  <Phone size={18} color="#fff" />
-                  <Text style={{ color: '#fff', fontWeight: '800', fontSize: 14 }}>
-                    {lang === 'en' ? 'Call Now' : 'Gọi điện ngay'}
-                  </Text>
-                </TouchableOpacity>
+                {hasRealHelper && helperPhone ? (
+                  <TouchableOpacity
+                    activeOpacity={0.8}
+                    onPress={handleCallHelper}
+                    style={{
+                      flex: 1,
+                      backgroundColor: '#10B981',
+                      borderRadius: 14,
+                      paddingVertical: 12,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexDirection: 'row',
+                      gap: 8,
+                    }}
+                  >
+                    <Phone size={18} color="#fff" />
+                    <Text style={{ color: '#fff', fontWeight: '800', fontSize: 14 }}>
+                      {lang === 'en' ? 'Call Now' : 'Gọi điện ngay'}
+                    </Text>
+                  </TouchableOpacity>
+                ) : null}
 
                 <TouchableOpacity
                   activeOpacity={0.8}
