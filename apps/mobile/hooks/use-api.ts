@@ -1102,6 +1102,19 @@ export function useSendSupportMessage() {
   });
 }
 
+// B75: Mở lại thread hỗ trợ đã đóng
+export function useReopenSupportConversation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (conversationId: string) =>
+      apiClient.patch(`/support/conversations/${conversationId}/reopen`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['support', 'mine'] });
+      qc.invalidateQueries({ queryKey: ['support', 'messages'] });
+    },
+  });
+}
+
 export function useMarkSupportRead() {
   const qc = useQueryClient();
   return useMutation({
