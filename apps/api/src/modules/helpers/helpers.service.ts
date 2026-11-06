@@ -253,6 +253,10 @@ export class HelpersService {
   async rejectKyc(userId: string, reason: string): Promise<HelperProfileDocument> {
     const profile = await this.helperModel.findOne({ user_id: new Types.ObjectId(userId) }).exec();
     if (!profile) throw new NotFoundException('Helper không tồn tại');
+    // B82: chỉ từ chối được e-KYC đang chờ duyệt
+    if (profile.verification_status !== VerificationStatus.PENDING) {
+      throw new BadRequestException('Hồ sơ không ở trạng thái chờ duyệt (PENDING), không thể từ chối');
+    }
     profile.verification_status = VerificationStatus.REJECTED;
     profile.rejection_reason = reason;
     return profile.save();
