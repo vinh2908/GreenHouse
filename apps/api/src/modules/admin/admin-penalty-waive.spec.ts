@@ -6,10 +6,12 @@ import { AdminService } from './admin.service';
  * Spec cho AdminService — giám sát SOS (flagged list), sổ phạt, và miễn phạt
  * (waive) kèm tính lại điểm. Model giả in-memory.
  *
- * Kịch bản điểm: thợ rating 5 (12 review), completion/acceptance 100 →
- * 3 tiêu chí đầu = 80đ cố định; Reliability = 20 − phạt.
- * 5 mốc hủy/7 ngày → phạt 10 → tổng 90. Miễn sự kiện của lần hủy thứ 5 →
- * còn 4 mốc → phạt 5 → tổng 95.
+ * Kịch bản điểm (G8 — 1 công thức duy nhất Distance 40 / Skill 30 /
+ * Rating 20 / KYC 10 − phạt hủy): thợ rating 5, đã duyệt e-KYC, có đăng ký
+ * dịch vụ, không có đơn tham chiếu nên khoảng cách = 0đ → 4 tiêu chí =
+ * 0 + 30 + 20 + 10 = 60đ cố định; phạt hủy trừ vào tổng.
+ * 5 mốc hủy/7 ngày → phạt 10 → tổng 50. Miễn sự kiện của lần hủy thứ 5 →
+ * còn 4 mốc → phạt 5 → tổng 55.
  */
 
 type Doc = Record<string, unknown>;
@@ -91,11 +93,13 @@ function makeService() {
     total_reviews: 12,
     completion_rate: 100,
     acceptance_rate: 100,
+    verification_status: 'approved',
+    service_ids: [new Types.ObjectId()],
     cancellation_timestamps: [...stamps],
     cancellations_last_7_days: 5,
     penalty_points: 10,
-    performance_score: 90,
-    score_breakdown: { rating: 40, completion: 25, responsiveness: 15, reliability: 10 },
+    performance_score: 50,
+    score_breakdown: { distance: 0, skill: 30, rating: 20, kyc: 10 },
     score_updated_at: new Date(now - 10 * 60 * 1000),
     save: jest.fn(async () => profile),
   };
@@ -205,7 +209,7 @@ function makeService() {
 }
 
 describe('AdminService.waivePenaltyEvent', () => {
-  it('miễn phạt: sự kiện → waived kèm audit, gỡ đúng 1 mốc hủy, điểm tính lại 90 → 95', async () => {
+  it('miễn phạt: sự kiện → waived kèm audit, gỡ đúng 1 mốc hủy, điểm tính lại 50 → 55', async () => {
     const { service, adminId, profile, targetEvent } = makeService();
 
     const result = await service.waivePenaltyEvent(
@@ -226,8 +230,8 @@ describe('AdminService.waivePenaltyEvent', () => {
     expect(profile['cancellation_timestamps'] as Date[]).toHaveLength(4);
     expect(profile['cancellations_last_7_days']).toBe(4);
     expect(profile['penalty_points']).toBe(5);
-    expect(profile['performance_score']).toBe(95);
-    expect(result.helper_score?.total).toBe(95);
+    expect(profile['performance_score']).toBe(55);
+    expect(result.helper_score?.total).toBe(55);
     expect(result.helper_score?.penaltyPoints).toBe(5);
   });
 
@@ -244,8 +248,8 @@ describe('AdminService.waivePenaltyEvent', () => {
     expect(second.already_waived).toBe(true);
     expect(profile['cancellation_timestamps'] as Date[]).toHaveLength(4);
     expect(profile['penalty_points']).toBe(5);
-    expect(profile['performance_score']).toBe(95);
-    expect(second.helper_score?.total).toBe(95);
+    expect(profile['performance_score']).toBe(55);
+    expect(second.helper_score?.total).toBe(55);
   });
 
   it('sự kiện không tồn tại → NotFoundException', async () => {
