@@ -244,7 +244,7 @@ export function useNotificationSocket() {
                 ? '💬 ' +
                   (formatNotificationTitle(n.title, lang) ||
                     (lang === 'en' ? 'New message' : 'Tin nhắn mới'))
-                : formatNotificationTitle(n.title, lang);
+                : formatNotificationTitle(n.title, lang, n.type);
         const body = isNewJob
           ? lang === 'en'
             ? `${formatNotificationBody(n.body, lang) || 'A customer just posted a matching job.'} Open Jobs tab to view.`
@@ -266,7 +266,7 @@ export function useNotificationSocket() {
                     ? formatNotificationBody(n.body, lang) ||
                       'You have a new message from partner'
                     : n.body || 'Bạn có tin nhắn mới từ đối tác'
-                  : formatNotificationBody(n.body, lang);
+                  : formatNotificationBody(n.body, lang, n.type, n.data);
 
         Toast.show({
           type: isNewJob || isAccepted || isNewQuote ? 'success' : 'info',
