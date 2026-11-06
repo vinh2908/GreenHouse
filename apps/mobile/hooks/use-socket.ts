@@ -134,12 +134,17 @@ export function useJobSocketUpdates(jobId?: string) {
       },
     );
 
-    const unsub2 = socketService.on<{ quote_id: string }>(SOCKET_EVENTS.QUOTE_RECEIVED, () => {
-      qc.invalidateQueries({ queryKey: ['job', jobId, 'quotes'] });
-      Toast.show({ type: 'success', text1: '💰 Có báo giá mới!' });
-    });
+    const unsub2 = socketService.on<{ job_id?: string; quote_id: string }>(
+      SOCKET_EVENTS.QUOTE_RECEIVED,
+      data => {
+        if (data?.job_id && data.job_id !== jobId) return;
+        qc.invalidateQueries({ queryKey: ['job', jobId, 'quotes'] });
+        Toast.show({ type: 'success', text1: '💰 Có báo giá mới!' });
+      },
+    );
 
-    const unsub3 = socketService.on<{ job_id: string }>(SOCKET_EVENTS.CONTRACT_AMENDED, () => {
+    const unsub3 = socketService.on<{ job_id?: string }>(SOCKET_EVENTS.CONTRACT_AMENDED, data => {
+      if (data?.job_id && data.job_id !== jobId) return;
       qc.invalidateQueries({ queryKey: ['job', jobId, 'contract'] });
       qc.invalidateQueries({ queryKey: ['job', jobId] });
       Toast.show({
@@ -149,9 +154,10 @@ export function useJobSocketUpdates(jobId?: string) {
       });
     });
 
-    const unsub4 = socketService.on<{ job_id: string; status: string }>(
+    const unsub4 = socketService.on<{ job_id?: string; status: string }>(
       SOCKET_EVENTS.CONTRACT_AMENDMENT_ACCEPTED,
       data => {
+        if (data?.job_id && data.job_id !== jobId) return;
         qc.invalidateQueries({ queryKey: ['job', jobId, 'contract'] });
         qc.invalidateQueries({ queryKey: ['job', jobId] });
         Toast.show({
@@ -224,7 +230,9 @@ export function useMonthlyContractSocket(contractId?: string) {
   const qc = useQueryClient();
 
   useEffect(() => {
-    const handleUpdate = () => {
+    // B111: chỉ cập nhật khi event thuộc hợp đồng đang mở (hoặc đang xem danh sách)
+    const handleUpdate = (data?: { contract_id?: string }) => {
+      if (contractId && data?.contract_id && data.contract_id !== contractId) return;
       qc.invalidateQueries({ queryKey: ['monthly-contracts'] });
       if (contractId) {
         qc.invalidateQueries({ queryKey: ['monthly-contract', contractId] });
