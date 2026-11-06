@@ -39,7 +39,7 @@ import { ImageViewerModal } from '@/components/common/photo-thumbs';
 import { Alert } from '@/components/common/app-alert';
 import { useTranslation } from '@/hooks/use-i18n';
 import { formatDayLabel } from '@/utils/date-format';
-import { Avatar, COLORS, LoadingSpinner, EmptyState } from '@/components/ui';
+import { Avatar, COLORS, LoadingSpinner, EmptyState, Skeleton } from '@/components/ui';
 
 export function resolveMediaUrl(rawUrl: string): string {
   if (!rawUrl || typeof rawUrl !== 'string') return '';
@@ -489,7 +489,14 @@ export default function ChatScreen() {
 
       {/* ── Chat Messages List ──────────────────────────────────────── */}
       {loadingConv ? (
-        <LoadingSpinner />
+        // B28: skeleton bong bóng chat giữ khung thay spinner trắng
+        <View style={{ flex: 1, padding: 16, gap: 12 }}>
+          <Skeleton width="70%" height={52} radius={14} style={{ alignSelf: 'flex-start' }} />
+          <Skeleton width="60%" height={52} radius={14} style={{ alignSelf: 'flex-end' }} />
+          <Skeleton width="75%" height={52} radius={14} style={{ alignSelf: 'flex-start' }} />
+          <Skeleton width="55%" height={40} radius={14} style={{ alignSelf: 'flex-end' }} />
+          <Skeleton width="65%" height={52} radius={14} style={{ alignSelf: 'flex-start' }} />
+        </View>
       ) : errorMsg ? (
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 }}>
           <EmptyState

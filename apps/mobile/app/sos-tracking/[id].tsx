@@ -40,8 +40,8 @@ import {
   LoadingSpinner,
   COLORS,
   Separator,
-  PriceText,
-} from '@/components/ui';
+  PriceText,,
+  Skeleton,} from '@/components/ui';
 
 dayjs.extend(relativeTime);
 
@@ -79,7 +79,16 @@ export default function SosTrackingScreen() {
     };
   }, [refetch, id]);
 
-  if (isLoading) return <LoadingSpinner />;
+  // B28: skeleton giữ khung (header + bản đồ + thẻ trạng thái + thẻ thợ) thay spinner trắng
+  if (isLoading)
+    return (
+      <View style={{ flex: 1, backgroundColor: '#F8F9FA', padding: 16, gap: 12 }}>
+        <Skeleton width="60%" height={24} />
+        <Skeleton width="100%" height={220} radius={14} />
+        <Skeleton width="100%" height={110} radius={14} />
+        <Skeleton width="100%" height={90} radius={14} />
+      </View>
+    );
 
   const isMatched =
     job?.status === 'confirmed' ||

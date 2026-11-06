@@ -556,6 +556,35 @@ export function ErrorState({ title, subtitle, onRetry, retryText }: ErrorStatePr
   );
 }
 
+// ─── Skeleton (B28) ──────────────────────────────────────────────────────────
+// Khối xám giữ khung bố cục khi dữ liệu đang tải — thay cho spinner trắng
+// toàn màn hình (mẫu đã có ở (customer)/jobs.tsx và (helper)/dashboard.tsx).
+export function Skeleton({
+  width,
+  height,
+  radius = 8,
+  style,
+}: {
+  width?: number | string;
+  height?: number | string;
+  radius?: number;
+  style?: object;
+}) {
+  return (
+    <View
+      style={[
+        {
+          width: width as never,
+          height: height as never,
+          borderRadius: radius,
+          backgroundColor: COLORS.gray[200],
+        },
+        style as object,
+      ]}
+    />
+  );
+}
+
 // ─── Loading Spinner ───────────────────────────────────────────────────────────
 
 export function LoadingSpinner({ size = 'large' }: { size?: 'small' | 'large' }) {

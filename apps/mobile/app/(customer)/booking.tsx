@@ -71,7 +71,7 @@ import {
 } from '@/hooks/use-api';
 import type { IssuePhotoAnalysis } from '@/hooks/use-api';
 import { locationService, OsmPlace, parseVietnameseAddress } from '@/services/location.service';
-import { Button, Input, Card, COLORS } from '@/components/ui';
+import { Button, Input, Card, COLORS, Skeleton } from '@/components/ui';
 import { VoucherInput } from '@/components/common/voucher-input';
 import type { VoucherPreview } from '@/hooks/use-api';
 import { useTranslation } from '@/hooks/use-i18n';
@@ -1497,9 +1497,12 @@ export default function BookingScreen() {
 
               <View style={{ gap: 10 }}>
                 {isLoadingServices ? (
-                  <View style={{ paddingVertical: 40, alignItems: 'center', gap: 12 }}>
-                    <ActivityIndicator size="large" color={COLORS.primary} />
-                    <Text style={{ fontSize: fs(13), color: COLORS.gray[500], fontWeight: '600' }}>
+                  // B28: skeleton hàng dịch vụ giữ khung thay spinner trắng
+                  <View style={{ gap: 10 }}>
+                    {[1, 2, 3].map(i => (
+                      <Skeleton key={i} width="100%" height={72} radius={14} />
+                    ))}
+                    <Text style={{ fontSize: fs(13), color: COLORS.gray[500], fontWeight: '600', textAlign: 'center' }}>
                       {t('booking_loading_services')}
                     </Text>
                   </View>
