@@ -231,6 +231,8 @@ export const NOTIFICATION_TYPES = {
   MONTHLY_CONTRACT_LEAVE_REQUEST: 'monthly_contract_leave_request',
   MONTHLY_CONTRACT_LEAVE_RESPONSE: 'monthly_contract_leave_response',
   MONTHLY_CONTRACT_SETTLED: 'monthly_contract_settled',
+  MONTHLY_CONTRACT_STARTED: 'monthly_contract_started', // B100: hợp đồng bắt đầu
+  MONTHLY_CONTRACT_EXPIRING_SOON: 'monthly_contract_expiring_soon', // B100: sắp hết hạn
   // Claims
   INSURANCE_CLAIM_UPDATE: 'insurance_claim_update',
   // SOS Backup

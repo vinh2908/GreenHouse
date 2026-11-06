@@ -99,6 +99,13 @@ export class MonthlyContract {
   @Prop()
   end_reason?: string;
 
+  // B100: cờ chống gửi trùng mốc nhắc (bắt đầu / sắp hết hạn), 1 lần/mốc
+  @Prop({ type: Date, default: null })
+  start_notified_at?: Date | null;
+
+  @Prop({ type: Date, default: null })
+  expiry_notified_at?: Date | null;
+
   created_at: Date;
   updated_at: Date;
 }

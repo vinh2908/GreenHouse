@@ -22,6 +22,7 @@ import {
 import { CreateMonthlyContractDto, SettleMonthDto } from './dto/monthly-contract.dto';
 import { HelperProfile, HelperProfileDocument } from '../helpers/schemas/helper-profile.schema';
 import { VerificationStatus } from '@homemate/types';
+import { NOTIFICATION_TYPES } from '@homemate/constants';
 import { NotificationsService } from '../notifications/notifications.service';
 import { PaymentsService } from '../payments/payments.service';
 import { AppGateway } from '../chat/app.gateway';
@@ -720,6 +721,7 @@ export class MonthlyContractsService {
       throw err;
     }
 
+    // B100: chốt lương xong → báo cả thợ (đã có) và khách
     await this.notificationsService.create({
       userId: contract.helper_id.toString(),
       type: 'monthly_contract_settled',
@@ -727,6 +729,15 @@ export class MonthlyContractsService {
       body: `Hợp đồng "${contract.title}": ${summary.confirmed_days}/${summary.scheduled_days} buổi — bạn nhận ${summary.helper_receives.toLocaleString('vi-VN')}₫ vào ví.`,
       payload: { contract_id: String(contract._id), month: dto.month, kind: 'monthly_contract' },
     });
+    await this.notificationsService
+      .create({
+        userId: contract.customer_id.toString(),
+        type: 'monthly_contract_settled',
+        title: '💰 Đã chốt lương tháng ' + dto.month,
+        body: `Hợp đồng "${contract.title}": đã chốt lương tháng ${dto.month} — thợ nhận ${summary.helper_receives.toLocaleString('vi-VN')}₫ (${summary.confirmed_days}/${summary.scheduled_days} buổi).`,
+        payload: { contract_id: String(contract._id), month: dto.month, kind: 'monthly_contract' },
+      })
+      .catch(() => undefined);
 
     // A85: Socket event cập nhật tức thì chốt lương
     const settlePayload = {
@@ -743,6 +754,81 @@ export class MonthlyContractsService {
       settled_at: settlement.settled_at,
       settlement_id: String(settlement._id),
     };
+  }
+
+  /**
+   * B100: nhắc 3 mốc hợp đồng tháng cho CẢ khách + thợ, mỗi mốc 1 lần:
+   *  - bắt đầu (start_date là hôm nay, status active)
+   *  - sắp hết hạn (end_date trong 3 ngày tới, status active)
+   *  - chốt lương xong (gửi ngay trong settle(), xem trên)
+   * Hợp đồng đã huỷ/kết thúc/từ chối thì không nhắc.
+   */
+  @Cron('0 8 * * *')
+  async notifyMonthlyContractMilestones(): Promise<void> {
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const todayEnd = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000);
+    const in3Days = new Date(todayStart.getTime() + 3 * 24 * 60 * 60 * 1000);
+
+    // Mốc bắt đầu
+    const starting = await this.contractModel
+      .find({
+        status: 'active',
+        start_date: { $gte: todayStart, $lt: todayEnd },
+        start_notified_at: null,
+      })
+      .exec();
+    for (const c of starting) {
+      const claimed = await this.contractModel
+        .findOneAndUpdate(
+          { _id: c._id, start_notified_at: null },
+          { $set: { start_notified_at: now } },
+          { new: true },
+        )
+        .exec();
+      if (!claimed) continue;
+      for (const userId of [String(c.customer_id), String(c.helper_id)]) {
+        await this.notificationsService
+          .create({
+            userId,
+            type: NOTIFICATION_TYPES.MONTHLY_CONTRACT_STARTED,
+            title: 'Hợp đồng tháng đã bắt đầu',
+            body: `Hợp đồng "${c.title}" đã bắt đầu hôm nay.`,
+            payload: { contract_id: String(c._id), kind: 'monthly_contract' },
+          })
+          .catch(() => undefined);
+      }
+    }
+
+    // Mốc sắp hết hạn (3 ngày trước)
+    const expiring = await this.contractModel
+      .find({
+        status: 'active',
+        end_date: { $gte: todayStart, $lt: in3Days },
+        expiry_notified_at: null,
+      })
+      .exec();
+    for (const c of expiring) {
+      const claimed = await this.contractModel
+        .findOneAndUpdate(
+          { _id: c._id, expiry_notified_at: null },
+          { $set: { expiry_notified_at: now } },
+          { new: true },
+        )
+        .exec();
+      if (!claimed) continue;
+      for (const userId of [String(c.customer_id), String(c.helper_id)]) {
+        await this.notificationsService
+          .create({
+            userId,
+            type: NOTIFICATION_TYPES.MONTHLY_CONTRACT_EXPIRING_SOON,
+            title: 'Hợp đồng tháng sắp hết hạn',
+            body: `Hợp đồng "${c.title}" sắp hết hạn vào ${this.toDateStr(new Date(c.end_date!))}.`,
+            payload: { contract_id: String(c._id), kind: 'monthly_contract' },
+          })
+          .catch(() => undefined);
+      }
+    }
   }
 
   // ─── Admin Management ───────────────────────────────────────────────────────
