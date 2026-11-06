@@ -2712,7 +2712,7 @@ export class JobsService implements OnModuleInit {
             contract.helper_receives,
             `Hoàn tác tiền công đơn ${jobId} do lỗi nghiệm thu`,
           )
-          .catch((rollbackErr) => {
+          .catch(rollbackErr => {
             // F20: lỗi hoàn tác tiền công phải được log rõ, không nuốt im lặng.
             this.logger.error(
               `Failed to roll back payout for job ${jobId} after approval error: ${rollbackErr}`,

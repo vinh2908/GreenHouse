@@ -396,11 +396,7 @@ export function EmptyState({ icon, title, subtitle, action, onAction }: EmptySta
           marginBottom: 14,
         }}
       >
-        {icon ? (
-          icon
-        ) : (
-          <ClipboardList size={36} color={COLORS.gray[400]} />
-        )}
+        {icon ? icon : <ClipboardList size={36} color={COLORS.gray[400]} />}
       </View>
       <Text
         style={{

@@ -56,5 +56,4 @@ export class AnalyticsController {
   async getTopHelpers(@Query('limit') limit?: number) {
     return this.analyticsService.getTopHelpers(Number(limit) || 10);
   }
-
 }

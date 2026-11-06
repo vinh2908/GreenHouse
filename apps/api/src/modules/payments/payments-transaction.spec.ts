@@ -19,7 +19,7 @@ describe('PaymentsService - F5 & F19 Transaction and Stuck Processing', () => {
 
   beforeEach(async () => {
     mockSession = {
-      withTransaction: jest.fn().mockImplementation(async (cb) => {
+      withTransaction: jest.fn().mockImplementation(async cb => {
         return await cb();
       }),
       endSession: jest.fn().mockResolvedValue(undefined),
@@ -33,8 +33,12 @@ describe('PaymentsService - F5 & F19 Transaction and Stuck Processing', () => {
       findById: jest.fn(),
       findOneAndUpdate: jest.fn(),
       findByIdAndUpdate: jest.fn(),
-      updateOne: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue({ modifiedCount: 1 }) }),
-      updateMany: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue({ modifiedCount: 2 }) }),
+      updateOne: jest
+        .fn()
+        .mockReturnValue({ exec: jest.fn().mockResolvedValue({ modifiedCount: 1 }) }),
+      updateMany: jest
+        .fn()
+        .mockReturnValue({ exec: jest.fn().mockResolvedValue({ modifiedCount: 2 }) }),
       db: mockConnection,
     };
 
@@ -62,9 +66,11 @@ describe('PaymentsService - F5 & F19 Transaction and Stuck Processing', () => {
     };
 
     const mockTransactionModel = {
-      create: jest.fn().mockImplementation((docs) => {
+      create: jest.fn().mockImplementation(docs => {
         const item = Array.isArray(docs) ? docs[0] : docs;
-        return Array.isArray(docs) ? [{ ...item, _id: new Types.ObjectId() }] : { ...item, _id: new Types.ObjectId() };
+        return Array.isArray(docs)
+          ? [{ ...item, _id: new Types.ObjectId() }]
+          : { ...item, _id: new Types.ObjectId() };
       }),
     };
 
@@ -132,9 +138,9 @@ describe('PaymentsService - F5 & F19 Transaction and Stuck Processing', () => {
       exec: jest.fn().mockRejectedValue(new Error('Simulated DB failure')),
     });
 
-    await expect(
-      service.mockPayJob(customerId, jobId, 300000, 'cash'),
-    ).rejects.toThrow('Simulated DB failure');
+    await expect(service.mockPayJob(customerId, jobId, 300000, 'cash')).rejects.toThrow(
+      'Simulated DB failure',
+    );
 
     // Verify session started and withTransaction called
     expect(mockSession.withTransaction).toHaveBeenCalled();
@@ -149,4 +155,3 @@ describe('PaymentsService - F5 & F19 Transaction and Stuck Processing', () => {
     );
   });
 });
-

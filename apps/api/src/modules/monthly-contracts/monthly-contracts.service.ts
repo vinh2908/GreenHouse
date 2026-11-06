@@ -755,9 +755,7 @@ export class MonthlyContractsService {
       if (err?.code === 11000) {
         throw new ConflictException(`Tháng ${dto.month} đã được chốt lương rồi`);
       }
-      this.logger.error(
-        `Settle ${dto.month} for contract ${id} failed: ${err?.message ?? err}`,
-      );
+      this.logger.error(`Settle ${dto.month} for contract ${id} failed: ${err?.message ?? err}`);
       throw err;
     } finally {
       if (session) {

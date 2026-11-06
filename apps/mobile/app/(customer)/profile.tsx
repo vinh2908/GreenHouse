@@ -281,10 +281,7 @@ export default function CustomerProfileScreen() {
 
         {/* ── Customer Wallet Card (F6) ────────────────────────────── */}
         <View style={{ paddingHorizontal: 16, paddingTop: 16 }}>
-          <TouchableOpacity
-            activeOpacity={0.85}
-            onPress={() => router.push('/bank-account')}
-          >
+          <TouchableOpacity activeOpacity={0.85} onPress={() => router.push('/bank-account')}>
             <Card
               style={{
                 gap: 8,
