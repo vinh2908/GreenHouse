@@ -8,6 +8,7 @@ import { COLORS } from '@/components/ui';
 import { useTranslation, fs } from '@/hooks/use-i18n';
 import { useConversations } from '@/hooks/use-api';
 import { ScalePressable } from '@/components/common/scale-pressable';
+import { lightImpact } from '@/services/haptics';
 
 interface CustomTabBarProps {
   state: any;
@@ -107,6 +108,8 @@ export function CustomTabBar({
           const isCenterButton = mode === 'customer' && route.name === 'booking';
 
           const onPress = () => {
+            // B20: rung nhẹ khi chuyển tab (chỉ khi chuyển sang tab khác)
+            if (!isFocused) void lightImpact();
             const event = navigation.emit({
               type: 'tabPress',
               target: route.key,

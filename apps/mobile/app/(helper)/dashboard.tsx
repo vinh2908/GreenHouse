@@ -42,6 +42,7 @@ import {
   useUpdateHelperLocation,
 } from '@/hooks/use-api';
 import { useTranslation } from '@/hooks/use-i18n';
+import { lightImpact } from '@/services/haptics';
 import { locationService } from '@/services/location.service';
 import { socketService, SOCKET_EVENTS } from '@/services/socket.service';
 import {
@@ -147,6 +148,8 @@ export default function HelperDashboardScreen() {
 
   const handleAcceptSos = async () => {
     if (!sosBroadcast?.job_id) return;
+    // B20: rung nhẹ khi thợ nhận đơn SOS
+    void lightImpact();
     try {
       await acceptSos.mutateAsync(sosBroadcast.job_id);
       const targetId = sosBroadcast.job_id;
