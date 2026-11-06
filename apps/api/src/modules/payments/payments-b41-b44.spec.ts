@@ -4,20 +4,17 @@ import { PaymentsService } from './payments.service';
 
 /**
  * Spec B41–B44: kiểm chứng validation tiền/thanh toán/rút tiền của PaymentsService.
- * Service được khởi tạo trực tiếp với model giả tối thiểu (các hàm kiểm chứng
- * ở đây đều chặn trước khi chạm DB nên mock rỗng là đủ; riêng B43/B44 dùng
- * mock có hành vi).
+ * Service được khởi tạo trực tiếp với model giả tối thiểu.
  */
 describe('PaymentsService - B41/B42/B43/B44 validation', () => {
   const customerId = new Types.ObjectId().toHexString();
   const helperId = new Types.ObjectId().toHexString();
   const jobId = new Types.ObjectId().toHexString();
 
-  function makeService(overrides: Record<string, any> = {}) {
-    const walletDoc: any = { _id: new Types.ObjectId(), balance: 1_000_000 };
+  function makeService(balance = 1_000_000) {
     const walletModel: any = {
       findOneAndUpdate: jest.fn().mockReturnValue({
-        exec: jest.fn().mockResolvedValue({ ...walletDoc, balance: 1_000_000 }),
+        exec: jest.fn().mockResolvedValue({ _id: new Types.ObjectId(), balance }),
       }),
       findByIdAndUpdate: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue({}) }),
     };
@@ -56,15 +53,15 @@ describe('PaymentsService - B41/B42/B43/B44 validation', () => {
       undefined,
       undefined,
     );
-    return { service, walletModel, transactionModel, withdrawalModel, createdTx, ...overrides };
+    return { service, walletModel, transactionModel, withdrawalModel, createdTx };
   }
 
   describe('B41: mockPayJob chỉ chấp nhận payment_method hợp lệ', () => {
     it('payment_method "bitcoin" → 400', async () => {
       const { service } = makeService();
-      await expect(service.mockPayJob(customerId, jobId, 500_000, 'bitcoin')).rejects.toBeInstanceOf(
-        BadRequestException,
-      );
+      await expect(
+        service.mockPayJob(customerId, jobId, 500_000, 'bitcoin'),
+      ).rejects.toBeInstanceOf(BadRequestException);
     });
 
     it('payment_method rỗng → 400', async () => {
@@ -128,6 +125,26 @@ describe('PaymentsService - B41/B42/B43/B44 validation', () => {
       const tx = await service.creditHelper(helperId, jobId, 200_000);
       expect(tx.amount).toBe(200_000);
       expect(tx.type).toBe('earning');
+    });
+  });
+
+  describe('B43: giao dịch hoa hồng tiền mặt ghi đúng tiền hoa hồng', () => {
+    it('đơn 500.000₫, phí sàn 10% (50.000₫) → giao dịch commission ghi 50.000₫, không phải 500.000₫', async () => {
+      const { service, createdTx } = makeService();
+      const tx = await service.deductCommissionForCashJob(helperId, jobId, 50_000, 450_000);
+      expect(tx.type).toBe('commission');
+      expect(tx.amount).toBe(50_000);
+      expect(tx.balance_before).toBe(1_000_000);
+      expect(tx.balance_after).toBe(950_000);
+      expect(createdTx[0].metadata.helper_net_earned).toBe(450_000);
+    });
+
+    it('ví không đủ phí: chỉ trừ tối đa số dư, phần thiếu ghi unpaid_fee', async () => {
+      const { service } = makeService(30_000);
+      const tx: any = await service.deductCommissionForCashJob(helperId, jobId, 50_000, 450_000);
+      expect(tx.amount).toBe(50_000);
+      expect(tx.balance_after).toBe(0);
+      expect(tx.metadata.unpaid_fee).toBe(20_000);
     });
   });
 });
