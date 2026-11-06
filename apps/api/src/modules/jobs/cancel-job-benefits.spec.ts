@@ -63,9 +63,17 @@ function makeJobsService(opts?: { voucherThrows?: boolean }) {
     ),
   };
 
+  const pendingQuotes: Doc[] = [];
   const quoteModel = {
     updateMany: jest.fn(() => ({
       exec: async () => ({ modifiedCount: 0 }),
+    })),
+    find: jest.fn(() => ({
+      select: jest.fn(() => ({
+        lean: jest.fn(() => ({
+          exec: async () => pendingQuotes,
+        })),
+      })),
     })),
   };
 
@@ -110,7 +118,16 @@ function makeJobsService(opts?: { voucherThrows?: boolean }) {
     dummy, // disputesService
   );
 
-  return { service, jobRecord, vouchersService, loyaltyService, customerId, jobId };
+  return {
+    service,
+    jobRecord,
+    vouchersService,
+    loyaltyService,
+    notificationsService,
+    pendingQuotes,
+    customerId,
+    jobId,
+  };
 }
 
 describe('JobsService.cancelJob - Khôi phục voucher và điểm loyalty', () => {
@@ -178,5 +195,25 @@ describe('JobsService.cancelJob - Khôi phục voucher và điểm loyalty', () 
     expect(cancelledJob.status).toBe(JobStatus.CANCELLED);
     expect(jobRecord['voucher_code']).toBeUndefined();
     expect(vouchersService.restoreForJob).toHaveBeenCalledTimes(1);
+  });
+
+  it('B60: 3 thợ đã báo giá → hủy đơn → cả 3 nhận thông báo "Đơn hàng đã bị hủy"', async () => {
+    const { service, notificationsService, pendingQuotes, customerId, jobId } = makeJobsService();
+    const quotedHelpers = [new Types.ObjectId(), new Types.ObjectId(), new Types.ObjectId()];
+    for (const helperId of quotedHelpers) {
+      pendingQuotes.push({ helper_id: helperId });
+    }
+
+    await service.cancelJob(String(customerId), 'customer', String(jobId), {
+      reason: 'Thay đổi kế hoạch cá nhân',
+    });
+
+    for (const helperId of quotedHelpers) {
+      const call = (notificationsService.create as jest.Mock).mock.calls.find(
+        (c: any[]) => c[0].userId === String(helperId) && c[0].title === 'Đơn hàng đã bị hủy',
+      );
+      expect(call).toBeDefined();
+      expect(call[0].body).toContain('không còn hiệu lực');
+    }
   });
 });

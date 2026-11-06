@@ -45,13 +45,33 @@ describe('JobsService - F7 Refund Retry & Notification', () => {
       providers: [
         JobsService,
         { provide: getModelToken(Job.name), useValue: jobModel },
-        { provide: getModelToken(Quote.name), useValue: { updateMany: jest.fn().mockReturnValue({ exec: jest.fn() }) } },
-        { provide: getModelToken(Contract.name), useValue: { findOne: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(null) }) } },
+        {
+          provide: getModelToken(Quote.name),
+          useValue: {
+            updateMany: jest.fn().mockReturnValue({ exec: jest.fn() }),
+            find: jest.fn().mockReturnValue({
+              select: jest.fn().mockReturnValue({
+                lean: jest.fn().mockReturnValue({
+                  exec: jest.fn().mockResolvedValue([]),
+                }),
+              }),
+            }),
+          },
+        },
+        {
+          provide: getModelToken(Contract.name),
+          useValue: {
+            findOne: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(null) }),
+          },
+        },
         { provide: getModelToken(Service.name), useValue: {} },
         { provide: getModelToken(HelperProfile.name), useValue: {} },
         { provide: getModelToken(HelperPenaltyEvent.name), useValue: {} },
         { provide: getModelToken(User.name), useValue: {} },
-        { provide: AppGateway, useValue: { emitToJob: jest.fn(), emitToUser: jest.fn(), emitToAdmins: jest.fn() } },
+        {
+          provide: AppGateway,
+          useValue: { emitToJob: jest.fn(), emitToUser: jest.fn(), emitToAdmins: jest.fn() },
+        },
         { provide: NotificationsService, useValue: notificationsService },
         { provide: ChatService, useValue: {} },
         { provide: PaymentsService, useValue: paymentsService },
