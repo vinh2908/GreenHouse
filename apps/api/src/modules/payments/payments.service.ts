@@ -88,6 +88,36 @@ export class PaymentsService {
     return this.getOrCreateWallet(userId);
   }
 
+  /** B96: thông báo xác nhận tiền đã vào/ra — chỉ gửi khi giao dịch THÀNH CÔNG, 1 lần. */
+  private async notifyTopupSuccess(userId: string, amount: number, balanceAfter: number) {
+    await this.notificationsService
+      .create({
+        userId,
+        type: NOTIFICATION_TYPES.PAYMENT_SUCCESS,
+        title: 'Nạp tiền thành công',
+        body: `Đã nạp ${amount.toLocaleString('vi-VN')}₫, số dư mới: ${balanceAfter.toLocaleString('vi-VN')}₫`,
+        payload: { amount, balance: balanceAfter, screen: 'wallet' },
+      })
+      .catch(() => undefined);
+  }
+
+  private async notifyPaymentSuccess(
+    userId: string,
+    amount: number,
+    balanceAfter: number,
+    jobId?: string,
+  ) {
+    await this.notificationsService
+      .create({
+        userId,
+        type: NOTIFICATION_TYPES.PAYMENT_SUCCESS,
+        title: 'Thanh toán thành công',
+        body: `Đã thanh toán ${amount.toLocaleString('vi-VN')}₫${jobId ? ` cho đơn #${jobId.slice(-6)}` : ''}. Số dư ví: ${balanceAfter.toLocaleString('vi-VN')}₫`,
+        payload: { amount, balance: balanceAfter, ...(jobId ? { job_id: jobId } : {}) },
+      })
+      .catch(() => undefined);
+  }
+
   /**
    * B91: chạy 1 thao tác tiền trong MongoDB transaction khi DB hỗ trợ
    * (replica set); standalone Mongo không hỗ trợ transaction thì chạy thẳng
@@ -136,7 +166,7 @@ export class PaymentsService {
       throw new BadRequestException('Số tiền nạp tối thiểu là 50,000₫');
     }
     // B91: cộng ví + ghi giao dịch nạp tiền trong 1 transaction
-    return this.runInTransaction(async session => {
+    const result = await this.runInTransaction(async session => {
       const walletBefore = await this.getOrCreateWallet(userId);
       const updatedWallet = await this.walletModel
         .findByIdAndUpdate(walletBefore._id, { $inc: { balance: amount } }, { new: true, session })
@@ -162,6 +192,9 @@ export class PaymentsService {
 
       return { wallet: updatedWallet ?? walletBefore, transaction };
     });
+    // B96: chỉ gửi khi nạp thành công
+    await this.notifyTopupSuccess(userId, amount, result.wallet.balance);
+    return result;
   }
 
   // ─── Escrow / Job Payment ──────────────────────────────────────────────────
@@ -417,6 +450,13 @@ export class PaymentsService {
       });
     }
 
+    // B96: thanh toán thành công → thông báo xác nhận 1 lần (lỗi thì không gửi)
+    await this.notifyPaymentSuccess(
+      customerId,
+      resolvedAmount,
+      transaction!.balance_after ?? 0,
+      jobId,
+    );
     return {
       transaction: transaction!,
       success: true,
