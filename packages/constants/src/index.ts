@@ -199,6 +199,8 @@ export const NOTIFICATION_TYPES = {
   HELPER_ON_THE_WAY: 'helper_on_the_way',
   HELPER_ARRIVED: 'helper_arrived',
   JOB_COMPLETED: 'job_completed',
+  JOB_EXPIRED: 'job_expired',
+  JOB_EXPIRING_SOON: 'job_expiring_soon',
   // Helper
   NEW_JOB_NEARBY: 'new_job_nearby',
   QUOTE_ACCEPTED: 'quote_accepted',

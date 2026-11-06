@@ -52,6 +52,7 @@ export class HelpersService {
     delete doc.selfie_photo;
     delete doc.bank_account;
     delete doc.rejection_reason;
+    delete doc.private_notes;
     if (doc.user_id && typeof doc.user_id === 'object') {
       delete doc.user_id.phone;
       delete doc.user_id.password;
@@ -75,7 +76,7 @@ export class HelpersService {
     const profile = await this.helperModel
       .findOne(query)
       .select(
-        '-id_card_number -id_card_front -id_card_back -selfie_photo -bank_account -rejection_reason',
+        '-id_card_number -id_card_front -id_card_back -selfie_photo -bank_account -rejection_reason -private_notes',
       )
       .populate('user_id', 'full_name avatar created_at')
       .populate('service_ids', 'name slug icon base_price_min base_price_max')

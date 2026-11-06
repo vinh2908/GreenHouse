@@ -132,6 +132,9 @@ export class HelperProfile {
   })
   bank_account?: { bank_name: string; account_number: string; account_name: string };
 
+  @Prop()
+  private_notes?: string;
+
   // ── Lịch làm việc (Feature 13) ────────────────────────────────────────────
   // enabled=false (mặc định) = không lọc gì cả, thợ nhận mọi đơn như trước.
   @Prop({

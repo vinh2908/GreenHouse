@@ -449,6 +449,7 @@ export default function JobDetailScreen() {
     'quote_selected',
     'confirmed',
     'helper_on_the_way',
+    'helper_arrived',
   ].includes(job.status);
   const canEdit = !['completed', 'cancelled', 'disputed', 'refunded'].includes(job.status);
   const canApprove = job.status === 'pending_review';
@@ -666,12 +667,12 @@ export default function JobDetailScreen() {
       }
     };
 
-    if (job.status === 'helper_on_the_way') {
+    if (job.status === 'helper_on_the_way' || job.status === 'helper_arrived') {
       Alert.alert(
-        lang === 'en' ? 'Cancel while helper is on the way' : 'Hủy khi thợ đang di chuyển',
+        lang === 'en' ? 'Cancel when helper is on the way or arrived' : 'Hủy khi thợ đang di chuyển hoặc đã đến',
         lang === 'en'
-          ? 'Helper has started traveling to your location. Are you sure you want to cancel?'
-          : 'Thợ đã bắt đầu di chuyển đến điểm làm việc của bạn. Bạn có chắc chắn muốn hủy đơn không?',
+          ? 'Helper has started traveling or has arrived. Are you sure you want to cancel?'
+          : 'Thợ đã bắt đầu di chuyển hoặc đã có mặt tại địa điểm. Bạn có chắc chắn muốn hủy đơn không?',
         [
           { text: lang === 'en' ? 'Stay' : 'Ở lại', style: 'cancel' },
           {
