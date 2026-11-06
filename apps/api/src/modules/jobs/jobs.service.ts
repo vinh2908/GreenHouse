@@ -3728,6 +3728,13 @@ export class JobsService implements OnModuleInit {
     if (job.helper_id) {
       this.gateway.emitToUser(String(job.helper_id), SOCKET_EVENTS.TEAM_UPDATED, payload);
     }
+    // B114: phát cho MỌI thành viên trong team (kể cả thợ được mời chưa vào room job)
+    const memberIds = new Set(
+      (job.team ?? []).map(m => String(m.helper_id)).filter(Boolean),
+    );
+    for (const memberId of memberIds) {
+      this.gateway.emitToUser(memberId, SOCKET_EVENTS.TEAM_UPDATED, payload);
+    }
   }
 
   /** Danh sách lời mời vào nhóm đang chờ của 1 thợ */

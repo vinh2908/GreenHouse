@@ -170,6 +170,17 @@ export function useJobSocketUpdates(jobId?: string) {
       },
     );
 
+    // B114: team:updated — cập nhật ngay khi đội nhóm của đơn thay đổi
+    const unsubTeam = socketService.on<{ job_id?: string }>(
+      SOCKET_EVENTS.TEAM_UPDATED,
+      data => {
+        if (data?.job_id && data.job_id !== jobId) return;
+        qc.invalidateQueries({ queryKey: ['job', jobId] });
+        qc.invalidateQueries({ queryKey: ['jobs'] });
+        qc.invalidateQueries({ queryKey: ['team-invitations'] });
+      },
+    );
+
     const unsub5 = socketService.on<{ job_id?: string; quote_id?: string }>(
       SOCKET_EVENTS.QUOTE_REJECTED,
       data => {
@@ -186,6 +197,7 @@ export function useJobSocketUpdates(jobId?: string) {
       unsub3();
       unsub4();
       unsub5();
+      unsubTeam();
       socketService.leaveJob(jobId);
     };
   }, [jobId, qc]);
