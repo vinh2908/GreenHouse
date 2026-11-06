@@ -664,7 +664,7 @@ export class SosBackupService implements OnModuleInit, OnModuleDestroy {
       }
       // F13: mỗi SOS dùng bán kính theo đợt mời hiện tại của chính nó —
       // đợt sau mở rộng hơn (30 → 50 → 100km) để tìm được thợ ở xa.
-      const wave = s._id.equals(focusSos._id) ? focusWave : (s.current_wave || 1);
+      const wave = s._id.equals(focusSos._id) ? focusWave : s.current_wave || 1;
       const pool = await this.computeCandidatePool(job, s, this.waveRadiusKm(wave));
       pools.set(String(s._id), pool);
       pool.forEach(c => helperIds.add(c.helperId));

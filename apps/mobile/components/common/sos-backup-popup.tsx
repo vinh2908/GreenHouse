@@ -167,9 +167,7 @@ export function SosBackupPopup() {
                 urls={incoming.photo_urls}
                 size={56}
                 label={
-                  lang === 'en'
-                    ? 'Incident photo from helper'
-                    : 'Ảnh hiện trạng từ thợ gặp sự cố'
+                  lang === 'en' ? 'Incident photo from helper' : 'Ảnh hiện trạng từ thợ gặp sự cố'
                 }
               />
             ) : null}

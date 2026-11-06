@@ -253,19 +253,17 @@ export class PaymentsService {
           }
         }
 
-        await this.jobModel!
-          .findByIdAndUpdate(
-            job._id,
-            {
-              $set: {
-                payment_status: PaymentStatus.PAID,
-                payment_method: paymentMethod,
-                ...(discountAmount > 0 ? { discount_amount: discountAmount } : {}),
-              },
+        await this.jobModel!.findByIdAndUpdate(
+          job._id,
+          {
+            $set: {
+              payment_status: PaymentStatus.PAID,
+              payment_method: paymentMethod,
+              ...(discountAmount > 0 ? { discount_amount: discountAmount } : {}),
             },
-            { session: sess ?? undefined },
-          )
-          .exec();
+          },
+          { session: sess ?? undefined },
+        ).exec();
 
         const wallet = await this.getOrCreateWallet(customerId);
 
@@ -346,7 +344,7 @@ export class PaymentsService {
             { $set: { payment_status: PaymentStatus.UNPAID } },
           )
           .exec()
-          .catch((resetErr) => {
+          .catch(resetErr => {
             // F20: lỗi reset trạng thái phải được log rõ, không nuốt im lặng.
             this.logger.error(
               `Failed to reset job ${jobId} payment_status to UNPAID after payment error: ${resetErr}`,
@@ -798,7 +796,7 @@ export class PaymentsService {
       await this.walletModel
         .updateOne({ _id: wallet._id }, { $inc: { balance: amount } })
         .exec()
-        .catch((refundErr) => {
+        .catch(refundErr => {
           // F20: hoàn tiền vào ví lỗi thì phải log rõ (tiền rút đã trừ nhưng chưa hoàn lại).
           this.logger.error(
             `Failed to refund ${amount} to wallet ${String(wallet._id)} after withdrawal failure: ${refundErr}`,
@@ -906,7 +904,7 @@ export class PaymentsService {
             : `${amount}₫ đã được hoàn lại vào ví.${adminNote ? ' Lý do: ' + adminNote : ''}`,
         payload: { withdrawal_id: String(withdrawal._id) },
       })
-      .catch((notifyErr) => {
+      .catch(notifyErr => {
         // F20: lỗi gửi thông báo rút tiền phải được log rõ, không nuốt im lặng.
         this.logger.warn(
           `Failed to send withdrawal notification for ${String(withdrawal._id)}: ${(notifyErr as Error)?.message ?? notifyErr}`,

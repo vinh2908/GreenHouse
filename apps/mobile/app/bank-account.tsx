@@ -129,9 +129,7 @@ export default function BankAccountScreen() {
       Toast.show({
         type: 'error',
         text1:
-          lang === 'en'
-            ? 'Minimum top-up amount is 50,000₫'
-            : 'Số tiền nạp tối thiểu là 50.000₫',
+          lang === 'en' ? 'Minimum top-up amount is 50,000₫' : 'Số tiền nạp tối thiểu là 50.000₫',
       });
       return;
     }
@@ -153,8 +151,7 @@ export default function BankAccountScreen() {
       Toast.show({
         type: 'error',
         text1:
-          err?.response?.data?.message ||
-          (lang === 'en' ? 'Top-up failed' : 'Nạp tiền thất bại'),
+          err?.response?.data?.message || (lang === 'en' ? 'Top-up failed' : 'Nạp tiền thất bại'),
       });
     }
   };
@@ -783,7 +780,8 @@ export default function BankAccountScreen() {
                 <Text style={{ fontSize: fs(20), fontWeight: '800', color: COLORS.primary }}>
                   {new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'vi-VN').format(
                     wallet?.balance ?? 0,
-                  )}₫
+                  )}
+                  ₫
                 </Text>
               </Card>
 
