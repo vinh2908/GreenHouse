@@ -56,12 +56,17 @@ export function normalizePhone(phone: string): string {
   return normalized;
 }
 
+// B88: regex SĐT VN duy nhất dùng chung — 10 chữ số, đầu 03/05/07/08/09.
+// (Bản cũ /^(0[3|5|7|8|9])+([0-9]{8})$/ sai: [3|5|7|8|9] chứa cả ký tự '|'
+// và dấu + cho phép lặp tiền tố, vd '09090...' vẫn khớp.)
+export const VIETNAMESE_PHONE_REGEX = /^0(3|5|7|8|9)[0-9]{8}$/;
+
 /**
  * Validate Vietnamese phone number
  */
 export function isValidVietnamesePhone(phone: string): boolean {
   const normalized = normalizePhone(phone);
-  return /^(0[3|5|7|8|9])+([0-9]{8})$/.test(normalized);
+  return VIETNAMESE_PHONE_REGEX.test(normalized);
 }
 
 /**
