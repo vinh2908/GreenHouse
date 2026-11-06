@@ -561,11 +561,19 @@ export class RecurringService implements OnApplicationBootstrap, OnModuleDestroy
     }
 
     const today = this.startOfDay(new Date());
-    const upcoming = this.occurrenceDates(plan, today, this.addDays(today, 370)).filter(
-      key => !plan.skipped_dates.includes(key),
-    );
+    // B53: Chỉ bỏ qua lần trong TƯƠNG LAI gần nhất — so theo cả ngày + giờ
+    // bắt đầu (giống nextOccurrenceDate). Lượt hôm nay mà giờ làm đã qua thì
+    // không còn là "lần tới" nữa, phải bỏ qua lượt kế tiếp.
+    const now = new Date();
+    const [hh, mm] = (plan.time_start || '09:00').split(':').map(Number);
+    const upcoming = this.occurrenceDates(plan, today, this.addDays(today, 370))
+      .filter(key => !plan.skipped_dates.includes(key))
+      .filter(key => {
+        const [y, m, d] = key.split('-').map(Number);
+        return new Date(y, (m ?? 1) - 1, d ?? 1, hh ?? 9, mm ?? 0, 0, 0).getTime() > now.getTime();
+      });
     if (upcoming.length === 0) {
-      throw new BadRequestException('Không còn lượt nào sắp tới để bỏ qua');
+      throw new BadRequestException('Không còn lượt nào trong tương lai để bỏ qua');
     }
     const nextKey = upcoming[0];
 
