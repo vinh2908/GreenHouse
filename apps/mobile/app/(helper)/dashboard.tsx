@@ -398,6 +398,21 @@ export default function HelperDashboardScreen() {
         )}
 
         {/* ── 2. Trạng thái Nhận việc Online Toggle ─────────────────────── */}
+        {pError && (
+          <View style={{ paddingHorizontal: 16, marginTop: 14 }}>
+            <Card style={{ alignItems: 'center', paddingVertical: 18 }}>
+              <ErrorState
+                title={lang === 'en' ? 'Unable to load helper profile' : 'Không thể tải hồ sơ thợ'}
+                subtitle={
+                  lang === 'en'
+                    ? 'Could not connect to profile service. Please retry.'
+                    : 'Không thể tải dữ liệu hồ sơ thợ. Vui lòng bấm thử lại.'
+                }
+                onRetry={() => refetchProfile()}
+              />
+            </Card>
+          </View>
+        )}
         <View style={{ paddingHorizontal: 16, marginTop: 14 }}>
           <View
             style={{
@@ -639,6 +654,21 @@ export default function HelperDashboardScreen() {
         </View>
 
         {/* ── 4. Đơn hàng đang nhận làm (Active Job) ─────────────────── */}
+        {mError && (
+          <View style={{ paddingHorizontal: 16, marginTop: 16 }}>
+            <Card style={{ alignItems: 'center', paddingVertical: 18 }}>
+              <ErrorState
+                title={lang === 'en' ? 'Unable to load active jobs' : 'Không thể tải đơn đang làm'}
+                subtitle={
+                  lang === 'en'
+                    ? 'Could not connect to active jobs service. Please retry.'
+                    : 'Không thể kết nối đến máy chủ quản lý đơn. Vui lòng bấm thử lại.'
+                }
+                onRetry={() => refetchMyJobs()}
+              />
+            </Card>
+          </View>
+        )}
         {activeJob && (
           <View style={{ paddingHorizontal: 16, marginTop: 20 }}>
             <SectionHeader title={t('dash_active_job')} subtitle={t('dash_active_job_sub')} />

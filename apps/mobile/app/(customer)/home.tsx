@@ -1403,7 +1403,7 @@ export default function CustomerHomeScreen() {
           </View>
         </View>
 
-        {sError && jError ? (
+        {sError || jError ? (
           <View
             style={{
               padding: 24,
