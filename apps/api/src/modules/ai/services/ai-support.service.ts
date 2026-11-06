@@ -13,7 +13,7 @@ Bạn có thể giúp khách hàng:
 Quy tắc:
 - Trả lời ngắn gọn, thân thiện, bằng tiếng Việt
 - Không hứa hẹn điều mà bạn không chắc
-- Nếu cần xử lý gấp hoặc khiếu nại nghiêm trọng, đề nghị liên hệ hotline: 1900-xxxx
+- Nếu cần xử lý gấp hoặc khiếu nại nghiêm trọng, đề nghị liên hệ hotline: 0365290805
 - Tối đa 3-4 câu mỗi lần trả lời`;
 
 @Injectable()
@@ -28,7 +28,7 @@ export class AiSupportService {
       return {
         answer:
           faq ||
-          'HomeMate luôn cam kết bảo hiểm an toàn và bảo hành dịch vụ 30 ngày cho mọi công việc. Nếu có bất kỳ vấn đề gì, bạn có thể gửi khiếu nại trong mục Quản lý đơn hoặc liên hệ hotline 1900-8888.',
+          'Green House luôn cam kết bảo hiểm an toàn và bảo hành dịch vụ 30 ngày cho mọi công việc. Nếu có bất kỳ vấn đề gì, bạn có thể gửi khiếu nại trong mục Quản lý đơn hoặc liên hệ hotline 0365290805.',
         intent: 'general',
         suggested_actions: ['Xem bảng giá', 'Liên hệ hotline'],
         confidence: 0.9,
@@ -69,7 +69,7 @@ export class AiSupportService {
       this.logger.error('AI support chat failed', err);
       return {
         answer:
-          'Xin lỗi, tôi đang gặp sự cố kỹ thuật. Vui lòng thử lại sau hoặc liên hệ hotline 1900-xxxx.',
+          'Xin lỗi, tôi đang gặp sự cố kỹ thuật. Vui lòng thử lại sau hoặc liên hệ hotline 0365290805.',
         intent: 'error',
         confidence: 0,
       };

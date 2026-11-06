@@ -38,7 +38,7 @@ export const SUPPORT_FAQS: SupportFaq[] = [
   },
   {
     q: 'Trường hợp khẩn cấp thì liên hệ ai?',
-    a: 'Sự cố khẩn cấp (rò rỉ nước, chập điện, kẹt khóa...): dùng nút "Cứu hộ SOS" trên trang chủ để được ưu tiên tìm thợ trong 15–20 phút, hoặc gọi hotline 1900 8888 (24/7). Nếu có nguy hiểm tới tính mạng, hãy gọi 113/114/115 trước tiên.',
+    a: 'Sự cố khẩn cấp (rò rỉ nước, chập điện, kẹt khóa...): dùng nút "Cứu hộ SOS" trên trang chủ để được ưu tiên tìm thợ trong 15–20 phút, hoặc gọi hotline 0365290805 (24/7). Nếu có nguy hiểm tới tính mạng, hãy gọi 113/114/115 trước tiên.',
   },
 ];
 
@@ -73,7 +73,7 @@ export const SUPPORT_FAQS_EN: SupportFaq[] = [
   },
   {
     q: 'Who should I contact in an emergency?',
-    a: 'For urgent emergencies (water leaks, short circuits, lockouts, etc.): use the "SOS Emergency" button on the home screen to find priority helpers in 15–20 minutes, or call hotline 1900 8888 (24/7). For life-threatening emergencies, call 113/114/115 immediately.',
+    a: 'For urgent emergencies (water leaks, short circuits, lockouts, etc.): use the "SOS Emergency" button on the home screen to find priority helpers in 15–20 minutes, or call hotline 0365290805 (24/7). For life-threatening emergencies, call 113/114/115 immediately.',
   },
 ];
 
