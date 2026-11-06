@@ -1,4 +1,5 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
+import { NotificationsModule } from '../notifications/notifications.module';
 import { MongooseModule } from '@nestjs/mongoose';
 import { VouchersController, AdminVouchersController } from './vouchers.controller';
 import { VouchersService } from './vouchers.service';
@@ -12,6 +13,7 @@ import { Job, JobSchema } from '../jobs/schemas/job.schema';
 
 @Module({
   imports: [
+    forwardRef(() => NotificationsModule),
     MongooseModule.forFeature([
       { name: Voucher.name, schema: VoucherSchema },
       { name: VoucherRedemption.name, schema: VoucherRedemptionSchema },
