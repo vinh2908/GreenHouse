@@ -193,6 +193,28 @@ export class ReviewsService {
     return saved;
   }
 
+  // ─── B1: Admin quản lý đánh giá ─────────────────────────────────────────────
+  // Trả lời thay mặt nền tảng (admin_reply), ẩn/hiện, xoá đánh giá.
+  async adminReplyToReview(reviewId: string, reply: string): Promise<ReviewDocument> {
+    const review = await this.reviewModel.findById(reviewId).exec();
+    if (!review) throw new NotFoundException('Đánh giá không tồn tại');
+    review.admin_reply = reply;
+    review.admin_replied_at = new Date();
+    return review.save();
+  }
+
+  async adminSetHidden(reviewId: string, hidden: boolean): Promise<ReviewDocument> {
+    return this.setReviewVisibility(reviewId, hidden);
+  }
+
+  async adminDeleteReview(reviewId: string): Promise<{ deleted: boolean; id: string }> {
+    const review = await this.reviewModel.findById(reviewId).exec();
+    if (!review) throw new NotFoundException('Đánh giá không tồn tại');
+    await this.reviewModel.findByIdAndDelete(reviewId).exec();
+    await this.syncHelperRating(String(review.helper_id));
+    return { deleted: true, id: reviewId };
+  }
+
   // ─── Get rating stats for a helper ────────────────────────────────────────
 
   async getHelperRatingStats(helperId: string) {
