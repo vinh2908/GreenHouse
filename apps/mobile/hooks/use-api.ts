@@ -1097,6 +1097,35 @@ export function useMarkAllRead() {
   });
 }
 
+export function useNotificationSettings() {
+  return useQuery({
+    queryKey: ['notifications', 'settings'],
+    queryFn: async () => {
+      const { data } = await apiClient.get('/notifications/settings');
+      return data;
+    },
+  });
+}
+
+export function useUpdateNotificationSettings() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (
+      settings: Partial<{
+        order_updates: boolean;
+        chat_messages: boolean;
+        promotions: boolean;
+        vouchers: boolean;
+        sound: boolean;
+        vibration: boolean;
+      }>,
+    ) => apiClient.patch('/notifications/settings', settings),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['notifications', 'settings'] });
+    },
+  });
+}
+
 // ─── Customer Profile ──────────────────────────────────────────────────────────
 
 export function useCustomerProfile() {

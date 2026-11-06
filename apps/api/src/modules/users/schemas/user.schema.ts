@@ -76,6 +76,33 @@ export class User {
   @Prop({ default: 0 })
   token_version?: number;
 
+  @Prop({
+    type: {
+      order_updates: { type: Boolean, default: true },
+      chat_messages: { type: Boolean, default: true },
+      promotions: { type: Boolean, default: true },
+      vouchers: { type: Boolean, default: true },
+      sound: { type: Boolean, default: true },
+      vibration: { type: Boolean, default: true },
+    },
+    default: () => ({
+      order_updates: true,
+      chat_messages: true,
+      promotions: true,
+      vouchers: true,
+      sound: true,
+      vibration: true,
+    }),
+  })
+  notification_settings: {
+    order_updates: boolean;
+    chat_messages: boolean;
+    promotions: boolean;
+    vouchers: boolean;
+    sound: boolean;
+    vibration: boolean;
+  };
+
   created_at: Date;
   updated_at: Date;
 }

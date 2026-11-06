@@ -1,4 +1,4 @@
-import { Controller, Get, Patch, Param, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Patch, Param, Query, Body, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { NotificationsService } from './notifications.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -10,6 +10,29 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 @Controller('notifications')
 export class NotificationsController {
   constructor(private readonly notificationsService: NotificationsService) {}
+
+  @Get('settings')
+  @ApiOperation({ summary: 'Lấy cài đặt thông báo của tôi' })
+  async getSettings(@CurrentUser() user: { sub: string }) {
+    return this.notificationsService.getSettings(user.sub);
+  }
+
+  @Patch('settings')
+  @ApiOperation({ summary: 'Cập nhật cài đặt thông báo' })
+  async updateSettings(
+    @CurrentUser() user: { sub: string },
+    @Body()
+    dto: Partial<{
+      order_updates: boolean;
+      chat_messages: boolean;
+      promotions: boolean;
+      vouchers: boolean;
+      sound: boolean;
+      vibration: boolean;
+    }>,
+  ) {
+    return this.notificationsService.updateSettings(user.sub, dto);
+  }
 
   @Get()
   @ApiOperation({ summary: 'Lấy thông báo của tôi' })

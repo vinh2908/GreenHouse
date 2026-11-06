@@ -12,6 +12,7 @@ import {
   Home,
   HelpCircle,
   Shield,
+  Bell,
 } from 'lucide-react-native';
 import Toast from 'react-native-toast-message';
 import { Alert } from '@/components/common/app-alert';
@@ -376,6 +377,11 @@ export default function HelperProfileScreen() {
                 icon: CreditCard,
                 label: t('profile_bank_account'),
                 onPress: () => router.push('/bank-account?role=helper' as any),
+              },
+              {
+                icon: Bell,
+                label: t('profile_notification_settings'),
+                onPress: () => router.push('/notification-settings' as any),
               },
               {
                 icon: FileText,
