@@ -3,7 +3,7 @@
 // (popup quyết định của khách, popup mời thợ ứng viên, banner chi tiết đơn).
 import { useState } from 'react';
 import { Modal, View, TouchableOpacity, Image, Text } from 'react-native';
-import { X } from 'lucide-react-native';
+import { X, ImageOff } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation, fs } from '@/hooks/use-i18n';
 
@@ -65,8 +65,9 @@ export function PhotoThumbRow({
   size?: number;
   label?: string;
 }) {
-  const { fs } = useTranslation();
+  const { fs, lang } = useTranslation();
   const [viewing, setViewing] = useState<string | null>(null);
+  const [failedUrls, setFailedUrls] = useState<Record<string, boolean>>({});
   const list = (urls ?? []).filter(u => typeof u === 'string' && u);
   if (list.length === 0) return null;
   return (
@@ -75,15 +76,51 @@ export function PhotoThumbRow({
         <Text style={{ fontSize: fs(12.5), fontWeight: '700', color: '#6B7280' }}>{label}</Text>
       ) : null}
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-        {list.map(url => (
-          <TouchableOpacity key={url} activeOpacity={0.85} onPress={() => setViewing(url)}>
-            <Image
-              source={{ uri: url }}
-              style={{ width: size, height: size, borderRadius: 10 }}
-              resizeMode="cover"
-            />
-          </TouchableOpacity>
-        ))}
+        {list.map(url => {
+          const isFailed = failedUrls[url];
+          return (
+            <TouchableOpacity
+              key={url}
+              activeOpacity={0.85}
+              onPress={() => !isFailed && setViewing(url)}
+            >
+              {isFailed ? (
+                <View
+                  style={{
+                    width: size,
+                    height: size,
+                    borderRadius: 10,
+                    backgroundColor: '#F3F4F6',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    borderWidth: 1,
+                    borderColor: '#E5E7EB',
+                    padding: 4,
+                  }}
+                >
+                  <ImageOff size={Math.min(size * 0.4, 22)} color="#9CA3AF" />
+                  <Text
+                    style={{
+                      fontSize: fs(9),
+                      color: '#9CA3AF',
+                      marginTop: 2,
+                      textAlign: 'center',
+                    }}
+                  >
+                    {lang === 'en' ? 'Unavailable' : 'Ảnh lỗi'}
+                  </Text>
+                </View>
+              ) : (
+                <Image
+                  source={{ uri: url }}
+                  onError={() => setFailedUrls(prev => ({ ...prev, [url]: true }))}
+                  style={{ width: size, height: size, borderRadius: 10 }}
+                  resizeMode="cover"
+                />
+              )}
+            </TouchableOpacity>
+          );
+        })}
       </View>
       <ImageViewerModal uri={viewing} visible={!!viewing} onClose={() => setViewing(null)} />
     </View>

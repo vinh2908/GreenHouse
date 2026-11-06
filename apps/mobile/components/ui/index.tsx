@@ -1,5 +1,5 @@
 // apps/mobile/components/ui/index.tsx
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   TouchableOpacity,
   Text,
@@ -263,17 +263,25 @@ interface AvatarProps {
 }
 
 export function Avatar({ uri, name, size = 44 }: AvatarProps) {
+  const [hasError, setHasError] = useState(false);
+
+  useEffect(() => {
+    setHasError(false);
+  }, [uri]);
+
   const initials = name
     ?.split(' ')
+    .filter(Boolean)
     .map(w => w[0])
     .slice(-2)
     .join('')
     .toUpperCase();
 
-  if (uri) {
+  if (uri && !hasError) {
     return (
       <Image
         source={{ uri }}
+        onError={() => setHasError(true)}
         style={{
           width: size,
           height: size,
@@ -296,7 +304,7 @@ export function Avatar({ uri, name, size = 44 }: AvatarProps) {
       }}
     >
       <Text style={{ color: '#fff', fontSize: size * 0.38, fontWeight: '800' }}>
-        {initials ?? 'H'}
+        {initials || 'H'}
       </Text>
     </View>
   );

@@ -449,6 +449,14 @@ export default function KycScreen() {
                     <View style={{ width: '100%', height: '100%', position: 'relative' }}>
                       <Image
                         source={{ uri: frontImage }}
+                        onError={() => {
+                          Toast.show({
+                            type: 'error',
+                            text1: lang === 'en' ? 'Photo failed to load' : 'Không thể tải ảnh CCCD',
+                            text2: lang === 'en' ? 'Please select another photo' : 'Vui lòng bấm chọn ảnh khác',
+                          });
+                          setFrontImage(null);
+                        }}
                         style={{ width: '100%', height: '100%' }}
                         resizeMode="contain"
                       />
@@ -531,6 +539,14 @@ export default function KycScreen() {
                     <View style={{ width: '100%', height: '100%', position: 'relative' }}>
                       <Image
                         source={{ uri: backImage }}
+                        onError={() => {
+                          Toast.show({
+                            type: 'error',
+                            text1: lang === 'en' ? 'Photo failed to load' : 'Không thể tải ảnh CCCD',
+                            text2: lang === 'en' ? 'Please select another photo' : 'Vui lòng bấm chọn ảnh khác',
+                          });
+                          setBackImage(null);
+                        }}
                         style={{ width: '100%', height: '100%' }}
                         resizeMode="contain"
                       />
@@ -613,6 +629,14 @@ export default function KycScreen() {
                     <View style={{ width: '100%', height: '100%', position: 'relative' }}>
                       <Image
                         source={{ uri: selfieImage }}
+                        onError={() => {
+                          Toast.show({
+                            type: 'error',
+                            text1: lang === 'en' ? 'Photo failed to load' : 'Không thể tải ảnh CCCD',
+                            text2: lang === 'en' ? 'Please select another photo' : 'Vui lòng bấm chọn ảnh khác',
+                          });
+                          setSelfieImage(null);
+                        }}
                         style={{ width: '100%', height: '100%' }}
                         resizeMode="contain"
                       />
