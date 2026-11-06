@@ -17,6 +17,7 @@ import {
 import { AlertTriangle, RotateCw, ClipboardList, Phone } from 'lucide-react-native';
 import { OFFICIAL_CONTACT_PHONE, OFFICIAL_CONTACT_PHONE_DISPLAY } from '@homemate/constants';
 import { useTranslation } from '@/hooks/use-i18n';
+import { lightImpact } from '@/services/haptics';
 
 // ─── Green House Color Palette (Banana Green / Lime Fresh) ───────────────────
 // B19 — 1 xanh chính + 1 xanh đậm, dùng nhất quán:
@@ -75,6 +76,7 @@ export function Button({
   disabled,
   style,
   textStyle,
+  onPress,
   ...props
 }: ButtonProps) {
   const isPrimary = variant === 'primary' || variant === 'gradient';
@@ -104,9 +106,16 @@ export function Button({
   const paddingY = { sm: 12, md: 13, lg: 16 }[size];
   const fontSize = fs({ sm: 13, md: 15, lg: 16 }[size]);
 
+  // B20: rung nhẹ khi bấm nút chính (primary/gradient); nút phụ không rung
+  const handlePress = (e: any) => {
+    if (isPrimary) void lightImpact();
+    onPress?.(e);
+  };
+
   return (
     <TouchableOpacity
       activeOpacity={0.82}
+      onPress={handlePress}
       disabled={disabled || loading}
       style={[
         {

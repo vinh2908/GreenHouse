@@ -30,6 +30,7 @@ import {
 } from 'lucide-react-native';
 import Toast from 'react-native-toast-message';
 import { useCreateSosJob } from '@/hooks/use-api';
+import { lightImpact } from '@/services/haptics';
 import { useTranslation } from '@/hooks/use-i18n';
 import { locationService, parseVietnameseAddress } from '@/services/location.service';
 import { Button, Card, LoadingSpinner, COLORS, Separator, PriceText } from '@/components/ui';
@@ -185,6 +186,8 @@ export default function SosScreen() {
   };
 
   const executeSendSos = async () => {
+    // B20: rung nhẹ khi xác nhận gửi SOS
+    void lightImpact();
     try {
       const res = await createSos.mutateAsync({
         category: selectedCategory,
