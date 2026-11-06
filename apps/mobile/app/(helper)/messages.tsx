@@ -9,7 +9,15 @@ import { formatConversationTime } from '@/utils/date-format';
 import { useConversations } from '@/hooks/use-api';
 import { useAuthStore } from '@/stores/auth.store';
 import { useTranslation } from '@/hooks/use-i18n';
-import { Card, Avatar, COLORS, EmptyState, ErrorState, LoadingSpinner, useThemeColors } from '@/components/ui';
+import {
+  Card,
+  Avatar,
+  COLORS,
+  EmptyState,
+  ErrorState,
+  LoadingSpinner,
+  useThemeColors,
+} from '@/components/ui';
 
 dayjs.extend(relativeTime);
 
@@ -18,7 +26,7 @@ export default function HelperConversationsScreen() {
   const { t, fs, lang } = useTranslation();
   const tc = useThemeColors();
   const currentUser = useAuthStore(s => s.user);
-  const { data: conversations, isLoading, isError, refetch } = useConversations();
+  const { data: conversations, isLoading, isError, refetch, dataUpdatedAt } = useConversations();
   const insets = useSafeAreaInsets();
 
   return (
@@ -39,6 +47,12 @@ export default function HelperConversationsScreen() {
         <Text style={{ fontSize: fs(12), color: tc.textMuted, marginTop: 2 }}>
           {t('messages_subtitle')}
         </Text>
+        {/* A97: Thời gian cập nhật lần cuối — đổi mỗi khi tải lại dữ liệu */}
+        {dataUpdatedAt ? (
+          <Text style={{ fontSize: fs(11), color: tc.textMuted, marginTop: 2 }}>
+            {lang === 'en' ? 'Updated at' : 'Cập nhật lúc'} {dayjs(dataUpdatedAt).format('HH:mm')}
+          </Text>
+        ) : null}
       </View>
 
       <ScrollView

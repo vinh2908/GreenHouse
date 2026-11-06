@@ -9,9 +9,11 @@ import {
   TextInput,
   KeyboardAvoidingView,
   Platform,
+  Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
+import { useRouter } from 'expo-router';
 import {
   TrendingUp,
   ArrowDownCircle,
@@ -31,7 +33,17 @@ import {
   useTopupWallet,
   useHelperProfile,
 } from '@/hooks/use-api';
-import { Card, Button, COLORS, LoadingSpinner, Separator, PriceText, EmptyState, ErrorState, useThemeColors } from '@/components/ui';
+import {
+  Card,
+  Button,
+  COLORS,
+  LoadingSpinner,
+  Separator,
+  PriceText,
+  EmptyState,
+  ErrorState,
+  useThemeColors,
+} from '@/components/ui';
 import dayjs from 'dayjs';
 import { EarningsReport } from '@/components/helper/earnings-report';
 import { useTranslation } from '@/hooks/use-i18n';
@@ -65,6 +77,7 @@ const TX_COLORS: Record<string, string> = {
 };
 
 export default function HelperEarningsScreen() {
+  const router = useRouter();
   const { t, fs, lang, formatTxDesc } = useTranslation();
   const tc = useThemeColors();
   const { data: wallet, isLoading, isError: isWalletError, refetch: refetchWallet } = useWallet();
@@ -73,6 +86,7 @@ export default function HelperEarningsScreen() {
     isLoading: isTxLoading,
     isError: isTxError,
     refetch: refetchTx,
+    dataUpdatedAt: txUpdatedAt,
   } = useTransactions(1);
   const { data: profile } = useHelperProfile();
   const withdraw = useRequestWithdrawal();
@@ -130,6 +144,25 @@ export default function HelperEarningsScreen() {
       return;
     }
 
+    // A91: Xác nhận trước khi rút tiền — hiện số tiền, phí, tài khoản nhận (đã che).
+    const maskedAccount = `***${accountNumber.trim().slice(-4)}`;
+    const amountText = `${new Intl.NumberFormat('vi-VN').format(amt)}₫`;
+    Alert.alert(
+      lang === 'en' ? 'Confirm withdrawal' : 'Xác nhận rút tiền',
+      lang === 'en'
+        ? `Withdraw ${amountText}, fee 0₫, to account ${maskedAccount} (${bankName.trim()})?`
+        : `Rút ${amountText}, phí 0₫, về tài khoản ${maskedAccount} (${bankName.trim()})?`,
+      [
+        { text: lang === 'en' ? 'Cancel' : 'Hủy', style: 'cancel' },
+        {
+          text: lang === 'en' ? 'Confirm' : 'Xác nhận',
+          onPress: () => void doWithdraw(amt),
+        },
+      ],
+    );
+  };
+
+  const doWithdraw = async (amt: number) => {
     try {
       await withdraw.mutateAsync({
         amount: amt,
@@ -159,6 +192,23 @@ export default function HelperEarningsScreen() {
       });
       return;
     }
+    // A91: Xác nhận trước khi nạp tiền — hiện số tiền + phương thức.
+    Alert.alert(
+      lang === 'en' ? 'Confirm top-up' : 'Xác nhận nạp tiền',
+      lang === 'en'
+        ? `Top up ${new Intl.NumberFormat('vi-VN').format(amt)}₫ via VietQR?`
+        : `Nạp ${new Intl.NumberFormat('vi-VN').format(amt)}₫ qua VietQR?`,
+      [
+        { text: lang === 'en' ? 'Cancel' : 'Hủy', style: 'cancel' },
+        {
+          text: lang === 'en' ? 'Confirm' : 'Xác nhận',
+          onPress: () => void doTopup(amt),
+        },
+      ],
+    );
+  };
+
+  const doTopup = async (amt: number) => {
     try {
       await topup.mutateAsync({ amount: amt, payment_method: 'vietqr' });
       setShowTopup(false);
@@ -330,6 +380,12 @@ export default function HelperEarningsScreen() {
           >
             {t('earn_history_title')}
           </Text>
+          {/* A97: Thời gian cập nhật lần cuối */}
+          {txUpdatedAt ? (
+            <Text style={{ fontSize: fs(11), color: tc.textMuted, marginBottom: 12 }}>
+              {lang === 'en' ? 'Updated at' : 'Cập nhật lúc'} {dayjs(txUpdatedAt).format('HH:mm')}
+            </Text>
+          ) : null}
 
           {isTxError ? (
             <Card style={{ alignItems: 'center', paddingVertical: 20 }}>
@@ -413,86 +469,98 @@ export default function HelperEarningsScreen() {
                     amount: number;
                     status: string;
                     created_at: string;
+                    job_id?: string | { _id?: string };
+                    metadata?: { job_id?: string };
                   },
                   i: number,
                 ) => {
                   const isCredit =
                     tx.type === 'earning' || tx.type === 'refund' || tx.type === 'topup';
+                  // A93: Giao dịch có đơn liên quan thì bấm vào mở được đơn đó.
+                  const txJobId: string | undefined =
+                    (typeof tx.job_id === 'string' && tx.job_id) ||
+                    (typeof tx.job_id === 'object' && tx.job_id?._id) ||
+                    tx.metadata?.job_id;
                   return (
                     <View key={tx._id}>
                       {i > 0 && <Separator my={0} />}
-                      <View
-                        style={{
-                          flexDirection: 'row',
-                          alignItems: 'center',
-                          gap: 12,
-                          paddingVertical: 14,
+                      <TouchableOpacity
+                        activeOpacity={txJobId ? 0.7 : 1}
+                        onPress={() => {
+                          if (txJobId) router.push(`/helper-job-detail/${txJobId}` as never);
                         }}
                       >
                         <View
                           style={{
-                            width: 42,
-                            height: 42,
-                            borderRadius: 14,
-                            backgroundColor: isCredit ? '#ECFDF5' : COLORS.gray[100],
+                            flexDirection: 'row',
                             alignItems: 'center',
-                            justifyContent: 'center',
+                            gap: 12,
+                            paddingVertical: 14,
                           }}
                         >
-                          {renderTxIcon(tx.type, 20)}
-                        </View>
-                        <View style={{ flex: 1 }}>
-                          <Text
-                            style={{ fontWeight: '700', fontSize: fs(14), color: tc.text }}
-                          >
-                            {formatTxDesc(tx.description)}
-                          </Text>
-                          <Text style={{ fontSize: fs(12), color: tc.textMuted, marginTop: 2 }}>
-                            {formatDateTime(dayjs(tx.created_at))}
-                          </Text>
-                        </View>
-                        <View style={{ alignItems: 'flex-end' }}>
-                          <Text
-                            style={{
-                              fontSize: fs(15),
-                              fontWeight: '800',
-                              color: TX_COLORS[tx.type] ?? COLORS.gray[900],
-                            }}
-                          >
-                            {isCredit ? '+' : '-'}
-                            {new Intl.NumberFormat('vi-VN').format(tx.amount)}₫
-                          </Text>
                           <View
                             style={{
-                              flexDirection: 'row',
+                              width: 42,
+                              height: 42,
+                              borderRadius: 14,
+                              backgroundColor: isCredit ? '#ECFDF5' : COLORS.gray[100],
                               alignItems: 'center',
-                              gap: 4,
-                              marginTop: 2,
+                              justifyContent: 'center',
                             }}
                           >
-                            {tx.status === 'success' ? (
-                              <CheckCircle size={12} color={COLORS.success} />
-                            ) : (
-                              <Clock size={12} color={COLORS.warning} />
-                            )}
-                            <Text
-                              style={{
-                                fontSize: fs(11),
-                                color: tc.textMuted,
-                                fontWeight: '600',
-                              }}
-                            >
-                              {tx.status === 'success'
-                                ? lang === 'en'
-                                  ? 'Success'
-                                  : 'Thành công'
-                                : lang === 'en'
-                                  ? 'Processing'
-                                  : 'Đang xử lý'}
+                            {renderTxIcon(tx.type, 20)}
+                          </View>
+                          <View style={{ flex: 1 }}>
+                            <Text style={{ fontWeight: '700', fontSize: fs(14), color: tc.text }}>
+                              {formatTxDesc(tx.description)}
+                            </Text>
+                            <Text style={{ fontSize: fs(12), color: tc.textMuted, marginTop: 2 }}>
+                              {formatDateTime(dayjs(tx.created_at))}
                             </Text>
                           </View>
+                          <View style={{ alignItems: 'flex-end' }}>
+                            <Text
+                              style={{
+                                fontSize: fs(15),
+                                fontWeight: '800',
+                                color: TX_COLORS[tx.type] ?? COLORS.gray[900],
+                              }}
+                            >
+                              {isCredit ? '+' : '-'}
+                              {new Intl.NumberFormat('vi-VN').format(tx.amount)}₫
+                            </Text>
+                            <View
+                              style={{
+                                flexDirection: 'row',
+                                alignItems: 'center',
+                                gap: 4,
+                                marginTop: 2,
+                              }}
+                            >
+                              {tx.status === 'success' ? (
+                                <CheckCircle size={12} color={COLORS.success} />
+                              ) : (
+                                <Clock size={12} color={COLORS.warning} />
+                              )}
+                              <Text
+                                style={{
+                                  fontSize: fs(11),
+                                  color: tc.textMuted,
+                                  fontWeight: '600',
+                                }}
+                              >
+                                {tx.status === 'success'
+                                  ? lang === 'en'
+                                    ? 'Success'
+                                    : 'Thành công'
+                                  : lang === 'en'
+                                    ? 'Processing'
+                                    : 'Đang xử lý'}
+                              </Text>
+                            </View>
+                          </View>
                         </View>
-                      </View>
+                      </TouchableOpacity>
                     </View>
                   );
                 },
@@ -504,7 +572,9 @@ export default function HelperEarningsScreen() {
 
       {/* ── Top-up Deposit Wallet Modal ────────────────────────────────── */}
       <Modal visible={showTopup} animationType="slide" presentationStyle="pageSheet">
-        <View style={{ flex: 1, backgroundColor: tc.surface, paddingTop: Math.max(insets.top, 16) }}>
+        <View
+          style={{ flex: 1, backgroundColor: tc.surface, paddingTop: Math.max(insets.top, 16) }}
+        >
           <View style={{ flexDirection: 'row', alignItems: 'center', padding: 20 }}>
             <TouchableOpacity onPress={() => setShowTopup(false)}>
               <X size={24} color={COLORS.gray[700]} />
@@ -609,7 +679,9 @@ export default function HelperEarningsScreen() {
 
       {/* ── Withdraw Modal ─────────────────────────────────────────────── */}
       <Modal visible={showWithdraw} animationType="slide" presentationStyle="pageSheet">
-        <View style={{ flex: 1, backgroundColor: tc.surface, paddingTop: Math.max(insets.top, 16) }}>
+        <View
+          style={{ flex: 1, backgroundColor: tc.surface, paddingTop: Math.max(insets.top, 16) }}
+        >
           <View style={{ flexDirection: 'row', alignItems: 'center', padding: 20 }}>
             <TouchableOpacity onPress={() => setShowWithdraw(false)}>
               <X size={24} color={COLORS.gray[700]} />
