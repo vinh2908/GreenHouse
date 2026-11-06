@@ -23,7 +23,7 @@ describe('VouchersService - B45 adminCreate/adminUpdate validation', () => {
         return v;
       }),
     };
-    const service = new VouchersService(voucherModel, {} as any, {} as any);
+    const service = new VouchersService(voucherModel, {} as any, {} as any, {} as any);
     return { service, voucherModel, created };
   }
 

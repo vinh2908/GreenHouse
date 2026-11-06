@@ -1,7 +1,7 @@
 import dns from 'dns';
 try {
   dns.setServers(['8.8.8.8', '1.1.1.1']);
-} catch {}
+} catch { /* DNS tùy chọn — lỗi thì dùng DNS mặc định của hệ thống */ }
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';

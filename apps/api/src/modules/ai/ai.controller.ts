@@ -6,7 +6,6 @@ import {
   UseGuards,
   HttpCode,
   HttpStatus,
-  Query,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
@@ -16,9 +15,7 @@ import { AiSupportService } from './services/ai-support.service';
 import { AiConfigService } from './services/ai-config.service';
 import { AnalyzeBookingDto, AnalyzePhotoDto, EstimatePriceDto, SupportChatDto } from './dto/ai.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Public } from '../../common/decorators/public.decorator';
-import { AI_FEATURE_FLAGS } from '@homemate/constants';
 
 @ApiTags('AI')
 @ApiBearerAuth()

@@ -1,8 +1,8 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { GoogleGenerativeAI, GenerativeModel } from '@google/generative-ai';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import OpenAI from 'openai';
-import { AI_CONFIG, AI_FEATURE_FLAGS } from '@homemate/constants';
+import { AI_FEATURE_FLAGS } from '@homemate/constants';
 
 export interface ChatMessageParam {
   role: 'system' | 'user' | 'assistant';

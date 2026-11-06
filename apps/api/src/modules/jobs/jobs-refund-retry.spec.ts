@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getModelToken } from '@nestjs/mongoose';
-import { JobsService, computeNetPaidAmount } from './jobs.service';
+import { JobsService } from './jobs.service';
 import { Job, Quote, Contract } from './schemas/job.schema';
 import { Service } from '../services/schemas/service.schema';
 import { HelperProfile } from '../helpers/schemas/helper-profile.schema';

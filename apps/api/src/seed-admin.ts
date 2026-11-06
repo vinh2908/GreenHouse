@@ -9,7 +9,7 @@ async function checkAndCreateAdmin() {
   if (!db) throw new Error('No DB');
 
   const usersCollection = db.collection('users');
-  let admin = await usersCollection.findOne({ roles: 'admin' });
+  const admin = await usersCollection.findOne({ roles: 'admin' });
 
   const passwordHash = await bcrypt.hash('admin123', 10);
 

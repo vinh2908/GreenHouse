@@ -54,7 +54,7 @@ function chainable(docs: Doc[]) {
       return q;
     },
     exec: async () => {
-      let out = [...docs];
+      const out = [...docs];
       if (sortSpec) {
         const [field, dir] = Object.entries(sortSpec)[0]!;
         out.sort(

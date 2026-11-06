@@ -2,7 +2,6 @@ import {
   Injectable,
   Logger,
   NotFoundException,
-  BadRequestException,
   ForbiddenException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
@@ -14,7 +13,7 @@ import { HelperStatus, VerificationStatus, JobStatus, UserRole } from '@homemate
 import { AppGateway } from '../chat/app.gateway';
 import { NotificationsService } from '../notifications/notifications.service';
 import { MatchingCacheService } from './matching-cache.service';
-import { SOCKET_EVENTS, NOTIFICATION_TYPES } from '@homemate/constants';
+import { SOCKET_EVENTS } from '@homemate/constants';
 import { computeJobFitScore } from '../helpers/utils/helper-score';
 
 export interface MatchPair {

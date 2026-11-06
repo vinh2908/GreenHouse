@@ -12,9 +12,7 @@ import {
   MaxLength,
   Min,
   Max,
-  ValidateNested,
 } from 'class-validator';
-import { Type } from 'class-transformer';
 import { ApiPropertyOptional, ApiProperty } from '@nestjs/swagger';
 import { HelperStatus } from '@homemate/types';
 

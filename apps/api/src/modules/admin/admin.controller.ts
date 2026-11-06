@@ -14,7 +14,6 @@ import {
 import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { AdminService } from './admin.service';
 import {
-  AdminListQueryDto,
   AdminSuspendDto,
   AdminKycActionDto,
   AdminWaivePenaltyDto,
@@ -26,8 +25,8 @@ import { RolesGuard } from '../../common/guards/roles.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { UserRole } from '@homemate/types';
-import { IsString, IsNotEmpty, IsOptional } from 'class-validator';
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IsString, IsNotEmpty } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
 
 class BroadcastDto {
   @ApiProperty() @IsString() @IsNotEmpty() title: string;

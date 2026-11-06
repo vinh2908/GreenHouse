@@ -1,5 +1,5 @@
 import { Types } from 'mongoose';
-import { JobsService, ACTIVE_HELPER_JOB_STATUSES } from './jobs.service';
+import { JobsService } from './jobs.service';
 import { AdminService } from '../admin/admin.service';
 import { ContractStatus, HelperStatus, JobStatus, PaymentStatus } from '@homemate/types';
 
