@@ -56,6 +56,12 @@ export class CallsService {
     }
     const job = await this.jobModel.findById(jobId).exec();
     if (!job) throw new NotFoundException('Job không tồn tại');
+    // B85: chỉ gọi được khi đơn còn hoạt động — đơn đã xong/hủy/hết hạn thì 400
+    if (['completed', 'cancelled', 'expired', 'refunded'].includes(job.status)) {
+      throw new BadRequestException(
+        'Đơn đã kết thúc (hoàn thành/hủy/hết hạn) nên không thể gọi điện',
+      );
+    }
     if (!job.helper_id) {
       throw new BadRequestException('Đơn chưa có thợ phụ trách để gọi');
     }
