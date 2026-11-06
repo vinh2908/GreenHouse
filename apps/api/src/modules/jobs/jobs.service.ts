@@ -3864,7 +3864,7 @@ export class JobsService implements OnModuleInit {
     await this.notificationsService
       .create({
         userId: dto.helper_id,
-        type: NOTIFICATION_TYPES.SYSTEM,
+        type: NOTIFICATION_TYPES.TEAM_INVITATION,
         title: '👥 Lời mời vào nhóm làm việc',
         body: `Bạn được mời tham gia đơn "${job.title}" với tỉ lệ chia tiền công ${dto.split_percent}%.`,
         payload: { job_id: jobId },
@@ -3899,7 +3899,7 @@ export class JobsService implements OnModuleInit {
       await this.notificationsService
         .create({
           userId: String(job.helper_id),
-          type: NOTIFICATION_TYPES.SYSTEM,
+          type: NOTIFICATION_TYPES.TEAM_INVITATION_RESPONSE,
           title:
             action === 'accept'
               ? '✅ Thành viên đã nhận lời vào nhóm'
