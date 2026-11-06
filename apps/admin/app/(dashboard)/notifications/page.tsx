@@ -21,17 +21,24 @@ import {
   TableRow,
 } from '@/components/ui';
 import { formatDateTime } from '@/lib/utils';
+import { PromptDialog } from '@/components/common/prompt-dialog';
 
 export default function BroadcastPage() {
   const broadcast = useBroadcast();
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
   const [page, setPage] = useState(1);
+  // B106: xác nhận bằng PromptDialog thay cho hộp thoại confirm của trình duyệt.
+  const [confirmBroadcast, setConfirmBroadcast] = useState(false);
   const { data: history, isLoading: historyLoading } = useAdminSentNotifications({ page });
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!confirm('Gửi thông báo này tới TẤT CẢ người dùng?')) return;
+    setConfirmBroadcast(true);
+  };
+
+  const sendBroadcast = () => {
+    setConfirmBroadcast(false);
     broadcast.mutate(
       { title: title.trim(), body: body.trim() },
       {
@@ -151,6 +158,17 @@ export default function BroadcastPage() {
           )}
         </CardContent>
       </Card>
+
+      {confirmBroadcast && (
+        <PromptDialog
+          title="Gửi thông báo"
+          message="Gửi thông báo này tới TẤT CẢ người dùng?"
+          confirmLabel="Gửi tới tất cả"
+          requireInput={false}
+          onSubmit={sendBroadcast}
+          onClose={() => setConfirmBroadcast(false)}
+        />
+      )}
     </div>
   );
 }

@@ -27,6 +27,7 @@ import {
   TableRow,
 } from '@/components/ui';
 import { formatDateTime, formatVND } from '@/lib/utils';
+import { PromptDialog } from '@/components/common/prompt-dialog';
 
 const STATUS_MAP: Record<
   string,
@@ -49,6 +50,13 @@ export default function AdminMonthlyContractsPage() {
   });
 
   const contracts = data?.contracts ?? [];
+
+  // B106: xác nhận bằng PromptDialog thay cho hộp thoại confirm của trình duyệt.
+  const [confirmContract, setConfirmContract] = useState<{
+    id: string;
+    title: string;
+    action: 'cancel' | 'end';
+  } | null>(null);
 
   // B3: admin duyệt / hủy / kết thúc hợp đồng tháng
   const approveMutation = useAdminApproveMonthlyContract();
@@ -165,11 +173,9 @@ export default function AdminMonthlyContractsPage() {
                                 size="sm"
                                 variant="outline"
                                 disabled={cancelMutation.isPending}
-                                onClick={() => {
-                                  if (window.confirm(`Hủy hợp đồng "${c.title}"?`)) {
-                                    cancelMutation.mutate({ id: c._id });
-                                  }
-                                }}
+                                onClick={() =>
+                                  setConfirmContract({ id: c._id, title: c.title, action: 'cancel' })
+                                }
                               >
                                 Hủy
                               </Button>
@@ -179,11 +185,9 @@ export default function AdminMonthlyContractsPage() {
                                 size="sm"
                                 variant="outline"
                                 disabled={endMutation.isPending}
-                                onClick={() => {
-                                  if (window.confirm(`Kết thúc hợp đồng "${c.title}"?`)) {
-                                    endMutation.mutate({ id: c._id });
-                                  }
-                                }}
+                                onClick={() =>
+                                  setConfirmContract({ id: c._id, title: c.title, action: 'end' })
+                                }
                               >
                                 Kết thúc
                               </Button>
@@ -226,6 +230,29 @@ export default function AdminMonthlyContractsPage() {
           )}
         </CardContent>
       </Card>
+
+      {confirmContract && (
+        <PromptDialog
+          title={confirmContract.action === 'cancel' ? 'Hủy hợp đồng' : 'Kết thúc hợp đồng'}
+          message={
+            confirmContract.action === 'cancel'
+              ? `Hủy hợp đồng "${confirmContract.title}"?`
+              : `Kết thúc hợp đồng "${confirmContract.title}"?`
+          }
+          confirmLabel={confirmContract.action === 'cancel' ? 'Hủy' : 'Kết thúc'}
+          requireInput={false}
+          onSubmit={() => {
+            const target = confirmContract;
+            setConfirmContract(null);
+            if (target.action === 'cancel') {
+              cancelMutation.mutate({ id: target.id });
+            } else {
+              endMutation.mutate({ id: target.id });
+            }
+          }}
+          onClose={() => setConfirmContract(null)}
+        />
+      )}
     </div>
   );
 }
