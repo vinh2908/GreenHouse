@@ -4,6 +4,8 @@ import {
   NotFoundException,
   BadRequestException,
   ForbiddenException,
+  Inject,
+  forwardRef,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectModel } from '@nestjs/mongoose';
@@ -26,7 +28,9 @@ import {
   LOYALTY_CAP_PERCENT_REGULAR,
   LOYALTY_CAP_PERCENT_SILVER,
   LOYALTY_CAP_PERCENT_GOLD,
+  NOTIFICATION_TYPES,
 } from '@homemate/constants';
+import { NotificationsService } from '../notifications/notifications.service';
 
 /**
  * Điểm thành viên & hạng khách (Feature 12).
@@ -57,6 +61,8 @@ export class LoyaltyService {
     @InjectModel(Job.name) private jobModel: Model<JobDocument>,
     @InjectModel(Contract.name) private contractModel: Model<ContractDocument>,
     private readonly configService: ConfigService,
+    @Inject(forwardRef(() => NotificationsService))
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   // ─── Hằng số (env override) ────────────────────────────────────────────────
@@ -202,6 +208,16 @@ export class LoyaltyService {
         .exec();
       return 0;
     }
+    // B97: cộng điểm thì báo cho khách (số điểm + lý do), chỉ 1 lần, lỗi gửi không chặn cộng điểm
+    await this.notificationsService
+      .create({
+        userId: customerId,
+        type: NOTIFICATION_TYPES.LOYALTY_POINTS_EARNED,
+        title: 'Bạn được cộng điểm thưởng',
+        body: `Bạn được cộng ${points} điểm (hoàn thành đơn #${jobId.slice(-6)}). Số dư hiện tại: ${account!.points_balance} điểm.`,
+        payload: { job_id: jobId, points, balance: account!.points_balance },
+      })
+      .catch(() => undefined);
     return points;
   }
 
@@ -439,6 +455,18 @@ export class LoyaltyService {
       balance_after: updated.points_balance,
       note: note ?? 'Điều chỉnh bởi Admin',
     });
+    // B97: admin cộng điểm thì khách cũng nhận thông báo (chỉ khi cộng, không khi trừ)
+    if (points > 0) {
+      await this.notificationsService
+        .create({
+          userId,
+          type: NOTIFICATION_TYPES.LOYALTY_POINTS_EARNED,
+          title: 'Bạn được cộng điểm thưởng',
+          body: `Bạn được cộng ${points} điểm${note ? ` (${note})` : ''}. Số dư hiện tại: ${updated.points_balance} điểm.`,
+          payload: { points, balance: updated.points_balance },
+        })
+        .catch(() => undefined);
+    }
     return { account: await this.getAccount(userId), transaction: tx };
   }
 }
