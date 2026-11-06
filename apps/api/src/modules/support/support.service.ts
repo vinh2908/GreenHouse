@@ -97,7 +97,8 @@ export class SupportService {
     const conv = await this.findConversationOrThrow(conversationId);
     if (conv.user_id.toString() !== userId) throw new ForbiddenException();
     if (conv.status !== 'open') {
-      throw new BadRequestException('Hội thoại đã đóng. Hãy mở hội thoại hỗ trợ mới.');
+      // B75: lỗi ghi rõ cách mở lại; KHÔNG tự mở lại thread
+      throw new BadRequestException("Thread đã đóng. Bấm 'Mở lại' để tiếp tục trò chuyện.");
     }
     const message = await this.messageModel.create({
       conversation_id: new Types.ObjectId(conversationId),
@@ -156,9 +157,8 @@ export class SupportService {
     const conv = await this.findConversationOrThrow(conversationId);
     // A69: Không cho phép trả lời thread đã đóng
     if (conv.status === 'closed') {
-      throw new BadRequestException(
-        'Phiên hỗ trợ đã đóng. Vui lòng mở lại phiên trước khi gửi tin nhắn.',
-      );
+      // B75: lỗi ghi rõ cách mở lại; KHÔNG tự mở lại thread
+      throw new BadRequestException("Thread đã đóng. Bấm 'Mở lại' để tiếp tục trò chuyện.");
     }
     const message = await this.messageModel.create({
       conversation_id: new Types.ObjectId(conversationId),
@@ -206,6 +206,21 @@ export class SupportService {
     await this.findConversationOrThrow(conversationId);
     await this.conversationModel.findByIdAndUpdate(conversationId, { unread_for_admin: 0 }).exec();
     return { message: 'Đã đọc' };
+  }
+
+  // B75: Mở lại thread đã đóng (chủ thread hoặc admin) — chỉ mở lại khi bấm nút
+  async reopenConversation(
+    conversationId: string,
+    requester: { sub: string; isAdmin?: boolean },
+  ) {
+    const conv = await this.findConversationOrThrow(conversationId);
+    if (!requester.isAdmin && conv.user_id.toString() !== requester.sub) {
+      throw new ForbiddenException('Bạn không có quyền mở lại hội thoại này');
+    }
+    if (conv.status === 'open') return conv;
+    conv.status = 'open';
+    await conv.save();
+    return conv;
   }
 
   async adminClose(conversationId: string) {

@@ -20,6 +20,7 @@ import {
   useEnsureSupportConversation,
   useSupportMessages,
   useSendSupportMessage,
+  useReopenSupportConversation,
   useMarkSupportRead,
   type SupportMessageItem,
 } from '@/hooks/use-api';
@@ -57,6 +58,7 @@ export default function SupportChatScreen() {
   const ensureConversation = useEnsureSupportConversation();
   const { data: messages } = useSupportMessages(conversationId);
   const sendMsg = useSendSupportMessage();
+  const reopenConv = useReopenSupportConversation();
   const markRead = useMarkSupportRead();
 
   // Tự tạo hội thoại khi mở màn hình + đánh dấu đã đọc phản hồi của đội hỗ trợ
@@ -283,6 +285,21 @@ export default function SupportChatScreen() {
                     <Text style={{ fontSize: fs(13), color: '#92400E', lineHeight: 19 }}>
                       {t('support_closed_notice')}
                     </Text>
+                    <TouchableOpacity
+                      style={{
+                        marginTop: 10,
+                        backgroundColor: COLORS.primary,
+                        borderRadius: 10,
+                        paddingVertical: 12,
+                        alignItems: 'center',
+                      }}
+                      disabled={reopenConv.isPending}
+                      onPress={() => conversationId && reopenConv.mutate(conversationId)}
+                    >
+                      <Text style={{ color: '#fff', fontWeight: '800', fontSize: fs(14) }}>
+                        {lang === 'en' ? 'Reopen conversation' : 'Mở lại'}
+                      </Text>
+                    </TouchableOpacity>
                   </View>
                 )}
               </View>

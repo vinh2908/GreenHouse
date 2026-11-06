@@ -73,6 +73,13 @@ export class SupportController {
   async markRead(@CurrentUser() user: { sub: string }, @Param('id') id: string) {
     return this.supportService.markUserRead(id, user.sub);
   }
+
+  @Patch('conversations/:id/reopen')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: "B75: Mở lại thread hỗ trợ đã đóng để tiếp tục trò chuyện" })
+  async reopen(@CurrentUser() user: { sub: string }, @Param('id') id: string) {
+    return this.supportService.reopenConversation(id, { sub: user.sub });
+  }
 }
 
 // ─── Admin endpoints ──────────────────────────────────────────────────────────
@@ -129,5 +136,12 @@ export class AdminSupportController {
   @ApiOperation({ summary: '[Admin] Đóng hội thoại hỗ trợ' })
   async close(@Param('id') id: string) {
     return this.supportService.adminClose(id);
+  }
+
+  @Patch('conversations/:id/reopen')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: '[Admin] Mở lại hội thoại hỗ trợ đã đóng' })
+  async reopen(@Param('id') id: string) {
+    return this.supportService.reopenConversation(id, { sub: '', isAdmin: true });
   }
 }
