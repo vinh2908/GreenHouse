@@ -186,6 +186,56 @@ export function useAdminDeleteReview() {
   });
 }
 
+// ─── Loyalty (B2) ─────────────────────────────────────────────────────────────
+
+export interface AdminLoyaltyAccount {
+  user_id: string;
+  points_balance: number;
+  lifetime_points: number;
+  tier: string;
+  tier_label: string;
+  next_tier_at: number | null;
+  points_to_next_tier: number;
+  redemption_cap_percent: number;
+  earn_vnd_per_point: number;
+  point_value_vnd: number;
+  min_redeem_points: number;
+}
+
+export interface AdminLoyaltyTransaction {
+  _id: string;
+  type: string;
+  points: number;
+  balance_after: number;
+  note?: string;
+  created_at: string;
+}
+
+export function useAdminLoyaltyUser(userId?: string) {
+  return useQuery({
+    queryKey: ['admin', 'loyalty', userId],
+    queryFn: async () => {
+      const { data } = await apiClient.get(`/admin/loyalty/users/${userId}`);
+      return data.data as {
+        account: AdminLoyaltyAccount;
+        recent_history: AdminLoyaltyTransaction[];
+      };
+    },
+    enabled: !!userId,
+  });
+}
+
+export function useAdminAdjustLoyalty() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ userId, points, note }: { userId: string; points: number; note?: string }) =>
+      apiClient.post(`/admin/loyalty/users/${userId}/adjust`, { points, note }),
+    onSuccess: (_d, vars) => {
+      qc.invalidateQueries({ queryKey: ['admin', 'loyalty', vars.userId] });
+    },
+  });
+}
+
 // ─── Analytics ────────────────────────────────────────────────────────────────
 
 export function useAnalyticsSummary() {
