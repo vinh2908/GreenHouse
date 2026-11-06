@@ -74,6 +74,21 @@ export default function RegisterScreen() {
         password,
       });
       const data = res.data?.data;
+      // G5 (F16): chỉ báo "đã gửi mã" khi gửi thật thành công. API trả lỗi rõ
+      // khi gửi mail OTP thất bại (prod) nên 2xx = mail đã được gửi. Nếu API
+      // trả cờ trạng thái gửi mail thì tôn trọng cờ đó, không báo gửi giả.
+      const otpSentFlag =
+        (data as any)?.email_otp_sent ?? (data as any)?.otp_sent ?? (data as any)?.otpSent;
+      if (otpSentFlag === false) {
+        Toast.show({
+          type: 'error',
+          text1:
+            lang === 'en'
+              ? 'Could not send the verification code to your email. Please try again.'
+              : 'Không gửi được mã xác minh đến email của bạn. Vui lòng thử lại.',
+        });
+        return;
+      }
       if (data?.access_token && data?.user) {
         await setAuth(data.user, data.access_token, data.refresh_token);
         Toast.show({
@@ -89,17 +104,13 @@ export default function RegisterScreen() {
           params: { email: cleanEmail, phone: cleanPhone },
         });
       } else {
+        // Phản hồi đăng ký không đầy đủ (không có token): không báo thành công giả.
         Toast.show({
-          type: 'success',
-          text1: lang === 'en' ? 'Registration successful!' : 'Đăng ký thành công!',
-          text2:
+          type: 'error',
+          text1:
             lang === 'en'
-              ? 'Please check your email for the verification code'
-              : 'Vui lòng kiểm tra email để nhận mã OTP',
-        });
-        router.replace({
-          pathname: '/(auth)/otp',
-          params: { email: cleanEmail, phone: cleanPhone },
+              ? 'Registration failed. Please try again.'
+              : 'Đăng ký không thành công. Vui lòng thử lại.',
         });
       }
     } catch (err: unknown) {

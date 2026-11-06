@@ -111,7 +111,10 @@ export default function LoginScreen() {
       Toast.show({
         type: 'success',
         text1: lang === 'en' ? 'Password reset OTP sent' : 'Đã gửi mã OTP đặt lại mật khẩu',
-        text2: lang === 'en' ? 'Check your text messages' : 'Kiểm tra tin nhắn điện thoại của bạn',
+        text2:
+          lang === 'en'
+            ? 'Check your email inbox for the OTP code'
+            : 'Kiểm tra hộp thư email của bạn để lấy mã OTP',
       });
     } catch (err: unknown) {
       const msg =
