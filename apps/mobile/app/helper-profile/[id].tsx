@@ -511,7 +511,7 @@ export default function HelperPublicProfileScreen() {
                     </Text>
                   </View>
                 )}
-                <Text style={{ fontSize: 11, color: COLORS.gray[400], marginTop: 2 }}>
+                <Text style={{ fontSize: 11, color: COLORS.gray[500], marginTop: 2 }}>
                   {dayjs(r.created_at).fromNow()}
                 </Text>
               </View>

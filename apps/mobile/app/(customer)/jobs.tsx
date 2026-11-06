@@ -326,7 +326,7 @@ export default function CustomerJobsScreen() {
                     </View>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
                       <Clock size={13} color={COLORS.gray[400]} />
-                      <Text style={{ fontSize: fs(12), color: COLORS.gray[400] }}>
+                      <Text style={{ fontSize: fs(12), color: COLORS.gray[500] }}>
                         {dayjs(job.created_at).locale(lang === 'en' ? 'en' : 'vi').fromNow()}
                       </Text>
                     </View>

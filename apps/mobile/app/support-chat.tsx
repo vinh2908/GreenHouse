@@ -167,7 +167,7 @@ export default function SupportChatScreen() {
         <Text
           style={{
             fontSize: 10.5,
-            color: COLORS.gray[400],
+            color: COLORS.gray[500],
             marginTop: 4,
             marginHorizontal: 6,
             fontWeight: '600',
@@ -335,7 +335,7 @@ export default function SupportChatScreen() {
                       <Text
                         style={{
                           fontSize: 11.5,
-                          color: COLORS.gray[400],
+                          color: COLORS.gray[500],
                           marginLeft: 6,
                           fontWeight: '600',
                         }}

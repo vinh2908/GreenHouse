@@ -398,7 +398,7 @@ export default function HelperJobsScreen() {
                       borderTopColor: COLORS.gray[100],
                     }}
                   >
-                    <Text style={{ fontSize: fs(12), color: COLORS.gray[400] }}>
+                    <Text style={{ fontSize: fs(12), color: COLORS.gray[500] }}>
                       {dayjs(job.created_at).fromNow()}
                     </Text>
                     {tabIndex === 0 && (job.is_fixed_price || job.is_warranty) ? (

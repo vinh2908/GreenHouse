@@ -271,7 +271,7 @@ export default function NotificationsScreen() {
                   <Text
                     style={{
                       fontSize: 11,
-                      color: COLORS.gray[400],
+                      color: COLORS.gray[500],
                       marginTop: 6,
                       fontWeight: '600',
                     }}

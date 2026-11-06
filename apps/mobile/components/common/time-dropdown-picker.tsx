@@ -859,7 +859,7 @@ const styles = StyleSheet.create({
   separatorColon: {
     fontSize: 16,
     fontWeight: '800',
-    color: COLORS.gray[400],
+    color: COLORS.gray[500],
   },
   errorText: {
     fontSize: 12,
@@ -990,7 +990,7 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   modalItemTextDisabled: {
-    color: COLORS.gray[400],
+    color: COLORS.gray[500],
   },
   previewBox: {
     backgroundColor: '#F8FAFC',

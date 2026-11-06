@@ -494,7 +494,7 @@ export default function HelperProfileScreen() {
             style={{
               textAlign: 'center',
               fontSize: fs(12),
-              color: COLORS.gray[400],
+              color: COLORS.gray[500],
               fontWeight: '500',
             }}
           >

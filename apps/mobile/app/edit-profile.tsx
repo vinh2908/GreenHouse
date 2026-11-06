@@ -492,7 +492,7 @@ export default function EditProfileScreen() {
               <Text style={{ fontSize: 14, fontWeight: '800', color: COLORS.gray[800] }}>
                 {lang === 'en' ? 'Account Avatar' : 'Ảnh đại diện tài khoản'}
               </Text>
-              <Text style={{ fontSize: 12, color: COLORS.gray[400], marginTop: 2 }}>
+              <Text style={{ fontSize: 12, color: COLORS.gray[500], marginTop: 2 }}>
                 {lang === 'en' ? 'Take photo, pick from gallery, or select a preset below:' : 'Chụp ảnh, chọn từ thư viện hoặc chọn nhanh bên dưới:'}
               </Text>
             </View>
@@ -842,7 +842,7 @@ export default function EditProfileScreen() {
                   </Text>
                 </TouchableOpacity>
 
-                <Text style={{ fontSize: 11, color: COLORS.gray[400], lineHeight: 16 }}>
+                <Text style={{ fontSize: 11, color: COLORS.gray[500], lineHeight: 16 }}>
                   {lang === 'en'
                     ? 'Open map to pin your base location — distance to customers is calculated from this point. GPS updates with your phone location.'
                     : 'Mở bản đồ để tìm và ghim vị trí hoạt động cố định — khoảng cách tới khách được tính từ điểm này. Nếu dùng GPS, vị trí sẽ tự cập nhật theo điện thoại.'}
@@ -996,7 +996,7 @@ export default function EditProfileScreen() {
                   </Text>
                 </TouchableOpacity>
 
-                <Text style={{ fontSize: 11, color: COLORS.gray[400], lineHeight: 16 }}>
+                <Text style={{ fontSize: 11, color: COLORS.gray[500], lineHeight: 16 }}>
                   {lang === 'en'
                     ? 'Open map to pin your home address, or tap GPS. The address will be auto-filled and saved immediately.'
                     : 'Mở bản đồ để tìm và ghim địa chỉ nhà, hoặc bấm nút GPS. Địa chỉ sẽ được tự động điền và lưu ngay.'}

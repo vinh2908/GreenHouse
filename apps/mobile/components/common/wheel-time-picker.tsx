@@ -346,7 +346,7 @@ const styles = StyleSheet.create({
     top: 4,
     fontSize: 9.5,
     fontWeight: '800',
-    color: COLORS.gray[400],
+    color: COLORS.gray[500],
     textTransform: 'uppercase',
     zIndex: 3,
   },
@@ -383,7 +383,7 @@ const styles = StyleSheet.create({
   },
   itemTextFaded: {
     fontWeight: '500',
-    color: COLORS.gray[400],
+    color: COLORS.gray[500],
     opacity: 0.55,
   },
   statusRow: {

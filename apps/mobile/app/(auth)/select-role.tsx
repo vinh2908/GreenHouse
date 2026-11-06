@@ -111,7 +111,7 @@ export default function SelectRoleScreen() {
               }}
             >
               {lang === 'en' ? 'How would you like to use Green House?\n' : 'Bạn muốn sử dụng Green House như thế nào?\n'}
-              <Text style={{ fontSize: 13, color: COLORS.gray[400] }}>
+              <Text style={{ fontSize: 13, color: COLORS.gray[500] }}>
                 {lang === 'en' ? '(You can switch anytime in settings)' : '(Bạn có thể chuyển đổi linh hoạt bất kỳ lúc nào)'}
               </Text>
             </Text>

@@ -282,7 +282,7 @@ export default function LoginScreen() {
             <Text
               style={{
                 marginHorizontal: 12,
-                color: COLORS.gray[400],
+                color: COLORS.gray[500],
                 fontSize: 13,
                 fontWeight: '500',
               }}

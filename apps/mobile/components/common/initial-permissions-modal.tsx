@@ -484,7 +484,7 @@ export function AppPermissionsSection() {
         style={{
           fontSize: fs(12),
           fontWeight: '700',
-          color: COLORS.gray[400],
+          color: COLORS.gray[500],
           textTransform: 'uppercase',
           letterSpacing: 0.5,
         }}
