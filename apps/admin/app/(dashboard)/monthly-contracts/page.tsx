@@ -2,7 +2,13 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { AdminMonthlyContract, useAdminMonthlyContracts } from '@/hooks/use-admin';
+import {
+  AdminMonthlyContract,
+  useAdminMonthlyContracts,
+  useAdminApproveMonthlyContract,
+  useAdminCancelMonthlyContract,
+  useAdminEndMonthlyContract,
+} from '@/hooks/use-admin';
 import {
   Badge,
   Button,
