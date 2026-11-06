@@ -391,6 +391,17 @@ export function useToggleService() {
 
 // ─── Broadcast ──────────────────────────────────────────────────────────────────
 
+// B108: lịch sử thông báo đã gửi
+export function useAdminSentNotifications(params: { page?: number; type?: string }) {
+  return useQuery({
+    queryKey: ['admin', 'notifications', 'sent', params],
+    queryFn: async () => {
+      const { data } = await apiClient.get('/admin/notifications', { params });
+      return data.data;
+    },
+  });
+}
+
 export function useBroadcast() {
   return useMutation({
     mutationFn: async (dto: { title: string; body: string }) => {
