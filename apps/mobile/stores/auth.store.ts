@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import * as SecureStore from '@/services/secure-storage';
+import apiClient from '@/services/api-client';
 import type { IUser, UserRole } from '@homemate/types';
 
 interface AuthState {
@@ -129,6 +130,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   logout: async () => {
+    try {
+      const refreshToken = get().refreshToken;
+      const accessToken = get().accessToken;
+      if (accessToken || refreshToken) {
+        await apiClient.post('/auth/logout', { refresh_token: refreshToken }).catch(() => {});
+      }
+    } catch {}
     await SecureStore.deleteItemAsync(TOKEN_KEY);
     await SecureStore.deleteItemAsync(REFRESH_TOKEN_KEY);
     await SecureStore.deleteItemAsync(USER_KEY);

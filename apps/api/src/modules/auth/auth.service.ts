@@ -141,6 +141,7 @@ export class AuthService {
     } else {
       await this.usersService.revokeAllRefreshTokens(userId);
     }
+    await this.usersService.incrementTokenVersion(userId);
     return { success: true, message: 'Đăng xuất thành công' };
   }
 
@@ -292,6 +293,7 @@ export class AuthService {
     phone: string;
     roles: UserRole[];
     active_role: UserRole;
+    token_version?: number;
   }) {
     const userId = (user.id ?? String(user._id)) as string;
     const payload: JwtPayload = {
@@ -299,6 +301,7 @@ export class AuthService {
       phone: user.phone,
       roles: user.roles,
       active_role: user.active_role,
+      token_version: user.token_version ?? 0,
     };
 
     const accessSecret = this.configService.get<string>('jwt.accessSecret') as string;

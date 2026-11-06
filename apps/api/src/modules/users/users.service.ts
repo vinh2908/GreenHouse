@@ -178,4 +178,9 @@ export class UsersService {
       })
       .exec();
   }
+
+  /** Tăng token_version khi đăng xuất để vô hiệu hóa access token cũ ngay lập tức */
+  async incrementTokenVersion(id: string): Promise<void> {
+    await this.userModel.findByIdAndUpdate(id, { $inc: { token_version: 1 } }).exec();
+  }
 }

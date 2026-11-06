@@ -28,6 +28,11 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
     if (user.status === UserStatus.SUSPENDED) {
       throw new UnauthorizedException('Tài khoản đã bị khóa. Liên hệ hỗ trợ.');
     }
+    const currentVersion = user.token_version ?? 0;
+    const tokenVersion = payload.token_version ?? 0;
+    if (tokenVersion < currentVersion) {
+      throw new UnauthorizedException('Phiên đăng nhập đã kết thúc do đăng xuất.');
+    }
     return {
       sub: payload.sub,
       phone: user.phone,
