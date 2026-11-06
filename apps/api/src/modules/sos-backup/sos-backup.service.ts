@@ -1064,7 +1064,7 @@ export class SosBackupService implements OnModuleInit, OnModuleDestroy {
             $set: {
               status: SosBackupStatus.PENDING,
               replacement_helper_id: undefined,
-              'candidates.$[cand].status': 'invited',
+              'candidates.$[cand].state': 'invited',
             },
             $unset: { resolved_at: '', 'candidates.$[cand].responded_at': '' },
           },
@@ -1425,6 +1425,28 @@ export class SosBackupService implements OnModuleInit, OnModuleDestroy {
           job_id: String(sos.job_id),
           outcome: 'expired',
         });
+      }
+    }
+
+    // B65: Ứng viên đã bấm nhận nhưng chưa được xác nhận (state 'accepted'
+    // còn sót lại — vd claim bị rollback khi đơn đổi trạng thái) cũng phải
+    // nhận thông báo khi SOS hết hạn, không chỉ socket.
+    for (const c of sos.candidates) {
+      if (c.state === 'accepted') {
+        this.gateway.emitToUser(String(c.helper_id), SOCKET_EVENTS.SOS_BACKUP_RESOLVED, {
+          sos_id: String(sos._id),
+          job_id: String(sos.job_id),
+          outcome: 'expired',
+        });
+        await this.notificationsService
+          .create({
+            userId: String(c.helper_id),
+            type: NOTIFICATION_TYPES.SOS_BACKUP_EXPIRED,
+            title: 'SOS đã hết hạn',
+            body: `Yêu cầu thay thế cho đơn "${sos.job_title}" đã hết hạn. Cảm ơn bạn đã sẵn sàng hỗ trợ.`,
+            payload: { job_id: String(sos.job_id), sos_id: String(sos._id) },
+          })
+          .catch(() => undefined);
       }
     }
 
