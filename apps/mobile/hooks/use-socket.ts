@@ -40,12 +40,12 @@ export function useSocketConnection() {
           'Đối tác';
         const content =
           data?.message?.type === 'image'
-            ? 'Đã gửi một hình ảnh 📷'
+            ? 'Đã gửi một hình ảnh '
             : data?.message?.content || 'Bạn có tin nhắn mới';
 
         Toast.show({
           type: 'info',
-          text1: `💬 ${senderName}`,
+          text1: ` ${senderName}`,
           text2: content,
           visibilityTime: 5000,
         });
@@ -119,14 +119,14 @@ export function useJobSocketUpdates(jobId?: string) {
         qc.invalidateQueries({ queryKey: ['jobs'] });
 
         const labels: Record<string, string> = {
-          helper_on_the_way: '🚗 Helper đang trên đường đến',
-          helper_arrived: '📍 Helper đã đến nơi!',
-          in_progress: '▶️ Công việc đã bắt đầu',
-          pending_review: '⏳ Helper đã hoàn thành, vui lòng nghiệm thu',
-          completed: '✅ Công việc hoàn thành!',
-          cancelled: '❌ Đơn đã bị hủy',
-          disputed: '⚠️ Đơn hàng đã chuyển sang trạng thái Khiếu nại / Tranh chấp',
-          refunded: '↩️ Đơn hàng đã được hoàn tiền',
+          helper_on_the_way: ' Helper đang trên đường đến',
+          helper_arrived: ' Helper đã đến nơi!',
+          in_progress: '▶ Công việc đã bắt đầu',
+          pending_review: ' Helper đã hoàn thành, vui lòng nghiệm thu',
+          completed: ' Công việc hoàn thành!',
+          cancelled: ' Đơn đã bị hủy',
+          disputed: ' Đơn hàng đã chuyển sang trạng thái Khiếu nại / Tranh chấp',
+          refunded: '↩ Đơn hàng đã được hoàn tiền',
         };
         if (labels[status]) {
           Toast.show({ type: 'info', text1: labels[status], visibilityTime: 4000 });
@@ -136,7 +136,7 @@ export function useJobSocketUpdates(jobId?: string) {
 
     const unsub2 = socketService.on<{ quote_id: string }>(SOCKET_EVENTS.QUOTE_RECEIVED, () => {
       qc.invalidateQueries({ queryKey: ['job', jobId, 'quotes'] });
-      Toast.show({ type: 'success', text1: '💰 Có báo giá mới!' });
+      Toast.show({ type: 'success', text1: ' Có báo giá mới!' });
     });
 
     const unsub3 = socketService.on<{ job_id: string }>(SOCKET_EVENTS.CONTRACT_AMENDED, () => {
@@ -144,7 +144,7 @@ export function useJobSocketUpdates(jobId?: string) {
       qc.invalidateQueries({ queryKey: ['job', jobId] });
       Toast.show({
         type: 'info',
-        text1: '📋 Có đề xuất phát sinh vật tư / chi phí mới!',
+        text1: ' Có đề xuất phát sinh vật tư / chi phí mới!',
         text2: 'Vui lòng kiểm tra mục Hợp đồng dịch vụ để duyệt.',
       });
     });
@@ -158,8 +158,8 @@ export function useJobSocketUpdates(jobId?: string) {
           type: data?.status === 'accepted' ? 'success' : 'info',
           text1:
             data?.status === 'accepted'
-              ? '✅ Khách hàng đã đồng ý chi phí phát sinh!'
-              : 'ℹ️ Khách hàng đã từ chối khoản phát sinh',
+              ? ' Khách hàng đã đồng ý chi phí phát sinh!'
+              : 'ℹ Khách hàng đã từ chối khoản phát sinh',
         });
       },
     );
@@ -291,18 +291,18 @@ export function useNotificationSocket() {
 
         const title = isNewJob
           ? lang === 'en'
-            ? 'New job near you 🎉'
-            : 'Có đơn mới gần bạn 🎉'
+            ? 'New job near you '
+            : 'Có đơn mới gần bạn '
           : isAccepted
             ? lang === 'en'
-              ? 'Great news about your order 🎉'
-              : 'Tin vui về đơn hàng 🎉'
+              ? 'Great news about your order '
+              : 'Tin vui về đơn hàng '
             : isNewQuote
               ? lang === 'en'
-                ? 'New quote received 💬'
-                : 'Có báo giá mới 💬'
+                ? 'New quote received '
+                : 'Có báo giá mới '
               : isNewMsg
-                ? '💬 ' +
+                ? ' ' +
                   (formatNotificationTitle(n.title, lang) ||
                     (lang === 'en' ? 'New message' : 'Tin nhắn mới'))
                 : formatNotificationTitle(n.title, lang, n.type);

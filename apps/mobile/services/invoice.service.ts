@@ -59,7 +59,7 @@ export async function downloadInvoicePdf(jobId: string): Promise<void> {
     anchor.click();
     anchor.remove();
     g.URL.revokeObjectURL(url);
-    Toast.show({ type: 'success', text1: 'Đã tải hóa đơn PDF 🧾', text2: fileName });
+    Toast.show({ type: 'success', text1: 'Đã tải hóa đơn PDF ', text2: fileName });
     return;
   }
 
@@ -70,7 +70,7 @@ export async function downloadInvoicePdf(jobId: string): Promise<void> {
   });
   Toast.show({
     type: 'success',
-    text1: 'Đã tải hóa đơn PDF 🧾',
+    text1: 'Đã tải hóa đơn PDF ',
     text2: `Đã lưu tại: ${fileUri}`,
     visibilityTime: 5000,
   });
