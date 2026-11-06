@@ -197,9 +197,41 @@ export default function RegisterScreen() {
                 }}
               >
                 {lang === 'en' ? (
-                  <>By registering, you agree to the <Text style={{ color: COLORS.primary, fontWeight: '700' }}>Terms of Service</Text> and <Text style={{ color: COLORS.primary, fontWeight: '700' }}>Privacy Policy</Text> of Green House.</>
+                  <>
+                    By registering, you agree to the{' '}
+                    <Text
+                      onPress={() => router.push({ pathname: '/policy-insurance', params: { tab: 'terms' } })}
+                      style={{ color: COLORS.primary, fontWeight: '700' }}
+                    >
+                      Terms of Service
+                    </Text>{' '}
+                    and{' '}
+                    <Text
+                      onPress={() => router.push({ pathname: '/policy-insurance', params: { tab: 'privacy' } })}
+                      style={{ color: COLORS.primary, fontWeight: '700' }}
+                    >
+                      Privacy Policy
+                    </Text>{' '}
+                    of Green House.
+                  </>
                 ) : (
-                  <>Bằng cách đăng ký, bạn đồng ý với <Text style={{ color: COLORS.primary, fontWeight: '700' }}>Điều khoản dịch vụ</Text> và <Text style={{ color: COLORS.primary, fontWeight: '700' }}>Chính sách bảo mật</Text> của Green House.</>
+                  <>
+                    Bằng cách đăng ký, bạn đồng ý với{' '}
+                    <Text
+                      onPress={() => router.push({ pathname: '/policy-insurance', params: { tab: 'terms' } })}
+                      style={{ color: COLORS.primary, fontWeight: '700' }}
+                    >
+                      Điều khoản dịch vụ
+                    </Text>{' '}
+                    và{' '}
+                    <Text
+                      onPress={() => router.push({ pathname: '/policy-insurance', params: { tab: 'privacy' } })}
+                      style={{ color: COLORS.primary, fontWeight: '700' }}
+                    >
+                      Chính sách bảo mật
+                    </Text>{' '}
+                    của Green House.
+                  </>
                 )}
               </Text>
 
