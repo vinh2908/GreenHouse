@@ -94,7 +94,52 @@ export class NotificationsService {
         this.logger.warn(`[sendExpoPush] Invalid userId: ${userId}`);
         return;
       }
-      const user = await this.userModel.findById(userId).select('push_tokens').lean().exec();
+      const user = await this.userModel
+        .findById(userId)
+        .select('push_tokens notification_settings')
+        .lean()
+        .exec();
+
+      const notifType = String(data?.type || '');
+      const settings = (user as any)?.notification_settings || {
+        order_updates: true,
+        chat_messages: true,
+        promotions: true,
+        vouchers: true,
+        sound: true,
+        vibration: true,
+      };
+
+      let allowed = true;
+      if (
+        notifType.startsWith('job_') ||
+        notifType.startsWith('quote_') ||
+        notifType.startsWith('sos_') ||
+        notifType.startsWith('payment_') ||
+        notifType.startsWith('monthly_contract_') ||
+        notifType.startsWith('insurance_claim_') ||
+        notifType.startsWith('contract_') ||
+        notifType.startsWith('helper_')
+      ) {
+        if (settings.order_updates === false) allowed = false;
+      } else if (notifType.startsWith('chat_') || notifType.startsWith('support_')) {
+        if (settings.chat_messages === false) allowed = false;
+      } else if (
+        notifType.startsWith('promotion_') ||
+        notifType === 'promotion' ||
+        notifType === 'bonus'
+      ) {
+        if (settings.promotions === false) allowed = false;
+      } else if (notifType.startsWith('voucher_')) {
+        if (settings.vouchers === false) allowed = false;
+      }
+
+      if (!allowed) {
+        this.logger.log(
+          `[sendExpoPush] Skipped push for userId=${userId} due to user notification settings (type=${notifType})`,
+        );
+        return;
+      }
       const rawTokens = (user?.push_tokens ?? []) as string[];
       const tokens = rawTokens.filter(
         token =>
@@ -118,7 +163,7 @@ export class NotificationsService {
         title,
         body,
         data,
-        sound: 'default' as const,
+        sound: settings.sound ? ('default' as const) : null,
         priority: 'high' as const,
         channelId: 'default',
       }));
@@ -352,5 +397,59 @@ export class NotificationsService {
       body: `Công việc "${jobTitle}" đã được hoàn thành. Vui lòng nghiệm thu.`,
       payload: { job_id: jobId },
     });
+  }
+
+  async getSettings(userId: string) {
+    if (!Types.ObjectId.isValid(userId)) {
+      throw new NotFoundException('User not found');
+    }
+    const user = await this.userModel
+      .findById(userId)
+      .select('notification_settings')
+      .lean()
+      .exec();
+    if (!user) throw new NotFoundException('User not found');
+    return (
+      (user as any).notification_settings || {
+        order_updates: true,
+        chat_messages: true,
+        promotions: true,
+        vouchers: true,
+        sound: true,
+        vibration: true,
+      }
+    );
+  }
+
+  async updateSettings(
+    userId: string,
+    settings: Partial<{
+      order_updates: boolean;
+      chat_messages: boolean;
+      promotions: boolean;
+      vouchers: boolean;
+      sound: boolean;
+      vibration: boolean;
+    }>,
+  ) {
+    if (!Types.ObjectId.isValid(userId)) {
+      throw new NotFoundException('User not found');
+    }
+    const user = await this.userModel.findById(userId).exec();
+    if (!user) throw new NotFoundException('User not found');
+    const current = (user as any).notification_settings || {
+      order_updates: true,
+      chat_messages: true,
+      promotions: true,
+      vouchers: true,
+      sound: true,
+      vibration: true,
+    };
+    (user as any).notification_settings = {
+      ...current,
+      ...settings,
+    };
+    await user.save();
+    return (user as any).notification_settings;
   }
 }

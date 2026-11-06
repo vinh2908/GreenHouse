@@ -6,6 +6,7 @@ import { ArrowLeft, Bell, Tag, Volume2, Shield, Smartphone } from 'lucide-react-
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Toast from 'react-native-toast-message';
 import { useTranslation } from '@/hooks/use-i18n';
+import { useNotificationSettings, useUpdateNotificationSettings } from '@/hooks/use-api';
 import { Card, COLORS, Separator } from '@/components/ui';
 
 const STORAGE_KEY = '@greenhouse_notification_settings';
@@ -35,6 +36,9 @@ export default function NotificationSettingsScreen() {
   const [settings, setSettings] = useState<SettingsState>(DEFAULT_SETTINGS);
   const [loaded, setLoaded] = useState(false);
 
+  const { data: serverSettings } = useNotificationSettings();
+  const updateMutation = useUpdateNotificationSettings();
+
   useEffect(() => {
     AsyncStorage.getItem(STORAGE_KEY)
       .then(val => {
@@ -47,17 +51,53 @@ export default function NotificationSettingsScreen() {
       .finally(() => setLoaded(true));
   }, []);
 
+  useEffect(() => {
+    if (serverSettings) {
+      const mapped: SettingsState = {
+        orderUpdates: serverSettings.order_updates ?? true,
+        chatMessages: serverSettings.chat_messages ?? true,
+        promotions: serverSettings.promotions ?? true,
+        vouchers: serverSettings.vouchers ?? true,
+        sound: serverSettings.sound ?? true,
+        vibration: serverSettings.vibration ?? true,
+      };
+      setSettings(mapped);
+      AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(mapped)).catch(() => {});
+    }
+  }, [serverSettings]);
+
   const toggle = async (key: keyof SettingsState) => {
     const updated = { ...settings, [key]: !settings[key] };
     setSettings(updated);
     try {
       await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-      Toast.show({
-        type: 'success',
-        text1: lang === 'en' ? 'Notification settings saved' : 'Đã lưu cài đặt thông báo',
-        visibilityTime: 1500,
-      });
     } catch {}
+
+    const payload = {
+      order_updates: updated.orderUpdates,
+      chat_messages: updated.chatMessages,
+      promotions: updated.promotions,
+      vouchers: updated.vouchers,
+      sound: updated.sound,
+      vibration: updated.vibration,
+    };
+
+    updateMutation.mutate(payload, {
+      onSuccess: () => {
+        Toast.show({
+          type: 'success',
+          text1: lang === 'en' ? 'Notification settings saved' : 'Đã lưu cài đặt thông báo',
+          visibilityTime: 1500,
+        });
+      },
+      onError: () => {
+        Toast.show({
+          type: 'success',
+          text1: lang === 'en' ? 'Notification settings saved' : 'Đã lưu cài đặt thông báo',
+          visibilityTime: 1500,
+        });
+      },
+    });
   };
 
   const handleBack = () => {
