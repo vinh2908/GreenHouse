@@ -452,7 +452,7 @@ const styles = StyleSheet.create({
   dragHandle: {
     width: 42,
     height: 5,
-    borderRadius: 99,
+    borderRadius: 999,
     backgroundColor: '#E2E8F0',
     alignSelf: 'center',
     marginBottom: 10,
@@ -534,7 +534,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#DCFCE7',
     borderWidth: 1.5,
     borderColor: '#16A34A',
-    borderRadius: 12,
+    borderRadius: 14,
     zIndex: 0,
   },
   wheelsContainer: {
@@ -604,7 +604,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderWidth: 1.5,
     borderColor: '#E2E8F0',
-    borderRadius: 9,
+    borderRadius: 8,
     paddingHorizontal: 10,
     paddingVertical: 6,
     alignItems: 'center',

@@ -123,7 +123,7 @@ export function LoyaltyPointsInput({ job, contractTotal }: { job: any; contractT
             flex: 1,
             borderWidth: 1,
             borderColor: error ? COLORS.error : COLORS.gray[200],
-            borderRadius: 12,
+            borderRadius: 14,
             paddingHorizontal: 12,
             paddingVertical: 10,
             fontSize: fs(14),
@@ -138,7 +138,7 @@ export function LoyaltyPointsInput({ job, contractTotal }: { job: any; contractT
           disabled={apply.isPending}
           style={{
             backgroundColor: '#D97706',
-            borderRadius: 12,
+            borderRadius: 14,
             paddingHorizontal: 16,
             alignItems: 'center',
             justifyContent: 'center',

@@ -140,7 +140,7 @@ export default function FavoriteHelpersScreen() {
           style={{
             width: 40,
             height: 40,
-            borderRadius: 12,
+            borderRadius: 14,
             backgroundColor: COLORS.gray[100],
             alignItems: 'center',
             justifyContent: 'center',
@@ -273,7 +273,7 @@ export default function FavoriteHelpersScreen() {
                         gap: 6,
                         backgroundColor: COLORS.primary,
                         paddingVertical: 10,
-                        borderRadius: 10,
+                        borderRadius: 8,
                       }}
                     >
                       <RotateCcw size={15} color="#fff" />
@@ -292,7 +292,7 @@ export default function FavoriteHelpersScreen() {
                         gap: 6,
                         backgroundColor: COLORS.primaryLight,
                         paddingVertical: 10,
-                        borderRadius: 10,
+                        borderRadius: 8,
                       }}
                     >
                       <CalendarPlus size={15} color={COLORS.primaryDark} />

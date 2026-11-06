@@ -26,6 +26,7 @@ import { SosCustomerDecisionPopup } from '@/components/common/sos-customer-decis
 import { InitialPermissionsModal } from '@/components/common/initial-permissions-modal';
 import { useBackgroundGps } from '@/hooks/use-background-gps';
 import { useAuthStore } from '@/stores/auth.store';
+import { COLORS } from '@/components/ui';
 import { takePendingToastRoute } from '@/services/toast-navigation';
 
 console.warn('[Startup] 0. _layout.tsx module evaluating...');
@@ -126,10 +127,13 @@ function ToastCard() {
       router.push(route as never);
     }
   };
-  const borderColor = type === 'success' ? '#4caf50' : type === 'error' ? '#f44336' : '#87CEFA';
-  const iconBackground = type === 'success' ? '#DCFCE7' : type === 'error' ? '#FEF2F2' : '#EFF6FF';
+  // B19: toast dùng đúng màu hệ thống COLORS.success/error
+  const borderColor =
+    type === 'success' ? COLORS.success : type === 'error' ? COLORS.error : COLORS.secondary;
+  const iconBackground =
+    type === 'success' ? COLORS.successLight : type === 'error' ? COLORS.errorLight : COLORS.secondaryLight;
   const renderIcon = () => {
-    if (type === 'success') return <CheckCircle2 size={20} color="#16A34A" />;
+    if (type === 'success') return <CheckCircle2 size={20} color={COLORS.primaryDark} />;
     if (type === 'error') return <AlertTriangle size={20} color="#DC2626" />;
     return <Bell size={20} color="#2563EB" />;
   };
@@ -150,7 +154,7 @@ function ToastCard() {
         style={{
           width: '90%',
           backgroundColor: '#fff',
-          borderRadius: 18,
+          borderRadius: 14,
           paddingVertical: 14,
           paddingHorizontal: 14,
           flexDirection: 'row',

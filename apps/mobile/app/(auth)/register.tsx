@@ -145,7 +145,7 @@ export default function RegisterScreen() {
               style={{
                 width: 40,
                 height: 40,
-                borderRadius: 12,
+                borderRadius: 14,
                 backgroundColor: COLORS.gray[100],
                 alignItems: 'center',
                 justifyContent: 'center',

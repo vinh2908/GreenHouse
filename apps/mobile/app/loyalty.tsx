@@ -124,7 +124,7 @@ export default function LoyaltyScreen() {
               <View
                 style={{
                   height: 10,
-                  borderRadius: 5,
+                  borderRadius: 8,
                   backgroundColor: COLORS.gray[200],
                   overflow: 'hidden',
                 }}
@@ -200,7 +200,7 @@ export default function LoyaltyScreen() {
                         style={{
                           width: 36,
                           height: 36,
-                          borderRadius: 18,
+                          borderRadius: 14,
                           backgroundColor: COLORS.gray[100],
                           alignItems: 'center',
                           justifyContent: 'center',

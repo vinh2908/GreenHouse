@@ -19,6 +19,12 @@ import { OFFICIAL_CONTACT_PHONE, OFFICIAL_CONTACT_PHONE_DISPLAY } from '@homemat
 import { useTranslation } from '@/hooks/use-i18n';
 
 // ─── Green House Color Palette (Banana Green / Lime Fresh) ───────────────────
+// B19 — 1 xanh chính + 1 xanh đậm, dùng nhất quán:
+//   primary (#22C55E): nút chính, header, tab đang chọn, điểm nhấn chính.
+//   primaryDark (#16A34A): chỉ dùng cho chữ/icon trên nền sáng (độ tương phản)
+//   và trạng thái nhấn — KHÔNG dùng làm màu nền chính thay cho primary.
+// Bo góc chuẩn 3 mức (RADIUS): 8 nhỏ, 14 nút/card, 999 tròn.
+export const RADIUS = { sm: 8, md: 14, full: 999 } as const;
 export const COLORS = {
   primary: '#22C55E', // Banana / Fresh vibrant Green
   primaryDark: '#16A34A',
@@ -214,7 +220,7 @@ export function Card({ children, shadow = true, style, ...props }: CardProps) {
       style={[
         {
           backgroundColor: '#FFFFFF',
-          borderRadius: 18,
+          borderRadius: 14,
           padding: 16,
           borderWidth: 1,
           borderColor: 'rgba(0, 0, 0, 0.04)',
@@ -390,7 +396,7 @@ export function EmptyState({ icon, title, subtitle, action, onAction }: EmptySta
         style={{
           width: 72,
           height: 72,
-          borderRadius: 36,
+          borderRadius: 999,
           backgroundColor: COLORS.gray[100],
           alignItems: 'center',
           justifyContent: 'center',
@@ -435,7 +441,7 @@ export function EmptyState({ icon, title, subtitle, action, onAction }: EmptySta
             backgroundColor: COLORS.primary,
             paddingHorizontal: 22,
             paddingVertical: 11,
-            borderRadius: 12,
+            borderRadius: 14,
           }}
         >
           <Text style={{ color: '#fff', fontWeight: '700', fontSize: fs(14) }}>{action}</Text>
@@ -469,7 +475,7 @@ export function ErrorState({ title, subtitle, onRetry, retryText }: ErrorStatePr
         style={{
           width: 64,
           height: 64,
-          borderRadius: 32,
+          borderRadius: 999,
           backgroundColor: '#FEE2E2',
           alignItems: 'center',
           justifyContent: 'center',
@@ -511,7 +517,7 @@ export function ErrorState({ title, subtitle, onRetry, retryText }: ErrorStatePr
             backgroundColor: COLORS.primary,
             paddingVertical: 10,
             paddingHorizontal: 20,
-            borderRadius: 12,
+            borderRadius: 14,
             flexDirection: 'row',
             alignItems: 'center',
             gap: 8,

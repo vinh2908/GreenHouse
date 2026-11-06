@@ -863,7 +863,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderWidth: 1.5,
     borderColor: COLORS.gray[200],
-    borderRadius: 12,
+    borderRadius: 14,
     paddingHorizontal: 12,
     paddingVertical: 10,
     gap: 6,
@@ -938,7 +938,7 @@ const styles = StyleSheet.create({
   chipBadge: {
     paddingHorizontal: 4,
     paddingVertical: 1,
-    borderRadius: 4,
+    borderRadius: 8,
   },
   chipBadgeNew: {
     backgroundColor: '#DCFCE7',
@@ -973,7 +973,7 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: 340,
     backgroundColor: '#FFFFFF',
-    borderRadius: 20,
+    borderRadius: 14,
     padding: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
@@ -1001,7 +1001,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: 12,
     paddingHorizontal: 12,
-    borderRadius: 10,
+    borderRadius: 8,
   },
   modalItemActive: {
     backgroundColor: COLORS.primaryLight,

@@ -282,7 +282,7 @@ export default function HelperAvailabilityScreen() {
                 flex: 1,
                 borderWidth: 1,
                 borderColor: COLORS.gray[200],
-                borderRadius: 12,
+                borderRadius: 14,
                 paddingHorizontal: 12,
                 paddingVertical: 10,
                 fontSize: fs(14),
@@ -296,7 +296,7 @@ export default function HelperAvailabilityScreen() {
               onPress={addBlockedDate}
               style={{
                 backgroundColor: COLORS.primary,
-                borderRadius: 12,
+                borderRadius: 14,
                 paddingHorizontal: 14,
                 alignItems: 'center',
                 justifyContent: 'center',

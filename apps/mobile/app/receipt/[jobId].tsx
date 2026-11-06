@@ -284,7 +284,7 @@ const styles = StyleSheet.create({
   backBtn: {
     width: 38,
     height: 38,
-    borderRadius: 12,
+    borderRadius: 14,
     backgroundColor: '#F3F4F6',
     alignItems: 'center',
     justifyContent: 'center',
@@ -300,7 +300,7 @@ const styles = StyleSheet.create({
   },
   receiptCard: {
     backgroundColor: '#fff',
-    borderRadius: 20,
+    borderRadius: 14,
     padding: 20,
     borderWidth: 1,
     borderColor: '#E5E7EB',
@@ -318,7 +318,7 @@ const styles = StyleSheet.create({
   successIcon: {
     width: 56,
     height: 56,
-    borderRadius: 28,
+    borderRadius: 999,
     backgroundColor: '#ECFDF5',
     alignItems: 'center',
     justifyContent: 'center',
@@ -340,7 +340,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#ECFDF5',
     paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 12,
+    borderRadius: 14,
     marginTop: 6,
   },
   paidBadgeText: {

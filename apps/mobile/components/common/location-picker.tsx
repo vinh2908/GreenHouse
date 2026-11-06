@@ -409,7 +409,7 @@ export function LocationPicker({
               style={{
                 width: 36,
                 height: 36,
-                borderRadius: 12,
+                borderRadius: 14,
                 backgroundColor: COLORS.gray[100],
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -428,7 +428,7 @@ export function LocationPicker({
               gap: 8,
               borderWidth: 1.5,
               borderColor: COLORS.gray[200],
-              borderRadius: 12,
+              borderRadius: 14,
               paddingHorizontal: 12,
               backgroundColor: COLORS.gray[50],
             }}

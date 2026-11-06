@@ -137,7 +137,7 @@ export default function SupportChatScreen() {
           maxWidth: '80%',
           paddingHorizontal: 16,
           paddingVertical: 12,
-          borderRadius: 20,
+          borderRadius: 14,
           borderBottomRightRadius: isMe ? 4 : 20,
           borderBottomLeftRadius: isMe ? 20 : 4,
           backgroundColor: isMe ? COLORS.primary : '#FFFFFF',
@@ -200,7 +200,7 @@ export default function SupportChatScreen() {
           style={{
             width: 40,
             height: 40,
-            borderRadius: 12,
+            borderRadius: 14,
             backgroundColor: COLORS.gray[100],
             alignItems: 'center',
             justifyContent: 'center',
@@ -212,7 +212,7 @@ export default function SupportChatScreen() {
           style={{
             width: 42,
             height: 42,
-            borderRadius: 21,
+            borderRadius: 14,
             backgroundColor: COLORS.primaryLight,
             alignItems: 'center',
             justifyContent: 'center',
@@ -320,7 +320,7 @@ export default function SupportChatScreen() {
                           alignSelf: 'flex-start',
                           marginLeft: 4,
                           backgroundColor: COLORS.primaryLight,
-                          borderRadius: 10,
+                          borderRadius: 8,
                           paddingHorizontal: 12,
                           paddingVertical: 8,
                         }}
@@ -377,7 +377,7 @@ export default function SupportChatScreen() {
                 flex: 1,
                 borderWidth: 1.5,
                 borderColor: COLORS.gray[200],
-                borderRadius: 24,
+                borderRadius: 14,
                 paddingHorizontal: 18,
                 paddingVertical: 11,
                 fontSize: fs(15),
@@ -398,7 +398,7 @@ export default function SupportChatScreen() {
               style={{
                 width: 44,
                 height: 44,
-                borderRadius: 22,
+                borderRadius: 14,
                 backgroundColor: text.trim() ? COLORS.primary : COLORS.gray[200],
                 alignItems: 'center',
                 justifyContent: 'center',

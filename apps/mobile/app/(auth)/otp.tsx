@@ -129,7 +129,7 @@ export default function OtpScreen() {
           style={{
             width: 40,
             height: 40,
-            borderRadius: 12,
+            borderRadius: 14,
             backgroundColor: COLORS.gray[100],
             alignItems: 'center',
             justifyContent: 'center',
@@ -150,7 +150,7 @@ export default function OtpScreen() {
             style={{
               width: 72,
               height: 72,
-              borderRadius: 36,
+              borderRadius: 999,
               backgroundColor: COLORS.primaryLight,
               alignItems: 'center',
               justifyContent: 'center',
@@ -197,7 +197,7 @@ export default function OtpScreen() {
               borderWidth: 1,
               paddingVertical: 8,
               paddingHorizontal: 14,
-              borderRadius: 12,
+              borderRadius: 14,
               marginTop: 14,
               flexDirection: 'row',
               alignItems: 'center',
@@ -227,7 +227,7 @@ export default function OtpScreen() {
               style={{
                 width: 48,
                 height: 56,
-                borderRadius: 12,
+                borderRadius: 14,
                 textAlign: 'center',
                 fontSize: fs(22),
                 fontWeight: '700',

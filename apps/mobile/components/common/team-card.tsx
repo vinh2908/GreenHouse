@@ -181,7 +181,7 @@ export function TeamCard({ job, currentUserId }: { job: any; currentUserId?: str
                   alignItems: 'center',
                   borderWidth: 1,
                   borderColor: COLORS.gray[200],
-                  borderRadius: 10,
+                  borderRadius: 8,
                   paddingHorizontal: 8,
                 }}
               >
@@ -203,7 +203,7 @@ export function TeamCard({ job, currentUserId }: { job: any; currentUserId?: str
                   backgroundColor: COLORS.primary,
                   paddingHorizontal: 12,
                   paddingVertical: 8,
-                  borderRadius: 10,
+                  borderRadius: 8,
                 }}
               >
                 <Text style={{ color: '#fff', fontWeight: '800', fontSize: fs(12.5) }}>

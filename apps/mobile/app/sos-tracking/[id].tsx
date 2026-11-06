@@ -164,7 +164,7 @@ export default function SosTrackingScreen() {
           style={{
             width: 38,
             height: 38,
-            borderRadius: 12,
+            borderRadius: 14,
             backgroundColor: 'rgba(255,255,255,0.2)',
             alignItems: 'center',
             justifyContent: 'center',
@@ -187,7 +187,7 @@ export default function SosTrackingScreen() {
           style={{
             width: 38,
             height: 38,
-            borderRadius: 12,
+            borderRadius: 14,
             backgroundColor: 'rgba(255,255,255,0.2)',
             alignItems: 'center',
             justifyContent: 'center',
@@ -217,7 +217,7 @@ export default function SosTrackingScreen() {
               style={{
                 width: 80,
                 height: 80,
-                borderRadius: 40,
+                borderRadius: 999,
                 backgroundColor: '#FEE2E2',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -244,7 +244,7 @@ export default function SosTrackingScreen() {
               style={{
                 backgroundColor: '#fff',
                 padding: 12,
-                borderRadius: 12,
+                borderRadius: 14,
                 width: '100%',
                 gap: 6,
                 marginTop: 4,
@@ -324,7 +324,7 @@ export default function SosTrackingScreen() {
                           backgroundColor: '#ECFDF5',
                           paddingHorizontal: 6,
                           paddingVertical: 2,
-                          borderRadius: 6,
+                          borderRadius: 8,
                         }}
                       >
                         <Text

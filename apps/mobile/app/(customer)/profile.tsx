@@ -204,7 +204,7 @@ export default function CustomerProfileScreen() {
                   backgroundColor: COLORS.gray[100],
                   paddingHorizontal: 10,
                   paddingVertical: 4,
-                  borderRadius: 10,
+                  borderRadius: 8,
                   marginTop: 6,
                 }}
               >
@@ -242,7 +242,7 @@ export default function CustomerProfileScreen() {
                   backgroundColor: COLORS.primary,
                   paddingHorizontal: 20,
                   paddingVertical: 8,
-                  borderRadius: 20,
+                  borderRadius: 14,
                   marginTop: 10,
                 }}
               >
@@ -260,7 +260,7 @@ export default function CustomerProfileScreen() {
             style={{
               marginTop: 16,
               backgroundColor: COLORS.primaryLight,
-              borderRadius: 20,
+              borderRadius: 14,
               paddingHorizontal: 20,
               paddingVertical: 10,
               flexDirection: 'row',
@@ -312,7 +312,7 @@ export default function CustomerProfileScreen() {
                     backgroundColor: COLORS.primary,
                     paddingHorizontal: 12,
                     paddingVertical: 6,
-                    borderRadius: 10,
+                    borderRadius: 8,
                     flexDirection: 'row',
                     alignItems: 'center',
                     gap: 4,

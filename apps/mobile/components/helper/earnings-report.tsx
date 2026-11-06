@@ -98,7 +98,7 @@ export function EarningsReport() {
               backgroundColor: COLORS.primary,
               paddingHorizontal: 16,
               paddingVertical: 8,
-              borderRadius: 10,
+              borderRadius: 8,
             }}
           >
             <Text style={{ color: '#fff', fontWeight: '700', fontSize: fs(13) }}>
@@ -163,7 +163,7 @@ export function EarningsReport() {
                     height: 70,
                     justifyContent: 'flex-end',
                     backgroundColor: COLORS.gray[100],
-                    borderRadius: 6,
+                    borderRadius: 8,
                     overflow: 'hidden',
                   }}
                 >
@@ -171,7 +171,7 @@ export function EarningsReport() {
                     style={{
                       height: `${heightPct}%`,
                       backgroundColor: isToday ? COLORS.primaryDark : COLORS.primary,
-                      borderRadius: 6,
+                      borderRadius: 8,
                     }}
                   />
                 </View>
@@ -224,7 +224,7 @@ export function EarningsReport() {
                     height: 40,
                     justifyContent: 'flex-end',
                     backgroundColor: COLORS.gray[100],
-                    borderRadius: 6,
+                    borderRadius: 8,
                     overflow: 'hidden',
                   }}
                 >
@@ -232,7 +232,7 @@ export function EarningsReport() {
                     style={{
                       height: `${heightPct}%`,
                       backgroundColor: COLORS.secondary,
-                      borderRadius: 6,
+                      borderRadius: 8,
                     }}
                   />
                 </View>
@@ -280,7 +280,7 @@ export function EarningsReport() {
             <View
               style={{
                 height: 12,
-                borderRadius: 6,
+                borderRadius: 8,
                 backgroundColor: COLORS.gray[200],
                 overflow: 'hidden',
               }}
@@ -314,7 +314,7 @@ export function EarningsReport() {
                 flex: 1,
                 borderWidth: 1,
                 borderColor: COLORS.gray[200],
-                borderRadius: 12,
+                borderRadius: 14,
                 paddingHorizontal: 12,
                 paddingVertical: 10,
                 fontSize: fs(14),
@@ -329,7 +329,7 @@ export function EarningsReport() {
               disabled={setGoal.isPending}
               style={{
                 backgroundColor: COLORS.primary,
-                borderRadius: 12,
+                borderRadius: 14,
                 paddingHorizontal: 18,
                 alignItems: 'center',
                 justifyContent: 'center',

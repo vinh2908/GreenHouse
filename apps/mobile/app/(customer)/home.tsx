@@ -1250,7 +1250,7 @@ export default function CustomerHomeScreen() {
                 backgroundColor: currentCoords ? '#F1F5F9' : '#FEF3C7',
                 paddingVertical: 7,
                 paddingHorizontal: 12,
-                borderRadius: 20,
+                borderRadius: 14,
                 gap: 6,
                 maxWidth: '65%',
                 borderWidth: currentCoords ? 0 : 1,
@@ -1282,7 +1282,7 @@ export default function CustomerHomeScreen() {
                 style={{
                   width: 38,
                   height: 38,
-                  borderRadius: 19,
+                  borderRadius: 14,
                   backgroundColor: '#F1F5F9',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -1298,7 +1298,7 @@ export default function CustomerHomeScreen() {
                       right: 6,
                       width: 8,
                       height: 8,
-                      borderRadius: 4,
+                      borderRadius: 8,
                       backgroundColor: COLORS.error,
                       borderWidth: 1.5,
                       borderColor: '#fff',
@@ -1314,7 +1314,7 @@ export default function CustomerHomeScreen() {
                 style={{
                   width: 38,
                   height: 38,
-                  borderRadius: 19,
+                  borderRadius: 14,
                   backgroundColor: '#DCFCE7',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -1409,7 +1409,7 @@ export default function CustomerHomeScreen() {
               padding: 24,
               margin: 16,
               backgroundColor: '#fff',
-              borderRadius: 16,
+              borderRadius: 14,
               borderWidth: 1,
               borderColor: '#E2E8F0',
             }}
@@ -1449,7 +1449,7 @@ export default function CustomerHomeScreen() {
                     style={{
                       width: 8,
                       height: 8,
-                      borderRadius: 4,
+                      borderRadius: 8,
                       backgroundColor: '#22C55E',
                     }}
                   />
@@ -1463,7 +1463,7 @@ export default function CustomerHomeScreen() {
               <View
                 style={{
                   height: 190,
-                  borderRadius: 18,
+                  borderRadius: 14,
                   overflow: 'hidden',
                   backgroundColor: '#F8FAFC',
                   borderWidth: 1,
@@ -1512,7 +1512,7 @@ export default function CustomerHomeScreen() {
                       style={{
                         width: 44,
                         height: 44,
-                        borderRadius: 22,
+                        borderRadius: 14,
                         backgroundColor: '#FEF3C7',
                         alignItems: 'center',
                         justifyContent: 'center',
@@ -1551,7 +1551,7 @@ export default function CustomerHomeScreen() {
                           backgroundColor: COLORS.primary,
                           paddingVertical: 7,
                           paddingHorizontal: 14,
-                          borderRadius: 10,
+                          borderRadius: 8,
                         }}
                       >
                         {isLocatingLive ? (
@@ -1574,7 +1574,7 @@ export default function CustomerHomeScreen() {
                           borderColor: COLORS.gray[300],
                           paddingVertical: 7,
                           paddingHorizontal: 14,
-                          borderRadius: 10,
+                          borderRadius: 8,
                         }}
                       >
                         <MapPin size={14} color={COLORS.gray[700]} />
@@ -1595,7 +1595,7 @@ export default function CustomerHomeScreen() {
                   style={{
                     marginTop: 12,
                     backgroundColor: '#FFFFFF',
-                    borderRadius: 16,
+                    borderRadius: 14,
                     paddingVertical: 20,
                     paddingHorizontal: 16,
                     alignItems: 'center',
@@ -1608,7 +1608,7 @@ export default function CustomerHomeScreen() {
                     style={{
                       width: 44,
                       height: 44,
-                      borderRadius: 22,
+                      borderRadius: 14,
                       backgroundColor: '#F1F5F9',
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -1674,7 +1674,7 @@ export default function CustomerHomeScreen() {
                             style={{
                               width: 38,
                               height: 38,
-                              borderRadius: 19,
+                              borderRadius: 14,
                               backgroundColor: isSelected ? '#DCFCE7' : '#F1F5F9',
                               alignItems: 'center',
                               justifyContent: 'center',
@@ -1772,7 +1772,7 @@ export default function CustomerHomeScreen() {
               <View
                 style={{
                   backgroundColor: '#16A34A',
-                  borderRadius: 20,
+                  borderRadius: 14,
                   paddingHorizontal: 16,
                   paddingTop: 18,
                   paddingBottom: 20,
@@ -1842,7 +1842,7 @@ export default function CustomerHomeScreen() {
                     backgroundColor: 'rgba(255, 255, 255, 0.22)',
                     paddingHorizontal: 10,
                     paddingVertical: 4,
-                    borderRadius: 20,
+                    borderRadius: 14,
                   }}
                 >
                   <Sparkles size={13} color="#FFFFFF" />
@@ -1978,7 +1978,7 @@ export default function CustomerHomeScreen() {
                   style={{
                     marginHorizontal: 16,
                     backgroundColor: '#FFFFFF',
-                    borderRadius: 16,
+                    borderRadius: 14,
                     padding: 20,
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -2046,7 +2046,7 @@ export default function CustomerHomeScreen() {
                           style={{
                             width: 260,
                             backgroundColor: '#FFFFFF',
-                            borderRadius: 16,
+                            borderRadius: 14,
                             padding: 16,
                             borderWidth: 1,
                             borderColor: '#E2E8F0',
@@ -2158,7 +2158,7 @@ export default function CustomerHomeScreen() {
                           style={{
                             width: i === activeVoucherIdx ? 18 : 6,
                             height: 6,
-                            borderRadius: 3,
+                            borderRadius: 8,
                             backgroundColor: i === activeVoucherIdx ? COLORS.primary : '#CBD5E1',
                           }}
                         />
@@ -2320,7 +2320,7 @@ export default function CustomerHomeScreen() {
                               backgroundColor: '#DCFCE7',
                               paddingHorizontal: Math.round(5 * textScale),
                               paddingVertical: Math.round(2 * textScale),
-                              borderRadius: 6,
+                              borderRadius: 8,
                             }}
                           >
                             <Text
@@ -2385,7 +2385,7 @@ export default function CustomerHomeScreen() {
                   onPress={() => router.push('/sos')}
                   style={{
                     backgroundColor: '#DC2626',
-                    borderRadius: 16,
+                    borderRadius: 14,
                     padding: 15,
                     shadowColor: '#DC2626',
                     shadowOffset: { width: 0, height: 4 },
@@ -2406,7 +2406,7 @@ export default function CustomerHomeScreen() {
                         style={{
                           width: 26,
                           height: 26,
-                          borderRadius: 13,
+                          borderRadius: 14,
                           backgroundColor: 'rgba(255,255,255,0.22)',
                           alignItems: 'center',
                           justifyContent: 'center',
@@ -2423,7 +2423,7 @@ export default function CustomerHomeScreen() {
                         backgroundColor: '#FFFFFF',
                         paddingHorizontal: 7,
                         paddingVertical: 2,
-                        borderRadius: 6,
+                        borderRadius: 8,
                       }}
                     >
                       <Text style={{ fontSize: fs(10.5), fontWeight: '800', color: '#DC2626' }}>
@@ -2450,7 +2450,7 @@ export default function CustomerHomeScreen() {
                   onPress={() => router.push('/(customer)/booking')}
                   style={{
                     backgroundColor: '#F8FAFC',
-                    borderRadius: 16,
+                    borderRadius: 14,
                     padding: 14,
                     borderWidth: 1,
                     borderColor: '#E2E8F0',
@@ -2489,7 +2489,7 @@ export default function CustomerHomeScreen() {
               <View
                 style={{
                   backgroundColor: '#FFFFFF',
-                  borderRadius: 20,
+                  borderRadius: 14,
                   padding: 18,
                   borderWidth: 1,
                   borderColor: '#E2E8F0',
@@ -2526,7 +2526,7 @@ export default function CustomerHomeScreen() {
                           style={{
                             paddingHorizontal: 14,
                             paddingVertical: 7,
-                            borderRadius: 20,
+                            borderRadius: 14,
                             backgroundColor: isSel ? '#DCFCE7' : '#F1F5F9',
                             borderWidth: 1,
                             borderColor: isSel ? COLORS.primary : '#E2E8F0',
@@ -2556,7 +2556,7 @@ export default function CustomerHomeScreen() {
                     numberOfLines={3}
                     style={{
                       backgroundColor: '#F8FAFC',
-                      borderRadius: 12,
+                      borderRadius: 14,
                       padding: 12,
                       fontSize: fs(14),
                       color: COLORS.gray[900],
@@ -2586,7 +2586,7 @@ export default function CustomerHomeScreen() {
                     keyboardType="numeric"
                     style={{
                       backgroundColor: '#F8FAFC',
-                      borderRadius: 12,
+                      borderRadius: 14,
                       paddingHorizontal: 14,
                       paddingVertical: 12,
                       fontSize: fs(16),
@@ -2763,7 +2763,7 @@ export default function CustomerHomeScreen() {
                   style={{
                     flex: 1,
                     backgroundColor: '#FFFFFF',
-                    borderRadius: 16,
+                    borderRadius: 14,
                     padding: 12,
                     borderWidth: 1,
                     borderColor: '#E2E8F0',
@@ -2800,7 +2800,7 @@ export default function CustomerHomeScreen() {
                   style={{
                     flex: 1,
                     backgroundColor: '#FFFFFF',
-                    borderRadius: 16,
+                    borderRadius: 14,
                     padding: 12,
                     borderWidth: 1,
                     borderColor: '#E2E8F0',
@@ -2837,7 +2837,7 @@ export default function CustomerHomeScreen() {
                   style={{
                     flex: 1,
                     backgroundColor: '#FFFFFF',
-                    borderRadius: 16,
+                    borderRadius: 14,
                     padding: 12,
                     borderWidth: 1,
                     borderColor: '#E2E8F0',
@@ -2986,7 +2986,7 @@ export default function CustomerHomeScreen() {
                       }
                       style={{
                         backgroundColor: '#FFFFFF',
-                        borderRadius: 18,
+                        borderRadius: 14,
                         padding: 16,
                         borderWidth: 1.5,
                         borderColor: '#E2E8F0',
@@ -3048,7 +3048,7 @@ export default function CustomerHomeScreen() {
                               style={{
                                 width: 14,
                                 height: 14,
-                                borderRadius: 7,
+                                borderRadius: 8,
                                 backgroundColor: st.active ? COLORS.primary : '#E2E8F0',
                                 borderWidth: 2,
                                 borderColor: '#FFFFFF',
@@ -3074,7 +3074,7 @@ export default function CustomerHomeScreen() {
                 <View
                   style={{
                     backgroundColor: '#FFFFFF',
-                    borderRadius: 18,
+                    borderRadius: 14,
                     padding: 22,
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -3087,7 +3087,7 @@ export default function CustomerHomeScreen() {
                     style={{
                       width: 44,
                       height: 44,
-                      borderRadius: 22,
+                      borderRadius: 14,
                       backgroundColor: '#F8FAFC',
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -3161,7 +3161,7 @@ export default function CustomerHomeScreen() {
                     <View
                       style={{
                         backgroundColor: '#FFFFFF',
-                        borderRadius: 18,
+                        borderRadius: 14,
                         padding: 16,
                         borderWidth: 1,
                         borderColor: '#E2E8F0',
@@ -3177,7 +3177,7 @@ export default function CustomerHomeScreen() {
                           style={{
                             width: 44,
                             height: 44,
-                            borderRadius: 12,
+                            borderRadius: 14,
                             backgroundColor: '#DCFCE7',
                             alignItems: 'center',
                             justifyContent: 'center',
@@ -3221,7 +3221,7 @@ export default function CustomerHomeScreen() {
                           borderColor: COLORS.primary,
                           paddingHorizontal: 14,
                           paddingVertical: 8,
-                          borderRadius: 12,
+                          borderRadius: 14,
                         }}
                       >
                         <Text

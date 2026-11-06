@@ -65,7 +65,7 @@ export default function CustomerJobsScreen() {
             style={{
               width: 140,
               height: 24,
-              borderRadius: 6,
+              borderRadius: 8,
               backgroundColor: COLORS.gray[200],
             }}
           />
@@ -73,7 +73,7 @@ export default function CustomerJobsScreen() {
             style={{
               width: 200,
               height: 14,
-              borderRadius: 4,
+              borderRadius: 8,
               backgroundColor: COLORS.gray[100],
               marginTop: 6,
             }}
@@ -98,7 +98,7 @@ export default function CustomerJobsScreen() {
               style={{
                 width: w,
                 height: 32,
-                borderRadius: 16,
+                borderRadius: 14,
                 backgroundColor: COLORS.gray[100],
               }}
             />
@@ -112,7 +112,7 @@ export default function CustomerJobsScreen() {
               key={i}
               style={{
                 height: 110,
-                borderRadius: 16,
+                borderRadius: 14,
                 backgroundColor: COLORS.gray[200],
               }}
             />
@@ -156,7 +156,7 @@ export default function CustomerJobsScreen() {
             backgroundColor: COLORS.primary,
             width: 38,
             height: 38,
-            borderRadius: 12,
+            borderRadius: 14,
             alignItems: 'center',
             justifyContent: 'center',
             shadowColor: COLORS.primary,
@@ -191,7 +191,7 @@ export default function CustomerJobsScreen() {
               style={{
                 paddingHorizontal: 16,
                 paddingVertical: 8,
-                borderRadius: 20,
+                borderRadius: 14,
                 backgroundColor: activeTab === i ? COLORS.primary : COLORS.gray[100],
               }}
             >

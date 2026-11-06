@@ -98,7 +98,7 @@ export function SosBackupPopup() {
         <View
           style={{
             backgroundColor: '#fff',
-            borderRadius: 24,
+            borderRadius: 14,
             padding: 22,
             width: '100%',
             maxWidth: 420,

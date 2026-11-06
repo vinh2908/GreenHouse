@@ -50,7 +50,7 @@ export default function CustomerVouchersScreen() {
           style={{
             width: 40,
             height: 40,
-            borderRadius: 20,
+            borderRadius: 14,
             alignItems: 'center',
             justifyContent: 'center',
             backgroundColor: COLORS.gray[50],
@@ -127,7 +127,7 @@ export default function CustomerVouchersScreen() {
                       style={{
                         width: 44,
                         height: 44,
-                        borderRadius: 12,
+                        borderRadius: 14,
                         backgroundColor: COLORS.primaryLight,
                         alignItems: 'center',
                         justifyContent: 'center',
@@ -153,7 +153,7 @@ export default function CustomerVouchersScreen() {
                   style={{
                     padding: 10,
                     backgroundColor: COLORS.gray[50],
-                    borderRadius: 10,
+                    borderRadius: 8,
                     gap: 6,
                   }}
                 >
@@ -237,7 +237,7 @@ export default function CustomerVouchersScreen() {
                       backgroundColor: copiedCode === v.code ? COLORS.success : COLORS.primary,
                       paddingHorizontal: 14,
                       paddingVertical: 8,
-                      borderRadius: 10,
+                      borderRadius: 8,
                     }}
                   >
                     {copiedCode === v.code ? (
