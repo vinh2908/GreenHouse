@@ -1600,6 +1600,16 @@ export function formatNotificationBody(
   );
   if (quoteAccepted) return `Congratulations! The customer has selected your quote for ${quoteAccepted[1]}`;
 
+  const quoteRejected = b.match(
+    /^Khách hàng đã chọn báo giá khác cho công việc\s*(".*?"|'.*?'|“.*?”)\.?$/i,
+  );
+  if (quoteRejected)
+    return `The customer has selected another quote for job ${quoteRejected[1]}`;
+
+  if (/^Khách hàng đã chọn báo giá khác cho công việc/i.test(b)) {
+    return 'The customer has selected another quote for this job.';
+  }
+
   const custCancel = b.match(/^Khách hàng đã hủy công việc\s*(".*?"|'.*?'|“.*?”)$/i);
   if (custCancel) return `The customer has cancelled the job ${custCancel[1]}`;
 

@@ -1584,11 +1584,18 @@ export class JobsService {
 
     for (const oq of otherQuotes) {
       if (oq.helper_id) {
-        this.gateway.emitToUser(String(oq.helper_id), SOCKET_EVENTS.QUOTE_REJECTED, {
+        const oqHelperId = String(oq.helper_id);
+        this.gateway.emitToUser(oqHelperId, SOCKET_EVENTS.QUOTE_REJECTED, {
           job_id: jobId,
           quote_id: String(oq._id),
           reason: 'Khách hàng đã chọn báo giá khác',
         });
+        await this.notificationsService.notifyQuoteRejected(
+          oqHelperId,
+          job.title,
+          jobId,
+          String(oq._id),
+        );
       }
     }
 

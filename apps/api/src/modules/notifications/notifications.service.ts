@@ -389,6 +389,16 @@ export class NotificationsService {
     });
   }
 
+  async notifyQuoteRejected(helperId: string, jobTitle: string, jobId: string, quoteId?: string) {
+    return this.create({
+      userId: helperId,
+      type: NOTIFICATION_TYPES.QUOTE_REJECTED,
+      title: 'Báo giá không được chọn',
+      body: `Khách hàng đã chọn báo giá khác cho công việc "${jobTitle}"`,
+      payload: { job_id: jobId, ...(quoteId ? { quote_id: quoteId } : {}) },
+    });
+  }
+
   async notifyJobCompleted(customerId: string, jobTitle: string, jobId: string) {
     return this.create({
       userId: customerId,
