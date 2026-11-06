@@ -4,6 +4,7 @@ import {
   Get,
   Body,
   Param,
+  Query,
   UseGuards,
   HttpCode,
   HttpStatus,
@@ -66,9 +67,13 @@ export class SosBackupController {
   }
 
   @Get('by-job/:jobId')
-  @ApiOperation({ summary: 'Trạng thái SOS đang hoạt động của 1 đơn (cả 2 phía)' })
-  async byJob(@CurrentUser() user: { sub: string }, @Param('jobId') jobId: string) {
-    return this.sosService.getByJob(user.sub, jobId);
+  @ApiOperation({ summary: 'B81: Mọi SOS của 1 đơn (mới nhất trước); ?status= để lọc' })
+  async byJob(
+    @CurrentUser() user: { sub: string },
+    @Param('jobId') jobId: string,
+    @Query('status') status?: string,
+  ) {
+    return this.sosService.getByJob(user.sub, jobId, status);
   }
 
   // A95: Lịch sử các lần SOS của đơn hàng
