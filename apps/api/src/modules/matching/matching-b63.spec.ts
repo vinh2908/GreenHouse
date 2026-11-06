@@ -91,7 +91,18 @@ describe('MatchingService.findOptimalHelpersForJob (B63)', () => {
         populate: jest.fn(() => ({ exec: async () => makeHelpers(helperCount) })),
       })),
     };
-    const service = new MatchingService(jobModel, helperModel, {} as never, {} as never);
+    const cache = {
+      get: jest.fn(async () => null),
+      set: jest.fn(async () => undefined),
+      invalidateJob: jest.fn(async () => undefined),
+    };
+    const service = new MatchingService(
+      jobModel,
+      helperModel,
+      {} as never,
+      {} as never,
+      cache as never,
+    );
     return service;
   }
 
