@@ -119,6 +119,11 @@ export class PaymentsService {
 
   // ─── Escrow / Job Payment ──────────────────────────────────────────────────
 
+  // B41: Chỉ chấp nhận phương thức thanh toán hợp lệ. 'vietqr' là phương
+  // thức mặc định đang dùng toàn hệ thống (xem MockPayJobDto + approveCompletion)
+  // nên bắt buộc phải có trong danh sách — không chặn phương thức đang dùng.
+  static readonly ALLOWED_PAYMENT_METHODS = ['wallet', 'cash', 'momo', 'zalopay', 'vietqr'];
+
   async mockPayJob(
     customerId: string,
     jobId: string,
@@ -132,6 +137,11 @@ export class PaymentsService {
     loyalty_points_redeemed: number;
     loyalty_discount_amount: number;
   }> {
+    if (!paymentMethod || !PaymentsService.ALLOWED_PAYMENT_METHODS.includes(paymentMethod)) {
+      throw new BadRequestException(
+        `Phương thức thanh toán không hợp lệ: "${paymentMethod}". Chỉ chấp nhận: ${PaymentsService.ALLOWED_PAYMENT_METHODS.join(', ')}`,
+      );
+    }
     if (!Types.ObjectId.isValid(jobId)) {
       throw new BadRequestException('Mã công việc (job_id) không hợp lệ');
     }
@@ -387,6 +397,10 @@ export class PaymentsService {
     jobId: string,
     amount: number,
   ): Promise<TransactionDocument> {
+    // B42: Chỉ cộng tiền dương — số âm/0 sẽ làm sai lệch ví thợ
+    if (!Number.isFinite(amount) || amount <= 0) {
+      throw new BadRequestException('Số tiền cộng cho thợ phải lớn hơn 0₫');
+    }
     const wallet = await this.getOrCreateWallet(helperId);
     const balanceBefore = wallet.balance;
     const balanceAfter = balanceBefore + amount;
@@ -517,6 +531,10 @@ export class PaymentsService {
     refundAmount: number,
     reason: string,
   ): Promise<TransactionDocument> {
+    // B42: Chỉ hoàn tiền dương — số âm/0 sẽ làm sai lệch ví khách
+    if (!Number.isFinite(refundAmount) || refundAmount <= 0) {
+      throw new BadRequestException('Số tiền hoàn cho khách phải lớn hơn 0₫');
+    }
     const wallet = await this.getOrCreateWallet(customerId);
     const balanceBefore = wallet.balance;
     const balanceAfter = balanceBefore + refundAmount;
