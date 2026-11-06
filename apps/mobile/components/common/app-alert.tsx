@@ -8,6 +8,16 @@ import {
   TouchableWithoutFeedback,
   Platform,
 } from 'react-native';
+import {
+  LogOut,
+  AlertTriangle,
+  Car,
+  Shield,
+  CheckCircle2,
+  Camera,
+  AlertOctagon,
+  Bell,
+} from 'lucide-react-native';
 import type { AlertButton, AlertOptions } from 'react-native';
 import { create } from 'zustand';
 import Toast from 'react-native-toast-message';
@@ -28,21 +38,43 @@ const useDialogs = create<{ queue: Dialog[] }>(() => ({ queue: [] }));
 
 const getDialogIcon = (title: string, message?: string, buttons?: AlertButton[]): string => {
   const t = (title + ' ' + (message || '')).toLowerCase();
-  if (t.includes('đăng xuất') || t.includes('logout')) return '🚪';
-  if (t.includes('hủy') || t.includes('cancel') || t.includes('xóa')) return '⚠️';
-  if (t.includes('di chuyển') || t.includes('xe') || t.includes('đến')) return '🚗';
+  if (t.includes('đăng xuất') || t.includes('logout')) return 'logout';
+  if (t.includes('hủy') || t.includes('cancel') || t.includes('xóa')) return 'warning';
+  if (t.includes('di chuyển') || t.includes('xe') || t.includes('đến')) return 'car';
   if (
     t.includes('kyc') ||
     t.includes('xác minh') ||
     t.includes('danh tính') ||
     t.includes('bảo mật')
   )
-    return '🛡️';
-  if (t.includes('thành công') || t.includes('hoàn tất') || t.includes('nghiệm thu')) return '✅';
-  if (t.includes('ảnh') || t.includes('camera') || t.includes('chứng từ')) return '📷';
-  if (t.includes('sos') || t.includes('khẩn cấp') || t.includes('cứu hộ')) return '🚨';
-  if (buttons?.some(b => b.style === 'destructive')) return '⚠️';
-  return '🔔';
+    return 'shield';
+  if (t.includes('thành công') || t.includes('hoàn tất') || t.includes('nghiệm thu')) return 'success';
+  if (t.includes('ảnh') || t.includes('camera') || t.includes('chứng từ')) return 'camera';
+  if (t.includes('sos') || t.includes('khẩn cấp') || t.includes('cứu hộ')) return 'sos';
+  if (buttons?.some(b => b.style === 'destructive')) return 'warning';
+  return 'bell';
+};
+
+const renderDialogIcon = (iconKey?: string) => {
+  const size = 28;
+  switch (iconKey) {
+    case 'logout':
+      return <LogOut size={size} color="#EF4444" />;
+    case 'warning':
+      return <AlertTriangle size={size} color="#F59E0B" />;
+    case 'car':
+      return <Car size={size} color="#3B82F6" />;
+    case 'shield':
+      return <Shield size={size} color="#10B981" />;
+    case 'success':
+      return <CheckCircle2 size={size} color="#10B981" />;
+    case 'camera':
+      return <Camera size={size} color="#6366F1" />;
+    case 'sos':
+      return <AlertOctagon size={size} color="#EF4444" />;
+    default:
+      return <Bell size={size} color="#22C55E" />;
+  }
 };
 
 export const Alert = {
@@ -157,7 +189,7 @@ export function AppAlertHost() {
                   marginBottom: 16,
                 }}
               >
-                <Text style={{ fontSize: fs(28) }}>{dialog.icon || '🔔'}</Text>
+                {renderDialogIcon(dialog.icon)}
               </View>
 
               {/* Title */}

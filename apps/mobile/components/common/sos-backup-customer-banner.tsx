@@ -5,6 +5,7 @@
 //  - Đang có SOS chờ mình quyết định: banner nhắc + nút mở lại popup quyết định
 import { View, Text } from 'react-native';
 import dayjs from 'dayjs';
+import { AlertTriangle, RefreshCw, Camera } from 'lucide-react-native';
 import { Button, Card, COLORS } from '@/components/ui';
 import { PhotoThumbRow } from '@/components/common/photo-thumbs';
 import { useSosBackupByJob } from '@/hooks/use-api';
@@ -53,11 +54,14 @@ export function SosBackupCustomerBanner({ job }: { job: any }) {
         <Card
           style={{ backgroundColor: '#FFFBEB', borderColor: '#FDE68A', borderWidth: 1.5, gap: 8 }}
         >
-          <Text style={{ fontWeight: '800', fontSize: fs(15), color: '#92400E' }}>
-            {lang === 'en'
-              ? '⚠️ Helper encountered an issue — your decision needed'
-              : '⚠️ Người giúp việc gặp sự cố — cần bạn quyết định'}
-          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <AlertTriangle size={fs(18)} color="#92400E" />
+            <Text style={{ fontWeight: '800', fontSize: fs(15), color: '#92400E', flex: 1 }}>
+              {lang === 'en'
+                ? 'Helper encountered an issue — your decision needed'
+                : 'Người giúp việc gặp sự cố — cần bạn quyết định'}
+            </Text>
+          </View>
           <Text style={{ fontSize: fs(13), color: COLORS.gray[700], lineHeight: Math.round(fs(19)) }}>
             {lang === 'en'
               ? 'The helper cannot continue this job. You can agree to switch helpers (price unchanged) or cancel with 100% refund.'
@@ -67,7 +71,7 @@ export function SosBackupCustomerBanner({ job }: { job: any }) {
             <PhotoThumbRow
               urls={sos.photo_urls}
               size={56}
-              label={lang === 'en' ? '📷 Incident evidence photos' : '📷 Ảnh minh chứng sự cố'}
+              label={lang === 'en' ? 'Incident evidence photos' : 'Ảnh minh chứng sự cố'}
             />
           ) : null}
           <Button
@@ -81,11 +85,14 @@ export function SosBackupCustomerBanner({ job }: { job: any }) {
         <Card
           style={{ backgroundColor: '#EFF6FF', borderColor: '#BFDBFE', borderWidth: 1.5, gap: 6 }}
         >
-          <Text style={{ fontWeight: '800', fontSize: fs(15), color: '#1E40AF' }}>
-            {lang === 'en'
-              ? '🔄 Helper has been replaced due to an incident'
-              : '🔄 Người giúp việc đã được thay thế do sự cố'}
-          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <RefreshCw size={fs(18)} color="#1E40AF" />
+            <Text style={{ fontWeight: '800', fontSize: fs(15), color: '#1E40AF', flex: 1 }}>
+              {lang === 'en'
+                ? 'Helper has been replaced due to an incident'
+                : 'Người giúp việc đã được thay thế do sự cố'}
+            </Text>
+          </View>
           <Text style={{ fontSize: fs(13), color: COLORS.gray[700], lineHeight: Math.round(fs(19)) }}>
             {lang === 'en'
               ? `The previous helper encountered an unexpected incident, so another helper has taken over your job${

@@ -6,7 +6,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import Toast from 'react-native-toast-message';
 import { TouchableOpacity, View, Text, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { X } from 'lucide-react-native';
+import { X, CheckCircle2, AlertTriangle, Bell } from 'lucide-react-native';
 import { create } from 'zustand';
 import * as SplashScreen from 'expo-splash-screen';
 import '../global.css';
@@ -113,8 +113,12 @@ function ToastCard() {
 
   const { type, text1, text2, hide } = toast;
   const borderColor = type === 'success' ? '#4caf50' : type === 'error' ? '#f44336' : '#87CEFA';
-  const icon = type === 'success' ? '🎉' : type === 'error' ? '⚠️' : '🔔';
   const iconBackground = type === 'success' ? '#DCFCE7' : type === 'error' ? '#FEF2F2' : '#EFF6FF';
+  const renderIcon = () => {
+    if (type === 'success') return <CheckCircle2 size={20} color="#16A34A" />;
+    if (type === 'error') return <AlertTriangle size={20} color="#DC2626" />;
+    return <Bell size={20} color="#2563EB" />;
+  };
   return (
     <View
       pointerEvents="box-none"
@@ -155,7 +159,7 @@ function ToastCard() {
             marginRight: 11,
           }}
         >
-          <Text style={{ fontSize: 20 }}>{icon}</Text>
+          {renderIcon()}
         </View>
         <View style={{ flex: 1, paddingRight: 8 }}>
           {text1 ? (

@@ -20,6 +20,7 @@ import {
   ImagePlus,
   X,
   AlertCircle,
+  MessageSquare,
 } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import dayjs from 'dayjs';
@@ -328,11 +329,11 @@ export default function ChatScreen() {
       lang === 'en' ? 'Select photo source' : 'Chọn nguồn ảnh',
       [
         {
-          text: lang === 'en' ? '📷 Take Photo' : '📷 Chụp ảnh',
+          text: lang === 'en' ? 'Take Photo' : 'Chụp ảnh',
           onPress: () => void pickPhoto('camera'),
         },
         {
-          text: lang === 'en' ? '🖼️ Photo Library' : '🖼️ Thư viện ảnh',
+          text: lang === 'en' ? 'Photo Library' : 'Thư viện ảnh',
           onPress: () => void pickPhoto('library'),
         },
         { text: lang === 'en' ? 'Cancel' : 'Hủy', style: 'cancel' },
@@ -456,7 +457,7 @@ export default function ChatScreen() {
       ) : errorMsg ? (
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 }}>
           <EmptyState
-            emoji="💬"
+            icon={<MessageSquare size={36} color={COLORS.gray[400]} />}
             title={lang === 'en' ? 'Could not open conversation' : 'Chưa thể mở cuộc trò chuyện'}
             subtitle={errorMsg}
             action={lang === 'en' ? 'Back' : 'Quay lại'}
@@ -563,7 +564,7 @@ export default function ChatScreen() {
                     justifyContent: 'center',
                   }}
                 >
-                  <Text style={{ fontSize: 28 }}>💬</Text>
+                  <MessageSquare size={28} color={COLORS.primary} />
                 </View>
                 <Text style={{ fontSize: 16, fontWeight: '800', color: COLORS.gray[800] }}>
                   {lang === 'en' ? 'Start the conversation' : 'Bắt đầu cuộc trò chuyện'}

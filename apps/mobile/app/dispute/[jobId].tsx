@@ -12,7 +12,19 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { ArrowLeft, ImagePlus, Scale, Send, Gavel, Undo2 } from 'lucide-react-native';
+import {
+  ArrowLeft,
+  ImagePlus,
+  Scale,
+  Send,
+  Gavel,
+  Undo2,
+  Flag,
+  Camera,
+  MessageSquare,
+  Shield,
+  RotateCcw,
+} from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import dayjs from 'dayjs';
 import 'dayjs/locale/vi';
@@ -30,15 +42,35 @@ import { Badge, Button, Card, COLORS, EmptyState, LoadingSpinner } from '@/compo
 
 const fmt = (n?: number) => new Intl.NumberFormat('vi-VN').format(n ?? 0);
 
-const KIND_META: Record<DisputeTimelineEntry['kind'], { icon: string; label: string; label_en: string }> = {
-  opened: { icon: '🚩', label: 'Mở tranh chấp', label_en: 'Dispute opened' },
-  evidence: { icon: '📸', label: 'Bổ sung bằng chứng', label_en: 'Additional evidence' },
-  note: { icon: '💬', label: 'Trình bày thêm', label_en: 'Additional note' },
-  admin_message: { icon: '🛡️', label: 'Admin phản hồi', label_en: 'Admin response' },
-  resolution: { icon: '⚖️', label: 'Phán quyết của Admin', label_en: 'Admin resolution' },
-  appeal: { icon: '↩️', label: 'Kháng cáo', label_en: 'Appeal filed' },
-  appeal_resolved: { icon: '⚖️', label: 'Phán quyết sau kháng cáo', label_en: 'Appeal resolution' },
+const KIND_META: Record<DisputeTimelineEntry['kind'], { label: string; label_en: string }> = {
+  opened: { label: 'Mở tranh chấp', label_en: 'Dispute opened' },
+  evidence: { label: 'Bổ sung bằng chứng', label_en: 'Additional evidence' },
+  note: { label: 'Trình bày thêm', label_en: 'Additional note' },
+  admin_message: { label: 'Admin phản hồi', label_en: 'Admin response' },
+  resolution: { label: 'Phán quyết của Admin', label_en: 'Admin resolution' },
+  appeal: { label: 'Kháng cáo', label_en: 'Appeal filed' },
+  appeal_resolved: { label: 'Phán quyết sau kháng cáo', label_en: 'Appeal resolution' },
 };
+
+function renderKindIcon(kind: DisputeTimelineEntry['kind'], size = 16) {
+  switch (kind) {
+    case 'opened':
+      return <Flag size={size} color="#EF4444" />;
+    case 'evidence':
+      return <Camera size={size} color="#3B82F6" />;
+    case 'note':
+      return <MessageSquare size={size} color="#6B7280" />;
+    case 'admin_message':
+      return <Shield size={size} color="#10B981" />;
+    case 'resolution':
+    case 'appeal_resolved':
+      return <Scale size={size} color="#8B5CF6" />;
+    case 'appeal':
+      return <RotateCcw size={size} color="#F59E0B" />;
+    default:
+      return <MessageSquare size={size} color="#6B7280" />;
+  }
+}
 
 function roleLabel(role: string, lang?: string) {
   if (role === 'customer') return lang === 'en' ? 'Customer' : 'Khách hàng';
@@ -153,7 +185,7 @@ export default function DisputeCaseScreen() {
         </TouchableOpacity>
         <View style={{ flex: 1 }}>
           <Text style={{ fontSize: 18, fontWeight: '800', color: COLORS.gray[900] }}>
-            {lang === 'en' ? 'Dispute Case ⚖️' : 'Hồ sơ tranh chấp ⚖️'}
+            {lang === 'en' ? 'Dispute Case' : 'Hồ sơ tranh chấp'}
           </Text>
           <Text style={{ fontSize: 12, color: COLORS.gray[500] }}>
             {lang === 'en' ? 'All records preserved for fair administrative arbitration' : 'Toàn bộ diễn biến được lưu lại để Admin phân xử công bằng'}
@@ -165,7 +197,7 @@ export default function DisputeCaseScreen() {
       {!caseData ? (
         <View style={{ flex: 1, justifyContent: 'center', padding: 24 }}>
           <EmptyState
-            emoji="⚖️"
+            icon={<Scale size={36} color={COLORS.gray[400]} />}
             title={lang === 'en' ? 'No dispute case found' : 'Chưa có hồ sơ tranh chấp'}
             subtitle={
               (error as any)?.response?.data?.message ?? (lang === 'en' ? 'This job has no active disputes.' : 'Đơn này chưa phát sinh tranh chấp nào.')
@@ -298,7 +330,7 @@ export default function DisputeCaseScreen() {
                           justifyContent: 'center',
                         }}
                       >
-                        <Text style={{ fontSize: 15 }}>{meta.icon}</Text>
+                        {renderKindIcon(entry.kind, 16)}
                       </View>
                       {idx < caseData.timeline.length - 1 && (
                         <View style={{ width: 2, flex: 1, backgroundColor: COLORS.gray[200] }} />
@@ -382,7 +414,7 @@ export default function DisputeCaseScreen() {
                 )}
                 <View style={{ flexDirection: 'row', gap: 8 }}>
                   <Button
-                    title={lang === 'en' ? '📸 Add photos' : '📸 Thêm ảnh'}
+                    title={lang === 'en' ? 'Add photos' : 'Thêm ảnh'}
                     variant="outline"
                     onPress={pickPhotos}
                     icon={<ImagePlus size={16} color={COLORS.primary} />}

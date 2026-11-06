@@ -202,7 +202,7 @@ export default function MonthlyContractCreateScreen() {
         </TouchableOpacity>
         <View style={{ flex: 1 }}>
           <Text style={{ fontSize: 18, fontWeight: '800', color: COLORS.gray[900] }}>
-            {lang === 'en' ? 'Hire Helper by Month 📅' : 'Thuê giúp việc theo tháng 📅'}
+            {lang === 'en' ? 'Hire Helper by Month' : 'Thuê giúp việc theo tháng'}
           </Text>
           <Text style={{ fontSize: 12, color: COLORS.gray[500] }}>
             {lang === 'en' ? 'Helper will review the contract before it takes effect' : 'Thợ sẽ duyệt hợp đồng trước khi có hiệu lực'}
@@ -217,15 +217,15 @@ export default function MonthlyContractCreateScreen() {
         {/* ── Chọn thợ ── */}
         <Card style={{ gap: 10 }}>
           <Text style={{ fontSize: 15, fontWeight: '800', color: COLORS.gray[900] }}>
-            {lang === 'en' ? '1. Select helper (from favorites ❤️)' : '1. Chọn thợ (từ danh sách yêu thích ❤️)'}
+            {lang === 'en' ? '1. Select helper (from favorites)' : '1. Chọn thợ (từ danh sách yêu thích)'}
           </Text>
           {favLoading ? (
             <LoadingSpinner size="small" />
           ) : favoriteHelpers.length === 0 && !params.helperId ? (
             <Text style={{ fontSize: 13, color: COLORS.gray[500], lineHeight: 19 }}>
               {lang === 'en'
-                ? 'You have no favorite helpers yet. Tap ❤️ on helper profile or completed jobs, then return to create contract.'
-                : 'Bạn chưa có thợ yêu thích nào. Hãy lưu ❤️ thợ từ trang hồ sơ thợ hoặc từ đơn đã hoàn thành, rồi quay lại tạo hợp đồng.'}
+                ? 'You have no favorite helpers yet. Save helpers to your favorites from their profile or completed jobs, then return to create contract.'
+                : 'Bạn chưa có thợ yêu thích nào. Hãy lưu thợ vào danh sách yêu thích từ trang hồ sơ thợ hoặc từ đơn đã hoàn thành, rồi quay lại tạo hợp đồng.'}
             </Text>
           ) : (
             <View style={{ gap: 8 }}>
@@ -266,7 +266,7 @@ export default function MonthlyContractCreateScreen() {
               {(services ?? []).slice(0, 8).map((s: any) => (
                 <Chip
                   key={s._id}
-                  label={`${s.icon ?? '🧹'} ${tService(s)}`}
+                  label={tService(s)}
                   selected={serviceId === s._id}
                   onPress={() => setServiceId(serviceId === s._id ? undefined : s._id)}
                 />

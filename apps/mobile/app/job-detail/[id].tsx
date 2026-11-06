@@ -34,6 +34,21 @@ import {
   ImagePlus,
   Trash2,
   Info,
+  Phone,
+  Heart,
+  RotateCcw,
+  Scale,
+  FileDown,
+  CheckCircle2,
+  DollarSign,
+  Building2,
+  Smartphone,
+  Shield,
+  Repeat,
+  Tag,
+  FileText,
+  Ticket,
+  Star,
 } from 'lucide-react-native';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
@@ -110,7 +125,7 @@ const STATUS_STEPS: StatusStep[] = [
   { key: 'helper_arrived', label: 'Thợ đã đến nơi', label_en: 'Helper arrived' },
   { key: 'in_progress', label: 'Đang làm việc', label_en: 'In progress' },
   { key: 'pending_review', label: 'Chờ nghiệm thu', label_en: 'Awaiting review' },
-  { key: 'completed', label: 'Hoàn tất ✓', label_en: 'Completed ✓' },
+  { key: 'completed', label: 'Hoàn tất', label_en: 'Completed' },
 ];
 
 const STATUS_ORDER = STATUS_STEPS.map(s => s.key);
@@ -124,18 +139,18 @@ interface PaymentMethodItem {
 const PAYMENT_METHODS: PaymentMethodItem[] = [
   {
     id: 'cash',
-    label: '💵 Tiền mặt trực tiếp (Trừ phí 15% ví ký quỹ thợ)',
-    label_en: '💵 Direct cash (15% platform fee deducted from helper escrow)',
+    label: 'Tiền mặt trực tiếp (Trừ phí 15% ví ký quỹ thợ)',
+    label_en: 'Direct cash (15% platform fee deducted from helper escrow)',
   },
   {
     id: 'vietqr',
-    label: '🏦 Chuyển khoản VietQR (Escrow)',
-    label_en: '🏦 VietQR bank transfer (Escrow)',
+    label: 'Chuyển khoản VietQR (Escrow)',
+    label_en: 'VietQR bank transfer (Escrow)',
   },
   {
     id: 'momo',
-    label: '📱 Ví MoMo / ZaloPay (Escrow)',
-    label_en: '📱 MoMo / ZaloPay wallet (Escrow)',
+    label: 'Ví MoMo / ZaloPay (Escrow)',
+    label_en: 'MoMo / ZaloPay wallet (Escrow)',
   },
 ];
 
@@ -509,7 +524,7 @@ export default function JobDetailScreen() {
       setWarrantyIssue('');
       Toast.show({
         type: 'success',
-        text1: lang === 'en' ? 'Warranty request created 🛡' : 'Đã tạo đơn bảo hành 🛡',
+        text1: lang === 'en' ? 'Warranty request created' : 'Đã tạo đơn bảo hành',
         text2: lang === 'en' ? 'Sent privately to the original helper.' : 'Đơn đã được gửi riêng cho thợ của đơn gốc.',
       });
       if (newJob?._id) {
@@ -596,7 +611,7 @@ export default function JobDetailScreen() {
       setShowEditModal(false);
       Toast.show({
         type: 'success',
-        text1: lang === 'en' ? 'Update successful! 🎉' : 'Cập nhật thành công! 🎉',
+        text1: lang === 'en' ? 'Update successful!' : 'Cập nhật thành công!',
         text2: lang === 'en' ? 'Saved new information and location for the job' : 'Đã lưu thông tin và vị trí mới cho đơn hàng',
       });
     } catch (err: any) {
@@ -617,7 +632,7 @@ export default function JobDetailScreen() {
       setQuoteToAccept(null);
       Toast.show({
         type: 'success',
-        text1: lang === 'en' ? 'Helper selected successfully 🎉' : 'Đã chọn thợ thành công 🎉',
+        text1: lang === 'en' ? 'Helper selected successfully' : 'Đã chọn thợ thành công',
         text2: lang === 'en' ? 'Contract ready. You can chat with helper for details.' : 'Hợp đồng đã sẵn sàng. Bạn có thể nhắn tin để trao đổi thêm.',
         visibilityTime: 5000,
       });
@@ -883,10 +898,13 @@ export default function JobDetailScreen() {
         )}
 
         {isRecurringJob && (
-          <Card style={{ backgroundColor: '#EFF6FF', borderColor: '#BFDBFE', borderWidth: 1.5 }}>
-            <Text style={{ fontWeight: '800', fontSize: 14.5, color: '#1E40AF' }}>
-              {lang === 'en' ? '🔁 Recurring plan job' : '🔁 Đơn thuộc gói định kỳ'}
-            </Text>
+          <Card style={{ backgroundColor: '#EFF6FF', borderColor: '#BFDBFE', borderWidth: 1.5, gap: 6 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <Repeat size={16} color="#1E40AF" />
+              <Text style={{ fontWeight: '800', fontSize: 14.5, color: '#1E40AF' }}>
+                {lang === 'en' ? 'Recurring plan job' : 'Đơn thuộc gói định kỳ'}
+              </Text>
+            </View>
             <Text style={{ fontSize: 13, color: COLORS.gray[700], marginTop: 4, lineHeight: 19 }}>
               {lang === 'en' ? 'This job was automatically generated from your recurring plan.' : 'Đơn này được hệ thống tự tạo từ gói định kỳ của bạn.'}
             </Text>
@@ -894,10 +912,13 @@ export default function JobDetailScreen() {
         )}
 
         {job.is_warranty && (
-          <Card style={{ backgroundColor: '#FFFBEB', borderColor: '#FDE68A', borderWidth: 1.5 }}>
-            <Text style={{ fontWeight: '800', fontSize: 14.5, color: '#92400E' }}>
-              {lang === 'en' ? '🛡 Warranty job — Free' : '🛡 Đơn bảo hành — Miễn phí'}
-            </Text>
+          <Card style={{ backgroundColor: '#FFFBEB', borderColor: '#FDE68A', borderWidth: 1.5, gap: 6 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <ShieldCheck size={16} color="#92400E" />
+              <Text style={{ fontWeight: '800', fontSize: 14.5, color: '#92400E' }}>
+                {lang === 'en' ? 'Warranty job — Free' : 'Đơn bảo hành — Miễn phí'}
+              </Text>
+            </View>
             <Text style={{ fontSize: 13, color: COLORS.gray[700], marginTop: 4, lineHeight: 19 }}>
               {lang === 'en' ? 'This is a warranty job from a completed order. You do not need to pay for this.' : 'Đây là đơn bảo hành phát sinh từ một đơn đã hoàn thành. Bạn không phải thanh toán cho đơn này.'}
             </Text>
@@ -927,9 +948,12 @@ export default function JobDetailScreen() {
           <Card
             style={{ backgroundColor: '#FFFBEB', borderColor: '#FDE68A', borderWidth: 1.5, gap: 8 }}
           >
-            <Text style={{ fontWeight: '800', fontSize: 15, color: '#92400E' }}>
-              {lang === 'en' ? `🛡 ${job.warranty_days ?? 30}-day warranty` : `🛡 Bảo hành trong ${job.warranty_days ?? 30} ngày`}
-            </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <ShieldCheck size={18} color="#92400E" />
+              <Text style={{ fontWeight: '800', fontSize: 15, color: '#92400E' }}>
+                {lang === 'en' ? `${job.warranty_days ?? 30}-day warranty` : `Bảo hành trong ${job.warranty_days ?? 30} ngày`}
+              </Text>
+            </View>
             <Text style={{ fontSize: 13, color: COLORS.gray[700], lineHeight: 19 }}>
               {job.warranty_job_id
                 ? (lang === 'en' ? 'You have created a warranty request for this job — original helper will handle for free.' : 'Bạn đã tạo đơn bảo hành cho đơn này — thợ của đơn gốc sẽ xử lý miễn phí.')
@@ -959,16 +983,20 @@ export default function JobDetailScreen() {
         {/* ── Bồi thường bảo hiểm (Feature 10) ───────────────────────── */}
         {job.status === 'completed' && !job.is_warranty && (
           <Card style={{ gap: 8 }}>
-            <Text style={{ fontWeight: '800', fontSize: 15, color: COLORS.gray[900] }}>
-              {lang === 'en' ? '🛡 Insurance compensation' : '🛡 Bồi thường bảo hiểm'}
-            </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <ShieldCheck size={18} color={COLORS.gray[900]} />
+              <Text style={{ fontWeight: '800', fontSize: 15, color: COLORS.gray[900] }}>
+                {lang === 'en' ? 'Insurance compensation' : 'Bồi thường bảo hiểm'}
+              </Text>
+            </View>
             <Text style={{ fontSize: 13, color: COLORS.gray[700], lineHeight: 19 }}>
               {jobClaim
                 ? (lang === 'en' ? 'You submitted an insurance claim — view status and timeline here.' : 'Bạn đã gửi yêu cầu bồi thường cho đơn này — xem trạng thái và diễn biến xử lý tại đây.')
                 : (lang === 'en' ? 'Service caused damages? Submit an insurance claim within policy window (default 30 days) — approved payout goes directly to your wallet.' : 'Dịch vụ gây thiệt hại sau khi hoàn thành? Gửi yêu cầu bồi thường trong thời hạn bảo hiểm của đơn (mặc định 30 ngày) — tiền duyệt sẽ cộng thẳng vào ví của bạn.')}
             </Text>
             <Button
-              title={jobClaim ? (lang === 'en' ? 'View insurance claim' : 'Xem yêu cầu bồi thường') : (lang === 'en' ? '🛡 Request insurance claim' : '🛡 Yêu cầu bồi thường bảo hiểm')}
+              title={jobClaim ? (lang === 'en' ? 'View insurance claim' : 'Xem yêu cầu bồi thường') : (lang === 'en' ? 'Request insurance claim' : 'Yêu cầu bồi thường bảo hiểm')}
+              icon={jobClaim ? undefined : <ShieldCheck size={18} color="#fff" />}
               variant={jobClaim ? 'outline' : 'primary'}
               onPress={() =>
                 router.push({ pathname: '/claim/[jobId]', params: { jobId: job._id } })
@@ -1000,8 +1028,8 @@ export default function JobDetailScreen() {
                 }}
               >
                 {job.status === 'disputed'
-                  ? (lang === 'en' ? '⚖️ Job under Admin dispute arbitration' : '⚖️ Đơn hàng đang được Admin phân xử tranh chấp')
-                  : (lang === 'en' ? '✅ Dispute resolution outcome' : '✅ Kết quả phân xử khiếu nại')}
+                  ? (lang === 'en' ? 'Job under Admin dispute arbitration' : 'Đơn hàng đang được Admin phân xử tranh chấp')
+                  : (lang === 'en' ? 'Dispute resolution outcome' : 'Kết quả phân xử khiếu nại')}
               </Text>
             </View>
             {job.dispute_reason && (
@@ -1073,11 +1101,14 @@ export default function JobDetailScreen() {
             </View>
 
             {!!job.is_sos && (
-              <Text style={{ fontSize: 13.5, color: '#991B1B', lineHeight: 20, fontWeight: '700' }}>
-                {lang === 'en'
-                  ? `🚨 SOS Emergency rescue — helper arrives in 15 mins${job.sos_surcharge ? ` (emergency surcharge ${new Intl.NumberFormat('vi-VN').format(job.sos_surcharge)}₫)` : ''}`
-                  : `🚨 Đơn cứu hộ khẩn cấp SOS — yêu cầu thợ có mặt trong 15 phút${job.sos_surcharge ? ` (phụ phí khẩn cấp ${new Intl.NumberFormat('vi-VN').format(job.sos_surcharge)}₫)` : ''}`}
-              </Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <AlertTriangle size={16} color="#991B1B" />
+                <Text style={{ fontSize: 13.5, color: '#991B1B', lineHeight: 20, fontWeight: '700', flex: 1 }}>
+                  {lang === 'en'
+                    ? `SOS Emergency rescue — helper arrives in 15 mins${job.sos_surcharge ? ` (emergency surcharge ${new Intl.NumberFormat('vi-VN').format(job.sos_surcharge)}₫)` : ''}`
+                    : `Đơn cứu hộ khẩn cấp SOS — yêu cầu thợ có mặt trong 15 phút${job.sos_surcharge ? ` (phụ phí khẩn cấp ${new Intl.NumberFormat('vi-VN').format(job.sos_surcharge)}₫)` : ''}`}
+                </Text>
+              </View>
             )}
 
             {job.updated_at && (
@@ -1234,13 +1265,13 @@ export default function JobDetailScreen() {
               )}
               {job.is_fixed_price && (
                 <Badge
-                  label={lang === 'en' ? `🏷️ Fixed price ${new Intl.NumberFormat('vi-VN').format(job.fixed_price ?? 0)}₫` : `🏷️ Giá cam kết ${new Intl.NumberFormat('vi-VN').format(job.fixed_price ?? 0)}₫`}
+                  label={lang === 'en' ? `Fixed price ${new Intl.NumberFormat('vi-VN').format(job.fixed_price ?? 0)}₫` : `Giá cam kết ${new Intl.NumberFormat('vi-VN').format(job.fixed_price ?? 0)}₫`}
                   color="#ECFDF5"
                   textColor="#065F46"
                 />
               )}
               {job.is_warranty && (
-                <Badge label={lang === 'en' ? '🛡 Warranty — Free' : '🛡 Đơn bảo hành — Miễn phí'} color="#FFFBEB" textColor="#92400E" />
+                <Badge label={lang === 'en' ? 'Warranty — Free' : 'Đơn bảo hành — Miễn phí'} color="#FFFBEB" textColor="#92400E" />
               )}
             </View>
             {canEdit && (
@@ -1411,9 +1442,12 @@ export default function JobDetailScreen() {
                   borderWidth: 1.5,
                 }}
               >
-                <Text style={{ fontWeight: '800', fontSize: 16, color: '#065F46' }}>
-                  {lang === 'en' ? `🏷️ Fixed price: ${new Intl.NumberFormat('vi-VN').format(job.fixed_price ?? 0)}₫` : `🏷️ Giá cam kết: ${new Intl.NumberFormat('vi-VN').format(job.fixed_price ?? 0)}₫`}
-                </Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <Tag size={18} color="#065F46" />
+                  <Text style={{ fontWeight: '800', fontSize: 16, color: '#065F46' }}>
+                    {lang === 'en' ? `Fixed price: ${new Intl.NumberFormat('vi-VN').format(job.fixed_price ?? 0)}₫` : `Giá cam kết: ${new Intl.NumberFormat('vi-VN').format(job.fixed_price ?? 0)}₫`}
+                  </Text>
+                </View>
                 <Text style={{ fontSize: 13.5, color: COLORS.gray[700], lineHeight: 20 }}>
                   {lang === 'en'
                     ? 'Waiting for helper to accept with fixed price — no bidding round, first helper to accept starts immediately.'
@@ -1595,9 +1629,12 @@ export default function JobDetailScreen() {
             {Array.isArray(contract.amendments) && contract.amendments.length > 0 && (
               <View style={{ gap: 10, marginTop: 8 }}>
                 <Separator my={2} />
-                <Text style={{ fontWeight: '800', fontSize: 14, color: COLORS.gray[900] }}>
-                  {lang === 'en' ? `📋 Cost & materials addenda (${contract.amendments.length})` : `📋 Phụ lục phát sinh vật tư / chi phí (${contract.amendments.length})`}
-                </Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <FileText size={16} color={COLORS.gray[900]} />
+                  <Text style={{ fontWeight: '800', fontSize: 14, color: COLORS.gray[900] }}>
+                    {lang === 'en' ? `Cost & materials addenda (${contract.amendments.length})` : `Phụ lục phát sinh vật tư / chi phí (${contract.amendments.length})`}
+                  </Text>
+                </View>
                 {contract.amendments.map((am: any) => {
                   const addTotal =
                     (Number(am.additional_labor_cost) || 0) +
@@ -1633,10 +1670,10 @@ export default function JobDetailScreen() {
                         <Badge
                           label={
                             isPending
-                              ? (lang === 'en' ? '⏳ Awaiting your approval' : '⏳ Chờ bạn duyệt')
+                              ? (lang === 'en' ? 'Awaiting your approval' : 'Chờ bạn duyệt')
                               : am.status === 'accepted'
-                                ? (lang === 'en' ? '✓ Accepted' : '✓ Đã đồng ý')
-                                : (lang === 'en' ? '✕ Rejected' : '✕ Đã từ chối')
+                                ? (lang === 'en' ? 'Accepted' : 'Đã đồng ý')
+                                : (lang === 'en' ? 'Rejected' : 'Đã từ chối')
                           }
                           color={
                             isPending ? '#FEF3C7' : am.status === 'accepted' ? '#D1FAE5' : '#FEE2E2'
@@ -1660,7 +1697,7 @@ export default function JobDetailScreen() {
                       {isPending && (
                         <View style={{ flexDirection: 'row', gap: 10, marginTop: 4 }}>
                           <Button
-                            title={lang === 'en' ? '✕ Reject' : '✕ Từ chối'}
+                            title={lang === 'en' ? 'Reject' : 'Từ chối'}
                             variant="outline"
                             size="sm"
                             fullWidth={false}
@@ -1669,7 +1706,7 @@ export default function JobDetailScreen() {
                             onPress={() => handleRespondAmendment(am._id, 'reject')}
                           />
                           <Button
-                            title={lang === 'en' ? '✓ Accept addendum' : '✓ Đồng ý phụ lục'}
+                            title={lang === 'en' ? 'Accept addendum' : 'Đồng ý phụ lục'}
                             size="sm"
                             fullWidth={false}
                             style={{ flex: 1 }}
@@ -1734,9 +1771,12 @@ export default function JobDetailScreen() {
 
             {job.completion_photos && job.completion_photos.length > 0 && (
               <View style={{ gap: 6 }}>
-                <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.gray[700] }}>
-                  {lang === 'en' ? `📸 Result photos (${job.completion_photos.length}):` : `📸 Hình ảnh kết quả (${job.completion_photos.length}):`}
-                </Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <Camera size={16} color={COLORS.gray[700]} />
+                  <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.gray[700] }}>
+                    {lang === 'en' ? `Result photos (${job.completion_photos.length}):` : `Hình ảnh kết quả (${job.completion_photos.length}):`}
+                  </Text>
+                </View>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                   <View style={{ flexDirection: 'row', gap: 10 }}>
                     {job.completion_photos.map((uri: string, idx: number) => (
@@ -1767,9 +1807,12 @@ export default function JobDetailScreen() {
 
             {job.completion_videos && job.completion_videos.length > 0 && (
               <View style={{ gap: 6, marginTop: 4 }}>
-                <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.gray[700] }}>
-                  {lang === 'en' ? `🎥 Acceptance videos (${job.completion_videos.length}):` : `🎥 Video nghiệm thu (${job.completion_videos.length}):`}
-                </Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <Video size={16} color={COLORS.gray[700]} />
+                  <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.gray[700] }}>
+                    {lang === 'en' ? `Acceptance videos (${job.completion_videos.length}):` : `Video nghiệm thu (${job.completion_videos.length}):`}
+                  </Text>
+                </View>
                 <View style={{ gap: 8 }}>
                   {job.completion_videos.map((vUri: string, idx: number) => (
                     <TouchableOpacity
@@ -1826,14 +1869,16 @@ export default function JobDetailScreen() {
         <View style={{ gap: 10, marginTop: 4 }}>
           {canApprove && (
             <Button
-              title={lang === 'en' ? '✓ Verified • Review & Pay' : '✓ Kiểm tra xong • Nghiệm thu & Thanh toán'}
+              title={lang === 'en' ? 'Verified • Review & Pay' : 'Kiểm tra xong • Nghiệm thu & Thanh toán'}
+              icon={<CheckCircle2 size={18} color="#FFF" />}
               onPress={() => setShowReview(true)}
             />
           )}
           {canDispute && (
             <Button
-              title={lang === 'en' ? '⚠️ Dispute / Report substandard quality' : '⚠️ Khiếu nại / Báo sự cố chưa đạt chuẩn'}
+              title={lang === 'en' ? 'Dispute / Report substandard quality' : 'Khiếu nại / Báo sự cố chưa đạt chuẩn'}
               variant="danger"
+              icon={<AlertTriangle size={18} color="#FFF" />}
               onPress={() => setShowDisputeModal(true)}
             />
           )}
@@ -1848,8 +1893,9 @@ export default function JobDetailScreen() {
           {/* ── Gọi thoại che số (Roadmap Phase 1) — chỉ hiện khi server đã cấu hình VoIP ── */}
           {hasHelperAssigned && isActive && callConfig?.enabled && (
             <Button
-              title={lang === 'en' ? '📞 In-app voice call (masked number)' : '📞 Gọi thoại trong app (ẩn số thật)'}
+              title={lang === 'en' ? 'In-app voice call (masked number)' : 'Gọi thoại trong app (ẩn số thật)'}
               variant="outline"
+              icon={<Phone size={18} color={COLORS.primary} />}
               onPress={() =>
                 router.push({
                   pathname: '/call/[jobId]',
@@ -1864,32 +1910,42 @@ export default function JobDetailScreen() {
               <Button
                 title={
                   isHelperFavorite
-                    ? (lang === 'en' ? '❤️ Favorite saved (tap to remove)' : '❤️ Đã lưu thợ yêu thích (bấm để bỏ)')
-                    : (lang === 'en' ? '🤍 Save helper to favorites' : '🤍 Lưu thợ này vào Yêu thích')
+                    ? (lang === 'en' ? 'Favorite saved (tap to remove)' : 'Đã lưu thợ yêu thích (bấm để bỏ)')
+                    : (lang === 'en' ? 'Save helper to favorites' : 'Lưu thợ này vào Yêu thích')
                 }
                 variant="outline"
+                icon={
+                  <Heart
+                    size={18}
+                    color={isHelperFavorite ? COLORS.error : COLORS.gray[500]}
+                    fill={isHelperFavorite ? COLORS.error : 'transparent'}
+                  />
+                }
                 loading={addFavorite.isPending || removeFavorite.isPending}
                 onPress={handleToggleFavoriteHelper}
               />
               <Button
-                title={lang === 'en' ? '🔁 Rebook with this helper' : '🔁 Đặt lại việc với thợ này'}
+                title={lang === 'en' ? 'Rebook with this helper' : 'Đặt lại việc với thợ này'}
                 variant="outline"
+                icon={<Repeat size={18} color={COLORS.primary} />}
                 onPress={handleRebookWithHelper}
               />
             </>
           )}
           {(job.status === 'disputed' || job.dispute_resolution) && (
             <Button
-              title={lang === 'en' ? '⚖️ View dispute record' : '⚖️ Xem hồ sơ tranh chấp'}
+              title={lang === 'en' ? 'View dispute record' : 'Xem hồ sơ tranh chấp'}
               variant="outline"
+              icon={<Scale size={18} color={COLORS.primary} />}
               onPress={() => router.push({ pathname: '/dispute/[jobId]', params: { jobId: id } })}
             />
           )}
           {/* ── Hóa đơn điện tử (Feature 11) — chỉ trong chi tiết đơn ── */}
           {(job.payment_status === 'paid' || job.status === 'completed') && !job.is_warranty && (
             <Button
-              title={lang === 'en' ? '🧾 Download invoice (PDF)' : '🧾 Tải hóa đơn (PDF)'}
+              title={lang === 'en' ? 'Download invoice (PDF)' : 'Tải hóa đơn (PDF)'}
               variant="outline"
+              icon={<FileDown size={18} color={COLORS.primary} />}
               loading={downloadingInvoice}
               onPress={handleDownloadInvoice}
             />
@@ -1898,8 +1954,9 @@ export default function JobDetailScreen() {
           <TeamCard job={job} currentUserId={user?._id} />
           {canEdit && (
             <Button
-              title={lang === 'en' ? '✏️  Edit location & job details' : '✏️  Chỉnh sửa vị trí & thông tin yêu cầu'}
+              title={lang === 'en' ? 'Edit location & job details' : 'Chỉnh sửa vị trí & thông tin yêu cầu'}
               variant="outline"
+              icon={<Edit3 size={18} color={COLORS.primary} />}
               onPress={handleOpenEdit}
             />
           )}
@@ -2075,9 +2132,12 @@ export default function JobDetailScreen() {
                 gap: 4,
               }}
             >
-              <Text style={{ fontWeight: '800', fontSize: 14, color: '#991B1B' }}>
-                {lang === 'en' ? '⚖️ Escrow Dispute Guarantee' : '⚖️ Cơ chế giữ tiền bảo đảm (Escrow Dispute)'}
-              </Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <Scale size={16} color="#991B1B" />
+                <Text style={{ fontWeight: '800', fontSize: 14, color: '#991B1B' }}>
+                  {lang === 'en' ? 'Escrow Dispute Guarantee' : 'Cơ chế giữ tiền bảo đảm (Escrow Dispute)'}
+                </Text>
+              </View>
               <Text style={{ fontSize: 12.5, color: '#7F1D1D', lineHeight: 18 }}>
                 {lang === 'en'
                   ? 'Upon opening a dispute, payment is frozen and administrators review completion photos and evidence to decide 100% or partial refund.'
@@ -2270,9 +2330,12 @@ export default function JobDetailScreen() {
             {/* Phương thức thanh toán — đơn bảo hành miễn phí thì ẩn */}
             {job.is_warranty ? (
               <Card style={{ gap: 6, padding: 16, backgroundColor: '#FFFBEB' }}>
-                <Text style={{ fontWeight: '800', fontSize: 15, color: '#92400E' }}>
-                  {lang === 'en' ? '🛡 Warranty Job — Free' : '🛡 Đơn bảo hành — Miễn phí'}
-                </Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <ShieldCheck size={18} color="#92400E" />
+                  <Text style={{ fontWeight: '800', fontSize: 15, color: '#92400E' }}>
+                    {lang === 'en' ? 'Warranty Job — Free' : 'Đơn bảo hành — Miễn phí'}
+                  </Text>
+                </View>
                 <Text style={{ fontSize: 13, color: COLORS.gray[700], lineHeight: 19 }}>
                   {lang === 'en'
                     ? 'Warranty jobs have no extra cost. Please review and rate your helper.'
@@ -2323,15 +2386,18 @@ export default function JobDetailScreen() {
                           </View>
                           {job.voucher_code && discount > 0 && (
                             <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                              <Text
-                                style={{
-                                  fontSize: 13,
-                                  color: COLORS.primaryDark,
-                                  fontWeight: '700',
-                                }}
-                              >
-                                {lang === 'en' ? `🎟️ Voucher (${job.voucher_code}):` : `🎟️ Mã giảm giá (${job.voucher_code}):`}
-                              </Text>
+                              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                                <Ticket size={14} color={COLORS.primaryDark} />
+                                <Text
+                                  style={{
+                                    fontSize: 13,
+                                    color: COLORS.primaryDark,
+                                    fontWeight: '700',
+                                  }}
+                                >
+                                  {lang === 'en' ? `Voucher (${job.voucher_code}):` : `Mã giảm giá (${job.voucher_code}):`}
+                                </Text>
+                              </View>
                               <Text
                                 style={{ fontSize: 13, fontWeight: '800', color: COLORS.primary }}
                               >
@@ -2341,9 +2407,12 @@ export default function JobDetailScreen() {
                           )}
                           {loyaltyDiscount > 0 && (
                             <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                              <Text style={{ fontSize: 13, color: '#D97706', fontWeight: '700' }}>
-                                {lang === 'en' ? '⭐ Loyalty discount:' : '⭐ Giảm từ điểm tích lũy:'}
-                              </Text>
+                              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                                <Star size={14} color="#D97706" fill="#D97706" />
+                                <Text style={{ fontSize: 13, color: '#D97706', fontWeight: '700' }}>
+                                  {lang === 'en' ? 'Loyalty discount:' : 'Giảm từ điểm tích lũy:'}
+                                </Text>
+                              </View>
                               <Text style={{ fontSize: 13, fontWeight: '800', color: '#D97706' }}>
                                 -{new Intl.NumberFormat('vi-VN').format(loyaltyDiscount)}₫
                               </Text>
@@ -2391,15 +2460,25 @@ export default function JobDetailScreen() {
                           backgroundColor: selected ? COLORS.primaryLight : '#fff',
                         }}
                       >
-                        <Text
-                          style={{
-                            fontSize: 14,
-                            fontWeight: '700',
-                            color: selected ? COLORS.primaryDark : COLORS.gray[800],
-                          }}
-                        >
-                          {lang === 'en' ? pm.label_en : pm.label}
-                        </Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 }}>
+                          {pm.id === 'cash' ? (
+                            <DollarSign size={18} color={selected ? COLORS.primaryDark : COLORS.gray[600]} />
+                          ) : pm.id === 'vietqr' ? (
+                            <Building2 size={18} color={selected ? COLORS.primaryDark : COLORS.gray[600]} />
+                          ) : (
+                            <Smartphone size={18} color={selected ? COLORS.primaryDark : COLORS.gray[600]} />
+                          )}
+                          <Text
+                            style={{
+                              fontSize: 14,
+                              fontWeight: '700',
+                              color: selected ? COLORS.primaryDark : COLORS.gray[800],
+                              flex: 1,
+                            }}
+                          >
+                            {lang === 'en' ? pm.label_en : pm.label}
+                          </Text>
+                        </View>
                         {selected && <Check size={16} color={COLORS.primary} />}
                       </TouchableOpacity>
                     );
@@ -2420,10 +2499,12 @@ export default function JobDetailScreen() {
             </Text>
             <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 12 }}>
               {[1, 2, 3, 4, 5].map(s => (
-                <TouchableOpacity key={s} onPress={() => setRating(s)}>
-                  <Text style={{ fontSize: 44, opacity: s <= rating ? 1 : 0.25, color: '#F59E0B' }}>
-                    ★
-                  </Text>
+                <TouchableOpacity key={s} onPress={() => setRating(s)} activeOpacity={0.7}>
+                  <Star
+                    size={36}
+                    color="#F59E0B"
+                    fill={s <= rating ? '#F59E0B' : 'transparent'}
+                  />
                 </TouchableOpacity>
               ))}
             </View>
@@ -2751,18 +2832,19 @@ export default function JobDetailScreen() {
             >
               <X size={22} color={COLORS.gray[700]} />
             </TouchableOpacity>
-            <Text
-              style={{
-                fontSize: 17,
-                fontWeight: '800',
-                color: COLORS.gray[900],
-                flex: 1,
-                textAlign: 'center',
-                marginRight: 22,
-              }}
-            >
-              {lang === 'en' ? '🛡️ Free warranty request' : '🛡️ Yêu cầu bảo hành miễn phí'}
-            </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, flex: 1, marginRight: 22 }}>
+              <ShieldCheck size={20} color={COLORS.gray[900]} />
+              <Text
+                style={{
+                  fontSize: 17,
+                  fontWeight: '800',
+                  color: COLORS.gray[900],
+                  textAlign: 'center',
+                }}
+              >
+                {lang === 'en' ? 'Free warranty request' : 'Yêu cầu bảo hành miễn phí'}
+              </Text>
+            </View>
           </View>
 
           <ScrollView contentContainerStyle={{ padding: 20, gap: 18, paddingBottom: 40 }}>
@@ -2882,10 +2964,13 @@ function JobVoucherRow({ job, contractTotal }: { job: any; contractTotal: number
   if (job.voucher_code && isPaid && appliedDiscount > 0) {
     return (
       <View style={{ gap: 4 }}>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-          <Text style={{ color: COLORS.success, fontSize: 13.5, fontWeight: '700' }}>
-            {lang === 'en' ? `🎟️ Discount (${job.voucher_code})` : `🎟️ Giảm giá (${job.voucher_code})`}
-          </Text>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+            <Ticket size={14} color={COLORS.success} />
+            <Text style={{ color: COLORS.success, fontSize: 13.5, fontWeight: '700' }}>
+              {lang === 'en' ? `Discount (${job.voucher_code})` : `Giảm giá (${job.voucher_code})`}
+            </Text>
+          </View>
           <Text style={{ color: COLORS.success, fontSize: 14, fontWeight: '800' }}>
             −{new Intl.NumberFormat('vi-VN').format(appliedDiscount)}₫
           </Text>
@@ -2915,10 +3000,11 @@ function JobVoucherRow({ job, contractTotal }: { job: any; contractTotal: number
           padding: 10,
         }}
       >
+        <Ticket size={16} color="#065F46" />
         <Text style={{ flex: 1, fontSize: 13, fontWeight: '700', color: '#065F46' }}>
           {lang === 'en'
-            ? `🎟️ Voucher ${job.voucher_code} applied — active at checkout`
-            : `🎟️ Đã gắn mã ${job.voucher_code} — sẽ áp dụng khi thanh toán`}
+            ? `Voucher ${job.voucher_code} applied — active at checkout`
+            : `Đã gắn mã ${job.voucher_code} — sẽ áp dụng khi thanh toán`}
         </Text>
         {!isPaid && (
           <TouchableOpacity onPress={() => detach.mutate(job._id)}>
@@ -2944,7 +3030,7 @@ function JobVoucherRow({ job, contractTotal }: { job: any; contractTotal: number
             setPreview(null);
             setError(null);
           }}
-          placeholder={lang === 'en' ? '🎟️ Enter voucher code' : '🎟️ Nhập mã giảm giá'}
+          placeholder={lang === 'en' ? 'Enter voucher code' : 'Nhập mã giảm giá'}
           placeholderTextColor={COLORS.gray[400]}
           autoCapitalize="characters"
           autoCorrect={false}

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, TextInput, Image } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { ArrowLeft, ImagePlus, ShieldCheck } from 'lucide-react-native';
+import { ArrowLeft, ImagePlus, ShieldCheck, CheckCircle2 } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import dayjs from 'dayjs';
 import 'dayjs/locale/vi';
@@ -61,11 +61,11 @@ const STATUS_META: Record<
 };
 
 const TIMELINE_LABEL: Record<InsuranceClaimStatus, { vi: string; en: string }> = {
-  submitted: { vi: '📨 Đã gửi yêu cầu', en: '📨 Claim submitted' },
-  under_review: { vi: '🔎 Bắt đầu xem xét', en: '🔎 Review started' },
-  approved: { vi: '✅ Duyệt bồi thường', en: '✅ Claim approved' },
-  paid: { vi: '💰 Đã chi trả vào ví', en: '💰 Paid to wallet' },
-  rejected: { vi: '❌ Từ chối bồi thường', en: '❌ Claim rejected' },
+  submitted: { vi: 'Đã gửi yêu cầu', en: 'Claim submitted' },
+  under_review: { vi: 'Bắt đầu xem xét', en: 'Review started' },
+  approved: { vi: 'Duyệt bồi thường', en: 'Claim approved' },
+  paid: { vi: 'Đã chi trả vào ví', en: 'Paid to wallet' },
+  rejected: { vi: 'Từ chối bồi thường', en: 'Claim rejected' },
 };
 
 export default function ClaimScreen() {
@@ -169,7 +169,7 @@ export default function ClaimScreen() {
         </TouchableOpacity>
         <View style={{ flex: 1 }}>
           <Text style={{ fontSize: 18, fontWeight: '800', color: COLORS.gray[900] }}>
-            {lang === 'en' ? 'Insurance Claim 🛡' : 'Bồi thường bảo hiểm 🛡'}
+            {lang === 'en' ? 'Insurance Claim' : 'Bồi thường bảo hiểm'}
           </Text>
           <Text style={{ fontSize: 12, color: COLORS.gray[500] }}>
             {lang === 'en' ? '30-day insurance warranty for all completed jobs' : 'Bảo hiểm 30 ngày cho mọi đơn đã hoàn thành'}
@@ -300,7 +300,7 @@ export default function ClaimScreen() {
             </>
           ) : submitted ? (
             <Card style={{ gap: 10, alignItems: 'center', paddingVertical: 24 }}>
-              <Text style={{ fontSize: 40 }}>✅</Text>
+              <CheckCircle2 size={44} color="#10B981" />
               <Text
                 style={{
                   fontSize: 16,

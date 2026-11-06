@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -26,6 +26,7 @@ import {
   CheckCircle2,
   Clock,
   Navigation,
+  Wind,
 } from 'lucide-react-native';
 import Toast from 'react-native-toast-message';
 import { useCreateSosJob } from '@/hooks/use-api';
@@ -38,7 +39,7 @@ const SOS_CATEGORIES = [
   {
     id: 'electrician',
     name: 'Chập điện & Cháy khét ổ cắm',
-    emoji: '⚡',
+    icon: Zap,
     desc: 'Mất điện toàn nhà, ổ cắm tóe lửa, mùi khét dây điện',
     color: '#EF4444',
     bg: '#FEF2F2',
@@ -46,7 +47,7 @@ const SOS_CATEGORIES = [
   {
     id: 'plumbing',
     name: 'Vỡ đường ống nước & Ngập sàn',
-    emoji: '🚰',
+    icon: Droplets,
     desc: 'Bục ống nước, van tổng không khóa được, nước tràn ngập nhà',
     color: '#3B82F6',
     bg: '#EFF6FF',
@@ -54,7 +55,7 @@ const SOS_CATEGORIES = [
   {
     id: 'locksmith',
     name: 'Kẹt khóa & Mất chìa khẩn cấp',
-    emoji: '🔑',
+    icon: Key,
     desc: 'Kẹt khóa cửa ngoài, trẻ nhỏ/người già bị kẹt bên trong phòng',
     color: '#F59E0B',
     bg: '#FFFBEB',
@@ -62,7 +63,7 @@ const SOS_CATEGORIES = [
   {
     id: 'ac_repair',
     name: 'Rò rỉ khí gas máy lạnh',
-    emoji: '❄️',
+    icon: Wind,
     desc: 'Mùi gas nồng nặc trong phòng kín, rung lắc rơi dàn lạnh',
     color: '#06B6D4',
     bg: '#ECFEFF',
@@ -81,7 +82,7 @@ export default function SosScreen() {
         lang === 'en'
           ? 'Electrical Short & Burning Smell'
           : 'Chập điện & Cháy khét ổ cắm',
-      emoji: '⚡',
+      icon: Zap,
       desc:
         lang === 'en'
           ? 'Total blackout, sparking sockets, burning wires smell'
@@ -95,7 +96,7 @@ export default function SosScreen() {
         lang === 'en'
           ? 'Burst Pipe & Floor Flooding'
           : 'Vỡ đường ống nước & Ngập sàn',
-      emoji: '🚰',
+      icon: Droplets,
       desc:
         lang === 'en'
           ? 'Pipe burst, main valve stuck, severe indoor flooding'
@@ -109,7 +110,7 @@ export default function SosScreen() {
         lang === 'en'
           ? 'Jammed Lock & Lost Key Emergency'
           : 'Kẹt khóa & Mất chìa khẩn cấp',
-      emoji: '🔑',
+      icon: Key,
       desc:
         lang === 'en'
           ? 'Stuck door lock, child or elderly locked inside room'
@@ -123,7 +124,7 @@ export default function SosScreen() {
         lang === 'en'
           ? 'AC Gas Leak & Heavy Vibration'
           : 'Rò rỉ khí gas máy lạnh',
-      emoji: '❄️',
+      icon: Wind,
       desc:
         lang === 'en'
           ? 'Strong gas odor in closed room, AC unit loose/falling'
@@ -218,8 +219,8 @@ export default function SosScreen() {
         type: 'success',
         text1:
           lang === 'en'
-            ? '🚨 SOS EMERGENCY SIGNAL SENT!'
-            : '🚨 ĐÃ PHÁT TÍN HIỆU CỨU HỘ SOS!',
+            ? 'SOS Emergency Signal Sent!'
+            : 'Đã phát tín hiệu cứu hộ SOS!',
         text2:
           lang === 'en'
             ? 'The system is dispatching nearest helpers to arrive within 15 minutes.'
@@ -410,7 +411,9 @@ export default function SosScreen() {
                     gap: 12,
                   }}
                 >
-                  <Text style={{ fontSize: 32 }}>{cat.emoji}</Text>
+                  <View style={{ width: 44, height: 44, borderRadius: 12, backgroundColor: cat.bg, alignItems: 'center', justifyContent: 'center' }}>
+                    {React.createElement(cat.icon, { size: 26, color: cat.color })}
+                  </View>
                   <View style={{ flex: 1 }}>
                     <Text style={{ fontSize: 15, fontWeight: '800', color: COLORS.gray[900] }}>
                       {cat.name}

@@ -9,7 +9,18 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { ChevronRight, MapPin, Clock, Navigation } from 'lucide-react-native';
+import {
+  ChevronRight,
+  MapPin,
+  Clock,
+  Navigation,
+  Map,
+  Users,
+  Check,
+  Search,
+  ClipboardList,
+  BookOpen,
+} from 'lucide-react-native';
 import Toast from 'react-native-toast-message';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
@@ -235,14 +246,18 @@ export default function HelperJobsScreen() {
         ) : !ds.loading && (!ds.data || ds.data.length === 0) ? (
           <Card style={{ alignItems: 'center', paddingVertical: 40 }}>
             <EmptyState
-              emoji={
-                tabIndex === 0
-                  ? available?.empty_reason === 'outside_working_hours'
-                    ? '⏰'
-                    : '🔍'
-                  : tabIndex === 1
-                    ? '📋'
-                    : '📚'
+              icon={
+                tabIndex === 0 ? (
+                  available?.empty_reason === 'outside_working_hours' ? (
+                    <Clock size={36} color={COLORS.gray[400]} />
+                  ) : (
+                    <Search size={36} color={COLORS.gray[400]} />
+                  )
+                ) : tabIndex === 1 ? (
+                  <ClipboardList size={36} color={COLORS.gray[400]} />
+                ) : (
+                  <BookOpen size={36} color={COLORS.gray[400]} />
+                )
               }
               title={
                 tabIndex === 0
@@ -368,7 +383,7 @@ export default function HelperJobsScreen() {
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
                         <Clock size={13} color={COLORS.gray[400]} />
                         <Text style={{ fontSize: fs(12), color: COLORS.gray[500] }}>
-                          🕐 {job.preferred_time_start}
+                          {job.preferred_time_start}
                         </Text>
                       </View>
                     )}
@@ -413,7 +428,7 @@ export default function HelperJobsScreen() {
                       >
                         <Text style={{ fontSize: fs(13), fontWeight: '800', color: '#fff' }}>
                           {job.is_warranty
-                            ? lang === 'en' ? '🛡 Accept warranty job' : '🛡 Nhận việc bảo hành'
+                            ? lang === 'en' ? 'Accept warranty job' : 'Nhận việc bảo hành'
                             : lang === 'en'
                               ? `Accept now • ${new Intl.NumberFormat('en-US').format(job.fixed_price ?? 0)}₫`
                               : `Nhận việc ngay • ${new Intl.NumberFormat('vi-VN').format(job.fixed_price ?? 0)}₫`}
@@ -474,7 +489,7 @@ export default function HelperJobsScreen() {
             paddingVertical: 10,
           }}
         >
-          <Text style={{ fontSize: 15 }}>🗺</Text>
+          <Map size={18} color={COLORS.primary} />
           <View style={{ flex: 1 }}>
             <Text style={{ fontWeight: '800', fontSize: fs(13.5), color: COLORS.gray[900] }}>
               {t('helper_jobs_demand_map')}
@@ -490,26 +505,30 @@ export default function HelperJobsScreen() {
       {/* ── Lời mời vào nhóm (Đơn nhóm) ─────────────────────────────────── */}
       {(teamInvitations ?? []).length > 0 && (
         <View style={{ paddingHorizontal: 16, paddingTop: 12, gap: 10 }}>
-          <Text style={{ fontWeight: '800', fontSize: fs(14.5), color: COLORS.gray[900] }}>
-            👥 {lang === 'en' ? 'Team Invitations' : 'Lời mời vào nhóm'} ({teamInvitations!.length})
-          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <Users size={16} color={COLORS.gray[900]} />
+            <Text style={{ fontWeight: '800', fontSize: fs(14.5), color: COLORS.gray[900] }}>
+              {lang === 'en' ? 'Team Invitations' : 'Lời mời vào nhóm'} ({teamInvitations!.length})
+            </Text>
+          </View>
           {teamInvitations!.map(inv => (
             <Card key={inv.job_id} style={{ gap: 8 }}>
               <Text style={{ fontWeight: '800', fontSize: fs(14), color: COLORS.gray[900] }}>
                 {inv.title}
               </Text>
               <Text style={{ fontSize: fs(12.5), color: COLORS.gray[600], lineHeight: Math.round(fs(18)) }}>
-                {inv.address_text ? `📍 ${inv.address_text}\n` : ''}
+                {inv.address_text ? `${inv.address_text}\n` : ''}
                 {lang === 'en'
                   ? `You will receive ${inv.split_percent}% of job pay (after platform fee) when completed with team of ${inv.helpers_needed} helpers.`
                   : `Bạn sẽ nhận ${inv.split_percent}% tiền công của đơn (sau phí sàn) khi hoàn thành cùng nhóm ${inv.helpers_needed} thợ.`}
               </Text>
               <View style={{ flexDirection: 'row', gap: 8 }}>
                 <Button
-                  title={lang === 'en' ? '✓ Accept' : '✓ Nhận lời'}
+                  title={lang === 'en' ? 'Accept' : 'Nhận lời'}
                   size="sm"
                   loading={respondInvitation.isPending}
                   onPress={() => respondInvitation.mutate({ jobId: inv.job_id, action: 'accept' })}
+                  icon={<Check size={14} color="#fff" />}
                 />
                 <Button
                   title={lang === 'en' ? 'Decline' : 'Từ chối'}

@@ -22,6 +22,8 @@ import {
   Flame,
   X,
   Check,
+  PowerOff,
+  Search,
 } from 'lucide-react-native';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
@@ -731,7 +733,7 @@ export default function HelperDashboardScreen() {
           ) : !effectiveOnline ? (
             <Card style={{ alignItems: 'center', paddingVertical: 28 }}>
               <EmptyState
-                emoji="📴"
+                icon={<PowerOff size={36} color={COLORS.gray[400]} />}
                 title={t('dash_offline_empty_title')}
                 subtitle={t('dash_offline_empty_sub')}
               />
@@ -739,7 +741,7 @@ export default function HelperDashboardScreen() {
           ) : profile?.verification_status !== 'approved' ? (
             <Card style={{ alignItems: 'center', paddingVertical: 28 }}>
               <EmptyState
-                emoji="🪪"
+                icon={<ShieldCheck size={36} color={COLORS.gray[400]} />}
                 title={t('dash_kyc_needed_title')}
                 subtitle={
                   profile?.verification_status === 'pending'
@@ -751,7 +753,13 @@ export default function HelperDashboardScreen() {
           ) : !availableJobs?.jobs?.length ? (
             <Card style={{ alignItems: 'center', paddingVertical: 28 }}>
               <EmptyState
-                emoji={availableJobs?.empty_reason === 'outside_working_hours' ? '⏰' : '🔍'}
+                icon={
+                  availableJobs?.empty_reason === 'outside_working_hours' ? (
+                    <Clock size={36} color={COLORS.gray[400]} />
+                  ) : (
+                    <Search size={36} color={COLORS.gray[400]} />
+                  )
+                }
                 title={
                   availableJobs?.empty_reason === 'outside_working_hours'
                     ? t('jobs_outside_hours_title')
@@ -821,13 +829,19 @@ export default function HelperDashboardScreen() {
                           label={tService(job.service_id) || t('common_service')}
                           size="sm"
                         />
-                        <Text style={{ fontSize: fs(13), color: COLORS.gray[600] }}>
-                          📍 {job.address?.district || job.address?.city || t('jobs_unspecified')}
-                        </Text>
-                        {job.preferred_time_start && (
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                          <MapPin size={12} color={COLORS.gray[500]} />
                           <Text style={{ fontSize: fs(13), color: COLORS.gray[600] }}>
-                            • 🕐 {job.preferred_time_start}
+                            {job.address?.district || job.address?.city || t('jobs_unspecified')}
                           </Text>
+                        </View>
+                        {job.preferred_time_start && (
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                            <Clock size={12} color={COLORS.gray[500]} />
+                            <Text style={{ fontSize: fs(13), color: COLORS.gray[600] }}>
+                              {job.preferred_time_start}
+                            </Text>
+                          </View>
                         )}
                       </View>
 

@@ -11,6 +11,7 @@ import {
   ShieldCheck,
   Send,
   Zap,
+  MessageCircle,
 } from 'lucide-react-native';
 import { Card, COLORS, Badge, Separator } from '@/components/ui';
 import { useAiSupport } from '@/hooks/use-api';
@@ -127,7 +128,7 @@ export default function HelpCenterScreen() {
       const res: any = await aiSupport.mutateAsync({ message: question });
       const reply = res?.data?.reply || res?.reply;
       if (reply) {
-        setAiAnswer(`💡 ${reply}`);
+        setAiAnswer(reply);
       } else {
         setAiAnswer(getFallbackAiAnswer(question));
       }
@@ -287,7 +288,7 @@ export default function HelpCenterScreen() {
             gap: 12,
           }}
         >
-          <Text style={{ fontSize: 26 }}>💬</Text>
+          <MessageCircle size={26} color="#FFF" />
           <View style={{ flex: 1 }}>
             <Text style={{ fontSize: 15.5, fontWeight: '800', color: '#FFF' }}>
               {lang === 'en' ? 'Chat with Support Team' : 'Chat với đội hỗ trợ'}

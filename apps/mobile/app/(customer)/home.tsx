@@ -50,6 +50,16 @@ import {
   AlertTriangle,
   Users,
   Tag,
+  Home,
+  UtensilsCrossed,
+  Package,
+  Baby,
+  Wrench,
+  Shirt,
+  Wind,
+  HeartHandshake,
+  Truck,
+  Lightbulb,
 } from 'lucide-react-native';
 import { useAuthStore } from '@/stores/auth.store';
 import { useTranslation } from '@/hooks/use-i18n';
@@ -75,7 +85,7 @@ import 'dayjs/locale/en';
 
 dayjs.extend(relativeTime);
 
-// ─── Danh mục dịch vụ chuẩn theo Homepage Redesign Demo (12 items) ─────────────
+// ─── Danh mục dịch vụ chuẩn (12 items) ───────────────────────────────────────
 interface ServiceItem {
   id: string;
   name: string;
@@ -83,7 +93,7 @@ interface ServiceItem {
   priceType: 'fixed_from' | 'custom_deal' | 'quote_job' | 'quote_trip';
   baseAmount?: number;
   unitKey?: I18nKey;
-  emoji: string;
+  icon: React.ComponentType<{ size?: number; color?: string }>;
   slug: string;
   isCustom?: boolean;
   badgeKey?: I18nKey;
@@ -91,7 +101,7 @@ interface ServiceItem {
   subtitleKey?: I18nKey;
 }
 
-const DEMO_SERVICES: ServiceItem[] = [
+const SERVICES_CATALOG: ServiceItem[] = [
   {
     id: '1',
     name: 'Giúp việc theo giờ',
@@ -99,7 +109,7 @@ const DEMO_SERVICES: ServiceItem[] = [
     priceType: 'fixed_from',
     baseAmount: 60000,
     unitKey: 'price_per_hour',
-    emoji: '🧹',
+    icon: Sparkles,
     slug: 'housekeeping_hourly',
   },
   {
@@ -107,7 +117,7 @@ const DEMO_SERVICES: ServiceItem[] = [
     name: 'Sửa điện gia dụng',
     nameKey: 'svc_electrician',
     priceType: 'quote_job',
-    emoji: '⚡',
+    icon: Zap,
     slug: 'electrician',
   },
   {
@@ -117,7 +127,7 @@ const DEMO_SERVICES: ServiceItem[] = [
     priceType: 'fixed_from',
     baseAmount: 150000,
     unitKey: 'price_per_shift',
-    emoji: '🏠',
+    icon: Home,
     slug: 'house_cleaning',
   },
   {
@@ -127,7 +137,7 @@ const DEMO_SERVICES: ServiceItem[] = [
     priceType: 'fixed_from',
     baseAmount: 120000,
     unitKey: 'price_per_meal',
-    emoji: '🍳',
+    icon: UtensilsCrossed,
     slug: 'cooking',
   },
   {
@@ -135,7 +145,7 @@ const DEMO_SERVICES: ServiceItem[] = [
     name: 'Chuyển nhà',
     nameKey: 'svc_moving_help',
     priceType: 'quote_trip',
-    emoji: '📦',
+    icon: Package,
     slug: 'moving_help',
   },
   {
@@ -145,7 +155,7 @@ const DEMO_SERVICES: ServiceItem[] = [
     priceType: 'fixed_from',
     baseAmount: 55000,
     unitKey: 'price_per_hour',
-    emoji: '👶',
+    icon: Baby,
     slug: 'child_care',
   },
   {
@@ -153,7 +163,7 @@ const DEMO_SERVICES: ServiceItem[] = [
     name: 'Sửa ống nước',
     nameKey: 'svc_plumbing',
     priceType: 'quote_job',
-    emoji: '🔧',
+    icon: Wrench,
     slug: 'plumbing',
   },
   {
@@ -163,7 +173,7 @@ const DEMO_SERVICES: ServiceItem[] = [
     priceType: 'fixed_from',
     baseAmount: 20000,
     unitKey: 'price_per_kg',
-    emoji: '👔',
+    icon: Shirt,
     slug: 'laundry',
   },
   {
@@ -173,7 +183,7 @@ const DEMO_SERVICES: ServiceItem[] = [
     priceType: 'fixed_from',
     baseAmount: 150000,
     unitKey: 'price_per_unit',
-    emoji: '❄️',
+    icon: Wind,
     slug: 'ac_repair',
   },
   {
@@ -183,7 +193,7 @@ const DEMO_SERVICES: ServiceItem[] = [
     priceType: 'fixed_from',
     baseAmount: 70000,
     unitKey: 'price_per_hour',
-    emoji: '👵',
+    icon: HeartHandshake,
     slug: 'elderly_care',
   },
   {
@@ -191,7 +201,7 @@ const DEMO_SERVICES: ServiceItem[] = [
     name: 'Bốc hàng, vận chuyển',
     nameKey: 'svc_handyman',
     priceType: 'custom_deal',
-    emoji: '🚛',
+    icon: Truck,
     slug: 'handyman',
   },
   {
@@ -199,7 +209,7 @@ const DEMO_SERVICES: ServiceItem[] = [
     name: 'Dịch vụ khác — tự ghi việc, tự set giá',
     nameKey: 'svc_custom',
     priceType: 'custom_deal',
-    emoji: '💡',
+    icon: Lightbulb,
     slug: 'custom',
     isCustom: true,
     badgeKey: 'badge_new',
@@ -2063,7 +2073,7 @@ export default function CustomerHomeScreen() {
             {(() => {
               const q = removeVietnameseDiacritics(serviceSearchQuery);
               const list = q
-                ? DEMO_SERVICES.filter(s => {
+                ? SERVICES_CATALOG.filter(s => {
                     const normName = removeVietnameseDiacritics(s.name);
                     const normTranslated = removeVietnameseDiacritics(t(s.nameKey));
                     const normSlug = removeVietnameseDiacritics(s.slug.replace(/_/g, ' '));
@@ -2075,7 +2085,7 @@ export default function CustomerHomeScreen() {
                       normSub.includes(q)
                     );
                   })
-                : DEMO_SERVICES;
+                : SERVICES_CATALOG;
 
               const containerW = Math.min(windowWidth, 640) - 36; // 18px padding each side
               const numCols = windowWidth >= 768 ? 4 : 3;
@@ -2189,7 +2199,12 @@ export default function CustomerHomeScreen() {
                       </View>
                     )}
 
-                    <Text style={{ fontSize: fs(24), marginVertical: 2 }}>{svc.emoji}</Text>
+                    <View style={{ height: 28, alignItems: 'center', justifyContent: 'center', marginVertical: 2 }}>
+                      {React.createElement(svc.icon, {
+                        size: 24,
+                        color: isCustom ? COLORS.primary : COLORS.gray[800],
+                      })}
+                    </View>
 
                     <Text
                       style={{
@@ -2997,7 +3012,7 @@ export default function CustomerHomeScreen() {
                         justifyContent: 'center',
                       }}
                     >
-                      <Text style={{ fontSize: 22 }}>🏠</Text>
+                      <Home size={22} color={COLORS.primary} />
                     </View>
 
                     <View style={{ flex: 1 }}>

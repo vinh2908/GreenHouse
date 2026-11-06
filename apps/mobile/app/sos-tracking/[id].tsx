@@ -21,6 +21,7 @@ import {
   AlertTriangle,
   ArrowLeft,
   Navigation,
+  Star,
 } from 'lucide-react-native';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
@@ -68,8 +69,8 @@ export default function SosTrackingScreen() {
         type: 'success',
         text1:
           lang === 'en'
-            ? '🚨 HELPER ACCEPTED RESCUE REQUEST!'
-            : '🚨 ĐÃ CÓ THỢ NHẬN CỨU HỘ!',
+            ? 'HELPER ACCEPTED RESCUE REQUEST!'
+            : 'ĐÃ CÓ THỢ NHẬN CỨU HỘ!',
         text2:
           lang === 'en'
             ? 'Helper is packing tools and rushing to your location.'
@@ -108,8 +109,8 @@ export default function SosTrackingScreen() {
       await Share.share({
         message:
           lang === 'en'
-            ? `🚨 I am requesting emergency SOS rescue for "${job?.title}" at address: ${job?.address?.full_address}. Helper: ${helperName}${helperInfo}. Track via Green House.`
-            : `🚨 Tôi đang gọi cứu hộ sự cố khẩn cấp "${job?.title}" tại địa chỉ: ${job?.address?.full_address}. Thợ phụ trách: ${helperName}${helperInfo}. Theo dõi qua Green House.`,
+            ? `I am requesting emergency SOS rescue for "${job?.title}" at address: ${job?.address?.full_address}. Helper: ${helperName}${helperInfo}. Track via Green House.`
+            : `Tôi đang gọi cứu hộ sự cố khẩn cấp "${job?.title}" tại địa chỉ: ${job?.address?.full_address}. Thợ phụ trách: ${helperName}${helperInfo}. Theo dõi qua Green House.`,
       });
     } catch {
       /* ignore */
@@ -331,9 +332,12 @@ export default function SosTrackingScreen() {
                           e-KYC 100%
                         </Text>
                       </View>
-                      <Text style={{ fontSize: 12, color: '#F59E0B', fontWeight: '800' }}>
-                        {lang === 'en' ? '★ 4.9 (48 jobs)' : '★ 4.9 (48 đơn)'}
-                      </Text>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
+                        <Star size={12} color="#F59E0B" fill="#F59E0B" />
+                        <Text style={{ fontSize: 12, color: '#F59E0B', fontWeight: '800' }}>
+                          {lang === 'en' ? '4.9 (48 jobs)' : '4.9 (48 đơn)'}
+                        </Text>
+                      </View>
                     </View>
                   )}
                 </View>
