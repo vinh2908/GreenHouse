@@ -180,6 +180,33 @@ export default function HelperEarningsScreen() {
 
   if (isLoading) return <LoadingSpinner />;
 
+  if (isWalletError) {
+    return (
+      <View
+        style={{
+          flex: 1,
+          backgroundColor: '#F8F9FA',
+          justifyContent: 'center',
+          alignItems: 'center',
+          padding: 24,
+        }}
+      >
+        <ErrorState
+          title={lang === 'en' ? 'Unable to load wallet data' : 'Không thể tải thông tin ví'}
+          subtitle={
+            lang === 'en'
+              ? 'Could not connect to wallet service. Please retry.'
+              : 'Không thể kết nối đến máy chủ quản lý ví. Vui lòng bấm thử lại.'
+          }
+          onRetry={() => {
+            refetchWallet();
+            refetchTx();
+          }}
+        />
+      </View>
+    );
+  }
+
   return (
     <View style={{ flex: 1, backgroundColor: '#F8F9FA' }}>
       <ScrollView
