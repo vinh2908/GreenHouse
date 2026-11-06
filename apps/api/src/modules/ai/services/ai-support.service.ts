@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { AiConfigService } from './ai-config.service';
 import { AiChatMessage, AiSupportResponse } from '@homemate/types';
 
@@ -23,6 +23,13 @@ export class AiSupportService {
   constructor(private readonly aiConfig: AiConfigService) {}
 
   async chat(messages: AiChatMessage[], userMessage: string): Promise<AiSupportResponse> {
+    // B69: Giới hạn tin nhắn + từng tin trong lịch sử ≤ 2000 ký tự
+    if (typeof userMessage !== 'string' || userMessage.length > 2000) {
+      throw new BadRequestException('Tin nhắn tối đa 2000 ký tự');
+    }
+    if ((messages ?? []).some(m => typeof m?.content === 'string' && m.content.length > 2000)) {
+      throw new BadRequestException('Tin nhắn trong lịch sử tối đa 2000 ký tự');
+    }
     if (!this.aiConfig.enabled) {
       const faq = this.getFaqAnswer(userMessage);
       return {
