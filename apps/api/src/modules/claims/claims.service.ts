@@ -4,6 +4,7 @@ import {
   BadRequestException,
   ConflictException,
   ForbiddenException,
+  Logger,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
@@ -31,6 +32,8 @@ const OPEN_STATUSES: InsuranceClaimStatus[] = ['submitted', 'under_review'];
  */
 @Injectable()
 export class ClaimsService {
+  private readonly logger = new Logger(ClaimsService.name);
+
   constructor(
     @InjectModel(InsuranceClaim.name)
     private claimModel: Model<InsuranceClaimDocument>,
@@ -223,11 +226,22 @@ export class ClaimsService {
     }
 
     // approve → duyệt + chi trả ngay vào ví khách
-    if (!dto.approved_amount || dto.approved_amount <= 0) {
-      throw new BadRequestException('Số tiền duyệt bồi thường phải lớn hơn 0');
+    if (claim.status === 'approved' || claim.status === 'paid' || claim.payout_transaction_id) {
+      this.logger.warn(
+        `claim_payout_idempotent: Claim ${id} already processed or paid (status: ${claim.status}, payout tx: ${claim.payout_transaction_id})`,
+      );
+      throw new ConflictException('Yêu cầu bồi thường này đã được duyệt hoặc đã chi trả');
     }
     if (claim.status !== 'submitted' && claim.status !== 'under_review') {
       throw new ConflictException('Yêu cầu này đã có kết quả cuối cùng');
+    }
+    if (!dto.approved_amount || dto.approved_amount <= 0) {
+      throw new BadRequestException('Số tiền duyệt bồi thường phải lớn hơn 0');
+    }
+    if (claim.requested_amount && dto.approved_amount > claim.requested_amount) {
+      throw new BadRequestException(
+        `Số tiền duyệt bồi thường không được vượt quá số tiền yêu cầu (${claim.requested_amount.toLocaleString('vi-VN')}₫)`,
+      );
     }
     claim.approved_amount = dto.approved_amount;
     claim.status = 'approved';
