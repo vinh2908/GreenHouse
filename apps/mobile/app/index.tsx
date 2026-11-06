@@ -296,7 +296,7 @@ const styles = StyleSheet.create({
   outerGlow: {
     width: 120,
     height: 120,
-    borderRadius: 36,
+    borderRadius: 999,
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
     alignItems: 'center',
     justifyContent: 'center',
@@ -311,7 +311,7 @@ const styles = StyleSheet.create({
   logoBadge: {
     width: 96,
     height: 96,
-    borderRadius: 28,
+    borderRadius: 999,
     backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
@@ -367,7 +367,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 20,
+    borderRadius: 14,
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.3)',
   },
@@ -389,7 +389,7 @@ const styles = StyleSheet.create({
   dot: {
     width: 8,
     height: 8,
-    borderRadius: 4,
+    borderRadius: 8,
     backgroundColor: '#FFFFFF',
   },
   dotActive: {

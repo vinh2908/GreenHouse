@@ -10,7 +10,7 @@ import { SOS_BACKUP_REASON_LABELS, useSosBackupStore } from '@/stores/sos-backup
 import { PhotoThumbRow } from '@/components/common/photo-thumbs';
 import { useCustomerSosDecision } from '@/hooks/use-api';
 import { useNowTick, formatCountdown } from '@/hooks/use-countdown';
-import { COLORS } from '@/components/ui';
+import { COLORS, useThemeColors } from '@/components/ui';
 import { useTranslation } from '@/hooks/use-i18n';
 import { SOS_BACKUP_REASONS_I18N } from '@/services/i18n';
 
@@ -20,6 +20,7 @@ export function SosCustomerDecisionPopup() {
   const decide = useCustomerSosDecision();
   const now = useNowTick(!!decision);
   const { t, tService, fs, lang } = useTranslation();
+  const tc = useThemeColors();
 
   if (!decision) return null;
 
@@ -78,8 +79,8 @@ export function SosCustomerDecisionPopup() {
       >
         <View
           style={{
-            backgroundColor: '#fff',
-            borderRadius: 24,
+            backgroundColor: tc.surface,
+            borderRadius: 14,
             padding: 22,
             width: '100%',
             maxWidth: 420,
@@ -94,7 +95,7 @@ export function SosCustomerDecisionPopup() {
             style={{
               fontSize: fs(18),
               fontWeight: '800',
-              color: COLORS.gray[900],
+              color: tc.text,
               textAlign: 'center',
               marginBottom: 6,
             }}
@@ -104,7 +105,7 @@ export function SosCustomerDecisionPopup() {
           <Text
             style={{
               fontSize: fs(14),
-              color: COLORS.gray[700],
+              color: tc.textSecondary,
               textAlign: 'center',
               lineHeight: Math.round(fs(20)),
             }}
@@ -140,7 +141,7 @@ export function SosCustomerDecisionPopup() {
             <Text
               style={{
                 fontSize: fs(13.5),
-                color: COLORS.gray[800],
+                color: tc.text,
                 lineHeight: Math.round(fs(19)),
               }}
             >
@@ -149,7 +150,7 @@ export function SosCustomerDecisionPopup() {
             <Text
               style={{
                 fontSize: fs(13.5),
-                color: COLORS.gray[800],
+                color: tc.text,
                 lineHeight: Math.round(fs(19)),
               }}
             >

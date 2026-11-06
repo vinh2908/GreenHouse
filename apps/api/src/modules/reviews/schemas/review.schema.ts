@@ -40,6 +40,17 @@ export class Review {
   @Prop()
   helper_replied_at?: Date;
 
+  // Admin moderation reply (hiển thị cùng phản hồi thợ, ghi rõ là Admin)
+  @Prop({ maxlength: 500 })
+  admin_reply?: string;
+
+  @Prop()
+  admin_replied_at?: Date;
+
+  // Admin ẩn đánh giá vi phạm — khách không còn thấy, admin vẫn thấy trong danh sách
+  @Prop({ default: false })
+  is_hidden?: boolean;
+
   created_at: Date;
   updated_at: Date;
 }

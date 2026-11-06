@@ -42,21 +42,10 @@ import {
   useUpdateHelperLocation,
 } from '@/hooks/use-api';
 import { useTranslation } from '@/hooks/use-i18n';
+import { lightImpact } from '@/services/haptics';
 import { locationService } from '@/services/location.service';
 import { socketService, SOCKET_EVENTS } from '@/services/socket.service';
-import {
-  Card,
-  JobStatusBadge,
-  Avatar,
-  EmptyState,
-  ErrorState,
-  COLORS,
-  SectionHeader,
-  PriceText,
-  Badge,
-  Button,
-  Separator,
-} from '@/components/ui';
+import { Card, JobStatusBadge, Avatar, EmptyState, ErrorState, COLORS, SectionHeader, PriceText, Badge, Button, Separator, useThemeColors } from '@/components/ui';
 import Toast from 'react-native-toast-message';
 
 dayjs.extend(relativeTime);
@@ -64,6 +53,7 @@ dayjs.extend(relativeTime);
 export default function HelperDashboardScreen() {
   const router = useRouter();
   const { t, tService, fs, lang } = useTranslation();
+  const tc = useThemeColors();
   const storedUser = useAuthStore(s => s.user);
   // Stored login payload has no avatar — prefer the full profile from the API
   const { data: myProfile, refetch: refetchMyProfile } = useMyProfile();
@@ -120,8 +110,12 @@ export default function HelperDashboardScreen() {
       setSosBroadcast(data);
       Toast.show({
         type: 'error',
-        text1: 'CỨU HỘ KHẨN CẤP SOS GẦN BẠN!',
-        text2: `${data.title} tại ${data.district}. Phụ phí +${data.surcharge?.toLocaleString()}đ`,
+        text1: t('helper_dash_sos_title'),
+        text2: t('helper_dash_sos_body', {
+          title: data.title ?? '',
+          district: data.district ?? '',
+          surcharge: new Intl.NumberFormat('vi-VN').format(data.surcharge ?? 0),
+        }),
         visibilityTime: 10000,
       });
     });
@@ -143,6 +137,8 @@ export default function HelperDashboardScreen() {
 
   const handleAcceptSos = async () => {
     if (!sosBroadcast?.job_id) return;
+    // B20: rung nhẹ khi thợ nhận đơn SOS
+    void lightImpact();
     try {
       await acceptSos.mutateAsync(sosBroadcast.job_id);
       const targetId = sosBroadcast.job_id;
@@ -150,7 +146,7 @@ export default function HelperDashboardScreen() {
       refetchMyJobs();
       router.push({ pathname: '/helper-job-detail/[id]', params: { id: targetId } });
     } catch (err: any) {
-      const msg = err?.response?.data?.message || 'Không thể nhận đơn cứu hộ';
+      const msg = err?.response?.data?.message || t('helper_dash_sos_accept_failed');
       Toast.show({ type: 'error', text1: msg });
       setSosBroadcast(null);
     }
@@ -158,11 +154,9 @@ export default function HelperDashboardScreen() {
 
   const handleToggleOnline = (value: boolean) => {
     if (isWorking) {
-      Alert.alert(
-        'Đang có công việc diễn ra',
-        'Bạn đang có đơn công việc đang thực hiện. Hãy hoàn thành hoặc kết thúc công việc trước khi tắt nhận việc nhé!',
-        [{ text: 'Đã hiểu', style: 'default' }],
-      );
+      Alert.alert(t('helper_dash_job_in_progress_title'), t('helper_dash_job_in_progress_msg'), [
+        { text: t('helper_dash_understood'), style: 'default' },
+      ]);
       return;
     }
 
@@ -224,7 +218,7 @@ export default function HelperDashboardScreen() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#F8F9FA' }}>
+    <View style={{ flex: 1, backgroundColor: tc.background }}>
       <ScrollView
         showsVerticalScrollIndicator={false}
         refreshControl={
@@ -239,12 +233,12 @@ export default function HelperDashboardScreen() {
         {/* ── 1. Top Header Thợ (Safe Insets) ──────────────────────────── */}
         <View
           style={{
-            backgroundColor: '#FFFFFF',
+            backgroundColor: tc.surface,
             paddingHorizontal: 18,
             paddingTop: Math.max(insets.top + 8, 20),
             paddingBottom: 16,
             borderBottomWidth: 1,
-            borderBottomColor: COLORS.gray[100],
+            borderBottomColor: tc.border,
           }}
         >
           <View
@@ -268,7 +262,7 @@ export default function HelperDashboardScreen() {
                     style={{
                       fontSize: fs(16),
                       fontWeight: '800',
-                      color: COLORS.gray[900],
+                      color: tc.text,
                       flexShrink: 1,
                     }}
                     numberOfLines={1}
@@ -280,7 +274,7 @@ export default function HelperDashboardScreen() {
                   )}
                 </View>
                 <Text
-                  style={{ fontSize: fs(12), color: COLORS.gray[500], marginTop: 1 }}
+                  style={{ fontSize: fs(12), color: tc.textMuted, marginTop: 1 }}
                   numberOfLines={1}
                 >
                   {t('dash_helper_role_label')}
@@ -296,8 +290,8 @@ export default function HelperDashboardScreen() {
                 style={{
                   width: 38,
                   height: 38,
-                  borderRadius: 12,
-                  backgroundColor: COLORS.gray[100],
+                  borderRadius: 14,
+                  backgroundColor: tc.subtle,
                   alignItems: 'center',
                   justifyContent: 'center',
                 }}
@@ -311,7 +305,7 @@ export default function HelperDashboardScreen() {
                       right: 6,
                       width: 8,
                       height: 8,
-                      borderRadius: 4,
+                      borderRadius: 8,
                       backgroundColor: COLORS.error,
                       borderWidth: 1.5,
                       borderColor: '#fff',
@@ -331,7 +325,7 @@ export default function HelperDashboardScreen() {
               onPress={() => router.push('/kyc')}
               style={{
                 backgroundColor: profile?.verification_status === 'pending' ? '#FFFBEB' : '#FEF2F2',
-                borderRadius: 16,
+                borderRadius: 14,
                 padding: 14,
                 borderWidth: 1.5,
                 borderColor: profile?.verification_status === 'pending' ? '#FDE68A' : '#FECACA',
@@ -344,7 +338,7 @@ export default function HelperDashboardScreen() {
                 style={{
                   width: 40,
                   height: 40,
-                  borderRadius: 12,
+                  borderRadius: 14,
                   backgroundColor:
                     profile?.verification_status === 'pending' ? '#FEF3C7' : '#FEE2E2',
                   alignItems: 'center',
@@ -423,7 +417,7 @@ export default function HelperDashboardScreen() {
                   : effectiveOnline
                     ? '#1E1E24'
                     : '#FFFFFF',
-              borderRadius: 20,
+              borderRadius: 14,
               padding: 18,
               borderWidth: 1,
               borderColor: pLoading
@@ -453,16 +447,16 @@ export default function HelperDashboardScreen() {
                     style={{
                       width: 140,
                       height: 18,
-                      borderRadius: 6,
-                      backgroundColor: COLORS.gray[200],
+                      borderRadius: 8,
+                      backgroundColor: tc.border,
                     }}
                   />
                   <View
                     style={{
                       width: 200,
                       height: 13,
-                      borderRadius: 4,
-                      backgroundColor: COLORS.gray[100],
+                      borderRadius: 8,
+                      backgroundColor: tc.subtle,
                       marginTop: 8,
                     }}
                   />
@@ -472,7 +466,7 @@ export default function HelperDashboardScreen() {
                     width: 48,
                     height: 28,
                     borderRadius: 14,
-                    backgroundColor: COLORS.gray[200],
+                    backgroundColor: tc.border,
                   }}
                 />
               </View>
@@ -490,7 +484,7 @@ export default function HelperDashboardScreen() {
                       style={{
                         width: 10,
                         height: 10,
-                        borderRadius: 5,
+                        borderRadius: 8,
                         backgroundColor: isWorking
                           ? '#F59E0B'
                           : effectiveOnline
@@ -561,8 +555,8 @@ export default function HelperDashboardScreen() {
                   style={{
                     flex: 1,
                     height: 92,
-                    borderRadius: 16,
-                    backgroundColor: COLORS.gray[200],
+                    borderRadius: 14,
+                    backgroundColor: tc.border,
                   }}
                 />
               ))}
@@ -583,7 +577,7 @@ export default function HelperDashboardScreen() {
                       alignItems: 'center',
                     }}
                   >
-                    <Text style={{ fontSize: fs(11), color: COLORS.gray[500], fontWeight: '700' }}>
+                    <Text style={{ fontSize: fs(11), color: tc.textMuted, fontWeight: '700' }}>
                       {t('dash_wallet')}
                     </Text>
                     <TrendingUp size={16} color={COLORS.success} />
@@ -612,15 +606,15 @@ export default function HelperDashboardScreen() {
                       alignItems: 'center',
                     }}
                   >
-                    <Text style={{ fontSize: fs(11), color: COLORS.gray[500], fontWeight: '700' }}>
+                    <Text style={{ fontSize: fs(11), color: tc.textMuted, fontWeight: '700' }}>
                       {t('dash_done')}
                     </Text>
                     <Briefcase size={16} color={COLORS.secondary} />
                   </View>
-                  <Text style={{ fontSize: fs(17), fontWeight: '800', color: COLORS.gray[900] }}>
+                  <Text style={{ fontSize: fs(17), fontWeight: '800', color: tc.text }}>
                     {t('dash_jobs_unit', { count: totalCompleted })}
                   </Text>
-                  <Text style={{ fontSize: fs(11), color: COLORS.gray[500], marginTop: 2 }}>
+                  <Text style={{ fontSize: fs(11), color: tc.textMuted, marginTop: 2 }}>
                     {t('dash_acceptance_rate')}
                   </Text>
                 </Card>
@@ -636,7 +630,7 @@ export default function HelperDashboardScreen() {
                       alignItems: 'center',
                     }}
                   >
-                    <Text style={{ fontSize: fs(11), color: COLORS.gray[500], fontWeight: '700' }}>
+                    <Text style={{ fontSize: fs(11), color: tc.textMuted, fontWeight: '700' }}>
                       {t('dash_reputation')}
                     </Text>
                     <Star size={16} color="#F59E0B" />
@@ -644,7 +638,7 @@ export default function HelperDashboardScreen() {
                   <Text style={{ fontSize: fs(17), fontWeight: '800', color: '#F59E0B' }}>
                     ★ {avgRating.toFixed(1)}
                   </Text>
-                  <Text style={{ fontSize: fs(11), color: COLORS.gray[500], marginTop: 2 }}>
+                  <Text style={{ fontSize: fs(11), color: tc.textMuted, marginTop: 2 }}>
                     {t('dash_top_helper')}
                   </Text>
                 </Card>
@@ -690,7 +684,7 @@ export default function HelperDashboardScreen() {
                     style={{
                       fontWeight: '800',
                       fontSize: fs(15),
-                      color: COLORS.gray[900],
+                      color: tc.text,
                       flex: 1,
                       marginRight: 8,
                     }}
@@ -704,14 +698,14 @@ export default function HelperDashboardScreen() {
                 <View style={{ flexDirection: 'row', gap: 12 }}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                     <MapPin size={14} color={COLORS.gray[500]} />
-                    <Text style={{ fontSize: fs(13), color: COLORS.gray[700] }}>
+                    <Text style={{ fontSize: fs(13), color: tc.textSecondary }}>
                       {activeJob.address?.district}
                     </Text>
                   </View>
                   {activeJob.preferred_time_start && (
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                       <Clock size={14} color={COLORS.gray[500]} />
-                      <Text style={{ fontSize: fs(13), color: COLORS.gray[700] }}>
+                      <Text style={{ fontSize: fs(13), color: tc.textSecondary }}>
                         {activeJob.preferred_time_start}
                       </Text>
                     </View>
@@ -763,7 +757,7 @@ export default function HelperDashboardScreen() {
           ) : pLoading ? (
             <Card style={{ alignItems: 'center', paddingVertical: 28, gap: 10 }}>
               <ActivityIndicator size="small" color={COLORS.primary} />
-              <Text style={{ fontSize: fs(13), color: COLORS.gray[500] }}>
+              <Text style={{ fontSize: fs(13), color: tc.textMuted }}>
                 {t('dash_loading_status')}
               </Text>
             </Card>
@@ -841,7 +835,7 @@ export default function HelperDashboardScreen() {
                           style={{
                             fontWeight: '800',
                             fontSize: fs(15),
-                            color: COLORS.gray[900],
+                            color: tc.text,
                             flex: 1,
                             marginRight: 8,
                           }}
@@ -869,14 +863,14 @@ export default function HelperDashboardScreen() {
                         <Badge label={tService(job.service_id) || t('common_service')} size="sm" />
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                           <MapPin size={12} color={COLORS.gray[500]} />
-                          <Text style={{ fontSize: fs(13), color: COLORS.gray[600] }}>
+                          <Text style={{ fontSize: fs(13), color: tc.textSecondary }}>
                             {job.address?.district || job.address?.city || t('jobs_unspecified')}
                           </Text>
                         </View>
                         {job.preferred_time_start && (
                           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                             <Clock size={12} color={COLORS.gray[500]} />
-                            <Text style={{ fontSize: fs(13), color: COLORS.gray[600] }}>
+                            <Text style={{ fontSize: fs(13), color: tc.textSecondary }}>
                               {job.preferred_time_start}
                             </Text>
                           </View>
@@ -890,10 +884,10 @@ export default function HelperDashboardScreen() {
                           alignItems: 'center',
                           paddingTop: 8,
                           borderTopWidth: 1,
-                          borderTopColor: COLORS.gray[100],
+                          borderTopColor: tc.border,
                         }}
                       >
-                        <Text style={{ fontSize: fs(12), color: COLORS.gray[500] }}>
+                        <Text style={{ fontSize: fs(12), color: tc.textMuted }}>
                           {job.total_quotes_count > 0
                             ? t('dash_quotes_count', { count: job.total_quotes_count })
                             : t('dash_no_quotes')}
@@ -918,7 +912,7 @@ export default function HelperDashboardScreen() {
         <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.75)', justifyContent: 'flex-end' }}>
           <View
             style={{
-              backgroundColor: '#FFFFFF',
+              backgroundColor: tc.surface,
               borderTopLeftRadius: 28,
               borderTopRightRadius: 28,
               padding: 24,
@@ -940,7 +934,7 @@ export default function HelperDashboardScreen() {
                   style={{
                     width: 40,
                     height: 40,
-                    borderRadius: 20,
+                    borderRadius: 14,
                     backgroundColor: '#FEF2F2',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -952,7 +946,7 @@ export default function HelperDashboardScreen() {
                   <Text style={{ fontSize: fs(18), fontWeight: '900', color: '#DC2626' }}>
                     {t('dash_sos_modal_title')}
                   </Text>
-                  <Text style={{ fontSize: fs(12), color: COLORS.gray[500], fontWeight: '600' }}>
+                  <Text style={{ fontSize: fs(12), color: tc.textMuted, fontWeight: '600' }}>
                     {t('dash_sos_modal_sub')}
                   </Text>
                 </View>
@@ -963,8 +957,8 @@ export default function HelperDashboardScreen() {
                 style={{
                   width: 34,
                   height: 34,
-                  borderRadius: 17,
-                  backgroundColor: COLORS.gray[100],
+                  borderRadius: 14,
+                  backgroundColor: tc.subtle,
                   alignItems: 'center',
                   justifyContent: 'center',
                 }}
@@ -993,7 +987,7 @@ export default function HelperDashboardScreen() {
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                 <MapPin size={16} color="#DC2626" />
                 <Text
-                  style={{ fontSize: fs(13), fontWeight: '700', color: COLORS.gray[900], flex: 1 }}
+                  style={{ fontSize: fs(13), fontWeight: '700', color: tc.text, flex: 1 }}
                   numberOfLines={1}
                 >
                   {sosBroadcast?.address}
@@ -1038,7 +1032,7 @@ export default function HelperDashboardScreen() {
               onPress={handleAcceptSos}
               style={{
                 backgroundColor: '#DC2626',
-                borderRadius: 16,
+                borderRadius: 14,
                 paddingVertical: 16,
                 alignItems: 'center',
                 justifyContent: 'center',

@@ -3,7 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, ActivityIndicator } from 'reac
 import dayjs from 'dayjs';
 import { useEarningsReport, useSetIncomeGoal } from '@/hooks/use-api';
 import { useTranslation } from '@/hooks/use-i18n';
-import { Card, COLORS } from '@/components/ui';
+import { Card, COLORS, useThemeColors } from '@/components/ui';
 
 const fmt = (n: number) => new Intl.NumberFormat('vi-VN').format(n);
 const WEEKDAY_LABELS_VI = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN']; // days[] bắt đầu từ Thứ 2
@@ -11,9 +11,10 @@ const WEEKDAY_LABELS_EN = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 function ChangeChip({ percent, lang }: { percent: number | null; lang?: string }) {
   const { fs } = useTranslation();
+  const tc = useThemeColors();
   if (percent === null || percent === undefined) {
     return (
-      <Text style={{ fontSize: fs(12), color: COLORS.gray[500], fontWeight: '600' }}>
+      <Text style={{ fontSize: fs(12), color: tc.textMuted, fontWeight: '600' }}>
         {lang === 'en'
           ? 'No prior period data for comparison'
           : 'Chưa có dữ liệu kỳ trước để so sánh'}
@@ -48,6 +49,7 @@ function ChangeChip({ percent, lang }: { percent: number | null; lang?: string }
  */
 export function EarningsReport() {
   const { t, fs, lang } = useTranslation();
+  const tc = useThemeColors();
   const { data: report, isLoading, isError, refetch } = useEarningsReport();
   const setGoal = useSetIncomeGoal();
   const [goalText, setGoalText] = useState('');
@@ -60,12 +62,12 @@ export function EarningsReport() {
   if (isLoading) {
     return (
       <View style={{ gap: 12 }}>
-        <Text style={{ fontSize: fs(17), fontWeight: '800', color: COLORS.gray[900] }}>
+        <Text style={{ fontSize: fs(17), fontWeight: '800', color: tc.text }}>
           {lang === 'en' ? 'Income Report' : 'Báo cáo thu nhập'}
         </Text>
         <Card style={{ padding: 24, alignItems: 'center', justifyContent: 'center', gap: 8 }}>
           <ActivityIndicator size="small" color={COLORS.primary} />
-          <Text style={{ fontSize: fs(13), color: COLORS.gray[500], fontWeight: '600' }}>
+          <Text style={{ fontSize: fs(13), color: tc.textMuted, fontWeight: '600' }}>
             {lang === 'en'
               ? 'Loading income report data...'
               : 'Đang tải dữ liệu báo cáo thu nhập...'}
@@ -78,14 +80,14 @@ export function EarningsReport() {
   if (isError || !report) {
     return (
       <View style={{ gap: 12 }}>
-        <Text style={{ fontSize: fs(17), fontWeight: '800', color: COLORS.gray[900] }}>
+        <Text style={{ fontSize: fs(17), fontWeight: '800', color: tc.text }}>
           {lang === 'en' ? 'Income Report' : 'Báo cáo thu nhập'}
         </Text>
         <Card style={{ padding: 24, alignItems: 'center', justifyContent: 'center', gap: 10 }}>
-          <Text style={{ fontSize: fs(14), color: COLORS.gray[700], fontWeight: '700' }}>
+          <Text style={{ fontSize: fs(14), color: tc.textSecondary, fontWeight: '700' }}>
             {lang === 'en' ? 'No income report data' : 'Chưa có dữ liệu báo cáo thu nhập'}
           </Text>
-          <Text style={{ fontSize: fs(12), color: COLORS.gray[500], textAlign: 'center' }}>
+          <Text style={{ fontSize: fs(12), color: tc.textMuted, textAlign: 'center' }}>
             {lang === 'en'
               ? 'Figures will aggregate automatically after completing your first jobs.'
               : 'Số liệu sẽ tự động tổng hợp khi bạn hoàn thành các đơn hàng đầu tiên.'}
@@ -98,7 +100,7 @@ export function EarningsReport() {
               backgroundColor: COLORS.primary,
               paddingHorizontal: 16,
               paddingVertical: 8,
-              borderRadius: 10,
+              borderRadius: 8,
             }}
           >
             <Text style={{ color: '#fff', fontWeight: '700', fontSize: fs(13) }}>
@@ -124,7 +126,7 @@ export function EarningsReport() {
 
   return (
     <View style={{ gap: 16 }}>
-      <Text style={{ fontSize: fs(17), fontWeight: '800', color: COLORS.gray[900] }}>
+      <Text style={{ fontSize: fs(17), fontWeight: '800', color: tc.text }}>
         {lang === 'en' ? 'Income Report' : 'Báo cáo thu nhập'}
       </Text>
 
@@ -133,7 +135,7 @@ export function EarningsReport() {
         <View
           style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}
         >
-          <Text style={{ fontWeight: '800', fontSize: fs(15), color: COLORS.gray[900] }}>
+          <Text style={{ fontWeight: '800', fontSize: fs(15), color: tc.text }}>
             {lang === 'en' ? 'This Week (Mon – Sun)' : 'Tuần này (T2 – CN)'}
           </Text>
           <Text style={{ fontWeight: '800', fontSize: fs(15), color: COLORS.primaryDark }}>
@@ -154,7 +156,7 @@ export function EarningsReport() {
             const isToday = d.date === dayjs().format('YYYY-MM-DD');
             return (
               <View key={d.date} style={{ flex: 1, alignItems: 'center', gap: 4 }}>
-                <Text style={{ fontSize: fs(9.5), color: COLORS.gray[500], fontWeight: '600' }}>
+                <Text style={{ fontSize: fs(9.5), color: tc.textMuted, fontWeight: '600' }}>
                   {d.amount > 0 ? `${Math.round(d.amount / 1000)}k` : ''}
                 </Text>
                 <View
@@ -162,8 +164,8 @@ export function EarningsReport() {
                     width: '100%',
                     height: 70,
                     justifyContent: 'flex-end',
-                    backgroundColor: COLORS.gray[100],
-                    borderRadius: 6,
+                    backgroundColor: tc.subtle,
+                    borderRadius: 8,
                     overflow: 'hidden',
                   }}
                 >
@@ -171,7 +173,7 @@ export function EarningsReport() {
                     style={{
                       height: `${heightPct}%`,
                       backgroundColor: isToday ? COLORS.primaryDark : COLORS.primary,
-                      borderRadius: 6,
+                      borderRadius: 8,
                     }}
                   />
                 </View>
@@ -196,14 +198,14 @@ export function EarningsReport() {
         <View
           style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}
         >
-          <Text style={{ fontWeight: '800', fontSize: fs(15), color: COLORS.gray[900] }}>
+          <Text style={{ fontWeight: '800', fontSize: fs(15), color: tc.text }}>
             {lang === 'en' ? 'This Month' : 'Tháng này'}
           </Text>
           <Text style={{ fontWeight: '800', fontSize: fs(15), color: COLORS.primaryDark }}>
             {fmt(report.month.total)}₫
           </Text>
         </View>
-        <Text style={{ fontSize: fs(13), color: COLORS.gray[600] }}>
+        <Text style={{ fontSize: fs(13), color: tc.textSecondary }}>
           {lang === 'en' ? 'From ' : 'Từ '}
           {report.month.jobs_earning_count}{' '}
           {lang === 'en' ? 'income entries · Prev month: ' : 'khoản thu nhập · Tháng trước: '}
@@ -223,8 +225,8 @@ export function EarningsReport() {
                     width: '100%',
                     height: 40,
                     justifyContent: 'flex-end',
-                    backgroundColor: COLORS.gray[100],
-                    borderRadius: 6,
+                    backgroundColor: tc.subtle,
+                    borderRadius: 8,
                     overflow: 'hidden',
                   }}
                 >
@@ -232,11 +234,11 @@ export function EarningsReport() {
                     style={{
                       height: `${heightPct}%`,
                       backgroundColor: COLORS.secondary,
-                      borderRadius: 6,
+                      borderRadius: 8,
                     }}
                   />
                 </View>
-                <Text style={{ fontSize: fs(11), fontWeight: '600', color: COLORS.gray[500] }}>
+                <Text style={{ fontSize: fs(11), fontWeight: '600', color: tc.textMuted }}>
                   {lang === 'en' ? 'Wk ' : 'Tuần '}
                   {w.week}
                 </Text>
@@ -251,7 +253,7 @@ export function EarningsReport() {
         <View
           style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}
         >
-          <Text style={{ fontWeight: '800', fontSize: fs(15), color: COLORS.gray[900] }}>
+          <Text style={{ fontWeight: '800', fontSize: fs(15), color: tc.text }}>
             {lang === 'en' ? 'Monthly Goal' : 'Mục tiêu tháng'}
           </Text>
           <TouchableOpacity onPress={() => setEditingGoal(v => !v)}>
@@ -273,15 +275,15 @@ export function EarningsReport() {
 
         {goal.monthly_goal > 0 ? (
           <>
-            <Text style={{ fontSize: fs(13.5), color: COLORS.gray[700] }}>
+            <Text style={{ fontSize: fs(13.5), color: tc.textSecondary }}>
               {lang === 'en' ? 'Achieved ' : 'Đã đạt '}
               {fmt(goal.earned_this_month)}₫ / {fmt(goal.monthly_goal)}₫ ({goal.progress_percent}%)
             </Text>
             <View
               style={{
                 height: 12,
-                borderRadius: 6,
-                backgroundColor: COLORS.gray[200],
+                borderRadius: 8,
+                backgroundColor: tc.border,
                 overflow: 'hidden',
               }}
             >
@@ -295,7 +297,7 @@ export function EarningsReport() {
             </View>
           </>
         ) : (
-          <Text style={{ fontSize: fs(13), color: COLORS.gray[500] }}>
+          <Text style={{ fontSize: fs(13), color: tc.textMuted }}>
             {lang === 'en'
               ? 'No goal set yet. Set a monthly income goal to track daily progress.'
               : 'Chưa đặt mục tiêu. Đặt mục tiêu thu nhập tháng để theo dõi tiến độ mỗi ngày.'}
@@ -313,14 +315,14 @@ export function EarningsReport() {
               style={{
                 flex: 1,
                 borderWidth: 1,
-                borderColor: COLORS.gray[200],
-                borderRadius: 12,
+                borderColor: tc.border,
+                borderRadius: 14,
                 paddingHorizontal: 12,
                 paddingVertical: 10,
                 fontSize: fs(14),
                 fontWeight: '700',
-                color: COLORS.gray[900],
-                backgroundColor: '#fff',
+                color: tc.text,
+                backgroundColor: tc.surface,
               }}
             />
             <TouchableOpacity
@@ -329,7 +331,7 @@ export function EarningsReport() {
               disabled={setGoal.isPending}
               style={{
                 backgroundColor: COLORS.primary,
-                borderRadius: 12,
+                borderRadius: 14,
                 paddingHorizontal: 18,
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -343,7 +345,7 @@ export function EarningsReport() {
         )}
       </Card>
 
-      <Text style={{ fontSize: fs(11.5), color: COLORS.gray[500] }}>
+      <Text style={{ fontSize: fs(11.5), color: tc.textMuted }}>
         {lang === 'en'
           ? '* Figures represent net earnings (platform fees deducted).'
           : '* Số liệu là thu nhập ròng (đã trừ phí sàn đối với đơn tiền mặt).'}

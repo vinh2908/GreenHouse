@@ -1,4 +1,5 @@
-import { View, Text, ScrollView, TouchableOpacity, RefreshControl } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, RefreshControl, TextInput } from 'react-native';
+import { useState } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import {
@@ -23,20 +24,13 @@ import { useTranslation } from '@/hooks/use-i18n';
 import {
   useHelperPublicProfile,
   useHelperReviews,
+  useReplyReview,
   useSelectQuote,
   useFavorites,
   useAddFavorite,
   useRemoveFavorite,
 } from '@/hooks/use-api';
-import {
-  Button,
-  Card,
-  Avatar,
-  LoadingSpinner,
-  COLORS,
-  Separator,
-  StarRating,
-} from '@/components/ui';
+import { Button, Card, Avatar, LoadingSpinner, COLORS, Separator, StarRating, useThemeColors } from '@/components/ui';
 
 dayjs.extend(relativeTime);
 
@@ -48,12 +42,18 @@ export default function HelperPublicProfileScreen() {
   }>();
   const router = useRouter();
   const { t, fs, lang } = useTranslation();
+  const tc = useThemeColors();
   dayjs.locale(lang === 'vi' ? 'vi' : 'en');
 
   const { user } = useAuthStore();
   const { data: profile, isLoading: pLoading, refetch } = useHelperPublicProfile(id);
   const { data: reviewsData, isLoading: rLoading } = useHelperReviews(id);
   const selectQuote = useSelectQuote();
+  // B1: thợ trả lời đánh giá của chính mình (chỉ hiện khi đang xem hồ sơ của mình)
+  const isOwnProfile = !!user?._id && user._id === id;
+  const replyReview = useReplyReview();
+  const [replyingId, setReplyingId] = useState<string | null>(null);
+  const [replyText, setReplyText] = useState('');
 
   // ── Thợ yêu thích ──────────────────────────────────────────────────────
   const isCustomer = user?.active_role !== 'helper';
@@ -138,7 +138,7 @@ export default function HelperPublicProfileScreen() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#F8F9FA' }}>
+    <View style={{ flex: 1, backgroundColor: tc.background }}>
       {/* ── Top Bar (Safe Insets) ────────────────────────────────────── */}
       <View
         style={{
@@ -148,9 +148,9 @@ export default function HelperPublicProfileScreen() {
           paddingHorizontal: 16,
           paddingTop: Math.max(insets.top + 6, 18),
           paddingBottom: 14,
-          backgroundColor: '#fff',
+          backgroundColor: tc.surface,
           borderBottomWidth: 1,
-          borderBottomColor: COLORS.gray[100],
+          borderBottomColor: tc.border,
         }}
       >
         <TouchableOpacity
@@ -160,15 +160,15 @@ export default function HelperPublicProfileScreen() {
           style={{
             width: 40,
             height: 40,
-            borderRadius: 12,
-            backgroundColor: COLORS.gray[100],
+            borderRadius: 14,
+            backgroundColor: tc.subtle,
             alignItems: 'center',
             justifyContent: 'center',
           }}
         >
           <ArrowLeft size={20} color={COLORS.gray[800]} />
         </TouchableOpacity>
-        <Text style={{ fontSize: fs(17), fontWeight: '800', color: COLORS.gray[900] }}>
+        <Text style={{ fontSize: fs(17), fontWeight: '800', color: tc.text }}>
           {lang === 'en' ? 'Verified Helper Profile' : 'Hồ sơ thợ uy tín'}
         </Text>
         {isCustomer ? (
@@ -179,7 +179,7 @@ export default function HelperPublicProfileScreen() {
             style={{
               width: 40,
               height: 40,
-              borderRadius: 12,
+              borderRadius: 14,
               backgroundColor: isFavorite ? '#FDF2F8' : COLORS.gray[100],
               alignItems: 'center',
               justifyContent: 'center',
@@ -217,8 +217,8 @@ export default function HelperPublicProfileScreen() {
                   position: 'absolute',
                   bottom: 0,
                   right: 0,
-                  backgroundColor: '#fff',
-                  borderRadius: 12,
+                  backgroundColor: tc.surface,
+                  borderRadius: 14,
                   padding: 2,
                 }}
               >
@@ -228,11 +228,11 @@ export default function HelperPublicProfileScreen() {
           </View>
 
           <View style={{ alignItems: 'center', gap: 4 }}>
-            <Text style={{ fontSize: fs(20), fontWeight: '900', color: COLORS.gray[900] }}>
+            <Text style={{ fontSize: fs(20), fontWeight: '900', color: tc.text }}>
               {helperName}
             </Text>
             {profile?.working_areas?.length > 0 && (
-              <Text style={{ fontSize: fs(13), color: COLORS.gray[500], fontWeight: '500' }}>
+              <Text style={{ fontSize: fs(13), color: tc.textMuted, fontWeight: '500' }}>
                 {lang === 'en' ? 'Operating in: ' : 'Hoạt động: '}
                 {profile.working_areas.join(', ')}
               </Text>
@@ -310,17 +310,17 @@ export default function HelperPublicProfileScreen() {
                 {ratingScore.toFixed(1)}
               </Text>
             </View>
-            <Text style={{ fontSize: fs(11), color: COLORS.gray[500], fontWeight: '700' }}>
+            <Text style={{ fontSize: fs(11), color: tc.textMuted, fontWeight: '700' }}>
               {profile?.total_reviews || reviewsList.length || 0}{' '}
               {lang === 'en' ? 'reviews' : 'đánh giá'}
             </Text>
           </Card>
 
           <Card style={{ flex: 1, alignItems: 'center', padding: 14, gap: 4 }}>
-            <Text style={{ fontSize: fs(20), fontWeight: '900', color: COLORS.gray[900] }}>
+            <Text style={{ fontSize: fs(20), fontWeight: '900', color: tc.text }}>
               {totalCompleted}
             </Text>
-            <Text style={{ fontSize: fs(11), color: COLORS.gray[500], fontWeight: '700' }}>
+            <Text style={{ fontSize: fs(11), color: tc.textMuted, fontWeight: '700' }}>
               {lang === 'en' ? 'Jobs done' : 'Đơn hoàn tất'}
             </Text>
           </Card>
@@ -329,7 +329,7 @@ export default function HelperPublicProfileScreen() {
             <Text style={{ fontSize: fs(20), fontWeight: '900', color: COLORS.success }}>
               {profile?.completion_rate ?? 100}%
             </Text>
-            <Text style={{ fontSize: fs(11), color: COLORS.gray[500], fontWeight: '700' }}>
+            <Text style={{ fontSize: fs(11), color: tc.textMuted, fontWeight: '700' }}>
               {lang === 'en' ? 'On time' : 'Đúng giờ hẹn'}
             </Text>
           </Card>
@@ -361,7 +361,7 @@ export default function HelperPublicProfileScreen() {
         <Card style={{ gap: 12, padding: 16 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
             <Wrench size={18} color={COLORS.primary} />
-            <Text style={{ fontSize: fs(16), fontWeight: '800', color: COLORS.gray[900] }}>
+            <Text style={{ fontSize: fs(16), fontWeight: '800', color: tc.text }}>
               {lang === 'en' ? 'Specialized Skills' : 'Kỹ năng chuyên sâu'}
             </Text>
           </View>
@@ -372,13 +372,13 @@ export default function HelperPublicProfileScreen() {
                 <View
                   key={skill}
                   style={{
-                    backgroundColor: COLORS.gray[100],
-                    borderRadius: 10,
+                    backgroundColor: tc.subtle,
+                    borderRadius: 8,
                     paddingHorizontal: 12,
                     paddingVertical: 7,
                   }}
                 >
-                  <Text style={{ fontSize: fs(12.5), fontWeight: '700', color: COLORS.gray[800] }}>
+                  <Text style={{ fontSize: fs(12.5), fontWeight: '700', color: tc.text }}>
                     ✓ {skill}
                   </Text>
                 </View>
@@ -389,7 +389,7 @@ export default function HelperPublicProfileScreen() {
           {profile?.bio && (
             <>
               <Separator my={4} />
-              <Text style={{ fontSize: fs(13), color: COLORS.gray[600], lineHeight: 19 }}>
+              <Text style={{ fontSize: fs(13), color: tc.textSecondary, lineHeight: 19 }}>
                 {profile.bio}
               </Text>
             </>
@@ -400,7 +400,7 @@ export default function HelperPublicProfileScreen() {
         <Card style={{ gap: 10, padding: 16 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
             <Calendar size={18} color={COLORS.primary} />
-            <Text style={{ fontSize: fs(16), fontWeight: '800', color: COLORS.gray[900] }}>
+            <Text style={{ fontSize: fs(16), fontWeight: '800', color: tc.text }}>
               {lang === 'en'
                 ? 'Reference Pricing & Working Hours'
                 : 'Bảng giá tham khảo & Khung giờ rảnh'}
@@ -410,7 +410,7 @@ export default function HelperPublicProfileScreen() {
           <View
             style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4 }}
           >
-            <Text style={{ fontSize: fs(13.5), color: COLORS.gray[600] }}>
+            <Text style={{ fontSize: fs(13.5), color: tc.textSecondary }}>
               {lang === 'en' ? 'Hourly wage:' : 'Công thợ theo giờ:'}
             </Text>
             <Text style={{ fontSize: fs(14), fontWeight: '800', color: COLORS.primary }}>
@@ -421,7 +421,7 @@ export default function HelperPublicProfileScreen() {
           <View
             style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4 }}
           >
-            <Text style={{ fontSize: fs(13.5), color: COLORS.gray[600] }}>
+            <Text style={{ fontSize: fs(13.5), color: tc.textSecondary }}>
               {lang === 'en' ? 'Basic electrical & plumbing package:' : 'Gói sửa điện nước cơ bản:'}
             </Text>
             <Text style={{ fontSize: fs(14), fontWeight: '800', color: COLORS.primary }}>
@@ -431,15 +431,15 @@ export default function HelperPublicProfileScreen() {
 
           <View
             style={{
-              backgroundColor: COLORS.gray[50],
+              backgroundColor: tc.background,
               padding: 10,
-              borderRadius: 10,
+              borderRadius: 8,
               marginTop: 4,
             }}
           >
-            <Text style={{ fontSize: fs(12.5), color: COLORS.gray[600], fontWeight: '600' }}>
+            <Text style={{ fontSize: fs(12.5), color: tc.textSecondary, fontWeight: '600' }}>
               {lang === 'en' ? 'Working hours: ' : 'Khung giờ làm việc: '}
-              <Text style={{ color: COLORS.gray[900], fontWeight: '800' }}>
+              <Text style={{ color: tc.text, fontWeight: '800' }}>
                 {profile?.availability?.start_time || '07:00'} –{' '}
                 {profile?.availability?.end_time || '19:00'}
               </Text>{' '}
@@ -455,7 +455,7 @@ export default function HelperPublicProfileScreen() {
           >
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
               <ThumbsUp size={18} color={COLORS.primary} />
-              <Text style={{ fontSize: fs(16), fontWeight: '800', color: COLORS.gray[900] }}>
+              <Text style={{ fontSize: fs(16), fontWeight: '800', color: tc.text }}>
                 {lang === 'en' ? 'Customer Reviews' : 'Khách hàng đánh giá'} (
                 {profile?.total_reviews || reviewsList.length || 0})
               </Text>
@@ -466,14 +466,14 @@ export default function HelperPublicProfileScreen() {
           {reviewsList.length === 0 ? (
             <View
               style={{
-                backgroundColor: COLORS.gray[50],
+                backgroundColor: tc.background,
                 padding: 20,
                 borderRadius: 14,
                 alignItems: 'center',
                 gap: 8,
               }}
             >
-              <Text style={{ fontSize: fs(14), fontWeight: '700', color: COLORS.gray[700] }}>
+              <Text style={{ fontSize: fs(14), fontWeight: '700', color: tc.textSecondary }}>
                 {lang === 'en'
                   ? 'No reviews from customers yet'
                   : 'Chưa có đánh giá nào từ khách hàng'}
@@ -481,7 +481,7 @@ export default function HelperPublicProfileScreen() {
               <Text
                 style={{
                   fontSize: fs(12),
-                  color: COLORS.gray[500],
+                  color: tc.textMuted,
                   textAlign: 'center',
                   lineHeight: 18,
                 }}
@@ -495,7 +495,7 @@ export default function HelperPublicProfileScreen() {
             reviewsList.map((r: any) => (
               <View
                 key={r._id}
-                style={{ backgroundColor: COLORS.gray[50], padding: 12, borderRadius: 12, gap: 6 }}
+                style={{ backgroundColor: tc.background, padding: 12, borderRadius: 14, gap: 6 }}
               >
                 <View
                   style={{
@@ -504,36 +504,112 @@ export default function HelperPublicProfileScreen() {
                     alignItems: 'center',
                   }}
                 >
-                  <Text style={{ fontWeight: '800', fontSize: fs(14), color: COLORS.gray[900] }}>
+                  <Text style={{ fontWeight: '800', fontSize: fs(14), color: tc.text }}>
                     {r.customer_id?.full_name ||
                       (lang === 'en' ? 'Anonymous Customer' : 'Khách hàng ẩn danh')}
                   </Text>
                   <StarRating rating={r.rating} size={12} />
                 </View>
                 {r.comment && (
-                  <Text style={{ fontSize: fs(13), color: COLORS.gray[700], lineHeight: 18 }}>
+                  <Text style={{ fontSize: fs(13), color: tc.textSecondary, lineHeight: 18 }}>
                     "{r.comment}"
                   </Text>
                 )}
-                {r.helper_reply && (
+                {r.admin_reply && (
                   <View
                     style={{
-                      backgroundColor: '#fff',
+                      backgroundColor: tc.surface,
                       padding: 8,
                       borderRadius: 8,
                       marginTop: 4,
                       borderLeftWidth: 3,
-                      borderLeftColor: COLORS.primary,
+                      borderLeftColor: COLORS.gray[400],
                     }}
                   >
                     <Text
-                      style={{ fontSize: fs(12), color: COLORS.gray[600], fontStyle: 'italic' }}
+                      style={{ fontSize: fs(12), color: tc.textSecondary, fontStyle: 'italic' }}
                     >
-                      {lang === 'en' ? 'Helper replied: ' : 'Thợ phản hồi: '}"{r.helper_reply}"
+                      {lang === 'en' ? 'Admin replied: ' : 'Admin phản hồi: '}"{r.admin_reply}"
                     </Text>
                   </View>
                 )}
-                <Text style={{ fontSize: fs(11), color: COLORS.gray[500], marginTop: 2 }}>
+                {/* B1: thợ trả lời đánh giá (chỉ chủ hồ sơ, mỗi đánh giá 1 lần) */}
+                {isOwnProfile && !r.helper_reply && (
+                  <View style={{ marginTop: 6, gap: 8 }}>
+                    {replyingId === r._id ? (
+                      <>
+                        <TextInput
+                          value={replyText}
+                          onChangeText={setReplyText}
+                          placeholder={
+                            lang === 'en'
+                              ? 'Write your reply to this review...'
+                              : 'Viết phản hồi cho đánh giá này...'
+                          }
+                          placeholderTextColor={COLORS.gray[400]}
+                          multiline
+                          style={{
+                            backgroundColor: tc.surface,
+                            borderWidth: 1,
+                            borderColor: tc.border,
+                            borderRadius: 8,
+                            padding: 10,
+                            fontSize: fs(13),
+                            color: tc.text,
+                            minHeight: 64,
+                            textAlignVertical: 'top',
+                          }}
+                        />
+                        <View style={{ flexDirection: 'row', gap: 8 }}>
+                          <Button
+                            title={lang === 'en' ? 'Send reply' : 'Gửi phản hồi'}
+                            size="sm"
+                            disabled={!replyText.trim() || replyReview.isPending}
+                            onPress={() => {
+                              replyReview.mutate(
+                                { id: r._id, reply: replyText.trim() },
+                                {
+                                  onSuccess: () => {
+                                    setReplyingId(null);
+                                    setReplyText('');
+                                  },
+                                },
+                              );
+                            }}
+                          />
+                          <Button
+                            title={lang === 'en' ? 'Cancel' : 'Hủy'}
+                            variant="outline"
+                            size="sm"
+                            onPress={() => {
+                              setReplyingId(null);
+                              setReplyText('');
+                            }}
+                          />
+                        </View>
+                      </>
+                    ) : (
+                      <TouchableOpacity
+                        activeOpacity={0.7}
+                        onPress={() => {
+                          setReplyingId(r._id);
+                          setReplyText('');
+                        }}
+                      >
+                        <Text
+                          style={{
+                            fontSize: fs(13),
+                            fontWeight: '700',
+                            color: COLORS.primary,
+                          }}
+                        >
+                          {lang === 'en' ? 'Reply to this review' : 'Trả lời đánh giá này'}
+                        </Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                )}
+                <Text style={{ fontSize: fs(11), color: tc.textMuted, marginTop: 2 }}>
                   {dayjs(r.created_at).fromNow()}
                 </Text>
               </View>
@@ -550,11 +626,11 @@ export default function HelperPublicProfileScreen() {
             bottom: 0,
             left: 0,
             right: 0,
-            backgroundColor: '#fff',
+            backgroundColor: tc.surface,
             paddingHorizontal: 20,
             paddingVertical: 14,
             borderTopWidth: 1,
-            borderTopColor: COLORS.gray[100],
+            borderTopColor: tc.border,
             flexDirection: 'row',
             gap: 12,
             shadowColor: '#000',

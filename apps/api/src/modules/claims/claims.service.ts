@@ -17,6 +17,7 @@ import { CreateClaimDto, ReviewClaimDto } from './dto/claim.dto';
 import { Job, JobDocument, Contract, ContractDocument } from '../jobs/schemas/job.schema';
 import { JobStatus, UserRole } from '@homemate/types';
 import { NotificationsService } from '../notifications/notifications.service';
+import { NOTIFICATION_TYPES } from '@homemate/constants';
 import { PaymentsService } from '../payments/payments.service';
 
 const OPEN_STATUSES: InsuranceClaimStatus[] = ['submitted', 'under_review'];
@@ -106,7 +107,7 @@ export class ClaimsService {
     // A77: Báo cho Admin khi có yêu cầu bồi thường mới
     void this.notificationsService
       .notifyAdmins({
-        type: 'claim_submitted',
+        type: NOTIFICATION_TYPES.CLAIM_SUBMITTED,
         title: 'Có yêu cầu bồi thường mới',
         body: `Khách hàng gửi yêu cầu bồi thường ${(dto.requested_amount ?? 0).toLocaleString('vi-VN')}₫ cho đơn #${dto.job_id.slice(-6)}`,
         payload: { job_id: dto.job_id, claim_id: String(claim._id) },
@@ -365,7 +366,7 @@ export class ClaimsService {
     const customerId = this.idOf(claim.customer_id as unknown as Types.ObjectId);
     await this.notificationsService.create({
       userId: customerId,
-      type: 'insurance_claim_update',
+      type: NOTIFICATION_TYPES.INSURANCE_CLAIM_UPDATE,
       title,
       body,
       // job_id bắt buộc phải có: màn hình claim mở theo job (/claim/[jobId]),

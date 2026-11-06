@@ -19,6 +19,9 @@ import {
   Headset,
   Siren,
   CalendarClock,
+  Coins,
+  GitMerge,
+  MessageSquare,
   Menu,
   X,
 } from 'lucide-react';
@@ -38,6 +41,9 @@ const navItems = [
   { href: '/support', label: 'Hỗ trợ trực tuyến', icon: Headset },
   { href: '/payments', label: 'Thanh toán & Rút tiền', icon: CreditCard },
   { href: '/reviews', label: 'Đánh giá & Phản hồi', icon: Star },
+  { href: '/loyalty', label: 'Điểm thưởng Loyalty', icon: Coins },
+  { href: '/matching', label: 'Ghép thợ Hungarian', icon: GitMerge },
+  { href: '/feedback', label: 'Góp ý', icon: MessageSquare },
   { href: '/analytics', label: 'Thống kê & Báo cáo', icon: BarChart3 },
   { href: '/notifications', label: 'Gửi thông báo', icon: Megaphone },
 ];
@@ -121,9 +127,11 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
           <div className="flex items-center justify-between">
             <div className="min-w-0">
               <p className="text-sm font-bold truncate">{user?.full_name || 'Admin System'}</p>
-              <p className="text-xs text-muted-foreground truncate">
-                {user?.phone || '0999999999'}
-              </p>
+              {user?.phone ? (
+                <p className="text-xs text-muted-foreground truncate">{user.phone}</p>
+              ) : user?.email ? (
+                <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+              ) : null}
             </div>
             <button
               onClick={handleLogout}
@@ -133,9 +141,11 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
               <LogOut className="h-4 w-4" />
             </button>
           </div>
-          <p className="text-[11px] text-muted-foreground/60 text-center">
-            Green House v1.0.0 • Production Ready
-          </p>
+          {process.env.NEXT_PUBLIC_APP_VERSION && (
+            <p className="text-[11px] text-muted-foreground/60 text-center">
+              Green House v{process.env.NEXT_PUBLIC_APP_VERSION}
+            </p>
+          )}
         </div>
       </aside>
 

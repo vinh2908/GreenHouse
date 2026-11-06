@@ -435,7 +435,7 @@ export const LiveTrackingMap = React.memo(LiveTrackingMapComponent);
 const styles = StyleSheet.create({
   container: {
     width: '100%',
-    borderRadius: 20,
+    borderRadius: 14,
     overflow: 'hidden',
     backgroundColor: '#e2e8f0',
     position: 'relative',
@@ -450,7 +450,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   statusText: { color: 'white', fontSize: fs(13), lineHeight: 18, fontWeight: '700', flex: 1 },
-  dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#00b14f' },
+  dot: { width: 8, height: 8, borderRadius: 8, backgroundColor: '#00b14f' },
   error: {
     position: 'absolute',
     bottom: 10,
@@ -458,7 +458,7 @@ const styles = StyleSheet.create({
     right: 10,
     backgroundColor: '#fef3c7',
     padding: 12,
-    borderRadius: 10,
+    borderRadius: 8,
   },
   navigation: {
     padding: 14,

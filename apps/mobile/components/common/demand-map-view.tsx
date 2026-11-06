@@ -5,7 +5,7 @@ import { useMemo } from 'react';
 import { Platform, View } from 'react-native';
 import { WebView } from 'react-native-webview';
 import type { DemandArea } from '@/hooks/use-api';
-import { COLORS } from '@/components/ui';
+import { COLORS, useThemeColors } from '@/components/ui';
 import { useTranslation } from '@/hooks/use-i18n';
 
 export const DANANG_CENTER = { latitude: 16.0544, longitude: 108.2022 };
@@ -247,6 +247,7 @@ const demandMapHtml = (
 
 export function DemandMapView({ areas, focus, height = 300, userCoords }: Props) {
   const { lang } = useTranslation();
+  const tc = useThemeColors();
   const withCoords = useMemo(
     () => (areas ?? []).filter(a => a.lat != null && a.lng != null),
     [areas],
@@ -277,9 +278,9 @@ export function DemandMapView({ areas, focus, height = 300, userCoords }: Props)
     <View
       style={{
         height,
-        borderRadius: 16,
+        borderRadius: 14,
         overflow: 'hidden',
-        backgroundColor: COLORS.gray[100],
+        backgroundColor: tc.subtle,
       }}
     >
       {Platform.OS === 'web' ? (
@@ -290,7 +291,7 @@ export function DemandMapView({ areas, focus, height = 300, userCoords }: Props)
             width: '100%',
             height: '100%',
             border: 'none',
-            backgroundColor: COLORS.gray[100],
+            backgroundColor: tc.subtle,
           }}
           title={lang === 'en' ? 'Demand map' : 'Bản đồ nhu cầu'}
         />
@@ -303,7 +304,7 @@ export function DemandMapView({ areas, focus, height = 300, userCoords }: Props)
           javaScriptEnabled
           domStorageEnabled
           androidLayerType="hardware"
-          style={{ flex: 1, backgroundColor: COLORS.gray[100] }}
+          style={{ flex: 1, backgroundColor: tc.subtle }}
         />
       )}
     </View>

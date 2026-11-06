@@ -13,7 +13,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { ArrowLeft, MapPin, Moon, Flame } from 'lucide-react-native';
 import { useDemandMap, useHelperProfile, type DemandArea } from '@/hooks/use-api';
-import { Card, COLORS, EmptyState } from '@/components/ui';
+import { Card, COLORS, EmptyState, useThemeColors } from '@/components/ui';
 import { DemandMapView } from '@/components/common/demand-map-view';
 import { useTranslation } from '@/hooks/use-i18n';
 
@@ -21,6 +21,7 @@ export default function DemandMapScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { t, fs } = useTranslation();
+  const tc = useThemeColors();
   const { data: helperProfile } = useHelperProfile();
   const { data: areas, isLoading, isRefetching, refetch } = useDemandMap();
   const [focus, setFocus] = useState<DemandArea | null>(null);
@@ -41,13 +42,13 @@ export default function DemandMapScreen() {
   const activeFocus = focus ?? sorted[0] ?? null;
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#F8F9FA' }}>
+    <View style={{ flex: 1, backgroundColor: tc.background }}>
       {/* Header */}
       <View
         style={{
-          backgroundColor: '#FFFFFF',
+          backgroundColor: tc.surface,
           borderBottomWidth: 1,
-          borderBottomColor: COLORS.gray[100],
+          borderBottomColor: tc.border,
           paddingHorizontal: 16,
           paddingTop: Math.max(insets.top + 8, 20),
           paddingBottom: 14,
@@ -62,8 +63,8 @@ export default function DemandMapScreen() {
           style={{
             width: 38,
             height: 38,
-            borderRadius: 12,
-            backgroundColor: COLORS.gray[100],
+            borderRadius: 14,
+            backgroundColor: tc.subtle,
             alignItems: 'center',
             justifyContent: 'center',
           }}
@@ -71,10 +72,10 @@ export default function DemandMapScreen() {
           <ArrowLeft size={20} color={COLORS.gray[800]} />
         </TouchableOpacity>
         <View style={{ flex: 1 }}>
-          <Text style={{ fontSize: fs(19), fontWeight: '800', color: COLORS.gray[900] }}>
+          <Text style={{ fontSize: fs(19), fontWeight: '800', color: tc.text }}>
             {t('demand_map.title')}
           </Text>
-          <Text style={{ fontSize: fs(12), color: COLORS.gray[500], marginTop: 2 }}>
+          <Text style={{ fontSize: fs(12), color: tc.textMuted, marginTop: 2 }}>
             {totalJobs > 0
               ? t('demand_map.total_summary', { count: totalJobs, areas: sorted.length })
               : t('demand_map.subtitle_empty')}
@@ -100,7 +101,7 @@ export default function DemandMapScreen() {
         {isLoading ? (
           <Card style={{ alignItems: 'center', paddingVertical: 24, gap: 10 }}>
             <ActivityIndicator size="small" color={COLORS.primary} />
-            <Text style={{ fontSize: fs(13), color: COLORS.gray[500] }}>
+            <Text style={{ fontSize: fs(13), color: tc.textMuted }}>
               {t('demand_map.loading')}
             </Text>
           </Card>
@@ -136,7 +137,7 @@ export default function DemandMapScreen() {
                     style={{
                       width: 40,
                       height: 40,
-                      borderRadius: 12,
+                      borderRadius: 14,
                       backgroundColor: idx === 0 ? '#DCFCE7' : COLORS.gray[100],
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -149,11 +150,11 @@ export default function DemandMapScreen() {
                     )}
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text style={{ fontWeight: '800', fontSize: fs(15), color: COLORS.gray[900] }}>
+                    <Text style={{ fontWeight: '800', fontSize: fs(15), color: tc.text }}>
                       {area.district}
                       {area.city ? `, ${area.city}` : ''}
                     </Text>
-                    <Text style={{ fontSize: fs(12.5), color: COLORS.gray[500], marginTop: 2 }}>
+                    <Text style={{ fontSize: fs(12.5), color: tc.textMuted, marginTop: 2 }}>
                       {area.open_jobs} {t('demand_map.jobs_waiting_quotes')}
                       {area.fixed_price_jobs
                         ? ` · ${t('demand_map.fixed_price_count', { count: area.fixed_price_jobs })}`

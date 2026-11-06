@@ -160,6 +160,82 @@ export function useAdminReviews(params: {
   });
 }
 
+export function useAdminReplyReview() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, reply }: { id: string; reply: string }) =>
+      apiClient.patch(`/reviews/admin/${id}/reply`, { reply }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'reviews'] }),
+  });
+}
+
+export function useAdminHideReview() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, hidden }: { id: string; hidden: boolean }) =>
+      apiClient.patch(`/reviews/admin/${id}/hide`, { hidden }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'reviews'] }),
+  });
+}
+
+export function useAdminDeleteReview() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => apiClient.delete(`/reviews/admin/${id}`),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'reviews'] }),
+  });
+}
+
+// ─── Loyalty (B2) ─────────────────────────────────────────────────────────────
+
+export interface AdminLoyaltyAccount {
+  user_id: string;
+  points_balance: number;
+  lifetime_points: number;
+  tier: string;
+  tier_label: string;
+  next_tier_at: number | null;
+  points_to_next_tier: number;
+  redemption_cap_percent: number;
+  earn_vnd_per_point: number;
+  point_value_vnd: number;
+  min_redeem_points: number;
+}
+
+export interface AdminLoyaltyTransaction {
+  _id: string;
+  type: string;
+  points: number;
+  balance_after: number;
+  note?: string;
+  created_at: string;
+}
+
+export function useAdminLoyaltyUser(userId?: string) {
+  return useQuery({
+    queryKey: ['admin', 'loyalty', userId],
+    queryFn: async () => {
+      const { data } = await apiClient.get(`/admin/loyalty/users/${userId}`);
+      return data.data as {
+        account: AdminLoyaltyAccount;
+        recent_history: AdminLoyaltyTransaction[];
+      };
+    },
+    enabled: !!userId,
+  });
+}
+
+export function useAdminAdjustLoyalty() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ userId, points, note }: { userId: string; points: number; note?: string }) =>
+      apiClient.post(`/admin/loyalty/users/${userId}/adjust`, { points, note }),
+    onSuccess: (_d, vars) => {
+      qc.invalidateQueries({ queryKey: ['admin', 'loyalty', vars.userId] });
+    },
+  });
+}
+
 // ─── Analytics ────────────────────────────────────────────────────────────────
 
 export function useAnalyticsSummary() {
@@ -728,6 +804,69 @@ export function useAdminMonthlyContracts(params?: {
         limit: number;
         total_pages: number;
       };
+    },
+  });
+}
+
+export function useAdminApproveMonthlyContract() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => apiClient.patch(`/monthly-contracts/admin/${id}/approve`),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'monthly-contracts'] }),
+  });
+}
+
+export function useAdminCancelMonthlyContract() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, reason }: { id: string; reason?: string }) =>
+      apiClient.patch(`/monthly-contracts/admin/${id}/cancel`, { reason }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'monthly-contracts'] }),
+  });
+}
+
+export function useAdminEndMonthlyContract() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, reason }: { id: string; reason?: string }) =>
+      apiClient.patch(`/monthly-contracts/admin/${id}/end`, { reason }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'monthly-contracts'] }),
+  });
+}
+
+// ─── Matching / Hungarian (B6) ──────────────────────────────────────────────────
+
+export interface OptimalHelper {
+  job: { _id: string; title: string; district: string };
+  helper: {
+    _id: string;
+    full_name: string;
+    phone: string;
+    average_rating: number;
+    distance_km: number;
+  };
+  match_score: number;
+  match_reasons: string[];
+}
+
+export function useOptimalHelpers(jobId?: string) {
+  return useQuery({
+    queryKey: ['admin', 'matching', 'optimal-helpers', jobId],
+    queryFn: async () => {
+      const { data } = await apiClient.get(`/matching/jobs/${jobId}/optimal-helpers`, {
+        params: { limit: 10 },
+      });
+      return data.data as OptimalHelper[];
+    },
+    enabled: !!jobId,
+  });
+}
+
+export function useMatchBatch() {
+  return useMutation({
+    mutationFn: async () => {
+      const { data } = await apiClient.post('/matching/batch');
+      return data.data;
     },
   });
 }

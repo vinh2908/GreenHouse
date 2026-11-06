@@ -241,7 +241,7 @@ export class DisputesService {
       await this.notificationsService
         .create({
           userId: target,
-          type: NOTIFICATION_TYPES.SYSTEM,
+          type: NOTIFICATION_TYPES.DISPUTE_UPDATED,
           title: '⚖️ Hồ sơ tranh chấp có cập nhật',
           body: `Đơn "${job.title}": ${role === 'admin' ? 'Admin vừa phản hồi' : 'Đối phương vừa bổ sung thông tin'} trong hồ sơ tranh chấp.`,
           payload: { job_id: jobId },
@@ -318,7 +318,7 @@ export class DisputesService {
       await this.notificationsService
         .create({
           userId: String(otherParty),
-          type: NOTIFICATION_TYPES.SYSTEM,
+          type: NOTIFICATION_TYPES.DISPUTE_APPEALED,
           title: '⚖️ Phán quyết tranh chấp bị kháng cáo',
           body: `Đơn "${job.title}" đang được Admin xem xét lại sau kháng cáo.`,
           payload: { job_id: jobId },

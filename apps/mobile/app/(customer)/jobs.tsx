@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { formatTime } from '@/utils/date-format';
 import { View, Text, ScrollView, TouchableOpacity, RefreshControl } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -9,7 +10,7 @@ import 'dayjs/locale/vi';
 import { useAuthStore } from '@/stores/auth.store';
 import { useMyJobs, useMyProfile } from '@/hooks/use-api';
 import { useTranslation } from '@/hooks/use-i18n';
-import { Card, JobStatusBadge, EmptyState, ErrorState, COLORS, Badge } from '@/components/ui';
+import { Card, JobStatusBadge, EmptyState, ErrorState, COLORS, Badge, useThemeColors } from '@/components/ui';
 
 dayjs.extend(relativeTime);
 
@@ -25,6 +26,7 @@ const TABS = [
 export default function CustomerJobsScreen() {
   const router = useRouter();
   const { t, tService, fs, lang } = useTranslation();
+  const tc = useThemeColors();
   const [activeTab, setActiveTab] = useState(0);
   const user = useAuthStore(s => s.user);
   const isAuthLoading = useAuthStore(s => s.isLoading);
@@ -49,32 +51,32 @@ export default function CustomerJobsScreen() {
 
   if (isAuthLoading || (!isSwitchingRole && isHelper)) {
     return (
-      <View style={{ flex: 1, backgroundColor: '#F8F9FA' }}>
+      <View style={{ flex: 1, backgroundColor: tc.background }}>
         {/* Header skeleton */}
         <View
           style={{
             paddingHorizontal: 20,
             paddingTop: Math.max(insets.top + 8, 20),
             paddingBottom: 14,
-            backgroundColor: '#fff',
+            backgroundColor: tc.surface,
             borderBottomWidth: 1,
-            borderBottomColor: COLORS.gray[100],
+            borderBottomColor: tc.border,
           }}
         >
           <View
             style={{
               width: 140,
               height: 24,
-              borderRadius: 6,
-              backgroundColor: COLORS.gray[200],
+              borderRadius: 8,
+              backgroundColor: tc.border,
             }}
           />
           <View
             style={{
               width: 200,
               height: 14,
-              borderRadius: 4,
-              backgroundColor: COLORS.gray[100],
+              borderRadius: 8,
+              backgroundColor: tc.subtle,
               marginTop: 6,
             }}
           />
@@ -87,9 +89,9 @@ export default function CustomerJobsScreen() {
             paddingHorizontal: 16,
             paddingVertical: 12,
             gap: 10,
-            backgroundColor: '#fff',
+            backgroundColor: tc.surface,
             borderBottomWidth: 1,
-            borderBottomColor: COLORS.gray[100],
+            borderBottomColor: tc.border,
           }}
         >
           {[80, 100, 90, 80].map((w, i) => (
@@ -98,8 +100,8 @@ export default function CustomerJobsScreen() {
               style={{
                 width: w,
                 height: 32,
-                borderRadius: 16,
-                backgroundColor: COLORS.gray[100],
+                borderRadius: 14,
+                backgroundColor: tc.subtle,
               }}
             />
           ))}
@@ -112,8 +114,8 @@ export default function CustomerJobsScreen() {
               key={i}
               style={{
                 height: 110,
-                borderRadius: 16,
-                backgroundColor: COLORS.gray[200],
+                borderRadius: 14,
+                backgroundColor: tc.border,
               }}
             />
           ))}
@@ -123,7 +125,7 @@ export default function CustomerJobsScreen() {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#F8F9FA' }}>
+    <View style={{ flex: 1, backgroundColor: tc.background }}>
       {/* Header */}
       <View
         style={{
@@ -133,19 +135,19 @@ export default function CustomerJobsScreen() {
           paddingHorizontal: 20,
           paddingTop: Math.max(insets.top + 8, 20),
           paddingBottom: 14,
-          backgroundColor: '#fff',
+          backgroundColor: tc.surface,
           borderBottomWidth: 1,
-          borderBottomColor: COLORS.gray[100],
+          borderBottomColor: tc.border,
         }}
       >
         <View>
-          <Text style={{ fontSize: fs(20), fontWeight: '800', color: COLORS.gray[900] }}>
+          <Text style={{ fontSize: fs(20), fontWeight: '800', color: tc.text }}>
             {t('jobs_title')}
           </Text>
-          <Text style={{ fontSize: fs(12), color: COLORS.gray[500], marginTop: 2 }}>
+          <Text style={{ fontSize: fs(12), color: tc.textMuted, marginTop: 2 }}>
             {t('jobs_subtitle')}{' '}
             {dataUpdatedAt
-              ? `• ${lang === 'en' ? 'Updated' : 'Cập nhật'} lúc ${dayjs(dataUpdatedAt).format('HH:mm')}`
+              ? `• ${lang === 'en' ? 'Updated' : 'Cập nhật'} lúc ${formatTime(dayjs(dataUpdatedAt))}`
               : ''}
           </Text>
         </View>
@@ -156,7 +158,7 @@ export default function CustomerJobsScreen() {
             backgroundColor: COLORS.primary,
             width: 38,
             height: 38,
-            borderRadius: 12,
+            borderRadius: 14,
             alignItems: 'center',
             justifyContent: 'center',
             shadowColor: COLORS.primary,
@@ -173,9 +175,9 @@ export default function CustomerJobsScreen() {
       {/* Tabs Pill Bar */}
       <View
         style={{
-          backgroundColor: '#fff',
+          backgroundColor: tc.surface,
           borderBottomWidth: 1,
-          borderBottomColor: COLORS.gray[100],
+          borderBottomColor: tc.border,
         }}
       >
         <ScrollView
@@ -191,7 +193,7 @@ export default function CustomerJobsScreen() {
               style={{
                 paddingHorizontal: 16,
                 paddingVertical: 8,
-                borderRadius: 20,
+                borderRadius: 14,
                 backgroundColor: activeTab === i ? COLORS.primary : COLORS.gray[100],
               }}
             >
@@ -282,7 +284,7 @@ export default function CustomerJobsScreen() {
                       style={{
                         fontWeight: '800',
                         fontSize: fs(15),
-                        color: COLORS.gray[900],
+                        color: tc.text,
                         flex: 1,
                         marginRight: 8,
                         lineHeight: Math.round(fs(20)),
@@ -328,14 +330,14 @@ export default function CustomerJobsScreen() {
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
                       <MapPin size={13} color={COLORS.gray[500]} />
                       <Text
-                        style={{ fontSize: fs(12), color: COLORS.gray[600], fontWeight: '500' }}
+                        style={{ fontSize: fs(12), color: tc.textSecondary, fontWeight: '500' }}
                       >
                         {job.address?.district || job.address?.city || t('jobs_unspecified')}
                       </Text>
                     </View>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
                       <Clock size={13} color={COLORS.gray[400]} />
-                      <Text style={{ fontSize: fs(12), color: COLORS.gray[500] }}>
+                      <Text style={{ fontSize: fs(12), color: tc.textMuted }}>
                         {dayjs(job.created_at)
                           .locale(lang === 'en' ? 'en' : 'vi')
                           .fromNow()}
@@ -350,7 +352,7 @@ export default function CustomerJobsScreen() {
                       alignItems: 'center',
                       paddingTop: 10,
                       borderTopWidth: 1,
-                      borderTopColor: COLORS.gray[100],
+                      borderTopColor: tc.border,
                     }}
                   >
                     {(() => {
@@ -368,7 +370,7 @@ export default function CustomerJobsScreen() {
                           <Text
                             style={{
                               fontSize: fs(12.5),
-                              color: COLORS.gray[600],
+                              color: tc.textSecondary,
                               fontWeight: '700',
                             }}
                           >
@@ -399,10 +401,10 @@ export default function CustomerJobsScreen() {
                       if (job.helper_id) {
                         return (
                           <Text
-                            style={{ fontSize: fs(13), color: COLORS.gray[700], fontWeight: '600' }}
+                            style={{ fontSize: fs(13), color: tc.textSecondary, fontWeight: '600' }}
                           >
                             {t('jobs_helper_label')}{' '}
-                            <Text style={{ color: COLORS.gray[900], fontWeight: '700' }}>
+                            <Text style={{ color: tc.text, fontWeight: '700' }}>
                               {(job.helper_id as any).full_name}
                             </Text>
                           </Text>

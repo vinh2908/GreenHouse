@@ -7,6 +7,8 @@ import { useSettingsStore } from '@/stores/settings.store';
 import Toast from 'react-native-toast-message';
 import { acceptTrackingEvent, GPS_MAX_AGE_MS, TrackingEvent } from '@/services/tracking';
 import { formatNotificationTitle, formatNotificationBody } from '@/services/i18n';
+import { resolveNotificationRoute } from '@/utils/notification-route';
+import { setPendingToastRoute } from '@/services/toast-navigation';
 
 // ─── Connect on auth ─────────────────────────────────────────────────────────
 
@@ -90,10 +92,111 @@ export function useSocketConnection() {
         });
       });
 
+      // B16: listener cho các socket event đang phát mà không ai nghe
+      const lang = () => useSettingsStore.getState().language || 'vi';
+      const unsubJobCreated = socketService.on<{ job_id?: string }>(
+        SOCKET_EVENTS.JOB_CREATED,
+        data => {
+          qc.invalidateQueries({ queryKey: ['jobs', 'available'] });
+          qc.invalidateQueries({ queryKey: ['jobs'] });
+          if (data?.job_id) qc.invalidateQueries({ queryKey: ['job', data.job_id] });
+        },
+      );
+      const unsubPrivateOffer = socketService.on<{ job_id?: string }>(
+        SOCKET_EVENTS.JOB_PRIVATE_OFFER,
+        data => {
+          qc.invalidateQueries({ queryKey: ['jobs', 'available'] });
+          qc.invalidateQueries({ queryKey: ['helper-jobs'] });
+          if (data?.job_id) qc.invalidateQueries({ queryKey: ['job', data.job_id] });
+          Toast.show({
+            type: 'success',
+            text1:
+              lang() === 'en'
+                ? 'A regular customer sent you a private job!'
+                : 'Khách quen gửi việc riêng cho bạn!',
+            visibilityTime: 6000,
+          });
+        },
+      );
+      const unsubTeamInvitation = socketService.on<{ job_id?: string; split_percent?: number }>(
+        SOCKET_EVENTS.TEAM_INVITATION,
+        data => {
+          qc.invalidateQueries({ queryKey: ['team-invitations'] });
+          if (data?.job_id) qc.invalidateQueries({ queryKey: ['job', data.job_id] });
+          Toast.show({
+            type: 'info',
+            text1:
+              lang() === 'en'
+                ? 'You were invited to join a team job'
+                : 'Bạn được mời tham gia đơn nhóm',
+            text2:
+              data?.split_percent != null
+                ? lang() === 'en'
+                  ? `Revenue share ${data.split_percent}%`
+                  : `Tỉ lệ chia tiền công ${data.split_percent}%`
+                : undefined,
+            visibilityTime: 6000,
+          });
+        },
+      );
+      const unsubQuoteAccepted = socketService.on<{ job_id?: string; quote_id?: string }>(
+        SOCKET_EVENTS.QUOTE_ACCEPTED,
+        data => {
+          qc.invalidateQueries({ queryKey: ['jobs'] });
+          qc.invalidateQueries({ queryKey: ['helper-jobs'] });
+          qc.invalidateQueries({ queryKey: ['helper', 'dashboard'] });
+          if (data?.job_id) {
+            qc.invalidateQueries({ queryKey: ['job', data.job_id] });
+            qc.invalidateQueries({ queryKey: ['job', data.job_id, 'quotes'] });
+          }
+          Toast.show({
+            type: 'success',
+            text1:
+              lang() === 'en'
+                ? 'Your quote was accepted!'
+                : 'Báo giá của bạn đã được chấp nhận!',
+            visibilityTime: 5000,
+          });
+        },
+      );
+      const unsubTeamUpdated = socketService.on<{ job_id?: string }>(
+        SOCKET_EVENTS.TEAM_UPDATED,
+        data => {
+          qc.invalidateQueries({ queryKey: ['jobs'] });
+          qc.invalidateQueries({ queryKey: ['helper-jobs'] });
+          qc.invalidateQueries({ queryKey: ['team-invitations'] });
+          if (data?.job_id) qc.invalidateQueries({ queryKey: ['job', data.job_id] });
+        },
+      );
+      const unsubDisputeUpdated = socketService.on<{ job_id?: string; case_id?: string }>(
+        SOCKET_EVENTS.DISPUTE_UPDATED,
+        data => {
+          if (data?.job_id) {
+            qc.invalidateQueries({ queryKey: ['dispute', data.job_id] });
+            qc.invalidateQueries({ queryKey: ['job', data.job_id] });
+          }
+          qc.invalidateQueries({ queryKey: ['jobs'] });
+          Toast.show({
+            type: 'info',
+            text1:
+              lang() === 'en'
+                ? 'A dispute case was updated'
+                : 'Hồ sơ tranh chấp có cập nhật',
+            visibilityTime: 5000,
+          });
+        },
+      );
+
       return () => {
         unsubChat();
         unsubStatus();
         unsubQuoteRejected();
+        unsubJobCreated();
+        unsubPrivateOffer();
+        unsubTeamInvitation();
+        unsubQuoteAccepted();
+        unsubTeamUpdated();
+        unsubDisputeUpdated();
       };
     } else {
       socketService.disconnect();
@@ -328,11 +431,21 @@ export function useNotificationSocket() {
                     : n.body || 'Bạn có tin nhắn mới từ đối tác'
                   : formatNotificationBody(n.body, lang, n.type, n.data);
 
+        // B10: Toast realtime bấm được — resolve route ngay lúc hiện Toast,
+        // ToastCard sẽ điều hướng khi người dùng chạm vào thẻ.
+        const authUser = useAuthStore.getState().user;
+        const toastRoute = resolveNotificationRoute(
+          { type: n.type, title: n.title, body: n.body, data: n.data as any },
+          authUser?.active_role,
+          (authUser as { roles?: string[] } | null)?.roles,
+        );
+        const toastTtl = isNewJob || isAccepted || isNewMsg ? 6000 : 4500;
+        setPendingToastRoute(toastRoute, toastTtl);
         Toast.show({
           type: isNewJob || isAccepted || isNewQuote ? 'success' : 'info',
           text1: title,
           text2: body,
-          visibilityTime: isNewJob || isAccepted || isNewMsg ? 6000 : 4500,
+          visibilityTime: toastTtl,
         });
       }
     });

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { formatDate, formatTime } from '@/utils/date-format';
 import {
   View,
   Text,
@@ -77,7 +78,7 @@ import {
 import { locationService } from '@/services/location.service';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LocationPicker, PickerCoords } from '@/components/common/location-picker';
-import { Avatar, COLORS, ErrorState } from '@/components/ui';
+import { Avatar, COLORS, ErrorState, useThemeColors } from '@/components/ui';
 import { removeVietnameseDiacritics } from '@/utils/search';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
@@ -253,6 +254,7 @@ function calculateDistanceKm(lat1: number, lon1: number, lat2: number, lon2: num
 export default function CustomerHomeScreen() {
   const router = useRouter();
   const { t, tService, fs, lang, textScale, formatVoucherDesc } = useTranslation();
+  const tc = useThemeColors();
   const storedUser = useAuthStore(s => s.user);
   const { data: profile, refetch: refetchProfile } = useMyProfile();
   const user = profile ?? storedUser;
@@ -1169,7 +1171,7 @@ export default function CustomerHomeScreen() {
     recentJobs?.filter((j: { status: string }) => j.status === 'completed') ?? [];
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#F8F9FA' }}>
+    <View style={{ flex: 1, backgroundColor: tc.background }}>
       <LocationPicker
         visible={locationPickerOpen}
         title={t('home_pick_location')}
@@ -1250,7 +1252,7 @@ export default function CustomerHomeScreen() {
                 backgroundColor: currentCoords ? '#F1F5F9' : '#FEF3C7',
                 paddingVertical: 7,
                 paddingHorizontal: 12,
-                borderRadius: 20,
+                borderRadius: 14,
                 gap: 6,
                 maxWidth: '65%',
                 borderWidth: currentCoords ? 0 : 1,
@@ -1282,7 +1284,7 @@ export default function CustomerHomeScreen() {
                 style={{
                   width: 38,
                   height: 38,
-                  borderRadius: 19,
+                  borderRadius: 14,
                   backgroundColor: '#F1F5F9',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -1298,7 +1300,7 @@ export default function CustomerHomeScreen() {
                       right: 6,
                       width: 8,
                       height: 8,
-                      borderRadius: 4,
+                      borderRadius: 8,
                       backgroundColor: COLORS.error,
                       borderWidth: 1.5,
                       borderColor: '#fff',
@@ -1314,7 +1316,7 @@ export default function CustomerHomeScreen() {
                 style={{
                   width: 38,
                   height: 38,
-                  borderRadius: 19,
+                  borderRadius: 14,
                   backgroundColor: '#DCFCE7',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -1334,7 +1336,7 @@ export default function CustomerHomeScreen() {
             style={{
               fontSize: fs(24),
               fontWeight: '900',
-              color: COLORS.gray[900],
+              color: tc.text,
               letterSpacing: -0.3,
             }}
           >
@@ -1343,7 +1345,7 @@ export default function CustomerHomeScreen() {
           <Text
             style={{
               fontSize: fs(14),
-              color: COLORS.gray[500],
+              color: tc.textMuted,
               marginTop: 4,
               fontWeight: '500',
             }}
@@ -1354,7 +1356,7 @@ export default function CustomerHomeScreen() {
           {/* Interactive Search Bar (Item 8 & Item 5 placeholder fix) */}
           <View
             style={{
-              backgroundColor: '#FFFFFF',
+              backgroundColor: tc.surface,
               borderRadius: 14,
               flexDirection: 'row',
               alignItems: 'center',
@@ -1380,7 +1382,7 @@ export default function CustomerHomeScreen() {
                 flex: 1,
                 paddingVertical: Platform.OS === 'ios' ? 12 : 10,
                 fontSize: fs(13),
-                color: COLORS.gray[900],
+                color: tc.text,
                 fontWeight: '500',
               }}
               numberOfLines={1}
@@ -1395,7 +1397,7 @@ export default function CustomerHomeScreen() {
                 onPress={() => setServiceSearchQuery('')}
                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               >
-                <Text style={{ fontSize: fs(13), fontWeight: '700', color: COLORS.gray[500] }}>
+                <Text style={{ fontSize: fs(13), fontWeight: '700', color: tc.textMuted }}>
                   ✕
                 </Text>
               </TouchableOpacity>
@@ -1408,8 +1410,8 @@ export default function CustomerHomeScreen() {
             style={{
               padding: 24,
               margin: 16,
-              backgroundColor: '#fff',
-              borderRadius: 16,
+              backgroundColor: tc.surface,
+              borderRadius: 14,
               borderWidth: 1,
               borderColor: '#E2E8F0',
             }}
@@ -1441,7 +1443,7 @@ export default function CustomerHomeScreen() {
                   marginBottom: 12,
                 }}
               >
-                <Text style={{ fontSize: fs(18), fontWeight: '800', color: COLORS.gray[900] }}>
+                <Text style={{ fontSize: fs(18), fontWeight: '800', color: tc.text }}>
                   {t('home_nearby_helpers_title')}
                 </Text>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
@@ -1449,7 +1451,7 @@ export default function CustomerHomeScreen() {
                     style={{
                       width: 8,
                       height: 8,
-                      borderRadius: 4,
+                      borderRadius: 8,
                       backgroundColor: '#22C55E',
                     }}
                   />
@@ -1463,7 +1465,7 @@ export default function CustomerHomeScreen() {
               <View
                 style={{
                   height: 190,
-                  borderRadius: 18,
+                  borderRadius: 14,
                   overflow: 'hidden',
                   backgroundColor: '#F8FAFC',
                   borderWidth: 1,
@@ -1512,7 +1514,7 @@ export default function CustomerHomeScreen() {
                       style={{
                         width: 44,
                         height: 44,
-                        borderRadius: 22,
+                        borderRadius: 14,
                         backgroundColor: '#FEF3C7',
                         alignItems: 'center',
                         justifyContent: 'center',
@@ -1524,7 +1526,7 @@ export default function CustomerHomeScreen() {
                       style={{
                         fontSize: fs(14),
                         fontWeight: '800',
-                        color: COLORS.gray[800],
+                        color: tc.text,
                         textAlign: 'center',
                       }}
                     >
@@ -1533,7 +1535,7 @@ export default function CustomerHomeScreen() {
                     <Text
                       style={{
                         fontSize: fs(12),
-                        color: COLORS.gray[500],
+                        color: tc.textMuted,
                         textAlign: 'center',
                         lineHeight: Math.round(fs(16)),
                       }}
@@ -1551,7 +1553,7 @@ export default function CustomerHomeScreen() {
                           backgroundColor: COLORS.primary,
                           paddingVertical: 7,
                           paddingHorizontal: 14,
-                          borderRadius: 10,
+                          borderRadius: 8,
                         }}
                       >
                         {isLocatingLive ? (
@@ -1569,17 +1571,17 @@ export default function CustomerHomeScreen() {
                           flexDirection: 'row',
                           alignItems: 'center',
                           gap: 6,
-                          backgroundColor: '#fff',
+                          backgroundColor: tc.surface,
                           borderWidth: 1,
                           borderColor: COLORS.gray[300],
                           paddingVertical: 7,
                           paddingHorizontal: 14,
-                          borderRadius: 10,
+                          borderRadius: 8,
                         }}
                       >
                         <MapPin size={14} color={COLORS.gray[700]} />
                         <Text
-                          style={{ color: COLORS.gray[800], fontWeight: '700', fontSize: fs(12) }}
+                          style={{ color: tc.text, fontWeight: '700', fontSize: fs(12) }}
                         >
                           {t('home_select_manual')}
                         </Text>
@@ -1594,8 +1596,8 @@ export default function CustomerHomeScreen() {
                 <View
                   style={{
                     marginTop: 12,
-                    backgroundColor: '#FFFFFF',
-                    borderRadius: 16,
+                    backgroundColor: tc.surface,
+                    borderRadius: 14,
                     paddingVertical: 20,
                     paddingHorizontal: 16,
                     alignItems: 'center',
@@ -1608,7 +1610,7 @@ export default function CustomerHomeScreen() {
                     style={{
                       width: 44,
                       height: 44,
-                      borderRadius: 22,
+                      borderRadius: 14,
                       backgroundColor: '#F1F5F9',
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -1621,7 +1623,7 @@ export default function CustomerHomeScreen() {
                     style={{
                       fontSize: fs(14),
                       fontWeight: '700',
-                      color: COLORS.gray[800],
+                      color: tc.text,
                       textAlign: 'center',
                     }}
                   >
@@ -1630,7 +1632,7 @@ export default function CustomerHomeScreen() {
                   <Text
                     style={{
                       fontSize: fs(12),
-                      color: COLORS.gray[500],
+                      color: tc.textMuted,
                       marginTop: 4,
                       textAlign: 'center',
                     }}
@@ -1651,7 +1653,7 @@ export default function CustomerHomeScreen() {
                         activeOpacity={0.8}
                         onPress={() => setSelectedHelperId(helper.id)}
                         style={{
-                          backgroundColor: '#FFFFFF',
+                          backgroundColor: tc.surface,
                           borderRadius: 14,
                           paddingVertical: 12,
                           paddingHorizontal: 14,
@@ -1674,7 +1676,7 @@ export default function CustomerHomeScreen() {
                             style={{
                               width: 38,
                               height: 38,
-                              borderRadius: 19,
+                              borderRadius: 14,
                               backgroundColor: isSelected ? '#DCFCE7' : '#F1F5F9',
                               alignItems: 'center',
                               justifyContent: 'center',
@@ -1696,7 +1698,7 @@ export default function CustomerHomeScreen() {
                               style={{
                                 fontSize: fs(15),
                                 fontWeight: '800',
-                                color: COLORS.gray[900],
+                                color: tc.text,
                               }}
                               numberOfLines={1}
                             >
@@ -1710,7 +1712,7 @@ export default function CustomerHomeScreen() {
                                 marginTop: 2,
                               }}
                             >
-                              <Text style={{ fontSize: fs(12), color: COLORS.gray[500] }}>
+                              <Text style={{ fontSize: fs(12), color: tc.textMuted }}>
                                 {helper.status === 'Đang rảnh' || helper.status === 'Sẵn sàng'
                                   ? lang === 'en'
                                     ? 'Available'
@@ -1719,7 +1721,7 @@ export default function CustomerHomeScreen() {
                                 ·
                               </Text>
                               <Star size={12} color="#F59E0B" fill="#F59E0B" />
-                              <Text style={{ fontSize: fs(12), color: COLORS.gray[500] }}>
+                              <Text style={{ fontSize: fs(12), color: tc.textMuted }}>
                                 {helper.rating.toFixed(1)} ({helper.completedJobs}{' '}
                                 {lang === 'en'
                                   ? helper.completedJobs === 1
@@ -1772,7 +1774,7 @@ export default function CustomerHomeScreen() {
               <View
                 style={{
                   backgroundColor: '#16A34A',
-                  borderRadius: 20,
+                  borderRadius: 14,
                   paddingHorizontal: 16,
                   paddingTop: 18,
                   paddingBottom: 20,
@@ -1842,7 +1844,7 @@ export default function CustomerHomeScreen() {
                     backgroundColor: 'rgba(255, 255, 255, 0.22)',
                     paddingHorizontal: 10,
                     paddingVertical: 4,
-                    borderRadius: 20,
+                    borderRadius: 14,
                   }}
                 >
                   <Sparkles size={13} color="#FFFFFF" />
@@ -1913,7 +1915,7 @@ export default function CustomerHomeScreen() {
                 <ScalePressable
                   onPress={handleTakeIssuePhoto}
                   style={{
-                    backgroundColor: '#FFFFFF',
+                    backgroundColor: tc.surface,
                     borderRadius: 14,
                     paddingVertical: 13,
                     flexDirection: 'row',
@@ -1966,7 +1968,7 @@ export default function CustomerHomeScreen() {
                   style={{
                     fontSize: fs(18),
                     fontWeight: '800',
-                    color: COLORS.gray[900],
+                    color: tc.text,
                   }}
                 >
                   {t('home_vouchers_title')}
@@ -1977,8 +1979,8 @@ export default function CustomerHomeScreen() {
                 <View
                   style={{
                     marginHorizontal: 16,
-                    backgroundColor: '#FFFFFF',
-                    borderRadius: 16,
+                    backgroundColor: tc.surface,
+                    borderRadius: 14,
                     padding: 20,
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -1991,13 +1993,13 @@ export default function CustomerHomeScreen() {
                     style={{
                       fontSize: fs(14),
                       fontWeight: '700',
-                      color: COLORS.gray[700],
+                      color: tc.textSecondary,
                       marginTop: 6,
                     }}
                   >
                     {t('voucher_empty_title')}
                   </Text>
-                  <Text style={{ fontSize: fs(12), color: COLORS.gray[500], marginTop: 2 }}>
+                  <Text style={{ fontSize: fs(12), color: tc.textMuted, marginTop: 2 }}>
                     {t('voucher_empty_sub')}
                   </Text>
                 </View>
@@ -2045,8 +2047,8 @@ export default function CustomerHomeScreen() {
                           }}
                           style={{
                             width: 260,
-                            backgroundColor: '#FFFFFF',
-                            borderRadius: 16,
+                            backgroundColor: tc.surface,
+                            borderRadius: 14,
                             padding: 16,
                             borderWidth: 1,
                             borderColor: '#E2E8F0',
@@ -2077,7 +2079,7 @@ export default function CustomerHomeScreen() {
                               style={{
                                 fontSize: fs(22),
                                 fontWeight: '900',
-                                color: COLORS.gray[900],
+                                color: tc.text,
                                 marginTop: 6,
                               }}
                             >
@@ -2086,7 +2088,7 @@ export default function CustomerHomeScreen() {
                             <Text
                               style={{
                                 fontSize: fs(12),
-                                color: COLORS.gray[600],
+                                color: tc.textSecondary,
                                 marginTop: 4,
                                 lineHeight: Math.round(fs(16)),
                               }}
@@ -2112,7 +2114,7 @@ export default function CustomerHomeScreen() {
                               style={{
                                 fontSize: fs(14),
                                 fontWeight: '800',
-                                color: COLORS.gray[900],
+                                color: tc.text,
                               }}
                             >
                               {v.code}
@@ -2158,7 +2160,7 @@ export default function CustomerHomeScreen() {
                           style={{
                             width: i === activeVoucherIdx ? 18 : 6,
                             height: 6,
-                            borderRadius: 3,
+                            borderRadius: 8,
                             backgroundColor: i === activeVoucherIdx ? COLORS.primary : '#CBD5E1',
                           }}
                         />
@@ -2184,7 +2186,7 @@ export default function CustomerHomeScreen() {
                   marginBottom: 14,
                 }}
               >
-                <Text style={{ fontSize: fs(18), fontWeight: '800', color: COLORS.gray[900] }}>
+                <Text style={{ fontSize: fs(18), fontWeight: '800', color: tc.text }}>
                   {t('home_all_services_title')}
                 </Text>
                 <TouchableOpacity
@@ -2229,7 +2231,7 @@ export default function CustomerHomeScreen() {
                           style={{
                             fontSize: fs(14),
                             fontWeight: '700',
-                            color: COLORS.gray[700],
+                            color: tc.textSecondary,
                             textAlign: 'center',
                           }}
                         >
@@ -2238,7 +2240,7 @@ export default function CustomerHomeScreen() {
                         <Text
                           style={{
                             fontSize: fs(12),
-                            color: COLORS.gray[500],
+                            color: tc.textMuted,
                             marginTop: 4,
                             textAlign: 'center',
                           }}
@@ -2320,7 +2322,7 @@ export default function CustomerHomeScreen() {
                               backgroundColor: '#DCFCE7',
                               paddingHorizontal: Math.round(5 * textScale),
                               paddingVertical: Math.round(2 * textScale),
-                              borderRadius: 6,
+                              borderRadius: 8,
                             }}
                           >
                             <Text
@@ -2385,7 +2387,7 @@ export default function CustomerHomeScreen() {
                   onPress={() => router.push('/sos')}
                   style={{
                     backgroundColor: '#DC2626',
-                    borderRadius: 16,
+                    borderRadius: 14,
                     padding: 15,
                     shadowColor: '#DC2626',
                     shadowOffset: { width: 0, height: 4 },
@@ -2406,7 +2408,7 @@ export default function CustomerHomeScreen() {
                         style={{
                           width: 26,
                           height: 26,
-                          borderRadius: 13,
+                          borderRadius: 14,
                           backgroundColor: 'rgba(255,255,255,0.22)',
                           alignItems: 'center',
                           justifyContent: 'center',
@@ -2420,10 +2422,10 @@ export default function CustomerHomeScreen() {
                     </View>
                     <View
                       style={{
-                        backgroundColor: '#FFFFFF',
+                        backgroundColor: tc.surface,
                         paddingHorizontal: 7,
                         paddingVertical: 2,
-                        borderRadius: 6,
+                        borderRadius: 8,
                       }}
                     >
                       <Text style={{ fontSize: fs(10.5), fontWeight: '800', color: '#DC2626' }}>
@@ -2450,19 +2452,19 @@ export default function CustomerHomeScreen() {
                   onPress={() => router.push('/(customer)/booking')}
                   style={{
                     backgroundColor: '#F8FAFC',
-                    borderRadius: 16,
+                    borderRadius: 14,
                     padding: 14,
                     borderWidth: 1,
                     borderColor: '#E2E8F0',
                   }}
                 >
-                  <Text style={{ fontSize: fs(14), fontWeight: '800', color: COLORS.gray[900] }}>
+                  <Text style={{ fontSize: fs(14), fontWeight: '800', color: tc.text }}>
                     {t('home_ai_callout_title')}
                   </Text>
                   <Text
                     style={{
                       fontSize: fs(12),
-                      color: COLORS.gray[600],
+                      color: tc.textSecondary,
                       marginTop: 2,
                       lineHeight: Math.round(fs(16)),
                     }}
@@ -2479,7 +2481,7 @@ export default function CustomerHomeScreen() {
                 style={{
                   fontSize: fs(18),
                   fontWeight: '800',
-                  color: COLORS.gray[900],
+                  color: tc.text,
                   marginBottom: 12,
                 }}
               >
@@ -2488,8 +2490,8 @@ export default function CustomerHomeScreen() {
 
               <View
                 style={{
-                  backgroundColor: '#FFFFFF',
-                  borderRadius: 20,
+                  backgroundColor: tc.surface,
+                  borderRadius: 14,
                   padding: 18,
                   borderWidth: 1,
                   borderColor: '#E2E8F0',
@@ -2502,7 +2504,7 @@ export default function CustomerHomeScreen() {
                     style={{
                       fontSize: fs(14),
                       fontWeight: '700',
-                      color: COLORS.gray[800],
+                      color: tc.text,
                       marginBottom: 8,
                     }}
                   >
@@ -2526,7 +2528,7 @@ export default function CustomerHomeScreen() {
                           style={{
                             paddingHorizontal: 14,
                             paddingVertical: 7,
-                            borderRadius: 20,
+                            borderRadius: 14,
                             backgroundColor: isSel ? '#DCFCE7' : '#F1F5F9',
                             borderWidth: 1,
                             borderColor: isSel ? COLORS.primary : '#E2E8F0',
@@ -2556,10 +2558,10 @@ export default function CustomerHomeScreen() {
                     numberOfLines={3}
                     style={{
                       backgroundColor: '#F8FAFC',
-                      borderRadius: 12,
+                      borderRadius: 14,
                       padding: 12,
                       fontSize: fs(14),
-                      color: COLORS.gray[900],
+                      color: tc.text,
                       borderWidth: 1,
                       borderColor: '#E2E8F0',
                       minHeight: 70,
@@ -2574,7 +2576,7 @@ export default function CustomerHomeScreen() {
                     style={{
                       fontSize: fs(14),
                       fontWeight: '700',
-                      color: COLORS.gray[800],
+                      color: tc.text,
                       marginBottom: 8,
                     }}
                   >
@@ -2586,12 +2588,12 @@ export default function CustomerHomeScreen() {
                     keyboardType="numeric"
                     style={{
                       backgroundColor: '#F8FAFC',
-                      borderRadius: 12,
+                      borderRadius: 14,
                       paddingHorizontal: 14,
                       paddingVertical: 12,
                       fontSize: fs(16),
                       fontWeight: '800',
-                      color: COLORS.gray[900],
+                      color: tc.text,
                       borderWidth: 1,
                       borderColor: '#E2E8F0',
                     }}
@@ -2604,7 +2606,7 @@ export default function CustomerHomeScreen() {
                     style={{
                       fontSize: fs(14),
                       fontWeight: '700',
-                      color: COLORS.gray[800],
+                      color: tc.text,
                     }}
                   >
                     {t('home_quick_time_title')}
@@ -2632,14 +2634,14 @@ export default function CustomerHomeScreen() {
                     <Calendar size={18} color="#16A34A" />
                     <View style={{ flex: 1 }}>
                       <Text
-                        style={{ fontSize: fs(15), fontWeight: '700', color: COLORS.gray[900] }}
+                        style={{ fontSize: fs(15), fontWeight: '700', color: tc.text }}
                         numberOfLines={1}
                       >
                         {(() => {
                           const dt = dayjs(quickDate).locale(lang === 'en' ? 'en' : 'vi');
                           const dow = dt.format('dddd');
                           const capitalizedDow = dow.charAt(0).toUpperCase() + dow.slice(1);
-                          return `${capitalizedDow}, ${dt.format('DD/MM')}`;
+                          return `${capitalizedDow}, ${formatDate(dt)}`;
                         })()}
                       </Text>
                       <Text
@@ -2750,7 +2752,7 @@ export default function CustomerHomeScreen() {
                 style={{
                   fontSize: fs(18),
                   fontWeight: '800',
-                  color: COLORS.gray[900],
+                  color: tc.text,
                   marginBottom: 12,
                 }}
               >
@@ -2762,8 +2764,8 @@ export default function CustomerHomeScreen() {
                 <View
                   style={{
                     flex: 1,
-                    backgroundColor: '#FFFFFF',
-                    borderRadius: 16,
+                    backgroundColor: tc.surface,
+                    borderRadius: 14,
                     padding: 12,
                     borderWidth: 1,
                     borderColor: '#E2E8F0',
@@ -2776,7 +2778,7 @@ export default function CustomerHomeScreen() {
                     style={{
                       fontSize: fs(12),
                       fontWeight: '800',
-                      color: COLORS.gray[900],
+                      color: tc.text,
                       marginTop: 6,
                       textAlign: 'center',
                     }}
@@ -2786,7 +2788,7 @@ export default function CustomerHomeScreen() {
                   <Text
                     style={{
                       fontSize: fs(10),
-                      color: COLORS.gray[500],
+                      color: tc.textMuted,
                       marginTop: 2,
                       textAlign: 'center',
                     }}
@@ -2799,8 +2801,8 @@ export default function CustomerHomeScreen() {
                 <View
                   style={{
                     flex: 1,
-                    backgroundColor: '#FFFFFF',
-                    borderRadius: 16,
+                    backgroundColor: tc.surface,
+                    borderRadius: 14,
                     padding: 12,
                     borderWidth: 1,
                     borderColor: '#E2E8F0',
@@ -2813,7 +2815,7 @@ export default function CustomerHomeScreen() {
                     style={{
                       fontSize: fs(12),
                       fontWeight: '800',
-                      color: COLORS.gray[900],
+                      color: tc.text,
                       marginTop: 6,
                       textAlign: 'center',
                     }}
@@ -2823,7 +2825,7 @@ export default function CustomerHomeScreen() {
                   <Text
                     style={{
                       fontSize: fs(10),
-                      color: COLORS.gray[500],
+                      color: tc.textMuted,
                       marginTop: 2,
                       textAlign: 'center',
                     }}
@@ -2836,8 +2838,8 @@ export default function CustomerHomeScreen() {
                 <View
                   style={{
                     flex: 1,
-                    backgroundColor: '#FFFFFF',
-                    borderRadius: 16,
+                    backgroundColor: tc.surface,
+                    borderRadius: 14,
                     padding: 12,
                     borderWidth: 1,
                     borderColor: '#E2E8F0',
@@ -2850,7 +2852,7 @@ export default function CustomerHomeScreen() {
                     style={{
                       fontSize: fs(12),
                       fontWeight: '800',
-                      color: COLORS.gray[900],
+                      color: tc.text,
                       marginTop: 6,
                       textAlign: 'center',
                     }}
@@ -2860,7 +2862,7 @@ export default function CustomerHomeScreen() {
                   <Text
                     style={{
                       fontSize: fs(10),
-                      color: COLORS.gray[500],
+                      color: tc.textMuted,
                       marginTop: 2,
                       textAlign: 'center',
                     }}
@@ -2878,7 +2880,7 @@ export default function CustomerHomeScreen() {
                 style={{
                   fontSize: fs(18),
                   fontWeight: '800',
-                  color: COLORS.gray[900],
+                  color: tc.text,
                   marginBottom: 12,
                 }}
               >
@@ -2972,8 +2974,8 @@ export default function CustomerHomeScreen() {
                     statusDesc = t('home_status_processing_desc');
                   }
 
-                  const displayDate = dayjs(j.scheduled_at || j.created_at).format('DD/MM');
-                  const displayTime = j.preferred_time_start || dayjs(j.created_at).format('HH:mm');
+                  const displayDate = formatDate(dayjs(j.scheduled_at || j.created_at));
+                  const displayTime = j.preferred_time_start || formatTime(dayjs(j.created_at));
                   const displayDistrict =
                     j.address?.district || j.address?.city || currentLocationName.split(',')[0];
 
@@ -2985,8 +2987,8 @@ export default function CustomerHomeScreen() {
                         router.push({ pathname: '/job-detail/[id]', params: { id: j._id } })
                       }
                       style={{
-                        backgroundColor: '#FFFFFF',
-                        borderRadius: 18,
+                        backgroundColor: tc.surface,
+                        borderRadius: 14,
                         padding: 16,
                         borderWidth: 1.5,
                         borderColor: '#E2E8F0',
@@ -3003,7 +3005,7 @@ export default function CustomerHomeScreen() {
                           style={{
                             fontSize: fs(16),
                             fontWeight: '800',
-                            color: COLORS.gray[900],
+                            color: tc.text,
                             flex: 1,
                           }}
                           numberOfLines={1}
@@ -3026,7 +3028,7 @@ export default function CustomerHomeScreen() {
                         </View>
                       </View>
 
-                      <Text style={{ fontSize: fs(12), color: COLORS.gray[500], marginTop: 4 }}>
+                      <Text style={{ fontSize: fs(12), color: tc.textMuted, marginTop: 4 }}>
                         {displayDate} · {displayTime} · {displayDistrict} — {statusDesc}
                       </Text>
 
@@ -3048,7 +3050,7 @@ export default function CustomerHomeScreen() {
                               style={{
                                 width: 14,
                                 height: 14,
-                                borderRadius: 7,
+                                borderRadius: 8,
                                 backgroundColor: st.active ? COLORS.primary : '#E2E8F0',
                                 borderWidth: 2,
                                 borderColor: '#FFFFFF',
@@ -3073,8 +3075,8 @@ export default function CustomerHomeScreen() {
                 /* Clean Empty State khi không có việc đang làm (Requirement 2) */
                 <View
                   style={{
-                    backgroundColor: '#FFFFFF',
-                    borderRadius: 18,
+                    backgroundColor: tc.surface,
+                    borderRadius: 14,
                     padding: 22,
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -3087,7 +3089,7 @@ export default function CustomerHomeScreen() {
                     style={{
                       width: 44,
                       height: 44,
-                      borderRadius: 22,
+                      borderRadius: 14,
                       backgroundColor: '#F8FAFC',
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -3100,7 +3102,7 @@ export default function CustomerHomeScreen() {
                     style={{
                       fontSize: fs(14.5),
                       fontWeight: '700',
-                      color: COLORS.gray[800],
+                      color: tc.text,
                       textAlign: 'center',
                     }}
                   >
@@ -3109,7 +3111,7 @@ export default function CustomerHomeScreen() {
                   <Text
                     style={{
                       fontSize: fs(12),
-                      color: COLORS.gray[500],
+                      color: tc.textMuted,
                       marginTop: 4,
                       textAlign: 'center',
                     }}
@@ -3127,9 +3129,9 @@ export default function CustomerHomeScreen() {
                 const pastPrice =
                   pastJob.final_price || pastJob.agreed_price || pastJob.target_price;
                 const displayPriceStr = pastPrice ? `${pastPrice.toLocaleString('vi-VN')}₫` : '';
-                const completedDateStr = dayjs(
+                const completedDateStr = formatDate(dayjs(
                   pastJob.completed_at || pastJob.updated_at || pastJob.created_at,
-                ).format('DD/MM/YYYY');
+                ));
                 return (
                   <View style={{ paddingHorizontal: 16, marginTop: 24 }}>
                     <View
@@ -3141,7 +3143,7 @@ export default function CustomerHomeScreen() {
                       }}
                     >
                       <Text
-                        style={{ fontSize: fs(18), fontWeight: '800', color: COLORS.gray[900] }}
+                        style={{ fontSize: fs(18), fontWeight: '800', color: tc.text }}
                       >
                         {t('home_recent_title')}
                       </Text>
@@ -3160,8 +3162,8 @@ export default function CustomerHomeScreen() {
                     {/* Past job with 1-click [Đặt lại] button */}
                     <View
                       style={{
-                        backgroundColor: '#FFFFFF',
-                        borderRadius: 18,
+                        backgroundColor: tc.surface,
+                        borderRadius: 14,
                         padding: 16,
                         borderWidth: 1,
                         borderColor: '#E2E8F0',
@@ -3177,7 +3179,7 @@ export default function CustomerHomeScreen() {
                           style={{
                             width: 44,
                             height: 44,
-                            borderRadius: 12,
+                            borderRadius: 14,
                             backgroundColor: '#DCFCE7',
                             alignItems: 'center',
                             justifyContent: 'center',
@@ -3188,12 +3190,12 @@ export default function CustomerHomeScreen() {
 
                         <View style={{ flex: 1 }}>
                           <Text
-                            style={{ fontSize: fs(15), fontWeight: '800', color: COLORS.gray[900] }}
+                            style={{ fontSize: fs(15), fontWeight: '800', color: tc.text }}
                             numberOfLines={1}
                           >
                             {pastJob.title}
                           </Text>
-                          <Text style={{ fontSize: fs(12), color: COLORS.gray[500], marginTop: 2 }}>
+                          <Text style={{ fontSize: fs(12), color: tc.textMuted, marginTop: 2 }}>
                             {t('status_completed')} · {completedDateStr}
                             {displayPriceStr ? ` · ${displayPriceStr}` : ''}
                           </Text>
@@ -3216,12 +3218,12 @@ export default function CustomerHomeScreen() {
                           });
                         }}
                         style={{
-                          backgroundColor: '#FFFFFF',
+                          backgroundColor: tc.surface,
                           borderWidth: 1.5,
                           borderColor: COLORS.primary,
                           paddingHorizontal: 14,
                           paddingVertical: 8,
-                          borderRadius: 12,
+                          borderRadius: 14,
                         }}
                       >
                         <Text

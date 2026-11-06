@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { TicketPercent, X } from 'lucide-react-native';
 import { useValidateVoucher, type VoucherPreview } from '@/hooks/use-api';
-import { Card, COLORS } from '@/components/ui';
+import { Card, COLORS, useThemeColors } from '@/components/ui';
 import { useTranslation } from '@/hooks/use-i18n';
 
 const fmt = (n: number) => new Intl.NumberFormat('vi-VN').format(n);
@@ -29,6 +29,7 @@ export function VoucherInput({
   const [error, setError] = useState<string | null>(null);
   const validate = useValidateVoucher();
   const { fs, lang } = useTranslation();
+  const tc = useThemeColors();
 
   const handleApply = async () => {
     const trimmed = code.trim();
@@ -66,7 +67,7 @@ export function VoucherInput({
     <Card style={{ gap: 10 }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
         <TicketPercent size={19} color={COLORS.primaryDark} />
-        <Text style={{ fontWeight: '800', fontSize: fs(15), color: COLORS.gray[900] }}>
+        <Text style={{ fontWeight: '800', fontSize: fs(15), color: tc.text }}>
           {lang === 'en' ? 'Discount Voucher' : 'Mã giảm giá'}
         </Text>
       </View>
@@ -75,7 +76,7 @@ export function VoucherInput({
         <View
           style={{
             backgroundColor: COLORS.successLight,
-            borderRadius: 12,
+            borderRadius: 14,
             padding: 12,
             gap: 4,
           }}
@@ -173,13 +174,13 @@ export function VoucherInput({
                 flex: 1,
                 borderWidth: 1,
                 borderColor: error ? COLORS.error : COLORS.gray[200],
-                borderRadius: 12,
+                borderRadius: 14,
                 paddingHorizontal: 12,
                 paddingVertical: 10,
                 fontSize: fs(14),
                 fontWeight: '700',
-                color: COLORS.gray[900],
-                backgroundColor: '#fff',
+                color: tc.text,
+                backgroundColor: tc.surface,
               }}
             />
             <TouchableOpacity
@@ -188,7 +189,7 @@ export function VoucherInput({
               disabled={validate.isPending}
               style={{
                 backgroundColor: COLORS.primary,
-                borderRadius: 12,
+                borderRadius: 14,
                 paddingHorizontal: 16,
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -209,7 +210,7 @@ export function VoucherInput({
               {error}
             </Text>
           ) : (
-            <Text style={{ fontSize: fs(12), color: COLORS.gray[500] }}>
+            <Text style={{ fontSize: fs(12), color: tc.textMuted }}>
               {lang === 'en'
                 ? 'Official discount will be calculated at checkout based on agreed price.'
                 : 'Số tiền giảm chính thức được tính theo giá chốt của đơn khi thanh toán.'}

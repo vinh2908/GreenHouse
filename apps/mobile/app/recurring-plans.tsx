@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { formatDate } from '@/utils/date-format';
 import { View, Text, ScrollView, TouchableOpacity, RefreshControl } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -27,7 +28,7 @@ import {
   type RecurringPlanItem,
 } from '@/hooks/use-api';
 import { useTranslation } from '@/hooks/use-i18n';
-import { Badge, Card, COLORS, EmptyState, LoadingSpinner } from '@/components/ui';
+import { Badge, Card, COLORS, EmptyState, LoadingSpinner, useThemeColors } from '@/components/ui';
 
 const WEEKDAY_LABELS_VI = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
 const WEEKDAY_LABELS_EN = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -79,6 +80,7 @@ export default function RecurringPlansScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { t, fs, lang, tService } = useTranslation();
+  const tc = useThemeColors();
   const { data: plans, isLoading, isRefetching, refetch } = useRecurringPlans();
   const pausePlan = usePauseRecurringPlan();
   const resumePlan = useResumeRecurringPlan();
@@ -104,7 +106,7 @@ export default function RecurringPlansScreen() {
     ]);
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#F8F9FA' }}>
+    <View style={{ flex: 1, backgroundColor: tc.background }}>
       {/* Header */}
       <View
         style={{
@@ -114,9 +116,9 @@ export default function RecurringPlansScreen() {
           paddingHorizontal: 16,
           paddingTop: Math.max(insets.top + 6, 18),
           paddingBottom: 14,
-          backgroundColor: '#fff',
+          backgroundColor: tc.surface,
           borderBottomWidth: 1,
-          borderBottomColor: COLORS.gray[100],
+          borderBottomColor: tc.border,
         }}
       >
         <TouchableOpacity
@@ -126,8 +128,8 @@ export default function RecurringPlansScreen() {
           style={{
             width: 40,
             height: 40,
-            borderRadius: 12,
-            backgroundColor: COLORS.gray[100],
+            borderRadius: 14,
+            backgroundColor: tc.subtle,
             alignItems: 'center',
             justifyContent: 'center',
           }}
@@ -135,10 +137,10 @@ export default function RecurringPlansScreen() {
           <ArrowLeft size={20} color={COLORS.gray[800]} />
         </TouchableOpacity>
         <View style={{ flex: 1 }}>
-          <Text style={{ fontSize: fs(18), fontWeight: '800', color: COLORS.gray[900] }}>
+          <Text style={{ fontSize: fs(18), fontWeight: '800', color: tc.text }}>
             {lang === 'en' ? 'My Recurring Plans' : 'Gói định kỳ của tôi'}
           </Text>
-          <Text style={{ fontSize: fs(12), color: COLORS.gray[500] }}>
+          <Text style={{ fontSize: fs(12), color: tc.textMuted }}>
             {lang === 'en'
               ? 'Automated repeating service — no need to repost each time'
               : 'Việc lặp lại tự động — không cần đăng lại mỗi lần'}
@@ -153,7 +155,7 @@ export default function RecurringPlansScreen() {
             backgroundColor: COLORS.primary,
             width: 38,
             height: 38,
-            borderRadius: 12,
+            borderRadius: 14,
             alignItems: 'center',
             justifyContent: 'center',
           }}
@@ -215,7 +217,7 @@ export default function RecurringPlansScreen() {
                           flex: 1,
                           fontSize: fs(15.5),
                           fontWeight: '800',
-                          color: COLORS.gray[900],
+                          color: tc.text,
                         }}
                         numberOfLines={1}
                       >
@@ -223,7 +225,7 @@ export default function RecurringPlansScreen() {
                       </Text>
                       {statusBadge(plan.status, lang)}
                     </View>
-                    <Text style={{ fontSize: fs(13), color: COLORS.gray[600], marginTop: 6 }}>
+                    <Text style={{ fontSize: fs(13), color: tc.textSecondary, marginTop: 6 }}>
                       {describeSchedule(plan, lang)}
                       {plan.duration_hours
                         ? lang === 'en'
@@ -231,7 +233,7 @@ export default function RecurringPlansScreen() {
                           : ` · ${plan.duration_hours} giờ/buổi`
                         : ''}
                     </Text>
-                    <Text style={{ fontSize: fs(12.5), color: COLORS.gray[500], marginTop: 2 }}>
+                    <Text style={{ fontSize: fs(12.5), color: tc.textMuted, marginTop: 2 }}>
                       {(tService(service) || (lang === 'en' ? 'Service' : 'Dịch vụ')) +
                         (lang === 'en'
                           ? ` · ${plan.jobs_generated || 0} ${plan.jobs_generated === 1 ? 'job' : 'jobs'} created`
@@ -343,6 +345,7 @@ function ActionChip({
   danger?: boolean;
 }) {
   const { fs } = useTranslation();
+  const tc = useThemeColors();
   return (
     <TouchableOpacity
       activeOpacity={0.8}
@@ -374,12 +377,13 @@ function ActionChip({
 function PlanDetail({ planId, lang = 'vi' }: { planId: string; lang?: string }) {
   const router = useRouter();
   const { fs } = useTranslation();
+  const tc = useThemeColors();
   const { data, isLoading } = useRecurringPlanDetail(planId);
   if (isLoading) return <LoadingSpinner size="small" />;
   const jobs = data?.jobs ?? [];
   if (jobs.length === 0) {
     return (
-      <Text style={{ fontSize: fs(12.5), color: COLORS.gray[500] }}>
+      <Text style={{ fontSize: fs(12.5), color: tc.textMuted }}>
         {lang === 'en'
           ? 'No jobs generated from this plan yet.'
           : 'Chưa có đơn nào được sinh từ gói này.'}
@@ -387,8 +391,8 @@ function PlanDetail({ planId, lang = 'vi' }: { planId: string; lang?: string }) 
     );
   }
   return (
-    <View style={{ gap: 6, borderTopWidth: 1, borderTopColor: COLORS.gray[100], paddingTop: 10 }}>
-      <Text style={{ fontSize: fs(13), fontWeight: '800', color: COLORS.gray[800] }}>
+    <View style={{ gap: 6, borderTopWidth: 1, borderTopColor: tc.border, paddingTop: 10 }}>
+      <Text style={{ fontSize: fs(13), fontWeight: '800', color: tc.text }}>
         {lang === 'en' ? 'Generated Jobs' : 'Các đơn đã sinh'}
       </Text>
       {jobs.slice(0, 8).map((job: any) => (
@@ -398,11 +402,11 @@ function PlanDetail({ planId, lang = 'vi' }: { planId: string; lang?: string }) 
           onPress={() => router.push({ pathname: '/job-detail/[id]', params: { id: job._id } })}
           style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 4 }}
         >
-          <Text style={{ flex: 1, fontSize: fs(13), color: COLORS.gray[700] }}>
-            {job.occurrence_date ?? dayjs(job.preferred_date).format('DD/MM/YYYY')} ·{' '}
+          <Text style={{ flex: 1, fontSize: fs(13), color: tc.textSecondary }}>
+            {job.occurrence_date ?? formatDate(dayjs(job.preferred_date))} ·{' '}
             {job.preferred_time_start ?? ''}
           </Text>
-          <Text style={{ fontSize: fs(12), fontWeight: '700', color: COLORS.gray[500] }}>
+          <Text style={{ fontSize: fs(12), fontWeight: '700', color: tc.textMuted }}>
             {job.status}
           </Text>
           <ChevronRight size={15} color={COLORS.gray[400]} />

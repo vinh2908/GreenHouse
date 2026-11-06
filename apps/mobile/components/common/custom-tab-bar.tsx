@@ -4,10 +4,11 @@ import { View, Text, Platform, StyleSheet, useWindowDimensions } from 'react-nat
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Home, Clock, MessageSquare, User, Plus, Briefcase, TrendingUp } from 'lucide-react-native';
-import { COLORS } from '@/components/ui';
+import { COLORS, useThemeColors } from '@/components/ui';
 import { useTranslation, fs } from '@/hooks/use-i18n';
 import { useConversations } from '@/hooks/use-api';
 import { ScalePressable } from '@/components/common/scale-pressable';
+import { lightImpact } from '@/services/haptics';
 
 interface CustomTabBarProps {
   state: any;
@@ -31,6 +32,7 @@ export function CustomTabBar({
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { t } = useTranslation();
+  const tc = useThemeColors();
   const { width } = useWindowDimensions();
   const { data: conversations } = useConversations();
 
@@ -79,10 +81,11 @@ export function CustomTabBar({
   }, [isNarrow, isTabletOrDesktop]);
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: tc.surface }]}>
       <View
         style={[
           styles.tabBar,
+          { backgroundColor: tc.surface, borderTopColor: tc.border },
           {
             height:
               Platform.OS === 'web'
@@ -107,6 +110,8 @@ export function CustomTabBar({
           const isCenterButton = mode === 'customer' && route.name === 'booking';
 
           const onPress = () => {
+            // B20: rung nhẹ khi chuyển tab (chỉ khi chuyển sang tab khác)
+            if (!isFocused) void lightImpact();
             const event = navigation.emit({
               type: 'tabPress',
               target: route.key,
@@ -276,7 +281,7 @@ export function CustomTabBar({
                     style={{
                       width: 4,
                       height: 4,
-                      borderRadius: 2,
+                      borderRadius: 8,
                       backgroundColor: COLORS.primary,
                       marginTop: 2,
                       marginBottom: -6,
@@ -290,7 +295,7 @@ export function CustomTabBar({
                   {
                     fontSize: fs(dims.tabFontSize),
                     letterSpacing: dims.letterSpacing,
-                    color: isFocused ? COLORS.primary : COLORS.gray[500],
+                    color: isFocused ? COLORS.primary : tc.textMuted,
                     fontWeight: isFocused ? '800' : '600',
                   },
                 ]}

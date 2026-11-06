@@ -8,12 +8,13 @@ import { useAuthStore } from '@/stores/auth.store';
 import { useTranslation } from '@/hooks/use-i18n';
 import { useVerifyOtp, useResendOtp } from '@/hooks/use-api';
 import apiClient from '@/services/api-client';
-import { Button, COLORS } from '@/components/ui';
+import { Button, COLORS, useThemeColors } from '@/components/ui';
 
 export default function OtpScreen() {
   const router = useRouter();
   const { phone, email } = useLocalSearchParams<{ phone?: string; email?: string }>();
   const { t, fs, lang } = useTranslation();
+  const tc = useThemeColors();
   const setAuth = useAuthStore(s => s.setAuth);
 
   const verifyOtp = useVerifyOtp();
@@ -113,7 +114,7 @@ export default function OtpScreen() {
   const insets = useSafeAreaInsets();
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#fff', paddingTop: Math.max(insets.top, 16) }}>
+    <View style={{ flex: 1, backgroundColor: tc.surface, paddingTop: Math.max(insets.top, 16) }}>
       <View
         style={{
           flexDirection: 'row',
@@ -129,8 +130,8 @@ export default function OtpScreen() {
           style={{
             width: 40,
             height: 40,
-            borderRadius: 12,
-            backgroundColor: COLORS.gray[100],
+            borderRadius: 14,
+            backgroundColor: tc.subtle,
             alignItems: 'center',
             justifyContent: 'center',
           }}
@@ -138,7 +139,7 @@ export default function OtpScreen() {
           <ArrowLeft size={20} color={COLORS.gray[800]} />
         </TouchableOpacity>
         <Text
-          style={{ fontSize: fs(18), fontWeight: '700', color: COLORS.gray[900], marginLeft: 12 }}
+          style={{ fontSize: fs(18), fontWeight: '700', color: tc.text, marginLeft: 12 }}
         >
           {lang === 'en' ? 'Verify OTP' : 'Xác minh OTP'}
         </Text>
@@ -150,7 +151,7 @@ export default function OtpScreen() {
             style={{
               width: 72,
               height: 72,
-              borderRadius: 36,
+              borderRadius: 999,
               backgroundColor: COLORS.primaryLight,
               alignItems: 'center',
               justifyContent: 'center',
@@ -163,7 +164,7 @@ export default function OtpScreen() {
             style={{
               fontSize: fs(18),
               fontWeight: '700',
-              color: COLORS.gray[900],
+              color: tc.text,
               textAlign: 'center',
             }}
           >
@@ -172,7 +173,7 @@ export default function OtpScreen() {
           <Text
             style={{
               fontSize: fs(14),
-              color: COLORS.gray[500],
+              color: tc.textMuted,
               textAlign: 'center',
               marginTop: 8,
               lineHeight: 20,
@@ -181,7 +182,7 @@ export default function OtpScreen() {
             {lang === 'en'
               ? `A 6-digit OTP was sent to\n`
               : `Mã OTP 6 số đã được gửi đến ${email ? 'email' : 'số điện thoại'}\n`}
-            <Text style={{ fontWeight: '700', color: COLORS.gray[800] }}>{email || phone}</Text>
+            <Text style={{ fontWeight: '700', color: tc.text }}>{email || phone}</Text>
           </Text>
 
           {/* Demo OTP Helper Badge */}
@@ -197,7 +198,7 @@ export default function OtpScreen() {
               borderWidth: 1,
               paddingVertical: 8,
               paddingHorizontal: 14,
-              borderRadius: 12,
+              borderRadius: 14,
               marginTop: 14,
               flexDirection: 'row',
               alignItems: 'center',
@@ -227,11 +228,11 @@ export default function OtpScreen() {
               style={{
                 width: 48,
                 height: 56,
-                borderRadius: 12,
+                borderRadius: 14,
                 textAlign: 'center',
                 fontSize: fs(22),
                 fontWeight: '700',
-                color: COLORS.gray[900],
+                color: tc.text,
                 borderWidth: 2,
                 borderColor: digit ? COLORS.primary : COLORS.gray[200],
                 backgroundColor: digit ? COLORS.primaryLight : COLORS.gray[50],
@@ -249,7 +250,7 @@ export default function OtpScreen() {
         {/* Resend */}
         <View style={{ alignItems: 'center', marginTop: 24 }}>
           {countdown > 0 ? (
-            <Text style={{ color: COLORS.gray[500], fontSize: fs(14) }}>
+            <Text style={{ color: tc.textMuted, fontSize: fs(14) }}>
               {lang === 'en' ? 'Resend in ' : 'Gửi lại sau '}
               <Text style={{ color: COLORS.primary, fontWeight: '600' }}>{countdown}s</Text>
             </Text>

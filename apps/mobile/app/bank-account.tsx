@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { formatDateTime } from '@/utils/date-format';
 import {
   View,
   Text,
@@ -34,7 +35,7 @@ import {
   useTopupWallet,
 } from '@/hooks/use-api';
 import { useTranslation } from '@/hooks/use-i18n';
-import { Button, Card, LoadingSpinner, COLORS, Separator, EmptyState } from '@/components/ui';
+import { Button, Card, LoadingSpinner, COLORS, Separator, EmptyState, useThemeColors } from '@/components/ui';
 
 const POPULAR_BANKS = [
   { code: 'VCB', name: 'Vietcombank', shortName: 'VCB' },
@@ -50,6 +51,7 @@ const POPULAR_BANKS = [
 export default function BankAccountScreen() {
   const router = useRouter();
   const { t, fs, lang, formatTxDesc } = useTranslation();
+  const tc = useThemeColors();
   const { role } = useLocalSearchParams<{ role?: string }>();
 
   const customerPaymentOptions = [
@@ -209,7 +211,7 @@ export default function BankAccountScreen() {
   if (isHelper && isLoading) return <LoadingSpinner />;
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#F8F9FA' }}>
+    <View style={{ flex: 1, backgroundColor: tc.background }}>
       {/* ── Top Header (Safe Insets) ─────────────────────────────────── */}
       <View
         style={{
@@ -219,9 +221,9 @@ export default function BankAccountScreen() {
           paddingHorizontal: 16,
           paddingTop: Math.max(insets.top + 6, 18),
           paddingBottom: 14,
-          backgroundColor: '#fff',
+          backgroundColor: tc.surface,
           borderBottomWidth: 1,
-          borderBottomColor: COLORS.gray[100],
+          borderBottomColor: tc.border,
         }}
       >
         <TouchableOpacity
@@ -231,15 +233,15 @@ export default function BankAccountScreen() {
           style={{
             width: 40,
             height: 40,
-            borderRadius: 12,
-            backgroundColor: COLORS.gray[100],
+            borderRadius: 14,
+            backgroundColor: tc.subtle,
             alignItems: 'center',
             justifyContent: 'center',
           }}
         >
           <ArrowLeft size={20} color={COLORS.gray[800]} />
         </TouchableOpacity>
-        <Text style={{ fontSize: fs(17), fontWeight: '800', color: COLORS.gray[900] }}>
+        <Text style={{ fontSize: fs(17), fontWeight: '800', color: tc.text }}>
           {isHelper
             ? lang === 'en'
               ? 'Linked Bank Account'
@@ -262,7 +264,7 @@ export default function BankAccountScreen() {
             style={{
               backgroundColor: '#0F172A',
               padding: 20,
-              borderRadius: 18,
+              borderRadius: 14,
               borderWidth: 1,
               borderColor: 'rgba(255, 255, 255, 0.1)',
             }}
@@ -302,7 +304,7 @@ export default function BankAccountScreen() {
                   backgroundColor: COLORS.primary,
                   paddingHorizontal: 16,
                   paddingVertical: 10,
-                  borderRadius: 12,
+                  borderRadius: 14,
                   flexDirection: 'row',
                   alignItems: 'center',
                   gap: 6,
@@ -330,7 +332,7 @@ export default function BankAccountScreen() {
             </Text>
           </Card>
 
-          <Text style={{ fontSize: fs(15), fontWeight: '800', color: COLORS.gray[900] }}>
+          <Text style={{ fontSize: fs(15), fontWeight: '800', color: tc.text }}>
             {lang === 'en' ? 'Default Payment Method' : 'Phương thức thanh toán mặc định'}
           </Text>
 
@@ -367,7 +369,7 @@ export default function BankAccountScreen() {
                       }}
                     >
                       <Text
-                        style={{ fontWeight: '800', fontSize: fs(14.5), color: COLORS.gray[900] }}
+                        style={{ fontWeight: '800', fontSize: fs(14.5), color: tc.text }}
                       >
                         {opt.title}
                       </Text>
@@ -385,7 +387,7 @@ export default function BankAccountScreen() {
                         </Text>
                       )}
                     </View>
-                    <Text style={{ fontSize: fs(12.5), color: COLORS.gray[600], lineHeight: 18 }}>
+                    <Text style={{ fontSize: fs(12.5), color: tc.textSecondary, lineHeight: 18 }}>
                       {opt.subtitle}
                     </Text>
                   </Card>
@@ -395,7 +397,7 @@ export default function BankAccountScreen() {
           </View>
 
           <Text
-            style={{ fontSize: fs(15), fontWeight: '800', color: COLORS.gray[900], marginTop: 6 }}
+            style={{ fontSize: fs(15), fontWeight: '800', color: tc.text, marginTop: 6 }}
           >
             {lang === 'en' ? 'Recent Transactions' : 'Lịch sử giao dịch gần đây'}
           </Text>
@@ -429,7 +431,7 @@ export default function BankAccountScreen() {
                   >
                     <View style={{ flex: 1, marginRight: 10 }}>
                       <Text
-                        style={{ fontWeight: '700', fontSize: fs(14), color: COLORS.gray[900] }}
+                        style={{ fontWeight: '700', fontSize: fs(14), color: tc.text }}
                       >
                         {formatTxDesc(tx.description)}
                       </Text>
@@ -437,13 +439,13 @@ export default function BankAccountScreen() {
                         style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 }}
                       >
                         <Clock size={12} color={COLORS.gray[400]} />
-                        <Text style={{ fontSize: fs(12), color: COLORS.gray[500] }}>
-                          {dayjs(tx.created_at).format('DD/MM/YYYY HH:mm')}
+                        <Text style={{ fontSize: fs(12), color: tc.textMuted }}>
+                          {formatDateTime(dayjs(tx.created_at))}
                         </Text>
                       </View>
                     </View>
                     <Text
-                      style={{ fontWeight: '800', fontSize: fs(14.5), color: COLORS.gray[900] }}
+                      style={{ fontWeight: '800', fontSize: fs(14.5), color: tc.text }}
                     >
                       {new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'vi-VN').format(tx.amount)}₫
                     </Text>
@@ -466,7 +468,7 @@ export default function BankAccountScreen() {
             <View
               style={{
                 backgroundColor: '#1E293B',
-                borderRadius: 20,
+                borderRadius: 14,
                 padding: 22,
                 minHeight: 180,
                 justifyContent: 'space-between',
@@ -505,7 +507,7 @@ export default function BankAccountScreen() {
                       backgroundColor: '#10B98133',
                       paddingHorizontal: 8,
                       paddingVertical: 3,
-                      borderRadius: 6,
+                      borderRadius: 8,
                     }}
                   >
                     <Text style={{ color: '#34D399', fontSize: fs(11), fontWeight: '800' }}>
@@ -569,7 +571,7 @@ export default function BankAccountScreen() {
             </View>
 
             <Card style={{ padding: 16, gap: 10 }}>
-              <Text style={{ fontSize: fs(14), fontWeight: '800', color: COLORS.gray[900] }}>
+              <Text style={{ fontSize: fs(14), fontWeight: '800', color: tc.text }}>
                 {lang === 'en' ? 'Select Beneficiary Bank' : 'Chọn ngân hàng thụ hưởng'}
               </Text>
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
@@ -585,7 +587,7 @@ export default function BankAccountScreen() {
                       style={{
                         paddingHorizontal: 12,
                         paddingVertical: 8,
-                        borderRadius: 12,
+                        borderRadius: 14,
                         borderWidth: 1.5,
                         borderColor: isSelected ? COLORS.primary : COLORS.gray[200],
                         backgroundColor: isSelected ? COLORS.primaryLight : '#fff',
@@ -607,23 +609,23 @@ export default function BankAccountScreen() {
             </Card>
 
             <Card style={{ padding: 16, gap: 14 }}>
-              <Text style={{ fontSize: fs(15), fontWeight: '800', color: COLORS.gray[900] }}>
+              <Text style={{ fontSize: fs(15), fontWeight: '800', color: tc.text }}>
                 {lang === 'en' ? 'Receiving Bank Account Details' : 'Thông tin tài khoản nhận tiền'}
               </Text>
 
               <View style={{ gap: 6 }}>
-                <Text style={{ fontSize: fs(13), fontWeight: '700', color: COLORS.gray[700] }}>
+                <Text style={{ fontSize: fs(13), fontWeight: '700', color: tc.textSecondary }}>
                   {lang === 'en' ? 'Bank name *' : 'Tên ngân hàng *'}
                 </Text>
                 <TextInput
                   style={{
                     borderWidth: 1.5,
-                    borderColor: COLORS.gray[200],
+                    borderColor: tc.border,
                     borderRadius: 14,
                     padding: 14,
                     fontSize: fs(15),
-                    color: COLORS.gray[900],
-                    backgroundColor: COLORS.gray[50],
+                    color: tc.text,
+                    backgroundColor: tc.background,
                   }}
                   placeholder={
                     lang === 'en' ? 'e.g. Vietcombank, MB Bank...' : 'VD: Vietcombank, MB Bank...'
@@ -635,19 +637,19 @@ export default function BankAccountScreen() {
               </View>
 
               <View style={{ gap: 6 }}>
-                <Text style={{ fontSize: fs(13), fontWeight: '700', color: COLORS.gray[700] }}>
+                <Text style={{ fontSize: fs(13), fontWeight: '700', color: tc.textSecondary }}>
                   {lang === 'en' ? 'Bank account number *' : 'Số tài khoản ngân hàng *'}
                 </Text>
                 <TextInput
                   style={{
                     borderWidth: 1.5,
-                    borderColor: COLORS.gray[200],
+                    borderColor: tc.border,
                     borderRadius: 14,
                     padding: 14,
                     fontSize: fs(17),
                     fontWeight: '800',
-                    color: COLORS.gray[900],
-                    backgroundColor: COLORS.gray[50],
+                    color: tc.text,
+                    backgroundColor: tc.background,
                     letterSpacing: 1,
                   }}
                   placeholder={
@@ -661,7 +663,7 @@ export default function BankAccountScreen() {
               </View>
 
               <View style={{ gap: 6 }}>
-                <Text style={{ fontSize: fs(13), fontWeight: '700', color: COLORS.gray[700] }}>
+                <Text style={{ fontSize: fs(13), fontWeight: '700', color: tc.textSecondary }}>
                   {lang === 'en'
                     ? 'Account holder name (UPPERCASE, unaccented) *'
                     : 'Tên chủ tài khoản (in hoa, không dấu) *'}
@@ -669,13 +671,13 @@ export default function BankAccountScreen() {
                 <TextInput
                   style={{
                     borderWidth: 1.5,
-                    borderColor: COLORS.gray[200],
+                    borderColor: tc.border,
                     borderRadius: 14,
                     padding: 14,
                     fontSize: fs(15),
                     fontWeight: '800',
-                    color: COLORS.gray[900],
-                    backgroundColor: COLORS.gray[50],
+                    color: tc.text,
+                    backgroundColor: tc.background,
                   }}
                   placeholder={lang === 'en' ? 'e.g. NGUYEN VAN A' : 'VD: NGUYEN VAN A'}
                   value={accountName}
@@ -737,7 +739,7 @@ export default function BankAccountScreen() {
         <View
           style={{
             flex: 1,
-            backgroundColor: '#fff',
+            backgroundColor: tc.surface,
             paddingTop: Math.max(insets.top, 16),
           }}
         >
@@ -749,7 +751,7 @@ export default function BankAccountScreen() {
               paddingHorizontal: 20,
               paddingVertical: 14,
               borderBottomWidth: 1,
-              borderBottomColor: COLORS.gray[100],
+              borderBottomColor: tc.border,
             }}
           >
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
@@ -759,7 +761,7 @@ export default function BankAccountScreen() {
               >
                 <X size={22} color={COLORS.gray[700]} />
               </TouchableOpacity>
-              <Text style={{ fontSize: fs(17), fontWeight: '800', color: COLORS.gray[900] }}>
+              <Text style={{ fontSize: fs(17), fontWeight: '800', color: tc.text }}>
                 {lang === 'en' ? 'Top-up GreenHouse Wallet' : 'Nạp tiền vào ví GreenHouse'}
               </Text>
             </View>
@@ -774,7 +776,7 @@ export default function BankAccountScreen() {
               keyboardShouldPersistTaps="handled"
             >
               <Card style={{ backgroundColor: COLORS.primaryLight, padding: 16, gap: 6 }}>
-                <Text style={{ fontSize: fs(12.5), color: COLORS.gray[600], fontWeight: '600' }}>
+                <Text style={{ fontSize: fs(12.5), color: tc.textSecondary, fontWeight: '600' }}>
                   {lang === 'en' ? 'Current Balance' : 'Số dư hiện tại'}
                 </Text>
                 <Text style={{ fontSize: fs(20), fontWeight: '800', color: COLORS.primary }}>
@@ -786,7 +788,7 @@ export default function BankAccountScreen() {
               </Card>
 
               <View style={{ gap: 8 }}>
-                <Text style={{ fontWeight: '700', fontSize: fs(14), color: COLORS.gray[800] }}>
+                <Text style={{ fontWeight: '700', fontSize: fs(14), color: tc.text }}>
                   {lang === 'en' ? 'Select quick amount' : 'Chọn nhanh số tiền nạp'}
                 </Text>
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
@@ -800,7 +802,7 @@ export default function BankAccountScreen() {
                         style={{
                           paddingHorizontal: 14,
                           paddingVertical: 10,
-                          borderRadius: 12,
+                          borderRadius: 14,
                           borderWidth: 1.5,
                           borderColor: isSelected ? COLORS.primary : COLORS.gray[200],
                           backgroundColor: isSelected ? COLORS.primaryLight : '#fff',
@@ -822,19 +824,19 @@ export default function BankAccountScreen() {
               </View>
 
               <View style={{ gap: 8 }}>
-                <Text style={{ fontWeight: '700', fontSize: fs(14), color: COLORS.gray[800] }}>
+                <Text style={{ fontWeight: '700', fontSize: fs(14), color: tc.text }}>
                   {lang === 'en' ? 'Or enter custom amount (₫) *' : 'Hoặc nhập số tiền khác (₫) *'}
                 </Text>
                 <TextInput
                   style={{
                     borderWidth: 1.5,
-                    borderColor: COLORS.gray[200],
+                    borderColor: tc.border,
                     borderRadius: 14,
                     padding: 14,
                     fontSize: fs(20),
                     fontWeight: '800',
-                    color: COLORS.gray[900],
-                    backgroundColor: COLORS.gray[50],
+                    color: tc.text,
+                    backgroundColor: tc.background,
                   }}
                   placeholder={lang === 'en' ? 'Minimum 50,000₫' : 'Tối thiểu 50.000₫'}
                   value={customerTopupAmount}
@@ -847,11 +849,11 @@ export default function BankAccountScreen() {
               <Card style={{ backgroundColor: '#F8FAFC', padding: 14, gap: 6 }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                   <ShieldCheck size={16} color={COLORS.success} />
-                  <Text style={{ fontSize: fs(13), fontWeight: '700', color: COLORS.gray[800] }}>
+                  <Text style={{ fontSize: fs(13), fontWeight: '700', color: tc.text }}>
                     {lang === 'en' ? 'VietQR 24/7 Fast Top-up' : 'Nạp nhanh qua VietQR 24/7'}
                   </Text>
                 </View>
-                <Text style={{ fontSize: fs(12), color: COLORS.gray[600], lineHeight: 18 }}>
+                <Text style={{ fontSize: fs(12), color: tc.textSecondary, lineHeight: 18 }}>
                   {lang === 'en'
                     ? 'Funds are added immediately to your wallet to pay for services seamlessly.'
                     : 'Tiền sẽ được cộng tức thì vào ví để bạn sẵn sàng thanh toán dịch vụ tiện lợi.'}

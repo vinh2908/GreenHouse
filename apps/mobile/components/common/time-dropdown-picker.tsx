@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
+import { formatDate } from '@/utils/date-format';
 import dayjs from 'dayjs';
 import {
   View,
@@ -10,7 +11,7 @@ import {
   Platform,
 } from 'react-native';
 import { Clock, ChevronDown, Check, X } from 'lucide-react-native';
-import { COLORS } from '@/components/ui';
+import { COLORS, useThemeColors } from '@/components/ui';
 import { useTranslation, fs } from '@/hooks/use-i18n';
 
 export const ORIGINAL_TIME_CHIPS = [
@@ -35,10 +36,11 @@ export const ORIGINAL_TIME_CHIPS = [
   '22:00',
 ];
 
-/** Nhãn badge cho chip gợi ý theo thiết kế (MỚI cho 12:00, ĐÊM cho 21:00, 21:30, 22:00) */
-export function getChipBadge(chip: string): 'MỚI' | 'ĐÊM' | null {
-  if (chip === '12:00') return 'MỚI';
-  if (chip === '21:00' || chip === '21:30' || chip === '22:00') return 'ĐÊM';
+/** Badge cho chip gợi ý (12:00 = mới, 21:00+ = đêm). Trả về key trung lập
+ * ngôn ngữ; nhãn hiển thị dịch qua i18n (time_badge_new / time_badge_night). */
+export function getChipBadge(chip: string): 'NEW' | 'NIGHT' | null {
+  if (chip === '12:00') return 'NEW';
+  if (chip === '21:00' || chip === '21:30' || chip === '22:00') return 'NIGHT';
   return null;
 }
 
@@ -265,6 +267,7 @@ export function TimeDropdownPicker({
   }, [currentHour, currentMinute]);
 
   const { t, lang } = useTranslation();
+  const tc = useThemeColors();
 
   return (
     <View style={styles.container}>
@@ -352,7 +355,7 @@ export function TimeDropdownPicker({
                             styles.chipBadge,
                             isSelected
                               ? styles.chipBadgeActive
-                              : badge === 'ĐÊM'
+                              : badge === 'NIGHT'
                                 ? styles.chipBadgeNight
                                 : styles.chipBadgeNew,
                           ]}
@@ -362,13 +365,13 @@ export function TimeDropdownPicker({
                               styles.chipBadgeText,
                               isSelected
                                 ? styles.chipBadgeTextActive
-                                : badge === 'ĐÊM'
+                                : badge === 'NIGHT'
                                   ? styles.chipBadgeTextNight
                                   : styles.chipBadgeTextNew,
                               { fontSize: fs(9) },
                             ]}
                           >
-                            {lang === 'en' ? (badge === 'ĐÊM' ? 'NIGHT' : 'NEW') : badge}
+                            {t(badge === 'NIGHT' ? 'time_badge_night' : 'time_badge_new')}
                           </Text>
                         </View>
                       )}
@@ -550,6 +553,7 @@ export function DurationDropdownPicker({
   maxMinutes = 720, // 12h
 }: DurationDropdownPickerProps) {
   const { lang } = useTranslation();
+  const tc = useThemeColors();
   const effectiveLabel = label ?? (lang === 'en' ? 'Duration' : 'Thời lượng');
   const [modalType, setModalType] = useState<'hour' | 'minute' | null>(null);
   const hourScrollRef = useRef<ScrollView>(null);
@@ -768,6 +772,7 @@ export function ScheduledTimePreview({
   price,
 }: ScheduledTimePreviewProps) {
   const { t, lang } = useTranslation();
+  const tc = useThemeColors();
   const effectiveStart = timeStart || startTime || '08:00';
   const calc = useMemo(
     () => calcEndTime(effectiveStart, durationMinutes),
@@ -781,7 +786,7 @@ export function ScheduledTimePreview({
         const dt = dayjs(startDate);
         const dow = dt.format('dddd');
         const capDow = dow.charAt(0).toUpperCase() + dow.slice(1);
-        return `${capDow}, ${dt.format('DD/MM/YYYY')}`;
+        return `${capDow}, ${formatDate(dt)}`;
       } catch {
         return startDate;
       }
@@ -816,7 +821,7 @@ export function ScheduledTimePreview({
             {effectiveStart} – {calc.timeEnd} {calc.isNextDay ? t('picker_next_day') : ''}
           </Text>
         ) : (
-          <Text style={[styles.previewValue, { color: COLORS.gray[500], fontSize: fs(12.5) }]}>
+          <Text style={[styles.previewValue, { color: tc.textMuted, fontSize: fs(12.5) }]}>
             {t('picker_cannot_calc')}
           </Text>
         )}
@@ -862,7 +867,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderWidth: 1.5,
     borderColor: COLORS.gray[200],
-    borderRadius: 12,
+    borderRadius: 14,
     paddingHorizontal: 12,
     paddingVertical: 10,
     gap: 6,
@@ -937,7 +942,7 @@ const styles = StyleSheet.create({
   chipBadge: {
     paddingHorizontal: 4,
     paddingVertical: 1,
-    borderRadius: 4,
+    borderRadius: 8,
   },
   chipBadgeNew: {
     backgroundColor: '#DCFCE7',
@@ -972,7 +977,7 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: 340,
     backgroundColor: '#FFFFFF',
-    borderRadius: 20,
+    borderRadius: 14,
     padding: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
@@ -1000,7 +1005,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: 12,
     paddingHorizontal: 12,
-    borderRadius: 10,
+    borderRadius: 8,
   },
   modalItemActive: {
     backgroundColor: COLORS.primaryLight,
