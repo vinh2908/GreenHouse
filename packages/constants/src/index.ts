@@ -169,6 +169,7 @@ export const SOCKET_EVENTS = {
   CALL_ENDED: 'call:ended', // Cuộc gọi thoại kết thúc / cúp máy
   CALL_MISSED: 'call:missed', // Cuộc gọi nhỡ
   CALL_DECLINED: 'call:declined', // Cuộc gọi bị từ chối
+  SUPPORT_MESSAGE: 'support:message', // Tin nhắn hỗ trợ trực tuyến (Feature 18)
 } as const;
 
 // B112: một enum duy nhất cho lý do kết thúc cuộc gọi — cả hai bên (server +
@@ -197,9 +198,7 @@ export function normalizeCallEndReason(reason?: string | null): CallEndReason {
     default:
       return CALL_END_REASONS.ENDED;
   }
-
-  SUPPORT_MESSAGE: 'support:message', // Tin nhắn hỗ trợ trực tuyến (Feature 18)
-} as const;
+}
 
 // ─── Cache Keys ────────────────────────────────────────────────────────────────
 
@@ -264,6 +263,7 @@ export const NOTIFICATION_TYPES = {
   MONTHLY_CONTRACT_SETTLED: 'monthly_contract_settled',
   MONTHLY_CONTRACT_STARTED: 'monthly_contract_started', // B100: hợp đồng bắt đầu
   MONTHLY_CONTRACT_EXPIRING_SOON: 'monthly_contract_expiring_soon', // B100: sắp hết hạn
+  JOB_PRIVATE_OFFER: 'job_private_offer', // B101: ưu đãi riêng hết hạn
   // Recurring plans (B117)
   RECURRING_PLAN_PAUSED: 'recurring_plan_paused',
   RECURRING_PLAN_RESUMED: 'recurring_plan_resumed',

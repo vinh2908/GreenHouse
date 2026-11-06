@@ -956,8 +956,8 @@ export class SosBackupService implements OnModuleInit, OnModuleDestroy {
     if (!candidate) {
       throw new ForbiddenException('Bạn không nằm trong đợt mời hiện tại của yêu cầu này');
     }
-    // B80: thợ đã rút/từ chối khỏi SOS thì không chọn/nhận lại được nữa → 409
-    if (candidate.state === 'declined' || candidate.state === 'withdrawn') {
+    // B80: thợ đã rút/từ chối khỏi SOS (state 'declined') thì không chọn/nhận lại được nữa → 409
+    if (candidate.state === 'declined') {
       throw new ConflictException('Thợ này đã rút khỏi SOS, không thể chọn nữa');
     }
     if (candidate.state !== 'invited') {

@@ -8,6 +8,7 @@ import {
   forwardRef,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
+import { Cron } from '@nestjs/schedule';
 import { Model, Types } from 'mongoose';
 import {
   MonthlyContract,
