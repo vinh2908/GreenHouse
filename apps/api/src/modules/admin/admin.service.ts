@@ -717,6 +717,23 @@ export class AdminService {
     );
   }
 
+  // B83: đếm thợ đang hoạt động — loại trừ hồ sơ đã xoá mềm (deleted_at != null)
+  // và thợ có tài khoản user đã xoá (is_deleted).
+  private async countActiveHelpers(): Promise<number> {
+    const deletedUsers = await this.userModel
+      .find({ is_deleted: true })
+      .select('_id')
+      .lean()
+      .exec();
+    const deletedIds = deletedUsers.map(u => u._id);
+    return this.helperModel
+      .countDocuments({
+        deleted_at: null,
+        ...(deletedIds.length ? { user_id: { $nin: deletedIds } } : {}),
+      })
+      .exec();
+  }
+
   // ─── Dashboard stats ──────────────────────────────────────────────────────
 
   async getDashboardStats() {
@@ -739,7 +756,8 @@ export class AdminService {
       pendingWithdrawals,
     ] = await Promise.all([
       this.userModel.countDocuments({ is_deleted: false }).exec(),
-      this.helperModel.countDocuments().exec(),
+      // B83: tổng thợ loại trừ thợ đã xoá mềm (deleted_at != null hoặc user đã xoá)
+      this.countActiveHelpers(),
       this.helperModel.countDocuments({ verification_status: VerificationStatus.APPROVED }).exec(),
       this.jobModel.countDocuments().exec(),
       this.jobModel.countDocuments({ created_at: { $gte: startOfDay } }).exec(),

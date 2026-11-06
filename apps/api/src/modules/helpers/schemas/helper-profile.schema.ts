@@ -196,6 +196,10 @@ export class HelperProfile {
   @Prop()
   score_updated_at?: Date;
 
+  // B83: xoá mềm thợ — đặt khi admin xoá thợ; đếm tổng thợ loại trừ deleted_at != null
+  @Prop({ type: Date, default: null, index: true })
+  deleted_at?: Date | null;
+
   created_at: Date;
   updated_at: Date;
 }
