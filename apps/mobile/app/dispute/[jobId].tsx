@@ -192,7 +192,7 @@ export default function DisputeCaseScreen() {
           style={{
             width: 40,
             height: 40,
-            borderRadius: 12,
+            borderRadius: 14,
             backgroundColor: COLORS.gray[100],
             alignItems: 'center',
             justifyContent: 'center',
@@ -361,7 +361,7 @@ export default function DisputeCaseScreen() {
                         style={{
                           width: 34,
                           height: 34,
-                          borderRadius: 17,
+                          borderRadius: 14,
                           backgroundColor: entry.actor_role === 'admin' ? '#EFF6FF' : '#fff',
                           borderWidth: 1,
                           borderColor: COLORS.gray[200],
@@ -403,7 +403,7 @@ export default function DisputeCaseScreen() {
                             <Image
                               key={i}
                               source={{ uri }}
-                              style={{ width: 72, height: 72, borderRadius: 10 }}
+                              style={{ width: 72, height: 72, borderRadius: 8 }}
                             />
                           ))}
                         </View>
@@ -433,7 +433,7 @@ export default function DisputeCaseScreen() {
                   style={{
                     borderWidth: 1,
                     borderColor: COLORS.gray[200],
-                    borderRadius: 12,
+                    borderRadius: 14,
                     padding: 12,
                     minHeight: 74,
                     textAlignVertical: 'top',
@@ -451,7 +451,7 @@ export default function DisputeCaseScreen() {
                       >
                         <Image
                           source={{ uri }}
-                          style={{ width: 60, height: 60, borderRadius: 10 }}
+                          style={{ width: 60, height: 60, borderRadius: 8 }}
                         />
                       </TouchableOpacity>
                     ))}

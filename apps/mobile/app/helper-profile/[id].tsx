@@ -167,7 +167,7 @@ export default function HelperPublicProfileScreen() {
           style={{
             width: 40,
             height: 40,
-            borderRadius: 12,
+            borderRadius: 14,
             backgroundColor: COLORS.gray[100],
             alignItems: 'center',
             justifyContent: 'center',
@@ -186,7 +186,7 @@ export default function HelperPublicProfileScreen() {
             style={{
               width: 40,
               height: 40,
-              borderRadius: 12,
+              borderRadius: 14,
               backgroundColor: isFavorite ? '#FDF2F8' : COLORS.gray[100],
               alignItems: 'center',
               justifyContent: 'center',
@@ -225,7 +225,7 @@ export default function HelperPublicProfileScreen() {
                   bottom: 0,
                   right: 0,
                   backgroundColor: '#fff',
-                  borderRadius: 12,
+                  borderRadius: 14,
                   padding: 2,
                 }}
               >
@@ -380,7 +380,7 @@ export default function HelperPublicProfileScreen() {
                   key={skill}
                   style={{
                     backgroundColor: COLORS.gray[100],
-                    borderRadius: 10,
+                    borderRadius: 8,
                     paddingHorizontal: 12,
                     paddingVertical: 7,
                   }}
@@ -440,7 +440,7 @@ export default function HelperPublicProfileScreen() {
             style={{
               backgroundColor: COLORS.gray[50],
               padding: 10,
-              borderRadius: 10,
+              borderRadius: 8,
               marginTop: 4,
             }}
           >
@@ -502,7 +502,7 @@ export default function HelperPublicProfileScreen() {
             reviewsList.map((r: any) => (
               <View
                 key={r._id}
-                style={{ backgroundColor: COLORS.gray[50], padding: 12, borderRadius: 12, gap: 6 }}
+                style={{ backgroundColor: COLORS.gray[50], padding: 12, borderRadius: 14, gap: 6 }}
               >
                 <View
                   style={{

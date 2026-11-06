@@ -69,7 +69,7 @@ export default function PolicyInsuranceScreen() {
           style={{
             width: 40,
             height: 40,
-            borderRadius: 12,
+            borderRadius: 14,
             backgroundColor: COLORS.gray[100],
             alignItems: 'center',
             justifyContent: 'center',
@@ -114,7 +114,7 @@ export default function PolicyInsuranceScreen() {
             flex: 1,
             paddingVertical: 9,
             alignItems: 'center',
-            borderRadius: 12,
+            borderRadius: 14,
             backgroundColor: activeTab === 'terms' ? COLORS.primaryLight : 'transparent',
             borderWidth: activeTab === 'terms' ? 1.5 : 0,
             borderColor: COLORS.primary,
@@ -138,7 +138,7 @@ export default function PolicyInsuranceScreen() {
             flex: 1,
             paddingVertical: 9,
             alignItems: 'center',
-            borderRadius: 12,
+            borderRadius: 14,
             backgroundColor: activeTab === 'privacy' ? COLORS.primaryLight : 'transparent',
             borderWidth: activeTab === 'privacy' ? 1.5 : 0,
             borderColor: COLORS.primary,
@@ -162,7 +162,7 @@ export default function PolicyInsuranceScreen() {
             flex: 1,
             paddingVertical: 9,
             alignItems: 'center',
-            borderRadius: 12,
+            borderRadius: 14,
             backgroundColor: activeTab === 'insurance' ? COLORS.primaryLight : 'transparent',
             borderWidth: activeTab === 'insurance' ? 1.5 : 0,
             borderColor: COLORS.primary,
@@ -186,7 +186,7 @@ export default function PolicyInsuranceScreen() {
             flex: 1,
             paddingVertical: 9,
             alignItems: 'center',
-            borderRadius: 12,
+            borderRadius: 14,
             backgroundColor: activeTab === 'claim' ? COLORS.primaryLight : 'transparent',
             borderWidth: activeTab === 'claim' ? 1.5 : 0,
             borderColor: COLORS.primary,
@@ -215,7 +215,7 @@ export default function PolicyInsuranceScreen() {
               style={{
                 backgroundColor: '#064E3B',
                 padding: 18,
-                borderRadius: 20,
+                borderRadius: 14,
                 borderWidth: 0,
                 gap: 12,
               }}
@@ -225,7 +225,7 @@ export default function PolicyInsuranceScreen() {
                   style={{
                     width: 48,
                     height: 48,
-                    borderRadius: 16,
+                    borderRadius: 14,
                     backgroundColor: '#10B981',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -312,7 +312,7 @@ export default function PolicyInsuranceScreen() {
               style={{
                 backgroundColor: '#064E3B',
                 padding: 18,
-                borderRadius: 20,
+                borderRadius: 14,
                 borderWidth: 0,
                 gap: 12,
               }}
@@ -322,7 +322,7 @@ export default function PolicyInsuranceScreen() {
                   style={{
                     width: 48,
                     height: 48,
-                    borderRadius: 16,
+                    borderRadius: 14,
                     backgroundColor: '#10B981',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -364,7 +364,7 @@ export default function PolicyInsuranceScreen() {
                     style={{
                       width: 36,
                       height: 36,
-                      borderRadius: 10,
+                      borderRadius: 8,
                       backgroundColor: COLORS.primaryLight,
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -399,7 +399,7 @@ export default function PolicyInsuranceScreen() {
                     style={{
                       width: 36,
                       height: 36,
-                      borderRadius: 10,
+                      borderRadius: 8,
                       backgroundColor: '#EEF4FE',
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -434,7 +434,7 @@ export default function PolicyInsuranceScreen() {
                     style={{
                       width: 36,
                       height: 36,
-                      borderRadius: 10,
+                      borderRadius: 8,
                       backgroundColor: '#ECFDF5',
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -558,7 +558,7 @@ export default function PolicyInsuranceScreen() {
                     style={{
                       width: 26,
                       height: 26,
-                      borderRadius: 13,
+                      borderRadius: 14,
                       backgroundColor: COLORS.primary,
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -585,7 +585,7 @@ export default function PolicyInsuranceScreen() {
                     style={{
                       width: 26,
                       height: 26,
-                      borderRadius: 13,
+                      borderRadius: 14,
                       backgroundColor: COLORS.primary,
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -612,7 +612,7 @@ export default function PolicyInsuranceScreen() {
                     style={{
                       width: 26,
                       height: 26,
-                      borderRadius: 13,
+                      borderRadius: 14,
                       backgroundColor: COLORS.primary,
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -639,7 +639,7 @@ export default function PolicyInsuranceScreen() {
                     style={{
                       width: 26,
                       height: 26,
-                      borderRadius: 13,
+                      borderRadius: 14,
                       backgroundColor: COLORS.success,
                       alignItems: 'center',
                       justifyContent: 'center',

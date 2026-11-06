@@ -282,7 +282,7 @@ export function SosBackupHelperCard({ job }: { job: any }) {
                     gap: 10,
                     paddingVertical: 12,
                     paddingHorizontal: 14,
-                    borderRadius: 12,
+                    borderRadius: 14,
                     borderWidth: 1.5,
                     borderColor: selected ? COLORS.error : COLORS.gray[200],
                     backgroundColor: selected ? '#FEF2F2' : '#fff',
@@ -292,7 +292,7 @@ export function SosBackupHelperCard({ job }: { job: any }) {
                     style={{
                       width: 18,
                       height: 18,
-                      borderRadius: 9,
+                      borderRadius: 8,
                       borderWidth: 2,
                       borderColor: selected ? COLORS.error : COLORS.gray[300],
                       alignItems: 'center',
@@ -304,7 +304,7 @@ export function SosBackupHelperCard({ job }: { job: any }) {
                         style={{
                           width: 9,
                           height: 9,
-                          borderRadius: 5,
+                          borderRadius: 8,
                           backgroundColor: COLORS.error,
                         }}
                       />
@@ -324,7 +324,7 @@ export function SosBackupHelperCard({ job }: { job: any }) {
               style={{
                 borderWidth: 1,
                 borderColor: COLORS.gray[200],
-                borderRadius: 12,
+                borderRadius: 14,
                 paddingHorizontal: 14,
                 paddingVertical: 11,
                 fontSize: fs(14),
@@ -342,7 +342,7 @@ export function SosBackupHelperCard({ job }: { job: any }) {
                   <View key={uri}>
                     <Image
                       source={{ uri }}
-                      style={{ width: 64, height: 64, borderRadius: 10 }}
+                      style={{ width: 64, height: 64, borderRadius: 8 }}
                       resizeMode="cover"
                     />
                     <TouchableOpacity
@@ -354,7 +354,7 @@ export function SosBackupHelperCard({ job }: { job: any }) {
                         right: -7,
                         width: 22,
                         height: 22,
-                        borderRadius: 11,
+                        borderRadius: 14,
                         backgroundColor: COLORS.gray[700],
                         alignItems: 'center',
                         justifyContent: 'center',
@@ -370,7 +370,7 @@ export function SosBackupHelperCard({ job }: { job: any }) {
                     style={{
                       width: 64,
                       height: 64,
-                      borderRadius: 10,
+                      borderRadius: 8,
                       borderWidth: 1.5,
                       borderStyle: 'dashed',
                       borderColor: COLORS.gray[300],

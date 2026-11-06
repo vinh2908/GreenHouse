@@ -400,7 +400,7 @@ export default function CallScreen() {
               borderColor:
                 uiState === 'rejected' ? 'rgba(239, 68, 68, 0.4)' : 'rgba(255, 255, 255, 0.2)',
               borderWidth: 1,
-              borderRadius: 16,
+              borderRadius: 14,
               padding: 16,
               width: '100%',
               alignItems: 'center',
@@ -439,7 +439,7 @@ export default function CallScreen() {
               backgroundColor: '#16A34A',
               paddingHorizontal: 32,
               paddingVertical: 14,
-              borderRadius: 12,
+              borderRadius: 14,
               marginTop: 6,
               minWidth: 180,
               alignItems: 'center',
@@ -464,7 +464,7 @@ export default function CallScreen() {
               backgroundColor: 'rgba(239, 68, 68, 0.15)',
               borderColor: 'rgba(239, 68, 68, 0.4)',
               borderWidth: 1,
-              borderRadius: 12,
+              borderRadius: 14,
               padding: 14,
               width: '100%',
             }}
@@ -534,7 +534,7 @@ export default function CallScreen() {
               style={{
                 width: 62,
                 height: 62,
-                borderRadius: 31,
+                borderRadius: 999,
                 backgroundColor: muted ? '#fff' : 'rgba(255,255,255,0.16)',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -551,7 +551,7 @@ export default function CallScreen() {
               style={{
                 width: 62,
                 height: 62,
-                borderRadius: 31,
+                borderRadius: 999,
                 backgroundColor: speaker ? '#fff' : 'rgba(255,255,255,0.16)',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -565,7 +565,7 @@ export default function CallScreen() {
             style={{
               width: 72,
               height: 72,
-              borderRadius: 36,
+              borderRadius: 999,
               backgroundColor: '#EF4444',
               alignItems: 'center',
               justifyContent: 'center',

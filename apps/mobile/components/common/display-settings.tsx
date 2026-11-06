@@ -20,7 +20,7 @@ function Segmented<T extends string>({
       style={{
         flexDirection: 'row',
         backgroundColor: COLORS.gray[100],
-        borderRadius: 12,
+        borderRadius: 14,
         padding: 4,
         gap: 4,
       }}
@@ -35,7 +35,7 @@ function Segmented<T extends string>({
             style={{
               flex: 1,
               paddingVertical: 9,
-              borderRadius: 9,
+              borderRadius: 8,
               alignItems: 'center',
               backgroundColor: active ? COLORS.primary : 'transparent',
             }}

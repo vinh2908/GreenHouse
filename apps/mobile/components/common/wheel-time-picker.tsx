@@ -311,7 +311,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     height: CONTAINER_HEIGHT,
     backgroundColor: '#FFFFFF',
-    borderRadius: 16,
+    borderRadius: 14,
     borderWidth: 1.5,
     borderColor: '#E2E8F0',
     overflow: 'hidden',
@@ -331,7 +331,7 @@ const styles = StyleSheet.create({
     right: 12,
     height: ITEM_HEIGHT,
     backgroundColor: '#DCFCE7',
-    borderRadius: 10,
+    borderRadius: 8,
     borderWidth: 1.5,
     borderColor: COLORS.primary,
     zIndex: 1,
@@ -394,7 +394,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginTop: 10,
     backgroundColor: '#F8FAFC',
-    borderRadius: 12,
+    borderRadius: 14,
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderWidth: 1,
@@ -436,7 +436,7 @@ const styles = StyleSheet.create({
   chip: {
     paddingHorizontal: 11,
     paddingVertical: 7,
-    borderRadius: 9,
+    borderRadius: 8,
     borderWidth: 1.5,
     alignItems: 'center',
     justifyContent: 'center',
@@ -468,7 +468,7 @@ const styles = StyleSheet.create({
     right: -2,
     backgroundColor: '#DCFCE7',
     paddingHorizontal: 3,
-    borderRadius: 4,
+    borderRadius: 8,
   },
   newBadgeText: {
     fontSize: fs(8),
@@ -481,7 +481,7 @@ const styles = StyleSheet.create({
     right: -2,
     backgroundColor: '#FEF2F2',
     paddingHorizontal: 3,
-    borderRadius: 4,
+    borderRadius: 8,
   },
   nightBadgeText: {
     fontSize: fs(8),
@@ -504,7 +504,7 @@ const styles = StyleSheet.create({
   oddChip: {
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 6,
+    borderRadius: 8,
     borderWidth: 1,
   },
   oddChipSelected: {

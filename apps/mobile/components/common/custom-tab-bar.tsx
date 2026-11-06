@@ -276,7 +276,7 @@ export function CustomTabBar({
                     style={{
                       width: 4,
                       height: 4,
-                      borderRadius: 2,
+                      borderRadius: 8,
                       backgroundColor: COLORS.primary,
                       marginTop: 2,
                       marginBottom: -6,

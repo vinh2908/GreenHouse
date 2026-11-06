@@ -126,7 +126,7 @@ export default function RecurringPlansScreen() {
           style={{
             width: 40,
             height: 40,
-            borderRadius: 12,
+            borderRadius: 14,
             backgroundColor: COLORS.gray[100],
             alignItems: 'center',
             justifyContent: 'center',
@@ -153,7 +153,7 @@ export default function RecurringPlansScreen() {
             backgroundColor: COLORS.primary,
             width: 38,
             height: 38,
-            borderRadius: 12,
+            borderRadius: 14,
             alignItems: 'center',
             justifyContent: 'center',
           }}

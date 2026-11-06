@@ -298,7 +298,7 @@ export default function HelperDashboardScreen() {
                 style={{
                   width: 38,
                   height: 38,
-                  borderRadius: 12,
+                  borderRadius: 14,
                   backgroundColor: COLORS.gray[100],
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -313,7 +313,7 @@ export default function HelperDashboardScreen() {
                       right: 6,
                       width: 8,
                       height: 8,
-                      borderRadius: 4,
+                      borderRadius: 8,
                       backgroundColor: COLORS.error,
                       borderWidth: 1.5,
                       borderColor: '#fff',
@@ -333,7 +333,7 @@ export default function HelperDashboardScreen() {
               onPress={() => router.push('/kyc')}
               style={{
                 backgroundColor: profile?.verification_status === 'pending' ? '#FFFBEB' : '#FEF2F2',
-                borderRadius: 16,
+                borderRadius: 14,
                 padding: 14,
                 borderWidth: 1.5,
                 borderColor: profile?.verification_status === 'pending' ? '#FDE68A' : '#FECACA',
@@ -346,7 +346,7 @@ export default function HelperDashboardScreen() {
                 style={{
                   width: 40,
                   height: 40,
-                  borderRadius: 12,
+                  borderRadius: 14,
                   backgroundColor:
                     profile?.verification_status === 'pending' ? '#FEF3C7' : '#FEE2E2',
                   alignItems: 'center',
@@ -425,7 +425,7 @@ export default function HelperDashboardScreen() {
                   : effectiveOnline
                     ? '#1E1E24'
                     : '#FFFFFF',
-              borderRadius: 20,
+              borderRadius: 14,
               padding: 18,
               borderWidth: 1,
               borderColor: pLoading
@@ -455,7 +455,7 @@ export default function HelperDashboardScreen() {
                     style={{
                       width: 140,
                       height: 18,
-                      borderRadius: 6,
+                      borderRadius: 8,
                       backgroundColor: COLORS.gray[200],
                     }}
                   />
@@ -463,7 +463,7 @@ export default function HelperDashboardScreen() {
                     style={{
                       width: 200,
                       height: 13,
-                      borderRadius: 4,
+                      borderRadius: 8,
                       backgroundColor: COLORS.gray[100],
                       marginTop: 8,
                     }}
@@ -492,7 +492,7 @@ export default function HelperDashboardScreen() {
                       style={{
                         width: 10,
                         height: 10,
-                        borderRadius: 5,
+                        borderRadius: 8,
                         backgroundColor: isWorking
                           ? '#F59E0B'
                           : effectiveOnline
@@ -563,7 +563,7 @@ export default function HelperDashboardScreen() {
                   style={{
                     flex: 1,
                     height: 92,
-                    borderRadius: 16,
+                    borderRadius: 14,
                     backgroundColor: COLORS.gray[200],
                   }}
                 />
@@ -942,7 +942,7 @@ export default function HelperDashboardScreen() {
                   style={{
                     width: 40,
                     height: 40,
-                    borderRadius: 20,
+                    borderRadius: 14,
                     backgroundColor: '#FEF2F2',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -965,7 +965,7 @@ export default function HelperDashboardScreen() {
                 style={{
                   width: 34,
                   height: 34,
-                  borderRadius: 17,
+                  borderRadius: 14,
                   backgroundColor: COLORS.gray[100],
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -1040,7 +1040,7 @@ export default function HelperDashboardScreen() {
               onPress={handleAcceptSos}
               style={{
                 backgroundColor: '#DC2626',
-                borderRadius: 16,
+                borderRadius: 14,
                 paddingVertical: 16,
                 alignItems: 'center',
                 justifyContent: 'center',

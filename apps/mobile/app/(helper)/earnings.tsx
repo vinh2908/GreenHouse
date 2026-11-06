@@ -370,7 +370,7 @@ export default function HelperEarningsScreen() {
                     style={{
                       width: 42,
                       height: 42,
-                      borderRadius: 12,
+                      borderRadius: 14,
                       backgroundColor: COLORS.gray[200],
                     }}
                   />
@@ -379,7 +379,7 @@ export default function HelperEarningsScreen() {
                       style={{
                         width: '70%',
                         height: 14,
-                        borderRadius: 4,
+                        borderRadius: 8,
                         backgroundColor: COLORS.gray[200],
                       }}
                     />
@@ -387,7 +387,7 @@ export default function HelperEarningsScreen() {
                       style={{
                         width: '40%',
                         height: 11,
-                        borderRadius: 4,
+                        borderRadius: 8,
                         backgroundColor: COLORS.gray[100],
                       }}
                     />
@@ -396,7 +396,7 @@ export default function HelperEarningsScreen() {
                     style={{
                       width: 60,
                       height: 16,
-                      borderRadius: 4,
+                      borderRadius: 8,
                       backgroundColor: COLORS.gray[200],
                     }}
                   />
@@ -440,7 +440,7 @@ export default function HelperEarningsScreen() {
                           style={{
                             width: 42,
                             height: 42,
-                            borderRadius: 21,
+                            borderRadius: 14,
                             backgroundColor: isCredit ? '#ECFDF5' : COLORS.gray[100],
                             alignItems: 'center',
                             justifyContent: 'center',
@@ -563,7 +563,7 @@ export default function HelperEarningsScreen() {
                       style={{
                         paddingHorizontal: 14,
                         paddingVertical: 10,
-                        borderRadius: 12,
+                        borderRadius: 14,
                         borderWidth: 1.5,
                         borderColor: topupAmount === preset ? COLORS.primary : COLORS.gray[200],
                         backgroundColor: topupAmount === preset ? COLORS.primaryLight : '#fff',
@@ -590,7 +590,7 @@ export default function HelperEarningsScreen() {
                   style={{
                     borderWidth: 1.5,
                     borderColor: COLORS.gray[200],
-                    borderRadius: 12,
+                    borderRadius: 14,
                     padding: 14,
                     fontSize: fs(22),
                     fontWeight: '800',
@@ -653,7 +653,7 @@ export default function HelperEarningsScreen() {
                   style={{
                     borderWidth: 1.5,
                     borderColor: COLORS.gray[200],
-                    borderRadius: 12,
+                    borderRadius: 14,
                     padding: 14,
                     fontSize: fs(22),
                     fontWeight: '800',
@@ -697,7 +697,7 @@ export default function HelperEarningsScreen() {
                     style={{
                       borderWidth: 1.5,
                       borderColor: COLORS.gray[200],
-                      borderRadius: 12,
+                      borderRadius: 14,
                       padding: 14,
                       fontSize: fs(15),
                       color: COLORS.gray[900],

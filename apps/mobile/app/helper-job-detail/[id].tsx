@@ -629,7 +629,7 @@ export default function HelperJobDetailScreen() {
           style={{
             width: 40,
             height: 40,
-            borderRadius: 12,
+            borderRadius: 14,
             backgroundColor: COLORS.gray[100],
             alignItems: 'center',
             justifyContent: 'center',
@@ -826,7 +826,7 @@ export default function HelperJobDetailScreen() {
               style={{
                 width: 44,
                 height: 44,
-                borderRadius: 22,
+                borderRadius: 14,
                 backgroundColor: COLORS.primary,
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -848,7 +848,7 @@ export default function HelperJobDetailScreen() {
             </View>
             <TouchableOpacity
               onPress={() => router.push({ pathname: '/chat/[jobId]', params: { jobId: id } })}
-              style={{ backgroundColor: COLORS.primaryLight, borderRadius: 12, padding: 10 }}
+              style={{ backgroundColor: COLORS.primaryLight, borderRadius: 14, padding: 10 }}
             >
               <MessageCircle size={20} color={COLORS.primary} />
             </TouchableOpacity>
@@ -869,7 +869,7 @@ export default function HelperJobDetailScreen() {
                     },
                   })
                 }
-                style={{ backgroundColor: COLORS.primaryLight, borderRadius: 12, padding: 10 }}
+                style={{ backgroundColor: COLORS.primaryLight, borderRadius: 14, padding: 10 }}
               >
                 <Phone size={20} color={COLORS.primary} />
               </TouchableOpacity>
@@ -910,7 +910,7 @@ export default function HelperJobDetailScreen() {
                       key={am._id}
                       style={{
                         padding: 10,
-                        borderRadius: 10,
+                        borderRadius: 8,
                         backgroundColor: COLORS.gray[50],
                         borderWidth: 1,
                         borderColor: COLORS.gray[200],
@@ -1270,7 +1270,7 @@ export default function HelperJobDetailScreen() {
               width: '100%',
               maxWidth: 420,
               backgroundColor: '#fff',
-              borderRadius: 20,
+              borderRadius: 14,
               padding: 20,
               gap: 14,
             }}
@@ -1344,7 +1344,7 @@ export default function HelperJobDetailScreen() {
                 style={{
                   borderWidth: 1,
                   borderColor: COLORS.gray[200],
-                  borderRadius: 10,
+                  borderRadius: 8,
                   padding: 10,
                   fontSize: fs(13.5),
                   color: COLORS.gray[900],
@@ -1615,7 +1615,7 @@ export default function HelperJobDetailScreen() {
                       style={{
                         paddingHorizontal: 16,
                         paddingVertical: 10,
-                        borderRadius: 12,
+                        borderRadius: 14,
                         borderWidth: 2,
                         borderColor:
                           estimatedDuration === String(h) ? COLORS.primary : COLORS.gray[200],
@@ -1758,7 +1758,7 @@ export default function HelperJobDetailScreen() {
                       backgroundColor: '#FFF4ED',
                       borderWidth: 1.5,
                       borderColor: COLORS.primary,
-                      borderRadius: 12,
+                      borderRadius: 14,
                       paddingVertical: 12,
                     }}
                   >
@@ -1778,7 +1778,7 @@ export default function HelperJobDetailScreen() {
                       justifyContent: 'center',
                       gap: 6,
                       backgroundColor: COLORS.gray[100],
-                      borderRadius: 12,
+                      borderRadius: 14,
                       paddingVertical: 12,
                     }}
                   >
@@ -1800,7 +1800,7 @@ export default function HelperJobDetailScreen() {
                         style={{
                           width: '30%',
                           aspectRatio: 1,
-                          borderRadius: 12,
+                          borderRadius: 14,
                           overflow: 'hidden',
                           position: 'relative',
                           borderWidth: 1,
@@ -1824,7 +1824,7 @@ export default function HelperJobDetailScreen() {
                             backgroundColor: 'rgba(0,0,0,0.65)',
                             width: 24,
                             height: 24,
-                            borderRadius: 12,
+                            borderRadius: 14,
                             alignItems: 'center',
                             justifyContent: 'center',
                           }}
@@ -1868,7 +1868,7 @@ export default function HelperJobDetailScreen() {
                       backgroundColor: '#EEF4FE',
                       borderWidth: 1.5,
                       borderColor: COLORS.secondary,
-                      borderRadius: 12,
+                      borderRadius: 14,
                       paddingVertical: 12,
                     }}
                   >
@@ -1890,7 +1890,7 @@ export default function HelperJobDetailScreen() {
                       justifyContent: 'center',
                       gap: 6,
                       backgroundColor: COLORS.gray[100],
-                      borderRadius: 12,
+                      borderRadius: 14,
                       paddingVertical: 12,
                     }}
                   >
@@ -1915,7 +1915,7 @@ export default function HelperJobDetailScreen() {
                           justifyContent: 'space-between',
                           backgroundColor: COLORS.gray[50],
                           padding: 12,
-                          borderRadius: 12,
+                          borderRadius: 14,
                           borderWidth: 1,
                           borderColor: COLORS.gray[200],
                         }}

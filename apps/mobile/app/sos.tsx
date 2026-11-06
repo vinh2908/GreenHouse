@@ -281,7 +281,7 @@ export default function SosScreen() {
           style={{
             width: 38,
             height: 38,
-            borderRadius: 12,
+            borderRadius: 14,
             backgroundColor: 'rgba(255,255,255,0.2)',
             alignItems: 'center',
             justifyContent: 'center',
@@ -335,7 +335,7 @@ export default function SosScreen() {
                 style={{
                   flex: 1,
                   backgroundColor: '#DC2626',
-                  borderRadius: 10,
+                  borderRadius: 8,
                   paddingVertical: 8,
                   alignItems: 'center',
                   flexDirection: 'row',
@@ -353,7 +353,7 @@ export default function SosScreen() {
                 style={{
                   flex: 1,
                   backgroundColor: '#2563EB',
-                  borderRadius: 10,
+                  borderRadius: 8,
                   paddingVertical: 8,
                   alignItems: 'center',
                   flexDirection: 'row',
@@ -388,7 +388,7 @@ export default function SosScreen() {
                     backgroundColor: isSelected ? cat.bg : '#FFFFFF',
                     borderWidth: 2,
                     borderColor: isSelected ? cat.color : COLORS.gray[200],
-                    borderRadius: 16,
+                    borderRadius: 14,
                     padding: 14,
                     flexDirection: 'row',
                     alignItems: 'center',
@@ -399,7 +399,7 @@ export default function SosScreen() {
                     style={{
                       width: 44,
                       height: 44,
-                      borderRadius: 12,
+                      borderRadius: 14,
                       backgroundColor: cat.bg,
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -420,7 +420,7 @@ export default function SosScreen() {
                       style={{
                         width: 24,
                         height: 24,
-                        borderRadius: 12,
+                        borderRadius: 14,
                         backgroundColor: cat.color,
                         alignItems: 'center',
                         justifyContent: 'center',
@@ -455,7 +455,7 @@ export default function SosScreen() {
                     backgroundColor: COLORS.gray[100],
                     paddingHorizontal: 8,
                     paddingVertical: 4,
-                    borderRadius: 6,
+                    borderRadius: 8,
                   }}
                 >
                   <Text style={{ fontSize: fs(11), color: COLORS.gray[700], fontWeight: '700' }}>
@@ -478,7 +478,7 @@ export default function SosScreen() {
                     backgroundColor: '#ECFDF5',
                     paddingHorizontal: 8,
                     paddingVertical: 4,
-                    borderRadius: 6,
+                    borderRadius: 8,
                   }}
                 >
                   {isLocating ? (
@@ -505,7 +505,7 @@ export default function SosScreen() {
                   style={{
                     borderWidth: 1.5,
                     borderColor: COLORS.primary,
-                    borderRadius: 10,
+                    borderRadius: 8,
                     padding: 10,
                     fontSize: fs(14),
                     color: COLORS.gray[900],
@@ -574,7 +574,7 @@ export default function SosScreen() {
                   gap: 8,
                   backgroundColor: COLORS.gray[50],
                   padding: 12,
-                  borderRadius: 12,
+                  borderRadius: 14,
                 }}
               >
                 <MapPin size={18} color={COLORS.primary} style={{ marginTop: 2 }} />
@@ -690,7 +690,7 @@ export default function SosScreen() {
           onPress={handleSendSos}
           style={{
             backgroundColor: '#DC2626',
-            borderRadius: 16,
+            borderRadius: 14,
             paddingVertical: 16,
             alignItems: 'center',
             justifyContent: 'center',

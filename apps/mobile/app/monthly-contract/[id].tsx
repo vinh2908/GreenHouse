@@ -190,7 +190,7 @@ export default function MonthlyContractDetailScreen() {
           style={{
             width: 40,
             height: 40,
-            borderRadius: 12,
+            borderRadius: 14,
             backgroundColor: COLORS.gray[100],
             alignItems: 'center',
             justifyContent: 'center',
@@ -623,7 +623,7 @@ export default function MonthlyContractDetailScreen() {
                 style={{
                   borderWidth: 1,
                   borderColor: COLORS.gray[200],
-                  borderRadius: 10,
+                  borderRadius: 8,
                   paddingHorizontal: 12,
                   paddingVertical: 10,
                   fontSize: fs(14),
@@ -637,7 +637,7 @@ export default function MonthlyContractDetailScreen() {
                 style={{
                   borderWidth: 1,
                   borderColor: COLORS.gray[200],
-                  borderRadius: 10,
+                  borderRadius: 8,
                   paddingHorizontal: 12,
                   paddingVertical: 10,
                   fontSize: fs(14),

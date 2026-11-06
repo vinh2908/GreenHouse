@@ -277,7 +277,7 @@ export function DemandMapView({ areas, focus, height = 300, userCoords }: Props)
     <View
       style={{
         height,
-        borderRadius: 16,
+        borderRadius: 14,
         overflow: 'hidden',
         backgroundColor: COLORS.gray[100],
       }}

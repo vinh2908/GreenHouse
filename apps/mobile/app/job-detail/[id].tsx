@@ -1007,7 +1007,7 @@ export default function JobDetailScreen() {
           style={{
             width: 42,
             height: 42,
-            borderRadius: 12,
+            borderRadius: 14,
             backgroundColor: COLORS.gray[100],
             alignItems: 'center',
             justifyContent: 'center',
@@ -1250,7 +1250,7 @@ export default function JobDetailScreen() {
                 style={{
                   backgroundColor: '#fff',
                   padding: 12,
-                  borderRadius: 12,
+                  borderRadius: 14,
                   borderWidth: 1,
                   borderColor: COLORS.gray[200],
                   gap: 4,
@@ -1297,7 +1297,7 @@ export default function JobDetailScreen() {
                 style={{
                   width: 32,
                   height: 32,
-                  borderRadius: 16,
+                  borderRadius: 14,
                   backgroundColor: COLORS.gray[200],
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -1408,7 +1408,7 @@ export default function JobDetailScreen() {
                     style={{
                       width: 24,
                       height: 24,
-                      borderRadius: 12,
+                      borderRadius: 14,
                       alignItems: 'center',
                       justifyContent: 'center',
                       backgroundColor: done
@@ -1460,7 +1460,7 @@ export default function JobDetailScreen() {
                         backgroundColor: COLORS.primaryLight,
                         paddingHorizontal: 8,
                         paddingVertical: 2,
-                        borderRadius: 6,
+                        borderRadius: 8,
                       }}
                     >
                       <Text style={{ color: COLORS.primary, fontSize: fs(11), fontWeight: '800' }}>
@@ -1551,7 +1551,7 @@ export default function JobDetailScreen() {
                   backgroundColor: COLORS.primaryLight,
                   paddingHorizontal: 10,
                   paddingVertical: 5,
-                  borderRadius: 10,
+                  borderRadius: 8,
                 }}
               >
                 <Edit3 size={13} color={COLORS.primary} />
@@ -1579,7 +1579,7 @@ export default function JobDetailScreen() {
                     style={{
                       width: 90,
                       height: 90,
-                      borderRadius: 12,
+                      borderRadius: 14,
                       overflow: 'hidden',
                       borderWidth: 1,
                       borderColor: COLORS.gray[200],
@@ -1688,7 +1688,7 @@ export default function JobDetailScreen() {
                 onPress={() => router.push({ pathname: '/chat/[jobId]', params: { jobId: id } })}
                 style={{
                   backgroundColor: COLORS.primaryLight,
-                  borderRadius: 12,
+                  borderRadius: 14,
                   padding: 10,
                   borderWidth: 1,
                   borderColor: '#FFD9C5',
@@ -1766,7 +1766,7 @@ export default function JobDetailScreen() {
                         style={{
                           borderWidth: 1.5,
                           borderColor: COLORS.gray[200],
-                          borderRadius: 16,
+                          borderRadius: 14,
                           padding: 14,
                           gap: 10,
                           backgroundColor: '#fff',
@@ -1820,7 +1820,7 @@ export default function JobDetailScreen() {
                             style={{
                               backgroundColor: COLORS.gray[50],
                               padding: 10,
-                              borderRadius: 10,
+                              borderRadius: 8,
                             }}
                           >
                             <Text
@@ -1995,7 +1995,7 @@ export default function JobDetailScreen() {
                       key={am._id}
                       style={{
                         padding: 12,
-                        borderRadius: 12,
+                        borderRadius: 14,
                         borderWidth: 1.5,
                         borderColor: isPending
                           ? COLORS.warning
@@ -2119,7 +2119,7 @@ export default function JobDetailScreen() {
             </View>
 
             {job.completion_notes && (
-              <View style={{ backgroundColor: COLORS.gray[50], padding: 12, borderRadius: 12 }}>
+              <View style={{ backgroundColor: COLORS.gray[50], padding: 12, borderRadius: 14 }}>
                 <Text
                   style={{
                     fontSize: fs(13),
@@ -2196,7 +2196,7 @@ export default function JobDetailScreen() {
                         justifyContent: 'space-between',
                         backgroundColor: '#EEF4FE',
                         padding: 12,
-                        borderRadius: 12,
+                        borderRadius: 14,
                         borderWidth: 1,
                         borderColor: '#BFDBFE',
                       }}
@@ -2206,7 +2206,7 @@ export default function JobDetailScreen() {
                           style={{
                             width: 36,
                             height: 36,
-                            borderRadius: 10,
+                            borderRadius: 8,
                             backgroundColor: COLORS.secondary,
                             alignItems: 'center',
                             justifyContent: 'center',
@@ -2409,7 +2409,7 @@ export default function JobDetailScreen() {
                   backgroundColor: '#F8FAFC',
                   borderColor: COLORS.gray[200],
                   borderWidth: 1,
-                  borderRadius: 12,
+                  borderRadius: 14,
                   padding: 14,
                   flexDirection: 'row',
                   alignItems: 'center',
@@ -2453,7 +2453,7 @@ export default function JobDetailScreen() {
               width: '100%',
               maxWidth: 420,
               backgroundColor: '#fff',
-              borderRadius: 24,
+              borderRadius: 14,
               padding: 22,
               alignItems: 'center',
               shadowColor: '#111827',
@@ -2467,7 +2467,7 @@ export default function JobDetailScreen() {
               style={{
                 width: 58,
                 height: 58,
-                borderRadius: 20,
+                borderRadius: 14,
                 backgroundColor: COLORS.primaryLight,
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -2631,7 +2631,7 @@ export default function JobDetailScreen() {
                     backgroundColor: '#FEF2F2',
                     borderWidth: 1.5,
                     borderColor: COLORS.error,
-                    borderRadius: 12,
+                    borderRadius: 14,
                     paddingVertical: 12,
                   }}
                 >
@@ -2649,7 +2649,7 @@ export default function JobDetailScreen() {
                     justifyContent: 'center',
                     gap: 6,
                     backgroundColor: COLORS.gray[100],
-                    borderRadius: 12,
+                    borderRadius: 14,
                     paddingVertical: 12,
                   }}
                 >
@@ -2667,7 +2667,7 @@ export default function JobDetailScreen() {
                       style={{
                         width: 84,
                         height: 84,
-                        borderRadius: 12,
+                        borderRadius: 14,
                         overflow: 'hidden',
                         position: 'relative',
                       }}
@@ -2682,7 +2682,7 @@ export default function JobDetailScreen() {
                           backgroundColor: 'rgba(0,0,0,0.65)',
                           width: 22,
                           height: 22,
-                          borderRadius: 11,
+                          borderRadius: 14,
                           alignItems: 'center',
                           justifyContent: 'center',
                         }}
@@ -2735,7 +2735,7 @@ export default function JobDetailScreen() {
               backgroundColor: 'rgba(255,255,255,0.2)',
               width: 44,
               height: 44,
-              borderRadius: 22,
+              borderRadius: 14,
               alignItems: 'center',
               justifyContent: 'center',
               zIndex: 99,
@@ -2745,7 +2745,7 @@ export default function JobDetailScreen() {
           </TouchableOpacity>
 
           {selectedMediaPreview && (
-            <View style={{ width: '100%', height: '75%', borderRadius: 16, overflow: 'hidden' }}>
+            <View style={{ width: '100%', height: '75%', borderRadius: 14, overflow: 'hidden' }}>
               {isVideoUrl(selectedMediaPreview) ? (
                 <WebView
                   originWhitelist={['*']}
@@ -2830,7 +2830,7 @@ export default function JobDetailScreen() {
                           style={{
                             backgroundColor: '#fff',
                             padding: 12,
-                            borderRadius: 10,
+                            borderRadius: 8,
                             gap: 6,
                             borderWidth: 1,
                             borderColor: COLORS.gray[200],
@@ -2938,7 +2938,7 @@ export default function JobDetailScreen() {
                           alignItems: 'center',
                           justifyContent: 'space-between',
                           padding: 12,
-                          borderRadius: 12,
+                          borderRadius: 14,
                           borderWidth: 1.5,
                           borderColor: selected ? COLORS.primary : COLORS.gray[200],
                           backgroundColor: selected ? COLORS.primaryLight : '#fff',
@@ -3194,7 +3194,7 @@ export default function JobDetailScreen() {
                       padding: 10,
                       marginTop: 4,
                       backgroundColor: COLORS.gray[50],
-                      borderRadius: 10,
+                      borderRadius: 8,
                       borderWidth: 1,
                       borderColor: COLORS.gray[200],
                     }}
@@ -3395,7 +3395,7 @@ export default function JobDetailScreen() {
                 backgroundColor: '#FFFBEB',
                 borderColor: '#FDE68A',
                 borderWidth: 1,
-                borderRadius: 12,
+                borderRadius: 14,
                 padding: 14,
                 gap: 4,
               }}
@@ -3514,7 +3514,7 @@ export default function JobDetailScreen() {
               width: '100%',
               maxWidth: 420,
               backgroundColor: '#fff',
-              borderRadius: 20,
+              borderRadius: 14,
               padding: 20,
               gap: 14,
               shadowColor: '#000',
@@ -3636,7 +3636,7 @@ export default function JobDetailScreen() {
                 style={{
                   borderWidth: 1,
                   borderColor: COLORS.gray[200],
-                  borderRadius: 10,
+                  borderRadius: 8,
                   padding: 10,
                   fontSize: fs(13.5),
                   color: COLORS.gray[900],
@@ -3700,7 +3700,7 @@ export default function JobDetailScreen() {
               width: '100%',
               maxWidth: 400,
               backgroundColor: '#fff',
-              borderRadius: 20,
+              borderRadius: 14,
               padding: 20,
               gap: 14,
             }}
@@ -3733,7 +3733,7 @@ export default function JobDetailScreen() {
               style={{
                 borderWidth: 1,
                 borderColor: COLORS.gray[200],
-                borderRadius: 10,
+                borderRadius: 8,
                 padding: 10,
                 fontSize: fs(13.5),
                 color: COLORS.gray[900],
@@ -3795,7 +3795,7 @@ export default function JobDetailScreen() {
               width: '100%',
               maxWidth: 400,
               backgroundColor: '#fff',
-              borderRadius: 20,
+              borderRadius: 14,
               padding: 20,
               gap: 14,
             }}
@@ -3828,7 +3828,7 @@ export default function JobDetailScreen() {
               style={{
                 borderWidth: 1,
                 borderColor: COLORS.gray[200],
-                borderRadius: 10,
+                borderRadius: 8,
                 padding: 10,
                 fontSize: fs(13.5),
                 color: COLORS.gray[900],
@@ -4040,7 +4040,7 @@ function JobVoucherRow({ job, contractTotal }: { job: any; contractTotal: number
           alignItems: 'center',
           gap: 8,
           backgroundColor: COLORS.successLight,
-          borderRadius: 10,
+          borderRadius: 8,
           padding: 10,
         }}
       >
@@ -4082,7 +4082,7 @@ function JobVoucherRow({ job, contractTotal }: { job: any; contractTotal: number
             flex: 1,
             borderWidth: 1,
             borderColor: error ? COLORS.error : COLORS.gray[200],
-            borderRadius: 10,
+            borderRadius: 8,
             paddingHorizontal: 10,
             paddingVertical: 8,
             fontSize: fs(13),
@@ -4113,7 +4113,7 @@ function JobVoucherRow({ job, contractTotal }: { job: any; contractTotal: number
           }}
           style={{
             backgroundColor: COLORS.primary,
-            borderRadius: 10,
+            borderRadius: 8,
             paddingHorizontal: 14,
             alignItems: 'center',
             justifyContent: 'center',

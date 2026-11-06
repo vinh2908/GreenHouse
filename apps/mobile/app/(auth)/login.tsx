@@ -190,7 +190,7 @@ export default function LoginScreen() {
               style={{
                 width: 84,
                 height: 84,
-                borderRadius: 24,
+                borderRadius: 14,
                 backgroundColor: '#F0FDF4',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -204,7 +204,7 @@ export default function LoginScreen() {
             >
               <Image
                 source={require('../../assets/images/logo.png')}
-                style={{ width: 84, height: 84, borderRadius: 24 }}
+                style={{ width: 84, height: 84, borderRadius: 14 }}
                 resizeMode="contain"
               />
             </View>
@@ -288,7 +288,7 @@ export default function LoginScreen() {
                   backgroundColor: '#FEF2F2',
                   borderWidth: 1,
                   borderColor: '#FCA5A5',
-                  borderRadius: 10,
+                  borderRadius: 8,
                   padding: 10,
                   marginTop: 6,
                 }}
@@ -448,7 +448,7 @@ export default function LoginScreen() {
                       borderWidth: 1,
                       paddingVertical: 8,
                       paddingHorizontal: 12,
-                      borderRadius: 10,
+                      borderRadius: 8,
                     }}
                   >
                     <Text style={{ fontSize: fs(12.5), color: '#16A34A', fontWeight: '700' }}>

@@ -1299,7 +1299,7 @@ export default function BookingScreen() {
           style={{
             width: 40,
             height: 40,
-            borderRadius: 12,
+            borderRadius: 14,
             backgroundColor: COLORS.gray[100],
             alignItems: 'center',
             justifyContent: 'center',
@@ -1323,7 +1323,7 @@ export default function BookingScreen() {
               style={{
                 flex: 1,
                 height: 4,
-                borderRadius: 2,
+                borderRadius: 8,
                 backgroundColor: i <= step ? COLORS.primary : COLORS.gray[200],
               }}
             />
@@ -1361,7 +1361,7 @@ export default function BookingScreen() {
                 <TextInput
                   style={{
                     backgroundColor: 'rgba(255,255,255,0.1)',
-                    borderRadius: 12,
+                    borderRadius: 14,
                     padding: 12,
                     color: '#fff',
                     fontSize: fs(14),
@@ -1387,7 +1387,7 @@ export default function BookingScreen() {
                       gap: 8,
                       backgroundColor: 'rgba(255,255,255,0.06)',
                       padding: 12,
-                      borderRadius: 12,
+                      borderRadius: 14,
                       borderLeftWidth: 3,
                       borderLeftColor: COLORS.primary,
                       marginTop: 4,
@@ -1478,7 +1478,7 @@ export default function BookingScreen() {
                       style={{
                         backgroundColor: COLORS.primary,
                         paddingVertical: 9,
-                        borderRadius: 10,
+                        borderRadius: 8,
                         alignItems: 'center',
                         marginTop: 4,
                       }}
@@ -1515,7 +1515,7 @@ export default function BookingScreen() {
                         borderWidth: 2,
                         borderColor:
                           selectedService === svc._id ? COLORS.primary : COLORS.gray[200],
-                        borderRadius: 16,
+                        borderRadius: 14,
                         padding: 16,
                         flexDirection: 'row',
                         alignItems: 'center',
@@ -1527,7 +1527,7 @@ export default function BookingScreen() {
                         style={{
                           width: 44,
                           height: 44,
-                          borderRadius: 12,
+                          borderRadius: 14,
                           backgroundColor:
                             selectedService === svc._id ? '#DCFCE7' : COLORS.gray[100],
                           alignItems: 'center',
@@ -1589,7 +1589,7 @@ export default function BookingScreen() {
                           style={{
                             width: 24,
                             height: 24,
-                            borderRadius: 12,
+                            borderRadius: 14,
                             backgroundColor: COLORS.primary,
                             alignItems: 'center',
                             justifyContent: 'center',
@@ -1608,7 +1608,7 @@ export default function BookingScreen() {
                   onPress={() => setSelectedService('custom')}
                   style={{
                     padding: 16,
-                    borderRadius: 16,
+                    borderRadius: 14,
                     borderWidth: 2,
                     borderColor: selectedService === 'custom' ? COLORS.primary : '#86EFAC',
                     backgroundColor: selectedService === 'custom' ? COLORS.primaryLight : '#F0FDF4',
@@ -1621,7 +1621,7 @@ export default function BookingScreen() {
                     style={{
                       width: 44,
                       height: 44,
-                      borderRadius: 12,
+                      borderRadius: 14,
                       backgroundColor: '#DCFCE7',
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -1641,7 +1641,7 @@ export default function BookingScreen() {
                           backgroundColor: '#DCFCE7',
                           paddingHorizontal: 6,
                           paddingVertical: 2,
-                          borderRadius: 6,
+                          borderRadius: 8,
                         }}
                       >
                         <Text
@@ -1670,7 +1670,7 @@ export default function BookingScreen() {
                       style={{
                         width: 24,
                         height: 24,
-                        borderRadius: 12,
+                        borderRadius: 14,
                         backgroundColor: COLORS.primary,
                         alignItems: 'center',
                         justifyContent: 'center',
@@ -1685,7 +1685,7 @@ export default function BookingScreen() {
                   <View
                     style={{
                       backgroundColor: '#FFFFFF',
-                      borderRadius: 16,
+                      borderRadius: 14,
                       padding: 16,
                       borderWidth: 1.5,
                       borderColor: COLORS.primary,
@@ -1837,7 +1837,7 @@ export default function BookingScreen() {
                         padding: 10,
                         marginTop: 4,
                         backgroundColor: COLORS.gray[50],
-                        borderRadius: 10,
+                        borderRadius: 8,
                         borderWidth: 1,
                         borderColor: COLORS.gray[200],
                       }}
@@ -2155,7 +2155,7 @@ export default function BookingScreen() {
                       backgroundColor: COLORS.primaryLight,
                       borderWidth: 1.5,
                       borderColor: COLORS.primary,
-                      borderRadius: 12,
+                      borderRadius: 14,
                       paddingVertical: 11,
                     }}
                   >
@@ -2175,7 +2175,7 @@ export default function BookingScreen() {
                       justifyContent: 'center',
                       gap: 6,
                       backgroundColor: COLORS.gray[100],
-                      borderRadius: 12,
+                      borderRadius: 14,
                       paddingVertical: 11,
                     }}
                   >
@@ -2194,7 +2194,7 @@ export default function BookingScreen() {
                         style={{
                           width: '30%',
                           aspectRatio: 1,
-                          borderRadius: 12,
+                          borderRadius: 14,
                           overflow: 'hidden',
                           position: 'relative',
                           borderWidth: 1,
@@ -2215,7 +2215,7 @@ export default function BookingScreen() {
                             backgroundColor: 'rgba(0,0,0,0.65)',
                             width: 24,
                             height: 24,
-                            borderRadius: 12,
+                            borderRadius: 14,
                             alignItems: 'center',
                             justifyContent: 'center',
                           }}
@@ -2485,7 +2485,7 @@ export default function BookingScreen() {
                       style={{
                         flex: 1,
                         paddingVertical: 10,
-                        borderRadius: 12,
+                        borderRadius: 14,
                         borderWidth: 1.5,
                         borderColor: helpersNeeded === n ? COLORS.primary : COLORS.gray[200],
                         backgroundColor: helpersNeeded === n ? COLORS.primaryLight : '#fff',
@@ -2580,7 +2580,7 @@ export default function BookingScreen() {
                               style={{
                                 width: 42,
                                 height: 42,
-                                borderRadius: 21,
+                                borderRadius: 14,
                                 alignItems: 'center',
                                 justifyContent: 'center',
                                 backgroundColor: active ? COLORS.primary : COLORS.gray[100],
@@ -2617,7 +2617,7 @@ export default function BookingScreen() {
                             width: 56,
                             borderWidth: 1,
                             borderColor: COLORS.gray[200],
-                            borderRadius: 10,
+                            borderRadius: 8,
                             paddingHorizontal: 10,
                             paddingVertical: 8,
                             fontSize: fs(14),

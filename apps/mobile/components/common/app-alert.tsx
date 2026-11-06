@@ -164,7 +164,7 @@ export function AppAlertHost() {
               accessibilityViewIsModal
               style={{
                 backgroundColor: '#FFFFFF',
-                borderRadius: 24,
+                borderRadius: 14,
                 padding: 24,
                 width: '100%',
                 maxWidth: 420,
@@ -183,7 +183,7 @@ export function AppAlertHost() {
                 style={{
                   width: 58,
                   height: 58,
-                  borderRadius: 29,
+                  borderRadius: 999,
                   backgroundColor: iconBg,
                   alignItems: 'center',
                   justifyContent: 'center',

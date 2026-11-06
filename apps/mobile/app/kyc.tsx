@@ -259,7 +259,7 @@ export default function KycScreen() {
           style={{
             width: 40,
             height: 40,
-            borderRadius: 12,
+            borderRadius: 14,
             backgroundColor: COLORS.gray[100],
             alignItems: 'center',
             justifyContent: 'center',
@@ -297,7 +297,7 @@ export default function KycScreen() {
                 style={{
                   width: 68,
                   height: 68,
-                  borderRadius: 34,
+                  borderRadius: 999,
                   backgroundColor: '#10B981',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -334,7 +334,7 @@ export default function KycScreen() {
                   backgroundColor: '#fff',
                   paddingHorizontal: 16,
                   paddingVertical: 10,
-                  borderRadius: 12,
+                  borderRadius: 14,
                   marginTop: 4,
                 }}
               >
@@ -362,7 +362,7 @@ export default function KycScreen() {
                 style={{
                   width: 68,
                   height: 68,
-                  borderRadius: 34,
+                  borderRadius: 999,
                   backgroundColor: '#F59E0B',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -396,7 +396,7 @@ export default function KycScreen() {
                 style={{
                   backgroundColor: '#fff',
                   padding: 12,
-                  borderRadius: 12,
+                  borderRadius: 14,
                   width: '100%',
                   gap: 6,
                   marginTop: 4,
@@ -577,7 +577,7 @@ export default function KycScreen() {
                         style={{
                           width: 48,
                           height: 48,
-                          borderRadius: 24,
+                          borderRadius: 14,
                           backgroundColor: COLORS.primaryLight,
                           alignItems: 'center',
                           justifyContent: 'center',
@@ -675,7 +675,7 @@ export default function KycScreen() {
                         style={{
                           width: 48,
                           height: 48,
-                          borderRadius: 24,
+                          borderRadius: 14,
                           backgroundColor: COLORS.primaryLight,
                           alignItems: 'center',
                           justifyContent: 'center',
@@ -775,7 +775,7 @@ export default function KycScreen() {
                         style={{
                           width: 48,
                           height: 48,
-                          borderRadius: 24,
+                          borderRadius: 14,
                           backgroundColor: COLORS.primaryLight,
                           alignItems: 'center',
                           justifyContent: 'center',
@@ -853,7 +853,7 @@ export default function KycScreen() {
                 style={{
                   width: 32,
                   height: 32,
-                  borderRadius: 16,
+                  borderRadius: 14,
                   backgroundColor: COLORS.gray[100],
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -882,7 +882,7 @@ export default function KycScreen() {
                 style={{
                   width: 44,
                   height: 44,
-                  borderRadius: 12,
+                  borderRadius: 14,
                   backgroundColor: COLORS.primaryLight,
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -922,7 +922,7 @@ export default function KycScreen() {
                 style={{
                   width: 44,
                   height: 44,
-                  borderRadius: 12,
+                  borderRadius: 14,
                   backgroundColor: '#EFF6FF',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -963,7 +963,7 @@ export default function KycScreen() {
                   style={{
                     width: 44,
                     height: 44,
-                    borderRadius: 12,
+                    borderRadius: 14,
                     backgroundColor: '#EDE9FE',
                     alignItems: 'center',
                     justifyContent: 'center',

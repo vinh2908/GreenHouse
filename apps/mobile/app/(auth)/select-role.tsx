@@ -85,7 +85,7 @@ export default function SelectRoleScreen() {
               style={{
                 width: 64,
                 height: 64,
-                borderRadius: 20,
+                borderRadius: 14,
                 backgroundColor: COLORS.primary,
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -141,7 +141,7 @@ export default function SelectRoleScreen() {
                   borderColor: selectedRole === 'customer' ? COLORS.primary : COLORS.gray[200],
                   backgroundColor: selectedRole === 'customer' ? COLORS.primaryLight : '#fff',
                   padding: 20,
-                  borderRadius: 20,
+                  borderRadius: 14,
                   gap: 12,
                 }}
               >
@@ -156,7 +156,7 @@ export default function SelectRoleScreen() {
                     style={{
                       width: 52,
                       height: 52,
-                      borderRadius: 16,
+                      borderRadius: 14,
                       backgroundColor: selectedRole === 'customer' ? '#fff' : COLORS.gray[100],
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -171,7 +171,7 @@ export default function SelectRoleScreen() {
                     style={{
                       width: 24,
                       height: 24,
-                      borderRadius: 12,
+                      borderRadius: 14,
                       borderWidth: 2,
                       borderColor: selectedRole === 'customer' ? COLORS.primary : COLORS.gray[300],
                       alignItems: 'center',
@@ -210,7 +210,7 @@ export default function SelectRoleScreen() {
                   borderColor: selectedRole === 'helper' ? COLORS.primary : COLORS.gray[200],
                   backgroundColor: selectedRole === 'helper' ? COLORS.primaryLight : '#fff',
                   padding: 20,
-                  borderRadius: 20,
+                  borderRadius: 14,
                   gap: 12,
                 }}
               >
@@ -225,7 +225,7 @@ export default function SelectRoleScreen() {
                     style={{
                       width: 52,
                       height: 52,
-                      borderRadius: 16,
+                      borderRadius: 14,
                       backgroundColor: selectedRole === 'helper' ? '#fff' : COLORS.gray[100],
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -240,7 +240,7 @@ export default function SelectRoleScreen() {
                     style={{
                       width: 24,
                       height: 24,
-                      borderRadius: 12,
+                      borderRadius: 14,
                       borderWidth: 2,
                       borderColor: selectedRole === 'helper' ? COLORS.primary : COLORS.gray[300],
                       alignItems: 'center',

@@ -177,7 +177,7 @@ export default function HelperProfileScreen() {
                 backgroundColor: COLORS.gray[100],
                 paddingHorizontal: 10,
                 paddingVertical: 4,
-                borderRadius: 10,
+                borderRadius: 8,
                 marginTop: 6,
               }}
             >
@@ -244,7 +244,7 @@ export default function HelperProfileScreen() {
               padding: 14,
               borderWidth: 1.5,
               borderColor: COLORS.primary,
-              borderRadius: 16,
+              borderRadius: 14,
               backgroundColor: COLORS.primaryLight,
             }}
           >

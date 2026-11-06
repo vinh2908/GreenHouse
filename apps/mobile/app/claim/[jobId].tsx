@@ -139,7 +139,7 @@ export default function ClaimScreen() {
   const inputStyle = {
     borderWidth: 1,
     borderColor: COLORS.gray[200],
-    borderRadius: 10,
+    borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: fs(14),
@@ -170,7 +170,7 @@ export default function ClaimScreen() {
           style={{
             width: 40,
             height: 40,
-            borderRadius: 12,
+            borderRadius: 14,
             backgroundColor: COLORS.gray[100],
             alignItems: 'center',
             justifyContent: 'center',
@@ -244,7 +244,7 @@ export default function ClaimScreen() {
                   <View
                     style={{
                       backgroundColor: COLORS.errorLight,
-                      borderRadius: 10,
+                      borderRadius: 8,
                       padding: 10,
                     }}
                   >
@@ -271,7 +271,7 @@ export default function ClaimScreen() {
                       <Image
                         key={i}
                         source={{ uri }}
-                        style={{ width: 96, height: 96, borderRadius: 10 }}
+                        style={{ width: 96, height: 96, borderRadius: 8 }}
                       />
                     ))}
                   </View>
@@ -290,7 +290,7 @@ export default function ClaimScreen() {
                         style={{
                           width: 10,
                           height: 10,
-                          borderRadius: 5,
+                          borderRadius: 8,
                           backgroundColor: COLORS.primary,
                           marginTop: 4,
                         }}
@@ -400,7 +400,7 @@ export default function ClaimScreen() {
                       key={i}
                       onPress={() => setPhotos(prev => prev.filter((_, idx) => idx !== i))}
                     >
-                      <Image source={{ uri }} style={{ width: 84, height: 84, borderRadius: 10 }} />
+                      <Image source={{ uri }} style={{ width: 84, height: 84, borderRadius: 8 }} />
                     </TouchableOpacity>
                   ))}
                   {photos.length < 6 && (
@@ -409,7 +409,7 @@ export default function ClaimScreen() {
                       style={{
                         width: 84,
                         height: 84,
-                        borderRadius: 10,
+                        borderRadius: 8,
                         borderWidth: 1.5,
                         borderStyle: 'dashed',
                         borderColor: COLORS.gray[300],

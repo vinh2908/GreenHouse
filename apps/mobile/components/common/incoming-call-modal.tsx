@@ -105,7 +105,7 @@ export function IncomingCallModal() {
         <View
           style={{
             backgroundColor: '#0B3D24',
-            borderRadius: 24,
+            borderRadius: 14,
             padding: 24,
             width: '100%',
             maxWidth: 420,
@@ -137,7 +137,7 @@ export function IncomingCallModal() {
               style={{
                 width: 64,
                 height: 64,
-                borderRadius: 32,
+                borderRadius: 999,
                 backgroundColor: '#EF4444',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -150,7 +150,7 @@ export function IncomingCallModal() {
               style={{
                 width: 64,
                 height: 64,
-                borderRadius: 32,
+                borderRadius: 999,
                 backgroundColor: '#22C55E',
                 alignItems: 'center',
                 justifyContent: 'center',

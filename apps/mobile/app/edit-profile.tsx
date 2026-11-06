@@ -494,7 +494,7 @@ export default function EditProfileScreen() {
           style={{
             width: 40,
             height: 40,
-            borderRadius: 12,
+            borderRadius: 14,
             backgroundColor: COLORS.gray[100],
             alignItems: 'center',
             justifyContent: 'center',
@@ -533,7 +533,7 @@ export default function EditProfileScreen() {
             style={{
               flex: 1,
               paddingVertical: 9,
-              borderRadius: 10,
+              borderRadius: 8,
               alignItems: 'center',
               backgroundColor: activeTab === 'general' ? COLORS.primaryLight : COLORS.gray[100],
               borderWidth: 1,
@@ -556,7 +556,7 @@ export default function EditProfileScreen() {
             style={{
               flex: 1,
               paddingVertical: 9,
-              borderRadius: 10,
+              borderRadius: 8,
               alignItems: 'center',
               backgroundColor: activeTab === 'career' ? COLORS.primaryLight : COLORS.gray[100],
               borderWidth: 1,
@@ -600,7 +600,7 @@ export default function EditProfileScreen() {
                     bottom: 0,
                     right: 0,
                     backgroundColor: COLORS.primary,
-                    borderRadius: 18,
+                    borderRadius: 14,
                     width: 34,
                     height: 34,
                     alignItems: 'center',
@@ -643,7 +643,7 @@ export default function EditProfileScreen() {
                       activeOpacity={0.8}
                       onPress={() => setAvatar(url)}
                       style={{
-                        borderRadius: 24,
+                        borderRadius: 14,
                         borderWidth: 2.5,
                         borderColor: isSelected ? COLORS.primary : 'transparent',
                         padding: 2,
@@ -654,7 +654,7 @@ export default function EditProfileScreen() {
                         style={{
                           width: 44,
                           height: 44,
-                          borderRadius: 22,
+                          borderRadius: 14,
                           backgroundColor: COLORS.gray[200],
                         }}
                       />
@@ -727,7 +727,7 @@ export default function EditProfileScreen() {
                       backgroundColor: '#ECFDF5',
                       paddingHorizontal: 8,
                       paddingVertical: 2,
-                      borderRadius: 6,
+                      borderRadius: 8,
                     }}
                   >
                     <ShieldCheck size={12} color={COLORS.success} />
@@ -801,7 +801,7 @@ export default function EditProfileScreen() {
                       style={{
                         flex: 1,
                         paddingVertical: 10,
-                        borderRadius: 12,
+                        borderRadius: 14,
                         alignItems: 'center',
                         borderWidth: 1.5,
                         borderColor: gender === g.id ? COLORS.primary : COLORS.gray[200],
@@ -914,7 +914,7 @@ export default function EditProfileScreen() {
                         alignItems: 'center',
                         gap: 5,
                         backgroundColor: 'rgba(17,24,39,0.85)',
-                        borderRadius: 10,
+                        borderRadius: 8,
                         paddingHorizontal: 10,
                         paddingVertical: 6,
                       }}
@@ -979,7 +979,7 @@ export default function EditProfileScreen() {
                     justifyContent: 'center',
                     gap: 8,
                     paddingVertical: 12,
-                    borderRadius: 12,
+                    borderRadius: 14,
                     backgroundColor: COLORS.primaryLight,
                     borderWidth: 1.5,
                     borderColor: COLORS.primary,
@@ -1080,7 +1080,7 @@ export default function EditProfileScreen() {
                         alignItems: 'center',
                         gap: 5,
                         backgroundColor: 'rgba(17,24,39,0.85)',
-                        borderRadius: 10,
+                        borderRadius: 8,
                         paddingHorizontal: 10,
                         paddingVertical: 6,
                       }}
@@ -1147,7 +1147,7 @@ export default function EditProfileScreen() {
                     justifyContent: 'center',
                     gap: 8,
                     paddingVertical: 12,
-                    borderRadius: 12,
+                    borderRadius: 14,
                     backgroundColor: COLORS.primaryLight,
                     borderWidth: 1.5,
                     borderColor: COLORS.primary,

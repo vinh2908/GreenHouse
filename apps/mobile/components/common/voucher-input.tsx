@@ -75,7 +75,7 @@ export function VoucherInput({
         <View
           style={{
             backgroundColor: COLORS.successLight,
-            borderRadius: 12,
+            borderRadius: 14,
             padding: 12,
             gap: 4,
           }}
@@ -173,7 +173,7 @@ export function VoucherInput({
                 flex: 1,
                 borderWidth: 1,
                 borderColor: error ? COLORS.error : COLORS.gray[200],
-                borderRadius: 12,
+                borderRadius: 14,
                 paddingHorizontal: 12,
                 paddingVertical: 10,
                 fontSize: fs(14),
@@ -188,7 +188,7 @@ export function VoucherInput({
               disabled={validate.isPending}
               style={{
                 backgroundColor: COLORS.primary,
-                borderRadius: 12,
+                borderRadius: 14,
                 paddingHorizontal: 16,
                 alignItems: 'center',
                 justifyContent: 'center',

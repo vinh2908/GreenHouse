@@ -200,7 +200,7 @@ export default function NotificationsScreen() {
             style={{
               width: 38,
               height: 38,
-              borderRadius: 12,
+              borderRadius: 14,
               backgroundColor: COLORS.gray[100],
               alignItems: 'center',
               justifyContent: 'center',
@@ -280,7 +280,7 @@ export default function NotificationsScreen() {
                   gap: 12,
                   padding: 14,
                   backgroundColor: n.is_read ? '#fff' : '#FFF7F3',
-                  borderRadius: 16,
+                  borderRadius: 14,
                   borderWidth: 1,
                   borderColor: n.is_read ? COLORS.gray[100] : '#FFD9C5',
                   alignItems: 'center',
@@ -336,7 +336,7 @@ export default function NotificationsScreen() {
                     style={{
                       width: 8,
                       height: 8,
-                      borderRadius: 4,
+                      borderRadius: 8,
                       backgroundColor: COLORS.primary,
                       marginRight: 4,
                     }}

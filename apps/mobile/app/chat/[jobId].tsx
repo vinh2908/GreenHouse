@@ -89,7 +89,7 @@ function ChatImageBubble({ uri, onPress }: { uri: string; onPress: () => void })
       style={{
         width: 220,
         height: 220,
-        borderRadius: 16,
+        borderRadius: 14,
         overflow: 'hidden',
         backgroundColor: '#F1F5F9',
         borderWidth: 1,
@@ -143,7 +143,7 @@ function ChatImageBubble({ uri, onPress }: { uri: string; onPress: () => void })
             style={{
               width: 36,
               height: 36,
-              borderRadius: 18,
+              borderRadius: 14,
               backgroundColor: '#FEE2E2',
               alignItems: 'center',
               justifyContent: 'center',
@@ -182,7 +182,7 @@ function ChatImageBubble({ uri, onPress }: { uri: string; onPress: () => void })
               backgroundColor: '#DC2626',
               paddingHorizontal: 10,
               paddingVertical: 4,
-              borderRadius: 6,
+              borderRadius: 8,
             }}
           >
             <Text style={{ fontSize: fs(10), color: '#fff', fontWeight: '700' }}>
@@ -434,7 +434,7 @@ export default function ChatScreen() {
             style={{
               width: 40,
               height: 40,
-              borderRadius: 12,
+              borderRadius: 14,
               backgroundColor: COLORS.gray[100],
               alignItems: 'center',
               justifyContent: 'center',
@@ -475,7 +475,7 @@ export default function ChatScreen() {
             style={{
               width: 40,
               height: 40,
-              borderRadius: 12,
+              borderRadius: 14,
               backgroundColor: COLORS.primaryLight,
               alignItems: 'center',
               justifyContent: 'center',
@@ -524,7 +524,7 @@ export default function ChatScreen() {
                         style={{
                           width: 220,
                           height: 220,
-                          borderRadius: 16,
+                          borderRadius: 14,
                           opacity: 0.55,
                           backgroundColor: COLORS.gray[100],
                         }}
@@ -573,7 +573,7 @@ export default function ChatScreen() {
                           left: -8,
                           width: 24,
                           height: 24,
-                          borderRadius: 12,
+                          borderRadius: 14,
                           backgroundColor: COLORS.gray[700],
                           alignItems: 'center',
                           justifyContent: 'center',
@@ -593,7 +593,7 @@ export default function ChatScreen() {
                   style={{
                     width: 56,
                     height: 56,
-                    borderRadius: 28,
+                    borderRadius: 999,
                     backgroundColor: COLORS.primaryLight,
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -660,7 +660,7 @@ export default function ChatScreen() {
                       maxWidth: '80%',
                       paddingHorizontal: 16,
                       paddingVertical: 12,
-                      borderRadius: 20,
+                      borderRadius: 14,
                       borderBottomRightRadius: isMe ? 4 : 20,
                       borderBottomLeftRadius: isMe ? 20 : 4,
                       backgroundColor: isMe ? COLORS.primary : '#FFFFFF',
@@ -720,7 +720,7 @@ export default function ChatScreen() {
               style={{
                 width: 44,
                 height: 44,
-                borderRadius: 22,
+                borderRadius: 14,
                 backgroundColor: COLORS.gray[100],
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -734,7 +734,7 @@ export default function ChatScreen() {
                 flex: 1,
                 borderWidth: 1.5,
                 borderColor: COLORS.gray[200],
-                borderRadius: 24,
+                borderRadius: 14,
                 paddingHorizontal: 18,
                 paddingVertical: 11,
                 fontSize: fs(15),
@@ -755,7 +755,7 @@ export default function ChatScreen() {
               style={{
                 width: 44,
                 height: 44,
-                borderRadius: 22,
+                borderRadius: 14,
                 backgroundColor: text.trim() ? COLORS.primary : COLORS.gray[200],
                 alignItems: 'center',
                 justifyContent: 'center',

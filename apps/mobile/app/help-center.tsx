@@ -177,7 +177,7 @@ export default function HelpCenterScreen() {
           style={{
             width: 40,
             height: 40,
-            borderRadius: 12,
+            borderRadius: 14,
             backgroundColor: COLORS.gray[100],
             alignItems: 'center',
             justifyContent: 'center',
@@ -208,7 +208,7 @@ export default function HelpCenterScreen() {
           style={{
             backgroundColor: '#0F172A',
             padding: 18,
-            borderRadius: 20,
+            borderRadius: 14,
             borderWidth: 0,
             gap: 14,
           }}
@@ -269,7 +269,7 @@ export default function HelpCenterScreen() {
                 backgroundColor: COLORS.primary,
                 paddingHorizontal: 16,
                 paddingVertical: 10,
-                borderRadius: 12,
+                borderRadius: 14,
                 flexDirection: 'row',
                 alignItems: 'center',
                 gap: 6,
@@ -289,7 +289,7 @@ export default function HelpCenterScreen() {
           onPress={() => router.push('/support-chat')}
           style={{
             backgroundColor: COLORS.primary,
-            borderRadius: 16,
+            borderRadius: 14,
             padding: 16,
             flexDirection: 'row',
             alignItems: 'center',
@@ -317,7 +317,7 @@ export default function HelpCenterScreen() {
               style={{
                 width: 36,
                 height: 36,
-                borderRadius: 10,
+                borderRadius: 8,
                 backgroundColor: COLORS.primaryLight,
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -373,7 +373,7 @@ export default function HelpCenterScreen() {
               style={{
                 backgroundColor: COLORS.primary,
                 padding: 8,
-                borderRadius: 10,
+                borderRadius: 8,
               }}
             >
               <Send size={16} color="#FFF" />
@@ -386,7 +386,7 @@ export default function HelpCenterScreen() {
               style={{
                 backgroundColor: '#DCFCE7',
                 padding: 12,
-                borderRadius: 12,
+                borderRadius: 14,
                 borderLeftWidth: 4,
                 borderLeftColor: COLORS.primary,
               }}
@@ -412,7 +412,7 @@ export default function HelpCenterScreen() {
                 flex: 1,
                 backgroundColor: '#FEF2F2',
                 padding: 14,
-                borderRadius: 16,
+                borderRadius: 14,
                 borderWidth: 1,
                 borderColor: '#FECACA',
                 gap: 6,
@@ -436,7 +436,7 @@ export default function HelpCenterScreen() {
                 flex: 1,
                 backgroundColor: '#ECFDF5',
                 padding: 14,
-                borderRadius: 16,
+                borderRadius: 14,
                 borderWidth: 1,
                 borderColor: '#A7F3D0',
                 gap: 6,

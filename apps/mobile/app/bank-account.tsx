@@ -234,7 +234,7 @@ export default function BankAccountScreen() {
           style={{
             width: 40,
             height: 40,
-            borderRadius: 12,
+            borderRadius: 14,
             backgroundColor: COLORS.gray[100],
             alignItems: 'center',
             justifyContent: 'center',
@@ -265,7 +265,7 @@ export default function BankAccountScreen() {
             style={{
               backgroundColor: '#0F172A',
               padding: 20,
-              borderRadius: 18,
+              borderRadius: 14,
               borderWidth: 1,
               borderColor: 'rgba(255, 255, 255, 0.1)',
             }}
@@ -305,7 +305,7 @@ export default function BankAccountScreen() {
                   backgroundColor: COLORS.primary,
                   paddingHorizontal: 16,
                   paddingVertical: 10,
-                  borderRadius: 12,
+                  borderRadius: 14,
                   flexDirection: 'row',
                   alignItems: 'center',
                   gap: 6,
@@ -469,7 +469,7 @@ export default function BankAccountScreen() {
             <View
               style={{
                 backgroundColor: '#1E293B',
-                borderRadius: 20,
+                borderRadius: 14,
                 padding: 22,
                 minHeight: 180,
                 justifyContent: 'space-between',
@@ -508,7 +508,7 @@ export default function BankAccountScreen() {
                       backgroundColor: '#10B98133',
                       paddingHorizontal: 8,
                       paddingVertical: 3,
-                      borderRadius: 6,
+                      borderRadius: 8,
                     }}
                   >
                     <Text style={{ color: '#34D399', fontSize: fs(11), fontWeight: '800' }}>
@@ -588,7 +588,7 @@ export default function BankAccountScreen() {
                       style={{
                         paddingHorizontal: 12,
                         paddingVertical: 8,
-                        borderRadius: 12,
+                        borderRadius: 14,
                         borderWidth: 1.5,
                         borderColor: isSelected ? COLORS.primary : COLORS.gray[200],
                         backgroundColor: isSelected ? COLORS.primaryLight : '#fff',
@@ -802,7 +802,7 @@ export default function BankAccountScreen() {
                         style={{
                           paddingHorizontal: 14,
                           paddingVertical: 10,
-                          borderRadius: 12,
+                          borderRadius: 14,
                           borderWidth: 1.5,
                           borderColor: isSelected ? COLORS.primary : COLORS.gray[200],
                           backgroundColor: isSelected ? COLORS.primaryLight : '#fff',

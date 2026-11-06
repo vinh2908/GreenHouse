@@ -16,7 +16,7 @@ export default function Root({ children }: PropsWithChildren) {
 
         {/* PWA Manifest */}
         <link rel="manifest" href="/manifest.json" />
-        <meta name="theme-color" content="#16A34A" />
+        <meta name="theme-color" content="#22C55E" />
 
         {/* Apple iOS PWA Meta Tags */}
         <meta name="apple-mobile-web-app-capable" content="yes" />

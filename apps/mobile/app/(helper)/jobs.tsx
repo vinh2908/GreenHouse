@@ -154,7 +154,7 @@ export default function HelperJobsScreen() {
             style={{
               width: 140,
               height: 24,
-              borderRadius: 6,
+              borderRadius: 8,
               backgroundColor: COLORS.gray[200],
             }}
           />
@@ -162,7 +162,7 @@ export default function HelperJobsScreen() {
             style={{
               width: 200,
               height: 14,
-              borderRadius: 4,
+              borderRadius: 8,
               backgroundColor: COLORS.gray[100],
               marginTop: 6,
             }}
@@ -174,7 +174,7 @@ export default function HelperJobsScreen() {
               key={i}
               style={{
                 height: 110,
-                borderRadius: 16,
+                borderRadius: 14,
                 backgroundColor: COLORS.gray[200],
               }}
             />
@@ -250,7 +250,7 @@ export default function HelperJobsScreen() {
                   backgroundColor: COLORS.primary,
                   paddingHorizontal: 20,
                   paddingVertical: 10,
-                  borderRadius: 12,
+                  borderRadius: 14,
                 }}
               >
                 <Text style={{ color: '#fff', fontWeight: '700' }}>{t('jobs_verify_now')}</Text>
@@ -459,7 +459,7 @@ export default function HelperJobsScreen() {
                           backgroundColor: COLORS.primary,
                           paddingHorizontal: 14,
                           paddingVertical: 8,
-                          borderRadius: 10,
+                          borderRadius: 8,
                         }}
                       >
                         <Text style={{ fontSize: fs(13), fontWeight: '800', color: '#fff' }}>
@@ -529,7 +529,7 @@ export default function HelperJobsScreen() {
             backgroundColor: COLORS.primaryLight,
             borderWidth: 1,
             borderColor: COLORS.primary,
-            borderRadius: 12,
+            borderRadius: 14,
             paddingHorizontal: 14,
             paddingVertical: 10,
           }}
@@ -641,7 +641,7 @@ export default function HelperJobsScreen() {
               style={{
                 paddingHorizontal: 12,
                 paddingVertical: 8,
-                borderRadius: 20,
+                borderRadius: 14,
                 backgroundColor: tab === i ? COLORS.primary : COLORS.gray[100],
               }}
             >

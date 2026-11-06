@@ -276,7 +276,7 @@ export function InitialPermissionsModal() {
         <View
           style={{
             backgroundColor: '#fff',
-            borderRadius: 24,
+            borderRadius: 14,
             width: '100%',
             maxWidth: 440,
             maxHeight: '90%',
@@ -294,7 +294,7 @@ export function InitialPermissionsModal() {
               style={{
                 width: 54,
                 height: 54,
-                borderRadius: 27,
+                borderRadius: 999,
                 backgroundColor: '#DCFCE7',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -353,7 +353,7 @@ export function InitialPermissionsModal() {
                     style={{
                       width: 40,
                       height: 40,
-                      borderRadius: 10,
+                      borderRadius: 8,
                       backgroundColor: isGranted ? '#DCFCE7' : '#F3F4F6',
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -533,7 +533,7 @@ export function AppPermissionsSection() {
                       backgroundColor: '#DCFCE7',
                       paddingHorizontal: 8,
                       paddingVertical: 3,
-                      borderRadius: 6,
+                      borderRadius: 8,
                     }}
                   >
                     <CheckCircle2 size={13} color="#16A34A" />
@@ -550,7 +550,7 @@ export function AppPermissionsSection() {
                       backgroundColor: '#F3F4F6',
                       paddingHorizontal: 8,
                       paddingVertical: 3,
-                      borderRadius: 6,
+                      borderRadius: 8,
                     }}
                   >
                     <AlertCircle size={13} color="#9CA3AF" />
@@ -574,7 +574,7 @@ export function AppPermissionsSection() {
             gap: 6,
             paddingVertical: 10,
             marginTop: 4,
-            borderRadius: 10,
+            borderRadius: 8,
             backgroundColor: '#F0FDF4',
             borderWidth: 1,
             borderColor: '#BBF7D0',
