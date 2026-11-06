@@ -4,8 +4,10 @@
 //   { job_id, session_id, caller_id, room_id, provider }
 // Map defensively cả dạng sessionId/jobId nếu server thay đổi casing.
 import { useEffect } from 'react';
+import { Platform } from 'react-native';
 import { socketService, SOCKET_EVENTS } from '@/services/socket.service';
 import { useCallStore } from '@/stores/call.store';
+import { callkeepService } from '@/services/callkeep.service';
 
 interface CallIncomingPayload {
   job_id?: string;
@@ -35,6 +37,14 @@ export function useIncomingCallListener() {
         room_id: payload?.room_id ?? payload?.roomId,
         provider: payload?.provider,
       });
+      if (Platform.OS !== 'web') {
+        callkeepService.displayIncoming({
+          sessionId: session_id,
+          jobId: job_id,
+          callerId: caller_id,
+          callerName: 'Đối tác GreenHouse',
+        });
+      }
     });
     return unsub;
   }, [setIncoming]);

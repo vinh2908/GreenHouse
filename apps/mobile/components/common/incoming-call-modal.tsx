@@ -2,12 +2,13 @@
 import { useEffect } from 'react';
 import { Modal, View, Text, TouchableOpacity } from 'react-native';
 import { usePathname, useRouter } from 'expo-router';
-import { Phone, PhoneOff } from 'lucide-react-native';
+import { Phone, PhoneOff, PhoneCall } from 'lucide-react-native';
 import { useCallStore } from '@/stores/call.store';
 import { useEndCall } from '@/hooks/use-api';
 import apiClient from '@/services/api-client';
 import { stringeeService } from '@/services/stringee.service';
 import { useTranslation } from '@/hooks/use-i18n';
+import { ringtoneService } from '@/services/ringtone.service';
 
 export function IncomingCallModal() {
   const incoming = useCallStore(s => s.incoming);
@@ -35,6 +36,18 @@ export function IncomingCallModal() {
     };
   }, [incoming?.session_id]);
 
+  // Phát chuông lặp lại khi có cuộc gọi đến và dừng khi nhận/từ chối/huỷ
+  useEffect(() => {
+    if (!incoming) {
+      ringtoneService.stop();
+      return;
+    }
+    ringtoneService.start();
+    return () => {
+      ringtoneService.stop();
+    };
+  }, [incoming]);
+
   if (!incoming) return null;
 
   // Đã ở màn hình cuộc gọi cho đúng session này thì không hiện modal nữa.
@@ -44,6 +57,7 @@ export function IncomingCallModal() {
   const shortJob = incoming.job_id ? `#${incoming.job_id.slice(-6)}` : '';
 
   const handleAccept = () => {
+    ringtoneService.stop();
     const { job_id, session_id } = incoming;
     clearIncoming();
     router.push({
@@ -53,6 +67,7 @@ export function IncomingCallModal() {
   };
 
   const handleDecline = () => {
+    ringtoneService.stop();
     const { session_id } = incoming;
     stringeeService.rejectPending();
     endCall.mutate({ sessionId: session_id, reason: 'declined' });
@@ -80,7 +95,9 @@ export function IncomingCallModal() {
             alignItems: 'center',
           }}
         >
-          <Text style={{ fontSize: fs(40), marginBottom: 12 }}>📞</Text>
+          <View style={{ marginBottom: 12 }}>
+            <PhoneCall size={42} color="#A7F3C7" />
+          </View>
           <Text
             style={{
               fontSize: fs(18),

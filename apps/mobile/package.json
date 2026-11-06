@@ -29,6 +29,7 @@
     "dayjs": "^1.11.13",
     "expo": "~57.0.25",
     "expo-asset": "~57.0.18",
+    "expo-av": "^16.0.8",
     "expo-camera": "~57.0.5",
     "expo-constants": "~57.0.19",
     "expo-dev-client": "~57.0.20",
