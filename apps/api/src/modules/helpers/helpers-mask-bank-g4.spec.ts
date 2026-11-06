@@ -28,8 +28,10 @@ describe('HelpersService - G4 mask bank account on setStatus/submitKyc', () => {
       // thật), không phải snapshot lúc tạo — submitKyc gán
       // verification_status sau khi tạo profile.
       toObject: function (this: any) {
-        const { toObject: _t, save: _s, ...rest } = this;
-        return { ...rest };
+        const rest = { ...this };
+        delete rest.toObject;
+        delete rest.save;
+        return rest;
       },
       save: jest.fn(async function (this: any) {
         return this;
