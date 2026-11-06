@@ -453,6 +453,116 @@ export default function KycScreen() {
           {/* ── FORM NỘP HỒ SƠ (CHO UNSUBMITTED & REJECTED) ────────────── */}
           {(kycStatus === 'unsubmitted' || kycStatus === 'rejected') && (
             <>
+              {/* B22: chỉ báo 3 bước — Ảnh CCCD → Selfie → Thông tin */}
+              {(() => {
+                const steps = [
+                  {
+                    label: lang === 'en' ? 'ID photos' : 'Ảnh CCCD',
+                    done: !!frontImage && !!backImage,
+                  },
+                  {
+                    label: lang === 'en' ? 'Selfie' : 'Selfie',
+                    done: !!selfieImage,
+                  },
+                  {
+                    label: lang === 'en' ? 'Information' : 'Thông tin',
+                    done: idCardNumber.trim().length === 12,
+                  },
+                ];
+                const currentIdx = steps.findIndex(st => !st.done);
+                return (
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'flex-start',
+                      paddingHorizontal: 4,
+                      marginBottom: 4,
+                    }}
+                  >
+                    {steps.map((st, i) => {
+                      const done = st.done;
+                      const current = currentIdx === i;
+                      const upcoming = currentIdx !== -1 && i > currentIdx;
+                      const circleBg = done
+                        ? COLORS.success
+                        : current
+                          ? COLORS.primary
+                          : COLORS.gray[200];
+                      const labelColor = done
+                        ? COLORS.success
+                        : current
+                          ? COLORS.primary
+                          : COLORS.gray[400];
+                      return (
+                        <View key={st.label} style={{ flex: 1, alignItems: 'center', gap: 6 }}>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', width: '100%' }}>
+                            <View
+                              style={{
+                                flex: 1,
+                                height: 2,
+                                backgroundColor:
+                                  i === 0 ? 'transparent' : steps[i - 1].done ? COLORS.success : COLORS.gray[200],
+                              }}
+                            />
+                            <View
+                              style={{
+                                width: 30,
+                                height: 30,
+                                borderRadius: 999,
+                                backgroundColor: circleBg,
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                              }}
+                            >
+                              {done ? (
+                                <Check size={16} color="#fff" />
+                              ) : (
+                                <Text style={{ fontSize: fs(13), fontWeight: '800', color: '#fff' }}>
+                                  {i + 1}
+                                </Text>
+                              )}
+                            </View>
+                            <View
+                              style={{
+                                flex: 1,
+                                height: 2,
+                                backgroundColor:
+                                  i === steps.length - 1
+                                    ? 'transparent'
+                                    : done
+                                      ? COLORS.success
+                                      : COLORS.gray[200],
+                              }}
+                            />
+                          </View>
+                          <Text
+                            style={{
+                              fontSize: fs(11.5),
+                              fontWeight: current || done ? '800' : '600',
+                              color: labelColor,
+                              textAlign: 'center',
+                            }}
+                          >
+                            {st.label}
+                            {upcoming ? '' : ''}
+                          </Text>
+                          <Text style={{ fontSize: fs(10.5), fontWeight: '700', color: COLORS.gray[400] }}>
+                            {done
+                              ? lang === 'en'
+                                ? 'Done'
+                                : 'Đã xong'
+                              : current
+                                ? lang === 'en'
+                                  ? 'In progress'
+                                  : 'Đang làm'
+                                : ''}
+                          </Text>
+                        </View>
+                      );
+                    })}
+                  </View>
+                );
+              })()}
               {/* Card hướng dẫn */}
               <Card style={{ backgroundColor: '#1E1E24', padding: 18, gap: 8 }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
