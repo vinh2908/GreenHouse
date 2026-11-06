@@ -136,10 +136,10 @@ export default function CustomerVouchersScreen() {
                       <Ticket size={22} color={COLORS.primary} />
                     </View>
                     <View style={{ flex: 1, gap: 2 }}>
-                      <Text style={{ fontSize: 16, fontWeight: '800', color: COLORS.gray[900] }}>
+                      <Text style={{ fontSize: fs(16), fontWeight: '800', color: COLORS.gray[900] }}>
                         {discountLabel}
                       </Text>
-                      <Text style={{ fontSize: 13, color: COLORS.gray[600], lineHeight: 18 }}>
+                      <Text style={{ fontSize: fs(13), color: COLORS.gray[600], lineHeight: 18 }}>
                         {formatVoucherDesc(v)}
                       </Text>
                     </View>
@@ -156,7 +156,7 @@ export default function CustomerVouchersScreen() {
                   }}
                 >
                   {v.min_order_amount > 0 && (
-                    <Text style={{ fontSize: 12, color: COLORS.gray[700] }}>
+                    <Text style={{ fontSize: fs(12), color: COLORS.gray[700] }}>
                       • {lang === 'en' ? 'Min order: ' : 'Đơn tối thiểu: '}
                       <Text style={{ fontWeight: '700' }}>
                         {new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'vi-VN').format(v.min_order_amount)}₫
@@ -164,7 +164,7 @@ export default function CustomerVouchersScreen() {
                     </Text>
                   )}
                   {v.max_discount_amount && isPercent && (
-                    <Text style={{ fontSize: 12, color: COLORS.gray[700] }}>
+                    <Text style={{ fontSize: fs(12), color: COLORS.gray[700] }}>
                       • {lang === 'en' ? 'Max discount: ' : 'Giảm tối đa: '}
                       <Text style={{ fontWeight: '700' }}>
                         {new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'vi-VN').format(v.max_discount_amount)}₫
@@ -173,7 +173,7 @@ export default function CustomerVouchersScreen() {
                   )}
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                     <Clock size={12} color={COLORS.gray[500]} />
-                    <Text style={{ fontSize: 12, color: COLORS.gray[500] }}>
+                    <Text style={{ fontSize: fs(12), color: COLORS.gray[500] }}>
                       {lang === 'en' ? 'Expires: ' : 'Hết hạn: '}
                       {v.valid_to || v.end_date || (v as any).expires_at
                         ? dayjs(v.valid_to || v.end_date || (v as any).expires_at).format(
@@ -210,7 +210,7 @@ export default function CustomerVouchersScreen() {
                       style={{
                         fontFamily: 'monospace',
                         fontWeight: '800',
-                        fontSize: 14,
+                        fontSize: fs(14),
                         color: COLORS.primaryDark,
                         letterSpacing: 1,
                       }}

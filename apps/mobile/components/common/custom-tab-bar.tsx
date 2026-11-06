@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Home, Clock, MessageSquare, User, Plus, Briefcase, TrendingUp } from 'lucide-react-native';
 import { COLORS } from '@/components/ui';
-import { useTranslation } from '@/hooks/use-i18n';
+import { useTranslation, fs } from '@/hooks/use-i18n';
 import { ScalePressable } from '@/components/common/scale-pressable';
 
 interface CustomTabBarProps {
@@ -29,7 +29,7 @@ export function CustomTabBar({
 }: CustomTabBarProps) {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { t, fs } = useTranslation();
+  const { t } = useTranslation();
   const { width } = useWindowDimensions();
 
   // Tính toán kích thước co giãn theo bề rộng màn hình (360px, 390px, 412px, desktop)
@@ -312,7 +312,7 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   tabLabel: {
-    fontSize: 10,
+    fontSize: fs(10),
     marginTop: 2,
     textAlign: 'center',
   },
@@ -339,7 +339,7 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   centerLabel: {
-    fontSize: 10,
+    fontSize: fs(10),
     fontWeight: '800',
     color: COLORS.primary,
     marginTop: 2,

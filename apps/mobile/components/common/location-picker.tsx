@@ -214,7 +214,7 @@ const DEFAULT_CENTER: PickerCoords = { latitude: 16.0, longitude: 107.5 };
 
 /** Static map thumbnail of a pinned location. */
 export function LocationPreview({ coords }: { coords: PickerCoords | null }) {
-  const { lang } = useTranslation();
+  const { lang, fs } = useTranslation();
   if (!coords) {
     return (
       <View
@@ -227,7 +227,7 @@ export function LocationPreview({ coords }: { coords: PickerCoords | null }) {
         }}
       >
         <MapPin size={22} color={COLORS.gray[400]} />
-        <Text style={{ fontSize: 12.5, color: COLORS.gray[500] }}>
+        <Text style={{ fontSize: fs(12.5), color: COLORS.gray[500] }}>
           {lang === 'en' ? 'No location selected' : 'Chưa chọn vị trí'}
         </Text>
       </View>
@@ -284,7 +284,7 @@ export function LocationPicker({
   onClose,
   onConfirm,
 }: LocationPickerProps) {
-  const { lang } = useTranslation();
+  const { lang, fs } = useTranslation();
   const webRef = useRef<WebView>(null);
 
   // A stored pin outside Vietnam is ignored: open on the whole country instead of
@@ -410,7 +410,7 @@ export function LocationPicker({
             >
               <X size={18} color={COLORS.gray[700]} />
             </TouchableOpacity>
-            <Text style={{ flex: 1, fontSize: 16, fontWeight: '800', color: COLORS.gray[900] }}>
+            <Text style={{ flex: 1, fontSize: fs(16), fontWeight: '800', color: COLORS.gray[900] }}>
               {title}
             </Text>
           </View>
@@ -428,7 +428,7 @@ export function LocationPicker({
           >
             <Search size={16} color={COLORS.gray[400]} />
             <TextInput
-              style={{ flex: 1, paddingVertical: 10, fontSize: 14.5, color: COLORS.gray[900] }}
+              style={{ flex: 1, paddingVertical: 10, fontSize: fs(14.5), color: COLORS.gray[900] }}
               placeholder={
                 lang === 'en'
                   ? 'Search address: street, ward, district...'
@@ -504,7 +504,7 @@ export function LocationPicker({
                     }}
                   >
                     <MapPin size={15} color={COLORS.primary} style={{ marginTop: 2 }} />
-                    <Text style={{ flex: 1, fontSize: 13.5, color: COLORS.gray[800] }}>
+                    <Text style={{ flex: 1, fontSize: fs(13.5), color: COLORS.gray[800] }}>
                       {item.display_name}
                     </Text>
                   </TouchableOpacity>
@@ -526,7 +526,7 @@ export function LocationPicker({
         >
           <View style={{ flexDirection: 'row', gap: 6, minHeight: 34 }}>
             <MapPin size={15} color={COLORS.primary} style={{ marginTop: 2 }} />
-            <Text style={{ flex: 1, fontSize: 13, color: COLORS.gray[700] }} numberOfLines={2}>
+            <Text style={{ flex: 1, fontSize: fs(13), color: COLORS.gray[700] }} numberOfLines={2}>
               {!picked
                 ? lang === 'en'
                   ? 'Tap on map or search address to drop pin'
@@ -554,7 +554,7 @@ export function LocationPicker({
               backgroundColor: canSave ? COLORS.primary : COLORS.gray[300],
             }}
           >
-            <Text style={{ color: '#fff', fontSize: 15, fontWeight: '800' }}>
+            <Text style={{ color: '#fff', fontSize: fs(15), fontWeight: '800' }}>
               {lang === 'en' ? 'Save this location' : 'Lưu vị trí này'}
             </Text>
           </TouchableOpacity>

@@ -34,7 +34,7 @@ export default function FeedbackScreen() {
         variant="outline"
         onPress={() => (router.canGoBack() ? router.back() : router.replace('/(customer)/profile'))}
       />
-      <Text accessibilityRole="header" style={{ fontSize: 24, fontWeight: '700' }}>
+      <Text accessibilityRole="header" style={{ fontSize: fs(24), fontWeight: '700' }}>
         {lang === 'en' ? 'App Feedback' : 'Góp ý ứng dụng'}
       </Text>
       <Text>

@@ -571,7 +571,7 @@ export function AppPermissionsSection() {
           }}
         >
           <ExternalLink size={15} color="#16A34A" />
-          <Text style={{ fontSize: 13, fontWeight: '700', color: '#16A34A' }}>
+          <Text style={{ fontSize: fs(13), fontWeight: '700', color: '#16A34A' }}>
             {t('perm_open_settings_desc')}
           </Text>
         </TouchableOpacity>

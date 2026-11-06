@@ -33,7 +33,7 @@ function helperIdOf(job: any): string | null {
 }
 
 export function SosBackupHelperCard({ job }: { job: any }) {
-  const { t, lang } = useTranslation();
+  const { t, lang, fs } = useTranslation();
   const getReasonLabel = (code: string) => {
     if (SOS_BACKUP_REASONS_I18N[code]) {
       return SOS_BACKUP_REASONS_I18N[code][lang === 'en' ? 'en' : 'vi'];
@@ -67,10 +67,10 @@ export function SosBackupHelperCard({ job }: { job: any }) {
       <Card
         style={{ backgroundColor: '#EFF6FF', borderColor: '#BFDBFE', borderWidth: 1.5, gap: 6 }}
       >
-        <Text style={{ fontWeight: '800', fontSize: 15, color: '#1E40AF' }}>
+        <Text style={{ fontWeight: '800', fontSize: fs(15), color: '#1E40AF' }}>
           {t('sos_helper.replacement_title')}
         </Text>
-        <Text style={{ fontSize: 13, color: COLORS.gray[700], lineHeight: 19 }}>
+        <Text style={{ fontSize: fs(13), color: COLORS.gray[700], lineHeight: 19 }}>
           {t('sos_helper.replacement_desc')}
         </Text>
       </Card>
@@ -109,11 +109,11 @@ export function SosBackupHelperCard({ job }: { job: any }) {
         }}
       >
         <Text
-          style={{ fontWeight: '800', fontSize: 15, color: isAwaiting ? '#92400E' : '#1E40AF' }}
+          style={{ fontWeight: '800', fontSize: fs(15), color: isAwaiting ? '#92400E' : '#1E40AF' }}
         >
           {isAwaiting ? t('sos_helper.awaiting_customer') : t('sos_helper.finding_replacement')}
         </Text>
-        <Text style={{ fontSize: 13, color: COLORS.gray[700], lineHeight: 19 }}>
+        <Text style={{ fontSize: fs(13), color: COLORS.gray[700], lineHeight: 19 }}>
           {isAwaiting
             ? t('sos_helper.awaiting_desc', {
                 reason: getReasonLabel(outgoing.reason),
@@ -217,14 +217,14 @@ export function SosBackupHelperCard({ job }: { job: any }) {
       <Card
         style={{ gap: 10, backgroundColor: '#FEF2F2', borderColor: '#FECACA', borderWidth: 1.5 }}
       >
-        <Text style={{ fontWeight: '800', fontSize: 15, color: '#991B1B' }}>
+        <Text style={{ fontWeight: '800', fontSize: fs(15), color: '#991B1B' }}>
           {t('sos_helper.trigger_title')}
         </Text>
-        <Text style={{ fontSize: 13, color: COLORS.gray[700], lineHeight: 19 }}>
+        <Text style={{ fontSize: fs(13), color: COLORS.gray[700], lineHeight: 19 }}>
           {t('sos_helper.trigger_desc')}
         </Text>
         {cancels7d >= 2 && (
-          <Text style={{ fontSize: 12.5, color: '#B45309', lineHeight: 18 }}>
+          <Text style={{ fontSize: fs(12.5), color: '#B45309', lineHeight: 18 }}>
             {t('sos_helper.trigger_reputation_warning', {
               cancels: cancels7d,
               score:
@@ -260,10 +260,10 @@ export function SosBackupHelperCard({ job }: { job: any }) {
               gap: 10,
             }}
           >
-            <Text style={{ fontWeight: '800', fontSize: 16, color: COLORS.gray[900] }}>
+            <Text style={{ fontWeight: '800', fontSize: fs(16), color: COLORS.gray[900] }}>
               {t('sos_helper.modal_title')}
             </Text>
-            <Text style={{ fontSize: 13, color: COLORS.gray[500], lineHeight: 18 }}>
+            <Text style={{ fontSize: fs(13), color: COLORS.gray[500], lineHeight: 18 }}>
               {t('sos_helper.modal_subtitle')}
             </Text>
             {REASON_CODES.map(code => {
@@ -306,7 +306,7 @@ export function SosBackupHelperCard({ job }: { job: any }) {
                       />
                     )}
                   </View>
-                  <Text style={{ fontSize: 14.5, fontWeight: '600', color: COLORS.gray[800] }}>
+                  <Text style={{ fontSize: fs(14.5), fontWeight: '600', color: COLORS.gray[800] }}>
                     {getReasonLabel(code)}
                   </Text>
                 </TouchableOpacity>
@@ -323,14 +323,14 @@ export function SosBackupHelperCard({ job }: { job: any }) {
                 borderRadius: 12,
                 paddingHorizontal: 14,
                 paddingVertical: 11,
-                fontSize: 14,
+                fontSize: fs(14),
               }}
             />
             <View style={{ gap: 6 }}>
-              <Text style={{ fontSize: 13.5, fontWeight: '700', color: COLORS.gray[800] }}>
+              <Text style={{ fontSize: fs(13.5), fontWeight: '700', color: COLORS.gray[800] }}>
                 {t('sos_helper.photos_label')}
               </Text>
-              <Text style={{ fontSize: 12.5, color: COLORS.gray[500], lineHeight: 17 }}>
+              <Text style={{ fontSize: fs(12.5), color: COLORS.gray[500], lineHeight: 17 }}>
                 {t('sos_helper.photos_hint')}
               </Text>
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
@@ -356,7 +356,7 @@ export function SosBackupHelperCard({ job }: { job: any }) {
                         justifyContent: 'center',
                       }}
                     >
-                      <Text style={{ color: '#fff', fontSize: 12, fontWeight: '800' }}>✕</Text>
+                      <Text style={{ color: '#fff', fontSize: fs(12), fontWeight: '800' }}>✕</Text>
                     </TouchableOpacity>
                   </View>
                 ))}
@@ -375,8 +375,8 @@ export function SosBackupHelperCard({ job }: { job: any }) {
                       backgroundColor: COLORS.gray[50],
                     }}
                   >
-                    <Text style={{ fontSize: 20, color: COLORS.gray[500] }}>＋</Text>
-                    <Text style={{ fontSize: 10, color: COLORS.gray[500], fontWeight: '600' }}>
+                    <Text style={{ fontSize: fs(20), color: COLORS.gray[500] }}>＋</Text>
+                    <Text style={{ fontSize: fs(10), color: COLORS.gray[500], fontWeight: '600' }}>
                       {t('sos_helper.add_photo')}
                     </Text>
                   </TouchableOpacity>

@@ -29,7 +29,7 @@ export default function ForgotPasswordScreen() {
   const error = (send.error || reset.error) as any;
   return (
     <ScrollView contentContainerStyle={{ padding: 24, paddingTop: 64, gap: 16 }}>
-      <Text accessibilityRole="header" style={{ fontWeight: '700', fontSize: 24 }}>
+      <Text accessibilityRole="header" style={{ fontWeight: '700', fontSize: fs(24) }}>
         {lang === 'en' ? 'Reset Password' : 'Đặt lại mật khẩu'}
       </Text>
       <Input

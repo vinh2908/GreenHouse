@@ -69,7 +69,7 @@ export function resolveMediaUrl(rawUrl: string): string {
 }
 
 function ChatImageBubble({ uri, onPress }: { uri: string; onPress: () => void }) {
-  const { lang } = useTranslation();
+  const { lang, fs } = useTranslation();
   const resolvedUrl = useMemo(() => resolveMediaUrl(uri), [uri]);
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
 
@@ -116,7 +116,7 @@ function ChatImageBubble({ uri, onPress }: { uri: string; onPress: () => void })
       {status === 'loading' && (
         <View style={{ alignItems: 'center', gap: 6, zIndex: 2 }}>
           <ActivityIndicator size="small" color={COLORS.primary} />
-          <Text style={{ fontSize: 11, color: COLORS.gray[500], fontWeight: '600' }}>
+          <Text style={{ fontSize: fs(11), color: COLORS.gray[500], fontWeight: '600' }}>
             {lang === 'en' ? 'Loading image...' : 'Đang tải ảnh...'}
           </Text>
         </View>
@@ -148,7 +148,7 @@ function ChatImageBubble({ uri, onPress }: { uri: string; onPress: () => void })
           </View>
           <Text
             style={{
-              fontSize: 12,
+              fontSize: fs(12),
               fontWeight: '700',
               color: '#DC2626',
               textAlign: 'center',
@@ -158,7 +158,7 @@ function ChatImageBubble({ uri, onPress }: { uri: string; onPress: () => void })
           </Text>
           <Text
             style={{
-              fontSize: 10.5,
+              fontSize: fs(10.5),
               color: COLORS.gray[500],
               textAlign: 'center',
               lineHeight: 14,
@@ -180,7 +180,7 @@ function ChatImageBubble({ uri, onPress }: { uri: string; onPress: () => void })
               borderRadius: 6,
             }}
           >
-            <Text style={{ fontSize: 10, color: '#fff', fontWeight: '700' }}>
+            <Text style={{ fontSize: fs(10), color: '#fff', fontWeight: '700' }}>
               {lang === 'en' ? 'Retry' : 'Thử lại'}
             </Text>
           </TouchableOpacity>
@@ -413,14 +413,14 @@ export default function ChatScreen() {
           <View style={{ flex: 1 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
               <Text
-                style={{ fontWeight: '800', fontSize: 15, color: COLORS.gray[900] }}
+                style={{ fontWeight: '800', fontSize: fs(15), color: COLORS.gray[900] }}
                 numberOfLines={1}
               >
                 {partnerName}
               </Text>
               <ShieldCheck size={15} color={COLORS.success} />
             </View>
-            <Text style={{ fontSize: 11.5, color: COLORS.success, fontWeight: '700' }}>
+            <Text style={{ fontSize: fs(11.5), color: COLORS.success, fontWeight: '700' }}>
               {lang === 'en' ? '● Online' : '● Đang hoạt động'}
             </Text>
           </View>
@@ -511,7 +511,7 @@ export default function ChatScreen() {
                             style={{
                               color: '#fff',
                               fontWeight: '700',
-                              fontSize: 13,
+                              fontSize: fs(13),
                               backgroundColor: 'rgba(220,38,38,0.85)',
                               paddingHorizontal: 10,
                               paddingVertical: 5,
@@ -566,13 +566,13 @@ export default function ChatScreen() {
                 >
                   <MessageSquare size={28} color={COLORS.primary} />
                 </View>
-                <Text style={{ fontSize: 16, fontWeight: '800', color: COLORS.gray[800] }}>
+                <Text style={{ fontSize: fs(16), fontWeight: '800', color: COLORS.gray[800] }}>
                   {lang === 'en' ? 'Start the conversation' : 'Bắt đầu cuộc trò chuyện'}
                 </Text>
                 <Text
                   style={{
                     color: COLORS.gray[500],
-                    fontSize: 13,
+                    fontSize: fs(13),
                     textAlign: 'center',
                     paddingHorizontal: 20,
                   }}
@@ -606,7 +606,7 @@ export default function ChatScreen() {
                     />
                     <Text
                       style={{
-                        fontSize: 10.5,
+                        fontSize: fs(10.5),
                         color: COLORS.gray[500],
                         marginTop: 4,
                         marginHorizontal: 6,
@@ -640,7 +640,7 @@ export default function ChatScreen() {
                   >
                     <Text
                       style={{
-                        fontSize: 15,
+                        fontSize: fs(15),
                         color: isMe ? '#FFFFFF' : COLORS.gray[900],
                         lineHeight: 21,
                         fontWeight: '500',
@@ -651,7 +651,7 @@ export default function ChatScreen() {
                   </View>
                   <Text
                     style={{
-                      fontSize: 10.5,
+                      fontSize: fs(10.5),
                       color: COLORS.gray[500],
                       marginTop: 4,
                       marginHorizontal: 6,
@@ -702,7 +702,7 @@ export default function ChatScreen() {
                 borderRadius: 24,
                 paddingHorizontal: 18,
                 paddingVertical: 11,
-                fontSize: 15,
+                fontSize: fs(15),
                 maxHeight: 100,
                 backgroundColor: COLORS.gray[50],
                 color: COLORS.gray[900],

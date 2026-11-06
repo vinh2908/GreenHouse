@@ -14,7 +14,7 @@ import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Sparkles, ShieldCheck, Zap } from 'lucide-react-native';
 import { useAuthStore } from '@/stores/auth.store';
-import { useTranslation } from '@/hooks/use-i18n';
+import { useTranslation, fs } from '@/hooks/use-i18n';
 import apiClient from '@/services/api-client';
 
 const { width, height } = Dimensions.get('window');
@@ -337,19 +337,19 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   brandPrimary: {
-    fontSize: 34,
+    fontSize: fs(34),
     fontWeight: '900',
     color: '#FFFFFF',
     letterSpacing: 1.5,
   },
   brandWhite: {
-    fontSize: 34,
+    fontSize: fs(34),
     fontWeight: '900',
     color: '#DCFCE7',
     letterSpacing: 1.5,
   },
   slogan: {
-    fontSize: 14.5,
+    fontSize: fs(14.5),
     fontWeight: '600',
     color: 'rgba(255, 255, 255, 0.92)',
     letterSpacing: 0.5,
@@ -374,7 +374,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255, 255, 255, 0.3)',
   },
   featureText: {
-    fontSize: 11.5,
+    fontSize: fs(11.5),
     fontWeight: '700',
     color: '#FFFFFF',
   },
@@ -399,7 +399,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
   },
   footerText: {
-    fontSize: 11,
+    fontSize: fs(11),
     fontWeight: '700',
     color: 'rgba(255, 255, 255, 0.7)',
     letterSpacing: 1.2,

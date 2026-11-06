@@ -92,10 +92,10 @@ export default function MonthlyContractsScreen() {
           <ArrowLeft size={20} color={COLORS.gray[800]} />
         </TouchableOpacity>
         <View style={{ flex: 1 }}>
-          <Text style={{ fontSize: 18, fontWeight: '800', color: COLORS.gray[900] }}>
+          <Text style={{ fontSize: fs(18), fontWeight: '800', color: COLORS.gray[900] }}>
             {lang === 'en' ? 'Monthly Contracts 📅' : 'Hợp đồng theo tháng 📅'}
           </Text>
-          <Text style={{ fontSize: 12, color: COLORS.gray[500] }}>
+          <Text style={{ fontSize: fs(12), color: COLORS.gray[500] }}>
             {lang === 'en'
               ? isHelper
                 ? 'Long-term helper contracts you are handling'
@@ -167,11 +167,11 @@ export default function MonthlyContractsScreen() {
                 >
                   <Card style={{ gap: 8 }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                      <Text style={{ fontSize: 20 }}>📅</Text>
+                      <Text style={{ fontSize: fs(20) }}>📅</Text>
                       <Text
                         style={{
                           flex: 1,
-                          fontSize: 15.5,
+                          fontSize: fs(15.5),
                           fontWeight: '800',
                           color: COLORS.gray[900],
                         }}
@@ -185,11 +185,11 @@ export default function MonthlyContractsScreen() {
                         textColor={meta.color}
                       />
                     </View>
-                    <Text style={{ fontSize: 13, color: COLORS.gray[600] }}>
+                    <Text style={{ fontSize: fs(13), color: COLORS.gray[600] }}>
                       {isHelper ? (lang === 'en' ? 'Customer' : 'Khách hàng') : (lang === 'en' ? 'Helper' : 'Thợ')}: {personName(partner)} · {lang === 'en' ? 'Salary ' : 'Lương '}
                       {fmt(c.monthly_salary)}₫/{lang === 'en' ? 'month' : 'tháng'}
                     </Text>
-                    <Text style={{ fontSize: 12.5, color: COLORS.gray[500] }}>
+                    <Text style={{ fontSize: fs(12.5), color: COLORS.gray[500] }}>
                       {lang === 'en' ? 'Schedule: ' : 'Lịch: '}{describeMonthlySchedule(c, lang)} · {lang === 'en' ? 'From ' : 'Từ '}
                       {dayjs(c.start_date).format('DD/MM/YYYY')}
                       {c.end_date ? (lang === 'en' ? ` to ${dayjs(c.end_date).format('DD/MM/YYYY')}` : ` đến ${dayjs(c.end_date).format('DD/MM/YYYY')}`) : ''}
@@ -198,7 +198,7 @@ export default function MonthlyContractsScreen() {
                       <Text
                         style={{
                           flex: 1,
-                          fontSize: 12.5,
+                          fontSize: fs(12.5),
                           color: COLORS.primaryDark,
                           fontWeight: '700',
                         }}

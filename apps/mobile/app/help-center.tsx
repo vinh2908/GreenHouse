@@ -181,7 +181,7 @@ export default function HelpCenterScreen() {
         </TouchableOpacity>
         <Text
           style={{
-            fontSize: 18,
+            fontSize: fs(18),
             fontWeight: '800',
             color: COLORS.gray[900],
             marginLeft: 12,
@@ -224,10 +224,10 @@ export default function HelpCenterScreen() {
                 <PhoneCall size={22} color="#FFF" />
               </View>
               <View>
-                <Text style={{ fontSize: 16, fontWeight: '800', color: '#FFF' }}>
+                <Text style={{ fontSize: fs(16), fontWeight: '800', color: '#FFF' }}>
                   {lang === 'en' ? '24/7 Support Hotline' : 'Tổng đài Hỗ trợ 24/7'}
                 </Text>
-                <Text style={{ fontSize: 12.5, color: 'rgba(255,255,255,0.7)', marginTop: 2 }}>
+                <Text style={{ fontSize: fs(12.5), color: 'rgba(255,255,255,0.7)', marginTop: 2 }}>
                   {lang === 'en'
                     ? 'Dispute Resolution & Emergency Dispatch'
                     : 'Giải quyết khiếu nại & Cứu hộ sự cố'}
@@ -247,10 +247,10 @@ export default function HelpCenterScreen() {
             }}
           >
             <View>
-              <Text style={{ fontSize: 11.5, color: 'rgba(255,255,255,0.6)', fontWeight: '600' }}>
+              <Text style={{ fontSize: fs(11.5), color: 'rgba(255,255,255,0.6)', fontWeight: '600' }}>
                 {lang === 'en' ? 'TOLL-FREE HOTLINE' : 'HOTLINE MIỄN PHÍ CƯỚC'}
               </Text>
-              <Text style={{ fontSize: 20, fontWeight: '900', color: '#34D399', marginTop: 2 }}>
+              <Text style={{ fontSize: fs(20), fontWeight: '900', color: '#34D399', marginTop: 2 }}>
                 1900 8888
               </Text>
             </View>
@@ -268,7 +268,7 @@ export default function HelpCenterScreen() {
               }}
             >
               <PhoneCall size={16} color="#FFF" />
-              <Text style={{ color: '#FFF', fontWeight: '800', fontSize: 13.5 }}>
+              <Text style={{ color: '#FFF', fontWeight: '800', fontSize: fs(13.5) }}>
                 {lang === 'en' ? 'Call Now' : 'Gọi ngay'}
               </Text>
             </TouchableOpacity>
@@ -290,16 +290,16 @@ export default function HelpCenterScreen() {
         >
           <MessageCircle size={26} color="#FFF" />
           <View style={{ flex: 1 }}>
-            <Text style={{ fontSize: 15.5, fontWeight: '800', color: '#FFF' }}>
+            <Text style={{ fontSize: fs(15.5), fontWeight: '800', color: '#FFF' }}>
               {lang === 'en' ? 'Chat with Support Team' : 'Chat với đội hỗ trợ'}
             </Text>
-            <Text style={{ fontSize: 12.5, color: 'rgba(255,255,255,0.85)', marginTop: 2 }}>
+            <Text style={{ fontSize: fs(12.5), color: 'rgba(255,255,255,0.85)', marginTop: 2 }}>
               {lang === 'en'
                 ? 'Real agents responding directly in-app, 24/7'
                 : 'Nhân viên thật phản hồi trực tiếp trong app, 24/7'}
             </Text>
           </View>
-          <Text style={{ fontSize: 18, color: '#FFF', fontWeight: '800' }}>→</Text>
+          <Text style={{ fontSize: fs(18), color: '#FFF', fontWeight: '800' }}>→</Text>
         </TouchableOpacity>
 
         {/* ── 2. AI Support Assistant Card ─────────────────────────────── */}
@@ -318,10 +318,10 @@ export default function HelpCenterScreen() {
               <Sparkles size={18} color={COLORS.primary} />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 15, fontWeight: '800', color: COLORS.gray[900] }}>
+              <Text style={{ fontSize: fs(15), fontWeight: '800', color: COLORS.gray[900] }}>
                 {lang === 'en' ? 'Quick Q&A with AI Assistant' : 'Hỏi đáp nhanh cùng Trợ lý AI'}
               </Text>
-              <Text style={{ fontSize: 12, color: COLORS.gray[500] }}>
+              <Text style={{ fontSize: fs(12), color: COLORS.gray[500] }}>
                 {lang === 'en'
                   ? 'Instant procedure answers and app guidance'
                   : 'Giải đáp quy trình, hướng dẫn thao tác tức thì'}
@@ -344,7 +344,7 @@ export default function HelpCenterScreen() {
             <TextInput
               style={{
                 flex: 1,
-                fontSize: 14,
+                fontSize: fs(14),
                 color: COLORS.gray[900],
                 paddingVertical: 11,
               }}
@@ -383,7 +383,7 @@ export default function HelpCenterScreen() {
                 borderLeftColor: COLORS.primary,
               }}
             >
-              <Text style={{ fontSize: 13.5, color: COLORS.gray[800], lineHeight: 20 }}>
+              <Text style={{ fontSize: fs(13.5), color: COLORS.gray[800], lineHeight: 20 }}>
                 {aiAnswer}
               </Text>
             </View>
@@ -392,7 +392,7 @@ export default function HelpCenterScreen() {
 
         {/* ── 3. Quick Action Topics ──────────────────────────────────── */}
         <View style={{ gap: 10 }}>
-          <Text style={{ fontSize: 15, fontWeight: '800', color: COLORS.gray[900] }}>
+          <Text style={{ fontSize: fs(15), fontWeight: '800', color: COLORS.gray[900] }}>
             {lang === 'en' ? 'Popular Support Topics' : 'Chủ đề trợ giúp phổ biến'}
           </Text>
 
@@ -411,10 +411,10 @@ export default function HelpCenterScreen() {
               }}
             >
               <Zap size={22} color={COLORS.error} />
-              <Text style={{ fontWeight: '800', fontSize: 14, color: COLORS.error }}>
+              <Text style={{ fontWeight: '800', fontSize: fs(14), color: COLORS.error }}>
                 {lang === 'en' ? '15m Emergency SOS' : 'Cứu hộ SOS 15p'}
               </Text>
-              <Text style={{ fontSize: 11.5, color: COLORS.gray[600], lineHeight: 16 }}>
+              <Text style={{ fontSize: fs(11.5), color: COLORS.gray[600], lineHeight: 16 }}>
                 {lang === 'en'
                   ? 'Urgent plumbing, electrical, and lockouts'
                   : 'Sự cố khẩn cấp điện nước, khóa cửa'}
@@ -435,10 +435,10 @@ export default function HelpCenterScreen() {
               }}
             >
               <ShieldCheck size={22} color={COLORS.success} />
-              <Text style={{ fontWeight: '800', fontSize: 14, color: COLORS.success }}>
+              <Text style={{ fontWeight: '800', fontSize: fs(14), color: COLORS.success }}>
                 {lang === 'en' ? '30-Day Insurance' : 'Bảo hiểm 30 ngày'}
               </Text>
-              <Text style={{ fontSize: 11.5, color: COLORS.gray[600], lineHeight: 16 }}>
+              <Text style={{ fontSize: fs(11.5), color: COLORS.gray[600], lineHeight: 16 }}>
                 {lang === 'en'
                   ? 'Warranty guarantee & 100% compensation'
                   : 'Cam kết bảo hành và bồi thường 100%'}
@@ -449,7 +449,7 @@ export default function HelpCenterScreen() {
 
         {/* ── 4. Frequently Asked Questions (Accordion) ───────────────── */}
         <View style={{ gap: 10 }}>
-          <Text style={{ fontSize: 15, fontWeight: '800', color: COLORS.gray[900] }}>
+          <Text style={{ fontSize: fs(15), fontWeight: '800', color: COLORS.gray[900] }}>
             {lang === 'en' ? 'Frequently Asked Questions (FAQ)' : 'Câu hỏi thường gặp (FAQ)'}
           </Text>
 
@@ -473,7 +473,7 @@ export default function HelpCenterScreen() {
                     <Text
                       style={{
                         flex: 1,
-                        fontSize: 14,
+                        fontSize: fs(14),
                         fontWeight: '700',
                         color: isOpen ? COLORS.primary : COLORS.gray[800],
                         lineHeight: 20,
@@ -496,7 +496,7 @@ export default function HelpCenterScreen() {
                         paddingTop: 0,
                       }}
                     >
-                      <Text style={{ fontSize: 13.5, color: COLORS.gray[600], lineHeight: 21 }}>
+                      <Text style={{ fontSize: fs(13.5), color: COLORS.gray[600], lineHeight: 21 }}>
                         {faq.a}
                       </Text>
                     </View>

@@ -40,7 +40,7 @@ type ThreadItem = { kind: 'msg'; msg: SupportMessageItem } | { kind: 'faq'; faq:
 
 export default function SupportChatScreen() {
   const router = useRouter();
-  const { t, lang } = useTranslation();
+  const { t, lang, fs } = useTranslation();
   const insets = useSafeAreaInsets();
   const currentUser = useAuthStore(s => s.user);
   const [text, setText] = useState('');
@@ -154,7 +154,7 @@ export default function SupportChatScreen() {
       >
         <Text
           style={{
-            fontSize: 15,
+            fontSize: fs(15),
             color: isMe ? '#FFFFFF' : COLORS.gray[900],
             lineHeight: 21,
             fontWeight: '500',
@@ -166,7 +166,7 @@ export default function SupportChatScreen() {
       {time && (
         <Text
           style={{
-            fontSize: 10.5,
+            fontSize: fs(10.5),
             color: COLORS.gray[500],
             marginTop: 4,
             marginHorizontal: 6,
@@ -223,10 +223,10 @@ export default function SupportChatScreen() {
           <Headset size={21} color={COLORS.primaryDark} />
         </View>
         <View style={{ flex: 1 }}>
-          <Text style={{ fontWeight: '800', fontSize: 15, color: COLORS.gray[900] }}>
+          <Text style={{ fontWeight: '800', fontSize: fs(15), color: COLORS.gray[900] }}>
             {t('support_title')}
           </Text>
-          <Text style={{ fontSize: 11.5, color: COLORS.success, fontWeight: '700' }}>
+          <Text style={{ fontSize: fs(11.5), color: COLORS.success, fontWeight: '700' }}>
             {t('support_online')}
           </Text>
         </View>
@@ -248,7 +248,7 @@ export default function SupportChatScreen() {
             onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: false })}
             ListHeaderComponent={
               <View style={{ gap: 8, marginBottom: 4 }}>
-                <Text style={{ fontSize: 14, fontWeight: '800', color: COLORS.gray[900] }}>
+                <Text style={{ fontSize: fs(14), fontWeight: '800', color: COLORS.gray[900] }}>
                   {t('support_faq_heading')}
                 </Text>
                 {getSupportFaqs(lang).map(faq => (
@@ -265,7 +265,7 @@ export default function SupportChatScreen() {
                       paddingVertical: 11,
                     }}
                   >
-                    <Text style={{ fontSize: 13.5, fontWeight: '600', color: COLORS.gray[800] }}>
+                    <Text style={{ fontSize: fs(13.5), fontWeight: '600', color: COLORS.gray[800] }}>
                       {faq.q}
                     </Text>
                   </TouchableOpacity>
@@ -280,7 +280,7 @@ export default function SupportChatScreen() {
                       padding: 12,
                     }}
                   >
-                    <Text style={{ fontSize: 13, color: '#92400E', lineHeight: 19 }}>
+                    <Text style={{ fontSize: fs(13), color: '#92400E', lineHeight: 19 }}>
                       {t('support_closed_notice')}
                     </Text>
                   </View>
@@ -289,7 +289,7 @@ export default function SupportChatScreen() {
             }
             ListEmptyComponent={
               <View style={{ alignItems: 'center', paddingVertical: 24, gap: 8 }}>
-                <Text style={{ fontSize: 15, fontWeight: '800', color: COLORS.gray[800] }}>
+                <Text style={{ fontSize: fs(15), fontWeight: '800', color: COLORS.gray[800] }}>
                   {t('support_greeting', {
                     name: currentUser?.full_name ?? (lang === 'en' ? 'you' : 'bạn'),
                   })}
@@ -297,7 +297,7 @@ export default function SupportChatScreen() {
                 <Text
                   style={{
                     color: COLORS.gray[500],
-                    fontSize: 13,
+                    fontSize: fs(13),
                     textAlign: 'center',
                     paddingHorizontal: 20,
                     lineHeight: 19,
@@ -326,7 +326,7 @@ export default function SupportChatScreen() {
                         }}
                       >
                         <Text
-                          style={{ fontSize: 12.5, fontWeight: '700', color: COLORS.primaryDark }}
+                          style={{ fontSize: fs(12.5), fontWeight: '700', color: COLORS.primaryDark }}
                         >
                           {t('support_send_question')}
                         </Text>
@@ -334,7 +334,7 @@ export default function SupportChatScreen() {
                     ) : (
                       <Text
                         style={{
-                          fontSize: 11.5,
+                          fontSize: fs(11.5),
                           color: COLORS.gray[500],
                           marginLeft: 6,
                           fontWeight: '600',
@@ -376,7 +376,7 @@ export default function SupportChatScreen() {
                 borderRadius: 24,
                 paddingHorizontal: 18,
                 paddingVertical: 11,
-                fontSize: 15,
+                fontSize: fs(15),
                 maxHeight: 100,
                 backgroundColor: COLORS.gray[50],
                 color: COLORS.gray[900],

@@ -158,7 +158,7 @@ export default function HelperPublicProfileScreen() {
         >
           <ArrowLeft size={20} color={COLORS.gray[800]} />
         </TouchableOpacity>
-        <Text style={{ fontSize: 17, fontWeight: '800', color: COLORS.gray[900] }}>
+        <Text style={{ fontSize: fs(17), fontWeight: '800', color: COLORS.gray[900] }}>
           {lang === 'en' ? 'Verified Helper Profile' : 'Hồ sơ thợ uy tín'}
         </Text>
         {isCustomer ? (
@@ -218,11 +218,11 @@ export default function HelperPublicProfileScreen() {
           </View>
 
           <View style={{ alignItems: 'center', gap: 4 }}>
-            <Text style={{ fontSize: 20, fontWeight: '900', color: COLORS.gray[900] }}>
+            <Text style={{ fontSize: fs(20), fontWeight: '900', color: COLORS.gray[900] }}>
               {helperName}
             </Text>
             {profile?.working_areas?.length > 0 && (
-              <Text style={{ fontSize: 13, color: COLORS.gray[500], fontWeight: '500' }}>
+              <Text style={{ fontSize: fs(13), color: COLORS.gray[500], fontWeight: '500' }}>
                 {lang === 'en' ? 'Operating in: ' : 'Hoạt động: '}{profile.working_areas.join(', ')}
               </Text>
             )}
@@ -243,7 +243,7 @@ export default function HelperPublicProfileScreen() {
               }}
             >
               <ShieldCheck size={18} color={COLORS.success} />
-              <Text style={{ fontSize: 12.5, fontWeight: '800', color: COLORS.success }}>
+              <Text style={{ fontSize: fs(12.5), fontWeight: '800', color: COLORS.success }}>
                 {lang === 'en' ? 'Identity & Judicial Records Verified (e-KYC 100%)' : 'Đã xác minh nhân thân & Hồ sơ tư pháp (e-KYC 100%)'}
               </Text>
             </View>
@@ -262,7 +262,7 @@ export default function HelperPublicProfileScreen() {
               }}
             >
               <ShieldCheck size={18} color="#D97706" />
-              <Text style={{ fontSize: 12.5, fontWeight: '800', color: '#D97706' }}>
+              <Text style={{ fontSize: fs(12.5), fontWeight: '800', color: '#D97706' }}>
                 {lang === 'en' ? 'e-KYC Verification Pending' : 'Hồ sơ e-KYC đang chờ duyệt'}
               </Text>
             </View>
@@ -281,7 +281,7 @@ export default function HelperPublicProfileScreen() {
               }}
             >
               <ShieldCheck size={18} color={COLORS.error} />
-              <Text style={{ fontSize: 12.5, fontWeight: '800', color: COLORS.error }}>
+              <Text style={{ fontSize: fs(12.5), fontWeight: '800', color: COLORS.error }}>
                 {lang === 'en' ? 'e-KYC Identity Not Verified' : 'Chưa xác minh danh tính e-KYC'}
               </Text>
             </View>
@@ -293,29 +293,29 @@ export default function HelperPublicProfileScreen() {
           <Card style={{ flex: 1, alignItems: 'center', padding: 14, gap: 4 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
               <Star size={20} color="#F59E0B" />
-              <Text style={{ fontSize: 20, fontWeight: '900', color: '#F59E0B' }}>
+              <Text style={{ fontSize: fs(20), fontWeight: '900', color: '#F59E0B' }}>
                 {ratingScore.toFixed(1)}
               </Text>
             </View>
-            <Text style={{ fontSize: 11, color: COLORS.gray[500], fontWeight: '700' }}>
+            <Text style={{ fontSize: fs(11), color: COLORS.gray[500], fontWeight: '700' }}>
               {profile?.total_reviews || reviewsList.length || 0} {lang === 'en' ? 'reviews' : 'đánh giá'}
             </Text>
           </Card>
 
           <Card style={{ flex: 1, alignItems: 'center', padding: 14, gap: 4 }}>
-            <Text style={{ fontSize: 20, fontWeight: '900', color: COLORS.gray[900] }}>
+            <Text style={{ fontSize: fs(20), fontWeight: '900', color: COLORS.gray[900] }}>
               {totalCompleted}
             </Text>
-            <Text style={{ fontSize: 11, color: COLORS.gray[500], fontWeight: '700' }}>
+            <Text style={{ fontSize: fs(11), color: COLORS.gray[500], fontWeight: '700' }}>
               {lang === 'en' ? 'Jobs done' : 'Đơn hoàn tất'}
             </Text>
           </Card>
 
           <Card style={{ flex: 1, alignItems: 'center', padding: 14, gap: 4 }}>
-            <Text style={{ fontSize: 20, fontWeight: '900', color: COLORS.success }}>
+            <Text style={{ fontSize: fs(20), fontWeight: '900', color: COLORS.success }}>
               {profile?.completion_rate ?? 100}%
             </Text>
-            <Text style={{ fontSize: 11, color: COLORS.gray[500], fontWeight: '700' }}>
+            <Text style={{ fontSize: fs(11), color: COLORS.gray[500], fontWeight: '700' }}>
               {lang === 'en' ? 'On time' : 'Đúng giờ hẹn'}
             </Text>
           </Card>
@@ -332,11 +332,11 @@ export default function HelperPublicProfileScreen() {
         >
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
             <Award size={18} color="#D97706" />
-            <Text style={{ fontSize: 14, fontWeight: '800', color: '#B45309' }}>
+            <Text style={{ fontSize: fs(14), fontWeight: '800', color: '#B45309' }}>
               {lang === 'en' ? 'Partner Service Commitment' : 'Cam kết dịch vụ từ đối tác'}
             </Text>
           </View>
-          <Text style={{ fontSize: 12.5, color: '#92400E', lineHeight: 18 }}>
+          <Text style={{ fontSize: fs(12.5), color: '#92400E', lineHeight: 18 }}>
             {lang === 'en'
               ? `• Job completion rate: ${profile?.completion_rate ?? 100}% (No arbitrary cancellation).\n• ${profile?.years_experience ? `Over ${profile.years_experience} years` : 'Proven'} practical experience.\n• Service quality warranty and safety insurance during work.`
               : `• Tỷ lệ hoàn thành công việc: ${profile?.completion_rate ?? 100}% (Không hủy ngang).\n• ${profile?.years_experience ? `Hơn ${profile.years_experience} năm` : 'Có'} kinh nghiệm thực tế trong lĩnh vực.\n• Bảo hành chất lượng dịch vụ và bảo hiểm an toàn trong quá trình làm việc.`}
@@ -347,7 +347,7 @@ export default function HelperPublicProfileScreen() {
         <Card style={{ gap: 12, padding: 16 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
             <Wrench size={18} color={COLORS.primary} />
-            <Text style={{ fontSize: 16, fontWeight: '800', color: COLORS.gray[900] }}>
+            <Text style={{ fontSize: fs(16), fontWeight: '800', color: COLORS.gray[900] }}>
               {lang === 'en' ? 'Specialized Skills' : 'Kỹ năng chuyên sâu'}
             </Text>
           </View>
@@ -364,7 +364,7 @@ export default function HelperPublicProfileScreen() {
                     paddingVertical: 7,
                   }}
                 >
-                  <Text style={{ fontSize: 12.5, fontWeight: '700', color: COLORS.gray[800] }}>
+                  <Text style={{ fontSize: fs(12.5), fontWeight: '700', color: COLORS.gray[800] }}>
                     ✓ {skill}
                   </Text>
                 </View>
@@ -375,7 +375,7 @@ export default function HelperPublicProfileScreen() {
           {profile?.bio && (
             <>
               <Separator my={4} />
-              <Text style={{ fontSize: 13, color: COLORS.gray[600], lineHeight: 19 }}>
+              <Text style={{ fontSize: fs(13), color: COLORS.gray[600], lineHeight: 19 }}>
                 {profile.bio}
               </Text>
             </>
@@ -386,7 +386,7 @@ export default function HelperPublicProfileScreen() {
         <Card style={{ gap: 10, padding: 16 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
             <Calendar size={18} color={COLORS.primary} />
-            <Text style={{ fontSize: 16, fontWeight: '800', color: COLORS.gray[900] }}>
+            <Text style={{ fontSize: fs(16), fontWeight: '800', color: COLORS.gray[900] }}>
               {lang === 'en' ? 'Reference Pricing & Working Hours' : 'Bảng giá tham khảo & Khung giờ rảnh'}
             </Text>
           </View>
@@ -394,10 +394,10 @@ export default function HelperPublicProfileScreen() {
           <View
             style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4 }}
           >
-            <Text style={{ fontSize: 13.5, color: COLORS.gray[600] }}>
+            <Text style={{ fontSize: fs(13.5), color: COLORS.gray[600] }}>
               {lang === 'en' ? 'Hourly wage:' : 'Công thợ theo giờ:'}
             </Text>
-            <Text style={{ fontSize: 14, fontWeight: '800', color: COLORS.primary }}>
+            <Text style={{ fontSize: fs(14), fontWeight: '800', color: COLORS.primary }}>
               {lang === 'en' ? '70,000₫ – 100,000₫ / hr' : '70.000₫ – 100.000₫ / giờ'}
             </Text>
           </View>
@@ -405,10 +405,10 @@ export default function HelperPublicProfileScreen() {
           <View
             style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4 }}
           >
-            <Text style={{ fontSize: 13.5, color: COLORS.gray[600] }}>
+            <Text style={{ fontSize: fs(13.5), color: COLORS.gray[600] }}>
               {lang === 'en' ? 'Basic electrical & plumbing package:' : 'Gói sửa điện nước cơ bản:'}
             </Text>
-            <Text style={{ fontSize: 14, fontWeight: '800', color: COLORS.primary }}>
+            <Text style={{ fontSize: fs(14), fontWeight: '800', color: COLORS.primary }}>
               {lang === 'en' ? 'From 150,000₫ / job' : 'Từ 150.000₫ / ca'}
             </Text>
           </View>
@@ -421,7 +421,7 @@ export default function HelperPublicProfileScreen() {
               marginTop: 4,
             }}
           >
-            <Text style={{ fontSize: 12.5, color: COLORS.gray[600], fontWeight: '600' }}>
+            <Text style={{ fontSize: fs(12.5), color: COLORS.gray[600], fontWeight: '600' }}>
               {lang === 'en' ? '🕐 Working hours: ' : '🕐 Khung giờ làm việc: '}
               <Text style={{ color: COLORS.gray[900], fontWeight: '800' }}>
                 {profile?.availability?.start_time || '07:00'} –{' '}
@@ -439,7 +439,7 @@ export default function HelperPublicProfileScreen() {
           >
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
               <ThumbsUp size={18} color={COLORS.primary} />
-              <Text style={{ fontSize: 16, fontWeight: '800', color: COLORS.gray[900] }}>
+              <Text style={{ fontSize: fs(16), fontWeight: '800', color: COLORS.gray[900] }}>
                 {lang === 'en' ? 'Customer Reviews' : 'Khách hàng đánh giá'} ({profile?.total_reviews || reviewsList.length || 0})
               </Text>
             </View>
@@ -456,12 +456,12 @@ export default function HelperPublicProfileScreen() {
                 gap: 8,
               }}
             >
-              <Text style={{ fontSize: 14, fontWeight: '700', color: COLORS.gray[700] }}>
+              <Text style={{ fontSize: fs(14), fontWeight: '700', color: COLORS.gray[700] }}>
                 {lang === 'en' ? 'No reviews from customers yet' : 'Chưa có đánh giá nào từ khách hàng'}
               </Text>
               <Text
                 style={{
-                  fontSize: 12,
+                  fontSize: fs(12),
                   color: COLORS.gray[500],
                   textAlign: 'center',
                   lineHeight: 18,
@@ -485,13 +485,13 @@ export default function HelperPublicProfileScreen() {
                     alignItems: 'center',
                   }}
                 >
-                  <Text style={{ fontWeight: '800', fontSize: 14, color: COLORS.gray[900] }}>
+                  <Text style={{ fontWeight: '800', fontSize: fs(14), color: COLORS.gray[900] }}>
                     {r.customer_id?.full_name || (lang === 'en' ? 'Anonymous Customer' : 'Khách hàng ẩn danh')}
                   </Text>
                   <StarRating rating={r.rating} size={12} />
                 </View>
                 {r.comment && (
-                  <Text style={{ fontSize: 13, color: COLORS.gray[700], lineHeight: 18 }}>
+                  <Text style={{ fontSize: fs(13), color: COLORS.gray[700], lineHeight: 18 }}>
                     "{r.comment}"
                   </Text>
                 )}
@@ -506,12 +506,12 @@ export default function HelperPublicProfileScreen() {
                       borderLeftColor: COLORS.primary,
                     }}
                   >
-                    <Text style={{ fontSize: 12, color: COLORS.gray[600], fontStyle: 'italic' }}>
+                    <Text style={{ fontSize: fs(12), color: COLORS.gray[600], fontStyle: 'italic' }}>
                       {lang === 'en' ? 'Helper replied: ' : 'Thợ phản hồi: '}"{r.helper_reply}"
                     </Text>
                   </View>
                 )}
-                <Text style={{ fontSize: 11, color: COLORS.gray[500], marginTop: 2 }}>
+                <Text style={{ fontSize: fs(11), color: COLORS.gray[500], marginTop: 2 }}>
                   {dayjs(r.created_at).fromNow()}
                 </Text>
               </View>

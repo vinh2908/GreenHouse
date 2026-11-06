@@ -140,7 +140,7 @@ export default function NotificationSettingsScreen() {
         </TouchableOpacity>
         <Text
           style={{
-            fontSize: 18,
+            fontSize: fs(18),
             fontWeight: '800',
             color: COLORS.gray[900],
             marginLeft: 12,
@@ -159,7 +159,7 @@ export default function NotificationSettingsScreen() {
         <View>
           <Text
             style={{
-              fontSize: 12,
+              fontSize: fs(12),
               fontWeight: '700',
               color: COLORS.gray[500],
               marginBottom: 8,
@@ -179,10 +179,10 @@ export default function NotificationSettingsScreen() {
               }}
             >
               <View style={{ flex: 1, marginRight: 12 }}>
-                <Text style={{ fontSize: 15, fontWeight: '700', color: COLORS.gray[900] }}>
+                <Text style={{ fontSize: fs(15), fontWeight: '700', color: COLORS.gray[900] }}>
                   {lang === 'en' ? 'Order Progress Updates' : 'Cập nhật tiến độ đơn hàng'}
                 </Text>
-                <Text style={{ fontSize: 13, color: COLORS.gray[500], marginTop: 2 }}>
+                <Text style={{ fontSize: fs(13), color: COLORS.gray[500], marginTop: 2 }}>
                   {lang === 'en'
                     ? 'Get notified when helper accepts job, starts moving, arrives, or finishes.'
                     : 'Nhận tin khi thợ nhận việc, bắt đầu di chuyển, đã đến nơi hoặc hoàn thành.'}
@@ -206,10 +206,10 @@ export default function NotificationSettingsScreen() {
               }}
             >
               <View style={{ flex: 1, marginRight: 12 }}>
-                <Text style={{ fontSize: 15, fontWeight: '700', color: COLORS.gray[900] }}>
+                <Text style={{ fontSize: fs(15), fontWeight: '700', color: COLORS.gray[900] }}>
                   {lang === 'en' ? 'Messages & Chat' : 'Tin nhắn & Trao đổi'}
                 </Text>
-                <Text style={{ fontSize: 13, color: COLORS.gray[500], marginTop: 2 }}>
+                <Text style={{ fontSize: fs(13), color: COLORS.gray[500], marginTop: 2 }}>
                   {lang === 'en'
                     ? 'Direct chat message notifications from customers or helpers.'
                     : 'Thông báo tin nhắn trò chuyện trực tiếp từ khách hàng hoặc thợ.'}
@@ -228,7 +228,7 @@ export default function NotificationSettingsScreen() {
         <View>
           <Text
             style={{
-              fontSize: 12,
+              fontSize: fs(12),
               fontWeight: '700',
               color: COLORS.gray[500],
               marginBottom: 8,
@@ -248,10 +248,10 @@ export default function NotificationSettingsScreen() {
               }}
             >
               <View style={{ flex: 1, marginRight: 12 }}>
-                <Text style={{ fontSize: 15, fontWeight: '700', color: COLORS.gray[900] }}>
+                <Text style={{ fontSize: fs(15), fontWeight: '700', color: COLORS.gray[900] }}>
                   {lang === 'en' ? 'New Promotional Deals' : 'Chương trình ưu đãi mới'}
                 </Text>
-                <Text style={{ fontSize: 13, color: COLORS.gray[500], marginTop: 2 }}>
+                <Text style={{ fontSize: fs(13), color: COLORS.gray[500], marginTop: 2 }}>
                   {lang === 'en'
                     ? 'Notifications about periodic service discounts and holiday deals.'
                     : 'Thông báo các chương trình giảm giá dịch vụ định kỳ và mùa lễ.'}
@@ -275,10 +275,10 @@ export default function NotificationSettingsScreen() {
               }}
             >
               <View style={{ flex: 1, marginRight: 12 }}>
-                <Text style={{ fontSize: 15, fontWeight: '700', color: COLORS.gray[900] }}>
+                <Text style={{ fontSize: fs(15), fontWeight: '700', color: COLORS.gray[900] }}>
                   {lang === 'en' ? 'Expiring Voucher Reminders' : 'Nhắc nhở voucher sắp hết hạn'}
                 </Text>
-                <Text style={{ fontSize: 13, color: COLORS.gray[500], marginTop: 2 }}>
+                <Text style={{ fontSize: fs(13), color: COLORS.gray[500], marginTop: 2 }}>
                   {lang === 'en'
                     ? 'Reminders to use discount vouchers before they expire.'
                     : 'Nhắc sử dụng các voucher giảm giá trước khi hết hạn sử dụng.'}
@@ -297,7 +297,7 @@ export default function NotificationSettingsScreen() {
         <View>
           <Text
             style={{
-              fontSize: 12,
+              fontSize: fs(12),
               fontWeight: '700',
               color: COLORS.gray[500],
               marginBottom: 8,
@@ -317,10 +317,10 @@ export default function NotificationSettingsScreen() {
               }}
             >
               <View style={{ flex: 1, marginRight: 12 }}>
-                <Text style={{ fontSize: 15, fontWeight: '700', color: COLORS.gray[900] }}>
+                <Text style={{ fontSize: fs(15), fontWeight: '700', color: COLORS.gray[900] }}>
                   {lang === 'en' ? 'Notification Sound' : 'Âm thanh thông báo'}
                 </Text>
-                <Text style={{ fontSize: 13, color: COLORS.gray[500], marginTop: 2 }}>
+                <Text style={{ fontSize: fs(13), color: COLORS.gray[500], marginTop: 2 }}>
                   {lang === 'en'
                     ? 'Play chime when a new notification arrives.'
                     : 'Phát âm thanh chuông khi có thông báo mới đến.'}
@@ -344,10 +344,10 @@ export default function NotificationSettingsScreen() {
               }}
             >
               <View style={{ flex: 1, marginRight: 12 }}>
-                <Text style={{ fontSize: 15, fontWeight: '700', color: COLORS.gray[900] }}>
+                <Text style={{ fontSize: fs(15), fontWeight: '700', color: COLORS.gray[900] }}>
                   {lang === 'en' ? 'Device Vibration' : 'Rung thiết bị'}
                 </Text>
-                <Text style={{ fontSize: 13, color: COLORS.gray[500], marginTop: 2 }}>
+                <Text style={{ fontSize: fs(13), color: COLORS.gray[500], marginTop: 2 }}>
                   {lang === 'en'
                     ? 'Gently vibrate device upon incoming messages or emergency SOS jobs.'
                     : 'Rung nhẹ điện thoại khi nhận tín hiệu hoặc đơn cứu hộ khẩn cấp.'}

@@ -307,7 +307,7 @@ export default function SosScreen() {
         </TouchableOpacity>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
           <ShieldAlert size={22} color="#FFFFFF" />
-          <Text style={{ fontSize: 18, fontWeight: '900', color: '#FFFFFF' }}>
+          <Text style={{ fontSize: fs(18), fontWeight: '900', color: '#FFFFFF' }}>
             {lang === 'en' ? 'EMERGENCY SOS DISPATCH' : 'CỨU HỘ KHẨN CẤP SOS'}
           </Text>
         </View>
@@ -334,13 +334,13 @@ export default function SosScreen() {
           >
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
               <AlertTriangle size={20} color="#DC2626" />
-              <Text style={{ fontSize: 14, fontWeight: '900', color: '#B91C1C' }}>
+              <Text style={{ fontSize: fs(14), fontWeight: '900', color: '#B91C1C' }}>
                 {lang === 'en'
                   ? 'LIFE THREATENING / FIRE HAZARD WARNING'
                   : 'CẢNH BÁO NGUY HIỂM TÍNH MẠNG / HỎA HOẠN'}
               </Text>
             </View>
-            <Text style={{ fontSize: 12.5, color: '#991B1B', lineHeight: 18 }}>
+            <Text style={{ fontSize: fs(12.5), color: '#991B1B', lineHeight: 18 }}>
               {lang === 'en'
                 ? 'If the incident poses high fire risk or threatens life, please immediately call national emergency authorities:'
                 : 'Nếu sự cố có nguy cơ cháy nổ lớn hoặc đe dọa tính mạng, vui lòng gọi cơ quan cứu hộ quốc gia ngay:'}
@@ -360,7 +360,7 @@ export default function SosScreen() {
                 }}
               >
                 <PhoneCall size={16} color="#fff" />
-                <Text style={{ color: '#fff', fontWeight: '800', fontSize: 13 }}>
+                <Text style={{ color: '#fff', fontWeight: '800', fontSize: fs(13) }}>
                   {lang === 'en' ? 'Call 114 (Firefighters)' : 'Gọi 114 (Cứu hỏa)'}
                 </Text>
               </TouchableOpacity>
@@ -378,7 +378,7 @@ export default function SosScreen() {
                 }}
               >
                 <PhoneCall size={16} color="#fff" />
-                <Text style={{ color: '#fff', fontWeight: '800', fontSize: 13 }}>
+                <Text style={{ color: '#fff', fontWeight: '800', fontSize: fs(13) }}>
                   {lang === 'en' ? 'Call 115 (Ambulance)' : 'Gọi 115 (Cấp cứu)'}
                 </Text>
               </TouchableOpacity>
@@ -386,7 +386,7 @@ export default function SosScreen() {
           </Card>
 
           {/* ── 1. CHỌN NHANH SỰ CỐ KHẨN CẤP (1 CHẠM) ─────────────────── */}
-          <Text style={{ fontSize: 16, fontWeight: '900', color: COLORS.gray[900] }}>
+          <Text style={{ fontSize: fs(16), fontWeight: '900', color: COLORS.gray[900] }}>
             {lang === 'en'
               ? '1. Select Emergency Type (1-Tap):'
               : '1. Chọn loại sự cố khẩn cấp (1 chạm):'}
@@ -415,10 +415,10 @@ export default function SosScreen() {
                     {React.createElement(cat.icon, { size: 26, color: cat.color })}
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: 15, fontWeight: '800', color: COLORS.gray[900] }}>
+                    <Text style={{ fontSize: fs(15), fontWeight: '800', color: COLORS.gray[900] }}>
                       {cat.name}
                     </Text>
-                    <Text style={{ fontSize: 12, color: COLORS.gray[500], marginTop: 2 }}>
+                    <Text style={{ fontSize: fs(12), color: COLORS.gray[500], marginTop: 2 }}>
                       {cat.desc}
                     </Text>
                   </View>
@@ -450,7 +450,7 @@ export default function SosScreen() {
                 alignItems: 'center',
               }}
             >
-              <Text style={{ fontSize: 14, fontWeight: '800', color: COLORS.gray[900] }}>
+              <Text style={{ fontSize: fs(14), fontWeight: '800', color: COLORS.gray[900] }}>
                 {lang === 'en'
                   ? '2. Rescue Location (Goong Maps)'
                   : '2. Vị trí cứu hộ (Bản đồ Goong)'}
@@ -465,7 +465,7 @@ export default function SosScreen() {
                     borderRadius: 6,
                   }}
                 >
-                  <Text style={{ fontSize: 11, color: COLORS.gray[700], fontWeight: '700' }}>
+                  <Text style={{ fontSize: fs(11), color: COLORS.gray[700], fontWeight: '700' }}>
                     {isEditingAddress
                       ? lang === 'en'
                         ? 'Collapse'
@@ -493,7 +493,7 @@ export default function SosScreen() {
                   ) : (
                     <Navigation size={12} color={COLORS.success} />
                   )}
-                  <Text style={{ fontSize: 11, color: COLORS.success, fontWeight: '700' }}>
+                  <Text style={{ fontSize: fs(11), color: COLORS.success, fontWeight: '700' }}>
                     {isLocating
                       ? lang === 'en'
                         ? 'Locating GPS...'
@@ -514,7 +514,7 @@ export default function SosScreen() {
                     borderColor: COLORS.primary,
                     borderRadius: 10,
                     padding: 10,
-                    fontSize: 14,
+                    fontSize: fs(14),
                     color: COLORS.gray[900],
                     backgroundColor: '#fff',
                   }}
@@ -568,7 +568,7 @@ export default function SosScreen() {
                     alignItems: 'center',
                   }}
                 >
-                  <Text style={{ color: '#fff', fontWeight: '700', fontSize: 13 }}>
+                  <Text style={{ color: '#fff', fontWeight: '700', fontSize: fs(13) }}>
                     {lang === 'en' ? 'Confirm this address' : 'Xác nhận địa chỉ này'}
                   </Text>
                 </TouchableOpacity>
@@ -586,13 +586,13 @@ export default function SosScreen() {
               >
                 <MapPin size={18} color={COLORS.primary} style={{ marginTop: 2 }} />
                 <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: 14, fontWeight: '700', color: COLORS.gray[900] }}>
+                  <Text style={{ fontSize: fs(14), fontWeight: '700', color: COLORS.gray[900] }}>
                     {address.full_address ||
                       (lang === 'en'
                         ? 'No location yet — tap "Relocate" or "Enter manually"'
                         : 'Chưa có vị trí — bấm "Định vị lại" hoặc "Nhập tay"')}
                   </Text>
-                  <Text style={{ fontSize: 12, color: COLORS.gray[500], marginTop: 2 }}>
+                  <Text style={{ fontSize: fs(12), color: COLORS.gray[500], marginTop: 2 }}>
                     {[address.ward, address.district, address.city].filter(Boolean).join(', ')}
                   </Text>
                 </View>
@@ -619,7 +619,7 @@ export default function SosScreen() {
             >
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                 <Clock size={18} color={COLORS.primary} />
-                <Text style={{ fontSize: 15, fontWeight: '900', color: COLORS.gray[900] }}>
+                <Text style={{ fontSize: fs(15), fontWeight: '900', color: COLORS.gray[900] }}>
                   {lang === 'en' ? 'Helper Arrival Time' : 'Thời gian thợ có mặt'}
                 </Text>
               </View>
@@ -631,7 +631,7 @@ export default function SosScreen() {
                   borderRadius: 8,
                 }}
               >
-                <Text style={{ color: '#fff', fontSize: 13, fontWeight: '900' }}>
+                <Text style={{ color: '#fff', fontSize: fs(13), fontWeight: '900' }}>
                   {lang === 'en' ? '15 - 20 MINUTES' : '15 - 20 PHÚT'}
                 </Text>
               </View>
@@ -641,13 +641,13 @@ export default function SosScreen() {
 
             <View style={{ gap: 6 }}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                <Text style={{ fontSize: 13, color: COLORS.gray[600] }}>
+                <Text style={{ fontSize: fs(13), color: COLORS.gray[600] }}>
                   {lang === 'en' ? 'Base rescue fee:' : 'Công thợ cứu hộ cơ bản:'}
                 </Text>
                 <PriceText amount={baseCost} size={14} color={COLORS.gray[900]} bold={false} />
               </View>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                <Text style={{ fontSize: 13, color: COLORS.gray[600] }}>
+                <Text style={{ fontSize: fs(13), color: COLORS.gray[600] }}>
                   {lang === 'en'
                     ? 'Emergency dispatch surcharge (+50%):'
                     : 'Phụ phí cứu hộ khẩn cấp (+50%):'}
@@ -656,14 +656,14 @@ export default function SosScreen() {
               </View>
               <Separator my={2} />
               <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                <Text style={{ fontSize: 15, fontWeight: '900', color: COLORS.gray[900] }}>
+                <Text style={{ fontSize: fs(15), fontWeight: '900', color: COLORS.gray[900] }}>
                   {lang === 'en' ? 'Estimated Total:' : 'Ước tính tổng cộng:'}
                 </Text>
                 <PriceText amount={totalEstimate} size={18} color="#DC2626" />
               </View>
             </View>
 
-            <Text style={{ fontSize: 11.5, color: COLORS.gray[500], lineHeight: 16 }}>
+            <Text style={{ fontSize: fs(11.5), color: COLORS.gray[500], lineHeight: 16 }}>
               {lang === 'en'
                 ? '* Emergency surcharge is used to prioritize immediate helper dispatch. You only pay after helper completes the resolution.'
                 : '* Phụ phí khẩn cấp dùng để ưu tiên thợ di chuyển ngay lập tức. Khách hàng chỉ thanh toán sau khi thợ hoàn tất xử lý sự cố.'}
@@ -711,7 +711,7 @@ export default function SosScreen() {
           }}
         >
           <Flame size={24} color="#FFFFFF" />
-          <Text style={{ color: '#FFFFFF', fontSize: 17, fontWeight: '900', letterSpacing: 0.5 }}>
+          <Text style={{ color: '#FFFFFF', fontSize: fs(17), fontWeight: '900', letterSpacing: 0.5 }}>
             {createSos.isPending
               ? lang === 'en'
                 ? 'DISPATCHING SIGNAL...'

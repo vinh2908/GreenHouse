@@ -441,7 +441,7 @@ export default function EditProfileScreen() {
         >
           <ArrowLeft size={20} color={COLORS.gray[800]} />
         </TouchableOpacity>
-        <Text style={{ fontSize: 17, fontWeight: '800', color: COLORS.gray[900] }}>
+        <Text style={{ fontSize: fs(17), fontWeight: '800', color: COLORS.gray[900] }}>
           {lang === 'en' ? 'Edit Profile' : 'Chỉnh sửa thông tin cá nhân'}
         </Text>
         <View style={{ width: 40 }} />
@@ -489,10 +489,10 @@ export default function EditProfileScreen() {
             </View>
 
             <View style={{ alignItems: 'center' }}>
-              <Text style={{ fontSize: 14, fontWeight: '800', color: COLORS.gray[800] }}>
+              <Text style={{ fontSize: fs(14), fontWeight: '800', color: COLORS.gray[800] }}>
                 {lang === 'en' ? 'Account Avatar' : 'Ảnh đại diện tài khoản'}
               </Text>
-              <Text style={{ fontSize: 12, color: COLORS.gray[500], marginTop: 2 }}>
+              <Text style={{ fontSize: fs(12), color: COLORS.gray[500], marginTop: 2 }}>
                 {lang === 'en' ? 'Take photo, pick from gallery, or select a preset below:' : 'Chụp ảnh, chọn từ thư viện hoặc chọn nhanh bên dưới:'}
               </Text>
             </View>
@@ -548,12 +548,12 @@ export default function EditProfileScreen() {
 
           {/* ── 2. THÔNG TIN ĐỊNH DANH CƠ BẢN ─────────────────────────── */}
           <Card style={{ padding: 16, gap: 14 }}>
-            <Text style={{ fontSize: 15, fontWeight: '800', color: COLORS.gray[900] }}>
+            <Text style={{ fontSize: fs(15), fontWeight: '800', color: COLORS.gray[900] }}>
               {lang === 'en' ? 'Contact Information' : 'Thông tin liên hệ'}
             </Text>
 
             <View style={{ gap: 6 }}>
-              <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.gray[700] }}>
+              <Text style={{ fontSize: fs(13), fontWeight: '700', color: COLORS.gray[700] }}>
                 {lang === 'en' ? 'Full Name *' : 'Họ và tên *'}
               </Text>
               <TextInput
@@ -562,7 +562,7 @@ export default function EditProfileScreen() {
                   borderColor: COLORS.gray[200],
                   borderRadius: 14,
                   padding: 14,
-                  fontSize: 15,
+                  fontSize: fs(15),
                   color: COLORS.gray[900],
                   backgroundColor: COLORS.gray[50],
                   fontWeight: '600',
@@ -582,7 +582,7 @@ export default function EditProfileScreen() {
                   alignItems: 'center',
                 }}
               >
-                <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.gray[700] }}>
+                <Text style={{ fontSize: fs(13), fontWeight: '700', color: COLORS.gray[700] }}>
                   {lang === 'en' ? 'Registered Phone Number' : 'Số điện thoại đăng ký'}
                 </Text>
                 <View
@@ -597,7 +597,7 @@ export default function EditProfileScreen() {
                   }}
                 >
                   <ShieldCheck size={12} color={COLORS.success} />
-                  <Text style={{ fontSize: 11, color: COLORS.success, fontWeight: '700' }}>
+                  <Text style={{ fontSize: fs(11), color: COLORS.success, fontWeight: '700' }}>
                     {lang === 'en' ? 'OTP Verified' : 'Đã xác thực OTP'}
                   </Text>
                 </View>
@@ -608,7 +608,7 @@ export default function EditProfileScreen() {
                   borderColor: COLORS.gray[200],
                   borderRadius: 14,
                   padding: 14,
-                  fontSize: 15,
+                  fontSize: fs(15),
                   color: COLORS.gray[500],
                   backgroundColor: COLORS.gray[100],
                 }}
@@ -618,7 +618,7 @@ export default function EditProfileScreen() {
             </View>
 
             <View style={{ gap: 6 }}>
-              <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.gray[700] }}>
+              <Text style={{ fontSize: fs(13), fontWeight: '700', color: COLORS.gray[700] }}>
                 {lang === 'en' ? 'Contact Email (Electronic Invoices)' : 'Email liên hệ (Nhận hóa đơn điện tử)'}
               </Text>
               <TextInput
@@ -627,7 +627,7 @@ export default function EditProfileScreen() {
                   borderColor: COLORS.gray[200],
                   borderRadius: 14,
                   padding: 14,
-                  fontSize: 15,
+                  fontSize: fs(15),
                   color: COLORS.gray[900],
                   backgroundColor: COLORS.gray[50],
                 }}
@@ -642,7 +642,7 @@ export default function EditProfileScreen() {
 
             {/* Giới tính */}
             <View style={{ gap: 6 }}>
-              <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.gray[700] }}>
+              <Text style={{ fontSize: fs(13), fontWeight: '700', color: COLORS.gray[700] }}>
                 {lang === 'en' ? 'Gender' : 'Giới tính'}
               </Text>
               <View style={{ flexDirection: 'row', gap: 10 }}>
@@ -667,7 +667,7 @@ export default function EditProfileScreen() {
                   >
                     <Text
                       style={{
-                        fontSize: 13.5,
+                        fontSize: fs(13.5),
                         fontWeight: '700',
                         color: gender === g.id ? COLORS.primary : COLORS.gray[700],
                       }}
@@ -686,13 +686,13 @@ export default function EditProfileScreen() {
             <Card style={{ padding: 16, gap: 14 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                 <Briefcase size={18} color={COLORS.primary} />
-                <Text style={{ fontSize: 15, fontWeight: '800', color: COLORS.gray[900] }}>
+                <Text style={{ fontSize: fs(15), fontWeight: '800', color: COLORS.gray[900] }}>
                   {lang === 'en' ? 'Professional Profile & Work Area' : 'Hồ sơ nghề nghiệp & Khu vực làm việc'}
                 </Text>
               </View>
 
               <View style={{ gap: 6 }}>
-                <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.gray[700] }}>
+                <Text style={{ fontSize: fs(13), fontWeight: '700', color: COLORS.gray[700] }}>
                   {lang === 'en' ? 'Years of Experience' : 'Số năm kinh nghiệm'}
                 </Text>
                 <TextInput
@@ -701,7 +701,7 @@ export default function EditProfileScreen() {
                     borderColor: COLORS.gray[200],
                     borderRadius: 14,
                     padding: 14,
-                    fontSize: 15,
+                    fontSize: fs(15),
                     color: COLORS.gray[900],
                     backgroundColor: COLORS.gray[50],
                   }}
@@ -714,7 +714,7 @@ export default function EditProfileScreen() {
               </View>
 
               <View style={{ gap: 6 }}>
-                <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.gray[700] }}>
+                <Text style={{ fontSize: fs(13), fontWeight: '700', color: COLORS.gray[700] }}>
                   {lang === 'en' ? 'Preferred Work Districts' : 'Khu vực hoạt động ưu tiên'}
                 </Text>
                 <TextInput
@@ -723,7 +723,7 @@ export default function EditProfileScreen() {
                     borderColor: COLORS.gray[200],
                     borderRadius: 14,
                     padding: 14,
-                    fontSize: 15,
+                    fontSize: fs(15),
                     color: COLORS.gray[900],
                     backgroundColor: COLORS.gray[50],
                   }}
@@ -736,7 +736,7 @@ export default function EditProfileScreen() {
 
               {/* ── Vị trí GPS trên bản đồ ──────────────────────────── */}
               <View style={{ gap: 8 }}>
-                <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.gray[700] }}>
+                <Text style={{ fontSize: fs(13), fontWeight: '700', color: COLORS.gray[700] }}>
                   {lang === 'en' ? 'Your Working Base Location' : 'Vị trí hoạt động của bạn'}
                 </Text>
 
@@ -770,7 +770,7 @@ export default function EditProfileScreen() {
                       }}
                     >
                       <MapPin size={13} color="#fff" />
-                      <Text style={{ color: '#fff', fontSize: 12, fontWeight: '700' }}>
+                      <Text style={{ color: '#fff', fontSize: fs(12), fontWeight: '700' }}>
                         {lang === 'en' ? 'Open map to select address' : 'Mở bản đồ chọn địa chỉ'}
                       </Text>
                     </View>
@@ -781,7 +781,7 @@ export default function EditProfileScreen() {
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                     <MapPin size={14} color={COLORS.primary} />
                     <Text
-                      style={{ fontSize: 12, color: COLORS.gray[600], flex: 1 }}
+                      style={{ fontSize: fs(12), color: COLORS.gray[600], flex: 1 }}
                       numberOfLines={2}
                     >
                       {locationAddress}
@@ -837,12 +837,12 @@ export default function EditProfileScreen() {
                   ) : (
                     <Navigation size={16} color={COLORS.primary} />
                   )}
-                  <Text style={{ fontSize: 14, fontWeight: '800', color: COLORS.primary }}>
+                  <Text style={{ fontSize: fs(14), fontWeight: '800', color: COLORS.primary }}>
                     {gpsLoading ? (lang === 'en' ? 'Getting location...' : 'Đang lấy vị trí...') : (lang === 'en' ? 'Get current GPS location' : 'Lấy vị trí GPS hiện tại')}
                   </Text>
                 </TouchableOpacity>
 
-                <Text style={{ fontSize: 11, color: COLORS.gray[500], lineHeight: 16 }}>
+                <Text style={{ fontSize: fs(11), color: COLORS.gray[500], lineHeight: 16 }}>
                   {lang === 'en'
                     ? 'Open map to pin your base location — distance to customers is calculated from this point. GPS updates with your phone location.'
                     : 'Mở bản đồ để tìm và ghim vị trí hoạt động cố định — khoảng cách tới khách được tính từ điểm này. Nếu dùng GPS, vị trí sẽ tự cập nhật theo điện thoại.'}
@@ -850,7 +850,7 @@ export default function EditProfileScreen() {
               </View>
 
               <View style={{ gap: 6 }}>
-                <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.gray[700] }}>
+                <Text style={{ fontSize: fs(13), fontWeight: '700', color: COLORS.gray[700] }}>
                   {lang === 'en' ? 'Bio / Introduction (Shown to customers)' : 'Lời giới thiệu bản thân (Hiển thị tới khách hàng)'}
                 </Text>
                 <TextInput
@@ -859,7 +859,7 @@ export default function EditProfileScreen() {
                     borderColor: COLORS.gray[200],
                     borderRadius: 14,
                     padding: 14,
-                    fontSize: 14.5,
+                    fontSize: fs(14.5),
                     color: COLORS.gray[900],
                     backgroundColor: COLORS.gray[50],
                     minHeight: 80,
@@ -878,14 +878,14 @@ export default function EditProfileScreen() {
             <Card style={{ padding: 16, gap: 14 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                 <MapPin size={18} color={COLORS.primary} />
-                <Text style={{ fontSize: 15, fontWeight: '800', color: COLORS.gray[900] }}>
+                <Text style={{ fontSize: fs(15), fontWeight: '800', color: COLORS.gray[900] }}>
                   {lang === 'en' ? 'Home Address & Notes' : 'Địa chỉ & Ghi chú nhà riêng'}
                 </Text>
               </View>
 
               {/* ── Bản đồ GPS chọn vị trí nhà ──────────────────────── */}
               <View style={{ gap: 8 }}>
-                <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.gray[700] }}>
+                <Text style={{ fontSize: fs(13), fontWeight: '700', color: COLORS.gray[700] }}>
                   {lang === 'en' ? 'Your Home Location on Map' : 'Vị trí nhà của bạn trên bản đồ'}
                 </Text>
 
@@ -919,7 +919,7 @@ export default function EditProfileScreen() {
                       }}
                     >
                       <MapPin size={13} color="#fff" />
-                      <Text style={{ color: '#fff', fontSize: 12, fontWeight: '700' }}>
+                      <Text style={{ color: '#fff', fontSize: fs(12), fontWeight: '700' }}>
                         Mở bản đồ chọn địa chỉ
                       </Text>
                     </View>
@@ -930,7 +930,7 @@ export default function EditProfileScreen() {
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                     <MapPin size={14} color={COLORS.primary} />
                     <Text
-                      style={{ fontSize: 12, color: COLORS.gray[600], flex: 1 }}
+                      style={{ fontSize: fs(12), color: COLORS.gray[600], flex: 1 }}
                       numberOfLines={2}
                     >
                       {customerLocationText}
@@ -991,12 +991,12 @@ export default function EditProfileScreen() {
                   ) : (
                     <Navigation size={16} color={COLORS.primary} />
                   )}
-                  <Text style={{ fontSize: 14, fontWeight: '800', color: COLORS.primary }}>
+                  <Text style={{ fontSize: fs(14), fontWeight: '800', color: COLORS.primary }}>
                     {customerGpsLoading ? (lang === 'en' ? 'Getting location...' : 'Đang lấy vị trí...') : (lang === 'en' ? 'Get current GPS location' : 'Lấy vị trí GPS hiện tại')}
                   </Text>
                 </TouchableOpacity>
 
-                <Text style={{ fontSize: 11, color: COLORS.gray[500], lineHeight: 16 }}>
+                <Text style={{ fontSize: fs(11), color: COLORS.gray[500], lineHeight: 16 }}>
                   {lang === 'en'
                     ? 'Open map to pin your home address, or tap GPS. The address will be auto-filled and saved immediately.'
                     : 'Mở bản đồ để tìm và ghim địa chỉ nhà, hoặc bấm nút GPS. Địa chỉ sẽ được tự động điền và lưu ngay.'}
@@ -1004,7 +1004,7 @@ export default function EditProfileScreen() {
               </View>
 
               <View style={{ gap: 6 }}>
-                <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.gray[700] }}>
+                <Text style={{ fontSize: fs(13), fontWeight: '700', color: COLORS.gray[700] }}>
                   {lang === 'en' ? 'Detailed Address' : 'Địa chỉ chi tiết'}
                 </Text>
                 <TextInput
@@ -1013,7 +1013,7 @@ export default function EditProfileScreen() {
                     borderColor: COLORS.gray[200],
                     borderRadius: 14,
                     padding: 14,
-                    fontSize: 14.5,
+                    fontSize: fs(14.5),
                     color: COLORS.gray[900],
                     backgroundColor: COLORS.gray[50],
                   }}
@@ -1029,7 +1029,7 @@ export default function EditProfileScreen() {
               </View>
 
               <View style={{ gap: 6 }}>
-                <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.gray[700] }}>
+                <Text style={{ fontSize: fs(13), fontWeight: '700', color: COLORS.gray[700] }}>
                   {lang === 'en' ? 'Arrival Notes for Helper' : 'Ghi chú chỉ dẫn cho Thợ khi đến nhà'}
                 </Text>
                 <TextInput
@@ -1038,7 +1038,7 @@ export default function EditProfileScreen() {
                     borderColor: COLORS.gray[200],
                     borderRadius: 14,
                     padding: 14,
-                    fontSize: 14.5,
+                    fontSize: fs(14.5),
                     color: COLORS.gray[900],
                     backgroundColor: COLORS.gray[50],
                     minHeight: 70,

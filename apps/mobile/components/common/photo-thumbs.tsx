@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { Modal, View, TouchableOpacity, Image, Text } from 'react-native';
 import { X } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation, fs } from '@/hooks/use-i18n';
 
 /** Modal xem 1 ảnh toàn màn hình (chạm nền hoặc nút ✕ để đóng) */
 export function ImageViewerModal({
@@ -64,13 +65,14 @@ export function PhotoThumbRow({
   size?: number;
   label?: string;
 }) {
+  const { fs } = useTranslation();
   const [viewing, setViewing] = useState<string | null>(null);
   const list = (urls ?? []).filter(u => typeof u === 'string' && u);
   if (list.length === 0) return null;
   return (
     <View style={{ gap: 6 }}>
       {label ? (
-        <Text style={{ fontSize: 12.5, fontWeight: '700', color: '#6B7280' }}>{label}</Text>
+        <Text style={{ fontSize: fs(12.5), fontWeight: '700', color: '#6B7280' }}>{label}</Text>
       ) : null}
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
         {list.map(url => (

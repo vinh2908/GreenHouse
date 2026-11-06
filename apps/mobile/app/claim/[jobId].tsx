@@ -131,7 +131,7 @@ export default function ClaimScreen() {
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 10,
-    fontSize: 14,
+    fontSize: fs(14),
     backgroundColor: '#fff',
   } as const;
 
@@ -168,10 +168,10 @@ export default function ClaimScreen() {
           <ArrowLeft size={20} color={COLORS.gray[800]} />
         </TouchableOpacity>
         <View style={{ flex: 1 }}>
-          <Text style={{ fontSize: 18, fontWeight: '800', color: COLORS.gray[900] }}>
+          <Text style={{ fontSize: fs(18), fontWeight: '800', color: COLORS.gray[900] }}>
             {lang === 'en' ? 'Insurance Claim' : 'Bồi thường bảo hiểm'}
           </Text>
-          <Text style={{ fontSize: 12, color: COLORS.gray[500] }}>
+          <Text style={{ fontSize: fs(12), color: COLORS.gray[500] }}>
             {lang === 'en' ? '30-day insurance warranty for all completed jobs' : 'Bảo hiểm 30 ngày cho mọi đơn đã hoàn thành'}
           </Text>
         </View>
@@ -191,7 +191,7 @@ export default function ClaimScreen() {
               <Card style={{ gap: 8 }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                   <Text
-                    style={{ flex: 1, fontWeight: '800', fontSize: 15, color: COLORS.gray[900] }}
+                    style={{ flex: 1, fontWeight: '800', fontSize: fs(15), color: COLORS.gray[900] }}
                   >
                     {lang === 'en' ? 'Claim Status' : 'Trạng thái yêu cầu'}
                   </Text>
@@ -203,19 +203,19 @@ export default function ClaimScreen() {
                     />
                   )}
                 </View>
-                <Text style={{ fontSize: 13, color: COLORS.gray[600], lineHeight: 19 }}>
+                <Text style={{ fontSize: fs(13), color: COLORS.gray[600], lineHeight: 19 }}>
                   {lang === 'en' ? meta?.desc_en : meta?.desc}
                 </Text>
-                <Text style={{ fontSize: 13.5, color: COLORS.gray[800], lineHeight: 20 }}>
+                <Text style={{ fontSize: fs(13.5), color: COLORS.gray[800], lineHeight: 20 }}>
                   {claim.description}
                 </Text>
                 {claim.requested_amount ? (
-                  <Text style={{ fontSize: 13, color: COLORS.gray[600] }}>
+                  <Text style={{ fontSize: fs(13), color: COLORS.gray[600] }}>
                     {lang === 'en' ? 'Requested amount: ' : 'Số tiền đề nghị: '}{fmt(claim.requested_amount)}₫
                   </Text>
                 ) : null}
                 {claim.status === 'paid' && (
-                  <Text style={{ fontSize: 13.5, fontWeight: '700', color: COLORS.success }}>
+                  <Text style={{ fontSize: fs(13.5), fontWeight: '700', color: COLORS.success }}>
                     {lang === 'en'
                       ? `Compensated: ${fmt(claim.approved_amount)}₫ to your wallet`
                       : `Đã bồi thường: ${fmt(claim.approved_amount)}₫ vào ví của bạn`}
@@ -229,12 +229,12 @@ export default function ClaimScreen() {
                       padding: 10,
                     }}
                   >
-                    <Text style={{ fontSize: 13, color: COLORS.error, lineHeight: 19 }}>
+                    <Text style={{ fontSize: fs(13), color: COLORS.error, lineHeight: 19 }}>
                       {lang === 'en' ? 'Rejection reason: ' : 'Lý do từ chối: '}{claim.reject_reason}
                     </Text>
                   </View>
                 )}
-                <Text style={{ fontSize: 12, color: COLORS.gray[500] }}>
+                <Text style={{ fontSize: fs(12), color: COLORS.gray[500] }}>
                   {lang === 'en' ? 'Submitted at ' : 'Gửi lúc '}{dayjs(claim.created_at).format('HH:mm DD/MM/YYYY')}
                 </Text>
               </Card>
@@ -242,7 +242,7 @@ export default function ClaimScreen() {
               {/* ── Ảnh bằng chứng ── */}
               {claim.photos.length > 0 && (
                 <Card style={{ gap: 8 }}>
-                  <Text style={{ fontWeight: '800', fontSize: 15, color: COLORS.gray[900] }}>
+                  <Text style={{ fontWeight: '800', fontSize: fs(15), color: COLORS.gray[900] }}>
                     {lang === 'en' ? 'Evidence Photos' : 'Ảnh bằng chứng'}
                   </Text>
                   <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
@@ -259,7 +259,7 @@ export default function ClaimScreen() {
 
               {/* ── Timeline ── */}
               <Card style={{ gap: 10 }}>
-                <Text style={{ fontWeight: '800', fontSize: 15, color: COLORS.gray[900] }}>
+                <Text style={{ fontWeight: '800', fontSize: fs(15), color: COLORS.gray[900] }}>
                   {lang === 'en' ? 'Processing Timeline' : 'Diễn biến xử lý'}
                 </Text>
                 {(claim.timeline ?? []).map((entry, i) => (
@@ -279,17 +279,17 @@ export default function ClaimScreen() {
                       )}
                     </View>
                     <View style={{ flex: 1, paddingBottom: 10 }}>
-                      <Text style={{ fontSize: 13.5, fontWeight: '700', color: COLORS.gray[900] }}>
+                      <Text style={{ fontSize: fs(13.5), fontWeight: '700', color: COLORS.gray[900] }}>
                         {lang === 'en'
                           ? (TIMELINE_LABEL[entry.status]?.en ?? entry.status)
                           : (TIMELINE_LABEL[entry.status]?.vi ?? entry.status)}
                       </Text>
                       {entry.note ? (
-                        <Text style={{ fontSize: 12.5, color: COLORS.gray[600], lineHeight: 18 }}>
+                        <Text style={{ fontSize: fs(12.5), color: COLORS.gray[600], lineHeight: 18 }}>
                           {entry.note}
                         </Text>
                       ) : null}
-                      <Text style={{ fontSize: 11.5, color: COLORS.gray[500] }}>
+                      <Text style={{ fontSize: fs(11.5), color: COLORS.gray[500] }}>
                         {entry.actor_role === 'admin' ? 'Admin' : (lang === 'en' ? 'You' : 'Bạn')} ·{' '}
                         {dayjs(entry.at).format('HH:mm DD/MM/YYYY')}
                       </Text>
@@ -303,7 +303,7 @@ export default function ClaimScreen() {
               <CheckCircle2 size={44} color="#10B981" />
               <Text
                 style={{
-                  fontSize: 16,
+                  fontSize: fs(16),
                   fontWeight: '800',
                   color: COLORS.gray[900],
                   textAlign: 'center',
@@ -313,7 +313,7 @@ export default function ClaimScreen() {
               </Text>
               <Text
                 style={{
-                  fontSize: 13,
+                  fontSize: fs(13),
                   color: COLORS.gray[600],
                   textAlign: 'center',
                   lineHeight: 19,
@@ -328,7 +328,7 @@ export default function ClaimScreen() {
           ) : (
             <>
               <Card style={{ gap: 6 }}>
-                <Text style={{ fontSize: 13.5, color: COLORS.gray[700], lineHeight: 20 }}>
+                <Text style={{ fontSize: fs(13.5), color: COLORS.gray[700], lineHeight: 20 }}>
                   {lang === 'en'
                     ? 'If the completed service caused damages (property damage, sub-standard rework...), please submit a claim with photo evidence. Claims must be submitted within the job insurance warranty period (default 30 days after completion).'
                     : 'Nếu dịch vụ đã hoàn thành gây thiệt hại (hư hỏng đồ đạc, làm lại không đạt…), hãy gửi yêu cầu bồi thường kèm ảnh bằng chứng. Yêu cầu phải gửi trong thời hạn bảo hiểm của đơn (mặc định 30 ngày sau khi hoàn thành).'}
@@ -336,7 +336,7 @@ export default function ClaimScreen() {
               </Card>
 
               <Card style={{ gap: 10 }}>
-                <Text style={{ fontWeight: '800', fontSize: 15, color: COLORS.gray[900] }}>
+                <Text style={{ fontWeight: '800', fontSize: fs(15), color: COLORS.gray[900] }}>
                   {lang === 'en' ? 'Describe incident / damage *' : 'Mô tả sự cố / thiệt hại *'}
                 </Text>
                 <TextInput
@@ -351,7 +351,7 @@ export default function ClaimScreen() {
                   numberOfLines={5}
                   style={{ ...inputStyle, minHeight: 110, textAlignVertical: 'top' }}
                 />
-                <Text style={{ fontWeight: '800', fontSize: 15, color: COLORS.gray[900] }}>
+                <Text style={{ fontWeight: '800', fontSize: fs(15), color: COLORS.gray[900] }}>
                   {lang === 'en' ? 'Requested claim amount (optional)' : 'Số tiền đề nghị bồi thường (không bắt buộc)'}
                 </Text>
                 <TextInput
@@ -361,7 +361,7 @@ export default function ClaimScreen() {
                   keyboardType="numeric"
                   style={inputStyle}
                 />
-                <Text style={{ fontWeight: '800', fontSize: 15, color: COLORS.gray[900] }}>
+                <Text style={{ fontWeight: '800', fontSize: fs(15), color: COLORS.gray[900] }}>
                   {lang === 'en' ? 'Evidence Photos' : 'Ảnh bằng chứng'}
                 </Text>
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
@@ -390,7 +390,7 @@ export default function ClaimScreen() {
                       }}
                     >
                       <ImagePlus size={20} color={COLORS.gray[500]} />
-                      <Text style={{ fontSize: 11, color: COLORS.gray[500] }}>
+                      <Text style={{ fontSize: fs(11), color: COLORS.gray[500] }}>
                         {lang === 'en' ? 'Add photo' : 'Thêm ảnh'}
                       </Text>
                     </TouchableOpacity>
