@@ -104,6 +104,20 @@ export class AdminController {
     return this.adminService.activateUser(id);
   }
 
+  @Patch('users/:id/delete')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: '[Admin] B107: Xoá mềm tài khoản (không xoá cứng, không xoá admin)' })
+  async deleteUser(@Param('id') id: string) {
+    return this.adminService.deleteUser(id);
+  }
+
+  @Patch('users/:id/restore')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: '[Admin] B107: Khôi phục tài khoản đã xoá mềm' })
+  async restoreUser(@Param('id') id: string) {
+    return this.adminService.restoreUser(id);
+  }
+
   // ─── Helpers / KYC ───────────────────────────────────────────────────────
 
   @Get('helpers')

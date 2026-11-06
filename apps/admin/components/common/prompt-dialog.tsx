@@ -7,6 +7,7 @@ import { Button, Input } from '@/components/ui';
 // dùng chung cho mọi chỗ admin cần nhập lý do hoặc xác nhận hành động.
 export function PromptDialog({
   title,
+  message,
   label,
   placeholder,
   confirmLabel = 'Xác nhận',
@@ -15,6 +16,7 @@ export function PromptDialog({
   onClose,
 }: {
   title: string;
+  message?: string;
   label?: string;
   placeholder?: string;
   confirmLabel?: string;
@@ -35,6 +37,7 @@ export function PromptDialog({
         onClick={e => e.stopPropagation()}
       >
         <h3 className="text-lg font-bold">{title}</h3>
+        {message ? <p className="text-sm text-muted-foreground">{message}</p> : null}
         {label ? (
           <Input
             label={label}

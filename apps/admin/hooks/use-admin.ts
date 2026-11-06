@@ -38,6 +38,29 @@ export function useSuspendUser() {
   });
 }
 
+// B107: xoá mềm / khôi phục tài khoản
+export function useDeleteUser() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => apiClient.patch(`/admin/users/${id}/delete`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin', 'users'] });
+      qc.invalidateQueries({ queryKey: ['admin', 'user'] });
+    },
+  });
+}
+
+export function useRestoreUser() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => apiClient.patch(`/admin/users/${id}/restore`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin', 'users'] });
+      qc.invalidateQueries({ queryKey: ['admin', 'user'] });
+    },
+  });
+}
+
 export function useActivateUser() {
   const qc = useQueryClient();
   return useMutation({

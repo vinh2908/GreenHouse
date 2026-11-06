@@ -9,6 +9,8 @@ import {
   useApproveKyc,
   useRejectKyc,
   useSuspendUser,
+  useDeleteUser,
+  useRestoreUser,
 } from '@/hooks/use-admin';
 import {
   Badge,
@@ -196,6 +198,9 @@ export default function UserDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { data, isLoading, error } = useAdminUser(id);
   const suspend = useSuspendUser();
+  const deleteUser = useDeleteUser();
+  const restoreUser = useRestoreUser();
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const activate = useActivateUser();
   const approveKyc = useApproveKyc();
   const rejectKyc = useRejectKyc();
@@ -256,6 +261,23 @@ export default function UserDetailPage() {
           >
             {suspended ? 'Mở khóa tài khoản' : 'Khóa tài khoản'}
           </Button>
+          {user.is_deleted ? (
+            <Button
+              variant="default"
+              disabled={restoreUser.isPending}
+              onClick={() => restoreUser.mutate(user._id)}
+            >
+              Khôi phục tài khoản
+            </Button>
+          ) : (
+            <Button
+              variant="destructive"
+              disabled={deleteUser.isPending}
+              onClick={() => setDeleteDialogOpen(true)}
+            >
+              Xóa tài khoản
+            </Button>
+          )}
         )}
       </div>
 
@@ -266,6 +288,19 @@ export default function UserDetailPage() {
         </div>
       )}
 
+      {deleteDialogOpen && (
+        <PromptDialog
+          title="Xóa tài khoản"
+          message={'Bạn có chắc chắn muốn xóa (mềm) tài khoản "' + (user.full_name ?? user.phone ?? user.email ?? '') + '"? Tài khoản sẽ không đăng nhập được nữa, dữ liệu không bị xóa cứng và có thể khôi phục lại.'}
+          confirmLabel="Xóa tài khoản"
+          requireInput={false}
+          onSubmit={() => {
+            setDeleteDialogOpen(false);
+            deleteUser.mutate(user._id);
+          }}
+          onClose={() => setDeleteDialogOpen(false)}
+        />
+      )}
       {suspendDialogOpen && (
         <PromptDialog
           title="Khóa tài khoản"
