@@ -270,7 +270,7 @@ export function CustomTabBar({
                     }}
                   >
                     <Text
-                      style={{ color: '#FFFFFF', fontSize: 10, fontWeight: '800', lineHeight: 12 }}
+                      style={{ color: '#FFFFFF', fontSize: fs(10), fontWeight: '800', lineHeight: 12 }}
                     >
                       {unreadMessagesCount > 99 ? '99+' : unreadMessagesCount}
                     </Text>
