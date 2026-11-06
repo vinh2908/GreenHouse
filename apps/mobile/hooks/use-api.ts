@@ -1034,6 +1034,8 @@ export interface SupportConversation {
   _id: string;
   user_id: string;
   status: 'open' | 'closed';
+  // B77: đơn liên quan (populated { _id, title, status } hoặc ObjectId string)
+  job_id?: string | { _id: string; title?: string; status?: string };
   last_message?: string;
   last_message_at?: string;
   unread_for_admin: number;
@@ -1068,8 +1070,11 @@ export function useMySupportConversation() {
 export function useEnsureSupportConversation() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async () => {
-      const { data } = await apiClient.post('/support/conversations');
+    mutationFn: async (jobId?: string) => {
+      const { data } = await apiClient.post(
+        '/support/conversations',
+        jobId ? { job_id: jobId } : {},
+      );
       return data.data as SupportConversation;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['support', 'mine'] }),

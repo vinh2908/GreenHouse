@@ -47,20 +47,33 @@ export class SupportService {
 
   // ─── User ─────────────────────────────────────────────────────────────────
 
-  /** Get-or-create hội thoại OPEN của user; thread mới nhất đã closed → tạo mới. */
-  async getOrCreateOpen(userId: string) {
+  /** Get-or-create hội thoại OPEN của user; thread mới nhất đã closed → tạo mới.
+   * B77: tạo từ màn đơn thì gắn job_id; thread mở sẵn chưa gắn đơn thì gắn thêm. */
+  async getOrCreateOpen(userId: string, jobId?: string) {
     const open = await this.conversationModel
       .findOne({ user_id: new Types.ObjectId(userId), status: 'open' })
       .sort({ created_at: -1 })
       .exec();
-    if (open) return open;
-    return this.conversationModel.create({ user_id: new Types.ObjectId(userId) });
+    if (open) {
+      if (jobId && Types.ObjectId.isValid(jobId) && !open.job_id) {
+        open.job_id = new Types.ObjectId(jobId);
+        await open.save();
+      }
+      return open;
+    }
+    return this.conversationModel.create({
+      user_id: new Types.ObjectId(userId),
+      ...(jobId && Types.ObjectId.isValid(jobId)
+        ? { job_id: new Types.ObjectId(jobId) }
+        : {}),
+    });
   }
 
   /** Hội thoại mới nhất của tôi (kèm tóm tắt tin nhắn cuối) hoặc null. */
   async getMyLatest(userId: string) {
     const conv = await this.conversationModel
       .findOne({ user_id: new Types.ObjectId(userId) })
+      .populate('job_id', 'title status')
       .sort({ created_at: -1 })
       .exec();
     if (!conv) return null;
@@ -148,6 +161,7 @@ export class SupportService {
     return this.conversationModel
       .find(query)
       .populate('user_id', 'full_name phone avatar')
+      .populate('job_id', 'title status')
       .sort({ last_message_at: -1, created_at: -1 })
       .limit(100)
       .exec();
