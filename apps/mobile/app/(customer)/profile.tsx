@@ -23,6 +23,7 @@ import {
   CreditCard,
   Heart,
   CalendarClock,
+  FileSignature,
   Ticket,
   Wallet as WalletIcon,
   PlusCircle,
@@ -46,7 +47,7 @@ const MENU_SECTIONS = [
       { icon: Heart, labelKey: 'profile_favorite_helpers', route: '/favorites' },
       { icon: Ticket, labelKey: 'profile_my_vouchers', route: '/vouchers' },
       { icon: CalendarClock, labelKey: 'profile_recurring_plans', route: '/recurring-plans' },
-      { icon: CalendarClock, labelKey: 'profile_monthly_contracts', route: '/monthly-contracts' },
+      { icon: FileSignature, labelKey: 'profile_monthly_contracts', route: '/monthly-contracts' },
     ],
   },
   {
