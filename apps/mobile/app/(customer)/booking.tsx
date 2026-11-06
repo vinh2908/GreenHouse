@@ -488,6 +488,19 @@ export default function BookingScreen() {
   // ── Photo Pickers for Step 3 ───────────────────────────────────────────────
   const handleTakeJobPhoto = async () => {
     try {
+      // B14: camera không hỗ trợ trên web → chọn ảnh từ thư viện (mẫu home.tsx)
+      if (Platform.OS === 'web') {
+        const result = await ImagePicker.launchImageLibraryAsync({
+          mediaTypes: ImagePicker.MediaTypeOptions.Images,
+          allowsEditing: true,
+          aspect: [4, 3],
+          quality: 0.8,
+        });
+        if (!result.canceled && result.assets[0]?.uri) {
+          setPhotos(prev => [...prev, result.assets[0].uri].slice(0, 6));
+        }
+        return;
+      }
       const { status } = await ImagePicker.requestCameraPermissionsAsync();
       if (status !== 'granted') {
         Toast.show({ type: 'error', text1: t('booking_toast_camera_perm') });

@@ -293,6 +293,17 @@ export default function ChatScreen() {
   const pickPhoto = async (source: 'camera' | 'library') => {
     try {
       if (source === 'camera') {
+        // B14: camera không hỗ trợ trên web → chọn ảnh từ thư viện (mẫu home.tsx)
+        if (Platform.OS === 'web') {
+          const webResult = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ['images'],
+            quality: 0.8,
+          });
+          if (!webResult.canceled && webResult.assets[0]?.uri) {
+            void sendPhoto(webResult.assets[0].uri);
+          }
+          return;
+        }
         const { status } = await ImagePicker.requestCameraPermissionsAsync();
         if (status !== 'granted') {
           Toast.show({

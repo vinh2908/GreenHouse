@@ -82,6 +82,22 @@ export default function KycScreen() {
   const handleTakePhoto = async () => {
     setPickerModalVisible(false);
     try {
+      // B14: camera không hỗ trợ trên web → chọn ảnh từ thư viện (mẫu home.tsx)
+      if (Platform.OS === 'web') {
+        const result = await ImagePicker.launchImageLibraryAsync({
+          mediaTypes: ImagePicker.MediaTypeOptions.Images,
+          allowsEditing: false,
+          quality: 1,
+        });
+        if (!result.canceled && result.assets[0]?.uri) {
+          applyImage(activeImageType, result.assets[0].uri);
+          Toast.show({
+            type: 'success',
+            text1: lang === 'en' ? 'Photo selected successfully' : 'Đã chọn ảnh thành công',
+          });
+        }
+        return;
+      }
       const { status } = await ImagePicker.requestCameraPermissionsAsync();
       if (status !== 'granted') {
         Toast.show({

@@ -381,6 +381,19 @@ export default function HelperJobDetailScreen() {
   // ── Media Picker Actions ──────────────────────────────────────────────────
   const handleTakePhoto = async () => {
     try {
+      // B14: camera không hỗ trợ trên web → chọn ảnh từ thư viện (mẫu home.tsx)
+      if (Platform.OS === 'web') {
+        const result = await ImagePicker.launchImageLibraryAsync({
+          mediaTypes: ImagePicker.MediaTypeOptions.Images,
+          allowsEditing: true,
+          aspect: [4, 3],
+          quality: 0.8,
+        });
+        if (!result.canceled && result.assets[0]?.uri) {
+          setCompletionPhotos(prev => [...prev, result.assets[0].uri]);
+        }
+        return;
+      }
       const { status } = await ImagePicker.requestCameraPermissionsAsync();
       if (status !== 'granted') {
         Toast.show({ type: 'error', text1: t('helper_job.evidence_camera_perm') });
@@ -424,6 +437,17 @@ export default function HelperJobDetailScreen() {
 
   const handleRecordVideo = async () => {
     try {
+      // B14: quay video không hỗ trợ trên web → chọn video từ thư viện
+      if (Platform.OS === 'web') {
+        const result = await ImagePicker.launchImageLibraryAsync({
+          mediaTypes: ImagePicker.MediaTypeOptions.Videos,
+          quality: 0.7,
+        });
+        if (!result.canceled && result.assets[0]?.uri) {
+          setCompletionVideos(prev => [...prev, result.assets[0].uri]);
+        }
+        return;
+      }
       const { status } = await ImagePicker.requestCameraPermissionsAsync();
       if (status !== 'granted') {
         Toast.show({ type: 'error', text1: t('helper_job.evidence_video_camera_perm') });
