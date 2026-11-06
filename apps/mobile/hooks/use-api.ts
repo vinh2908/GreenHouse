@@ -273,7 +273,7 @@ export function useAcceptSosJob() {
       qc.invalidateQueries({ queryKey: ['jobs'] });
       Toast.show({
         type: 'success',
-        text1: '🚨 BẠN ĐÃ NHẬN ĐƠN CỨU HỘ SOS!',
+        text1: ' BẠN ĐÃ NHẬN ĐƠN CỨU HỘ SOS!',
         text2: 'Vui lòng di chuyển khẩn cấp đến địa chỉ khách hàng',
       });
     },
@@ -293,7 +293,7 @@ export function useAcceptFixedPrice() {
       qc.invalidateQueries({ queryKey: ['jobs'] });
       Toast.show({
         type: 'success',
-        text1: 'Đã nhận việc thành công! 🎉',
+        text1: 'Đã nhận việc thành công! ',
         text2: 'Hợp đồng đã được tạo — bạn có thể bắt đầu di chuyển đến khách.',
       });
     },
@@ -1298,7 +1298,7 @@ export function useAddFavorite() {
       apiClient.post('/customers/me/favorites', { helper_id: helperId }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['favorites'] });
-      Toast.show({ type: 'success', text1: 'Đã thêm vào thợ yêu thích ❤️' });
+      Toast.show({ type: 'success', text1: 'Đã thêm vào thợ yêu thích ' });
     },
     onError: (err: any) => {
       const msg = err?.response?.data?.message ?? 'Không thể thêm thợ yêu thích';
@@ -1434,7 +1434,7 @@ export function useCreateRecurringPlan() {
       qc.invalidateQueries({ queryKey: ['jobs', 'my'] });
       Toast.show({
         type: 'success',
-        text1: 'Đã tạo gói định kỳ 🔁',
+        text1: 'Đã tạo gói định kỳ ',
         text2: 'Hệ thống sẽ tự tạo đơn cho từng buổi sắp tới',
       });
     },
@@ -1590,7 +1590,7 @@ export function useCreateMonthlyContract() {
       qc.invalidateQueries({ queryKey: ['monthly-contracts'] });
       Toast.show({
         type: 'success',
-        text1: 'Đã gửi đề nghị hợp đồng 📅',
+        text1: 'Đã gửi đề nghị hợp đồng ',
         text2: 'Thợ sẽ nhận được thông báo và phản hồi sớm',
       });
     },
@@ -1649,7 +1649,7 @@ export function useCheckinMonthly() {
     onSuccess: (_, id) => {
       qc.invalidateQueries({ queryKey: ['monthly-contracts', id] });
       qc.invalidateQueries({ queryKey: ['monthly-contracts'] });
-      Toast.show({ type: 'success', text1: 'Đã điểm danh hôm nay 🟢' });
+      Toast.show({ type: 'success', text1: 'Đã điểm danh hôm nay ' });
     },
     onError: (err: any) => monthlyErr(err, 'Điểm danh thất bại'),
   });
@@ -1686,7 +1686,7 @@ export function useRequestLeave() {
       apiClient.post(`/monthly-contracts/${id}/leave-requests`, { date, reason }),
     onSuccess: (_, vars) => {
       qc.invalidateQueries({ queryKey: ['monthly-contracts', vars.id, 'leave-requests'] });
-      Toast.show({ type: 'success', text1: 'Đã gửi đơn xin nghỉ 🌴' });
+      Toast.show({ type: 'success', text1: 'Đã gửi đơn xin nghỉ ' });
     },
     onError: (err: any) => monthlyErr(err, 'Gửi đơn xin nghỉ thất bại'),
   });
@@ -1730,7 +1730,7 @@ export function useSettleMonth() {
       qc.invalidateQueries({ queryKey: ['wallet'] });
       Toast.show({
         type: 'success',
-        text1: 'Đã chốt lương tháng 💰',
+        text1: 'Đã chốt lương tháng ',
         text2: 'Tiền đã được cộng vào ví của thợ',
       });
     },
@@ -1783,7 +1783,7 @@ export function useCreateClaim() {
       qc.invalidateQueries({ queryKey: ['job', vars.job_id] });
       Toast.show({
         type: 'success',
-        text1: 'Đã gửi yêu cầu bồi thường 🛡',
+        text1: 'Đã gửi yêu cầu bồi thường ',
         text2: 'Đội ngũ Green House sẽ xem xét và phản hồi sớm nhất',
       });
     },
@@ -1844,7 +1844,7 @@ export function useApplyVoucherToJob() {
       apiClient.post(`/vouchers/jobs/${jobId}/apply`, { code }),
     onSuccess: (_, vars) => {
       qc.invalidateQueries({ queryKey: ['job', vars.jobId] });
-      Toast.show({ type: 'success', text1: 'Đã áp mã giảm giá 🎟️' });
+      Toast.show({ type: 'success', text1: 'Đã áp mã giảm giá ' });
     },
     onError: (err: any) => {
       const msg = err?.response?.data?.message ?? 'Không áp được mã giảm giá';
@@ -2051,7 +2051,7 @@ export function useRespondTeamInvitation() {
       qc.invalidateQueries({ queryKey: ['helper-jobs'] });
       Toast.show({
         type: 'success',
-        text1: vars.action === 'accept' ? 'Đã nhận lời vào nhóm 🎉' : 'Đã từ chối lời mời',
+        text1: vars.action === 'accept' ? 'Đã nhận lời vào nhóm ' : 'Đã từ chối lời mời',
       });
     },
     onError: (err: any) => {
@@ -2244,7 +2244,7 @@ export function useApplyLoyaltyPoints() {
     onSuccess: (_, vars) => {
       qc.invalidateQueries({ queryKey: ['job', vars.jobId] });
       qc.invalidateQueries({ queryKey: ['loyalty'] });
-      Toast.show({ type: 'success', text1: 'Đã áp dụng điểm thành viên ⭐' });
+      Toast.show({ type: 'success', text1: 'Đã áp dụng điểm thành viên ' });
     },
     onError: (err: any) => {
       const msg = err?.response?.data?.message ?? 'Không áp dụng được điểm';
@@ -2292,7 +2292,7 @@ export function useUpdateAvailability() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['helpers', 'me', 'availability'] });
       qc.invalidateQueries({ queryKey: ['jobs'] });
-      Toast.show({ type: 'success', text1: 'Đã lưu lịch làm việc 🗓️' });
+      Toast.show({ type: 'success', text1: 'Đã lưu lịch làm việc ' });
     },
     onError: (err: any) => {
       const msg = err?.response?.data?.message ?? 'Không lưu được lịch làm việc';
@@ -2352,7 +2352,7 @@ export function useSetIncomeGoal() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['payments', 'earnings-report'] });
       qc.invalidateQueries({ queryKey: ['helper', 'profile'] });
-      Toast.show({ type: 'success', text1: 'Đã đặt mục tiêu thu nhập 🎯' });
+      Toast.show({ type: 'success', text1: 'Đã đặt mục tiêu thu nhập ' });
     },
     onError: (err: any) => {
       const msg = err?.response?.data?.message ?? 'Không đặt được mục tiêu';

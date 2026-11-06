@@ -46,7 +46,7 @@ import { useTranslation } from '@/hooks/use-i18n';
  *  StringeeClient/StringeeCall là component React, sự kiện qua prop
  *  eventHandlers, mọi thao tác cuộc gọi theo callId).
  *
- *  ⚠️ Caveat còn lại: runtime thật cần dev build (expo prebuild / EAS,
+ *   Caveat còn lại: runtime thật cần dev build (expo prebuild / EAS,
  *    KHÔNG chạy Expo Go) + tài khoản Stringee thật với API Key SID/Secret
  *    cấu hình trên server, và 2 thiết bị để test cuộc gọi thật.
  * ════════════════════════════════════════════════════════════════════════════
