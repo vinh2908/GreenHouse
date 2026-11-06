@@ -50,13 +50,6 @@ export class AnalyticsController {
     return this.analyticsService.getRevenuePerMonth(Number(months) || 6);
   }
 
-  @Get('new-users-per-day')
-  @ApiOperation({ summary: '[Admin] Người dùng mới theo ngày' })
-  @ApiQuery({ name: 'days', required: false, type: Number })
-  async getNewUsersPerDay(@Query('days') days?: number) {
-    return this.analyticsService.getNewUsersPerDay(Number(days) || 30);
-  }
-
   @Get('top-helpers')
   @ApiOperation({ summary: '[Admin] Top helpers theo số job hoàn thành' })
   @ApiQuery({ name: 'limit', required: false, type: Number })
@@ -64,9 +57,4 @@ export class AnalyticsController {
     return this.analyticsService.getTopHelpers(Number(limit) || 10);
   }
 
-  @Get('rating-by-service')
-  @ApiOperation({ summary: '[Admin] Rating trung bình theo loại dịch vụ' })
-  async getRatingByService() {
-    return this.analyticsService.getRatingByService();
-  }
 }
