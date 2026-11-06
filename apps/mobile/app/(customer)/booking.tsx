@@ -30,6 +30,22 @@ import {
   Camera,
   ImagePlus,
   Trash2,
+  Briefcase,
+  Home,
+  UtensilsCrossed,
+  Shirt,
+  Users,
+  Heart,
+  Leaf,
+  ShieldCheck,
+  Package,
+  Wrench,
+  Zap,
+  Droplets,
+  Lightbulb,
+  Repeat,
+  FileText,
+  Star,
 } from 'lucide-react-native';
 import Toast from 'react-native-toast-message';
 import { Alert } from '@/components/common/app-alert';
@@ -100,12 +116,45 @@ type BookingServiceOption = {
   fixed_price?: number;
 };
 
+function renderServiceIcon(slug: string, size = 26, color = COLORS.primary) {
+  switch (slug) {
+    case 'house_cleaning':
+      return <Home size={size} color={color} />;
+    case 'cooking':
+      return <UtensilsCrossed size={size} color={color} />;
+    case 'laundry':
+      return <Shirt size={size} color={color} />;
+    case 'family_care':
+      return <Users size={size} color={color} />;
+    case 'petcare':
+      return <Heart size={size} color={color} />;
+    case 'plantcare':
+      return <Leaf size={size} color={color} />;
+    case 'house_management':
+      return <ShieldCheck size={size} color={color} />;
+    case 'housekeeping_hourly':
+    case 'hourly_helper':
+    case 'deep_cleaning':
+      return <Sparkles size={size} color={color} />;
+    case 'moving_help':
+      return <Package size={size} color={color} />;
+    case 'handyman':
+      return <Wrench size={size} color={color} />;
+    case 'electrician':
+      return <Zap size={size} color={color} />;
+    case 'plumbing':
+      return <Droplets size={size} color={color} />;
+    default:
+      return <Briefcase size={size} color={color} />;
+  }
+}
+
 const DEFAULT_SERVICES: BookingServiceOption[] = [
   {
     _id: '6aa1269cd33a3aed2b36a5e1',
     name: 'Dọn dẹp vệ sinh nhà cửa',
     slug: 'house_cleaning',
-    icon: '🏠',
+    icon: 'house_cleaning',
     description: 'Lau sàn, hút bụi, dọn phòng khách, phòng ngủ, nhà bếp, vệ sinh...',
     base_price_min: 80000,
   },
@@ -113,7 +162,7 @@ const DEFAULT_SERVICES: BookingServiceOption[] = [
     _id: '6aa1269cd33a3aed2b36a5e2',
     name: 'Đi chợ & Nấu ăn gia đình',
     slug: 'cooking',
-    icon: '🍳',
+    icon: 'cooking',
     description: 'Đi chợ mua nguyên liệu, nấu cơm canh, món mặn, món chay theo yêu cầu...',
     base_price_min: 100000,
   },
@@ -121,7 +170,7 @@ const DEFAULT_SERVICES: BookingServiceOption[] = [
     _id: '6aa1269cd33a3aed2b36a5e3',
     name: 'Giặt giũ & Là ủi quần áo',
     slug: 'laundry',
-    icon: '👔',
+    icon: 'laundry',
     description: 'Phân loại, giặt tay/máy, phơi, gấp, là ủi quần áo gọn gàng...',
     base_price_min: 70000,
   },
@@ -129,7 +178,7 @@ const DEFAULT_SERVICES: BookingServiceOption[] = [
     _id: '6aa1269cd33a3aed2b36a5e4',
     name: 'Chăm sóc Gia Chủ',
     slug: 'family_care',
-    icon: '👨‍👩‍👧',
+    icon: 'family_care',
     description: 'Trông trẻ, chăm sóc người già, người bệnh, hỗ trợ bà bầu...',
     base_price_min: 120000,
   },
@@ -137,7 +186,7 @@ const DEFAULT_SERVICES: BookingServiceOption[] = [
     _id: '6aa1269cd33a3aed2b36a5e5',
     name: 'Chăm sóc thú cưng',
     slug: 'petcare',
-    icon: '🐾',
+    icon: 'petcare',
     description: 'Cho ăn, tắm rửa, dắt đi dạo, vệ sinh chuồng trại thú cưng...',
     base_price_min: 80000,
   },
@@ -145,7 +194,7 @@ const DEFAULT_SERVICES: BookingServiceOption[] = [
     _id: '6aa1269cd33a3aed2b36a5e6',
     name: 'Chăm sóc cây cảnh',
     slug: 'plantcare',
-    icon: '🌿',
+    icon: 'plantcare',
     description: 'Tưới cây, bón phân, cắt tỉa, thay chậu, phòng trừ sâu bệnh...',
     base_price_min: 80000,
   },
@@ -153,7 +202,7 @@ const DEFAULT_SERVICES: BookingServiceOption[] = [
     _id: '6aa1269cd33a3aed2b36a5e7',
     name: 'Trông giữ & Quản lý nhà cửa',
     slug: 'house_management',
-    icon: '🔐',
+    icon: 'house_management',
     description: 'Trông coi nhà khi vắng, nhận bưu phẩm, kiểm tra an ninh, bảo trì...',
     base_price_min: 150000,
   },
@@ -161,7 +210,7 @@ const DEFAULT_SERVICES: BookingServiceOption[] = [
     _id: '6aa1269cd33a3aed2b36a5e8',
     name: 'Giúp việc theo giờ',
     slug: 'housekeeping_hourly',
-    icon: '🧹',
+    icon: 'housekeeping_hourly',
     description: 'Dọn dẹp, rửa chén, lau kính, hỗ trợ việc nhà linh hoạt theo giờ...',
     base_price_min: 60000,
   },
@@ -169,7 +218,7 @@ const DEFAULT_SERVICES: BookingServiceOption[] = [
     _id: '6aa1269cd33a3aed2b36a5e9',
     name: 'Tổng vệ sinh nhà cửa',
     slug: 'deep_cleaning',
-    icon: '✨',
+    icon: 'deep_cleaning',
     description: 'Vệ sinh toàn bộ nhà chuyên sâu, chà sàn, lau kính, tẩy rửa...',
     base_price_min: 500000,
   },
@@ -177,7 +226,7 @@ const DEFAULT_SERVICES: BookingServiceOption[] = [
     _id: '6aa1269cd33a3aed2b36a5ea',
     name: 'Dọn nhà & Chuyển nhà',
     slug: 'moving_help',
-    icon: '📦',
+    icon: 'moving_help',
     description: 'Đóng gói đồ đạc, sắp xếp, vận chuyển, bày trí nhà mới...',
     base_price_min: 200000,
   },
@@ -185,7 +234,7 @@ const DEFAULT_SERVICES: BookingServiceOption[] = [
     _id: '6aa1269cd33a3aed2b36a5eb',
     name: 'Phụ việc lặt vặt',
     slug: 'handyman',
-    icon: '🔧',
+    icon: 'handyman',
     description: 'Treo tranh, lắp kệ, sửa nhỏ, thay bóng đèn, việc vặt trong nhà...',
     base_price_min: 80000,
   },
@@ -1276,9 +1325,12 @@ export default function BookingScreen() {
                         alignItems: 'center',
                       }}
                     >
-                      <Text style={{ color: '#34D399', fontWeight: '800', fontSize: fs(13.5) }}>
-                        ✓ {aiSuggestion.service_name || t('booking_ai_done')}
-                      </Text>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                        <Check size={15} color="#34D399" />
+                        <Text style={{ color: '#34D399', fontWeight: '800', fontSize: fs(13.5) }}>
+                          {aiSuggestion.service_name || t('booking_ai_done')}
+                        </Text>
+                      </View>
                       {aiSuggestion.estimated_duration_hours && (
                         <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: fs(12) }}>
                           {t('booking_ai_est_duration', {
@@ -1336,7 +1388,7 @@ export default function BookingScreen() {
                           fontStyle: 'italic',
                         }}
                       >
-                        💡 {aiSuggestion.notes}
+                        {aiSuggestion.notes}
                       </Text>
                     )}
 
@@ -1396,24 +1448,22 @@ export default function BookingScreen() {
                         backgroundColor: selectedService === svc._id ? COLORS.primaryLight : '#fff',
                       }}
                     >
-                      <Text style={{ fontSize: fs(32) }}>
-                        {(
-                          {
-                            house_cleaning: '🏠',
-                            cooking: '🍳',
-                            laundry: '👔',
-                            family_care: '👨‍👩‍👧',
-                            petcare: '🐾',
-                            plantcare: '🌿',
-                            house_management: '🔐',
-                            housekeeping_hourly: '🧹',
-                            hourly_helper: '🧹',
-                            deep_cleaning: '✨',
-                            moving_help: '📦',
-                            handyman: '🔧',
-                          } as Record<string, string>
-                        )[svc.slug] ?? '🏠'}
-                      </Text>
+                      <View
+                        style={{
+                          width: 44,
+                          height: 44,
+                          borderRadius: 12,
+                          backgroundColor: selectedService === svc._id ? '#DCFCE7' : COLORS.gray[100],
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                      >
+                        {renderServiceIcon(
+                          svc.slug,
+                          26,
+                          selectedService === svc._id ? COLORS.primary : COLORS.gray[700],
+                        )}
+                      </View>
                       <View style={{ flex: 1 }}>
                         <Text style={{ fontWeight: '800', fontSize: fs(15), color: COLORS.gray[900] }}>
                           {tService(svc)}
@@ -1489,7 +1539,18 @@ export default function BookingScreen() {
                     gap: 14,
                   }}
                 >
-                  <Text style={{ fontSize: fs(28) }}>💡</Text>
+                  <View
+                    style={{
+                      width: 44,
+                      height: 44,
+                      borderRadius: 12,
+                      backgroundColor: '#DCFCE7',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <Lightbulb size={24} color={COLORS.primary} />
+                  </View>
                   <View style={{ flex: 1 }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                       <Text style={{ fontWeight: '800', fontSize: fs(15), color: COLORS.gray[900] }}>
@@ -2169,9 +2230,9 @@ export default function BookingScreen() {
               </Text>
 
               <Card style={{ gap: 14 }}>
-                <Row icon="🏠" label={t('common_service')} value={tService(selectedServiceData) || '—'} />
+                <Row icon={<Briefcase size={16} color={COLORS.primary} />} label={t('common_service')} value={tService(selectedServiceData) || '—'} />
                 <Row
-                  icon="📍"
+                  icon={<MapPin size={16} color={COLORS.primary} />}
                   label={t('booking_step_address')}
                   value={
                     [address.full_address, address.ward, address.district, address.city]
@@ -2180,12 +2241,12 @@ export default function BookingScreen() {
                   }
                 />
                 {address.notes ? (
-                  <Row icon="📝" label={t('booking_address_notes_label')} value={address.notes} />
+                  <Row icon={<FileText size={16} color={COLORS.primary} />} label={t('booking_address_notes_label')} value={address.notes} />
                 ) : null}
-                <Row icon="📅" label={t('booking_date_label')} value={dayjs(date).locale(lang === 'en' ? 'en' : 'vi').format('dddd, DD/MM/YYYY')} />
-                <Row icon="🕐" label={t('booking_time_label')} value={`${timeSlot} • ${duration} ${t('common_hours')}`} />
+                <Row icon={<Calendar size={16} color={COLORS.primary} />} label={t('booking_date_label')} value={dayjs(date).locale(lang === 'en' ? 'en' : 'vi').format('dddd, DD/MM/YYYY')} />
+                <Row icon={<Clock size={16} color={COLORS.primary} />} label={t('booking_time_label')} value={`${timeSlot} • ${duration} ${t('common_hours')}`} />
                 {photos.length > 0 && (
-                  <Row icon="📸" label={t('booking_attached_photos_label')} value={`${photos.length} ${t('common_photos')}`} />
+                  <Row icon={<Camera size={16} color={COLORS.primary} />} label={t('booking_attached_photos_label')} value={`${photos.length} ${t('common_photos')}`} />
                 )}
                 <View style={{ height: 1, backgroundColor: COLORS.gray[100] }} />
                 <Text style={{ fontWeight: '800', fontSize: 16, color: COLORS.gray[900] }}>
@@ -2227,7 +2288,7 @@ export default function BookingScreen() {
                   alignItems: 'flex-start',
                 }}
               >
-                <Text style={{ fontSize: 20 }}>💡</Text>
+                <Lightbulb size={20} color="#EA580C" style={{ marginTop: 2 }} />
                 <Text style={{ flex: 1, fontSize: 13, color: COLORS.gray[700], lineHeight: 18 }}>
                   {isFixedPriceService
                     ? t('booking_quote_tip_fixed')
@@ -2239,7 +2300,7 @@ export default function BookingScreen() {
               {params.favorite_helper_id && (
                 <Card style={{ gap: 8 }}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                    <Text style={{ fontSize: 20 }}>⭐</Text>
+                    <Star size={20} color="#F59E0B" />
                     <View style={{ flex: 1 }}>
                       <Text style={{ fontWeight: '800', fontSize: 15, color: COLORS.gray[900] }}>
                         {t('booking_send_private_to', {
@@ -2264,7 +2325,7 @@ export default function BookingScreen() {
               {/* ── Đơn nhóm: số thợ cần ────────────────────────────────── */}
               <Card style={{ gap: 10 }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                  <Text style={{ fontSize: 20 }}>👥</Text>
+                  <Users size={20} color={COLORS.primary} />
                   <View style={{ flex: 1 }}>
                     <Text style={{ fontWeight: '800', fontSize: 15, color: COLORS.gray[900] }}>
                       {t('booking_helpers_needed_title')}
@@ -2306,7 +2367,7 @@ export default function BookingScreen() {
               {/* ── Gói định kỳ ─────────────────────────────────────────── */}
               <Card style={{ gap: 10 }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                  <Text style={{ fontSize: 20 }}>🔁</Text>
+                  <Repeat size={20} color={COLORS.primary} />
                   <View style={{ flex: 1 }}>
                     <Text style={{ fontWeight: '800', fontSize: 15, color: COLORS.gray[900] }}>
                       {t('booking_set_recurring')}
@@ -2501,10 +2562,12 @@ export default function BookingScreen() {
   );
 }
 
-function Row({ icon, label, value }: { icon: string; label: string; value: string }) {
+function Row({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
   return (
     <View style={{ flexDirection: 'row', gap: 10, alignItems: 'flex-start' }}>
-      <Text style={{ fontSize: 18 }}>{icon}</Text>
+      <View style={{ width: 20, height: 20, alignItems: 'center', justifyContent: 'center', marginTop: 1 }}>
+        {icon}
+      </View>
       <View style={{ flex: 1 }}>
         <Text style={{ fontSize: 12, color: COLORS.gray[500], fontWeight: '600' }}>{label}</Text>
         <Text style={{ fontSize: 14, fontWeight: '700', color: COLORS.gray[900], marginTop: 2 }}>

@@ -190,7 +190,7 @@ export default function MonthlyContractDetailScreen() {
         {/* ── Thông tin hợp đồng ── */}
         <Card style={{ gap: 8 }}>
           <Text style={{ fontSize: 15, fontWeight: '800', color: COLORS.gray[900] }}>
-            {lang === 'en' ? '📋 Contract Information' : '📋 Thông tin hợp đồng'}
+            {lang === 'en' ? 'Contract Information' : 'Thông tin hợp đồng'}
           </Text>
           <InfoRow
             label={isHelper ? (lang === 'en' ? 'Customer' : 'Khách hàng') : (lang === 'en' ? 'Helper' : 'Thợ thực hiện')}
@@ -278,7 +278,7 @@ export default function MonthlyContractDetailScreen() {
         {isHelper && isActive && (
           <Card style={{ gap: 8 }}>
             <Text style={{ fontSize: 14.5, fontWeight: '800', color: COLORS.gray[900] }}>
-              {lang === 'en' ? `🟢 Today's Attendance (${dayjs().format('DD/MM/YYYY')})` : `🟢 Điểm danh hôm nay (${dayjs().format('DD/MM/YYYY')})`}
+              {lang === 'en' ? `Today's Attendance (${dayjs().format('DD/MM/YYYY')})` : `Điểm danh hôm nay (${dayjs().format('DD/MM/YYYY')})`}
             </Text>
             {todayRecord ? (
               <Text style={{ fontSize: 13, color: COLORS.gray[600] }}>
@@ -339,7 +339,7 @@ export default function MonthlyContractDetailScreen() {
         <Card style={{ gap: 10 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
             <Text style={{ flex: 1, fontSize: 15, fontWeight: '800', color: COLORS.gray[900] }}>
-              {lang === 'en' ? `📆 Attendance for Month ${dayjs(`${month}-01`).format('MM/YYYY')}` : `📆 Điểm danh tháng ${dayjs(`${month}-01`).format('MM/YYYY')}`}
+              {lang === 'en' ? `Attendance for Month ${dayjs(`${month}-01`).format('MM/YYYY')}` : `Điểm danh tháng ${dayjs(`${month}-01`).format('MM/YYYY')}`}
             </Text>
             <TouchableOpacity
               onPress={() => setMonth(dayjs(`${month}-01`).subtract(1, 'month').format('YYYY-MM'))}
@@ -450,7 +450,7 @@ export default function MonthlyContractDetailScreen() {
         {/* ── Xin nghỉ ── */}
         <Card style={{ gap: 10 }}>
           <Text style={{ fontSize: 15, fontWeight: '800', color: COLORS.gray[900] }}>
-            {lang === 'en' ? '🌴 Leave Requests' : '🌴 Đơn xin nghỉ'}
+            {lang === 'en' ? 'Leave Requests' : 'Đơn xin nghỉ'}
           </Text>
           {(leaves ?? []).length === 0 && (
             <Text style={{ fontSize: 13, color: COLORS.gray[500] }}>
@@ -568,7 +568,7 @@ export default function MonthlyContractDetailScreen() {
         {(isActive || contract.status === 'ended') && (
           <Card style={{ gap: 8 }}>
             <Text style={{ fontSize: 15, fontWeight: '800', color: COLORS.gray[900] }}>
-              {lang === 'en' ? `💰 Wage Settlement for Month ${dayjs(`${month}-01`).format('MM/YYYY')}` : `💰 Chốt lương tháng ${dayjs(`${month}-01`).format('MM/YYYY')}`}
+              {lang === 'en' ? `Wage Settlement for Month ${dayjs(`${month}-01`).format('MM/YYYY')}` : `Chốt lương tháng ${dayjs(`${month}-01`).format('MM/YYYY')}`}
             </Text>
             {settlement ? (
               <>
@@ -603,7 +603,7 @@ export default function MonthlyContractDetailScreen() {
                 />
                 {settlement.status === 'settled' ? (
                   <Badge
-                    label={lang === 'en' ? `✅ Wages settled${settlement.settled_at ? ` · ${dayjs(settlement.settled_at).format('DD/MM/YYYY HH:mm')}` : ''}` : `✅ Đã chốt lương${settlement.settled_at ? ` · ${dayjs(settlement.settled_at).format('DD/MM/YYYY HH:mm')}` : ''}`}
+                    label={lang === 'en' ? `Wages settled${settlement.settled_at ? ` · ${dayjs(settlement.settled_at).format('DD/MM/YYYY HH:mm')}` : ''}` : `Đã chốt lương${settlement.settled_at ? ` · ${dayjs(settlement.settled_at).format('DD/MM/YYYY HH:mm')}` : ''}`}
                     color={COLORS.successLight}
                     textColor={COLORS.success}
                   />

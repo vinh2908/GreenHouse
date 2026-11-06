@@ -11,7 +11,7 @@ import {
   type TouchableOpacityProps,
   type ViewProps,
 } from 'react-native';
-import { AlertTriangle, RotateCw } from 'lucide-react-native';
+import { AlertTriangle, RotateCw, ClipboardList } from 'lucide-react-native';
 import { useTranslation } from '@/hooks/use-i18n';
 
 // ─── Green House Color Palette (Banana Green / Lime Fresh) ───────────────────
@@ -349,6 +349,7 @@ export function SectionHeader({ title, action, onAction, subtitle }: SectionHead
 // ─── Empty State ───────────────────────────────────────────────────────────────
 
 interface EmptyStateProps {
+  icon?: React.ReactNode;
   emoji?: string;
   title: string;
   subtitle?: string;
@@ -356,7 +357,7 @@ interface EmptyStateProps {
   onAction?: () => void;
 }
 
-export function EmptyState({ emoji = '📋', title, subtitle, action, onAction }: EmptyStateProps) {
+export function EmptyState({ icon, emoji, title, subtitle, action, onAction }: EmptyStateProps) {
   const { fs } = useTranslation();
   return (
     <View style={{ alignItems: 'center', paddingVertical: 36, paddingHorizontal: 20 }}>
@@ -371,7 +372,13 @@ export function EmptyState({ emoji = '📋', title, subtitle, action, onAction }
           marginBottom: 14,
         }}
       >
-        <Text style={{ fontSize: fs(36) }}>{emoji}</Text>
+        {icon ? (
+          icon
+        ) : emoji ? (
+          <Text style={{ fontSize: fs(36) }}>{emoji}</Text>
+        ) : (
+          <ClipboardList size={36} color={COLORS.gray[400]} />
+        )}
       </View>
       <Text
         style={{ fontSize: fs(16), fontWeight: '700', color: COLORS.gray[800], textAlign: 'center' }}

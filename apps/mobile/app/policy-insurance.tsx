@@ -116,7 +116,7 @@ export default function PolicyInsuranceScreen() {
               color: activeTab === 'insurance' ? COLORS.primary : COLORS.gray[600],
             }}
           >
-            {lang === 'en' ? '🛡️ Insurance' : '🛡️ Gói Bảo hiểm'}
+            {lang === 'en' ? 'Insurance' : 'Gói Bảo hiểm'}
           </Text>
         </TouchableOpacity>
 
@@ -140,7 +140,7 @@ export default function PolicyInsuranceScreen() {
               color: activeTab === 'privacy' ? COLORS.primary : COLORS.gray[600],
             }}
           >
-            {lang === 'en' ? '🔒 Privacy' : '🔒 Bảo mật'}
+            {lang === 'en' ? 'Privacy' : 'Bảo mật'}
           </Text>
         </TouchableOpacity>
 
@@ -164,7 +164,7 @@ export default function PolicyInsuranceScreen() {
               color: activeTab === 'claim' ? COLORS.primary : COLORS.gray[600],
             }}
           >
-            {lang === 'en' ? '📋 Claims' : '📋 Bồi thường'}
+            {lang === 'en' ? 'Claims' : 'Bồi thường'}
           </Text>
         </TouchableOpacity>
       </View>
@@ -533,9 +533,10 @@ export default function PolicyInsuranceScreen() {
             <Button
               title={
                 lang === 'en'
-                  ? '📞 Contact Claims Hotline (1900 8888)'
-                  : '📞 Liên hệ Tổng đài Khiếu nại (1900 8888)'
+                  ? 'Contact Claims Hotline (1900 8888)'
+                  : 'Liên hệ Tổng đài Khiếu nại (1900 8888)'
               }
+              icon={<PhoneCall size={16} color="#fff" />}
               onPress={handleCallSupport}
               style={{ marginTop: 4 }}
             />

@@ -1,7 +1,33 @@
 import { View, Text, ScrollView, TouchableOpacity, RefreshControl } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Bell, CheckCheck, ArrowLeft, ChevronRight } from 'lucide-react-native';
+import {
+  Bell,
+  CheckCheck,
+  ArrowLeft,
+  ChevronRight,
+  CircleDollarSign,
+  CheckCircle2,
+  Car,
+  MapPin,
+  Trophy,
+  Target,
+  XCircle,
+  Banknote,
+  Star,
+  MessageSquare,
+  ShieldCheck,
+  AlertTriangle,
+  Building2,
+  Gift,
+  Megaphone,
+  HelpCircle,
+  AlertOctagon,
+  Clock,
+  RefreshCw,
+  Hourglass,
+  Shield,
+} from 'lucide-react-native';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import 'dayjs/locale/vi';
@@ -14,32 +40,58 @@ import { Card, COLORS, EmptyState, ErrorState, LoadingSpinner } from '@/componen
 
 dayjs.extend(relativeTime);
 
-const NOTIF_ICONS: Record<string, string> = {
-  new_quote_received: '💰',
-  job_confirmed: '✅',
-  helper_on_the_way: '🚗',
-  helper_arrived: '📍',
-  job_completed: '🎉',
-  new_job_nearby: '🔔',
-  quote_accepted: '🎯',
-  quote_rejected: '❌',
-  payment_success: '💸',
-  review_received: '⭐',
-  new_message: '💬',
-  kyc_approved: '🪪',
-  kyc_rejected: '⚠️',
-  withdrawal_processed: '🏦',
-  promotion: '🎁',
-  system: '📢',
-  support_reply: '🛎️',
-  sos_backup_decision_request: '🆘',
-  sos_backup_decision_reminder: '⏰',
-  sos_backup_job_cancelled: '🆘',
-  sos_backup_request: '🆘',
-  sos_backup_helper_replaced: '🔄',
-  sos_backup_expired: '⌛',
-  insurance_claim_update: '🛡️',
-};
+function renderNotificationIcon(type: string) {
+  const size = 22;
+  switch (type) {
+    case 'new_quote_received':
+      return <CircleDollarSign size={size} color="#F59E0B" />;
+    case 'job_confirmed':
+      return <CheckCircle2 size={size} color="#10B981" />;
+    case 'helper_on_the_way':
+      return <Car size={size} color="#3B82F6" />;
+    case 'helper_arrived':
+      return <MapPin size={size} color="#EF4444" />;
+    case 'job_completed':
+      return <Trophy size={size} color="#8B5CF6" />;
+    case 'new_job_nearby':
+      return <Bell size={size} color="#22C55E" />;
+    case 'quote_accepted':
+      return <Target size={size} color="#10B981" />;
+    case 'quote_rejected':
+      return <XCircle size={size} color="#EF4444" />;
+    case 'payment_success':
+      return <Banknote size={size} color="#10B981" />;
+    case 'review_received':
+      return <Star size={size} color="#F59E0B" />;
+    case 'new_message':
+      return <MessageSquare size={size} color="#3B82F6" />;
+    case 'kyc_approved':
+      return <ShieldCheck size={size} color="#10B981" />;
+    case 'kyc_rejected':
+      return <AlertTriangle size={size} color="#EF4444" />;
+    case 'withdrawal_processed':
+      return <Building2 size={size} color="#6366F1" />;
+    case 'promotion':
+      return <Gift size={size} color="#EC4899" />;
+    case 'system':
+      return <Megaphone size={size} color="#3B82F6" />;
+    case 'support_reply':
+      return <HelpCircle size={size} color="#06B6D4" />;
+    case 'sos_backup_decision_request':
+    case 'sos_backup_decision_reminder':
+    case 'sos_backup_job_cancelled':
+    case 'sos_backup_request':
+      return <AlertOctagon size={size} color="#EF4444" />;
+    case 'sos_backup_helper_replaced':
+      return <RefreshCw size={size} color="#3B82F6" />;
+    case 'sos_backup_expired':
+      return <Hourglass size={size} color="#F59E0B" />;
+    case 'insurance_claim_update':
+      return <Shield size={size} color="#10B981" />;
+    default:
+      return <Bell size={size} color="#6B7280" />;
+  }
+}
 
 // Việc "chạm thông báo → mở màn hình nào" nằm hết ở utils/notification-route.ts
 // (dùng chung với đường chạm OS push). Tại đây chỉ còn xử lý riêng của SOS:
@@ -155,7 +207,7 @@ export default function NotificationsScreen() {
           <LoadingSpinner />
         ) : !notifications?.length ? (
           <EmptyState
-            emoji="🔔"
+            icon={<Bell size={36} color={COLORS.gray[400]} />}
             title={lang === 'en' ? 'No notifications yet' : 'Chưa có thông báo nào'}
             subtitle={
               lang === 'en'
@@ -199,7 +251,7 @@ export default function NotificationsScreen() {
                     justifyContent: 'center',
                   }}
                 >
-                  <Text style={{ fontSize: 22 }}>{NOTIF_ICONS[n.type] ?? '📢'}</Text>
+                  {renderNotificationIcon(n.type)}
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text

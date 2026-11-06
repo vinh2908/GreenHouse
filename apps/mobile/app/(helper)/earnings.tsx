@@ -18,6 +18,10 @@ import {
   Clock,
   CheckCircle,
   X,
+  CreditCard,
+  Receipt,
+  RotateCcw,
+  DollarSign,
 } from 'lucide-react-native';
 import {
   useWallet,
@@ -40,14 +44,24 @@ import dayjs from 'dayjs';
 import { EarningsReport } from '@/components/helper/earnings-report';
 import { useTranslation } from '@/hooks/use-i18n';
 
-const TX_ICONS: Record<string, string> = {
-  earning: '💰',
-  topup: '📥',
-  payment: '💳',
-  commission: '🧾',
-  withdrawal: '📤',
-  refund: '↩️',
-};
+function renderTxIcon(type: string, size = 20) {
+  switch (type) {
+    case 'earning':
+      return <TrendingUp size={size} color={COLORS.success} />;
+    case 'topup':
+      return <ArrowDownCircle size={size} color={COLORS.success} />;
+    case 'payment':
+      return <CreditCard size={size} color={COLORS.primary} />;
+    case 'commission':
+      return <Receipt size={size} color={COLORS.warning} />;
+    case 'withdrawal':
+      return <ArrowUpCircle size={size} color={COLORS.error} />;
+    case 'refund':
+      return <RotateCcw size={size} color={COLORS.secondary} />;
+    default:
+      return <CreditCard size={size} color={COLORS.gray[500]} />;
+  }
+}
 
 const TX_COLORS: Record<string, string> = {
   earning: COLORS.success,
@@ -327,7 +341,7 @@ export default function HelperEarningsScreen() {
             </Card>
           ) : !txData?.transactions?.length ? (
             <EmptyState
-              emoji="💸"
+              icon={<CreditCard size={36} color={COLORS.gray[400]} />}
               title={t('earn_no_transactions')}
               subtitle={t('earn_no_transactions_sub')}
             />
@@ -368,7 +382,7 @@ export default function HelperEarningsScreen() {
                             justifyContent: 'center',
                           }}
                         >
-                          <Text style={{ fontSize: fs(20) }}>{TX_ICONS[tx.type] ?? '💳'}</Text>
+                          {renderTxIcon(tx.type, 20)}
                         </View>
                         <View style={{ flex: 1 }}>
                           <Text

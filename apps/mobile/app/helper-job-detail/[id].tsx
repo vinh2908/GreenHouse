@@ -26,6 +26,10 @@ import {
   Sparkles,
   PlusCircle,
   Phone,
+  Ban,
+  CheckCircle2,
+  DollarSign,
+  MapPin,
 } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import dayjs from 'dayjs';
@@ -613,8 +617,8 @@ export default function HelperJobDetailScreen() {
               <Badge
                 label={
                   lang === 'en'
-                    ? `🏷️ Fixed price: ${new Intl.NumberFormat('en-US').format(job.fixed_price ?? 0)}₫`
-                    : `🏷️ Giá cam kết ${new Intl.NumberFormat('vi-VN').format(job.fixed_price ?? 0)}₫`
+                    ? `Fixed price: ${new Intl.NumberFormat('en-US').format(job.fixed_price ?? 0)}₫`
+                    : `Giá cam kết ${new Intl.NumberFormat('vi-VN').format(job.fixed_price ?? 0)}₫`
                 }
                 color="#ECFDF5"
                 textColor="#065F46"
@@ -668,7 +672,7 @@ export default function HelperJobDetailScreen() {
           )}
           <Separator my={4} />
           <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 8 }}>
-            <Text style={{ fontSize: 16 }}>📍</Text>
+            <MapPin size={16} color={COLORS.primary} />
             <View style={{ flex: 1, gap: 4 }}>
               <Text
                 style={{
@@ -801,10 +805,10 @@ export default function HelperJobDetailScreen() {
                         <Badge
                           label={
                             am.status === 'pending'
-                              ? (lang === 'en' ? '⏳ Awaiting customer' : '⏳ Chờ khách duyệt')
+                              ? (lang === 'en' ? 'Awaiting customer' : 'Chờ khách duyệt')
                               : am.status === 'accepted'
-                                ? (lang === 'en' ? '✓ Customer agreed' : '✓ Khách đã đồng ý')
-                                : (lang === 'en' ? '✕ Customer declined' : '✕ Khách từ chối')
+                                ? (lang === 'en' ? 'Customer agreed' : 'Khách đã đồng ý')
+                                : (lang === 'en' ? 'Customer declined' : 'Khách từ chối')
                           }
                           color={
                             am.status === 'pending'
@@ -856,7 +860,7 @@ export default function HelperJobDetailScreen() {
             }}
           >
             <Text style={{ fontWeight: '800', fontSize: 15, color: '#991B1B' }}>
-              {lang === 'en' ? '⚖️ Job has an open dispute' : '⚖️ Đơn đang có tranh chấp'}
+              {lang === 'en' ? 'Job has an open dispute' : 'Đơn đang có tranh chấp'}
             </Text>
             <Text style={{ fontSize: 13, color: COLORS.gray[700], lineHeight: 19 }}>
               {lang === 'en'
@@ -937,7 +941,7 @@ export default function HelperJobDetailScreen() {
                   gap: 6,
                 }}
               >
-                <Text style={{ fontSize: 16 }}>🚫</Text>
+                <Ban size={20} color={COLORS.gray[700]} />
                 <Text style={{ fontSize: 14, fontWeight: '700', color: COLORS.gray[700] }}>
                   {lang === 'en' ? 'You declined this job offer' : 'Bạn đã từ chối đơn hàng này'}
                 </Text>
@@ -960,8 +964,8 @@ export default function HelperJobDetailScreen() {
                   {job.is_warranty
                     ? t('helper_job.warranty_badge')
                     : (lang === 'en'
-                        ? `🏷️ Fixed price: ${new Intl.NumberFormat('en-US').format(job.fixed_price ?? 0)}₫`
-                        : `🏷️ Giá cam kết: ${new Intl.NumberFormat('vi-VN').format(job.fixed_price ?? 0)}₫`)}
+                        ? `Fixed price: ${new Intl.NumberFormat('en-US').format(job.fixed_price ?? 0)}₫`
+                        : `Giá cam kết: ${new Intl.NumberFormat('vi-VN').format(job.fixed_price ?? 0)}₫`)}
                 </Text>
                 {job.is_warranty ? (
                   <Text style={{ fontSize: 13.5, color: COLORS.gray[700], lineHeight: 20 }}>
@@ -995,9 +999,10 @@ export default function HelperJobDetailScreen() {
                 <Button
                   title={
                     job.is_warranty
-                      ? (lang === 'en' ? '🛡 Accept warranty job' : '🛡 Nhận việc bảo hành')
-                      : (lang === 'en' ? '⚡ Accept job now' : '⚡ Nhận việc ngay')
+                      ? (lang === 'en' ? 'Accept warranty job' : 'Nhận việc bảo hành')
+                      : (lang === 'en' ? 'Accept job now' : 'Nhận việc ngay')
                   }
+                  icon={<CheckCircle2 size={16} color="#fff" />}
                   loading={acceptFixed.isPending}
                   onPress={handleAcceptDirect}
                 />
@@ -1018,7 +1023,7 @@ export default function HelperJobDetailScreen() {
                 }}
               >
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                  <Text style={{ fontSize: 16 }}>✅</Text>
+                  <CheckCircle2 size={16} color={COLORS.success} />
                   <Text style={{ fontWeight: '800', fontSize: 15, color: COLORS.success }}>
                     {lang === 'en' ? 'You submitted a quote for this job' : 'Bạn đã gửi báo giá cho đơn này'}
                   </Text>
@@ -1073,7 +1078,7 @@ export default function HelperJobDetailScreen() {
                 <Button
                   title={lang === 'en' ? 'Send quote to customer' : 'Gửi báo giá cho khách'}
                   onPress={handleOpenQuoteModal}
-                  icon={<Text style={{ color: '#fff', fontSize: 18 }}>💰</Text>}
+                  icon={<DollarSign size={18} color="#fff" />}
                 />
                 <Button
                   title={lang === 'en' ? 'Decline / Skip this job' : 'Từ chối / Bỏ qua đơn này'}
@@ -1113,7 +1118,7 @@ export default function HelperJobDetailScreen() {
             <ScrollView contentContainerStyle={{ padding: 20, gap: 18 }}>
               <Card style={{ backgroundColor: COLORS.primaryLight, gap: 6 }}>
                 <Text style={{ fontWeight: '800', fontSize: 13.5, color: COLORS.primaryDark }}>
-                  {lang === 'en' ? '💡 Transparent Costs & Additional Materials' : '💡 Minh bạch chi phí & Vật tư ngoài'}
+                  {lang === 'en' ? 'Transparent Costs & Additional Materials' : 'Minh bạch chi phí & Vật tư ngoài'}
                 </Text>
                 <Text style={{ fontSize: 12.5, color: COLORS.gray[700], lineHeight: 18 }}>
                   {lang === 'en'
