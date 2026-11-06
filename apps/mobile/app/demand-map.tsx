@@ -20,7 +20,7 @@ import { useTranslation } from '@/hooks/use-i18n';
 export default function DemandMapScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { t } = useTranslation();
+  const { t, fs } = useTranslation();
   const { data: helperProfile } = useHelperProfile();
   const { data: areas, isLoading, isRefetching, refetch } = useDemandMap();
   const [focus, setFocus] = useState<DemandArea | null>(null);
@@ -71,10 +71,10 @@ export default function DemandMapScreen() {
           <ArrowLeft size={20} color={COLORS.gray[800]} />
         </TouchableOpacity>
         <View style={{ flex: 1 }}>
-          <Text style={{ fontSize: 19, fontWeight: '800', color: COLORS.gray[900] }}>
+          <Text style={{ fontSize: fs(19), fontWeight: '800', color: COLORS.gray[900] }}>
             🗺 {t('demand_map.title')}
           </Text>
-          <Text style={{ fontSize: 12, color: COLORS.gray[500], marginTop: 2 }}>
+          <Text style={{ fontSize: fs(12), color: COLORS.gray[500], marginTop: 2 }}>
             {totalJobs > 0
               ? t('demand_map.total_summary', { count: totalJobs, areas: sorted.length })
               : t('demand_map.subtitle_empty')}
@@ -100,7 +100,7 @@ export default function DemandMapScreen() {
         {isLoading ? (
           <Card style={{ alignItems: 'center', paddingVertical: 24, gap: 10 }}>
             <ActivityIndicator size="small" color={COLORS.primary} />
-            <Text style={{ fontSize: 13, color: COLORS.gray[500] }}>
+            <Text style={{ fontSize: fs(13), color: COLORS.gray[500] }}>
               {t('demand_map.loading')}
             </Text>
           </Card>
@@ -142,14 +142,14 @@ export default function DemandMapScreen() {
                       justifyContent: 'center',
                     }}
                   >
-                    <Text style={{ fontSize: 17 }}>{idx === 0 ? '🔥' : '📍'}</Text>
+                    <Text style={{ fontSize: fs(17) }}>{idx === 0 ? '🔥' : '📍'}</Text>
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text style={{ fontWeight: '800', fontSize: 15, color: COLORS.gray[900] }}>
+                    <Text style={{ fontWeight: '800', fontSize: fs(15), color: COLORS.gray[900] }}>
                       {area.district}
                       {area.city ? `, ${area.city}` : ''}
                     </Text>
-                    <Text style={{ fontSize: 12.5, color: COLORS.gray[500], marginTop: 2 }}>
+                    <Text style={{ fontSize: fs(12.5), color: COLORS.gray[500], marginTop: 2 }}>
                       {area.open_jobs} {t('demand_map.jobs_waiting_quotes')}
                       {area.fixed_price_jobs
                         ? ` · ${t('demand_map.fixed_price_count', { count: area.fixed_price_jobs })}`

@@ -117,7 +117,7 @@ export default function OtpScreen() {
         >
           <ArrowLeft size={20} color={COLORS.gray[800]} />
         </TouchableOpacity>
-        <Text style={{ fontSize: 18, fontWeight: '700', color: COLORS.gray[900], marginLeft: 12 }}>
+        <Text style={{ fontSize: fs(18), fontWeight: '700', color: COLORS.gray[900], marginLeft: 12 }}>
           {lang === 'en' ? 'Verify OTP' : 'Xác minh OTP'}
         </Text>
       </View>
@@ -135,11 +135,11 @@ export default function OtpScreen() {
               marginBottom: 20,
             }}
           >
-            <Text style={{ fontSize: 36 }}>📱</Text>
+            <Text style={{ fontSize: fs(36) }}>📱</Text>
           </View>
           <Text
             style={{
-              fontSize: 18,
+              fontSize: fs(18),
               fontWeight: '700',
               color: COLORS.gray[900],
               textAlign: 'center',
@@ -149,7 +149,7 @@ export default function OtpScreen() {
           </Text>
           <Text
             style={{
-              fontSize: 14,
+              fontSize: fs(14),
               color: COLORS.gray[500],
               textAlign: 'center',
               marginTop: 8,
@@ -180,7 +180,7 @@ export default function OtpScreen() {
               gap: 6,
             }}
           >
-            <Text style={{ fontSize: 13, color: '#16A34A', fontWeight: '600' }}>
+            <Text style={{ fontSize: fs(13), color: '#16A34A', fontWeight: '600' }}>
               {lang === 'en' ? '💡 Dev test OTP: ' : '💡 Mã OTP thử nghiệm: '}
               <Text style={{ fontWeight: '800' }}>123456</Text>{' '}
               {lang === 'en' ? '(Tap to fill)' : '(Bấm để điền nhanh)'}
@@ -205,7 +205,7 @@ export default function OtpScreen() {
                 height: 56,
                 borderRadius: 12,
                 textAlign: 'center',
-                fontSize: 22,
+                fontSize: fs(22),
                 fontWeight: '700',
                 color: COLORS.gray[900],
                 borderWidth: 2,
@@ -225,13 +225,13 @@ export default function OtpScreen() {
         {/* Resend */}
         <View style={{ alignItems: 'center', marginTop: 24 }}>
           {countdown > 0 ? (
-            <Text style={{ color: COLORS.gray[500], fontSize: 14 }}>
+            <Text style={{ color: COLORS.gray[500], fontSize: fs(14) }}>
               {lang === 'en' ? 'Resend in ' : 'Gửi lại sau '}
               <Text style={{ color: COLORS.primary, fontWeight: '600' }}>{countdown}s</Text>
             </Text>
           ) : (
             <TouchableOpacity onPress={handleResend}>
-              <Text style={{ color: COLORS.primary, fontWeight: '600', fontSize: 14 }}>
+              <Text style={{ color: COLORS.primary, fontWeight: '600', fontSize: fs(14) }}>
                 {lang === 'en' ? 'Resend OTP' : 'Gửi lại OTP'}
               </Text>
             </TouchableOpacity>

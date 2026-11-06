@@ -171,7 +171,7 @@ export default function NotificationsScreen() {
           >
             <ArrowLeft size={20} color={COLORS.gray[800]} />
           </TouchableOpacity>
-          <Text style={{ fontSize: 18, fontWeight: '800', color: COLORS.gray[900] }}>
+          <Text style={{ fontSize: fs(18), fontWeight: '800', color: COLORS.gray[900] }}>
             {lang === 'en' ? 'Notifications' : 'Thông báo'}
           </Text>
         </View>
@@ -181,7 +181,7 @@ export default function NotificationsScreen() {
           style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}
         >
           <CheckCheck size={16} color={COLORS.primary} />
-          <Text style={{ color: COLORS.primary, fontSize: 13, fontWeight: '700' }}>
+          <Text style={{ color: COLORS.primary, fontSize: fs(13), fontWeight: '700' }}>
             {lang === 'en' ? 'Mark all as read' : 'Đọc tất cả'}
           </Text>
         </TouchableOpacity>
@@ -257,20 +257,20 @@ export default function NotificationsScreen() {
                   <Text
                     style={{
                       fontWeight: n.is_read ? '600' : '800',
-                      fontSize: 14,
+                      fontSize: fs(14),
                       color: COLORS.gray[900],
                     }}
                   >
                     {formatNotifTitle(n.title, n.type)}
                   </Text>
                   <Text
-                    style={{ fontSize: 13, color: COLORS.gray[600], marginTop: 3, lineHeight: 18 }}
+                    style={{ fontSize: fs(13), color: COLORS.gray[600], marginTop: 3, lineHeight: 18 }}
                   >
                     {formatNotifBody(n.body, n.type, n.data)}
                   </Text>
                   <Text
                     style={{
-                      fontSize: 11,
+                      fontSize: fs(11),
                       color: COLORS.gray[500],
                       marginTop: 6,
                       fontWeight: '600',

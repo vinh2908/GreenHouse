@@ -12,7 +12,7 @@ import {
   type NativeSyntheticEvent,
   type NativeScrollEvent,
 } from 'react-native';
-import { useTranslation } from '@/hooks/use-i18n';
+import { useTranslation, fs } from '@/hooks/use-i18n';
 
 export const ITEM_HEIGHT = 46;
 export const VISIBLE_ROWS = 5;
@@ -463,17 +463,17 @@ const styles = StyleSheet.create({
     opacity: 0.35,
   },
   cancelBtnText: {
-    fontSize: 15,
+    fontSize: fs(15),
     fontWeight: '600',
     color: '#64748B',
   },
   sheetTitle: {
-    fontSize: 16,
+    fontSize: fs(16),
     fontWeight: '800',
     color: '#0F172A',
   },
   confirmBtnText: {
-    fontSize: 15,
+    fontSize: fs(15),
     fontWeight: '800',
     color: '#047857',
   },
@@ -488,7 +488,7 @@ const styles = StyleSheet.create({
     minHeight: 40,
   },
   previewText: {
-    fontSize: 28,
+    fontSize: fs(28),
     fontWeight: '800',
     color: '#047857',
     letterSpacing: -0.2,
@@ -502,7 +502,7 @@ const styles = StyleSheet.create({
   wheelLabelCol: {
     flex: 1,
     textAlign: 'center',
-    fontSize: 11,
+    fontSize: fs(11),
     fontWeight: '700',
     letterSpacing: 1.2,
     color: '#94A3B8',
@@ -548,13 +548,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   wheelItemText: {
-    fontSize: 20,
+    fontSize: fs(20),
     fontWeight: '500',
     color: '#B3BEC9',
     fontVariant: ['tabular-nums'],
   },
   wheelItemTextSel: {
-    fontSize: 25,
+    fontSize: fs(25),
     fontWeight: '800',
     color: '#0F172A',
   },
@@ -583,7 +583,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   sheetChipsLabel: {
-    fontSize: 11,
+    fontSize: fs(11),
     fontWeight: '600',
     color: '#64748B',
     marginBottom: 4,
@@ -607,7 +607,7 @@ const styles = StyleSheet.create({
     borderColor: '#16A34A',
   },
   sheetChipText: {
-    fontSize: 12,
+    fontSize: fs(12),
     fontWeight: '600',
     color: '#334155',
   },
@@ -617,7 +617,7 @@ const styles = StyleSheet.create({
   },
   sheetNote: {
     textAlign: 'center',
-    fontSize: 12,
+    fontSize: fs(12),
     color: '#64748B',
     marginTop: 8,
     minHeight: 16,

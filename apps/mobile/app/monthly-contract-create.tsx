@@ -164,7 +164,7 @@ export default function MonthlyContractCreateScreen() {
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 10,
-    fontSize: 14,
+    fontSize: fs(14),
     backgroundColor: '#fff',
   } as const;
 
@@ -201,10 +201,10 @@ export default function MonthlyContractCreateScreen() {
           <ArrowLeft size={20} color={COLORS.gray[800]} />
         </TouchableOpacity>
         <View style={{ flex: 1 }}>
-          <Text style={{ fontSize: 18, fontWeight: '800', color: COLORS.gray[900] }}>
+          <Text style={{ fontSize: fs(18), fontWeight: '800', color: COLORS.gray[900] }}>
             {lang === 'en' ? 'Hire Helper by Month' : 'Thuê giúp việc theo tháng'}
           </Text>
-          <Text style={{ fontSize: 12, color: COLORS.gray[500] }}>
+          <Text style={{ fontSize: fs(12), color: COLORS.gray[500] }}>
             {lang === 'en' ? 'Helper will review the contract before it takes effect' : 'Thợ sẽ duyệt hợp đồng trước khi có hiệu lực'}
           </Text>
         </View>
@@ -216,13 +216,13 @@ export default function MonthlyContractCreateScreen() {
       >
         {/* ── Chọn thợ ── */}
         <Card style={{ gap: 10 }}>
-          <Text style={{ fontSize: 15, fontWeight: '800', color: COLORS.gray[900] }}>
+          <Text style={{ fontSize: fs(15), fontWeight: '800', color: COLORS.gray[900] }}>
             {lang === 'en' ? '1. Select helper (from favorites)' : '1. Chọn thợ (từ danh sách yêu thích)'}
           </Text>
           {favLoading ? (
             <LoadingSpinner size="small" />
           ) : favoriteHelpers.length === 0 && !params.helperId ? (
-            <Text style={{ fontSize: 13, color: COLORS.gray[500], lineHeight: 19 }}>
+            <Text style={{ fontSize: fs(13), color: COLORS.gray[500], lineHeight: 19 }}>
               {lang === 'en'
                 ? 'You have no favorite helpers yet. Save helpers to your favorites from their profile or completed jobs, then return to create contract.'
                 : 'Bạn chưa có thợ yêu thích nào. Hãy lưu thợ vào danh sách yêu thích từ trang hồ sơ thợ hoặc từ đơn đã hoàn thành, rồi quay lại tạo hợp đồng.'}
@@ -252,7 +252,7 @@ export default function MonthlyContractCreateScreen() {
 
         {/* ── Công việc & lương ── */}
         <Card style={{ gap: 10 }}>
-          <Text style={{ fontSize: 15, fontWeight: '800', color: COLORS.gray[900] }}>
+          <Text style={{ fontSize: fs(15), fontWeight: '800', color: COLORS.gray[900] }}>
             {lang === 'en' ? '2. Job details & monthly wage' : '2. Công việc & lương tháng'}
           </Text>
           <TextInput
@@ -280,7 +280,7 @@ export default function MonthlyContractCreateScreen() {
             keyboardType="numeric"
             style={inputStyle}
           />
-          <Text style={{ fontSize: 12, color: COLORS.gray[500] }}>
+          <Text style={{ fontSize: fs(12), color: COLORS.gray[500] }}>
             {lang === 'en'
               ? 'At month end, actual wage = monthly salary × (verified sessions / scheduled sessions), minus 15% platform fee.'
               : 'Cuối tháng, lương thực trả = lương tháng × (số buổi đã xác nhận / tổng số buổi theo lịch), trừ phí sàn 15%.'}
@@ -289,7 +289,7 @@ export default function MonthlyContractCreateScreen() {
 
         {/* ── Lịch làm việc ── */}
         <Card style={{ gap: 10 }}>
-          <Text style={{ fontSize: 15, fontWeight: '800', color: COLORS.gray[900] }}>
+          <Text style={{ fontSize: fs(15), fontWeight: '800', color: COLORS.gray[900] }}>
             {lang === 'en' ? '3. Weekly schedule' : '3. Lịch làm việc hằng tuần'}
           </Text>
           <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
@@ -304,7 +304,7 @@ export default function MonthlyContractCreateScreen() {
           </View>
           <View style={{ flexDirection: 'row', gap: 10 }}>
             <View style={{ flex: 1, gap: 4 }}>
-              <Text style={{ fontSize: 12.5, color: COLORS.gray[500] }}>
+              <Text style={{ fontSize: fs(12.5), color: COLORS.gray[500] }}>
                 {lang === 'en' ? 'Start time' : 'Giờ bắt đầu'}
               </Text>
               <TextInput
@@ -315,7 +315,7 @@ export default function MonthlyContractCreateScreen() {
               />
             </View>
             <View style={{ flex: 1, gap: 4 }}>
-              <Text style={{ fontSize: 12.5, color: COLORS.gray[500] }}>
+              <Text style={{ fontSize: fs(12.5), color: COLORS.gray[500] }}>
                 {lang === 'en' ? 'End time' : 'Giờ kết thúc'}
               </Text>
               <TextInput
@@ -328,13 +328,13 @@ export default function MonthlyContractCreateScreen() {
           </View>
           <View style={{ flexDirection: 'row', gap: 10 }}>
             <View style={{ flex: 1, gap: 4 }}>
-              <Text style={{ fontSize: 12.5, color: COLORS.gray[500] }}>
+              <Text style={{ fontSize: fs(12.5), color: COLORS.gray[500] }}>
                 {lang === 'en' ? 'Start date (YYYY-MM-DD)' : 'Ngày bắt đầu (YYYY-MM-DD)'}
               </Text>
               <TextInput value={startDate} onChangeText={setStartDate} style={inputStyle} />
             </View>
             <View style={{ flex: 1, gap: 4 }}>
-              <Text style={{ fontSize: 12.5, color: COLORS.gray[500] }}>
+              <Text style={{ fontSize: fs(12.5), color: COLORS.gray[500] }}>
                 {lang === 'en' ? 'End date (optional)' : 'Ngày kết thúc (không bắt buộc)'}
               </Text>
               <TextInput
@@ -349,7 +349,7 @@ export default function MonthlyContractCreateScreen() {
 
         {/* ── Địa chỉ ── */}
         <Card style={{ gap: 10 }}>
-          <Text style={{ fontSize: 15, fontWeight: '800', color: COLORS.gray[900] }}>
+          <Text style={{ fontSize: fs(15), fontWeight: '800', color: COLORS.gray[900] }}>
             {lang === 'en' ? '4. Work address' : '4. Địa chỉ làm việc'}
           </Text>
           {savedAddresses.length > 0 ? (
@@ -371,10 +371,10 @@ export default function MonthlyContractCreateScreen() {
                   }}
                 >
                   <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: 13.5, fontWeight: '700', color: COLORS.gray[800] }}>
+                    <Text style={{ fontSize: fs(13.5), fontWeight: '700', color: COLORS.gray[800] }}>
                       {a.label || (lang === 'en' ? 'Address' : 'Địa chỉ')} {a.is_default ? (lang === 'en' ? '· Default' : '· Mặc định') : ''}
                     </Text>
-                    <Text style={{ fontSize: 12.5, color: COLORS.gray[600] }}>
+                    <Text style={{ fontSize: fs(12.5), color: COLORS.gray[600] }}>
                       {a.full_address}, {a.district}, {a.city}
                     </Text>
                   </View>
@@ -412,7 +412,7 @@ export default function MonthlyContractCreateScreen() {
           onPress={handleSubmit}
         />
         <Text
-          style={{ fontSize: 12, color: COLORS.gray[500], textAlign: 'center', lineHeight: 18 }}
+          style={{ fontSize: fs(12), color: COLORS.gray[500], textAlign: 'center', lineHeight: 18 }}
         >
           {lang === 'en'
             ? 'Contract takes effect only after helper agrees. You can cancel anytime before finalizing first month wages.'
@@ -436,6 +436,7 @@ function HelperRow({
   selected: boolean;
   onPress: () => void;
 }) {
+  const { fs } = useTranslation();
   return (
     <TouchableOpacity
       activeOpacity={0.8}
@@ -453,9 +454,9 @@ function HelperRow({
     >
       <Avatar uri={avatar} name={name} size={40} />
       <View style={{ flex: 1 }}>
-        <Text style={{ fontSize: 14, fontWeight: '700', color: COLORS.gray[900] }}>{name}</Text>
+        <Text style={{ fontSize: fs(14), fontWeight: '700', color: COLORS.gray[900] }}>{name}</Text>
         {rating ? (
-          <Text style={{ fontSize: 12, color: COLORS.gray[500] }}>⭐ {rating.toFixed(1)}</Text>
+          <Text style={{ fontSize: fs(12), color: COLORS.gray[500] }}>⭐ {rating.toFixed(1)}</Text>
         ) : null}
       </View>
       {selected && <Check size={18} color={COLORS.primary} />}
@@ -472,6 +473,7 @@ function Chip({
   selected: boolean;
   onPress: () => void;
 }) {
+  const { fs } = useTranslation();
   return (
     <TouchableOpacity
       activeOpacity={0.8}
@@ -486,7 +488,7 @@ function Chip({
       }}
     >
       <Text
-        style={{ fontSize: 13, fontWeight: '700', color: selected ? '#fff' : COLORS.gray[700] }}
+        style={{ fontSize: fs(13), fontWeight: '700', color: selected ? '#fff' : COLORS.gray[700] }}
       >
         {label}
       </Text>

@@ -205,7 +205,7 @@ export default function KycScreen() {
         >
           <ArrowLeft size={20} color={COLORS.gray[800]} />
         </TouchableOpacity>
-        <Text style={{ fontSize: 17, fontWeight: '800', color: COLORS.gray[900] }}>
+        <Text style={{ fontSize: fs(17), fontWeight: '800', color: COLORS.gray[900] }}>
           {lang === 'en' ? 'Identity Verification (e-KYC)' : 'Xác thực danh tính (e-KYC)'}
         </Text>
         <View style={{ width: 38 }} />
@@ -244,12 +244,12 @@ export default function KycScreen() {
                 <CheckCircle2 size={38} color="#fff" />
               </View>
               <Text
-                style={{ fontSize: 20, fontWeight: '900', color: '#065F46', textAlign: 'center' }}
+                style={{ fontSize: fs(20), fontWeight: '900', color: '#065F46', textAlign: 'center' }}
               >
                 {lang === 'en' ? 'e-KYC Profile 100% Verified' : 'Hồ sơ đã được xác thực e-KYC 100%'}
               </Text>
               <Text
-                style={{ fontSize: 13.5, color: '#047857', textAlign: 'center', lineHeight: 20 }}
+                style={{ fontSize: fs(13.5), color: '#047857', textAlign: 'center', lineHeight: 20 }}
               >
                 {lang === 'en'
                   ? 'Your identity and records have been verified. You now have priority job dispatch and a verified partner badge shown to customers.'
@@ -264,7 +264,7 @@ export default function KycScreen() {
                   marginTop: 4,
                 }}
               >
-                <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.gray[800] }}>
+                <Text style={{ fontSize: fs(13), fontWeight: '700', color: COLORS.gray[800] }}>
                   {lang === 'en' ? 'Citizen ID: ' : 'Số CCCD: '}{profile?.id_card_number || '—'}
                 </Text>
               </View>
@@ -296,12 +296,12 @@ export default function KycScreen() {
                 <Clock size={36} color="#fff" />
               </View>
               <Text
-                style={{ fontSize: 20, fontWeight: '900', color: '#92400E', textAlign: 'center' }}
+                style={{ fontSize: fs(20), fontWeight: '900', color: '#92400E', textAlign: 'center' }}
               >
                 {lang === 'en' ? 'Application Under Review' : 'Hồ sơ đang được xét duyệt'}
               </Text>
               <Text
-                style={{ fontSize: 13.5, color: '#B45309', textAlign: 'center', lineHeight: 20 }}
+                style={{ fontSize: fs(13.5), color: '#B45309', textAlign: 'center', lineHeight: 20 }}
               >
                 {lang === 'en'
                   ? 'Your e-KYC profile has been submitted and is being verified by Green House administrators within 24 working hours.'
@@ -317,13 +317,13 @@ export default function KycScreen() {
                   marginTop: 4,
                 }}
               >
-                <Text style={{ fontSize: 12.5, color: COLORS.gray[600] }}>
+                <Text style={{ fontSize: fs(12.5), color: COLORS.gray[600] }}>
                   {lang === 'en' ? '• Submitted ID: ' : '• Số CCCD nộp: '}
                   <Text style={{ fontWeight: '700', color: COLORS.gray[900] }}>
                     {profile?.id_card_number || idCardNumber || '—'}
                   </Text>
                 </Text>
-                <Text style={{ fontSize: 12.5, color: COLORS.gray[600] }}>
+                <Text style={{ fontSize: fs(12.5), color: COLORS.gray[600] }}>
                   {lang === 'en' ? '• Status: ' : '• Trạng thái: '}
                   <Text style={{ fontWeight: '700', color: '#D97706' }}>
                     {lang === 'en' ? 'Verifying photo evidence' : 'Đang kiểm tra dữ liệu hình ảnh'}
@@ -346,18 +346,18 @@ export default function KycScreen() {
             >
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                 <AlertCircle size={24} color={COLORS.error} />
-                <Text style={{ fontSize: 17, fontWeight: '900', color: '#991B1B' }}>
+                <Text style={{ fontSize: fs(17), fontWeight: '900', color: '#991B1B' }}>
                   {lang === 'en' ? 'Application Rejected' : 'Hồ sơ bị từ chối xét duyệt'}
                 </Text>
               </View>
-              <Text style={{ fontSize: 13.5, color: '#B91C1C', lineHeight: 20 }}>
+              <Text style={{ fontSize: fs(13.5), color: '#B91C1C', lineHeight: 20 }}>
                 {lang === 'en' ? 'Reason: ' : 'Lý do: '}
                 {profile?.rejection_reason ||
                   (lang === 'en'
                     ? 'ID photos are blurry, glared, or corners cut off. Please retake clearly.'
                     : 'Ảnh chụp CCCD bị mờ, lóa sáng hoặc mất góc. Vui lòng chụp lại rõ nét.')}
               </Text>
-              <Text style={{ fontSize: 12.5, color: COLORS.gray[600], fontWeight: '600' }}>
+              <Text style={{ fontSize: fs(12.5), color: COLORS.gray[600], fontWeight: '600' }}>
                 {lang === 'en'
                   ? 'Please update information and retake photos below:'
                   : 'Vui lòng cập nhật lại thông tin và chụp lại ảnh bên dưới:'}
@@ -372,11 +372,11 @@ export default function KycScreen() {
               <Card style={{ backgroundColor: '#1E1E24', padding: 18, gap: 8 }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                   <ShieldCheck size={20} color={COLORS.primary} />
-                  <Text style={{ color: '#fff', fontWeight: '800', fontSize: 16 }}>
+                  <Text style={{ color: '#fff', fontWeight: '800', fontSize: fs(16) }}>
                     {lang === 'en' ? 'e-KYC Photo Guidelines' : 'Quy chuẩn chụp ảnh e-KYC'}
                   </Text>
                 </View>
-                <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 12.5, lineHeight: 18 }}>
+                <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: fs(12.5), lineHeight: 18 }}>
                   {lang === 'en'
                     ? '1. Clearly capture all 4 corners of original Citizen ID, without glare.\n2. Portrait selfie clearly shows face, without sunglasses or masks.'
                     : '1. Chụp rõ 4 góc của thẻ CCCD/CMND gốc, không lóa sáng.\n2. Ảnh chân dung chụp rõ mặt, không đeo kính râm hoặc khẩu trang.'}
@@ -385,7 +385,7 @@ export default function KycScreen() {
 
               {/* 1. Nhập số CCCD */}
               <Card style={{ padding: 16, gap: 10 }}>
-                <Text style={{ fontSize: 14, fontWeight: '800', color: COLORS.gray[900] }}>
+                <Text style={{ fontSize: fs(14), fontWeight: '800', color: COLORS.gray[900] }}>
                   {lang === 'en' ? '1. Citizen ID Number *' : '1. Số Căn cước công dân (CCCD) *'}
                 </Text>
                 <TextInput
@@ -394,7 +394,7 @@ export default function KycScreen() {
                     borderColor: COLORS.gray[200],
                     borderRadius: 14,
                     padding: 14,
-                    fontSize: 17,
+                    fontSize: fs(17),
                     fontWeight: '700',
                     color: COLORS.gray[900],
                     backgroundColor: COLORS.gray[50],
@@ -417,13 +417,13 @@ export default function KycScreen() {
                     alignItems: 'center',
                   }}
                 >
-                  <Text style={{ fontSize: 14, fontWeight: '800', color: COLORS.gray[900] }}>
+                  <Text style={{ fontSize: fs(14), fontWeight: '800', color: COLORS.gray[900] }}>
                     {lang === 'en' ? '2. Citizen ID Front Side *' : '2. Mặt trước CCCD/CMND *'}
                   </Text>
                   {frontImage && (
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                       <Check size={16} color={COLORS.success} />
-                      <Text style={{ fontSize: 12, fontWeight: '700', color: COLORS.success }}>
+                      <Text style={{ fontSize: fs(12), fontWeight: '700', color: COLORS.success }}>
                         {lang === 'en' ? 'Photo added' : 'Đã có ảnh'}
                       </Text>
                     </View>
@@ -463,7 +463,7 @@ export default function KycScreen() {
                           alignItems: 'center',
                         }}
                       >
-                        <Text style={{ color: '#fff', fontSize: 12, fontWeight: '700' }}>
+                        <Text style={{ color: '#fff', fontSize: fs(12), fontWeight: '700' }}>
                           {lang === 'en' ? 'Tap to change photo' : 'Bấm để đổi ảnh khác'}
                         </Text>
                       </View>
@@ -482,7 +482,7 @@ export default function KycScreen() {
                       >
                         <Camera size={24} color={COLORS.primary} />
                       </View>
-                      <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.gray[700] }}>
+                      <Text style={{ fontSize: fs(13), fontWeight: '700', color: COLORS.gray[700] }}>
                         {lang === 'en' ? 'Capture or select front photo' : 'Chụp hoặc chọn ảnh mặt trước'}
                       </Text>
                     </View>
@@ -499,13 +499,13 @@ export default function KycScreen() {
                     alignItems: 'center',
                   }}
                 >
-                  <Text style={{ fontSize: 14, fontWeight: '800', color: COLORS.gray[900] }}>
+                  <Text style={{ fontSize: fs(14), fontWeight: '800', color: COLORS.gray[900] }}>
                     {lang === 'en' ? '3. Citizen ID Back Side *' : '3. Mặt sau CCCD/CMND *'}
                   </Text>
                   {backImage && (
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                       <Check size={16} color={COLORS.success} />
-                      <Text style={{ fontSize: 12, fontWeight: '700', color: COLORS.success }}>
+                      <Text style={{ fontSize: fs(12), fontWeight: '700', color: COLORS.success }}>
                         {lang === 'en' ? 'Photo added' : 'Đã có ảnh'}
                       </Text>
                     </View>
@@ -545,7 +545,7 @@ export default function KycScreen() {
                           alignItems: 'center',
                         }}
                       >
-                        <Text style={{ color: '#fff', fontSize: 12, fontWeight: '700' }}>
+                        <Text style={{ color: '#fff', fontSize: fs(12), fontWeight: '700' }}>
                           {lang === 'en' ? 'Tap to change photo' : 'Bấm để đổi ảnh khác'}
                         </Text>
                       </View>
@@ -564,7 +564,7 @@ export default function KycScreen() {
                       >
                         <Camera size={24} color={COLORS.primary} />
                       </View>
-                      <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.gray[700] }}>
+                      <Text style={{ fontSize: fs(13), fontWeight: '700', color: COLORS.gray[700] }}>
                         {lang === 'en' ? 'Capture or select back photo' : 'Chụp hoặc chọn ảnh mặt sau'}
                       </Text>
                     </View>
@@ -581,13 +581,13 @@ export default function KycScreen() {
                     alignItems: 'center',
                   }}
                 >
-                  <Text style={{ fontSize: 14, fontWeight: '800', color: COLORS.gray[900] }}>
+                  <Text style={{ fontSize: fs(14), fontWeight: '800', color: COLORS.gray[900] }}>
                     {lang === 'en' ? '4. Portrait selfie holding Citizen ID *' : '4. Ảnh chân dung selfie cầm CCCD *'}
                   </Text>
                   {selfieImage && (
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                       <Check size={16} color={COLORS.success} />
-                      <Text style={{ fontSize: 12, fontWeight: '700', color: COLORS.success }}>
+                      <Text style={{ fontSize: fs(12), fontWeight: '700', color: COLORS.success }}>
                         {lang === 'en' ? 'Photo added' : 'Đã có ảnh'}
                       </Text>
                     </View>
@@ -627,7 +627,7 @@ export default function KycScreen() {
                           alignItems: 'center',
                         }}
                       >
-                        <Text style={{ color: '#fff', fontSize: 12, fontWeight: '700' }}>
+                        <Text style={{ color: '#fff', fontSize: fs(12), fontWeight: '700' }}>
                           {lang === 'en' ? 'Tap to change photo' : 'Bấm để đổi ảnh khác'}
                         </Text>
                       </View>
@@ -646,7 +646,7 @@ export default function KycScreen() {
                       >
                         <Camera size={24} color={COLORS.primary} />
                       </View>
-                      <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.gray[700] }}>
+                      <Text style={{ fontSize: fs(13), fontWeight: '700', color: COLORS.gray[700] }}>
                         {lang === 'en' ? 'Take portrait selfie photo' : 'Chụp ảnh selfie chân dung'}
                       </Text>
                     </View>
@@ -702,10 +702,10 @@ export default function KycScreen() {
               }}
             >
               <View>
-                <Text style={{ fontSize: 17, fontWeight: '800', color: COLORS.gray[900] }}>
+                <Text style={{ fontSize: fs(17), fontWeight: '800', color: COLORS.gray[900] }}>
                   {lang === 'en' ? `Upload ${getTargetTitle()}` : `Tải ảnh ${getTargetTitle()}`}
                 </Text>
-                <Text style={{ fontSize: 12.5, color: COLORS.gray[500], marginTop: 2 }}>
+                <Text style={{ fontSize: fs(12.5), color: COLORS.gray[500], marginTop: 2 }}>
                   {lang === 'en' ? 'Choose photo upload method' : 'Chọn phương thức cung cấp ảnh'}
                 </Text>
               </View>
@@ -752,10 +752,10 @@ export default function KycScreen() {
                 <Camera size={22} color={COLORS.primary} />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 15, fontWeight: '700', color: COLORS.gray[900] }}>
+                <Text style={{ fontSize: fs(15), fontWeight: '700', color: COLORS.gray[900] }}>
                   {lang === 'en' ? 'Take photo directly (Camera)' : 'Chụp ảnh trực tiếp (Camera)'}
                 </Text>
-                <Text style={{ fontSize: 12, color: COLORS.gray[500], marginTop: 2 }}>
+                <Text style={{ fontSize: fs(12), color: COLORS.gray[500], marginTop: 2 }}>
                   {lang === 'en' ? 'Open device camera to capture now' : 'Mở máy ảnh thiết bị để chụp ảnh ngay'}
                 </Text>
               </View>
@@ -790,10 +790,10 @@ export default function KycScreen() {
                 <ImageIcon size={22} color="#2563EB" />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 15, fontWeight: '700', color: COLORS.gray[900] }}>
+                <Text style={{ fontSize: fs(15), fontWeight: '700', color: COLORS.gray[900] }}>
                   {lang === 'en' ? 'Choose from Photo Library' : 'Chọn từ Thư viện ảnh'}
                 </Text>
-                <Text style={{ fontSize: 12, color: COLORS.gray[500], marginTop: 2 }}>
+                <Text style={{ fontSize: fs(12), color: COLORS.gray[500], marginTop: 2 }}>
                   {lang === 'en' ? 'Upload existing photo from gallery' : 'Tải lên ảnh có sẵn trong thư viện'}
                 </Text>
               </View>
@@ -829,10 +829,10 @@ export default function KycScreen() {
                   <Sparkles size={22} color="#7C3AED" />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: 15, fontWeight: '700', color: '#5B21B6' }}>
+                  <Text style={{ fontSize: fs(15), fontWeight: '700', color: '#5B21B6' }}>
                     {lang === 'en' ? 'Use sample test photo (Quick test)' : 'Dùng ảnh mẫu thử nghiệm (Test nhanh)'}
                   </Text>
-                  <Text style={{ fontSize: 12, color: '#7C3AED', marginTop: 2 }}>
+                  <Text style={{ fontSize: fs(12), color: '#7C3AED', marginTop: 2 }}>
                     {lang === 'en' ? 'Auto-fills valid ID photos for quick testing' : 'Tự động điền ảnh chuẩn để nộp duyệt nhanh'}
                   </Text>
                 </View>

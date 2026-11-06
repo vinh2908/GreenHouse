@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { Clock, ChevronDown, Check, X } from 'lucide-react-native';
 import { COLORS } from '@/components/ui';
-import { useTranslation } from '@/hooks/use-i18n';
+import { useTranslation, fs } from '@/hooks/use-i18n';
 
 export const ORIGINAL_TIME_CHIPS = [
   '07:00',
@@ -264,7 +264,7 @@ export function TimeDropdownPicker({
     return ORIGINAL_TIME_CHIPS.includes(currentFormatted) ? currentFormatted : null;
   }, [currentHour, currentMinute]);
 
-  const { t, fs, lang } = useTranslation();
+  const { t, lang } = useTranslation();
 
   return (
     <View style={styles.container}>
@@ -529,7 +529,7 @@ export function DurationDropdownPicker({
   minMinutes = 15,
   maxMinutes = 720, // 12h
 }: DurationDropdownPickerProps) {
-  const { lang, fs } = useTranslation();
+  const { lang } = useTranslation();
   const effectiveLabel = label ?? (lang === 'en' ? 'Duration' : 'Thời lượng');
   const [modalType, setModalType] = useState<'hour' | 'minute' | null>(null);
   const hourScrollRef = useRef<ScrollView>(null);
@@ -745,7 +745,7 @@ export function ScheduledTimePreview({
   durationMinutes,
   price,
 }: ScheduledTimePreviewProps) {
-  const { t, fs, lang } = useTranslation();
+  const { t, lang } = useTranslation();
   const effectiveStart = timeStart || startTime || '08:00';
   const calc = useMemo(
     () => calcEndTime(effectiveStart, durationMinutes),
@@ -816,7 +816,7 @@ const styles = StyleSheet.create({
     marginVertical: 4,
   },
   fieldLabel: {
-    fontSize: 13,
+    fontSize: fs(13),
     fontWeight: '700',
     color: COLORS.gray[700],
     marginBottom: 6,
@@ -844,12 +844,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#FEF2F2',
   },
   dropdownValue: {
-    fontSize: 16,
+    fontSize: fs(16),
     fontWeight: '800',
     color: COLORS.gray[900],
   },
   dropdownUnit: {
-    fontSize: 12,
+    fontSize: fs(12),
     fontWeight: '600',
     color: COLORS.gray[500],
     flex: 1,
@@ -857,12 +857,12 @@ const styles = StyleSheet.create({
     marginLeft: 4,
   },
   separatorColon: {
-    fontSize: 16,
+    fontSize: fs(16),
     fontWeight: '800',
     color: COLORS.gray[500],
   },
   errorText: {
-    fontSize: 12,
+    fontSize: fs(12),
     color: COLORS.error,
     fontWeight: '600',
     marginTop: 6,
@@ -871,13 +871,13 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   chipsInstruction: {
-    fontSize: 11.5,
+    fontSize: fs(11.5),
     color: COLORS.gray[500],
     fontWeight: '500',
     marginBottom: 6,
   },
   noChipsText: {
-    fontSize: 12,
+    fontSize: fs(12),
     color: COLORS.gray[500],
     fontStyle: 'italic',
     paddingVertical: 4,
@@ -899,7 +899,7 @@ const styles = StyleSheet.create({
     borderColor: COLORS.primary,
   },
   timeChipText: {
-    fontSize: 13,
+    fontSize: fs(13),
     fontWeight: '700',
     color: COLORS.gray[700],
   },
@@ -921,7 +921,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.25)',
   },
   chipBadgeText: {
-    fontSize: 9,
+    fontSize: fs(9),
     fontWeight: '800',
   },
   chipBadgeTextNew: {
@@ -962,7 +962,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   modalTitle: {
-    fontSize: 16,
+    fontSize: fs(16),
     fontWeight: '800',
     color: COLORS.gray[900],
   },
@@ -981,7 +981,7 @@ const styles = StyleSheet.create({
     opacity: 0.35,
   },
   modalItemText: {
-    fontSize: 15,
+    fontSize: fs(15),
     fontWeight: '600',
     color: COLORS.gray[800],
   },
@@ -1002,7 +1002,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   previewTitle: {
-    fontSize: 13,
+    fontSize: fs(13),
     fontWeight: '800',
     color: COLORS.gray[800],
     marginBottom: 2,
@@ -1013,12 +1013,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   previewLabel: {
-    fontSize: 12,
+    fontSize: fs(12),
     color: COLORS.gray[500],
     fontWeight: '600',
   },
   previewValue: {
-    fontSize: 12.5,
+    fontSize: fs(12.5),
     fontWeight: '700',
     color: COLORS.gray[900],
   },

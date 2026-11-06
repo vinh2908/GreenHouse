@@ -120,7 +120,7 @@ export default function RegisterScreen() {
               <ArrowLeft size={20} color={COLORS.gray[800]} />
             </TouchableOpacity>
             <Text
-              style={{ fontSize: 18, fontWeight: '800', color: COLORS.gray[900], marginLeft: 12 }}
+              style={{ fontSize: fs(18), fontWeight: '800', color: COLORS.gray[900], marginLeft: 12 }}
             >
               {lang === 'en' ? 'Create New Account' : 'Tạo tài khoản mới'}
             </Text>
@@ -128,7 +128,7 @@ export default function RegisterScreen() {
 
           <View style={{ paddingHorizontal: 24, paddingBottom: 40 }}>
             <Text
-              style={{ fontSize: 14, color: COLORS.gray[500], marginBottom: 24, lineHeight: 20 }}
+              style={{ fontSize: fs(14), color: COLORS.gray[500], marginBottom: 24, lineHeight: 20 }}
             >
               {lang === 'en'
                 ? 'A single account to book services or earn income as a helper.'
@@ -189,7 +189,7 @@ export default function RegisterScreen() {
               {/* Terms */}
               <Text
                 style={{
-                  fontSize: 12,
+                  fontSize: fs(12),
                   color: COLORS.gray[500],
                   textAlign: 'center',
                   lineHeight: 18,
@@ -212,11 +212,11 @@ export default function RegisterScreen() {
             </View>
 
             <View style={{ flexDirection: 'row', justifyContent: 'center', marginTop: 24, gap: 6 }}>
-              <Text style={{ color: COLORS.gray[600], fontSize: 14 }}>
+              <Text style={{ color: COLORS.gray[600], fontSize: fs(14) }}>
                 {lang === 'en' ? 'Already have an account?' : 'Đã có tài khoản?'}
               </Text>
               <TouchableOpacity onPress={() => router.back()}>
-                <Text style={{ color: COLORS.primary, fontWeight: '800', fontSize: 14 }}>
+                <Text style={{ color: COLORS.primary, fontWeight: '800', fontSize: fs(14) }}>
                   {lang === 'en' ? 'Log in' : 'Đăng nhập'}
                 </Text>
               </TouchableOpacity>

@@ -10,7 +10,7 @@ import { useTranslation } from '@/hooks/use-i18n';
 export default function LoyaltyScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { t, lang, tLoyaltyTier } = useTranslation();
+  const { t, lang, tLoyaltyTier, fs } = useTranslation();
   const fmt = (n: number) => new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'vi-VN').format(n);
 
   const getTxLabel = (tx: any) => {
@@ -83,7 +83,7 @@ export default function LoyaltyScreen() {
         <TouchableOpacity activeOpacity={0.7} onPress={handleBack}>
           <ArrowLeft size={22} color={COLORS.gray[800]} />
         </TouchableOpacity>
-        <Text style={{ fontSize: 17, fontWeight: '800', color: COLORS.gray[900] }}>
+        <Text style={{ fontSize: fs(17), fontWeight: '800', color: COLORS.gray[900] }}>
           {t('loyalty_title')}
         </Text>
       </View>
@@ -102,15 +102,15 @@ export default function LoyaltyScreen() {
         <Card style={{ gap: 12, backgroundColor: '#FFFBEB' }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
             <Star size={22} color="#D97706" />
-            <Text style={{ fontSize: 15, fontWeight: '800', color: '#92400E' }}>
+            <Text style={{ fontSize: fs(15), fontWeight: '800', color: '#92400E' }}>
               {t('loyalty_tier_name', { tier: tLoyaltyTier(account?.tier_label) })}
             </Text>
           </View>
-          <Text style={{ fontSize: 32, fontWeight: '800', color: COLORS.gray[900] }}>
+          <Text style={{ fontSize: fs(32), fontWeight: '800', color: COLORS.gray[900] }}>
             {fmt(account?.points_balance ?? 0)}{' '}
-            <Text style={{ fontSize: 16, color: COLORS.gray[500] }}>{t('loyalty_points_unit')}</Text>
+            <Text style={{ fontSize: fs(16), color: COLORS.gray[500] }}>{t('loyalty_points_unit')}</Text>
           </Text>
-          <Text style={{ fontSize: 13, color: COLORS.gray[600] }}>
+          <Text style={{ fontSize: fs(13), color: COLORS.gray[600] }}>
             {t('loyalty_lifetime_summary', {
               lifetime: fmt(account?.lifetime_points ?? 0),
               value: fmt(account?.point_value_vnd ?? 1000),
@@ -131,7 +131,7 @@ export default function LoyaltyScreen() {
                   style={{ height: '100%', width: `${progress}%`, backgroundColor: '#D97706' }}
                 />
               </View>
-              <Text style={{ fontSize: 12, color: COLORS.gray[600] }}>
+              <Text style={{ fontSize: fs(12), color: COLORS.gray[600] }}>
                 {t('loyalty_next_tier_hint', {
                   points: fmt(account.points_to_next_tier),
                   target: fmt(account.next_tier_at),
@@ -139,7 +139,7 @@ export default function LoyaltyScreen() {
               </Text>
             </View>
           ) : (
-            <Text style={{ fontSize: 12, fontWeight: '700', color: '#92400E' }}>
+            <Text style={{ fontSize: fs(12), fontWeight: '700', color: '#92400E' }}>
               {t('loyalty_max_tier')}
             </Text>
           )}
@@ -147,16 +147,16 @@ export default function LoyaltyScreen() {
 
         {/* Perks */}
         <Card style={{ gap: 8 }}>
-          <Text style={{ fontWeight: '800', fontSize: 15, color: COLORS.gray[900] }}>
+          <Text style={{ fontWeight: '800', fontSize: fs(15), color: COLORS.gray[900] }}>
             {t('loyalty_perks_title')}
           </Text>
-          <Text style={{ fontSize: 13, color: COLORS.gray[600], lineHeight: 20 }}>
+          <Text style={{ fontSize: fs(13), color: COLORS.gray[600], lineHeight: 20 }}>
             {t('loyalty_perks_body', {
               earn: fmt(account?.earn_vnd_per_point ?? 10000),
               min: fmt(account?.min_redeem_points ?? 100),
             })}
           </Text>
-          <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.gray[800] }}>
+          <Text style={{ fontSize: fs(13), fontWeight: '700', color: COLORS.gray[800] }}>
             {t('loyalty_current_cap_desc', { cap: account?.redemption_cap_percent ?? 20 })}
           </Text>
         </Card>
@@ -164,7 +164,7 @@ export default function LoyaltyScreen() {
         {/* History */}
         <View>
           <Text
-            style={{ fontSize: 16, fontWeight: '800', color: COLORS.gray[900], marginBottom: 10 }}
+            style={{ fontSize: fs(16), fontWeight: '800', color: COLORS.gray[900], marginBottom: 10 }}
           >
             {t('loyalty_history_title')}
           </Text>
@@ -189,12 +189,12 @@ export default function LoyaltyScreen() {
                         paddingVertical: 12,
                       }}
                     >
-                      <Text style={{ fontSize: 20 }}>{getTxEmoji(tx.type)}</Text>
+                      <Text style={{ fontSize: fs(20) }}>{getTxEmoji(tx.type)}</Text>
                       <View style={{ flex: 1 }}>
-                        <Text style={{ fontWeight: '700', fontSize: 14, color: COLORS.gray[900] }}>
+                        <Text style={{ fontWeight: '700', fontSize: fs(14), color: COLORS.gray[900] }}>
                           {getTxLabel(tx)}
                         </Text>
-                        <Text style={{ fontSize: 12, color: COLORS.gray[500], marginTop: 2 }}>
+                        <Text style={{ fontSize: fs(12), color: COLORS.gray[500], marginTop: 2 }}>
                           {t('loyalty_balance_after', {
                             time: dayjs(tx.created_at).format('DD/MM/YYYY HH:mm'),
                             balance: fmt(tx.balance_after),
@@ -203,7 +203,7 @@ export default function LoyaltyScreen() {
                       </View>
                       <Text
                         style={{
-                          fontSize: 15,
+                          fontSize: fs(15),
                           fontWeight: '800',
                           color: positive ? COLORS.success : COLORS.error,
                         }}

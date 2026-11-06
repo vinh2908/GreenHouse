@@ -148,10 +148,10 @@ export default function FavoriteHelpersScreen() {
           <ArrowLeft size={20} color={COLORS.gray[800]} />
         </TouchableOpacity>
         <View style={{ flex: 1 }}>
-          <Text style={{ fontSize: 18, fontWeight: '800', color: COLORS.gray[900] }}>
+          <Text style={{ fontSize: fs(18), fontWeight: '800', color: COLORS.gray[900] }}>
             {lang === 'en' ? 'Favorite Helpers ❤️' : 'Thợ yêu thích ❤️'}
           </Text>
-          <Text style={{ fontSize: 12, color: COLORS.gray[500] }}>
+          <Text style={{ fontSize: fs(12), color: COLORS.gray[500] }}>
             {lang === 'en'
               ? 'Quick rebooking and exclusive dispatch priority for trusted helpers'
               : 'Đặt việc nhanh và ưu tiên gửi riêng cho thợ quen'}
@@ -214,7 +214,7 @@ export default function FavoriteHelpersScreen() {
                   >
                     <Avatar name={helper.full_name} uri={helper.avatar} size={54} />
                     <View style={{ flex: 1 }}>
-                      <Text style={{ fontSize: 16, fontWeight: '800', color: COLORS.gray[900] }}>
+                      <Text style={{ fontSize: fs(16), fontWeight: '800', color: COLORS.gray[900] }}>
                         {helper.full_name ?? (lang === 'en' ? 'Helper' : 'Thợ')}
                       </Text>
                       <View
@@ -228,14 +228,14 @@ export default function FavoriteHelpersScreen() {
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
                           <Star size={13} color="#F59E0B" fill="#F59E0B" />
                           <Text
-                            style={{ fontSize: 12.5, fontWeight: '700', color: COLORS.gray[700] }}
+                            style={{ fontSize: fs(12.5), fontWeight: '700', color: COLORS.gray[700] }}
                           >
                             {(p?.rating ?? 0).toFixed(1)} ({p?.total_reviews ?? 0})
                           </Text>
                         </View>
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
                           <Briefcase size={13} color={COLORS.gray[500]} />
-                          <Text style={{ fontSize: 12.5, color: COLORS.gray[600] }}>
+                          <Text style={{ fontSize: fs(12.5), color: COLORS.gray[600] }}>
                             {(p?.completed_jobs ?? 0) +
                               (lang === 'en' ? ' jobs done' : ' đơn đã xong')}
                           </Text>
@@ -266,7 +266,7 @@ export default function FavoriteHelpersScreen() {
                       }}
                     >
                       <RotateCcw size={15} color="#fff" />
-                      <Text style={{ color: '#fff', fontWeight: '700', fontSize: 13 }}>
+                      <Text style={{ color: '#fff', fontWeight: '700', fontSize: fs(13) }}>
                         {lang === 'en' ? '1-Tap Rebook' : 'Đặt lại 1 chạm'}
                       </Text>
                     </TouchableOpacity>
@@ -285,7 +285,7 @@ export default function FavoriteHelpersScreen() {
                       }}
                     >
                       <CalendarPlus size={15} color={COLORS.primaryDark} />
-                      <Text style={{ color: COLORS.primaryDark, fontWeight: '700', fontSize: 13 }}>
+                      <Text style={{ color: COLORS.primaryDark, fontWeight: '700', fontSize: fs(13) }}>
                         {lang === 'en' ? 'Book New Job' : 'Đặt việc mới'}
                       </Text>
                     </TouchableOpacity>

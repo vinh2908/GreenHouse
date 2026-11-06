@@ -184,10 +184,10 @@ export default function DisputeCaseScreen() {
           <ArrowLeft size={20} color={COLORS.gray[800]} />
         </TouchableOpacity>
         <View style={{ flex: 1 }}>
-          <Text style={{ fontSize: 18, fontWeight: '800', color: COLORS.gray[900] }}>
+          <Text style={{ fontSize: fs(18), fontWeight: '800', color: COLORS.gray[900] }}>
             {lang === 'en' ? 'Dispute Case' : 'Hồ sơ tranh chấp'}
           </Text>
-          <Text style={{ fontSize: 12, color: COLORS.gray[500] }}>
+          <Text style={{ fontSize: fs(12), color: COLORS.gray[500] }}>
             {lang === 'en' ? 'All records preserved for fair administrative arbitration' : 'Toàn bộ diễn biến được lưu lại để Admin phân xử công bằng'}
           </Text>
         </View>
@@ -218,7 +218,7 @@ export default function DisputeCaseScreen() {
             {/* ── Trạng thái hồ sơ ─────────────────────────────────────── */}
             <Card style={{ gap: 8 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                <Text style={{ flex: 1, fontWeight: '800', fontSize: 15, color: COLORS.gray[900] }}>
+                <Text style={{ flex: 1, fontWeight: '800', fontSize: fs(15), color: COLORS.gray[900] }}>
                   {lang === 'en' ? 'Dispute reason' : 'Lý do tranh chấp'}
                 </Text>
                 {caseData.status === 'open' && (
@@ -235,10 +235,10 @@ export default function DisputeCaseScreen() {
                   />
                 )}
               </View>
-              <Text style={{ fontSize: 13.5, color: COLORS.gray[800], lineHeight: 20 }}>
+              <Text style={{ fontSize: fs(13.5), color: COLORS.gray[800], lineHeight: 20 }}>
                 {caseData.reason}
               </Text>
-              <Text style={{ fontSize: 12, color: COLORS.gray[500] }}>
+              <Text style={{ fontSize: fs(12), color: COLORS.gray[500] }}>
                 {lang === 'en' ? 'Opened by ' : 'Mở bởi '}{roleLabel(caseData.opened_by_role, lang)} ·{' '}
                 {dayjs(caseData.created_at).format('HH:mm DD/MM/YYYY')}
               </Text>
@@ -256,36 +256,36 @@ export default function DisputeCaseScreen() {
               >
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                   <Gavel size={18} color="#1E40AF" />
-                  <Text style={{ fontWeight: '800', fontSize: 15, color: '#1E40AF' }}>
+                  <Text style={{ fontWeight: '800', fontSize: fs(15), color: '#1E40AF' }}>
                     {lang === 'en' ? 'Admin Resolution' : 'Phán quyết của Admin'}
                   </Text>
                 </View>
-                <Text style={{ fontSize: 14, fontWeight: '700', color: COLORS.gray[900] }}>
+                <Text style={{ fontSize: fs(14), fontWeight: '700', color: COLORS.gray[900] }}>
                   {resolutionLabel(caseData.resolution.action, lang)}
                 </Text>
                 {(caseData.resolution.refund_amount ?? 0) > 0 && (
-                  <Text style={{ fontSize: 13, color: COLORS.gray[700] }}>
+                  <Text style={{ fontSize: fs(13), color: COLORS.gray[700] }}>
                     {lang === 'en' ? 'Refund to customer: ' : 'Hoàn cho khách: '}{fmt(caseData.resolution.refund_amount)}₫
                   </Text>
                 )}
                 {(caseData.resolution.helper_payout ?? 0) > 0 && (
-                  <Text style={{ fontSize: 13, color: COLORS.gray[700] }}>
+                  <Text style={{ fontSize: fs(13), color: COLORS.gray[700] }}>
                     {lang === 'en' ? 'Payout to helper: ' : 'Giải ngân cho thợ: '}{fmt(caseData.resolution.helper_payout)}₫
                   </Text>
                 )}
                 {caseData.resolution.admin_note && (
-                  <Text style={{ fontSize: 13, color: COLORS.gray[700], lineHeight: 19 }}>
+                  <Text style={{ fontSize: fs(13), color: COLORS.gray[700], lineHeight: 19 }}>
                     {lang === 'en' ? 'Note: ' : 'Ghi chú: '}{caseData.resolution.admin_note}
                   </Text>
                 )}
                 {caseData.resolution.resolved_at && (
-                  <Text style={{ fontSize: 12, color: COLORS.gray[500] }}>
+                  <Text style={{ fontSize: fs(12), color: COLORS.gray[500] }}>
                     {dayjs(caseData.resolution.resolved_at).format('HH:mm DD/MM/YYYY')}
                   </Text>
                 )}
                 {caseData.can_appeal && (
                   <>
-                    <Text style={{ fontSize: 12.5, color: '#9A3412', fontWeight: '600' }}>
+                    <Text style={{ fontSize: fs(12.5), color: '#9A3412', fontWeight: '600' }}>
                       {lang === 'en' ? 'You may appeal once before ' : 'Bạn có thể kháng cáo 1 lần trước '}
                       {caseData.appeal_deadline
                         ? dayjs(caseData.appeal_deadline).format('HH:mm DD/MM/YYYY')
@@ -300,7 +300,7 @@ export default function DisputeCaseScreen() {
                   </>
                 )}
                 {caseData.appeal && (
-                  <Text style={{ fontSize: 12.5, color: COLORS.gray[600] }}>
+                  <Text style={{ fontSize: fs(12.5), color: COLORS.gray[600] }}>
                     {lang === 'en' ? 'Appealed by ' : 'Đã kháng cáo bởi '}{roleLabel(caseData.appeal.by_role, lang)}: {caseData.appeal.reason}
                   </Text>
                 )}
@@ -308,7 +308,7 @@ export default function DisputeCaseScreen() {
             )}
 
             {/* ── Timeline ─────────────────────────────────────────────── */}
-            <Text style={{ fontWeight: '800', fontSize: 15, color: COLORS.gray[900] }}>
+            <Text style={{ fontWeight: '800', fontSize: fs(15), color: COLORS.gray[900] }}>
               {lang === 'en' ? 'Case Timeline' : 'Diễn biến hồ sơ'}
             </Text>
             <View style={{ gap: 0 }}>
@@ -339,7 +339,7 @@ export default function DisputeCaseScreen() {
                     <Card style={{ flex: 1, marginBottom: 12, gap: 5 }}>
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                         <Text
-                          style={{ fontWeight: '800', fontSize: 13.5, color: COLORS.gray[900] }}
+                          style={{ fontWeight: '800', fontSize: fs(13.5), color: COLORS.gray[900] }}
                         >
                           {lang === 'en' ? meta.label_en : meta.label}
                         </Text>
@@ -348,11 +348,11 @@ export default function DisputeCaseScreen() {
                           size="sm"
                         />
                       </View>
-                      <Text style={{ fontSize: 11.5, color: COLORS.gray[500] }}>
+                      <Text style={{ fontSize: fs(11.5), color: COLORS.gray[500] }}>
                         {dayjs(entry.created_at).format('HH:mm DD/MM/YYYY')}
                       </Text>
                       {entry.text ? (
-                        <Text style={{ fontSize: 13.5, color: COLORS.gray[800], lineHeight: 20 }}>
+                        <Text style={{ fontSize: fs(13.5), color: COLORS.gray[800], lineHeight: 20 }}>
                           {entry.text}
                         </Text>
                       ) : null}
@@ -376,7 +376,7 @@ export default function DisputeCaseScreen() {
             {/* ── Bổ sung bằng chứng ───────────────────────────────────── */}
             {caseData.status !== 'resolved' ? (
               <Card style={{ gap: 10 }}>
-                <Text style={{ fontWeight: '800', fontSize: 14.5, color: COLORS.gray[900] }}>
+                <Text style={{ fontWeight: '800', fontSize: fs(14.5), color: COLORS.gray[900] }}>
                   {lang === 'en' ? 'Add evidence / statement' : 'Bổ sung bằng chứng / trình bày'}
                 </Text>
                 <TextInput
@@ -392,7 +392,7 @@ export default function DisputeCaseScreen() {
                     padding: 12,
                     minHeight: 74,
                     textAlignVertical: 'top',
-                    fontSize: 13.5,
+                    fontSize: fs(13.5),
                     color: COLORS.gray[900],
                     backgroundColor: '#fff',
                   }}
@@ -429,7 +429,7 @@ export default function DisputeCaseScreen() {
               </Card>
             ) : (
               <Card style={{ backgroundColor: COLORS.gray[50] }}>
-                <Text style={{ fontSize: 13, color: COLORS.gray[600], lineHeight: 19 }}>
+                <Text style={{ fontSize: fs(13), color: COLORS.gray[600], lineHeight: 19 }}>
                   {lang === 'en'
                     ? `Case closed following resolution. If you disagree with the outcome, you may appeal once within ${caseData.appeal_window_hours} hours of resolution (when active, the Appeal button appears in the resolution card above).`
                     : `Hồ sơ đã đóng sau phán quyết. Nếu chưa đồng ý với kết quả, bạn có thể kháng cáo 1 lần trong ${caseData.appeal_window_hours} giờ kể từ lúc có phán quyết (khi còn thời hạn, nút Kháng cáo sẽ hiện ở thẻ phán quyết phía trên).`}
@@ -453,11 +453,11 @@ export default function DisputeCaseScreen() {
         >
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
             <Undo2 size={20} color={COLORS.gray[800]} />
-            <Text style={{ fontSize: 18, fontWeight: '800', color: COLORS.gray[900] }}>
+            <Text style={{ fontSize: fs(18), fontWeight: '800', color: COLORS.gray[900] }}>
               {lang === 'en' ? 'Appeal Resolution' : 'Kháng cáo phán quyết'}
             </Text>
           </View>
-          <Text style={{ fontSize: 13.5, color: COLORS.gray[600], lineHeight: 20 }}>
+          <Text style={{ fontSize: fs(13.5), color: COLORS.gray[600], lineHeight: 20 }}>
             {lang === 'en' ? (
               <>
                 Each case can only be appealed <Text style={{ fontWeight: '800' }}>once</Text>.
@@ -484,7 +484,7 @@ export default function DisputeCaseScreen() {
               padding: 14,
               minHeight: 120,
               textAlignVertical: 'top',
-              fontSize: 14,
+              fontSize: fs(14),
               color: COLORS.gray[900],
             }}
           />

@@ -196,7 +196,7 @@ export default function BankAccountScreen() {
         >
           <ArrowLeft size={20} color={COLORS.gray[800]} />
         </TouchableOpacity>
-        <Text style={{ fontSize: 17, fontWeight: '800', color: COLORS.gray[900] }}>
+        <Text style={{ fontSize: fs(17), fontWeight: '800', color: COLORS.gray[900] }}>
           {isHelper
             ? lang === 'en'
               ? 'Linked Bank Account'
@@ -217,18 +217,18 @@ export default function BankAccountScreen() {
           <Card style={{ backgroundColor: '#0F172A', padding: 18, gap: 10 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
               <ShieldCheck size={20} color="#34D399" />
-              <Text style={{ color: '#fff', fontWeight: '800', fontSize: 15 }}>
+              <Text style={{ color: '#fff', fontWeight: '800', fontSize: fs(15) }}>
                 {lang === 'en' ? '100% Escrow Payment Protection' : 'Bảo vệ thanh toán Escrow 100%'}
               </Text>
             </View>
-            <Text style={{ color: 'rgba(255,255,255,0.75)', fontSize: 13, lineHeight: 19 }}>
+            <Text style={{ color: 'rgba(255,255,255,0.75)', fontSize: fs(13), lineHeight: 19 }}>
               {lang === 'en'
                 ? 'You only pay after the helper completes the job, submits completion photos/videos, and you confirm your satisfaction.'
                 : 'Bạn chỉ thanh toán sau khi thợ đã hoàn thành công việc, gửi ảnh/video nghiệm thu và bạn xác nhận hài lòng.'}
             </Text>
           </Card>
 
-          <Text style={{ fontSize: 15, fontWeight: '800', color: COLORS.gray[900] }}>
+          <Text style={{ fontSize: fs(15), fontWeight: '800', color: COLORS.gray[900] }}>
             {lang === 'en' ? 'Default Payment Method' : 'Phương thức thanh toán mặc định'}
           </Text>
 
@@ -266,7 +266,7 @@ export default function BankAccountScreen() {
                         alignItems: 'center',
                       }}
                     >
-                      <Text style={{ fontWeight: '800', fontSize: 14.5, color: COLORS.gray[900] }}>
+                      <Text style={{ fontWeight: '800', fontSize: fs(14.5), color: COLORS.gray[900] }}>
                         {opt.title}
                       </Text>
                       {selected ? (
@@ -274,7 +274,7 @@ export default function BankAccountScreen() {
                       ) : (
                         <Text
                           style={{
-                            fontSize: 11,
+                            fontSize: fs(11),
                             color: COLORS.primary,
                             fontWeight: '700',
                           }}
@@ -283,7 +283,7 @@ export default function BankAccountScreen() {
                         </Text>
                       )}
                     </View>
-                    <Text style={{ fontSize: 12.5, color: COLORS.gray[600], lineHeight: 18 }}>
+                    <Text style={{ fontSize: fs(12.5), color: COLORS.gray[600], lineHeight: 18 }}>
                       {opt.subtitle}
                     </Text>
                   </Card>
@@ -292,7 +292,7 @@ export default function BankAccountScreen() {
             })}
           </View>
 
-          <Text style={{ fontSize: 15, fontWeight: '800', color: COLORS.gray[900], marginTop: 6 }}>
+          <Text style={{ fontSize: fs(15), fontWeight: '800', color: COLORS.gray[900], marginTop: 6 }}>
             {lang === 'en' ? 'Recent Transactions' : 'Lịch sử giao dịch gần đây'}
           </Text>
 
@@ -324,19 +324,19 @@ export default function BankAccountScreen() {
                     }}
                   >
                     <View style={{ flex: 1, marginRight: 10 }}>
-                      <Text style={{ fontWeight: '700', fontSize: 14, color: COLORS.gray[900] }}>
+                      <Text style={{ fontWeight: '700', fontSize: fs(14), color: COLORS.gray[900] }}>
                         {formatTxDesc(tx.description)}
                       </Text>
                       <View
                         style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 }}
                       >
                         <Clock size={12} color={COLORS.gray[400]} />
-                        <Text style={{ fontSize: 12, color: COLORS.gray[500] }}>
+                        <Text style={{ fontSize: fs(12), color: COLORS.gray[500] }}>
                           {dayjs(tx.created_at).format('DD/MM/YYYY HH:mm')}
                         </Text>
                       </View>
                     </View>
-                    <Text style={{ fontWeight: '800', fontSize: 14.5, color: COLORS.gray[900] }}>
+                    <Text style={{ fontWeight: '800', fontSize: fs(14.5), color: COLORS.gray[900] }}>
                       {new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'vi-VN').format(tx.amount)}₫
                     </Text>
                   </View>
@@ -384,7 +384,7 @@ export default function BankAccountScreen() {
                     style={{
                       color: '#F8FAFC',
                       fontWeight: '800',
-                      fontSize: 16,
+                      fontSize: fs(16),
                       letterSpacing: 0.5,
                     }}
                   >
@@ -400,7 +400,7 @@ export default function BankAccountScreen() {
                       borderRadius: 6,
                     }}
                   >
-                    <Text style={{ color: '#34D399', fontSize: 11, fontWeight: '800' }}>
+                    <Text style={{ color: '#34D399', fontSize: fs(11), fontWeight: '800' }}>
                       {lang === 'en' ? '● LINKED' : '● ĐÃ LIÊN KẾT'}
                     </Text>
                   </View>
@@ -409,14 +409,14 @@ export default function BankAccountScreen() {
 
               <View style={{ marginVertical: 12 }}>
                 <Text
-                  style={{ color: '#94A3B8', fontSize: 11, fontWeight: '600', letterSpacing: 1 }}
+                  style={{ color: '#94A3B8', fontSize: fs(11), fontWeight: '600', letterSpacing: 1 }}
                 >
                   {lang === 'en' ? 'ACCOUNT NUMBER' : 'SỐ TÀI KHOẢN'}
                 </Text>
                 <Text
                   style={{
                     color: '#FFFFFF',
-                    fontSize: 20,
+                    fontSize: fs(20),
                     fontWeight: '900',
                     letterSpacing: 2,
                     marginTop: 4,
@@ -436,13 +436,13 @@ export default function BankAccountScreen() {
                 }}
               >
                 <View>
-                  <Text style={{ color: '#94A3B8', fontSize: 10, fontWeight: '600' }}>
+                  <Text style={{ color: '#94A3B8', fontSize: fs(10), fontWeight: '600' }}>
                     {lang === 'en' ? 'ACCOUNT HOLDER' : 'CHỦ TÀI KHOẢN'}
                   </Text>
                   <Text
                     style={{
                       color: '#FFFFFF',
-                      fontSize: 14,
+                      fontSize: fs(14),
                       fontWeight: '800',
                       marginTop: 2,
                       letterSpacing: 0.5,
@@ -456,7 +456,7 @@ export default function BankAccountScreen() {
             </View>
 
             <Card style={{ padding: 16, gap: 10 }}>
-              <Text style={{ fontSize: 14, fontWeight: '800', color: COLORS.gray[900] }}>
+              <Text style={{ fontSize: fs(14), fontWeight: '800', color: COLORS.gray[900] }}>
                 {lang === 'en' ? 'Select Beneficiary Bank' : 'Chọn ngân hàng thụ hưởng'}
               </Text>
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
@@ -480,7 +480,7 @@ export default function BankAccountScreen() {
                     >
                       <Text
                         style={{
-                          fontSize: 12.5,
+                          fontSize: fs(12.5),
                           fontWeight: '700',
                           color: isSelected ? COLORS.primary : COLORS.gray[700],
                         }}
@@ -494,12 +494,12 @@ export default function BankAccountScreen() {
             </Card>
 
             <Card style={{ padding: 16, gap: 14 }}>
-              <Text style={{ fontSize: 15, fontWeight: '800', color: COLORS.gray[900] }}>
+              <Text style={{ fontSize: fs(15), fontWeight: '800', color: COLORS.gray[900] }}>
                 {lang === 'en' ? 'Receiving Bank Account Details' : 'Thông tin tài khoản nhận tiền'}
               </Text>
 
               <View style={{ gap: 6 }}>
-                <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.gray[700] }}>
+                <Text style={{ fontSize: fs(13), fontWeight: '700', color: COLORS.gray[700] }}>
                   {lang === 'en' ? 'Bank name *' : 'Tên ngân hàng *'}
                 </Text>
                 <TextInput
@@ -508,7 +508,7 @@ export default function BankAccountScreen() {
                     borderColor: COLORS.gray[200],
                     borderRadius: 14,
                     padding: 14,
-                    fontSize: 15,
+                    fontSize: fs(15),
                     color: COLORS.gray[900],
                     backgroundColor: COLORS.gray[50],
                   }}
@@ -520,7 +520,7 @@ export default function BankAccountScreen() {
               </View>
 
               <View style={{ gap: 6 }}>
-                <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.gray[700] }}>
+                <Text style={{ fontSize: fs(13), fontWeight: '700', color: COLORS.gray[700] }}>
                   {lang === 'en' ? 'Bank account number *' : 'Số tài khoản ngân hàng *'}
                 </Text>
                 <TextInput
@@ -529,7 +529,7 @@ export default function BankAccountScreen() {
                     borderColor: COLORS.gray[200],
                     borderRadius: 14,
                     padding: 14,
-                    fontSize: 17,
+                    fontSize: fs(17),
                     fontWeight: '800',
                     color: COLORS.gray[900],
                     backgroundColor: COLORS.gray[50],
@@ -544,7 +544,7 @@ export default function BankAccountScreen() {
               </View>
 
               <View style={{ gap: 6 }}>
-                <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.gray[700] }}>
+                <Text style={{ fontSize: fs(13), fontWeight: '700', color: COLORS.gray[700] }}>
                   {lang === 'en'
                     ? 'Account holder name (UPPERCASE, unaccented) *'
                     : 'Tên chủ tài khoản (in hoa, không dấu) *'}
@@ -555,7 +555,7 @@ export default function BankAccountScreen() {
                     borderColor: COLORS.gray[200],
                     borderRadius: 14,
                     padding: 14,
-                    fontSize: 15,
+                    fontSize: fs(15),
                     fontWeight: '800',
                     color: COLORS.gray[900],
                     backgroundColor: COLORS.gray[50],
@@ -580,11 +580,11 @@ export default function BankAccountScreen() {
             >
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                 <Lock size={16} color={COLORS.secondary} />
-                <Text style={{ fontSize: 13.5, fontWeight: '800', color: COLORS.secondary }}>
+                <Text style={{ fontSize: fs(13.5), fontWeight: '800', color: COLORS.secondary }}>
                   {lang === 'en' ? 'Security & Payout Rules' : 'Bảo mật & Quy chuẩn rút tiền'}
                 </Text>
               </View>
-              <Text style={{ fontSize: 12.5, color: '#1E40AF', lineHeight: 18 }}>
+              <Text style={{ fontSize: fs(12.5), color: '#1E40AF', lineHeight: 18 }}>
                 {lang === 'en'
                   ? `• The bank account holder name should match your verified ID (e-KYC) for 24/7 automated payouts.\n• Payouts from your earnings wallet are processed quickly via interbank transfer.`
                   : `• Tên chủ tài khoản ngân hàng nên trùng khớp với họ tên đã xác minh trên CCCD (e-KYC) để quá trình rút tiền diễn ra tự động 24/7.\n• Tiền rút từ ví thu nhập sẽ được xử lý chuyển khoản liên ngân hàng nhanh chóng.`}

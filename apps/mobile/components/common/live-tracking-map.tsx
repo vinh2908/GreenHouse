@@ -5,7 +5,7 @@ import * as Location from 'expo-location';
 import { Navigation } from 'lucide-react-native';
 import { TRACKING_MAP_HTML, buildTrackingMapHtml } from './tracking-map-document';
 import { trackingTitle, validCoordinate } from '@/services/tracking';
-import { useTranslation } from '@/hooks/use-i18n';
+import { useTranslation, fs } from '@/hooks/use-i18n';
 
 export interface Coordinates {
   latitude: number;
@@ -439,7 +439,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
   },
-  statusText: { color: 'white', fontSize: 13, lineHeight: 18, fontWeight: '700', flex: 1 },
+  statusText: { color: 'white', fontSize: fs(13), lineHeight: 18, fontWeight: '700', flex: 1 },
   dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#00b14f' },
   error: {
     position: 'absolute',
@@ -458,6 +458,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
   },
-  navText: { color: 'white', fontSize: 14, fontWeight: '700', flexShrink: 1 },
-  note: { fontSize: 12, color: '#64748b', lineHeight: 17 },
+  navText: { color: 'white', fontSize: fs(14), fontWeight: '700', flexShrink: 1 },
+  note: { fontSize: fs(12), color: '#64748b', lineHeight: 17 },
 });

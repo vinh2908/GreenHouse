@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { COLORS } from '@/components/ui';
 import { ScalePressable } from '@/components/common/scale-pressable';
-import { useTranslation } from '@/hooks/use-i18n';
+import { useTranslation, fs } from '@/hooks/use-i18n';
 
 const ITEM_HEIGHT = 40;
 const VISIBLE_ITEMS = 3;
@@ -344,7 +344,7 @@ const styles = StyleSheet.create({
   columnHeader: {
     position: 'absolute',
     top: 4,
-    fontSize: 9.5,
+    fontSize: fs(9.5),
     fontWeight: '800',
     color: COLORS.gray[500],
     textTransform: 'uppercase',
@@ -358,7 +358,7 @@ const styles = StyleSheet.create({
     zIndex: 3,
   },
   colonText: {
-    fontSize: 26,
+    fontSize: fs(26),
     fontWeight: '900',
     color: COLORS.primary,
     marginTop: -2,
@@ -374,7 +374,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   itemText: {
-    fontSize: 20,
+    fontSize: fs(20),
     fontVariant: ['tabular-nums'],
   },
   itemTextSelected: {
@@ -399,7 +399,7 @@ const styles = StyleSheet.create({
     borderColor: '#E2E8F0',
   },
   statusLabel: {
-    fontSize: 13,
+    fontSize: fs(13),
     fontWeight: '700',
     color: COLORS.gray[700],
   },
@@ -412,7 +412,7 @@ const styles = StyleSheet.create({
     borderColor: '#86EFAC',
   },
   statusTimeText: {
-    fontSize: 15,
+    fontSize: fs(15),
     fontWeight: '900',
     color: COLORS.primary,
     fontVariant: ['tabular-nums'],
@@ -422,7 +422,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   chipsTitle: {
-    fontSize: 12,
+    fontSize: fs(12),
     fontWeight: '700',
     color: COLORS.gray[600],
   },
@@ -449,7 +449,7 @@ const styles = StyleSheet.create({
     borderColor: '#E2E8F0',
   },
   chipText: {
-    fontSize: 12,
+    fontSize: fs(12),
     fontVariant: ['tabular-nums'],
   },
   chipTextSelected: {
@@ -469,7 +469,7 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   newBadgeText: {
-    fontSize: 8,
+    fontSize: fs(8),
     fontWeight: '900',
     color: COLORS.primary,
   },
@@ -482,7 +482,7 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   nightBadgeText: {
-    fontSize: 8,
+    fontSize: fs(8),
     fontWeight: '900',
     color: COLORS.error,
   },
@@ -494,7 +494,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   oddChipsLabel: {
-    fontSize: 11.5,
+    fontSize: fs(11.5),
     fontWeight: '700',
     color: COLORS.gray[500],
     marginRight: 2,
@@ -514,7 +514,7 @@ const styles = StyleSheet.create({
     borderColor: '#E2E8F0',
   },
   oddChipText: {
-    fontSize: 11,
+    fontSize: fs(11),
     fontVariant: ['tabular-nums'],
   },
   oddChipTextSelected: {

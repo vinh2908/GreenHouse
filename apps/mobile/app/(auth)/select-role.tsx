@@ -89,11 +89,11 @@ export default function SelectRoleScreen() {
                 elevation: 6,
               }}
             >
-              <Text style={{ color: '#fff', fontSize: 28, fontWeight: '800' }}>G</Text>
+              <Text style={{ color: '#fff', fontSize: fs(28), fontWeight: '800' }}>G</Text>
             </View>
             <Text
               style={{
-                fontSize: 24,
+                fontSize: fs(24),
                 fontWeight: '800',
                 color: COLORS.gray[900],
                 textAlign: 'center',
@@ -103,7 +103,7 @@ export default function SelectRoleScreen() {
             </Text>
             <Text
               style={{
-                fontSize: 15,
+                fontSize: fs(15),
                 color: COLORS.gray[500],
                 textAlign: 'center',
                 marginTop: 8,
@@ -111,7 +111,7 @@ export default function SelectRoleScreen() {
               }}
             >
               {lang === 'en' ? 'How would you like to use Green House?\n' : 'Bạn muốn sử dụng Green House như thế nào?\n'}
-              <Text style={{ fontSize: 13, color: COLORS.gray[500] }}>
+              <Text style={{ fontSize: fs(13), color: COLORS.gray[500] }}>
                 {lang === 'en' ? '(You can switch anytime in settings)' : '(Bạn có thể chuyển đổi linh hoạt bất kỳ lúc nào)'}
               </Text>
             </Text>
@@ -148,7 +148,7 @@ export default function SelectRoleScreen() {
                       justifyContent: 'center',
                     }}
                   >
-                    <Text style={{ fontSize: 28 }}>🏠</Text>
+                    <Text style={{ fontSize: fs(28) }}>🏠</Text>
                   </View>
                   <View
                     style={{
@@ -166,11 +166,11 @@ export default function SelectRoleScreen() {
                   </View>
                 </View>
                 <View>
-                  <Text style={{ fontSize: 18, fontWeight: '700', color: COLORS.gray[900] }}>
+                  <Text style={{ fontSize: fs(18), fontWeight: '700', color: COLORS.gray[900] }}>
                     {lang === 'en' ? 'I need services' : 'Tôi cần thuê dịch vụ'}
                   </Text>
                   <Text
-                    style={{ fontSize: 14, color: COLORS.gray[600], marginTop: 4, lineHeight: 20 }}
+                    style={{ fontSize: fs(14), color: COLORS.gray[600], marginTop: 4, lineHeight: 20 }}
                   >
                     {lang === 'en'
                       ? 'Find home cleaners, cooks, electricians and plumbers quickly and reliably.'
@@ -209,7 +209,7 @@ export default function SelectRoleScreen() {
                       justifyContent: 'center',
                     }}
                   >
-                    <Text style={{ fontSize: 28 }}>🔧</Text>
+                    <Text style={{ fontSize: fs(28) }}>🔧</Text>
                   </View>
                   <View
                     style={{
@@ -227,11 +227,11 @@ export default function SelectRoleScreen() {
                   </View>
                 </View>
                 <View>
-                  <Text style={{ fontSize: 18, fontWeight: '700', color: COLORS.gray[900] }}>
+                  <Text style={{ fontSize: fs(18), fontWeight: '700', color: COLORS.gray[900] }}>
                     {lang === 'en' ? 'I want to work' : 'Tôi muốn nhận việc'}
                   </Text>
                   <Text
-                    style={{ fontSize: 14, color: COLORS.gray[600], marginTop: 4, lineHeight: 20 }}
+                    style={{ fontSize: fs(14), color: COLORS.gray[600], marginTop: 4, lineHeight: 20 }}
                   >
                     {lang === 'en'
                       ? 'Become a helper partner to connect with thousands of customers around you.'

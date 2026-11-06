@@ -175,7 +175,7 @@ export default function SosTrackingScreen() {
         >
           <ArrowLeft size={20} color="#FFFFFF" />
         </TouchableOpacity>
-        <Text style={{ fontSize: 17, fontWeight: '900', color: '#FFFFFF' }}>
+        <Text style={{ fontSize: fs(17), fontWeight: '900', color: '#FFFFFF' }}>
           {isMatched
             ? lang === 'en'
               ? 'HELPER ON THE WAY TO RESCUE'
@@ -229,13 +229,13 @@ export default function SosTrackingScreen() {
               <ActivityIndicator size="large" color="#DC2626" />
             </View>
             <Text
-              style={{ fontSize: 19, fontWeight: '900', color: '#991B1B', textAlign: 'center' }}
+              style={{ fontSize: fs(19), fontWeight: '900', color: '#991B1B', textAlign: 'center' }}
             >
               {lang === 'en'
                 ? 'Broadcasting signal to 5 nearest helpers'
                 : 'Đang broadcast tín hiệu tới 5 thợ gần bạn nhất'}
             </Text>
-            <Text style={{ fontSize: 13, color: '#B91C1C', textAlign: 'center', lineHeight: 19 }}>
+            <Text style={{ fontSize: fs(13), color: '#B91C1C', textAlign: 'center', lineHeight: 19 }}>
               {lang === 'en'
                 ? 'System is scanning verified online helper partners within 10km radius. First helper to accept will immediately rush to you.'
                 : 'Hệ thống đang quét các đối tác thợ online trong bán kính 10km đã xác minh e-KYC. Thợ đầu tiên bấm nhận sẽ lập tức di chuyển đến bạn.'}
@@ -252,18 +252,18 @@ export default function SosTrackingScreen() {
               }}
             >
               <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                <Text style={{ fontSize: 12.5, color: COLORS.gray[600] }}>
+                <Text style={{ fontSize: fs(12.5), color: COLORS.gray[600] }}>
                   {lang === 'en' ? 'Emergency issue:' : 'Sự cố khẩn cấp:'}
                 </Text>
-                <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.gray[900] }}>
+                <Text style={{ fontSize: fs(13), fontWeight: '700', color: COLORS.gray[900] }}>
                   {job?.title}
                 </Text>
               </View>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                <Text style={{ fontSize: 12.5, color: COLORS.gray[600] }}>
+                <Text style={{ fontSize: fs(12.5), color: COLORS.gray[600] }}>
                   {lang === 'en' ? 'Arrival commitment:' : 'Thời gian cam kết:'}
                 </Text>
-                <Text style={{ fontSize: 13, fontWeight: '900', color: '#DC2626' }}>
+                <Text style={{ fontSize: fs(13), fontWeight: '900', color: '#DC2626' }}>
                   {lang === 'en' ? 'Arriving in 15 minutes' : 'Có mặt sau 15 phút'}
                 </Text>
               </View>
@@ -296,7 +296,7 @@ export default function SosTrackingScreen() {
 
             {/* 2. Thẻ định danh Thợ cứu hộ */}
             <Card style={{ padding: 16, gap: 14 }}>
-              <Text style={{ fontSize: 15, fontWeight: '900', color: COLORS.gray[900] }}>
+              <Text style={{ fontSize: fs(15), fontWeight: '900', color: COLORS.gray[900] }}>
                 {lang === 'en' ? 'Assigned Rescue Helper' : 'Thông tin thợ cứu hộ phụ trách'}
               </Text>
 
@@ -304,12 +304,12 @@ export default function SosTrackingScreen() {
                 <Avatar name={helperName} uri={helperAvatar} size={54} />
                 <View style={{ flex: 1 }}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                    <Text style={{ fontWeight: '800', fontSize: 16, color: COLORS.gray[900] }}>
+                    <Text style={{ fontWeight: '800', fontSize: fs(16), color: COLORS.gray[900] }}>
                       {helperName}
                     </Text>
                     {hasRealHelper && <ShieldCheck size={18} color={COLORS.success} />}
                   </View>
-                  <Text style={{ fontSize: 13, color: COLORS.gray[500], marginTop: 2 }}>
+                  <Text style={{ fontSize: fs(13), color: COLORS.gray[500], marginTop: 2 }}>
                     {hasRealHelper && helperPhone
                       ? helperPhone
                       : lang === 'en'
@@ -328,13 +328,13 @@ export default function SosTrackingScreen() {
                           borderRadius: 6,
                         }}
                       >
-                        <Text style={{ fontSize: 11, color: COLORS.success, fontWeight: '700' }}>
+                        <Text style={{ fontSize: fs(11), color: COLORS.success, fontWeight: '700' }}>
                           e-KYC 100%
                         </Text>
                       </View>
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
                         <Star size={12} color="#F59E0B" fill="#F59E0B" />
-                        <Text style={{ fontSize: 12, color: '#F59E0B', fontWeight: '800' }}>
+                        <Text style={{ fontSize: fs(12), color: '#F59E0B', fontWeight: '800' }}>
                           {lang === 'en' ? '4.9 (48 jobs)' : '4.9 (48 đơn)'}
                         </Text>
                       </View>
@@ -363,7 +363,7 @@ export default function SosTrackingScreen() {
                     }}
                   >
                     <Phone size={18} color="#fff" />
-                    <Text style={{ color: '#fff', fontWeight: '800', fontSize: 14 }}>
+                    <Text style={{ color: '#fff', fontWeight: '800', fontSize: fs(14) }}>
                       {lang === 'en' ? 'Call Now' : 'Gọi điện ngay'}
                     </Text>
                   </TouchableOpacity>
@@ -386,7 +386,7 @@ export default function SosTrackingScreen() {
                   }}
                 >
                   <MessageCircle size={18} color={COLORS.primary} />
-                  <Text style={{ color: COLORS.primary, fontWeight: '800', fontSize: 14 }}>
+                  <Text style={{ color: COLORS.primary, fontWeight: '800', fontSize: fs(14) }}>
                     {lang === 'en' ? 'Message' : 'Nhắn tin'}
                   </Text>
                 </TouchableOpacity>
@@ -397,7 +397,7 @@ export default function SosTrackingScreen() {
 
         {/* ── Thông tin địa chỉ & sự cố ────────────────────────────────── */}
         <Card style={{ padding: 16, gap: 10 }}>
-          <Text style={{ fontSize: 14, fontWeight: '800', color: COLORS.gray[900] }}>
+          <Text style={{ fontSize: fs(14), fontWeight: '800', color: COLORS.gray[900] }}>
             {lang === 'en' ? 'Rescue Address' : 'Địa chỉ cứu hộ'}
           </Text>
           <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 8 }}>
@@ -405,7 +405,7 @@ export default function SosTrackingScreen() {
             <Text
               style={{
                 flex: 1,
-                fontSize: 14,
+                fontSize: fs(14),
                 color: COLORS.gray[700],
                 lineHeight: 20,
                 fontWeight: '600',
@@ -416,7 +416,7 @@ export default function SosTrackingScreen() {
             </Text>
           </View>
           <Separator my={2} />
-          <Text style={{ fontSize: 13, color: COLORS.gray[600], lineHeight: 19 }}>
+          <Text style={{ fontSize: fs(13), color: COLORS.gray[600], lineHeight: 19 }}>
             {job?.description}
           </Text>
         </Card>

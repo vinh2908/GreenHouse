@@ -78,7 +78,7 @@ export function SosCustomerDecisionPopup() {
             borderColor: '#FDE68A',
           }}
         >
-          <Text style={{ fontSize: 34, textAlign: 'center', marginBottom: 6 }}>⚠️</Text>
+          <Text style={{ fontSize: fs(34), textAlign: 'center', marginBottom: 6 }}>⚠️</Text>
           <Text
             style={{
               fontSize: fs(18),

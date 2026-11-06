@@ -133,10 +133,10 @@ export default function RecurringPlansScreen() {
           <ArrowLeft size={20} color={COLORS.gray[800]} />
         </TouchableOpacity>
         <View style={{ flex: 1 }}>
-          <Text style={{ fontSize: 18, fontWeight: '800', color: COLORS.gray[900] }}>
+          <Text style={{ fontSize: fs(18), fontWeight: '800', color: COLORS.gray[900] }}>
             {lang === 'en' ? 'My Recurring Plans 🔁' : 'Gói định kỳ của tôi 🔁'}
           </Text>
-          <Text style={{ fontSize: 12, color: COLORS.gray[500] }}>
+          <Text style={{ fontSize: fs(12), color: COLORS.gray[500] }}>
             {lang === 'en'
               ? 'Automated repeating service — no need to repost each time'
               : 'Việc lặp lại tự động — không cần đăng lại mỗi lần'}
@@ -207,11 +207,11 @@ export default function RecurringPlansScreen() {
                     onPress={() => setExpandedId(expanded ? null : plan._id)}
                   >
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                      <Text style={{ fontSize: 20 }}>{service?.icon ?? '🔁'}</Text>
+                      <Text style={{ fontSize: fs(20) }}>{service?.icon ?? '🔁'}</Text>
                       <Text
                         style={{
                           flex: 1,
-                          fontSize: 15.5,
+                          fontSize: fs(15.5),
                           fontWeight: '800',
                           color: COLORS.gray[900],
                         }}
@@ -221,7 +221,7 @@ export default function RecurringPlansScreen() {
                       </Text>
                       {statusBadge(plan.status, lang)}
                     </View>
-                    <Text style={{ fontSize: 13, color: COLORS.gray[600], marginTop: 6 }}>
+                    <Text style={{ fontSize: fs(13), color: COLORS.gray[600], marginTop: 6 }}>
                       {describeSchedule(plan, lang)}
                       {plan.duration_hours
                         ? lang === 'en'
@@ -229,7 +229,7 @@ export default function RecurringPlansScreen() {
                           : ` · ${plan.duration_hours} giờ/buổi`
                         : ''}
                     </Text>
-                    <Text style={{ fontSize: 12.5, color: COLORS.gray[500], marginTop: 2 }}>
+                    <Text style={{ fontSize: fs(12.5), color: COLORS.gray[500], marginTop: 2 }}>
                       {(tService(service) || (lang === 'en' ? 'Service' : 'Dịch vụ')) +
                         (lang === 'en'
                           ? ` · ${plan.jobs_generated || 0} ${plan.jobs_generated === 1 ? 'job' : 'jobs'} created`
@@ -245,7 +245,7 @@ export default function RecurringPlansScreen() {
                       !dayjs(plan.next_occurrence_at).isBefore(dayjs().subtract(1, 'hour')) && (
                         <Text
                           style={{
-                            fontSize: 12.5,
+                            fontSize: fs(12.5),
                             color: COLORS.primaryDark,
                             fontWeight: '700',
                             marginTop: 2,
@@ -340,6 +340,7 @@ function ActionChip({
   onPress: () => void;
   danger?: boolean;
 }) {
+  const { fs } = useTranslation();
   return (
     <TouchableOpacity
       activeOpacity={0.8}
@@ -357,7 +358,7 @@ function ActionChip({
       {icon}
       <Text
         style={{
-          fontSize: 12.5,
+          fontSize: fs(12.5),
           fontWeight: '700',
           color: danger ? COLORS.error : COLORS.gray[700],
         }}
@@ -370,12 +371,13 @@ function ActionChip({
 
 function PlanDetail({ planId, lang = 'vi' }: { planId: string; lang?: string }) {
   const router = useRouter();
+  const { fs } = useTranslation();
   const { data, isLoading } = useRecurringPlanDetail(planId);
   if (isLoading) return <LoadingSpinner size="small" />;
   const jobs = data?.jobs ?? [];
   if (jobs.length === 0) {
     return (
-      <Text style={{ fontSize: 12.5, color: COLORS.gray[500] }}>
+      <Text style={{ fontSize: fs(12.5), color: COLORS.gray[500] }}>
         {lang === 'en'
           ? 'No jobs generated from this plan yet.'
           : 'Chưa có đơn nào được sinh từ gói này.'}
@@ -384,7 +386,7 @@ function PlanDetail({ planId, lang = 'vi' }: { planId: string; lang?: string }) 
   }
   return (
     <View style={{ gap: 6, borderTopWidth: 1, borderTopColor: COLORS.gray[100], paddingTop: 10 }}>
-      <Text style={{ fontSize: 13, fontWeight: '800', color: COLORS.gray[800] }}>
+      <Text style={{ fontSize: fs(13), fontWeight: '800', color: COLORS.gray[800] }}>
         {lang === 'en' ? 'Generated Jobs' : 'Các đơn đã sinh'}
       </Text>
       {jobs.slice(0, 8).map((job: any) => (
@@ -394,11 +396,11 @@ function PlanDetail({ planId, lang = 'vi' }: { planId: string; lang?: string }) 
           onPress={() => router.push({ pathname: '/job-detail/[id]', params: { id: job._id } })}
           style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 4 }}
         >
-          <Text style={{ flex: 1, fontSize: 13, color: COLORS.gray[700] }}>
+          <Text style={{ flex: 1, fontSize: fs(13), color: COLORS.gray[700] }}>
             📅 {job.occurrence_date ?? dayjs(job.preferred_date).format('DD/MM/YYYY')} ·{' '}
             {job.preferred_time_start ?? ''}
           </Text>
-          <Text style={{ fontSize: 12, fontWeight: '700', color: COLORS.gray[500] }}>
+          <Text style={{ fontSize: fs(12), fontWeight: '700', color: COLORS.gray[500] }}>
             {job.status}
           </Text>
           <ChevronRight size={15} color={COLORS.gray[400]} />

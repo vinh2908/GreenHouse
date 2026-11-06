@@ -151,7 +151,7 @@ export default function HelperAvailabilityScreen() {
         <TouchableOpacity activeOpacity={0.7} onPress={handleBack}>
           <ArrowLeft size={22} color={COLORS.gray[800]} />
         </TouchableOpacity>
-        <Text style={{ fontSize: 17, fontWeight: '800', color: COLORS.gray[900] }}>
+        <Text style={{ fontSize: fs(17), fontWeight: '800', color: COLORS.gray[900] }}>
           {lang === 'en' ? '🗓 Working Schedule' : '🗓 Lịch làm việc'}
         </Text>
       </View>
@@ -162,10 +162,10 @@ export default function HelperAvailabilityScreen() {
       >
         <Card style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
           <View style={{ flex: 1 }}>
-            <Text style={{ fontWeight: '800', fontSize: 15, color: COLORS.gray[900] }}>
+            <Text style={{ fontWeight: '800', fontSize: fs(15), color: COLORS.gray[900] }}>
               {lang === 'en' ? 'Enable Working Schedule' : 'Bật lịch làm việc'}
             </Text>
-            <Text style={{ fontSize: 13, color: COLORS.gray[500], marginTop: 2, lineHeight: 19 }}>
+            <Text style={{ fontSize: fs(13), color: COLORS.gray[500], marginTop: 2, lineHeight: 19 }}>
               {lang === 'en'
                 ? 'When enabled, you only see & get notified for jobs during your working days/hours. When disabled, you receive all jobs as usual.'
                 : 'Khi bật, bạn chỉ thấy & được thông báo các đơn rơi vào ngày/giờ làm việc của mình. Khi tắt, bạn nhận mọi đơn như trước.'}
@@ -180,7 +180,7 @@ export default function HelperAvailabilityScreen() {
         </Card>
 
         <Card style={{ gap: 12 }}>
-          <Text style={{ fontWeight: '800', fontSize: 15, color: COLORS.gray[900] }}>
+          <Text style={{ fontWeight: '800', fontSize: fs(15), color: COLORS.gray[900] }}>
             {lang === 'en' ? 'Working Days of Week' : 'Ngày làm việc trong tuần'}
           </Text>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
@@ -215,7 +215,7 @@ export default function HelperAvailabilityScreen() {
         </Card>
 
         <Card style={{ gap: 14 }}>
-          <Text style={{ fontWeight: '800', fontSize: 15, color: COLORS.gray[900] }}>
+          <Text style={{ fontWeight: '800', fontSize: fs(15), color: COLORS.gray[900] }}>
             {lang === 'en' ? 'Working Hours' : 'Khung giờ làm việc'}
           </Text>
           <View style={{ gap: 12 }}>
@@ -234,7 +234,7 @@ export default function HelperAvailabilityScreen() {
               checkPast={false}
             />
           </View>
-          <Text style={{ fontSize: 12, color: COLORS.gray[500] }}>
+          <Text style={{ fontSize: fs(12), color: COLORS.gray[500] }}>
             {lang === 'en'
               ? 'The system only dispatches new jobs during this active timeframe.'
               : 'Hệ thống chỉ phân phối việc mới trong khung giờ hoạt động này.'}
@@ -242,11 +242,11 @@ export default function HelperAvailabilityScreen() {
         </Card>
 
         <Card style={{ gap: 12 }}>
-          <Text style={{ fontWeight: '800', fontSize: 15, color: COLORS.gray[900] }}>
+          <Text style={{ fontWeight: '800', fontSize: fs(15), color: COLORS.gray[900] }}>
             {lang === 'en' ? 'Custom Days Off' : 'Ngày nghỉ lẻ'}
           </Text>
           {blockedDates.length === 0 ? (
-            <Text style={{ fontSize: 13, color: COLORS.gray[500] }}>
+            <Text style={{ fontSize: fs(13), color: COLORS.gray[500] }}>
               {lang === 'en'
                 ? 'No days off added. Add days when you are unavailable (trips, holidays, personal events...).'
                 : 'Chưa có ngày nghỉ nào. Thêm ngày bạn bận (đi chơi, lễ, việc riêng…).'}
@@ -254,7 +254,7 @@ export default function HelperAvailabilityScreen() {
           ) : (
             blockedDates.map(d => (
               <View key={d} style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                <Text style={{ flex: 1, fontSize: 14, fontWeight: '700', color: COLORS.gray[800] }}>
+                <Text style={{ flex: 1, fontSize: fs(14), fontWeight: '700', color: COLORS.gray[800] }}>
                   🚫 {d}
                 </Text>
                 <TouchableOpacity
@@ -279,7 +279,7 @@ export default function HelperAvailabilityScreen() {
                 borderRadius: 12,
                 paddingHorizontal: 12,
                 paddingVertical: 10,
-                fontSize: 14,
+                fontSize: fs(14),
                 fontWeight: '700',
                 color: COLORS.gray[900],
                 backgroundColor: '#fff',
@@ -299,7 +299,7 @@ export default function HelperAvailabilityScreen() {
               }}
             >
               <Plus size={16} color="#fff" />
-              <Text style={{ color: '#fff', fontWeight: '800', fontSize: 13.5 }}>
+              <Text style={{ color: '#fff', fontWeight: '800', fontSize: fs(13.5) }}>
                 {lang === 'en' ? 'Add' : 'Thêm'}
               </Text>
             </TouchableOpacity>

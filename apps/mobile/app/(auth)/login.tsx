@@ -177,7 +177,7 @@ export default function LoginScreen() {
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
               <Text
                 style={{
-                  fontSize: 30,
+                  fontSize: fs(30),
                   fontWeight: '900',
                   color: COLORS.primary,
                   letterSpacing: -0.5,
@@ -187,7 +187,7 @@ export default function LoginScreen() {
               </Text>
               <Text
                 style={{
-                  fontSize: 30,
+                  fontSize: fs(30),
                   fontWeight: '900',
                   color: COLORS.gray[900],
                   letterSpacing: -0.5,
@@ -197,7 +197,7 @@ export default function LoginScreen() {
               </Text>
             </View>
             <Text
-              style={{ fontSize: 14, color: COLORS.gray[500], marginTop: 4, fontWeight: '600' }}
+              style={{ fontSize: fs(14), color: COLORS.gray[500], marginTop: 4, fontWeight: '600' }}
             >
               {lang === 'en' ? 'Home Services & Professional Helpers 24/7' : 'Dịch vụ gia đình & Thợ chuyên nghiệp 24/7'}
             </Text>
@@ -239,7 +239,7 @@ export default function LoginScreen() {
               }}
               style={{ alignSelf: 'flex-end', marginTop: -2 }}
             >
-              <Text style={{ color: COLORS.primary, fontSize: 13, fontWeight: '700' }}>
+              <Text style={{ color: COLORS.primary, fontSize: fs(13), fontWeight: '700' }}>
                 {lang === 'en' ? 'Forgot password?' : 'Quên mật khẩu?'}
               </Text>
             </TouchableOpacity>
@@ -258,7 +258,7 @@ export default function LoginScreen() {
                 <Text
                   style={{
                     color: '#DC2626',
-                    fontSize: 13,
+                    fontSize: fs(13),
                     fontWeight: '600',
                     textAlign: 'center',
                   }}
@@ -283,7 +283,7 @@ export default function LoginScreen() {
               style={{
                 marginHorizontal: 12,
                 color: COLORS.gray[500],
-                fontSize: 13,
+                fontSize: fs(13),
                 fontWeight: '500',
               }}
             >
@@ -296,11 +296,11 @@ export default function LoginScreen() {
           <View
             style={{ flexDirection: 'row', justifyContent: 'center', gap: 6, marginBottom: 16 }}
           >
-            <Text style={{ color: COLORS.gray[600], fontSize: 14 }}>
+            <Text style={{ color: COLORS.gray[600], fontSize: fs(14) }}>
               {lang === 'en' ? "Don't have an account?" : 'Chưa có tài khoản?'}
             </Text>
             <TouchableOpacity onPress={() => router.push('/(auth)/register')}>
-              <Text style={{ color: COLORS.primary, fontWeight: '800', fontSize: 14 }}>
+              <Text style={{ color: COLORS.primary, fontWeight: '800', fontSize: fs(14) }}>
                 {lang === 'en' ? 'Register now' : 'Đăng ký ngay'}
               </Text>
             </TouchableOpacity>
@@ -310,7 +310,7 @@ export default function LoginScreen() {
             onPress={() => router.replace('/(customer)/home')}
             style={{ alignSelf: 'center', paddingVertical: 8, paddingHorizontal: 16 }}
           >
-            <Text style={{ color: COLORS.gray[500], fontSize: 13, fontWeight: '700' }}>
+            <Text style={{ color: COLORS.gray[500], fontSize: fs(13), fontWeight: '700' }}>
               {lang === 'en' ? 'Skip, explore services now →' : 'Bỏ qua, khám phá dịch vụ ngay →'}
             </Text>
           </TouchableOpacity>
@@ -350,7 +350,7 @@ export default function LoginScreen() {
             >
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                 <KeyRound size={20} color={COLORS.primary} />
-                <Text style={{ fontSize: 18, fontWeight: '800', color: COLORS.gray[900] }}>
+                <Text style={{ fontSize: fs(18), fontWeight: '800', color: COLORS.gray[900] }}>
                   {forgotStep === 'phone'
                     ? (lang === 'en' ? 'Forgot Password' : 'Quên mật khẩu')
                     : (lang === 'en' ? 'Reset New Password' : 'Đặt lại mật khẩu mới')}
@@ -363,7 +363,7 @@ export default function LoginScreen() {
 
             {forgotStep === 'phone' ? (
               <>
-                <Text style={{ fontSize: 13.5, color: COLORS.gray[600], lineHeight: 20 }}>
+                <Text style={{ fontSize: fs(13.5), color: COLORS.gray[600], lineHeight: 20 }}>
                   {lang === 'en'
                     ? 'Enter your registered phone number to receive a verification OTP for password reset.'
                     : 'Nhập số điện thoại đã đăng ký tài khoản để nhận mã xác thực OTP đặt lại mật khẩu.'}
@@ -384,7 +384,7 @@ export default function LoginScreen() {
               </>
             ) : (
               <>
-                <Text style={{ fontSize: 13.5, color: COLORS.gray[600], lineHeight: 20 }}>
+                <Text style={{ fontSize: fs(13.5), color: COLORS.gray[600], lineHeight: 20 }}>
                   {lang === 'en' ? (
                     <>Enter the 6-digit OTP sent to <Text style={{ fontWeight: '800' }}>{resetPhone}</Text> and your new password.</>
                   ) : (
@@ -403,7 +403,7 @@ export default function LoginScreen() {
                       borderRadius: 10,
                     }}
                   >
-                    <Text style={{ fontSize: 12.5, color: '#16A34A', fontWeight: '700' }}>
+                    <Text style={{ fontSize: fs(12.5), color: '#16A34A', fontWeight: '700' }}>
                       {lang === 'en' ? '💡 Dev test OTP: 123456 (Tap to fill)' : '💡 Mã OTP thử nghiệm (Dev): 123456 (Chạm để điền)'}
                     </Text>
                   </TouchableOpacity>
