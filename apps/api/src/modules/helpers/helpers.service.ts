@@ -116,7 +116,7 @@ export class HelpersService {
     return this.maskHelperBankAccount(saved);
   }
 
-  async setStatus(userId: string, dto: SetHelperStatusDto): Promise<HelperProfileDocument> {
+  async setStatus(userId: string, dto: SetHelperStatusDto): Promise<any> {
     const profile = await this.getOrCreate(userId);
 
     // Can't go ONLINE if not verified
@@ -133,7 +133,7 @@ export class HelpersService {
     }
 
     profile.status = dto.status;
-    await profile.save();
+    const saved = await profile.save();
 
     // B113: phát cho thợ + khách đang xem hồ sơ thợ + khách có đơn đang
     // hoạt động với thợ đó; không phát cho khách không liên quan.
@@ -145,10 +145,11 @@ export class HelpersService {
       void this.matchingService.notifyNewSuitableHelper(userId);
     }
 
-    return profile;
+    // G4 (F8): che số tài khoản như GET/PATCH me/profile — không trả số đầy đủ.
+    return this.maskHelperBankAccount(saved);
   }
 
-  async submitKyc(userId: string, dto: SubmitKycDto): Promise<HelperProfileDocument> {
+  async submitKyc(userId: string, dto: SubmitKycDto): Promise<any> {
     const profile = await this.getOrCreate(userId);
 
     if (profile.verification_status === VerificationStatus.APPROVED) {
@@ -164,7 +165,9 @@ export class HelpersService {
       rejection_reason: undefined,
     });
 
-    return profile.save();
+    const saved = await profile.save();
+    // G4 (F8): che số tài khoản như GET/PATCH me/profile — không trả số đầy đủ.
+    return this.maskHelperBankAccount(saved);
   }
 
   async updateLocation(userId: string, dto: UpdateLocationDto): Promise<void> {
