@@ -165,6 +165,35 @@ export class MonthlyContractsService {
     if (end && end < start) {
       throw new BadRequestException('Ngày kết thúc phải sau ngày bắt đầu');
     }
+    // B49: Ngày bắt đầu không được trong quá khứ (so theo ngày)
+    if (dto.start_date.slice(0, 10) < this.todayStr()) {
+      throw new BadRequestException('Ngày bắt đầu hợp đồng không được trong quá khứ');
+    }
+    // B49: Lương tháng tối đa 20.000.000₫
+    if (dto.monthly_salary > 20_000_000) {
+      throw new BadRequestException('Lương tháng tối đa là 20.000.000₫');
+    }
+    // B49: Không trùng lịch với hợp đồng đang chạy/chờ duyệt của cùng thợ.
+    // So sánh khoảng [start, end] (end trống = không thời hạn). Hợp đồng của
+    // 1 thợ ít nên lọc bằng JS cho rõ, tránh query ngày phức tạp.
+    const running = await this.contractModel
+      .find({
+        helper_id: new Types.ObjectId(dto.helper_id),
+        status: { $in: ['active', 'pending'] },
+      })
+      .select('start_date end_date')
+      .exec();
+    for (const other of running) {
+      const otherStart = new Date(other.start_date);
+      const otherEnd = other.end_date ? new Date(other.end_date) : null;
+      const overlaps =
+        (otherEnd === null || start <= otherEnd) && (end === undefined || otherStart <= end);
+      if (overlaps) {
+        throw new ConflictException(
+          'Thợ đã có hợp đồng theo tháng trùng lịch trong khoảng thời gian này',
+        );
+      }
+    }
 
     const contract = await this.contractModel.create({
       customer_id: new Types.ObjectId(customerId),
