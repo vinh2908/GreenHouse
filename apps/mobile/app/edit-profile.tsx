@@ -67,6 +67,13 @@ export default function EditProfileScreen() {
   const updateProfileMutation = useUpdateProfile();
 
   const { role, tab } = useLocalSearchParams<{ role?: string; tab?: string }>();
+  const [activeTab, setActiveTab] = useState<'general' | 'career'>(tab === 'career' ? 'career' : 'general');
+
+  useEffect(() => {
+    if (tab === 'career') {
+      setActiveTab('career');
+    }
+  }, [tab]);
   const searchRole =
     typeof globalThis !== 'undefined' && (globalThis as any).location?.search
       ? new URLSearchParams((globalThis as any).location.search).get('role')
@@ -240,47 +247,49 @@ export default function EditProfileScreen() {
     );
 
   const handleSave = async () => {
-    if (!fullName.trim()) {
+    if (activeTab === 'general' && !fullName.trim()) {
       Toast.show({ type: 'error', text1: lang === 'en' ? 'Please enter your full name' : 'Vui lòng nhập họ và tên' });
       return;
     }
 
     setSaving(true);
     try {
-      // 1. Upload ảnh mới (nếu là ảnh trên máy) rồi cập nhật thông tin User chung
-      let avatarUrl = avatar;
-      if (avatar) {
-        try {
-          avatarUrl = await uploadFile(avatar);
-        } catch {
-          Toast.show({
-            type: 'error',
-            text1: lang === 'en' ? 'Failed to upload avatar' : 'Tải ảnh đại diện thất bại',
-            text2: lang === 'en' ? 'Please try again' : 'Vui lòng thử lại',
-          });
-          return;
+      if (activeTab === 'general') {
+        // 1. Upload ảnh mới (nếu là ảnh trên máy) rồi cập nhật thông tin User chung
+        let avatarUrl = avatar;
+        if (avatar) {
+          try {
+            avatarUrl = await uploadFile(avatar);
+          } catch {
+            Toast.show({
+              type: 'error',
+              text1: lang === 'en' ? 'Failed to upload avatar' : 'Tải ảnh đại diện thất bại',
+              text2: lang === 'en' ? 'Please try again' : 'Vui lòng thử lại',
+            });
+            return;
+          }
         }
-      }
-      const res = await updateProfileMutation.mutateAsync({
-        full_name: fullName.trim(),
-        email: email.trim() || undefined,
-        avatar: avatarUrl || undefined,
-        gender,
-      });
-
-      // Cập nhật State trong AuthStore
-      const updatedUser = res?.data?.data ||
-        res?.data || {
-          ...user,
+        const res = await updateProfileMutation.mutateAsync({
           full_name: fullName.trim(),
-          email: email.trim(),
-          avatar: avatarUrl,
+          email: email.trim() || undefined,
+          avatar: avatarUrl || undefined,
           gender,
-        };
-      setUser(updatedUser);
+        });
+
+        // Cập nhật State trong AuthStore
+        const updatedUser = res?.data?.data ||
+          res?.data || {
+            ...user,
+            full_name: fullName.trim(),
+            email: email.trim(),
+            avatar: avatarUrl,
+            gender,
+          };
+        setUser(updatedUser);
+      }
 
       // 2. Nếu là Thợ -> Cập nhật thêm thông tin chuyên môn + vị trí GPS
-      if (isHelper) {
+      if (isHelper && (activeTab === 'career' || activeTab === 'general')) {
         await apiClient.patch('/helpers/me/profile', {
           bio: bio.trim() || undefined,
           years_experience: parseInt(experienceYears, 10) || 0,
@@ -309,7 +318,13 @@ export default function EditProfileScreen() {
       queryClient.invalidateQueries({ queryKey: ['addresses'] });
       queryClient.invalidateQueries({ queryKey: ['customer', 'profile'] });
 
-      Toast.show({ type: 'success', text1: lang === 'en' ? 'Profile saved successfully!' : 'Đã lưu thông tin hồ sơ thành công!' });
+      Toast.show({
+        type: 'success',
+        text1:
+          isHelper && activeTab === 'career'
+            ? (lang === 'en' ? 'Career profile saved successfully!' : 'Đã lưu hồ sơ nghề nghiệp thành công!')
+            : (lang === 'en' ? 'Profile saved successfully!' : 'Đã lưu thông tin hồ sơ thành công!'),
+      });
       handleBack();
     } catch (err: any) {
       const msg = err?.response?.data?.message || (lang === 'en' ? 'Profile update failed' : 'Cập nhật hồ sơ thất bại');
@@ -442,10 +457,74 @@ export default function EditProfileScreen() {
           <ArrowLeft size={20} color={COLORS.gray[800]} />
         </TouchableOpacity>
         <Text style={{ fontSize: fs(17), fontWeight: '800', color: COLORS.gray[900] }}>
-          {lang === 'en' ? 'Edit Profile' : 'Chỉnh sửa thông tin cá nhân'}
+          {isHelper && activeTab === 'career'
+            ? (lang === 'en' ? 'Career Profile & Skills' : 'Hồ sơ nghề nghiệp & Kỹ năng')
+            : (lang === 'en' ? 'Edit Profile' : 'Chỉnh sửa thông tin cá nhân')}
         </Text>
         <View style={{ width: 40 }} />
       </View>
+
+      {/* ── Helper Tab Switcher ────────────────────────────────────── */}
+      {isHelper && (
+        <View
+          style={{
+            flexDirection: 'row',
+            backgroundColor: '#fff',
+            paddingHorizontal: 16,
+            paddingVertical: 8,
+            borderBottomWidth: 1,
+            borderBottomColor: COLORS.gray[100],
+            gap: 8,
+          }}
+        >
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={() => setActiveTab('general')}
+            style={{
+              flex: 1,
+              paddingVertical: 9,
+              borderRadius: 10,
+              alignItems: 'center',
+              backgroundColor: activeTab === 'general' ? COLORS.primaryLight : COLORS.gray[100],
+              borderWidth: 1,
+              borderColor: activeTab === 'general' ? COLORS.primary : 'transparent',
+            }}
+          >
+            <Text
+              style={{
+                fontSize: fs(13),
+                fontWeight: '700',
+                color: activeTab === 'general' ? COLORS.primaryDark : COLORS.gray[600],
+              }}
+            >
+              {lang === 'en' ? 'Personal Info' : 'Thông tin cá nhân'}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={() => setActiveTab('career')}
+            style={{
+              flex: 1,
+              paddingVertical: 9,
+              borderRadius: 10,
+              alignItems: 'center',
+              backgroundColor: activeTab === 'career' ? COLORS.primaryLight : COLORS.gray[100],
+              borderWidth: 1,
+              borderColor: activeTab === 'career' ? COLORS.primary : 'transparent',
+            }}
+          >
+            <Text
+              style={{
+                fontSize: fs(13),
+                fontWeight: '700',
+                color: activeTab === 'career' ? COLORS.primaryDark : COLORS.gray[600],
+              }}
+            >
+              {lang === 'en' ? 'Career & Skills' : 'Nghề nghiệp & Kỹ năng'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      )}
 
       <KeyboardAvoidingView
         style={{ flex: 1 }}
@@ -456,7 +535,8 @@ export default function EditProfileScreen() {
           contentContainerStyle={{ padding: 16, gap: 16, paddingBottom: 100 }}
         >
           {/* ── 1. AVATAR PICKER & BỘ SƯU TẬP AVATAR ──────────────────── */}
-          <Card style={{ alignItems: 'center', padding: 20, gap: 14 }}>
+          {(!isHelper || activeTab === 'general') && (
+            <Card style={{ alignItems: 'center', padding: 20, gap: 14 }}>
             <View style={{ position: 'relative' }}>
               <TouchableOpacity activeOpacity={0.85} onPress={openAvatarMenu}>
                 <Avatar name={fullName || 'User'} uri={avatar} size={90} />
@@ -545,8 +625,10 @@ export default function EditProfileScreen() {
               })}
             </ScrollView>
           </Card>
+          )}
 
           {/* ── 2. THÔNG TIN ĐỊNH DANH CƠ BẢN ─────────────────────────── */}
+          {(!isHelper || activeTab === 'general') && (
           <Card style={{ padding: 16, gap: 14 }}>
             <Text style={{ fontSize: fs(15), fontWeight: '800', color: COLORS.gray[900] }}>
               {lang === 'en' ? 'Contact Information' : 'Thông tin liên hệ'}
@@ -679,9 +761,10 @@ export default function EditProfileScreen() {
               </View>
             </View>
           </Card>
+          )}
 
           {/* ── 3. CÁ NHÂN HÓA DÀNH CHO THỢ HOẶC KHÁCH HÀNG ─────────────── */}
-          {isHelper ? (
+          {isHelper && activeTab === 'career' && (
             /* Dành cho Thợ / Đối tác */
             <Card style={{ padding: 16, gap: 14 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
@@ -873,7 +956,9 @@ export default function EditProfileScreen() {
                 />
               </View>
             </Card>
-          ) : (
+          )}
+
+          {!isHelper && (
             /* Dành cho Khách hàng */
             <Card style={{ padding: 16, gap: 14 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
@@ -1056,7 +1141,13 @@ export default function EditProfileScreen() {
 
           {/* ── 4. NÚT LƯU THAY ĐỔI ────────────────────────────────────── */}
           <Button
-            title={lang === 'en' ? 'Save Profile Details' : 'Lưu thông tin hồ sơ'}
+            title={
+              saving
+                ? (lang === 'en' ? 'Saving...' : 'Đang lưu...')
+                : isHelper && activeTab === 'career'
+                  ? (lang === 'en' ? 'Save Career Profile' : 'Lưu hồ sơ nghề nghiệp')
+                  : (lang === 'en' ? 'Save Profile Details' : 'Lưu thông tin hồ sơ')
+            }
             loading={saving}
             onPress={handleSave}
             icon={<CheckCircle2 size={18} color="#fff" />}
