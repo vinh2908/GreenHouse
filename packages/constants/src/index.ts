@@ -263,6 +263,10 @@ export const NOTIFICATION_TYPES = {
   MONTHLY_CONTRACT_SETTLED: 'monthly_contract_settled',
   MONTHLY_CONTRACT_STARTED: 'monthly_contract_started', // B100: hợp đồng bắt đầu
   MONTHLY_CONTRACT_EXPIRING_SOON: 'monthly_contract_expiring_soon', // B100: sắp hết hạn
+  // Recurring plans (B117)
+  RECURRING_PLAN_PAUSED: 'recurring_plan_paused',
+  RECURRING_PLAN_RESUMED: 'recurring_plan_resumed',
+  RECURRING_PLAN_CANCELLED: 'recurring_plan_cancelled',
   // Claims
   INSURANCE_CLAIM_UPDATE: 'insurance_claim_update',
   // SOS Backup
