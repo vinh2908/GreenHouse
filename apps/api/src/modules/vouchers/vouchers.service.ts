@@ -12,7 +12,7 @@ import { Cron } from '@nestjs/schedule';
 import { NOTIFICATION_TYPES } from '@homemate/constants';
 import { NotificationsService } from '../notifications/notifications.service';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
+import { Model, Types, ClientSession } from 'mongoose';
 import {
   Voucher,
   VoucherDocument,
@@ -131,12 +131,16 @@ export class VouchersService {
   }
 
   // ─── Thanh toán: ghi nhận lượt dùng + tính giảm chính thức (atomic) ──────
-
+  // G2 (F5/B91): nhận thêm session để lần trừ voucher chạy TRONG cùng
+  // transaction với thanh toán — trước đây redeem chạy ngoài transaction nên
+  // lỗi giữa chừng chỉ hoàn tác thủ công ở catch. Không có session thì giữ
+  // nguyên hành vi cũ (chạy thẳng, caller chịu trách nhiệm rollback).
   async redeemForJob(
     userId: string,
     jobId: string,
     code: string,
     amount: number,
+    session?: ClientSession | null,
   ): Promise<{ discount_amount: number; voucher: VoucherDocument }> {
     const voucher = await this.findVoucherOrThrow(code);
     await this.assertUsable(voucher, userId, amount);
@@ -168,7 +172,7 @@ export class VouchersService {
           $inc: { used_count: 1 },
           ...(userLimit === 1 ? { $addToSet: { used_user_ids: new Types.ObjectId(userId) } } : {}),
         },
-        { new: true },
+        { new: true, session: session ?? undefined },
       )
       .exec();
     if (!updated) {
@@ -179,14 +183,19 @@ export class VouchersService {
       throw new BadRequestException('Mã giảm giá đã hết lượt sử dụng');
     }
 
-    await this.redemptionModel.create({
-      voucher_id: voucher._id,
-      code: voucher.code,
-      user_id: new Types.ObjectId(userId),
-      job_id: new Types.ObjectId(jobId),
-      discount_amount: discount,
-      status: 'redeemed',
-    });
+    await this.redemptionModel.create(
+      [
+        {
+          voucher_id: voucher._id,
+          code: voucher.code,
+          user_id: new Types.ObjectId(userId),
+          job_id: new Types.ObjectId(jobId),
+          discount_amount: discount,
+          status: 'redeemed',
+        },
+      ],
+      { session: session ?? undefined },
+    );
 
     return { discount_amount: discount, voucher };
   }

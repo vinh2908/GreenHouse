@@ -91,7 +91,7 @@ describe('PaymentsService - F5 & F19 Transaction and Stuck Processing', () => {
             }),
           },
         },
-        { provide: NotificationsService, useValue: { create: jest.fn() } },
+        { provide: NotificationsService, useValue: { create: jest.fn().mockResolvedValue({}) } },
         { provide: VouchersService, useValue: vouchersService },
         { provide: LoyaltyService, useValue: loyaltyService },
         { provide: getConnectionToken(), useValue: mockConnection },
@@ -144,6 +144,20 @@ describe('PaymentsService - F5 & F19 Transaction and Stuck Processing', () => {
 
     // Verify session started and withTransaction called
     expect(mockSession.withTransaction).toHaveBeenCalled();
+    // G2: voucher/điểm phải được trừ TRONG cùng transaction (nhận session),
+    // không chạy ngoài transaction như trước.
+    expect(vouchersService.redeemForJob).toHaveBeenCalledWith(
+      customerId,
+      jobId,
+      'SALE50',
+      300000,
+      mockSession,
+    );
+    expect(loyaltyService.redeemAtPayment).toHaveBeenCalledWith(
+      customerId,
+      jobId,
+      mockSession,
+    );
     // Verify voucher rollback was invoked
     expect(vouchersService.restoreForJob).toHaveBeenCalledWith(customerId, jobId);
     // Verify loyalty rollback was invoked
@@ -153,5 +167,50 @@ describe('PaymentsService - F5 & F19 Transaction and Stuck Processing', () => {
       { _id: mockJob._id, payment_status: PaymentStatus.PROCESSING },
       { $set: { payment_status: PaymentStatus.UNPAID } },
     );
+  });
+
+  it('G2: mockPayJob fallback khi Mongo không hỗ trợ transaction → chạy không session + log rõ', async () => {
+    const customerId = new Types.ObjectId().toString();
+    const jobId = new Types.ObjectId().toString();
+
+    const mockJob = {
+      _id: new Types.ObjectId(jobId),
+      customer_id: customerId,
+      status: JobStatus.CONFIRMED,
+      payment_status: PaymentStatus.UNPAID,
+      voucher_code: 'SALE50',
+      loyalty_points_requested: 100,
+    };
+
+    jobModel.findById.mockReturnValue({
+      exec: jest.fn().mockResolvedValue(mockJob),
+    });
+    jobModel.findOneAndUpdate.mockReturnValue({
+      exec: jest.fn().mockResolvedValue({ ...mockJob, payment_status: PaymentStatus.PROCESSING }),
+    });
+    jobModel.findByIdAndUpdate.mockReturnValue({
+      exec: jest.fn().mockResolvedValue({ ...mockJob, payment_status: PaymentStatus.PAID }),
+    });
+    // withTransaction ném lỗi replica-set → fallback chạy không transaction.
+    mockSession.withTransaction.mockRejectedValueOnce(
+      new Error('Transaction numbers are only allowed on a replica set member'),
+    );
+    const loggerSpy = jest.spyOn((service as any).logger, 'error');
+
+    const result = await service.mockPayJob(customerId, jobId, 300000, 'cash');
+
+    expect(result.success).toBe(true);
+    // Fallback chạy không session: redeem được gọi với session undefined.
+    expect(vouchersService.redeemForJob).toHaveBeenCalledWith(
+      customerId,
+      jobId,
+      'SALE50',
+      300000,
+      undefined,
+    );
+    expect(loyaltyService.redeemAtPayment).toHaveBeenCalledWith(customerId, jobId, undefined);
+    // Log phải nói rõ là chạy KHÔNG transaction (không im lặng).
+    expect(loggerSpy).toHaveBeenCalledWith(expect.stringContaining('WITHOUT transaction'));
+    loggerSpy.mockRestore();
   });
 });

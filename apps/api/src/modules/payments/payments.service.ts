@@ -157,6 +157,16 @@ export class PaymentsService {
     }
   }
 
+  /**
+   * G2: wrapper công khai cho runInTransaction để JobsService.creditJobPayout
+   * (và các luồng trả tiền thợ khác) bọc nhiều lần cộng ví trong 1 transaction.
+   * Khi DB không hỗ trợ transaction thì chạy thẳng như runInTransaction và
+   * ghi log warn ở đó — các lần cộng ví riêng lẻ vẫn nguyên tử (xem creditHelper).
+   */
+  async runMoneyTransaction<T>(fn: (session?: ClientSession | null) => Promise<T>): Promise<T> {
+    return this.runInTransaction(fn);
+  }
+
   async topupWallet(
     userId: string,
     amount: number,
@@ -321,12 +331,15 @@ export class PaymentsService {
         }
 
         // Voucher: ghi nhận lượt dùng + tính giảm trên giá chốt của đơn
+        // G2: truyền session để lần trừ voucher chạy trong cùng transaction
+        // với thanh toán (trước đây chạy ngoài transaction).
         if (job.voucher_code && resolvedAmount > 0 && (job.discount_amount ?? 0) <= 0) {
           const redeemed = await this.vouchersService.redeemForJob(
             customerId,
             jobId,
             job.voucher_code,
             resolvedAmount,
+            sess,
           );
           discountAmount = redeemed.discount_amount;
           appliedVoucherCode = redeemed.voucher.code;
@@ -334,8 +347,13 @@ export class PaymentsService {
         }
 
         // Loyalty: trừ điểm thật tại thời điểm thanh toán
+        // G2: truyền session để lần trừ điểm chạy trong cùng transaction.
         if ((job.loyalty_points_requested ?? 0) > 0 && resolvedAmount > 0) {
-          const loyaltyRedeemed = await this.loyaltyService.redeemAtPayment(customerId, jobId);
+          const loyaltyRedeemed = await this.loyaltyService.redeemAtPayment(
+            customerId,
+            jobId,
+            sess,
+          );
           if (loyaltyRedeemed) {
             loyaltyPointsRedeemed = loyaltyRedeemed.points_redeemed;
             loyaltyDiscountAmount = loyaltyRedeemed.discount_amount;
@@ -408,12 +426,22 @@ export class PaymentsService {
               txErr?.message?.includes('replica set member') ||
               txErr?.message?.includes('Transaction numbers')
             ) {
+              // G2 (F5/B91): fallback chạy KHÔNG transaction — log rõ để vận
+              // hành biết voucher/điểm lúc này chỉ được hoàn tác thủ công ở
+              // catch bên dưới, không còn rollback nguyên tử. Không im lặng.
+              this.logger.error(
+                `G2/B91: mockPayJob job ${jobId} — MongoDB transactions unsupported on this deployment, running payment WITHOUT transaction (voucher/loyalty redemptions will NOT roll back atomically; manual rollback on failure only)`,
+              );
               await executePaymentFlow();
             } else {
               throw txErr;
             }
           }
         } else {
+          // G2 (F5/B91): không mở được session — chạy không transaction, log rõ.
+          this.logger.error(
+            `G2/B91: mockPayJob job ${jobId} — running payment WITHOUT transaction (no session available; voucher/loyalty redemptions will NOT roll back atomically; manual rollback on failure only)`,
+          );
           await executePaymentFlow();
         }
       } catch (err) {
@@ -486,33 +514,49 @@ export class PaymentsService {
     helperId: string,
     jobId: string,
     amount: number,
+    session?: ClientSession | null,
   ): Promise<TransactionDocument> {
     // B42: Chỉ cộng tiền dương — số âm/0 sẽ làm sai lệch ví thợ
     if (!Number.isFinite(amount) || amount <= 0) {
       throw new BadRequestException('Số tiền cộng cho thợ phải lớn hơn 0₫');
     }
-    const wallet = await this.getOrCreateWallet(helperId);
-    const balanceBefore = wallet.balance;
-    const balanceAfter = balanceBefore + amount;
+    const wallet = await this.getOrCreateWallet(helperId, session);
 
-    // Atomic update
-    await this.walletModel
-      .findByIdAndUpdate(wallet._id, {
-        $inc: { balance: amount, total_earned: amount },
-      })
+    // G2: $inc nguyên tử + lấy balance_after TỪ KẾT QUẢ $inc (new: true),
+    // không đọc trước rồi cộng tay — 2 lần trả tiền song song trước đây có
+    // thể ghi cùng balance_after sai. Ghi giao dịch trong cùng session khi có.
+    const updatedWallet = await this.walletModel
+      .findByIdAndUpdate(
+        wallet._id,
+        {
+          $inc: { balance: amount, total_earned: amount },
+        },
+        { new: true, session: session ?? undefined },
+      )
       .exec();
+    if (!updatedWallet) {
+      throw new BadRequestException('Không tìm thấy ví thợ để cộng tiền');
+    }
+    const balanceAfter = updatedWallet.balance;
+    const balanceBefore = balanceAfter - amount;
 
-    return this.transactionModel.create({
-      wallet_id: wallet._id,
-      user_id: new Types.ObjectId(helperId),
-      job_id: new Types.ObjectId(jobId),
-      type: 'earning',
-      status: 'success',
-      amount,
-      balance_before: balanceBefore,
-      balance_after: balanceAfter,
-      description: `Thu nhập từ công việc #${jobId.slice(-6)}`,
-    });
+    const [tx] = await this.transactionModel.create(
+      [
+        {
+          wallet_id: wallet._id,
+          user_id: new Types.ObjectId(helperId),
+          job_id: new Types.ObjectId(jobId),
+          type: 'earning',
+          status: 'success',
+          amount,
+          balance_before: balanceBefore,
+          balance_after: balanceAfter,
+          description: `Thu nhập từ công việc #${jobId.slice(-6)}`,
+        },
+      ],
+      { session: session ?? undefined },
+    );
+    return tx;
   }
 
   // ─── Credit ví dùng chung (không gắn với 1 Job cụ thể) ─────────────────────
@@ -530,18 +574,23 @@ export class PaymentsService {
       throw new BadRequestException('Số tiền cộng ví phải lớn hơn 0');
     }
     const wallet = await this.getOrCreateWallet(userId, session);
-    const balanceBefore = wallet.balance;
-    const balanceAfter = balanceBefore + amount;
 
-    await this.walletModel
+    // G2: như creditHelper — balance_after lấy từ kết quả $inc (new: true),
+    // không đọc trước rồi cộng tay.
+    const updatedWallet = await this.walletModel
       .findByIdAndUpdate(
         wallet._id,
         {
           $inc: { balance: amount, total_earned: amount },
         },
-        { session: session ?? undefined },
+        { new: true, session: session ?? undefined },
       )
       .exec();
+    if (!updatedWallet) {
+      throw new BadRequestException('Không tìm thấy ví để cộng tiền');
+    }
+    const balanceAfter = updatedWallet.balance;
+    const balanceBefore = balanceAfter - amount;
 
     const [tx] = await this.transactionModel.create(
       [
@@ -565,24 +614,53 @@ export class PaymentsService {
   }
 
   /** Trừ tiền ví dùng chung (dùng cho hoàn tác hoặc điều chỉnh) */
-  async deductWallet(userId: string, amount: number, reason: string): Promise<TransactionDocument> {
-    const wallet = await this.getOrCreateWallet(userId);
-    const balanceBefore = wallet.balance;
-    const balanceAfter = Math.max(0, balanceBefore - amount);
+  async deductWallet(
+    userId: string,
+    amount: number,
+    reason: string,
+    session?: ClientSession | null,
+  ): Promise<TransactionDocument> {
+    if (!Number.isFinite(amount) || amount <= 0) {
+      throw new BadRequestException('Số tiền trừ ví phải lớn hơn 0');
+    }
+    const wallet = await this.getOrCreateWallet(userId, session);
 
-    await this.walletModel.findByIdAndUpdate(wallet._id, { $inc: { balance: -amount } }).exec();
+    // G2: guard nguyên tử $gte — chỉ trừ khi số dư đủ; trước đây $inc trừ
+    // thẳng rồi kẹp balance_after về 0 bằng Math.max, ví có thể âm thầm âm
+    // trong khi giao dịch ghi balance_after = 0. balance_after lấy từ kết
+    // quả $inc (new: true).
+    const updatedWallet = await this.walletModel
+      .findOneAndUpdate(
+        { _id: wallet._id, balance: { $gte: amount } },
+        { $inc: { balance: -amount } },
+        { new: true, session: session ?? undefined },
+      )
+      .exec();
+    if (!updatedWallet) {
+      throw new BadRequestException(
+        `Số dư không đủ để trừ ${amount.toLocaleString('vi-VN')}₫. Hiện có: ${wallet.balance.toLocaleString('vi-VN')}₫`,
+      );
+    }
+    const balanceAfter = updatedWallet.balance;
+    const balanceBefore = balanceAfter + amount;
 
-    return this.transactionModel.create({
-      wallet_id: wallet._id,
-      user_id: new Types.ObjectId(userId),
-      type: 'adjustment',
-      status: 'success',
-      amount: -amount,
-      balance_before: balanceBefore,
-      balance_after: balanceAfter,
-      description: reason,
-      reference: `ADJ-${Date.now()}`,
-    });
+    const [tx] = await this.transactionModel.create(
+      [
+        {
+          wallet_id: wallet._id,
+          user_id: new Types.ObjectId(userId),
+          type: 'adjustment',
+          status: 'success',
+          amount: -amount,
+          balance_before: balanceBefore,
+          balance_after: balanceAfter,
+          description: reason,
+          reference: `ADJ-${Date.now()}`,
+        },
+      ],
+      { session: session ?? undefined },
+    );
+    return tx;
   }
 
   // ─── Deduct platform commission for Cash jobs (Helper collected 100% cash) ──

@@ -9,7 +9,7 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
+import { Model, Types, ClientSession } from 'mongoose';
 import {
   LoyaltyAccount,
   LoyaltyAccountDocument,
@@ -313,11 +313,17 @@ export class LoyaltyService {
    * Được PaymentsService.mockPayJob gọi cạnh block voucher. Đọc snapshot trên
    * Job; nếu đã có redeem tx cho đơn → trả lại thông tin cũ (idempotent, không
    * trừ 2 lần). Trừ điểm nguyên tử: chỉ thành công khi balance >= points.
+   * G2 (F5/B91): nhận thêm session để lần trừ điểm chạy TRONG cùng
+   * transaction với thanh toán.
    */
   async redeemAtPayment(
     customerId: string,
     jobId: string,
+    session?: ClientSession | null,
   ): Promise<{ points_redeemed: number; discount_amount: number } | null> {
+    // G2: session chỉ gắn vào thao tác GHI ($inc + ghi tx) để chúng chạy trong
+    // transaction; các lần ĐỌC (job, tx cũ) giữ nguyên như topupWallet làm —
+    // đọc snapshot đã commit là đủ, và tránh vỡ mock/query không có .session().
     const job = await this.jobModel.findById(jobId).exec();
     if (!job) return null;
     const requested = job.loyalty_points_requested ?? 0;
@@ -342,7 +348,7 @@ export class LoyaltyService {
           points_balance: { $gte: requested },
         },
         { $inc: { points_balance: -requested } },
-        { new: true },
+        { new: true, session: session ?? undefined },
       )
       .exec();
     if (!updated) {
@@ -351,14 +357,19 @@ export class LoyaltyService {
       );
     }
 
-    await this.txModel.create({
-      user_id: new Types.ObjectId(customerId),
-      type: 'redeem',
-      points: -requested,
-      job_id: new Types.ObjectId(jobId),
-      balance_after: updated.points_balance,
-      note: `Đổi điểm cho đơn #${jobId.slice(-6)}`,
-    });
+    await this.txModel.create(
+      [
+        {
+          user_id: new Types.ObjectId(customerId),
+          type: 'redeem',
+          points: -requested,
+          job_id: new Types.ObjectId(jobId),
+          balance_after: updated.points_balance,
+          note: `Đổi điểm cho đơn #${jobId.slice(-6)}`,
+        },
+      ],
+      { session: session ?? undefined },
+    );
 
     return { points_redeemed: requested, discount_amount: discountAmount };
   }

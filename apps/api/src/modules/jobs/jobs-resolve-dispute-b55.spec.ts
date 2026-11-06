@@ -36,6 +36,8 @@ describe('JobsService.resolveDispute (B55)', () => {
 
     paymentsService = {
       refundCustomer: jest.fn().mockResolvedValue({}),
+      // G2: creditJobPayout bọc trả tiền trong runMoneyTransaction.
+      runMoneyTransaction: jest.fn(async (fn: (s: any) => Promise<any>) => fn(undefined)),
       creditHelper: jest.fn().mockResolvedValue({}),
       deductCommissionForCashJob: jest.fn().mockResolvedValue({}),
     };
