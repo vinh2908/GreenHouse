@@ -8,6 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { CalendarCheck, Siren, Wallet, ClipboardCheck, ChevronRight } from 'lucide-react-native';
 import { useAuthStore } from '@/stores/auth.store';
+import { UserRole } from '@homemate/types';
 import { useTranslation } from '@/hooks/use-i18n';
 import { Button, COLORS, useThemeColors } from '@/components/ui';
 
@@ -34,7 +35,7 @@ export default function OnboardingScreen() {
 
   const goHome = async () => {
     await AsyncStorage.setItem(ONBOARDING_SEEN_KEY, '1');
-    router.replace(user?.roles?.includes('helper') ? '/(helper)/dashboard' : '/(customer)/home');
+    router.replace(user?.roles?.includes(UserRole.HELPER) ? '/(helper)/dashboard' : '/(customer)/home');
   };
 
   const handleNext = () => {
@@ -133,7 +134,7 @@ export default function OnboardingScreen() {
         <Button
           title={isLast ? t('onboarding_start') : t('onboarding_next')}
           onPress={handleNext}
-          rightIcon={<ChevronRight size={18} color="#fff" />}
+          icon={<ChevronRight size={18} color="#fff" />}
         />
       </View>
     </View>
