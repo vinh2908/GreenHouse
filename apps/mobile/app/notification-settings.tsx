@@ -90,11 +90,16 @@ export default function NotificationSettingsScreen() {
           visibilityTime: 1500,
         });
       },
-      onError: () => {
+      onError: (err: any) => {
         Toast.show({
-          type: 'success',
-          text1: lang === 'en' ? 'Notification settings saved' : 'Đã lưu cài đặt thông báo',
-          visibilityTime: 1500,
+          type: 'error',
+          text1: lang === 'en' ? 'Failed to save settings' : 'Lưu cài đặt thông báo thất bại',
+          text2:
+            err?.response?.data?.message ||
+            (lang === 'en'
+              ? 'Please check your connection and retry'
+              : 'Vui lòng kiểm tra kết nối mạng và thử lại'),
+          visibilityTime: 2500,
         });
       },
     });

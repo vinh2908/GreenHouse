@@ -24,13 +24,78 @@ export class NotificationsService {
     private readonly zaloService: ZaloNotificationService,
   ) {}
 
+  /**
+   * F9 (A3) & F18 (R4): Kiểm tra cài đặt thông báo của user.
+   * Riêng thông báo SOS khẩn cấp (sos_*) KHÔNG BAO GIỜ bị chặn.
+   */
+  isNotificationAllowed(notifType: string, settings?: any): boolean {
+    // F18: Thông báo SOS khẩn cấp bỏ qua bộ lọc cài đặt
+    if (notifType.startsWith('sos_') || notifType.includes('sos')) {
+      return true;
+    }
+
+    const s = settings || {
+      order_updates: true,
+      chat_messages: true,
+      promotions: true,
+      vouchers: true,
+      sound: true,
+      vibration: true,
+    };
+
+    if (
+      notifType.startsWith('job_') ||
+      notifType.startsWith('quote_') ||
+      notifType.startsWith('payment_') ||
+      notifType.startsWith('refund_') ||
+      notifType.startsWith('monthly_contract_') ||
+      notifType.startsWith('insurance_claim_') ||
+      notifType.startsWith('contract_') ||
+      notifType.startsWith('helper_') ||
+      notifType === 'review_received'
+    ) {
+      if (s.order_updates === false) return false;
+    } else if (
+      notifType.startsWith('chat_') ||
+      notifType.startsWith('support_') ||
+      notifType === 'new_message'
+    ) {
+      if (s.chat_messages === false) return false;
+    } else if (
+      notifType.startsWith('promotion_') ||
+      notifType === 'promotion' ||
+      notifType === 'bonus'
+    ) {
+      if (s.promotions === false) return false;
+    } else if (notifType.startsWith('voucher_') || notifType === 'voucher') {
+      if (s.vouchers === false) return false;
+    }
+
+    return true;
+  }
+
   async create(data: {
     userId: string;
     type: string;
     title: string;
     body: string;
     payload?: Record<string, unknown>;
-  }): Promise<NotificationDocument> {
+  }): Promise<NotificationDocument | null> {
+    // F9 (A3): Kiểm tra cài đặt trước khi lưu DB và phát socket
+    const user = await this.userModel
+      .findById(data.userId)
+      .select('notification_settings')
+      .lean()
+      .exec();
+    const settings = (user as any)?.notification_settings;
+
+    if (!this.isNotificationAllowed(data.type, settings)) {
+      this.logger.log(
+        `[create] Notification skipped for userId=${data.userId} due to muted settings (type=${data.type})`,
+      );
+      return null;
+    }
+
     const notification = await this.notificationModel.create({
       user_id: new Types.ObjectId(data.userId),
       type: data.type,
@@ -132,40 +197,9 @@ export class NotificationsService {
         .exec();
 
       const notifType = String(data?.type || '');
-      const settings = (user as any)?.notification_settings || {
-        order_updates: true,
-        chat_messages: true,
-        promotions: true,
-        vouchers: true,
-        sound: true,
-        vibration: true,
-      };
+      const settings = (user as any)?.notification_settings;
 
-      let allowed = true;
-      if (
-        notifType.startsWith('job_') ||
-        notifType.startsWith('quote_') ||
-        notifType.startsWith('sos_') ||
-        notifType.startsWith('payment_') ||
-        notifType.startsWith('monthly_contract_') ||
-        notifType.startsWith('insurance_claim_') ||
-        notifType.startsWith('contract_') ||
-        notifType.startsWith('helper_')
-      ) {
-        if (settings.order_updates === false) allowed = false;
-      } else if (notifType.startsWith('chat_') || notifType.startsWith('support_')) {
-        if (settings.chat_messages === false) allowed = false;
-      } else if (
-        notifType.startsWith('promotion_') ||
-        notifType === 'promotion' ||
-        notifType === 'bonus'
-      ) {
-        if (settings.promotions === false) allowed = false;
-      } else if (notifType.startsWith('voucher_')) {
-        if (settings.vouchers === false) allowed = false;
-      }
-
-      if (!allowed) {
+      if (!this.isNotificationAllowed(notifType, settings)) {
         this.logger.log(
           `[sendExpoPush] Skipped push for userId=${userId} due to user notification settings (type=${notifType})`,
         );
