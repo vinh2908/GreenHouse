@@ -6,6 +6,7 @@ import { useRouter } from 'expo-router';
 import { Home, Clock, MessageSquare, User, Plus, Briefcase, TrendingUp } from 'lucide-react-native';
 import { COLORS } from '@/components/ui';
 import { useTranslation, fs } from '@/hooks/use-i18n';
+import { useConversations } from '@/hooks/use-api';
 import { ScalePressable } from '@/components/common/scale-pressable';
 
 interface CustomTabBarProps {
@@ -31,6 +32,12 @@ export function CustomTabBar({
   const insets = useSafeAreaInsets();
   const { t } = useTranslation();
   const { width } = useWindowDimensions();
+  const { data: conversations } = useConversations();
+
+  const unreadMessagesCount = useMemo(() => {
+    if (!Array.isArray(conversations)) return 0;
+    return conversations.reduce((sum: number, c: any) => sum + (Number(c.unread_count) || 0), 0);
+  }, [conversations]);
 
   // Tính toán kích thước co giãn theo bề rộng màn hình (360px, 390px, 412px, desktop)
   const isNarrow = width < 375; // màn hẹp như 360px
@@ -242,6 +249,26 @@ export function CustomTabBar({
             >
               <View style={{ alignItems: 'center', justifyContent: 'center' }}>
                 {renderIcon()}
+                {route.name === 'messages' && unreadMessagesCount > 0 && (
+                  <View
+                    style={{
+                      position: 'absolute',
+                      top: -4,
+                      right: -10,
+                      backgroundColor: COLORS.error,
+                      borderRadius: 999,
+                      minWidth: 16,
+                      height: 16,
+                      paddingHorizontal: 4,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <Text style={{ color: '#FFFFFF', fontSize: 10, fontWeight: '800', lineHeight: 12 }}>
+                      {unreadMessagesCount > 99 ? '99+' : unreadMessagesCount}
+                    </Text>
+                  </View>
+                )}
                 {isFocused && (
                   <View
                     style={{

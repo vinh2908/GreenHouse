@@ -30,7 +30,7 @@ export class ChatController {
 
   @Get('conversations')
   @ApiOperation({ summary: 'Lấy danh sách cuộc trò chuyện của tôi' })
-  async getMyConversations(@CurrentUser() user: { sub: string }) {
+  async getMyConversations(@CurrentUser() user: { sub: string }): Promise<any[]> {
     return this.chatService.getUserConversations(user.sub);
   }
 

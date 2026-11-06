@@ -211,12 +211,43 @@ export class ChatService {
     await this.notificationsService.markConversationRead(userId, conversationId);
   }
 
-  async getUserConversations(userId: string) {
-    return this.conversationModel
+  async getUserConversations(userId: string): Promise<any[]> {
+    const convs = await this.conversationModel
       .find({ participants: new Types.ObjectId(userId) })
       .populate('participants', 'full_name avatar phone')
       .populate('job_id', 'title status')
       .sort({ last_message_at: -1 })
+      .lean()
       .exec();
+
+    if (!convs.length) return [];
+
+    const userObjId = new Types.ObjectId(userId);
+    const convIds = convs.map(c => c._id);
+
+    const unreadCounts = await this.messageModel.aggregate([
+      {
+        $match: {
+          conversation_id: { $in: convIds },
+          read_by: { $ne: userObjId },
+        },
+      },
+      {
+        $group: {
+          _id: '$conversation_id',
+          count: { $sum: 1 },
+        },
+      },
+    ]);
+
+    const countMap = new Map<string, number>();
+    for (const item of unreadCounts) {
+      countMap.set(String(item._id), item.count);
+    }
+
+    return convs.map(c => ({
+      ...c,
+      unread_count: countMap.get(String(c._id)) || 0,
+    }));
   }
 }
