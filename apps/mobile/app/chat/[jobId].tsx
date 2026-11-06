@@ -38,6 +38,7 @@ import { uploadFile } from '@/services/upload.service';
 import { ImageViewerModal } from '@/components/common/photo-thumbs';
 import { Alert } from '@/components/common/app-alert';
 import { useTranslation } from '@/hooks/use-i18n';
+import { formatDayLabel } from '@/utils/date-format';
 import { Avatar, COLORS, LoadingSpinner, EmptyState } from '@/components/ui';
 
 export function resolveMediaUrl(rawUrl: string): string {
@@ -620,6 +621,7 @@ export default function ChatScreen() {
             }
             renderItem={({
               item,
+              index,
             }: {
               item: {
                 _id: string;
@@ -628,13 +630,38 @@ export default function ChatScreen() {
                 type?: string;
                 created_at: string;
               };
+              index: number;
             }) => {
               const senderId =
                 typeof item.sender_id === 'string' ? item.sender_id : item.sender_id?._id;
               const isMe = senderId === currentUser?._id;
+              // B21: dải phân cách ngày khi created_at đổi ngày so với tin trước
+              const prev = index > 0 ? allMessages[index - 1] : null;
+              const showDaySeparator =
+                !prev || !dayjs(prev.created_at).isSame(dayjs(item.created_at), 'day');
+              const daySeparator = showDaySeparator ? (
+                <View style={{ alignItems: 'center', marginVertical: 6 }}>
+                  <Text
+                    style={{
+                      fontSize: fs(11.5),
+                      fontWeight: '700',
+                      color: COLORS.gray[500],
+                      backgroundColor: COLORS.gray[100],
+                      paddingHorizontal: 12,
+                      paddingVertical: 4,
+                      borderRadius: 999,
+                      overflow: 'hidden',
+                    }}
+                  >
+                    {formatDayLabel(item.created_at, undefined, lang === 'en' ? 'en' : 'vi')}
+                  </Text>
+                </View>
+              ) : null;
               if (item.type === 'image') {
                 return (
-                  <View style={{ alignItems: isMe ? 'flex-end' : 'flex-start', marginVertical: 2 }}>
+                  <>
+                    {daySeparator}
+                    <View style={{ alignItems: isMe ? 'flex-end' : 'flex-start', marginVertical: 2 }}>
                     <ChatImageBubble
                       uri={item.content}
                       onPress={() => setViewingImage(item.content)}
@@ -650,11 +677,14 @@ export default function ChatScreen() {
                     >
                       {dayjs(item.created_at).format('HH:mm')}
                     </Text>
-                  </View>
+                    </View>
+                  </>
                 );
               }
               return (
-                <View style={{ alignItems: isMe ? 'flex-end' : 'flex-start', marginVertical: 2 }}>
+                <>
+                  {daySeparator}
+                  <View style={{ alignItems: isMe ? 'flex-end' : 'flex-start', marginVertical: 2 }}>
                   <View
                     style={{
                       maxWidth: '80%',
@@ -695,7 +725,8 @@ export default function ChatScreen() {
                   >
                     {dayjs(item.created_at).format('HH:mm')}
                   </Text>
-                </View>
+                  </View>
+                </>
               );
             }}
           />
