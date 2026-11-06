@@ -102,6 +102,8 @@ export const STRINGS = {
     en: 'Wrong password. Please try again.',
   },
   time_badge_new: { vi: 'MỚI', en: 'NEW' },
+  root_error_title: { vi: 'Lỗi hiển thị màn hình', en: 'Screen render error' },
+  root_error_unknown: { vi: 'Lỗi không xác định', en: 'Unknown error' },
   time_badge_night: { vi: 'ĐÊM', en: 'NIGHT' },
 
   // ─── Job statuses (dùng qua JobStatusBadge) ───────────────────────────────
