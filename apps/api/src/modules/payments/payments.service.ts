@@ -740,6 +740,10 @@ export class PaymentsService {
     if (!amount || amount <= 0 || isNaN(amount)) {
       throw new BadRequestException('Số tiền rút phải lớn hơn 0₫');
     }
+    // B44: Số tiền rút phải là số nguyên (VNĐ không có đơn vị nhỏ hơn đồng)
+    if (!Number.isInteger(amount)) {
+      throw new BadRequestException('Số tiền rút phải là số nguyên (không có phần thập phân)');
+    }
 
     const pending = await this.withdrawalModel
       .findOne({ user_id: new Types.ObjectId(helperId), status: 'pending' })
