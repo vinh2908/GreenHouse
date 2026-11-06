@@ -271,6 +271,31 @@ export class AuthService {
     };
   }
 
+  // ─── B95: Đổi email có xác minh ────────────────────────────────────────────
+  // Bước 1: gửi mã xác nhận tới EMAIL MỚI (không đổi gì cho tới khi nhập đúng mã)
+  async requestEmailChange(userId: string, newEmail: string) {
+    const email = newEmail.trim().toLowerCase();
+    const taken = await this.usersService.findByEmail(email);
+    if (taken && String(taken._id) !== String(userId)) {
+      throw new BadRequestException('Email này đã được đăng ký');
+    }
+    const me = await this.usersService.findById(userId);
+    if ((me.email ?? '').toLowerCase() === email) {
+      throw new BadRequestException('Email mới trùng với email hiện tại');
+    }
+    await this.otpService.sendOtp(email, 'verify');
+    return { message: 'Mã xác nhận đã được gửi tới email mới của bạn.' };
+  }
+
+  // Bước 2: nhập đúng mã gửi tới email mới thì mới đổi email
+  async confirmEmailChange(userId: string, newEmail: string, otp: string) {
+    const email = newEmail.trim().toLowerCase();
+    const isValid = await this.otpService.verifyOtp(email, otp, 'verify');
+    if (!isValid) throw new BadRequestException('Mã xác nhận không đúng hoặc đã hết hạn');
+    const user = await this.usersService.changeEmail(userId, email);
+    return { message: 'Đổi email thành công', email: user.email };
+  }
+
   async resendEmailOtp(dto: ResendEmailOtpDto) {
     const email = dto.email.trim().toLowerCase();
     const user = await this.usersService.findByEmail(email);

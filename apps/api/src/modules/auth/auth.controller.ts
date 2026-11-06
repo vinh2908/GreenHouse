@@ -12,6 +12,8 @@ import {
   ResetPasswordDto,
   VerifyEmailDto,
   ResendEmailOtpDto,
+  RequestEmailChangeDto,
+  ConfirmEmailChangeDto,
 } from './dto/auth.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
@@ -109,6 +111,30 @@ export class AuthController {
   }
 
   @Public()
+  // ─── B95: Đổi email có xác minh mã gửi tới email mới ─────────────────────
+
+  @UseGuards(JwtAuthGuard)
+  @Post('email/change-request')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Gửi mã xác nhận đổi email tới email mới' })
+  async requestEmailChange(
+    @CurrentUser() user: { sub: string },
+    @Body() dto: RequestEmailChangeDto,
+  ) {
+    return this.authService.requestEmailChange(user.sub, dto.new_email);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('email/change-confirm')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Xác nhận mã OTP để đổi sang email mới' })
+  async confirmEmailChange(
+    @CurrentUser() user: { sub: string },
+    @Body() dto: ConfirmEmailChangeDto,
+  ) {
+    return this.authService.confirmEmailChange(user.sub, dto.new_email, dto.otp);
+  }
+
   @Post('verify-email/resend')
   @HttpCode(HttpStatus.OK)
   @Throttle({ default: { ttl: 60000, limit: 3 } })

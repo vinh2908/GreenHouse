@@ -134,3 +134,23 @@ export class ResendEmailOtpDto {
   @IsNotEmpty({ message: 'Vui lòng cung cấp email' })
   email: string;
 }
+
+export class RequestEmailChangeDto {
+  @ApiProperty({ example: 'new@example.com' })
+  @IsEmail({}, { message: 'Email không hợp lệ' })
+  @IsNotEmpty()
+  new_email: string;
+}
+
+export class ConfirmEmailChangeDto {
+  @ApiProperty({ example: 'new@example.com' })
+  @IsEmail({}, { message: 'Email không hợp lệ' })
+  @IsNotEmpty()
+  new_email: string;
+
+  @ApiProperty({ example: '123456' })
+  @IsString()
+  @IsNotEmpty()
+  @Matches(/^[0-9]{6}$/, { message: 'OTP phải là 6 chữ số' })
+  otp: string;
+}
