@@ -68,3 +68,11 @@ LoyaltyTransactionSchema.index(
     partialFilterExpression: { type: 'earn', job_id: { $exists: true } },
   },
 );
+// A35: Chống đổi điểm 2 lần cho cùng 1 đơn: chỉ cho phép 1 giao dịch 'redeem' / 1 job
+LoyaltyTransactionSchema.index(
+  { user_id: 1, job_id: 1, type: 1 },
+  {
+    unique: true,
+    partialFilterExpression: { type: 'redeem', job_id: { $exists: true } },
+  },
+);

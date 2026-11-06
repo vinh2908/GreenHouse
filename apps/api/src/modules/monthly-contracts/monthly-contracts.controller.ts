@@ -100,8 +100,12 @@ export class MonthlyContractsController {
   @Post(':id/attendance/checkin')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: '[Helper] Điểm danh buổi hôm nay' })
-  async checkin(@CurrentUser() user: { sub: string }, @Param('id') id: string) {
-    return this.service.checkin(user.sub, id);
+  async checkin(
+    @CurrentUser() user: { sub: string },
+    @Param('id') id: string,
+    @Body() dto?: { lat?: number; lng?: number },
+  ) {
+    return this.service.checkin(user.sub, id, dto);
   }
 
   @Get(':id/attendance')

@@ -4,6 +4,7 @@ import {
   NotFoundException,
   BadRequestException,
   ForbiddenException,
+  ConflictException,
   OnApplicationBootstrap,
   OnModuleDestroy,
 } from '@nestjs/common';
@@ -179,11 +180,22 @@ export class RecurringService implements OnApplicationBootstrap, OnModuleDestroy
     }
 
     let created = 0;
+    const now = new Date();
     for (const key of dates) {
       const exists = await this.jobModel
         .exists({ recurring_plan_id: plan._id, occurrence_date: key })
         .exec();
       if (exists) continue;
+
+      const [hh, mm] = (plan.time_start || '09:00').split(':').map(Number);
+      const [y, m, d] = key.split('-').map(Number);
+      const occurrenceDateTime = new Date(y, (m ?? 1) - 1, d ?? 1, hh ?? 9, mm ?? 0, 0, 0);
+      if (occurrenceDateTime.getTime() <= now.getTime()) {
+        this.logger.log(
+          `Skipping past occurrence date ${key} ${plan.time_start} for plan ${plan._id}`,
+        );
+        continue;
+      }
 
       const dto: CreateJobDto = {
         service_id: String(plan.service_id),
@@ -228,13 +240,21 @@ export class RecurringService implements OnApplicationBootstrap, OnModuleDestroy
           this.logger.warn(
             `Plan ${String(plan._id)}: private offer failed (${err instanceof Error ? err.message : err}); creating public job instead`,
           );
-          await this.jobsService.createJob(String(plan.customer_id), dto, {
-            recurringPlanId: String(plan._id),
-            occurrenceDate: key,
-          });
-          created += 1;
+          try {
+            await this.jobsService.createJob(String(plan.customer_id), dto, {
+              recurringPlanId: String(plan._id),
+              occurrenceDate: key,
+            });
+            created += 1;
+          } catch (pubErr) {
+            this.logger.warn(
+              `Plan ${String(plan._id)}: public job creation failed for date ${key}: ${pubErr instanceof Error ? pubErr.message : pubErr}`,
+            );
+          }
         } else {
-          throw err;
+          this.logger.warn(
+            `Plan ${String(plan._id)}: job creation failed for date ${key}: ${err instanceof Error ? err.message : err}`,
+          );
         }
       }
     }
@@ -282,6 +302,37 @@ export class RecurringService implements OnApplicationBootstrap, OnModuleDestroy
   ): Promise<RecurringPlanDocument> {
     this.validateSchedule(dto);
     await this.validatePreferredHelper(customerId, dto.preferred_helper_id);
+
+    // A40: Kiểm tra lịch trùng (cùng customer_id, service_id, frequency, time_start)
+    const existingPlans = await this.planModel
+      .find({
+        customer_id: new Types.ObjectId(customerId),
+        service_id: new Types.ObjectId(dto.service_id),
+        frequency: dto.frequency,
+        time_start: dto.time_start,
+        status: RecurringPlanStatus.ACTIVE,
+      })
+      .exec();
+
+    for (const existing of existingPlans) {
+      if (dto.frequency === 'weekly') {
+        const existingWeekdays = new Set(existing.weekdays ?? []);
+        const hasOverlap = (dto.weekdays ?? []).some(w => existingWeekdays.has(w));
+        if (hasOverlap) {
+          throw new ConflictException(
+            'Bạn đã có lịch định kỳ cho dịch vụ này vào cùng khung giờ',
+          );
+        }
+      } else if (dto.frequency === 'monthly') {
+        const existingMonthDays = new Set(existing.month_days ?? []);
+        const hasOverlap = (dto.month_days ?? []).some(d => existingMonthDays.has(d));
+        if (hasOverlap) {
+          throw new ConflictException(
+            'Bạn đã có lịch định kỳ cho dịch vụ này vào cùng khung giờ',
+          );
+        }
+      }
+    }
 
     const startDate = new Date(dto.start_date);
     if (Number.isNaN(startDate.getTime())) {

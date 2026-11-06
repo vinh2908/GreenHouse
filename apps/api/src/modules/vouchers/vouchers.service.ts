@@ -136,23 +136,40 @@ export class VouchersService {
       throw new BadRequestException('Mã giảm giá không áp dụng được cho đơn này');
     }
 
-    // Tăng used_count nguyên tử, tôn trọng total_usage_limit kể cả khi gọi đồng thời
+    // Tăng used_count nguyên tử, tôn trọng cả total_usage_limit và per_user_limit khi gọi song song
+    const userLimit = voucher.per_user_limit ?? 1;
+    const updateQuery: Record<string, unknown> = {
+      _id: voucher._id,
+      is_active: true,
+      $or: [
+        { total_usage_limit: { $exists: false } },
+        { total_usage_limit: null },
+        { $expr: { $lt: ['$used_count', '$total_usage_limit'] } },
+      ],
+    };
+    if (userLimit === 1) {
+      updateQuery['used_user_ids'] = { $ne: new Types.ObjectId(userId) };
+    }
+
     const updated = await this.voucherModel
       .findOneAndUpdate(
+        updateQuery,
         {
-          _id: voucher._id,
-          is_active: true,
-          $or: [
-            { total_usage_limit: { $exists: false } },
-            { total_usage_limit: null },
-            { $expr: { $lt: ['$used_count', '$total_usage_limit'] } },
-          ],
+          $inc: { used_count: 1 },
+          ...(userLimit === 1 ? { $addToSet: { used_user_ids: new Types.ObjectId(userId) } } : {}),
         },
-        { $inc: { used_count: 1 } },
         { new: true },
       )
       .exec();
     if (!updated) {
+      const currentVoucher = await this.voucherModel.findById(voucher._id).exec();
+      if (
+        currentVoucher?.used_user_ids?.some(
+          id => String(id) === String(userId),
+        )
+      ) {
+        throw new BadRequestException('Bạn đã dùng mã này tối đa số lần cho phép');
+      }
       throw new BadRequestException('Mã giảm giá đã hết lượt sử dụng');
     }
 
@@ -201,7 +218,10 @@ export class VouchersService {
     await this.voucherModel
       .findOneAndUpdate(
         { _id: redemption.voucher_id, used_count: { $gt: 0 } },
-        { $inc: { used_count: -1 } },
+        {
+          $inc: { used_count: -1 },
+          $pull: { used_user_ids: new Types.ObjectId(userId) },
+        },
       )
       .exec();
 

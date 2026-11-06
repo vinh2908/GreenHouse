@@ -40,6 +40,10 @@ export class Voucher {
   @Prop({ default: 0 })
   used_count: number;
 
+  /** Danh sách user_id đã sử dụng mã (dùng cho kiểm tra per_user_limit nguyên tử) */
+  @Prop({ type: [{ type: Types.ObjectId, ref: 'User' }], default: [] })
+  used_user_ids: Types.ObjectId[];
+
   @Prop({ default: true, index: true })
   is_active: boolean;
 

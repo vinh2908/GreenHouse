@@ -277,6 +277,7 @@ export class MonthlyContractsService {
     }
     contract.status = 'ended';
     contract.ended_at = new Date();
+    contract.end_date = new Date();
     contract.end_reason = reason;
     await contract.save();
 
@@ -296,7 +297,7 @@ export class MonthlyContractsService {
 
   // ─── Điểm danh ────────────────────────────────────────────────────────────
 
-  async checkin(helperId: string, id: string) {
+  async checkin(helperId: string, id: string, dto?: { lat?: number; lng?: number }) {
     const contract = await this.getContractOrFail(id);
     if (contract.helper_id.toString() !== helperId) {
       throw new ForbiddenException('Chỉ thợ của hợp đồng mới điểm danh được');
@@ -304,6 +305,47 @@ export class MonthlyContractsService {
     if (contract.status !== 'active') {
       throw new ConflictException('Hợp đồng chưa có hiệu lực hoặc đã kết thúc');
     }
+
+    // A38: Kiểm tra giờ hiện tại có nằm trong ca làm việc không (cho phép lệch ±30 phút)
+    if (contract.schedule?.time_start && contract.schedule?.time_end) {
+      const now = new Date();
+      const currentMinutes = now.getHours() * 60 + now.getMinutes();
+      const [startH, startM] = contract.schedule.time_start.split(':').map(Number);
+      const [endH, endM] = contract.schedule.time_end.split(':').map(Number);
+      const startMinutes = (startH ?? 0) * 60 + (startM ?? 0);
+      const endMinutes = (endH ?? 0) * 60 + (endM ?? 0);
+      if (currentMinutes < startMinutes - 30 || currentMinutes > endMinutes + 30) {
+        throw new BadRequestException(
+          `Hiện không trong ca làm việc (${contract.schedule.time_start} - ${contract.schedule.time_end}). Vui lòng điểm danh đúng giờ.`,
+        );
+      }
+    }
+
+    // A38: Kiểm tra GPS vị trí nếu client gửi tọa độ
+    if (
+      dto?.lat !== undefined &&
+      dto?.lng !== undefined &&
+      contract.address?.location?.coordinates &&
+      contract.address.location.coordinates.length === 2
+    ) {
+      const [destLng, destLat] = contract.address.location.coordinates;
+      const R = 6371; // km
+      const dLat = ((destLat - dto.lat) * Math.PI) / 180;
+      const dLon = ((destLng - dto.lng) * Math.PI) / 180;
+      const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos((dto.lat * Math.PI) / 180) *
+          Math.cos((destLat * Math.PI) / 180) *
+          Math.sin(dLon / 2) *
+          Math.sin(dLon / 2);
+      const distanceKm = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      if (distanceKm > 2.0) {
+        throw new BadRequestException(
+          `Vị trí điểm danh cách xa địa chỉ làm việc (${distanceKm.toFixed(1)} km > 2 km). Vui lòng điểm danh tại nơi làm việc.`,
+        );
+      }
+    }
+
     const today = this.todayStr();
     const month = today.slice(0, 7);
     if (!this.scheduledDatesOfMonth(contract, month).includes(today)) {
@@ -498,6 +540,20 @@ export class MonthlyContractsService {
 
   // ─── Chốt lương tháng ─────────────────────────────────────────────────────
 
+  fullMonthScheduledDates(contract: MonthlyContractDocument, month: string): string[] {
+    const [y, m] = month.split('-').map(Number);
+    const monthStart = new Date(y, (m ?? 1) - 1, 1);
+    const monthEnd = new Date(y, m ?? 1, 0);
+    const days = new Set(contract.schedule?.days_of_week ?? []);
+    const result: string[] = [];
+    const cursor = new Date(monthStart);
+    while (cursor <= monthEnd) {
+      if (days.has(cursor.getDay())) result.push(this.toDateStr(cursor));
+      cursor.setDate(cursor.getDate() + 1);
+    }
+    return result;
+  }
+
   async computeSummary(
     contract: MonthlyContractDocument,
     month: string,
@@ -521,14 +577,18 @@ export class MonthlyContractsService {
       // 'checked_in' chưa xác nhận & ngày hôm nay/tương lai: chưa tính
     }
 
-    const scheduledDays = scheduled.length;
+    // A39: Tính lương theo tỷ lệ số buổi đã xác nhận / tổng số buổi theo lịch trọn tháng
+    const fullMonthScheduled = this.fullMonthScheduledDates(contract, month);
+    const totalScheduledDaysInMonth = fullMonthScheduled.length > 0 ? fullMonthScheduled.length : scheduled.length;
     const gross =
-      scheduledDays > 0 ? Math.round((contract.monthly_salary * confirmed) / scheduledDays) : 0;
+      totalScheduledDaysInMonth > 0
+        ? Math.round((contract.monthly_salary * confirmed) / totalScheduledDaysInMonth)
+        : 0;
     const fee = Math.round((gross * (contract.platform_fee_percent ?? 15)) / 100);
     return {
       contract_id: String(contract._id),
       month,
-      scheduled_days: scheduledDays,
+      scheduled_days: scheduled.length,
       confirmed_days: confirmed,
       leave_days: leave,
       absent_days: absent,
@@ -587,23 +647,8 @@ export class MonthlyContractsService {
     }
 
     const summary = await this.computeSummary(contract, dto.month);
-    const settlement = await this.settlementModel.create({
-      contract_id: contract._id,
-      month: dto.month,
-      scheduled_days: summary.scheduled_days,
-      confirmed_days: summary.confirmed_days,
-      leave_days: summary.leave_days,
-      absent_days: summary.absent_days,
-      gross_amount: summary.gross_amount,
-      platform_fee: summary.platform_fee,
-      helper_receives: summary.helper_receives,
-      status: 'settled',
-      settled_at: new Date(),
-      settled_by: new Types.ObjectId(customerId),
-    });
 
-    // Cộng tiền vào ví thợ qua PaymentsService.creditWallet (không gắn Job):
-    // reference = MONTHLY-<contractId last6>-<month> để đối soát trong ví.
+    // A43: Cộng tiền vào ví thợ TRƯỚC, lưu settlement record SAU (rollback nếu tạo settlement lỗi)
     if (summary.helper_receives > 0) {
       await this.paymentsService.creditWallet(
         contract.helper_id.toString(),
@@ -614,6 +659,35 @@ export class MonthlyContractsService {
           type: 'earning',
         },
       );
+    }
+
+    let settlement: MonthlySettlementDocument;
+    try {
+      settlement = await this.settlementModel.create({
+        contract_id: contract._id,
+        month: dto.month,
+        scheduled_days: summary.scheduled_days,
+        confirmed_days: summary.confirmed_days,
+        leave_days: summary.leave_days,
+        absent_days: summary.absent_days,
+        gross_amount: summary.gross_amount,
+        platform_fee: summary.platform_fee,
+        helper_receives: summary.helper_receives,
+        status: 'settled',
+        settled_at: new Date(),
+        settled_by: new Types.ObjectId(customerId),
+      });
+    } catch (err) {
+      if (summary.helper_receives > 0) {
+        await this.paymentsService
+          .deductWallet(
+            contract.helper_id.toString(),
+            summary.helper_receives,
+            `Rollback lương tháng ${dto.month} do lỗi tạo bản ghi chốt lương`,
+          )
+          .catch(() => undefined);
+      }
+      throw err;
     }
 
     await this.notificationsService.create({
