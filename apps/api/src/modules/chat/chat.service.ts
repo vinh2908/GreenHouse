@@ -199,6 +199,16 @@ export class ChatService {
   }
 
   async markRead(conversationId: string, userId: string) {
+    // A68: Chỉ người trong cuộc trò chuyện mới được đánh dấu đã đọc
+    const conv = await this.conversationModel.findById(conversationId).exec();
+    if (!conv) {
+      throw new NotFoundException('Cuộc trò chuyện không tồn tại');
+    }
+    const isParticipant = conv.participants.some(p => String(p) === userId);
+    if (!isParticipant) {
+      throw new ForbiddenException('Bạn không phải là người tham gia cuộc trò chuyện này');
+    }
+
     await this.messageModel
       .updateMany(
         {

@@ -43,13 +43,14 @@ import {
   ContractStatus,
   HelperStatus,
   JobStatus,
+  PaymentStatus,
   UserRole,
   UserStatus,
   VerificationStatus,
 } from '@homemate/types';
 import { NOTIFICATION_TYPES } from '@homemate/constants';
 import { NotificationsService } from '../notifications/notifications.service';
-import { JobsService, ACTIVE_HELPER_JOB_STATUSES } from '../jobs/jobs.service';
+import { JobsService, ACTIVE_HELPER_JOB_STATUSES, computeNetPaidAmount } from '../jobs/jobs.service';
 
 const ADMIN_JOB_STATUS_TRANSITIONS: Record<string, string[]> = {
   [JobStatus.DRAFT]: [JobStatus.OPEN, JobStatus.CANCELLED],
@@ -335,6 +336,15 @@ export class AdminService {
       : { user_id: userId };
     const profile = await this.helperModel.findOne(query).exec();
     if (!profile) throw new NotFoundException('Helper profile not found');
+
+    // A72: Kiểm tra trạng thái pending và đầy đủ giấy tờ e-KYC
+    if (profile.verification_status !== VerificationStatus.PENDING) {
+      throw new BadRequestException('Hồ sơ không ở trạng thái chờ duyệt (PENDING)');
+    }
+    if (!profile.id_card_front || !profile.id_card_back || !profile.selfie_photo) {
+      throw new BadRequestException('Hồ sơ thiếu giấy tờ xác minh (CCCD mặt trước, mặt sau hoặc ảnh chân dung)');
+    }
+
     profile.verification_status = VerificationStatus.APPROVED;
     profile.verified_at = new Date();
     const saved = await profile.save();
@@ -592,6 +602,29 @@ export class AdminService {
     const job = await this.jobModel.findById(jobId).exec();
     if (!job) throw new NotFoundException('Job không tồn tại');
     if (!amount || amount <= 0) throw new BadRequestException('Số tiền hoàn phải lớn hơn 0');
+
+    // A73: Chỉ hoàn tiền cho đơn đã thanh toán
+    if (job.payment_status !== PaymentStatus.PAID) {
+      throw new BadRequestException('Chỉ có thể hoàn tiền cho đơn đã thu tiền (PAID)');
+    }
+
+    const contract = await this.contractModel.findOne({ job_id: job._id }).exec();
+    const netPaid = computeNetPaidAmount(job, contract?.total_price);
+
+    // Tính tổng số tiền đã hoàn trước đó cho đơn này
+    const previousRefunds = await this.transactionModel.find({
+      job_id: job._id,
+      type: 'refund',
+      status: 'success',
+    }).exec();
+    const totalRefunded = previousRefunds.reduce((sum, tx) => sum + (tx.amount || 0), 0);
+    const maxRefundable = Math.max(0, netPaid - totalRefunded);
+
+    if (amount > maxRefundable) {
+      throw new BadRequestException(
+        `Số tiền hoàn (${amount.toLocaleString('vi-VN')}₫) vượt quá số tiền khách thực trả còn lại (tối đa có thể hoàn: ${maxRefundable.toLocaleString('vi-VN')}₫)`,
+      );
+    }
 
     let wallet = await this.walletModel.findOne({ user_id: job.customer_id }).exec();
     if (!wallet) {

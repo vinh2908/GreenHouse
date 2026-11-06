@@ -4,6 +4,7 @@ import { MatchingService } from './matching.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { UserRole } from '@homemate/types';
 
 @ApiTags('Matching')
@@ -30,10 +31,14 @@ export class MatchingController {
   @ApiOperation({
     summary: 'Tìm và xếp hạng thợ tối ưu nhất cho 1 công việc',
     description:
-      'Tính toán điểm tương thích đa tiêu chí: Khoảng cách, chuyên môn, số sao rating và e-KYC.',
+      'Tính toán điểm tương thích đa tiêu chí: Khoảng cách, chuyên môn, số sao rating và e-KYC. Chỉ chủ đơn hoặc Admin được xem.',
   })
   @ApiQuery({ name: 'limit', required: false, type: Number })
-  async getOptimalHelpers(@Param('jobId') jobId: string, @Query('limit') limit?: number) {
-    return this.matchingService.findOptimalHelpersForJob(jobId, Number(limit) || 5);
+  async getOptimalHelpers(
+    @CurrentUser() user: { sub: string; roles?: string[] },
+    @Param('jobId') jobId: string,
+    @Query('limit') limit?: number,
+  ) {
+    return this.matchingService.findOptimalHelpersForJob(jobId, user.sub, user.roles, Number(limit) || 5);
   }
 }

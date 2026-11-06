@@ -1,10 +1,10 @@
-import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Job, JobDocument } from '../jobs/schemas/job.schema';
 import { HelperProfile, HelperProfileDocument } from '../helpers/schemas/helper-profile.schema';
 import { HungarianAlgorithm, AssignmentResult } from './algorithms/hungarian.algorithm';
-import { HelperStatus, VerificationStatus, JobStatus } from '@homemate/types';
+import { HelperStatus, VerificationStatus, JobStatus, UserRole } from '@homemate/types';
 import { AppGateway } from '../chat/app.gateway';
 import { NotificationsService } from '../notifications/notifications.service';
 import { SOCKET_EVENTS, NOTIFICATION_TYPES } from '@homemate/constants';
@@ -73,34 +73,34 @@ export class MatchingService {
       ? this.calculateDistanceKm(helperCoords[1], helperCoords[0], jobCoords[1], jobCoords[0])
       : -1;
 
-    // Điểm khoảng cách: 0km -> 100đ, 10km -> 50đ, >=20km -> 0đ
-    const distanceScore = hasCoords ? Math.max(0, 100 - (distanceKm / 20) * 100) : 0;
+    // A67: Chuẩn hoá khoảng cách về thang điểm 0 - 1 (0km -> 1.0, 20km -> 0.0)
+    const normDistance = hasCoords ? Math.max(0, 1 - distanceKm / 20) : 0;
     if (!hasCoords) reasons.push('Chưa có vị trí');
     else if (distanceKm <= 3) reasons.push(`Khoảng cách rất gần (${distanceKm}km)`);
     else reasons.push(`Cách ${distanceKm}km`);
 
-    // 2. Chuyên môn (Skills / Service Match)
+    // 2. Chuyên môn (Skills / Service Match: 0 - 1)
     const jobServiceId = job.service_id?._id?.toString() || job.service_id?.toString();
     const hasService = (helper.service_ids || []).some(
       (sId: any) => sId.toString() === jobServiceId,
     );
-    const skillScore = hasService ? 100 : 40;
+    const normSkill = hasService ? 1.0 : 0.4;
     if (hasService) reasons.push('Đúng chuyên môn yêu cầu');
 
-    // 3. Đánh giá sao (Rating 1 - 5 sao -> 0 - 100đ)
+    // 3. Đánh giá sao (Rating 0 - 1)
     const rating = helper.rating || 0;
-    const ratingScore = (rating / 5) * 100;
+    const normRating = Math.min(1, Math.max(0, rating / 5));
     if (rating >= 4.8) reasons.push(`Uy tín cao: ★ ${rating.toFixed(1)}`);
 
-    // 4. Xác thực e-KYC (100đ hoặc 0đ)
+    // 4. Xác thực e-KYC (0 hoặc 1)
     const isVerified = helper.verification_status === VerificationStatus.APPROVED;
-    const kycScore = isVerified ? 100 : 0;
+    const normKyc = isVerified ? 1.0 : 0.0;
     if (isVerified) reasons.push('Đã xác minh e-KYC');
 
-    // Tổng hợp điểm số trọng số:
+    // Tổng hợp điểm số trọng số đã chuẩn hoá (thang 0 - 100):
     // Distance 40% + Skill 30% + Rating 20% + KYC 10%
     const totalScore = Math.round(
-      distanceScore * 0.4 + skillScore * 0.3 + ratingScore * 0.2 + kycScore * 0.1,
+      (normDistance * 0.4 + normSkill * 0.3 + normRating * 0.2 + normKyc * 0.1) * 100,
     );
 
     return {
@@ -201,9 +201,21 @@ export class MatchingService {
   /**
    * Tìm và xếp hạng các thợ tối ưu nhất cho 1 công việc cụ thể
    */
-  async findOptimalHelpersForJob(jobId: string, limit = 5): Promise<MatchPair[]> {
+  async findOptimalHelpersForJob(
+    jobId: string,
+    userId: string,
+    userRoles?: string[],
+    limit = 5,
+  ): Promise<MatchPair[]> {
     const job = await this.jobModel.findById(jobId).populate('service_id').exec();
     if (!job) throw new NotFoundException('Công việc không tồn tại');
+
+    // A66: Chỉ chủ đơn hoặc Admin mới xem được danh sách thợ gợi ý
+    const isAdmin = (userRoles ?? []).includes(UserRole.ADMIN);
+    const isOwner = String(job.customer_id) === userId;
+    if (!isAdmin && !isOwner) {
+      throw new ForbiddenException('Bạn không có quyền xem gợi ý thợ cho công việc này');
+    }
 
     const helpers = await this.helperModel
       .find({
