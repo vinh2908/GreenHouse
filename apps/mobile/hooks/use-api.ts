@@ -2178,6 +2178,12 @@ export function useCreateReview() {
   });
 }
 
+export function useDeleteAccount() {
+  return useMutation({
+    mutationFn: (dto: { password: string }) => apiClient.delete('/auth/me', { data: dto }),
+  });
+}
+
 export function useReplyReview() {
   const qc = useQueryClient();
   return useMutation({
