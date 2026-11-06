@@ -10,7 +10,6 @@ import {
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { AiBookingService } from './services/ai-booking.service';
-import { AiMatchingService } from './services/ai-matching.service';
 import { AiSupportService } from './services/ai-support.service';
 import { AiConfigService } from './services/ai-config.service';
 import { AnalyzeBookingDto, AnalyzePhotoDto, EstimatePriceDto, SupportChatDto } from './dto/ai.dto';
@@ -23,7 +22,6 @@ import { Public } from '../../common/decorators/public.decorator';
 export class AiController {
   constructor(
     private readonly bookingService: AiBookingService,
-    private readonly matchingService: AiMatchingService,
     private readonly supportService: AiSupportService,
     private readonly aiConfig: AiConfigService,
   ) {}
