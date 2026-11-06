@@ -1,35 +1,48 @@
+import { VerificationStatus } from '@homemate/types';
+
 /**
- * Điểm hiệu suất thợ — thang 100 theo 4 tiêu chí (mở rộng từ các field sẵn có
- * trên HelperProfile, KHÔNG tạo hệ điểm song song):
+ * Điểm thợ — MỘT công thức duy nhất (B87/G8, quyết định của chủ 2026-11-07):
  *
- *   Đánh giá dịch vụ (rating)        tối đa 40đ  = rating/5 × 40
- *                                                (chưa có review nào → 40đ, như mặc định trung tính)
- *   Hoàn thành đơn (completion_rate) tối đa 25đ  = completion_rate/100 × 25
- *   Phản hồi (acceptance_rate)       tối đa 15đ  = acceptance_rate/100 × 15
- *   Độ tin cậy (reliability)         tối đa 20đ  = 20 − điểm phạt hủy đơn (sàn 0)
+ *   Khoảng cách (Distance)  tối đa 40đ  = (1 − km/20) × 40
+ *                                        (0km → 40đ, ≥20km → 0đ; thiếu tọa độ tham chiếu → 0đ)
+ *   Kỹ năng (Skill)         tối đa 30đ  = đúng chuyên môn → 30đ, không → 0.4 × 30 = 12đ
+ *   Đánh giá (Rating)       tối đa 20đ  = rating/5 × 20 (chưa có rating → 0đ)
+ *   Xác minh e-KYC (KYC)    tối đa 10đ  = đã duyệt → 10đ, chưa → 0đ
+ *   Trừ phạt hủy đơn (quy tắc riêng, giữ nguyên — SOS Backup): trong cửa sổ
+ *   trượt 7 NGÀY, thợ tự hủy quá 3 lần thì mỗi lần vượt −5đ vào TỔNG (sàn 0).
+ *
+ * Cả gợi ý thợ (matching — có đơn tham chiếu để đo khoảng cách + đối chiếu
+ * dịch vụ) và xếp hạng admin (không có đơn tham chiếu — khoảng cách = −1,
+ * kỹ năng = thợ có đăng ký dịch vụ nào không) đều gọi cùng hàm
+ * computeHelperScore với cùng 1 input shape; cùng input → cùng 1 số.
+ * Trước đây có 2 công thức song song (computeJobFitScore 40/30/20/10 và
+ * computePerformanceScore 40/25/15/20) nên cùng 1 thợ cho 2 số khác nhau —
+ * cả 2 đã bị xoá, chỉ còn hàm chung này.
  *
  * QUY TẮC PHẠT HỦY ĐƠN (chủ dự án đặt): trong cửa sổ trượt 7 NGÀY, thợ tự hủy
- * (hủy đơn thường SAU khi đã chốt + gửi SOS Backup) quá 3 lần thì bị trừ điểm
- * ở tiêu chí Độ tin cậy: từ lần hủy vượt ngưỡng trở đi, mỗi lần −5đ.
+ * (hủy đơn thường SAU khi đã chốt + gửi SOS Backup) quá 3 lần thì bị trừ điểm:
+ * từ lần hủy vượt ngưỡng trở đi, mỗi lần −5đ.
  * Tất cả con số đều là HẰNG SỐ CÓ THỂ CHỈNH bằng env (mặc định do đội dự án chọn):
  *   HELPER_SCORE_CANCEL_WINDOW_DAYS   (mặc định 7)
  *   HELPER_SCORE_CANCEL_THRESHOLD     (mặc định 3 — hủy ≤ 3 lần/7 ngày: không phạt)
  *   HELPER_SCORE_PENALTY_PER_EXCESS   (mặc định 5 điểm/lần vượt)
+ * Trọng số 40/30/20/10 do chủ chốt, KHÔNG chỉnh bằng env.
  */
 
 export interface HelperScoreConfig {
   windowDays: number;
   threshold: number;
   pointsPerExcess: number;
-  weights: { rating: number; completion: number; responsiveness: number; reliability: number };
 }
 
 export const DEFAULT_HELPER_SCORE_CONFIG: HelperScoreConfig = {
   windowDays: 7,
   threshold: 3,
   pointsPerExcess: 5,
-  weights: { rating: 40, completion: 25, responsiveness: 15, reliability: 20 },
 };
+
+/** Trọng số duy nhất của điểm thợ (chủ chốt 2026-11-07): Distance 40 / Skill 30 / Rating 20 / KYC 10 */
+export const HELPER_SCORE_WEIGHTS = { distance: 40, skill: 30, rating: 20, kyc: 10 } as const;
 
 /** Đọc cấu hình từ env (getter để hàm vẫn thuần & test được) */
 export function helperScoreConfigFromEnv(
@@ -90,7 +103,7 @@ export function excessCancellations(
   return Math.max(0, countInWindow - config.threshold);
 }
 
-/** Tổng điểm phạt trừ vào tiêu chí Độ tin cậy */
+/** Tổng điểm phạt trừ vào TỔNG điểm thợ */
 export function cancellationPenaltyPoints(
   countInWindow: number,
   config: HelperScoreConfig = DEFAULT_HELPER_SCORE_CONFIG,
@@ -114,19 +127,25 @@ export function scoreWarningLevel(
   return 'none';
 }
 
+/** Chuẩn hoá rating 0–5 về 0–1 — dùng chung cho mọi đường tính điểm. */
+export function normalizeRating(rating?: number | null): number {
+  return clamp(rating ?? 0, 0, 5) / 5;
+}
+
+/** Input duy nhất của công thức điểm thợ — cả gợi ý (matching) và xếp hạng admin đều dựng input này. */
 export interface HelperScoreInput {
+  distanceKm: number; // -1 = thiếu tọa độ tham chiếu (không cộng điểm khoảng cách)
+  hasService: boolean; // đúng chuyên môn của đơn / đã đăng ký dịch vụ (đường admin)
   rating?: number | null;
-  totalReviews?: number | null;
-  completionRate?: number | null;
-  acceptanceRate?: number | null;
+  isVerified: boolean;
   cancellationsInWindow: number;
 }
 
 export interface HelperScoreBreakdown {
+  distance: number;
+  skill: number;
   rating: number;
-  completion: number;
-  responsiveness: number;
-  reliability: number;
+  kyc: number;
 }
 
 export interface HelperScoreResult {
@@ -135,83 +154,23 @@ export interface HelperScoreResult {
   penaltyPoints: number;
   cancellationsInWindow: number;
   warningLevel: ScoreWarningLevel;
+  reasons: string[];
 }
 
 const round1 = (n: number) => Math.round(n * 10) / 10;
 const clamp = (n: number, min: number, max: number) => Math.min(max, Math.max(min, n));
 
-/** Tính điểm hiệu suất 100 từ các chỉ số sẵn có + số hủy trong cửa sổ */
-export function computePerformanceScore(
+/**
+ * CÔNG THỨC ĐIỂM THỢ DUY NHẤT (thang 100):
+ * tổng = Distance 40 + Skill 30 + Rating 20 + KYC 10 − phạt hủy đơn (sàn 0).
+ */
+export function computeHelperScore(
   input: HelperScoreInput,
   config: HelperScoreConfig = DEFAULT_HELPER_SCORE_CONFIG,
 ): HelperScoreResult {
-  const { weights } = config;
   const penaltyPoints = cancellationPenaltyPoints(input.cancellationsInWindow, config);
-
-  const ratingPoints =
-    (input.totalReviews ?? 0) > 0
-      ? normalizeRating(input.rating) * weights.rating
-      : weights.rating; // chưa có review → trung tính như các rate mặc định 100 của hồ sơ
-  const completionPoints = (clamp(input.completionRate ?? 100, 0, 100) / 100) * weights.completion;
-  const responsivenessPoints =
-    (clamp(input.acceptanceRate ?? 100, 0, 100) / 100) * weights.responsiveness;
-  const reliabilityPoints = Math.max(0, weights.reliability - penaltyPoints);
-
-  const breakdown: HelperScoreBreakdown = {
-    rating: round1(ratingPoints),
-    completion: round1(completionPoints),
-    responsiveness: round1(responsivenessPoints),
-    reliability: round1(reliabilityPoints),
-  };
-  const total = round1(
-    clamp(
-      breakdown.rating + breakdown.completion + breakdown.responsiveness + breakdown.reliability,
-      0,
-      100,
-    ),
-  );
-
-  return {
-    total,
-    breakdown,
-    penaltyPoints,
-    cancellationsInWindow: input.cancellationsInWindow,
-    warningLevel: scoreWarningLevel(input.cancellationsInWindow, config),
-  };
-}
-
-// ─── B87: công thức điểm phù hợp đơn (job-fit) — dùng chung với matching ─────
-// Trước đây công thức này sống riêng trong MatchingService.computeUtilityScore
-// (trọng số Distance 40% + Skill 30% + Rating 20% + KYC 10%). Nó KHÁC với
-// computePerformanceScore ở trên (điểm hiệu suất tổng của thợ: 40/25/15/20) nên
-// không thể gộp thành một con số duy nhất mà không đổi trọng số của một bên.
-// Cách gộp đúng: cả hai công thức sống chung trong module này (1 nơi duy nhất
-// tính điểm thợ), dùng chung phép chuẩn hoá rating, trọng số mỗi bên giữ nguyên.
-// MatchingService.computeUtilityScore chỉ còn là lớp mỏng gọi hàm này.
-
-export const JOB_FIT_WEIGHTS = { distance: 0.4, skill: 0.3, rating: 0.2, kyc: 0.1 } as const;
-
-/** Chuẩn hoá rating 0–5 về 0–1 — dùng chung cho cả hai công thức. */
-export function normalizeRating(rating?: number | null): number {
-  return clamp(rating ?? 0, 0, 5) / 5;
-}
-
-export interface JobFitScoreInput {
-  distanceKm: number; // -1 = thiếu tọa độ (không cộng điểm khoảng cách)
-  hasService: boolean;
-  rating?: number | null;
-  isVerified: boolean;
-}
-
-export interface JobFitScoreResult {
-  score: number; // 0–100
-  distance_km: number;
-  reasons: string[];
-}
-
-/** Điểm phù hợp thợ ↔ đơn (thang 100). Trọng số giữ nguyên như cũ. */
-export function computeJobFitScore(input: JobFitScoreInput): JobFitScoreResult {
   const reasons: string[] = [];
+
   const hasCoords = input.distanceKm >= 0;
   // Chuẩn hoá khoảng cách về 0–1 (0km → 1.0, 20km → 0.0)
   const normDistance = hasCoords ? Math.max(0, 1 - input.distanceKm / 20) : 0;
@@ -228,12 +187,46 @@ export function computeJobFitScore(input: JobFitScoreInput): JobFitScoreResult {
   const normKyc = input.isVerified ? 1.0 : 0.0;
   if (input.isVerified) reasons.push('Đã xác minh e-KYC');
 
-  const totalScore = Math.round(
-    (normDistance * JOB_FIT_WEIGHTS.distance +
-      normSkill * JOB_FIT_WEIGHTS.skill +
-      normRating * JOB_FIT_WEIGHTS.rating +
-      normKyc * JOB_FIT_WEIGHTS.kyc) *
-      100,
-  );
-  return { score: totalScore, distance_km: input.distanceKm, reasons };
+  const breakdown: HelperScoreBreakdown = {
+    distance: round1(normDistance * HELPER_SCORE_WEIGHTS.distance),
+    skill: round1(normSkill * HELPER_SCORE_WEIGHTS.skill),
+    rating: round1(normRating * HELPER_SCORE_WEIGHTS.rating),
+    kyc: round1(normKyc * HELPER_SCORE_WEIGHTS.kyc),
+  };
+  const base = breakdown.distance + breakdown.skill + breakdown.rating + breakdown.kyc;
+  const total = round1(clamp(base - penaltyPoints, 0, 100));
+
+  return {
+    total,
+    breakdown,
+    penaltyPoints,
+    cancellationsInWindow: input.cancellationsInWindow,
+    warningLevel: scoreWarningLevel(input.cancellationsInWindow, config),
+    reasons,
+  };
+}
+
+export interface HelperProfileScoreSource {
+  rating?: number | null;
+  verification_status?: string | null;
+  service_ids?: readonly unknown[] | null;
+}
+
+/**
+ * Dựng input cho hàm chung từ hồ sơ thợ (đường admin / xếp hạng — KHÔNG có
+ * đơn tham chiếu): khoảng cách không đo được → −1 (0đ, cùng quy tắc như
+ * matching khi thiếu tọa độ); kỹ năng = thợ có đăng ký dịch vụ nào không
+ * (có → đủ 30đ, không → 12đ như trường hợp không đúng chuyên môn ở matching).
+ */
+export function helperScoreInputFromProfile(
+  profile: HelperProfileScoreSource,
+  cancellationsInWindow: number,
+): HelperScoreInput {
+  return {
+    distanceKm: -1,
+    hasService: (profile.service_ids?.length ?? 0) > 0,
+    rating: profile.rating ?? null,
+    isVerified: profile.verification_status === VerificationStatus.APPROVED,
+    cancellationsInWindow,
+  };
 }
