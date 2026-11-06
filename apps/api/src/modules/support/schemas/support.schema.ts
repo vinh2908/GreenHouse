@@ -10,6 +10,10 @@ export class SupportConversation {
   @Prop({ type: Types.ObjectId, ref: 'User', required: true, index: true })
   user_id: Types.ObjectId;
 
+  // B77: đơn liên quan (không bắt buộc — chỉ gắn khi tạo từ màn đơn)
+  @Prop({ type: Types.ObjectId, ref: 'Job', index: true })
+  job_id?: Types.ObjectId;
+
   @Prop({ type: String, enum: ['open', 'closed'], default: 'open' })
   status: SupportConversationStatus;
 
