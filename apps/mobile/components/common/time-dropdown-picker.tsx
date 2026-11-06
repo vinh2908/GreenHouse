@@ -1,6 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { formatDate } from '@/utils/date-format';
-import dayjs from 'dayjs';
+import { formatDate, formatDateWithWeekday } from '@/utils/date-format';
 import {
   View,
   Text,
@@ -783,10 +782,7 @@ export function ScheduledTimePreview({
     if (dateLabel) return dateLabel;
     if (startDate) {
       try {
-        const dt = dayjs(startDate);
-        const dow = dt.format('dddd');
-        const capDow = dow.charAt(0).toUpperCase() + dow.slice(1);
-        return `${capDow}, ${formatDate(dt)}`;
+        return formatDateWithWeekday(startDate, lang);
       } catch {
         return startDate;
       }

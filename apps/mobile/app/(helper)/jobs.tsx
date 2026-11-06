@@ -24,6 +24,7 @@ import {
 } from 'lucide-react-native';
 import Toast from 'react-native-toast-message';
 import dayjs from 'dayjs';
+import { formatTime } from '@/utils/date-format';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import 'dayjs/locale/vi';
 import { useAuthStore } from '@/stores/auth.store';
@@ -523,9 +524,7 @@ export default function HelperJobsScreen() {
         </Text>
         <Text style={{ fontSize: fs(12), color: tc.textMuted, marginTop: 2 }}>
           {t('helper_jobs_subtitle')} • {lang === 'en' ? 'Updated' : 'Cập nhật'} lúc{' '}
-          {dayjs(Math.max(aUpdatedAt || 0, acUpdatedAt || 0, hUpdatedAt || 0) || Date.now()).format(
-            'HH:mm',
-          )}
+          {formatTime(Math.max(aUpdatedAt || 0, acUpdatedAt || 0, hUpdatedAt || 0) || Date.now())}
         </Text>
         {/* Bản đồ nhu cầu (Feature 15) */}
         <TouchableOpacity

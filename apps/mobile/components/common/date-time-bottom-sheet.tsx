@@ -1,6 +1,14 @@
 // apps/mobile/components/common/date-time-bottom-sheet.tsx
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { formatDate } from '@/utils/date-format';
+import {
+  formatDate,
+  formatDateKey,
+  formatDateWithWeekday,
+  formatMonthTitle,
+  toVnDayjs,
+  vnDateKey,
+  vnNow,
+} from '@/utils/date-format';
 import {
   View,
   Text,
@@ -13,9 +21,6 @@ import {
   type NativeSyntheticEvent,
   type NativeScrollEvent,
 } from 'react-native';
-import dayjs from 'dayjs';
-import 'dayjs/locale/vi';
-import 'dayjs/locale/en';
 import { Calendar as CalendarIcon, Clock, ChevronLeft, ChevronRight } from 'lucide-react-native';
 import { useTranslation, fs } from '@/hooks/use-i18n';
 
@@ -45,11 +50,11 @@ export function DateTimeBottomSheet({
   const [activeTab, setActiveTab] = useState<'date' | 'time'>(initialTab);
 
   // Temporary selection state inside sheet
-  const [tempDate, setTempDate] = useState<string>(initialDate || dayjs().format('YYYY-MM-DD'));
+  const [tempDate, setTempDate] = useState<string>(initialDate || vnDateKey());
   const [tempTime, setTempTime] = useState<string>(initialTime || '08:00');
 
   // Calendar month state
-  const [calendarMonth, setCalendarMonth] = useState(() => dayjs(initialDate || undefined));
+  const [calendarMonth, setCalendarMonth] = useState(() => toVnDayjs(initialDate));
 
   // Parsed initial indices
   const parseHour = (t: string) => {
@@ -87,7 +92,7 @@ export function DateTimeBottomSheet({
   // Sync state whenever modal opens or initial values change
   useEffect(() => {
     if (visible) {
-      const d = initialDate || dayjs().format('YYYY-MM-DD');
+      const d = initialDate || vnDateKey();
       const t = initialTime || '08:00';
       const h = parseHour(t);
       const m = parseMinute(t);
@@ -97,7 +102,7 @@ export function DateTimeBottomSheet({
       setSelectedH(h);
       setSelectedM(m);
       setActiveTab(initialTab);
-      setCalendarMonth(dayjs(d));
+      setCalendarMonth(toVnDayjs(d));
 
       // Multi-phase pin to guarantee Android layout measurements receive the offset
       requestAnimationFrame(() => pinWheels(h, m, false));
@@ -220,8 +225,8 @@ export function DateTimeBottomSheet({
 
   // A1: Kiểm tra thời điểm chọn có ở trong quá khứ hay không
   const isSelectionInPast = useMemo(() => {
-    const selected = dayjs(`${tempDate} ${tempTime}`);
-    return selected.isBefore(dayjs().subtract(1, 'minute'));
+    const selected = toVnDayjs(`${tempDate} ${tempTime}`);
+    return selected.isBefore(vnNow().subtract(1, 'minute'));
   }, [tempDate, tempTime]);
 
   const handleConfirm = useCallback(() => {
@@ -231,7 +236,7 @@ export function DateTimeBottomSheet({
   }, [onConfirm, onClose, tempDate, tempTime, isSelectionInPast]);
 
   // Calendar calculations
-  const today = dayjs().startOf('day');
+  const today = vnNow().startOf('day');
   const startOfMonth = calendarMonth.startOf('month');
   const daysInMonth = calendarMonth.daysInMonth();
   const startOffset = (startOfMonth.day() + 6) % 7; // Monday = 0
@@ -242,10 +247,7 @@ export function DateTimeBottomSheet({
 
   // Format date preview matching demo: "Thứ năm, 29/10"
   const formattedDatePreview = useMemo(() => {
-    const dt = dayjs(tempDate).locale(lang === 'en' ? 'en' : 'vi');
-    const dow = dt.format('dddd');
-    const capitalizedDow = dow.charAt(0).toUpperCase() + dow.slice(1);
-    return `${capitalizedDow}, ${formatDate(dt)}`;
+    return formatDateWithWeekday(tempDate, lang);
   }, [tempDate, lang]);
 
   return (
@@ -351,9 +353,7 @@ export function DateTimeBottomSheet({
                 </TouchableOpacity>
 
                 <Text style={styles.calMonthTitle}>
-                  {lang === 'en'
-                    ? calendarMonth.locale('en').format('MMMM YYYY')
-                    : `Tháng ${calendarMonth.format('M · YYYY')}`}
+                  {formatMonthTitle(calendarMonth, lang)}
                 </Text>
 
                 <TouchableOpacity
@@ -391,7 +391,7 @@ export function DateTimeBottomSheet({
                 {Array.from({ length: daysInMonth }, (_, i) => {
                   const dayNum = i + 1;
                   const currentCellDate = calendarMonth.date(dayNum).startOf('day');
-                  const currentCellDateStr = currentCellDate.format('YYYY-MM-DD');
+                  const currentCellDateStr = formatDateKey(currentCellDate);
 
                   const isPast = currentCellDate.isBefore(today);
                   const isToday = currentCellDate.isSame(today);
@@ -572,8 +572,8 @@ export function DateTimeBottomSheet({
                 ].map(item => {
                   const isSel = tempTime === item.t;
                   const isPastChip =
-                    dayjs(tempDate).isSame(dayjs(), 'day') &&
-                    dayjs(`${tempDate} ${item.t}`).isBefore(dayjs().subtract(1, 'minute'));
+                    toVnDayjs(tempDate).isSame(vnNow(), 'day') &&
+                    toVnDayjs(`${tempDate} ${item.t}`).isBefore(vnNow().subtract(1, 'minute'));
                   return (
                     <TouchableOpacity
                       key={item.t}
@@ -626,8 +626,8 @@ export function DateTimeBottomSheet({
                     t => {
                       const isSel = tempTime === t;
                       const isPastChip =
-                        dayjs(tempDate).isSame(dayjs(), 'day') &&
-                        dayjs(`${tempDate} ${t}`).isBefore(dayjs().subtract(1, 'minute'));
+                        toVnDayjs(tempDate).isSame(vnNow(), 'day') &&
+                        toVnDayjs(`${tempDate} ${t}`).isBefore(vnNow().subtract(1, 'minute'));
                       return (
                         <TouchableOpacity
                           key={t}
