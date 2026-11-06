@@ -11,7 +11,7 @@ describe('PaymentsService - B41/B42/B43/B44 validation', () => {
   const helperId = new Types.ObjectId().toHexString();
   const jobId = new Types.ObjectId().toHexString();
 
-  function makeService(balance = 1_000_000) {
+  function makeService(balance = 1_000_000, pendingWithdrawal: any = null) {
     const walletModel: any = {
       findOneAndUpdate: jest.fn().mockReturnValue({
         exec: jest.fn().mockResolvedValue({ _id: new Types.ObjectId(), balance }),
@@ -27,7 +27,7 @@ describe('PaymentsService - B41/B42/B43/B44 validation', () => {
       }),
     };
     const withdrawalModel: any = {
-      findOne: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(null) }),
+      findOne: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(pendingWithdrawal) }),
       create: jest.fn(async (doc: any) => ({ _id: new Types.ObjectId(), ...doc })),
     };
     const helperModel: any = {
@@ -145,6 +145,32 @@ describe('PaymentsService - B41/B42/B43/B44 validation', () => {
       expect(tx.amount).toBe(50_000);
       expect(tx.balance_after).toBe(0);
       expect(tx.metadata.unpaid_fee).toBe(20_000);
+    });
+  });
+
+  describe('B44: requestWithdrawal — 1 yêu cầu pending duy nhất + số nguyên', () => {
+    it('rút 500.000,5₫ → 400', async () => {
+      const { service } = makeService();
+      await expect(service.requestWithdrawal(helperId, 500_000.5)).rejects.toBeInstanceOf(
+        BadRequestException,
+      );
+    });
+
+    it('đã có yêu cầu pending → tạo thêm yêu cầu → 409', async () => {
+      const { service } = makeService(1_000_000, {
+        _id: new Types.ObjectId(),
+        status: 'pending',
+        amount: 500_000,
+      });
+      await expect(service.requestWithdrawal(helperId, 300_000)).rejects.toThrow('đang chờ xử lý');
+    });
+
+    it('không có yêu cầu pending, số nguyên → tạo thành công', async () => {
+      const { service, withdrawalModel } = makeService();
+      const w = await service.requestWithdrawal(helperId, 500_000);
+      expect(w.status).toBe('pending');
+      expect(w.amount).toBe(500_000);
+      expect(withdrawalModel.create).toHaveBeenCalled();
     });
   });
 });

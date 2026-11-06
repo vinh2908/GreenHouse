@@ -58,8 +58,12 @@ export class BankAccountInfoDto {
 }
 
 export class RequestWithdrawalDto {
-  @ApiProperty({ description: 'Số tiền rút (tối thiểu 50,000₫)', minimum: 50000 })
+  @ApiProperty({
+    description: 'Số tiền rút (tối thiểu 50,000₫, phải là số nguyên)',
+    minimum: 50000,
+  })
   @IsNumber()
+  @IsInt({ message: 'Số tiền rút phải là số nguyên' })
   @Min(50000)
   @Max(500_000_000)
   amount: number;
