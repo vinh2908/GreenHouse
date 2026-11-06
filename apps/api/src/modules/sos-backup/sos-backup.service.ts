@@ -1345,32 +1345,42 @@ export class SosBackupService implements OnModuleInit, OnModuleDestroy {
     return { items: list.map(sos => this.decisionPayload(sos)) };
   }
 
-  /** Trạng thái SOS đang hoạt động của 1 đơn (cho màn hình chi tiết đơn 2 phía) */
-  async getByJob(userId: string, jobId: string) {
-    if (!Types.ObjectId.isValid(jobId)) return { sos: null };
-    const sos = await this.sosModel
-      .findOne({
-        job_id: new Types.ObjectId(jobId),
-        status: { $in: [SosBackupStatus.AWAITING_CUSTOMER, SosBackupStatus.PENDING] },
-        $or: [
-          { original_helper_id: new Types.ObjectId(userId) },
-          { customer_id: new Types.ObjectId(userId) },
-          { 'candidates.helper_id': new Types.ObjectId(userId) },
-        ],
-      })
-      .exec();
-    if (!sos) return { sos: null };
-    return {
-      sos: this.serialize(sos, {
+  /** B81: Trả về mọi SOS của 1 đơn (đang chờ + đã xử lý xong), mới nhất trước.
+   * `status` lọc khi cần. `sos` giữ tương thích cũ = SOS mới nhất khớp lọc
+   * (mặc định là SOS đang hoạt động); `sos_list` là toàn bộ lịch sử. */
+  async getByJob(userId: string, jobId: string, status?: string) {
+    if (!Types.ObjectId.isValid(jobId)) return { sos: null, sos_list: [] };
+    const query: Record<string, unknown> = {
+      job_id: new Types.ObjectId(jobId),
+      $or: [
+        { original_helper_id: new Types.ObjectId(userId) },
+        { customer_id: new Types.ObjectId(userId) },
+        { 'candidates.helper_id': new Types.ObjectId(userId) },
+      ],
+    };
+    if (status && Object.values(SosBackupStatus).includes(status as SosBackupStatus)) {
+      query['status'] = status;
+    }
+    const list = await this.sosModel.find(query).sort({ created_at: -1 }).exec();
+    if (!list.length) return { sos: null, sos_list: [] };
+    const serialized = list.map(s =>
+      this.serialize(s, {
         my_state:
-          sos.original_helper_id.toString() === userId
+          s.original_helper_id.toString() === userId
             ? 'originator'
-            : sos.customer_id.toString() === userId
+            : s.customer_id.toString() === userId
               ? 'customer'
               : 'candidate',
-        my_candidate_state: sos.candidates.find(c => String(c.helper_id) === userId)?.state,
+        my_candidate_state: s.candidates.find(c => String(c.helper_id) === userId)?.state,
       }),
-    };
+    );
+    // Mặc định (không lọc status): sos = SOS đang hoạt động mới nhất, nếu có
+    const active =
+      !status &&
+      serialized.find(
+        s => s.status === SosBackupStatus.AWAITING_CUSTOMER || s.status === SosBackupStatus.PENDING,
+      );
+    return { sos: active ?? serialized[0], sos_list: serialized };
   }
 
   // A95: Lấy toàn bộ lịch sử các lần SOS của đơn hàng
