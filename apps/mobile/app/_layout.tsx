@@ -26,6 +26,8 @@ import { SosCustomerDecisionPopup } from '@/components/common/sos-customer-decis
 import { InitialPermissionsModal } from '@/components/common/initial-permissions-modal';
 import { useBackgroundGps } from '@/hooks/use-background-gps';
 import { useAuthStore } from '@/stores/auth.store';
+import { useSettingsStore } from '@/stores/settings.store';
+import { translate } from '@/services/i18n';
 import { COLORS } from '@/components/ui';
 import { takePendingToastRoute } from '@/services/toast-navigation';
 
@@ -50,6 +52,8 @@ class RootErrorBoundary extends Component<
 
   render() {
     if (this.state.hasError) {
+      // B27: màn lỗi root hiển thị theo ngôn ngữ đã chọn (đọc từ store vì đây là class component)
+      const lang = useSettingsStore.getState().language || 'vi';
       return (
         <View
           style={{ flex: 1, backgroundColor: '#FEF2F2', padding: 24, justifyContent: 'center' }}
@@ -57,10 +61,10 @@ class RootErrorBoundary extends Component<
           <Text
             style={{ fontSize: fs(20), fontWeight: 'bold', color: '#991B1B', marginBottom: 12 }}
           >
-            Root Error / Lỗi hiển thị màn hình
+            {translate(lang, 'root_error_title')}
           </Text>
           <Text style={{ fontSize: fs(14), color: '#B91C1C', marginBottom: 16 }}>
-            {this.state.error?.message || 'Unknown error / Lỗi không xác định'}
+            {this.state.error?.message || translate(lang, 'root_error_unknown')}
           </Text>
           <ScrollView
             style={{ maxHeight: 250, backgroundColor: '#FFF', padding: 10, borderRadius: 8 }}
