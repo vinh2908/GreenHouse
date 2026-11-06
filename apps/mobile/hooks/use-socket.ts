@@ -170,6 +170,18 @@ export function useJobSocketUpdates(jobId?: string) {
       },
     );
 
+    // B116: matching:suggestion_updated — có thợ mới phù hợp với đơn đang mở
+    const unsubMatching = socketService.on<{
+      job_id?: string;
+      helper_id?: string;
+      match_score?: number;
+    }>(SOCKET_EVENTS.MATCHING_SUGGESTION_UPDATED, data => {
+      if (data?.job_id && data.job_id !== jobId) return;
+      qc.invalidateQueries({ queryKey: ['job', jobId, 'suggestions'] });
+      qc.invalidateQueries({ queryKey: ['job', jobId] });
+      qc.invalidateQueries({ queryKey: ['helpers', 'nearby'] });
+    });
+
     // B114: team:updated — cập nhật ngay khi đội nhóm của đơn thay đổi
     const unsubTeam = socketService.on<{ job_id?: string }>(
       SOCKET_EVENTS.TEAM_UPDATED,
@@ -198,6 +210,7 @@ export function useJobSocketUpdates(jobId?: string) {
       unsub4();
       unsub5();
       unsubTeam();
+      unsubMatching();
       socketService.leaveJob(jobId);
     };
   }, [jobId, qc]);
@@ -222,6 +235,25 @@ export function useHelperStatusSocket(helperId?: string) {
       socketService.leaveHelper(helperId);
     };
   }, [helperId, qc]);
+}
+
+// ─── B116: thợ mới phù hợp — cập nhật danh sách gợi ý/thợ gần đây ────────────
+export function useMatchingSuggestionSocket() {
+  const qc = useQueryClient();
+
+  useEffect(() => {
+    const unsub = socketService.on<{
+      job_id?: string;
+      helper_id?: string;
+    }>(SOCKET_EVENTS.MATCHING_SUGGESTION_UPDATED, data => {
+      qc.invalidateQueries({ queryKey: ['helpers', 'nearby'] });
+      if (data?.job_id) {
+        qc.invalidateQueries({ queryKey: ['job', data.job_id, 'suggestions'] });
+        qc.invalidateQueries({ queryKey: ['job', data.job_id] });
+      }
+    });
+    return () => unsub();
+  }, [qc]);
 }
 
 // ─── Chat messages ───────────────────────────────────────────────────────────
