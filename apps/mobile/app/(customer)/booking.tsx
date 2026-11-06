@@ -698,7 +698,22 @@ export default function BookingScreen() {
           text2: t('booking_ai_photo_success_desc'),
         });
       } else {
-        unavailableToast(res?.message);
+        // B78: hiển thị lý do phù hợp theo reason từ server
+        const reasonMsg =
+          res?.reason === 'no_api_key'
+            ? (lang === 'en'
+                ? 'AI analysis is not configured yet (no API key). The photo is attached; please describe the issue briefly.'
+                : 'Tính năng chưa khả dụng (chưa cấu hình AI). Ảnh đã được đính kèm, bạn vui lòng mô tả ngắn gọn giúp mình nhé!')
+            : res?.reason === 'invalid_image'
+              ? (lang === 'en'
+                  ? 'The issue photo is invalid. Please retake a clearer photo.'
+                  : 'Ảnh sự cố không hợp lệ. Vui lòng chụp lại ảnh rõ hơn.')
+              : res?.reason === 'unsupported'
+                ? (lang === 'en'
+                    ? 'This image format is not supported for AI analysis. Please use JPG, PNG or WEBP.'
+                    : 'Định dạng ảnh chưa được hỗ trợ phân tích. Vui lòng dùng ảnh JPG, PNG hoặc WEBP.')
+                : res?.message;
+        unavailableToast(reasonMsg);
       }
     } catch (err: any) {
       console.warn('AI issue photo analysis error:', err);
