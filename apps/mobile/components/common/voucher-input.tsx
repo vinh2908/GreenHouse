@@ -95,22 +95,63 @@ export function VoucherInput({
               <X size={17} color="#065F46" />
             </TouchableOpacity>
           </View>
-          {preview.discount_amount > 0 ? (
-            <Text style={{ fontSize: fs(13), color: '#065F46' }}>
-              {lang === 'en' ? 'Est. discount: −' : 'Giảm tạm tính: −'}{fmt(preview.discount_amount)}₫
-              {estimatedAmount
-                ? lang === 'en'
-                  ? ` · Est. payment ~${fmt(preview.final_amount)}₫`
-                  : ` · Cần thanh toán khoảng ${fmt(preview.final_amount)}₫`
-                : ''}
-            </Text>
-          ) : (
-            <Text style={{ fontSize: fs(12.5), color: '#065F46' }}>
-              {lang === 'en'
-                ? 'Valid code. Official discount will be calculated at final checkout.'
-                : 'Mã hợp lệ. Số tiền giảm chính thức sẽ được tính theo giá chốt khi thanh toán.'}
-            </Text>
-          )}
+          {(() => {
+            const calculatedDiscount =
+              preview.discount_amount > 0
+                ? preview.discount_amount
+                : estimatedAmount && estimatedAmount > 0
+                  ? preview.discount_type === 'percent'
+                    ? Math.min(
+                        Math.round((estimatedAmount * preview.discount_value) / 100),
+                        preview.max_discount_amount ?? Infinity,
+                      )
+                    : preview.discount_value
+                  : 0;
+            const calculatedFinal =
+              estimatedAmount && estimatedAmount > 0
+                ? Math.max(0, estimatedAmount - calculatedDiscount)
+                : 0;
+
+            if (calculatedDiscount > 0) {
+              return (
+                <Text style={{ fontSize: fs(13), color: '#065F46', fontWeight: '600' }}>
+                  {lang === 'en' ? 'Est. discount: −' : 'Giảm tạm tính: −'}
+                  {fmt(calculatedDiscount)}₫
+                  {estimatedAmount ? (
+                    lang === 'en' ? (
+                      ` · Est. payment ~${fmt(calculatedFinal)}₫`
+                    ) : (
+                      ` · Cần thanh toán khoảng ${fmt(calculatedFinal)}₫`
+                    )
+                  ) : (
+                    ''
+                  )}
+                </Text>
+              );
+            }
+
+            return (
+              <View style={{ gap: 2 }}>
+                <Text style={{ fontSize: fs(13), color: '#065F46', fontWeight: '600' }}>
+                  {preview.discount_type === 'percent'
+                    ? lang === 'en'
+                      ? `Discount ${preview.discount_value}% OFF`
+                      : `Giảm ${preview.discount_value}%`
+                    : lang === 'en'
+                      ? `Discount ${fmt(preview.discount_value)}₫`
+                      : `Giảm ${fmt(preview.discount_value)}₫`}
+                  {preview.discount_type === 'percent' && preview.max_discount_amount
+                    ? ` (${lang === 'en' ? 'max' : 'tối đa'} ${fmt(preview.max_discount_amount)}₫)`
+                    : ''}
+                </Text>
+                <Text style={{ fontSize: fs(12), color: '#047857' }}>
+                  {lang === 'en'
+                    ? 'Exact discount amount will be applied upon final agreed price.'
+                    : 'Số tiền giảm chính xác sẽ hiển thị khi có giá chốt lúc thanh toán.'}
+                </Text>
+              </View>
+            );
+          })()}
         </View>
       ) : (
         <>
