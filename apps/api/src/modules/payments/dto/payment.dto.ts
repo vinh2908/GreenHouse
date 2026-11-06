@@ -17,9 +17,13 @@ export class MockPayJobDto {
   @IsNotEmpty()
   job_id: string;
 
-  @ApiProperty({ description: 'Phương thức thanh toán (cash | vietqr | momo)', example: 'vietqr' })
+  @ApiProperty({
+    description: 'Phương thức thanh toán (wallet | cash | vietqr | momo | zalopay)',
+    example: 'vietqr',
+  })
   @IsString()
   @IsNotEmpty()
+  @IsIn(['wallet', 'cash', 'vietqr', 'momo', 'zalopay'])
   payment_method: string;
 }
 
