@@ -25,6 +25,7 @@ import {
 import { formatDateTime } from '@/lib/utils';
 import { STATUS_BADGE, STATUS_VI } from '../status';
 import { PhotoGrid } from '@/components/common/photo-grid';
+import { PromptDialog } from '@/components/common/prompt-dialog';
 
 // Statuses from which the state machine still allows a cancellation.
 const CANCELLABLE = [
@@ -89,6 +90,11 @@ export default function JobDetailPage() {
   const [manualNote, setManualNote] = useState('');
   const [directRefundAmount, setDirectRefundAmount] = useState('');
   const [directRefundReason, setDirectRefundReason] = useState('');
+  // B106: xác nhận bằng PromptDialog thay cho hộp thoại confirm của trình duyệt.
+  const [confirmDispute, setConfirmDispute] = useState(false);
+  const [confirmCancel, setConfirmCancel] = useState(false);
+  const [confirmStatus, setConfirmStatus] = useState(false);
+  const [confirmRefund, setConfirmRefund] = useState(false);
 
   if (isLoading) return <Loading />;
   if (error || !job) return <EmptyState message="Không tìm thấy job" />;
@@ -274,21 +280,7 @@ export default function JobDetailPage() {
                     (disputeAction === 'refund_partial' && !Number(refundAmount)) ||
                     resolveDispute.isPending
                   }
-                  onClick={() => {
-                    if (
-                      confirm(
-                        'Xác nhận phán quyết tranh chấp này? Hệ thống sẽ tự động hoàn tiền/giải ngân và đóng tranh chấp.',
-                      )
-                    ) {
-                      resolveDispute.mutate({
-                        id,
-                        action: disputeAction,
-                        refund_amount:
-                          disputeAction === 'refund_partial' ? Number(refundAmount) : undefined,
-                        admin_note: adminNote.trim(),
-                      });
-                    }
-                  }}
+                  onClick={() => setConfirmDispute(true)}
                 >
                   {resolveDispute.isPending ? 'Đang xử lý…' : 'Xác nhận Phán quyết'}
                 </Button>
@@ -317,11 +309,7 @@ export default function JobDetailPage() {
                   variant="destructive"
                   className="w-full"
                   disabled={!reason.trim() || cancelJob.isPending}
-                  onClick={() => {
-                    if (confirm('Hủy job này? Khách hàng và thợ sẽ nhận được thông báo.')) {
-                      cancelJob.mutate({ id, reason: reason.trim() });
-                    }
-                  }}
+                  onClick={() => setConfirmCancel(true)}
                 >
                   {cancelJob.isPending ? 'Đang hủy…' : 'Hủy job'}
                 </Button>
@@ -371,26 +359,7 @@ export default function JobDetailPage() {
                   variant="outline"
                   className="w-full text-xs"
                   disabled={!manualStatus || manualStatus === job.status || updateStatus.isPending}
-                  onClick={() => {
-                    if (confirm(`Chuyển trạng thái đơn sang "${manualStatus}"?`)) {
-                      updateStatus.mutate(
-                        { id, status: manualStatus, note: manualNote.trim() },
-                        {
-                          onSuccess: () => {
-                            setManualStatus('');
-                            setManualNote('');
-                            alert('Đã cập nhật trạng thái đơn thành công');
-                          },
-                          onError: (err: any) => {
-                            alert(
-                              err?.response?.data?.message ||
-                                'Không thể cập nhật trạng thái đơn. Vui lòng kiểm tra lại.',
-                            );
-                          },
-                        },
-                      );
-                    }
-                  }}
+                  onClick={() => setConfirmStatus(true)}
                 >
                   {updateStatus.isPending ? 'Đang cập nhật…' : 'Cập nhật trạng thái'}
                 </Button>
@@ -426,34 +395,7 @@ export default function JobDetailPage() {
                     !directRefundReason.trim() ||
                     directRefund.isPending
                   }
-                  onClick={() => {
-                    if (
-                      confirm(
-                        `Hoàn ${Number(directRefundAmount).toLocaleString('vi-VN')}₫ vào ví của khách hàng?`,
-                      )
-                    ) {
-                      directRefund.mutate(
-                        {
-                          id,
-                          amount: Number(directRefundAmount),
-                          reason: directRefundReason.trim(),
-                        },
-                        {
-                          onSuccess: () => {
-                            setDirectRefundAmount('');
-                            setDirectRefundReason('');
-                            alert('Đã hoàn tiền vào ví khách hàng thành công');
-                          },
-                          onError: (err: any) => {
-                            alert(
-                              err?.response?.data?.message ||
-                                'Không thể hoàn tiền trực tiếp. Vui lòng thử lại.',
-                            );
-                          },
-                        },
-                      );
-                    }
-                  }}
+                  onClick={() => setConfirmRefund(true)}
                 >
                   {directRefund.isPending ? 'Đang hoàn tiền…' : 'Hoàn tiền vào ví khách'}
                 </Button>
@@ -462,6 +404,99 @@ export default function JobDetailPage() {
           </Card>
         </div>
       </div>
+
+      {confirmDispute && (
+        <PromptDialog
+          title="Xác nhận phán quyết tranh chấp"
+          message="Xác nhận phán quyết tranh chấp này? Hệ thống sẽ tự động hoàn tiền/giải ngân và đóng tranh chấp."
+          confirmLabel="Xác nhận Phán quyết"
+          requireInput={false}
+          onSubmit={() => {
+            setConfirmDispute(false);
+            resolveDispute.mutate({
+              id,
+              action: disputeAction,
+              refund_amount:
+                disputeAction === 'refund_partial' ? Number(refundAmount) : undefined,
+              admin_note: adminNote.trim(),
+            });
+          }}
+          onClose={() => setConfirmDispute(false)}
+        />
+      )}
+      {confirmCancel && (
+        <PromptDialog
+          title="Hủy job"
+          message="Hủy job này? Khách hàng và thợ sẽ nhận được thông báo."
+          confirmLabel="Hủy job"
+          requireInput={false}
+          onSubmit={() => {
+            setConfirmCancel(false);
+            cancelJob.mutate({ id, reason: reason.trim() });
+          }}
+          onClose={() => setConfirmCancel(false)}
+        />
+      )}
+      {confirmStatus && (
+        <PromptDialog
+          title="Đổi trạng thái đơn"
+          message={`Chuyển trạng thái đơn sang "${manualStatus}"?`}
+          confirmLabel="Cập nhật trạng thái"
+          requireInput={false}
+          onSubmit={() => {
+            setConfirmStatus(false);
+            updateStatus.mutate(
+              { id, status: manualStatus, note: manualNote.trim() },
+              {
+                onSuccess: () => {
+                  setManualStatus('');
+                  setManualNote('');
+                  alert('Đã cập nhật trạng thái đơn thành công');
+                },
+                onError: (err: any) => {
+                  alert(
+                    err?.response?.data?.message ||
+                      'Không thể cập nhật trạng thái đơn. Vui lòng kiểm tra lại.',
+                  );
+                },
+              },
+            );
+          }}
+          onClose={() => setConfirmStatus(false)}
+        />
+      )}
+      {confirmRefund && (
+        <PromptDialog
+          title="Hoàn tiền vào ví khách"
+          message={`Hoàn ${Number(directRefundAmount).toLocaleString('vi-VN')}₫ vào ví của khách hàng?`}
+          confirmLabel="Hoàn tiền"
+          requireInput={false}
+          onSubmit={() => {
+            setConfirmRefund(false);
+            directRefund.mutate(
+              {
+                id,
+                amount: Number(directRefundAmount),
+                reason: directRefundReason.trim(),
+              },
+              {
+                onSuccess: () => {
+                  setDirectRefundAmount('');
+                  setDirectRefundReason('');
+                  alert('Đã hoàn tiền vào ví khách hàng thành công');
+                },
+                onError: (err: any) => {
+                  alert(
+                    err?.response?.data?.message ||
+                      'Không thể hoàn tiền trực tiếp. Vui lòng thử lại.',
+                  );
+                },
+              },
+            );
+          }}
+          onClose={() => setConfirmRefund(false)}
+        />
+      )}
     </div>
   );
 }

@@ -220,7 +220,8 @@ export default function KycPendingPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      {/* G11: flex-wrap để ở 360px nút duyệt hàng loạt không bóp tiêu đề. */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">KYC chờ duyệt</h1>
           <p className="text-muted-foreground">
@@ -398,12 +399,12 @@ export default function KycPendingPage() {
                 .map((h: KycHelper, idx: number) => (
                   <div
                     key={h._id}
-                    className="flex justify-between items-center py-1 border-b last:border-none"
+                    className="flex justify-between items-center gap-3 py-1 border-b last:border-none"
                   >
-                    <span className="font-medium">
+                    <span className="font-medium min-w-0 truncate">
                       {idx + 1}. {h.user_id?.full_name}
                     </span>
-                    <span className="text-xs text-muted-foreground font-mono">
+                    <span className="text-xs text-muted-foreground font-mono shrink-0">
                       {h.user_id?.phone}
                     </span>
                   </div>
@@ -435,16 +436,16 @@ export default function KycPendingPage() {
           <div className="w-full max-w-md rounded-xl bg-card p-6 shadow-xl border space-y-4">
             <h3 className="text-lg font-bold">Xác nhận duyệt hồ sơ e-KYC</h3>
             <div className="rounded-lg bg-muted/40 p-4 space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Họ tên thợ:</span>
-                <span className="font-semibold">{approvingSingle.user_id?.full_name}</span>
+              <div className="flex justify-between gap-3">
+                <span className="text-muted-foreground shrink-0">Họ tên thợ:</span>
+                <span className="font-semibold min-w-0 text-right break-words">{approvingSingle.user_id?.full_name}</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Số điện thoại:</span>
+              <div className="flex justify-between gap-3">
+                <span className="text-muted-foreground shrink-0">Số điện thoại:</span>
                 <span className="font-mono">{approvingSingle.user_id?.phone}</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Số CCCD:</span>
+              <div className="flex justify-between gap-3">
+                <span className="text-muted-foreground shrink-0">Số CCCD:</span>
                 <span className="font-mono">{approvingSingle.id_card_number || '—'}</span>
               </div>
             </div>
