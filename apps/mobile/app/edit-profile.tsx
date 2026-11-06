@@ -200,7 +200,7 @@ export default function EditProfileScreen() {
   const pickAvatar = async (source: 'camera' | 'library') => {
     try {
       const perm =
-        source === 'camera'
+        source === 'camera' && Platform.OS !== 'web'
           ? await ImagePicker.requestCameraPermissionsAsync()
           : await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (perm.status !== 'granted') {
@@ -223,8 +223,9 @@ export default function EditProfileScreen() {
         aspect: [1, 1],
         quality: 0.7,
       };
+      // B14: camera không hỗ trợ trên web → chọn ảnh từ thư viện (mẫu home.tsx)
       const result =
-        source === 'camera'
+        source === 'camera' && Platform.OS !== 'web'
           ? await ImagePicker.launchCameraAsync(options)
           : await ImagePicker.launchImageLibraryAsync(options);
       if (!result.canceled && result.assets[0]?.uri) {

@@ -922,6 +922,17 @@ export default function JobDetailScreen() {
 
   const handleTakeDisputePhoto = async () => {
     try {
+      // B14: camera không hỗ trợ trên web → chọn ảnh từ thư viện (mẫu home.tsx)
+      if (Platform.OS === 'web') {
+        const result = await ImagePicker.launchImageLibraryAsync({
+          mediaTypes: ImagePicker.MediaTypeOptions.Images,
+          quality: 0.8,
+        });
+        if (!result.canceled && result.assets[0]?.uri) {
+          setDisputePhotos(prev => [...prev, result.assets[0].uri].slice(0, 4));
+        }
+        return;
+      }
       const { status } = await ImagePicker.requestCameraPermissionsAsync();
       if (status !== 'granted') {
         Toast.show({
