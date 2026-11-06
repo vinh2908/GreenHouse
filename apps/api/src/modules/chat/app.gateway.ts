@@ -162,7 +162,7 @@ export class AppGateway implements OnGatewayConnection, OnGatewayDisconnect {
     client.leave(`chat:${data?.conversation_id}`);
   }
 
-  // ─── Chat messages (REST only — socket chat:send removed, B40) ─────────────
+  // ─── Chat messages (REST only — socket send path removed, B40) ─────────────
 
   @SubscribeMessage('chat:read')
   async handleReadReceipt(
