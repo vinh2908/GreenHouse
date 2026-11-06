@@ -196,22 +196,7 @@ export default function SosScreen() {
     Linking.openURL(`tel:${phone}`);
   };
 
-  const handleSendSos = async () => {
-    if (
-      !address.full_address.trim() ||
-      (address.coordinates[0] === 0 && address.coordinates[1] === 0)
-    ) {
-      Toast.show({
-        type: 'error',
-        text1: lang === 'en' ? 'Rescue address missing' : 'Chưa có địa chỉ cứu hộ',
-        text2:
-          lang === 'en'
-            ? 'Please tap GPS locate or enter address below before sending SOS signal.'
-            : 'Vui lòng bấm định vị GPS hoặc nhập địa chỉ cấp cứu bên dưới trước khi phát tín hiệu SOS.',
-      });
-      return;
-    }
-
+  const executeSendSos = async () => {
     try {
       const res = await createSos.mutateAsync({
         category: selectedCategory,
@@ -252,6 +237,41 @@ export default function SosScreen() {
         (lang === 'en' ? 'Failed to send SOS request' : 'Gửi yêu cầu cứu hộ thất bại');
       Toast.show({ type: 'error', text1: msg });
     }
+  };
+
+  const handleSendSos = () => {
+    if (
+      !address.full_address.trim() ||
+      (address.coordinates[0] === 0 && address.coordinates[1] === 0)
+    ) {
+      Toast.show({
+        type: 'error',
+        text1: lang === 'en' ? 'Rescue address missing' : 'Chưa có địa chỉ cứu hộ',
+        text2:
+          lang === 'en'
+            ? 'Please tap GPS locate or enter address below before sending SOS signal.'
+            : 'Vui lòng bấm định vị GPS hoặc nhập địa chỉ cấp cứu bên dưới trước khi phát tín hiệu SOS.',
+      });
+      return;
+    }
+
+    const title = lang === 'en' ? 'Confirm Emergency SOS' : 'Xác nhận cứu hộ khẩn cấp';
+    const msg =
+      lang === 'en'
+        ? `Emergency type: ${selectedCatObj.name}\nAddress: ${address.full_address}\nEstimated total: ${totalEstimate.toLocaleString('vi-VN')}₫ (includes emergency surcharge ${surcharge.toLocaleString('vi-VN')}₫).\n\nDo you want to dispatch SOS signal now?`
+        : `Loại sự cố: ${selectedCatObj.name}\nĐịa chỉ: ${address.full_address}\nTổng tiền ước tính: ${totalEstimate.toLocaleString('vi-VN')}₫ (đã gồm phụ phí khẩn cấp: ${surcharge.toLocaleString('vi-VN')}₫).\n\nBạn có chắc chắn muốn gửi tín hiệu cứu hộ SOS ngay?`;
+
+    Alert.alert(title, msg, [
+      {
+        text: lang === 'en' ? 'Cancel' : 'Hủy',
+        style: 'cancel',
+      },
+      {
+        text: lang === 'en' ? 'Send SOS' : 'Gửi SOS',
+        style: 'destructive',
+        onPress: executeSendSos,
+      },
+    ]);
   };
 
   const insets = useSafeAreaInsets();
