@@ -365,6 +365,10 @@ export class AdminService {
       : { user_id: userId };
     const profile = await this.helperModel.findOne(query).exec();
     if (!profile) throw new NotFoundException('Helper profile not found');
+    // B82: chỉ từ chối được e-KYC đang chờ duyệt; đã duyệt/từ chối rồi → 400
+    if (profile.verification_status !== VerificationStatus.PENDING) {
+      throw new BadRequestException('Hồ sơ không ở trạng thái chờ duyệt (PENDING), không thể từ chối');
+    }
     profile.verification_status = VerificationStatus.REJECTED;
     profile.rejection_reason = reason;
     // A helper who loses verification must stop receiving jobs and SOS broadcasts.
@@ -375,6 +379,8 @@ export class AdminService {
       type: NOTIFICATION_TYPES.KYC_REJECTED,
       title: 'Hồ sơ e-KYC bị từ chối',
       body: `Lý do: ${reason}. Vui lòng cập nhật và nộp lại hồ sơ.`,
+      // B104: bấm thông báo mở đúng màn nộp lại e-KYC
+      payload: { screen: 'kyc', route: '/kyc', reason },
     });
     return saved;
   }
