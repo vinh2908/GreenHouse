@@ -39,8 +39,25 @@ export class HelpersService {
     return profile!;
   }
 
-  async getProfile(userId: string): Promise<HelperProfileDocument> {
-    return this.getOrCreate(userId);
+  maskHelperBankAccount<T extends Record<string, any>>(profile: T): any {
+    if (!profile) return profile;
+    const doc =
+      typeof (profile as any).toObject === 'function'
+        ? (profile as any).toObject()
+        : JSON.parse(JSON.stringify(profile));
+    if (doc.bank_account?.account_number) {
+      const raw = String(doc.bank_account.account_number).trim();
+      doc.bank_account = {
+        ...doc.bank_account,
+        account_number: raw.length > 4 ? `****${raw.slice(-4)}` : '****',
+      };
+    }
+    return doc;
+  }
+
+  async getProfile(userId: string): Promise<any> {
+    const profile = await this.getOrCreate(userId);
+    return this.maskHelperBankAccount(profile);
   }
 
   toSafePublicProfile(profile: any): any {
@@ -86,13 +103,14 @@ export class HelpersService {
     return this.toSafePublicProfile(profile);
   }
 
-  async updateProfile(userId: string, dto: UpdateHelperProfileDto): Promise<HelperProfileDocument> {
+  async updateProfile(userId: string, dto: UpdateHelperProfileDto): Promise<any> {
     const profile = await this.getOrCreate(userId);
     Object.assign(profile, dto);
     if (dto.service_ids) {
       profile.service_ids = dto.service_ids.map(id => new Types.ObjectId(id)) as any;
     }
-    return profile.save();
+    const saved = await profile.save();
+    return this.maskHelperBankAccount(saved);
   }
 
   async setStatus(userId: string, dto: SetHelperStatusDto): Promise<HelperProfileDocument> {
@@ -168,10 +186,11 @@ export class HelpersService {
       .exec();
   }
 
-  async updateBankAccount(userId: string, dto: BankAccountDto): Promise<HelperProfileDocument> {
+  async updateBankAccount(userId: string, dto: BankAccountDto): Promise<any> {
     const profile = await this.getOrCreate(userId);
     profile.bank_account = dto;
-    return profile.save();
+    const saved = await profile.save();
+    return this.maskHelperBankAccount(saved);
   }
 
   // ─── Lịch làm việc (Feature 13) ────────────────────────────────────────────
