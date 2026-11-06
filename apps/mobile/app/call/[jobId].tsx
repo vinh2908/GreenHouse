@@ -14,7 +14,7 @@ import {
 import { stringeeService, type StringeeCallEvents } from '@/services/stringee.service';
 import { callkeepService } from '@/services/callkeep.service';
 import { socketService } from '@/services/socket.service';
-import { SOCKET_EVENTS } from '@homemate/constants';
+import { SOCKET_EVENTS, CALL_END_REASONS, normalizeCallEndReason } from '@homemate/constants';
 import { useTranslation } from '@/hooks/use-i18n';
 
 /**
@@ -268,14 +268,24 @@ export default function CallScreen() {
       if (!s || (payload?.sessionId && payload.sessionId !== s.session_id)) return;
       if (endedRef.current) return;
       endedRef.current = true;
-      if (payload?.reason === 'rejected') {
-        setEndReason(
-          lang === 'en' ? 'The other party declined the call' : 'Người kia đã từ chối cuộc gọi',
-        );
-        setUiState('rejected');
-      } else {
-        setUiState('ended');
-      }
+      // B112: lý do kết thúc dùng chung một enum — hiển thị cùng một lý do ở cả hai bên
+      const reason = normalizeCallEndReason(payload?.reason);
+      const reasonText: Record<string, string> =
+        lang === 'en'
+          ? {
+              [CALL_END_REASONS.DECLINED]: 'The other party declined the call',
+              [CALL_END_REASONS.CANCELLED]: 'The other party cancelled the call',
+              [CALL_END_REASONS.MISSED]: 'Missed call',
+              [CALL_END_REASONS.ENDED]: 'Call ended',
+            }
+          : {
+              [CALL_END_REASONS.DECLINED]: 'Người kia đã từ chối cuộc gọi',
+              [CALL_END_REASONS.CANCELLED]: 'Người kia đã hủy cuộc gọi',
+              [CALL_END_REASONS.MISSED]: 'Cuộc gọi nhỡ',
+              [CALL_END_REASONS.ENDED]: 'Cuộc gọi đã kết thúc',
+            };
+      setEndReason(reasonText[reason] ?? reasonText[CALL_END_REASONS.ENDED]);
+      setUiState(reason === CALL_END_REASONS.DECLINED ? 'rejected' : 'ended');
     });
     return () => unsub();
   }, []);

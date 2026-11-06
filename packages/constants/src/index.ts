@@ -167,6 +167,35 @@ export const SOCKET_EVENTS = {
   CALL_ENDED: 'call:ended', // Cuộc gọi thoại kết thúc / cúp máy
   CALL_MISSED: 'call:missed', // Cuộc gọi nhỡ
   CALL_DECLINED: 'call:declined', // Cuộc gọi bị từ chối
+} as const;
+
+// B112: một enum duy nhất cho lý do kết thúc cuộc gọi — cả hai bên (server +
+// app) dùng chung, hiển thị cùng một lý do.
+export const CALL_END_REASONS = {
+  DECLINED: 'declined',
+  CANCELLED: 'cancelled',
+  ENDED: 'ended',
+  MISSED: 'missed',
+} as const;
+export type CallEndReason = (typeof CALL_END_REASONS)[keyof typeof CALL_END_REASONS];
+
+/** Chuẩn hoá lý do cũ/lạ về enum B112: rejected→declined, no_answer/timeout→missed. */
+export function normalizeCallEndReason(reason?: string | null): CallEndReason {
+  switch ((reason ?? '').toLowerCase()) {
+    case 'declined':
+    case 'rejected':
+      return CALL_END_REASONS.DECLINED;
+    case 'cancelled':
+    case 'canceled':
+      return CALL_END_REASONS.CANCELLED;
+    case 'missed':
+    case 'no_answer':
+    case 'timeout':
+      return CALL_END_REASONS.MISSED;
+    default:
+      return CALL_END_REASONS.ENDED;
+  }
+
   SUPPORT_MESSAGE: 'support:message', // Tin nhắn hỗ trợ trực tuyến (Feature 18)
 } as const;
 

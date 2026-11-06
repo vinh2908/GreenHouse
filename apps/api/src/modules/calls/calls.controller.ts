@@ -23,7 +23,7 @@ class InitiateCallDto {
 
 class EndCallDto {
   @ApiPropertyOptional({
-    description: 'Lý do kết thúc: ended | missed | rejected | declined | failed',
+    description: 'B112: Lý do kết thúc (enum duy nhất): declined | cancelled | ended | missed',
   })
   @IsOptional()
   @IsString()
