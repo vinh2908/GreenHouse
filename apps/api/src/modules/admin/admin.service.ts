@@ -653,42 +653,82 @@ export class AdminService {
       );
     }
 
-    let wallet = await this.walletModel.findOne({ user_id: job.customer_id }).exec();
-    if (!wallet) {
-      wallet = await this.walletModel.create({
-        user_id: job.customer_id,
-        balance: 0,
-      });
+    // B91: hoàn tiền trực tiếp (cộng ví + ghi giao dịch + ghi event đơn) trong 1 transaction
+    const conn: any = (this.walletModel as any)?.db;
+    let session: any = null;
+    if (conn && typeof conn.startSession === 'function') {
+      try {
+        session = await conn.startSession();
+      } catch {
+        session = null;
+      }
     }
+    const doRefund = async (sess?: any) => {
+      let wallet = await this.walletModel
+        .findOne({ user_id: job.customer_id })
+        .session(sess ?? null)
+        .exec();
+      if (!wallet) {
+        [wallet] = await this.walletModel.create(
+          [{ user_id: job.customer_id, balance: 0 }],
+          { session: sess ?? undefined },
+        );
+      }
 
-    const balanceBefore = wallet.balance;
-    const balanceAfter = balanceBefore + amount;
-    wallet.balance = balanceAfter;
-    await wallet.save();
+      const balanceBefore = wallet.balance;
+      const balanceAfter = balanceBefore + amount;
+      wallet.balance = balanceAfter;
+      await wallet.save({ session: sess ?? undefined });
 
-    await this.transactionModel.create({
-      wallet_id: wallet._id,
-      user_id: job.customer_id,
-      job_id: job._id,
-      type: 'refund',
-      status: 'success',
-      amount,
-      balance_before: balanceBefore,
-      balance_after: balanceAfter,
-      description: `Admin hoàn tiền trực tiếp cho đơn #${jobId.slice(-6)}: ${reason}`,
-    });
+      await this.transactionModel.create(
+        [
+          {
+            wallet_id: wallet._id,
+            user_id: job.customer_id,
+            job_id: job._id,
+            type: 'refund',
+            status: 'success',
+            amount,
+            balance_before: balanceBefore,
+            balance_after: balanceAfter,
+            description: `Admin hoàn tiền trực tiếp cho đơn #${jobId.slice(-6)}: ${reason}`,
+          },
+        ],
+        { session: sess ?? undefined },
+      );
 
-    job.events.push({
-      status: job.status,
-      note: `Admin hoàn tiền trực tiếp ${amount.toLocaleString('vi-VN')}₫ vào ví khách hàng. Lý do: ${reason}`,
-      actor_id:
-        adminId && Types.ObjectId.isValid(adminId)
-          ? new Types.ObjectId(adminId)
-          : (job.customer_id as any) || new Types.ObjectId(),
-      actor_role: 'admin',
-      timestamp: new Date(),
-    });
-    await job.save();
+      job.events.push({
+        status: job.status,
+        note: `Admin hoàn tiền trực tiếp ${amount.toLocaleString('vi-VN')}₫ vào ví khách hàng. Lý do: ${reason}`,
+        actor_id:
+          adminId && Types.ObjectId.isValid(adminId)
+            ? new Types.ObjectId(adminId)
+            : (job.customer_id as any) || new Types.ObjectId(),
+        actor_role: 'admin',
+        timestamp: new Date(),
+      });
+      await job.save({ session: sess ?? undefined });
+      return balanceAfter;
+    };
+    let balanceAfter: number;
+    if (session) {
+      try {
+        balanceAfter = await session.withTransaction(async () => doRefund(session));
+      } catch (txErr: any) {
+        if (
+          txErr?.message?.includes('replica set member') ||
+          txErr?.message?.includes('Transaction numbers')
+        ) {
+          balanceAfter = await doRefund(undefined);
+        } else {
+          throw txErr;
+        }
+      } finally {
+        try { await session.endSession(); } catch { /* ignore */ }
+      }
+    } else {
+      balanceAfter = await doRefund(undefined);
+    }
 
     await this.notificationsService
       .create({
