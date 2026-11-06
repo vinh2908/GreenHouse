@@ -808,6 +808,32 @@ export function useAdminMonthlyContracts(params?: {
   });
 }
 
+export function useAdminApproveMonthlyContract() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => apiClient.patch(`/monthly-contracts/admin/${id}/approve`),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'monthly-contracts'] }),
+  });
+}
+
+export function useAdminCancelMonthlyContract() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, reason }: { id: string; reason?: string }) =>
+      apiClient.patch(`/monthly-contracts/admin/${id}/cancel`, { reason }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'monthly-contracts'] }),
+  });
+}
+
+export function useAdminEndMonthlyContract() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, reason }: { id: string; reason?: string }) =>
+      apiClient.patch(`/monthly-contracts/admin/${id}/end`, { reason }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'monthly-contracts'] }),
+  });
+}
+
 // ─── Manual Job Interventions ──────────────────────────────────────────────────
 
 export function useAdminUpdateJobStatus() {
