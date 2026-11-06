@@ -28,7 +28,7 @@ import {
   useUpdateHelperLocation,
 } from '@/hooks/use-api';
 import { locationService } from '@/services/location.service';
-import { Avatar, Card, COLORS, Separator } from '@/components/ui';
+import { Avatar, Card, COLORS, Separator, useThemeColors } from '@/components/ui';
 import { useTranslation } from '@/hooks/use-i18n';
 import { DisplaySettingsSection } from '@/components/common/display-settings';
 import { AppPermissionsSection } from '@/components/common/initial-permissions-modal';
@@ -48,6 +48,7 @@ export default function HelperProfileScreen() {
   }, [isAuthLoading, isSwitchingRole, storedUser?.active_role]);
 
   const { t, fs } = useTranslation();
+  const tc = useThemeColors();
   const queryClient = useQueryClient();
   const logout = useAuthStore(s => s.logout);
   const { data: myProfile } = useMyProfile();
@@ -133,7 +134,7 @@ export default function HelperProfileScreen() {
   };
 
   const KYC_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
-    loading: { label: t('kyc_status_loading'), color: COLORS.gray[500], bg: COLORS.gray[100] },
+    loading: { label: t('kyc_status_loading'), color: tc.textMuted, bg: COLORS.gray[100] },
     unsubmitted: { label: t('kyc_status_unsubmitted'), color: COLORS.error, bg: '#FEF2F2' },
     pending: { label: t('kyc_status_pending'), color: '#D97706', bg: '#FFFBEB' },
     approved: { label: t('kyc_status_approved'), color: COLORS.success, bg: '#ECFDF5' },
@@ -148,7 +149,7 @@ export default function HelperProfileScreen() {
   const ratingScore = profile?.rating ?? profile?.average_rating ?? 0;
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#F8F9FA' }}>
+    <View style={{ flex: 1, backgroundColor: tc.background }}>
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 110 }}
@@ -156,13 +157,13 @@ export default function HelperProfileScreen() {
         {/* Header (Safe Insets) */}
         <View
           style={{
-            backgroundColor: '#FFFFFF',
+            backgroundColor: tc.surface,
             paddingHorizontal: 24,
             paddingTop: Math.max(insets.top + 8, 20),
             paddingBottom: 24,
             alignItems: 'center',
             borderBottomWidth: 1,
-            borderBottomColor: COLORS.gray[100],
+            borderBottomColor: tc.border,
           }}
         >
           <TouchableOpacity
@@ -175,20 +176,20 @@ export default function HelperProfileScreen() {
               style={{
                 fontSize: fs(20),
                 fontWeight: '800',
-                color: COLORS.gray[900],
+                color: tc.text,
                 marginTop: 12,
               }}
             >
               {user?.full_name}
             </Text>
             <Text
-              style={{ fontSize: fs(14), color: COLORS.gray[500], marginTop: 4, fontWeight: '600' }}
+              style={{ fontSize: fs(14), color: tc.textMuted, marginTop: 4, fontWeight: '600' }}
             >
               {user?.phone}
             </Text>
             <View
               style={{
-                backgroundColor: COLORS.gray[100],
+                backgroundColor: tc.subtle,
                 paddingHorizontal: 10,
                 paddingVertical: 4,
                 borderRadius: 8,
@@ -210,34 +211,34 @@ export default function HelperProfileScreen() {
                 marginTop: 16,
                 paddingTop: 16,
                 borderTopWidth: 1,
-                borderTopColor: COLORS.gray[100],
+                borderTopColor: tc.border,
                 width: '100%',
                 justifyContent: 'center',
               }}
             >
               <View style={{ alignItems: 'center' }}>
-                <Text style={{ fontSize: fs(20), fontWeight: '800', color: COLORS.gray[900] }}>
+                <Text style={{ fontSize: fs(20), fontWeight: '800', color: tc.text }}>
                   {completedCount}
                 </Text>
-                <Text style={{ fontSize: fs(12), color: COLORS.gray[500], fontWeight: '600' }}>
+                <Text style={{ fontSize: fs(12), color: tc.textMuted, fontWeight: '600' }}>
                   {t('helper_profile.completed_jobs')}
                 </Text>
               </View>
-              <View style={{ width: 1, backgroundColor: COLORS.gray[200] }} />
+              <View style={{ width: 1, backgroundColor: tc.border }} />
               <View style={{ alignItems: 'center' }}>
                 <Text style={{ fontSize: fs(20), fontWeight: '800', color: '#D97706' }}>
                   ★ {ratingScore > 0 ? ratingScore.toFixed(1) : '5.0'}
                 </Text>
-                <Text style={{ fontSize: fs(12), color: COLORS.gray[500], fontWeight: '600' }}>
+                <Text style={{ fontSize: fs(12), color: tc.textMuted, fontWeight: '600' }}>
                   {t('helper_profile.reputation_points')}
                 </Text>
               </View>
-              <View style={{ width: 1, backgroundColor: COLORS.gray[200] }} />
+              <View style={{ width: 1, backgroundColor: tc.border }} />
               <View style={{ alignItems: 'center' }}>
                 <Text style={{ fontSize: fs(20), fontWeight: '800', color: COLORS.success }}>
                   {profile.completion_rate ?? 100}%
                 </Text>
-                <Text style={{ fontSize: fs(12), color: COLORS.gray[500], fontWeight: '600' }}>
+                <Text style={{ fontSize: fs(12), color: tc.textMuted, fontWeight: '600' }}>
                   {t('helper_profile.acceptance_rate')}
                 </Text>
               </View>
@@ -271,7 +272,7 @@ export default function HelperProfileScreen() {
           {/* Online toggle */}
           <Card style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
             <View style={{ flex: 1 }}>
-              <Text style={{ fontWeight: '800', fontSize: fs(15), color: COLORS.gray[900] }}>
+              <Text style={{ fontWeight: '800', fontSize: fs(15), color: tc.text }}>
                 {t('helper_profile.receiving_status')}
               </Text>
               <Text
@@ -475,7 +476,7 @@ export default function HelperProfileScreen() {
                     style={{
                       flex: 1,
                       fontSize: fs(15),
-                      color: COLORS.gray[900],
+                      color: tc.text,
                       fontWeight: '600',
                     }}
                   >
@@ -535,7 +536,7 @@ export default function HelperProfileScreen() {
             style={{
               textAlign: 'center',
               fontSize: fs(12),
-              color: COLORS.gray[500],
+              color: tc.textMuted,
               fontWeight: '500',
             }}
           >

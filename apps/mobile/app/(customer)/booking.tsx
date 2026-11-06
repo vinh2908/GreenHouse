@@ -72,7 +72,7 @@ import {
 } from '@/hooks/use-api';
 import type { IssuePhotoAnalysis } from '@/hooks/use-api';
 import { locationService, OsmPlace, parseVietnameseAddress } from '@/services/location.service';
-import { Button, Input, Card, COLORS, Skeleton } from '@/components/ui';
+import { Button, Input, Card, COLORS, Skeleton, useThemeColors } from '@/components/ui';
 import { VoucherInput } from '@/components/common/voucher-input';
 import type { VoucherPreview } from '@/hooks/use-api';
 import { useTranslation } from '@/hooks/use-i18n';
@@ -245,6 +245,7 @@ const DEFAULT_SERVICES: BookingServiceOption[] = [
 export default function BookingScreen() {
   const router = useRouter();
   const { t, tService, tServiceDesc, lang, fs } = useTranslation();
+  const tc = useThemeColors();
   const params = useLocalSearchParams<{
     service_id?: string;
     service_slug?: string;
@@ -1282,7 +1283,7 @@ export default function BookingScreen() {
   const insets = useSafeAreaInsets();
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#fff' }}>
+    <View style={{ flex: 1, backgroundColor: tc.surface }}>
       {/* Header (Safe Insets) */}
       <View
         style={{
@@ -1301,7 +1302,7 @@ export default function BookingScreen() {
             width: 40,
             height: 40,
             borderRadius: 14,
-            backgroundColor: COLORS.gray[100],
+            backgroundColor: tc.subtle,
             alignItems: 'center',
             justifyContent: 'center',
           }}
@@ -1309,7 +1310,7 @@ export default function BookingScreen() {
           <ArrowLeft size={20} color={COLORS.gray[800]} />
         </TouchableOpacity>
         <Text
-          style={{ fontSize: fs(18), fontWeight: '800', color: COLORS.gray[900], marginLeft: 12 }}
+          style={{ fontSize: fs(18), fontWeight: '800', color: tc.text, marginLeft: 12 }}
         >
           {t('booking_screen_title')}
         </Text>
@@ -1330,7 +1331,7 @@ export default function BookingScreen() {
             />
           ))}
         </View>
-        <Text style={{ fontSize: fs(12), color: COLORS.gray[500], fontWeight: '600' }}>
+        <Text style={{ fontSize: fs(12), color: tc.textMuted, fontWeight: '600' }}>
           {t('booking_step_indicator', {
             step: step + 1,
             total: STEPS.length,
@@ -1492,7 +1493,7 @@ export default function BookingScreen() {
                 )}
               </Card>
 
-              <Text style={{ fontSize: fs(16), fontWeight: '800', color: COLORS.gray[800] }}>
+              <Text style={{ fontSize: fs(16), fontWeight: '800', color: tc.text }}>
                 {t('booking_or_choose_below')}
               </Text>
 
@@ -1503,7 +1504,7 @@ export default function BookingScreen() {
                     {[1, 2, 3].map(i => (
                       <Skeleton key={i} width="100%" height={72} radius={14} />
                     ))}
-                    <Text style={{ fontSize: fs(13), color: COLORS.gray[500], fontWeight: '600', textAlign: 'center' }}>
+                    <Text style={{ fontSize: fs(13), color: tc.textMuted, fontWeight: '600', textAlign: 'center' }}>
                       {t('booking_loading_services')}
                     </Text>
                   </View>
@@ -1546,13 +1547,13 @@ export default function BookingScreen() {
                       </View>
                       <View style={{ flex: 1 }}>
                         <Text
-                          style={{ fontWeight: '800', fontSize: fs(15), color: COLORS.gray[900] }}
+                          style={{ fontWeight: '800', fontSize: fs(15), color: tc.text }}
                         >
                           {tService(svc)}
                         </Text>
                         {svc.description && (
                           <Text
-                            style={{ fontSize: fs(12), color: COLORS.gray[500], marginTop: 2 }}
+                            style={{ fontSize: fs(12), color: tc.textMuted, marginTop: 2 }}
                             numberOfLines={1}
                           >
                             {tServiceDesc(svc)}
@@ -1636,7 +1637,7 @@ export default function BookingScreen() {
                   <View style={{ flex: 1 }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                       <Text
-                        style={{ fontWeight: '800', fontSize: fs(15), color: COLORS.gray[900] }}
+                        style={{ fontWeight: '800', fontSize: fs(15), color: tc.text }}
                       >
                         {t('booking_other_service_title')}
                       </Text>
@@ -1655,7 +1656,7 @@ export default function BookingScreen() {
                         </Text>
                       </View>
                     </View>
-                    <Text style={{ fontSize: fs(12), color: COLORS.gray[600], marginTop: 2 }}>
+                    <Text style={{ fontSize: fs(12), color: tc.textSecondary, marginTop: 2 }}>
                       {t('booking_other_service_desc')}
                     </Text>
                     <Text
@@ -1688,7 +1689,7 @@ export default function BookingScreen() {
                 {selectedService === 'custom' && (
                   <View
                     style={{
-                      backgroundColor: '#FFFFFF',
+                      backgroundColor: tc.surface,
                       borderRadius: 14,
                       padding: 16,
                       borderWidth: 1.5,
@@ -1727,7 +1728,7 @@ export default function BookingScreen() {
           {/* ── STEP 1: Địa chỉ ──────────────────────────────────────── */}
           {step === 1 && (
             <View style={{ gap: 14 }}>
-              <Text style={{ fontSize: fs(20), fontWeight: '800', color: COLORS.gray[900] }}>
+              <Text style={{ fontSize: fs(20), fontWeight: '800', color: tc.text }}>
                 {t('booking_step_address_title')}
               </Text>
 
@@ -1759,7 +1760,7 @@ export default function BookingScreen() {
 
               {/* Ô Tìm kiếm địa điểm Goong Maps */}
               <View style={{ gap: 6, position: 'relative', zIndex: 10 }}>
-                <Text style={{ fontSize: fs(13), fontWeight: '700', color: COLORS.gray[700] }}>
+                <Text style={{ fontSize: fs(13), fontWeight: '700', color: tc.textSecondary }}>
                   {t('booking_search_map_title')}
                 </Text>
                 <View
@@ -1767,10 +1768,10 @@ export default function BookingScreen() {
                     flexDirection: 'row',
                     alignItems: 'center',
                     borderWidth: 1.5,
-                    borderColor: COLORS.gray[200],
+                    borderColor: tc.border,
                     borderRadius: 14,
                     paddingHorizontal: 14,
-                    backgroundColor: '#fff',
+                    backgroundColor: tc.surface,
                     gap: 10,
                   }}
                 >
@@ -1780,7 +1781,7 @@ export default function BookingScreen() {
                       flex: 1,
                       paddingVertical: 12,
                       fontSize: fs(14),
-                      color: COLORS.gray[900],
+                      color: tc.text,
                     }}
                     placeholder={t('booking_search_address_placeholder')}
                     value={searchQuery}
@@ -1809,7 +1810,7 @@ export default function BookingScreen() {
                           style={{
                             padding: 10,
                             borderBottomWidth: idx < searchResults.length - 1 ? 1 : 0,
-                            borderBottomColor: COLORS.gray[100],
+                            borderBottomColor: tc.border,
                             flexDirection: 'row',
                             alignItems: 'flex-start',
                             gap: 8,
@@ -1819,7 +1820,7 @@ export default function BookingScreen() {
                           <Text
                             style={{
                               fontSize: fs(13),
-                              color: COLORS.gray[800],
+                              color: tc.text,
                               flex: 1,
                               lineHeight: 18,
                             }}
@@ -1840,13 +1841,13 @@ export default function BookingScreen() {
                       style={{
                         padding: 10,
                         marginTop: 4,
-                        backgroundColor: COLORS.gray[50],
+                        backgroundColor: tc.background,
                         borderRadius: 8,
                         borderWidth: 1,
-                        borderColor: COLORS.gray[200],
+                        borderColor: tc.border,
                       }}
                     >
-                      <Text style={{ fontSize: fs(13), color: COLORS.gray[500], lineHeight: 18 }}>
+                      <Text style={{ fontSize: fs(13), color: tc.textMuted, lineHeight: 18 }}>
                         {t('booking_no_location_found')}
                       </Text>
                     </View>
@@ -1910,13 +1911,13 @@ export default function BookingScreen() {
           {/* ── STEP 2: Lịch hẹn ─────────────────────────────────────── */}
           {step === 2 && (
             <View style={{ gap: 20 }}>
-              <Text style={{ fontSize: fs(20), fontWeight: '800', color: COLORS.gray[900] }}>
+              <Text style={{ fontSize: fs(20), fontWeight: '800', color: tc.text }}>
                 {t('booking_step_schedule_title')}
               </Text>
 
               {/* 1. Lịch làm việc: Ngày & Giờ (Trigger mở Bottom Sheet Item 1) */}
               <View style={{ gap: 10 }}>
-                <Text style={{ fontSize: fs(14), fontWeight: '700', color: COLORS.gray[800] }}>
+                <Text style={{ fontSize: fs(14), fontWeight: '700', color: tc.text }}>
                   {t('booking_start_time_title')}
                 </Text>
 
@@ -1942,7 +1943,7 @@ export default function BookingScreen() {
                   <Calendar size={18} color="#16A34A" />
                   <View style={{ flex: 1 }}>
                     <Text
-                      style={{ fontSize: fs(15), fontWeight: '700', color: COLORS.gray[900] }}
+                      style={{ fontSize: fs(15), fontWeight: '700', color: tc.text }}
                       numberOfLines={1}
                     >
                       {(() => {
@@ -2056,7 +2057,7 @@ export default function BookingScreen() {
           {/* ── STEP 3: Mô tả & Ảnh hiện trạng ───────────────────────── */}
           {step === 3 && (
             <View style={{ gap: 16 }}>
-              <Text style={{ fontSize: fs(20), fontWeight: '800', color: COLORS.gray[900] }}>
+              <Text style={{ fontSize: fs(20), fontWeight: '800', color: tc.text }}>
                 {t('booking_step_details_title')}
               </Text>
 
@@ -2098,7 +2099,7 @@ export default function BookingScreen() {
               />
 
               <View style={{ gap: 6 }}>
-                <Text style={{ fontSize: fs(14), fontWeight: '700', color: COLORS.gray[700] }}>
+                <Text style={{ fontSize: fs(14), fontWeight: '700', color: tc.textSecondary }}>
                   {t('booking_description_label')}
                 </Text>
                 <TextInput
@@ -2108,8 +2109,8 @@ export default function BookingScreen() {
                     borderRadius: 14,
                     padding: 14,
                     fontSize: fs(15),
-                    color: COLORS.gray[900],
-                    backgroundColor: COLORS.gray[50],
+                    color: tc.text,
+                    backgroundColor: tc.background,
                     minHeight: 120,
                     textAlignVertical: 'top',
                   }}
@@ -2138,10 +2139,10 @@ export default function BookingScreen() {
                     alignItems: 'center',
                   }}
                 >
-                  <Text style={{ fontSize: fs(14), fontWeight: '700', color: COLORS.gray[700] }}>
+                  <Text style={{ fontSize: fs(14), fontWeight: '700', color: tc.textSecondary }}>
                     {t('booking_photos_label', { count: photos.length })}
                   </Text>
-                  <Text style={{ fontSize: fs(12), color: COLORS.gray[500] }}>
+                  <Text style={{ fontSize: fs(12), color: tc.textMuted }}>
                     {t('booking_optional')}
                   </Text>
                 </View>
@@ -2178,13 +2179,13 @@ export default function BookingScreen() {
                       alignItems: 'center',
                       justifyContent: 'center',
                       gap: 6,
-                      backgroundColor: COLORS.gray[100],
+                      backgroundColor: tc.subtle,
                       borderRadius: 14,
                       paddingVertical: 11,
                     }}
                   >
                     <ImagePlus size={18} color={COLORS.gray[700]} />
-                    <Text style={{ fontWeight: '700', fontSize: fs(13), color: COLORS.gray[800] }}>
+                    <Text style={{ fontWeight: '700', fontSize: fs(13), color: tc.text }}>
                       {t('booking_pick_gallery')}
                     </Text>
                   </TouchableOpacity>
@@ -2202,7 +2203,7 @@ export default function BookingScreen() {
                           overflow: 'hidden',
                           position: 'relative',
                           borderWidth: 1,
-                          borderColor: COLORS.gray[200],
+                          borderColor: tc.border,
                         }}
                       >
                         <Image
@@ -2269,11 +2270,11 @@ export default function BookingScreen() {
                   <Text style={{ fontSize: fs(13), fontWeight: '700', color: COLORS.primary }}>
                     {t('booking_ai_detected_title')}
                   </Text>
-                  <Text style={{ fontSize: fs(15), fontWeight: '700', color: COLORS.gray[900] }}>
+                  <Text style={{ fontSize: fs(15), fontWeight: '700', color: tc.text }}>
                     {t('booking_ai_issue_label')} {photoAnalysis.detected_issue ?? '—'}
                   </Text>
                   {photoAnalysis.price_min != null && photoAnalysis.price_max != null && (
-                    <Text style={{ fontSize: fs(13), color: COLORS.gray[700] }}>
+                    <Text style={{ fontSize: fs(13), color: tc.textSecondary }}>
                       {t('booking_ai_price_range')}{' '}
                       {new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'vi-VN').format(
                         photoAnalysis.price_min,
@@ -2288,7 +2289,7 @@ export default function BookingScreen() {
                         : ''}
                     </Text>
                   )}
-                  <Text style={{ fontSize: fs(12), color: COLORS.gray[500] }}>
+                  <Text style={{ fontSize: fs(12), color: tc.textMuted }}>
                     {t('booking_ai_desc_hint')}
                   </Text>
                 </Card>
@@ -2324,7 +2325,7 @@ export default function BookingScreen() {
                   <Text style={{ fontSize: fs(13), fontWeight: '700', color: COLORS.primary }}>
                     {t('booking_ai_estimate_title')}
                   </Text>
-                  <Text style={{ fontSize: fs(22), fontWeight: '800', color: COLORS.gray[900] }}>
+                  <Text style={{ fontSize: fs(22), fontWeight: '800', color: tc.text }}>
                     {new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'vi-VN').format(
                       priceEstimate.price_min,
                     )}
@@ -2334,7 +2335,7 @@ export default function BookingScreen() {
                     )}
                     ₫
                   </Text>
-                  <Text style={{ fontSize: fs(12), color: COLORS.gray[500] }}>
+                  <Text style={{ fontSize: fs(12), color: tc.textMuted }}>
                     {t('booking_ai_market_note')}
                   </Text>
                 </Card>
@@ -2345,7 +2346,7 @@ export default function BookingScreen() {
           {/* ── STEP 4: Xác nhận ─────────────────────────────────────── */}
           {step === 4 && (
             <View style={{ gap: 16 }}>
-              <Text style={{ fontSize: fs(20), fontWeight: '800', color: COLORS.gray[900] }}>
+              <Text style={{ fontSize: fs(20), fontWeight: '800', color: tc.text }}>
                 {t('booking_confirm_title')}
               </Text>
 
@@ -2390,11 +2391,11 @@ export default function BookingScreen() {
                     value={`${photos.length} ${t('common_photos')}`}
                   />
                 )}
-                <View style={{ height: 1, backgroundColor: COLORS.gray[100] }} />
-                <Text style={{ fontWeight: '800', fontSize: fs(16), color: COLORS.gray[900] }}>
+                <View style={{ height: 1, backgroundColor: tc.subtle }} />
+                <Text style={{ fontWeight: '800', fontSize: fs(16), color: tc.text }}>
                   {title}
                 </Text>
-                <Text style={{ color: COLORS.gray[600], fontSize: fs(14), lineHeight: 20 }}>
+                <Text style={{ color: tc.textSecondary, fontSize: fs(14), lineHeight: 20 }}>
                   {description}
                 </Text>
               </Card>
@@ -2416,7 +2417,7 @@ export default function BookingScreen() {
                     )}
                     ₫
                   </Text>
-                  <Text style={{ fontSize: fs(13), color: COLORS.gray[700], lineHeight: 19 }}>
+                  <Text style={{ fontSize: fs(13), color: tc.textSecondary, lineHeight: 19 }}>
                     {t('booking_fixed_price_desc')}
                   </Text>
                 </Card>
@@ -2432,7 +2433,7 @@ export default function BookingScreen() {
               >
                 <Lightbulb size={20} color="#EA580C" style={{ marginTop: 2 }} />
                 <Text
-                  style={{ flex: 1, fontSize: fs(13), color: COLORS.gray[700], lineHeight: 18 }}
+                  style={{ flex: 1, fontSize: fs(13), color: tc.textSecondary, lineHeight: 18 }}
                 >
                   {isFixedPriceService
                     ? t('booking_quote_tip_fixed')
@@ -2447,7 +2448,7 @@ export default function BookingScreen() {
                     <Star size={20} color="#F59E0B" />
                     <View style={{ flex: 1 }}>
                       <Text
-                        style={{ fontWeight: '800', fontSize: fs(15), color: COLORS.gray[900] }}
+                        style={{ fontWeight: '800', fontSize: fs(15), color: tc.text }}
                       >
                         {t('booking_send_private_to', {
                           name:
@@ -2455,7 +2456,7 @@ export default function BookingScreen() {
                             (lang === 'en' ? 'favorite helper' : 'thợ yêu thích'),
                         })}
                       </Text>
-                      <Text style={{ fontSize: fs(12.5), color: COLORS.gray[600], lineHeight: 17 }}>
+                      <Text style={{ fontSize: fs(12.5), color: tc.textSecondary, lineHeight: 17 }}>
                         {t('booking_private_offer_desc')}
                       </Text>
                     </View>
@@ -2473,10 +2474,10 @@ export default function BookingScreen() {
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                   <Users size={20} color={COLORS.primary} />
                   <View style={{ flex: 1 }}>
-                    <Text style={{ fontWeight: '800', fontSize: fs(15), color: COLORS.gray[900] }}>
+                    <Text style={{ fontWeight: '800', fontSize: fs(15), color: tc.text }}>
                       {t('booking_helpers_needed_title')}
                     </Text>
-                    <Text style={{ fontSize: fs(12.5), color: COLORS.gray[600], lineHeight: 17 }}>
+                    <Text style={{ fontSize: fs(12.5), color: tc.textSecondary, lineHeight: 17 }}>
                       {t('booking_helpers_needed_desc')}
                     </Text>
                   </View>
@@ -2515,10 +2516,10 @@ export default function BookingScreen() {
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                   <Repeat size={20} color={COLORS.primary} />
                   <View style={{ flex: 1 }}>
-                    <Text style={{ fontWeight: '800', fontSize: fs(15), color: COLORS.gray[900] }}>
+                    <Text style={{ fontWeight: '800', fontSize: fs(15), color: tc.text }}>
                       {t('booking_set_recurring')}
                     </Text>
-                    <Text style={{ fontSize: fs(12.5), color: COLORS.gray[600], lineHeight: 17 }}>
+                    <Text style={{ fontSize: fs(12.5), color: tc.textSecondary, lineHeight: 17 }}>
                       {t('booking_recurring_desc')}
                     </Text>
                   </View>
@@ -2605,7 +2606,7 @@ export default function BookingScreen() {
                       </View>
                     ) : (
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                        <Text style={{ fontSize: fs(13.5), color: COLORS.gray[700] }}>
+                        <Text style={{ fontSize: fs(13.5), color: tc.textSecondary }}>
                           {t('booking_on_day')}
                         </Text>
                         <TextInput
@@ -2620,7 +2621,7 @@ export default function BookingScreen() {
                           style={{
                             width: 56,
                             borderWidth: 1,
-                            borderColor: COLORS.gray[200],
+                            borderColor: tc.border,
                             borderRadius: 8,
                             paddingHorizontal: 10,
                             paddingVertical: 8,
@@ -2629,12 +2630,12 @@ export default function BookingScreen() {
                             textAlign: 'center',
                           }}
                         />
-                        <Text style={{ fontSize: fs(13.5), color: COLORS.gray[700] }}>
+                        <Text style={{ fontSize: fs(13.5), color: tc.textSecondary }}>
                           {t('booking_every_month')}
                         </Text>
                       </View>
                     )}
-                    <Text style={{ fontSize: fs(12), color: COLORS.gray[500], lineHeight: 17 }}>
+                    <Text style={{ fontSize: fs(12), color: tc.textMuted, lineHeight: 17 }}>
                       {t('booking_recurring_preview', {
                         date: formatDate(dayjs(date)),
                         time: timeSlot,
@@ -2711,13 +2712,13 @@ export default function BookingScreen() {
                   <Card
                     style={{
                       backgroundColor: '#F9FAFB',
-                      borderColor: COLORS.gray[200],
+                      borderColor: tc.border,
                       borderWidth: 1,
                       gap: 12,
                       padding: 16,
                     }}
                   >
-                    <Text style={{ fontSize: fs(15), fontWeight: '800', color: COLORS.gray[900] }}>
+                    <Text style={{ fontSize: fs(15), fontWeight: '800', color: tc.text }}>
                       {lang === 'en' ? 'Price Summary' : 'Tóm tắt chi phí'}
                     </Text>
                     <View style={{ gap: 8 }}>
@@ -2729,11 +2730,11 @@ export default function BookingScreen() {
                           alignItems: 'center',
                         }}
                       >
-                        <Text style={{ fontSize: fs(13.5), color: COLORS.gray[600] }}>
+                        <Text style={{ fontSize: fs(13.5), color: tc.textSecondary }}>
                           {lang === 'en' ? 'Subtotal (est.)' : 'Tạm tính'}
                         </Text>
                         <Text
-                          style={{ fontSize: fs(14), fontWeight: '700', color: COLORS.gray[900] }}
+                          style={{ fontSize: fs(14), fontWeight: '700', color: tc.text }}
                         >
                           {subtotalText}
                         </Text>
@@ -2769,7 +2770,7 @@ export default function BookingScreen() {
                       <View
                         style={{
                           height: 1,
-                          backgroundColor: COLORS.gray[200],
+                          backgroundColor: tc.border,
                           marginVertical: 2,
                         }}
                       />
@@ -2783,7 +2784,7 @@ export default function BookingScreen() {
                         }}
                       >
                         <Text
-                          style={{ fontSize: fs(14.5), fontWeight: '800', color: COLORS.gray[900] }}
+                          style={{ fontSize: fs(14.5), fontWeight: '800', color: tc.text }}
                         >
                           {lang === 'en' ? 'Est. payment' : 'Còn phải trả'}
                         </Text>
@@ -2828,11 +2829,11 @@ export default function BookingScreen() {
           bottom: Platform.OS === 'ios' ? 92 : 72,
           left: 0,
           right: 0,
-          backgroundColor: '#fff',
+          backgroundColor: tc.surface,
           paddingHorizontal: 20,
           paddingVertical: 12,
           borderTopWidth: 1,
-          borderTopColor: COLORS.gray[100],
+          borderTopColor: tc.border,
           shadowColor: '#000',
           shadowOffset: { width: 0, height: -4 },
           shadowOpacity: 0.08,
@@ -2867,6 +2868,7 @@ export default function BookingScreen() {
 
 function Row({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
   const { fs } = useTranslation();
+  const tc = useThemeColors();
   return (
     <View style={{ flexDirection: 'row', gap: 10, alignItems: 'flex-start' }}>
       <View
@@ -2881,11 +2883,11 @@ function Row({ icon, label, value }: { icon: React.ReactNode; label: string; val
         {icon}
       </View>
       <View style={{ flex: 1 }}>
-        <Text style={{ fontSize: fs(12), color: COLORS.gray[500], fontWeight: '600' }}>
+        <Text style={{ fontSize: fs(12), color: tc.textMuted, fontWeight: '600' }}>
           {label}
         </Text>
         <Text
-          style={{ fontSize: fs(14), fontWeight: '700', color: COLORS.gray[900], marginTop: 2 }}
+          style={{ fontSize: fs(14), fontWeight: '700', color: tc.text, marginTop: 2 }}
         >
           {value}
         </Text>

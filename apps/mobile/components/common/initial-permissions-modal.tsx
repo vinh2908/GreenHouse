@@ -28,7 +28,7 @@ import {
   ShieldCheck,
 } from 'lucide-react-native';
 import { useAuthStore } from '@/stores/auth.store';
-import { Card, COLORS } from '@/components/ui';
+import { Card, COLORS, useThemeColors } from '@/components/ui';
 import { useTranslation } from '@/hooks/use-i18n';
 import { I18nKey } from '@/services/i18n';
 
@@ -259,6 +259,7 @@ export function InitialPermissionsModal() {
   };
 
   const { t, fs } = useTranslation();
+  const tc = useThemeColors();
 
   if (!visible) return null;
 
@@ -275,7 +276,7 @@ export function InitialPermissionsModal() {
       >
         <View
           style={{
-            backgroundColor: '#fff',
+            backgroundColor: tc.surface,
             borderRadius: 14,
             width: '100%',
             maxWidth: 440,
@@ -307,7 +308,7 @@ export function InitialPermissionsModal() {
               style={{
                 fontSize: fs(19),
                 fontWeight: '800',
-                color: COLORS.gray[900],
+                color: tc.text,
                 textAlign: 'center',
               }}
             >
@@ -316,7 +317,7 @@ export function InitialPermissionsModal() {
             <Text
               style={{
                 fontSize: fs(13),
-                color: COLORS.gray[600],
+                color: tc.textSecondary,
                 textAlign: 'center',
                 marginTop: 4,
                 lineHeight: Math.round(fs(18)),
@@ -367,7 +368,7 @@ export function InitialPermissionsModal() {
                       style={{
                         fontSize: fs(14),
                         fontWeight: '700',
-                        color: COLORS.gray[900],
+                        color: tc.text,
                       }}
                     >
                       {t(item.titleKey)}
@@ -375,7 +376,7 @@ export function InitialPermissionsModal() {
                     <Text
                       style={{
                         fontSize: fs(12),
-                        color: COLORS.gray[500],
+                        color: tc.textMuted,
                         marginTop: 2,
                         lineHeight: Math.round(fs(16)),
                       }}
@@ -448,7 +449,7 @@ export function InitialPermissionsModal() {
                 justifyContent: 'center',
               }}
             >
-              <Text style={{ color: COLORS.gray[500], fontSize: fs(13.5), fontWeight: '600' }}>
+              <Text style={{ color: tc.textMuted, fontSize: fs(13.5), fontWeight: '600' }}>
                 {t('perm_skip')}
               </Text>
             </TouchableOpacity>
@@ -466,6 +467,7 @@ export function AppPermissionsSection() {
   const [statuses, setStatuses] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(true);
   const { t, fs } = useTranslation();
+  const tc = useThemeColors();
 
   const loadStatuses = useCallback(async () => {
     setLoading(true);
@@ -488,7 +490,7 @@ export function AppPermissionsSection() {
         style={{
           fontSize: fs(12),
           fontWeight: '700',
-          color: COLORS.gray[500],
+          color: tc.textMuted,
           textTransform: 'uppercase',
           letterSpacing: 0.5,
         }}
@@ -512,10 +514,10 @@ export function AppPermissionsSection() {
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 }}>
                 <Icon size={17} color={isGranted ? '#16A34A' : COLORS.gray[500]} />
                 <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: fs(13.5), fontWeight: '600', color: COLORS.gray[800] }}>
+                  <Text style={{ fontSize: fs(13.5), fontWeight: '600', color: tc.text }}>
                     {t(item.titleKey)}
                   </Text>
-                  <Text style={{ fontSize: fs(11), color: COLORS.gray[500] }}>
+                  <Text style={{ fontSize: fs(11), color: tc.textMuted }}>
                     {t(item.descKey)}
                   </Text>
                 </View>

@@ -66,16 +66,7 @@ import {
 } from '@/hooks/use-api';
 import { useAuthStore } from '@/stores/auth.store';
 import { useTranslation } from '@/hooks/use-i18n';
-import {
-  Button,
-  Card,
-  JobStatusBadge,
-  COLORS,
-  LoadingSpinner,
-  Separator,
-  PriceText,
-  Badge,
-} from '@/components/ui';
+import { Button, Card, JobStatusBadge, COLORS, LoadingSpinner, Separator, PriceText, Badge, useThemeColors } from '@/components/ui';
 import Toast from 'react-native-toast-message';
 
 const PLATFORM_FEE = 0.15;
@@ -84,6 +75,7 @@ export default function HelperJobDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { t, tService, fs, lang } = useTranslation();
+  const tc = useThemeColors();
   const currentUser = useAuthStore(s => s.user);
   const { data: callConfig } = useCallConfig();
 
@@ -608,7 +600,7 @@ export default function HelperJobDetailScreen() {
     ['confirmed', 'helper_on_the_way', 'helper_arrived', 'in_progress'].includes(job.status);
 
   return (
-    <View style={{ flex: 1, backgroundColor: COLORS.gray[50] }}>
+    <View style={{ flex: 1, backgroundColor: tc.background }}>
       <OfflineBanner />
       {/* Header (Safe Insets) */}
       <View
@@ -618,9 +610,9 @@ export default function HelperJobDetailScreen() {
           paddingHorizontal: 16,
           paddingTop: Math.max(insets.top + 6, 18),
           paddingBottom: 14,
-          backgroundColor: '#fff',
+          backgroundColor: tc.surface,
           borderBottomWidth: 1,
-          borderBottomColor: COLORS.gray[100],
+          borderBottomColor: tc.border,
         }}
       >
         <TouchableOpacity
@@ -631,7 +623,7 @@ export default function HelperJobDetailScreen() {
             width: 40,
             height: 40,
             borderRadius: 14,
-            backgroundColor: COLORS.gray[100],
+            backgroundColor: tc.subtle,
             alignItems: 'center',
             justifyContent: 'center',
           }}
@@ -642,7 +634,7 @@ export default function HelperJobDetailScreen() {
           style={{
             fontSize: fs(17),
             fontWeight: '800',
-            color: COLORS.gray[900],
+            color: tc.text,
             flex: 1,
             marginLeft: 12,
           }}
@@ -683,7 +675,7 @@ export default function HelperJobDetailScreen() {
                 <Text style={{ fontWeight: '600' }}>{job.cancellation_reason}</Text>
               </Text>
             ) : null}
-            <Text style={{ fontSize: fs(12), color: COLORS.gray[500] }}>
+            <Text style={{ fontSize: fs(12), color: tc.textMuted }}>
               {lang === 'en'
                 ? 'This job is no longer active. No further actions are needed.'
                 : 'Đơn hàng này đã bị hủy và không còn hiệu lực. Bạn không cần thực hiện thêm thao tác nào.'}
@@ -761,7 +753,7 @@ export default function HelperJobDetailScreen() {
             )}
           </View>
           <Text
-            style={{ fontSize: fs(15), color: COLORS.gray[900], lineHeight: 22, fontWeight: '500' }}
+            style={{ fontSize: fs(15), color: tc.text, lineHeight: 22, fontWeight: '500' }}
           >
             {job.description}
           </Text>
@@ -799,7 +791,7 @@ export default function HelperJobDetailScreen() {
               <Text
                 style={{
                   fontSize: fs(14),
-                  color: COLORS.gray[700],
+                  color: tc.textSecondary,
                   lineHeight: 20,
                   fontWeight: '600',
                 }}
@@ -836,14 +828,14 @@ export default function HelperJobDetailScreen() {
               <Text style={{ color: '#fff', fontWeight: '800', fontSize: fs(18) }}>K</Text>
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={{ fontWeight: '800', fontSize: fs(15), color: COLORS.gray[900] }}>
+              <Text style={{ fontWeight: '800', fontSize: fs(15), color: tc.text }}>
                 {typeof job.customer_id === 'object' && job.customer_id
                   ? (job.customer_id as { full_name: string }).full_name
                   : lang === 'en'
                     ? 'Customer'
                     : 'Khách hàng'}
               </Text>
-              <Text style={{ fontSize: fs(13), color: COLORS.gray[500] }}>
+              <Text style={{ fontSize: fs(13), color: tc.textMuted }}>
                 {lang === 'en' ? 'Service requester' : 'Chủ đơn đặt dịch vụ'}
               </Text>
             </View>
@@ -888,13 +880,13 @@ export default function HelperJobDetailScreen() {
                 alignItems: 'center',
               }}
             >
-              <Text style={{ fontWeight: '800', fontSize: fs(15), color: COLORS.gray[900] }}>
+              <Text style={{ fontWeight: '800', fontSize: fs(15), color: tc.text }}>
                 {t('helper_job_detail.contract_amendments_title')}
               </Text>
               <PriceText amount={contract.total_price} size={16} />
             </View>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-              <Text style={{ fontSize: fs(13), color: COLORS.gray[600] }}>
+              <Text style={{ fontSize: fs(13), color: tc.textSecondary }}>
                 {t('helper_job_detail.estimated_payout', { percent: 85 })}
               </Text>
               <PriceText amount={contract.helper_receives} size={14} color={COLORS.success} />
@@ -912,9 +904,9 @@ export default function HelperJobDetailScreen() {
                       style={{
                         padding: 10,
                         borderRadius: 8,
-                        backgroundColor: COLORS.gray[50],
+                        backgroundColor: tc.background,
                         borderWidth: 1,
-                        borderColor: COLORS.gray[200],
+                        borderColor: tc.border,
                         gap: 4,
                       }}
                     >
@@ -926,7 +918,7 @@ export default function HelperJobDetailScreen() {
                         }}
                       >
                         <Text
-                          style={{ fontSize: fs(13), fontWeight: '700', color: COLORS.gray[800] }}
+                          style={{ fontSize: fs(13), fontWeight: '700', color: tc.text }}
                         >
                           +{new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'vi-VN').format(addAmt)}
                           ₫
@@ -962,7 +954,7 @@ export default function HelperJobDetailScreen() {
                           size="sm"
                         />
                       </View>
-                      <Text style={{ fontSize: fs(12.5), color: COLORS.gray[600] }}>
+                      <Text style={{ fontSize: fs(12.5), color: tc.textSecondary }}>
                         {am.reason}
                       </Text>
                     </View>
@@ -999,7 +991,7 @@ export default function HelperJobDetailScreen() {
             <Text style={{ fontWeight: '800', fontSize: fs(15), color: '#991B1B' }}>
               {lang === 'en' ? 'Job has an open dispute' : 'Đơn đang có tranh chấp'}
             </Text>
-            <Text style={{ fontSize: fs(13), color: COLORS.gray[700], lineHeight: 19 }}>
+            <Text style={{ fontSize: fs(13), color: tc.textSecondary, lineHeight: 19 }}>
               {lang === 'en'
                 ? 'View dispute case history, provide additional evidence to Admin, and appeal if judgment is unsatisfactory.'
                 : 'Xem toàn bộ diễn biến hồ sơ, bổ sung bằng chứng cho Admin và kháng cáo nếu phán quyết chưa thỏa đáng.'}
@@ -1015,7 +1007,7 @@ export default function HelperJobDetailScreen() {
         {/* ── Execution steps (active job) ──────────────────────────── */}
         {isMyActiveJob && (
           <Card style={{ gap: 16 }}>
-            <Text style={{ fontWeight: '800', fontSize: fs(15), color: COLORS.gray[900] }}>
+            <Text style={{ fontWeight: '800', fontSize: fs(15), color: tc.text }}>
               {t('helper_job_detail.update_progress_title')}
             </Text>
 
@@ -1060,12 +1052,12 @@ export default function HelperJobDetailScreen() {
             {job.status === 'pending_review' && (
               <View style={{ alignItems: 'center', gap: 8, paddingVertical: 10 }}>
                 <Clock size={36} color={COLORS.gray[400]} />
-                <Text style={{ fontWeight: '800', fontSize: fs(15), color: COLORS.gray[800] }}>
+                <Text style={{ fontWeight: '800', fontSize: fs(15), color: tc.text }}>
                   {lang === 'en'
                     ? 'Awaiting customer acceptance'
                     : 'Đang chờ khách hàng nghiệm thu'}
                 </Text>
-                <Text style={{ fontSize: fs(13), color: COLORS.gray[500], textAlign: 'center' }}>
+                <Text style={{ fontSize: fs(13), color: tc.textMuted, textAlign: 'center' }}>
                   {lang === 'en'
                     ? 'Customer will confirm and payout will be automatically credited to your wallet.'
                     : 'Khách hàng sẽ xác nhận và tiền công sẽ tự động cộng vào ví của bạn.'}
@@ -1084,17 +1076,17 @@ export default function HelperJobDetailScreen() {
             {isRejectedByMe ? (
               <Card
                 style={{
-                  backgroundColor: COLORS.gray[100],
+                  backgroundColor: tc.subtle,
                   padding: 16,
                   alignItems: 'center',
                   gap: 6,
                 }}
               >
                 <Ban size={20} color={COLORS.gray[700]} />
-                <Text style={{ fontSize: fs(14), fontWeight: '700', color: COLORS.gray[700] }}>
+                <Text style={{ fontSize: fs(14), fontWeight: '700', color: tc.textSecondary }}>
                   {lang === 'en' ? 'You declined this job offer' : 'Bạn đã từ chối đơn hàng này'}
                 </Text>
-                <Text style={{ fontSize: fs(12), color: COLORS.gray[500], textAlign: 'center' }}>
+                <Text style={{ fontSize: fs(12), color: tc.textMuted, textAlign: 'center' }}>
                   {lang === 'en'
                     ? 'Job has been hidden from your new job list and demand map.'
                     : 'Đơn đã được ẩn khỏi danh sách việc mới và bản đồ nhu cầu của bạn.'}
@@ -1109,7 +1101,7 @@ export default function HelperJobDetailScreen() {
                   borderWidth: 1.5,
                 }}
               >
-                <Text style={{ fontWeight: '800', fontSize: fs(16), color: COLORS.gray[900] }}>
+                <Text style={{ fontWeight: '800', fontSize: fs(16), color: tc.text }}>
                   {job.is_warranty
                     ? t('helper_job.warranty_badge')
                     : lang === 'en'
@@ -1117,7 +1109,7 @@ export default function HelperJobDetailScreen() {
                       : `Giá cam kết: ${new Intl.NumberFormat('vi-VN').format(job.fixed_price ?? 0)}₫`}
                 </Text>
                 {job.is_warranty ? (
-                  <Text style={{ fontSize: fs(13.5), color: COLORS.gray[700], lineHeight: 20 }}>
+                  <Text style={{ fontSize: fs(13.5), color: tc.textSecondary, lineHeight: 20 }}>
                     {lang === 'en'
                       ? 'This is a free warranty job sent directly to you because you completed the original job. Warranty jobs do not charge labor — please support the customer during warranty period.'
                       : 'Đây là đơn bảo hành miễn phí, được gửi riêng cho bạn vì bạn đã thực hiện đơn gốc. Đơn bảo hành không tính tiền công — hãy hỗ trợ khách trong thời gian bảo hành nhé.'}
@@ -1131,14 +1123,14 @@ export default function HelperJobDetailScreen() {
                         alignItems: 'center',
                       }}
                     >
-                      <Text style={{ fontSize: fs(13), color: COLORS.gray[600] }}>
+                      <Text style={{ fontSize: fs(13), color: tc.textSecondary }}>
                         {lang === 'en'
                           ? `Net wallet payout (after ${fixedFeePercent}% platform fee):`
                           : `Thực nhận về ví (sau phí sàn ${fixedFeePercent}%):`}
                       </Text>
                       <PriceText amount={fixedHelperReceives} size={15} color={COLORS.success} />
                     </View>
-                    <Text style={{ fontSize: fs(13), color: COLORS.gray[600], lineHeight: 19 }}>
+                    <Text style={{ fontSize: fs(13), color: tc.textSecondary, lineHeight: 19 }}>
                       {lang === 'en'
                         ? 'Fixed price jobs require no bidding — tap accept to confirm immediately at the price above.'
                         : 'Đơn giá cam kết không cần gửi báo giá — bấm nhận việc là chốt ngay với mức giá trên.'}
@@ -1191,7 +1183,7 @@ export default function HelperJobDetailScreen() {
                     marginTop: 4,
                   }}
                 >
-                  <Text style={{ fontSize: fs(13), color: COLORS.gray[600] }}>
+                  <Text style={{ fontSize: fs(13), color: tc.textSecondary }}>
                     {lang === 'en' ? 'Quoted labor price:' : 'Giá công đã báo:'}
                   </Text>
                   <PriceText amount={myQuote.total_price} size={16} />
@@ -1203,7 +1195,7 @@ export default function HelperJobDetailScreen() {
                     alignItems: 'center',
                   }}
                 >
-                  <Text style={{ fontSize: fs(13), color: COLORS.gray[600] }}>
+                  <Text style={{ fontSize: fs(13), color: tc.textSecondary }}>
                     {lang === 'en' ? 'Net wallet payout (-15%):' : 'Thực nhận về ví (trừ 15%):'}
                   </Text>
                   <PriceText amount={myQuote.helper_receives} size={15} color={COLORS.success} />
@@ -1211,7 +1203,7 @@ export default function HelperJobDetailScreen() {
                 <Text
                   style={{
                     fontSize: fs(12),
-                    color: COLORS.gray[500],
+                    color: tc.textMuted,
                     marginTop: 2,
                     fontStyle: 'italic',
                   }}
@@ -1270,7 +1262,7 @@ export default function HelperJobDetailScreen() {
             style={{
               width: '100%',
               maxWidth: 420,
-              backgroundColor: '#fff',
+              backgroundColor: tc.surface,
               borderRadius: 14,
               padding: 20,
               gap: 14,
@@ -1283,7 +1275,7 @@ export default function HelperJobDetailScreen() {
                 alignItems: 'center',
               }}
             >
-              <Text style={{ fontSize: fs(18), fontWeight: '800', color: COLORS.gray[900] }}>
+              <Text style={{ fontSize: fs(18), fontWeight: '800', color: tc.text }}>
                 {lang === 'en' ? 'Cancel Assigned Job' : 'Hủy nhận công việc'}
               </Text>
               <TouchableOpacity
@@ -1294,7 +1286,7 @@ export default function HelperJobDetailScreen() {
               </TouchableOpacity>
             </View>
 
-            <Text style={{ fontSize: fs(13), color: COLORS.gray[600], lineHeight: 19 }}>
+            <Text style={{ fontSize: fs(13), color: tc.textSecondary, lineHeight: 19 }}>
               {lang === 'en'
                 ? 'Cancelling after accepting may affect your completion rate. Please provide a clear reason.'
                 : 'Việc hủy đơn sau khi đã nhận có thể ảnh hưởng đến điểm uy tín và tỷ lệ hoàn thành. Vui lòng cung cấp lý do rõ ràng.'}
@@ -1302,7 +1294,7 @@ export default function HelperJobDetailScreen() {
 
             {/* Quick Reason Chips */}
             <View style={{ gap: 8 }}>
-              <Text style={{ fontSize: fs(13), fontWeight: '700', color: COLORS.gray[800] }}>
+              <Text style={{ fontSize: fs(13), fontWeight: '700', color: tc.text }}>
                 {lang === 'en' ? 'Cancellation reason (required) *' : 'Lý do hủy đơn (bắt buộc) *'}
               </Text>
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
@@ -1344,11 +1336,11 @@ export default function HelperJobDetailScreen() {
               <TextInput
                 style={{
                   borderWidth: 1,
-                  borderColor: COLORS.gray[200],
+                  borderColor: tc.border,
                   borderRadius: 8,
                   padding: 10,
                   fontSize: fs(13.5),
-                  color: COLORS.gray[900],
+                  color: tc.text,
                   minHeight: 54,
                   textAlignVertical: 'top',
                 }}
@@ -1390,7 +1382,7 @@ export default function HelperJobDetailScreen() {
         presentationStyle="pageSheet"
         onRequestClose={() => setShowAmendmentModal(false)}
       >
-        <View style={{ flex: 1, backgroundColor: '#fff', paddingTop: Math.max(insets.top, 16) }}>
+        <View style={{ flex: 1, backgroundColor: tc.surface, paddingTop: Math.max(insets.top, 16) }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', padding: 20 }}>
             <TouchableOpacity onPress={() => setShowAmendmentModal(false)}>
               <X size={24} color={COLORS.gray[700]} />
@@ -1400,7 +1392,7 @@ export default function HelperJobDetailScreen() {
                 fontSize: fs(18),
                 fontWeight: '800',
                 marginLeft: 12,
-                color: COLORS.gray[900],
+                color: tc.text,
               }}
             >
               {lang === 'en' ? 'Propose Cost Addendum' : 'Đề xuất phụ lục phát sinh'}
@@ -1418,7 +1410,7 @@ export default function HelperJobDetailScreen() {
                     ? 'Transparent Costs & Additional Materials'
                     : 'Minh bạch chi phí & Vật tư ngoài'}
                 </Text>
-                <Text style={{ fontSize: fs(12.5), color: COLORS.gray[700], lineHeight: 18 }}>
+                <Text style={{ fontSize: fs(12.5), color: tc.textSecondary, lineHeight: 18 }}>
                   {lang === 'en'
                     ? 'If you need to purchase extra parts/materials or encounter unexpected work, submit a proposal for customer approval on app before proceeding.'
                     : 'Nếu cần mua thêm vật tư/linh kiện hoặc phát sinh khối lượng công việc ngoài dự kiến, hãy gửi đề xuất để khách bấm Đồng ý trên ứng dụng trước khi thực hiện.'}
@@ -1426,7 +1418,7 @@ export default function HelperJobDetailScreen() {
               </Card>
 
               <View style={{ gap: 6 }}>
-                <Text style={{ fontWeight: '700', color: COLORS.gray[700] }}>
+                <Text style={{ fontWeight: '700', color: tc.textSecondary }}>
                   {lang === 'en'
                     ? 'Additional parts / materials cost (₫)'
                     : 'Tiền vật tư / linh kiện phát sinh (₫)'}
@@ -1434,12 +1426,12 @@ export default function HelperJobDetailScreen() {
                 <TextInput
                   style={{
                     borderWidth: 1.5,
-                    borderColor: COLORS.gray[200],
+                    borderColor: tc.border,
                     borderRadius: 14,
                     padding: 14,
                     fontSize: fs(18),
                     fontWeight: '700',
-                    color: COLORS.gray[900],
+                    color: tc.text,
                   }}
                   placeholder={lang === 'en' ? 'E.g., 150000' : 'VD: 150000'}
                   value={amendMaterialsCost}
@@ -1450,18 +1442,18 @@ export default function HelperJobDetailScreen() {
               </View>
 
               <View style={{ gap: 6 }}>
-                <Text style={{ fontWeight: '700', color: COLORS.gray[700] }}>
+                <Text style={{ fontWeight: '700', color: tc.textSecondary }}>
                   {lang === 'en' ? 'Extra labor fee (₫)' : 'Tiền công làm thêm (₫)'}
                 </Text>
                 <TextInput
                   style={{
                     borderWidth: 1.5,
-                    borderColor: COLORS.gray[200],
+                    borderColor: tc.border,
                     borderRadius: 14,
                     padding: 14,
                     fontSize: fs(18),
                     fontWeight: '700',
-                    color: COLORS.gray[900],
+                    color: tc.text,
                   }}
                   placeholder={lang === 'en' ? 'E.g., 100000' : 'VD: 100000'}
                   value={amendLaborCost}
@@ -1472,7 +1464,7 @@ export default function HelperJobDetailScreen() {
               </View>
 
               <View style={{ gap: 6 }}>
-                <Text style={{ fontWeight: '700', color: COLORS.gray[700] }}>
+                <Text style={{ fontWeight: '700', color: tc.textSecondary }}>
                   {lang === 'en'
                     ? 'Reason & details of additional items *'
                     : 'Lý do & Chi tiết hạng mục phát sinh *'}
@@ -1480,13 +1472,13 @@ export default function HelperJobDetailScreen() {
                 <TextInput
                   style={{
                     borderWidth: 1.5,
-                    borderColor: COLORS.gray[200],
+                    borderColor: tc.border,
                     borderRadius: 14,
                     padding: 14,
                     fontSize: fs(15),
                     minHeight: 90,
                     textAlignVertical: 'top',
-                    color: COLORS.gray[900],
+                    color: tc.text,
                   }}
                   placeholder={
                     lang === 'en'
@@ -1517,7 +1509,7 @@ export default function HelperJobDetailScreen() {
 
       {/* ── Quote Modal ───────────────────────────────────────────────── */}
       <Modal visible={showQuoteModal} animationType="slide" presentationStyle="pageSheet">
-        <View style={{ flex: 1, backgroundColor: '#fff', paddingTop: Math.max(insets.top, 16) }}>
+        <View style={{ flex: 1, backgroundColor: tc.surface, paddingTop: Math.max(insets.top, 16) }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', padding: 20 }}>
             <TouchableOpacity onPress={() => setShowQuoteModal(false)}>
               <X size={24} color={COLORS.gray[700]} />
@@ -1527,7 +1519,7 @@ export default function HelperJobDetailScreen() {
                 fontSize: fs(18),
                 fontWeight: '800',
                 marginLeft: 12,
-                color: COLORS.gray[900],
+                color: tc.text,
               }}
             >
               {t('helper_job.quote_modal_title')}
@@ -1540,18 +1532,18 @@ export default function HelperJobDetailScreen() {
           >
             <ScrollView contentContainerStyle={{ padding: 20, gap: 20 }}>
               <View style={{ gap: 8 }}>
-                <Text style={{ fontWeight: '700', color: COLORS.gray[700] }}>
+                <Text style={{ fontWeight: '700', color: tc.textSecondary }}>
                   {t('helper_job.labor_price_label')}
                 </Text>
                 <TextInput
                   style={{
                     borderWidth: 1.5,
-                    borderColor: COLORS.gray[200],
+                    borderColor: tc.border,
                     borderRadius: 14,
                     padding: 14,
                     fontSize: fs(22),
                     fontWeight: '800',
-                    color: COLORS.gray[900],
+                    color: tc.text,
                   }}
                   placeholder={lang === 'en' ? 'E.g., 300000' : 'VD: 300000'}
                   value={laborCost}
@@ -1578,13 +1570,13 @@ export default function HelperJobDetailScreen() {
               {total > 0 && (
                 <Card style={{ backgroundColor: COLORS.primaryLight, gap: 10 }}>
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                    <Text style={{ color: COLORS.gray[700], fontWeight: '600' }}>
+                    <Text style={{ color: tc.textSecondary, fontWeight: '600' }}>
                       {t('helper_job.cust_pays')}
                     </Text>
                     <PriceText amount={total} size={14} color={COLORS.gray[900]} bold={false} />
                   </View>
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                    <Text style={{ color: COLORS.gray[500], fontWeight: '500' }}>
+                    <Text style={{ color: tc.textMuted, fontWeight: '500' }}>
                       {t('helper_job.platform_fee')}
                     </Text>
                     <PriceText
@@ -1596,7 +1588,7 @@ export default function HelperJobDetailScreen() {
                   </View>
                   <Separator my={4} />
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                    <Text style={{ fontWeight: '800', color: COLORS.gray[900] }}>
+                    <Text style={{ fontWeight: '800', color: tc.text }}>
                       {t('helper_job.net_payout')}
                     </Text>
                     <PriceText amount={helperReceives} size={17} />
@@ -1605,7 +1597,7 @@ export default function HelperJobDetailScreen() {
               )}
 
               <View style={{ gap: 8 }}>
-                <Text style={{ fontWeight: '700', color: COLORS.gray[700] }}>
+                <Text style={{ fontWeight: '700', color: tc.textSecondary }}>
                   {t('helper_job.est_hours')}
                 </Text>
                 <View style={{ flexDirection: 'row', gap: 10 }}>
@@ -1639,19 +1631,19 @@ export default function HelperJobDetailScreen() {
               </View>
 
               <View style={{ gap: 8 }}>
-                <Text style={{ fontWeight: '700', color: COLORS.gray[700] }}>
+                <Text style={{ fontWeight: '700', color: tc.textSecondary }}>
                   {t('helper_job.quote_notes_label')}
                 </Text>
                 <TextInput
                   style={{
                     borderWidth: 1.5,
-                    borderColor: COLORS.gray[200],
+                    borderColor: tc.border,
                     borderRadius: 14,
                     padding: 14,
                     fontSize: fs(15),
                     minHeight: 80,
                     textAlignVertical: 'top',
-                    color: COLORS.gray[900],
+                    color: tc.text,
                   }}
                   placeholder={t('helper_job.quote_notes_placeholder')}
                   value={notes}
@@ -1675,7 +1667,7 @@ export default function HelperJobDetailScreen() {
 
       {/* ── Complete Evidence Modal (Chụp ảnh / Quay video hoàn thành) ── */}
       <Modal visible={showCompleteModal} animationType="slide" presentationStyle="pageSheet">
-        <View style={{ flex: 1, backgroundColor: '#fff', paddingTop: Math.max(insets.top, 16) }}>
+        <View style={{ flex: 1, backgroundColor: tc.surface, paddingTop: Math.max(insets.top, 16) }}>
           <View
             style={{
               flexDirection: 'row',
@@ -1684,14 +1676,14 @@ export default function HelperJobDetailScreen() {
               paddingHorizontal: 20,
               paddingVertical: 16,
               borderBottomWidth: 1,
-              borderBottomColor: COLORS.gray[100],
+              borderBottomColor: tc.border,
             }}
           >
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
               <TouchableOpacity onPress={() => setShowCompleteModal(false)}>
                 <X size={24} color={COLORS.gray[700]} />
               </TouchableOpacity>
-              <Text style={{ fontSize: fs(18), fontWeight: '800', color: COLORS.gray[900] }}>
+              <Text style={{ fontSize: fs(18), fontWeight: '800', color: tc.text }}>
                 {t('helper_job.evidence_title')}
               </Text>
             </View>
@@ -1723,7 +1715,7 @@ export default function HelperJobDetailScreen() {
                     {t('helper_job.evidence_sub')}
                   </Text>
                 </View>
-                <Text style={{ fontSize: fs(12.5), color: COLORS.gray[700], lineHeight: 18 }}>
+                <Text style={{ fontSize: fs(12.5), color: tc.textSecondary, lineHeight: 18 }}>
                   {t('helper_job.evidence_hint')}
                 </Text>
               </View>
@@ -1737,10 +1729,10 @@ export default function HelperJobDetailScreen() {
                     alignItems: 'center',
                   }}
                 >
-                  <Text style={{ fontWeight: '800', fontSize: fs(15), color: COLORS.gray[800] }}>
+                  <Text style={{ fontWeight: '800', fontSize: fs(15), color: tc.text }}>
                     {t('helper_job.evidence_photos_count', { count: completionPhotos.length })}
                   </Text>
-                  <Text style={{ fontSize: fs(12), color: COLORS.gray[500] }}>
+                  <Text style={{ fontSize: fs(12), color: tc.textMuted }}>
                     {t('helper_job.evidence_max_photos')}
                   </Text>
                 </View>
@@ -1778,14 +1770,14 @@ export default function HelperJobDetailScreen() {
                       alignItems: 'center',
                       justifyContent: 'center',
                       gap: 6,
-                      backgroundColor: COLORS.gray[100],
+                      backgroundColor: tc.subtle,
                       borderRadius: 14,
                       paddingVertical: 12,
                     }}
                   >
                     <ImagePlus size={18} color={COLORS.gray[700]} />
                     <Text
-                      style={{ fontWeight: '700', fontSize: fs(13.5), color: COLORS.gray[800] }}
+                      style={{ fontWeight: '700', fontSize: fs(13.5), color: tc.text }}
                     >
                       {t('helper_job.evidence_pick_album')}
                     </Text>
@@ -1805,7 +1797,7 @@ export default function HelperJobDetailScreen() {
                           overflow: 'hidden',
                           position: 'relative',
                           borderWidth: 1,
-                          borderColor: COLORS.gray[200],
+                          borderColor: tc.border,
                         }}
                       >
                         <Image
@@ -1847,10 +1839,10 @@ export default function HelperJobDetailScreen() {
                     alignItems: 'center',
                   }}
                 >
-                  <Text style={{ fontWeight: '800', fontSize: fs(15), color: COLORS.gray[800] }}>
+                  <Text style={{ fontWeight: '800', fontSize: fs(15), color: tc.text }}>
                     {t('helper_job.evidence_videos_count', { count: completionVideos.length })}
                   </Text>
-                  <Text style={{ fontSize: fs(12), color: COLORS.gray[500] }}>
+                  <Text style={{ fontSize: fs(12), color: tc.textMuted }}>
                     {t('helper_job.evidence_video_limit')}
                   </Text>
                 </View>
@@ -1890,14 +1882,14 @@ export default function HelperJobDetailScreen() {
                       alignItems: 'center',
                       justifyContent: 'center',
                       gap: 6,
-                      backgroundColor: COLORS.gray[100],
+                      backgroundColor: tc.subtle,
                       borderRadius: 14,
                       paddingVertical: 12,
                     }}
                   >
                     <Video size={18} color={COLORS.gray[700]} />
                     <Text
-                      style={{ fontWeight: '700', fontSize: fs(13.5), color: COLORS.gray[800] }}
+                      style={{ fontWeight: '700', fontSize: fs(13.5), color: tc.text }}
                     >
                       {t('helper_job.evidence_pick_video')}
                     </Text>
@@ -1914,11 +1906,11 @@ export default function HelperJobDetailScreen() {
                           flexDirection: 'row',
                           alignItems: 'center',
                           justifyContent: 'space-between',
-                          backgroundColor: COLORS.gray[50],
+                          backgroundColor: tc.background,
                           padding: 12,
                           borderRadius: 14,
                           borderWidth: 1,
-                          borderColor: COLORS.gray[200],
+                          borderColor: tc.border,
                         }}
                       >
                         <View
@@ -1941,7 +1933,7 @@ export default function HelperJobDetailScreen() {
                               style={{
                                 fontSize: fs(13),
                                 fontWeight: '700',
-                                color: COLORS.gray[800],
+                                color: tc.text,
                               }}
                               numberOfLines={1}
                             >
@@ -1949,7 +1941,7 @@ export default function HelperJobDetailScreen() {
                                 ? `Acceptance video #${index + 1}`
                                 : `Video nghiệm thu #${index + 1}`}
                             </Text>
-                            <Text style={{ fontSize: fs(11), color: COLORS.gray[500] }}>
+                            <Text style={{ fontSize: fs(11), color: tc.textMuted }}>
                               {lang === 'en'
                                 ? 'Ready to send to customer'
                                 : 'Đã sẵn sàng gửi cho khách'}
@@ -1976,19 +1968,19 @@ export default function HelperJobDetailScreen() {
 
               {/* ── 3. Notes Section ──────────────────────────────────── */}
               <View style={{ gap: 8, marginTop: 4 }}>
-                <Text style={{ fontWeight: '700', color: COLORS.gray[700], fontSize: fs(13.5) }}>
+                <Text style={{ fontWeight: '700', color: tc.textSecondary, fontSize: fs(13.5) }}>
                   {t('helper_job.evidence_notes_label')}
                 </Text>
                 <TextInput
                   style={{
                     borderWidth: 1.5,
-                    borderColor: COLORS.gray[200],
+                    borderColor: tc.border,
                     borderRadius: 14,
                     padding: 14,
                     fontSize: fs(14),
                     minHeight: 80,
                     textAlignVertical: 'top',
-                    color: COLORS.gray[900],
+                    color: tc.text,
                   }}
                   placeholder={t('helper_job.evidence_notes_placeholder')}
                   value={completionNotes}

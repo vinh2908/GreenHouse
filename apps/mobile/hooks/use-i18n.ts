@@ -17,8 +17,10 @@ import {
 export function useTranslation() {
   const language = useSettingsStore(s => s.language);
   const textSize = useSettingsStore(s => s.textSize);
+  const theme = useSettingsStore(s => s.theme);
   const setLanguage = useSettingsStore(s => s.setLanguage);
   const setTextSize = useSettingsStore(s => s.setTextSize);
+  const setTheme = useSettingsStore(s => s.setTheme);
 
   useEffect(() => {
     syncDayjsLocale(language);
@@ -78,6 +80,8 @@ export function useTranslation() {
     formatNotifBody,
     formatTxDesc,
     language,
+    theme,
+    setTheme,
     lang: language,
     setLanguage,
     textSize,

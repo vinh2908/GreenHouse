@@ -12,7 +12,7 @@ import {
 } from '@/hooks/use-api';
 import { useTranslation } from '@/hooks/use-i18n';
 import apiClient from '@/services/api-client';
-import { Avatar, Card, COLORS, EmptyState, ErrorState, LoadingSpinner } from '@/components/ui';
+import { Avatar, Card, COLORS, EmptyState, ErrorState, LoadingSpinner, useThemeColors } from '@/components/ui';
 
 function helperOf(fav: FavoriteHelperItem) {
   return typeof fav.helper_id === 'object' && fav.helper_id ? fav.helper_id : null;
@@ -22,6 +22,7 @@ export default function FavoriteHelpersScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { t, fs, lang } = useTranslation();
+  const tc = useThemeColors();
   const { data: favorites, isLoading, isError, isRefetching, refetch } = useFavorites();
   const removeFavorite = useRemoveFavorite();
   const rebookJob = useRebookJob();
@@ -118,7 +119,7 @@ export default function FavoriteHelpersScreen() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#F8F9FA' }}>
+    <View style={{ flex: 1, backgroundColor: tc.background }}>
       {/* Header */}
       <View
         style={{
@@ -128,9 +129,9 @@ export default function FavoriteHelpersScreen() {
           paddingHorizontal: 16,
           paddingTop: Math.max(insets.top + 6, 18),
           paddingBottom: 14,
-          backgroundColor: '#fff',
+          backgroundColor: tc.surface,
           borderBottomWidth: 1,
-          borderBottomColor: COLORS.gray[100],
+          borderBottomColor: tc.border,
         }}
       >
         <TouchableOpacity
@@ -141,7 +142,7 @@ export default function FavoriteHelpersScreen() {
             width: 40,
             height: 40,
             borderRadius: 14,
-            backgroundColor: COLORS.gray[100],
+            backgroundColor: tc.subtle,
             alignItems: 'center',
             justifyContent: 'center',
           }}
@@ -149,10 +150,10 @@ export default function FavoriteHelpersScreen() {
           <ArrowLeft size={20} color={COLORS.gray[800]} />
         </TouchableOpacity>
         <View style={{ flex: 1 }}>
-          <Text style={{ fontSize: fs(18), fontWeight: '800', color: COLORS.gray[900] }}>
+          <Text style={{ fontSize: fs(18), fontWeight: '800', color: tc.text }}>
             {lang === 'en' ? 'Favorite Helpers' : 'Thợ yêu thích'}
           </Text>
-          <Text style={{ fontSize: fs(12), color: COLORS.gray[500] }}>
+          <Text style={{ fontSize: fs(12), color: tc.textMuted }}>
             {lang === 'en'
               ? 'Quick rebooking and exclusive dispatch priority for trusted helpers'
               : 'Đặt việc nhanh và ưu tiên gửi riêng cho thợ quen'}
@@ -220,7 +221,7 @@ export default function FavoriteHelpersScreen() {
                     <Avatar name={helper.full_name} uri={helper.avatar} size={54} />
                     <View style={{ flex: 1 }}>
                       <Text
-                        style={{ fontSize: fs(16), fontWeight: '800', color: COLORS.gray[900] }}
+                        style={{ fontSize: fs(16), fontWeight: '800', color: tc.text }}
                       >
                         {helper.full_name ?? (lang === 'en' ? 'Helper' : 'Thợ')}
                       </Text>
@@ -238,7 +239,7 @@ export default function FavoriteHelpersScreen() {
                             style={{
                               fontSize: fs(12.5),
                               fontWeight: '700',
-                              color: COLORS.gray[700],
+                              color: tc.textSecondary,
                             }}
                           >
                             {(p?.rating ?? 0).toFixed(1)} ({p?.total_reviews ?? 0})
@@ -246,7 +247,7 @@ export default function FavoriteHelpersScreen() {
                         </View>
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
                           <Briefcase size={13} color={COLORS.gray[500]} />
-                          <Text style={{ fontSize: fs(12.5), color: COLORS.gray[600] }}>
+                          <Text style={{ fontSize: fs(12.5), color: tc.textSecondary }}>
                             {(p?.completed_jobs ?? 0) +
                               (lang === 'en' ? ' jobs done' : ' đơn đã xong')}
                           </Text>

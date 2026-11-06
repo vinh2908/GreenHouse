@@ -27,8 +27,9 @@ import { InitialPermissionsModal } from '@/components/common/initial-permissions
 import { useBackgroundGps } from '@/hooks/use-background-gps';
 import { useAuthStore } from '@/stores/auth.store';
 import { useSettingsStore } from '@/stores/settings.store';
+import { useSettingsStore } from '@/stores/settings.store';
 import { translate } from '@/services/i18n';
-import { COLORS } from '@/components/ui';
+import { COLORS, useThemeColors } from '@/components/ui';
 import { takePendingToastRoute } from '@/services/toast-navigation';
 
 console.warn('[Startup] 0. _layout.tsx module evaluating...');
@@ -116,6 +117,7 @@ const toastConfig = {
 };
 
 function ToastCard() {
+  const tc = useThemeColors();
   const toast = useToastStore(s => s.toast);
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -157,7 +159,7 @@ function ToastCard() {
         onPress={handlePress}
         style={{
           width: '90%',
-          backgroundColor: '#fff',
+          backgroundColor: tc.surface,
           borderRadius: 14,
           paddingVertical: 14,
           paddingHorizontal: 14,
@@ -233,6 +235,7 @@ function SocketManager() {
 }
 
 export default function RootLayout() {
+  const theme = useSettingsStore(s => s.theme);
   console.warn('[Startup] 1. RootLayout render start');
 
   useEffect(() => {
@@ -277,10 +280,12 @@ export default function RootLayout() {
 
   return (
     <RootErrorBoundary>
-      <GestureHandlerRootView style={{ flex: 1 }}>
+      <GestureHandlerRootView
+        style={{ flex: 1, backgroundColor: theme === 'dark' ? '#0F172A' : '#FFFFFF' }}
+      >
         <QueryClientProvider client={queryClient}>
           <SocketManager />
-          <StatusBar style="auto" />
+          <StatusBar style={theme === 'dark' ? 'light' : 'auto'} />
           <Stack screenOptions={{ headerShown: false }}>
             <Stack.Screen name="index" />
             <Stack.Screen name="(auth)" options={{ headerShown: false }} />

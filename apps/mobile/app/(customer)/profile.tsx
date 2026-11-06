@@ -31,7 +31,7 @@ import {
 import { Alert } from '@/components/common/app-alert';
 import { useAuthStore } from '@/stores/auth.store';
 import { useMyProfile, useSwitchRole, useLoyaltyAccount, useWallet } from '@/hooks/use-api';
-import { Avatar, Card, COLORS, Separator, LoadingSpinner } from '@/components/ui';
+import { Avatar, Card, COLORS, Separator, LoadingSpinner, useThemeColors } from '@/components/ui';
 import { useTranslation } from '@/hooks/use-i18n';
 import { DisplaySettingsSection } from '@/components/common/display-settings';
 import { AppPermissionsSection } from '@/components/common/initial-permissions-modal';
@@ -63,6 +63,7 @@ const MENU_SECTIONS = [
 export default function CustomerProfileScreen() {
   const router = useRouter();
   const { t, fs, lang, tLoyaltyTier } = useTranslation();
+  const tc = useThemeColors();
   const queryClient = useQueryClient();
   const logout = useAuthStore(s => s.logout);
   const user = useAuthStore(s => s.user);
@@ -157,7 +158,7 @@ export default function CustomerProfileScreen() {
       <View
         style={{
           flex: 1,
-          backgroundColor: COLORS.gray[50],
+          backgroundColor: tc.background,
           justifyContent: 'center',
           alignItems: 'center',
         }}
@@ -168,7 +169,7 @@ export default function CustomerProfileScreen() {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: COLORS.gray[50] }}>
+    <View style={{ flex: 1, backgroundColor: tc.background }}>
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 110 }}
@@ -176,13 +177,13 @@ export default function CustomerProfileScreen() {
         {/* ── Profile header (Safe Insets) ────────────────────────────── */}
         <View
           style={{
-            backgroundColor: '#fff',
+            backgroundColor: tc.surface,
             paddingHorizontal: 24,
             paddingTop: Math.max(insets.top + 8, 20),
             paddingBottom: 24,
             alignItems: 'center',
             borderBottomWidth: 1,
-            borderBottomColor: COLORS.gray[100],
+            borderBottomColor: tc.border,
           }}
         >
           {displayUser ? (
@@ -196,7 +197,7 @@ export default function CustomerProfileScreen() {
                 style={{
                   fontSize: fs(20),
                   fontWeight: '800',
-                  color: COLORS.gray[900],
+                  color: tc.text,
                   marginTop: 12,
                 }}
               >
@@ -205,7 +206,7 @@ export default function CustomerProfileScreen() {
               <Text
                 style={{
                   fontSize: fs(14),
-                  color: COLORS.gray[500],
+                  color: tc.textMuted,
                   marginTop: 4,
                   fontWeight: '600',
                 }}
@@ -214,7 +215,7 @@ export default function CustomerProfileScreen() {
               </Text>
               <View
                 style={{
-                  backgroundColor: COLORS.gray[100],
+                  backgroundColor: tc.subtle,
                   paddingHorizontal: 10,
                   paddingVertical: 4,
                   borderRadius: 8,
@@ -233,7 +234,7 @@ export default function CustomerProfileScreen() {
                 style={{
                   fontSize: fs(20),
                   fontWeight: '800',
-                  color: COLORS.gray[900],
+                  color: tc.text,
                   marginTop: 12,
                 }}
               >
@@ -242,7 +243,7 @@ export default function CustomerProfileScreen() {
               <Text
                 style={{
                   fontSize: fs(13),
-                  color: COLORS.gray[500],
+                  color: tc.textMuted,
                   marginTop: 4,
                   fontWeight: '500',
                 }}
@@ -362,7 +363,7 @@ export default function CustomerProfileScreen() {
                 </Text>
                 <ChevronRight size={16} color="#92400E" />
               </View>
-              <Text style={{ fontSize: fs(22), fontWeight: '800', color: COLORS.gray[900] }}>
+              <Text style={{ fontSize: fs(22), fontWeight: '800', color: tc.text }}>
                 {isLoyaltyLoading && !loyalty ? (
                   <ActivityIndicator size="small" color="#D97706" />
                 ) : (
@@ -373,7 +374,7 @@ export default function CustomerProfileScreen() {
                   })
                 )}
               </Text>
-              <Text style={{ fontSize: fs(12.5), color: COLORS.gray[600] }}>
+              <Text style={{ fontSize: fs(12.5), color: tc.textSecondary }}>
                 {t('profile_loyalty_redeem_desc', { cap: loyalty?.redemption_cap_percent ?? 20 })}
               </Text>
             </Card>
@@ -388,7 +389,7 @@ export default function CustomerProfileScreen() {
                 style={{
                   fontSize: fs(12),
                   fontWeight: '700',
-                  color: COLORS.gray[500],
+                  color: tc.textMuted,
                   marginBottom: 8,
                   textTransform: 'uppercase',
                   letterSpacing: 0.5,
@@ -419,7 +420,7 @@ export default function CustomerProfileScreen() {
                         style={{
                           flex: 1,
                           fontSize: fs(15),
-                          color: COLORS.gray[900],
+                          color: tc.text,
                           fontWeight: '600',
                         }}
                       >
@@ -484,7 +485,7 @@ export default function CustomerProfileScreen() {
             style={{
               textAlign: 'center',
               fontSize: fs(12),
-              color: COLORS.gray[500],
+              color: tc.textMuted,
               fontWeight: '500',
             }}
           >

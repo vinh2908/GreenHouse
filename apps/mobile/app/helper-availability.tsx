@@ -6,7 +6,7 @@ import { ArrowLeft, Trash2, Plus } from 'lucide-react-native';
 import Toast from 'react-native-toast-message';
 import { useMyAvailability, useUpdateAvailability } from '@/hooks/use-api';
 import { useTranslation } from '@/hooks/use-i18n';
-import { Button, Card, COLORS, LoadingSpinner } from '@/components/ui';
+import { Button, Card, COLORS, LoadingSpinner, useThemeColors } from '@/components/ui';
 import { TimeDropdownPicker } from '@/components/common/time-dropdown-picker';
 
 // JS getDay(): 0 = Chủ nhật … 6 = Thứ 7
@@ -27,6 +27,7 @@ export default function HelperAvailabilityScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { t, fs, lang } = useTranslation();
+  const tc = useThemeColors();
   const { data, isLoading } = useMyAvailability();
   const update = useUpdateAvailability();
 
@@ -134,7 +135,7 @@ export default function HelperAvailabilityScreen() {
   if (isLoading) return <LoadingSpinner />;
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#F8F9FA' }}>
+    <View style={{ flex: 1, backgroundColor: tc.background }}>
       <View
         style={{
           flexDirection: 'row',
@@ -143,15 +144,15 @@ export default function HelperAvailabilityScreen() {
           paddingHorizontal: 16,
           paddingTop: Math.max(insets.top + 6, 18),
           paddingBottom: 14,
-          backgroundColor: '#fff',
+          backgroundColor: tc.surface,
           borderBottomWidth: 1,
-          borderBottomColor: COLORS.gray[100],
+          borderBottomColor: tc.border,
         }}
       >
         <TouchableOpacity activeOpacity={0.7} onPress={handleBack}>
           <ArrowLeft size={22} color={COLORS.gray[800]} />
         </TouchableOpacity>
-        <Text style={{ fontSize: fs(17), fontWeight: '800', color: COLORS.gray[900] }}>
+        <Text style={{ fontSize: fs(17), fontWeight: '800', color: tc.text }}>
           {lang === 'en' ? 'Working Schedule' : 'Lịch làm việc'}
         </Text>
       </View>
@@ -162,11 +163,11 @@ export default function HelperAvailabilityScreen() {
       >
         <Card style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
           <View style={{ flex: 1 }}>
-            <Text style={{ fontWeight: '800', fontSize: fs(15), color: COLORS.gray[900] }}>
+            <Text style={{ fontWeight: '800', fontSize: fs(15), color: tc.text }}>
               {lang === 'en' ? 'Enable Working Schedule' : 'Bật lịch làm việc'}
             </Text>
             <Text
-              style={{ fontSize: fs(13), color: COLORS.gray[500], marginTop: 2, lineHeight: 19 }}
+              style={{ fontSize: fs(13), color: tc.textMuted, marginTop: 2, lineHeight: 19 }}
             >
               {lang === 'en'
                 ? 'When enabled, you only see & get notified for jobs during your working days/hours. When disabled, you receive all jobs as usual.'
@@ -182,7 +183,7 @@ export default function HelperAvailabilityScreen() {
         </Card>
 
         <Card style={{ gap: 12 }}>
-          <Text style={{ fontWeight: '800', fontSize: fs(15), color: COLORS.gray[900] }}>
+          <Text style={{ fontWeight: '800', fontSize: fs(15), color: tc.text }}>
             {lang === 'en' ? 'Working Days of Week' : 'Ngày làm việc trong tuần'}
           </Text>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
@@ -217,7 +218,7 @@ export default function HelperAvailabilityScreen() {
         </Card>
 
         <Card style={{ gap: 14 }}>
-          <Text style={{ fontWeight: '800', fontSize: fs(15), color: COLORS.gray[900] }}>
+          <Text style={{ fontWeight: '800', fontSize: fs(15), color: tc.text }}>
             {lang === 'en' ? 'Working Hours' : 'Khung giờ làm việc'}
           </Text>
           <View style={{ gap: 12 }}>
@@ -236,7 +237,7 @@ export default function HelperAvailabilityScreen() {
               checkPast={false}
             />
           </View>
-          <Text style={{ fontSize: fs(12), color: COLORS.gray[500] }}>
+          <Text style={{ fontSize: fs(12), color: tc.textMuted }}>
             {lang === 'en'
               ? 'The system only dispatches new jobs during this active timeframe.'
               : 'Hệ thống chỉ phân phối việc mới trong khung giờ hoạt động này.'}
@@ -244,11 +245,11 @@ export default function HelperAvailabilityScreen() {
         </Card>
 
         <Card style={{ gap: 12 }}>
-          <Text style={{ fontWeight: '800', fontSize: fs(15), color: COLORS.gray[900] }}>
+          <Text style={{ fontWeight: '800', fontSize: fs(15), color: tc.text }}>
             {lang === 'en' ? 'Custom Days Off' : 'Ngày nghỉ lẻ'}
           </Text>
           {blockedDates.length === 0 ? (
-            <Text style={{ fontSize: fs(13), color: COLORS.gray[500] }}>
+            <Text style={{ fontSize: fs(13), color: tc.textMuted }}>
               {lang === 'en'
                 ? 'No days off added. Add days when you are unavailable (trips, holidays, personal events...).'
                 : 'Chưa có ngày nghỉ nào. Thêm ngày bạn bận (đi chơi, lễ, việc riêng…).'}
@@ -257,7 +258,7 @@ export default function HelperAvailabilityScreen() {
             blockedDates.map(d => (
               <View key={d} style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                 <Text
-                  style={{ flex: 1, fontSize: fs(14), fontWeight: '700', color: COLORS.gray[800] }}
+                  style={{ flex: 1, fontSize: fs(14), fontWeight: '700', color: tc.text }}
                 >
                   {d}
                 </Text>
@@ -281,14 +282,14 @@ export default function HelperAvailabilityScreen() {
               style={{
                 flex: 1,
                 borderWidth: 1,
-                borderColor: COLORS.gray[200],
+                borderColor: tc.border,
                 borderRadius: 14,
                 paddingHorizontal: 12,
                 paddingVertical: 10,
                 fontSize: fs(14),
                 fontWeight: '700',
-                color: COLORS.gray[900],
-                backgroundColor: '#fff',
+                color: tc.text,
+                backgroundColor: tc.surface,
               }}
             />
             <TouchableOpacity

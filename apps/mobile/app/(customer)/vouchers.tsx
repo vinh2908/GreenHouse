@@ -6,13 +6,14 @@ import Toast from 'react-native-toast-message';
 import dayjs from 'dayjs';
 import { useMyVouchers } from '@/hooks/use-api';
 import { useTranslation } from '@/hooks/use-i18n';
-import { Card, COLORS, EmptyState, ErrorState, LoadingSpinner, Badge } from '@/components/ui';
+import { Card, COLORS, EmptyState, ErrorState, LoadingSpinner, Badge, useThemeColors } from '@/components/ui';
 import { useState } from 'react';
 
 export default function CustomerVouchersScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { t, fs, lang, formatVoucherDesc } = useTranslation();
+  const tc = useThemeColors();
   const { data: vouchers, isLoading, isError, refetch } = useMyVouchers();
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
 
@@ -30,19 +31,19 @@ export default function CustomerVouchersScreen() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#F8F9FA' }}>
+    <View style={{ flex: 1, backgroundColor: tc.background }}>
       {/* Header */}
       <View
         style={{
           paddingHorizontal: 16,
           paddingTop: Math.max(insets.top + 8, 16),
           paddingBottom: 14,
-          backgroundColor: '#fff',
+          backgroundColor: tc.surface,
           flexDirection: 'row',
           alignItems: 'center',
           gap: 12,
           borderBottomWidth: 1,
-          borderBottomColor: COLORS.gray[100],
+          borderBottomColor: tc.border,
         }}
       >
         <TouchableOpacity
@@ -53,16 +54,16 @@ export default function CustomerVouchersScreen() {
             borderRadius: 14,
             alignItems: 'center',
             justifyContent: 'center',
-            backgroundColor: COLORS.gray[50],
+            backgroundColor: tc.background,
           }}
         >
           <ArrowLeft size={20} color={COLORS.gray[800]} />
         </TouchableOpacity>
         <View style={{ flex: 1 }}>
-          <Text style={{ fontSize: fs(18), fontWeight: '800', color: COLORS.gray[900] }}>
+          <Text style={{ fontSize: fs(18), fontWeight: '800', color: tc.text }}>
             {t('voucher_title')}
           </Text>
-          <Text style={{ fontSize: fs(12), color: COLORS.gray[500] }}>
+          <Text style={{ fontSize: fs(12), color: tc.textMuted }}>
             {t('home_vouchers_sub')}
           </Text>
         </View>
@@ -112,7 +113,7 @@ export default function CustomerVouchersScreen() {
                   gap: 12,
                   borderWidth: 1.5,
                   borderColor: COLORS.primaryLight,
-                  backgroundColor: '#fff',
+                  backgroundColor: tc.surface,
                 }}
               >
                 <View
@@ -137,11 +138,11 @@ export default function CustomerVouchersScreen() {
                     </View>
                     <View style={{ flex: 1, gap: 2 }}>
                       <Text
-                        style={{ fontSize: fs(16), fontWeight: '800', color: COLORS.gray[900] }}
+                        style={{ fontSize: fs(16), fontWeight: '800', color: tc.text }}
                       >
                         {discountLabel}
                       </Text>
-                      <Text style={{ fontSize: fs(13), color: COLORS.gray[600], lineHeight: 18 }}>
+                      <Text style={{ fontSize: fs(13), color: tc.textSecondary, lineHeight: 18 }}>
                         {formatVoucherDesc(v)}
                       </Text>
                     </View>
@@ -152,13 +153,13 @@ export default function CustomerVouchersScreen() {
                 <View
                   style={{
                     padding: 10,
-                    backgroundColor: COLORS.gray[50],
+                    backgroundColor: tc.background,
                     borderRadius: 8,
                     gap: 6,
                   }}
                 >
                   {v.min_order_amount > 0 && (
-                    <Text style={{ fontSize: fs(12), color: COLORS.gray[700] }}>
+                    <Text style={{ fontSize: fs(12), color: tc.textSecondary }}>
                       • {lang === 'en' ? 'Min order: ' : 'Đơn tối thiểu: '}
                       <Text style={{ fontWeight: '700' }}>
                         {new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'vi-VN').format(
@@ -169,7 +170,7 @@ export default function CustomerVouchersScreen() {
                     </Text>
                   )}
                   {v.max_discount_amount && isPercent && (
-                    <Text style={{ fontSize: fs(12), color: COLORS.gray[700] }}>
+                    <Text style={{ fontSize: fs(12), color: tc.textSecondary }}>
                       • {lang === 'en' ? 'Max discount: ' : 'Giảm tối đa: '}
                       <Text style={{ fontWeight: '700' }}>
                         {new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'vi-VN').format(
@@ -181,7 +182,7 @@ export default function CustomerVouchersScreen() {
                   )}
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                     <Clock size={12} color={COLORS.gray[500]} />
-                    <Text style={{ fontSize: fs(12), color: COLORS.gray[500] }}>
+                    <Text style={{ fontSize: fs(12), color: tc.textMuted }}>
                       {lang === 'en' ? 'Expires: ' : 'Hết hạn: '}
                       {v.valid_to || v.end_date || (v as any).expires_at
                         ? dayjs(v.valid_to || v.end_date || (v as any).expires_at).format(

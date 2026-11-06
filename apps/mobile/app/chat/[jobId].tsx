@@ -39,7 +39,7 @@ import { ImageViewerModal } from '@/components/common/photo-thumbs';
 import { Alert } from '@/components/common/app-alert';
 import { useTranslation } from '@/hooks/use-i18n';
 import { formatDayLabel, formatTime } from '@/utils/date-format';
-import { Avatar, COLORS, LoadingSpinner, EmptyState, Skeleton } from '@/components/ui';
+import { Avatar, COLORS, LoadingSpinner, EmptyState, Skeleton, useThemeColors } from '@/components/ui';
 
 export function resolveMediaUrl(rawUrl: string): string {
   if (!rawUrl || typeof rawUrl !== 'string') return '';
@@ -76,6 +76,7 @@ export function resolveMediaUrl(rawUrl: string): string {
 
 function ChatImageBubble({ uri, onPress }: { uri: string; onPress: () => void }) {
   const { lang, fs } = useTranslation();
+  const tc = useThemeColors();
   const resolvedUrl = useMemo(() => resolveMediaUrl(uri), [uri]);
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
 
@@ -122,7 +123,7 @@ function ChatImageBubble({ uri, onPress }: { uri: string; onPress: () => void })
       {status === 'loading' && (
         <View style={{ alignItems: 'center', gap: 6, zIndex: 2 }}>
           <ActivityIndicator size="small" color={COLORS.primary} />
-          <Text style={{ fontSize: fs(11), color: COLORS.gray[500], fontWeight: '600' }}>
+          <Text style={{ fontSize: fs(11), color: tc.textMuted, fontWeight: '600' }}>
             {lang === 'en' ? 'Loading image...' : 'Đang tải ảnh...'}
           </Text>
         </View>
@@ -165,7 +166,7 @@ function ChatImageBubble({ uri, onPress }: { uri: string; onPress: () => void })
           <Text
             style={{
               fontSize: fs(10.5),
-              color: COLORS.gray[500],
+              color: tc.textMuted,
               textAlign: 'center',
               lineHeight: 14,
             }}
@@ -201,6 +202,7 @@ export default function ChatScreen() {
   const router = useRouter();
   const currentUser = useAuthStore(s => s.user);
   const { t, fs, lang } = useTranslation();
+  const tc = useThemeColors();
 
   const [conversation, setConversation] = useState<any>(null);
   const [loadingConv, setLoadingConv] = useState(true);
@@ -412,7 +414,7 @@ export default function ChatScreen() {
   const insets = useSafeAreaInsets();
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#F8F9FA' }}>
+    <View style={{ flex: 1, backgroundColor: tc.background }}>
       {/* ── Top Header Bar (Safe Insets) ───────────────────────────── */}
       <View
         style={{
@@ -422,9 +424,9 @@ export default function ChatScreen() {
           paddingHorizontal: 16,
           paddingTop: Math.max(insets.top + 6, 18),
           paddingBottom: 12,
-          backgroundColor: '#fff',
+          backgroundColor: tc.surface,
           borderBottomWidth: 1,
-          borderBottomColor: COLORS.gray[100],
+          borderBottomColor: tc.border,
         }}
       >
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 }}>
@@ -436,7 +438,7 @@ export default function ChatScreen() {
               width: 40,
               height: 40,
               borderRadius: 14,
-              backgroundColor: COLORS.gray[100],
+              backgroundColor: tc.subtle,
               alignItems: 'center',
               justifyContent: 'center',
             }}
@@ -449,7 +451,7 @@ export default function ChatScreen() {
           <View style={{ flex: 1 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
               <Text
-                style={{ fontWeight: '800', fontSize: fs(15), color: COLORS.gray[900] }}
+                style={{ fontWeight: '800', fontSize: fs(15), color: tc.text }}
                 numberOfLines={1}
               >
                 {partnerName}
@@ -534,7 +536,7 @@ export default function ChatScreen() {
                           height: 220,
                           borderRadius: 14,
                           opacity: 0.55,
-                          backgroundColor: COLORS.gray[100],
+                          backgroundColor: tc.subtle,
                         }}
                         resizeMode="cover"
                       />
@@ -609,12 +611,12 @@ export default function ChatScreen() {
                 >
                   <MessageSquare size={28} color={COLORS.primary} />
                 </View>
-                <Text style={{ fontSize: fs(16), fontWeight: '800', color: COLORS.gray[800] }}>
+                <Text style={{ fontSize: fs(16), fontWeight: '800', color: tc.text }}>
                   {lang === 'en' ? 'Start the conversation' : 'Bắt đầu cuộc trò chuyện'}
                 </Text>
                 <Text
                   style={{
-                    color: COLORS.gray[500],
+                    color: tc.textMuted,
                     fontSize: fs(13),
                     textAlign: 'center',
                     paddingHorizontal: 20,
@@ -652,8 +654,8 @@ export default function ChatScreen() {
                     style={{
                       fontSize: fs(11.5),
                       fontWeight: '700',
-                      color: COLORS.gray[500],
-                      backgroundColor: COLORS.gray[100],
+                      color: tc.textMuted,
+                      backgroundColor: tc.subtle,
                       paddingHorizontal: 12,
                       paddingVertical: 4,
                       borderRadius: 999,
@@ -676,7 +678,7 @@ export default function ChatScreen() {
                     <Text
                       style={{
                         fontSize: fs(10.5),
-                        color: COLORS.gray[500],
+                        color: tc.textMuted,
                         marginTop: 4,
                         marginHorizontal: 6,
                         fontWeight: '600',
@@ -707,7 +709,7 @@ export default function ChatScreen() {
                       shadowRadius: 3,
                       elevation: 2,
                       borderWidth: isMe ? 0 : 1,
-                      borderColor: COLORS.gray[100],
+                      borderColor: tc.border,
                     }}
                   >
                     <Text
@@ -724,7 +726,7 @@ export default function ChatScreen() {
                   <Text
                     style={{
                       fontSize: fs(10.5),
-                      color: COLORS.gray[500],
+                      color: tc.textMuted,
                       marginTop: 4,
                       marginHorizontal: 6,
                       fontWeight: '600',
@@ -746,9 +748,9 @@ export default function ChatScreen() {
               gap: 10,
               paddingHorizontal: 16,
               paddingVertical: 12,
-              backgroundColor: '#fff',
+              backgroundColor: tc.surface,
               borderTopWidth: 1,
-              borderTopColor: COLORS.gray[100],
+              borderTopColor: tc.border,
             }}
           >
             <TouchableOpacity
@@ -759,7 +761,7 @@ export default function ChatScreen() {
                 width: 44,
                 height: 44,
                 borderRadius: 14,
-                backgroundColor: COLORS.gray[100],
+                backgroundColor: tc.subtle,
                 alignItems: 'center',
                 justifyContent: 'center',
                 opacity: pendingPhoto && !pendingPhoto.failed ? 0.5 : 1,
@@ -771,14 +773,14 @@ export default function ChatScreen() {
               style={{
                 flex: 1,
                 borderWidth: 1.5,
-                borderColor: COLORS.gray[200],
+                borderColor: tc.border,
                 borderRadius: 14,
                 paddingHorizontal: 18,
                 paddingVertical: 11,
                 fontSize: fs(15),
                 maxHeight: 100,
-                backgroundColor: COLORS.gray[50],
-                color: COLORS.gray[900],
+                backgroundColor: tc.background,
+                color: tc.text,
               }}
               placeholder={lang === 'en' ? 'Type a message...' : 'Nhập tin nhắn trao đổi...'}
               value={text}

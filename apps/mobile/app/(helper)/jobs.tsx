@@ -36,15 +36,7 @@ import {
   useAcceptFixedPrice,
 } from '@/hooks/use-api';
 import { useTranslation } from '@/hooks/use-i18n';
-import {
-  Button,
-  Card,
-  JobStatusBadge,
-  Badge,
-  COLORS,
-  EmptyState,
-  ErrorState,
-} from '@/components/ui';
+import { Button, Card, JobStatusBadge, Badge, COLORS, EmptyState, ErrorState, useThemeColors } from '@/components/ui';
 import { OfflineBanner } from '@/components/common/offline-banner';
 
 dayjs.extend(relativeTime);
@@ -52,6 +44,7 @@ dayjs.extend(relativeTime);
 export default function HelperJobsScreen() {
   const router = useRouter();
   const { t, tService, fs, lang } = useTranslation();
+  const tc = useThemeColors();
   const [tab, setTab] = useState(0);
   const tabBarScrollRef = useRef<ScrollView>(null);
   const tabLayouts = useRef<{ [key: number]: { x: number; width: number } }>({});
@@ -139,15 +132,15 @@ export default function HelperJobsScreen() {
 
   if (isAuthLoading || (!isSwitchingRole && user && user.active_role === 'customer')) {
     return (
-      <View style={{ flex: 1, backgroundColor: '#F8F9FA' }}>
+      <View style={{ flex: 1, backgroundColor: tc.background }}>
         <View
           style={{
             paddingHorizontal: 20,
             paddingTop: Math.max(insets.top + 8, 20),
             paddingBottom: 14,
-            backgroundColor: '#fff',
+            backgroundColor: tc.surface,
             borderBottomWidth: 1,
-            borderBottomColor: COLORS.gray[100],
+            borderBottomColor: tc.border,
           }}
         >
           <View
@@ -155,7 +148,7 @@ export default function HelperJobsScreen() {
               width: 140,
               height: 24,
               borderRadius: 8,
-              backgroundColor: COLORS.gray[200],
+              backgroundColor: tc.border,
             }}
           />
           <View
@@ -163,7 +156,7 @@ export default function HelperJobsScreen() {
               width: 200,
               height: 14,
               borderRadius: 8,
-              backgroundColor: COLORS.gray[100],
+              backgroundColor: tc.subtle,
               marginTop: 6,
             }}
           />
@@ -175,7 +168,7 @@ export default function HelperJobsScreen() {
               style={{
                 height: 110,
                 borderRadius: 14,
-                backgroundColor: COLORS.gray[200],
+                backgroundColor: tc.border,
               }}
             />
           ))}
@@ -203,7 +196,7 @@ export default function HelperJobsScreen() {
         {tabIndex === 0 && (pLoading || (aLoading && !available)) ? (
           <Card style={{ alignItems: 'center', paddingVertical: 40, gap: 12 }}>
             <ActivityIndicator size="small" color={COLORS.primary} />
-            <Text style={{ fontSize: fs(13), color: COLORS.gray[500] }}>
+            <Text style={{ fontSize: fs(13), color: tc.textMuted }}>
               {lang === 'en'
                 ? 'Checking status and loading new jobs...'
                 : 'Đang kiểm tra trạng thái và tải đơn mới...'}
@@ -344,7 +337,7 @@ export default function HelperJobsScreen() {
                       style={{
                         fontWeight: '800',
                         fontSize: fs(15),
-                        color: COLORS.gray[900],
+                        color: tc.text,
                         flex: 1,
                         marginRight: 8,
                         lineHeight: Math.round(fs(20)),
@@ -396,7 +389,7 @@ export default function HelperJobsScreen() {
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
                       <MapPin size={13} color={COLORS.gray[500]} />
                       <Text
-                        style={{ fontSize: fs(12), color: COLORS.gray[600], fontWeight: '500' }}
+                        style={{ fontSize: fs(12), color: tc.textSecondary, fontWeight: '500' }}
                       >
                         {job.address?.district || job.address?.city || t('jobs_unspecified')}
                       </Text>
@@ -415,7 +408,7 @@ export default function HelperJobsScreen() {
                     {job.preferred_time_start && (
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
                         <Clock size={13} color={COLORS.gray[400]} />
-                        <Text style={{ fontSize: fs(12), color: COLORS.gray[500] }}>
+                        <Text style={{ fontSize: fs(12), color: tc.textMuted }}>
                           {job.preferred_time_start}
                         </Text>
                       </View>
@@ -428,10 +421,10 @@ export default function HelperJobsScreen() {
                       alignItems: 'center',
                       paddingTop: 8,
                       borderTopWidth: 1,
-                      borderTopColor: COLORS.gray[100],
+                      borderTopColor: tc.border,
                     }}
                   >
-                    <Text style={{ fontSize: fs(12), color: COLORS.gray[500] }}>
+                    <Text style={{ fontSize: fs(12), color: tc.textMuted }}>
                       {dayjs(job.created_at).fromNow()}
                     </Text>
                     {tabIndex === 0 && (job.is_fixed_price || job.is_warranty) ? (
@@ -495,23 +488,23 @@ export default function HelperJobsScreen() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#F8F9FA' }}>
+    <View style={{ flex: 1, backgroundColor: tc.background }}>
       <OfflineBanner />
       {/* Header */}
       <View
         style={{
-          backgroundColor: '#FFFFFF',
+          backgroundColor: tc.surface,
           borderBottomWidth: 1,
-          borderBottomColor: COLORS.gray[100],
+          borderBottomColor: tc.border,
           paddingHorizontal: 20,
           paddingTop: Math.max(insets.top + 8, 20),
           paddingBottom: 14,
         }}
       >
-        <Text style={{ fontSize: fs(20), fontWeight: '800', color: COLORS.gray[900] }}>
+        <Text style={{ fontSize: fs(20), fontWeight: '800', color: tc.text }}>
           {t('helper_jobs_title')}
         </Text>
-        <Text style={{ fontSize: fs(12), color: COLORS.gray[500], marginTop: 2 }}>
+        <Text style={{ fontSize: fs(12), color: tc.textMuted, marginTop: 2 }}>
           {t('helper_jobs_subtitle')} • {lang === 'en' ? 'Updated' : 'Cập nhật'} lúc{' '}
           {dayjs(Math.max(aUpdatedAt || 0, acUpdatedAt || 0, hUpdatedAt || 0) || Date.now()).format(
             'HH:mm',
@@ -536,10 +529,10 @@ export default function HelperJobsScreen() {
         >
           <Map size={18} color={COLORS.primary} />
           <View style={{ flex: 1 }}>
-            <Text style={{ fontWeight: '800', fontSize: fs(13.5), color: COLORS.gray[900] }}>
+            <Text style={{ fontWeight: '800', fontSize: fs(13.5), color: tc.text }}>
               {t('helper_jobs_demand_map')}
             </Text>
-            <Text style={{ fontSize: fs(11.5), color: COLORS.gray[500] }}>
+            <Text style={{ fontSize: fs(11.5), color: tc.textMuted }}>
               {t('helper_jobs_demand_map_sub')}
             </Text>
           </View>
@@ -552,19 +545,19 @@ export default function HelperJobsScreen() {
         <View style={{ paddingHorizontal: 16, paddingTop: 12, gap: 10 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
             <Users size={16} color={COLORS.gray[900]} />
-            <Text style={{ fontWeight: '800', fontSize: fs(14.5), color: COLORS.gray[900] }}>
+            <Text style={{ fontWeight: '800', fontSize: fs(14.5), color: tc.text }}>
               {lang === 'en' ? 'Team Invitations' : 'Lời mời vào nhóm'} ({teamInvitations!.length})
             </Text>
           </View>
           {teamInvitations!.map(inv => (
             <Card key={inv.job_id} style={{ gap: 8 }}>
-              <Text style={{ fontWeight: '800', fontSize: fs(14), color: COLORS.gray[900] }}>
+              <Text style={{ fontWeight: '800', fontSize: fs(14), color: tc.text }}>
                 {inv.title}
               </Text>
               <Text
                 style={{
                   fontSize: fs(12.5),
-                  color: COLORS.gray[600],
+                  color: tc.textSecondary,
                   lineHeight: Math.round(fs(18)),
                 }}
               >
@@ -607,9 +600,9 @@ export default function HelperJobsScreen() {
       {/* Tabs */}
       <View
         style={{
-          backgroundColor: '#FFFFFF',
+          backgroundColor: tc.surface,
           borderBottomWidth: 1,
-          borderBottomColor: COLORS.gray[100],
+          borderBottomColor: tc.border,
         }}
       >
         <ScrollView

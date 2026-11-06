@@ -31,16 +31,7 @@ import {
   useTopupWallet,
   useHelperProfile,
 } from '@/hooks/use-api';
-import {
-  Card,
-  Button,
-  COLORS,
-  LoadingSpinner,
-  Separator,
-  PriceText,
-  EmptyState,
-  ErrorState,
-} from '@/components/ui';
+import { Card, Button, COLORS, LoadingSpinner, Separator, PriceText, EmptyState, ErrorState, useThemeColors } from '@/components/ui';
 import dayjs from 'dayjs';
 import { EarningsReport } from '@/components/helper/earnings-report';
 import { useTranslation } from '@/hooks/use-i18n';
@@ -75,6 +66,7 @@ const TX_COLORS: Record<string, string> = {
 
 export default function HelperEarningsScreen() {
   const { t, fs, lang, formatTxDesc } = useTranslation();
+  const tc = useThemeColors();
   const { data: wallet, isLoading, isError: isWalletError, refetch: refetchWallet } = useWallet();
   const {
     data: txData,
@@ -186,7 +178,7 @@ export default function HelperEarningsScreen() {
       <View
         style={{
           flex: 1,
-          backgroundColor: '#F8F9FA',
+          backgroundColor: tc.background,
           justifyContent: 'center',
           alignItems: 'center',
           padding: 24,
@@ -209,7 +201,7 @@ export default function HelperEarningsScreen() {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#F8F9FA' }}>
+    <View style={{ flex: 1, backgroundColor: tc.background }}>
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 110 }}
@@ -258,7 +250,7 @@ export default function HelperEarningsScreen() {
               <Text
                 style={{
                   fontSize: fs(11),
-                  color: COLORS.gray[500],
+                  color: tc.textMuted,
                   textAlign: 'center',
                   fontWeight: '600',
                 }}
@@ -272,7 +264,7 @@ export default function HelperEarningsScreen() {
               <Text
                 style={{
                   fontSize: fs(11),
-                  color: COLORS.gray[500],
+                  color: tc.textMuted,
                   textAlign: 'center',
                   fontWeight: '600',
                 }}
@@ -312,7 +304,7 @@ export default function HelperEarningsScreen() {
           <Text
             style={{
               fontSize: fs(12),
-              color: COLORS.gray[500],
+              color: tc.textMuted,
               textAlign: 'center',
               lineHeight: 18,
             }}
@@ -332,7 +324,7 @@ export default function HelperEarningsScreen() {
             style={{
               fontSize: fs(17),
               fontWeight: '800',
-              color: COLORS.gray[900],
+              color: tc.text,
               marginBottom: 12,
             }}
           >
@@ -372,7 +364,7 @@ export default function HelperEarningsScreen() {
                       width: 42,
                       height: 42,
                       borderRadius: 14,
-                      backgroundColor: COLORS.gray[200],
+                      backgroundColor: tc.border,
                     }}
                   />
                   <View style={{ flex: 1, gap: 6 }}>
@@ -381,7 +373,7 @@ export default function HelperEarningsScreen() {
                         width: '70%',
                         height: 14,
                         borderRadius: 8,
-                        backgroundColor: COLORS.gray[200],
+                        backgroundColor: tc.border,
                       }}
                     />
                     <View
@@ -389,7 +381,7 @@ export default function HelperEarningsScreen() {
                         width: '40%',
                         height: 11,
                         borderRadius: 8,
-                        backgroundColor: COLORS.gray[100],
+                        backgroundColor: tc.subtle,
                       }}
                     />
                   </View>
@@ -398,7 +390,7 @@ export default function HelperEarningsScreen() {
                       width: 60,
                       height: 16,
                       borderRadius: 8,
-                      backgroundColor: COLORS.gray[200],
+                      backgroundColor: tc.border,
                     }}
                   />
                 </View>
@@ -451,11 +443,11 @@ export default function HelperEarningsScreen() {
                         </View>
                         <View style={{ flex: 1 }}>
                           <Text
-                            style={{ fontWeight: '700', fontSize: fs(14), color: COLORS.gray[900] }}
+                            style={{ fontWeight: '700', fontSize: fs(14), color: tc.text }}
                           >
                             {formatTxDesc(tx.description)}
                           </Text>
-                          <Text style={{ fontSize: fs(12), color: COLORS.gray[500], marginTop: 2 }}>
+                          <Text style={{ fontSize: fs(12), color: tc.textMuted, marginTop: 2 }}>
                             {formatDateTime(dayjs(tx.created_at))}
                           </Text>
                         </View>
@@ -486,7 +478,7 @@ export default function HelperEarningsScreen() {
                             <Text
                               style={{
                                 fontSize: fs(11),
-                                color: COLORS.gray[500],
+                                color: tc.textMuted,
                                 fontWeight: '600',
                               }}
                             >
@@ -512,7 +504,7 @@ export default function HelperEarningsScreen() {
 
       {/* ── Top-up Deposit Wallet Modal ────────────────────────────────── */}
       <Modal visible={showTopup} animationType="slide" presentationStyle="pageSheet">
-        <View style={{ flex: 1, backgroundColor: '#fff', paddingTop: Math.max(insets.top, 16) }}>
+        <View style={{ flex: 1, backgroundColor: tc.surface, paddingTop: Math.max(insets.top, 16) }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', padding: 20 }}>
             <TouchableOpacity onPress={() => setShowTopup(false)}>
               <X size={24} color={COLORS.gray[700]} />
@@ -522,7 +514,7 @@ export default function HelperEarningsScreen() {
                 fontSize: fs(18),
                 fontWeight: '800',
                 marginLeft: 12,
-                color: COLORS.gray[900],
+                color: tc.text,
               }}
             >
               {t('earn_topup_title')}
@@ -542,7 +534,7 @@ export default function HelperEarningsScreen() {
                 <Text
                   style={{
                     fontSize: fs(12),
-                    color: COLORS.gray[700],
+                    color: tc.textSecondary,
                     lineHeight: Math.round(fs(18)),
                   }}
                 >
@@ -553,7 +545,7 @@ export default function HelperEarningsScreen() {
               </Card>
 
               <View style={{ gap: 8 }}>
-                <Text style={{ fontWeight: '700', color: COLORS.gray[700] }}>
+                <Text style={{ fontWeight: '700', color: tc.textSecondary }}>
                   {lang === 'en' ? 'Quick select amount' : 'Chọn nhanh mệnh giá nạp'}
                 </Text>
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
@@ -584,18 +576,18 @@ export default function HelperEarningsScreen() {
               </View>
 
               <View style={{ gap: 6 }}>
-                <Text style={{ fontWeight: '700', color: COLORS.gray[700] }}>
+                <Text style={{ fontWeight: '700', color: tc.textSecondary }}>
                   {lang === 'en' ? 'Top-up amount (₫) *' : 'Số tiền nạp (₫) *'}
                 </Text>
                 <TextInput
                   style={{
                     borderWidth: 1.5,
-                    borderColor: COLORS.gray[200],
+                    borderColor: tc.border,
                     borderRadius: 14,
                     padding: 14,
                     fontSize: fs(22),
                     fontWeight: '800',
-                    color: COLORS.gray[900],
+                    color: tc.text,
                   }}
                   placeholder={lang === 'en' ? 'Minimum 50,000₫' : 'Tối thiểu 50,000₫'}
                   value={topupAmount}
@@ -617,7 +609,7 @@ export default function HelperEarningsScreen() {
 
       {/* ── Withdraw Modal ─────────────────────────────────────────────── */}
       <Modal visible={showWithdraw} animationType="slide" presentationStyle="pageSheet">
-        <View style={{ flex: 1, backgroundColor: '#fff', paddingTop: Math.max(insets.top, 16) }}>
+        <View style={{ flex: 1, backgroundColor: tc.surface, paddingTop: Math.max(insets.top, 16) }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', padding: 20 }}>
             <TouchableOpacity onPress={() => setShowWithdraw(false)}>
               <X size={24} color={COLORS.gray[700]} />
@@ -627,7 +619,7 @@ export default function HelperEarningsScreen() {
                 fontSize: fs(18),
                 fontWeight: '800',
                 marginLeft: 12,
-                color: COLORS.gray[900],
+                color: tc.text,
               }}
             >
               {t('earn_withdraw_title')}
@@ -647,18 +639,18 @@ export default function HelperEarningsScreen() {
               </Card>
 
               <View style={{ gap: 6 }}>
-                <Text style={{ fontWeight: '700', color: COLORS.gray[700] }}>
+                <Text style={{ fontWeight: '700', color: tc.textSecondary }}>
                   {lang === 'en' ? 'Withdrawal amount (₫) *' : 'Số tiền rút (₫) *'}
                 </Text>
                 <TextInput
                   style={{
                     borderWidth: 1.5,
-                    borderColor: COLORS.gray[200],
+                    borderColor: tc.border,
                     borderRadius: 14,
                     padding: 14,
                     fontSize: fs(22),
                     fontWeight: '800',
-                    color: COLORS.gray[900],
+                    color: tc.text,
                   }}
                   placeholder={lang === 'en' ? 'Minimum 50,000₫' : 'Tối thiểu 50,000₫'}
                   value={amount}
@@ -693,15 +685,15 @@ export default function HelperEarningsScreen() {
                 },
               ].map(f => (
                 <View key={f.label} style={{ gap: 6 }}>
-                  <Text style={{ fontWeight: '700', color: COLORS.gray[700] }}>{f.label}</Text>
+                  <Text style={{ fontWeight: '700', color: tc.textSecondary }}>{f.label}</Text>
                   <TextInput
                     style={{
                       borderWidth: 1.5,
-                      borderColor: COLORS.gray[200],
+                      borderColor: tc.border,
                       borderRadius: 14,
                       padding: 14,
                       fontSize: fs(15),
-                      color: COLORS.gray[900],
+                      color: tc.text,
                     }}
                     placeholder={f.placeholder}
                     value={f.value}

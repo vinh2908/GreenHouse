@@ -48,7 +48,7 @@ import { useAuthStore } from '@/stores/auth.store';
 import { resolveNotificationRoute } from '@/utils/notification-route';
 import { refreshSosState } from '@/hooks/use-sos-backup';
 import { useTranslation } from '@/hooks/use-i18n';
-import { Card, COLORS, EmptyState, ErrorState, LoadingSpinner } from '@/components/ui';
+import { Card, COLORS, EmptyState, ErrorState, LoadingSpinner, useThemeColors } from '@/components/ui';
 
 dayjs.extend(relativeTime);
 
@@ -141,6 +141,7 @@ const SOS_DECISION_TYPES = new Set(['sos_backup_decision_request', 'sos_backup_d
 export default function NotificationsScreen() {
   const router = useRouter();
   const { t, fs, lang, formatNotifTitle, formatNotifBody } = useTranslation();
+  const tc = useThemeColors();
   const user = useAuthStore(s => s.user);
   // B23: 2 tab Tất cả / Chưa đọc dùng đúng hook useNotifications(unreadOnly)
   const [tab, setTab] = useState<'all' | 'unread'>('all');
@@ -183,7 +184,7 @@ export default function NotificationsScreen() {
   const insets = useSafeAreaInsets();
 
   return (
-    <View style={{ flex: 1, backgroundColor: COLORS.gray[50] }}>
+    <View style={{ flex: 1, backgroundColor: tc.background }}>
       {/* Header (Safe Insets) */}
       <View
         style={{
@@ -193,9 +194,9 @@ export default function NotificationsScreen() {
           paddingHorizontal: 20,
           paddingTop: Math.max(insets.top + 6, 18),
           paddingBottom: 14,
-          backgroundColor: '#fff',
+          backgroundColor: tc.surface,
           borderBottomWidth: 1,
-          borderBottomColor: COLORS.gray[100],
+          borderBottomColor: tc.border,
         }}
       >
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
@@ -207,7 +208,7 @@ export default function NotificationsScreen() {
               width: 38,
               height: 38,
               borderRadius: 14,
-              backgroundColor: COLORS.gray[100],
+              backgroundColor: tc.subtle,
               alignItems: 'center',
               justifyContent: 'center',
             }}
@@ -215,11 +216,11 @@ export default function NotificationsScreen() {
             <ArrowLeft size={20} color={COLORS.gray[800]} />
           </TouchableOpacity>
           <View>
-            <Text style={{ fontSize: fs(18), fontWeight: '800', color: COLORS.gray[900] }}>
+            <Text style={{ fontSize: fs(18), fontWeight: '800', color: tc.text }}>
               {lang === 'en' ? 'Notifications' : 'Thông báo'}
             </Text>
             {dataUpdatedAt ? (
-              <Text style={{ fontSize: fs(11), color: COLORS.gray[500] }}>
+              <Text style={{ fontSize: fs(11), color: tc.textMuted }}>
                 {lang === 'en' ? 'Updated at' : 'Cập nhật lúc'}{' '}
                 {formatTime(dayjs(dataUpdatedAt))}
               </Text>
@@ -245,7 +246,7 @@ export default function NotificationsScreen() {
           gap: 8,
           paddingHorizontal: 16,
           paddingTop: 12,
-          backgroundColor: '#fff',
+          backgroundColor: tc.surface,
         }}
       >
         {(
@@ -361,7 +362,7 @@ export default function NotificationsScreen() {
                     style={{
                       fontWeight: n.is_read ? '600' : '800',
                       fontSize: fs(14),
-                      color: COLORS.gray[900],
+                      color: tc.text,
                     }}
                   >
                     {formatNotifTitle(n.title, n.type)}
@@ -369,7 +370,7 @@ export default function NotificationsScreen() {
                   <Text
                     style={{
                       fontSize: fs(13),
-                      color: COLORS.gray[600],
+                      color: tc.textSecondary,
                       marginTop: 3,
                       lineHeight: 18,
                     }}
@@ -379,7 +380,7 @@ export default function NotificationsScreen() {
                   <Text
                     style={{
                       fontSize: fs(11),
-                      color: COLORS.gray[500],
+                      color: tc.textMuted,
                       marginTop: 6,
                       fontWeight: '600',
                     }}

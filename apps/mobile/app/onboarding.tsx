@@ -9,7 +9,7 @@ import { useRouter } from 'expo-router';
 import { CalendarCheck, Siren, Wallet, ClipboardCheck, ChevronRight } from 'lucide-react-native';
 import { useAuthStore } from '@/stores/auth.store';
 import { useTranslation } from '@/hooks/use-i18n';
-import { Button, COLORS } from '@/components/ui';
+import { Button, COLORS, useThemeColors } from '@/components/ui';
 
 export const ONBOARDING_SEEN_KEY = 'gh_onboarding_seen_v1';
 
@@ -25,6 +25,7 @@ const PAGES = [
 export default function OnboardingScreen() {
   const router = useRouter();
   const { t, fs } = useTranslation();
+  const tc = useThemeColors();
   const { user } = useAuthStore();
   const [page, setPage] = useState(0);
   const listRef = useRef<FlatList>(null);
@@ -50,11 +51,11 @@ export default function OnboardingScreen() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#fff', paddingTop: Math.max(insets.top, 16) }}>
+    <View style={{ flex: 1, backgroundColor: tc.surface, paddingTop: Math.max(insets.top, 16) }}>
       {/* Bỏ qua */}
       <View style={{ flexDirection: 'row', justifyContent: 'flex-end', paddingHorizontal: 20 }}>
         <TouchableOpacity onPress={() => void goHome()} hitSlop={12}>
-          <Text style={{ fontSize: fs(14), fontWeight: '700', color: COLORS.gray[500] }}>
+          <Text style={{ fontSize: fs(14), fontWeight: '700', color: tc.textMuted }}>
             {t('onboarding_skip')}
           </Text>
         </TouchableOpacity>
@@ -94,12 +95,12 @@ export default function OnboardingScreen() {
                 <Icon size={56} color={COLORS.primaryDark} />
               </View>
               <Text
-                style={{ fontSize: fs(22), fontWeight: '800', color: COLORS.gray[900], textAlign: 'center' }}
+                style={{ fontSize: fs(22), fontWeight: '800', color: tc.text, textAlign: 'center' }}
               >
                 {t(item.titleKey)}
               </Text>
               <Text
-                style={{ fontSize: fs(15), color: COLORS.gray[600], lineHeight: 23, textAlign: 'center' }}
+                style={{ fontSize: fs(15), color: tc.textSecondary, lineHeight: 23, textAlign: 'center' }}
               >
                 {t(item.bodyKey)}
               </Text>

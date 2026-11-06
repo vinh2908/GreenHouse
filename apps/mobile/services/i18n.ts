@@ -283,6 +283,9 @@ export const STRINGS = {
 
   // ─── Display settings (mục mới trong cả 2 profile) ────────────────────────
   settings_section: { vi: 'Cài đặt hiển thị', en: 'Display Settings' },
+  settings_theme: { vi: 'Giao diện', en: 'Appearance' },
+  settings_theme_light: { vi: 'Sáng', en: 'Light' },
+  settings_theme_dark: { vi: 'Tối', en: 'Dark' },
   settings_language: { vi: 'Ngôn ngữ', en: 'Language' },
   settings_language_vi: { vi: 'Tiếng Việt', en: 'Tiếng Việt' },
   settings_language_en: { vi: 'English', en: 'English' },

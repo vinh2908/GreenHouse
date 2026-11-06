@@ -14,7 +14,7 @@ import {
 import { useMonthlyContractSocket } from '@/hooks/use-socket';
 import { useAuthStore } from '@/stores/auth.store';
 import { useTranslation } from '@/hooks/use-i18n';
-import { Badge, Card, COLORS, EmptyState, LoadingSpinner } from '@/components/ui';
+import { Badge, Card, COLORS, EmptyState, LoadingSpinner, useThemeColors } from '@/components/ui';
 
 const WEEKDAY_LABELS_VI = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
 const WEEKDAY_LABELS_EN = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -46,9 +46,9 @@ export const MONTHLY_STATUS_META: Record<
     label: 'Đã hủy',
     label_en: 'Cancelled',
     bg: COLORS.gray[100],
-    color: COLORS.gray[500],
+    color: tc.textMuted,
   },
-  ended: { label: 'Đã kết thúc', label_en: 'Ended', bg: COLORS.gray[100], color: COLORS.gray[600] },
+  ended: { label: 'Đã kết thúc', label_en: 'Ended', bg: COLORS.gray[100], color: tc.textSecondary },
 };
 
 export function describeMonthlySchedule(c: MonthlyContractItem, lang?: string): string {
@@ -68,6 +68,7 @@ export default function MonthlyContractsScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { t, fs, lang } = useTranslation();
+  const tc = useThemeColors();
   // Vai trò hiện tại lấy từ auth store (active_role) như các màn hình dùng chung khác
   const user = useAuthStore(s => s.user);
   const isHelper = user?.active_role === 'helper';
@@ -87,7 +88,7 @@ export default function MonthlyContractsScreen() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#F8F9FA' }}>
+    <View style={{ flex: 1, backgroundColor: tc.background }}>
       <View
         style={{
           flexDirection: 'row',
@@ -96,9 +97,9 @@ export default function MonthlyContractsScreen() {
           paddingHorizontal: 16,
           paddingTop: Math.max(insets.top + 6, 18),
           paddingBottom: 14,
-          backgroundColor: '#fff',
+          backgroundColor: tc.surface,
           borderBottomWidth: 1,
-          borderBottomColor: COLORS.gray[100],
+          borderBottomColor: tc.border,
         }}
       >
         <TouchableOpacity
@@ -109,7 +110,7 @@ export default function MonthlyContractsScreen() {
             width: 40,
             height: 40,
             borderRadius: 14,
-            backgroundColor: COLORS.gray[100],
+            backgroundColor: tc.subtle,
             alignItems: 'center',
             justifyContent: 'center',
           }}
@@ -117,10 +118,10 @@ export default function MonthlyContractsScreen() {
           <ArrowLeft size={20} color={COLORS.gray[800]} />
         </TouchableOpacity>
         <View style={{ flex: 1 }}>
-          <Text style={{ fontSize: fs(18), fontWeight: '800', color: COLORS.gray[900] }}>
+          <Text style={{ fontSize: fs(18), fontWeight: '800', color: tc.text }}>
             {lang === 'en' ? 'Monthly Contracts' : 'Hợp đồng theo tháng'}
           </Text>
-          <Text style={{ fontSize: fs(12), color: COLORS.gray[500] }}>
+          <Text style={{ fontSize: fs(12), color: tc.textMuted }}>
             {lang === 'en'
               ? isHelper
                 ? 'Long-term helper contracts you are handling'
@@ -200,7 +201,7 @@ export default function MonthlyContractsScreen() {
                           flex: 1,
                           fontSize: fs(15.5),
                           fontWeight: '800',
-                          color: COLORS.gray[900],
+                          color: tc.text,
                         }}
                         numberOfLines={1}
                       >
@@ -212,7 +213,7 @@ export default function MonthlyContractsScreen() {
                         textColor={meta.color}
                       />
                     </View>
-                    <Text style={{ fontSize: fs(13), color: COLORS.gray[600] }}>
+                    <Text style={{ fontSize: fs(13), color: tc.textSecondary }}>
                       {isHelper
                         ? lang === 'en'
                           ? 'Customer'
@@ -223,7 +224,7 @@ export default function MonthlyContractsScreen() {
                       : {personName(partner)} · {lang === 'en' ? 'Salary ' : 'Lương '}
                       {fmt(c.monthly_salary)}₫/{lang === 'en' ? 'month' : 'tháng'}
                     </Text>
-                    <Text style={{ fontSize: fs(12.5), color: COLORS.gray[500] }}>
+                    <Text style={{ fontSize: fs(12.5), color: tc.textMuted }}>
                       {lang === 'en' ? 'Schedule: ' : 'Lịch: '}
                       {describeMonthlySchedule(c, lang)} · {lang === 'en' ? 'From ' : 'Từ '}
                       {formatDate(dayjs(c.start_date))}

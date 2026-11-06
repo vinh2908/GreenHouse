@@ -17,13 +17,14 @@ import Toast from 'react-native-toast-message';
 import { useJobDetail, useJobContract } from '@/hooks/use-api';
 import { useTranslation } from '@/hooks/use-i18n';
 import { downloadInvoicePdf } from '@/services/invoice.service';
-import { Button, Card, LoadingSpinner, COLORS, Separator, PriceText } from '@/components/ui';
+import { Button, Card, LoadingSpinner, COLORS, Separator, PriceText, useThemeColors } from '@/components/ui';
 
 export default function ReceiptScreen() {
   const { jobId } = useLocalSearchParams<{ jobId: string }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { t, fs, lang } = useTranslation();
+  const tc = useThemeColors();
 
   const { data: job, isLoading: jobLoading } = useJobDetail(jobId);
   const { data: contract, isLoading: contractLoading } = useJobContract(jobId);
@@ -35,7 +36,7 @@ export default function ReceiptScreen() {
   if (!job) {
     return (
       <View style={[styles.container, { paddingTop: insets.top + 20, padding: 20 }]}>
-        <Text style={{ fontSize: fs(16), color: COLORS.gray[600], textAlign: 'center' }}>
+        <Text style={{ fontSize: fs(16), color: tc.textSecondary, textAlign: 'center' }}>
           {lang === 'en' ? 'Job receipt not found.' : 'Không tìm thấy biên lai đơn hàng.'}
         </Text>
       </View>

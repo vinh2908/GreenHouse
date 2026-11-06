@@ -7,7 +7,7 @@ import { View, Text } from 'react-native';
 import { formatDateTime } from '@/utils/date-format';
 import dayjs from 'dayjs';
 import { AlertTriangle, RefreshCw, Camera } from 'lucide-react-native';
-import { Button, Card, COLORS } from '@/components/ui';
+import { Button, Card, COLORS, useThemeColors } from '@/components/ui';
 import { PhotoThumbRow } from '@/components/common/photo-thumbs';
 import { useSosBackupByJob } from '@/hooks/use-api';
 import { useAuthStore } from '@/stores/auth.store';
@@ -18,6 +18,7 @@ const ACTIVE_STATUSES = ['confirmed', 'helper_on_the_way', 'helper_arrived', 'in
 
 export function SosBackupCustomerBanner({ job }: { job: any }) {
   const { lang, fs } = useTranslation();
+  const tc = useThemeColors();
   const myId = useAuthStore(s => s.user?._id);
   const setDecision = useSosBackupStore(s => s.setDecision);
   const isActive = ACTIVE_STATUSES.includes(job?.status);
@@ -64,7 +65,7 @@ export function SosBackupCustomerBanner({ job }: { job: any }) {
             </Text>
           </View>
           <Text
-            style={{ fontSize: fs(13), color: COLORS.gray[700], lineHeight: Math.round(fs(19)) }}
+            style={{ fontSize: fs(13), color: tc.textSecondary, lineHeight: Math.round(fs(19)) }}
           >
             {lang === 'en'
               ? 'The helper cannot continue this job. You can agree to switch helpers (price unchanged) or cancel with 100% refund.'
@@ -97,7 +98,7 @@ export function SosBackupCustomerBanner({ job }: { job: any }) {
             </Text>
           </View>
           <Text
-            style={{ fontSize: fs(13), color: COLORS.gray[700], lineHeight: Math.round(fs(19)) }}
+            style={{ fontSize: fs(13), color: tc.textSecondary, lineHeight: Math.round(fs(19)) }}
           >
             {lang === 'en'
               ? `The previous helper encountered an unexpected incident, so another helper has taken over your job${

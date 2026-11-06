@@ -44,7 +44,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import apiClient from '@/services/api-client';
 import { uploadFile } from '@/services/upload.service';
 import { locationService, normalizeVietnameseAddress } from '@/services/location.service';
-import { Button, Card, LoadingSpinner, COLORS, Separator, Avatar } from '@/components/ui';
+import { Button, Card, LoadingSpinner, COLORS, Separator, Avatar, useThemeColors } from '@/components/ui';
 import { useTranslation } from '@/hooks/use-i18n';
 
 // Bộ sưu tập avatar chuyên nghiệp có sẵn để người dùng chọn nhanh 1 chạm
@@ -60,6 +60,7 @@ const PRESET_AVATARS = [
 export default function EditProfileScreen() {
   const router = useRouter();
   const { t, fs, lang } = useTranslation();
+  const tc = useThemeColors();
   const queryClient = useQueryClient();
   const { user, setUser } = useAuthStore();
   const { data: myProfile, isLoading: uLoading } = useMyProfile();
@@ -457,7 +458,7 @@ export default function EditProfileScreen() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#F8F9FA' }}>
+    <View style={{ flex: 1, backgroundColor: tc.background }}>
       <LocationPicker
         visible={pickerFor !== null}
         title={
@@ -482,9 +483,9 @@ export default function EditProfileScreen() {
           paddingHorizontal: 16,
           paddingTop: Math.max(insets.top + 6, 18),
           paddingBottom: 14,
-          backgroundColor: '#fff',
+          backgroundColor: tc.surface,
           borderBottomWidth: 1,
-          borderBottomColor: COLORS.gray[100],
+          borderBottomColor: tc.border,
         }}
       >
         <TouchableOpacity
@@ -495,14 +496,14 @@ export default function EditProfileScreen() {
             width: 40,
             height: 40,
             borderRadius: 14,
-            backgroundColor: COLORS.gray[100],
+            backgroundColor: tc.subtle,
             alignItems: 'center',
             justifyContent: 'center',
           }}
         >
           <ArrowLeft size={20} color={COLORS.gray[800]} />
         </TouchableOpacity>
-        <Text style={{ fontSize: fs(17), fontWeight: '800', color: COLORS.gray[900] }}>
+        <Text style={{ fontSize: fs(17), fontWeight: '800', color: tc.text }}>
           {isHelper && activeTab === 'career'
             ? lang === 'en'
               ? 'Career Profile & Skills'
@@ -519,11 +520,11 @@ export default function EditProfileScreen() {
         <View
           style={{
             flexDirection: 'row',
-            backgroundColor: '#fff',
+            backgroundColor: tc.surface,
             paddingHorizontal: 16,
             paddingVertical: 8,
             borderBottomWidth: 1,
-            borderBottomColor: COLORS.gray[100],
+            borderBottomColor: tc.border,
             gap: 8,
           }}
         >
@@ -619,10 +620,10 @@ export default function EditProfileScreen() {
               </View>
 
               <View style={{ alignItems: 'center' }}>
-                <Text style={{ fontSize: fs(14), fontWeight: '800', color: COLORS.gray[800] }}>
+                <Text style={{ fontSize: fs(14), fontWeight: '800', color: tc.text }}>
                   {lang === 'en' ? 'Account Avatar' : 'Ảnh đại diện tài khoản'}
                 </Text>
-                <Text style={{ fontSize: fs(12), color: COLORS.gray[500], marginTop: 2 }}>
+                <Text style={{ fontSize: fs(12), color: tc.textMuted, marginTop: 2 }}>
                   {lang === 'en'
                     ? 'Take photo, pick from gallery, or select a preset below:'
                     : 'Chụp ảnh, chọn từ thư viện hoặc chọn nhanh bên dưới:'}
@@ -655,7 +656,7 @@ export default function EditProfileScreen() {
                           width: 44,
                           height: 44,
                           borderRadius: 14,
-                          backgroundColor: COLORS.gray[200],
+                          backgroundColor: tc.border,
                         }}
                       />
                       {isSelected && (
@@ -682,23 +683,23 @@ export default function EditProfileScreen() {
           {/* ── 2. THÔNG TIN ĐỊNH DANH CƠ BẢN ─────────────────────────── */}
           {(!isHelper || activeTab === 'general') && (
             <Card style={{ padding: 16, gap: 14 }}>
-              <Text style={{ fontSize: fs(15), fontWeight: '800', color: COLORS.gray[900] }}>
+              <Text style={{ fontSize: fs(15), fontWeight: '800', color: tc.text }}>
                 {lang === 'en' ? 'Contact Information' : 'Thông tin liên hệ'}
               </Text>
 
               <View style={{ gap: 6 }}>
-                <Text style={{ fontSize: fs(13), fontWeight: '700', color: COLORS.gray[700] }}>
+                <Text style={{ fontSize: fs(13), fontWeight: '700', color: tc.textSecondary }}>
                   {lang === 'en' ? 'Full Name *' : 'Họ và tên *'}
                 </Text>
                 <TextInput
                   style={{
                     borderWidth: 1.5,
-                    borderColor: COLORS.gray[200],
+                    borderColor: tc.border,
                     borderRadius: 14,
                     padding: 14,
                     fontSize: fs(15),
-                    color: COLORS.gray[900],
-                    backgroundColor: COLORS.gray[50],
+                    color: tc.text,
+                    backgroundColor: tc.background,
                     fontWeight: '600',
                   }}
                   placeholder={lang === 'en' ? 'Enter full name' : 'Nhập họ và tên đầy đủ'}
@@ -716,7 +717,7 @@ export default function EditProfileScreen() {
                     alignItems: 'center',
                   }}
                 >
-                  <Text style={{ fontSize: fs(13), fontWeight: '700', color: COLORS.gray[700] }}>
+                  <Text style={{ fontSize: fs(13), fontWeight: '700', color: tc.textSecondary }}>
                     {lang === 'en' ? 'Registered Phone Number' : 'Số điện thoại đăng ký'}
                   </Text>
                   <View
@@ -739,12 +740,12 @@ export default function EditProfileScreen() {
                 <TextInput
                   style={{
                     borderWidth: 1.5,
-                    borderColor: COLORS.gray[200],
+                    borderColor: tc.border,
                     borderRadius: 14,
                     padding: 14,
                     fontSize: fs(15),
-                    color: COLORS.gray[500],
-                    backgroundColor: COLORS.gray[100],
+                    color: tc.textMuted,
+                    backgroundColor: tc.subtle,
                   }}
                   value={myProfile?.phone || user?.phone || ''}
                   placeholder={
@@ -759,7 +760,7 @@ export default function EditProfileScreen() {
               </View>
 
               <View style={{ gap: 6 }}>
-                <Text style={{ fontSize: fs(13), fontWeight: '700', color: COLORS.gray[700] }}>
+                <Text style={{ fontSize: fs(13), fontWeight: '700', color: tc.textSecondary }}>
                   {lang === 'en'
                     ? 'Contact Email (Electronic Invoices)'
                     : 'Email liên hệ (Nhận hóa đơn điện tử)'}
@@ -767,12 +768,12 @@ export default function EditProfileScreen() {
                 <TextInput
                   style={{
                     borderWidth: 1.5,
-                    borderColor: COLORS.gray[200],
+                    borderColor: tc.border,
                     borderRadius: 14,
                     padding: 14,
                     fontSize: fs(15),
-                    color: COLORS.gray[900],
-                    backgroundColor: COLORS.gray[50],
+                    color: tc.text,
+                    backgroundColor: tc.background,
                   }}
                   placeholder="VD: nguyenvana@gmail.com"
                   value={email}
@@ -785,7 +786,7 @@ export default function EditProfileScreen() {
 
               {/* Giới tính */}
               <View style={{ gap: 6 }}>
-                <Text style={{ fontSize: fs(13), fontWeight: '700', color: COLORS.gray[700] }}>
+                <Text style={{ fontSize: fs(13), fontWeight: '700', color: tc.textSecondary }}>
                   {lang === 'en' ? 'Gender' : 'Giới tính'}
                 </Text>
                 <View style={{ flexDirection: 'row', gap: 10 }}>
@@ -830,7 +831,7 @@ export default function EditProfileScreen() {
             <Card style={{ padding: 16, gap: 14 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                 <Briefcase size={18} color={COLORS.primary} />
-                <Text style={{ fontSize: fs(15), fontWeight: '800', color: COLORS.gray[900] }}>
+                <Text style={{ fontSize: fs(15), fontWeight: '800', color: tc.text }}>
                   {lang === 'en'
                     ? 'Professional Profile & Work Area'
                     : 'Hồ sơ nghề nghiệp & Khu vực làm việc'}
@@ -838,18 +839,18 @@ export default function EditProfileScreen() {
               </View>
 
               <View style={{ gap: 6 }}>
-                <Text style={{ fontSize: fs(13), fontWeight: '700', color: COLORS.gray[700] }}>
+                <Text style={{ fontSize: fs(13), fontWeight: '700', color: tc.textSecondary }}>
                   {lang === 'en' ? 'Years of Experience' : 'Số năm kinh nghiệm'}
                 </Text>
                 <TextInput
                   style={{
                     borderWidth: 1.5,
-                    borderColor: COLORS.gray[200],
+                    borderColor: tc.border,
                     borderRadius: 14,
                     padding: 14,
                     fontSize: fs(15),
-                    color: COLORS.gray[900],
-                    backgroundColor: COLORS.gray[50],
+                    color: tc.text,
+                    backgroundColor: tc.background,
                   }}
                   placeholder={lang === 'en' ? 'e.g. 3 years' : 'VD: 3 năm'}
                   value={experienceYears}
@@ -860,18 +861,18 @@ export default function EditProfileScreen() {
               </View>
 
               <View style={{ gap: 6 }}>
-                <Text style={{ fontSize: fs(13), fontWeight: '700', color: COLORS.gray[700] }}>
+                <Text style={{ fontSize: fs(13), fontWeight: '700', color: tc.textSecondary }}>
                   {lang === 'en' ? 'Preferred Work Districts' : 'Khu vực hoạt động ưu tiên'}
                 </Text>
                 <TextInput
                   style={{
                     borderWidth: 1.5,
-                    borderColor: COLORS.gray[200],
+                    borderColor: tc.border,
                     borderRadius: 14,
                     padding: 14,
                     fontSize: fs(15),
-                    color: COLORS.gray[900],
-                    backgroundColor: COLORS.gray[50],
+                    color: tc.text,
+                    backgroundColor: tc.background,
                   }}
                   placeholder={
                     lang === 'en'
@@ -886,7 +887,7 @@ export default function EditProfileScreen() {
 
               {/* ── Vị trí GPS trên bản đồ ──────────────────────────── */}
               <View style={{ gap: 8 }}>
-                <Text style={{ fontSize: fs(13), fontWeight: '700', color: COLORS.gray[700] }}>
+                <Text style={{ fontSize: fs(13), fontWeight: '700', color: tc.textSecondary }}>
                   {lang === 'en' ? 'Your Working Base Location' : 'Vị trí hoạt động của bạn'}
                 </Text>
 
@@ -895,7 +896,7 @@ export default function EditProfileScreen() {
                     borderRadius: 14,
                     overflow: 'hidden',
                     borderWidth: 1.5,
-                    borderColor: COLORS.gray[200],
+                    borderColor: tc.border,
                     height: 200,
                   }}
                 >
@@ -931,7 +932,7 @@ export default function EditProfileScreen() {
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                     <MapPin size={14} color={COLORS.primary} />
                     <Text
-                      style={{ fontSize: fs(12), color: COLORS.gray[600], flex: 1 }}
+                      style={{ fontSize: fs(12), color: tc.textSecondary, flex: 1 }}
                       numberOfLines={2}
                     >
                       {locationAddress}
@@ -1001,7 +1002,7 @@ export default function EditProfileScreen() {
                   </Text>
                 </TouchableOpacity>
 
-                <Text style={{ fontSize: fs(11), color: COLORS.gray[500], lineHeight: 16 }}>
+                <Text style={{ fontSize: fs(11), color: tc.textMuted, lineHeight: 16 }}>
                   {lang === 'en'
                     ? 'Open map to pin your base location — distance to customers is calculated from this point. GPS updates with your phone location.'
                     : 'Mở bản đồ để tìm và ghim vị trí hoạt động cố định — khoảng cách tới khách được tính từ điểm này. Nếu dùng GPS, vị trí sẽ tự cập nhật theo điện thoại.'}
@@ -1009,7 +1010,7 @@ export default function EditProfileScreen() {
               </View>
 
               <View style={{ gap: 6 }}>
-                <Text style={{ fontSize: fs(13), fontWeight: '700', color: COLORS.gray[700] }}>
+                <Text style={{ fontSize: fs(13), fontWeight: '700', color: tc.textSecondary }}>
                   {lang === 'en'
                     ? 'Bio / Introduction (Shown to customers)'
                     : 'Lời giới thiệu bản thân (Hiển thị tới khách hàng)'}
@@ -1017,12 +1018,12 @@ export default function EditProfileScreen() {
                 <TextInput
                   style={{
                     borderWidth: 1.5,
-                    borderColor: COLORS.gray[200],
+                    borderColor: tc.border,
                     borderRadius: 14,
                     padding: 14,
                     fontSize: fs(14.5),
-                    color: COLORS.gray[900],
-                    backgroundColor: COLORS.gray[50],
+                    color: tc.text,
+                    backgroundColor: tc.background,
                     minHeight: 80,
                     textAlignVertical: 'top',
                   }}
@@ -1045,14 +1046,14 @@ export default function EditProfileScreen() {
             <Card style={{ padding: 16, gap: 14 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                 <MapPin size={18} color={COLORS.primary} />
-                <Text style={{ fontSize: fs(15), fontWeight: '800', color: COLORS.gray[900] }}>
+                <Text style={{ fontSize: fs(15), fontWeight: '800', color: tc.text }}>
                   {lang === 'en' ? 'Home Address & Notes' : 'Địa chỉ & Ghi chú nhà riêng'}
                 </Text>
               </View>
 
               {/* ── Bản đồ GPS chọn vị trí nhà ──────────────────────── */}
               <View style={{ gap: 8 }}>
-                <Text style={{ fontSize: fs(13), fontWeight: '700', color: COLORS.gray[700] }}>
+                <Text style={{ fontSize: fs(13), fontWeight: '700', color: tc.textSecondary }}>
                   {lang === 'en' ? 'Your Home Location on Map' : 'Vị trí nhà của bạn trên bản đồ'}
                 </Text>
 
@@ -1061,7 +1062,7 @@ export default function EditProfileScreen() {
                     borderRadius: 14,
                     overflow: 'hidden',
                     borderWidth: 1.5,
-                    borderColor: COLORS.gray[200],
+                    borderColor: tc.border,
                     height: 200,
                   }}
                 >
@@ -1097,7 +1098,7 @@ export default function EditProfileScreen() {
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                     <MapPin size={14} color={COLORS.primary} />
                     <Text
-                      style={{ fontSize: fs(12), color: COLORS.gray[600], flex: 1 }}
+                      style={{ fontSize: fs(12), color: tc.textSecondary, flex: 1 }}
                       numberOfLines={2}
                     >
                       {customerLocationText}
@@ -1169,7 +1170,7 @@ export default function EditProfileScreen() {
                   </Text>
                 </TouchableOpacity>
 
-                <Text style={{ fontSize: fs(11), color: COLORS.gray[500], lineHeight: 16 }}>
+                <Text style={{ fontSize: fs(11), color: tc.textMuted, lineHeight: 16 }}>
                   {lang === 'en'
                     ? 'Open map to pin your home address, or tap GPS. The address will be auto-filled and saved immediately.'
                     : 'Mở bản đồ để tìm và ghim địa chỉ nhà, hoặc bấm nút GPS. Địa chỉ sẽ được tự động điền và lưu ngay.'}
@@ -1177,18 +1178,18 @@ export default function EditProfileScreen() {
               </View>
 
               <View style={{ gap: 6 }}>
-                <Text style={{ fontSize: fs(13), fontWeight: '700', color: COLORS.gray[700] }}>
+                <Text style={{ fontSize: fs(13), fontWeight: '700', color: tc.textSecondary }}>
                   {lang === 'en' ? 'Detailed Address' : 'Địa chỉ chi tiết'}
                 </Text>
                 <TextInput
                   style={{
                     borderWidth: 1.5,
-                    borderColor: COLORS.gray[200],
+                    borderColor: tc.border,
                     borderRadius: 14,
                     padding: 14,
                     fontSize: fs(14.5),
-                    color: COLORS.gray[900],
-                    backgroundColor: COLORS.gray[50],
+                    color: tc.text,
+                    backgroundColor: tc.background,
                   }}
                   placeholder={
                     lang === 'en'
@@ -1202,7 +1203,7 @@ export default function EditProfileScreen() {
               </View>
 
               <View style={{ gap: 6 }}>
-                <Text style={{ fontSize: fs(13), fontWeight: '700', color: COLORS.gray[700] }}>
+                <Text style={{ fontSize: fs(13), fontWeight: '700', color: tc.textSecondary }}>
                   {lang === 'en'
                     ? 'Arrival Notes for Helper'
                     : 'Ghi chú chỉ dẫn cho Thợ khi đến nhà'}
@@ -1210,12 +1211,12 @@ export default function EditProfileScreen() {
                 <TextInput
                   style={{
                     borderWidth: 1.5,
-                    borderColor: COLORS.gray[200],
+                    borderColor: tc.border,
                     borderRadius: 14,
                     padding: 14,
                     fontSize: fs(14.5),
-                    color: COLORS.gray[900],
-                    backgroundColor: COLORS.gray[50],
+                    color: tc.text,
+                    backgroundColor: tc.background,
                     minHeight: 70,
                     textAlignVertical: 'top',
                   }}
