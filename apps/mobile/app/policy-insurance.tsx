@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, Linking } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import {
   ArrowLeft,
   ShieldCheck,
@@ -13,19 +13,30 @@ import {
   PhoneCall,
   DollarSign,
   HeartHandshake,
+  FileText,
 } from 'lucide-react-native';
 import { Button, Card, COLORS, Badge, Separator } from '@/components/ui';
-import { useTranslation } from '@/hooks/use-i18n';
+import { useTranslation, fs } from '@/hooks/use-i18n';
 import Toast from 'react-native-toast-message';
 
-const TABS = ['insurance', 'privacy', 'claim'] as const;
+const TABS = ['terms', 'privacy', 'insurance', 'claim'] as const;
 type TabType = (typeof TABS)[number];
 
 export default function PolicyInsuranceScreen() {
   const router = useRouter();
+  const { tab } = useLocalSearchParams<{ tab?: string }>();
   const insets = useSafeAreaInsets();
   const { t, fs, lang } = useTranslation();
-  const [activeTab, setActiveTab] = useState<TabType>('insurance');
+  const [activeTab, setActiveTab] = useState<TabType>(() => {
+    if (tab && (TABS as readonly string[]).includes(tab)) return tab as TabType;
+    return 'insurance';
+  });
+
+  useEffect(() => {
+    if (tab && (TABS as readonly string[]).includes(tab)) {
+      setActiveTab(tab as TabType);
+    }
+  }, [tab]);
 
   const handleCallSupport = () => {
     Linking.openURL('tel:19008888').catch(() => {
@@ -98,25 +109,25 @@ export default function PolicyInsuranceScreen() {
       >
         <TouchableOpacity
           activeOpacity={0.8}
-          onPress={() => setActiveTab('insurance')}
+          onPress={() => setActiveTab('terms')}
           style={{
             flex: 1,
             paddingVertical: 9,
             alignItems: 'center',
             borderRadius: 12,
-            backgroundColor: activeTab === 'insurance' ? COLORS.primaryLight : 'transparent',
-            borderWidth: activeTab === 'insurance' ? 1.5 : 0,
+            backgroundColor: activeTab === 'terms' ? COLORS.primaryLight : 'transparent',
+            borderWidth: activeTab === 'terms' ? 1.5 : 0,
             borderColor: COLORS.primary,
           }}
         >
           <Text
             style={{
-              fontSize: fs(13),
+              fontSize: fs(12.5),
               fontWeight: '800',
-              color: activeTab === 'insurance' ? COLORS.primary : COLORS.gray[600],
+              color: activeTab === 'terms' ? COLORS.primary : COLORS.gray[600],
             }}
           >
-            {lang === 'en' ? 'Insurance' : 'Gói Bảo hiểm'}
+            {lang === 'en' ? 'Terms' : 'Điều khoản'}
           </Text>
         </TouchableOpacity>
 
@@ -135,12 +146,36 @@ export default function PolicyInsuranceScreen() {
         >
           <Text
             style={{
-              fontSize: fs(13),
+              fontSize: fs(12.5),
               fontWeight: '800',
               color: activeTab === 'privacy' ? COLORS.primary : COLORS.gray[600],
             }}
           >
             {lang === 'en' ? 'Privacy' : 'Bảo mật'}
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          activeOpacity={0.8}
+          onPress={() => setActiveTab('insurance')}
+          style={{
+            flex: 1,
+            paddingVertical: 9,
+            alignItems: 'center',
+            borderRadius: 12,
+            backgroundColor: activeTab === 'insurance' ? COLORS.primaryLight : 'transparent',
+            borderWidth: activeTab === 'insurance' ? 1.5 : 0,
+            borderColor: COLORS.primary,
+          }}
+        >
+          <Text
+            style={{
+              fontSize: fs(12.5),
+              fontWeight: '800',
+              color: activeTab === 'insurance' ? COLORS.primary : COLORS.gray[600],
+            }}
+          >
+            {lang === 'en' ? 'Insurance' : 'Bảo hiểm'}
           </Text>
         </TouchableOpacity>
 
@@ -159,7 +194,7 @@ export default function PolicyInsuranceScreen() {
         >
           <Text
             style={{
-              fontSize: fs(13),
+              fontSize: fs(12.5),
               fontWeight: '800',
               color: activeTab === 'claim' ? COLORS.primary : COLORS.gray[600],
             }}
@@ -173,6 +208,94 @@ export default function PolicyInsuranceScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ padding: 16, gap: 16, paddingBottom: 60 }}
       >
+        {/* ── TAB 0: ĐIỀU KHOẢN DỊCH VỤ ──────────────────────────────────── */}
+        {activeTab === 'terms' && (
+          <View style={{ gap: 14 }}>
+            <Card
+              style={{
+                backgroundColor: '#064E3B',
+                padding: 18,
+                borderRadius: 20,
+                borderWidth: 0,
+                gap: 12,
+              }}
+            >
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                <View
+                  style={{
+                    width: 48,
+                    height: 48,
+                    borderRadius: 16,
+                    backgroundColor: '#10B981',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <FileText size={26} color="#FFF" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: fs(17), fontWeight: '900', color: '#FFF' }}>
+                    {lang === 'en' ? 'Green House Service Terms' : 'Điều Khoản Dịch Vụ Green House'}
+                  </Text>
+                  <Text style={{ fontSize: fs(13), color: '#A7F3D0', marginTop: 2 }}>
+                    {lang === 'en'
+                      ? 'Standards • Reliability • Dispute Escrow Protection'
+                      : 'Chuẩn mực • Tin cậy • Bảo đảm giao dịch Escrow'}
+                  </Text>
+                </View>
+              </View>
+              <Text style={{ fontSize: fs(13.5), color: 'rgba(255,255,255,0.85)', lineHeight: 20 }}>
+                {lang === 'en'
+                  ? 'These terms govern the use of the Green House home services platform for both customers and service partners.'
+                  : 'Quy chế và điều khoản dịch vụ áp dụng cho toàn bộ giao dịch đặt việc, thực hiện công việc và thanh toán giữa Khách hàng và Đối tác Thợ trên Green House.'}
+              </Text>
+            </Card>
+
+            <Card style={{ padding: 16, gap: 12 }}>
+              <Text style={{ fontSize: fs(15), fontWeight: '800', color: COLORS.gray[900] }}>
+                {lang === 'en' ? '1. Service Scope & Booking Model' : '1. Phạm vi dịch vụ & Quy chế đặt việc'}
+              </Text>
+              <Text style={{ fontSize: fs(13.5), color: COLORS.gray[700], lineHeight: 20 }}>
+                {lang === 'en'
+                  ? '• Green House connects households with verified helpers for home cleaning, electrical, plumbing, air conditioning, and emergency SOS repairs.\n• Customers can post jobs to receive helper quotes or choose fixed-price booking. All helpers are required to complete identity e-KYC verification before accepting jobs.'
+                  : '• Green House cung cấp nền tảng kết nối nhu cầu giúp việc nhà, vệ sinh công nghiệp, sửa điện nước, điện lạnh và cứu hộ sự cố khẩn cấp SOS.\n• Khách hàng có thể đăng việc nhận báo giá hoặc đặt theo giá cam kết niêm yết. Mọi đối tác thợ bắt buộc hoàn thành xác thực danh tính e-KYC trước khi nhận việc.'}
+              </Text>
+            </Card>
+
+            <Card style={{ padding: 16, gap: 12 }}>
+              <Text style={{ fontSize: fs(15), fontWeight: '800', color: COLORS.gray[900] }}>
+                {lang === 'en' ? '2. Escrow Payment & Quality Assurance' : '2. Cơ chế giữ tiền Escrow & Nghiệm thu'}
+              </Text>
+              <Text style={{ fontSize: fs(13.5), color: COLORS.gray[700], lineHeight: 20 }}>
+                {lang === 'en'
+                  ? '• Funds paid via VietQR, card, or e-wallet are safely held in Escrow by Green House until the customer reviews and approves the completion.\n• Helpers must upload clear before/after photos and videos of work completed. Once customer confirms satisfaction, payment is disbursed to helper account.'
+                  : '• Khoản thanh toán qua VietQR hoặc ví điện tử được hệ thống Green House giữ hộ an toàn (Escrow) trong suốt thời gian làm việc.\n• Thợ có nghĩa vụ chụp ảnh và video minh chứng kết quả nghiệm thu. Chỉ khi khách hàng kiểm tra đạt chuẩn và bấm nghiệm thu, tiền mới được giải ngân vào ví thợ.'}
+              </Text>
+            </Card>
+
+            <Card style={{ padding: 16, gap: 12 }}>
+              <Text style={{ fontSize: fs(15), fontWeight: '800', color: COLORS.gray[900] }}>
+                {lang === 'en' ? '3. Cancellation & Refund Policy' : '3. Chính sách hủy đơn & Hoàn tiền'}
+              </Text>
+              <Text style={{ fontSize: fs(13.5), color: COLORS.gray[700], lineHeight: 20 }}>
+                {lang === 'en'
+                  ? '• Customers may cancel open requests without penalty prior to helper acceptance.\n• If cancelled after helper is on the way, a minimal travel fee may apply. If helper fails to arrive or cancels unexpectedly, customer receives 100% refund plus immediate SOS backup replacement options.'
+                  : '• Khách hàng được quyền hủy yêu cầu miễn phí 100% khi chưa có thợ nhận việc hoặc thợ chưa di chuyển.\n• Trường hợp thợ gặp sự cố hoặc hủy ngang, khách hàng được hoàn trả 100% tiền giữ hộ và kích hoạt quyền đổi thợ cứu hộ SOS ngay lập tức.'}
+              </Text>
+            </Card>
+
+            <Card style={{ padding: 16, gap: 12 }}>
+              <Text style={{ fontSize: fs(15), fontWeight: '800', color: COLORS.gray[900] }}>
+                {lang === 'en' ? '4. Dispute Arbitration & Fair Settlement' : '4. Phân xử tranh chấp & Bồi thường'}
+              </Text>
+              <Text style={{ fontSize: fs(13.5), color: COLORS.gray[700], lineHeight: 20 }}>
+                {lang === 'en'
+                  ? '• In case of substandard service or property damage, either party can open a Dispute. Green House administrators review photographic proof within 24 hours to enforce partial or full refunds.\n• All completed orders include a default 30-day workmanship warranty and up to 50,000,000₫ property breakage insurance.'
+                  : '• Khi công việc chưa đạt chuẩn hoặc có sự cố, khách hàng có quyền mở Khiếu nại (Dispute). Ban quản trị đối chiếu bằng chứng ảnh/video để phán quyết hoàn tiền toàn phần hoặc một phần.\n• Đơn hoàn tất được bảo hành tay nghề 30 ngày và bảo hiểm tài sản lên đến 50.000.000₫.'}
+              </Text>
+            </Card>
+          </View>
+        )}
         {/* ── TAB 1: BẢO HIỂM DỊCH VỤ ──────────────────────────────────── */}
         {activeTab === 'insurance' && (
           <>
