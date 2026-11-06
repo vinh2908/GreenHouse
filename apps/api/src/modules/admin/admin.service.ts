@@ -281,6 +281,49 @@ export class AdminService {
     return user;
   }
 
+  // B107: xoá mềm — không xoá cứng, không xoá admin khác. Người đã xoá không
+  // đăng nhập được (findByPhone/findByEmail lọc is_deleted: false). Hồ sơ thợ
+  // (nếu có) cũng được đánh dấu deleted_at để không còn được đếm (B83).
+  async deleteUser(id: string): Promise<UserDocument> {
+    const target = await this.userModel.findById(id).select('roles is_deleted').exec();
+    if (!target) throw new NotFoundException('Người dùng không tồn tại');
+    if (target.roles?.includes(UserRole.ADMIN)) {
+      throw new BadRequestException('Không thể xóa tài khoản quản trị viên');
+    }
+    if (target.is_deleted) throw new BadRequestException('Tài khoản đã bị xóa trước đó');
+    const user = await this.userModel
+      .findByIdAndUpdate(
+        id,
+        { is_deleted: true, deleted_at: new Date(), status: UserStatus.SUSPENDED },
+        { new: true },
+      )
+      .exec();
+    if (!user) throw new NotFoundException('Người dùng không tồn tại');
+    await this.helperModel
+      .updateOne(
+        { user_id: user._id },
+        { status: HelperStatus.OFFLINE, deleted_at: new Date() },
+      )
+      .exec();
+    return user;
+  }
+
+  // B107: khôi phục tài khoản đã xoá mềm.
+  async restoreUser(id: string): Promise<UserDocument> {
+    const user = await this.userModel
+      .findByIdAndUpdate(
+        id,
+        { is_deleted: false, status: UserStatus.ACTIVE, $unset: { deleted_at: 1 } },
+        { new: true },
+      )
+      .exec();
+    if (!user) throw new NotFoundException('Người dùng không tồn tại');
+    await this.helperModel
+      .updateOne({ user_id: user._id }, { $unset: { deleted_at: 1 } })
+      .exec();
+    return user;
+  }
+
   // ─── Helpers ──────────────────────────────────────────────────────────────
 
   async getHelpers(search?: string, verificationStatus?: string, page = 1, limit = 20) {
