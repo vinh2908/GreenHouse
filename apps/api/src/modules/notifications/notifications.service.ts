@@ -1,4 +1,5 @@
 import { Injectable, Inject, NotFoundException, forwardRef, Logger } from '@nestjs/common';
+import { Cron } from '@nestjs/schedule';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Notification, NotificationDocument } from './schemas/notification.schema';
@@ -399,8 +400,9 @@ export class NotificationsService {
     return { sent: userIds.length };
   }
 
-  // One unread notification per conversation: a new message replaces the previous
-  // unread one (so it moves to the top) instead of piling up one per message.
+  // B73: One unread notification per conversation. Merging a new message into
+  // the existing unread one UPDATES it (never deletes it) so the unread
+  // notification — and the unread count — is never lost.
   async notifyChatMessage(
     recipientId: string,
     senderName: string,
@@ -408,22 +410,74 @@ export class NotificationsService {
     conversationId: string,
     jobId?: string,
   ) {
-    const body = `${senderName}: ${preview.length > 80 ? preview.slice(0, 77) + '…' : preview}`;
-    await this.notificationModel
-      .deleteOne({
+    const shortPreview = preview.length > 80 ? preview.slice(0, 77) + '…' : preview;
+    const existing = await this.notificationModel
+      .findOne({
         user_id: new Types.ObjectId(recipientId),
         type: NOTIFICATION_TYPES.NEW_MESSAGE,
         is_read: false,
         'data.conversation_id': conversationId,
       })
       .exec();
+    if (existing) {
+      const prevCount = Number((existing.data as any)?.message_count ?? 1);
+      const count = prevCount + 1;
+      existing.body = `${senderName}: ${shortPreview} (${count} tin nhắn mới)`;
+      existing.title = 'Tin nhắn mới';
+      existing.data = {
+        ...(existing.data as any),
+        conversation_id: conversationId,
+        ...(jobId ? { job_id: jobId } : {}),
+        message_count: count,
+      };
+      // Bump to the top without touching is_read
+      (existing as any).updated_at = new Date();
+      await existing.save();
+      try {
+        this.gateway.emitToUser(recipientId, SOCKET_EVENTS.NOTIFICATION_NEW, {
+          _id: String(existing._id),
+          type: existing.type,
+          title: existing.title,
+          body: existing.body,
+          data: existing.data,
+          is_read: false,
+          created_at: existing.created_at,
+        });
+      } catch {
+        // Ignore socket error if user is offline
+      }
+      return existing;
+    }
     return this.create({
       userId: recipientId,
       type: NOTIFICATION_TYPES.NEW_MESSAGE,
       title: 'Tin nhắn mới',
-      body,
-      payload: { conversation_id: conversationId, job_id: jobId },
+      body: `${senderName}: ${shortPreview}`,
+      payload: { conversation_id: conversationId, job_id: jobId, message_count: 1 },
     });
+  }
+
+  // B74: Dọn thông báo đã đọc quá 30 ngày; KHÔNG bao giờ xoá thông báo chưa đọc.
+  async cleanupOldReadNotifications(): Promise<{ deleted: number }> {
+    const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const res = await this.notificationModel
+      .deleteMany({ is_read: true, created_at: { $lt: cutoff } })
+      .exec();
+    if (res.deletedCount > 0) {
+      this.logger.log(`[cleanupOldReadNotifications] Deleted ${res.deletedCount} read notifications older than 30 days`);
+    }
+    return { deleted: res.deletedCount ?? 0 };
+  }
+
+  @Cron('0 3 * * *')
+  async cleanupOldReadNotificationsCron(): Promise<void> {
+    try {
+      await this.cleanupOldReadNotifications();
+    } catch (err) {
+      this.logger.error(
+        `[cleanupOldReadNotificationsCron] Failed: ${(err as Error).message}`,
+      );
+    }
   }
 
   async markConversationRead(userId: string, conversationId: string) {
