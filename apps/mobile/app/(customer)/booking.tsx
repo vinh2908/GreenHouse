@@ -316,9 +316,7 @@ export default function BookingScreen() {
   const searchTimeoutRef = useRef<any>(null);
   const [date, setDate] = useState(vnDateKey(1));
   const [dateChip, setDateChip] = useState<'today' | 'tomorrow' | 'sat' | 'sun' | null>('tomorrow');
-  const [timeSlot, setTimeSlot] = useState(() =>
-    getDefaultFutureTimeSlot(vnDateKey(1)),
-  );
+  const [timeSlot, setTimeSlot] = useState(() => getDefaultFutureTimeSlot(vnDateKey(1)));
   const [duration, setDuration] = useState(3);
   const [dateTimePickerOpen, setDateTimePickerOpen] = useState(false);
   const [bottomSheetInitialTab, setBottomSheetInitialTab] = useState<'date' | 'time'>('date');
@@ -355,6 +353,27 @@ export default function BookingScreen() {
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const scrollRef = useRef<ScrollView>(null);
 
+  // A20/G15: vị trí từng ô để cuộn tới đúng ô lỗi thay vì về đầu trang.
+  const fieldRefs = useRef<Record<string, View | null>>({});
+
+  const scrollToField = (key: string) => {
+    const node = fieldRefs.current[key];
+    const scroll = scrollRef.current;
+    if (!node || !scroll) {
+      scroll?.scrollTo({ y: 0, animated: true });
+      return;
+    }
+    node.measureLayout(
+      scroll as unknown as number,
+      (_x, y) => {
+        scroll.scrollTo({ y: Math.max(0, y - 12), animated: true });
+      },
+      () => {
+        scroll.scrollTo({ y: 0, animated: true });
+      },
+    );
+  };
+
   const clearFieldError = (f: string) => {
     setFieldErrors(prev => {
       if (!prev[f]) return prev;
@@ -381,8 +400,7 @@ export default function BookingScreen() {
     if (params.preferred_date) {
       setDate(params.preferred_date);
       if (params.preferred_date === vnDateKey()) setDateChip('today');
-      else if (params.preferred_date === vnDateKey(1))
-        setDateChip('tomorrow');
+      else if (params.preferred_date === vnDateKey(1)) setDateChip('tomorrow');
       else setDateChip(null);
     }
     if (params.preferred_time_start) {
@@ -724,17 +742,17 @@ export default function BookingScreen() {
         // B78: hiển thị lý do phù hợp theo reason từ server
         const reasonMsg =
           res?.reason === 'no_api_key'
-            ? (lang === 'en'
-                ? 'AI analysis is not configured yet (no API key). The photo is attached; please describe the issue briefly.'
-                : 'Tính năng chưa khả dụng (chưa cấu hình AI). Ảnh đã được đính kèm, bạn vui lòng mô tả ngắn gọn giúp mình nhé!')
+            ? lang === 'en'
+              ? 'AI analysis is not configured yet (no API key). The photo is attached; please describe the issue briefly.'
+              : 'Tính năng chưa khả dụng (chưa cấu hình AI). Ảnh đã được đính kèm, bạn vui lòng mô tả ngắn gọn giúp mình nhé!'
             : res?.reason === 'invalid_image'
-              ? (lang === 'en'
-                  ? 'The issue photo is invalid. Please retake a clearer photo.'
-                  : 'Ảnh sự cố không hợp lệ. Vui lòng chụp lại ảnh rõ hơn.')
+              ? lang === 'en'
+                ? 'The issue photo is invalid. Please retake a clearer photo.'
+                : 'Ảnh sự cố không hợp lệ. Vui lòng chụp lại ảnh rõ hơn.'
               : res?.reason === 'unsupported'
-                ? (lang === 'en'
-                    ? 'This image format is not supported for AI analysis. Please use JPG, PNG or WEBP.'
-                    : 'Định dạng ảnh chưa được hỗ trợ phân tích. Vui lòng dùng ảnh JPG, PNG hoặc WEBP.')
+                ? lang === 'en'
+                  ? 'This image format is not supported for AI analysis. Please use JPG, PNG or WEBP.'
+                  : 'Định dạng ảnh chưa được hỗ trợ phân tích. Vui lòng dùng ảnh JPG, PNG hoặc WEBP.'
                 : res?.message;
         unavailableToast(reasonMsg);
       }
@@ -1211,7 +1229,9 @@ export default function BookingScreen() {
     const nextErrors: Record<string, string> = {};
     if (step === 0) {
       if (!selectedService) {
-        Toast.show({ type: 'error', text1: t('booking_select_service_error') });
+        nextErrors.service = t('booking_select_service_error');
+        setFieldErrors(nextErrors);
+        scrollToField('service');
         return;
       }
       if (selectedService === 'custom') {
@@ -1226,7 +1246,7 @@ export default function BookingScreen() {
         }
         if (Object.keys(nextErrors).length > 0) {
           setFieldErrors(nextErrors);
-          scrollRef.current?.scrollTo({ y: 0, animated: true });
+          scrollToField('customServiceName');
           return;
         }
       }
@@ -1250,7 +1270,7 @@ export default function BookingScreen() {
       }
       if (Object.keys(nextErrors).length > 0) {
         setFieldErrors(nextErrors);
-        scrollRef.current?.scrollTo({ y: 0, animated: true });
+        scrollToField('full_address');
         return;
       }
       setFieldErrors({});
@@ -1260,12 +1280,16 @@ export default function BookingScreen() {
       setStep(2);
     } else if (step === 2) {
       if (!date || !timeSlot) {
-        Toast.show({ type: 'error', text1: t('booking_time_validation_error') });
+        nextErrors.timeSlot = t('booking_time_validation_error');
+        setFieldErrors(nextErrors);
+        scrollToField('timeSlot');
         return;
       }
       const selectedStart = toVnDayjs(`${date} ${timeSlot}`);
       if (selectedStart.isBefore(vnNow())) {
-        Toast.show({ type: 'error', text1: t('booking_time_past_error') });
+        nextErrors.timeSlot = t('booking_time_past_error');
+        setFieldErrors(nextErrors);
+        scrollToField('timeSlot');
         return;
       }
       setFieldErrors({});
@@ -1281,7 +1305,7 @@ export default function BookingScreen() {
       }
       if (Object.keys(nextErrors).length > 0) {
         setFieldErrors(nextErrors);
-        scrollRef.current?.scrollTo({ y: 0, animated: true });
+        scrollToField(nextErrors.title ? 'title' : 'description');
         return;
       }
       setFieldErrors({});
@@ -1332,9 +1356,7 @@ export default function BookingScreen() {
         >
           <ArrowLeft size={20} color={COLORS.gray[800]} />
         </TouchableOpacity>
-        <Text
-          style={{ fontSize: fs(18), fontWeight: '800', color: tc.text, marginLeft: 12 }}
-        >
+        <Text style={{ fontSize: fs(18), fontWeight: '800', color: tc.text, marginLeft: 12 }}>
           {t('booking_screen_title')}
         </Text>
       </View>
@@ -1498,6 +1520,7 @@ export default function BookingScreen() {
                         if (!selectedService) {
                           setSelectedService(svcList[0]._id);
                         }
+                        clearFieldError('service');
                         setStep(1);
                       }}
                       style={{
@@ -1520,14 +1543,26 @@ export default function BookingScreen() {
                 {t('booking_or_choose_below')}
               </Text>
 
-              <View style={{ gap: 10 }}>
+              <View
+                style={{ gap: 10 }}
+                ref={el => {
+                  fieldRefs.current.service = el;
+                }}
+              >
                 {isLoadingServices ? (
                   // B28: skeleton hàng dịch vụ giữ khung thay spinner trắng
                   <View style={{ gap: 10 }}>
                     {[1, 2, 3].map(i => (
                       <Skeleton key={i} width="100%" height={72} radius={14} />
                     ))}
-                    <Text style={{ fontSize: fs(13), color: tc.textMuted, fontWeight: '600', textAlign: 'center' }}>
+                    <Text
+                      style={{
+                        fontSize: fs(13),
+                        color: tc.textMuted,
+                        fontWeight: '600',
+                        textAlign: 'center',
+                      }}
+                    >
                       {t('booking_loading_services')}
                     </Text>
                   </View>
@@ -1537,6 +1572,7 @@ export default function BookingScreen() {
                       key={svc._id}
                       onPress={() => {
                         setSelectedService(svc._id);
+                        clearFieldError('service');
                         setStep(1);
                       }}
                       style={{
@@ -1569,9 +1605,7 @@ export default function BookingScreen() {
                         )}
                       </View>
                       <View style={{ flex: 1 }}>
-                        <Text
-                          style={{ fontWeight: '800', fontSize: fs(15), color: tc.text }}
-                        >
+                        <Text style={{ fontWeight: '800', fontSize: fs(15), color: tc.text }}>
                           {tService(svc)}
                         </Text>
                         {svc.description && (
@@ -1633,7 +1667,10 @@ export default function BookingScreen() {
                 {/* 12th Service: Dịch vụ khác — tự ghi việc, tự set giá */}
                 <TouchableOpacity
                   activeOpacity={0.85}
-                  onPress={() => setSelectedService('custom')}
+                  onPress={() => {
+                    setSelectedService('custom');
+                    clearFieldError('service');
+                  }}
                   style={{
                     padding: 16,
                     borderRadius: 14,
@@ -1659,9 +1696,7 @@ export default function BookingScreen() {
                   </View>
                   <View style={{ flex: 1 }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                      <Text
-                        style={{ fontWeight: '800', fontSize: fs(15), color: tc.text }}
-                      >
+                      <Text style={{ fontWeight: '800', fontSize: fs(15), color: tc.text }}>
                         {t('booking_other_service_title')}
                       </Text>
                       <View
@@ -1711,6 +1746,9 @@ export default function BookingScreen() {
 
                 {selectedService === 'custom' && (
                   <View
+                    ref={el => {
+                      fieldRefs.current.customServiceName = el;
+                    }}
                     style={{
                       backgroundColor: tc.surface,
                       borderRadius: 14,
@@ -1743,6 +1781,11 @@ export default function BookingScreen() {
                       keyboardType="numeric"
                     />
                   </View>
+                )}
+                {fieldErrors.service && (
+                  <Text style={{ fontSize: fs(12), color: COLORS.error }}>
+                    {fieldErrors.service}
+                  </Text>
                 )}
               </View>
             </View>
@@ -1877,18 +1920,24 @@ export default function BookingScreen() {
                   )}
               </View>
 
-              <Input
-                label={t('booking_detail_address_label')}
-                placeholder=""
-                value={address.full_address}
-                error={fieldErrors.full_address}
-                onChangeText={v => {
-                  setAddress(a => ({ ...a, full_address: v }));
-                  setCoordsDerived(false);
-                  clearFieldError('full_address');
+              <View
+                ref={el => {
+                  fieldRefs.current.full_address = el;
                 }}
-                leftIcon={<MapPin size={16} color={COLORS.gray[400]} />}
-              />
+              >
+                <Input
+                  label={t('booking_detail_address_label')}
+                  placeholder=""
+                  value={address.full_address}
+                  error={fieldErrors.full_address}
+                  onChangeText={v => {
+                    setAddress(a => ({ ...a, full_address: v }));
+                    setCoordsDerived(false);
+                    clearFieldError('full_address');
+                  }}
+                  leftIcon={<MapPin size={16} color={COLORS.gray[400]} />}
+                />
+              </View>
               <View style={{ flexDirection: 'row', gap: 12 }}>
                 <View style={{ flex: 1 }}>
                   <Input
@@ -1939,7 +1988,12 @@ export default function BookingScreen() {
               </Text>
 
               {/* 1. Lịch làm việc: Ngày & Giờ (Trigger mở Bottom Sheet Item 1) */}
-              <View style={{ gap: 10 }}>
+              <View
+                style={{ gap: 10 }}
+                ref={el => {
+                  fieldRefs.current.timeSlot = el;
+                }}
+              >
                 <Text style={{ fontSize: fs(14), fontWeight: '700', color: tc.text }}>
                   {t('booking_start_time_title')}
                 </Text>
@@ -1999,6 +2053,7 @@ export default function BookingScreen() {
                         key={c.key}
                         onPress={() => {
                           setDateChip(c.key as any);
+                          clearFieldError('timeSlot');
                           const now = vnNow();
                           if (c.key === 'today') {
                             const todayStr = vnDateKey();
@@ -2008,8 +2063,7 @@ export default function BookingScreen() {
                             if (th * 60 + tm <= nowVn.totalMinutes) {
                               setTimeSlot(getDefaultFutureTimeSlot(todayStr));
                             }
-                          } else if (c.key === 'tomorrow')
-                            setDate(vnDateKey(1));
+                          } else if (c.key === 'tomorrow') setDate(vnDateKey(1));
                           else if (c.key === 'sat') {
                             const nextSat = now.day() <= 6 ? now.day(6) : now.add(1, 'week').day(6);
                             setDate(formatDateKey(nextSat));
@@ -2045,11 +2099,19 @@ export default function BookingScreen() {
                 {/* Giờ bắt đầu — Dropdown Type 12 */}
                 <TimeDropdownPicker
                   value={timeSlot}
-                  onChange={setTimeSlot}
+                  onChange={v => {
+                    setTimeSlot(v);
+                    clearFieldError('timeSlot');
+                  }}
                   selectedDate={date}
                   label={t('booking_time_label')}
                   showChips={true}
                 />
+                {fieldErrors.timeSlot && (
+                  <Text style={{ fontSize: fs(12), color: COLORS.error }}>
+                    {fieldErrors.timeSlot}
+                  </Text>
+                )}
 
                 {/* Thời lượng ước tính — Dropdown Type 12 */}
                 <DurationDropdownPicker
@@ -2105,18 +2167,29 @@ export default function BookingScreen() {
                 </View>
               )}
 
-              <Input
-                label={t('booking_title_label')}
-                placeholder=""
-                value={title}
-                error={fieldErrors.title}
-                onChangeText={v => {
-                  setTitle(v);
-                  clearFieldError('title');
+              <View
+                ref={el => {
+                  fieldRefs.current.title = el;
                 }}
-              />
+              >
+                <Input
+                  label={t('booking_title_label')}
+                  placeholder=""
+                  value={title}
+                  error={fieldErrors.title}
+                  onChangeText={v => {
+                    setTitle(v);
+                    clearFieldError('title');
+                  }}
+                />
+              </View>
 
-              <View style={{ gap: 6 }}>
+              <View
+                style={{ gap: 6 }}
+                ref={el => {
+                  fieldRefs.current.description = el;
+                }}
+              >
                 <Text style={{ fontSize: fs(14), fontWeight: '700', color: tc.textSecondary }}>
                   {t('booking_description_label')}
                 </Text>
@@ -2408,9 +2481,7 @@ export default function BookingScreen() {
                   />
                 )}
                 <View style={{ height: 1, backgroundColor: tc.subtle }} />
-                <Text style={{ fontWeight: '800', fontSize: fs(16), color: tc.text }}>
-                  {title}
-                </Text>
+                <Text style={{ fontWeight: '800', fontSize: fs(16), color: tc.text }}>{title}</Text>
                 <Text style={{ color: tc.textSecondary, fontSize: fs(14), lineHeight: 20 }}>
                   {description}
                 </Text>
@@ -2463,9 +2534,7 @@ export default function BookingScreen() {
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                     <Star size={20} color="#F59E0B" />
                     <View style={{ flex: 1 }}>
-                      <Text
-                        style={{ fontWeight: '800', fontSize: fs(15), color: tc.text }}
-                      >
+                      <Text style={{ fontWeight: '800', fontSize: fs(15), color: tc.text }}>
                         {t('booking_send_private_to', {
                           name:
                             params.favorite_helper_name ??
@@ -2749,9 +2818,7 @@ export default function BookingScreen() {
                         <Text style={{ fontSize: fs(13.5), color: tc.textSecondary }}>
                           {lang === 'en' ? 'Subtotal (est.)' : 'Tạm tính'}
                         </Text>
-                        <Text
-                          style={{ fontSize: fs(14), fontWeight: '700', color: tc.text }}
-                        >
+                        <Text style={{ fontSize: fs(14), fontWeight: '700', color: tc.text }}>
                           {subtotalText}
                         </Text>
                       </View>
@@ -2799,9 +2866,7 @@ export default function BookingScreen() {
                           alignItems: 'center',
                         }}
                       >
-                        <Text
-                          style={{ fontSize: fs(14.5), fontWeight: '800', color: tc.text }}
-                        >
+                        <Text style={{ fontSize: fs(14.5), fontWeight: '800', color: tc.text }}>
                           {lang === 'en' ? 'Est. payment' : 'Còn phải trả'}
                         </Text>
                         <Text
@@ -2876,6 +2941,7 @@ export default function BookingScreen() {
           setDate(selectedDate);
           setTimeSlot(selectedTime);
           setDateChip(null);
+          clearFieldError('timeSlot');
         }}
       />
     </View>
@@ -2899,12 +2965,8 @@ function Row({ icon, label, value }: { icon: React.ReactNode; label: string; val
         {icon}
       </View>
       <View style={{ flex: 1 }}>
-        <Text style={{ fontSize: fs(12), color: tc.textMuted, fontWeight: '600' }}>
-          {label}
-        </Text>
-        <Text
-          style={{ fontSize: fs(14), fontWeight: '700', color: tc.text, marginTop: 2 }}
-        >
+        <Text style={{ fontSize: fs(12), color: tc.textMuted, fontWeight: '600' }}>{label}</Text>
+        <Text style={{ fontSize: fs(14), fontWeight: '700', color: tc.text, marginTop: 2 }}>
           {value}
         </Text>
       </View>
