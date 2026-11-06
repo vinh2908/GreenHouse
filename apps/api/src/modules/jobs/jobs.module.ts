@@ -20,6 +20,7 @@ import { PaymentsModule } from '../payments/payments.module';
 import { FavoritesModule } from '../favorites/favorites.module';
 import { VouchersModule } from '../vouchers/vouchers.module';
 import { LoyaltyModule } from '../loyalty/loyalty.module';
+import { MatchingModule } from '../matching/matching.module';
 
 @Module({
   imports: [
@@ -39,6 +40,7 @@ import { LoyaltyModule } from '../loyalty/loyalty.module';
     FavoritesModule,
     VouchersModule,
     LoyaltyModule,
+    MatchingModule,
   ],
   controllers: [JobsController, DisputesController],
   providers: [JobsService, RoutingService, DisputesService],

@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   ForbiddenException,
+  BadRequestException,
   Inject,
   forwardRef,
 } from '@nestjs/common';
@@ -148,6 +149,13 @@ export class ChatService {
     content: string,
     type = 'text',
   ): Promise<MessageDocument> {
+    // B70: Tin nhắn tối đa 2000 ký tự, type chỉ nhận text / image / location
+    if (typeof content !== 'string' || content.length > 2000) {
+      throw new BadRequestException('Tin nhắn tối đa 2000 ký tự');
+    }
+    if (!['text', 'image', 'location'].includes(type)) {
+      throw new BadRequestException('Loại tin nhắn không hợp lệ (text, image, location)');
+    }
     const conv = await this.conversationModel.findById(conversationId).exec();
     if (!conv) throw new NotFoundException('Không tìm thấy cuộc trò chuyện');
     const isParticipant = conv.participants.some(p => p.toString() === senderId);

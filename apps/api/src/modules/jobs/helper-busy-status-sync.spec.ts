@@ -207,6 +207,8 @@ function createMockEnvironment() {
       status,
       payment_method: 'vietqr',
       payment_status: PaymentStatus.PAID,
+      // B57: nghiệm thu yêu cầu ít nhất 1 ảnh bằng chứng hoàn thành
+      completion_photos: ['https://cdn.example.com/evidence.jpg'],
       events: [],
       save: jest.fn(async function (this: Doc) {
         return this;

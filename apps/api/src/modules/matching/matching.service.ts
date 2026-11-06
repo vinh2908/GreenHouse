@@ -13,6 +13,7 @@ import { HungarianAlgorithm, AssignmentResult } from './algorithms/hungarian.alg
 import { HelperStatus, VerificationStatus, JobStatus, UserRole } from '@homemate/types';
 import { AppGateway } from '../chat/app.gateway';
 import { NotificationsService } from '../notifications/notifications.service';
+import { MatchingCacheService } from './matching-cache.service';
 import { SOCKET_EVENTS, NOTIFICATION_TYPES } from '@homemate/constants';
 import { computeJobFitScore } from '../helpers/utils/helper-score';
 
@@ -42,6 +43,7 @@ export class MatchingService {
     @InjectModel(HelperProfile.name) private helperModel: Model<HelperProfileDocument>,
     private readonly gateway: AppGateway,
     private readonly notificationsService: NotificationsService,
+    private readonly cache: MatchingCacheService,
   ) {}
 
   /**
@@ -230,8 +232,11 @@ export class MatchingService {
     jobId: string,
     userId: string,
     userRoles?: string[],
-    limit = 5,
+    limit = 10,
   ): Promise<MatchPair[]> {
+    // B63: mặc định 10, kẹp trong 1–20 (controller đã trả 400 cho giá trị
+    // ngoài khoảng; đây là lớp phòng thủ cho caller gọi trực tiếp service).
+    const take = Number.isInteger(limit) ? Math.min(20, Math.max(1, limit)) : 10;
     const job = await this.jobModel.findById(jobId).populate('service_id').exec();
     if (!job) throw new NotFoundException('Công việc không tồn tại');
 
@@ -242,15 +247,33 @@ export class MatchingService {
       throw new ForbiddenException('Bạn không có quyền xem gợi ý thợ cho công việc này');
     }
 
+    // B67: Trả cache nếu còn hạn (TTL 5 phút) — kiểm tra sau bước phân quyền
+    const cached = await this.cache.get<MatchPair[]>(jobId, take);
+    if (cached) return cached;
+
+    // B68: Lọc trước rồi mới tính điểm — chỉ thợ đúng service của đơn
+    // (bỏ lọc khi đơn không gắn service, vd đơn tự viết) và trong khu vực.
+    const jobServiceId = (job.service_id as any)?._id ?? job.service_id;
+    const helperFilter: Record<string, unknown> = {
+      status: HelperStatus.ONLINE,
+      verification_status: VerificationStatus.APPROVED,
+    };
+    if (jobServiceId) helperFilter.service_ids = jobServiceId;
     const helpers = await this.helperModel
-      .find({
-        status: HelperStatus.ONLINE,
-        verification_status: VerificationStatus.APPROVED,
-      })
+      .find(helperFilter)
       .populate('user_id', 'full_name phone avatar')
       .exec();
 
-    const scored = helpers.map(h => {
+    // Trong khu vực: ≤ 20km khi cả 2 bên đều có tọa độ; thợ chưa có tọa độ
+    // vẫn giữ lại để tính điểm (không tự loại vì thiếu vị trí).
+    const jobCoords = job.address?.location?.coordinates; // [lon, lat]
+    const inArea = helpers.filter(h => {
+      const coords = (h as any).location?.coordinates;
+      if (!jobCoords || !coords) return true;
+      return this.calculateDistanceKm(coords[1], coords[0], jobCoords[1], jobCoords[0]) <= 20;
+    });
+
+    const scored = inArea.map(h => {
       const { score, distance_km, reasons } = this.computeUtilityScore(h, job);
       const user = h.user_id as any;
       return {
@@ -272,6 +295,17 @@ export class MatchingService {
     });
 
     scored.sort((a, b) => b.match_score - a.match_score);
-    return scored.slice(0, limit);
+    const result = scored.slice(0, take);
+    // B67: Lưu cache 5 phút cho lần gọi sau
+    await this.cache.set(jobId, take, result);
+    return result;
+  }
+
+  /**
+   * B67: Xoá cache gợi ý thợ của 1 đơn — gọi khi đơn thay đổi (thợ mới báo
+   * giá, chọn báo giá, huỷ đơn) để lần gợi ý sau tính lại từ dữ liệu mới.
+   */
+  async invalidateOptimalHelpersCache(jobId: string): Promise<void> {
+    await this.cache.invalidateJob(jobId);
   }
 }

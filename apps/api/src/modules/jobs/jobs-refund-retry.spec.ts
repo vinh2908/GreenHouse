@@ -47,7 +47,16 @@ describe('JobsService - F7 Refund Retry & Notification', () => {
         { provide: getModelToken(Job.name), useValue: jobModel },
         {
           provide: getModelToken(Quote.name),
-          useValue: { updateMany: jest.fn().mockReturnValue({ exec: jest.fn() }) },
+          useValue: {
+            updateMany: jest.fn().mockReturnValue({ exec: jest.fn() }),
+            find: jest.fn().mockReturnValue({
+              select: jest.fn().mockReturnValue({
+                lean: jest.fn().mockReturnValue({
+                  exec: jest.fn().mockResolvedValue([]),
+                }),
+              }),
+            }),
+          },
         },
         {
           provide: getModelToken(Contract.name),

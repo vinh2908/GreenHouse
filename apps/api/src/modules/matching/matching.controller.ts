@@ -1,4 +1,12 @@
-import { Controller, Get, Post, Param, UseGuards, Query } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Param,
+  UseGuards,
+  Query,
+  BadRequestException,
+} from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags, ApiQuery } from '@nestjs/swagger';
 import { MatchingService } from './matching.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -39,11 +47,14 @@ export class MatchingController {
     @Param('jobId') jobId: string,
     @Query('limit') limit?: number,
   ) {
-    return this.matchingService.findOptimalHelpersForJob(
-      jobId,
-      user.sub,
-      user.roles,
-      Number(limit) || 5,
-    );
+    // B63: limit 1–20, mặc định 10; vượt hoặc không nguyên → 400
+    let parsedLimit: number | undefined;
+    if (limit !== undefined) {
+      parsedLimit = Number(limit);
+      if (!Number.isInteger(parsedLimit) || parsedLimit < 1 || parsedLimit > 20) {
+        throw new BadRequestException('limit phải là số nguyên từ 1 đến 20');
+      }
+    }
+    return this.matchingService.findOptimalHelpersForJob(jobId, user.sub, user.roles, parsedLimit);
   }
 }

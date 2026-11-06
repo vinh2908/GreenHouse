@@ -404,16 +404,116 @@ export class LoyaltyService {
       )
       .exec();
 
-    await this.txModel.create({
-      user_id: userOid,
-      type: 'reversal',
-      points,
-      job_id: jobOid,
-      balance_after: updated!.points_balance,
-      note: `Hoàn điểm do hủy đơn theo SOS #${jobId.slice(-6)}`,
-    });
+    // B47: Chốt chặn race — 2 request hủy song song đều có thể qua bước kiểm
+    // tra 'reversal' tồn tại ở trên rồi cùng cộng điểm. Unique partial index
+    // (user_id, job_id, type='reversal') chặn reversal thứ 2 ở tầng DB:
+    // request thua vấp duplicate key → hoàn lại phần điểm vừa cộng thừa và
+    // trả về kết quả như request thắng (chỉ hoàn 1 lần). Lỗi ghi khác thì
+    // vẫn hoàn điểm rồi ném lại để caller biết (không để ví lệch sổ cái).
+    try {
+      await this.txModel.create({
+        user_id: userOid,
+        type: 'reversal',
+        points,
+        job_id: jobOid,
+        balance_after: updated!.points_balance,
+        note: `Hoàn điểm do hủy đơn theo SOS #${jobId.slice(-6)}`,
+      });
+    } catch (err) {
+      await this.accountModel
+        .findOneAndUpdate({ user_id: account.user_id }, { $inc: { points_balance: -points } })
+        .exec();
+      if ((err as { code?: number })?.code === 11000) {
+        const existing = await this.txModel
+          .findOne({ user_id: userOid, job_id: jobOid, type: 'reversal' })
+          .exec();
+        this.logger.warn(
+          `Loyalty reversal duplicate for job ${jobId} — points already restored once, rolled back ${points} extra points`,
+        );
+        return { points_restored: existing ? Math.abs(existing.points) : points };
+      }
+      throw err;
+    }
 
     return { points_restored: points };
+  }
+
+  // ─── Thu hồi điểm thưởng (B48) ───────────────────────────────────────────
+
+  /**
+   * Thu hồi điểm thưởng đã cộng trước đó (vd đơn bị hủy sau khi đã cộng điểm).
+   * Số dư KHÔNG BAO GIỜ âm: chỉ trừ tối đa số điểm hiện có (về 0), phần thiếu
+   * được ghi log rõ "thu hồi X/Y điểm". Ghi 1 giao dịch type 'revoke' (điểm âm)
+   * để đối soát; lifetime_points không đổi (điểm thưởng đã tính vào hạng).
+   */
+  async revokePoints(
+    userId: string,
+    points: number,
+    note?: string,
+  ): Promise<{ points_revoked: number; points_requested: number; balance_after: number }> {
+    if (!Types.ObjectId.isValid(userId)) throw new BadRequestException('userId không hợp lệ');
+    if (!Number.isInteger(points) || points <= 0) {
+      throw new BadRequestException('Số điểm thu hồi phải là số nguyên dương');
+    }
+    const account = await this.getOrCreateAccount(userId);
+    const revoked = Math.min(points, Math.max(0, account.points_balance));
+    if (revoked < points) {
+      this.logger.warn(
+        `Thu hồi điểm: chỉ thu hồi được ${revoked}/${points} điểm cho user ${userId} (số dư không đủ, số dư về 0)`,
+      );
+    }
+    if (revoked === 0) {
+      return { points_revoked: 0, points_requested: points, balance_after: account.points_balance };
+    }
+    const updated = await this.accountModel
+      .findOneAndUpdate(
+        { user_id: account.user_id, points_balance: { $gte: revoked } },
+        { $inc: { points_balance: -revoked } },
+        { new: true },
+      )
+      .exec();
+    if (!updated) {
+      // Số dư thay đổi giữa chừng (race) — đọc lại và thu hồi theo số mới
+      const fresh = await this.getOrCreateAccount(userId);
+      const retryRevoked = Math.min(points, Math.max(0, fresh.points_balance));
+      if (retryRevoked === 0) {
+        this.logger.warn(
+          `Thu hồi điểm: chỉ thu hồi được 0/${points} điểm cho user ${userId} (số dư đã thay đổi)`,
+        );
+        return { points_revoked: 0, points_requested: points, balance_after: fresh.points_balance };
+      }
+      const retried = await this.accountModel
+        .findOneAndUpdate(
+          { user_id: fresh.user_id, points_balance: { $gte: retryRevoked } },
+          { $inc: { points_balance: -retryRevoked } },
+          { new: true },
+        )
+        .exec();
+      await this.txModel.create({
+        user_id: new Types.ObjectId(userId),
+        type: 'revoke',
+        points: -retryRevoked,
+        balance_after: retried!.points_balance,
+        note: note ?? `Thu hồi ${retryRevoked}/${points} điểm thưởng`,
+      });
+      return {
+        points_revoked: retryRevoked,
+        points_requested: points,
+        balance_after: retried!.points_balance,
+      };
+    }
+    await this.txModel.create({
+      user_id: new Types.ObjectId(userId),
+      type: 'revoke',
+      points: -revoked,
+      balance_after: updated.points_balance,
+      note: note ?? `Thu hồi ${revoked}/${points} điểm thưởng`,
+    });
+    return {
+      points_revoked: revoked,
+      points_requested: points,
+      balance_after: updated.points_balance,
+    };
   }
 
   // ─── Admin ─────────────────────────────────────────────────────────────────

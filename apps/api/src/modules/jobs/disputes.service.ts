@@ -281,6 +281,31 @@ export class DisputesService {
       );
     }
 
+    // B61: Kháng nghị sau khi khách đã được hoàn ĐỦ tiền — chỉ mở lại phân
+    // xử khi có lý do MỚI (khác lý do tranh chấp ban đầu, vd phát hiện hư
+    // hỏng thêm). Không có lý do mới thì chặn: "đã hoàn đủ tiền, không thể
+    // kháng nghị thêm". Hoàn tiền 2 lần đã bị chặn ở tầng phân xử
+    // (JobsService.resolveDispute bỏ qua di chuyển tiền ở lần phân xử lại).
+    if (role === 'customer' && caseDoc.resolution) {
+      const contract = await this.contractModel.findOne({ job_id: job._id }).exec();
+      const basePrice = (contract as any)?.total_price ?? (job as any).fixed_price ?? 0;
+      const netPaid = Math.max(
+        0,
+        basePrice - (job.discount_amount ?? 0) - (job.loyalty_discount_amount ?? 0),
+      );
+      const refunded = caseDoc.resolution.refund_amount ?? 0;
+      const fullyRefunded = netPaid > 0 && refunded >= netPaid;
+      if (fullyRefunded) {
+        const newReason = dto.reason.trim().toLowerCase();
+        const originalReason = (caseDoc.reason ?? '').trim().toLowerCase();
+        if (!newReason || newReason === originalReason) {
+          throw new BadRequestException(
+            'Đơn này đã được hoàn đủ tiền nên không thể kháng nghị thêm với cùng lý do. Nếu phát hiện vấn đề mới (vd hư hỏng thêm), hãy kháng nghị và nêu rõ lý do mới.',
+          );
+        }
+      }
+    }
+
     caseDoc.status = 'appealed';
     caseDoc.appeal = {
       by: new Types.ObjectId(userId),

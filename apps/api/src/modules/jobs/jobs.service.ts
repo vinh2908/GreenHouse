@@ -6,6 +6,7 @@ import {
   ForbiddenException,
   ConflictException,
   OnModuleInit,
+  Optional,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
@@ -59,6 +60,7 @@ import { FavoritesService } from '../favorites/favorites.service';
 import { VouchersService } from '../vouchers/vouchers.service';
 import { LoyaltyService } from '../loyalty/loyalty.service';
 import { DisputesService } from './disputes.service';
+import { MatchingService } from '../matching/matching.service';
 import {
   HelperPenaltyEvent,
   HelperPenaltyEventDocument,
@@ -178,7 +180,15 @@ export class JobsService implements OnModuleInit {
     private readonly vouchersService: VouchersService,
     private readonly loyaltyService: LoyaltyService,
     private readonly disputesService: DisputesService,
+    // B67: @Optional để các test cũ khởi tạo trực tiếp JobsService (không
+    // truyền MatchingService) vẫn chạy; module thật luôn có MatchingModule.
+    @Optional() private readonly matchingService?: MatchingService,
   ) {}
+
+  /** B67: Xoá cache gợi ý thợ của đơn khi đơn thay đổi (báo giá mới / chọn báo giá / huỷ đơn) */
+  private async invalidateMatchingCache(jobId: string): Promise<void> {
+    await this.matchingService?.invalidateOptimalHelpersCache(jobId).catch(() => undefined);
+  }
 
   onModuleInit() {
     this.sweepExpiredJobsAndQuotes().catch(err =>
@@ -739,6 +749,11 @@ export class JobsService implements OnModuleInit {
       throw new BadRequestException(
         'Đơn yêu cầu phải có ít nhất dịch vụ trong danh mục hoặc tên dịch vụ tùy chỉnh',
       );
+    }
+
+    // B62: Địa chỉ làm việc không được trống — thợ cần biết đi đâu
+    if (!dto.address?.full_address?.trim()) {
+      throw new BadRequestException('Vui lòng nhập địa chỉ làm việc');
     }
 
     // B4: Chặn giá mong muốn < 50.000₫
@@ -1806,6 +1821,9 @@ export class JobsService implements OnModuleInit {
       })
       .catch(() => undefined);
 
+    // B67: Có thợ mới báo giá → gợi ý thợ cũ đã lỗi thời
+    await this.invalidateMatchingCache(jobId);
+
     return quote;
   }
 
@@ -2037,6 +2055,18 @@ export class JobsService implements OnModuleInit {
       }
     }
 
+    // B58: Giờ bắt đầu phải trong giờ làm việc 07:00–22:00 (chỉ kiểm tra giờ
+    // bắt đầu — thời lượng đã được chặn 15 phút–12 giờ lúc tạo đơn).
+    if (job.preferred_time_start && /^\d{1,2}:\d{2}$/.test(job.preferred_time_start.trim())) {
+      const [sh, sm] = job.preferred_time_start.trim().split(':').map(Number);
+      const startMin = sh * 60 + sm;
+      if (startMin < 7 * 60 || startMin >= 22 * 60) {
+        throw new BadRequestException(
+          'Giờ làm việc phải trong khung 07:00–22:00. Vui lòng cập nhật lại thời gian trước khi chọn thợ.',
+        );
+      }
+    }
+
     const quote = await this.quoteModel.findById(dto.quote_id).exec();
     if (!quote || quote.job_id.toString() !== jobId)
       throw new NotFoundException('Quote không tồn tại');
@@ -2189,6 +2219,9 @@ export class JobsService implements OnModuleInit {
     this.emitJobStatusChange(job);
 
     await this.notificationsService.notifyQuoteAccepted(helperId, job.title, jobId);
+
+    // B67: Đã chọn thợ → gợi ý thợ cũ đã lỗi thời
+    await this.invalidateMatchingCache(jobId);
 
     return { job, contract };
   }
@@ -2649,6 +2682,14 @@ export class JobsService implements OnModuleInit {
     if (existing.customer_id.toString() !== customerId) throw new ForbiddenException();
     this.validateTransition(existing.status, JobStatus.COMPLETED);
 
+    // B57: Nghiệm thu yêu cầu ít nhất 1 ảnh bằng chứng hoàn thành (thợ chụp
+    // qua completeByHelper) — đơn hoàn thành không có ảnh thì không nghiệm thu.
+    if (!existing.completion_photos || existing.completion_photos.length === 0) {
+      throw new BadRequestException(
+        'Chưa có ảnh bằng chứng hoàn thành. Vui lòng yêu cầu thợ chụp ảnh hoàn thành trước khi nghiệm thu.',
+      );
+    }
+
     const effectivePaymentMethod = dto.payment_method || existing.payment_method || 'vietqr';
 
     // A56: Chặn đổi sang tiền mặt nếu đơn gốc đặt online và chưa thanh toán
@@ -2704,6 +2745,8 @@ export class JobsService implements OnModuleInit {
               status: JobStatus.COMPLETED,
               payment_status: PaymentStatus.PAID,
               payment_method: effectivePaymentMethod,
+              // B56: Ghi mốc hoàn thành để tính cửa sổ mở tranh chấp 72 giờ
+              completed_at: new Date(),
               customer_rating: dto.rating,
               customer_review: dto.review,
             },
@@ -2828,6 +2871,26 @@ export class JobsService implements OnModuleInit {
 
   // ─── Customer / Helper: Open Dispute (Báo sự cố / Khiếu nại nghiệm thu) ──
 
+  /**
+   * Mốc hoàn thành của 1 đơn để tính cửa sổ mở tranh chấp 72 giờ (B56).
+   * Ưu tiên job.completed_at (ghi từ approveCompletion), sau đó
+   * contract.completed_at (đơn hoàn thành trước khi có job.completed_at),
+   * cuối cùng là updated_at.
+   */
+  private async getJobCompletedAt(job: JobDocument): Promise<Date | null> {
+    if ((job as any).completed_at) return new Date((job as any).completed_at);
+    try {
+      const contract = await this.contractModel
+        ?.findOne({ job_id: new Types.ObjectId(String(job._id)) })
+        .select('completed_at')
+        .exec();
+      if ((contract as any)?.completed_at) return new Date((contract as any).completed_at);
+    } catch {
+      // Không đọc được hợp đồng thì dùng updated_at
+    }
+    return (job as any).updated_at ? new Date((job as any).updated_at) : null;
+  }
+
   async openDispute(
     actorId: string,
     actorRole: string,
@@ -2843,7 +2906,22 @@ export class JobsService implements OnModuleInit {
       throw new ForbiddenException('Bạn không có quyền mở khiếu nại cho công việc này');
     }
 
-    this.validateTransition(job.status, JobStatus.DISPUTED);
+    // B56: Đơn COMPLETED vẫn mở được tranh chấp trong 72 giờ sau khi hoàn
+    // thành (phát hiện lỗi sau nghiệm thu). Quá 72 giờ → lỗi rõ + hướng dẫn
+    // liên hệ hỗ trợ. Đơn đã hủy vẫn không mở được (validateTransition chặn).
+    if (job.status === JobStatus.COMPLETED) {
+      const completedAt = await this.getJobCompletedAt(job);
+      const hoursSinceCompletion = completedAt
+        ? (Date.now() - completedAt.getTime()) / 3_600_000
+        : Number.POSITIVE_INFINITY;
+      if (hoursSinceCompletion > 72) {
+        throw new BadRequestException(
+          'Đơn đã hoàn thành quá 72 giờ nên không thể mở tranh chấp trực tuyến. Vui lòng liên hệ bộ phận hỗ trợ qua hotline 0365290805 hoặc mục Hỗ trợ trong app để được xử lý.',
+        );
+      }
+    } else {
+      this.validateTransition(job.status, JobStatus.DISPUTED);
+    }
 
     job.dispute_reason = dto.reason.trim();
     job.dispute_photos = dto.photos ?? [];
@@ -3086,12 +3164,19 @@ export class JobsService implements OnModuleInit {
 
     this.emitJobStatusChange(job);
 
+    // B55: Hoàn 0₫ vẫn phải báo khách rõ ràng "không hoàn tiền" + lý do —
+    // khách không được để tưởng đã hoàn. Giao dịch hoàn 0₫ KHÔNG được ghi
+    // vào ví (refundCustomer chỉ gọi khi refundAmount > 0, xem khối trên).
+    const customerBody =
+      refundAmount === 0
+        ? `Đơn "${job.title}": Kết quả phân xử: không hoàn tiền. Lý do: ${dto.admin_note}`
+        : `Đơn "${job.title}": ${dto.admin_note}${moveMoney ? ` (Hoàn ví: +${refundAmount.toLocaleString('vi-VN')}₫)` : ''}`;
     await this.notificationsService
       .create({
         userId: String(job.customer_id),
         type: NOTIFICATION_TYPES.DISPUTE_RESOLVED,
         title: '⚖️ Kết quả phân xử khiếu nại từ Admin',
-        body: `Đơn "${job.title}": ${dto.admin_note}${refundAmount > 0 && moveMoney ? ` (Hoàn ví: +${refundAmount.toLocaleString('vi-VN')}₫)` : ''}`,
+        body: customerBody,
         payload: { job_id: jobId, dispute_id: jobId },
       })
       .catch(() => undefined);
@@ -3189,12 +3274,30 @@ export class JobsService implements OnModuleInit {
       }
     }
 
+    // B60: Báo cho mọi thợ đã báo giá khi báo giá của họ bị chuyển sang
+    // rejected do hủy đơn — lấy danh sách trước rồi mới cập nhật trạng thái.
+    const pendingQuotes = await this.quoteModel
+      .find({ job_id: new Types.ObjectId(jobId), status: QuoteStatus.PENDING })
+      .select('helper_id')
+      .lean()
+      .exec();
     await this.quoteModel
       .updateMany(
         { job_id: new Types.ObjectId(jobId), status: QuoteStatus.PENDING },
         { status: QuoteStatus.REJECTED },
       )
       .exec();
+    for (const q of pendingQuotes) {
+      await this.notificationsService
+        .create({
+          userId: String((q as any).helper_id),
+          type: NOTIFICATION_TYPES.SYSTEM,
+          title: 'Đơn hàng đã bị hủy',
+          body: `Công việc "${job.title}" đã bị hủy. Báo giá của bạn cho đơn này không còn hiệu lực.`,
+          payload: { job_id: jobId },
+        })
+        .catch(() => undefined);
+    }
 
     let contractTotalPrice: number | undefined;
     if (this.contractModel?.findOne) {
@@ -3245,6 +3348,14 @@ export class JobsService implements OnModuleInit {
           job.refund_pending_reason = dto.reason || 'Hủy đơn hàng đã thanh toán';
         }
       }
+    }
+
+    // B46: Xoá liên kết voucher–đơn khi huỷ (lượt dùng được trả lại trong
+    // restoreJobBenefitsOnCancel qua VouchersService.restoreForJob — giảm
+    // used_count + lật redemption sang 'reversed'; bản ghi redemption giữ lại
+    // để đối soát). Đặt trước job.save() để liên kết được gỡ cùng lần lưu này.
+    if (job.voucher_code) {
+      job.voucher_code = undefined;
     }
 
     await job.save();
@@ -3302,6 +3413,9 @@ export class JobsService implements OnModuleInit {
         payload: { job_id: jobId, reason: dto.reason },
       });
     }
+
+    // B67: Đơn đã huỷ → gợi ý thợ cũ đã lỗi thời
+    await this.invalidateMatchingCache(jobId);
 
     return job;
   }
@@ -3921,6 +4035,25 @@ export class JobsService implements OnModuleInit {
     );
     if (!entry) {
       throw new BadRequestException('Không tìm thấy lời mời đang chờ cho đơn này');
+    }
+    // B59: Chỉ nhận lời mời nhóm khi đơn còn đang hoạt động — đơn đã xong/hủy
+    // thì không vào nhóm nữa. Từ chối thì vẫn cho (dọn lời mời cũ).
+    if (action === 'accept') {
+      const activeStatuses = [
+        JobStatus.OPEN,
+        JobStatus.RECEIVING_QUOTES,
+        JobStatus.QUOTE_SELECTED,
+        JobStatus.CONFIRMED,
+        JobStatus.HELPER_ON_THE_WAY,
+        JobStatus.HELPER_ARRIVED,
+        JobStatus.IN_PROGRESS,
+        JobStatus.PENDING_REVIEW,
+      ];
+      if (!activeStatuses.includes(job.status)) {
+        throw new BadRequestException(
+          'Đơn đã kết thúc hoặc đã hủy, không thể nhận lời mời vào nhóm',
+        );
+      }
     }
     entry.status = action === 'accept' ? 'accepted' : 'declined';
     entry.responded_at = new Date();
