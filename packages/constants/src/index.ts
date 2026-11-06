@@ -277,7 +277,6 @@ export const NOTIFICATION_TYPES = {
   TEAM_INVITATION: 'team_invitation',
   TEAM_RESPONSE: 'team_response',
   RECURRING_JOB_CREATED: 'recurring_job_created',
-  RECURRING_PLAN_CANCELLED: 'recurring_plan_cancelled',
   SOS_BACKUP_WITHDRAWN: 'sos_backup_withdrawn',
   DISPUTE_OPENED: 'dispute_opened',
   DISPUTE_RESOLVED: 'dispute_resolved',
@@ -292,10 +291,8 @@ export const NOTIFICATION_TYPES = {
   SOS_BACKUP_EXPIRED: 'sos_backup_expired', // Khách + admin: SOS backup hết hạn chưa có người thay
   JOB_CREATED: 'job_created',
   // B102: nhóm thông báo mới có type riêng để map tiếng Anh theo type (không theo chuỗi)
-  TEAM_INVITATION: 'team_invitation',
   TEAM_INVITATION_RESPONSE: 'team_invitation_response',
   DISPUTE_EVIDENCE: 'dispute_evidence',
-  DISPUTE_APPEALED: 'dispute_appealed',
   JOB_STATUS_CHANGED: 'job_status_changed',
   SYSTEM: 'system',
 } as const;

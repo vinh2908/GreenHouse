@@ -51,7 +51,6 @@ export default function HelperPublicProfileScreen() {
   const appealReview = useAppealReview();
   const [appealFor, setAppealFor] = React.useState<string | null>(null);
   const [appealReason, setAppealReason] = React.useState('');
-  const isOwnProfile = user?._id === id;
   const { data: profile, isLoading: pLoading, refetch } = useHelperPublicProfile(id);
   // B113: đang xem hồ sơ thợ → nhận helper:status_changed để cập nhật trạng thái ngay
   useHelperStatusSocket(id);
