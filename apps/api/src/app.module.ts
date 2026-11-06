@@ -26,6 +26,7 @@ import { MonthlyContractsModule } from './modules/monthly-contracts/monthly-cont
 import { ClaimsModule } from './modules/claims/claims.module';
 import { LoyaltyModule } from './modules/loyalty/loyalty.module';
 import { SupportModule } from './modules/support/support.module';
+import { FeedbackModule } from './modules/feedback/feedback.module';
 
 // ─── Phase 4: Services ────────────────────────────────────────────────────────
 import { ServicesModule } from './modules/services/services.module';
@@ -101,6 +102,7 @@ import { UploadsModule } from './modules/uploads/uploads.module';
     ClaimsModule,
     LoyaltyModule,
     SupportModule,
+    FeedbackModule,
     ServicesModule,
     JobsModule,
     SosBackupModule,
