@@ -945,7 +945,7 @@ export default function BookingScreen() {
               t('booking_ai_suggest_change_title'),
               t('booking_ai_suggest_desc', {
                 newSvc: tService(svc),
-                currentSvc: currentSvc ? tService(currentSvc) : (lang === 'en' ? 'other' : 'khác'),
+                currentSvc: currentSvc ? tService(currentSvc) : lang === 'en' ? 'other' : 'khác',
               }),
               [
                 { text: t('booking_keep_current_svc'), style: 'cancel' },
@@ -978,7 +978,7 @@ export default function BookingScreen() {
                 t('booking_ai_suggest_change_title'),
                 t('booking_ai_suggest_desc', {
                   newSvc: tService(fallbackSvc),
-                  currentSvc: currentSvc ? tService(currentSvc) : (lang === 'en' ? 'other' : 'khác'),
+                  currentSvc: currentSvc ? tService(currentSvc) : lang === 'en' ? 'other' : 'khác',
                 }),
                 [
                   { text: t('booking_keep_current_svc'), style: 'cancel' },
@@ -1001,11 +1001,10 @@ export default function BookingScreen() {
 
       if (result.service_name || result.tasks) {
         setTitle(result.service_name || aiInput.slice(0, 60));
-        const tasksPrefix = lang === 'en' ? '\n\nTasks to perform:\n• ' : '\n\nCác hạng mục cần làm:\n• ';
+        const tasksPrefix =
+          lang === 'en' ? '\n\nTasks to perform:\n• ' : '\n\nCác hạng mục cần làm:\n• ';
         const notesPrefix = lang === 'en' ? '\n\nGhi chú: ' : '\n\nGhi chú: ';
-        const tasksList = result.tasks?.length
-          ? `${tasksPrefix}${result.tasks.join('\n• ')}`
-          : '';
+        const tasksList = result.tasks?.length ? `${tasksPrefix}${result.tasks.join('\n• ')}` : '';
         const notesStr = result.notes ? `${notesPrefix}${result.notes}` : '';
         setDescription(`${aiInput}${tasksList}${notesStr}`);
       }
@@ -1235,7 +1234,8 @@ export default function BookingScreen() {
       setStep(3);
     } else if (step === 3) {
       if (!title.trim()) {
-        nextErrors.title = lang === 'en' ? 'Please enter job title' : 'Vui lòng nhập tiêu đề công việc';
+        nextErrors.title =
+          lang === 'en' ? 'Please enter job title' : 'Vui lòng nhập tiêu đề công việc';
       }
       if (!description.trim()) {
         nextErrors.description =
@@ -1515,7 +1515,8 @@ export default function BookingScreen() {
                           width: 44,
                           height: 44,
                           borderRadius: 12,
-                          backgroundColor: selectedService === svc._id ? '#DCFCE7' : COLORS.gray[100],
+                          backgroundColor:
+                            selectedService === svc._id ? '#DCFCE7' : COLORS.gray[100],
                           alignItems: 'center',
                           justifyContent: 'center',
                         }}
@@ -1527,7 +1528,9 @@ export default function BookingScreen() {
                         )}
                       </View>
                       <View style={{ flex: 1 }}>
-                        <Text style={{ fontWeight: '800', fontSize: fs(15), color: COLORS.gray[900] }}>
+                        <Text
+                          style={{ fontWeight: '800', fontSize: fs(15), color: COLORS.gray[900] }}
+                        >
                           {tService(svc)}
                         </Text>
                         {svc.description && (
@@ -1615,7 +1618,9 @@ export default function BookingScreen() {
                   </View>
                   <View style={{ flex: 1 }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                      <Text style={{ fontWeight: '800', fontSize: fs(15), color: COLORS.gray[900] }}>
+                      <Text
+                        style={{ fontWeight: '800', fontSize: fs(15), color: COLORS.gray[900] }}
+                      >
                         {t('booking_other_service_title')}
                       </Text>
                       <View
@@ -1626,7 +1631,9 @@ export default function BookingScreen() {
                           borderRadius: 6,
                         }}
                       >
-                        <Text style={{ fontSize: fs(10), fontWeight: '900', color: COLORS.primary }}>
+                        <Text
+                          style={{ fontSize: fs(10), fontWeight: '900', color: COLORS.primary }}
+                        >
                           {t('booking_new_badge')}
                         </Text>
                       </View>
@@ -1752,7 +1759,12 @@ export default function BookingScreen() {
                 >
                   <Search size={18} color={COLORS.gray[400]} />
                   <TextInput
-                    style={{ flex: 1, paddingVertical: 12, fontSize: fs(14), color: COLORS.gray[900] }}
+                    style={{
+                      flex: 1,
+                      paddingVertical: 12,
+                      fontSize: fs(14),
+                      color: COLORS.gray[900],
+                    }}
                     placeholder={t('booking_search_address_placeholder')}
                     value={searchQuery}
                     onChangeText={handleSearchAddress}
@@ -1924,7 +1936,12 @@ export default function BookingScreen() {
                       })()}
                     </Text>
                     <Text
-                      style={{ fontSize: fs(11), color: '#64748B', fontWeight: '500', marginTop: 1 }}
+                      style={{
+                        fontSize: fs(11),
+                        color: '#64748B',
+                        fontWeight: '500',
+                        marginTop: 1,
+                      }}
                     >
                       {t('booking_tap_to_open_calendar')}
                     </Text>
@@ -2107,7 +2124,9 @@ export default function BookingScreen() {
                   <Text style={{ fontSize: fs(14), fontWeight: '700', color: COLORS.gray[700] }}>
                     {t('booking_photos_label', { count: photos.length })}
                   </Text>
-                  <Text style={{ fontSize: fs(12), color: COLORS.gray[500] }}>{t('booking_optional')}</Text>
+                  <Text style={{ fontSize: fs(12), color: COLORS.gray[500] }}>
+                    {t('booking_optional')}
+                  </Text>
                 </View>
 
                 <View style={{ flexDirection: 'row', gap: 10 }}>
@@ -2314,7 +2333,11 @@ export default function BookingScreen() {
               </Text>
 
               <Card style={{ gap: 14 }}>
-                <Row icon={<Briefcase size={16} color={COLORS.primary} />} label={t('common_service')} value={tService(selectedServiceData) || '—'} />
+                <Row
+                  icon={<Briefcase size={16} color={COLORS.primary} />}
+                  label={t('common_service')}
+                  value={tService(selectedServiceData) || '—'}
+                />
                 <Row
                   icon={<MapPin size={16} color={COLORS.primary} />}
                   label={t('booking_step_address')}
@@ -2325,12 +2348,30 @@ export default function BookingScreen() {
                   }
                 />
                 {address.notes ? (
-                  <Row icon={<FileText size={16} color={COLORS.primary} />} label={t('booking_address_notes_label')} value={address.notes} />
+                  <Row
+                    icon={<FileText size={16} color={COLORS.primary} />}
+                    label={t('booking_address_notes_label')}
+                    value={address.notes}
+                  />
                 ) : null}
-                <Row icon={<Calendar size={16} color={COLORS.primary} />} label={t('booking_date_label')} value={dayjs(date).locale(lang === 'en' ? 'en' : 'vi').format('dddd, DD/MM/YYYY')} />
-                <Row icon={<Clock size={16} color={COLORS.primary} />} label={t('booking_time_label')} value={`${timeSlot} • ${duration} ${t('common_hours')}`} />
+                <Row
+                  icon={<Calendar size={16} color={COLORS.primary} />}
+                  label={t('booking_date_label')}
+                  value={dayjs(date)
+                    .locale(lang === 'en' ? 'en' : 'vi')
+                    .format('dddd, DD/MM/YYYY')}
+                />
+                <Row
+                  icon={<Clock size={16} color={COLORS.primary} />}
+                  label={t('booking_time_label')}
+                  value={`${timeSlot} • ${duration} ${t('common_hours')}`}
+                />
                 {photos.length > 0 && (
-                  <Row icon={<Camera size={16} color={COLORS.primary} />} label={t('booking_attached_photos_label')} value={`${photos.length} ${t('common_photos')}`} />
+                  <Row
+                    icon={<Camera size={16} color={COLORS.primary} />}
+                    label={t('booking_attached_photos_label')}
+                    value={`${photos.length} ${t('common_photos')}`}
+                  />
                 )}
                 <View style={{ height: 1, backgroundColor: COLORS.gray[100] }} />
                 <Text style={{ fontWeight: '800', fontSize: fs(16), color: COLORS.gray[900] }}>
@@ -2373,7 +2414,9 @@ export default function BookingScreen() {
                 }}
               >
                 <Lightbulb size={20} color="#EA580C" style={{ marginTop: 2 }} />
-                <Text style={{ flex: 1, fontSize: fs(13), color: COLORS.gray[700], lineHeight: 18 }}>
+                <Text
+                  style={{ flex: 1, fontSize: fs(13), color: COLORS.gray[700], lineHeight: 18 }}
+                >
                   {isFixedPriceService
                     ? t('booking_quote_tip_fixed')
                     : t('booking_quote_tip_regular')}
@@ -2386,7 +2429,9 @@ export default function BookingScreen() {
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                     <Star size={20} color="#F59E0B" />
                     <View style={{ flex: 1 }}>
-                      <Text style={{ fontWeight: '800', fontSize: fs(15), color: COLORS.gray[900] }}>
+                      <Text
+                        style={{ fontWeight: '800', fontSize: fs(15), color: COLORS.gray[900] }}
+                      >
                         {t('booking_send_private_to', {
                           name:
                             params.favorite_helper_name ??
@@ -2655,9 +2700,7 @@ export default function BookingScreen() {
                       padding: 16,
                     }}
                   >
-                    <Text
-                      style={{ fontSize: fs(15), fontWeight: '800', color: COLORS.gray[900] }}
-                    >
+                    <Text style={{ fontSize: fs(15), fontWeight: '800', color: COLORS.gray[900] }}>
                       {lang === 'en' ? 'Price Summary' : 'Tóm tắt chi phí'}
                     </Text>
                     <View style={{ gap: 8 }}>
@@ -2809,12 +2852,24 @@ function Row({ icon, label, value }: { icon: React.ReactNode; label: string; val
   const { fs } = useTranslation();
   return (
     <View style={{ flexDirection: 'row', gap: 10, alignItems: 'flex-start' }}>
-      <View style={{ width: 20, height: 20, alignItems: 'center', justifyContent: 'center', marginTop: 1 }}>
+      <View
+        style={{
+          width: 20,
+          height: 20,
+          alignItems: 'center',
+          justifyContent: 'center',
+          marginTop: 1,
+        }}
+      >
         {icon}
       </View>
       <View style={{ flex: 1 }}>
-        <Text style={{ fontSize: fs(12), color: COLORS.gray[500], fontWeight: '600' }}>{label}</Text>
-        <Text style={{ fontSize: fs(14), fontWeight: '700', color: COLORS.gray[900], marginTop: 2 }}>
+        <Text style={{ fontSize: fs(12), color: COLORS.gray[500], fontWeight: '600' }}>
+          {label}
+        </Text>
+        <Text
+          style={{ fontSize: fs(14), fontWeight: '700', color: COLORS.gray[900], marginTop: 2 }}
+        >
           {value}
         </Text>
       </View>

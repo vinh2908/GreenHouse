@@ -253,7 +253,9 @@ export default function PolicyInsuranceScreen() {
 
             <Card style={{ padding: 16, gap: 12 }}>
               <Text style={{ fontSize: fs(15), fontWeight: '800', color: COLORS.gray[900] }}>
-                {lang === 'en' ? '1. Service Scope & Booking Model' : '1. Phạm vi dịch vụ & Quy chế đặt việc'}
+                {lang === 'en'
+                  ? '1. Service Scope & Booking Model'
+                  : '1. Phạm vi dịch vụ & Quy chế đặt việc'}
               </Text>
               <Text style={{ fontSize: fs(13.5), color: COLORS.gray[700], lineHeight: 20 }}>
                 {lang === 'en'
@@ -264,7 +266,9 @@ export default function PolicyInsuranceScreen() {
 
             <Card style={{ padding: 16, gap: 12 }}>
               <Text style={{ fontSize: fs(15), fontWeight: '800', color: COLORS.gray[900] }}>
-                {lang === 'en' ? '2. Escrow Payment & Quality Assurance' : '2. Cơ chế giữ tiền Escrow & Nghiệm thu'}
+                {lang === 'en'
+                  ? '2. Escrow Payment & Quality Assurance'
+                  : '2. Cơ chế giữ tiền Escrow & Nghiệm thu'}
               </Text>
               <Text style={{ fontSize: fs(13.5), color: COLORS.gray[700], lineHeight: 20 }}>
                 {lang === 'en'
@@ -275,7 +279,9 @@ export default function PolicyInsuranceScreen() {
 
             <Card style={{ padding: 16, gap: 12 }}>
               <Text style={{ fontSize: fs(15), fontWeight: '800', color: COLORS.gray[900] }}>
-                {lang === 'en' ? '3. Cancellation & Refund Policy' : '3. Chính sách hủy đơn & Hoàn tiền'}
+                {lang === 'en'
+                  ? '3. Cancellation & Refund Policy'
+                  : '3. Chính sách hủy đơn & Hoàn tiền'}
               </Text>
               <Text style={{ fontSize: fs(13.5), color: COLORS.gray[700], lineHeight: 20 }}>
                 {lang === 'en'
@@ -286,7 +292,9 @@ export default function PolicyInsuranceScreen() {
 
             <Card style={{ padding: 16, gap: 12 }}>
               <Text style={{ fontSize: fs(15), fontWeight: '800', color: COLORS.gray[900] }}>
-                {lang === 'en' ? '4. Dispute Arbitration & Fair Settlement' : '4. Phân xử tranh chấp & Bồi thường'}
+                {lang === 'en'
+                  ? '4. Dispute Arbitration & Fair Settlement'
+                  : '4. Phân xử tranh chấp & Bồi thường'}
               </Text>
               <Text style={{ fontSize: fs(13.5), color: COLORS.gray[700], lineHeight: 20 }}>
                 {lang === 'en'
@@ -344,7 +352,9 @@ export default function PolicyInsuranceScreen() {
             {/* Insurance Pillars */}
             <View style={{ gap: 12 }}>
               <Text style={{ fontSize: fs(15), fontWeight: '800', color: COLORS.gray[900] }}>
-                {lang === 'en' ? '3 Comprehensive Insurance Pillars' : '3 Trụ cột Bảo hiểm Toàn diện'}
+                {lang === 'en'
+                  ? '3 Comprehensive Insurance Pillars'
+                  : '3 Trụ cột Bảo hiểm Toàn diện'}
               </Text>
 
               {/* Pillar 1 */}

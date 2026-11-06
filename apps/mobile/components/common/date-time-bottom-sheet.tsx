@@ -275,7 +275,9 @@ export function DateTimeBottomSheet({
               <Text style={styles.cancelBtnText}>{t('common_cancel') || 'Huỷ'}</Text>
             </TouchableOpacity>
 
-            <Text style={styles.sheetTitle}>{lang === 'en' ? 'Select Date & Time' : 'Chọn ngày & giờ'}</Text>
+            <Text style={styles.sheetTitle}>
+              {lang === 'en' ? 'Select Date & Time' : 'Chọn ngày & giờ'}
+            </Text>
 
             <TouchableOpacity
               activeOpacity={isSelectionInPast ? 1 : 0.7}
@@ -288,7 +290,7 @@ export function DateTimeBottomSheet({
             </TouchableOpacity>
           </View>
 
-          {/* 3. Segmented Toggle: 📅 Ngày / 🕒 Giờ */}
+          {/* 3. Segmented Toggle: Ngày / Giờ */}
           <View style={styles.segToggle}>
             <TouchableOpacity
               activeOpacity={0.8}

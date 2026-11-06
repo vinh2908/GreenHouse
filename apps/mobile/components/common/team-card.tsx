@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity } from 'react-native';
-import { Users } from 'lucide-react-native';
+import { Users, Star } from 'lucide-react-native';
 import { Avatar, Badge, Button, Card, COLORS } from '@/components/ui';
 import { useTeamCandidates, useInviteTeamMember } from '@/hooks/use-api';
 import { Alert } from '@/components/common/app-alert';
@@ -13,9 +13,17 @@ function idOf(v: any): string {
   return String(v?._id ?? v);
 }
 
-const STATUS_META: Record<string, { label: string; label_en: string; color: string; textColor: string }> = {
+const STATUS_META: Record<
+  string,
+  { label: string; label_en: string; color: string; textColor: string }
+> = {
   accepted: { label: 'Đã nhận', label_en: 'Accepted', color: '#D1FAE5', textColor: '#065F46' },
-  invited: { label: 'Chờ phản hồi', label_en: 'Awaiting response', color: '#FEF3C7', textColor: '#92400E' },
+  invited: {
+    label: 'Chờ phản hồi',
+    label_en: 'Awaiting response',
+    color: '#FEF3C7',
+    textColor: '#92400E',
+  },
   declined: { label: 'Đã từ chối', label_en: 'Declined', color: '#FEE2E2', textColor: '#991B1B' },
 };
 
@@ -45,7 +53,9 @@ export function TeamCard({ job, currentUserId }: { job: any; currentUserId?: str
     if (!pct || pct < 1 || pct > 90) {
       Alert.alert(
         lang === 'en' ? 'Invalid ratio' : 'Tỉ lệ chưa hợp lệ',
-        lang === 'en' ? 'Enter payout % for member (1–90%).' : 'Nhập % tiền công cho thành viên (1–90%).',
+        lang === 'en'
+          ? 'Enter payout % for member (1–90%).'
+          : 'Nhập % tiền công cho thành viên (1–90%).',
       );
       return;
     }
@@ -104,9 +114,16 @@ export function TeamCard({ job, currentUserId }: { job: any; currentUserId?: str
               </Text>
               <Text style={{ fontSize: fs(12), color: COLORS.gray[500] }}>
                 {member.role === 'lead'
-                  ? (lang === 'en' ? '⭐ Lead helper' : '⭐ Thợ chính (lead)')
-                  : (lang === 'en' ? 'Member' : 'Thành viên')}{' '}
-                · {lang === 'en' ? `Receives ${member.split_percent}% payout` : `Nhận ${member.split_percent}% tiền công`}
+                  ? lang === 'en'
+                    ? 'Lead helper'
+                    : 'Thợ chính (lead)'
+                  : lang === 'en'
+                    ? 'Member'
+                    : 'Thành viên'}{' '}
+                ·{' '}
+                {lang === 'en'
+                  ? `Receives ${member.split_percent}% payout`
+                  : `Nhận ${member.split_percent}% tiền công`}
               </Text>
             </View>
             <Badge
@@ -130,11 +147,15 @@ export function TeamCard({ job, currentUserId }: { job: any; currentUserId?: str
           style={{ gap: 10, borderTopWidth: 1, borderTopColor: COLORS.gray[100], paddingTop: 12 }}
         >
           <Text style={{ fontWeight: '800', fontSize: fs(13.5), color: COLORS.gray[900] }}>
-            {lang === 'en' ? `Invite helpers to team (${slotsLeft} slots left)` : `Mời thêm thợ vào nhóm (còn ${slotsLeft} chỗ)`}
+            {lang === 'en'
+              ? `Invite helpers to team (${slotsLeft} slots left)`
+              : `Mời thêm thợ vào nhóm (còn ${slotsLeft} chỗ)`}
           </Text>
           {(candidates ?? []).length === 0 && (
             <Text style={{ fontSize: fs(12.5), color: COLORS.gray[500] }}>
-              {lang === 'en' ? 'No helpers currently available to invite. Try again later.' : 'Chưa có thợ đang sẵn sàng để mời. Thử lại sau ít phút.'}
+              {lang === 'en'
+                ? 'No helpers currently available to invite. Try again later.'
+                : 'Chưa có thợ đang sẵn sàng để mời. Thử lại sau ít phút.'}
             </Text>
           )}
           {(candidates ?? []).map(c => (
@@ -144,10 +165,15 @@ export function TeamCard({ job, currentUserId }: { job: any; currentUserId?: str
                 <Text style={{ fontWeight: '700', fontSize: fs(13), color: COLORS.gray[900] }}>
                   {c.full_name}
                 </Text>
-                <Text style={{ fontSize: fs(11.5), color: COLORS.gray[500] }}>
-                  ⭐ {c.rating?.toFixed?.(1) ?? c.rating} ·{' '}
-                  {lang === 'en' ? `${c.completed_jobs} completed jobs` : `${c.completed_jobs} đơn hoàn thành`}
-                </Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
+                  <Star size={11} color="#F59E0B" fill="#F59E0B" />
+                  <Text style={{ fontSize: fs(11.5), color: COLORS.gray[500] }}>
+                    {c.rating?.toFixed?.(1) ?? c.rating} ·{' '}
+                    {lang === 'en'
+                      ? `${c.completed_jobs} completed jobs`
+                      : `${c.completed_jobs} đơn hoàn thành`}
+                  </Text>
+                </View>
               </View>
               <View
                 style={{

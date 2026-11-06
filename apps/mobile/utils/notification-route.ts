@@ -159,8 +159,11 @@ export function resolveNotificationRoute(
   if (
     type.includes('dispute') ||
     data.dispute_id ||
-    (typeof n.title === 'string' && (n.title.toLowerCase().includes('tranh chấp') || n.title.toLowerCase().includes('khiếu nại'))) ||
-    (typeof n.body === 'string' && (n.body.toLowerCase().includes('tranh chấp') || n.body.toLowerCase().includes('khiếu nại')))
+    (typeof n.title === 'string' &&
+      (n.title.toLowerCase().includes('tranh chấp') ||
+        n.title.toLowerCase().includes('khiếu nại'))) ||
+    (typeof n.body === 'string' &&
+      (n.body.toLowerCase().includes('tranh chấp') || n.body.toLowerCase().includes('khiếu nại')))
   ) {
     if (jobId) return { pathname: '/dispute/[jobId]', params: { jobId } };
     return null;

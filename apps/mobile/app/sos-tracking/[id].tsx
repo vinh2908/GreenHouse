@@ -67,10 +67,7 @@ export default function SosTrackingScreen() {
       refetch();
       Toast.show({
         type: 'success',
-        text1:
-          lang === 'en'
-            ? 'HELPER ACCEPTED RESCUE REQUEST!'
-            : 'ĐÃ CÓ THỢ NHẬN CỨU HỘ!',
+        text1: lang === 'en' ? 'HELPER ACCEPTED RESCUE REQUEST!' : 'ĐÃ CÓ THỢ NHẬN CỨU HỘ!',
         text2:
           lang === 'en'
             ? 'Helper is packing tools and rushing to your location.'
@@ -92,8 +89,10 @@ export default function SosTrackingScreen() {
   const helperObj = typeof job?.helper_id === 'object' && job?.helper_id ? job.helper_id : null;
   const hasRealHelper = Boolean(helperObj && (helperObj.full_name || helperObj.phone));
   const helperName = hasRealHelper
-    ? (helperObj?.full_name || '')
-    : (lang === 'en' ? 'Finding replacement helper...' : 'Đang tìm thợ thay thế...');
+    ? helperObj?.full_name || ''
+    : lang === 'en'
+      ? 'Finding replacement helper...'
+      : 'Đang tìm thợ thay thế...';
   const helperPhone = helperObj?.phone || '';
   const helperAvatar = helperObj?.avatar;
 
@@ -136,9 +135,7 @@ export default function SosTrackingScreen() {
             await cancelJob.mutateAsync({
               jobId: id!,
               reason:
-                lang === 'en'
-                  ? 'Customer cancelled SOS request'
-                  : 'Khách hàng hủy yêu cầu SOS',
+                lang === 'en' ? 'Customer cancelled SOS request' : 'Khách hàng hủy yêu cầu SOS',
             });
             router.replace('/(customer)/home');
           },
@@ -235,7 +232,9 @@ export default function SosTrackingScreen() {
                 ? 'Broadcasting signal to 5 nearest helpers'
                 : 'Đang broadcast tín hiệu tới 5 thợ gần bạn nhất'}
             </Text>
-            <Text style={{ fontSize: fs(13), color: '#B91C1C', textAlign: 'center', lineHeight: 19 }}>
+            <Text
+              style={{ fontSize: fs(13), color: '#B91C1C', textAlign: 'center', lineHeight: 19 }}
+            >
               {lang === 'en'
                 ? 'System is scanning verified online helper partners within 10km radius. First helper to accept will immediately rush to you.'
                 : 'Hệ thống đang quét các đối tác thợ online trong bán kính 10km đã xác minh e-KYC. Thợ đầu tiên bấm nhận sẽ lập tức di chuyển đến bạn.'}
@@ -328,7 +327,9 @@ export default function SosTrackingScreen() {
                           borderRadius: 6,
                         }}
                       >
-                        <Text style={{ fontSize: fs(11), color: COLORS.success, fontWeight: '700' }}>
+                        <Text
+                          style={{ fontSize: fs(11), color: COLORS.success, fontWeight: '700' }}
+                        >
                           e-KYC 100%
                         </Text>
                       </View>

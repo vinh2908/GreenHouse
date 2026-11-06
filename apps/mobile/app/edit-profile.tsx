@@ -67,7 +67,9 @@ export default function EditProfileScreen() {
   const updateProfileMutation = useUpdateProfile();
 
   const { role, tab } = useLocalSearchParams<{ role?: string; tab?: string }>();
-  const [activeTab, setActiveTab] = useState<'general' | 'career'>(tab === 'career' ? 'career' : 'general');
+  const [activeTab, setActiveTab] = useState<'general' | 'career'>(
+    tab === 'career' ? 'career' : 'general',
+  );
 
   useEffect(() => {
     if (tab === 'career') {
@@ -206,8 +208,12 @@ export default function EditProfileScreen() {
           type: 'error',
           text1:
             source === 'camera'
-              ? (lang === 'en' ? 'Camera permission required to take photo' : 'Cần cấp quyền camera để chụp ảnh')
-              : (lang === 'en' ? 'Photo library permission required' : 'Cần cấp quyền truy cập thư viện ảnh'),
+              ? lang === 'en'
+                ? 'Camera permission required to take photo'
+                : 'Cần cấp quyền camera để chụp ảnh'
+              : lang === 'en'
+                ? 'Photo library permission required'
+                : 'Cần cấp quyền truy cập thư viện ảnh',
         });
         return;
       }
@@ -228,9 +234,14 @@ export default function EditProfileScreen() {
     } catch {
       Toast.show({
         type: 'error',
-        text1: source === 'camera'
-          ? (lang === 'en' ? 'Unable to open camera' : 'Không thể mở máy ảnh')
-          : (lang === 'en' ? 'Unable to open photo library' : 'Không thể mở thư viện ảnh'),
+        text1:
+          source === 'camera'
+            ? lang === 'en'
+              ? 'Unable to open camera'
+              : 'Không thể mở máy ảnh'
+            : lang === 'en'
+              ? 'Unable to open photo library'
+              : 'Không thể mở thư viện ảnh',
       });
     }
   };
@@ -241,14 +252,20 @@ export default function EditProfileScreen() {
       lang === 'en' ? 'Choose photo source' : 'Chọn nguồn ảnh',
       [
         { text: lang === 'en' ? 'Take photo' : 'Chụp ảnh', onPress: () => pickAvatar('camera') },
-        { text: lang === 'en' ? 'Choose from gallery' : 'Chọn từ thư viện', onPress: () => pickAvatar('library') },
+        {
+          text: lang === 'en' ? 'Choose from gallery' : 'Chọn từ thư viện',
+          onPress: () => pickAvatar('library'),
+        },
         { text: lang === 'en' ? 'Cancel' : 'Hủy', style: 'cancel' },
-      ]
+      ],
     );
 
   const handleSave = async () => {
     if (activeTab === 'general' && !fullName.trim()) {
-      Toast.show({ type: 'error', text1: lang === 'en' ? 'Please enter your full name' : 'Vui lòng nhập họ và tên' });
+      Toast.show({
+        type: 'error',
+        text1: lang === 'en' ? 'Please enter your full name' : 'Vui lòng nhập họ và tên',
+      });
       return;
     }
 
@@ -322,12 +339,18 @@ export default function EditProfileScreen() {
         type: 'success',
         text1:
           isHelper && activeTab === 'career'
-            ? (lang === 'en' ? 'Career profile saved successfully!' : 'Đã lưu hồ sơ nghề nghiệp thành công!')
-            : (lang === 'en' ? 'Profile saved successfully!' : 'Đã lưu thông tin hồ sơ thành công!'),
+            ? lang === 'en'
+              ? 'Career profile saved successfully!'
+              : 'Đã lưu hồ sơ nghề nghiệp thành công!'
+            : lang === 'en'
+              ? 'Profile saved successfully!'
+              : 'Đã lưu thông tin hồ sơ thành công!',
       });
       handleBack();
     } catch (err: any) {
-      const msg = err?.response?.data?.message || (lang === 'en' ? 'Profile update failed' : 'Cập nhật hồ sơ thất bại');
+      const msg =
+        err?.response?.data?.message ||
+        (lang === 'en' ? 'Profile update failed' : 'Cập nhật hồ sơ thất bại');
       Toast.show({ type: 'error', text1: msg });
     } finally {
       setSaving(false);
@@ -375,10 +398,17 @@ export default function EditProfileScreen() {
         source,
       });
       setCoordsSource(null);
-      Toast.show({ type: 'success', text1: lang === 'en' ? 'Working location saved' : 'Đã lưu vị trí hoạt động' });
+      Toast.show({
+        type: 'success',
+        text1: lang === 'en' ? 'Working location saved' : 'Đã lưu vị trí hoạt động',
+      });
     } catch {
       // Giữ coordsSource để nút Lưu gửi lại.
-      Toast.show({ type: 'error', text1: lang === 'en' ? 'Failed to save location' : 'Chưa lưu được vị trí', text2: lang === 'en' ? 'Tap Save to retry' : 'Bấm Lưu để thử lại' });
+      Toast.show({
+        type: 'error',
+        text1: lang === 'en' ? 'Failed to save location' : 'Chưa lưu được vị trí',
+        text2: lang === 'en' ? 'Tap Save to retry' : 'Bấm Lưu để thử lại',
+      });
     }
   };
 
@@ -412,9 +442,16 @@ export default function EditProfileScreen() {
     if (!fullAddress.trim()) return;
     try {
       await persistCustomerAddress(coords, fullAddress, geo);
-      Toast.show({ type: 'success', text1: lang === 'en' ? 'Current address saved' : 'Đã lưu địa chỉ hiện tại' });
+      Toast.show({
+        type: 'success',
+        text1: lang === 'en' ? 'Current address saved' : 'Đã lưu địa chỉ hiện tại',
+      });
     } catch {
-      Toast.show({ type: 'error', text1: lang === 'en' ? 'Failed to save address' : 'Chưa lưu được địa chỉ', text2: lang === 'en' ? 'Tap Save to retry' : 'Bấm Lưu để thử lại' });
+      Toast.show({
+        type: 'error',
+        text1: lang === 'en' ? 'Failed to save address' : 'Chưa lưu được địa chỉ',
+        text2: lang === 'en' ? 'Tap Save to retry' : 'Bấm Lưu để thử lại',
+      });
     }
   };
 
@@ -422,7 +459,15 @@ export default function EditProfileScreen() {
     <View style={{ flex: 1, backgroundColor: '#F8F9FA' }}>
       <LocationPicker
         visible={pickerFor !== null}
-        title={pickerFor === 'customer' ? (lang === 'en' ? 'Select home address' : 'Chọn địa chỉ nhà') : (lang === 'en' ? 'Select working base location' : 'Chọn vị trí hoạt động')}
+        title={
+          pickerFor === 'customer'
+            ? lang === 'en'
+              ? 'Select home address'
+              : 'Chọn địa chỉ nhà'
+            : lang === 'en'
+              ? 'Select working base location'
+              : 'Chọn vị trí hoạt động'
+        }
         initial={pickerFor === 'customer' ? customerCoords : helperCoords}
         onClose={() => setPickerFor(null)}
         onConfirm={handlePickerConfirm}
@@ -458,8 +503,12 @@ export default function EditProfileScreen() {
         </TouchableOpacity>
         <Text style={{ fontSize: fs(17), fontWeight: '800', color: COLORS.gray[900] }}>
           {isHelper && activeTab === 'career'
-            ? (lang === 'en' ? 'Career Profile & Skills' : 'Hồ sơ nghề nghiệp & Kỹ năng')
-            : (lang === 'en' ? 'Edit Profile' : 'Chỉnh sửa thông tin cá nhân')}
+            ? lang === 'en'
+              ? 'Career Profile & Skills'
+              : 'Hồ sơ nghề nghiệp & Kỹ năng'
+            : lang === 'en'
+              ? 'Edit Profile'
+              : 'Chỉnh sửa thông tin cá nhân'}
         </Text>
         <View style={{ width: 40 }} />
       </View>
@@ -537,231 +586,241 @@ export default function EditProfileScreen() {
           {/* ── 1. AVATAR PICKER & BỘ SƯU TẬP AVATAR ──────────────────── */}
           {(!isHelper || activeTab === 'general') && (
             <Card style={{ alignItems: 'center', padding: 20, gap: 14 }}>
-            <View style={{ position: 'relative' }}>
-              <TouchableOpacity activeOpacity={0.85} onPress={openAvatarMenu}>
-                <Avatar name={fullName || 'User'} uri={avatar} size={90} />
-              </TouchableOpacity>
-              <TouchableOpacity
-                activeOpacity={0.8}
-                onPress={openAvatarMenu}
-                accessibilityLabel={lang === 'en' ? 'Change avatar' : 'Đổi ảnh đại diện'}
-                style={{
-                  position: 'absolute',
-                  bottom: 0,
-                  right: 0,
-                  backgroundColor: COLORS.primary,
-                  borderRadius: 18,
-                  width: 34,
-                  height: 34,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  borderWidth: 3,
-                  borderColor: '#fff',
-                  shadowColor: COLORS.primary,
-                  shadowOffset: { width: 0, height: 3 },
-                  shadowOpacity: 0.4,
-                  shadowRadius: 6,
-                  elevation: 4,
-                }}
+              <View style={{ position: 'relative' }}>
+                <TouchableOpacity activeOpacity={0.85} onPress={openAvatarMenu}>
+                  <Avatar name={fullName || 'User'} uri={avatar} size={90} />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  activeOpacity={0.8}
+                  onPress={openAvatarMenu}
+                  accessibilityLabel={lang === 'en' ? 'Change avatar' : 'Đổi ảnh đại diện'}
+                  style={{
+                    position: 'absolute',
+                    bottom: 0,
+                    right: 0,
+                    backgroundColor: COLORS.primary,
+                    borderRadius: 18,
+                    width: 34,
+                    height: 34,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    borderWidth: 3,
+                    borderColor: '#fff',
+                    shadowColor: COLORS.primary,
+                    shadowOffset: { width: 0, height: 3 },
+                    shadowOpacity: 0.4,
+                    shadowRadius: 6,
+                    elevation: 4,
+                  }}
+                >
+                  <Camera size={16} color="#fff" />
+                </TouchableOpacity>
+              </View>
+
+              <View style={{ alignItems: 'center' }}>
+                <Text style={{ fontSize: fs(14), fontWeight: '800', color: COLORS.gray[800] }}>
+                  {lang === 'en' ? 'Account Avatar' : 'Ảnh đại diện tài khoản'}
+                </Text>
+                <Text style={{ fontSize: fs(12), color: COLORS.gray[500], marginTop: 2 }}>
+                  {lang === 'en'
+                    ? 'Take photo, pick from gallery, or select a preset below:'
+                    : 'Chụp ảnh, chọn từ thư viện hoặc chọn nhanh bên dưới:'}
+                </Text>
+              </View>
+
+              {/* Danh sách Avatar mẫu để chọn nhanh 1 chạm */}
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={{ gap: 10, paddingVertical: 4 }}
               >
-                <Camera size={16} color="#fff" />
-              </TouchableOpacity>
-            </View>
-
-            <View style={{ alignItems: 'center' }}>
-              <Text style={{ fontSize: fs(14), fontWeight: '800', color: COLORS.gray[800] }}>
-                {lang === 'en' ? 'Account Avatar' : 'Ảnh đại diện tài khoản'}
-              </Text>
-              <Text style={{ fontSize: fs(12), color: COLORS.gray[500], marginTop: 2 }}>
-                {lang === 'en' ? 'Take photo, pick from gallery, or select a preset below:' : 'Chụp ảnh, chọn từ thư viện hoặc chọn nhanh bên dưới:'}
-              </Text>
-            </View>
-
-            {/* Danh sách Avatar mẫu để chọn nhanh 1 chạm */}
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={{ gap: 10, paddingVertical: 4 }}
-            >
-              {PRESET_AVATARS.map((url, idx) => {
-                const isSelected = avatar === url;
-                return (
-                  <TouchableOpacity
-                    key={idx}
-                    activeOpacity={0.8}
-                    onPress={() => setAvatar(url)}
-                    style={{
-                      borderRadius: 24,
-                      borderWidth: 2.5,
-                      borderColor: isSelected ? COLORS.primary : 'transparent',
-                      padding: 2,
-                    }}
-                  >
-                    <Image
-                      source={{ uri: url }}
+                {PRESET_AVATARS.map((url, idx) => {
+                  const isSelected = avatar === url;
+                  return (
+                    <TouchableOpacity
+                      key={idx}
+                      activeOpacity={0.8}
+                      onPress={() => setAvatar(url)}
                       style={{
-                        width: 44,
-                        height: 44,
-                        borderRadius: 22,
-                        backgroundColor: COLORS.gray[200],
+                        borderRadius: 24,
+                        borderWidth: 2.5,
+                        borderColor: isSelected ? COLORS.primary : 'transparent',
+                        padding: 2,
                       }}
-                    />
-                    {isSelected && (
-                      <View
+                    >
+                      <Image
+                        source={{ uri: url }}
                         style={{
-                          position: 'absolute',
-                          top: 0,
-                          right: 0,
-                          backgroundColor: COLORS.primary,
-                          borderRadius: 8,
-                          padding: 1,
+                          width: 44,
+                          height: 44,
+                          borderRadius: 22,
+                          backgroundColor: COLORS.gray[200],
                         }}
-                      >
-                        <Check size={10} color="#fff" strokeWidth={3} />
-                      </View>
-                    )}
-                  </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
-          </Card>
+                      />
+                      {isSelected && (
+                        <View
+                          style={{
+                            position: 'absolute',
+                            top: 0,
+                            right: 0,
+                            backgroundColor: COLORS.primary,
+                            borderRadius: 8,
+                            padding: 1,
+                          }}
+                        >
+                          <Check size={10} color="#fff" strokeWidth={3} />
+                        </View>
+                      )}
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            </Card>
           )}
 
           {/* ── 2. THÔNG TIN ĐỊNH DANH CƠ BẢN ─────────────────────────── */}
           {(!isHelper || activeTab === 'general') && (
-          <Card style={{ padding: 16, gap: 14 }}>
-            <Text style={{ fontSize: fs(15), fontWeight: '800', color: COLORS.gray[900] }}>
-              {lang === 'en' ? 'Contact Information' : 'Thông tin liên hệ'}
-            </Text>
-
-            <View style={{ gap: 6 }}>
-              <Text style={{ fontSize: fs(13), fontWeight: '700', color: COLORS.gray[700] }}>
-                {lang === 'en' ? 'Full Name *' : 'Họ và tên *'}
+            <Card style={{ padding: 16, gap: 14 }}>
+              <Text style={{ fontSize: fs(15), fontWeight: '800', color: COLORS.gray[900] }}>
+                {lang === 'en' ? 'Contact Information' : 'Thông tin liên hệ'}
               </Text>
-              <TextInput
-                style={{
-                  borderWidth: 1.5,
-                  borderColor: COLORS.gray[200],
-                  borderRadius: 14,
-                  padding: 14,
-                  fontSize: fs(15),
-                  color: COLORS.gray[900],
-                  backgroundColor: COLORS.gray[50],
-                  fontWeight: '600',
-                }}
-                placeholder={lang === 'en' ? 'Enter full name' : 'Nhập họ và tên đầy đủ'}
-                value={fullName}
-                onChangeText={setFullName}
-                placeholderTextColor={COLORS.gray[400]}
-              />
-            </View>
 
-            <View style={{ gap: 6 }}>
-              <View
-                style={{
-                  flexDirection: 'row',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                }}
-              >
+              <View style={{ gap: 6 }}>
                 <Text style={{ fontSize: fs(13), fontWeight: '700', color: COLORS.gray[700] }}>
-                  {lang === 'en' ? 'Registered Phone Number' : 'Số điện thoại đăng ký'}
+                  {lang === 'en' ? 'Full Name *' : 'Họ và tên *'}
                 </Text>
+                <TextInput
+                  style={{
+                    borderWidth: 1.5,
+                    borderColor: COLORS.gray[200],
+                    borderRadius: 14,
+                    padding: 14,
+                    fontSize: fs(15),
+                    color: COLORS.gray[900],
+                    backgroundColor: COLORS.gray[50],
+                    fontWeight: '600',
+                  }}
+                  placeholder={lang === 'en' ? 'Enter full name' : 'Nhập họ và tên đầy đủ'}
+                  value={fullName}
+                  onChangeText={setFullName}
+                  placeholderTextColor={COLORS.gray[400]}
+                />
+              </View>
+
+              <View style={{ gap: 6 }}>
                 <View
                   style={{
                     flexDirection: 'row',
+                    justifyContent: 'space-between',
                     alignItems: 'center',
-                    gap: 4,
-                    backgroundColor: '#ECFDF5',
-                    paddingHorizontal: 8,
-                    paddingVertical: 2,
-                    borderRadius: 6,
                   }}
                 >
-                  <ShieldCheck size={12} color={COLORS.success} />
-                  <Text style={{ fontSize: fs(11), color: COLORS.success, fontWeight: '700' }}>
-                    {lang === 'en' ? 'OTP Verified' : 'Đã xác thực OTP'}
+                  <Text style={{ fontSize: fs(13), fontWeight: '700', color: COLORS.gray[700] }}>
+                    {lang === 'en' ? 'Registered Phone Number' : 'Số điện thoại đăng ký'}
                   </Text>
-                </View>
-              </View>
-              <TextInput
-                style={{
-                  borderWidth: 1.5,
-                  borderColor: COLORS.gray[200],
-                  borderRadius: 14,
-                  padding: 14,
-                  fontSize: fs(15),
-                  color: COLORS.gray[500],
-                  backgroundColor: COLORS.gray[100],
-                }}
-                value={myProfile?.phone || user?.phone || ''}
-                placeholder={uLoading ? (lang === 'en' ? 'Loading phone...' : 'Đang tải số điện thoại...') : ''}
-                editable={false}
-              />
-            </View>
-
-            <View style={{ gap: 6 }}>
-              <Text style={{ fontSize: fs(13), fontWeight: '700', color: COLORS.gray[700] }}>
-                {lang === 'en' ? 'Contact Email (Electronic Invoices)' : 'Email liên hệ (Nhận hóa đơn điện tử)'}
-              </Text>
-              <TextInput
-                style={{
-                  borderWidth: 1.5,
-                  borderColor: COLORS.gray[200],
-                  borderRadius: 14,
-                  padding: 14,
-                  fontSize: fs(15),
-                  color: COLORS.gray[900],
-                  backgroundColor: COLORS.gray[50],
-                }}
-                placeholder="VD: nguyenvana@gmail.com"
-                value={email}
-                onChangeText={setEmail}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                placeholderTextColor={COLORS.gray[400]}
-              />
-            </View>
-
-            {/* Giới tính */}
-            <View style={{ gap: 6 }}>
-              <Text style={{ fontSize: fs(13), fontWeight: '700', color: COLORS.gray[700] }}>
-                {lang === 'en' ? 'Gender' : 'Giới tính'}
-              </Text>
-              <View style={{ flexDirection: 'row', gap: 10 }}>
-                {[
-                  { id: 'male', label: 'Nam', label_en: 'Male' },
-                  { id: 'female', label: 'Nữ', label_en: 'Female' },
-                  { id: 'other', label: 'Khác', label_en: 'Other' },
-                ].map(g => (
-                  <TouchableOpacity
-                    key={g.id}
-                    activeOpacity={0.8}
-                    onPress={() => setGender(g.id as any)}
+                  <View
                     style={{
-                      flex: 1,
-                      paddingVertical: 10,
-                      borderRadius: 12,
+                      flexDirection: 'row',
                       alignItems: 'center',
-                      borderWidth: 1.5,
-                      borderColor: gender === g.id ? COLORS.primary : COLORS.gray[200],
-                      backgroundColor: gender === g.id ? COLORS.primaryLight : COLORS.gray[50],
+                      gap: 4,
+                      backgroundColor: '#ECFDF5',
+                      paddingHorizontal: 8,
+                      paddingVertical: 2,
+                      borderRadius: 6,
                     }}
                   >
-                    <Text
+                    <ShieldCheck size={12} color={COLORS.success} />
+                    <Text style={{ fontSize: fs(11), color: COLORS.success, fontWeight: '700' }}>
+                      {lang === 'en' ? 'OTP Verified' : 'Đã xác thực OTP'}
+                    </Text>
+                  </View>
+                </View>
+                <TextInput
+                  style={{
+                    borderWidth: 1.5,
+                    borderColor: COLORS.gray[200],
+                    borderRadius: 14,
+                    padding: 14,
+                    fontSize: fs(15),
+                    color: COLORS.gray[500],
+                    backgroundColor: COLORS.gray[100],
+                  }}
+                  value={myProfile?.phone || user?.phone || ''}
+                  placeholder={
+                    uLoading
+                      ? lang === 'en'
+                        ? 'Loading phone...'
+                        : 'Đang tải số điện thoại...'
+                      : ''
+                  }
+                  editable={false}
+                />
+              </View>
+
+              <View style={{ gap: 6 }}>
+                <Text style={{ fontSize: fs(13), fontWeight: '700', color: COLORS.gray[700] }}>
+                  {lang === 'en'
+                    ? 'Contact Email (Electronic Invoices)'
+                    : 'Email liên hệ (Nhận hóa đơn điện tử)'}
+                </Text>
+                <TextInput
+                  style={{
+                    borderWidth: 1.5,
+                    borderColor: COLORS.gray[200],
+                    borderRadius: 14,
+                    padding: 14,
+                    fontSize: fs(15),
+                    color: COLORS.gray[900],
+                    backgroundColor: COLORS.gray[50],
+                  }}
+                  placeholder="VD: nguyenvana@gmail.com"
+                  value={email}
+                  onChangeText={setEmail}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  placeholderTextColor={COLORS.gray[400]}
+                />
+              </View>
+
+              {/* Giới tính */}
+              <View style={{ gap: 6 }}>
+                <Text style={{ fontSize: fs(13), fontWeight: '700', color: COLORS.gray[700] }}>
+                  {lang === 'en' ? 'Gender' : 'Giới tính'}
+                </Text>
+                <View style={{ flexDirection: 'row', gap: 10 }}>
+                  {[
+                    { id: 'male', label: 'Nam', label_en: 'Male' },
+                    { id: 'female', label: 'Nữ', label_en: 'Female' },
+                    { id: 'other', label: 'Khác', label_en: 'Other' },
+                  ].map(g => (
+                    <TouchableOpacity
+                      key={g.id}
+                      activeOpacity={0.8}
+                      onPress={() => setGender(g.id as any)}
                       style={{
-                        fontSize: fs(13.5),
-                        fontWeight: '700',
-                        color: gender === g.id ? COLORS.primary : COLORS.gray[700],
+                        flex: 1,
+                        paddingVertical: 10,
+                        borderRadius: 12,
+                        alignItems: 'center',
+                        borderWidth: 1.5,
+                        borderColor: gender === g.id ? COLORS.primary : COLORS.gray[200],
+                        backgroundColor: gender === g.id ? COLORS.primaryLight : COLORS.gray[50],
                       }}
                     >
-                      {lang === 'en' ? g.label_en : g.label}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
+                      <Text
+                        style={{
+                          fontSize: fs(13.5),
+                          fontWeight: '700',
+                          color: gender === g.id ? COLORS.primary : COLORS.gray[700],
+                        }}
+                      >
+                        {lang === 'en' ? g.label_en : g.label}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
               </View>
-            </View>
-          </Card>
+            </Card>
           )}
 
           {/* ── 3. CÁ NHÂN HÓA DÀNH CHO THỢ HOẶC KHÁCH HÀNG ─────────────── */}
@@ -771,7 +830,9 @@ export default function EditProfileScreen() {
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                 <Briefcase size={18} color={COLORS.primary} />
                 <Text style={{ fontSize: fs(15), fontWeight: '800', color: COLORS.gray[900] }}>
-                  {lang === 'en' ? 'Professional Profile & Work Area' : 'Hồ sơ nghề nghiệp & Khu vực làm việc'}
+                  {lang === 'en'
+                    ? 'Professional Profile & Work Area'
+                    : 'Hồ sơ nghề nghiệp & Khu vực làm việc'}
                 </Text>
               </View>
 
@@ -811,7 +872,11 @@ export default function EditProfileScreen() {
                     color: COLORS.gray[900],
                     backgroundColor: COLORS.gray[50],
                   }}
-                  placeholder={lang === 'en' ? 'e.g. District 1, District 3, Binh Thanh...' : 'VD: Quận 1, Quận 3, Bình Thạnh...'}
+                  placeholder={
+                    lang === 'en'
+                      ? 'e.g. District 1, District 3, Binh Thanh...'
+                      : 'VD: Quận 1, Quận 3, Bình Thạnh...'
+                  }
                   value={workingAreas}
                   onChangeText={setWorkingAreas}
                   placeholderTextColor={COLORS.gray[400]}
@@ -897,7 +962,10 @@ export default function EditProfileScreen() {
                         Toast.show({
                           type: 'error',
                           text1: lang === 'en' ? 'Could not get location' : 'Không lấy được vị trí',
-                          text2: lang === 'en' ? 'Please enable GPS / Location services on your phone' : 'Vui lòng bật GPS/Dịch vụ vị trí trên điện thoại',
+                          text2:
+                            lang === 'en'
+                              ? 'Please enable GPS / Location services on your phone'
+                              : 'Vui lòng bật GPS/Dịch vụ vị trí trên điện thoại',
                         });
                       }
                     } finally {
@@ -922,7 +990,13 @@ export default function EditProfileScreen() {
                     <Navigation size={16} color={COLORS.primary} />
                   )}
                   <Text style={{ fontSize: fs(14), fontWeight: '800', color: COLORS.primary }}>
-                    {gpsLoading ? (lang === 'en' ? 'Getting location...' : 'Đang lấy vị trí...') : (lang === 'en' ? 'Get current GPS location' : 'Lấy vị trí GPS hiện tại')}
+                    {gpsLoading
+                      ? lang === 'en'
+                        ? 'Getting location...'
+                        : 'Đang lấy vị trí...'
+                      : lang === 'en'
+                        ? 'Get current GPS location'
+                        : 'Lấy vị trí GPS hiện tại'}
                   </Text>
                 </TouchableOpacity>
 
@@ -935,7 +1009,9 @@ export default function EditProfileScreen() {
 
               <View style={{ gap: 6 }}>
                 <Text style={{ fontSize: fs(13), fontWeight: '700', color: COLORS.gray[700] }}>
-                  {lang === 'en' ? 'Bio / Introduction (Shown to customers)' : 'Lời giới thiệu bản thân (Hiển thị tới khách hàng)'}
+                  {lang === 'en'
+                    ? 'Bio / Introduction (Shown to customers)'
+                    : 'Lời giới thiệu bản thân (Hiển thị tới khách hàng)'}
                 </Text>
                 <TextInput
                   style={{
@@ -949,7 +1025,11 @@ export default function EditProfileScreen() {
                     minHeight: 80,
                     textAlignVertical: 'top',
                   }}
-                  placeholder={lang === 'en' ? 'Introduce your skills, tools, and work ethic...' : 'Giới thiệu về kỹ năng, đồ nghề và phong cách làm việc...'} 
+                  placeholder={
+                    lang === 'en'
+                      ? 'Introduce your skills, tools, and work ethic...'
+                      : 'Giới thiệu về kỹ năng, đồ nghề và phong cách làm việc...'
+                  }
                   value={bio}
                   onChangeText={setBio}
                   multiline
@@ -1078,7 +1158,13 @@ export default function EditProfileScreen() {
                     <Navigation size={16} color={COLORS.primary} />
                   )}
                   <Text style={{ fontSize: fs(14), fontWeight: '800', color: COLORS.primary }}>
-                    {customerGpsLoading ? (lang === 'en' ? 'Getting location...' : 'Đang lấy vị trí...') : (lang === 'en' ? 'Get current GPS location' : 'Lấy vị trí GPS hiện tại')}
+                    {customerGpsLoading
+                      ? lang === 'en'
+                        ? 'Getting location...'
+                        : 'Đang lấy vị trí...'
+                      : lang === 'en'
+                        ? 'Get current GPS location'
+                        : 'Lấy vị trí GPS hiện tại'}
                   </Text>
                 </TouchableOpacity>
 
@@ -1116,7 +1202,9 @@ export default function EditProfileScreen() {
 
               <View style={{ gap: 6 }}>
                 <Text style={{ fontSize: fs(13), fontWeight: '700', color: COLORS.gray[700] }}>
-                  {lang === 'en' ? 'Arrival Notes for Helper' : 'Ghi chú chỉ dẫn cho Thợ khi đến nhà'}
+                  {lang === 'en'
+                    ? 'Arrival Notes for Helper'
+                    : 'Ghi chú chỉ dẫn cho Thợ khi đến nhà'}
                 </Text>
                 <TextInput
                   style={{
@@ -1130,7 +1218,11 @@ export default function EditProfileScreen() {
                     minHeight: 70,
                     textAlignVertical: 'top',
                   }}
-                  placeholder={lang === 'en' ? 'e.g. Park in basement B1, ring apartment bell 12.04...' : 'VD: Gửi xe ở hầm B1, bấm chuông số 12.04...'}
+                  placeholder={
+                    lang === 'en'
+                      ? 'e.g. Park in basement B1, ring apartment bell 12.04...'
+                      : 'VD: Gửi xe ở hầm B1, bấm chuông số 12.04...'
+                  }
                   value={homeNote}
                   onChangeText={setHomeNote}
                   multiline
@@ -1144,10 +1236,16 @@ export default function EditProfileScreen() {
           <Button
             title={
               saving
-                ? (lang === 'en' ? 'Saving...' : 'Đang lưu...')
+                ? lang === 'en'
+                  ? 'Saving...'
+                  : 'Đang lưu...'
                 : isHelper && activeTab === 'career'
-                  ? (lang === 'en' ? 'Save Career Profile' : 'Lưu hồ sơ nghề nghiệp')
-                  : (lang === 'en' ? 'Save Profile Details' : 'Lưu thông tin hồ sơ')
+                  ? lang === 'en'
+                    ? 'Save Career Profile'
+                    : 'Lưu hồ sơ nghề nghiệp'
+                  : lang === 'en'
+                    ? 'Save Profile Details'
+                    : 'Lưu thông tin hồ sơ'
             }
             loading={saving}
             onPress={handleSave}

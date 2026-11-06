@@ -108,10 +108,16 @@ function LiveTrackingMapComponent({
               if (disposed) return;
               const reason =
                 err?.code === 1
-                  ? (lang === 'en' ? 'Location permission denied' : 'Quyền vị trí bị từ chối')
+                  ? lang === 'en'
+                    ? 'Location permission denied'
+                    : 'Quyền vị trí bị từ chối'
                   : err?.code === 3
-                    ? (lang === 'en' ? 'GPS timeout' : 'Hết thời gian chờ GPS')
-                    : (lang === 'en' ? 'Device GPS error' : 'Lỗi GPS thiết bị');
+                    ? lang === 'en'
+                      ? 'GPS timeout'
+                      : 'Hết thời gian chờ GPS'
+                    : lang === 'en'
+                      ? 'Device GPS error'
+                      : 'Lỗi GPS thiết bị';
               setGpsError({ error: true, reason });
             },
             { enableHighAccuracy: true, timeout: 10000, maximumAge: 5000 },
@@ -394,7 +400,11 @@ function LiveTrackingMapComponent({
               setRetry(value => value + 1);
             }}
           >
-            <Text>{lang === 'en' ? 'Unable to load map. Tap to retry.' : 'Không tải được bản đồ. Chạm để thử lại.'}</Text>
+            <Text>
+              {lang === 'en'
+                ? 'Unable to load map. Tap to retry.'
+                : 'Không tải được bản đồ. Chạm để thử lại.'}
+            </Text>
           </TouchableOpacity>
         )}
       </View>

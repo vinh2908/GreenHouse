@@ -264,7 +264,9 @@ export function CustomTabBar({
                       justifyContent: 'center',
                     }}
                   >
-                    <Text style={{ color: '#FFFFFF', fontSize: 10, fontWeight: '800', lineHeight: 12 }}>
+                    <Text
+                      style={{ color: '#FFFFFF', fontSize: 10, fontWeight: '800', lineHeight: 12 }}
+                    >
                       {unreadMessagesCount > 99 ? '99+' : unreadMessagesCount}
                     </Text>
                   </View>

@@ -24,7 +24,7 @@ html,body,#map{height:100%;width:100%;margin:0;background:#f1f5f9;font-family:sy
 <div class="goong-attribution">© <a href="https://goong.io" target="_blank" rel="noopener">Goong Maps</a></div>
 <div id="info" role="status">${isEn ? 'Loading map…' : 'Đang tải bản đồ…'}</div>
 <div id="error-card"><span id="error-msg">${isEn ? 'Unable to load Goong map.' : 'Không tải được bản đồ Goong.'}</span><button class="map-retry-btn" onclick="window.location.reload()">${isEn ? 'Retry' : 'Thử lại'}</button></div>
-<button id="recenter" aria-label="${isEn ? 'View entire route' : 'Xem toàn bộ hành trình'}">🎯</button>
+<button id="recenter" aria-label="${isEn ? 'View entire route' : 'Xem toàn bộ hành trình'}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1f2937" stroke-width="2.5"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="2" fill="#1f2937"/><line x1="12" y1="2" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22"/><line x1="2" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="22" y2="12"/></svg></button>
 <script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
 <script>
 (function(){
@@ -189,7 +189,9 @@ html,body,#map{height:100%;width:100%;margin:0;background:#f1f5f9;font-family:sy
   function createPinElement(kind){
     var el = document.createElement('div');
     el.className = 'pin ' + kind;
-    el.innerHTML = kind === 'home' ? '🏠' : '🛵';
+    el.innerHTML = kind === 'home'
+      ? '<svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"#ffffff\" stroke-width=\"2.5\"><path d=\"M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z\"/><polyline points=\"9 22 9 12 15 12 15 22\"/></svg>'
+      : '<svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"#ffffff\" stroke-width=\"2.5\"><polygon points=\"3 11 22 2 13 21 11 13 3 11\"/></svg>';
     return el;
   }
 

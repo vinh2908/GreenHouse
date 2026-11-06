@@ -369,7 +369,9 @@ export function DurationBottomSheet({
 
           {/* Quick preset duration chips */}
           <View style={styles.sheetChipsContainer}>
-            <Text style={styles.sheetChipsLabel}>{lang === 'en' ? 'Quick suggestions:' : 'Gợi ý nhanh:'}</Text>
+            <Text style={styles.sheetChipsLabel}>
+              {lang === 'en' ? 'Quick suggestions:' : 'Gợi ý nhanh:'}
+            </Text>
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
@@ -404,10 +406,16 @@ export function DurationBottomSheet({
           {/* Footer Note */}
           <Text style={[styles.sheetNote, isUnderMinDuration && styles.sheetNoteErr]}>
             {isUnderMinDuration
-              ? (lang === 'en' ? 'Minimum duration is 15 minutes — please select more time.' : 'Thời lượng tối thiểu là 15 phút — chọn thêm giờ hoặc phút.')
+              ? lang === 'en'
+                ? 'Minimum duration is 15 minutes — please select more time.'
+                : 'Thời lượng tối thiểu là 15 phút — chọn thêm giờ hoặc phút.'
               : isMaxDuration
-                ? (lang === 'en' ? 'Maximum booking duration: 12 hours.' : 'Mức tối đa cho một lần đặt: 12 giờ.')
-                : (lang === 'en' ? 'Flexible selection: 0–12 hours, 00–59 minutes.' : 'Chỉnh tự do: giờ 0–12, phút 00–59.')}
+                ? lang === 'en'
+                  ? 'Maximum booking duration: 12 hours.'
+                  : 'Mức tối đa cho một lần đặt: 12 giờ.'
+                : lang === 'en'
+                  ? 'Flexible selection: 0–12 hours, 00–59 minutes.'
+                  : 'Chỉnh tự do: giờ 0–12, phút 00–59.'}
           </Text>
         </View>
       </View>

@@ -30,22 +30,45 @@ import { MONTHLY_STATUS_META, describeMonthlySchedule, personName } from '../mon
 
 const fmt = (n?: number) => new Intl.NumberFormat('vi-VN').format(n ?? 0);
 
-const ATT_META: Record<AttendanceStatus, { label: string; label_en: string; bg: string; color: string }> = {
+const ATT_META: Record<
+  AttendanceStatus,
+  { label: string; label_en: string; bg: string; color: string }
+> = {
   checked_in: {
     label: 'Đã điểm danh — chờ xác nhận',
     label_en: 'Checked in — pending',
     bg: COLORS.warningLight,
     color: COLORS.warning,
   },
-  confirmed: { label: 'Đã xác nhận có mặt', label_en: 'Confirmed present', bg: COLORS.successLight, color: COLORS.success },
+  confirmed: {
+    label: 'Đã xác nhận có mặt',
+    label_en: 'Confirmed present',
+    bg: COLORS.successLight,
+    color: COLORS.success,
+  },
   absent: { label: 'Vắng', label_en: 'Absent', bg: COLORS.errorLight, color: COLORS.error },
   leave: { label: 'Nghỉ phép', label_en: 'On leave', bg: '#EFF6FF', color: '#2563EB' },
 };
 
 const LEAVE_META: Record<string, { label: string; label_en: string; bg: string; color: string }> = {
-  pending: { label: 'Chờ duyệt', label_en: 'Pending', bg: COLORS.warningLight, color: COLORS.warning },
-  approved: { label: 'Đã duyệt', label_en: 'Approved', bg: COLORS.successLight, color: COLORS.success },
-  rejected: { label: 'Đã từ chối', label_en: 'Rejected', bg: COLORS.errorLight, color: COLORS.error },
+  pending: {
+    label: 'Chờ duyệt',
+    label_en: 'Pending',
+    bg: COLORS.warningLight,
+    color: COLORS.warning,
+  },
+  approved: {
+    label: 'Đã duyệt',
+    label_en: 'Approved',
+    bg: COLORS.successLight,
+    color: COLORS.success,
+  },
+  rejected: {
+    label: 'Đã từ chối',
+    label_en: 'Rejected',
+    bg: COLORS.errorLight,
+    color: COLORS.error,
+  },
 };
 
 export default function MonthlyContractDetailScreen() {
@@ -113,11 +136,20 @@ export default function MonthlyContractDetailScreen() {
   const handleRequestLeave = async () => {
     if (!id) return;
     if (!/^\d{4}-\d{2}-\d{2}$/.test(leaveDate.trim())) {
-      Toast.show({ type: 'error', text1: lang === 'en' ? 'Leave date must be in YYYY-MM-DD format (e.g. 2026-11-05)' : 'Ngày nghỉ phải có dạng YYYY-MM-DD (VD: 2026-11-05)' });
+      Toast.show({
+        type: 'error',
+        text1:
+          lang === 'en'
+            ? 'Leave date must be in YYYY-MM-DD format (e.g. 2026-11-05)'
+            : 'Ngày nghỉ phải có dạng YYYY-MM-DD (VD: 2026-11-05)',
+      });
       return;
     }
     if (leaveReason.trim().length < 3) {
-      Toast.show({ type: 'error', text1: lang === 'en' ? 'Please enter leave reason' : 'Vui lòng nhập lý do xin nghỉ' });
+      Toast.show({
+        type: 'error',
+        text1: lang === 'en' ? 'Please enter leave reason' : 'Vui lòng nhập lý do xin nghỉ',
+      });
       return;
     }
     try {
@@ -197,7 +229,15 @@ export default function MonthlyContractDetailScreen() {
             {lang === 'en' ? 'Contract Information' : 'Thông tin hợp đồng'}
           </Text>
           <InfoRow
-            label={isHelper ? (lang === 'en' ? 'Customer' : 'Khách hàng') : (lang === 'en' ? 'Helper' : 'Thợ thực hiện')}
+            label={
+              isHelper
+                ? lang === 'en'
+                  ? 'Customer'
+                  : 'Khách hàng'
+                : lang === 'en'
+                  ? 'Helper'
+                  : 'Thợ thực hiện'
+            }
             value={personName(partner)}
           />
           <InfoRow
@@ -218,7 +258,9 @@ export default function MonthlyContractDetailScreen() {
             value={`${dayjs(contract.start_date).format('DD/MM/YYYY')}${
               contract.end_date
                 ? ` → ${dayjs(contract.end_date).format('DD/MM/YYYY')}`
-                : (lang === 'en' ? ' → Ongoing' : ' → Chưa ấn định ngày kết thúc')
+                : lang === 'en'
+                  ? ' → Ongoing'
+                  : ' → Chưa ấn định ngày kết thúc'
             }`}
           />
           <View style={{ flexDirection: 'row', gap: 6, alignItems: 'flex-start' }}>
@@ -230,7 +272,8 @@ export default function MonthlyContractDetailScreen() {
           </View>
           {contract.end_reason && (
             <Text style={{ fontSize: fs(12.5), color: COLORS.gray[500] }}>
-              {lang === 'en' ? 'Reason for ending/cancelling: ' : 'Lý do kết thúc/hủy: '}{contract.end_reason}
+              {lang === 'en' ? 'Reason for ending/cancelling: ' : 'Lý do kết thúc/hủy: '}
+              {contract.end_reason}
             </Text>
           )}
         </Card>
@@ -239,7 +282,9 @@ export default function MonthlyContractDetailScreen() {
         {isHelper && contract.status === 'pending' && (
           <Card style={{ gap: 8 }}>
             <Text style={{ fontSize: fs(14.5), fontWeight: '800', color: COLORS.gray[900] }}>
-              {lang === 'en' ? 'Customer has invited you to this contract' : 'Khách hàng đang mời bạn ký hợp đồng này'}
+              {lang === 'en'
+                ? 'Customer has invited you to this contract'
+                : 'Khách hàng đang mời bạn ký hợp đồng này'}
             </Text>
             <View style={{ flexDirection: 'row', gap: 10 }}>
               <Button
@@ -268,7 +313,9 @@ export default function MonthlyContractDetailScreen() {
                 onPress={() =>
                   confirmDialog(
                     lang === 'en' ? 'Accept contract?' : 'Đồng ý hợp đồng?',
-                    lang === 'en' ? 'Contract will take effect immediately. Please check in on scheduled days.' : 'Hợp đồng sẽ có hiệu lực ngay. Bạn cần điểm danh đúng các buổi theo lịch.',
+                    lang === 'en'
+                      ? 'Contract will take effect immediately. Please check in on scheduled days.'
+                      : 'Hợp đồng sẽ có hiệu lực ngay. Bạn cần điểm danh đúng các buổi theo lịch.',
                     lang === 'en' ? 'Accept' : 'Đồng ý',
                     () =>
                       respond.mutate({ id: contract._id, path: 'respond', body: { accept: true } }),
@@ -282,11 +329,15 @@ export default function MonthlyContractDetailScreen() {
         {isHelper && isActive && (
           <Card style={{ gap: 8 }}>
             <Text style={{ fontSize: fs(14.5), fontWeight: '800', color: COLORS.gray[900] }}>
-              {lang === 'en' ? `Today's Attendance (${dayjs().format('DD/MM/YYYY')})` : `Điểm danh hôm nay (${dayjs().format('DD/MM/YYYY')})`}
+              {lang === 'en'
+                ? `Today's Attendance (${dayjs().format('DD/MM/YYYY')})`
+                : `Điểm danh hôm nay (${dayjs().format('DD/MM/YYYY')})`}
             </Text>
             {todayRecord ? (
               <Text style={{ fontSize: fs(13), color: COLORS.gray[600] }}>
-                {lang === 'en' ? `Today's status: ${ATT_META[todayRecord].label_en}` : `Trạng thái hôm nay: ${ATT_META[todayRecord].label}`}
+                {lang === 'en'
+                  ? `Today's status: ${ATT_META[todayRecord].label_en}`
+                  : `Trạng thái hôm nay: ${ATT_META[todayRecord].label}`}
               </Text>
             ) : isScheduledToday ? (
               <Button
@@ -296,7 +347,9 @@ export default function MonthlyContractDetailScreen() {
               />
             ) : (
               <Text style={{ fontSize: fs(13), color: COLORS.gray[600] }}>
-                {lang === 'en' ? 'Today is not in the contract working schedule.' : 'Hôm nay không nằm trong lịch làm việc của hợp đồng.'}
+                {lang === 'en'
+                  ? 'Today is not in the contract working schedule.'
+                  : 'Hôm nay không nằm trong lịch làm việc của hợp đồng.'}
               </Text>
             )}
           </Card>
@@ -312,7 +365,9 @@ export default function MonthlyContractDetailScreen() {
               onPress={() =>
                 confirmDialog(
                   lang === 'en' ? 'Cancel contract?' : 'Hủy hợp đồng?',
-                  lang === 'en' ? 'Contract will terminate immediately and other party will be notified.' : 'Hợp đồng sẽ dừng ngay và bên còn lại được thông báo.',
+                  lang === 'en'
+                    ? 'Contract will terminate immediately and other party will be notified.'
+                    : 'Hợp đồng sẽ dừng ngay và bên còn lại được thông báo.',
                   lang === 'en' ? 'Cancel contract' : 'Hủy hợp đồng',
                   () => cancel.mutate({ id: contract._id, path: 'cancel' }),
                   true,
@@ -328,7 +383,9 @@ export default function MonthlyContractDetailScreen() {
                 onPress={() =>
                   confirmDialog(
                     lang === 'en' ? 'End contract?' : 'Kết thúc hợp đồng?',
-                    lang === 'en' ? 'You can still settle unsettled months after ending.' : 'Bạn vẫn có thể chốt lương các tháng chưa chốt sau khi kết thúc.',
+                    lang === 'en'
+                      ? 'You can still settle unsettled months after ending.'
+                      : 'Bạn vẫn có thể chốt lương các tháng chưa chốt sau khi kết thúc.',
                     lang === 'en' ? 'End' : 'Kết thúc',
                     () => end.mutate({ id: contract._id, path: 'end', body: {} }),
                     true,
@@ -343,7 +400,9 @@ export default function MonthlyContractDetailScreen() {
         <Card style={{ gap: 10 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
             <Text style={{ flex: 1, fontSize: fs(15), fontWeight: '800', color: COLORS.gray[900] }}>
-              {lang === 'en' ? `Attendance for Month ${dayjs(`${month}-01`).format('MM/YYYY')}` : `Điểm danh tháng ${dayjs(`${month}-01`).format('MM/YYYY')}`}
+              {lang === 'en'
+                ? `Attendance for Month ${dayjs(`${month}-01`).format('MM/YYYY')}`
+                : `Điểm danh tháng ${dayjs(`${month}-01`).format('MM/YYYY')}`}
             </Text>
             <TouchableOpacity
               onPress={() => setMonth(dayjs(`${month}-01`).subtract(1, 'month').format('YYYY-MM'))}
@@ -373,7 +432,9 @@ export default function MonthlyContractDetailScreen() {
 
           {(attendance?.scheduled_dates ?? []).length === 0 ? (
             <Text style={{ fontSize: fs(13), color: COLORS.gray[500] }}>
-              {lang === 'en' ? 'No work sessions scheduled for this month.' : 'Tháng này không có buổi làm nào theo lịch của hợp đồng.'}
+              {lang === 'en'
+                ? 'No work sessions scheduled for this month.'
+                : 'Tháng này không có buổi làm nào theo lịch của hợp đồng.'}
             </Text>
           ) : (
             (attendance?.scheduled_dates ?? []).map(date => {
@@ -393,7 +454,12 @@ export default function MonthlyContractDetailScreen() {
                   }}
                 >
                   <Text
-                    style={{ width: 118, fontSize: fs(13), fontWeight: '700', color: COLORS.gray[800] }}
+                    style={{
+                      width: 118,
+                      fontSize: fs(13),
+                      fontWeight: '700',
+                      color: COLORS.gray[800],
+                    }}
                   >
                     {dayjs(date).format('ddd, DD/MM')}
                     {isToday ? (lang === 'en' ? ' • Today' : ' • Hôm nay') : ''}
@@ -408,8 +474,12 @@ export default function MonthlyContractDetailScreen() {
                     ) : (
                       <Text style={{ fontSize: fs(12.5), color: COLORS.gray[500] }}>
                         {isPast
-                          ? (lang === 'en' ? 'No check-in (counted as absent at settlement)' : 'Không có điểm danh (tính vắng khi chốt lương)')
-                          : (lang === 'en' ? 'Upcoming' : 'Chưa tới')}
+                          ? lang === 'en'
+                            ? 'No check-in (counted as absent at settlement)'
+                            : 'Không có điểm danh (tính vắng khi chốt lương)'
+                          : lang === 'en'
+                            ? 'Upcoming'
+                            : 'Chưa tới'}
                       </Text>
                     )}
                   </View>
@@ -475,14 +545,26 @@ export default function MonthlyContractDetailScreen() {
               >
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                   <Text
-                    style={{ flex: 1, fontSize: fs(13.5), fontWeight: '700', color: COLORS.gray[800] }}
+                    style={{
+                      flex: 1,
+                      fontSize: fs(13.5),
+                      fontWeight: '700',
+                      color: COLORS.gray[800],
+                    }}
                   >
-                    {lang === 'en' ? `Leave on ${dayjs(l.date).format('DD/MM/YYYY')}` : `Nghỉ ngày ${dayjs(l.date).format('DD/MM/YYYY')}`}
+                    {lang === 'en'
+                      ? `Leave on ${dayjs(l.date).format('DD/MM/YYYY')}`
+                      : `Nghỉ ngày ${dayjs(l.date).format('DD/MM/YYYY')}`}
                   </Text>
-                  <Badge label={lang === 'en' ? m.label_en : m.label} color={m.bg} textColor={m.color} />
+                  <Badge
+                    label={lang === 'en' ? m.label_en : m.label}
+                    color={m.bg}
+                    textColor={m.color}
+                  />
                 </View>
                 <Text style={{ fontSize: fs(12.5), color: COLORS.gray[600] }}>
-                  {lang === 'en' ? 'Reason: ' : 'Lý do: '}{l.reason}
+                  {lang === 'en' ? 'Reason: ' : 'Lý do: '}
+                  {l.reason}
                 </Text>
                 {!isHelper && l.status === 'pending' && (
                   <View style={{ flexDirection: 'row', gap: 8, marginTop: 2 }}>
@@ -533,7 +615,11 @@ export default function MonthlyContractDetailScreen() {
               <TextInput
                 value={leaveDate}
                 onChangeText={setLeaveDate}
-                placeholder={lang === 'en' ? 'Leave date (YYYY-MM-DD), e.g. 2026-11-05' : 'Ngày nghỉ (YYYY-MM-DD), VD: 2026-11-05'}
+                placeholder={
+                  lang === 'en'
+                    ? 'Leave date (YYYY-MM-DD), e.g. 2026-11-05'
+                    : 'Ngày nghỉ (YYYY-MM-DD), VD: 2026-11-05'
+                }
                 style={{
                   borderWidth: 1,
                   borderColor: COLORS.gray[200],
@@ -572,7 +658,9 @@ export default function MonthlyContractDetailScreen() {
         {(isActive || contract.status === 'ended') && (
           <Card style={{ gap: 8 }}>
             <Text style={{ fontSize: fs(15), fontWeight: '800', color: COLORS.gray[900] }}>
-              {lang === 'en' ? `Wage Settlement for Month ${dayjs(`${month}-01`).format('MM/YYYY')}` : `Chốt lương tháng ${dayjs(`${month}-01`).format('MM/YYYY')}`}
+              {lang === 'en'
+                ? `Wage Settlement for Month ${dayjs(`${month}-01`).format('MM/YYYY')}`
+                : `Chốt lương tháng ${dayjs(`${month}-01`).format('MM/YYYY')}`}
             </Text>
             {settlement ? (
               <>
@@ -597,7 +685,11 @@ export default function MonthlyContractDetailScreen() {
                   value={`${fmt(settlement.gross_amount)}₫`}
                 />
                 <InfoRow
-                  label={lang === 'en' ? `Platform fee (${contract.platform_fee_percent ?? 15}%)` : `Phí sàn (${contract.platform_fee_percent ?? 15}%)`}
+                  label={
+                    lang === 'en'
+                      ? `Platform fee (${contract.platform_fee_percent ?? 15}%)`
+                      : `Phí sàn (${contract.platform_fee_percent ?? 15}%)`
+                  }
                   value={`−${fmt(settlement.platform_fee)}₫`}
                 />
                 <InfoRow
@@ -607,7 +699,11 @@ export default function MonthlyContractDetailScreen() {
                 />
                 {settlement.status === 'settled' ? (
                   <Badge
-                    label={lang === 'en' ? `Wages settled${settlement.settled_at ? ` · ${dayjs(settlement.settled_at).format('DD/MM/YYYY HH:mm')}` : ''}` : `Đã chốt lương${settlement.settled_at ? ` · ${dayjs(settlement.settled_at).format('DD/MM/YYYY HH:mm')}` : ''}`}
+                    label={
+                      lang === 'en'
+                        ? `Wages settled${settlement.settled_at ? ` · ${dayjs(settlement.settled_at).format('DD/MM/YYYY HH:mm')}` : ''}`
+                        : `Đã chốt lương${settlement.settled_at ? ` · ${dayjs(settlement.settled_at).format('DD/MM/YYYY HH:mm')}` : ''}`
+                    }
                     color={COLORS.successLight}
                     textColor={COLORS.success}
                   />
@@ -628,7 +724,9 @@ export default function MonthlyContractDetailScreen() {
                   />
                 ) : (
                   <Text style={{ fontSize: fs(12.5), color: COLORS.gray[500] }}>
-                    {lang === 'en' ? 'Customer will settle wages after confirming all sessions in the month.' : 'Khách hàng sẽ chốt lương sau khi xác nhận đủ các buổi trong tháng.'}
+                    {lang === 'en'
+                      ? 'Customer will settle wages after confirming all sessions in the month.'
+                      : 'Khách hàng sẽ chốt lương sau khi xác nhận đủ các buổi trong tháng.'}
                   </Text>
                 )}
               </>

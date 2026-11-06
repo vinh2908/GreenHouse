@@ -52,7 +52,9 @@ class RootErrorBoundary extends Component<
         <View
           style={{ flex: 1, backgroundColor: '#FEF2F2', padding: 24, justifyContent: 'center' }}
         >
-          <Text style={{ fontSize: fs(20), fontWeight: 'bold', color: '#991B1B', marginBottom: 12 }}>
+          <Text
+            style={{ fontSize: fs(20), fontWeight: 'bold', color: '#991B1B', marginBottom: 12 }}
+          >
             Root Error / Lỗi hiển thị màn hình
           </Text>
           <Text style={{ fontSize: fs(14), color: '#B91C1C', marginBottom: 16 }}>

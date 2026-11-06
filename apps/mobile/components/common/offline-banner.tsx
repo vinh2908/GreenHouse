@@ -1,6 +1,7 @@
 // components/common/offline-banner.tsx — Banner chế độ offline (Feature 16)
 // Hiện khi mất mạng (đang xem dữ liệu đã lưu) hoặc còn thao tác chờ đồng bộ.
 import { View, Text } from 'react-native';
+import { WifiOff, Clock } from 'lucide-react-native';
 import { useOfflineStore } from '@/stores/offline.store';
 import { useTranslation } from '@/hooks/use-i18n';
 
@@ -34,16 +35,24 @@ export function OfflineBanner() {
       }}
     >
       {!isOnline && (
-        <Text style={{ fontSize: fs(12.5), fontWeight: '700', color: '#92400E' }}>
-          {lang === 'en' ? '📴 Offline mode — viewing saved data' : '📴 Chế độ offline — đang xem dữ liệu đã lưu'}
-        </Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+          <WifiOff size={14} color="#92400E" />
+          <Text style={{ fontSize: fs(12.5), fontWeight: '700', color: '#92400E' }}>
+            {lang === 'en'
+              ? 'Offline mode — viewing saved data'
+              : 'Chế độ offline — đang xem dữ liệu đã lưu'}
+          </Text>
+        </View>
       )}
       {pendingCount > 0 && (
-        <Text style={{ fontSize: fs(12.5), fontWeight: '600', color: '#92400E' }}>
-          {lang === 'en'
-            ? `⏳ ${pendingCount} operation(s) pending sync`
-            : `⏳ ${pendingCount} thao tác đang chờ đồng bộ`}
-        </Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+          <Clock size={14} color="#92400E" />
+          <Text style={{ fontSize: fs(12.5), fontWeight: '600', color: '#92400E' }}>
+            {lang === 'en'
+              ? `${pendingCount} operation(s) pending sync`
+              : `${pendingCount} thao tác đang chờ đồng bộ`}
+          </Text>
+        </View>
       )}
     </View>
   );

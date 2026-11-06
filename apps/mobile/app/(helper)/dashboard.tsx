@@ -68,15 +68,22 @@ export default function HelperDashboardScreen() {
   // Stored login payload has no avatar — prefer the full profile from the API
   const { data: myProfile, refetch: refetchMyProfile } = useMyProfile();
   const user = myProfile ?? storedUser;
-  const { data: profile, isLoading: pLoading, isError: pError, refetch: refetchProfile } = useHelperProfile();
-  const { data: availableJobs, isError: aError, refetch: refetchJobs } = useAvailableJobs(
-    undefined,
-    1,
-    profile?.verification_status === 'approved',
-  );
-  const { data: myJobs, isError: mError, refetch: refetchMyJobs } = useHelperJobs(
-    'confirmed,helper_on_the_way,helper_arrived,in_progress',
-  );
+  const {
+    data: profile,
+    isLoading: pLoading,
+    isError: pError,
+    refetch: refetchProfile,
+  } = useHelperProfile();
+  const {
+    data: availableJobs,
+    isError: aError,
+    refetch: refetchJobs,
+  } = useAvailableJobs(undefined, 1, profile?.verification_status === 'approved');
+  const {
+    data: myJobs,
+    isError: mError,
+    refetch: refetchMyJobs,
+  } = useHelperJobs('confirmed,helper_on_the_way,helper_arrived,in_progress');
   const { data: wallet, isLoading: wLoading } = useWallet();
   // Lần mount đầu (chưa có cache): isLoading=true → gate các khu hiển thị số
   // liệu/banner/công tắc bằng skeleton thay vì fallback 0 giả. Khi đã có cache
@@ -113,7 +120,7 @@ export default function HelperDashboardScreen() {
       setSosBroadcast(data);
       Toast.show({
         type: 'error',
-        text1: '🚨 CỨU HỘ KHẨN CẤP SOS GẦN BẠN!',
+        text1: 'CỨU HỘ KHẨN CẤP SOS GẦN BẠN!',
         text2: `${data.title} tại ${data.district}. Phụ phí +${data.surcharge?.toLocaleString()}đ`,
         visibilityTime: 10000,
       });
@@ -812,8 +819,12 @@ export default function HelperDashboardScreen() {
                         >
                           {job.title}
                         </Text>
-                        <Text style={{ fontSize: fs(12), color: COLORS.primary, fontWeight: '700' }}>
-                          {dayjs(job.created_at).locale(lang === 'en' ? 'en' : 'vi').fromNow()}
+                        <Text
+                          style={{ fontSize: fs(12), color: COLORS.primary, fontWeight: '700' }}
+                        >
+                          {dayjs(job.created_at)
+                            .locale(lang === 'en' ? 'en' : 'vi')
+                            .fromNow()}
                         </Text>
                       </View>
 
@@ -825,10 +836,7 @@ export default function HelperDashboardScreen() {
                           flexWrap: 'wrap',
                         }}
                       >
-                        <Badge
-                          label={tService(job.service_id) || t('common_service')}
-                          size="sm"
-                        />
+                        <Badge label={tService(job.service_id) || t('common_service')} size="sm" />
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                           <MapPin size={12} color={COLORS.gray[500]} />
                           <Text style={{ fontSize: fs(13), color: COLORS.gray[600] }}>
@@ -860,7 +868,9 @@ export default function HelperDashboardScreen() {
                             ? t('dash_quotes_count', { count: job.total_quotes_count })
                             : t('dash_no_quotes')}
                         </Text>
-                        <Text style={{ fontSize: fs(13), fontWeight: '800', color: COLORS.primary }}>
+                        <Text
+                          style={{ fontSize: fs(13), fontWeight: '800', color: COLORS.primary }}
+                        >
                           {t('dash_send_quote_now')}
                         </Text>
                       </View>
@@ -1013,7 +1023,12 @@ export default function HelperDashboardScreen() {
             >
               <Check size={22} color="#FFFFFF" strokeWidth={3} />
               <Text
-                style={{ color: '#FFFFFF', fontSize: fs(17), fontWeight: '900', letterSpacing: 0.5 }}
+                style={{
+                  color: '#FFFFFF',
+                  fontSize: fs(17),
+                  fontWeight: '900',
+                  letterSpacing: 0.5,
+                }}
               >
                 {acceptSos.isPending ? t('dash_sos_modal_matching') : t('dash_sos_modal_accept')}
               </Text>

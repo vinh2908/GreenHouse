@@ -134,7 +134,12 @@ export function Button({
       ) : (
         <>
           {icon}
-          <Text style={[{ color: textColor, fontSize, fontWeight: '700', letterSpacing: 0.2 }, textStyle]}>
+          <Text
+            style={[
+              { color: textColor, fontSize, fontWeight: '700', letterSpacing: 0.2 },
+              textStyle,
+            ]}
+          >
             {title}
           </Text>
         </>
@@ -157,7 +162,9 @@ export function Input({ label, error, leftIcon, rightIcon, style, ...props }: In
   return (
     <View style={{ gap: 6 }}>
       {label && (
-        <Text style={{ fontSize: fs(13), fontWeight: '600', color: COLORS.gray[700] }}>{label}</Text>
+        <Text style={{ fontSize: fs(13), fontWeight: '600', color: COLORS.gray[700] }}>
+          {label}
+        </Text>
       )}
       <View
         style={{
@@ -187,7 +194,9 @@ export function Input({ label, error, leftIcon, rightIcon, style, ...props }: In
         />
         {rightIcon}
       </View>
-      {error && <Text style={{ fontSize: fs(12), color: COLORS.error, marginTop: -2 }}>{error}</Text>}
+      {error && (
+        <Text style={{ fontSize: fs(12), color: COLORS.error, marginTop: -2 }}>{error}</Text>
+      )}
     </View>
   );
 }
@@ -349,7 +358,9 @@ export function SectionHeader({ title, action, onAction, subtitle }: SectionHead
         </Text>
         {action && (
           <TouchableOpacity activeOpacity={0.7} onPress={onAction}>
-            <Text style={{ fontSize: fs(13), color: COLORS.primary, fontWeight: '700' }}>{action}</Text>
+            <Text style={{ fontSize: fs(13), color: COLORS.primary, fontWeight: '700' }}>
+              {action}
+            </Text>
           </TouchableOpacity>
         )}
       </View>
@@ -364,14 +375,13 @@ export function SectionHeader({ title, action, onAction, subtitle }: SectionHead
 
 interface EmptyStateProps {
   icon?: React.ReactNode;
-  emoji?: string;
   title: string;
   subtitle?: string;
   action?: string;
   onAction?: () => void;
 }
 
-export function EmptyState({ icon, emoji, title, subtitle, action, onAction }: EmptyStateProps) {
+export function EmptyState({ icon, title, subtitle, action, onAction }: EmptyStateProps) {
   const { fs } = useTranslation();
   return (
     <View style={{ alignItems: 'center', paddingVertical: 36, paddingHorizontal: 20 }}>
@@ -388,14 +398,17 @@ export function EmptyState({ icon, emoji, title, subtitle, action, onAction }: E
       >
         {icon ? (
           icon
-        ) : emoji ? (
-          <Text style={{ fontSize: fs(36) }}>{emoji}</Text>
         ) : (
           <ClipboardList size={36} color={COLORS.gray[400]} />
         )}
       </View>
       <Text
-        style={{ fontSize: fs(16), fontWeight: '700', color: COLORS.gray[800], textAlign: 'center' }}
+        style={{
+          fontSize: fs(16),
+          fontWeight: '700',
+          color: COLORS.gray[800],
+          textAlign: 'center',
+        }}
       >
         {title}
       </Text>
@@ -443,7 +456,14 @@ export interface ErrorStateProps {
 export function ErrorState({ title, subtitle, onRetry, retryText }: ErrorStateProps) {
   const { fs, lang } = useTranslation();
   return (
-    <View style={{ alignItems: 'center', justifyContent: 'center', paddingVertical: 40, paddingHorizontal: 24 }}>
+    <View
+      style={{
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: 40,
+        paddingHorizontal: 24,
+      }}
+    >
       <View
         style={{
           width: 64,

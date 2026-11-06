@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { ArrowRight, CheckCircle2 } from 'lucide-react-native';
+import { ArrowRight, CheckCircle2, Home, Wrench } from 'lucide-react-native';
 import Toast from 'react-native-toast-message';
 import { useAuthStore } from '@/stores/auth.store';
 import { useTranslation } from '@/hooks/use-i18n';
@@ -27,12 +27,20 @@ export default function SelectRoleScreen() {
         type: 'success',
         text1:
           selectedRole === 'customer'
-            ? (lang === 'en' ? 'Welcome to Green House!' : 'Chào mừng bạn đến với Green House!')
-            : (lang === 'en' ? 'Welcome Green House Partner!' : 'Chào mừng đối tác Green House!'),
+            ? lang === 'en'
+              ? 'Welcome to Green House!'
+              : 'Chào mừng bạn đến với Green House!'
+            : lang === 'en'
+              ? 'Welcome Green House Partner!'
+              : 'Chào mừng đối tác Green House!',
         text2:
           selectedRole === 'customer'
-            ? (lang === 'en' ? 'Start searching for handy services' : 'Bắt đầu tìm kiếm dịch vụ tiện ích')
-            : (lang === 'en' ? 'Start receiving jobs and earning income' : 'Bắt đầu nhận công việc và gia tăng thu nhập'),
+            ? lang === 'en'
+              ? 'Start searching for handy services'
+              : 'Bắt đầu tìm kiếm dịch vụ tiện ích'
+            : lang === 'en'
+              ? 'Start receiving jobs and earning income'
+              : 'Bắt đầu nhận công việc và gia tăng thu nhập',
       });
 
       if (selectedRole === 'helper') {
@@ -99,7 +107,9 @@ export default function SelectRoleScreen() {
                 textAlign: 'center',
               }}
             >
-              {lang === 'en' ? `Welcome, ${user?.full_name?.split(' ').slice(-1)[0] ?? 'friend'}!` : `Chào mừng, ${user?.full_name?.split(' ').slice(-1)[0] ?? 'bạn'}!`}
+              {lang === 'en'
+                ? `Welcome, ${user?.full_name?.split(' ').slice(-1)[0] ?? 'friend'}!`
+                : `Chào mừng, ${user?.full_name?.split(' ').slice(-1)[0] ?? 'bạn'}!`}
             </Text>
             <Text
               style={{
@@ -110,9 +120,13 @@ export default function SelectRoleScreen() {
                 lineHeight: 22,
               }}
             >
-              {lang === 'en' ? 'How would you like to use Green House?\n' : 'Bạn muốn sử dụng Green House như thế nào?\n'}
+              {lang === 'en'
+                ? 'How would you like to use Green House?\n'
+                : 'Bạn muốn sử dụng Green House như thế nào?\n'}
               <Text style={{ fontSize: fs(13), color: COLORS.gray[500] }}>
-                {lang === 'en' ? '(You can switch anytime in settings)' : '(Bạn có thể chuyển đổi linh hoạt bất kỳ lúc nào)'}
+                {lang === 'en'
+                  ? '(You can switch anytime in settings)'
+                  : '(Bạn có thể chuyển đổi linh hoạt bất kỳ lúc nào)'}
               </Text>
             </Text>
           </View>
@@ -148,7 +162,10 @@ export default function SelectRoleScreen() {
                       justifyContent: 'center',
                     }}
                   >
-                    <Text style={{ fontSize: fs(28) }}>🏠</Text>
+                    <Home
+                      size={28}
+                      color={selectedRole === 'customer' ? COLORS.primary : COLORS.gray[600]}
+                    />
                   </View>
                   <View
                     style={{
@@ -170,7 +187,12 @@ export default function SelectRoleScreen() {
                     {lang === 'en' ? 'I need services' : 'Tôi cần thuê dịch vụ'}
                   </Text>
                   <Text
-                    style={{ fontSize: fs(14), color: COLORS.gray[600], marginTop: 4, lineHeight: 20 }}
+                    style={{
+                      fontSize: fs(14),
+                      color: COLORS.gray[600],
+                      marginTop: 4,
+                      lineHeight: 20,
+                    }}
                   >
                     {lang === 'en'
                       ? 'Find home cleaners, cooks, electricians and plumbers quickly and reliably.'
@@ -209,7 +231,10 @@ export default function SelectRoleScreen() {
                       justifyContent: 'center',
                     }}
                   >
-                    <Text style={{ fontSize: fs(28) }}>🔧</Text>
+                    <Wrench
+                      size={28}
+                      color={selectedRole === 'helper' ? COLORS.primary : COLORS.gray[600]}
+                    />
                   </View>
                   <View
                     style={{
@@ -231,7 +256,12 @@ export default function SelectRoleScreen() {
                     {lang === 'en' ? 'I want to work' : 'Tôi muốn nhận việc'}
                   </Text>
                   <Text
-                    style={{ fontSize: fs(14), color: COLORS.gray[600], marginTop: 4, lineHeight: 20 }}
+                    style={{
+                      fontSize: fs(14),
+                      color: COLORS.gray[600],
+                      marginTop: 4,
+                      lineHeight: 20,
+                    }}
                   >
                     {lang === 'en'
                       ? 'Become a helper partner to connect with thousands of customers around you.'

@@ -109,9 +109,7 @@ export default function CallScreen() {
         endedRef.current = true;
         setEndReason(
           reason ||
-            (lang === 'en'
-              ? 'The other party declined the call'
-              : 'Người kia đã từ chối cuộc gọi'),
+            (lang === 'en' ? 'The other party declined the call' : 'Người kia đã từ chối cuộc gọi'),
         );
         setUiState('rejected');
         const s = sessionRef.current;
@@ -271,9 +269,7 @@ export default function CallScreen() {
       endedRef.current = true;
       if (payload?.reason === 'rejected') {
         setEndReason(
-          lang === 'en'
-            ? 'The other party declined the call'
-            : 'Người kia đã từ chối cuộc gọi',
+          lang === 'en' ? 'The other party declined the call' : 'Người kia đã từ chối cuộc gọi',
         );
         setUiState('rejected');
       } else {
@@ -432,9 +428,7 @@ export default function CallScreen() {
                 textAlign: 'center',
               }}
             >
-              {uiState === 'rejected'
-                ? t('call_rejected_hint')
-                : t('call_thank_you')}
+              {uiState === 'rejected' ? t('call_rejected_hint') : t('call_thank_you')}
             </Text>
           </View>
 
@@ -456,7 +450,9 @@ export default function CallScreen() {
               elevation: 4,
             }}
           >
-            <Text style={{ color: '#fff', fontWeight: '800', fontSize: fs(15) }}>{t('common_back')}</Text>
+            <Text style={{ color: '#fff', fontWeight: '800', fontSize: fs(15) }}>
+              {t('common_back')}
+            </Text>
           </TouchableOpacity>
         </View>
       )}
@@ -522,7 +518,9 @@ export default function CallScreen() {
                 borderRadius: 8,
               }}
             >
-              <Text style={{ color: '#fff', fontWeight: '600', fontSize: fs(13.5) }}>{t('common_back')}</Text>
+              <Text style={{ color: '#fff', fontWeight: '600', fontSize: fs(13.5) }}>
+                {t('common_back')}
+              </Text>
             </TouchableOpacity>
           </View>
         </View>

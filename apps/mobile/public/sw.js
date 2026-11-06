@@ -64,9 +64,12 @@ self.addEventListener('fetch', event => {
           (event.request.mode === 'navigate' || event.request.destination === 'document')
         ) {
           const responseToCache = response.clone();
-          caches.open(CACHE_NAME).then(cache => {
-            cache.put('/', responseToCache);
-          }).catch(() => {});
+          caches
+            .open(CACHE_NAME)
+            .then(cache => {
+              cache.put('/', responseToCache);
+            })
+            .catch(() => {});
         }
         return response;
       })

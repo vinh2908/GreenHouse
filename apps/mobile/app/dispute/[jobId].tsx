@@ -80,9 +80,16 @@ function roleLabel(role: string, lang?: string) {
 }
 
 function resolutionLabel(action?: string, lang?: string) {
-  if (action === 'refund_full') return lang === 'en' ? '100% refund to customer' : 'Hoàn tiền 100% cho khách hàng';
-  if (action === 'refund_partial') return lang === 'en' ? 'Partial refund to customer, remainder to helper' : 'Hoàn một phần cho khách, phần còn lại trả thợ';
-  if (action === 'release_to_helper') return lang === 'en' ? 'Dispute dismissed — payout released to helper' : 'Bác khiếu nại — giải ngân cho thợ';
+  if (action === 'refund_full')
+    return lang === 'en' ? '100% refund to customer' : 'Hoàn tiền 100% cho khách hàng';
+  if (action === 'refund_partial')
+    return lang === 'en'
+      ? 'Partial refund to customer, remainder to helper'
+      : 'Hoàn một phần cho khách, phần còn lại trả thợ';
+  if (action === 'release_to_helper')
+    return lang === 'en'
+      ? 'Dispute dismissed — payout released to helper'
+      : 'Bác khiếu nại — giải ngân cho thợ';
   return '—';
 }
 
@@ -111,7 +118,11 @@ export default function DisputeCaseScreen() {
   const pickPhotos = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
-      Toast.show({ type: 'error', text1: lang === 'en' ? 'Photo library permission required' : 'Cần quyền truy cập thư viện ảnh' });
+      Toast.show({
+        type: 'error',
+        text1:
+          lang === 'en' ? 'Photo library permission required' : 'Cần quyền truy cập thư viện ảnh',
+      });
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -138,7 +149,13 @@ export default function DisputeCaseScreen() {
 
   const handleAppeal = async () => {
     if (!jobId || appealReason.trim().length < 5) {
-      Toast.show({ type: 'error', text1: lang === 'en' ? 'Please state your appeal reason clearly' : 'Vui lòng nêu rõ lý do kháng cáo' });
+      Toast.show({
+        type: 'error',
+        text1:
+          lang === 'en'
+            ? 'Please state your appeal reason clearly'
+            : 'Vui lòng nêu rõ lý do kháng cáo',
+      });
       return;
     }
     try {
@@ -188,7 +205,9 @@ export default function DisputeCaseScreen() {
             {lang === 'en' ? 'Dispute Case' : 'Hồ sơ tranh chấp'}
           </Text>
           <Text style={{ fontSize: fs(12), color: COLORS.gray[500] }}>
-            {lang === 'en' ? 'All records preserved for fair administrative arbitration' : 'Toàn bộ diễn biến được lưu lại để Admin phân xử công bằng'}
+            {lang === 'en'
+              ? 'All records preserved for fair administrative arbitration'
+              : 'Toàn bộ diễn biến được lưu lại để Admin phân xử công bằng'}
           </Text>
         </View>
         <Scale size={22} color={COLORS.gray[400]} />
@@ -200,7 +219,10 @@ export default function DisputeCaseScreen() {
             icon={<Scale size={36} color={COLORS.gray[400]} />}
             title={lang === 'en' ? 'No dispute case found' : 'Chưa có hồ sơ tranh chấp'}
             subtitle={
-              (error as any)?.response?.data?.message ?? (lang === 'en' ? 'This job has no active disputes.' : 'Đơn này chưa phát sinh tranh chấp nào.')
+              (error as any)?.response?.data?.message ??
+              (lang === 'en'
+                ? 'This job has no active disputes.'
+                : 'Đơn này chưa phát sinh tranh chấp nào.')
             }
             action={lang === 'en' ? 'Back' : 'Quay lại'}
             onAction={handleBack}
@@ -218,14 +240,24 @@ export default function DisputeCaseScreen() {
             {/* ── Trạng thái hồ sơ ─────────────────────────────────────── */}
             <Card style={{ gap: 8 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                <Text style={{ flex: 1, fontWeight: '800', fontSize: fs(15), color: COLORS.gray[900] }}>
+                <Text
+                  style={{ flex: 1, fontWeight: '800', fontSize: fs(15), color: COLORS.gray[900] }}
+                >
                   {lang === 'en' ? 'Dispute reason' : 'Lý do tranh chấp'}
                 </Text>
                 {caseData.status === 'open' && (
-                  <Badge label={lang === 'en' ? 'Pending arbitration' : 'Đang chờ phân xử'} color="#FEF3C7" textColor="#92400E" />
+                  <Badge
+                    label={lang === 'en' ? 'Pending arbitration' : 'Đang chờ phân xử'}
+                    color="#FEF3C7"
+                    textColor="#92400E"
+                  />
                 )}
                 {caseData.status === 'appealed' && (
-                  <Badge label={lang === 'en' ? 'Under appeal' : 'Đang kháng cáo'} color="#FFEDD5" textColor="#9A3412" />
+                  <Badge
+                    label={lang === 'en' ? 'Under appeal' : 'Đang kháng cáo'}
+                    color="#FFEDD5"
+                    textColor="#9A3412"
+                  />
                 )}
                 {caseData.status === 'resolved' && (
                   <Badge
@@ -239,7 +271,8 @@ export default function DisputeCaseScreen() {
                 {caseData.reason}
               </Text>
               <Text style={{ fontSize: fs(12), color: COLORS.gray[500] }}>
-                {lang === 'en' ? 'Opened by ' : 'Mở bởi '}{roleLabel(caseData.opened_by_role, lang)} ·{' '}
+                {lang === 'en' ? 'Opened by ' : 'Mở bởi '}
+                {roleLabel(caseData.opened_by_role, lang)} ·{' '}
                 {dayjs(caseData.created_at).format('HH:mm DD/MM/YYYY')}
               </Text>
             </Card>
@@ -265,17 +298,20 @@ export default function DisputeCaseScreen() {
                 </Text>
                 {(caseData.resolution.refund_amount ?? 0) > 0 && (
                   <Text style={{ fontSize: fs(13), color: COLORS.gray[700] }}>
-                    {lang === 'en' ? 'Refund to customer: ' : 'Hoàn cho khách: '}{fmt(caseData.resolution.refund_amount)}₫
+                    {lang === 'en' ? 'Refund to customer: ' : 'Hoàn cho khách: '}
+                    {fmt(caseData.resolution.refund_amount)}₫
                   </Text>
                 )}
                 {(caseData.resolution.helper_payout ?? 0) > 0 && (
                   <Text style={{ fontSize: fs(13), color: COLORS.gray[700] }}>
-                    {lang === 'en' ? 'Payout to helper: ' : 'Giải ngân cho thợ: '}{fmt(caseData.resolution.helper_payout)}₫
+                    {lang === 'en' ? 'Payout to helper: ' : 'Giải ngân cho thợ: '}
+                    {fmt(caseData.resolution.helper_payout)}₫
                   </Text>
                 )}
                 {caseData.resolution.admin_note && (
                   <Text style={{ fontSize: fs(13), color: COLORS.gray[700], lineHeight: 19 }}>
-                    {lang === 'en' ? 'Note: ' : 'Ghi chú: '}{caseData.resolution.admin_note}
+                    {lang === 'en' ? 'Note: ' : 'Ghi chú: '}
+                    {caseData.resolution.admin_note}
                   </Text>
                 )}
                 {caseData.resolution.resolved_at && (
@@ -286,14 +322,16 @@ export default function DisputeCaseScreen() {
                 {caseData.can_appeal && (
                   <>
                     <Text style={{ fontSize: fs(12.5), color: '#9A3412', fontWeight: '600' }}>
-                      {lang === 'en' ? 'You may appeal once before ' : 'Bạn có thể kháng cáo 1 lần trước '}
+                      {lang === 'en'
+                        ? 'You may appeal once before '
+                        : 'Bạn có thể kháng cáo 1 lần trước '}
                       {caseData.appeal_deadline
                         ? dayjs(caseData.appeal_deadline).format('HH:mm DD/MM/YYYY')
                         : ''}
                       .
                     </Text>
                     <Button
-                      title={lang === 'en' ? '↩️ Appeal resolution' : '↩️ Kháng cáo phán quyết'}
+                      title={lang === 'en' ? 'Appeal resolution' : 'Kháng cáo phán quyết'}
                       variant="outline"
                       onPress={() => setShowAppeal(true)}
                     />
@@ -301,7 +339,8 @@ export default function DisputeCaseScreen() {
                 )}
                 {caseData.appeal && (
                   <Text style={{ fontSize: fs(12.5), color: COLORS.gray[600] }}>
-                    {lang === 'en' ? 'Appealed by ' : 'Đã kháng cáo bởi '}{roleLabel(caseData.appeal.by_role, lang)}: {caseData.appeal.reason}
+                    {lang === 'en' ? 'Appealed by ' : 'Đã kháng cáo bởi '}
+                    {roleLabel(caseData.appeal.by_role, lang)}: {caseData.appeal.reason}
                   </Text>
                 )}
               </Card>
@@ -352,7 +391,9 @@ export default function DisputeCaseScreen() {
                         {dayjs(entry.created_at).format('HH:mm DD/MM/YYYY')}
                       </Text>
                       {entry.text ? (
-                        <Text style={{ fontSize: fs(13.5), color: COLORS.gray[800], lineHeight: 20 }}>
+                        <Text
+                          style={{ fontSize: fs(13.5), color: COLORS.gray[800], lineHeight: 20 }}
+                        >
                           {entry.text}
                         </Text>
                       ) : null}
@@ -382,7 +423,11 @@ export default function DisputeCaseScreen() {
                 <TextInput
                   value={text}
                   onChangeText={setText}
-                  placeholder={lang === 'en' ? 'Describe details, timeline, prior agreements...' : 'Mô tả thêm sự việc, thời gian, thỏa thuận đã có…'}
+                  placeholder={
+                    lang === 'en'
+                      ? 'Describe details, timeline, prior agreements...'
+                      : 'Mô tả thêm sự việc, thời gian, thỏa thuận đã có…'
+                  }
                   placeholderTextColor={COLORS.gray[400]}
                   multiline
                   style={{
@@ -461,20 +506,25 @@ export default function DisputeCaseScreen() {
             {lang === 'en' ? (
               <>
                 Each case can only be appealed <Text style={{ fontWeight: '800' }}>once</Text>.
-                Admin will re-examine all evidence submitted by both parties. The appeal verdict is final.
+                Admin will re-examine all evidence submitted by both parties. The appeal verdict is
+                final.
               </>
             ) : (
               <>
-                Mỗi hồ sơ chỉ được kháng cáo <Text style={{ fontWeight: '800' }}>1 lần duy nhất</Text>.
-                Admin sẽ xem lại toàn bộ bằng chứng hai bên đã gửi. Phán quyết sau kháng cáo là quyết
-                định cuối cùng.
+                Mỗi hồ sơ chỉ được kháng cáo{' '}
+                <Text style={{ fontWeight: '800' }}>1 lần duy nhất</Text>. Admin sẽ xem lại toàn bộ
+                bằng chứng hai bên đã gửi. Phán quyết sau kháng cáo là quyết định cuối cùng.
               </>
             )}
           </Text>
           <TextInput
             value={appealReason}
             onChangeText={setAppealReason}
-            placeholder={lang === 'en' ? 'Why you believe the resolution was inappropriate...' : 'Lý do bạn cho rằng phán quyết chưa thỏa đáng…'}
+            placeholder={
+              lang === 'en'
+                ? 'Why you believe the resolution was inappropriate...'
+                : 'Lý do bạn cho rằng phán quyết chưa thỏa đáng…'
+            }
             placeholderTextColor={COLORS.gray[400]}
             multiline
             style={{

@@ -1,7 +1,7 @@
 import { View, Text, ScrollView, TouchableOpacity, RefreshControl } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { ArrowLeft, Plus, ChevronRight } from 'lucide-react-native';
+import { ArrowLeft, Plus, ChevronRight, Calendar } from 'lucide-react-native';
 import dayjs from 'dayjs';
 import 'dayjs/locale/vi';
 import 'dayjs/locale/en';
@@ -23,10 +23,30 @@ export const MONTHLY_STATUS_META: Record<
   MonthlyContractStatus,
   { label: string; label_en: string; bg: string; color: string }
 > = {
-  pending: { label: 'Chờ duyệt', label_en: 'Pending', bg: COLORS.warningLight, color: COLORS.warning },
-  active: { label: 'Đang hiệu lực', label_en: 'Active', bg: COLORS.successLight, color: COLORS.success },
-  rejected: { label: 'Đã từ chối', label_en: 'Rejected', bg: COLORS.errorLight, color: COLORS.error },
-  cancelled: { label: 'Đã hủy', label_en: 'Cancelled', bg: COLORS.gray[100], color: COLORS.gray[500] },
+  pending: {
+    label: 'Chờ duyệt',
+    label_en: 'Pending',
+    bg: COLORS.warningLight,
+    color: COLORS.warning,
+  },
+  active: {
+    label: 'Đang hiệu lực',
+    label_en: 'Active',
+    bg: COLORS.successLight,
+    color: COLORS.success,
+  },
+  rejected: {
+    label: 'Đã từ chối',
+    label_en: 'Rejected',
+    bg: COLORS.errorLight,
+    color: COLORS.error,
+  },
+  cancelled: {
+    label: 'Đã hủy',
+    label_en: 'Cancelled',
+    bg: COLORS.gray[100],
+    color: COLORS.gray[500],
+  },
   ended: { label: 'Đã kết thúc', label_en: 'Ended', bg: COLORS.gray[100], color: COLORS.gray[600] },
 };
 
@@ -97,7 +117,7 @@ export default function MonthlyContractsScreen() {
         </TouchableOpacity>
         <View style={{ flex: 1 }}>
           <Text style={{ fontSize: fs(18), fontWeight: '800', color: COLORS.gray[900] }}>
-            {lang === 'en' ? 'Monthly Contracts 📅' : 'Hợp đồng theo tháng 📅'}
+            {lang === 'en' ? 'Monthly Contracts' : 'Hợp đồng theo tháng'}
           </Text>
           <Text style={{ fontSize: fs(12), color: COLORS.gray[500] }}>
             {lang === 'en'
@@ -143,7 +163,7 @@ export default function MonthlyContractsScreen() {
         >
           {(contracts ?? []).length === 0 ? (
             <EmptyState
-              emoji="📅"
+              icon={<Calendar size={36} color={COLORS.gray[400]} />}
               title={lang === 'en' ? 'No monthly contracts yet' : 'Chưa có hợp đồng theo tháng nào'}
               subtitle={
                 lang === 'en'
@@ -154,7 +174,9 @@ export default function MonthlyContractsScreen() {
                     ? 'Khi khách hàng mời bạn làm giúp việc theo tháng, hợp đồng sẽ hiện ở đây để bạn duyệt và điểm danh hằng ngày.'
                     : 'Thuê 1 thợ quen theo tháng với lịch cố định: thợ điểm danh từng buổi, cuối tháng chốt lương theo số buổi thực tế — minh bạch cho cả hai bên.'
               }
-              action={isHelper ? undefined : (lang === 'en' ? 'Create new contract' : 'Tạo hợp đồng mới')}
+              action={
+                isHelper ? undefined : lang === 'en' ? 'Create new contract' : 'Tạo hợp đồng mới'
+              }
               onAction={isHelper ? undefined : () => router.push('/monthly-contract-create')}
             />
           ) : (
@@ -171,7 +193,7 @@ export default function MonthlyContractsScreen() {
                 >
                   <Card style={{ gap: 8 }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                      <Text style={{ fontSize: fs(20) }}>📅</Text>
+                      <Calendar size={20} color={COLORS.primary} />
                       <Text
                         style={{
                           flex: 1,
@@ -190,13 +212,25 @@ export default function MonthlyContractsScreen() {
                       />
                     </View>
                     <Text style={{ fontSize: fs(13), color: COLORS.gray[600] }}>
-                      {isHelper ? (lang === 'en' ? 'Customer' : 'Khách hàng') : (lang === 'en' ? 'Helper' : 'Thợ')}: {personName(partner)} · {lang === 'en' ? 'Salary ' : 'Lương '}
+                      {isHelper
+                        ? lang === 'en'
+                          ? 'Customer'
+                          : 'Khách hàng'
+                        : lang === 'en'
+                          ? 'Helper'
+                          : 'Thợ'}
+                      : {personName(partner)} · {lang === 'en' ? 'Salary ' : 'Lương '}
                       {fmt(c.monthly_salary)}₫/{lang === 'en' ? 'month' : 'tháng'}
                     </Text>
                     <Text style={{ fontSize: fs(12.5), color: COLORS.gray[500] }}>
-                      {lang === 'en' ? 'Schedule: ' : 'Lịch: '}{describeMonthlySchedule(c, lang)} · {lang === 'en' ? 'From ' : 'Từ '}
+                      {lang === 'en' ? 'Schedule: ' : 'Lịch: '}
+                      {describeMonthlySchedule(c, lang)} · {lang === 'en' ? 'From ' : 'Từ '}
                       {dayjs(c.start_date).format('DD/MM/YYYY')}
-                      {c.end_date ? (lang === 'en' ? ` to ${dayjs(c.end_date).format('DD/MM/YYYY')}` : ` đến ${dayjs(c.end_date).format('DD/MM/YYYY')}`) : ''}
+                      {c.end_date
+                        ? lang === 'en'
+                          ? ` to ${dayjs(c.end_date).format('DD/MM/YYYY')}`
+                          : ` đến ${dayjs(c.end_date).format('DD/MM/YYYY')}`
+                        : ''}
                     </Text>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                       <Text

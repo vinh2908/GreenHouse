@@ -132,9 +132,7 @@ export default function BankAccountScreen() {
       Toast.show({
         type: 'error',
         text1:
-          lang === 'en'
-            ? 'Invalid bank account number'
-            : 'Số tài khoản ngân hàng không hợp lệ',
+          lang === 'en' ? 'Invalid bank account number' : 'Số tài khoản ngân hàng không hợp lệ',
       });
       return;
     }
@@ -148,9 +146,7 @@ export default function BankAccountScreen() {
       Toast.show({
         type: 'success',
         text1:
-          lang === 'en'
-            ? 'Bank account updated successfully'
-            : 'Cập nhật tài khoản thành công',
+          lang === 'en' ? 'Bank account updated successfully' : 'Cập nhật tài khoản thành công',
       });
       refetch();
     } catch (err: any) {
@@ -244,9 +240,7 @@ export default function BankAccountScreen() {
                     Toast.show({
                       type: 'success',
                       text1:
-                        lang === 'en'
-                          ? 'Default method selected'
-                          : 'Đã chọn phương thức mặc định',
+                        lang === 'en' ? 'Default method selected' : 'Đã chọn phương thức mặc định',
                       text2: opt.title,
                     });
                   }}
@@ -266,7 +260,9 @@ export default function BankAccountScreen() {
                         alignItems: 'center',
                       }}
                     >
-                      <Text style={{ fontWeight: '800', fontSize: fs(14.5), color: COLORS.gray[900] }}>
+                      <Text
+                        style={{ fontWeight: '800', fontSize: fs(14.5), color: COLORS.gray[900] }}
+                      >
                         {opt.title}
                       </Text>
                       {selected ? (
@@ -292,7 +288,9 @@ export default function BankAccountScreen() {
             })}
           </View>
 
-          <Text style={{ fontSize: fs(15), fontWeight: '800', color: COLORS.gray[900], marginTop: 6 }}>
+          <Text
+            style={{ fontSize: fs(15), fontWeight: '800', color: COLORS.gray[900], marginTop: 6 }}
+          >
             {lang === 'en' ? 'Recent Transactions' : 'Lịch sử giao dịch gần đây'}
           </Text>
 
@@ -301,7 +299,7 @@ export default function BankAccountScreen() {
           ) : !txData?.transactions?.length ? (
             <Card>
               <EmptyState
-                emoji="💳"
+                icon={<CreditCard size={36} color={COLORS.gray[400]} />}
                 title={lang === 'en' ? 'No transactions yet' : 'Chưa có giao dịch thanh toán'}
                 subtitle={
                   lang === 'en'
@@ -324,7 +322,9 @@ export default function BankAccountScreen() {
                     }}
                   >
                     <View style={{ flex: 1, marginRight: 10 }}>
-                      <Text style={{ fontWeight: '700', fontSize: fs(14), color: COLORS.gray[900] }}>
+                      <Text
+                        style={{ fontWeight: '700', fontSize: fs(14), color: COLORS.gray[900] }}
+                      >
                         {formatTxDesc(tx.description)}
                       </Text>
                       <View
@@ -336,7 +336,9 @@ export default function BankAccountScreen() {
                         </Text>
                       </View>
                     </View>
-                    <Text style={{ fontWeight: '800', fontSize: fs(14.5), color: COLORS.gray[900] }}>
+                    <Text
+                      style={{ fontWeight: '800', fontSize: fs(14.5), color: COLORS.gray[900] }}
+                    >
                       {new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'vi-VN').format(tx.amount)}₫
                     </Text>
                   </View>
@@ -409,7 +411,12 @@ export default function BankAccountScreen() {
 
               <View style={{ marginVertical: 12 }}>
                 <Text
-                  style={{ color: '#94A3B8', fontSize: fs(11), fontWeight: '600', letterSpacing: 1 }}
+                  style={{
+                    color: '#94A3B8',
+                    fontSize: fs(11),
+                    fontWeight: '600',
+                    letterSpacing: 1,
+                  }}
                 >
                   {lang === 'en' ? 'ACCOUNT NUMBER' : 'SỐ TÀI KHOẢN'}
                 </Text>
@@ -512,7 +519,9 @@ export default function BankAccountScreen() {
                     color: COLORS.gray[900],
                     backgroundColor: COLORS.gray[50],
                   }}
-                  placeholder={lang === 'en' ? 'e.g. Vietcombank, MB Bank...' : 'VD: Vietcombank, MB Bank...'}
+                  placeholder={
+                    lang === 'en' ? 'e.g. Vietcombank, MB Bank...' : 'VD: Vietcombank, MB Bank...'
+                  }
                   value={bankName}
                   onChangeText={setBankName}
                   placeholderTextColor={COLORS.gray[400]}
@@ -535,7 +544,9 @@ export default function BankAccountScreen() {
                     backgroundColor: COLORS.gray[50],
                     letterSpacing: 1,
                   }}
-                  placeholder={lang === 'en' ? 'Enter bank account number' : 'Nhập số tài khoản ngân hàng'}
+                  placeholder={
+                    lang === 'en' ? 'Enter bank account number' : 'Nhập số tài khoản ngân hàng'
+                  }
                   value={accountNumber}
                   onChangeText={setAccountNumber}
                   keyboardType="numeric"

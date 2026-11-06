@@ -24,7 +24,8 @@ const STATUS_META: Record<
     bg: COLORS.warningLight,
     color: COLORS.warning,
     desc: 'Yêu cầu của bạn đã được ghi nhận. Đội ngũ Green House sẽ xem xét hồ sơ và phản hồi sớm nhất.',
-    desc_en: 'Your claim has been submitted. The Green House team will review your case and respond soon.',
+    desc_en:
+      'Your claim has been submitted. The Green House team will review your case and respond soon.',
   },
   under_review: {
     label: 'Đang xem xét',
@@ -91,7 +92,11 @@ export default function ClaimScreen() {
   const pickPhotos = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
-      Toast.show({ type: 'error', text1: lang === 'en' ? 'Photo library permission required' : 'Cần quyền truy cập thư viện ảnh' });
+      Toast.show({
+        type: 'error',
+        text1:
+          lang === 'en' ? 'Photo library permission required' : 'Cần quyền truy cập thư viện ảnh',
+      });
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -108,7 +113,13 @@ export default function ClaimScreen() {
   const handleSubmit = async () => {
     if (!jobId) return;
     if (description.trim().length < 10) {
-      Toast.show({ type: 'error', text1: lang === 'en' ? 'Please describe the incident/damage clearly (at least 10 characters)' : 'Vui lòng mô tả rõ sự cố/thiệt hại (ít nhất 10 ký tự)' });
+      Toast.show({
+        type: 'error',
+        text1:
+          lang === 'en'
+            ? 'Please describe the incident/damage clearly (at least 10 characters)'
+            : 'Vui lòng mô tả rõ sự cố/thiệt hại (ít nhất 10 ký tự)',
+      });
       return;
     }
     const amountNum = amount.trim() ? Number(amount.replace(/[^\d]/g, '')) : undefined;
@@ -172,7 +183,9 @@ export default function ClaimScreen() {
             {lang === 'en' ? 'Insurance Claim' : 'Bồi thường bảo hiểm'}
           </Text>
           <Text style={{ fontSize: fs(12), color: COLORS.gray[500] }}>
-            {lang === 'en' ? '30-day insurance warranty for all completed jobs' : 'Bảo hiểm 30 ngày cho mọi đơn đã hoàn thành'}
+            {lang === 'en'
+              ? '30-day insurance warranty for all completed jobs'
+              : 'Bảo hiểm 30 ngày cho mọi đơn đã hoàn thành'}
           </Text>
         </View>
         <ShieldCheck size={22} color={COLORS.gray[400]} />
@@ -191,7 +204,12 @@ export default function ClaimScreen() {
               <Card style={{ gap: 8 }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                   <Text
-                    style={{ flex: 1, fontWeight: '800', fontSize: fs(15), color: COLORS.gray[900] }}
+                    style={{
+                      flex: 1,
+                      fontWeight: '800',
+                      fontSize: fs(15),
+                      color: COLORS.gray[900],
+                    }}
                   >
                     {lang === 'en' ? 'Claim Status' : 'Trạng thái yêu cầu'}
                   </Text>
@@ -211,7 +229,8 @@ export default function ClaimScreen() {
                 </Text>
                 {claim.requested_amount ? (
                   <Text style={{ fontSize: fs(13), color: COLORS.gray[600] }}>
-                    {lang === 'en' ? 'Requested amount: ' : 'Số tiền đề nghị: '}{fmt(claim.requested_amount)}₫
+                    {lang === 'en' ? 'Requested amount: ' : 'Số tiền đề nghị: '}
+                    {fmt(claim.requested_amount)}₫
                   </Text>
                 ) : null}
                 {claim.status === 'paid' && (
@@ -230,12 +249,14 @@ export default function ClaimScreen() {
                     }}
                   >
                     <Text style={{ fontSize: fs(13), color: COLORS.error, lineHeight: 19 }}>
-                      {lang === 'en' ? 'Rejection reason: ' : 'Lý do từ chối: '}{claim.reject_reason}
+                      {lang === 'en' ? 'Rejection reason: ' : 'Lý do từ chối: '}
+                      {claim.reject_reason}
                     </Text>
                   </View>
                 )}
                 <Text style={{ fontSize: fs(12), color: COLORS.gray[500] }}>
-                  {lang === 'en' ? 'Submitted at ' : 'Gửi lúc '}{dayjs(claim.created_at).format('HH:mm DD/MM/YYYY')}
+                  {lang === 'en' ? 'Submitted at ' : 'Gửi lúc '}
+                  {dayjs(claim.created_at).format('HH:mm DD/MM/YYYY')}
                 </Text>
               </Card>
 
@@ -279,18 +300,22 @@ export default function ClaimScreen() {
                       )}
                     </View>
                     <View style={{ flex: 1, paddingBottom: 10 }}>
-                      <Text style={{ fontSize: fs(13.5), fontWeight: '700', color: COLORS.gray[900] }}>
+                      <Text
+                        style={{ fontSize: fs(13.5), fontWeight: '700', color: COLORS.gray[900] }}
+                      >
                         {lang === 'en'
                           ? (TIMELINE_LABEL[entry.status]?.en ?? entry.status)
                           : (TIMELINE_LABEL[entry.status]?.vi ?? entry.status)}
                       </Text>
                       {entry.note ? (
-                        <Text style={{ fontSize: fs(12.5), color: COLORS.gray[600], lineHeight: 18 }}>
+                        <Text
+                          style={{ fontSize: fs(12.5), color: COLORS.gray[600], lineHeight: 18 }}
+                        >
                           {entry.note}
                         </Text>
                       ) : null}
                       <Text style={{ fontSize: fs(11.5), color: COLORS.gray[500] }}>
-                        {entry.actor_role === 'admin' ? 'Admin' : (lang === 'en' ? 'You' : 'Bạn')} ·{' '}
+                        {entry.actor_role === 'admin' ? 'Admin' : lang === 'en' ? 'You' : 'Bạn'} ·{' '}
                         {dayjs(entry.at).format('HH:mm DD/MM/YYYY')}
                       </Text>
                     </View>
@@ -323,7 +348,10 @@ export default function ClaimScreen() {
                   ? 'Your claim is pending Admin review. The result will be notified in-app — once approved, payout will be credited directly to your wallet.'
                   : 'Yêu cầu của bạn đang chờ Admin xem xét. Kết quả sẽ được thông báo trong app — nếu được duyệt, tiền bồi thường sẽ cộng thẳng vào ví của bạn.'}
               </Text>
-              <Button title={lang === 'en' ? 'Back to Job Details' : 'Quay lại chi tiết đơn'} onPress={handleBack} />
+              <Button
+                title={lang === 'en' ? 'Back to Job Details' : 'Quay lại chi tiết đơn'}
+                onPress={handleBack}
+              />
             </Card>
           ) : (
             <>
@@ -352,7 +380,9 @@ export default function ClaimScreen() {
                   style={{ ...inputStyle, minHeight: 110, textAlignVertical: 'top' }}
                 />
                 <Text style={{ fontWeight: '800', fontSize: fs(15), color: COLORS.gray[900] }}>
-                  {lang === 'en' ? 'Requested claim amount (optional)' : 'Số tiền đề nghị bồi thường (không bắt buộc)'}
+                  {lang === 'en'
+                    ? 'Requested claim amount (optional)'
+                    : 'Số tiền đề nghị bồi thường (không bắt buộc)'}
                 </Text>
                 <TextInput
                   value={amount}

@@ -103,18 +103,14 @@ export default function CustomerProfileScreen() {
       }
     };
 
-    Alert.alert(
-      t('profile_logout_confirm_title'),
-      t('profile_logout_confirm_desc'),
-      [
-        { text: t('profile_logout_stay'), style: 'cancel' },
-        {
-          text: t('profile_logout_now'),
-          style: 'destructive',
-          onPress: doLogout,
-        },
-      ],
-    );
+    Alert.alert(t('profile_logout_confirm_title'), t('profile_logout_confirm_desc'), [
+      { text: t('profile_logout_stay'), style: 'cancel' },
+      {
+        text: t('profile_logout_now'),
+        style: 'destructive',
+        onPress: doLogout,
+      },
+    ]);
   };
 
   const handleSwitchToHelper = async () => {
@@ -183,12 +179,22 @@ export default function CustomerProfileScreen() {
             >
               <Avatar name={displayUser?.full_name} uri={displayUser?.avatar} size={80} />
               <Text
-                style={{ fontSize: fs(20), fontWeight: '800', color: COLORS.gray[900], marginTop: 12 }}
+                style={{
+                  fontSize: fs(20),
+                  fontWeight: '800',
+                  color: COLORS.gray[900],
+                  marginTop: 12,
+                }}
               >
                 {displayUser?.full_name}
               </Text>
               <Text
-                style={{ fontSize: fs(14), color: COLORS.gray[500], marginTop: 4, fontWeight: '600' }}
+                style={{
+                  fontSize: fs(14),
+                  color: COLORS.gray[500],
+                  marginTop: 4,
+                  fontWeight: '600',
+                }}
               >
                 {displayUser?.phone}
               </Text>
@@ -286,7 +292,9 @@ export default function CustomerProfileScreen() {
                   <ActivityIndicator size="small" color="#D97706" />
                 ) : (
                   t('profile_loyalty_points', {
-                    points: new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'vi-VN').format(loyalty?.points_balance ?? 0),
+                    points: new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'vi-VN').format(
+                      loyalty?.points_balance ?? 0,
+                    ),
                   })
                 )}
               </Text>

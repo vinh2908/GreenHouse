@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { View, Text, TouchableOpacity, TextInput } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { ArrowLeft } from 'lucide-react-native';
+import { ArrowLeft, Smartphone } from 'lucide-react-native';
 import Toast from 'react-native-toast-message';
 import { useAuthStore } from '@/stores/auth.store';
 import { useTranslation } from '@/hooks/use-i18n';
@@ -44,7 +44,10 @@ export default function OtpScreen() {
   const handleVerify = async (code?: string) => {
     const otpCode = code ?? otp.join('');
     if (otpCode.length !== 6) {
-      Toast.show({ type: 'error', text1: lang === 'en' ? 'Enter 6-digit OTP code' : 'Nhập đủ 6 ký tự OTP' });
+      Toast.show({
+        type: 'error',
+        text1: lang === 'en' ? 'Enter 6-digit OTP code' : 'Nhập đủ 6 ký tự OTP',
+      });
       return;
     }
     try {
@@ -92,7 +95,10 @@ export default function OtpScreen() {
       setCountdown(60);
       Toast.show({ type: 'success', text1: lang === 'en' ? 'OTP resent' : 'Đã gửi lại OTP' });
     } catch {
-      Toast.show({ type: 'error', text1: lang === 'en' ? 'Failed to resend OTP' : 'Gửi lại OTP thất bại' });
+      Toast.show({
+        type: 'error',
+        text1: lang === 'en' ? 'Failed to resend OTP' : 'Gửi lại OTP thất bại',
+      });
     }
   };
 
@@ -131,7 +137,9 @@ export default function OtpScreen() {
         >
           <ArrowLeft size={20} color={COLORS.gray[800]} />
         </TouchableOpacity>
-        <Text style={{ fontSize: fs(18), fontWeight: '700', color: COLORS.gray[900], marginLeft: 12 }}>
+        <Text
+          style={{ fontSize: fs(18), fontWeight: '700', color: COLORS.gray[900], marginLeft: 12 }}
+        >
           {lang === 'en' ? 'Verify OTP' : 'Xác minh OTP'}
         </Text>
       </View>
@@ -149,7 +157,7 @@ export default function OtpScreen() {
               marginBottom: 20,
             }}
           >
-            <Text style={{ fontSize: fs(36) }}>📱</Text>
+            <Smartphone size={36} color={COLORS.primary[600]} />
           </View>
           <Text
             style={{
@@ -197,7 +205,7 @@ export default function OtpScreen() {
             }}
           >
             <Text style={{ fontSize: fs(13), color: '#16A34A', fontWeight: '600' }}>
-              {lang === 'en' ? '💡 Dev test OTP: ' : '💡 Mã OTP thử nghiệm: '}
+              {lang === 'en' ? 'Dev test OTP: ' : 'Mã OTP thử nghiệm: '}
               <Text style={{ fontWeight: '800' }}>123456</Text>{' '}
               {lang === 'en' ? '(Tap to fill)' : '(Bấm để điền nhanh)'}
             </Text>

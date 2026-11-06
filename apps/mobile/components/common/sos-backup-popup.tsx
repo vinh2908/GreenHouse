@@ -4,6 +4,7 @@
 // đơn; nếu chậm tay server trả 409 → toast "Đã có người khác nhận".
 import { useEffect } from 'react';
 import { Modal, View, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { AlertCircle } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import Toast from 'react-native-toast-message';
 import { useSosBackupStore } from '@/stores/sos-backup.store';
@@ -57,7 +58,9 @@ export function SosBackupPopup() {
           text1:
             typeof msg === 'string'
               ? msg
-              : (lang === 'en' ? 'Could not accept job (network or system error). Please retry!' : 'Không nhận được đơn (lỗi mạng hoặc hệ thống). Vui lòng thử lại!'),
+              : lang === 'en'
+                ? 'Could not accept job (network or system error). Please retry!'
+                : 'Không nhận được đơn (lỗi mạng hoặc hệ thống). Vui lòng thử lại!',
         });
       }
     }
@@ -74,7 +77,9 @@ export function SosBackupPopup() {
         text1:
           typeof msg === 'string'
             ? msg
-            : (lang === 'en' ? 'Could not decline right now. Please check network and retry!' : 'Không thể từ chối lúc này. Vui lòng kiểm tra mạng và thử lại!'),
+            : lang === 'en'
+              ? 'Could not decline right now. Please check network and retry!'
+              : 'Không thể từ chối lúc này. Vui lòng kiểm tra mạng và thử lại!',
       });
     }
   };
@@ -101,7 +106,9 @@ export function SosBackupPopup() {
             borderColor: '#FECACA',
           }}
         >
-          <Text style={{ fontSize: fs(34), textAlign: 'center', marginBottom: 6 }}>🆘</Text>
+          <View style={{ alignItems: 'center', marginBottom: 6 }}>
+            <AlertCircle size={36} color="#DC2626" />
+          </View>
           <Text
             style={{
               fontSize: fs(18),
@@ -114,7 +121,12 @@ export function SosBackupPopup() {
             {t('sos_popup_title')}
           </Text>
           <Text
-            style={{ fontSize: fs(14), color: COLORS.gray[700], textAlign: 'center', lineHeight: Math.round(fs(20)) }}
+            style={{
+              fontSize: fs(14),
+              color: COLORS.gray[700],
+              textAlign: 'center',
+              lineHeight: Math.round(fs(20)),
+            }}
           >
             {t('sos_popup_desc')}
           </Text>
@@ -133,7 +145,9 @@ export function SosBackupPopup() {
               {incoming.job_title ? ` — ${incoming.job_title}` : ''}
             </Text>
             {area ? (
-              <Text style={{ fontSize: fs(13.5), color: COLORS.gray[700] }}>{t('sos_popup_area')} {area}</Text>
+              <Text style={{ fontSize: fs(13.5), color: COLORS.gray[700] }}>
+                {t('sos_popup_area')} {area}
+              </Text>
             ) : null}
             {incoming.distance_km != null ? (
               <Text style={{ fontSize: fs(13.5), color: COLORS.gray[700] }}>
@@ -152,7 +166,11 @@ export function SosBackupPopup() {
               <PhotoThumbRow
                 urls={incoming.photo_urls}
                 size={56}
-                label={lang === 'en' ? '📷 Incident photo from helper' : '📷 Ảnh hiện trạng từ thợ gặp sự cố'}
+                label={
+                  lang === 'en'
+                    ? 'Incident photo from helper'
+                    : 'Ảnh hiện trạng từ thợ gặp sự cố'
+                }
               />
             ) : null}
           </View>
@@ -167,7 +185,7 @@ export function SosBackupPopup() {
                 color: remainingMs <= 60_000 ? '#DC2626' : COLORS.gray[500],
               }}
             >
-              ⏱ {t('sos_popup_auto_skip', { sec: Math.ceil(remainingMs / 1000) })}
+              {t('sos_popup_auto_skip', { sec: Math.ceil(remainingMs / 1000) })}
             </Text>
           ) : null}
 
@@ -203,7 +221,9 @@ export function SosBackupPopup() {
             {decline.isPending ? (
               <ActivityIndicator color={COLORS.gray[500]} size="small" />
             ) : (
-              <Text style={{ color: COLORS.gray[500], fontWeight: '700', fontSize: fs(14) }}>{t('sos_popup_skip')}</Text>
+              <Text style={{ color: COLORS.gray[500], fontWeight: '700', fontSize: fs(14) }}>
+                {t('sos_popup_skip')}
+              </Text>
             )}
           </TouchableOpacity>
         </View>

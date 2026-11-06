@@ -39,7 +39,8 @@ export default function FavoriteHelpersScreen() {
       pathname: '/(customer)/booking',
       params: {
         favorite_helper_id: helper._id,
-        favorite_helper_name: helper.full_name ?? (lang === 'en' ? 'Favorite Helper' : 'Thợ yêu thích'),
+        favorite_helper_name:
+          helper.full_name ?? (lang === 'en' ? 'Favorite Helper' : 'Thợ yêu thích'),
       },
     });
   };
@@ -149,7 +150,7 @@ export default function FavoriteHelpersScreen() {
         </TouchableOpacity>
         <View style={{ flex: 1 }}>
           <Text style={{ fontSize: fs(18), fontWeight: '800', color: COLORS.gray[900] }}>
-            {lang === 'en' ? 'Favorite Helpers ❤️' : 'Thợ yêu thích ❤️'}
+            {lang === 'en' ? 'Favorite Helpers' : 'Thợ yêu thích'}
           </Text>
           <Text style={{ fontSize: fs(12), color: COLORS.gray[500] }}>
             {lang === 'en'
@@ -161,7 +162,11 @@ export default function FavoriteHelpersScreen() {
 
       {isError ? (
         <ErrorState
-          title={lang === 'en' ? 'Unable to load favorite helpers' : 'Không thể tải danh sách thợ yêu thích'}
+          title={
+            lang === 'en'
+              ? 'Unable to load favorite helpers'
+              : 'Không thể tải danh sách thợ yêu thích'
+          }
           subtitle={
             lang === 'en'
               ? 'Could not connect to server. Please check your network and retry.'
@@ -185,7 +190,7 @@ export default function FavoriteHelpersScreen() {
         >
           {(favorites ?? []).length === 0 ? (
             <EmptyState
-              emoji="❤️"
+              icon={<Heart size={36} color={COLORS.gray[400]} />}
               title={lang === 'en' ? 'No favorite helpers yet' : 'Chưa có thợ yêu thích'}
               subtitle={
                 lang === 'en'
@@ -214,7 +219,9 @@ export default function FavoriteHelpersScreen() {
                   >
                     <Avatar name={helper.full_name} uri={helper.avatar} size={54} />
                     <View style={{ flex: 1 }}>
-                      <Text style={{ fontSize: fs(16), fontWeight: '800', color: COLORS.gray[900] }}>
+                      <Text
+                        style={{ fontSize: fs(16), fontWeight: '800', color: COLORS.gray[900] }}
+                      >
                         {helper.full_name ?? (lang === 'en' ? 'Helper' : 'Thợ')}
                       </Text>
                       <View
@@ -228,7 +235,11 @@ export default function FavoriteHelpersScreen() {
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
                           <Star size={13} color="#F59E0B" fill="#F59E0B" />
                           <Text
-                            style={{ fontSize: fs(12.5), fontWeight: '700', color: COLORS.gray[700] }}
+                            style={{
+                              fontSize: fs(12.5),
+                              fontWeight: '700',
+                              color: COLORS.gray[700],
+                            }}
                           >
                             {(p?.rating ?? 0).toFixed(1)} ({p?.total_reviews ?? 0})
                           </Text>
@@ -285,7 +296,9 @@ export default function FavoriteHelpersScreen() {
                       }}
                     >
                       <CalendarPlus size={15} color={COLORS.primaryDark} />
-                      <Text style={{ color: COLORS.primaryDark, fontWeight: '700', fontSize: fs(13) }}>
+                      <Text
+                        style={{ color: COLORS.primaryDark, fontWeight: '700', fontSize: fs(13) }}
+                      >
                         {lang === 'en' ? 'Book New Job' : 'Đặt việc mới'}
                       </Text>
                     </TouchableOpacity>

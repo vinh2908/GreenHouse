@@ -4,6 +4,7 @@
 // hủy theo chính sách SOS, hoàn tiền 100%, thợ không bị phạt. Quá hạn không
 // quyết định → server xử lý theo mặc định cấu hình (mặc định: hủy + hoàn tiền).
 import { Modal, View, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { AlertTriangle } from 'lucide-react-native';
 import Toast from 'react-native-toast-message';
 import { SOS_BACKUP_REASON_LABELS, useSosBackupStore } from '@/stores/sos-backup.store';
 import { PhotoThumbRow } from '@/components/common/photo-thumbs';
@@ -27,7 +28,9 @@ export function SosCustomerDecisionPopup() {
   const reasonKey = decision.reason ?? 'other';
   const reasonLabel =
     SOS_BACKUP_REASONS_I18N[reasonKey]?.[lang] ??
-    (lang === 'en' ? 'Emergency incident' : (SOS_BACKUP_REASON_LABELS[reasonKey] ?? 'Sự cố khẩn cấp'));
+    (lang === 'en'
+      ? 'Emergency incident'
+      : (SOS_BACKUP_REASON_LABELS[reasonKey] ?? 'Sự cố khẩn cấp'));
 
   const handle = async (choice: 'accept_replacement' | 'cancel_job') => {
     try {
@@ -44,13 +47,19 @@ export function SosCustomerDecisionPopup() {
         clearDecision();
         Toast.show({
           type: 'info',
-          text1: lang === 'en' ? 'This request has already been processed' : 'Yêu cầu này đã được xử lý',
+          text1:
+            lang === 'en' ? 'This request has already been processed' : 'Yêu cầu này đã được xử lý',
         });
       } else {
         const msg = err?.response?.data?.message;
         Toast.show({
           type: 'error',
-          text1: typeof msg === 'string' ? msg : (lang === 'en' ? 'Could not submit decision — try again' : 'Không gửi được quyết định — thử lại'),
+          text1:
+            typeof msg === 'string'
+              ? msg
+              : lang === 'en'
+                ? 'Could not submit decision — try again'
+                : 'Không gửi được quyết định — thử lại',
         });
       }
     }
@@ -78,7 +87,9 @@ export function SosCustomerDecisionPopup() {
             borderColor: '#FDE68A',
           }}
         >
-          <Text style={{ fontSize: fs(34), textAlign: 'center', marginBottom: 6 }}>⚠️</Text>
+          <View style={{ alignItems: 'center', marginBottom: 6 }}>
+            <AlertTriangle size={36} color="#D97706" />
+          </View>
           <Text
             style={{
               fontSize: fs(18),
@@ -91,10 +102,16 @@ export function SosCustomerDecisionPopup() {
             {t('sos_customer_popup_title')}
           </Text>
           <Text
-            style={{ fontSize: fs(14), color: COLORS.gray[700], textAlign: 'center', lineHeight: Math.round(fs(20)) }}
+            style={{
+              fontSize: fs(14),
+              color: COLORS.gray[700],
+              textAlign: 'center',
+              lineHeight: Math.round(fs(20)),
+            }}
           >
             {tService(decision.service_name) || decision.job_title || ''}{' '}
-            {t('sos_customer_popup_reason_prefix')} <Text style={{ fontWeight: '700' }}>{reasonLabel}</Text>
+            {t('sos_customer_popup_reason_prefix')}{' '}
+            <Text style={{ fontWeight: '700' }}>{reasonLabel}</Text>
             {t('sos_customer_popup_reason_suffix')}
           </Text>
 
@@ -102,7 +119,11 @@ export function SosCustomerDecisionPopup() {
             <View style={{ marginTop: 14, alignItems: 'center' }}>
               <PhotoThumbRow
                 urls={decision.photo_urls}
-                label={lang === 'en' ? '📷 Incident evidence from helper' : '📷 Ảnh minh chứng từ người giúp việc'}
+                label={
+                  lang === 'en'
+                    ? 'Incident evidence from helper'
+                    : 'Ảnh minh chứng từ người giúp việc'
+                }
               />
             </View>
           ) : null}
@@ -116,10 +137,22 @@ export function SosCustomerDecisionPopup() {
               gap: 8,
             }}
           >
-            <Text style={{ fontSize: fs(13.5), color: COLORS.gray[800], lineHeight: Math.round(fs(19)) }}>
+            <Text
+              style={{
+                fontSize: fs(13.5),
+                color: COLORS.gray[800],
+                lineHeight: Math.round(fs(19)),
+              }}
+            >
               {t('sos_customer_popup_replace_desc')}
             </Text>
-            <Text style={{ fontSize: fs(13.5), color: COLORS.gray[800], lineHeight: Math.round(fs(19)) }}>
+            <Text
+              style={{
+                fontSize: fs(13.5),
+                color: COLORS.gray[800],
+                lineHeight: Math.round(fs(19)),
+              }}
+            >
               {t('sos_customer_popup_cancel_desc')}
             </Text>
           </View>
@@ -135,8 +168,10 @@ export function SosCustomerDecisionPopup() {
               }}
             >
               {expired
-                ? (lang === 'en' ? 'Decision window expired — system processing by default policy' : 'Đã quá hạn quyết định — hệ thống đang xử lý theo chính sách mặc định')
-                : `⏱ ${t('sos_popup_auto_skip', { sec: Math.ceil(remainingMs / 1000) })}`}
+                ? lang === 'en'
+                  ? 'Decision window expired — system processing by default policy'
+                  : 'Đã quá hạn quyết định — hệ thống đang xử lý theo chính sách mặc định'
+                : t('sos_popup_auto_skip', { sec: Math.ceil(remainingMs / 1000) })}
             </Text>
           ) : null}
 

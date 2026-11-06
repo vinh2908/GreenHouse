@@ -166,10 +166,14 @@ export function SosBackupHelperCard({ job }: { job: any }) {
           text1: t('sos_helper.upload_fail_title'),
           text2: t('sos_helper.upload_fail_sub'),
         });
-        Alert.alert(t('sos_helper.upload_fail_alert_title'), t('sos_helper.upload_fail_alert_msg'), [
-          { text: t('sos_helper.retry'), style: 'cancel' },
-          { text: t('sos_helper.submit_without_photo'), onPress: () => void doSubmit(undefined) },
-        ]);
+        Alert.alert(
+          t('sos_helper.upload_fail_alert_title'),
+          t('sos_helper.upload_fail_alert_msg'),
+          [
+            { text: t('sos_helper.retry'), style: 'cancel' },
+            { text: t('sos_helper.submit_without_photo'), onPress: () => void doSubmit(undefined) },
+          ],
+        );
         return;
       }
       setUploadingPhotos(false);
@@ -394,7 +398,9 @@ export function SosBackupHelperCard({ job }: { job: any }) {
               onPress={() => setSheetOpen(false)}
               style={{ paddingVertical: 8, alignItems: 'center' }}
             >
-              <Text style={{ color: COLORS.gray[500], fontWeight: '700' }}>{t('common_close')}</Text>
+              <Text style={{ color: COLORS.gray[500], fontWeight: '700' }}>
+                {t('common_close')}
+              </Text>
             </TouchableOpacity>
           </View>
         </View>

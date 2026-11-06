@@ -2,7 +2,15 @@ import React from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ArrowLeft, CheckCircle2, Download, ShieldCheck, Calendar, User, CreditCard } from 'lucide-react-native';
+import {
+  ArrowLeft,
+  CheckCircle2,
+  Download,
+  ShieldCheck,
+  Calendar,
+  User,
+  CreditCard,
+} from 'lucide-react-native';
 import dayjs from 'dayjs';
 import Toast from 'react-native-toast-message';
 import { useJobDetail, useJobContract } from '@/hooks/use-api';
@@ -36,7 +44,8 @@ export default function ReceiptScreen() {
   const helper = typeof job.helper_id === 'object' ? job.helper_id : null;
   const customer = typeof job.customer_id === 'object' ? job.customer_id : null;
 
-  const baseLabor = contract?.labor_cost ?? job.labor_cost ?? job.total_price ?? job.fixed_price ?? 0;
+  const baseLabor =
+    contract?.labor_cost ?? job.labor_cost ?? job.total_price ?? job.fixed_price ?? 0;
   const materialsCost = contract?.materials_cost ?? job.materials_cost ?? 0;
   const sosSurcharge = job.sos_surcharge ?? 0;
   const discountAmount = job.discount_amount ?? 0;
@@ -106,7 +115,9 @@ export default function ReceiptScreen() {
             </View>
             <Text style={[styles.brandName, { fontSize: fs(20) }]}>GREENHOUSE</Text>
             <Text style={[styles.brandSubtitle, { fontSize: fs(12) }]}>
-              {lang === 'en' ? 'Official Electronic Payment Receipt' : 'Biên lai thanh toán điện tử chính thức'}
+              {lang === 'en'
+                ? 'Official Electronic Payment Receipt'
+                : 'Biên lai thanh toán điện tử chính thức'}
             </Text>
             <View style={styles.paidBadge}>
               <ShieldCheck size={14} color="#059669" />

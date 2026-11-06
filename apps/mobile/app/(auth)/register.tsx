@@ -33,20 +33,36 @@ export default function RegisterScreen() {
     const cleanPhone = phone.trim().replace(/\s+/g, '').replace(/^\+84/, '0');
     const cleanEmail = email.trim().toLowerCase();
     if (!fullName.trim() || !cleanPhone || !cleanEmail || !password.trim()) {
-      Toast.show({ type: 'error', text1: lang === 'en' ? 'Please fill in all information' : 'Vui lòng điền đầy đủ thông tin' });
+      Toast.show({
+        type: 'error',
+        text1: lang === 'en' ? 'Please fill in all information' : 'Vui lòng điền đầy đủ thông tin',
+      });
       return;
     }
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(cleanEmail)) {
-      Toast.show({ type: 'error', text1: lang === 'en' ? 'Invalid email format' : 'Email không đúng định dạng' });
+      Toast.show({
+        type: 'error',
+        text1: lang === 'en' ? 'Invalid email format' : 'Email không đúng định dạng',
+      });
       return;
     }
     if (password !== confirmPassword) {
-      Toast.show({ type: 'error', text1: lang === 'en' ? 'Confirmation password does not match' : 'Mật khẩu xác nhận không khớp' });
+      Toast.show({
+        type: 'error',
+        text1:
+          lang === 'en' ? 'Confirmation password does not match' : 'Mật khẩu xác nhận không khớp',
+      });
       return;
     }
     if (password.length < 8) {
-      Toast.show({ type: 'error', text1: lang === 'en' ? 'Password must have at least 8 characters' : 'Mật khẩu phải có ít nhất 8 ký tự' });
+      Toast.show({
+        type: 'error',
+        text1:
+          lang === 'en'
+            ? 'Password must have at least 8 characters'
+            : 'Mật khẩu phải có ít nhất 8 ký tự',
+      });
       return;
     }
     try {
@@ -67,7 +83,10 @@ export default function RegisterScreen() {
               ? 'A verification code has been sent to your email'
               : 'Mã xác minh OTP đã được gửi đến email của bạn',
         });
-        router.replace({ pathname: '/(auth)/otp', params: { email: cleanEmail, phone: cleanPhone } });
+        router.replace({
+          pathname: '/(auth)/otp',
+          params: { email: cleanEmail, phone: cleanPhone },
+        });
       } else {
         Toast.show({
           type: 'success',
@@ -77,12 +96,17 @@ export default function RegisterScreen() {
               ? 'Please check your email for the verification code'
               : 'Vui lòng kiểm tra email để nhận mã OTP',
         });
-        router.replace({ pathname: '/(auth)/otp', params: { email: cleanEmail, phone: cleanPhone } });
+        router.replace({
+          pathname: '/(auth)/otp',
+          params: { email: cleanEmail, phone: cleanPhone },
+        });
       }
     } catch (err: unknown) {
       const responseData = (err as any)?.response?.data;
       const msg = responseData?.message;
-      const displayMsg = Array.isArray(msg) ? msg[0] : msg || (lang === 'en' ? 'Registration failed' : 'Đăng ký không thành công');
+      const displayMsg = Array.isArray(msg)
+        ? msg[0]
+        : msg || (lang === 'en' ? 'Registration failed' : 'Đăng ký không thành công');
       Toast.show({ type: 'error', text1: displayMsg });
     }
   };
@@ -130,7 +154,12 @@ export default function RegisterScreen() {
               <ArrowLeft size={20} color={COLORS.gray[800]} />
             </TouchableOpacity>
             <Text
-              style={{ fontSize: fs(18), fontWeight: '800', color: COLORS.gray[900], marginLeft: 12 }}
+              style={{
+                fontSize: fs(18),
+                fontWeight: '800',
+                color: COLORS.gray[900],
+                marginLeft: 12,
+              }}
             >
               {lang === 'en' ? 'Create New Account' : 'Tạo tài khoản mới'}
             </Text>
@@ -138,7 +167,12 @@ export default function RegisterScreen() {
 
           <View style={{ paddingHorizontal: 24, paddingBottom: 40 }}>
             <Text
-              style={{ fontSize: fs(14), color: COLORS.gray[500], marginBottom: 24, lineHeight: 20 }}
+              style={{
+                fontSize: fs(14),
+                color: COLORS.gray[500],
+                marginBottom: 24,
+                lineHeight: 20,
+              }}
             >
               {lang === 'en'
                 ? 'A single account to book services or earn income as a helper.'
@@ -210,14 +244,18 @@ export default function RegisterScreen() {
                   <>
                     By registering, you agree to the{' '}
                     <Text
-                      onPress={() => router.push({ pathname: '/policy-insurance', params: { tab: 'terms' } })}
+                      onPress={() =>
+                        router.push({ pathname: '/policy-insurance', params: { tab: 'terms' } })
+                      }
                       style={{ color: COLORS.primary, fontWeight: '700' }}
                     >
                       Terms of Service
                     </Text>{' '}
                     and{' '}
                     <Text
-                      onPress={() => router.push({ pathname: '/policy-insurance', params: { tab: 'privacy' } })}
+                      onPress={() =>
+                        router.push({ pathname: '/policy-insurance', params: { tab: 'privacy' } })
+                      }
                       style={{ color: COLORS.primary, fontWeight: '700' }}
                     >
                       Privacy Policy
@@ -228,14 +266,18 @@ export default function RegisterScreen() {
                   <>
                     Bằng cách đăng ký, bạn đồng ý với{' '}
                     <Text
-                      onPress={() => router.push({ pathname: '/policy-insurance', params: { tab: 'terms' } })}
+                      onPress={() =>
+                        router.push({ pathname: '/policy-insurance', params: { tab: 'terms' } })
+                      }
                       style={{ color: COLORS.primary, fontWeight: '700' }}
                     >
                       Điều khoản dịch vụ
                     </Text>{' '}
                     và{' '}
                     <Text
-                      onPress={() => router.push({ pathname: '/policy-insurance', params: { tab: 'privacy' } })}
+                      onPress={() =>
+                        router.push({ pathname: '/policy-insurance', params: { tab: 'privacy' } })
+                      }
                       style={{ color: COLORS.primary, fontWeight: '700' }}
                     >
                       Chính sách bảo mật

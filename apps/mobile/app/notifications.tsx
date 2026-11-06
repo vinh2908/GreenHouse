@@ -177,7 +177,8 @@ export default function NotificationsScreen() {
             </Text>
             {dataUpdatedAt ? (
               <Text style={{ fontSize: fs(11), color: COLORS.gray[500] }}>
-                {lang === 'en' ? 'Updated at' : 'Cập nhật lúc'} {dayjs(dataUpdatedAt).format('HH:mm')}
+                {lang === 'en' ? 'Updated at' : 'Cập nhật lúc'}{' '}
+                {dayjs(dataUpdatedAt).format('HH:mm')}
               </Text>
             ) : null}
           </View>
@@ -271,7 +272,12 @@ export default function NotificationsScreen() {
                     {formatNotifTitle(n.title, n.type)}
                   </Text>
                   <Text
-                    style={{ fontSize: fs(13), color: COLORS.gray[600], marginTop: 3, lineHeight: 18 }}
+                    style={{
+                      fontSize: fs(13),
+                      color: COLORS.gray[600],
+                      marginTop: 3,
+                      lineHeight: 18,
+                    }}
                   >
                     {formatNotifBody(n.body, n.type, n.data)}
                   </Text>
@@ -283,7 +289,9 @@ export default function NotificationsScreen() {
                       fontWeight: '600',
                     }}
                   >
-                    {dayjs(n.created_at).locale(lang === 'en' ? 'en' : 'vi').fromNow()}
+                    {dayjs(n.created_at)
+                      .locale(lang === 'en' ? 'en' : 'vi')
+                      .fromNow()}
                   </Text>
                 </View>
                 {!n.is_read && (

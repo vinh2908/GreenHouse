@@ -37,11 +37,11 @@ const STATUS_META: Record<AdminClaimStatus, { label: string; variant: string }> 
 };
 
 const TIMELINE_LABEL: Record<AdminClaimStatus, string> = {
-  submitted: '📨 Khách gửi yêu cầu',
-  under_review: '🔎 Bắt đầu xem xét',
-  approved: '✅ Duyệt bồi thường',
-  paid: '💰 Đã chi trả vào ví khách',
-  rejected: '❌ Từ chối bồi thường',
+  submitted: 'Khách gửi yêu cầu',
+  under_review: 'Bắt đầu xem xét',
+  approved: 'Duyệt bồi thường',
+  paid: 'Đã chi trả vào ví khách',
+  rejected: 'Từ chối bồi thường',
 };
 
 const errorMessage = (err: unknown) => {
@@ -72,7 +72,7 @@ export default function ClaimsPage() {
         <CardHeader>
           <div className="flex items-center justify-between gap-4 flex-wrap">
             <div>
-              <CardTitle>Bồi thường bảo hiểm 🛡</CardTitle>
+              <CardTitle>Bồi thường bảo hiểm</CardTitle>
               <p className="text-sm text-muted-foreground mt-1">
                 Yêu cầu bồi thường của khách cho các đơn đã hoàn thành (cửa sổ bảo hiểm mặc định 30
                 ngày). Duyệt bồi thường = cộng tiền thẳng vào ví của khách.
@@ -321,7 +321,7 @@ function ClaimDetail({ claimId, onClose }: { claimId: string; onClose: () => voi
                       act(() => review.mutateAsync({ id: claim._id, action: 'start_review' }))
                     }
                   >
-                    🔎 Bắt đầu xem xét
+                    Bắt đầu xem xét
                   </Button>
                 )}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -347,7 +347,7 @@ function ClaimDetail({ claimId, onClose }: { claimId: string; onClose: () => voi
                         )
                       }
                     >
-                      ✅ Duyệt & chi trả vào ví khách
+                      Duyệt & chi trả vào ví khách
                     </Button>
                   </div>
                   <div className="space-y-2">
@@ -370,7 +370,7 @@ function ClaimDetail({ claimId, onClose }: { claimId: string; onClose: () => voi
                         )
                       }
                     >
-                      ❌ Từ chối yêu cầu
+                      Từ chối yêu cầu
                     </Button>
                   </div>
                 </div>

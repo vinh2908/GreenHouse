@@ -296,7 +296,7 @@ export default function ServicesPage() {
                   <TableCell className="text-sm">
                     {s.pricing_model === 'fixed' ? (
                       <span className="font-semibold text-emerald-700">
-                        🏷️ Giá cam kết: {formatVND(s.fixed_price ?? 0)}
+                        Giá cam kết: {formatVND(s.fixed_price ?? 0)}
                       </span>
                     ) : (
                       <>

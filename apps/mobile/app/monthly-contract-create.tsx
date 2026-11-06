@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState, useRef } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, TextInput } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { ArrowLeft, Check } from 'lucide-react-native';
+import { ArrowLeft, Check, Star } from 'lucide-react-native';
 import dayjs from 'dayjs';
 import Toast from 'react-native-toast-message';
 import { useFavorites, useAddresses, useServices, useCreateMonthlyContract } from '@/hooks/use-api';
@@ -44,7 +44,9 @@ export default function MonthlyContractCreateScreen() {
 
   const [helperId, setHelperId] = useState<string | undefined>(params.helperId);
   const [serviceId, setServiceId] = useState<string | undefined>();
-  const [title, setTitle] = useState(lang === 'en' ? 'Monthly Home Helper' : 'Giúp việc nhà theo tháng');
+  const [title, setTitle] = useState(
+    lang === 'en' ? 'Monthly Home Helper' : 'Giúp việc nhà theo tháng',
+  );
   const [salary, setSalary] = useState('');
   const [days, setDays] = useState<number[]>([1, 2, 3, 4, 5]);
   const [timeStart, setTimeStart] = useState('08:00');
@@ -106,11 +108,14 @@ export default function MonthlyContractCreateScreen() {
     const errors: Record<string, string> = {};
     if (!helperId) {
       errors.helperId =
-        lang === 'en' ? 'Please select a helper from favorites' : 'Vui lòng chọn thợ từ danh sách yêu thích';
+        lang === 'en'
+          ? 'Please select a helper from favorites'
+          : 'Vui lòng chọn thợ từ danh sách yêu thích';
     }
     const salaryNum = Number(salary.replace(/[^\d]/g, ''));
     if (!salaryNum || salaryNum < 100000) {
-      errors.salary = lang === 'en' ? 'Minimum monthly salary is 100,000₫' : 'Lương tháng tối thiểu 100.000₫';
+      errors.salary =
+        lang === 'en' ? 'Minimum monthly salary is 100,000₫' : 'Lương tháng tối thiểu 100.000₫';
     }
     if (days.length === 0) {
       errors.days =
@@ -120,11 +125,15 @@ export default function MonthlyContractCreateScreen() {
     }
     if (!/^\d{4}-\d{2}-\d{2}$/.test(startDate.trim())) {
       errors.startDate =
-        lang === 'en' ? 'Start date must be in YYYY-MM-DD format' : 'Ngày bắt đầu phải có dạng YYYY-MM-DD';
+        lang === 'en'
+          ? 'Start date must be in YYYY-MM-DD format'
+          : 'Ngày bắt đầu phải có dạng YYYY-MM-DD';
     }
     if (endDate.trim() && !/^\d{4}-\d{2}-\d{2}$/.test(endDate.trim())) {
       errors.endDate =
-        lang === 'en' ? 'End date must be in YYYY-MM-DD format' : 'Ngày kết thúc phải có dạng YYYY-MM-DD';
+        lang === 'en'
+          ? 'End date must be in YYYY-MM-DD format'
+          : 'Ngày kết thúc phải có dạng YYYY-MM-DD';
     }
 
     // Ưu tiên địa chỉ đã lưu (có sẵn tọa độ); nếu nhập tay thì dùng tọa độ
@@ -228,7 +237,9 @@ export default function MonthlyContractCreateScreen() {
             {lang === 'en' ? 'Hire Helper by Month' : 'Thuê giúp việc theo tháng'}
           </Text>
           <Text style={{ fontSize: fs(12), color: COLORS.gray[500] }}>
-            {lang === 'en' ? 'Helper will review the contract before it takes effect' : 'Thợ sẽ duyệt hợp đồng trước khi có hiệu lực'}
+            {lang === 'en'
+              ? 'Helper will review the contract before it takes effect'
+              : 'Thợ sẽ duyệt hợp đồng trước khi có hiệu lực'}
           </Text>
         </View>
       </View>
@@ -241,7 +252,9 @@ export default function MonthlyContractCreateScreen() {
         {/* ── Chọn thợ ── */}
         <Card style={{ gap: 10 }}>
           <Text style={{ fontSize: fs(15), fontWeight: '800', color: COLORS.gray[900] }}>
-            {lang === 'en' ? '1. Select helper (from favorites)' : '1. Chọn thợ (từ danh sách yêu thích)'}
+            {lang === 'en'
+              ? '1. Select helper (from favorites)'
+              : '1. Chọn thợ (từ danh sách yêu thích)'}
           </Text>
           {favLoading ? (
             <LoadingSpinner size="small" />
@@ -314,7 +327,9 @@ export default function MonthlyContractCreateScreen() {
               setSalary(v);
               clearFieldError('salary');
             }}
-            placeholder={lang === 'en' ? 'Monthly wage (VND), e.g. 8000000' : 'Lương tháng (VNĐ), VD: 8000000'}
+            placeholder={
+              lang === 'en' ? 'Monthly wage (VND), e.g. 8000000' : 'Lương tháng (VNĐ), VD: 8000000'
+            }
             keyboardType="numeric"
             style={[inputStyle, fieldErrors.salary ? { borderColor: COLORS.error } : null]}
           />
@@ -442,8 +457,11 @@ export default function MonthlyContractCreateScreen() {
                   }}
                 >
                   <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: fs(13.5), fontWeight: '700', color: COLORS.gray[800] }}>
-                      {a.label || (lang === 'en' ? 'Address' : 'Địa chỉ')} {a.is_default ? (lang === 'en' ? '· Default' : '· Mặc định') : ''}
+                    <Text
+                      style={{ fontSize: fs(13.5), fontWeight: '700', color: COLORS.gray[800] }}
+                    >
+                      {a.label || (lang === 'en' ? 'Address' : 'Địa chỉ')}{' '}
+                      {a.is_default ? (lang === 'en' ? '· Default' : '· Mặc định') : ''}
                     </Text>
                     <Text style={{ fontSize: fs(12.5), color: COLORS.gray[600] }}>
                       {a.full_address}, {a.district}, {a.city}
@@ -461,7 +479,11 @@ export default function MonthlyContractCreateScreen() {
                   setFullAddress(v);
                   clearFieldError('address');
                 }}
-                placeholder={lang === 'en' ? 'Full address (street, number...)' : 'Địa chỉ đầy đủ (số nhà, đường…)'}
+                placeholder={
+                  lang === 'en'
+                    ? 'Full address (street, number...)'
+                    : 'Địa chỉ đầy đủ (số nhà, đường…)'
+                }
                 style={[inputStyle, fieldErrors.address ? { borderColor: COLORS.error } : null]}
               />
               <TextInput
@@ -489,7 +511,9 @@ export default function MonthlyContractCreateScreen() {
         </Card>
 
         <Button
-          title={lang === 'en' ? 'Send contract proposal to helper' : 'Gửi đề nghị hợp đồng cho thợ'}
+          title={
+            lang === 'en' ? 'Send contract proposal to helper' : 'Gửi đề nghị hợp đồng cho thợ'
+          }
           loading={create.isPending}
           onPress={handleSubmit}
         />
@@ -538,7 +562,10 @@ function HelperRow({
       <View style={{ flex: 1 }}>
         <Text style={{ fontSize: fs(14), fontWeight: '700', color: COLORS.gray[900] }}>{name}</Text>
         {rating ? (
-          <Text style={{ fontSize: fs(12), color: COLORS.gray[500] }}>⭐ {rating.toFixed(1)}</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
+            <Star size={12} color="#F59E0B" fill="#F59E0B" />
+            <Text style={{ fontSize: fs(12), color: COLORS.gray[500] }}>{rating.toFixed(1)}</Text>
+          </View>
         ) : null}
       </View>
       {selected && <Check size={18} color={COLORS.primary} />}

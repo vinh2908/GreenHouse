@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, RefreshControl } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { ChevronRight, Plus, Clock, MapPin } from 'lucide-react-native';
+import { ChevronRight, Plus, Clock, MapPin, ClipboardList } from 'lucide-react-native';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import 'dayjs/locale/vi';
@@ -31,7 +31,14 @@ export default function CustomerJobsScreen() {
   const isSwitchingRole = useAuthStore(s => s.isSwitchingRole);
   const isHelper = user?.active_role === 'helper';
 
-  const { data: jobs, isLoading, isError, isRefetching, refetch, dataUpdatedAt } = useMyJobs(TABS[activeTab].key);
+  const {
+    data: jobs,
+    isLoading,
+    isError,
+    isRefetching,
+    refetch,
+    dataUpdatedAt,
+  } = useMyJobs(TABS[activeTab].key);
   const insets = useSafeAreaInsets();
 
   useEffect(() => {
@@ -136,7 +143,10 @@ export default function CustomerJobsScreen() {
             {t('jobs_title')}
           </Text>
           <Text style={{ fontSize: fs(12), color: COLORS.gray[500], marginTop: 2 }}>
-            {t('jobs_subtitle')} {dataUpdatedAt ? `• ${lang === 'en' ? 'Updated' : 'Cập nhật'} lúc ${dayjs(dataUpdatedAt).format('HH:mm')}` : ''}
+            {t('jobs_subtitle')}{' '}
+            {dataUpdatedAt
+              ? `• ${lang === 'en' ? 'Updated' : 'Cập nhật'} lúc ${dayjs(dataUpdatedAt).format('HH:mm')}`
+              : ''}
           </Text>
         </View>
         <TouchableOpacity
@@ -227,7 +237,7 @@ export default function CustomerJobsScreen() {
         ) : !isLoading && (!jobs || jobs.length === 0) ? (
           <Card style={{ alignItems: 'center', paddingVertical: 40 }}>
             <EmptyState
-              emoji="📋"
+              icon={<ClipboardList size={36} color={COLORS.gray[400]} />}
               title={t('jobs_empty_title')}
               subtitle={
                 activeTab === 0
@@ -288,10 +298,7 @@ export default function CustomerJobsScreen() {
                     style={{ flexDirection: 'row', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}
                   >
                     <Badge
-                      label={
-                        tService(job.service_id) ||
-                        t('jobs_service_fallback')
-                      }
+                      label={tService(job.service_id) || t('jobs_service_fallback')}
                       size="sm"
                     />
                     {job.recurring_plan_id ? (
@@ -320,14 +327,18 @@ export default function CustomerJobsScreen() {
                     ) : null}
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
                       <MapPin size={13} color={COLORS.gray[500]} />
-                      <Text style={{ fontSize: fs(12), color: COLORS.gray[600], fontWeight: '500' }}>
+                      <Text
+                        style={{ fontSize: fs(12), color: COLORS.gray[600], fontWeight: '500' }}
+                      >
                         {job.address?.district || job.address?.city || t('jobs_unspecified')}
                       </Text>
                     </View>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
                       <Clock size={13} color={COLORS.gray[400]} />
                       <Text style={{ fontSize: fs(12), color: COLORS.gray[500] }}>
-                        {dayjs(job.created_at).locale(lang === 'en' ? 'en' : 'vi').fromNow()}
+                        {dayjs(job.created_at)
+                          .locale(lang === 'en' ? 'en' : 'vi')
+                          .fromNow()}
                       </Text>
                     </View>
                   </View>
@@ -345,7 +356,9 @@ export default function CustomerJobsScreen() {
                     {(() => {
                       if (job.status === 'cancelled') {
                         return (
-                          <Text style={{ fontSize: fs(12.5), color: COLORS.error, fontWeight: '700' }}>
+                          <Text
+                            style={{ fontSize: fs(12.5), color: COLORS.error, fontWeight: '700' }}
+                          >
                             {t('jobs_customer_cancelled')}
                           </Text>
                         );
@@ -353,7 +366,11 @@ export default function CustomerJobsScreen() {
                       if (job.status === 'refunded') {
                         return (
                           <Text
-                            style={{ fontSize: fs(12.5), color: COLORS.gray[600], fontWeight: '700' }}
+                            style={{
+                              fontSize: fs(12.5),
+                              color: COLORS.gray[600],
+                              fontWeight: '700',
+                            }}
                           >
                             {t('status_refunded')}
                           </Text>
@@ -361,7 +378,9 @@ export default function CustomerJobsScreen() {
                       }
                       if (job.status === 'disputed') {
                         return (
-                          <Text style={{ fontSize: fs(12.5), color: COLORS.error, fontWeight: '700' }}>
+                          <Text
+                            style={{ fontSize: fs(12.5), color: COLORS.error, fontWeight: '700' }}
+                          >
                             {t('status_disputed')}
                           </Text>
                         );

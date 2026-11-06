@@ -17,7 +17,9 @@ export default function ForgotPasswordScreen() {
 
   const cleanId = identifier.trim();
   const isEmail = cleanId.includes('@');
-  const isValidIdentifier = isEmail ? cleanId.length >= 5 && cleanId.includes('.') : /^0\d{9}$/.test(cleanId);
+  const isValidIdentifier = isEmail
+    ? cleanId.length >= 5 && cleanId.includes('.')
+    : /^0\d{9}$/.test(cleanId);
 
   const send = useMutation({
     mutationFn: () =>
@@ -42,7 +44,10 @@ export default function ForgotPasswordScreen() {
 
   return (
     <ScrollView contentContainerStyle={{ padding: 24, paddingTop: 64, gap: 16 }}>
-      <Text accessibilityRole="header" style={{ fontWeight: '700', fontSize: fs(24), color: '#111827' }}>
+      <Text
+        accessibilityRole="header"
+        style={{ fontWeight: '700', fontSize: fs(24), color: '#111827' }}
+      >
         {lang === 'en' ? 'Reset Password' : 'Đặt lại mật khẩu'}
       </Text>
       <Text style={{ fontSize: fs(14), color: '#4B5563', lineHeight: 20 }}>
@@ -80,7 +85,15 @@ export default function ForgotPasswordScreen() {
 
       {requested && (
         <View style={{ gap: 14, marginTop: 8 }}>
-          <View style={{ backgroundColor: '#F0FDF4', padding: 12, borderRadius: 8, borderWidth: 1, borderColor: '#BBF7D0' }}>
+          <View
+            style={{
+              backgroundColor: '#F0FDF4',
+              padding: 12,
+              borderRadius: 8,
+              borderWidth: 1,
+              borderColor: '#BBF7D0',
+            }}
+          >
             <Text style={{ fontSize: fs(13), color: '#166534', fontWeight: '500', lineHeight: 18 }}>
               {lang === 'en'
                 ? `A 6-digit verification code has been sent to ${cleanId}. Please check your inbox (and spam folder). Code expires in 5 minutes.`
@@ -120,17 +133,41 @@ export default function ForgotPasswordScreen() {
       )}
 
       {!!error && (
-        <View style={{ backgroundColor: '#FEF2F2', padding: 12, borderRadius: 8, borderWidth: 1, borderColor: '#FECACA' }}>
-          <Text accessibilityRole="alert" style={{ color: '#DC2626', fontSize: fs(13), fontWeight: '500' }}>
+        <View
+          style={{
+            backgroundColor: '#FEF2F2',
+            padding: 12,
+            borderRadius: 8,
+            borderWidth: 1,
+            borderColor: '#FECACA',
+          }}
+        >
+          <Text
+            accessibilityRole="alert"
+            style={{ color: '#DC2626', fontSize: fs(13), fontWeight: '500' }}
+          >
             {error.response?.data?.message ||
-              (lang === 'en' ? 'Action failed. Please try again.' : 'Thao tác không thành công. Vui lòng thử lại.')}
+              (lang === 'en'
+                ? 'Action failed. Please try again.'
+                : 'Thao tác không thành công. Vui lòng thử lại.')}
           </Text>
         </View>
       )}
 
       {reset.isSuccess && (
-        <View style={{ backgroundColor: '#F0FDF4', padding: 14, borderRadius: 8, borderWidth: 1, borderColor: '#86EFAC' }}>
-          <Text accessibilityRole="alert" style={{ color: '#15803D', fontSize: fs(14), fontWeight: '600' }}>
+        <View
+          style={{
+            backgroundColor: '#F0FDF4',
+            padding: 14,
+            borderRadius: 8,
+            borderWidth: 1,
+            borderColor: '#86EFAC',
+          }}
+        >
+          <Text
+            accessibilityRole="alert"
+            style={{ color: '#15803D', fontSize: fs(14), fontWeight: '600' }}
+          >
             {lang === 'en'
               ? 'Password successfully changed! You can now log in with your new password.'
               : 'Đã đổi mật khẩu thành công! Bạn có thể đăng nhập bằng mật khẩu mới.'}

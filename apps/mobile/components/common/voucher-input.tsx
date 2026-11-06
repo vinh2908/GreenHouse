@@ -45,7 +45,13 @@ export function VoucherInput({
       onApplied(result.code, result);
     } catch (err: any) {
       const msg = err?.response?.data?.message;
-      setError(typeof msg === 'string' ? msg : (lang === 'en' ? 'Invalid discount code' : 'Mã giảm giá không hợp lệ'));
+      setError(
+        typeof msg === 'string'
+          ? msg
+          : lang === 'en'
+            ? 'Invalid discount code'
+            : 'Mã giảm giá không hợp lệ',
+      );
       onCleared();
     }
   };
@@ -74,9 +80,10 @@ export function VoucherInput({
             gap: 4,
           }}
         >
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <TicketPercent size={16} color="#065F46" />
             <Text style={{ flex: 1, fontWeight: '800', fontSize: fs(14.5), color: '#065F46' }}>
-              🎟️ {preview.code} —{' '}
+              {preview.code} —{' '}
               {preview.discount_type === 'percent'
                 ? lang === 'en'
                   ? `${preview.discount_value}% OFF`
@@ -117,15 +124,11 @@ export function VoucherInput({
                 <Text style={{ fontSize: fs(13), color: '#065F46', fontWeight: '600' }}>
                   {lang === 'en' ? 'Est. discount: −' : 'Giảm tạm tính: −'}
                   {fmt(calculatedDiscount)}₫
-                  {estimatedAmount ? (
-                    lang === 'en' ? (
-                      ` · Est. payment ~${fmt(calculatedFinal)}₫`
-                    ) : (
-                      ` · Cần thanh toán khoảng ${fmt(calculatedFinal)}₫`
-                    )
-                  ) : (
-                    ''
-                  )}
+                  {estimatedAmount
+                    ? lang === 'en'
+                      ? ` · Est. payment ~${fmt(calculatedFinal)}₫`
+                      : ` · Cần thanh toán khoảng ${fmt(calculatedFinal)}₫`
+                    : ''}
                 </Text>
               );
             }
@@ -202,7 +205,9 @@ export function VoucherInput({
             </TouchableOpacity>
           </View>
           {error ? (
-            <Text style={{ fontSize: fs(12.5), color: COLORS.error, fontWeight: '600' }}>{error}</Text>
+            <Text style={{ fontSize: fs(12.5), color: COLORS.error, fontWeight: '600' }}>
+              {error}
+            </Text>
           ) : (
             <Text style={{ fontSize: fs(12), color: COLORS.gray[500] }}>
               {lang === 'en'

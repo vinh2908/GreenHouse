@@ -152,7 +152,7 @@ export default function HelperAvailabilityScreen() {
           <ArrowLeft size={22} color={COLORS.gray[800]} />
         </TouchableOpacity>
         <Text style={{ fontSize: fs(17), fontWeight: '800', color: COLORS.gray[900] }}>
-          {lang === 'en' ? '🗓 Working Schedule' : '🗓 Lịch làm việc'}
+          {lang === 'en' ? 'Working Schedule' : 'Lịch làm việc'}
         </Text>
       </View>
 
@@ -165,7 +165,9 @@ export default function HelperAvailabilityScreen() {
             <Text style={{ fontWeight: '800', fontSize: fs(15), color: COLORS.gray[900] }}>
               {lang === 'en' ? 'Enable Working Schedule' : 'Bật lịch làm việc'}
             </Text>
-            <Text style={{ fontSize: fs(13), color: COLORS.gray[500], marginTop: 2, lineHeight: 19 }}>
+            <Text
+              style={{ fontSize: fs(13), color: COLORS.gray[500], marginTop: 2, lineHeight: 19 }}
+            >
               {lang === 'en'
                 ? 'When enabled, you only see & get notified for jobs during your working days/hours. When disabled, you receive all jobs as usual.'
                 : 'Khi bật, bạn chỉ thấy & được thông báo các đơn rơi vào ngày/giờ làm việc của mình. Khi tắt, bạn nhận mọi đơn như trước.'}
@@ -254,8 +256,10 @@ export default function HelperAvailabilityScreen() {
           ) : (
             blockedDates.map(d => (
               <View key={d} style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                <Text style={{ flex: 1, fontSize: fs(14), fontWeight: '700', color: COLORS.gray[800] }}>
-                  🚫 {d}
+                <Text
+                  style={{ flex: 1, fontSize: fs(14), fontWeight: '700', color: COLORS.gray[800] }}
+                >
+                  {d}
                 </Text>
                 <TouchableOpacity
                   onPress={() => setBlockedDates(prev => prev.filter(x => x !== d))}
@@ -270,7 +274,9 @@ export default function HelperAvailabilityScreen() {
             <TextInput
               value={newDate}
               onChangeText={setNewDate}
-              placeholder={lang === 'en' ? 'YYYY-MM-DD (e.g. 2026-11-01)' : 'YYYY-MM-DD (VD: 2026-11-01)'}
+              placeholder={
+                lang === 'en' ? 'YYYY-MM-DD (e.g. 2026-11-01)' : 'YYYY-MM-DD (VD: 2026-11-01)'
+              }
               placeholderTextColor={COLORS.gray[400]}
               style={{
                 flex: 1,

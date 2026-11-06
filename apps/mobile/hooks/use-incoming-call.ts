@@ -27,27 +27,30 @@ export function useIncomingCallListener() {
   const clearIncoming = useCallStore(s => s.clearIncoming);
 
   useEffect(() => {
-    const unsubIncoming = socketService.on<CallIncomingPayload>(SOCKET_EVENTS.CALL_INCOMING, payload => {
-      const session_id = payload?.session_id ?? payload?.sessionId;
-      const job_id = payload?.job_id ?? payload?.jobId;
-      const caller_id = payload?.caller_id ?? payload?.callerId ?? '';
-      if (!session_id || !job_id) return;
-      setIncoming({
-        session_id,
-        job_id,
-        caller_id,
-        room_id: payload?.room_id ?? payload?.roomId,
-        provider: payload?.provider,
-      });
-      if (Platform.OS !== 'web') {
-        callkeepService.displayIncoming({
-          sessionId: session_id,
-          jobId: job_id,
-          callerId: caller_id,
-          callerName: 'Đối tác GreenHouse',
+    const unsubIncoming = socketService.on<CallIncomingPayload>(
+      SOCKET_EVENTS.CALL_INCOMING,
+      payload => {
+        const session_id = payload?.session_id ?? payload?.sessionId;
+        const job_id = payload?.job_id ?? payload?.jobId;
+        const caller_id = payload?.caller_id ?? payload?.callerId ?? '';
+        if (!session_id || !job_id) return;
+        setIncoming({
+          session_id,
+          job_id,
+          caller_id,
+          room_id: payload?.room_id ?? payload?.roomId,
+          provider: payload?.provider,
         });
-      }
-    });
+        if (Platform.OS !== 'web') {
+          callkeepService.displayIncoming({
+            sessionId: session_id,
+            jobId: job_id,
+            callerId: caller_id,
+            callerName: 'Đối tác GreenHouse',
+          });
+        }
+      },
+    );
 
     const handleCallEnded = (payload?: { sessionId?: string; session_id?: string }) => {
       const currentIncoming = useCallStore.getState().incoming;

@@ -62,7 +62,9 @@ export function SosBackupCustomerBanner({ job }: { job: any }) {
                 : 'Người giúp việc gặp sự cố — cần bạn quyết định'}
             </Text>
           </View>
-          <Text style={{ fontSize: fs(13), color: COLORS.gray[700], lineHeight: Math.round(fs(19)) }}>
+          <Text
+            style={{ fontSize: fs(13), color: COLORS.gray[700], lineHeight: Math.round(fs(19)) }}
+          >
             {lang === 'en'
               ? 'The helper cannot continue this job. You can agree to switch helpers (price unchanged) or cancel with 100% refund.'
               : 'Người giúp việc không thể tiếp tục đơn này. Bạn có thể đồng ý đổi người khác (giữ nguyên giá) hoặc hủy đơn với hoàn tiền 100%.'}
@@ -93,7 +95,9 @@ export function SosBackupCustomerBanner({ job }: { job: any }) {
                 : 'Người giúp việc đã được thay thế do sự cố'}
             </Text>
           </View>
-          <Text style={{ fontSize: fs(13), color: COLORS.gray[700], lineHeight: Math.round(fs(19)) }}>
+          <Text
+            style={{ fontSize: fs(13), color: COLORS.gray[700], lineHeight: Math.round(fs(19)) }}
+          >
             {lang === 'en'
               ? `The previous helper encountered an unexpected incident, so another helper has taken over your job${
                   replacement.replaced_at

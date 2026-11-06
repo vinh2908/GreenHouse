@@ -26,7 +26,8 @@ const demandMapHtml = (
   lang = 'vi',
 ) => {
   const mapKey = process.env.EXPO_PUBLIC_GOONG_MAP_KEY || '';
-  const noKeyMsg = lang === 'en' ? 'Goong map key not configured.' : 'Chưa cấu hình khoá bản đồ Goong.';
+  const noKeyMsg =
+    lang === 'en' ? 'Goong map key not configured.' : 'Chưa cấu hình khoá bản đồ Goong.';
   const loadFailMsg = lang === 'en' ? 'Unable to load Goong map.' : 'Không tải được bản đồ Goong.';
   const jobsWord = lang === 'en' ? 'jobs' : 'việc';
   const areasJson = JSON.stringify(
@@ -228,7 +229,7 @@ const demandMapHtml = (
               areas.forEach(function (a) {
                 const el = document.createElement('div');
                 el.className = 'demand-pill' + (a.isFocused ? ' focused' : '');
-                el.innerHTML = '<span>🔥</span><span>' + a.open_jobs + ' ' + '${jobsWord}' + ' · ' + a.district + '</span>';
+                el.innerHTML = '<span>' + a.open_jobs + ' ' + '${jobsWord}' + ' · ' + a.district + '</span>';
                 new maplibregl.Marker({ element: el })
                   .setLngLat([a.lng, a.lat])
                   .addTo(map);
@@ -258,10 +259,12 @@ export function DemandMapView({ areas, focus, height = 300, userCoords }: Props)
   const totalJobs = withCoords.reduce((sum, a) => sum + (a.open_jobs || 0), 0);
   const statusText =
     totalJobs > 0
-      ? (lang === 'en'
-          ? `${totalJobs} jobs waiting across ${withCoords.length} areas`
-          : `${totalJobs} đơn chờ tại ${withCoords.length} khu vực`)
-      : (lang === 'en' ? 'Demand map around you' : 'Bản đồ nhu cầu việc quanh bạn');
+      ? lang === 'en'
+        ? `${totalJobs} jobs waiting across ${withCoords.length} areas`
+        : `${totalJobs} đơn chờ tại ${withCoords.length} khu vực`
+      : lang === 'en'
+        ? 'Demand map around you'
+        : 'Bản đồ nhu cầu việc quanh bạn';
 
   const html = useMemo(
     () => demandMapHtml(center, zoom, withCoords, activeFocus?.district, statusText, lang),

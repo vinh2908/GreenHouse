@@ -108,18 +108,14 @@ export default function HelperProfileScreen() {
       }
     };
 
-    Alert.alert(
-      t('helper_profile.logout_title'),
-      t('helper_profile.logout_msg'),
-      [
-        { text: t('helper_profile.stay'), style: 'cancel' },
-        {
-          text: t('helper_profile.logout_now'),
-          style: 'destructive',
-          onPress: doLogout,
-        },
-      ],
-    );
+    Alert.alert(t('helper_profile.logout_title'), t('helper_profile.logout_msg'), [
+      { text: t('helper_profile.stay'), style: 'cancel' },
+      {
+        text: t('helper_profile.logout_now'),
+        style: 'destructive',
+        onPress: doLogout,
+      },
+    ]);
   };
 
   const KYC_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
@@ -162,7 +158,12 @@ export default function HelperProfileScreen() {
           >
             <Avatar name={user?.full_name} uri={user?.avatar} size={80} />
             <Text
-              style={{ fontSize: fs(20), fontWeight: '800', color: COLORS.gray[900], marginTop: 12 }}
+              style={{
+                fontSize: fs(20),
+                fontWeight: '800',
+                color: COLORS.gray[900],
+                marginTop: 12,
+              }}
             >
               {user?.full_name}
             </Text>
@@ -361,7 +362,12 @@ export default function HelperProfileScreen() {
                   {t('helper_profile.kyc_title')}
                 </Text>
                 <Text
-                  style={{ fontSize: fs(13), color: KYC_STATUS.color, marginTop: 2, fontWeight: '600' }}
+                  style={{
+                    fontSize: fs(13),
+                    color: KYC_STATUS.color,
+                    marginTop: 2,
+                    fontWeight: '600',
+                  }}
                 >
                   {KYC_STATUS.label}
                 </Text>
@@ -452,7 +458,12 @@ export default function HelperProfileScreen() {
                 >
                   <item.icon size={20} color={COLORS.gray[600]} />
                   <Text
-                    style={{ flex: 1, fontSize: fs(15), color: COLORS.gray[900], fontWeight: '600' }}
+                    style={{
+                      flex: 1,
+                      fontSize: fs(15),
+                      color: COLORS.gray[900],
+                      fontWeight: '600',
+                    }}
                   >
                     {item.label}
                   </Text>
