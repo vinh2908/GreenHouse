@@ -1438,7 +1438,7 @@ export default function JobDetailScreen() {
                         {stepTime}
                       </Text>
                     ) : !done && !active ? (
-                      <Text style={{ fontSize: fs(11), color: COLORS.gray[400], marginTop: 1 }}>
+                      <Text style={{ fontSize: fs(11), color: COLORS.gray[500], marginTop: 1 }}>
                         {lang === 'en' ? 'Upcoming' : 'Chưa tới'}
                       </Text>
                     ) : null}
