@@ -2023,7 +2023,7 @@ export default function BookingScreen() {
                   <Text style={{ fontSize: 14, fontWeight: '700', color: COLORS.gray[700] }}>
                     {t('booking_photos_label', { count: photos.length })}
                   </Text>
-                  <Text style={{ fontSize: 12, color: COLORS.gray[400] }}>{t('booking_optional')}</Text>
+                  <Text style={{ fontSize: 12, color: COLORS.gray[500] }}>{t('booking_optional')}</Text>
                 </View>
 
                 <View style={{ flexDirection: 'row', gap: 10 }}>

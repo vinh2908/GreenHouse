@@ -1327,7 +1327,7 @@ export default function CustomerHomeScreen() {
                 onPress={() => setServiceSearchQuery('')}
                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               >
-                <Text style={{ fontSize: fs(13), fontWeight: '700', color: COLORS.gray[400] }}>✕</Text>
+                <Text style={{ fontSize: fs(13), fontWeight: '700', color: COLORS.gray[500] }}>✕</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -1877,7 +1877,7 @@ export default function CustomerHomeScreen() {
               >
                 {t('voucher_empty_title')}
               </Text>
-              <Text style={{ fontSize: fs(12), color: COLORS.gray[400], marginTop: 2 }}>
+              <Text style={{ fontSize: fs(12), color: COLORS.gray[500], marginTop: 2 }}>
                 {t('voucher_empty_sub')}
               </Text>
             </View>
@@ -2108,7 +2108,7 @@ export default function CustomerHomeScreen() {
                     <Text
                       style={{
                         fontSize: fs(12),
-                        color: COLORS.gray[400],
+                        color: COLORS.gray[500],
                         marginTop: 4,
                         textAlign: 'center',
                       }}
@@ -2945,7 +2945,7 @@ export default function CustomerHomeScreen() {
               <Text
                 style={{
                   fontSize: fs(12),
-                  color: COLORS.gray[400],
+                  color: COLORS.gray[500],
                   marginTop: 4,
                   textAlign: 'center',
                 }}

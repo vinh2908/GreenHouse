@@ -305,7 +305,7 @@ export default function CustomerProfileScreen() {
                 style={{
                   fontSize: fs(12),
                   fontWeight: '700',
-                  color: COLORS.gray[400],
+                  color: COLORS.gray[500],
                   marginBottom: 8,
                   textTransform: 'uppercase',
                   letterSpacing: 0.5,
@@ -389,7 +389,7 @@ export default function CustomerProfileScreen() {
             style={{
               textAlign: 'center',
               fontSize: fs(12),
-              color: COLORS.gray[400],
+              color: COLORS.gray[500],
               fontWeight: '500',
             }}
           >

@@ -598,7 +598,7 @@ export default function HelperDashboardScreen() {
                   <Text style={{ fontSize: fs(17), fontWeight: '800', color: COLORS.gray[900] }}>
                     {t('dash_jobs_unit', { count: totalCompleted })}
                   </Text>
-                  <Text style={{ fontSize: fs(11), color: COLORS.gray[400], marginTop: 2 }}>
+                  <Text style={{ fontSize: fs(11), color: COLORS.gray[500], marginTop: 2 }}>
                     {t('dash_acceptance_rate')}
                   </Text>
                 </Card>
@@ -622,7 +622,7 @@ export default function HelperDashboardScreen() {
                   <Text style={{ fontSize: fs(17), fontWeight: '800', color: '#F59E0B' }}>
                     ★ {avgRating.toFixed(1)}
                   </Text>
-                  <Text style={{ fontSize: fs(11), color: COLORS.gray[400], marginTop: 2 }}>
+                  <Text style={{ fontSize: fs(11), color: COLORS.gray[500], marginTop: 2 }}>
                     {t('dash_top_helper')}
                   </Text>
                 </Card>

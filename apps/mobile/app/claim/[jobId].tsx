@@ -289,7 +289,7 @@ export default function ClaimScreen() {
                           {entry.note}
                         </Text>
                       ) : null}
-                      <Text style={{ fontSize: 11.5, color: COLORS.gray[400] }}>
+                      <Text style={{ fontSize: 11.5, color: COLORS.gray[500] }}>
                         {entry.actor_role === 'admin' ? 'Admin' : (lang === 'en' ? 'You' : 'Bạn')} ·{' '}
                         {dayjs(entry.at).format('HH:mm DD/MM/YYYY')}
                       </Text>

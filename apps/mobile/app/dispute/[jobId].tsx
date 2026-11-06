@@ -348,7 +348,7 @@ export default function DisputeCaseScreen() {
                           size="sm"
                         />
                       </View>
-                      <Text style={{ fontSize: 11.5, color: COLORS.gray[400] }}>
+                      <Text style={{ fontSize: 11.5, color: COLORS.gray[500] }}>
                         {dayjs(entry.created_at).format('HH:mm DD/MM/YYYY')}
                       </Text>
                       {entry.text ? (

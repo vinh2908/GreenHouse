@@ -419,7 +419,7 @@ export default function HelperEarningsScreen() {
                               <Clock size={12} color={COLORS.warning} />
                             )}
                             <Text
-                              style={{ fontSize: fs(11), color: COLORS.gray[400], fontWeight: '600' }}
+                              style={{ fontSize: fs(11), color: COLORS.gray[500], fontWeight: '600' }}
                             >
                               {tx.status === 'success' ? (lang === 'en' ? 'Success' : 'Thành công') : (lang === 'en' ? 'Processing' : 'Đang xử lý')}
                             </Text>

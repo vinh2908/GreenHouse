@@ -64,7 +64,7 @@ export function DisplaySettingsSection() {
         style={{
           fontSize: fs(12),
           fontWeight: '700',
-          color: COLORS.gray[400],
+          color: COLORS.gray[500],
           marginBottom: 8,
           textTransform: 'uppercase',
           letterSpacing: 0.5,

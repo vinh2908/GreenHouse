@@ -607,7 +607,7 @@ export default function ChatScreen() {
                     <Text
                       style={{
                         fontSize: 10.5,
-                        color: COLORS.gray[400],
+                        color: COLORS.gray[500],
                         marginTop: 4,
                         marginHorizontal: 6,
                         fontWeight: '600',
@@ -652,7 +652,7 @@ export default function ChatScreen() {
                   <Text
                     style={{
                       fontSize: 10.5,
-                      color: COLORS.gray[400],
+                      color: COLORS.gray[500],
                       marginTop: 4,
                       marginHorizontal: 6,
                       fontWeight: '600',

@@ -125,7 +125,7 @@ export default function ConversationsScreen() {
                   </View>
                   <View style={{ alignItems: 'flex-end', gap: 6 }}>
                     {conv.last_message_at && (
-                      <Text style={{ fontSize: fs(11), color: COLORS.gray[400], fontWeight: '600' }}>
+                      <Text style={{ fontSize: fs(11), color: COLORS.gray[500], fontWeight: '600' }}>
                         {formatConversationTime(conv.last_message_at, undefined, lang)}
                       </Text>
                     )}

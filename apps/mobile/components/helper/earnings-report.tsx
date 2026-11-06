@@ -326,7 +326,7 @@ export function EarningsReport() {
         )}
       </Card>
 
-      <Text style={{ fontSize: 11.5, color: COLORS.gray[400] }}>
+      <Text style={{ fontSize: 11.5, color: COLORS.gray[500] }}>
         {lang === 'en'
           ? '* Figures represent net earnings (platform fees deducted).'
           : '* Số liệu là thu nhập ròng (đã trừ phí sàn đối với đơn tiền mặt).'}

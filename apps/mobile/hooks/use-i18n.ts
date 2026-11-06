@@ -89,3 +89,10 @@ export function useTranslation() {
     fs,
   };
 }
+
+/** Standalone helper tính cỡ chữ theo cài đặt hiện tại: fs(14) → 14 (thường) hoặc 17.5 (lớn). */
+export function fs(base: number): number {
+  const textSize = useSettingsStore.getState().textSize;
+  const scale = textScaleFor(textSize);
+  return Math.round(base * scale * 10) / 10;
+}
