@@ -74,6 +74,8 @@ export const STRINGS = {
     en: 'You have a job in progress. Please finish or end it before turning off job receiving.',
   },
   helper_dash_understood: { vi: 'Đã hiểu', en: 'Understood' },
+  time_badge_new: { vi: 'MỚI', en: 'NEW' },
+  time_badge_night: { vi: 'ĐÊM', en: 'NIGHT' },
 
   // ─── Job statuses (dùng qua JobStatusBadge) ───────────────────────────────
   status_open: { vi: 'Đang tìm thợ', en: 'Finding helper' },
