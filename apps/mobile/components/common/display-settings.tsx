@@ -15,6 +15,7 @@ function Segmented<T extends string>({
   onChange: (v: T) => void;
 }) {
   const { fs } = useTranslation();
+  const tc = useThemeColors();
   return (
     <View
       style={{

@@ -46,9 +46,9 @@ export const MONTHLY_STATUS_META: Record<
     label: 'Đã hủy',
     label_en: 'Cancelled',
     bg: COLORS.gray[100],
-    color: tc.textMuted,
+    color: COLORS.gray[500],
   },
-  ended: { label: 'Đã kết thúc', label_en: 'Ended', bg: COLORS.gray[100], color: tc.textSecondary },
+  ended: { label: 'Đã kết thúc', label_en: 'Ended', bg: COLORS.gray[100], color: COLORS.gray[600] },
 };
 
 export function describeMonthlySchedule(c: MonthlyContractItem, lang?: string): string {

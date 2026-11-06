@@ -27,7 +27,6 @@ import { InitialPermissionsModal } from '@/components/common/initial-permissions
 import { useBackgroundGps } from '@/hooks/use-background-gps';
 import { useAuthStore } from '@/stores/auth.store';
 import { useSettingsStore } from '@/stores/settings.store';
-import { useSettingsStore } from '@/stores/settings.store';
 import { translate } from '@/services/i18n';
 import { COLORS, useThemeColors } from '@/components/ui';
 import { takePendingToastRoute } from '@/services/toast-navigation';

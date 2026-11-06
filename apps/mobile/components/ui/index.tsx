@@ -122,6 +122,7 @@ export function Button({
   onPress,
   ...props
 }: ButtonProps) {
+  const tc = useThemeColors();
   const isPrimary = variant === 'primary' || variant === 'gradient';
   const isSecondary = variant === 'secondary';
   const isOutline = variant === 'outline';
@@ -145,7 +146,6 @@ export function Button({
           : COLORS.primary;
 
   const { fs } = useTranslation();
-  const tc = useThemeColors();
   // B18: nút cỡ nhỏ vẫn đạt chuẩn chạm 44px (13px chữ + 2×12px padding + border)
   const paddingY = { sm: 12, md: 13, lg: 16 }[size];
   const fontSize = fs({ sm: 13, md: 15, lg: 16 }[size]);
