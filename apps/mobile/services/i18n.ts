@@ -1397,10 +1397,73 @@ export const SOS_BACKUP_REASONS_I18N: Record<string, { vi: string; en: string }>
 export function formatNotificationTitle(
   title: string | undefined | null,
   lang: AppLanguage = 'vi',
+  type?: string,
 ): string {
-  if (!title) return '';
-  if (lang !== 'en') return title;
-  const t = title.trim();
+  if (!title && !type) return '';
+  if (lang !== 'en') return title || '';
+  const t = (title || '').trim();
+
+  if (type) {
+    switch (type) {
+      case 'quote_accepted':
+        return 'Quote Accepted!';
+      case 'quote_rejected':
+        return 'Quote Declined';
+      case 'new_quote_received':
+        return 'New Quote Received';
+      case 'new_job_nearby':
+        return 'New job near you 🎉';
+      case 'job_completed':
+        return 'Job Completed';
+      case 'helper_on_the_way':
+        return 'Helper is on the way';
+      case 'helper_arrived':
+        return 'Helper has arrived';
+      case 'kyc_approved':
+        return 'e-KYC Profile Approved';
+      case 'kyc_rejected':
+        return 'e-KYC Profile Rejected';
+      case 'withdrawal_processed':
+        return 'Withdrawal Successful';
+      case 'new_message':
+        return 'New Message';
+      case 'support_reply':
+        return 'Support Team Replied';
+      case 'monthly_contract_new':
+        return '📅 New Monthly Contract Offer';
+      case 'monthly_contract_accepted':
+        return '✅ Helper Accepted Monthly Contract';
+      case 'monthly_contract_rejected':
+        return '❌ Helper Declined Monthly Contract';
+      case 'monthly_contract_cancelled':
+        return '🚫 Monthly Contract Cancelled';
+      case 'monthly_contract_ended':
+        return '🏁 Monthly Contract Ended';
+      case 'monthly_contract_checkin':
+        return '🟢 Helper Checked In Today';
+      case 'monthly_contract_attendance':
+        return /vắng/i.test(t) ? '❌ Work Session Marked Absent' : '✅ Work Session Confirmed';
+      case 'monthly_contract_leave_request':
+        return '🌴 Helper Requested 1 Day Leave';
+      case 'monthly_contract_leave_response':
+        return /từ chối/i.test(t) ? '❌ Leave Request Rejected' : '✅ Leave Request Approved';
+      case 'monthly_contract_settled':
+        return '💰 Monthly Salary Finalized';
+      case 'insurance_claim_update':
+        if (/từ chối/i.test(t)) return '❌ Insurance Claim Rejected';
+        if (/chi trả|được duyệt/i.test(t)) return '💰 Insurance Claim Payout Approved';
+        return '🛡 Insurance Claim Under Review';
+    }
+  }
+
+  if (/^Hoàn tất đơn Tiền mặt!?$/i.test(t)) return 'Cash Order Completed!';
+  if (/^Tiền công đã cộng vào ví!?$/i.test(t)) return 'Earnings Credited to Wallet!';
+  if (/^🛡️?\s*Thợ đã nhận việc bảo hành!?$/i.test(t)) return '🛡 Helper Accepted Warranty Job!';
+  if (/^✅?\s*Đã có thợ nhận việc giá cam kết!?$/i.test(t)) return '✅ Helper Accepted Fixed-Price Job!';
+  if (/^✅?\s*Khách đã duyệt chi phí phát sinh!?$/i.test(t)) return '✅ Customer Approved Extra Expenses';
+  if (/^❌?\s*Khách từ chối chi phí phát sinh!?$/i.test(t)) return '❌ Customer Rejected Extra Expenses';
+  if (/^✅?\s*Thợ đã nhận hợp đồng theo tháng!?$/i.test(t)) return '✅ Helper Accepted Monthly Contract';
+  if (/^❌?\s*Thợ đã từ chối hợp đồng theo tháng!?$/i.test(t)) return '❌ Helper Declined Monthly Contract';
 
   if (/^Báo giá được chọn!?$/i.test(t)) return 'Quote Accepted!';
   if (/^Công việc bị hủy$/i.test(t)) return 'Job Cancelled';
@@ -1471,16 +1534,66 @@ export function formatNotificationTitle(
     return t.replace(/^Bảo hành:\s*/i, 'Warranty: ');
   }
 
-  return title;
+  return title || '';
 }
 
 export function formatNotificationBody(
   body: string | undefined | null,
   lang: AppLanguage = 'vi',
+  type?: string,
+  data?: any,
 ): string {
   if (!body) return '';
   if (lang !== 'en') return body;
   const b = body.trim();
+
+  // 1. payment_success (cash & escrow)
+  const cashComplete = b.match(/^Công việc\s*(".*?"|'.*?'|“.*?”)\s*đã nghiệm thu\.\s*Phí nền tảng đã được đối soát\.?$/i);
+  if (cashComplete) return `Job ${cashComplete[1]} has been inspected and approved. Platform fee settled.`;
+
+  const escrowComplete = b.match(/^Công việc\s*(".*?"|'.*?'|“.*?”)\s*đã hoàn thành\.\s*Thu nhập đã được giải ngân vào ví của bạn\.?$/i);
+  if (escrowComplete) return `Job ${escrowComplete[1]} is completed. Earnings disbursed to your wallet.`;
+
+  // 2. job_confirmed (warranty & fixed price)
+  const warrantyAccepted = b.match(/^Thợ đã nhận đơn bảo hành\s*(".*?"|'.*?'|“.*?”)\s*\(miễn phí\)\s*và sẽ liên hệ với bạn sớm\.?$/i);
+  if (warrantyAccepted) return `Helper accepted warranty order ${warrantyAccepted[1]} (free of charge) and will contact you shortly.`;
+
+  const fixedPriceAccepted = b.match(/^Đơn\s*(".*?"|'.*?'|“.*?”)\s*đã có thợ nhận với giá cam kết\s*(.*?₫?)\.?$/i);
+  if (fixedPriceAccepted) return `Job ${fixedPriceAccepted[1]} has been accepted by a helper at fixed price ${fixedPriceAccepted[2]}.`;
+
+  // 3. Extra cost amendment responses
+  const amendmentApproved = b.match(/^Tổng giá trị hợp đồng mới:\s*(.*?₫?)\.?$/i);
+  if (amendmentApproved) return `New total contract value: ${amendmentApproved[1]}`;
+
+  const amendmentRejected = b.match(/^Khách hàng không đồng ý khoản phát sinh\s*\((.*?)\)\.?$/i);
+  if (amendmentRejected) return `Customer did not approve extra cost (${amendmentRejected[1]}).`;
+
+  // 4. monthly_contract_accepted, _rejected, _attendance, _leave_response
+  const monthlyAccepted = b.match(/^Hợp đồng\s*(".*?"|'.*?'|“.*?”)\s*đã có hiệu lực từ\s*(.*?)\.?$/i);
+  if (monthlyAccepted) return `Contract ${monthlyAccepted[1]} is effective from ${monthlyAccepted[2]}.`;
+
+  const monthlyRejected = b.match(/^Thợ đã từ chối hợp đồng\s*(".*?"|'.*?'|“.*?”)\.\s*Bạn có thể mời thợ khác\.?$/i);
+  if (monthlyRejected) return `Helper declined contract ${monthlyRejected[1]}. You may invite another helper.`;
+
+  const monthlyAttConfirmed = b.match(/^Buổi làm ngày\s*(.*?)\s+của hợp đồng\s*(".*?"|'.*?'|“.*?”)\s+đã được khách xác nhận có mặt\.?$/i);
+  if (monthlyAttConfirmed) return `Work session on ${monthlyAttConfirmed[1]} for contract ${monthlyAttConfirmed[2]} confirmed present by customer.`;
+
+  const monthlyAttAbsent = b.match(/^Buổi làm ngày\s*(.*?)\s+của hợp đồng\s*(".*?"|'.*?'|“.*?”)\s+đã bị khách đánh dấu vắng\.?$/i);
+  if (monthlyAttAbsent) return `Work session on ${monthlyAttAbsent[1]} for contract ${monthlyAttAbsent[2]} marked absent by customer.`;
+
+  const monthlyLeaveApproved = b.match(/^Đơn xin nghỉ ngày\s*(.*?)\s+của hợp đồng\s*(".*?"|'.*?'|“.*?”)\s+đã được khách duyệt\.?$/i);
+  if (monthlyLeaveApproved) return `Leave request on ${monthlyLeaveApproved[1]} for contract ${monthlyLeaveApproved[2]} approved by customer.`;
+
+  const monthlyLeaveRejected = b.match(/^Đơn xin nghỉ ngày\s*(.*?)\s+của hợp đồng\s*(".*?"|'.*?'|“.*?”)\s+đã bị khách từ chối\.?$/i);
+  if (monthlyLeaveRejected) return `Leave request on ${monthlyLeaveRejected[1]} for contract ${monthlyLeaveRejected[2]} declined by customer.`;
+
+  // 5. Insurance claim reject body
+  const claimRejectReason = b.match(/^Lý do:\s*(.*?)$/i);
+  if (claimRejectReason) return `Reason: ${claimRejectReason[1]}`;
+
+  // 6. Review fallback body
+  const reviewFallback = b.match(/^Công việc\s*(".*?"|'.*?'|“.*?”)\.?$/i);
+  if (reviewFallback) return `Job ${reviewFallback[1]}`;
 
   const quoteAccepted = b.match(
     /^Chúc mừng!\s*Khách hàng đã chọn báo giá của bạn cho\s*(".*?"|'.*?'|“.*?”)$/i,

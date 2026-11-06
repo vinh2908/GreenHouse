@@ -51,12 +51,14 @@ export function useTranslation() {
   );
 
   const formatNotifTitle = useCallback(
-    (title: string | undefined | null) => formatNotificationTitle(title, language),
+    (title: string | undefined | null, type?: string) =>
+      formatNotificationTitle(title, language, type),
     [language],
   );
 
   const formatNotifBody = useCallback(
-    (body: string | undefined | null) => formatNotificationBody(body, language),
+    (body: string | undefined | null, type?: string, data?: any) =>
+      formatNotificationBody(body, language, type, data),
     [language],
   );
 

@@ -209,12 +209,12 @@ export default function NotificationsScreen() {
                       color: COLORS.gray[900],
                     }}
                   >
-                    {formatNotifTitle(n.title)}
+                    {formatNotifTitle(n.title, n.type)}
                   </Text>
                   <Text
                     style={{ fontSize: 13, color: COLORS.gray[600], marginTop: 3, lineHeight: 18 }}
                   >
-                    {formatNotifBody(n.body)}
+                    {formatNotifBody(n.body, n.type, n.data)}
                   </Text>
                   <Text
                     style={{

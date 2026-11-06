@@ -209,6 +209,19 @@ export const NOTIFICATION_TYPES = {
   NEW_MESSAGE: 'new_message',
   PROMOTION: 'promotion',
   SUPPORT_REPLY: 'support_reply', // Đội hỗ trợ phản hồi live chat (Feature 18)
+  // Monthly Contracts (9 types)
+  MONTHLY_CONTRACT_NEW: 'monthly_contract_new',
+  MONTHLY_CONTRACT_ACCEPTED: 'monthly_contract_accepted',
+  MONTHLY_CONTRACT_REJECTED: 'monthly_contract_rejected',
+  MONTHLY_CONTRACT_CANCELLED: 'monthly_contract_cancelled',
+  MONTHLY_CONTRACT_ENDED: 'monthly_contract_ended',
+  MONTHLY_CONTRACT_CHECKIN: 'monthly_contract_checkin',
+  MONTHLY_CONTRACT_ATTENDANCE: 'monthly_contract_attendance',
+  MONTHLY_CONTRACT_LEAVE_REQUEST: 'monthly_contract_leave_request',
+  MONTHLY_CONTRACT_LEAVE_RESPONSE: 'monthly_contract_leave_response',
+  MONTHLY_CONTRACT_SETTLED: 'monthly_contract_settled',
+  // Claims
+  INSURANCE_CLAIM_UPDATE: 'insurance_claim_update',
   // SOS Backup
   SOS_BACKUP_DECISION_REQUEST: 'sos_backup_decision_request', // Khách: thợ có sự cố, cần bạn quyết định đổi người hay hủy đơn
   SOS_BACKUP_DECISION_REMINDER: 'sos_backup_decision_reminder', // Khách: nhắc quyết định SOS trước khi hệ thống tự xử lý
