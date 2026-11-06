@@ -1501,7 +1501,7 @@ export class JobsService implements OnModuleInit {
       type: NOTIFICATION_TYPES.JOB_CONFIRMED,
       title: '🚨 ĐÃ CÓ THỢ NHẬN CỨU HỘ SOS!',
       body: `Thợ đang chuẩn bị đồ nghề và di chuyển gấp đến bạn (Dự kiến 15 phút).`,
-      payload: { job_id: jobId },
+      payload: { job_id: jobId, is_sos: true, job_title: job.title },
     });
 
     return { job, contract };
@@ -2274,7 +2274,15 @@ export class JobsService implements OnModuleInit {
         body: isWarrantyJob
           ? `Thợ đã nhận đơn bảo hành "${job.title}" (miễn phí) và sẽ liên hệ với bạn sớm.`
           : `Đơn "${job.title}" đã có thợ nhận với giá cam kết ${totalPrice.toLocaleString('vi-VN')}₫.`,
-        payload: { job_id: jobId, contract_id: String(contract._id), is_fixed_price: true },
+        payload: {
+          job_id: jobId,
+          contract_id: String(contract._id),
+          is_fixed_price: true,
+          is_warranty: isWarrantyJob,
+          is_sos: false,
+          job_title: job.title,
+          total_price: totalPrice,
+        },
       })
       .catch(() => undefined);
 
@@ -2732,7 +2740,11 @@ export class JobsService implements OnModuleInit {
           effectivePaymentMethod === 'cash'
             ? `Công việc "${job.title}" đã nghiệm thu. Phí nền tảng đã được đối soát.`
             : `Công việc "${job.title}" đã hoàn thành. Thu nhập đã được giải ngân vào ví của bạn.`,
-        payload: { job_id: jobId },
+        payload: {
+          job_id: jobId,
+          payment_method: effectivePaymentMethod,
+          job_title: job.title,
+        },
       });
     }
 

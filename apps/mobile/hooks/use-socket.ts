@@ -305,7 +305,7 @@ export function useNotificationSocket() {
                 ? ' ' +
                   (formatNotificationTitle(n.title, lang) ||
                     (lang === 'en' ? 'New message' : 'Tin nhắn mới'))
-                : formatNotificationTitle(n.title, lang, n.type);
+                : formatNotificationTitle(n.title, lang, n.type, n.data);
         const body = isNewJob
           ? lang === 'en'
             ? `${formatNotificationBody(n.body, lang) || 'A customer just posted a matching job.'} Open Jobs tab to view.`
