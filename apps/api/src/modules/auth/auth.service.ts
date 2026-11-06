@@ -23,7 +23,7 @@ import {
   ResendEmailOtpDto,
 } from './dto/auth.dto';
 import { OtpService } from './otp.service';
-import { JwtPayload, UserRole } from '@homemate/types';
+import { JwtPayload, UserRole, UserStatus } from '@homemate/types';
 
 @Injectable()
 export class AuthService {
@@ -93,6 +93,9 @@ export class AuthService {
     if (user.status === 'suspended')
       throw new UnauthorizedException('Tài khoản đã bị khóa. Liên hệ hỗ trợ.');
 
+    if ((user as any).is_deleted)
+      throw new UnauthorizedException('Tài khoản đã bị xóa.');
+
     const tokens = await this.generateTokens(user);
 
     this.logger.log(`User logged in: ${user.phone}`);
@@ -109,7 +112,8 @@ export class AuthService {
       });
 
       const user = await this.usersService.findById(payload.sub);
-      if (!user || user.status === 'suspended') throw new UnauthorizedException();
+      if (!user || user.status === 'suspended' || (user as any).is_deleted)
+        throw new UnauthorizedException();
 
       // Check if token was revoked
       if (user.invalid_tokens && user.invalid_tokens.includes(dto.refresh_token)) {
@@ -143,6 +147,27 @@ export class AuthService {
     }
     await this.usersService.incrementTokenVersion(userId);
     return { success: true, message: 'Đăng xuất thành công' };
+  }
+
+  // ─── Delete account (B24: xóa mềm, yêu cầu mật khẩu) ──────────────────────
+
+  async deleteAccount(userId: string, password: string) {
+    if (!password) throw new BadRequestException('Vui lòng nhập mật khẩu để xác nhận');
+    const user = await this.usersService.findByIdWithPassword(userId);
+    if (!user || (user as any).is_deleted)
+      throw new UnauthorizedException('Tài khoản không tồn tại');
+    const ok = await bcrypt.compare(password, user.password_hash);
+    if (!ok) throw new UnauthorizedException('Mật khẩu không đúng');
+    // Xóa mềm: giữ lại toàn bộ dữ liệu đơn cũ cho admin tra cứu, chỉ khóa
+    // đăng nhập (is_deleted + vô hiệu mọi token đang có).
+    user.is_deleted = true;
+    user.status = UserStatus.INACTIVE;
+    user.tokens = [];
+    user.invalid_tokens = [];
+    await user.save();
+    await this.usersService.incrementTokenVersion(userId);
+    this.logger.log(`User soft-deleted account: ${user.phone}`);
+    return { success: true, message: 'Tài khoản đã được xóa' };
   }
 
   // ─── OTP ───────────────────────────────────────────────────────────────────

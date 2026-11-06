@@ -7,7 +7,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import Toast from 'react-native-toast-message';
 import { useTranslation } from '@/hooks/use-i18n';
 import { useNotificationSettings, useUpdateNotificationSettings } from '@/hooks/use-api';
-import { Card, COLORS, Separator } from '@/components/ui';
+import { Card, COLORS, Separator, useThemeColors } from '@/components/ui';
 
 const STORAGE_KEY = '@greenhouse_notification_settings';
 
@@ -33,6 +33,7 @@ export default function NotificationSettingsScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { t, fs, lang } = useTranslation();
+  const tc = useThemeColors();
   const [settings, setSettings] = useState<SettingsState>(DEFAULT_SETTINGS);
   const [loaded, setLoaded] = useState(false);
 
@@ -114,7 +115,7 @@ export default function NotificationSettingsScreen() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: COLORS.gray[50] }}>
+    <View style={{ flex: 1, backgroundColor: tc.background }}>
       {/* ── Top Bar ──────────────────────────────────────────────────────── */}
       <View
         style={{
@@ -123,9 +124,9 @@ export default function NotificationSettingsScreen() {
           paddingHorizontal: 16,
           paddingTop: Math.max(insets.top + 6, 18),
           paddingBottom: 14,
-          backgroundColor: '#fff',
+          backgroundColor: tc.surface,
           borderBottomWidth: 1,
-          borderBottomColor: COLORS.gray[100],
+          borderBottomColor: tc.border,
         }}
       >
         <TouchableOpacity
@@ -135,8 +136,8 @@ export default function NotificationSettingsScreen() {
           style={{
             width: 40,
             height: 40,
-            borderRadius: 12,
-            backgroundColor: COLORS.gray[100],
+            borderRadius: 14,
+            backgroundColor: tc.subtle,
             alignItems: 'center',
             justifyContent: 'center',
           }}
@@ -147,7 +148,7 @@ export default function NotificationSettingsScreen() {
           style={{
             fontSize: fs(18),
             fontWeight: '800',
-            color: COLORS.gray[900],
+            color: tc.text,
             marginLeft: 12,
             flex: 1,
           }}
@@ -166,7 +167,7 @@ export default function NotificationSettingsScreen() {
             style={{
               fontSize: fs(12),
               fontWeight: '700',
-              color: COLORS.gray[500],
+              color: tc.textMuted,
               marginBottom: 8,
               textTransform: 'uppercase',
               letterSpacing: 0.5,
@@ -184,10 +185,10 @@ export default function NotificationSettingsScreen() {
               }}
             >
               <View style={{ flex: 1, marginRight: 12 }}>
-                <Text style={{ fontSize: fs(15), fontWeight: '700', color: COLORS.gray[900] }}>
+                <Text style={{ fontSize: fs(15), fontWeight: '700', color: tc.text }}>
                   {lang === 'en' ? 'Order Progress Updates' : 'Cập nhật tiến độ đơn hàng'}
                 </Text>
-                <Text style={{ fontSize: fs(13), color: COLORS.gray[500], marginTop: 2 }}>
+                <Text style={{ fontSize: fs(13), color: tc.textMuted, marginTop: 2 }}>
                   {lang === 'en'
                     ? 'Get notified when helper accepts job, starts moving, arrives, or finishes.'
                     : 'Nhận tin khi thợ nhận việc, bắt đầu di chuyển, đã đến nơi hoặc hoàn thành.'}
@@ -211,10 +212,10 @@ export default function NotificationSettingsScreen() {
               }}
             >
               <View style={{ flex: 1, marginRight: 12 }}>
-                <Text style={{ fontSize: fs(15), fontWeight: '700', color: COLORS.gray[900] }}>
+                <Text style={{ fontSize: fs(15), fontWeight: '700', color: tc.text }}>
                   {lang === 'en' ? 'Messages & Chat' : 'Tin nhắn & Trao đổi'}
                 </Text>
-                <Text style={{ fontSize: fs(13), color: COLORS.gray[500], marginTop: 2 }}>
+                <Text style={{ fontSize: fs(13), color: tc.textMuted, marginTop: 2 }}>
                   {lang === 'en'
                     ? 'Direct chat message notifications from customers or helpers.'
                     : 'Thông báo tin nhắn trò chuyện trực tiếp từ khách hàng hoặc thợ.'}
@@ -235,7 +236,7 @@ export default function NotificationSettingsScreen() {
             style={{
               fontSize: fs(12),
               fontWeight: '700',
-              color: COLORS.gray[500],
+              color: tc.textMuted,
               marginBottom: 8,
               textTransform: 'uppercase',
               letterSpacing: 0.5,
@@ -253,10 +254,10 @@ export default function NotificationSettingsScreen() {
               }}
             >
               <View style={{ flex: 1, marginRight: 12 }}>
-                <Text style={{ fontSize: fs(15), fontWeight: '700', color: COLORS.gray[900] }}>
+                <Text style={{ fontSize: fs(15), fontWeight: '700', color: tc.text }}>
                   {lang === 'en' ? 'New Promotional Deals' : 'Chương trình ưu đãi mới'}
                 </Text>
-                <Text style={{ fontSize: fs(13), color: COLORS.gray[500], marginTop: 2 }}>
+                <Text style={{ fontSize: fs(13), color: tc.textMuted, marginTop: 2 }}>
                   {lang === 'en'
                     ? 'Notifications about periodic service discounts and holiday deals.'
                     : 'Thông báo các chương trình giảm giá dịch vụ định kỳ và mùa lễ.'}
@@ -280,10 +281,10 @@ export default function NotificationSettingsScreen() {
               }}
             >
               <View style={{ flex: 1, marginRight: 12 }}>
-                <Text style={{ fontSize: fs(15), fontWeight: '700', color: COLORS.gray[900] }}>
+                <Text style={{ fontSize: fs(15), fontWeight: '700', color: tc.text }}>
                   {lang === 'en' ? 'Expiring Voucher Reminders' : 'Nhắc nhở voucher sắp hết hạn'}
                 </Text>
-                <Text style={{ fontSize: fs(13), color: COLORS.gray[500], marginTop: 2 }}>
+                <Text style={{ fontSize: fs(13), color: tc.textMuted, marginTop: 2 }}>
                   {lang === 'en'
                     ? 'Reminders to use discount vouchers before they expire.'
                     : 'Nhắc sử dụng các voucher giảm giá trước khi hết hạn sử dụng.'}
@@ -304,7 +305,7 @@ export default function NotificationSettingsScreen() {
             style={{
               fontSize: fs(12),
               fontWeight: '700',
-              color: COLORS.gray[500],
+              color: tc.textMuted,
               marginBottom: 8,
               textTransform: 'uppercase',
               letterSpacing: 0.5,
@@ -322,10 +323,10 @@ export default function NotificationSettingsScreen() {
               }}
             >
               <View style={{ flex: 1, marginRight: 12 }}>
-                <Text style={{ fontSize: fs(15), fontWeight: '700', color: COLORS.gray[900] }}>
+                <Text style={{ fontSize: fs(15), fontWeight: '700', color: tc.text }}>
                   {lang === 'en' ? 'Notification Sound' : 'Âm thanh thông báo'}
                 </Text>
-                <Text style={{ fontSize: fs(13), color: COLORS.gray[500], marginTop: 2 }}>
+                <Text style={{ fontSize: fs(13), color: tc.textMuted, marginTop: 2 }}>
                   {lang === 'en'
                     ? 'Play chime when a new notification arrives.'
                     : 'Phát âm thanh chuông khi có thông báo mới đến.'}
@@ -349,10 +350,10 @@ export default function NotificationSettingsScreen() {
               }}
             >
               <View style={{ flex: 1, marginRight: 12 }}>
-                <Text style={{ fontSize: fs(15), fontWeight: '700', color: COLORS.gray[900] }}>
+                <Text style={{ fontSize: fs(15), fontWeight: '700', color: tc.text }}>
                   {lang === 'en' ? 'Device Vibration' : 'Rung thiết bị'}
                 </Text>
-                <Text style={{ fontSize: fs(13), color: COLORS.gray[500], marginTop: 2 }}>
+                <Text style={{ fontSize: fs(13), color: tc.textMuted, marginTop: 2 }}>
                   {lang === 'en'
                     ? 'Gently vibrate device upon incoming messages or emergency SOS jobs.'
                     : 'Rung nhẹ điện thoại khi nhận tín hiệu hoặc đơn cứu hộ khẩn cấp.'}

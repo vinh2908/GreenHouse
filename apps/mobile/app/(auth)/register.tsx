@@ -14,11 +14,12 @@ import Toast from 'react-native-toast-message';
 import { useAuthStore } from '@/stores/auth.store';
 import { useTranslation } from '@/hooks/use-i18n';
 import { useRegister } from '@/hooks/use-api';
-import { Button, Input, COLORS } from '@/components/ui';
+import { Button, Input, COLORS, useThemeColors } from '@/components/ui';
 
 export default function RegisterScreen() {
   const router = useRouter();
   const { t, fs, lang } = useTranslation();
+  const tc = useThemeColors();
   const register = useRegister();
   const setAuth = useAuthStore(s => s.setAuth);
 
@@ -122,7 +123,7 @@ export default function RegisterScreen() {
   const insets = useSafeAreaInsets();
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
+    <View style={{ flex: 1, backgroundColor: tc.surface }}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -145,8 +146,8 @@ export default function RegisterScreen() {
               style={{
                 width: 40,
                 height: 40,
-                borderRadius: 12,
-                backgroundColor: COLORS.gray[100],
+                borderRadius: 14,
+                backgroundColor: tc.subtle,
                 alignItems: 'center',
                 justifyContent: 'center',
               }}
@@ -157,7 +158,7 @@ export default function RegisterScreen() {
               style={{
                 fontSize: fs(18),
                 fontWeight: '800',
-                color: COLORS.gray[900],
+                color: tc.text,
                 marginLeft: 12,
               }}
             >
@@ -169,7 +170,7 @@ export default function RegisterScreen() {
             <Text
               style={{
                 fontSize: fs(14),
-                color: COLORS.gray[500],
+                color: tc.textMuted,
                 marginBottom: 24,
                 lineHeight: 20,
               }}
@@ -234,7 +235,7 @@ export default function RegisterScreen() {
               <Text
                 style={{
                   fontSize: fs(12),
-                  color: COLORS.gray[500],
+                  color: tc.textMuted,
                   textAlign: 'center',
                   lineHeight: 18,
                   marginTop: 6,
@@ -296,7 +297,7 @@ export default function RegisterScreen() {
             </View>
 
             <View style={{ flexDirection: 'row', justifyContent: 'center', marginTop: 24, gap: 6 }}>
-              <Text style={{ color: COLORS.gray[600], fontSize: fs(14) }}>
+              <Text style={{ color: tc.textSecondary, fontSize: fs(14) }}>
                 {lang === 'en' ? 'Already have an account?' : 'Đã có tài khoản?'}
               </Text>
               <TouchableOpacity onPress={() => router.back()}>

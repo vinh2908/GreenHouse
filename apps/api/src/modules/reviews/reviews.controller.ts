@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Patch, Body, Param, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Body, Param, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { ReviewsService } from './reviews.service';
 import { CreateReviewDto, HelperReplyDto } from './dto/review.dto';
@@ -34,6 +34,32 @@ export class ReviewsController {
     @Body() dto: HelperReplyDto,
   ) {
     return this.reviewsService.replyToReview(user.sub, id, dto);
+  }
+
+  // ─── Admin: Reply / hide / delete ───────────────────────────────────────────
+
+  @Patch('admin/:id/reply')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({ summary: '[Admin] Phản hồi đánh giá thay mặt nền tảng' })
+  async adminReply(@Param('id') id: string, @Body() dto: HelperReplyDto) {
+    return this.reviewsService.adminReplyToReview(id, dto.reply);
+  }
+
+  @Patch('admin/:id/hide')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({ summary: '[Admin] Ẩn / hiện lại đánh giá' })
+  async adminHide(@Param('id') id: string, @Body() dto: { hidden: boolean }) {
+    return this.reviewsService.adminSetHidden(id, dto.hidden !== false);
+  }
+
+  @Delete('admin/:id')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({ summary: '[Admin] Xoá đánh giá' })
+  async adminDelete(@Param('id') id: string) {
+    return this.reviewsService.adminDeleteReview(id);
   }
 
   // ─── Get reviews for a helper (public) ────────────────────────────────────

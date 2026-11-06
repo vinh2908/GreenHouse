@@ -1,8 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { useAdminReviews } from '@/hooks/use-admin';
+import { useAdminReviews, useAdminReplyReview, useAdminHideReview, useAdminDeleteReview } from '@/hooks/use-admin';
 import {
+  Button,
+  Input,
   Table,
   TableHeader,
   TableBody,
@@ -46,6 +48,12 @@ export default function ReviewsPage() {
     max_rating: maxRating,
     page,
   });
+  // B1: admin trả lời / ẩn / xoá đánh giá
+  const replyMutation = useAdminReplyReview();
+  const hideMutation = useAdminHideReview();
+  const deleteMutation = useAdminDeleteReview();
+  const [replyingId, setReplyingId] = useState<string | null>(null);
+  const [replyText, setReplyText] = useState('');
 
   const handleRatingFilter = (value: string) => {
     setRatingFilter(value);
@@ -101,6 +109,7 @@ export default function ReviewsPage() {
                     <TableHead>Nhận xét</TableHead>
                     <TableHead>Phản hồi helper</TableHead>
                     <TableHead>Ngày đánh giá</TableHead>
+                    <TableHead>Thao tác</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -113,9 +122,11 @@ export default function ReviewsPage() {
                       comment?: string;
                       tags?: string[];
                       helper_reply?: string;
+                      admin_reply?: string;
+                      is_hidden?: boolean;
                       created_at: string;
                     }) => (
-                      <TableRow key={r._id}>
+                      <TableRow key={r._id} className={r.is_hidden ? 'opacity-60' : undefined}>
                         <TableCell>
                           <p className="text-sm font-medium">{r.customer_id?.full_name ?? '—'}</p>
                         </TableCell>
@@ -124,6 +135,11 @@ export default function ReviewsPage() {
                         </TableCell>
                         <TableCell>
                           <StarRating rating={r.rating} />
+                          {r.is_hidden && (
+                            <span className="ml-2 text-xs bg-destructive/10 text-destructive px-1.5 py-0.5 rounded">
+                              Đã ẩn
+                            </span>
+                          )}
                         </TableCell>
                         <TableCell>
                           <div className="max-w-[200px]">
@@ -154,9 +170,93 @@ export default function ReviewsPage() {
                           ) : (
                             <span className="text-muted-foreground text-sm">—</span>
                           )}
+                          {r.admin_reply && (
+                            <p className="text-sm text-muted-foreground italic max-w-[180px] line-clamp-2 mt-1">
+                              Admin: &ldquo;{r.admin_reply}&rdquo;
+                            </p>
+                          )}
                         </TableCell>
                         <TableCell className="text-sm text-muted-foreground">
                           {formatDateTime(r.created_at)}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex flex-col gap-1.5 min-w-[140px]">
+                            {replyingId === r._id ? (
+                              <>
+                                <Input
+                                  value={replyText}
+                                  onChange={e => setReplyText(e.target.value)}
+                                  placeholder="Phản hồi thay mặt nền tảng..."
+                                />
+                                <div className="flex gap-1.5">
+                                  <Button
+                                    size="sm"
+                                    disabled={!replyText.trim() || replyMutation.isPending}
+                                    onClick={() =>
+                                      replyMutation.mutate(
+                                        { id: r._id, reply: replyText.trim() },
+                                        {
+                                          onSuccess: () => {
+                                            setReplyingId(null);
+                                            setReplyText('');
+                                          },
+                                        },
+                                      )
+                                    }
+                                  >
+                                    Gửi
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => {
+                                      setReplyingId(null);
+                                      setReplyText('');
+                                    }}
+                                  >
+                                    Hủy
+                                  </Button>
+                                </div>
+                              </>
+                            ) : (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => {
+                                  setReplyingId(r._id);
+                                  setReplyText('');
+                                }}
+                              >
+                                Trả lời
+                              </Button>
+                            )}
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              disabled={hideMutation.isPending}
+                              onClick={() =>
+                                hideMutation.mutate({ id: r._id, hidden: !r.is_hidden })
+                              }
+                            >
+                              {r.is_hidden ? 'Hiện lại' : 'Ẩn'}
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              disabled={deleteMutation.isPending}
+                              onClick={() => {
+                                if (
+                                  window.confirm(
+                                    'Xoá vĩnh viễn đánh giá này? Khách sẽ không còn thấy nó.',
+                                  )
+                                ) {
+                                  deleteMutation.mutate(r._id);
+                                }
+                              }}
+                            >
+                              Xoá
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ),

@@ -14,7 +14,7 @@ import { User, UserDocument } from '../users/schemas/user.schema';
 import { CallSession, CallSessionDocument } from './schemas/call-session.schema';
 import { CallProvider, CALL_PROVIDER } from './call-provider.interface';
 import { VoipPushService } from './voip-push.service';
-import { SOCKET_EVENTS } from '@homemate/constants';
+import { SOCKET_EVENTS, NOTIFICATION_TYPES } from '@homemate/constants';
 import { AppGateway } from '../chat/app.gateway';
 import { NotificationsService } from '../notifications/notifications.service';
 
@@ -227,7 +227,7 @@ export class CallsService {
           });
           return this.notificationsService.create({
             userId: calleeId,
-            type: 'call_missed',
+            type: NOTIFICATION_TYPES.CALL_MISSED,
             title: 'Cuộc gọi nhỡ',
             body: `Cuộc gọi nhỡ từ ${callerName} lúc ${timeStr}`,
             payload: {

@@ -1,5 +1,6 @@
 // apps/mobile/components/common/date-time-bottom-sheet.tsx
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { formatDate } from '@/utils/date-format';
 import {
   View,
   Text,
@@ -244,7 +245,7 @@ export function DateTimeBottomSheet({
     const dt = dayjs(tempDate).locale(lang === 'en' ? 'en' : 'vi');
     const dow = dt.format('dddd');
     const capitalizedDow = dow.charAt(0).toUpperCase() + dow.slice(1);
-    return `${capitalizedDow}, ${dt.format('DD/MM')}`;
+    return `${capitalizedDow}, ${formatDate(dt)}`;
   }, [tempDate, lang]);
 
   return (
@@ -699,7 +700,7 @@ const styles = StyleSheet.create({
   dragHandle: {
     width: 42,
     height: 5,
-    borderRadius: 99,
+    borderRadius: 999,
     backgroundColor: '#E2E8F0',
     alignSelf: 'center',
     marginBottom: 10,
@@ -732,7 +733,7 @@ const styles = StyleSheet.create({
   segToggle: {
     flexDirection: 'row',
     backgroundColor: '#F1F5F9',
-    borderRadius: 12,
+    borderRadius: 14,
     padding: 4,
     marginTop: 10,
     gap: 4,
@@ -744,7 +745,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 6,
     paddingVertical: 9,
-    borderRadius: 9,
+    borderRadius: 8,
   },
   segBtnActive: {
     backgroundColor: '#FFFFFF',
@@ -794,7 +795,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#E2E8F0',
-    borderRadius: 16,
+    borderRadius: 14,
     padding: 12,
     paddingBottom: 8,
   },
@@ -847,7 +848,7 @@ const styles = StyleSheet.create({
   dayCircle: {
     width: 32,
     height: 32,
-    borderRadius: 16,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -908,7 +909,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#DCFCE7',
     borderWidth: 1.5,
     borderColor: '#16A34A',
-    borderRadius: 12,
+    borderRadius: 14,
     zIndex: 0,
   },
   wheelsContainer: {
@@ -987,7 +988,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderWidth: 1.5,
     borderColor: '#E2E8F0',
-    borderRadius: 9,
+    borderRadius: 8,
     paddingHorizontal: 9,
     paddingVertical: 5,
     alignItems: 'center',
@@ -1013,7 +1014,7 @@ const styles = StyleSheet.create({
     right: -4,
     paddingHorizontal: 4,
     paddingVertical: 1,
-    borderRadius: 99,
+    borderRadius: 999,
   },
   sheetChipTagNew: {
     backgroundColor: '#DCFCE7',

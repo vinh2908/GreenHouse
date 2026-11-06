@@ -1,4 +1,5 @@
 import { View, Text, ScrollView, TouchableOpacity, RefreshControl } from 'react-native';
+import { formatDate } from '@/utils/date-format';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { ArrowLeft, Plus, ChevronRight, Calendar } from 'lucide-react-native';
@@ -13,7 +14,7 @@ import {
 import { useMonthlyContractSocket } from '@/hooks/use-socket';
 import { useAuthStore } from '@/stores/auth.store';
 import { useTranslation } from '@/hooks/use-i18n';
-import { Badge, Card, COLORS, EmptyState, LoadingSpinner } from '@/components/ui';
+import { Badge, Card, COLORS, EmptyState, LoadingSpinner, useThemeColors } from '@/components/ui';
 
 const WEEKDAY_LABELS_VI = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
 const WEEKDAY_LABELS_EN = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -67,6 +68,7 @@ export default function MonthlyContractsScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { t, fs, lang } = useTranslation();
+  const tc = useThemeColors();
   // Vai trò hiện tại lấy từ auth store (active_role) như các màn hình dùng chung khác
   const user = useAuthStore(s => s.user);
   const isHelper = user?.active_role === 'helper';
@@ -86,7 +88,7 @@ export default function MonthlyContractsScreen() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#F8F9FA' }}>
+    <View style={{ flex: 1, backgroundColor: tc.background }}>
       <View
         style={{
           flexDirection: 'row',
@@ -95,9 +97,9 @@ export default function MonthlyContractsScreen() {
           paddingHorizontal: 16,
           paddingTop: Math.max(insets.top + 6, 18),
           paddingBottom: 14,
-          backgroundColor: '#fff',
+          backgroundColor: tc.surface,
           borderBottomWidth: 1,
-          borderBottomColor: COLORS.gray[100],
+          borderBottomColor: tc.border,
         }}
       >
         <TouchableOpacity
@@ -107,8 +109,8 @@ export default function MonthlyContractsScreen() {
           style={{
             width: 40,
             height: 40,
-            borderRadius: 12,
-            backgroundColor: COLORS.gray[100],
+            borderRadius: 14,
+            backgroundColor: tc.subtle,
             alignItems: 'center',
             justifyContent: 'center',
           }}
@@ -116,10 +118,10 @@ export default function MonthlyContractsScreen() {
           <ArrowLeft size={20} color={COLORS.gray[800]} />
         </TouchableOpacity>
         <View style={{ flex: 1 }}>
-          <Text style={{ fontSize: fs(18), fontWeight: '800', color: COLORS.gray[900] }}>
+          <Text style={{ fontSize: fs(18), fontWeight: '800', color: tc.text }}>
             {lang === 'en' ? 'Monthly Contracts' : 'Hợp đồng theo tháng'}
           </Text>
-          <Text style={{ fontSize: fs(12), color: COLORS.gray[500] }}>
+          <Text style={{ fontSize: fs(12), color: tc.textMuted }}>
             {lang === 'en'
               ? isHelper
                 ? 'Long-term helper contracts you are handling'
@@ -137,7 +139,7 @@ export default function MonthlyContractsScreen() {
               backgroundColor: COLORS.primary,
               width: 38,
               height: 38,
-              borderRadius: 12,
+              borderRadius: 14,
               alignItems: 'center',
               justifyContent: 'center',
             }}
@@ -199,7 +201,7 @@ export default function MonthlyContractsScreen() {
                           flex: 1,
                           fontSize: fs(15.5),
                           fontWeight: '800',
-                          color: COLORS.gray[900],
+                          color: tc.text,
                         }}
                         numberOfLines={1}
                       >
@@ -211,7 +213,7 @@ export default function MonthlyContractsScreen() {
                         textColor={meta.color}
                       />
                     </View>
-                    <Text style={{ fontSize: fs(13), color: COLORS.gray[600] }}>
+                    <Text style={{ fontSize: fs(13), color: tc.textSecondary }}>
                       {isHelper
                         ? lang === 'en'
                           ? 'Customer'
@@ -222,14 +224,14 @@ export default function MonthlyContractsScreen() {
                       : {personName(partner)} · {lang === 'en' ? 'Salary ' : 'Lương '}
                       {fmt(c.monthly_salary)}₫/{lang === 'en' ? 'month' : 'tháng'}
                     </Text>
-                    <Text style={{ fontSize: fs(12.5), color: COLORS.gray[500] }}>
+                    <Text style={{ fontSize: fs(12.5), color: tc.textMuted }}>
                       {lang === 'en' ? 'Schedule: ' : 'Lịch: '}
                       {describeMonthlySchedule(c, lang)} · {lang === 'en' ? 'From ' : 'Từ '}
-                      {dayjs(c.start_date).format('DD/MM/YYYY')}
+                      {formatDate(dayjs(c.start_date))}
                       {c.end_date
                         ? lang === 'en'
-                          ? ` to ${dayjs(c.end_date).format('DD/MM/YYYY')}`
-                          : ` đến ${dayjs(c.end_date).format('DD/MM/YYYY')}`
+                          ? ` to ${formatDate(dayjs(c.end_date))}`
+                          : ` đến ${formatDate(dayjs(c.end_date))}`
                         : ''}
                     </Text>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>

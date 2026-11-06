@@ -1,4 +1,4 @@
-import { Controller, Post, Body, HttpCode, HttpStatus, UseGuards, Get } from '@nestjs/common';
+import { Controller, Post, Body, HttpCode, HttpStatus, UseGuards, Get, Delete } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiResponse } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
@@ -128,6 +128,18 @@ export class AuthController {
   }
 
   // ─── Logout ─────────────────────────────────────────────────────────────────
+
+  // ─── Delete account (B24: xác nhận bằng mật khẩu, xóa mềm) ────────────────
+
+  @UseGuards(JwtAuthGuard)
+  @Delete('me')
+  @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Xóa tài khoản của chính mình (xóa mềm, cần mật khẩu)' })
+  async deleteMe(@CurrentUser() user: any, @Body() body: { password: string }) {
+    const userId = user?.sub ?? user?.id ?? user?._id;
+    return this.authService.deleteAccount(String(userId), body?.password);
+  }
 
   @UseGuards(JwtAuthGuard)
   @Post('logout')

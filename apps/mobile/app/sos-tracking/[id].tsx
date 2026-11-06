@@ -33,15 +33,7 @@ import { useJobSocketUpdates, useHelperLocation } from '@/hooks/use-socket';
 import { socketService, SOCKET_EVENTS } from '@/services/socket.service';
 import { LiveTrackingMap } from '@/components/common/live-tracking-map';
 import { useTranslation } from '@/hooks/use-i18n';
-import {
-  Button,
-  Card,
-  Avatar,
-  LoadingSpinner,
-  COLORS,
-  Separator,
-  PriceText,
-} from '@/components/ui';
+import { Button, Card, Avatar, LoadingSpinner, COLORS, Separator, PriceText, Skeleton, useThemeColors } from '@/components/ui';
 
 dayjs.extend(relativeTime);
 
@@ -50,6 +42,7 @@ export default function SosTrackingScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { t, fs, lang } = useTranslation();
+  const tc = useThemeColors();
 
   // ── Realtime Socket Updates ──────────────────────────────────────────────
   useJobSocketUpdates(id);
@@ -79,7 +72,16 @@ export default function SosTrackingScreen() {
     };
   }, [refetch, id]);
 
-  if (isLoading) return <LoadingSpinner />;
+  // B28: skeleton giữ khung (header + bản đồ + thẻ trạng thái + thẻ thợ) thay spinner trắng
+  if (isLoading)
+    return (
+      <View style={{ flex: 1, backgroundColor: tc.background, padding: 16, gap: 12 }}>
+        <Skeleton width="60%" height={24} />
+        <Skeleton width="100%" height={220} radius={14} />
+        <Skeleton width="100%" height={110} radius={14} />
+        <Skeleton width="100%" height={90} radius={14} />
+      </View>
+    );
 
   const isMatched =
     job?.status === 'confirmed' ||
@@ -145,7 +147,7 @@ export default function SosTrackingScreen() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#F8F9FA' }}>
+    <View style={{ flex: 1, backgroundColor: tc.background }}>
       {/* ── Top Header (Safe Insets) ─────────────────────────────────── */}
       <View
         style={{
@@ -164,7 +166,7 @@ export default function SosTrackingScreen() {
           style={{
             width: 38,
             height: 38,
-            borderRadius: 12,
+            borderRadius: 14,
             backgroundColor: 'rgba(255,255,255,0.2)',
             alignItems: 'center',
             justifyContent: 'center',
@@ -187,7 +189,7 @@ export default function SosTrackingScreen() {
           style={{
             width: 38,
             height: 38,
-            borderRadius: 12,
+            borderRadius: 14,
             backgroundColor: 'rgba(255,255,255,0.2)',
             alignItems: 'center',
             justifyContent: 'center',
@@ -217,7 +219,7 @@ export default function SosTrackingScreen() {
               style={{
                 width: 80,
                 height: 80,
-                borderRadius: 40,
+                borderRadius: 999,
                 backgroundColor: '#FEE2E2',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -242,24 +244,24 @@ export default function SosTrackingScreen() {
 
             <View
               style={{
-                backgroundColor: '#fff',
+                backgroundColor: tc.surface,
                 padding: 12,
-                borderRadius: 12,
+                borderRadius: 14,
                 width: '100%',
                 gap: 6,
                 marginTop: 4,
               }}
             >
               <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                <Text style={{ fontSize: fs(12.5), color: COLORS.gray[600] }}>
+                <Text style={{ fontSize: fs(12.5), color: tc.textSecondary }}>
                   {lang === 'en' ? 'Emergency issue:' : 'Sự cố khẩn cấp:'}
                 </Text>
-                <Text style={{ fontSize: fs(13), fontWeight: '700', color: COLORS.gray[900] }}>
+                <Text style={{ fontSize: fs(13), fontWeight: '700', color: tc.text }}>
                   {job?.title}
                 </Text>
               </View>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                <Text style={{ fontSize: fs(12.5), color: COLORS.gray[600] }}>
+                <Text style={{ fontSize: fs(12.5), color: tc.textSecondary }}>
                   {lang === 'en' ? 'Arrival commitment:' : 'Thời gian cam kết:'}
                 </Text>
                 <Text style={{ fontSize: fs(13), fontWeight: '900', color: '#DC2626' }}>
@@ -295,7 +297,7 @@ export default function SosTrackingScreen() {
 
             {/* 2. Thẻ định danh Thợ cứu hộ */}
             <Card style={{ padding: 16, gap: 14 }}>
-              <Text style={{ fontSize: fs(15), fontWeight: '900', color: COLORS.gray[900] }}>
+              <Text style={{ fontSize: fs(15), fontWeight: '900', color: tc.text }}>
                 {lang === 'en' ? 'Assigned Rescue Helper' : 'Thông tin thợ cứu hộ phụ trách'}
               </Text>
 
@@ -303,12 +305,12 @@ export default function SosTrackingScreen() {
                 <Avatar name={helperName} uri={helperAvatar} size={54} />
                 <View style={{ flex: 1 }}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                    <Text style={{ fontWeight: '800', fontSize: fs(16), color: COLORS.gray[900] }}>
+                    <Text style={{ fontWeight: '800', fontSize: fs(16), color: tc.text }}>
                       {helperName}
                     </Text>
                     {hasRealHelper && <ShieldCheck size={18} color={COLORS.success} />}
                   </View>
-                  <Text style={{ fontSize: fs(13), color: COLORS.gray[500], marginTop: 2 }}>
+                  <Text style={{ fontSize: fs(13), color: tc.textMuted, marginTop: 2 }}>
                     {hasRealHelper && helperPhone
                       ? helperPhone
                       : lang === 'en'
@@ -324,7 +326,7 @@ export default function SosTrackingScreen() {
                           backgroundColor: '#ECFDF5',
                           paddingHorizontal: 6,
                           paddingVertical: 2,
-                          borderRadius: 6,
+                          borderRadius: 8,
                         }}
                       >
                         <Text
@@ -398,7 +400,7 @@ export default function SosTrackingScreen() {
 
         {/* ── Thông tin địa chỉ & sự cố ────────────────────────────────── */}
         <Card style={{ padding: 16, gap: 10 }}>
-          <Text style={{ fontSize: fs(14), fontWeight: '800', color: COLORS.gray[900] }}>
+          <Text style={{ fontSize: fs(14), fontWeight: '800', color: tc.text }}>
             {lang === 'en' ? 'Rescue Address' : 'Địa chỉ cứu hộ'}
           </Text>
           <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 8 }}>
@@ -407,7 +409,7 @@ export default function SosTrackingScreen() {
               style={{
                 flex: 1,
                 fontSize: fs(14),
-                color: COLORS.gray[700],
+                color: tc.textSecondary,
                 lineHeight: 20,
                 fontWeight: '600',
               }}
@@ -417,7 +419,7 @@ export default function SosTrackingScreen() {
             </Text>
           </View>
           <Separator my={2} />
-          <Text style={{ fontSize: fs(13), color: COLORS.gray[600], lineHeight: 19 }}>
+          <Text style={{ fontSize: fs(13), color: tc.textSecondary, lineHeight: 19 }}>
             {job?.description}
           </Text>
         </Card>
@@ -438,7 +440,7 @@ export default function SosTrackingScreen() {
           <Button
             title={lang === 'en' ? 'Cancel rescue request' : 'Hủy yêu cầu cứu hộ'}
             variant="ghost"
-            style={{ borderWidth: 1, borderColor: COLORS.gray[200] }}
+            style={{ borderWidth: 1, borderColor: tc.border }}
             onPress={handleCancel}
           />
         </View>

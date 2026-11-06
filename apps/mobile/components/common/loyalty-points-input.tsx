@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { Star, X } from 'lucide-react-native';
 import { useLoyaltyAccount, useApplyLoyaltyPoints, useRemoveLoyaltyPoints } from '@/hooks/use-api';
-import { Card, COLORS } from '@/components/ui';
+import { Card, COLORS, useThemeColors } from '@/components/ui';
 import { useTranslation } from '@/hooks/use-i18n';
 
 /**
@@ -17,6 +17,7 @@ export function LoyaltyPointsInput({ job, contractTotal }: { job: any; contractT
   const [pointsText, setPointsText] = useState('');
   const [error, setError] = useState<string | null>(null);
   const { t, lang, tLoyaltyTier, fs } = useTranslation();
+  const tc = useThemeColors();
   const fmt = (n: number) => new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'vi-VN').format(n);
 
   const isPaid = job.payment_status === 'paid';
@@ -64,11 +65,11 @@ export function LoyaltyPointsInput({ job, contractTotal }: { job: any; contractT
       <Card style={{ gap: 4 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
           <Star size={18} color={COLORS.gray[400]} />
-          <Text style={{ fontWeight: '800', fontSize: fs(14), color: COLORS.gray[700] }}>
+          <Text style={{ fontWeight: '800', fontSize: fs(14), color: tc.textSecondary }}>
             {t('loyalty_input.balance_summary', { points: fmt(account.points_balance ?? 0) })}
           </Text>
         </View>
-        <Text style={{ fontSize: fs(12), color: COLORS.gray[500] }}>
+        <Text style={{ fontSize: fs(12), color: tc.textMuted }}>
           {t('loyalty_input.min_notice', {
             min: fmt(minRedeem),
             earn: fmt(account.earn_vnd_per_point ?? 10000),
@@ -97,11 +98,11 @@ export function LoyaltyPointsInput({ job, contractTotal }: { job: any; contractT
     <Card style={{ gap: 10 }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
         <Star size={19} color="#D97706" />
-        <Text style={{ fontWeight: '800', fontSize: fs(15), color: COLORS.gray[900] }}>
+        <Text style={{ fontWeight: '800', fontSize: fs(15), color: tc.text }}>
           {t('loyalty_input.title')}
         </Text>
       </View>
-      <Text style={{ fontSize: fs(12.5), color: COLORS.gray[500] }}>
+      <Text style={{ fontSize: fs(12.5), color: tc.textMuted }}>
         {t('loyalty_input.summary_line', {
           points: fmt(account.points_balance),
           tier: tLoyaltyTier(account.tier_label),
@@ -123,13 +124,13 @@ export function LoyaltyPointsInput({ job, contractTotal }: { job: any; contractT
             flex: 1,
             borderWidth: 1,
             borderColor: error ? COLORS.error : COLORS.gray[200],
-            borderRadius: 12,
+            borderRadius: 14,
             paddingHorizontal: 12,
             paddingVertical: 10,
             fontSize: fs(14),
             fontWeight: '700',
-            color: COLORS.gray[900],
-            backgroundColor: '#fff',
+            color: tc.text,
+            backgroundColor: tc.surface,
           }}
         />
         <TouchableOpacity
@@ -138,7 +139,7 @@ export function LoyaltyPointsInput({ job, contractTotal }: { job: any; contractT
           disabled={apply.isPending}
           style={{
             backgroundColor: '#D97706',
-            borderRadius: 12,
+            borderRadius: 14,
             paddingHorizontal: 16,
             alignItems: 'center',
             justifyContent: 'center',

@@ -1,4 +1,5 @@
 import React from 'react';
+import { useThemeColors } from '@/components/ui';
 import {
   Modal,
   View,
@@ -102,6 +103,7 @@ export const Alert = {
 export function AppAlertHost() {
   const dialog = useDialogs(s => s.queue[0]);
   const { fs, textScale } = useTranslation();
+  const tc = useThemeColors();
   if (!dialog) return null;
 
   const dismiss = (button?: AlertButton) => {
@@ -163,8 +165,8 @@ export function AppAlertHost() {
             <View
               accessibilityViewIsModal
               style={{
-                backgroundColor: '#FFFFFF',
-                borderRadius: 24,
+                backgroundColor: tc.surface,
+                borderRadius: 14,
                 padding: 24,
                 width: '100%',
                 maxWidth: 420,
@@ -183,7 +185,7 @@ export function AppAlertHost() {
                 style={{
                   width: 58,
                   height: 58,
-                  borderRadius: 29,
+                  borderRadius: 999,
                   backgroundColor: iconBg,
                   alignItems: 'center',
                   justifyContent: 'center',

@@ -133,7 +133,7 @@ export class HelpersService {
     await profile.save();
 
     // Realtime: broadcast helper availability change to personal room
-    this.gateway.emitToUser(userId, 'helper:status_changed', {
+    this.gateway.emitToUser(userId, SOCKET_EVENTS.HELPER_STATUS_CHANGED, {
       helper_id: userId,
       status: dto.status,
     });

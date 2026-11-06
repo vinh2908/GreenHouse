@@ -1,3 +1,5 @@
+import { useState } from 'react';
+import { formatTime } from '@/utils/date-format';
 import { View, Text, ScrollView, TouchableOpacity, RefreshControl } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -28,6 +30,15 @@ import {
   Hourglass,
   Shield,
   RotateCcw,
+  ClipboardList,
+  Receipt,
+  Scale,
+  Users,
+  CalendarClock,
+  CalendarX,
+  Undo2,
+  FileWarning,
+  PhoneMissed,
 } from 'lucide-react-native';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
@@ -37,7 +48,7 @@ import { useAuthStore } from '@/stores/auth.store';
 import { resolveNotificationRoute } from '@/utils/notification-route';
 import { refreshSosState } from '@/hooks/use-sos-backup';
 import { useTranslation } from '@/hooks/use-i18n';
-import { Card, COLORS, EmptyState, ErrorState, LoadingSpinner } from '@/components/ui';
+import { Card, COLORS, EmptyState, ErrorState, LoadingSpinner, useThemeColors } from '@/components/ui';
 
 dayjs.extend(relativeTime);
 
@@ -76,6 +87,31 @@ function renderNotificationIcon(type: string) {
       return <Building2 size={size} color="#6366F1" />;
     case 'promotion':
       return <Gift size={size} color="#EC4899" />;
+    case 'job_cancelled':
+      return <XCircle size={size} color="#EF4444" />;
+    case 'job_updated':
+      return <ClipboardList size={size} color="#3B82F6" />;
+    case 'cost_proposal':
+    case 'cost_proposal_response':
+      return <Receipt size={size} color="#F59E0B" />;
+    case 'dispute_updated':
+    case 'dispute_appealed':
+    case 'dispute_opened':
+    case 'dispute_resolved':
+      return <Scale size={size} color="#EF4444" />;
+    case 'claim_submitted':
+      return <FileWarning size={size} color="#F59E0B" />;
+    case 'call_missed':
+      return <PhoneMissed size={size} color="#EF4444" />;
+    case 'team_invitation':
+    case 'team_response':
+      return <Users size={size} color="#8B5CF6" />;
+    case 'recurring_job_created':
+      return <CalendarClock size={size} color="#22C55E" />;
+    case 'recurring_plan_cancelled':
+      return <CalendarX size={size} color="#EF4444" />;
+    case 'sos_backup_withdrawn':
+      return <Undo2 size={size} color="#6B7280" />;
     case 'system':
       return <Megaphone size={size} color="#3B82F6" />;
     case 'support_reply':
@@ -105,8 +141,13 @@ const SOS_DECISION_TYPES = new Set(['sos_backup_decision_request', 'sos_backup_d
 export default function NotificationsScreen() {
   const router = useRouter();
   const { t, fs, lang, formatNotifTitle, formatNotifBody } = useTranslation();
+  const tc = useThemeColors();
   const user = useAuthStore(s => s.user);
-  const { data: notifications, isLoading, isError, refetch, dataUpdatedAt } = useNotifications();
+  // B23: 2 tab Tất cả / Chưa đọc dùng đúng hook useNotifications(unreadOnly)
+  const [tab, setTab] = useState<'all' | 'unread'>('all');
+  const { data: notifications, isLoading, isError, refetch, dataUpdatedAt } = useNotifications(
+    tab === 'unread',
+  );
   const markAll = useMarkAllRead();
   const markRead = useMarkNotificationRead();
 
@@ -143,7 +184,7 @@ export default function NotificationsScreen() {
   const insets = useSafeAreaInsets();
 
   return (
-    <View style={{ flex: 1, backgroundColor: COLORS.gray[50] }}>
+    <View style={{ flex: 1, backgroundColor: tc.background }}>
       {/* Header (Safe Insets) */}
       <View
         style={{
@@ -153,9 +194,9 @@ export default function NotificationsScreen() {
           paddingHorizontal: 20,
           paddingTop: Math.max(insets.top + 6, 18),
           paddingBottom: 14,
-          backgroundColor: '#fff',
+          backgroundColor: tc.surface,
           borderBottomWidth: 1,
-          borderBottomColor: COLORS.gray[100],
+          borderBottomColor: tc.border,
         }}
       >
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
@@ -166,8 +207,8 @@ export default function NotificationsScreen() {
             style={{
               width: 38,
               height: 38,
-              borderRadius: 12,
-              backgroundColor: COLORS.gray[100],
+              borderRadius: 14,
+              backgroundColor: tc.subtle,
               alignItems: 'center',
               justifyContent: 'center',
             }}
@@ -175,13 +216,13 @@ export default function NotificationsScreen() {
             <ArrowLeft size={20} color={COLORS.gray[800]} />
           </TouchableOpacity>
           <View>
-            <Text style={{ fontSize: fs(18), fontWeight: '800', color: COLORS.gray[900] }}>
+            <Text style={{ fontSize: fs(18), fontWeight: '800', color: tc.text }}>
               {lang === 'en' ? 'Notifications' : 'Thông báo'}
             </Text>
             {dataUpdatedAt ? (
-              <Text style={{ fontSize: fs(11), color: COLORS.gray[500] }}>
+              <Text style={{ fontSize: fs(11), color: tc.textMuted }}>
                 {lang === 'en' ? 'Updated at' : 'Cập nhật lúc'}{' '}
-                {dayjs(dataUpdatedAt).format('HH:mm')}
+                {formatTime(dayjs(dataUpdatedAt))}
               </Text>
             ) : null}
           </View>
@@ -196,6 +237,50 @@ export default function NotificationsScreen() {
             {lang === 'en' ? 'Mark all as read' : 'Đọc tất cả'}
           </Text>
         </TouchableOpacity>
+      </View>
+
+      {/* B23: tab lọc Tất cả / Chưa đọc */}
+      <View
+        style={{
+          flexDirection: 'row',
+          gap: 8,
+          paddingHorizontal: 16,
+          paddingTop: 12,
+          backgroundColor: tc.surface,
+        }}
+      >
+        {(
+          [
+            { key: 'all', label: lang === 'en' ? 'All' : 'Tất cả' },
+            { key: 'unread', label: lang === 'en' ? 'Unread' : 'Chưa đọc' },
+          ] as const
+        ).map(tabItem => {
+          const active = tab === tabItem.key;
+          return (
+            <TouchableOpacity
+              key={tabItem.key}
+              activeOpacity={0.8}
+              onPress={() => setTab(tabItem.key)}
+              style={{
+                flex: 1,
+                paddingVertical: 10,
+                borderRadius: 999,
+                alignItems: 'center',
+                backgroundColor: active ? COLORS.primary : COLORS.gray[100],
+              }}
+            >
+              <Text
+                style={{
+                  fontSize: fs(13.5),
+                  fontWeight: '800',
+                  color: active ? '#fff' : COLORS.gray[700],
+                }}
+              >
+                {tabItem.label}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
       </View>
 
       <ScrollView
@@ -219,7 +304,15 @@ export default function NotificationsScreen() {
         ) : !notifications?.length ? (
           <EmptyState
             icon={<Bell size={36} color={COLORS.gray[400]} />}
-            title={lang === 'en' ? 'No notifications yet' : 'Chưa có thông báo nào'}
+            title={
+              tab === 'unread'
+                ? lang === 'en'
+                  ? 'No unread notifications'
+                  : 'Không có thông báo chưa đọc'
+                : lang === 'en'
+                  ? 'No notifications yet'
+                  : 'Chưa có thông báo nào'
+            }
             subtitle={
               lang === 'en'
                 ? 'Quotes updates, order status, and payments will appear here'
@@ -246,7 +339,7 @@ export default function NotificationsScreen() {
                   gap: 12,
                   padding: 14,
                   backgroundColor: n.is_read ? '#fff' : '#FFF7F3',
-                  borderRadius: 16,
+                  borderRadius: 14,
                   borderWidth: 1,
                   borderColor: n.is_read ? COLORS.gray[100] : '#FFD9C5',
                   alignItems: 'center',
@@ -269,7 +362,7 @@ export default function NotificationsScreen() {
                     style={{
                       fontWeight: n.is_read ? '600' : '800',
                       fontSize: fs(14),
-                      color: COLORS.gray[900],
+                      color: tc.text,
                     }}
                   >
                     {formatNotifTitle(n.title, n.type, n.data)}
@@ -277,7 +370,7 @@ export default function NotificationsScreen() {
                   <Text
                     style={{
                       fontSize: fs(13),
-                      color: COLORS.gray[600],
+                      color: tc.textSecondary,
                       marginTop: 3,
                       lineHeight: 18,
                     }}
@@ -287,7 +380,7 @@ export default function NotificationsScreen() {
                   <Text
                     style={{
                       fontSize: fs(11),
-                      color: COLORS.gray[500],
+                      color: tc.textMuted,
                       marginTop: 6,
                       fontWeight: '600',
                     }}
@@ -302,7 +395,7 @@ export default function NotificationsScreen() {
                     style={{
                       width: 8,
                       height: 8,
-                      borderRadius: 4,
+                      borderRadius: 8,
                       backgroundColor: COLORS.primary,
                       marginRight: 4,
                     }}

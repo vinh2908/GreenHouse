@@ -2,16 +2,19 @@ import { useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { ONBOARDING_SEEN_KEY } from '@/app/onboarding';
 import { ArrowRight, CheckCircle2, Home, Wrench } from 'lucide-react-native';
 import Toast from 'react-native-toast-message';
 import { useAuthStore } from '@/stores/auth.store';
 import { useTranslation } from '@/hooks/use-i18n';
 import { useSwitchRole } from '@/hooks/use-api';
-import { Button, Card, COLORS } from '@/components/ui';
+import { Button, Card, COLORS, useThemeColors } from '@/components/ui';
 
 export default function SelectRoleScreen() {
   const router = useRouter();
   const { t, fs, lang } = useTranslation();
+  const tc = useThemeColors();
   const { user, switchRole: updateStoreRole } = useAuthStore();
   const switchRoleMutation = useSwitchRole();
   const [selectedRole, setSelectedRole] = useState<'customer' | 'helper'>('customer');
@@ -43,7 +46,11 @@ export default function SelectRoleScreen() {
               : 'Bắt đầu nhận công việc và gia tăng thu nhập',
       });
 
-      if (selectedRole === 'helper') {
+      // B30: lần đầu đăng ký xong -> onboarding, đã xem rồi -> về trang chính
+      const seen = await AsyncStorage.getItem(ONBOARDING_SEEN_KEY);
+      if (!seen) {
+        router.replace('/onboarding');
+      } else if (selectedRole === 'helper') {
         router.replace('/(helper)/dashboard');
       } else {
         router.replace('/(customer)/home');
@@ -53,8 +60,11 @@ export default function SelectRoleScreen() {
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
         (lang === 'en' ? 'An error occurred' : 'Đã có lỗi xảy ra');
       Toast.show({ type: 'error', text1: msg });
-      // Fallback redirect
-      if (selectedRole === 'helper') {
+      // Fallback redirect (B30: vẫn qua onboarding nếu chưa xem)
+      const seen = await AsyncStorage.getItem(ONBOARDING_SEEN_KEY);
+      if (!seen) {
+        router.replace('/onboarding');
+      } else if (selectedRole === 'helper') {
         router.replace('/(helper)/dashboard');
       } else {
         router.replace('/(customer)/home');
@@ -70,7 +80,7 @@ export default function SelectRoleScreen() {
     <View
       style={{
         flex: 1,
-        backgroundColor: '#fff',
+        backgroundColor: tc.surface,
         paddingTop: Math.max(insets.top, 16),
         paddingBottom: Math.max(insets.bottom, 16),
       }}
@@ -85,7 +95,7 @@ export default function SelectRoleScreen() {
               style={{
                 width: 64,
                 height: 64,
-                borderRadius: 20,
+                borderRadius: 14,
                 backgroundColor: COLORS.primary,
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -103,7 +113,7 @@ export default function SelectRoleScreen() {
               style={{
                 fontSize: fs(24),
                 fontWeight: '800',
-                color: COLORS.gray[900],
+                color: tc.text,
                 textAlign: 'center',
               }}
             >
@@ -114,7 +124,7 @@ export default function SelectRoleScreen() {
             <Text
               style={{
                 fontSize: fs(15),
-                color: COLORS.gray[500],
+                color: tc.textMuted,
                 textAlign: 'center',
                 marginTop: 8,
                 lineHeight: 22,
@@ -123,7 +133,7 @@ export default function SelectRoleScreen() {
               {lang === 'en'
                 ? 'How would you like to use Green House?\n'
                 : 'Bạn muốn sử dụng Green House như thế nào?\n'}
-              <Text style={{ fontSize: fs(13), color: COLORS.gray[500] }}>
+              <Text style={{ fontSize: fs(13), color: tc.textMuted }}>
                 {lang === 'en'
                   ? '(You can switch anytime in settings)'
                   : '(Bạn có thể chuyển đổi linh hoạt bất kỳ lúc nào)'}
@@ -141,7 +151,7 @@ export default function SelectRoleScreen() {
                   borderColor: selectedRole === 'customer' ? COLORS.primary : COLORS.gray[200],
                   backgroundColor: selectedRole === 'customer' ? COLORS.primaryLight : '#fff',
                   padding: 20,
-                  borderRadius: 20,
+                  borderRadius: 14,
                   gap: 12,
                 }}
               >
@@ -156,7 +166,7 @@ export default function SelectRoleScreen() {
                     style={{
                       width: 52,
                       height: 52,
-                      borderRadius: 16,
+                      borderRadius: 14,
                       backgroundColor: selectedRole === 'customer' ? '#fff' : COLORS.gray[100],
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -171,7 +181,7 @@ export default function SelectRoleScreen() {
                     style={{
                       width: 24,
                       height: 24,
-                      borderRadius: 12,
+                      borderRadius: 14,
                       borderWidth: 2,
                       borderColor: selectedRole === 'customer' ? COLORS.primary : COLORS.gray[300],
                       alignItems: 'center',
@@ -183,13 +193,13 @@ export default function SelectRoleScreen() {
                   </View>
                 </View>
                 <View>
-                  <Text style={{ fontSize: fs(18), fontWeight: '700', color: COLORS.gray[900] }}>
+                  <Text style={{ fontSize: fs(18), fontWeight: '700', color: tc.text }}>
                     {lang === 'en' ? 'I need services' : 'Tôi cần thuê dịch vụ'}
                   </Text>
                   <Text
                     style={{
                       fontSize: fs(14),
-                      color: COLORS.gray[600],
+                      color: tc.textSecondary,
                       marginTop: 4,
                       lineHeight: 20,
                     }}
@@ -210,7 +220,7 @@ export default function SelectRoleScreen() {
                   borderColor: selectedRole === 'helper' ? COLORS.primary : COLORS.gray[200],
                   backgroundColor: selectedRole === 'helper' ? COLORS.primaryLight : '#fff',
                   padding: 20,
-                  borderRadius: 20,
+                  borderRadius: 14,
                   gap: 12,
                 }}
               >
@@ -225,7 +235,7 @@ export default function SelectRoleScreen() {
                     style={{
                       width: 52,
                       height: 52,
-                      borderRadius: 16,
+                      borderRadius: 14,
                       backgroundColor: selectedRole === 'helper' ? '#fff' : COLORS.gray[100],
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -240,7 +250,7 @@ export default function SelectRoleScreen() {
                     style={{
                       width: 24,
                       height: 24,
-                      borderRadius: 12,
+                      borderRadius: 14,
                       borderWidth: 2,
                       borderColor: selectedRole === 'helper' ? COLORS.primary : COLORS.gray[300],
                       alignItems: 'center',
@@ -252,13 +262,13 @@ export default function SelectRoleScreen() {
                   </View>
                 </View>
                 <View>
-                  <Text style={{ fontSize: fs(18), fontWeight: '700', color: COLORS.gray[900] }}>
+                  <Text style={{ fontSize: fs(18), fontWeight: '700', color: tc.text }}>
                     {lang === 'en' ? 'I want to work' : 'Tôi muốn nhận việc'}
                   </Text>
                   <Text
                     style={{
                       fontSize: fs(14),
-                      color: COLORS.gray[600],
+                      color: tc.textSecondary,
                       marginTop: 4,
                       lineHeight: 20,
                     }}

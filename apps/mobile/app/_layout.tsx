@@ -1,5 +1,5 @@
 import { useTranslation, fs } from '@/hooks/use-i18n';
-import { Stack } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import React, { Component, useEffect, type ReactNode } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -26,6 +26,10 @@ import { SosCustomerDecisionPopup } from '@/components/common/sos-customer-decis
 import { InitialPermissionsModal } from '@/components/common/initial-permissions-modal';
 import { useBackgroundGps } from '@/hooks/use-background-gps';
 import { useAuthStore } from '@/stores/auth.store';
+import { useSettingsStore } from '@/stores/settings.store';
+import { translate } from '@/services/i18n';
+import { COLORS, useThemeColors } from '@/components/ui';
+import { takePendingToastRoute } from '@/services/toast-navigation';
 
 console.warn('[Startup] 0. _layout.tsx module evaluating...');
 
@@ -48,6 +52,8 @@ class RootErrorBoundary extends Component<
 
   render() {
     if (this.state.hasError) {
+      // B27: màn lỗi root hiển thị theo ngôn ngữ đã chọn (đọc từ store vì đây là class component)
+      const lang = useSettingsStore.getState().language || 'vi';
       return (
         <View
           style={{ flex: 1, backgroundColor: '#FEF2F2', padding: 24, justifyContent: 'center' }}
@@ -55,10 +61,10 @@ class RootErrorBoundary extends Component<
           <Text
             style={{ fontSize: fs(20), fontWeight: 'bold', color: '#991B1B', marginBottom: 12 }}
           >
-            Root Error / Lỗi hiển thị màn hình
+            {translate(lang, 'root_error_title')}
           </Text>
           <Text style={{ fontSize: fs(14), color: '#B91C1C', marginBottom: 16 }}>
-            {this.state.error?.message || 'Unknown error / Lỗi không xác định'}
+            {this.state.error?.message || translate(lang, 'root_error_unknown')}
           </Text>
           <ScrollView
             style={{ maxHeight: 250, backgroundColor: '#FFF', padding: 10, borderRadius: 8 }}
@@ -110,15 +116,29 @@ const toastConfig = {
 };
 
 function ToastCard() {
+  const tc = useThemeColors();
   const toast = useToastStore(s => s.toast);
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   if (!toast?.isVisible) return null;
 
   const { type, text1, text2, hide } = toast;
-  const borderColor = type === 'success' ? '#4caf50' : type === 'error' ? '#f44336' : '#87CEFA';
-  const iconBackground = type === 'success' ? '#DCFCE7' : type === 'error' ? '#FEF2F2' : '#EFF6FF';
+  // B10: chạm vào Toast → mở đúng màn hình của thông báo (nếu có route);
+  // Toast không có route thì chạm vào không làm gì (không lỗi).
+  const handlePress = () => {
+    const route = takePendingToastRoute();
+    if (route) {
+      hide();
+      router.push(route as never);
+    }
+  };
+  // B19: toast dùng đúng màu hệ thống COLORS.success/error
+  const borderColor =
+    type === 'success' ? COLORS.success : type === 'error' ? COLORS.error : COLORS.secondary;
+  const iconBackground =
+    type === 'success' ? COLORS.successLight : type === 'error' ? COLORS.errorLight : COLORS.secondaryLight;
   const renderIcon = () => {
-    if (type === 'success') return <CheckCircle2 size={20} color="#16A34A" />;
+    if (type === 'success') return <CheckCircle2 size={20} color={COLORS.primaryDark} />;
     if (type === 'error') return <AlertTriangle size={20} color="#DC2626" />;
     return <Bell size={20} color="#2563EB" />;
   };
@@ -133,11 +153,13 @@ function ToastCard() {
         alignItems: 'center',
       }}
     >
-      <View
+      <TouchableOpacity
+        activeOpacity={0.85}
+        onPress={handlePress}
         style={{
           width: '90%',
-          backgroundColor: '#fff',
-          borderRadius: 18,
+          backgroundColor: tc.surface,
+          borderRadius: 14,
           paddingVertical: 14,
           paddingHorizontal: 14,
           flexDirection: 'row',
@@ -185,7 +207,7 @@ function ToastCard() {
         >
           <X size={20} color="#9ca3af" />
         </TouchableOpacity>
-      </View>
+      </TouchableOpacity>
     </View>
   );
 }
@@ -212,6 +234,7 @@ function SocketManager() {
 }
 
 export default function RootLayout() {
+  const theme = useSettingsStore(s => s.theme);
   console.warn('[Startup] 1. RootLayout render start');
 
   useEffect(() => {
@@ -256,10 +279,12 @@ export default function RootLayout() {
 
   return (
     <RootErrorBoundary>
-      <GestureHandlerRootView style={{ flex: 1 }}>
+      <GestureHandlerRootView
+        style={{ flex: 1, backgroundColor: theme === 'dark' ? '#0F172A' : '#FFFFFF' }}
+      >
         <QueryClientProvider client={queryClient}>
           <SocketManager />
-          <StatusBar style="auto" />
+          <StatusBar style={theme === 'dark' ? 'light' : 'auto'} />
           <Stack screenOptions={{ headerShown: false }}>
             <Stack.Screen name="index" />
             <Stack.Screen name="(auth)" options={{ headerShown: false }} />
@@ -273,6 +298,8 @@ export default function RootLayout() {
             <Stack.Screen name="helper-profile/[id]" options={{ headerShown: false }} />
             <Stack.Screen name="kyc" options={{ headerShown: false }} />
             <Stack.Screen name="bank-account" options={{ headerShown: false }} />
+            <Stack.Screen name="delete-account" options={{ headerShown: false }} />
+            <Stack.Screen name="onboarding" options={{ headerShown: false }} />
             <Stack.Screen name="help-center" options={{ headerShown: false }} />
             <Stack.Screen name="support-chat" options={{ headerShown: false }} />
             <Stack.Screen name="policy-insurance" options={{ headerShown: false }} />

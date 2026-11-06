@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { MapPin, Search, X } from 'lucide-react-native';
-import { COLORS } from '@/components/ui';
+import { COLORS, useThemeColors } from '@/components/ui';
 import { locationService, LocationResult, OsmPlace } from '@/services/location.service';
 import { useTranslation } from '@/hooks/use-i18n';
 
@@ -222,6 +222,7 @@ const DEFAULT_CENTER: PickerCoords = { latitude: 16.0, longitude: 107.5 };
 /** Static map thumbnail of a pinned location. */
 export function LocationPreview({ coords }: { coords: PickerCoords | null }) {
   const { lang, fs } = useTranslation();
+  const tc = useThemeColors();
   if (!coords) {
     return (
       <View
@@ -230,11 +231,11 @@ export function LocationPreview({ coords }: { coords: PickerCoords | null }) {
           alignItems: 'center',
           justifyContent: 'center',
           gap: 6,
-          backgroundColor: COLORS.gray[100],
+          backgroundColor: tc.subtle,
         }}
       >
         <MapPin size={22} color={COLORS.gray[400]} />
-        <Text style={{ fontSize: fs(12.5), color: COLORS.gray[500] }}>
+        <Text style={{ fontSize: fs(12.5), color: tc.textMuted }}>
           {lang === 'en' ? 'No location selected' : 'Chưa chọn vị trí'}
         </Text>
       </View>
@@ -250,7 +251,7 @@ export function LocationPreview({ coords }: { coords: PickerCoords | null }) {
             width: '100%',
             height: '100%',
             border: 'none',
-            backgroundColor: COLORS.gray[100],
+            backgroundColor: tc.subtle,
           }}
           title="Location Preview"
         />
@@ -268,7 +269,7 @@ export function LocationPreview({ coords }: { coords: PickerCoords | null }) {
         javaScriptEnabled
         domStorageEnabled
         androidLayerType="hardware"
-        style={{ flex: 1, backgroundColor: COLORS.gray[100] }}
+        style={{ flex: 1, backgroundColor: tc.subtle }}
       />
     </View>
   );
@@ -292,6 +293,7 @@ export function LocationPicker({
   onConfirm,
 }: LocationPickerProps) {
   const { lang, fs } = useTranslation();
+  const tc = useThemeColors();
   const webRef = useRef<WebView>(null);
 
   // A stored pin outside Vietnam is ignored: open on the whole country instead of
@@ -390,7 +392,7 @@ export function LocationPicker({
 
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
-      <View style={{ flex: 1, backgroundColor: '#fff' }}>
+      <View style={{ flex: 1, backgroundColor: tc.surface }}>
         {/* Header + search */}
         <View
           style={{
@@ -399,7 +401,7 @@ export function LocationPicker({
             paddingBottom: 10,
             gap: 10,
             borderBottomWidth: 1,
-            borderBottomColor: COLORS.gray[100],
+            borderBottomColor: tc.border,
           }}
         >
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
@@ -409,15 +411,15 @@ export function LocationPicker({
               style={{
                 width: 36,
                 height: 36,
-                borderRadius: 12,
-                backgroundColor: COLORS.gray[100],
+                borderRadius: 14,
+                backgroundColor: tc.subtle,
                 alignItems: 'center',
                 justifyContent: 'center',
               }}
             >
               <X size={18} color={COLORS.gray[700]} />
             </TouchableOpacity>
-            <Text style={{ flex: 1, fontSize: fs(16), fontWeight: '800', color: COLORS.gray[900] }}>
+            <Text style={{ flex: 1, fontSize: fs(16), fontWeight: '800', color: tc.text }}>
               {title}
             </Text>
           </View>
@@ -427,15 +429,15 @@ export function LocationPicker({
               alignItems: 'center',
               gap: 8,
               borderWidth: 1.5,
-              borderColor: COLORS.gray[200],
-              borderRadius: 12,
+              borderColor: tc.border,
+              borderRadius: 14,
               paddingHorizontal: 12,
-              backgroundColor: COLORS.gray[50],
+              backgroundColor: tc.background,
             }}
           >
             <Search size={16} color={COLORS.gray[400]} />
             <TextInput
-              style={{ flex: 1, paddingVertical: 10, fontSize: fs(14.5), color: COLORS.gray[900] }}
+              style={{ flex: 1, paddingVertical: 10, fontSize: fs(14.5), color: tc.text }}
               placeholder={
                 lang === 'en'
                   ? 'Search address: street, ward, district...'
@@ -488,9 +490,9 @@ export function LocationPicker({
                 left: 0,
                 right: 0,
                 maxHeight: 280,
-                backgroundColor: '#fff',
+                backgroundColor: tc.surface,
                 borderBottomWidth: 1,
-                borderBottomColor: COLORS.gray[200],
+                borderBottomColor: tc.border,
                 elevation: 6,
               }}
             >
@@ -507,11 +509,11 @@ export function LocationPicker({
                       paddingHorizontal: 14,
                       paddingVertical: 11,
                       borderBottomWidth: 1,
-                      borderBottomColor: COLORS.gray[100],
+                      borderBottomColor: tc.border,
                     }}
                   >
                     <MapPin size={15} color={COLORS.primary} style={{ marginTop: 2 }} />
-                    <Text style={{ flex: 1, fontSize: fs(13.5), color: COLORS.gray[800] }}>
+                    <Text style={{ flex: 1, fontSize: fs(13.5), color: tc.text }}>
                       {item.display_name}
                     </Text>
                   </TouchableOpacity>
@@ -528,12 +530,12 @@ export function LocationPicker({
             paddingBottom: 16,
             gap: 10,
             borderTopWidth: 1,
-            borderTopColor: COLORS.gray[100],
+            borderTopColor: tc.border,
           }}
         >
           <View style={{ flexDirection: 'row', gap: 6, minHeight: 34 }}>
             <MapPin size={15} color={COLORS.primary} style={{ marginTop: 2 }} />
-            <Text style={{ flex: 1, fontSize: fs(13), color: COLORS.gray[700] }} numberOfLines={2}>
+            <Text style={{ flex: 1, fontSize: fs(13), color: tc.textSecondary }} numberOfLines={2}>
               {!picked
                 ? lang === 'en'
                   ? 'Tap on map or search address to drop pin'

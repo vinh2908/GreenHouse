@@ -1,4 +1,5 @@
 import React from 'react';
+import { formatDateTime } from '@/utils/date-format';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -16,13 +17,14 @@ import Toast from 'react-native-toast-message';
 import { useJobDetail, useJobContract } from '@/hooks/use-api';
 import { useTranslation } from '@/hooks/use-i18n';
 import { downloadInvoicePdf } from '@/services/invoice.service';
-import { Button, Card, LoadingSpinner, COLORS, Separator, PriceText } from '@/components/ui';
+import { Button, Card, LoadingSpinner, COLORS, Separator, PriceText, useThemeColors } from '@/components/ui';
 
 export default function ReceiptScreen() {
   const { jobId } = useLocalSearchParams<{ jobId: string }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { t, fs, lang } = useTranslation();
+  const tc = useThemeColors();
 
   const { data: job, isLoading: jobLoading } = useJobDetail(jobId);
   const { data: contract, isLoading: contractLoading } = useJobContract(jobId);
@@ -34,7 +36,7 @@ export default function ReceiptScreen() {
   if (!job) {
     return (
       <View style={[styles.container, { paddingTop: insets.top + 20, padding: 20 }]}>
-        <Text style={{ fontSize: fs(16), color: COLORS.gray[600], textAlign: 'center' }}>
+        <Text style={{ fontSize: fs(16), color: tc.textSecondary, textAlign: 'center' }}>
           {lang === 'en' ? 'Job receipt not found.' : 'Không tìm thấy biên lai đơn hàng.'}
         </Text>
       </View>
@@ -183,7 +185,7 @@ export default function ReceiptScreen() {
                 {lang === 'en' ? 'Settlement Time' : 'Thời gian quyết toán'}
               </Text>
               <Text style={[styles.detailVal, { fontSize: fs(13) }]}>
-                {dayjs(job.updated_at || job.created_at).format('HH:mm DD/MM/YYYY')}
+                {formatDateTime(dayjs(job.updated_at || job.created_at))}
               </Text>
             </View>
 
@@ -284,7 +286,7 @@ const styles = StyleSheet.create({
   backBtn: {
     width: 38,
     height: 38,
-    borderRadius: 12,
+    borderRadius: 14,
     backgroundColor: '#F3F4F6',
     alignItems: 'center',
     justifyContent: 'center',
@@ -300,7 +302,7 @@ const styles = StyleSheet.create({
   },
   receiptCard: {
     backgroundColor: '#fff',
-    borderRadius: 20,
+    borderRadius: 14,
     padding: 20,
     borderWidth: 1,
     borderColor: '#E5E7EB',
@@ -318,7 +320,7 @@ const styles = StyleSheet.create({
   successIcon: {
     width: 56,
     height: 56,
-    borderRadius: 28,
+    borderRadius: 999,
     backgroundColor: '#ECFDF5',
     alignItems: 'center',
     justifyContent: 'center',
@@ -340,7 +342,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#ECFDF5',
     paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 12,
+    borderRadius: 14,
     marginTop: 6,
   },
   paidBadgeText: {

@@ -695,7 +695,7 @@ export class AdminService {
     await this.notificationsService
       .create({
         userId: String(job.customer_id),
-        type: NOTIFICATION_TYPES.SYSTEM,
+        type: NOTIFICATION_TYPES.REFUND_RECEIVED,
         title: 'Hoàn tiền vào ví Green House',
         body: `Bạn đã nhận được khoản hoàn tiền ${amount.toLocaleString('vi-VN')}₫ cho đơn hàng #${jobId.slice(-6)}.`,
         payload: { job_id: jobId },

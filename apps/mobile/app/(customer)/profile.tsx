@@ -23,15 +23,15 @@ import {
   CreditCard,
   Heart,
   CalendarClock,
+  FileSignature,
   Ticket,
   Wallet as WalletIcon,
   PlusCircle,
 } from 'lucide-react-native';
-import Toast from 'react-native-toast-message';
 import { Alert } from '@/components/common/app-alert';
 import { useAuthStore } from '@/stores/auth.store';
 import { useMyProfile, useSwitchRole, useLoyaltyAccount, useWallet } from '@/hooks/use-api';
-import { Avatar, Card, COLORS, Separator, LoadingSpinner } from '@/components/ui';
+import { Avatar, Card, COLORS, Separator, LoadingSpinner, useThemeColors } from '@/components/ui';
 import { useTranslation } from '@/hooks/use-i18n';
 import { DisplaySettingsSection } from '@/components/common/display-settings';
 import { AppPermissionsSection } from '@/components/common/initial-permissions-modal';
@@ -47,7 +47,7 @@ const MENU_SECTIONS = [
       { icon: Heart, labelKey: 'profile_favorite_helpers', route: '/favorites' },
       { icon: Ticket, labelKey: 'profile_my_vouchers', route: '/vouchers' },
       { icon: CalendarClock, labelKey: 'profile_recurring_plans', route: '/recurring-plans' },
-      { icon: CalendarClock, labelKey: 'profile_monthly_contracts', route: '/monthly-contracts' },
+      { icon: FileSignature, labelKey: 'profile_monthly_contracts', route: '/monthly-contracts' },
     ],
   },
   {
@@ -56,7 +56,6 @@ const MENU_SECTIONS = [
       { icon: HelpCircle, labelKey: 'profile_support_online', route: '/support-chat' },
       { icon: HelpCircle, labelKey: 'profile_help_center', route: '/help-center' },
       { icon: Shield, labelKey: 'profile_privacy_insurance', route: '/policy-insurance' },
-      { icon: Star, labelKey: 'profile_rate_app', route: '__rate_app__' },
     ],
   },
 ];
@@ -64,6 +63,7 @@ const MENU_SECTIONS = [
 export default function CustomerProfileScreen() {
   const router = useRouter();
   const { t, fs, lang, tLoyaltyTier } = useTranslation();
+  const tc = useThemeColors();
   const queryClient = useQueryClient();
   const logout = useAuthStore(s => s.logout);
   const user = useAuthStore(s => s.user);
@@ -94,6 +94,18 @@ export default function CustomerProfileScreen() {
       router.replace('/(helper)/dashboard');
     }
   }, [isAuthLoading, isSwitchingRole, effectiveRole]);
+
+  // B24 lớp 1: xác nhận xoá tài khoản → màn nhập mật khẩu (lớp 2)
+  const handleDeleteAccount = () => {
+    Alert.alert(t('delete_account_confirm_title'), t('delete_account_confirm_desc'), [
+      { text: t('profile_logout_stay'), style: 'cancel' },
+      {
+        text: t('delete_account'),
+        style: 'destructive',
+        onPress: () => router.push('/delete-account' as never),
+      },
+    ]);
+  };
 
   const handleLogout = () => {
     const doLogout = async () => {
@@ -146,7 +158,7 @@ export default function CustomerProfileScreen() {
       <View
         style={{
           flex: 1,
-          backgroundColor: COLORS.gray[50],
+          backgroundColor: tc.background,
           justifyContent: 'center',
           alignItems: 'center',
         }}
@@ -157,7 +169,7 @@ export default function CustomerProfileScreen() {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: COLORS.gray[50] }}>
+    <View style={{ flex: 1, backgroundColor: tc.background }}>
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 110 }}
@@ -165,13 +177,13 @@ export default function CustomerProfileScreen() {
         {/* ── Profile header (Safe Insets) ────────────────────────────── */}
         <View
           style={{
-            backgroundColor: '#fff',
+            backgroundColor: tc.surface,
             paddingHorizontal: 24,
             paddingTop: Math.max(insets.top + 8, 20),
             paddingBottom: 24,
             alignItems: 'center',
             borderBottomWidth: 1,
-            borderBottomColor: COLORS.gray[100],
+            borderBottomColor: tc.border,
           }}
         >
           {displayUser ? (
@@ -185,7 +197,7 @@ export default function CustomerProfileScreen() {
                 style={{
                   fontSize: fs(20),
                   fontWeight: '800',
-                  color: COLORS.gray[900],
+                  color: tc.text,
                   marginTop: 12,
                 }}
               >
@@ -194,7 +206,7 @@ export default function CustomerProfileScreen() {
               <Text
                 style={{
                   fontSize: fs(14),
-                  color: COLORS.gray[500],
+                  color: tc.textMuted,
                   marginTop: 4,
                   fontWeight: '600',
                 }}
@@ -203,10 +215,10 @@ export default function CustomerProfileScreen() {
               </Text>
               <View
                 style={{
-                  backgroundColor: COLORS.gray[100],
+                  backgroundColor: tc.subtle,
                   paddingHorizontal: 10,
                   paddingVertical: 4,
-                  borderRadius: 10,
+                  borderRadius: 8,
                   marginTop: 6,
                 }}
               >
@@ -222,7 +234,7 @@ export default function CustomerProfileScreen() {
                 style={{
                   fontSize: fs(20),
                   fontWeight: '800',
-                  color: COLORS.gray[900],
+                  color: tc.text,
                   marginTop: 12,
                 }}
               >
@@ -231,7 +243,7 @@ export default function CustomerProfileScreen() {
               <Text
                 style={{
                   fontSize: fs(13),
-                  color: COLORS.gray[500],
+                  color: tc.textMuted,
                   marginTop: 4,
                   fontWeight: '500',
                 }}
@@ -244,7 +256,7 @@ export default function CustomerProfileScreen() {
                   backgroundColor: COLORS.primary,
                   paddingHorizontal: 20,
                   paddingVertical: 8,
-                  borderRadius: 20,
+                  borderRadius: 14,
                   marginTop: 10,
                 }}
               >
@@ -262,7 +274,7 @@ export default function CustomerProfileScreen() {
             style={{
               marginTop: 16,
               backgroundColor: COLORS.primaryLight,
-              borderRadius: 20,
+              borderRadius: 14,
               paddingHorizontal: 20,
               paddingVertical: 10,
               flexDirection: 'row',
@@ -311,7 +323,7 @@ export default function CustomerProfileScreen() {
                     backgroundColor: COLORS.primary,
                     paddingHorizontal: 12,
                     paddingVertical: 6,
-                    borderRadius: 10,
+                    borderRadius: 8,
                     flexDirection: 'row',
                     alignItems: 'center',
                     gap: 4,
@@ -348,7 +360,7 @@ export default function CustomerProfileScreen() {
                 </Text>
                 <ChevronRight size={16} color="#92400E" />
               </View>
-              <Text style={{ fontSize: fs(22), fontWeight: '800', color: COLORS.gray[900] }}>
+              <Text style={{ fontSize: fs(22), fontWeight: '800', color: tc.text }}>
                 {isLoyaltyLoading && !loyalty ? (
                   <ActivityIndicator size="small" color="#D97706" />
                 ) : (
@@ -359,7 +371,7 @@ export default function CustomerProfileScreen() {
                   })
                 )}
               </Text>
-              <Text style={{ fontSize: fs(12.5), color: COLORS.gray[600] }}>
+              <Text style={{ fontSize: fs(12.5), color: tc.textSecondary }}>
                 {t('profile_loyalty_redeem_desc', { cap: loyalty?.redemption_cap_percent ?? 20 })}
               </Text>
             </Card>
@@ -374,7 +386,7 @@ export default function CustomerProfileScreen() {
                 style={{
                   fontSize: fs(12),
                   fontWeight: '700',
-                  color: COLORS.gray[500],
+                  color: tc.textMuted,
                   marginBottom: 8,
                   textTransform: 'uppercase',
                   letterSpacing: 0.5,
@@ -389,13 +401,7 @@ export default function CustomerProfileScreen() {
                     <TouchableOpacity
                       activeOpacity={0.7}
                       onPress={() => {
-                        if (item.route === '__rate_app__') {
-                          Toast.show({
-                            type: 'success',
-                            text1: t('profile_rate_app_thanks_title'),
-                            text2: t('profile_rate_app_thanks_desc'),
-                          });
-                        } else if (item.route) {
+                        if (item.route) {
                           router.push(item.route as never);
                         }
                       }}
@@ -411,7 +417,7 @@ export default function CustomerProfileScreen() {
                         style={{
                           flex: 1,
                           fontSize: fs(15),
-                          color: COLORS.gray[900],
+                          color: tc.text,
                           fontWeight: '600',
                         }}
                       >
@@ -454,11 +460,29 @@ export default function CustomerProfileScreen() {
             </TouchableOpacity>
           )}
 
+          {displayUser && (
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={handleDeleteAccount}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 8,
+                padding: 14,
+              }}
+            >
+              <Text style={{ fontSize: fs(14), fontWeight: '700', color: COLORS.error }}>
+                {t('delete_account')}
+              </Text>
+            </TouchableOpacity>
+          )}
+
           <Text
             style={{
               textAlign: 'center',
               fontSize: fs(12),
-              color: COLORS.gray[500],
+              color: tc.textMuted,
               fontWeight: '500',
             }}
           >

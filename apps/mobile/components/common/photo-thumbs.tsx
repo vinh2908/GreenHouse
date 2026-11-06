@@ -42,7 +42,7 @@ export function ImageViewerModal({
             right: 16,
             width: 40,
             height: 40,
-            borderRadius: 20,
+            borderRadius: 14,
             backgroundColor: 'rgba(255,255,255,0.18)',
             alignItems: 'center',
             justifyContent: 'center',
@@ -89,7 +89,7 @@ export function PhotoThumbRow({
                   style={{
                     width: size,
                     height: size,
-                    borderRadius: 10,
+                    borderRadius: 8,
                     backgroundColor: '#F3F4F6',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -114,7 +114,7 @@ export function PhotoThumbRow({
                 <Image
                   source={{ uri: url }}
                   onError={() => setFailedUrls(prev => ({ ...prev, [url]: true }))}
-                  style={{ width: size, height: size, borderRadius: 10 }}
+                  style={{ width: size, height: size, borderRadius: 8 }}
                   resizeMode="cover"
                 />
               )}

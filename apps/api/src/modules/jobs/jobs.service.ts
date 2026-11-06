@@ -530,7 +530,7 @@ export class JobsService implements OnModuleInit {
             { status: HelperStatus.ONLINE },
           )
           .exec();
-        this.gateway.emitToUser(String(helperObjId), 'helper:status_changed', {
+        this.gateway.emitToUser(String(helperObjId), SOCKET_EVENTS.HELPER_STATUS_CHANGED, {
           status: HelperStatus.ONLINE,
         });
       }
@@ -1385,7 +1385,7 @@ export class JobsService implements OnModuleInit {
       await this.notificationsService
         .create({
           userId: helperIdStr,
-          type: NOTIFICATION_TYPES.SYSTEM,
+          type: NOTIFICATION_TYPES.JOB_UPDATED,
           title: 'Khách đã cập nhật thông tin đơn hàng',
           body: `Khách đã đổi ${changesText} cho đơn "${job.title}".`,
           payload: { job_id: jobId },
@@ -2355,7 +2355,7 @@ export class JobsService implements OnModuleInit {
     await this.notificationsService
       .create({
         userId: String(job.customer_id),
-        type: NOTIFICATION_TYPES.SYSTEM,
+        type: NOTIFICATION_TYPES.COST_PROPOSAL,
         title: '📋 Đề xuất phát sinh vật tư / chi phí',
         body: `Thợ đề xuất bổ sung +${(addLabor + addMat).toLocaleString('vi-VN')}₫ cho "${job.title}". Lý do: ${dto.reason}`,
         payload: { job_id: jobId },
@@ -2468,7 +2468,7 @@ export class JobsService implements OnModuleInit {
       await this.notificationsService
         .create({
           userId: String(job.helper_id),
-          type: NOTIFICATION_TYPES.SYSTEM,
+          type: NOTIFICATION_TYPES.COST_PROPOSAL_RESPONSE,
           title:
             dto.action === 'accept'
               ? '✅ Khách đã duyệt chi phí phát sinh'
@@ -2864,7 +2864,7 @@ export class JobsService implements OnModuleInit {
       await this.notificationsService
         .create({
           userId: targetNotifyId,
-          type: 'dispute_opened',
+          type: NOTIFICATION_TYPES.DISPUTE_OPENED,
           title: '⚠️ Đơn hàng đang có khiếu nại / tranh chấp',
           body: `Công việc "${job.title}" đã chuyển sang trạng thái chờ Admin phân xử. Lý do: ${dto.reason}`,
           payload: { job_id: jobId, dispute_id: jobId },
@@ -2875,7 +2875,7 @@ export class JobsService implements OnModuleInit {
     // A77: Báo cho Admin khi có tranh chấp mới
     void this.notificationsService
       .notifyAdmins({
-        type: 'dispute_opened',
+        type: NOTIFICATION_TYPES.DISPUTE_OPENED,
         title: 'Có tranh chấp mới cần xử lý',
         body: `Đơn "${job.title}" có khiếu nại mới từ ${isCustomer ? 'khách hàng' : 'thợ'}: ${dto.reason}`,
         payload: { job_id: jobId, dispute_id: jobId },
@@ -3068,7 +3068,7 @@ export class JobsService implements OnModuleInit {
     await this.notificationsService
       .create({
         userId: String(job.customer_id),
-        type: 'dispute_resolved',
+        type: NOTIFICATION_TYPES.DISPUTE_RESOLVED,
         title: '⚖️ Kết quả phân xử khiếu nại từ Admin',
         body: `Đơn "${job.title}": ${dto.admin_note}${refundAmount > 0 && moveMoney ? ` (Hoàn ví: +${refundAmount.toLocaleString('vi-VN')}₫)` : ''}`,
         payload: { job_id: jobId, dispute_id: jobId },
@@ -3089,7 +3089,7 @@ export class JobsService implements OnModuleInit {
       await this.notificationsService
         .create({
           userId: String(job.helper_id),
-          type: 'dispute_resolved',
+          type: NOTIFICATION_TYPES.DISPUTE_RESOLVED,
           title: '⚖️ Kết quả phân xử khiếu nại từ Admin',
           body: helperBody,
           payload: { job_id: jobId, dispute_id: jobId },
@@ -3247,7 +3247,7 @@ export class JobsService implements OnModuleInit {
       await this.notificationsService
         .create({
           userId: String(job.customer_id),
-          type: NOTIFICATION_TYPES.SYSTEM,
+          type: NOTIFICATION_TYPES.JOB_CANCELLED,
           title: 'Đơn hàng đã bị hủy bởi Quản trị viên',
           body: `Công việc "${job.title}" đã bị hủy. Lý do: ${dto.reason}`,
           payload: { job_id: jobId },
@@ -3257,7 +3257,7 @@ export class JobsService implements OnModuleInit {
         await this.notificationsService
           .create({
             userId: String(job.helper_id),
-            type: NOTIFICATION_TYPES.SYSTEM,
+            type: NOTIFICATION_TYPES.JOB_CANCELLED,
             title: 'Đơn hàng đã bị hủy bởi Quản trị viên',
             body: `Công việc "${job.title}" đã bị hủy. Lý do: ${dto.reason}`,
             payload: { job_id: jobId },
@@ -3267,7 +3267,7 @@ export class JobsService implements OnModuleInit {
     } else if (actorRole === 'customer' && job.helper_id) {
       await this.notificationsService.create({
         userId: String(job.helper_id),
-        type: NOTIFICATION_TYPES.SYSTEM,
+        type: NOTIFICATION_TYPES.JOB_CANCELLED,
         title: 'Công việc bị hủy',
         body: `Khách hàng đã hủy công việc "${job.title}". Lý do: ${dto.reason}`,
         payload: { job_id: jobId, reason: dto.reason },
@@ -3275,7 +3275,7 @@ export class JobsService implements OnModuleInit {
     } else if (actorRole === 'helper') {
       await this.notificationsService.create({
         userId: String(job.customer_id),
-        type: NOTIFICATION_TYPES.SYSTEM,
+        type: NOTIFICATION_TYPES.JOB_CANCELLED,
         title: 'Công việc bị hủy',
         body: `Người giúp việc đã hủy công việc "${job.title}". Lý do: ${dto.reason}`,
         payload: { job_id: jobId, reason: dto.reason },
@@ -3854,7 +3854,7 @@ export class JobsService implements OnModuleInit {
     await this.notificationsService
       .create({
         userId: dto.helper_id,
-        type: NOTIFICATION_TYPES.SYSTEM,
+        type: NOTIFICATION_TYPES.TEAM_INVITATION,
         title: '👥 Lời mời vào nhóm làm việc',
         body: `Bạn được mời tham gia đơn "${job.title}" với tỉ lệ chia tiền công ${dto.split_percent}%.`,
         payload: { job_id: jobId },
@@ -3889,7 +3889,7 @@ export class JobsService implements OnModuleInit {
       await this.notificationsService
         .create({
           userId: String(job.helper_id),
-          type: NOTIFICATION_TYPES.SYSTEM,
+          type: NOTIFICATION_TYPES.TEAM_RESPONSE,
           title:
             action === 'accept'
               ? '✅ Thành viên đã nhận lời vào nhóm'

@@ -7,7 +7,7 @@ import dayjs from 'dayjs';
 import Toast from 'react-native-toast-message';
 import { useFavorites, useAddresses, useServices, useCreateMonthlyContract } from '@/hooks/use-api';
 import { useTranslation } from '@/hooks/use-i18n';
-import { Avatar, Button, Card, COLORS, LoadingSpinner } from '@/components/ui';
+import { Avatar, Button, Card, COLORS, LoadingSpinner, useThemeColors } from '@/components/ui';
 
 // Thứ hiển thị T2..CN → giá trị JS Date.getDay(): T2=1 … T7=6, CN=0
 const DAY_OPTIONS_VI = [
@@ -36,6 +36,7 @@ export default function MonthlyContractCreateScreen() {
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ helperId?: string }>();
   const { t, fs, lang, tService } = useTranslation();
+  const tc = useThemeColors();
 
   const { data: favorites, isLoading: favLoading } = useFavorites();
   const { data: addresses } = useAddresses();
@@ -192,16 +193,16 @@ export default function MonthlyContractCreateScreen() {
 
   const inputStyle = {
     borderWidth: 1,
-    borderColor: COLORS.gray[200],
-    borderRadius: 10,
+    borderColor: tc.border,
+    borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: fs(14),
-    backgroundColor: '#fff',
+    backgroundColor: tc.surface,
   } as const;
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#F8F9FA' }}>
+    <View style={{ flex: 1, backgroundColor: tc.background }}>
       <View
         style={{
           flexDirection: 'row',
@@ -210,9 +211,9 @@ export default function MonthlyContractCreateScreen() {
           paddingHorizontal: 16,
           paddingTop: Math.max(insets.top + 6, 18),
           paddingBottom: 14,
-          backgroundColor: '#fff',
+          backgroundColor: tc.surface,
           borderBottomWidth: 1,
-          borderBottomColor: COLORS.gray[100],
+          borderBottomColor: tc.border,
         }}
       >
         <TouchableOpacity
@@ -224,8 +225,8 @@ export default function MonthlyContractCreateScreen() {
           style={{
             width: 40,
             height: 40,
-            borderRadius: 12,
-            backgroundColor: COLORS.gray[100],
+            borderRadius: 14,
+            backgroundColor: tc.subtle,
             alignItems: 'center',
             justifyContent: 'center',
           }}
@@ -233,10 +234,10 @@ export default function MonthlyContractCreateScreen() {
           <ArrowLeft size={20} color={COLORS.gray[800]} />
         </TouchableOpacity>
         <View style={{ flex: 1 }}>
-          <Text style={{ fontSize: fs(18), fontWeight: '800', color: COLORS.gray[900] }}>
+          <Text style={{ fontSize: fs(18), fontWeight: '800', color: tc.text }}>
             {lang === 'en' ? 'Hire Helper by Month' : 'Thuê giúp việc theo tháng'}
           </Text>
-          <Text style={{ fontSize: fs(12), color: COLORS.gray[500] }}>
+          <Text style={{ fontSize: fs(12), color: tc.textMuted }}>
             {lang === 'en'
               ? 'Helper will review the contract before it takes effect'
               : 'Thợ sẽ duyệt hợp đồng trước khi có hiệu lực'}
@@ -251,7 +252,7 @@ export default function MonthlyContractCreateScreen() {
       >
         {/* ── Chọn thợ ── */}
         <Card style={{ gap: 10 }}>
-          <Text style={{ fontSize: fs(15), fontWeight: '800', color: COLORS.gray[900] }}>
+          <Text style={{ fontSize: fs(15), fontWeight: '800', color: tc.text }}>
             {lang === 'en'
               ? '1. Select helper (from favorites)'
               : '1. Chọn thợ (từ danh sách yêu thích)'}
@@ -259,7 +260,7 @@ export default function MonthlyContractCreateScreen() {
           {favLoading ? (
             <LoadingSpinner size="small" />
           ) : favoriteHelpers.length === 0 && !params.helperId ? (
-            <Text style={{ fontSize: fs(13), color: COLORS.gray[500], lineHeight: 19 }}>
+            <Text style={{ fontSize: fs(13), color: tc.textMuted, lineHeight: 19 }}>
               {lang === 'en'
                 ? 'You have no favorite helpers yet. Save helpers to your favorites from their profile or completed jobs, then return to create contract.'
                 : 'Bạn chưa có thợ yêu thích nào. Hãy lưu thợ vào danh sách yêu thích từ trang hồ sơ thợ hoặc từ đơn đã hoàn thành, rồi quay lại tạo hợp đồng.'}
@@ -300,7 +301,7 @@ export default function MonthlyContractCreateScreen() {
 
         {/* ── Công việc & lương ── */}
         <Card style={{ gap: 10 }}>
-          <Text style={{ fontSize: fs(15), fontWeight: '800', color: COLORS.gray[900] }}>
+          <Text style={{ fontSize: fs(15), fontWeight: '800', color: tc.text }}>
             {lang === 'en' ? '2. Job details & monthly wage' : '2. Công việc & lương tháng'}
           </Text>
           <TextInput
@@ -338,7 +339,7 @@ export default function MonthlyContractCreateScreen() {
               {fieldErrors.salary}
             </Text>
           )}
-          <Text style={{ fontSize: fs(12), color: COLORS.gray[500] }}>
+          <Text style={{ fontSize: fs(12), color: tc.textMuted }}>
             {lang === 'en'
               ? 'At month end, actual wage = monthly salary × (verified sessions / scheduled sessions), minus 15% platform fee.'
               : 'Cuối tháng, lương thực trả = lương tháng × (số buổi đã xác nhận / tổng số buổi theo lịch), trừ phí sàn 15%.'}
@@ -347,7 +348,7 @@ export default function MonthlyContractCreateScreen() {
 
         {/* ── Lịch làm việc ── */}
         <Card style={{ gap: 10 }}>
-          <Text style={{ fontSize: fs(15), fontWeight: '800', color: COLORS.gray[900] }}>
+          <Text style={{ fontSize: fs(15), fontWeight: '800', color: tc.text }}>
             {lang === 'en' ? '3. Weekly schedule' : '3. Lịch làm việc hằng tuần'}
           </Text>
           <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
@@ -367,7 +368,7 @@ export default function MonthlyContractCreateScreen() {
           )}
           <View style={{ flexDirection: 'row', gap: 10 }}>
             <View style={{ flex: 1, gap: 4 }}>
-              <Text style={{ fontSize: fs(12.5), color: COLORS.gray[500] }}>
+              <Text style={{ fontSize: fs(12.5), color: tc.textMuted }}>
                 {lang === 'en' ? 'Start time' : 'Giờ bắt đầu'}
               </Text>
               <TextInput
@@ -378,7 +379,7 @@ export default function MonthlyContractCreateScreen() {
               />
             </View>
             <View style={{ flex: 1, gap: 4 }}>
-              <Text style={{ fontSize: fs(12.5), color: COLORS.gray[500] }}>
+              <Text style={{ fontSize: fs(12.5), color: tc.textMuted }}>
                 {lang === 'en' ? 'End time' : 'Giờ kết thúc'}
               </Text>
               <TextInput
@@ -391,7 +392,7 @@ export default function MonthlyContractCreateScreen() {
           </View>
           <View style={{ flexDirection: 'row', gap: 10 }}>
             <View style={{ flex: 1, gap: 4 }}>
-              <Text style={{ fontSize: fs(12.5), color: COLORS.gray[500] }}>
+              <Text style={{ fontSize: fs(12.5), color: tc.textMuted }}>
                 {lang === 'en' ? 'Start date (YYYY-MM-DD)' : 'Ngày bắt đầu (YYYY-MM-DD)'}
               </Text>
               <TextInput
@@ -409,7 +410,7 @@ export default function MonthlyContractCreateScreen() {
               )}
             </View>
             <View style={{ flex: 1, gap: 4 }}>
-              <Text style={{ fontSize: fs(12.5), color: COLORS.gray[500] }}>
+              <Text style={{ fontSize: fs(12.5), color: tc.textMuted }}>
                 {lang === 'en' ? 'End date (optional)' : 'Ngày kết thúc (không bắt buộc)'}
               </Text>
               <TextInput
@@ -432,7 +433,7 @@ export default function MonthlyContractCreateScreen() {
 
         {/* ── Địa chỉ ── */}
         <Card style={{ gap: 10 }}>
-          <Text style={{ fontSize: fs(15), fontWeight: '800', color: COLORS.gray[900] }}>
+          <Text style={{ fontSize: fs(15), fontWeight: '800', color: tc.text }}>
             {lang === 'en' ? '4. Work address' : '4. Địa chỉ làm việc'}
           </Text>
           {savedAddresses.length > 0 ? (
@@ -450,7 +451,7 @@ export default function MonthlyContractCreateScreen() {
                     alignItems: 'center',
                     gap: 10,
                     padding: 12,
-                    borderRadius: 12,
+                    borderRadius: 14,
                     borderWidth: 1.5,
                     borderColor: addressIdx === i ? COLORS.primary : COLORS.gray[200],
                     backgroundColor: addressIdx === i ? COLORS.primaryLight : '#fff',
@@ -458,12 +459,12 @@ export default function MonthlyContractCreateScreen() {
                 >
                   <View style={{ flex: 1 }}>
                     <Text
-                      style={{ fontSize: fs(13.5), fontWeight: '700', color: COLORS.gray[800] }}
+                      style={{ fontSize: fs(13.5), fontWeight: '700', color: tc.text }}
                     >
                       {a.label || (lang === 'en' ? 'Address' : 'Địa chỉ')}{' '}
                       {a.is_default ? (lang === 'en' ? '· Default' : '· Mặc định') : ''}
                     </Text>
-                    <Text style={{ fontSize: fs(12.5), color: COLORS.gray[600] }}>
+                    <Text style={{ fontSize: fs(12.5), color: tc.textSecondary }}>
                       {a.full_address}, {a.district}, {a.city}
                     </Text>
                   </View>
@@ -518,7 +519,7 @@ export default function MonthlyContractCreateScreen() {
           onPress={handleSubmit}
         />
         <Text
-          style={{ fontSize: fs(12), color: COLORS.gray[500], textAlign: 'center', lineHeight: 18 }}
+          style={{ fontSize: fs(12), color: tc.textMuted, textAlign: 'center', lineHeight: 18 }}
         >
           {lang === 'en'
             ? 'Contract takes effect only after helper agrees. You can cancel anytime before finalizing first month wages.'
@@ -543,6 +544,7 @@ function HelperRow({
   onPress: () => void;
 }) {
   const { fs } = useTranslation();
+  const tc = useThemeColors();
   return (
     <TouchableOpacity
       activeOpacity={0.8}
@@ -552,7 +554,7 @@ function HelperRow({
         alignItems: 'center',
         gap: 10,
         padding: 10,
-        borderRadius: 12,
+        borderRadius: 14,
         borderWidth: 1.5,
         borderColor: selected ? COLORS.primary : COLORS.gray[200],
         backgroundColor: selected ? COLORS.primaryLight : '#fff',
@@ -560,11 +562,11 @@ function HelperRow({
     >
       <Avatar uri={avatar} name={name} size={40} />
       <View style={{ flex: 1 }}>
-        <Text style={{ fontSize: fs(14), fontWeight: '700', color: COLORS.gray[900] }}>{name}</Text>
+        <Text style={{ fontSize: fs(14), fontWeight: '700', color: tc.text }}>{name}</Text>
         {rating ? (
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
             <Star size={12} color="#F59E0B" fill="#F59E0B" />
-            <Text style={{ fontSize: fs(12), color: COLORS.gray[500] }}>{rating.toFixed(1)}</Text>
+            <Text style={{ fontSize: fs(12), color: tc.textMuted }}>{rating.toFixed(1)}</Text>
           </View>
         ) : null}
       </View>
@@ -583,6 +585,7 @@ function Chip({
   onPress: () => void;
 }) {
   const { fs } = useTranslation();
+  const tc = useThemeColors();
   return (
     <TouchableOpacity
       activeOpacity={0.8}

@@ -2178,6 +2178,24 @@ export function useCreateReview() {
   });
 }
 
+export function useDeleteAccount() {
+  return useMutation({
+    mutationFn: (dto: { password: string }) => apiClient.delete('/auth/me', { data: dto }),
+  });
+}
+
+export function useReplyReview() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, reply }: { id: string; reply: string }) =>
+      apiClient.patch(`/reviews/${id}/reply`, { reply }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['helper', 'reviews'] });
+      Toast.show({ type: 'success', text1: 'Đã gửi phản hồi đánh giá!' });
+    },
+  });
+}
+
 // ─── Loyalty (Feature 12 — Điểm thành viên & hạng khách) ─────────────────────
 
 export interface LoyaltyAccount {

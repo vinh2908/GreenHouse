@@ -30,9 +30,10 @@ import {
 } from 'lucide-react-native';
 import Toast from 'react-native-toast-message';
 import { useCreateSosJob } from '@/hooks/use-api';
+import { lightImpact } from '@/services/haptics';
 import { useTranslation } from '@/hooks/use-i18n';
 import { locationService, parseVietnameseAddress } from '@/services/location.service';
-import { Button, Card, LoadingSpinner, COLORS, Separator, PriceText } from '@/components/ui';
+import { Button, Card, LoadingSpinner, COLORS, Separator, PriceText, useThemeColors } from '@/components/ui';
 
 // ── Danh sách sự cố SOS khẩn cấp hợp lệ (Whitelist) ──────────────────────────
 const SOS_CATEGORIES = [
@@ -73,6 +74,7 @@ const SOS_CATEGORIES = [
 export default function SosScreen() {
   const router = useRouter();
   const { t, fs, lang } = useTranslation();
+  const tc = useThemeColors();
   const createSos = useCreateSosJob();
 
   const sosCategories = [
@@ -185,6 +187,8 @@ export default function SosScreen() {
   };
 
   const executeSendSos = async () => {
+    // B20: rung nhẹ khi xác nhận gửi SOS
+    void lightImpact();
     try {
       const res = await createSos.mutateAsync({
         category: selectedCategory,
@@ -262,7 +266,7 @@ export default function SosScreen() {
   const insets = useSafeAreaInsets();
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#F8F9FA' }}>
+    <View style={{ flex: 1, backgroundColor: tc.background }}>
       {/* ── Top Header (Safe Insets) ─────────────────────────────────── */}
       <View
         style={{
@@ -281,7 +285,7 @@ export default function SosScreen() {
           style={{
             width: 38,
             height: 38,
-            borderRadius: 12,
+            borderRadius: 14,
             backgroundColor: 'rgba(255,255,255,0.2)',
             alignItems: 'center',
             justifyContent: 'center',
@@ -335,7 +339,7 @@ export default function SosScreen() {
                 style={{
                   flex: 1,
                   backgroundColor: '#DC2626',
-                  borderRadius: 10,
+                  borderRadius: 8,
                   paddingVertical: 8,
                   alignItems: 'center',
                   flexDirection: 'row',
@@ -353,7 +357,7 @@ export default function SosScreen() {
                 style={{
                   flex: 1,
                   backgroundColor: '#2563EB',
-                  borderRadius: 10,
+                  borderRadius: 8,
                   paddingVertical: 8,
                   alignItems: 'center',
                   flexDirection: 'row',
@@ -370,7 +374,7 @@ export default function SosScreen() {
           </Card>
 
           {/* ── 1. CHỌN NHANH SỰ CỐ KHẨN CẤP (1 CHẠM) ─────────────────── */}
-          <Text style={{ fontSize: fs(16), fontWeight: '900', color: COLORS.gray[900] }}>
+          <Text style={{ fontSize: fs(16), fontWeight: '900', color: tc.text }}>
             {lang === 'en'
               ? '1. Select Emergency Type (1-Tap):'
               : '1. Chọn loại sự cố khẩn cấp (1 chạm):'}
@@ -388,7 +392,7 @@ export default function SosScreen() {
                     backgroundColor: isSelected ? cat.bg : '#FFFFFF',
                     borderWidth: 2,
                     borderColor: isSelected ? cat.color : COLORS.gray[200],
-                    borderRadius: 16,
+                    borderRadius: 14,
                     padding: 14,
                     flexDirection: 'row',
                     alignItems: 'center',
@@ -399,7 +403,7 @@ export default function SosScreen() {
                     style={{
                       width: 44,
                       height: 44,
-                      borderRadius: 12,
+                      borderRadius: 14,
                       backgroundColor: cat.bg,
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -408,10 +412,10 @@ export default function SosScreen() {
                     {React.createElement(cat.icon, { size: 26, color: cat.color })}
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: fs(15), fontWeight: '800', color: COLORS.gray[900] }}>
+                    <Text style={{ fontSize: fs(15), fontWeight: '800', color: tc.text }}>
                       {cat.name}
                     </Text>
-                    <Text style={{ fontSize: fs(12), color: COLORS.gray[500], marginTop: 2 }}>
+                    <Text style={{ fontSize: fs(12), color: tc.textMuted, marginTop: 2 }}>
                       {cat.desc}
                     </Text>
                   </View>
@@ -420,7 +424,7 @@ export default function SosScreen() {
                       style={{
                         width: 24,
                         height: 24,
-                        borderRadius: 12,
+                        borderRadius: 14,
                         backgroundColor: cat.color,
                         alignItems: 'center',
                         justifyContent: 'center',
@@ -443,7 +447,7 @@ export default function SosScreen() {
                 alignItems: 'center',
               }}
             >
-              <Text style={{ fontSize: fs(14), fontWeight: '800', color: COLORS.gray[900] }}>
+              <Text style={{ fontSize: fs(14), fontWeight: '800', color: tc.text }}>
                 {lang === 'en'
                   ? '2. Rescue Location (Goong Maps)'
                   : '2. Vị trí cứu hộ (Bản đồ Goong)'}
@@ -452,13 +456,13 @@ export default function SosScreen() {
                 <TouchableOpacity
                   onPress={() => setIsEditingAddress(!isEditingAddress)}
                   style={{
-                    backgroundColor: COLORS.gray[100],
+                    backgroundColor: tc.subtle,
                     paddingHorizontal: 8,
                     paddingVertical: 4,
-                    borderRadius: 6,
+                    borderRadius: 8,
                   }}
                 >
-                  <Text style={{ fontSize: fs(11), color: COLORS.gray[700], fontWeight: '700' }}>
+                  <Text style={{ fontSize: fs(11), color: tc.textSecondary, fontWeight: '700' }}>
                     {isEditingAddress
                       ? lang === 'en'
                         ? 'Collapse'
@@ -478,7 +482,7 @@ export default function SosScreen() {
                     backgroundColor: '#ECFDF5',
                     paddingHorizontal: 8,
                     paddingVertical: 4,
-                    borderRadius: 6,
+                    borderRadius: 8,
                   }}
                 >
                   {isLocating ? (
@@ -505,11 +509,11 @@ export default function SosScreen() {
                   style={{
                     borderWidth: 1.5,
                     borderColor: COLORS.primary,
-                    borderRadius: 10,
+                    borderRadius: 8,
                     padding: 10,
                     fontSize: fs(14),
-                    color: COLORS.gray[900],
-                    backgroundColor: '#fff',
+                    color: tc.text,
+                    backgroundColor: tc.surface,
                   }}
                   placeholder={
                     lang === 'en'
@@ -572,20 +576,20 @@ export default function SosScreen() {
                   flexDirection: 'row',
                   alignItems: 'flex-start',
                   gap: 8,
-                  backgroundColor: COLORS.gray[50],
+                  backgroundColor: tc.background,
                   padding: 12,
-                  borderRadius: 12,
+                  borderRadius: 14,
                 }}
               >
                 <MapPin size={18} color={COLORS.primary} style={{ marginTop: 2 }} />
                 <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: fs(14), fontWeight: '700', color: COLORS.gray[900] }}>
+                  <Text style={{ fontSize: fs(14), fontWeight: '700', color: tc.text }}>
                     {address.full_address ||
                       (lang === 'en'
                         ? 'No location yet — tap "Relocate" or "Enter manually"'
                         : 'Chưa có vị trí — bấm "Định vị lại" hoặc "Nhập tay"')}
                   </Text>
-                  <Text style={{ fontSize: fs(12), color: COLORS.gray[500], marginTop: 2 }}>
+                  <Text style={{ fontSize: fs(12), color: tc.textMuted, marginTop: 2 }}>
                     {[address.ward, address.district, address.city].filter(Boolean).join(', ')}
                   </Text>
                 </View>
@@ -612,7 +616,7 @@ export default function SosScreen() {
             >
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                 <Clock size={18} color={COLORS.primary} />
-                <Text style={{ fontSize: fs(15), fontWeight: '900', color: COLORS.gray[900] }}>
+                <Text style={{ fontSize: fs(15), fontWeight: '900', color: tc.text }}>
                   {lang === 'en' ? 'Helper Arrival Time' : 'Thời gian thợ có mặt'}
                 </Text>
               </View>
@@ -634,13 +638,13 @@ export default function SosScreen() {
 
             <View style={{ gap: 6 }}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                <Text style={{ fontSize: fs(13), color: COLORS.gray[600] }}>
+                <Text style={{ fontSize: fs(13), color: tc.textSecondary }}>
                   {lang === 'en' ? 'Base rescue fee:' : 'Công thợ cứu hộ cơ bản:'}
                 </Text>
                 <PriceText amount={baseCost} size={14} color={COLORS.gray[900]} bold={false} />
               </View>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                <Text style={{ fontSize: fs(13), color: COLORS.gray[600] }}>
+                <Text style={{ fontSize: fs(13), color: tc.textSecondary }}>
                   {lang === 'en'
                     ? 'Emergency dispatch surcharge (+50%):'
                     : 'Phụ phí cứu hộ khẩn cấp (+50%):'}
@@ -649,14 +653,14 @@ export default function SosScreen() {
               </View>
               <Separator my={2} />
               <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                <Text style={{ fontSize: fs(15), fontWeight: '900', color: COLORS.gray[900] }}>
+                <Text style={{ fontSize: fs(15), fontWeight: '900', color: tc.text }}>
                   {lang === 'en' ? 'Estimated Total:' : 'Ước tính tổng cộng:'}
                 </Text>
                 <PriceText amount={totalEstimate} size={18} color="#DC2626" />
               </View>
             </View>
 
-            <Text style={{ fontSize: fs(11.5), color: COLORS.gray[500], lineHeight: 16 }}>
+            <Text style={{ fontSize: fs(11.5), color: tc.textMuted, lineHeight: 16 }}>
               {lang === 'en'
                 ? '* Emergency surcharge is used to prioritize immediate helper dispatch. You only pay after helper completes the resolution.'
                 : '* Phụ phí khẩn cấp dùng để ưu tiên thợ di chuyển ngay lập tức. Khách hàng chỉ thanh toán sau khi thợ hoàn tất xử lý sự cố.'}
@@ -672,7 +676,7 @@ export default function SosScreen() {
           bottom: 0,
           left: 0,
           right: 0,
-          backgroundColor: '#fff',
+          backgroundColor: tc.surface,
           paddingHorizontal: 16,
           paddingVertical: 14,
           borderTopWidth: 1,
@@ -690,7 +694,7 @@ export default function SosScreen() {
           onPress={handleSendSos}
           style={{
             backgroundColor: '#DC2626',
-            borderRadius: 16,
+            borderRadius: 14,
             paddingVertical: 16,
             alignItems: 'center',
             justifyContent: 'center',

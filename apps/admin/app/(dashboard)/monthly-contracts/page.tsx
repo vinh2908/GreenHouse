@@ -2,9 +2,16 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { AdminMonthlyContract, useAdminMonthlyContracts } from '@/hooks/use-admin';
+import {
+  AdminMonthlyContract,
+  useAdminMonthlyContracts,
+  useAdminApproveMonthlyContract,
+  useAdminCancelMonthlyContract,
+  useAdminEndMonthlyContract,
+} from '@/hooks/use-admin';
 import {
   Badge,
+  Button,
   Card,
   CardContent,
   CardHeader,
@@ -42,6 +49,11 @@ export default function AdminMonthlyContractsPage() {
   });
 
   const contracts = data?.contracts ?? [];
+
+  // B3: admin duyệt / hủy / kết thúc hợp đồng tháng
+  const approveMutation = useAdminApproveMonthlyContract();
+  const cancelMutation = useAdminCancelMonthlyContract();
+  const endMutation = useAdminEndMonthlyContract();
 
   return (
     <div className="space-y-6">
@@ -93,6 +105,7 @@ export default function AdminMonthlyContractsPage() {
                     <TableHead>Khung giờ</TableHead>
                     <TableHead>Trạng thái</TableHead>
                     <TableHead>Ngày tạo</TableHead>
+                    <TableHead>Thao tác</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -135,6 +148,50 @@ export default function AdminMonthlyContractsPage() {
                         </TableCell>
                         <TableCell className="text-xs text-muted-foreground">
                           {formatDateTime(c.created_at)}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex flex-col gap-1.5 min-w-[110px]">
+                            {c.status === 'pending' && (
+                              <Button
+                                size="sm"
+                                disabled={approveMutation.isPending}
+                                onClick={() => approveMutation.mutate(c._id)}
+                              >
+                                Duyệt
+                              </Button>
+                            )}
+                            {(c.status === 'pending' || c.status === 'active') && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                disabled={cancelMutation.isPending}
+                                onClick={() => {
+                                  if (window.confirm(`Hủy hợp đồng "${c.title}"?`)) {
+                                    cancelMutation.mutate({ id: c._id });
+                                  }
+                                }}
+                              >
+                                Hủy
+                              </Button>
+                            )}
+                            {c.status === 'active' && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                disabled={endMutation.isPending}
+                                onClick={() => {
+                                  if (window.confirm(`Kết thúc hợp đồng "${c.title}"?`)) {
+                                    endMutation.mutate({ id: c._id });
+                                  }
+                                }}
+                              >
+                                Kết thúc
+                              </Button>
+                            )}
+                            {c.status !== 'pending' && c.status !== 'active' && (
+                              <span className="text-xs text-muted-foreground">—</span>
+                            )}
+                          </div>
                         </TableCell>
                       </TableRow>
                     );

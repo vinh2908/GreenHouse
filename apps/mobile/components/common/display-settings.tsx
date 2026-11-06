@@ -2,7 +2,7 @@
 // Dùng chung cho profile khách + thợ: chọn ngôn ngữ (Tiếng Việt | English) và
 // cỡ chữ (Thường | Lớn), ghi vào settings.store (persist AsyncStorage).
 import { View, Text, TouchableOpacity } from 'react-native';
-import { Card, COLORS } from '@/components/ui';
+import { Card, COLORS, useThemeColors } from '@/components/ui';
 import { useTranslation } from '@/hooks/use-i18n';
 
 function Segmented<T extends string>({
@@ -15,12 +15,13 @@ function Segmented<T extends string>({
   onChange: (v: T) => void;
 }) {
   const { fs } = useTranslation();
+  const tc = useThemeColors();
   return (
     <View
       style={{
         flexDirection: 'row',
-        backgroundColor: COLORS.gray[100],
-        borderRadius: 12,
+        backgroundColor: tc.subtle,
+        borderRadius: 14,
         padding: 4,
         gap: 4,
       }}
@@ -35,7 +36,7 @@ function Segmented<T extends string>({
             style={{
               flex: 1,
               paddingVertical: 9,
-              borderRadius: 9,
+              borderRadius: 8,
               alignItems: 'center',
               backgroundColor: active ? COLORS.primary : 'transparent',
             }}
@@ -44,7 +45,7 @@ function Segmented<T extends string>({
               style={{
                 fontSize: fs(13.5),
                 fontWeight: '800',
-                color: active ? '#fff' : COLORS.gray[600],
+                color: active ? '#fff' : tc.textSecondary,
               }}
             >
               {opt.label}
@@ -57,14 +58,16 @@ function Segmented<T extends string>({
 }
 
 export function DisplaySettingsSection() {
-  const { t, fs, language, setLanguage, textSize, setTextSize } = useTranslation();
+  const { t, fs, language, setLanguage, textSize, setTextSize, theme, setTheme } =
+    useTranslation();
+  const tc = useThemeColors();
   return (
     <View>
       <Text
         style={{
           fontSize: fs(12),
           fontWeight: '700',
-          color: COLORS.gray[500],
+          color: tc.textMuted,
           marginBottom: 8,
           textTransform: 'uppercase',
           letterSpacing: 0.5,
@@ -74,7 +77,7 @@ export function DisplaySettingsSection() {
       </Text>
       <Card style={{ gap: 14 }}>
         <View style={{ gap: 8 }}>
-          <Text style={{ fontSize: fs(14), fontWeight: '700', color: COLORS.gray[800] }}>
+          <Text style={{ fontSize: fs(14), fontWeight: '700', color: tc.text }}>
             {t('settings_language')}
           </Text>
           <Segmented
@@ -87,7 +90,7 @@ export function DisplaySettingsSection() {
           />
         </View>
         <View style={{ gap: 8 }}>
-          <Text style={{ fontSize: fs(14), fontWeight: '700', color: COLORS.gray[800] }}>
+          <Text style={{ fontSize: fs(14), fontWeight: '700', color: tc.text }}>
             {t('settings_text_size')}
           </Text>
           <Segmented
@@ -96,6 +99,20 @@ export function DisplaySettingsSection() {
             options={[
               { value: 'normal', label: t('settings_text_normal') },
               { value: 'large', label: t('settings_text_large') },
+            ]}
+          />
+        </View>
+        {/* B32: Giao diện tối */}
+        <View style={{ gap: 8 }}>
+          <Text style={{ fontSize: fs(14), fontWeight: '700', color: tc.text }}>
+            {t('settings_theme')}
+          </Text>
+          <Segmented
+            value={theme}
+            onChange={setTheme}
+            options={[
+              { value: 'light', label: t('settings_theme_light') },
+              { value: 'dark', label: t('settings_theme_dark') },
             ]}
           />
         </View>

@@ -31,6 +31,71 @@ export const STRINGS = {
   },
   home_active_jobs: { vi: 'Đơn đang thực hiện', en: 'Jobs in progress' },
 
+  // ─── Helper dashboard SOS (B8) ────────────────────────────────────────────
+  helper_dash_sos_title: {
+    vi: 'CỨU HỘ KHẨN CẤP SOS GẦN BẠN!',
+    en: 'EMERGENCY SOS RESCUE NEAR YOU!',
+  },
+  helper_dash_sos_body: {
+    vi: '{title} tại {district}. Phụ phí +{surcharge}đ',
+    en: '{title} in {district}. Surcharge +{surcharge} VND',
+  },
+  helper_dash_sos_accept_failed: {
+    vi: 'Không thể nhận đơn cứu hộ',
+    en: 'Could not accept the SOS job',
+  },
+  helper_dash_job_in_progress_title: {
+    vi: 'Đang có công việc diễn ra',
+    en: 'A job is in progress',
+  },
+  helper_dash_job_in_progress_msg: {
+    vi: 'Bạn đang có đơn công việc đang thực hiện. Hãy hoàn thành hoặc kết thúc công việc trước khi tắt nhận việc nhé!',
+    en: 'You have a job in progress. Please finish or end it before turning off job receiving.',
+  },
+  helper_dash_understood: { vi: 'Đã hiểu', en: 'Understood' },
+  delete_account: { vi: 'Xoá tài khoản', en: 'Delete account' },
+  delete_account_title: { vi: 'Xoá tài khoản của bạn', en: 'Delete your account' },
+  delete_account_warn: {
+    vi: 'Tài khoản của bạn sẽ bị xoá vĩnh viễn và không thể đăng nhập lại bằng số điện thoại/email này. Lịch sử đơn hàng cũ vẫn được lưu cho quản trị viên tra cứu.',
+    en: 'Your account will be permanently deleted and you will not be able to sign in again with this phone/email. Past order history is kept for admin records.',
+  },
+  delete_account_confirm_title: {
+    vi: 'Chắc chắn xoá tài khoản?',
+    en: 'Are you sure you want to delete your account?',
+  },
+  delete_account_confirm_desc: {
+    vi: 'Hành động này không thể hoàn tác. Bạn sẽ bị đăng xuất ngay và không đăng nhập lại được.',
+    en: 'This cannot be undone. You will be signed out immediately and cannot sign in again.',
+  },
+  delete_account_password_label: {
+    vi: 'Nhập mật khẩu để xác nhận',
+    en: 'Enter your password to confirm',
+  },
+  delete_account_password_placeholder: { vi: 'Mật khẩu hiện tại', en: 'Current password' },
+  delete_account_success: {
+    vi: 'Tài khoản đã được xoá.',
+    en: 'Your account has been deleted.',
+  },
+  delete_account_wrong_password: {
+    vi: 'Mật khẩu không đúng. Vui lòng thử lại.',
+    en: 'Wrong password. Please try again.',
+  },
+  time_badge_new: { vi: 'MỚI', en: 'NEW' },
+  root_error_title: { vi: 'Lỗi hiển thị màn hình', en: 'Screen render error' },
+  onboarding_skip: { vi: 'Bỏ qua', en: 'Skip' },
+  onboarding_next: { vi: 'Tiếp', en: 'Next' },
+  onboarding_start: { vi: 'Bắt đầu', en: 'Get started' },
+  onboarding_1_title: { vi: 'Đặt dịch vụ trong 1 phút', en: 'Book a service in 1 minute' },
+  onboarding_1_body: { vi: 'Chọn dịch vụ, chọn giờ, mô tả yêu cầu — thợ gần bạn sẽ báo giá. Bạn chọn báo giá phù hợp rồi chờ thợ đến.', en: 'Pick a service, time and describe the job — nearby helpers quote a price. Choose the quote you like and wait for the helper.' },
+  onboarding_2_title: { vi: 'SOS luôn ở ngay tay', en: 'SOS is always at hand' },
+  onboarding_2_body: { vi: 'Sự cố khẩn cấp? Nút SOS đỏ trên trang chính sẽ tìm thợ thay thế gần nhất và báo cho bạn ngay.', en: 'An emergency? The red SOS button on the home screen finds the nearest replacement helper and notifies you right away.' },
+  onboarding_3_title: { vi: 'Thanh toán minh bạch', en: 'Transparent payment' },
+  onboarding_3_body: { vi: 'Giá chốt trước khi làm, thanh toán qua ví trong app. Mọi giao dịch đều có hoá đơn và lịch sử rõ ràng.', en: 'The price is agreed before work starts, paid via the in-app wallet. Every transaction has an invoice and clear history.' },
+  onboarding_4_title: { vi: 'Theo dõi đơn theo thời gian thực', en: 'Track your job in real time' },
+  onboarding_4_body: { vi: 'Xem thợ đang ở đâu, nhắn tin và gọi điện trực tiếp trong app, nghiệm thu và đánh giá khi xong việc.', en: 'See where your helper is, chat and call right in the app, then review and rate when the job is done.' },
+  root_error_unknown: { vi: 'Lỗi không xác định', en: 'Unknown error' },
+  time_badge_night: { vi: 'ĐÊM', en: 'NIGHT' },
+
   // ─── Job statuses (dùng qua JobStatusBadge) ───────────────────────────────
   status_open: { vi: 'Đang tìm thợ', en: 'Finding helper' },
   status_receiving_quotes: { vi: 'Có báo giá', en: 'Quotes received' },
@@ -192,6 +257,9 @@ export const STRINGS = {
 
   // ─── Display settings (mục mới trong cả 2 profile) ────────────────────────
   settings_section: { vi: 'Cài đặt hiển thị', en: 'Display Settings' },
+  settings_theme: { vi: 'Giao diện', en: 'Appearance' },
+  settings_theme_light: { vi: 'Sáng', en: 'Light' },
+  settings_theme_dark: { vi: 'Tối', en: 'Dark' },
   settings_language: { vi: 'Ngôn ngữ', en: 'Language' },
   settings_language_vi: { vi: 'Tiếng Việt', en: 'Tiếng Việt' },
   settings_language_en: { vi: 'English', en: 'English' },

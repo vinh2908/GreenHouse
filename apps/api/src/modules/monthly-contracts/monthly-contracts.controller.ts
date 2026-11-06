@@ -50,6 +50,33 @@ export class MonthlyContractsController {
     return this.service.adminListContracts(status, Number(page) || 1, Number(limit) || 20);
   }
 
+  @Patch('admin/:id/approve')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: '[Admin] Duyệt hợp đồng tháng đang chờ' })
+  async adminApprove(@Param('id') id: string) {
+    return this.service.adminApprove(id);
+  }
+
+  @Patch('admin/:id/cancel')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: '[Admin] Hủy hợp đồng tháng' })
+  async adminCancel(@Param('id') id: string, @Body() dto?: CancelMonthlyContractDto) {
+    return this.service.adminCancel(id, dto?.reason);
+  }
+
+  @Patch('admin/:id/end')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: '[Admin] Kết thúc hợp đồng tháng đang hiệu lực' })
+  async adminEnd(@Param('id') id: string, @Body() dto?: EndMonthlyContractDto) {
+    return this.service.adminEnd(id, dto?.reason);
+  }
+
   @Post()
   @ApiOperation({ summary: '[Customer] Tạo hợp đồng giúp việc theo tháng (chờ thợ duyệt)' })
   async create(@CurrentUser() user: { sub: string }, @Body() dto: CreateMonthlyContractDto) {
