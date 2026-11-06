@@ -146,22 +146,6 @@ export const SOCKET_EVENTS = {
   SOS_ACCEPTED: 'sos:accepted', // Thợ nhận việc cứu hộ
   SOS_CANCELLED: 'sos:cancelled',
 
-  // Job lifecycle (B17: tách khỏi type 'system' quá tải)
-  JOB_CANCELLED: 'job_cancelled',
-  JOB_UPDATED: 'job_updated',
-  COST_PROPOSAL: 'cost_proposal',
-  COST_PROPOSAL_RESPONSE: 'cost_proposal_response',
-  DISPUTE_UPDATED: 'dispute_updated',
-  DISPUTE_APPEALED: 'dispute_appealed',
-  TEAM_INVITATION: 'team_invitation',
-  TEAM_RESPONSE: 'team_response',
-  RECURRING_JOB_CREATED: 'recurring_job_created',
-  RECURRING_PLAN_CANCELLED: 'recurring_plan_cancelled',
-  SOS_BACKUP_WITHDRAWN: 'sos_backup_withdrawn',
-  DISPUTE_OPENED: 'dispute_opened',
-  DISPUTE_RESOLVED: 'dispute_resolved',
-  CLAIM_SUBMITTED: 'claim_submitted',
-  CALL_MISSED: 'call_missed',
   // SOS Backup (thợ không thể tiếp tục đơn → khách đồng ý mới tìm thợ thay thế, ghép cặp Hungarian)
   SOS_BACKUP_DECISION_REQUESTED: 'sos:customer_decision_requested', // Gửi tới khách: thợ có sự cố, cần khách quyết định (đổi người / hủy đơn)
   SOS_BACKUP_DECIDED: 'sos:customer_decided', // Khách đã quyết định (báo thợ gốc + room của đơn)
