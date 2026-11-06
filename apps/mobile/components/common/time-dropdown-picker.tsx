@@ -35,10 +35,11 @@ export const ORIGINAL_TIME_CHIPS = [
   '22:00',
 ];
 
-/** Nhãn badge cho chip gợi ý theo thiết kế (MỚI cho 12:00, ĐÊM cho 21:00, 21:30, 22:00) */
-export function getChipBadge(chip: string): 'MỚI' | 'ĐÊM' | null {
-  if (chip === '12:00') return 'MỚI';
-  if (chip === '21:00' || chip === '21:30' || chip === '22:00') return 'ĐÊM';
+/** Badge cho chip gợi ý (12:00 = mới, 21:00+ = đêm). Trả về key trung lập
+ * ngôn ngữ; nhãn hiển thị dịch qua i18n (time_badge_new / time_badge_night). */
+export function getChipBadge(chip: string): 'NEW' | 'NIGHT' | null {
+  if (chip === '12:00') return 'NEW';
+  if (chip === '21:00' || chip === '21:30' || chip === '22:00') return 'NIGHT';
   return null;
 }
 
@@ -352,7 +353,7 @@ export function TimeDropdownPicker({
                             styles.chipBadge,
                             isSelected
                               ? styles.chipBadgeActive
-                              : badge === 'ĐÊM'
+                              : badge === 'NIGHT'
                                 ? styles.chipBadgeNight
                                 : styles.chipBadgeNew,
                           ]}
@@ -362,13 +363,13 @@ export function TimeDropdownPicker({
                               styles.chipBadgeText,
                               isSelected
                                 ? styles.chipBadgeTextActive
-                                : badge === 'ĐÊM'
+                                : badge === 'NIGHT'
                                   ? styles.chipBadgeTextNight
                                   : styles.chipBadgeTextNew,
                               { fontSize: fs(9) },
                             ]}
                           >
-                            {lang === 'en' ? (badge === 'ĐÊM' ? 'NIGHT' : 'NEW') : badge}
+                            {t(badge === 'NIGHT' ? 'time_badge_night' : 'time_badge_new')}
                           </Text>
                         </View>
                       )}
