@@ -86,9 +86,17 @@ function jobIdOf(job: AdminPenaltyEvent['job_id'] | { _id: string } | string | n
 
 // ─── Tab 1: SOS bị gắn cờ ─────────────────────────────────────────────────────
 
-function FlaggedSosTab() {
-  const [page, setPage] = useState(1);
-  const { data, isLoading } = useFlaggedSosRequests({ page });
+function FlaggedSosTab({
+  data,
+  isLoading,
+  page,
+  setPage,
+}: {
+  data: ReturnType<typeof useFlaggedSosRequests>['data'];
+  isLoading: boolean;
+  page: number;
+  setPage: (p: number) => void;
+}) {
   const requests = data?.requests ?? [];
 
   return (
@@ -263,18 +271,27 @@ function WaiveDialog({ event, onClose }: { event: AdminPenaltyEvent; onClose: ()
 
 // ─── Tab 2: Sổ điểm phạt ──────────────────────────────────────────────────────
 
-function PenaltyEventsTab() {
-  const [page, setPage] = useState(1);
-  const [status, setStatus] = useState('');
+function PenaltyEventsTab({
+  data,
+  isLoading,
+  page,
+  setPage,
+  status,
+  setStatus,
+  helperId,
+  setHelperId,
+}: {
+  data: ReturnType<typeof useHelperPenaltyEvents>['data'];
+  isLoading: boolean;
+  page: number;
+  setPage: (p: number) => void;
+  status: string;
+  setStatus: (s: string) => void;
+  helperId: string;
+  setHelperId: (id: string) => void;
+}) {
   const [helperIdInput, setHelperIdInput] = useState('');
-  const [helperId, setHelperId] = useState('');
   const [waiving, setWaiving] = useState<AdminPenaltyEvent | null>(null);
-
-  const { data, isLoading } = useHelperPenaltyEvents({
-    helper_id: helperId || undefined,
-    status: status || undefined,
-    page,
-  });
   const events = data?.events ?? [];
 
   return (
@@ -411,8 +428,18 @@ function PenaltyEventsTab() {
 
 export default function SosOversightPage() {
   const [tab, setTab] = useState<'flagged' | 'penalties'>('flagged');
-  const flagged = useFlaggedSosRequests({ page: 1 });
-  const penalties = useHelperPenaltyEvents({ page: 1 });
+  // B12: mỗi query chỉ gọi 1 lần ở cấp trang, truyền xuống tab qua props
+  // (trước đây trang + tab gọi trùng nhau).
+  const [flaggedPage, setFlaggedPage] = useState(1);
+  const [penaltyPage, setPenaltyPage] = useState(1);
+  const [penaltyStatus, setPenaltyStatus] = useState('');
+  const [penaltyHelperId, setPenaltyHelperId] = useState('');
+  const flagged = useFlaggedSosRequests({ page: flaggedPage });
+  const penalties = useHelperPenaltyEvents({
+    helper_id: penaltyHelperId || undefined,
+    status: penaltyStatus || undefined,
+    page: penaltyPage,
+  });
 
   return (
     <div className="space-y-6">
@@ -443,7 +470,31 @@ export default function SosOversightPage() {
         </Button>
       </div>
 
-      {tab === 'flagged' ? <FlaggedSosTab /> : <PenaltyEventsTab />}
+      {tab === 'flagged' ? (
+        <FlaggedSosTab
+          data={flagged.data}
+          isLoading={flagged.isLoading}
+          page={flaggedPage}
+          setPage={setFlaggedPage}
+        />
+      ) : (
+        <PenaltyEventsTab
+          data={penalties.data}
+          isLoading={penalties.isLoading}
+          page={penaltyPage}
+          setPage={setPenaltyPage}
+          status={penaltyStatus}
+          setStatus={s => {
+            setPenaltyStatus(s);
+            setPenaltyPage(1);
+          }}
+          helperId={penaltyHelperId}
+          setHelperId={id => {
+            setPenaltyHelperId(id);
+            setPenaltyPage(1);
+          }}
+        />
+      )}
     </div>
   );
 }
