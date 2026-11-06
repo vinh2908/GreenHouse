@@ -1252,7 +1252,7 @@ export class SosBackupService implements OnModuleInit, OnModuleDestroy {
       await this.notificationsService
         .create({
           userId: String(sos.customer_id),
-          type: NOTIFICATION_TYPES.SYSTEM,
+          type: NOTIFICATION_TYPES.SOS_BACKUP_WITHDRAWN,
           title: 'Người giúp việc đã thu hồi yêu cầu SOS',
           body: `Đơn "${sos.job_title}" vẫn tiếp tục với người giúp việc hiện tại như bình thường.`,
           payload: { job_id: String(sos.job_id), sos_id: String(sos._id) },

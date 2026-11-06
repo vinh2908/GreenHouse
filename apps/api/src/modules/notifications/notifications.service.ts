@@ -52,6 +52,12 @@ export class NotificationsService {
       notifType.startsWith('insurance_claim_') ||
       notifType.startsWith('contract_') ||
       notifType.startsWith('helper_') ||
+      notifType.startsWith('cost_') ||
+      notifType.startsWith('dispute_') ||
+      notifType.startsWith('team_') ||
+      notifType.startsWith('recurring_') ||
+      notifType.startsWith('claim_') ||
+      notifType.startsWith('call_') ||
       notifType === 'review_received'
     ) {
       if (s.order_updates === false) return false;
