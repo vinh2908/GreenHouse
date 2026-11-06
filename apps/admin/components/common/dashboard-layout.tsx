@@ -20,6 +20,7 @@ import {
   Siren,
   CalendarClock,
   Coins,
+  GitMerge,
   Menu,
   X,
 } from 'lucide-react';
@@ -40,6 +41,7 @@ const navItems = [
   { href: '/payments', label: 'Thanh toán & Rút tiền', icon: CreditCard },
   { href: '/reviews', label: 'Đánh giá & Phản hồi', icon: Star },
   { href: '/loyalty', label: 'Điểm thưởng Loyalty', icon: Coins },
+  { href: '/matching', label: 'Ghép thợ Hungarian', icon: GitMerge },
   { href: '/analytics', label: 'Thống kê & Báo cáo', icon: BarChart3 },
   { href: '/notifications', label: 'Gửi thông báo', icon: Megaphone },
 ];

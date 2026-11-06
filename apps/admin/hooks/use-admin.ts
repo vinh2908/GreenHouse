@@ -834,6 +834,43 @@ export function useAdminEndMonthlyContract() {
   });
 }
 
+// ─── Matching / Hungarian (B6) ──────────────────────────────────────────────────
+
+export interface OptimalHelper {
+  job: { _id: string; title: string; district: string };
+  helper: {
+    _id: string;
+    full_name: string;
+    phone: string;
+    average_rating: number;
+    distance_km: number;
+  };
+  match_score: number;
+  match_reasons: string[];
+}
+
+export function useOptimalHelpers(jobId?: string) {
+  return useQuery({
+    queryKey: ['admin', 'matching', 'optimal-helpers', jobId],
+    queryFn: async () => {
+      const { data } = await apiClient.get(`/matching/jobs/${jobId}/optimal-helpers`, {
+        params: { limit: 10 },
+      });
+      return data.data as OptimalHelper[];
+    },
+    enabled: !!jobId,
+  });
+}
+
+export function useMatchBatch() {
+  return useMutation({
+    mutationFn: async () => {
+      const { data } = await apiClient.post('/matching/batch');
+      return data.data;
+    },
+  });
+}
+
 // ─── Manual Job Interventions ──────────────────────────────────────────────────
 
 export function useAdminUpdateJobStatus() {
