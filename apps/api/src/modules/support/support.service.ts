@@ -225,8 +225,21 @@ export class SupportService {
 
   async adminClose(conversationId: string) {
     const conv = await this.findConversationOrThrow(conversationId);
+    const wasOpen = conv.status === 'open';
     conv.status = 'closed';
     await conv.save();
+    // B76: admin đóng thread thì khách nhận thông báo (chỉ khi thread đang mở)
+    if (wasOpen) {
+      await this.notificationsService
+        .create({
+          userId: String(conv.user_id),
+          type: NOTIFICATION_TYPES.SUPPORT_REPLY,
+          title: 'Yêu cầu hỗ trợ đã được đóng',
+          body: 'Yêu cầu hỗ trợ của bạn đã được đóng. Bạn có thể mở lại để tiếp tục trò chuyện.',
+          payload: { support_conversation_id: conversationId },
+        })
+        .catch(() => undefined);
+    }
     return conv;
   }
 }
