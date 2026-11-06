@@ -87,7 +87,23 @@ export class ReviewsService {
     const review = await this.reviewModel.findById(reviewId).exec();
     if (!review) throw new NotFoundException('Đánh giá không tồn tại');
     if (review.helper_id.toString() !== helperId) throw new ForbiddenException();
-    if (review.helper_reply) throw new BadRequestException('Bạn đã phản hồi đánh giá này rồi');
+    // B72: sửa được câu trả lời của mình trong 24h sau khi trả lời, lưu lịch sử sửa
+    if (review.helper_reply) {
+      if (!review.helper_replied_at) {
+        throw new BadRequestException('Không thể sửa câu trả lời này');
+      }
+      const elapsedMs = Date.now() - new Date(review.helper_replied_at).getTime();
+      if (elapsedMs > 24 * 60 * 60 * 1000) {
+        throw new BadRequestException('Đã quá 24 giờ, không thể sửa câu trả lời nữa');
+      }
+      review.reply_history = [
+        ...(review.reply_history ?? []),
+        { reply: review.helper_reply, edited_at: new Date(review.helper_replied_at) },
+      ];
+      review.helper_reply = dto.reply;
+      review.helper_replied_at = new Date();
+      return review.save();
+    }
 
     review.helper_reply = dto.reply;
     review.helper_replied_at = new Date();
