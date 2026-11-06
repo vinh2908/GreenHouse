@@ -220,7 +220,7 @@ export default function UserDetailPage() {
           )}
           <div className="min-w-0">
             <Link href="/users" className="text-sm text-muted-foreground hover:underline">
-              ← Người dùng
+              ← Quay lại danh sách người dùng
             </Link>
             <h1 className="break-words text-2xl font-bold tracking-tight">{user.full_name}</h1>
             <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
