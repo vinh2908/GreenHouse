@@ -1,14 +1,19 @@
-import { IsOptional, IsString, IsEnum, IsNotEmpty, IsNumber, Min } from 'class-validator';
+import { IsOptional, IsString, IsEnum, IsNotEmpty, IsNumber, IsInt, Min, Max } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { JobStatus } from '@homemate/types';
 
 export class AdminListQueryDto {
   @ApiPropertyOptional({ description: 'Trang', default: 1 })
   @IsOptional()
+  @IsInt()
+  @Min(1)
   page?: number;
 
   @ApiPropertyOptional({ description: 'Số lượng mỗi trang', default: 20 })
   @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(100)
   limit?: number;
 
   @ApiPropertyOptional({ description: 'Tìm kiếm theo tên/số điện thoại' })
