@@ -2009,6 +2009,18 @@ export class JobsService implements OnModuleInit {
       }
     }
 
+    // B58: Giờ bắt đầu phải trong giờ làm việc 07:00–22:00 (chỉ kiểm tra giờ
+    // bắt đầu — thời lượng đã được chặn 15 phút–12 giờ lúc tạo đơn).
+    if (job.preferred_time_start && /^\d{1,2}:\d{2}$/.test(job.preferred_time_start.trim())) {
+      const [sh, sm] = job.preferred_time_start.trim().split(':').map(Number);
+      const startMin = sh * 60 + sm;
+      if (startMin < 7 * 60 || startMin >= 22 * 60) {
+        throw new BadRequestException(
+          'Giờ làm việc phải trong khung 07:00–22:00. Vui lòng cập nhật lại thời gian trước khi chọn thợ.',
+        );
+      }
+    }
+
     const quote = await this.quoteModel.findById(dto.quote_id).exec();
     if (!quote || quote.job_id.toString() !== jobId)
       throw new NotFoundException('Quote không tồn tại');
