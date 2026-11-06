@@ -167,6 +167,12 @@ export function useSosBackupListener() {
           });
         }
       }),
+      // B80: ứng viên rút/từ chối → cập nhật danh sách SOS trên màn khách ngay
+      socketService.on<any>(SOCKET_EVENTS.SOS_BACKUP_CANDIDATE_WITHDRAWN, payload => {
+        if (!payload?.job_id) return;
+        qc.invalidateQueries({ queryKey: ['sos-backup', 'by-job', payload.job_id] });
+        qc.invalidateQueries({ queryKey: ['sos-backup', 'history', payload.job_id] });
+      }),
       socketService.on<any>(SOCKET_EVENTS.SOS_BACKUP_EXPIRED, payload => {
         if (payload?.sos_id) {
           removeIncoming(payload.sos_id);
