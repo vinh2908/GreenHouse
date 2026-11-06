@@ -143,6 +143,7 @@ function createMockEnvironment() {
   const gateway = {
     emitToJob: jest.fn(),
     emitToUser: jest.fn(),
+    broadcastHelperStatus: jest.fn().mockResolvedValue(undefined), // B113
   };
 
   const notificationsService = {
