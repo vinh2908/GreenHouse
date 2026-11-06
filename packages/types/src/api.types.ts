@@ -43,6 +43,7 @@ export interface JwtPayload {
   phone: string;
   roles: string[];
   active_role: string;
+  token_version?: number;
   iat?: number;
   exp?: number;
 }
