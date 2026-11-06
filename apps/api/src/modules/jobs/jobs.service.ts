@@ -2613,6 +2613,14 @@ export class JobsService implements OnModuleInit {
     if (existing.customer_id.toString() !== customerId) throw new ForbiddenException();
     this.validateTransition(existing.status, JobStatus.COMPLETED);
 
+    // B57: Nghiệm thu yêu cầu ít nhất 1 ảnh bằng chứng hoàn thành (thợ chụp
+    // qua completeByHelper) — đơn hoàn thành không có ảnh thì không nghiệm thu.
+    if (!existing.completion_photos || existing.completion_photos.length === 0) {
+      throw new BadRequestException(
+        'Chưa có ảnh bằng chứng hoàn thành. Vui lòng yêu cầu thợ chụp ảnh hoàn thành trước khi nghiệm thu.',
+      );
+    }
+
     const effectivePaymentMethod = dto.payment_method || existing.payment_method || 'vietqr';
 
     // A56: Chặn đổi sang tiền mặt nếu đơn gốc đặt online và chưa thanh toán
