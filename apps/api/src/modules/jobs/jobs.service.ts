@@ -720,6 +720,11 @@ export class JobsService implements OnModuleInit {
       );
     }
 
+    // B62: Địa chỉ làm việc không được trống — thợ cần biết đi đâu
+    if (!dto.address?.full_address?.trim()) {
+      throw new BadRequestException('Vui lòng nhập địa chỉ làm việc');
+    }
+
     // B4: Chặn giá mong muốn < 50.000₫
     if (dto.target_price !== undefined && dto.target_price < 50000) {
       throw new BadRequestException('Giá mong muốn tối thiểu là 50.000₫');
