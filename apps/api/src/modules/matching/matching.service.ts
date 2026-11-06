@@ -13,6 +13,7 @@ import { HungarianAlgorithm, AssignmentResult } from './algorithms/hungarian.alg
 import { HelperStatus, VerificationStatus, JobStatus, UserRole } from '@homemate/types';
 import { AppGateway } from '../chat/app.gateway';
 import { NotificationsService } from '../notifications/notifications.service';
+import { MatchingCacheService } from './matching-cache.service';
 import { SOCKET_EVENTS, NOTIFICATION_TYPES } from '@homemate/constants';
 
 export interface MatchPair {
@@ -41,6 +42,7 @@ export class MatchingService {
     @InjectModel(HelperProfile.name) private helperModel: Model<HelperProfileDocument>,
     private readonly gateway: AppGateway,
     private readonly notificationsService: NotificationsService,
+    private readonly cache: MatchingCacheService,
   ) {}
 
   /**
@@ -226,6 +228,10 @@ export class MatchingService {
       throw new ForbiddenException('Bạn không có quyền xem gợi ý thợ cho công việc này');
     }
 
+    // B67: Trả cache nếu còn hạn (TTL 5 phút) — kiểm tra sau bước phân quyền
+    const cached = await this.cache.get<MatchPair[]>(jobId, take);
+    if (cached) return cached;
+
     const helpers = await this.helperModel
       .find({
         status: HelperStatus.ONLINE,
@@ -256,6 +262,17 @@ export class MatchingService {
     });
 
     scored.sort((a, b) => b.match_score - a.match_score);
-    return scored.slice(0, take);
+    const result = scored.slice(0, take);
+    // B67: Lưu cache 5 phút cho lần gọi sau
+    await this.cache.set(jobId, take, result);
+    return result;
+  }
+
+  /**
+   * B67: Xoá cache gợi ý thợ của 1 đơn — gọi khi đơn thay đổi (thợ mới báo
+   * giá, chọn báo giá, huỷ đơn) để lần gợi ý sau tính lại từ dữ liệu mới.
+   */
+  async invalidateOptimalHelpersCache(jobId: string): Promise<void> {
+    await this.cache.invalidateJob(jobId);
   }
 }

@@ -6,6 +6,7 @@ import {
   ForbiddenException,
   ConflictException,
   OnModuleInit,
+  Optional,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
@@ -59,6 +60,7 @@ import { FavoritesService } from '../favorites/favorites.service';
 import { VouchersService } from '../vouchers/vouchers.service';
 import { LoyaltyService } from '../loyalty/loyalty.service';
 import { DisputesService } from './disputes.service';
+import { MatchingService } from '../matching/matching.service';
 import {
   HelperPenaltyEvent,
   HelperPenaltyEventDocument,
@@ -178,7 +180,15 @@ export class JobsService implements OnModuleInit {
     private readonly vouchersService: VouchersService,
     private readonly loyaltyService: LoyaltyService,
     private readonly disputesService: DisputesService,
+    // B67: @Optional để các test cũ khởi tạo trực tiếp JobsService (không
+    // truyền MatchingService) vẫn chạy; module thật luôn có MatchingModule.
+    @Optional() private readonly matchingService?: MatchingService,
   ) {}
+
+  /** B67: Xoá cache gợi ý thợ của đơn khi đơn thay đổi (báo giá mới / chọn báo giá / huỷ đơn) */
+  private async invalidateMatchingCache(jobId: string): Promise<void> {
+    await this.matchingService?.invalidateOptimalHelpersCache(jobId).catch(() => undefined);
+  }
 
   onModuleInit() {
     this.sweepExpiredJobsAndQuotes().catch(err =>
@@ -1790,6 +1800,9 @@ export class JobsService implements OnModuleInit {
       })
       .catch(() => undefined);
 
+    // B67: Có thợ mới báo giá → gợi ý thợ cũ đã lỗi thời
+    await this.invalidateMatchingCache(jobId);
+
     return quote;
   }
 
@@ -2178,6 +2191,9 @@ export class JobsService implements OnModuleInit {
     this.emitJobStatusChange(job);
 
     await this.notificationsService.notifyQuoteAccepted(helperId, job.title, jobId);
+
+    // B67: Đã chọn thợ → gợi ý thợ cũ đã lỗi thời
+    await this.invalidateMatchingCache(jobId);
 
     return { job, contract };
   }
@@ -3351,6 +3367,9 @@ export class JobsService implements OnModuleInit {
         payload: { job_id: jobId, reason: dto.reason },
       });
     }
+
+    // B67: Đơn đã huỷ → gợi ý thợ cũ đã lỗi thời
+    await this.invalidateMatchingCache(jobId);
 
     return job;
   }
