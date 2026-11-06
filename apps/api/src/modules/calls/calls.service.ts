@@ -200,7 +200,7 @@ export class CallsService {
       await session.save();
     }
 
-    this.gateway.emitToUser(partnerId, 'call:ended', {
+    this.gateway.emitToUser(partnerId, SOCKET_EVENTS.CALL_ENDED, {
       sessionId: String(session._id),
       reason,
     });
