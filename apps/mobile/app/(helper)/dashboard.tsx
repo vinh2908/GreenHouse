@@ -47,6 +47,7 @@ import {
   JobStatusBadge,
   Avatar,
   EmptyState,
+  ErrorState,
   COLORS,
   SectionHeader,
   PriceText,
@@ -65,13 +66,13 @@ export default function HelperDashboardScreen() {
   // Stored login payload has no avatar — prefer the full profile from the API
   const { data: myProfile, refetch: refetchMyProfile } = useMyProfile();
   const user = myProfile ?? storedUser;
-  const { data: profile, isLoading: pLoading, refetch: refetchProfile } = useHelperProfile();
-  const { data: availableJobs, refetch: refetchJobs } = useAvailableJobs(
+  const { data: profile, isLoading: pLoading, isError: pError, refetch: refetchProfile } = useHelperProfile();
+  const { data: availableJobs, isError: aError, refetch: refetchJobs } = useAvailableJobs(
     undefined,
     1,
     profile?.verification_status === 'approved',
   );
-  const { data: myJobs, refetch: refetchMyJobs } = useHelperJobs(
+  const { data: myJobs, isError: mError, refetch: refetchMyJobs } = useHelperJobs(
     'confirmed,helper_on_the_way,helper_arrived,in_progress',
   );
   const { data: wallet, isLoading: wLoading } = useWallet();
@@ -708,7 +709,19 @@ export default function HelperDashboardScreen() {
             onAction={() => router.push('/(helper)/jobs')}
           />
 
-          {pLoading ? (
+          {aError ? (
+            <Card style={{ alignItems: 'center', paddingVertical: 20 }}>
+              <ErrorState
+                title={lang === 'en' ? 'Unable to load nearby jobs' : 'Không thể tải đơn hàng mới'}
+                subtitle={
+                  lang === 'en'
+                    ? 'Could not connect to job service. Please retry.'
+                    : 'Không thể kết nối đến máy chủ nhận việc. Vui lòng thử lại.'
+                }
+                onRetry={() => refetchJobs()}
+              />
+            </Card>
+          ) : pLoading ? (
             <Card style={{ alignItems: 'center', paddingVertical: 28, gap: 10 }}>
               <ActivityIndicator size="small" color={COLORS.primary} />
               <Text style={{ fontSize: fs(13), color: COLORS.gray[500] }}>

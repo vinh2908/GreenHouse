@@ -24,7 +24,7 @@ import {
   useAcceptFixedPrice,
 } from '@/hooks/use-api';
 import { useTranslation } from '@/hooks/use-i18n';
-import { Button, Card, JobStatusBadge, Badge, COLORS, EmptyState } from '@/components/ui';
+import { Button, Card, JobStatusBadge, Badge, COLORS, EmptyState, ErrorState } from '@/components/ui';
 import { OfflineBanner } from '@/components/common/offline-banner';
 
 dayjs.extend(relativeTime);
@@ -70,12 +70,14 @@ export default function HelperJobsScreen() {
   const {
     data: available,
     isLoading: aLoading,
+    isError: aError,
     isRefetching: aRefetching,
     refetch: ra,
   } = useAvailableJobs(undefined, 1, Boolean(isAuth && isVerified !== false));
   const {
     data: active,
     isLoading: acLoading,
+    isError: acError,
     isRefetching: acRefetching,
     refetch: rac,
   } = useHelperJobs(
@@ -84,14 +86,15 @@ export default function HelperJobsScreen() {
   const {
     data: history,
     isLoading: hLoading,
+    isError: hError,
     isRefetching: hRefetching,
     refetch: rh,
   } = useHelperJobs('completed,cancelled,refunded');
 
   const datasets = [
-    { data: available?.jobs, loading: aLoading, refetching: aRefetching, refetch: ra },
-    { data: active, loading: acLoading, refetching: acRefetching, refetch: rac },
-    { data: history, loading: hLoading, refetching: hRefetching, refetch: rh },
+    { data: available?.jobs, loading: aLoading, isError: aError, refetching: aRefetching, refetch: ra },
+    { data: active, loading: acLoading, isError: acError, refetching: acRefetching, refetch: rac },
+    { data: history, loading: hLoading, isError: hError, refetching: hRefetching, refetch: rh },
   ];
 
   const insets = useSafeAreaInsets();
@@ -216,6 +219,18 @@ export default function HelperJobsScreen() {
                 <Text style={{ color: '#fff', fontWeight: '700' }}>{t('jobs_verify_now')}</Text>
               </TouchableOpacity>
             )}
+          </Card>
+        ) : ds.isError ? (
+          <Card style={{ alignItems: 'center', paddingVertical: 20 }}>
+            <ErrorState
+              title={lang === 'en' ? 'Unable to load jobs' : 'Không thể tải danh sách công việc'}
+              subtitle={
+                lang === 'en'
+                  ? 'Connection to server failed. Please check your network and retry.'
+                  : 'Không thể kết nối đến máy chủ. Vui lòng kiểm tra mạng và thử lại.'
+              }
+              onRetry={() => ds.refetch()}
+            />
           </Card>
         ) : !ds.loading && (!ds.data || ds.data.length === 0) ? (
           <Card style={{ alignItems: 'center', paddingVertical: 40 }}>

@@ -6,14 +6,14 @@ import Toast from 'react-native-toast-message';
 import dayjs from 'dayjs';
 import { useMyVouchers } from '@/hooks/use-api';
 import { useTranslation } from '@/hooks/use-i18n';
-import { Card, COLORS, EmptyState, LoadingSpinner, Badge } from '@/components/ui';
+import { Card, COLORS, EmptyState, ErrorState, LoadingSpinner, Badge } from '@/components/ui';
 import { useState } from 'react';
 
 export default function CustomerVouchersScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { t, fs, lang, formatVoucherDesc } = useTranslation();
-  const { data: vouchers, isLoading, refetch } = useMyVouchers();
+  const { data: vouchers, isLoading, isError, refetch } = useMyVouchers();
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
 
   const handleCopy = (code: string) => {
@@ -75,7 +75,17 @@ export default function CustomerVouchersScreen() {
           <RefreshControl refreshing={isLoading} onRefresh={refetch} colors={[COLORS.primary]} />
         }
       >
-        {isLoading ? (
+        {isError ? (
+          <ErrorState
+            title={lang === 'en' ? 'Unable to load vouchers' : 'Không thể tải danh sách ưu đãi'}
+            subtitle={
+              lang === 'en'
+                ? 'Could not connect to voucher service. Please check your network and retry.'
+                : 'Không thể kết nối đến máy chủ ưu đãi. Vui lòng kiểm tra mạng và thử lại.'
+            }
+            onRetry={() => refetch()}
+          />
+        ) : isLoading ? (
           <LoadingSpinner />
         ) : !vouchers?.length ? (
           <EmptyState

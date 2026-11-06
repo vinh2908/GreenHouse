@@ -10,7 +10,7 @@ import { useAuthStore } from '@/stores/auth.store';
 import { resolveNotificationRoute } from '@/utils/notification-route';
 import { refreshSosState } from '@/hooks/use-sos-backup';
 import { useTranslation } from '@/hooks/use-i18n';
-import { Card, COLORS, EmptyState, LoadingSpinner } from '@/components/ui';
+import { Card, COLORS, EmptyState, ErrorState, LoadingSpinner } from '@/components/ui';
 
 dayjs.extend(relativeTime);
 
@@ -51,7 +51,7 @@ export default function NotificationsScreen() {
   const router = useRouter();
   const { t, fs, lang, formatNotifTitle, formatNotifBody } = useTranslation();
   const user = useAuthStore(s => s.user);
-  const { data: notifications, isLoading, refetch } = useNotifications();
+  const { data: notifications, isLoading, isError, refetch } = useNotifications();
   const markAll = useMarkAllRead();
   const markRead = useMarkNotificationRead();
 
@@ -141,7 +141,17 @@ export default function NotificationsScreen() {
           <RefreshControl refreshing={isLoading} onRefresh={refetch} colors={[COLORS.primary]} />
         }
       >
-        {isLoading ? (
+        {isError ? (
+          <ErrorState
+            title={lang === 'en' ? 'Unable to load notifications' : 'Không thể tải thông báo'}
+            subtitle={
+              lang === 'en'
+                ? 'Could not fetch your notifications. Please check your network and retry.'
+                : 'Không thể kết nối đến máy chủ thông báo. Vui lòng kiểm tra mạng và thử lại.'
+            }
+            onRetry={() => refetch()}
+          />
+        ) : isLoading ? (
           <LoadingSpinner />
         ) : !notifications?.length ? (
           <EmptyState
