@@ -152,6 +152,8 @@ function createMockEnvironment() {
   };
 
   const paymentsService = {
+    // G2: creditJobPayout bọc trả tiền trong runMoneyTransaction.
+    runMoneyTransaction: jest.fn(async (fn: (s: any) => Promise<any>) => fn(undefined)),
     creditHelper: jest.fn().mockResolvedValue({}),
     refundCustomer: jest.fn().mockResolvedValue({}),
     deductCommissionForCashJob: jest.fn().mockResolvedValue({}),
@@ -266,11 +268,12 @@ describe('Đồng bộ trạng thái bận của Thợ & Hợp đồng (Helper B
 
     // 1. Đơn sang completed
     expect(jobDoc['status']).toBe(JobStatus.COMPLETED);
-    // 2. Thợ được giải ngân
+    // 2. Thợ được giải ngân (G2: creditHelper nay nhận thêm session thứ 4)
     expect(env.paymentsService.creditHelper).toHaveBeenCalledWith(
       String(env.helperUserId),
       String(jobDoc['_id']),
       170000,
+      undefined,
     );
     // 3. Thợ chuyển về online
     expect(env.helperProfile['status']).toBe(HelperStatus.ONLINE);
