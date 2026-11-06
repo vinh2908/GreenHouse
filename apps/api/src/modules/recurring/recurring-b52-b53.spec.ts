@@ -69,8 +69,13 @@ describe('RecurringService (B52/B53)', () => {
     } as never;
   }
 
+  // Giờ địa phương, giống RecurringService.dateKey — toISOString() (UTC)
+  // lệch 1 ngày khi chạy trước 07:00 giờ VN.
   function dateKey(d: Date): string {
-    return d.toISOString().slice(0, 10);
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
   }
 
   function nextWeekday(weekday: number, from = new Date()): Date {
