@@ -340,6 +340,17 @@ export default function BookingScreen() {
   } | null>(null);
   // Feature 17: kết quả phân tích ảnh sự cố bằng AI Vision
   const [photoAnalysis, setPhotoAnalysis] = useState<IssuePhotoAnalysis | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const scrollRef = useRef<ScrollView>(null);
+
+  const clearFieldError = (f: string) => {
+    setFieldErrors(prev => {
+      if (!prev[f]) return prev;
+      const next = { ...prev };
+      delete next[f];
+      return next;
+    });
+  };
 
   useEffect(() => {
     if (params.custom_service_name) {
@@ -1132,6 +1143,7 @@ export default function BookingScreen() {
   };
 
   const handleNextStep = () => {
+    const nextErrors: Record<string, string> = {};
     if (step === 0) {
       if (!selectedService) {
         Toast.show({ type: 'error', text1: t('booking_select_service_error') });
@@ -1139,17 +1151,21 @@ export default function BookingScreen() {
       }
       if (selectedService === 'custom') {
         if (!customServiceName.trim()) {
-          Toast.show({ type: 'error', text1: t('booking_enter_service_name_error') });
-          return;
+          nextErrors.customServiceName = t('booking_enter_service_name_error');
         }
         if (targetPrice) {
           const cleanP = Number(String(targetPrice).replace(/[^0-9]/g, ''));
           if (cleanP > 0 && cleanP < 50000) {
-            Toast.show({ type: 'error', text1: t('booking_min_price_error') });
-            return;
+            nextErrors.targetPrice = t('booking_min_price_error');
           }
         }
+        if (Object.keys(nextErrors).length > 0) {
+          setFieldErrors(nextErrors);
+          scrollRef.current?.scrollTo({ y: 0, animated: true });
+          return;
+        }
       }
+      setFieldErrors({});
       setStep(1);
     } else if (step === 1) {
       const hasFullAddress = address.full_address.trim().length > 0;
@@ -1159,13 +1175,20 @@ export default function BookingScreen() {
         address.city.trim() ||
         (address.coordinates && (address.coordinates[0] !== 0 || address.coordinates[1] !== 0)),
       );
-      if (!hasFullAddress || !hasLocality) {
-        Toast.show({
-          type: 'error',
-          text1: t('booking_address_validation_error'),
-        });
+      if (!hasFullAddress) {
+        nextErrors.full_address = t('booking_address_validation_error');
+      } else if (!hasLocality) {
+        nextErrors.full_address =
+          lang === 'en'
+            ? 'Please provide district/ward or pick location on map'
+            : 'Vui lòng điền quận/huyện hoặc định vị trên bản đồ';
+      }
+      if (Object.keys(nextErrors).length > 0) {
+        setFieldErrors(nextErrors);
+        scrollRef.current?.scrollTo({ y: 0, animated: true });
         return;
       }
+      setFieldErrors({});
       if (!coordsDerived || (address.coordinates[0] === 0 && address.coordinates[1] === 0)) {
         ensureResolvedCoordinates(address).catch(() => {});
       }
@@ -1180,12 +1203,22 @@ export default function BookingScreen() {
         Toast.show({ type: 'error', text1: t('booking_time_past_error') });
         return;
       }
+      setFieldErrors({});
       setStep(3);
     } else if (step === 3) {
-      if (!title.trim() || !description.trim()) {
-        Toast.show({ type: 'error', text1: t('booking_title_desc_required') });
+      if (!title.trim()) {
+        nextErrors.title = lang === 'en' ? 'Please enter job title' : 'Vui lòng nhập tiêu đề công việc';
+      }
+      if (!description.trim()) {
+        nextErrors.description =
+          lang === 'en' ? 'Please describe job details' : 'Vui lòng nhập mô tả chi tiết công việc';
+      }
+      if (Object.keys(nextErrors).length > 0) {
+        setFieldErrors(nextErrors);
+        scrollRef.current?.scrollTo({ y: 0, animated: true });
         return;
       }
+      setFieldErrors({});
       setStep(4);
     } else {
       handleSubmit();
@@ -1269,6 +1302,7 @@ export default function BookingScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         <ScrollView
+          ref={scrollRef}
           contentContainerStyle={{ padding: 20, paddingBottom: 180 }}
           keyboardShouldPersistTaps="handled"
         >
@@ -1615,13 +1649,21 @@ export default function BookingScreen() {
                       label={t('booking_other_service_name_label')}
                       placeholder=""
                       value={customServiceName}
-                      onChangeText={setCustomServiceName}
+                      error={fieldErrors.customServiceName}
+                      onChangeText={v => {
+                        setCustomServiceName(v);
+                        clearFieldError('customServiceName');
+                      }}
                     />
                     <Input
                       label={t('booking_other_service_price_label')}
                       placeholder=""
                       value={targetPrice}
-                      onChangeText={v => setTargetPrice(v.replace(/[^0-9]/g, ''))}
+                      error={fieldErrors.targetPrice}
+                      onChangeText={v => {
+                        setTargetPrice(v.replace(/[^0-9]/g, ''));
+                        clearFieldError('targetPrice');
+                      }}
                       keyboardType="numeric"
                     />
                   </View>
@@ -1758,9 +1800,11 @@ export default function BookingScreen() {
                 label={t('booking_detail_address_label')}
                 placeholder=""
                 value={address.full_address}
+                error={fieldErrors.full_address}
                 onChangeText={v => {
                   setAddress(a => ({ ...a, full_address: v }));
                   setCoordsDerived(false);
+                  clearFieldError('full_address');
                 }}
                 leftIcon={<MapPin size={16} color={COLORS.gray[400]} />}
               />
@@ -1984,7 +2028,11 @@ export default function BookingScreen() {
                 label={t('booking_title_label')}
                 placeholder=""
                 value={title}
-                onChangeText={setTitle}
+                error={fieldErrors.title}
+                onChangeText={v => {
+                  setTitle(v);
+                  clearFieldError('title');
+                }}
               />
 
               <View style={{ gap: 6 }}>
@@ -1994,7 +2042,7 @@ export default function BookingScreen() {
                 <TextInput
                   style={{
                     borderWidth: 1.5,
-                    borderColor: COLORS.gray[200],
+                    borderColor: fieldErrors.description ? COLORS.error : COLORS.gray[200],
                     borderRadius: 14,
                     padding: 14,
                     fontSize: fs(15),
@@ -2005,10 +2053,18 @@ export default function BookingScreen() {
                   }}
                   placeholder=""
                   value={description}
-                  onChangeText={setDescription}
+                  onChangeText={v => {
+                    setDescription(v);
+                    clearFieldError('description');
+                  }}
                   multiline
                   placeholderTextColor={COLORS.gray[400]}
                 />
+                {fieldErrors.description && (
+                  <Text style={{ fontSize: fs(12), color: COLORS.error, marginTop: -2 }}>
+                    {fieldErrors.description}
+                  </Text>
+                )}
               </View>
 
               {/* Đính kèm ảnh hiện trạng */}

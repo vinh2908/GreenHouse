@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useRef } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, TextInput } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -85,30 +85,46 @@ export default function MonthlyContractCreateScreen() {
     [favorites, lang],
   );
 
-  const toggleDay = (v: number) =>
+  const scrollRef = useRef<ScrollView>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+
+  const clearFieldError = (f: string) => {
+    setFieldErrors(prev => {
+      if (!prev[f]) return prev;
+      const next = { ...prev };
+      delete next[f];
+      return next;
+    });
+  };
+
+  const toggleDay = (v: number) => {
+    clearFieldError('days');
     setDays(prev => (prev.includes(v) ? prev.filter(d => d !== v) : [...prev, v]));
+  };
 
   const handleSubmit = async () => {
+    const errors: Record<string, string> = {};
     if (!helperId) {
-      Toast.show({ type: 'error', text1: lang === 'en' ? 'Please select a helper from favorites' : 'Vui lòng chọn thợ từ danh sách yêu thích' });
-      return;
+      errors.helperId =
+        lang === 'en' ? 'Please select a helper from favorites' : 'Vui lòng chọn thợ từ danh sách yêu thích';
     }
     const salaryNum = Number(salary.replace(/[^\d]/g, ''));
     if (!salaryNum || salaryNum < 100000) {
-      Toast.show({ type: 'error', text1: lang === 'en' ? 'Minimum monthly salary is 100,000₫' : 'Lương tháng tối thiểu 100.000₫' });
-      return;
+      errors.salary = lang === 'en' ? 'Minimum monthly salary is 100,000₫' : 'Lương tháng tối thiểu 100.000₫';
     }
     if (days.length === 0) {
-      Toast.show({ type: 'error', text1: lang === 'en' ? 'Please select at least 1 working day in week' : 'Vui lòng chọn ít nhất 1 ngày làm việc trong tuần' });
-      return;
+      errors.days =
+        lang === 'en'
+          ? 'Please select at least 1 working day in week'
+          : 'Vui lòng chọn ít nhất 1 ngày làm việc trong tuần';
     }
     if (!/^\d{4}-\d{2}-\d{2}$/.test(startDate.trim())) {
-      Toast.show({ type: 'error', text1: lang === 'en' ? 'Start date must be in YYYY-MM-DD format' : 'Ngày bắt đầu phải có dạng YYYY-MM-DD' });
-      return;
+      errors.startDate =
+        lang === 'en' ? 'Start date must be in YYYY-MM-DD format' : 'Ngày bắt đầu phải có dạng YYYY-MM-DD';
     }
     if (endDate.trim() && !/^\d{4}-\d{2}-\d{2}$/.test(endDate.trim())) {
-      Toast.show({ type: 'error', text1: lang === 'en' ? 'End date must be in YYYY-MM-DD format' : 'Ngày kết thúc phải có dạng YYYY-MM-DD' });
-      return;
+      errors.endDate =
+        lang === 'en' ? 'End date must be in YYYY-MM-DD format' : 'Ngày kết thúc phải có dạng YYYY-MM-DD';
     }
 
     // Ưu tiên địa chỉ đã lưu (có sẵn tọa độ); nếu nhập tay thì dùng tọa độ
@@ -132,9 +148,16 @@ export default function MonthlyContractCreateScreen() {
           location: { type: 'Point', coordinates: DEFAULT_COORDS },
         };
     if (!address.full_address || !address.district) {
-      Toast.show({ type: 'error', text1: lang === 'en' ? 'Please enter full work address' : 'Vui lòng nhập đầy đủ địa chỉ làm việc' });
+      errors.address =
+        lang === 'en' ? 'Please enter full work address' : 'Vui lòng nhập đầy đủ địa chỉ làm việc';
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      scrollRef.current?.scrollTo({ y: 0, animated: true });
       return;
     }
+    setFieldErrors({});
 
     try {
       const created: any = await create.mutateAsync({
@@ -211,6 +234,7 @@ export default function MonthlyContractCreateScreen() {
       </View>
 
       <ScrollView
+        ref={scrollRef}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ padding: 16, gap: 12, paddingBottom: 130 }}
       >
@@ -233,7 +257,10 @@ export default function MonthlyContractCreateScreen() {
                 <HelperRow
                   name={lang === 'en' ? 'Helper selected from profile' : 'Thợ đã chọn từ hồ sơ'}
                   selected={helperId === params.helperId}
-                  onPress={() => setHelperId(params.helperId)}
+                  onPress={() => {
+                    setHelperId(params.helperId);
+                    clearFieldError('helperId');
+                  }}
                 />
               )}
               {favoriteHelpers.map(h => (
@@ -243,10 +270,18 @@ export default function MonthlyContractCreateScreen() {
                   avatar={h.avatar}
                   rating={h.rating}
                   selected={helperId === h.id}
-                  onPress={() => setHelperId(h.id)}
+                  onPress={() => {
+                    setHelperId(h.id);
+                    clearFieldError('helperId');
+                  }}
                 />
               ))}
             </View>
+          )}
+          {fieldErrors.helperId && (
+            <Text style={{ fontSize: fs(12), color: COLORS.error, marginTop: 2 }}>
+              {fieldErrors.helperId}
+            </Text>
           )}
         </Card>
 
@@ -275,11 +310,19 @@ export default function MonthlyContractCreateScreen() {
           )}
           <TextInput
             value={salary}
-            onChangeText={setSalary}
+            onChangeText={v => {
+              setSalary(v);
+              clearFieldError('salary');
+            }}
             placeholder={lang === 'en' ? 'Monthly wage (VND), e.g. 8000000' : 'Lương tháng (VNĐ), VD: 8000000'}
             keyboardType="numeric"
-            style={inputStyle}
+            style={[inputStyle, fieldErrors.salary ? { borderColor: COLORS.error } : null]}
           />
+          {fieldErrors.salary && (
+            <Text style={{ fontSize: fs(12), color: COLORS.error, marginTop: -4 }}>
+              {fieldErrors.salary}
+            </Text>
+          )}
           <Text style={{ fontSize: fs(12), color: COLORS.gray[500] }}>
             {lang === 'en'
               ? 'At month end, actual wage = monthly salary × (verified sessions / scheduled sessions), minus 15% platform fee.'
@@ -302,6 +345,11 @@ export default function MonthlyContractCreateScreen() {
               />
             ))}
           </View>
+          {fieldErrors.days && (
+            <Text style={{ fontSize: fs(12), color: COLORS.error, marginTop: -4 }}>
+              {fieldErrors.days}
+            </Text>
+          )}
           <View style={{ flexDirection: 'row', gap: 10 }}>
             <View style={{ flex: 1, gap: 4 }}>
               <Text style={{ fontSize: fs(12.5), color: COLORS.gray[500] }}>
@@ -331,7 +379,19 @@ export default function MonthlyContractCreateScreen() {
               <Text style={{ fontSize: fs(12.5), color: COLORS.gray[500] }}>
                 {lang === 'en' ? 'Start date (YYYY-MM-DD)' : 'Ngày bắt đầu (YYYY-MM-DD)'}
               </Text>
-              <TextInput value={startDate} onChangeText={setStartDate} style={inputStyle} />
+              <TextInput
+                value={startDate}
+                onChangeText={v => {
+                  setStartDate(v);
+                  clearFieldError('startDate');
+                }}
+                style={[inputStyle, fieldErrors.startDate ? { borderColor: COLORS.error } : null]}
+              />
+              {fieldErrors.startDate && (
+                <Text style={{ fontSize: fs(11.5), color: COLORS.error, marginTop: 2 }}>
+                  {fieldErrors.startDate}
+                </Text>
+              )}
             </View>
             <View style={{ flex: 1, gap: 4 }}>
               <Text style={{ fontSize: fs(12.5), color: COLORS.gray[500] }}>
@@ -339,10 +399,18 @@ export default function MonthlyContractCreateScreen() {
               </Text>
               <TextInput
                 value={endDate}
-                onChangeText={setEndDate}
+                onChangeText={v => {
+                  setEndDate(v);
+                  clearFieldError('endDate');
+                }}
                 placeholder={lang === 'en' ? 'Empty = ongoing' : 'Để trống = lâu dài'}
-                style={inputStyle}
+                style={[inputStyle, fieldErrors.endDate ? { borderColor: COLORS.error } : null]}
               />
+              {fieldErrors.endDate && (
+                <Text style={{ fontSize: fs(11.5), color: COLORS.error, marginTop: 2 }}>
+                  {fieldErrors.endDate}
+                </Text>
+              )}
             </View>
           </View>
         </Card>
@@ -358,7 +426,10 @@ export default function MonthlyContractCreateScreen() {
                 <TouchableOpacity
                   key={i}
                   activeOpacity={0.8}
-                  onPress={() => setAddressIdx(i)}
+                  onPress={() => {
+                    setAddressIdx(i);
+                    clearFieldError('address');
+                  }}
                   style={{
                     flexDirection: 'row',
                     alignItems: 'center',
@@ -386,15 +457,21 @@ export default function MonthlyContractCreateScreen() {
             <View style={{ gap: 8 }}>
               <TextInput
                 value={fullAddress}
-                onChangeText={setFullAddress}
+                onChangeText={v => {
+                  setFullAddress(v);
+                  clearFieldError('address');
+                }}
                 placeholder={lang === 'en' ? 'Full address (street, number...)' : 'Địa chỉ đầy đủ (số nhà, đường…)'}
-                style={inputStyle}
+                style={[inputStyle, fieldErrors.address ? { borderColor: COLORS.error } : null]}
               />
               <TextInput
                 value={district}
-                onChangeText={setDistrict}
+                onChangeText={v => {
+                  setDistrict(v);
+                  clearFieldError('address');
+                }}
                 placeholder={lang === 'en' ? 'District' : 'Quận / Huyện'}
-                style={inputStyle}
+                style={[inputStyle, fieldErrors.address ? { borderColor: COLORS.error } : null]}
               />
               <TextInput
                 value={city}
@@ -403,6 +480,11 @@ export default function MonthlyContractCreateScreen() {
                 style={inputStyle}
               />
             </View>
+          )}
+          {fieldErrors.address && (
+            <Text style={{ fontSize: fs(12), color: COLORS.error, marginTop: 2 }}>
+              {fieldErrors.address}
+            </Text>
           )}
         </Card>
 
