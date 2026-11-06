@@ -14,6 +14,7 @@ import {
 import { stringeeService, type StringeeCallEvents } from '@/services/stringee.service';
 import { callkeepService } from '@/services/callkeep.service';
 import { socketService } from '@/services/socket.service';
+import { SOCKET_EVENTS } from '@homemate/constants';
 import { useTranslation } from '@/hooks/use-i18n';
 
 /**
@@ -260,9 +261,9 @@ export default function CallScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [jobId, config, configLoading]);
 
-  // Lắng nghe socket call:ended từ đối phương (hỗ trợ cả Web lẫn Native)
+  // Lắng nghe socket CALL_ENDED từ đối phương (hỗ trợ cả Web lẫn Native)
   useEffect(() => {
-    const unsub = socketService.on('call:ended', (payload: any) => {
+    const unsub = socketService.on(SOCKET_EVENTS.CALL_ENDED, (payload: any) => {
       const s = sessionRef.current;
       if (!s || (payload?.sessionId && payload.sessionId !== s.session_id)) return;
       if (endedRef.current) return;
