@@ -67,9 +67,33 @@ export function useSocketConnection() {
         },
       );
 
+      const unsubQuoteRejected = socketService.on<{
+        job_id?: string;
+        quote_id?: string;
+        reason?: string;
+      }>(SOCKET_EVENTS.QUOTE_REJECTED, data => {
+        qc.invalidateQueries({ queryKey: ['jobs'] });
+        qc.invalidateQueries({ queryKey: ['helper', 'dashboard'] });
+        if (data?.job_id) {
+          qc.invalidateQueries({ queryKey: ['job', data.job_id] });
+        }
+        const lang = useSettingsStore.getState().language || 'vi';
+        Toast.show({
+          type: 'info',
+          text1: lang === 'en' ? 'Quote not selected' : 'Báo giá không được chọn',
+          text2:
+            data?.reason ||
+            (lang === 'en'
+              ? 'The customer has selected another quote for this job.'
+              : 'Khách hàng đã chọn báo giá khác cho công việc này.'),
+          visibilityTime: 5000,
+        });
+      });
+
       return () => {
         unsubChat();
         unsubStatus();
+        unsubQuoteRejected();
       };
     } else {
       socketService.disconnect();
@@ -140,11 +164,22 @@ export function useJobSocketUpdates(jobId?: string) {
       },
     );
 
+    const unsub5 = socketService.on<{ job_id?: string; quote_id?: string }>(
+      SOCKET_EVENTS.QUOTE_REJECTED,
+      data => {
+        if (data?.job_id && data.job_id !== jobId) return;
+        qc.invalidateQueries({ queryKey: ['job', jobId] });
+        qc.invalidateQueries({ queryKey: ['job', jobId, 'quotes'] });
+        qc.invalidateQueries({ queryKey: ['jobs'] });
+      },
+    );
+
     return () => {
       unsub1();
       unsub2();
       unsub3();
       unsub4();
+      unsub5();
       socketService.leaveJob(jobId);
     };
   }, [jobId, qc]);
