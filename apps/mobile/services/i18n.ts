@@ -52,6 +52,29 @@ export const STRINGS = {
     en: 'Post a job now and nearby helpers will quote fast!',
   },
 
+  // ─── Helper dashboard SOS (B8) ────────────────────────────────────────────
+  helper_dash_sos_title: {
+    vi: 'CỨU HỘ KHẨN CẤP SOS GẦN BẠN!',
+    en: 'EMERGENCY SOS RESCUE NEAR YOU!',
+  },
+  helper_dash_sos_body: {
+    vi: '{title} tại {district}. Phụ phí +{surcharge}đ',
+    en: '{title} in {district}. Surcharge +{surcharge} VND',
+  },
+  helper_dash_sos_accept_failed: {
+    vi: 'Không thể nhận đơn cứu hộ',
+    en: 'Could not accept the SOS job',
+  },
+  helper_dash_job_in_progress_title: {
+    vi: 'Đang có công việc diễn ra',
+    en: 'A job is in progress',
+  },
+  helper_dash_job_in_progress_msg: {
+    vi: 'Bạn đang có đơn công việc đang thực hiện. Hãy hoàn thành hoặc kết thúc công việc trước khi tắt nhận việc nhé!',
+    en: 'You have a job in progress. Please finish or end it before turning off job receiving.',
+  },
+  helper_dash_understood: { vi: 'Đã hiểu', en: 'Understood' },
+
   // ─── Job statuses (dùng qua JobStatusBadge) ───────────────────────────────
   status_open: { vi: 'Đang tìm thợ', en: 'Finding helper' },
   status_receiving_quotes: { vi: 'Có báo giá', en: 'Quotes received' },

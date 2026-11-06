@@ -120,8 +120,12 @@ export default function HelperDashboardScreen() {
       setSosBroadcast(data);
       Toast.show({
         type: 'error',
-        text1: 'CỨU HỘ KHẨN CẤP SOS GẦN BẠN!',
-        text2: `${data.title} tại ${data.district}. Phụ phí +${data.surcharge?.toLocaleString()}đ`,
+        text1: t('helper_dash_sos_title'),
+        text2: t('helper_dash_sos_body', {
+          title: data.title ?? '',
+          district: data.district ?? '',
+          surcharge: new Intl.NumberFormat('vi-VN').format(data.surcharge ?? 0),
+        }),
         visibilityTime: 10000,
       });
     });
@@ -150,7 +154,7 @@ export default function HelperDashboardScreen() {
       refetchMyJobs();
       router.push({ pathname: '/helper-job-detail/[id]', params: { id: targetId } });
     } catch (err: any) {
-      const msg = err?.response?.data?.message || 'Không thể nhận đơn cứu hộ';
+      const msg = err?.response?.data?.message || t('helper_dash_sos_accept_failed');
       Toast.show({ type: 'error', text1: msg });
       setSosBroadcast(null);
     }
@@ -158,11 +162,9 @@ export default function HelperDashboardScreen() {
 
   const handleToggleOnline = (value: boolean) => {
     if (isWorking) {
-      Alert.alert(
-        'Đang có công việc diễn ra',
-        'Bạn đang có đơn công việc đang thực hiện. Hãy hoàn thành hoặc kết thúc công việc trước khi tắt nhận việc nhé!',
-        [{ text: 'Đã hiểu', style: 'default' }],
-      );
+      Alert.alert(t('helper_dash_job_in_progress_title'), t('helper_dash_job_in_progress_msg'), [
+        { text: t('helper_dash_understood'), style: 'default' },
+      ]);
       return;
     }
 
