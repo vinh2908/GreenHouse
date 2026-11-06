@@ -15,7 +15,6 @@ async function fixJobHelpers() {
 
   if (!customer || !helper) throw new Error('Customer or Helper not found');
 
-  const customerId = customer._id;
   const helperId = helper._id;
 
   // 1. Cập nhật tất cả các job mà helper_id đang bị lưu trùng với customer_id

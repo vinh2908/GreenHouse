@@ -49,6 +49,7 @@ describe('LoyaltyService.revokePoints (B48)', () => {
       {} as never,
       {} as never,
       { get: () => undefined } as never,
+      {} as never,
     );
     return { service, userId, account, txs };
   }

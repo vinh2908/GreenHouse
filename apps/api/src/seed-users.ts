@@ -11,7 +11,6 @@ async function runSeed() {
   const usersCollection = db.collection('users');
   const helperProfilesCollection = db.collection('helperprofiles');
   const walletsCollection = db.collection('wallets');
-  const servicesCollection = db.collection('services');
 
   const passwordHash = await bcrypt.hash('password123', 10);
 

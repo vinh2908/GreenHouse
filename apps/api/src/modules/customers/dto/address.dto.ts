@@ -7,8 +7,6 @@ import {
   ValidateNested,
   IsNotEmpty,
   MaxLength,
-  Min,
-  Max,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';

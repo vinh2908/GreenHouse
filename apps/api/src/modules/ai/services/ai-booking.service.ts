@@ -2,7 +2,7 @@ import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { Types } from 'mongoose';
 import { AiConfigService, AiProviderUnavailableError } from './ai-config.service';
 import { AiBookingAnalysis, AiPriceEstimate } from '@homemate/types';
-import { PLATFORM_FEE_BY_SERVICE, SERVICE_SLUG_VI } from '@homemate/constants';
+import { SERVICE_SLUG_VI } from '@homemate/constants';
 
 // ─── Price reference table (VND/giờ hoặc theo lần theo dịch vụ) ─────────────────────────────
 const PRICE_REFERENCE: Record<string, { min: number; max: number; unit: string }> = {

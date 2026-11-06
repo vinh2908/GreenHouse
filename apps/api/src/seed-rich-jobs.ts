@@ -24,7 +24,6 @@ async function seedRichJobs() {
   const sCleaning = services.find(s => s.slug === 'housekeeping_hourly') || services[0];
   const sAc = services.find(s => s.slug === 'ac_repair') || services[1];
   const sPlumbing = services.find(s => s.slug === 'plumbing') || services[2];
-  const sCooking = services.find(s => s.slug === 'cooking') || services[3];
 
   // 1. Job 1: Đang tìm thợ (OPEN - có 2 báo giá)
   const job1Id = new mongoose.Types.ObjectId();

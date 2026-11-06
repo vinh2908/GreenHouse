@@ -4,7 +4,6 @@ import {
   Patch,
   Delete,
   Body,
-  Param,
   UseGuards,
   HttpCode,
   HttpStatus,

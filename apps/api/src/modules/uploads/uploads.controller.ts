@@ -109,7 +109,7 @@ export class UploadsController {
         if (count >= MAX_UPLOADS_PER_USER) {
           try {
             unlinkSync(file.path);
-          } catch {}
+          } catch { /* Xoá file tạm thất bại thì bỏ qua — đơn đã bị từ chối vì quá giới hạn */ }
           throw new HttpException(
             `Bạn đã tải lên tối đa ${MAX_UPLOADS_PER_USER} ảnh. Vui lòng xóa ảnh cũ không còn dùng (mở ảnh và chọn xóa) rồi tải lên lại.`,
             HttpStatus.TOO_MANY_REQUESTS,
@@ -125,7 +125,7 @@ export class UploadsController {
     try {
       if (this.connection?.db) {
         const bucket = new mongo.GridFSBucket(this.connection.db, { bucketName: 'uploads' });
-        await new Promise<void>((resolve, reject) => {
+        await new Promise<void>((resolve, _reject) => {
           const uploadStream = bucket.openUploadStream(relPath, {
             metadata: { mimetype: file.mimetype, size: file.size, userId },
           });
@@ -181,7 +181,7 @@ export class UploadsController {
     const localPath = join(UPLOAD_ROOT, relPath);
     try {
       if (existsSync(localPath)) unlinkSync(localPath);
-    } catch {}
+    } catch { /* File local đã mất thì bỏ qua — GridFS vẫn là nguồn chính */ }
     return { deleted: true, path: `/uploads/${relPath}` };
   }
 
@@ -223,11 +223,11 @@ export class UploadsController {
             mkdirSync(dirname(localPath), { recursive: true });
             const writeCache = createWriteStream(localPath);
             bucket.openDownloadStreamByName(relPath).pipe(writeCache);
-          } catch {}
+          } catch { /* Ghi cache local thất bại thì bỏ qua — vẫn trả file từ GridFS */ }
 
           return bucket.openDownloadStreamByName(relPath).pipe(res);
         }
-      } catch {}
+      } catch { /* Đọc GridFS thất bại thì trả 404 bên dưới */ }
     }
 
     throw new NotFoundException('Tệp tin không tồn tại hoặc đã bị xóa');
