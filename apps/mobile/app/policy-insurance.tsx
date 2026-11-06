@@ -39,10 +39,10 @@ export default function PolicyInsuranceScreen() {
   }, [tab]);
 
   const handleCallSupport = () => {
-    Linking.openURL('tel:19008888').catch(() => {
+    Linking.openURL('tel:0365290805').catch(() => {
       Toast.show({
         type: 'info',
-        text1: lang === 'en' ? 'Insurance Hotline: 1900 8888' : 'Tổng đài bảo hiểm: 1900 8888',
+        text1: lang === 'en' ? 'Insurance Hotline: 0365290805' : 'Tổng đài bảo hiểm: 0365290805',
       });
     });
   };
@@ -559,8 +559,8 @@ export default function PolicyInsuranceScreen() {
                   <View style={{ flex: 1 }}>
                     <Text style={{ fontSize: fs(14), fontWeight: '700', color: COLORS.gray[900] }}>
                       {lang === 'en'
-                        ? 'Submit request or call Hotline 1900 8888'
-                        : 'Gửi yêu cầu hoặc gọi Hotline 1900 8888'}
+                        ? 'Submit request or call Hotline 0365290805'
+                        : 'Gửi yêu cầu hoặc gọi Hotline 0365290805'}
                     </Text>
                     <Text style={{ fontSize: fs(12.5), color: COLORS.gray[600], marginTop: 2 }}>
                       {lang === 'en'
@@ -656,8 +656,8 @@ export default function PolicyInsuranceScreen() {
             <Button
               title={
                 lang === 'en'
-                  ? 'Contact Claims Hotline (1900 8888)'
-                  : 'Liên hệ Tổng đài Khiếu nại (1900 8888)'
+                  ? 'Contact Claims Hotline (0365290805)'
+                  : 'Liên hệ Tổng đài Khiếu nại (0365290805)'
               }
               icon={<PhoneCall size={16} color="#fff" />}
               onPress={handleCallSupport}
