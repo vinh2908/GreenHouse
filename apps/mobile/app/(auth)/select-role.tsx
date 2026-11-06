@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { ONBOARDING_SEEN_KEY } from '@/app/onboarding';
 import { ArrowRight, CheckCircle2, Home, Wrench } from 'lucide-react-native';
 import Toast from 'react-native-toast-message';
 import { useAuthStore } from '@/stores/auth.store';
@@ -43,7 +45,11 @@ export default function SelectRoleScreen() {
               : 'Bắt đầu nhận công việc và gia tăng thu nhập',
       });
 
-      if (selectedRole === 'helper') {
+      // B30: lần đầu đăng ký xong -> onboarding, đã xem rồi -> về trang chính
+      const seen = await AsyncStorage.getItem(ONBOARDING_SEEN_KEY);
+      if (!seen) {
+        router.replace('/onboarding');
+      } else if (selectedRole === 'helper') {
         router.replace('/(helper)/dashboard');
       } else {
         router.replace('/(customer)/home');
@@ -53,8 +59,11 @@ export default function SelectRoleScreen() {
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
         (lang === 'en' ? 'An error occurred' : 'Đã có lỗi xảy ra');
       Toast.show({ type: 'error', text1: msg });
-      // Fallback redirect
-      if (selectedRole === 'helper') {
+      // Fallback redirect (B30: vẫn qua onboarding nếu chưa xem)
+      const seen = await AsyncStorage.getItem(ONBOARDING_SEEN_KEY);
+      if (!seen) {
+        router.replace('/onboarding');
+      } else if (selectedRole === 'helper') {
         router.replace('/(helper)/dashboard');
       } else {
         router.replace('/(customer)/home');
