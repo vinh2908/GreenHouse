@@ -84,9 +84,12 @@ export class AiController {
   }
 
   // ─── Price Estimator ──────────────────────────────────────────────────────
+  // F17: ước giá gọi được khi chưa đăng nhập (khách vãng lai) — @Public()
+  // thay cho JwtAuthGuard; giới hạn tần suất vẫn giữ (@Throttle 20/phút +
+  // global HttpThrottlerGuard) để chống lạm dụng.
 
   @Post('price/estimate')
-  @UseGuards(JwtAuthGuard)
+  @Public()
   @Throttle({ default: { ttl: 60000, limit: 20 } })
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
