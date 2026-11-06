@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { formatDate, formatTime } from '@/utils/date-format';
 import {
   View,
   Text,
@@ -2639,7 +2640,7 @@ export default function CustomerHomeScreen() {
                           const dt = dayjs(quickDate).locale(lang === 'en' ? 'en' : 'vi');
                           const dow = dt.format('dddd');
                           const capitalizedDow = dow.charAt(0).toUpperCase() + dow.slice(1);
-                          return `${capitalizedDow}, ${dt.format('DD/MM')}`;
+                          return `${capitalizedDow}, ${formatDate(dt)}`;
                         })()}
                       </Text>
                       <Text
@@ -2972,8 +2973,8 @@ export default function CustomerHomeScreen() {
                     statusDesc = t('home_status_processing_desc');
                   }
 
-                  const displayDate = dayjs(j.scheduled_at || j.created_at).format('DD/MM');
-                  const displayTime = j.preferred_time_start || dayjs(j.created_at).format('HH:mm');
+                  const displayDate = formatDate(dayjs(j.scheduled_at || j.created_at));
+                  const displayTime = j.preferred_time_start || formatTime(dayjs(j.created_at));
                   const displayDistrict =
                     j.address?.district || j.address?.city || currentLocationName.split(',')[0];
 
@@ -3127,9 +3128,9 @@ export default function CustomerHomeScreen() {
                 const pastPrice =
                   pastJob.final_price || pastJob.agreed_price || pastJob.target_price;
                 const displayPriceStr = pastPrice ? `${pastPrice.toLocaleString('vi-VN')}₫` : '';
-                const completedDateStr = dayjs(
+                const completedDateStr = formatDate(dayjs(
                   pastJob.completed_at || pastJob.updated_at || pastJob.created_at,
-                ).format('DD/MM/YYYY');
+                ));
                 return (
                   <View style={{ paddingHorizontal: 16, marginTop: 24 }}>
                     <View

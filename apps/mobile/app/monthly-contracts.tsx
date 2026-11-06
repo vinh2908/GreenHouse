@@ -1,4 +1,5 @@
 import { View, Text, ScrollView, TouchableOpacity, RefreshControl } from 'react-native';
+import { formatDate } from '@/utils/date-format';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { ArrowLeft, Plus, ChevronRight, Calendar } from 'lucide-react-native';
@@ -225,11 +226,11 @@ export default function MonthlyContractsScreen() {
                     <Text style={{ fontSize: fs(12.5), color: COLORS.gray[500] }}>
                       {lang === 'en' ? 'Schedule: ' : 'Lịch: '}
                       {describeMonthlySchedule(c, lang)} · {lang === 'en' ? 'From ' : 'Từ '}
-                      {dayjs(c.start_date).format('DD/MM/YYYY')}
+                      {formatDate(dayjs(c.start_date))}
                       {c.end_date
                         ? lang === 'en'
-                          ? ` to ${dayjs(c.end_date).format('DD/MM/YYYY')}`
-                          : ` đến ${dayjs(c.end_date).format('DD/MM/YYYY')}`
+                          ? ` to ${formatDate(dayjs(c.end_date))}`
+                          : ` đến ${formatDate(dayjs(c.end_date))}`
                         : ''}
                     </Text>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>

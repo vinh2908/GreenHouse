@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { formatDate } from '@/utils/date-format';
 import { View, Text, ScrollView, TouchableOpacity, RefreshControl } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -399,7 +400,7 @@ function PlanDetail({ planId, lang = 'vi' }: { planId: string; lang?: string }) 
           style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 4 }}
         >
           <Text style={{ flex: 1, fontSize: fs(13), color: COLORS.gray[700] }}>
-            {job.occurrence_date ?? dayjs(job.preferred_date).format('DD/MM/YYYY')} ·{' '}
+            {job.occurrence_date ?? formatDate(dayjs(job.preferred_date))} ·{' '}
             {job.preferred_time_start ?? ''}
           </Text>
           <Text style={{ fontSize: fs(12), fontWeight: '700', color: COLORS.gray[500] }}>

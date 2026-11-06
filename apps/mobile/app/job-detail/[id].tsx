@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useMemo } from 'react';
+import { formatDate, formatDateTime } from '@/utils/date-format';
 import {
   View,
   Text,
@@ -1050,8 +1051,8 @@ export default function JobDetailScreen() {
             </Text>
             <Text style={{ fontSize: fs(13), color: COLORS.gray[700], lineHeight: 19 }}>
               {lang === 'en'
-                ? `Only selected helper can view and quote this job until ${dayjs(job.private_offer_expires_at).format('HH:mm DD/MM/YYYY')}. Afterward, job opens publicly.`
-                : `Chỉ thợ được chọn mới thấy và báo giá đơn này đến ${dayjs(job.private_offer_expires_at).format('HH:mm DD/MM/YYYY')}. Hết thời gian chờ, đơn tự mở công khai cho mọi thợ.`}
+                ? `Only selected helper can view and quote this job until ${formatDateTime(dayjs(job.private_offer_expires_at))}. Afterward, job opens publicly.`
+                : `Chỉ thợ được chọn mới thấy và báo giá đơn này đến ${formatDateTime(dayjs(job.private_offer_expires_at))}. Hết thời gian chờ, đơn tự mở công khai cho mọi thợ.`}
             </Text>
             <Button
               title={
@@ -1343,7 +1344,7 @@ export default function JobDetailScreen() {
                       ? 'Cancellation time: '
                       : 'Thời gian hủy đơn: '}
                 </Text>
-                {dayjs(job.updated_at).format('HH:mm DD/MM/YYYY')}
+                {formatDateTime(dayjs(job.updated_at))}
               </Text>
             )}
 
@@ -1397,9 +1398,9 @@ export default function JobDetailScreen() {
                 : null;
               const stepTime =
                 s.key === 'open' && job.created_at
-                  ? dayjs(job.created_at).format('HH:mm DD/MM')
+                  ? formatDateTime(dayjs(job.created_at))
                   : stepEvent?.created_at
-                    ? dayjs(stepEvent.created_at).format('HH:mm DD/MM')
+                    ? formatDateTime(dayjs(stepEvent.created_at))
                     : null;
 
               return (
@@ -1510,7 +1511,7 @@ export default function JobDetailScreen() {
               <Badge label={tService(serviceObj) || t('common_service')} />
               {job.preferred_date && (
                 <Badge
-                  label={dayjs(job.preferred_date).format('DD/MM/YYYY')}
+                  label={formatDate(dayjs(job.preferred_date))}
                   color={COLORS.gray[100]}
                   textColor={COLORS.gray[700]}
                 />
@@ -1809,7 +1810,7 @@ export default function JobDetailScreen() {
                                 : lang === 'en'
                                   ? 'Helper location unavailable'
                                   : 'Chưa xác định được vị trí thợ'}
-                              {q.available_date && ` • ${dayjs(q.available_date).format('DD/MM')}`}
+                              {q.available_date && ` • ${formatDate(dayjs(q.available_date))}`}
                             </Text>
                           </View>
                           <PriceText amount={q.total_price} size={18} />
@@ -3954,7 +3955,7 @@ export default function JobDetailScreen() {
                     </View>
                     <Text style={{ fontSize: fs(12), color: COLORS.gray[500] }}>
                       {lang === 'en' ? 'Created at: ' : 'Thời gian: '}
-                      {dayjs(s.created_at).format('HH:mm DD/MM/YYYY')}
+                      {formatDateTime(dayjs(s.created_at))}
                     </Text>
                     {orig && (
                       <Text style={{ fontSize: fs(13), color: COLORS.gray[700] }}>

@@ -4,6 +4,7 @@
 //    khi tải lại app) "Người giúp việc đã được thay thế do sự cố…"
 //  - Đang có SOS chờ mình quyết định: banner nhắc + nút mở lại popup quyết định
 import { View, Text } from 'react-native';
+import { formatDateTime } from '@/utils/date-format';
 import dayjs from 'dayjs';
 import { AlertTriangle, RefreshCw, Camera } from 'lucide-react-native';
 import { Button, Card, COLORS } from '@/components/ui';
@@ -101,12 +102,12 @@ export function SosBackupCustomerBanner({ job }: { job: any }) {
             {lang === 'en'
               ? `The previous helper encountered an unexpected incident, so another helper has taken over your job${
                   replacement.replaced_at
-                    ? ` since ${dayjs(replacement.replaced_at).format('HH:mm DD/MM/YYYY')}`
+                    ? ` since ${formatDateTime(dayjs(replacement.replaced_at))}`
                     : ''
                 }. Your job price and escrow hold remain unchanged.`
               : `Người giúp việc trước gặp sự cố bất khả kháng nên một thợ khác đã tiếp tục đơn của bạn${
                   replacement.replaced_at
-                    ? ` từ ${dayjs(replacement.replaced_at).format('HH:mm DD/MM/YYYY')}`
+                    ? ` từ ${formatDateTime(dayjs(replacement.replaced_at))}`
                     : ''
                 }. Giá đơn và số tiền giữ đảm bảo của bạn không thay đổi.`}
           </Text>

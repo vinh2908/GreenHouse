@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { formatTime } from '@/utils/date-format';
 import {
   View,
   Text,
@@ -354,7 +355,7 @@ export default function SupportChatScreen() {
               return renderBubble(
                 isMe,
                 item.msg.content,
-                dayjs(item.msg.created_at).format('HH:mm'),
+                formatTime(dayjs(item.msg.created_at)),
               );
             }}
           />

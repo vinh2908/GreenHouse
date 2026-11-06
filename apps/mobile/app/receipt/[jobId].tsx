@@ -1,4 +1,5 @@
 import React from 'react';
+import { formatDateTime } from '@/utils/date-format';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -183,7 +184,7 @@ export default function ReceiptScreen() {
                 {lang === 'en' ? 'Settlement Time' : 'Thời gian quyết toán'}
               </Text>
               <Text style={[styles.detailVal, { fontSize: fs(13) }]}>
-                {dayjs(job.updated_at || job.created_at).format('HH:mm DD/MM/YYYY')}
+                {formatDateTime(dayjs(job.updated_at || job.created_at))}
               </Text>
             </View>
 

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
+import { formatDate, formatTime } from '@/utils/date-format';
 import {
   View,
   Text,
@@ -1143,7 +1144,7 @@ export default function BookingScreen() {
         Toast.show({ type: 'error', text1: t('booking_time_past_error') });
         return;
       }
-      const endTime = startDateTime.add(durMinsTotal, 'minute').format('HH:mm');
+      const endTime = formatTime(startDateTime.add(durMinsTotal, 'minute'));
       const cleanNum = targetPrice ? Number(String(targetPrice).replace(/[^0-9]/g, '')) : undefined;
       if (cleanNum !== undefined && cleanNum < 50000) {
         Toast.show({ type: 'error', text1: t('booking_min_price_error') });
@@ -1948,7 +1949,7 @@ export default function BookingScreen() {
                         const dt = dayjs(date).locale(lang === 'en' ? 'en' : 'vi');
                         const dow = dt.format('dddd');
                         const capitalizedDow = dow.charAt(0).toUpperCase() + dow.slice(1);
-                        return `${capitalizedDow}, ${dt.format('DD/MM/YYYY')}`;
+                        return `${capitalizedDow}, ${formatDate(dt)}`;
                       })()}
                     </Text>
                     <Text
@@ -2635,7 +2636,7 @@ export default function BookingScreen() {
                     )}
                     <Text style={{ fontSize: fs(12), color: COLORS.gray[500], lineHeight: 17 }}>
                       {t('booking_recurring_preview', {
-                        date: dayjs(date).format('DD/MM/YYYY'),
+                        date: formatDate(dayjs(date)),
                         time: timeSlot,
                         duration,
                       })}

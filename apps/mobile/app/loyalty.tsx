@@ -1,4 +1,5 @@
 import { View, Text, ScrollView, TouchableOpacity, RefreshControl } from 'react-native';
+import { formatDateTime } from '@/utils/date-format';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { ArrowLeft, Star, Gift, Wrench } from 'lucide-react-native';
@@ -216,7 +217,7 @@ export default function LoyaltyScreen() {
                         </Text>
                         <Text style={{ fontSize: fs(12), color: COLORS.gray[500], marginTop: 2 }}>
                           {t('loyalty_balance_after', {
-                            time: dayjs(tx.created_at).format('DD/MM/YYYY HH:mm'),
+                            time: formatDateTime(dayjs(tx.created_at)),
                             balance: fmt(tx.balance_after),
                           })}
                         </Text>

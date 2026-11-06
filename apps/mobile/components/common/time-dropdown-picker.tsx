@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
+import { formatDate } from '@/utils/date-format';
 import dayjs from 'dayjs';
 import {
   View,
@@ -782,7 +783,7 @@ export function ScheduledTimePreview({
         const dt = dayjs(startDate);
         const dow = dt.format('dddd');
         const capDow = dow.charAt(0).toUpperCase() + dow.slice(1);
-        return `${capDow}, ${dt.format('DD/MM/YYYY')}`;
+        return `${capDow}, ${formatDate(dt)}`;
       } catch {
         return startDate;
       }

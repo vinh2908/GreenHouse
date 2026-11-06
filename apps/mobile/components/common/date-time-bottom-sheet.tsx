@@ -1,5 +1,6 @@
 // apps/mobile/components/common/date-time-bottom-sheet.tsx
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { formatDate } from '@/utils/date-format';
 import {
   View,
   Text,
@@ -244,7 +245,7 @@ export function DateTimeBottomSheet({
     const dt = dayjs(tempDate).locale(lang === 'en' ? 'en' : 'vi');
     const dow = dt.format('dddd');
     const capitalizedDow = dow.charAt(0).toUpperCase() + dow.slice(1);
-    return `${capitalizedDow}, ${dt.format('DD/MM')}`;
+    return `${capitalizedDow}, ${formatDate(dt)}`;
   }, [tempDate, lang]);
 
   return (
