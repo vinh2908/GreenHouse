@@ -83,6 +83,7 @@ export default function ConversationsScreen() {
                 ? `${lang === 'en' ? 'Order #' : 'Đơn hàng #'}${conv.job_id.slice(-6)}`
                 : t('messages_job_fallback'));
             const targetJobId = typeof conv.job_id === 'object' ? conv.job_id?._id : conv.job_id;
+            const isUnread = Boolean(Number(conv.unread_count) > 0);
 
             return (
               <TouchableOpacity
@@ -92,12 +93,21 @@ export default function ConversationsScreen() {
                   router.push({ pathname: '/chat/[jobId]', params: { jobId: targetJobId } })
                 }
               >
-                <Card style={{ flexDirection: 'row', alignItems: 'center', gap: 14, padding: 14 }}>
+                <Card
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 14,
+                    padding: 14,
+                    backgroundColor: isUnread ? '#F0FDF4' : '#FFFFFF',
+                    borderColor: isUnread ? '#BBF7D0' : 'rgba(0, 0, 0, 0.04)',
+                  }}
+                >
                   <Avatar name={partnerName} uri={partnerAvatar} size={50} />
                   <View style={{ flex: 1, gap: 2 }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                       <Text
-                        style={{ fontWeight: '800', fontSize: fs(15), color: COLORS.gray[900] }}
+                        style={{ fontWeight: isUnread ? '900' : '800', fontSize: fs(15), color: COLORS.gray[900] }}
                         numberOfLines={1}
                       >
                         {partnerName}
@@ -108,12 +118,17 @@ export default function ConversationsScreen() {
                       style={{ fontSize: fs(12), color: COLORS.primary, fontWeight: '700' }}
                       numberOfLines={1}
                     >
-                      📌 {jobTitle}
+                      {jobTitle}
                     </Text>
                     <Text
                       style={{
                         fontSize: fs(13),
-                        color: conv.last_message ? COLORS.gray[700] : COLORS.gray[400],
+                        color: isUnread
+                          ? COLORS.gray[900]
+                          : conv.last_message
+                            ? COLORS.gray[700]
+                            : COLORS.gray[500],
+                        fontWeight: isUnread ? '800' : '500',
                         marginTop: 2,
                       }}
                       numberOfLines={1}
@@ -125,11 +140,35 @@ export default function ConversationsScreen() {
                   </View>
                   <View style={{ alignItems: 'flex-end', gap: 6 }}>
                     {conv.last_message_at && (
-                      <Text style={{ fontSize: fs(11), color: COLORS.gray[500], fontWeight: '600' }}>
+                      <Text
+                        style={{
+                          fontSize: fs(11),
+                          color: isUnread ? COLORS.primaryDark : COLORS.gray[500],
+                          fontWeight: isUnread ? '700' : '600',
+                        }}
+                      >
                         {formatConversationTime(conv.last_message_at, undefined, lang)}
                       </Text>
                     )}
-                    <ChevronRight size={14} color={COLORS.gray[300]} />
+                    {isUnread ? (
+                      <View
+                        style={{
+                          backgroundColor: COLORS.error,
+                          borderRadius: 999,
+                          minWidth: 18,
+                          height: 18,
+                          paddingHorizontal: 5,
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                      >
+                        <Text style={{ color: '#fff', fontSize: fs(10), fontWeight: '800' }}>
+                          {conv.unread_count > 99 ? '99+' : conv.unread_count}
+                        </Text>
+                      </View>
+                    ) : (
+                      <ChevronRight size={14} color={COLORS.gray[300]} />
+                    )}
                   </View>
                 </Card>
               </TouchableOpacity>

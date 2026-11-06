@@ -26,7 +26,7 @@ import * as ImagePicker from 'expo-image-picker';
 import dayjs from 'dayjs';
 import Toast from 'react-native-toast-message';
 import { useAuthStore } from '@/stores/auth.store';
-import { useMessages, useSendMessage, useCallConfig } from '@/hooks/use-api';
+import { useMessages, useSendMessage, useCallConfig, useMarkConversationRead } from '@/hooks/use-api';
 import { useChatSocket } from '@/hooks/use-socket';
 import apiClient from '@/services/api-client';
 import { uploadFile } from '@/services/upload.service';
@@ -213,6 +213,13 @@ export default function ChatScreen() {
 
   const { data: messages, isLoading: mLoading, refetch } = useMessages(conversationId ?? undefined);
   const sendMsg = useSendMessage();
+  const markRead = useMarkConversationRead();
+
+  useEffect(() => {
+    if (conversationId) {
+      markRead.mutate(conversationId);
+    }
+  }, [conversationId, messages?.length]);
 
   // Fetch or create conversation by job
   useEffect(() => {

@@ -959,6 +959,18 @@ export function useSendMessage() {
     }) => apiClient.post(`/chat/conversations/${conversationId}/messages`, { content, type }),
     onSuccess: (_, vars) => {
       qc.invalidateQueries({ queryKey: ['messages', vars.conversationId] });
+      qc.invalidateQueries({ queryKey: ['conversations'] });
+    },
+  });
+}
+
+export function useMarkConversationRead() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (conversationId: string) =>
+      apiClient.post(`/chat/conversations/${conversationId}/read`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['conversations'] });
     },
   });
 }
