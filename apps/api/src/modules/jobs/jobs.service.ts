@@ -3207,12 +3207,30 @@ export class JobsService implements OnModuleInit {
       }
     }
 
+    // B60: Báo cho mọi thợ đã báo giá khi báo giá của họ bị chuyển sang
+    // rejected do hủy đơn — lấy danh sách trước rồi mới cập nhật trạng thái.
+    const pendingQuotes = await this.quoteModel
+      .find({ job_id: new Types.ObjectId(jobId), status: QuoteStatus.PENDING })
+      .select('helper_id')
+      .lean()
+      .exec();
     await this.quoteModel
       .updateMany(
         { job_id: new Types.ObjectId(jobId), status: QuoteStatus.PENDING },
         { status: QuoteStatus.REJECTED },
       )
       .exec();
+    for (const q of pendingQuotes) {
+      await this.notificationsService
+        .create({
+          userId: String((q as any).helper_id),
+          type: NOTIFICATION_TYPES.SYSTEM,
+          title: 'Đơn hàng đã bị hủy',
+          body: `Công việc "${job.title}" đã bị hủy. Báo giá của bạn cho đơn này không còn hiệu lực.`,
+          payload: { job_id: jobId },
+        })
+        .catch(() => undefined);
+    }
 
     let contractTotalPrice: number | undefined;
     if (this.contractModel?.findOne) {
