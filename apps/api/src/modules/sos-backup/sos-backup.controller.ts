@@ -13,7 +13,7 @@ import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { SosBackupService } from './sos-backup.service';
-import { CreateSosBackupDto, CustomerDecisionDto } from './dto/sos-backup.dto';
+import { CreateSosBackupDto, CustomerDecisionDto, DeclineSosDto } from './dto/sos-backup.dto';
 
 @ApiTags('SOS Backup')
 @ApiBearerAuth()
@@ -94,10 +94,14 @@ export class SosBackupController {
 
   @Post(':sosId/decline')
   @ApiOperation({
-    summary: 'Ứng viên từ chối — bị loại khỏi các đợt mời sau của SOS này',
+    summary: 'B105: Ứng viên từ chối (kèm lý do) — bị loại khỏi các đợt mời sau của SOS này',
   })
-  async decline(@CurrentUser() user: { sub: string }, @Param('sosId') sosId: string) {
-    return this.sosService.declineSos(user.sub, sosId);
+  async decline(
+    @CurrentUser() user: { sub: string },
+    @Param('sosId') sosId: string,
+    @Body() dto?: DeclineSosDto,
+  ) {
+    return this.sosService.declineSos(user.sub, sosId, dto?.reason);
   }
 
   @Post(':sosId/cancel')

@@ -56,6 +56,8 @@ const SosCandidateSchema = {
   },
   invited_at: { type: Date },
   responded_at: { type: Date },
+  // B105: lý do thợ từ chối lời mời SOS (nhập ở màn xác nhận)
+  decline_reason: { type: String },
 };
 
 @Schema({ timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' }, versionKey: false })
