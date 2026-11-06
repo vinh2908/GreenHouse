@@ -1,4 +1,5 @@
-import { View, Text, ScrollView, TouchableOpacity, RefreshControl } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, RefreshControl, TextInput } from 'react-native';
+import { useState } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import {
@@ -23,6 +24,7 @@ import { useTranslation } from '@/hooks/use-i18n';
 import {
   useHelperPublicProfile,
   useHelperReviews,
+  useReplyReview,
   useSelectQuote,
   useFavorites,
   useAddFavorite,
@@ -54,6 +56,11 @@ export default function HelperPublicProfileScreen() {
   const { data: profile, isLoading: pLoading, refetch } = useHelperPublicProfile(id);
   const { data: reviewsData, isLoading: rLoading } = useHelperReviews(id);
   const selectQuote = useSelectQuote();
+  // B1: thợ trả lời đánh giá của chính mình (chỉ hiện khi đang xem hồ sơ của mình)
+  const isOwnProfile = !!user?._id && user._id === id;
+  const replyReview = useReplyReview();
+  const [replyingId, setReplyingId] = useState<string | null>(null);
+  const [replyText, setReplyText] = useState('');
 
   // ── Thợ yêu thích ──────────────────────────────────────────────────────
   const isCustomer = user?.active_role !== 'helper';
@@ -515,7 +522,7 @@ export default function HelperPublicProfileScreen() {
                     "{r.comment}"
                   </Text>
                 )}
-                {r.helper_reply && (
+                {r.admin_reply && (
                   <View
                     style={{
                       backgroundColor: '#fff',
@@ -523,14 +530,90 @@ export default function HelperPublicProfileScreen() {
                       borderRadius: 8,
                       marginTop: 4,
                       borderLeftWidth: 3,
-                      borderLeftColor: COLORS.primary,
+                      borderLeftColor: COLORS.gray[400],
                     }}
                   >
                     <Text
                       style={{ fontSize: fs(12), color: COLORS.gray[600], fontStyle: 'italic' }}
                     >
-                      {lang === 'en' ? 'Helper replied: ' : 'Thợ phản hồi: '}"{r.helper_reply}"
+                      {lang === 'en' ? 'Admin replied: ' : 'Admin phản hồi: '}"{r.admin_reply}"
                     </Text>
+                  </View>
+                )}
+                {/* B1: thợ trả lời đánh giá (chỉ chủ hồ sơ, mỗi đánh giá 1 lần) */}
+                {isOwnProfile && !r.helper_reply && (
+                  <View style={{ marginTop: 6, gap: 8 }}>
+                    {replyingId === r._id ? (
+                      <>
+                        <TextInput
+                          value={replyText}
+                          onChangeText={setReplyText}
+                          placeholder={
+                            lang === 'en'
+                              ? 'Write your reply to this review...'
+                              : 'Viết phản hồi cho đánh giá này...'
+                          }
+                          placeholderTextColor={COLORS.gray[400]}
+                          multiline
+                          style={{
+                            backgroundColor: '#fff',
+                            borderWidth: 1,
+                            borderColor: COLORS.gray[200],
+                            borderRadius: 8,
+                            padding: 10,
+                            fontSize: fs(13),
+                            color: COLORS.gray[900],
+                            minHeight: 64,
+                            textAlignVertical: 'top',
+                          }}
+                        />
+                        <View style={{ flexDirection: 'row', gap: 8 }}>
+                          <Button
+                            title={lang === 'en' ? 'Send reply' : 'Gửi phản hồi'}
+                            size="sm"
+                            disabled={!replyText.trim() || replyReview.isPending}
+                            onPress={() => {
+                              replyReview.mutate(
+                                { id: r._id, reply: replyText.trim() },
+                                {
+                                  onSuccess: () => {
+                                    setReplyingId(null);
+                                    setReplyText('');
+                                  },
+                                },
+                              );
+                            }}
+                          />
+                          <Button
+                            title={lang === 'en' ? 'Cancel' : 'Hủy'}
+                            variant="outline"
+                            size="sm"
+                            onPress={() => {
+                              setReplyingId(null);
+                              setReplyText('');
+                            }}
+                          />
+                        </View>
+                      </>
+                    ) : (
+                      <TouchableOpacity
+                        activeOpacity={0.7}
+                        onPress={() => {
+                          setReplyingId(r._id);
+                          setReplyText('');
+                        }}
+                      >
+                        <Text
+                          style={{
+                            fontSize: fs(13),
+                            fontWeight: '700',
+                            color: COLORS.primary,
+                          }}
+                        >
+                          {lang === 'en' ? 'Reply to this review' : 'Trả lời đánh giá này'}
+                        </Text>
+                      </TouchableOpacity>
+                    )}
                   </View>
                 )}
                 <Text style={{ fontSize: fs(11), color: COLORS.gray[500], marginTop: 2 }}>

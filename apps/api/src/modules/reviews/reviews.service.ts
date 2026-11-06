@@ -100,14 +100,16 @@ export class ReviewsService {
     const skip = (page - 1) * limit;
     const [reviews, total] = await Promise.all([
       this.reviewModel
-        .find({ helper_id: new Types.ObjectId(helperId) })
+        .find({ helper_id: new Types.ObjectId(helperId), is_hidden: { $ne: true } })
         .populate('customer_id', 'full_name avatar')
         .populate('job_id', 'title')
         .sort({ created_at: -1 })
         .skip(skip)
         .limit(limit)
         .exec(),
-      this.reviewModel.countDocuments({ helper_id: new Types.ObjectId(helperId) }).exec(),
+      this.reviewModel
+        .countDocuments({ helper_id: new Types.ObjectId(helperId), is_hidden: { $ne: true } })
+        .exec(),
     ]);
 
     return { reviews, total, page, limit, total_pages: Math.ceil(total / limit) };
@@ -118,7 +120,7 @@ export class ReviewsService {
   async getHelperRatingStats(helperId: string) {
     const stats = await this.reviewModel
       .aggregate([
-        { $match: { helper_id: new Types.ObjectId(helperId) } },
+        { $match: { helper_id: new Types.ObjectId(helperId), is_hidden: { $ne: true } } },
         {
           $group: {
             _id: null,
