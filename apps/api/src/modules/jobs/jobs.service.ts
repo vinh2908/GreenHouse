@@ -74,6 +74,25 @@ import { RoutingService } from './routing.service';
 const QUOTE_SERVICE_RADIUS_KM = 30;
 
 /**
+ * A25/A28: Tính số tiền thực trả của khách cho đơn hàng
+ * = total_price (hoặc fixed_price) - discount_amount - loyalty_discount_amount
+ */
+export function computeNetPaidAmount(
+  job: {
+    total_price?: number;
+    fixed_price?: number;
+    discount_amount?: number;
+    loyalty_discount_amount?: number;
+  },
+  contractTotalPrice?: number,
+): number {
+  const basePrice = contractTotalPrice ?? job.total_price ?? job.fixed_price ?? 0;
+  const discount = job.discount_amount ?? 0;
+  const loyaltyDiscount = job.loyalty_discount_amount ?? 0;
+  return Math.max(0, basePrice - discount - loyaltyDiscount);
+}
+
+/**
  * Danh sách trạng thái đơn mà thợ đang bận làm việc (không thể nhận việc mới).
  * Bao gồm cả PENDING_REVIEW (chờ khách nghiệm thu).
  */
@@ -2255,8 +2274,18 @@ export class JobsService {
     }
 
     const contract = await this.contractModel.findOne({ job_id: new Types.ObjectId(jobId) }).exec();
-    const totalPrice = contract?.total_price ?? 0;
+    const totalPrice = contract?.total_price ?? job.fixed_price ?? 0;
     const defaultHelperReceives = contract?.helper_receives ?? 0;
+    const netPaid = computeNetPaidAmount(job, totalPrice);
+
+    if (['refund_full', 'refund_partial'].includes(dto.action)) {
+      if (job.payment_status !== PaymentStatus.PAID) {
+        throw new BadRequestException('Đơn hàng chưa thu tiền hoặc thanh toán chưa hoàn tất, không thể hoàn tiền');
+      }
+      if (job.payment_method === 'cash') {
+        throw new BadRequestException('Đơn hàng thanh toán tiền mặt không thể hoàn tiền điện tử vào ví');
+      }
+    }
 
     // Phân xử LẦN 2 (sau kháng cáo — Feature 4): tiền đã thực sự di chuyển ở
     // phán quyết đầu tiên, nên lần này KHÔNG tự động hoàn/giải ngân/khấu trừ
@@ -2276,7 +2305,7 @@ export class JobsService {
 
     if (dto.action === 'refund_full') {
       nextStatus = JobStatus.REFUNDED;
-      refundAmount = totalPrice;
+      refundAmount = netPaid;
       helperPayout = 0;
       job.payment_status = PaymentStatus.REFUNDED;
 
@@ -2295,8 +2324,8 @@ export class JobsService {
       }
     } else if (dto.action === 'refund_partial') {
       nextStatus = JobStatus.COMPLETED;
-      refundAmount = Math.min(totalPrice, Math.max(0, Number(dto.refund_amount ?? 0)));
-      const remaining = Math.max(0, totalPrice - refundAmount);
+      refundAmount = Math.min(netPaid, Math.max(0, Number(dto.refund_amount ?? 0)));
+      const remaining = Math.max(0, netPaid - refundAmount);
       const disputeService = job.service_id
         ? await this.serviceModel
             .findById(job.service_id)
@@ -2487,17 +2516,50 @@ export class JobsService {
       )
       .exec();
 
-    await job.save();
-
+    let contractTotalPrice: number | undefined;
     if (this.contractModel?.findOne) {
       const contract = await this.contractModel
         .findOne({ job_id: new Types.ObjectId(jobId) })
         .exec();
-      if (contract && contract.status !== ContractStatus.CANCELLED) {
-        contract.status = ContractStatus.CANCELLED;
-        await contract.save();
+      if (contract) {
+        contractTotalPrice = contract.total_price;
+        if (contract.status !== ContractStatus.CANCELLED) {
+          contract.status = ContractStatus.CANCELLED;
+          await contract.save();
+        }
       }
     }
+
+    // A25: Tự động hoàn tiền vào ví khách khi huỷ đơn nếu đơn đã thanh toán điện tử
+    if (job.payment_status === PaymentStatus.PAID && job.payment_method !== 'cash') {
+      const netPaid = computeNetPaidAmount(job, contractTotalPrice);
+      if (netPaid > 0) {
+        try {
+          await this.paymentsService.refundCustomer(
+            String(job.customer_id),
+            jobId,
+            netPaid,
+            dto.reason || 'Hủy đơn hàng đã thanh toán',
+          );
+          job.payment_status = PaymentStatus.REFUNDED;
+          await this.notificationsService
+            .create({
+              userId: String(job.customer_id),
+              type: NOTIFICATION_TYPES.SYSTEM,
+              title: 'Hoàn tiền đơn hàng đã hủy',
+              body: `Đã hoàn ${netPaid.toLocaleString('vi-VN')}₫ vào ví của bạn cho công việc "${job.title}"`,
+              payload: { job_id: jobId, amount: netPaid },
+            })
+            .catch(() => undefined);
+        } catch (refundErr) {
+          this.logger.error(
+            `Refund on cancel failed for job ${jobId}: ${(refundErr as Error).message}`,
+          );
+        }
+      }
+    }
+
+    await job.save();
 
     if (job.helper_id) await this.setHelperBusy(job.helper_id, false);
 
