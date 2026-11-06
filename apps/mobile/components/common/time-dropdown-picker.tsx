@@ -11,7 +11,7 @@ import {
   Platform,
 } from 'react-native';
 import { Clock, ChevronDown, Check, X } from 'lucide-react-native';
-import { COLORS } from '@/components/ui';
+import { COLORS, useThemeColors } from '@/components/ui';
 import { useTranslation, fs } from '@/hooks/use-i18n';
 
 export const ORIGINAL_TIME_CHIPS = [
@@ -267,6 +267,7 @@ export function TimeDropdownPicker({
   }, [currentHour, currentMinute]);
 
   const { t, lang } = useTranslation();
+  const tc = useThemeColors();
 
   return (
     <View style={styles.container}>
@@ -552,6 +553,7 @@ export function DurationDropdownPicker({
   maxMinutes = 720, // 12h
 }: DurationDropdownPickerProps) {
   const { lang } = useTranslation();
+  const tc = useThemeColors();
   const effectiveLabel = label ?? (lang === 'en' ? 'Duration' : 'Thời lượng');
   const [modalType, setModalType] = useState<'hour' | 'minute' | null>(null);
   const hourScrollRef = useRef<ScrollView>(null);
@@ -770,6 +772,7 @@ export function ScheduledTimePreview({
   price,
 }: ScheduledTimePreviewProps) {
   const { t, lang } = useTranslation();
+  const tc = useThemeColors();
   const effectiveStart = timeStart || startTime || '08:00';
   const calc = useMemo(
     () => calcEndTime(effectiveStart, durationMinutes),
@@ -818,7 +821,7 @@ export function ScheduledTimePreview({
             {effectiveStart} – {calc.timeEnd} {calc.isNextDay ? t('picker_next_day') : ''}
           </Text>
         ) : (
-          <Text style={[styles.previewValue, { color: COLORS.gray[500], fontSize: fs(12.5) }]}>
+          <Text style={[styles.previewValue, { color: tc.textMuted, fontSize: fs(12.5) }]}>
             {t('picker_cannot_calc')}
           </Text>
         )}

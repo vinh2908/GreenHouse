@@ -13,7 +13,7 @@ import {
   Zap,
   MessageCircle,
 } from 'lucide-react-native';
-import { Card, COLORS, Badge, Separator } from '@/components/ui';
+import { Card, COLORS, Badge, Separator, useThemeColors } from '@/components/ui';
 import { useAiSupport } from '@/hooks/use-api';
 import { useAuthStore } from '@/stores/auth.store';
 import { useTranslation } from '@/hooks/use-i18n';
@@ -71,6 +71,7 @@ export default function HelpCenterScreen() {
   const insets = useSafeAreaInsets();
   const user = useAuthStore(s => s.user);
   const { t, fs, lang } = useTranslation();
+  const tc = useThemeColors();
   const aiSupport = useAiSupport();
   const [expandedFaq, setExpandedFaq] = useState<number | null>(0);
   const [aiQuestion, setAiQuestion] = useState('');
@@ -146,7 +147,7 @@ export default function HelpCenterScreen() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: COLORS.gray[50] }}>
+    <View style={{ flex: 1, backgroundColor: tc.background }}>
       {/* ── Top Header Bar ────────────────────────────────────────────── */}
       <View
         style={{
@@ -155,9 +156,9 @@ export default function HelpCenterScreen() {
           paddingHorizontal: 16,
           paddingTop: Math.max(insets.top + 6, 18),
           paddingBottom: 14,
-          backgroundColor: '#fff',
+          backgroundColor: tc.surface,
           borderBottomWidth: 1,
-          borderBottomColor: COLORS.gray[100],
+          borderBottomColor: tc.border,
         }}
       >
         <TouchableOpacity
@@ -178,7 +179,7 @@ export default function HelpCenterScreen() {
             width: 40,
             height: 40,
             borderRadius: 14,
-            backgroundColor: COLORS.gray[100],
+            backgroundColor: tc.subtle,
             alignItems: 'center',
             justifyContent: 'center',
           }}
@@ -189,7 +190,7 @@ export default function HelpCenterScreen() {
           style={{
             fontSize: fs(18),
             fontWeight: '800',
-            color: COLORS.gray[900],
+            color: tc.text,
             marginLeft: 12,
             flex: 1,
           }}
@@ -326,10 +327,10 @@ export default function HelpCenterScreen() {
               <Sparkles size={18} color={COLORS.primary} />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: fs(15), fontWeight: '800', color: COLORS.gray[900] }}>
+              <Text style={{ fontSize: fs(15), fontWeight: '800', color: tc.text }}>
                 {lang === 'en' ? 'Quick Q&A with AI Assistant' : 'Hỏi đáp nhanh cùng Trợ lý AI'}
               </Text>
-              <Text style={{ fontSize: fs(12), color: COLORS.gray[500] }}>
+              <Text style={{ fontSize: fs(12), color: tc.textMuted }}>
                 {lang === 'en'
                   ? 'Instant procedure answers and app guidance'
                   : 'Giải đáp quy trình, hướng dẫn thao tác tức thì'}
@@ -342,9 +343,9 @@ export default function HelpCenterScreen() {
               flexDirection: 'row',
               alignItems: 'center',
               borderWidth: 1.5,
-              borderColor: COLORS.gray[200],
+              borderColor: tc.border,
               borderRadius: 14,
-              backgroundColor: '#fff',
+              backgroundColor: tc.surface,
               paddingHorizontal: 12,
               gap: 8,
             }}
@@ -353,7 +354,7 @@ export default function HelpCenterScreen() {
               style={{
                 flex: 1,
                 fontSize: fs(14),
-                color: COLORS.gray[900],
+                color: tc.text,
                 paddingVertical: 11,
               }}
               placeholder={
@@ -391,7 +392,7 @@ export default function HelpCenterScreen() {
                 borderLeftColor: COLORS.primary,
               }}
             >
-              <Text style={{ fontSize: fs(13.5), color: COLORS.gray[800], lineHeight: 20 }}>
+              <Text style={{ fontSize: fs(13.5), color: tc.text, lineHeight: 20 }}>
                 {aiAnswer}
               </Text>
             </View>
@@ -400,7 +401,7 @@ export default function HelpCenterScreen() {
 
         {/* ── 3. Quick Action Topics ──────────────────────────────────── */}
         <View style={{ gap: 10 }}>
-          <Text style={{ fontSize: fs(15), fontWeight: '800', color: COLORS.gray[900] }}>
+          <Text style={{ fontSize: fs(15), fontWeight: '800', color: tc.text }}>
             {lang === 'en' ? 'Popular Support Topics' : 'Chủ đề trợ giúp phổ biến'}
           </Text>
 
@@ -422,7 +423,7 @@ export default function HelpCenterScreen() {
               <Text style={{ fontWeight: '800', fontSize: fs(14), color: COLORS.error }}>
                 {lang === 'en' ? '15m Emergency SOS' : 'Cứu hộ SOS 15p'}
               </Text>
-              <Text style={{ fontSize: fs(11.5), color: COLORS.gray[600], lineHeight: 16 }}>
+              <Text style={{ fontSize: fs(11.5), color: tc.textSecondary, lineHeight: 16 }}>
                 {lang === 'en'
                   ? 'Urgent plumbing, electrical, and lockouts'
                   : 'Sự cố khẩn cấp điện nước, khóa cửa'}
@@ -446,7 +447,7 @@ export default function HelpCenterScreen() {
               <Text style={{ fontWeight: '800', fontSize: fs(14), color: COLORS.success }}>
                 {lang === 'en' ? '30-Day Insurance' : 'Bảo hiểm 30 ngày'}
               </Text>
-              <Text style={{ fontSize: fs(11.5), color: COLORS.gray[600], lineHeight: 16 }}>
+              <Text style={{ fontSize: fs(11.5), color: tc.textSecondary, lineHeight: 16 }}>
                 {lang === 'en'
                   ? 'Warranty guarantee & 100% compensation'
                   : 'Cam kết bảo hành và bồi thường 100%'}
@@ -457,7 +458,7 @@ export default function HelpCenterScreen() {
 
         {/* ── 4. Frequently Asked Questions (Accordion) ───────────────── */}
         <View style={{ gap: 10 }}>
-          <Text style={{ fontSize: fs(15), fontWeight: '800', color: COLORS.gray[900] }}>
+          <Text style={{ fontSize: fs(15), fontWeight: '800', color: tc.text }}>
             {lang === 'en' ? 'Frequently Asked Questions (FAQ)' : 'Câu hỏi thường gặp (FAQ)'}
           </Text>
 
@@ -504,7 +505,7 @@ export default function HelpCenterScreen() {
                         paddingTop: 0,
                       }}
                     >
-                      <Text style={{ fontSize: fs(13.5), color: COLORS.gray[600], lineHeight: 21 }}>
+                      <Text style={{ fontSize: fs(13.5), color: tc.textSecondary, lineHeight: 21 }}>
                         {faq.a}
                       </Text>
                     </View>

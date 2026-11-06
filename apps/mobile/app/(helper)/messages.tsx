@@ -9,33 +9,34 @@ import { formatConversationTime } from '@/utils/date-format';
 import { useConversations } from '@/hooks/use-api';
 import { useAuthStore } from '@/stores/auth.store';
 import { useTranslation } from '@/hooks/use-i18n';
-import { Card, Avatar, COLORS, EmptyState, ErrorState, LoadingSpinner } from '@/components/ui';
+import { Card, Avatar, COLORS, EmptyState, ErrorState, LoadingSpinner, useThemeColors } from '@/components/ui';
 
 dayjs.extend(relativeTime);
 
 export default function HelperConversationsScreen() {
   const router = useRouter();
   const { t, fs, lang } = useTranslation();
+  const tc = useThemeColors();
   const currentUser = useAuthStore(s => s.user);
   const { data: conversations, isLoading, isError, refetch } = useConversations();
   const insets = useSafeAreaInsets();
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#F8F9FA' }}>
+    <View style={{ flex: 1, backgroundColor: tc.background }}>
       <View
         style={{
           paddingHorizontal: 20,
           paddingTop: Math.max(insets.top + 8, 20),
           paddingBottom: 14,
-          backgroundColor: '#fff',
+          backgroundColor: tc.surface,
           borderBottomWidth: 1,
-          borderBottomColor: COLORS.gray[100],
+          borderBottomColor: tc.border,
         }}
       >
-        <Text style={{ fontSize: fs(20), fontWeight: '800', color: COLORS.gray[900] }}>
+        <Text style={{ fontSize: fs(20), fontWeight: '800', color: tc.text }}>
           {t('messages_title')}
         </Text>
-        <Text style={{ fontSize: fs(12), color: COLORS.gray[500], marginTop: 2 }}>
+        <Text style={{ fontSize: fs(12), color: tc.textMuted, marginTop: 2 }}>
           {t('messages_subtitle')}
         </Text>
       </View>
@@ -110,7 +111,7 @@ export default function HelperConversationsScreen() {
                         style={{
                           fontWeight: isUnread ? '900' : '800',
                           fontSize: fs(15),
-                          color: COLORS.gray[900],
+                          color: tc.text,
                         }}
                         numberOfLines={1}
                       >

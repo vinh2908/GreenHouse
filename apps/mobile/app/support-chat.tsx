@@ -27,7 +27,7 @@ import {
 import { useSupportSocket } from '@/hooks/use-socket';
 import { getSupportFaqs } from '@/components/common/support-faq';
 import { useTranslation } from '@/hooks/use-i18n';
-import { COLORS, LoadingSpinner } from '@/components/ui';
+import { COLORS, LoadingSpinner, useThemeColors } from '@/components/ui';
 
 // Bong bóng cục bộ (FAQ tĩnh, không lưu server)
 interface LocalBubble {
@@ -42,6 +42,7 @@ type ThreadItem = { kind: 'msg'; msg: SupportMessageItem } | { kind: 'faq'; faq:
 export default function SupportChatScreen() {
   const router = useRouter();
   const { t, lang, fs } = useTranslation();
+  const tc = useThemeColors();
   const insets = useSafeAreaInsets();
   const currentUser = useAuthStore(s => s.user);
   const [text, setText] = useState('');
@@ -148,7 +149,7 @@ export default function SupportChatScreen() {
           shadowRadius: 3,
           elevation: 2,
           borderWidth: isMe ? 0 : 1,
-          borderColor: COLORS.gray[100],
+          borderColor: tc.border,
         }}
       >
         <Text
@@ -166,7 +167,7 @@ export default function SupportChatScreen() {
         <Text
           style={{
             fontSize: fs(10.5),
-            color: COLORS.gray[500],
+            color: tc.textMuted,
             marginTop: 4,
             marginHorizontal: 6,
             fontWeight: '600',
@@ -179,7 +180,7 @@ export default function SupportChatScreen() {
   );
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#F8F9FA' }}>
+    <View style={{ flex: 1, backgroundColor: tc.background }}>
       {/* ── Header ─────────────────────────────────────────────────────── */}
       <View
         style={{
@@ -189,9 +190,9 @@ export default function SupportChatScreen() {
           paddingHorizontal: 16,
           paddingTop: Math.max(insets.top + 6, 18),
           paddingBottom: 12,
-          backgroundColor: '#fff',
+          backgroundColor: tc.surface,
           borderBottomWidth: 1,
-          borderBottomColor: COLORS.gray[100],
+          borderBottomColor: tc.border,
         }}
       >
         <TouchableOpacity
@@ -202,7 +203,7 @@ export default function SupportChatScreen() {
             width: 40,
             height: 40,
             borderRadius: 14,
-            backgroundColor: COLORS.gray[100],
+            backgroundColor: tc.subtle,
             alignItems: 'center',
             justifyContent: 'center',
           }}
@@ -222,7 +223,7 @@ export default function SupportChatScreen() {
           <Headset size={21} color={COLORS.primaryDark} />
         </View>
         <View style={{ flex: 1 }}>
-          <Text style={{ fontWeight: '800', fontSize: fs(15), color: COLORS.gray[900] }}>
+          <Text style={{ fontWeight: '800', fontSize: fs(15), color: tc.text }}>
             {t('support_title')}
           </Text>
           <Text style={{ fontSize: fs(11.5), color: COLORS.success, fontWeight: '700' }}>
@@ -247,7 +248,7 @@ export default function SupportChatScreen() {
             onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: false })}
             ListHeaderComponent={
               <View style={{ gap: 8, marginBottom: 4 }}>
-                <Text style={{ fontSize: fs(14), fontWeight: '800', color: COLORS.gray[900] }}>
+                <Text style={{ fontSize: fs(14), fontWeight: '800', color: tc.text }}>
                   {t('support_faq_heading')}
                 </Text>
                 {getSupportFaqs(lang).map(faq => (
@@ -256,16 +257,16 @@ export default function SupportChatScreen() {
                     activeOpacity={0.75}
                     onPress={() => handleFaqTap(faq.q, faq.a)}
                     style={{
-                      backgroundColor: '#fff',
+                      backgroundColor: tc.surface,
                       borderWidth: 1,
-                      borderColor: COLORS.gray[200],
+                      borderColor: tc.border,
                       borderRadius: 14,
                       paddingHorizontal: 14,
                       paddingVertical: 11,
                     }}
                   >
                     <Text
-                      style={{ fontSize: fs(13.5), fontWeight: '600', color: COLORS.gray[800] }}
+                      style={{ fontSize: fs(13.5), fontWeight: '600', color: tc.text }}
                     >
                       {faq.q}
                     </Text>
@@ -290,14 +291,14 @@ export default function SupportChatScreen() {
             }
             ListEmptyComponent={
               <View style={{ alignItems: 'center', paddingVertical: 24, gap: 8 }}>
-                <Text style={{ fontSize: fs(15), fontWeight: '800', color: COLORS.gray[800] }}>
+                <Text style={{ fontSize: fs(15), fontWeight: '800', color: tc.text }}>
                   {t('support_greeting', {
                     name: currentUser?.full_name ?? (lang === 'en' ? 'you' : 'bạn'),
                   })}
                 </Text>
                 <Text
                   style={{
-                    color: COLORS.gray[500],
+                    color: tc.textMuted,
                     fontSize: fs(13),
                     textAlign: 'center',
                     paddingHorizontal: 20,
@@ -340,7 +341,7 @@ export default function SupportChatScreen() {
                       <Text
                         style={{
                           fontSize: fs(11.5),
-                          color: COLORS.gray[500],
+                          color: tc.textMuted,
                           marginLeft: 6,
                           fontWeight: '600',
                         }}
@@ -368,23 +369,23 @@ export default function SupportChatScreen() {
               gap: 10,
               paddingHorizontal: 16,
               paddingVertical: 12,
-              backgroundColor: '#fff',
+              backgroundColor: tc.surface,
               borderTopWidth: 1,
-              borderTopColor: COLORS.gray[100],
+              borderTopColor: tc.border,
             }}
           >
             <TextInput
               style={{
                 flex: 1,
                 borderWidth: 1.5,
-                borderColor: COLORS.gray[200],
+                borderColor: tc.border,
                 borderRadius: 14,
                 paddingHorizontal: 18,
                 paddingVertical: 11,
                 fontSize: fs(15),
                 maxHeight: 100,
-                backgroundColor: COLORS.gray[50],
-                color: COLORS.gray[900],
+                backgroundColor: tc.background,
+                color: tc.text,
               }}
               placeholder={t('support_placeholder')}
               value={text}

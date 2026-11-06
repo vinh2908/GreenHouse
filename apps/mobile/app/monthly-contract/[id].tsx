@@ -24,7 +24,7 @@ import {
   useSettleMonth,
   type AttendanceStatus,
 } from '@/hooks/use-api';
-import { Badge, Button, Card, COLORS, LoadingSpinner } from '@/components/ui';
+import { Badge, Button, Card, COLORS, LoadingSpinner, useThemeColors } from '@/components/ui';
 import { useTranslation } from '@/hooks/use-i18n';
 import { useMonthlyContractSocket } from '@/hooks/use-socket';
 import { MONTHLY_STATUS_META, describeMonthlySchedule, personName } from '../monthly-contracts';
@@ -77,6 +77,7 @@ export default function MonthlyContractDetailScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { t, fs, lang } = useTranslation();
+  const tc = useThemeColors();
   const user = useAuthStore(s => s.user);
   const isHelper = user?.active_role === 'helper';
 
@@ -170,7 +171,7 @@ export default function MonthlyContractDetailScreen() {
   const pendingLeaves = (leaves ?? []).filter(l => l.status === 'pending');
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#F8F9FA' }}>
+    <View style={{ flex: 1, backgroundColor: tc.background }}>
       <View
         style={{
           flexDirection: 'row',
@@ -179,9 +180,9 @@ export default function MonthlyContractDetailScreen() {
           paddingHorizontal: 16,
           paddingTop: Math.max(insets.top + 6, 18),
           paddingBottom: 14,
-          backgroundColor: '#fff',
+          backgroundColor: tc.surface,
           borderBottomWidth: 1,
-          borderBottomColor: COLORS.gray[100],
+          borderBottomColor: tc.border,
         }}
       >
         <TouchableOpacity
@@ -192,7 +193,7 @@ export default function MonthlyContractDetailScreen() {
             width: 40,
             height: 40,
             borderRadius: 14,
-            backgroundColor: COLORS.gray[100],
+            backgroundColor: tc.subtle,
             alignItems: 'center',
             justifyContent: 'center',
           }}
@@ -201,12 +202,12 @@ export default function MonthlyContractDetailScreen() {
         </TouchableOpacity>
         <View style={{ flex: 1 }}>
           <Text
-            style={{ fontSize: fs(18), fontWeight: '800', color: COLORS.gray[900] }}
+            style={{ fontSize: fs(18), fontWeight: '800', color: tc.text }}
             numberOfLines={1}
           >
             {contract.title}
           </Text>
-          <Text style={{ fontSize: fs(12), color: COLORS.gray[500] }}>
+          <Text style={{ fontSize: fs(12), color: tc.textMuted }}>
             {lang === 'en' ? 'Monthly helper contract' : 'Hợp đồng giúp việc theo tháng'}
           </Text>
         </View>
@@ -226,7 +227,7 @@ export default function MonthlyContractDetailScreen() {
       >
         {/* ── Thông tin hợp đồng ── */}
         <Card style={{ gap: 8 }}>
-          <Text style={{ fontSize: fs(15), fontWeight: '800', color: COLORS.gray[900] }}>
+          <Text style={{ fontSize: fs(15), fontWeight: '800', color: tc.text }}>
             {lang === 'en' ? 'Contract Information' : 'Thông tin hợp đồng'}
           </Text>
           <InfoRow
@@ -266,13 +267,13 @@ export default function MonthlyContractDetailScreen() {
           />
           <View style={{ flexDirection: 'row', gap: 6, alignItems: 'flex-start' }}>
             <MapPin size={14} color={COLORS.gray[500]} style={{ marginTop: 2 }} />
-            <Text style={{ flex: 1, fontSize: fs(13), color: COLORS.gray[700], lineHeight: 19 }}>
+            <Text style={{ flex: 1, fontSize: fs(13), color: tc.textSecondary, lineHeight: 19 }}>
               {contract.address.full_address}, {contract.address.district}, {contract.address.city}
               {contract.address.notes ? ` (${contract.address.notes})` : ''}
             </Text>
           </View>
           {contract.end_reason && (
-            <Text style={{ fontSize: fs(12.5), color: COLORS.gray[500] }}>
+            <Text style={{ fontSize: fs(12.5), color: tc.textMuted }}>
               {lang === 'en' ? 'Reason for ending/cancelling: ' : 'Lý do kết thúc/hủy: '}
               {contract.end_reason}
             </Text>
@@ -282,7 +283,7 @@ export default function MonthlyContractDetailScreen() {
         {/* ── Hành động theo vai trò & trạng thái ── */}
         {isHelper && contract.status === 'pending' && (
           <Card style={{ gap: 8 }}>
-            <Text style={{ fontSize: fs(14.5), fontWeight: '800', color: COLORS.gray[900] }}>
+            <Text style={{ fontSize: fs(14.5), fontWeight: '800', color: tc.text }}>
               {lang === 'en'
                 ? 'Customer has invited you to this contract'
                 : 'Khách hàng đang mời bạn ký hợp đồng này'}
@@ -329,13 +330,13 @@ export default function MonthlyContractDetailScreen() {
 
         {isHelper && isActive && (
           <Card style={{ gap: 8 }}>
-            <Text style={{ fontSize: fs(14.5), fontWeight: '800', color: COLORS.gray[900] }}>
+            <Text style={{ fontSize: fs(14.5), fontWeight: '800', color: tc.text }}>
               {lang === 'en'
                 ? `Today's Attendance (${formatDate(dayjs())})`
                 : `Điểm danh hôm nay (${formatDate(dayjs())})`}
             </Text>
             {todayRecord ? (
-              <Text style={{ fontSize: fs(13), color: COLORS.gray[600] }}>
+              <Text style={{ fontSize: fs(13), color: tc.textSecondary }}>
                 {lang === 'en'
                   ? `Today's status: ${ATT_META[todayRecord].label_en}`
                   : `Trạng thái hôm nay: ${ATT_META[todayRecord].label}`}
@@ -347,7 +348,7 @@ export default function MonthlyContractDetailScreen() {
                 onPress={() => checkin.mutate(contract._id)}
               />
             ) : (
-              <Text style={{ fontSize: fs(13), color: COLORS.gray[600] }}>
+              <Text style={{ fontSize: fs(13), color: tc.textSecondary }}>
                 {lang === 'en'
                   ? 'Today is not in the contract working schedule.'
                   : 'Hôm nay không nằm trong lịch làm việc của hợp đồng.'}
@@ -400,7 +401,7 @@ export default function MonthlyContractDetailScreen() {
         {/* ── Điểm danh theo tháng ── */}
         <Card style={{ gap: 10 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <Text style={{ flex: 1, fontSize: fs(15), fontWeight: '800', color: COLORS.gray[900] }}>
+            <Text style={{ flex: 1, fontSize: fs(15), fontWeight: '800', color: tc.text }}>
               {lang === 'en'
                 ? `Attendance for Month ${dayjs(`${month}-01`).format('MM/YYYY')}`
                 : `Điểm danh tháng ${dayjs(`${month}-01`).format('MM/YYYY')}`}
@@ -411,10 +412,10 @@ export default function MonthlyContractDetailScreen() {
                 paddingHorizontal: 10,
                 paddingVertical: 6,
                 borderRadius: 8,
-                backgroundColor: COLORS.gray[100],
+                backgroundColor: tc.subtle,
               }}
             >
-              <Text style={{ fontWeight: '800', color: COLORS.gray[700] }}>‹</Text>
+              <Text style={{ fontWeight: '800', color: tc.textSecondary }}>‹</Text>
             </TouchableOpacity>
             <TouchableOpacity
               disabled={month >= currentMonth}
@@ -423,16 +424,16 @@ export default function MonthlyContractDetailScreen() {
                 paddingHorizontal: 10,
                 paddingVertical: 6,
                 borderRadius: 8,
-                backgroundColor: COLORS.gray[100],
+                backgroundColor: tc.subtle,
                 opacity: month >= currentMonth ? 0.4 : 1,
               }}
             >
-              <Text style={{ fontWeight: '800', color: COLORS.gray[700] }}>›</Text>
+              <Text style={{ fontWeight: '800', color: tc.textSecondary }}>›</Text>
             </TouchableOpacity>
           </View>
 
           {(attendance?.scheduled_dates ?? []).length === 0 ? (
-            <Text style={{ fontSize: fs(13), color: COLORS.gray[500] }}>
+            <Text style={{ fontSize: fs(13), color: tc.textMuted }}>
               {lang === 'en'
                 ? 'No work sessions scheduled for this month.'
                 : 'Tháng này không có buổi làm nào theo lịch của hợp đồng.'}
@@ -451,7 +452,7 @@ export default function MonthlyContractDetailScreen() {
                     gap: 8,
                     paddingVertical: 7,
                     borderTopWidth: 1,
-                    borderTopColor: COLORS.gray[100],
+                    borderTopColor: tc.border,
                   }}
                 >
                   <Text
@@ -459,7 +460,7 @@ export default function MonthlyContractDetailScreen() {
                       width: 118,
                       fontSize: fs(13),
                       fontWeight: '700',
-                      color: COLORS.gray[800],
+                      color: tc.text,
                     }}
                   >
                     {dayjs(date).format('ddd, DD/MM')}
@@ -473,7 +474,7 @@ export default function MonthlyContractDetailScreen() {
                         textColor={ATT_META[st].color}
                       />
                     ) : (
-                      <Text style={{ fontSize: fs(12.5), color: COLORS.gray[500] }}>
+                      <Text style={{ fontSize: fs(12.5), color: tc.textMuted }}>
                         {isPast
                           ? lang === 'en'
                             ? 'No check-in (counted as absent at settlement)'
@@ -524,11 +525,11 @@ export default function MonthlyContractDetailScreen() {
 
         {/* ── Xin nghỉ ── */}
         <Card style={{ gap: 10 }}>
-          <Text style={{ fontSize: fs(15), fontWeight: '800', color: COLORS.gray[900] }}>
+          <Text style={{ fontSize: fs(15), fontWeight: '800', color: tc.text }}>
             {lang === 'en' ? 'Leave Requests' : 'Đơn xin nghỉ'}
           </Text>
           {(leaves ?? []).length === 0 && (
-            <Text style={{ fontSize: fs(13), color: COLORS.gray[500] }}>
+            <Text style={{ fontSize: fs(13), color: tc.textMuted }}>
               {lang === 'en' ? 'No leave requests yet.' : 'Chưa có đơn xin nghỉ nào.'}
             </Text>
           )}
@@ -540,7 +541,7 @@ export default function MonthlyContractDetailScreen() {
                 style={{
                   gap: 4,
                   borderTopWidth: 1,
-                  borderTopColor: COLORS.gray[100],
+                  borderTopColor: tc.border,
                   paddingTop: 8,
                 }}
               >
@@ -550,7 +551,7 @@ export default function MonthlyContractDetailScreen() {
                       flex: 1,
                       fontSize: fs(13.5),
                       fontWeight: '700',
-                      color: COLORS.gray[800],
+                      color: tc.text,
                     }}
                   >
                     {lang === 'en'
@@ -563,7 +564,7 @@ export default function MonthlyContractDetailScreen() {
                     textColor={m.color}
                   />
                 </View>
-                <Text style={{ fontSize: fs(12.5), color: COLORS.gray[600] }}>
+                <Text style={{ fontSize: fs(12.5), color: tc.textSecondary }}>
                   {lang === 'en' ? 'Reason: ' : 'Lý do: '}
                   {l.reason}
                 </Text>
@@ -606,11 +607,11 @@ export default function MonthlyContractDetailScreen() {
               style={{
                 gap: 8,
                 borderTopWidth: 1,
-                borderTopColor: COLORS.gray[100],
+                borderTopColor: tc.border,
                 paddingTop: 10,
               }}
             >
-              <Text style={{ fontSize: fs(13.5), fontWeight: '800', color: COLORS.gray[800] }}>
+              <Text style={{ fontSize: fs(13.5), fontWeight: '800', color: tc.text }}>
                 {lang === 'en' ? 'Request 1 session off' : 'Xin nghỉ 1 buổi'}
               </Text>
               <TextInput
@@ -623,12 +624,12 @@ export default function MonthlyContractDetailScreen() {
                 }
                 style={{
                   borderWidth: 1,
-                  borderColor: COLORS.gray[200],
+                  borderColor: tc.border,
                   borderRadius: 8,
                   paddingHorizontal: 12,
                   paddingVertical: 10,
                   fontSize: fs(14),
-                  backgroundColor: '#fff',
+                  backgroundColor: tc.surface,
                 }}
               />
               <TextInput
@@ -637,12 +638,12 @@ export default function MonthlyContractDetailScreen() {
                 placeholder={lang === 'en' ? 'Reason for leave...' : 'Lý do xin nghỉ…'}
                 style={{
                   borderWidth: 1,
-                  borderColor: COLORS.gray[200],
+                  borderColor: tc.border,
                   borderRadius: 8,
                   paddingHorizontal: 12,
                   paddingVertical: 10,
                   fontSize: fs(14),
-                  backgroundColor: '#fff',
+                  backgroundColor: tc.surface,
                 }}
               />
               <Button
@@ -658,7 +659,7 @@ export default function MonthlyContractDetailScreen() {
         {/* ── Chốt lương ── */}
         {(isActive || contract.status === 'ended') && (
           <Card style={{ gap: 8 }}>
-            <Text style={{ fontSize: fs(15), fontWeight: '800', color: COLORS.gray[900] }}>
+            <Text style={{ fontSize: fs(15), fontWeight: '800', color: tc.text }}>
               {lang === 'en'
                 ? `Wage Settlement for Month ${dayjs(`${month}-01`).format('MM/YYYY')}`
                 : `Chốt lương tháng ${dayjs(`${month}-01`).format('MM/YYYY')}`}
@@ -724,7 +725,7 @@ export default function MonthlyContractDetailScreen() {
                     }
                   />
                 ) : (
-                  <Text style={{ fontSize: fs(12.5), color: COLORS.gray[500] }}>
+                  <Text style={{ fontSize: fs(12.5), color: tc.textMuted }}>
                     {lang === 'en'
                       ? 'Customer will settle wages after confirming all sessions in the month.'
                       : 'Khách hàng sẽ chốt lương sau khi xác nhận đủ các buổi trong tháng.'}
@@ -732,7 +733,7 @@ export default function MonthlyContractDetailScreen() {
                 )}
               </>
             ) : (
-              <Text style={{ fontSize: fs(13), color: COLORS.gray[500] }}>
+              <Text style={{ fontSize: fs(13), color: tc.textMuted }}>
                 {lang === 'en' ? 'Loading figures...' : 'Đang tải số liệu…'}
               </Text>
             )}
@@ -745,9 +746,10 @@ export default function MonthlyContractDetailScreen() {
 
 function InfoRow({ label, value, strong }: { label: string; value: string; strong?: boolean }) {
   const { fs } = useTranslation();
+  const tc = useThemeColors();
   return (
     <View style={{ flexDirection: 'row', gap: 8 }}>
-      <Text style={{ width: 130, fontSize: fs(13), color: COLORS.gray[500] }}>{label}</Text>
+      <Text style={{ width: 130, fontSize: fs(13), color: tc.textMuted }}>{label}</Text>
       <Text
         style={{
           flex: 1,

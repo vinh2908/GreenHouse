@@ -45,19 +45,7 @@ import { useTranslation } from '@/hooks/use-i18n';
 import { lightImpact } from '@/services/haptics';
 import { locationService } from '@/services/location.service';
 import { socketService, SOCKET_EVENTS } from '@/services/socket.service';
-import {
-  Card,
-  JobStatusBadge,
-  Avatar,
-  EmptyState,
-  ErrorState,
-  COLORS,
-  SectionHeader,
-  PriceText,
-  Badge,
-  Button,
-  Separator,
-} from '@/components/ui';
+import { Card, JobStatusBadge, Avatar, EmptyState, ErrorState, COLORS, SectionHeader, PriceText, Badge, Button, Separator, useThemeColors } from '@/components/ui';
 import Toast from 'react-native-toast-message';
 
 dayjs.extend(relativeTime);
@@ -65,6 +53,7 @@ dayjs.extend(relativeTime);
 export default function HelperDashboardScreen() {
   const router = useRouter();
   const { t, tService, fs, lang } = useTranslation();
+  const tc = useThemeColors();
   const storedUser = useAuthStore(s => s.user);
   // Stored login payload has no avatar — prefer the full profile from the API
   const { data: myProfile, refetch: refetchMyProfile } = useMyProfile();
@@ -229,7 +218,7 @@ export default function HelperDashboardScreen() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#F8F9FA' }}>
+    <View style={{ flex: 1, backgroundColor: tc.background }}>
       <ScrollView
         showsVerticalScrollIndicator={false}
         refreshControl={
@@ -244,12 +233,12 @@ export default function HelperDashboardScreen() {
         {/* ── 1. Top Header Thợ (Safe Insets) ──────────────────────────── */}
         <View
           style={{
-            backgroundColor: '#FFFFFF',
+            backgroundColor: tc.surface,
             paddingHorizontal: 18,
             paddingTop: Math.max(insets.top + 8, 20),
             paddingBottom: 16,
             borderBottomWidth: 1,
-            borderBottomColor: COLORS.gray[100],
+            borderBottomColor: tc.border,
           }}
         >
           <View
@@ -273,7 +262,7 @@ export default function HelperDashboardScreen() {
                     style={{
                       fontSize: fs(16),
                       fontWeight: '800',
-                      color: COLORS.gray[900],
+                      color: tc.text,
                       flexShrink: 1,
                     }}
                     numberOfLines={1}
@@ -285,7 +274,7 @@ export default function HelperDashboardScreen() {
                   )}
                 </View>
                 <Text
-                  style={{ fontSize: fs(12), color: COLORS.gray[500], marginTop: 1 }}
+                  style={{ fontSize: fs(12), color: tc.textMuted, marginTop: 1 }}
                   numberOfLines={1}
                 >
                   {t('dash_helper_role_label')}
@@ -302,7 +291,7 @@ export default function HelperDashboardScreen() {
                   width: 38,
                   height: 38,
                   borderRadius: 14,
-                  backgroundColor: COLORS.gray[100],
+                  backgroundColor: tc.subtle,
                   alignItems: 'center',
                   justifyContent: 'center',
                 }}
@@ -459,7 +448,7 @@ export default function HelperDashboardScreen() {
                       width: 140,
                       height: 18,
                       borderRadius: 8,
-                      backgroundColor: COLORS.gray[200],
+                      backgroundColor: tc.border,
                     }}
                   />
                   <View
@@ -467,7 +456,7 @@ export default function HelperDashboardScreen() {
                       width: 200,
                       height: 13,
                       borderRadius: 8,
-                      backgroundColor: COLORS.gray[100],
+                      backgroundColor: tc.subtle,
                       marginTop: 8,
                     }}
                   />
@@ -477,7 +466,7 @@ export default function HelperDashboardScreen() {
                     width: 48,
                     height: 28,
                     borderRadius: 14,
-                    backgroundColor: COLORS.gray[200],
+                    backgroundColor: tc.border,
                   }}
                 />
               </View>
@@ -567,7 +556,7 @@ export default function HelperDashboardScreen() {
                     flex: 1,
                     height: 92,
                     borderRadius: 14,
-                    backgroundColor: COLORS.gray[200],
+                    backgroundColor: tc.border,
                   }}
                 />
               ))}
@@ -588,7 +577,7 @@ export default function HelperDashboardScreen() {
                       alignItems: 'center',
                     }}
                   >
-                    <Text style={{ fontSize: fs(11), color: COLORS.gray[500], fontWeight: '700' }}>
+                    <Text style={{ fontSize: fs(11), color: tc.textMuted, fontWeight: '700' }}>
                       {t('dash_wallet')}
                     </Text>
                     <TrendingUp size={16} color={COLORS.success} />
@@ -617,15 +606,15 @@ export default function HelperDashboardScreen() {
                       alignItems: 'center',
                     }}
                   >
-                    <Text style={{ fontSize: fs(11), color: COLORS.gray[500], fontWeight: '700' }}>
+                    <Text style={{ fontSize: fs(11), color: tc.textMuted, fontWeight: '700' }}>
                       {t('dash_done')}
                     </Text>
                     <Briefcase size={16} color={COLORS.secondary} />
                   </View>
-                  <Text style={{ fontSize: fs(17), fontWeight: '800', color: COLORS.gray[900] }}>
+                  <Text style={{ fontSize: fs(17), fontWeight: '800', color: tc.text }}>
                     {t('dash_jobs_unit', { count: totalCompleted })}
                   </Text>
-                  <Text style={{ fontSize: fs(11), color: COLORS.gray[500], marginTop: 2 }}>
+                  <Text style={{ fontSize: fs(11), color: tc.textMuted, marginTop: 2 }}>
                     {t('dash_acceptance_rate')}
                   </Text>
                 </Card>
@@ -641,7 +630,7 @@ export default function HelperDashboardScreen() {
                       alignItems: 'center',
                     }}
                   >
-                    <Text style={{ fontSize: fs(11), color: COLORS.gray[500], fontWeight: '700' }}>
+                    <Text style={{ fontSize: fs(11), color: tc.textMuted, fontWeight: '700' }}>
                       {t('dash_reputation')}
                     </Text>
                     <Star size={16} color="#F59E0B" />
@@ -649,7 +638,7 @@ export default function HelperDashboardScreen() {
                   <Text style={{ fontSize: fs(17), fontWeight: '800', color: '#F59E0B' }}>
                     ★ {avgRating.toFixed(1)}
                   </Text>
-                  <Text style={{ fontSize: fs(11), color: COLORS.gray[500], marginTop: 2 }}>
+                  <Text style={{ fontSize: fs(11), color: tc.textMuted, marginTop: 2 }}>
                     {t('dash_top_helper')}
                   </Text>
                 </Card>
@@ -695,7 +684,7 @@ export default function HelperDashboardScreen() {
                     style={{
                       fontWeight: '800',
                       fontSize: fs(15),
-                      color: COLORS.gray[900],
+                      color: tc.text,
                       flex: 1,
                       marginRight: 8,
                     }}
@@ -709,14 +698,14 @@ export default function HelperDashboardScreen() {
                 <View style={{ flexDirection: 'row', gap: 12 }}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                     <MapPin size={14} color={COLORS.gray[500]} />
-                    <Text style={{ fontSize: fs(13), color: COLORS.gray[700] }}>
+                    <Text style={{ fontSize: fs(13), color: tc.textSecondary }}>
                       {activeJob.address?.district}
                     </Text>
                   </View>
                   {activeJob.preferred_time_start && (
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                       <Clock size={14} color={COLORS.gray[500]} />
-                      <Text style={{ fontSize: fs(13), color: COLORS.gray[700] }}>
+                      <Text style={{ fontSize: fs(13), color: tc.textSecondary }}>
                         {activeJob.preferred_time_start}
                       </Text>
                     </View>
@@ -768,7 +757,7 @@ export default function HelperDashboardScreen() {
           ) : pLoading ? (
             <Card style={{ alignItems: 'center', paddingVertical: 28, gap: 10 }}>
               <ActivityIndicator size="small" color={COLORS.primary} />
-              <Text style={{ fontSize: fs(13), color: COLORS.gray[500] }}>
+              <Text style={{ fontSize: fs(13), color: tc.textMuted }}>
                 {t('dash_loading_status')}
               </Text>
             </Card>
@@ -846,7 +835,7 @@ export default function HelperDashboardScreen() {
                           style={{
                             fontWeight: '800',
                             fontSize: fs(15),
-                            color: COLORS.gray[900],
+                            color: tc.text,
                             flex: 1,
                             marginRight: 8,
                           }}
@@ -874,14 +863,14 @@ export default function HelperDashboardScreen() {
                         <Badge label={tService(job.service_id) || t('common_service')} size="sm" />
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                           <MapPin size={12} color={COLORS.gray[500]} />
-                          <Text style={{ fontSize: fs(13), color: COLORS.gray[600] }}>
+                          <Text style={{ fontSize: fs(13), color: tc.textSecondary }}>
                             {job.address?.district || job.address?.city || t('jobs_unspecified')}
                           </Text>
                         </View>
                         {job.preferred_time_start && (
                           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                             <Clock size={12} color={COLORS.gray[500]} />
-                            <Text style={{ fontSize: fs(13), color: COLORS.gray[600] }}>
+                            <Text style={{ fontSize: fs(13), color: tc.textSecondary }}>
                               {job.preferred_time_start}
                             </Text>
                           </View>
@@ -895,10 +884,10 @@ export default function HelperDashboardScreen() {
                           alignItems: 'center',
                           paddingTop: 8,
                           borderTopWidth: 1,
-                          borderTopColor: COLORS.gray[100],
+                          borderTopColor: tc.border,
                         }}
                       >
-                        <Text style={{ fontSize: fs(12), color: COLORS.gray[500] }}>
+                        <Text style={{ fontSize: fs(12), color: tc.textMuted }}>
                           {job.total_quotes_count > 0
                             ? t('dash_quotes_count', { count: job.total_quotes_count })
                             : t('dash_no_quotes')}
@@ -923,7 +912,7 @@ export default function HelperDashboardScreen() {
         <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.75)', justifyContent: 'flex-end' }}>
           <View
             style={{
-              backgroundColor: '#FFFFFF',
+              backgroundColor: tc.surface,
               borderTopLeftRadius: 28,
               borderTopRightRadius: 28,
               padding: 24,
@@ -957,7 +946,7 @@ export default function HelperDashboardScreen() {
                   <Text style={{ fontSize: fs(18), fontWeight: '900', color: '#DC2626' }}>
                     {t('dash_sos_modal_title')}
                   </Text>
-                  <Text style={{ fontSize: fs(12), color: COLORS.gray[500], fontWeight: '600' }}>
+                  <Text style={{ fontSize: fs(12), color: tc.textMuted, fontWeight: '600' }}>
                     {t('dash_sos_modal_sub')}
                   </Text>
                 </View>
@@ -969,7 +958,7 @@ export default function HelperDashboardScreen() {
                   width: 34,
                   height: 34,
                   borderRadius: 14,
-                  backgroundColor: COLORS.gray[100],
+                  backgroundColor: tc.subtle,
                   alignItems: 'center',
                   justifyContent: 'center',
                 }}
@@ -998,7 +987,7 @@ export default function HelperDashboardScreen() {
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                 <MapPin size={16} color="#DC2626" />
                 <Text
-                  style={{ fontSize: fs(13), fontWeight: '700', color: COLORS.gray[900], flex: 1 }}
+                  style={{ fontSize: fs(13), fontWeight: '700', color: tc.text, flex: 1 }}
                   numberOfLines={1}
                 >
                   {sosBroadcast?.address}

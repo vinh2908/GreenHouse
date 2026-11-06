@@ -11,7 +11,7 @@ import { useSosBackupStore } from '@/stores/sos-backup.store';
 import { PhotoThumbRow } from '@/components/common/photo-thumbs';
 import { useAcceptSosBackup, useDeclineSosBackup } from '@/hooks/use-api';
 import { useNowTick, formatCountdown } from '@/hooks/use-countdown';
-import { COLORS } from '@/components/ui';
+import { COLORS, useThemeColors } from '@/components/ui';
 import { useTranslation } from '@/hooks/use-i18n';
 
 export function SosBackupPopup() {
@@ -22,6 +22,7 @@ export function SosBackupPopup() {
   const decline = useDeclineSosBackup();
   const now = useNowTick(!!incoming);
   const { t, tService, fs, lang } = useTranslation();
+  const tc = useThemeColors();
 
   // Hết hạn đếm ngược phía client → tự đóng (server cũng sẽ gửi resolved/expired)
   useEffect(() => {
@@ -97,7 +98,7 @@ export function SosBackupPopup() {
       >
         <View
           style={{
-            backgroundColor: '#fff',
+            backgroundColor: tc.surface,
             borderRadius: 14,
             padding: 22,
             width: '100%',
@@ -123,7 +124,7 @@ export function SosBackupPopup() {
           <Text
             style={{
               fontSize: fs(14),
-              color: COLORS.gray[700],
+              color: tc.textSecondary,
               textAlign: 'center',
               lineHeight: Math.round(fs(20)),
             }}
@@ -140,22 +141,22 @@ export function SosBackupPopup() {
               gap: 6,
             }}
           >
-            <Text style={{ fontWeight: '800', fontSize: fs(15), color: COLORS.gray[900] }}>
+            <Text style={{ fontWeight: '800', fontSize: fs(15), color: tc.text }}>
               {tService(incoming.service_name) || t('sos_popup_service_fallback')}
               {incoming.job_title ? ` — ${incoming.job_title}` : ''}
             </Text>
             {area ? (
-              <Text style={{ fontSize: fs(13.5), color: COLORS.gray[700] }}>
+              <Text style={{ fontSize: fs(13.5), color: tc.textSecondary }}>
                 {t('sos_popup_area')} {area}
               </Text>
             ) : null}
             {incoming.distance_km != null ? (
-              <Text style={{ fontSize: fs(13.5), color: COLORS.gray[700] }}>
+              <Text style={{ fontSize: fs(13.5), color: tc.textSecondary }}>
                 {t('sos_popup_distance', { dist: incoming.distance_km })}
               </Text>
             ) : null}
             {incoming.payout != null ? (
-              <Text style={{ fontSize: fs(13.5), color: COLORS.gray[700] }}>
+              <Text style={{ fontSize: fs(13.5), color: tc.textSecondary }}>
                 {t('sos_popup_payout')}{' '}
                 <Text style={{ fontWeight: '800', color: COLORS.success }}>
                   {incoming.payout.toLocaleString('vi-VN')}₫
@@ -221,7 +222,7 @@ export function SosBackupPopup() {
             {decline.isPending ? (
               <ActivityIndicator color={COLORS.gray[500]} size="small" />
             ) : (
-              <Text style={{ color: COLORS.gray[500], fontWeight: '700', fontSize: fs(14) }}>
+              <Text style={{ color: tc.textMuted, fontWeight: '700', fontSize: fs(14) }}>
                 {t('sos_popup_skip')}
               </Text>
             )}

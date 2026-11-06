@@ -9,11 +9,12 @@ import Toast from 'react-native-toast-message';
 import { useAuthStore } from '@/stores/auth.store';
 import { useTranslation } from '@/hooks/use-i18n';
 import { useSwitchRole } from '@/hooks/use-api';
-import { Button, Card, COLORS } from '@/components/ui';
+import { Button, Card, COLORS, useThemeColors } from '@/components/ui';
 
 export default function SelectRoleScreen() {
   const router = useRouter();
   const { t, fs, lang } = useTranslation();
+  const tc = useThemeColors();
   const { user, switchRole: updateStoreRole } = useAuthStore();
   const switchRoleMutation = useSwitchRole();
   const [selectedRole, setSelectedRole] = useState<'customer' | 'helper'>('customer');
@@ -79,7 +80,7 @@ export default function SelectRoleScreen() {
     <View
       style={{
         flex: 1,
-        backgroundColor: '#fff',
+        backgroundColor: tc.surface,
         paddingTop: Math.max(insets.top, 16),
         paddingBottom: Math.max(insets.bottom, 16),
       }}
@@ -112,7 +113,7 @@ export default function SelectRoleScreen() {
               style={{
                 fontSize: fs(24),
                 fontWeight: '800',
-                color: COLORS.gray[900],
+                color: tc.text,
                 textAlign: 'center',
               }}
             >
@@ -123,7 +124,7 @@ export default function SelectRoleScreen() {
             <Text
               style={{
                 fontSize: fs(15),
-                color: COLORS.gray[500],
+                color: tc.textMuted,
                 textAlign: 'center',
                 marginTop: 8,
                 lineHeight: 22,
@@ -132,7 +133,7 @@ export default function SelectRoleScreen() {
               {lang === 'en'
                 ? 'How would you like to use Green House?\n'
                 : 'Bạn muốn sử dụng Green House như thế nào?\n'}
-              <Text style={{ fontSize: fs(13), color: COLORS.gray[500] }}>
+              <Text style={{ fontSize: fs(13), color: tc.textMuted }}>
                 {lang === 'en'
                   ? '(You can switch anytime in settings)'
                   : '(Bạn có thể chuyển đổi linh hoạt bất kỳ lúc nào)'}
@@ -192,13 +193,13 @@ export default function SelectRoleScreen() {
                   </View>
                 </View>
                 <View>
-                  <Text style={{ fontSize: fs(18), fontWeight: '700', color: COLORS.gray[900] }}>
+                  <Text style={{ fontSize: fs(18), fontWeight: '700', color: tc.text }}>
                     {lang === 'en' ? 'I need services' : 'Tôi cần thuê dịch vụ'}
                   </Text>
                   <Text
                     style={{
                       fontSize: fs(14),
-                      color: COLORS.gray[600],
+                      color: tc.textSecondary,
                       marginTop: 4,
                       lineHeight: 20,
                     }}
@@ -261,13 +262,13 @@ export default function SelectRoleScreen() {
                   </View>
                 </View>
                 <View>
-                  <Text style={{ fontSize: fs(18), fontWeight: '700', color: COLORS.gray[900] }}>
+                  <Text style={{ fontSize: fs(18), fontWeight: '700', color: tc.text }}>
                     {lang === 'en' ? 'I want to work' : 'Tôi muốn nhận việc'}
                   </Text>
                   <Text
                     style={{
                       fontSize: fs(14),
-                      color: COLORS.gray[600],
+                      color: tc.textSecondary,
                       marginTop: 4,
                       lineHeight: 20,
                     }}

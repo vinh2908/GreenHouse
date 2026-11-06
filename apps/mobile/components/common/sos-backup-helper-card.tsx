@@ -10,7 +10,7 @@ import { View, Text, TouchableOpacity, Modal, TextInput, Image } from 'react-nat
 import * as ImagePicker from 'expo-image-picker';
 import Toast from 'react-native-toast-message';
 import { Alert } from '@/components/common/app-alert';
-import { Button, Card, COLORS } from '@/components/ui';
+import { Button, Card, COLORS, useThemeColors } from '@/components/ui';
 import { uploadFiles } from '@/services/upload.service';
 import {
   useCancelSosBackup,
@@ -34,6 +34,7 @@ function helperIdOf(job: any): string | null {
 
 export function SosBackupHelperCard({ job }: { job: any }) {
   const { t, lang, fs } = useTranslation();
+  const tc = useThemeColors();
   const getReasonLabel = (code: string) => {
     if (SOS_BACKUP_REASONS_I18N[code]) {
       return SOS_BACKUP_REASONS_I18N[code][lang === 'en' ? 'en' : 'vi'];
@@ -70,7 +71,7 @@ export function SosBackupHelperCard({ job }: { job: any }) {
         <Text style={{ fontWeight: '800', fontSize: fs(15), color: '#1E40AF' }}>
           {t('sos_helper.replacement_title')}
         </Text>
-        <Text style={{ fontSize: fs(13), color: COLORS.gray[700], lineHeight: 19 }}>
+        <Text style={{ fontSize: fs(13), color: tc.textSecondary, lineHeight: 19 }}>
           {t('sos_helper.replacement_desc')}
         </Text>
       </Card>
@@ -113,7 +114,7 @@ export function SosBackupHelperCard({ job }: { job: any }) {
         >
           {isAwaiting ? t('sos_helper.awaiting_customer') : t('sos_helper.finding_replacement')}
         </Text>
-        <Text style={{ fontSize: fs(13), color: COLORS.gray[700], lineHeight: 19 }}>
+        <Text style={{ fontSize: fs(13), color: tc.textSecondary, lineHeight: 19 }}>
           {isAwaiting
             ? t('sos_helper.awaiting_desc', {
                 reason: getReasonLabel(outgoing.reason),
@@ -224,7 +225,7 @@ export function SosBackupHelperCard({ job }: { job: any }) {
         <Text style={{ fontWeight: '800', fontSize: fs(15), color: '#991B1B' }}>
           {t('sos_helper.trigger_title')}
         </Text>
-        <Text style={{ fontSize: fs(13), color: COLORS.gray[700], lineHeight: 19 }}>
+        <Text style={{ fontSize: fs(13), color: tc.textSecondary, lineHeight: 19 }}>
           {t('sos_helper.trigger_desc')}
         </Text>
         {cancels7d >= 2 && (
@@ -257,17 +258,17 @@ export function SosBackupHelperCard({ job }: { job: any }) {
         >
           <View
             style={{
-              backgroundColor: '#fff',
+              backgroundColor: tc.surface,
               borderTopLeftRadius: 24,
               borderTopRightRadius: 24,
               padding: 20,
               gap: 10,
             }}
           >
-            <Text style={{ fontWeight: '800', fontSize: fs(16), color: COLORS.gray[900] }}>
+            <Text style={{ fontWeight: '800', fontSize: fs(16), color: tc.text }}>
               {t('sos_helper.modal_title')}
             </Text>
-            <Text style={{ fontSize: fs(13), color: COLORS.gray[500], lineHeight: 18 }}>
+            <Text style={{ fontSize: fs(13), color: tc.textMuted, lineHeight: 18 }}>
               {t('sos_helper.modal_subtitle')}
             </Text>
             {REASON_CODES.map(code => {
@@ -310,7 +311,7 @@ export function SosBackupHelperCard({ job }: { job: any }) {
                       />
                     )}
                   </View>
-                  <Text style={{ fontSize: fs(14.5), fontWeight: '600', color: COLORS.gray[800] }}>
+                  <Text style={{ fontSize: fs(14.5), fontWeight: '600', color: tc.text }}>
                     {getReasonLabel(code)}
                   </Text>
                 </TouchableOpacity>
@@ -323,7 +324,7 @@ export function SosBackupHelperCard({ job }: { job: any }) {
               maxLength={300}
               style={{
                 borderWidth: 1,
-                borderColor: COLORS.gray[200],
+                borderColor: tc.border,
                 borderRadius: 14,
                 paddingHorizontal: 14,
                 paddingVertical: 11,
@@ -331,10 +332,10 @@ export function SosBackupHelperCard({ job }: { job: any }) {
               }}
             />
             <View style={{ gap: 6 }}>
-              <Text style={{ fontSize: fs(13.5), fontWeight: '700', color: COLORS.gray[800] }}>
+              <Text style={{ fontSize: fs(13.5), fontWeight: '700', color: tc.text }}>
                 {t('sos_helper.photos_label')}
               </Text>
-              <Text style={{ fontSize: fs(12.5), color: COLORS.gray[500], lineHeight: 17 }}>
+              <Text style={{ fontSize: fs(12.5), color: tc.textMuted, lineHeight: 17 }}>
                 {t('sos_helper.photos_hint')}
               </Text>
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
@@ -376,11 +377,11 @@ export function SosBackupHelperCard({ job }: { job: any }) {
                       borderColor: COLORS.gray[300],
                       alignItems: 'center',
                       justifyContent: 'center',
-                      backgroundColor: COLORS.gray[50],
+                      backgroundColor: tc.background,
                     }}
                   >
-                    <Text style={{ fontSize: fs(20), color: COLORS.gray[500] }}>＋</Text>
-                    <Text style={{ fontSize: fs(10), color: COLORS.gray[500], fontWeight: '600' }}>
+                    <Text style={{ fontSize: fs(20), color: tc.textMuted }}>＋</Text>
+                    <Text style={{ fontSize: fs(10), color: tc.textMuted, fontWeight: '600' }}>
                       {t('sos_helper.add_photo')}
                     </Text>
                   </TouchableOpacity>
@@ -398,7 +399,7 @@ export function SosBackupHelperCard({ job }: { job: any }) {
               onPress={() => setSheetOpen(false)}
               style={{ paddingVertical: 8, alignItems: 'center' }}
             >
-              <Text style={{ color: COLORS.gray[500], fontWeight: '700' }}>
+              <Text style={{ color: tc.textMuted, fontWeight: '700' }}>
                 {t('common_close')}
               </Text>
             </TouchableOpacity>

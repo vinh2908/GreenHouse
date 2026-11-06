@@ -17,6 +17,7 @@ import {
 import { AlertTriangle, RotateCw, ClipboardList, Phone } from 'lucide-react-native';
 import { OFFICIAL_CONTACT_PHONE, OFFICIAL_CONTACT_PHONE_DISPLAY } from '@homemate/constants';
 import { useTranslation } from '@/hooks/use-i18n';
+import { useSettingsStore, type AppTheme } from '@/stores/settings.store';
 import { lightImpact } from '@/services/haptics';
 
 // ─── Green House Color Palette (Banana Green / Lime Fresh) ───────────────────
@@ -54,6 +55,48 @@ export const COLORS = {
   },
 };
 
+// ─── Dark Mode (B32) ─────────────────────────────────────────────────────────
+// Bảng màu theo theme cho nền + chữ + card. Màu brand (primary) giữ nguyên.
+// text/textSecondary/textMuted thay cho gray[900]/[800], gray[700]/[600], gray[500].
+export interface ThemeColors {
+  isDark: boolean;
+  background: string;
+  surface: string;
+  subtle: string;
+  border: string;
+  text: string;
+  textSecondary: string;
+  textMuted: string;
+}
+
+const THEME_COLORS: Record<AppTheme, ThemeColors> = {
+  light: {
+    isDark: false,
+    background: '#F8F9FA',
+    surface: '#FFFFFF',
+    subtle: '#F3F4F6',
+    border: '#E5E7EB',
+    text: '#111827',
+    textSecondary: '#4B5563',
+    textMuted: '#6B7280',
+  },
+  dark: {
+    isDark: true,
+    background: '#0F172A',
+    surface: '#1E293B',
+    subtle: '#334155',
+    border: '#334155',
+    text: '#F1F5F9',
+    textSecondary: '#CBD5E1',
+    textMuted: '#94A3B8',
+  },
+};
+
+export function useThemeColors(): ThemeColors {
+  const theme = useSettingsStore(s => s.theme);
+  return THEME_COLORS[theme] ?? THEME_COLORS.light;
+}
+
 // ─── Button ────────────────────────────────────────────────────────────────────
 
 interface ButtonProps extends TouchableOpacityProps {
@@ -87,7 +130,7 @@ export function Button({
   const bgColor = isPrimary
     ? COLORS.primary
     : isSecondary
-      ? COLORS.gray[100]
+      ? tc.subtle
       : isDanger
         ? COLORS.error
         : 'transparent';
@@ -98,10 +141,11 @@ export function Button({
       : isOutline
         ? COLORS.primary
         : isSecondary
-          ? COLORS.gray[800]
+          ? tc.text
           : COLORS.primary;
 
   const { fs } = useTranslation();
+  const tc = useThemeColors();
   // B18: nút cỡ nhỏ vẫn đạt chuẩn chạm 44px (13px chữ + 2×12px padding + border)
   const paddingY = { sm: 12, md: 13, lg: 16 }[size];
   const fontSize = fs({ sm: 13, md: 15, lg: 16 }[size]);
@@ -175,6 +219,7 @@ interface InputProps extends TextInputProps {
 
 export function Input({ label, error, leftIcon, rightIcon, style, ...props }: InputProps) {
   const { fs } = useTranslation();
+  const tc = useThemeColors();
   return (
     <View style={{ gap: 6 }}>
       {label && (
@@ -187,9 +232,9 @@ export function Input({ label, error, leftIcon, rightIcon, style, ...props }: In
           flexDirection: 'row',
           alignItems: 'center',
           borderWidth: 1.5,
-          borderColor: error ? COLORS.error : COLORS.gray[200],
+          borderColor: error ? COLORS.error : tc.border,
           borderRadius: 14,
-          backgroundColor: '#FFFFFF',
+          backgroundColor: tc.surface,
           paddingHorizontal: 14,
           gap: 10,
         }}
@@ -200,7 +245,7 @@ export function Input({ label, error, leftIcon, rightIcon, style, ...props }: In
             {
               flex: 1,
               fontSize: fs(15),
-              color: COLORS.gray[900],
+              color: tc.text,
               paddingVertical: 13,
             },
             style as object,
@@ -224,15 +269,16 @@ interface CardProps extends ViewProps {
 }
 
 export function Card({ children, shadow = true, style, ...props }: CardProps) {
+  const tc = useThemeColors();
   return (
     <View
       style={[
         {
-          backgroundColor: '#FFFFFF',
+          backgroundColor: tc.surface,
           borderRadius: 14,
           padding: 16,
           borderWidth: 1,
-          borderColor: 'rgba(0, 0, 0, 0.04)',
+          borderColor: tc.border,
           ...(shadow
             ? {
                 shadowColor: '#000',
@@ -294,6 +340,7 @@ interface AvatarProps {
 }
 
 export function Avatar({ uri, name, size = 44 }: AvatarProps) {
+  const tc = useThemeColors();
   const [hasError, setHasError] = useState(false);
 
   useEffect(() => {
@@ -317,7 +364,7 @@ export function Avatar({ uri, name, size = 44 }: AvatarProps) {
           width: size,
           height: size,
           borderRadius: size / 2,
-          backgroundColor: COLORS.gray[200],
+          backgroundColor: tc.subtle,
         }}
       />
     );
@@ -344,7 +391,8 @@ export function Avatar({ uri, name, size = 44 }: AvatarProps) {
 // ─── Separator ─────────────────────────────────────────────────────────────────
 
 export function Separator({ my = 14 }: { my?: number }) {
-  return <View style={{ height: 1, backgroundColor: COLORS.gray[100], marginVertical: my }} />;
+  const tc = useThemeColors();
+  return <View style={{ height: 1, backgroundColor: tc.border, marginVertical: my }} />;
 }
 
 // ─── Section Header ────────────────────────────────────────────────────────────
@@ -359,6 +407,7 @@ interface SectionHeaderProps {
 export function SectionHeader({ title, action, onAction, subtitle }: SectionHeaderProps) {
   // Feature 20: tiêu đề mục tự phóng theo cài đặt cỡ chữ của user.
   const { fs } = useTranslation();
+  const tc = useThemeColors();
   return (
     <View style={{ marginBottom: 12 }}>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -366,7 +415,7 @@ export function SectionHeader({ title, action, onAction, subtitle }: SectionHead
           style={{
             fontSize: fs(18),
             fontWeight: '800',
-            color: COLORS.gray[900],
+            color: tc.text,
             letterSpacing: -0.3,
           }}
         >
@@ -381,7 +430,7 @@ export function SectionHeader({ title, action, onAction, subtitle }: SectionHead
         )}
       </View>
       {subtitle && (
-        <Text style={{ fontSize: fs(12), color: COLORS.gray[500], marginTop: 2 }}>{subtitle}</Text>
+        <Text style={{ fontSize: fs(12), color: tc.textMuted, marginTop: 2 }}>{subtitle}</Text>
       )}
     </View>
   );
@@ -399,6 +448,7 @@ interface EmptyStateProps {
 
 export function EmptyState({ icon, title, subtitle, action, onAction }: EmptyStateProps) {
   const { fs } = useTranslation();
+  const tc = useThemeColors();
   return (
     <View style={{ alignItems: 'center', paddingVertical: 36, paddingHorizontal: 20 }}>
       <View
@@ -406,7 +456,7 @@ export function EmptyState({ icon, title, subtitle, action, onAction }: EmptySta
           width: 72,
           height: 72,
           borderRadius: 999,
-          backgroundColor: COLORS.gray[100],
+          backgroundColor: tc.subtle,
           alignItems: 'center',
           justifyContent: 'center',
           marginBottom: 14,
@@ -422,7 +472,7 @@ export function EmptyState({ icon, title, subtitle, action, onAction }: EmptySta
         style={{
           fontSize: fs(16),
           fontWeight: '700',
-          color: COLORS.gray[800],
+          color: tc.text,
           textAlign: 'center',
         }}
       >
@@ -432,7 +482,7 @@ export function EmptyState({ icon, title, subtitle, action, onAction }: EmptySta
         <Text
           style={{
             fontSize: fs(13),
-            color: COLORS.gray[500],
+            color: tc.textMuted,
             textAlign: 'center',
             marginTop: 6,
             lineHeight: Math.round(fs(19)),
@@ -471,6 +521,7 @@ export interface ErrorStateProps {
 
 export function ErrorState({ title, subtitle, onRetry, retryText }: ErrorStateProps) {
   const { fs, lang } = useTranslation();
+  const tc = useThemeColors();
   return (
     <View
       style={{
@@ -497,7 +548,7 @@ export function ErrorState({ title, subtitle, onRetry, retryText }: ErrorStatePr
         style={{
           fontSize: fs(16),
           fontWeight: '700',
-          color: COLORS.gray[800],
+          color: tc.text,
           textAlign: 'center',
           marginBottom: 8,
         }}
@@ -507,7 +558,7 @@ export function ErrorState({ title, subtitle, onRetry, retryText }: ErrorStatePr
       <Text
         style={{
           fontSize: fs(13),
-          color: COLORS.gray[500],
+          color: tc.textMuted,
           textAlign: 'center',
           marginBottom: 20,
           lineHeight: 18,
@@ -544,8 +595,8 @@ export function ErrorState({ title, subtitle, onRetry, retryText }: ErrorStatePr
         activeOpacity={0.7}
         style={{ marginTop: 16, flexDirection: 'row', alignItems: 'center', gap: 6 }}
       >
-        <Phone size={14} color={COLORS.gray[500]} />
-        <Text style={{ fontSize: fs(12.5), color: COLORS.gray[500] }}>
+        <Phone size={14} color={tc.textMuted} />
+        <Text style={{ fontSize: fs(12.5), color: tc.textMuted }}>
           {lang === 'en' ? 'Support Hotline: ' : 'Tổng đài hỗ trợ: '}
           <Text style={{ color: COLORS.primaryDark, fontWeight: '700' }}>
             {OFFICIAL_CONTACT_PHONE_DISPLAY}
@@ -570,6 +621,7 @@ export function Skeleton({
   radius?: number;
   style?: object;
 }) {
+  const tc = useThemeColors();
   return (
     <View
       style={[
@@ -577,7 +629,7 @@ export function Skeleton({
           width: width as never,
           height: height as never,
           borderRadius: radius,
-          backgroundColor: COLORS.gray[200],
+          backgroundColor: tc.subtle,
         },
         style as object,
       ]}
@@ -616,10 +668,11 @@ export function JobStatusBadge({ status }: { status: string }) {
   // Feature 20: nhãn trạng thái dịch qua từ điển theo key `status_<status>`,
   // fallback về nhãn tiếng Việt cứng nếu status lạ.
   const { t } = useTranslation();
+  const tc = useThemeColors();
   const config = JOB_STATUS_CONFIG[status] ?? {
     label: status,
-    color: COLORS.gray[100],
-    textColor: COLORS.gray[700],
+    color: tc.subtle,
+    textColor: tc.textSecondary,
   };
   const translated = t(`status_${status}`);
   const label = translated === `status_${status}` ? config.label : translated;
@@ -630,10 +683,11 @@ export function JobStatusBadge({ status }: { status: string }) {
 
 export function StarRating({ rating, size = 13 }: { rating: number; size?: number }) {
   const { fs } = useTranslation();
+  const tc = useThemeColors();
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}>
       <Text style={{ fontSize: fs(size), color: '#F59E0B' }}>★</Text>
-      <Text style={{ fontSize: fs(size + 1), fontWeight: '700', color: COLORS.gray[800] }}>
+      <Text style={{ fontSize: fs(size + 1), fontWeight: '700', color: tc.text }}>
         {rating > 0 ? rating.toFixed(1) : '5.0'}
       </Text>
     </View>

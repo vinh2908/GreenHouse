@@ -12,11 +12,12 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from '@/hooks/use-i18n';
 import { useDeleteAccount } from '@/hooks/use-api';
 import { useAuthStore } from '@/stores/auth.store';
-import { Button, COLORS } from '@/components/ui';
+import { Button, COLORS, useThemeColors } from '@/components/ui';
 
 export default function DeleteAccountScreen() {
   const router = useRouter();
   const { t, fs, lang } = useTranslation();
+  const tc = useThemeColors();
   const insets = useSafeAreaInsets();
   const queryClient = useQueryClient();
   const logout = useAuthStore(s => s.logout);
@@ -59,7 +60,7 @@ export default function DeleteAccountScreen() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: COLORS.gray[50] }}>
+    <View style={{ flex: 1, backgroundColor: tc.background }}>
       <View
         style={{
           flexDirection: 'row',
@@ -68,9 +69,9 @@ export default function DeleteAccountScreen() {
           paddingHorizontal: 16,
           paddingTop: Math.max(insets.top + 6, 18),
           paddingBottom: 14,
-          backgroundColor: '#fff',
+          backgroundColor: tc.surface,
           borderBottomWidth: 1,
-          borderBottomColor: COLORS.gray[100],
+          borderBottomColor: tc.border,
         }}
       >
         <TouchableOpacity
@@ -81,14 +82,14 @@ export default function DeleteAccountScreen() {
             width: 38,
             height: 38,
             borderRadius: 14,
-            backgroundColor: COLORS.gray[100],
+            backgroundColor: tc.subtle,
             alignItems: 'center',
             justifyContent: 'center',
           }}
         >
           <ArrowLeft size={20} color={COLORS.gray[800]} />
         </TouchableOpacity>
-        <Text style={{ fontSize: fs(18), fontWeight: '800', color: COLORS.gray[900] }}>
+        <Text style={{ fontSize: fs(18), fontWeight: '800', color: tc.text }}>
           {t('delete_account_title')}
         </Text>
       </View>
@@ -112,7 +113,7 @@ export default function DeleteAccountScreen() {
         </View>
 
         <View style={{ gap: 8 }}>
-          <Text style={{ fontSize: fs(14), fontWeight: '700', color: COLORS.gray[900] }}>
+          <Text style={{ fontSize: fs(14), fontWeight: '700', color: tc.text }}>
             {t('delete_account_password_label')}
           </Text>
           <View
@@ -122,7 +123,7 @@ export default function DeleteAccountScreen() {
               borderWidth: 1.5,
               borderColor: error ? COLORS.error : COLORS.gray[200],
               borderRadius: 14,
-              backgroundColor: '#fff',
+              backgroundColor: tc.surface,
               paddingHorizontal: 14,
             }}
           >
@@ -136,7 +137,7 @@ export default function DeleteAccountScreen() {
               placeholderTextColor={COLORS.gray[400]}
               secureTextEntry={!showPassword}
               autoCapitalize="none"
-              style={{ flex: 1, paddingVertical: 14, fontSize: fs(15), color: COLORS.gray[900] }}
+              style={{ flex: 1, paddingVertical: 14, fontSize: fs(15), color: tc.text }}
             />
             <TouchableOpacity onPress={() => setShowPassword(v => !v)} hitSlop={10}>
               {showPassword ? (
