@@ -65,12 +65,12 @@ export const STRINGS = {
   jobs_empty_action: { vi: 'Đăng yêu cầu ngay', en: 'Post a request now' },
   jobs_details: { vi: 'Chi tiết', en: 'Details' },
   jobs_helper_label: { vi: 'Thợ:', en: 'Helper:' },
-  jobs_quotes_count: { vi: '💰 {count} thợ đã báo giá', en: '💰 {count} helpers quoted' },
+  jobs_quotes_count: { vi: ' {count} thợ đã báo giá', en: ' {count} helpers quoted' },
   jobs_waiting_quotes: { vi: 'Đang chờ thợ báo giá', en: 'Waiting for quotes' },
   jobs_service_fallback: { vi: 'Dịch vụ', en: 'Service' },
-  jobs_badge_recurring: { vi: '🔁 Định kỳ', en: '🔁 Recurring' },
-  jobs_badge_private: { vi: '⭐ Gửi riêng', en: '⭐ Private offer' },
-  jobs_badge_warranty: { vi: '🛡 Đơn bảo hành — Miễn phí', en: '🛡 Warranty job — Free' },
+  jobs_badge_recurring: { vi: ' Định kỳ', en: ' Recurring' },
+  jobs_badge_private: { vi: ' Gửi riêng', en: ' Private offer' },
+  jobs_badge_warranty: { vi: ' Đơn bảo hành — Miễn phí', en: ' Warranty job — Free' },
 
   // ─── Booking ──────────────────────────────────────────────────────────────
   booking_step_service: { vi: 'Dịch vụ', en: 'Service' },
@@ -82,7 +82,7 @@ export const STRINGS = {
   booking_continue: { vi: 'Tiếp theo', en: 'Continue' },
   booking_confirm_title: { vi: 'Xác nhận yêu cầu', en: 'Confirm your request' },
   booking_submit: { vi: 'Đăng yêu cầu ngay', en: 'Post request now' },
-  booking_fixed_price: { vi: '🏷️ Giá cam kết:', en: '🏷️ Fixed price:' },
+  booking_fixed_price: { vi: ' Giá cam kết:', en: ' Fixed price:' },
   booking_use_suggestion: { vi: 'Tiếp tục với gợi ý này →', en: 'Continue with this suggestion →' },
 
   // ─── Helper dashboard ─────────────────────────────────────────────────────
@@ -146,7 +146,7 @@ export const STRINGS = {
   profile_favorite_helpers: { vi: 'Thợ yêu thích', en: 'Favorite helpers' },
   profile_recurring_plans: { vi: 'Gói định kỳ của tôi', en: 'My recurring plans' },
   profile_monthly_contracts: { vi: 'Hợp đồng theo tháng', en: 'Monthly contracts' },
-  profile_support_online: { vi: '💬 Hỗ trợ trực tuyến', en: '💬 Online support' },
+  profile_support_online: { vi: ' Hỗ trợ trực tuyến', en: ' Online support' },
   profile_help_center: {
     vi: 'Trung tâm trợ giúp Green House (24/7)',
     en: 'Help Center (24/7)',
@@ -157,8 +157,8 @@ export const STRINGS = {
   },
   profile_rate_app: { vi: 'Đánh giá ứng dụng Green House', en: 'Rate the Green House app' },
   profile_rate_app_thanks_title: {
-    vi: 'Cảm ơn bạn đã ủng hộ Green House! ⭐',
-    en: 'Thank you for supporting Green House! ⭐',
+    vi: 'Cảm ơn bạn đã ủng hộ Green House! ',
+    en: 'Thank you for supporting Green House! ',
   },
   profile_rate_app_thanks_desc: {
     vi: 'Đánh giá 5 sao của bạn giúp đội ngũ phát triển tốt hơn mỗi ngày.',
@@ -175,11 +175,11 @@ export const STRINGS = {
   profile_logout_stay: { vi: 'Ở lại', en: 'Stay' },
   profile_logout_now: { vi: 'Đăng xuất ngay', en: 'Log out now' },
   profile_logout: { vi: 'Đăng xuất', en: 'Log out' },
-  profile_edit: { vi: 'Chỉnh sửa hồ sơ ✏️', en: 'Edit profile ✏️' },
+  profile_edit: { vi: 'Chỉnh sửa hồ sơ ', en: 'Edit profile ' },
   profile_bank_account: { vi: 'Tài khoản ngân hàng liên kết', en: 'Linked bank account' },
-  profile_work_schedule: { vi: '🗓 Lịch làm việc', en: '🗓 Work schedule' },
+  profile_work_schedule: { vi: ' Lịch làm việc', en: ' Work schedule' },
   profile_career: { vi: 'Hồ sơ nghề nghiệp & Kỹ năng', en: 'Career profile & Skills' },
-  profile_edit_helper: { vi: 'Chỉnh sửa hồ sơ thợ ✏️', en: 'Edit helper profile ✏️' },
+  profile_edit_helper: { vi: 'Chỉnh sửa hồ sơ thợ ', en: 'Edit helper profile ' },
   profile_reviews: {
     vi: 'Đánh giá & Phản hồi từ khách hàng',
     en: 'Ratings & Customer feedback',
@@ -213,7 +213,7 @@ export const STRINGS = {
   messages_partner_helper: { vi: 'Thợ đối tác', en: 'Partner helper' },
   messages_partner_customer: { vi: 'Khách hàng', en: 'Customer' },
   messages_job_fallback: { vi: 'Công việc', en: 'Job' },
-  messages_photo: { vi: '📷 Ảnh', en: '📷 Photo' },
+  messages_photo: { vi: ' Ảnh', en: ' Photo' },
   messages_chat_hint: {
     vi: 'Bắt đầu trao đổi thông tin công việc...',
     en: 'Start discussing job details...',
@@ -281,7 +281,7 @@ export const STRINGS = {
   dash_accepting: { vi: 'Đang nhận đơn mới', en: 'Accepting new jobs' },
   dash_paused: { vi: 'Đang tạm dừng nhận đơn', en: 'Paused — not accepting jobs' },
   dash_busy: { vi: 'Đang bận làm việc', en: 'Busy on a job' },
-  support_greeting: { vi: 'Xin chào {name} 👋', en: 'Hello {name} 👋' },
+  support_greeting: { vi: 'Xin chào {name} ', en: 'Hello {name} ' },
   support_empty_sub: {
     vi: 'Chọn một câu hỏi thường gặp ở trên hoặc nhắn trực tiếp — đội hỗ trợ sẽ phản hồi ngay trong mục này.',
     en: 'Pick a common question above or message us directly — support will reply right here.',
@@ -302,8 +302,8 @@ export const STRINGS = {
     en: 'Green House v1.0.0 • Professional home services',
   },
   earn_note: {
-    vi: '💡 Đơn thanh toán Online sẽ cộng 85% vào ví. Đơn thu Tiền mặt trực tiếp sẽ khấu trừ 15% phí sàn từ ví ký quỹ.',
-    en: '💡 Online-paid jobs credit 85% to your wallet. Cash jobs deduct the 15% platform fee from your escrow wallet.',
+    vi: ' Đơn thanh toán Online sẽ cộng 85% vào ví. Đơn thu Tiền mặt trực tiếp sẽ khấu trừ 15% phí sàn từ ví ký quỹ.',
+    en: ' Online-paid jobs credit 85% to your wallet. Cash jobs deduct the 15% platform fee from your escrow wallet.',
   },
   common_service: { vi: 'Dịch vụ', en: 'Service' },
   // ─── Support chat ─────────────────────────────────────────────────────────
@@ -459,12 +459,12 @@ export const STRINGS = {
   picker_unit_hour: { vi: 'giờ', en: 'hrs' },
   picker_unit_min: { vi: 'phút', en: 'mins' },
   picker_err_past_time: {
-    vi: '⚠️ Thời điểm bắt đầu không thể ở quá khứ',
-    en: '⚠️ Start time cannot be in the past',
+    vi: ' Thời điểm bắt đầu không thể ở quá khứ',
+    en: ' Start time cannot be in the past',
   },
   picker_err_end_before_start: {
-    vi: '⚠️ Giờ kết thúc phải lớn hơn giờ bắt đầu',
-    en: '⚠️ End time must be after start time',
+    vi: ' Giờ kết thúc phải lớn hơn giờ bắt đầu',
+    en: ' End time must be after start time',
   },
   picker_chips_instruction: { vi: 'bấm là chọn đúng giờ đó', en: 'tap to select exact time' },
   picker_no_chips: { vi: 'Hôm nay đã hết khung giờ gợi ý', en: 'No suggested times left today' },
@@ -485,10 +485,10 @@ export const STRINGS = {
     en: 'The previous helper cannot continue this job. Would you like to take over?',
   },
   sos_popup_service_fallback: { vi: 'Dịch vụ tại nhà', en: 'Home service' },
-  sos_popup_area: { vi: '📍 Khu vực:', en: '📍 Area:' },
-  sos_popup_distance: { vi: '🚗 Cách bạn khoảng {dist} km', en: '🚗 About {dist} km from you' },
-  sos_popup_payout: { vi: '💰 Thực nhận:', en: '💰 Net payout:' },
-  sos_popup_accept: { vi: '⚡ Nhận thay ngay', en: '⚡ Accept takeover' },
+  sos_popup_area: { vi: ' Khu vực:', en: ' Area:' },
+  sos_popup_distance: { vi: ' Cách bạn khoảng {dist} km', en: ' About {dist} km from you' },
+  sos_popup_payout: { vi: ' Thực nhận:', en: ' Net payout:' },
+  sos_popup_accept: { vi: ' Nhận thay ngay', en: ' Accept takeover' },
   sos_popup_skip: { vi: 'Bỏ qua', en: 'Skip' },
   sos_popup_auto_skip: { vi: 'Tự động bỏ qua sau {sec}s', en: 'Auto skip in {sec}s' },
   sos_popup_accepted_success: {
@@ -511,16 +511,16 @@ export const STRINGS = {
     en: '. How would you like to proceed?',
   },
   sos_customer_popup_replace_desc: {
-    vi: '🔄 Đổi người: một thợ khác sẽ tiếp tục đơn - giá và số tiền giữ đảm bảo không thay đổi.',
-    en: '🔄 Replace helper: another helper will take over - guaranteed price and escrow deposit remain unchanged.',
+    vi: ' Đổi người: một thợ khác sẽ tiếp tục đơn - giá và số tiền giữ đảm bảo không thay đổi.',
+    en: ' Replace helper: another helper will take over - guaranteed price and escrow deposit remain unchanged.',
   },
   sos_customer_popup_cancel_desc: {
-    vi: '❌ Hủy đơn: hoàn 100% số tiền bạn đã thực trả (sau voucher và điểm) vào ví. Đơn chưa thanh toán hoặc trả tiền mặt sẽ không phát sinh hoàn tiền ví.',
-    en: '❌ Cancel order: 100% refund of your actual paid amount (after vouchers and points) to wallet. Unpaid or cash orders have no wallet refund.',
+    vi: ' Hủy đơn: hoàn 100% số tiền bạn đã thực trả (sau voucher và điểm) vào ví. Đơn chưa thanh toán hoặc trả tiền mặt sẽ không phát sinh hoàn tiền ví.',
+    en: ' Cancel order: 100% refund of your actual paid amount (after vouchers and points) to wallet. Unpaid or cash orders have no wallet refund.',
   },
   sos_customer_popup_accept_btn: {
-    vi: '🔄 Chấp nhận đổi người',
-    en: '🔄 Accept replacement helper',
+    vi: ' Chấp nhận đổi người',
+    en: ' Accept replacement helper',
   },
   sos_customer_popup_cancel_btn: {
     vi: 'Hủy đơn - hoàn tiền thực trả',
@@ -666,7 +666,7 @@ export const STRINGS = {
     en: '(Includes base 200,000₫ + Emergency bonus 100,000₫ - 15% platform fee)',
   },
   dash_sos_modal_matching: { vi: 'ĐANG KHỚP ĐƠN...', en: 'MATCHING JOB...' },
-  dash_sos_modal_accept: { vi: '🚨 NHẬN CỨU HỘ SOS NGAY', en: '🚨 ACCEPT SOS RESCUE NOW' },
+  dash_sos_modal_accept: { vi: ' NHẬN CỨU HỘ SOS NGAY', en: ' ACCEPT SOS RESCUE NOW' },
 
   // ─── Customer Home (Điểm 2) ────────────────────────────────────────────────
   home_greeting_night: { vi: 'Chào {name}, khuya rồi', en: 'Hello {name}, it is late' },
@@ -751,8 +751,8 @@ export const STRINGS = {
   },
 
   // ─── Helper Jobs & Badges ──────────────────────────────────────────────────
-  jobs_badge_private_for_you: { vi: '⭐ Gửi riêng cho bạn', en: '⭐ Private offer for you' },
-  jobs_badge_fixed_price: { vi: '🏷️ Giá cam kết {price}₫', en: '🏷️ Fixed price {price}₫' },
+  jobs_badge_private_for_you: { vi: ' Gửi riêng cho bạn', en: ' Private offer for you' },
+  jobs_badge_fixed_price: { vi: ' Giá cam kết {price}₫', en: ' Fixed price {price}₫' },
   jobs_unspecified: { vi: 'Chưa rõ', en: 'Unspecified' },
   jobs_minutes_unit: { vi: 'phút', en: 'mins' },
   jobs_verify_now: { vi: 'Xác thực ngay', en: 'Verify now' },
@@ -778,13 +778,13 @@ export const STRINGS = {
   'helper_profile.acceptance_rate': { vi: 'Nhận việc', en: 'Accept jobs' },
   'helper_profile.receiving_status': { vi: 'Trạng thái nhận đơn', en: 'Job receiving status' },
   'helper_profile.status_busy_working': {
-    vi: '🟡 Đang bận làm việc (Cuốc đang chạy)',
-    en: '🟡 Busy working (Ongoing job)',
+    vi: ' Đang bận làm việc (Cuốc đang chạy)',
+    en: ' Busy working (Ongoing job)',
   },
-  'helper_profile.status_online': { vi: '🟢 Đang nhận đơn mới', en: '🟢 Accepting new jobs' },
+  'helper_profile.status_online': { vi: ' Đang nhận đơn mới', en: ' Accepting new jobs' },
   'helper_profile.status_offline': {
-    vi: '⚫ Ngoại tuyến (Đã tắt nhận đơn)',
-    en: '⚫ Offline (Job receiving off)',
+    vi: ' Ngoại tuyến (Đã tắt nhận đơn)',
+    en: ' Offline (Job receiving off)',
   },
   'helper_profile.loading_status': { vi: 'Đang tải trạng thái...', en: 'Loading status...' },
   'helper_profile.kyc_title': {
@@ -1066,15 +1066,15 @@ export const STRINGS = {
   booking_title_label: { vi: 'Tiêu đề yêu cầu *', en: 'Request title *' },
   booking_description_label: { vi: 'Mô tả chi tiết *', en: 'Detailed description *' },
   booking_photos_label: {
-    vi: '📸 Ảnh hiện trạng công việc ({count}/6)',
-    en: '📸 Issue photos ({count}/6)',
+    vi: ' Ảnh hiện trạng công việc ({count}/6)',
+    en: ' Issue photos ({count}/6)',
   },
   booking_optional: { vi: 'Không bắt buộc', en: 'Optional' },
   booking_take_photo: { vi: 'Chụp ảnh', en: 'Take photo' },
   booking_pick_gallery: { vi: 'Chọn từ thư viện', en: 'Choose from library' },
   booking_ai_analyzing_photo: { vi: 'AI đang phân tích ảnh...', en: 'AI is analyzing photo...' },
   booking_ai_analyze_photo: { vi: 'Phân tích ảnh sự cố bằng AI', en: 'AI Photo Diagnosis' },
-  booking_ai_detected_title: { vi: '🔍 AI nhận diện sự cố', en: '🔍 AI Issue Detection' },
+  booking_ai_detected_title: { vi: ' AI nhận diện sự cố', en: ' AI Issue Detection' },
   booking_ai_issue_label: { vi: 'Vấn đề phát hiện:', en: 'Detected issue:' },
   booking_ai_price_range: { vi: 'Khoảng giá:', en: 'Price range:' },
   booking_ai_confidence: { vi: 'độ tin cậy', en: 'confidence' },
@@ -1147,8 +1147,8 @@ export const STRINGS = {
     en: '{points} more points to reach next tier ({next} pts)',
   },
   'loyalty.highest_tier': {
-    vi: '🎉 Bạn đang ở hạng cao nhất!',
-    en: '🎉 You are at the highest tier!',
+    vi: ' Bạn đang ở hạng cao nhất!',
+    en: ' You are at the highest tier!',
   },
   'loyalty.perks_title': { vi: 'Quyền lợi theo hạng', en: 'Tier Benefits' },
   'loyalty.perks_body': {
@@ -1182,8 +1182,8 @@ export const STRINGS = {
     en: '{points} more pts to reach next tier ({target} pts)',
   },
   loyalty_max_tier: {
-    vi: '🎉 Bạn đang ở hạng cao nhất!',
-    en: '🎉 You have reached the highest tier!',
+    vi: ' Bạn đang ở hạng cao nhất!',
+    en: ' You have reached the highest tier!',
   },
   loyalty_perks_title: { vi: 'Quyền lợi theo hạng', en: 'Tier Benefits' },
   loyalty_perks_body: {
@@ -1288,26 +1288,26 @@ export const STRINGS = {
     en: 'Estimated net payout ({percent}%):',
   },
   'helper_job_detail.propose_amendment_btn': {
-    vi: '➕ Đề xuất phát sinh vật tư / chi phí',
-    en: '➕ Propose additional materials / costs',
+    vi: ' Đề xuất phát sinh vật tư / chi phí',
+    en: ' Propose additional materials / costs',
   },
   'helper_job_detail.update_progress_title': {
     vi: 'Cập nhật tiến trình làm việc',
     en: 'Update work progress',
   },
   'helper_job_detail.start_moving_btn': {
-    vi: '🚗  Bắt đầu di chuyển đến khách',
-    en: '🚗  Start heading to customer',
+    vi: '  Bắt đầu di chuyển đến khách',
+    en: '  Start heading to customer',
   },
-  'helper_job_detail.i_arrived_btn': { vi: '📍  Tôi đã đến nơi', en: '📍  I have arrived' },
-  'helper_job_detail.start_work_btn': { vi: '▶️  Bắt đầu làm việc', en: '▶️  Start work' },
+  'helper_job_detail.i_arrived_btn': { vi: '  Tôi đã đến nơi', en: '  I have arrived' },
+  'helper_job_detail.start_work_btn': { vi: '▶  Bắt đầu làm việc', en: '▶  Start work' },
   'helper_job_detail.complete_work_btn': {
-    vi: '✅  Hoàn thành công việc',
-    en: '✅  Complete work',
+    vi: '  Hoàn thành công việc',
+    en: '  Complete work',
   },
   'sos_helper.replacement_title': {
-    vi: '🔄 Bạn đang thay thế đơn này qua SOS Backup',
-    en: '🔄 You are replacing this job via SOS Backup',
+    vi: ' Bạn đang thay thế đơn này qua SOS Backup',
+    en: ' You are replacing this job via SOS Backup',
   },
   'sos_helper.replacement_desc': {
     vi: 'Thợ trước gặp sự cố nên khách hàng đã đồng ý đổi người. Hãy tiếp tục đơn như bình thường — tiền công giữ nguyên theo hợp đồng.',
@@ -1320,12 +1320,12 @@ export const STRINGS = {
   },
   'sos_helper.withdraw_confirm': { vi: 'Thu hồi SOS', en: 'Withdraw SOS' },
   'sos_helper.awaiting_customer': {
-    vi: '⏳ Đang chờ khách xác nhận…',
-    en: '⏳ Awaiting customer confirmation…',
+    vi: ' Đang chờ khách xác nhận…',
+    en: ' Awaiting customer confirmation…',
   },
   'sos_helper.finding_replacement': {
-    vi: '🔍 Đang tìm người thay thế…',
-    en: '🔍 Finding replacement helper…',
+    vi: ' Đang tìm người thay thế…',
+    en: ' Finding replacement helper…',
   },
   'sos_helper.awaiting_desc': {
     vi: 'Bạn đã gửi SOS (lý do: {reason}). Khách hàng cần đồng ý đổi người thì hệ thống mới tìm thợ thay thế.{deadline} Nếu khách không phản hồi, đơn sẽ tự hủy và hoàn tiền 100% theo chính sách.',
@@ -1376,24 +1376,24 @@ export const STRINGS = {
     en: 'You cancelled/SOS {count} jobs in 7 days — over 3 will deduct reliability points',
   },
   'sos_helper.trigger_title': {
-    vi: '🆘 Gặp sự cố không thể tiếp tục đơn?',
-    en: '🆘 Encountered an issue and cannot continue?',
+    vi: ' Gặp sự cố không thể tiếp tục đơn?',
+    en: ' Encountered an issue and cannot continue?',
   },
   'sos_helper.trigger_desc': {
     vi: 'Gửi SOS để xin đổi người: khách hàng sẽ xác nhận đổi thợ khác (giữ nguyên giá) hoặc hủy đơn. Bạn không bị tính phạt trễ/hủy cho đơn này khi dùng SOS.',
     en: 'Submit SOS to request replacement: customer confirms switching helpers (price kept) or cancels. You will not receive late/cancel penalties for this job when using SOS.',
   },
   'sos_helper.trigger_reputation_warning': {
-    vi: '⚠️ Điểm uy tín: bạn đã hủy/SOS {cancels} đơn trong 7 ngày qua{score}. Hủy quá 3 đơn/7 ngày sẽ bị trừ điểm tiêu chí Độ tin cậy.',
-    en: '⚠️ Reputation: you cancelled/SOS {cancels} jobs in past 7 days{score}. Over 3 jobs/7 days will deduct Reliability score.',
+    vi: ' Điểm uy tín: bạn đã hủy/SOS {cancels} đơn trong 7 ngày qua{score}. Hủy quá 3 đơn/7 ngày sẽ bị trừ điểm tiêu chí Độ tin cậy.',
+    en: ' Reputation: you cancelled/SOS {cancels} jobs in past 7 days{score}. Over 3 jobs/7 days will deduct Reliability score.',
   },
   'sos_helper.score_suffix': {
     vi: ' — điểm hiện tại {score}/100',
     en: ' — current score {score}/100',
   },
   'sos_helper.open_modal_btn': {
-    vi: '🆘 Gửi SOS — xin đổi người',
-    en: '🆘 Submit SOS — request replacement',
+    vi: ' Gửi SOS — xin đổi người',
+    en: ' Submit SOS — request replacement',
   },
   'sos_helper.modal_title': {
     vi: 'Lý do không thể tiếp tục đơn',
@@ -1511,35 +1511,35 @@ export const STRINGS = {
   'helper_job.evidence_capture_now': { vi: 'Chụp/Quay ngay', en: 'Capture now' },
   'helper_job.evidence_submit_anyway': { vi: 'Tiếp tục gửi', en: 'Submit anyway' },
   'helper_job.step_moving_toast': {
-    vi: 'Bắt đầu di chuyển đến khách hàng 🛵',
-    en: 'Heading to customer location 🛵',
+    vi: 'Bắt đầu di chuyển đến khách hàng ',
+    en: 'Heading to customer location ',
   },
   'helper_job.step_arrived_toast': {
-    vi: 'Đã đến địa điểm của khách hàng 📍',
-    en: 'Arrived at customer location 📍',
+    vi: 'Đã đến địa điểm của khách hàng ',
+    en: 'Arrived at customer location ',
   },
   'helper_job.step_working_toast': {
-    vi: 'Bắt đầu tính giờ làm việc ▶️',
-    en: 'Timer started & working ▶️',
+    vi: 'Bắt đầu tính giờ làm việc ▶',
+    en: 'Timer started & working ▶',
   },
   'helper_job.step_moving_title': { vi: 'Bắt đầu di chuyển?', en: 'Start heading out?' },
   'helper_job.step_moving_msg': {
     vi: 'Bạn chuẩn bị xuất phát tới nhà khách hàng? Vị trí GPS của bạn sẽ được đồng bộ trực tiếp để khách hàng theo dõi hành trình như Grab.',
     en: 'Ready to depart for customer address? Your GPS location will sync live for customer to track like Grab.',
   },
-  'helper_job.step_moving_btn': { vi: 'Bắt đầu xuất phát 🛵', en: 'Start heading out 🛵' },
+  'helper_job.step_moving_btn': { vi: 'Bắt đầu xuất phát ', en: 'Start heading out ' },
   'helper_job.step_arrived_title': { vi: 'Đã đến nơi?', en: 'Arrived at location?' },
   'helper_job.step_arrived_msg': {
     vi: 'Xác nhận bạn đã có mặt tại địa chỉ khách hàng. Khách hàng sẽ nhận được thông báo để chuẩn bị đón tiếp.',
     en: 'Confirm you have arrived at customer address. Customer will receive a notification to welcome you.',
   },
-  'helper_job.step_arrived_btn': { vi: 'Tôi đã có mặt 📍', en: 'I have arrived 📍' },
+  'helper_job.step_arrived_btn': { vi: 'Tôi đã có mặt ', en: 'I have arrived ' },
   'helper_job.step_working_title': { vi: 'Bắt đầu bấm giờ làm việc?', en: 'Start working timer?' },
   'helper_job.step_working_msg': {
     vi: 'Bắt đầu tính giờ và thực hiện công việc theo thỏa thuận với khách hàng.',
     en: 'Start timer and perform work as agreed with customer.',
   },
-  'helper_job.step_working_btn': { vi: 'Bắt đầu ngay ▶️', en: 'Start now ▶️' },
+  'helper_job.step_working_btn': { vi: 'Bắt đầu ngay ▶', en: 'Start now ▶' },
   'helper_job.sos_replacement_accepted_title': {
     vi: 'Khách đã đồng ý đổi thợ — Đang tìm thợ cứu hộ thay thế...',
     en: 'Customer agreed to switch helper — Finding replacement helper...',
@@ -1548,16 +1548,16 @@ export const STRINGS = {
     vi: 'Bạn đã báo sự cố và khách hàng đã chấp nhận tìm thợ thay thế. Hệ thống đang quét thợ cứu hộ gần nhất để tiếp nhận đơn này.',
     en: 'You reported an issue and customer accepted replacement. System is scanning nearest rescue helpers to take over.',
   },
-  'helper_job.warranty_badge': { vi: '🛡 Đơn bảo hành — Miễn phí', en: '🛡 Warranty Job — Free' },
+  'helper_job.warranty_badge': { vi: ' Đơn bảo hành — Miễn phí', en: ' Warranty Job — Free' },
   'helper_job.warranty_header': {
-    vi: '🛡️ Yêu cầu bảo hành từ khách',
-    en: '🛡️ Warranty request from customer',
+    vi: ' Yêu cầu bảo hành từ khách',
+    en: ' Warranty request from customer',
   },
   'helper_job.quote_modal_title': { vi: 'Gửi báo giá dịch vụ', en: 'Submit Service Quote' },
   'helper_job.labor_price_label': { vi: 'Giá công thợ (₫) *', en: 'Helper labor price (₫) *' },
   'helper_job.min_quote_warning': {
-    vi: '⚠️ Tiền công báo giá tối thiểu là 50.000₫',
-    en: '⚠️ Minimum quote price is 50,000₫',
+    vi: ' Tiền công báo giá tối thiểu là 50.000₫',
+    en: ' Minimum quote price is 50,000₫',
   },
   'helper_job.cust_pays': { vi: 'Giá khách hàng trả', en: 'Customer pays' },
   'helper_job.platform_fee': { vi: 'Phí nền tảng (15%)', en: 'Platform fee (15%)' },
@@ -1583,15 +1583,15 @@ export const STRINGS = {
     en: 'Capture 1-4 photos or short video showing clean, finished repair work for customer to verify and complete quickly.',
   },
   'helper_job.evidence_photos_count': {
-    vi: '📸 Ảnh kết quả ({count})',
-    en: '📸 Result photos ({count})',
+    vi: ' Ảnh kết quả ({count})',
+    en: ' Result photos ({count})',
   },
   'helper_job.evidence_max_photos': { vi: 'Tối đa 6 ảnh', en: 'Max 6 photos' },
   'helper_job.evidence_take_photo': { vi: 'Chụp ảnh ngay', en: 'Take photo' },
   'helper_job.evidence_pick_album': { vi: 'Chọn từ album', en: 'Choose from album' },
   'helper_job.evidence_videos_count': {
-    vi: '🎥 Video nghiệm thu ({count})',
-    en: '🎥 Acceptance video ({count})',
+    vi: ' Video nghiệm thu ({count})',
+    en: ' Acceptance video ({count})',
   },
   'helper_job.evidence_video_limit': { vi: '1-2 video ngắn', en: '1-2 short videos' },
   'helper_job.evidence_pick_video': { vi: 'Chọn video', en: 'Choose video' },
@@ -1616,8 +1616,8 @@ export const STRINGS = {
     en: 'Send SOS to request a replacement: customer will confirm another helper (same price) or cancel. You won’t be penalized for delays/cancellation.',
   },
   'sos_helper.reputation_warning': {
-    vi: '⚠️ Điểm uy tín: bạn đã hủy/SOS {count} đơn trong 7 ngày qua{score}. Hủy quá 3 đơn/7 ngày sẽ bị trừ điểm tiêu chí Độ tin cậy.',
-    en: '⚠️ Reputation: you cancelled/SOS {count} jobs in the last 7 days{score}. Over 3 cancellations in 7 days reduces Reliability score.',
+    vi: ' Điểm uy tín: bạn đã hủy/SOS {count} đơn trong 7 ngày qua{score}. Hủy quá 3 đơn/7 ngày sẽ bị trừ điểm tiêu chí Độ tin cậy.',
+    en: ' Reputation: you cancelled/SOS {count} jobs in the last 7 days{score}. Over 3 cancellations in 7 days reduces Reliability score.',
   },
   'sos_helper.score_info': {
     vi: ' — điểm hiện tại {score}/100',
@@ -1992,6 +1992,7 @@ export function formatNotificationTitle(
   title: string | undefined | null,
   lang: AppLanguage = 'vi',
   type?: string,
+  data?: any,
 ): string {
   if (!title && !type) return '';
   if (lang !== 'en') return title || '';
@@ -2000,10 +2001,19 @@ export function formatNotificationTitle(
   if (type) {
     switch (type) {
       case 'payment_success':
+        // F11: map theo type + payload, không theo chuỗi tiêu đề.
+        if (data?.payment_method === 'cash') return 'Cash Order Completed!';
+        if (data?.payment_method) return 'Earnings Credited to Wallet!';
+        // Fallback cho thông báo cũ (chưa có payment_method trong payload).
         if (/tiền mặt/i.test(t) || /phí sàn/i.test(t) || /đối soát/i.test(t)) return 'Cash Order Completed!';
         if (/ví|thu nhập|tiền công/i.test(t)) return 'Earnings Credited to Wallet!';
         return 'Payment Successful';
       case 'job_confirmed':
+        // F11: map theo type + payload, không theo chuỗi tiêu đề.
+        if (data?.is_sos) return 'Helper Accepted SOS Rescue!';
+        if (data?.is_warranty) return 'Helper Accepted Warranty Job!';
+        if (data?.is_fixed_price) return 'Helper Accepted Fixed-Price Job!';
+        // Fallback cho thông báo cũ (chưa có cờ trong payload).
         if (/bảo hành/i.test(t)) return 'Helper Accepted Warranty Job!';
         if (/giá cam kết/i.test(t)) return 'Helper Accepted Fixed-Price Job!';
         if (/cứu hộ|sos/i.test(t)) return 'Helper Accepted SOS Rescue!';
@@ -2081,24 +2091,24 @@ export function formatNotificationTitle(
 
   if (/^Hoàn tất đơn Tiền mặt!?$/i.test(t)) return 'Cash Order Completed!';
   if (/^Tiền công đã cộng vào ví!?$/i.test(t)) return 'Earnings Credited to Wallet!';
-  if (/^🛡️?\s*Thợ đã nhận việc bảo hành!?$/i.test(t)) return 'Helper Accepted Warranty Job!';
-  if (/^✅?\s*Đã có thợ nhận việc giá cam kết!?$/i.test(t))
+  if (/^\s*Thợ đã nhận việc bảo hành!?$/i.test(t)) return 'Helper Accepted Warranty Job!';
+  if (/^\s*Đã có thợ nhận việc giá cam kết!?$/i.test(t))
     return 'Helper Accepted Fixed-Price Job!';
-  if (/^✅?\s*Khách đã duyệt chi phí phát sinh!?$/i.test(t))
+  if (/^\s*Khách đã duyệt chi phí phát sinh!?$/i.test(t))
     return 'Customer Approved Extra Expenses';
-  if (/^❌?\s*Khách từ chối chi phí phát sinh!?$/i.test(t))
+  if (/^\s*Khách từ chối chi phí phát sinh!?$/i.test(t))
     return 'Customer Rejected Extra Expenses';
-  if (/^✅?\s*Thợ đã nhận hợp đồng theo tháng!?$/i.test(t))
+  if (/^\s*Thợ đã nhận hợp đồng theo tháng!?$/i.test(t))
     return 'Helper Accepted Monthly Contract';
-  if (/^❌?\s*Thợ đã từ chối hợp đồng theo tháng!?$/i.test(t))
+  if (/^\s*Thợ đã từ chối hợp đồng theo tháng!?$/i.test(t))
     return 'Helper Declined Monthly Contract';
 
   if (/^Báo giá được chọn!?$/i.test(t)) return 'Quote Accepted!';
   if (/^Công việc bị hủy$/i.test(t)) return 'Job Cancelled';
   if (/^Đơn hàng đã bị hủy bởi Quản trị viên$/i.test(t)) return 'Order Cancelled by Admin';
   if (/^Báo giá mới$/i.test(t)) return 'New Quote Received';
-  if (/^Có đơn mới gần bạn\s*(🎉|🔔)?$/i.test(t)) return 'New job near you';
-  if (/^⭐\s*Bạn được khách quen gửi việc riêng!$/i.test(t))
+  if (/^Có đơn mới gần bạn\s*(|)?$/i.test(t)) return 'New job near you';
+  if (/^\s*Bạn được khách quen gửi việc riêng!$/i.test(t))
     return 'You received a private job from a regular customer!';
   if (/^Hoàn thành công việc$/i.test(t)) return 'Job Completed';
   if (/^Người giúp việc đang trên đường$/i.test(t)) return 'Helper is on the way';
@@ -2119,14 +2129,14 @@ export function formatNotificationTitle(
     return 'SOS Backup Expired — Manual Review Required';
   if (/^Nhắc:\s*cần bạn quyết định cho đơn đang chờ$/i.test(t))
     return 'Reminder: Action Required for Pending Job';
-  if (/^🚨?\s*Lời mời hỗ trợ khẩn cấp\s*\(SOS Backup\)/i.test(t))
+  if (/^\s*Lời mời hỗ trợ khẩn cấp\s*\(SOS Backup\)/i.test(t))
     return 'Emergency Backup Invitation (SOS)';
-  if (/^(?:🚨|🆘)\s*CỨU HỘ KHẨN CẤP SOS GẦN BẠN!?$/i.test(t))
+  if (/^\s*CỨU HỘ KHẨN CẤP SOS GẦN BẠN!?$/i.test(t))
     return 'URGENT SOS EMERGENCY NEAR YOU!';
-  if (/^(?:🚨|🆘)\s*ĐÃ CÓ THỢ NHẬN CỨU HỘ SOS!?$/i.test(t))
+  if (/^\s*ĐÃ CÓ THỢ NHẬN CỨU HỘ SOS!?$/i.test(t))
     return 'A HELPER ACCEPTED SOS RESCUE!';
-  if (/^🚨\s*\[SOS CỨU HỘ\]\s*(.*)$/i.test(t)) {
-    const rest = t.replace(/^🚨\s*\[SOS CỨU HỘ\]\s*/i, '');
+  if (/^\s*\[SOS CỨU HỘ\]\s*(.*)$/i.test(t)) {
+    const rest = t.replace(/^\s*\[SOS CỨU HỘ\]\s*/i, '');
     return `[SOS RESCUE] ${rest}`;
   }
   if (/^Hồ sơ e-KYC đã được duyệt$/i.test(t)) return 'e-KYC Profile Approved';
@@ -2139,31 +2149,31 @@ export function formatNotificationTitle(
   if (/^Bạn nhận được đánh giá\s*(\d+)★$/i.test(t)) {
     return t.replace(/^Bạn nhận được đánh giá\s*(\d+)★$/i, 'You received a $1-star review');
   }
-  if (/^📋\s*Đề xuất phát sinh vật tư \/ chi phí$/i.test(t))
+  if (/^\s*Đề xuất phát sinh vật tư \/ chi phí$/i.test(t))
     return 'Extra Supplies / Costs Proposal';
-  if (/^⚠️\s*Đơn hàng đang có khiếu nại \/ tranh chấp$/i.test(t))
+  if (/^\s*Đơn hàng đang có khiếu nại \/ tranh chấp$/i.test(t))
     return 'Order Has Dispute / Complaint';
-  if (/^⚖️\s*Kết quả phân xử khiếu nại từ Admin$/i.test(t))
+  if (/^\s*Kết quả phân xử khiếu nại từ Admin$/i.test(t))
     return 'Dispute Resolution from Admin';
-  if (/^⚖️\s*Hồ sơ tranh chấp có cập nhật$/i.test(t)) return 'Dispute Case Updated';
-  if (/^⚖️\s*Phán quyết tranh chấp bị kháng cáo$/i.test(t)) return 'Dispute Decision Appealed';
-  if (/^👥\s*Lời mời vào nhóm làm việc$/i.test(t)) return 'Invitation to Work Team';
-  if (/^[📅📑]\s*Đề nghị hợp đồng theo tháng mới$/i.test(t)) return 'New Monthly Contract Offer';
-  if (/^[🚫🛑❌]\s*Hợp đồng theo tháng đã bị hủy$/i.test(t)) return 'Monthly Contract Cancelled';
-  if (/^🏁\s*Hợp đồng theo tháng đã kết thúc$/i.test(t)) return 'Monthly Contract Ended';
-  if (/^[🟢📍]\s*Thợ đã điểm danh hôm nay$/i.test(t)) return 'Helper Checked In Today';
-  if (/^✅\s*Buổi làm đã được xác nhận$/i.test(t)) return 'Work Session Confirmed';
-  if (/^❌\s*Buổi làm bị đánh dấu vắng$/i.test(t)) return 'Work Session Marked Absent';
-  if (/^[🌴📝]\s*Thợ xin nghỉ 1 buổi$/i.test(t)) return 'Helper Requested 1 Day Leave';
-  if (/^✅\s*Đơn xin nghỉ đã được duyệt$/i.test(t)) return 'Leave Request Approved';
-  if (/^❌\s*Đơn xin nghỉ bị từ chối$/i.test(t)) return 'Leave Request Rejected';
-  if (/^💰\s*Đã chốt lương tháng\s*(.*)$/i.test(t)) {
-    return t.replace(/^💰\s*Đã chốt lương tháng\s*(.*)$/i, 'Monthly Salary Finalized for $1');
+  if (/^\s*Hồ sơ tranh chấp có cập nhật$/i.test(t)) return 'Dispute Case Updated';
+  if (/^\s*Phán quyết tranh chấp bị kháng cáo$/i.test(t)) return 'Dispute Decision Appealed';
+  if (/^\s*Lời mời vào nhóm làm việc$/i.test(t)) return 'Invitation to Work Team';
+  if (/^\s*Đề nghị hợp đồng theo tháng mới$/i.test(t)) return 'New Monthly Contract Offer';
+  if (/^\s*Hợp đồng theo tháng đã bị hủy$/i.test(t)) return 'Monthly Contract Cancelled';
+  if (/^\s*Hợp đồng theo tháng đã kết thúc$/i.test(t)) return 'Monthly Contract Ended';
+  if (/^\s*Thợ đã điểm danh hôm nay$/i.test(t)) return 'Helper Checked In Today';
+  if (/^\s*Buổi làm đã được xác nhận$/i.test(t)) return 'Work Session Confirmed';
+  if (/^\s*Buổi làm bị đánh dấu vắng$/i.test(t)) return 'Work Session Marked Absent';
+  if (/^\s*Thợ xin nghỉ 1 buổi$/i.test(t)) return 'Helper Requested 1 Day Leave';
+  if (/^\s*Đơn xin nghỉ đã được duyệt$/i.test(t)) return 'Leave Request Approved';
+  if (/^\s*Đơn xin nghỉ bị từ chối$/i.test(t)) return 'Leave Request Rejected';
+  if (/^\s*Đã chốt lương tháng\s*(.*)$/i.test(t)) {
+    return t.replace(/^\s*Đã chốt lương tháng\s*(.*)$/i, 'Monthly Salary Finalized for $1');
   }
-  if (/^🛡️?\s*Yêu cầu bồi thường đang được xem xét$/i.test(t))
+  if (/^\s*Yêu cầu bồi thường đang được xem xét$/i.test(t))
     return 'Insurance Claim Under Review';
-  if (/^❌\s*Yêu cầu bồi thường bị từ chối$/i.test(t)) return 'Insurance Claim Rejected';
-  if (/^[💰✅]\s*Bồi thường bảo hiểm đã được chi trả$/i.test(t))
+  if (/^\s*Yêu cầu bồi thường bị từ chối$/i.test(t)) return 'Insurance Claim Rejected';
+  if (/^\s*Bồi thường bảo hiểm đã được chi trả$/i.test(t))
     return 'Insurance Claim Payout Approved';
   if (/^Bảo hành:\s*(.*)$/i.test(t)) {
     return t.replace(/^Bảo hành:\s*/i, 'Warranty: ');
@@ -2182,7 +2192,15 @@ export function formatNotificationBody(
   if (lang !== 'en') return body;
   const b = body.trim();
 
-  // 1. payment_success (cash & escrow)
+  // 1. payment_success (cash & escrow) — F11: map theo type + payload trước,
+  // chỉ dùng regex bóc tiêu đề VI làm fallback cho thông báo cũ.
+  if (type === 'payment_success' && data?.payment_method) {
+    const jobName = data?.job_title ? `"${data.job_title}"` : 'Your job';
+    if (data.payment_method === 'cash')
+      return `Job ${jobName} has been inspected and approved. Platform fee settled.`;
+    return `Job ${jobName} is completed. Earnings disbursed to your wallet.`;
+  }
+
   const cashComplete = b.match(
     /^Công việc\s*(".*?"|'.*?'|“.*?”)\s*đã nghiệm thu\.\s*Phí nền tảng đã được đối soát\.?$/i,
   );
@@ -2199,7 +2217,23 @@ export function formatNotificationBody(
     return 'Payment has been processed successfully.';
   }
 
-  // 2. job_confirmed (warranty & fixed price)
+  // 2. job_confirmed (warranty & fixed price) — F11: map theo type + payload
+  // trước, chỉ dùng regex bóc tiêu đề VI làm fallback cho thông báo cũ.
+  if (
+    type === 'job_confirmed' &&
+    (data?.is_sos || data?.is_warranty || data?.is_fixed_price)
+  ) {
+    const jobName = data?.job_title ? `"${data.job_title}"` : 'your job';
+    if (data.is_sos)
+      return `A helper accepted your SOS rescue for ${jobName} and is on the way (ETA 15 minutes).`;
+    if (data.is_warranty)
+      return `Helper accepted warranty order ${jobName} (free of charge) and will contact you shortly.`;
+    const price = data?.total_price
+      ? ` at fixed price ${Number(data.total_price).toLocaleString('en-US')}₫`
+      : '';
+    return `Job ${jobName} has been accepted by a helper${price}.`;
+  }
+
   const warrantyAccepted = b.match(
     /^Thợ đã nhận đơn bảo hành\s*(".*?"|'.*?'|“.*?”)\s*\(miễn phí\)\s*và sẽ liên hệ với bạn sớm\.?$/i,
   );

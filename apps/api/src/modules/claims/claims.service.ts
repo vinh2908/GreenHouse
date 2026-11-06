@@ -237,15 +237,9 @@ export class ClaimsService {
     }
 
     // approve → duyệt + chi trả ngay vào ví khách
-    if (claim.status === 'approved' || claim.status === 'paid' || claim.payout_transaction_id) {
-      this.logger.warn(
-        `claim_payout_idempotent: Claim ${id} already processed or paid (status: ${claim.status}, payout tx: ${claim.payout_transaction_id})`,
-      );
-      throw new ConflictException('Yêu cầu bồi thường này đã được duyệt hoặc đã chi trả');
-    }
-    if (claim.status !== 'submitted' && claim.status !== 'under_review') {
-      throw new ConflictException('Yêu cầu này đã có kết quả cuối cùng');
-    }
+    // F14: chiếm quyền duyệt bằng cập nhật nguyên tử có điều kiện trên
+    // status + payout_transaction_id — 2 request song song chỉ 1 lọt qua,
+    // request còn lại nhận 409 và không tạo giao dịch bồi thường thứ hai.
     if (!dto.approved_amount || dto.approved_amount <= 0) {
       throw new BadRequestException('Số tiền duyệt bồi thường phải lớn hơn 0');
     }
@@ -254,35 +248,109 @@ export class ClaimsService {
         `Số tiền duyệt bồi thường không được vượt quá số tiền yêu cầu (${claim.requested_amount.toLocaleString('vi-VN')}₫)`,
       );
     }
-    claim.approved_amount = dto.approved_amount;
-    claim.status = 'approved';
-    pushTimeline(
-      'approved',
-      dto.note || `Duyệt bồi thường ${dto.approved_amount.toLocaleString('vi-VN')}₫`,
-    );
-    await claim.save();
+    const approvedNote =
+      dto.note || `Duyệt bồi thường ${dto.approved_amount.toLocaleString('vi-VN')}₫`;
+    const claimed = await this.claimModel
+      .findOneAndUpdate(
+        {
+          _id: claim._id,
+          status: { $in: OPEN_STATUSES },
+          $or: [
+            { payout_transaction_id: { $exists: false } },
+            { payout_transaction_id: null },
+            { payout_transaction_id: '' },
+          ],
+        },
+        {
+          $set: { status: 'approved', approved_amount: dto.approved_amount },
+          $push: {
+            timeline: {
+              status: 'approved',
+              note: approvedNote,
+              actor_id: new Types.ObjectId(adminId),
+              actor_role: 'admin',
+              at: new Date(),
+            },
+          },
+        },
+        { new: true },
+      )
+      .exec();
+    if (!claimed) {
+      this.logger.warn(
+        `claim_payout_idempotent: Claim ${id} already processed or paid (status: ${claim.status}, payout tx: ${claim.payout_transaction_id})`,
+      );
+      throw new ConflictException('Yêu cầu bồi thường này đã được duyệt hoặc đã chi trả');
+    }
 
     const jobIdStr = this.idOf(claim.job_id as unknown as Types.ObjectId);
-    const tx = await this.paymentsService.refundCustomer(
-      this.idOf(claim.customer_id as unknown as Types.ObjectId),
-      jobIdStr,
-      dto.approved_amount,
-      `Bồi thường bảo hiểm đơn #${jobIdStr.slice(-6)}`,
-    );
-    claim.status = 'paid';
-    claim.payout_transaction_id = String(tx._id);
-    pushTimeline(
-      'paid',
-      `Đã cộng ${dto.approved_amount.toLocaleString('vi-VN')}₫ vào ví khách hàng`,
-    );
-    await claim.save();
+    let tx: { _id: unknown };
+    try {
+      tx = await this.paymentsService.refundCustomer(
+        this.idOf(claim.customer_id as unknown as Types.ObjectId),
+        jobIdStr,
+        dto.approved_amount,
+        `Bồi thường bảo hiểm đơn #${jobIdStr.slice(-6)}`,
+      );
+    } catch (refundErr) {
+      // Chi trả lỗi: hoàn tác trạng thái duyệt về under_review để admin duyệt
+      // lại được, không kẹt ở 'approved' khi chưa có tiền chi trả.
+      await this.claimModel
+        .updateOne(
+          { _id: claim._id, status: 'approved' },
+          { $set: { status: 'under_review' }, $unset: { approved_amount: '' } },
+        )
+        .exec()
+        .catch(() => undefined);
+      this.logger.error(
+        `Claim ${id} payout failed, approval rolled back to under_review: ${(refundErr as Error)?.message ?? refundErr}`,
+      );
+      throw refundErr;
+    }
+    // Ghi 'paid' + payout_transaction_id có điều kiện — chỉ request đang giữ
+    // trạng thái 'approved' mới ghi được, chống ghi đè trùng.
+    const paid = await this.claimModel
+      .findOneAndUpdate(
+        {
+          _id: claim._id,
+          status: 'approved',
+          $or: [
+            { payout_transaction_id: { $exists: false } },
+            { payout_transaction_id: null },
+            { payout_transaction_id: '' },
+          ],
+        },
+        {
+          $set: { status: 'paid', payout_transaction_id: String(tx._id) },
+          $push: {
+            timeline: {
+              status: 'paid',
+              note: `Đã cộng ${dto.approved_amount.toLocaleString('vi-VN')}₫ vào ví khách hàng`,
+              actor_id: new Types.ObjectId(adminId),
+              actor_role: 'admin',
+              at: new Date(),
+            },
+          },
+        },
+        { new: true },
+      )
+      .exec();
+    if (!paid) {
+      // Không thể xảy ra trong luồng bình thường (chỉ request này giữ
+      // 'approved'); nếu xảy ra thì tiền đã cộng nhưng claim chưa ghi 'paid'
+      // — log lỗi nghiêm trọng để xử lý thủ công thay vì lặng im.
+      this.logger.error(
+        `Claim ${id} payout tx ${String(tx._id)} succeeded but claim could not transition to paid — manual reconciliation required`,
+      );
+      return this.adminGet(id);
+    }
 
     await this.notifyCustomer(
       claim,
       '💰 Bồi thường bảo hiểm đã được chi trả',
       `Yêu cầu bồi thường cho đơn #${jobIdStr.slice(-6)} đã được duyệt: ${dto.approved_amount.toLocaleString('vi-VN')}₫ đã cộng vào ví của bạn.`,
     );
-    return claim;
+    return this.adminGet(id);
   }
 
   /** Lấy id dạng string từ field ObjectId — kể cả khi field đã được populate. */

@@ -643,13 +643,29 @@ export default function HelperJobDetailScreen() {
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
               <Ban size={22} color="#DC2626" />
               <Text style={{ fontSize: fs(16), fontWeight: '800', color: '#991B1B' }}>
-                {String(job.cancelled_by) === String(currentUser?._id)
+                {job.cancelled_by_role === 'admin'
                   ? lang === 'en'
-                    ? 'You cancelled this job'
-                    : 'Bạn đã hủy đơn hàng này'
-                  : lang === 'en'
-                    ? 'Customer cancelled this job'
-                    : 'Khách hàng đã hủy đơn hàng'}
+                    ? 'Admin cancelled this job'
+                    : 'Admin đã hủy đơn hàng'
+                  : job.cancelled_by_role === 'customer'
+                    ? lang === 'en'
+                      ? 'Customer cancelled this job'
+                      : 'Khách hàng đã hủy đơn hàng'
+                    : job.cancelled_by_role === 'helper'
+                      ? String(job.cancelled_by) === String(currentUser?._id)
+                        ? lang === 'en'
+                          ? 'You cancelled this job'
+                          : 'Bạn đã hủy đơn hàng này'
+                        : lang === 'en'
+                          ? 'Helper cancelled this job'
+                          : 'Thợ đã hủy đơn hàng'
+                      : String(job.cancelled_by) === String(currentUser?._id)
+                        ? lang === 'en'
+                          ? 'You cancelled this job'
+                          : 'Bạn đã hủy đơn hàng này'
+                        : lang === 'en'
+                          ? 'Customer cancelled this job'
+                          : 'Khách hàng đã hủy đơn hàng'}
               </Text>
             </View>
             {job.cancellation_reason ? (

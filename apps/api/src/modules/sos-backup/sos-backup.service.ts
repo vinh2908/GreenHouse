@@ -101,7 +101,7 @@ export class SosBackupService implements OnModuleInit, OnModuleDestroy {
   // SOS_BACKUP_BROADCAST_TTL_SECONDS          — tổng thời gian phát sóng tìm người thay (mặc định 240 = 4 phút)
   // SOS_BACKUP_WAVE_SIZE                      — số thợ mỗi đợt mời (mặc định 5)
   // SOS_BACKUP_WAVE_INTERVAL_SECONDS          — giãn cách leo thang đợt mời (mặc định 60)
-  // SOS_BACKUP_MAX_DISTANCE_KM                — bán kính ứng viên tối đa (mặc định 30km)
+  // SOS_BACKUP_MAX_DISTANCE_KM                — bán kính ứng viên đợt 1 (mặc định 30km); F13 mở rộng theo đợt: 30 → 50 → 100km
   // SOS_BACKUP_LOCATION_MAX_AGE_MINUTES       — độ tươi tối đa của vị trí GPS (mặc định 120 phút)
   private cfgNum(key: string, def: number): number {
     const raw = this.configService.get<string>(key) ?? process.env[key];
@@ -125,6 +125,15 @@ export class SosBackupService implements OnModuleInit, OnModuleDestroy {
   }
   private get maxDistanceKm(): number {
     return this.cfgNum('SOS_BACKUP_MAX_DISTANCE_KM', 30);
+  }
+  /**
+   * F13: bán kính ứng viên mở rộng theo từng đợt mời — đợt 1 = cấu hình
+   * SOS_BACKUP_MAX_DISTANCE_KM (mặc định 30km), đợt 2 = 50km, đợt 3+ = 100km.
+   */
+  private waveRadiusKm(wave: number): number {
+    const steps = [this.maxDistanceKm, 50, 100];
+    const upto = steps.slice(0, Math.min(Math.max(1, wave), steps.length));
+    return Math.max(...upto);
   }
   private get locationMaxAgeMs(): number {
     return this.cfgNum('SOS_BACKUP_LOCATION_MAX_AGE_MINUTES', 120) * 60_000;
@@ -632,6 +641,7 @@ export class SosBackupService implements OnModuleInit, OnModuleDestroy {
    */
   private async runGlobalMatching(
     focusSos: SosBackupRequestDocument,
+    focusWave = 1,
   ): Promise<Map<string, { pool: CandidateInfo[]; optimalHelperId?: string }>> {
     const pendings = await this.sosModel
       .find({
@@ -652,7 +662,10 @@ export class SosBackupService implements OnModuleInit, OnModuleDestroy {
         pools.set(String(s._id), []);
         continue;
       }
-      const pool = await this.computeCandidatePool(job, s);
+      // F13: mỗi SOS dùng bán kính theo đợt mời hiện tại của chính nó —
+      // đợt sau mở rộng hơn (30 → 50 → 100km) để tìm được thợ ở xa.
+      const wave = s._id.equals(focusSos._id) ? focusWave : (s.current_wave || 1);
+      const pool = await this.computeCandidatePool(job, s, this.waveRadiusKm(wave));
       pools.set(String(s._id), pool);
       pool.forEach(c => helperIds.add(c.helperId));
     }
@@ -689,7 +702,7 @@ export class SosBackupService implements OnModuleInit, OnModuleDestroy {
    * đang là ghép tối ưu của SOS khác (họ nhận popup của SOS kia trước).
    */
   private async inviteWave(sos: SosBackupRequestDocument, wave: number): Promise<void> {
-    const matching = await this.runGlobalMatching(sos);
+    const matching = await this.runGlobalMatching(sos, wave);
     const mine = matching.get(String(sos._id));
     if (!mine) return;
     const optimalOfOthers = new Set(
@@ -819,6 +832,7 @@ export class SosBackupService implements OnModuleInit, OnModuleDestroy {
   private async computeCandidatePool(
     job: JobDocument,
     sos: SosBackupRequestDocument,
+    maxDistanceKm?: number,
   ): Promise<CandidateInfo[]> {
     const jobCoords = job.address?.location?.coordinates; // [lng, lat]
     if (!jobCoords) return [];
@@ -834,10 +848,21 @@ export class SosBackupService implements OnModuleInit, OnModuleDestroy {
     }
 
     const profiles = await this.helperModel.find(helperFilter).exec();
-    this.logger.log(
-      `SOS candidate search for job ${job._id}: found ${profiles.length} online, verified helpers.`,
-    );
-    if (profiles.length === 0) return [];
+    // F13: log số ứng viên sau mỗi bước lọc để chẩn đoán vì sao SOS không tìm được thợ.
+    const filterSteps = {
+      onlineVerified: profiles.length,
+      afterSelf: 0,
+      hasCoords: 0,
+      gpsFresh: 0,
+      withinRadius: 0,
+      notBusy: 0,
+    };
+    if (profiles.length === 0) {
+      this.logger.log(
+        `SOS candidate filter job ${job._id}: onlineVerified=0 -> qualified=0 (no online verified helpers)`,
+      );
+      return [];
+    }
 
     const userIds = profiles.map(p => String(p.user_id));
     const activeJobs = await this.jobModel
@@ -857,27 +882,33 @@ export class SosBackupService implements OnModuleInit, OnModuleDestroy {
     const nowMs = Date.now();
     const pool: CandidateInfo[] = [];
     const maxGpsAgeMs = 12 * 60 * 60 * 1000; // A64: nới lỏng GPS 12 giờ
-    const maxAllowedDist = Math.max(this.maxDistanceKm, 30);
+    // F13: bán kính theo đợt mời (30 → 50 → 100km), truyền từ inviteWave.
+    const maxAllowedDist = maxDistanceKm ?? this.maxDistanceKm;
 
     for (const profile of profiles) {
       const helperId = String(profile.user_id);
       if (helperId === String(job.customer_id)) continue;
+      filterSteps.afterSelf += 1;
       // A64: Không yêu cầu socket đang mở — thợ đang chạy nền vẫn nhận notification + push
 
       const coords = profile.location?.coordinates;
       if (!coords) continue;
+      filterSteps.hasCoords += 1;
       if (profile.location_source === 'gps' || profile.last_location_update) {
         const age = profile.last_location_update
           ? nowMs - new Date(profile.last_location_update).getTime()
           : Number.POSITIVE_INFINITY;
         if (age > maxGpsAgeMs) continue; // vị trí GPS quá 12 giờ
       }
+      filterSteps.gpsFresh += 1;
 
       const distanceKm = this.haversineKm(coords[1], coords[0], jobCoords[1], jobCoords[0]);
       if (distanceKm > maxAllowedDist) continue;
+      filterSteps.withinRadius += 1;
 
       const activeJobsCount = activeCountByHelper.get(helperId) ?? 0;
       if (activeJobsCount > 0) continue; // đang bận đơn khác
+      filterSteps.notBusy += 1;
 
       const rating = profile.rating ?? 0;
       const completedJobs = profile.completed_jobs ?? 0;
@@ -915,7 +946,11 @@ export class SosBackupService implements OnModuleInit, OnModuleDestroy {
       });
     }
     this.logger.log(
-      `SOS candidate search for job ${job._id}: ${pool.length} candidates qualified in pool within ${maxAllowedDist}km.`,
+      `SOS candidate filter job ${job._id} radius=${maxAllowedDist}km: ` +
+        `onlineVerified=${filterSteps.onlineVerified} -> afterSelf=${filterSteps.afterSelf} ` +
+        `-> hasCoords=${filterSteps.hasCoords} -> gpsFresh=${filterSteps.gpsFresh} ` +
+        `-> withinRadius=${filterSteps.withinRadius} -> notBusy=${filterSteps.notBusy} ` +
+        `-> qualified=${pool.length}`,
     );
     return pool.sort((a, b) => a.cost - b.cost);
   }
