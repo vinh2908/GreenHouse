@@ -274,7 +274,7 @@ export default function ServicesPage() {
         ) : !services?.length ? (
           <EmptyState message="Chưa có dịch vụ nào" />
         ) : (
-          <Table>
+          <Table className="min-w-[650px]">
             <TableHeader>
               <TableRow>
                 <TableHead>Dịch vụ</TableHead>

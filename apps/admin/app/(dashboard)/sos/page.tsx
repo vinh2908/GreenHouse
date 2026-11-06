@@ -99,65 +99,67 @@ function FlaggedSosTab() {
         <EmptyState message="Không có yêu cầu SOS nào đang cần chú ý" />
       ) : (
         <>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Thời gian</TableHead>
-                <TableHead>Đơn</TableHead>
-                <TableHead>Khách hàng</TableHead>
-                <TableHead>Thợ gốc</TableHead>
-                <TableHead>Lý do SOS</TableHead>
-                <TableHead>Trạng thái</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {requests.map(r => {
-                const jobId = jobIdOf(r.job_id);
-                const jobTitle =
-                  r.job_id && typeof r.job_id === 'object' && r.job_id.title
-                    ? r.job_id.title
-                    : r.job_title;
-                return (
-                  <TableRow key={r._id}>
-                    <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
-                      {formatDateTime(r.created_at)}
-                    </TableCell>
-                    <TableCell>
-                      {jobId ? (
-                        <Link href={`/jobs/${jobId}`} className="font-medium hover:underline">
-                          {jobTitle}
-                        </Link>
-                      ) : (
-                        <span className="font-medium">{jobTitle}</span>
-                      )}
-                      <p className="text-xs text-muted-foreground">
-                        #{jobId.slice(-6)}
-                        {r.service_name ? ` • ${r.service_name}` : ''}
-                        {r.refund_amount > 0 ? ` • Đã hoàn ${formatVND(r.refund_amount)}` : ''}
-                      </p>
-                    </TableCell>
-                    <TableCell>
-                      <PersonCell person={r.customer_id} />
-                    </TableCell>
-                    <TableCell>
-                      <PersonCell person={r.original_helper_id} />
-                      {r.replacement_helper_id && typeof r.replacement_helper_id === 'object' && (
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Thay: {r.replacement_helper_id.full_name}
+          <div className="overflow-x-auto w-full">
+            <Table className="min-w-[700px]">
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Thời gian</TableHead>
+                  <TableHead>Đơn</TableHead>
+                  <TableHead>Khách hàng</TableHead>
+                  <TableHead>Thợ gốc</TableHead>
+                  <TableHead>Lý do SOS</TableHead>
+                  <TableHead>Trạng thái</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {requests.map(r => {
+                  const jobId = jobIdOf(r.job_id);
+                  const jobTitle =
+                    r.job_id && typeof r.job_id === 'object' && r.job_id.title
+                      ? r.job_id.title
+                      : r.job_title;
+                  return (
+                    <TableRow key={r._id}>
+                      <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
+                        {formatDateTime(r.created_at)}
+                      </TableCell>
+                      <TableCell>
+                        {jobId ? (
+                          <Link href={`/jobs/${jobId}`} className="font-medium hover:underline">
+                            {jobTitle}
+                          </Link>
+                        ) : (
+                          <span className="font-medium">{jobTitle}</span>
+                        )}
+                        <p className="text-xs text-muted-foreground">
+                          #{jobId.slice(-6)}
+                          {r.service_name ? ` • ${r.service_name}` : ''}
+                          {r.refund_amount > 0 ? ` • Đã hoàn ${formatVND(r.refund_amount)}` : ''}
                         </p>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-sm">{REASON_VI[r.reason] ?? r.reason}</TableCell>
-                    <TableCell>
-                      <Badge variant={SOS_STATUS_BADGE[r.status] ?? 'secondary'}>
-                        {SOS_STATUS_VI[r.status] ?? r.status}
-                      </Badge>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
+                      </TableCell>
+                      <TableCell>
+                        <PersonCell person={r.customer_id} />
+                      </TableCell>
+                      <TableCell>
+                        <PersonCell person={r.original_helper_id} />
+                        {r.replacement_helper_id && typeof r.replacement_helper_id === 'object' && (
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Thay: {r.replacement_helper_id.full_name}
+                          </p>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-sm">{REASON_VI[r.reason] ?? r.reason}</TableCell>
+                      <TableCell>
+                        <Badge variant={SOS_STATUS_BADGE[r.status] ?? 'secondary'}>
+                          {SOS_STATUS_VI[r.status] ?? r.status}
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </div>
           <Pagination page={page} totalPages={data?.total_pages ?? 1} onPageChange={setPage} />
         </>
       )}
@@ -318,81 +320,83 @@ function PenaltyEventsTab() {
         </div>
       </div>
 
-      <div className="rounded-lg border bg-card">
+      <div className="rounded-lg border bg-card overflow-hidden max-w-full">
         {isLoading ? (
           <Loading />
         ) : events.length === 0 ? (
           <EmptyState message="Chưa có sự kiện phạt nào" />
         ) : (
           <>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Thời gian</TableHead>
-                  <TableHead>Thợ</TableHead>
-                  <TableHead>Điểm trừ</TableHead>
-                  <TableHead>Nguồn / Đơn</TableHead>
-                  <TableHead>Trạng thái</TableHead>
-                  <TableHead className="text-right">Thao tác</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {events.map(ev => {
-                  const jobId = jobIdOf(ev.job_id);
-                  const jobTitle =
-                    ev.job_id && typeof ev.job_id === 'object' ? ev.job_id.title : undefined;
-                  return (
-                    <TableRow key={ev._id}>
-                      <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
-                        {formatDateTime(ev.created_at)}
-                      </TableCell>
-                      <TableCell>
-                        <PersonCell person={ev.helper_id} />
-                      </TableCell>
-                      <TableCell>
-                        <span className="font-semibold text-red-600">−{ev.points_deducted}đ</span>
-                        <p className="text-xs text-muted-foreground">
-                          {ev.cancellations_in_window} lần hủy / 7 ngày • Điểm sau phạt:{' '}
-                          {ev.performance_score_after}
-                        </p>
-                      </TableCell>
-                      <TableCell className="text-sm">
-                        {SOURCE_VI[ev.source] ?? ev.source}
-                        {jobId && (
+            <div className="overflow-x-auto w-full">
+              <Table className="min-w-[700px]">
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Thời gian</TableHead>
+                    <TableHead>Thợ</TableHead>
+                    <TableHead>Điểm trừ</TableHead>
+                    <TableHead>Nguồn / Đơn</TableHead>
+                    <TableHead>Trạng thái</TableHead>
+                    <TableHead className="text-right">Thao tác</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {events.map(ev => {
+                    const jobId = jobIdOf(ev.job_id);
+                    const jobTitle =
+                      ev.job_id && typeof ev.job_id === 'object' ? ev.job_id.title : undefined;
+                    return (
+                      <TableRow key={ev._id}>
+                        <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
+                          {formatDateTime(ev.created_at)}
+                        </TableCell>
+                        <TableCell>
+                          <PersonCell person={ev.helper_id} />
+                        </TableCell>
+                        <TableCell>
+                          <span className="font-semibold text-red-600">−{ev.points_deducted}đ</span>
                           <p className="text-xs text-muted-foreground">
-                            <Link href={`/jobs/${jobId}`} className="hover:underline">
-                              {jobTitle ?? `Đơn #${jobId.slice(-6)}`}
-                            </Link>
+                            {ev.cancellations_in_window} lần hủy / 7 ngày • Điểm sau phạt:{' '}
+                            {ev.performance_score_after}
                           </p>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {ev.status === 'waived' ? (
-                          <>
-                            <Badge variant="secondary">Đã miễn</Badge>
-                            {ev.waive_reason && (
-                              <p className="text-xs text-muted-foreground mt-1 max-w-56">
-                                {ev.waive_reason}
-                                {ev.waived_at ? ` — ${formatDateTime(ev.waived_at)}` : ''}
-                              </p>
-                            )}
-                          </>
-                        ) : (
-                          <Badge variant="danger">Đang tính phạt</Badge>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {ev.status !== 'waived' && (
-                          <Button size="sm" variant="outline" onClick={() => setWaiving(ev)}>
-                            Miễn phạt
-                          </Button>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
+                        </TableCell>
+                        <TableCell className="text-sm">
+                          {SOURCE_VI[ev.source] ?? ev.source}
+                          {jobId && (
+                            <p className="text-xs text-muted-foreground">
+                              <Link href={`/jobs/${jobId}`} className="hover:underline">
+                                {jobTitle ?? `Đơn #${jobId.slice(-6)}`}
+                              </Link>
+                            </p>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {ev.status === 'waived' ? (
+                            <>
+                              <Badge variant="secondary">Đã miễn</Badge>
+                              {ev.waive_reason && (
+                                <p className="text-xs text-muted-foreground mt-1 max-w-56">
+                                  {ev.waive_reason}
+                                  {ev.waived_at ? ` — ${formatDateTime(ev.waived_at)}` : ''}
+                                </p>
+                              )}
+                            </>
+                          ) : (
+                            <Badge variant="danger">Đang tính phạt</Badge>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {ev.status !== 'waived' && (
+                            <Button size="sm" variant="outline" onClick={() => setWaiving(ev)}>
+                              Miễn phạt
+                            </Button>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
             <Pagination page={page} totalPages={data?.total_pages ?? 1} onPageChange={setPage} />
           </>
         )}

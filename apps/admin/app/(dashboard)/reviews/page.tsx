@@ -84,84 +84,86 @@ export default function ReviewsPage() {
         />
       </div>
 
-      <div className="rounded-lg border bg-card">
+      <div className="rounded-lg border bg-card overflow-hidden max-w-full">
         {isLoading ? (
           <Loading />
         ) : !data?.reviews?.length ? (
           <EmptyState message="Chưa có đánh giá nào" />
         ) : (
           <>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Khách hàng</TableHead>
-                  <TableHead>Helper</TableHead>
-                  <TableHead>Đánh giá</TableHead>
-                  <TableHead>Nhận xét</TableHead>
-                  <TableHead>Phản hồi helper</TableHead>
-                  <TableHead>Ngày đánh giá</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {data.reviews.map(
-                  (r: {
-                    _id: string;
-                    customer_id: { full_name: string } | null;
-                    helper_id: { full_name: string } | null;
-                    rating: number;
-                    comment?: string;
-                    tags?: string[];
-                    helper_reply?: string;
-                    created_at: string;
-                  }) => (
-                    <TableRow key={r._id}>
-                      <TableCell>
-                        <p className="text-sm font-medium">{r.customer_id?.full_name ?? '—'}</p>
-                      </TableCell>
-                      <TableCell>
-                        <p className="text-sm font-medium">{r.helper_id?.full_name ?? '—'}</p>
-                      </TableCell>
-                      <TableCell>
-                        <StarRating rating={r.rating} />
-                      </TableCell>
-                      <TableCell>
-                        <div className="max-w-[200px]">
-                          {r.comment && (
-                            <p className="text-sm text-muted-foreground line-clamp-2">
-                              {r.comment}
+            <div className="overflow-x-auto w-full">
+              <Table className="min-w-[700px]">
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Khách hàng</TableHead>
+                    <TableHead>Helper</TableHead>
+                    <TableHead>Đánh giá</TableHead>
+                    <TableHead>Nhận xét</TableHead>
+                    <TableHead>Phản hồi helper</TableHead>
+                    <TableHead>Ngày đánh giá</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {data.reviews.map(
+                    (r: {
+                      _id: string;
+                      customer_id: { full_name: string } | null;
+                      helper_id: { full_name: string } | null;
+                      rating: number;
+                      comment?: string;
+                      tags?: string[];
+                      helper_reply?: string;
+                      created_at: string;
+                    }) => (
+                      <TableRow key={r._id}>
+                        <TableCell>
+                          <p className="text-sm font-medium">{r.customer_id?.full_name ?? '—'}</p>
+                        </TableCell>
+                        <TableCell>
+                          <p className="text-sm font-medium">{r.helper_id?.full_name ?? '—'}</p>
+                        </TableCell>
+                        <TableCell>
+                          <StarRating rating={r.rating} />
+                        </TableCell>
+                        <TableCell>
+                          <div className="max-w-[200px]">
+                            {r.comment && (
+                              <p className="text-sm text-muted-foreground line-clamp-2">
+                                {r.comment}
+                              </p>
+                            )}
+                            {r.tags?.length ? (
+                              <div className="flex gap-1 flex-wrap mt-1">
+                                {r.tags.map(t => (
+                                  <span
+                                    key={t}
+                                    className="text-xs bg-secondary text-secondary-foreground px-1.5 py-0.5 rounded"
+                                  >
+                                    {t}
+                                  </span>
+                                ))}
+                              </div>
+                            ) : null}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          {r.helper_reply ? (
+                            <p className="text-sm text-muted-foreground italic max-w-[180px] line-clamp-2">
+                              &ldquo;{r.helper_reply}&rdquo;
                             </p>
+                          ) : (
+                            <span className="text-muted-foreground text-sm">—</span>
                           )}
-                          {r.tags?.length ? (
-                            <div className="flex gap-1 flex-wrap mt-1">
-                              {r.tags.map(t => (
-                                <span
-                                  key={t}
-                                  className="text-xs bg-secondary text-secondary-foreground px-1.5 py-0.5 rounded"
-                                >
-                                  {t}
-                                </span>
-                              ))}
-                            </div>
-                          ) : null}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        {r.helper_reply ? (
-                          <p className="text-sm text-muted-foreground italic max-w-[180px] line-clamp-2">
-                            &ldquo;{r.helper_reply}&rdquo;
-                          </p>
-                        ) : (
-                          <span className="text-muted-foreground text-sm">—</span>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
-                        {formatDateTime(r.created_at)}
-                      </TableCell>
-                    </TableRow>
-                  ),
-                )}
-              </TableBody>
-            </Table>
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          {formatDateTime(r.created_at)}
+                        </TableCell>
+                      </TableRow>
+                    ),
+                  )}
+                </TableBody>
+              </Table>
+            </div>
             <Pagination page={page} totalPages={data.total_pages ?? 1} onPageChange={setPage} />
           </>
         )}

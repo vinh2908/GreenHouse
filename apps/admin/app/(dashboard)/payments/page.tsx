@@ -98,138 +98,141 @@ export default function PaymentsPage() {
           />
         </div>
 
-        <div className="rounded-lg border bg-card">
+        <div className="rounded-lg border bg-card overflow-hidden max-w-full">
           {wLoading ? (
             <Loading />
           ) : !withdrawals?.withdrawals?.length ? (
             <EmptyState message="Không có yêu cầu rút tiền" />
           ) : (
             <>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Helper</TableHead>
-                    <TableHead>Số tiền</TableHead>
-                    <TableHead>Ngân hàng</TableHead>
-                    <TableHead>Trạng thái</TableHead>
-                    <TableHead>Ngày yêu cầu</TableHead>
-                    <TableHead className="text-right">Thao tác</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {withdrawals.withdrawals.map(
-                    (w: {
-                      _id: string;
-                      user_id: string | { _id: string; full_name?: string; phone?: string } | null;
-                      amount: number;
-                      status: string;
-                      bank_account: {
-                        bank_name: string;
-                        account_number: string;
-                        account_name: string;
-                      };
-                      admin_note?: string;
-                      created_at: string;
-                    }) => (
-                      <Fragment key={w._id}>
-                        <TableRow>
-                          <TableCell>
-                            {w.user_id && typeof w.user_id === 'object' ? (
+              <div className="overflow-x-auto w-full">
+                <Table className="min-w-[700px]">
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Helper</TableHead>
+                      <TableHead>Số tiền</TableHead>
+                      <TableHead>Ngân hàng</TableHead>
+                      <TableHead>Trạng thái</TableHead>
+                      <TableHead>Ngày yêu cầu</TableHead>
+                      <TableHead className="text-right">Thao tác</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {withdrawals.withdrawals.map(
+                      (w: {
+                        _id: string;
+                        user_id:
+                          string | { _id: string; full_name?: string; phone?: string } | null;
+                        amount: number;
+                        status: string;
+                        bank_account: {
+                          bank_name: string;
+                          account_number: string;
+                          account_name: string;
+                        };
+                        admin_note?: string;
+                        created_at: string;
+                      }) => (
+                        <Fragment key={w._id}>
+                          <TableRow>
+                            <TableCell>
+                              {w.user_id && typeof w.user_id === 'object' ? (
+                                <div>
+                                  <Link
+                                    href={`/users/${w.user_id._id}`}
+                                    className="font-medium hover:underline"
+                                  >
+                                    {w.user_id.full_name ?? '—'}
+                                  </Link>
+                                  <p className="text-xs text-muted-foreground">{w.user_id.phone}</p>
+                                </div>
+                              ) : (
+                                <span className="font-mono text-xs">{w.user_id ?? '—'}</span>
+                              )}
+                            </TableCell>
+                            <TableCell className="font-semibold text-green-700">
+                              {formatVND(w.amount)}
+                            </TableCell>
+                            <TableCell>
                               <div>
-                                <Link
-                                  href={`/users/${w.user_id._id}`}
-                                  className="font-medium hover:underline"
-                                >
-                                  {w.user_id.full_name ?? '—'}
-                                </Link>
-                                <p className="text-xs text-muted-foreground">{w.user_id.phone}</p>
-                              </div>
-                            ) : (
-                              <span className="font-mono text-xs">{w.user_id ?? '—'}</span>
-                            )}
-                          </TableCell>
-                          <TableCell className="font-semibold text-green-700">
-                            {formatVND(w.amount)}
-                          </TableCell>
-                          <TableCell>
-                            <div>
-                              <p className="text-sm font-medium">{w.bank_account.bank_name}</p>
-                              <p className="text-xs text-muted-foreground font-mono">
-                                {w.bank_account.account_number}
-                              </p>
-                              <p className="text-xs text-muted-foreground">
-                                {w.bank_account.account_name}
-                              </p>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant={WITHDRAWAL_BADGE[w.status] ?? 'secondary'}>
-                              {w.status}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-sm text-muted-foreground">
-                            {formatDateTime(w.created_at)}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            {w.status === 'pending' && (
-                              <div className="flex gap-2 justify-end">
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  className="text-green-600 border-green-300"
-                                  loading={process.isPending && approvingItem?._id === w._id}
-                                  onClick={() => setApprovingItem(w)}
-                                >
-                                  Duyệt
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  className="text-red-600 border-red-300"
-                                  onClick={() =>
-                                    setRejectingId(rejectingId === w._id ? null : w._id)
-                                  }
-                                >
-                                  Từ chối
-                                </Button>
-                              </div>
-                            )}
-                          </TableCell>
-                        </TableRow>
-                        {rejectingId === w._id && (
-                          <TableRow key={`${w._id}-reject`}>
-                            <TableCell colSpan={6} className="bg-muted/30 py-2 px-4">
-                              <div className="flex gap-2">
-                                <input
-                                  className="flex-1 h-8 rounded border border-input px-2 text-sm"
-                                  placeholder="Ghi chú từ chối..."
-                                  value={rejectNote}
-                                  onChange={e => setRejectNote(e.target.value)}
-                                />
-                                <Button
-                                  size="sm"
-                                  variant="destructive"
-                                  loading={process.isPending}
-                                  onClick={() => handleReject(w._id)}
-                                >
-                                  Xác nhận
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  onClick={() => setRejectingId(null)}
-                                >
-                                  Hủy
-                                </Button>
+                                <p className="text-sm font-medium">{w.bank_account.bank_name}</p>
+                                <p className="text-xs text-muted-foreground font-mono">
+                                  {w.bank_account.account_number}
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                  {w.bank_account.account_name}
+                                </p>
                               </div>
                             </TableCell>
+                            <TableCell>
+                              <Badge variant={WITHDRAWAL_BADGE[w.status] ?? 'secondary'}>
+                                {w.status}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-sm text-muted-foreground">
+                              {formatDateTime(w.created_at)}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              {w.status === 'pending' && (
+                                <div className="flex gap-2 justify-end">
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="text-green-600 border-green-300"
+                                    loading={process.isPending && approvingItem?._id === w._id}
+                                    onClick={() => setApprovingItem(w)}
+                                  >
+                                    Duyệt
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="text-red-600 border-red-300"
+                                    onClick={() =>
+                                      setRejectingId(rejectingId === w._id ? null : w._id)
+                                    }
+                                  >
+                                    Từ chối
+                                  </Button>
+                                </div>
+                              )}
+                            </TableCell>
                           </TableRow>
-                        )}
-                      </Fragment>
-                    ),
-                  )}
-                </TableBody>
-              </Table>
+                          {rejectingId === w._id && (
+                            <TableRow key={`${w._id}-reject`}>
+                              <TableCell colSpan={6} className="bg-muted/30 py-2 px-4">
+                                <div className="flex gap-2">
+                                  <input
+                                    className="flex-1 h-8 rounded border border-input px-2 text-sm"
+                                    placeholder="Ghi chú từ chối..."
+                                    value={rejectNote}
+                                    onChange={e => setRejectNote(e.target.value)}
+                                  />
+                                  <Button
+                                    size="sm"
+                                    variant="destructive"
+                                    loading={process.isPending}
+                                    onClick={() => handleReject(w._id)}
+                                  >
+                                    Xác nhận
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() => setRejectingId(null)}
+                                  >
+                                    Hủy
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          )}
+                        </Fragment>
+                      ),
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
               <Pagination
                 page={wPage}
                 totalPages={withdrawals.total_pages ?? 1}
@@ -255,69 +258,71 @@ export default function PaymentsPage() {
           />
         </div>
 
-        <div className="rounded-lg border bg-card">
+        <div className="rounded-lg border bg-card overflow-hidden max-w-full">
           {txLoading ? (
             <Loading />
           ) : !transactions?.transactions?.length ? (
             <EmptyState message="Chưa có giao dịch" />
           ) : (
             <>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Loại</TableHead>
-                    <TableHead>Mô tả</TableHead>
-                    <TableHead>Số tiền</TableHead>
-                    <TableHead>Trạng thái</TableHead>
-                    <TableHead>Thời gian</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {transactions.transactions.map(
-                    (tx: {
-                      _id: string;
-                      type: string;
-                      description: string;
-                      amount: number;
-                      status: string;
-                      created_at: string;
-                    }) => (
-                      <TableRow key={tx._id}>
-                        <TableCell>
-                          <Badge variant={TX_TYPE_BADGE[tx.type] ?? 'secondary'}>{tx.type}</Badge>
-                        </TableCell>
-                        <TableCell className="text-sm">{tx.description}</TableCell>
-                        <TableCell
-                          className={`font-semibold ${
-                            tx.type === 'earning' || tx.type === 'refund'
-                              ? 'text-green-700'
-                              : 'text-foreground'
-                          }`}
-                        >
-                          {tx.type === 'earning' || tx.type === 'refund' ? '+' : ''}
-                          {formatVND(tx.amount)}
-                        </TableCell>
-                        <TableCell>
-                          <Badge
-                            variant={
-                              tx.status === 'success'
-                                ? 'success'
-                                : tx.status === 'failed'
-                                  ? 'danger'
-                                  : 'warning'
-                            }
+              <div className="overflow-x-auto w-full">
+                <Table className="min-w-[700px]">
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Loại</TableHead>
+                      <TableHead>Mô tả</TableHead>
+                      <TableHead>Số tiền</TableHead>
+                      <TableHead>Trạng thái</TableHead>
+                      <TableHead>Thời gian</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {transactions.transactions.map(
+                      (tx: {
+                        _id: string;
+                        type: string;
+                        description: string;
+                        amount: number;
+                        status: string;
+                        created_at: string;
+                      }) => (
+                        <TableRow key={tx._id}>
+                          <TableCell>
+                            <Badge variant={TX_TYPE_BADGE[tx.type] ?? 'secondary'}>{tx.type}</Badge>
+                          </TableCell>
+                          <TableCell className="text-sm">{tx.description}</TableCell>
+                          <TableCell
+                            className={`font-semibold ${
+                              tx.type === 'earning' || tx.type === 'refund'
+                                ? 'text-green-700'
+                                : 'text-foreground'
+                            }`}
                           >
-                            {tx.status}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-sm text-muted-foreground">
-                          {formatDateTime(tx.created_at)}
-                        </TableCell>
-                      </TableRow>
-                    ),
-                  )}
-                </TableBody>
-              </Table>
+                            {tx.type === 'earning' || tx.type === 'refund' ? '+' : ''}
+                            {formatVND(tx.amount)}
+                          </TableCell>
+                          <TableCell>
+                            <Badge
+                              variant={
+                                tx.status === 'success'
+                                  ? 'success'
+                                  : tx.status === 'failed'
+                                    ? 'danger'
+                                    : 'warning'
+                              }
+                            >
+                              {tx.status}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-sm text-muted-foreground">
+                            {formatDateTime(tx.created_at)}
+                          </TableCell>
+                        </TableRow>
+                      ),
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
               <Pagination
                 page={txPage}
                 totalPages={transactions.total_pages ?? 1}

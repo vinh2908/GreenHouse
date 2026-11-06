@@ -105,108 +105,110 @@ export default function UsersPage() {
       </form>
 
       {/* Table */}
-      <div className="rounded-lg border bg-card">
+      <div className="rounded-lg border bg-card overflow-hidden max-w-full">
         {isLoading ? (
           <Loading />
         ) : !data?.users?.length ? (
           <EmptyState message="Không tìm thấy người dùng nào" />
         ) : (
           <>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Người dùng</TableHead>
-                  <TableHead>SĐT</TableHead>
-                  <TableHead>Roles</TableHead>
-                  <TableHead>Trạng thái</TableHead>
-                  <TableHead>Ngày tạo</TableHead>
-                  <TableHead className="text-right">Thao tác</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {data.users.map(
-                  (user: {
-                    _id: string;
-                    full_name: string;
-                    email?: string;
-                    phone: string;
-                    roles: string[];
-                    status: string;
-                    created_at: string;
-                  }) => {
-                    const isAdmin = user.roles?.includes('admin');
-                    return (
-                      <TableRow key={user._id}>
-                        <TableCell>
-                          <div>
-                            <Link
-                              href={`/users/${user._id}`}
-                              className="font-medium hover:underline"
-                            >
-                              {user.full_name}
-                            </Link>
-                            {user.email && (
-                              <p className="text-xs text-muted-foreground">{user.email}</p>
+            <div className="overflow-x-auto w-full">
+              <Table className="min-w-[700px]">
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Người dùng</TableHead>
+                    <TableHead>SĐT</TableHead>
+                    <TableHead>Roles</TableHead>
+                    <TableHead>Trạng thái</TableHead>
+                    <TableHead>Ngày tạo</TableHead>
+                    <TableHead className="text-right">Thao tác</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {data.users.map(
+                    (user: {
+                      _id: string;
+                      full_name: string;
+                      email?: string;
+                      phone: string;
+                      roles: string[];
+                      status: string;
+                      created_at: string;
+                    }) => {
+                      const isAdmin = user.roles?.includes('admin');
+                      return (
+                        <TableRow key={user._id}>
+                          <TableCell>
+                            <div>
+                              <Link
+                                href={`/users/${user._id}`}
+                                className="font-medium hover:underline"
+                              >
+                                {user.full_name}
+                              </Link>
+                              {user.email && (
+                                <p className="text-xs text-muted-foreground">{user.email}</p>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell className="font-mono text-sm">{user.phone}</TableCell>
+                          <TableCell>
+                            <div className="flex gap-1 flex-wrap">
+                              {user.roles.map(r => (
+                                <Badge key={r} variant="outline">
+                                  {r}
+                                </Badge>
+                              ))}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={STATUS_BADGE[user.status] ?? 'secondary'}>
+                              {STATUS_VI[user.status] ?? user.status}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-sm text-muted-foreground">
+                            {formatDateTime(user.created_at)}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {isAdmin ? (
+                              <span className="text-xs text-muted-foreground">Quản trị viên</span>
+                            ) : user.status === 'suspended' ? (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                loading={activate.isPending}
+                                onClick={() => activate.mutate(user._id)}
+                              >
+                                Kích hoạt
+                              </Button>
+                            ) : (
+                              <Button
+                                size="sm"
+                                variant="destructive"
+                                loading={suspend.isPending}
+                                onClick={() => {
+                                  const reason = prompt(
+                                    `Nhập lý do đình chỉ tài khoản "${user.full_name}":`,
+                                  );
+                                  if (reason !== null) {
+                                    suspend.mutate({
+                                      id: user._id,
+                                      reason: reason.trim() || 'Vi phạm quy định nền tảng',
+                                    });
+                                  }
+                                }}
+                              >
+                                Đình chỉ
+                              </Button>
                             )}
-                          </div>
-                        </TableCell>
-                        <TableCell className="font-mono text-sm">{user.phone}</TableCell>
-                        <TableCell>
-                          <div className="flex gap-1 flex-wrap">
-                            {user.roles.map(r => (
-                              <Badge key={r} variant="outline">
-                                {r}
-                              </Badge>
-                            ))}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant={STATUS_BADGE[user.status] ?? 'secondary'}>
-                            {STATUS_VI[user.status] ?? user.status}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-sm text-muted-foreground">
-                          {formatDateTime(user.created_at)}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          {isAdmin ? (
-                            <span className="text-xs text-muted-foreground">Quản trị viên</span>
-                          ) : user.status === 'suspended' ? (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              loading={activate.isPending}
-                              onClick={() => activate.mutate(user._id)}
-                            >
-                              Kích hoạt
-                            </Button>
-                          ) : (
-                            <Button
-                              size="sm"
-                              variant="destructive"
-                              loading={suspend.isPending}
-                              onClick={() => {
-                                const reason = prompt(
-                                  `Nhập lý do đình chỉ tài khoản "${user.full_name}":`,
-                                );
-                                if (reason !== null) {
-                                  suspend.mutate({
-                                    id: user._id,
-                                    reason: reason.trim() || 'Vi phạm quy định nền tảng',
-                                  });
-                                }
-                              }}
-                            >
-                              Đình chỉ
-                            </Button>
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    );
-                  },
-                )}
-              </TableBody>
-            </Table>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    },
+                  )}
+                </TableBody>
+              </Table>
+            </div>
             <Pagination page={page} totalPages={data.total_pages ?? 1} onPageChange={setPage} />
           </>
         )}
