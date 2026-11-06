@@ -50,7 +50,9 @@ export interface SettlementSummary {
  *   Date.getDay(): 0 = Chủ nhật … 6 = Thứ 7) giao với [start_date, end_date]
  *   — không cần cron/bảng lịch riêng.
  * - Ngày theo giờ server (định dạng 'YYYY-MM-DD' bằng thành phần ngày local).
- * - Chốt lương: gross = round(lương tháng × buổi confirmed / buổi theo lịch).
+ * - Chốt lương: gross = round(lương tháng × buổi đã làm / buổi theo lịch).
+ *   Buổi đã làm = 'confirmed' (khách đã xác nhận) + 'checked_in' (thợ đã chấm
+ *   công thực tế, kể cả khi khách chưa kịp xác nhận — B50).
  *   Buổi theo lịch trong quá khứ mà KHÔNG có bản ghi điểm danh được tính là
  *   vắng (absent) trong bản tóm tắt — thợ quên check-in thì khách vẫn có thể
  *   xác nhận/vắng khi có bản ghi 'checked_in'; buổi không có bản ghi chỉ ảnh
@@ -628,11 +630,15 @@ export class MonthlyContractsService {
     let absent = 0;
     for (const date of scheduled) {
       const st = byDate.get(date);
-      if (st === 'confirmed') confirmed += 1;
+      // B50: Buổi đã chấm công thực tế ('checked_in') tính như buổi đã làm,
+      // kể cả khi khách chưa kịp bấm xác nhận — lương tính theo buổi làm thật,
+      // không phải buổi dự kiến. Chỉ 'confirmed' thì lương đã thiếu khi khách
+      // chưa xác nhận kịp lúc chốt lương.
+      if (st === 'confirmed' || st === 'checked_in') confirmed += 1;
       else if (st === 'leave') leave += 1;
       else if (st === 'absent') absent += 1;
       else if (!st && date < today) absent += 1; // quá khứ không có record = vắng
-      // 'checked_in' chưa xác nhận & ngày hôm nay/tương lai: chưa tính
+      // Ngày hôm nay/tương lai chưa có record: chưa tính
     }
 
     // A39: Tính lương theo tỷ lệ số buổi đã xác nhận / tổng số buổi theo lịch trọn tháng
