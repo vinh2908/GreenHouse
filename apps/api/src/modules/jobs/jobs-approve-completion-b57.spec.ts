@@ -77,6 +77,8 @@ describe('JobsService.approveCompletion (B57)', () => {
         {
           provide: PaymentsService,
           useValue: {
+            // G2: creditJobPayout bọc trả tiền trong runMoneyTransaction.
+            runMoneyTransaction: jest.fn(async (fn: (s: any) => Promise<any>) => fn(undefined)),
             creditHelper: jest.fn().mockResolvedValue({}),
             deductCommissionForCashJob: jest.fn().mockResolvedValue({}),
             deductWallet: jest.fn().mockResolvedValue({}),

@@ -3835,25 +3835,35 @@ export class JobsService implements OnModuleInit {
     if (!job.helper_id || totalAmount <= 0) return;
     const jobId = String(job._id);
     const acceptedMembers = (job.team ?? []).filter(m => m.status === 'accepted');
-    if (acceptedMembers.length === 0) {
-      await this.paymentsService.creditHelper(String(job.helper_id), jobId, totalAmount);
-      return;
-    }
-    let creditedToMembers = 0;
-    for (const member of acceptedMembers) {
-      const share = Math.floor((totalAmount * member.split_percent) / 100);
-      if (share > 0) {
-        await this.paymentsService.creditHelper(String(member.helper_id), jobId, share);
-        creditedToMembers += share;
+    // G2: bọc toàn bộ lần trả tiền (lead + các member) trong 1 transaction —
+    // trước đây creditHelper được gọi 3 lần không transaction/session, lỗi
+    // giữa chừng có thể trả thiếu/thừa mà không hoàn tác được.
+    await this.paymentsService.runMoneyTransaction(async session => {
+      if (acceptedMembers.length === 0) {
+        await this.paymentsService.creditHelper(String(job.helper_id), jobId, totalAmount, session);
+        return;
       }
-    }
-    const leadShare = totalAmount - creditedToMembers;
-    if (leadShare > 0) {
-      await this.paymentsService.creditHelper(String(job.helper_id), jobId, leadShare);
-    }
-    this.logger.log(
-      `Team payout job ${jobId}: total=${totalAmount} members=${creditedToMembers} lead=${leadShare}`,
-    );
+      let creditedToMembers = 0;
+      for (const member of acceptedMembers) {
+        const share = Math.floor((totalAmount * member.split_percent) / 100);
+        if (share > 0) {
+          await this.paymentsService.creditHelper(
+            String(member.helper_id),
+            jobId,
+            share,
+            session,
+          );
+          creditedToMembers += share;
+        }
+      }
+      const leadShare = totalAmount - creditedToMembers;
+      if (leadShare > 0) {
+        await this.paymentsService.creditHelper(String(job.helper_id), jobId, leadShare, session);
+      }
+      this.logger.log(
+        `Team payout job ${jobId}: total=${totalAmount} members=${creditedToMembers} lead=${leadShare}`,
+      );
+    });
   }
 
   /** Gắn team_display (tên/avatar từng thành viên + lead) vào job object cho mobile render */
