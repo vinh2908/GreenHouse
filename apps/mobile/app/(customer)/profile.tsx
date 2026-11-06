@@ -27,7 +27,6 @@ import {
   Wallet as WalletIcon,
   PlusCircle,
 } from 'lucide-react-native';
-import Toast from 'react-native-toast-message';
 import { Alert } from '@/components/common/app-alert';
 import { useAuthStore } from '@/stores/auth.store';
 import { useMyProfile, useSwitchRole, useLoyaltyAccount, useWallet } from '@/hooks/use-api';
@@ -56,7 +55,6 @@ const MENU_SECTIONS = [
       { icon: HelpCircle, labelKey: 'profile_support_online', route: '/support-chat' },
       { icon: HelpCircle, labelKey: 'profile_help_center', route: '/help-center' },
       { icon: Shield, labelKey: 'profile_privacy_insurance', route: '/policy-insurance' },
-      { icon: Star, labelKey: 'profile_rate_app', route: '__rate_app__' },
     ],
   },
 ];
@@ -392,13 +390,7 @@ export default function CustomerProfileScreen() {
                     <TouchableOpacity
                       activeOpacity={0.7}
                       onPress={() => {
-                        if (item.route === '__rate_app__') {
-                          Toast.show({
-                            type: 'success',
-                            text1: t('profile_rate_app_thanks_title'),
-                            text2: t('profile_rate_app_thanks_desc'),
-                          });
-                        } else if (item.route) {
+                        if (item.route) {
                           router.push(item.route as never);
                         }
                       }}
