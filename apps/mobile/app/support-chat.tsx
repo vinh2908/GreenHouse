@@ -11,7 +11,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { ArrowLeft, Send, Headset } from 'lucide-react-native';
 import dayjs from 'dayjs';
 import Toast from 'react-native-toast-message';
@@ -21,6 +21,7 @@ import {
   useEnsureSupportConversation,
   useSupportMessages,
   useSendSupportMessage,
+  useReopenSupportConversation,
   useMarkSupportRead,
   type SupportMessageItem,
 } from '@/hooks/use-api';
@@ -41,6 +42,8 @@ type ThreadItem = { kind: 'msg'; msg: SupportMessageItem } | { kind: 'faq'; faq:
 
 export default function SupportChatScreen() {
   const router = useRouter();
+  // B77: mở hỗ trợ từ màn đơn thì gắn job_id cho thread
+  const { jobId } = useLocalSearchParams<{ jobId?: string }>();
   const { t, lang, fs } = useTranslation();
   const tc = useThemeColors();
   const insets = useSafeAreaInsets();
@@ -59,12 +62,13 @@ export default function SupportChatScreen() {
   const ensureConversation = useEnsureSupportConversation();
   const { data: messages } = useSupportMessages(conversationId);
   const sendMsg = useSendSupportMessage();
+  const reopenConv = useReopenSupportConversation();
   const markRead = useMarkSupportRead();
 
   // Tự tạo hội thoại khi mở màn hình + đánh dấu đã đọc phản hồi của đội hỗ trợ
   useEffect(() => {
     if (!isLoading && !conversation) {
-      ensureConversation.mutate();
+      ensureConversation.mutate(jobId);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLoading, conversation?._id]);
@@ -272,6 +276,29 @@ export default function SupportChatScreen() {
                     </Text>
                   </TouchableOpacity>
                 ))}
+                {conversation?.job_id && (
+                  <TouchableOpacity
+                    style={{
+                      backgroundColor: '#EFF6FF',
+                      borderWidth: 1,
+                      borderColor: '#BFDBFE',
+                      borderRadius: 14,
+                      padding: 12,
+                    }}
+                    onPress={() =>
+                      router.push(
+                        `/(customer)/job-detail/${typeof conversation.job_id === 'object' ? (conversation.job_id as any)._id : conversation.job_id}` as any,
+                      )
+                    }
+                  >
+                    <Text style={{ fontSize: fs(13), color: '#1E40AF', fontWeight: '700' }}>
+                      {lang === 'en' ? 'Related job: ' : 'Đơn liên quan: '}
+                      {typeof conversation.job_id === 'object'
+                        ? (conversation.job_id as any).title ?? (conversation.job_id as any)._id
+                        : conversation.job_id}
+                    </Text>
+                  </TouchableOpacity>
+                )}
                 {isClosed && (
                   <View
                     style={{
@@ -285,6 +312,21 @@ export default function SupportChatScreen() {
                     <Text style={{ fontSize: fs(13), color: '#92400E', lineHeight: 19 }}>
                       {t('support_closed_notice')}
                     </Text>
+                    <TouchableOpacity
+                      style={{
+                        marginTop: 10,
+                        backgroundColor: COLORS.primary,
+                        borderRadius: 10,
+                        paddingVertical: 12,
+                        alignItems: 'center',
+                      }}
+                      disabled={reopenConv.isPending}
+                      onPress={() => conversationId && reopenConv.mutate(conversationId)}
+                    >
+                      <Text style={{ color: '#fff', fontWeight: '800', fontSize: fs(14) }}>
+                        {lang === 'en' ? 'Reopen conversation' : 'Mở lại'}
+                      </Text>
+                    </TouchableOpacity>
                   </View>
                 )}
               </View>

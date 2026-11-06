@@ -265,6 +265,29 @@ export class JobsService implements OnModuleInit {
         { $set: { status: QuoteStatus.EXPIRED } },
       )
       .exec();
+
+    // 4. B101: ưu đãi riêng (private offer) hết hạn → báo cho thợ được mời, 1 lần
+    const expiredOffers = await this.jobModel
+      .find({
+        status: { $in: [JobStatus.OPEN, JobStatus.RECEIVING_QUOTES] },
+        private_offer_helper_id: { $exists: true, $ne: null },
+        private_offer_expires_at: { $lte: now },
+        private_offer_expiry_notified: { $ne: true },
+      })
+      .exec();
+    for (const job of expiredOffers) {
+      await this.notificationsService
+        .create({
+          userId: String(job.private_offer_helper_id),
+          type: NOTIFICATION_TYPES.JOB_PRIVATE_OFFER,
+          title: 'Ưu đãi riêng đã hết hạn',
+          body: `Ưu đãi riêng cho đơn "${job.title}" đã hết hạn.`,
+          payload: { job_id: String(job._id), is_private_offer: true },
+        })
+        .catch(() => undefined);
+      job.private_offer_expiry_notified = true;
+      await job.save();
+    }
   }
 
   /** Wrapper riêng của JobsService quanh helper dùng chung isAvailableForDate */
@@ -530,9 +553,7 @@ export class JobsService implements OnModuleInit {
             { status: HelperStatus.ONLINE },
           )
           .exec();
-        this.gateway.emitToUser(String(helperObjId), SOCKET_EVENTS.HELPER_STATUS_CHANGED, {
-          status: HelperStatus.ONLINE,
-        });
+        void this.gateway.broadcastHelperStatus(String(helperObjId), HelperStatus.ONLINE);
       }
     }
   }
@@ -3318,9 +3339,12 @@ export class JobsService implements OnModuleInit {
     job.benefits_restored_at = claimed.benefits_restored_at;
 
     const restored: string[] = [];
+    let restoredVoucherCode: string | undefined;
+    let restoredPoints = 0;
     try {
       const v = await this.vouchersService.restoreForJob(customerId, jobId);
       if (v.restored) {
+        restoredVoucherCode = v.code;
         restored.push(
           `voucher ${v.code ?? ''} (+1 lượt, giảm ${v.discount_amount.toLocaleString('vi-VN')}₫)`,
         );
@@ -3332,6 +3356,7 @@ export class JobsService implements OnModuleInit {
     try {
       const l = await this.loyaltyService.reverseRedeemForJob(customerId, jobId);
       if (l && l.points_restored > 0) {
+        restoredPoints = l.points_restored;
         restored.push(`${l.points_restored} điểm loyalty`);
       }
     } catch (err) {
@@ -3342,6 +3367,20 @@ export class JobsService implements OnModuleInit {
       this.logger.log(
         `Cancel job ${jobId}: đã khôi phục quyền lợi cho khách — ${restored.join(' + ')}`,
       );
+      // B98: huỷ đơn hoàn voucher/điểm thật thì báo cho khách (chỉ khi có hoàn trả thật, 1 lần)
+      await this.notificationsService
+        .create({
+          userId: customerId,
+          type: NOTIFICATION_TYPES.VOUCHER_RESTORED,
+          title: 'Đã hoàn lại voucher và điểm',
+          body: `Đơn #${jobId.slice(-6)} đã huỷ — đã hoàn lại ${restored.join(' và ')} cho bạn.`,
+          payload: {
+            job_id: jobId,
+            ...(restoredVoucherCode ? { voucher_code: restoredVoucherCode } : {}),
+            ...(restoredPoints > 0 ? { points_restored: restoredPoints } : {}),
+          },
+        })
+        .catch(() => undefined);
     }
   }
 
@@ -3720,6 +3759,13 @@ export class JobsService implements OnModuleInit {
     if (job.helper_id) {
       this.gateway.emitToUser(String(job.helper_id), SOCKET_EVENTS.TEAM_UPDATED, payload);
     }
+    // B114: phát cho MỌI thành viên trong team (kể cả thợ được mời chưa vào room job)
+    const memberIds = new Set(
+      (job.team ?? []).map(m => String(m.helper_id)).filter(Boolean),
+    );
+    for (const memberId of memberIds) {
+      this.gateway.emitToUser(memberId, SOCKET_EVENTS.TEAM_UPDATED, payload);
+    }
   }
 
   /** Danh sách lời mời vào nhóm đang chờ của 1 thợ */
@@ -3889,7 +3935,7 @@ export class JobsService implements OnModuleInit {
       await this.notificationsService
         .create({
           userId: String(job.helper_id),
-          type: NOTIFICATION_TYPES.TEAM_RESPONSE,
+          type: NOTIFICATION_TYPES.TEAM_INVITATION_RESPONSE,
           title:
             action === 'accept'
               ? '✅ Thành viên đã nhận lời vào nhóm'

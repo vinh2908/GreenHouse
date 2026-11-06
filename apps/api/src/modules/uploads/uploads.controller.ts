@@ -1,7 +1,11 @@
 import {
   BadRequestException,
   Controller,
+  Delete,
+  ForbiddenException,
   Get,
+  HttpException,
+  HttpStatus,
   NotFoundException,
   Param,
   Post,
@@ -17,11 +21,13 @@ import { ConfigService } from '@nestjs/config';
 import { InjectConnection } from '@nestjs/mongoose';
 import { Connection, mongo } from 'mongoose';
 import { randomBytes } from 'node:crypto';
-import { createReadStream, createWriteStream, existsSync, mkdirSync } from 'node:fs';
+import { createReadStream, createWriteStream, existsSync, mkdirSync, unlinkSync } from 'node:fs';
 import { dirname, extname, join, relative, sep } from 'node:path';
 import { diskStorage } from 'multer';
 import type { Request, Response } from 'express';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { MAX_UPLOADS_PER_USER } from '@homemate/constants';
 import { Public } from '../../common/decorators/public.decorator';
 
 export const UPLOAD_ROOT = join(process.cwd(), 'uploads');
@@ -77,10 +83,43 @@ export class UploadsController {
             ),
     }),
   )
-  async upload(@UploadedFile() file: Express.Multer.File | undefined, @Req() req: Request) {
+  async upload(
+    @UploadedFile() file: Express.Multer.File | undefined,
+    @Req() req: Request,
+    @CurrentUser() user: { sub: string },
+  ) {
     if (!file) throw new BadRequestException('Thiếu file (field "file")');
     const relPath = relative(UPLOAD_ROOT, file.path).split(sep).join('/');
     const path = `/uploads/${relPath}`;
+    const userId = user?.sub;
+
+    // B86: giới hạn 100 ảnh/người — đếm ảnh đã lưu trên GridFS theo metadata.userId.
+    // Vượt giới hạn → 429 + hướng dẫn xóa ảnh cũ (DELETE /uploads/:folder/:filename).
+    if (file.mimetype.startsWith('image/') && userId && this.connection?.db) {
+      try {
+        const bucket = new mongo.GridFSBucket(this.connection.db, { bucketName: 'uploads' });
+        const count = await bucket
+          .find({
+            'metadata.userId': userId,
+            'metadata.mimetype': { $regex: '^image/' },
+          })
+          .limit(MAX_UPLOADS_PER_USER + 1)
+          .toArray()
+          .then(files => files.length);
+        if (count >= MAX_UPLOADS_PER_USER) {
+          try {
+            unlinkSync(file.path);
+          } catch {}
+          throw new HttpException(
+            `Bạn đã tải lên tối đa ${MAX_UPLOADS_PER_USER} ảnh. Vui lòng xóa ảnh cũ không còn dùng (mở ảnh và chọn xóa) rồi tải lên lại.`,
+            HttpStatus.TOO_MANY_REQUESTS,
+          );
+        }
+      } catch (err) {
+        if (err instanceof HttpException) throw err;
+        console.error('[Uploads] Lỗi đếm ảnh người dùng:', err);
+      }
+    }
 
     // Lưu bền vững vào MongoDB GridFS để không bị mất khi Render sleep/restart
     try {
@@ -88,7 +127,7 @@ export class UploadsController {
         const bucket = new mongo.GridFSBucket(this.connection.db, { bucketName: 'uploads' });
         await new Promise<void>((resolve, reject) => {
           const uploadStream = bucket.openUploadStream(relPath, {
-            metadata: { mimetype: file.mimetype, size: file.size },
+            metadata: { mimetype: file.mimetype, size: file.size, userId },
           });
           createReadStream(file.path)
             .pipe(uploadStream)
@@ -112,6 +151,38 @@ export class UploadsController {
       base = base.replace(/^http:\/\//i, 'https://');
     }
     return { url: `${base}${path}`, path, size: file.size, mimetype: file.mimetype };
+  }
+
+  // B86: xóa ảnh của chính mình (để giải phóng quota 100 ảnh). Chỉ chủ file
+  // hoặc admin được xóa; file không có metadata.userId (ảnh cũ) thì admin mới xóa được.
+  @Delete(':folder/:filename')
+  @ApiOperation({ summary: 'Xóa ảnh/video đã tải lên (chủ file hoặc admin)' })
+  async deleteFile(
+    @Param('folder') folder: string,
+    @Param('filename') filename: string,
+    @CurrentUser() user: { sub: string; roles?: string[] },
+  ) {
+    const relPath = `${folder}/${filename}`;
+    if (this.connection?.db) {
+      const bucket = new mongo.GridFSBucket(this.connection.db, { bucketName: 'uploads' });
+      const files = await bucket.find({ filename: relPath }).limit(1).toArray();
+      if (files && files.length > 0) {
+        const ownerId = (files[0].metadata as any)?.userId as string | undefined;
+        const isAdmin = (user?.roles ?? []).includes('admin');
+        if (ownerId && ownerId !== user?.sub && !isAdmin) {
+          throw new ForbiddenException('Bạn không có quyền xóa ảnh này');
+        }
+        if (!ownerId && !isAdmin) {
+          throw new ForbiddenException('Chỉ quản trị viên mới xóa được ảnh không rõ chủ sở hữu');
+        }
+        await bucket.delete(files[0]._id);
+      }
+    }
+    const localPath = join(UPLOAD_ROOT, relPath);
+    try {
+      if (existsSync(localPath)) unlinkSync(localPath);
+    } catch {}
+    return { deleted: true, path: `/uploads/${relPath}` };
   }
 
   @Public()

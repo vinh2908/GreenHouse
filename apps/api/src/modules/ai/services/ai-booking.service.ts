@@ -19,8 +19,12 @@ const PRICE_REFERENCE: Record<string, { min: number; max: number; unit: string }
 };
 
 /** Kết quả phân tích ảnh sự cố (Feature 17). available=false khi AI không dùng được. */
+export type IssuePhotoUnavailableReason = 'no_api_key' | 'invalid_image' | 'unsupported' | 'provider_error';
+
 export interface IssuePhotoAnalysis {
   available: boolean;
+  // B78: lý do không phân tích được để app hiển thị phù hợp
+  reason?: IssuePhotoUnavailableReason;
   message?: string;
   detected_issue?: string;
   suggested_service_slug?: string | null;
@@ -266,6 +270,21 @@ Trả về JSON:
   // lỗi ra client: app vẫn đính kèm ảnh vào đơn và để khách tự mô tả.
 
   async analyzeIssuePhoto(imageBase64: string, mimeType: string): Promise<IssuePhotoAnalysis> {
+    // B78: ảnh trống / không phải base64 ảnh → reason rõ ràng, không báo thành công giả
+    if (!imageBase64 || typeof imageBase64 !== 'string' || imageBase64.trim().length < 100) {
+      return {
+        available: false,
+        reason: 'invalid_image',
+        message: 'Ảnh sự cố không hợp lệ hoặc quá nhỏ. Vui lòng chụp lại ảnh rõ hơn.',
+      };
+    }
+    if (mimeType && !/^(image\/(jpeg|png|webp|heic|jpg))$/.test(mimeType.toLowerCase())) {
+      return {
+        available: false,
+        reason: 'unsupported',
+        message: 'Định dạng ảnh chưa được hỗ trợ. Vui lòng dùng ảnh JPG, PNG hoặc WEBP.',
+      };
+    }
     const knownSlugs = Object.keys(SERVICE_SLUG_VI);
     const slugList = knownSlugs
       .map(slug => {
@@ -349,8 +368,14 @@ Nếu ảnh không liên quan sự cố gia đình / không nhận diện đư�
       } else {
         this.logger.error('Issue photo analysis failed', err as Error);
       }
+      const reason: IssuePhotoUnavailableReason = isUnavailable
+        ? 'no_api_key'
+        : /no JSON object|Invalid JSON/i.test((err as Error).message ?? '')
+          ? 'unsupported'
+          : 'provider_error';
       return {
         available: false,
+        reason,
         message: isUnavailable
           ? 'Hệ thống AI phân tích sự cố chưa được cấu hình API key trên máy chủ production. Ảnh của bạn đã được đính kèm vào đơn, bạn vui lòng mô tả ngắn gọn giúp mình nhé!'
           : 'Chưa thể phân tích nội dung ảnh sự cố lúc này. Ảnh của bạn đã được đính kèm vào đơn, bạn vui lòng mô tả thêm chi tiết bên dưới nhé!',

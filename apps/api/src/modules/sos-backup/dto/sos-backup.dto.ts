@@ -43,3 +43,11 @@ export class CustomerDecisionDto {
   @IsEnum(SosBackupDecision, { message: 'decision không hợp lệ' })
   decision: SosBackupDecision;
 }
+
+export class DeclineSosDto {
+  @ApiPropertyOptional({ description: 'Lý do từ chối lời mời SOS', maxLength: 300 })
+  @IsOptional()
+  @IsString()
+  @MaxLength(300)
+  reason?: string;
+}

@@ -36,6 +36,7 @@ export const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
 export const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 export const ALLOWED_VIDEO_TYPES = ['video/mp4', 'video/quicktime'];
 export const MAX_JOB_PHOTOS = 10; // Customer upload ảnh hiện trạng
+export const MAX_UPLOADS_PER_USER = 100; // B86: giới hạn 100 ảnh/người dùng
 export const MAX_JOB_VIDEOS = 3; // Customer upload video
 export const MAX_COMPLETION_PHOTOS = 10; // Helper upload ảnh sau khi hoàn thành
 
@@ -150,6 +151,7 @@ export const SOCKET_EVENTS = {
   SOS_BACKUP_RESOLVED: 'sos:backup_resolved', // SOS đã kết thúc (đã có người nhận / thu hồi / hết hạn) — báo cho các ứng viên còn lại
   SOS_BACKUP_HELPER_REPLACED: 'sos:backup_helper_replaced', // Đã thay thợ cho đơn (báo khách + room của đơn)
   SOS_BACKUP_EXPIRED: 'sos:backup_expired', // Hết hạn mà chưa tìm được người thay (báo khách)
+  SOS_BACKUP_CANDIDATE_WITHDRAWN: 'sos:backup_candidate_withdrawn', // B80: ứng viên rút/từ chối — khách đang xem cập nhật danh sách ngay
 
   // Notification
   NOTIFICATION_NEW: 'notification:new',
@@ -158,6 +160,7 @@ export const SOCKET_EVENTS = {
   JOB_PRIVATE_OFFER: 'job:private_offer', // Job được gửi riêng cho thợ yêu thích
   TEAM_INVITATION: 'team:invitation', // Lời mời tham gia đơn nhóm
   TEAM_UPDATED: 'team:updated', // Đội nhóm của job thay đổi
+  MATCHING_SUGGESTION_UPDATED: 'matching:suggestion_updated', // B116: có thợ mới phù hợp với đơn
   DISPUTE_UPDATED: 'dispute:updated', // Hồ sơ tranh chấp có cập nhật
   CALL_INCOMING: 'call:incoming', // Cuộc gọi thoại trong app đến
   CALL_ENDED: 'call:ended', // Cuộc gọi thoại kết thúc / cúp máy
@@ -165,6 +168,34 @@ export const SOCKET_EVENTS = {
   CALL_DECLINED: 'call:declined', // Cuộc gọi bị từ chối
   SUPPORT_MESSAGE: 'support:message', // Tin nhắn hỗ trợ trực tuyến (Feature 18)
 } as const;
+
+// B112: một enum duy nhất cho lý do kết thúc cuộc gọi — cả hai bên (server +
+// app) dùng chung, hiển thị cùng một lý do.
+export const CALL_END_REASONS = {
+  DECLINED: 'declined',
+  CANCELLED: 'cancelled',
+  ENDED: 'ended',
+  MISSED: 'missed',
+} as const;
+export type CallEndReason = (typeof CALL_END_REASONS)[keyof typeof CALL_END_REASONS];
+
+/** Chuẩn hoá lý do cũ/lạ về enum B112: rejected→declined, no_answer/timeout→missed. */
+export function normalizeCallEndReason(reason?: string | null): CallEndReason {
+  switch ((reason ?? '').toLowerCase()) {
+    case 'declined':
+    case 'rejected':
+      return CALL_END_REASONS.DECLINED;
+    case 'cancelled':
+    case 'canceled':
+      return CALL_END_REASONS.CANCELLED;
+    case 'missed':
+    case 'no_answer':
+    case 'timeout':
+      return CALL_END_REASONS.MISSED;
+    default:
+      return CALL_END_REASONS.ENDED;
+  }
+}
 
 // ─── Cache Keys ────────────────────────────────────────────────────────────────
 
@@ -209,6 +240,10 @@ export const NOTIFICATION_TYPES = {
   PAYMENT_SUCCESS: 'payment_success',
   REFUND_RECEIVED: 'refund_received',
   REVIEW_RECEIVED: 'review_received',
+  LOYALTY_POINTS_EARNED: 'loyalty_points_earned', // B97: cộng điểm thưởng
+  VOUCHER_RESTORED: 'voucher_restored', // B98: huỷ đơn hoàn voucher/điểm
+  VOUCHER_EXPIRING_SOON: 'voucher_expiring_soon', // B99: voucher sắp hết hạn
+  REVIEW_APPEAL: 'review_appeal', // B71: thợ kháng nghị đánh giá → admin xử lý
   NEW_MESSAGE: 'new_message',
   PROMOTION: 'promotion',
   SUPPORT_REPLY: 'support_reply', // Đội hỗ trợ phản hồi live chat (Feature 18)
@@ -223,6 +258,13 @@ export const NOTIFICATION_TYPES = {
   MONTHLY_CONTRACT_LEAVE_REQUEST: 'monthly_contract_leave_request',
   MONTHLY_CONTRACT_LEAVE_RESPONSE: 'monthly_contract_leave_response',
   MONTHLY_CONTRACT_SETTLED: 'monthly_contract_settled',
+  MONTHLY_CONTRACT_STARTED: 'monthly_contract_started', // B100: hợp đồng bắt đầu
+  MONTHLY_CONTRACT_EXPIRING_SOON: 'monthly_contract_expiring_soon', // B100: sắp hết hạn
+  JOB_PRIVATE_OFFER: 'job_private_offer', // B101: ưu đãi riêng hết hạn
+  // Recurring plans (B117)
+  RECURRING_PLAN_PAUSED: 'recurring_plan_paused',
+  RECURRING_PLAN_RESUMED: 'recurring_plan_resumed',
+  RECURRING_PLAN_CANCELLED: 'recurring_plan_cancelled',
   // Claims
   INSURANCE_CLAIM_UPDATE: 'insurance_claim_update',
   // Job lifecycle (B17: tách khỏi type 'system' quá tải)
@@ -249,6 +291,11 @@ export const NOTIFICATION_TYPES = {
   SOS_BACKUP_HELPER_REPLACED: 'sos_backup_helper_replaced', // Khách + thợ cũ: đơn đã được thay thợ
   SOS_BACKUP_EXPIRED: 'sos_backup_expired', // Khách + admin: SOS backup hết hạn chưa có người thay
   JOB_CREATED: 'job_created',
+  // B102: nhóm thông báo mới có type riêng để map tiếng Anh theo type (không theo chuỗi)
+  TEAM_INVITATION: 'team_invitation',
+  TEAM_INVITATION_RESPONSE: 'team_invitation_response',
+  DISPUTE_EVIDENCE: 'dispute_evidence',
+  DISPUTE_APPEALED: 'dispute_appealed',
   JOB_STATUS_CHANGED: 'job_status_changed',
   SYSTEM: 'system',
 } as const;

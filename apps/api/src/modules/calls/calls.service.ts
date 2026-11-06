@@ -14,7 +14,7 @@ import { User, UserDocument } from '../users/schemas/user.schema';
 import { CallSession, CallSessionDocument } from './schemas/call-session.schema';
 import { CallProvider, CALL_PROVIDER } from './call-provider.interface';
 import { VoipPushService } from './voip-push.service';
-import { SOCKET_EVENTS, NOTIFICATION_TYPES } from '@homemate/constants';
+import { SOCKET_EVENTS, NOTIFICATION_TYPES, normalizeCallEndReason, CALL_END_REASONS } from '@homemate/constants';
 import { AppGateway } from '../chat/app.gateway';
 import { NotificationsService } from '../notifications/notifications.service';
 
@@ -56,6 +56,12 @@ export class CallsService {
     }
     const job = await this.jobModel.findById(jobId).exec();
     if (!job) throw new NotFoundException('Job không tồn tại');
+    // B85: chỉ gọi được khi đơn còn hoạt động — đơn đã xong/hủy/hết hạn thì 400
+    if (['completed', 'cancelled', 'expired', 'refunded'].includes(job.status)) {
+      throw new BadRequestException(
+        'Đơn đã kết thúc (hoàn thành/hủy/hết hạn) nên không thể gọi điện',
+      );
+    }
     if (!job.helper_id) {
       throw new BadRequestException('Đơn chưa có thợ phụ trách để gọi');
     }
@@ -183,26 +189,26 @@ export class CallsService {
     const calleeId = String(session.callee_id);
     const partnerId = userId === callerId ? calleeId : callerId;
 
+    // B112: chuẩn hoá lý do về một enum duy nhất (declined/cancelled/ended/missed)
+    const normalizedReason = normalizeCallEndReason(reason);
+
     // A87: Phát hiện cuộc gọi nhỡ (chưa được trả lời và caller không huỷ trong 3s đầu)
     const startedAt = session.started_at ? new Date(session.started_at).getTime() : 0;
     const durationSeconds = (Date.now() - startedAt) / 1000;
     const isMissed =
       !session.answered_at &&
-      (durationSeconds > 3 ||
-        reason === 'missed' ||
-        reason === 'no_answer' ||
-        reason === 'timeout');
+      (durationSeconds > 3 || normalizedReason === CALL_END_REASONS.MISSED);
 
     if (session.status !== 'ended') {
       session.status = isMissed ? 'missed' : 'ended';
       session.ended_at = new Date();
-      session.end_reason = isMissed ? 'missed' : reason;
+      session.end_reason = isMissed ? CALL_END_REASONS.MISSED : normalizedReason;
       await session.save();
     }
 
-    this.gateway.emitToUser(partnerId, 'call:ended', {
+    this.gateway.emitToUser(partnerId, SOCKET_EVENTS.CALL_ENDED, {
       sessionId: String(session._id),
-      reason,
+      reason: isMissed ? CALL_END_REASONS.MISSED : normalizedReason,
     });
 
     if (isMissed) {

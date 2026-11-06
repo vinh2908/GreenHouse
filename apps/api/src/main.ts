@@ -63,9 +63,46 @@ async function bootstrap() {
   // Global prefix
   app.setGlobalPrefix('api/v1');
 
-  // CORS
+  // B94: CORS chỉ cho origin tin cậy — domain Vercel của app (customer/admin/
+  // landing), localhost dev, và origin cấu hình thêm qua CORS_ORIGINS.
+  // Request không có Origin (app native, curl, server-to-server) vẫn qua.
+  const trustedOrigins = new Set<string>([
+    'https://greenhouse-customer.vercel.app',
+    'https://greenhouse-mobile.vercel.app',
+    'https://admin-rho-nine-13.vercel.app',
+    'https://greenhouse-landing-vvinhdzs1tg-gmailcoms-projects.vercel.app',
+    'http://localhost:3000',
+    'http://localhost:3001',
+    'http://localhost:8081',
+    'http://localhost:19006',
+    ...((configService.get<string>('app.corsOrigins') as unknown as string[]) ?? []),
+    ...((process.env['CORS_ORIGINS'] ?? '')
+      .split(',')
+      .map(s => s.trim())
+      .filter(Boolean)),
+  ]);
   app.enableCors({
-    origin: true,
+    origin: (origin, callback) => {
+      // Không có Origin (native app / curl / server) → cho qua
+      if (!origin) return callback(null, true);
+      if (trustedOrigins.has(origin)) return callback(null, true);
+      // Cho phép mọi preview deployment *.vercel.app của đúng project GreenHouse
+      try {
+        const url = new URL(origin);
+        if (
+          url.protocol === 'https:' &&
+          (url.hostname.endsWith('-gmailcoms-projects.vercel.app') ||
+            url.hostname === 'greenhouse-customer.vercel.app' ||
+            url.hostname === 'greenhouse-mobile.vercel.app' ||
+            url.hostname === 'admin-rho-nine-13.vercel.app')
+        ) {
+          return callback(null, true);
+        }
+      } catch {
+        // origin không parse được → chặn
+      }
+      callback(new Error(`CORS: origin not allowed: ${origin}`));
+    },
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,
     // Bypass-Tunnel-Reminder is sent by the mobile client; browsers need it allowed (web build).

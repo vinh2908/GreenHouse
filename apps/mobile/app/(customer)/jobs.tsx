@@ -264,6 +264,7 @@ export default function CustomerJobsScreen() {
               recurring_plan_id?: string;
               private_offer_helper_id?: string;
               is_warranty?: boolean;
+              is_sos?: boolean;
             }) => (
               <TouchableOpacity
                 key={job._id}
@@ -293,6 +294,22 @@ export default function CustomerJobsScreen() {
                     >
                       {job.title}
                     </Text>
+                    {/* B109: badge SOS đỏ cho đơn SOS */}
+                    {job.is_sos ? (
+                      <View
+                        style={{
+                          backgroundColor: '#DC2626',
+                          borderRadius: 6,
+                          paddingHorizontal: 6,
+                          paddingVertical: 2,
+                          marginRight: 6,
+                        }}
+                      >
+                        <Text style={{ color: '#fff', fontWeight: '800', fontSize: fs(11) }}>
+                          SOS
+                        </Text>
+                      </View>
+                    ) : null}
                     <JobStatusBadge status={job.status} />
                   </View>
 

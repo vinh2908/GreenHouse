@@ -70,3 +70,22 @@ export class HelperReplyDto {
   @IsNotEmpty()
   reply: string;
 }
+
+export class AppealReviewDto {
+  @ApiProperty({ description: 'Lý do kháng nghị đánh giá', maxLength: 1000 })
+  @IsString()
+  @IsNotEmpty()
+  reason: string;
+}
+
+export class ResolveAppealDto {
+  @ApiProperty({ description: "'upheld' = kháng nghị đúng, ẩn đánh giá; 'rejected' = bác kháng nghị, giữ hiển thị" })
+  @IsString()
+  @IsNotEmpty()
+  decision: 'upheld' | 'rejected';
+}
+
+export class SetReviewVisibilityDto {
+  @ApiProperty({ description: 'true = ẩn khỏi công khai, false = hiện lại' })
+  hidden: boolean;
+}

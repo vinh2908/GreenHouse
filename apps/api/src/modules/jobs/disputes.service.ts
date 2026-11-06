@@ -241,7 +241,7 @@ export class DisputesService {
       await this.notificationsService
         .create({
           userId: target,
-          type: NOTIFICATION_TYPES.DISPUTE_UPDATED,
+          type: NOTIFICATION_TYPES.DISPUTE_EVIDENCE,
           title: '⚖️ Hồ sơ tranh chấp có cập nhật',
           body: `Đơn "${job.title}": ${role === 'admin' ? 'Admin vừa phản hồi' : 'Đối phương vừa bổ sung thông tin'} trong hồ sơ tranh chấp.`,
           payload: { job_id: jobId },

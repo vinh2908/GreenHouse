@@ -150,7 +150,7 @@ export function computePerformanceScore(
 
   const ratingPoints =
     (input.totalReviews ?? 0) > 0
-      ? (clamp(input.rating ?? 0, 0, 5) / 5) * weights.rating
+      ? normalizeRating(input.rating) * weights.rating
       : weights.rating; // chưa có review → trung tính như các rate mặc định 100 của hồ sơ
   const completionPoints = (clamp(input.completionRate ?? 100, 0, 100) / 100) * weights.completion;
   const responsivenessPoints =
@@ -178,4 +178,62 @@ export function computePerformanceScore(
     cancellationsInWindow: input.cancellationsInWindow,
     warningLevel: scoreWarningLevel(input.cancellationsInWindow, config),
   };
+}
+
+// ─── B87: công thức điểm phù hợp đơn (job-fit) — dùng chung với matching ─────
+// Trước đây công thức này sống riêng trong MatchingService.computeUtilityScore
+// (trọng số Distance 40% + Skill 30% + Rating 20% + KYC 10%). Nó KHÁC với
+// computePerformanceScore ở trên (điểm hiệu suất tổng của thợ: 40/25/15/20) nên
+// không thể gộp thành một con số duy nhất mà không đổi trọng số của một bên.
+// Cách gộp đúng: cả hai công thức sống chung trong module này (1 nơi duy nhất
+// tính điểm thợ), dùng chung phép chuẩn hoá rating, trọng số mỗi bên giữ nguyên.
+// MatchingService.computeUtilityScore chỉ còn là lớp mỏng gọi hàm này.
+
+export const JOB_FIT_WEIGHTS = { distance: 0.4, skill: 0.3, rating: 0.2, kyc: 0.1 } as const;
+
+/** Chuẩn hoá rating 0–5 về 0–1 — dùng chung cho cả hai công thức. */
+export function normalizeRating(rating?: number | null): number {
+  return clamp(rating ?? 0, 0, 5) / 5;
+}
+
+export interface JobFitScoreInput {
+  distanceKm: number; // -1 = thiếu tọa độ (không cộng điểm khoảng cách)
+  hasService: boolean;
+  rating?: number | null;
+  isVerified: boolean;
+}
+
+export interface JobFitScoreResult {
+  score: number; // 0–100
+  distance_km: number;
+  reasons: string[];
+}
+
+/** Điểm phù hợp thợ ↔ đơn (thang 100). Trọng số giữ nguyên như cũ. */
+export function computeJobFitScore(input: JobFitScoreInput): JobFitScoreResult {
+  const reasons: string[] = [];
+  const hasCoords = input.distanceKm >= 0;
+  // Chuẩn hoá khoảng cách về 0–1 (0km → 1.0, 20km → 0.0)
+  const normDistance = hasCoords ? Math.max(0, 1 - input.distanceKm / 20) : 0;
+  if (!hasCoords) reasons.push('Chưa có vị trí');
+  else if (input.distanceKm <= 3) reasons.push(`Khoảng cách rất gần (${input.distanceKm}km)`);
+  else reasons.push(`Cách ${input.distanceKm}km`);
+
+  const normSkill = input.hasService ? 1.0 : 0.4;
+  if (input.hasService) reasons.push('Đúng chuyên môn yêu cầu');
+
+  const normRating = normalizeRating(input.rating);
+  if ((input.rating ?? 0) >= 4.8) reasons.push(`Uy tín cao: ★ ${(input.rating ?? 0).toFixed(1)}`);
+
+  const normKyc = input.isVerified ? 1.0 : 0.0;
+  if (input.isVerified) reasons.push('Đã xác minh e-KYC');
+
+  const totalScore = Math.round(
+    (normDistance * JOB_FIT_WEIGHTS.distance +
+      normSkill * JOB_FIT_WEIGHTS.skill +
+      normRating * JOB_FIT_WEIGHTS.rating +
+      normKyc * JOB_FIT_WEIGHTS.kyc) *
+      100,
+  );
+  return { score: totalScore, distance_km: input.distanceKm, reasons };
 }

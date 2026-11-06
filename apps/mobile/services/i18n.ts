@@ -2155,6 +2155,41 @@ export function formatNotificationTitle(
         if (/từ chối/i.test(t)) return 'Insurance Claim Rejected';
         if (/chi trả|được duyệt/i.test(t)) return 'Insurance Claim Payout Approved';
         return 'Insurance Claim Under Review';
+      // B102: nhóm thông báo mới — map theo type
+      case 'team_invitation':
+        return 'Invitation to Work Team';
+      case 'team_invitation_response':
+        return /từ chối/i.test(t) ? 'Team Invitation Declined' : 'Team Invitation Accepted';
+      case 'dispute_evidence':
+        return 'Dispute Case Updated';
+      case 'dispute_appealed':
+        return 'Dispute Decision Appealed';
+      case 'review_appeal':
+        if (/chấp nhận/i.test(t)) return 'Review Appeal Accepted';
+        if (/từ chối|bị từ chối/i.test(t)) return 'Review Appeal Rejected';
+        return 'New Review Appeal';
+      case 'loyalty_points_earned':
+        return 'Loyalty Points Earned';
+      case 'voucher_restored':
+        return 'Voucher & Points Restored';
+      case 'voucher_expiring_soon':
+        return 'Voucher Expiring Soon';
+      case 'monthly_contract_started':
+        return 'Monthly Contract Started';
+      case 'monthly_contract_expiring_soon':
+        return 'Monthly Contract Expiring Soon';
+      case 'recurring_plan_paused':
+        return 'Recurring Plan Paused';
+      case 'recurring_plan_resumed':
+        return 'Recurring Plan Resumed';
+      case 'recurring_plan_cancelled':
+        return 'Recurring Plan Cancelled';
+      case 'job_private_offer':
+        return 'Private Job Offer';
+      case 'call_missed':
+        return 'Missed Call';
+      case 'sos_backup_candidate_withdrawn':
+        return 'Replacement Candidate Withdrew';
     }
   }
 
@@ -2276,6 +2311,72 @@ export function formatNotificationBody(
     return 'Payment has been processed successfully.';
   }
 
+  // B102: nhóm thông báo mới — map body theo type (không đoán theo chuỗi tiếng Việt)
+  if (type === 'team_invitation') {
+    const m = b.match(/đơn\s*(".*?"|'.*?'|“.*?”).*?(\d+)%/i);
+    return m
+      ? `You are invited to join job ${m[1]} with a ${m[2]}% earnings split.`
+      : 'You are invited to join a work team for a job.';
+  }
+  if (type === 'team_invitation_response') {
+    const m = b.match(/Đơn\s*(".*?"|'.*?'|“.*?”)/i);
+    const accepted = /đồng ý/i.test(b);
+    return `Job ${m ? m[1] : ''}: a helper just ${accepted ? 'accepted' : 'declined'} the team invitation.`;
+  }
+  if (type === 'dispute_evidence') {
+    const m = b.match(/Đơn\s*(".*?"|'.*?'|“.*?”)/i);
+    return `Job ${m ? m[1] : ''}: new evidence or a reply was added to the dispute case.`;
+  }
+  if (type === 'dispute_appealed') {
+    const m = b.match(/Đơn\s*(".*?"|'.*?'|“.*?”)/i);
+    return `Job ${m ? m[1] : ''} is under admin review again after an appeal.`;
+  }
+  if (type === 'review_appeal') {
+    if (/đã được ẩn/i.test(b)) return 'The review you appealed has been hidden from the public page.';
+    if (/vẫn được giữ/i.test(b)) return 'The review you appealed is still shown.';
+    return 'A helper appealed a review. Please review it in the admin panel.';
+  }
+  if (type === 'loyalty_points_earned') {
+    const m = b.match(/cộng\s*(\d+)\s*điểm/i);
+    return m ? `You earned ${m[1]} loyalty points.` : 'You earned loyalty points.';
+  }
+  if (type === 'voucher_restored') {
+    return 'Your voucher and loyalty points for the cancelled job have been restored.';
+  }
+  if (type === 'voucher_expiring_soon') {
+    const m = b.match(/Voucher\s*(\S+)\s*sắp hết hạn.*còn\s*(\d+)\s*ngày/i);
+    return m
+      ? `Voucher ${m[1]} expires in ${m[2]} day(s). Use it before it expires!`
+      : 'A voucher of yours is about to expire.';
+  }
+  if (type === 'monthly_contract_started') {
+    const m = b.match(/Hợp đồng\s*(".*?"|'.*?'|“.*?”)/i);
+    return `Contract ${m ? m[1] : ''} started today.`;
+  }
+  if (type === 'monthly_contract_expiring_soon') {
+    const m = b.match(/Hợp đồng\s*(".*?"|'.*?'|“.*?”).*?vào\s*(.*?)\.?$/i);
+    return `Contract ${m ? m[1] : ''} expires soon${m && m[2] ? ` on ${m[2]}` : ''}.`;
+  }
+  if (type === 'recurring_plan_paused') {
+    const m = b.match(/Gói định kỳ\s*(".*?"|'.*?'|“.*?”)/i);
+    return `Recurring plan ${m ? m[1] : ''} has been paused. You can resume it anytime.`;
+  }
+  if (type === 'recurring_plan_resumed') {
+    const m = b.match(/Gói định kỳ\s*(".*?"|'.*?'|“.*?”)/i);
+    return `Recurring plan ${m ? m[1] : ''} is active again.`;
+  }
+  if (type === 'recurring_plan_cancelled') {
+    const m = b.match(/Gói định kỳ\s*(".*?"|'.*?'|“.*?”)/i);
+    return `Recurring plan ${m ? m[1] : ''} has been cancelled.`;
+  }
+  if (type === 'job_private_offer') {
+    return 'A private job offer has expired.';
+  }
+  if (type === 'sos_backup_candidate_withdrawn') {
+    return 'A replacement candidate withdrew from the SOS request.';
+  }
+
+
   // 2. job_confirmed (warranty & fixed price) — F11: map theo type + payload
   // trước, chỉ dùng regex bóc tiêu đề VI làm fallback cho thông báo cũ.
   if (type === 'job_confirmed' && (data?.is_sos || data?.is_warranty || data?.is_fixed_price)) {
@@ -2289,7 +2390,6 @@ export function formatNotificationBody(
       : '';
     return `Job ${jobName} has been accepted by a helper${price}.`;
   }
-
   const warrantyAccepted = b.match(
     /^Thợ đã nhận đơn bảo hành\s*(".*?"|'.*?'|“.*?”)\s*\(miễn phí\)\s*và sẽ liên hệ với bạn sớm\.?$/i,
   );

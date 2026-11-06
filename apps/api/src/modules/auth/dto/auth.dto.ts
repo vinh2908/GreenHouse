@@ -8,12 +8,13 @@ import {
   IsEmail,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { VIETNAMESE_PHONE_REGEX } from '@homemate/utils';
 
 export class RegisterDto {
   @ApiProperty({ example: '0901234567', description: 'Số điện thoại Việt Nam' })
   @IsString()
   @IsNotEmpty()
-  @Matches(/^(0[3|5|7|8|9])+([0-9]{8})$/, {
+  @Matches(VIETNAMESE_PHONE_REGEX, {
     message: 'Số điện thoại phải gồm 10 số và bắt đầu bằng 0 (03, 05, 07, 08, 09)',
   })
   phone: string;
@@ -60,7 +61,7 @@ export class SendOtpDto {
   @ApiProperty({ example: '0901234567' })
   @IsString()
   @IsNotEmpty()
-  @Matches(/^(0[3|5|7|8|9])+([0-9]{8})$/, {
+  @Matches(VIETNAMESE_PHONE_REGEX, {
     message: 'Số điện thoại không hợp lệ',
   })
   phone: string;
@@ -133,4 +134,24 @@ export class ResendEmailOtpDto {
   @IsEmail({}, { message: 'Email không hợp lệ' })
   @IsNotEmpty({ message: 'Vui lòng cung cấp email' })
   email: string;
+}
+
+export class RequestEmailChangeDto {
+  @ApiProperty({ example: 'new@example.com' })
+  @IsEmail({}, { message: 'Email không hợp lệ' })
+  @IsNotEmpty()
+  new_email: string;
+}
+
+export class ConfirmEmailChangeDto {
+  @ApiProperty({ example: 'new@example.com' })
+  @IsEmail({}, { message: 'Email không hợp lệ' })
+  @IsNotEmpty()
+  new_email: string;
+
+  @ApiProperty({ example: '123456' })
+  @IsString()
+  @IsNotEmpty()
+  @Matches(/^[0-9]{6}$/, { message: 'OTP phải là 6 chữ số' })
+  otp: string;
 }

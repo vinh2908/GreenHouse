@@ -12,7 +12,7 @@ import {
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { SupportService } from './support.service';
-import { SendSupportMessageDto } from './dto/support.dto';
+import { SendSupportMessageDto, CreateSupportConversationDto } from './dto/support.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
@@ -29,9 +29,12 @@ export class SupportController {
   constructor(private readonly supportService: SupportService) {}
 
   @Post('conversations')
-  @ApiOperation({ summary: 'Lấy hoặc tạo hội thoại hỗ trợ đang mở của tôi' })
-  async getOrCreate(@CurrentUser() user: { sub: string }) {
-    return this.supportService.getOrCreateOpen(user.sub);
+  @ApiOperation({ summary: 'Lấy hoặc tạo hội thoại hỗ trợ đang mở của tôi (B77: kèm job_id khi tạo từ màn đơn)' })
+  async getOrCreate(
+    @CurrentUser() user: { sub: string },
+    @Body() dto?: CreateSupportConversationDto,
+  ) {
+    return this.supportService.getOrCreateOpen(user.sub, dto?.job_id);
   }
 
   @Get('conversations/me')
@@ -72,6 +75,13 @@ export class SupportController {
   @ApiOperation({ summary: 'Đánh dấu đã đọc phản hồi của đội hỗ trợ' })
   async markRead(@CurrentUser() user: { sub: string }, @Param('id') id: string) {
     return this.supportService.markUserRead(id, user.sub);
+  }
+
+  @Patch('conversations/:id/reopen')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: "B75: Mở lại thread hỗ trợ đã đóng để tiếp tục trò chuyện" })
+  async reopen(@CurrentUser() user: { sub: string }, @Param('id') id: string) {
+    return this.supportService.reopenConversation(id, { sub: user.sub });
   }
 }
 
@@ -129,5 +139,12 @@ export class AdminSupportController {
   @ApiOperation({ summary: '[Admin] Đóng hội thoại hỗ trợ' })
   async close(@Param('id') id: string) {
     return this.supportService.adminClose(id);
+  }
+
+  @Patch('conversations/:id/reopen')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: '[Admin] Mở lại hội thoại hỗ trợ đã đóng' })
+  async reopen(@Param('id') id: string) {
+    return this.supportService.reopenConversation(id, { sub: '', isAdmin: true });
   }
 }

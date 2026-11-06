@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { User, UserDocument } from './schemas/user.schema';
@@ -62,8 +62,34 @@ export class UsersService {
   }
 
   async update(id: string, dto: UpdateUserDto): Promise<UserDocument> {
+    // B95: đổi email KHÔNG được đi qua update profile thường — phải xác minh
+    // email mới bằng mã OTP trước (POST /auth/email/change-request + /change-confirm)
+    if (dto.email) {
+      const current = await this.userModel.findById(id).select('email').exec();
+      if (!current) throw new NotFoundException('User not found');
+      if (dto.email.trim().toLowerCase() !== (current.email ?? '').toLowerCase()) {
+        throw new BadRequestException(
+          'Đổi email cần xác minh email mới: gửi mã xác nhận tới email mới rồi nhập mã để đổi.',
+        );
+      }
+      delete (dto as any).email; // trùng email cũ thì không cần ghi lại
+    }
     const user = await this.userModel
       .findByIdAndUpdate(id, { $set: dto }, { new: true, runValidators: true })
+      .exec();
+    if (!user) throw new NotFoundException('User not found');
+    return user;
+  }
+
+  /** B95: đổi email sau khi đã xác minh mã OTP gửi tới email mới. */
+  async changeEmail(id: string, newEmail: string): Promise<UserDocument> {
+    const email = newEmail.trim().toLowerCase();
+    const taken = await this.findByEmail(email);
+    if (taken && String(taken._id) !== String(id)) {
+      throw new ConflictException('Email đã được đăng ký');
+    }
+    const user = await this.userModel
+      .findByIdAndUpdate(id, { email, is_verified: true }, { new: true })
       .exec();
     if (!user) throw new NotFoundException('User not found');
     return user;

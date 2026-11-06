@@ -1,8 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useAdminReviews, useAdminReplyReview, useAdminHideReview, useAdminDeleteReview } from '@/hooks/use-admin';
-import {
+import { useAdminReviews, useAdminReplyReview, useAdminDeleteReview, useSetReviewVisibility, useResolveReviewAppeal } from '@/hooks/use-admin';import {
   Button,
   Input,
   Table,
@@ -48,13 +47,15 @@ export default function ReviewsPage() {
     max_rating: maxRating,
     page,
   });
-  // B1: admin trả lời / ẩn / xoá đánh giá
+  // B1: admin trả lời / xoá đánh giá
   const replyMutation = useAdminReplyReview();
-  const hideMutation = useAdminHideReview();
   const deleteMutation = useAdminDeleteReview();
   const [replyingId, setReplyingId] = useState<string | null>(null);
   const [replyText, setReplyText] = useState('');
 
+  // B71: ẩn/hiện đánh giá + quyết định kháng nghị
+  const setVisibility = useSetReviewVisibility();
+  const resolveAppeal = useResolveReviewAppeal();
   const handleRatingFilter = (value: string) => {
     setRatingFilter(value);
     setPage(1);
@@ -109,7 +110,7 @@ export default function ReviewsPage() {
                     <TableHead>Nhận xét</TableHead>
                     <TableHead>Phản hồi helper</TableHead>
                     <TableHead>Ngày đánh giá</TableHead>
-                    <TableHead>Thao tác</TableHead>
+                    <TableHead>Kháng nghị</TableHead>                    <TableHead>Thao tác</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -125,6 +126,8 @@ export default function ReviewsPage() {
                       admin_reply?: string;
                       is_hidden?: boolean;
                       created_at: string;
+                      appeal_status?: string;
+                      appeal_reason?: string;
                     }) => (
                       <TableRow key={r._id} className={r.is_hidden ? 'opacity-60' : undefined}>
                         <TableCell>
@@ -178,6 +181,22 @@ export default function ReviewsPage() {
                         </TableCell>
                         <TableCell className="text-sm text-muted-foreground">
                           {formatDateTime(r.created_at)}
+                        </TableCell>
+                        <TableCell className="text-sm">
+                          {r.appeal_status === 'pending' ? (
+                            <span className="text-amber-600 font-medium">
+                              Chờ xử lý{r.appeal_reason ? `: ${r.appeal_reason}` : ''}
+                            </span>
+                          ) : r.appeal_status === 'upheld' ? (
+                            <span className="text-green-600">Đã chấp nhận</span>
+                          ) : r.appeal_status === 'rejected' ? (
+                            <span className="text-muted-foreground">Đã bác</span>
+                          ) : (
+                            <span className="text-muted-foreground">—</span>
+                          )}
+                          {r.is_hidden ? (
+                            <span className="ml-1 text-xs bg-red-100 text-red-700 px-1.5 py-0.5 rounded">Đã ẩn</span>
+                          ) : null}
                         </TableCell>
                         <TableCell>
                           <div className="flex flex-col gap-1.5 min-w-[140px]">
@@ -233,13 +252,33 @@ export default function ReviewsPage() {
                             <Button
                               size="sm"
                               variant="outline"
-                              disabled={hideMutation.isPending}
+                              disabled={setVisibility.isPending}
                               onClick={() =>
-                                hideMutation.mutate({ id: r._id, hidden: !r.is_hidden })
+                                setVisibility.mutate({ id: r._id, hidden: !r.is_hidden })
                               }
                             >
                               {r.is_hidden ? 'Hiện lại' : 'Ẩn'}
                             </Button>
+{r.appeal_status === 'pending' && (
+                              <>
+                                <button
+                                  className="text-xs border rounded px-2 py-1 text-green-700"
+                                  onClick={() =>
+                                    resolveAppeal.mutate({ id: r._id, decision: 'upheld' })
+                                  }
+                                >
+                                  Chấp nhận KN
+                                </button>
+                                <button
+                                  className="text-xs border rounded px-2 py-1"
+                                  onClick={() =>
+                                    resolveAppeal.mutate({ id: r._id, decision: 'rejected' })
+                                  }
+                                >
+                                  Bác KN
+                                </button>
+                              </>
+                            )}
                             <Button
                               size="sm"
                               variant="destructive"
@@ -255,8 +294,7 @@ export default function ReviewsPage() {
                               }}
                             >
                               Xoá
-                            </Button>
-                          </div>
+                            </Button>                          </div>
                         </TableCell>
                       </TableRow>
                     ),

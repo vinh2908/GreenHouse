@@ -76,6 +76,7 @@ import {
   useMyVouchers,
 } from '@/hooks/use-api';
 import { locationService } from '@/services/location.service';
+import { useMatchingSuggestionSocket } from '@/hooks/use-socket';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LocationPicker, PickerCoords } from '@/components/common/location-picker';
 import { Avatar, COLORS, ErrorState, useThemeColors } from '@/components/ui';
@@ -344,6 +345,8 @@ export default function CustomerHomeScreen() {
 
   // API Thợ gần & Vouchers thật
   const { data: nearbyRaw, refetch: refetchNearby } = useNearbyHelpers(currentCoords);
+  // B116: có thợ mới phù hợp → cập nhật danh sách thợ gần đây ngay
+  useMatchingSuggestionSocket();
   const { data: vouchersRaw, refetch: refetchVouchers } = useMyVouchers();
   const [isPullRefreshing, setIsPullRefreshing] = useState(false);
 

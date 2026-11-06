@@ -19,6 +19,7 @@ import {
   Pagination,
 } from '@/components/ui';
 import { formatDateTime } from '@/lib/utils';
+import { PromptDialog } from '@/components/common/prompt-dialog';
 
 const STATUS_OPTIONS = [
   { value: '', label: 'Tất cả trạng thái' },
@@ -42,6 +43,8 @@ const STATUS_VI: Record<string, string> = {
 };
 
 export default function UsersPage() {
+  // B106: dialog nhập lý do thay cho prompt() của trình duyệt
+  const [suspendTarget, setSuspendTarget] = useState<{ _id: string; full_name?: string } | null>(null);
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('');
   const [page, setPage] = useState(1);
@@ -186,17 +189,7 @@ export default function UsersPage() {
                                 size="sm"
                                 variant="destructive"
                                 loading={suspend.isPending}
-                                onClick={() => {
-                                  const reason = prompt(
-                                    `Nhập lý do đình chỉ tài khoản "${user.full_name}":`,
-                                  );
-                                  if (reason !== null) {
-                                    suspend.mutate({
-                                      id: user._id,
-                                      reason: reason.trim() || 'Vi phạm quy định nền tảng',
-                                    });
-                                  }
-                                }}
+                                onClick={() => setSuspendTarget(user)}
                               >
                                 Đình chỉ
                               </Button>
@@ -207,7 +200,23 @@ export default function UsersPage() {
                     },
                   )}
                 </TableBody>
-              </Table>
+                    {suspendTarget && (
+        <PromptDialog
+          title="Đình chỉ tài khoản"
+          label={'Lý do đình chỉ tài khoản "' + (suspendTarget.full_name ?? '') + '"'}
+          placeholder="Nhập lý do đình chỉ..."
+          confirmLabel="Đình chỉ"
+          onSubmit={reason => {
+            suspend.mutate({
+              id: suspendTarget._id,
+              reason: reason || 'Vi phạm quy định nền tảng',
+            });
+            setSuspendTarget(null);
+          }}
+          onClose={() => setSuspendTarget(null)}
+        />
+      )}
+</Table>
             </div>
             <Pagination page={page} totalPages={data.total_pages ?? 1} onPageChange={setPage} />
           </>

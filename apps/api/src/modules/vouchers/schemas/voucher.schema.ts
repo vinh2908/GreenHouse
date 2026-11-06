@@ -56,6 +56,10 @@ export class Voucher {
   @Prop({ type: Types.ObjectId, ref: 'User' })
   created_by?: Types.ObjectId;
 
+  // B99: mốc đã gửi nhắc hết hạn (1 lần/voucher) — tránh nhắc lặp mỗi ngày cron chạy
+  @Prop({ type: Date, default: null })
+  expiry_reminder_sent_at?: Date | null;
+
   created_at: Date;
   updated_at: Date;
 }

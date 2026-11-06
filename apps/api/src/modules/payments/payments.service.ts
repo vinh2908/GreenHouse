@@ -88,6 +88,75 @@ export class PaymentsService {
     return this.getOrCreateWallet(userId);
   }
 
+  /** B96: thông báo xác nhận tiền đã vào/ra — chỉ gửi khi giao dịch THÀNH CÔNG, 1 lần. */
+  private async notifyTopupSuccess(userId: string, amount: number, balanceAfter: number) {
+    await this.notificationsService
+      .create({
+        userId,
+        type: NOTIFICATION_TYPES.PAYMENT_SUCCESS,
+        title: 'Nạp tiền thành công',
+        body: `Đã nạp ${amount.toLocaleString('vi-VN')}₫, số dư mới: ${balanceAfter.toLocaleString('vi-VN')}₫`,
+        payload: { amount, balance: balanceAfter, screen: 'wallet' },
+      })
+      .catch(() => undefined);
+  }
+
+  private async notifyPaymentSuccess(
+    userId: string,
+    amount: number,
+    balanceAfter: number,
+    jobId?: string,
+  ) {
+    await this.notificationsService
+      .create({
+        userId,
+        type: NOTIFICATION_TYPES.PAYMENT_SUCCESS,
+        title: 'Thanh toán thành công',
+        body: `Đã thanh toán ${amount.toLocaleString('vi-VN')}₫${jobId ? ` cho đơn #${jobId.slice(-6)}` : ''}. Số dư ví: ${balanceAfter.toLocaleString('vi-VN')}₫`,
+        payload: { amount, balance: balanceAfter, ...(jobId ? { job_id: jobId } : {}) },
+      })
+      .catch(() => undefined);
+  }
+
+  /**
+   * B91: chạy 1 thao tác tiền trong MongoDB transaction khi DB hỗ trợ
+   * (replica set); standalone Mongo không hỗ trợ transaction thì chạy thẳng
+   * như cũ và ghi log cảnh báo. Lỗi giữa chừng -> rollback toàn bộ.
+   */
+  private async runInTransaction<T>(fn: (session?: any) => Promise<T>): Promise<T> {
+    const conn: any = this.connection ?? (this.walletModel as any)?.db;
+    let session: any = null;
+    if (conn && typeof conn.startSession === 'function') {
+      try {
+        session = await conn.startSession();
+      } catch (sErr) {
+        this.logger.warn(`B91: Could not start mongoose session: ${sErr}`);
+      }
+    }
+    if (!session) {
+      this.logger.warn('B91: running money operation without transaction (no session available)');
+      return fn(undefined);
+    }
+    try {
+      let result: T | undefined;
+      await session.withTransaction(async () => {
+        result = await fn(session);
+      });
+      return result as T;
+    } catch (txErr: any) {
+      if (
+        txErr?.message?.includes('replica set member') ||
+        txErr?.message?.includes('Transaction numbers')
+      ) {
+        this.logger.warn('B91: transactions unsupported on this Mongo deployment, running without transaction');
+        return fn(undefined);
+      }
+      throw txErr;
+    } finally {
+      try { await session.endSession(); } catch { /* ignore */ }
+    }
+  }
+
   async topupWallet(
     userId: string,
     amount: number,
@@ -96,25 +165,36 @@ export class PaymentsService {
     if (!amount || amount < 50000) {
       throw new BadRequestException('Số tiền nạp tối thiểu là 50,000₫');
     }
-    const walletBefore = await this.getOrCreateWallet(userId);
-    const updatedWallet = await this.walletModel
-      .findByIdAndUpdate(walletBefore._id, { $inc: { balance: amount } }, { new: true })
-      .exec();
+    // B91: cộng ví + ghi giao dịch nạp tiền trong 1 transaction
+    const result = await this.runInTransaction(async session => {
+      const walletBefore = await this.getOrCreateWallet(userId);
+      const updatedWallet = await this.walletModel
+        .findByIdAndUpdate(walletBefore._id, { $inc: { balance: amount } }, { new: true, session })
+        .exec();
 
-    const transaction = await this.transactionModel.create({
-      wallet_id: walletBefore._id,
-      user_id: new Types.ObjectId(userId),
-      type: 'topup',
-      status: 'success',
-      amount,
-      balance_before: walletBefore.balance,
-      balance_after: updatedWallet?.balance ?? walletBefore.balance + amount,
-      description: `Nạp tiền ví ký quỹ qua ${paymentMethod.toUpperCase()}`,
-      reference: `TOPUP-${Date.now()}`,
-      metadata: { payment_method: paymentMethod },
+      const [transaction] = await this.transactionModel.create(
+        [
+          {
+            wallet_id: walletBefore._id,
+            user_id: new Types.ObjectId(userId),
+            type: 'topup',
+            status: 'success',
+            amount,
+            balance_before: walletBefore.balance,
+            balance_after: updatedWallet?.balance ?? walletBefore.balance + amount,
+            description: `Nạp tiền ví ký quỹ qua ${paymentMethod.toUpperCase()}`,
+            reference: `TOPUP-${Date.now()}`,
+            metadata: { payment_method: paymentMethod },
+          },
+        ],
+        { session },
+      );
+
+      return { wallet: updatedWallet ?? walletBefore, transaction };
     });
-
-    return { wallet: updatedWallet ?? walletBefore, transaction };
+    // B96: chỉ gửi khi nạp thành công
+    await this.notifyTopupSuccess(userId, amount, result.wallet.balance);
+    return result;
   }
 
   // ─── Escrow / Job Payment ──────────────────────────────────────────────────
@@ -373,6 +453,13 @@ export class PaymentsService {
       });
     }
 
+    // B96: thanh toán thành công → thông báo xác nhận 1 lần (lỗi thì không gửi)
+    await this.notifyPaymentSuccess(
+      customerId,
+      resolvedAmount,
+      transaction!.balance_after ?? 0,
+      jobId,
+    );
     return {
       transaction: transaction!,
       success: true,
@@ -531,24 +618,33 @@ export class PaymentsService {
     refundAmount: number,
     reason: string,
   ): Promise<TransactionDocument> {
-    const wallet = await this.getOrCreateWallet(customerId);
-    const balanceBefore = wallet.balance;
-    const balanceAfter = balanceBefore + refundAmount;
+    // B91: cộng ví + ghi giao dịch hoàn tiền trong 1 transaction
+    return this.runInTransaction(async session => {
+      const wallet = await this.getOrCreateWallet(customerId);
+      const balanceBefore = wallet.balance;
+      const balanceAfter = balanceBefore + refundAmount;
 
-    await this.walletModel
-      .findByIdAndUpdate(wallet._id, { $inc: { balance: refundAmount } })
-      .exec();
+      await this.walletModel
+        .findByIdAndUpdate(wallet._id, { $inc: { balance: refundAmount } }, { session })
+        .exec();
 
-    return this.transactionModel.create({
-      wallet_id: wallet._id,
-      user_id: new Types.ObjectId(customerId),
-      job_id: new Types.ObjectId(jobId),
-      type: 'refund',
-      status: 'success',
-      amount: refundAmount,
-      balance_before: balanceBefore,
-      balance_after: balanceAfter,
-      description: `Hoàn tiền khiếu nại công việc #${jobId.slice(-6)}: ${reason}`,
+      const [tx] = await this.transactionModel.create(
+        [
+          {
+            wallet_id: wallet._id,
+            user_id: new Types.ObjectId(customerId),
+            job_id: new Types.ObjectId(jobId),
+            type: 'refund',
+            status: 'success',
+            amount: refundAmount,
+            balance_before: balanceBefore,
+            balance_after: balanceAfter,
+            description: `Hoàn tiền khiếu nại công việc #${jobId.slice(-6)}: ${reason}`,
+          },
+        ],
+        { session },
+      );
+      return tx;
     });
   }
 
@@ -853,39 +949,57 @@ export class PaymentsService {
       throw new BadRequestException('Yêu cầu này đã được xử lý');
     }
 
-    if (action === 'approve') {
-      withdrawal.status = 'completed';
-      await this.walletModel
-        .findOneAndUpdate(
-          { user_id: withdrawal.user_id },
-          { $inc: { total_withdrawn: withdrawal.amount } },
-        )
-        .exec();
-      await this.transactionModel
-        .findOneAndUpdate({ 'metadata.withdrawal_id': withdrawalId }, { status: 'success' })
-        .exec();
-    } else {
-      withdrawal.status = 'rejected';
-      const wallet = await this.getOrCreateWallet(String(withdrawal.user_id));
-      await this.walletModel
-        .findByIdAndUpdate(wallet._id, {
-          $inc: { balance: withdrawal.amount },
-        })
-        .exec();
-      await this.transactionModel.create({
-        wallet_id: wallet._id,
-        user_id: withdrawal.user_id,
-        type: 'refund',
-        status: 'success',
-        amount: withdrawal.amount,
-        balance_before: wallet.balance,
-        balance_after: wallet.balance + withdrawal.amount,
-        description: `Hoàn tiền rút thất bại`,
-      });
-      await this.transactionModel
-        .findOneAndUpdate({ 'metadata.withdrawal_id': withdrawalId }, { status: 'failed' })
-        .exec();
-    }
+    // B91: các ghi ví/giao dịch khi xử lý rút tiền chạy trong 1 transaction
+    await this.runInTransaction(async session => {
+      if (action === 'approve') {
+        await this.walletModel
+          .findOneAndUpdate(
+            { user_id: withdrawal.user_id },
+            { $inc: { total_withdrawn: withdrawal.amount } },
+            { session },
+          )
+          .exec();
+        await this.transactionModel
+          .findOneAndUpdate(
+            { 'metadata.withdrawal_id': withdrawalId },
+            { status: 'success' },
+            { session },
+          )
+          .exec();
+      } else {
+        const wallet = await this.getOrCreateWallet(String(withdrawal.user_id));
+        await this.walletModel
+          .findByIdAndUpdate(
+            wallet._id,
+            { $inc: { balance: withdrawal.amount } },
+            { session },
+          )
+          .exec();
+        await this.transactionModel.create(
+          [
+            {
+              wallet_id: wallet._id,
+              user_id: withdrawal.user_id,
+              type: 'refund',
+              status: 'success',
+              amount: withdrawal.amount,
+              balance_before: wallet.balance,
+              balance_after: wallet.balance + withdrawal.amount,
+              description: `Hoàn tiền rút thất bại`,
+            },
+          ],
+          { session },
+        );
+        await this.transactionModel
+          .findOneAndUpdate(
+            { 'metadata.withdrawal_id': withdrawalId },
+            { status: 'failed' },
+            { session },
+          )
+          .exec();
+      }
+    });
+    withdrawal.status = action === 'approve' ? 'completed' : 'rejected';
 
     withdrawal.admin_note = adminNote;
     withdrawal.processed_at = new Date();
