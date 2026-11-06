@@ -7,6 +7,7 @@ import {
   TextInput,
   KeyboardAvoidingView,
   Platform,
+  Modal,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -18,11 +19,20 @@ import {
   Lock,
   Check,
   Clock,
+  PlusCircle,
+  X,
+  Wallet as WalletIcon,
 } from 'lucide-react-native';
 import Toast from 'react-native-toast-message';
 import dayjs from 'dayjs';
 import { useAuthStore } from '@/stores/auth.store';
-import { useHelperProfile, useUpdateBankAccount, useTransactions } from '@/hooks/use-api';
+import {
+  useHelperProfile,
+  useUpdateBankAccount,
+  useTransactions,
+  useWallet,
+  useTopupWallet,
+} from '@/hooks/use-api';
 import { useTranslation } from '@/hooks/use-i18n';
 import { Button, Card, LoadingSpinner, COLORS, Separator, EmptyState } from '@/components/ui';
 
@@ -91,13 +101,17 @@ export default function BankAccountScreen() {
             (Array.isArray(user?.roles) && (user.roles as any[]).includes('helper'))))));
 
   const { data: profile, isLoading, refetch } = useHelperProfile();
-  const { data: txData, isLoading: txLoading } = useTransactions(1);
+  const { data: txData, isLoading: txLoading, refetch: refetchTx } = useTransactions(1);
+  const { data: wallet, isLoading: isWalletLoading, refetch: refetchWallet } = useWallet();
+  const topup = useTopupWallet();
   const updateBank = useUpdateBankAccount();
 
   const [bankName, setBankName] = useState('');
   const [accountNumber, setAccountNumber] = useState('');
   const [accountName, setAccountName] = useState('');
   const [preferredMethod, setPreferredMethod] = useState('vietqr');
+  const [showCustomerTopup, setShowCustomerTopup] = useState(false);
+  const [customerTopupAmount, setCustomerTopupAmount] = useState('100000');
 
   const currentBank = profile?.bank_account;
 
@@ -108,6 +122,42 @@ export default function BankAccountScreen() {
       setAccountName(currentBank.account_name || '');
     }
   }, [currentBank]);
+
+  const handleCustomerTopup = async () => {
+    const num = Number(customerTopupAmount.replace(/\D/g, ''));
+    if (isNaN(num) || num < 50000) {
+      Toast.show({
+        type: 'error',
+        text1:
+          lang === 'en'
+            ? 'Minimum top-up amount is 50,000₫'
+            : 'Số tiền nạp tối thiểu là 50.000₫',
+      });
+      return;
+    }
+    try {
+      await topup.mutateAsync({ amount: num, payment_method: 'vietqr' });
+      Toast.show({
+        type: 'success',
+        text1: lang === 'en' ? 'Wallet top-up successful!' : 'Nạp tiền vào ví thành công!',
+        text2:
+          lang === 'en'
+            ? `+${num.toLocaleString('en-US')}₫ added to your balance`
+            : `+${num.toLocaleString('vi-VN')}₫ đã được cộng vào ví`,
+      });
+      setShowCustomerTopup(false);
+      setCustomerTopupAmount('100000');
+      refetchWallet();
+      refetchTx();
+    } catch (err: any) {
+      Toast.show({
+        type: 'error',
+        text1:
+          err?.response?.data?.message ||
+          (lang === 'en' ? 'Top-up failed' : 'Nạp tiền thất bại'),
+      });
+    }
+  };
 
   const handleBack = () => {
     if (router.canGoBack()) {
@@ -210,7 +260,66 @@ export default function BankAccountScreen() {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ padding: 16, gap: 16, paddingBottom: 60 }}
         >
-          <Card style={{ backgroundColor: '#0F172A', padding: 18, gap: 10 }}>
+          {/* Customer Wallet Balance Card */}
+          <Card
+            style={{
+              backgroundColor: '#0F172A',
+              padding: 20,
+              borderRadius: 18,
+              borderWidth: 1,
+              borderColor: 'rgba(255, 255, 255, 0.1)',
+            }}
+          >
+            <View
+              style={{
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+              }}
+            >
+              <View style={{ gap: 4 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <WalletIcon size={16} color="#38BDF8" />
+                  <Text style={{ color: '#94A3B8', fontSize: fs(12.5), fontWeight: '700' }}>
+                    {lang === 'en' ? 'GreenHouse Wallet Balance' : 'Số dư ví GreenHouse'}
+                  </Text>
+                </View>
+                <Text
+                  style={{
+                    color: '#FFFFFF',
+                    fontSize: fs(24),
+                    fontWeight: '900',
+                    marginTop: 2,
+                    letterSpacing: 0.5,
+                  }}
+                >
+                  {isWalletLoading
+                    ? '...'
+                    : `${new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'vi-VN').format(wallet?.balance ?? 0)}₫`}
+                </Text>
+              </View>
+              <TouchableOpacity
+                activeOpacity={0.8}
+                onPress={() => setShowCustomerTopup(true)}
+                style={{
+                  backgroundColor: COLORS.primary,
+                  paddingHorizontal: 16,
+                  paddingVertical: 10,
+                  borderRadius: 12,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 6,
+                }}
+              >
+                <PlusCircle size={18} color="#fff" />
+                <Text style={{ color: '#fff', fontWeight: '800', fontSize: fs(13.5) }}>
+                  {lang === 'en' ? 'Top up' : 'Nạp tiền'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </Card>
+
+          <Card style={{ backgroundColor: '#1E293B', padding: 18, gap: 10 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
               <ShieldCheck size={20} color="#34D399" />
               <Text style={{ color: '#fff', fontWeight: '800', fontSize: fs(15) }}>
@@ -620,6 +729,147 @@ export default function BankAccountScreen() {
           </ScrollView>
         </KeyboardAvoidingView>
       )}
+
+      {/* ── Customer Top-up Modal ─────────────────────────────────── */}
+      <Modal
+        visible={showCustomerTopup}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setShowCustomerTopup(false)}
+      >
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: '#fff',
+            paddingTop: Math.max(insets.top, 16),
+          }}
+        >
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              paddingHorizontal: 20,
+              paddingVertical: 14,
+              borderBottomWidth: 1,
+              borderBottomColor: COLORS.gray[100],
+            }}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+              <TouchableOpacity
+                onPress={() => setShowCustomerTopup(false)}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <X size={22} color={COLORS.gray[700]} />
+              </TouchableOpacity>
+              <Text style={{ fontSize: fs(17), fontWeight: '800', color: COLORS.gray[900] }}>
+                {lang === 'en' ? 'Top-up GreenHouse Wallet' : 'Nạp tiền vào ví GreenHouse'}
+              </Text>
+            </View>
+          </View>
+
+          <KeyboardAvoidingView
+            style={{ flex: 1 }}
+            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          >
+            <ScrollView
+              contentContainerStyle={{ padding: 20, gap: 20, paddingBottom: 60 }}
+              keyboardShouldPersistTaps="handled"
+            >
+              <Card style={{ backgroundColor: COLORS.primaryLight, padding: 16, gap: 6 }}>
+                <Text style={{ fontSize: fs(12.5), color: COLORS.gray[600], fontWeight: '600' }}>
+                  {lang === 'en' ? 'Current Balance' : 'Số dư hiện tại'}
+                </Text>
+                <Text style={{ fontSize: fs(20), fontWeight: '800', color: COLORS.primary }}>
+                  {new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'vi-VN').format(
+                    wallet?.balance ?? 0,
+                  )}₫
+                </Text>
+              </Card>
+
+              <View style={{ gap: 8 }}>
+                <Text style={{ fontWeight: '700', fontSize: fs(14), color: COLORS.gray[800] }}>
+                  {lang === 'en' ? 'Select quick amount' : 'Chọn nhanh số tiền nạp'}
+                </Text>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                  {['50000', '100000', '200000', '500000', '1000000'].map(preset => {
+                    const isSelected = customerTopupAmount === preset;
+                    return (
+                      <TouchableOpacity
+                        key={preset}
+                        activeOpacity={0.8}
+                        onPress={() => setCustomerTopupAmount(preset)}
+                        style={{
+                          paddingHorizontal: 14,
+                          paddingVertical: 10,
+                          borderRadius: 12,
+                          borderWidth: 1.5,
+                          borderColor: isSelected ? COLORS.primary : COLORS.gray[200],
+                          backgroundColor: isSelected ? COLORS.primaryLight : '#fff',
+                        }}
+                      >
+                        <Text
+                          style={{
+                            fontSize: fs(13),
+                            fontWeight: '700',
+                            color: isSelected ? COLORS.primaryDark : COLORS.gray[700],
+                          }}
+                        >
+                          {new Intl.NumberFormat('vi-VN').format(Number(preset))}₫
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </View>
+
+              <View style={{ gap: 8 }}>
+                <Text style={{ fontWeight: '700', fontSize: fs(14), color: COLORS.gray[800] }}>
+                  {lang === 'en' ? 'Or enter custom amount (₫) *' : 'Hoặc nhập số tiền khác (₫) *'}
+                </Text>
+                <TextInput
+                  style={{
+                    borderWidth: 1.5,
+                    borderColor: COLORS.gray[200],
+                    borderRadius: 14,
+                    padding: 14,
+                    fontSize: fs(20),
+                    fontWeight: '800',
+                    color: COLORS.gray[900],
+                    backgroundColor: COLORS.gray[50],
+                  }}
+                  placeholder={lang === 'en' ? 'Minimum 50,000₫' : 'Tối thiểu 50.000₫'}
+                  value={customerTopupAmount}
+                  onChangeText={setCustomerTopupAmount}
+                  keyboardType="numeric"
+                  placeholderTextColor={COLORS.gray[400]}
+                />
+              </View>
+
+              <Card style={{ backgroundColor: '#F8FAFC', padding: 14, gap: 6 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <ShieldCheck size={16} color={COLORS.success} />
+                  <Text style={{ fontSize: fs(13), fontWeight: '700', color: COLORS.gray[800] }}>
+                    {lang === 'en' ? 'VietQR 24/7 Fast Top-up' : 'Nạp nhanh qua VietQR 24/7'}
+                  </Text>
+                </View>
+                <Text style={{ fontSize: fs(12), color: COLORS.gray[600], lineHeight: 18 }}>
+                  {lang === 'en'
+                    ? 'Funds are added immediately to your wallet to pay for services seamlessly.'
+                    : 'Tiền sẽ được cộng tức thì vào ví để bạn sẵn sàng thanh toán dịch vụ tiện lợi.'}
+                </Text>
+              </Card>
+
+              <Button
+                title={lang === 'en' ? 'Confirm Top-up' : 'Xác nhận nạp tiền'}
+                loading={topup.isPending}
+                onPress={handleCustomerTopup}
+                icon={<CheckCircle2 size={18} color="#fff" />}
+              />
+            </ScrollView>
+          </KeyboardAvoidingView>
+        </View>
+      </Modal>
     </View>
   );
 }

@@ -24,11 +24,13 @@ import {
   Heart,
   CalendarClock,
   Ticket,
+  Wallet as WalletIcon,
+  PlusCircle,
 } from 'lucide-react-native';
 import Toast from 'react-native-toast-message';
 import { Alert } from '@/components/common/app-alert';
 import { useAuthStore } from '@/stores/auth.store';
-import { useMyProfile, useSwitchRole, useLoyaltyAccount } from '@/hooks/use-api';
+import { useMyProfile, useSwitchRole, useLoyaltyAccount, useWallet } from '@/hooks/use-api';
 import { Avatar, Card, COLORS, Separator, LoadingSpinner } from '@/components/ui';
 import { useTranslation } from '@/hooks/use-i18n';
 import { DisplaySettingsSection } from '@/components/common/display-settings';
@@ -69,6 +71,7 @@ export default function CustomerProfileScreen() {
   const isSwitchingRole = useAuthStore(s => s.isSwitchingRole);
 
   const { data: profile, isLoading: isProfileLoading, refetch: refetchProfile } = useMyProfile();
+  const { data: wallet, isLoading: isWalletLoading } = useWallet();
   const {
     data: loyalty,
     isLoading: isLoyaltyLoading,
@@ -273,6 +276,67 @@ export default function CustomerProfileScreen() {
             <Text style={{ color: COLORS.primary, fontWeight: '800', fontSize: fs(14) }}>
               {t('profile_switch_helper')}
             </Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* ── Customer Wallet Card (F6) ────────────────────────────── */}
+        <View style={{ paddingHorizontal: 16, paddingTop: 16 }}>
+          <TouchableOpacity
+            activeOpacity={0.85}
+            onPress={() => router.push('/bank-account')}
+          >
+            <Card
+              style={{
+                gap: 8,
+                backgroundColor: '#0F172A',
+                borderWidth: 1,
+                borderColor: 'rgba(255, 255, 255, 0.1)',
+                padding: 18,
+              }}
+            >
+              <View
+                style={{
+                  flexDirection: 'row',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                }}
+              >
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <WalletIcon size={18} color="#38BDF8" />
+                  <Text style={{ fontWeight: '800', fontSize: fs(14.5), color: '#FFFFFF' }}>
+                    {lang === 'en' ? 'GreenHouse Wallet' : 'Ví GreenHouse'}
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  activeOpacity={0.8}
+                  onPress={() => router.push('/bank-account')}
+                  style={{
+                    backgroundColor: COLORS.primary,
+                    paddingHorizontal: 12,
+                    paddingVertical: 6,
+                    borderRadius: 10,
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 4,
+                  }}
+                >
+                  <PlusCircle size={14} color="#fff" />
+                  <Text style={{ color: '#fff', fontWeight: '800', fontSize: fs(12) }}>
+                    {lang === 'en' ? 'Top up' : 'Nạp tiền'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+              <Text style={{ fontSize: fs(22), fontWeight: '900', color: '#FFFFFF' }}>
+                {isWalletLoading && !wallet
+                  ? '...'
+                  : `${new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'vi-VN').format(wallet?.balance ?? 0)}₫`}
+              </Text>
+              <Text style={{ fontSize: fs(12), color: '#94A3B8' }}>
+                {lang === 'en'
+                  ? 'Tap to manage payment methods and top up'
+                  : 'Bấm để quản lý phương thức thanh toán và nạp tiền'}
+              </Text>
+            </Card>
           </TouchableOpacity>
         </View>
 
