@@ -166,4 +166,17 @@ describe('JobsService.cancelJob - Khôi phục voucher và điểm loyalty', () 
     expect(cancelledJob.status).toBe(JobStatus.CANCELLED);
     expect(loyaltyService.reverseRedeemForJob).toHaveBeenCalledTimes(1);
   });
+
+  it('B46: hủy đơn gắn voucher GIAM50K → voucher_code trên đơn bị xoá, lượt dùng được trả lại', async () => {
+    const { service, jobRecord, vouchersService, customerId, jobId } = makeJobsService();
+    jobRecord['voucher_code'] = 'GIAM50K';
+
+    const cancelledJob = await service.cancelJob(String(customerId), 'customer', String(jobId), {
+      reason: 'Thay đổi kế hoạch cá nhân',
+    });
+
+    expect(cancelledJob.status).toBe(JobStatus.CANCELLED);
+    expect(jobRecord['voucher_code']).toBeUndefined();
+    expect(vouchersService.restoreForJob).toHaveBeenCalledTimes(1);
+  });
 });

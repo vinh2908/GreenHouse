@@ -207,7 +207,13 @@ export class JobsService implements OnModuleInit {
     for (const job of expiredJobs) {
       job.status = JobStatus.EXPIRED;
       job.cancellation_reason = 'Đơn đã hết hạn nhận báo giá (quá 72 giờ)';
-      this.addEvent(job, JobStatus.EXPIRED, 'system', 'system', 'Đơn đã hết hạn nhận báo giá (quá 72 giờ)');
+      this.addEvent(
+        job,
+        JobStatus.EXPIRED,
+        'system',
+        'system',
+        'Đơn đã hết hạn nhận báo giá (quá 72 giờ)',
+      );
       await job.save();
 
       // Cập nhật các báo giá của job sang EXPIRED
@@ -3193,6 +3199,14 @@ export class JobsService implements OnModuleInit {
           job.refund_pending_reason = dto.reason || 'Hủy đơn hàng đã thanh toán';
         }
       }
+    }
+
+    // B46: Xoá liên kết voucher–đơn khi huỷ (lượt dùng được trả lại trong
+    // restoreJobBenefitsOnCancel qua VouchersService.restoreForJob — giảm
+    // used_count + lật redemption sang 'reversed'; bản ghi redemption giữ lại
+    // để đối soát). Đặt trước job.save() để liên kết được gỡ cùng lần lưu này.
+    if (job.voucher_code) {
+      job.voucher_code = undefined;
     }
 
     await job.save();
