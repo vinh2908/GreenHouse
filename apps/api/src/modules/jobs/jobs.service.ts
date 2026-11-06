@@ -6,10 +6,10 @@ import {
   ForbiddenException,
   ConflictException,
   OnModuleInit,
-  OnModuleDestroy,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
+import { Cron } from '@nestjs/schedule';
 import {
   Job,
   JobDocument,
@@ -157,9 +157,8 @@ export function isAvailableForDate(
 }
 
 @Injectable()
-export class JobsService implements OnModuleInit, OnModuleDestroy {
+export class JobsService implements OnModuleInit {
   private readonly logger = new Logger(JobsService.name);
-  private expiryTimer?: ReturnType<typeof setInterval>;
 
   constructor(
     @InjectModel(Job.name) private jobModel: Model<JobDocument>,
@@ -188,24 +187,12 @@ export class JobsService implements OnModuleInit, OnModuleDestroy {
     this.sweepUpcomingJobReminders().catch(err =>
       this.logger.error(`Initial reminder sweep failed: ${err?.message ?? err}`),
     );
-    this.expiryTimer = setInterval(
-      () => {
-        this.sweepExpiredJobsAndQuotes().catch(err =>
-          this.logger.error(`Periodic expired sweep failed: ${err?.message ?? err}`),
-        );
-        this.sweepUpcomingJobReminders().catch(err =>
-          this.logger.error(`Periodic reminder sweep failed: ${err?.message ?? err}`),
-        );
-      },
-      5 * 60 * 1000,
-    );
-    (this.expiryTimer as unknown as { unref?: () => void }).unref?.();
   }
 
-  onModuleDestroy() {
-    if (this.expiryTimer) clearInterval(this.expiryTimer);
-  }
-
+  /**
+   * F12 (A45): Quét đơn quá hạn nhận báo giá (72h) chuyển sang EXPIRED và nhắc 24h
+   */
+  @Cron('*/5 * * * *')
   async sweepExpiredJobsAndQuotes(): Promise<void> {
     const now = new Date();
 
@@ -218,9 +205,9 @@ export class JobsService implements OnModuleInit, OnModuleDestroy {
       .exec();
 
     for (const job of expiredJobs) {
-      job.status = JobStatus.CANCELLED;
+      job.status = JobStatus.EXPIRED;
       job.cancellation_reason = 'Đơn đã hết hạn nhận báo giá (quá 72 giờ)';
-      this.addEvent(job, JobStatus.CANCELLED, 'system', 'system', 'Tự động hủy do hết hạn 72 giờ');
+      this.addEvent(job, JobStatus.EXPIRED, 'system', 'system', 'Đơn đã hết hạn nhận báo giá (quá 72 giờ)');
       await job.save();
 
       // Cập nhật các báo giá của job sang EXPIRED
@@ -240,7 +227,6 @@ export class JobsService implements OnModuleInit, OnModuleDestroy {
         payload: { job_id: String(job._id), action: 'repost' },
       });
 
-      this.emitJobCancelled(job, job.cancellation_reason, 'system');
       this.emitJobStatusChange(job);
     }
 
@@ -287,6 +273,7 @@ export class JobsService implements OnModuleInit, OnModuleDestroy {
   /**
    * A80: Quét các đơn sắp đến giờ làm (CONFIRMED) để gửi nhắc hẹn trước 60 phút và 30 phút.
    */
+  @Cron('*/5 * * * *')
   async sweepUpcomingJobReminders(): Promise<void> {
     try {
       const now = new Date();
@@ -365,6 +352,60 @@ export class JobsService implements OnModuleInit, OnModuleDestroy {
       }
     } catch (err) {
       this.logger.warn(`sweepUpcomingJobReminders failed: ${(err as Error).message}`);
+    }
+  }
+
+  /**
+   * F7 (A25): Quét và thử lại hoàn tiền cho các đơn hủy bị lỗi thanh toán
+   */
+  @Cron('*/5 * * * *')
+  async sweepPendingRefundRetries(): Promise<number> {
+    try {
+      const pendingJobs = await this.jobModel
+        .find({
+          status: JobStatus.CANCELLED,
+          refund_pending_retry: true,
+          refund_pending_amount: { $gt: 0 },
+          refund_retry_count: { $lt: 5 },
+        })
+        .exec();
+
+      let recovered = 0;
+      for (const job of pendingJobs) {
+        try {
+          await this.paymentsService.refundCustomer(
+            String(job.customer_id),
+            String(job._id),
+            job.refund_pending_amount!,
+            job.refund_pending_reason || 'Thử lại hoàn tiền đơn hủy',
+          );
+          job.payment_status = PaymentStatus.REFUNDED;
+          job.refund_pending_retry = false;
+          job.refund_pending_amount = undefined;
+          job.refund_pending_reason = undefined;
+          await job.save();
+
+          await this.notificationsService
+            .create({
+              userId: String(job.customer_id),
+              type: NOTIFICATION_TYPES.REFUND_RECEIVED,
+              title: 'Hoàn tiền đơn hàng đã hủy',
+              body: `Đã hoàn ${job.refund_pending_amount!.toLocaleString('vi-VN')}₫ vào ví của bạn cho công việc "${job.title}"`,
+              payload: { job_id: String(job._id), amount: job.refund_pending_amount },
+            })
+            .catch(() => undefined);
+
+          recovered++;
+        } catch (err) {
+          job.refund_retry_count = (job.refund_retry_count || 0) + 1;
+          await job.save().catch(() => undefined);
+          this.logger.error(`Retry refund for job ${job._id} failed: ${(err as Error).message}`);
+        }
+      }
+      return recovered;
+    } catch (err) {
+      this.logger.error(`sweepPendingRefundRetries failed: ${(err as Error).message}`);
+      return 0;
     }
   }
 
@@ -3117,7 +3158,7 @@ export class JobsService implements OnModuleInit, OnModuleDestroy {
       }
     }
 
-    // A25: Tự động hoàn tiền vào ví khách khi huỷ đơn nếu đơn đã thanh toán điện tử
+    // A25 & F7: Tự động hoàn tiền vào ví khách khi huỷ đơn nếu đơn đã thanh toán điện tử
     if (job.payment_status === PaymentStatus.PAID && job.payment_method !== 'cash') {
       const netPaid = computeNetPaidAmount(job, contractTotalPrice);
       if (netPaid > 0) {
@@ -3129,10 +3170,13 @@ export class JobsService implements OnModuleInit, OnModuleDestroy {
             dto.reason || 'Hủy đơn hàng đã thanh toán',
           );
           job.payment_status = PaymentStatus.REFUNDED;
+          job.refund_pending_retry = false;
+          job.refund_pending_amount = undefined;
+          job.refund_pending_reason = undefined;
           await this.notificationsService
             .create({
               userId: String(job.customer_id),
-              type: NOTIFICATION_TYPES.SYSTEM,
+              type: NOTIFICATION_TYPES.REFUND_RECEIVED,
               title: 'Hoàn tiền đơn hàng đã hủy',
               body: `Đã hoàn ${netPaid.toLocaleString('vi-VN')}₫ vào ví của bạn cho công việc "${job.title}"`,
               payload: { job_id: jobId, amount: netPaid },
@@ -3142,6 +3186,11 @@ export class JobsService implements OnModuleInit, OnModuleDestroy {
           this.logger.error(
             `Refund on cancel failed for job ${jobId}: ${(refundErr as Error).message}`,
           );
+          // F7: Thiết lập cờ retry để không làm mất tiền hoàn của khách
+          job.refund_pending_retry = true;
+          job.refund_retry_count = 0;
+          job.refund_pending_amount = netPaid;
+          job.refund_pending_reason = dto.reason || 'Hủy đơn hàng đã thanh toán';
         }
       }
     }

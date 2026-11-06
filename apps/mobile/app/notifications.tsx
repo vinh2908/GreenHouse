@@ -27,6 +27,7 @@ import {
   RefreshCw,
   Hourglass,
   Shield,
+  RotateCcw,
 } from 'lucide-react-native';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
@@ -61,6 +62,8 @@ function renderNotificationIcon(type: string) {
       return <XCircle size={size} color="#EF4444" />;
     case 'payment_success':
       return <Banknote size={size} color="#10B981" />;
+    case 'refund_received':
+      return <RotateCcw size={size} color="#10B981" />;
     case 'review_received':
       return <Star size={size} color="#F59E0B" />;
     case 'new_message':

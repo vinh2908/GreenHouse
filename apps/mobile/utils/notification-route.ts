@@ -180,7 +180,7 @@ export function resolveNotificationRoute(
   if (type.includes('favorite')) return { pathname: '/(customer)/favorites' };
 
   // ── Ví: nạp/rút/hoàn tiền không gắn job cụ thể (dự phòng cho type tương lai)
-  if (type.includes('wallet') || type.includes('topup') || type.includes('refund')) {
+  if (type === 'refund_received' || type.includes('wallet') || type.includes('topup') || type.includes('refund')) {
     return activeRole === 'helper'
       ? { pathname: '/(helper)/earnings' }
       : { pathname: '/bank-account' };

@@ -210,6 +210,7 @@ export const NOTIFICATION_TYPES = {
   WITHDRAWAL_PROCESSED: 'withdrawal_processed',
   // Common
   PAYMENT_SUCCESS: 'payment_success',
+  REFUND_RECEIVED: 'refund_received',
   REVIEW_RECEIVED: 'review_received',
   NEW_MESSAGE: 'new_message',
   PROMOTION: 'promotion',
