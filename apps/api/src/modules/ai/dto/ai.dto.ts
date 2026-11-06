@@ -19,6 +19,7 @@ export class AnalyzeBookingDto {
   })
   @IsString()
   @IsNotEmpty()
+  @MaxLength(2000)
   text: string;
 }
 
@@ -29,6 +30,7 @@ export class EstimatePriceDto {
   })
   @IsString()
   @IsNotEmpty()
+  @MaxLength(2000)
   description: string;
 
   @ApiPropertyOptional({
@@ -83,6 +85,7 @@ export class AiChatMessageDto {
   @ApiProperty()
   @IsString()
   @IsNotEmpty()
+  @MaxLength(2000)
   content: string;
 }
 
@@ -90,6 +93,7 @@ export class SupportChatDto {
   @ApiProperty({ description: 'Tin nhắn hiện tại của người dùng' })
   @IsString()
   @IsNotEmpty()
+  @MaxLength(2000)
   message: string;
 
   @ApiPropertyOptional({
@@ -120,5 +124,6 @@ export class RankHelpersDto {
   @ApiPropertyOptional({ description: 'Mô tả công việc để AI giải thích phù hợp' })
   @IsOptional()
   @IsString()
+  @MaxLength(2000)
   job_description?: string;
 }
