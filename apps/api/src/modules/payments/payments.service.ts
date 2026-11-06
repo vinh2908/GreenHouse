@@ -137,7 +137,9 @@ export class PaymentsService {
         .exec();
 
       if (!claimedJob) {
-        throw new ConflictException('Đơn hàng này đã được thanh toán hoặc đang được xử lý thanh toán');
+        throw new ConflictException(
+          'Đơn hàng này đã được thanh toán hoặc đang được xử lý thanh toán',
+        );
       }
 
       try {
@@ -339,18 +341,12 @@ export class PaymentsService {
   }
 
   /** Trừ tiền ví dùng chung (dùng cho hoàn tác hoặc điều chỉnh) */
-  async deductWallet(
-    userId: string,
-    amount: number,
-    reason: string,
-  ): Promise<TransactionDocument> {
+  async deductWallet(userId: string, amount: number, reason: string): Promise<TransactionDocument> {
     const wallet = await this.getOrCreateWallet(userId);
     const balanceBefore = wallet.balance;
     const balanceAfter = Math.max(0, balanceBefore - amount);
 
-    await this.walletModel
-      .findByIdAndUpdate(wallet._id, { $inc: { balance: -amount } })
-      .exec();
+    await this.walletModel.findByIdAndUpdate(wallet._id, { $inc: { balance: -amount } }).exec();
 
     return this.transactionModel.create({
       wallet_id: wallet._id,

@@ -235,12 +235,7 @@ export class AuthService {
     }
     if (!user) throw new BadRequestException('Tài khoản không tồn tại trong hệ thống');
 
-    const targetsToTry = [
-      email,
-      phone,
-      user.email,
-      user.phone,
-    ].filter(Boolean) as string[];
+    const targetsToTry = [email, phone, user.email, user.phone].filter(Boolean) as string[];
 
     let isValid = false;
     for (const target of targetsToTry) {
@@ -322,8 +317,10 @@ export class AuthService {
       }),
     ]);
 
-    await this.usersService.addRefreshToken(userId, refreshToken).catch((err) => {
-      this.logger.warn(`Failed to store refresh token for user ${userId}: ${(err as Error).message}`);
+    await this.usersService.addRefreshToken(userId, refreshToken).catch(err => {
+      this.logger.warn(
+        `Failed to store refresh token for user ${userId}: ${(err as Error).message}`,
+      );
     });
 
     return {

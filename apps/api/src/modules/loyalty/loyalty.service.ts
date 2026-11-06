@@ -245,10 +245,14 @@ export class LoyaltyService {
     const voucherDiscount = job.discount_amount ?? 0;
     const remainingAfterVoucher = Math.max(0, contract.total_price - voucherDiscount);
     if (remainingAfterVoucher <= 0) {
-      throw new BadRequestException('Mã voucher đã giảm hết giá trị đơn hàng, không thể áp dụng thêm điểm');
+      throw new BadRequestException(
+        'Mã voucher đã giảm hết giá trị đơn hàng, không thể áp dụng thêm điểm',
+      );
     }
 
-    const capAmount = Math.floor((remainingAfterVoucher * accountInfo.redemption_cap_percent) / 100);
+    const capAmount = Math.floor(
+      (remainingAfterVoucher * accountInfo.redemption_cap_percent) / 100,
+    );
     const maxDiscountAllowed = Math.min(capAmount, remainingAfterVoucher);
     const maxPointsByCap = Math.floor(maxDiscountAllowed / this.pointValueVnd());
     if (maxPointsByCap < minRedeem) {

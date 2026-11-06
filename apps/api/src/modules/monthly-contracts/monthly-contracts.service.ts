@@ -250,9 +250,9 @@ export class MonthlyContractsService {
         : '❌ Thợ đã từ chối hợp đồng theo tháng',
       body: accept
         ? `Hợp đồng "${contract.title}" đã có hiệu lực từ ${this.toDateStr(new Date(contract.start_date))}.`
-        : (reason
-            ? `Thợ đã từ chối hợp đồng "${contract.title}": ${reason}`
-            : `Thợ đã từ chối hợp đồng "${contract.title}". Bạn có thể mời thợ khác.`),
+        : reason
+          ? `Thợ đã từ chối hợp đồng "${contract.title}": ${reason}`
+          : `Thợ đã từ chối hợp đồng "${contract.title}". Bạn có thể mời thợ khác.`,
       payload: { contract_id: String(contract._id), kind: 'monthly_contract' },
     });
     return this.populate(contract);
@@ -267,7 +267,7 @@ export class MonthlyContractsService {
     contract.status = 'cancelled';
     contract.ended_at = new Date();
     contract.end_reason =
-      reason || ('Đã hủy bởi ' + (contract.customer_id.toString() === userId ? 'khách hàng' : 'thợ'));
+      reason || 'Đã hủy bởi ' + (contract.customer_id.toString() === userId ? 'khách hàng' : 'thợ');
     await contract.save();
 
     const otherId =
@@ -608,7 +608,8 @@ export class MonthlyContractsService {
 
     // A39: Tính lương theo tỷ lệ số buổi đã xác nhận / tổng số buổi theo lịch trọn tháng
     const fullMonthScheduled = this.fullMonthScheduledDates(contract, month);
-    const totalScheduledDaysInMonth = fullMonthScheduled.length > 0 ? fullMonthScheduled.length : scheduled.length;
+    const totalScheduledDaysInMonth =
+      fullMonthScheduled.length > 0 ? fullMonthScheduled.length : scheduled.length;
     const gross =
       totalScheduledDaysInMonth > 0
         ? Math.round((contract.monthly_salary * confirmed) / totalScheduledDaysInMonth)

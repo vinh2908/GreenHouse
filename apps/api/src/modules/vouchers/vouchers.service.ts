@@ -163,11 +163,7 @@ export class VouchersService {
       .exec();
     if (!updated) {
       const currentVoucher = await this.voucherModel.findById(voucher._id).exec();
-      if (
-        currentVoucher?.used_user_ids?.some(
-          id => String(id) === String(userId),
-        )
-      ) {
+      if (currentVoucher?.used_user_ids?.some(id => String(id) === String(userId))) {
         throw new BadRequestException('Bạn đã dùng mã này tối đa số lần cho phép');
       }
       throw new BadRequestException('Mã giảm giá đã hết lượt sử dụng');

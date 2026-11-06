@@ -357,17 +357,13 @@ export class RecurringService implements OnApplicationBootstrap, OnModuleDestroy
         const existingWeekdays = new Set(existing.weekdays ?? []);
         const hasOverlap = (dto.weekdays ?? []).some(w => existingWeekdays.has(w));
         if (hasOverlap) {
-          throw new ConflictException(
-            'Bạn đã có lịch định kỳ cho dịch vụ này vào cùng khung giờ',
-          );
+          throw new ConflictException('Bạn đã có lịch định kỳ cho dịch vụ này vào cùng khung giờ');
         }
       } else if (dto.frequency === 'monthly') {
         const existingMonthDays = new Set(existing.month_days ?? []);
         const hasOverlap = (dto.month_days ?? []).some(d => existingMonthDays.has(d));
         if (hasOverlap) {
-          throw new ConflictException(
-            'Bạn đã có lịch định kỳ cho dịch vụ này vào cùng khung giờ',
-          );
+          throw new ConflictException('Bạn đã có lịch định kỳ cho dịch vụ này vào cùng khung giờ');
         }
       }
     }
@@ -566,7 +562,11 @@ export class RecurringService implements OnApplicationBootstrap, OnModuleDestroy
     return refreshed ?? plan;
   }
 
-  async cancelPlan(customerId: string, planId: string, reason?: string): Promise<RecurringPlanDocument> {
+  async cancelPlan(
+    customerId: string,
+    planId: string,
+    reason?: string,
+  ): Promise<RecurringPlanDocument> {
     const plan = await this.getOwnedPlan(customerId, planId);
     if (plan.status === RecurringPlanStatus.CANCELLED) {
       throw new BadRequestException('Gói đã được hủy trước đó');

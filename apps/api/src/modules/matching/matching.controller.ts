@@ -39,6 +39,11 @@ export class MatchingController {
     @Param('jobId') jobId: string,
     @Query('limit') limit?: number,
   ) {
-    return this.matchingService.findOptimalHelpersForJob(jobId, user.sub, user.roles, Number(limit) || 5);
+    return this.matchingService.findOptimalHelpersForJob(
+      jobId,
+      user.sub,
+      user.roles,
+      Number(limit) || 5,
+    );
   }
 }

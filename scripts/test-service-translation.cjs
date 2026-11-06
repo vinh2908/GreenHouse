@@ -29,9 +29,13 @@ const { SERVICE_NAME_EN_MAP, SERVICE_SLUG_EN_MAP } = (() => {
   const content = fs.readFileSync('apps/mobile/services/i18n.ts', 'utf8');
 
   // Extract SERVICE_NAME_EN_MAP
-  const nameMapMatch = content.match(/export const SERVICE_NAME_EN_MAP: Record<string, string> = ({[\s\S]*?});/);
+  const nameMapMatch = content.match(
+    /export const SERVICE_NAME_EN_MAP: Record<string, string> = ({[\s\S]*?});/,
+  );
   // Extract SERVICE_SLUG_EN_MAP
-  const slugMapMatch = content.match(/export const SERVICE_SLUG_EN_MAP: Record<string, string> = ({[\s\S]*?});/);
+  const slugMapMatch = content.match(
+    /export const SERVICE_SLUG_EN_MAP: Record<string, string> = ({[\s\S]*?});/,
+  );
 
   return {
     SERVICE_NAME_EN_MAP: eval('(' + nameMapMatch[1] + ')'),
@@ -64,7 +68,10 @@ function translateServiceName(service, lang) {
 test('translateServiceName maps Pet care correctly', () => {
   assert.equal(translateServiceName('Chăm sóc thú cưng', 'en'), 'Pet care');
   assert.equal(translateServiceName('Chăm sóc thú cưng', 'vi'), 'Chăm sóc thú cưng');
-  assert.equal(translateServiceName({ name: 'Chăm sóc thú cưng', slug: 'pet_care' }, 'en'), 'Pet care');
+  assert.equal(
+    translateServiceName({ name: 'Chăm sóc thú cưng', slug: 'pet_care' }, 'en'),
+    'Pet care',
+  );
 });
 
 test('translateServiceName maps standard catalog services', () => {

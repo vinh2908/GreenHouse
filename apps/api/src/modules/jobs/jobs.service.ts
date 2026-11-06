@@ -220,13 +220,7 @@ export class JobsService implements OnModuleInit, OnModuleDestroy {
     for (const job of expiredJobs) {
       job.status = JobStatus.CANCELLED;
       job.cancellation_reason = 'Đơn đã hết hạn nhận báo giá (quá 72 giờ)';
-      this.addEvent(
-        job,
-        JobStatus.CANCELLED,
-        'system',
-        'system',
-        'Tự động hủy do hết hạn 72 giờ',
-      );
+      this.addEvent(job, JobStatus.CANCELLED, 'system', 'system', 'Tự động hủy do hết hạn 72 giờ');
       await job.save();
 
       // Cập nhật các báo giá của job sang EXPIRED
@@ -827,12 +821,14 @@ export class JobsService implements OnModuleInit, OnModuleDestroy {
     });
 
     // A77: Thông báo cho Admin khi có đơn mới được tạo
-    void this.notificationsService.notifyAdmins({
-      type: NOTIFICATION_TYPES.JOB_CREATED,
-      title: 'Có công việc mới',
-      body: `Khách hàng vừa tạo công việc "${job.title}".`,
-      payload: { job_id: String(job._id) },
-    }).catch(() => undefined);
+    void this.notificationsService
+      .notifyAdmins({
+        type: NOTIFICATION_TYPES.JOB_CREATED,
+        title: 'Có công việc mới',
+        body: `Khách hàng vừa tạo công việc "${job.title}".`,
+        payload: { job_id: String(job._id) },
+      })
+      .catch(() => undefined);
 
     return job;
   }
@@ -1610,10 +1606,14 @@ export class JobsService implements OnModuleInit, OnModuleDestroy {
       throw new ForbiddenException('Tài khoản của bạn đang bị tạm khoá hoặc ngừng hoạt động');
     }
     if (helperProfile.status === HelperStatus.BUSY) {
-      throw new BadRequestException('Bạn đang bận làm việc cho đơn khác, không thể gửi báo giá lúc này');
+      throw new BadRequestException(
+        'Bạn đang bận làm việc cho đơn khác, không thể gửi báo giá lúc này',
+      );
     }
     if (helperProfile.status === HelperStatus.OFFLINE) {
-      throw new BadRequestException('Bạn đang ở trạng thái Ngoại tuyến, vui lòng bật Nhận việc để gửi báo giá');
+      throw new BadRequestException(
+        'Bạn đang ở trạng thái Ngoại tuyến, vui lòng bật Nhận việc để gửi báo giá',
+      );
     }
 
     if (job.status !== JobStatus.OPEN && job.status !== JobStatus.RECEIVING_QUOTES) {
@@ -1729,12 +1729,14 @@ export class JobsService implements OnModuleInit, OnModuleDestroy {
     );
 
     // A77: Báo cho Admin khi có báo giá mới
-    void this.notificationsService.notifyAdmins({
-      type: NOTIFICATION_TYPES.NEW_QUOTE_RECEIVED,
-      title: 'Có báo giá mới',
-      body: `Thợ đã gửi báo giá ${totalPrice.toLocaleString('vi-VN')}₫ cho công việc "${job.title}".`,
-      payload: { job_id: jobId, quote_id: String(quote._id) },
-    }).catch(() => undefined);
+    void this.notificationsService
+      .notifyAdmins({
+        type: NOTIFICATION_TYPES.NEW_QUOTE_RECEIVED,
+        title: 'Có báo giá mới',
+        body: `Thợ đã gửi báo giá ${totalPrice.toLocaleString('vi-VN')}₫ cho công việc "${job.title}".`,
+        payload: { job_id: jobId, quote_id: String(quote._id) },
+      })
+      .catch(() => undefined);
 
     return quote;
   }
@@ -2317,9 +2319,16 @@ export class JobsService implements OnModuleInit, OnModuleDestroy {
 
     // A50: Chỉ đơn đang hoạt động mới phản hồi sửa đổi hợp đồng được
     if (
-      ![JobStatus.CONFIRMED, JobStatus.HELPER_ON_THE_WAY, JobStatus.HELPER_ARRIVED, JobStatus.IN_PROGRESS].includes(job.status)
+      ![
+        JobStatus.CONFIRMED,
+        JobStatus.HELPER_ON_THE_WAY,
+        JobStatus.HELPER_ARRIVED,
+        JobStatus.IN_PROGRESS,
+      ].includes(job.status)
     ) {
-      throw new BadRequestException('Chỉ có thể phản hồi sửa đổi hợp đồng khi công việc đang hoạt động');
+      throw new BadRequestException(
+        'Chỉ có thể phản hồi sửa đổi hợp đồng khi công việc đang hoạt động',
+      );
     }
 
     const contract = await this.contractModel.findOne({ job_id: new Types.ObjectId(jobId) }).exec();
@@ -2405,9 +2414,9 @@ export class JobsService implements OnModuleInit, OnModuleDestroy {
           body:
             dto.action === 'accept'
               ? `Tổng giá trị hợp đồng mới: ${contract.total_price.toLocaleString('vi-VN')}₫`
-              : (dto.reason
-                  ? `Khách hàng đã từ chối khoản phát sinh (${amendment.reason}). Lý do: ${dto.reason}`
-                  : `Khách hàng không đồng ý khoản phát sinh (${amendment.reason}).`),
+              : dto.reason
+                ? `Khách hàng đã từ chối khoản phát sinh (${amendment.reason}). Lý do: ${dto.reason}`
+                : `Khách hàng không đồng ý khoản phát sinh (${amendment.reason}).`,
           payload: { job_id: jobId },
         })
         .catch(() => undefined);
@@ -2689,7 +2698,9 @@ export class JobsService implements OnModuleInit, OnModuleDestroy {
     // A81: Gửi thông báo nhắc đánh giá cho khách nếu chưa gửi
     if (!job.review_reminder_sent) {
       job.review_reminder_sent = true;
-      await this.jobModel.updateOne({ _id: job._id }, { $set: { review_reminder_sent: true } }).exec();
+      await this.jobModel
+        .updateOne({ _id: job._id }, { $set: { review_reminder_sent: true } })
+        .exec();
       await this.notificationsService
         .create({
           userId: customerId,
@@ -2791,12 +2802,14 @@ export class JobsService implements OnModuleInit, OnModuleDestroy {
     }
 
     // A77: Báo cho Admin khi có tranh chấp mới
-    void this.notificationsService.notifyAdmins({
-      type: 'dispute_opened',
-      title: 'Có tranh chấp mới cần xử lý',
-      body: `Đơn "${job.title}" có khiếu nại mới từ ${isCustomer ? 'khách hàng' : 'thợ'}: ${dto.reason}`,
-      payload: { job_id: jobId, dispute_id: jobId },
-    }).catch(() => undefined);
+    void this.notificationsService
+      .notifyAdmins({
+        type: 'dispute_opened',
+        title: 'Có tranh chấp mới cần xử lý',
+        body: `Đơn "${job.title}" có khiếu nại mới từ ${isCustomer ? 'khách hàng' : 'thợ'}: ${dto.reason}`,
+        payload: { job_id: jobId, dispute_id: jobId },
+      })
+      .catch(() => undefined);
 
     return job;
   }
@@ -2826,10 +2839,14 @@ export class JobsService implements OnModuleInit, OnModuleDestroy {
 
     if (['refund_full', 'refund_partial'].includes(dto.action)) {
       if (job.payment_status !== PaymentStatus.PAID) {
-        throw new BadRequestException('Đơn hàng chưa thu tiền hoặc thanh toán chưa hoàn tất, không thể hoàn tiền');
+        throw new BadRequestException(
+          'Đơn hàng chưa thu tiền hoặc thanh toán chưa hoàn tất, không thể hoàn tiền',
+        );
       }
       if (job.payment_method === 'cash') {
-        throw new BadRequestException('Đơn hàng thanh toán tiền mặt không thể hoàn tiền điện tử vào ví');
+        throw new BadRequestException(
+          'Đơn hàng thanh toán tiền mặt không thể hoàn tiền điện tử vào ví',
+        );
       }
     }
 
@@ -3050,7 +3067,9 @@ export class JobsService implements OnModuleInit, OnModuleDestroy {
     if (
       actorRole === 'helper' &&
       job.helper_id &&
-      [JobStatus.CONFIRMED, JobStatus.HELPER_ON_THE_WAY, JobStatus.HELPER_ARRIVED].includes(previousStatus)
+      [JobStatus.CONFIRMED, JobStatus.HELPER_ON_THE_WAY, JobStatus.HELPER_ARRIVED].includes(
+        previousStatus,
+      )
     ) {
       await this.helperModel
         .updateOne(

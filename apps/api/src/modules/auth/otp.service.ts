@@ -116,7 +116,11 @@ export class OtpService {
     }
   }
 
-  async verifyOtp(targetInput: string, code: string, purpose: 'verify' | 'reset'): Promise<boolean> {
+  async verifyOtp(
+    targetInput: string,
+    code: string,
+    purpose: 'verify' | 'reset',
+  ): Promise<boolean> {
     const target = targetInput.trim().toLowerCase();
     const isProd =
       this.configService.get<string>('app.env') === 'production' ||

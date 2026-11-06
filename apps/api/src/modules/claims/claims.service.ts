@@ -104,12 +104,14 @@ export class ClaimsService {
     });
 
     // A77: Báo cho Admin khi có yêu cầu bồi thường mới
-    void this.notificationsService.notifyAdmins({
-      type: 'claim_submitted',
-      title: 'Có yêu cầu bồi thường mới',
-      body: `Khách hàng gửi yêu cầu bồi thường ${(dto.requested_amount ?? 0).toLocaleString('vi-VN')}₫ cho đơn #${dto.job_id.slice(-6)}`,
-      payload: { job_id: dto.job_id, claim_id: String(claim._id) },
-    }).catch(() => undefined);
+    void this.notificationsService
+      .notifyAdmins({
+        type: 'claim_submitted',
+        title: 'Có yêu cầu bồi thường mới',
+        body: `Khách hàng gửi yêu cầu bồi thường ${(dto.requested_amount ?? 0).toLocaleString('vi-VN')}₫ cho đơn #${dto.job_id.slice(-6)}`,
+        payload: { job_id: dto.job_id, claim_id: String(claim._id) },
+      })
+      .catch(() => undefined);
 
     return claim;
   }
