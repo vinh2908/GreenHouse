@@ -9,7 +9,7 @@ import 'dayjs/locale/vi';
 import { useAuthStore } from '@/stores/auth.store';
 import { useMyJobs, useMyProfile } from '@/hooks/use-api';
 import { useTranslation } from '@/hooks/use-i18n';
-import { Card, JobStatusBadge, EmptyState, COLORS, Badge } from '@/components/ui';
+import { Card, JobStatusBadge, EmptyState, ErrorState, COLORS, Badge } from '@/components/ui';
 
 dayjs.extend(relativeTime);
 
@@ -31,7 +31,7 @@ export default function CustomerJobsScreen() {
   const isSwitchingRole = useAuthStore(s => s.isSwitchingRole);
   const isHelper = user?.active_role === 'helper';
 
-  const { data: jobs, isLoading, isRefetching, refetch } = useMyJobs(TABS[activeTab].key);
+  const { data: jobs, isLoading, isError, isRefetching, refetch } = useMyJobs(TABS[activeTab].key);
   const insets = useSafeAreaInsets();
 
   useEffect(() => {
@@ -212,7 +212,19 @@ export default function CustomerJobsScreen() {
           />
         }
       >
-        {!isLoading && (!jobs || jobs.length === 0) ? (
+        {isError ? (
+          <Card style={{ alignItems: 'center', paddingVertical: 20 }}>
+            <ErrorState
+              title={lang === 'en' ? 'Unable to load orders' : 'Không thể tải danh sách đơn'}
+              subtitle={
+                lang === 'en'
+                  ? 'Failed to fetch your orders. Please check your network and retry.'
+                  : 'Không thể kết nối đến máy chủ. Vui lòng kiểm tra mạng và thử lại.'
+              }
+              onRetry={() => refetch()}
+            />
+          </Card>
+        ) : !isLoading && (!jobs || jobs.length === 0) ? (
           <Card style={{ alignItems: 'center', paddingVertical: 40 }}>
             <EmptyState
               emoji="📋"

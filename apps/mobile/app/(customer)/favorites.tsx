@@ -12,7 +12,7 @@ import {
 } from '@/hooks/use-api';
 import { useTranslation } from '@/hooks/use-i18n';
 import apiClient from '@/services/api-client';
-import { Avatar, Card, COLORS, EmptyState, LoadingSpinner } from '@/components/ui';
+import { Avatar, Card, COLORS, EmptyState, ErrorState, LoadingSpinner } from '@/components/ui';
 
 function helperOf(fav: FavoriteHelperItem) {
   return typeof fav.helper_id === 'object' && fav.helper_id ? fav.helper_id : null;
@@ -22,7 +22,7 @@ export default function FavoriteHelpersScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { t, fs, lang } = useTranslation();
-  const { data: favorites, isLoading, isRefetching, refetch } = useFavorites();
+  const { data: favorites, isLoading, isError, isRefetching, refetch } = useFavorites();
   const removeFavorite = useRemoveFavorite();
   const rebookJob = useRebookJob();
 
@@ -159,7 +159,17 @@ export default function FavoriteHelpersScreen() {
         </View>
       </View>
 
-      {isLoading ? (
+      {isError ? (
+        <ErrorState
+          title={lang === 'en' ? 'Unable to load favorite helpers' : 'Không thể tải danh sách thợ yêu thích'}
+          subtitle={
+            lang === 'en'
+              ? 'Could not connect to server. Please check your network and retry.'
+              : 'Không thể kết nối đến máy chủ. Vui lòng kiểm tra mạng và thử lại.'
+          }
+          onRetry={() => refetch()}
+        />
+      ) : isLoading ? (
         <LoadingSpinner />
       ) : (
         <ScrollView

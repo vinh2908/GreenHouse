@@ -9,7 +9,7 @@ import { formatConversationTime } from '@/utils/date-format';
 import { useConversations } from '@/hooks/use-api';
 import { useAuthStore } from '@/stores/auth.store';
 import { useTranslation } from '@/hooks/use-i18n';
-import { Card, Avatar, COLORS, EmptyState, LoadingSpinner } from '@/components/ui';
+import { Card, Avatar, COLORS, EmptyState, ErrorState, LoadingSpinner } from '@/components/ui';
 
 dayjs.extend(relativeTime);
 
@@ -17,7 +17,7 @@ export default function HelperConversationsScreen() {
   const router = useRouter();
   const { t, fs, lang } = useTranslation();
   const currentUser = useAuthStore(s => s.user);
-  const { data: conversations, isLoading, refetch } = useConversations();
+  const { data: conversations, isLoading, isError, refetch } = useConversations();
   const insets = useSafeAreaInsets();
 
   return (
@@ -47,7 +47,17 @@ export default function HelperConversationsScreen() {
           <RefreshControl refreshing={isLoading} onRefresh={refetch} colors={[COLORS.primary]} />
         }
       >
-        {isLoading ? (
+        {isError ? (
+          <ErrorState
+            title={lang === 'en' ? 'Unable to load conversations' : 'Không thể tải cuộc trò chuyện'}
+            subtitle={
+              lang === 'en'
+                ? 'Could not connect to chat server. Please retry.'
+                : 'Không thể kết nối đến máy chủ trò chuyện. Vui lòng thử lại.'
+            }
+            onRetry={() => refetch()}
+          />
+        ) : isLoading ? (
           <LoadingSpinner />
         ) : !conversations?.length ? (
           <EmptyState

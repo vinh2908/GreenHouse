@@ -11,6 +11,7 @@ import {
   type TouchableOpacityProps,
   type ViewProps,
 } from 'react-native';
+import { AlertTriangle, RotateCw } from 'lucide-react-native';
 import { useTranslation } from '@/hooks/use-i18n';
 
 // ─── Green House Color Palette (Banana Green / Lime Fresh) ───────────────────
@@ -403,6 +404,81 @@ export function EmptyState({ emoji = '📋', title, subtitle, action, onAction }
           }}
         >
           <Text style={{ color: '#fff', fontWeight: '700', fontSize: fs(14) }}>{action}</Text>
+        </TouchableOpacity>
+      )}
+    </View>
+  );
+}
+
+// ─── Error State ───────────────────────────────────────────────────────────────
+
+export interface ErrorStateProps {
+  title?: string;
+  subtitle?: string;
+  onRetry?: () => void;
+  retryText?: string;
+}
+
+export function ErrorState({ title, subtitle, onRetry, retryText }: ErrorStateProps) {
+  const { fs, lang } = useTranslation();
+  return (
+    <View style={{ alignItems: 'center', justifyContent: 'center', paddingVertical: 40, paddingHorizontal: 24 }}>
+      <View
+        style={{
+          width: 64,
+          height: 64,
+          borderRadius: 32,
+          backgroundColor: '#FEE2E2',
+          alignItems: 'center',
+          justifyContent: 'center',
+          marginBottom: 16,
+        }}
+      >
+        <AlertTriangle size={32} color="#DC2626" />
+      </View>
+      <Text
+        style={{
+          fontSize: fs(16),
+          fontWeight: '700',
+          color: COLORS.gray[800],
+          textAlign: 'center',
+          marginBottom: 8,
+        }}
+      >
+        {title || (lang === 'en' ? 'Unable to load data' : 'Không thể tải dữ liệu')}
+      </Text>
+      <Text
+        style={{
+          fontSize: fs(13),
+          color: COLORS.gray[500],
+          textAlign: 'center',
+          marginBottom: 20,
+          lineHeight: 18,
+        }}
+      >
+        {subtitle ||
+          (lang === 'en'
+            ? 'A connection or server error occurred. Please try again.'
+            : 'Đã xảy ra lỗi kết nối hoặc hệ thống. Vui lòng thử lại.')}
+      </Text>
+      {onRetry && (
+        <TouchableOpacity
+          onPress={onRetry}
+          activeOpacity={0.8}
+          style={{
+            backgroundColor: COLORS.primary,
+            paddingVertical: 10,
+            paddingHorizontal: 20,
+            borderRadius: 12,
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 8,
+          }}
+        >
+          <RotateCw size={16} color="#FFFFFF" />
+          <Text style={{ color: '#FFFFFF', fontWeight: '600', fontSize: fs(14) }}>
+            {retryText || (lang === 'en' ? 'Retry' : 'Thử lại')}
+          </Text>
         </TouchableOpacity>
       )}
     </View>

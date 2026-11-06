@@ -34,6 +34,7 @@ import {
   Separator,
   PriceText,
   EmptyState,
+  ErrorState,
 } from '@/components/ui';
 import dayjs from 'dayjs';
 import { EarningsReport } from '@/components/helper/earnings-report';
@@ -59,8 +60,8 @@ const TX_COLORS: Record<string, string> = {
 
 export default function HelperEarningsScreen() {
   const { t, fs, lang, formatTxDesc } = useTranslation();
-  const { data: wallet, isLoading } = useWallet();
-  const { data: txData, isLoading: isTxLoading } = useTransactions(1);
+  const { data: wallet, isLoading, isError: isWalletError, refetch: refetchWallet } = useWallet();
+  const { data: txData, isLoading: isTxLoading, isError: isTxError, refetch: refetchTx } = useTransactions(1);
   const { data: profile } = useHelperProfile();
   const withdraw = useRequestWithdrawal();
   const topup = useTopupWallet();
@@ -261,7 +262,22 @@ export default function HelperEarningsScreen() {
             {t('earn_history_title')}
           </Text>
 
-          {isTxLoading ? (
+          {isTxError ? (
+            <Card style={{ alignItems: 'center', paddingVertical: 20 }}>
+              <ErrorState
+                title={lang === 'en' ? 'Unable to load transactions' : 'Không thể tải lịch sử giao dịch'}
+                subtitle={
+                  lang === 'en'
+                    ? 'Connection to server failed. Please check your network and retry.'
+                    : 'Không thể kết nối đến máy chủ. Vui lòng kiểm tra mạng và thử lại.'
+                }
+                onRetry={() => {
+                  refetchWallet();
+                  refetchTx();
+                }}
+              />
+            </Card>
+          ) : isTxLoading ? (
             <Card style={{ gap: 14, padding: 16 }}>
               {[1, 2, 3].map(i => (
                 <View

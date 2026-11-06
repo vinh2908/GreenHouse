@@ -66,7 +66,7 @@ import {
 import { locationService } from '@/services/location.service';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LocationPicker, PickerCoords } from '@/components/common/location-picker';
-import { Avatar, COLORS } from '@/components/ui';
+import { Avatar, COLORS, ErrorState } from '@/components/ui';
 import { removeVietnameseDiacritics } from '@/utils/search';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
@@ -245,8 +245,8 @@ export default function CustomerHomeScreen() {
   const storedUser = useAuthStore(s => s.user);
   const { data: profile, refetch: refetchProfile } = useMyProfile();
   const user = profile ?? storedUser;
-  const { data: services, refetch: refetchServices } = useServices();
-  const { data: recentJobs, isLoading: jLoading, refetch: refetchJobs } = useMyJobs();
+  const { data: services, isError: sError, refetch: refetchServices } = useServices();
+  const { data: recentJobs, isLoading: jLoading, isError: jError, refetch: refetchJobs } = useMyJobs();
   const { data: unread, refetch: refetchUnread } = useUnreadCount();
   const createJob = useCreateJob();
   const insets = useSafeAreaInsets();
@@ -1323,6 +1323,24 @@ export default function CustomerHomeScreen() {
           </View>
         </View>
 
+        {sError && jError ? (
+          <View style={{ padding: 24, margin: 16, backgroundColor: '#fff', borderRadius: 16, borderWidth: 1, borderColor: '#E2E8F0' }}>
+            <ErrorState
+              title={lang === 'en' ? 'Unable to load home data' : 'Không thể tải dữ liệu trang chủ'}
+              subtitle={
+                lang === 'en'
+                  ? 'Connection to server failed. Please check your network and retry.'
+                  : 'Không thể kết nối đến máy chủ. Vui lòng kiểm tra mạng và thử lại.'
+              }
+              onRetry={() => {
+                refetchServices();
+                refetchJobs();
+                refetchProfile();
+              }}
+            />
+          </View>
+        ) : (
+          <>
         {/* ── 2. WOW 1: THỢ ĐANG Ở GẦN BẠN (Live Map + Real Nearby Helpers) ─ */}
         <View style={{ paddingHorizontal: 16, marginTop: 20 }}>
           {/* Section Header with "Trực tiếp" green pulse badge */}
@@ -3028,6 +3046,8 @@ export default function CustomerHomeScreen() {
               </View>
             );
           })()}
+          </>
+        )}
       </ScrollView>
 
       {/* ── BOTTOM SHEET CHỌN NGÀY & GIỜ (ITEM 1) ── */}
