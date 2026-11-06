@@ -53,6 +53,7 @@ export class CreateMonthlyContractDto {
   @ApiProperty({ description: 'Lương tháng thỏa thuận (VNĐ)' })
   @IsNumber()
   @Min(100000, { message: 'Lương tháng tối thiểu 100.000₫' })
+  @Max(20000000, { message: 'Lương tháng tối đa 20.000.000₫' })
   monthly_salary: number;
 
   @ApiProperty({ type: JobAddressDto })
