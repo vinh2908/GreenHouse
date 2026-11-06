@@ -119,7 +119,8 @@ export default function VouchersPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      {/* G11: flex-wrap để ở 360px nút tạo mã không bóp tiêu đề thành 2 dòng chật. */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-extrabold tracking-tight">Mã giảm giá (Voucher)</h1>
           <p className="text-sm text-muted-foreground mt-1">
