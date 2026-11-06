@@ -211,8 +211,11 @@ export class MatchingService {
     jobId: string,
     userId: string,
     userRoles?: string[],
-    limit = 5,
+    limit = 10,
   ): Promise<MatchPair[]> {
+    // B63: mặc định 10, kẹp trong 1–20 (controller đã trả 400 cho giá trị
+    // ngoài khoảng; đây là lớp phòng thủ cho caller gọi trực tiếp service).
+    const take = Number.isInteger(limit) ? Math.min(20, Math.max(1, limit)) : 10;
     const job = await this.jobModel.findById(jobId).populate('service_id').exec();
     if (!job) throw new NotFoundException('Công việc không tồn tại');
 
@@ -253,6 +256,6 @@ export class MatchingService {
     });
 
     scored.sort((a, b) => b.match_score - a.match_score);
-    return scored.slice(0, limit);
+    return scored.slice(0, take);
   }
 }
