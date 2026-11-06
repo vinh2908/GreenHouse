@@ -9,6 +9,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Modal,
+  Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -35,7 +36,15 @@ import {
   useTopupWallet,
 } from '@/hooks/use-api';
 import { useTranslation } from '@/hooks/use-i18n';
-import { Button, Card, LoadingSpinner, COLORS, Separator, EmptyState, useThemeColors } from '@/components/ui';
+import {
+  Button,
+  Card,
+  LoadingSpinner,
+  COLORS,
+  Separator,
+  EmptyState,
+  useThemeColors,
+} from '@/components/ui';
 
 const POPULAR_BANKS = [
   { code: 'VCB', name: 'Vietcombank', shortName: 'VCB' },
@@ -103,7 +112,12 @@ export default function BankAccountScreen() {
             (Array.isArray(user?.roles) && (user.roles as any[]).includes('helper'))))));
 
   const { data: profile, isLoading, refetch } = useHelperProfile();
-  const { data: txData, isLoading: txLoading, refetch: refetchTx } = useTransactions(1);
+  const {
+    data: txData,
+    isLoading: txLoading,
+    refetch: refetchTx,
+    dataUpdatedAt: txUpdatedAt,
+  } = useTransactions(1);
   const { data: wallet, isLoading: isWalletLoading, refetch: refetchWallet } = useWallet();
   const topup = useTopupWallet();
   const updateBank = useUpdateBankAccount();
@@ -135,6 +149,23 @@ export default function BankAccountScreen() {
       });
       return;
     }
+    // A91: Xác nhận trước khi nạp tiền — hiện số tiền + phương thức.
+    Alert.alert(
+      lang === 'en' ? 'Confirm top-up' : 'Xác nhận nạp tiền',
+      lang === 'en'
+        ? `Top up ${num.toLocaleString('vi-VN')}₫ via VietQR?`
+        : `Nạp ${num.toLocaleString('vi-VN')}₫ qua VietQR?`,
+      [
+        { text: lang === 'en' ? 'Cancel' : 'Hủy', style: 'cancel' },
+        {
+          text: lang === 'en' ? 'Confirm' : 'Xác nhận',
+          onPress: () => void doCustomerTopup(num),
+        },
+      ],
+    );
+  };
+
+  const doCustomerTopup = async (num: number) => {
     try {
       await topup.mutateAsync({ amount: num, payment_method: 'vietqr' });
       Toast.show({
@@ -368,9 +399,7 @@ export default function BankAccountScreen() {
                         alignItems: 'center',
                       }}
                     >
-                      <Text
-                        style={{ fontWeight: '800', fontSize: fs(14.5), color: tc.text }}
-                      >
+                      <Text style={{ fontWeight: '800', fontSize: fs(14.5), color: tc.text }}>
                         {opt.title}
                       </Text>
                       {selected ? (
@@ -396,11 +425,15 @@ export default function BankAccountScreen() {
             })}
           </View>
 
-          <Text
-            style={{ fontSize: fs(15), fontWeight: '800', color: tc.text, marginTop: 6 }}
-          >
+          <Text style={{ fontSize: fs(15), fontWeight: '800', color: tc.text, marginTop: 6 }}>
             {lang === 'en' ? 'Recent Transactions' : 'Lịch sử giao dịch gần đây'}
           </Text>
+          {/* A97: Thời gian cập nhật lần cuối */}
+          {txUpdatedAt ? (
+            <Text style={{ fontSize: fs(11), color: tc.textMuted, marginTop: 2 }}>
+              {lang === 'en' ? 'Updated at' : 'Cập nhật lúc'} {dayjs(txUpdatedAt).format('HH:mm')}
+            </Text>
+          ) : null}
 
           {txLoading ? (
             <LoadingSpinner size="small" />
@@ -418,40 +451,58 @@ export default function BankAccountScreen() {
             </Card>
           ) : (
             <Card style={{ gap: 0 }}>
-              {txData.transactions.map((tx: any, i: number) => (
-                <View key={tx._id}>
-                  {i > 0 && <Separator my={0} />}
-                  <View
-                    style={{
-                      flexDirection: 'row',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      paddingVertical: 12,
-                    }}
-                  >
-                    <View style={{ flex: 1, marginRight: 10 }}>
-                      <Text
-                        style={{ fontWeight: '700', fontSize: fs(14), color: tc.text }}
-                      >
-                        {formatTxDesc(tx.description)}
-                      </Text>
+              {txData.transactions.map((tx: any, i: number) => {
+                // A93: Giao dịch có đơn liên quan thì bấm vào mở được đơn đó.
+                const txJobId: string | undefined =
+                  (typeof tx.job_id === 'string' && tx.job_id) ||
+                  (typeof tx.job_id === 'object' && tx.job_id ? String(tx.job_id) : undefined) ||
+                  tx.metadata?.job_id;
+                return (
+                  <View key={tx._id}>
+                    {i > 0 && <Separator my={0} />}
+                    <TouchableOpacity
+                      activeOpacity={txJobId ? 0.7 : 1}
+                      onPress={() => {
+                        if (txJobId) router.push(`/job-detail/${txJobId}` as never);
+                      }}
+                    >
                       <View
-                        style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 }}
+                        style={{
+                          flexDirection: 'row',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          paddingVertical: 12,
+                        }}
                       >
-                        <Clock size={12} color={COLORS.gray[400]} />
-                        <Text style={{ fontSize: fs(12), color: tc.textMuted }}>
-                          {formatDateTime(dayjs(tx.created_at))}
+                        <View style={{ flex: 1, marginRight: 10 }}>
+                          <Text style={{ fontWeight: '700', fontSize: fs(14), color: tc.text }}>
+                            {formatTxDesc(tx.description)}
+                          </Text>
+                          <View
+                            style={{
+                              flexDirection: 'row',
+                              alignItems: 'center',
+                              gap: 4,
+                              marginTop: 2,
+                            }}
+                          >
+                            <Clock size={12} color={COLORS.gray[400]} />
+                            <Text style={{ fontSize: fs(12), color: tc.textMuted }}>
+                              {formatDateTime(dayjs(tx.created_at))}
+                            </Text>
+                          </View>
+                        </View>
+                        <Text style={{ fontWeight: '800', fontSize: fs(14.5), color: tc.text }}>
+                          {new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'vi-VN').format(
+                            tx.amount,
+                          )}
+                          ₫
                         </Text>
                       </View>
-                    </View>
-                    <Text
-                      style={{ fontWeight: '800', fontSize: fs(14.5), color: tc.text }}
-                    >
-                      {new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'vi-VN').format(tx.amount)}₫
-                    </Text>
+                    </TouchableOpacity>
                   </View>
-                </View>
-              ))}
+                );
+              })}
             </Card>
           )}
         </ScrollView>
