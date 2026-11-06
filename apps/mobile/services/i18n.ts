@@ -2623,8 +2623,5 @@ export function formatTransactionDescription(
   if (salaryMatch)
     return `Salary for month ${salaryMatch[1]} — contract ${salaryMatch[2]} (${salaryMatch[3]} sessions, after ${salaryMatch[4]} platform fee)`;
 
-  const teamMatch = d.match(/^Chia tiền công nhóm đơn\s*#([a-zA-Z0-9]+)$/i);
-  if (teamMatch) return `Team wage split for job #${teamMatch[1]}`;
-
   return desc;
 }
