@@ -152,4 +152,85 @@ describe('JobsService - F7 Refund Retry & Notification', () => {
     expect(mockJob.refund_pending_amount).toBe(350000);
     expect(mockJob.refund_retry_count).toBe(0);
   });
+
+  it('G1: sweepPendingRefundRetries — retry thành công → notification đúng số tiền, không TypeError, count không tăng', async () => {
+    const customerId = new Types.ObjectId().toString();
+    const jobId = new Types.ObjectId().toString();
+
+    const pendingJob: any = {
+      _id: new Types.ObjectId(jobId),
+      customer_id: new Types.ObjectId(customerId),
+      status: JobStatus.CANCELLED,
+      payment_status: PaymentStatus.PAID,
+      title: 'Dọn nhà',
+      refund_pending_retry: true,
+      refund_pending_amount: 350000,
+      refund_pending_reason: 'Thử lại hoàn tiền đơn hủy',
+      refund_retry_count: 1,
+      save: jest.fn().mockImplementation(async function (this: any) {
+        return this;
+      }),
+    };
+
+    jobModel.find.mockReturnValue({
+      exec: jest.fn().mockResolvedValue([pendingJob]),
+    });
+    paymentsService.refundCustomer.mockResolvedValue({});
+
+    const recovered = await service.sweepPendingRefundRetries();
+
+    expect(recovered).toBe(1);
+    expect(paymentsService.refundCustomer).toHaveBeenCalledWith(
+      customerId,
+      jobId,
+      350000,
+      'Thử lại hoàn tiền đơn hủy',
+    );
+    // Notification được tạo với đúng số tiền (không TypeError do đọc
+    // refund_pending_amount sau khi đã gán undefined).
+    expect(notificationsService.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: NOTIFICATION_TYPES.REFUND_RECEIVED,
+        userId: customerId,
+        body: expect.stringContaining('350.000'),
+        payload: expect.objectContaining({ job_id: jobId, amount: 350000 }),
+      }),
+    );
+    expect(pendingJob.refund_pending_amount).toBeUndefined();
+    expect(pendingJob.refund_pending_retry).toBe(false);
+    expect(pendingJob.payment_status).toBe(PaymentStatus.REFUNDED);
+    // Count KHÔNG tăng khi retry thành công (bug cũ: TypeError làm count +1
+    // và log "Retry refund failed" dù tiền đã hoàn xong).
+    expect(pendingJob.refund_retry_count).toBe(1);
+  });
+
+  it('G1: sweepPendingRefundRetries — retry thất bại → count tăng 1, không notification', async () => {
+    const customerId = new Types.ObjectId().toString();
+    const jobId = new Types.ObjectId().toString();
+
+    const pendingJob: any = {
+      _id: new Types.ObjectId(jobId),
+      customer_id: new Types.ObjectId(customerId),
+      status: JobStatus.CANCELLED,
+      payment_status: PaymentStatus.PAID,
+      title: 'Dọn nhà',
+      refund_pending_retry: true,
+      refund_pending_amount: 200000,
+      refund_pending_reason: 'Thử lại hoàn tiền đơn hủy',
+      refund_retry_count: 1,
+      save: jest.fn().mockResolvedValue(true),
+    };
+
+    jobModel.find.mockReturnValue({
+      exec: jest.fn().mockResolvedValue([pendingJob]),
+    });
+    paymentsService.refundCustomer.mockRejectedValue(new Error('Gateway timeout'));
+
+    const recovered = await service.sweepPendingRefundRetries();
+
+    expect(recovered).toBe(0);
+    expect(pendingJob.refund_retry_count).toBe(2);
+    expect(pendingJob.refund_pending_amount).toBe(200000);
+    expect(notificationsService.create).not.toHaveBeenCalled();
+  });
 });
