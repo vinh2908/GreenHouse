@@ -411,11 +411,15 @@ export class JobsService implements OnModuleInit {
 
       let recovered = 0;
       for (const job of pendingJobs) {
+        // G1 (F7): lưu số tiền hoàn vào biến local TRƯỚC khi gán undefined —
+        // dùng job.refund_pending_amount sau save() sẽ là undefined và ném
+        // TypeError, làm mất notification + tăng sai refund_retry_count.
+        const refundAmount = job.refund_pending_amount!;
         try {
           await this.paymentsService.refundCustomer(
             String(job.customer_id),
             String(job._id),
-            job.refund_pending_amount!,
+            refundAmount,
             job.refund_pending_reason || 'Thử lại hoàn tiền đơn hủy',
           );
           job.payment_status = PaymentStatus.REFUNDED;
@@ -429,13 +433,16 @@ export class JobsService implements OnModuleInit {
               userId: String(job.customer_id),
               type: NOTIFICATION_TYPES.REFUND_RECEIVED,
               title: 'Hoàn tiền đơn hàng đã hủy',
-              body: `Đã hoàn ${job.refund_pending_amount!.toLocaleString('vi-VN')}₫ vào ví của bạn cho công việc "${job.title}"`,
-              payload: { job_id: String(job._id), amount: job.refund_pending_amount },
+              body: `Đã hoàn ${refundAmount.toLocaleString('vi-VN')}₫ vào ví của bạn cho công việc "${job.title}"`,
+              payload: { job_id: String(job._id), amount: refundAmount },
             })
             .catch(() => undefined);
 
           recovered++;
         } catch (err) {
+          // G1: refund_retry_count chỉ tăng khi lần thử lại thật sự thất bại.
+          // Trước đây TypeError ở notification (đọc refund_pending_amount
+          // sau khi đã gán undefined) cũng rơi vào đây dù tiền đã hoàn xong.
           job.refund_retry_count = (job.refund_retry_count || 0) + 1;
           await job.save().catch(() => undefined);
           this.logger.error(`Retry refund for job ${job._id} failed: ${(err as Error).message}`);
