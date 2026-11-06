@@ -376,11 +376,10 @@ export class JobsController {
   }
 
   // ─── Cancel ───────────────────────────────────────────────────────────────
+  // F15: chỉ giữ 1 route hủy duy nhất (PATCH /jobs/:jobId/cancel) — các route
+  // trùng POST /cancel, POST/PATCH /cancel-request đã xóa.
 
-  @Post(':jobId/cancel')
   @Patch(':jobId/cancel')
-  @Post(':jobId/cancel-request')
-  @Patch(':jobId/cancel-request')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Hủy job hoặc gửi yêu cầu hủy đơn' })
   async cancelJob(

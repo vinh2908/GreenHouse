@@ -207,7 +207,13 @@ export class JobsService implements OnModuleInit {
     for (const job of expiredJobs) {
       job.status = JobStatus.EXPIRED;
       job.cancellation_reason = 'Đơn đã hết hạn nhận báo giá (quá 72 giờ)';
-      this.addEvent(job, JobStatus.EXPIRED, 'system', 'system', 'Đơn đã hết hạn nhận báo giá (quá 72 giờ)');
+      this.addEvent(
+        job,
+        JobStatus.EXPIRED,
+        'system',
+        'system',
+        'Đơn đã hết hạn nhận báo giá (quá 72 giờ)',
+      );
       await job.save();
 
       // Cập nhật các báo giá của job sang EXPIRED
@@ -3114,6 +3120,7 @@ export class JobsService implements OnModuleInit {
     this.validateTransition(job.status, JobStatus.CANCELLED);
     job.cancellation_reason = dto.reason;
     job.cancelled_by = new Types.ObjectId(actorId);
+    job.cancelled_by_role = actorRole;
     this.addEvent(job, JobStatus.CANCELLED, actorId, actorRole, `Hủy: ${dto.reason}`);
 
     // Nếu Thợ tự ý hủy đơn sau khi đã chốt hợp đồng (confirmed / helper_on_the_way / helper_arrived) -> phạt điểm rủi ro (No-Show / Late Cancel)
