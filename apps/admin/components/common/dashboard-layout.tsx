@@ -21,6 +21,7 @@ import {
   CalendarClock,
   Coins,
   GitMerge,
+  MessageSquare,
   Menu,
   X,
 } from 'lucide-react';
@@ -42,6 +43,7 @@ const navItems = [
   { href: '/reviews', label: 'Đánh giá & Phản hồi', icon: Star },
   { href: '/loyalty', label: 'Điểm thưởng Loyalty', icon: Coins },
   { href: '/matching', label: 'Ghép thợ Hungarian', icon: GitMerge },
+  { href: '/feedback', label: 'Góp ý', icon: MessageSquare },
   { href: '/analytics', label: 'Thống kê & Báo cáo', icon: BarChart3 },
   { href: '/notifications', label: 'Gửi thông báo', icon: Megaphone },
 ];
