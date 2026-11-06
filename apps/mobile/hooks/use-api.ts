@@ -2473,9 +2473,11 @@ export function useAcceptSosBackup() {
   });
 }
 
+// B105: từ chối lời mời SOS kèm lý do (qua màn xác nhận)
 export function useDeclineSosBackup() {
   return useMutation({
-    mutationFn: (sosId: string) => apiClient.post(`/sos-backup/${sosId}/decline`),
+    mutationFn: ({ sosId, reason }: { sosId: string; reason?: string }) =>
+      apiClient.post(`/sos-backup/${sosId}/decline`, reason ? { reason } : {}),
   });
 }
 

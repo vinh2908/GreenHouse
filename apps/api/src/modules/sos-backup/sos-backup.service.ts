@@ -1179,7 +1179,9 @@ export class SosBackupService implements OnModuleInit, OnModuleDestroy {
     return { sos: this.serialize(claimed), job: swapped };
   }
 
-  async declineSos(helperId: string, sosId: string) {
+  // B105: từ chối lời mời SOS kèm lý do (lưu lại); thợ đã từ chối không được
+  // mời lại trong cùng lần SOS (findCandidates loại trừ state 'declined').
+  async declineSos(helperId: string, sosId: string, reason?: string) {
     if (!Types.ObjectId.isValid(sosId)) throw new BadRequestException('sos_id không hợp lệ');
     const sos = await this.sosModel.findById(sosId).exec();
     if (!sos) throw new NotFoundException('Yêu cầu SOS không tồn tại');
@@ -1196,12 +1198,16 @@ export class SosBackupService implements OnModuleInit, OnModuleDestroy {
           $set: {
             'candidates.$[c].state': 'declined',
             'candidates.$[c].responded_at': now,
+            ...(reason?.trim()
+              ? { 'candidates.$[c].decline_reason': reason.trim().slice(0, 300) }
+              : {}),
           },
         },
         { arrayFilters: [{ 'c.helper_id': new Types.ObjectId(helperId) }] },
       )
       .exec();
     candidate.state = 'declined';
+    if (reason?.trim()) (candidate as any).decline_reason = reason.trim().slice(0, 300);
 
     // B80: thợ rút/từ chối → cập nhật danh sách trên màn khách ngay
     const withdrawnPayload = {
