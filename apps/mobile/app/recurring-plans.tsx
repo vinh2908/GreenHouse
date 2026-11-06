@@ -1,6 +1,14 @@
 import { useState } from 'react';
 import { formatDate } from '@/utils/date-format';
-import { View, Text, ScrollView, TouchableOpacity, RefreshControl } from 'react-native';
+import {
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  RefreshControl,
+  Modal,
+  TextInput,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import {
@@ -18,6 +26,7 @@ import dayjs from 'dayjs';
 import 'dayjs/locale/vi';
 import 'dayjs/locale/en';
 import { Alert } from '@/components/common/app-alert';
+import Toast from 'react-native-toast-message';
 import {
   useRecurringPlans,
   useRecurringPlanDetail,
@@ -28,7 +37,15 @@ import {
   type RecurringPlanItem,
 } from '@/hooks/use-api';
 import { useTranslation } from '@/hooks/use-i18n';
-import { Badge, Card, COLORS, EmptyState, LoadingSpinner, useThemeColors } from '@/components/ui';
+import {
+  Badge,
+  Button,
+  Card,
+  COLORS,
+  EmptyState,
+  LoadingSpinner,
+  useThemeColors,
+} from '@/components/ui';
 
 const WEEKDAY_LABELS_VI = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
 const WEEKDAY_LABELS_EN = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -87,6 +104,27 @@ export default function RecurringPlansScreen() {
   const skipNext = useSkipNextOccurrence();
   const cancelPlan = useCancelRecurringPlan();
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  // A102: Hủy gói định kỳ phải nhập lý do — bên kia nhận thông báo ghi rõ lý do.
+  const [cancelTarget, setCancelTarget] = useState<RecurringPlanItem | null>(null);
+  const [cancelReason, setCancelReason] = useState('');
+
+  const handleConfirmCancelPlan = async () => {
+    if (!cancelTarget) return;
+    if (cancelReason.trim().length < 3) {
+      Toast.show({
+        type: 'error',
+        text1: lang === 'en' ? 'Please enter a reason' : 'Vui lòng nhập lý do',
+      });
+      return;
+    }
+    try {
+      await cancelPlan.mutateAsync({ planId: cancelTarget._id, reason: cancelReason.trim() });
+      setCancelTarget(null);
+      setCancelReason('');
+    } catch {
+      // Toast lỗi đã hiển thị bởi hook
+    }
+  };
 
   const handleBack = () => {
     if (router.canGoBack()) router.back();
@@ -309,17 +347,11 @@ export default function RecurringPlansScreen() {
                         icon={<Trash2 size={14} color={COLORS.error} />}
                         label={lang === 'en' ? 'Cancel plan' : 'Hủy gói'}
                         danger
-                        onPress={() =>
-                          confirm(
-                            lang === 'en' ? 'Cancel recurring plan?' : 'Hủy gói định kỳ?',
-                            lang === 'en'
-                              ? 'Future unassigned jobs will be cancelled. This action cannot be undone.'
-                              : 'Các đơn tương lai chưa có thợ chốt sẽ bị hủy theo. Thao tác này không khôi phục được.',
-                            lang === 'en' ? 'Cancel plan' : 'Hủy gói',
-                            () => cancelPlan.mutate(plan._id),
-                            true,
-                          )
-                        }
+                        // A102: Hủy gói phải nhập lý do (modal bên dưới).
+                        onPress={() => {
+                          setCancelReason('');
+                          setCancelTarget(plan);
+                        }}
                       />
                     </View>
                   )}
@@ -329,6 +361,75 @@ export default function RecurringPlansScreen() {
           )}
         </ScrollView>
       )}
+
+      {/* A102: Modal nhập lý do bắt buộc khi hủy gói định kỳ */}
+      <Modal
+        visible={cancelTarget !== null}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setCancelTarget(null)}
+      >
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: 'rgba(0,0,0,0.5)',
+            justifyContent: 'flex-end',
+          }}
+        >
+          <View
+            style={{
+              backgroundColor: tc.surface,
+              borderTopLeftRadius: 16,
+              borderTopRightRadius: 16,
+              padding: 20,
+              gap: 12,
+            }}
+          >
+            <Text style={{ fontSize: fs(16), fontWeight: '800', color: tc.text }}>
+              {lang === 'en' ? 'Cancel recurring plan?' : 'Hủy gói định kỳ?'}
+            </Text>
+            <Text style={{ fontSize: fs(13), color: tc.textMuted }}>
+              {lang === 'en'
+                ? 'Future unassigned jobs will be cancelled. This action cannot be undone. Please enter a reason — the helper will be notified with this reason.'
+                : 'Các đơn tương lai chưa có thợ chốt sẽ bị hủy theo. Thao tác này không khôi phục được. Vui lòng nhập lý do — thợ sẽ nhận thông báo ghi rõ lý do này.'}
+            </Text>
+            <TextInput
+              value={cancelReason}
+              onChangeText={setCancelReason}
+              placeholder={lang === 'en' ? 'Reason…' : 'Lý do…'}
+              multiline
+              style={{
+                borderWidth: 1,
+                borderColor: cancelReason.trim().length >= 3 ? tc.border : COLORS.error,
+                borderRadius: 8,
+                paddingHorizontal: 12,
+                paddingVertical: 10,
+                fontSize: fs(14),
+                backgroundColor: tc.surface,
+                color: tc.text,
+                minHeight: 80,
+                textAlignVertical: 'top',
+              }}
+            />
+            <View style={{ flexDirection: 'row', gap: 10 }}>
+              <Button
+                title={lang === 'en' ? 'Back' : 'Quay lại'}
+                variant="outline"
+                style={{ flex: 1 }}
+                onPress={() => setCancelTarget(null)}
+              />
+              <Button
+                title={lang === 'en' ? 'Cancel plan' : 'Hủy gói'}
+                variant="danger"
+                style={{ flex: 1 }}
+                loading={cancelPlan.isPending}
+                disabled={cancelReason.trim().length < 3}
+                onPress={handleConfirmCancelPlan}
+              />
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }

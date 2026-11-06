@@ -547,7 +547,7 @@ export default function KycScreen() {
                             {st.label}
                             {upcoming ? '' : ''}
                           </Text>
-                          <Text style={{ fontSize: fs(10.5), fontWeight: '700', color: COLORS.gray[400] }}>
+                          <Text style={{ fontSize: fs(10.5), fontWeight: '700', color: COLORS.gray[500] }}>
                             {done
                               ? lang === 'en'
                                 ? 'Done'

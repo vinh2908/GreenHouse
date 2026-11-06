@@ -1,6 +1,14 @@
 import { useMemo, useState } from 'react';
 import { formatDate, formatDateTime } from '@/utils/date-format';
-import { View, Text, ScrollView, TouchableOpacity, TextInput, RefreshControl } from 'react-native';
+import {
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  TextInput,
+  RefreshControl,
+  Modal,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { ArrowLeft, MapPin } from 'lucide-react-native';
@@ -106,6 +114,9 @@ export default function MonthlyContractDetailScreen() {
 
   const [leaveDate, setLeaveDate] = useState('');
   const [leaveReason, setLeaveReason] = useState('');
+  // A102: Lý do bắt buộc khi kết thúc / hủy / từ chối hợp đồng — bên kia nhận thông báo ghi rõ lý do.
+  const [reasonAction, setReasonAction] = useState<'end' | 'cancel' | 'decline' | null>(null);
+  const [actionReason, setActionReason] = useState('');
 
   const recordByDate = useMemo(() => {
     const map = new Map<string, AttendanceStatus>();
@@ -134,6 +145,36 @@ export default function MonthlyContractDetailScreen() {
       { text: lang === 'en' ? 'Later' : 'Để sau', style: 'cancel' },
       { text: label, style: destructive ? 'destructive' : 'default', onPress: fn },
     ]);
+
+  // A102: Xác nhận kết thúc/hủy/từ chối hợp đồng — bắt buộc nhập lý do.
+  const handleConfirmReasonAction = async () => {
+    if (!id || !reasonAction) return;
+    if (actionReason.trim().length < 3) {
+      Toast.show({
+        type: 'error',
+        text1: lang === 'en' ? 'Please enter a reason' : 'Vui lòng nhập lý do',
+      });
+      return;
+    }
+    const reason = actionReason.trim();
+    try {
+      if (reasonAction === 'end') {
+        await end.mutateAsync({ id, path: 'end', body: { reason } });
+      } else if (reasonAction === 'cancel') {
+        await cancel.mutateAsync({ id, path: 'cancel', body: { reason } });
+      } else {
+        await respond.mutateAsync({
+          id,
+          path: 'respond',
+          body: { accept: false, reason },
+        });
+      }
+      setReasonAction(null);
+      setActionReason('');
+    } catch {
+      // Toast lỗi đã hiển thị bởi hook
+    }
+  };
 
   const handleRequestLeave = async () => {
     if (!id) return;
@@ -201,10 +242,7 @@ export default function MonthlyContractDetailScreen() {
           <ArrowLeft size={20} color={COLORS.gray[800]} />
         </TouchableOpacity>
         <View style={{ flex: 1 }}>
-          <Text
-            style={{ fontSize: fs(18), fontWeight: '800', color: tc.text }}
-            numberOfLines={1}
-          >
+          <Text style={{ fontSize: fs(18), fontWeight: '800', color: tc.text }} numberOfLines={1}>
             {contract.title}
           </Text>
           <Text style={{ fontSize: fs(12), color: tc.textMuted }}>
@@ -294,19 +332,11 @@ export default function MonthlyContractDetailScreen() {
                 variant="outline"
                 style={{ flex: 1 }}
                 loading={respond.isPending}
-                onPress={() =>
-                  confirmDialog(
-                    lang === 'en' ? 'Decline contract?' : 'Từ chối hợp đồng?',
-                    lang === 'en' ? 'Customer will be notified.' : 'Khách hàng sẽ được thông báo.',
-                    lang === 'en' ? 'Decline' : 'Từ chối',
-                    () =>
-                      respond.mutate({
-                        id: contract._id,
-                        path: 'respond',
-                        body: { accept: false },
-                      }),
-                  )
-                }
+                // A102: Từ chối hợp đồng phải nhập lý do (modal bên dưới).
+                onPress={() => {
+                  setActionReason('');
+                  setReasonAction('decline');
+                }}
               />
               <Button
                 title={lang === 'en' ? 'Accept' : 'Đồng ý nhận'}
@@ -364,17 +394,11 @@ export default function MonthlyContractDetailScreen() {
               variant="danger"
               style={{ flex: 1 }}
               loading={cancel.isPending}
-              onPress={() =>
-                confirmDialog(
-                  lang === 'en' ? 'Cancel contract?' : 'Hủy hợp đồng?',
-                  lang === 'en'
-                    ? 'Contract will terminate immediately and other party will be notified.'
-                    : 'Hợp đồng sẽ dừng ngay và bên còn lại được thông báo.',
-                  lang === 'en' ? 'Cancel contract' : 'Hủy hợp đồng',
-                  () => cancel.mutate({ id: contract._id, path: 'cancel' }),
-                  true,
-                )
-              }
+              // A102: Hủy hợp đồng phải nhập lý do (modal bên dưới).
+              onPress={() => {
+                setActionReason('');
+                setReasonAction('cancel');
+              }}
             />
             {isActive && (
               <Button
@@ -382,17 +406,11 @@ export default function MonthlyContractDetailScreen() {
                 variant="outline"
                 style={{ flex: 1 }}
                 loading={end.isPending}
-                onPress={() =>
-                  confirmDialog(
-                    lang === 'en' ? 'End contract?' : 'Kết thúc hợp đồng?',
-                    lang === 'en'
-                      ? 'You can still settle unsettled months after ending.'
-                      : 'Bạn vẫn có thể chốt lương các tháng chưa chốt sau khi kết thúc.',
-                    lang === 'en' ? 'End' : 'Kết thúc',
-                    () => end.mutate({ id: contract._id, path: 'end', body: {} }),
-                    true,
-                  )
-                }
+                // A102: Kết thúc hợp đồng phải nhập lý do (modal bên dưới).
+                onPress={() => {
+                  setActionReason('');
+                  setReasonAction('end');
+                }}
               />
             )}
           </View>
@@ -740,6 +758,97 @@ export default function MonthlyContractDetailScreen() {
           </Card>
         )}
       </ScrollView>
+
+      {/* A102: Modal nhập lý do bắt buộc khi kết thúc / hủy / từ chối hợp đồng */}
+      <Modal
+        visible={reasonAction !== null}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setReasonAction(null)}
+      >
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: 'rgba(0,0,0,0.5)',
+            justifyContent: 'flex-end',
+          }}
+        >
+          <View
+            style={{
+              backgroundColor: tc.surface,
+              borderTopLeftRadius: 16,
+              borderTopRightRadius: 16,
+              padding: 20,
+              gap: 12,
+            }}
+          >
+            <Text style={{ fontSize: fs(16), fontWeight: '800', color: tc.text }}>
+              {reasonAction === 'end'
+                ? lang === 'en'
+                  ? 'End contract?'
+                  : 'Kết thúc hợp đồng?'
+                : reasonAction === 'cancel'
+                  ? lang === 'en'
+                    ? 'Cancel contract?'
+                    : 'Hủy hợp đồng?'
+                  : lang === 'en'
+                    ? 'Decline contract?'
+                    : 'Từ chối hợp đồng?'}
+            </Text>
+            <Text style={{ fontSize: fs(13), color: tc.textMuted }}>
+              {lang === 'en'
+                ? 'Please enter a reason. The other party will be notified with this reason.'
+                : 'Vui lòng nhập lý do. Bên còn lại sẽ nhận thông báo ghi rõ lý do này.'}
+            </Text>
+            <TextInput
+              value={actionReason}
+              onChangeText={setActionReason}
+              placeholder={lang === 'en' ? 'Reason…' : 'Lý do…'}
+              multiline
+              style={{
+                borderWidth: 1,
+                borderColor: actionReason.trim().length >= 3 ? tc.border : COLORS.error,
+                borderRadius: 8,
+                paddingHorizontal: 12,
+                paddingVertical: 10,
+                fontSize: fs(14),
+                backgroundColor: tc.surface,
+                color: tc.text,
+                minHeight: 80,
+                textAlignVertical: 'top',
+              }}
+            />
+            <View style={{ flexDirection: 'row', gap: 10 }}>
+              <Button
+                title={lang === 'en' ? 'Back' : 'Quay lại'}
+                variant="outline"
+                style={{ flex: 1 }}
+                onPress={() => setReasonAction(null)}
+              />
+              <Button
+                title={
+                  reasonAction === 'end'
+                    ? lang === 'en'
+                      ? 'End'
+                      : 'Kết thúc'
+                    : reasonAction === 'cancel'
+                      ? lang === 'en'
+                        ? 'Cancel contract'
+                        : 'Hủy hợp đồng'
+                      : lang === 'en'
+                        ? 'Decline'
+                        : 'Từ chối'
+                }
+                variant="danger"
+                style={{ flex: 1 }}
+                loading={end.isPending || cancel.isPending || respond.isPending}
+                disabled={actionReason.trim().length < 3}
+                onPress={handleConfirmReasonAction}
+              />
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
