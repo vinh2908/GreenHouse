@@ -90,6 +90,29 @@ export function useMyProfile() {
   });
 }
 
+// B95: đổi email có xác minh mã gửi tới email mới
+export function useRequestEmailChange() {
+  return useMutation({
+    mutationFn: (newEmail: string) =>
+      apiClient.post('/auth/email/change-request', { new_email: newEmail }),
+    onSuccess: () => {
+      Toast.show({ type: 'success', text1: 'Mã xác nhận đã gửi tới email mới' });
+    },
+  });
+}
+
+export function useConfirmEmailChange() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ newEmail, otp }: { newEmail: string; otp: string }) =>
+      apiClient.post('/auth/email/change-confirm', { new_email: newEmail, otp }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['me'] });
+      Toast.show({ type: 'success', text1: 'Đổi email thành công' });
+    },
+  });
+}
+
 export function useUpdateProfile() {
   const qc = useQueryClient();
   return useMutation({

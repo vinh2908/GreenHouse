@@ -36,6 +36,8 @@ import { useAuthStore } from '@/stores/auth.store';
 import {
   useMyProfile,
   useUpdateProfile,
+  useRequestEmailChange,
+  useConfirmEmailChange,
   useHelperProfile,
   useUpdateHelperLocation,
   useAddresses,
@@ -65,6 +67,11 @@ export default function EditProfileScreen() {
   const { data: myProfile, isLoading: uLoading } = useMyProfile();
   const { data: helperProfile } = useHelperProfile();
   const updateProfileMutation = useUpdateProfile();
+  // B95: đổi email phải xác minh mã gửi tới email mới
+  const requestEmailChange = useRequestEmailChange();
+  const confirmEmailChange = useConfirmEmailChange();
+  const [emailOtpSent, setEmailOtpSent] = useState(false);
+  const [emailOtp, setEmailOtp] = useState('');
 
   const { role, tab } = useLocalSearchParams<{ role?: string; tab?: string }>();
   const [activeTab, setActiveTab] = useState<'general' | 'career'>(
@@ -286,9 +293,18 @@ export default function EditProfileScreen() {
             return;
           }
         }
+        const emailChanged = email.trim() && email.trim().toLowerCase() !== (user?.email ?? '').toLowerCase();
+        if (emailChanged && !emailOtpSent) {
+          // B95: chưa xác minh email mới thì chỉ gửi mã, không lưu email
+          await requestEmailChange.mutateAsync(email.trim());
+          setEmailOtpSent(true);
+          setSaving(false);
+          return;
+        }
         const res = await updateProfileMutation.mutateAsync({
           full_name: fullName.trim(),
-          email: email.trim() || undefined,
+          // B95: email chỉ lưu sau khi xác minh xong (nút xác nhận riêng bên dưới)
+          email: emailChanged ? undefined : email.trim() || undefined,
           avatar: avatarUrl || undefined,
           gender,
         });
@@ -780,6 +796,45 @@ export default function EditProfileScreen() {
                   autoCapitalize="none"
                   placeholderTextColor={COLORS.gray[400]}
                 />
+                {emailOtpSent && (
+                  <View style={{ gap: 8, marginTop: 8 }}>
+                    <Text style={{ fontSize: fs(13), color: COLORS.gray[600] }}>
+                      {lang === 'en'
+                        ? 'A verification code was sent to the new email. Enter it to change your email.'
+                        : 'Mã xác nhận đã gửi tới email mới. Nhập mã để đổi email.'}
+                    </Text>
+                    <TextInput
+                      style={{
+                        borderWidth: 1.5,
+                        borderColor: COLORS.gray[200],
+                        borderRadius: 14,
+                        padding: 14,
+                        fontSize: fs(15),
+                        color: COLORS.gray[900],
+                        backgroundColor: '#fff',
+                      }}
+                      placeholder="123456"
+                      value={emailOtp}
+                      onChangeText={setEmailOtp}
+                      keyboardType="number-pad"
+                      maxLength={6}
+                      placeholderTextColor={COLORS.gray[400]}
+                    />
+                    <Button
+                      title={lang === 'en' ? 'Confirm email change' : 'Xác nhận đổi email'}
+                      disabled={emailOtp.trim().length !== 6 || confirmEmailChange.isPending}
+                      onPress={async () => {
+                        const res: any = await confirmEmailChange.mutateAsync({
+                          newEmail: email.trim(),
+                          otp: emailOtp.trim(),
+                        });
+                        if (res?.data?.email) setUser({ ...user, email: res.data.email });
+                        setEmailOtpSent(false);
+                        setEmailOtp('');
+                      }}
+                    />
+                  </View>
+                )}
               </View>
 
               {/* Giới tính */}
