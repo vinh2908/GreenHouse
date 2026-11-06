@@ -3923,6 +3923,25 @@ export class JobsService implements OnModuleInit {
     if (!entry) {
       throw new BadRequestException('Không tìm thấy lời mời đang chờ cho đơn này');
     }
+    // B59: Chỉ nhận lời mời nhóm khi đơn còn đang hoạt động — đơn đã xong/hủy
+    // thì không vào nhóm nữa. Từ chối thì vẫn cho (dọn lời mời cũ).
+    if (action === 'accept') {
+      const activeStatuses = [
+        JobStatus.OPEN,
+        JobStatus.RECEIVING_QUOTES,
+        JobStatus.QUOTE_SELECTED,
+        JobStatus.CONFIRMED,
+        JobStatus.HELPER_ON_THE_WAY,
+        JobStatus.HELPER_ARRIVED,
+        JobStatus.IN_PROGRESS,
+        JobStatus.PENDING_REVIEW,
+      ];
+      if (!activeStatuses.includes(job.status)) {
+        throw new BadRequestException(
+          'Đơn đã kết thúc hoặc đã hủy, không thể nhận lời mời vào nhóm',
+        );
+      }
+    }
     entry.status = action === 'accept' ? 'accepted' : 'declined';
     entry.responded_at = new Date();
     await job.save();
