@@ -98,19 +98,85 @@ export class ReviewsService {
 
   async getHelperReviews(helperId: string, page = 1, limit = 10) {
     const skip = (page - 1) * limit;
+    // B71: đánh giá đã bị admin ẩn (kháng nghị được chấp nhận) không hiện công khai
+    const query = { helper_id: new Types.ObjectId(helperId), is_hidden: { $ne: true } };
     const [reviews, total] = await Promise.all([
       this.reviewModel
-        .find({ helper_id: new Types.ObjectId(helperId) })
+        .find(query)
         .populate('customer_id', 'full_name avatar')
         .populate('job_id', 'title')
         .sort({ created_at: -1 })
         .skip(skip)
         .limit(limit)
         .exec(),
-      this.reviewModel.countDocuments({ helper_id: new Types.ObjectId(helperId) }).exec(),
+      this.reviewModel.countDocuments(query).exec(),
     ]);
 
     return { reviews, total, page, limit, total_pages: Math.ceil(total / limit) };
+  }
+
+  // ─── B71: Helper kháng nghị đánh giá ──────────────────────────────────────
+  async appealReview(helperId: string, reviewId: string, reason: string): Promise<ReviewDocument> {
+    const review = await this.reviewModel.findById(reviewId).exec();
+    if (!review) throw new NotFoundException('Đánh giá không tồn tại');
+    if (review.helper_id.toString() !== helperId) throw new ForbiddenException();
+    if (review.appeal_status === 'pending') {
+      throw new ConflictException('Đánh giá này đang chờ admin xử lý kháng nghị');
+    }
+    review.appeal_reason = reason;
+    review.appeal_status = 'pending';
+    review.appealed_at = new Date();
+    const saved = await review.save();
+    // B71: không tự ẩn khi thợ kháng nghị — chỉ báo admin xử lý
+    await this.notificationsService
+      .notifyAdmins({
+        type: NOTIFICATION_TYPES.REVIEW_APPEAL,
+        title: 'Kháng nghị đánh giá mới',
+        body: `Thợ đã kháng nghị đánh giá ${review.rating}★: "${reason.slice(0, 120)}"`,
+        payload: { review_id: String(review._id), job_id: String(review.job_id) },
+      })
+      .catch(() => undefined);
+    return saved;
+  }
+
+  // ─── B71: Admin quyết định kháng nghị ─────────────────────────────────────
+  async resolveAppeal(reviewId: string, decision: 'upheld' | 'rejected'): Promise<ReviewDocument> {
+    const review = await this.reviewModel.findById(reviewId).exec();
+    if (!review) throw new NotFoundException('Đánh giá không tồn tại');
+    if (review.appeal_status !== 'pending') {
+      throw new BadRequestException('Đánh giá này không có kháng nghị đang chờ xử lý');
+    }
+    review.appeal_status = decision;
+    // upheld = kháng nghị đúng → ẩn đánh giá; rejected = giữ hiển thị
+    if (decision === 'upheld') review.is_hidden = true;
+    const saved = await review.save();
+    await this.syncHelperRating(String(review.helper_id));
+    await this.notificationsService
+      .create({
+        userId: String(review.helper_id),
+        type: NOTIFICATION_TYPES.REVIEW_APPEAL,
+        title:
+          decision === 'upheld'
+            ? 'Kháng nghị đánh giá được chấp nhận'
+            : 'Kháng nghị đánh giá bị từ chối',
+        body:
+          decision === 'upheld'
+            ? 'Đánh giá bạn kháng nghị đã được ẩn khỏi trang công khai.'
+            : 'Đánh giá bạn kháng nghị vẫn được giữ hiển thị.',
+        payload: { review_id: String(review._id), job_id: String(review.job_id) },
+      })
+      .catch(() => undefined);
+    return saved;
+  }
+
+  // ─── B71: Admin ẩn/hiện đánh giá ──────────────────────────────────────────
+  async setReviewVisibility(reviewId: string, hidden: boolean): Promise<ReviewDocument> {
+    const review = await this.reviewModel.findById(reviewId).exec();
+    if (!review) throw new NotFoundException('Đánh giá không tồn tại');
+    review.is_hidden = hidden;
+    const saved = await review.save();
+    await this.syncHelperRating(String(review.helper_id));
+    return saved;
   }
 
   // ─── Get rating stats for a helper ────────────────────────────────────────
@@ -191,8 +257,17 @@ export class ReviewsService {
 
   // ─── Admin: Get all reviews ───────────────────────────────────────────────
 
-  async getAllReviews(minRating?: number, maxRating?: number, page = 1, limit = 20) {
+  async getAllReviews(
+    minRating?: number,
+    maxRating?: number,
+    page = 1,
+    limit = 20,
+    appealStatus?: string,
+  ) {
     const query: Record<string, unknown> = {};
+    if (appealStatus === 'pending' || appealStatus === 'upheld' || appealStatus === 'rejected') {
+      query['appeal_status'] = appealStatus;
+    }
     if (minRating || maxRating) {
       query['rating'] = {};
       if (minRating) (query['rating'] as Record<string, unknown>)['$gte'] = minRating;

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useAdminReviews } from '@/hooks/use-admin';
+import { useAdminReviews, useSetReviewVisibility, useResolveReviewAppeal } from '@/hooks/use-admin';
 import {
   Table,
   TableHeader,
@@ -46,6 +46,9 @@ export default function ReviewsPage() {
     max_rating: maxRating,
     page,
   });
+  // B71: ẩn/hiện đánh giá + quyết định kháng nghị
+  const setVisibility = useSetReviewVisibility();
+  const resolveAppeal = useResolveReviewAppeal();
 
   const handleRatingFilter = (value: string) => {
     setRatingFilter(value);
@@ -101,6 +104,8 @@ export default function ReviewsPage() {
                     <TableHead>Nhận xét</TableHead>
                     <TableHead>Phản hồi helper</TableHead>
                     <TableHead>Ngày đánh giá</TableHead>
+                    <TableHead>Kháng nghị</TableHead>
+                    <TableHead>Thao tác</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -114,6 +119,9 @@ export default function ReviewsPage() {
                       tags?: string[];
                       helper_reply?: string;
                       created_at: string;
+                      is_hidden?: boolean;
+                      appeal_status?: string;
+                      appeal_reason?: string;
                     }) => (
                       <TableRow key={r._id}>
                         <TableCell>
@@ -157,6 +165,54 @@ export default function ReviewsPage() {
                         </TableCell>
                         <TableCell className="text-sm text-muted-foreground">
                           {formatDateTime(r.created_at)}
+                        </TableCell>
+                        <TableCell className="text-sm">
+                          {r.appeal_status === 'pending' ? (
+                            <span className="text-amber-600 font-medium">
+                              Chờ xử lý{r.appeal_reason ? `: ${r.appeal_reason}` : ''}
+                            </span>
+                          ) : r.appeal_status === 'upheld' ? (
+                            <span className="text-green-600">Đã chấp nhận</span>
+                          ) : r.appeal_status === 'rejected' ? (
+                            <span className="text-muted-foreground">Đã bác</span>
+                          ) : (
+                            <span className="text-muted-foreground">—</span>
+                          )}
+                          {r.is_hidden ? (
+                            <span className="ml-1 text-xs bg-red-100 text-red-700 px-1.5 py-0.5 rounded">Đã ẩn</span>
+                          ) : null}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex gap-1 flex-wrap">
+                            <button
+                              className="text-xs border rounded px-2 py-1"
+                              onClick={() =>
+                                setVisibility.mutate({ id: r._id, hidden: !r.is_hidden })
+                              }
+                            >
+                              {r.is_hidden ? 'Hiện lại' : 'Ẩn'}
+                            </button>
+                            {r.appeal_status === 'pending' && (
+                              <>
+                                <button
+                                  className="text-xs border rounded px-2 py-1 text-green-700"
+                                  onClick={() =>
+                                    resolveAppeal.mutate({ id: r._id, decision: 'upheld' })
+                                  }
+                                >
+                                  Chấp nhận KN
+                                </button>
+                                <button
+                                  className="text-xs border rounded px-2 py-1"
+                                  onClick={() =>
+                                    resolveAppeal.mutate({ id: r._id, decision: 'rejected' })
+                                  }
+                                >
+                                  Bác KN
+                                </button>
+                              </>
+                            )}
+                          </div>
                         </TableCell>
                       </TableRow>
                     ),

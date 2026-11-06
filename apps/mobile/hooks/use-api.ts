@@ -2178,6 +2178,19 @@ export function useCreateReview() {
   });
 }
 
+// B71: Thợ kháng nghị đánh giá (ghi lý do, gửi admin)
+export function useAppealReview() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ reviewId, reason }: { reviewId: string; reason: string }) =>
+      apiClient.post(`/reviews/${reviewId}/appeal`, { reason }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['reviews'] });
+      Toast.show({ type: 'success', text1: 'Đã gửi kháng nghị cho quản trị viên' });
+    },
+  });
+}
+
 // ─── Loyalty (Feature 12 — Điểm thành viên & hạng khách) ─────────────────────
 
 export interface LoyaltyAccount {
