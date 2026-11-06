@@ -100,12 +100,37 @@ export class AuthService {
       const user = await this.usersService.findById(payload.sub);
       if (!user || user.status === 'suspended') throw new UnauthorizedException();
 
+      // Check if token was revoked
+      if (user.invalid_tokens && user.invalid_tokens.includes(dto.refresh_token)) {
+        throw new UnauthorizedException('Refresh token đã bị thu hồi hoặc đã sử dụng');
+      }
+
+      // Check if token exists in active tokens (if tokens array is tracked)
+      if (user.tokens && user.tokens.length > 0 && !user.tokens.includes(dto.refresh_token)) {
+        throw new UnauthorizedException('Refresh token không hợp lệ hoặc đã bị thay thế');
+      }
+
+      // Invalidate old token (rotate)
+      await this.usersService.revokeRefreshToken(user.id as string, dto.refresh_token);
+
       // Issue new tokens (rotate refresh token)
       const tokens = await this.generateTokens(user);
       return tokens;
-    } catch {
+    } catch (err) {
+      if (err instanceof UnauthorizedException) throw err;
       throw new UnauthorizedException('Refresh token không hợp lệ hoặc đã hết hạn');
     }
+  }
+
+  // ─── Logout ─────────────────────────────────────────────────────────────────
+
+  async logout(userId: string, refreshToken?: string) {
+    if (refreshToken) {
+      await this.usersService.revokeRefreshToken(userId, refreshToken);
+    } else {
+      await this.usersService.revokeAllRefreshTokens(userId);
+    }
+    return { success: true, message: 'Đăng xuất thành công' };
   }
 
   // ─── OTP ───────────────────────────────────────────────────────────────────
@@ -203,6 +228,10 @@ export class AuthService {
         expiresIn: refreshExpiresIn as any,
       }),
     ]);
+
+    await this.usersService.addRefreshToken(userId, refreshToken).catch((err) => {
+      this.logger.warn(`Failed to store refresh token for user ${userId}: ${(err as Error).message}`);
+    });
 
     return {
       access_token: accessToken,

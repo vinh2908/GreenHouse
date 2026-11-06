@@ -131,4 +131,51 @@ export class UsersService {
   async removeVoipToken(id: string, token: string): Promise<void> {
     await this.userModel.findByIdAndUpdate(id, { $pull: { voip_tokens: { token } } }).exec();
   }
+
+  /** Lưu refresh token đang hoạt động */
+  async addRefreshToken(id: string, token: string): Promise<void> {
+    await this.userModel
+      .findByIdAndUpdate(id, {
+        $push: {
+          tokens: {
+            $each: [token],
+            $slice: -20,
+          },
+        },
+      })
+      .exec();
+  }
+
+  /** Thu hồi 1 refresh token và ghi nhận vào invalid_tokens */
+  async revokeRefreshToken(id: string, token: string): Promise<void> {
+    await this.userModel
+      .findByIdAndUpdate(id, {
+        $pull: { tokens: token },
+        $push: {
+          invalid_tokens: {
+            $each: [token],
+            $slice: -50,
+          },
+        },
+      })
+      .exec();
+  }
+
+  /** Thu hồi toàn bộ refresh token (đăng xuất mọi thiết bị) */
+  async revokeAllRefreshTokens(id: string): Promise<void> {
+    const user = await this.userModel.findById(id).select('tokens').exec();
+    const existingTokens = user?.tokens ?? [];
+    await this.userModel
+      .findByIdAndUpdate(id, {
+        $set: { tokens: [] },
+        $inc: { token_version: 1 },
+        $push: {
+          invalid_tokens: {
+            $each: existingTokens,
+            $slice: -50,
+          },
+        },
+      })
+      .exec();
+  }
 }
