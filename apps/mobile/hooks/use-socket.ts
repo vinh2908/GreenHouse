@@ -7,6 +7,8 @@ import { useSettingsStore } from '@/stores/settings.store';
 import Toast from 'react-native-toast-message';
 import { acceptTrackingEvent, GPS_MAX_AGE_MS, TrackingEvent } from '@/services/tracking';
 import { formatNotificationTitle, formatNotificationBody } from '@/services/i18n';
+import { resolveNotificationRoute } from '@/utils/notification-route';
+import { setPendingToastRoute } from '@/services/toast-navigation';
 
 // ─── Connect on auth ─────────────────────────────────────────────────────────
 
@@ -328,11 +330,21 @@ export function useNotificationSocket() {
                     : n.body || 'Bạn có tin nhắn mới từ đối tác'
                   : formatNotificationBody(n.body, lang, n.type, n.data);
 
+        // B10: Toast realtime bấm được — resolve route ngay lúc hiện Toast,
+        // ToastCard sẽ điều hướng khi người dùng chạm vào thẻ.
+        const authUser = useAuthStore.getState().user;
+        const toastRoute = resolveNotificationRoute(
+          { type: n.type, title: n.title, body: n.body, data: n.data as any },
+          authUser?.active_role,
+          (authUser as { roles?: string[] } | null)?.roles,
+        );
+        const toastTtl = isNewJob || isAccepted || isNewMsg ? 6000 : 4500;
+        setPendingToastRoute(toastRoute, toastTtl);
         Toast.show({
           type: isNewJob || isAccepted || isNewQuote ? 'success' : 'info',
           text1: title,
           text2: body,
-          visibilityTime: isNewJob || isAccepted || isNewMsg ? 6000 : 4500,
+          visibilityTime: toastTtl,
         });
       }
     });
