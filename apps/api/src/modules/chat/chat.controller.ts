@@ -10,15 +10,19 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { IsString, IsNotEmpty, IsOptional } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, MaxLength, IsIn } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { ChatService } from './chat.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 
 class SendMessageDto {
-  @ApiProperty() @IsString() @IsNotEmpty() content: string;
-  @ApiProperty({ default: 'text' }) @IsOptional() @IsString() type?: string;
+  @ApiProperty() @IsString() @IsNotEmpty() @MaxLength(2000) content: string;
+  @ApiProperty({ default: 'text' })
+  @IsOptional()
+  @IsString()
+  @IsIn(['text', 'image', 'location'])
+  type?: string;
 }
 
 @ApiTags('Chat')
