@@ -90,6 +90,16 @@ export class CreateJobDto {
   @ApiPropertyOptional() @IsOptional() @IsDateString() preferred_date?: string;
   @ApiPropertyOptional() @IsOptional() @IsString() preferred_time_start?: string;
   @ApiPropertyOptional() @IsOptional() @IsString() preferred_time_end?: string;
+  @ApiPropertyOptional({
+    description: 'Thời lượng ước tính (giờ) — cùng thang với báo giá (0,5–720 giờ)',
+    minimum: 0.5,
+    maximum: 720,
+  })
+  @IsOptional()
+  @IsNumber()
+  @Min(0.5, { message: 'Thời lượng công việc tối thiểu là 0,5 giờ' })
+  @Max(720, { message: 'Thời lượng công việc tối đa là 720 giờ' })
+  estimated_duration?: number;
   @ApiPropertyOptional({ default: false }) @IsOptional() @IsBoolean() is_flexible_time?: boolean;
 
   @ApiPropertyOptional({

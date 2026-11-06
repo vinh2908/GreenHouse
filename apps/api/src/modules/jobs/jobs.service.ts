@@ -828,6 +828,32 @@ export class JobsService implements OnModuleInit {
       }
     }
 
+    // G12 (B62): createJob phải kiểm tra duration — cùng thang với phía báo
+    // giá (CreateQuoteDto.estimated_duration: 0,5–720 giờ). Đơn phải có ít
+    // nhất 1 tín hiệu thời lượng: estimated_duration, hoặc cặp giờ bắt đầu +
+    // giờ kết thúc (đã kiểm tra 15 phút–12 giờ ở A9 trên đây).
+    const startStr = dto.preferred_time_start?.trim();
+    const endStr = dto.preferred_time_end?.trim();
+    const hasTimeRange =
+      startStr !== undefined &&
+      endStr !== undefined &&
+      /^\d{1,2}:\d{2}$/.test(startStr) &&
+      /^\d{1,2}:\d{2}$/.test(endStr);
+    if (dto.estimated_duration !== undefined && dto.estimated_duration !== null) {
+      if (
+        typeof dto.estimated_duration !== 'number' ||
+        !Number.isFinite(dto.estimated_duration) ||
+        dto.estimated_duration < 0.5 ||
+        dto.estimated_duration > 720
+      ) {
+        throw new BadRequestException('Thời lượng công việc phải từ 0,5 đến 720 giờ');
+      }
+    } else if (!hasTimeRange) {
+      throw new BadRequestException(
+        'Vui lòng nhập thời lượng công việc (giờ bắt đầu + giờ kết thúc hoặc thời lượng ước tính)',
+      );
+    }
+
     const expiresAt = new Date();
     expiresAt.setHours(expiresAt.getHours() + JOB_OPEN_EXPIRY_HOURS);
 
@@ -892,6 +918,7 @@ export class JobsService implements OnModuleInit {
       preferred_date: dto.preferred_date ? new Date(dto.preferred_date) : undefined,
       preferred_time_start: dto.preferred_time_start,
       preferred_time_end: dto.preferred_time_end,
+      estimated_duration: dto.estimated_duration,
       is_flexible_time: dto.is_flexible_time ?? false,
       private_offer_helper_id: offer?.helper_id,
       private_offer_expires_at: offer?.expires_at,
