@@ -85,7 +85,8 @@ export default function PaymentsPage() {
 
       {/* Withdrawals */}
       <div className="space-y-4">
-        <div className="flex items-center justify-between">
+        {/* G11: flex-wrap để ở 360px select lọc không bóp tiêu đề mục thành 2 dòng chật. */}
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 className="text-xl font-semibold">Yêu cầu rút tiền</h2>
           <Select
             options={WITHDRAWAL_STATUS_OPTIONS}
@@ -245,7 +246,7 @@ export default function PaymentsPage() {
 
       {/* Transactions */}
       <div className="space-y-4">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 className="text-xl font-semibold">Lịch sử giao dịch</h2>
           <Select
             options={TX_TYPE_OPTIONS}

@@ -157,7 +157,7 @@ export default function SupportPage() {
           </CardHeader>
           <CardContent>
             {selected?.job_id && (
-              <div className="mb-3 rounded-lg bg-blue-50 border border-blue-200 px-3 py-2 text-sm">
+              <div className="mb-3 break-words rounded-lg bg-blue-50 border border-blue-200 px-3 py-2 text-sm">
                 Đơn liên quan:{' '}
                 <a
                   href={`/jobs/${typeof selected.job_id === 'object' ? selected.job_id._id : selected.job_id}`}
@@ -187,7 +187,7 @@ export default function SupportPage() {
                         className={`flex ${isAdmin ? 'justify-end' : 'justify-start'}`}
                       >
                         <div
-                          className={`max-w-[75%] rounded-2xl px-4 py-2.5 ${
+                          className={`max-w-[75%] break-words rounded-2xl px-4 py-2.5 ${
                             isAdmin
                               ? 'bg-primary text-primary-foreground rounded-br-sm'
                               : 'bg-muted rounded-bl-sm'

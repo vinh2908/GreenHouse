@@ -65,7 +65,8 @@ export default function HelpersPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      {/* G11: flex-wrap để ở 360px nút KYC không bóp tiêu đề thành 2 dòng chật. */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Người giúp việc</h1>
           <p className="text-muted-foreground">
