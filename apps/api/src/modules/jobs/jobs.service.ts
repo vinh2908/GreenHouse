@@ -2173,8 +2173,8 @@ export class JobsService {
         .findOne({ job_id: new Types.ObjectId(jobId) })
         .exec();
       if (loyaltyContract && loyaltyContract.total_price > 0) {
-        const paidAmount =
-          loyaltyContract.total_price - (job.discount_amount || 0) + (job.sos_surcharge || 0);
+        // A36: Dùng computeNetPaidAmount để tránh cộng trùng sos_surcharge đã có trong total_price
+        const paidAmount = computeNetPaidAmount(job, loyaltyContract.total_price);
         await this.loyaltyService.awardForJob(customerId, jobId, paidAmount);
       }
     } catch (err) {

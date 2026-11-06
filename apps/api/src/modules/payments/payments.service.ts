@@ -122,76 +122,106 @@ export class PaymentsService {
         throw new ConflictException('Đơn hàng này đã được thanh toán trước đó');
       }
 
-      // A2: Chặn thanh toán cho đơn hàng không ở trạng thái hợp lệ
-      const payableStatuses: string[] = [
-        JobStatus.CONFIRMED,
-        JobStatus.HELPER_ON_THE_WAY,
-        JobStatus.HELPER_ARRIVED,
-        JobStatus.IN_PROGRESS,
-        JobStatus.PENDING_REVIEW,
-      ];
-      if (!payableStatuses.includes(job.status)) {
-        throw new BadRequestException(
-          `Đơn hàng ở trạng thái "${job.status}" không thể thực hiện thanh toán`,
-        );
-      }
-
-      // A2: Kiểm tra hợp đồng và chặn giao dịch 0₫ không hợp lệ
-      let contract: any = null;
-      if (this.contractModel) {
-        contract = await this.contractModel.findOne({ job_id: new Types.ObjectId(jobId) }).exec();
-      }
-      if (!contract && !job.is_warranty) {
-        throw new BadRequestException('Đơn hàng chưa có hợp đồng để thanh toán');
-      }
-
-      if (resolvedAmount <= 0 && contract?.total_price) {
-        resolvedAmount = contract.total_price;
-      }
-
-      if (!job.is_warranty && resolvedAmount <= 0) {
-        throw new BadRequestException('Số tiền thanh toán phải lớn hơn 0₫');
-      }
-
-      // ── Voucher: ghi nhận lượt dùng + tính giảm trên giá chốt của đơn ──
-      // Nền tảng chịu phần giảm (thợ vẫn nhận đủ theo hợp đồng). Nếu mã đã
-      // hết hạn/hết lượt ở thời điểm thanh toán → ném lỗi rõ ràng để khách
-      // gỡ mã rồi thanh toán lại, tránh trừ tiền sai.
-      if (job.voucher_code && resolvedAmount > 0 && (job.discount_amount ?? 0) <= 0) {
-        const redeemed = await this.vouchersService.redeemForJob(
-          customerId,
-          jobId,
-          job.voucher_code,
-          resolvedAmount,
-        );
-        discountAmount = redeemed.discount_amount;
-        appliedVoucherCode = redeemed.voucher.code;
-        resolvedAmount = Math.max(0, resolvedAmount - discountAmount);
-      }
-
-      // ── Loyalty (Feature 12): trừ điểm thật tại thời điểm thanh toán ──
-      // Mirror voucher: nếu số dư điểm lúc này không còn đủ → redeemAtPayment
-      // ném BadRequest rõ ràng, thanh toán bị chặn để khách gỡ điểm rồi
-      // thanh toán lại. Phần giảm do điểm cũng do sàn chịu (thợ nhận đủ
-      // theo hợp đồng như voucher).
-      if ((job.loyalty_points_requested ?? 0) > 0 && resolvedAmount > 0) {
-        const loyaltyRedeemed = await this.loyaltyService.redeemAtPayment(customerId, jobId);
-        if (loyaltyRedeemed) {
-          loyaltyPointsRedeemed = loyaltyRedeemed.points_redeemed;
-          loyaltyDiscountAmount = loyaltyRedeemed.discount_amount;
-          resolvedAmount = Math.max(0, resolvedAmount - loyaltyDiscountAmount);
-        }
-      }
-
-      await this.jobModel
-        .findByIdAndUpdate(job._id, {
-          $set: {
-            payment_status: PaymentStatus.PAID,
-            payment_method: paymentMethod,
-            ...(discountAmount > 0 ? { discount_amount: discountAmount } : {}),
+      // A33: Khóa nguyên tử đơn hàng để chặn request thanh toán song song trừ tiền 2 lần
+      const claimedJob = await this.jobModel
+        .findOneAndUpdate(
+          {
+            _id: job._id,
+            payment_status: { $nin: [PaymentStatus.PAID, 'processing'] },
           },
-        })
+          {
+            $set: { payment_status: 'processing' },
+          },
+          { new: true },
+        )
         .exec();
+
+      if (!claimedJob) {
+        throw new ConflictException('Đơn hàng này đã được thanh toán hoặc đang được xử lý thanh toán');
+      }
+
+      try {
+        // A2: Chặn thanh toán cho đơn hàng không ở trạng thái hợp lệ
+        const payableStatuses: string[] = [
+          JobStatus.CONFIRMED,
+          JobStatus.HELPER_ON_THE_WAY,
+          JobStatus.HELPER_ARRIVED,
+          JobStatus.IN_PROGRESS,
+          JobStatus.PENDING_REVIEW,
+        ];
+        if (!payableStatuses.includes(job.status)) {
+          throw new BadRequestException(
+            `Đơn hàng ở trạng thái "${job.status}" không thể thực hiện thanh toán`,
+          );
+        }
+
+        // A2: Kiểm tra hợp đồng và chặn giao dịch 0₫ không hợp lệ
+        let contract: any = null;
+        if (this.contractModel) {
+          contract = await this.contractModel.findOne({ job_id: new Types.ObjectId(jobId) }).exec();
+        }
+        if (!contract && !job.is_warranty) {
+          throw new BadRequestException('Đơn hàng chưa có hợp đồng để thanh toán');
+        }
+
+        if (resolvedAmount <= 0 && contract?.total_price) {
+          resolvedAmount = contract.total_price;
+        }
+
+        if (!job.is_warranty && resolvedAmount <= 0) {
+          throw new BadRequestException('Số tiền thanh toán phải lớn hơn 0₫');
+        }
+
+        // ── Voucher: ghi nhận lượt dùng + tính giảm trên giá chốt của đơn ──
+        // Nền tảng chịu phần giảm (thợ vẫn nhận đủ theo hợp đồng). Nếu mã đã
+        // hết hạn/hết lượt ở thời điểm thanh toán → ném lỗi rõ ràng để khách
+        // gỡ mã rồi thanh toán lại, tránh trừ tiền sai.
+        if (job.voucher_code && resolvedAmount > 0 && (job.discount_amount ?? 0) <= 0) {
+          const redeemed = await this.vouchersService.redeemForJob(
+            customerId,
+            jobId,
+            job.voucher_code,
+            resolvedAmount,
+          );
+          discountAmount = redeemed.discount_amount;
+          appliedVoucherCode = redeemed.voucher.code;
+          resolvedAmount = Math.max(0, resolvedAmount - discountAmount);
+        }
+
+        // ── Loyalty (Feature 12): trừ điểm thật tại thời điểm thanh toán ──
+        // Mirror voucher: nếu số dư điểm lúc này không còn đủ → redeemAtPayment
+        // ném BadRequest rõ ràng, thanh toán bị chặn để khách gỡ điểm rồi
+        // thanh toán lại. Phần giảm do điểm cũng do sàn chịu (thợ nhận đủ
+        // theo hợp đồng như voucher).
+        if ((job.loyalty_points_requested ?? 0) > 0 && resolvedAmount > 0) {
+          const loyaltyRedeemed = await this.loyaltyService.redeemAtPayment(customerId, jobId);
+          if (loyaltyRedeemed) {
+            loyaltyPointsRedeemed = loyaltyRedeemed.points_redeemed;
+            loyaltyDiscountAmount = loyaltyRedeemed.discount_amount;
+            resolvedAmount = Math.max(0, resolvedAmount - loyaltyDiscountAmount);
+          }
+        }
+
+        await this.jobModel
+          .findByIdAndUpdate(job._id, {
+            $set: {
+              payment_status: PaymentStatus.PAID,
+              payment_method: paymentMethod,
+              ...(discountAmount > 0 ? { discount_amount: discountAmount } : {}),
+            },
+          })
+          .exec();
+      } catch (err) {
+        // Rollback cờ processing về unpaid nếu xảy ra lỗi trong quá trình xử lý
+        await this.jobModel
+          .updateOne(
+            { _id: job._id, payment_status: 'processing' },
+            { $set: { payment_status: PaymentStatus.UNPAID } },
+          )
+          .exec()
+          .catch(() => undefined);
+        throw err;
+      }
     }
 
     const wallet = await this.getOrCreateWallet(customerId);
@@ -305,6 +335,33 @@ export class PaymentsService {
       description: opts.description,
       reference: opts.reference,
       metadata: { reference: opts.reference },
+    });
+  }
+
+  /** Trừ tiền ví dùng chung (dùng cho hoàn tác hoặc điều chỉnh) */
+  async deductWallet(
+    userId: string,
+    amount: number,
+    reason: string,
+  ): Promise<TransactionDocument> {
+    const wallet = await this.getOrCreateWallet(userId);
+    const balanceBefore = wallet.balance;
+    const balanceAfter = Math.max(0, balanceBefore - amount);
+
+    await this.walletModel
+      .findByIdAndUpdate(wallet._id, { $inc: { balance: -amount } })
+      .exec();
+
+    return this.transactionModel.create({
+      wallet_id: wallet._id,
+      user_id: new Types.ObjectId(userId),
+      type: 'adjustment',
+      status: 'success',
+      amount: -amount,
+      balance_before: balanceBefore,
+      balance_after: balanceAfter,
+      description: reason,
+      reference: `ADJ-${Date.now()}`,
     });
   }
 
@@ -559,6 +616,10 @@ export class PaymentsService {
     amount: number,
     bankAccount?: BankAccountInfoDto,
   ): Promise<WithdrawalDocument> {
+    if (!amount || amount <= 0 || isNaN(amount)) {
+      throw new BadRequestException('Số tiền rút phải lớn hơn 0₫');
+    }
+
     const pending = await this.withdrawalModel
       .findOne({ user_id: new Types.ObjectId(helperId), status: 'pending' })
       .exec();
@@ -587,30 +648,38 @@ export class PaymentsService {
       );
     }
 
-    const withdrawal = await this.withdrawalModel.create({
-      user_id: new Types.ObjectId(helperId),
-      amount,
-      status: 'pending',
-      bank_account: {
-        bank_name: resolvedBankAccount.bank_name,
-        account_number: resolvedBankAccount.account_number,
-        account_name: resolvedBankAccount.account_name,
-      },
-    });
+    try {
+      const withdrawal = await this.withdrawalModel.create({
+        user_id: new Types.ObjectId(helperId),
+        amount,
+        status: 'pending',
+        bank_account: {
+          bank_name: resolvedBankAccount.bank_name,
+          account_number: resolvedBankAccount.account_number,
+          account_name: resolvedBankAccount.account_name,
+        },
+      });
 
-    await this.transactionModel.create({
-      wallet_id: wallet._id,
-      user_id: new Types.ObjectId(helperId),
-      type: 'withdrawal',
-      status: 'pending',
-      amount,
-      balance_before: wallet.balance + amount,
-      balance_after: wallet.balance,
-      description: `Yêu cầu rút tiền`,
-      metadata: { withdrawal_id: String(withdrawal._id) },
-    });
+      await this.transactionModel.create({
+        wallet_id: wallet._id,
+        user_id: new Types.ObjectId(helperId),
+        type: 'withdrawal',
+        status: 'pending',
+        amount,
+        balance_before: wallet.balance + amount,
+        balance_after: wallet.balance,
+        description: `Yêu cầu rút tiền`,
+        metadata: { withdrawal_id: String(withdrawal._id) },
+      });
 
-    return withdrawal;
+      return withdrawal;
+    } catch (err) {
+      await this.walletModel
+        .updateOne({ _id: wallet._id }, { $inc: { balance: amount } })
+        .exec()
+        .catch(() => undefined);
+      throw err;
+    }
   }
 
   async getWithdrawals(userId: string) {

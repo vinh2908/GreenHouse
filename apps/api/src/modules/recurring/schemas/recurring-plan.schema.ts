@@ -111,3 +111,7 @@ export class RecurringPlan {
 export const RecurringPlanSchema = SchemaFactory.createForClass(RecurringPlan);
 RecurringPlanSchema.index({ customer_id: 1, status: 1 });
 RecurringPlanSchema.index({ status: 1, next_occurrence_at: 1 });
+// A40: Index ngăn tạo 2 lịch định kỳ trùng lặp cùng khung giờ
+RecurringPlanSchema.index(
+  { customer_id: 1, service_id: 1, frequency: 1, time_start: 1, status: 1 },
+);
