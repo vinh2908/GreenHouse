@@ -348,6 +348,21 @@ class CallKeepService {
       }
     }
   }
+
+  /** Đóng tất cả các cuộc gọi CallKeep đang pending */
+  endAllCalls(): void {
+    const RNCallKeep = this.loadCallKeep();
+    if (!RNCallKeep) return;
+    for (const [uuid] of [...this.pending]) {
+      this.pending.delete(uuid);
+      this.answered.delete(uuid);
+      try {
+        RNCallKeep.endCall(uuid);
+      } catch {
+        // no-op
+      }
+    }
+  }
 }
 
 export const callkeepService = new CallKeepService();

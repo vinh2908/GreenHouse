@@ -8,6 +8,7 @@ import { Platform } from 'react-native';
 import { socketService, SOCKET_EVENTS } from '@/services/socket.service';
 import { useCallStore } from '@/stores/call.store';
 import { callkeepService } from '@/services/callkeep.service';
+import { ringtoneService } from '@/services/ringtone.service';
 
 interface CallIncomingPayload {
   job_id?: string;
@@ -23,9 +24,10 @@ interface CallIncomingPayload {
 
 export function useIncomingCallListener() {
   const setIncoming = useCallStore(s => s.setIncoming);
+  const clearIncoming = useCallStore(s => s.clearIncoming);
 
   useEffect(() => {
-    const unsub = socketService.on<CallIncomingPayload>(SOCKET_EVENTS.CALL_INCOMING, payload => {
+    const unsubIncoming = socketService.on<CallIncomingPayload>(SOCKET_EVENTS.CALL_INCOMING, payload => {
       const session_id = payload?.session_id ?? payload?.sessionId;
       const job_id = payload?.job_id ?? payload?.jobId;
       const caller_id = payload?.caller_id ?? payload?.callerId ?? '';
@@ -46,6 +48,30 @@ export function useIncomingCallListener() {
         });
       }
     });
-    return unsub;
-  }, [setIncoming]);
+
+    const handleCallEnded = (payload?: { sessionId?: string; session_id?: string }) => {
+      const currentIncoming = useCallStore.getState().incoming;
+      const targetSession = payload?.sessionId ?? payload?.session_id;
+      if (!targetSession || !currentIncoming || currentIncoming.session_id === targetSession) {
+        ringtoneService.stop();
+        clearIncoming();
+        if (Platform.OS !== 'web') {
+          try {
+            callkeepService.endAllCalls();
+          } catch {}
+        }
+      }
+    };
+
+    const unsubEnded = socketService.on(SOCKET_EVENTS.CALL_ENDED, handleCallEnded);
+    const unsubMissed = socketService.on(SOCKET_EVENTS.CALL_MISSED, handleCallEnded);
+    const unsubDeclined = socketService.on(SOCKET_EVENTS.CALL_DECLINED, handleCallEnded);
+
+    return () => {
+      unsubIncoming();
+      unsubEnded();
+      unsubMissed();
+      unsubDeclined();
+    };
+  }, [setIncoming, clearIncoming]);
 }
