@@ -14,6 +14,7 @@ import { HelperStatus, VerificationStatus, JobStatus, UserRole } from '@homemate
 import { AppGateway } from '../chat/app.gateway';
 import { NotificationsService } from '../notifications/notifications.service';
 import { SOCKET_EVENTS, NOTIFICATION_TYPES } from '@homemate/constants';
+import { computeJobFitScore } from '../helpers/utils/helper-score';
 
 export interface MatchPair {
   job: {
@@ -63,57 +64,30 @@ export class MatchingService {
   /**
    * Tính điểm số tương thích giữa 1 Thợ và 1 Công việc (0 - 100 điểm)
    */
+  // B87: công thức điểm phù hợp đơn sống trong module dùng chung
+  // helpers/utils/helper-score.ts (computeJobFitScore) — giữ nguyên trọng số
+  // Distance 40% + Skill 30% + Rating 20% + KYC 10%. Hàm này chỉ trích xuất
+  // đầu vào từ helper/job rồi gọi hàm dùng chung.
   public computeUtilityScore(
     helper: any,
     job: any,
   ): { score: number; distance_km: number; reasons: string[] } {
-    const reasons: string[] = [];
-
-    // 1. Tọa độ & Khoảng cách — thiếu tọa độ thì không cộng điểm (distance_km = -1),
-    // không giả định cả hai cùng ở một điểm mặc định.
     const jobCoords = job.address?.location?.coordinates; // [lon, lat]
     const helperCoords = helper.location?.coordinates;
     const hasCoords = !!jobCoords && !!helperCoords;
-
     const distanceKm = hasCoords
       ? this.calculateDistanceKm(helperCoords[1], helperCoords[0], jobCoords[1], jobCoords[0])
       : -1;
-
-    // A67: Chuẩn hoá khoảng cách về thang điểm 0 - 1 (0km -> 1.0, 20km -> 0.0)
-    const normDistance = hasCoords ? Math.max(0, 1 - distanceKm / 20) : 0;
-    if (!hasCoords) reasons.push('Chưa có vị trí');
-    else if (distanceKm <= 3) reasons.push(`Khoảng cách rất gần (${distanceKm}km)`);
-    else reasons.push(`Cách ${distanceKm}km`);
-
-    // 2. Chuyên môn (Skills / Service Match: 0 - 1)
     const jobServiceId = job.service_id?._id?.toString() || job.service_id?.toString();
     const hasService = (helper.service_ids || []).some(
       (sId: any) => sId.toString() === jobServiceId,
     );
-    const normSkill = hasService ? 1.0 : 0.4;
-    if (hasService) reasons.push('Đúng chuyên môn yêu cầu');
-
-    // 3. Đánh giá sao (Rating 0 - 1)
-    const rating = helper.rating || 0;
-    const normRating = Math.min(1, Math.max(0, rating / 5));
-    if (rating >= 4.8) reasons.push(`Uy tín cao: ★ ${rating.toFixed(1)}`);
-
-    // 4. Xác thực e-KYC (0 hoặc 1)
-    const isVerified = helper.verification_status === VerificationStatus.APPROVED;
-    const normKyc = isVerified ? 1.0 : 0.0;
-    if (isVerified) reasons.push('Đã xác minh e-KYC');
-
-    // Tổng hợp điểm số trọng số đã chuẩn hoá (thang 0 - 100):
-    // Distance 40% + Skill 30% + Rating 20% + KYC 10%
-    const totalScore = Math.round(
-      (normDistance * 0.4 + normSkill * 0.3 + normRating * 0.2 + normKyc * 0.1) * 100,
-    );
-
-    return {
-      score: totalScore,
-      distance_km: distanceKm,
-      reasons,
-    };
+    return computeJobFitScore({
+      distanceKm,
+      hasService,
+      rating: helper.rating || 0,
+      isVerified: helper.verification_status === VerificationStatus.APPROVED,
+    });
   }
 
   /**
