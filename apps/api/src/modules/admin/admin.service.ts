@@ -762,9 +762,11 @@ export class AdminService {
       this.jobModel.countDocuments().exec(),
       this.jobModel.countDocuments({ created_at: { $gte: startOfDay } }).exec(),
       this.jobModel.countDocuments({ created_at: { $gte: startOfMonth } }).exec(),
+      // B84: đơn đang hoạt động = chưa xong và chưa huỷ (loại trừ completed,
+      // cancelled, expired, refunded — kể cả pending_review/disputed còn dở)
       this.jobModel
         .countDocuments({
-          status: { $in: ['confirmed', 'helper_on_the_way', 'helper_arrived', 'in_progress'] },
+          status: { $nin: ['completed', 'cancelled', 'expired', 'refunded'] },
         })
         .exec(),
       this.jobModel.countDocuments({ status: 'completed' }).exec(),
