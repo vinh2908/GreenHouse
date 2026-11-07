@@ -1,18 +1,14 @@
 import { useState, useEffect } from 'react';
-import { formatTime } from '@/utils/date-format';
+import { formatTime, formatRelativeTime } from '@/utils/date-format';
 import { View, Text, ScrollView, TouchableOpacity, RefreshControl } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { ChevronRight, Plus, Clock, MapPin, ClipboardList } from 'lucide-react-native';
 import dayjs from 'dayjs';
-import relativeTime from 'dayjs/plugin/relativeTime';
-import 'dayjs/locale/vi';
 import { useAuthStore } from '@/stores/auth.store';
 import { useMyJobs, useMyProfile } from '@/hooks/use-api';
 import { useTranslation } from '@/hooks/use-i18n';
 import { Card, JobStatusBadge, EmptyState, ErrorState, COLORS, Badge, useThemeColors } from '@/components/ui';
-
-dayjs.extend(relativeTime);
 
 const TABS = [
   { key: undefined, labelKey: 'jobs_tab_all' },
@@ -355,9 +351,7 @@ export default function CustomerJobsScreen() {
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
                       <Clock size={13} color={COLORS.gray[400]} />
                       <Text style={{ fontSize: fs(12), color: tc.textMuted }}>
-                        {dayjs(job.created_at)
-                          .locale(lang === 'en' ? 'en' : 'vi')
-                          .fromNow()}
+                        {formatRelativeTime(job.created_at, lang)}
                       </Text>
                     </View>
                   </View>

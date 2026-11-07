@@ -1246,7 +1246,9 @@ export default function BookingScreen() {
         }
         if (Object.keys(nextErrors).length > 0) {
           setFieldErrors(nextErrors);
-          scrollToField('customServiceName');
+          // G15: cuộn tới ô lỗi ĐẦU TIÊN theo thứ tự hiển thị — chỉ sai giá
+          // thì cuộn tới ô targetPrice, không cuộn về ô tên dịch vụ nữa.
+          scrollToField(nextErrors.customServiceName ? 'customServiceName' : 'targetPrice');
           return;
         }
       }
@@ -1769,17 +1771,25 @@ export default function BookingScreen() {
                         clearFieldError('customServiceName');
                       }}
                     />
-                    <Input
-                      label={t('booking_other_service_price_label')}
-                      placeholder=""
-                      value={targetPrice}
-                      error={fieldErrors.targetPrice}
-                      onChangeText={v => {
-                        setTargetPrice(v.replace(/[^0-9]/g, ''));
-                        clearFieldError('targetPrice');
+                    {/* G15: ô giá có ref riêng để scrollToField('targetPrice')
+                        đo đúng vị trí ô giá thay vì đầu hộp dịch vụ khác. */}
+                    <View
+                      ref={el => {
+                        fieldRefs.current.targetPrice = el;
                       }}
-                      keyboardType="numeric"
-                    />
+                    >
+                      <Input
+                        label={t('booking_other_service_price_label')}
+                        placeholder=""
+                        value={targetPrice}
+                        error={fieldErrors.targetPrice}
+                        onChangeText={v => {
+                          setTargetPrice(v.replace(/[^0-9]/g, ''));
+                          clearFieldError('targetPrice');
+                        }}
+                        keyboardType="numeric"
+                      />
+                    </View>
                   </View>
                 )}
                 {fieldErrors.service && (

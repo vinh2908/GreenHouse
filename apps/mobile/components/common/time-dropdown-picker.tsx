@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { formatDate, formatDateWithWeekday } from '@/utils/date-format';
+import { formatDate, formatDateWithWeekday, formatDateKey, vnDateKey, vnNow } from '@/utils/date-format';
 import {
   View,
   Text,
@@ -43,45 +43,31 @@ export function getChipBadge(chip: string): 'NEW' | 'NIGHT' | null {
   return null;
 }
 
-/** Giờ hiện tại theo múi giờ Asia/Ho_Chi_Minh (UTC+7) */
+/** Giờ hiện tại theo múi giờ Asia/Ho_Chi_Minh (UTC+7) — G13: qua hàm chung
+ * vnNow() (dayjs.tz) thay cho tự cộng tay theo UTC (VN không có DST nên
+ * kết quả bằng nhau, nhưng mọi chuyển đổi múi giờ phải đi qua một chỗ). */
 export function getNowVietnam(): {
   hours: number;
   minutes: number;
   dateStr: string;
   totalMinutes: number;
 } {
-  const now = new Date();
-  const utc = now.getTime() + now.getTimezoneOffset() * 60000;
-  const vnTime = new Date(utc + 7 * 3600000);
-  const hours = vnTime.getHours();
-  const minutes = vnTime.getMinutes();
-  const y = vnTime.getFullYear();
-  const m = String(vnTime.getMonth() + 1).padStart(2, '0');
-  const d = String(vnTime.getDate()).padStart(2, '0');
+  const now = vnNow();
+  const hours = now.hour();
+  const minutes = now.minute();
   return {
     hours,
     minutes,
-    dateStr: `${y}-${m}-${d}`,
+    dateStr: now.format('YYYY-MM-DD'),
     totalMinutes: hours * 60 + minutes,
   };
 }
 
-/** Kiểm tra xem 1 ngày có phải là HÔM NAY theo giờ VN hay không */
+/** Kiểm tra xem 1 ngày có phải là HÔM NAY theo giờ VN hay không — G13: so
+ * khóa ngày VN (formatDateKey/vnDateKey, dayjs.tz) thay cho tự cộng +7. */
 export function isTodayVietnam(dateInput?: string | Date | null): boolean {
   if (!dateInput) return true;
-  const vn = getNowVietnam();
-  let inputStr = '';
-  if (typeof dateInput === 'string') {
-    inputStr = dateInput.trim().split('T')[0];
-  } else if (dateInput instanceof Date) {
-    const utc = dateInput.getTime() + dateInput.getTimezoneOffset() * 60000;
-    const d = new Date(utc + 7 * 3600000);
-    const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    inputStr = `${y}-${m}-${day}`;
-  }
-  return inputStr === vn.dateStr;
+  return formatDateKey(dateInput) === vnDateKey();
 }
 
 /** Lấy giờ mặc định tương lai gần nhất theo danh sách ORIGINAL_TIME_CHIPS cho ngày đã chọn */

@@ -20,6 +20,7 @@ import { DEFAULT_HELPER_AVAILABILITY, HelperAvailability } from './schemas/helpe
 import { HelperStatus, VerificationStatus } from '@homemate/types';
 import { AppGateway } from '../chat/app.gateway';
 import { MatchingService } from '../matching/matching.service';
+import { maskHelperBankAccount } from './utils/mask-bank-account';
 
 @Injectable()
 export class HelpersService {
@@ -42,20 +43,9 @@ export class HelpersService {
     return profile!;
   }
 
+  // G4 (F8): che số tài khoản — logic dùng chung trong utils/mask-bank-account.
   maskHelperBankAccount<T extends Record<string, any>>(profile: T): any {
-    if (!profile) return profile;
-    const doc =
-      typeof (profile as any).toObject === 'function'
-        ? (profile as any).toObject()
-        : JSON.parse(JSON.stringify(profile));
-    if (doc.bank_account?.account_number) {
-      const raw = String(doc.bank_account.account_number).trim();
-      doc.bank_account = {
-        ...doc.bank_account,
-        account_number: raw.length > 4 ? `****${raw.slice(-4)}` : '****',
-      };
-    }
-    return doc;
+    return maskHelperBankAccount(profile);
   }
 
   async getProfile(userId: string): Promise<any> {
@@ -243,7 +233,7 @@ export class HelpersService {
 
   // ─── Admin: verify / reject KYC ──────────────────────────────────────────
 
-  async approveKyc(userId: string): Promise<HelperProfileDocument> {
+  async approveKyc(userId: string): Promise<any> {
     const profile = await this.helperModel.findOne({ user_id: new Types.ObjectId(userId) }).exec();
     if (!profile) throw new NotFoundException('Helper không tồn tại');
     if (profile.verification_status !== VerificationStatus.PENDING) {
@@ -257,10 +247,12 @@ export class HelpersService {
     }
     profile.verification_status = VerificationStatus.APPROVED;
     profile.verified_at = new Date();
-    return profile.save();
+    const saved = await profile.save();
+    // G4 (F8): che số tài khoản như setStatus/submitKyc — không trả số đầy đủ.
+    return this.maskHelperBankAccount(saved);
   }
 
-  async rejectKyc(userId: string, reason: string): Promise<HelperProfileDocument> {
+  async rejectKyc(userId: string, reason: string): Promise<any> {
     const profile = await this.helperModel.findOne({ user_id: new Types.ObjectId(userId) }).exec();
     if (!profile) throw new NotFoundException('Helper không tồn tại');
     // B82: chỉ từ chối được e-KYC đang chờ duyệt
@@ -269,7 +261,9 @@ export class HelpersService {
     }
     profile.verification_status = VerificationStatus.REJECTED;
     profile.rejection_reason = reason;
-    return profile.save();
+    const saved = await profile.save();
+    // G4 (F8): che số tài khoản như setStatus/submitKyc — không trả số đầy đủ.
+    return this.maskHelperBankAccount(saved);
   }
 
   // ─── Find nearby helpers ──────────────────────────────────────────────────
