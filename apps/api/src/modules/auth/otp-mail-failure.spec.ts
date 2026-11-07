@@ -60,4 +60,14 @@ describe('OtpService - F16 mail failure', () => {
     expect(code).toHaveLength(6);
     expect(otpModel.deleteOne).not.toHaveBeenCalled();
   });
+
+  it('P0-6: target SĐT -> ném 400 rõ ràng (SMS OTP chưa hỗ trợ), không tạo mã, không gửi mail', async () => {
+    process.env.NODE_ENV = 'production';
+    await build('production', true);
+    await expect(service.sendOtp('0901234567', 'verify')).rejects.toMatchObject({
+      status: 400,
+    });
+    expect(otpModel.create).not.toHaveBeenCalled();
+    expect(mailService.sendOtpEmail).not.toHaveBeenCalled();
+  });
 });
