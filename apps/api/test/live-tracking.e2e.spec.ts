@@ -10,7 +10,7 @@ import { Job, JobSchema } from '../src/modules/jobs/schemas/job.schema';
 import { SOCKET_EVENTS } from '@homemate/constants';
 import { JobsService } from '../src/modules/jobs/jobs.service';
 // Use the application's Socket.IO client, avoiding a second dependency/version.
-const { io } = require('../../mobile/node_modules/socket.io-client');
+import { io } from '../../mobile/node_modules/socket.io-client';
 
 describe('Live GPS through real Socket.IO and isolated MongoDB', () => {
   let mongo: MongoMemoryServer;

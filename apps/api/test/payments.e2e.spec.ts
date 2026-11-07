@@ -24,7 +24,6 @@ describe('Payments E2E (Phase 7)', () => {
   let helperToken: string;
   let helperId: string;
   let customerToken: string;
-  let customerId: string;
 
   beforeAll(async () => {
     mongod = await MongoMemoryServer.create();
@@ -74,7 +73,6 @@ describe('Payments E2E (Phase 7)', () => {
       password: 'Password123!',
     });
     customerToken = res.body.data.access_token;
-    customerId = res.body.data.user._id;
   });
 
   afterAll(async () => {

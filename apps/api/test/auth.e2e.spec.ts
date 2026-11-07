@@ -20,7 +20,6 @@ describe('Auth E2E', () => {
   let mongod: MongoMemoryServer;
   let accessToken: string;
   let refreshToken: string;
-  let capturedOtp: string;
 
   beforeAll(async () => {
     mongod = await MongoMemoryServer.create();

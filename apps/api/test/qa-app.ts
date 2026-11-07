@@ -22,7 +22,7 @@ import { HttpExceptionFilter } from '../src/common/filters/http-exception.filter
 import { TransformInterceptor } from '../src/common/interceptors/transform.interceptor';
 import appConfig from '../src/config/app.config';
 import jwtConfig from '../src/config/jwt.config';
-const request = require('supertest');
+import request from 'supertest';
 
 // Never imports AppModule or .env: all data lives in this disposable replica set.
 export async function createQaApp() {

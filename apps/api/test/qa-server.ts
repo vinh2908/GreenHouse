@@ -1,5 +1,4 @@
 import { createQaApp } from './qa-app';
-import { getModelToken } from '@nestjs/mongoose';
 import { writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { JobsService } from '../src/modules/jobs/jobs.service';
