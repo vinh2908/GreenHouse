@@ -332,13 +332,18 @@ export function DemandMapView({ areas, focus, height = 300, userCoords, onFocusA
   };
 
   // Web (iframe srcDoc): nhận postMessage từ pill trong bản đồ.
+  // Dùng globalThis thay cho window/MessageEvent để không cần DOM lib.
   useEffect(() => {
     if (Platform.OS !== 'web' || !onFocusArea) return;
-    const handler = (event: MessageEvent) => {
+    const target = globalThis as unknown as {
+      addEventListener?: (type: string, fn: (event: { data?: unknown }) => void) => void;
+      removeEventListener?: (type: string, fn: (event: { data?: unknown }) => void) => void;
+    };
+    const handler = (event: { data?: unknown }) => {
       if (typeof event.data === 'string') handleMapMessage(event.data);
     };
-    window.addEventListener('message', handler);
-    return () => window.removeEventListener('message', handler);
+    target.addEventListener?.('message', handler);
+    return () => target.removeEventListener?.('message', handler);
   }, [onFocusArea, withCoords]);
 
   const html = useMemo(
