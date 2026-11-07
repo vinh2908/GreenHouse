@@ -5,6 +5,7 @@ import {
   formatDateKey,
   formatDateWithWeekday,
   formatMonthTitle,
+  isValidDateKey,
   toVnDayjs,
   vnDateKey,
   vnNow,
@@ -38,6 +39,23 @@ export interface DateTimeBottomSheetProps {
   onConfirm: (selectedDate: string, selectedTime: string) => void;
 }
 
+// Khung giờ làm việc (server G3): bắt đầu 07:00–22:00 (P1-29).
+const WORK_START_HOUR = 7;
+const WORK_END_HOUR = 22;
+
+/** Chuẩn hoá 'HH:mm' về khung 07:00–22:00 (22:00 là muộn nhất). */
+function normalizeTime(t: string): string {
+  const parts = (t || '08:00').split(':');
+  let h = parseInt(parts[0], 10);
+  let m = parseInt(parts[1], 10);
+  if (isNaN(h)) h = 8;
+  if (isNaN(m)) m = 0;
+  h = Math.max(WORK_START_HOUR, Math.min(WORK_END_HOUR, h));
+  if (h === WORK_END_HOUR) m = 0;
+  m = Math.max(0, Math.min(59, m));
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+}
+
 export function DateTimeBottomSheet({
   visible,
   initialDate,
@@ -49,17 +67,24 @@ export function DateTimeBottomSheet({
   const { lang, t } = useTranslation();
   const [activeTab, setActiveTab] = useState<'date' | 'time'>(initialTab);
 
-  // Temporary selection state inside sheet
-  const [tempDate, setTempDate] = useState<string>(initialDate || vnDateKey());
-  const [tempTime, setTempTime] = useState<string>(initialTime || '08:00');
+  // Temporary selection state inside sheet — ngày/giờ khởi tạo không hợp lệ
+  // thì rơi về hôm nay/giờ trong khung, không bao giờ giữ 'Invalid Date'.
+  const [tempDate, setTempDate] = useState<string>(
+    isValidDateKey(initialDate) ? initialDate : vnDateKey(),
+  );
+  const [tempTime, setTempTime] = useState<string>(normalizeTime(initialTime || '08:00'));
 
-  // Calendar month state
-  const [calendarMonth, setCalendarMonth] = useState(() => toVnDayjs(initialDate));
+  // Calendar month state — toVnDayjs() không bao giờ trả invalid nữa (fallback
+  // UTC+7), nhưng vẫn giữ guard đề phòng Dayjs invalid lọt vào từ chỗ khác.
+  const [calendarMonth, setCalendarMonth] = useState(() => {
+    const d = toVnDayjs(initialDate);
+    return d.isValid() ? d : vnNow();
+  });
 
-  // Parsed initial indices
+  // Parsed initial indices (giờ đã kẹp 07–22)
   const parseHour = (t: string) => {
     const h = parseInt((t || '08:00').split(':')[0], 10);
-    return isNaN(h) ? 8 : Math.max(0, Math.min(23, h));
+    return isNaN(h) ? 8 : Math.max(WORK_START_HOUR, Math.min(WORK_END_HOUR, h));
   };
   const parseMinute = (t: string) => {
     const m = parseInt((t || '08:00').split(':')[1], 10);
@@ -76,13 +101,17 @@ export function DateTimeBottomSheet({
   selectedHRef.current = selectedH;
   selectedMRef.current = selectedM;
 
-  // Lists
-  const hoursList = useMemo(() => Array.from({ length: 24 }, (_, i) => i), []);
+  // Lists — bánh xe giờ chỉ 07–22 (P1-29); index trong list = giờ − 7
+  const hoursList = useMemo(
+    () => Array.from({ length: WORK_END_HOUR - WORK_START_HOUR + 1 }, (_, i) => i + WORK_START_HOUR),
+    [],
+  );
   const minutesList = useMemo(() => Array.from({ length: 60 }, (_, i) => i), []);
 
   const pinWheels = useCallback((h: number, m: number, animated = false) => {
     try {
-      hoursScrollRef.current?.scrollTo({ y: h * ITEM_HEIGHT, animated });
+      const hourIdx = Math.max(0, Math.min(WORK_END_HOUR - WORK_START_HOUR, h - WORK_START_HOUR));
+      hoursScrollRef.current?.scrollTo({ y: hourIdx * ITEM_HEIGHT, animated });
       minutesScrollRef.current?.scrollTo({ y: m * ITEM_HEIGHT, animated });
     } catch {
       // Safe fallback
@@ -92,8 +121,8 @@ export function DateTimeBottomSheet({
   // Sync state whenever modal opens or initial values change
   useEffect(() => {
     if (visible) {
-      const d = initialDate || vnDateKey();
-      const t = initialTime || '08:00';
+      const d = isValidDateKey(initialDate) ? initialDate : vnDateKey();
+      const t = normalizeTime(initialTime || '08:00');
       const h = parseHour(t);
       const m = parseMinute(t);
 
@@ -102,7 +131,10 @@ export function DateTimeBottomSheet({
       setSelectedH(h);
       setSelectedM(m);
       setActiveTab(initialTab);
-      setCalendarMonth(toVnDayjs(d));
+      setCalendarMonth(() => {
+        const parsed = toVnDayjs(d);
+        return parsed.isValid() ? parsed : vnNow();
+      });
 
       // Multi-phase pin to guarantee Android layout measurements receive the offset
       requestAnimationFrame(() => pinWheels(h, m, false));
@@ -134,14 +166,30 @@ export function DateTimeBottomSheet({
   }, [visible, activeTab, pinWheels]);
 
   // Handlers for scroll wheel events - CRASH-PROOF, SYNCHRONOUS, NO POOLED EVENT LEAKS
+  // (giờ trong list 07–22 nên scroll index = giờ − 7)
+  const hourFromScrollY = (y: number) =>
+    Math.max(
+      WORK_START_HOUR,
+      Math.min(
+        WORK_END_HOUR,
+        Math.round(y / ITEM_HEIGHT) + WORK_START_HOUR,
+      ),
+    );
+
   const handleHourScroll = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
     try {
       const y = e.nativeEvent?.contentOffset?.y ?? 0;
-      const idx = Math.max(0, Math.min(23, Math.round(y / ITEM_HEIGHT)));
+      const idx = hourFromScrollY(y);
       if (idx !== selectedHRef.current) {
         selectedHRef.current = idx;
         setSelectedH(idx);
-        const newTime = `${String(idx).padStart(2, '0')}:${String(selectedMRef.current).padStart(2, '0')}`;
+        // 22:00 là muộn nhất — về 22 thì phút ép về 00
+        const m = idx === WORK_END_HOUR ? 0 : selectedMRef.current;
+        if (m !== selectedMRef.current) {
+          selectedMRef.current = m;
+          setSelectedM(m);
+        }
+        const newTime = `${String(idx).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
         setTempTime(newTime);
       }
     } catch {
@@ -152,12 +200,18 @@ export function DateTimeBottomSheet({
   const handleHourScrollEnd = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
     try {
       const y = e.nativeEvent?.contentOffset?.y ?? 0;
-      const idx = Math.max(0, Math.min(23, Math.round(y / ITEM_HEIGHT)));
+      const idx = hourFromScrollY(y);
       selectedHRef.current = idx;
       setSelectedH(idx);
-      const newTime = `${String(idx).padStart(2, '0')}:${String(selectedMRef.current).padStart(2, '0')}`;
+      const m = idx === WORK_END_HOUR ? 0 : selectedMRef.current;
+      if (m !== selectedMRef.current) {
+        selectedMRef.current = m;
+        setSelectedM(m);
+        minutesScrollRef.current?.scrollTo({ y: 0, animated: true });
+      }
+      const newTime = `${String(idx).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
       setTempTime(newTime);
-      hoursScrollRef.current?.scrollTo({ y: idx * ITEM_HEIGHT, animated: true });
+      hoursScrollRef.current?.scrollTo({ y: (idx - WORK_START_HOUR) * ITEM_HEIGHT, animated: true });
     } catch {
       // Prevent unhandled errors
     }
@@ -166,7 +220,9 @@ export function DateTimeBottomSheet({
   const handleMinuteScroll = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
     try {
       const y = e.nativeEvent?.contentOffset?.y ?? 0;
-      const idx = Math.max(0, Math.min(59, Math.round(y / ITEM_HEIGHT)));
+      const rawIdx = Math.max(0, Math.min(59, Math.round(y / ITEM_HEIGHT)));
+      // 22:00 là muộn nhất — đang ở giờ 22 thì phút ép về 00
+      const idx = selectedHRef.current === WORK_END_HOUR ? 0 : rawIdx;
       if (idx !== selectedMRef.current) {
         selectedMRef.current = idx;
         setSelectedM(idx);
@@ -181,7 +237,8 @@ export function DateTimeBottomSheet({
   const handleMinuteScrollEnd = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
     try {
       const y = e.nativeEvent?.contentOffset?.y ?? 0;
-      const idx = Math.max(0, Math.min(59, Math.round(y / ITEM_HEIGHT)));
+      const rawIdx = Math.max(0, Math.min(59, Math.round(y / ITEM_HEIGHT)));
+      const idx = selectedHRef.current === WORK_END_HOUR ? 0 : rawIdx;
       selectedMRef.current = idx;
       setSelectedM(idx);
       const newTime = `${String(selectedHRef.current).padStart(2, '0')}:${String(idx).padStart(2, '0')}`;
@@ -193,18 +250,28 @@ export function DateTimeBottomSheet({
   }, []);
 
   const selectHour = useCallback((h: number) => {
-    selectedHRef.current = h;
-    setSelectedH(h);
-    hoursScrollRef.current?.scrollTo({ y: h * ITEM_HEIGHT, animated: true });
-    const newTime = `${String(h).padStart(2, '0')}:${String(selectedMRef.current).padStart(2, '0')}`;
+    const hour = Math.max(WORK_START_HOUR, Math.min(WORK_END_HOUR, h));
+    // 22:00 là muộn nhất — về 22 thì phút ép về 00
+    const m = hour === WORK_END_HOUR ? 0 : selectedMRef.current;
+    selectedHRef.current = hour;
+    setSelectedH(hour);
+    if (m !== selectedMRef.current) {
+      selectedMRef.current = m;
+      setSelectedM(m);
+      minutesScrollRef.current?.scrollTo({ y: 0, animated: true });
+    }
+    hoursScrollRef.current?.scrollTo({ y: (hour - WORK_START_HOUR) * ITEM_HEIGHT, animated: true });
+    const newTime = `${String(hour).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
     setTempTime(newTime);
   }, []);
 
   const selectMinute = useCallback((m: number) => {
-    selectedMRef.current = m;
-    setSelectedM(m);
-    minutesScrollRef.current?.scrollTo({ y: m * ITEM_HEIGHT, animated: true });
-    const newTime = `${String(selectedHRef.current).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+    // 22:00 là muộn nhất — đang ở giờ 22 thì phút ép về 00
+    const minute = selectedHRef.current === WORK_END_HOUR ? 0 : m;
+    selectedMRef.current = minute;
+    setSelectedM(minute);
+    minutesScrollRef.current?.scrollTo({ y: minute * ITEM_HEIGHT, animated: true });
+    const newTime = `${String(selectedHRef.current).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
     setTempTime(newTime);
   }, []);
 
@@ -213,34 +280,51 @@ export function DateTimeBottomSheet({
     const h = parseInt(parts[0], 10);
     const m = parseInt(parts[1], 10);
     if (!isNaN(h) && !isNaN(m)) {
-      selectedHRef.current = h;
-      selectedMRef.current = m;
-      setSelectedH(h);
-      setSelectedM(m);
-      setTempTime(timeStr);
-      hoursScrollRef.current?.scrollTo({ y: h * ITEM_HEIGHT, animated: true });
-      minutesScrollRef.current?.scrollTo({ y: m * ITEM_HEIGHT, animated: true });
+      // Kẹp về khung 07:00–22:00 (chip gợi ý vốn đã trong khung)
+      const hour = Math.max(WORK_START_HOUR, Math.min(WORK_END_HOUR, h));
+      const minute = hour === WORK_END_HOUR ? 0 : Math.max(0, Math.min(59, m));
+      selectedHRef.current = hour;
+      selectedMRef.current = minute;
+      setSelectedH(hour);
+      setSelectedM(minute);
+      setTempTime(`${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`);
+      hoursScrollRef.current?.scrollTo({ y: (hour - WORK_START_HOUR) * ITEM_HEIGHT, animated: true });
+      minutesScrollRef.current?.scrollTo({ y: minute * ITEM_HEIGHT, animated: true });
     }
   }, []);
 
   // A1: Kiểm tra thời điểm chọn có ở trong quá khứ hay không
   const isSelectionInPast = useMemo(() => {
+    if (!isValidDateKey(tempDate)) return true; // ngày không hợp lệ → chặn Xác nhận
     const selected = toVnDayjs(`${tempDate} ${tempTime}`);
     return selected.isBefore(vnNow().subtract(1, 'minute'));
   }, [tempDate, tempTime]);
 
+  // P1-29: re-check khung giờ làm việc lúc Xác nhận (dù bánh xe đã kẹp 07–22,
+  // initialTime truyền vào vẫn có thể ngoài khung)
+  const isOutsideWorkWindow = useMemo(() => {
+    const [h, m] = tempTime.split(':').map(Number);
+    if (isNaN(h) || isNaN(m)) return true;
+    const total = h * 60 + m;
+    return total < WORK_START_HOUR * 60 || total > WORK_END_HOUR * 60;
+  }, [tempTime]);
+
+  const confirmBlocked = isSelectionInPast || isOutsideWorkWindow;
+
   const handleConfirm = useCallback(() => {
-    if (isSelectionInPast) return;
+    if (confirmBlocked) return;
     onConfirm(tempDate, tempTime);
     onClose();
-  }, [onConfirm, onClose, tempDate, tempTime, isSelectionInPast]);
+  }, [onConfirm, onClose, tempDate, tempTime, confirmBlocked]);
 
-  // Calendar calculations
+  // Calendar calculations — KHÔNG BAO GIỜ render lưới rỗng: tháng invalid thì
+  // rơi về tháng hiện tại (giờ VN).
+  const safeCalendarMonth = calendarMonth.isValid() ? calendarMonth : vnNow();
   const today = vnNow().startOf('day');
-  const startOfMonth = calendarMonth.startOf('month');
-  const daysInMonth = calendarMonth.daysInMonth();
+  const startOfMonth = safeCalendarMonth.startOf('month');
+  const daysInMonth = safeCalendarMonth.daysInMonth();
   const startOffset = (startOfMonth.day() + 6) % 7; // Monday = 0
-  const curMonthIndex = calendarMonth.year() * 12 + calendarMonth.month();
+  const curMonthIndex = safeCalendarMonth.year() * 12 + safeCalendarMonth.month();
   const todayMonthIndex = today.year() * 12 + today.month();
   const isPrevMonthDisabled = curMonthIndex <= todayMonthIndex;
   const isNextMonthDisabled = curMonthIndex >= todayMonthIndex + 6;
@@ -283,10 +367,10 @@ export function DateTimeBottomSheet({
             </Text>
 
             <TouchableOpacity
-              activeOpacity={isSelectionInPast ? 1 : 0.7}
-              disabled={isSelectionInPast}
+              activeOpacity={confirmBlocked ? 1 : 0.7}
+              disabled={confirmBlocked}
               onPress={handleConfirm}
-              style={[styles.headBtn, isSelectionInPast && { opacity: 0.35 }]}
+              style={[styles.headBtn, confirmBlocked && { opacity: 0.35 }]}
               hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
             >
               <Text style={styles.confirmBtnText}>{t('common_confirm') || 'Xác nhận'}</Text>
@@ -340,7 +424,9 @@ export function DateTimeBottomSheet({
               {/* Calendar Month Header */}
               <View style={styles.calHead}>
                 <TouchableOpacity
-                  onPress={() => setCalendarMonth(prev => prev.subtract(1, 'month'))}
+                  onPress={() =>
+                    setCalendarMonth(prev => (prev.isValid() ? prev : vnNow()).subtract(1, 'month'))
+                  }
                   disabled={isPrevMonthDisabled}
                   style={[styles.calNavBtn, isPrevMonthDisabled && styles.calNavBtnDisabled]}
                   hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
@@ -353,11 +439,13 @@ export function DateTimeBottomSheet({
                 </TouchableOpacity>
 
                 <Text style={styles.calMonthTitle}>
-                  {formatMonthTitle(calendarMonth, lang)}
+                  {formatMonthTitle(safeCalendarMonth, lang)}
                 </Text>
 
                 <TouchableOpacity
-                  onPress={() => setCalendarMonth(prev => prev.add(1, 'month'))}
+                  onPress={() =>
+                    setCalendarMonth(prev => (prev.isValid() ? prev : vnNow()).add(1, 'month'))
+                  }
                   disabled={isNextMonthDisabled}
                   style={[styles.calNavBtn, isNextMonthDisabled && styles.calNavBtnDisabled]}
                   hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
@@ -390,7 +478,7 @@ export function DateTimeBottomSheet({
 
                 {Array.from({ length: daysInMonth }, (_, i) => {
                   const dayNum = i + 1;
-                  const currentCellDate = calendarMonth.date(dayNum).startOf('day');
+                  const currentCellDate = safeCalendarMonth.date(dayNum).startOf('day');
                   const currentCellDateStr = formatDateKey(currentCellDate);
 
                   const isPast = currentCellDate.isBefore(today);

@@ -16,7 +16,48 @@ dayjs.extend(relativeTime);
  */
 export const VN_TIMEZONE = 'Asia/Ho_Chi_Minh';
 
+/** VN = UTC+7, không có DST nên offset cố định này tương đương Asia/Ho_Chi_Minh. */
+const VN_UTC_OFFSET_MINUTES = 7 * 60;
+
 export type DateInput = string | Date | number | dayjs.Dayjs | undefined | null;
+
+/**
+ * Fallback cuối cùng, không phụ thuộc dayjs.tz / Intl: giờ VN tính tay từ
+ * Date.now() + 7h rồi đọc bằng UTC getters. Chỉ dùng khi dayjs.tz trả về
+ * invalid (Hermes thiếu Intl.DateTimeFormat.formatToParts cho timezone).
+ */
+function vnNowManual(): dayjs.Dayjs {
+  const d = new Date(Date.now() + VN_UTC_OFFSET_MINUTES * 60 * 1000);
+  return dayjs(
+    `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(
+      d.getUTCDate(),
+    ).padStart(2, '0')}T${String(d.getUTCHours()).padStart(2, '0')}:${String(
+      d.getUTCMinutes(),
+    ).padStart(2, '0')}:${String(d.getUTCSeconds()).padStart(2, '0')}`,
+  );
+}
+
+/**
+ * Chuyển một giá trị dayjs đã tính qua dayjs.tz sang UTC+7 thủ công khi nó
+ * invalid. Chuỗi naive ('YYYY-MM-DD', 'YYYY-MM-DD HH:mm') giữ nguyên giờ
+ * tường (utcOffset(7, true)); chuỗi có offset/Z hoặc Date/timestamp giữ
+ * nguyên thời điểm tuyệt đối (utcOffset(7)).
+ */
+function fallbackUtcOffset7(input: unknown): dayjs.Dayjs {
+  if (typeof input === 'string' && /^\d{4}-\d{2}-\d{2}([T ]\d{2}:\d{2}(:\d{2})?(\.\d+)?)?$/.test(input.trim())) {
+    const d = dayjs(input.trim()).utcOffset(VN_UTC_OFFSET_MINUTES, true);
+    if (d.isValid()) return d;
+  }
+  if (input instanceof Date || typeof input === 'number' || dayjs.isDayjs(input)) {
+    const d = dayjs(input as any).utcOffset(VN_UTC_OFFSET_MINUTES);
+    if (d.isValid()) return d;
+  }
+  if (typeof input === 'string') {
+    const d = dayjs(input).utcOffset(VN_UTC_OFFSET_MINUTES);
+    if (d.isValid()) return d;
+  }
+  return vnNowManual();
+}
 
 /**
  * Chuyển mọi đầu vào ngày giờ về múi giờ Việt Nam.
@@ -24,25 +65,63 @@ export type DateInput = string | Date | number | dayjs.Dayjs | undefined | null;
  *   đối, chỉ đổi múi giờ hiển thị sang VN.
  * - Chuỗi naive ('YYYY-MM-DD', 'YYYY-MM-DD HH:mm'): đọc như giờ tường VN.
  * - Rỗng: trả về thời điểm hiện tại theo giờ VN.
+ * - Mảng (expo-router trả duplicate params dạng string[]): lấy phần tử đầu.
+ * - Giá trị không phải string/Date/number/Dayjs: trả về giờ VN hiện tại.
+ * BULLETPROOF (v9 date-picker blank): dayjs.tz() âm thầm trả invalid khi
+ * runtime thiếu Intl timezone (Hermes trên LDPlayer/OPPO, không polyfill),
+ * và .format() của invalid trả literal 'Invalid Date' — chuỗi này non-empty
+ * nên lọt mọi check !date rồi bị API @IsDateString() từ chối. Vì vậy mọi
+ * kết quả tz invalid đều fallback sang UTC+7 thủ công (VN không DST nên
+ * tương đương), và hàm này KHÔNG BAO GIỜ trả về Dayjs invalid.
  */
-export function toVnDayjs(dateInput: DateInput): dayjs.Dayjs {
-  if (!dateInput) return dayjs().tz(VN_TIMEZONE);
-  return dayjs.tz(dateInput, VN_TIMEZONE);
+export function toVnDayjs(dateInput: DateInput | unknown): dayjs.Dayjs {
+  const input: unknown = Array.isArray(dateInput) ? dateInput[0] : dateInput;
+  if (input === undefined || input === null || input === '') return vnNow();
+  if (typeof input !== 'string' && !(input instanceof Date) && typeof input !== 'number' && !dayjs.isDayjs(input)) {
+    return vnNow();
+  }
+  let result: dayjs.Dayjs;
+  try {
+    result = dayjs.tz(input as any, VN_TIMEZONE);
+  } catch {
+    return fallbackUtcOffset7(input);
+  }
+  if (result.isValid()) return result;
+  return fallbackUtcOffset7(input);
 }
 
-/** Thời điểm hiện tại theo giờ Việt Nam. */
+/** Thời điểm hiện tại theo giờ Việt Nam — không bao giờ invalid (fallback UTC+7 tay). */
 export function vnNow(): dayjs.Dayjs {
-  return dayjs().tz(VN_TIMEZONE);
+  let now: dayjs.Dayjs;
+  try {
+    now = dayjs().tz(VN_TIMEZONE);
+  } catch {
+    return vnNowManual();
+  }
+  return now.isValid() ? now : dayjs().utcOffset(VN_UTC_OFFSET_MINUTES);
 }
 
-/** Khóa ngày 'YYYY-MM-DD' của hôm nay (giờ VN) cộng thêm offsetDays ngày. */
+/** Khóa ngày 'YYYY-MM-DD' của hôm nay (giờ VN) cộng thêm offsetDays ngày. Không bao giờ trả 'Invalid Date'. */
 export function vnDateKey(offsetDays = 0): string {
-  return vnNow().add(offsetDays, 'day').format('YYYY-MM-DD');
+  const d = vnNow().add(offsetDays, 'day');
+  if (d.isValid()) {
+    const key = d.format('YYYY-MM-DD');
+    if (key && key !== 'Invalid Date') return key;
+  }
+  return vnNowManual().add(offsetDays, 'day').format('YYYY-MM-DD');
 }
 
 /** Khóa ngày-giờ 'YYYY-MM-DDT09:00:00' của hôm nay (giờ VN) cộng offsetDays. */
 export function vnDateTimeKey(offsetDays = 0, time = '09:00'): string {
   return `${vnDateKey(offsetDays)}T${time}:00`;
+}
+
+/** 'YYYY-MM-DD' thật (đúng dạng + đúng ngày, vd 2026-02-30 là sai). */
+export function isValidDateKey(s: unknown): s is string {
+  if (typeof s !== 'string') return false;
+  if (!/^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/.test(s)) return false;
+  const d = toVnDayjs(s);
+  return d.isValid() && d.format('YYYY-MM-DD') === s;
 }
 
 /** Khóa ngày 'YYYY-MM-DD' của một thời điểm, tính theo giờ VN. */

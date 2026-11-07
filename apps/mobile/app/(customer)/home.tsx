@@ -29,6 +29,7 @@ import {
   ScheduledTimePreview,
   getDefaultFutureTimeSlot,
   getNowVietnam,
+  hasFutureTimeSlot,
 } from '@/components/common/time-dropdown-picker';
 import { DateTimePickerBottomSheet } from '@/components/common/date-time-bottom-sheet';
 import Svg, { Defs, LinearGradient as SvgLinearGradient, Stop, Rect } from 'react-native-svg';
@@ -1060,7 +1061,15 @@ export default function CustomerHomeScreen() {
       const [th, tm] = quickTimeSlot.split(':').map(Number);
       const nowVn = getNowVietnam();
       if (th * 60 + tm <= nowVn.totalMinutes) {
-        setQuickTimeSlot(getDefaultFutureTimeSlot(todayStr));
+        // B6: sau 22:00 không còn slot tương lai hôm nay — dời sang ngày mai
+        // thay vì gán '22:00' đã qua
+        if (hasFutureTimeSlot(todayStr)) {
+          setQuickTimeSlot(getDefaultFutureTimeSlot(todayStr));
+        } else {
+          setQuickDate(vnDateKey(1));
+          setQuickDateChip('tomorrow');
+          setQuickTimeSlot('09:00');
+        }
       }
     } else if (chip === 'tomorrow') {
       setQuickDate(vnDateKey(1));
