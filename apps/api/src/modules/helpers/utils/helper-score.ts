@@ -15,6 +15,15 @@ import { VerificationStatus } from '@homemate/types';
  * dịch vụ) và xếp hạng admin (không có đơn tham chiếu — khoảng cách = −1,
  * kỹ năng = thợ có đăng ký dịch vụ nào không) đều gọi cùng hàm
  * computeHelperScore với cùng 1 input shape; cùng input → cùng 1 số.
+ *
+ * QUYẾT ĐỊNH (c) CỦA CHỦ 2026-11-07 — CHẤP NHẬN + GHI RÕ (G8/H6):
+ * Đường admin KHÔNG có đơn tham chiếu nên khoảng cách không đo được →
+ * điểm khoảng cách = 0 THEO THIẾT KẾ, không phải bug. Tiêu chí "cùng thợ
+ * cùng số" chỉ áp dụng khi ĐẦU VÀO GIỐNG NHAU: cùng 1 HelperScoreInput thì
+ * computeHelperScore luôn trả cùng 1 số ở mọi đường gọi. Ví dụ thợ cách đơn
+ * 2km, rating 5, đã KYC, đúng chuyên môn: gợi ý = 96 (36 + 30 + 20 + 10),
+ * xếp hạng admin = 60 (0 + 30 + 20 + 10) — chênh 36đ đúng bằng điểm khoảng
+ * cách. KHÔNG đổi trọng số, KHÔNG đổi công thức, KHÔNG đổi logic chấm điểm.
  * Trước đây có 2 công thức song song (computeJobFitScore 40/30/20/10 và
  * computePerformanceScore 40/25/15/20) nên cùng 1 thợ cho 2 số khác nhau —
  * cả 2 đã bị xoá, chỉ còn hàm chung này.
@@ -214,15 +223,23 @@ export interface HelperProfileScoreSource {
 
 /**
  * Dựng input cho hàm chung từ hồ sơ thợ (đường admin / xếp hạng — KHÔNG có
- * đơn tham chiếu): khoảng cách không đo được → −1 (0đ, cùng quy tắc như
- * matching khi thiếu tọa độ); kỹ năng = thợ có đăng ký dịch vụ nào không
- * (có → đủ 30đ, không → 12đ như trường hợp không đúng chuyên môn ở matching).
+ * đơn tham chiếu nên khoảng cách KHÔNG ĐO ĐƯỢC → distanceKm = −1, điểm
+ * khoảng cách = 0 THEO THIẾT KẾ (quyết định (c) của chủ 2026-11-07, G8/H6),
+ * không phải bug; cùng quy tắc như matching khi thiếu tọa độ. Tiêu chí
+ * "cùng thợ cùng số" chỉ áp dụng khi ĐẦU VÀO GIỐNG NHAU — đường admin thiếu
+ * khoảng cách nên tổng thấp hơn gợi ý đúng bằng phần khoảng cách (vd thợ
+ * cách 2km: gợi ý 96, admin 60, chênh đúng 36đ khoảng cách). Kỹ năng = thợ
+ * có đăng ký dịch vụ nào không (có → đủ 30đ, không → 12đ như trường hợp
+ * không đúng chuyên môn ở matching).
  */
 export function helperScoreInputFromProfile(
   profile: HelperProfileScoreSource,
   cancellationsInWindow: number,
 ): HelperScoreInput {
   return {
+    // Đường admin không có đơn tham chiếu → không đo được khoảng cách → 0đ
+    // khoảng cách THEO THIẾT KẾ (G8, quyết định (c) của chủ 2026-11-07),
+    // KHÔNG phải bug. Chỉ duy nhất chỗ này trong code sản phẩm đặt −1.
     distanceKm: -1,
     hasService: (profile.service_ids?.length ?? 0) > 0,
     rating: profile.rating ?? null,
