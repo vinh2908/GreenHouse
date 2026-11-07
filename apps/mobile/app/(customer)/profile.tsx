@@ -71,7 +71,7 @@ export default function CustomerProfileScreen() {
   const isSwitchingRole = useAuthStore(s => s.isSwitchingRole);
 
   const { data: profile, isLoading: isProfileLoading, refetch: refetchProfile } = useMyProfile();
-  const { data: wallet, isLoading: isWalletLoading } = useWallet();
+  const { data: wallet, isLoading: isWalletLoading, isError: isWalletError } = useWallet();
   const {
     data: loyalty,
     isLoading: isLoyaltyLoading,
@@ -338,7 +338,13 @@ export default function CustomerProfileScreen() {
               <Text style={{ fontSize: fs(22), fontWeight: '900', color: '#FFFFFF' }}>
                 {isWalletLoading && !wallet
                   ? '...'
-                  : `${new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'vi-VN').format(wallet?.balance ?? 0)}₫`}
+                  : // P1-27: never render 0₫ as the balance when the fetch
+                    // errored — a failed fetch is not a zero balance.
+                    !wallet && isWalletError
+                    ? lang === 'en'
+                      ? 'Failed to load'
+                      : 'Không tải được'
+                    : `${new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'vi-VN').format(wallet?.balance ?? 0)}₫`}
               </Text>
               <Text style={{ fontSize: fs(12), color: '#94A3B8' }}>
                 {lang === 'en'
