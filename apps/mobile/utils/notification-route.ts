@@ -121,9 +121,11 @@ export function resolveNotificationRoute(
   // ── Tin nhắn mới → đúng cuộc trò chuyện của đơn ────────────────────────────
   if (type === 'new_message') {
     if (jobId) return { pathname: '/chat/[jobId]', params: { jobId } };
-    // Chỉ có conversation_id: màn chat mở theo job nên không vào thẳng được,
-    // khách về tab Tin nhắn; thợ không có tab tin nhắn riêng → bỏ qua.
-    return activeRole === 'helper' ? null : { pathname: '/(customer)/messages' };
+    // Chỉ có conversation_id: màn chat mở theo job nên không vào thẳng được —
+    // về tab Tin nhắn của đúng phía người nhận.
+    return activeRole === 'helper'
+      ? { pathname: '/(helper)/messages' }
+      : { pathname: '/(customer)/messages' };
   }
 
   // ── KYC ────────────────────────────────────────────────────────────────────
@@ -137,10 +139,13 @@ export function resolveNotificationRoute(
   }
 
   // ── Tiền công đã vào ví (gửi cho thợ khi đơn hoàn tất/nghiệm thu) ─────────
-  // Nội dung thông báo là TIỀN ĐÃ VỀ VÍ → đích đúng là màn Thu nhập, nơi thấy
-  // số dư mới + dòng thu nhập của đúng đơn này trong lịch sử biến động.
+  // Cùng type này còn gửi cho KHÁCH (nạp tiền / thanh toán đơn) nên phải rẽ
+  // theo phía như refund_received: thợ → Thu nhập; khách có job_id → chi
+  // tiết đơn, không có job_id (nạp tiền) → ví của khách (/bank-account).
   if (type === 'payment_success') {
-    return { pathname: '/(helper)/earnings' };
+    if (activeRole === 'helper') return { pathname: '/(helper)/earnings' };
+    if (jobId) return jobRoute(jobId, false);
+    return { pathname: '/bank-account' };
   }
 
   // ── Hợp đồng tháng ────────────────────────────────────────────────────────

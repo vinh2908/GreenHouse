@@ -3,7 +3,7 @@ import { Document, Types } from 'mongoose';
 
 export type NotificationDocument = Notification & Document;
 
-@Schema({ timestamps: { createdAt: 'created_at' }, versionKey: false })
+@Schema({ timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' }, versionKey: false })
 export class Notification {
   @Prop({ type: Types.ObjectId, ref: 'User', required: true })
   user_id: Types.ObjectId;
@@ -24,7 +24,10 @@ export class Notification {
   is_read: boolean;
 
   created_at: Date;
+
+  updated_at: Date;
 }
 
 export const NotificationSchema = SchemaFactory.createForClass(Notification);
 NotificationSchema.index({ user_id: 1, is_read: 1, created_at: -1 });
+NotificationSchema.index({ user_id: 1, updated_at: -1 });
