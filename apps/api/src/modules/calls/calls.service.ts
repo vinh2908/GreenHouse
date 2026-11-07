@@ -6,6 +6,7 @@ import {
   BadRequestException,
   ServiceUnavailableException,
   Inject,
+  forwardRef,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
@@ -30,8 +31,14 @@ export class CallsService {
     @InjectModel(Job.name) private jobModel: Model<JobDocument>,
     @InjectModel(User.name) private userModel: Model<UserDocument>,
     @Inject(CALL_PROVIDER) private readonly provider: CallProvider,
-    private readonly gateway: AppGateway,
+    // forwardRef: AppGateway cũng inject CallsService (handler call:declined)
+    @Inject(forwardRef(() => AppGateway)) private readonly gateway: AppGateway,
     private readonly voipPush: VoipPushService,
+    // forwardRef (không dùng design:paramtypes): chu trình ChatModule ↔
+    // CallsModule có thể khiến module này chạy body khi NotificationsService
+    // còn đang dở (undefined) tùy thứ tự require — callback lazy tránh lỗi
+    // "argument at index [6] is undefined" khi Nest resolve dependency.
+    @Inject(forwardRef(() => NotificationsService))
     private readonly notificationsService: NotificationsService,
   ) {}
 
@@ -142,6 +149,17 @@ export class CallsService {
    * Cấp token join cho phía nhận cuộc gọi (callee) — hoặc caller join lại.
    * Callee không đi qua initiateCall nên cần endpoint riêng để lấy token
    * provider cho đúng session đã được tạo.
+   *
+   * Idempotent cho cùng một bên (fix Bug 1): token join KHÔNG còn single-use.
+   * Modal cuộc gọi đến fetch join-token ngay khi chuông reo, rồi màn hình
+   * /call lại fetch lần nữa khi user bấm Nhận — cả hai lần đều phải thành
+   * công. Token refresher (Stringee SDK, TTL 1h) cũng đi qua đây cho phiên
+   * đang connected. Vì vậy join được phép khi session còn initiated /
+   * ringing / connected; chỉ session đã kết thúc mới 400.
+   *
+   * Join KHÔNG đánh dấu đã trả lời (fix Bug 5): answered_at chỉ được set
+   * bởi markAnswered(), khi media/signaling thật sự connected. Callee join
+   * lần đầu chỉ chuyển initiated → ringing.
    */
   async joinSessionToken(userId: string, sessionId: string) {
     if (!this.provider.isConfigured()) {
@@ -149,7 +167,11 @@ export class CallsService {
     }
     const session = await this.callSessionModel.findById(sessionId).exec();
     if (!session) throw new NotFoundException('Phiên gọi không tồn tại');
-    if (session.status !== 'initiated' && session.status !== 'ringing') {
+    if (
+      session.status !== 'initiated' &&
+      session.status !== 'ringing' &&
+      session.status !== 'connected'
+    ) {
       throw new BadRequestException('Phiên gọi đã kết thúc hoặc không còn khả dụng');
     }
     const callerId = String(session.caller_id);
@@ -158,10 +180,10 @@ export class CallsService {
       throw new ForbiddenException('Bạn không thuộc phiên gọi này');
     }
 
-    // A87: Đánh dấu cuộc gọi đã được trả lời khi callee join
-    if (userId === calleeId && !session.answered_at) {
-      session.answered_at = new Date();
-      session.status = 'connected';
+    // Callee join lần đầu = chuông đang reo (chưa trả lời): initiated → ringing.
+    // Không chạm answered_at ở đây — xem markAnswered().
+    if (userId === calleeId && session.status === 'initiated') {
+      session.status = 'ringing';
       await session.save();
     }
 
@@ -175,6 +197,34 @@ export class CallsService {
       room_id: session.provider_room_id,
       partner_id: partnerId,
       my_user_id: userId,
+    };
+  }
+
+  /**
+   * Đánh dấu cuộc gọi ĐÃ ĐƯỢC TRẢ LỜI (fix Bug 5): chỉ gọi khi media /
+   * signaling của Stringee thật sự connected (màn hình /call nhận
+   * onConnected), KHÔNG phải lúc fetch token. Nhờ vậy endCall mới phân
+   * biệt được cuộc gọi nhỡ (chưa ai trả lời) với cuộc gọi đã nối máy.
+   * Idempotent: gọi lại sau khi đã answered thì no-op.
+   */
+  async markAnswered(sessionId: string, userId: string) {
+    const session = await this.callSessionModel.findById(sessionId).exec();
+    if (!session) throw new NotFoundException('Phiên gọi không tồn tại');
+    if (String(session.caller_id) !== userId && String(session.callee_id) !== userId) {
+      throw new ForbiddenException('Bạn không thuộc phiên gọi này');
+    }
+    if (session.status === 'ended' || session.status === 'missed' || session.status === 'failed') {
+      throw new BadRequestException('Phiên gọi đã kết thúc hoặc không còn khả dụng');
+    }
+    if (!session.answered_at) {
+      session.answered_at = new Date();
+      session.status = 'connected';
+      await session.save();
+    }
+    return {
+      session_id: String(session._id),
+      status: session.status,
+      answered_at: session.answered_at,
     };
   }
 
@@ -200,12 +250,17 @@ export class CallsService {
       !session.answered_at &&
       (durationSeconds > 3 || normalizedReason === CALL_END_REASONS.MISSED);
 
-    if (session.status !== 'ended') {
-      session.status = isMissed ? 'missed' : 'ended';
-      session.ended_at = new Date();
-      session.end_reason = isMissed ? CALL_END_REASONS.MISSED : normalizedReason;
-      await session.save();
-    }
+    // Chỉ chuyển trạng thái / phát sự kiện / gửi thông báo nhỡ ở lần end đầu
+    // tiên. endCall có thể tới 2 lần cho cùng 1 phiên (socket call:declined
+    // + REST end, hoặc màn hình lỗi + cleanup unmount) — lần 2 là no-op để
+    // không spam CALL_ENDED và notification cuộc gọi nhỡ.
+    const wasActive = session.status !== 'ended' && session.status !== 'missed';
+    if (!wasActive) return session;
+
+    session.status = isMissed ? 'missed' : 'ended';
+    session.ended_at = new Date();
+    session.end_reason = isMissed ? CALL_END_REASONS.MISSED : normalizedReason;
+    await session.save();
 
     this.gateway.emitToUser(partnerId, SOCKET_EVENTS.CALL_ENDED, {
       sessionId: String(session._id),

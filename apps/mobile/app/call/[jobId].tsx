@@ -9,6 +9,7 @@ import {
   useInitiateCall,
   useEndCall,
   useJoinCallToken,
+  useMarkCallAnswered,
   type CallSessionInit,
 } from '@/hooks/use-api';
 import { stringeeService, type StringeeCallEvents } from '@/services/stringee.service';
@@ -32,7 +33,13 @@ import { useTranslation } from '@/hooks/use-i18n';
  *    2b. Nhận cuộc gọi (mode='answer' + sessionId): POST
  *        /calls/sessions/:sessionId/join-token → token join cho callee,
  *        ensureConnected, chờ SDK báo incoming call (tối đa 20s) rồi
- *        answerPending().
+ *        answerPending(). Join-token là idempotent cho cùng một bên nên
+ *        modal chuông (fetch trước khi bấm Nhận) + màn hình này (fetch
+ *        sau khi bấm Nhận) + token refresher đều dùng chung 1 phiên.
+ *    2c. Khi media/signaling thật sự connected: POST
+ *        /calls/sessions/:sessionId/answered (chỉ lúc này mới tính là
+ *        "đã trả lời" để phát hiện cuộc gọi nhỡ). Caller chờ trả lời tối
+ *        đa 40s rồi kết thúc thành nhỡ.
  *    3. POST /calls/sessions/:id/end khi cúp máy / kết thúc từ xa.
  *
  *  Tầng media qua adapter duy nhất `services/stringee.service.ts` — file đó
@@ -56,6 +63,11 @@ import { useTranslation } from '@/hooks/use-i18n';
 type CallUiState =
   'preparing' | 'connecting' | 'in_call' | 'ended' | 'rejected' | 'unavailable' | 'error';
 
+// Caller chờ đối tác trả lời tối đa 40s rồi kết thúc thành cuộc gọi nhỡ
+// (fix Bug 4). Ngắn hơn TTL token Stringee (1h) rất nhiều nên không liên
+// quan tới refresh token.
+const RING_TIMEOUT_MS = 40_000;
+
 export default function CallScreen() {
   const { jobId, partnerName, sessionId, mode } = useLocalSearchParams<{
     jobId: string;
@@ -73,6 +85,7 @@ export default function CallScreen() {
   const initiate = useInitiateCall();
   const joinToken = useJoinCallToken();
   const endCall = useEndCall();
+  const markAnswered = useMarkCallAnswered();
 
   const [session, setSession] = useState<CallSessionInit | null>(null);
   const [uiState, setUiState] = useState<CallUiState>('preparing');
@@ -81,15 +94,77 @@ export default function CallScreen() {
   const [speaker, setSpeaker] = useState(false);
   const [seconds, setSeconds] = useState(0);
   const [errorMsg, setErrorMsg] = useState('');
+  // fix Bug 2: retry tăng counter này để effect khởi động chạy lại thật sự
+  // (deps cũ không đổi khi retry nên effect không bao giờ chạy lại).
+  const [retryAttempt, setRetryAttempt] = useState(0);
   const startedRef = useRef(false);
   const sessionRef = useRef<CallSessionInit | null>(null);
   const endedRef = useRef(false);
+  const connectedRef = useRef(false);
+  // fix Bug 3: endCall chỉ gửi tối đa 1 lần cho 1 phiên trên màn hình này
+  // (lỗi join + rời màn hình + cleanup unmount đều đi qua đây).
+  const endSentRef = useRef(false);
   const answerTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const ringTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const unsubIncomingRef = useRef<(() => void) | null>(null);
 
   const setSessionBoth = (s: CallSessionInit | null) => {
     sessionRef.current = s;
     setSession(s);
+    // Phiên mới = vòng đời end mới (retry của caller tạo session mới).
+    if (s) endSentRef.current = false;
+  };
+
+  // Kết thúc phiên trên server tối đa 1 lần — để phía bên kia nhận
+  // CALL_ENDED và thoát, thay vì kẹt ở "Đang kết nối…" (fix Bug 3).
+  const endSessionOnce = (sessionId: string, reason: string) => {
+    if (endSentRef.current) return;
+    endSentRef.current = true;
+    void endCall.mutateAsync({ sessionId, reason }).catch(() => undefined);
+  };
+
+  const clearCallTimers = () => {
+    if (answerTimerRef.current) {
+      clearTimeout(answerTimerRef.current);
+      answerTimerRef.current = null;
+    }
+    if (ringTimerRef.current) {
+      clearTimeout(ringTimerRef.current);
+      ringTimerRef.current = null;
+    }
+  };
+
+  // fix Bug 2: retry chạy lại toàn bộ flow lấy token. Caller: kết thúc phiên
+  // cũ rồi initiate phiên mới (tránh 2 phiên cùng reo). Callee: join lại
+  // cùng session (join-token đã idempotent sau fix Bug 1).
+  const handleRetry = () => {
+    clearCallTimers();
+    if (!isAnswerMode && sessionRef.current) {
+      const old = sessionRef.current;
+      setSessionBoth(null);
+      void endCall.mutateAsync({ sessionId: old.session_id, reason: 'cancelled' }).catch(() => undefined);
+    }
+    endedRef.current = false;
+    connectedRef.current = false;
+    startedRef.current = false;
+    setErrorMsg('');
+    setUiState('connecting');
+    setRetryAttempt(a => a + 1);
+  };
+
+  // fix Bug 3: rời màn hình lỗi thì kết thúc phiên để phía bên kia thoát.
+  // Chỉ khi đang ở trạng thái lỗi (đã có phiên) — màn 'unavailable'
+  // (tính năng chưa bật) thì chưa từng tạo/join phiên nào.
+  const handleBackFromError = () => {
+    if (uiState === 'error') {
+      const s = sessionRef.current;
+      if (s) {
+        endSessionOnce(s.session_id, 'cancelled');
+      } else if (isAnswerMode && sessionId) {
+        endSessionOnce(sessionId, 'cancelled');
+      }
+    }
+    router.back();
   };
 
   // Bắt đầu phiên gọi ngay khi mở màn hình (và tính năng đang bật)
@@ -104,7 +179,19 @@ export default function CallScreen() {
     setUiState('connecting');
 
     const events: StringeeCallEvents = {
-      onConnected: () => setUiState('in_call'),
+      onConnected: () => {
+        connectedRef.current = true;
+        // Đã nối máy thật: huỷ cả 2 timer chờ (trả lời / chờ chuông) — trước
+        // đây timer 25s của callee không được huỷ nên có thể giết cuộc gọi
+        // đang nói ở giây 25. Đồng thời đánh dấu answered trên server để
+        // endCall phân biệt được cuộc gọi nhỡ (fix Bug 5).
+        clearCallTimers();
+        setUiState('in_call');
+        const sid = sessionRef.current?.session_id;
+        if (sid) {
+          void markAnswered.mutateAsync(sid).catch(() => undefined);
+        }
+      },
       onBusyOrRejected: (reason?: string) => {
         if (endedRef.current) return;
         endedRef.current = true;
@@ -116,9 +203,7 @@ export default function CallScreen() {
         const s = sessionRef.current;
         if (s) {
           callkeepService.reportSessionEnded(s.session_id);
-          void endCall
-            .mutateAsync({ sessionId: s.session_id, reason: 'rejected' })
-            .catch(() => undefined);
+          endSessionOnce(s.session_id, 'rejected');
         }
       },
       onEnded: () => {
@@ -129,9 +214,7 @@ export default function CallScreen() {
           // Nếu cuộc gọi này đến qua CallKit (app bị đánh thức bởi VoIP
           // push) thì báo lại để hệ thống dọn giao diện cuộc gọi native.
           callkeepService.reportSessionEnded(s.session_id);
-          void endCall
-            .mutateAsync({ sessionId: s.session_id, reason: 'ended' })
-            .catch(() => undefined);
+          endSessionOnce(s.session_id, 'ended');
         }
         setUiState('ended');
       },
@@ -190,6 +273,7 @@ export default function CallScreen() {
             console.warn('[CallScreen] Answer timeout:', diagMsg);
             setErrorMsg(diagMsg);
             setUiState('error');
+            endSentRef.current = true;
             void endCall.mutateAsync({ sessionId, reason: 'missed' }).catch(() => undefined);
           }, 25_000);
         })
@@ -200,16 +284,24 @@ export default function CallScreen() {
             (lang === 'en' ? 'Could not start call' : 'Không bắt đầu được cuộc gọi');
           const diag = `${lang === 'en' ? 'Call token fetch error' : 'Lỗi lấy token cuộc gọi'} (${serverMsg})`;
           console.warn('[CallScreen] joinToken error:', diag);
+          // fix Bug 3: lấy token thất bại thì kết thúc phiên để caller nhận
+          // CALL_ENDED và thoát, thay vì kẹt ở "Đang kết nối…".
+          endSessionOnce(sessionId, 'cancelled');
           setErrorMsg(diag);
           setUiState('error');
         });
       return;
     }
 
-    // Đăng ký token refresher cho caller
+    // Đăng ký token refresher cho caller (fix Bug 6): refresh phải cấp
+    // token cho PHIÊN HIỆN TẠI qua join-token (idempotent), không được
+    // initiate phiên mới — initiate tạo CallSession mới + bắn CALL_INCOMING
+    // lần nữa, callee sẽ nhận thêm 1 modal trong lúc đang nói.
     stringeeService.setTokenRefresher(async () => {
       try {
-        const fresh = await initiate.mutateAsync(jobId);
+        const sid = sessionRef.current?.session_id;
+        if (!sid) return null;
+        const fresh = await joinToken.mutateAsync(sid);
         return fresh.token;
       } catch {
         return null;
@@ -247,6 +339,17 @@ export default function CallScreen() {
           setUiState('error');
           return;
         }
+        // fix Bug 4: caller chờ trả lời tối đa RING_TIMEOUT_MS — trước đây
+        // không có timer nào phía caller nên đối tác không nghe máy thì
+        // màn hình kẹt ở "Đang kết nối…" mãi. Hết giờ: kết thúc thành
+        // cuộc gọi nhỡ (server gửi notification nhỡ cho callee) + hiện
+        // "không trả lời". onConnected huỷ timer này.
+        ringTimerRef.current = setTimeout(() => {
+          if (endedRef.current || connectedRef.current) return;
+          endSessionOnce(s.session_id, 'missed');
+          setErrorMsg(t('call_no_answer'));
+          setUiState('error');
+        }, RING_TIMEOUT_MS);
       })
       .catch((err: any) => {
         const serverMsg =
@@ -259,7 +362,7 @@ export default function CallScreen() {
         setUiState('error');
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [jobId, config, configLoading]);
+  }, [jobId, config, configLoading, retryAttempt]);
 
   // Lắng nghe socket CALL_ENDED từ đối phương (hỗ trợ cả Web lẫn Native)
   useEffect(() => {
@@ -290,14 +393,23 @@ export default function CallScreen() {
     return () => unsub();
   }, []);
 
-  // Cleanup: clear answer timer / listener, hang up SDK call on unmount.
+  // Cleanup: clear timers / listener, hang up SDK call on unmount.
+  // fix Bug 3: rời màn hình khi phiên còn sống thì kết thúc phiên trên
+  // server để phía bên kia nhận CALL_ENDED (rời màn hình lỗi, vuốt back
+  // giữa chừng…). Đã kết thúc rồi (endedRef / endSessionOnce) thì không
+  // gửi lần nữa.
   useEffect(() => {
     return () => {
-      if (answerTimerRef.current) clearTimeout(answerTimerRef.current);
+      clearCallTimers();
       unsubIncomingRef.current?.();
       stringeeService.setTokenRefresher(null);
       stringeeService.hangupCurrent();
+      const s = sessionRef.current;
+      if (s && !endedRef.current) {
+        endSessionOnce(s.session_id, connectedRef.current ? 'ended' : 'cancelled');
+      }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Đồng hồ đếm thời lượng (chạy khi đang trong cuộc gọi)
@@ -320,6 +432,7 @@ export default function CallScreen() {
   const handleEnd = async () => {
     stringeeService.hangupCurrent();
     stringeeService.rejectPending();
+    endSentRef.current = true;
     if (session) {
       await endCall
         .mutateAsync({ sessionId: session.session_id, reason: 'ended' })
@@ -501,13 +614,9 @@ export default function CallScreen() {
             </Text>
           </View>
           <View style={{ flexDirection: 'row', gap: 12, marginTop: 4 }}>
-            {isAnswerMode && (
+            {uiState === 'error' && (
               <TouchableOpacity
-                onPress={() => {
-                  setErrorMsg('');
-                  setUiState('connecting');
-                  startedRef.current = false;
-                }}
+                onPress={handleRetry}
                 style={{
                   backgroundColor: '#16A34A',
                   paddingHorizontal: 18,
@@ -521,7 +630,7 @@ export default function CallScreen() {
               </TouchableOpacity>
             )}
             <TouchableOpacity
-              onPress={() => router.back()}
+              onPress={handleBackFromError}
               style={{
                 backgroundColor: 'rgba(255,255,255,0.2)',
                 paddingHorizontal: 18,

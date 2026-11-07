@@ -9,14 +9,15 @@ import {
   WsException,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
-import { Logger } from '@nestjs/common';
+import { Logger, Inject, forwardRef } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { ChatService } from './chat.service';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Job, JobDocument } from '../jobs/schemas/job.schema';
-import { SOCKET_EVENTS } from '@homemate/constants';
+import { SOCKET_EVENTS, CALL_END_REASONS } from '@homemate/constants';
+import { CallsService } from '../calls/calls.service';
 
 @WebSocketGateway({
   cors: {
@@ -63,6 +64,9 @@ export class AppGateway implements OnGatewayConnection, OnGatewayDisconnect {
     private readonly configService: ConfigService,
     private readonly chatService: ChatService,
     @InjectModel(Job.name) private readonly jobModel: Model<JobDocument>,
+    // forwardRef: CallsService cũng inject AppGateway (emit CALL_INCOMING/ENDED)
+    @Inject(forwardRef(() => CallsService))
+    private readonly callsService: CallsService,
   ) {}
 
   // Only the job's customer, its assigned helper or an admin may listen to a job room
@@ -209,6 +213,30 @@ export class AppGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   // ─── Chat messages (REST only — socket send path removed, B40) ─────────────
+
+  // Cuộc gọi đến bị từ chối (fix Bug 7): trước đây emit 'call:declined' từ
+  // modal không có handler nào ở server — đồng bộ từ chối chỉ chạy nhờ
+  // modal gọi thêm REST endCall. Handler này kết thúc phiên + phát
+  // CALL_ENDED cho caller, nên chỉ cần socket cũng đủ (REST endCall vẫn
+  // chạy song song và là no-op ở lần thứ hai nhờ guard trong endCall).
+  @SubscribeMessage(SOCKET_EVENTS.CALL_DECLINED)
+  async handleCallDeclined(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: { session_id?: string; sessionId?: string; job_id?: string },
+  ) {
+    const userId = client.data.userId as string | undefined;
+    const sessionId = data?.session_id ?? data?.sessionId;
+    if (!userId || !sessionId || !Types.ObjectId.isValid(sessionId)) {
+      throw new WsException('session_id bắt buộc');
+    }
+    try {
+      await this.callsService.endCall(sessionId, userId, CALL_END_REASONS.DECLINED);
+    } catch (e) {
+      throw new WsException(
+        e instanceof Error ? e.message : 'Không kết thúc được phiên gọi',
+      );
+    }
+  }
 
   @SubscribeMessage('chat:read')
   async handleReadReceipt(

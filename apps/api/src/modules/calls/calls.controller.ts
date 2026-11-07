@@ -59,6 +59,16 @@ export class CallsController {
     return this.callsService.joinSessionToken(user.sub, sessionId);
   }
 
+  @Post('sessions/:sessionId/answered')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary:
+      'Đánh dấu cuộc gọi đã được trả lời (chỉ khi media/signaling thật sự connected, không phải lúc fetch token)',
+  })
+  async markAnswered(@CurrentUser() user: { sub: string }, @Param('sessionId') sessionId: string) {
+    return this.callsService.markAnswered(sessionId, user.sub);
+  }
+
   @Post('sessions/:sessionId/end')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Kết thúc phiên gọi' })
