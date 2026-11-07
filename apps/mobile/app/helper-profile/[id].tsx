@@ -29,7 +29,7 @@ import {
   useAppealReview,
 } from '@/hooks/use-api';
 import { useHelperStatusSocket } from '@/hooks/use-socket';
-import { Button, Card, Avatar, LoadingSpinner, COLORS, Separator, StarRating, useThemeColors } from '@/components/ui';
+import { Button, Card, Avatar, LoadingSpinner, COLORS, Separator, StarRating, ErrorState, useThemeColors } from '@/components/ui';
 
 export default function HelperPublicProfileScreen() {
   const { id, jobId, quoteId } = useLocalSearchParams<{
@@ -46,19 +46,29 @@ export default function HelperPublicProfileScreen() {
   const appealReview = useAppealReview();
   const [appealFor, setAppealFor] = React.useState<string | null>(null);
   const [appealReason, setAppealReason] = React.useState('');
-  const { data: profile, isLoading: pLoading, refetch } = useHelperPublicProfile(id);
+  const { data: profile, isLoading: pLoading, isError: pError, refetch } = useHelperPublicProfile(id);
   // B113: đang xem hồ sơ thợ → nhận helper:status_changed để cập nhật trạng thái ngay
   useHelperStatusSocket(id);
   const { data: reviewsData, isLoading: rLoading } = useHelperReviews(id);
   const selectQuote = useSelectQuote();
   // B1: thợ trả lời đánh giá của chính mình (chỉ hiện khi đang xem hồ sơ của mình)
-  const isOwnProfile = !!user?._id && user._id === id;
+  // S12: route id có thể là user id (favorites, job-detail) hoặc Helper doc id
+  // ((helper)/profile fallback) — so với cả hai.
+  const helperOwnerId =
+    typeof profile?.user_id === 'object' && profile?.user_id
+      ? (profile.user_id as { _id?: string })._id
+      : typeof profile?.user_id === 'string'
+        ? profile.user_id
+        : undefined;
+  const isOwnProfile =
+    !!user?._id && (user._id === id || (helperOwnerId != null && user._id === helperOwnerId));
   const replyReview = useReplyReview();
   const [replyingId, setReplyingId] = useState<string | null>(null);
   const [replyText, setReplyText] = useState('');
 
   // ── Thợ yêu thích ──────────────────────────────────────────────────────
-  const isCustomer = user?.active_role !== 'helper';
+  // Khách chưa đăng nhập không phải "khách hàng": ẩn tim, bấm tim → đăng nhập.
+  const isCustomer = !!user && user.active_role !== 'helper';
   const { data: favorites } = useFavorites();
   const addFavorite = useAddFavorite();
   const removeFavorite = useRemoveFavorite();
@@ -68,6 +78,10 @@ export default function HelperPublicProfileScreen() {
   });
   const toggleFavorite = () => {
     if (!id) return;
+    if (!user) {
+      router.push('/(auth)/login');
+      return;
+    }
     if (isFavorite) removeFavorite.mutate(id);
     else addFavorite.mutate(id);
   };
@@ -80,7 +94,57 @@ export default function HelperPublicProfileScreen() {
     router.replace(user?.active_role === 'helper' ? '/(helper)/dashboard' : '/(customer)/home');
   };
 
+  const insets = useSafeAreaInsets();
+
   if (pLoading) return <LoadingSpinner />;
+
+  // P1-6: fetch lỗi/404 không được render hồ sơ giả (tên "Thợ", 0.0★, badge đỏ).
+  if (pError || !profile) {
+    return (
+      <View style={{ flex: 1, backgroundColor: tc.background }}>
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            paddingHorizontal: 16,
+            paddingTop: Math.max(insets.top + 6, 18),
+            paddingBottom: 14,
+            backgroundColor: tc.surface,
+            borderBottomWidth: 1,
+            borderBottomColor: tc.border,
+          }}
+        >
+          <TouchableOpacity
+            activeOpacity={0.7}
+            onPress={handleBack}
+            hitSlop={{ top: 14, bottom: 14, left: 14, right: 14 }}
+            style={{
+              width: 40,
+              height: 40,
+              borderRadius: 14,
+              backgroundColor: tc.subtle,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <ArrowLeft size={20} color={COLORS.gray[800]} />
+          </TouchableOpacity>
+          <Text style={{ fontSize: fs(17), fontWeight: '800', color: tc.text, marginLeft: 12 }}>
+            {lang === 'en' ? 'Verified Helper Profile' : 'Hồ sơ thợ uy tín'}
+          </Text>
+        </View>
+        <ErrorState
+          title={lang === 'en' ? 'Unable to load helper profile' : 'Không thể tải hồ sơ thợ'}
+          subtitle={
+            lang === 'en'
+              ? 'This helper may not exist or the network failed. Please retry.'
+              : 'Thợ này có thể không tồn tại hoặc mạng gặp sự cố. Vui lòng thử lại.'
+          }
+          onRetry={() => refetch()}
+        />
+      </View>
+    );
+  }
 
   const helperUser =
     typeof profile?.user_id === 'object' && profile?.user_id ? profile.user_id : {};
@@ -91,8 +155,45 @@ export default function HelperPublicProfileScreen() {
   const totalCompleted = profile?.total_completed || profile?.completed_jobs || 0;
   const isVerified = profile?.verification_status === 'approved';
 
+  // P1-4: giá thật từ service_ids đã populate (base_price_min/max) — không
+  // dùng giá cứng 70–100k/giờ hay 150k/ca cho mọi thợ.
+  const pricedServices = ((profile?.service_ids ?? []) as any[]).filter(
+    s =>
+      s &&
+      typeof s === 'object' &&
+      (typeof s.base_price_min === 'number' || typeof s.base_price_max === 'number'),
+  );
+  const formatPriceRange = (s: any): string => {
+    const min = s.base_price_min;
+    const max = s.base_price_max;
+    if (typeof min === 'number' && typeof max === 'number' && max > min)
+      return `${min.toLocaleString('vi-VN')}₫ – ${max.toLocaleString('vi-VN')}₫`;
+    if (typeof min === 'number')
+      return `${lang === 'en' ? 'From ' : 'Từ '}${min.toLocaleString('vi-VN')}₫`;
+    return `${(max as number).toLocaleString('vi-VN')}₫`;
+  };
+  // Khung giờ thật: chỉ khi thợ đã bật lịch làm việc (availability.enabled);
+  // mặc định enabled=false nghĩa là nhận việc linh hoạt, không phải 07:00–19:00.
+  const availability = profile?.availability as
+    | { enabled?: boolean; days_of_week?: number[]; start_time?: string; end_time?: string }
+    | undefined;
+  const availabilityDays = (availability?.days_of_week ?? []).filter(
+    (d: number) => d >= 0 && d <= 6,
+  );
+  const dayLabels =
+    lang === 'en'
+      ? ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+      : ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
+  const availabilityDaysText =
+    availabilityDays.length === 7
+      ? lang === 'en'
+        ? '(Every day of the week)'
+        : '(Tất cả các ngày trong tuần)'
+      : availabilityDays.length > 0
+        ? `(${availabilityDays.map(d => dayLabels[d]).join(', ')})`
+        : '';
+
   const reviewsList = reviewsData?.reviews || [];
-  const insets = useSafeAreaInsets();
 
   const handleMessageHelper = () => {
     if (jobId) {
@@ -329,10 +430,10 @@ export default function HelperPublicProfileScreen() {
 
           <Card style={{ flex: 1, alignItems: 'center', padding: 14, gap: 4 }}>
             <Text style={{ fontSize: fs(20), fontWeight: '900', color: COLORS.success }}>
-              {profile?.completion_rate ?? 100}%
+              {profile?.completion_rate == null ? '—' : `${profile.completion_rate}%`}
             </Text>
             <Text style={{ fontSize: fs(11), color: tc.textMuted, fontWeight: '700' }}>
-              {lang === 'en' ? 'On time' : 'Đúng giờ hẹn'}
+              {lang === 'en' ? 'Completion rate' : 'Tỷ lệ hoàn thành'}
             </Text>
           </Card>
         </View>
@@ -354,8 +455,8 @@ export default function HelperPublicProfileScreen() {
           </View>
           <Text style={{ fontSize: fs(12.5), color: '#92400E', lineHeight: 18 }}>
             {lang === 'en'
-              ? `• Job completion rate: ${profile?.completion_rate ?? 100}% (No arbitrary cancellation).\n• ${profile?.years_experience ? `Over ${profile.years_experience} years` : 'Proven'} practical experience.\n• Service quality warranty and safety insurance during work.`
-              : `• Tỷ lệ hoàn thành công việc: ${profile?.completion_rate ?? 100}% (Không hủy ngang).\n• ${profile?.years_experience ? `Hơn ${profile.years_experience} năm` : 'Có'} kinh nghiệm thực tế trong lĩnh vực.\n• Bảo hành chất lượng dịch vụ và bảo hiểm an toàn trong quá trình làm việc.`}
+              ? `${profile?.completion_rate == null ? '' : `• Job completion rate: ${profile.completion_rate}% (No arbitrary cancellation).\n` }• ${profile?.years_experience ? `Over ${profile.years_experience} years` : 'Proven'} practical experience.\n• Service quality warranty and safety insurance during work.`
+              : `${profile?.completion_rate == null ? '' : `• Tỷ lệ hoàn thành công việc: ${profile.completion_rate}% (Không hủy ngang).\n`}• ${profile?.years_experience ? `Hơn ${profile.years_experience} năm` : 'Có'} kinh nghiệm thực tế trong lĩnh vực.\n• Bảo hành chất lượng dịch vụ và bảo hiểm an toàn trong quá trình làm việc.`}
           </Text>
         </Card>
 
@@ -409,27 +510,31 @@ export default function HelperPublicProfileScreen() {
             </Text>
           </View>
 
-          <View
-            style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4 }}
-          >
-            <Text style={{ fontSize: fs(13.5), color: tc.textSecondary }}>
-              {lang === 'en' ? 'Hourly wage:' : 'Công thợ theo giờ:'}
+          {pricedServices.length > 0 ? (
+            pricedServices.map((s: any) => (
+              <View
+                key={String(s._id || s.slug || s.name)}
+                style={{
+                  flexDirection: 'row',
+                  justifyContent: 'space-between',
+                  paddingVertical: 4,
+                }}
+              >
+                <Text style={{ fontSize: fs(13.5), color: tc.textSecondary }}>
+                  {s.name || s.slug}
+                </Text>
+                <Text style={{ fontSize: fs(14), fontWeight: '800', color: COLORS.primary }}>
+                  {formatPriceRange(s)}
+                </Text>
+              </View>
+            ))
+          ) : (
+            <Text style={{ fontSize: fs(13.5), color: tc.textSecondary, paddingVertical: 4 }}>
+              {lang === 'en'
+                ? 'No price list yet — price is agreed when booking.'
+                : 'Chưa cập nhật bảng giá — giá sẽ thỏa thuận khi đặt việc.'}
             </Text>
-            <Text style={{ fontSize: fs(14), fontWeight: '800', color: COLORS.primary }}>
-              {lang === 'en' ? '70,000₫ – 100,000₫ / hr' : '70.000₫ – 100.000₫ / giờ'}
-            </Text>
-          </View>
-
-          <View
-            style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4 }}
-          >
-            <Text style={{ fontSize: fs(13.5), color: tc.textSecondary }}>
-              {lang === 'en' ? 'Basic electrical & plumbing package:' : 'Gói sửa điện nước cơ bản:'}
-            </Text>
-            <Text style={{ fontSize: fs(14), fontWeight: '800', color: COLORS.primary }}>
-              {lang === 'en' ? 'From 150,000₫ / job' : 'Từ 150.000₫ / ca'}
-            </Text>
-          </View>
+          )}
 
           <View
             style={{
@@ -441,11 +546,20 @@ export default function HelperPublicProfileScreen() {
           >
             <Text style={{ fontSize: fs(12.5), color: tc.textSecondary, fontWeight: '600' }}>
               {lang === 'en' ? 'Working hours: ' : 'Khung giờ làm việc: '}
-              <Text style={{ color: tc.text, fontWeight: '800' }}>
-                {profile?.availability?.start_time || '07:00'} –{' '}
-                {profile?.availability?.end_time || '19:00'}
-              </Text>{' '}
-              {lang === 'en' ? '(Every day of the week)' : '(Tất cả các ngày trong tuần)'}
+              {availability?.enabled ? (
+                <>
+                  <Text style={{ color: tc.text, fontWeight: '800' }}>
+                    {availability.start_time || '07:00'} – {availability.end_time || '19:00'}
+                  </Text>{' '}
+                  {availabilityDaysText}
+                </>
+              ) : (
+                <Text style={{ color: tc.text, fontWeight: '800' }}>
+                  {lang === 'en'
+                    ? 'Flexible — as scheduled when booking'
+                    : 'Linh hoạt theo lịch hẹn khi đặt việc'}
+                </Text>
+              )}
             </Text>
           </View>
         </Card>
@@ -683,7 +797,7 @@ export default function HelperPublicProfileScreen() {
       </ScrollView>
 
       {/* ── Bottom Floating Bar: Nhắn tin / Thuê thợ ─────────────────── */}
-      {user?._id !== id && (
+      {!isOwnProfile && (
         <View
           style={{
             position: 'absolute',
