@@ -73,6 +73,7 @@ LoyaltyTransactionSchema.index(
   { user_id: 1, job_id: 1, type: 1 },
   {
     unique: true,
+    name: 'loyalty_redeem_unique', // G6: tên riêng — 3 index trùng key nên tên tự sinh trùng nhau, chỉ tạo được 1
     partialFilterExpression: { type: 'redeem', job_id: { $exists: true } },
   },
 );
@@ -84,6 +85,7 @@ LoyaltyTransactionSchema.index(
   { user_id: 1, job_id: 1, type: 1 },
   {
     unique: true,
+    name: 'loyalty_reversal_unique', // G6: tên riêng — khớp index đã tạo trên Atlas, tránh trùng tên tự sinh
     partialFilterExpression: { type: 'reversal', job_id: { $exists: true } },
   },
 );
