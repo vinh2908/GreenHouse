@@ -257,9 +257,18 @@ export class VouchersService {
       throw new BadRequestException('Đơn đã thanh toán, không thể gắn mã giảm giá');
     }
     const voucher = await this.assertCodeAttachable(code, userId);
+    // P1-24: điểm đã gắn trước đó được cap theo giá CHƯA có voucher này —
+    // snapshot đó có thể vượt cap sau khi trừ voucher. Xóa snapshot để khách
+    // áp lại điểm (lúc đó LoyaltyService tính cap trên giá sau voucher).
+    // Điểm chưa bị trừ ở bước này (chỉ trừ lúc thanh toán) nên không mất gì.
+    const loyaltyPointsCleared = (job.loyalty_points_requested ?? 0) > 0;
+    if (loyaltyPointsCleared) {
+      job.loyalty_points_requested = 0;
+      job.loyalty_discount_amount = 0;
+    }
     job.voucher_code = voucher.code;
     await job.save();
-    return { job_id: jobId, voucher_code: voucher.code };
+    return { job_id: jobId, voucher_code: voucher.code, loyalty_points_cleared: loyaltyPointsCleared };
   }
 
   async detachFromJob(userId: string, jobId: string) {

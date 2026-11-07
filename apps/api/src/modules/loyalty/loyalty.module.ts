@@ -9,6 +9,7 @@ import {
   LoyaltyTransactionSchema,
 } from './schemas/loyalty.schema';
 import { Job, JobSchema, Contract, ContractSchema } from '../jobs/schemas/job.schema';
+import { Voucher, VoucherSchema } from '../vouchers/schemas/voucher.schema';
 import { forwardRef } from '@nestjs/common';
 import { NotificationsModule } from '../notifications/notifications.module';
 
@@ -26,6 +27,9 @@ import { NotificationsModule } from '../notifications/notifications.module';
       { name: LoyaltyTransaction.name, schema: LoyaltyTransactionSchema },
       { name: Job.name, schema: JobSchema },
       { name: Contract.name, schema: ContractSchema },
+      // P1-24: đọc voucher gắn trên job để tính cap sau voucher (chỉ schema,
+      // không import VouchersModule — tránh circular, xem LoyaltyService).
+      { name: Voucher.name, schema: VoucherSchema },
     ]),
   ],
   controllers: [LoyaltyController, AdminLoyaltyController],
