@@ -35,6 +35,7 @@ import { Avatar, Card, COLORS, Separator, LoadingSpinner, useThemeColors } from 
 import { useTranslation } from '@/hooks/use-i18n';
 import { DisplaySettingsSection } from '@/components/common/display-settings';
 import { AppPermissionsSection } from '@/components/common/initial-permissions-modal';
+import { VerificationBanner } from '@/components/common/verification-banner';
 
 const MENU_SECTIONS = [
   {
@@ -174,6 +175,9 @@ export default function CustomerProfileScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 110 }}
       >
+        {/* P0-7: banner xác minh email khi tài khoản chưa xác minh */}
+        <VerificationBanner />
+
         {/* ── Profile header (Safe Insets) ────────────────────────────── */}
         <View
           style={{

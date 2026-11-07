@@ -1,4 +1,4 @@
-import { Injectable, Logger, HttpException, HttpStatus } from '@nestjs/common';
+import { Injectable, Logger, HttpException, HttpStatus, BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
@@ -60,6 +60,15 @@ export class OtpService {
   async sendOtp(targetInput: string, purpose: 'verify' | 'reset'): Promise<string | undefined> {
     const target = targetInput.trim().toLowerCase();
     const isEmail = target.includes('@');
+
+    // P0-6: SMS OTP chưa được triển khai — không có kênh nào gửi được mã tới
+    // SĐT. Thất bại RÕ RÀNG thay vì tạo mã rồi trả "đã gửi" giả: người dùng
+    // ở nhánh SĐT không bao giờ nhận được mã.
+    if (!isEmail) {
+      throw new BadRequestException(
+        'Gửi mã OTP qua SMS chưa được hỗ trợ. Vui lòng dùng email để nhận mã OTP.',
+      );
+    }
 
     // A103 Rate limit: tối đa 5 lần gửi trong 1 giờ. Lần thứ 6 ném 429 Too Many Requests
     const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
@@ -175,7 +184,9 @@ export class OtpService {
     // Increment attempts
     otp.attempts += 1;
 
-    if (otp.attempts > OTP_MAX_ATTEMPTS) {
+    // S15: giới hạn đúng 5 lần nhập sai — lần sai thứ 5 là lần cuối, mã bị
+    // xóa ngay thay vì cho lần sai thứ 6 vẫn được chấp nhận rồi mới xóa.
+    if (otp.attempts >= OTP_MAX_ATTEMPTS) {
       await otp.deleteOne();
       return false;
     }

@@ -14,6 +14,8 @@ import Toast from 'react-native-toast-message';
 import { useAuthStore } from '@/stores/auth.store';
 import { useTranslation } from '@/hooks/use-i18n';
 import { useRegister } from '@/hooks/use-api';
+import { mapAuthErrorMessage } from '@/services/i18n';
+import { VIETNAMESE_PHONE_REGEX } from '@homemate/utils';
 import { Button, Input, COLORS, useThemeColors } from '@/components/ui';
 
 export default function RegisterScreen() {
@@ -45,6 +47,15 @@ export default function RegisterScreen() {
       Toast.show({
         type: 'error',
         text1: lang === 'en' ? 'Invalid email format' : 'Email không đúng định dạng',
+      });
+      return;
+    }
+    // P2-23: kiểm tra định dạng SĐT phía client (cùng regex với server +
+    // modal quên mật khẩu) thay vì đợi submit rồi mới bị server từ chối.
+    if (!VIETNAMESE_PHONE_REGEX.test(cleanPhone)) {
+      Toast.show({
+        type: 'error',
+        text1: t('auth_err_invalid_phone'),
       });
       return;
     }
@@ -115,10 +126,12 @@ export default function RegisterScreen() {
       }
     } catch (err: unknown) {
       const responseData = (err as any)?.response?.data;
-      const msg = responseData?.message;
-      const displayMsg = Array.isArray(msg)
-        ? msg[0]
-        : msg || (lang === 'en' ? 'Registration failed' : 'Đăng ký không thành công');
+      const rawMsg = responseData?.message;
+      const firstMsg = Array.isArray(rawMsg) ? rawMsg[0] : rawMsg;
+      // P2-16: dịch message backend sang tiếng Anh khi ở chế độ English
+      const displayMsg =
+        mapAuthErrorMessage(firstMsg, lang) ||
+        (lang === 'en' ? 'Registration failed' : 'Đăng ký không thành công');
       Toast.show({ type: 'error', text1: displayMsg });
     }
   };

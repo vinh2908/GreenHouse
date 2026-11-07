@@ -32,6 +32,7 @@ import { Avatar, Card, COLORS, Separator, useThemeColors } from '@/components/ui
 import { useTranslation } from '@/hooks/use-i18n';
 import { DisplaySettingsSection } from '@/components/common/display-settings';
 import { AppPermissionsSection } from '@/components/common/initial-permissions-modal';
+import { VerificationBanner } from '@/components/common/verification-banner';
 import { useState, useEffect, useRef } from 'react';
 
 export default function HelperProfileScreen() {
@@ -154,6 +155,9 @@ export default function HelperProfileScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 110 }}
       >
+        {/* P0-7: banner xác minh email khi tài khoản chưa xác minh */}
+        <VerificationBanner />
+
         {/* Header (Safe Insets) */}
         <View
           style={{
