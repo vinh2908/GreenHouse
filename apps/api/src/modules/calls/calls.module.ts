@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { CallsController } from './calls.controller';
@@ -36,7 +36,8 @@ const callProviderFactory = {
       { name: Job.name, schema: JobSchema },
       { name: User.name, schema: UserSchema },
     ]),
-    ChatModule, // AppGateway — báo cuộc gọi đến qua socket
+    // forwardRef: AppGateway inject CallsService (handler call:declined)
+    forwardRef(() => ChatModule), // AppGateway — báo cuộc gọi đến qua socket
     NotificationsModule,
   ],
   controllers: [CallsController],
