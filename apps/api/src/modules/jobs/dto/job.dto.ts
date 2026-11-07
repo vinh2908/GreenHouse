@@ -91,14 +91,14 @@ export class CreateJobDto {
   @ApiPropertyOptional() @IsOptional() @IsString() preferred_time_start?: string;
   @ApiPropertyOptional() @IsOptional() @IsString() preferred_time_end?: string;
   @ApiPropertyOptional({
-    description: 'Thời lượng ước tính (giờ) — cùng thang với báo giá (0,5–720 giờ)',
+    description: 'Thời lượng ước tính (giờ) — cùng thang với báo giá (0,5–12 giờ)',
     minimum: 0.5,
-    maximum: 720,
+    maximum: 12,
   })
   @IsOptional()
   @IsNumber()
   @Min(0.5, { message: 'Thời lượng công việc tối thiểu là 0,5 giờ' })
-  @Max(720, { message: 'Thời lượng công việc tối đa là 720 giờ' })
+  @Max(12, { message: 'Thời lượng công việc tối đa là 12 giờ' })
   estimated_duration?: number;
   @ApiPropertyOptional({ default: false }) @IsOptional() @IsBoolean() is_flexible_time?: boolean;
 
@@ -162,6 +162,18 @@ export class RebookJobDto {
   @IsOptional()
   @IsString()
   preferred_time_start?: string;
+
+  @ApiPropertyOptional({
+    description:
+      'Thời lượng ước tính (giờ, 0,5–12) — dùng khi đơn gốc chỉ có duration mà thiếu giờ kết thúc, hoặc muốn đặt lại với thời lượng khác (ưu tiên hơn cặp giờ của đơn cũ)',
+    minimum: 0.5,
+    maximum: 12,
+  })
+  @IsOptional()
+  @IsNumber()
+  @Min(0.5, { message: 'Thời lượng công việc tối thiểu là 0,5 giờ' })
+  @Max(12, { message: 'Thời lượng công việc tối đa là 12 giờ' })
+  estimated_duration?: number;
 
   @ApiPropertyOptional({
     default: true,
@@ -229,7 +241,7 @@ export class CreateQuoteDto {
   @Min(0)
   @Max(1_000_000_000)
   materials_cost?: number;
-  @ApiProperty({ example: 3 }) @IsNumber() @Min(0.5) @Max(720) estimated_duration: number;
+  @ApiProperty({ example: 3 }) @IsNumber() @Min(0.5) @Max(12, { message: 'Thời lượng công việc tối đa là 12 giờ' }) estimated_duration: number;
   @ApiPropertyOptional({ default: 0 })
   @IsOptional()
   @IsNumber()
@@ -419,4 +431,16 @@ export class CreateWarrantyDto {
   @IsOptional()
   @IsString()
   preferred_time_start?: string;
+
+  @ApiPropertyOptional({
+    description:
+      'Thời lượng ước tính (giờ, 0,5–12) — dùng khi đơn gốc chỉ có duration mà thiếu giờ kết thúc, hoặc muốn hẹn bảo hành với thời lượng khác (ưu tiên hơn cặp giờ của đơn cũ)',
+    minimum: 0.5,
+    maximum: 12,
+  })
+  @IsOptional()
+  @IsNumber()
+  @Min(0.5, { message: 'Thời lượng công việc tối thiểu là 0,5 giờ' })
+  @Max(12, { message: 'Thời lượng công việc tối đa là 12 giờ' })
+  estimated_duration?: number;
 }
