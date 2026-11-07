@@ -264,7 +264,12 @@ describe('RecurringService generateJobsForPlan (H1/R1 duration mapping)', () => 
   it('lượt hôm nay đã qua giờ thì bỏ qua, lượt tuần sau vẫn sinh', async () => {
     const { service, createdJobs } = makeWorld();
     const today = startOfDay(new Date());
-    const todayOccurrence = new Date(
+    // "Đã qua giờ" phải khớp CẢ 2 check trong service: check local ở
+    // generateJobsForPlan (giờ máy local) VÀ check A1 trong createJob
+    // (parse giờ bắt đầu theo +07:00, kèm đệm 2 phút). Chỉ tính theo
+    // 1 phía thì lệch múi giờ: vd TZ=UTC lúc 02:28 UTC, 09:00 local
+    // chưa qua nhưng 09:00+07:00 đã qua từ 02:00 UTC nên A1 chặn 400.
+    const todayLocal = new Date(
       today.getFullYear(),
       today.getMonth(),
       today.getDate(),
@@ -273,7 +278,10 @@ describe('RecurringService generateJobsForPlan (H1/R1 duration mapping)', () => 
       0,
       0,
     );
-    const todayPast = todayOccurrence.getTime() <= Date.now();
+    const todayVn = new Date(`${dateKey(today)}T09:00:00+07:00`);
+    const todayPast =
+      todayLocal.getTime() <= Date.now() ||
+      todayVn.getTime() < Date.now() - 2 * 60 * 1000;
     const plan: any = weeklyPlan({
       weekdays: [today.getDay()],
       time_start: '09:00',
