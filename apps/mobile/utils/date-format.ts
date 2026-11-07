@@ -80,6 +80,21 @@ export function toVnDayjs(dateInput: DateInput | unknown): dayjs.Dayjs {
   if (typeof input !== 'string' && !(input instanceof Date) && typeof input !== 'number' && !dayjs.isDayjs(input)) {
     return vnNow();
   }
+  // Chuỗi ISO có Z hoặc offset số (+07:00, -05:00) là THỜI ĐIỂM TUYỆT ĐỐI
+  // (server trả created_at dạng UTC '...Z'). dayjs.tz(str, tz) BỎ QUA Z và
+  // đọc giờ tường như giờ VN → lệch đúng 7 tiếng (đơn tạo 18:54 hiện
+  // '7 giờ trước'). Vì vậy parse tuyệt đối trước rồi mới chuyển sang VN.
+  // Chuỗi naive ('YYYY-MM-DD', 'YYYY-MM-DD HH:mm') KHÔNG vào nhánh này —
+  // vẫn đọc như giờ tường VN như cũ.
+  if (typeof input === 'string' && /([Zz]|[+-]\d{2}:?\d{2})$/.test(input.trim())) {
+    try {
+      const absolute = dayjs(input.trim()).tz(VN_TIMEZONE);
+      if (absolute.isValid()) return absolute;
+    } catch {
+      // rớt xuống fallbackUtcOffset7 bên dưới (giữ nguyên thời điểm tuyệt đối)
+    }
+    return fallbackUtcOffset7(input);
+  }
   let result: dayjs.Dayjs;
   try {
     result = dayjs.tz(input as any, VN_TIMEZONE);
