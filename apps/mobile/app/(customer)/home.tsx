@@ -415,6 +415,8 @@ export default function CustomerHomeScreen() {
   // Date Time Bottom Sheet state (Item 1)
   const [dateTimePickerOpen, setDateTimePickerOpen] = useState(false);
   const [bottomSheetInitialTab, setBottomSheetInitialTab] = useState<'date' | 'time'>('date');
+  // Ghi nhận khách có chọn thời lượng tùy chỉnh không (chỉ ghi, không đọc).
+  const [, setIsCustomDuration] = useState(false);
 
   // Khối Quick Booking Block ("Đăng việc theo ý bạn")
   const [quickServiceChip, setQuickServiceChip] = useState<

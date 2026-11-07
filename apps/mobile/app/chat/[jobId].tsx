@@ -705,6 +705,7 @@ export default function ChatScreen() {
                     : 'Gửi tin nhắn để trao đổi chi tiết về địa chỉ, sự cố và thời gian làm việc với đối phương.'}
                 </Text>
               </View>
+              )
             }
             renderItem={({
               item,
