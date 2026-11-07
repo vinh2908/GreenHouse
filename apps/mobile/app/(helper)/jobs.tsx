@@ -21,6 +21,8 @@ import {
   ClipboardList,
   BookOpen,
   ShieldCheck,
+  EyeOff,
+  RotateCcw,
 } from 'lucide-react-native';
 import Toast from 'react-native-toast-message';
 import { formatTime, formatRelativeTime } from '@/utils/date-format';
@@ -32,6 +34,8 @@ import {
   useTeamInvitations,
   useRespondTeamInvitation,
   useAcceptFixedPrice,
+  useSkippedJobs,
+  useUnrejectJob,
 } from '@/hooks/use-api';
 import { useTranslation } from '@/hooks/use-i18n';
 import { Button, Card, JobStatusBadge, Badge, COLORS, EmptyState, ErrorState, useThemeColors } from '@/components/ui';
@@ -76,6 +80,23 @@ export default function HelperJobsScreen() {
   const { data: helperProfile, isLoading: pLoading } = useHelperProfile();
   const kycStatus = helperProfile?.verification_status as string | undefined;
   const isVerified = kycStatus === 'approved';
+
+  // Lệnh 7: Xem và hoàn tác đơn đã bỏ qua
+  const [showSkipped, setShowSkipped] = useState(false);
+  const { data: skippedData, isLoading: skippedLoading, refetch: refetchSkipped } = useSkippedJobs(
+    1,
+    Boolean(isAuth && isVerified !== false),
+  );
+  const unrejectJob = useUnrejectJob();
+
+  const getJobServiceLabel = (job: any) => {
+    if (job?.custom_service_name && String(job.custom_service_name).trim()) {
+      return `${t('common_service')}: ${String(job.custom_service_name).trim()}`;
+    }
+    const svcName = tService(job?.service_id);
+    if (svcName) return svcName;
+    return t('common_service');
+  };
   const {
     data: available,
     isLoading: aLoading,
@@ -183,12 +204,157 @@ export default function HelperJobsScreen() {
         refreshControl={
           <RefreshControl
             refreshing={ds.loading || ds.refetching}
-            onRefresh={ds.refetch}
+            onRefresh={() => {
+              ds.refetch();
+              if (tabIndex === 0) refetchSkipped();
+            }}
             colors={[COLORS.primary]}
             tintColor={COLORS.primary}
           />
         }
       >
+        {tabIndex === 0 && isVerified && (
+          <View style={{ marginBottom: 4 }}>
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() => setShowSkipped(prev => !prev)}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                paddingHorizontal: 14,
+                paddingVertical: 10,
+                backgroundColor: showSkipped ? '#FEF2F2' : tc.surface,
+                borderRadius: 12,
+                borderWidth: 1,
+                borderColor: showSkipped ? '#FCA5A5' : tc.border,
+              }}
+            >
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <EyeOff size={16} color={showSkipped ? '#DC2626' : tc.textSecondary} />
+                <Text
+                  style={{
+                    fontSize: fs(13),
+                    fontWeight: '700',
+                    color: showSkipped ? '#DC2626' : tc.text,
+                  }}
+                >
+                  {lang === 'en' ? 'Skipped Jobs' : 'Đơn đã bỏ qua'} ({skippedData?.total ?? 0})
+                </Text>
+              </View>
+              <Text style={{ fontSize: fs(12), color: COLORS.primary, fontWeight: '600' }}>
+                {showSkipped
+                  ? lang === 'en'
+                    ? 'Hide'
+                    : 'Thu gọn'
+                  : lang === 'en'
+                    ? 'Review & Restore'
+                    : 'Xem lại'}
+              </Text>
+            </TouchableOpacity>
+
+            {showSkipped && (
+              <View style={{ marginTop: 8, gap: 8 }}>
+                {skippedLoading ? (
+                  <Card style={{ alignItems: 'center', paddingVertical: 16 }}>
+                    <ActivityIndicator size="small" color={COLORS.primary} />
+                  </Card>
+                ) : !skippedData?.jobs || skippedData.jobs.length === 0 ? (
+                  <Card style={{ alignItems: 'center', paddingVertical: 16 }}>
+                    <Text style={{ fontSize: fs(13), color: tc.textMuted }}>
+                      {lang === 'en'
+                        ? 'No skipped jobs to restore.'
+                        : 'Bạn chưa bỏ qua đơn hàng nào.'}
+                    </Text>
+                  </Card>
+                ) : (
+                  skippedData.jobs.map((job: any) => (
+                    <Card
+                      key={job._id}
+                      style={{
+                        padding: 12,
+                        gap: 8,
+                        borderLeftWidth: 3,
+                        borderLeftColor: '#F87171',
+                        backgroundColor: tc.surface,
+                      }}
+                    >
+                      <View
+                        style={{
+                          flexDirection: 'row',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                        }}
+                      >
+                        <Badge label={getJobServiceLabel(job)} size="sm" />
+                        <JobStatusBadge status={job.status} />
+                      </View>
+                      <Text
+                        style={{ fontSize: fs(14), fontWeight: '700', color: tc.text }}
+                        numberOfLines={2}
+                      >
+                        {job.title}
+                      </Text>
+                      <View
+                        style={{
+                          flexDirection: 'row',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          marginTop: 2,
+                        }}
+                      >
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                          <MapPin size={12} color={COLORS.gray[500]} />
+                          <Text style={{ fontSize: fs(12), color: tc.textSecondary }}>
+                            {job.address?.district || job.address?.city || t('jobs_unspecified')}
+                          </Text>
+                          {job.distance_km != null && (
+                            <Text
+                              style={{
+                                fontSize: fs(12),
+                                color: COLORS.primary,
+                                fontWeight: '600',
+                              }}
+                            >
+                              · {job.distance_km} km
+                            </Text>
+                          )}
+                        </View>
+                        <TouchableOpacity
+                          activeOpacity={0.8}
+                          disabled={unrejectJob.isPending}
+                          onPress={() => unrejectJob.mutate(job._id)}
+                          style={{
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            gap: 4,
+                            paddingHorizontal: 10,
+                            paddingVertical: 5,
+                            borderRadius: 8,
+                            backgroundColor: '#EFF6FF',
+                            borderWidth: 1,
+                            borderColor: '#BFDBFE',
+                          }}
+                        >
+                          <RotateCcw size={12} color="#1D4ED8" />
+                          <Text
+                            style={{
+                              fontSize: fs(11.5),
+                              fontWeight: '700',
+                              color: '#1D4ED8',
+                            }}
+                          >
+                            {lang === 'en' ? 'Restore Job' : 'Hiện lại đơn này'}
+                          </Text>
+                        </TouchableOpacity>
+                      </View>
+                    </Card>
+                  ))
+                )}
+              </View>
+            )}
+          </View>
+        )}
         {tabIndex === 0 && (pLoading || (aLoading && !available)) ? (
           <Card style={{ alignItems: 'center', paddingVertical: 40, gap: 12 }}>
             <ActivityIndicator size="small" color={COLORS.primary} />
@@ -364,7 +530,7 @@ export default function HelperJobsScreen() {
                   <View
                     style={{ flexDirection: 'row', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}
                   >
-                    <Badge label={tService(job.service_id) || t('common_service')} size="sm" />
+                    <Badge label={getJobServiceLabel(job)} size="sm" />
                     {job.is_private_offer ? (
                       <Badge
                         label={t('jobs_badge_private_for_you')}

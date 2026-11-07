@@ -404,11 +404,56 @@ export default function UserDetailPage() {
                   <Field label="Kinh nghiệm">
                     {hp?.years_experience != null ? `${hp.years_experience} năm` : null}
                   </Field>
-                  <Field label="Dịch vụ">
-                    {hp?.service_ids?.map((s: { name: string }) => s.name).join(', ') || null}
+                  <Field label="Dịch vụ đã đăng ký">
+                    {hp?.service_ids?.length
+                      ? hp.service_ids.map((s: { name: string }) => s.name).join(', ')
+                      : 'Chưa đăng ký dịch vụ nào (nhận tất cả dịch vụ)'}
                   </Field>
                   <Field label="Khu vực">{hp?.working_areas?.join(', ') || null}</Field>
                 </div>
+
+                {/* Lịch làm việc chi tiết (Lệnh 6) */}
+                <div className="rounded-lg border bg-muted/20 p-4 space-y-3">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    Cấu hình lịch làm việc (Availability)
+                  </p>
+                  <div className="grid gap-3 sm:grid-cols-2 text-sm">
+                    <div>
+                      <span className="text-xs text-muted-foreground">Công tắc lịch: </span>
+                      <Badge variant={hp?.availability?.enabled ? 'success' : 'secondary'}>
+                        {hp?.availability?.enabled ? 'Đang BẬT' : 'Đang TẮT (Nhận mọi đơn)'}
+                      </Badge>
+                    </div>
+                    <div>
+                      <span className="text-xs text-muted-foreground">Khung giờ làm: </span>
+                      <span className="font-semibold">
+                        {hp?.availability?.start_time || '07:00'} –{' '}
+                        {hp?.availability?.end_time || '19:00'}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-xs text-muted-foreground">Ngày làm trong tuần: </span>
+                      <span className="font-medium">
+                        {hp?.availability?.days_of_week?.length === 7
+                          ? 'Tất cả 7 ngày trong tuần'
+                          : hp?.availability?.days_of_week?.length
+                            ? hp.availability.days_of_week
+                                .map((d: number) => ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'][d])
+                                .join(', ')
+                            : 'Chưa chọn ngày'}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-xs text-muted-foreground">Ngày nghỉ chặn: </span>
+                      <span className="font-medium">
+                        {hp?.availability?.blocked_dates?.length
+                          ? hp.availability.blocked_dates.join(', ')
+                          : 'Không có'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
                 {hp?.bio && <Field label="Giới thiệu">{hp.bio}</Field>}
                 <Field label="Tài khoản ngân hàng">
                   {hp?.bank_account ? (

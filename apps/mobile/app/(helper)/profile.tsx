@@ -1,3 +1,4 @@
+import React, { useMemo } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, Switch, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -23,6 +24,7 @@ import {
   useHelperProfile,
   useHelperJobs,
   useMyProfile,
+  useMyAvailability,
   useSetHelperStatus,
   useSwitchRole,
   useUpdateHelperLocation,
@@ -48,13 +50,34 @@ export default function HelperProfileScreen() {
     }
   }, [isAuthLoading, isSwitchingRole, storedUser?.active_role]);
 
-  const { t, fs } = useTranslation();
+  const { t, fs, lang } = useTranslation();
   const tc = useThemeColors();
   const queryClient = useQueryClient();
   const logout = useAuthStore(s => s.logout);
   const { data: myProfile } = useMyProfile();
   const user = myProfile ?? storedUser;
   const { data: profile, isLoading: pLoading } = useHelperProfile();
+  const { data: myAvailability } = useMyAvailability();
+
+  // Lệnh 5: Hiển thị đúng tóm tắt giờ làm việc từ bản ghi availability thật
+  const scheduleSummary = useMemo(() => {
+    const avail = myAvailability ?? (profile?.availability as any);
+    if (!avail || !avail.enabled) {
+      return lang === 'en' ? 'Flexible (Schedule OFF)' : 'Linh hoạt (Đang tắt lịch)';
+    }
+    const start = avail.start_time || '07:00';
+    const end = avail.end_time || '19:00';
+    const days = avail.days_of_week ?? [];
+    const daysText =
+      days.length === 7
+        ? lang === 'en'
+          ? 'Every day'
+          : 'Tất cả các ngày'
+        : days.length > 0
+          ? `${days.length} ${lang === 'en' ? 'days/week' : 'ngày/tuần'}`
+          : '';
+    return `${start} – ${end}${daysText ? ` · ${daysText}` : ''}`;
+  }, [myAvailability, profile?.availability, lang]);
   const { data: activeJobs } = useHelperJobs(
     'confirmed,helper_on_the_way,helper_arrived,in_progress',
   );
@@ -411,6 +434,7 @@ export default function HelperProfileScreen() {
               {
                 icon: CalendarDays,
                 label: t('profile_work_schedule'),
+                subtitle: scheduleSummary,
                 onPress: () => router.push('/helper-availability' as any),
               },
               {
@@ -476,16 +500,28 @@ export default function HelperProfileScreen() {
                   }}
                 >
                   <item.icon size={20} color={COLORS.gray[600]} />
-                  <Text
-                    style={{
-                      flex: 1,
-                      fontSize: fs(15),
-                      color: tc.text,
-                      fontWeight: '600',
-                    }}
-                  >
-                    {item.label}
-                  </Text>
+                  <View style={{ flex: 1 }}>
+                    <Text
+                      style={{
+                        fontSize: fs(15),
+                        color: tc.text,
+                        fontWeight: '600',
+                      }}
+                    >
+                      {item.label}
+                    </Text>
+                    {item.subtitle ? (
+                      <Text
+                        style={{
+                          fontSize: fs(12),
+                          color: tc.textSecondary,
+                          marginTop: 2,
+                        }}
+                      >
+                        {item.subtitle}
+                      </Text>
+                    ) : null}
+                  </View>
                   <ChevronRight size={16} color={COLORS.gray[400]} />
                 </TouchableOpacity>
               </View>

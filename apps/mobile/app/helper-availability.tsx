@@ -66,6 +66,27 @@ export default function HelperAvailabilityScreen() {
   const toggleDay = (day: number) =>
     setDays(prev => (prev.includes(day) ? prev.filter(d => d !== day) : [...prev, day].sort()));
 
+  const handleToggleEnabled = async (val: boolean) => {
+    setEnabled(val);
+    try {
+      await update.mutateAsync({
+        enabled: val,
+        days_of_week: days,
+        start_time: startTime,
+        end_time: endTime,
+        blocked_dates: blockedDates,
+      });
+      Toast.show({
+        type: 'success',
+        text1: val
+          ? (lang === 'en' ? 'Working schedule enabled' : 'Đã bật lịch làm việc')
+          : (lang === 'en' ? 'Working schedule disabled' : 'Đã tắt lịch làm việc'),
+      });
+    } catch {
+      setEnabled(!val);
+    }
+  };
+
   const addBlockedDate = () => {
     const value = newDate.trim();
     if (!DATE_RE.test(value)) {
@@ -176,7 +197,7 @@ export default function HelperAvailabilityScreen() {
           </View>
           <Switch
             value={enabled}
-            onValueChange={setEnabled}
+            onValueChange={handleToggleEnabled}
             trackColor={{ false: COLORS.gray[300], true: COLORS.primary }}
             thumbColor="#fff"
           />
