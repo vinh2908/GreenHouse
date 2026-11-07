@@ -138,9 +138,7 @@ export default function OtpScreen() {
         >
           <ArrowLeft size={20} color={COLORS.gray[800]} />
         </TouchableOpacity>
-        <Text
-          style={{ fontSize: fs(18), fontWeight: '700', color: tc.text, marginLeft: 12 }}
-        >
+        <Text style={{ fontSize: fs(18), fontWeight: '700', color: tc.text, marginLeft: 12 }}>
           {lang === 'en' ? 'Verify OTP' : 'Xác minh OTP'}
         </Text>
       </View>
@@ -184,33 +182,19 @@ export default function OtpScreen() {
               : `Mã OTP 6 số đã được gửi đến ${email ? 'email' : 'số điện thoại'}\n`}
             <Text style={{ fontWeight: '700', color: tc.text }}>{email || phone}</Text>
           </Text>
-
-          {/* Demo OTP Helper Badge */}
-          <TouchableOpacity
-            activeOpacity={0.8}
-            onPress={() => {
-              setOtp(['1', '2', '3', '4', '5', '6']);
-              handleVerify('123456');
-            }}
+          <Text
             style={{
-              backgroundColor: '#F0FDF4',
-              borderColor: '#86EFAC',
-              borderWidth: 1,
-              paddingVertical: 8,
-              paddingHorizontal: 14,
-              borderRadius: 14,
-              marginTop: 14,
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: 6,
+              fontSize: fs(13),
+              color: tc.textMuted,
+              textAlign: 'center',
+              marginTop: 6,
+              lineHeight: 18,
             }}
           >
-            <Text style={{ fontSize: fs(13), color: '#16A34A', fontWeight: '600' }}>
-              {lang === 'en' ? 'Dev test OTP: ' : 'Mã OTP thử nghiệm: '}
-              <Text style={{ fontWeight: '800' }}>123456</Text>{' '}
-              {lang === 'en' ? '(Tap to fill)' : '(Bấm để điền nhanh)'}
-            </Text>
-          </TouchableOpacity>
+            {lang === 'en'
+              ? "Can't find the code? Please check your Spam / Junk folder."
+              : 'Không thấy mã? Vui lòng kiểm tra thư mục Spam / Thư rác.'}
+          </Text>
         </View>
 
         {/* OTP inputs */}
