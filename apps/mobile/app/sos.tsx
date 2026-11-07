@@ -178,6 +178,8 @@ export default function SosScreen() {
   };
 
   const selectedCatObj = sosCategories.find(c => c.id === selectedCategory) || sosCategories[0];
+  // S4: chỉ dùng để HIỂN THỊ ước tính — phụ phí thật do server quyết định
+  // (packages/constants SOS_SURCHARGE_VND); client không gửi giá này nữa.
   const surcharge = 100000;
   const baseCost = 200000;
   const totalEstimate = baseCost + surcharge;
@@ -201,7 +203,7 @@ export default function SosScreen() {
           city: address.city,
           location: { type: 'Point', coordinates: address.coordinates },
         },
-        surcharge: surcharge,
+        // S4: surcharge do server quyết định — client không gửi giá này nữa.
       });
 
       const newJobId =
