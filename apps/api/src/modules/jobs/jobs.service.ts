@@ -987,6 +987,62 @@ export class JobsService implements OnModuleInit {
     return job;
   }
 
+  /**
+   * H2/H3 (R2/R3): Giờ bắt đầu mặc định lấy từ đơn gốc phải qua gate
+   * 07:00–22:00. createJob cũng chặn, nhưng chặn ở đây cho lỗi nêu rõ giờ
+   * gốc + hướng xử lý thay vì 400 chung chung.
+   */
+  private assertWorkingHoursStart(time: string | undefined, context: string): void {
+    if (!time || !/^\d{1,2}:\d{2}$/.test(time.trim())) return;
+    const [h, m] = time.trim().split(':').map(Number);
+    const startMin = h * 60 + m;
+    if (startMin < 7 * 60 || startMin > 22 * 60) {
+      throw new BadRequestException(
+        `${context} bắt đầu lúc ${time.trim()} nằm ngoài giờ làm việc 07:00–22:00. Vui lòng chọn giờ khác trong khung 07:00–22:00.`,
+      );
+    }
+  }
+
+  /**
+   * H2/H3 (R2/R3): Thời lượng hiệu lực cho đơn đặt lại / bảo hành.
+   * - Khách nhập estimated_duration trong DTO → ưu tiên, cặp giờ cũ bỏ qua.
+   * - Không nhập → đơn gốc chỉ có duration (thiếu giờ kết thúc) thì copy nó;
+   *   đơn gốc đã có cặp giờ thì cặp giờ là đủ, không copy duration.
+   * - Đơn gốc không có tín hiệu thời lượng nào → lỗi rõ ràng, hướng khách
+   *   nhập duration (0,5–12 giờ).
+   * - Đơn gốc có duration > 12 giờ (tạo dưới trần cũ 720 giờ): KHÔNG cắt
+   *   ngầm (cắt sẽ đổi lén thời lượng công việc) mà báo lỗi rõ ràng để
+   *   khách nhập lại duration ≤ 12 giờ qua DTO.
+   */
+  private resolveInheritedDuration(
+    source: JobDocument,
+    dtoDuration: number | undefined,
+    context: string,
+  ): number | undefined {
+    const hasTimeRange = Boolean(source.preferred_time_start && source.preferred_time_end);
+    if (hasTimeRange && dtoDuration === undefined) return undefined;
+    const duration = dtoDuration ?? source.estimated_duration;
+    if (duration === undefined || duration === null) {
+      throw new BadRequestException(
+        `Đơn gốc không có thông tin thời lượng (thiếu cả giờ kết thúc lẫn thời lượng ước tính). Vui lòng nhập thời lượng ${context.toLowerCase()} từ 0,5 đến 12 giờ.`,
+      );
+    }
+    if (
+      typeof duration !== 'number' ||
+      !Number.isFinite(duration) ||
+      duration < 0.5 ||
+      duration > 12
+    ) {
+      if (dtoDuration === undefined) {
+        throw new BadRequestException(
+          `Đơn gốc có thời lượng ${duration} giờ, vượt trần hiện tại 12 giờ. Vui lòng nhập thời lượng ${context.toLowerCase()} mới từ 0,5 đến 12 giờ.`,
+        );
+      }
+      throw new BadRequestException('Thời lượng công việc phải từ 0,5 đến 12 giờ');
+    }
+    return duration;
+  }
+
   // ─── Customer: Đặt lại từ 1 đơn đã hoàn thành (1 chạm) ────────────────────
 
   async rebookJob(
@@ -1114,6 +1170,17 @@ export class JobsService implements OnModuleInit {
     const chosenDate = dto?.preferred_date?.trim() || tomorrow.toISOString().slice(0, 10);
     const chosenTime = dto?.preferred_time_start?.trim() || source.preferred_time_start || '08:00';
 
+    // H2 (R2): giờ bảo hành mặc định lấy từ đơn gốc — phải qua gate
+    // 07:00–22:00 (đơn gốc hoàn thành lúc 23:00 thì báo lỗi rõ ràng).
+    this.assertWorkingHoursStart(chosenTime, 'Đơn bảo hành');
+    // H2 (R2): đơn gốc chỉ có duration → copy estimated_duration; đơn gốc
+    // thiếu mọi tín hiệu thời lượng / duration vượt trần 12 giờ → lỗi rõ ràng.
+    const warrantyDuration = this.resolveInheritedDuration(
+      source,
+      dto?.estimated_duration,
+      'Bảo hành',
+    );
+
     const createDto: CreateJobDto = {
       service_id: source.service_id ? String(source.service_id) : undefined,
       custom_service_name: source.custom_service_name,
@@ -1140,7 +1207,11 @@ export class JobsService implements OnModuleInit {
       },
       preferred_date: chosenDate,
       preferred_time_start: chosenTime,
-      preferred_time_end: source.preferred_time_end,
+      // Khách nhập duration mới → duration là tín hiệu duy nhất, bỏ giờ kết
+      // thúc cũ để tránh 2 tín hiệu mâu thuẫn.
+      preferred_time_end:
+        dto?.estimated_duration !== undefined ? undefined : source.preferred_time_end,
+      estimated_duration: warrantyDuration,
       is_flexible_time: source.is_flexible_time,
     };
 

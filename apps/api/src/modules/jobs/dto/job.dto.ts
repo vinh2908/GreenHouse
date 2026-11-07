@@ -419,4 +419,16 @@ export class CreateWarrantyDto {
   @IsOptional()
   @IsString()
   preferred_time_start?: string;
+
+  @ApiPropertyOptional({
+    description:
+      'Thời lượng ước tính (giờ, 0,5–12) — dùng khi đơn gốc chỉ có duration mà thiếu giờ kết thúc, hoặc muốn hẹn bảo hành với thời lượng khác (ưu tiên hơn cặp giờ của đơn cũ)',
+    minimum: 0.5,
+    maximum: 12,
+  })
+  @IsOptional()
+  @IsNumber()
+  @Min(0.5, { message: 'Thời lượng công việc tối thiểu là 0,5 giờ' })
+  @Max(12, { message: 'Thời lượng công việc tối đa là 12 giờ' })
+  estimated_duration?: number;
 }
