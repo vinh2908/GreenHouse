@@ -1243,7 +1243,7 @@ export class JobsService implements OnModuleInit {
       // Tiêu đề tối đa 200 ký tự (schema) — chừa chỗ cho tiền tố "Bảo hành: "
       title: `Bảo hành: ${source.title}`.slice(0, 200),
       description:
-        `🛡 Đơn bảo hành MIỄN PHÍ phát sinh từ đơn gốc "${source.title}" (mã đơn ${String(source._id)}).\n` +
+        `Đơn bảo hành MIỄN PHÍ phát sinh từ đơn gốc "${source.title}" (mã đơn ${String(source._id)}).\n` +
         `• Mô tả vấn đề cần bảo hành: ${issueText}\n` +
         `• Hạn bảo hành: ${info.windowDays} ngày\n\n` +
         `Mô tả đơn gốc: ${source.description}`,
