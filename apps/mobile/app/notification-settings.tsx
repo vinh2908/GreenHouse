@@ -7,7 +7,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import Toast from 'react-native-toast-message';
 import { useTranslation } from '@/hooks/use-i18n';
 import { useNotificationSettings, useUpdateNotificationSettings } from '@/hooks/use-api';
-import { Card, COLORS, Separator, useThemeColors } from '@/components/ui';
+import { useAuthStore } from '@/stores/auth.store';
+import { Card, COLORS, Separator, LoadingSpinner, ErrorState, EmptyState, useThemeColors } from '@/components/ui';
 
 const STORAGE_KEY = '@greenhouse_notification_settings';
 
@@ -36,8 +37,14 @@ export default function NotificationSettingsScreen() {
   const tc = useThemeColors();
   const [settings, setSettings] = useState<SettingsState>(DEFAULT_SETTINGS);
   const [loaded, setLoaded] = useState(false);
+  const isAuth = useAuthStore(s => s.isAuthenticated);
 
-  const { data: serverSettings } = useNotificationSettings();
+  const {
+    data: serverSettings,
+    isLoading: settingsLoading,
+    isError: settingsError,
+    refetch: refetchSettings,
+  } = useNotificationSettings();
   const updateMutation = useUpdateNotificationSettings();
 
   useEffect(() => {
@@ -68,6 +75,7 @@ export default function NotificationSettingsScreen() {
   }, [serverSettings]);
 
   const toggle = async (key: keyof SettingsState) => {
+    const previous = settings;
     const updated = { ...settings, [key]: !settings[key] };
     setSettings(updated);
     try {
@@ -92,6 +100,10 @@ export default function NotificationSettingsScreen() {
         });
       },
       onError: (err: any) => {
+        // P2-1: PATCH lỗi thì hoàn lại cả state lẫn storage — công tắc không
+        // được nói dối là đã lưu.
+        setSettings(previous);
+        AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(previous)).catch(() => {});
         Toast.show({
           type: 'error',
           text1: lang === 'en' ? 'Failed to save settings' : 'Lưu cài đặt thông báo thất bại',
@@ -157,10 +169,39 @@ export default function NotificationSettingsScreen() {
         </Text>
       </View>
 
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ padding: 16, gap: 16, paddingBottom: 40 }}
-      >
+      {!isAuth ? (
+        <EmptyState
+          icon={<Bell size={36} color={COLORS.gray[400]} />}
+          title={
+            lang === 'en' ? 'Log in to change notification settings' : 'Đăng nhập để đổi cài đặt thông báo'
+          }
+          subtitle={
+            lang === 'en'
+              ? 'Notification preferences are saved to your account.'
+              : 'Cài đặt thông báo được lưu theo tài khoản của bạn.'
+          }
+          action={lang === 'en' ? 'Log in' : 'Đăng nhập'}
+          onAction={() => router.push('/(auth)/login')}
+        />
+      ) : settingsLoading && !loaded ? (
+        <LoadingSpinner />
+      ) : settingsError ? (
+        <ErrorState
+          title={
+            lang === 'en' ? 'Unable to load notification settings' : 'Không thể tải cài đặt thông báo'
+          }
+          subtitle={
+            lang === 'en'
+              ? 'Could not connect to server. Please check your network and retry.'
+              : 'Không thể kết nối đến máy chủ. Vui lòng kiểm tra mạng và thử lại.'
+          }
+          onRetry={() => refetchSettings()}
+        />
+      ) : (
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ padding: 16, gap: 16, paddingBottom: 40 }}
+        >
         {/* ── 1. Đơn hàng & Tin nhắn ─────────────────────────────────────── */}
         <View>
           <Text
@@ -367,7 +408,8 @@ export default function NotificationSettingsScreen() {
             </View>
           </Card>
         </View>
-      </ScrollView>
+        </ScrollView>
+      )}
     </View>
   );
 }
