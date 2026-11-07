@@ -1060,6 +1060,18 @@ export class JobsService implements OnModuleInit {
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
 
+    // H3 (R3): giờ đặt lại mặc định lấy từ đơn gốc — phải qua gate
+    // 07:00–22:00 (đơn gốc hoàn thành lúc 23:00 thì báo lỗi rõ ràng).
+    const startTime = dto.preferred_time_start ?? source.preferred_time_start;
+    this.assertWorkingHoursStart(startTime, 'Đơn đặt lại');
+    // H3 (R3): đơn gốc chỉ có duration → copy estimated_duration; đơn gốc
+    // thiếu mọi tín hiệu thời lượng / duration vượt trần 12 giờ → lỗi rõ ràng.
+    const inheritedDuration = this.resolveInheritedDuration(
+      source,
+      dto.estimated_duration,
+      'Đặt lại',
+    );
+
     const createDto: CreateJobDto = {
       service_id: source.service_id ? String(source.service_id) : undefined,
       custom_service_name: source.custom_service_name,
@@ -1080,8 +1092,12 @@ export class JobsService implements OnModuleInit {
         } as CreateJobDto['address']['location'],
       },
       preferred_date: (dto.preferred_date ?? tomorrow.toISOString()).slice(0, 10),
-      preferred_time_start: dto.preferred_time_start ?? source.preferred_time_start,
-      preferred_time_end: source.preferred_time_end,
+      preferred_time_start: startTime,
+      // Khách nhập duration mới → duration là tín hiệu duy nhất, bỏ giờ kết
+      // thúc cũ để tránh 2 tín hiệu mâu thuẫn.
+      preferred_time_end:
+        dto.estimated_duration !== undefined ? undefined : source.preferred_time_end,
+      estimated_duration: inheritedDuration,
       is_flexible_time: source.is_flexible_time,
     };
 
