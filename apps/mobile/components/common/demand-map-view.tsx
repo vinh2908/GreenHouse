@@ -1,13 +1,16 @@
 // components/common/demand-map-view.tsx — Bản đồ nhu cầu cho thợ (Goong Vector Map)
 // Đồng bộ 100% cho cả Web (iframe) và Native Android/iOS (WebView).
 // Không dùng react-native-maps để tránh crash ứng dụng khi thiếu Google Play Services / API key.
-import { useMemo } from 'react';
-import { Platform, View } from 'react-native';
+import { useEffect, useMemo } from 'react';
+import { Platform, Text, View } from 'react-native';
 import { WebView } from 'react-native-webview';
+import { MapPin } from 'lucide-react-native';
 import type { DemandArea } from '@/hooks/use-api';
 import { COLORS, useThemeColors } from '@/components/ui';
 import { useTranslation } from '@/hooks/use-i18n';
 
+// Giữ export để tương thích: KHÔNG còn dùng làm tâm bản đồ mặc định —
+// không có tọa độ thì hiển thị trạng thái trống, không giả vờ thợ ở Đà Nẵng.
 export const DANANG_CENTER = { latitude: 16.0544, longitude: 108.2022 };
 
 interface Props {
@@ -15,6 +18,7 @@ interface Props {
   focus: DemandArea | null;
   height?: number;
   userCoords?: { latitude: number; longitude: number } | null;
+  onFocusArea?: (area: DemandArea) => void;
 }
 
 const demandMapHtml = (
@@ -24,6 +28,7 @@ const demandMapHtml = (
   focusedDistrict?: string | null,
   statusText = 'Bản đồ nhu cầu khu vực',
   lang = 'vi',
+  userCoords?: { latitude: number; longitude: number } | null,
 ) => {
   const mapKey = process.env.EXPO_PUBLIC_GOONG_MAP_KEY || '';
   const noKeyMsg =
@@ -86,6 +91,26 @@ const demandMapHtml = (
         background: #dc2626;
         border-color: #fef08a;
         transform: scale(1.1);
+      }
+      .you-pin {
+        background: #2563eb;
+        color: #ffffff;
+        padding: 4px 10px;
+        border-radius: 16px;
+        font-size: 12px;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        box-shadow: 0 3px 8px rgba(0,0,0,0.25);
+        border: 2px solid #ffffff;
+        white-space: nowrap;
+      }
+      .you-pin .you-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #ffffff;
       }
       .status-badge {
         position: absolute;
@@ -195,6 +220,20 @@ const demandMapHtml = (
           map.on('load', function () {
             addMountainFallbacks();
             const areas = ${areasJson};
+            const you = ${JSON.stringify(
+              userCoords
+                ? { lat: userCoords.latitude, lng: userCoords.longitude }
+                : null,
+            )};
+            const youLabel = ${JSON.stringify(lang === 'en' ? 'You' : 'Bạn')};
+            if (you) {
+              var youEl = document.createElement('div');
+              youEl.className = 'you-pin';
+              youEl.innerHTML = '<span class="you-dot"></span><span>' + youLabel + '</span>';
+              new maplibregl.Marker({ element: youEl })
+                .setLngLat([you.lng, you.lat])
+                .addTo(map);
+            }
             if (areas && areas.length > 0) {
               const features = areas.map(function (a) {
                 return {
@@ -230,6 +269,15 @@ const demandMapHtml = (
                 const el = document.createElement('div');
                 el.className = 'demand-pill' + (a.isFocused ? ' focused' : '');
                 el.innerHTML = '<span>' + a.open_jobs + ' ' + '${jobsWord}' + ' · ' + a.district + '</span>';
+                el.addEventListener('click', function () {
+                  var msg = JSON.stringify({
+                    type: 'focus-area',
+                    district: a.district,
+                    city: a.city,
+                  });
+                  if (window.ReactNativeWebView) window.ReactNativeWebView.postMessage(msg);
+                  if (window.parent) window.parent.postMessage(msg, '*');
+                });
                 new maplibregl.Marker({ element: el })
                   .setLngLat([a.lng, a.lat])
                   .addTo(map);
@@ -245,7 +293,7 @@ const demandMapHtml = (
 </html>`;
 };
 
-export function DemandMapView({ areas, focus, height = 300, userCoords }: Props) {
+export function DemandMapView({ areas, focus, height = 300, userCoords, onFocusArea }: Props) {
   const { lang } = useTranslation();
   const tc = useThemeColors();
   const withCoords = useMemo(
@@ -253,9 +301,12 @@ export function DemandMapView({ areas, focus, height = 300, userCoords }: Props)
     [areas],
   );
   const activeFocus = focus && focus.lat != null && focus.lng != null ? focus : withCoords[0];
+  // Không có khu vực nào có tọa độ và không có vị trí thợ → trạng thái trống,
+  // KHÔNG lấy Đà Nẵng làm tâm giả cho thợ ở nơi khác (P2-9).
+  const hasMapData = withCoords.length > 0 || !!userCoords;
   const center = activeFocus
     ? { latitude: activeFocus.lat as number, longitude: activeFocus.lng as number }
-    : (userCoords ?? DANANG_CENTER);
+    : (userCoords ?? null);
   const zoom = activeFocus ? 13 : 12;
   const totalJobs = withCoords.reduce((sum, a) => sum + (a.open_jobs || 0), 0);
   const statusText =
@@ -267,12 +318,88 @@ export function DemandMapView({ areas, focus, height = 300, userCoords }: Props)
         ? 'Demand map around you'
         : 'Bản đồ nhu cầu việc quanh bạn';
 
+  const handleMapMessage = (raw: string) => {
+    if (!onFocusArea) return;
+    try {
+      const msg = JSON.parse(raw);
+      if (msg?.type === 'focus-area') {
+        const area = withCoords.find(
+          a => a.district === msg.district && (!msg.city || a.city === msg.city),
+        );
+        if (area) onFocusArea(area);
+      }
+    } catch {}
+  };
+
+  // Web (iframe srcDoc): nhận postMessage từ pill trong bản đồ.
+  // Dùng globalThis thay cho window/MessageEvent để không cần DOM lib.
+  useEffect(() => {
+    if (Platform.OS !== 'web' || !onFocusArea) return;
+    const target = globalThis as unknown as {
+      addEventListener?: (type: string, fn: (event: { data?: unknown }) => void) => void;
+      removeEventListener?: (type: string, fn: (event: { data?: unknown }) => void) => void;
+    };
+    const handler = (event: { data?: unknown }) => {
+      if (typeof event.data === 'string') handleMapMessage(event.data);
+    };
+    target.addEventListener?.('message', handler);
+    return () => target.removeEventListener?.('message', handler);
+  }, [onFocusArea, withCoords]);
+
   const html = useMemo(
-    () => demandMapHtml(center, zoom, withCoords, activeFocus?.district, statusText, lang),
-    [center.latitude, center.longitude, zoom, withCoords, activeFocus?.district, statusText, lang],
+    () =>
+      center
+        ? demandMapHtml(
+            center,
+            zoom,
+            withCoords,
+            activeFocus?.district,
+            statusText,
+            lang,
+            userCoords,
+          )
+        : '',
+    [
+      center?.latitude,
+      center?.longitude,
+      zoom,
+      withCoords,
+      activeFocus?.district,
+      statusText,
+      lang,
+      userCoords?.latitude,
+      userCoords?.longitude,
+    ],
   );
 
-  const mapKey = `${center.latitude},${center.longitude},${zoom},${activeFocus?.district || 'all'}`;
+  const mapKey = `${center?.latitude ?? 'none'},${center?.longitude ?? 'none'},${zoom},${activeFocus?.district || 'all'}`;
+
+  if (!hasMapData) {
+    return (
+      <View
+        style={{
+          height,
+          borderRadius: 14,
+          overflow: 'hidden',
+          backgroundColor: tc.subtle,
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 8,
+          padding: 20,
+        }}
+      >
+        <MapPin size={28} color={COLORS.gray[400]} />
+        <Text style={{ fontSize: 14, fontWeight: '700', color: tc.text, textAlign: 'center' }}>
+          {lang === 'en' ? 'No location to show the demand map' : 'Chưa có vị trí để hiển thị bản đồ'}
+        </Text>
+        <Text style={{ fontSize: 12, color: tc.textMuted, textAlign: 'center' }}>
+          {lang === 'en'
+            ? 'Enable location or wait for jobs with coordinates to appear.'
+            : 'Hãy bật định vị hoặc chờ các đơn có tọa độ xuất hiện.'}
+        </Text>
+      </View>
+    );
+  }
 
   return (
     <View
@@ -300,6 +427,7 @@ export function DemandMapView({ areas, focus, height = 300, userCoords }: Props)
           key={mapKey}
           originWhitelist={['*']}
           source={{ html }}
+          onMessage={event => handleMapMessage(event.nativeEvent.data)}
           scrollEnabled={false}
           javaScriptEnabled
           domStorageEnabled

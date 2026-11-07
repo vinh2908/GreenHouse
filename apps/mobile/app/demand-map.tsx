@@ -12,6 +12,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { ArrowLeft, MapPin, Moon, Flame } from 'lucide-react-native';
+import Toast from 'react-native-toast-message';
 import { useDemandMap, useHelperProfile, type DemandArea } from '@/hooks/use-api';
 import { Card, COLORS, EmptyState, useThemeColors } from '@/components/ui';
 import { DemandMapView } from '@/components/common/demand-map-view';
@@ -20,7 +21,7 @@ import { useTranslation } from '@/hooks/use-i18n';
 export default function DemandMapScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { t, fs } = useTranslation();
+  const { t, fs, lang } = useTranslation();
   const tc = useThemeColors();
   const { data: helperProfile } = useHelperProfile();
   const { data: areas, isLoading, isRefetching, refetch } = useDemandMap();
@@ -96,7 +97,12 @@ export default function DemandMapScreen() {
         }
       >
         {/* Bản đồ Goong nhu cầu (dùng chung Web + App) */}
-        <DemandMapView areas={sorted} focus={activeFocus} userCoords={helperCoords} />
+        <DemandMapView
+          areas={sorted}
+          focus={activeFocus}
+          userCoords={helperCoords}
+          onFocusArea={setFocus}
+        />
 
         {isLoading ? (
           <Card style={{ alignItems: 'center', paddingVertical: 24, gap: 10 }}>
@@ -121,7 +127,25 @@ export default function DemandMapScreen() {
               <TouchableOpacity
                 key={`${area.district}-${area.city}`}
                 activeOpacity={0.85}
-                onPress={() => setFocus(area)}
+                onPress={() => {
+                  // Khu vực không có tọa độ thì bản đồ không thể focus —
+                  // báo rõ thay vì lặng lẽ giữ nguyên khu vực cũ.
+                  if (area.lat == null || area.lng == null) {
+                    Toast.show({
+                      type: 'info',
+                      text1:
+                        lang === 'en'
+                          ? `${area.district} has no map location yet`
+                          : `${area.district} chưa có vị trí trên bản đồ`,
+                      text2:
+                        lang === 'en'
+                          ? 'Jobs here have no coordinates.'
+                          : 'Các đơn ở đây chưa có tọa độ.',
+                    });
+                    return;
+                  }
+                  setFocus(area);
+                }}
               >
                 <Card
                   style={{
