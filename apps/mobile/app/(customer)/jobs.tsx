@@ -8,7 +8,15 @@ import dayjs from 'dayjs';
 import { useAuthStore } from '@/stores/auth.store';
 import { useMyJobs, useMyProfile } from '@/hooks/use-api';
 import { useTranslation } from '@/hooks/use-i18n';
-import { Card, JobStatusBadge, EmptyState, ErrorState, COLORS, Badge, useThemeColors } from '@/components/ui';
+import {
+  Card,
+  JobStatusBadge,
+  EmptyState,
+  ErrorState,
+  COLORS,
+  Badge,
+  useThemeColors,
+} from '@/components/ui';
 
 const TABS = [
   { key: undefined, labelKey: 'jobs_tab_all' },

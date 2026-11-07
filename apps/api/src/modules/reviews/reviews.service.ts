@@ -118,13 +118,15 @@ export class ReviewsService {
     const query = { helper_id: new Types.ObjectId(helperId), is_hidden: { $ne: true } };
     const [reviews, total] = await Promise.all([
       this.reviewModel
-        .find(query)        .populate('customer_id', 'full_name avatar')
+        .find(query)
+        .populate('customer_id', 'full_name avatar')
         .populate('job_id', 'title')
         .sort({ created_at: -1 })
         .skip(skip)
         .limit(limit)
         .exec(),
-      this.reviewModel.countDocuments(query).exec(),    ]);
+      this.reviewModel.countDocuments(query).exec(),
+    ]);
 
     return { reviews, total, page, limit, total_pages: Math.ceil(total / limit) };
   }

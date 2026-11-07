@@ -107,9 +107,7 @@ export default function DemandMapScreen() {
         {isLoading ? (
           <Card style={{ alignItems: 'center', paddingVertical: 24, gap: 10 }}>
             <ActivityIndicator size="small" color={COLORS.primary} />
-            <Text style={{ fontSize: fs(13), color: tc.textMuted }}>
-              {t('demand_map.loading')}
-            </Text>
+            <Text style={{ fontSize: fs(13), color: tc.textMuted }}>{t('demand_map.loading')}</Text>
           </Card>
         ) : sorted.length === 0 ? (
           <Card style={{ alignItems: 'center', paddingVertical: 32 }}>

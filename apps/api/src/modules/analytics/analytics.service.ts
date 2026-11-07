@@ -85,12 +85,17 @@ export class AnalyticsService {
         { $sort: { '_id.month': 1 } },
       ])
       .exec();
-    const byMonth = new Map<string, { gross: number; refunds: number; fees: number; count: number }>();
+    const byMonth = new Map<
+      string,
+      { gross: number; refunds: number; fees: number; count: number }
+    >();
     for (const r of rows as any[]) {
       const m = r._id.month as string;
       const cur = byMonth.get(m) ?? { gross: 0, refunds: 0, fees: 0, count: 0 };
-      if (r._id.type === 'payment') { cur.gross += r.total; cur.count += r.count; }
-      else if (r._id.type === 'refund') cur.refunds += r.total;
+      if (r._id.type === 'payment') {
+        cur.gross += r.total;
+        cur.count += r.count;
+      } else if (r._id.type === 'refund') cur.refunds += r.total;
       else if (r._id.type === 'commission') cur.fees += r.total;
       byMonth.set(m, cur);
     }
@@ -108,19 +113,21 @@ export class AnalyticsService {
   }
 
   /** B89: cộng dồn 1 kỳ: { gross, refunds, fees, net } */
-  private async sumRevenue(from: Date, to?: Date): Promise<{ gross: number; refunds: number; fees: number; net: number }> {
+  private async sumRevenue(
+    from: Date,
+    to?: Date,
+  ): Promise<{ gross: number; refunds: number; fees: number; net: number }> {
     const match: Record<string, unknown> = {
       type: { $in: ['payment', 'refund', 'commission'] },
       status: 'success',
       created_at: to ? { $gte: from, $lte: to } : { $gte: from },
     };
     const rows = await this.transactionModel
-      .aggregate([
-        { $match: match },
-        { $group: { _id: '$type', total: { $sum: '$amount' } } },
-      ])
+      .aggregate([{ $match: match }, { $group: { _id: '$type', total: { $sum: '$amount' } } }])
       .exec();
-    let gross = 0, refunds = 0, fees = 0;
+    let gross = 0,
+      refunds = 0,
+      fees = 0;
     for (const r of rows as any[]) {
       if (r._id === 'payment') gross = r.total;
       else if (r._id === 'refund') refunds = r.total;

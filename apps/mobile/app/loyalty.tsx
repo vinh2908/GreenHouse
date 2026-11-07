@@ -6,7 +6,15 @@ import { useRouter } from 'expo-router';
 import { ArrowLeft, Star, Gift, Wrench } from 'lucide-react-native';
 import dayjs from 'dayjs';
 import { useLoyaltyAccount, useLoyaltyHistory } from '@/hooks/use-api';
-import { Card, COLORS, EmptyState, ErrorState, LoadingSpinner, Separator, useThemeColors } from '@/components/ui';
+import {
+  Card,
+  COLORS,
+  EmptyState,
+  ErrorState,
+  LoadingSpinner,
+  Separator,
+  useThemeColors,
+} from '@/components/ui';
 import { useTranslation } from '@/hooks/use-i18n';
 
 export default function LoyaltyScreen() {
@@ -220,9 +228,7 @@ export default function LoyaltyScreen() {
           </Text>
           {isHistoryError ? (
             <ErrorState
-              title={
-                lang === 'en' ? 'Unable to load point history' : 'Không thể tải lịch sử điểm'
-              }
+              title={lang === 'en' ? 'Unable to load point history' : 'Không thể tải lịch sử điểm'}
               subtitle={
                 lang === 'en'
                   ? 'Could not connect to the server. Please retry.'
@@ -264,9 +270,7 @@ export default function LoyaltyScreen() {
                         {getTxIcon(tx.type)}
                       </View>
                       <View style={{ flex: 1 }}>
-                        <Text
-                          style={{ fontWeight: '700', fontSize: fs(14), color: tc.text }}
-                        >
+                        <Text style={{ fontWeight: '700', fontSize: fs(14), color: tc.text }}>
                           {getTxLabel(tx)}
                         </Text>
                         <Text style={{ fontSize: fs(12), color: tc.textMuted, marginTop: 2 }}>

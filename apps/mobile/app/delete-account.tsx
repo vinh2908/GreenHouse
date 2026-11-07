@@ -52,7 +52,9 @@ export default function DeleteAccountScreen() {
             status === 401
               ? t('delete_account_wrong_password')
               : err?.response?.data?.message ||
-                  (lang === 'en' ? 'Failed to delete account. Please try again.' : 'Xoá tài khoản thất bại. Vui lòng thử lại.'),
+                  (lang === 'en'
+                    ? 'Failed to delete account. Please try again.'
+                    : 'Xoá tài khoản thất bại. Vui lòng thử lại.'),
           );
         },
       },
@@ -147,9 +149,7 @@ export default function DeleteAccountScreen() {
               )}
             </TouchableOpacity>
           </View>
-          {error ? (
-            <Text style={{ fontSize: fs(13), color: COLORS.error }}>{error}</Text>
-          ) : null}
+          {error ? <Text style={{ fontSize: fs(13), color: COLORS.error }}>{error}</Text> : null}
         </View>
 
         <Button

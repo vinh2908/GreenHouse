@@ -936,9 +936,12 @@ export class MonthlyContractsService {
     contract.status = 'active';
     contract.responded_at = new Date();
     await contract.save();
-    await this.notifyBoth(contract, NOTIFICATION_TYPES.MONTHLY_CONTRACT_ACCEPTED,
+    await this.notifyBoth(
+      contract,
+      NOTIFICATION_TYPES.MONTHLY_CONTRACT_ACCEPTED,
       'Hợp đồng theo tháng đã được duyệt',
-      `Hợp đồng "${contract.title}" đã được Admin duyệt và có hiệu lực.`);
+      `Hợp đồng "${contract.title}" đã được Admin duyệt và có hiệu lực.`,
+    );
     return this.populate(contract);
   }
 
@@ -952,9 +955,12 @@ export class MonthlyContractsService {
     contract.ended_at = new Date();
     contract.end_reason = reason || 'Đã hủy bởi Quản trị viên';
     await contract.save();
-    await this.notifyBoth(contract, NOTIFICATION_TYPES.MONTHLY_CONTRACT_CANCELLED,
+    await this.notifyBoth(
+      contract,
+      NOTIFICATION_TYPES.MONTHLY_CONTRACT_CANCELLED,
       'Hợp đồng theo tháng đã bị hủy',
-      `Hợp đồng "${contract.title}" đã bị Admin hủy${reason ? `: ${reason}` : '.'}`);
+      `Hợp đồng "${contract.title}" đã bị Admin hủy${reason ? `: ${reason}` : '.'}`,
+    );
     return this.populate(contract);
   }
 
@@ -969,9 +975,12 @@ export class MonthlyContractsService {
     contract.end_date = new Date();
     contract.end_reason = reason;
     await contract.save();
-    await this.notifyBoth(contract, NOTIFICATION_TYPES.MONTHLY_CONTRACT_ENDED,
+    await this.notifyBoth(
+      contract,
+      NOTIFICATION_TYPES.MONTHLY_CONTRACT_ENDED,
       'Hợp đồng theo tháng đã kết thúc',
-      `Hợp đồng "${contract.title}" đã được Admin kết thúc${reason ? `: ${reason}` : '.'}`);
+      `Hợp đồng "${contract.title}" đã được Admin kết thúc${reason ? `: ${reason}` : '.'}`,
+    );
     return this.populate(contract);
   }
 

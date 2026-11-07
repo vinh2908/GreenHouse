@@ -92,8 +92,7 @@ export class AuthService {
     if (user.status === 'suspended')
       throw new UnauthorizedException('Tài khoản đã bị khóa. Liên hệ hỗ trợ.');
 
-    if ((user as any).is_deleted)
-      throw new UnauthorizedException('Tài khoản đã bị xóa.');
+    if ((user as any).is_deleted) throw new UnauthorizedException('Tài khoản đã bị xóa.');
 
     const tokens = await this.generateTokens(user);
 

@@ -832,10 +832,7 @@ export class JobsService implements OnModuleInit {
     // với gate ở selectQuote. Không chặn ở đây thì đơn tạo hợp lệ lúc
     // 23:00/06:00 vẫn nhận báo giá bình thường, tới lúc chọn mới bị 400
     // và kẹt vĩnh viễn.
-    if (
-      dto.preferred_time_start &&
-      /^\d{1,2}:\d{2}$/.test(dto.preferred_time_start.trim())
-    ) {
+    if (dto.preferred_time_start && /^\d{1,2}:\d{2}$/.test(dto.preferred_time_start.trim())) {
       const [sh, sm] = dto.preferred_time_start.trim().split(':').map(Number);
       const startMin = sh * 60 + sm;
       if (startMin < 7 * 60 || startMin > 22 * 60) {
@@ -2972,8 +2969,7 @@ export class JobsService implements OnModuleInit {
           await this.creditJobPayout(existing, contract.helper_receives);
           payoutCredited = true;
         } else {
-          const verified =
-            (await this.paymentsService.hasVerifiedWalletPayment?.(jobId)) ?? false;
+          const verified = (await this.paymentsService.hasVerifiedWalletPayment?.(jobId)) ?? false;
           if (verified) {
             await this.creditJobPayout(existing, contract.helper_receives);
             payoutCredited = true;
@@ -3770,7 +3766,10 @@ export class JobsService implements OnModuleInit {
     return { success: true, message: 'Đã bỏ qua đơn hàng thành công' };
   }
 
-  async unrejectJob(helperId: string, jobId: string): Promise<{ success: boolean; message: string }> {
+  async unrejectJob(
+    helperId: string,
+    jobId: string,
+  ): Promise<{ success: boolean; message: string }> {
     const job = await this.jobModel.findById(jobId).exec();
     if (!job) throw new NotFoundException('Đơn hàng không tồn tại');
     const helperOid = new Types.ObjectId(helperId);
@@ -3799,11 +3798,7 @@ export class JobsService implements OnModuleInit {
         .limit(limit)
         .exec(),
       this.jobModel.countDocuments(query).exec(),
-      this.helperModel
-        .findOne({ user_id: helperOid })
-        .select('location')
-        .lean()
-        .exec(),
+      this.helperModel.findOne({ user_id: helperOid }).select('location').lean().exec(),
     ]);
 
     const helperCoords = helperProfile?.location?.coordinates;
@@ -4172,12 +4167,7 @@ export class JobsService implements OnModuleInit {
       for (const member of acceptedMembers) {
         const share = Math.floor((totalAmount * member.split_percent) / 100);
         if (share > 0) {
-          await this.paymentsService.creditHelper(
-            String(member.helper_id),
-            jobId,
-            share,
-            session,
-          );
+          await this.paymentsService.creditHelper(String(member.helper_id), jobId, share, session);
           creditedToMembers += share;
         }
       }
@@ -4307,9 +4297,7 @@ export class JobsService implements OnModuleInit {
       this.gateway.emitToUser(String(job.helper_id), SOCKET_EVENTS.TEAM_UPDATED, payload);
     }
     // B114: phát cho MỌI thành viên trong team (kể cả thợ được mời chưa vào room job)
-    const memberIds = new Set(
-      (job.team ?? []).map(m => String(m.helper_id)).filter(Boolean),
-    );
+    const memberIds = new Set((job.team ?? []).map(m => String(m.helper_id)).filter(Boolean));
     for (const memberId of memberIds) {
       this.gateway.emitToUser(memberId, SOCKET_EVENTS.TEAM_UPDATED, payload);
     }

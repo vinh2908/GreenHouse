@@ -79,7 +79,10 @@ export class AppealReviewDto {
 }
 
 export class ResolveAppealDto {
-  @ApiProperty({ description: "'upheld' = kháng nghị đúng, ẩn đánh giá; 'rejected' = bác kháng nghị, giữ hiển thị" })
+  @ApiProperty({
+    description:
+      "'upheld' = kháng nghị đúng, ẩn đánh giá; 'rejected' = bác kháng nghị, giữ hiển thị",
+  })
   @IsString()
   @IsNotEmpty()
   decision: 'upheld' | 'rejected';

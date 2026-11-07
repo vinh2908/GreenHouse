@@ -17,14 +17,20 @@ import {
   useThemeColors,
 } from '@/components/ui';
 
-
 export default function HelperConversationsScreen() {
   const router = useRouter();
   const { t, fs, lang } = useTranslation();
   const tc = useThemeColors();
   const currentUser = useAuthStore(s => s.user);
   const isAuth = useAuthStore(s => s.isAuthenticated);
-  const { data: conversations, isLoading, isError, isRefetching, refetch, dataUpdatedAt } = useConversations();
+  const {
+    data: conversations,
+    isLoading,
+    isError,
+    isRefetching,
+    refetch,
+    dataUpdatedAt,
+  } = useConversations();
   const insets = useSafeAreaInsets();
 
   return (

@@ -257,7 +257,9 @@ export class HelpersService {
     if (!profile) throw new NotFoundException('Helper không tồn tại');
     // B82: chỉ từ chối được e-KYC đang chờ duyệt
     if (profile.verification_status !== VerificationStatus.PENDING) {
-      throw new BadRequestException('Hồ sơ không ở trạng thái chờ duyệt (PENDING), không thể từ chối');
+      throw new BadRequestException(
+        'Hồ sơ không ở trạng thái chờ duyệt (PENDING), không thể từ chối',
+      );
     }
     profile.verification_status = VerificationStatus.REJECTED;
     profile.rejection_reason = reason;

@@ -1,10 +1,5 @@
 import { useState } from 'react';
-import {
-  formatDate,
-  formatDateTimeWithWeekday,
-  toVnDayjs,
-  vnNow,
-} from '@/utils/date-format';
+import { formatDate, formatDateTimeWithWeekday, toVnDayjs, vnNow } from '@/utils/date-format';
 import {
   View,
   Text,

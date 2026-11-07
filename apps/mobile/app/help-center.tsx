@@ -392,9 +392,7 @@ export default function HelpCenterScreen() {
                 borderLeftColor: COLORS.primary,
               }}
             >
-              <Text style={{ fontSize: fs(13.5), color: tc.text, lineHeight: 20 }}>
-                {aiAnswer}
-              </Text>
+              <Text style={{ fontSize: fs(13.5), color: tc.text, lineHeight: 20 }}>{aiAnswer}</Text>
             </View>
           )}
         </Card>

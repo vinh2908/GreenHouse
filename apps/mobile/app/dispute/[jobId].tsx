@@ -39,7 +39,15 @@ import {
   useAppealDispute,
   type DisputeTimelineEntry,
 } from '@/hooks/use-api';
-import { Badge, Button, Card, COLORS, EmptyState, LoadingSpinner, useThemeColors } from '@/components/ui';
+import {
+  Badge,
+  Button,
+  Card,
+  COLORS,
+  EmptyState,
+  LoadingSpinner,
+  useThemeColors,
+} from '@/components/ui';
 
 const fmt = (n?: number) => new Intl.NumberFormat('vi-VN').format(n ?? 0);
 
@@ -242,9 +250,7 @@ export default function DisputeCaseScreen() {
             {/* ── Trạng thái hồ sơ ─────────────────────────────────────── */}
             <Card style={{ gap: 8 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                <Text
-                  style={{ flex: 1, fontWeight: '800', fontSize: fs(15), color: tc.text }}
-                >
+                <Text style={{ flex: 1, fontWeight: '800', fontSize: fs(15), color: tc.text }}>
                   {lang === 'en' ? 'Dispute reason' : 'Lý do tranh chấp'}
                 </Text>
                 {caseData.status === 'open' && (
@@ -379,9 +385,7 @@ export default function DisputeCaseScreen() {
                     </View>
                     <Card style={{ flex: 1, marginBottom: 12, gap: 5 }}>
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                        <Text
-                          style={{ fontWeight: '800', fontSize: fs(13.5), color: tc.text }}
-                        >
+                        <Text style={{ fontWeight: '800', fontSize: fs(13.5), color: tc.text }}>
                           {lang === 'en' ? meta.label_en : meta.label}
                         </Text>
                         <Badge
@@ -393,9 +397,7 @@ export default function DisputeCaseScreen() {
                         {formatDateTime(dayjs(entry.created_at))}
                       </Text>
                       {entry.text ? (
-                        <Text
-                          style={{ fontSize: fs(13.5), color: tc.text, lineHeight: 20 }}
-                        >
+                        <Text style={{ fontSize: fs(13.5), color: tc.text, lineHeight: 20 }}>
                           {entry.text}
                         </Text>
                       ) : null}

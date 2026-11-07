@@ -142,7 +142,9 @@ export default function CallScreen() {
     if (!isAnswerMode && sessionRef.current) {
       const old = sessionRef.current;
       setSessionBoth(null);
-      void endCall.mutateAsync({ sessionId: old.session_id, reason: 'cancelled' }).catch(() => undefined);
+      void endCall
+        .mutateAsync({ sessionId: old.session_id, reason: 'cancelled' })
+        .catch(() => undefined);
     }
     endedRef.current = false;
     connectedRef.current = false;

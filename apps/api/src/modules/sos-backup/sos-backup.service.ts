@@ -1258,8 +1258,16 @@ export class SosBackupService implements OnModuleInit, OnModuleDestroy {
       job_id: String(sos.job_id),
       helper_id: helperId,
     };
-    this.gateway.emitToUser(String(sos.customer_id), SOCKET_EVENTS.SOS_BACKUP_CANDIDATE_WITHDRAWN, withdrawnPayload);
-    this.gateway.emitToJob(String(sos.job_id), SOCKET_EVENTS.SOS_BACKUP_CANDIDATE_WITHDRAWN, withdrawnPayload);
+    this.gateway.emitToUser(
+      String(sos.customer_id),
+      SOCKET_EVENTS.SOS_BACKUP_CANDIDATE_WITHDRAWN,
+      withdrawnPayload,
+    );
+    this.gateway.emitToJob(
+      String(sos.job_id),
+      SOCKET_EVENTS.SOS_BACKUP_CANDIDATE_WITHDRAWN,
+      withdrawnPayload,
+    );
 
     // Mọi người được mời đều từ chối → leo thang đợt tiếp ngay (hoặc hết hạn nếu cạn ứng viên)
     const anyoneLeftInvited = sos.candidates.some(c => c.state === 'invited');

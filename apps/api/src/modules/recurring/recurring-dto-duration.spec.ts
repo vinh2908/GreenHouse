@@ -33,9 +33,7 @@ describe('CreateRecurringPlanDto duration_hours (F2)', () => {
   it('duration_hours 13 → lỗi max; 24 → lỗi max (trần cũ không còn)', async () => {
     for (const bad of [13, 24]) {
       const errors = await validate(validDto(bad));
-      expect(
-        errors.some(e => e.property === 'duration_hours' && e.constraints?.max),
-      ).toBe(true);
+      expect(errors.some(e => e.property === 'duration_hours' && e.constraints?.max)).toBe(true);
     }
   });
 
@@ -47,12 +45,8 @@ describe('CreateRecurringPlanDto duration_hours (F2)', () => {
 
   it('duration_hours 12.5 → lỗi max; 0.2 → lỗi min', async () => {
     const over = await validate(validDto(12.5));
-    expect(
-      over.some(e => e.property === 'duration_hours' && e.constraints?.max),
-    ).toBe(true);
+    expect(over.some(e => e.property === 'duration_hours' && e.constraints?.max)).toBe(true);
     const under = await validate(validDto(0.2));
-    expect(
-      under.some(e => e.property === 'duration_hours' && e.constraints?.min),
-    ).toBe(true);
+    expect(under.some(e => e.property === 'duration_hours' && e.constraints?.min)).toBe(true);
   });
 });

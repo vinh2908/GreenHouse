@@ -63,9 +63,7 @@ export class SupportService {
     }
     return this.conversationModel.create({
       user_id: new Types.ObjectId(userId),
-      ...(jobId && Types.ObjectId.isValid(jobId)
-        ? { job_id: new Types.ObjectId(jobId) }
-        : {}),
+      ...(jobId && Types.ObjectId.isValid(jobId) ? { job_id: new Types.ObjectId(jobId) } : {}),
     });
   }
 
@@ -223,10 +221,7 @@ export class SupportService {
   }
 
   // B75: Mở lại thread đã đóng (chủ thread hoặc admin) — chỉ mở lại khi bấm nút
-  async reopenConversation(
-    conversationId: string,
-    requester: { sub: string; isAdmin?: boolean },
-  ) {
+  async reopenConversation(conversationId: string, requester: { sub: string; isAdmin?: boolean }) {
     const conv = await this.findConversationOrThrow(conversationId);
     if (!requester.isAdmin && conv.user_id.toString() !== requester.sub) {
       throw new ForbiddenException('Bạn không có quyền mở lại hội thoại này');

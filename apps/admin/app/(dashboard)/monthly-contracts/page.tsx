@@ -174,7 +174,11 @@ export default function AdminMonthlyContractsPage() {
                                 variant="outline"
                                 disabled={cancelMutation.isPending}
                                 onClick={() =>
-                                  setConfirmContract({ id: c._id, title: c.title, action: 'cancel' })
+                                  setConfirmContract({
+                                    id: c._id,
+                                    title: c.title,
+                                    action: 'cancel',
+                                  })
                                 }
                               >
                                 Hủy

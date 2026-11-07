@@ -434,7 +434,9 @@ export default function MonthlyContractDetailScreen() {
                 : `Điểm danh tháng ${formatMonthSlash(`${month}-01`)}`}
             </Text>
             <TouchableOpacity
-              onPress={() => setMonth(formatMonthKey(toVnDayjs(`${month}-01`).subtract(1, 'month')))}
+              onPress={() =>
+                setMonth(formatMonthKey(toVnDayjs(`${month}-01`).subtract(1, 'month')))
+              }
               style={{
                 paddingHorizontal: 10,
                 paddingVertical: 6,

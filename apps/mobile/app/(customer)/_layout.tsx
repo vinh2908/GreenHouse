@@ -35,11 +35,26 @@ export default function CustomerLayout() {
     // B28: skeleton giữ khung (header + tab + nội dung) thay spinner trắng
     return (
       <View style={{ flex: 1, backgroundColor: tc.background }}>
-        <View style={{ paddingHorizontal: 20, paddingTop: 56, paddingBottom: 14, backgroundColor: tc.surface }}>
+        <View
+          style={{
+            paddingHorizontal: 20,
+            paddingTop: 56,
+            paddingBottom: 14,
+            backgroundColor: tc.surface,
+          }}
+        >
           <Skeleton width={140} height={24} />
           <Skeleton width={200} height={14} style={{ marginTop: 6 }} />
         </View>
-        <View style={{ flexDirection: 'row', paddingHorizontal: 16, paddingVertical: 12, gap: 10, backgroundColor: tc.surface }}>
+        <View
+          style={{
+            flexDirection: 'row',
+            paddingHorizontal: 16,
+            paddingVertical: 12,
+            gap: 10,
+            backgroundColor: tc.surface,
+          }}
+        >
           {[80, 100, 90, 80].map((w, i) => (
             <Skeleton key={i} width={w} height={32} radius={14} />
           ))}

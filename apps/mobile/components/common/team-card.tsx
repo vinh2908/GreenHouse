@@ -144,9 +144,7 @@ export function TeamCard({ job, currentUserId }: { job: any; currentUserId?: str
       </Text>
 
       {canBuild && slotsLeft > 0 && (
-        <View
-          style={{ gap: 10, borderTopWidth: 1, borderTopColor: tc.border, paddingTop: 12 }}
-        >
+        <View style={{ gap: 10, borderTopWidth: 1, borderTopColor: tc.border, paddingTop: 12 }}>
           <Text style={{ fontWeight: '800', fontSize: fs(13.5), color: tc.text }}>
             {lang === 'en'
               ? `Invite helpers to team (${slotsLeft} slots left)`

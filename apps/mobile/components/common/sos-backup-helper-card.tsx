@@ -399,9 +399,7 @@ export function SosBackupHelperCard({ job }: { job: any }) {
               onPress={() => setSheetOpen(false)}
               style={{ paddingVertical: 8, alignItems: 'center' }}
             >
-              <Text style={{ color: tc.textMuted, fontWeight: '700' }}>
-                {t('common_close')}
-              </Text>
+              <Text style={{ color: tc.textMuted, fontWeight: '700' }}>{t('common_close')}</Text>
             </TouchableOpacity>
           </View>
         </View>

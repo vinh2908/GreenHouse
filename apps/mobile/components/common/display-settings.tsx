@@ -58,8 +58,7 @@ function Segmented<T extends string>({
 }
 
 export function DisplaySettingsSection() {
-  const { t, fs, language, setLanguage, textSize, setTextSize, theme, setTheme } =
-    useTranslation();
+  const { t, fs, language, setLanguage, textSize, setTextSize, theme, setTheme } = useTranslation();
   const tc = useThemeColors();
   return (
     <View>

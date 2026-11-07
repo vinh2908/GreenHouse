@@ -2,7 +2,15 @@
 // "Bỏ qua" / hoàn thành lưu cờ gh_onboarding_seen_v1 vào AsyncStorage rồi
 // đưa về trang chính theo vai trò. Chỉ hiện 1 lần sau đăng ký.
 import { useRef, useState } from 'react';
-import { View, Text, TouchableOpacity, FlatList, Dimensions, NativeSyntheticEvent, NativeScrollEvent } from 'react-native';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  FlatList,
+  Dimensions,
+  NativeSyntheticEvent,
+  NativeScrollEvent,
+} from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -35,7 +43,9 @@ export default function OnboardingScreen() {
 
   const goHome = async () => {
     await AsyncStorage.setItem(ONBOARDING_SEEN_KEY, '1');
-    router.replace(user?.roles?.includes(UserRole.HELPER) ? '/(helper)/dashboard' : '/(customer)/home');
+    router.replace(
+      user?.roles?.includes(UserRole.HELPER) ? '/(helper)/dashboard' : '/(customer)/home',
+    );
   };
 
   const handleNext = () => {
@@ -101,7 +111,12 @@ export default function OnboardingScreen() {
                 {t(item.titleKey)}
               </Text>
               <Text
-                style={{ fontSize: fs(15), color: tc.textSecondary, lineHeight: 23, textAlign: 'center' }}
+                style={{
+                  fontSize: fs(15),
+                  color: tc.textSecondary,
+                  lineHeight: 23,
+                  textAlign: 'center',
+                }}
               >
                 {t(item.bodyKey)}
               </Text>

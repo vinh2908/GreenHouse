@@ -234,7 +234,11 @@ export class CreateQuoteDto {
   @Min(0)
   @Max(1_000_000_000)
   materials_cost?: number;
-  @ApiProperty({ example: 3 }) @IsNumber() @Min(0.5) @Max(12, { message: 'Thời lượng công việc tối đa là 12 giờ' }) estimated_duration: number;
+  @ApiProperty({ example: 3 })
+  @IsNumber()
+  @Min(0.5)
+  @Max(12, { message: 'Thời lượng công việc tối đa là 12 giờ' })
+  estimated_duration: number;
   @ApiPropertyOptional({ default: 0 })
   @IsOptional()
   @IsNumber()

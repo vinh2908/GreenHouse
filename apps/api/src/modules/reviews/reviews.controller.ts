@@ -1,7 +1,23 @@
-import { Controller, Get, Post, Patch, Delete, Body, Param, Query, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Delete,
+  Body,
+  Param,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { ReviewsService } from './reviews.service';
-import { CreateReviewDto, HelperReplyDto, AppealReviewDto, ResolveAppealDto, SetReviewVisibilityDto } from './dto/review.dto';
+import {
+  CreateReviewDto,
+  HelperReplyDto,
+  AppealReviewDto,
+  ResolveAppealDto,
+  SetReviewVisibilityDto,
+} from './dto/review.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
@@ -91,7 +107,8 @@ export class ReviewsController {
   @Roles(UserRole.ADMIN)
   @ApiOperation({ summary: '[Admin] Ẩn/hiện đánh giá' })
   async setVisibility(@Param('id') id: string, @Body() dto: SetReviewVisibilityDto) {
-    return this.reviewsService.setReviewVisibility(id, dto.hidden);  }
+    return this.reviewsService.setReviewVisibility(id, dto.hidden);
+  }
 
   // ─── Get reviews for a helper (public) ────────────────────────────────────
 

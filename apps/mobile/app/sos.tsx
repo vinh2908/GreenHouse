@@ -34,7 +34,15 @@ import { useAuthStore } from '@/stores/auth.store';
 import { lightImpact } from '@/services/haptics';
 import { useTranslation } from '@/hooks/use-i18n';
 import { locationService, parseVietnameseAddress } from '@/services/location.service';
-import { Button, Card, LoadingSpinner, COLORS, Separator, PriceText, useThemeColors } from '@/components/ui';
+import {
+  Button,
+  Card,
+  LoadingSpinner,
+  COLORS,
+  Separator,
+  PriceText,
+  useThemeColors,
+} from '@/components/ui';
 
 // ── Danh sách sự cố SOS khẩn cấp hợp lệ (Whitelist) ──────────────────────────
 const SOS_CATEGORIES = [

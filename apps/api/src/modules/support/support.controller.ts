@@ -29,7 +29,9 @@ export class SupportController {
   constructor(private readonly supportService: SupportService) {}
 
   @Post('conversations')
-  @ApiOperation({ summary: 'Lấy hoặc tạo hội thoại hỗ trợ đang mở của tôi (B77: kèm job_id khi tạo từ màn đơn)' })
+  @ApiOperation({
+    summary: 'Lấy hoặc tạo hội thoại hỗ trợ đang mở của tôi (B77: kèm job_id khi tạo từ màn đơn)',
+  })
   async getOrCreate(
     @CurrentUser() user: { sub: string },
     @Body() dto?: CreateSupportConversationDto,
@@ -79,7 +81,7 @@ export class SupportController {
 
   @Patch('conversations/:id/reopen')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: "B75: Mở lại thread hỗ trợ đã đóng để tiếp tục trò chuyện" })
+  @ApiOperation({ summary: 'B75: Mở lại thread hỗ trợ đã đóng để tiếp tục trò chuyện' })
   async reopen(@CurrentUser() user: { sub: string }, @Param('id') id: string) {
     return this.supportService.reopenConversation(id, { sub: user.sub });
   }

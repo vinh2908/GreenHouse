@@ -103,7 +103,8 @@ export function DateTimeBottomSheet({
 
   // Lists — bánh xe giờ chỉ 07–22 (P1-29); index trong list = giờ − 7
   const hoursList = useMemo(
-    () => Array.from({ length: WORK_END_HOUR - WORK_START_HOUR + 1 }, (_, i) => i + WORK_START_HOUR),
+    () =>
+      Array.from({ length: WORK_END_HOUR - WORK_START_HOUR + 1 }, (_, i) => i + WORK_START_HOUR),
     [],
   );
   const minutesList = useMemo(() => Array.from({ length: 60 }, (_, i) => i), []);
@@ -170,10 +171,7 @@ export function DateTimeBottomSheet({
   const hourFromScrollY = (y: number) =>
     Math.max(
       WORK_START_HOUR,
-      Math.min(
-        WORK_END_HOUR,
-        Math.round(y / ITEM_HEIGHT) + WORK_START_HOUR,
-      ),
+      Math.min(WORK_END_HOUR, Math.round(y / ITEM_HEIGHT) + WORK_START_HOUR),
     );
 
   const handleHourScroll = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
@@ -211,7 +209,10 @@ export function DateTimeBottomSheet({
       }
       const newTime = `${String(idx).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
       setTempTime(newTime);
-      hoursScrollRef.current?.scrollTo({ y: (idx - WORK_START_HOUR) * ITEM_HEIGHT, animated: true });
+      hoursScrollRef.current?.scrollTo({
+        y: (idx - WORK_START_HOUR) * ITEM_HEIGHT,
+        animated: true,
+      });
     } catch {
       // Prevent unhandled errors
     }
@@ -288,7 +289,10 @@ export function DateTimeBottomSheet({
       setSelectedH(hour);
       setSelectedM(minute);
       setTempTime(`${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`);
-      hoursScrollRef.current?.scrollTo({ y: (hour - WORK_START_HOUR) * ITEM_HEIGHT, animated: true });
+      hoursScrollRef.current?.scrollTo({
+        y: (hour - WORK_START_HOUR) * ITEM_HEIGHT,
+        animated: true,
+      });
       minutesScrollRef.current?.scrollTo({ y: minute * ITEM_HEIGHT, animated: true });
     }
   }, []);

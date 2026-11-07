@@ -1,11 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import {
-  useAdminUsers,
-  useAdminLoyaltyUser,
-  useAdminAdjustLoyalty,
-} from '@/hooks/use-admin';
+import { useAdminUsers, useAdminLoyaltyUser, useAdminAdjustLoyalty } from '@/hooks/use-admin';
 import {
   Badge,
   Button,
@@ -39,9 +35,7 @@ export default function AdminLoyaltyPage() {
   });
   const users = usersData?.users ?? [];
 
-  const { data: loyalty, isLoading: loyaltyLoading } = useAdminLoyaltyUser(
-    selectedId || undefined,
-  );
+  const { data: loyalty, isLoading: loyaltyLoading } = useAdminLoyaltyUser(selectedId || undefined);
   const adjust = useAdminAdjustLoyalty();
 
   const selectedUser = users.find((u: any) => u._id === selectedId);
@@ -66,9 +60,7 @@ export default function AdminLoyaltyPage() {
           setNoteInput('');
         },
         onError: (e: any) => {
-          setMessage(
-            e?.response?.data?.message || 'Điều chỉnh điểm thất bại. Thử lại sau.',
-          );
+          setMessage(e?.response?.data?.message || 'Điều chỉnh điểm thất bại. Thử lại sau.');
         },
       },
     );
@@ -78,9 +70,7 @@ export default function AdminLoyaltyPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Quản lý điểm thưởng</h1>
-        <p className="text-muted-foreground">
-          Xem số điểm của người dùng, cộng/trừ điểm kèm lý do
-        </p>
+        <p className="text-muted-foreground">Xem số điểm của người dùng, cộng/trừ điểm kèm lý do</p>
       </div>
 
       <Card>
@@ -205,7 +195,9 @@ export default function AdminLoyaltyPage() {
                               <TableCell>{tx.type}</TableCell>
                               <TableCell
                                 className={
-                                  tx.points > 0 ? 'text-green-600 font-medium' : 'text-red-600 font-medium'
+                                  tx.points > 0
+                                    ? 'text-green-600 font-medium'
+                                    : 'text-red-600 font-medium'
                                 }
                               >
                                 {tx.points > 0 ? '+' : ''}

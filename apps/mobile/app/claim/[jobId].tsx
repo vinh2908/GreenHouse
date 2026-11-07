@@ -302,9 +302,7 @@ export default function ClaimScreen() {
                       )}
                     </View>
                     <View style={{ flex: 1, paddingBottom: 10 }}>
-                      <Text
-                        style={{ fontSize: fs(13.5), fontWeight: '700', color: tc.text }}
-                      >
+                      <Text style={{ fontSize: fs(13.5), fontWeight: '700', color: tc.text }}>
                         {lang === 'en'
                           ? (TIMELINE_LABEL[entry.status]?.en ?? entry.status)
                           : (TIMELINE_LABEL[entry.status]?.vi ?? entry.status)}

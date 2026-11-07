@@ -386,14 +386,8 @@ export function useCreateWarrantyJob() {
 export function useSelectQuote() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({
-      jobId,
-      ...dto
-    }: {
-      jobId: string;
-      quote_id: string;
-      scheduled_at?: string;
-    }) => apiClient.post(`/jobs/${jobId}/select-quote`, dto),
+    mutationFn: ({ jobId, ...dto }: { jobId: string; quote_id: string; scheduled_at?: string }) =>
+      apiClient.post(`/jobs/${jobId}/select-quote`, dto),
     onSuccess: (_, vars) => {
       qc.invalidateQueries({ queryKey: ['job', vars.jobId] });
       qc.invalidateQueries({ queryKey: ['jobs', 'my'] });
@@ -1002,9 +996,7 @@ export function useTopupWallet() {
       Toast.show({
         type: 'success',
         text1:
-          lang === 'en'
-            ? 'Demo top-up recorded (simulation)'
-            : 'Đã ghi nhận nạp tiền mô phỏng',
+          lang === 'en' ? 'Demo top-up recorded (simulation)' : 'Đã ghi nhận nạp tiền mô phỏng',
         text2:
           lang === 'en'
             ? 'No real payment was made; withdrawable balance unchanged.'

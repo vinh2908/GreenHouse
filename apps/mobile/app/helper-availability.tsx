@@ -79,8 +79,12 @@ export default function HelperAvailabilityScreen() {
       Toast.show({
         type: 'success',
         text1: val
-          ? (lang === 'en' ? 'Working schedule enabled' : 'Đã bật lịch làm việc')
-          : (lang === 'en' ? 'Working schedule disabled' : 'Đã tắt lịch làm việc'),
+          ? lang === 'en'
+            ? 'Working schedule enabled'
+            : 'Đã bật lịch làm việc'
+          : lang === 'en'
+            ? 'Working schedule disabled'
+            : 'Đã tắt lịch làm việc',
       });
     } catch {
       setEnabled(!val);
@@ -187,9 +191,7 @@ export default function HelperAvailabilityScreen() {
             <Text style={{ fontWeight: '800', fontSize: fs(15), color: tc.text }}>
               {lang === 'en' ? 'Enable Working Schedule' : 'Bật lịch làm việc'}
             </Text>
-            <Text
-              style={{ fontSize: fs(13), color: tc.textMuted, marginTop: 2, lineHeight: 19 }}
-            >
+            <Text style={{ fontSize: fs(13), color: tc.textMuted, marginTop: 2, lineHeight: 19 }}>
               {lang === 'en'
                 ? 'When enabled, you only see & get notified for jobs during your working days/hours. When disabled, you receive all jobs as usual.'
                 : 'Khi bật, bạn chỉ thấy & được thông báo các đơn rơi vào ngày/giờ làm việc của mình. Khi tắt, bạn nhận mọi đơn như trước.'}
@@ -278,9 +280,7 @@ export default function HelperAvailabilityScreen() {
           ) : (
             blockedDates.map(d => (
               <View key={d} style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                <Text
-                  style={{ flex: 1, fontSize: fs(14), fontWeight: '700', color: tc.text }}
-                >
+                <Text style={{ flex: 1, fontSize: fs(14), fontWeight: '700', color: tc.text }}>
                   {d}
                 </Text>
                 <TouchableOpacity

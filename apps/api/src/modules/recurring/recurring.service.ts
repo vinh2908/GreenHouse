@@ -208,8 +208,7 @@ export class RecurringService implements OnApplicationBootstrap, OnModuleDestroy
       // rỗng — chuỗi rỗng cũng làm hasTimeRange của G12 sai nên tính là
       // thiếu). duration_hours không phải số hữu hạn thì không map: G12 sẽ
       // 400 với thông báo chung thay vì nhận giá trị rác.
-      const hasTimeEnd =
-        typeof plan.time_end === 'string' && plan.time_end.trim() !== '';
+      const hasTimeEnd = typeof plan.time_end === 'string' && plan.time_end.trim() !== '';
       const durationHours =
         typeof plan.duration_hours === 'number' && Number.isFinite(plan.duration_hours)
           ? plan.duration_hours

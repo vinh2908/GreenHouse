@@ -269,9 +269,7 @@ export default function SupportChatScreen() {
                       paddingVertical: 11,
                     }}
                   >
-                    <Text
-                      style={{ fontSize: fs(13.5), fontWeight: '600', color: tc.text }}
-                    >
+                    <Text style={{ fontSize: fs(13.5), fontWeight: '600', color: tc.text }}>
                       {faq.q}
                     </Text>
                   </TouchableOpacity>
@@ -294,7 +292,7 @@ export default function SupportChatScreen() {
                     <Text style={{ fontSize: fs(13), color: '#1E40AF', fontWeight: '700' }}>
                       {lang === 'en' ? 'Related job: ' : 'Đơn liên quan: '}
                       {typeof conversation.job_id === 'object'
-                        ? (conversation.job_id as any).title ?? (conversation.job_id as any)._id
+                        ? ((conversation.job_id as any).title ?? (conversation.job_id as any)._id)
                         : conversation.job_id}
                     </Text>
                   </TouchableOpacity>
@@ -395,11 +393,7 @@ export default function SupportChatScreen() {
                 );
               }
               const isMe = item.msg.sender_role === 'user';
-              return renderBubble(
-                isMe,
-                item.msg.content,
-                formatTime(dayjs(item.msg.created_at)),
-              );
+              return renderBubble(isMe, item.msg.content, formatTime(dayjs(item.msg.created_at)));
             }}
           />
 

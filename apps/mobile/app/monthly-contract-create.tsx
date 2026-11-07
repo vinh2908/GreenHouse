@@ -458,9 +458,7 @@ export default function MonthlyContractCreateScreen() {
                   }}
                 >
                   <View style={{ flex: 1 }}>
-                    <Text
-                      style={{ fontSize: fs(13.5), fontWeight: '700', color: tc.text }}
-                    >
+                    <Text style={{ fontSize: fs(13.5), fontWeight: '700', color: tc.text }}>
                       {a.label || (lang === 'en' ? 'Address' : 'Địa chỉ')}{' '}
                       {a.is_default ? (lang === 'en' ? '· Default' : '· Mặc định') : ''}
                     </Text>

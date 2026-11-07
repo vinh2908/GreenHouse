@@ -92,7 +92,12 @@ function makeService() {
       execOf(redemptions.filter(r => matches(r, filter)).length),
   };
 
-  const service = new VouchersService(voucherModel as never, redemptionModel as never, {} as never, {} as never); // B99: NotificationsService
+  const service = new VouchersService(
+    voucherModel as never,
+    redemptionModel as never,
+    {} as never,
+    {} as never,
+  ); // B99: NotificationsService
   return { service, userId, jobId, voucher, redemptions };
 }
 

@@ -44,7 +44,10 @@ function vnNowManual(): dayjs.Dayjs {
  * nguyên thời điểm tuyệt đối (utcOffset(7)).
  */
 function fallbackUtcOffset7(input: unknown): dayjs.Dayjs {
-  if (typeof input === 'string' && /^\d{4}-\d{2}-\d{2}([T ]\d{2}:\d{2}(:\d{2})?(\.\d+)?)?$/.test(input.trim())) {
+  if (
+    typeof input === 'string' &&
+    /^\d{4}-\d{2}-\d{2}([T ]\d{2}:\d{2}(:\d{2})?(\.\d+)?)?$/.test(input.trim())
+  ) {
     const d = dayjs(input.trim()).utcOffset(VN_UTC_OFFSET_MINUTES, true);
     if (d.isValid()) return d;
   }
@@ -77,7 +80,12 @@ function fallbackUtcOffset7(input: unknown): dayjs.Dayjs {
 export function toVnDayjs(dateInput: DateInput | unknown): dayjs.Dayjs {
   const input: unknown = Array.isArray(dateInput) ? dateInput[0] : dateInput;
   if (input === undefined || input === null || input === '') return vnNow();
-  if (typeof input !== 'string' && !(input instanceof Date) && typeof input !== 'number' && !dayjs.isDayjs(input)) {
+  if (
+    typeof input !== 'string' &&
+    !(input instanceof Date) &&
+    typeof input !== 'number' &&
+    !dayjs.isDayjs(input)
+  ) {
     return vnNow();
   }
   // Chuỗi ISO có Z hoặc offset số (+07:00, -05:00) là THỜI ĐIỂM TUYỆT ĐỐI
@@ -269,10 +277,7 @@ export function formatDateWithWeekday(dateInput: DateInput, lang: 'vi' | 'en' = 
 }
 
 /** 'Thứ hai, 08/11/2026 09:00' / 'Monday, 08/11/2026 09:00' theo giờ VN. */
-export function formatDateTimeWithWeekday(
-  dateInput: DateInput,
-  lang: 'vi' | 'en' = 'vi',
-): string {
+export function formatDateTimeWithWeekday(dateInput: DateInput, lang: 'vi' | 'en' = 'vi'): string {
   if (!dateInput) return '';
   const weekday = formatWeekday(dateInput, lang);
   const dateTime = formatDateTime(dateInput);

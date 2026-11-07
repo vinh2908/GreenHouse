@@ -1,7 +1,14 @@
 'use client';
 
 import { useState } from 'react';
-import { useAdminReviews, useAdminReplyReview, useAdminDeleteReview, useSetReviewVisibility, useResolveReviewAppeal } from '@/hooks/use-admin';import {
+import {
+  useAdminReviews,
+  useAdminReplyReview,
+  useAdminDeleteReview,
+  useSetReviewVisibility,
+  useResolveReviewAppeal,
+} from '@/hooks/use-admin';
+import {
   Button,
   Input,
   Table,
@@ -113,7 +120,7 @@ export default function ReviewsPage() {
                     <TableHead>Nhận xét</TableHead>
                     <TableHead>Phản hồi helper</TableHead>
                     <TableHead>Ngày đánh giá</TableHead>
-                    <TableHead>Kháng nghị</TableHead>                    <TableHead>Thao tác</TableHead>
+                    <TableHead>Kháng nghị</TableHead> <TableHead>Thao tác</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -198,7 +205,9 @@ export default function ReviewsPage() {
                             <span className="text-muted-foreground">—</span>
                           )}
                           {r.is_hidden ? (
-                            <span className="ml-1 text-xs bg-red-100 text-red-700 px-1.5 py-0.5 rounded">Đã ẩn</span>
+                            <span className="ml-1 text-xs bg-red-100 text-red-700 px-1.5 py-0.5 rounded">
+                              Đã ẩn
+                            </span>
                           ) : null}
                         </TableCell>
                         <TableCell>
@@ -262,7 +271,7 @@ export default function ReviewsPage() {
                             >
                               {r.is_hidden ? 'Hiện lại' : 'Ẩn'}
                             </Button>
-{r.appeal_status === 'pending' && (
+                            {r.appeal_status === 'pending' && (
                               <>
                                 <button
                                   className="text-xs border rounded px-2 py-1 text-green-700"
@@ -289,7 +298,8 @@ export default function ReviewsPage() {
                               onClick={() => setDeleteTargetId(r._id)}
                             >
                               Xoá
-                            </Button>                          </div>
+                            </Button>{' '}
+                          </div>
                         </TableCell>
                       </TableRow>
                     ),
