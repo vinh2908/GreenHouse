@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -16,6 +16,7 @@ import Toast from 'react-native-toast-message';
 import { useAuthStore } from '@/stores/auth.store';
 import { useTranslation } from '@/hooks/use-i18n';
 import { useLogin, useForgotPassword, useResetPassword } from '@/hooks/use-api';
+import { mapAuthErrorMessage } from '@/services/i18n';
 import { VIETNAMESE_PHONE_REGEX } from '@homemate/utils';
 import { Button, Input, COLORS, useThemeColors } from '@/components/ui';
 
@@ -39,6 +40,14 @@ export default function LoginScreen() {
   const [resetPhone, setResetPhone] = useState('');
   const [resetOtp, setResetOtp] = useState('');
   const [newPassword, setNewPassword] = useState('');
+  // P2-21: đếm ngược gửi lại mã ở bước reset (OTP hết hạn sau 5 phút)
+  const [resetCountdown, setResetCountdown] = useState(0);
+
+  useEffect(() => {
+    if (resetCountdown <= 0) return;
+    const timer = setInterval(() => setResetCountdown(c => c - 1), 1000);
+    return () => clearInterval(timer);
+  }, [resetCountdown]);
 
   const handleLogin = async () => {
     setLoginError(null);
@@ -77,12 +86,13 @@ export default function LoginScreen() {
       }
     } catch (err: unknown) {
       const dataMsg = (err as any)?.response?.data?.message;
-      const msg = Array.isArray(dataMsg)
-        ? dataMsg[0]
-        : dataMsg ||
-          (lang === 'en'
-            ? 'Incorrect phone number or password'
-            : 'Số điện thoại hoặc mật khẩu không chính xác');
+      const rawMsg = Array.isArray(dataMsg) ? dataMsg[0] : dataMsg;
+      // P2-16: dịch message backend sang tiếng Anh khi ở chế độ English
+      const msg =
+        mapAuthErrorMessage(rawMsg, lang) ||
+        (lang === 'en'
+          ? 'Incorrect phone number or password'
+          : 'Số điện thoại hoặc mật khẩu không chính xác');
       setLoginError(msg);
       Toast.show({
         type: 'error',
@@ -108,6 +118,7 @@ export default function LoginScreen() {
       await forgotPassword.mutateAsync(cleanPhone);
       setResetPhone(cleanPhone);
       setForgotStep('reset');
+      setResetCountdown(60);
       Toast.show({
         type: 'success',
         text1: lang === 'en' ? 'Password reset OTP sent' : 'Đã gửi mã OTP đặt lại mật khẩu',
@@ -117,9 +128,37 @@ export default function LoginScreen() {
             : 'Kiểm tra hộp thư email của bạn để lấy mã OTP',
       });
     } catch (err: unknown) {
+      const rawMsg = (err as { response?: { data?: { message?: unknown } } })?.response?.data
+        ?.message;
       const msg =
-        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
+        mapAuthErrorMessage(rawMsg, lang) ??
         (lang === 'en' ? 'Unable to send OTP at this time' : 'Không thể gửi OTP lúc này');
+      Toast.show({ type: 'error', text1: msg });
+    }
+  };
+
+  // P2-21: gửi lại mã ở bước reset — mirror otp.tsx (OTP hết hạn sau 5 phút,
+  // trước đây chỉ có đường Back → nhập lại SĐT → gửi lại).
+  const handleResendResetOtp = async () => {
+    if (resetCountdown > 0 || forgotPassword.isPending) return;
+    try {
+      await forgotPassword.mutateAsync(resetPhone);
+      setResetCountdown(60);
+      Toast.show({
+        type: 'success',
+        text1: lang === 'en' ? 'OTP resent' : 'Đã gửi lại OTP',
+        text2:
+          lang === 'en'
+            ? 'Check your email inbox for the new code'
+            : 'Kiểm tra hộp thư email của bạn để lấy mã mới',
+      });
+    } catch (err: unknown) {
+      const res = (err as { response?: { status?: number; data?: { message?: unknown } } })
+        ?.response;
+      const msg =
+        mapAuthErrorMessage(res?.data?.message, lang) ??
+        (lang === 'en' ? 'Unable to resend OTP at this time' : 'Không thể gửi lại OTP lúc này');
+      if (res?.status === 429) setResetCountdown(3600);
       Toast.show({ type: 'error', text1: msg });
     }
   };
@@ -150,6 +189,7 @@ export default function LoginScreen() {
       });
       setShowForgotModal(false);
       setForgotStep('phone');
+      setResetCountdown(0);
       setPhone(resetPhone);
       setPassword(newPassword);
       setResetOtp('');
@@ -163,11 +203,19 @@ export default function LoginScreen() {
             : 'Bạn có thể đăng nhập bằng mật khẩu mới',
       });
     } catch (err: unknown) {
+      const rawMsg = (err as { response?: { data?: { message?: unknown } } })?.response?.data
+        ?.message;
       const msg =
-        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
+        mapAuthErrorMessage(rawMsg, lang) ??
         (lang === 'en' ? 'Invalid or expired OTP' : 'Mã OTP không đúng hoặc đã hết hạn');
       Toast.show({ type: 'error', text1: msg });
     }
+  };
+
+  const closeForgotModal = () => {
+    setShowForgotModal(false);
+    setForgotStep('phone');
+    setResetCountdown(0);
   };
 
   const insets = useSafeAreaInsets();
@@ -365,7 +413,7 @@ export default function LoginScreen() {
         visible={showForgotModal}
         transparent
         animationType="slide"
-        onRequestClose={() => setShowForgotModal(false)}
+        onRequestClose={closeForgotModal}
       >
         <View
           style={{
@@ -403,7 +451,7 @@ export default function LoginScreen() {
                       : 'Đặt lại mật khẩu mới'}
                 </Text>
               </View>
-              <TouchableOpacity onPress={() => setShowForgotModal(false)}>
+              <TouchableOpacity onPress={closeForgotModal}>
                 <X size={22} color={COLORS.gray[500]} />
               </TouchableOpacity>
             </View>
@@ -483,13 +531,45 @@ export default function LoginScreen() {
                   onChangeText={setNewPassword}
                   leftIcon={<Lock size={18} color={COLORS.gray[400]} />}
                 />
+                {/* P2-21: gửi lại mã khi OTP hết hạn (5 phút) */}
+                <View style={{ alignItems: 'center' }}>
+                  {resetCountdown > 0 ? (
+                    <Text style={{ color: tc.textMuted, fontSize: fs(14) }}>
+                      {lang === 'en' ? 'Resend in ' : 'Gửi lại sau '}
+                      <Text style={{ color: COLORS.primary, fontWeight: '600' }}>
+                        {resetCountdown >= 120
+                          ? `${Math.ceil(resetCountdown / 60)} min`
+                          : `${resetCountdown}s`}
+                      </Text>
+                    </Text>
+                  ) : (
+                    <TouchableOpacity
+                      onPress={handleResendResetOtp}
+                      disabled={forgotPassword.isPending}
+                    >
+                      <Text
+                        style={{
+                          color: COLORS.primary,
+                          fontWeight: '600',
+                          fontSize: fs(14),
+                          opacity: forgotPassword.isPending ? 0.6 : 1,
+                        }}
+                      >
+                        {lang === 'en' ? 'Resend OTP' : 'Gửi lại OTP'}
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
                 <View style={{ flexDirection: 'row', gap: 10 }}>
                   <Button
                     title={lang === 'en' ? 'Back' : 'Quay lại'}
                     variant="outline"
                     fullWidth={false}
                     style={{ flex: 1 }}
-                    onPress={() => setForgotStep('phone')}
+                    onPress={() => {
+                      setForgotStep('phone');
+                      setResetCountdown(0);
+                    }}
                   />
                   <Button
                     title={lang === 'en' ? 'Confirm Reset' : 'Xác nhận đổi'}

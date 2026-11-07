@@ -77,8 +77,11 @@ import {
   useAnalyzeIssuePhoto,
   useCreateRecurringPlan,
   useValidateVoucher,
+  useMyProfile,
 } from '@/hooks/use-api';
 import type { IssuePhotoAnalysis } from '@/hooks/use-api';
+import { useResendVerification } from '@/components/common/verification-banner';
+import { mapAuthErrorMessage } from '@/services/i18n';
 import { locationService, OsmPlace, parseVietnameseAddress } from '@/services/location.service';
 import { Button, Input, Card, COLORS, Skeleton, useThemeColors } from '@/components/ui';
 import { VoucherInput } from '@/components/common/voucher-input';
@@ -273,6 +276,8 @@ export default function BookingScreen() {
   const { data: services, isLoading: isLoadingServices } = useServices();
   const createJob = useCreateJob();
   const createRecurringPlan = useCreateRecurringPlan();
+  const { data: myProfile } = useMyProfile();
+  const { resendAndGoToOtp } = useResendVerification();
   const analyzeAI = useAnalyzeBooking();
   const estimatePrice = useEstimatePrice();
   const analyzeIssuePhoto = useAnalyzeIssuePhoto();
@@ -1089,6 +1094,37 @@ export default function BookingScreen() {
     }
   };
 
+  // P0-7: tài khoản chưa xác minh email thì server chặn tạo đơn — hiện hộp
+  // thoại kèm nút gửi lại mã (đưa sang màn OTP) thay vì lỗi trần ở cuối submit.
+  const promptVerifyBeforeBooking = (email?: string) => {
+    if (!email?.trim()) {
+      Toast.show({ type: 'error', text1: t('verify_banner_no_email') });
+      return;
+    }
+    Alert.alert(t('booking_verify_title'), t('booking_verify_desc'), [
+      { text: t('common_cancel'), style: 'cancel' },
+      {
+        text: t('booking_verify_resend'),
+        onPress: async () => {
+          try {
+            await resendAndGoToOtp(email);
+          } catch (err: unknown) {
+            const raw = (err as { response?: { data?: { message?: unknown } } })?.response
+              ?.data?.message;
+            Toast.show({
+              type: 'error',
+              text1:
+                mapAuthErrorMessage(raw, lang) ??
+                (lang === 'en'
+                  ? 'Could not resend the code. Please try again.'
+                  : 'Không gửi lại được mã. Vui lòng thử lại.'),
+            });
+          }
+        },
+      },
+    ]);
+  };
+
   const handleSubmit = async () => {
     if (!useAuthStore.getState().isAuthenticated) {
       Toast.show({
@@ -1097,6 +1133,14 @@ export default function BookingScreen() {
         text2: t('booking_login_required_desc'),
       });
       router.push('/(auth)/login');
+      return;
+    }
+
+    // P0-7: kiểm tra xác minh TRƯỚC khi submit — chỉ chặn khi biết chắc chưa
+    // xác minh (profile store đều có is_verified); chưa rõ thì để server quyết.
+    const verifyState = myProfile ?? useAuthStore.getState().user;
+    if (verifyState && verifyState.is_verified === false) {
+      promptVerifyBeforeBooking((verifyState as { email?: string }).email);
       return;
     }
 
@@ -1213,15 +1257,21 @@ export default function BookingScreen() {
       resetForm();
       router.replace('/(customer)/jobs');
     } catch (err: any) {
+      const rawMsg = err?.response?.data?.message;
+      const msgStr = Array.isArray(rawMsg) ? rawMsg[0] : rawMsg;
+      // P0-7: server vẫn có thể chặn (vd. profile chưa kịp load ở pre-check)
+      // → đưa lối gửi lại mã thay vì toast lỗi trần.
+      if (typeof msgStr === 'string' && msgStr.includes('chưa được xác minh')) {
+        promptVerifyBeforeBooking(
+          (myProfile as { email?: string } | undefined)?.email ??
+            (useAuthStore.getState().user as { email?: string } | null)?.email,
+        );
+        return;
+      }
       const msg =
-        err?.response?.data?.message ||
-        (Array.isArray(err?.response?.data?.message)
-          ? err.response.data.message[0]
-          : t('booking_create_failed'));
-      Toast.show({
-        type: 'error',
-        text1: typeof msg === 'string' ? msg : t('booking_create_failed'),
-      });
+        mapAuthErrorMessage(msgStr, lang) ??
+        (typeof msgStr === 'string' ? msgStr : t('booking_create_failed'));
+      Toast.show({ type: 'error', text1: msg });
     }
   };
 

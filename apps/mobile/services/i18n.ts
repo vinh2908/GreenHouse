@@ -1718,6 +1718,33 @@ export const STRINGS = {
   'sos_helper.add_photo_btn': { vi: 'Thêm ảnh', en: 'Add photo' },
   'sos_helper.uploading_photos': { vi: 'Đang tải ảnh lên…', en: 'Uploading photos…' },
   'sos_helper.submit_sos_btn': { vi: 'Gửi yêu cầu SOS', en: 'Submit SOS request' },
+  // ─── Email verification (P0-7) ───────────────────────────────────────────
+  verify_banner_title: { vi: 'Xác minh email của bạn', en: 'Verify your email' },
+  verify_banner_desc: {
+    vi: 'Bạn chưa xác minh email nên chưa thể tạo đơn hoặc nhận việc. Gửi lại mã xác minh để tiếp tục.',
+    en: 'You have not verified your email yet, so you cannot post jobs or accept work. Resend the verification code to continue.',
+  },
+  verify_banner_action: { vi: 'Gửi lại mã', en: 'Resend code' },
+  verify_banner_sent: {
+    vi: 'Đã gửi mã xác minh đến email của bạn',
+    en: 'Verification code sent to your email',
+  },
+  verify_banner_no_email: {
+    vi: 'Tài khoản chưa có email — vui lòng liên hệ hỗ trợ để cập nhật email trước khi xác minh.',
+    en: 'This account has no email — please contact support to add an email before verifying.',
+  },
+  booking_verify_title: { vi: 'Cần xác minh email trước', en: 'Email verification required first' },
+  booking_verify_desc: {
+    vi: 'Tài khoản của bạn chưa được xác minh qua email nên chưa thể tạo đơn. Gửi lại mã xác minh ngay?',
+    en: 'Your account is not email-verified yet, so you cannot post a job. Resend the verification code now?',
+  },
+  booking_verify_resend: { vi: 'Gửi lại mã', en: 'Resend code' },
+
+  // ─── Auth error mapping (P2-16) — xem mapAuthErrorMessage bên dưới ────────
+  auth_err_invalid_phone: {
+    vi: 'Vui lòng nhập số điện thoại 10 số hợp lệ',
+    en: 'Please enter a valid 10-digit phone number',
+  },
 } as const;
 
 export type I18nKey = keyof typeof STRINGS;
@@ -1736,6 +1763,53 @@ export function translate(
     }
   }
   return text;
+}
+
+// ─── Auth Error Mapping (P2-16) ──────────────────────────────────────────────
+// Backend trả message tiếng Việt thô; ở chế độ English phải dịch sang tiếng
+// Anh thay vì hiển thị nguyên văn. Chỉ map các message đã biết — message lạ
+// giữ nguyên để không giấu thông tin.
+const AUTH_ERROR_EN_MAP: Record<string, string> = {
+  'Số điện thoại đã được đăng ký': 'This phone number is already registered',
+  'Email đã được đăng ký': 'This email is already registered',
+  'Email này đã được đăng ký': 'This email is already registered',
+  'Số điện thoại, email hoặc mật khẩu không đúng': 'Incorrect phone number, email or password',
+  'Tài khoản đã bị khóa. Liên hệ hỗ trợ.': 'This account is locked. Please contact support.',
+  'Tài khoản đã bị xóa.': 'This account has been deleted.',
+  'OTP không đúng hoặc đã hết hạn': 'Invalid or expired OTP code',
+  'Mã OTP không đúng hoặc đã hết hạn': 'Invalid or expired OTP code',
+  'Mã xác nhận không đúng hoặc đã hết hạn': 'Invalid or expired verification code',
+  'Số điện thoại chưa được đăng ký': 'This phone number is not registered',
+  'Số điện thoại không tồn tại': 'This phone number does not exist',
+  'Email chưa được đăng ký trong hệ thống': 'This email is not registered',
+  'Tài khoản không tồn tại trong hệ thống': 'Account does not exist',
+  'Tài khoản không tồn tại': 'Account does not exist',
+  'Gửi mã OTP thất bại. Vui lòng thử lại sau.': 'Failed to send the OTP code. Please try again later.',
+  'Bạn đã yêu cầu gửi mã OTP quá 5 lần trong 1 giờ. Vui lòng thử lại sau.':
+    'You have requested the OTP code too many times in 1 hour. Please try again later.',
+  'Gửi mã OTP qua SMS chưa được hỗ trợ. Vui lòng dùng email để nhận mã OTP.':
+    'SMS OTP is not supported yet. Please use email to receive the OTP code.',
+  'Tài khoản chưa đăng ký email nên không thể gửi mã OTP qua email. Vui lòng liên hệ hỗ trợ để cập nhật email.':
+    'This account has no email registered, so the OTP cannot be sent by email. Please contact support to add an email.',
+  'Tài khoản chưa được xác minh qua email. Vui lòng xác minh email trước khi tạo đơn.':
+    'Your account is not email-verified yet. Please verify your email before posting a job.',
+  'Số điện thoại không hợp lệ': 'Invalid phone number',
+  'Mật khẩu không đúng': 'Incorrect password',
+  'Đăng ký thành công!': 'Registration successful!',
+  'Đặt lại mật khẩu thành công': 'Password reset successful',
+  'Xác minh email thành công': 'Email verified successfully',
+  'OTP đã được gửi. Có hiệu lực trong 5 phút.': 'OTP sent. Valid for 5 minutes.',
+  'Mã xác minh OTP đã được gửi đến email của bạn.':
+    'The OTP verification code has been sent to your email.',
+};
+
+export function mapAuthErrorMessage(
+  message: unknown,
+  lang: AppLanguage,
+): string | undefined {
+  if (typeof message !== 'string' || !message) return undefined;
+  if (lang !== 'en') return message;
+  return AUTH_ERROR_EN_MAP[message.trim()] ?? message;
 }
 
 // ─── Service Catalog Name Translation (Điểm 3) ───────────────────────────────
