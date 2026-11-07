@@ -4,6 +4,7 @@ import {
   formatDateKey,
   formatDateWithWeekday,
   formatTime,
+  isValidDateKey,
   toVnDayjs,
   vnDateKey,
   vnNow,
@@ -19,6 +20,7 @@ import {
   ActivityIndicator,
   Image,
   Switch,
+  findNodeHandle,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -65,8 +67,10 @@ import {
   TimeDropdownPicker,
   DurationDropdownPicker,
   ScheduledTimePreview,
+  formatDurationVi,
   getDefaultFutureTimeSlot,
   getNowVietnam,
+  hasFutureTimeSlot,
 } from '@/components/common/time-dropdown-picker';
 import { DateTimePickerBottomSheet } from '@/components/common/date-time-bottom-sheet';
 import {
@@ -320,8 +324,6 @@ export default function BookingScreen() {
   const [duration, setDuration] = useState(3);
   const [dateTimePickerOpen, setDateTimePickerOpen] = useState(false);
   const [bottomSheetInitialTab, setBottomSheetInitialTab] = useState<'date' | 'time'>('date');
-  const [calendarOpen, setCalendarOpen] = useState(false);
-  const [calendarMonth, setCalendarMonth] = useState(vnNow());
   const [customTimeOpen, setCustomTimeOpen] = useState(false);
   const [customTimeInput, setCustomTimeInput] = useState('');
   const [isCustomDuration, setIsCustomDuration] = useState(false);
@@ -363,8 +365,16 @@ export default function BookingScreen() {
       scroll?.scrollTo({ y: 0, animated: true });
       return;
     }
+    // S1: measureLayout cần node handle (số) của ScrollView, KHÔNG phải chính
+    // ref object — truyền thẳng ref (cast sang number) là sai API, đo luôn
+    // thất bại rồi rơi về đầu trang qua onFail.
+    const scrollHandle = findNodeHandle(scroll);
+    if (scrollHandle == null) {
+      scroll.scrollTo({ y: 0, animated: true });
+      return;
+    }
     node.measureLayout(
-      scroll as unknown as number,
+      scrollHandle,
       (_x, y) => {
         scroll.scrollTo({ y: Math.max(0, y - 12), animated: true });
       },
@@ -372,6 +382,30 @@ export default function BookingScreen() {
         scroll.scrollTo({ y: 0, animated: true });
       },
     );
+  };
+
+  // B3/P1-32: thời lượng luôn kẹp 0.5–12h (API duration_hours @Min(0.5)/@Max(12))
+  const clampDurationHours = (h: number) =>
+    Math.min(Math.max(typeof h === 'number' && !isNaN(h) ? h : 3, 0.5), 12);
+
+  // Kiểm tra lịch chung cho step 2 và submit (cả đơn lẻ lẫn gói định kỳ —
+  // P1-33: nhánh recurring trước đây bỏ qua check này). Trả về i18n key lỗi
+  // hoặc null khi hợp lệ. Bao gồm: B2 (ngày invalid), B5 (quá khứ, grace
+  // 1 phút như sheet/submit), P1-29 (khung 07:00–22:00), P1-28 (vượt nửa đêm).
+  const validateSchedule = (): string | null => {
+    if (!date || !timeSlot) return 'booking_time_validation_error';
+    if (!isValidDateKey(date)) return 'booking_invalid_date_error';
+    const start = toVnDayjs(`${date} ${timeSlot}`);
+    if (!start.isValid()) return 'booking_invalid_date_error';
+    if (start.isBefore(vnNow().subtract(1, 'minute'))) return 'booking_time_past_error';
+    const [sh, sm] = timeSlot.split(':').map(Number);
+    const startMin = sh * 60 + sm;
+    if (isNaN(startMin) || startMin < 7 * 60 || startMin > 22 * 60) {
+      return 'booking_time_window_error';
+    }
+    const durMins = Math.round(clampDurationHours(duration) * 60);
+    if (startMin + durMins >= 24 * 60) return 'booking_midnight_cross_error';
+    return null;
   };
 
   const clearFieldError = (f: string) => {
@@ -396,27 +430,43 @@ export default function BookingScreen() {
       setSelectedService('');
       setStep(0);
     }
-    // Prefill ngày giờ nếu có
+    // Prefill ngày giờ nếu có — chỉ nhận giá trị HỢP LỆ, còn lại giữ mặc định
+    // (ngày mai). Ngày 'Invalid Date' hoặc sai dạng trước đây ghi thẳng vào
+    // state rồi bị API @IsDateString() từ chối ở bước 5/5.
     if (params.preferred_date) {
-      setDate(params.preferred_date);
-      if (params.preferred_date === vnDateKey()) setDateChip('today');
-      else if (params.preferred_date === vnDateKey(1)) setDateChip('tomorrow');
-      else setDateChip(null);
+      if (isValidDateKey(params.preferred_date)) {
+        setDate(params.preferred_date);
+        if (params.preferred_date === vnDateKey()) setDateChip('today');
+        else if (params.preferred_date === vnDateKey(1)) setDateChip('tomorrow');
+        else setDateChip(null);
+      } else {
+        setDate(vnDateKey(1));
+        setDateChip('tomorrow');
+      }
     }
-    if (params.preferred_time_start) {
-      setTimeSlot(params.preferred_time_start);
-      if (!TIME_SLOTS.includes(params.preferred_time_start)) {
-        setCustomTimeInput(params.preferred_time_start);
+    if (typeof params.preferred_time_start === 'string' && params.preferred_time_start) {
+      // Chỉ nhận HH:mm trong khung làm việc 07:00–22:00 (P1-29)
+      const m = /^([01]\d|2[0-3]):([0-5]\d)$/.exec(params.preferred_time_start.trim());
+      if (m) {
+        const total = Number(m[1]) * 60 + Number(m[2]);
+        if (total >= 7 * 60 && total <= 22 * 60) {
+          setTimeSlot(params.preferred_time_start.trim());
+          if (!TIME_SLOTS.includes(params.preferred_time_start.trim())) {
+            setCustomTimeInput(params.preferred_time_start.trim());
+          }
+        }
       }
     }
     if (params.duration_hours) {
       const parsedDur = parseFloat(params.duration_hours);
-      if (!isNaN(parsedDur) && parsedDur > 0) {
-        setDuration(parsedDur);
-        if (![1, 2, 3, 4].includes(parsedDur)) {
+      if (!isNaN(parsedDur)) {
+        // B3: kẹp 0.5–12h (0.25h hay 16h đều không lọt qua)
+        const clamped = Math.min(Math.max(parsedDur, 0.5), 12);
+        setDuration(clamped);
+        if (![1, 2, 3, 4].includes(clamped)) {
           setIsCustomDuration(true);
-          const h = Math.floor(parsedDur);
-          const m = Math.round((parsedDur - h) * 60);
+          const h = Math.floor(clamped);
+          const m = Math.round((clamped - h) * 60);
           setCustomHours(h);
           setCustomMinutes(m);
         }
@@ -463,6 +513,7 @@ export default function BookingScreen() {
     });
     setCoordsDerived(false);
     setDate(vnDateKey(1));
+    setDateChip('tomorrow');
     setTimeSlot('09:00');
     setDuration(3);
     setTitle('');
@@ -1052,7 +1103,8 @@ export default function BookingScreen() {
       }
 
       if (result.estimated_duration_hours) {
-        setDuration(Math.min(Math.max(Math.round(result.estimated_duration_hours), 1), 8));
+        // P1-32: giữ số lẻ (1.5h không làm tròn thành 2h), kẹp 0.5–12h
+        setDuration(Math.min(Math.max(result.estimated_duration_hours, 0.5), 12));
       }
 
       if (result.service_name || result.tasks) {
@@ -1141,6 +1193,16 @@ export default function BookingScreen() {
       setStep(2);
       return;
     }
+    // B2/P1-33: kiểm tra lịch DÙNG CHUNG cho cả đơn lẻ lẫn gói định kỳ
+    // (ngày invalid, quá khứ, ngoài khung 07–22, vượt nửa đêm) — trước đây
+    // nhánh recurring return sớm nên bỏ qua mọi check này.
+    const scheduleError = validateSchedule();
+    if (scheduleError) {
+      setFieldErrors({ timeSlot: t(scheduleError) });
+      Toast.show({ type: 'error', text1: t(scheduleError) });
+      setStep(2);
+      return;
+    }
     if (!title.trim() || !description.trim()) {
       Toast.show({ type: 'error', text1: t('booking_title_desc_required') });
       setStep(3);
@@ -1169,7 +1231,7 @@ export default function BookingScreen() {
           weekdays: recurringFreq === 'weekly' ? recurringWeekdays : undefined,
           month_days: recurringFreq === 'monthly' ? [recurringMonthDay] : undefined,
           time_start: timeSlot,
-          duration_hours: duration,
+          duration_hours: clampDurationHours(duration),
           start_date: date,
           preferred_helper_id:
             offerToFavorite && params.favorite_helper_id ? params.favorite_helper_id : undefined,
@@ -1179,17 +1241,21 @@ export default function BookingScreen() {
         return;
       }
 
-      const durHours = typeof duration === 'number' ? duration : parseFloat(String(duration)) || 2;
+      // Lịch đã qua validateSchedule() chung ở trên (cả nhánh recurring):
+      // ngày hợp lệ, không quá khứ, trong khung 07–22, không vượt nửa đêm.
+      const durHours = clampDurationHours(
+        typeof duration === 'number' ? duration : parseFloat(String(duration)) || 2,
+      );
       const durMinsTotal = Math.round(durHours * 60);
       const startDateTime = toVnDayjs(`${date} ${timeSlot}`);
-      if (startDateTime.isBefore(vnNow().subtract(1, 'minute'))) {
-        Toast.show({ type: 'error', text1: t('booking_time_past_error') });
-        return;
-      }
       const endTime = formatTime(startDateTime.add(durMinsTotal, 'minute'));
       const cleanNum = targetPrice ? Number(String(targetPrice).replace(/[^0-9]/g, '')) : undefined;
       if (cleanNum !== undefined && cleanNum < 50000) {
+        // B4: giá 0 cũng lỗi như ở step 0 — về step 0 + highlight ô giá thay
+        // vì chỉ toast rồi kẹt ở bước xác nhận
+        setFieldErrors({ targetPrice: t('booking_min_price_error') });
         Toast.show({ type: 'error', text1: t('booking_min_price_error') });
+        setStep(0);
         return;
       }
 
@@ -1240,7 +1306,8 @@ export default function BookingScreen() {
         }
         if (targetPrice) {
           const cleanP = Number(String(targetPrice).replace(/[^0-9]/g, ''));
-          if (cleanP > 0 && cleanP < 50000) {
+          // B4: giá 0 cũng invalid (submit chặn < 50000) — đồng bộ 2 đầu
+          if (cleanP < 50000) {
             nextErrors.targetPrice = t('booking_min_price_error');
           }
         }
@@ -1281,15 +1348,11 @@ export default function BookingScreen() {
       }
       setStep(2);
     } else if (step === 2) {
-      if (!date || !timeSlot) {
-        nextErrors.timeSlot = t('booking_time_validation_error');
-        setFieldErrors(nextErrors);
-        scrollToField('timeSlot');
-        return;
-      }
-      const selectedStart = toVnDayjs(`${date} ${timeSlot}`);
-      if (selectedStart.isBefore(vnNow())) {
-        nextErrors.timeSlot = t('booking_time_past_error');
+      // B2/B5/P1-28/P1-29: ngày invalid, quá khứ (grace 1 phút như sheet +
+      // submit), ngoài khung 07–22, vượt nửa đêm — lỗi nào cũng cuộn tới ô giờ
+      const scheduleError = validateSchedule();
+      if (scheduleError) {
+        nextErrors.timeSlot = t(scheduleError);
         setFieldErrors(nextErrors);
         scrollToField('timeSlot');
         return;
@@ -2071,7 +2134,15 @@ export default function BookingScreen() {
                             const [th, tm] = timeSlot.split(':').map(Number);
                             const nowVn = getNowVietnam();
                             if (th * 60 + tm <= nowVn.totalMinutes) {
-                              setTimeSlot(getDefaultFutureTimeSlot(todayStr));
+                              // B6: sau 22:00 không còn slot tương lai hôm nay —
+                              // dời sang ngày mai thay vì gán '22:00' đã qua
+                              if (hasFutureTimeSlot(todayStr)) {
+                                setTimeSlot(getDefaultFutureTimeSlot(todayStr));
+                              } else {
+                                setDate(vnDateKey(1));
+                                setDateChip('tomorrow');
+                                setTimeSlot('09:00');
+                              }
                             }
                           } else if (c.key === 'tomorrow') setDate(vnDateKey(1));
                           else if (c.key === 'sat') {
@@ -2481,7 +2552,7 @@ export default function BookingScreen() {
                 <Row
                   icon={<Clock size={16} color={COLORS.primary} />}
                   label={t('booking_time_label')}
-                  value={`${timeSlot} • ${duration} ${t('common_hours')}`}
+                  value={`${timeSlot} • ${formatDurationVi(Math.round(duration * 60), lang)}`}
                 />
                 {photos.length > 0 && (
                   <Row
