@@ -35,6 +35,7 @@ describe('JobsService - F7 Refund Retry & Notification', () => {
 
     paymentsService = {
       refundCustomer: jest.fn(),
+      hasSuccessfulRefund: jest.fn().mockResolvedValue(false),
     };
 
     notificationsService = {
@@ -232,5 +233,93 @@ describe('JobsService - F7 Refund Retry & Notification', () => {
     expect(pendingJob.refund_retry_count).toBe(2);
     expect(pendingJob.refund_pending_amount).toBe(200000);
     expect(notificationsService.create).not.toHaveBeenCalled();
+  });
+
+  it('H8 (G1): job.save() lỗi SAU khi hoàn tiền → lần quét sau KHÔNG hoàn trùng (tổng hoàn = 1 lần)', async () => {
+    const customerId = new Types.ObjectId().toString();
+    const jobId = new Types.ObjectId().toString();
+
+    const pendingJob: any = {
+      _id: new Types.ObjectId(jobId),
+      customer_id: new Types.ObjectId(customerId),
+      status: JobStatus.CANCELLED,
+      payment_status: PaymentStatus.PAID,
+      title: 'Dọn nhà',
+      refund_pending_retry: true,
+      refund_pending_amount: 350000,
+      refund_pending_reason: 'Thử lại hoàn tiền đơn hủy',
+      refund_retry_count: 1,
+      // Lần save đầu (sau refundCustomer) lỗi — mô phỏng đúng sót H8.
+      // Các lần save sau (trong catch + lần quét 2) thành công.
+      save: jest.fn().mockRejectedValueOnce(new Error('DB save failed')).mockResolvedValue(true),
+    };
+
+    jobModel.find.mockReturnValue({
+      exec: jest.fn().mockResolvedValue([pendingJob]),
+    });
+    paymentsService.refundCustomer.mockResolvedValue({});
+    paymentsService.hasSuccessfulRefund.mockResolvedValue(false);
+
+    // Lần quét 1: tiền đã hoàn (refundCustomer 1 lần) nhưng save lỗi → chưa recovered.
+    const recovered1 = await service.sweepPendingRefundRetries();
+    expect(recovered1).toBe(0);
+    expect(paymentsService.refundCustomer).toHaveBeenCalledTimes(1);
+    expect(notificationsService.create).not.toHaveBeenCalled();
+
+    // DB thật không lưu được lần gán trong bộ nhớ ở lần quét 1 (save lỗi),
+    // nên lần quét 2 vẫn thấy đơn ở trạng thái chờ hoàn — reset lại đúng
+    // trạng thái DB để mô phỏng lần quét sau.
+    pendingJob.refund_pending_retry = true;
+    pendingJob.refund_pending_amount = 350000;
+    pendingJob.refund_pending_reason = 'Thử lại hoàn tiền đơn hủy';
+    pendingJob.payment_status = PaymentStatus.PAID;
+    // Sổ giao dịch đã có bản ghi refund success từ lần quét 1.
+    paymentsService.hasSuccessfulRefund.mockResolvedValue(true);
+
+    // Lần quét 2: guard phát hiện đã hoàn → KHÔNG gọi refundCustomer nữa,
+    // chỉ đồng bộ trạng thái + gửi notification, tính là recovered.
+    const recovered2 = await service.sweepPendingRefundRetries();
+    expect(recovered2).toBe(1);
+    expect(paymentsService.refundCustomer).toHaveBeenCalledTimes(1);
+    expect(pendingJob.payment_status).toBe(PaymentStatus.REFUNDED);
+    expect(pendingJob.refund_pending_retry).toBe(false);
+    expect(pendingJob.refund_pending_amount).toBeUndefined();
+    expect(notificationsService.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: NOTIFICATION_TYPES.REFUND_RECEIVED,
+        userId: customerId,
+        body: expect.stringContaining('350.000'),
+        payload: expect.objectContaining({ job_id: jobId, amount: 350000 }),
+      }),
+    );
+  });
+
+  it('H8 (G1): đơn đã ở trạng thái REFUNDED nhưng cờ retry còn sót → không hoàn nữa, chỉ đồng bộ', async () => {
+    const customerId = new Types.ObjectId().toString();
+    const jobId = new Types.ObjectId().toString();
+
+    const pendingJob: any = {
+      _id: new Types.ObjectId(jobId),
+      customer_id: new Types.ObjectId(customerId),
+      status: JobStatus.CANCELLED,
+      payment_status: PaymentStatus.REFUNDED,
+      title: 'Dọn nhà',
+      refund_pending_retry: true,
+      refund_pending_amount: 350000,
+      refund_pending_reason: 'Thử lại hoàn tiền đơn hủy',
+      refund_retry_count: 1,
+      save: jest.fn().mockResolvedValue(true),
+    };
+
+    jobModel.find.mockReturnValue({
+      exec: jest.fn().mockResolvedValue([pendingJob]),
+    });
+
+    const recovered = await service.sweepPendingRefundRetries();
+
+    expect(recovered).toBe(1);
+    expect(paymentsService.refundCustomer).not.toHaveBeenCalled();
+    expect(pendingJob.refund_pending_retry).toBe(false);
+    expect(pendingJob.refund_pending_amount).toBeUndefined();
   });
 });
