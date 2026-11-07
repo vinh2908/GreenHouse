@@ -117,6 +117,23 @@ export class JobsController {
     );
   }
 
+  @Get('skipped')
+  @ApiOperation({ summary: '[Helper] Danh sách các đơn đã bỏ qua' })
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  async getSkippedJobs(
+    @CurrentUser() user: { sub: string },
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+  ) {
+    await this.jobsService.requireVerifiedHelper(user.sub);
+    return this.jobsService.getSkippedJobs(
+      user.sub,
+      Number(page) || 1,
+      Number(limit) || 20,
+    );
+  }
+
   // ─── Helper: Own jobs ─────────────────────────────────────────────────────
 
   @Get('helper/my')
@@ -398,5 +415,12 @@ export class JobsController {
   @ApiOperation({ summary: '[Helper] Bỏ qua / từ chối đơn hàng đang mở' })
   async rejectJob(@CurrentUser() user: { sub: string }, @Param('jobId') jobId: string) {
     return this.jobsService.rejectJob(user.sub, jobId);
+  }
+
+  @Post(':jobId/unreject')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: '[Helper] Hoàn tác bỏ qua đơn hàng (hiện lại đơn)' })
+  async unrejectJob(@CurrentUser() user: { sub: string }, @Param('jobId') jobId: string) {
+    return this.jobsService.unrejectJob(user.sub, jobId);
   }
 }

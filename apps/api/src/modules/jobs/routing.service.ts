@@ -15,17 +15,20 @@ export class RoutingService {
     toLat: number,
     toLng: number,
   ): Promise<RouteResult> {
-    const cacheKey = `${fromLat.toFixed(4)},${fromLng.toFixed(4)}-${toLat.toFixed(4)},${toLng.toFixed(4)}`;
+    // Làm tròn 3 chữ số thập phân (~110m) để chống rung toạ độ GPS khi làm mới
+    const cacheKey = `${fromLat.toFixed(3)},${fromLng.toFixed(3)}-${toLat.toFixed(3)},${toLng.toFixed(3)}`;
     const cached = this.cache.get(cacheKey);
     if (cached && cached.expires > Date.now()) return cached.result;
 
     try {
       const result = await this.fetchGoongDirections(fromLat, fromLng, toLat, toLng);
-      this.cache.set(cacheKey, { result, expires: Date.now() + 10 * 60 * 1000 });
-      if (this.cache.size > 500) this.evictOldest();
+      this.cache.set(cacheKey, { result, expires: Date.now() + 30 * 60 * 1000 });
+      if (this.cache.size > 1000) this.evictOldest();
       return result;
     } catch {
-      return this.haversineFallback(fromLat, fromLng, toLat, toLng);
+      const fallback = this.haversineFallback(fromLat, fromLng, toLat, toLng);
+      this.cache.set(cacheKey, { result: fallback, expires: Date.now() + 5 * 60 * 1000 });
+      return fallback;
     }
   }
 

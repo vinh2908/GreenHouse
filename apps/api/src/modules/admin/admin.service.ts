@@ -509,6 +509,8 @@ export class AdminService {
       .populate('customer_id', 'full_name phone')
       .populate('helper_id', 'full_name phone')
       .populate('service_id', 'name')
+      .populate('private_offer_helper_id', 'full_name phone')
+      .populate('rejected_helper_ids', 'full_name phone')
       .exec();
     if (!job) throw new NotFoundException('Job không tồn tại');
     return job;

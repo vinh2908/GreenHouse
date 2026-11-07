@@ -1305,7 +1305,16 @@ export class JobsService implements OnModuleInit {
               query: {
                 status: HelperStatus.ONLINE,
                 verification_status: VerificationStatus.APPROVED,
-                ...(job.service_id ? { service_ids: job.service_id } : {}),
+                ...(job.service_id
+                  ? {
+                      $or: [
+                        { service_ids: job.service_id },
+                        { service_ids: { $size: 0 } },
+                        { service_ids: { $exists: false } },
+                        { service_ids: null },
+                      ],
+                    }
+                  : {}),
               },
             },
           },
@@ -3761,6 +3770,84 @@ export class JobsService implements OnModuleInit {
     return { success: true, message: 'Đã bỏ qua đơn hàng thành công' };
   }
 
+  async unrejectJob(helperId: string, jobId: string): Promise<{ success: boolean; message: string }> {
+    const job = await this.jobModel.findById(jobId).exec();
+    if (!job) throw new NotFoundException('Đơn hàng không tồn tại');
+    const helperOid = new Types.ObjectId(helperId);
+    await this.jobModel
+      .findByIdAndUpdate(jobId, {
+        $pull: { rejected_helper_ids: helperOid },
+      })
+      .exec();
+    return { success: true, message: 'Đã hoàn tác và hiện lại đơn hàng thành công' };
+  }
+
+  async getSkippedJobs(helperId: string, page = 1, limit = 20) {
+    const now = new Date();
+    const helperOid = new Types.ObjectId(helperId);
+    const query: Record<string, unknown> = {
+      status: { $in: [JobStatus.OPEN, JobStatus.RECEIVING_QUOTES] },
+      expires_at: { $gt: now },
+      rejected_helper_ids: helperOid,
+    };
+    const [jobs, total, helperProfile] = await Promise.all([
+      this.jobModel
+        .find(query)
+        .populate('service_id', 'name slug icon')
+        .sort({ created_at: -1 })
+        .skip((page - 1) * limit)
+        .limit(limit)
+        .exec(),
+      this.jobModel.countDocuments(query).exec(),
+      this.helperModel
+        .findOne({ user_id: helperOid })
+        .select('location')
+        .lean()
+        .exec(),
+    ]);
+
+    const helperCoords = helperProfile?.location?.coordinates;
+    const jobObjects = jobs.map(job => {
+      const obj = job.toObject() as any;
+      obj.is_recurring = Boolean(job.recurring_plan_id);
+      obj.is_fixed_price = Boolean(job.is_fixed_price);
+      obj.fixed_price = job.fixed_price ?? 0;
+      obj.is_warranty = Boolean(job.is_warranty);
+      return obj;
+    });
+
+    if (helperCoords) {
+      const destinations = jobObjects
+        .filter(obj => obj.address?.location?.coordinates)
+        .map(obj => ({
+          id: String(obj._id),
+          lat: obj.address.location.coordinates[1],
+          lng: obj.address.location.coordinates[0],
+        }));
+
+      const routes = await this.routingService.getRoutesBatch(
+        helperCoords[1],
+        helperCoords[0],
+        destinations,
+      );
+
+      for (const obj of jobObjects) {
+        const route = routes.get(String(obj._id));
+        if (route) {
+          obj.distance_km = route.distance_km;
+          obj.estimated_travel_minutes = route.estimated_minutes;
+        }
+      }
+    }
+
+    return {
+      jobs: jobObjects,
+      total,
+      page,
+      total_pages: Math.max(1, Math.ceil(total / limit)),
+    };
+  }
+
   async getAvailableJobs(helperId: string, serviceId?: string, page = 1, limit = 20) {
     const now = new Date();
     const helperOid = new Types.ObjectId(helperId);
@@ -3776,7 +3863,9 @@ export class JobsService implements OnModuleInit {
         { private_offer_helper_id: helperOid },
       ],
     };
-    if (serviceId && Types.ObjectId.isValid(serviceId)) {
+    if (serviceId === 'custom') {
+      query['service_id'] = null;
+    } else if (serviceId && Types.ObjectId.isValid(serviceId)) {
       query['service_id'] = new Types.ObjectId(serviceId);
     }
     const [allJobs, rawTotalCount, helperProfile] = await Promise.all([

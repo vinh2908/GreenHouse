@@ -130,6 +130,74 @@ export default function JobDetailPage() {
               <PersonCard title="Khách hàng" person={job.customer_id} />
               <PersonCard title="Thợ" person={job.helper_id} />
             </div>
+
+            {/* Chi tiết lịch hẹn & điều phối (Lệnh 6) */}
+            <div className="grid gap-4 rounded-lg border bg-muted/20 p-4 sm:grid-cols-2 text-sm">
+              <div>
+                <p className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">
+                  Ngày & Giờ hẹn
+                </p>
+                <p className="mt-1 font-medium">
+                  {job.preferred_date
+                    ? `${typeof job.preferred_date === 'string' ? job.preferred_date.slice(0, 10) : new Date(job.preferred_date).toISOString().slice(0, 10)}`
+                    : 'Chưa đặt ngày'}
+                  {job.preferred_time_start
+                    ? ` · ${job.preferred_time_start}${job.preferred_time_end ? ` – ${job.preferred_time_end}` : ''}`
+                    : ''}
+                </p>
+              </div>
+
+              <div>
+                <p className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">
+                  Hạn nhận đơn (Expires At)
+                </p>
+                <p className="mt-1 font-medium">
+                  {job.expires_at ? formatDateTime(job.expires_at) : '72 giờ sau khi tạo'}
+                </p>
+              </div>
+
+              <div>
+                <p className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">
+                  Chế độ gửi riêng (Private Offer)
+                </p>
+                {job.private_offer_helper_id ? (
+                  <div className="mt-1">
+                    <p className="font-medium text-pink-700">
+                      Gửi riêng cho: {job.private_offer_helper_id.full_name || 'Thợ'} (
+                      <span className="font-mono">{job.private_offer_helper_id.phone}</span>)
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Hạn độc quyền:{' '}
+                      {job.private_offer_expires_at
+                        ? formatDateTime(job.private_offer_expires_at)
+                        : '—'}
+                    </p>
+                  </div>
+                ) : (
+                  <p className="mt-1 text-muted-foreground">Đơn công khai (không gửi riêng)</p>
+                )}
+              </div>
+
+              <div>
+                <p className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">
+                  Danh sách thợ đã từ chối / bỏ qua
+                </p>
+                {job.rejected_helper_ids && job.rejected_helper_ids.length > 0 ? (
+                  <ul className="mt-1 list-disc pl-4 text-xs space-y-0.5 text-destructive font-medium">
+                    {job.rejected_helper_ids.map((h: any, idx: number) => (
+                      <li key={h._id || idx}>
+                        {h.full_name || 'Thợ'}{' '}
+                        <span className="font-mono text-muted-foreground">
+                          ({h.phone || '—'})
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="mt-1 text-muted-foreground">Chưa có thợ nào bỏ qua đơn này</p>
+                )}
+              </div>
+            </div>
             <div>
               <p className="text-xs uppercase tracking-wide text-muted-foreground">Địa chỉ</p>
               <p className="text-sm">{job.address?.full_address}</p>

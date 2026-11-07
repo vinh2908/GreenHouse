@@ -80,6 +80,15 @@ export default function HelperDashboardScreen() {
   const acceptSos = useAcceptSosJob();
   const updateLocation = useUpdateHelperLocation();
 
+  const getJobServiceLabel = (job: any) => {
+    if (job?.custom_service_name && String(job.custom_service_name).trim()) {
+      return `${t('common_service')}: ${String(job.custom_service_name).trim()}`;
+    }
+    const svcName = tService(job?.service_id);
+    if (svcName) return svcName;
+    return t('common_service');
+  };
+
   const isWorking =
     profile?.status === 'busy' ||
     myJobs?.some((j: any) =>
@@ -854,7 +863,7 @@ export default function HelperDashboardScreen() {
                           flexWrap: 'wrap',
                         }}
                       >
-                        <Badge label={tService(job.service_id) || t('common_service')} size="sm" />
+                        <Badge label={getJobServiceLabel(job)} size="sm" />
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                           <MapPin size={12} color={COLORS.gray[500]} />
                           <Text style={{ fontSize: fs(13), color: tc.textSecondary }}>

@@ -431,7 +431,35 @@ export function useRejectJob() {
       qc.invalidateQueries({ queryKey: ['job', jobId] });
       qc.invalidateQueries({ queryKey: ['quotes', jobId] });
       qc.invalidateQueries({ queryKey: ['jobs', 'available'] });
+      qc.invalidateQueries({ queryKey: ['jobs', 'skipped'] });
       qc.invalidateQueries({ queryKey: ['jobs', 'demand-map'] });
+    },
+  });
+}
+
+export function useUnrejectJob() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (jobId: string) => apiClient.post(`/jobs/${jobId}/unreject`),
+    onSuccess: (_, jobId) => {
+      qc.invalidateQueries({ queryKey: ['job', jobId] });
+      qc.invalidateQueries({ queryKey: ['quotes', jobId] });
+      qc.invalidateQueries({ queryKey: ['jobs', 'available'] });
+      qc.invalidateQueries({ queryKey: ['jobs', 'skipped'] });
+      qc.invalidateQueries({ queryKey: ['jobs', 'demand-map'] });
+    },
+  });
+}
+
+export function useSkippedJobs(page = 1, enabled = true) {
+  return useQuery({
+    enabled,
+    queryKey: ['jobs', 'skipped', page],
+    queryFn: async () => {
+      const { data } = await apiClient.get('/jobs/skipped', {
+        params: { page },
+      });
+      return data.data;
     },
   });
 }

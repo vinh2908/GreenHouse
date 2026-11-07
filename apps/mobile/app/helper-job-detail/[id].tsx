@@ -32,6 +32,7 @@ import {
   DollarSign,
   MapPin,
   Clock,
+  RotateCcw,
 } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import dayjs from 'dayjs';
@@ -62,6 +63,7 @@ import {
   useCallConfig,
   useAcceptFixedPrice,
   useRejectJob,
+  useUnrejectJob,
   useCancelJob,
 } from '@/hooks/use-api';
 import { useAuthStore } from '@/stores/auth.store';
@@ -163,7 +165,17 @@ export default function HelperJobDetailScreen() {
   const submitQuote = useSubmitQuote();
   const acceptFixed = useAcceptFixedPrice();
   const rejectJob = useRejectJob();
+  const unrejectJob = useUnrejectJob();
   const cancelJobMutation = useCancelJob();
+
+  const getJobServiceLabel = (j: any) => {
+    if (j?.custom_service_name && String(j.custom_service_name).trim()) {
+      return `${t('common_service')}: ${String(j.custom_service_name).trim()}`;
+    }
+    const svcName = tService(j?.service_id);
+    if (svcName) return svcName;
+    return t('common_service');
+  };
   const onTheWay = useHelperOnTheWay();
   const arrived = useHelperArrived();
   const startJob = useStartJob();
@@ -757,7 +769,7 @@ export default function HelperJobDetailScreen() {
         {/* ── Job info ─────────────────────────────────────────────── */}
         <Card style={{ gap: 12 }}>
           <View style={{ flexDirection: 'row', gap: 10, flexWrap: 'wrap' }}>
-            <Badge label={tService(job.service_id) || t('common_service')} />
+            <Badge label={getJobServiceLabel(job)} />
             {job.is_fixed_price && (
               <Badge
                 label={
@@ -1135,6 +1147,37 @@ export default function HelperJobDetailScreen() {
                     ? 'Job has been hidden from your new job list and demand map.'
                     : 'Đơn đã được ẩn khỏi danh sách việc mới và bản đồ nhu cầu của bạn.'}
                 </Text>
+                <TouchableOpacity
+                  activeOpacity={0.8}
+                  disabled={unrejectJob.isPending}
+                  onPress={async () => {
+                    await unrejectJob.mutateAsync(id!);
+                    Toast.show({
+                      type: 'success',
+                      text1:
+                        lang === 'en'
+                          ? 'Job unhidden, you can now submit a quote'
+                          : 'Đã hoàn tác, bạn có thể gửi báo giá cho đơn này',
+                    });
+                  }}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 6,
+                    marginTop: 8,
+                    paddingHorizontal: 16,
+                    paddingVertical: 9,
+                    borderRadius: 10,
+                    backgroundColor: '#EFF6FF',
+                    borderWidth: 1,
+                    borderColor: '#BFDBFE',
+                  }}
+                >
+                  <RotateCcw size={14} color="#1D4ED8" />
+                  <Text style={{ fontSize: fs(13), fontWeight: '700', color: '#1D4ED8' }}>
+                    {lang === 'en' ? 'Restore Job (Unhide)' : 'Hiện lại đơn này'}
+                  </Text>
+                </TouchableOpacity>
               </Card>
             ) : isDirectAcceptJob ? (
               <Card
