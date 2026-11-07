@@ -3,10 +3,9 @@ import { Types } from 'mongoose';
 import { createQaApp } from './qa-app';
 import { JobsService } from '../src/modules/jobs/jobs.service';
 import { ChatService } from '../src/modules/chat/chat.service';
-import { AppGateway } from '../src/modules/chat/app.gateway';
 import { PaymentsService } from '../src/modules/payments/payments.service';
-const request = require('supertest');
-const { io } = require('socket.io-client');
+import request from 'supertest';
+import { io } from 'socket.io-client';
 
 describe('QA extended workflows: SOS, admin actions, live sockets', () => {
   let qa: Awaited<ReturnType<typeof createQaApp>>;

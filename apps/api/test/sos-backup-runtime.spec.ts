@@ -32,7 +32,7 @@ import {
   HelperPenaltyEventSchema,
   HelperPenaltyEventDocument,
 } from '../src/modules/helpers/schemas/helper-penalty-event.schema';
-import { User, UserSchema, UserDocument } from '../src/modules/users/schemas/user.schema';
+import { User, UserSchema } from '../src/modules/users/schemas/user.schema';
 import {
   Service,
   ServiceSchema,
@@ -64,7 +64,6 @@ describe('SOS Backup & Roadmap Financial Logic Runtime Suite (Real MongoDB)', ()
   let contractModel: Model<ContractDocument>;
   let helperModel: Model<HelperProfileDocument>;
   let penaltyEventModel: Model<HelperPenaltyEventDocument>;
-  let userModel: Model<UserDocument>;
   let serviceModel: Model<ServiceDocument>;
 
   const emittedEvents: Array<{ target: string; event: string; data: any }> = [];
@@ -163,7 +162,6 @@ describe('SOS Backup & Roadmap Financial Logic Runtime Suite (Real MongoDB)', ()
     contractModel = moduleRef.get(getModelToken(Contract.name));
     helperModel = moduleRef.get(getModelToken(HelperProfile.name));
     penaltyEventModel = moduleRef.get(getModelToken(HelperPenaltyEvent.name));
-    userModel = moduleRef.get(getModelToken(User.name));
     serviceModel = moduleRef.get(getModelToken(Service.name));
   }, 30000);
 

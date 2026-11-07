@@ -5,7 +5,7 @@ import { JobsService } from '../src/modules/jobs/jobs.service';
 import { AppGateway } from '../src/modules/chat/app.gateway';
 import { OtpService } from '../src/modules/auth/otp.service';
 import { Types } from 'mongoose';
-const request = require('supertest');
+import request from 'supertest';
 
 describe('QA regression — customer, helper, admin', () => {
   let qa: Awaited<ReturnType<typeof createQaApp>>;
