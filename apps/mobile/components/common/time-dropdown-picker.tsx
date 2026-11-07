@@ -13,6 +13,10 @@ import { Clock, ChevronDown, Check, X } from 'lucide-react-native';
 import { COLORS, useThemeColors } from '@/components/ui';
 import { useTranslation, fs } from '@/hooks/use-i18n';
 
+/** Khung giờ làm việc (server G3, jobs.service.ts): bắt đầu 07:00–22:00. */
+export const WORK_START_HOUR = 7;
+export const WORK_END_HOUR = 22;
+
 export const ORIGINAL_TIME_CHIPS = [
   '07:00',
   '07:30',
@@ -70,7 +74,22 @@ export function isTodayVietnam(dateInput?: string | Date | null): boolean {
   return formatDateKey(dateInput) === vnDateKey();
 }
 
-/** Lấy giờ mặc định tương lai gần nhất theo danh sách ORIGINAL_TIME_CHIPS cho ngày đã chọn */
+/** Còn chip giờ nào trong tương lai của ngày đã chọn không (giờ VN). */
+export function hasFutureTimeSlot(selectedDate?: string | Date | null): boolean {
+  if (!isTodayVietnam(selectedDate)) return true;
+  const nowVn = getNowVietnam();
+  return ORIGINAL_TIME_CHIPS.some(chip => {
+    const [h, m] = chip.split(':').map(Number);
+    return h * 60 + m > nowVn.totalMinutes;
+  });
+}
+
+/**
+ * Lấy giờ mặc định tương lai gần nhất theo danh sách ORIGINAL_TIME_CHIPS cho ngày đã chọn.
+ * B6: sau 22:00 hôm nay không còn chip tương lai — KHÔNG trả '22:00' (đã qua).
+ * Trả '07:00' = slot đầu tiên của NGÀY MAI; caller giữ ngày hôm nay phải tự
+ * dời ngày sang ngày mai (dùng hasFutureTimeSlot() để phát hiện).
+ */
 export function getDefaultFutureTimeSlot(selectedDate?: string | Date | null): string {
   const isToday = isTodayVietnam(selectedDate);
   if (!isToday) return '09:00';
@@ -79,7 +98,7 @@ export function getDefaultFutureTimeSlot(selectedDate?: string | Date | null): s
     const [h, m] = chip.split(':').map(Number);
     return h * 60 + m > nowVn.totalMinutes;
   });
-  return nextChip || '22:00';
+  return nextChip || '07:00';
 }
 
 /** Format thời lượng: "1 giờ 10 phút", "2 giờ 20 phút", "30 phút" (không thập phân 1,17 giờ) */
@@ -169,7 +188,8 @@ export function TimeDropdownPicker({
   useEffect(() => {
     if (modalType === 'hour') {
       const timer = setTimeout(() => {
-        const targetY = Math.max(0, (currentHour - 1) * 44);
+        // Danh sách giờ chỉ còn 07–22 (P1-29): index = giờ − 7
+        const targetY = Math.max(0, (currentHour - WORK_START_HOUR) * 44);
         hourScrollRef.current?.scrollTo({ y: targetY, animated: false });
       }, 60);
       return () => clearTimeout(timer);
@@ -231,6 +251,8 @@ export function TimeDropdownPicker({
     if (isToday && h === nowVn.hours && nextMinute <= nowVn.minutes) {
       nextMinute = Math.min(59, nowVn.minutes + 1);
     }
+    // 22:00 là giờ bắt đầu muộn nhất (P1-29) — áp sau điều chỉnh quá khứ
+    if (h === WORK_END_HOUR) nextMinute = 0;
     const formatted = `${String(h).padStart(2, '0')}:${String(nextMinute).padStart(2, '0')}`;
     onChange(formatted);
     setModalType(null);
@@ -369,7 +391,7 @@ export function TimeDropdownPicker({
         </View>
       )}
 
-      {/* Modal Chọn Giờ (00–23) */}
+      {/* Modal Chọn Giờ (07–22, khung giờ làm việc P1-29) */}
       <Modal
         visible={modalType === 'hour'}
         transparent
@@ -401,7 +423,7 @@ export function TimeDropdownPicker({
               nestedScrollEnabled={true}
               keyboardShouldPersistTaps="handled"
             >
-              {Array.from({ length: 24 }, (_, i) => i).map(h => {
+              {Array.from({ length: WORK_END_HOUR - WORK_START_HOUR + 1 }, (_, i) => i + WORK_START_HOUR).map(h => {
                 const isSelected = h === currentHour;
                 // Nếu hôm nay và giờ < giờ hiện tại (hoặc bằng giờ hiện tại nhưng phút đã 59)
                 const isHourPast =
@@ -473,23 +495,26 @@ export function TimeDropdownPicker({
               {Array.from({ length: 60 }, (_, i) => i).map(m => {
                 const isSelected = m === currentMinute;
                 const isMinPast = isToday && currentHour === nowVn.hours && m <= nowVn.minutes;
+                // 22:00 là giờ bắt đầu muộn nhất — 22:01+ ngoài khung (P1-29)
+                const isMinOutOfWindow = currentHour === WORK_END_HOUR && m > 0;
+                const isMinDisabled = isMinPast || isMinOutOfWindow;
                 return (
                   <TouchableOpacity
                     key={m}
-                    activeOpacity={isMinPast ? 1 : 0.7}
-                    disabled={isMinPast}
+                    activeOpacity={isMinDisabled ? 1 : 0.7}
+                    disabled={isMinDisabled}
                     onPress={() => handleSelectMinute(m)}
                     style={[
                       styles.modalItem,
                       isSelected && styles.modalItemActive,
-                      isMinPast && styles.modalItemDisabled,
+                      isMinDisabled && styles.modalItemDisabled,
                     ]}
                   >
                     <Text
                       style={[
                         styles.modalItemText,
                         isSelected && styles.modalItemTextActive,
-                        isMinPast && styles.modalItemTextDisabled,
+                        isMinDisabled && styles.modalItemTextDisabled,
                         { fontSize: fs(15) },
                       ]}
                     >
@@ -534,7 +559,8 @@ export function DurationDropdownPicker({
   valueMinutes,
   onChangeMinutes,
   label,
-  minMinutes = 15,
+  // B3/P1-32: API duration_hours @Min(0.5) → tối thiểu 30 phút, tối đa 12 giờ
+  minMinutes = 30,
   maxMinutes = 720, // 12h
 }: DurationDropdownPickerProps) {
   const { lang } = useTranslation();
@@ -799,7 +825,13 @@ export function ScheduledTimePreview({
           {t('picker_time_slot_label')}
         </Text>
         {calc ? (
-          <Text style={[styles.previewValue, { fontSize: fs(12.5) }]}>
+          <Text
+            style={[
+              styles.previewValue,
+              calc.isNextDay && { color: COLORS.error },
+              { fontSize: fs(12.5) },
+            ]}
+          >
             {effectiveStart} – {calc.timeEnd} {calc.isNextDay ? t('picker_next_day') : ''}
           </Text>
         ) : (
@@ -808,6 +840,12 @@ export function ScheduledTimePreview({
           </Text>
         )}
       </View>
+      {/* P1-28: vượt nửa đêm thì KHÔNG trình bày như lịch hợp lệ — cảnh báo đỏ */}
+      {calc?.isNextDay ? (
+        <Text style={{ fontSize: fs(12), color: COLORS.error, fontWeight: '700' }}>
+          {t('picker_midnight_cross_error')}
+        </Text>
+      ) : null}
       <View style={styles.previewRow}>
         <Text style={[styles.previewLabel, { fontSize: fs(12) }]}>
           {t('picker_duration_label')}
