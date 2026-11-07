@@ -37,11 +37,20 @@ export class NotificationsController {
   @Get()
   @ApiOperation({ summary: 'Lấy thông báo của tôi' })
   @ApiQuery({ name: 'unread_only', required: false, type: Boolean })
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
   async getMyNotifications(
     @CurrentUser() user: { sub: string },
     @Query('unread_only') unreadOnly?: string,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
   ) {
-    return this.notificationsService.getForUser(user.sub, unreadOnly === 'true');
+    return this.notificationsService.getForUser(
+      user.sub,
+      unreadOnly === 'true',
+      Number(page) || 1,
+      Number(limit) || 50,
+    );
   }
 
   @Get('unread-count')

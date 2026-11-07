@@ -19,6 +19,21 @@ function helperOf(fav: FavoriteHelperItem) {
   return typeof fav.helper_id === 'object' && fav.helper_id ? fav.helper_id : null;
 }
 
+function helperIdOf(fav: FavoriteHelperItem): string | undefined {
+  return typeof fav.helper_id === 'string' ? fav.helper_id : fav.helper_id?._id;
+}
+
+// P2-5: giờ đặt lại phải qua gate 07:00–22:00 của backend
+// (assertWorkingHoursStart) — kẹp về khung giờ hợp lệ thay vì hứa một giờ
+// mà "Đặt lại ngay" sẽ bị từ chối (vd. đơn gốc 22:30 → 22:00).
+function clampToWorkingHours(time: string | undefined): string {
+  const m = /^(\d{1,2}):(\d{2})$/.exec((time ?? '').trim());
+  if (!m) return '09:00';
+  const mins = Number(m[1]) * 60 + Number(m[2]);
+  const clamped = Math.min(Math.max(mins, 7 * 60), 22 * 60);
+  return `${String(Math.floor(clamped / 60)).padStart(2, '0')}:${String(clamped % 60).padStart(2, '0')}`;
+}
+
 export default function FavoriteHelpersScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -57,22 +72,22 @@ export default function FavoriteHelpersScreen() {
         `/customers/me/favorites/${helper._id}/last-completed-job`,
       );
       const lastJob = data.data;
+      const effectiveTime = clampToWorkingHours(lastJob.preferred_time_start);
       Alert.alert(
         lang === 'en' ? 'Rebook with this helper?' : 'Đặt lại việc với thợ này?',
         lang === 'en'
-          ? `New job will be similar to "${lastJob.title}" (tomorrow, ${
-              lastJob.preferred_time_start ?? '09:00'
-            }) and prioritized exclusively for ${helper.full_name ?? 'helper'} for 24 hours.`
-          : `Đơn mới sẽ giống đơn "${lastJob.title}" (ngày mai, ${
-              lastJob.preferred_time_start ?? '09:00'
-            }) và được ưu tiên gửi riêng cho ${helper.full_name ?? 'thợ'} trong 24 giờ.`,
+          ? `New job will be similar to "${lastJob.title}" (tomorrow, ${effectiveTime}) and prioritized exclusively for ${helper.full_name ?? 'helper'} for 24 hours.`
+          : `Đơn mới sẽ giống đơn "${lastJob.title}" (ngày mai, ${effectiveTime}) và được ưu tiên gửi riêng cho ${helper.full_name ?? 'thợ'} trong 24 giờ.`,
         [
           { text: lang === 'en' ? 'Not now' : 'Để sau', style: 'cancel' },
           {
             text: lang === 'en' ? 'Rebook Now' : 'Đặt lại ngay',
             onPress: async () => {
               try {
-                const res = await rebookJob.mutateAsync({ sourceJobId: lastJob._id });
+                const res = await rebookJob.mutateAsync({
+                  sourceJobId: lastJob._id,
+                  preferred_time_start: effectiveTime,
+                });
                 const newJob = (res as any)?.data?.data;
                 if (newJob?._id) {
                   router.push({ pathname: '/job-detail/[id]', params: { id: newJob._id } });
@@ -103,18 +118,19 @@ export default function FavoriteHelpersScreen() {
 
   const handleRemove = (fav: FavoriteHelperItem) => {
     const helper = helperOf(fav);
-    if (!helper) return;
+    const helperId = helperIdOf(fav);
+    if (!helperId) return;
     Alert.alert(
       lang === 'en' ? 'Remove favorite helper?' : 'Bỏ thợ yêu thích?',
       lang === 'en'
-        ? `Remove ${helper.full_name ?? 'this helper'} from your favorites list?`
-        : `Bỏ ${helper.full_name ?? 'thợ này'} khỏi danh sách yêu thích?`,
+        ? `Remove ${helper?.full_name ?? 'this helper'} from your favorites list?`
+        : `Bỏ ${helper?.full_name ?? 'thợ này'} khỏi danh sách yêu thích?`,
       [
         { text: lang === 'en' ? 'Stay' : 'Ở lại', style: 'cancel' },
         {
           text: lang === 'en' ? 'Remove' : 'Bỏ yêu thích',
           style: 'destructive',
-          onPress: () => removeFavorite.mutate(helper._id),
+          onPress: () => removeFavorite.mutate(helperId),
         },
       ],
     );
@@ -163,7 +179,7 @@ export default function FavoriteHelpersScreen() {
         </View>
       </View>
 
-      {isError && isAuth ? (
+      {isError ? (
         <ErrorState
           title={
             lang === 'en'
@@ -179,6 +195,18 @@ export default function FavoriteHelpersScreen() {
         />
       ) : isLoading ? (
         <LoadingSpinner />
+      ) : !isAuth ? (
+        <EmptyState
+          icon={<Heart size={36} color={COLORS.gray[400]} />}
+          title={lang === 'en' ? 'Log in to see favorite helpers' : 'Đăng nhập để xem thợ yêu thích'}
+          subtitle={
+            lang === 'en'
+              ? 'Log in to save helpers you trust and rebook them in one tap.'
+              : 'Đăng nhập để lưu thợ quen và đặt lại việc với họ chỉ bằng một chạm.'
+          }
+          action={lang === 'en' ? 'Log in' : 'Đăng nhập'}
+          onAction={() => router.push('/(auth)/login')}
+        />
       ) : (
         <ScrollView
           showsVerticalScrollIndicator={false}
@@ -206,8 +234,37 @@ export default function FavoriteHelpersScreen() {
           ) : (
             (favorites ?? []).map(fav => {
               const helper = helperOf(fav);
-              if (!helper) return null;
+              // P2-7: thợ đã xóa / không populate được thì hiện hàng "không còn
+              // khả dụng" thay vì lặng lẽ nuốt mất, kèm nút bỏ yêu thích.
+              if (!helper) {
+                return (
+                  <Card key={fav._id} style={{ gap: 8 }}>
+                    <View
+                      style={{ flexDirection: 'row', gap: 12, alignItems: 'center' }}
+                    >
+                      <Avatar name="?" size={54} />
+                      <View style={{ flex: 1 }}>
+                        <Text style={{ fontSize: fs(16), fontWeight: '800', color: tc.text }}>
+                          {lang === 'en' ? 'Helper no longer available' : 'Thợ không còn khả dụng'}
+                        </Text>
+                        <Text style={{ fontSize: fs(12.5), color: tc.textMuted, marginTop: 3 }}>
+                          {lang === 'en'
+                            ? 'This helper profile could not be loaded. You can remove them from favorites.'
+                            : 'Không tải được hồ sơ thợ này. Bạn có thể bỏ thợ khỏi danh sách yêu thích.'}
+                        </Text>
+                      </View>
+                      <TouchableOpacity
+                        onPress={() => handleRemove(fav)}
+                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                      >
+                        <Heart size={20} color="#EC4899" fill="#EC4899" />
+                      </TouchableOpacity>
+                    </View>
+                  </Card>
+                );
+              }
               const p = fav.helper_profile;
+              const hasReviews = (p?.total_reviews ?? 0) > 0 && typeof p?.rating === 'number';
               return (
                 <Card key={fav._id} style={{ gap: 12 }}>
                   <TouchableOpacity
@@ -244,7 +301,11 @@ export default function FavoriteHelpersScreen() {
                               color: tc.textSecondary,
                             }}
                           >
-                            {(p?.rating ?? 0).toFixed(1)} ({p?.total_reviews ?? 0})
+                            {hasReviews
+                              ? `${(p?.rating ?? 0).toFixed(1)} (${p?.total_reviews ?? 0})`
+                              : lang === 'en'
+                                ? 'No reviews yet'
+                                : 'Chưa có đánh giá'}
                           </Text>
                         </View>
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>

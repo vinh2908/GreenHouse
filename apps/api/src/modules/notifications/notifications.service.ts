@@ -344,10 +344,19 @@ export class NotificationsService {
     }
   }
 
-  async getForUser(userId: string, unreadOnly = false) {
+  async getForUser(userId: string, unreadOnly = false, page = 1, limit = 50) {
     const query: Record<string, unknown> = { user_id: new Types.ObjectId(userId) };
     if (unreadOnly) query['is_read'] = false;
-    return this.notificationModel.find(query).sort({ created_at: -1 }).limit(50).exec();
+    const safePage = Math.max(1, Number(page) || 1);
+    const safeLimit = Math.min(100, Math.max(1, Number(limit) || 50));
+    // Sắp theo updated_at: tin nhắn gộp (notifyChatMessage) bump updated_at
+    // nên nổi lên đầu; thông báo chưa từng sửa có updated_at == created_at.
+    return this.notificationModel
+      .find(query)
+      .sort({ updated_at: -1 })
+      .skip((safePage - 1) * safeLimit)
+      .limit(safeLimit)
+      .exec();
   }
 
   async markRead(userId: string, notificationId: string) {
@@ -436,7 +445,9 @@ export class NotificationsService {
         ...(jobId ? { job_id: jobId } : {}),
         message_count: count,
       };
-      // Bump to the top without touching is_read
+      // Bump to the top without touching is_read. updated_at is a real
+      // timestamped field (schema) so the bump persists and getForUser's
+      // updated_at sort surfaces the merged notification first.
       (existing as any).updated_at = new Date();
       await existing.save();
       try {
@@ -448,10 +459,18 @@ export class NotificationsService {
           data: existing.data,
           is_read: false,
           created_at: existing.created_at,
+          updated_at: (existing as any).updated_at,
         });
       } catch {
         // Ignore socket error if user is offline
       }
+      // P1-19: tin nhắn thứ 2, 3, ... cũng phải có OS push như tin đầu —
+      // app đóng thì socket không tới được. sendExpoPush tự tôn trọng cài
+      // đặt chat_messages của user và không bao giờ throw.
+      void this.sendExpoPush(recipientId, existing.title, existing.body, {
+        type: existing.type,
+        ...((existing.data as any) ?? {}),
+      }).catch(() => undefined);
       return existing;
     }
     return this.create({

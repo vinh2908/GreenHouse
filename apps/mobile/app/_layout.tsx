@@ -221,7 +221,6 @@ function AuthenticatedServices() {
   useIncomingCallListener(); // Feature 6: lắng nghe cuộc gọi thoại đến
   useCallKeep(); // VoIP/CallKeep: chỉ kích hoạt sau đăng nhập, an toàn với cold start
   useSosBackupListener(); // SOS Backup: popup quyết định cho khách + popup backup cho thợ
-  usePushNotifications(); // OS push: đăng ký Expo token + chạm push → deep-link đúng màn hình
   console.warn('[Startup] 2b. AuthenticatedServices hooks mounted cleanly');
   return null;
 }
@@ -229,6 +228,10 @@ function AuthenticatedServices() {
 function SocketManager() {
   const isAuthenticated = useAuthStore(s => s.isAuthenticated);
   useOfflineSync(); // Vòng lặp flush hàng đợi offline an toàn khi chưa đăng nhập
+  // S7: mount sớm, không chờ đăng nhập — nếu không, push chạm lúc cold start
+  // (trước khi session restore) sẽ không bao giờ được xử lý. Hook tự giữ
+  // token registration sau isAuthenticated và giữ response chờ auth sẵn.
+  usePushNotifications();
   if (!isAuthenticated) return null;
   return <AuthenticatedServices />;
 }

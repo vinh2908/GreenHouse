@@ -88,7 +88,7 @@ import { useMatchingSuggestionSocket } from '@/hooks/use-socket';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LocationPicker, PickerCoords } from '@/components/common/location-picker';
 import { VerificationBanner } from '@/components/common/verification-banner';
-import { Avatar, COLORS, ErrorState, useThemeColors } from '@/components/ui';
+import { Avatar, COLORS, ErrorState, Skeleton, useThemeColors } from '@/components/ui';
 import { removeVietnameseDiacritics } from '@/utils/search';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
@@ -103,7 +103,6 @@ interface ServiceItem {
   name: string;
   nameKey: I18nKey;
   priceType: 'fixed_from' | 'custom_deal' | 'quote_job' | 'quote_trip';
-  baseAmount?: number;
   unitKey?: I18nKey;
   icon: React.ComponentType<{ size?: number; color?: string }>;
   slug: string;
@@ -119,7 +118,6 @@ const SERVICES_CATALOG: ServiceItem[] = [
     name: 'Giúp việc theo giờ',
     nameKey: 'svc_housekeeping_hourly',
     priceType: 'fixed_from',
-    baseAmount: 60000,
     unitKey: 'price_per_hour',
     icon: Sparkles,
     slug: 'housekeeping_hourly',
@@ -137,7 +135,6 @@ const SERVICES_CATALOG: ServiceItem[] = [
     name: 'Dọn nhà',
     nameKey: 'svc_house_cleaning',
     priceType: 'fixed_from',
-    baseAmount: 150000,
     unitKey: 'price_per_shift',
     icon: Home,
     slug: 'house_cleaning',
@@ -147,7 +144,6 @@ const SERVICES_CATALOG: ServiceItem[] = [
     name: 'Nấu ăn',
     nameKey: 'svc_cooking',
     priceType: 'fixed_from',
-    baseAmount: 120000,
     unitKey: 'price_per_meal',
     icon: UtensilsCrossed,
     slug: 'cooking',
@@ -165,7 +161,6 @@ const SERVICES_CATALOG: ServiceItem[] = [
     name: 'Chăm trẻ',
     nameKey: 'svc_child_care',
     priceType: 'fixed_from',
-    baseAmount: 55000,
     unitKey: 'price_per_hour',
     icon: Baby,
     slug: 'child_care',
@@ -183,7 +178,6 @@ const SERVICES_CATALOG: ServiceItem[] = [
     name: 'Giặt ủi',
     nameKey: 'svc_laundry',
     priceType: 'fixed_from',
-    baseAmount: 20000,
     unitKey: 'price_per_kg',
     icon: Shirt,
     slug: 'laundry',
@@ -193,7 +187,6 @@ const SERVICES_CATALOG: ServiceItem[] = [
     name: 'Vệ sinh máy lạnh',
     nameKey: 'svc_ac_repair',
     priceType: 'fixed_from',
-    baseAmount: 150000,
     unitKey: 'price_per_unit',
     icon: Wind,
     slug: 'ac_repair',
@@ -203,7 +196,6 @@ const SERVICES_CATALOG: ServiceItem[] = [
     name: 'Chăm người già',
     nameKey: 'svc_elderly_care',
     priceType: 'fixed_from',
-    baseAmount: 70000,
     unitKey: 'price_per_hour',
     icon: HeartHandshake,
     slug: 'elderly_care',
@@ -238,10 +230,10 @@ interface NearbyHelperItem {
   phone?: string;
   avatar?: string;
   rating: number;
+  totalReviews: number;
   completedJobs: number;
   distKm: number;
   distance: string;
-  eta: string;
   lat: number;
   lon: number;
   status: string;
@@ -354,7 +346,13 @@ export default function CustomerHomeScreen() {
   };
 
   // API Thợ gần & Vouchers thật
-  const { data: nearbyRaw, refetch: refetchNearby } = useNearbyHelpers(currentCoords);
+  const {
+    data: nearbyRaw,
+    refetch: refetchNearby,
+    isLoading: nearbyLoading,
+    isError: nearbyError,
+    isRefetching: nearbyRefetching,
+  } = useNearbyHelpers(currentCoords);
   // B116: có thợ mới phù hợp → cập nhật danh sách thợ gần đây ngay
   useMatchingSuggestionSocket();
   const { data: vouchersRaw, refetch: refetchVouchers } = useMyVouchers();
@@ -419,14 +417,8 @@ export default function CustomerHomeScreen() {
   // Date Time Bottom Sheet state (Item 1)
   const [dateTimePickerOpen, setDateTimePickerOpen] = useState(false);
   const [bottomSheetInitialTab, setBottomSheetInitialTab] = useState<'date' | 'time'>('date');
-
-  // Month Calendar state
-  const [calendarOpen, setCalendarOpen] = useState(false);
-  const [calendarMonth, setCalendarMonth] = useState(vnNow());
-
-  const [customHours, setCustomHours] = useState(1);
-  const [customMinutes, setCustomMinutes] = useState(30);
-  const [isCustomDuration, setIsCustomDuration] = useState(false);
+  // Ghi nhận khách có chọn thời lượng tùy chỉnh không (chỉ ghi, không đọc).
+  const [, setIsCustomDuration] = useState(false);
 
   // Khối Quick Booking Block ("Đăng việc theo ý bạn")
   const [quickServiceChip, setQuickServiceChip] = useState<
@@ -434,6 +426,8 @@ export default function CustomerHomeScreen() {
   >('boc_hang');
   const [quickDescription, setQuickDescription] = useState('');
   const [quickDealPrice, setQuickDealPrice] = useState('200000');
+  // Khách đã tự sửa giá thì đổi chip dịch vụ không được ghi đè giá của khách.
+  const [quickPriceEdited, setQuickPriceEdited] = useState(false);
   const [quickDateChip, setQuickDateChip] = useState<'today' | 'tomorrow' | 'sat' | 'sun' | null>(
     'tomorrow',
   );
@@ -493,22 +487,32 @@ export default function CustomerHomeScreen() {
           distKm < 1
             ? `${Math.round(distKm * 1000)} m`
             : `${distKm.toFixed(1).replace('.', ',')} km`;
-        const etaMinutes = Math.max(5, Math.round(distKm * 3.5) + 3);
-        const etaText = t('home_eta_min', { min: etaMinutes });
+        // Trạng thái thật từ API: findNearby chỉ trả thợ ONLINE (đang nhận việc).
+        // Không hardcode "Đang rảnh" cho mọi thợ.
+        const rawStatus = typeof h.status === 'string' ? h.status : '';
+        const status =
+          rawStatus === 'online'
+            ? 'Đang rảnh'
+            : rawStatus === 'busy'
+              ? 'Đang bận'
+              : rawStatus === 'offline'
+                ? 'Ngoại tuyến'
+                : '';
         return {
           id: String(h._id || idx),
           name: helperName,
           shortName,
           phone: h.user_id?.phone,
           avatar: h.user_id?.avatar,
-          rating: h.rating || 5.0,
+          // Rating thật: 0 = chưa có đánh giá, không mặc định 5.0.
+          rating: typeof h.rating === 'number' && h.rating > 0 ? h.rating : 0,
+          totalReviews: h.total_reviews || 0,
           completedJobs: h.completed_jobs || 0,
           distKm,
           distance: distText,
-          eta: etaText,
           lat: coords[1],
           lon: coords[0],
-          status: 'Đang rảnh',
+          status,
         };
       })
       .sort((a, b) => a.distKm - b.distKm);
@@ -534,37 +538,6 @@ export default function CustomerHomeScreen() {
     return () => clearInterval(timer);
   }, [vouchers.length, reduceMotion]);
 
-  // Ma trận ngày của tháng cho bộ chọn lịch
-  const calendarDays = useMemo(() => {
-    const startOfMonth = calendarMonth.startOf('month');
-    const daysInMonth = calendarMonth.daysInMonth();
-    const startOffset = (startOfMonth.day() + 6) % 7; // T2 là 0
-    const items: ({
-      dayNum: number;
-      dateStr: string;
-      isPast: boolean;
-      isToday: boolean;
-      isSelected: boolean;
-    } | null)[] = [];
-    for (let i = 0; i < startOffset; i++) {
-      items.push(null);
-    }
-    const todayStr = vnDateKey();
-    const startOfToday = vnNow().startOf('day');
-    for (let d = 1; d <= daysInMonth; d++) {
-      const dObj = calendarMonth.date(d);
-      const dateStr = formatDateKey(dObj);
-      items.push({
-        dayNum: d,
-        dateStr,
-        isPast: dObj.isBefore(startOfToday),
-        isToday: dateStr === todayStr,
-        isSelected: dateStr === quickDate,
-      });
-    }
-    return items;
-  }, [calendarMonth, quickDate]);
-
   // Tọa độ gốc cho mini-map: chỉ trả về khi có vị trí thật, không mặc định Sài Gòn hay Đà Nẵng
   const mapCenter = useMemo(() => {
     if (currentCoords && currentCoords.latitude && currentCoords.longitude) {
@@ -573,17 +546,26 @@ export default function CustomerHomeScreen() {
     return null;
   }, [currentCoords]);
 
+  // Chuỗi ghim ổn định theo giá trị: refetch nearby tạo mảng mới nhưng cùng
+  // nội dung thì HTML map không sinh lại, WebView/iframe không reload mất
+  // thao tác kéo/zoom của khách (S13).
+  const nearbyPinsJson = useMemo(
+    () =>
+      JSON.stringify(
+        nearbyHelpers.map(h => ({
+          id: h.id,
+          name: h.name, // Hiển thị đầy đủ TÊN THỢ khi chọn
+          lat: h.lat,
+          lon: h.lon,
+        })),
+      ),
+    [nearbyHelpers],
+  );
+
   // Sinh HTML Goong bản đồ mini với ghim gọn, tương tác kéo/zoom/chọn thợ không reload
   const leafletMiniMapHtml = useMemo(() => {
     if (!mapCenter) return '';
-    const pinsJson = JSON.stringify(
-      nearbyHelpers.map(h => ({
-        id: h.id,
-        name: h.name, // Hiển thị đầy đủ TÊN THỢ khi chọn
-        lat: h.lat,
-        lon: h.lon,
-      })),
-    );
+    const pinsJson = nearbyPinsJson;
 
     return `<!DOCTYPE html>
 <html>
@@ -813,7 +795,7 @@ export default function CustomerHomeScreen() {
   </script>
 </body>
 </html>`;
-  }, [mapCenter, nearbyHelpers, lang, t]);
+  }, [mapCenter, nearbyPinsJson, selectedHelperId, lang, t]);
 
   // Lời chào theo thời gian trong ngày (khuya / sáng / chiều / tối)
   const greeting = useMemo(() => {
@@ -1083,18 +1065,20 @@ export default function CustomerHomeScreen() {
     }
   };
 
-  // Chọn loại công việc chip trong Quick Booking
+  // Chọn loại công việc chip trong Quick Booking — giữ mô tả khách đã gõ,
+  // chỉ đặt lại giá mặc định khi khách chưa tự sửa giá.
   const handleSelectQuickServiceChip = (chip: 'don_nha' | 'boc_hang' | 'may_lanh' | 'khac') => {
     setQuickServiceChip(chip);
-    setQuickDescription('');
-    if (chip === 'don_nha') {
-      setQuickDealPrice('150000');
-    } else if (chip === 'boc_hang') {
-      setQuickDealPrice('200000');
-    } else if (chip === 'may_lanh') {
-      setQuickDealPrice('250000');
-    } else {
-      setQuickDealPrice('100000');
+    if (!quickPriceEdited) {
+      if (chip === 'don_nha') {
+        setQuickDealPrice('150000');
+      } else if (chip === 'boc_hang') {
+        setQuickDealPrice('200000');
+      } else if (chip === 'may_lanh') {
+        setQuickDealPrice('250000');
+      } else {
+        setQuickDealPrice('100000');
+      }
     }
   };
 
@@ -1616,7 +1600,29 @@ export default function CustomerHomeScreen() {
               </View>
 
               {/* Worker list cards or Clean Empty State */}
-              {nearbyHelpers.length === 0 ? (
+              {nearbyLoading ? (
+                <View style={{ marginTop: 12, gap: 8 }}>
+                  {[1, 2, 3].map(i => (
+                    <Skeleton key={i} width="100%" height={64} radius={14} />
+                  ))}
+                </View>
+              ) : nearbyError ? (
+                <View style={{ marginTop: 12 }}>
+                  <ErrorState
+                    title={
+                      lang === 'en'
+                        ? 'Unable to load nearby helpers'
+                        : 'Không thể tải thợ gần bạn'
+                    }
+                    subtitle={
+                      lang === 'en'
+                        ? 'Please check your connection and retry.'
+                        : 'Vui lòng kiểm tra kết nối mạng và thử lại.'
+                    }
+                    onRetry={() => refetchNearby()}
+                  />
+                </View>
+              ) : nearbyHelpers.length === 0 ? (
                 <View
                   style={{
                     marginTop: 12,
@@ -1675,7 +1681,13 @@ export default function CustomerHomeScreen() {
                       <TouchableOpacity
                         key={helper.id}
                         activeOpacity={0.8}
-                        onPress={() => setSelectedHelperId(helper.id)}
+                        onPress={() => {
+                          setSelectedHelperId(helper.id);
+                          router.push({
+                            pathname: '/helper-profile/[id]',
+                            params: { id: helper.id },
+                          });
+                        }}
                         style={{
                           backgroundColor: tc.surface,
                           borderRadius: 14,
@@ -1736,24 +1748,40 @@ export default function CustomerHomeScreen() {
                                 marginTop: 2,
                               }}
                             >
-                              <Text style={{ fontSize: fs(12), color: tc.textMuted }}>
-                                {helper.status === 'Đang rảnh' || helper.status === 'Sẵn sàng'
-                                  ? lang === 'en'
-                                    ? 'Available'
-                                    : helper.status
-                                  : helper.status}{' '}
-                                ·
-                              </Text>
-                              <Star size={12} color="#F59E0B" fill="#F59E0B" />
-                              <Text style={{ fontSize: fs(12), color: tc.textMuted }}>
-                                {helper.rating.toFixed(1)} ({helper.completedJobs}{' '}
-                                {lang === 'en'
-                                  ? helper.completedJobs === 1
-                                    ? 'job'
-                                    : 'jobs'
-                                  : 'việc'}
-                                )
-                              </Text>
+                              {helper.status ? (
+                                <Text style={{ fontSize: fs(12), color: tc.textMuted }}>
+                                  {helper.status === 'Đang rảnh' || helper.status === 'Sẵn sàng'
+                                    ? lang === 'en'
+                                      ? 'Available'
+                                      : helper.status
+                                    : helper.status}{' '}
+                                  ·
+                                </Text>
+                              ) : null}
+                              {helper.rating > 0 ? (
+                                <>
+                                  <Star size={12} color="#F59E0B" fill="#F59E0B" />
+                                  <Text style={{ fontSize: fs(12), color: tc.textMuted }}>
+                                    {helper.rating.toFixed(1)} ({helper.completedJobs}{' '}
+                                    {lang === 'en'
+                                      ? helper.completedJobs === 1
+                                        ? 'job'
+                                        : 'jobs'
+                                      : 'việc'}
+                                    )
+                                  </Text>
+                                </>
+                              ) : (
+                                <Text style={{ fontSize: fs(12), color: tc.textMuted }}>
+                                  {lang === 'en' ? 'No reviews yet' : 'Chưa có đánh giá'} ·{' '}
+                                  {helper.completedJobs}{' '}
+                                  {lang === 'en'
+                                    ? helper.completedJobs === 1
+                                      ? 'job'
+                                      : 'jobs'
+                                    : 'việc'}
+                                </Text>
+                              )}
                             </View>
                           </View>
                         </View>
@@ -2277,13 +2305,13 @@ export default function CustomerHomeScreen() {
 
                   return list.map(svc => {
                     const isCustom = svc.isCustom;
-                    const matched =
-                      services?.find(s => s.slug === svc.slug) ||
-                      services?.find(s => s.slug.includes(svc.slug.split('_')[0])) ||
-                      services?.find(s =>
-                        s.name.toLowerCase().includes(svc.name.toLowerCase().split(' ')[0]),
-                      );
+                    // Chỉ khớp slug chính xác: khớp tiền tố/từ đầu tên có thể
+                    // đưa khách sang nhầm dịch vụ (vd. house → housekeeping
+                    // thay vì house_cleaning). Không khớp thì mở booking tự ghi.
+                    const matched = services?.find(s => s.slug === svc.slug);
                     const fromPrefix = t('price_from_prefix');
+                    // Giá thật từ API; API không có giá thì "Thương lượng",
+                    // không dùng giá cứng trong catalog.
                     const displayPrice = matched?.base_price_min
                       ? `${fromPrefix}${matched.base_price_min.toLocaleString('vi-VN')}₫`
                       : svc.isCustom || svc.priceType === 'custom_deal'
@@ -2292,9 +2320,7 @@ export default function CustomerHomeScreen() {
                           ? t('price_per_task')
                           : svc.priceType === 'quote_trip'
                             ? t('price_per_trip')
-                            : svc.baseAmount
-                              ? `${fromPrefix}${svc.baseAmount.toLocaleString('vi-VN')}₫${svc.unitKey ? t(svc.unitKey) : ''}`
-                              : '';
+                            : t('price_negotiate');
 
                     return (
                       <ScalePressable
@@ -2608,7 +2634,10 @@ export default function CustomerHomeScreen() {
                   </Text>
                   <TextInput
                     value={quickDealPrice}
-                    onChangeText={setQuickDealPrice}
+                    onChangeText={text => {
+                      setQuickDealPrice(text);
+                      setQuickPriceEdited(true);
+                    }}
                     keyboardType="numeric"
                     style={{
                       backgroundColor: '#F8FAFC',
@@ -2895,16 +2924,36 @@ export default function CustomerHomeScreen() {
             {/* ── 8. VIỆC ĐANG THỰC HIỆN & ĐẶT GẦN ĐÂY ───────────────────────── */}
             {/* Section: Việc đang thực hiện */}
             <View style={{ paddingHorizontal: 16, marginTop: 24 }}>
-              <Text
+              <View
                 style={{
-                  fontSize: fs(18),
-                  fontWeight: '800',
-                  color: tc.text,
+                  flexDirection: 'row',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
                   marginBottom: 12,
                 }}
               >
-                {t('home_active_jobs')}
-              </Text>
+                <Text
+                  style={{
+                    fontSize: fs(18),
+                    fontWeight: '800',
+                    color: tc.text,
+                  }}
+                >
+                  {t('home_active_jobs')}
+                </Text>
+                {activeJobs.length > 1 && (
+                  <TouchableOpacity
+                    activeOpacity={0.7}
+                    onPress={() => router.push('/(customer)/jobs')}
+                  >
+                    <Text
+                      style={{ fontSize: fs(13), fontWeight: '700', color: COLORS.primary }}
+                    >
+                      {t('home_view_all')} ({activeJobs.length})
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              </View>
 
               {activeJobs.length > 0 ? (
                 activeJobs.slice(0, 1).map((j: any) => {
@@ -2995,8 +3044,12 @@ export default function CustomerHomeScreen() {
 
                   const displayDate = formatDate(dayjs(j.scheduled_at || j.created_at));
                   const displayTime = j.preferred_time_start || formatTime(dayjs(j.created_at));
+                  // Không suy diễn quận/huyện từ vị trí hiện tại của khách
+                  // khi đơn không có địa chỉ.
                   const displayDistrict =
-                    j.address?.district || j.address?.city || currentLocationName.split(',')[0];
+                    j.address?.district ||
+                    j.address?.city ||
+                    (lang === 'en' ? 'Location TBD' : 'Chưa rõ địa điểm');
 
                   return (
                     <TouchableOpacity
