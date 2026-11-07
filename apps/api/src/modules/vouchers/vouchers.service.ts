@@ -285,13 +285,37 @@ export class VouchersService {
 
   // ─── Public: Danh sách voucher đang hoạt động ────────────────────────────
 
-  async getActiveVouchers() {
+  /**
+   * P2-24: chỉ voucher ĐANG trong thời gian hiệu lực mới được liệt kê —
+   * trước đây chỉ lọc valid_to nên voucher chưa tới ngày bắt đầu vẫn hiện
+   * là "dùng được" (chỉ tới lúc validate/apply mới báo chưa tới hạn).
+   */
+  private currentlyValidFilter(): Record<string, unknown> {
     const now = new Date();
+    return {
+      is_active: true,
+      $and: [
+        {
+          $or: [
+            { valid_from: { $exists: false } },
+            { valid_from: null },
+            { valid_from: { $lte: now } },
+          ],
+        },
+        {
+          $or: [
+            { valid_to: { $exists: false } },
+            { valid_to: null },
+            { valid_to: { $gte: now } },
+          ],
+        },
+      ],
+    };
+  }
+
+  async getActiveVouchers() {
     return this.voucherModel
-      .find({
-        is_active: true,
-        $or: [{ valid_to: { $exists: false } }, { valid_to: null }, { valid_to: { $gte: now } }],
-      })
+      .find(this.currentlyValidFilter())
       .sort({ discount_value: -1, created_at: -1 })
       .lean()
       .exec();
@@ -300,12 +324,8 @@ export class VouchersService {
   // ─── Customer: Danh sách voucher khả dụng của tôi ──────────────────────────
 
   async getMyAvailableVouchers(userId: string) {
-    const now = new Date();
     const vouchers = await this.voucherModel
-      .find({
-        is_active: true,
-        $or: [{ valid_to: { $exists: false } }, { valid_to: null }, { valid_to: { $gte: now } }],
-      })
+      .find(this.currentlyValidFilter())
       .sort({ discount_value: -1, created_at: -1 })
       .lean()
       .exec();

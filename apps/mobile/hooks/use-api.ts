@@ -1931,20 +1931,27 @@ export function useDetachVoucherFromJob() {
 }
 
 export function useMyVouchers() {
+  const isAuth = useAuthStore(s => s.isAuthenticated);
   return useQuery({
-    queryKey: ['vouchers', 'my'],
+    queryKey: ['vouchers', 'my', isAuth],
     queryFn: async () => {
       try {
         const res = await apiClient.get('/vouchers/my');
         const list = (res.data?.data ?? res.data ?? []) as any[];
-        if (list.length > 0) return list;
+        // P1-23: danh sách trống của user đã đăng nhập là hợp lệ (đã dùng
+        // hết) — KHÔNG fallback sang voucher public, nếu không user sẽ thấy
+        // lại mã đã dùng hết và chỉ fail ở lúc validate/apply.
+        return list;
       } catch {
-        // Fallback to active vouchers if guest / not logged in
-      }
-      try {
-        const resActive = await apiClient.get('/vouchers/active');
-        return (resActive.data?.data ?? resActive.data ?? []) as any[];
-      } catch {
+        // Fallback sang voucher public chỉ cho khách chưa đăng nhập.
+        if (!isAuth) {
+          try {
+            const resActive = await apiClient.get('/vouchers/active');
+            return (resActive.data?.data ?? resActive.data ?? []) as any[];
+          } catch {
+            return [];
+          }
+        }
         return [];
       }
     },
