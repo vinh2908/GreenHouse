@@ -169,6 +169,7 @@ export default function NotificationsScreen() {
   const { t, fs, lang, formatNotifTitle, formatNotifBody } = useTranslation();
   const tc = useThemeColors();
   const user = useAuthStore(s => s.user);
+  const isAuth = useAuthStore(s => s.isAuthenticated);
   // B23: 2 tab Tất cả / Chưa đọc dùng đúng hook useNotifications(unreadOnly)
   const [tab, setTab] = useState<'all' | 'unread'>('all');
   const { data: notifications, isLoading, isError, refetch, dataUpdatedAt } = useNotifications(
@@ -315,7 +316,7 @@ export default function NotificationsScreen() {
           <RefreshControl refreshing={isLoading} onRefresh={refetch} colors={[COLORS.primary]} />
         }
       >
-        {isError ? (
+        {isError && isAuth ? (
           <ErrorState
             title={lang === 'en' ? 'Unable to load notifications' : 'Không thể tải thông báo'}
             subtitle={

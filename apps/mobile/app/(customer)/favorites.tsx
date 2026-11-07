@@ -11,6 +11,7 @@ import {
   type FavoriteHelperItem,
 } from '@/hooks/use-api';
 import { useTranslation } from '@/hooks/use-i18n';
+import { useAuthStore } from '@/stores/auth.store';
 import apiClient from '@/services/api-client';
 import { Avatar, Card, COLORS, EmptyState, ErrorState, LoadingSpinner, useThemeColors } from '@/components/ui';
 
@@ -24,6 +25,7 @@ export default function FavoriteHelpersScreen() {
   const { t, fs, lang } = useTranslation();
   const tc = useThemeColors();
   const { data: favorites, isLoading, isError, isRefetching, refetch } = useFavorites();
+  const isAuth = useAuthStore(s => s.isAuthenticated);
   const removeFavorite = useRemoveFavorite();
   const rebookJob = useRebookJob();
 
@@ -161,7 +163,7 @@ export default function FavoriteHelpersScreen() {
         </View>
       </View>
 
-      {isError ? (
+      {isError && isAuth ? (
         <ErrorState
           title={
             lang === 'en'

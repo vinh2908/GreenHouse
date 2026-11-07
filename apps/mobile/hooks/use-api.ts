@@ -1000,12 +1000,15 @@ export function useRequestWithdrawal() {
 // ─── Chat ──────────────────────────────────────────────────────────────────────
 
 export function useConversations() {
+  const isAuth = useAuthStore(s => s.isAuthenticated);
   return useQuery({
     queryKey: ['conversations'],
     queryFn: async () => {
       const { data } = await apiClient.get('/chat/conversations');
       return data.data;
     },
+    // Khách chưa đăng nhập: không gọi API (sẽ 401) và không poll mỗi 10s.
+    enabled: !!isAuth,
     refetchInterval: 10000,
   });
 }
@@ -1159,6 +1162,7 @@ export function useMarkSupportRead() {
 // ─── Notifications ─────────────────────────────────────────────────────────────
 
 export function useNotifications(unreadOnly = false) {
+  const isAuth = useAuthStore(s => s.isAuthenticated);
   return useQuery({
     queryKey: ['notifications', unreadOnly],
     queryFn: async () => {
@@ -1167,17 +1171,22 @@ export function useNotifications(unreadOnly = false) {
       });
       return data.data;
     },
+    // Khách chưa đăng nhập: không gọi API (sẽ 401) và không poll mỗi 30s.
+    enabled: !!isAuth,
     refetchInterval: 30000,
   });
 }
 
 export function useUnreadCount() {
+  const isAuth = useAuthStore(s => s.isAuthenticated);
   return useQuery({
     queryKey: ['notifications', 'count'],
     queryFn: async () => {
       const { data } = await apiClient.get('/notifications/unread-count');
       return data.data.count as number;
     },
+    // Khách chưa đăng nhập: không gọi API (sẽ 401) và không poll mỗi 15s.
+    enabled: !!isAuth,
     refetchInterval: 15000,
   });
 }
@@ -1332,12 +1341,15 @@ export interface FavoriteHelperItem {
 }
 
 export function useFavorites() {
+  const isAuth = useAuthStore(s => s.isAuthenticated);
   return useQuery({
     queryKey: ['favorites'],
     queryFn: async () => {
       const { data } = await apiClient.get('/customers/me/favorites');
       return data.data as FavoriteHelperItem[];
     },
+    // Khách chưa đăng nhập: không gọi API (sẽ 401).
+    enabled: !!isAuth,
   });
 }
 
