@@ -23,10 +23,7 @@ import {
   ShieldCheck,
 } from 'lucide-react-native';
 import Toast from 'react-native-toast-message';
-import dayjs from 'dayjs';
-import { formatTime } from '@/utils/date-format';
-import relativeTime from 'dayjs/plugin/relativeTime';
-import 'dayjs/locale/vi';
+import { formatTime, formatRelativeTime } from '@/utils/date-format';
 import { useAuthStore } from '@/stores/auth.store';
 import {
   useAvailableJobs,
@@ -39,8 +36,6 @@ import {
 import { useTranslation } from '@/hooks/use-i18n';
 import { Button, Card, JobStatusBadge, Badge, COLORS, EmptyState, ErrorState, useThemeColors } from '@/components/ui';
 import { OfflineBanner } from '@/components/common/offline-banner';
-
-dayjs.extend(relativeTime);
 
 export default function HelperJobsScreen() {
   const router = useRouter();
@@ -443,7 +438,7 @@ export default function HelperJobsScreen() {
                     }}
                   >
                     <Text style={{ fontSize: fs(12), color: tc.textMuted }}>
-                      {dayjs(job.created_at).fromNow()}
+                      {formatRelativeTime(job.created_at, lang)}
                     </Text>
                     {tabIndex === 0 && (job.is_fixed_price || job.is_warranty) ? (
                       <TouchableOpacity

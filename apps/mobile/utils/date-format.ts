@@ -1,11 +1,13 @@
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
+import relativeTime from 'dayjs/plugin/relativeTime';
 import 'dayjs/locale/vi';
 import 'dayjs/locale/en';
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
+dayjs.extend(relativeTime);
 
 /**
  * B29 — Múi giờ hiển thị chuẩn của toàn app: Việt Nam (UTC+7).
@@ -140,6 +142,19 @@ export function formatTime(dateInput: DateInput): string {
   if (!dateInput) return '';
   const date = toVnDayjs(dateInput);
   return date.isValid() ? date.format('HH:mm') : '';
+}
+
+/**
+ * G13 — thời gian tương đối dùng chung ('5 phút trước' / '5 minutes ago'):
+ * tính theo giờ Việt Nam (Asia/Ho_Chi_Minh, qua toVnDayjs) và ngôn ngữ đã
+ * chọn. Đây là chỗ DUY NHẤT trong mobile được gọi .fromNow() — các màn
+ * hình không tự gọi dayjs(...).fromNow() nữa. Giá trị không hợp lệ → ''.
+ */
+export function formatRelativeTime(dateInput: DateInput, lang: 'vi' | 'en' = 'vi'): string {
+  if (!dateInput) return '';
+  const date = toVnDayjs(dateInput);
+  if (!date.isValid()) return '';
+  return date.locale(lang).fromNow();
 }
 
 /** Tên thứ trong tuần, viết hoa chữ đầu, đúng ngôn ngữ đã chọn, theo giờ VN. */
