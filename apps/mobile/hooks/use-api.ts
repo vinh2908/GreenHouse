@@ -2034,6 +2034,17 @@ export function useJoinCallToken() {
   });
 }
 
+// Đánh dấu cuộc gọi đã được trả lời — chỉ gọi khi media/signaling thật sự
+// connected (onConnected), không phải lúc fetch token (fix Bug 5).
+export function useMarkCallAnswered() {
+  return useMutation({
+    mutationFn: async (sessionId: string) => {
+      const { data } = await apiClient.post(`/calls/sessions/${sessionId}/answered`);
+      return data.data as { session_id: string; status: string; answered_at?: string };
+    },
+  });
+}
+
 // ─── Team Jobs (Roadmap Phase 1 — Đơn nhóm) ──────────────────────────────────
 
 export interface TeamInvitation {

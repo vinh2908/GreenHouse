@@ -8,6 +8,7 @@ import { AppGateway } from './app.gateway';
 import { Conversation, ConversationSchema } from './schemas/chat.schema';
 import { Message, MessageSchema } from './schemas/chat.schema';
 import { Job, JobSchema } from '../jobs/schemas/job.schema';
+import { CallsModule } from '../calls/calls.module';
 
 @Module({
   imports: [
@@ -18,6 +19,8 @@ import { Job, JobSchema } from '../jobs/schemas/job.schema';
     ]),
     JwtModule.register({}),
     forwardRef(() => NotificationsModule),
+    // forwardRef: AppGateway inject CallsService (handler call:declined)
+    forwardRef(() => CallsModule),
   ],
   controllers: [ChatController],
   providers: [ChatService, AppGateway],
