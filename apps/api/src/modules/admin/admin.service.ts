@@ -382,7 +382,17 @@ export class AdminService {
     ]);
 
     const filtered = search ? helpers.filter(h => h.user_id !== null) : helpers;
-    return { helpers: filtered, total, page, limit, total_pages: Math.ceil(total / limit) };
+    // F3: che số TK ở danh sách admin — trang danh sách helpers không dùng
+    // bank_account; chỉ che bank_account, không che CCCD/ảnh (trang duyệt
+    // KYC cần id_card_number/front/back + selfie; STK đầy đủ chỉ hiện ở
+    // trang duyệt rút tiền / chi tiết user, endpoint riêng).
+    return {
+      helpers: filtered.map(h => maskHelperBankAccount(h)),
+      total,
+      page,
+      limit,
+      total_pages: Math.ceil(total / limit),
+    };
   }
 
   async getPendingKyc(page = 1, limit = 20) {
@@ -397,7 +407,15 @@ export class AdminService {
         .exec(),
       this.helperModel.countDocuments({ verification_status: VerificationStatus.PENDING }).exec(),
     ]);
-    return { helpers, total, page, limit, total_pages: Math.ceil(total / limit) };
+    // F3: che số TK ở danh sách chờ duyệt KYC (như getHelpers) — trang này
+    // không dùng bank_account; chỉ che bank_account, giữ nguyên CCCD/ảnh.
+    return {
+      helpers: helpers.map(h => maskHelperBankAccount(h)),
+      total,
+      page,
+      limit,
+      total_pages: Math.ceil(total / limit),
+    };
   }
 
   async approveKyc(userId: string): Promise<any> {
