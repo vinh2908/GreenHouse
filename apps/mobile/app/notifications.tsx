@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { formatTime, formatRelativeTime } from '@/utils/date-format';
 import { View, Text, ScrollView, TouchableOpacity, RefreshControl } from 'react-native';
+import Toast from 'react-native-toast-message';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import {
@@ -96,6 +97,7 @@ function renderNotificationIcon(type: string) {
     case 'dispute_appealed':
     case 'dispute_opened':
     case 'dispute_resolved':
+    case 'dispute_evidence':
       return <Scale size={size} color="#EF4444" />;
     case 'claim_submitted':
       return <FileWarning size={size} color="#F59E0B" />;
@@ -103,6 +105,7 @@ function renderNotificationIcon(type: string) {
       return <PhoneMissed size={size} color="#EF4444" />;
     case 'team_invitation':
     case 'team_response':
+    case 'team_invitation_response':
       return <Users size={size} color="#8B5CF6" />;
     case 'recurring_job_created':
       return <CalendarClock size={size} color="#22C55E" />;
@@ -140,12 +143,6 @@ function renderNotificationIcon(type: string) {
     case 'monthly_contract_expiring_soon':
       return <CalendarClock size={size} color="#0EA5E9" />;
     // B102: các nhóm mới cũng có icon riêng
-    case 'team_invitation':
-    case 'team_invitation_response':
-      return <Users size={size} color="#8B5CF6" />;
-    case 'dispute_evidence':
-    case 'dispute_appealed':
-      return <Scale size={size} color="#F59E0B" />;
     case 'loyalty_points_earned':
       return <Award size={size} color="#F59E0B" />;
     case 'voucher_restored':
@@ -172,8 +169,20 @@ export default function NotificationsScreen() {
   const isAuth = useAuthStore(s => s.isAuthenticated);
   // B23: 2 tab Tất cả / Chưa đọc dùng đúng hook useNotifications(unreadOnly)
   const [tab, setTab] = useState<'all' | 'unread'>('all');
-  const { data: notifications, isLoading, isError, refetch, dataUpdatedAt } = useNotifications(
-    tab === 'unread',
+  const {
+    data: notificationPages,
+    isLoading,
+    isError,
+    isRefetching,
+    refetch,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    dataUpdatedAt,
+  } = useNotifications(tab === 'unread');
+  const notifications = useMemo(
+    () => (notificationPages?.pages ?? []).flat() as any[],
+    [notificationPages],
   );
   const markAll = useMarkAllRead();
   const markRead = useMarkNotificationRead();
@@ -205,6 +214,18 @@ export default function NotificationsScreen() {
     );
     if (route) {
       router.push(route as never);
+    } else {
+      // P2-8: thông báo không có đích cụ thể (system/promotion...) — chạm
+      // không được im lặng, báo rõ là đã đọc và không có màn chi tiết.
+      Toast.show({
+        type: 'info',
+        text1: lang === 'en' ? 'Notification marked as read' : 'Đã đánh dấu thông báo là đã đọc',
+        text2:
+          lang === 'en'
+            ? 'This notification has no detail screen.'
+            : 'Thông báo này không có màn hình chi tiết.',
+        visibilityTime: 2000,
+      });
     }
   };
 
@@ -313,10 +334,22 @@ export default function NotificationsScreen() {
       <ScrollView
         contentContainerStyle={{ padding: 16, gap: 10, paddingBottom: 40 }}
         refreshControl={
-          <RefreshControl refreshing={isLoading} onRefresh={refetch} colors={[COLORS.primary]} />
+          <RefreshControl refreshing={isRefetching} onRefresh={refetch} colors={[COLORS.primary]} />
         }
       >
-        {isError && isAuth ? (
+        {!isAuth ? (
+          <EmptyState
+            icon={<Bell size={36} color={COLORS.gray[400]} />}
+            title={lang === 'en' ? 'Log in to see notifications' : 'Đăng nhập để xem thông báo'}
+            subtitle={
+              lang === 'en'
+                ? 'Quotes updates, order status, and payments will appear here after you log in.'
+                : 'Đăng nhập để xem cập nhật báo giá, tình trạng đơn hàng và thanh toán tại đây.'
+            }
+            action={lang === 'en' ? 'Log in' : 'Đăng nhập'}
+            onAction={() => router.push('/(auth)/login')}
+          />
+        ) : isError ? (
           <ErrorState
             title={lang === 'en' ? 'Unable to load notifications' : 'Không thể tải thông báo'}
             subtitle={
@@ -430,6 +463,30 @@ export default function NotificationsScreen() {
               </TouchableOpacity>
             ),
           )
+        )}
+        {isAuth && hasNextPage && (
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={() => fetchNextPage()}
+            disabled={isFetchingNextPage}
+            style={{
+              alignItems: 'center',
+              paddingVertical: 12,
+              borderRadius: 14,
+              backgroundColor: tc.subtle,
+              marginTop: 4,
+            }}
+          >
+            <Text style={{ fontSize: fs(13.5), fontWeight: '700', color: COLORS.primary }}>
+              {isFetchingNextPage
+                ? lang === 'en'
+                  ? 'Loading…'
+                  : 'Đang tải…'
+                : lang === 'en'
+                  ? 'Load older notifications'
+                  : 'Tải thông báo cũ hơn'}
+            </Text>
+          </TouchableOpacity>
         )}
       </ScrollView>
     </View>

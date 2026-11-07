@@ -1,5 +1,5 @@
 // hooks/use-api.ts — TanStack Query hooks cho toàn bộ app
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import apiClient from '@/services/api-client';
 import { uploadFile, uploadFiles } from '@/services/upload.service';
 import { syncHelperLocation } from '@/hooks/use-helper-location-sync';
@@ -1013,16 +1013,23 @@ export function useConversations() {
   });
 }
 
-export function useMessages(conversationId?: string, page = 1) {
-  return useQuery({
-    queryKey: ['messages', conversationId, page],
-    queryFn: async () => {
+export function useMessages(conversationId?: string) {
+  return useInfiniteQuery({
+    queryKey: ['messages', conversationId],
+    queryFn: async ({ pageParam = 1 }) => {
       const { data } = await apiClient.get(`/chat/conversations/${conversationId}/messages`, {
-        params: { page, limit: 30 },
+        params: { page: pageParam, limit: 30 },
       });
       return data.data;
     },
+    initialPageParam: 1,
+    // Trang 1 = 30 tin mới nhất, trang sau = 30 tin cũ hơn. Hết khi trang
+    // trả về ít hơn limit.
+    getNextPageParam: (lastPage, allPages) =>
+      Array.isArray(lastPage) && lastPage.length === 30 ? allPages.length + 1 : undefined,
     enabled: !!conversationId,
+    // S9: socket rớt thì polling 15s vẫn giữ chat tươi (như useConversations).
+    refetchInterval: 15000,
   });
 }
 
@@ -1163,14 +1170,17 @@ export function useMarkSupportRead() {
 
 export function useNotifications(unreadOnly = false) {
   const isAuth = useAuthStore(s => s.isAuthenticated);
-  return useQuery({
+  return useInfiniteQuery({
     queryKey: ['notifications', unreadOnly],
-    queryFn: async () => {
+    queryFn: async ({ pageParam = 1 }) => {
       const { data } = await apiClient.get('/notifications', {
-        params: { unread_only: unreadOnly },
+        params: { unread_only: unreadOnly, page: pageParam, limit: 50 },
       });
       return data.data;
     },
+    initialPageParam: 1,
+    getNextPageParam: (lastPage, allPages) =>
+      Array.isArray(lastPage) && lastPage.length === 50 ? allPages.length + 1 : undefined,
     // Khách chưa đăng nhập: không gọi API (sẽ 401) và không poll mỗi 30s.
     enabled: !!isAuth,
     refetchInterval: 30000,
@@ -1200,6 +1210,9 @@ export function useMarkNotificationRead() {
       qc.invalidateQueries({ queryKey: ['notifications'] });
       qc.invalidateQueries({ queryKey: ['notifications', 'count'] });
     },
+    onError: () => {
+      Toast.show({ type: 'error', text1: 'Không thể đánh dấu đã đọc, vui lòng thử lại' });
+    },
   });
 }
 
@@ -1211,16 +1224,22 @@ export function useMarkAllRead() {
       qc.invalidateQueries({ queryKey: ['notifications'] });
       qc.invalidateQueries({ queryKey: ['notifications', 'count'] });
     },
+    onError: () => {
+      Toast.show({ type: 'error', text1: 'Không thể đánh dấu tất cả đã đọc, vui lòng thử lại' });
+    },
   });
 }
 
 export function useNotificationSettings() {
+  const isAuth = useAuthStore(s => s.isAuthenticated);
   return useQuery({
     queryKey: ['notifications', 'settings'],
     queryFn: async () => {
       const { data } = await apiClient.get('/notifications/settings');
       return data;
     },
+    // Khách chưa đăng nhập: không gọi API (sẽ 401) — như useNotifications.
+    enabled: !!isAuth,
   });
 }
 
@@ -1376,6 +1395,10 @@ export function useRemoveFavorite() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['favorites'] });
       Toast.show({ type: 'success', text1: 'Đã bỏ khỏi danh sách yêu thích' });
+    },
+    onError: (err: any) => {
+      const msg = err?.response?.data?.message ?? 'Không thể bỏ thợ yêu thích';
+      Toast.show({ type: 'error', text1: typeof msg === 'string' ? msg : 'Đã có lỗi xảy ra' });
     },
   });
 }

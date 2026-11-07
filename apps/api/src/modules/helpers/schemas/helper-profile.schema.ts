@@ -109,7 +109,10 @@ export class HelperProfile {
   @Prop({ default: 100 })
   acceptance_rate: number;
 
-  @Prop({ default: 100 })
+  // Không mặc định 100: thợ mới chưa có đơn hoàn thành thì completion_rate
+  // là undefined → client hiển thị "—" thay vì bịa 100%. Nơi cần số để
+  // chấm điểm (matching) vẫn dùng `?? 100` tại chỗ đọc.
+  @Prop()
   completion_rate: number;
 
   @Prop({ default: 0 })
