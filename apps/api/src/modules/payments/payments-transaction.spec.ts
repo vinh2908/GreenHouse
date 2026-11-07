@@ -153,11 +153,7 @@ describe('PaymentsService - F5 & F19 Transaction and Stuck Processing', () => {
       300000,
       mockSession,
     );
-    expect(loyaltyService.redeemAtPayment).toHaveBeenCalledWith(
-      customerId,
-      jobId,
-      mockSession,
-    );
+    expect(loyaltyService.redeemAtPayment).toHaveBeenCalledWith(customerId, jobId, mockSession);
     // Verify voucher rollback was invoked
     expect(vouchersService.restoreForJob).toHaveBeenCalledWith(customerId, jobId);
     // Verify loyalty rollback was invoked

@@ -517,9 +517,7 @@ export function AppPermissionsSection() {
                   <Text style={{ fontSize: fs(13.5), fontWeight: '600', color: tc.text }}>
                     {t(item.titleKey)}
                   </Text>
-                  <Text style={{ fontSize: fs(11), color: tc.textMuted }}>
-                    {t(item.descKey)}
-                  </Text>
+                  <Text style={{ fontSize: fs(11), color: tc.textMuted }}>{t(item.descKey)}</Text>
                 </View>
               </View>
 

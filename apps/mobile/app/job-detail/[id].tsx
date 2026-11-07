@@ -102,7 +102,20 @@ import { LoyaltyPointsInput } from '@/components/common/loyalty-points-input';
 import { LocationPicker } from '@/components/common/location-picker';
 import { validCoordinate } from '@/services/tracking';
 import { formatDisplayAddress } from '@/utils/address-formatter';
-import { Button, Card, JobStatusBadge, Avatar, LoadingSpinner, COLORS, Separator, PriceText, Badge, Input, EmptyState, useThemeColors } from '@/components/ui';
+import {
+  Button,
+  Card,
+  JobStatusBadge,
+  Avatar,
+  LoadingSpinner,
+  COLORS,
+  Separator,
+  PriceText,
+  Badge,
+  Input,
+  EmptyState,
+  useThemeColors,
+} from '@/components/ui';
 
 dayjs.extend(relativeTime);
 
@@ -518,8 +531,7 @@ export default function JobDetailScreen() {
     job.status === 'completed' &&
     completedAtMs !== null &&
     Date.now() - completedAtMs <= 72 * 60 * 60 * 1000;
-  const canDispute =
-    ['in_progress', 'pending_review'].includes(job.status) || canDisputeCompleted;
+  const canDispute = ['in_progress', 'pending_review'].includes(job.status) || canDisputeCompleted;
   const hasHelperAssigned = !!job.helper_id;
 
   const helperObj = typeof job.helper_id === 'object' && job.helper_id ? job.helper_id : null;
@@ -864,9 +876,7 @@ export default function JobDetailScreen() {
           // P0-3: retry must not re-charge when already paid — the local
           // job snapshot may be stale; a 409 "already paid" means the first
           // charge went through, so continue to approval instead of failing.
-          const msg = String(
-            payErr?.response?.data?.message ?? payErr?.message ?? '',
-          );
+          const msg = String(payErr?.response?.data?.message ?? payErr?.message ?? '');
           if (/đã được thanh toán|already paid/i.test(msg)) {
             await refetchJob();
           } else {
@@ -1558,29 +1568,33 @@ export default function JobDetailScreen() {
         {/* P2-13: live map only while a helper is assigned and en route /
             working — never on open / finished / disputed / refunded jobs. */}
         {customerLocation &&
-          ['confirmed', 'helper_on_the_way', 'helper_arrived', 'in_progress', 'pending_review'].includes(
-            job.status,
-          ) && (
-          <View
-            onLayout={e => {
-              trackingSectionY.current = e.nativeEvent.layout.y;
-            }}
-          >
-            <LiveTrackingMap
-              customerLocation={customerLocation}
-              helperLocation={trackingHelperLocation}
-              helperRecordedAt={helperLocation?.recorded_at}
-              viewerRole="customer"
-              customerAddress={job.address?.full_address}
-              helperName={
-                helperObj?.full_name || (lang === 'en' ? 'Green House Helper' : 'Thợ Green House')
-              }
-              status={job.status}
-              height={300}
-              showNavigationButton={false}
-            />
-          </View>
-        )}
+          [
+            'confirmed',
+            'helper_on_the_way',
+            'helper_arrived',
+            'in_progress',
+            'pending_review',
+          ].includes(job.status) && (
+            <View
+              onLayout={e => {
+                trackingSectionY.current = e.nativeEvent.layout.y;
+              }}
+            >
+              <LiveTrackingMap
+                customerLocation={customerLocation}
+                helperLocation={trackingHelperLocation}
+                helperRecordedAt={helperLocation?.recorded_at}
+                viewerRole="customer"
+                customerAddress={job.address?.full_address}
+                helperName={
+                  helperObj?.full_name || (lang === 'en' ? 'Green House Helper' : 'Thợ Green House')
+                }
+                status={job.status}
+                height={300}
+                showNavigationButton={false}
+              />
+            </View>
+          )}
 
         {/* ── Job info ───────────────────────────────────────────────── */}
         <Card style={{ gap: 12, padding: 16 }}>
@@ -1647,9 +1661,7 @@ export default function JobDetailScreen() {
             )}
           </View>
 
-          <Text
-            style={{ fontSize: fs(15), color: tc.text, lineHeight: 22, fontWeight: '500' }}
-          >
+          <Text style={{ fontSize: fs(15), color: tc.text, lineHeight: 22, fontWeight: '500' }}>
             {job.description}
           </Text>
 
@@ -1884,9 +1896,7 @@ export default function JobDetailScreen() {
                               </Text>
                               <ShieldCheck size={14} color={COLORS.success} />
                             </View>
-                            <Text
-                              style={{ fontSize: fs(12), color: tc.textMuted, marginTop: 1 }}
-                            >
+                            <Text style={{ fontSize: fs(12), color: tc.textMuted, marginTop: 1 }}>
                               {q.distance_km != null
                                 ? lang === 'en'
                                   ? `~${q.distance_km}km away • Est. arrival ~${formatTravelTime(q.estimated_minutes, 'en')}`
@@ -2140,9 +2150,7 @@ export default function JobDetailScreen() {
                         />
                         <PriceText amount={addTotal} size={15} color={COLORS.primaryDark} />
                       </View>
-                      <Text
-                        style={{ fontSize: fs(13.5), color: tc.text, fontWeight: '600' }}
-                      >
+                      <Text style={{ fontSize: fs(13.5), color: tc.text, fontWeight: '600' }}>
                         {lang === 'en' ? 'Reason: ' : 'Lý do: '}
                         {am.reason}
                       </Text>
@@ -2511,37 +2519,35 @@ export default function JobDetailScreen() {
                   const res: any = await rebookJob.mutateAsync({ sourceJobId: id! });
                   const newId =
                     res?.data?.data?._id ?? res?.data?._id ?? res?._id ?? res?.data?.data?.id;
-                  if (newId) router.replace({ pathname: '/job-detail/[id]', params: { id: String(newId) } });
+                  if (newId)
+                    router.replace({ pathname: '/job-detail/[id]', params: { id: String(newId) } });
                 } catch {
                   // useRebookJob onError already shows the error toast.
                 }
               }}
             />
           )}
-          {!canCancel &&
-            ['in_progress', 'pending_review'].includes(job.status) && (
-              <View
-                style={{
-                  backgroundColor: '#F8FAFC',
-                  borderColor: tc.border,
-                  borderWidth: 1,
-                  borderRadius: 14,
-                  padding: 14,
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: 10,
-                }}
-              >
-                <Info size={22} color={COLORS.warning || '#D97706'} />
-                <Text
-                  style={{ flex: 1, fontSize: fs(13), color: tc.textSecondary, lineHeight: 18 }}
-                >
-                  {lang === 'en'
-                    ? 'Cannot cancel directly at this stage. Work is underway. If you need support, please contact helper or Green House customer service.'
-                    : 'Không thể hủy trực tiếp ở bước này. Công việc đang tiến hành. Nếu cần hỗ trợ hoặc giải quyết sự cố, vui lòng liên hệ thợ hoặc tổng đài hỗ trợ Green House.'}
-                </Text>
-              </View>
-            )}
+          {!canCancel && ['in_progress', 'pending_review'].includes(job.status) && (
+            <View
+              style={{
+                backgroundColor: '#F8FAFC',
+                borderColor: tc.border,
+                borderWidth: 1,
+                borderRadius: 14,
+                padding: 14,
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 10,
+              }}
+            >
+              <Info size={22} color={COLORS.warning || '#D97706'} />
+              <Text style={{ flex: 1, fontSize: fs(13), color: tc.textSecondary, lineHeight: 18 }}>
+                {lang === 'en'
+                  ? 'Cannot cancel directly at this stage. Work is underway. If you need support, please contact helper or Green House customer service.'
+                  : 'Không thể hủy trực tiếp ở bước này. Công việc đang tiến hành. Nếu cần hỗ trợ hoặc giải quyết sự cố, vui lòng liên hệ thợ hoặc tổng đài hỗ trợ Green House.'}
+              </Text>
+            </View>
+          )}
         </View>
       </ScrollView>
 
@@ -2886,7 +2892,9 @@ export default function JobDetailScreen() {
 
       {/* ── Review & Payment Modal ─────────────────────────────────────── */}
       <Modal visible={showReview} animationType="slide" presentationStyle="pageSheet">
-        <View style={{ flex: 1, backgroundColor: tc.surface, paddingTop: Math.max(insets.top, 16) }}>
+        <View
+          style={{ flex: 1, backgroundColor: tc.surface, paddingTop: Math.max(insets.top, 16) }}
+        >
           <View style={{ flexDirection: 'row', alignItems: 'center', padding: 20 }}>
             <TouchableOpacity onPress={() => setShowReview(false)}>
               <X size={24} color={COLORS.gray[700]} />
@@ -2932,9 +2940,7 @@ export default function JobDetailScreen() {
                     <>
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                         <CreditCard size={18} color={COLORS.primary} />
-                        <Text
-                          style={{ fontWeight: '800', fontSize: fs(15), color: tc.text }}
-                        >
+                        <Text style={{ fontWeight: '800', fontSize: fs(15), color: tc.text }}>
                           {lang === 'en' ? 'Payment method' : 'Phương thức thanh toán'} (
                           {new Intl.NumberFormat('vi-VN').format(finalPayable)}₫)
                         </Text>
@@ -3989,7 +3995,9 @@ export default function JobDetailScreen() {
         presentationStyle="pageSheet"
         onRequestClose={() => setShowSosHistoryModal(false)}
       >
-        <View style={{ flex: 1, backgroundColor: tc.surface, paddingTop: Math.max(insets.top, 16) }}>
+        <View
+          style={{ flex: 1, backgroundColor: tc.surface, paddingTop: Math.max(insets.top, 16) }}
+        >
           <View
             style={{
               flexDirection: 'row',
@@ -4050,9 +4058,7 @@ export default function JobDetailScreen() {
                         alignItems: 'center',
                       }}
                     >
-                      <Text
-                        style={{ fontSize: fs(14), fontWeight: '800', color: tc.text }}
-                      >
+                      <Text style={{ fontSize: fs(14), fontWeight: '800', color: tc.text }}>
                         {lang === 'en' ? `SOS Dispatch #${idx + 1}` : `Lần điều phối #${idx + 1}`}
                       </Text>
                       <Badge

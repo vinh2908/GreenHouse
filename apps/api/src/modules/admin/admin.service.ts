@@ -127,12 +127,7 @@ export class AdminService {
 
   // B108: lịch sử thông báo đã gửi (mới nhất trước) — nội dung, người nhận,
   // thời gian, đã đọc/chưa đọc. Dùng chung parseAdminPagination (B90).
-  async getSentNotifications(
-    page = 1,
-    limit = 20,
-    type?: string,
-    userId?: string,
-  ) {
+  async getSentNotifications(page = 1, limit = 20, type?: string, userId?: string) {
     const query: Record<string, unknown> = {};
     if (type) query['type'] = type;
     if (userId) query['user_id'] = new Types.ObjectId(userId);
@@ -327,10 +322,7 @@ export class AdminService {
       .exec();
     if (!user) throw new NotFoundException('Người dùng không tồn tại');
     await this.helperModel
-      .updateOne(
-        { user_id: user._id },
-        { status: HelperStatus.OFFLINE, deleted_at: new Date() },
-      )
+      .updateOne({ user_id: user._id }, { status: HelperStatus.OFFLINE, deleted_at: new Date() })
       .exec();
     return user;
   }
@@ -345,9 +337,7 @@ export class AdminService {
       )
       .exec();
     if (!user) throw new NotFoundException('Người dùng không tồn tại');
-    await this.helperModel
-      .updateOne({ user_id: user._id }, { $unset: { deleted_at: 1 } })
-      .exec();
+    await this.helperModel.updateOne({ user_id: user._id }, { $unset: { deleted_at: 1 } }).exec();
     return user;
   }
 
@@ -456,7 +446,9 @@ export class AdminService {
     if (!profile) throw new NotFoundException('Helper profile not found');
     // B82: chỉ từ chối được e-KYC đang chờ duyệt; đã duyệt/từ chối rồi → 400
     if (profile.verification_status !== VerificationStatus.PENDING) {
-      throw new BadRequestException('Hồ sơ không ở trạng thái chờ duyệt (PENDING), không thể từ chối');
+      throw new BadRequestException(
+        'Hồ sơ không ở trạng thái chờ duyệt (PENDING), không thể từ chối',
+      );
     }
     profile.verification_status = VerificationStatus.REJECTED;
     profile.rejection_reason = reason;
@@ -769,10 +761,9 @@ export class AdminService {
         .session(sess ?? null)
         .exec();
       if (!wallet) {
-        [wallet] = await this.walletModel.create(
-          [{ user_id: job.customer_id, balance: 0 }],
-          { session: sess ?? undefined },
-        );
+        [wallet] = await this.walletModel.create([{ user_id: job.customer_id, balance: 0 }], {
+          session: sess ?? undefined,
+        });
       }
 
       const balanceBefore = wallet.balance;
@@ -824,7 +815,11 @@ export class AdminService {
           throw txErr;
         }
       } finally {
-        try { await session.endSession(); } catch { /* ignore */ }
+        try {
+          await session.endSession();
+        } catch {
+          /* ignore */
+        }
       }
     } else {
       balanceAfter = await doRefund(undefined);
@@ -1044,11 +1039,7 @@ export class AdminService {
     return computeHelperScore(
       helperScoreInputFromProfile(
         profile,
-        countCancellationsInWindow(
-          profile.cancellation_timestamps ?? [],
-          now,
-          config.windowDays,
-        ),
+        countCancellationsInWindow(profile.cancellation_timestamps ?? [], now, config.windowDays),
       ),
       config,
     );
@@ -1084,10 +1075,7 @@ export class AdminService {
 
     const pruned = pruneCancellationTimestamps(stamps, now, config.windowDays);
     const count = countCancellationsInWindow(pruned, now, config.windowDays);
-    const result = computeHelperScore(
-      helperScoreInputFromProfile(profile, count),
-      config,
-    );
+    const result = computeHelperScore(helperScoreInputFromProfile(profile, count), config);
 
     profile.cancellation_timestamps = pruned;
     profile.cancellations_last_7_days = count;

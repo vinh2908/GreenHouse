@@ -136,6 +136,10 @@ describe('computeHelperScore — MỘT công thức duy nhất (G8/B87: Distance
   });
 
   it('cấu hình phạt vẫn đọc từ env (ngưỡng/phạt/cửa sổ)', () => {
-    expect(DEFAULT_HELPER_SCORE_CONFIG).toEqual({ windowDays: 7, threshold: 3, pointsPerExcess: 5 });
+    expect(DEFAULT_HELPER_SCORE_CONFIG).toEqual({
+      windowDays: 7,
+      threshold: 3,
+      pointsPerExcess: 5,
+    });
   });
 });

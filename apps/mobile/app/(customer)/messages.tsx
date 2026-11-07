@@ -18,7 +18,6 @@ import {
   useThemeColors,
 } from '@/components/ui';
 
-
 export default function ConversationsScreen() {
   const router = useRouter();
   const { t, fs, lang } = useTranslation();
@@ -92,9 +91,7 @@ export default function ConversationsScreen() {
               return (
                 <EmptyState
                   icon={<MessageCircle size={36} color={COLORS.gray[400]} />}
-                  title={
-                    lang === 'en' ? 'Session expired' : 'Phiên đăng nhập đã hết hạn'
-                  }
+                  title={lang === 'en' ? 'Session expired' : 'Phiên đăng nhập đã hết hạn'}
                   subtitle={
                     lang === 'en'
                       ? 'Your session has expired. Please log in again to view your conversations.'
@@ -108,9 +105,7 @@ export default function ConversationsScreen() {
             return (
               <ErrorState
                 title={
-                  lang === 'en'
-                    ? 'Unable to load conversations'
-                    : 'Không thể tải cuộc trò chuyện'
+                  lang === 'en' ? 'Unable to load conversations' : 'Không thể tải cuộc trò chuyện'
                 }
                 subtitle={
                   lang === 'en'

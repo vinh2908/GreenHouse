@@ -79,7 +79,12 @@ describe('JobsService.resolveDispute (B55)', () => {
         { provide: getModelToken(User.name), useValue: {} },
         {
           provide: AppGateway,
-          useValue: { emitToJob: jest.fn(), emitToUser: jest.fn(), emitToAdmins: jest.fn(), broadcastHelperStatus: jest.fn() },
+          useValue: {
+            emitToJob: jest.fn(),
+            emitToUser: jest.fn(),
+            emitToAdmins: jest.fn(),
+            broadcastHelperStatus: jest.fn(),
+          },
         },
         { provide: NotificationsService, useValue: notificationsService },
         { provide: ChatService, useValue: {} },

@@ -248,9 +248,9 @@ describe('CallsService.joinSessionToken / markAnswered — re-join idempotent', 
 
   it('markAnswered khi session đã ended → 400', async () => {
     const { service, calleeId, sessionId } = makeJoinService({ status: 'ended' });
-    await expect(
-      service.markAnswered(String(sessionId), String(calleeId)),
-    ).rejects.toBeInstanceOf(BadRequestException);
+    await expect(service.markAnswered(String(sessionId), String(calleeId))).rejects.toBeInstanceOf(
+      BadRequestException,
+    );
   });
 
   it('endCall 2 lần (socket decline + REST end) → chỉ emit CALL_ENDED + notification nhỡ 1 lần', async () => {

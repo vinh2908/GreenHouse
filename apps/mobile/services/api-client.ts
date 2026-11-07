@@ -110,12 +110,15 @@ function triggerSessionExpiredLogout() {
 
   try {
     const { useAuthStore } = require('@/stores/auth.store');
-    void useAuthStore.getState().logout().finally(() => {
-      try {
-        const { router } = require('expo-router');
-        router.replace('/(auth)/login');
-      } catch {}
-    });
+    void useAuthStore
+      .getState()
+      .logout()
+      .finally(() => {
+        try {
+          const { router } = require('expo-router');
+          router.replace('/(auth)/login');
+        } catch {}
+      });
   } catch {
     try {
       const { router } = require('expo-router');
@@ -134,12 +137,15 @@ if (typeof globalThis !== 'undefined') {
         if (event.data?.type === 'SESSION_EXPIRED') {
           try {
             const { useAuthStore } = require('@/stores/auth.store');
-            void useAuthStore.getState().logout().finally(() => {
-              try {
-                const { router } = require('expo-router');
-                router.replace('/(auth)/login');
-              } catch {}
-            });
+            void useAuthStore
+              .getState()
+              .logout()
+              .finally(() => {
+                try {
+                  const { router } = require('expo-router');
+                  router.replace('/(auth)/login');
+                } catch {}
+              });
           } catch {}
         }
       };

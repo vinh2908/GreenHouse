@@ -173,7 +173,7 @@ describe('RecurringService generateJobsForPlan (H1/R1 duration mapping)', () => 
     }
   });
 
-  it("time_end chuỗi rỗng + duration_hours → coi như thiếu time_end, dùng duration_hours", async () => {
+  it('time_end chuỗi rỗng + duration_hours → coi như thiếu time_end, dùng duration_hours', async () => {
     const { service, createdJobs } = makeWorld();
     const plan: any = weeklyPlan({ time_end: '', duration_hours: 3 });
 
@@ -269,19 +269,10 @@ describe('RecurringService generateJobsForPlan (H1/R1 duration mapping)', () => 
     // (parse giờ bắt đầu theo +07:00, kèm đệm 2 phút). Chỉ tính theo
     // 1 phía thì lệch múi giờ: vd TZ=UTC lúc 02:28 UTC, 09:00 local
     // chưa qua nhưng 09:00+07:00 đã qua từ 02:00 UTC nên A1 chặn 400.
-    const todayLocal = new Date(
-      today.getFullYear(),
-      today.getMonth(),
-      today.getDate(),
-      9,
-      0,
-      0,
-      0,
-    );
+    const todayLocal = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 9, 0, 0, 0);
     const todayVn = new Date(`${dateKey(today)}T09:00:00+07:00`);
     const todayPast =
-      todayLocal.getTime() <= Date.now() ||
-      todayVn.getTime() < Date.now() - 2 * 60 * 1000;
+      todayLocal.getTime() <= Date.now() || todayVn.getTime() < Date.now() - 2 * 60 * 1000;
     const plan: any = weeklyPlan({
       weekdays: [today.getDay()],
       time_start: '09:00',

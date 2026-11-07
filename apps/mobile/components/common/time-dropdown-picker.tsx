@@ -1,5 +1,11 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { formatDate, formatDateWithWeekday, formatDateKey, vnDateKey, vnNow } from '@/utils/date-format';
+import {
+  formatDate,
+  formatDateWithWeekday,
+  formatDateKey,
+  vnDateKey,
+  vnNow,
+} from '@/utils/date-format';
 import {
   View,
   Text,
@@ -423,7 +429,10 @@ export function TimeDropdownPicker({
               nestedScrollEnabled={true}
               keyboardShouldPersistTaps="handled"
             >
-              {Array.from({ length: WORK_END_HOUR - WORK_START_HOUR + 1 }, (_, i) => i + WORK_START_HOUR).map(h => {
+              {Array.from(
+                { length: WORK_END_HOUR - WORK_START_HOUR + 1 },
+                (_, i) => i + WORK_START_HOUR,
+              ).map(h => {
                 const isSelected = h === currentHour;
                 // Nếu hôm nay và giờ < giờ hiện tại (hoặc bằng giờ hiện tại nhưng phút đã 59)
                 const isHourPast =

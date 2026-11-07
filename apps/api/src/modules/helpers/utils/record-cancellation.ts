@@ -56,10 +56,7 @@ export async function recordHelperCancellation(args: {
       now,
       config.windowDays,
     );
-    const result = computeHelperScore(
-      helperScoreInputFromProfile(profile, pruned.length),
-      config,
-    );
+    const result = computeHelperScore(helperScoreInputFromProfile(profile, pruned.length), config);
     profile.cancellation_timestamps = pruned;
     profile.cancellations_last_7_days = pruned.length;
     profile.penalty_points = result.penaltyPoints;

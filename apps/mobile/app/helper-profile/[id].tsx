@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, ScrollView, TouchableOpacity, RefreshControl, TextInput } from 'react-native';
-import { useState } from 'react';import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useState } from 'react';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import {
   ArrowLeft,
@@ -30,7 +31,17 @@ import {
   useAppealReview,
 } from '@/hooks/use-api';
 import { useHelperStatusSocket } from '@/hooks/use-socket';
-import { Button, Card, Avatar, LoadingSpinner, COLORS, Separator, StarRating, ErrorState, useThemeColors } from '@/components/ui';
+import {
+  Button,
+  Card,
+  Avatar,
+  LoadingSpinner,
+  COLORS,
+  Separator,
+  StarRating,
+  ErrorState,
+  useThemeColors,
+} from '@/components/ui';
 
 export default function HelperPublicProfileScreen() {
   const { id, jobId, quoteId } = useLocalSearchParams<{
@@ -47,7 +58,12 @@ export default function HelperPublicProfileScreen() {
   const appealReview = useAppealReview();
   const [appealFor, setAppealFor] = React.useState<string | null>(null);
   const [appealReason, setAppealReason] = React.useState('');
-  const { data: profile, isLoading: pLoading, isError: pError, refetch } = useHelperPublicProfile(id);
+  const {
+    data: profile,
+    isLoading: pLoading,
+    isError: pError,
+    refetch,
+  } = useHelperPublicProfile(id);
   // P1-1: when hired from a job context, scheduled_at must be that job's
   // real preferred_date + preferred_time_start, never tomorrow 09:00.
   const { data: hireJob } = useJobDetail(jobId);
@@ -786,7 +802,12 @@ export default function HelperPublicProfileScreen() {
                             onPress={() => {
                               appealReview.mutate(
                                 { reviewId: r._id, reason: appealReason.trim() },
-                                { onSuccess: () => { setAppealFor(null); setAppealReason(''); } },
+                                {
+                                  onSuccess: () => {
+                                    setAppealFor(null);
+                                    setAppealReason('');
+                                  },
+                                },
                               );
                             }}
                           />
@@ -794,7 +815,10 @@ export default function HelperPublicProfileScreen() {
                             title={lang === 'en' ? 'Cancel' : 'Huỷ'}
                             size="sm"
                             variant="outline"
-                            onPress={() => { setAppealFor(null); setAppealReason(''); }}
+                            onPress={() => {
+                              setAppealFor(null);
+                              setAppealReason('');
+                            }}
                           />
                         </View>
                       </View>
@@ -803,7 +827,14 @@ export default function HelperPublicProfileScreen() {
                         onPress={() => setAppealFor(r._id)}
                         hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                       >
-                        <Text style={{ fontSize: fs(13), color: COLORS.primary, fontWeight: '700', marginTop: 4 }}>
+                        <Text
+                          style={{
+                            fontSize: fs(13),
+                            color: COLORS.primary,
+                            fontWeight: '700',
+                            marginTop: 4,
+                          }}
+                        >
                           {lang === 'en' ? 'Appeal this review' : 'Kháng nghị đánh giá này'}
                         </Text>
                       </TouchableOpacity>

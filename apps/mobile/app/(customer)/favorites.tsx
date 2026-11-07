@@ -13,7 +13,15 @@ import {
 import { useTranslation } from '@/hooks/use-i18n';
 import { useAuthStore } from '@/stores/auth.store';
 import apiClient from '@/services/api-client';
-import { Avatar, Card, COLORS, EmptyState, ErrorState, LoadingSpinner, useThemeColors } from '@/components/ui';
+import {
+  Avatar,
+  Card,
+  COLORS,
+  EmptyState,
+  ErrorState,
+  LoadingSpinner,
+  useThemeColors,
+} from '@/components/ui';
 
 function helperOf(fav: FavoriteHelperItem) {
   return typeof fav.helper_id === 'object' && fav.helper_id ? fav.helper_id : null;
@@ -198,7 +206,9 @@ export default function FavoriteHelpersScreen() {
       ) : !isAuth ? (
         <EmptyState
           icon={<Heart size={36} color={COLORS.gray[400]} />}
-          title={lang === 'en' ? 'Log in to see favorite helpers' : 'Đăng nhập để xem thợ yêu thích'}
+          title={
+            lang === 'en' ? 'Log in to see favorite helpers' : 'Đăng nhập để xem thợ yêu thích'
+          }
           subtitle={
             lang === 'en'
               ? 'Log in to save helpers you trust and rebook them in one tap.'
@@ -239,9 +249,7 @@ export default function FavoriteHelpersScreen() {
               if (!helper) {
                 return (
                   <Card key={fav._id} style={{ gap: 8 }}>
-                    <View
-                      style={{ flexDirection: 'row', gap: 12, alignItems: 'center' }}
-                    >
+                    <View style={{ flexDirection: 'row', gap: 12, alignItems: 'center' }}>
                       <Avatar name="?" size={54} />
                       <View style={{ flex: 1 }}>
                         <Text style={{ fontSize: fs(16), fontWeight: '800', color: tc.text }}>
@@ -279,9 +287,7 @@ export default function FavoriteHelpersScreen() {
                   >
                     <Avatar name={helper.full_name} uri={helper.avatar} size={54} />
                     <View style={{ flex: 1 }}>
-                      <Text
-                        style={{ fontSize: fs(16), fontWeight: '800', color: tc.text }}
-                      >
+                      <Text style={{ fontSize: fs(16), fontWeight: '800', color: tc.text }}>
                         {helper.full_name ?? (lang === 'en' ? 'Helper' : 'Thợ')}
                       </Text>
                       <View

@@ -1178,8 +1178,8 @@ export default function BookingScreen() {
           try {
             await resendAndGoToOtp(email);
           } catch (err: unknown) {
-            const raw = (err as { response?: { data?: { message?: unknown } } })?.response
-              ?.data?.message;
+            const raw = (err as { response?: { data?: { message?: unknown } } })?.response?.data
+              ?.message;
             Toast.show({
               type: 'error',
               text1:
@@ -1357,11 +1357,14 @@ export default function BookingScreen() {
               ? 'Please log in again to continue'
               : 'Vui lòng đăng nhập lại để tiếp tục',
         });
-        void useAuthStore.getState().logout().finally(() => {
-          try {
-            router.replace('/(auth)/login');
-          } catch {}
-        });
+        void useAuthStore
+          .getState()
+          .logout()
+          .finally(() => {
+            try {
+              router.replace('/(auth)/login');
+            } catch {}
+          });
         return;
       }
 

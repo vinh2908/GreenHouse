@@ -252,33 +252,33 @@ export default function UserDetailPage() {
             <Button
               variant={suspended ? 'default' : 'destructive'}
               disabled={suspend.isPending || activate.isPending}
-            onClick={() => {
-              if (suspended) {
-                activate.mutate(user._id);
-              } else {
-                setSuspendDialogOpen(true);
-              }
-            }}
-          >
-            {suspended ? 'Mở khóa tài khoản' : 'Khóa tài khoản'}
-          </Button>
-          {user.is_deleted ? (
-            <Button
-              variant="default"
-              disabled={restoreUser.isPending}
-              onClick={() => restoreUser.mutate(user._id)}
+              onClick={() => {
+                if (suspended) {
+                  activate.mutate(user._id);
+                } else {
+                  setSuspendDialogOpen(true);
+                }
+              }}
             >
-              Khôi phục tài khoản
+              {suspended ? 'Mở khóa tài khoản' : 'Khóa tài khoản'}
             </Button>
-          ) : (
-            <Button
-              variant="destructive"
-              disabled={deleteUser.isPending}
-              onClick={() => setDeleteDialogOpen(true)}
-            >
-              Xóa tài khoản
-            </Button>
-          )}
+            {user.is_deleted ? (
+              <Button
+                variant="default"
+                disabled={restoreUser.isPending}
+                onClick={() => restoreUser.mutate(user._id)}
+              >
+                Khôi phục tài khoản
+              </Button>
+            ) : (
+              <Button
+                variant="destructive"
+                disabled={deleteUser.isPending}
+                onClick={() => setDeleteDialogOpen(true)}
+              >
+                Xóa tài khoản
+              </Button>
+            )}
           </>
         )}
       </div>
@@ -293,7 +293,11 @@ export default function UserDetailPage() {
       {deleteDialogOpen && (
         <PromptDialog
           title="Xóa tài khoản"
-          message={'Bạn có chắc chắn muốn xóa (mềm) tài khoản "' + (user.full_name ?? user.phone ?? user.email ?? '') + '"? Tài khoản sẽ không đăng nhập được nữa, dữ liệu không bị xóa cứng và có thể khôi phục lại.'}
+          message={
+            'Bạn có chắc chắn muốn xóa (mềm) tài khoản "' +
+            (user.full_name ?? user.phone ?? user.email ?? '') +
+            '"? Tài khoản sẽ không đăng nhập được nữa, dữ liệu không bị xóa cứng và có thể khôi phục lại.'
+          }
           confirmLabel="Xóa tài khoản"
           requireInput={false}
           onSubmit={() => {

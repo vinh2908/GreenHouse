@@ -1,7 +1,9 @@
 import dns from 'dns';
 try {
   dns.setServers(['8.8.8.8', '1.1.1.1']);
-} catch { /* DNS tùy chọn — lỗi thì dùng DNS mặc định của hệ thống */ }
+} catch {
+  /* DNS tùy chọn — lỗi thì dùng DNS mặc định của hệ thống */
+}
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -47,7 +49,9 @@ async function bootstrap() {
           return bucket.openDownloadStreamByName(relPath).pipe(res);
         }
       }
-    } catch { /* Không phục vụ được file tĩnh thì chuyển sang route tiếp theo */ }
+    } catch {
+      /* Không phục vụ được file tĩnh thì chuyển sang route tiếp theo */
+    }
     next();
   });
 
@@ -76,10 +80,10 @@ async function bootstrap() {
     'http://localhost:8081',
     'http://localhost:19006',
     ...((configService.get<string>('app.corsOrigins') as unknown as string[]) ?? []),
-    ...((process.env['CORS_ORIGINS'] ?? '')
+    ...(process.env['CORS_ORIGINS'] ?? '')
       .split(',')
       .map(s => s.trim())
-      .filter(Boolean)),
+      .filter(Boolean),
   ]);
   app.enableCors({
     origin: (origin, callback) => {

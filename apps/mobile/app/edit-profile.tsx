@@ -46,7 +46,15 @@ import { useQueryClient } from '@tanstack/react-query';
 import apiClient from '@/services/api-client';
 import { uploadFile } from '@/services/upload.service';
 import { locationService, normalizeVietnameseAddress } from '@/services/location.service';
-import { Button, Card, LoadingSpinner, COLORS, Separator, Avatar, useThemeColors } from '@/components/ui';
+import {
+  Button,
+  Card,
+  LoadingSpinner,
+  COLORS,
+  Separator,
+  Avatar,
+  useThemeColors,
+} from '@/components/ui';
 import { useTranslation } from '@/hooks/use-i18n';
 
 // Bộ sưu tập avatar chuyên nghiệp có sẵn để người dùng chọn nhanh 1 chạm
@@ -295,7 +303,8 @@ export default function EditProfileScreen() {
             return;
           }
         }
-        const emailChanged = email.trim() && email.trim().toLowerCase() !== (user?.email ?? '').toLowerCase();
+        const emailChanged =
+          email.trim() && email.trim().toLowerCase() !== (user?.email ?? '').toLowerCase();
         if (emailChanged && !emailOtpSent) {
           // B95: chưa xác minh email mới thì chỉ gửi mã, không lưu email
           await requestEmailChange.mutateAsync(email.trim());

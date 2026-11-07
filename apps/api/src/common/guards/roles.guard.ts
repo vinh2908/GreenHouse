@@ -29,13 +29,10 @@ export class RolesGuard implements CanActivate {
       const roles: unknown = user.roles;
       const activeRole: unknown = user.active_role;
       return requiredRoles.some(
-        role =>
-          (Array.isArray(roles) && roles.includes(role)) || activeRole === role,
+        role => (Array.isArray(roles) && roles.includes(role)) || activeRole === role,
       );
     } catch (err) {
-      this.logger.error(
-        `RolesGuard check failed (fail-closed): ${(err as Error)?.message ?? err}`,
-      );
+      this.logger.error(`RolesGuard check failed (fail-closed): ${(err as Error)?.message ?? err}`);
       return false;
     }
   }

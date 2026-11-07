@@ -221,9 +221,7 @@ const demandMapHtml = (
             addMountainFallbacks();
             const areas = ${areasJson};
             const you = ${JSON.stringify(
-              userCoords
-                ? { lat: userCoords.latitude, lng: userCoords.longitude }
-                : null,
+              userCoords ? { lat: userCoords.latitude, lng: userCoords.longitude } : null,
             )};
             const youLabel = ${JSON.stringify(lang === 'en' ? 'You' : 'Bạn')};
             if (you) {
@@ -390,7 +388,9 @@ export function DemandMapView({ areas, focus, height = 300, userCoords, onFocusA
       >
         <MapPin size={28} color={COLORS.gray[400]} />
         <Text style={{ fontSize: 14, fontWeight: '700', color: tc.text, textAlign: 'center' }}>
-          {lang === 'en' ? 'No location to show the demand map' : 'Chưa có vị trí để hiển thị bản đồ'}
+          {lang === 'en'
+            ? 'No location to show the demand map'
+            : 'Chưa có vị trí để hiển thị bản đồ'}
         </Text>
         <Text style={{ fontSize: 12, color: tc.textMuted, textAlign: 'center' }}>
           {lang === 'en'

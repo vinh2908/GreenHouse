@@ -1,4 +1,13 @@
-import { Controller, Post, Body, HttpCode, HttpStatus, UseGuards, Get, Delete } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  HttpCode,
+  HttpStatus,
+  UseGuards,
+  Get,
+  Delete,
+} from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiResponse } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
@@ -112,7 +121,6 @@ export class AuthController {
 
   @Public()
   // ─── B95: Đổi email có xác minh mã gửi tới email mới ─────────────────────
-
   @UseGuards(JwtAuthGuard)
   @Post('email/change-request')
   @HttpCode(HttpStatus.OK)

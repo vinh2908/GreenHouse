@@ -1,9 +1,4 @@
-import {
-  Injectable,
-  Logger,
-  NotFoundException,
-  ForbiddenException,
-} from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Job, JobDocument } from '../jobs/schemas/job.schema';
@@ -197,9 +192,7 @@ export class MatchingService {
    * đó phù hợp. Chỉ phát cho khách của đơn liên quan — không broadcast.
    */
   async notifyNewSuitableHelper(helperId: string): Promise<void> {
-    const helper = await this.helperModel
-      .findOne({ user_id: new Types.ObjectId(helperId) })
-      .exec();
+    const helper = await this.helperModel.findOne({ user_id: new Types.ObjectId(helperId) }).exec();
     if (!helper) return;
     if (
       helper.status !== HelperStatus.ONLINE ||

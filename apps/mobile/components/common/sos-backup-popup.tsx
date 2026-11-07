@@ -225,7 +225,9 @@ export function SosBackupPopup() {
               <TextInput
                 value={declineReason}
                 onChangeText={setDeclineReason}
-                placeholder={lang === 'en' ? 'Reason (optional)...' : 'Lý do từ chối (không bắt buộc)...'}
+                placeholder={
+                  lang === 'en' ? 'Reason (optional)...' : 'Lý do từ chối (không bắt buộc)...'
+                }
                 multiline
                 style={{
                   borderWidth: 1,

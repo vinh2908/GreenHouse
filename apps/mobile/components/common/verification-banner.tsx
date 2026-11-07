@@ -51,11 +51,12 @@ export function VerificationBanner() {
     try {
       await resendAndGoToOtp(email!);
     } catch (err: unknown) {
-      const raw = (err as { response?: { data?: { message?: unknown } } })?.response?.data
-        ?.message;
+      const raw = (err as { response?: { data?: { message?: unknown } } })?.response?.data?.message;
       setError(
         mapAuthErrorMessage(raw, lang) ??
-          (lang === 'en' ? 'Could not resend the code. Please try again.' : 'Không gửi lại được mã. Vui lòng thử lại.'),
+          (lang === 'en'
+            ? 'Could not resend the code. Please try again.'
+            : 'Không gửi lại được mã. Vui lòng thử lại.'),
       );
     }
   };
@@ -84,9 +85,7 @@ export function VerificationBanner() {
           {hasEmail ? t('verify_banner_desc') : t('verify_banner_no_email')}
         </Text>
         {error && (
-          <Text style={{ fontSize: fs(13), color: COLORS.error, fontWeight: '600' }}>
-            {error}
-          </Text>
+          <Text style={{ fontSize: fs(13), color: COLORS.error, fontWeight: '600' }}>{error}</Text>
         )}
         {hasEmail && (
           <TouchableOpacity

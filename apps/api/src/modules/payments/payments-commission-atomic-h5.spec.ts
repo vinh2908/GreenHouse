@@ -94,7 +94,13 @@ describe('PaymentsService - H5 atomic deductCommissionForCashJob', () => {
     const jobId = new Types.ObjectId().toString();
     const mockSession: any = { id: 'sess-h5' };
 
-    const tx: any = await service.deductCommissionForCashJob(helperId, jobId, 50_000, 450_000, mockSession);
+    const tx: any = await service.deductCommissionForCashJob(
+      helperId,
+      jobId,
+      50_000,
+      450_000,
+      mockSession,
+    );
 
     expect(tx.type).toBe('commission');
     expect(tx.amount).toBe(50_000);
@@ -157,7 +163,7 @@ describe('PaymentsService - H5 atomic deductCommissionForCashJob', () => {
     expect(tx1.balance_after).toBeGreaterThanOrEqual(0);
     expect(tx2.balance_after).toBeGreaterThanOrEqual(0);
     const totalDeducted =
-      (tx1.balance_before - tx1.balance_after) + (tx2.balance_before - tx2.balance_after);
+      tx1.balance_before - tx1.balance_after + (tx2.balance_before - tx2.balance_after);
     expect(totalDeducted).toBe(60_000);
     // Tổng unpaid_fee = 2 × 50.000 − 60.000 = 40.000 (1 lần đủ phí, 1 lần trừ 1 phần).
     expect(tx1.metadata.unpaid_fee + tx2.metadata.unpaid_fee).toBe(40_000);

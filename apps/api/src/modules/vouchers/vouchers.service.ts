@@ -268,7 +268,11 @@ export class VouchersService {
     }
     job.voucher_code = voucher.code;
     await job.save();
-    return { job_id: jobId, voucher_code: voucher.code, loyalty_points_cleared: loyaltyPointsCleared };
+    return {
+      job_id: jobId,
+      voucher_code: voucher.code,
+      loyalty_points_cleared: loyaltyPointsCleared,
+    };
   }
 
   async detachFromJob(userId: string, jobId: string) {
@@ -303,11 +307,7 @@ export class VouchersService {
           ],
         },
         {
-          $or: [
-            { valid_to: { $exists: false } },
-            { valid_to: null },
-            { valid_to: { $gte: now } },
-          ],
+          $or: [{ valid_to: { $exists: false } }, { valid_to: null }, { valid_to: { $gte: now } }],
         },
       ],
     };
@@ -534,9 +534,7 @@ export class VouchersService {
       for (const r of redemptions) {
         usedByUser.set(String(r.user_id), (usedByUser.get(String(r.user_id)) ?? 0) + 1);
       }
-      const recipients = userIds.filter(
-        id => (usedByUser.get(id) ?? 0) < (v.per_user_limit ?? 1),
-      );
+      const recipients = userIds.filter(id => (usedByUser.get(id) ?? 0) < (v.per_user_limit ?? 1));
       for (const userId of recipients) {
         await this.notificationsService
           .create({
@@ -554,7 +552,9 @@ export class VouchersService {
         .exec();
     }
     if (reminded > 0) {
-      this.logger.log(`[remindExpiringVouchers] Reminded ${reminded} user(s) about expiring vouchers`);
+      this.logger.log(
+        `[remindExpiringVouchers] Reminded ${reminded} user(s) about expiring vouchers`,
+      );
     }
     return { reminded };
   }

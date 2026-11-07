@@ -39,7 +39,15 @@ import { ImageViewerModal } from '@/components/common/photo-thumbs';
 import { Alert } from '@/components/common/app-alert';
 import { useTranslation } from '@/hooks/use-i18n';
 import { formatDayLabel, formatTime } from '@/utils/date-format';
-import { Avatar, COLORS, LoadingSpinner, EmptyState, Skeleton, ErrorState, useThemeColors } from '@/components/ui';
+import {
+  Avatar,
+  COLORS,
+  LoadingSpinner,
+  EmptyState,
+  Skeleton,
+  ErrorState,
+  useThemeColors,
+} from '@/components/ui';
 
 export function resolveMediaUrl(rawUrl: string): string {
   if (!rawUrl || typeof rawUrl !== 'string') return '';
@@ -568,7 +576,11 @@ export default function ChatScreen() {
             keyExtractor={(item: { _id: string }) => item._id}
             contentContainerStyle={{ padding: 16, gap: 12, paddingBottom: 20 }}
             refreshControl={
-              <RefreshControl refreshing={mRefetching} onRefresh={refetch} colors={[COLORS.primary]} />
+              <RefreshControl
+                refreshing={mRefetching}
+                onRefresh={refetch}
+                colors={[COLORS.primary]}
+              />
             }
             onScroll={handleListScroll}
             scrollEventThrottle={16}
@@ -686,35 +698,35 @@ export default function ChatScreen() {
             }}
             ListEmptyComponent={
               mLoading ? null : (
-              <View style={{ alignItems: 'center', paddingVertical: 40, gap: 8 }}>
-                <View
-                  style={{
-                    width: 56,
-                    height: 56,
-                    borderRadius: 999,
-                    backgroundColor: COLORS.primaryLight,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <MessageSquare size={28} color={COLORS.primary} />
+                <View style={{ alignItems: 'center', paddingVertical: 40, gap: 8 }}>
+                  <View
+                    style={{
+                      width: 56,
+                      height: 56,
+                      borderRadius: 999,
+                      backgroundColor: COLORS.primaryLight,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <MessageSquare size={28} color={COLORS.primary} />
+                  </View>
+                  <Text style={{ fontSize: fs(16), fontWeight: '800', color: tc.text }}>
+                    {lang === 'en' ? 'Start the conversation' : 'Bắt đầu cuộc trò chuyện'}
+                  </Text>
+                  <Text
+                    style={{
+                      color: tc.textMuted,
+                      fontSize: fs(13),
+                      textAlign: 'center',
+                      paddingHorizontal: 20,
+                    }}
+                  >
+                    {lang === 'en'
+                      ? 'Send a message to discuss location, details, and schedule with your partner.'
+                      : 'Gửi tin nhắn để trao đổi chi tiết về địa chỉ, sự cố và thời gian làm việc với đối phương.'}
+                  </Text>
                 </View>
-                <Text style={{ fontSize: fs(16), fontWeight: '800', color: tc.text }}>
-                  {lang === 'en' ? 'Start the conversation' : 'Bắt đầu cuộc trò chuyện'}
-                </Text>
-                <Text
-                  style={{
-                    color: tc.textMuted,
-                    fontSize: fs(13),
-                    textAlign: 'center',
-                    paddingHorizontal: 20,
-                  }}
-                >
-                  {lang === 'en'
-                    ? 'Send a message to discuss location, details, and schedule with your partner.'
-                    : 'Gửi tin nhắn để trao đổi chi tiết về địa chỉ, sự cố và thời gian làm việc với đối phương.'}
-                </Text>
-              </View>
               )
             }
             renderItem={({
@@ -759,11 +771,61 @@ export default function ChatScreen() {
                 return (
                   <>
                     {daySeparator}
-                    <View style={{ alignItems: isMe ? 'flex-end' : 'flex-start', marginVertical: 2 }}>
-                    <ChatImageBubble
-                      uri={item.content}
-                      onPress={() => setViewingImage(item.content)}
-                    />
+                    <View
+                      style={{ alignItems: isMe ? 'flex-end' : 'flex-start', marginVertical: 2 }}
+                    >
+                      <ChatImageBubble
+                        uri={item.content}
+                        onPress={() => setViewingImage(item.content)}
+                      />
+                      <Text
+                        style={{
+                          fontSize: fs(10.5),
+                          color: tc.textMuted,
+                          marginTop: 4,
+                          marginHorizontal: 6,
+                          fontWeight: '600',
+                        }}
+                      >
+                        {formatTime(dayjs(item.created_at))}
+                      </Text>
+                    </View>
+                  </>
+                );
+              }
+              return (
+                <>
+                  {daySeparator}
+                  <View style={{ alignItems: isMe ? 'flex-end' : 'flex-start', marginVertical: 2 }}>
+                    <View
+                      style={{
+                        maxWidth: '80%',
+                        paddingHorizontal: 16,
+                        paddingVertical: 12,
+                        borderRadius: 14,
+                        borderBottomRightRadius: isMe ? 4 : 20,
+                        borderBottomLeftRadius: isMe ? 20 : 4,
+                        backgroundColor: isMe ? COLORS.primary : '#FFFFFF',
+                        shadowColor: '#000',
+                        shadowOffset: { width: 0, height: 1 },
+                        shadowOpacity: 0.05,
+                        shadowRadius: 3,
+                        elevation: 2,
+                        borderWidth: isMe ? 0 : 1,
+                        borderColor: tc.border,
+                      }}
+                    >
+                      <Text
+                        style={{
+                          fontSize: fs(15),
+                          color: isMe ? '#FFFFFF' : COLORS.gray[900],
+                          lineHeight: 21,
+                          fontWeight: '500',
+                        }}
+                      >
+                        {item.content}
+                      </Text>
+                    </View>
                     <Text
                       style={{
                         fontSize: fs(10.5),
@@ -775,54 +837,6 @@ export default function ChatScreen() {
                     >
                       {formatTime(dayjs(item.created_at))}
                     </Text>
-                    </View>
-                  </>
-                );
-              }
-              return (
-                <>
-                  {daySeparator}
-                  <View style={{ alignItems: isMe ? 'flex-end' : 'flex-start', marginVertical: 2 }}>
-                  <View
-                    style={{
-                      maxWidth: '80%',
-                      paddingHorizontal: 16,
-                      paddingVertical: 12,
-                      borderRadius: 14,
-                      borderBottomRightRadius: isMe ? 4 : 20,
-                      borderBottomLeftRadius: isMe ? 20 : 4,
-                      backgroundColor: isMe ? COLORS.primary : '#FFFFFF',
-                      shadowColor: '#000',
-                      shadowOffset: { width: 0, height: 1 },
-                      shadowOpacity: 0.05,
-                      shadowRadius: 3,
-                      elevation: 2,
-                      borderWidth: isMe ? 0 : 1,
-                      borderColor: tc.border,
-                    }}
-                  >
-                    <Text
-                      style={{
-                        fontSize: fs(15),
-                        color: isMe ? '#FFFFFF' : COLORS.gray[900],
-                        lineHeight: 21,
-                        fontWeight: '500',
-                      }}
-                    >
-                      {item.content}
-                    </Text>
-                  </View>
-                  <Text
-                    style={{
-                      fontSize: fs(10.5),
-                      color: tc.textMuted,
-                      marginTop: 4,
-                      marginHorizontal: 6,
-                      fontWeight: '600',
-                    }}
-                  >
-                    {formatTime(dayjs(item.created_at))}
-                  </Text>
                   </View>
                 </>
               );

@@ -38,7 +38,16 @@ import {
   useUnrejectJob,
 } from '@/hooks/use-api';
 import { useTranslation } from '@/hooks/use-i18n';
-import { Button, Card, JobStatusBadge, Badge, COLORS, EmptyState, ErrorState, useThemeColors } from '@/components/ui';
+import {
+  Button,
+  Card,
+  JobStatusBadge,
+  Badge,
+  COLORS,
+  EmptyState,
+  ErrorState,
+  useThemeColors,
+} from '@/components/ui';
 import { OfflineBanner } from '@/components/common/offline-banner';
 
 export default function HelperJobsScreen() {
@@ -83,10 +92,11 @@ export default function HelperJobsScreen() {
 
   // Lệnh 7: Xem và hoàn tác đơn đã bỏ qua
   const [showSkipped, setShowSkipped] = useState(false);
-  const { data: skippedData, isLoading: skippedLoading, refetch: refetchSkipped } = useSkippedJobs(
-    1,
-    Boolean(isAuth && isVerified !== false),
-  );
+  const {
+    data: skippedData,
+    isLoading: skippedLoading,
+    refetch: refetchSkipped,
+  } = useSkippedJobs(1, Boolean(isAuth && isVerified !== false));
   const unrejectJob = useUnrejectJob();
 
   const getJobServiceLabel = (job: any) => {

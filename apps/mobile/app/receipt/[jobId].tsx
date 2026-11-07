@@ -17,7 +17,15 @@ import Toast from 'react-native-toast-message';
 import { useJobDetail, useJobContract } from '@/hooks/use-api';
 import { useTranslation } from '@/hooks/use-i18n';
 import { downloadInvoicePdf } from '@/services/invoice.service';
-import { Button, Card, LoadingSpinner, COLORS, Separator, PriceText, useThemeColors } from '@/components/ui';
+import {
+  Button,
+  Card,
+  LoadingSpinner,
+  COLORS,
+  Separator,
+  PriceText,
+  useThemeColors,
+} from '@/components/ui';
 
 export default function ReceiptScreen() {
   const { jobId } = useLocalSearchParams<{ jobId: string }>();

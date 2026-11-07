@@ -489,7 +489,9 @@ export class NotificationsService {
       .deleteMany({ is_read: true, created_at: { $lt: cutoff } })
       .exec();
     if (res.deletedCount > 0) {
-      this.logger.log(`[cleanupOldReadNotifications] Deleted ${res.deletedCount} read notifications older than 30 days`);
+      this.logger.log(
+        `[cleanupOldReadNotifications] Deleted ${res.deletedCount} read notifications older than 30 days`,
+      );
     }
     return { deleted: res.deletedCount ?? 0 };
   }
@@ -499,9 +501,7 @@ export class NotificationsService {
     try {
       await this.cleanupOldReadNotifications();
     } catch (err) {
-      this.logger.error(
-        `[cleanupOldReadNotificationsCron] Failed: ${(err as Error).message}`,
-      );
+      this.logger.error(`[cleanupOldReadNotificationsCron] Failed: ${(err as Error).message}`);
     }
   }
 

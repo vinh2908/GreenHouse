@@ -44,7 +44,9 @@ const STATUS_VI: Record<string, string> = {
 
 export default function UsersPage() {
   // B106: dialog nhập lý do thay cho prompt() của trình duyệt
-  const [suspendTarget, setSuspendTarget] = useState<{ _id: string; full_name?: string } | null>(null);
+  const [suspendTarget, setSuspendTarget] = useState<{ _id: string; full_name?: string } | null>(
+    null,
+  );
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('');
   const [page, setPage] = useState(1);
@@ -200,23 +202,23 @@ export default function UsersPage() {
                     },
                   )}
                 </TableBody>
-                    {suspendTarget && (
-        <PromptDialog
-          title="Đình chỉ tài khoản"
-          label={'Lý do đình chỉ tài khoản "' + (suspendTarget.full_name ?? '') + '"'}
-          placeholder="Nhập lý do đình chỉ..."
-          confirmLabel="Đình chỉ"
-          onSubmit={reason => {
-            suspend.mutate({
-              id: suspendTarget._id,
-              reason: reason || 'Vi phạm quy định nền tảng',
-            });
-            setSuspendTarget(null);
-          }}
-          onClose={() => setSuspendTarget(null)}
-        />
-      )}
-</Table>
+                {suspendTarget && (
+                  <PromptDialog
+                    title="Đình chỉ tài khoản"
+                    label={'Lý do đình chỉ tài khoản "' + (suspendTarget.full_name ?? '') + '"'}
+                    placeholder="Nhập lý do đình chỉ..."
+                    confirmLabel="Đình chỉ"
+                    onSubmit={reason => {
+                      suspend.mutate({
+                        id: suspendTarget._id,
+                        reason: reason || 'Vi phạm quy định nền tảng',
+                      });
+                      setSuspendTarget(null);
+                    }}
+                    onClose={() => setSuspendTarget(null)}
+                  />
+                )}
+              </Table>
             </div>
             <Pagination page={page} totalPages={data.total_pages ?? 1} onPageChange={setPage} />
           </>

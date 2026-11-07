@@ -232,9 +232,7 @@ export class AppGateway implements OnGatewayConnection, OnGatewayDisconnect {
     try {
       await this.callsService.endCall(sessionId, userId, CALL_END_REASONS.DECLINED);
     } catch (e) {
-      throw new WsException(
-        e instanceof Error ? e.message : 'Không kết thúc được phiên gọi',
-      );
+      throw new WsException(e instanceof Error ? e.message : 'Không kết thúc được phiên gọi');
     }
   }
 
@@ -335,7 +333,13 @@ export class AppGateway implements OnGatewayConnection, OnGatewayDisconnect {
       .find({
         helper_id: new Types.ObjectId(helperId),
         status: {
-          $in: ['confirmed', 'helper_on_the_way', 'helper_arrived', 'in_progress', 'pending_review'],
+          $in: [
+            'confirmed',
+            'helper_on_the_way',
+            'helper_arrived',
+            'in_progress',
+            'pending_review',
+          ],
         },
       })
       .select('customer_id')

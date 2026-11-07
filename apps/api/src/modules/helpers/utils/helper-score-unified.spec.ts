@@ -97,9 +97,7 @@ describe('G8/B87 — 1 công thức điểm thợ cho cả gợi ý và xếp h�
 
     const count = countCancellationsInWindow(stamps, now, 7);
     expect(count).toBe(4);
-    const adminResult = computeHelperScore(
-      helperScoreInputFromProfile(profileNoCoords, count),
-    );
+    const adminResult = computeHelperScore(helperScoreInputFromProfile(profileNoCoords, count));
     expect(adminResult.penaltyPoints).toBe(5);
     expect(adminResult.total).toBe(52);
     expect(utility.score).toBe(adminResult.total);

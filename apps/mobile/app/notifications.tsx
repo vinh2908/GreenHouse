@@ -49,7 +49,14 @@ import { useAuthStore } from '@/stores/auth.store';
 import { resolveNotificationRoute } from '@/utils/notification-route';
 import { refreshSosState } from '@/hooks/use-sos-backup';
 import { useTranslation } from '@/hooks/use-i18n';
-import { Card, COLORS, EmptyState, ErrorState, LoadingSpinner, useThemeColors } from '@/components/ui';
+import {
+  Card,
+  COLORS,
+  EmptyState,
+  ErrorState,
+  LoadingSpinner,
+  useThemeColors,
+} from '@/components/ui';
 
 function renderNotificationIcon(type: string) {
   const size = 22;
@@ -269,8 +276,7 @@ export default function NotificationsScreen() {
             </Text>
             {dataUpdatedAt ? (
               <Text style={{ fontSize: fs(11), color: tc.textMuted }}>
-                {lang === 'en' ? 'Updated at' : 'Cập nhật lúc'}{' '}
-                {formatTime(dayjs(dataUpdatedAt))}
+                {lang === 'en' ? 'Updated at' : 'Cập nhật lúc'} {formatTime(dayjs(dataUpdatedAt))}
               </Text>
             ) : null}
           </View>

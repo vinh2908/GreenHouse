@@ -31,7 +31,15 @@ import {
 import Toast from 'react-native-toast-message';
 import { useAuthStore } from '@/stores/auth.store';
 import { useHelperProfile, useSubmitKyc } from '@/hooks/use-api';
-import { Button, Card, LoadingSpinner, COLORS, Separator, Input, useThemeColors } from '@/components/ui';
+import {
+  Button,
+  Card,
+  LoadingSpinner,
+  COLORS,
+  Separator,
+  Input,
+  useThemeColors,
+} from '@/components/ui';
 import { useTranslation } from '@/hooks/use-i18n';
 
 // Ảnh mẫu demo e-KYC (phục vụ test nhanh)
@@ -496,13 +504,19 @@ export default function KycScreen() {
                           : COLORS.gray[400];
                       return (
                         <View key={st.label} style={{ flex: 1, alignItems: 'center', gap: 6 }}>
-                          <View style={{ flexDirection: 'row', alignItems: 'center', width: '100%' }}>
+                          <View
+                            style={{ flexDirection: 'row', alignItems: 'center', width: '100%' }}
+                          >
                             <View
                               style={{
                                 flex: 1,
                                 height: 2,
                                 backgroundColor:
-                                  i === 0 ? 'transparent' : steps[i - 1].done ? COLORS.success : COLORS.gray[200],
+                                  i === 0
+                                    ? 'transparent'
+                                    : steps[i - 1].done
+                                      ? COLORS.success
+                                      : COLORS.gray[200],
                               }}
                             />
                             <View
@@ -518,7 +532,9 @@ export default function KycScreen() {
                               {done ? (
                                 <Check size={16} color="#fff" />
                               ) : (
-                                <Text style={{ fontSize: fs(13), fontWeight: '800', color: '#fff' }}>
+                                <Text
+                                  style={{ fontSize: fs(13), fontWeight: '800', color: '#fff' }}
+                                >
                                   {i + 1}
                                 </Text>
                               )}
@@ -547,7 +563,13 @@ export default function KycScreen() {
                             {st.label}
                             {upcoming ? '' : ''}
                           </Text>
-                          <Text style={{ fontSize: fs(10.5), fontWeight: '700', color: COLORS.gray[500] }}>
+                          <Text
+                            style={{
+                              fontSize: fs(10.5),
+                              fontWeight: '700',
+                              color: COLORS.gray[500],
+                            }}
+                          >
                             {done
                               ? lang === 'en'
                                 ? 'Done'

@@ -15,7 +15,12 @@ import { User, UserDocument } from '../users/schemas/user.schema';
 import { CallSession, CallSessionDocument } from './schemas/call-session.schema';
 import { CallProvider, CALL_PROVIDER } from './call-provider.interface';
 import { VoipPushService } from './voip-push.service';
-import { SOCKET_EVENTS, NOTIFICATION_TYPES, normalizeCallEndReason, CALL_END_REASONS } from '@homemate/constants';
+import {
+  SOCKET_EVENTS,
+  NOTIFICATION_TYPES,
+  normalizeCallEndReason,
+  CALL_END_REASONS,
+} from '@homemate/constants';
 import { AppGateway } from '../chat/app.gateway';
 import { NotificationsService } from '../notifications/notifications.service';
 
@@ -66,9 +71,7 @@ export class CallsService {
     // G10/R2 (quyết định của chủ 2026-11-07): CHO PHÉP gọi sau khi đơn hoàn
     // thành (khách/thợ hỏi bảo hành); vẫn chặn đơn đã hủy/hết hạn/hoàn tiền.
     if (['cancelled', 'expired', 'refunded'].includes(job.status)) {
-      throw new BadRequestException(
-        'Đơn đã hủy/hết hạn/hoàn tiền nên không thể gọi điện',
-      );
+      throw new BadRequestException('Đơn đã hủy/hết hạn/hoàn tiền nên không thể gọi điện');
     }
     if (!job.helper_id) {
       throw new BadRequestException('Đơn chưa có thợ phụ trách để gọi');
@@ -247,8 +250,7 @@ export class CallsService {
     const startedAt = session.started_at ? new Date(session.started_at).getTime() : 0;
     const durationSeconds = (Date.now() - startedAt) / 1000;
     const isMissed =
-      !session.answered_at &&
-      (durationSeconds > 3 || normalizedReason === CALL_END_REASONS.MISSED);
+      !session.answered_at && (durationSeconds > 3 || normalizedReason === CALL_END_REASONS.MISSED);
 
     // Chỉ chuyển trạng thái / phát sự kiện / gửi thông báo nhỡ ở lần end đầu
     // tiên. endCall có thể tới 2 lần cho cùng 1 phiên (socket call:declined

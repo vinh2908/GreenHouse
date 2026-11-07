@@ -86,13 +86,25 @@ export const STRINGS = {
   onboarding_next: { vi: 'Tiếp', en: 'Next' },
   onboarding_start: { vi: 'Bắt đầu', en: 'Get started' },
   onboarding_1_title: { vi: 'Đặt dịch vụ trong 1 phút', en: 'Book a service in 1 minute' },
-  onboarding_1_body: { vi: 'Chọn dịch vụ, chọn giờ, mô tả yêu cầu — thợ gần bạn sẽ báo giá. Bạn chọn báo giá phù hợp rồi chờ thợ đến.', en: 'Pick a service, time and describe the job — nearby helpers quote a price. Choose the quote you like and wait for the helper.' },
+  onboarding_1_body: {
+    vi: 'Chọn dịch vụ, chọn giờ, mô tả yêu cầu — thợ gần bạn sẽ báo giá. Bạn chọn báo giá phù hợp rồi chờ thợ đến.',
+    en: 'Pick a service, time and describe the job — nearby helpers quote a price. Choose the quote you like and wait for the helper.',
+  },
   onboarding_2_title: { vi: 'SOS luôn ở ngay tay', en: 'SOS is always at hand' },
-  onboarding_2_body: { vi: 'Sự cố khẩn cấp? Nút SOS đỏ trên trang chính sẽ tìm thợ thay thế gần nhất và báo cho bạn ngay.', en: 'An emergency? The red SOS button on the home screen finds the nearest replacement helper and notifies you right away.' },
+  onboarding_2_body: {
+    vi: 'Sự cố khẩn cấp? Nút SOS đỏ trên trang chính sẽ tìm thợ thay thế gần nhất và báo cho bạn ngay.',
+    en: 'An emergency? The red SOS button on the home screen finds the nearest replacement helper and notifies you right away.',
+  },
   onboarding_3_title: { vi: 'Thanh toán minh bạch', en: 'Transparent payment' },
-  onboarding_3_body: { vi: 'Giá chốt trước khi làm, thanh toán qua ví trong app. Mọi giao dịch đều có hoá đơn và lịch sử rõ ràng.', en: 'The price is agreed before work starts, paid via the in-app wallet. Every transaction has an invoice and clear history.' },
+  onboarding_3_body: {
+    vi: 'Giá chốt trước khi làm, thanh toán qua ví trong app. Mọi giao dịch đều có hoá đơn và lịch sử rõ ràng.',
+    en: 'The price is agreed before work starts, paid via the in-app wallet. Every transaction has an invoice and clear history.',
+  },
   onboarding_4_title: { vi: 'Theo dõi đơn theo thời gian thực', en: 'Track your job in real time' },
-  onboarding_4_body: { vi: 'Xem thợ đang ở đâu, nhắn tin và gọi điện trực tiếp trong app, nghiệm thu và đánh giá khi xong việc.', en: 'See where your helper is, chat and call right in the app, then review and rate when the job is done.' },
+  onboarding_4_body: {
+    vi: 'Xem thợ đang ở đâu, nhắn tin và gọi điện trực tiếp trong app, nghiệm thu và đánh giá khi xong việc.',
+    en: 'See where your helper is, chat and call right in the app, then review and rate when the job is done.',
+  },
   root_error_unknown: { vi: 'Lỗi không xác định', en: 'Unknown error' },
   time_badge_night: { vi: 'ĐÊM', en: 'NIGHT' },
 
@@ -1806,7 +1818,8 @@ const AUTH_ERROR_EN_MAP: Record<string, string> = {
   'Email chưa được đăng ký trong hệ thống': 'This email is not registered',
   'Tài khoản không tồn tại trong hệ thống': 'Account does not exist',
   'Tài khoản không tồn tại': 'Account does not exist',
-  'Gửi mã OTP thất bại. Vui lòng thử lại sau.': 'Failed to send the OTP code. Please try again later.',
+  'Gửi mã OTP thất bại. Vui lòng thử lại sau.':
+    'Failed to send the OTP code. Please try again later.',
   'Bạn đã yêu cầu gửi mã OTP quá 5 lần trong 1 giờ. Vui lòng thử lại sau.':
     'You have requested the OTP code too many times in 1 hour. Please try again later.',
   'Gửi mã OTP qua SMS chưa được hỗ trợ. Vui lòng dùng email để nhận mã OTP.':
@@ -1825,10 +1838,7 @@ const AUTH_ERROR_EN_MAP: Record<string, string> = {
     'The OTP verification code has been sent to your email.',
 };
 
-export function mapAuthErrorMessage(
-  message: unknown,
-  lang: AppLanguage,
-): string | undefined {
+export function mapAuthErrorMessage(message: unknown, lang: AppLanguage): string | undefined {
   if (typeof message !== 'string' || !message) return undefined;
   if (lang !== 'en') return message;
   return AUTH_ERROR_EN_MAP[message.trim()] ?? message;
@@ -2428,7 +2438,8 @@ export function formatNotificationBody(
     return `Job ${m ? m[1] : ''} is under admin review again after an appeal.`;
   }
   if (type === 'review_appeal') {
-    if (/đã được ẩn/i.test(b)) return 'The review you appealed has been hidden from the public page.';
+    if (/đã được ẩn/i.test(b))
+      return 'The review you appealed has been hidden from the public page.';
     if (/vẫn được giữ/i.test(b)) return 'The review you appealed is still shown.';
     return 'A helper appealed a review. Please review it in the admin panel.';
   }
@@ -2471,7 +2482,6 @@ export function formatNotificationBody(
   if (type === 'sos_backup_candidate_withdrawn') {
     return 'A replacement candidate withdrew from the SOS request.';
   }
-
 
   // 2. job_confirmed (warranty & fixed price) — F11: map theo type + payload
   // trước, chỉ dùng regex bóc tiêu đề VI làm fallback cho thông báo cũ.

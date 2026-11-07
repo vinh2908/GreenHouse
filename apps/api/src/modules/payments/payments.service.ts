@@ -101,7 +101,12 @@ export class PaymentsService {
         type: NOTIFICATION_TYPES.PAYMENT_SUCCESS,
         title: 'Đã ghi nhận nạp tiền mô phỏng (Demo)',
         body: `Đã ghi nhận nạp thử ${amount.toLocaleString('vi-VN')}₫ (mô phỏng — chưa có thanh toán thật, số dư rút được không đổi: ${balanceAfter.toLocaleString('vi-VN')}₫; số dư mô phỏng: ${simulatedAfter.toLocaleString('vi-VN')}₫)`,
-        payload: { amount, balance: balanceAfter, simulated_balance: simulatedAfter, screen: 'wallet' },
+        payload: {
+          amount,
+          balance: balanceAfter,
+          simulated_balance: simulatedAfter,
+          screen: 'wallet',
+        },
       })
       .catch(() => undefined);
   }
@@ -240,12 +245,18 @@ export class PaymentsService {
         txErr?.message?.includes('replica set member') ||
         txErr?.message?.includes('Transaction numbers')
       ) {
-        this.logger.warn('B91: transactions unsupported on this Mongo deployment, running without transaction');
+        this.logger.warn(
+          'B91: transactions unsupported on this Mongo deployment, running without transaction',
+        );
         return fn(undefined);
       }
       throw txErr;
     } finally {
-      try { await session.endSession(); } catch { /* ignore */ }
+      try {
+        await session.endSession();
+      } catch {
+        /* ignore */
+      }
     }
   }
 
@@ -660,7 +671,9 @@ export class PaymentsService {
         balance_after: walletDebit?.balanceAfter ?? wallet.balance,
         description:
           `Thanh toán cho công việc #${jobId.slice(-6)} (${paymentMethod.toUpperCase()})` +
-          (paymentMethod === 'cash' ? ' — tiền mặt trực tiếp, thợ nhận tiền mặt (không qua ví)' : '') +
+          (paymentMethod === 'cash'
+            ? ' — tiền mặt trực tiếp, thợ nhận tiền mặt (không qua ví)'
+            : '') +
           (isSimulatedOnline
             ? ' — MÔ PHỎNG (demo, chưa có cổng thanh toán thật: không thu tiền thật, không trừ ví)'
             : ''),
@@ -936,9 +949,7 @@ export class PaymentsService {
       // Số dư đổi giữa chừng do 1 lần trừ khác chen ngang — đọc lại, thử lại.
     }
     if (balanceAfter === undefined || !wallet) {
-      throw new ConflictException(
-        'Không thể trừ phí sàn do xung đột song song, vui lòng thử lại',
-      );
+      throw new ConflictException('Không thể trừ phí sàn do xung đột song song, vui lòng thử lại');
     }
     const balanceBefore = balanceAfter + deducted;
 
@@ -1379,11 +1390,7 @@ export class PaymentsService {
       } else {
         const wallet = await this.getOrCreateWallet(String(withdrawal.user_id));
         await this.walletModel
-          .findByIdAndUpdate(
-            wallet._id,
-            { $inc: { balance: withdrawal.amount } },
-            { session },
-          )
+          .findByIdAndUpdate(wallet._id, { $inc: { balance: withdrawal.amount } }, { session })
           .exec();
         await this.transactionModel.create(
           [

@@ -152,9 +152,7 @@ export function useSocketConnection() {
           Toast.show({
             type: 'success',
             text1:
-              lang() === 'en'
-                ? 'Your quote was accepted!'
-                : 'Báo giá của bạn đã được chấp nhận!',
+              lang() === 'en' ? 'Your quote was accepted!' : 'Báo giá của bạn đã được chấp nhận!',
             visibilityTime: 5000,
           });
         },
@@ -178,10 +176,7 @@ export function useSocketConnection() {
           qc.invalidateQueries({ queryKey: ['jobs'] });
           Toast.show({
             type: 'info',
-            text1:
-              lang() === 'en'
-                ? 'A dispute case was updated'
-                : 'Hồ sơ tranh chấp có cập nhật',
+            text1: lang() === 'en' ? 'A dispute case was updated' : 'Hồ sơ tranh chấp có cập nhật',
             visibilityTime: 5000,
           });
         },
@@ -286,15 +281,12 @@ export function useJobSocketUpdates(jobId?: string) {
     });
 
     // B114: team:updated — cập nhật ngay khi đội nhóm của đơn thay đổi
-    const unsubTeam = socketService.on<{ job_id?: string }>(
-      SOCKET_EVENTS.TEAM_UPDATED,
-      data => {
-        if (data?.job_id && data.job_id !== jobId) return;
-        qc.invalidateQueries({ queryKey: ['job', jobId] });
-        qc.invalidateQueries({ queryKey: ['jobs'] });
-        qc.invalidateQueries({ queryKey: ['team-invitations'] });
-      },
-    );
+    const unsubTeam = socketService.on<{ job_id?: string }>(SOCKET_EVENTS.TEAM_UPDATED, data => {
+      if (data?.job_id && data.job_id !== jobId) return;
+      qc.invalidateQueries({ queryKey: ['job', jobId] });
+      qc.invalidateQueries({ queryKey: ['jobs'] });
+      qc.invalidateQueries({ queryKey: ['team-invitations'] });
+    });
 
     const unsub5 = socketService.on<{ job_id?: string; quote_id?: string }>(
       SOCKET_EVENTS.QUOTE_REJECTED,

@@ -136,7 +136,11 @@ function ToastCard() {
   const borderColor =
     type === 'success' ? COLORS.success : type === 'error' ? COLORS.error : COLORS.secondary;
   const iconBackground =
-    type === 'success' ? COLORS.successLight : type === 'error' ? COLORS.errorLight : COLORS.secondaryLight;
+    type === 'success'
+      ? COLORS.successLight
+      : type === 'error'
+        ? COLORS.errorLight
+        : COLORS.secondaryLight;
   const renderIcon = () => {
     if (type === 'success') return <CheckCircle2 size={20} color={COLORS.primaryDark} />;
     if (type === 'error') return <AlertTriangle size={20} color="#DC2626" />;

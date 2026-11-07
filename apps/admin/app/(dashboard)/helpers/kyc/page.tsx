@@ -438,7 +438,9 @@ export default function KycPendingPage() {
             <div className="rounded-lg bg-muted/40 p-4 space-y-2 text-sm">
               <div className="flex justify-between gap-3">
                 <span className="text-muted-foreground shrink-0">Họ tên thợ:</span>
-                <span className="font-semibold min-w-0 text-right break-words">{approvingSingle.user_id?.full_name}</span>
+                <span className="font-semibold min-w-0 text-right break-words">
+                  {approvingSingle.user_id?.full_name}
+                </span>
               </div>
               <div className="flex justify-between gap-3">
                 <span className="text-muted-foreground shrink-0">Số điện thoại:</span>

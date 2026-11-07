@@ -23,9 +23,7 @@ export function SosCustomerDecisionPopup() {
   const { t, tService, fs, lang } = useTranslation();
   const tc = useThemeColors();
 
-  const remainingMs = decision?.decision_expires_at_ms
-    ? decision.decision_expires_at_ms - now
-    : 0;
+  const remainingMs = decision?.decision_expires_at_ms ? decision.decision_expires_at_ms - now : 0;
   const expired = decision?.decision_expires_at_ms ? remainingMs <= 0 : false;
 
   // S2: local auto-dismiss after expiry. The server still applies the

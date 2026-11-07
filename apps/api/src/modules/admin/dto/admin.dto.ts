@@ -1,4 +1,13 @@
-import { IsOptional, IsString, IsEnum, IsNotEmpty, IsNumber, IsInt, Min, Max } from 'class-validator';
+import {
+  IsOptional,
+  IsString,
+  IsEnum,
+  IsNotEmpty,
+  IsNumber,
+  IsInt,
+  Min,
+  Max,
+} from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { JobStatus } from '@homemate/types';
 

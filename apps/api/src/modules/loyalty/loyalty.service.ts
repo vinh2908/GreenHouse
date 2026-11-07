@@ -144,10 +144,7 @@ export class LoyaltyService {
   }
 
   /** Cap điểm tối đa (quy ra điểm) cho 1 giá trị đơn còn lại sau voucher. */
-  private maxPointsForRemaining(
-    remainingAfterVoucher: number,
-    capPercent: number,
-  ): number {
+  private maxPointsForRemaining(remainingAfterVoucher: number, capPercent: number): number {
     const capAmount = Math.floor((remainingAfterVoucher * capPercent) / 100);
     const maxDiscountAllowed = Math.min(capAmount, remainingAfterVoucher);
     return Math.floor(maxDiscountAllowed / this.pointValueVnd());
@@ -381,9 +378,7 @@ export class LoyaltyService {
     // nhưng snapshot cũ vẫn có thể tồn tại từ trước bản sửa này, hoặc điểm
     // được apply rồi voucher mới gắn). Vượt cap → chặn thanh toán, khách gỡ
     // điểm rồi áp lại theo cap mới thay vì âm thầm trừ quá mức cho phép.
-    const contract = await this.contractModel
-      .findOne({ job_id: new Types.ObjectId(jobId) })
-      .exec();
+    const contract = await this.contractModel.findOne({ job_id: new Types.ObjectId(jobId) }).exec();
     if (contract?.total_price) {
       const voucherDiscount = await this.pendingVoucherDiscount(job, contract.total_price);
       const remaining = Math.max(0, contract.total_price - voucherDiscount);

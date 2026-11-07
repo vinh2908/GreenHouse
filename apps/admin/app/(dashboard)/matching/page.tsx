@@ -101,16 +101,16 @@ export default function AdminMatchingPage() {
                           </TableCell>
                           <TableCell>{m.helper.average_rating?.toFixed(1) ?? '—'} ★</TableCell>
                           <TableCell>
-                            {m.helper.distance_km != null
-                              ? `${m.helper.distance_km} km`
-                              : '—'}
+                            {m.helper.distance_km != null ? `${m.helper.distance_km} km` : '—'}
                           </TableCell>
                           <TableCell>
                             <Badge>{m.match_score?.toFixed(2) ?? '—'}</Badge>
                           </TableCell>
                           <TableCell>
                             <ul className="text-sm text-muted-foreground list-disc pl-4">
-                              {m.match_reasons?.map((r, j) => <li key={j}>{r}</li>)}
+                              {m.match_reasons?.map((r, j) => (
+                                <li key={j}>{r}</li>
+                              ))}
                             </ul>
                           </TableCell>
                         </TableRow>

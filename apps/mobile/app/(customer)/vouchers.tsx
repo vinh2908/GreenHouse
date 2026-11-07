@@ -6,7 +6,15 @@ import Toast from 'react-native-toast-message';
 import { useMyVouchers } from '@/hooks/use-api';
 import { formatDate } from '@/utils/date-format';
 import { useTranslation } from '@/hooks/use-i18n';
-import { Card, COLORS, EmptyState, ErrorState, LoadingSpinner, Badge, useThemeColors } from '@/components/ui';
+import {
+  Card,
+  COLORS,
+  EmptyState,
+  ErrorState,
+  LoadingSpinner,
+  Badge,
+  useThemeColors,
+} from '@/components/ui';
 import { useState } from 'react';
 
 export default function CustomerVouchersScreen() {
@@ -63,9 +71,7 @@ export default function CustomerVouchersScreen() {
           <Text style={{ fontSize: fs(18), fontWeight: '800', color: tc.text }}>
             {t('voucher_title')}
           </Text>
-          <Text style={{ fontSize: fs(12), color: tc.textMuted }}>
-            {t('home_vouchers_sub')}
-          </Text>
+          <Text style={{ fontSize: fs(12), color: tc.textMuted }}>{t('home_vouchers_sub')}</Text>
         </View>
       </View>
 
@@ -137,9 +143,7 @@ export default function CustomerVouchersScreen() {
                       <Ticket size={22} color={COLORS.primary} />
                     </View>
                     <View style={{ flex: 1, gap: 2 }}>
-                      <Text
-                        style={{ fontSize: fs(16), fontWeight: '800', color: tc.text }}
-                      >
+                      <Text style={{ fontSize: fs(16), fontWeight: '800', color: tc.text }}>
                         {discountLabel}
                       </Text>
                       <Text style={{ fontSize: fs(13), color: tc.textSecondary, lineHeight: 18 }}>

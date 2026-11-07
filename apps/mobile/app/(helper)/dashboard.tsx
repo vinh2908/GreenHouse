@@ -43,7 +43,20 @@ import { useTranslation } from '@/hooks/use-i18n';
 import { lightImpact } from '@/services/haptics';
 import { locationService } from '@/services/location.service';
 import { socketService, SOCKET_EVENTS } from '@/services/socket.service';
-import { Card, JobStatusBadge, Avatar, EmptyState, ErrorState, COLORS, SectionHeader, PriceText, Badge, Button, Separator, useThemeColors } from '@/components/ui';
+import {
+  Card,
+  JobStatusBadge,
+  Avatar,
+  EmptyState,
+  ErrorState,
+  COLORS,
+  SectionHeader,
+  PriceText,
+  Badge,
+  Button,
+  Separator,
+  useThemeColors,
+} from '@/components/ui';
 import Toast from 'react-native-toast-message';
 
 export default function HelperDashboardScreen() {

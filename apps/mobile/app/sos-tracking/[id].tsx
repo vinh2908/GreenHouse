@@ -34,7 +34,17 @@ import { useJobSocketUpdates, useHelperLocation } from '@/hooks/use-socket';
 import { socketService, SOCKET_EVENTS } from '@/services/socket.service';
 import { LiveTrackingMap } from '@/components/common/live-tracking-map';
 import { useTranslation } from '@/hooks/use-i18n';
-import { Button, Card, Avatar, LoadingSpinner, COLORS, Separator, PriceText, Skeleton, useThemeColors } from '@/components/ui';
+import {
+  Button,
+  Card,
+  Avatar,
+  LoadingSpinner,
+  COLORS,
+  Separator,
+  PriceText,
+  Skeleton,
+  useThemeColors,
+} from '@/components/ui';
 
 dayjs.extend(relativeTime);
 
@@ -153,8 +163,7 @@ export default function SosTrackingScreen() {
   const etaRemainingMs = etaDeadlineMs !== null ? etaDeadlineMs - nowMs : null;
   // P1-10: real rating / completed count; omit both when unavailable.
   const helperRating = helperProfile?.average_rating ?? helperProfile?.rating ?? 0;
-  const helperCompleted =
-    helperProfile?.total_completed ?? helperProfile?.completed_jobs ?? 0;
+  const helperCompleted = helperProfile?.total_completed ?? helperProfile?.completed_jobs ?? 0;
   const helperVerified = helperProfile?.verification_status === 'approved';
   const helperObj = typeof job?.helper_id === 'object' && job?.helper_id ? job.helper_id : null;
   const hasRealHelper = Boolean(helperObj && (helperObj.full_name || helperObj.phone));
@@ -206,14 +215,11 @@ export default function SosTrackingScreen() {
               await cancelJob.mutateAsync({
                 jobId: id!,
                 reason:
-                  lang === 'en'
-                    ? 'Customer cancelled SOS request'
-                    : 'Khách hàng hủy yêu cầu SOS',
+                  lang === 'en' ? 'Customer cancelled SOS request' : 'Khách hàng hủy yêu cầu SOS',
               });
               Toast.show({
                 type: 'success',
-                text1:
-                  lang === 'en' ? 'Rescue request cancelled' : 'Đã hủy yêu cầu cứu hộ',
+                text1: lang === 'en' ? 'Rescue request cancelled' : 'Đã hủy yêu cầu cứu hộ',
               });
               router.replace('/(customer)/home');
             } catch (err: any) {

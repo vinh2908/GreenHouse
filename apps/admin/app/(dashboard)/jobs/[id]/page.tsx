@@ -187,9 +187,7 @@ export default function JobDetailPage() {
                     {job.rejected_helper_ids.map((h: any, idx: number) => (
                       <li key={h._id || idx}>
                         {h.full_name || 'Thợ'}{' '}
-                        <span className="font-mono text-muted-foreground">
-                          ({h.phone || '—'})
-                        </span>
+                        <span className="font-mono text-muted-foreground">({h.phone || '—'})</span>
                       </li>
                     ))}
                   </ul>
@@ -484,8 +482,7 @@ export default function JobDetailPage() {
             resolveDispute.mutate({
               id,
               action: disputeAction,
-              refund_amount:
-                disputeAction === 'refund_partial' ? Number(refundAmount) : undefined,
+              refund_amount: disputeAction === 'refund_partial' ? Number(refundAmount) : undefined,
               admin_note: adminNote.trim(),
             });
           }}

@@ -19,7 +19,8 @@ const PRICE_REFERENCE: Record<string, { min: number; max: number; unit: string }
 };
 
 /** Kết quả phân tích ảnh sự cố (Feature 17). available=false khi AI không dùng được. */
-export type IssuePhotoUnavailableReason = 'no_api_key' | 'invalid_image' | 'unsupported' | 'provider_error';
+export type IssuePhotoUnavailableReason =
+  'no_api_key' | 'invalid_image' | 'unsupported' | 'provider_error';
 
 export interface IssuePhotoAnalysis {
   available: boolean;

@@ -68,7 +68,17 @@ import {
 } from '@/hooks/use-api';
 import { useAuthStore } from '@/stores/auth.store';
 import { useTranslation } from '@/hooks/use-i18n';
-import { Button, Card, JobStatusBadge, COLORS, LoadingSpinner, Separator, PriceText, Badge, useThemeColors } from '@/components/ui';
+import {
+  Button,
+  Card,
+  JobStatusBadge,
+  COLORS,
+  LoadingSpinner,
+  Separator,
+  PriceText,
+  Badge,
+  useThemeColors,
+} from '@/components/ui';
 import Toast from 'react-native-toast-message';
 
 // S3: no hardcoded platform fee here — the per-service fee percent is
@@ -744,22 +754,26 @@ export default function HelperJobDetailScreen() {
         {/* P2-13: live map only while the job is active — never on open /
             finished / disputed / refunded jobs. */}
         {customerLocation &&
-          ['confirmed', 'helper_on_the_way', 'helper_arrived', 'in_progress', 'pending_review'].includes(
-            job.status,
-          ) && (
-          <LiveTrackingMap
-            customerLocation={customerLocation}
-            helperLocation={helperLocation}
-            helperRecordedAt={gps?.recorded_at}
-            viewerRole="helper"
-            onRouteMetrics={handleRouteMetrics}
-            customerAddress={job.address?.full_address}
-            helperName={lang === 'en' ? 'You (Helper)' : 'Bạn (Thợ)'}
-            status={job.status}
-            showNavigationButton={true}
-            height={300}
-          />
-        )}
+          [
+            'confirmed',
+            'helper_on_the_way',
+            'helper_arrived',
+            'in_progress',
+            'pending_review',
+          ].includes(job.status) && (
+            <LiveTrackingMap
+              customerLocation={customerLocation}
+              helperLocation={helperLocation}
+              helperRecordedAt={gps?.recorded_at}
+              viewerRole="helper"
+              onRouteMetrics={handleRouteMetrics}
+              customerAddress={job.address?.full_address}
+              helperName={lang === 'en' ? 'You (Helper)' : 'Bạn (Thợ)'}
+              status={job.status}
+              showNavigationButton={true}
+              height={300}
+            />
+          )}
 
         {gpsError && job.status === 'helper_on_the_way' && (
           <Text accessibilityRole="alert" style={{ color: '#92400e' }}>
@@ -799,9 +813,7 @@ export default function HelperJobDetailScreen() {
               />
             )}
           </View>
-          <Text
-            style={{ fontSize: fs(15), color: tc.text, lineHeight: 22, fontWeight: '500' }}
-          >
+          <Text style={{ fontSize: fs(15), color: tc.text, lineHeight: 22, fontWeight: '500' }}>
             {job.description}
           </Text>
           {job.is_warranty && (
@@ -971,9 +983,7 @@ export default function HelperJobDetailScreen() {
                           alignItems: 'center',
                         }}
                       >
-                        <Text
-                          style={{ fontSize: fs(13), fontWeight: '700', color: tc.text }}
-                        >
+                        <Text style={{ fontSize: fs(13), fontWeight: '700', color: tc.text }}>
                           +{new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'vi-VN').format(addAmt)}
                           ₫
                         </Text>
@@ -1471,7 +1481,9 @@ export default function HelperJobDetailScreen() {
         presentationStyle="pageSheet"
         onRequestClose={() => setShowAmendmentModal(false)}
       >
-        <View style={{ flex: 1, backgroundColor: tc.surface, paddingTop: Math.max(insets.top, 16) }}>
+        <View
+          style={{ flex: 1, backgroundColor: tc.surface, paddingTop: Math.max(insets.top, 16) }}
+        >
           <View style={{ flexDirection: 'row', alignItems: 'center', padding: 20 }}>
             <TouchableOpacity onPress={() => setShowAmendmentModal(false)}>
               <X size={24} color={COLORS.gray[700]} />
@@ -1598,7 +1610,9 @@ export default function HelperJobDetailScreen() {
 
       {/* ── Quote Modal ───────────────────────────────────────────────── */}
       <Modal visible={showQuoteModal} animationType="slide" presentationStyle="pageSheet">
-        <View style={{ flex: 1, backgroundColor: tc.surface, paddingTop: Math.max(insets.top, 16) }}>
+        <View
+          style={{ flex: 1, backgroundColor: tc.surface, paddingTop: Math.max(insets.top, 16) }}
+        >
           <View style={{ flexDirection: 'row', alignItems: 'center', padding: 20 }}>
             <TouchableOpacity onPress={() => setShowQuoteModal(false)}>
               <X size={24} color={COLORS.gray[700]} />
@@ -1756,7 +1770,9 @@ export default function HelperJobDetailScreen() {
 
       {/* ── Complete Evidence Modal (Chụp ảnh / Quay video hoàn thành) ── */}
       <Modal visible={showCompleteModal} animationType="slide" presentationStyle="pageSheet">
-        <View style={{ flex: 1, backgroundColor: tc.surface, paddingTop: Math.max(insets.top, 16) }}>
+        <View
+          style={{ flex: 1, backgroundColor: tc.surface, paddingTop: Math.max(insets.top, 16) }}
+        >
           <View
             style={{
               flexDirection: 'row',
@@ -1865,9 +1881,7 @@ export default function HelperJobDetailScreen() {
                     }}
                   >
                     <ImagePlus size={18} color={COLORS.gray[700]} />
-                    <Text
-                      style={{ fontWeight: '700', fontSize: fs(13.5), color: tc.text }}
-                    >
+                    <Text style={{ fontWeight: '700', fontSize: fs(13.5), color: tc.text }}>
                       {t('helper_job.evidence_pick_album')}
                     </Text>
                   </TouchableOpacity>
@@ -1977,9 +1991,7 @@ export default function HelperJobDetailScreen() {
                     }}
                   >
                     <Video size={18} color={COLORS.gray[700]} />
-                    <Text
-                      style={{ fontWeight: '700', fontSize: fs(13.5), color: tc.text }}
-                    >
+                    <Text style={{ fontWeight: '700', fontSize: fs(13.5), color: tc.text }}>
                       {t('helper_job.evidence_pick_video')}
                     </Text>
                   </TouchableOpacity>
