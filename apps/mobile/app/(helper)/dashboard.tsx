@@ -25,9 +25,7 @@ import {
   PowerOff,
   Search,
 } from 'lucide-react-native';
-import dayjs from 'dayjs';
-import relativeTime from 'dayjs/plugin/relativeTime';
-import 'dayjs/locale/vi';
+import { formatRelativeTime } from '@/utils/date-format';
 import { Alert } from '@/components/common/app-alert';
 import { useAuthStore } from '@/stores/auth.store';
 import {
@@ -47,8 +45,6 @@ import { locationService } from '@/services/location.service';
 import { socketService, SOCKET_EVENTS } from '@/services/socket.service';
 import { Card, JobStatusBadge, Avatar, EmptyState, ErrorState, COLORS, SectionHeader, PriceText, Badge, Button, Separator, useThemeColors } from '@/components/ui';
 import Toast from 'react-native-toast-message';
-
-dayjs.extend(relativeTime);
 
 export default function HelperDashboardScreen() {
   const router = useRouter();
@@ -846,9 +842,7 @@ export default function HelperDashboardScreen() {
                         <Text
                           style={{ fontSize: fs(12), color: COLORS.primary, fontWeight: '700' }}
                         >
-                          {dayjs(job.created_at)
-                            .locale(lang === 'en' ? 'en' : 'vi')
-                            .fromNow()}
+                          {formatRelativeTime(job.created_at, lang)}
                         </Text>
                       </View>
 

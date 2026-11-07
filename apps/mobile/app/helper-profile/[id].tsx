@@ -14,11 +14,7 @@ import {
   ThumbsUp,
   Heart,
 } from 'lucide-react-native';
-import dayjs from 'dayjs';
-import { vnDateTimeKey } from '@/utils/date-format';
-import relativeTime from 'dayjs/plugin/relativeTime';
-import 'dayjs/locale/vi';
-import 'dayjs/locale/en';
+import { vnDateTimeKey, formatRelativeTime } from '@/utils/date-format';
 import Toast from 'react-native-toast-message';
 import { useAuthStore } from '@/stores/auth.store';
 import { useTranslation } from '@/hooks/use-i18n';
@@ -34,7 +30,6 @@ import {
 } from '@/hooks/use-api';
 import { useHelperStatusSocket } from '@/hooks/use-socket';
 import { Button, Card, Avatar, LoadingSpinner, COLORS, Separator, StarRating, useThemeColors } from '@/components/ui';
-dayjs.extend(relativeTime);
 
 export default function HelperPublicProfileScreen() {
   const { id, jobId, quoteId } = useLocalSearchParams<{
@@ -45,7 +40,6 @@ export default function HelperPublicProfileScreen() {
   const router = useRouter();
   const { t, fs, lang } = useTranslation();
   const tc = useThemeColors();
-  dayjs.locale(lang === 'vi' ? 'vi' : 'en');
 
   const { user } = useAuthStore();
   // B71: kháng nghị đánh giá (chỉ thợ xem hồ sơ của chính mình)
@@ -618,7 +612,7 @@ export default function HelperPublicProfileScreen() {
                   </View>
                 )}
                 <Text style={{ fontSize: fs(11), color: tc.textMuted, marginTop: 2 }}>
-                  {dayjs(r.created_at).fromNow()}
+                  {formatRelativeTime(r.created_at, lang)}
                 </Text>
                 {isOwnProfile && r.appeal_status === 'pending' && (
                   <Text style={{ fontSize: fs(12), color: COLORS.primary, marginTop: 4 }}>

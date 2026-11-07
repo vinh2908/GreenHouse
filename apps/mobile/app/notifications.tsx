@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { formatTime } from '@/utils/date-format';
+import { formatTime, formatRelativeTime } from '@/utils/date-format';
 import { View, Text, ScrollView, TouchableOpacity, RefreshControl } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -43,16 +43,12 @@ import {
   Award,
 } from 'lucide-react-native';
 import dayjs from 'dayjs';
-import relativeTime from 'dayjs/plugin/relativeTime';
-import 'dayjs/locale/vi';
 import { useNotifications, useMarkAllRead, useMarkNotificationRead } from '@/hooks/use-api';
 import { useAuthStore } from '@/stores/auth.store';
 import { resolveNotificationRoute } from '@/utils/notification-route';
 import { refreshSosState } from '@/hooks/use-sos-backup';
 import { useTranslation } from '@/hooks/use-i18n';
 import { Card, COLORS, EmptyState, ErrorState, LoadingSpinner, useThemeColors } from '@/components/ui';
-
-dayjs.extend(relativeTime);
 
 function renderNotificationIcon(type: string) {
   const size = 22;
@@ -415,9 +411,7 @@ export default function NotificationsScreen() {
                       fontWeight: '600',
                     }}
                   >
-                    {dayjs(n.created_at)
-                      .locale(lang === 'en' ? 'en' : 'vi')
-                      .fromNow()}
+                    {formatRelativeTime(n.created_at, lang)}
                   </Text>
                 </View>
                 {!n.is_read && (
