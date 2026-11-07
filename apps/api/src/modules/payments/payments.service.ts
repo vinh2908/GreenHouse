@@ -744,6 +744,23 @@ export class PaymentsService {
     });
   }
 
+  /**
+   * G1 (H8): Đã có giao dịch hoàn tiền THÀNH CÔNG cho đơn này chưa — guard
+   * idempotency cho đường retry hoàn tiền (sweepPendingRefundRetries).
+   * refundCustomer luôn ghi 1 Transaction { job_id, type: 'refund',
+   * status: 'success' } cùng transaction với cộng ví, nên có bản ghi này
+   * nghĩa là tiền đã vào ví khách rồi — lần quét sau chỉ đồng bộ lại trạng
+   * thái đơn, không hoàn lần nữa. Chỉ đọc, không đổi luồng hoàn tiền lần đầu.
+   */
+  async hasSuccessfulRefund(jobId: string): Promise<boolean> {
+    const tx = await this.transactionModel
+      .findOne({ job_id: new Types.ObjectId(jobId), type: 'refund', status: 'success' })
+      .select('_id')
+      .lean()
+      .exec();
+    return Boolean(tx);
+  }
+
   // ─── Báo cáo thu nhập nâng cao (Feature 14) ────────────────────────────────
   //
   // Định nghĩa thống nhất: mọi tổng trong báo cáo đều là NET =

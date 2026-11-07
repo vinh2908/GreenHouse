@@ -20,7 +20,7 @@ async function main() {
   } as any);
   const quote = await jobs.submitQuote(qa.accounts.helper.id, String(job._id), {
     labor_cost: 200000,
-    estimated_duration: 60,
+    estimated_duration: 6, // G12 (H7): trần duration 12 giờ — fixture cũ 60 giờ sẽ 400
   } as any);
   const fixtures = {
     jobId: String(job._id),

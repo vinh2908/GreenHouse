@@ -1,9 +1,11 @@
 import { Types } from 'mongoose';
+import { validate } from 'class-validator';
 import { JobsService } from './jobs.service';
+import { CreateQuoteDto } from './dto/job.dto';
 
 /**
  * Spec G12 (B62): createJob kiểm tra duration như phía báo giá
- * (CreateQuoteDto.estimated_duration: 0,5–720 giờ). Đơn phải có ít nhất 1
+ * (CreateQuoteDto.estimated_duration: 0,5–12 giờ). Đơn phải có ít nhất 1
  * tín hiệu thời lượng: estimated_duration, hoặc cặp giờ bắt đầu + kết thúc.
  */
 describe('JobsService.createJob duration (G12)', () => {
@@ -73,21 +75,28 @@ describe('JobsService.createJob duration (G12)', () => {
     const { service } = makeService();
     await expect(
       service.createJob(String(customerId), dto({ estimated_duration: 0.2 })),
-    ).rejects.toThrow('Thời lượng công việc phải từ 0,5 đến 720 giờ');
+    ).rejects.toThrow('Thời lượng công việc phải từ 0,5 đến 12 giờ');
   });
 
-  it('estimated_duration 800 giờ (> 720) → 400', async () => {
+  it('H7 (G12): estimated_duration 13 giờ (> 12) → 400', async () => {
     const { service } = makeService();
     await expect(
-      service.createJob(String(customerId), dto({ estimated_duration: 800 })),
-    ).rejects.toThrow('Thời lượng công việc phải từ 0,5 đến 720 giờ');
+      service.createJob(String(customerId), dto({ estimated_duration: 13 })),
+    ).rejects.toThrow('Thời lượng công việc phải từ 0,5 đến 12 giờ');
+  });
+
+  it('H7 (G12): estimated_duration 12,5 giờ (> 12) → 400', async () => {
+    const { service } = makeService();
+    await expect(
+      service.createJob(String(customerId), dto({ estimated_duration: 12.5 })),
+    ).rejects.toThrow('Thời lượng công việc phải từ 0,5 đến 12 giờ');
   });
 
   it('estimated_duration không phải số → 400', async () => {
     const { service } = makeService();
     await expect(
       service.createJob(String(customerId), dto({ estimated_duration: 'ba giờ' as never })),
-    ).rejects.toThrow('Thời lượng công việc phải từ 0,5 đến 720 giờ');
+    ).rejects.toThrow('Thời lượng công việc phải từ 0,5 đến 12 giờ');
   });
 
   it('thiếu duration (không estimated_duration, không giờ kết thúc) → 400', async () => {
@@ -115,5 +124,59 @@ describe('JobsService.createJob duration (G12)', () => {
     const job = await service.createJob(String(customerId), dto({}));
     expect(jobModel.create).toHaveBeenCalledTimes(1);
     expect(job).toBeDefined();
+  });
+
+  it('H7 (G12): estimated_duration đúng 12 giờ → tạo được', async () => {
+    const { service, jobModel } = makeService();
+    const job = await service.createJob(
+      String(customerId),
+      dto({ estimated_duration: 12, preferred_time_end: undefined }),
+    );
+    expect(jobModel.create).toHaveBeenCalledTimes(1);
+    expect((job as any).estimated_duration).toBe(12);
+  });
+
+  it('H7 (G12): cặp giờ đúng 12 giờ (09:00–21:00) → tạo được', async () => {
+    const { service, jobModel } = makeService();
+    const job = await service.createJob(
+      String(customerId),
+      dto({ preferred_time_start: '09:00', preferred_time_end: '21:00' }),
+    );
+    expect(jobModel.create).toHaveBeenCalledTimes(1);
+    expect(job).toBeDefined();
+  });
+
+  it('H7 (G12): cặp giờ 12 giờ 01 phút (09:00–21:01) → 400', async () => {
+    const { service } = makeService();
+    await expect(
+      service.createJob(
+        String(customerId),
+        dto({ preferred_time_start: '09:00', preferred_time_end: '21:01' }),
+      ),
+    ).rejects.toThrow('Thời lượng công việc tối đa là 12 giờ');
+  });
+});
+
+describe('CreateQuoteDto estimated_duration (H7/G12)', () => {
+  function quoteDto(estimated_duration: number) {
+    const q = new CreateQuoteDto();
+    q.labor_cost = 200000;
+    q.estimated_duration = estimated_duration;
+    return q;
+  }
+
+  it('báo giá duration 12 giờ → hợp lệ (không lỗi estimated_duration)', async () => {
+    const errors = await validate(quoteDto(12));
+    expect(errors.filter(e => e.property === 'estimated_duration')).toHaveLength(0);
+  });
+
+  it('báo giá duration 13 giờ → 400 (lỗi validation estimated_duration)', async () => {
+    const errors = await validate(quoteDto(13));
+    expect(errors.filter(e => e.property === 'estimated_duration')).toHaveLength(1);
+  });
+
+  it('báo giá duration 0,5 giờ → hợp lệ (trần dưới không đổi)', async () => {
+    const errors = await validate(quoteDto(0.5));
+    expect(errors.filter(e => e.property === 'estimated_duration')).toHaveLength(0);
   });
 });
