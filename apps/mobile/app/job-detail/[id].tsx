@@ -136,15 +136,16 @@ const PAYMENT_METHODS: PaymentMethodItem[] = [
     label: 'Tiền mặt trực tiếp (Trừ phí 15% ví ký quỹ thợ)',
     label_en: 'Direct cash (15% platform fee deducted from helper escrow)',
   },
+  // P0-2: only methods that move REAL, verifiable money are offered.
+  // 'wallet' debits the customer's real wallet balance atomically.
+  // VietQR/MoMo/ZaloPay are NOT offered: no payment gateway is connected
+  // yet, so those payments cannot be verified and must never mark a job
+  // PAID (approval would mint helper payout from uncollected money).
+  // They return once a real gateway lands (owner decision still open).
   {
-    id: 'vietqr',
-    label: 'Chuyển khoản VietQR (Escrow)',
-    label_en: 'VietQR bank transfer (Escrow)',
-  },
-  {
-    id: 'momo',
-    label: 'Ví MoMo / ZaloPay (Escrow)',
-    label_en: 'MoMo / ZaloPay wallet (Escrow)',
+    id: 'wallet',
+    label: 'Số dư ví (chỉ tiền thật trong ví)',
+    label_en: 'Wallet balance (real funds only)',
   },
 ];
 
@@ -277,7 +278,9 @@ export default function JobDetailScreen() {
   }, [focus, job, quotes]);
   const [rating, setRating] = useState(5);
   const [reviewText, setReviewText] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState('vietqr');
+  // P0-2: default to cash — vietqr/momo are not offered until a real
+  // payment gateway is connected (see PAYMENT_METHODS above).
+  const [paymentMethod, setPaymentMethod] = useState('cash');
   const [selectedMediaPreview, setSelectedMediaPreview] = useState<string | null>(null);
   const [selectedDate] = useState(vnDateTimeKey(1));
 
@@ -783,9 +786,44 @@ export default function JobDetailScreen() {
 
   const handleSubmitReview = async () => {
     try {
+      // P0-3: never charge before checking the approval precondition.
+      // approveCompletion rejects jobs with zero completion photos, so
+      // charging first strands the money in paid-but-unapproved. Refetch
+      // so the check uses the server state, not a stale snapshot.
+      const { data: freshJob } = await refetchJob();
+      const current = (freshJob ?? job) as any;
+      if (!(current?.completion_photos?.length ?? 0)) {
+        Toast.show({
+          type: 'error',
+          text1:
+            lang === 'en'
+              ? 'Helper has not uploaded completion photos yet'
+              : 'Thợ chưa tải ảnh bằng chứng hoàn thành',
+          text2:
+            lang === 'en'
+              ? 'Ask the helper to upload completion photos before approval — no payment was taken.'
+              : 'Hãy yêu cầu thợ tải ảnh hoàn thành trước khi nghiệm thu — chưa trừ tiền.',
+        });
+        return;
+      }
+
       // 1. Ghi nhận thanh toán nếu đơn chưa thanh toán (đơn bảo hành miễn phí — bỏ qua)
-      if (job.payment_status !== 'paid' && !job.is_warranty) {
-        await payJob.mutateAsync({ job_id: id!, payment_method: paymentMethod });
+      if (current.payment_status !== 'paid' && !current.is_warranty) {
+        try {
+          await payJob.mutateAsync({ job_id: id!, payment_method: paymentMethod });
+        } catch (payErr: any) {
+          // P0-3: retry must not re-charge when already paid — the local
+          // job snapshot may be stale; a 409 "already paid" means the first
+          // charge went through, so continue to approval instead of failing.
+          const msg = String(
+            payErr?.response?.data?.message ?? payErr?.message ?? '',
+          );
+          if (/đã được thanh toán|already paid/i.test(msg)) {
+            await refetchJob();
+          } else {
+            throw payErr;
+          }
+        }
       }
 
       // 2. Nghiệm thu hoàn thành công việc & quyết toán theo phương thức (Tiền mặt vs Escrow)
@@ -4087,11 +4125,25 @@ function JobVoucherRow({ job, contractTotal }: { job: any; contractTotal: number
           onPress={async () => {
             const trimmed = code.trim();
             if (!trimmed) return;
+            setError(null);
+            // P1-26: with no contract price yet, preview() skips the
+            // min-order check (amount 0) and the voucher attaches even
+            // though the order can never qualify — only to fail at payment.
+            if (!contractTotal || contractTotal <= 0) {
+              setError(
+                lang === 'en'
+                  ? 'The final price is not known yet — apply the voucher once the contract price is set.'
+                  : 'Chưa có giá chốt — hãy áp mã sau khi có giá hợp đồng.',
+              );
+              return;
+            }
             try {
               const result = await validate.mutateAsync({ code: trimmed, amount: contractTotal });
               setPreview(result);
               await apply.mutateAsync({ jobId: job._id, code: result.code });
             } catch (err: any) {
+              // P1-26: a failed attach must not keep showing "Est. discount".
+              setPreview(null);
               const msg = err?.response?.data?.message;
               setError(
                 typeof msg === 'string'

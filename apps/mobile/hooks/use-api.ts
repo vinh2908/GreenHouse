@@ -15,6 +15,7 @@ import {
 } from '@/services/offline.service';
 import { useOfflineStore } from '@/stores/offline.store';
 import { useAuthStore } from '@/stores/auth.store';
+import { useTranslation } from '@/hooks/use-i18n';
 import Toast from 'react-native-toast-message';
 
 // ─── Auth ──────────────────────────────────────────────────────────────────────
@@ -934,15 +935,26 @@ export function useWallet() {
 
 export function useTopupWallet() {
   const qc = useQueryClient();
+  const { lang } = useTranslation();
   return useMutation({
     mutationFn: (dto: { amount: number; payment_method?: string }) =>
       apiClient.post('/payments/wallet/topup', dto),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['wallet'] });
       qc.invalidateQueries({ queryKey: ['transactions'] });
+      // P2-18: the ONE success toast for top-ups lives here, localized.
+      // Screens must NOT show a second one. P0-1: label it a simulation —
+      // no real payment happens and the withdrawable balance does not change.
       Toast.show({
         type: 'success',
-        text1: 'Nạp tiền vào ví ký quỹ thành công!',
+        text1:
+          lang === 'en'
+            ? 'Demo top-up recorded (simulation)'
+            : 'Đã ghi nhận nạp tiền mô phỏng',
+        text2:
+          lang === 'en'
+            ? 'No real payment was made; withdrawable balance unchanged.'
+            : 'Chưa có thanh toán thật; số dư rút được không thay đổi.',
       });
     },
   });
@@ -1905,12 +1917,26 @@ export function useValidateVoucher() {
 
 export function useApplyVoucherToJob() {
   const qc = useQueryClient();
+  const { lang } = useTranslation();
   return useMutation({
     mutationFn: ({ jobId, code }: { jobId: string; code: string }) =>
       apiClient.post(`/vouchers/jobs/${jobId}/apply`, { code }),
-    onSuccess: (_, vars) => {
+    onSuccess: (res, vars) => {
       qc.invalidateQueries({ queryKey: ['job', vars.jobId] });
+      qc.invalidateQueries({ queryKey: ['loyalty'] });
       Toast.show({ type: 'success', text1: 'Đã áp mã giảm giá ' });
+      // P1-24: attaching a voucher clears a previously-applied points
+      // snapshot (it was capped without this voucher) — say so, so the
+      // customer knows to re-apply points under the new cap.
+      if ((res as any)?.data?.data?.loyalty_points_cleared) {
+        Toast.show({
+          type: 'info',
+          text1:
+            lang === 'en'
+              ? 'Loyalty points were removed — the voucher changes the discount cap. Please apply your points again.'
+              : 'Đã gỡ điểm đã áp — voucher làm đổi mức cap. Vui lòng áp lại điểm.',
+        });
+      }
     },
     onError: (err: any) => {
       const msg = err?.response?.data?.message ?? 'Không áp được mã giảm giá';
