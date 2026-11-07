@@ -20,7 +20,7 @@ export class MockPayJobDto {
 
   @ApiProperty({
     description:
-      'Phương thức thanh toán (wallet | cash). VietQR/MoMo/ZaloPay chưa khả dụng vì chưa có cổng thanh toán thật để xác minh giao dịch.',
+      'Phương thức thanh toán (wallet | cash | vietqr | momo | zalopay). VietQR/MoMo/ZaloPay là thanh toán MÔ PHỎNG (demo, chưa có cổng thanh toán thật — không thu tiền thật, tiền thợ chỉ vào số dư mô phỏng, không rút được).',
     example: 'cash',
   })
   @IsString()

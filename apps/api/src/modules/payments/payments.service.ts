@@ -133,9 +133,9 @@ export class PaymentsService {
    * wallet? Only a successful 'payment' transaction whose metadata says
    * payment_method 'wallet' counts — wallet payments atomically debit the
    * wallet in mockPayJob. Cash is handled separately (helper got cash in
-   * hand, no wallet credit). Unverified online methods (vietqr/momo/zalopay)
-   * can never produce such a transaction, so approveCompletion / dispute
-   * resolution must not release helper payout for them.
+   * hand, no wallet credit). Simulated online payments (vietqr/momo/zalopay)
+   * are tracked separately by hasSimulatedOnlinePayment below — they never
+   * count as verified, so they can never release a REAL helper payout.
    */
   async hasVerifiedWalletPayment(jobId: string): Promise<boolean> {
     if (!Types.ObjectId.isValid(jobId)) return false;
@@ -150,6 +150,33 @@ export class PaymentsService {
       .lean()
       .exec();
     return Boolean(tx);
+  }
+
+  /**
+   * Owner decision 2026-11-07 ("giữ mô phỏng thanh toán đi"): was this job
+   * paid by a SIMULATED VietQR/MoMo/ZaloPay payment? Such a payment never
+   * collected real money, so approval / dispute resolution may only release
+   * the helper payout into `simulated_balance` (creditHelperSimulated) —
+   * never into the withdrawable balance.
+   */
+  async hasSimulatedOnlinePayment(jobId: string): Promise<boolean> {
+    if (!Types.ObjectId.isValid(jobId)) return false;
+    try {
+      const tx = await this.transactionModel
+        .findOne({
+          job_id: new Types.ObjectId(jobId),
+          type: 'payment',
+          status: 'success',
+          'metadata.simulated': true,
+          'metadata.payment_method': { $in: PaymentsService.SIMULATED_ONLINE_METHODS },
+        })
+        .select('_id')
+        .lean()
+        .exec();
+      return Boolean(tx);
+    } catch {
+      return false;
+    }
   }
 
   /**
@@ -234,8 +261,8 @@ export class PaymentsService {
 
   /**
    * P0-1 (honest simulation): there is NO real payment gateway connected yet
-   * (owner decision: real gateway vs honestly labelled simulation — still
-   * open). So a "top-up" CANNOT create withdrawable money: it credits ONLY
+   * (owner decision 2026-11-07: keep honestly labelled simulation). So a
+   * "top-up" CANNOT create withdrawable money: it credits ONLY
    * `simulated_balance` (display-only demo credit, never withdrawable, never
    * spendable) and the transaction records the withdrawable balance as
    * UNCHANGED. Anyone topping up 100M₫ can no longer withdraw it.
@@ -310,6 +337,18 @@ export class PaymentsService {
   // nên bắt buộc phải có trong danh sách — không chặn phương thức đang dùng.
   static readonly ALLOWED_PAYMENT_METHODS = ['wallet', 'cash', 'momo', 'zalopay', 'vietqr'];
 
+  // Owner decision 2026-11-07 ("giữ mô phỏng thanh toán đi"): VietQR/MoMo/
+  // ZaloPay keep working as honestly labelled SIMULATION — no real gateway,
+  // no real money collected. A simulated payment marks the job PAID (demo)
+  // and releases helper payout ONLY into `simulated_balance` (never
+  // withdrawable, never spendable). Real wallet payments stay the only path
+  // to a real, withdrawable payout.
+  static readonly SIMULATED_ONLINE_METHODS = ['vietqr', 'momo', 'zalopay'];
+
+  static isSimulatedOnlineMethod(method?: string | null): boolean {
+    return !!method && PaymentsService.SIMULATED_ONLINE_METHODS.includes(method);
+  }
+
   async mockPayJob(
     customerId: string,
     jobId: string,
@@ -328,17 +367,14 @@ export class PaymentsService {
         `Phương thức thanh toán không hợp lệ: "${paymentMethod}". Chỉ chấp nhận: ${PaymentsService.ALLOWED_PAYMENT_METHODS.join(', ')}`,
       );
     }
-    // P0-2: no real payment gateway is connected yet (owner decision still
-    // open), so an online payment can never be VERIFIED. VietQR/MoMo/ZaloPay
-    // must not mark a job PAID — approval would otherwise mint withdrawable
-    // helper payout from money nobody collected. Only 'wallet' (real balance
-    // debited atomically below) and 'cash' (helper receives cash in hand, no
-    // wallet credit) can complete a payment until a gateway lands.
-    if (paymentMethod === 'vietqr' || paymentMethod === 'momo' || paymentMethod === 'zalopay') {
-      throw new BadRequestException(
-        'Thanh toán trực tuyến chưa khả dụng: chưa kết nối cổng thanh toán thật nên không thể xác minh giao dịch. Vui lòng thanh toán bằng tiền mặt, hoặc bằng số dư ví (tiền thật đã có trong ví).',
-      );
-    }
+    // Owner decision 2026-11-07 ("giữ mô phỏng thanh toán đi"): VietQR/MoMo/
+    // ZaloPay are SIMULATED online payments — no real gateway, no real money
+    // collected, no wallet debit. They mark the job PAID (demo) with
+    // metadata.simulated=true; approval releases the helper payout ONLY into
+    // simulated_balance (see creditHelperSimulated + hasSimulatedOnlinePayment),
+    // so a demo payment can never mint withdrawable money. Only 'wallet'
+    // (real balance debited atomically below) moves real money.
+    const isSimulatedOnline = PaymentsService.isSimulatedOnlineMethod(paymentMethod);
     if (!Types.ObjectId.isValid(jobId)) {
       throw new BadRequestException('Mã công việc (job_id) không hợp lệ');
     }
@@ -512,6 +548,9 @@ export class PaymentsService {
                 (paymentMethod === 'cash'
                   ? ' — tiền mặt trực tiếp, thợ nhận tiền mặt (không qua ví)'
                   : '') +
+                (isSimulatedOnline
+                  ? ' — MÔ PHỎNG (demo, chưa có cổng thanh toán thật: không thu tiền thật, không trừ ví)'
+                  : '') +
                 (discountAmount > 0
                   ? ` — đã áp mã ${appliedVoucherCode} giảm ${discountAmount.toLocaleString('vi-VN')}₫`
                   : '') +
@@ -522,6 +561,7 @@ export class PaymentsService {
               metadata: {
                 payment_method: paymentMethod,
                 job_id: jobId,
+                ...(isSimulatedOnline ? { simulated: true } : {}),
                 ...(paymentMethod === 'cash' ? { cash_paid_in_hand: true } : {}),
                 ...(discountAmount > 0
                   ? { voucher_code: appliedVoucherCode, discount_amount: discountAmount }
@@ -601,8 +641,9 @@ export class PaymentsService {
       }
     } else {
       // No job model (unit-test fallback path): same money rules as above —
-      // wallet really debits, cash moves no wallet money, online methods were
-      // already rejected at the top of this function.
+      // wallet really debits, cash moves no wallet money, simulated online
+      // methods record a simulated payment (metadata.simulated=true) and
+      // debit nothing.
       const wallet = await this.getOrCreateWallet(customerId);
       let walletDebit: { balanceBefore: number; balanceAfter: number } | null = null;
       if (paymentMethod === 'wallet' && resolvedAmount > 0) {
@@ -619,11 +660,15 @@ export class PaymentsService {
         balance_after: walletDebit?.balanceAfter ?? wallet.balance,
         description:
           `Thanh toán cho công việc #${jobId.slice(-6)} (${paymentMethod.toUpperCase()})` +
-          (paymentMethod === 'cash' ? ' — tiền mặt trực tiếp, thợ nhận tiền mặt (không qua ví)' : ''),
+          (paymentMethod === 'cash' ? ' — tiền mặt trực tiếp, thợ nhận tiền mặt (không qua ví)' : '') +
+          (isSimulatedOnline
+            ? ' — MÔ PHỎNG (demo, chưa có cổng thanh toán thật: không thu tiền thật, không trừ ví)'
+            : ''),
         reference: `PAY-${Date.now()}`,
         metadata: {
           payment_method: paymentMethod,
           job_id: jobId,
+          ...(isSimulatedOnline ? { simulated: true } : {}),
           ...(paymentMethod === 'cash' ? { cash_paid_in_hand: true } : {}),
         },
       });
@@ -691,6 +736,56 @@ export class PaymentsService {
           balance_before: balanceBefore,
           balance_after: balanceAfter,
           description: `Thu nhập từ công việc #${jobId.slice(-6)}`,
+        },
+      ],
+      { session: session ?? undefined },
+    );
+    return tx;
+  }
+
+  /**
+   * Owner decision 2026-11-07 (keep simulation): helper payout for a job
+   * paid by SIMULATED VietQR/MoMo/ZaloPay credits ONLY `simulated_balance`
+   * (demo credit, never withdrawable, never spendable — same treatment as a
+   * simulated top-up). Real `balance` and `total_earned` are untouched, so a
+   * demo payment can never mint withdrawable money.
+   */
+  async creditHelperSimulated(
+    helperId: string,
+    jobId: string,
+    amount: number,
+    session?: ClientSession | null,
+  ): Promise<TransactionDocument> {
+    if (!Number.isFinite(amount) || amount <= 0) {
+      throw new BadRequestException('Số tiền cộng cho thợ phải lớn hơn 0₫');
+    }
+    const wallet = await this.getOrCreateWallet(helperId, session);
+    const updatedWallet = await this.walletModel
+      .findByIdAndUpdate(
+        wallet._id,
+        { $inc: { simulated_balance: amount } },
+        { new: true, session: session ?? undefined },
+      )
+      .exec();
+    if (!updatedWallet) {
+      throw new BadRequestException('Không tìm thấy ví thợ để cộng tiền');
+    }
+    const simulatedAfter =
+      updatedWallet.simulated_balance ?? (wallet.simulated_balance ?? 0) + amount;
+    const [tx] = await this.transactionModel.create(
+      [
+        {
+          wallet_id: wallet._id,
+          user_id: new Types.ObjectId(helperId),
+          job_id: new Types.ObjectId(jobId),
+          type: 'earning',
+          status: 'success',
+          amount,
+          balance_before: wallet.balance,
+          balance_after: wallet.balance,
+          description: `Thu nhập MÔ PHỎNG từ công việc #${jobId.slice(-6)} (demo — chưa có cổng thanh toán thật, không rút được)`,
+          reference: `SIM-PAYOUT-${Date.now()}`,
+          metadata: { simulated: true, simulated_balance_after: simulatedAfter },
         },
       ],
       { session: session ?? undefined },
@@ -889,15 +984,31 @@ export class PaymentsService {
     if (!Number.isFinite(refundAmount) || refundAmount <= 0) {
       throw new BadRequestException('Số tiền hoàn cho khách phải lớn hơn 0₫');
     }
+    // Owner decision 2026-11-07 (keep simulation): a refund follows the
+    // nature of the payment it reverses. A job paid by simulated
+    // VietQR/MoMo/ZaloPay never collected real money, so its refund credits
+    // ONLY simulated_balance — never the withdrawable balance. Real payments
+    // keep the existing real refund. Lookup failures fail closed toward the
+    // existing real refund (hasSimulatedOnlinePayment returns false then).
+    const simulatedRefund = await this.hasSimulatedOnlinePayment(jobId);
     // B91: cộng ví + ghi giao dịch hoàn tiền trong 1 transaction
     return this.runInTransaction(async session => {
       const wallet = await this.getOrCreateWallet(customerId);
       const balanceBefore = wallet.balance;
-      const balanceAfter = balanceBefore + refundAmount;
+      const balanceAfter = simulatedRefund ? balanceBefore : balanceBefore + refundAmount;
 
-      await this.walletModel
-        .findByIdAndUpdate(wallet._id, { $inc: { balance: refundAmount } }, { session })
+      const updatedWallet = await this.walletModel
+        .findByIdAndUpdate(
+          wallet._id,
+          simulatedRefund
+            ? { $inc: { simulated_balance: refundAmount } }
+            : { $inc: { balance: refundAmount } },
+          { session },
+        )
         .exec();
+      const simulatedAfter = simulatedRefund
+        ? (updatedWallet?.simulated_balance ?? (wallet.simulated_balance ?? 0) + refundAmount)
+        : undefined;
 
       const [tx] = await this.transactionModel.create(
         [
@@ -910,7 +1021,14 @@ export class PaymentsService {
             amount: refundAmount,
             balance_before: balanceBefore,
             balance_after: balanceAfter,
-            description: `Hoàn tiền khiếu nại công việc #${jobId.slice(-6)}: ${reason}`,
+            description:
+              `Hoàn tiền khiếu nại công việc #${jobId.slice(-6)}: ${reason}` +
+              (simulatedRefund
+                ? ' (MÔ PHỎNG — hoàn vào số dư mô phỏng, không phải tiền thật)'
+                : ''),
+            ...(simulatedRefund
+              ? { metadata: { simulated: true, simulated_balance_after: simulatedAfter } }
+              : {}),
           },
         ],
         { session },

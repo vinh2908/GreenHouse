@@ -22,6 +22,7 @@ import { Types } from 'mongoose';
 describe('JobsService.approveCompletion (B57)', () => {
   let service: JobsService;
   let jobModel: any;
+  let paymentsService: any;
 
   beforeEach(async () => {
     jobModel = {
@@ -76,15 +77,18 @@ describe('JobsService.approveCompletion (B57)', () => {
         { provide: ChatService, useValue: {} },
         {
           provide: PaymentsService,
-          useValue: {
+          useValue: (paymentsService = {
             // G2: creditJobPayout bọc trả tiền trong runMoneyTransaction.
             runMoneyTransaction: jest.fn(async (fn: (s: any) => Promise<any>) => fn(undefined)),
             creditHelper: jest.fn().mockResolvedValue({}),
+            creditHelperSimulated: jest.fn().mockResolvedValue({}),
             deductCommissionForCashJob: jest.fn().mockResolvedValue({}),
             deductWallet: jest.fn().mockResolvedValue({}),
             // P0-2: payout chỉ giải ngân khi có thanh toán ví thật đã xác minh.
             hasVerifiedWalletPayment: jest.fn().mockResolvedValue(true),
-          },
+            // Owner decision 2026-11-07 (keep simulation): mặc định không mô phỏng.
+            hasSimulatedOnlinePayment: jest.fn().mockResolvedValue(false),
+          }),
         },
         { provide: RoutingService, useValue: {} },
         { provide: FavoritesService, useValue: {} },
@@ -143,5 +147,19 @@ describe('JobsService.approveCompletion (B57)', () => {
       review: 'Tốt',
     } as never);
     expect(result.status).toBe(JobStatus.COMPLETED);
+  });
+
+  it('đơn trả bằng VietQR mô phỏng → nghiệm thu → giải ngân vào simulated_balance, không đúc tiền thật', async () => {
+    const { customerId, jobId } = mockJob(['https://cdn.example.com/photo1.jpg']);
+    paymentsService.hasVerifiedWalletPayment.mockResolvedValue(false);
+    paymentsService.hasSimulatedOnlinePayment = jest.fn().mockResolvedValue(true);
+    paymentsService.creditHelperSimulated = jest.fn().mockResolvedValue({});
+    const result = await service.approveCompletion(String(customerId), String(jobId), {
+      rating: 5,
+      review: 'Tốt',
+    } as never);
+    expect(result.status).toBe(JobStatus.COMPLETED);
+    expect(paymentsService.creditHelperSimulated).toHaveBeenCalled();
+    expect(paymentsService.creditHelper).not.toHaveBeenCalled();
   });
 });
