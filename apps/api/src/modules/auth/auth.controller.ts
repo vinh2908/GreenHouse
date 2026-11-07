@@ -65,7 +65,7 @@ export class AuthController {
   @Post('otp/send')
   @HttpCode(HttpStatus.OK)
   @Throttle({ default: { ttl: 60000, limit: 3 } })
-  @ApiOperation({ summary: 'Gửi OTP xác minh SĐT' })
+  @ApiOperation({ summary: 'Gửi OTP xác minh — chỉ email (SMS chưa hỗ trợ, xem P0-6)' })
   async sendOtp(@Body() dto: SendOtpDto) {
     return this.authService.sendOtp(dto);
   }
