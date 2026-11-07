@@ -493,6 +493,10 @@ export default function JobDetailScreen() {
 
   const handleToggleFavoriteHelper = () => {
     if (!assignedHelperId) return;
+    if (!user) {
+      router.push('/(auth)/login');
+      return;
+    }
     if (isHelperFavorite) removeFavorite.mutate(assignedHelperId);
     else addFavorite.mutate(assignedHelperId);
   };
