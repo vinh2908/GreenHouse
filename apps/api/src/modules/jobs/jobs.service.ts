@@ -415,6 +415,45 @@ export class JobsService implements OnModuleInit {
         // dùng job.refund_pending_amount sau save() sẽ là undefined và ném
         // TypeError, làm mất notification + tăng sai refund_retry_count.
         const refundAmount = job.refund_pending_amount!;
+
+        // G1 (H8): guard idempotency — tiền có thể đã hoàn xong ở lần quét
+        // trước nhưng job.save() ở dưới lỗi nên cờ retry còn sót. Chỉ hoàn
+        // lại khi chưa có giao dịch hoàn tiền thành công cho đơn này (kiểm
+        // tra sổ giao dịch) và đơn chưa ở trạng thái đã-hoàn; nếu đã hoàn
+        // rồi thì chỉ đồng bộ lại trạng thái + thông báo, KHÔNG hoàn nữa.
+        // Guard đọc lỗi → bỏ qua đơn này trong lần quét này (fail-closed:
+        // không hoàn khi chưa chứng minh được là chưa hoàn).
+        try {
+          const alreadyRefunded =
+            job.payment_status === PaymentStatus.REFUNDED ||
+            (await this.paymentsService.hasSuccessfulRefund(String(job._id)));
+          if (alreadyRefunded) {
+            job.payment_status = PaymentStatus.REFUNDED;
+            job.refund_pending_retry = false;
+            job.refund_pending_amount = undefined;
+            job.refund_pending_reason = undefined;
+            await job.save();
+
+            await this.notificationsService
+              .create({
+                userId: String(job.customer_id),
+                type: NOTIFICATION_TYPES.REFUND_RECEIVED,
+                title: 'Hoàn tiền đơn hàng đã hủy',
+                body: `Đã hoàn ${refundAmount.toLocaleString('vi-VN')}₫ vào ví của bạn cho công việc "${job.title}"`,
+                payload: { job_id: String(job._id), amount: refundAmount },
+              })
+              .catch(() => undefined);
+
+            recovered++;
+            continue;
+          }
+        } catch (guardErr) {
+          this.logger.error(
+            `Refund guard for job ${job._id} failed: ${(guardErr as Error).message} — bỏ qua lần quét này`,
+          );
+          continue;
+        }
+
         try {
           await this.paymentsService.refundCustomer(
             String(job.customer_id),
