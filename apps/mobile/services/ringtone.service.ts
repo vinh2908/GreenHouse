@@ -1,9 +1,9 @@
 // services/ringtone.service.ts — Phát nhạc chuông trung tính lặp lại cho cuộc gọi đến
 import { Platform } from 'react-native';
-import { Audio } from 'expo-av';
+import { createAudioPlayer, setAudioModeAsync, AudioPlayer } from 'expo-audio';
 
 class RingtoneService {
-  private sound: Audio.Sound | null = null;
+  private player: AudioPlayer | null = null;
   private isPlaying = false;
   private webAudio: any = null;
 
@@ -22,7 +22,7 @@ class RingtoneService {
           await this.webAudio.play();
           return;
         } catch {
-          // If HTML5 Audio fails, try expo-av
+          // If HTML5 Audio fails, try expo-audio
         }
       }
 
@@ -34,30 +34,34 @@ class RingtoneService {
 
   private async playExpoAudio(): Promise<void> {
     try {
-      await Audio.setAudioModeAsync({
-        playsInSilentModeIOS: false, // Tôn trọng chế độ im lặng trên iOS
-        staysActiveInBackground: false,
-        shouldDuckAndroid: true,
+      await setAudioModeAsync({
+        playsInSilentMode: false,
+        shouldPlayInBackground: false,
+        interruptionMode: 'duckOthers',
       });
 
-      if (this.sound) {
-        await this.sound.unloadAsync().catch(() => {});
-        this.sound = null;
+      if (this.player) {
+        try {
+          this.player.pause();
+          this.player.remove();
+        } catch {}
+        this.player = null;
       }
 
-      const { sound } = await Audio.Sound.createAsync(require('@/assets/sounds/ringtone.wav'), {
-        isLooping: true,
-        volume: 1.0,
-      });
-      this.sound = sound;
+      const player = createAudioPlayer(require('@/assets/sounds/ringtone.wav'));
+      player.loop = true;
+      player.volume = 1.0;
+      this.player = player;
+
       if (this.isPlaying) {
-        await sound.playAsync();
+        player.play();
       } else {
-        await sound.unloadAsync().catch(() => {});
-        this.sound = null;
+        player.pause();
+        player.remove();
+        this.player = null;
       }
     } catch (e) {
-      console.warn('[RingtoneService] expo-av playback error:', e);
+      console.warn('[RingtoneService] expo-audio playback error:', e);
     }
   }
 
@@ -69,12 +73,12 @@ class RingtoneService {
         this.webAudio.currentTime = 0;
       } catch {}
     }
-    if (this.sound) {
+    if (this.player) {
       try {
-        await this.sound.stopAsync().catch(() => {});
-        await this.sound.unloadAsync().catch(() => {});
+        this.player.pause();
+        this.player.remove();
       } catch {}
-      this.sound = null;
+      this.player = null;
     }
   }
 }
