@@ -191,12 +191,16 @@ export function useServices() {
 // ─── Jobs (Customer & Helper) ──────────────────────────────────────────────────
 
 export function useMyJobs(status?: string) {
+  const isAuth = useAuthStore(s => s.isAuthenticated);
   return useQuery({
     queryKey: ['jobs', 'my', status],
     queryFn: async () => {
       const { data } = await apiClient.get('/jobs/my', { params: { status } });
       return data.data;
     },
+    // Khách chưa đăng nhập: không gọi API (sẽ 401) — màn hình chính của khách
+    // hiển thị nội dung công khai, không cần danh sách đơn của mình.
+    enabled: !!isAuth,
   });
 }
 

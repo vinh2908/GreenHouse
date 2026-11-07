@@ -264,6 +264,7 @@ export default function CustomerHomeScreen() {
   const { t, tService, fs, lang, textScale, formatVoucherDesc } = useTranslation();
   const tc = useThemeColors();
   const storedUser = useAuthStore(s => s.user);
+  const isAuth = useAuthStore(s => s.isAuthenticated);
   const { data: profile, refetch: refetchProfile } = useMyProfile();
   const user = profile ?? storedUser;
   const { data: services, isError: sError, refetch: refetchServices } = useServices();
@@ -1415,7 +1416,7 @@ export default function CustomerHomeScreen() {
           </View>
         </View>
 
-        {sError || jError ? (
+        {sError || (isAuth && jError) ? (
           <View
             style={{
               padding: 24,
