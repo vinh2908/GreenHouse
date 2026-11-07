@@ -318,6 +318,9 @@ export class Job {
   @Prop()
   expires_at?: Date;
 
+  @Prop({ type: [{ type: Types.ObjectId, ref: 'User' }], default: [] })
+  rejected_helper_ids?: Types.ObjectId[];
+
   @Prop({ default: false })
   expiry_reminder_sent?: boolean;
 
