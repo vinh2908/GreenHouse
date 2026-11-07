@@ -3,6 +3,7 @@
 // server mới chạy ghép Hungarian + phát sóng tìm thợ thay. Chọn "Hủy đơn" →
 // hủy theo chính sách SOS, hoàn tiền 100%, thợ không bị phạt. Quá hạn không
 // quyết định → server xử lý theo mặc định cấu hình (mặc định: hủy + hoàn tiền).
+import { useEffect } from 'react';
 import { Modal, View, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { AlertTriangle } from 'lucide-react-native';
 import Toast from 'react-native-toast-message';
@@ -22,10 +23,25 @@ export function SosCustomerDecisionPopup() {
   const { t, tService, fs, lang } = useTranslation();
   const tc = useThemeColors();
 
+  const remainingMs = decision?.decision_expires_at_ms
+    ? decision.decision_expires_at_ms - now
+    : 0;
+  const expired = decision?.decision_expires_at_ms ? remainingMs <= 0 : false;
+
+  // S2: local auto-dismiss after expiry. The server still applies the
+  // default policy, but if the SOS_BACKUP_EXPIRED socket event is missed
+  // while the app stays foreground, this timer guarantees the modal can
+  // never block the screen indefinitely. 10s grace so the user can read
+  // the "system processing" note before it closes.
+  // (Hook placed before the early return — hooks must not be conditional.)
+  useEffect(() => {
+    if (!decision || !expired) return;
+    const t = setTimeout(() => clearDecision(), 10_000);
+    return () => clearTimeout(t);
+  }, [decision, expired, clearDecision]);
+
   if (!decision) return null;
 
-  const remainingMs = decision.decision_expires_at_ms ? decision.decision_expires_at_ms - now : 0;
-  const expired = decision.decision_expires_at_ms ? remainingMs <= 0 : false;
   const reasonKey = decision.reason ?? 'other';
   const reasonLabel =
     SOS_BACKUP_REASONS_I18N[reasonKey]?.[lang] ??

@@ -30,6 +30,7 @@ import {
 } from 'lucide-react-native';
 import Toast from 'react-native-toast-message';
 import { useCreateSosJob } from '@/hooks/use-api';
+import { useAuthStore } from '@/stores/auth.store';
 import { lightImpact } from '@/services/haptics';
 import { useTranslation } from '@/hooks/use-i18n';
 import { locationService, parseVietnameseAddress } from '@/services/location.service';
@@ -76,6 +77,13 @@ export default function SosScreen() {
   const { t, fs, lang } = useTranslation();
   const tc = useThemeColors();
   const createSos = useCreateSosJob();
+  // P1-17: SOS is for signed-in customers only — guests are sent to login
+  // on entry instead of filling the form and failing with a 401 at submit.
+  const isAuth = useAuthStore(s => s.isAuthenticated);
+  const isAuthLoading = useAuthStore(s => s.isLoading);
+  useEffect(() => {
+    if (!isAuthLoading && !isAuth) router.replace('/(auth)/login');
+  }, [isAuthLoading, isAuth]);
 
   const sosCategories = [
     {
@@ -135,11 +143,9 @@ export default function SosScreen() {
     city: '',
     coordinates: [0, 0] as [number, number],
   });
-  const [description, setDescription] = useState(
-    lang === 'en'
-      ? 'Emergency incident requiring immediate helper dispatch!'
-      : 'Sự cố khẩn cấp cần thợ có mặt xử lý ngay lập tức!',
-  );
+  // P1-16: the customer describes the emergency in their own words; the
+  // backend stores it as the job description (CreateSosJobDto.description).
+  const [description, setDescription] = useState('');
   const [isLocating, setIsLocating] = useState(false);
   const [isEditingAddress, setIsEditingAddress] = useState(false);
 
@@ -178,6 +184,8 @@ export default function SosScreen() {
   };
 
   const selectedCatObj = sosCategories.find(c => c.id === selectedCategory) || sosCategories[0];
+
+  if (isAuthLoading || !isAuth) return <LoadingSpinner />;
   const surcharge = 100000;
   const baseCost = 200000;
   const totalEstimate = baseCost + surcharge;
@@ -193,7 +201,7 @@ export default function SosScreen() {
       const res = await createSos.mutateAsync({
         category: selectedCategory,
         title: selectedCatObj.name,
-        description: description,
+        description: description.trim(),
         address: {
           full_address: address.full_address,
           ward: address.ward,
@@ -211,8 +219,8 @@ export default function SosScreen() {
         text1: lang === 'en' ? 'SOS Emergency Signal Sent!' : 'Đã phát tín hiệu cứu hộ SOS!',
         text2:
           lang === 'en'
-            ? 'The system is dispatching nearest helpers to arrive within 15 minutes.'
-            : 'Hệ thống đang điều phối các thợ gần nhất có mặt sau 15 phút.',
+            ? 'Verified online helpers have been notified. Target arrival: within 15 minutes.'
+            : 'Đã thông báo tới các thợ online đã xác minh. Mục tiêu có mặt: trong 15 phút.',
       });
 
       if (newJobId) {
@@ -229,6 +237,17 @@ export default function SosScreen() {
   };
 
   const handleSendSos = () => {
+    if (!description.trim()) {
+      Toast.show({
+        type: 'error',
+        text1: lang === 'en' ? 'Describe the emergency' : 'Mô tả sự cố khẩn cấp',
+        text2:
+          lang === 'en'
+            ? 'Please describe what happened so the helper knows what to bring.'
+            : 'Vui lòng mô tả sự cố để thợ biết cần mang theo dụng cụ gì.',
+      });
+      return;
+    }
     if (
       !address.full_address.trim() ||
       (address.coordinates[0] === 0 && address.coordinates[1] === 0)
@@ -595,6 +614,35 @@ export default function SosScreen() {
                 </View>
               </View>
             )}
+          </Card>
+
+          {/* ── 2b. MÔ TẢ SỰ CỐ (P1-16) ─────────────────────────────────── */}
+          <Card style={{ padding: 16, gap: 8 }}>
+            <Text style={{ fontSize: fs(15), fontWeight: '800', color: tc.text }}>
+              {lang === 'en' ? 'Describe the emergency' : 'Mô tả sự cố'}
+            </Text>
+            <TextInput
+              style={{
+                borderWidth: 1.5,
+                borderColor: COLORS.primary,
+                borderRadius: 8,
+                padding: 12,
+                fontSize: fs(14),
+                color: tc.text,
+                backgroundColor: tc.surface,
+                minHeight: 84,
+                textAlignVertical: 'top',
+              }}
+              placeholder={
+                lang === 'en'
+                  ? 'E.g. socket sparking and burning smell in the living room, power tripped...'
+                  : 'VD: ổ cắm tóe lửa, có mùi khét ở phòng khách, aptomat đã nhảy...'
+              }
+              value={description}
+              onChangeText={setDescription}
+              multiline
+              placeholderTextColor={COLORS.gray[400]}
+            />
           </Card>
 
           {/* ── 3. CHI PHÍ SOS & CAM KẾT THỜI GIAN ──────────────────────── */}

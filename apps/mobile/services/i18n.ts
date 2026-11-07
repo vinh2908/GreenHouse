@@ -109,6 +109,7 @@ export const STRINGS = {
   status_cancelled: { vi: 'Đã hủy', en: 'Cancelled' },
   status_disputed: { vi: 'Đang tranh chấp', en: 'Disputed' },
   status_refunded: { vi: 'Đã hoàn tiền', en: 'Refunded' },
+  status_expired: { vi: 'Hết hạn', en: 'Expired' },
 
   // ─── Customer jobs ────────────────────────────────────────────────────────
   jobs_title: { vi: 'Quản lý đơn hàng', en: 'My jobs' },
@@ -121,6 +122,7 @@ export const STRINGS = {
   jobs_tab_working: { vi: 'Đang làm', en: 'In progress' },
   jobs_tab_review: { vi: 'Nghiệm thu / Khiếu nại', en: 'Review / Disputes' },
   jobs_tab_done: { vi: 'Hoàn thành / Hoàn tiền', en: 'Completed / Refunded' },
+  jobs_tab_expired: { vi: 'Hết hạn', en: 'Expired' },
   jobs_tab_cancelled: { vi: 'Đã hủy', en: 'Cancelled' },
   jobs_empty_title: { vi: 'Không có đơn hàng nào', en: 'No jobs here' },
   jobs_empty_sub_all: {

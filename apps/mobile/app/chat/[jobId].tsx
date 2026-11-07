@@ -231,7 +231,17 @@ export default function ChatScreen() {
 
   // Fetch or create conversation by job
   useEffect(() => {
-    if (!jobId) return;
+    // S6: no jobId (e.g. deep link / deleted job) — clear the skeleton and
+    // show the "unavailable" state instead of spinning forever.
+    if (!jobId) {
+      setLoadingConv(false);
+      setErrorMsg(
+        lang === 'en'
+          ? 'Conversation unavailable — the job for this chat no longer exists.'
+          : 'Cuộc trò chuyện không còn khả dụng — đơn hàng của đoạn chat này không còn tồn tại.',
+      );
+      return;
+    }
     setLoadingConv(true);
     setErrorMsg(null);
     apiClient
