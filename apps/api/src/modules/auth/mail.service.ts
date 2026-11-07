@@ -29,6 +29,11 @@ export class MailService {
           user,
           pass,
         },
+        // Domain sai / DNS chết không được treo request mãi: fail nhanh để
+        // API trả lỗi rõ (502) thay vì app xoay vòng đến hết timeout 35s.
+        connectionTimeout: 10_000,
+        greetingTimeout: 10_000,
+        socketTimeout: 15_000,
       });
       this.logger.log(`Khởi tạo Gmail SMTP transporter thành công cho tài khoản ${user}`);
     } catch (err: any) {
@@ -82,13 +87,20 @@ export class MailService {
     }
 
     try {
-      const info = await this.transporter.sendMail({
+      // Hạn mức cứng 15s cho cả quá trình gửi: kể cả khi DNS/MX của domain
+      // nhận treo (vd gõ sai gmail thành gmai.com) thì request vẫn fail nhanh
+      // thay vì treo vô hạn. sendMail dở dang (nếu có) tự hủy theo timeout.
+      const sendPromise = this.transporter.sendMail({
         from: `"GreenHouse" <${process.env.GMAIL_USER}>`,
         to: toEmail,
         subject,
         text,
         html,
       });
+      const timeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('SMTP send timeout (15s)')), 15_000),
+      );
+      const info = await Promise.race([sendPromise, timeoutPromise]);
       this.logger.log(`OTP email sent to ${toEmail} (messageId: ${info?.messageId})`);
       return true;
     } catch (err: any) {
