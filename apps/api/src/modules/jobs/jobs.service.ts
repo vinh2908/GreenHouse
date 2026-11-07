@@ -798,7 +798,7 @@ export class JobsService implements OnModuleInit {
     ) {
       const [sh, sm] = dto.preferred_time_start.trim().split(':').map(Number);
       const startMin = sh * 60 + sm;
-      if (startMin < 7 * 60 || startMin >= 22 * 60) {
+      if (startMin < 7 * 60 || startMin > 22 * 60) {
         throw new BadRequestException(
           'Giờ làm việc phải trong khung 07:00–22:00. Vui lòng chọn giờ bắt đầu trong khung giờ này.',
         );
@@ -2111,7 +2111,7 @@ export class JobsService implements OnModuleInit {
     if (job.preferred_time_start && /^\d{1,2}:\d{2}$/.test(job.preferred_time_start.trim())) {
       const [sh, sm] = job.preferred_time_start.trim().split(':').map(Number);
       const startMin = sh * 60 + sm;
-      if (startMin < 7 * 60 || startMin >= 22 * 60) {
+      if (startMin < 7 * 60 || startMin > 22 * 60) {
         throw new BadRequestException(
           'Giờ làm việc phải trong khung 07:00–22:00. Vui lòng cập nhật lại thời gian trước khi chọn thợ.',
         );

@@ -136,4 +136,31 @@ describe('JobsService.selectQuote (B58)', () => {
       } as never),
     ).rejects.toThrow('Quote không tồn tại');
   });
+
+  it('H4 (G3): chọn báo giá cho đơn đặt lúc 22:00 → qua được bước kiểm tra giờ', async () => {
+    const { customerId, jobId } = mockJob('22:00');
+    await expect(
+      service.selectQuote(String(customerId), String(jobId), {
+        quote_id: new Types.ObjectId().toHexString(),
+      } as never),
+    ).rejects.toThrow('Quote không tồn tại');
+  });
+
+  it('H4 (G3): chọn báo giá cho đơn đặt lúc 22:01 → 400', async () => {
+    const { customerId, jobId } = mockJob('22:01');
+    await expect(
+      service.selectQuote(String(customerId), String(jobId), {
+        quote_id: new Types.ObjectId().toHexString(),
+      } as never),
+    ).rejects.toThrow('Giờ làm việc phải trong khung 07:00–22:00');
+  });
+
+  it('H4 (G3): chọn báo giá cho đơn đặt lúc 06:59 → 400', async () => {
+    const { customerId, jobId } = mockJob('06:59');
+    await expect(
+      service.selectQuote(String(customerId), String(jobId), {
+        quote_id: new Types.ObjectId().toHexString(),
+      } as never),
+    ).rejects.toThrow('Giờ làm việc phải trong khung 07:00–22:00');
+  });
 });
