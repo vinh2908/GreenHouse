@@ -116,4 +116,38 @@ describe('JobsService.createJob (B62)', () => {
     expect(err).toBeDefined();
     expect(err.message).not.toContain('07:00–22:00');
   });
+
+  it('H4 (G3): giờ bắt đầu 22:00 đúng → qua được gate giờ làm việc (lỗi sau đó không phải lỗi giờ)', async () => {
+    const service = makeService();
+    let err: any;
+    try {
+      const d: any = dto({ full_address: '12 Nguyễn Văn Linh, Đà Nẵng' }, '22:00');
+      d.preferred_time_end = '23:00';
+      await service.createJob(String(customerId), d);
+    } catch (e) {
+      err = e;
+    }
+    expect(err).toBeDefined();
+    expect(err.message).not.toContain('07:00–22:00');
+  });
+
+  it('H4 (G3): giờ bắt đầu 22:01 → 400 khung 07:00–22:00', async () => {
+    const service = makeService();
+    await expect(
+      service.createJob(
+        String(customerId),
+        dto({ full_address: '12 Nguyễn Văn Linh, Đà Nẵng' }, '22:01'),
+      ),
+    ).rejects.toThrow('07:00–22:00');
+  });
+
+  it('H4 (G3): giờ bắt đầu 06:59 → 400 khung 07:00–22:00', async () => {
+    const service = makeService();
+    await expect(
+      service.createJob(
+        String(customerId),
+        dto({ full_address: '12 Nguyễn Văn Linh, Đà Nẵng' }, '06:59'),
+      ),
+    ).rejects.toThrow('07:00–22:00');
+  });
 });
