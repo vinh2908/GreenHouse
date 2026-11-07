@@ -121,9 +121,10 @@ describe('PaymentsService - H5 atomic deductCommissionForCashJob', () => {
 
     const tx: any = await service.deductCommissionForCashJob(helperId, jobId, 50_000, 450_000);
 
-    expect(tx.amount).toBe(50_000);
+    expect(tx.amount).toBe(30_000); // P2-14: ghi số tiền ĐÃ TRỪ, phí đầy đủ nằm ở metadata.platform_fee
     expect(tx.balance_before).toBe(30_000);
     expect(tx.balance_after).toBe(0);
+    expect(tx.metadata.platform_fee).toBe(50_000);
     expect(tx.metadata.unpaid_fee).toBe(20_000);
     expect(balance).toBe(0);
   });

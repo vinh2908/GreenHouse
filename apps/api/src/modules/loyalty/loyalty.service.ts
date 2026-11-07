@@ -6,6 +6,7 @@ import {
   ForbiddenException,
   Inject,
   forwardRef,
+  Optional,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectModel } from '@nestjs/mongoose';
@@ -18,6 +19,7 @@ import {
   LoyaltyTier,
 } from './schemas/loyalty.schema';
 import { Job, JobDocument, Contract, ContractDocument } from '../jobs/schemas/job.schema';
+import { Voucher, VoucherDocument } from '../vouchers/schemas/voucher.schema';
 import { PaymentStatus } from '@homemate/types';
 import {
   LOYALTY_EARN_VND_PER_POINT,
@@ -63,6 +65,10 @@ export class LoyaltyService {
     private readonly configService: ConfigService,
     @Inject(forwardRef(() => NotificationsService))
     private readonly notificationsService: NotificationsService,
+    // P1-24: đọc voucher gắn trên job để tính cap theo giá SAU voucher.
+    // Chỉ inject model (schema đăng ký trực tiếp như Job/Contract), KHÔNG
+    // import VouchersModule — tránh circular (xem LoyaltyModule).
+    @Optional() @InjectModel(Voucher.name) private voucherModel?: Model<VoucherDocument>,
   ) {}
 
   // ─── Hằng số (env override) ────────────────────────────────────────────────
@@ -106,6 +112,45 @@ export class LoyaltyService {
     if (lifetimePoints < LOYALTY_TIER_SILVER_POINTS) return LOYALTY_TIER_SILVER_POINTS;
     if (lifetimePoints < LOYALTY_TIER_GOLD_POINTS) return LOYALTY_TIER_GOLD_POINTS;
     return null; // Đã ở hạng cao nhất
+  }
+
+  /**
+   * P1-24: số tiền voucher sẽ giảm cho đơn này, tính từ job.voucher_code
+   * (voucher gắn trước khi thanh toán). job.discount_amount chỉ được ghi ở
+   * thời điểm thanh toán nên lúc apply điểm nó luôn là 0 — dùng nó làm
+   * voucherDiscount sẽ tính cap trên toàn bộ giá và cho phép vượt cap khi
+   * voucher + điểm kết hợp. Chỉ tính khi voucher còn hiệu lực tại thời điểm
+   * gọi (hết hạn/chưa tới hạn/không đạt min-order → 0, đúng như lúc thanh
+   * toán redeemForJob sẽ chặn). Công thức giống VouchersService.computeDiscount.
+   */
+  private async pendingVoucherDiscount(job: JobDocument, contractTotal: number): Promise<number> {
+    if (!job.voucher_code || !this.voucherModel) return 0;
+    const voucher = await this.voucherModel
+      .findOne({ code: String(job.voucher_code).trim().toUpperCase() })
+      .exec();
+    if (!voucher || !voucher.is_active) return 0;
+    const now = new Date();
+    if (voucher.valid_from && now < new Date(voucher.valid_from)) return 0;
+    if (voucher.valid_to && now > new Date(voucher.valid_to)) return 0;
+    if (contractTotal < (voucher.min_order_amount ?? 0)) return 0;
+    if (voucher.discount_type === 'percent') {
+      let discount = Math.floor((contractTotal * voucher.discount_value) / 100);
+      if (voucher.max_discount_amount && voucher.max_discount_amount > 0) {
+        discount = Math.min(discount, voucher.max_discount_amount);
+      }
+      return Math.min(discount, contractTotal);
+    }
+    return Math.min(voucher.discount_value, contractTotal);
+  }
+
+  /** Cap điểm tối đa (quy ra điểm) cho 1 giá trị đơn còn lại sau voucher. */
+  private maxPointsForRemaining(
+    remainingAfterVoucher: number,
+    capPercent: number,
+  ): number {
+    const capAmount = Math.floor((remainingAfterVoucher * capPercent) / 100);
+    const maxDiscountAllowed = Math.min(capAmount, remainingAfterVoucher);
+    return Math.floor(maxDiscountAllowed / this.pointValueVnd());
   }
 
   // ─── Tài khoản ─────────────────────────────────────────────────────────────
@@ -258,7 +303,9 @@ export class LoyaltyService {
       );
     }
 
-    const voucherDiscount = job.discount_amount ?? 0;
+    // P1-24: cap tính trên giá CÒN LẠI SAU VOUCHER — voucher gắn trên job
+    // nhưng chưa tới lúc thanh toán nên job.discount_amount vẫn là 0.
+    const voucherDiscount = await this.pendingVoucherDiscount(job, contract.total_price);
     const remainingAfterVoucher = Math.max(0, contract.total_price - voucherDiscount);
     if (remainingAfterVoucher <= 0) {
       throw new BadRequestException(
@@ -266,11 +313,10 @@ export class LoyaltyService {
       );
     }
 
-    const capAmount = Math.floor(
-      (remainingAfterVoucher * accountInfo.redemption_cap_percent) / 100,
+    const maxPointsByCap = this.maxPointsForRemaining(
+      remainingAfterVoucher,
+      accountInfo.redemption_cap_percent,
     );
-    const maxDiscountAllowed = Math.min(capAmount, remainingAfterVoucher);
-    const maxPointsByCap = Math.floor(maxDiscountAllowed / this.pointValueVnd());
     if (maxPointsByCap < minRedeem) {
       throw new BadRequestException(
         `Đơn này chỉ cho phép dùng tối đa ${maxPointsByCap} điểm (hạng ${accountInfo.tier_label}: tối đa ${accountInfo.redemption_cap_percent}% số tiền còn lại sau voucher) — chưa đạt mức tối thiểu ${minRedeem} điểm`,
@@ -329,6 +375,26 @@ export class LoyaltyService {
     const requested = job.loyalty_points_requested ?? 0;
     const discountAmount = job.loyalty_discount_amount ?? 0;
     if (requested <= 0 || discountAmount <= 0) return null;
+
+    // P1-24: tái kiểm tra cap tại thời điểm thanh toán — voucher có thể đã
+    // được gắn SAU khi điểm được apply (attachToJob xóa snapshot điểm cũ,
+    // nhưng snapshot cũ vẫn có thể tồn tại từ trước bản sửa này, hoặc điểm
+    // được apply rồi voucher mới gắn). Vượt cap → chặn thanh toán, khách gỡ
+    // điểm rồi áp lại theo cap mới thay vì âm thầm trừ quá mức cho phép.
+    const contract = await this.contractModel
+      .findOne({ job_id: new Types.ObjectId(jobId) })
+      .exec();
+    if (contract?.total_price) {
+      const voucherDiscount = await this.pendingVoucherDiscount(job, contract.total_price);
+      const remaining = Math.max(0, contract.total_price - voucherDiscount);
+      const account = await this.getAccount(customerId);
+      const maxPoints = this.maxPointsForRemaining(remaining, account.redemption_cap_percent);
+      if (requested > maxPoints) {
+        throw new BadRequestException(
+          `Số điểm đã gắn (${requested}) vượt mức tối đa ${maxPoints} điểm cho đơn này (hạng ${account.tier_label}: tối đa ${account.redemption_cap_percent}% số tiền còn lại ${remaining.toLocaleString('vi-VN')}₫ sau voucher). Vui lòng gỡ điểm khỏi đơn rồi áp lại.`,
+        );
+      }
+    }
 
     const existing = await this.txModel
       .findOne({

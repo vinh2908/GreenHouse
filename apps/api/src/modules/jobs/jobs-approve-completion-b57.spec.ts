@@ -82,6 +82,8 @@ describe('JobsService.approveCompletion (B57)', () => {
             creditHelper: jest.fn().mockResolvedValue({}),
             deductCommissionForCashJob: jest.fn().mockResolvedValue({}),
             deductWallet: jest.fn().mockResolvedValue({}),
+            // P0-2: payout chỉ giải ngân khi có thanh toán ví thật đã xác minh.
+            hasVerifiedWalletPayment: jest.fn().mockResolvedValue(true),
           },
         },
         { provide: RoutingService, useValue: {} },
@@ -105,7 +107,7 @@ describe('JobsService.approveCompletion (B57)', () => {
       helper_id: helperId,
       status: JobStatus.PENDING_REVIEW,
       payment_status: PaymentStatus.PAID,
-      payment_method: 'vietqr',
+      payment_method: 'wallet',
       title: 'Dọn nhà',
       completion_photos: completionPhotos,
       events: [],

@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, RefreshControl } from 'react-native';
 import { formatDateTime } from '@/utils/date-format';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -5,7 +6,7 @@ import { useRouter } from 'expo-router';
 import { ArrowLeft, Star, Gift, Wrench } from 'lucide-react-native';
 import dayjs from 'dayjs';
 import { useLoyaltyAccount, useLoyaltyHistory } from '@/hooks/use-api';
-import { Card, COLORS, EmptyState, LoadingSpinner, Separator, useThemeColors } from '@/components/ui';
+import { Card, COLORS, EmptyState, ErrorState, LoadingSpinner, Separator, useThemeColors } from '@/components/ui';
 import { useTranslation } from '@/hooks/use-i18n';
 
 export default function LoyaltyScreen() {
@@ -42,16 +43,30 @@ export default function LoyaltyScreen() {
   const {
     data: account,
     isLoading,
+    isError: isAccountError,
     refetch: refetchAccount,
     isRefetching: isRefetchingAccount,
   } = useLoyaltyAccount();
+  const [historyPage, setHistoryPage] = useState(1);
   const {
     data: history,
+    isError: isHistoryError,
     refetch: refetchHistory,
     isRefetching: isRefetchingHistory,
-  } = useLoyaltyHistory(1, 30);
+  } = useLoyaltyHistory(historyPage, 30);
+  // P2-20: accumulate loaded pages so entries beyond page 1 are reachable.
+  const [allHistory, setAllHistory] = useState<any[]>([]);
+  useEffect(() => {
+    if (!history?.transactions) return;
+    setAllHistory(prev => {
+      if (historyPage === 1) return history.transactions;
+      const seen = new Set(prev.map((t: any) => t._id));
+      return [...prev, ...history.transactions.filter((t: any) => !seen.has(t._id))];
+    });
+  }, [history, historyPage]);
 
   const handleRefresh = async () => {
+    setHistoryPage(1);
     await Promise.all([refetchAccount(), refetchHistory()]);
   };
 
@@ -61,6 +76,32 @@ export default function LoyaltyScreen() {
   };
 
   if (isLoading) return <LoadingSpinner />;
+
+  // P1-27: never render "0 points" when the fetch failed — a failed fetch
+  // is indistinguishable from a genuine zero, so show an error + retry.
+  if (isAccountError && !account) {
+    return (
+      <View
+        style={{
+          flex: 1,
+          backgroundColor: tc.background,
+          justifyContent: 'center',
+          alignItems: 'center',
+          padding: 24,
+        }}
+      >
+        <ErrorState
+          title={lang === 'en' ? 'Unable to load loyalty points' : 'Không thể tải điểm thưởng'}
+          subtitle={
+            lang === 'en'
+              ? 'Could not connect to the server. Your points are not 0 — please retry.'
+              : 'Không thể kết nối máy chủ. Điểm của bạn không phải là 0 — vui lòng thử lại.'
+          }
+          onRetry={handleRefresh}
+        />
+      </View>
+    );
+  }
 
   const progress =
     account && account.next_tier_at
@@ -177,7 +218,19 @@ export default function LoyaltyScreen() {
           >
             {t('loyalty_history_title')}
           </Text>
-          {!history?.transactions?.length ? (
+          {isHistoryError ? (
+            <ErrorState
+              title={
+                lang === 'en' ? 'Unable to load point history' : 'Không thể tải lịch sử điểm'
+              }
+              subtitle={
+                lang === 'en'
+                  ? 'Could not connect to the server. Please retry.'
+                  : 'Không thể kết nối máy chủ. Vui lòng thử lại.'
+              }
+              onRetry={() => refetchHistory()}
+            />
+          ) : !allHistory.length ? (
             <EmptyState
               icon={<Star size={36} color={COLORS.gray[400]} />}
               title={t('loyalty_history_empty_title')}
@@ -185,7 +238,7 @@ export default function LoyaltyScreen() {
             />
           ) : (
             <Card style={{ gap: 0 }}>
-              {history.transactions.map((tx, i) => {
+              {allHistory.map((tx, i) => {
                 const positive = tx.points > 0;
                 return (
                   <View key={tx._id}>
@@ -238,6 +291,33 @@ export default function LoyaltyScreen() {
                 );
               })}
             </Card>
+          )}
+          {/* P2-20: load older loyalty history (server already paginates) */}
+          {history && historyPage < (history.total_pages ?? 1) && (
+            <TouchableOpacity
+              activeOpacity={0.7}
+              disabled={isRefetchingHistory}
+              onPress={() => setHistoryPage(p => p + 1)}
+              style={{
+                marginTop: 12,
+                paddingVertical: 12,
+                borderRadius: 10,
+                backgroundColor: tc.surface,
+                borderWidth: 1,
+                borderColor: tc.border,
+                alignItems: 'center',
+              }}
+            >
+              <Text style={{ fontWeight: '800', fontSize: fs(14), color: COLORS.primary }}>
+                {isRefetchingHistory
+                  ? lang === 'en'
+                    ? 'Loading…'
+                    : 'Đang tải…'
+                  : lang === 'en'
+                    ? 'Load more history'
+                    : 'Xem thêm lịch sử'}
+              </Text>
+            </TouchableOpacity>
           )}
         </View>
       </ScrollView>
