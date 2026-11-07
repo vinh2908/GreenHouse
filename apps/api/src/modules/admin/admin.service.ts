@@ -40,6 +40,7 @@ import {
   pruneCancellationTimestamps,
   HelperScoreResult,
 } from '../helpers/utils/helper-score';
+import { maskHelperBankAccount } from '../helpers/utils/mask-bank-account';
 import {
   ContractStatus,
   HelperStatus,
@@ -399,7 +400,7 @@ export class AdminService {
     return { helpers, total, page, limit, total_pages: Math.ceil(total / limit) };
   }
 
-  async approveKyc(userId: string): Promise<HelperProfileDocument> {
+  async approveKyc(userId: string): Promise<any> {
     const query = Types.ObjectId.isValid(userId)
       ? { $or: [{ user_id: new Types.ObjectId(userId) }, { _id: new Types.ObjectId(userId) }] }
       : { user_id: userId };
@@ -425,10 +426,11 @@ export class AdminService {
       title: 'Hồ sơ e-KYC đã được duyệt',
       body: 'Bạn đã có thể bật trạng thái sẵn sàng và gửi báo giá cho khách hàng.',
     });
-    return saved;
+    // G4 (F8): che số tài khoản như HelpersService — không trả số đầy đủ.
+    return maskHelperBankAccount(saved);
   }
 
-  async rejectKyc(userId: string, reason: string): Promise<HelperProfileDocument> {
+  async rejectKyc(userId: string, reason: string): Promise<any> {
     const query = Types.ObjectId.isValid(userId)
       ? { $or: [{ user_id: new Types.ObjectId(userId) }, { _id: new Types.ObjectId(userId) }] }
       : { user_id: userId };
@@ -451,7 +453,8 @@ export class AdminService {
       // B104: bấm thông báo mở đúng màn nộp lại e-KYC
       payload: { screen: 'kyc', route: '/kyc', reason },
     });
-    return saved;
+    // G4 (F8): che số tài khoản như HelpersService — không trả số đầy đủ.
+    return maskHelperBankAccount(saved);
   }
 
   // ─── Jobs ─────────────────────────────────────────────────────────────────

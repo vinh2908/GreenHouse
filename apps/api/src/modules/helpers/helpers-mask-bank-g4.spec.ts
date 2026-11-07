@@ -5,6 +5,8 @@ import { HelperStatus, VerificationStatus } from '@homemate/types';
 /**
  * Spec G4 (F8): PATCH /helpers/me/status và POST /helpers/me/kyc phải che
  * số tài khoản (****1234) như GET/PATCH me/profile đã làm.
+ * H9: approveKyc/rejectKyc (HelpersService) cũng phải che — trước đây trả
+ * profile.save() thô, gồm bank_account đầy đủ.
  */
 describe('HelpersService - G4 mask bank account on setStatus/submitKyc', () => {
   const FULL_ACCOUNT = '1234567890';
@@ -43,6 +45,8 @@ describe('HelpersService - G4 mask bank account on setStatus/submitKyc', () => {
   function makeService(profile: any) {
     const helperModel: any = {
       findOneAndUpdate: jest.fn(() => ({ exec: async () => profile })),
+      // approveKyc/rejectKyc dùng findOne(...).exec()
+      findOne: jest.fn(() => ({ exec: async () => profile })),
     };
     const gateway: any = { broadcastHelperStatus: jest.fn() };
     const matchingService: any = { notifyNewSuitableHelper: jest.fn() };
@@ -77,5 +81,34 @@ describe('HelpersService - G4 mask bank account on setStatus/submitKyc', () => {
     expect(result.bank_account.account_number).toBe('****7890');
     expect(JSON.stringify(result)).not.toContain(FULL_ACCOUNT);
     expect(result.verification_status).toBe(VerificationStatus.PENDING);
+  });
+
+  it('approveKyc → số TK hiện ****7890, không còn số đầy đủ', async () => {
+    const profile = makeProfile({
+      verification_status: VerificationStatus.PENDING,
+      id_card_front: 'https://x/front.jpg',
+      id_card_back: 'https://x/back.jpg',
+      selfie_photo: 'https://x/selfie.jpg',
+    });
+    const { service } = makeService(profile);
+
+    const result = await service.approveKyc(String(profile.user_id));
+
+    expect(result.bank_account.account_number).toBe('****7890');
+    expect(JSON.stringify(result)).not.toContain(FULL_ACCOUNT);
+    expect(result.verification_status).toBe(VerificationStatus.APPROVED);
+    expect(result.verified_at).toBeDefined();
+  });
+
+  it('rejectKyc → số TK hiện ****7890, không còn số đầy đủ', async () => {
+    const profile = makeProfile({ verification_status: VerificationStatus.PENDING });
+    const { service } = makeService(profile);
+
+    const result = await service.rejectKyc(String(profile.user_id), 'Ảnh CCCD bị mờ');
+
+    expect(result.bank_account.account_number).toBe('****7890');
+    expect(JSON.stringify(result)).not.toContain(FULL_ACCOUNT);
+    expect(result.verification_status).toBe(VerificationStatus.REJECTED);
+    expect(result.rejection_reason).toBe('Ảnh CCCD bị mờ');
   });
 });
