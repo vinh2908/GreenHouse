@@ -86,6 +86,7 @@ import { locationService } from '@/services/location.service';
 import { useMatchingSuggestionSocket } from '@/hooks/use-socket';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LocationPicker, PickerCoords } from '@/components/common/location-picker';
+import { VerificationBanner } from '@/components/common/verification-banner';
 import { Avatar, COLORS, ErrorState, useThemeColors } from '@/components/ui';
 import { removeVietnameseDiacritics } from '@/utils/search';
 import dayjs from 'dayjs';
@@ -1213,6 +1214,9 @@ export default function CustomerHomeScreen() {
         }
         contentContainerStyle={{ paddingBottom: 130 }}
       >
+        {/* P0-7: banner xác minh email khi tài khoản chưa xác minh */}
+        <VerificationBanner />
+
         {/* ── 1. HEADER (Top Bar chuẩn Homepage Redesign Demo - Item 6 Nền Gradient) ─ */}
         <View
           style={{

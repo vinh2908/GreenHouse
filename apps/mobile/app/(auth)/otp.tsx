@@ -2,26 +2,34 @@ import { useState, useRef, useEffect } from 'react';
 import { View, Text, TouchableOpacity, TextInput } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Smartphone } from 'lucide-react-native';
 import Toast from 'react-native-toast-message';
 import { useAuthStore } from '@/stores/auth.store';
 import { useTranslation } from '@/hooks/use-i18n';
 import { useVerifyOtp, useResendOtp } from '@/hooks/use-api';
+import { mapAuthErrorMessage } from '@/services/i18n';
 import apiClient from '@/services/api-client';
 import { Button, COLORS, useThemeColors } from '@/components/ui';
 
 export default function OtpScreen() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { phone, email } = useLocalSearchParams<{ phone?: string; email?: string }>();
   const { t, fs, lang } = useTranslation();
   const tc = useThemeColors();
   const setAuth = useAuthStore(s => s.setAuth);
+  const setUser = useAuthStore(s => s.setUser);
 
   const verifyOtp = useVerifyOtp();
   const resendOtp = useResendOtp();
 
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [countdown, setCountdown] = useState(60);
+  // P2-19: cờ xác minh chung cho cả 2 nhánh (email gọi apiClient trực tiếp nên
+  // verifyOtp.isPending không phủ được) — chặn double-submit / auto-submit + tap.
+  const [verifying, setVerifying] = useState(false);
+  const [resending, setResending] = useState(false);
   const inputs = useRef<(TextInput | null)[]>([]);
 
   useEffect(() => {
@@ -51,9 +59,19 @@ export default function OtpScreen() {
       });
       return;
     }
+    // P2-19: chặn lần xác minh thứ 2 trong khi lần đầu đang bay (auto-submit
+    // khi đủ 6 số + bấm nút Xác nhận sẽ bắn trùng, lần 2 fail "OTP không đúng"
+    // dù lần 1 đã thành công).
+    if (verifying) return;
+    setVerifying(true);
     try {
       if (email) {
         await apiClient.post('/auth/verify-email', { email: email.trim(), otp: otpCode });
+        // P0-7: đồng bộ cờ xác minh vào store + cache profile để banner biến
+        // mất ngay, không chờ refetch.
+        const currentUser = useAuthStore.getState().user;
+        if (currentUser) setUser({ ...currentUser, is_verified: true });
+        queryClient.invalidateQueries({ queryKey: ['profile', 'me'] });
         Toast.show({
           type: 'success',
           text1: lang === 'en' ? 'Email verified successfully!' : 'Xác minh email thành công!',
@@ -76,17 +94,22 @@ export default function OtpScreen() {
         }
       }
     } catch (err: unknown) {
+      const rawMsg = (err as { response?: { data?: { message?: unknown } } })?.response?.data
+        ?.message;
       const msg =
-        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
+        mapAuthErrorMessage(rawMsg, lang) ??
         (lang === 'en' ? 'Invalid or expired OTP code' : 'Mã OTP không đúng hoặc đã hết hạn');
       Toast.show({ type: 'error', text1: msg });
       setOtp(['', '', '', '', '', '']);
       inputs.current[0]?.focus();
+    } finally {
+      setVerifying(false);
     }
   };
 
   const handleResend = async () => {
-    if (countdown > 0) return;
+    if (countdown > 0 || resending) return;
+    setResending(true);
     try {
       if (email) {
         await apiClient.post('/auth/verify-email/resend', { email: email.trim() });
@@ -95,11 +118,19 @@ export default function OtpScreen() {
       }
       setCountdown(60);
       Toast.show({ type: 'success', text1: lang === 'en' ? 'OTP resent' : 'Đã gửi lại OTP' });
-    } catch {
-      Toast.show({
-        type: 'error',
-        text1: lang === 'en' ? 'Failed to resend OTP' : 'Gửi lại OTP thất bại',
-      });
+    } catch (err: unknown) {
+      // P2-17: hiện lý do thật thay vì "Failed to resend OTP" chung chung —
+      // 429 (quá 5 lần/giờ) khóa nút tới hết khung 1 giờ, lỗi gửi mail thì
+      // giữ countdown = 0 để bấm thử lại ngay.
+      const res = (err as { response?: { status?: number; data?: { message?: unknown } } })
+        ?.response;
+      const msg =
+        mapAuthErrorMessage(res?.data?.message, lang) ??
+        (lang === 'en' ? 'Failed to resend OTP' : 'Gửi lại OTP thất bại');
+      if (res?.status === 429) setCountdown(3600);
+      Toast.show({ type: 'error', text1: msg });
+    } finally {
+      setResending(false);
     }
   };
 
@@ -227,7 +258,8 @@ export default function OtpScreen() {
 
         <Button
           title={lang === 'en' ? 'Confirm' : 'Xác nhận'}
-          loading={verifyOtp.isPending}
+          loading={verifyOtp.isPending || verifying}
+          disabled={verifying}
           onPress={() => handleVerify()}
         />
 
@@ -236,11 +268,20 @@ export default function OtpScreen() {
           {countdown > 0 ? (
             <Text style={{ color: tc.textMuted, fontSize: fs(14) }}>
               {lang === 'en' ? 'Resend in ' : 'Gửi lại sau '}
-              <Text style={{ color: COLORS.primary, fontWeight: '600' }}>{countdown}s</Text>
+              <Text style={{ color: COLORS.primary, fontWeight: '600' }}>
+                {countdown >= 120 ? `${Math.ceil(countdown / 60)} min` : `${countdown}s`}
+              </Text>
             </Text>
           ) : (
-            <TouchableOpacity onPress={handleResend}>
-              <Text style={{ color: COLORS.primary, fontWeight: '600', fontSize: fs(14) }}>
+            <TouchableOpacity onPress={handleResend} disabled={resending}>
+              <Text
+                style={{
+                  color: COLORS.primary,
+                  fontWeight: '600',
+                  fontSize: fs(14),
+                  opacity: resending ? 0.6 : 1,
+                }}
+              >
                 {lang === 'en' ? 'Resend OTP' : 'Gửi lại OTP'}
               </Text>
             </TouchableOpacity>
