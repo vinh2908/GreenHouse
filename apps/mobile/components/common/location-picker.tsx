@@ -137,6 +137,13 @@ const mapHtml = (
           });
           map.on('load', function() {
             addMountainFallbacks();
+            try {
+              if (window.ReactNativeWebView) {
+                window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'MAP_LOADED' }));
+              } else if (window.parent) {
+                window.parent.postMessage(JSON.stringify({ type: 'MAP_LOADED' }), '*');
+              }
+            } catch(e) {}
           });
 
           if (interactive) {
@@ -305,6 +312,7 @@ export function LocationPicker({
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<OsmPlace[]>([]);
   const [searching, setSearching] = useState(false);
+  const [mapLoading, setMapLoading] = useState(true);
 
   // Built once per opening so typing in the search box does not reload the map.
   const html = useMemo(
@@ -323,6 +331,7 @@ export function LocationPicker({
 
   useEffect(() => {
     if (!visible) return;
+    setMapLoading(true);
     setQuery('');
     setResults([]);
     setGeo(null);
@@ -353,6 +362,10 @@ export function LocationPicker({
     const handleWebMsg = (e: any) => {
       try {
         const data = typeof e.data === 'string' ? JSON.parse(e.data) : e.data;
+        if (data?.type === 'MAP_LOADED') {
+          setMapLoading(false);
+          return;
+        }
         if (data && typeof data.lat === 'number' && typeof data.lng === 'number') {
           pick({ latitude: data.lat, longitude: data.lng });
         }
@@ -453,11 +466,14 @@ export function LocationPicker({
         </View>
 
         {/* Map + search results overlay */}
-        <View style={{ flex: 1 }}>
+        <View style={{ flex: 1, position: 'relative' }}>
           {Platform.OS === 'web' ? (
             <iframe
               id="location-picker-web-iframe"
               srcDoc={html}
+              onLoad={() => {
+                setTimeout(() => setMapLoading(false), 800);
+              }}
               style={{ width: '100%', height: '100%', border: 'none' }}
               title="Location Picker Map"
             />
@@ -469,11 +485,18 @@ export function LocationPicker({
               javaScriptEnabled
               domStorageEnabled
               androidLayerType="hardware"
+              onLoadEnd={() => {
+                setTimeout(() => setMapLoading(false), 800);
+              }}
               onMessage={e => {
                 try {
-                  const { lat, lng } = JSON.parse(e.nativeEvent.data);
-                  if (typeof lat === 'number' && typeof lng === 'number') {
-                    pick({ latitude: lat, longitude: lng });
+                  const data = JSON.parse(e.nativeEvent.data);
+                  if (data?.type === 'MAP_LOADED') {
+                    setMapLoading(false);
+                    return;
+                  }
+                  if (typeof data.lat === 'number' && typeof data.lng === 'number') {
+                    pick({ latitude: data.lat, longitude: data.lng });
                   }
                 } catch {
                   // not a pin message
@@ -481,6 +504,29 @@ export function LocationPicker({
               }}
               style={{ flex: 1 }}
             />
+          )}
+
+          {/* Skeleton overlay khi bản đồ đang tải */}
+          {mapLoading && (
+            <View
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                backgroundColor: tc.subtle,
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 12,
+                zIndex: 2,
+              }}
+            >
+              <ActivityIndicator size="large" color={COLORS.primary} />
+              <Text style={{ fontSize: fs(13), color: tc.textMuted, fontWeight: '600' }}>
+                {lang === 'en' ? 'Loading map...' : 'Đang tải bản đồ...'}
+              </Text>
+            </View>
           )}
           {results.length > 0 && (
             <View

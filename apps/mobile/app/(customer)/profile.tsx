@@ -32,7 +32,8 @@ import { Alert } from '@/components/common/app-alert';
 import { useAuthStore } from '@/stores/auth.store';
 import { useMyProfile, useSwitchRole, useLoyaltyAccount, useWallet } from '@/hooks/use-api';
 import { Avatar, Card, COLORS, Separator, LoadingSpinner, useThemeColors } from '@/components/ui';
-import { useTranslation } from '@/hooks/use-i18n';
+import { useTranslation, fs } from '@/hooks/use-i18n';
+import { WalletBalanceDisplay } from '@/components/common/wallet-balance-display';
 import { DisplaySettingsSection } from '@/components/common/display-settings';
 import { AppPermissionsSection } from '@/components/common/initial-permissions-modal';
 import { VerificationBanner } from '@/components/common/verification-banner';
@@ -72,7 +73,12 @@ export default function CustomerProfileScreen() {
   const isSwitchingRole = useAuthStore(s => s.isSwitchingRole);
 
   const { data: profile, isLoading: isProfileLoading, refetch: refetchProfile } = useMyProfile();
-  const { data: wallet, isLoading: isWalletLoading, isError: isWalletError } = useWallet();
+  const {
+    data: wallet,
+    isLoading: isWalletLoading,
+    isError: isWalletError,
+    refetch: refetchWallet,
+  } = useWallet();
   const {
     data: loyalty,
     isLoading: isLoyaltyLoading,
@@ -339,17 +345,13 @@ export default function CustomerProfileScreen() {
                   </Text>
                 </TouchableOpacity>
               </View>
-              <Text style={{ fontSize: fs(22), fontWeight: '900', color: '#FFFFFF' }}>
-                {isWalletLoading && !wallet
-                  ? '...'
-                  : // P1-27: never render 0₫ as the balance when the fetch
-                    // errored — a failed fetch is not a zero balance.
-                    !wallet && isWalletError
-                    ? lang === 'en'
-                      ? 'Failed to load'
-                      : 'Không tải được'
-                    : `${new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'vi-VN').format(wallet?.balance ?? 0)}₫`}
-              </Text>
+              <WalletBalanceDisplay
+                balance={wallet?.balance}
+                isLoading={isWalletLoading}
+                isError={isWalletError}
+                onRetry={refetchWallet}
+                textStyle={{ fontSize: fs(22), fontWeight: '900', color: '#FFFFFF' }}
+              />
               <Text style={{ fontSize: fs(12), color: '#94A3B8' }}>
                 {lang === 'en'
                   ? 'Tap to manage payment methods and top up'

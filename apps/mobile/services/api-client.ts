@@ -96,6 +96,57 @@ class NoSessionError extends Error {
 
 let refreshPromise: Promise<string> | null = null;
 
+function triggerSessionExpiredLogout() {
+  try {
+    // Thông báo cho các tab web khác qua BroadcastChannel nếu có
+    const g = typeof globalThis !== 'undefined' ? (globalThis as any) : null;
+    if (typeof g?.BroadcastChannel !== 'undefined') {
+      try {
+        const bc = new g.BroadcastChannel('homemate_auth_channel');
+        bc.postMessage({ type: 'SESSION_EXPIRED' });
+      } catch {}
+    }
+  } catch {}
+
+  try {
+    const { useAuthStore } = require('@/stores/auth.store');
+    void useAuthStore.getState().logout().finally(() => {
+      try {
+        const { router } = require('expo-router');
+        router.replace('/(auth)/login');
+      } catch {}
+    });
+  } catch {
+    try {
+      const { router } = require('expo-router');
+      router.replace('/(auth)/login');
+    } catch {}
+  }
+}
+
+// Lắng nghe tín hiệu hết phiên từ tab khác trên web
+if (typeof globalThis !== 'undefined') {
+  const g = globalThis as any;
+  if (typeof g.BroadcastChannel !== 'undefined') {
+    try {
+      const authChannel = new g.BroadcastChannel('homemate_auth_channel');
+      authChannel.onmessage = (event: any) => {
+        if (event.data?.type === 'SESSION_EXPIRED') {
+          try {
+            const { useAuthStore } = require('@/stores/auth.store');
+            void useAuthStore.getState().logout().finally(() => {
+              try {
+                const { router } = require('expo-router');
+                router.replace('/(auth)/login');
+              } catch {}
+            });
+          } catch {}
+        }
+      };
+    } catch {}
+  }
+}
+
 function refreshAccessToken(): Promise<string> {
   if (!refreshPromise) {
     refreshPromise = (async (): Promise<string> => {
@@ -162,6 +213,7 @@ apiClient.interceptors.response.use(
             text1: 'Phiên đăng nhập hết hạn',
             text2: 'Vui lòng đăng nhập lại để tiếp tục',
           });
+          triggerSessionExpiredLogout();
         }
         // Lỗi refresh thoáng qua (mạng/5xx): không toast hết phiên, không xóa
         // token — chỉ fail request này.
