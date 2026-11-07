@@ -12,11 +12,33 @@ describe('PaymentsService - B41/B42/B43/B44 validation', () => {
   const jobId = new Types.ObjectId().toHexString();
 
   function makeService(balance = 1_000_000, pendingWithdrawal: any = null) {
-    const walletModel: any = {
-      findOneAndUpdate: jest.fn().mockReturnValue({
-        exec: jest.fn().mockResolvedValue({ _id: new Types.ObjectId(), balance }),
+    // H5: mock ví áp dụng $inc lên số dư trong bộ nhớ (như
+    // payments-credit-atomic-g2.spec.ts) để các test B43 kiểm chứng số dư
+    // THẬT sau trừ phí, thay vì mock cũ trả lại đúng số dư ban đầu bất kể
+    // $inc. Guard $gte: không đủ số dư thì trả null (không trừ).
+    let currentBalance = balance;
+    const walletId = new Types.ObjectId();
+    const applyWalletUpdate = (filter: any, update: any) => ({
+      exec: jest.fn(async () => {
+        // getOrCreateWallet: upsert, chỉ đọc số dư hiện tại.
+        if (update?.$setOnInsert) {
+          return { _id: walletId, balance: currentBalance };
+        }
+        // Guard $gte (deductCommissionForCashJob / requestWithdrawal).
+        if (filter?.balance?.$gte !== undefined && currentBalance < filter.balance.$gte) {
+          return null;
+        }
+        if (update?.$inc?.balance !== undefined) {
+          currentBalance += update.$inc.balance;
+        }
+        return { _id: walletId, balance: currentBalance };
       }),
-      findByIdAndUpdate: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue({}) }),
+    });
+    const walletModel: any = {
+      findOneAndUpdate: jest.fn(applyWalletUpdate),
+      findByIdAndUpdate: jest.fn((_id: any, update: any, _options: any) =>
+        applyWalletUpdate({}, update),
+      ),
     };
     const createdTx: any[] = [];
     const transactionModel: any = {
