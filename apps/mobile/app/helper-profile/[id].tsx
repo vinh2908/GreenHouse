@@ -14,13 +14,14 @@ import {
   ThumbsUp,
   Heart,
 } from 'lucide-react-native';
-import { vnDateTimeKey, formatRelativeTime } from '@/utils/date-format';
+import { formatRelativeTime } from '@/utils/date-format';
 import Toast from 'react-native-toast-message';
 import { useAuthStore } from '@/stores/auth.store';
 import { useTranslation } from '@/hooks/use-i18n';
 import {
   useHelperPublicProfile,
   useHelperReviews,
+  useJobDetail,
   useReplyReview,
   useSelectQuote,
   useFavorites,
@@ -47,6 +48,23 @@ export default function HelperPublicProfileScreen() {
   const [appealFor, setAppealFor] = React.useState<string | null>(null);
   const [appealReason, setAppealReason] = React.useState('');
   const { data: profile, isLoading: pLoading, refetch } = useHelperPublicProfile(id);
+  // P1-1: when hired from a job context, scheduled_at must be that job's
+  // real preferred_date + preferred_time_start, never tomorrow 09:00.
+  const { data: hireJob } = useJobDetail(jobId);
+  const hireJobScheduledAt = (() => {
+    const dateStr =
+      typeof hireJob?.preferred_date === 'string'
+        ? hireJob.preferred_date.slice(0, 10)
+        : hireJob?.preferred_date
+          ? new Date(hireJob.preferred_date).toISOString().slice(0, 10)
+          : '';
+    const timeStr = (hireJob?.preferred_time_start ?? '').trim();
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr) && /^\d{1,2}:\d{2}$/.test(timeStr)) {
+      const [h, m] = timeStr.split(':').map(Number);
+      return `${dateStr}T${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:00`;
+    }
+    return undefined;
+  })();
   // B113: đang xem hồ sơ thợ → nhận helper:status_changed để cập nhật trạng thái ngay
   useHelperStatusSocket(id);
   const { data: reviewsData, isLoading: rLoading } = useHelperReviews(id);
@@ -117,7 +135,7 @@ export default function HelperPublicProfileScreen() {
         await selectQuote.mutateAsync({
           jobId,
           quote_id: quoteId,
-          scheduled_at: vnDateTimeKey(1),
+          scheduled_at: hireJobScheduledAt,
         });
         Toast.show({
           type: 'success',
@@ -352,10 +370,12 @@ export default function HelperPublicProfileScreen() {
               {lang === 'en' ? 'Partner Service Commitment' : 'Cam kết dịch vụ từ đối tác'}
             </Text>
           </View>
+          {/* P2-12: never claim experience without data — the bullet is
+              omitted entirely when years_experience is missing. */}
           <Text style={{ fontSize: fs(12.5), color: '#92400E', lineHeight: 18 }}>
             {lang === 'en'
-              ? `• Job completion rate: ${profile?.completion_rate ?? 100}% (No arbitrary cancellation).\n• ${profile?.years_experience ? `Over ${profile.years_experience} years` : 'Proven'} practical experience.\n• Service quality warranty and safety insurance during work.`
-              : `• Tỷ lệ hoàn thành công việc: ${profile?.completion_rate ?? 100}% (Không hủy ngang).\n• ${profile?.years_experience ? `Hơn ${profile.years_experience} năm` : 'Có'} kinh nghiệm thực tế trong lĩnh vực.\n• Bảo hành chất lượng dịch vụ và bảo hiểm an toàn trong quá trình làm việc.`}
+              ? `• Job completion rate: ${profile?.completion_rate ?? 100}% (No arbitrary cancellation).${profile?.years_experience ? `\n• Over ${profile.years_experience} years practical experience.` : ''}\n• Service quality warranty and safety insurance during work.`
+              : `• Tỷ lệ hoàn thành công việc: ${profile?.completion_rate ?? 100}% (Không hủy ngang).${profile?.years_experience ? `\n• Hơn ${profile.years_experience} năm kinh nghiệm thực tế trong lĩnh vực.` : ''}\n• Bảo hành chất lượng dịch vụ và bảo hiểm an toàn trong quá trình làm việc.`}
           </Text>
         </Card>
 

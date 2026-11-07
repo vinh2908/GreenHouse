@@ -260,7 +260,13 @@ export class CreateQuoteDto {
 
 export class SelectQuoteDto {
   @ApiProperty() @IsMongoId() quote_id: string;
-  @ApiProperty() @IsDateString() scheduled_at: string;
+  // P1-1: optional — when missing (or the old tomorrow-09:00 default), the
+  // backend derives scheduled_at from the job's real preferred_date +
+  // preferred_time_start instead of booking tomorrow 09:00.
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsDateString()
+  scheduled_at?: string;
 }
 
 export class CompleteJobDto {

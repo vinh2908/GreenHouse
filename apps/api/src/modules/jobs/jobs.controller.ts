@@ -51,7 +51,7 @@ export class JobsController {
   // ─── Customer: Đặt lại từ đơn đã hoàn thành ───────────────────────────────
 
   @Post('rebook/:sourceJobId')
-  @ApiOperation({ summary: '[Customer] Đặt lại việc từ đơn đã hoàn thành (1 chạm)' })
+  @ApiOperation({ summary: '[Customer] Đặt lại việc từ đơn đã hoàn thành hoặc đã hết hạn (1 chạm)' })
   async rebookJob(
     @CurrentUser() user: { sub: string },
     @Param('sourceJobId') sourceJobId: string,

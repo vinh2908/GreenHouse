@@ -658,6 +658,7 @@ const JOB_STATUS_CONFIG: Record<string, { label: string; color: string; textColo
   cancelled: { label: 'Đã hủy', color: '#FEF2F2', textColor: '#991B1B' },
   disputed: { label: 'Đang tranh chấp', color: '#FEF2F2', textColor: '#991B1B' },
   refunded: { label: 'Đã hoàn tiền', color: '#F3F4F6', textColor: '#374151' },
+  expired: { label: 'Hết hạn', color: '#F3F4F6', textColor: '#6B7280' },
 };
 
 export function JobStatusBadge({ status }: { status: string }) {

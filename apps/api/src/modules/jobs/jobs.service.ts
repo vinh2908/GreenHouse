@@ -1092,8 +1092,8 @@ export class JobsService implements OnModuleInit {
     const source = await this.jobModel.findById(sourceJobId).exec();
     if (!source) throw new NotFoundException('Đơn gốc không tồn tại');
     if (source.customer_id.toString() !== customerId) throw new ForbiddenException();
-    if (source.status !== JobStatus.COMPLETED) {
-      throw new BadRequestException('Chỉ có thể đặt lại từ đơn đã hoàn thành');
+    if (source.status !== JobStatus.COMPLETED && source.status !== JobStatus.EXPIRED) {
+      throw new BadRequestException('Chỉ có thể đặt lại từ đơn đã hoàn thành hoặc đã hết hạn');
     }
 
     const tomorrow = new Date();
@@ -2359,6 +2359,54 @@ export class JobsService implements OnModuleInit {
       }
     }
 
+    // P1-1: scheduled_at must be the job's real schedule, never the old
+    // tomorrow-09:00 default. Derive it from preferred_date +
+    // preferred_time_start (VN wall time) and use it when the client sent
+    // nothing, an unparseable value, or exactly that default.
+    const jobDateStr =
+      typeof job.preferred_date === 'string'
+        ? (job.preferred_date as string).slice(0, 10)
+        : job.preferred_date
+          ? new Date(job.preferred_date).toISOString().slice(0, 10)
+          : '';
+    const jobTimeStr = (job.preferred_time_start ?? '').trim();
+    let jobScheduledAt: Date | null = null;
+    if (/^\d{4}-\d{2}-\d{2}$/.test(jobDateStr) && /^\d{1,2}:\d{2}$/.test(jobTimeStr)) {
+      const [jh, jm] = jobTimeStr.split(':').map(Number);
+      const parsed = new Date(
+        `${jobDateStr}T${String(jh).padStart(2, '0')}:${String(jm).padStart(2, '0')}:00+07:00`,
+      );
+      if (!Number.isNaN(parsed.getTime())) jobScheduledAt = parsed;
+    }
+    const dtoScheduledAt = (() => {
+      // Naive "YYYY-MM-DDTHH:mm:ss" from the client is VN wall time — parse
+      // it with +07:00, otherwise a UTC server would read it 7h early.
+      if (typeof dto.scheduled_at !== 'string' || !dto.scheduled_at.trim()) return null;
+      const raw = dto.scheduled_at.trim();
+      const hasOffset = /([Zz]|[+-]\d{2}:?\d{2})$/.test(raw);
+      const parsed = new Date(hasOffset ? raw : `${raw}+07:00`);
+      return Number.isNaN(parsed.getTime()) ? null : parsed;
+    })();
+    // Tomorrow 09:00 (VN wall clock) — the legacy client default that must
+    // never win over the job's real schedule. Compared as a VN date/time
+    // string, NOT as an absolute instant: the old client sends a naive
+    // "YYYY-MM-DDT09:00:00" that parses as server-local time, so an
+    // instant comparison would miss it on a UTC server.
+    const vnNow = new Date(Date.now() + 7 * 60 * 60 * 1000);
+    const tomorrowVnKey = new Date(
+      Date.UTC(vnNow.getUTCFullYear(), vnNow.getUTCMonth(), vnNow.getUTCDate() + 1),
+    )
+      .toISOString()
+      .slice(0, 10);
+    const isTomorrow0900Default =
+      typeof dto.scheduled_at === 'string' &&
+      dto.scheduled_at.slice(0, 10) === tomorrowVnKey &&
+      dto.scheduled_at.slice(11, 16) === '09:00';
+    const resolvedScheduledAt =
+      jobScheduledAt && (!dtoScheduledAt || isTomorrow0900Default)
+        ? jobScheduledAt
+        : (dtoScheduledAt ?? jobScheduledAt ?? new Date());
+
     const contract = await this.contractModel.create({
       job_id: new Types.ObjectId(jobId),
       quote_id: new Types.ObjectId(dto.quote_id),
@@ -2370,7 +2418,7 @@ export class JobsService implements OnModuleInit {
       platform_fee: quote.platform_fee,
       helper_receives: quote.helper_receives,
       warranty_days: quote.warranty_days,
-      scheduled_at: new Date(dto.scheduled_at),
+      scheduled_at: resolvedScheduledAt,
       signed_by_customer_at: new Date(),
     });
 
