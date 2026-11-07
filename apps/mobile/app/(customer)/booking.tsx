@@ -509,7 +509,24 @@ export default function BookingScreen() {
         .then(res => {
           setVoucherPreview(res);
         })
-        .catch(() => {});
+        .catch((err: any) => {
+          // P1-25: voucher không còn hợp lệ với giá mới thì phải GỠ khỏi
+          // đơn — giữ lại sẽ tạo job kèm voucher_code rồi fail ở lúc thanh
+          // toán (redeemForJob). Báo rõ lý do cho khách.
+          const msg = err?.response?.data?.message;
+          setVoucherCode('');
+          setVoucherPreview(null);
+          Toast.show({
+            type: 'error',
+            text1: lang === 'en' ? 'Voucher removed' : 'Đã gỡ mã giảm giá',
+            text2:
+              typeof msg === 'string'
+                ? msg
+                : lang === 'en'
+                  ? 'This voucher no longer applies to the current estimate.'
+                  : 'Mã này không còn áp dụng được với giá ước tính hiện tại.',
+          });
+        });
     }
   }, [currentEstimateAmount]);
 
@@ -2786,8 +2803,15 @@ export default function BookingScreen() {
                   if (calcDiscount > 0) {
                     netToPayText = `${fmtNum(Math.max(0, priceEstimate.price_min - calcDiscount))}₫ – ${fmtNum(Math.max(0, priceEstimate.price_max - calcDiscount))}₫`;
                   } else if (voucherPreview?.discount_type === 'percent') {
-                    const factor = 1 - voucherPreview.discount_value / 100;
-                    netToPayText = `~${fmtNum(Math.max(0, Math.round(priceEstimate.price_min * factor)))}₫ – ${fmtNum(Math.max(0, Math.round(priceEstimate.price_max * factor)))}₫`;
+                    // S16: áp cả max_discount_amount vào khoảng giá — chỉ
+                    // nhân (1 - value/100) sẽ nói khách trả ít hơn thực tế
+                    // khi cap có hiệu lực (vd 50% cap 50k trên đơn 500k).
+                    const discFor = (price: number) =>
+                      Math.min(
+                        Math.round((price * voucherPreview.discount_value) / 100),
+                        voucherPreview.max_discount_amount ?? Infinity,
+                      );
+                    netToPayText = `~${fmtNum(Math.max(0, priceEstimate.price_min - discFor(priceEstimate.price_min)))}₫ – ${fmtNum(Math.max(0, priceEstimate.price_max - discFor(priceEstimate.price_max)))}₫`;
                   } else {
                     netToPayText = `${fmtNum(priceEstimate.price_min)}₫ – ${fmtNum(priceEstimate.price_max)}₫`;
                   }

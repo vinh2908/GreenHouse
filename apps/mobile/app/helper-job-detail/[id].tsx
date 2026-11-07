@@ -69,7 +69,8 @@ import { useTranslation } from '@/hooks/use-i18n';
 import { Button, Card, JobStatusBadge, COLORS, LoadingSpinner, Separator, PriceText, Badge, useThemeColors } from '@/components/ui';
 import Toast from 'react-native-toast-message';
 
-const PLATFORM_FEE = 0.15;
+// S3: no hardcoded platform fee here — the per-service fee percent is
+// derived from job.service_id inside the component (see quoteFeePercent).
 
 export default function HelperJobDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -212,6 +213,13 @@ export default function HelperJobDetailScreen() {
         return helperId === currentUser?._id && q.status === 'pending';
       });
 
+  // S3: fee percent shown for my quote comes from the server-computed
+  // split (helper_receives / total_price), never a hardcoded 15%.
+  const myQuoteFeePercent =
+    myQuote?.total_price > 0
+      ? Math.round(100 - (myQuote.helper_receives / myQuote.total_price) * 100)
+      : 15;
+
   const handleOpenQuoteModal = () => {
     if (helperProfile?.verification_status !== 'approved') {
       const msg = t('helper_job.kyc_required_msg');
@@ -224,7 +232,13 @@ export default function HelperJobDetailScreen() {
     setShowQuoteModal(true);
   };
   const total = Number(laborCost) || 0;
-  const platformFee = Math.round(total * PLATFORM_FEE);
+  // S3: platform fee is per-service (service.platform_fee_percent) — never
+  // a hardcoded 15% (deep cleaning charges 20%). Falls back to 15% only
+  // when the service record carries no fee percent.
+  const quoteServiceObj =
+    typeof job.service_id === 'object' && job.service_id ? (job.service_id as any) : null;
+  const quoteFeePercent = quoteServiceObj?.platform_fee_percent ?? 15;
+  const platformFee = Math.round((total * quoteFeePercent) / 100);
   const helperReceives = total - platformFee;
 
   const handleSubmitQuote = async () => {
@@ -903,7 +917,14 @@ export default function HelperJobDetailScreen() {
             </View>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
               <Text style={{ fontSize: fs(13), color: tc.textSecondary }}>
-                {t('helper_job_detail.estimated_payout', { percent: 85 })}
+                {t('helper_job_detail.estimated_payout', {
+                  // S3: payout percent from the server-computed contract
+                  // split, never a hardcoded 85%.
+                  percent:
+                    contract.total_price > 0
+                      ? Math.round((contract.helper_receives / contract.total_price) * 100)
+                      : 85,
+                })}
               </Text>
               <PriceText amount={contract.helper_receives} size={14} color={COLORS.success} />
             </View>
@@ -1212,7 +1233,9 @@ export default function HelperJobDetailScreen() {
                   }}
                 >
                   <Text style={{ fontSize: fs(13), color: tc.textSecondary }}>
-                    {lang === 'en' ? 'Net wallet payout (-15%):' : 'Thực nhận về ví (trừ 15%):'}
+                    {lang === 'en'
+                      ? `Net wallet payout (-${myQuoteFeePercent}%):`
+                      : `Thực nhận về ví (trừ ${myQuoteFeePercent}%):`}
                   </Text>
                   <PriceText amount={myQuote.helper_receives} size={15} color={COLORS.success} />
                 </View>

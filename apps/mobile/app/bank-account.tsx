@@ -112,12 +112,23 @@ export default function BankAccountScreen() {
             (Array.isArray(user?.roles) && (user.roles as any[]).includes('helper'))))));
 
   const { data: profile, isLoading, refetch } = useHelperProfile();
+  const [txPage, setTxPage] = useState(1);
   const {
     data: txData,
     isLoading: txLoading,
     refetch: refetchTx,
     dataUpdatedAt: txUpdatedAt,
-  } = useTransactions(1);
+  } = useTransactions(txPage);
+  // P2-20: accumulate loaded pages so entries beyond page 1 are reachable.
+  const [allTxs, setAllTxs] = useState<any[]>([]);
+  useEffect(() => {
+    if (!txData?.transactions) return;
+    setAllTxs(prev => {
+      if (txPage === 1) return txData.transactions;
+      const seen = new Set(prev.map((t: any) => t._id));
+      return [...prev, ...txData.transactions.filter((t: any) => !seen.has(t._id))];
+    });
+  }, [txData, txPage]);
   const { data: wallet, isLoading: isWalletLoading, refetch: refetchWallet } = useWallet();
   const topup = useTopupWallet();
   const updateBank = useUpdateBankAccount();
@@ -150,11 +161,13 @@ export default function BankAccountScreen() {
       return;
     }
     // A91: Xác nhận trước khi nạp tiền — hiện số tiền + phương thức.
+    // P0-1: đây là nạp thử MÔ PHỎNG (chưa có cổng thanh toán thật) — không
+    // có thanh toán thật, số dư rút được không thay đổi.
     Alert.alert(
-      lang === 'en' ? 'Confirm top-up' : 'Xác nhận nạp tiền',
+      lang === 'en' ? 'Confirm demo top-up (simulation)' : 'Xác nhận nạp tiền mô phỏng',
       lang === 'en'
-        ? `Top up ${num.toLocaleString('vi-VN')}₫ via VietQR?`
-        : `Nạp ${num.toLocaleString('vi-VN')}₫ qua VietQR?`,
+        ? `Record a demo top-up of ${num.toLocaleString('vi-VN')}₫? No real payment is made and your withdrawable balance does not change.`
+        : `Ghi nhận nạp thử ${num.toLocaleString('vi-VN')}₫? Chưa có thanh toán thật, số dư rút được không thay đổi.`,
       [
         { text: lang === 'en' ? 'Cancel' : 'Hủy', style: 'cancel' },
         {
@@ -168,14 +181,7 @@ export default function BankAccountScreen() {
   const doCustomerTopup = async (num: number) => {
     try {
       await topup.mutateAsync({ amount: num, payment_method: 'vietqr' });
-      Toast.show({
-        type: 'success',
-        text1: lang === 'en' ? 'Wallet top-up successful!' : 'Nạp tiền vào ví thành công!',
-        text2:
-          lang === 'en'
-            ? `+${num.toLocaleString('en-US')}₫ added to your balance`
-            : `+${num.toLocaleString('vi-VN')}₫ đã được cộng vào ví`,
-      });
+      // P2-18: success toast comes from useTopupWallet — do NOT show a second one here.
       setShowCustomerTopup(false);
       setCustomerTopupAmount('100000');
       refetchWallet();
@@ -437,7 +443,7 @@ export default function BankAccountScreen() {
 
           {txLoading ? (
             <LoadingSpinner size="small" />
-          ) : !txData?.transactions?.length ? (
+          ) : !allTxs.length ? (
             <Card>
               <EmptyState
                 icon={<CreditCard size={36} color={COLORS.gray[400]} />}
@@ -451,7 +457,7 @@ export default function BankAccountScreen() {
             </Card>
           ) : (
             <Card style={{ gap: 0 }}>
-              {txData.transactions.map((tx: any, i: number) => {
+              {allTxs.map((tx: any, i: number) => {
                 // A93: Giao dịch có đơn liên quan thì bấm vào mở được đơn đó.
                 const txJobId: string | undefined =
                   (typeof tx.job_id === 'string' && tx.job_id) ||
@@ -504,6 +510,33 @@ export default function BankAccountScreen() {
                 );
               })}
             </Card>
+          )}
+          {/* P2-20: load older transactions (server already paginates) */}
+          {txData && txPage < (txData.total_pages ?? 1) && (
+            <TouchableOpacity
+              activeOpacity={0.7}
+              disabled={txLoading}
+              onPress={() => setTxPage(p => p + 1)}
+              style={{
+                marginTop: 12,
+                paddingVertical: 12,
+                borderRadius: 10,
+                backgroundColor: tc.surface,
+                borderWidth: 1,
+                borderColor: tc.border,
+                alignItems: 'center',
+              }}
+            >
+              <Text style={{ fontWeight: '800', fontSize: fs(14), color: COLORS.primary }}>
+                {txLoading
+                  ? lang === 'en'
+                    ? 'Loading…'
+                    : 'Đang tải…'
+                  : lang === 'en'
+                    ? 'Load more transactions'
+                    : 'Xem thêm giao dịch'}
+              </Text>
+            </TouchableOpacity>
           )}
         </ScrollView>
       ) : (

@@ -40,6 +40,8 @@ describe('JobsService.resolveDispute (B55)', () => {
       runMoneyTransaction: jest.fn(async (fn: (s: any) => Promise<any>) => fn(undefined)),
       creditHelper: jest.fn().mockResolvedValue({}),
       deductCommissionForCashJob: jest.fn().mockResolvedValue({}),
+      // P0-2: payout chỉ giải ngân khi có thanh toán ví thật đã xác minh.
+      hasVerifiedWalletPayment: jest.fn().mockResolvedValue(true),
     };
 
     notificationsService = {

@@ -89,14 +89,19 @@ export class PaymentsService {
   }
 
   /** B96: thông báo xác nhận tiền đã vào/ra — chỉ gửi khi giao dịch THÀNH CÔNG, 1 lần. */
-  private async notifyTopupSuccess(userId: string, amount: number, balanceAfter: number) {
+  private async notifyTopupSuccess(
+    userId: string,
+    amount: number,
+    balanceAfter: number,
+    simulatedAfter = 0,
+  ) {
     await this.notificationsService
       .create({
         userId,
         type: NOTIFICATION_TYPES.PAYMENT_SUCCESS,
-        title: 'Nạp tiền thành công',
-        body: `Đã nạp ${amount.toLocaleString('vi-VN')}₫, số dư mới: ${balanceAfter.toLocaleString('vi-VN')}₫`,
-        payload: { amount, balance: balanceAfter, screen: 'wallet' },
+        title: 'Đã ghi nhận nạp tiền mô phỏng (Demo)',
+        body: `Đã ghi nhận nạp thử ${amount.toLocaleString('vi-VN')}₫ (mô phỏng — chưa có thanh toán thật, số dư rút được không đổi: ${balanceAfter.toLocaleString('vi-VN')}₫; số dư mô phỏng: ${simulatedAfter.toLocaleString('vi-VN')}₫)`,
+        payload: { amount, balance: balanceAfter, simulated_balance: simulatedAfter, screen: 'wallet' },
       })
       .catch(() => undefined);
   }
@@ -106,16 +111,76 @@ export class PaymentsService {
     amount: number,
     balanceAfter: number,
     jobId?: string,
+    paymentMethod?: string,
   ) {
+    const cashNote =
+      paymentMethod === 'cash'
+        ? ' (tiền mặt trực tiếp — thợ nhận tiền mặt, ví không thay đổi)'
+        : '';
     await this.notificationsService
       .create({
         userId,
         type: NOTIFICATION_TYPES.PAYMENT_SUCCESS,
         title: 'Thanh toán thành công',
-        body: `Đã thanh toán ${amount.toLocaleString('vi-VN')}₫${jobId ? ` cho đơn #${jobId.slice(-6)}` : ''}. Số dư ví: ${balanceAfter.toLocaleString('vi-VN')}₫`,
+        body: `Đã thanh toán ${amount.toLocaleString('vi-VN')}₫${jobId ? ` cho đơn #${jobId.slice(-6)}` : ''}${cashNote}. Số dư ví: ${balanceAfter.toLocaleString('vi-VN')}₫`,
         payload: { amount, balance: balanceAfter, ...(jobId ? { job_id: jobId } : {}) },
       })
       .catch(() => undefined);
+  }
+
+  /**
+   * P0-2: has a job actually been paid with REAL money from the customer
+   * wallet? Only a successful 'payment' transaction whose metadata says
+   * payment_method 'wallet' counts — wallet payments atomically debit the
+   * wallet in mockPayJob. Cash is handled separately (helper got cash in
+   * hand, no wallet credit). Unverified online methods (vietqr/momo/zalopay)
+   * can never produce such a transaction, so approveCompletion / dispute
+   * resolution must not release helper payout for them.
+   */
+  async hasVerifiedWalletPayment(jobId: string): Promise<boolean> {
+    if (!Types.ObjectId.isValid(jobId)) return false;
+    const tx = await this.transactionModel
+      .findOne({
+        job_id: new Types.ObjectId(jobId),
+        type: 'payment',
+        status: 'success',
+        'metadata.payment_method': 'wallet',
+      })
+      .select('_id')
+      .lean()
+      .exec();
+    return Boolean(tx);
+  }
+
+  /**
+   * P0-2: atomically debit the customer wallet for a wallet job payment.
+   * Guard $gte rejects when the balance is short — never let the wallet go
+   * negative or pay with money that isn't there. balance_before is derived
+   * from the $inc result (balance_after + amount), never from a pre-read.
+   */
+  private async debitWalletForPayment(
+    userId: string,
+    amount: number,
+    session?: ClientSession | null,
+  ): Promise<{ walletId: Types.ObjectId; balanceBefore: number; balanceAfter: number }> {
+    const wallet = await this.getOrCreateWallet(userId);
+    const updated = await this.walletModel
+      .findOneAndUpdate(
+        { _id: wallet._id, balance: { $gte: amount } },
+        { $inc: { balance: -amount } },
+        { new: true, session: session ?? undefined },
+      )
+      .exec();
+    if (!updated) {
+      throw new BadRequestException(
+        `Số dư ví không đủ để thanh toán ${amount.toLocaleString('vi-VN')}₫. Hiện có: ${wallet.balance.toLocaleString('vi-VN')}₫. Vui lòng thanh toán bằng tiền mặt.`,
+      );
+    }
+    return {
+      walletId: wallet._id,
+      balanceBefore: updated.balance + amount,
+      balanceAfter: updated.balance,
+    };
   }
 
   /**
@@ -167,6 +232,17 @@ export class PaymentsService {
     return this.runInTransaction(fn);
   }
 
+  /**
+   * P0-1 (honest simulation): there is NO real payment gateway connected yet
+   * (owner decision: real gateway vs honestly labelled simulation — still
+   * open). So a "top-up" CANNOT create withdrawable money: it credits ONLY
+   * `simulated_balance` (display-only demo credit, never withdrawable, never
+   * spendable) and the transaction records the withdrawable balance as
+   * UNCHANGED. Anyone topping up 100M₫ can no longer withdraw it.
+   * S17: withdrawable balance_before/after come from the untouched balance,
+   * not a stale pre-read; the simulated balance_after comes from the $inc
+   * result (new: true).
+   */
   async topupWallet(
     userId: string,
     amount: number,
@@ -175,12 +251,22 @@ export class PaymentsService {
     if (!amount || amount < 50000) {
       throw new BadRequestException('Số tiền nạp tối thiểu là 50,000₫');
     }
-    // B91: cộng ví + ghi giao dịch nạp tiền trong 1 transaction
+    if (!Number.isInteger(amount)) {
+      throw new BadRequestException('Số tiền nạp phải là số nguyên (không có phần thập phân)');
+    }
+    // B91: ghi giao dịch nạp thử + cộng số dư MÔ PHỎNG trong 1 transaction
     const result = await this.runInTransaction(async session => {
       const walletBefore = await this.getOrCreateWallet(userId);
       const updatedWallet = await this.walletModel
-        .findByIdAndUpdate(walletBefore._id, { $inc: { balance: amount } }, { new: true, session })
+        .findByIdAndUpdate(
+          walletBefore._id,
+          { $inc: { simulated_balance: amount } },
+          { new: true, session },
+        )
         .exec();
+
+      const simulatedAfter =
+        updatedWallet?.simulated_balance ?? (walletBefore.simulated_balance ?? 0) + amount;
 
       const [transaction] = await this.transactionModel.create(
         [
@@ -190,11 +276,16 @@ export class PaymentsService {
             type: 'topup',
             status: 'success',
             amount,
+            // Withdrawable balance is untouched by a simulated top-up.
             balance_before: walletBefore.balance,
-            balance_after: updatedWallet?.balance ?? walletBefore.balance + amount,
-            description: `Nạp tiền ví ký quỹ qua ${paymentMethod.toUpperCase()}`,
-            reference: `TOPUP-${Date.now()}`,
-            metadata: { payment_method: paymentMethod },
+            balance_after: walletBefore.balance,
+            description: `Nạp tiền MÔ PHỎNG (demo — chưa có thanh toán thật) qua ${paymentMethod.toUpperCase()}; số dư rút được không thay đổi`,
+            reference: `SIM-TOPUP-${Date.now()}`,
+            metadata: {
+              payment_method: paymentMethod,
+              simulated: true,
+              simulated_balance_after: simulatedAfter,
+            },
           },
         ],
         { session },
@@ -202,8 +293,13 @@ export class PaymentsService {
 
       return { wallet: updatedWallet ?? walletBefore, transaction };
     });
-    // B96: chỉ gửi khi nạp thành công
-    await this.notifyTopupSuccess(userId, amount, result.wallet.balance);
+    // B96: chỉ gửi khi ghi nhận thành công
+    await this.notifyTopupSuccess(
+      userId,
+      amount,
+      result.wallet.balance,
+      result.wallet.simulated_balance ?? 0,
+    );
     return result;
   }
 
@@ -230,6 +326,17 @@ export class PaymentsService {
     if (!paymentMethod || !PaymentsService.ALLOWED_PAYMENT_METHODS.includes(paymentMethod)) {
       throw new BadRequestException(
         `Phương thức thanh toán không hợp lệ: "${paymentMethod}". Chỉ chấp nhận: ${PaymentsService.ALLOWED_PAYMENT_METHODS.join(', ')}`,
+      );
+    }
+    // P0-2: no real payment gateway is connected yet (owner decision still
+    // open), so an online payment can never be VERIFIED. VietQR/MoMo/ZaloPay
+    // must not mark a job PAID — approval would otherwise mint withdrawable
+    // helper payout from money nobody collected. Only 'wallet' (real balance
+    // debited atomically below) and 'cash' (helper receives cash in hand, no
+    // wallet credit) can complete a payment until a gateway lands.
+    if (paymentMethod === 'vietqr' || paymentMethod === 'momo' || paymentMethod === 'zalopay') {
+      throw new BadRequestException(
+        'Thanh toán trực tuyến chưa khả dụng: chưa kết nối cổng thanh toán thật nên không thể xác minh giao dịch. Vui lòng thanh toán bằng tiền mặt, hoặc bằng số dư ví (tiền thật đã có trong ví).',
       );
     }
     if (!Types.ObjectId.isValid(jobId)) {
@@ -361,6 +468,22 @@ export class PaymentsService {
           }
         }
 
+        // P0-2: 'wallet' must REALLY debit the customer wallet, BEFORE the
+        // job is marked PAID (atomic $inc with $gte guard — insufficient
+        // balance throws and the catch below rolls voucher/loyalty back +
+        // resets the job to UNPAID). 'cash' debits nothing: the helper
+        // receives cash in hand, no wallet money moves, and approval only
+        // deducts the platform fee (never credits the helper).
+        let walletDebit: {
+          walletId: Types.ObjectId;
+          balanceBefore: number;
+          balanceAfter: number;
+        } | null = null;
+        let wallet = await this.getOrCreateWallet(customerId);
+        if (paymentMethod === 'wallet' && resolvedAmount > 0) {
+          walletDebit = await this.debitWalletForPayment(customerId, resolvedAmount, sess);
+        }
+
         await this.jobModel!.findByIdAndUpdate(
           job._id,
           {
@@ -373,21 +496,22 @@ export class PaymentsService {
           { session: sess ?? undefined },
         ).exec();
 
-        const wallet = await this.getOrCreateWallet(customerId);
-
         const [createdTx] = await this.transactionModel.create(
           [
             {
-              wallet_id: wallet._id,
+              wallet_id: walletDebit?.walletId ?? wallet._id,
               user_id: new Types.ObjectId(customerId),
               job_id: new Types.ObjectId(jobId),
               type: 'payment',
               status: 'success',
               amount: resolvedAmount,
-              balance_before: wallet.balance,
-              balance_after: wallet.balance,
+              balance_before: walletDebit?.balanceBefore ?? wallet.balance,
+              balance_after: walletDebit?.balanceAfter ?? wallet.balance,
               description:
                 `Thanh toán cho công việc #${jobId.slice(-6)} (${paymentMethod.toUpperCase()})` +
+                (paymentMethod === 'cash'
+                  ? ' — tiền mặt trực tiếp, thợ nhận tiền mặt (không qua ví)'
+                  : '') +
                 (discountAmount > 0
                   ? ` — đã áp mã ${appliedVoucherCode} giảm ${discountAmount.toLocaleString('vi-VN')}₫`
                   : '') +
@@ -398,6 +522,7 @@ export class PaymentsService {
               metadata: {
                 payment_method: paymentMethod,
                 job_id: jobId,
+                ...(paymentMethod === 'cash' ? { cash_paid_in_hand: true } : {}),
                 ...(discountAmount > 0
                   ? { voucher_code: appliedVoucherCode, discount_amount: discountAmount }
                   : {}),
@@ -475,7 +600,14 @@ export class PaymentsService {
         }
       }
     } else {
+      // No job model (unit-test fallback path): same money rules as above —
+      // wallet really debits, cash moves no wallet money, online methods were
+      // already rejected at the top of this function.
       const wallet = await this.getOrCreateWallet(customerId);
+      let walletDebit: { balanceBefore: number; balanceAfter: number } | null = null;
+      if (paymentMethod === 'wallet' && resolvedAmount > 0) {
+        walletDebit = await this.debitWalletForPayment(customerId, resolvedAmount);
+      }
       transaction = await this.transactionModel.create({
         wallet_id: wallet._id,
         user_id: new Types.ObjectId(customerId),
@@ -483,11 +615,17 @@ export class PaymentsService {
         type: 'payment',
         status: 'success',
         amount: resolvedAmount,
-        balance_before: wallet.balance,
-        balance_after: wallet.balance,
-        description: `Thanh toán cho công việc #${jobId.slice(-6)} (${paymentMethod.toUpperCase()})`,
+        balance_before: walletDebit?.balanceBefore ?? wallet.balance,
+        balance_after: walletDebit?.balanceAfter ?? wallet.balance,
+        description:
+          `Thanh toán cho công việc #${jobId.slice(-6)} (${paymentMethod.toUpperCase()})` +
+          (paymentMethod === 'cash' ? ' — tiền mặt trực tiếp, thợ nhận tiền mặt (không qua ví)' : ''),
         reference: `PAY-${Date.now()}`,
-        metadata: { payment_method: paymentMethod, job_id: jobId },
+        metadata: {
+          payment_method: paymentMethod,
+          job_id: jobId,
+          ...(paymentMethod === 'cash' ? { cash_paid_in_hand: true } : {}),
+        },
       });
     }
 
@@ -497,6 +635,7 @@ export class PaymentsService {
       resolvedAmount,
       transaction!.balance_after ?? 0,
       jobId,
+      paymentMethod,
     );
     return {
       transaction: transaction!,
@@ -716,13 +855,18 @@ export class PaymentsService {
           job_id: new Types.ObjectId(jobId),
           type: 'commission',
           status: 'success',
-          amount: platformFee,
+          // P2-14: record what was ACTUALLY deducted, not the full fee —
+          // the UI renders -tx.amount, so the full fee overstated the
+          // deduction whenever the wallet was short. Full fee + shortfall
+          // stay in metadata for reconciliation.
+          amount: deducted,
           balance_before: balanceBefore,
           balance_after: balanceAfter,
           description: `Khấu trừ phí sàn (15%) đơn Tiền mặt #${jobId.slice(-6)}`,
           metadata: {
             payment_method: 'cash',
             job_id: jobId,
+            platform_fee: platformFee,
             unpaid_fee: platformFee - deducted,
             helper_net_earned: helperNetEarned || Math.round((platformFee * 85) / 15),
           },

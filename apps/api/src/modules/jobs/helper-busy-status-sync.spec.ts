@@ -157,6 +157,8 @@ function createMockEnvironment() {
     creditHelper: jest.fn().mockResolvedValue({}),
     refundCustomer: jest.fn().mockResolvedValue({}),
     deductCommissionForCashJob: jest.fn().mockResolvedValue({}),
+    // P0-2: payout chỉ giải ngân khi có thanh toán ví thật đã xác minh.
+    hasVerifiedWalletPayment: jest.fn().mockResolvedValue(true),
   };
 
   const disputesService = {
@@ -207,7 +209,7 @@ function createMockEnvironment() {
       customer_id: customerId,
       helper_id: overrideHelperId,
       status,
-      payment_method: 'vietqr',
+      payment_method: 'wallet',
       payment_status: PaymentStatus.PAID,
       // B57: nghiệm thu yêu cầu ít nhất 1 ảnh bằng chứng hoàn thành
       completion_photos: ['https://cdn.example.com/evidence.jpg'],

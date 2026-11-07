@@ -105,6 +105,10 @@ export const PLATFORM_FEE_BY_SERVICE = {
   default: 0.15, // Default: 15%
 } as const;
 
+// S4: Phụ phí cứu hộ khẩn cấp SOS — giá do SERVER quyết định duy nhất.
+// Client không được gửi giá này lên (mọi giá trị client gửi đều bị bỏ qua).
+export const SOS_SURCHARGE_VND = 100_000;
+
 // ─── Warranty ─────────────────────────────────────────────────────────────────
 
 export const DEFAULT_WARRANTY_DAYS = 0; // Mặc định không bảo hành

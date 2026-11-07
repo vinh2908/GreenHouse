@@ -19,8 +19,9 @@ export class MockPayJobDto {
   job_id: string;
 
   @ApiProperty({
-    description: 'Phương thức thanh toán (wallet | cash | vietqr | momo | zalopay)',
-    example: 'vietqr',
+    description:
+      'Phương thức thanh toán (wallet | cash). VietQR/MoMo/ZaloPay chưa khả dụng vì chưa có cổng thanh toán thật để xác minh giao dịch.',
+    example: 'cash',
   })
   @IsString()
   @IsNotEmpty()
@@ -29,8 +30,9 @@ export class MockPayJobDto {
 }
 
 export class TopupWalletDto {
-  @ApiProperty({ description: 'Số tiền nạp vào ví ký quỹ (tối thiểu 50,000₫)', minimum: 50000 })
+  @ApiProperty({ description: 'Số tiền nạp mô phỏng vào ví (tối thiểu 50,000₫, phải là số nguyên). Chưa có cổng thanh toán thật nên đây chỉ là nạp thử mô phỏng — số dư rút được không thay đổi.', minimum: 50000 })
   @IsNumber()
+  @IsInt({ message: 'Số tiền nạp phải là số nguyên (không có phần thập phân)' })
   @Min(50000)
   @Max(100_000_000)
   amount: number;

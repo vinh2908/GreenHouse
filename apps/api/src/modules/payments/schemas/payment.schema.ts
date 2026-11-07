@@ -13,7 +13,15 @@ export class Wallet {
   user_id: Types.ObjectId;
 
   @Prop({ default: 0, min: 0 })
-  balance: number; // VND
+  balance: number; // VND — withdrawable, real verified funds ONLY.
+
+  // P0-1: demo top-up credit. Simulated top-ups (no real payment gateway is
+  // connected yet — owner decision open) credit ONLY this field. It is NEVER
+  // withdrawable, NEVER debited for job payments and NEVER used for
+  // commission deduction. Display-only, so the demo flow still records the
+  // top-up without creating spendable money.
+  @Prop({ default: 0, min: 0 })
+  simulated_balance: number; // VND (demo only)
 
   @Prop({ default: 0 })
   total_earned: number;

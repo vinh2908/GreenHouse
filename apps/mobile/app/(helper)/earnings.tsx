@@ -81,13 +81,24 @@ export default function HelperEarningsScreen() {
   const { t, fs, lang, formatTxDesc } = useTranslation();
   const tc = useThemeColors();
   const { data: wallet, isLoading, isError: isWalletError, refetch: refetchWallet } = useWallet();
+  const [txPage, setTxPage] = useState(1);
   const {
     data: txData,
     isLoading: isTxLoading,
     isError: isTxError,
     refetch: refetchTx,
     dataUpdatedAt: txUpdatedAt,
-  } = useTransactions(1);
+  } = useTransactions(txPage);
+  // P2-20: accumulate loaded pages so entries beyond page 1 are reachable.
+  const [allTxs, setAllTxs] = useState<any[]>([]);
+  useEffect(() => {
+    if (!txData?.transactions) return;
+    setAllTxs(prev => {
+      if (txPage === 1) return txData.transactions;
+      const seen = new Set(prev.map((t: any) => t._id));
+      return [...prev, ...txData.transactions.filter((t: any) => !seen.has(t._id))];
+    });
+  }, [txData, txPage]);
   const { data: profile } = useHelperProfile();
   const withdraw = useRequestWithdrawal();
   const topup = useTopupWallet();
@@ -193,11 +204,13 @@ export default function HelperEarningsScreen() {
       return;
     }
     // A91: Xác nhận trước khi nạp tiền — hiện số tiền + phương thức.
+    // P0-1: đây là nạp thử MÔ PHỎNG (chưa có cổng thanh toán thật) — không
+    // có thanh toán thật, số dư rút được không thay đổi.
     Alert.alert(
-      lang === 'en' ? 'Confirm top-up' : 'Xác nhận nạp tiền',
+      lang === 'en' ? 'Confirm demo top-up (simulation)' : 'Xác nhận nạp tiền mô phỏng',
       lang === 'en'
-        ? `Top up ${new Intl.NumberFormat('vi-VN').format(amt)}₫ via VietQR?`
-        : `Nạp ${new Intl.NumberFormat('vi-VN').format(amt)}₫ qua VietQR?`,
+        ? `Record a demo top-up of ${new Intl.NumberFormat('vi-VN').format(amt)}₫? No real payment is made and your withdrawable balance does not change.`
+        : `Ghi nhận nạp thử ${new Intl.NumberFormat('vi-VN').format(amt)}₫? Chưa có thanh toán thật, số dư rút được không thay đổi.`,
       [
         { text: lang === 'en' ? 'Cancel' : 'Hủy', style: 'cancel' },
         {
@@ -278,6 +291,21 @@ export default function HelperEarningsScreen() {
             {t('earn_wallet_balance_label')}
           </Text>
           <PriceText amount={wallet?.balance ?? 0} size={36} color="#fff" />
+          {/* P0-1: demo credit is shown separately — it is NOT withdrawable. */}
+          {(wallet?.simulated_balance ?? 0) > 0 && (
+            <Text
+              style={{
+                color: 'rgba(255,255,255,0.8)',
+                fontSize: fs(12),
+                marginTop: 4,
+                fontWeight: '600',
+              }}
+            >
+              {lang === 'en'
+                ? `Demo credit (simulation, not withdrawable): ${new Intl.NumberFormat('vi-VN').format(wallet.simulated_balance)}₫`
+                : `Số dư mô phỏng (không rút được): ${new Intl.NumberFormat('vi-VN').format(wallet.simulated_balance)}₫`}
+            </Text>
+          )}
           <Text
             style={{
               color: 'rgba(255,255,255,0.8)',
@@ -452,7 +480,7 @@ export default function HelperEarningsScreen() {
                 </View>
               ))}
             </Card>
-          ) : !txData?.transactions?.length ? (
+          ) : !allTxs.length ? (
             <EmptyState
               icon={<CreditCard size={36} color={COLORS.gray[400]} />}
               title={t('earn_no_transactions')}
@@ -460,7 +488,7 @@ export default function HelperEarningsScreen() {
             />
           ) : (
             <Card style={{ gap: 0 }}>
-              {txData.transactions.map(
+              {allTxs.map(
                 (
                   tx: {
                     _id: string;
@@ -566,6 +594,33 @@ export default function HelperEarningsScreen() {
                 },
               )}
             </Card>
+          )}
+          {/* P2-20: load older transactions (server already paginates) */}
+          {txData && txPage < (txData.total_pages ?? 1) && (
+            <TouchableOpacity
+              activeOpacity={0.7}
+              disabled={isTxLoading}
+              onPress={() => setTxPage(p => p + 1)}
+              style={{
+                marginTop: 12,
+                paddingVertical: 12,
+                borderRadius: 10,
+                backgroundColor: tc.surface,
+                borderWidth: 1,
+                borderColor: tc.border,
+                alignItems: 'center',
+              }}
+            >
+              <Text style={{ fontWeight: '800', fontSize: fs(14), color: COLORS.primary }}>
+                {isTxLoading
+                  ? lang === 'en'
+                    ? 'Loading…'
+                    : 'Đang tải…'
+                  : lang === 'en'
+                    ? 'Load more transactions'
+                    : 'Xem thêm giao dịch'}
+              </Text>
+            </TouchableOpacity>
           )}
         </View>
       </ScrollView>

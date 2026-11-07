@@ -220,13 +220,6 @@ export class CreateSosJobDto {
   @IsArray()
   @IsString({ each: true })
   photos?: string[];
-
-  @ApiPropertyOptional({ default: 100000, description: 'Phụ phí cứu hộ khẩn cấp' })
-  @IsOptional()
-  @IsNumber()
-  @Min(0)
-  @Max(2_000_000)
-  surcharge?: number;
 }
 
 export class CreateQuoteDto {

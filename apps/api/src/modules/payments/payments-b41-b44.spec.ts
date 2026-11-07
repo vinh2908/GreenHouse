@@ -99,17 +99,51 @@ describe('PaymentsService - B41/B42/B43/B44 validation', () => {
       );
     });
 
-    it('payment_method "wallet" → thành công (không chặn phương thức đang dùng)', async () => {
+    it('payment_method "wallet" → thành công, ví bị trừ thật số tiền thanh toán', async () => {
       const { service, createdTx } = makeService();
       const result = await service.mockPayJob(customerId, jobId, 500_000, 'wallet');
       expect(result.success).toBe(true);
       expect(createdTx[0].metadata.payment_method).toBe('wallet');
+      expect(createdTx[0].balance_before).toBe(1_000_000);
+      expect(createdTx[0].balance_after).toBe(500_000);
     });
 
-    it('payment_method "vietqr" (mặc định hệ thống) → thành công', async () => {
+    it('payment_method "wallet" với số dư không đủ → 400, không ghi giao dịch thanh toán', async () => {
+      const { service, createdTx } = makeService(100_000);
+      await expect(service.mockPayJob(customerId, jobId, 500_000, 'wallet')).rejects.toBeInstanceOf(
+        BadRequestException,
+      );
+      expect(createdTx).toHaveLength(0);
+    });
+
+    // P0-2: chưa có cổng thanh toán thật nên VietQR/MoMo/ZaloPay không thể
+    // xác minh — từ chối thay vì ghi PAID giả rồi giải ngân tiền thợ từ hư không.
+    it('payment_method "vietqr" (chưa có cổng thanh toán thật) → 400', async () => {
       const { service } = makeService();
-      const result = await service.mockPayJob(customerId, jobId, 500_000, 'vietqr');
-      expect(result.success).toBe(true);
+      await expect(service.mockPayJob(customerId, jobId, 500_000, 'vietqr')).rejects.toBeInstanceOf(
+        BadRequestException,
+      );
+    });
+  });
+
+  describe('P0-1: topupWallet mô phỏng — không tạo số dư rút được', () => {
+    it('nạp 200.000₫ → giao dịch ghi simulated, số dư rút được không đổi', async () => {
+      const { service, createdTx } = makeService();
+      const { wallet, transaction } = await service.topupWallet(customerId, 200_000, 'vietqr');
+      expect((transaction as any).metadata.simulated).toBe(true);
+      expect((transaction as any).metadata.simulated_balance_after).toBe(200_000);
+      expect((transaction as any).balance_before).toBe(1_000_000);
+      expect((transaction as any).balance_after).toBe(1_000_000);
+      expect((transaction as any).reference).toMatch(/^SIM-TOPUP-/);
+      expect(createdTx[0].balance_after).toBe(1_000_000);
+      expect(wallet.balance).toBe(1_000_000);
+    });
+
+    it('nạp 100.000,5₫ → 400 (P2-15: số tiền nạp phải là số nguyên)', async () => {
+      const { service } = makeService();
+      await expect(service.topupWallet(customerId, 100_000.5)).rejects.toBeInstanceOf(
+        BadRequestException,
+      );
     });
   });
 
@@ -170,11 +204,12 @@ describe('PaymentsService - B41/B42/B43/B44 validation', () => {
       expect(createdTx[0].metadata.helper_net_earned).toBe(450_000);
     });
 
-    it('ví không đủ phí: chỉ trừ tối đa số dư, phần thiếu ghi unpaid_fee', async () => {
+    it('ví không đủ phí: chỉ trừ tối đa số dư, phần thiếu ghi unpaid_fee; giao dịch ghi đúng số tiền ĐÃ TRỪ (P2-14)', async () => {
       const { service } = makeService(30_000);
       const tx: any = await service.deductCommissionForCashJob(helperId, jobId, 50_000, 450_000);
-      expect(tx.amount).toBe(50_000);
+      expect(tx.amount).toBe(30_000);
       expect(tx.balance_after).toBe(0);
+      expect(tx.metadata.platform_fee).toBe(50_000);
       expect(tx.metadata.unpaid_fee).toBe(20_000);
     });
   });
