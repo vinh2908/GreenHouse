@@ -617,6 +617,10 @@ export const STRINGS = {
   call_muted_notice: { vi: 'Bạn đang tắt mic', en: 'Microphone is muted' },
   call_end_hint: { vi: 'Chạm nút đỏ để kết thúc cuộc gọi', en: 'Tap red button to end call' },
   call_retry: { vi: 'Thử kết nối lại', en: 'Retry connection' },
+  call_no_answer: {
+    vi: 'Đối tác không trả lời. Cuộc gọi đã kết thúc.',
+    en: 'No answer — the other party did not pick up.',
+  },
 
   // ─── Initial Permissions Modal ─────────────────────────────────────────────
   perm_modal_title: { vi: 'Cấp quyền ứng dụng', en: 'App Permissions' },
