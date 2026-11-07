@@ -23,6 +23,7 @@ export default function ConversationsScreen() {
   const { t, fs, lang } = useTranslation();
   const tc = useThemeColors();
   const currentUser = useAuthStore(s => s.user);
+  const isAuth = useAuthStore(s => s.isAuthenticated);
   const { data: conversations, isLoading, isError, refetch, dataUpdatedAt } = useConversations();
   const insets = useSafeAreaInsets();
 
@@ -59,7 +60,7 @@ export default function ConversationsScreen() {
           <RefreshControl refreshing={isLoading} onRefresh={refetch} colors={[COLORS.primary]} />
         }
       >
-        {isError ? (
+        {isError && isAuth ? (
           <ErrorState
             title={lang === 'en' ? 'Unable to load conversations' : 'Không thể tải cuộc trò chuyện'}
             subtitle={

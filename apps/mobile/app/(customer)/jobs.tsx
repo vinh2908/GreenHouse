@@ -25,6 +25,7 @@ export default function CustomerJobsScreen() {
   const tc = useThemeColors();
   const [activeTab, setActiveTab] = useState(0);
   const user = useAuthStore(s => s.user);
+  const isAuth = useAuthStore(s => s.isAuthenticated);
   const isAuthLoading = useAuthStore(s => s.isLoading);
   const isSwitchingRole = useAuthStore(s => s.isSwitchingRole);
   const isHelper = user?.active_role === 'helper';
@@ -220,7 +221,7 @@ export default function CustomerJobsScreen() {
           />
         }
       >
-        {isError ? (
+        {isError && isAuth ? (
           <Card style={{ alignItems: 'center', paddingVertical: 20 }}>
             <ErrorState
               title={lang === 'en' ? 'Unable to load orders' : 'Không thể tải danh sách đơn'}
