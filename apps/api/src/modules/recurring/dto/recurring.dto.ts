@@ -66,7 +66,7 @@ export class CreateRecurringPlanDto {
   @IsOptional()
   @IsNumber()
   @Min(0.5)
-  @Max(24)
+  @Max(12)
   duration_hours?: number;
 
   @ApiProperty({ description: 'Ngày bắt đầu gói' }) @IsDateString() start_date: string;
