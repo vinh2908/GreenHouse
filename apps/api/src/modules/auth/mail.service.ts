@@ -1,45 +1,25 @@
 import { Injectable, Logger } from '@nestjs/common';
-import * as nodemailer from 'nodemailer';
+
+// Gửi mail OTP qua SendGrid Web API v3 (HTTPS) thay vì Gmail SMTP.
+// Lý do đổi (2026-11-07): Gmail SMTP không kết nối được từ Render free tier
+// (kết nối treo tới hết timeout) nên đăng ký + quên mật khẩu không bao giờ
+// gửi được mail. SendGrid dùng cổng 443 nên không bị chặn.
+// Cần biến môi trường: SENDGRID_API_KEY (key có quyền Mail Send) và
+// SENDGRID_FROM (email người gửi đã xác minh Single Sender trên SendGrid;
+// mặc định dùng GMAIL_USER). Gói miễn phí: 100 mail/ngày.
+const SENDGRID_URL = 'https://api.sendgrid.com/v3/mail/send';
+const SEND_TIMEOUT_MS = 15_000;
 
 @Injectable()
 export class MailService {
   private readonly logger = new Logger(MailService.name);
-  private transporter: nodemailer.Transporter | null = null;
 
-  constructor() {
-    this.initTransporter();
+  private get apiKey(): string | undefined {
+    return process.env.SENDGRID_API_KEY;
   }
 
-  private initTransporter() {
-    const user = process.env.GMAIL_USER;
-    const pass = process.env.GMAIL_APP_PASSWORD;
-
-    if (!user || !pass) {
-      this.logger.warn(
-        'GMAIL_USER hoặc GMAIL_APP_PASSWORD chưa được cấu hình. Hệ thống sẽ mô phỏng gửi email OTP trong log dev.',
-      );
-      this.transporter = null;
-      return;
-    }
-
-    try {
-      this.transporter = nodemailer.createTransport({
-        service: 'gmail',
-        auth: {
-          user,
-          pass,
-        },
-        // Domain sai / DNS chết không được treo request mãi: fail nhanh để
-        // API trả lỗi rõ (502) thay vì app xoay vòng đến hết timeout 35s.
-        connectionTimeout: 10_000,
-        greetingTimeout: 10_000,
-        socketTimeout: 15_000,
-      });
-      this.logger.log(`Khởi tạo Gmail SMTP transporter thành công cho tài khoản ${user}`);
-    } catch (err: any) {
-      this.logger.error(`Không thể khởi tạo Gmail transporter: ${err?.message ?? err}`);
-      this.transporter = null;
-    }
+  private get fromEmail(): string {
+    return process.env.SENDGRID_FROM || process.env.GMAIL_USER || 'htcuteman@gmail.com';
   }
 
   async sendOtpEmail(toEmail: string, code: string, purpose: 'verify' | 'reset'): Promise<boolean> {
@@ -77,32 +57,40 @@ export class MailService {
       </div>
     `;
 
-    if (!this.transporter && process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD) {
-      this.initTransporter();
-    }
-
-    if (!this.transporter) {
-      this.logger.warn(`[GMAIL SIMULATED] To: ${toEmail} | Code: ${code} | Purpose: ${purpose}`);
+    if (!this.apiKey) {
+      this.logger.warn(
+        `[SENDGRID SIMULATED] To: ${toEmail} | Code: ${code} | Purpose: ${purpose} (SENDGRID_API_KEY chưa được cấu hình)`,
+      );
       return false;
     }
 
     try {
-      // Hạn mức cứng 15s cho cả quá trình gửi: kể cả khi DNS/MX của domain
-      // nhận treo (vd gõ sai gmail thành gmai.com) thì request vẫn fail nhanh
-      // thay vì treo vô hạn. sendMail dở dang (nếu có) tự hủy theo timeout.
-      const sendPromise = this.transporter.sendMail({
-        from: `"GreenHouse" <${process.env.GMAIL_USER}>`,
-        to: toEmail,
-        subject,
-        text,
-        html,
+      const res = await fetch(SENDGRID_URL, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${this.apiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          personalizations: [{ to: [{ email: toEmail }] }],
+          from: { email: this.fromEmail, name: 'GreenHouse' },
+          subject,
+          content: [
+            { type: 'text/plain', value: text },
+            { type: 'text/html', value: html },
+          ],
+        }),
+        // Hạn mức cứng 15s: SendGrid không trả lời thì fail nhanh để API trả
+        // lỗi rõ (502) thay vì app xoay vòng đến hết timeout 35s.
+        signal: AbortSignal.timeout(SEND_TIMEOUT_MS),
       });
-      const timeoutPromise = new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error('SMTP send timeout (15s)')), 15_000),
-      );
-      const info = await Promise.race([sendPromise, timeoutPromise]);
-      this.logger.log(`OTP email sent to ${toEmail} (messageId: ${info?.messageId})`);
-      return true;
+      if (res.status === 202) {
+        this.logger.log(`OTP email sent to ${toEmail} via SendGrid`);
+        return true;
+      }
+      const errBody = await res.text().catch(() => '');
+      this.logger.error(`SendGrid send failed to ${toEmail}: HTTP ${res.status} ${errBody}`);
+      return false;
     } catch (err: any) {
       this.logger.error(`Failed to send OTP email to ${toEmail}: ${err?.message ?? err}`);
       return false;
