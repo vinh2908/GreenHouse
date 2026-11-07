@@ -9,13 +9,13 @@ import {
   Platform,
   ActivityIndicator,
   Image,
+  RefreshControl,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import {
   ArrowLeft,
   Send,
-  ShieldCheck,
   Phone,
   ImagePlus,
   X,
@@ -39,7 +39,7 @@ import { ImageViewerModal } from '@/components/common/photo-thumbs';
 import { Alert } from '@/components/common/app-alert';
 import { useTranslation } from '@/hooks/use-i18n';
 import { formatDayLabel, formatTime } from '@/utils/date-format';
-import { Avatar, COLORS, LoadingSpinner, EmptyState, Skeleton, useThemeColors } from '@/components/ui';
+import { Avatar, COLORS, LoadingSpinner, EmptyState, Skeleton, ErrorState, useThemeColors } from '@/components/ui';
 
 export function resolveMediaUrl(rawUrl: string): string {
   if (!rawUrl || typeof rawUrl !== 'string') return '';
@@ -215,19 +215,54 @@ export default function ChatScreen() {
   const listRef = useRef<FlatList>(null);
 
   const conversationId = conversation?._id;
+  // P2-6: chỉ tự cuộn xuống cuối khi khách đang ở gần cuối danh sách (hoặc
+  // vừa gửi tin); đang đọc lịch sử phía trên thì tin mới/ảnh load xong
+  // không được giật màn hình về cuối.
+  const stickToBottomRef = useRef(true);
+  const handleListScroll = (e: any) => {
+    const { contentOffset, contentSize, layoutMeasurement } = e.nativeEvent;
+    stickToBottomRef.current =
+      contentSize.height - (contentOffset.y + layoutMeasurement.height) < 100;
+  };
 
   // ── Realtime Chat Updates ──────────────────────────────────────────────
   useChatSocket(conversationId ?? undefined);
 
-  const { data: messages, isLoading: mLoading, refetch } = useMessages(conversationId ?? undefined);
+  const {
+    data: messagePages,
+    isLoading: mLoading,
+    isError: mError,
+    isRefetching: mRefetching,
+    refetch,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useMessages(conversationId ?? undefined);
   const sendMsg = useSendMessage();
   const markRead = useMarkConversationRead();
+
+  // P1-20: trang 1 = 30 tin mới nhất, trang sau = 30 tin cũ hơn → đảo thứ tự
+  // trang rồi nối lại để hiển thị cũ → mới. Khử trùng theo _id (A82).
+  const allMessages = useMemo(() => {
+    const pages = messagePages?.pages ?? [];
+    const flat: any[] = [...pages].reverse().flat();
+    if (!Array.isArray(flat)) return [];
+    const seen = new Set<string>();
+    const res: any[] = [];
+    for (const m of flat) {
+      const id = String(m._id || m.id || '');
+      if (id && seen.has(id)) continue;
+      if (id) seen.add(id);
+      res.push(m);
+    }
+    return res;
+  }, [messagePages]);
 
   useEffect(() => {
     if (conversationId) {
       markRead.mutate(conversationId);
     }
-  }, [conversationId, messages?.length]);
+  }, [conversationId, allMessages.length]);
 
   // Fetch or create conversation by job
   useEffect(() => {
@@ -258,9 +293,12 @@ export default function ChatScreen() {
   const handleSend = async () => {
     if (!text.trim() || !conversationId) return;
     const content = text.trim();
-    setText('');
     try {
       await sendMsg.mutateAsync({ conversationId, content });
+      // Chỉ xóa ô nhập khi gửi thành công — gửi lỗi thì giữ nguyên nội dung
+      // để khách bấm gửi lại, không mất tin đã gõ (P1-21).
+      setText('');
+      stickToBottomRef.current = true;
       setTimeout(() => {
         listRef.current?.scrollToEnd({ animated: true });
       }, 100);
@@ -268,6 +306,10 @@ export default function ChatScreen() {
       Toast.show({
         type: 'error',
         text1: lang === 'en' ? 'Failed to send message' : 'Gửi tin nhắn thất bại',
+        text2:
+          lang === 'en'
+            ? 'Your message is kept — please try sending again.'
+            : 'Tin nhắn của bạn vẫn còn — hãy bấm gửi lại.',
       });
     }
   };
@@ -398,19 +440,6 @@ export default function ChatScreen() {
   const partnerAvatar = partner?.avatar;
   const partnerPhone = partner?.phone;
 
-  // A82: Loại bỏ tin nhắn trùng lặp theo _id
-  const allMessages = useMemo(() => {
-    if (!Array.isArray(messages)) return [];
-    const seen = new Set<string>();
-    const res: any[] = [];
-    for (const m of messages) {
-      const id = String(m._id || m.id || '');
-      if (id && seen.has(id)) continue;
-      if (id) seen.add(id);
-      res.push(m);
-    }
-    return res;
-  }, [messages]);
   const insets = useSafeAreaInsets();
 
   return (
@@ -456,11 +485,7 @@ export default function ChatScreen() {
               >
                 {partnerName}
               </Text>
-              <ShieldCheck size={15} color={COLORS.success} />
             </View>
-            <Text style={{ fontSize: fs(11.5), color: COLORS.success, fontWeight: '700' }}>
-              {lang === 'en' ? '● Online' : '● Đang hoạt động'}
-            </Text>
           </View>
         </View>
 
@@ -509,6 +534,18 @@ export default function ChatScreen() {
             onAction={() => router.back()}
           />
         </View>
+      ) : mError ? (
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 }}>
+          <ErrorState
+            title={lang === 'en' ? 'Unable to load messages' : 'Không thể tải tin nhắn'}
+            subtitle={
+              lang === 'en'
+                ? 'Could not fetch messages. Please check your connection and retry.'
+                : 'Không thể kết nối đến máy chủ trò chuyện. Vui lòng kiểm tra mạng và thử lại.'
+            }
+            onRetry={() => refetch()}
+          />
+        </View>
       ) : (
         <KeyboardAvoidingView
           style={{ flex: 1 }}
@@ -520,6 +557,42 @@ export default function ChatScreen() {
             data={allMessages}
             keyExtractor={(item: { _id: string }) => item._id}
             contentContainerStyle={{ padding: 16, gap: 12, paddingBottom: 20 }}
+            refreshControl={
+              <RefreshControl refreshing={mRefetching} onRefresh={refetch} colors={[COLORS.primary]} />
+            }
+            onScroll={handleListScroll}
+            scrollEventThrottle={16}
+            ListHeaderComponent={
+              mLoading ? (
+                <View style={{ alignItems: 'center', paddingVertical: 8 }}>
+                  <ActivityIndicator size="small" color={COLORS.primary} />
+                </View>
+              ) : hasNextPage ? (
+                <TouchableOpacity
+                  activeOpacity={0.8}
+                  onPress={() => fetchNextPage()}
+                  disabled={isFetchingNextPage}
+                  style={{
+                    alignSelf: 'center',
+                    backgroundColor: tc.subtle,
+                    paddingHorizontal: 16,
+                    paddingVertical: 8,
+                    borderRadius: 999,
+                    marginBottom: 4,
+                  }}
+                >
+                  <Text style={{ fontSize: fs(12.5), fontWeight: '700', color: COLORS.primary }}>
+                    {isFetchingNextPage
+                      ? lang === 'en'
+                        ? 'Loading…'
+                        : 'Đang tải…'
+                      : lang === 'en'
+                        ? 'Load older messages'
+                        : 'Tải tin nhắn cũ hơn'}
+                  </Text>
+                </TouchableOpacity>
+              ) : null
+            }
             ListFooterComponent={
               pendingPhoto ? (
                 <View style={{ alignItems: 'flex-end', marginVertical: 2 }}>
@@ -596,8 +669,13 @@ export default function ChatScreen() {
                 </View>
               ) : null
             }
-            onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: false })}
+            onContentSizeChange={() => {
+              if (stickToBottomRef.current) {
+                listRef.current?.scrollToEnd({ animated: false });
+              }
+            }}
             ListEmptyComponent={
+              mLoading ? null : (
               <View style={{ alignItems: 'center', paddingVertical: 40, gap: 8 }}>
                 <View
                   style={{

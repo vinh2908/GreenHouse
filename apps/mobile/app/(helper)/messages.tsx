@@ -1,7 +1,7 @@
 import { View, Text, ScrollView, TouchableOpacity, RefreshControl } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { MessageCircle, ChevronRight, ShieldCheck } from 'lucide-react-native';
+import { MessageCircle, ChevronRight } from 'lucide-react-native';
 import { formatConversationTime, formatTime } from '@/utils/date-format';
 import { useConversations } from '@/hooks/use-api';
 import { useAuthStore } from '@/stores/auth.store';
@@ -22,7 +22,8 @@ export default function HelperConversationsScreen() {
   const { t, fs, lang } = useTranslation();
   const tc = useThemeColors();
   const currentUser = useAuthStore(s => s.user);
-  const { data: conversations, isLoading, isError, refetch, dataUpdatedAt } = useConversations();
+  const isAuth = useAuthStore(s => s.isAuthenticated);
+  const { data: conversations, isLoading, isError, isRefetching, refetch, dataUpdatedAt } = useConversations();
   const insets = useSafeAreaInsets();
 
   return (
@@ -55,10 +56,22 @@ export default function HelperConversationsScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ padding: 16, gap: 10, paddingBottom: 110 }}
         refreshControl={
-          <RefreshControl refreshing={isLoading} onRefresh={refetch} colors={[COLORS.primary]} />
+          <RefreshControl refreshing={isRefetching} onRefresh={refetch} colors={[COLORS.primary]} />
         }
       >
-        {isError ? (
+        {!isAuth ? (
+          <EmptyState
+            icon={<MessageCircle size={36} color={COLORS.gray[400]} />}
+            title={lang === 'en' ? 'Log in to see messages' : 'Đăng nhập để xem tin nhắn'}
+            subtitle={
+              lang === 'en'
+                ? 'Your conversations with customers will appear here after you log in.'
+                : 'Đăng nhập để xem cuộc trò chuyện với khách tại đây.'
+            }
+            action={lang === 'en' ? 'Log in' : 'Đăng nhập'}
+            onAction={() => router.push('/(auth)/login')}
+          />
+        ) : isError ? (
           <ErrorState
             title={lang === 'en' ? 'Unable to load conversations' : 'Không thể tải cuộc trò chuyện'}
             subtitle={
@@ -127,7 +140,6 @@ export default function HelperConversationsScreen() {
                       >
                         {partnerName}
                       </Text>
-                      <ShieldCheck size={14} color={COLORS.success} />
                     </View>
                     <Text
                       style={{ fontSize: fs(12), color: COLORS.primary, fontWeight: '700' }}
