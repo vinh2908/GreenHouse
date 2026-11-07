@@ -544,6 +544,10 @@ export const STRINGS = {
   picker_duration_label: { vi: 'Thời lượng:', en: 'Duration:' },
   picker_deal_price: { vi: 'Giá deal:', en: 'Deal price:' },
   picker_next_day: { vi: '(ngày hôm sau)', en: '(next day)' },
+  picker_midnight_cross_error: {
+    vi: 'Vượt quá 24:00 — không thể đặt khung giờ này, vui lòng chọn giờ sớm hơn hoặc rút ngắn thời lượng.',
+    en: 'Crosses midnight — this time frame cannot be booked, please pick an earlier start or shorten the duration.',
+  },
   picker_cannot_calc: { vi: 'Chưa tính được', en: 'Unavailable' },
 
   // ─── SOS Backup & Decision Popups ──────────────────────────────────────────
@@ -1117,6 +1121,18 @@ export const STRINGS = {
   booking_time_past_error: {
     vi: 'Thời gian bắt đầu không được ở trong quá khứ',
     en: 'Start time cannot be in the past',
+  },
+  booking_invalid_date_error: {
+    vi: 'Ngày đã chọn không hợp lệ, vui lòng chọn lại ngày',
+    en: 'Selected date is invalid, please pick another date',
+  },
+  booking_time_window_error: {
+    vi: 'Giờ làm việc từ 07:00 đến 22:00, vui lòng chọn giờ trong khung này',
+    en: 'Working hours are 07:00–22:00, please pick a time in this range',
+  },
+  booking_midnight_cross_error: {
+    vi: 'Giờ kết thúc vượt quá 24:00, vui lòng chọn giờ sớm hơn hoặc rút ngắn thời lượng',
+    en: 'End time crosses midnight, please pick an earlier start or shorten the duration',
   },
   booking_title_desc_required: {
     vi: 'Vui lòng điền tiêu đề và mô tả công việc',
