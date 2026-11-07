@@ -3863,9 +3863,7 @@ export class JobsService implements OnModuleInit {
         { private_offer_helper_id: helperOid },
       ],
     };
-    if (serviceId === 'custom') {
-      query['service_id'] = null;
-    } else if (serviceId && Types.ObjectId.isValid(serviceId)) {
+    if (serviceId && Types.ObjectId.isValid(serviceId)) {
       query['service_id'] = new Types.ObjectId(serviceId);
     }
     const [allJobs, rawTotalCount, helperProfile] = await Promise.all([

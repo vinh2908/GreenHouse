@@ -1038,30 +1038,58 @@ export default function CustomerHomeScreen() {
   const handleSelectQuickDateChip = (chip: 'today' | 'tomorrow' | 'sat' | 'sun') => {
     setQuickDateChip(chip);
     const now = vnNow();
-    if (chip === 'today') {
-      const todayStr = vnDateKey();
-      setQuickDate(todayStr);
-      const [th, tm] = quickTimeSlot.split(':').map(Number);
-      const nowVn = getNowVietnam();
-      if (th * 60 + tm <= nowVn.totalMinutes) {
-        // B6: sau 22:00 không còn slot tương lai hôm nay — dời sang ngày mai
-        // thay vì gán '22:00' đã qua
-        if (hasFutureTimeSlot(todayStr)) {
-          setQuickTimeSlot(getDefaultFutureTimeSlot(todayStr));
-        } else {
-          setQuickDate(vnDateKey(1));
+    const todayStr = vnDateKey();
+
+    const adjustTimeForDate = (targetDateStr: string, isToday: boolean) => {
+      if (isToday) {
+        if (!hasFutureTimeSlot(targetDateStr)) {
+          const tomorrowStr = vnDateKey(1);
+          setQuickDate(tomorrowStr);
           setQuickDateChip('tomorrow');
+          setQuickTimeSlot('09:00');
+          Toast.show({
+            type: 'info',
+            text1:
+              lang === 'en'
+                ? 'No more time slots today, switched to tomorrow'
+                : 'Hôm nay đã hết giờ làm việc, tự động chuyển sang ngày mai',
+          });
+          return;
+        }
+        const [th, tm] = quickTimeSlot.split(':').map(Number);
+        const nowVn = getNowVietnam();
+        if (th * 60 + tm <= nowVn.totalMinutes) {
+          setQuickTimeSlot(getDefaultFutureTimeSlot(targetDateStr));
+        }
+      } else {
+        if (!quickTimeSlot) {
           setQuickTimeSlot('09:00');
         }
       }
+    };
+
+    if (chip === 'today') {
+      setQuickDate(todayStr);
+      adjustTimeForDate(todayStr, true);
     } else if (chip === 'tomorrow') {
-      setQuickDate(vnDateKey(1));
+      const tomorrowStr = vnDateKey(1);
+      setQuickDate(tomorrowStr);
+      adjustTimeForDate(tomorrowStr, false);
     } else if (chip === 'sat') {
-      const nextSat = now.day() <= 6 ? now.day(6) : now.add(1, 'week').day(6);
-      setQuickDate(formatDateKey(nextSat));
+      let nextSat = now.day(6);
+      if (now.day() === 0 || nextSat.isBefore(now, 'day')) {
+        nextSat = nextSat.add(1, 'week');
+      }
+      const satStr = formatDateKey(nextSat);
+      const isToday = satStr === todayStr;
+      setQuickDate(satStr);
+      adjustTimeForDate(satStr, isToday);
     } else if (chip === 'sun') {
-      const nextSun = now.day() === 0 ? now : now.day(7);
-      setQuickDate(formatDateKey(nextSun));
+      let nextSun = now.day() === 0 ? now : now.day(7);
+      const sunStr = formatDateKey(nextSun);
+      const isToday = sunStr === todayStr;
+      setQuickDate(sunStr);
+      adjustTimeForDate(sunStr, isToday);
     }
   };
 
@@ -1413,33 +1441,6 @@ export default function CustomerHomeScreen() {
           </View>
         </View>
 
-        {sError || (isAuth && jError) ? (
-          <View
-            style={{
-              padding: 24,
-              margin: 16,
-              backgroundColor: tc.surface,
-              borderRadius: 14,
-              borderWidth: 1,
-              borderColor: '#E2E8F0',
-            }}
-          >
-            <ErrorState
-              title={lang === 'en' ? 'Unable to load home data' : 'Không thể tải dữ liệu trang chủ'}
-              subtitle={
-                lang === 'en'
-                  ? 'Connection to server failed. Please check your network and retry.'
-                  : 'Không thể kết nối đến máy chủ. Vui lòng kiểm tra mạng và thử lại.'
-              }
-              onRetry={() => {
-                refetchServices();
-                refetchJobs();
-                refetchProfile();
-              }}
-            />
-          </View>
-        ) : (
-          <>
             {/* ── 2. WOW 1: THỢ ĐANG Ở GẦN BẠN (Live Map + Real Nearby Helpers) ─ */}
             <View style={{ paddingHorizontal: 16, marginTop: 20 }}>
               {/* Section Header with "Trực tiếp" green pulse badge */}
@@ -2252,9 +2253,35 @@ export default function CustomerHomeScreen() {
                 </TouchableOpacity>
               </View>
 
-              {/* Responsive Multi-Column Grid */}
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-                {(() => {
+              {sError ? (
+                <View
+                  style={{
+                    padding: 20,
+                    backgroundColor: tc.surface,
+                    borderRadius: 14,
+                    borderWidth: 1,
+                    borderColor: tc.border,
+                    alignItems: 'center',
+                  }}
+                >
+                  <ErrorState
+                    title={
+                      lang === 'en'
+                        ? 'Unable to load services'
+                        : 'Không thể tải danh mục dịch vụ'
+                    }
+                    subtitle={
+                      lang === 'en'
+                        ? 'Could not connect to service catalog. Please retry.'
+                        : 'Không thể kết nối đến danh mục dịch vụ. Vui lòng thử lại.'
+                    }
+                    onRetry={() => refetchServices()}
+                  />
+                </View>
+              ) : (
+                /* Responsive Multi-Column Grid */
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                  {(() => {
                   const q = removeVietnameseDiacritics(serviceSearchQuery);
                   const list = q
                     ? SERVICES_CATALOG.filter(s => {
@@ -2429,6 +2456,7 @@ export default function CustomerHomeScreen() {
                   });
                 })()}
               </View>
+            )}
 
               {/* 2 Callout Cards: SOS & AI Assistant */}
               <View style={{ marginTop: 14, gap: 10 }}>
@@ -2955,7 +2983,32 @@ export default function CustomerHomeScreen() {
                 )}
               </View>
 
-              {activeJobs.length > 0 ? (
+              {isAuth && jError ? (
+                <View
+                  style={{
+                    padding: 16,
+                    backgroundColor: tc.surface,
+                    borderRadius: 14,
+                    borderWidth: 1,
+                    borderColor: tc.border,
+                    alignItems: 'center',
+                  }}
+                >
+                  <ErrorState
+                    title={
+                      lang === 'en'
+                        ? 'Unable to load orders'
+                        : 'Không thể tải danh sách đơn'
+                    }
+                    subtitle={
+                      lang === 'en'
+                        ? 'Could not connect to your orders. Please retry.'
+                        : 'Không thể kết nối đến danh sách đơn của bạn. Vui lòng thử lại.'
+                    }
+                    onRetry={() => refetchJobs()}
+                  />
+                </View>
+              ) : activeJobs.length > 0 ? (
                 activeJobs.slice(0, 1).map((j: any) => {
                   // 4 nấc tiến trình: Đã nhận việc -> Đang đến -> Đang làm -> Nghiệm thu (Item 11)
                   const step1Done = [
@@ -3308,8 +3361,6 @@ export default function CustomerHomeScreen() {
                   </View>
                 );
               })()}
-          </>
-        )}
       </ScrollView>
 
       {/* ── BOTTOM SHEET CHỌN NGÀY & GIỜ (ITEM 1) ── */}

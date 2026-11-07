@@ -104,8 +104,20 @@ export class AuthService {
 
   // ─── Refresh Token ─────────────────────────────────────────────────────────
 
+  private readonly rotatedTokensGraceMap = new Map<
+    string,
+    { tokens: { access_token: string; refresh_token: string }; expiresAt: number }
+  >();
+
   async refreshToken(dto: RefreshTokenDto) {
     try {
+      // Grace window: Nếu token này vừa được xoay trong vòng 30 giây (đua giữa các tab trình duyệt),
+      // trả về cặp token đã cấp thay vì báo lỗi thu hồi
+      const cachedGrace = this.rotatedTokensGraceMap.get(dto.refresh_token);
+      if (cachedGrace && cachedGrace.expiresAt > Date.now()) {
+        return cachedGrace.tokens;
+      }
+
       const payload = this.jwtService.verify<JwtPayload>(dto.refresh_token, {
         secret: this.configService.get<string>('jwt.refreshSecret'),
       });
@@ -129,6 +141,21 @@ export class AuthService {
 
       // Issue new tokens (rotate refresh token)
       const tokens = await this.generateTokens(user);
+
+      // Lưu token cũ vào grace map 30s để các tab gọi đồng thời không bị lỗi
+      this.rotatedTokensGraceMap.set(dto.refresh_token, {
+        tokens,
+        expiresAt: Date.now() + 30000,
+      });
+
+      // Dọn dẹp các token hết hạn
+      if (this.rotatedTokensGraceMap.size > 200) {
+        const now = Date.now();
+        for (const [k, v] of this.rotatedTokensGraceMap.entries()) {
+          if (v.expiresAt <= now) this.rotatedTokensGraceMap.delete(k);
+        }
+      }
+
       return tokens;
     } catch (err) {
       if (err instanceof UnauthorizedException) throw err;

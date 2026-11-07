@@ -169,21 +169,30 @@ export function useServices() {
   return useQuery({
     queryKey: ['services'],
     queryFn: async () => {
-      const { data } = await apiClient.get('/services');
-      return data.data as {
-        _id: string;
-        name: string;
-        slug: string;
-        icon?: string;
-        description?: string;
-        base_price_min?: number;
-        base_price_max?: number;
-        price_range_min?: number;
-        price_range_max?: number;
-        platform_fee_percent?: number;
-        pricing_model?: 'quote' | 'fixed'; // Feature 7: giá cam kết
-        fixed_price?: number;
-      }[];
+      const t0 = Date.now();
+      try {
+        const { data } = await apiClient.get('/services');
+        const ms = Date.now() - t0;
+        if (__DEV__) console.log(`[API Timing] GET /services finished in ${ms}ms`);
+        return data.data as {
+          _id: string;
+          name: string;
+          slug: string;
+          icon?: string;
+          description?: string;
+          base_price_min?: number;
+          base_price_max?: number;
+          price_range_min?: number;
+          price_range_max?: number;
+          platform_fee_percent?: number;
+          pricing_model?: 'quote' | 'fixed'; // Feature 7: giá cam kết
+          fixed_price?: number;
+        }[];
+      } catch (err) {
+        const ms = Date.now() - t0;
+        if (__DEV__) console.warn(`[API Timing] GET /services FAILED after ${ms}ms`, err);
+        throw err;
+      }
     },
     staleTime: 10 * 60 * 1000,
   });
@@ -196,8 +205,17 @@ export function useMyJobs(status?: string) {
   return useQuery({
     queryKey: ['jobs', 'my', status],
     queryFn: async () => {
-      const { data } = await apiClient.get('/jobs/my', { params: { status } });
-      return data.data;
+      const t0 = Date.now();
+      try {
+        const { data } = await apiClient.get('/jobs/my', { params: { status } });
+        const ms = Date.now() - t0;
+        if (__DEV__) console.log(`[API Timing] GET /jobs/my finished in ${ms}ms`);
+        return data.data;
+      } catch (err) {
+        const ms = Date.now() - t0;
+        if (__DEV__) console.warn(`[API Timing] GET /jobs/my FAILED after ${ms}ms`, err);
+        throw err;
+      }
     },
     // Khách chưa đăng nhập: không gọi API (sẽ 401) — màn hình chính của khách
     // hiển thị nội dung công khai, không cần danh sách đơn của mình.
@@ -958,12 +976,14 @@ export function useHelperReviews(helperId?: string) {
 // ─── Wallet & Payments ─────────────────────────────────────────────────────────
 
 export function useWallet() {
+  const isAuth = useAuthStore(s => s.isAuthenticated);
   return useQuery({
     queryKey: ['wallet'],
     queryFn: async () => {
       const { data } = await apiClient.get('/payments/wallet');
       return data.data;
     },
+    enabled: !!isAuth,
   });
 }
 
@@ -1052,9 +1072,32 @@ export function useConversations() {
       const { data } = await apiClient.get('/chat/conversations');
       return data.data;
     },
-    // Khách chưa đăng nhập: không gọi API (sẽ 401) và không poll mỗi 10s.
+    // Khách chưa đăng nhập: không gọi API (sẽ 401) và không poll.
     enabled: !!isAuth,
-    refetchInterval: 10000,
+    // Dừng poll và dừng retry ngay lập tức khi phiên hết hạn hoặc gặp lỗi 401
+    refetchInterval: query => {
+      const err: any = query.state.error;
+      if (
+        err?.response?.status === 401 ||
+        err?.status === 401 ||
+        err?.name === 'SessionExpiredError' ||
+        err?.isSessionExpired
+      ) {
+        return false;
+      }
+      return 10000;
+    },
+    retry: (failureCount, error: any) => {
+      if (
+        error?.response?.status === 401 ||
+        error?.status === 401 ||
+        error?.name === 'SessionExpiredError' ||
+        error?.isSessionExpired
+      ) {
+        return false;
+      }
+      return failureCount < 2;
+    },
   });
 }
 

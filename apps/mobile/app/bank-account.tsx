@@ -35,7 +35,8 @@ import {
   useWallet,
   useTopupWallet,
 } from '@/hooks/use-api';
-import { useTranslation } from '@/hooks/use-i18n';
+import { useTranslation, fs } from '@/hooks/use-i18n';
+import { WalletBalanceDisplay } from '@/components/common/wallet-balance-display';
 import {
   Button,
   Card,
@@ -129,7 +130,12 @@ export default function BankAccountScreen() {
       return [...prev, ...txData.transactions.filter((t: any) => !seen.has(t._id))];
     });
   }, [txData, txPage]);
-  const { data: wallet, isLoading: isWalletLoading, refetch: refetchWallet } = useWallet();
+  const {
+    data: wallet,
+    isLoading: isWalletLoading,
+    isError: isWalletError,
+    refetch: refetchWallet,
+  } = useWallet();
   const topup = useTopupWallet();
   const updateBank = useUpdateBankAccount();
 
@@ -320,19 +326,19 @@ export default function BankAccountScreen() {
                     {lang === 'en' ? 'GreenHouse Wallet Balance' : 'Số dư ví GreenHouse'}
                   </Text>
                 </View>
-                <Text
-                  style={{
+                <WalletBalanceDisplay
+                  balance={wallet?.balance}
+                  isLoading={isWalletLoading}
+                  isError={isWalletError}
+                  onRetry={refetchWallet}
+                  textStyle={{
                     color: '#FFFFFF',
                     fontSize: fs(24),
                     fontWeight: '900',
                     marginTop: 2,
                     letterSpacing: 0.5,
                   }}
-                >
-                  {isWalletLoading
-                    ? '...'
-                    : `${new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'vi-VN').format(wallet?.balance ?? 0)}₫`}
-                </Text>
+                />
               </View>
               <TouchableOpacity
                 activeOpacity={0.8}
@@ -863,12 +869,13 @@ export default function BankAccountScreen() {
                 <Text style={{ fontSize: fs(12.5), color: tc.textSecondary, fontWeight: '600' }}>
                   {lang === 'en' ? 'Current Balance' : 'Số dư hiện tại'}
                 </Text>
-                <Text style={{ fontSize: fs(20), fontWeight: '800', color: COLORS.primary }}>
-                  {new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'vi-VN').format(
-                    wallet?.balance ?? 0,
-                  )}
-                  ₫
-                </Text>
+                <WalletBalanceDisplay
+                  balance={wallet?.balance}
+                  isLoading={isWalletLoading}
+                  isError={isWalletError}
+                  onRetry={refetchWallet}
+                  textStyle={{ fontSize: fs(20), fontWeight: '800', color: COLORS.primary }}
+                />
               </Card>
 
               <View style={{ gap: 8 }}>

@@ -1342,6 +1342,29 @@ export default function BookingScreen() {
     } catch (err: any) {
       const rawMsg = err?.response?.data?.message;
       const msgStr = Array.isArray(rawMsg) ? rawMsg[0] : rawMsg;
+
+      // Hết phiên hoặc 401 Unauthorized: chuyển về đăng nhập, không toast chữ thô 'Unauthorized'
+      if (
+        err?.response?.status === 401 ||
+        msgStr === 'Unauthorized' ||
+        err?.name === 'SessionExpiredError'
+      ) {
+        Toast.show({
+          type: 'error',
+          text1: lang === 'en' ? 'Session expired' : 'Phiên đăng nhập đã hết hạn',
+          text2:
+            lang === 'en'
+              ? 'Please log in again to continue'
+              : 'Vui lòng đăng nhập lại để tiếp tục',
+        });
+        void useAuthStore.getState().logout().finally(() => {
+          try {
+            router.replace('/(auth)/login');
+          } catch {}
+        });
+        return;
+      }
+
       // P0-7: server vẫn có thể chặn (vd. profile chưa kịp load ở pre-check)
       // → đưa lối gửi lại mã thay vì toast lỗi trần.
       if (typeof msgStr === 'string' && msgStr.includes('chưa được xác minh')) {
@@ -1386,6 +1409,9 @@ export default function BookingScreen() {
           return;
         }
       }
+      if (selectedService === 'custom' && customServiceName.trim() && !title.trim()) {
+        setTitle(customServiceName.trim());
+      }
       setFieldErrors({});
       setStep(1);
     } else if (step === 1) {
@@ -1413,6 +1439,9 @@ export default function BookingScreen() {
       if (!coordsDerived || (address.coordinates[0] === 0 && address.coordinates[1] === 0)) {
         ensureResolvedCoordinates(address).catch(() => {});
       }
+      if (selectedService === 'custom' && customServiceName.trim() && !title.trim()) {
+        setTitle(customServiceName.trim());
+      }
       setStep(2);
     } else if (step === 2) {
       // B2/B5/P1-28/P1-29: ngày invalid, quá khứ (grace 1 phút như sheet +
@@ -1425,6 +1454,9 @@ export default function BookingScreen() {
         return;
       }
       setFieldErrors({});
+      if (selectedService === 'custom' && customServiceName.trim() && !title.trim()) {
+        setTitle(customServiceName.trim());
+      }
       setStep(3);
     } else if (step === 3) {
       if (!title.trim()) {
@@ -1899,6 +1931,9 @@ export default function BookingScreen() {
                       onChangeText={v => {
                         setCustomServiceName(v);
                         clearFieldError('customServiceName');
+                        if (!title.trim() || title === customServiceName) {
+                          setTitle(v);
+                        }
                       }}
                     />
                     {/* G15: ô giá có ref riêng để scrollToField('targetPrice')
@@ -2593,7 +2628,11 @@ export default function BookingScreen() {
                 <Row
                   icon={<Briefcase size={16} color={COLORS.primary} />}
                   label={t('common_service')}
-                  value={tService(selectedServiceData) || '—'}
+                  value={
+                    selectedService === 'custom' || !selectedServiceData
+                      ? customServiceName.trim() || t('booking_custom_service_title')
+                      : tService(selectedServiceData) || customServiceName.trim() || '—'
+                  }
                 />
                 <Row
                   icon={<MapPin size={16} color={COLORS.primary} />}

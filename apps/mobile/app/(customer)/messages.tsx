@@ -25,7 +25,15 @@ export default function ConversationsScreen() {
   const tc = useThemeColors();
   const currentUser = useAuthStore(s => s.user);
   const isAuth = useAuthStore(s => s.isAuthenticated);
-  const { data: conversations, isLoading, isError, isRefetching, refetch, dataUpdatedAt } = useConversations();
+  const {
+    data: conversations,
+    isLoading,
+    isError,
+    error,
+    isRefetching,
+    refetch,
+    dataUpdatedAt,
+  } = useConversations();
   const insets = useSafeAreaInsets();
 
   return (
@@ -74,15 +82,45 @@ export default function ConversationsScreen() {
             onAction={() => router.push('/(auth)/login')}
           />
         ) : isError ? (
-          <ErrorState
-            title={lang === 'en' ? 'Unable to load conversations' : 'Không thể tải cuộc trò chuyện'}
-            subtitle={
-              lang === 'en'
-                ? 'Could not connect to chat server. Please retry.'
-                : 'Không thể kết nối đến máy chủ trò chuyện. Vui lòng thử lại.'
+          (() => {
+            const is401 =
+              (error as any)?.response?.status === 401 ||
+              (error as any)?.status === 401 ||
+              (error as any)?.name === 'SessionExpiredError' ||
+              (error as any)?.isSessionExpired;
+            if (is401) {
+              return (
+                <EmptyState
+                  icon={<MessageCircle size={36} color={COLORS.gray[400]} />}
+                  title={
+                    lang === 'en' ? 'Session expired' : 'Phiên đăng nhập đã hết hạn'
+                  }
+                  subtitle={
+                    lang === 'en'
+                      ? 'Your session has expired. Please log in again to view your conversations.'
+                      : 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại để xem tin nhắn.'
+                  }
+                  action={lang === 'en' ? 'Log in again' : 'Đăng nhập lại'}
+                  onAction={() => router.push('/(auth)/login')}
+                />
+              );
             }
-            onRetry={() => refetch()}
-          />
+            return (
+              <ErrorState
+                title={
+                  lang === 'en'
+                    ? 'Unable to load conversations'
+                    : 'Không thể tải cuộc trò chuyện'
+                }
+                subtitle={
+                  lang === 'en'
+                    ? 'Could not connect to chat server. Please retry.'
+                    : 'Không thể kết nối đến máy chủ trò chuyện. Vui lòng thử lại.'
+                }
+                onRetry={() => refetch()}
+              />
+            );
+          })()
         ) : isLoading ? (
           <LoadingSpinner />
         ) : !conversations?.length ? (
