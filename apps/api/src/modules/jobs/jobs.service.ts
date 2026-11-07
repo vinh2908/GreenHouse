@@ -829,7 +829,7 @@ export class JobsService implements OnModuleInit {
     }
 
     // G12 (B62): createJob phải kiểm tra duration — cùng thang với phía báo
-    // giá (CreateQuoteDto.estimated_duration: 0,5–720 giờ). Đơn phải có ít
+    // giá (CreateQuoteDto.estimated_duration: 0,5–12 giờ). Đơn phải có ít
     // nhất 1 tín hiệu thời lượng: estimated_duration, hoặc cặp giờ bắt đầu +
     // giờ kết thúc (đã kiểm tra 15 phút–12 giờ ở A9 trên đây).
     const startStr = dto.preferred_time_start?.trim();
@@ -844,9 +844,9 @@ export class JobsService implements OnModuleInit {
         typeof dto.estimated_duration !== 'number' ||
         !Number.isFinite(dto.estimated_duration) ||
         dto.estimated_duration < 0.5 ||
-        dto.estimated_duration > 720
+        dto.estimated_duration > 12
       ) {
-        throw new BadRequestException('Thời lượng công việc phải từ 0,5 đến 720 giờ');
+        throw new BadRequestException('Thời lượng công việc phải từ 0,5 đến 12 giờ');
       }
     } else if (!hasTimeRange) {
       throw new BadRequestException(
