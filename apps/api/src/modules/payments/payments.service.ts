@@ -670,36 +670,67 @@ export class PaymentsService {
     jobId: string,
     platformFee: number,
     helperNetEarned = 0,
+    session?: ClientSession | null,
   ): Promise<TransactionDocument> {
-    const wallet = await this.getOrCreateWallet(helperId);
-    const balanceBefore = wallet.balance;
-    const deducted = Math.min(balanceBefore, Math.max(0, platformFee));
-    const balanceAfter = Math.max(0, balanceBefore - deducted);
+    // H5 (G2): mẫu nguyên tử như deductWallet — $inc có guard $gte trên số
+    // tiền trừ THỰC TẾ, balance_after lấy TỪ KẾT QUẢ $inc (new: true).
+    // Khác deductWallet ở chỗ: ví không đủ phí thì KHÔNG ném lỗi mà chỉ trừ
+    // tối đa số dư còn lại, phần thiếu ghi unpaid_fee (giữ logic cũ, xem
+    // B43) — nên guard là $gte: deducted chứ không phải $gte: platformFee.
+    // deducted tính từ số dư vừa đọc nên có thể lỗi thời nếu 1 lần trừ khác
+    // chen ngang: khi đó $inc trả null, đọc lại số dư và thử lại (tối đa 5
+    // lần). Mỗi lần thử đều nguyên tử nên 2 lần trừ song song không bao giờ
+    // làm ví âm và tổng số trừ không vượt số dư ban đầu.
+    const fee = Math.max(0, platformFee);
+    let wallet: WalletDocument | null = null;
+    let deducted = 0;
+    let balanceAfter: number | undefined;
+    for (let attempt = 0; attempt < 5; attempt++) {
+      wallet = await this.getOrCreateWallet(helperId, session);
+      deducted = Math.min(Math.max(0, wallet.balance), fee);
+      const updatedWallet = await this.walletModel
+        .findOneAndUpdate(
+          { _id: wallet._id, balance: { $gte: deducted } },
+          { $inc: { balance: -deducted, total_earned: helperNetEarned } },
+          { new: true, session: session ?? undefined },
+        )
+        .exec();
+      if (updatedWallet) {
+        balanceAfter = updatedWallet.balance;
+        break;
+      }
+      // Số dư đổi giữa chừng do 1 lần trừ khác chen ngang — đọc lại, thử lại.
+    }
+    if (balanceAfter === undefined || !wallet) {
+      throw new ConflictException(
+        'Không thể trừ phí sàn do xung đột song song, vui lòng thử lại',
+      );
+    }
+    const balanceBefore = balanceAfter + deducted;
 
-    await this.walletModel
-      .findByIdAndUpdate(wallet._id, {
-        $set: { balance: balanceAfter },
-        $inc: { total_earned: helperNetEarned },
-      })
-      .exec();
-
-    return this.transactionModel.create({
-      wallet_id: wallet._id,
-      user_id: new Types.ObjectId(helperId),
-      job_id: new Types.ObjectId(jobId),
-      type: 'commission',
-      status: 'success',
-      amount: platformFee,
-      balance_before: balanceBefore,
-      balance_after: balanceAfter,
-      description: `Khấu trừ phí sàn (15%) đơn Tiền mặt #${jobId.slice(-6)}`,
-      metadata: {
-        payment_method: 'cash',
-        job_id: jobId,
-        unpaid_fee: platformFee - deducted,
-        helper_net_earned: helperNetEarned || Math.round((platformFee * 85) / 15),
-      },
-    });
+    const [tx] = await this.transactionModel.create(
+      [
+        {
+          wallet_id: wallet._id,
+          user_id: new Types.ObjectId(helperId),
+          job_id: new Types.ObjectId(jobId),
+          type: 'commission',
+          status: 'success',
+          amount: platformFee,
+          balance_before: balanceBefore,
+          balance_after: balanceAfter,
+          description: `Khấu trừ phí sàn (15%) đơn Tiền mặt #${jobId.slice(-6)}`,
+          metadata: {
+            payment_method: 'cash',
+            job_id: jobId,
+            unpaid_fee: platformFee - deducted,
+            helper_net_earned: helperNetEarned || Math.round((platformFee * 85) / 15),
+          },
+        },
+      ],
+      { session: session ?? undefined },
+    );
+    return tx;
   }
 
   // ─── Refund customer wallet on Dispute Resolution ──────────────────────────

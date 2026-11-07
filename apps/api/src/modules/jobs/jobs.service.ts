@@ -2899,12 +2899,7 @@ export class JobsService implements OnModuleInit {
     if (existing.helper_id && contract && contract.total_price > 0) {
       if (effectivePaymentMethod === 'cash') {
         // Đơn Tiền mặt: Thợ đã thu 100% tiền mặt trực tiếp từ khách -> Khấu trừ 15% phí sàn từ Ví thợ
-        await this.paymentsService.deductCommissionForCashJob(
-          String(existing.helper_id),
-          jobId,
-          contract.platform_fee,
-          contract.helper_receives,
-        );
+        await this.deductCashCommission(existing, contract.platform_fee, contract.helper_receives);
       } else if (contract.helper_receives > 0) {
         // Đơn Online Escrow: Giải ngân vào ví thợ
         await this.creditJobPayout(existing, contract.helper_receives);
@@ -3306,12 +3301,7 @@ export class JobsService implements OnModuleInit {
         if (job.payment_method === 'cash') {
           const platformFee = Math.max(0, remaining - helperPayout);
           if (platformFee > 0) {
-            await this.paymentsService.deductCommissionForCashJob(
-              String(job.helper_id),
-              jobId,
-              platformFee,
-              helperPayout,
-            );
+            await this.deductCashCommission(job, platformFee, helperPayout);
           }
         } else {
           await this.creditJobPayout(job, helperPayout);
@@ -3327,12 +3317,7 @@ export class JobsService implements OnModuleInit {
       // release_to_helper
       if (job.helper_id && moveMoney) {
         if (job.payment_method === 'cash' && contract) {
-          await this.paymentsService.deductCommissionForCashJob(
-            String(job.helper_id),
-            jobId,
-            contract.platform_fee,
-            contract.helper_receives,
-          );
+          await this.deductCashCommission(job, contract.platform_fee, contract.helper_receives);
         } else if (helperPayout > 0) {
           await this.creditJobPayout(job, helperPayout);
         }
@@ -3955,6 +3940,31 @@ export class JobsService implements OnModuleInit {
   // được chia theo tỉ lệ; lead nhận phần còn lại. Đơn thường (helpers_needed=1)
   // giữ nguyên luồng cũ 100%.
   // ═══════════════════════════════════════════════════════════════════════════
+
+  /**
+   * H5: Trừ phí sàn đơn tiền mặt trong 1 money transaction — session truyền
+   * xuống $inc + ghi giao dịch trong deductCommissionForCashJob, như
+   * creditJobPayout làm với creditHelper. Khi DB không hỗ trợ transaction
+   * thì runMoneyTransaction chạy thẳng và từng lần $inc vẫn nguyên tử.
+   */
+  private async deductCashCommission(
+    job: JobDocument,
+    platformFee: number,
+    helperNetEarned: number,
+  ): Promise<void> {
+    if (!job.helper_id) return;
+    const jobId = String(job._id);
+    const helperId = String(job.helper_id);
+    await this.paymentsService.runMoneyTransaction(async session => {
+      await this.paymentsService.deductCommissionForCashJob(
+        helperId,
+        jobId,
+        platformFee,
+        helperNetEarned,
+        session,
+      );
+    });
+  }
 
   /** Cộng tiền vào ví thợ — có chia nhóm nếu job có members đã accept */
   private async creditJobPayout(job: JobDocument, totalAmount: number): Promise<void> {
