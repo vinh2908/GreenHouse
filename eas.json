@@ -1,7 +1,7 @@
 {
   "cli": {
     "version": ">= 15.0.0",
-    "appVersionSource": "remote"
+    "appVersionSource": "local"
   },
   "build": {
     "development": {
@@ -24,7 +24,9 @@
       }
     },
     "production": {
-      "autoIncrement": true,
+      "android": {
+        "buildType": "apk"
+      },
       "env": {
         "EXPO_PUBLIC_API_URL": "https://greenhouse-api-chb9.onrender.com/api/v1"
       }
