@@ -2953,24 +2953,33 @@ export class JobsService implements OnModuleInit {
         // Đơn Tiền mặt: Thợ đã thu 100% tiền mặt trực tiếp từ khách -> Khấu trừ 15% phí sàn từ Ví thợ
         await this.deductCashCommission(existing, contract.platform_fee, contract.helper_receives);
       } else if (contract.helper_receives > 0) {
-        // P0-2: Đơn Online Escrow — chỉ giải ngân khi có khoản thanh toán
-        // trực tuyến ĐÃ XÁC MINH bằng tiền thật trong ví (mockPayJob trừ ví
-        // thật mới ghi được giao dịch 'payment' wallet). Đơn PAID bằng
-        // VietQR/MoMo mô phỏng (không cổng thanh toán thật) không được giải
-        // ngân — nếu không tiền thợ sẽ được đúc ra từ khoản tiền chưa ai thu.
-        // Đơn bảo hành (is_warranty) không thu tiền khách nên giữ luồng cũ.
-        if (!existing.is_warranty) {
+        // P0-2 + owner decision 2026-11-07 (keep simulation): an online-paid
+        // job releases payout only from money that actually exists — a REAL
+        // wallet payment credits the helper's withdrawable balance, a
+        // SIMULATED VietQR/MoMo/ZaloPay payment credits ONLY simulated_balance
+        // (demo, never withdrawable). Anything else is refused, never minted.
+        // Warranty jobs (is_warranty) collect no customer money; keep the old flow.
+        if (existing.is_warranty) {
+          await this.creditJobPayout(existing, contract.helper_receives);
+          payoutCredited = true;
+        } else {
           const verified =
             (await this.paymentsService.hasVerifiedWalletPayment?.(jobId)) ?? false;
-          if (!verified) {
-            throw new BadRequestException(
-              'Đơn này chưa có khoản thanh toán trực tuyến đã xác minh (chỉ thanh toán bằng số dư ví thật mới được giải ngân cho thợ). Vui lòng thanh toán lại bằng ví, hoặc nghiệm thu bằng tiền mặt nếu thợ đã nhận tiền mặt trực tiếp.',
-            );
+          if (verified) {
+            await this.creditJobPayout(existing, contract.helper_receives);
+            payoutCredited = true;
+          } else {
+            const simulated =
+              (await this.paymentsService.hasSimulatedOnlinePayment?.(jobId)) ?? false;
+            if (!simulated) {
+              throw new BadRequestException(
+                'Đơn này chưa có khoản thanh toán trực tuyến đã xác minh (chỉ thanh toán bằng số dư ví thật mới được giải ngân cho thợ). Vui lòng thanh toán lại bằng ví, hoặc nghiệm thu bằng tiền mặt nếu thợ đã nhận tiền mặt trực tiếp.',
+              );
+            }
+            await this.creditJobPayoutSimulated(existing, contract.helper_receives);
+            payoutCredited = true;
           }
         }
-        // Đơn Online Escrow: Giải ngân vào ví thợ
-        await this.creditJobPayout(existing, contract.helper_receives);
-        payoutCredited = true;
       }
     }
 
@@ -3370,8 +3379,8 @@ export class JobsService implements OnModuleInit {
           if (platformFee > 0) {
             await this.deductCashCommission(job, platformFee, helperPayout);
           }
-        } else if (await this.canReleaseVerifiedPayout(jobId)) {
-          await this.creditJobPayout(job, helperPayout);
+        } else {
+          await this.releasePayoutForJob(job, helperPayout);
         }
       }
       if (job.helper_id && moveMoney) {
@@ -3385,8 +3394,8 @@ export class JobsService implements OnModuleInit {
       if (job.helper_id && moveMoney) {
         if (job.payment_method === 'cash' && contract) {
           await this.deductCashCommission(job, contract.platform_fee, contract.helper_receives);
-        } else if (helperPayout > 0 && (await this.canReleaseVerifiedPayout(jobId))) {
-          await this.creditJobPayout(job, helperPayout);
+        } else if (helperPayout > 0) {
+          await this.releasePayoutForJob(job, helperPayout);
         }
       }
     }
@@ -4034,20 +4043,29 @@ export class JobsService implements OnModuleInit {
   }
 
   /**
-   * P0-2: chỉ giải ngân tiền thợ khi đơn đã được trả bằng tiền thật đã xác
-   * minh trong ví (PaymentsService.hasVerifiedWalletPayment). Trả về false
-   * (và log warn) khi không có khoản thanh toán xác minh — bản thân phán
-   * quyết tranh chấp vẫn hoàn tất, nhưng KHÔNG đúc tiền thợ từ khoản tiền
-   * chưa ai thu. Đơn tiền mặt không đi qua đây (nhánh cash riêng).
+   * Release helper payout from money that actually exists: a verified REAL
+   * wallet payment -> real payout (creditJobPayout); a SIMULATED VietQR/MoMo/
+   * ZaloPay payment -> simulated-balance payout only (creditJobPayoutSimulated);
+   * anything else -> no payout (warn + false), the dispute decision itself
+   * still completes without minting money from uncollected funds. Cash jobs
+   * never go through here (separate cash branch).
    */
-  private async canReleaseVerifiedPayout(jobId: string): Promise<boolean> {
+  private async releasePayoutForJob(job: JobDocument, amount: number): Promise<boolean> {
+    const jobId = String(job._id);
     const verified = (await this.paymentsService.hasVerifiedWalletPayment?.(jobId)) ?? false;
-    if (!verified) {
-      this.logger.warn(
-        `P0-2: skipping helper payout for job ${jobId} — no verified wallet payment on record; refusing to mint payout from uncollected money`,
-      );
+    if (verified) {
+      await this.creditJobPayout(job, amount);
+      return true;
     }
-    return verified;
+    const simulated = (await this.paymentsService.hasSimulatedOnlinePayment?.(jobId)) ?? false;
+    if (simulated) {
+      await this.creditJobPayoutSimulated(job, amount);
+      return true;
+    }
+    this.logger.warn(
+      `P0-2: skipping helper payout for job ${jobId} — no verified or simulated payment on record; refusing to mint payout from uncollected money`,
+    );
+    return false;
   }
 
   /** Cộng tiền vào ví thợ — có chia nhóm nếu job có members đã accept */
@@ -4082,6 +4100,53 @@ export class JobsService implements OnModuleInit {
       }
       this.logger.log(
         `Team payout job ${jobId}: total=${totalAmount} members=${creditedToMembers} lead=${leadShare}`,
+      );
+    });
+  }
+
+  /**
+   * Owner decision 2026-11-07 (keep simulation): same team split as
+   * creditJobPayout, but every share credits ONLY `simulated_balance`
+   * (creditHelperSimulated) — demo credit, never withdrawable.
+   */
+  private async creditJobPayoutSimulated(job: JobDocument, totalAmount: number): Promise<void> {
+    if (!job.helper_id || totalAmount <= 0) return;
+    const jobId = String(job._id);
+    const acceptedMembers = (job.team ?? []).filter(m => m.status === 'accepted');
+    await this.paymentsService.runMoneyTransaction(async session => {
+      if (acceptedMembers.length === 0) {
+        await this.paymentsService.creditHelperSimulated(
+          String(job.helper_id),
+          jobId,
+          totalAmount,
+          session,
+        );
+        return;
+      }
+      let creditedToMembers = 0;
+      for (const member of acceptedMembers) {
+        const share = Math.floor((totalAmount * member.split_percent) / 100);
+        if (share > 0) {
+          await this.paymentsService.creditHelperSimulated(
+            String(member.helper_id),
+            jobId,
+            share,
+            session,
+          );
+          creditedToMembers += share;
+        }
+      }
+      const leadShare = totalAmount - creditedToMembers;
+      if (leadShare > 0) {
+        await this.paymentsService.creditHelperSimulated(
+          String(job.helper_id),
+          jobId,
+          leadShare,
+          session,
+        );
+      }
+      this.logger.log(
+        `Team SIMULATED payout job ${jobId}: total=${totalAmount} members=${creditedToMembers} lead=${leadShare}`,
       );
     });
   }

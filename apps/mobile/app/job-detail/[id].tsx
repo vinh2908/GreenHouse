@@ -137,16 +137,25 @@ const PAYMENT_METHODS: PaymentMethodItem[] = [
     label: 'Tiền mặt trực tiếp (Trừ phí 15% ví ký quỹ thợ)',
     label_en: 'Direct cash (15% platform fee deducted from helper escrow)',
   },
-  // P0-2: only methods that move REAL, verifiable money are offered.
   // 'wallet' debits the customer's real wallet balance atomically.
-  // VietQR/MoMo/ZaloPay are NOT offered: no payment gateway is connected
-  // yet, so those payments cannot be verified and must never mark a job
-  // PAID (approval would mint helper payout from uncollected money).
-  // They return once a real gateway lands (owner decision still open).
+  // Owner decision 2026-11-07 ("giữ mô phỏng thanh toán đi"):
+  // VietQR/MoMo/ZaloPay are offered again as honestly labelled SIMULATION —
+  // no real gateway, no real money collected; the helper payout goes to the
+  // demo simulated balance only (never withdrawable).
   {
     id: 'wallet',
     label: 'Số dư ví (chỉ tiền thật trong ví)',
     label_en: 'Wallet balance (real funds only)',
+  },
+  {
+    id: 'vietqr',
+    label: 'VietQR (Mô phỏng — demo, không thu tiền thật)',
+    label_en: 'VietQR (Simulation — demo, no real money collected)',
+  },
+  {
+    id: 'momo',
+    label: 'MoMo / ZaloPay (Mô phỏng — demo, không thu tiền thật)',
+    label_en: 'MoMo / ZaloPay (Simulation — demo, no real money collected)',
   },
 ];
 
@@ -282,8 +291,8 @@ export default function JobDetailScreen() {
   }, [focus, job, quotes]);
   const [rating, setRating] = useState(5);
   const [reviewText, setReviewText] = useState('');
-  // P0-2: default to cash — vietqr/momo are not offered until a real
-  // payment gateway is connected (see PAYMENT_METHODS above).
+  // Default to cash; VietQR/MoMo/ZaloPay are offered as labelled
+  // simulation (see PAYMENT_METHODS above).
   const [paymentMethod, setPaymentMethod] = useState('cash');
   const [selectedMediaPreview, setSelectedMediaPreview] = useState<string | null>(null);
   // P1-1: scheduled_at comes from the job's real schedule, never the

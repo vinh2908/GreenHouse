@@ -116,13 +116,28 @@ describe('PaymentsService - B41/B42/B43/B44 validation', () => {
       expect(createdTx).toHaveLength(0);
     });
 
-    // P0-2: chưa có cổng thanh toán thật nên VietQR/MoMo/ZaloPay không thể
-    // xác minh — từ chối thay vì ghi PAID giả rồi giải ngân tiền thợ từ hư không.
-    it('payment_method "vietqr" (chưa có cổng thanh toán thật) → 400', async () => {
-      const { service } = makeService();
-      await expect(service.mockPayJob(customerId, jobId, 500_000, 'vietqr')).rejects.toBeInstanceOf(
-        BadRequestException,
-      );
+    // Owner decision 2026-11-07 ("giữ mô phỏng thanh toán đi"):
+    // VietQR/MoMo/ZaloPay work as honestly labelled SIMULATION — the job is
+    // marked PAID (demo) with metadata.simulated=true, no wallet debit, no
+    // real money collected.
+    it('payment_method "vietqr" (mô phỏng) → thành công, giao dịch ghi simulated, ví không bị trừ', async () => {
+      const { service, createdTx } = makeService();
+      const result = await service.mockPayJob(customerId, jobId, 500_000, 'vietqr');
+      expect(result.success).toBe(true);
+      expect((createdTx[0] as any).metadata.simulated).toBe(true);
+      expect((createdTx[0] as any).metadata.payment_method).toBe('vietqr');
+      expect((createdTx[0] as any).description).toContain('MÔ PHỎNG');
+      expect((createdTx[0] as any).balance_before).toBe(1_000_000);
+      expect((createdTx[0] as any).balance_after).toBe(1_000_000);
+    });
+
+    it('payment_method "momo" (mô phỏng) → thành công, giao dịch ghi simulated', async () => {
+      const { service, createdTx } = makeService();
+      const result = await service.mockPayJob(customerId, jobId, 500_000, 'momo');
+      expect(result.success).toBe(true);
+      expect((createdTx[0] as any).metadata.simulated).toBe(true);
+      expect((createdTx[0] as any).metadata.payment_method).toBe('momo');
+      expect((createdTx[0] as any).balance_after).toBe(1_000_000);
     });
   });
 
@@ -144,6 +159,35 @@ describe('PaymentsService - B41/B42/B43/B44 validation', () => {
       await expect(service.topupWallet(customerId, 100_000.5)).rejects.toBeInstanceOf(
         BadRequestException,
       );
+    });
+  });
+
+  describe('P0-2 (simulation): creditHelperSimulated / refundCustomer mô phỏng', () => {
+    it('cộng 297.500₫ mô phỏng cho thợ → giao dịch ghi simulated, số dư rút được không đổi', async () => {
+      const { service } = makeService();
+      const tx = await service.creditHelperSimulated(helperId, jobId, 297_500);
+      expect((tx as any).metadata.simulated).toBe(true);
+      expect((tx as any).metadata.simulated_balance_after).toBe(297_500);
+      expect((tx as any).balance_before).toBe(1_000_000);
+      expect((tx as any).balance_after).toBe(1_000_000);
+      expect((tx as any).reference).toMatch(/^SIM-PAYOUT-/);
+    });
+
+    it('đơn đã trả bằng vietqr mô phỏng → hoàn 350.000₫ vào simulated_balance, số dư rút được không đổi', async () => {
+      const { service, transactionModel } = makeService();
+      // Giả lập: đơn này có giao dịch payment simulated thành công.
+      (transactionModel as any).findOne = jest.fn().mockReturnValue({
+        select: jest.fn().mockReturnValue({
+          lean: jest.fn().mockReturnValue({
+            exec: jest.fn().mockResolvedValue({ _id: new Types.ObjectId() }),
+          }),
+        }),
+      });
+      const tx = await service.refundCustomer(customerId, jobId, 350_000, 'Hủy đơn mô phỏng');
+      expect((tx as any).metadata.simulated).toBe(true);
+      expect((tx as any).metadata.simulated_balance_after).toBe(350_000);
+      expect((tx as any).balance_before).toBe(1_000_000);
+      expect((tx as any).balance_after).toBe(1_000_000);
     });
   });
 
