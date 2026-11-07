@@ -16,6 +16,7 @@ const TABS = [
   { key: 'confirmed,helper_on_the_way,helper_arrived,in_progress', labelKey: 'jobs_tab_working' },
   { key: 'pending_review,disputed', labelKey: 'jobs_tab_review' },
   { key: 'completed,refunded', labelKey: 'jobs_tab_done' },
+  { key: 'expired', labelKey: 'jobs_tab_expired' },
   { key: 'cancelled', labelKey: 'jobs_tab_cancelled' },
 ];
 

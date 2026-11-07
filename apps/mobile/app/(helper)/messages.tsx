@@ -1,4 +1,5 @@
 import { View, Text, ScrollView, TouchableOpacity, RefreshControl } from 'react-native';
+import Toast from 'react-native-toast-message';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { MessageCircle, ChevronRight, ShieldCheck } from 'lucide-react-native';
@@ -100,9 +101,25 @@ export default function HelperConversationsScreen() {
               <TouchableOpacity
                 key={conv._id}
                 activeOpacity={0.85}
-                onPress={() =>
-                  router.push({ pathname: '/chat/[jobId]', params: { jobId: targetJobId } })
-                }
+                onPress={() => {
+                  // S6: a deleted job leaves conv.job_id null — never push
+                  // /chat/undefined (the chat screen would skeleton forever).
+                  if (!targetJobId) {
+                    Toast.show({
+                      type: 'info',
+                      text1:
+                        lang === 'en'
+                          ? 'Conversation unavailable'
+                          : 'Cuộc trò chuyện không còn khả dụng',
+                      text2:
+                        lang === 'en'
+                          ? 'The job for this conversation was deleted.'
+                          : 'Đơn hàng của cuộc trò chuyện này đã bị xóa.',
+                    });
+                    return;
+                  }
+                  router.push({ pathname: '/chat/[jobId]', params: { jobId: targetJobId } });
+                }}
               >
                 <Card
                   style={{

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useMemo } from 'react';
-import { formatDate, formatDateTime, vnDateKey, vnDateTimeKey } from '@/utils/date-format';
+import { formatDate, formatDateTime, vnDateKey } from '@/utils/date-format';
 import {
   View,
   Text,
@@ -77,6 +77,7 @@ import {
   useRemoveFavorite,
   useReleasePrivateOffer,
   useCreateWarrantyJob,
+  useRebookJob,
   useClaimForJob,
   useValidateVoucher,
   useApplyVoucherToJob,
@@ -243,6 +244,9 @@ export default function JobDetailScreen() {
   const removeFavorite = useRemoveFavorite();
   const releaseOffer = useReleasePrivateOffer();
   const createWarranty = useCreateWarrantyJob();
+  // P1-13: repost an expired job via the rebook endpoint (backend now also
+  // accepts EXPIRED sources, not just COMPLETED).
+  const rebookJob = useRebookJob();
   const { data: jobClaim } = useClaimForJob(job?.status === 'completed' ? id : undefined);
   const [downloadingInvoice, setDownloadingInvoice] = useState(false);
 
@@ -282,7 +286,23 @@ export default function JobDetailScreen() {
   // payment gateway is connected (see PAYMENT_METHODS above).
   const [paymentMethod, setPaymentMethod] = useState('cash');
   const [selectedMediaPreview, setSelectedMediaPreview] = useState<string | null>(null);
-  const [selectedDate] = useState(vnDateTimeKey(1));
+  // P1-1: scheduled_at comes from the job's real schedule, never the
+  // tomorrow-09:00 default. Derived at accept time from the loaded job so a
+  // stale initial value can never win. Backend re-derives it as well.
+  const jobScheduledAt = (() => {
+    const dateStr =
+      typeof job?.preferred_date === 'string'
+        ? job.preferred_date.slice(0, 10)
+        : job?.preferred_date
+          ? new Date(job.preferred_date).toISOString().slice(0, 10)
+          : '';
+    const timeStr = (job?.preferred_time_start ?? '').trim();
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr) && /^\d{1,2}:\d{2}$/.test(timeStr)) {
+      const [h, m] = timeStr.split(':').map(Number);
+      return `${dateStr}T${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:00`;
+    }
+    return undefined;
+  })();
 
   // ── Dispute Modal States ─────────────────────────────────────────────────
   const [showDisputeModal, setShowDisputeModal] = useState(false);
@@ -474,7 +494,23 @@ export default function JobDetailScreen() {
   ].includes(job.status);
   const canEdit = !['completed', 'cancelled', 'disputed', 'refunded'].includes(job.status);
   const canApprove = job.status === 'pending_review';
-  const canDispute = ['in_progress', 'pending_review'].includes(job.status);
+  // P1-9: backend also allows a dispute on a COMPLETED job within 72h of
+  // completion (openDispute). completed_at: completion event → job field →
+  // updated_at fallback, mirroring the backend's getJobCompletedAt.
+  const completedAtMs = (() => {
+    const ev = Array.isArray(job.events)
+      ? job.events.find((e: any) => e.to_status === 'completed')
+      : null;
+    const raw = ev?.created_at ?? (job as any).completed_at ?? job.updated_at;
+    const t = raw ? new Date(raw).getTime() : NaN;
+    return Number.isNaN(t) ? null : t;
+  })();
+  const canDisputeCompleted =
+    job.status === 'completed' &&
+    completedAtMs !== null &&
+    Date.now() - completedAtMs <= 72 * 60 * 60 * 1000;
+  const canDispute =
+    ['in_progress', 'pending_review'].includes(job.status) || canDisputeCompleted;
   const hasHelperAssigned = !!job.helper_id;
 
   const helperObj = typeof job.helper_id === 'object' && job.helper_id ? job.helper_id : null;
@@ -688,7 +724,7 @@ export default function JobDetailScreen() {
       await selectQuote.mutateAsync({
         jobId: id,
         quote_id: quoteToAccept,
-        scheduled_at: selectedDate,
+        scheduled_at: jobScheduledAt,
       });
       setQuoteToAccept(null);
       Toast.show({
@@ -1410,7 +1446,10 @@ export default function JobDetailScreen() {
         )}
 
         {/* ── Status tracker ─────────────────────────────────────────── */}
-        {job.status !== 'cancelled' && (
+        {/* P1-13: hide for terminal statuses with no progress path
+            (expired / disputed / refunded / cancelled) — the step list has
+            no entry for them, so it rendered every step as "Upcoming". */}
+        {!['cancelled', 'expired', 'disputed', 'refunded'].includes(job.status) && (
           <Card style={{ gap: 12, padding: 16 }}>
             <Text style={{ fontWeight: '800', fontSize: fs(15), color: tc.text }}>
               {lang === 'en' ? 'Job Progress' : 'Tiến trình thực hiện'}
@@ -1503,7 +1542,12 @@ export default function JobDetailScreen() {
         )}
 
         {/* ── Grab-Style Live Map Tracking & Route ─────────────────────── */}
-        {customerLocation && (
+        {/* P2-13: live map only while a helper is assigned and en route /
+            working — never on open / finished / disputed / refunded jobs. */}
+        {customerLocation &&
+          ['confirmed', 'helper_on_the_way', 'helper_arrived', 'in_progress', 'pending_review'].includes(
+            job.status,
+          ) && (
           <View
             onLayout={e => {
               trackingSectionY.current = e.nativeEvent.layout.y;
@@ -1864,7 +1908,9 @@ export default function JobDetailScreen() {
                           </View>
                         )}
 
-                        {q.status === 'rejected' ? (
+                        {/* P1-14: withdrawn / expired quotes are dead like
+                            rejected ones — badge them unavailable, no actions. */}
+                        {['rejected', 'withdrawn', 'expired'].includes(q.status) ? (
                           <View
                             style={{
                               flexDirection: 'row',
@@ -1877,7 +1923,19 @@ export default function JobDetailScreen() {
                             }}
                           >
                             <Badge
-                              label={lang === 'en' ? 'Rejected' : 'Đã từ chối'}
+                              label={
+                                q.status === 'withdrawn'
+                                  ? lang === 'en'
+                                    ? 'Withdrawn'
+                                    : 'Đã rút'
+                                  : q.status === 'expired'
+                                    ? lang === 'en'
+                                      ? 'Expired'
+                                      : 'Đã hết hạn'
+                                    : lang === 'en'
+                                      ? 'Rejected'
+                                      : 'Đã từ chối'
+                              }
                               color={COLORS.gray[200]}
                               textColor={COLORS.gray[600]}
                               size="sm"
@@ -2430,8 +2488,25 @@ export default function JobDetailScreen() {
             />
           )}
 
+          {job.status === 'expired' && (
+            <Button
+              title={lang === 'en' ? 'Repost this job' : 'Đăng lại đơn này'}
+              icon={<RotateCcw size={18} color="#FFF" />}
+              loading={rebookJob.isPending}
+              onPress={async () => {
+                try {
+                  const res: any = await rebookJob.mutateAsync({ sourceJobId: id! });
+                  const newId =
+                    res?.data?.data?._id ?? res?.data?._id ?? res?._id ?? res?.data?.data?.id;
+                  if (newId) router.replace({ pathname: '/job-detail/[id]', params: { id: String(newId) } });
+                } catch {
+                  // useRebookJob onError already shows the error toast.
+                }
+              }}
+            />
+          )}
           {!canCancel &&
-            ['helper_arrived', 'in_progress', 'pending_review'].includes(job.status) && (
+            ['in_progress', 'pending_review'].includes(job.status) && (
               <View
                 style={{
                   backgroundColor: '#F8FAFC',
@@ -2449,8 +2524,8 @@ export default function JobDetailScreen() {
                   style={{ flex: 1, fontSize: fs(13), color: tc.textSecondary, lineHeight: 18 }}
                 >
                   {lang === 'en'
-                    ? 'Cannot cancel directly at this stage. Helper has arrived or work is underway. If you need support, please contact helper or Green House customer service.'
-                    : 'Không thể hủy trực tiếp ở bước này. Thợ đã có mặt tại điểm làm việc hoặc đang tiến hành công việc. Nếu cần hỗ trợ hoặc giải quyết sự cố, vui lòng liên hệ thợ hoặc tổng đài hỗ trợ Green House.'}
+                    ? 'Cannot cancel directly at this stage. Work is underway. If you need support, please contact helper or Green House customer service.'
+                    : 'Không thể hủy trực tiếp ở bước này. Công việc đang tiến hành. Nếu cần hỗ trợ hoặc giải quyết sự cố, vui lòng liên hệ thợ hoặc tổng đài hỗ trợ Green House.'}
                 </Text>
               </View>
             )}
