@@ -200,6 +200,21 @@ export class RecurringService implements OnApplicationBootstrap, OnModuleDestroy
         continue;
       }
 
+      // H1 (R1): Gói wizard chỉ gửi time_start + duration_hours, không có
+      // time_end — map duration_hours → estimated_duration để G12 ở
+      // createJob không chặn 400 mọi kỳ. Có đủ cặp giờ thì ưu tiên cặp giờ
+      // như cũ (không gắn estimated_duration, A9 vẫn kiểm tra cặp giờ);
+      // chỉ dùng duration_hours khi thiếu time_end (undefined/null/chuỗi
+      // rỗng — chuỗi rỗng cũng làm hasTimeRange của G12 sai nên tính là
+      // thiếu). duration_hours không phải số hữu hạn thì không map: G12 sẽ
+      // 400 với thông báo chung thay vì nhận giá trị rác.
+      const hasTimeEnd =
+        typeof plan.time_end === 'string' && plan.time_end.trim() !== '';
+      const durationHours =
+        typeof plan.duration_hours === 'number' && Number.isFinite(plan.duration_hours)
+          ? plan.duration_hours
+          : undefined;
+
       const dto: CreateJobDto = {
         service_id: String(plan.service_id),
         title: plan.title,
@@ -219,6 +234,9 @@ export class RecurringService implements OnApplicationBootstrap, OnModuleDestroy
         preferred_date: key,
         preferred_time_start: plan.time_start,
         preferred_time_end: plan.time_end,
+        ...(!hasTimeEnd && durationHours !== undefined
+          ? { estimated_duration: durationHours }
+          : {}),
         is_flexible_time: false,
       };
 
