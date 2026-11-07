@@ -5,7 +5,7 @@
 //     { type, job_id, sos_id, ... } → resolveNotificationRoute → điều hướng
 //     đúng màn hình. SOS decision còn kích hoạt refreshSosState() để popup
 //     quyết định hiện ngay trên màn chi tiết đơn.
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as Notifications from 'expo-notifications';
@@ -30,6 +30,59 @@ export function usePushNotifications() {
   const handledResponseIds = useRef<Set<string>>(new Set());
   const savedTokenRef = useRef<string | null>(null);
   const wasAuthenticatedRef = useRef(false);
+  // S7: push chạm lúc cold start, session chưa restore xong (isAuthenticated
+  // còn false) → giữ lại, xử lý sau khi đăng nhập xong để biết active_role.
+  const pendingResponseRef = useRef<Notifications.NotificationResponse | null>(null);
+
+  const handleResponse = useCallback(
+    (response: Notifications.NotificationResponse | null) => {
+      if (!response) return;
+      const identifier = response.notification?.request?.identifier;
+      if (identifier) {
+        if (handledResponseIds.current.has(identifier)) return;
+        handledResponseIds.current.add(identifier);
+      }
+      const content = response.notification?.request?.content;
+      const data = (content?.data ?? {}) as Record<string, unknown>;
+      const type = typeof data.type === 'string' ? data.type : undefined;
+      if (!type) return;
+
+      // Chưa đăng nhập xong (cold start): giữ lại để xử lý khi auth sẵn —
+      // resolve ngay lúc này có thể chọn nhầm phía vì active_role chưa rõ.
+      if (!useAuthStore.getState().isAuthenticated) {
+        pendingResponseRef.current = response;
+        return;
+      }
+
+      // SOS: làm mới trạng thái SOS để popup quyết định hiện ngay (nếu còn chờ).
+      if (SOS_DECISION_TYPES.has(type)) {
+        void refreshSosState();
+      }
+      const authUser = useAuthStore.getState().user;
+      const route: NotificationRouteDescriptor | null = resolveNotificationRoute(
+        { type, data },
+        authUser?.active_role,
+        (authUser as { roles?: string[] } | null)?.roles,
+      );
+      if (route) {
+        router.push(route as never);
+      } else {
+        // P2-8: push không có đích cụ thể thì về danh sách thông báo thay vì
+        // chạm mà không có phản hồi gì.
+        router.push('/notifications');
+      }
+    },
+    [router],
+  );
+
+  // Xử lý push đã giữ lại ngay khi session restore xong.
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    const pending = pendingResponseRef.current;
+    if (!pending) return;
+    pendingResponseRef.current = null;
+    handleResponse(pending);
+  }, [isAuthenticated, handleResponse]);
 
   // ── Đăng ký / gỡ token theo trạng thái đăng nhập ──────────────────────────
   useEffect(() => {
@@ -80,33 +133,6 @@ export function usePushNotifications() {
     if (Platform.OS === 'web') return;
     configurePushForegroundHandler();
 
-    const handleResponse = (response: Notifications.NotificationResponse | null) => {
-      if (!response) return;
-      const identifier = response.notification?.request?.identifier;
-      if (identifier) {
-        if (handledResponseIds.current.has(identifier)) return;
-        handledResponseIds.current.add(identifier);
-      }
-      const content = response.notification?.request?.content;
-      const data = (content?.data ?? {}) as Record<string, unknown>;
-      const type = typeof data.type === 'string' ? data.type : undefined;
-      if (!type) return;
-
-      // SOS: làm mới trạng thái SOS để popup quyết định hiện ngay (nếu còn chờ).
-      if (SOS_DECISION_TYPES.has(type)) {
-        void refreshSosState();
-      }
-      const authUser = useAuthStore.getState().user;
-      const route: NotificationRouteDescriptor | null = resolveNotificationRoute(
-        { type, data },
-        authUser?.active_role,
-        (authUser as { roles?: string[] } | null)?.roles,
-      );
-      if (route) {
-        router.push(route as never);
-      }
-    };
-
     // Cold start: app bị đóng hẳn, user chạm push để mở app.
     void Notifications.getLastNotificationResponseAsync()
       .then(response => {
@@ -119,5 +145,5 @@ export function usePushNotifications() {
 
     const subscription = Notifications.addNotificationResponseReceivedListener(handleResponse);
     return () => subscription.remove();
-  }, [router]);
+  }, [router, handleResponse]);
 }
