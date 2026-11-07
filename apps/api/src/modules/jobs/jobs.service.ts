@@ -48,6 +48,7 @@ import {
   JOB_OPEN_EXPIRY_HOURS,
   JOB_QUOTE_EXPIRY_HOURS,
   PLATFORM_FEE_BY_SERVICE,
+  SOS_SURCHARGE_VND,
   PRIVATE_OFFER_DEFAULT_HOURS,
   SOCKET_EVENTS,
   NOTIFICATION_TYPES,
@@ -1383,7 +1384,10 @@ export class JobsService implements OnModuleInit {
     const expiresAt = new Date();
     expiresAt.setHours(expiresAt.getHours() + 2);
 
-    const surcharge = dto.surcharge ?? 100000;
+    // S4: Phụ phí SOS do server quyết định (SOS_SURCHARGE_VND) — giá trị
+    // client gửi trong dto.surcharge (nếu có) bị BỎ QUA hoàn toàn, giá là
+    // server-authoritative. (Trường surcharge đã gỡ khỏi CreateSosJobDto.)
+    const surcharge = SOS_SURCHARGE_VND;
 
     const job = await this.jobModel.create({
       customer_id: new Types.ObjectId(customerId),
@@ -2901,6 +2905,21 @@ export class JobsService implements OnModuleInit {
         // Đơn Tiền mặt: Thợ đã thu 100% tiền mặt trực tiếp từ khách -> Khấu trừ 15% phí sàn từ Ví thợ
         await this.deductCashCommission(existing, contract.platform_fee, contract.helper_receives);
       } else if (contract.helper_receives > 0) {
+        // P0-2: Đơn Online Escrow — chỉ giải ngân khi có khoản thanh toán
+        // trực tuyến ĐÃ XÁC MINH bằng tiền thật trong ví (mockPayJob trừ ví
+        // thật mới ghi được giao dịch 'payment' wallet). Đơn PAID bằng
+        // VietQR/MoMo mô phỏng (không cổng thanh toán thật) không được giải
+        // ngân — nếu không tiền thợ sẽ được đúc ra từ khoản tiền chưa ai thu.
+        // Đơn bảo hành (is_warranty) không thu tiền khách nên giữ luồng cũ.
+        if (!existing.is_warranty) {
+          const verified =
+            (await this.paymentsService.hasVerifiedWalletPayment?.(jobId)) ?? false;
+          if (!verified) {
+            throw new BadRequestException(
+              'Đơn này chưa có khoản thanh toán trực tuyến đã xác minh (chỉ thanh toán bằng số dư ví thật mới được giải ngân cho thợ). Vui lòng thanh toán lại bằng ví, hoặc nghiệm thu bằng tiền mặt nếu thợ đã nhận tiền mặt trực tiếp.',
+            );
+          }
+        }
         // Đơn Online Escrow: Giải ngân vào ví thợ
         await this.creditJobPayout(existing, contract.helper_receives);
         payoutCredited = true;
@@ -3303,7 +3322,7 @@ export class JobsService implements OnModuleInit {
           if (platformFee > 0) {
             await this.deductCashCommission(job, platformFee, helperPayout);
           }
-        } else {
+        } else if (await this.canReleaseVerifiedPayout(jobId)) {
           await this.creditJobPayout(job, helperPayout);
         }
       }
@@ -3318,7 +3337,7 @@ export class JobsService implements OnModuleInit {
       if (job.helper_id && moveMoney) {
         if (job.payment_method === 'cash' && contract) {
           await this.deductCashCommission(job, contract.platform_fee, contract.helper_receives);
-        } else if (helperPayout > 0) {
+        } else if (helperPayout > 0 && (await this.canReleaseVerifiedPayout(jobId))) {
           await this.creditJobPayout(job, helperPayout);
         }
       }
@@ -3964,6 +3983,23 @@ export class JobsService implements OnModuleInit {
         session,
       );
     });
+  }
+
+  /**
+   * P0-2: chỉ giải ngân tiền thợ khi đơn đã được trả bằng tiền thật đã xác
+   * minh trong ví (PaymentsService.hasVerifiedWalletPayment). Trả về false
+   * (và log warn) khi không có khoản thanh toán xác minh — bản thân phán
+   * quyết tranh chấp vẫn hoàn tất, nhưng KHÔNG đúc tiền thợ từ khoản tiền
+   * chưa ai thu. Đơn tiền mặt không đi qua đây (nhánh cash riêng).
+   */
+  private async canReleaseVerifiedPayout(jobId: string): Promise<boolean> {
+    const verified = (await this.paymentsService.hasVerifiedWalletPayment?.(jobId)) ?? false;
+    if (!verified) {
+      this.logger.warn(
+        `P0-2: skipping helper payout for job ${jobId} — no verified wallet payment on record; refusing to mint payout from uncollected money`,
+      );
+    }
+    return verified;
   }
 
   /** Cộng tiền vào ví thợ — có chia nhóm nếu job có members đã accept */

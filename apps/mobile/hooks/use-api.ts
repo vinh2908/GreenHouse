@@ -282,7 +282,6 @@ export function useCreateSosJob() {
       title: string;
       description: string;
       address: any;
-      surcharge?: number;
       photos?: string[];
     }) => uploadFiles(dto.photos).then(photos => apiClient.post('/jobs/sos', { ...dto, photos })),
     onSuccess: () => {
