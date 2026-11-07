@@ -28,7 +28,8 @@ import relativeTime from 'dayjs/plugin/relativeTime';
 import 'dayjs/locale/vi';
 import Toast from 'react-native-toast-message';
 import { Alert } from '@/components/common/app-alert';
-import { useJobDetail, useCancelJob } from '@/hooks/use-api';
+import { useJobDetail, useCancelJob, useHelperPublicProfile } from '@/hooks/use-api';
+import { useNowTick, formatCountdown } from '@/hooks/use-countdown';
 import { useJobSocketUpdates, useHelperLocation } from '@/hooks/use-socket';
 import { socketService, SOCKET_EVENTS } from '@/services/socket.service';
 import { LiveTrackingMap } from '@/components/common/live-tracking-map';
@@ -52,6 +53,15 @@ export default function SosTrackingScreen() {
     typeof job?.helper_id === 'object' ? job.helper_id?._id : job?.helper_id,
   );
   const cancelJob = useCancelJob();
+  // P1-11: live countdown clock (creation + 15 min ETA target).
+  const nowMs = useNowTick(true);
+  // P1-10: real helper rating / completed-job count from the public profile
+  // (the job's helper_id populate only carries name/phone/avatar).
+  const helperIdForProfile =
+    typeof job?.helper_id === 'object' ? job?.helper_id?._id : job?.helper_id;
+  const { data: helperProfile } = useHelperPublicProfile(
+    typeof helperIdForProfile === 'string' ? helperIdForProfile : undefined,
+  );
 
   // Lắng nghe sự kiện sos:accepted trực tiếp
   useEffect(() => {
@@ -83,11 +93,69 @@ export default function SosTrackingScreen() {
       </View>
     );
 
+  // P2-25: bad / deleted id — don't render the scanning card with
+  // undefined title/address and a map with no destination.
+  if (!job) {
+    return (
+      <View
+        style={{
+          flex: 1,
+          backgroundColor: tc.background,
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: 24,
+          gap: 12,
+        }}
+      >
+        <AlertTriangle size={40} color={COLORS.gray[400]} />
+        <Text style={{ fontSize: fs(17), fontWeight: '800', color: tc.text, textAlign: 'center' }}>
+          {lang === 'en' ? 'Rescue request not found' : 'Không tìm thấy yêu cầu cứu hộ'}
+        </Text>
+        <Text style={{ fontSize: fs(13), color: tc.textMuted, textAlign: 'center' }}>
+          {lang === 'en'
+            ? 'This rescue request may have been deleted or the link is incorrect.'
+            : 'Yêu cầu cứu hộ này có thể đã bị xóa hoặc liên kết không đúng.'}
+        </Text>
+        <Button
+          title={lang === 'en' ? 'Back to home' : 'Về trang chủ'}
+          onPress={() => router.replace('/(customer)/home')}
+        />
+      </View>
+    );
+  }
+
   const isMatched =
     job?.status === 'confirmed' ||
     job?.status === 'helper_on_the_way' ||
     job?.status === 'helper_arrived' ||
     job?.status === 'in_progress';
+  // P1-12: terminal SOS jobs must never show the "searching" spinner.
+  const isTerminal = [
+    'completed',
+    'cancelled',
+    'pending_review',
+    'refunded',
+    'disputed',
+    'expired',
+  ].includes(job?.status ?? '');
+  const isCancellable = [
+    'open',
+    'receiving_quotes',
+    'quote_selected',
+    'confirmed',
+    'helper_on_the_way',
+    'helper_arrived',
+  ].includes(job?.status ?? '');
+  // P1-11: live countdown to the 15-minute arrival target (creation + 15m).
+  const etaDeadlineMs = job?.created_at
+    ? new Date(job.created_at).getTime() + 15 * 60 * 1000
+    : null;
+  const etaRemainingMs = etaDeadlineMs !== null ? etaDeadlineMs - nowMs : null;
+  // P1-10: real rating / completed count; omit both when unavailable.
+  const helperRating = helperProfile?.average_rating ?? helperProfile?.rating ?? 0;
+  const helperCompleted =
+    helperProfile?.total_completed ?? helperProfile?.completed_jobs ?? 0;
+  const helperVerified = helperProfile?.verification_status === 'approved';
   const helperObj = typeof job?.helper_id === 'object' && job?.helper_id ? job.helper_id : null;
   const hasRealHelper = Boolean(helperObj && (helperObj.full_name || helperObj.phone));
   const helperName = hasRealHelper
@@ -134,12 +202,29 @@ export default function SosTrackingScreen() {
           text: lang === 'en' ? 'Confirm cancel' : 'Xác nhận hủy',
           style: 'destructive',
           onPress: async () => {
-            await cancelJob.mutateAsync({
-              jobId: id!,
-              reason:
-                lang === 'en' ? 'Customer cancelled SOS request' : 'Khách hàng hủy yêu cầu SOS',
-            });
-            router.replace('/(customer)/home');
+            try {
+              await cancelJob.mutateAsync({
+                jobId: id!,
+                reason:
+                  lang === 'en'
+                    ? 'Customer cancelled SOS request'
+                    : 'Khách hàng hủy yêu cầu SOS',
+              });
+              Toast.show({
+                type: 'success',
+                text1:
+                  lang === 'en' ? 'Rescue request cancelled' : 'Đã hủy yêu cầu cứu hộ',
+              });
+              router.replace('/(customer)/home');
+            } catch (err: any) {
+              const msg =
+                err?.response?.data?.message ||
+                (lang === 'en'
+                  ? 'Could not cancel this rescue request'
+                  : 'Không thể hủy yêu cầu cứu hộ này');
+              Toast.show({ type: 'error', text1: msg });
+              refetch();
+            }
           },
         },
       ],
@@ -157,7 +242,7 @@ export default function SosTrackingScreen() {
           paddingHorizontal: 16,
           paddingTop: Math.max(insets.top + 6, 18),
           paddingBottom: 14,
-          backgroundColor: isMatched ? '#10B981' : '#DC2626',
+          backgroundColor: isTerminal ? '#6B7280' : isMatched ? '#10B981' : '#DC2626',
         }}
       >
         <TouchableOpacity
@@ -175,13 +260,17 @@ export default function SosTrackingScreen() {
           <ArrowLeft size={20} color="#FFFFFF" />
         </TouchableOpacity>
         <Text style={{ fontSize: fs(17), fontWeight: '900', color: '#FFFFFF' }}>
-          {isMatched
+          {isTerminal
             ? lang === 'en'
-              ? 'HELPER ON THE WAY TO RESCUE'
-              : 'THỢ ĐANG ĐẾN CỨU HỘ'
-            : lang === 'en'
-              ? 'RADAR SCANNING FOR EMERGENCY HELPERS'
-              : 'RADAR QUÉT TÌM THỢ KHẨN CẤP'}
+              ? 'RESCUE REQUEST ENDED'
+              : 'YÊU CẦU CỨU HỘ ĐÃ KẾT THÚC'
+            : isMatched
+              ? lang === 'en'
+                ? 'HELPER ON THE WAY TO RESCUE'
+                : 'THỢ ĐANG ĐẾN CỨU HỘ'
+              : lang === 'en'
+                ? 'SEARCHING FOR EMERGENCY HELPERS'
+                : 'ĐANG TÌM THỢ KHẨN CẤP'}
         </Text>
         <TouchableOpacity
           activeOpacity={0.7}
@@ -203,8 +292,9 @@ export default function SosTrackingScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ padding: 16, gap: 14, paddingBottom: 60 }}
       >
-        {/* ── TRƯỜNG HỢP 1: ĐANG PHÁT SÓNG QUÉT TÌM THỢ GẦN NHẤT ─────── */}
-        {!isMatched && (
+        {/* ── TRƯỜNG HỢP 1: ĐANG TÌM THỢ (chưa có thợ nhận) ───────────── */}
+        {/* P1-12: terminal jobs show the terminal card below, never this. */}
+        {!isMatched && !isTerminal && (
           <Card
             style={{
               alignItems: 'center',
@@ -230,16 +320,18 @@ export default function SosTrackingScreen() {
             <Text
               style={{ fontSize: fs(19), fontWeight: '900', color: '#991B1B', textAlign: 'center' }}
             >
+              {/* P1-11: no "5 nearest / 10km" claim — the backend broadcasts
+                  to all verified online helpers with no distance filter. */}
               {lang === 'en'
-                ? 'Broadcasting signal to 5 nearest helpers'
-                : 'Đang broadcast tín hiệu tới 5 thợ gần bạn nhất'}
+                ? 'Notifying verified online helpers'
+                : 'Đang thông báo tới các thợ online đã xác minh'}
             </Text>
             <Text
               style={{ fontSize: fs(13), color: '#B91C1C', textAlign: 'center', lineHeight: 19 }}
             >
               {lang === 'en'
-                ? 'System is scanning verified online helper partners within 10km radius. First helper to accept will immediately rush to you.'
-                : 'Hệ thống đang quét các đối tác thợ online trong bán kính 10km đã xác minh e-KYC. Thợ đầu tiên bấm nhận sẽ lập tức di chuyển đến bạn.'}
+                ? 'The system is notifying verified online helpers. The first helper to accept will rush to you.'
+                : 'Hệ thống đang thông báo tới các thợ online đã xác minh. Thợ đầu tiên bấm nhận sẽ lập tức di chuyển đến bạn.'}
             </Text>
 
             <View
@@ -262,13 +354,61 @@ export default function SosTrackingScreen() {
               </View>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
                 <Text style={{ fontSize: fs(12.5), color: tc.textSecondary }}>
-                  {lang === 'en' ? 'Arrival commitment:' : 'Thời gian cam kết:'}
+                  {lang === 'en' ? 'Arrival target:' : 'Mục tiêu có mặt:'}
                 </Text>
                 <Text style={{ fontSize: fs(13), fontWeight: '900', color: '#DC2626' }}>
-                  {lang === 'en' ? 'Arriving in 15 minutes' : 'Có mặt sau 15 phút'}
+                  {/* P1-11: live countdown from creation + 15 min, not a
+                      static "15 minutes" claim. */}
+                  {etaRemainingMs !== null && etaRemainingMs > 0
+                    ? lang === 'en'
+                      ? `Within ${formatCountdown(etaRemainingMs)}`
+                      : `Trong ${formatCountdown(etaRemainingMs)}`
+                    : lang === 'en'
+                      ? 'Past the 15-minute target — still searching'
+                      : 'Đã quá mục tiêu 15 phút — vẫn đang tìm thợ'}
                 </Text>
               </View>
             </View>
+          </Card>
+        )}
+
+        {/* ── P1-12: terminal state instead of the endless scanning card ── */}
+        {isTerminal && (
+          <Card
+            style={{
+              alignItems: 'center',
+              padding: 24,
+              gap: 12,
+              backgroundColor: '#F9FAFB',
+              borderColor: tc.border,
+              borderWidth: 1.5,
+            }}
+          >
+            <CheckCircle2 size={44} color={COLORS.gray[400]} />
+            <Text
+              style={{ fontSize: fs(17), fontWeight: '900', color: tc.text, textAlign: 'center' }}
+            >
+              {job?.status === 'cancelled'
+                ? lang === 'en'
+                  ? 'Rescue request cancelled'
+                  : 'Yêu cầu cứu hộ đã được hủy'
+                : job?.status === 'completed'
+                  ? lang === 'en'
+                    ? 'Rescue completed'
+                    : 'Cứu hộ đã hoàn thành'
+                  : lang === 'en'
+                    ? 'Rescue request ended'
+                    : 'Yêu cầu cứu hộ đã kết thúc'}
+            </Text>
+            <Text style={{ fontSize: fs(13), color: tc.textMuted, textAlign: 'center' }}>
+              {lang === 'en'
+                ? 'This rescue request is no longer active. No helper is being dispatched.'
+                : 'Yêu cầu cứu hộ này không còn hoạt động. Không còn thợ nào đang được điều phối.'}
+            </Text>
+            <Button
+              title={lang === 'en' ? 'Back to home' : 'Về trang chủ'}
+              onPress={() => router.replace('/(customer)/home')}
+            />
           </Card>
         )}
 
@@ -317,30 +457,42 @@ export default function SosTrackingScreen() {
                         ? 'Finding replacement helper...'
                         : 'Đang tìm thợ thay thế...'}
                   </Text>
-                  {hasRealHelper && (
+                  {/* P1-10: real rating + completed count from the helper's
+                      public profile; e-KYC badge only when actually
+                      approved. Both omitted when the profile has no data. */}
+                  {hasRealHelper && (helperVerified || helperRating > 0 || helperCompleted > 0) && (
                     <View
                       style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 }}
                     >
-                      <View
-                        style={{
-                          backgroundColor: '#ECFDF5',
-                          paddingHorizontal: 6,
-                          paddingVertical: 2,
-                          borderRadius: 8,
-                        }}
-                      >
-                        <Text
-                          style={{ fontSize: fs(11), color: COLORS.success, fontWeight: '700' }}
+                      {helperVerified && (
+                        <View
+                          style={{
+                            backgroundColor: '#ECFDF5',
+                            paddingHorizontal: 6,
+                            paddingVertical: 2,
+                            borderRadius: 8,
+                          }}
                         >
-                          e-KYC 100%
-                        </Text>
-                      </View>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
-                        <Star size={12} color="#F59E0B" fill="#F59E0B" />
-                        <Text style={{ fontSize: fs(12), color: '#F59E0B', fontWeight: '800' }}>
-                          {lang === 'en' ? '4.9 (48 jobs)' : '4.9 (48 đơn)'}
-                        </Text>
-                      </View>
+                          <Text
+                            style={{ fontSize: fs(11), color: COLORS.success, fontWeight: '700' }}
+                          >
+                            e-KYC
+                          </Text>
+                        </View>
+                      )}
+                      {helperRating > 0 && (
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
+                          <Star size={12} color="#F59E0B" fill="#F59E0B" />
+                          <Text style={{ fontSize: fs(12), color: '#F59E0B', fontWeight: '800' }}>
+                            {helperRating.toFixed(1)}
+                            {helperCompleted > 0
+                              ? lang === 'en'
+                                ? ` (${helperCompleted} jobs)`
+                                : ` (${helperCompleted} đơn)`
+                              : ''}
+                          </Text>
+                        </View>
+                      )}
                     </View>
                   )}
                 </View>
@@ -437,12 +589,14 @@ export default function SosTrackingScreen() {
             onPress={handleShareSos}
           />
 
-          <Button
-            title={lang === 'en' ? 'Cancel rescue request' : 'Hủy yêu cầu cứu hộ'}
-            variant="ghost"
-            style={{ borderWidth: 1, borderColor: tc.border }}
-            onPress={handleCancel}
-          />
+          {isCancellable && (
+            <Button
+              title={lang === 'en' ? 'Cancel rescue request' : 'Hủy yêu cầu cứu hộ'}
+              variant="ghost"
+              style={{ borderWidth: 1, borderColor: tc.border }}
+              onPress={handleCancel}
+            />
+          )}
         </View>
       </ScrollView>
     </View>

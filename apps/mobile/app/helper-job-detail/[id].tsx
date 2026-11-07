@@ -729,7 +729,12 @@ export default function HelperJobDetailScreen() {
           </Card>
         )}
         {/* ── Grab-Style Live Route & Map Navigation ─────────────────────── */}
-        {customerLocation && (
+        {/* P2-13: live map only while the job is active — never on open /
+            finished / disputed / refunded jobs. */}
+        {customerLocation &&
+          ['confirmed', 'helper_on_the_way', 'helper_arrived', 'in_progress', 'pending_review'].includes(
+            job.status,
+          ) && (
           <LiveTrackingMap
             customerLocation={customerLocation}
             helperLocation={helperLocation}
@@ -1076,7 +1081,9 @@ export default function HelperJobDetailScreen() {
                 onPress={() => handleAction('complete')}
               />
             )}
-            {['confirmed', 'helper_on_the_way'].includes(job.status) && (
+            {/* P1-15: backend also allows cancel at helper_arrived (with the
+                late-cancel penalty branch) — same as the customer side. */}
+            {['confirmed', 'helper_on_the_way', 'helper_arrived'].includes(job.status) && (
               <Button
                 title={lang === 'en' ? 'Cancel job' : 'Hủy nhận đơn'}
                 variant="outline"

@@ -368,8 +368,14 @@ export function useCreateWarrantyJob() {
 export function useSelectQuote() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ jobId, ...dto }: { jobId: string; quote_id: string; scheduled_at: string }) =>
-      apiClient.post(`/jobs/${jobId}/select-quote`, dto),
+    mutationFn: ({
+      jobId,
+      ...dto
+    }: {
+      jobId: string;
+      quote_id: string;
+      scheduled_at?: string;
+    }) => apiClient.post(`/jobs/${jobId}/select-quote`, dto),
     onSuccess: (_, vars) => {
       qc.invalidateQueries({ queryKey: ['job', vars.jobId] });
       qc.invalidateQueries({ queryKey: ['jobs', 'my'] });
