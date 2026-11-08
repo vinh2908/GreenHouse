@@ -45,8 +45,7 @@ export function isNetworkError(err: unknown): boolean {
 export function isTimeoutError(err: unknown): boolean {
   const e = err as { code?: string; message?: string } | null;
   return (
-    e?.code === 'ECONNABORTED' ||
-    (typeof e?.message === 'string' && /timeout/i.test(e.message))
+    e?.code === 'ECONNABORTED' || (typeof e?.message === 'string' && /timeout/i.test(e.message))
   );
 }
 

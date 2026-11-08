@@ -15,7 +15,11 @@ describe('H17: OtpService bypass only with explicit OTP_BYPASS', () => {
       create: jest.fn(async (doc: any) => doc),
       findOne: jest.fn(() => ({
         sort: () => ({
-          exec: async () => ({ code: '654321', is_used: false, expires_at: new Date(Date.now() + 60000) }),
+          exec: async () => ({
+            code: '654321',
+            is_used: false,
+            expires_at: new Date(Date.now() + 60000),
+          }),
         }),
       })),
       updateMany: jest.fn(() => ({ exec: async () => ({}) })),

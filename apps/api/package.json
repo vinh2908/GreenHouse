@@ -16,7 +16,8 @@
     "seed": "ts-node -r tsconfig-paths/register src/seed.ts",
     "seed:admin": "ts-node -r tsconfig-paths/register src/seed-admin.ts",
     "sync:helper-status": "ts-node -r tsconfig-paths/register ../../scripts/sync-helpers-busy.ts",
-    "check:admin-jobs": "ts-node -r tsconfig-paths/register ../../scripts/check-manual-admin-jobs.ts"
+    "check:admin-jobs": "ts-node -r tsconfig-paths/register ../../scripts/check-manual-admin-jobs.ts",
+    "check:stuck-jobs": "ts-node -r tsconfig-paths/register ../../scripts/check-stuck-assigned-jobs.ts"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.0",

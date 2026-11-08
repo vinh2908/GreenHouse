@@ -553,11 +553,7 @@ export default function HelperDashboardScreen() {
                       style={{
                         fontSize: fs(16.5),
                         fontWeight: '800',
-                        color: isWorking
-                          ? '#92400E'
-                          : effectiveOnline
-                            ? '#FFFFFF'
-                            : tc.text,
+                        color: isWorking ? '#92400E' : effectiveOnline ? '#FFFFFF' : tc.text,
                       }}
                     >
                       {isWorking

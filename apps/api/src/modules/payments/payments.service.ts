@@ -1089,9 +1089,25 @@ export class PaymentsService {
             await new Promise(r => setTimeout(r, 50));
           }
         }
+        // I2: Sau 500ms vẫn chưa thấy giao dịch từ lần trừ đầu -> ném ConflictException để chặn trừ trùng
+        throw new ConflictException(
+          'Giao dịch trừ phí hoa hồng cho đơn hàng đang được xử lý bởi thao tác khác. Vui lòng thử lại sau.',
+        );
       } else {
         didClaimJob = true;
       }
+    }
+
+    // I2: Nối didClaimJob vào luồng để guard cứng thực sự chặn trừ trùng
+    if (
+      this.jobModel &&
+      typeof this.jobModel.findOneAndUpdate === 'function' &&
+      Types.ObjectId.isValid(jobId) &&
+      !didClaimJob
+    ) {
+      throw new ConflictException(
+        'Không thể claim trừ phí hoa hồng cho đơn hàng (đang được xử lý bởi thao tác khác).',
+      );
     }
     // H5 (G2): mẫu nguyên tử như deductWallet — $inc có guard $gte trên số
     // tiền trừ THỰC TẾ, balance_after lấy TỪ KẾT QUẢ $inc (new: true).

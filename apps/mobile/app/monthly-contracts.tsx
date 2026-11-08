@@ -66,7 +66,8 @@ export default function MonthlyContractsScreen() {
   const insets = useSafeAreaInsets();
   const { t, fs, lang } = useTranslation();
   const tc = useThemeColors();
-  const fmt = (n?: number) => new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'vi-VN').format(n ?? 0);
+  const fmt = (n?: number) =>
+    new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'vi-VN').format(n ?? 0);
   // Vai trò hiện tại lấy từ auth store (active_role) như các màn hình dùng chung khác
   const user = useAuthStore(s => s.user);
   const isHelper = user?.active_role === 'helper';

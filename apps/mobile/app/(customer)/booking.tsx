@@ -1534,7 +1534,9 @@ export default function BookingScreen() {
                         }}
                       >
                         <Text style={{ color: '#FBBF24', fontSize: fs(11), fontWeight: '700' }}>
-                          {lang === 'en' ? '⚠️ Simulated / Sample Result' : '⚠️ Kết quả mô phỏng (Chế độ mẫu)'}
+                          {lang === 'en'
+                            ? '⚠️ Simulated / Sample Result'
+                            : '⚠️ Kết quả mô phỏng (Chế độ mẫu)'}
                         </Text>
                       </View>
                     )}

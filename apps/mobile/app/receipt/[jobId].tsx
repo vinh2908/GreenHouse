@@ -230,7 +230,8 @@ export default function ReceiptScreen() {
                   {lang === 'en' ? 'Voucher Discount' : 'Giảm giá Voucher'}
                 </Text>
                 <Text style={{ fontSize: fs(13), color: COLORS.success, fontWeight: '700' }}>
-                  -{new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'vi-VN').format(discountAmount)}₫
+                  -{new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'vi-VN').format(discountAmount)}
+                  ₫
                 </Text>
               </View>
             )}
@@ -241,7 +242,9 @@ export default function ReceiptScreen() {
                   {lang === 'en' ? 'Loyalty Points Discount' : 'Giảm điểm thưởng'}
                 </Text>
                 <Text style={{ fontSize: fs(13), color: COLORS.success, fontWeight: '700' }}>
-                  -{new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'vi-VN').format(loyaltyDiscount)}₫
+                  -
+                  {new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'vi-VN').format(loyaltyDiscount)}
+                  ₫
                 </Text>
               </View>
             )}
