@@ -1,4 +1,4 @@
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   Platform,
   ActivityIndicator,
 } from 'react-native';
+import Toast from 'react-native-toast-message';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
@@ -135,26 +136,34 @@ export default function CustomerProfileScreen() {
     ]);
   };
 
+  const [isSwitching, setIsSwitching] = useState(false);
+
   const handleSwitchToHelper = async () => {
-    if (useAuthStore.getState().isSwitchingRole) return;
+    if (isSwitching || useAuthStore.getState().isSwitchingRole) return;
+    setIsSwitching(true);
     useAuthStore.getState().setSwitchingRole(true);
 
-    // 1. Cập nhật ngay auth store và local storage
-    useAuthStore.getState().switchRole('helper');
-
-    // 2. Cập nhật lạc quan cache ['profile', 'me'] để tránh trả về active_role khách cũ
-    queryClient.setQueryData(['profile', 'me'], (old: any) =>
-      old ? { ...old, active_role: 'helper' } : old,
-    );
-
-    // 3. Chuyển hướng dứt khoát sang dashboard thợ
-    router.replace('/(helper)/dashboard');
-
-    // 4. Đồng bộ lên backend API
     try {
+      // 1. Đồng bộ lên backend API trước
       await switchRole.mutateAsync('helper');
-    } catch {
-      /* fallback sang auth store */
+
+      // 2. Cập nhật auth store và cache
+      useAuthStore.getState().switchRole('helper');
+      queryClient.setQueryData(['profile', 'me'], (old: any) =>
+        old ? { ...old, active_role: 'helper' } : old,
+      );
+
+      // 3. Chuyển hướng sang dashboard thợ
+      router.replace('/(helper)/dashboard');
+    } catch (err: any) {
+      useAuthStore.getState().setSwitchingRole(false);
+      Toast.show({
+        type: 'error',
+        text1: 'Đổi vai trò thất bại',
+        text2: err?.response?.data?.message || 'Vui lòng thử lại sau',
+      });
+    } finally {
+      setIsSwitching(false);
     }
   };
 
@@ -277,28 +286,31 @@ export default function CustomerProfileScreen() {
             </View>
           )}
 
-          {/* Switch to helper role button */}
-          <TouchableOpacity
-            onPress={handleSwitchToHelper}
-            activeOpacity={0.85}
-            style={{
-              marginTop: 16,
-              backgroundColor: COLORS.primaryLight,
-              borderRadius: 14,
-              paddingHorizontal: 20,
-              paddingVertical: 10,
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: 8,
-              borderWidth: 1.5,
-              borderColor: '#FFD9C5',
-            }}
-          >
-            <Wrench size={18} color={COLORS.primary} />
-            <Text style={{ color: COLORS.primary, fontWeight: '800', fontSize: fs(14) }}>
-              {t('profile_switch_helper')}
-            </Text>
-          </TouchableOpacity>
+          {/* Switch to helper role button - Chỉ hiển thị khi tài khoản có vai trò helper (M-04) */}
+          {Array.isArray(displayUser?.roles) && displayUser.roles.includes('helper') && (
+            <TouchableOpacity
+              onPress={handleSwitchToHelper}
+              activeOpacity={0.85}
+              disabled={isSwitching}
+              style={{
+                marginTop: 16,
+                backgroundColor: COLORS.primaryLight,
+                borderRadius: 14,
+                paddingHorizontal: 20,
+                paddingVertical: 10,
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 8,
+                borderWidth: 1.5,
+                borderColor: '#FFD9C5',
+              }}
+            >
+              <Wrench size={18} color={COLORS.primary} />
+              <Text style={{ color: COLORS.primary, fontWeight: '800', fontSize: fs(14) }}>
+                {isSwitching ? 'Đang chuyển đổi...' : t('profile_switch_helper')}
+              </Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         {/* ── Customer Wallet Card (F6) ────────────────────────────── */}

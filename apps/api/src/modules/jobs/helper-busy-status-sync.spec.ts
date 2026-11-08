@@ -159,6 +159,8 @@ function createMockEnvironment() {
     deductCommissionForCashJob: jest.fn().mockResolvedValue({}),
     // P0-2: payout chỉ giải ngân khi có thanh toán ví thật đã xác minh.
     hasVerifiedWalletPayment: jest.fn().mockResolvedValue(true),
+    getTotalPaidForJob: jest.fn().mockResolvedValue(1000000),
+    hasRecordedCashPayment: jest.fn().mockResolvedValue(false),
   };
 
   const disputesService = {
@@ -198,6 +200,7 @@ function createMockEnvironment() {
     {}, // sosModel
     {}, // penaltyEventModel
     notificationsService,
+    paymentsService,
     jobsService,
   );
 

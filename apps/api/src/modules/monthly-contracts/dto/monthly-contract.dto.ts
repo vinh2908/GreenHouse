@@ -124,4 +124,13 @@ export class SettleMonthDto {
   @IsString()
   @Matches(MONTH_RE, { message: 'month phải có dạng YYYY-MM' })
   month: string;
+
+  @ApiPropertyOptional({
+    description:
+      "Chế độ thanh toán: 'wallet' (mặc định) trừ ví khách + cộng ví thợ; 'cash_direct' (trả ngoài hệ thống) chỉ ghi nhận công, cộng 0₫ vào ví thợ",
+    enum: ['wallet', 'cash_direct'],
+  })
+  @IsOptional()
+  @IsString()
+  payment_mode?: 'wallet' | 'cash_direct';
 }

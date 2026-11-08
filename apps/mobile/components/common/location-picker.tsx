@@ -471,9 +471,6 @@ export function LocationPicker({
             <iframe
               id="location-picker-web-iframe"
               srcDoc={html}
-              onLoad={() => {
-                setTimeout(() => setMapLoading(false), 800);
-              }}
               style={{ width: '100%', height: '100%', border: 'none' }}
               title="Location Picker Map"
             />
@@ -485,9 +482,6 @@ export function LocationPicker({
               javaScriptEnabled
               domStorageEnabled
               androidLayerType="hardware"
-              onLoadEnd={() => {
-                setTimeout(() => setMapLoading(false), 800);
-              }}
               onMessage={e => {
                 try {
                   const data = JSON.parse(e.nativeEvent.data);

@@ -8,6 +8,7 @@ import { useFavorites, useAddresses, useServices, useCreateMonthlyContract } fro
 import { vnDateKey } from '@/utils/date-format';
 import { useTranslation } from '@/hooks/use-i18n';
 import { Avatar, Button, Card, COLORS, LoadingSpinner, useThemeColors } from '@/components/ui';
+import { locationService } from '@/services/location.service';
 
 // Thứ hiển thị T2..CN → giá trị JS Date.getDay(): T2=1 … T7=6, CN=0
 const DAY_OPTIONS_VI = [
@@ -28,8 +29,6 @@ const DAY_OPTIONS_EN = [
   { label: 'Sat', value: 6 },
   { label: 'Sun', value: 0 },
 ];
-
-const DEFAULT_COORDS: [number, number] = [106.6983, 10.7725]; // TP.HCM — như flow đặt việc
 
 export default function MonthlyContractCreateScreen() {
   const router = useRouter();
@@ -137,8 +136,51 @@ export default function MonthlyContractCreateScreen() {
           : 'Ngày kết thúc phải có dạng YYYY-MM-DD';
     }
 
-    // Ưu tiên địa chỉ đã lưu (có sẵn tọa độ); nếu nhập tay thì dùng tọa độ
-    // mặc định TP.HCM như flow đặt việc hiện tại.
+    // M-03: Resolve tọa độ thực từ địa chỉ, không dùng tọa độ Bến Thành hardcode
+    let coords: [number, number] | null = null;
+    if (
+      selectedAddress?.location?.coordinates &&
+      Array.isArray(selectedAddress.location.coordinates) &&
+      selectedAddress.location.coordinates.length >= 2
+    ) {
+      coords = [
+        selectedAddress.location.coordinates[0],
+        selectedAddress.location.coordinates[1],
+      ];
+    } else {
+      const qFull = selectedAddress ? selectedAddress.full_address : fullAddress.trim();
+      const qDist = selectedAddress ? selectedAddress.district : district.trim();
+      const qCity = selectedAddress ? selectedAddress.city : (city.trim() || 'Hồ Chí Minh');
+      const queryParts = [qFull, qDist, qCity].filter(Boolean);
+      if (queryParts.length > 0) {
+        try {
+          const results = await locationService.searchPlaces(queryParts.join(', '));
+          if (results && results.length > 0) {
+            const lon = parseFloat(results[0].lon);
+            const lat = parseFloat(results[0].lat);
+            if (Number.isFinite(lon) && Number.isFinite(lat)) {
+              coords = [lon, lat];
+            }
+          }
+        } catch {}
+      }
+    }
+
+    if (!coords || (coords[0] === 0 && coords[1] === 0)) {
+      Toast.show({
+        type: 'error',
+        text1:
+          lang === 'en'
+            ? 'Unconfirmed address coordinates'
+            : 'Chưa xác định được tọa độ địa chỉ',
+        text2:
+          lang === 'en'
+            ? 'Please enter a detailed address or select from saved addresses.'
+            : 'Vui lòng nhập địa chỉ chi tiết hơn hoặc chọn từ danh bạ địa chỉ đã lưu.',
+      });
+      return;
+    }
+
     const address = selectedAddress
       ? {
           full_address: selectedAddress.full_address,
@@ -148,14 +190,14 @@ export default function MonthlyContractCreateScreen() {
           notes: selectedAddress.notes || undefined,
           location: {
             type: 'Point',
-            coordinates: selectedAddress.location?.coordinates ?? DEFAULT_COORDS,
+            coordinates: coords,
           },
         }
       : {
           full_address: fullAddress.trim(),
           district: district.trim(),
           city: city.trim() || 'Hồ Chí Minh',
-          location: { type: 'Point', coordinates: DEFAULT_COORDS },
+          location: { type: 'Point', coordinates: coords },
         };
     if (!address.full_address || !address.district) {
       errors.address =
@@ -341,8 +383,12 @@ export default function MonthlyContractCreateScreen() {
           )}
           <Text style={{ fontSize: fs(12), color: tc.textMuted }}>
             {lang === 'en'
-              ? 'At month end, actual wage = monthly salary × (verified sessions / scheduled sessions), minus 15% platform fee.'
-              : 'Cuối tháng, lương thực trả = lương tháng × (số buổi đã xác nhận / tổng số buổi theo lịch), trừ phí sàn 15%.'}
+              ? `At month end, actual wage = monthly salary × (verified sessions / scheduled sessions), minus ${
+                  services?.find((s: any) => s._id === serviceId)?.platform_fee_percent ?? 15
+                }% platform fee.`
+              : `Cuối tháng, lương thực trả = lương tháng × (số buổi đã xác nhận / tổng số buổi theo lịch), trừ phí sàn ${
+                  services?.find((s: any) => s._id === serviceId)?.platform_fee_percent ?? 15
+                }%.`}
           </Text>
         </Card>
 

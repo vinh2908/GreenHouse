@@ -46,9 +46,12 @@ function formatVND(amount: number): string {
 }
 
 function formatDate(d: Date): string {
-  const dd = String(d.getDate()).padStart(2, '0');
-  const mm = String(d.getMonth() + 1).padStart(2, '0');
-  return `${dd}/${mm}/${d.getFullYear()}`;
+  return d.toLocaleDateString('vi-VN', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    timeZone: 'Asia/Ho_Chi_Minh',
+  });
 }
 
 /**
@@ -188,9 +191,14 @@ export class InvoicesService {
     if (existing) return existing;
 
     const now = new Date();
-    const day = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(
-      now.getDate(),
-    ).padStart(2, '0')}`;
+    // Định dạng YYYYMMDD theo múi giờ Việt Nam (Asia/Ho_Chi_Minh)
+    const formatter = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Asia/Ho_Chi_Minh',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    });
+    const day = formatter.format(now).replace(/-/g, '');
     const dayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const dayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
 

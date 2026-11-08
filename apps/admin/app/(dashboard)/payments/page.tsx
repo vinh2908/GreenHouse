@@ -57,11 +57,11 @@ export default function PaymentsPage() {
   const [rejectNote, setRejectNote] = useState('');
   const [approvingItem, setApprovingItem] = useState<any | null>(null);
 
-  const { data: withdrawals, isLoading: wLoading } = useAdminWithdrawals({
+  const { data: withdrawals, isLoading: wLoading, isError: wError, refetch: refetchW } = useAdminWithdrawals({
     status: wStatus || undefined,
     page: wPage,
   });
-  const { data: transactions, isLoading: txLoading } = useAdminTransactions({
+  const { data: transactions, isLoading: txLoading, isError: txError, refetch: refetchTx } = useAdminTransactions({
     type: txType || undefined,
     page: txPage,
   });
@@ -102,6 +102,13 @@ export default function PaymentsPage() {
         <div className="rounded-lg border bg-card overflow-hidden max-w-full">
           {wLoading ? (
             <Loading />
+          ) : wError ? (
+            <div className="p-8 text-center space-y-3">
+              <p className="text-destructive font-medium">Không thể tải danh sách yêu cầu rút tiền</p>
+              <Button variant="outline" size="sm" onClick={() => refetchW()}>
+                Tải lại
+              </Button>
+            </div>
           ) : !withdrawals?.withdrawals?.length ? (
             <EmptyState message="Không có yêu cầu rút tiền" />
           ) : (
@@ -262,6 +269,13 @@ export default function PaymentsPage() {
         <div className="rounded-lg border bg-card overflow-hidden max-w-full">
           {txLoading ? (
             <Loading />
+          ) : txError ? (
+            <div className="p-8 text-center space-y-3">
+              <p className="text-destructive font-medium">Không thể tải danh sách giao dịch</p>
+              <Button variant="outline" size="sm" onClick={() => refetchTx()}>
+                Tải lại
+              </Button>
+            </div>
           ) : !transactions?.transactions?.length ? (
             <EmptyState message="Chưa có giao dịch" />
           ) : (
@@ -270,6 +284,7 @@ export default function PaymentsPage() {
                 <Table className="min-w-[700px]">
                   <TableHeader>
                     <TableRow>
+                      <TableHead>Người dùng</TableHead>
                       <TableHead>Loại</TableHead>
                       <TableHead>Mô tả</TableHead>
                       <TableHead>Số tiền</TableHead>
@@ -281,6 +296,7 @@ export default function PaymentsPage() {
                     {transactions.transactions.map(
                       (tx: {
                         _id: string;
+                        user_id?: string | { _id: string; full_name?: string; phone?: string; email?: string } | null;
                         type: string;
                         description: string;
                         amount: number;
@@ -288,6 +304,20 @@ export default function PaymentsPage() {
                         created_at: string;
                       }) => (
                         <TableRow key={tx._id}>
+                          <TableCell>
+                            {tx.user_id && typeof tx.user_id === 'object' ? (
+                              <div>
+                                <p className="text-sm font-medium">{tx.user_id.full_name || '—'}</p>
+                                <p className="text-xs text-muted-foreground font-mono">
+                                  {tx.user_id.phone || tx.user_id.email || ''}
+                                </p>
+                              </div>
+                            ) : (
+                              <span className="text-xs text-muted-foreground font-mono">
+                                {typeof tx.user_id === 'string' ? tx.user_id.slice(-6) : '—'}
+                              </span>
+                            )}
+                          </TableCell>
                           <TableCell>
                             <Badge variant={TX_TYPE_BADGE[tx.type] ?? 'secondary'}>{tx.type}</Badge>
                           </TableCell>

@@ -179,8 +179,13 @@ export default function KycPendingPage() {
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
   const [showBatchModal, setShowBatchModal] = useState(false);
   const [approvingSingle, setApprovingSingle] = useState<KycHelper | null>(null);
+  const [batchResult, setBatchResult] = useState<{
+    successCount: number;
+    failedItems: { userId: string; name: string; error: string }[];
+  } | null>(null);
+  const [isBatchProcessing, setIsBatchProcessing] = useState(false);
 
-  const { data, isLoading } = usePendingKyc({ page });
+  const { data, isLoading, isError, refetch } = usePendingKyc({ page });
   const approve = useApproveKyc();
   const reject = useRejectKyc();
 
@@ -204,11 +209,29 @@ export default function KycPendingPage() {
   };
 
   const handleBatchApprove = async () => {
+    setIsBatchProcessing(true);
+    let success = 0;
+    const failed: { userId: string; name: string; error: string }[] = [];
+    const remainingSelected: string[] = [];
+
     for (const uid of selectedUserIds) {
-      await approve.mutateAsync(uid).catch(() => undefined);
+      const helper = helpers.find((h: KycHelper) => h.user_id?._id === uid);
+      const name = helper?.user_id?.full_name || uid;
+      try {
+        await approve.mutateAsync(uid);
+        success++;
+      } catch (err: any) {
+        const errorMsg =
+          err?.response?.data?.message || err?.message || 'Không thể duyệt hồ sơ này';
+        failed.push({ userId: uid, name, error: errorMsg });
+        remainingSelected.push(uid);
+      }
     }
-    setSelectedUserIds([]);
+
+    setIsBatchProcessing(false);
     setShowBatchModal(false);
+    setSelectedUserIds(remainingSelected);
+    setBatchResult({ successCount: success, failedItems: failed });
   };
 
   const handleReject = (userId: string) => {
@@ -239,9 +262,50 @@ export default function KycPendingPage() {
         )}
       </div>
 
+      {batchResult && (
+        <div
+          className={`p-4 rounded-lg text-sm border ${
+            batchResult.failedItems.length === 0
+              ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+              : 'bg-amber-50 text-amber-800 border-amber-200'
+          }`}
+        >
+          <div className="flex justify-between items-start">
+            <div>
+              <p className="font-semibold">
+                Duyệt hàng loạt hoàn tất: {batchResult.successCount} thành công
+                {batchResult.failedItems.length > 0 ? `, ${batchResult.failedItems.length} thất bại` : ''}
+              </p>
+              {batchResult.failedItems.length > 0 && (
+                <ul className="mt-2 list-disc pl-4 text-xs space-y-1">
+                  {batchResult.failedItems.map(f => (
+                    <li key={f.userId}>
+                      <b>{f.name}</b>: {f.error}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+            <button
+              onClick={() => setBatchResult(null)}
+              className="text-xs hover:underline text-muted-foreground ml-4"
+            >
+              Đóng
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="rounded-lg border bg-card overflow-hidden max-w-full">
         {isLoading ? (
           <Loading />
+        ) : isError ? (
+          <div className="p-8 text-center space-y-3">
+            <p className="text-destructive font-medium">Không thể tải danh sách KYC chờ duyệt</p>
+            <Button variant="outline" size="sm" onClick={() => refetch()}>
+              Tải lại
+            </Button>
+          </div>
         ) : !helpers.length ? (
           <EmptyState message="Không có hồ sơ KYC nào chờ duyệt" />
         ) : (
@@ -420,7 +484,7 @@ export default function KycPendingPage() {
               </Button>
               <Button
                 className="bg-green-600 hover:bg-green-700 text-white"
-                loading={approve.isPending}
+                loading={isBatchProcessing}
                 onClick={handleBatchApprove}
               >
                 Xác nhận duyệt {selectedUserIds.length} thợ

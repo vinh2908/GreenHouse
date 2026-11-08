@@ -386,14 +386,8 @@ class LocationService {
       console.warn('[Goong Geocode] Thiếu EXPO_PUBLIC_GOONG_API_KEY');
     }
 
-    // Không tra được hoặc lỗi: chỉ còn tọa độ thực tế, không bịa địa chỉ
-    return {
-      full_address: `Tọa độ: ${latitude.toFixed(4)}, ${longitude.toFixed(4)}`,
-      road: `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`,
-      district: '',
-      city: '',
-      coordinates: [longitude, latitude],
-    };
+    // M-08: Không tra được hoặc lỗi Goong thì trả về null (không fallback chuỗi "Tọa độ: lat, lon")
+    return null;
   }
 
   /**

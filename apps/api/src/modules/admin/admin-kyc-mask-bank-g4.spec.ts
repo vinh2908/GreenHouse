@@ -63,6 +63,7 @@ describe('AdminService - G4 mask bank account on approveKyc/rejectKyc', () => {
       {} as never,
       notificationsService,
       {} as never,
+      {} as never,
     );
     return { service, helperModel, notificationsService };
   }
@@ -159,6 +160,7 @@ describe('AdminService - F3 mask bank account on getHelpers/getPendingKyc', () =
     const service = new AdminService(
       {} as never,
       helperModel,
+      {} as never,
       {} as never,
       {} as never,
       {} as never,

@@ -52,7 +52,7 @@ export default function UsersPage() {
   const [page, setPage] = useState(1);
   const [searchInput, setSearchInput] = useState('');
 
-  const { data, isLoading } = useAdminUsers({ search, status, page });
+  const { data, isLoading, isError, refetch } = useAdminUsers({ search, status, page });
   const suspend = useSuspendUser();
   const activate = useActivateUser();
 
@@ -113,6 +113,13 @@ export default function UsersPage() {
       <div className="rounded-lg border bg-card overflow-hidden max-w-full">
         {isLoading ? (
           <Loading />
+        ) : isError ? (
+          <div className="p-8 text-center space-y-3">
+            <p className="text-destructive font-medium">Không thể tải danh sách người dùng. Vui lòng thử lại.</p>
+            <Button variant="outline" size="sm" onClick={() => refetch()}>
+              Tải lại
+            </Button>
+          </div>
         ) : !data?.users?.length ? (
           <EmptyState message="Không tìm thấy người dùng nào" />
         ) : (

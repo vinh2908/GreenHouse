@@ -32,7 +32,7 @@ export default function SupportPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [draft, setDraft] = useState('');
 
-  const { data: conversations, isLoading } = useSupportConversations(status);
+  const { data: conversations, isLoading, isError, refetch } = useSupportConversations(status);
   const list = conversations ?? [];
   const selected = list.find(c => c._id === selectedId) ?? null;
 
@@ -97,6 +97,13 @@ export default function SupportPage() {
           <CardContent className="p-0">
             {isLoading ? (
               <Loading />
+            ) : isError ? (
+              <div className="p-8 text-center space-y-3">
+                <p className="text-destructive font-medium text-xs">Không thể tải hội thoại</p>
+                <Button variant="outline" size="sm" onClick={() => refetch()}>
+                  Tải lại
+                </Button>
+              </div>
             ) : list.length === 0 ? (
               <EmptyState message="Chưa có hội thoại hỗ trợ nào." />
             ) : (

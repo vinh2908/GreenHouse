@@ -108,9 +108,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
     if (user) {
       const updatedRoles = Array.isArray(user.roles) ? [...user.roles] : [];
-      if (!updatedRoles.includes(role)) {
-        updatedRoles.push(role);
-      }
       const updatedUser = { ...user, roles: updatedRoles, active_role: role };
       if (g?.localStorage) {
         try {

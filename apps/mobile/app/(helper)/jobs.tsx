@@ -23,6 +23,7 @@ import {
   ShieldCheck,
   EyeOff,
   RotateCcw,
+  AlertCircle,
 } from 'lucide-react-native';
 import Toast from 'react-native-toast-message';
 import { formatTime, formatRelativeTime } from '@/utils/date-format';
@@ -107,18 +108,21 @@ export default function HelperJobsScreen() {
     if (svcName) return svcName;
     return t('common_service');
   };
+  const [availablePage, setAvailablePage] = useState(1);
   const {
     data: available,
     isLoading: aLoading,
     isError: aError,
+    error: aErrorObj,
     isRefetching: aRefetching,
     refetch: ra,
     dataUpdatedAt: aUpdatedAt,
-  } = useAvailableJobs(undefined, 1, Boolean(isAuth && isVerified !== false));
+  } = useAvailableJobs(undefined, availablePage, Boolean(isAuth && isVerified !== false));
   const {
     data: active,
     isLoading: acLoading,
     isError: acError,
+    error: acErrorObj,
     isRefetching: acRefetching,
     refetch: rac,
     dataUpdatedAt: acUpdatedAt,
@@ -129,6 +133,7 @@ export default function HelperJobsScreen() {
     data: history,
     isLoading: hLoading,
     isError: hError,
+    error: hErrorObj,
     isRefetching: hRefetching,
     refetch: rh,
     dataUpdatedAt: hUpdatedAt,
@@ -139,11 +144,12 @@ export default function HelperJobsScreen() {
       data: available?.jobs,
       loading: aLoading,
       isError: aError,
+      error: aErrorObj,
       refetching: aRefetching,
       refetch: ra,
     },
-    { data: active, loading: acLoading, isError: acError, refetching: acRefetching, refetch: rac },
-    { data: history, loading: hLoading, isError: hError, refetching: hRefetching, refetch: rh },
+    { data: active, loading: acLoading, isError: acError, error: acErrorObj, refetching: acRefetching, refetch: rac },
+    { data: history, loading: hLoading, isError: hError, error: hErrorObj, refetching: hRefetching, refetch: rh },
   ];
 
   const insets = useSafeAreaInsets();
@@ -318,7 +324,7 @@ export default function HelperJobsScreen() {
                           <Text style={{ fontSize: fs(12), color: tc.textSecondary }}>
                             {job.address?.district || job.address?.city || t('jobs_unspecified')}
                           </Text>
-                          {job.distance_km != null && (
+                          {job.distance_km != null ? (
                             <Text
                               style={{
                                 fontSize: fs(12),
@@ -326,7 +332,17 @@ export default function HelperJobsScreen() {
                                 fontWeight: '600',
                               }}
                             >
-                              · {job.distance_km} km
+                              · {job.distance_km === 0 ? '< 100m' : `${job.distance_km} km`}
+                            </Text>
+                          ) : (
+                            <Text
+                              style={{
+                                fontSize: fs(12),
+                                color: tc.textMuted,
+                                fontWeight: '500',
+                              }}
+                            >
+                              · {lang === 'en' ? 'Location not specified' : 'Chưa xác định vị trí'}
                             </Text>
                           )}
                         </View>
@@ -423,17 +439,44 @@ export default function HelperJobsScreen() {
             )}
           </Card>
         ) : ds.isError ? (
-          <Card style={{ alignItems: 'center', paddingVertical: 20 }}>
-            <ErrorState
-              title={lang === 'en' ? 'Unable to load jobs' : 'Không thể tải danh sách công việc'}
-              subtitle={
-                lang === 'en'
-                  ? 'Connection to server failed. Please check your network and retry.'
-                  : 'Không thể kết nối đến máy chủ. Vui lòng kiểm tra mạng và thử lại.'
-              }
-              onRetry={() => ds.refetch()}
-            />
-          </Card>
+          (() => {
+            const errObj = (ds as any).error;
+            const is401 =
+              errObj?.response?.status === 401 ||
+              errObj?.status === 401 ||
+              errObj?.name === 'SessionExpiredError' ||
+              errObj?.isSessionExpired;
+            if (is401) {
+              return (
+                <Card style={{ alignItems: 'center', paddingVertical: 20 }}>
+                  <EmptyState
+                    icon={<AlertCircle size={36} color={COLORS.gray[400]} />}
+                    title={lang === 'en' ? 'Session expired' : 'Phiên đăng nhập đã hết hạn'}
+                    subtitle={
+                      lang === 'en'
+                        ? 'Your session has expired. Please log in again to view your jobs.'
+                        : 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại để xem danh sách công việc.'
+                    }
+                    action={lang === 'en' ? 'Log in again' : 'Đăng nhập lại'}
+                    onAction={() => router.push('/(auth)/login')}
+                  />
+                </Card>
+              );
+            }
+            return (
+              <Card style={{ alignItems: 'center', paddingVertical: 20 }}>
+                <ErrorState
+                  title={lang === 'en' ? 'Unable to load jobs' : 'Không thể tải danh sách công việc'}
+                  subtitle={
+                    lang === 'en'
+                      ? 'Connection to server failed. Please check your network and retry.'
+                      : 'Không thể kết nối đến máy chủ. Vui lòng kiểm tra mạng và thử lại.'
+                  }
+                  onRetry={() => ds.refetch()}
+                />
+              </Card>
+            );
+          })()
         ) : !ds.loading && (!ds.data || ds.data.length === 0) ? (
           <Card style={{ alignItems: 'center', paddingVertical: 40 }}>
             <EmptyState
@@ -583,14 +626,23 @@ export default function HelperJobsScreen() {
                         {job.address?.district || job.address?.city || t('jobs_unspecified')}
                       </Text>
                     </View>
-                    {job.distance_km != null && (
+                    {job.distance_km != null ? (
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
                         <Navigation size={13} color={COLORS.primary} />
                         <Text
                           style={{ fontSize: fs(12), color: COLORS.primary, fontWeight: '700' }}
                         >
-                          {job.distance_km} km ~ {job.estimated_minutes ?? '?'}{' '}
-                          {t('jobs_minutes_unit')}
+                          {job.distance_km === 0
+                            ? '< 100m'
+                            : `${job.distance_km} km`}{' '}
+                          ~ {job.estimated_minutes ? `${job.estimated_minutes} ${t('jobs_minutes_unit')}` : '< 1 phút'}
+                        </Text>
+                      </View>
+                    ) : (
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
+                        <Navigation size={13} color={COLORS.gray[400]} />
+                        <Text style={{ fontSize: fs(12), color: tc.textMuted }}>
+                          {lang === 'en' ? 'Location not specified' : 'Chưa xác định vị trí'}
                         </Text>
                       </View>
                     )}
@@ -671,6 +723,68 @@ export default function HelperJobsScreen() {
               </TouchableOpacity>
             ),
           )
+        )}
+
+        {tabIndex === 0 && available && available.total_pages > 1 && (
+          <View
+            style={{
+              flexDirection: 'row',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              paddingVertical: 12,
+              paddingHorizontal: 8,
+            }}
+          >
+            <TouchableOpacity
+              disabled={availablePage <= 1}
+              onPress={() => setAvailablePage(p => Math.max(1, p - 1))}
+              style={{
+                paddingHorizontal: 14,
+                paddingVertical: 8,
+                borderRadius: 10,
+                backgroundColor: availablePage <= 1 ? COLORS.gray[100] : COLORS.primaryLight,
+              }}
+            >
+              <Text
+                style={{
+                  fontSize: fs(13),
+                  fontWeight: '700',
+                  color: availablePage <= 1 ? COLORS.gray[400] : COLORS.primary,
+                }}
+              >
+                {lang === 'en' ? 'Previous' : 'Trang trước'}
+              </Text>
+            </TouchableOpacity>
+
+            <Text style={{ fontSize: fs(13), fontWeight: '600', color: tc.textMuted }}>
+              {lang === 'en'
+                ? `Page ${available.page} / ${available.total_pages}`
+                : `Trang ${available.page} / ${available.total_pages}`}
+            </Text>
+
+            <TouchableOpacity
+              disabled={availablePage >= available.total_pages}
+              onPress={() => setAvailablePage(p => p + 1)}
+              style={{
+                paddingHorizontal: 14,
+                paddingVertical: 8,
+                borderRadius: 10,
+                backgroundColor:
+                  availablePage >= available.total_pages ? COLORS.gray[100] : COLORS.primaryLight,
+              }}
+            >
+              <Text
+                style={{
+                  fontSize: fs(13),
+                  fontWeight: '700',
+                  color:
+                    availablePage >= available.total_pages ? COLORS.gray[400] : COLORS.primary,
+                }}
+              >
+                {lang === 'en' ? 'Next' : 'Trang sau'}
+              </Text>
+            </TouchableOpacity>
+          </View>
         )}
       </ScrollView>
     );

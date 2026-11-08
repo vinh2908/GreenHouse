@@ -24,7 +24,9 @@ import {
   Check,
   PowerOff,
   Search,
+  AlertCircle,
 } from 'lucide-react-native';
+import { WalletBalanceDisplay } from '@/components/common/wallet-balance-display';
 import { formatRelativeTime } from '@/utils/date-format';
 import { Alert } from '@/components/common/app-alert';
 import { useAuthStore } from '@/stores/auth.store';
@@ -71,19 +73,30 @@ export default function HelperDashboardScreen() {
     data: profile,
     isLoading: pLoading,
     isError: pError,
+    error: pErrorObj,
     refetch: refetchProfile,
   } = useHelperProfile();
+  const [dashPage, setDashPage] = useState(1);
   const {
     data: availableJobs,
+    isLoading: aLoading,
     isError: aError,
+    error: aErrorObj,
     refetch: refetchJobs,
-  } = useAvailableJobs(undefined, 1, profile?.verification_status === 'approved');
+  } = useAvailableJobs(undefined, dashPage, profile?.verification_status === 'approved');
   const {
     data: myJobs,
+    isLoading: mLoading,
     isError: mError,
+    error: mErrorObj,
     refetch: refetchMyJobs,
   } = useHelperJobs('confirmed,helper_on_the_way,helper_arrived,in_progress');
-  const { data: wallet, isLoading: wLoading } = useWallet();
+  const {
+    data: wallet,
+    isLoading: wLoading,
+    isError: wError,
+    refetch: refetchWallet,
+  } = useWallet();
   // Lần mount đầu (chưa có cache): isLoading=true → gate các khu hiển thị số
   // liệu/banner/công tắc bằng skeleton thay vì fallback 0 giả. Khi đã có cache
   // (quay lại tab), isLoading=false nên không nhấp nháy skeleton.
@@ -413,15 +426,39 @@ export default function HelperDashboardScreen() {
         {pError && (
           <View style={{ paddingHorizontal: 16, marginTop: 14 }}>
             <Card style={{ alignItems: 'center', paddingVertical: 18 }}>
-              <ErrorState
-                title={lang === 'en' ? 'Unable to load helper profile' : 'Không thể tải hồ sơ thợ'}
-                subtitle={
-                  lang === 'en'
-                    ? 'Could not connect to profile service. Please retry.'
-                    : 'Không thể tải dữ liệu hồ sơ thợ. Vui lòng bấm thử lại.'
+              {(() => {
+                const is401 =
+                  (pErrorObj as any)?.response?.status === 401 ||
+                  (pErrorObj as any)?.status === 401 ||
+                  (pErrorObj as any)?.name === 'SessionExpiredError' ||
+                  (pErrorObj as any)?.isSessionExpired;
+                if (is401) {
+                  return (
+                    <EmptyState
+                      icon={<AlertCircle size={36} color={COLORS.gray[400]} />}
+                      title={lang === 'en' ? 'Session expired' : 'Phiên đăng nhập đã hết hạn'}
+                      subtitle={
+                        lang === 'en'
+                          ? 'Your session has expired. Please log in again.'
+                          : 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.'
+                      }
+                      action={lang === 'en' ? 'Log in again' : 'Đăng nhập lại'}
+                      onAction={() => router.push('/(auth)/login')}
+                    />
+                  );
                 }
-                onRetry={() => refetchProfile()}
-              />
+                return (
+                  <ErrorState
+                    title={lang === 'en' ? 'Unable to load helper profile' : 'Không thể tải hồ sơ thợ'}
+                    subtitle={
+                      lang === 'en'
+                        ? 'Could not connect to profile service. Please retry.'
+                        : 'Không thể tải dữ liệu hồ sơ thợ. Vui lòng bấm thử lại.'
+                    }
+                    onRetry={() => refetchProfile()}
+                  />
+                );
+              })()}
             </Card>
           </View>
         )}
@@ -600,7 +637,14 @@ export default function HelperDashboardScreen() {
                     </Text>
                     <TrendingUp size={16} color={COLORS.success} />
                   </View>
-                  <PriceText amount={wallet?.balance ?? 0} size={17} color={COLORS.gray[900]} />
+                  <WalletBalanceDisplay
+                    balance={wallet?.balance}
+                    isLoading={wLoading}
+                    isError={wError}
+                    onRetry={refetchWallet}
+                    theme="light"
+                    textStyle={{ fontSize: fs(17), fontWeight: '800', color: tc.text }}
+                  />
                   <Text
                     style={{
                       fontSize: fs(11),
@@ -669,15 +713,39 @@ export default function HelperDashboardScreen() {
         {mError && (
           <View style={{ paddingHorizontal: 16, marginTop: 16 }}>
             <Card style={{ alignItems: 'center', paddingVertical: 18 }}>
-              <ErrorState
-                title={lang === 'en' ? 'Unable to load active jobs' : 'Không thể tải đơn đang làm'}
-                subtitle={
-                  lang === 'en'
-                    ? 'Could not connect to active jobs service. Please retry.'
-                    : 'Không thể kết nối đến máy chủ quản lý đơn. Vui lòng bấm thử lại.'
+              {(() => {
+                const is401 =
+                  (mErrorObj as any)?.response?.status === 401 ||
+                  (mErrorObj as any)?.status === 401 ||
+                  (mErrorObj as any)?.name === 'SessionExpiredError' ||
+                  (mErrorObj as any)?.isSessionExpired;
+                if (is401) {
+                  return (
+                    <EmptyState
+                      icon={<AlertCircle size={36} color={COLORS.gray[400]} />}
+                      title={lang === 'en' ? 'Session expired' : 'Phiên đăng nhập đã hết hạn'}
+                      subtitle={
+                        lang === 'en'
+                          ? 'Your session has expired. Please log in again.'
+                          : 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.'
+                      }
+                      action={lang === 'en' ? 'Log in again' : 'Đăng nhập lại'}
+                      onAction={() => router.push('/(auth)/login')}
+                    />
+                  );
                 }
-                onRetry={() => refetchMyJobs()}
-              />
+                return (
+                  <ErrorState
+                    title={lang === 'en' ? 'Unable to load active jobs' : 'Không thể tải đơn đang làm'}
+                    subtitle={
+                      lang === 'en'
+                        ? 'Could not connect to active jobs service. Please retry.'
+                        : 'Không thể kết nối đến máy chủ quản lý đơn. Vui lòng bấm thử lại.'
+                    }
+                    onRetry={() => refetchMyJobs()}
+                  />
+                );
+              })()}
             </Card>
           </View>
         )}
@@ -762,15 +830,39 @@ export default function HelperDashboardScreen() {
 
           {aError ? (
             <Card style={{ alignItems: 'center', paddingVertical: 20 }}>
-              <ErrorState
-                title={lang === 'en' ? 'Unable to load nearby jobs' : 'Không thể tải đơn hàng mới'}
-                subtitle={
-                  lang === 'en'
-                    ? 'Could not connect to job service. Please retry.'
-                    : 'Không thể kết nối đến máy chủ nhận việc. Vui lòng thử lại.'
+              {(() => {
+                const is401 =
+                  (aErrorObj as any)?.response?.status === 401 ||
+                  (aErrorObj as any)?.status === 401 ||
+                  (aErrorObj as any)?.name === 'SessionExpiredError' ||
+                  (aErrorObj as any)?.isSessionExpired;
+                if (is401) {
+                  return (
+                    <EmptyState
+                      icon={<AlertCircle size={36} color={COLORS.gray[400]} />}
+                      title={lang === 'en' ? 'Session expired' : 'Phiên đăng nhập đã hết hạn'}
+                      subtitle={
+                        lang === 'en'
+                          ? 'Your session has expired. Please log in again to view nearby jobs.'
+                          : 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại để xem đơn mới.'
+                      }
+                      action={lang === 'en' ? 'Log in again' : 'Đăng nhập lại'}
+                      onAction={() => router.push('/(auth)/login')}
+                    />
+                  );
                 }
-                onRetry={() => refetchJobs()}
-              />
+                return (
+                  <ErrorState
+                    title={lang === 'en' ? 'Unable to load nearby jobs' : 'Không thể tải đơn hàng mới'}
+                    subtitle={
+                      lang === 'en'
+                        ? 'Could not connect to job service. Please retry.'
+                        : 'Không thể kết nối đến máy chủ nhận việc. Vui lòng thử lại.'
+                    }
+                    onRetry={() => refetchJobs()}
+                  />
+                );
+              })()}
             </Card>
           ) : pLoading ? (
             <Card style={{ alignItems: 'center', paddingVertical: 28, gap: 10 }}>
@@ -882,6 +974,11 @@ export default function HelperDashboardScreen() {
                           <Text style={{ fontSize: fs(13), color: tc.textSecondary }}>
                             {job.address?.district || job.address?.city || t('jobs_unspecified')}
                           </Text>
+                          {(job as any).distance_km != null ? (
+                            <Text style={{ fontSize: fs(12), color: COLORS.primary, fontWeight: '700' }}>
+                              · {(job as any).distance_km === 0 ? '< 100m' : `${(job as any).distance_km} km`}
+                            </Text>
+                          ) : null}
                         </View>
                         {job.preferred_time_start && (
                           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
@@ -917,6 +1014,70 @@ export default function HelperDashboardScreen() {
                     </Card>
                   </TouchableOpacity>
                 ),
+              )}
+              {availableJobs && availableJobs.total_pages > 1 && (
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    paddingVertical: 10,
+                  }}
+                >
+                  <TouchableOpacity
+                    disabled={dashPage <= 1}
+                    onPress={() => setDashPage(p => Math.max(1, p - 1))}
+                    style={{
+                      paddingHorizontal: 14,
+                      paddingVertical: 8,
+                      borderRadius: 10,
+                      backgroundColor: dashPage <= 1 ? COLORS.gray[100] : COLORS.primaryLight,
+                    }}
+                  >
+                    <Text
+                      style={{
+                        fontSize: fs(13),
+                        fontWeight: '700',
+                        color: dashPage <= 1 ? COLORS.gray[400] : COLORS.primary,
+                      }}
+                    >
+                      {lang === 'en' ? 'Previous' : 'Trang trước'}
+                    </Text>
+                  </TouchableOpacity>
+
+                  <Text style={{ fontSize: fs(13), fontWeight: '600', color: tc.textMuted }}>
+                    {lang === 'en'
+                      ? `Page ${availableJobs.page} / ${availableJobs.total_pages}`
+                      : `Trang ${availableJobs.page} / ${availableJobs.total_pages}`}
+                  </Text>
+
+                  <TouchableOpacity
+                    disabled={dashPage >= availableJobs.total_pages}
+                    onPress={() => setDashPage(p => p + 1)}
+                    style={{
+                      paddingHorizontal: 14,
+                      paddingVertical: 8,
+                      borderRadius: 10,
+                      backgroundColor:
+                        dashPage >= availableJobs.total_pages
+                          ? COLORS.gray[100]
+                          : COLORS.primaryLight,
+                    }}
+                  >
+                    <Text
+                      style={{
+                        fontSize: fs(13),
+                        fontWeight: '700',
+                        color:
+                          dashPage >= availableJobs.total_pages
+                            ? COLORS.gray[400]
+                            : COLORS.primary,
+                      }}
+                    >
+                      {lang === 'en' ? 'Next' : 'Trang sau'}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
               )}
             </View>
           )}

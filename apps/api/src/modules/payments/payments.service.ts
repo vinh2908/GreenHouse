@@ -910,6 +910,52 @@ export class PaymentsService {
     return tx;
   }
 
+  /** P0-5: Trừ số dư mô phỏng (dùng cho hoàn tác giải ngân mô phỏng khi nghiệm thu thất bại) */
+  async deductWalletSimulated(
+    userId: string,
+    amount: number,
+    reason: string,
+    session?: ClientSession | null,
+  ): Promise<TransactionDocument> {
+    if (!Number.isFinite(amount) || amount <= 0) {
+      throw new BadRequestException('Số tiền trừ ví mô phỏng phải lớn hơn 0');
+    }
+    const wallet = await this.getOrCreateWallet(userId, session);
+
+    const updatedWallet = await this.walletModel
+      .findOneAndUpdate(
+        { _id: wallet._id, simulated_balance: { $gte: amount } },
+        { $inc: { simulated_balance: -amount } },
+        { new: true, session: session ?? undefined },
+      )
+      .exec();
+    if (!updatedWallet) {
+      throw new BadRequestException(
+        `Số dư mô phỏng không đủ để trừ ${amount.toLocaleString('vi-VN')}₫. Hiện có: ${(wallet.simulated_balance ?? 0).toLocaleString('vi-VN')}₫`,
+      );
+    }
+    const simulatedAfter = updatedWallet.simulated_balance;
+
+    const [tx] = await this.transactionModel.create(
+      [
+        {
+          wallet_id: wallet._id,
+          user_id: new Types.ObjectId(userId),
+          type: 'adjustment',
+          status: 'success',
+          amount: -amount,
+          balance_before: wallet.balance,
+          balance_after: wallet.balance,
+          description: reason,
+          reference: `SIM-ADJ-${Date.now()}`,
+          metadata: { simulated: true, simulated_balance_after: simulatedAfter },
+        },
+      ],
+      { session: session ?? undefined },
+    );
+    return tx;
+  }
+
   // ─── Deduct platform commission for Cash jobs (Helper collected 100% cash) ──
 
   async deductCommissionForCashJob(
@@ -1063,6 +1109,36 @@ export class PaymentsService {
       .lean()
       .exec();
     return Boolean(tx);
+  }
+
+  /** P0-4: Kiểm tra đơn hàng đã có giao dịch tiền mặt thành công được ghi nhận chưa */
+  async hasRecordedCashPayment(jobId: string): Promise<boolean> {
+    if (!this.transactionModel) return false;
+    const tx = await this.transactionModel
+      .findOne({
+        job_id: new Types.ObjectId(jobId),
+        'metadata.cash_paid_in_hand': true,
+        status: 'success',
+      })
+      .select('_id')
+      .lean()
+      .exec();
+    return Boolean(tx);
+  }
+
+  /** P0-3: Tính tổng số tiền khách đã thanh toán thành công cho đơn hàng này */
+  async getTotalPaidForJob(jobId: string): Promise<number> {
+    if (!this.transactionModel) return 0;
+    const txs = await this.transactionModel
+      .find({
+        job_id: new Types.ObjectId(jobId),
+        type: 'payment',
+        status: 'success',
+      })
+      .select('amount')
+      .lean()
+      .exec();
+    return txs.reduce((sum, tx) => sum + (tx.amount || 0), 0);
   }
 
   // ─── Báo cáo thu nhập nâng cao (Feature 14) ────────────────────────────────
@@ -1451,7 +1527,13 @@ export class PaymentsService {
     if (type) query['type'] = type;
     const skip = (page - 1) * limit;
     const [transactions, total] = await Promise.all([
-      this.transactionModel.find(query).sort({ created_at: -1 }).skip(skip).limit(limit).exec(),
+      this.transactionModel
+        .find(query)
+        .populate('user_id', 'full_name phone email')
+        .sort({ created_at: -1 })
+        .skip(skip)
+        .limit(limit)
+        .exec(),
       this.transactionModel.countDocuments(query).exec(),
     ]);
     return { transactions, total, page, limit, total_pages: Math.ceil(total / limit) };

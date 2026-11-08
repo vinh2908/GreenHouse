@@ -181,7 +181,14 @@ export class OtpService {
 
     if (!otp) return false;
 
-    // Increment attempts
+    // P1-11: So khớp mã OTP trước — nếu nhập đúng ở lần thứ 5 thì vẫn thành công
+    if (otp.code === code) {
+      otp.is_used = true;
+      await otp.save();
+      return true;
+    }
+
+    // Nhập sai mã -> tăng số lần thử sai
     otp.attempts += 1;
 
     // S15: giới hạn đúng 5 lần nhập sai — lần sai thứ 5 là lần cuối, mã bị
@@ -191,14 +198,7 @@ export class OtpService {
       return false;
     }
 
-    if (otp.code !== code) {
-      await otp.save();
-      return false;
-    }
-
-    // Mark as used
-    otp.is_used = true;
     await otp.save();
-    return true;
+    return false;
   }
 }

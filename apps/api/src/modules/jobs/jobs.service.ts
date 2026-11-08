@@ -49,6 +49,7 @@ import {
   JOB_QUOTE_EXPIRY_HOURS,
   PLATFORM_FEE_BY_SERVICE,
   SOS_SURCHARGE_VND,
+  SOS_BASE_COST_VND,
   PRIVATE_OFFER_DEFAULT_HOURS,
   SOCKET_EVENTS,
   NOTIFICATION_TYPES,
@@ -484,6 +485,29 @@ export class JobsService implements OnModuleInit {
           // Trước đây TypeError ở notification (đọc refund_pending_amount
           // sau khi đã gán undefined) cũng rơi vào đây dù tiền đã hoàn xong.
           job.refund_retry_count = (job.refund_retry_count || 0) + 1;
+          // P1-3: Khi đạt 5 lần thất bại, đơn rơi khỏi sweep. Báo admin đối soát, báo khách chờ xử lý thủ công!
+          if (job.refund_retry_count >= 5) {
+            (job as any).admin_attention = true;
+            (job as any).admin_note = `Hoàn tiền tự động thất bại 5 lần (${(err as Error).message}). Cần đối soát ví thủ công.`;
+            await this.notificationsService
+              .notifyAdmins({
+                type: NOTIFICATION_TYPES.SYSTEM,
+                title: 'Cần đối soát hoàn tiền đơn hàng',
+                body: `Đơn "${job.title}" (${job._id}) hoàn ${refundAmount.toLocaleString('vi-VN')}₫ thất bại 5 lần. Cần admin xử lý thủ công.`,
+                payload: { job_id: String(job._id), amount: refundAmount, customer_id: String(job.customer_id) },
+              })
+              .catch(() => undefined);
+
+            await this.notificationsService
+              .create({
+                userId: String(job.customer_id),
+                type: NOTIFICATION_TYPES.SYSTEM,
+                title: 'Hoàn tiền đơn hàng đang được xử lý thủ công',
+                body: `Hệ thống gặp sự cố khi tự động hoàn tiền cho đơn "${job.title}". Nhân viên hỗ trợ đang đối soát và sẽ hoàn tiền vào ví cho bạn trong thời gian sớm nhất.`,
+                payload: { job_id: String(job._id), amount: refundAmount },
+              })
+              .catch(() => undefined);
+          }
           await job.save().catch(() => undefined);
           this.logger.error(`Retry refund for job ${job._id} failed: ${(err as Error).message}`);
         }
@@ -647,7 +671,7 @@ export class JobsService implements OnModuleInit {
 
   // ─── Check Helper Schedule Conflict (Chống trùng lịch hẹn - A51) ────────────────
 
-  private async checkHelperScheduleConflict(
+  async checkHelperScheduleConflict(
     helperId: string | Types.ObjectId,
     preferredDate?: Date,
     preferredTimeStart?: string,
@@ -1180,7 +1204,7 @@ export class JobsService implements OnModuleInit {
         .findOne({
           warranty_source_job_id: new Types.ObjectId(String(source._id)),
           status: {
-            $nin: [JobStatus.COMPLETED, JobStatus.CANCELLED, JobStatus.REFUNDED],
+            $nin: [JobStatus.COMPLETED, JobStatus.CANCELLED, JobStatus.REFUNDED, JobStatus.EXPIRED],
           },
         })
         .select('_id')
@@ -1430,16 +1454,59 @@ export class JobsService implements OnModuleInit {
       ],
     });
 
-    const verifiedHelpers: { user_id: Types.ObjectId }[] = await this.helperModel
-      .aggregate([
-        {
-          $match: { status: HelperStatus.ONLINE, verification_status: VerificationStatus.APPROVED },
-        },
-        { $lookup: { from: 'users', localField: 'user_id', foreignField: '_id', as: 'user' } },
-        { $match: { 'user.status': { $ne: 'suspended' }, 'user.is_deleted': { $ne: true } } },
-        { $project: { user_id: 1 } },
-      ])
-      .exec();
+    const coordinates = dto.address?.location?.coordinates;
+    let verifiedHelpers: { user_id: Types.ObjectId }[] = [];
+    if (
+      Array.isArray(coordinates) &&
+      coordinates.length === 2 &&
+      coordinates.every(Number.isFinite)
+    ) {
+      const candidates = await this.helperModel
+        .aggregate<{ user_id: Types.ObjectId; availability?: HelperAvailability }>([
+          {
+            $geoNear: {
+              near: { type: 'Point', coordinates },
+              distanceField: 'distance_meters',
+              maxDistance: QUOTE_SERVICE_RADIUS_KM * 1000,
+              spherical: true,
+              key: 'location',
+              query: {
+                status: HelperStatus.ONLINE,
+                verification_status: VerificationStatus.APPROVED,
+                ...(service?._id
+                  ? {
+                      $or: [
+                        { service_ids: service._id },
+                        { service_ids: { $size: 0 } },
+                        { service_ids: { $exists: false } },
+                        { service_ids: null },
+                      ],
+                    }
+                  : {}),
+              },
+            },
+          },
+          { $lookup: { from: 'users', localField: 'user_id', foreignField: '_id', as: 'user' } },
+          { $match: { 'user.status': { $ne: 'suspended' }, 'user.is_deleted': { $ne: true } } },
+          { $project: { user_id: 1, availability: 1 } },
+        ])
+        .exec();
+
+      verifiedHelpers = candidates.filter(helper =>
+        this.isAvailableForDate(helper.availability, job.preferred_date, job.preferred_time_start),
+      );
+    } else {
+      verifiedHelpers = await this.helperModel
+        .aggregate([
+          {
+            $match: { status: HelperStatus.ONLINE, verification_status: VerificationStatus.APPROVED },
+          },
+          { $lookup: { from: 'users', localField: 'user_id', foreignField: '_id', as: 'user' } },
+          { $match: { 'user.status': { $ne: 'suspended' }, 'user.is_deleted': { $ne: true } } },
+          { $project: { user_id: 1 } },
+        ])
+        .exec();
+    }
 
     const broadcastPayload = {
       job_id: String(job._id),
@@ -1491,15 +1558,20 @@ export class JobsService implements OnModuleInit {
       job.status === JobStatus.COMPLETED ||
       job.status === JobStatus.CANCELLED ||
       job.status === JobStatus.DISPUTED ||
-      job.status === JobStatus.REFUNDED
+      job.status === JobStatus.REFUNDED ||
+      job.status === JobStatus.PENDING_REVIEW
     ) {
       throw new BadRequestException('Không thể cập nhật đơn hàng ở trạng thái này');
     }
 
-    // F4: Kiểm tra thời điểm bắt đầu không ở quá khứ và thời lượng 15m - 12h
+    // F4 & P1-23: Kiểm tra thời điểm bắt đầu không ở quá khứ, qua gate giờ làm việc 07:00–22:00 và thời lượng 15m - 12h
     const mergedDate = dto.preferred_date ? new Date(dto.preferred_date) : job.preferred_date;
     const mergedTimeStart = dto.preferred_time_start ?? job.preferred_time_start;
     const mergedTimeEnd = dto.preferred_time_end ?? job.preferred_time_end;
+
+    if (mergedTimeStart) {
+      this.assertWorkingHoursStart(mergedTimeStart, 'Đơn hàng');
+    }
 
     if (mergedDate && mergedTimeStart && /^\d{1,2}:\d{2}$/.test(mergedTimeStart.trim())) {
       const dateStr =
@@ -1638,11 +1710,14 @@ export class JobsService implements OnModuleInit {
       throw new BadRequestException('Bạn không thể tự nhận đơn cứu hộ của chính mình');
     }
 
-    const user = await this.userModel.findById(helperId).select('is_verified').lean();
+    const user = await this.userModel.findById(helperId).select('is_verified status').lean();
     if (user && user.is_verified === false) {
       throw new BadRequestException(
         'Tài khoản thợ chưa được xác minh qua email. Vui lòng xác minh email trước khi nhận đơn cứu hộ SOS.',
       );
+    }
+    if ((user as any)?.status === UserStatus.SUSPENDED || (user as any)?.status === UserStatus.INACTIVE) {
+      throw new ForbiddenException('Tài khoản của bạn đang bị tạm khoá hoặc ngừng hoạt động');
     }
 
     const helperProfile = await this.helperModel
@@ -1651,6 +1726,24 @@ export class JobsService implements OnModuleInit {
     if (!helperProfile || helperProfile.verification_status !== VerificationStatus.APPROVED) {
       throw new ForbiddenException('Chỉ thợ đã xác thực e-KYC mới có quyền nhận đơn cứu hộ SOS');
     }
+    if (helperProfile.status === HelperStatus.BUSY) {
+      throw new BadRequestException('Bạn đang bận làm việc cho đơn khác, không thể nhận đơn cứu hộ lúc này');
+    }
+    if (helperProfile.status === HelperStatus.OFFLINE) {
+      throw new BadRequestException('Bạn đang ở trạng thái Ngoại tuyến, vui lòng bật Nhận việc để nhận đơn');
+    }
+    if (job.expires_at && new Date() > new Date(job.expires_at)) {
+      throw new BadRequestException('Đơn cứu hộ SOS đã hết hạn');
+    }
+
+    await this.checkHelperScheduleConflict(
+      helperId,
+      job.preferred_date,
+      job.preferred_time_start,
+      jobId,
+      job.preferred_time_end,
+      1,
+    );
 
     const claimed = await this.jobModel
       .findOneAndUpdate(
@@ -1661,45 +1754,58 @@ export class JobsService implements OnModuleInit {
       .exec();
     if (!claimed) throw new ConflictException('Đơn cứu hộ này đã có thợ khác nhận');
 
-    const baseCost = 200000;
+    const baseCost = SOS_BASE_COST_VND;
     const surcharge = job.sos_surcharge || 100000;
     const totalPrice = baseCost + surcharge;
     const platformFee = Math.round(totalPrice * PLATFORM_FEE_BY_SERVICE.default);
     const helperReceives = totalPrice - platformFee;
 
-    const quote = await this.quoteModel.create({
-      job_id: new Types.ObjectId(jobId),
-      helper_id: new Types.ObjectId(helperId),
-      labor_cost: baseCost,
-      materials_cost: surcharge,
-      total_price: totalPrice,
-      platform_fee: platformFee,
-      helper_receives: helperReceives,
-      estimated_duration: 1,
-      warranty_days: 30,
-      notes: '🚨 Đơn cứu hộ khẩn cấp SOS - Thợ có mặt sau 15 phút',
-      status: QuoteStatus.ACCEPTED,
-      expires_at: new Date(Date.now() + 3600 * 1000 * 2),
-    });
+    let quote: QuoteDocument | undefined = undefined;
+    let contract: ContractDocument | undefined = undefined;
+    try {
+      quote = await this.quoteModel.create({
+        job_id: new Types.ObjectId(jobId),
+        helper_id: new Types.ObjectId(helperId),
+        labor_cost: baseCost,
+        materials_cost: surcharge,
+        total_price: totalPrice,
+        platform_fee: platformFee,
+        helper_receives: helperReceives,
+        estimated_duration: 1,
+        warranty_days: 30,
+        notes: '🚨 Đơn cứu hộ khẩn cấp SOS - Thợ có mặt sau 15 phút',
+        status: QuoteStatus.ACCEPTED,
+        expires_at: new Date(Date.now() + 3600 * 1000 * 2),
+      });
 
-    const contract = await this.contractModel.create({
-      job_id: new Types.ObjectId(jobId),
-      quote_id: quote._id,
-      customer_id: job.customer_id,
-      helper_id: new Types.ObjectId(helperId),
-      labor_cost: baseCost,
-      materials_cost: surcharge,
-      total_price: totalPrice,
-      platform_fee: platformFee,
-      helper_receives: helperReceives,
-      warranty_days: 30,
-      scheduled_at: new Date(),
-      signed_by_customer_at: new Date(),
-    });
+      contract = await this.contractModel.create({
+        job_id: new Types.ObjectId(jobId),
+        quote_id: quote._id,
+        customer_id: job.customer_id,
+        helper_id: new Types.ObjectId(helperId),
+        labor_cost: baseCost,
+        materials_cost: surcharge,
+        total_price: totalPrice,
+        platform_fee: platformFee,
+        helper_receives: helperReceives,
+        warranty_days: 30,
+        scheduled_at: new Date(),
+        signed_by_customer_at: new Date(),
+      });
+    } catch (createErr) {
+      if ((quote as any)?._id) {
+        await this.quoteModel.deleteOne({ _id: (quote as any)._id }).exec().catch(() => undefined);
+      }
+      await this.jobModel
+        .updateOne({ _id: job._id }, { $set: { helper_id: null, status: JobStatus.OPEN } })
+        .exec()
+        .catch(() => undefined);
+      throw createErr;
+    }
 
     this.addEvent(job, JobStatus.CONFIRMED, helperId, 'helper', 'Thợ đã nhận cứu hộ SOS');
     job.helper_id = new Types.ObjectId(helperId);
-    job.selected_quote_id = quote._id as any;
+    job.selected_quote_id = (quote?._id || quote) as any;
     await job.save();
 
     await this.helperModel
@@ -2417,20 +2523,44 @@ export class JobsService implements OnModuleInit {
         ? jobScheduledAt
         : (dtoScheduledAt ?? jobScheduledAt ?? new Date());
 
-    const contract = await this.contractModel.create({
-      job_id: new Types.ObjectId(jobId),
-      quote_id: new Types.ObjectId(dto.quote_id),
-      customer_id: new Types.ObjectId(customerId),
-      helper_id: quote.helper_id,
-      labor_cost: quote.labor_cost,
-      materials_cost: quote.materials_cost,
-      total_price: quote.total_price,
-      platform_fee: quote.platform_fee,
-      helper_receives: quote.helper_receives,
-      warranty_days: quote.warranty_days,
-      scheduled_at: resolvedScheduledAt,
-      signed_by_customer_at: new Date(),
-    });
+    let contract: ContractDocument;
+    try {
+      contract = await this.contractModel.create({
+        job_id: new Types.ObjectId(jobId),
+        quote_id: new Types.ObjectId(dto.quote_id),
+        customer_id: new Types.ObjectId(customerId),
+        helper_id: quote.helper_id,
+        labor_cost: quote.labor_cost,
+        materials_cost: quote.materials_cost,
+        total_price: quote.total_price,
+        platform_fee: quote.platform_fee,
+        helper_receives: quote.helper_receives,
+        warranty_days: quote.warranty_days,
+        scheduled_at: resolvedScheduledAt,
+        signed_by_customer_at: new Date(),
+      });
+    } catch (contractErr) {
+      // P1-22: Rollback quote và job về trạng thái trước khi claim nếu tạo hợp đồng thất bại
+      await this.quoteModel
+        .updateOne({ _id: updatedQuote._id }, { $set: { status: QuoteStatus.PENDING } })
+        .exec()
+        .catch(() => undefined);
+      await this.quoteModel
+        .updateMany(
+          { job_id: new Types.ObjectId(jobId), _id: { $ne: new Types.ObjectId(dto.quote_id) } },
+          { $set: { status: QuoteStatus.PENDING } },
+        )
+        .exec()
+        .catch(() => undefined);
+      await this.jobModel
+        .updateOne(
+          { _id: job._id },
+          { $set: { helper_id: null, status: job.status, selected_quote_id: null } },
+        )
+        .exec()
+        .catch(() => undefined);
+      throw contractErr;
+    }
 
     this.addEvent(job, JobStatus.CONFIRMED, customerId, 'customer', 'Đã chọn báo giá');
     job.selected_quote_id = quote._id as Types.ObjectId;
@@ -2471,10 +2601,39 @@ export class JobsService implements OnModuleInit {
     helperId: string,
     jobId: string,
   ): Promise<{ job: JobDocument; contract: ContractDocument }> {
-    await this.requireVerifiedHelper(helperId);
-
     const job = await this.jobModel.findById(jobId).exec();
     if (!job) throw new NotFoundException('Job không tồn tại');
+
+    // P1-8: Kiểm tra đầy đủ điều kiện nhận việc như submitQuote
+    const helperProfile = await this.helperModel
+      .findOne({ user_id: new Types.ObjectId(helperId) })
+      .populate('user_id', 'full_name status is_verified')
+      .exec();
+    if (!helperProfile || helperProfile.verification_status !== VerificationStatus.APPROVED) {
+      throw new ForbiddenException(
+        'Tài khoản của bạn chưa hoàn tất xác thực danh tính (e-KYC). Vui lòng xác thực KYC để nhận việc.',
+      );
+    }
+    const helperUser = helperProfile.user_id as any;
+    if (helperUser?.is_verified === false) {
+      throw new BadRequestException(
+        'Tài khoản thợ chưa được xác minh qua email. Vui lòng xác minh email trước khi nhận việc.',
+      );
+    }
+    if (helperUser?.status === UserStatus.SUSPENDED || helperUser?.status === UserStatus.INACTIVE) {
+      throw new ForbiddenException('Tài khoản của bạn đang bị tạm khoá hoặc ngừng hoạt động');
+    }
+    if (helperProfile.status === HelperStatus.BUSY) {
+      throw new BadRequestException('Bạn đang bận làm việc cho đơn khác, không thể nhận việc lúc này');
+    }
+    if (helperProfile.status === HelperStatus.OFFLINE) {
+      throw new BadRequestException('Bạn đang ở trạng thái Ngoại tuyến, vui lòng bật Nhận việc để nhận đơn');
+    }
+
+    if (job.expires_at && new Date() > new Date(job.expires_at)) {
+      throw new BadRequestException('Đơn hàng đã hết hạn nhận việc');
+    }
+
     // Feature 9: cùng endpoint này nhận cả đơn bảo hành (is_warranty, giá 0₫)
     const isWarrantyJob = !!job.is_warranty;
     if (!job.is_fixed_price && !isWarrantyJob) {
@@ -2495,12 +2654,14 @@ export class JobsService implements OnModuleInit {
       );
     }
 
-    // Kiểm tra trùng lịch hẹn của thợ
+    // Kiểm tra trùng lịch hẹn của thợ (có tính duration)
     await this.checkHelperScheduleConflict(
       helperId,
       job.preferred_date,
       job.preferred_time_start,
       jobId,
+      job.preferred_time_end,
+      job.estimated_duration,
     );
 
     // Claim nguyên tử: chỉ thợ đầu tiên (khi helper_id vẫn null) mới nhận được đơn
@@ -2530,21 +2691,32 @@ export class JobsService implements OnModuleInit {
 
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
-    const contract = await this.contractModel.create({
-      job_id: new Types.ObjectId(jobId),
-      customer_id: job.customer_id,
-      helper_id: new Types.ObjectId(helperId),
-      labor_cost: totalPrice,
-      materials_cost: 0,
-      total_price: totalPrice,
-      platform_fee: platformFee,
-      helper_receives: helperReceives,
-      // Mặc định bảo hành của luồng chốt đơn trực tiếp (như đơn SOS): 30 ngày.
-      // Riêng đơn bảo hành tự nó không sinh thêm kỳ bảo hành mới (0 ngày).
-      warranty_days: isWarrantyJob ? 0 : 30,
-      scheduled_at: job.preferred_date ? new Date(job.preferred_date) : tomorrow,
-      signed_by_customer_at: new Date(),
-    });
+
+    let contract: ContractDocument;
+    try {
+      contract = await this.contractModel.create({
+        job_id: new Types.ObjectId(jobId),
+        customer_id: job.customer_id,
+        helper_id: new Types.ObjectId(helperId),
+        labor_cost: totalPrice,
+        materials_cost: 0,
+        total_price: totalPrice,
+        platform_fee: platformFee,
+        helper_receives: helperReceives,
+        // Mặc định bảo hành của luồng chốt đơn trực tiếp (như đơn SOS): 30 ngày.
+        // Riêng đơn bảo hành tự nó không sinh thêm kỳ bảo hành mới (0 ngày).
+        warranty_days: isWarrantyJob ? 0 : 30,
+        scheduled_at: job.preferred_date ? new Date(job.preferred_date) : tomorrow,
+        signed_by_customer_at: new Date(),
+      });
+    } catch (contractErr) {
+      // P1-22: Rollback helper_id nếu tạo hợp đồng thất bại
+      await this.jobModel
+        .updateOne({ _id: job._id }, { $set: { helper_id: null, status: job.status } })
+        .exec()
+        .catch(() => undefined);
+      throw contractErr;
+    }
 
     this.addEvent(
       job,
@@ -2719,12 +2891,18 @@ export class JobsService implements OnModuleInit {
       contract.platform_fee = Math.round(contract.total_price * platformFeeRate);
       contract.helper_receives = contract.total_price - contract.platform_fee;
 
+      // P0-3: Nếu đơn đã thanh toán (PAID) mà phụ lục làm tăng giá (extraTotal > 0),
+      // đưa payment_status về UNPAID để khách phải thanh toán phần chênh lệch trước khi giải ngân
+      if (job.payment_status === PaymentStatus.PAID && extraTotal > 0) {
+        job.payment_status = PaymentStatus.UNPAID;
+      }
+
       this.addEvent(
         job,
         job.status,
         customerId,
         'customer',
-        `Đồng ý phụ lục phát sinh +${extraTotal.toLocaleString('vi-VN')}₫ (${amendment.reason})`,
+        `Đồng ý phụ lục phát sinh +${extraTotal.toLocaleString('vi-VN')}₫ (${amendment.reason})${job.payment_status === PaymentStatus.UNPAID ? ' — Đơn chuyển sang chờ thanh toán bổ sung' : ''}`,
       );
       await job.save();
     } else {
@@ -2888,6 +3066,11 @@ export class JobsService implements OnModuleInit {
     if (dto.completion_notes) {
       job.completion_notes = dto.completion_notes;
     }
+    // P0-4: Thợ xác nhận đã nhận tiền mặt ngay khi nộp bằng chứng hoàn thành
+    if (dto.cash_received) {
+      job.helper_cash_confirmed = true;
+      job.helper_cash_confirmed_at = new Date();
+    }
     this.addEvent(job, JobStatus.PENDING_REVIEW, helperId, 'helper', 'Upload ảnh/video hoàn thành');
     await job.save();
     await this.setHelperBusy(helperId, false);
@@ -2902,6 +3085,27 @@ export class JobsService implements OnModuleInit {
 
     await this.notificationsService.notifyJobCompleted(String(job.customer_id), job.title, jobId);
 
+    return job;
+  }
+
+  // ─── Helper: Confirm Cash Payment ─────────────────────────────────────────
+
+  async confirmCashPayment(helperId: string, jobId: string): Promise<JobDocument> {
+    const job = await this.jobModel.findById(jobId).exec();
+    if (!job) throw new NotFoundException('Job không tồn tại');
+    if (job.helper_id?.toString() !== helperId) {
+      throw new ForbiddenException('Chỉ thợ của đơn hàng mới có quyền xác nhận nhận tiền mặt');
+    }
+    job.helper_cash_confirmed = true;
+    job.helper_cash_confirmed_at = new Date();
+    this.addEvent(
+      job,
+      job.status,
+      helperId,
+      'helper',
+      'Thợ xác nhận đã nhận đủ tiền mặt trực tiếp từ khách hàng',
+    );
+    await job.save();
     return job;
   }
 
@@ -2939,6 +3143,19 @@ export class JobsService implements OnModuleInit {
       );
     }
 
+    // P0-4: Nghiệm thu bằng tiền mặt bắt buộc thợ đã xác nhận nhận tiền mặt
+    if (effectivePaymentMethod === 'cash' && !existing.is_warranty) {
+      const hasCashConfirmed = existing.helper_cash_confirmed === true;
+      const hasRecordedCashTx = typeof this.paymentsService?.hasRecordedCashPayment === 'function'
+        ? await this.paymentsService.hasRecordedCashPayment(String(existing._id))
+        : false;
+      if (!hasCashConfirmed && !hasRecordedCashTx) {
+        throw new BadRequestException(
+          'Thợ chưa xác nhận đã nhận tiền mặt từ khách. Vui lòng yêu cầu thợ bấm xác nhận đã nhận tiền mặt trước khi nghiệm thu đơn tiền mặt.',
+        );
+      }
+    }
+
     // A2: Nếu thanh toán online (không phải tiền mặt và không phải bảo hành), bắt buộc đơn phải PAID thật trước khi duyệt
     if (
       effectivePaymentMethod !== 'cash' &&
@@ -2954,35 +3171,50 @@ export class JobsService implements OnModuleInit {
 
     // A48: Cộng tiền cho thợ TRƯỚC, đổi trạng thái đơn sang COMPLETED SAU
     let payoutCredited = false;
+    let isSimulatedPayout = false;
+    let payoutAmount = 0;
     if (existing.helper_id && contract && contract.total_price > 0) {
       if (effectivePaymentMethod === 'cash') {
         // Đơn Tiền mặt: Thợ đã thu 100% tiền mặt trực tiếp từ khách -> Khấu trừ 15% phí sàn từ Ví thợ
         await this.deductCashCommission(existing, contract.platform_fee, contract.helper_receives);
       } else if (contract.helper_receives > 0) {
-        // P0-2 + owner decision 2026-11-07 (keep simulation): an online-paid
-        // job releases payout only from money that actually exists — a REAL
-        // wallet payment credits the helper's withdrawable balance, a
-        // SIMULATED VietQR/MoMo/ZaloPay payment credits ONLY simulated_balance
-        // (demo, never withdrawable). Anything else is refused, never minted.
-        // Warranty jobs (is_warranty) collect no customer money; keep the old flow.
-        if (existing.is_warranty) {
-          await this.creditJobPayout(existing, contract.helper_receives);
-          payoutCredited = true;
-        } else {
-          const verified = (await this.paymentsService.hasVerifiedWalletPayment?.(jobId)) ?? false;
-          if (verified) {
-            await this.creditJobPayout(existing, contract.helper_receives);
+        // P0-3: Chỉ giải ngân số tiền tương ứng với số tiền khách thực tế đã thanh toán (tránh giải ngân vượt số tiền đã thu)
+        let maxPayable = contract.helper_receives;
+        if (!existing.is_warranty) {
+          const totalPaidByCustomer = typeof this.paymentsService?.getTotalPaidForJob === 'function'
+            ? await this.paymentsService.getTotalPaidForJob(String(existing._id))
+            : contract.total_price;
+          const fee = contract.platform_fee ?? Math.max(0, contract.total_price - contract.helper_receives);
+          maxPayable = Math.min(
+            contract.helper_receives,
+            Math.max(0, totalPaidByCustomer - fee),
+          );
+        }
+        payoutAmount = existing.is_warranty ? contract.helper_receives : maxPayable;
+
+        if (payoutAmount > 0) {
+          if (existing.is_warranty) {
+            await this.creditJobPayout(existing, payoutAmount);
             payoutCredited = true;
+            isSimulatedPayout = false;
           } else {
-            const simulated =
-              (await this.paymentsService.hasSimulatedOnlinePayment?.(jobId)) ?? false;
-            if (!simulated) {
-              throw new BadRequestException(
-                'Đơn này chưa có khoản thanh toán trực tuyến đã xác minh (chỉ thanh toán bằng số dư ví thật mới được giải ngân cho thợ). Vui lòng thanh toán lại bằng ví, hoặc nghiệm thu bằng tiền mặt nếu thợ đã nhận tiền mặt trực tiếp.',
-              );
+            const verified = (await this.paymentsService.hasVerifiedWalletPayment?.(jobId)) ?? false;
+            if (verified) {
+              await this.creditJobPayout(existing, payoutAmount);
+              payoutCredited = true;
+              isSimulatedPayout = false;
+            } else {
+              const simulated =
+                (await this.paymentsService.hasSimulatedOnlinePayment?.(jobId)) ?? false;
+              if (!simulated) {
+                throw new BadRequestException(
+                  'Đơn này chưa có khoản thanh toán trực tuyến đã xác minh (chỉ thanh toán bằng số dư ví thật mới được giải ngân cho thợ). Vui lòng thanh toán lại bằng ví, hoặc nghiệm thu bằng tiền mặt nếu thợ đã nhận tiền mặt trực tiếp.',
+                );
+              }
+              await this.creditJobPayoutSimulated(existing, payoutAmount);
+              payoutCredited = true;
+              isSimulatedPayout = true;
             }
-            await this.creditJobPayoutSimulated(existing, contract.helper_receives);
-            payoutCredited = true;
           }
         }
       }
@@ -3021,20 +3253,34 @@ export class JobsService implements OnModuleInit {
         throw new ConflictException('Công việc đã được nghiệm thu bởi thao tác khác');
       }
     } catch (saveErr) {
-      // Rollback nếu cập nhật job thất bại
-      if (payoutCredited && existing.helper_id && contract && contract.helper_receives > 0) {
-        await this.paymentsService
-          .deductWallet(
-            String(existing.helper_id),
-            contract.helper_receives,
-            `Hoàn tác tiền công đơn ${jobId} do lỗi nghiệm thu`,
-          )
-          .catch(rollbackErr => {
-            // F20: lỗi hoàn tác tiền công phải được log rõ, không nuốt im lặng.
-            this.logger.error(
-              `Failed to roll back payout for job ${jobId} after approval error: ${rollbackErr}`,
-            );
-          });
+      // P0-5: Rollback nếu cập nhật job thất bại — trừ đúng loại số dư đã cộng (simulated -> trừ simulated_balance, real -> deductWallet)
+      if (payoutCredited && existing.helper_id && payoutAmount > 0) {
+        if (isSimulatedPayout) {
+          await this.paymentsService
+            .deductWalletSimulated(
+              String(existing.helper_id),
+              payoutAmount,
+              `Hoàn tác tiền công mô phỏng đơn ${jobId} do lỗi nghiệm thu`,
+            )
+            .catch(rollbackErr => {
+              this.logger.error(
+                `Failed to roll back simulated payout for job ${jobId} after approval error: ${rollbackErr}`,
+              );
+            });
+        } else {
+          await this.paymentsService
+            .deductWallet(
+              String(existing.helper_id),
+              payoutAmount,
+              `Hoàn tác tiền công đơn ${jobId} do lỗi nghiệm thu`,
+            )
+            .catch(rollbackErr => {
+              // F20: lỗi hoàn tác tiền công phải được log rõ, không nuốt im lặng.
+              this.logger.error(
+                `Failed to roll back payout for job ${jobId} after approval error: ${rollbackErr}`,
+              );
+            });
+        }
       }
       throw saveErr;
     }
@@ -3556,10 +3802,32 @@ export class JobsService implements OnModuleInit {
       }
     }
 
-    // A25 & F7: Tự động hoàn tiền vào ví khách khi huỷ đơn nếu đơn đã thanh toán điện tử
-    if (job.payment_status === PaymentStatus.PAID && job.payment_method !== 'cash') {
-      const netPaid = computeNetPaidAmount(job, contractTotalPrice);
-      if (netPaid > 0) {
+    // B46: Xoá liên kết voucher–đơn khi huỷ (lượt dùng được trả lại trong
+    // restoreJobBenefitsOnCancel qua VouchersService.restoreForJob — giảm
+    // used_count + lật redemption sang 'reversed'; bản ghi redemption giữ lại
+    // để đối soát). Đặt trước job.save() để liên kết được gỡ cùng lần lưu này.
+    if (job.voucher_code) {
+      job.voucher_code = undefined;
+    }
+
+    const netPaid = (job.payment_status === PaymentStatus.PAID && job.payment_method !== 'cash')
+      ? computeNetPaidAmount(job, contractTotalPrice)
+      : 0;
+
+    // P1-2: Lưu trạng thái hủy và cờ refund_pending vào DB TRƯỚC khi gọi hoàn tiền
+    job.status = JobStatus.CANCELLED;
+    if (netPaid > 0) {
+      job.refund_pending_retry = true;
+      job.refund_pending_amount = netPaid;
+      job.refund_pending_reason = dto.reason || 'Hủy đơn hàng đã thanh toán';
+      job.refund_retry_count = 0;
+    }
+    await job.save();
+
+    // A25 & F7 & P1-2: Tự động hoàn tiền vào ví khách khi huỷ đơn nếu đơn đã thanh toán điện tử
+    if (netPaid > 0) {
+      const alreadyRefunded = (await this.paymentsService.hasSuccessfulRefund?.(jobId)) ?? false;
+      if (!alreadyRefunded) {
         try {
           await this.paymentsService.refundCustomer(
             String(job.customer_id),
@@ -3571,6 +3839,7 @@ export class JobsService implements OnModuleInit {
           job.refund_pending_retry = false;
           job.refund_pending_amount = undefined;
           job.refund_pending_reason = undefined;
+          await job.save();
           await this.notificationsService
             .create({
               userId: String(job.customer_id),
@@ -3584,24 +3853,16 @@ export class JobsService implements OnModuleInit {
           this.logger.error(
             `Refund on cancel failed for job ${jobId}: ${(refundErr as Error).message}`,
           );
-          // F7: Thiết lập cờ retry để không làm mất tiền hoàn của khách
-          job.refund_pending_retry = true;
-          job.refund_retry_count = 0;
-          job.refund_pending_amount = netPaid;
-          job.refund_pending_reason = dto.reason || 'Hủy đơn hàng đã thanh toán';
+          // Cờ retry đã lưu trước đó, sweep sẽ tự động hoàn thành
         }
+      } else {
+        job.payment_status = PaymentStatus.REFUNDED;
+        job.refund_pending_retry = false;
+        job.refund_pending_amount = undefined;
+        job.refund_pending_reason = undefined;
+        await job.save();
       }
     }
-
-    // B46: Xoá liên kết voucher–đơn khi huỷ (lượt dùng được trả lại trong
-    // restoreJobBenefitsOnCancel qua VouchersService.restoreForJob — giảm
-    // used_count + lật redemption sang 'reversed'; bản ghi redemption giữ lại
-    // để đối soát). Đặt trước job.save() để liên kết được gỡ cùng lần lưu này.
-    if (job.voucher_code) {
-      job.voucher_code = undefined;
-    }
-
-    await job.save();
 
     if (job.helper_id) await this.setHelperBusy(job.helper_id, false);
 
@@ -3888,6 +4149,23 @@ export class JobsService implements OnModuleInit {
           ),
         )
       : allJobs;
+
+    // P1-18: Sắp xếp TOÀN BỘ visibleJobs theo khoảng cách Haversine trước khi cắt trang (slice)
+    if (helperCoords && Array.isArray(helperCoords) && helperCoords.length >= 2) {
+      visibleJobs.sort((a, b) => {
+        const coordsA = a.address?.location?.coordinates;
+        const coordsB = b.address?.location?.coordinates;
+        const distA =
+          coordsA && coordsA.length >= 2
+            ? this.haversineKm(helperCoords[1], helperCoords[0], coordsA[1], coordsA[0])
+            : 9999;
+        const distB =
+          coordsB && coordsB.length >= 2
+            ? this.haversineKm(helperCoords[1], helperCoords[0], coordsB[1], coordsB[0])
+            : 9999;
+        return distA - distB;
+      });
+    }
 
     const total = visibleJobs.length;
     const total_pages = Math.max(1, Math.ceil(total / limit));

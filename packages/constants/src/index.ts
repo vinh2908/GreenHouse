@@ -108,6 +108,7 @@ export const PLATFORM_FEE_BY_SERVICE = {
 // S4: Phụ phí cứu hộ khẩn cấp SOS — giá do SERVER quyết định duy nhất.
 // Client không được gửi giá này lên (mọi giá trị client gửi đều bị bỏ qua).
 export const SOS_SURCHARGE_VND = 100_000;
+export const SOS_BASE_COST_VND = 200_000;
 
 // ─── Warranty ─────────────────────────────────────────────────────────────────
 

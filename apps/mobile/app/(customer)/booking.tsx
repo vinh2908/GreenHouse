@@ -166,97 +166,6 @@ function renderServiceIcon(slug: string, size = 26, color = COLORS.primary) {
   }
 }
 
-const DEFAULT_SERVICES: BookingServiceOption[] = [
-  {
-    _id: '6aa1269cd33a3aed2b36a5e1',
-    name: 'Dọn dẹp vệ sinh nhà cửa',
-    slug: 'house_cleaning',
-    icon: 'house_cleaning',
-    description: 'Lau sàn, hút bụi, dọn phòng khách, phòng ngủ, nhà bếp, vệ sinh...',
-    base_price_min: 80000,
-  },
-  {
-    _id: '6aa1269cd33a3aed2b36a5e2',
-    name: 'Đi chợ & Nấu ăn gia đình',
-    slug: 'cooking',
-    icon: 'cooking',
-    description: 'Đi chợ mua nguyên liệu, nấu cơm canh, món mặn, món chay theo yêu cầu...',
-    base_price_min: 100000,
-  },
-  {
-    _id: '6aa1269cd33a3aed2b36a5e3',
-    name: 'Giặt giũ & Là ủi quần áo',
-    slug: 'laundry',
-    icon: 'laundry',
-    description: 'Phân loại, giặt tay/máy, phơi, gấp, là ủi quần áo gọn gàng...',
-    base_price_min: 70000,
-  },
-  {
-    _id: '6aa1269cd33a3aed2b36a5e4',
-    name: 'Chăm sóc Gia Chủ',
-    slug: 'family_care',
-    icon: 'family_care',
-    description: 'Trông trẻ, chăm sóc người già, người bệnh, hỗ trợ bà bầu...',
-    base_price_min: 120000,
-  },
-  {
-    _id: '6aa1269cd33a3aed2b36a5e5',
-    name: 'Chăm sóc thú cưng',
-    slug: 'petcare',
-    icon: 'petcare',
-    description: 'Cho ăn, tắm rửa, dắt đi dạo, vệ sinh chuồng trại thú cưng...',
-    base_price_min: 80000,
-  },
-  {
-    _id: '6aa1269cd33a3aed2b36a5e6',
-    name: 'Chăm sóc cây cảnh',
-    slug: 'plantcare',
-    icon: 'plantcare',
-    description: 'Tưới cây, bón phân, cắt tỉa, thay chậu, phòng trừ sâu bệnh...',
-    base_price_min: 80000,
-  },
-  {
-    _id: '6aa1269cd33a3aed2b36a5e7',
-    name: 'Trông giữ & Quản lý nhà cửa',
-    slug: 'house_management',
-    icon: 'house_management',
-    description: 'Trông coi nhà khi vắng, nhận bưu phẩm, kiểm tra an ninh, bảo trì...',
-    base_price_min: 150000,
-  },
-  {
-    _id: '6aa1269cd33a3aed2b36a5e8',
-    name: 'Giúp việc theo giờ',
-    slug: 'housekeeping_hourly',
-    icon: 'housekeeping_hourly',
-    description: 'Dọn dẹp, rửa chén, lau kính, hỗ trợ việc nhà linh hoạt theo giờ...',
-    base_price_min: 60000,
-  },
-  {
-    _id: '6aa1269cd33a3aed2b36a5e9',
-    name: 'Tổng vệ sinh nhà cửa',
-    slug: 'deep_cleaning',
-    icon: 'deep_cleaning',
-    description: 'Vệ sinh toàn bộ nhà chuyên sâu, chà sàn, lau kính, tẩy rửa...',
-    base_price_min: 500000,
-  },
-  {
-    _id: '6aa1269cd33a3aed2b36a5ea',
-    name: 'Dọn nhà & Chuyển nhà',
-    slug: 'moving_help',
-    icon: 'moving_help',
-    description: 'Đóng gói đồ đạc, sắp xếp, vận chuyển, bày trí nhà mới...',
-    base_price_min: 200000,
-  },
-  {
-    _id: '6aa1269cd33a3aed2b36a5eb',
-    name: 'Phụ việc lặt vặt',
-    slug: 'handyman',
-    icon: 'handyman',
-    description: 'Treo tranh, lắp kệ, sửa nhỏ, thay bóng đèn, việc vặt trong nhà...',
-    base_price_min: 80000,
-  },
-];
-
 export default function BookingScreen() {
   const router = useRouter();
   const { t, tService, tServiceDesc, lang, fs } = useTranslation();
@@ -277,7 +186,12 @@ export default function BookingScreen() {
     attached_photo?: string;
     auto_analyze?: string;
   }>();
-  const { data: services, isLoading: isLoadingServices } = useServices();
+  const {
+    data: services,
+    isLoading: isLoadingServices,
+    isError: isErrorServices,
+    refetch: refetchServices,
+  } = useServices();
   const createJob = useCreateJob();
   const createRecurringPlan = useCreateRecurringPlan();
   const { data: myProfile } = useMyProfile();
@@ -536,8 +450,7 @@ export default function BookingScreen() {
     setSearchResults([]);
   };
 
-  const svcList =
-    services && services.length > 0 ? services : isLoadingServices ? [] : DEFAULT_SERVICES;
+  const svcList = services && services.length > 0 ? services : [];
   const selectedServiceData = svcList.find(s => s._id === selectedService);
   // Feature 7: dịch vụ giá cam kết — giá cố định, không qua vòng báo giá
   const isFixedPriceService =
@@ -1732,6 +1645,42 @@ export default function BookingScreen() {
                     >
                       {t('booking_loading_services')}
                     </Text>
+                  </View>
+                ) : isErrorServices || svcList.length === 0 ? (
+                  <View
+                    style={{
+                      padding: 24,
+                      backgroundColor: '#FEF2F2',
+                      borderRadius: 14,
+                      borderWidth: 1,
+                      borderColor: '#FCA5A5',
+                      alignItems: 'center',
+                      gap: 12,
+                    }}
+                  >
+                    <Text
+                      style={{
+                        fontSize: fs(14),
+                        color: '#991B1B',
+                        fontWeight: '700',
+                        textAlign: 'center',
+                      }}
+                    >
+                      Không thể tải danh sách dịch vụ từ hệ thống
+                    </Text>
+                    <TouchableOpacity
+                      onPress={() => refetchServices()}
+                      style={{
+                        backgroundColor: '#DC2626',
+                        paddingHorizontal: 16,
+                        paddingVertical: 10,
+                        borderRadius: 10,
+                      }}
+                    >
+                      <Text style={{ color: '#fff', fontWeight: '700', fontSize: fs(13) }}>
+                        Tải lại dịch vụ
+                      </Text>
+                    </TouchableOpacity>
                   </View>
                 ) : (
                   svcList.map(svc => (

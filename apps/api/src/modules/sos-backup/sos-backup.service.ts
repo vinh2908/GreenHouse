@@ -372,10 +372,10 @@ export class SosBackupService implements OnModuleInit, OnModuleDestroy {
   private async cancelJobWithSosPolicy(
     sos: SosBackupRequestDocument,
     by: 'customer' | 'timeout',
-  ): Promise<void> {
+  ): Promise<{ refundFailed: boolean; refundAmount: number }> {
     const jobId = String(sos.job_id);
     const job = await this.jobModel.findById(sos.job_id).exec();
-    if (!job) return;
+    if (!job) return { refundFailed: false, refundAmount: 0 };
 
     let refundAmount = 0;
     let refundFailed = false;
@@ -420,6 +420,14 @@ export class SosBackupService implements OnModuleInit, OnModuleDestroy {
               },
             )
             .exec();
+          // P1-4: Thiết lập cờ refund_pending_retry để sweep 5 phút tự thử lại
+          job.refund_pending_retry = true;
+          job.refund_retry_count = 0;
+          job.refund_pending_amount = refundAmount;
+          job.refund_pending_reason =
+            by === 'customer'
+              ? 'Hủy đơn do thợ gặp sự cố (SOS) — khách chọn hủy'
+              : 'Hủy đơn do thợ gặp sự cố (SOS) — khách không phản hồi trong hạn';
         }
       }
     }
@@ -518,6 +526,8 @@ export class SosBackupService implements OnModuleInit, OnModuleDestroy {
         payload: { job_id: jobId, sos_id: String(sos._id) },
       })
       .catch(() => undefined);
+
+    return { refundFailed, refundAmount };
   }
 
   /**
@@ -850,9 +860,14 @@ export class SosBackupService implements OnModuleInit, OnModuleDestroy {
       verification_status: VerificationStatus.APPROVED,
       user_id: { $ne: sos.original_helper_id },
     };
-    // A65: Nếu đơn có service_id thì lọc theo service, đơn tự viết cho phép mọi thợ online đủ điều kiện
+    // A65 & P1-10: Nếu đơn có service_id thì lọc theo service, hoặc chấp nhận thợ chưa đăng ký dịch vụ (như notifyNearbyHelpers)
     if (job.service_id) {
-      helperFilter['service_ids'] = job.service_id;
+      helperFilter['$or'] = [
+        { service_ids: job.service_id },
+        { service_ids: { $size: 0 } },
+        { service_ids: { $exists: false } },
+        { service_ids: null },
+      ];
     }
 
     const profiles = await this.helperModel.find(helperFilter).exec();
@@ -1552,21 +1567,27 @@ export class SosBackupService implements OnModuleInit, OnModuleDestroy {
       payload,
     );
 
-    // A60: Khi SOS hết hạn phát sóng không có thợ thay, tự động huỷ đơn + hoàn tiền 100% số thực trả cho khách
+    // A60 & P1-5: Khi SOS hết hạn phát sóng không có thợ thay, tự động huỷ đơn + hoàn tiền 100% số thực trả cho khách
+    let cancelResult: { refundFailed: boolean; refundAmount: number } | undefined;
     try {
-      await this.cancelJobWithSosPolicy(claimed, 'timeout');
+      cancelResult = await this.cancelJobWithSosPolicy(claimed, 'timeout');
     } catch (cancelErr) {
       this.logger.error(
         `Failed to cancel and refund job on SOS expiry: ${(cancelErr as Error).message}`,
       );
     }
 
+    const refundFailed = cancelResult?.refundFailed ?? false;
     await this.notificationsService
       .create({
         userId: String(sos.customer_id),
         type: NOTIFICATION_TYPES.SOS_BACKUP_EXPIRED,
-        title: 'Không tìm được thợ thay, đã hoàn tiền',
-        body: `Không tìm được người giúp việc thay thế cho đơn "${sos.job_title}". Đơn đã tự động hủy và hoàn tiền vào ví của bạn.`,
+        title: refundFailed
+          ? 'Không tìm được thợ thay, đang chờ đối soát hoàn tiền'
+          : 'Không tìm được thợ thay, đã hoàn tiền',
+        body: refundFailed
+          ? `Không tìm được người giúp việc thay thế cho đơn "${sos.job_title}". Đơn đã tự động hủy, hệ thống đang đối soát để hoàn tiền vào ví cho bạn trong thời gian sớm nhất.`
+          : `Không tìm được người giúp việc thay thế cho đơn "${sos.job_title}". Đơn đã tự động hủy và hoàn tiền vào ví của bạn.`,
         payload: { job_id: String(sos.job_id), sos_id: String(sos._id) },
       })
       .catch(() => undefined);
@@ -1599,9 +1620,9 @@ export class SosBackupService implements OnModuleInit, OnModuleDestroy {
       /* ignore */
     }
 
-    // Admin: thông báo cho mọi tài khoản admin
+    // Admin: thông báo cho mọi tài khoản admin (P1-6: sửa query User schema đúng field roles và is_deleted)
     const admins = await this.userModel
-      .find({ role: 'admin', is_active: true })
+      .find({ roles: 'admin', is_deleted: false })
       .select('_id')
       .lean()
       .exec();
@@ -1760,12 +1781,33 @@ export class SosBackupService implements OnModuleInit, OnModuleDestroy {
 
   /** Đồng bộ trạng thái bận/rảnh của thợ (cùng quy ước như JobsService.setHelperBusy) */
   private async setHelperBusy(helperId: string, busy: boolean): Promise<void> {
-    const target = busy ? HelperStatus.BUSY : HelperStatus.ONLINE;
-    const guard = busy ? HelperStatus.ONLINE : HelperStatus.BUSY;
-    await this.helperModel
-      .updateOne({ user_id: new Types.ObjectId(helperId), status: guard }, { status: target })
-      .exec()
-      .catch(() => undefined);
+    if (busy) {
+      await this.helperModel
+        .updateOne(
+          { user_id: new Types.ObjectId(helperId), status: HelperStatus.ONLINE },
+          { status: HelperStatus.BUSY },
+        )
+        .exec()
+        .catch(() => undefined);
+    } else {
+      // P1-7: Chỉ đặt thợ về ONLINE khi không còn đơn đang hoạt động nào khác
+      const otherActiveJobsCount = await this.jobModel
+        .countDocuments({
+          helper_id: new Types.ObjectId(helperId),
+          status: { $in: [...ACTIVE_JOB_STATUSES, JobStatus.PENDING_REVIEW] },
+        })
+        .exec();
+
+      if (otherActiveJobsCount === 0) {
+        await this.helperModel
+          .updateOne(
+            { user_id: new Types.ObjectId(helperId), status: HelperStatus.BUSY },
+            { status: HelperStatus.ONLINE },
+          )
+          .exec()
+          .catch(() => undefined);
+      }
+    }
   }
 
   /** Khoảng cách đường chim bay (km) — cùng công thức như MatchingService */

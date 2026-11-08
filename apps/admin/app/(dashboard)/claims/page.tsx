@@ -62,7 +62,7 @@ export default function ClaimsPage() {
   const [status, setStatus] = useState('');
   const [page, setPage] = useState(1);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const { data, isLoading } = useAdminClaims({ status: status || undefined, page });
+  const { data, isLoading, isError, refetch } = useAdminClaims({ status: status || undefined, page });
 
   const claims = data?.claims ?? [];
 
@@ -100,6 +100,13 @@ export default function ClaimsPage() {
         <CardContent>
           {isLoading ? (
             <Loading />
+          ) : isError ? (
+            <div className="p-8 text-center space-y-3">
+              <p className="text-destructive font-medium">Không thể tải danh sách bồi thường</p>
+              <Button variant="outline" size="sm" onClick={() => refetch()}>
+                Tải lại
+              </Button>
+            </div>
           ) : claims.length === 0 ? (
             <EmptyState message="Chưa có yêu cầu bồi thường nào." />
           ) : (

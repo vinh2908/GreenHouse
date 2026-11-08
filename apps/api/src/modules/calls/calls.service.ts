@@ -288,6 +288,7 @@ export class CallsService {
           const timeStr = new Date(session.started_at || Date.now()).toLocaleTimeString('vi-VN', {
             hour: '2-digit',
             minute: '2-digit',
+            timeZone: 'Asia/Ho_Chi_Minh',
           });
           return this.notificationsService.create({
             userId: calleeId,

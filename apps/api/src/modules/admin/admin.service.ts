@@ -1,15 +1,19 @@
 import {
   BadRequestException,
+  ConflictException,
   Injectable,
   NotFoundException,
   forwardRef,
   Inject,
+  Optional,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { User, UserDocument } from '../users/schemas/user.schema';
 import { HelperProfile, HelperProfileDocument } from '../helpers/schemas/helper-profile.schema';
 import { Job, JobDocument, Contract, ContractDocument } from '../jobs/schemas/job.schema';
+import { Quote, QuoteDocument } from '../jobs/schemas/job.schema';
+import { Service, ServiceDocument } from '../services/schemas/service.schema';
 import { Notification, NotificationDocument } from '../notifications/schemas/notification.schema';
 import {
   Wallet,
@@ -50,8 +54,9 @@ import {
   UserStatus,
   VerificationStatus,
 } from '@homemate/types';
-import { NOTIFICATION_TYPES } from '@homemate/constants';
+import { NOTIFICATION_TYPES, PLATFORM_FEE_BY_SERVICE } from '@homemate/constants';
 import { NotificationsService } from '../notifications/notifications.service';
+import { PaymentsService } from '../payments/payments.service';
 import {
   JobsService,
   ACTIVE_HELPER_JOB_STATUSES,
@@ -119,8 +124,15 @@ export class AdminService {
     @InjectModel(HelperPenaltyEvent.name)
     private penaltyEventModel: Model<HelperPenaltyEventDocument>,
     private readonly notificationsService: NotificationsService,
+    private readonly paymentsService: PaymentsService,
     @Inject(forwardRef(() => JobsService))
     private readonly jobsService: JobsService,
+    @Optional()
+    @InjectModel(Quote.name)
+    private quoteModel?: Model<QuoteDocument>,
+    @Optional()
+    @InjectModel(Service.name)
+    private serviceModel?: Model<ServiceDocument>,
   ) {}
 
   // ─── Users ────────────────────────────────────────────────────────────────
@@ -300,6 +312,18 @@ export class AdminService {
       )
       .exec();
     if (!user) throw new NotFoundException('Người dùng không tồn tại');
+
+    // A13: Mở khóa tài khoản -> nếu là thợ và e-KYC đã duyệt thì đưa thợ về ONLINE
+    if (user.roles?.includes(UserRole.HELPER)) {
+      await this.helperModel
+        .updateOne(
+          { user_id: user._id, verification_status: VerificationStatus.APPROVED },
+          { status: HelperStatus.ONLINE },
+        )
+        .exec()
+        .catch(() => undefined);
+    }
+
     return user;
   }
 
@@ -495,7 +519,7 @@ export class AdminService {
     return { jobs, total, page, limit, total_pages: Math.ceil(total / limit) };
   }
 
-  async getJobById(jobId: string): Promise<JobDocument> {
+  async getJobById(jobId: string): Promise<any> {
     const job = await this.jobModel
       .findById(jobId)
       .populate('customer_id', 'full_name phone')
@@ -503,9 +527,37 @@ export class AdminService {
       .populate('service_id', 'name')
       .populate('private_offer_helper_id', 'full_name phone')
       .populate('rejected_helper_ids', 'full_name phone')
+      .populate('selected_quote_id')
+      .lean()
       .exec();
     if (!job) throw new NotFoundException('Job không tồn tại');
-    return job;
+
+    // A02: Populate thêm danh sách báo giá và hợp đồng cho Admin xem thanh toán
+    const [quotes, contract] = await Promise.all([
+      this.quoteModel
+        ? this.quoteModel
+            .find({ job_id: new Types.ObjectId(jobId) })
+            .populate('helper_id', 'full_name phone')
+            .sort({ created_at: -1 })
+            .lean()
+            .exec()
+        : Promise.resolve([]),
+      this.contractModel
+        .findOne({ job_id: new Types.ObjectId(jobId) })
+        .lean()
+        .exec(),
+    ]);
+
+    const netPaid = computeNetPaidAmount(job as any, contract?.total_price);
+    const maxRefundable = Math.max(0, netPaid - ((job as any).refunded_amount || 0));
+
+    return {
+      ...job,
+      quotes: quotes || [],
+      contract: contract || null,
+      net_paid: netPaid,
+      max_refundable: maxRefundable,
+    };
   }
 
   async updateJobStatus(
@@ -561,6 +613,45 @@ export class AdminService {
         contract.status = ContractStatus.CANCELLED;
         await contract.save();
       }
+    }
+
+    // P1-1: Di chuyển dòng tiền tương ứng khi Admin chuyển sang COMPLETED / CANCELLED / REFUNDED
+    if (status === JobStatus.COMPLETED) {
+      if (
+        contract &&
+        job.helper_id &&
+        (job.payment_status === PaymentStatus.PAID || job.payment_method === 'cash')
+      ) {
+        const payout = contract.helper_receives;
+        if (payout > 0) {
+          const isSimulated = (await this.paymentsService?.hasSimulatedOnlinePayment?.(jobId)) ?? false;
+          if (isSimulated) {
+            await this.paymentsService?.creditHelperSimulated?.(String(job.helper_id), jobId, payout);
+          } else {
+            await this.paymentsService?.creditHelper?.(String(job.helper_id), jobId, payout);
+          }
+        }
+      }
+      job.payment_status = PaymentStatus.PAID;
+      job.completed_at = new Date();
+      await job.save();
+    } else if (status === JobStatus.CANCELLED || status === JobStatus.REFUNDED) {
+      if (job.payment_status === PaymentStatus.PAID && job.payment_method !== 'cash') {
+        const netPaid = computeNetPaidAmount(job, contract?.total_price);
+        if (netPaid > 0) {
+          const alreadyRefunded = (await this.paymentsService?.hasSuccessfulRefund?.(jobId)) ?? false;
+          if (!alreadyRefunded) {
+            await this.paymentsService?.refundCustomer?.(
+              String(job.customer_id),
+              jobId,
+              netPaid,
+              note || `Admin can thiệp chuyển trạng thái sang ${status}`,
+            );
+          }
+        }
+      }
+      job.payment_status = PaymentStatus.REFUNDED;
+      await job.save();
     }
 
     // 2. Đồng bộ trạng thái bận của thợ khi chuyển sang trạng thái kết thúc (completed, refunded, cancelled)
@@ -736,8 +827,9 @@ export class AdminService {
         status: 'success',
       })
       .exec();
-    const totalRefunded = previousRefunds.reduce((sum, tx) => sum + (tx.amount || 0), 0);
-    const maxRefundable = Math.max(0, netPaid - totalRefunded);
+    const totalRefundedTxs = previousRefunds.reduce((sum, tx) => sum + (tx.amount || 0), 0);
+    const currentRefunded = Math.max(job.refunded_amount || 0, totalRefundedTxs);
+    const maxRefundable = Math.max(0, netPaid - currentRefunded);
 
     if (amount > maxRefundable) {
       throw new BadRequestException(
@@ -745,85 +837,70 @@ export class AdminService {
       );
     }
 
-    // B91: hoàn tiền trực tiếp (cộng ví + ghi giao dịch + ghi event đơn) trong 1 transaction
-    const conn: any = (this.walletModel as any)?.db;
-    let session: any = null;
-    if (conn && typeof conn.startSession === 'function') {
-      try {
-        session = await conn.startSession();
-      } catch {
-        session = null;
-      }
+    // P0-2: Claim nguyên tử phần tiền hoàn trên job để chống 2 lần hoàn song song vượt netPaid
+    if ((job.refunded_amount || 0) < totalRefundedTxs) {
+      await this.jobModel.updateOne({ _id: job._id }, { $set: { refunded_amount: totalRefundedTxs } }).exec();
     }
-    const doRefund = async (sess?: any) => {
-      let wallet = await this.walletModel
-        .findOne({ user_id: job.customer_id })
-        .session(sess ?? null)
-        .exec();
-      if (!wallet) {
-        [wallet] = await this.walletModel.create([{ user_id: job.customer_id, balance: 0 }], {
-          session: sess ?? undefined,
-        });
-      }
 
-      const balanceBefore = wallet.balance;
-      const balanceAfter = balanceBefore + amount;
-      wallet.balance = balanceAfter;
-      await wallet.save({ session: sess ?? undefined });
-
-      await this.transactionModel.create(
-        [
-          {
-            wallet_id: wallet._id,
-            user_id: job.customer_id,
-            job_id: job._id,
-            type: 'refund',
-            status: 'success',
-            amount,
-            balance_before: balanceBefore,
-            balance_after: balanceAfter,
-            description: `Admin hoàn tiền trực tiếp cho đơn #${jobId.slice(-6)}: ${reason}`,
+    const updatedJob = await this.jobModel
+      .findOneAndUpdate(
+        {
+          _id: job._id,
+          $expr: {
+            $lte: [
+              { $add: [{ $ifNull: ['$refunded_amount', 0] }, amount] },
+              netPaid,
+            ],
           },
-        ],
-        { session: sess ?? undefined },
-      );
+        },
+        {
+          $inc: { refunded_amount: amount },
+        },
+        { new: true },
+      )
+      .exec();
 
-      job.events.push({
-        status: job.status,
-        note: `Admin hoàn tiền trực tiếp ${amount.toLocaleString('vi-VN')}₫ vào ví khách hàng. Lý do: ${reason}`,
-        actor_id:
-          adminId && Types.ObjectId.isValid(adminId)
-            ? new Types.ObjectId(adminId)
-            : (job.customer_id as any) || new Types.ObjectId(),
-        actor_role: 'admin',
-        timestamp: new Date(),
-      });
-      await job.save({ session: sess ?? undefined });
-      return balanceAfter;
-    };
-    let balanceAfter: number;
-    if (session) {
-      try {
-        balanceAfter = await session.withTransaction(async () => doRefund(session));
-      } catch (txErr: any) {
-        if (
-          txErr?.message?.includes('replica set member') ||
-          txErr?.message?.includes('Transaction numbers')
-        ) {
-          balanceAfter = await doRefund(undefined);
-        } else {
-          throw txErr;
-        }
-      } finally {
-        try {
-          await session.endSession();
-        } catch {
-          /* ignore */
-        }
-      }
-    } else {
-      balanceAfter = await doRefund(undefined);
+    if (!updatedJob) {
+      throw new BadRequestException(
+        `Không thể hoàn tiền: xung đột hoàn tiền song song hoặc số tiền hoàn vượt quá số tiền khách thực trả còn lại`,
+      );
     }
+
+    // P0-2: Gọi paymentsService.refundCustomer để xử lý hoàn tiền đúng bản chất nguồn tiền (simulated -> simulated_balance, real -> balance)
+    let refundTx: any;
+    try {
+      refundTx = await this.paymentsService.refundCustomer(
+        String(job.customer_id),
+        jobId,
+        amount,
+        `Admin hoàn tiền trực tiếp cho đơn #${jobId.slice(-6)}: ${reason}`,
+      );
+    } catch (refundErr) {
+      // Rollback claimed amount on failure
+      await this.jobModel.updateOne({ _id: job._id }, { $inc: { refunded_amount: -amount } }).exec();
+      throw refundErr;
+    }
+
+    // Ghi event vào đơn và cập nhật payment_status sang REFUNDED nếu đã hoàn 100%
+    const isFullyRefunded = (updatedJob.refunded_amount || 0) >= netPaid;
+    await this.jobModel.updateOne(
+      { _id: job._id },
+      {
+        ...(isFullyRefunded ? { payment_status: PaymentStatus.REFUNDED } : {}),
+        $push: {
+          events: {
+            status: job.status,
+            note: `Admin hoàn tiền trực tiếp ${amount.toLocaleString('vi-VN')}₫ vào ví khách hàng. Lý do: ${reason}`,
+            actor_id:
+              adminId && Types.ObjectId.isValid(adminId)
+                ? new Types.ObjectId(adminId)
+                : (job.customer_id as any) || new Types.ObjectId(),
+            actor_role: 'admin',
+            timestamp: new Date(),
+          },
+        },
+      },
+    ).exec();
 
     await this.notificationsService
       .create({
@@ -835,7 +912,13 @@ export class AdminService {
       })
       .catch(() => undefined);
 
-    return { success: true, amount, job_id: jobId, balance_after: balanceAfter };
+    return {
+      success: true,
+      amount,
+      job_id: jobId,
+      balance_after: refundTx.balance_after,
+      simulated: !!refundTx.metadata?.simulated,
+    };
   }
 
   // ─── Broadcast notification ───────────────────────────────────────────────
@@ -1085,5 +1168,155 @@ export class AdminService {
     profile.score_updated_at = now;
     await profile.save();
     return result;
+  }
+
+  /** A09: Admin xử lý và gỡ cờ yêu cầu SOS cần chú ý */
+  async resolveFlaggedSos(sosId: string, adminNote?: string, adminId?: string) {
+    const sos = await this.sosModel.findById(sosId).exec();
+    if (!sos) throw new NotFoundException('Yêu cầu SOS không tồn tại');
+    sos.admin_attention = false;
+    sos.admin_note = adminNote
+      ? `${sos.admin_note ? sos.admin_note + ' | ' : ''}Đã xử lý bởi admin ${adminId ?? ''}: ${adminNote}`
+      : `${sos.admin_note ? sos.admin_note + ' | ' : ''}Đã đánh dấu xử lý bởi admin ${adminId ?? ''}`;
+    await sos.save();
+    return { success: true, message: 'Đã đánh dấu xử lý thành công', sos };
+  }
+
+  /** B11: Admin gán thợ thủ công qua Hungarian matching */
+  async adminAssignHelper(jobId: string, helperId: string, adminId?: string): Promise<JobDocument> {
+    const job = await this.jobModel.findById(jobId).exec();
+    if (!job) throw new NotFoundException('Đơn hàng không tồn tại');
+    if (job.status !== JobStatus.OPEN && job.status !== JobStatus.RECEIVING_QUOTES) {
+      throw new BadRequestException('Chỉ có thể gán thợ cho đơn hàng đang chờ thợ (OPEN hoặc RECEIVING_QUOTES)');
+    }
+    if (job.expires_at && new Date() > new Date(job.expires_at)) {
+      throw new BadRequestException('Đơn hàng đã hết hạn nhận việc');
+    }
+
+    const helperProfile = await this.helperModel
+      .findOne({ user_id: new Types.ObjectId(helperId) })
+      .populate('user_id', 'full_name phone status is_verified')
+      .exec();
+    if (!helperProfile || helperProfile.verification_status !== VerificationStatus.APPROVED) {
+      throw new BadRequestException('Thợ chưa hoàn tất xác thực e-KYC');
+    }
+    const helperUser = helperProfile.user_id as any;
+    if (helperUser?.status === UserStatus.SUSPENDED || helperUser?.status === UserStatus.INACTIVE) {
+      throw new BadRequestException('Tài khoản thợ đang bị tạm khóa hoặc ngừng hoạt động');
+    }
+    if (helperProfile.status === HelperStatus.OFFLINE) {
+      throw new BadRequestException('Thợ đang ngoại tuyến, không thể gán đơn');
+    }
+    if (helperProfile.status === HelperStatus.BUSY) {
+      throw new BadRequestException('Thợ đang bận làm việc cho đơn khác');
+    }
+
+    // Kiểm tra trùng lịch hẹn của thợ
+    await this.jobsService.checkHelperScheduleConflict(
+      helperId,
+      job.preferred_date,
+      job.preferred_time_start,
+      jobId,
+      job.preferred_time_end,
+      job.estimated_duration,
+    );
+
+    // Claim nguyên tử
+    const claimed = await this.jobModel
+      .findOneAndUpdate(
+        { _id: job._id, status: job.status, helper_id: null },
+        {
+          $set: {
+            helper_id: new Types.ObjectId(helperId),
+            status: JobStatus.CONFIRMED,
+          },
+        },
+        { new: true },
+      )
+      .exec();
+    if (!claimed) {
+      throw new ConflictException('Đơn hàng đã được nhận hoặc gán bởi thao tác khác');
+    }
+
+    // Giá đơn
+    const totalPrice = job.is_fixed_price
+      ? (job.fixed_price ?? 0)
+      : (job.target_price ?? 200_000);
+    let platformFeeRate: number = PLATFORM_FEE_BY_SERVICE.default;
+    if (job.service_id && this.serviceModel) {
+      const service = await this.serviceModel
+        .findById(job.service_id)
+        .select('platform_fee_percent')
+        .lean()
+        .exec();
+      if (typeof service?.platform_fee_percent === 'number') {
+        platformFeeRate = service.platform_fee_percent / 100;
+      }
+    }
+    const platformFee = Math.round(totalPrice * platformFeeRate);
+    const helperReceives = totalPrice - platformFee;
+
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    let contract: ContractDocument;
+    try {
+      contract = await this.contractModel.create({
+        job_id: new Types.ObjectId(jobId),
+        customer_id: job.customer_id,
+        helper_id: new Types.ObjectId(helperId),
+        labor_cost: totalPrice,
+        materials_cost: 0,
+        total_price: totalPrice,
+        platform_fee: platformFee,
+        helper_receives: helperReceives,
+        warranty_days: 30,
+        scheduled_at: job.preferred_date ? new Date(job.preferred_date) : tomorrow,
+        signed_by_customer_at: new Date(),
+      });
+    } catch (contractErr) {
+      await this.jobModel
+        .updateOne(
+          { _id: job._id },
+          { $set: { helper_id: null, status: job.status } },
+        )
+        .exec()
+        .catch(() => undefined);
+      throw contractErr;
+    }
+
+    claimed.events.push({
+      status: JobStatus.CONFIRMED,
+      note: `Admin gán thợ thủ công ${helperUser?.full_name ?? helperId} qua kết quả ghép Hungarian (Admin ID: ${adminId ?? 'hệ thống'})`,
+      actor_id: adminId && Types.ObjectId.isValid(adminId) ? new Types.ObjectId(adminId) : (job.customer_id as any),
+      actor_role: 'admin',
+      timestamp: new Date(),
+    });
+    await claimed.save();
+
+    await this.jobsService.setHelperBusy(helperId, true);
+
+    await this.notificationsService
+      .create({
+        userId: helperId,
+        type: NOTIFICATION_TYPES.QUOTE_ACCEPTED,
+        title: 'Bạn được gán công việc mới',
+        body: `Quản trị viên đã chỉ định bạn thực hiện công việc "${job.title}". Vui lòng kiểm tra lịch làm việc!`,
+        payload: { job_id: jobId, contract_id: String(contract._id) },
+      })
+      .catch(() => undefined);
+
+    await this.notificationsService
+      .create({
+        userId: String(job.customer_id),
+        type: NOTIFICATION_TYPES.JOB_CONFIRMED,
+        title: 'Đơn hàng đã có thợ phụ trách',
+        body: `Thợ ${helperUser?.full_name ?? ''} đã được chỉ định phụ trách công việc "${job.title}".`,
+        payload: { job_id: jobId, helper_id: helperId },
+      })
+      .catch(() => undefined);
+
+    this.jobsService.emitJobStatusChange(claimed);
+    return claimed;
   }
 }

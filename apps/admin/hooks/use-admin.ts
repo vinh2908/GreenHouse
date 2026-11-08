@@ -478,10 +478,14 @@ export function useAdminSentNotifications(params: { page?: number; type?: string
 }
 
 export function useBroadcast() {
+  const qc = useQueryClient();
   return useMutation({
     mutationFn: async (dto: { title: string; body: string }) => {
       const { data } = await apiClient.post('/admin/notifications/broadcast', dto);
       return data.data as { sent: number };
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin', 'notifications'] });
     },
   });
 }
@@ -951,6 +955,34 @@ export function useAdminDirectRefund() {
     onSuccess: (_, { id }) => {
       qc.invalidateQueries({ queryKey: ['admin', 'job', id] });
       qc.invalidateQueries({ queryKey: ['admin', 'jobs'] });
+    },
+  });
+}
+
+export function useAssignHelper() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ jobId, helperId }: { jobId: string; helperId: string }) => {
+      const { data } = await apiClient.post(`/admin/jobs/${jobId}/assign-helper`, { helper_id: helperId });
+      return data.data;
+    },
+    onSuccess: (_, { jobId }) => {
+      qc.invalidateQueries({ queryKey: ['admin', 'job', jobId] });
+      qc.invalidateQueries({ queryKey: ['admin', 'jobs'] });
+      qc.invalidateQueries({ queryKey: ['admin', 'matching'] });
+    },
+  });
+}
+
+export function useResolveFlaggedSos() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, note }: { id: string; note?: string }) => {
+      const { data } = await apiClient.patch(`/admin/sos-backup/${id}/resolve`, { note });
+      return data.data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin', 'sos-backup'] });
     },
   });
 }

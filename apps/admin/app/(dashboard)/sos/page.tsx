@@ -6,9 +6,11 @@ import {
   useFlaggedSosRequests,
   useHelperPenaltyEvents,
   useWaivePenaltyEvent,
+  useResolveFlaggedSos,
   type AdminPenaltyEvent,
   type AdminSosUserRef,
 } from '@/hooks/use-admin';
+import { PromptDialog } from '@/components/common/prompt-dialog';
 import {
   Badge,
   Button,
@@ -89,20 +91,33 @@ function jobIdOf(job: AdminPenaltyEvent['job_id'] | { _id: string } | string | n
 function FlaggedSosTab({
   data,
   isLoading,
+  isError,
+  refetch,
   page,
   setPage,
 }: {
   data: ReturnType<typeof useFlaggedSosRequests>['data'];
   isLoading: boolean;
+  isError: boolean;
+  refetch: () => void;
   page: number;
   setPage: (p: number) => void;
 }) {
   const requests = data?.requests ?? [];
+  const resolveSos = useResolveFlaggedSos();
+  const [resolvingId, setResolvingId] = useState<string | null>(null);
 
   return (
     <div className="rounded-lg border bg-card">
       {isLoading ? (
         <Loading />
+      ) : isError ? (
+        <div className="p-8 text-center space-y-3">
+          <p className="text-destructive font-medium">Không thể tải danh sách SOS cần chú ý</p>
+          <Button variant="outline" size="sm" onClick={() => refetch()}>
+            Tải lại
+          </Button>
+        </div>
       ) : requests.length === 0 ? (
         <EmptyState message="Không có yêu cầu SOS nào đang cần chú ý" />
       ) : (
@@ -117,6 +132,7 @@ function FlaggedSosTab({
                   <TableHead>Thợ gốc</TableHead>
                   <TableHead>Lý do SOS</TableHead>
                   <TableHead>Trạng thái</TableHead>
+                  <TableHead className="text-right">Thao tác</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -162,6 +178,16 @@ function FlaggedSosTab({
                           {SOS_STATUS_VI[r.status] ?? r.status}
                         </Badge>
                       </TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={resolveSos.isPending}
+                          onClick={() => setResolvingId(r._id)}
+                        >
+                          Xử lý & Ghi chú
+                        </Button>
+                      </TableCell>
                     </TableRow>
                   );
                 })}
@@ -170,6 +196,22 @@ function FlaggedSosTab({
           </div>
           <Pagination page={page} totalPages={data?.total_pages ?? 1} onPageChange={setPage} />
         </>
+      )}
+
+      {resolvingId && (
+        <PromptDialog
+          title="Xác nhận xử lý SOS"
+          message="Gỡ cờ cần chú ý và lưu ghi chú xử lý của admin vào yêu cầu SOS này."
+          label="Ghi chú admin (tùy chọn)"
+          placeholder="VD: Đã liên hệ thợ thay thế / Đã hoàn tiền cho khách..."
+          requireInput={false}
+          confirmLabel={resolveSos.isPending ? 'Đang xử lý...' : 'Đánh dấu đã xử lý'}
+          onSubmit={note => {
+            resolveSos.mutate({ id: resolvingId, note });
+            setResolvingId(null);
+          }}
+          onClose={() => setResolvingId(null)}
+        />
       )}
     </div>
   );
@@ -274,6 +316,8 @@ function WaiveDialog({ event, onClose }: { event: AdminPenaltyEvent; onClose: ()
 function PenaltyEventsTab({
   data,
   isLoading,
+  isError,
+  refetch,
   page,
   setPage,
   status,
@@ -283,6 +327,8 @@ function PenaltyEventsTab({
 }: {
   data: ReturnType<typeof useHelperPenaltyEvents>['data'];
   isLoading: boolean;
+  isError: boolean;
+  refetch: () => void;
   page: number;
   setPage: (p: number) => void;
   status: string;
@@ -340,6 +386,13 @@ function PenaltyEventsTab({
       <div className="rounded-lg border bg-card overflow-hidden max-w-full">
         {isLoading ? (
           <Loading />
+        ) : isError ? (
+          <div className="p-8 text-center space-y-3">
+            <p className="text-destructive font-medium">Không thể tải sổ điểm phạt</p>
+            <Button variant="outline" size="sm" onClick={() => refetch()}>
+              Tải lại
+            </Button>
+          </div>
         ) : events.length === 0 ? (
           <EmptyState message="Chưa có sự kiện phạt nào" />
         ) : (
@@ -474,6 +527,8 @@ export default function SosOversightPage() {
         <FlaggedSosTab
           data={flagged.data}
           isLoading={flagged.isLoading}
+          isError={flagged.isError}
+          refetch={flagged.refetch}
           page={flaggedPage}
           setPage={setFlaggedPage}
         />
@@ -481,6 +536,8 @@ export default function SosOversightPage() {
         <PenaltyEventsTab
           data={penalties.data}
           isLoading={penalties.isLoading}
+          isError={penalties.isError}
+          refetch={penalties.refetch}
           page={penaltyPage}
           setPage={setPenaltyPage}
           status={penaltyStatus}

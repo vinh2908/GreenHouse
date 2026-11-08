@@ -348,6 +348,16 @@ export class JobsController {
     return this.jobsService.completeByHelper(user.sub, jobId, dto);
   }
 
+  @Post(':jobId/confirm-cash')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: '[Helper] Xác nhận đã nhận tiền mặt từ khách hàng' })
+  async confirmCashPayment(
+    @CurrentUser() user: { sub: string },
+    @Param('jobId') jobId: string,
+  ) {
+    return this.jobsService.confirmCashPayment(user.sub, jobId);
+  }
+
   // ─── Customer: Approve completion ─────────────────────────────────────────
 
   @Patch(':jobId/approve')

@@ -101,26 +101,34 @@ export default function HelperProfileScreen() {
 
   const effectiveOnline = isWorking ? true : (localOnline ?? isOnline);
 
+  const [isSwitching, setIsSwitching] = useState(false);
+
   const handleSwitchToCustomer = async () => {
-    if (useAuthStore.getState().isSwitchingRole) return;
+    if (isSwitching || useAuthStore.getState().isSwitchingRole) return;
+    setIsSwitching(true);
     useAuthStore.getState().setSwitchingRole(true);
 
-    // 1. Cập nhật ngay auth store và local storage
-    useAuthStore.getState().switchRole('customer');
-
-    // 2. Cập nhật lạc quan cache ['profile', 'me'] để tránh trả về active_role thợ cũ
-    queryClient.setQueryData(['profile', 'me'], (old: any) =>
-      old ? { ...old, active_role: 'customer' } : old,
-    );
-
-    // 3. Chuyển hướng dứt khoát sang trang chủ khách
-    router.replace('/(customer)/home');
-
-    // 4. Đồng bộ lên backend API
     try {
+      // 1. Đồng bộ lên backend API trước
       await switchRole.mutateAsync('customer');
-    } catch {
-      /* fallback sang auth store */
+
+      // 2. Cập nhật auth store và cache
+      useAuthStore.getState().switchRole('customer');
+      queryClient.setQueryData(['profile', 'me'], (old: any) =>
+        old ? { ...old, active_role: 'customer' } : old,
+      );
+
+      // 3. Chuyển hướng sang trang chủ khách
+      router.replace('/(customer)/home');
+    } catch (err: any) {
+      useAuthStore.getState().setSwitchingRole(false);
+      Toast.show({
+        type: 'error',
+        text1: 'Đổi vai trò thất bại',
+        text2: err?.response?.data?.message || 'Vui lòng thử lại sau',
+      });
+    } finally {
+      setIsSwitching(false);
     }
   };
 
@@ -274,27 +282,30 @@ export default function HelperProfileScreen() {
         </View>
 
         <View style={{ padding: 16, gap: 16 }}>
-          {/* Switch to customer button */}
-          <TouchableOpacity
-            activeOpacity={0.85}
-            onPress={handleSwitchToCustomer}
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 8,
-              padding: 14,
-              borderWidth: 1.5,
-              borderColor: COLORS.primary,
-              borderRadius: 14,
-              backgroundColor: COLORS.primaryLight,
-            }}
-          >
-            <Home size={18} color={COLORS.primary} />
-            <Text style={{ fontSize: fs(15), fontWeight: '800', color: COLORS.primary }}>
-              {t('profile_switch_customer')}
-            </Text>
-          </TouchableOpacity>
+          {/* Switch to customer button - Chỉ hiển thị khi tài khoản có vai trò customer (M-04) */}
+          {Array.isArray(user?.roles) && user.roles.includes('customer') && (
+            <TouchableOpacity
+              activeOpacity={0.85}
+              disabled={isSwitching}
+              onPress={handleSwitchToCustomer}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 8,
+                padding: 14,
+                borderWidth: 1.5,
+                borderColor: COLORS.primary,
+                borderRadius: 14,
+                backgroundColor: COLORS.primaryLight,
+              }}
+            >
+              <Home size={18} color={COLORS.primary} />
+              <Text style={{ fontSize: fs(15), fontWeight: '800', color: COLORS.primary }}>
+                {isSwitching ? 'Đang chuyển đổi...' : t('profile_switch_customer')}
+              </Text>
+            </TouchableOpacity>
+          )}
 
           {/* Online toggle */}
           <Card style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>

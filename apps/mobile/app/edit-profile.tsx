@@ -834,14 +834,35 @@ export default function EditProfileScreen() {
                     <Button
                       title={lang === 'en' ? 'Confirm email change' : 'Xác nhận đổi email'}
                       disabled={emailOtp.trim().length !== 6 || confirmEmailChange.isPending}
+                      loading={confirmEmailChange.isPending}
                       onPress={async () => {
-                        const res: any = await confirmEmailChange.mutateAsync({
-                          newEmail: email.trim(),
-                          otp: emailOtp.trim(),
-                        });
-                        if (res?.data?.email) setUser({ ...user, email: res.data.email });
-                        setEmailOtpSent(false);
-                        setEmailOtp('');
+                        try {
+                          const res: any = await confirmEmailChange.mutateAsync({
+                            newEmail: email.trim(),
+                            otp: emailOtp.trim(),
+                          });
+                          if (res?.data?.email) setUser({ ...user, email: res.data.email });
+                          setEmailOtpSent(false);
+                          setEmailOtp('');
+                          Toast.show({
+                            type: 'success',
+                            text1: lang === 'en' ? 'Email verified' : 'Email đã được xác minh',
+                            text2:
+                              lang === 'en'
+                                ? 'Saving profile changes...'
+                                : 'Đang lưu các thay đổi hồ sơ...',
+                          });
+                          // M-09: Tự động gọi handleSave() để lưu các thay đổi còn lại (tên, avatar, bio)
+                          await handleSave();
+                        } catch (err: any) {
+                          Toast.show({
+                            type: 'error',
+                            text1: lang === 'en' ? 'Verification failed' : 'Xác minh thất bại',
+                            text2:
+                              err?.response?.data?.message ||
+                              (lang === 'en' ? 'Invalid OTP' : 'Mã OTP không hợp lệ'),
+                          });
+                        }
                       }}
                     />
                   </View>

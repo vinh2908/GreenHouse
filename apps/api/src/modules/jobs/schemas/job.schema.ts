@@ -258,6 +258,9 @@ export class Job {
   @Prop({ min: 1, max: 5 })
   customer_rating?: number;
 
+  @Prop()
+  completed_at?: Date;
+
   @Prop({ type: [String], default: [] })
   reminders_sent?: string[];
 
@@ -340,6 +343,17 @@ export class Job {
 
   @Prop({ type: String })
   refund_pending_reason?: string;
+
+  /** P0-2: Tổng số tiền đã hoàn cho đơn này (dùng cho claim nguyên tử tránh hoàn vượt netPaid) */
+  @Prop({ default: 0 })
+  refunded_amount?: number;
+
+  /** P0-4: Thợ xác nhận đã nhận đủ tiền mặt trực tiếp từ khách */
+  @Prop({ type: Boolean, default: false })
+  helper_cash_confirmed?: boolean;
+
+  @Prop({ type: Date })
+  helper_cash_confirmed_at?: Date;
 
   created_at: Date;
   updated_at: Date;

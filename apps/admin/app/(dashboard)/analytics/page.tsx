@@ -36,13 +36,27 @@ const STATUS_VI: Record<string, string> = {
 };
 
 export default function AnalyticsPage() {
-  const { data: summary, isLoading } = useAnalyticsSummary();
+  const { data: summary, isLoading, isError, refetch } = useAnalyticsSummary();
   const { data: jobsPerDay } = useJobsPerDay(30);
   const { data: revenuePerMonth } = useRevenuePerMonth(6);
   const { data: topHelpers } = useTopHelpers();
   const { data: jobsByStatus } = useJobsByStatus();
 
   if (isLoading) return <Loading />;
+
+  if (isError) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 space-y-4">
+        <p className="text-destructive font-medium">Không thể tải dữ liệu thống kê & phân tích</p>
+        <button
+          onClick={() => refetch()}
+          className="px-4 py-2 text-sm font-medium rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground"
+        >
+          Thử lại
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

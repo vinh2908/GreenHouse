@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useAdminUsers, useAdminLoyaltyUser, useAdminAdjustLoyalty } from '@/hooks/use-admin';
+import { PromptDialog } from '@/components/common/prompt-dialog';
 import {
   Badge,
   Button,
@@ -28,27 +29,33 @@ export default function AdminLoyaltyPage() {
   const [pointsInput, setPointsInput] = useState('');
   const [noteInput, setNoteInput] = useState('');
   const [message, setMessage] = useState('');
+  const [confirmAdjust, setConfirmAdjust] = useState(false);
 
-  const { data: usersData, isLoading: usersLoading } = useAdminUsers({
+  const { data: usersData, isLoading: usersLoading, isError: usersError, refetch: refetchUsers } = useAdminUsers({
     search: search || undefined,
     page: 1,
   });
   const users = usersData?.users ?? [];
 
-  const { data: loyalty, isLoading: loyaltyLoading } = useAdminLoyaltyUser(selectedId || undefined);
+  const { data: loyalty, isLoading: loyaltyLoading, isError: loyaltyError, refetch: refetchLoyalty } = useAdminLoyaltyUser(selectedId || undefined);
   const adjust = useAdminAdjustLoyalty();
 
   const selectedUser = users.find((u: any) => u._id === selectedId);
   const account = loyalty?.account;
   const history = loyalty?.recent_history ?? [];
 
-  const handleAdjust = () => {
+  const handleStartAdjust = () => {
     const points = Number(pointsInput);
     if (!selectedId || !Number.isInteger(points) || points === 0) {
       setMessage('Nhập số điểm là số nguyên khác 0 (dương = cộng, âm = trừ).');
       return;
     }
     setMessage('');
+    setConfirmAdjust(true);
+  };
+
+  const executeAdjust = () => {
+    const points = Number(pointsInput);
     adjust.mutate(
       { userId: selectedId, points, note: noteInput.trim() || undefined },
       {
@@ -156,8 +163,8 @@ export default function AdminLoyaltyPage() {
                       value={noteInput}
                       onChange={e => setNoteInput(e.target.value)}
                     />
-                    <Button onClick={handleAdjust} disabled={adjust.isPending}>
-                      Điều chỉnh
+                    <Button onClick={handleStartAdjust} disabled={adjust.isPending}>
+                      {adjust.isPending ? 'Đang điều chỉnh...' : 'Điều chỉnh'}
                     </Button>
                   </div>
                   {message && <p className="text-sm mt-2">{message}</p>}
@@ -172,7 +179,14 @@ export default function AdminLoyaltyPage() {
                   <CardTitle>Lịch sử điểm gần đây</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {history.length === 0 ? (
+                  {loyaltyError ? (
+                    <div className="p-8 text-center space-y-3">
+                      <p className="text-destructive font-medium">Không thể tải lịch sử điểm</p>
+                      <Button variant="outline" size="sm" onClick={() => refetchLoyalty()}>
+                        Tải lại
+                      </Button>
+                    </div>
+                  ) : history.length === 0 ? (
                     <EmptyState message="Chưa có giao dịch điểm nào" />
                   ) : (
                     <div className="overflow-x-auto w-full">
@@ -218,6 +232,20 @@ export default function AdminLoyaltyPage() {
             </>
           )}
         </>
+      )}
+
+      {confirmAdjust && (
+        <PromptDialog
+          title="Xác nhận điều chỉnh điểm thưởng"
+          message={`Bạn có chắc chắn muốn ${Number(pointsInput) > 0 ? 'cộng' : 'trừ'} ${Math.abs(Number(pointsInput)).toLocaleString('vi-VN')} điểm cho người dùng "${selectedUser?.full_name ?? selectedId}"${noteInput.trim() ? ` với lý do: "${noteInput.trim()}"` : ''}?`}
+          confirmLabel={adjust.isPending ? 'Đang điều chỉnh...' : 'Xác nhận điều chỉnh'}
+          requireInput={false}
+          onSubmit={() => {
+            setConfirmAdjust(false);
+            executeAdjust();
+          }}
+          onClose={() => setConfirmAdjust(false)}
+        />
       )}
     </div>
   );
