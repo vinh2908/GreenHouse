@@ -241,6 +241,10 @@ export function useSwitchRole() {
     mutationFn: (activeRole: 'customer' | 'helper') =>
       apiClient.patch('/users/me/role', { active_role: activeRole }),
     onMutate: async (activeRole: 'customer' | 'helper') => {
+      // G8: Lưu lại snapshot cache trước đó để rollback nếu server lỗi
+      await qc.cancelQueries({ queryKey: ['profile', 'me'] });
+      const previousProfile = qc.getQueryData(['profile', 'me']);
+
       qc.setQueryData(['profile', 'me'], (old: any) => {
         if (!old) return old;
         const updatedRoles = Array.isArray(old.roles) ? [...old.roles] : [];
@@ -251,6 +255,15 @@ export function useSwitchRole() {
           active_role: activeRole,
         };
       });
+
+      return { previousProfile };
+    },
+    onError: (_err, _activeRole, context) => {
+      // G8: Khi server đổi vai trò lỗi, khôi phục lại cache trước đó và invalidate để fetch lại dữ liệu đúng
+      if (context?.previousProfile) {
+        qc.setQueryData(['profile', 'me'], context.previousProfile);
+      }
+      qc.invalidateQueries({ queryKey: ['profile', 'me'] });
     },
     onSuccess: (_data, activeRole) => {
       qc.setQueryData(['profile', 'me'], (old: any) => {

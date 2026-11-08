@@ -542,6 +542,8 @@ export default function HelperJobsScreen() {
               preferred_time_start?: string;
               distance_km?: number;
               estimated_minutes?: number;
+              estimated_travel_minutes?: number;
+              routing_error?: boolean;
               recurring_plan_id?: string;
               is_recurring?: boolean;
               is_private_offer?: boolean;
@@ -649,11 +651,28 @@ export default function HelperJobsScreen() {
                           style={{ fontSize: fs(12), color: COLORS.primary, fontWeight: '700' }}
                         >
                           {job.distance_km === 0 ? '< 100m' : `${job.distance_km} km`} ~{' '}
-                          {job.estimated_minutes
-                            ? `${job.estimated_minutes} ${t('jobs_minutes_unit')}`
+                          {(job.estimated_minutes ?? (job as any).estimated_travel_minutes)
+                            ? `${job.estimated_minutes ?? (job as any).estimated_travel_minutes} ${t('jobs_minutes_unit')}`
                             : '< 1 phút'}
                         </Text>
                       </View>
+                    ) : (job as any).routing_error ? (
+                      <TouchableOpacity
+                        onPress={() => ra()}
+                        style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}
+                      >
+                        <AlertCircle size={13} color={COLORS.error || '#ef4444'} />
+                        <Text
+                          style={{
+                            fontSize: fs(12),
+                            color: COLORS.error || '#ef4444',
+                            fontWeight: '600',
+                            textDecorationLine: 'underline',
+                          }}
+                        >
+                          {lang === 'en' ? 'Route error · Tap to retry' : 'Lỗi tuyến đường · Thử lại'}
+                        </Text>
+                      </TouchableOpacity>
                     ) : (
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
                         <Navigation size={13} color={COLORS.gray[400]} />

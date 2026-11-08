@@ -118,12 +118,9 @@ export class JobsController {
     @Query('limit') limit?: number,
   ) {
     await this.jobsService.requireVerifiedHelper(user.sub);
-    return this.jobsService.getAvailableJobs(
-      user.sub,
-      serviceId,
-      Number(page) || 1,
-      Number(limit) || 20,
-    );
+    const safePage = Math.max(1, Number(page) || 1);
+    const safeLimit = Math.min(50, Math.max(1, Number(limit) || 20));
+    return this.jobsService.getAvailableJobs(user.sub, serviceId, safePage, safeLimit);
   }
 
   @Get('skipped')
@@ -136,7 +133,9 @@ export class JobsController {
     @Query('limit') limit?: number,
   ) {
     await this.jobsService.requireVerifiedHelper(user.sub);
-    return this.jobsService.getSkippedJobs(user.sub, Number(page) || 1, Number(limit) || 20);
+    const safePage = Math.max(1, Number(page) || 1);
+    const safeLimit = Math.min(50, Math.max(1, Number(limit) || 20));
+    return this.jobsService.getSkippedJobs(user.sub, safePage, safeLimit);
   }
 
   // ─── Helper: Own jobs ─────────────────────────────────────────────────────

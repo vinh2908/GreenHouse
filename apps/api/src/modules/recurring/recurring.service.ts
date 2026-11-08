@@ -132,20 +132,38 @@ export class RecurringService implements OnApplicationBootstrap, OnModuleDestroy
         if (weekdays.has(vnDay)) dates.push(this.dateKey(d));
       }
     } else {
+      const startKey = this.dateKey(rangeStart);
+      const endLimitKey = end ? this.dateKey(end) : null;
+      const rangeEndKey = this.dateKey(rangeEnd);
+
       const monthDays = [...(plan.month_days ?? [])].sort((a, b) => a - b);
-      const cursor = new Date(rangeStart.getFullYear(), rangeStart.getMonth(), 1);
-      const lastMonth = new Date(rangeEnd.getFullYear(), rangeEnd.getMonth(), 1);
-      while (cursor <= lastMonth) {
-        const lastDay = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 0).getDate();
+      const [startYear, startMonth] = startKey.split('-').map(Number);
+      const [endYear, endMonth] = rangeEndKey.split('-').map(Number);
+
+      let curY = startYear;
+      let curM = startMonth;
+      while (curY < endYear || (curY === endYear && curM <= endMonth)) {
+        const lastDay = new Date(Date.UTC(curY, curM, 0)).getUTCDate();
+        const yStr = String(curY);
+        const mStr = String(curM).padStart(2, '0');
         for (const md of monthDays) {
-          // P2-14: Với các tháng thiếu ngày (vd ngày 31 ở tháng 2 hoặc tháng 30 ngày), dời sang ngày cuối cùng của tháng
+          // P2-14 & G1: Với các tháng thiếu ngày (vd ngày 31 ở tháng 2 hoặc tháng 30 ngày), dời sang ngày cuối cùng của tháng
           const day = Math.min(md, lastDay);
-          const candidate = new Date(cursor.getFullYear(), cursor.getMonth(), day);
-          if (candidate >= rangeStart && candidate <= rangeEnd && (!end || candidate <= end)) {
-            dates.push(this.dateKey(candidate));
+          const dStr = String(day).padStart(2, '0');
+          const candKey = `${yStr}-${mStr}-${dStr}`;
+          if (
+            candKey >= startKey &&
+            candKey <= rangeEndKey &&
+            (!endLimitKey || candKey <= endLimitKey)
+          ) {
+            dates.push(candKey);
           }
         }
-        cursor.setMonth(cursor.getMonth() + 1);
+        curM++;
+        if (curM > 12) {
+          curM = 1;
+          curY++;
+        }
       }
       dates.sort();
     }

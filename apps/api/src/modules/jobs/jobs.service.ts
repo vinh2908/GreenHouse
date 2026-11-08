@@ -471,7 +471,8 @@ export class JobsService implements OnModuleInit {
           if (typeof this.paymentsService?.getTotalRefundedForJob === 'function') {
             refundedSoFar = await this.paymentsService.getTotalRefundedForJob(String(job._id));
           }
-          const toRefund = Math.max(0, refundAmount - refundedSoFar) || refundAmount;
+          const toRefund = Math.max(0, refundAmount - refundedSoFar);
+          if (toRefund <= 0) continue;
 
           await this.paymentsService.refundCustomer(
             String(job.customer_id),
@@ -2014,14 +2015,20 @@ export class JobsService implements OnModuleInit {
     const helperCoords = helperProfile?.location?.coordinates;
     const jobCoords = jobObj.address?.location?.coordinates;
     if (helperCoords && jobCoords) {
-      const route = await this.routingService.getRoute(
-        helperCoords[1],
-        helperCoords[0],
-        jobCoords[1],
-        jobCoords[0],
-      );
-      jobObj.distance_km = route.distance_km;
-      jobObj.estimated_minutes = route.estimated_minutes;
+      try {
+        const route = await this.routingService.getRoute(
+          helperCoords[1],
+          helperCoords[0],
+          jobCoords[1],
+          jobCoords[0],
+        );
+        jobObj.distance_km = route.distance_km;
+        jobObj.estimated_minutes = route.estimated_minutes;
+        jobObj.estimated_travel_minutes = route.estimated_minutes;
+        if (route.estimated) jobObj.estimated = true;
+      } catch {
+        jobObj.routing_error = true;
+      }
     }
     return jobObj;
   }
@@ -4181,7 +4188,11 @@ export class JobsService implements OnModuleInit {
    * Từng service được bọc try/catch riêng: lỗi trả voucher không chặn hoàn
    * điểm và ngược lại; lỗi chỉ được log để đối soát, không ném ra ngoài.
    */
-  private async restoreJobBenefitsOnCancel(job: JobDocument): Promise<void> {
+  /**
+   * G5: Khôi phục quyền lợi khách khi hủy đơn (dùng chung cho cả cancelJob và admin updateJobStatus):
+   * trả lượt voucher (VouchersService.restoreForJob) + hoàn điểm loyalty (LoyaltyService.reverseRedeemForJob).
+   */
+  async restoreJobBenefitsOnCancel(job: JobDocument): Promise<void> {
     const jobId = String(job._id);
     const customerId = String(job.customer_id);
 
@@ -4374,8 +4385,14 @@ export class JobsService implements OnModuleInit {
       for (const obj of jobObjects) {
         const route = routes.get(String(obj._id));
         if (route) {
-          obj.distance_km = route.distance_km;
-          obj.estimated_travel_minutes = route.estimated_minutes;
+          if (route.routing_error) {
+            obj.routing_error = true;
+          } else {
+            obj.distance_km = route.distance_km;
+            obj.estimated_minutes = route.estimated_minutes;
+            obj.estimated_travel_minutes = route.estimated_minutes;
+            if (route.estimated) obj.estimated = true;
+          }
         }
       }
     }
@@ -4408,12 +4425,7 @@ export class JobsService implements OnModuleInit {
     if (serviceId && Types.ObjectId.isValid(serviceId)) {
       query['service_id'] = new Types.ObjectId(serviceId);
     }
-    const [allJobs, rawTotalCount, helperProfile] = await Promise.all([
-      this.jobModel
-        .find(query)
-        .populate('service_id', 'name slug icon')
-        .sort({ created_at: -1 })
-        .exec(),
+    const [rawTotalCount, helperProfile] = await Promise.all([
       this.jobModel.countDocuments(query).exec(),
       this.helperModel
         .findOne({ user_id: helperOid })
@@ -4423,40 +4435,42 @@ export class JobsService implements OnModuleInit {
     ]);
 
     const helperCoords = helperProfile?.location?.coordinates;
-
-    // Lịch làm việc (Feature 13): lọc in-memory trên toàn bộ tập đơn khớp truy vấn
     const availabilityFiltered = Boolean(helperProfile?.availability?.enabled);
-    const visibleJobs = availabilityFiltered
-      ? allJobs.filter(job =>
-          this.isAvailableForDate(
-            helperProfile?.availability,
-            job.preferred_date ?? undefined,
-            job.preferred_time_start,
-          ),
-        )
-      : allJobs;
 
-    // P1-18: Sắp xếp TOÀN BỘ visibleJobs theo khoảng cách Haversine trước khi cắt trang (slice)
-    if (helperCoords && Array.isArray(helperCoords) && helperCoords.length >= 2) {
-      visibleJobs.sort((a, b) => {
-        const coordsA = a.address?.location?.coordinates;
-        const coordsB = b.address?.location?.coordinates;
-        const distA =
-          coordsA && coordsA.length >= 2
-            ? this.haversineKm(helperCoords[1], helperCoords[0], coordsA[1], coordsA[0])
-            : 9999;
-        const distB =
-          coordsB && coordsB.length >= 2
-            ? this.haversineKm(helperCoords[1], helperCoords[0], coordsB[1], coordsB[0])
-            : 9999;
-        return distA - distB;
-      });
+    let pagedJobs: JobDocument[] = [];
+    let total = rawTotalCount;
+
+    // G4: Phân trang tầng DB (không load toàn bộ đơn vào RAM gây timeout/nghẽn)
+    if (!availabilityFiltered) {
+      pagedJobs = await this.jobModel
+        .find(query)
+        .populate('service_id', 'name slug icon')
+        .sort({ created_at: -1 })
+        .skip((safePage - 1) * safeLimit)
+        .limit(safeLimit)
+        .exec();
+    } else {
+      // Khi thợ bật lịch làm việc, giới hạn tối đa 150 đơn mới nhất để lọc in-memory an toàn
+      const candidateJobs = await this.jobModel
+        .find(query)
+        .populate('service_id', 'name slug icon')
+        .sort({ created_at: -1 })
+        .limit(150)
+        .exec();
+
+      const visibleJobs = candidateJobs.filter(job =>
+        this.isAvailableForDate(
+          helperProfile?.availability,
+          job.preferred_date ?? undefined,
+          job.preferred_time_start,
+        ),
+      );
+      total = visibleJobs.length;
+      const skip = (safePage - 1) * safeLimit;
+      pagedJobs = visibleJobs.slice(skip, skip + safeLimit);
     }
 
-    const total = visibleJobs.length;
     const total_pages = Math.max(1, Math.ceil(total / safeLimit));
-    const skip = (safePage - 1) * safeLimit;
-    const pagedJobs = visibleJobs.slice(skip, skip + safeLimit);
 
     const jobObjects = pagedJobs.map(job => {
       const obj = job.toObject() as any;
@@ -4487,8 +4501,15 @@ export class JobsService implements OnModuleInit {
       for (const obj of jobObjects) {
         const route = routes.get(String(obj._id));
         if (route) {
-          (obj as any).distance_km = route.distance_km;
-          (obj as any).estimated_minutes = route.estimated_minutes;
+          if (route.routing_error) {
+            (obj as any).routing_error = true;
+          } else {
+            // G2: Đặt cả 2 tên trường estimated_minutes và estimated_travel_minutes để feed và chi tiết luôn đồng bộ
+            (obj as any).distance_km = route.distance_km;
+            (obj as any).estimated_minutes = route.estimated_minutes;
+            (obj as any).estimated_travel_minutes = route.estimated_minutes;
+            if (route.estimated) (obj as any).estimated = true;
+          }
         }
       }
 
@@ -4497,7 +4518,7 @@ export class JobsService implements OnModuleInit {
 
     let emptyReason: 'none' | 'outside_working_hours' | 'no_jobs' | 'expired_or_private' = 'none';
     if (total === 0) {
-      if (allJobs.length > 0 && availabilityFiltered) {
+      if (rawTotalCount > 0 && availabilityFiltered) {
         emptyReason = 'outside_working_hours';
       } else if (rawTotalCount === 0) {
         emptyReason = 'no_jobs';

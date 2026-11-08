@@ -3,6 +3,8 @@ import { Injectable } from '@nestjs/common';
 export interface RouteResult {
   distance_km: number;
   estimated_minutes: number;
+  estimated?: boolean;
+  routing_error?: boolean;
 }
 
 @Injectable()
@@ -14,38 +16,65 @@ export class RoutingService {
     fromLng: number,
     toLat: number,
     toLng: number,
+    timeoutMs = 6000,
   ): Promise<RouteResult> {
     // Làm tròn 3 chữ số thập phân (~110m) để chống rung toạ độ GPS khi làm mới
     const cacheKey = `${fromLat.toFixed(3)},${fromLng.toFixed(3)}-${toLat.toFixed(3)},${toLng.toFixed(3)}`;
     const cached = this.cache.get(cacheKey);
     if (cached && cached.expires > Date.now()) return cached.result;
 
-    try {
-      const result = await this.fetchGoongDirections(fromLat, fromLng, toLat, toLng);
-      this.cache.set(cacheKey, { result, expires: Date.now() + 30 * 60 * 1000 });
-      if (this.cache.size > 1000) this.evictOldest();
-      return result;
-    } catch {
-      const fallback = this.haversineFallback(fromLat, fromLng, toLat, toLng);
-      this.cache.set(cacheKey, { result: fallback, expires: Date.now() + 5 * 60 * 1000 });
-      return fallback;
-    }
+    // G3: getRoute ném lỗi khi Goong lỗi thay vì fallback lặng haversine
+    const result = await this.fetchGoongDirections(fromLat, fromLng, toLat, toLng, timeoutMs);
+    this.cache.set(cacheKey, { result, expires: Date.now() + 30 * 60 * 1000 });
+    if (this.cache.size > 1000) this.evictOldest();
+    return result;
   }
 
   async getRoutesBatch(
     fromLat: number,
     fromLng: number,
     destinations: Array<{ lat: number; lng: number; id: string }>,
+    deadlineMs = 7000,
   ): Promise<Map<string, RouteResult>> {
     const results = new Map<string, RouteResult>();
+    const startTime = Date.now();
     // D-TIME: Giới hạn concurrency tối đa 5 requests song song tới Goong API để chống timeout/rate-limit
     const BATCH_SIZE = 5;
+
     for (let i = 0; i < destinations.length; i += BATCH_SIZE) {
+      const remainingTime = deadlineMs - (Date.now() - startTime);
+
+      // G4: Thêm deadline tổng cho tuyến đường. Quá deadline thì dùng haversine + cờ estimated: true
+      if (remainingTime <= 400) {
+        for (const dest of destinations.slice(i)) {
+          const fallback = this.haversineFallback(fromLat, fromLng, dest.lat, dest.lng);
+          results.set(dest.id, { ...fallback, estimated: true });
+        }
+        break;
+      }
+
       const chunk = destinations.slice(i, i + BATCH_SIZE);
+      const reqTimeout = Math.min(5000, Math.max(1000, remainingTime));
+
       await Promise.all(
         chunk.map(async dest => {
-          const route = await this.getRoute(fromLat, fromLng, dest.lat, dest.lng);
-          results.set(dest.id, route);
+          try {
+            const route = await this.getRoute(fromLat, fromLng, dest.lat, dest.lng, reqTimeout);
+            results.set(dest.id, route);
+          } catch {
+            const elapsed = Date.now() - startTime;
+            if (elapsed >= deadlineMs) {
+              // Quá deadline tổng -> dùng haversine + cờ estimated: true
+              const fallback = this.haversineFallback(fromLat, fromLng, dest.lat, dest.lng);
+              results.set(dest.id, { ...fallback, estimated: true });
+            } else {
+              // G3: Goong lỗi thực sự -> đánh dấu routing_error để client hiện trạng thái lỗi + thử lại
+              results.set(dest.id, {
+                ...this.haversineFallback(fromLat, fromLng, dest.lat, dest.lng),
+                routing_error: true,
+              });
+            }
+          }
         }),
       );
     }
@@ -57,19 +86,19 @@ export class RoutingService {
     fromLng: number,
     toLat: number,
     toLng: number,
+    timeoutMs = 6000,
   ): Promise<RouteResult> {
     const apiKey = process.env.GOONG_API_KEY || process.env.EXPO_PUBLIC_GOONG_API_KEY;
     if (!apiKey) throw new Error('Missing Goong API key');
 
     const url = `https://rsapi.goong.io/Direction?origin=${fromLat},${fromLng}&destination=${toLat},${toLng}&vehicle=bike&api_key=${apiKey}`;
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 6000);
+    const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
     try {
       const res = await fetch(url, {
         signal: controller.signal,
       });
-      clearTimeout(timeout);
 
       if (!res.ok) throw new Error(`Goong Direction HTTP ${res.status}`);
       const data = await res.json();
