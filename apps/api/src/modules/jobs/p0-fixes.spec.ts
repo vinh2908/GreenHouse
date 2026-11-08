@@ -16,7 +16,10 @@ import { VouchersService } from '../vouchers/vouchers.service';
 import { LoyaltyService } from '../loyalty/loyalty.service';
 import { DisputesService } from './disputes.service';
 import { MonthlyContractsService } from '../monthly-contracts/monthly-contracts.service';
-import { MonthlyContract, MonthlySettlement } from '../monthly-contracts/schemas/monthly-contract.schema';
+import {
+  MonthlyContract,
+  MonthlySettlement,
+} from '../monthly-contracts/schemas/monthly-contract.schema';
 import { AdminService } from '../admin/admin.service';
 import { Wallet, Transaction, Withdrawal } from '../payments/schemas/payment.schema';
 import { Review } from '../reviews/schemas/review.schema';
@@ -114,7 +117,9 @@ describe('ĐỢT 1 — P0 Regression & Correctness Specs', () => {
         }),
       });
 
-      await expect((jobsService as any).rejectJob(helperId, jobId)).rejects.toThrow(BadRequestException);
+      await expect((jobsService as any).rejectJob(helperId, jobId)).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('rejectJob: chuyển quote PENDING sang WITHDRAWN và đồng bộ số quote', async () => {
@@ -243,9 +248,11 @@ describe('ĐỢT 1 — P0 Regression & Correctness Specs', () => {
       settlementModel = {
         db: { startSession: jest.fn().mockResolvedValue(mockSession) },
         findOne: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(null) }),
-        create: jest.fn().mockImplementation(async (docs: any[]) => [
-          { ...docs[0], _id: new Types.ObjectId(), settled_at: new Date() },
-        ]),
+        create: jest
+          .fn()
+          .mockImplementation(async (docs: any[]) => [
+            { ...docs[0], _id: new Types.ObjectId(), settled_at: new Date() },
+          ]),
       };
       paymentsServiceMock = {
         getWallet: jest.fn().mockResolvedValue({ balance: 50_000_000 }),
@@ -370,9 +377,9 @@ describe('ĐỢT 1 — P0 Regression & Correctness Specs', () => {
       transactionModel = {
         find: jest.fn(),
         findOne: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(null) }),
-        create: jest.fn().mockImplementation(async (docs: any[]) => [
-          { ...docs[0], _id: new Types.ObjectId() },
-        ]),
+        create: jest
+          .fn()
+          .mockImplementation(async (docs: any[]) => [{ ...docs[0], _id: new Types.ObjectId() }]),
       };
       jobModelPayment = {
         findById: jest.fn(),
@@ -403,13 +410,15 @@ describe('ĐỢT 1 — P0 Regression & Correctness Specs', () => {
       transactionModel.find.mockImplementation((filter: any) => ({
         select: jest.fn().mockReturnValue({
           lean: jest.fn().mockReturnValue({
-            exec: jest.fn().mockResolvedValue(
-              filter.type === 'payment'
-                ? [{ amount: 1_000_000 }]
-                : filter.type === 'refund'
-                  ? [{ amount: 400_000 }]
-                  : [],
-            ),
+            exec: jest
+              .fn()
+              .mockResolvedValue(
+                filter.type === 'payment'
+                  ? [{ amount: 1_000_000 }]
+                  : filter.type === 'refund'
+                    ? [{ amount: 400_000 }]
+                    : [],
+              ),
           }),
         }),
       }));
@@ -446,12 +455,7 @@ describe('ĐỢT 1 — P0 Regression & Correctness Specs', () => {
         }),
       });
 
-      const res = await paymentsService.mockPayJob(
-        customerId,
-        jobId,
-        600_000,
-        'wallet',
-      );
+      const res = await paymentsService.mockPayJob(customerId, jobId, 600_000, 'wallet');
 
       expect(res.transaction).toBeDefined();
       expect(res.transaction.amount).toBe(600_000);
@@ -551,7 +555,9 @@ describe('ĐỢT 1 — P0 Regression & Correctness Specs', () => {
           status: JobStatus.COMPLETED,
         }),
       });
-      jest.spyOn(jobsService as any, 'deductCashCommission').mockRejectedValue(new Error('Wallet failure'));
+      jest
+        .spyOn(jobsService as any, 'deductCashCommission')
+        .mockRejectedValue(new Error('Wallet failure'));
 
       await expect(
         jobsService.approveCompletion(customerId, jobId, { rating: 5, review: 'Tốt' } as any),
@@ -753,7 +759,12 @@ describe('ĐỢT 1 — P0 Regression & Correctness Specs', () => {
         exec: jest.fn().mockResolvedValue(mockJob),
       });
 
-      const res = await adminService.updateJobStatus(jobId, JobStatus.CANCELLED, 'Admin hủy', adminId);
+      const res = await adminService.updateJobStatus(
+        jobId,
+        JobStatus.CANCELLED,
+        'Admin hủy',
+        adminId,
+      );
 
       expect(res.status).toBe(JobStatus.CANCELLED);
       expect(mockJob.payment_status).toBe(PaymentStatus.UNPAID); // Giữ nguyên UNPAID

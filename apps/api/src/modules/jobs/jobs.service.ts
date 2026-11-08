@@ -3452,15 +3452,11 @@ export class JobsService implements OnModuleInit {
       if (payoutCredited && job.helper_id && payoutAmount > 0) {
         if (isCashCommission) {
           await this.paymentsService
-            .creditWallet(
-              String(job.helper_id),
-              payoutAmount,
-              {
-                description: `Hoàn phí sàn đơn tiền mặt #${jobId.slice(-6)} do lỗi nghiệm thu`,
-                reference: `ROLLBACK-COMMISSION-${jobId}`,
-                type: 'refund',
-              },
-            )
+            .creditWallet(String(job.helper_id), payoutAmount, {
+              description: `Hoàn phí sàn đơn tiền mặt #${jobId.slice(-6)} do lỗi nghiệm thu`,
+              reference: `ROLLBACK-COMMISSION-${jobId}`,
+              type: 'refund',
+            })
             .catch(rollbackErr => {
               this.logger.error(
                 `Failed to roll back cash commission for job ${jobId} after approval error: ${rollbackErr}`,
