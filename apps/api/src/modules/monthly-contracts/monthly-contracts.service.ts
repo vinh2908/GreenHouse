@@ -757,14 +757,12 @@ export class MonthlyContractsService {
         typeof this.paymentsService?.getWallet === 'function'
           ? await this.paymentsService.getWallet(customerId)
           : null;
-      if (customerWallet) {
-        const customerBalance =
-          (customerWallet?.balance ?? 0) + (customerWallet?.simulated_balance ?? 0);
-        if (customerBalance < summary.gross_amount) {
-          throw new BadRequestException(
-            `Số dư ví khách hàng không đủ để chốt lương tháng ${dto.month}. Cần tối thiểu ${summary.gross_amount.toLocaleString('vi-VN')}₫ (hiện có ${customerBalance.toLocaleString('vi-VN')}₫). Vui lòng nạp thêm tiền vào ví trước khi chốt lương.`,
-          );
-        }
+      const realBalance = customerWallet?.balance ?? 0;
+      if (realBalance < summary.gross_amount) {
+        const shortage = summary.gross_amount - realBalance;
+        throw new BadRequestException(
+          `Số dư ví thật không đủ để chốt lương tháng ${dto.month}. Cần ${summary.gross_amount.toLocaleString('vi-VN')}₫ (hiện có ${realBalance.toLocaleString('vi-VN')}₫, cần nạp thêm ${shortage.toLocaleString('vi-VN')}₫). Vui lòng nạp thêm tiền vào ví trước khi chốt lương.`,
+        );
       }
     }
 

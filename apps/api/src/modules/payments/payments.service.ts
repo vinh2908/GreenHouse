@@ -476,8 +476,18 @@ export class PaymentsService {
           throw new BadRequestException('Đơn hàng chưa có hợp đồng để thanh toán');
         }
 
-        if (resolvedAmount <= 0 && contract?.total_price) {
-          resolvedAmount = contract.total_price;
+        // P0-3: Kiểm tra các đợt thanh toán trước đó (hỗ trợ thanh toán bổ sung khi có phụ lục tăng giá)
+        const paidSoFar = await this.getTotalPaidForJob(jobId);
+        const isSupplemental = paidSoFar > 0;
+        if (contract?.total_price) {
+          if (isSupplemental && contract.total_price > paidSoFar) {
+            const remainingToPay = contract.total_price - paidSoFar;
+            if (resolvedAmount <= 0 || resolvedAmount > remainingToPay || resolvedAmount === contract.total_price) {
+              resolvedAmount = remainingToPay;
+            }
+          } else if (resolvedAmount <= 0) {
+            resolvedAmount = contract.total_price;
+          }
         }
 
         if (!job.is_warranty && resolvedAmount <= 0) {
@@ -537,6 +547,7 @@ export class PaymentsService {
             $set: {
               payment_status: PaymentStatus.PAID,
               payment_method: paymentMethod,
+              paid_amount: (job.paid_amount || paidSoFar) + resolvedAmount,
               ...(discountAmount > 0 ? { discount_amount: discountAmount } : {}),
             },
           },
@@ -555,7 +566,9 @@ export class PaymentsService {
               balance_before: walletDebit?.balanceBefore ?? wallet.balance,
               balance_after: walletDebit?.balanceAfter ?? wallet.balance,
               description:
-                `Thanh toán cho công việc #${jobId.slice(-6)} (${paymentMethod.toUpperCase()})` +
+                (isSupplemental
+                  ? `Thanh toán bổ sung phụ lục cho công việc #${jobId.slice(-6)} (${paymentMethod.toUpperCase()})`
+                  : `Thanh toán cho công việc #${jobId.slice(-6)} (${paymentMethod.toUpperCase()})`) +
                 (paymentMethod === 'cash'
                   ? ' — tiền mặt trực tiếp, thợ nhận tiền mặt (không qua ví)'
                   : '') +
@@ -572,6 +585,7 @@ export class PaymentsService {
               metadata: {
                 payment_method: paymentMethod,
                 job_id: jobId,
+                ...(isSupplemental ? { supplemental: true, paid_so_far: paidSoFar } : {}),
                 ...(isSimulatedOnline ? { simulated: true } : {}),
                 ...(paymentMethod === 'cash' ? { cash_paid_in_hand: true } : {}),
                 ...(discountAmount > 0
@@ -717,6 +731,26 @@ export class PaymentsService {
     if (!Number.isFinite(amount) || amount <= 0) {
       throw new BadRequestException('Số tiền cộng cho thợ phải lớn hơn 0₫');
     }
+    // R3: Idempotency check — chống giải ngân trùng 2 lần cho cùng một job
+    if (
+      this.transactionModel &&
+      typeof this.transactionModel.findOne === 'function' &&
+      Types.ObjectId.isValid(jobId)
+    ) {
+      const existingTx = await this.transactionModel
+        .findOne({
+          job_id: new Types.ObjectId(jobId),
+          user_id: new Types.ObjectId(helperId),
+          type: 'earning',
+          status: 'success',
+          'metadata.simulated': { $ne: true },
+        })
+        .session(session ?? null)
+        .exec();
+      if (existingTx) {
+        return existingTx;
+      }
+    }
     const wallet = await this.getOrCreateWallet(helperId, session);
 
     // G2: $inc nguyên tử + lấy balance_after TỪ KẾT QUẢ $inc (new: true),
@@ -771,6 +805,26 @@ export class PaymentsService {
   ): Promise<TransactionDocument> {
     if (!Number.isFinite(amount) || amount <= 0) {
       throw new BadRequestException('Số tiền cộng cho thợ phải lớn hơn 0₫');
+    }
+    // R3: Idempotency check — chống giải ngân mô phỏng trùng 2 lần cho cùng một job
+    if (
+      this.transactionModel &&
+      typeof this.transactionModel.findOne === 'function' &&
+      Types.ObjectId.isValid(jobId)
+    ) {
+      const existingTx = await this.transactionModel
+        .findOne({
+          job_id: new Types.ObjectId(jobId),
+          user_id: new Types.ObjectId(helperId),
+          type: 'earning',
+          status: 'success',
+          'metadata.simulated': true,
+        })
+        .session(session ?? null)
+        .exec();
+      if (existingTx) {
+        return existingTx;
+      }
     }
     const wallet = await this.getOrCreateWallet(helperId, session);
     const updatedWallet = await this.walletModel
@@ -965,6 +1019,25 @@ export class PaymentsService {
     helperNetEarned = 0,
     session?: ClientSession | null,
   ): Promise<TransactionDocument> {
+    // P0-5 & R3: Idempotency check — chống trừ phí hoa hồng tiền mặt trùng 2 lần
+    if (
+      this.transactionModel &&
+      typeof this.transactionModel.findOne === 'function' &&
+      Types.ObjectId.isValid(jobId)
+    ) {
+      const existingTx = await this.transactionModel
+        .findOne({
+          job_id: new Types.ObjectId(jobId),
+          user_id: new Types.ObjectId(helperId),
+          type: 'commission',
+          status: 'success',
+        })
+        .session(session ?? null)
+        .exec();
+      if (existingTx) {
+        return existingTx;
+      }
+    }
     // H5 (G2): mẫu nguyên tử như deductWallet — $inc có guard $gte trên số
     // tiền trừ THỰC TẾ, balance_after lấy TỪ KẾT QUẢ $inc (new: true).
     // Khác deductWallet ở chỗ: ví không đủ phí thì KHÔNG ném lỗi mà chỉ trừ
@@ -1128,7 +1201,7 @@ export class PaymentsService {
 
   /** P0-3: Tính tổng số tiền khách đã thanh toán thành công cho đơn hàng này */
   async getTotalPaidForJob(jobId: string): Promise<number> {
-    if (!this.transactionModel) return 0;
+    if (!this.transactionModel || typeof this.transactionModel.find !== 'function') return 0;
     const txs = await this.transactionModel
       .find({
         job_id: new Types.ObjectId(jobId),
