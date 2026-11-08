@@ -195,7 +195,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           } else {
             // Cold start / timeout / mạng chậm: GIỮ NGUYÊN phiên đã lưu từ SecureStore
             if (__DEV__) {
-              console.warn('[Startup] GET /auth/me timed out or cold-starting — retaining local session');
+              console.warn(
+                '[Startup] GET /auth/me timed out or cold-starting — retaining local session',
+              );
             }
           }
         }

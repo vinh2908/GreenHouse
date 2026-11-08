@@ -402,7 +402,9 @@ export default function HelpCenterScreen() {
               {aiIsMock && (
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                   <Text style={{ fontSize: fs(11), color: '#B45309', fontWeight: '700' }}>
-                    {lang === 'en' ? '⚠️ Simulated answer (Mock mode)' : '⚠️ Câu trả lời mô phỏng (Chế độ mẫu)'}
+                    {lang === 'en'
+                      ? '⚠️ Simulated answer (Mock mode)'
+                      : '⚠️ Câu trả lời mô phỏng (Chế độ mẫu)'}
                   </Text>
                 </View>
               )}

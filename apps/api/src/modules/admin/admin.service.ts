@@ -708,13 +708,15 @@ export class AdminService {
       }
     }
 
-    // F2 & F3: Nhánh COMPLETED
+    // F2 & F3 & I4: Nhánh COMPLETED
     if (status === JobStatus.COMPLETED) {
       const isCash = job.payment_method === 'cash';
       const isWarranty = !!job.is_warranty;
+      const origContractStatus = contract?.status;
+      const origContractCompletedAt = contract?.completed_at;
 
-      // F2: Kiểm tra tiền mặt & UNPAID TRƯỚC LẦN LƯU ĐẦU TIÊN
-      if (contract && job.helper_id) {
+      // F2 & I4: Kiểm tra tiền mặt & UNPAID TRƯỚC LẦN LƯU ĐẦU TIÊN
+      if (job.helper_id) {
         if (isCash && !isWarranty) {
           const hasCashConfirmed = job.helper_cash_confirmed === true;
           let hasRecordedCashTx = false;
@@ -729,6 +731,11 @@ export class AdminService {
         } else if (!isWarranty && job.payment_status !== PaymentStatus.PAID) {
           throw new BadRequestException(
             'Đơn hàng chưa được thanh toán thành công, không thể chuyển sang hoàn thành',
+          );
+        }
+        if (!contract) {
+          throw new BadRequestException(
+            'Đơn hàng có thợ phụ trách nhưng không có hợp đồng, không thể hoàn thành',
           );
         }
       }
@@ -847,14 +854,16 @@ export class AdminService {
                 `Rollback trạng thái đơn ${jobId} thất bại: ${rErr?.message ?? rErr}`,
               );
             });
-          if (contract) {
+          if (contract && origContractStatus !== undefined) {
             await this.contractModel
               .updateOne(
                 { _id: contract._id },
-                { $set: { status: contract.status, completed_at: contract.completed_at } },
+                { $set: { status: origContractStatus, completed_at: origContractCompletedAt } },
               )
               .exec()
               .catch(() => undefined);
+            contract.status = origContractStatus;
+            contract.completed_at = origContractCompletedAt;
           }
         }
         throw disburseErr;
@@ -1652,5 +1661,107 @@ export class AdminService {
 
     this.jobsService.emitJobStatusChange(claimed);
     return claimed;
+  }
+
+  /**
+   * I3: Sửa đơn kẹt đã có helper_id nhưng không có hợp đồng (CONFIRMED/QUOTE_SELECTED).
+   * - mode = 'unassign' (mặc định): Hủy gán về OPEN (helper_id = null), trả trạng thái thợ về rảnh để gán lại được.
+   * - mode = 'backfill': Tạo hợp đồng bù cho đơn dựa trên giá chốt/giá dự kiến.
+   */
+  async repairStuckAssignedJob(
+    jobId: string,
+    mode: 'unassign' | 'backfill' = 'unassign',
+    adminId?: string,
+  ): Promise<JobDocument> {
+    const job = await this.jobModel.findById(jobId).exec();
+    if (!job) throw new NotFoundException('Đơn hàng không tồn tại');
+
+    const existingContract = await this.contractModel.findOne({ job_id: job._id }).exec();
+    if (existingContract) {
+      throw new BadRequestException(
+        'Đơn hàng đã có hợp đồng, không thuộc diện đơn kẹt thiếu hợp đồng',
+      );
+    }
+
+    if (!job.helper_id) {
+      throw new BadRequestException('Đơn hàng chưa có thợ gán, không thuộc diện đơn kẹt');
+    }
+
+    if (mode === 'backfill') {
+      const agreedPrice = job.is_fixed_price ? job.fixed_price : job.target_price;
+      if (!agreedPrice || agreedPrice <= 0) {
+        throw new BadRequestException(
+          'Đơn chưa có giá chốt hoặc giá dự kiến hợp lệ để tạo hợp đồng bù',
+        );
+      }
+      let platformFeeRate: number = PLATFORM_FEE_BY_SERVICE.default;
+      if (job.service_id && this.serviceModel) {
+        const service = await this.serviceModel
+          .findById(job.service_id)
+          .select('platform_fee_percent')
+          .lean()
+          .exec();
+        if (typeof service?.platform_fee_percent === 'number') {
+          platformFeeRate = service.platform_fee_percent / 100;
+        }
+      }
+      const platformFee = Math.round(agreedPrice * platformFeeRate);
+      const helperReceives = agreedPrice - platformFee;
+
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      let scheduledAt: Date = tomorrow;
+      if (job.preferred_date) {
+        const datePart = new Date(job.preferred_date).toISOString().slice(0, 10);
+        const timePart = job.preferred_time_start ? `${job.preferred_time_start}:00` : '08:00:00';
+        scheduledAt = new Date(`${datePart}T${timePart}+07:00`);
+      }
+
+      await this.contractModel.create({
+        job_id: job._id,
+        customer_id: job.customer_id,
+        helper_id: job.helper_id,
+        labor_cost: agreedPrice,
+        materials_cost: 0,
+        total_price: agreedPrice,
+        platform_fee: platformFee,
+        helper_receives: helperReceives,
+        warranty_days: 30,
+        scheduled_at: scheduledAt,
+      });
+
+      job.events.push({
+        status: job.status,
+        note: `Admin bù hợp đồng cho đơn kẹt (Admin ID: ${adminId ?? 'hệ thống'})`,
+        actor_id:
+          adminId && Types.ObjectId.isValid(adminId)
+            ? new Types.ObjectId(adminId)
+            : (job.customer_id as any),
+        actor_role: 'admin',
+        timestamp: new Date(),
+      });
+      await job.save();
+      return job;
+    }
+
+    // Default mode: unassign -> OPEN, helper_id = null
+    const prevHelperId = String(job.helper_id);
+    job.helper_id = null as any;
+    job.status = JobStatus.OPEN;
+    job.events.push({
+      status: JobStatus.OPEN,
+      note: `Admin hủy gán thợ do đơn kẹt không có hợp đồng (Admin ID: ${adminId ?? 'hệ thống'})`,
+      actor_id:
+        adminId && Types.ObjectId.isValid(adminId)
+          ? new Types.ObjectId(adminId)
+          : (job.customer_id as any),
+      actor_role: 'admin',
+      timestamp: new Date(),
+    });
+    await job.save();
+
+    await this.jobsService.setHelperBusy(prevHelperId, false);
+    this.jobsService.emitJobStatusChange(job);
+    return job;
   }
 }

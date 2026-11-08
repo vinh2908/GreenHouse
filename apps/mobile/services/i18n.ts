@@ -2623,7 +2623,8 @@ export function formatNotificationBody(
     return 'A private job offer has expired.';
   }
   if (type === 'job_private_offer_expired') {
-    const jobTitleMatch = b.match(/đơn\s*(".*?"|'.*?'|“.*?”)/i) || b.match(/công việc\s*(".*?"|'.*?'|“.*?”)/i);
+    const jobTitleMatch =
+      b.match(/đơn\s*(".*?"|'.*?'|“.*?”)/i) || b.match(/công việc\s*(".*?"|'.*?'|“.*?”)/i);
     if (jobTitleMatch) {
       return `Private offer for job ${jobTitleMatch[1]} has expired.`;
     }

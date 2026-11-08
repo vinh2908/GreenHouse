@@ -81,7 +81,8 @@ export default function HelperEarningsScreen() {
   const router = useRouter();
   const { t, fs, lang, formatTxDesc } = useTranslation();
   const tc = useThemeColors();
-  const fmt = (n?: number) => new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'vi-VN').format(n ?? 0);
+  const fmt = (n?: number) =>
+    new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'vi-VN').format(n ?? 0);
   const { data: wallet, isLoading, isError: isWalletError, refetch: refetchWallet } = useWallet();
   const [txPage, setTxPage] = useState(1);
   const {
@@ -323,8 +324,7 @@ export default function HelperEarningsScreen() {
               fontWeight: '500',
             }}
           >
-            {t('earn_total_received')}{' '}
-            {fmt(wallet?.total_earned ?? 0)}₫
+            {t('earn_total_received')} {fmt(wallet?.total_earned ?? 0)}₫
           </Text>
         </View>
 

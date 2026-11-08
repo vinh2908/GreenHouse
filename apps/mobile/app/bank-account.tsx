@@ -907,7 +907,10 @@ export default function BankAccountScreen() {
                             color: isSelected ? COLORS.primaryDark : COLORS.gray[700],
                           }}
                         >
-                          {new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'vi-VN').format(Number(preset))}₫
+                          {new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'vi-VN').format(
+                            Number(preset),
+                          )}
+                          ₫
                         </Text>
                       </TouchableOpacity>
                     );

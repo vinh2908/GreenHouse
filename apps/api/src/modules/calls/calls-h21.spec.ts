@@ -38,7 +38,9 @@ describe('H21: Race-safe Call Session Creation', () => {
         // Simulate race condition: first caller creates successfully,
         // second concurrent caller gets E11000 duplicate key error
         if (sessionsInDb.length > 0) {
-          const err: any = new Error('E11000 duplicate key error collection: call_sessions index: job_id_1 dup key');
+          const err: any = new Error(
+            'E11000 duplicate key error collection: call_sessions index: job_id_1 dup key',
+          );
           err.code = 11000;
           throw err;
         }

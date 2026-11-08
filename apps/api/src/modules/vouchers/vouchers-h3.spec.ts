@@ -32,7 +32,9 @@ function matches(doc: Doc, filter: Record<string, unknown>): boolean {
           if ('$filter' in sizeExpr) {
             const filterExpr = sizeExpr['$filter'] as Record<string, unknown>;
             const arr = (doc['used_user_ids'] as Types.ObjectId[]) || [];
-            const targetId = ((filterExpr['cond'] as Record<string, unknown>)['$eq'] as [unknown, unknown])[1];
+            const targetId = (
+              (filterExpr['cond'] as Record<string, unknown>)['$eq'] as [unknown, unknown]
+            )[1];
             leftVal = arr.filter(id => eq(id, targetId)).length;
           }
         }
@@ -90,7 +92,8 @@ describe('H3: Voucher atomic limit under concurrency', () => {
     const redemptions: Doc[] = [];
 
     const voucherModel = {
-      findOne: (filter: Record<string, unknown>) => execOf(matches(voucher, filter) ? voucher : null),
+      findOne: (filter: Record<string, unknown>) =>
+        execOf(matches(voucher, filter) ? voucher : null),
       findById: () => execOf(voucher),
       findOneAndUpdate: (filter: Record<string, unknown>, update: Record<string, unknown>) => {
         if (!matches(voucher, filter)) return execOf(null);
@@ -115,9 +118,24 @@ describe('H3: Voucher atomic limit under concurrency', () => {
       {} as never,
     );
 
-    const call1 = service.redeemForJob(String(userId), String(new Types.ObjectId()), 'LIMIT2', 100_000);
-    const call2 = service.redeemForJob(String(userId), String(new Types.ObjectId()), 'LIMIT2', 100_000);
-    const call3 = service.redeemForJob(String(userId), String(new Types.ObjectId()), 'LIMIT2', 100_000);
+    const call1 = service.redeemForJob(
+      String(userId),
+      String(new Types.ObjectId()),
+      'LIMIT2',
+      100_000,
+    );
+    const call2 = service.redeemForJob(
+      String(userId),
+      String(new Types.ObjectId()),
+      'LIMIT2',
+      100_000,
+    );
+    const call3 = service.redeemForJob(
+      String(userId),
+      String(new Types.ObjectId()),
+      'LIMIT2',
+      100_000,
+    );
 
     const results = await Promise.allSettled([call1, call2, call3]);
 

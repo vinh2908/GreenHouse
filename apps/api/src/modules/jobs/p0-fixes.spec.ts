@@ -769,6 +769,86 @@ describe('ĐỢT 1 — P0 Regression & Correctness Specs', () => {
       expect(res.status).toBe(JobStatus.CANCELLED);
       expect(mockJob.payment_status).toBe(PaymentStatus.UNPAID); // Giữ nguyên UNPAID
     });
+
+    it('I1: giải ngân lỗi -> hợp đồng và đơn đều rollback về đúng status + completed_at gốc, không kẹt COMPLETED', async () => {
+      const prevStatus = JobStatus.IN_PROGRESS;
+      const prevContractStatus = ContractStatus.ACTIVE;
+      const prevCompletedAt = null;
+      const contractId = new Types.ObjectId();
+      const mockContract = {
+        _id: contractId,
+        status: prevContractStatus,
+        completed_at: prevCompletedAt,
+        total_price: 500_000,
+        platform_fee: 75_000,
+        helper_receives: 425_000,
+        save: jest.fn().mockResolvedValue({}),
+      };
+      contractModelAdmin.findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(mockContract),
+      });
+
+      jobModelAdmin.findById.mockReturnValue({
+        exec: jest.fn().mockResolvedValue({
+          _id: new Types.ObjectId(jobId),
+          status: prevStatus,
+          payment_status: PaymentStatus.PAID,
+          helper_id: new Types.ObjectId(),
+        }),
+      });
+      jobModelAdmin.findOneAndUpdate.mockReturnValue({
+        exec: jest.fn().mockResolvedValue({
+          _id: new Types.ObjectId(jobId),
+          status: JobStatus.COMPLETED,
+          payment_status: PaymentStatus.PAID,
+          helper_id: new Types.ObjectId(),
+        }),
+      });
+      paymentsServiceMock.creditHelper.mockRejectedValue(new Error('Gateway down'));
+
+      await expect(
+        adminService.updateJobStatus(jobId, JobStatus.COMPLETED, 'Admin done', adminId),
+      ).rejects.toThrow('Gateway down');
+
+      expect(jobModelAdmin.updateOne).toHaveBeenCalledWith(
+        { _id: new Types.ObjectId(jobId) },
+        expect.objectContaining({
+          $set: expect.objectContaining({ status: prevStatus }),
+        }),
+      );
+
+      expect(contractModelAdmin.updateOne).toHaveBeenCalledWith(
+        { _id: contractId },
+        expect.objectContaining({
+          $set: expect.objectContaining({
+            status: prevContractStatus,
+            completed_at: prevCompletedAt,
+          }),
+        }),
+      );
+    });
+
+    it('I4: đơn có helper_id nhưng không có hợp đồng (UNPAID hoặc tiền mặt chưa xác nhận) -> admin hoàn thành bị chặn, ném BadRequestException', async () => {
+      contractModelAdmin.findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(null), // Không có hợp đồng
+      });
+      jobModelAdmin.findById.mockReturnValue({
+        exec: jest.fn().mockResolvedValue({
+          _id: new Types.ObjectId(jobId),
+          status: JobStatus.IN_PROGRESS,
+          payment_method: 'vietqr',
+          payment_status: PaymentStatus.UNPAID,
+          helper_id: new Types.ObjectId(),
+          is_warranty: false,
+        }),
+      });
+
+      await expect(
+        adminService.updateJobStatus(jobId, JobStatus.COMPLETED, 'Admin done', adminId),
+      ).rejects.toThrow(BadRequestException);
+
+      expect(jobModelAdmin.findOneAndUpdate).not.toHaveBeenCalled();
+    });
   });
 
   describe('F4 & R-B11: Admin gán thợ (AdminService.adminAssignHelper)', () => {
@@ -881,6 +961,87 @@ describe('ĐỢT 1 — P0 Regression & Correctness Specs', () => {
       expect(contractModelAssign.create).toHaveBeenCalledWith(
         expect.objectContaining({
           total_price: 350_000,
+        }),
+      );
+    });
+
+    it('I3: đơn kẹt CONFIRMED có helper_id nhưng không có hợp đồng -> chạy repairStuckAssignedJob (unassign) -> đơn về OPEN, helper_id = null và gán thợ lại thành công', async () => {
+      // 1. Tạo đơn ở trạng thái kẹt
+      const stuckJob = {
+        _id: new Types.ObjectId(jobId),
+        status: JobStatus.CONFIRMED,
+        helper_id: new Types.ObjectId(helperId),
+        target_price: 400_000,
+        is_fixed_price: false,
+        payment_status: PaymentStatus.PAID,
+        preferred_date: new Date('2026-11-12'),
+        preferred_time_start: '10:00',
+        events: [] as any[],
+        save: jest.fn().mockResolvedValue({}),
+      };
+
+      jobModelAssign.findById.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(stuckJob),
+      });
+      contractModelAssign.findOne = jest.fn().mockReturnValue({
+        exec: jest.fn().mockResolvedValue(null), // Chưa có hợp đồng
+      });
+
+      // 2. Chạy đường sửa unassign
+      const repairedJob = await adminService.repairStuckAssignedJob(jobId, 'unassign', adminId);
+
+      // 3. Assert đơn trở về trạng thái gán lại được (OPEN, helper_id: null)
+      expect(repairedJob.status).toBe(JobStatus.OPEN);
+      expect(repairedJob.helper_id).toBeNull();
+      expect(jobsService.setHelperBusy).toHaveBeenCalledWith(helperId, false);
+
+      // 4. Gán thợ lại thành công
+      const claimedDoc = {
+        _id: new Types.ObjectId(jobId),
+        status: JobStatus.CONFIRMED,
+        helper_id: new Types.ObjectId(helperId),
+        events: [] as any[],
+        save: jest.fn().mockResolvedValue({}),
+      };
+      jobModelAssign.findOneAndUpdate.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(claimedDoc),
+      });
+
+      const assignRes = await adminService.adminAssignHelper(jobId, helperId, adminId);
+      expect(assignRes.status).toBe(JobStatus.CONFIRMED);
+      expect(contractModelAssign.create).toHaveBeenCalled();
+    });
+
+    it('I3: đơn kẹt CONFIRMED có helper_id nhưng không có hợp đồng -> chạy repairStuckAssignedJob (backfill) -> tạo hợp đồng bù', async () => {
+      const stuckJob = {
+        _id: new Types.ObjectId(jobId),
+        status: JobStatus.CONFIRMED,
+        helper_id: new Types.ObjectId(helperId),
+        customer_id: new Types.ObjectId(),
+        target_price: 500_000,
+        is_fixed_price: false,
+        payment_status: PaymentStatus.PAID,
+        preferred_date: new Date('2026-11-15'),
+        preferred_time_start: '08:00',
+        events: [] as any[],
+        save: jest.fn().mockResolvedValue({}),
+      };
+
+      jobModelAssign.findById.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(stuckJob),
+      });
+      contractModelAssign.findOne = jest.fn().mockReturnValue({
+        exec: jest.fn().mockResolvedValue(null), // Chưa có hợp đồng
+      });
+
+      const res = await adminService.repairStuckAssignedJob(jobId, 'backfill', adminId);
+
+      expect(res.status).toBe(JobStatus.CONFIRMED);
+      expect(contractModelAssign.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          job_id: stuckJob._id,
+          helper_id: stuckJob.helper_id,
+          total_price: 500_000,
         }),
       );
     });

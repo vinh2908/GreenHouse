@@ -385,9 +385,10 @@ export default function HelperJobDetailScreen() {
     typeof job.service_id === 'object' && job.service_id ? (job.service_id as any) : null;
   const hasFixedFee = fixedServiceObj?.platform_fee_percent != null;
   const fixedFeePercent: number | null = fixedServiceObj?.platform_fee_percent ?? null;
-  const fixedHelperReceives = (job.is_fixed_price && fixedFeePercent != null)
-    ? (job.fixed_price ?? 0) - Math.round(((job.fixed_price ?? 0) * fixedFeePercent) / 100)
-    : null;
+  const fixedHelperReceives =
+    job.is_fixed_price && fixedFeePercent != null
+      ? (job.fixed_price ?? 0) - Math.round(((job.fixed_price ?? 0) * fixedFeePercent) / 100)
+      : null;
 
   const handleAcceptDirect = async () => {
     try {
@@ -1361,7 +1362,9 @@ export default function HelperJobDetailScreen() {
                       {fixedHelperReceives != null ? (
                         <PriceText amount={fixedHelperReceives} size={15} color={COLORS.success} />
                       ) : (
-                        <Text style={{ fontSize: fs(13), color: tc.textMuted, fontStyle: 'italic' }}>
+                        <Text
+                          style={{ fontSize: fs(13), color: tc.textMuted, fontStyle: 'italic' }}
+                        >
                           {lang === 'en' ? 'Fee not set yet' : 'Chưa có phí'}
                         </Text>
                       )}
@@ -1816,7 +1819,13 @@ export default function HelperJobDetailScreen() {
                     </Text>
                     <PriceText amount={total} size={14} color={tc.text} bold={false} />
                   </View>
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                    }}
+                  >
                     <Text style={{ color: tc.textMuted, fontWeight: '500' }}>
                       {quoteFeePercent != null
                         ? lang === 'en'
@@ -1840,7 +1849,13 @@ export default function HelperJobDetailScreen() {
                     )}
                   </View>
                   <Separator my={4} />
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                    }}
+                  >
                     <Text style={{ fontWeight: '800', color: tc.text }}>
                       {t('helper_job.net_payout')}
                     </Text>

@@ -1925,7 +1925,13 @@ export default function JobDetailScreen() {
                                     paddingVertical: 2,
                                   }}
                                 >
-                                  <Text style={{ fontSize: fs(10), color: '#DC2626', fontWeight: '700' }}>
+                                  <Text
+                                    style={{
+                                      fontSize: fs(10),
+                                      color: '#DC2626',
+                                      fontWeight: '700',
+                                    }}
+                                  >
                                     {lang === 'en' ? 'Unverified' : 'Chưa xác minh'}
                                   </Text>
                                 </View>
@@ -1983,7 +1989,14 @@ export default function JobDetailScreen() {
                             }}
                           >
                             <AlertTriangle size={14} color="#DC2626" />
-                            <Text style={{ fontSize: fs(12), color: '#DC2626', fontWeight: '600', flex: 1 }}>
+                            <Text
+                              style={{
+                                fontSize: fs(12),
+                                color: '#DC2626',
+                                fontWeight: '600',
+                                flex: 1,
+                              }}
+                            >
                               {lang === 'en'
                                 ? 'Unverified Helper · Quote Hidden'
                                 : 'Thợ chưa xác minh danh tính · Báo giá bị ẩn'}
@@ -2102,12 +2115,7 @@ export default function JobDetailScreen() {
               <Text style={{ color: tc.textSecondary, fontSize: fs(13.5) }}>
                 {lang === 'en' ? 'Labor cost' : 'Tiền công thợ'}
               </Text>
-              <PriceText
-                amount={contract.labor_cost}
-                size={14}
-                color={tc.text}
-                bold={false}
-              />
+              <PriceText amount={contract.labor_cost} size={14} color={tc.text} bold={false} />
             </View>
             {contract.materials_cost > 0 && (
               <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>

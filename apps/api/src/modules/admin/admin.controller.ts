@@ -241,6 +241,20 @@ export class AdminController {
     return this.adminService.adminAssignHelper(id, dto.helper_id, adminId);
   }
 
+  @Post('jobs/:id/repair-stuck')
+  @ApiOperation({
+    summary:
+      '[Admin] I3: Sửa đơn kẹt đã có thợ nhưng không có hợp đồng (unassign về OPEN hoặc backfill hợp đồng)',
+  })
+  async repairStuckAssignedJob(
+    @Param('id') id: string,
+    @Body() dto: { mode?: 'unassign' | 'backfill' },
+    @CurrentUser() adminUser: any,
+  ) {
+    const adminId = adminUser?.sub || adminUser?._id || adminUser?.id;
+    return this.adminService.repairStuckAssignedJob(id, dto?.mode || 'unassign', adminId);
+  }
+
   // ─── Notifications broadcast ──────────────────────────────────────────────
 
   @Post('notifications/broadcast')
