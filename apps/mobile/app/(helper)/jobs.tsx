@@ -670,7 +670,9 @@ export default function HelperJobsScreen() {
                             textDecorationLine: 'underline',
                           }}
                         >
-                          {lang === 'en' ? 'Route error · Tap to retry' : 'Lỗi tuyến đường · Thử lại'}
+                          {lang === 'en'
+                            ? 'Route error · Tap to retry'
+                            : 'Lỗi tuyến đường · Thử lại'}
                         </Text>
                       </TouchableOpacity>
                     ) : (
