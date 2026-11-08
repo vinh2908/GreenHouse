@@ -70,7 +70,7 @@ describe('K5 & O5: Real Mobile apiClient Interceptor, Token Refresh, and 401/Ses
 
     // 2. Adapter thật của apiClient: GET /auth/me trả về 401 Unauthorized lần đầu
     let authMeCalls = 0;
-    apiClient.defaults.adapter = async (config) => {
+    apiClient.defaults.adapter = async config => {
       if (config.url?.includes('/auth/me')) {
         authMeCalls++;
         const err = new AxiosError(
@@ -129,7 +129,7 @@ describe('K5 & O5: Real Mobile apiClient Interceptor, Token Refresh, and 401/Ses
     mockSecureStore['homemate_user'] = JSON.stringify(user);
 
     let authMeCalls = 0;
-    apiClient.defaults.adapter = async (config) => {
+    apiClient.defaults.adapter = async config => {
       if (config.url?.includes('/auth/me')) {
         authMeCalls++;
         throw new AxiosError(

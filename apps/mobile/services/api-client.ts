@@ -102,7 +102,8 @@ function triggerSessionExpiredLogout() {
   try {
     // Thông báo cho các tab web khác qua BroadcastChannel nếu có
     const g = typeof globalThis !== 'undefined' ? (globalThis as any) : null;
-    const isBrowser = typeof globalThis !== 'undefined' && typeof (globalThis as any).window !== 'undefined';
+    const isBrowser =
+      typeof globalThis !== 'undefined' && typeof (globalThis as any).window !== 'undefined';
     if (isBrowser && typeof g?.BroadcastChannel !== 'undefined') {
       try {
         const bc = new g.BroadcastChannel('homemate_auth_channel');
