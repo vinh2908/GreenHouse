@@ -228,10 +228,14 @@ export function formatConversationTime(
  * - formatTime: giờ -> 'HH:mm'
  * Giá trị không hợp lệ trả về '' (không ném lỗi, không hiện Invalid Date).
  */
-export function formatDateTime(dateInput: DateInput): string {
+export function formatDateTime(dateInput: DateInput, lang: 'vi' | 'en' = 'vi'): string {
   if (!dateInput) return '';
   const date = toVnDayjs(dateInput);
-  return date.isValid() ? date.format('HH:mm DD/MM/YYYY') : '';
+  return date.isValid()
+    ? lang === 'en'
+      ? date.format('HH:mm MM/DD/YYYY')
+      : date.format('HH:mm DD/MM/YYYY')
+    : '';
 }
 
 export function formatDate(dateInput: DateInput, lang: 'vi' | 'en' = 'vi'): string {
@@ -272,19 +276,19 @@ export function formatWeekday(dateInput: DateInput, lang: 'vi' | 'en' = 'vi'): s
   return dow.charAt(0).toUpperCase() + dow.slice(1);
 }
 
-/** 'Thứ hai, 08/11/2026' / 'Monday, 08/11/2026' theo giờ VN. */
+/** 'Thứ hai, 08/11/2026' / 'Monday, 11/08/2026' theo giờ VN. */
 export function formatDateWithWeekday(dateInput: DateInput, lang: 'vi' | 'en' = 'vi'): string {
   if (!dateInput) return '';
   const weekday = formatWeekday(dateInput, lang);
-  const date = formatDate(dateInput);
+  const date = formatDate(dateInput, lang);
   return weekday && date ? `${weekday}, ${date}` : '';
 }
 
-/** 'Thứ hai, 08/11/2026 09:00' / 'Monday, 08/11/2026 09:00' theo giờ VN. */
+/** 'Thứ hai, 08/11/2026 09:00' / 'Monday, 11/08/2026 09:00' theo giờ VN. */
 export function formatDateTimeWithWeekday(dateInput: DateInput, lang: 'vi' | 'en' = 'vi'): string {
   if (!dateInput) return '';
   const weekday = formatWeekday(dateInput, lang);
-  const dateTime = formatDateTime(dateInput);
+  const dateTime = formatDateTime(dateInput, lang);
   return weekday && dateTime ? `${weekday}, ${dateTime}` : '';
 }
 

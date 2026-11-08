@@ -2405,6 +2405,8 @@ export function formatNotificationTitle(
         return 'Recurring Plan Cancelled';
       case 'job_private_offer':
         return 'Private Job Offer';
+      case 'job_private_offer_expired':
+        return 'Private Offer Expired';
       case 'call_missed':
         return 'Missed Call';
       case 'sos_backup_candidate_withdrawn':
@@ -2618,6 +2620,13 @@ export function formatNotificationBody(
     return `Recurring plan ${m ? m[1] : ''} has been cancelled.`;
   }
   if (type === 'job_private_offer') {
+    return 'A private job offer has expired.';
+  }
+  if (type === 'job_private_offer_expired') {
+    const jobTitleMatch = b.match(/đơn\s*(".*?"|'.*?'|“.*?”)/i) || b.match(/công việc\s*(".*?"|'.*?'|“.*?”)/i);
+    if (jobTitleMatch) {
+      return `Private offer for job ${jobTitleMatch[1]} has expired.`;
+    }
     return 'A private job offer has expired.';
   }
   if (type === 'sos_backup_candidate_withdrawn') {

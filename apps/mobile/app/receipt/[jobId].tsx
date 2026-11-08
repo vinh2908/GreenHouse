@@ -230,7 +230,7 @@ export default function ReceiptScreen() {
                   {lang === 'en' ? 'Voucher Discount' : 'Giảm giá Voucher'}
                 </Text>
                 <Text style={{ fontSize: fs(13), color: COLORS.success, fontWeight: '700' }}>
-                  -{discountAmount.toLocaleString('vi-VN')}₫
+                  -{new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'vi-VN').format(discountAmount)}₫
                 </Text>
               </View>
             )}
@@ -241,7 +241,7 @@ export default function ReceiptScreen() {
                   {lang === 'en' ? 'Loyalty Points Discount' : 'Giảm điểm thưởng'}
                 </Text>
                 <Text style={{ fontSize: fs(13), color: COLORS.success, fontWeight: '700' }}>
-                  -{loyaltyDiscount.toLocaleString('vi-VN')}₫
+                  -{new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'vi-VN').format(loyaltyDiscount)}₫
                 </Text>
               </View>
             )}
@@ -300,7 +300,6 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontWeight: '800',
-    color: '#111827',
   },
   content: {
     padding: 16,
@@ -386,13 +385,11 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   detailVal: {
-    color: '#111827',
     fontWeight: '700',
     maxWidth: '60%',
     textAlign: 'right',
   },
   detailValMono: {
-    color: '#111827',
     fontWeight: '800',
     fontFamily: 'monospace',
   },

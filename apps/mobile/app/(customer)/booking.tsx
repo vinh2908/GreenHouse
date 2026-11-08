@@ -264,6 +264,9 @@ export default function BookingScreen() {
     price_max?: number;
     confidence?: number;
     notes?: string;
+    mock?: boolean;
+    note?: string;
+    source?: string;
   } | null>(null);
   const [priceEstimate, setPriceEstimate] = useState<{
     price_min: number;
@@ -1517,6 +1520,29 @@ export default function BookingScreen() {
                       marginTop: 4,
                     }}
                   >
+                    {aiSuggestion.mock && (
+                      <View
+                        style={{
+                          flexDirection: 'row',
+                          alignItems: 'center',
+                          gap: 6,
+                          backgroundColor: 'rgba(245, 158, 11, 0.2)',
+                          paddingHorizontal: 8,
+                          paddingVertical: 4,
+                          borderRadius: 6,
+                          alignSelf: 'flex-start',
+                        }}
+                      >
+                        <Text style={{ color: '#FBBF24', fontSize: fs(11), fontWeight: '700' }}>
+                          {lang === 'en' ? '⚠️ Simulated / Sample Result' : '⚠️ Kết quả mô phỏng (Chế độ mẫu)'}
+                        </Text>
+                      </View>
+                    )}
+                    {aiSuggestion.note && (
+                      <Text style={{ color: '#FCD34D', fontSize: fs(11.5), fontStyle: 'italic' }}>
+                        {aiSuggestion.note}
+                      </Text>
+                    )}
                     <View
                       style={{
                         flexDirection: 'row',
@@ -2986,7 +3012,7 @@ export default function BookingScreen() {
                           style={{
                             fontSize: fs(14),
                             fontWeight: '700',
-                            color: voucherPreview ? '#16A34A' : COLORS.gray[900],
+                            color: voucherPreview ? '#16A34A' : tc.text,
                           }}
                         >
                           {discountText}

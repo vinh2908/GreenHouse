@@ -2415,7 +2415,7 @@ export default function CustomerHomeScreen() {
                         style={{
                           fontSize: fs(11.5),
                           fontWeight: '800',
-                          color: isCustom ? COLORS.primary : COLORS.gray[900],
+                          color: isCustom ? COLORS.primary : tc.text,
                           textAlign: 'center',
                           lineHeight: Math.round(fs(15)),
                         }}

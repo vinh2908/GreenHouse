@@ -202,10 +202,10 @@ export default function ConversationsScreen() {
                       style={{
                         fontSize: fs(13),
                         color: isUnread
-                          ? COLORS.gray[900]
+                          ? tc.text
                           : conv.last_message
-                            ? COLORS.gray[700]
-                            : COLORS.gray[500],
+                            ? tc.textSecondary
+                            : tc.textMuted,
                         fontWeight: isUnread ? '800' : '500',
                         marginTop: 2,
                       }}

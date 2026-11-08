@@ -1,25 +1,36 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 
 // Gửi mail OTP qua SendGrid Web API v3 (HTTPS) thay vì Gmail SMTP.
 // Lý do đổi (2026-11-07): Gmail SMTP không kết nối được từ Render free tier
 // (kết nối treo tới hết timeout) nên đăng ký + quên mật khẩu không bao giờ
 // gửi được mail. SendGrid dùng cổng 443 nên không bị chặn.
 // Cần biến môi trường: SENDGRID_API_KEY (key có quyền Mail Send) và
-// SENDGRID_FROM (email người gửi đã xác minh Single Sender trên SendGrid;
-// mặc định dùng GMAIL_USER). Gói miễn phí: 100 mail/ngày.
+// SENDGRID_FROM (email người gửi đã xác minh Single Sender trên SendGrid).
+// Gói miễn phí: 100 mail/ngày.
 const SENDGRID_URL = 'https://api.sendgrid.com/v3/mail/send';
 const SEND_TIMEOUT_MS = 15_000;
 
 @Injectable()
-export class MailService {
+export class MailService implements OnModuleInit {
   private readonly logger = new Logger(MailService.name);
+
+  onModuleInit() {
+    // H16: Lỗi ngay khi khởi động nếu thiếu SENDGRID_FROM
+    if (process.env.NODE_ENV !== 'test' || process.env.FORCE_MAIL_CHECK === 'true') {
+      if (!process.env.SENDGRID_FROM) {
+        throw new Error(
+          'Cấu hình SENDGRID_FROM bị thiếu. Bắt buộc phải cấu hình email người gửi Single Sender trên SendGrid.',
+        );
+      }
+    }
+  }
 
   private get apiKey(): string | undefined {
     return process.env.SENDGRID_API_KEY;
   }
 
   private get fromEmail(): string | undefined {
-    return process.env.SENDGRID_FROM || process.env.GMAIL_USER;
+    return process.env.SENDGRID_FROM;
   }
 
   async sendOtpEmail(toEmail: string, code: string, purpose: 'verify' | 'reset'): Promise<boolean> {

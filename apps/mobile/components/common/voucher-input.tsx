@@ -30,6 +30,7 @@ export function VoucherInput({
   const validate = useValidateVoucher();
   const { fs, lang } = useTranslation();
   const tc = useThemeColors();
+  const fmt = (n: number) => new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'vi-VN').format(n);
 
   const handleApply = async () => {
     const trimmed = code.trim();

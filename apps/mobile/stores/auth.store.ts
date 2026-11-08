@@ -166,6 +166,39 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           user: parsedUser,
           isAuthenticated: true,
         });
+
+        // H13: Gọi GET /auth/me khi mở app để làm mới thông tin phiên;
+        // nếu cold start / timeout / mạng chậm thì GIỮ NGUYÊN phiên, không đăng xuất ép.
+        try {
+          const { data } = await apiClient.get('/auth/me', { timeout: 8000 });
+          if (data?.data) {
+            const freshUser = data.data;
+            if (storedRole) {
+              freshUser.active_role = storedRole;
+            }
+            await SecureStore.setItemAsync(USER_KEY, JSON.stringify(freshUser));
+            set({ user: freshUser });
+          }
+        } catch (err: any) {
+          if (err?.response?.status === 401) {
+            // Token thật sự hết hạn hoặc bị từ chối bởi server
+            await SecureStore.deleteItemAsync(TOKEN_KEY);
+            await SecureStore.deleteItemAsync(REFRESH_TOKEN_KEY);
+            await SecureStore.deleteItemAsync(USER_KEY);
+            await SecureStore.deleteItemAsync(ROLE_KEY);
+            set({
+              user: null,
+              accessToken: null,
+              refreshToken: null,
+              isAuthenticated: false,
+            });
+          } else {
+            // Cold start / timeout / mạng chậm: GIỮ NGUYÊN phiên đã lưu từ SecureStore
+            if (__DEV__) {
+              console.warn('[Startup] GET /auth/me timed out or cold-starting — retaining local session');
+            }
+          }
+        }
       } else {
         set({
           user: null,

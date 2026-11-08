@@ -50,6 +50,7 @@ function ChangeChip({ percent, lang }: { percent: number | null; lang?: string }
 export function EarningsReport() {
   const { t, fs, lang } = useTranslation();
   const tc = useThemeColors();
+  const fmt = (n: number) => new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'vi-VN').format(n);
   const { data: report, isLoading, isError, refetch } = useEarningsReport();
   const setGoal = useSetIncomeGoal();
   const [goalText, setGoalText] = useState('');

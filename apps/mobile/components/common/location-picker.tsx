@@ -313,12 +313,12 @@ export function LocationPicker({
   const [results, setResults] = useState<OsmPlace[]>([]);
   const [searching, setSearching] = useState(false);
   const [mapLoading, setMapLoading] = useState(true);
+  const mapLoadedRef = useRef(false);
 
-  // Built once per opening so typing in the search box does not reload the map.
+  // HT-1: Built once per language so toggling modal or typing in search does not reload map.
   const html = useMemo(
     () => mapHtml(start ?? DEFAULT_CENTER, start ? 16 : 6, !!start, true, lang),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [visible, lang],
+    [lang],
   );
 
   const pick = async (coords: PickerCoords) => {
@@ -331,12 +331,29 @@ export function LocationPicker({
 
   useEffect(() => {
     if (!visible) return;
-    setMapLoading(true);
+    if (!mapLoadedRef.current) {
+      setMapLoading(true);
+    }
     setQuery('');
     setResults([]);
     setGeo(null);
     setPicked(start);
-    if (start) pick(start);
+    if (start) {
+      pick(start);
+      if (Platform.OS === 'web') {
+        try {
+          const gDoc = typeof globalThis !== 'undefined' ? (globalThis as any).document : null;
+          const iframe = gDoc?.getElementById('location-picker-web-iframe') as any;
+          if (iframe?.contentWindow?.setPin) {
+            iframe.contentWindow.setPin(start.latitude, start.longitude, true);
+          }
+        } catch {}
+      } else {
+        webRef.current?.injectJavaScript(
+          `window.setPin && window.setPin(${start.latitude}, ${start.longitude}, true); true;`,
+        );
+      }
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible]);
 
@@ -363,6 +380,7 @@ export function LocationPicker({
       try {
         const data = typeof e.data === 'string' ? JSON.parse(e.data) : e.data;
         if (data?.type === 'MAP_LOADED') {
+          mapLoadedRef.current = true;
           setMapLoading(false);
           return;
         }
@@ -486,6 +504,7 @@ export function LocationPicker({
                 try {
                   const data = JSON.parse(e.nativeEvent.data);
                   if (data?.type === 'MAP_LOADED') {
+                    mapLoadedRef.current = true;
                     setMapLoading(false);
                     return;
                   }

@@ -1280,7 +1280,7 @@ export default function JobDetailScreen() {
         {job.status === 'completed' && !job.is_warranty && (
           <Card style={{ gap: 8 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              <ShieldCheck size={18} color={COLORS.gray[900]} />
+              <ShieldCheck size={18} color={tc.text} />
               <Text style={{ fontWeight: '800', fontSize: fs(15), color: tc.text }}>
                 {lang === 'en' ? 'Insurance compensation' : 'Bồi thường bảo hiểm'}
               </Text>
@@ -1547,7 +1547,7 @@ export default function JobDetailScreen() {
                       style={{
                         fontSize: fs(14),
                         fontWeight: active ? '800' : done ? '600' : '400',
-                        color: active ? COLORS.primary : done ? COLORS.gray[900] : COLORS.gray[400],
+                        color: active ? COLORS.primary : done ? tc.text : COLORS.gray[400],
                       }}
                     >
                       {lang === 'en' ? s.label_en || t(`status_${s.key}`) : s.label}
@@ -1914,7 +1914,24 @@ export default function JobDetailScreen() {
                               >
                                 {hName}
                               </Text>
-                              <ShieldCheck size={14} color={COLORS.success} />
+                              {q.helper_unverified ? (
+                                <View
+                                  style={{
+                                    backgroundColor: '#FEF2F2',
+                                    borderWidth: 1,
+                                    borderColor: '#FECACA',
+                                    borderRadius: 6,
+                                    paddingHorizontal: 6,
+                                    paddingVertical: 2,
+                                  }}
+                                >
+                                  <Text style={{ fontSize: fs(10), color: '#DC2626', fontWeight: '700' }}>
+                                    {lang === 'en' ? 'Unverified' : 'Chưa xác minh'}
+                                  </Text>
+                                </View>
+                              ) : (
+                                <ShieldCheck size={14} color={COLORS.success} />
+                              )}
                             </View>
                             <Text style={{ fontSize: fs(12), color: tc.textMuted, marginTop: 1 }}>
                               {q.distance_km != null
@@ -1951,9 +1968,28 @@ export default function JobDetailScreen() {
                           </View>
                         )}
 
-                        {/* P1-14: withdrawn / expired quotes are dead like
-                            rejected ones — badge them unavailable, no actions. */}
-                        {['rejected', 'withdrawn', 'expired'].includes(q.status) ? (
+                        {q.helper_unverified ? (
+                          <View
+                            style={{
+                              flexDirection: 'row',
+                              alignItems: 'center',
+                              gap: 6,
+                              marginTop: 6,
+                              backgroundColor: '#FEF2F2',
+                              padding: 8,
+                              borderRadius: 8,
+                              borderWidth: 1,
+                              borderColor: '#FECACA',
+                            }}
+                          >
+                            <AlertTriangle size={14} color="#DC2626" />
+                            <Text style={{ fontSize: fs(12), color: '#DC2626', fontWeight: '600', flex: 1 }}>
+                              {lang === 'en'
+                                ? 'Unverified Helper · Quote Hidden'
+                                : 'Thợ chưa xác minh danh tính · Báo giá bị ẩn'}
+                            </Text>
+                          </View>
+                        ) : ['rejected', 'withdrawn', 'expired'].includes(q.status) ? (
                           <View
                             style={{
                               flexDirection: 'row',
@@ -2069,7 +2105,7 @@ export default function JobDetailScreen() {
               <PriceText
                 amount={contract.labor_cost}
                 size={14}
-                color={COLORS.gray[900]}
+                color={tc.text}
                 bold={false}
               />
             </View>
@@ -2081,7 +2117,7 @@ export default function JobDetailScreen() {
                 <PriceText
                   amount={contract.materials_cost}
                   size={14}
-                  color={COLORS.gray[900]}
+                  color={tc.text}
                   bold={false}
                 />
               </View>
@@ -2107,7 +2143,7 @@ export default function JobDetailScreen() {
               <View style={{ gap: 10, marginTop: 8 }}>
                 <Separator my={2} />
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                  <FileText size={16} color={COLORS.gray[900]} />
+                  <FileText size={16} color={tc.text} />
                   <Text style={{ fontWeight: '800', fontSize: fs(14), color: tc.text }}>
                     {lang === 'en'
                       ? `Cost & materials addenda (${contract.amendments.length})`
@@ -3546,7 +3582,7 @@ export default function JobDetailScreen() {
                 marginRight: 22,
               }}
             >
-              <ShieldCheck size={20} color={COLORS.gray[900]} />
+              <ShieldCheck size={20} color={tc.text} />
               <Text
                 style={{
                   fontSize: fs(17),

@@ -81,6 +81,7 @@ export default function HelperEarningsScreen() {
   const router = useRouter();
   const { t, fs, lang, formatTxDesc } = useTranslation();
   const tc = useThemeColors();
+  const fmt = (n?: number) => new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'vi-VN').format(n ?? 0);
   const { data: wallet, isLoading, isError: isWalletError, refetch: refetchWallet } = useWallet();
   const [txPage, setTxPage] = useState(1);
   const {
@@ -140,8 +141,8 @@ export default function HelperEarningsScreen() {
         text1: lang === 'en' ? 'Insufficient balance' : 'Số dư không đủ',
         text2:
           lang === 'en'
-            ? `Current wallet balance is: ${new Intl.NumberFormat('vi-VN').format(wallet.balance)}₫`
-            : `Số dư ví hiện tại là: ${new Intl.NumberFormat('vi-VN').format(wallet.balance)}₫`,
+            ? `Current wallet balance is: ${fmt(wallet.balance)}₫`
+            : `Số dư ví hiện tại là: ${fmt(wallet.balance)}₫`,
       });
       return;
     }
@@ -158,7 +159,7 @@ export default function HelperEarningsScreen() {
 
     // A91: Xác nhận trước khi rút tiền — hiện số tiền, phí, tài khoản nhận (đã che).
     const maskedAccount = `***${accountNumber.trim().slice(-4)}`;
-    const amountText = `${new Intl.NumberFormat('vi-VN').format(amt)}₫`;
+    const amountText = `${fmt(amt)}₫`;
     Alert.alert(
       lang === 'en' ? 'Confirm withdrawal' : 'Xác nhận rút tiền',
       lang === 'en'
@@ -213,8 +214,8 @@ export default function HelperEarningsScreen() {
     Alert.alert(
       lang === 'en' ? 'Confirm demo top-up (simulation)' : 'Xác nhận nạp tiền mô phỏng',
       lang === 'en'
-        ? `Record a demo top-up of ${new Intl.NumberFormat('vi-VN').format(amt)}₫? No real payment is made and your withdrawable balance does not change.`
-        : `Ghi nhận nạp thử ${new Intl.NumberFormat('vi-VN').format(amt)}₫? Chưa có thanh toán thật, số dư rút được không thay đổi.`,
+        ? `Record a demo top-up of ${fmt(amt)}₫? No real payment is made and your withdrawable balance does not change.`
+        : `Ghi nhận nạp thử ${fmt(amt)}₫? Chưa có thanh toán thật, số dư rút được không thay đổi.`,
       [
         { text: lang === 'en' ? 'Cancel' : 'Hủy', style: 'cancel' },
         {
@@ -310,8 +311,8 @@ export default function HelperEarningsScreen() {
               }}
             >
               {lang === 'en'
-                ? `Demo credit (simulation, not withdrawable): ${new Intl.NumberFormat('vi-VN').format(wallet.simulated_balance)}₫`
-                : `Số dư mô phỏng (không rút được): ${new Intl.NumberFormat('vi-VN').format(wallet.simulated_balance)}₫`}
+                ? `Demo credit (simulation, not withdrawable): ${fmt(wallet.simulated_balance)}₫`
+                : `Số dư mô phỏng (không rút được): ${fmt(wallet.simulated_balance)}₫`}
             </Text>
           )}
           <Text
@@ -323,7 +324,7 @@ export default function HelperEarningsScreen() {
             }}
           >
             {t('earn_total_received')}{' '}
-            {new Intl.NumberFormat('vi-VN').format(wallet?.total_earned ?? 0)}₫
+            {fmt(wallet?.total_earned ?? 0)}₫
           </Text>
         </View>
 
@@ -559,11 +560,11 @@ export default function HelperEarningsScreen() {
                               style={{
                                 fontSize: fs(15),
                                 fontWeight: '800',
-                                color: TX_COLORS[tx.type] ?? COLORS.gray[900],
+                                color: TX_COLORS[tx.type] ?? tc.text,
                               }}
                             >
                               {isCredit ? '+' : '-'}
-                              {new Intl.NumberFormat('vi-VN').format(tx.amount)}₫
+                              {fmt(tx.amount)}₫
                             </Text>
                             <View
                               style={{
@@ -701,7 +702,7 @@ export default function HelperEarningsScreen() {
                           color: topupAmount === preset ? COLORS.primaryDark : COLORS.gray[700],
                         }}
                       >
-                        {new Intl.NumberFormat('vi-VN').format(Number(preset))}₫
+                        {fmt(Number(preset))}₫
                       </Text>
                     </TouchableOpacity>
                   ))}

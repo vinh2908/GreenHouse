@@ -116,11 +116,20 @@ export class JobsController {
     @Query('service_id') serviceId?: string,
     @Query('page') page?: number,
     @Query('limit') limit?: number,
+    @Query('lat') lat?: number,
+    @Query('lng') lng?: number,
   ) {
     await this.jobsService.requireVerifiedHelper(user.sub);
     const safePage = Math.max(1, Number(page) || 1);
     const safeLimit = Math.min(50, Math.max(1, Number(limit) || 20));
-    return this.jobsService.getAvailableJobs(user.sub, serviceId, safePage, safeLimit);
+    return this.jobsService.getAvailableJobs(
+      user.sub,
+      serviceId,
+      safePage,
+      safeLimit,
+      lat ? Number(lat) : undefined,
+      lng ? Number(lng) : undefined,
+    );
   }
 
   @Get('skipped')

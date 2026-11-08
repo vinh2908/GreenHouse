@@ -109,6 +109,8 @@ export default function HelperJobsScreen() {
     return t('common_service');
   };
   const [availablePage, setAvailablePage] = useState(1);
+  const [activePage, setActivePage] = useState(1);
+  const [historyPage, setHistoryPage] = useState(1);
   const {
     data: available,
     isLoading: aLoading,
@@ -128,6 +130,8 @@ export default function HelperJobsScreen() {
     dataUpdatedAt: acUpdatedAt,
   } = useHelperJobs(
     'confirmed,helper_on_the_way,helper_arrived,in_progress,pending_review,disputed',
+    activePage,
+    10,
   );
   const {
     data: history,
@@ -137,7 +141,7 @@ export default function HelperJobsScreen() {
     isRefetching: hRefetching,
     refetch: rh,
     dataUpdatedAt: hUpdatedAt,
-  } = useHelperJobs('completed,cancelled,refunded');
+  } = useHelperJobs('completed,cancelled,refunded', historyPage, 10);
 
   const datasets = [
     {
@@ -653,7 +657,9 @@ export default function HelperJobsScreen() {
                           {job.distance_km === 0 ? '< 100m' : `${job.distance_km} km`} ~{' '}
                           {(job.estimated_minutes ?? (job as any).estimated_travel_minutes)
                             ? `${job.estimated_minutes ?? (job as any).estimated_travel_minutes} ${t('jobs_minutes_unit')}`
-                            : '< 1 phút'}
+                            : job.distance_km > 0
+                              ? `${Math.max(1, Math.round((job.distance_km / 25) * 60))} ${t('jobs_minutes_unit')}`
+                              : '< 1 phút'}
                         </Text>
                       </View>
                     ) : (job as any).routing_error ? (
@@ -822,6 +828,128 @@ export default function HelperJobsScreen() {
             </TouchableOpacity>
           </View>
         )}
+
+        {tabIndex === 1 && active && active.total_pages > 1 && (
+          <View
+            style={{
+              flexDirection: 'row',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              paddingVertical: 12,
+              paddingHorizontal: 8,
+            }}
+          >
+            <TouchableOpacity
+              disabled={activePage <= 1}
+              onPress={() => setActivePage(p => Math.max(1, p - 1))}
+              style={{
+                paddingHorizontal: 14,
+                paddingVertical: 8,
+                borderRadius: 10,
+                backgroundColor: activePage <= 1 ? COLORS.gray[100] : COLORS.primaryLight,
+              }}
+            >
+              <Text
+                style={{
+                  fontSize: fs(13),
+                  fontWeight: '700',
+                  color: activePage <= 1 ? COLORS.gray[400] : COLORS.primary,
+                }}
+              >
+                {lang === 'en' ? 'Previous' : 'Trang trước'}
+              </Text>
+            </TouchableOpacity>
+
+            <Text style={{ fontSize: fs(13), fontWeight: '600', color: tc.textMuted }}>
+              {lang === 'en'
+                ? `Page ${active.page} / ${active.total_pages}`
+                : `Trang ${active.page} / ${active.total_pages}`}
+            </Text>
+
+            <TouchableOpacity
+              disabled={activePage >= active.total_pages}
+              onPress={() => setActivePage(p => p + 1)}
+              style={{
+                paddingHorizontal: 14,
+                paddingVertical: 8,
+                borderRadius: 10,
+                backgroundColor:
+                  activePage >= active.total_pages ? COLORS.gray[100] : COLORS.primaryLight,
+              }}
+            >
+              <Text
+                style={{
+                  fontSize: fs(13),
+                  fontWeight: '700',
+                  color: activePage >= active.total_pages ? COLORS.gray[400] : COLORS.primary,
+                }}
+              >
+                {lang === 'en' ? 'Next' : 'Trang sau'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {tabIndex === 2 && history && history.total_pages > 1 && (
+          <View
+            style={{
+              flexDirection: 'row',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              paddingVertical: 12,
+              paddingHorizontal: 8,
+            }}
+          >
+            <TouchableOpacity
+              disabled={historyPage <= 1}
+              onPress={() => setHistoryPage(p => Math.max(1, p - 1))}
+              style={{
+                paddingHorizontal: 14,
+                paddingVertical: 8,
+                borderRadius: 10,
+                backgroundColor: historyPage <= 1 ? COLORS.gray[100] : COLORS.primaryLight,
+              }}
+            >
+              <Text
+                style={{
+                  fontSize: fs(13),
+                  fontWeight: '700',
+                  color: historyPage <= 1 ? COLORS.gray[400] : COLORS.primary,
+                }}
+              >
+                {lang === 'en' ? 'Previous' : 'Trang trước'}
+              </Text>
+            </TouchableOpacity>
+
+            <Text style={{ fontSize: fs(13), fontWeight: '600', color: tc.textMuted }}>
+              {lang === 'en'
+                ? `Page ${history.page} / ${history.total_pages}`
+                : `Trang ${history.page} / ${history.total_pages}`}
+            </Text>
+
+            <TouchableOpacity
+              disabled={historyPage >= history.total_pages}
+              onPress={() => setHistoryPage(p => p + 1)}
+              style={{
+                paddingHorizontal: 14,
+                paddingVertical: 8,
+                borderRadius: 10,
+                backgroundColor:
+                  historyPage >= history.total_pages ? COLORS.gray[100] : COLORS.primaryLight,
+              }}
+            >
+              <Text
+                style={{
+                  fontSize: fs(13),
+                  fontWeight: '700',
+                  color: historyPage >= history.total_pages ? COLORS.gray[400] : COLORS.primary,
+                }}
+              >
+                {lang === 'en' ? 'Next' : 'Trang sau'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </ScrollView>
     );
   };
@@ -881,7 +1009,7 @@ export default function HelperJobsScreen() {
       {(teamInvitations ?? []).length > 0 && (
         <View style={{ paddingHorizontal: 16, paddingTop: 12, gap: 10 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            <Users size={16} color={COLORS.gray[900]} />
+            <Users size={16} color={tc.text} />
             <Text style={{ fontWeight: '800', fontSize: fs(14.5), color: tc.text }}>
               {lang === 'en' ? 'Team Invitations' : 'Lời mời vào nhóm'} ({teamInvitations!.length})
             </Text>

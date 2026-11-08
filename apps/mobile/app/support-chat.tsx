@@ -159,7 +159,7 @@ export default function SupportChatScreen() {
         <Text
           style={{
             fontSize: fs(15),
-            color: isMe ? '#FFFFFF' : COLORS.gray[900],
+            color: isMe ? '#FFFFFF' : tc.text,
             lineHeight: 21,
             fontWeight: '500',
           }}

@@ -32,6 +32,7 @@ import Toast from 'react-native-toast-message';
 import { useCreateSosJob } from '@/hooks/use-api';
 import { useAuthStore } from '@/stores/auth.store';
 import { lightImpact } from '@/services/haptics';
+import { SOS_SURCHARGE_VND, SOS_BASE_COST_VND } from '@homemate/constants';
 import { useTranslation } from '@/hooks/use-i18n';
 import { locationService, parseVietnameseAddress } from '@/services/location.service';
 import {
@@ -195,10 +196,9 @@ export default function SosScreen() {
 
   if (isAuthLoading || !isAuth) return <LoadingSpinner />;
 
-  // S4: chỉ dùng để HIỂN THỊ ước tính — phụ phí thật do server quyết định
-  // (packages/constants SOS_SURCHARGE_VND); client không gửi giá này nữa.
-  const surcharge = 100000;
-  const baseCost = 200000;
+  // H19: Dùng hằng số SOS_SURCHARGE_VND và SOS_BASE_COST_VND từ @homemate/constants
+  const surcharge = SOS_SURCHARGE_VND;
+  const baseCost = SOS_BASE_COST_VND;
   const totalEstimate = baseCost + surcharge;
 
   const handleCallEmergency = (phone: string) => {
@@ -277,8 +277,8 @@ export default function SosScreen() {
     const title = lang === 'en' ? 'Confirm Emergency SOS' : 'Xác nhận cứu hộ khẩn cấp';
     const msg =
       lang === 'en'
-        ? `Emergency type: ${selectedCatObj.name}\nAddress: ${address.full_address}\nEstimated total: ${totalEstimate.toLocaleString('vi-VN')}₫ (includes emergency surcharge ${surcharge.toLocaleString('vi-VN')}₫).\n\nDo you want to dispatch SOS signal now?`
-        : `Loại sự cố: ${selectedCatObj.name}\nĐịa chỉ: ${address.full_address}\nTổng tiền ước tính: ${totalEstimate.toLocaleString('vi-VN')}₫ (đã gồm phụ phí khẩn cấp: ${surcharge.toLocaleString('vi-VN')}₫).\n\nBạn có chắc chắn muốn gửi tín hiệu cứu hộ SOS ngay?`;
+        ? `Emergency type: ${selectedCatObj.name}\nAddress: ${address.full_address}\nEstimated total: ${new Intl.NumberFormat('en-US').format(totalEstimate)}₫ (includes emergency surcharge ${new Intl.NumberFormat('en-US').format(surcharge)}₫).\n\nDo you want to dispatch SOS signal now?`
+        : `Loại sự cố: ${selectedCatObj.name}\nĐịa chỉ: ${address.full_address}\nTổng tiền ước tính: ${new Intl.NumberFormat('vi-VN').format(totalEstimate)}₫ (đã gồm phụ phí khẩn cấp: ${new Intl.NumberFormat('vi-VN').format(surcharge)}₫).\n\nBạn có chắc chắn muốn gửi tín hiệu cứu hộ SOS ngay?`;
 
     Alert.alert(title, msg, [
       {
@@ -700,7 +700,7 @@ export default function SosScreen() {
                 <Text style={{ fontSize: fs(13), color: tc.textSecondary }}>
                   {lang === 'en' ? 'Base rescue fee:' : 'Công thợ cứu hộ cơ bản:'}
                 </Text>
-                <PriceText amount={baseCost} size={14} color={COLORS.gray[900]} bold={false} />
+                <PriceText amount={baseCost} size={14} color={tc.text} bold={false} />
               </View>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
                 <Text style={{ fontSize: fs(13), color: tc.textSecondary }}>

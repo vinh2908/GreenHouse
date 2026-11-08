@@ -348,12 +348,10 @@ export default function HelperJobDetailScreen() {
     setShowQuoteModal(true);
   };
   const total = Number(laborCost) || 0;
-  // S3: platform fee is per-service (service.platform_fee_percent) — never
-  // a hardcoded 15% (deep cleaning charges 20%). Falls back to 15% only
-  // when the service record carries no fee percent.
-  const quoteFeePercent = quoteServiceObj?.platform_fee_percent ?? 15;
-  const platformFee = Math.round((total * quoteFeePercent) / 100);
-  const helperReceives = total - platformFee;
+  // H11: Bỏ fallback ?? 15 — không có phí thật thì không bịa 15%
+  const quoteFeePercent: number | null = quoteServiceObj?.platform_fee_percent ?? null;
+  const platformFee = quoteFeePercent != null ? Math.round((total * quoteFeePercent) / 100) : null;
+  const helperReceives = platformFee != null ? total - platformFee : null;
 
   const handleSubmitQuote = async () => {
     if (!laborCost || Number(laborCost) < 50000) {
@@ -386,10 +384,10 @@ export default function HelperJobDetailScreen() {
   const fixedServiceObj =
     typeof job.service_id === 'object' && job.service_id ? (job.service_id as any) : null;
   const hasFixedFee = fixedServiceObj?.platform_fee_percent != null;
-  const fixedFeePercent = fixedServiceObj?.platform_fee_percent ?? 15;
-  const fixedHelperReceives = job.is_fixed_price
+  const fixedFeePercent: number | null = fixedServiceObj?.platform_fee_percent ?? null;
+  const fixedHelperReceives = (job.is_fixed_price && fixedFeePercent != null)
     ? (job.fixed_price ?? 0) - Math.round(((job.fixed_price ?? 0) * fixedFeePercent) / 100)
-    : 0;
+    : null;
 
   const handleAcceptDirect = async () => {
     try {
@@ -1352,11 +1350,21 @@ export default function HelperJobDetailScreen() {
                       }}
                     >
                       <Text style={{ fontSize: fs(13), color: tc.textSecondary }}>
-                        {lang === 'en'
-                          ? `Net wallet payout (after ${hasFixedFee ? `${fixedFeePercent}%` : 'per-service'} platform fee):`
-                          : `Thực nhận về ví (sau phí sàn ${hasFixedFee ? `${fixedFeePercent}%` : 'theo dịch vụ'}):`}
+                        {hasFixedFee
+                          ? lang === 'en'
+                            ? `Net wallet payout (after ${fixedFeePercent}% platform fee):`
+                            : `Thực nhận về ví (sau phí sàn ${fixedFeePercent}%):`
+                          : lang === 'en'
+                            ? 'Platform fee:'
+                            : 'Phí sàn:'}
                       </Text>
-                      <PriceText amount={fixedHelperReceives} size={15} color={COLORS.success} />
+                      {fixedHelperReceives != null ? (
+                        <PriceText amount={fixedHelperReceives} size={15} color={COLORS.success} />
+                      ) : (
+                        <Text style={{ fontSize: fs(13), color: tc.textMuted, fontStyle: 'italic' }}>
+                          {lang === 'en' ? 'Fee not set yet' : 'Chưa có phí'}
+                        </Text>
+                      )}
                     </View>
                     <Text style={{ fontSize: fs(13), color: tc.textSecondary, lineHeight: 19 }}>
                       {lang === 'en'
@@ -1806,31 +1814,43 @@ export default function HelperJobDetailScreen() {
                     <Text style={{ color: tc.textSecondary, fontWeight: '600' }}>
                       {t('helper_job.cust_pays')}
                     </Text>
-                    <PriceText amount={total} size={14} color={COLORS.gray[900]} bold={false} />
+                    <PriceText amount={total} size={14} color={tc.text} bold={false} />
                   </View>
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                     <Text style={{ color: tc.textMuted, fontWeight: '500' }}>
-                      {quoteServiceObj?.platform_fee_percent != null
+                      {quoteFeePercent != null
                         ? lang === 'en'
                           ? `Platform fee (${quoteFeePercent}%)`
                           : `Phí nền tảng (${quoteFeePercent}%)`
                         : lang === 'en'
-                          ? 'Platform fee (per service)'
-                          : 'Phí sàn (theo dịch vụ)'}
+                          ? 'Platform fee'
+                          : 'Phí sàn'}
                     </Text>
-                    <PriceText
-                      amount={platformFee}
-                      size={14}
-                      color={COLORS.gray[500]}
-                      bold={false}
-                    />
+                    {platformFee != null ? (
+                      <PriceText
+                        amount={platformFee}
+                        size={14}
+                        color={COLORS.gray[500]}
+                        bold={false}
+                      />
+                    ) : (
+                      <Text style={{ fontSize: fs(13), color: tc.textMuted, fontStyle: 'italic' }}>
+                        {lang === 'en' ? 'Fee not set yet' : 'Chưa có phí'}
+                      </Text>
+                    )}
                   </View>
                   <Separator my={4} />
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                     <Text style={{ fontWeight: '800', color: tc.text }}>
                       {t('helper_job.net_payout')}
                     </Text>
-                    <PriceText amount={helperReceives} size={17} />
+                    {helperReceives != null ? (
+                      <PriceText amount={helperReceives} size={17} />
+                    ) : (
+                      <Text style={{ fontSize: fs(13), fontWeight: '700', color: tc.textMuted }}>
+                        {lang === 'en' ? 'Calculated upon fee setting' : 'Xác định khi có phí'}
+                      </Text>
+                    )}
                   </View>
                 </Card>
               )}
