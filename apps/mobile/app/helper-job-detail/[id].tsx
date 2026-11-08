@@ -1,5 +1,6 @@
 import { useState, useMemo, useCallback } from 'react';
 import { formatDate } from '@/utils/date-format';
+import { formatCurrency } from '@/services/i18n';
 import {
   View,
   Text,
@@ -1806,7 +1807,7 @@ export default function HelperJobDetailScreen() {
                   >
                     {t('helper_job.min_quote_warning')} (
                     {lang === 'en' ? 'current: ' : 'hiện tại: '}
-                    {Number(laborCost).toLocaleString(lang === 'en' ? 'en-US' : 'vi-VN')}₫)
+                    {formatCurrency(Number(laborCost), lang)}₫)
                   </Text>
                 )}
               </View>

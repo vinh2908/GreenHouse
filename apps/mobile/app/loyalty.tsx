@@ -16,13 +16,14 @@ import {
   useThemeColors,
 } from '@/components/ui';
 import { useTranslation } from '@/hooks/use-i18n';
+import { formatCurrency } from '@/services/i18n';
 
 export default function LoyaltyScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { t, lang, tLoyaltyTier, fs } = useTranslation();
   const tc = useThemeColors();
-  const fmt = (n: number) => new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'vi-VN').format(n);
+  const fmt = (n: number) => formatCurrency(n, lang);
 
   const getTxLabel = (tx: any) => {
     if (lang === 'en') {

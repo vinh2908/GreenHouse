@@ -11,12 +11,12 @@ import {
 import { useMonthlyContractSocket } from '@/hooks/use-socket';
 import { useAuthStore } from '@/stores/auth.store';
 import { useTranslation } from '@/hooks/use-i18n';
+import { formatCurrency } from '@/services/i18n';
 import { Badge, Card, COLORS, EmptyState, LoadingSpinner, useThemeColors } from '@/components/ui';
 
 const WEEKDAY_LABELS_VI = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
 const WEEKDAY_LABELS_EN = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-const fmt = (n?: number, l: string = 'vi') =>
-  new Intl.NumberFormat(l === 'en' ? 'en-US' : 'vi-VN').format(n ?? 0);
+const fmt = (n?: number, l: string = 'vi') => formatCurrency(n, l as any);
 
 export const MONTHLY_STATUS_META: Record<
   MonthlyContractStatus,
@@ -67,8 +67,7 @@ export default function MonthlyContractsScreen() {
   const insets = useSafeAreaInsets();
   const { t, fs, lang } = useTranslation();
   const tc = useThemeColors();
-  const fmt = (n?: number) =>
-    new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'vi-VN').format(n ?? 0);
+  const fmt = (n?: number) => formatCurrency(n, lang);
   // Vai trò hiện tại lấy từ auth store (active_role) như các màn hình dùng chung khác
   const user = useAuthStore(s => s.user);
   const isHelper = user?.active_role === 'helper';

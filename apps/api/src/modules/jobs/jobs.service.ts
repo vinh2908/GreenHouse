@@ -189,7 +189,7 @@ export async function setHelperBusyWithModels(
         user_id: helperObjId,
         status: { $ne: HelperStatus.BUSY },
       },
-      { status: HelperStatus.BUSY },
+      { $set: { status: HelperStatus.BUSY } },
     );
     if (typeof res?.exec === 'function') await res.exec();
   } else {
@@ -209,7 +209,7 @@ export async function setHelperBusyWithModels(
           user_id: helperObjId,
           status: HelperStatus.BUSY,
         },
-        { status: HelperStatus.ONLINE },
+        { $set: { status: HelperStatus.ONLINE } },
       );
       if (typeof res?.exec === 'function') await res.exec();
       if (gateway && typeof gateway.broadcastHelperStatus === 'function') {
@@ -4595,11 +4595,19 @@ export class JobsService implements OnModuleInit {
       ) {
         try {
           const geoQuery = { ...query, 'address.location.coordinates.0': { $exists: true } };
+          const { $or: existingOr, $and: existingAnd, ...restQuery } = query as any;
+          const nonGeoOr = [
+            { 'address.location.coordinates.0': { $exists: false } },
+            { 'address.location': { $exists: false } },
+          ];
+          // O1: Gộp điều kiện non-geo với query gốc qua $and thay vì ghi đè $or,
+          // bảo toàn bộ lọc ẩn đơn private-offer cho thợ khác
           const nonGeoQuery = {
-            ...query,
-            $or: [
-              { 'address.location.coordinates.0': { $exists: false } },
-              { 'address.location': { $exists: false } },
+            ...restQuery,
+            $and: [
+              ...(Array.isArray(existingAnd) ? existingAnd : []),
+              ...(existingOr ? [{ $or: existingOr }] : []),
+              { $or: nonGeoOr },
             ],
           };
 
@@ -4713,62 +4721,97 @@ export class JobsService implements OnModuleInit {
       if (!geoNearSucceeded) {
         // M1 & J2: Giới hạn an toàn MAX_FEED_SORT_CANDIDATES khi cần sort khoảng cách hoặc lọc availability trong RAM
         // Tránh failure mode D-TIME load hết đơn OPEN vào RAM ở quy mô lớn
-        const candidateJobs = await this.jobModel
-          .find(query)
-          .populate('service_id', 'name slug icon')
-          .sort({ created_at: -1 })
-          .limit(MAX_FEED_SORT_CANDIDATES)
-          .exec();
-
-        const visibleJobs = availabilityFiltered
-          ? candidateJobs.filter(job =>
-              this.isAvailableForDate(
-                helperProfile?.availability,
-                job.preferred_date ?? undefined,
-                job.preferred_time_start,
-              ),
-            )
-          : candidateJobs;
-
-        // P1-18 & J1: Sắp xếp TOÀN BỘ visibleJobs theo khoảng cách Haversine gần-nhất-trước trước khi cắt trang (slice)
-        if (helperCoords && Array.isArray(helperCoords) && helperCoords.length >= 2) {
-          visibleJobs.sort((a, b) => {
-            const coordsA = a.address?.location?.coordinates;
-            const coordsB = b.address?.location?.coordinates;
-            const distA =
-              coordsA && coordsA.length >= 2
-                ? this.haversineKm(helperCoords[1], helperCoords[0], coordsA[1], coordsA[0])
-                : 9999;
-            const distB =
-              coordsB && coordsB.length >= 2
-                ? this.haversineKm(helperCoords[1], helperCoords[0], coordsB[1], coordsB[0])
-                : 9999;
-            return distA - distB;
-          });
-        }
-
-        if (!availabilityFiltered) {
-          total = rawTotalCount;
-        } else if (rawTotalCount <= MAX_FEED_SORT_CANDIDATES) {
-          total = visibleJobs.length;
-        } else {
-          // N3: Khi > 200 đơn trong nhánh availability, giữ tổng thật chính xác bằng query projection gọn nhẹ
-          // chỉ lấy preferred_date và preferred_time_start để lọc qua isAvailableForDate, tránh phình RAM
+        if (availabilityFiltered && rawTotalCount > MAX_FEED_SORT_CANDIDATES) {
+          // O3: Khi thợ bật bộ lọc thời gian rảnh và tổng số đơn > 200, quét lean các đơn OPEN để lấy đúng danh sách ID khớp lịch,
+          // hỗ trợ phân trang sâu mà không trả rỗng ở các trang > 200 đơn và không phình RAM
           const leanCandidates = await this.jobModel
             .find(query)
-            .select('preferred_date preferred_time_start')
+            .select('preferred_date preferred_time_start address.location')
             .lean()
             .exec();
-          total = leanCandidates.filter(job =>
+
+          const matchingCandidates = (leanCandidates || []).filter(job =>
             this.isAvailableForDate(
               helperProfile?.availability,
               job.preferred_date ?? undefined,
               job.preferred_time_start,
             ),
-          ).length;
+          );
+
+          if (helperCoords && Array.isArray(helperCoords) && helperCoords.length >= 2) {
+            matchingCandidates.sort((a, b) => {
+              const coordsA = a.address?.location?.coordinates;
+              const coordsB = b.address?.location?.coordinates;
+              const distA =
+                coordsA && coordsA.length >= 2
+                  ? this.haversineKm(helperCoords[1], helperCoords[0], coordsA[1], coordsA[0])
+                  : 9999;
+              const distB =
+                coordsB && coordsB.length >= 2
+                  ? this.haversineKm(helperCoords[1], helperCoords[0], coordsB[1], coordsB[0])
+                  : 9999;
+              return distA - distB;
+            });
+          }
+
+          total = matchingCandidates.length;
+          const skip = (safePage - 1) * safeLimit;
+          const pageCandidates = matchingCandidates.slice(skip, skip + safeLimit);
+          const pageIds = pageCandidates.map(c => c._id);
+
+          if (pageIds.length > 0) {
+            const queryRes = this.jobModel
+              .find({ _id: { $in: pageIds } })
+              .populate('service_id', 'name slug icon');
+            const fullJobs =
+              typeof (queryRes as any)?.exec === 'function'
+                ? await (queryRes as any).exec()
+                : typeof (queryRes as any)?.sort === 'function'
+                  ? await (queryRes as any).sort({ created_at: -1 }).exec()
+                  : await (queryRes as any);
+            const jobMap = new Map((Array.isArray(fullJobs) ? fullJobs : []).map(j => [String(j._id), j]));
+            pagedJobs = pageIds.map(id => jobMap.get(String(id))).filter(Boolean) as JobDocument[];
+          } else {
+            pagedJobs = [];
+          }
+        } else {
+          const candidateJobs = await this.jobModel
+            .find(query)
+            .populate('service_id', 'name slug icon')
+            .sort({ created_at: -1 })
+            .limit(MAX_FEED_SORT_CANDIDATES)
+            .exec();
+
+          const visibleJobs = availabilityFiltered
+            ? candidateJobs.filter(job =>
+                this.isAvailableForDate(
+                  helperProfile?.availability,
+                  job.preferred_date ?? undefined,
+                  job.preferred_time_start,
+                ),
+              )
+            : candidateJobs;
+
+          if (helperCoords && Array.isArray(helperCoords) && helperCoords.length >= 2) {
+            visibleJobs.sort((a, b) => {
+              const coordsA = a.address?.location?.coordinates;
+              const coordsB = b.address?.location?.coordinates;
+              const distA =
+                coordsA && coordsA.length >= 2
+                  ? this.haversineKm(helperCoords[1], helperCoords[0], coordsA[1], coordsA[0])
+                  : 9999;
+              const distB =
+                coordsB && coordsB.length >= 2
+                  ? this.haversineKm(helperCoords[1], helperCoords[0], coordsB[1], coordsB[0])
+                  : 9999;
+              return distA - distB;
+            });
+          }
+
+          total = availabilityFiltered ? visibleJobs.length : rawTotalCount;
+          const skip = (safePage - 1) * safeLimit;
+          pagedJobs = visibleJobs.slice(skip, skip + safeLimit);
         }
-        const skip = (safePage - 1) * safeLimit;
-        pagedJobs = visibleJobs.slice(skip, skip + safeLimit);
       }
     }
 

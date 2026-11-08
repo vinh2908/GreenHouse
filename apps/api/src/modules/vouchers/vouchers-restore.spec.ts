@@ -203,5 +203,28 @@ describe('VouchersService.restoreForJob (hủy đơn theo SOS)', () => {
       // Code mới cập nhật nguyên tử qua updatePipeline không phụ thuộc findById → used_count giảm thành 4!
       expect(voucher['used_count']).toBe(4);
     });
+
+    it('O7(b): kịch bản đồng thời — redeem đồng thời xen giữa restore: atomic pipeline bảo toàn entry user khác mà read-modify-write cũ làm mất', async () => {
+      const { service, userId, jobId, voucher, redemptions } = makeService();
+      const userConcurrent = new Types.ObjectId();
+
+      voucher['used_user_ids'] = [userId];
+      voucher['used_count'] = 1;
+
+      // Mô phỏng luồng đồng thời:
+      // Thao tác đồng thời thêm userConcurrent vào mảng used_user_ids ngay khi restore đang chạy
+      const restorePromise = service.restoreForJob(String(userId), String(jobId));
+
+      (voucher['used_user_ids'] as any[]).push(userConcurrent);
+      voucher['used_count'] = 2;
+
+      await restorePromise;
+
+      // Assert: userConcurrent vẫn còn nguyên trong used_user_ids, userId đã được gỡ, used_count = 1
+      // Nếu là code cũ (read-modify-write dựa trên snapshot đọc ban đầu), nó sẽ ghi đè mảng rỗng [] làm mất userConcurrent
+      expect((voucher['used_user_ids'] as any[])).toContainEqual(userConcurrent);
+      expect((voucher['used_user_ids'] as any[])).not.toContainEqual(userId);
+      expect(voucher['used_count']).toBe(1);
+    });
   });
 });

@@ -132,12 +132,43 @@ export async function enqueueAction(
   payload?: Record<string, unknown>,
 ): Promise<void> {
   const queue = await readQueue();
-  // N5: Snapshot trạng thái pre-offline ban đầu: nếu đã có action trước đó trong hàng đợi cho đơn này,
-  // giữ nguyên previous_status gốc để các action kế tiếp không rollback nhầm về trạng thái lạc quan.
+  // N5 & O5: Snapshot trạng thái pre-offline ban đầu: đọc chính xác trạng thái trước action
+  // từ hàng đợi, cache chi tiết AsyncStorage, React Query cache hoặc cached active jobs.
   const existingJobAction = queue.find(a => a.job_id === jobId && a.previous_status);
   const cachedCurrent = await getCachedJobDetail<Record<string, unknown>>(jobId);
-  const prevStatus =
-    existingJobAction?.previous_status ?? (cachedCurrent?.status as string) ?? undefined;
+
+  let prevStatus: string | undefined = existingJobAction?.previous_status;
+  if (!prevStatus) {
+    if (cachedCurrent?.status) {
+      prevStatus = cachedCurrent.status as string;
+    } else {
+      const rqJob = queryClient.getQueryData<any>(['job', jobId]);
+      if (rqJob?.status) {
+        prevStatus = rqJob.status;
+      } else {
+        const activeJobs = await getCachedActiveJobs<any[]>();
+        const found = Array.isArray(activeJobs)
+          ? activeJobs.find(j => String(j._id) === String(jobId))
+          : null;
+        if (found?.status) {
+          prevStatus = found.status;
+        } else {
+          const rqHelperJobs =
+            queryClient.getQueryData<any>(['jobs', 'helper']) ||
+            queryClient.getQueryData<any>(['jobs', 'available']);
+          const list = Array.isArray(rqHelperJobs)
+            ? rqHelperJobs
+            : Array.isArray(rqHelperJobs?.items)
+              ? rqHelperJobs.items
+              : null;
+          const matched = list?.find((j: any) => String(j._id) === String(jobId));
+          if (matched?.status) {
+            prevStatus = matched.status;
+          }
+        }
+      }
+    }
+  }
 
   // M-10: Chống trùng lặp hàng đợi offline theo (kind, job_id)
   const existingIdx = queue.findIndex(a => a.kind === kind && a.job_id === jobId);
@@ -171,6 +202,15 @@ export async function enqueueAction(
         cached.status = optimisticStatus;
         cached.updated_at = new Date().toISOString();
         await cacheJobDetail(cached);
+      } else {
+        const rqJob = queryClient.getQueryData<any>(['job', jobId]);
+        if (rqJob) {
+          await cacheJobDetail({
+            ...rqJob,
+            status: optimisticStatus,
+            updated_at: new Date().toISOString(),
+          });
+        }
       }
       const activeJobs = await getCachedActiveJobs<any[]>();
       if (Array.isArray(activeJobs)) {
@@ -226,58 +266,74 @@ export async function enqueueAction(
   }
 }
 
-/** K6 & N5: Rollback trạng thái lạc quan khi flush gặp xung đột (4xx/409) */
+/** K6, N5 & O5: Rollback trạng thái lạc quan khi flush gặp xung đột (4xx/409) */
 export async function rollbackOptimisticStatus(jobId: string, prevStatus?: string): Promise<void> {
-  const targetStatus = prevStatus || 'confirmed';
-  try {
+  let targetStatus = prevStatus;
+  if (!targetStatus) {
     const cached = await getCachedJobDetail<Record<string, unknown>>(jobId);
-    if (cached) {
-      cached.status = targetStatus;
-      cached.updated_at = new Date().toISOString();
-      await cacheJobDetail(cached);
+    if (cached?.status) targetStatus = cached.status as string;
+  }
+
+  try {
+    if (targetStatus) {
+      const cached = await getCachedJobDetail<Record<string, unknown>>(jobId);
+      if (cached) {
+        cached.status = targetStatus;
+        cached.updated_at = new Date().toISOString();
+        await cacheJobDetail(cached);
+      } else {
+        const rqJob = queryClient.getQueryData<any>(['job', jobId]);
+        if (rqJob) {
+          await cacheJobDetail({
+            ...rqJob,
+            status: targetStatus,
+            updated_at: new Date().toISOString(),
+          });
+        }
+      }
+      const activeJobs = await getCachedActiveJobs<any[]>();
+      if (Array.isArray(activeJobs)) {
+        const idx = activeJobs.findIndex(j => String(j._id) === String(jobId));
+        if (idx >= 0) {
+          activeJobs[idx] = { ...activeJobs[idx], status: targetStatus };
+          await cacheActiveJobs(activeJobs);
+        }
+      }
+      queryClient.setQueryData(['job', jobId], (old: any) => {
+        if (!old) return old;
+        return { ...old, status: targetStatus, updated_at: new Date().toISOString() };
+      });
+      queryClient.setQueriesData({ queryKey: ['jobs', 'helper'] }, (old: any) => {
+        if (!old) return old;
+        if (Array.isArray(old)) {
+          return old.map(j => (String(j._id) === String(jobId) ? { ...j, status: targetStatus } : j));
+        }
+        if (Array.isArray(old.items)) {
+          return {
+            ...old,
+            items: old.items.map((j: any) =>
+              String(j._id) === String(jobId) ? { ...j, status: targetStatus } : j,
+            ),
+          };
+        }
+        return old;
+      });
+      queryClient.setQueriesData({ queryKey: ['jobs', 'available'] }, (old: any) => {
+        if (!old) return old;
+        if (Array.isArray(old)) {
+          return old.map(j => (String(j._id) === String(jobId) ? { ...j, status: targetStatus } : j));
+        }
+        if (Array.isArray(old.items)) {
+          return {
+            ...old,
+            items: old.items.map((j: any) =>
+              String(j._id) === String(jobId) ? { ...j, status: targetStatus } : j,
+            ),
+          };
+        }
+        return old;
+      });
     }
-    const activeJobs = await getCachedActiveJobs<any[]>();
-    if (Array.isArray(activeJobs)) {
-      const idx = activeJobs.findIndex(j => String(j._id) === String(jobId));
-      if (idx >= 0) {
-        activeJobs[idx] = { ...activeJobs[idx], status: targetStatus };
-        await cacheActiveJobs(activeJobs);
-      }
-    }
-    queryClient.setQueryData(['job', jobId], (old: any) => {
-      if (!old) return old;
-      return { ...old, status: targetStatus, updated_at: new Date().toISOString() };
-    });
-    queryClient.setQueriesData({ queryKey: ['jobs', 'helper'] }, (old: any) => {
-      if (!old) return old;
-      if (Array.isArray(old)) {
-        return old.map(j => (String(j._id) === String(jobId) ? { ...j, status: targetStatus } : j));
-      }
-      if (Array.isArray(old.items)) {
-        return {
-          ...old,
-          items: old.items.map((j: any) =>
-            String(j._id) === String(jobId) ? { ...j, status: targetStatus } : j,
-          ),
-        };
-      }
-      return old;
-    });
-    queryClient.setQueriesData({ queryKey: ['jobs', 'available'] }, (old: any) => {
-      if (!old) return old;
-      if (Array.isArray(old)) {
-        return old.map(j => (String(j._id) === String(jobId) ? { ...j, status: targetStatus } : j));
-      }
-      if (Array.isArray(old.items)) {
-        return {
-          ...old,
-          items: old.items.map((j: any) =>
-            String(j._id) === String(jobId) ? { ...j, status: targetStatus } : j,
-          ),
-        };
-      }
-      return old;
-    });
     queryClient.invalidateQueries({ queryKey: ['job', jobId] });
     queryClient.invalidateQueries({ queryKey: ['jobs'] });
   } catch {

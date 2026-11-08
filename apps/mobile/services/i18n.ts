@@ -2191,14 +2191,14 @@ export function formatVoucherDescription(
     if (discount_type === 'percent') {
       text = `${discount_value}% off`;
       if (max_discount_amount && max_discount_amount > 0) {
-        text += ` up to ${Number(max_discount_amount).toLocaleString('en-US')}₫`;
+        text += ` up to ${formatCurrency(max_discount_amount, 'en')}₫`;
       }
     } else {
-      text = `${Number(discount_value).toLocaleString('en-US')}₫ off`;
+      text = `${formatCurrency(discount_value, 'en')}₫ off`;
     }
 
     if (min_order_amount && min_order_amount > 0) {
-      text += ` · Min order ${Number(min_order_amount).toLocaleString('en-US')}₫`;
+      text += ` · Min order ${formatCurrency(min_order_amount, 'en')}₫`;
     } else {
       text += ' for all services';
     }
@@ -2211,14 +2211,14 @@ export function formatVoucherDescription(
   if (discount_type === 'percent') {
     viText = `Giảm ${discount_value}%`;
     if (max_discount_amount && max_discount_amount > 0) {
-      viText += ` tối đa ${Number(max_discount_amount).toLocaleString('vi-VN')}₫`;
+      viText += ` tối đa ${formatCurrency(max_discount_amount, 'vi')}₫`;
     }
   } else {
-    viText = `Giảm ${Number(discount_value).toLocaleString('vi-VN')}₫`;
+    viText = `Giảm ${formatCurrency(discount_value, 'vi')}₫`;
   }
 
   if (min_order_amount && min_order_amount > 0) {
-    viText += ` · Đơn tối thiểu ${Number(min_order_amount).toLocaleString('vi-VN')}₫`;
+    viText += ` · Đơn tối thiểu ${formatCurrency(min_order_amount, 'vi')}₫`;
   } else {
     viText += ' cho mọi dịch vụ';
   }
@@ -2306,6 +2306,8 @@ export function formatNotificationTitle(
         return 'Quote Accepted!';
       case 'quote_rejected':
         return 'Quote Declined';
+      case 'quote_hidden':
+        return 'Quote Hidden';
       case 'new_quote_received':
         return 'New Quote Received';
       case 'new_job_nearby':
@@ -2543,6 +2545,11 @@ export function formatNotificationBody(
   if (lang !== 'en') return body;
   const b = body.trim();
 
+  // O7(a): quote_hidden
+  if (type === 'quote_hidden' || /chưa xác minh danh tính|bị ẩn do hồ sơ/i.test(b)) {
+    return 'Your quote has been hidden because your profile is not identity-verified. Please complete verification in your profile.';
+  }
+
   // 1. payment_success (cash & escrow) — F11: map theo type + payload trước,
   // chỉ dùng regex bóc tiêu đề VI làm fallback cho thông báo cũ.
   if (type === 'payment_success' && data?.payment_method) {
@@ -2716,7 +2723,7 @@ export function formatNotificationBody(
     if (data.is_warranty)
       return `Helper accepted warranty order ${jobName} (free of charge) and will contact you shortly.`;
     const price = data?.total_price
-      ? ` at fixed price ${Number(data.total_price).toLocaleString('en-US')}₫`
+      ? ` at fixed price ${formatCurrency(data.total_price, 'en')}₫`
       : '';
     return `Job ${jobName} has been accepted by a helper${price}.`;
   }

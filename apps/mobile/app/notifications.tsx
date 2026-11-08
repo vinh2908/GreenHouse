@@ -42,6 +42,7 @@ import {
   PhoneMissed,
   Ticket,
   Award,
+  EyeOff,
 } from 'lucide-react-native';
 import dayjs from 'dayjs';
 import { useNotifications, useMarkAllRead, useMarkNotificationRead } from '@/hooks/use-api';
@@ -77,6 +78,8 @@ function renderNotificationIcon(type: string) {
       return <Target size={size} color="#10B981" />;
     case 'quote_rejected':
       return <XCircle size={size} color="#EF4444" />;
+    case 'quote_hidden':
+      return <EyeOff size={size} color="#6B7280" />;
     case 'payment_success':
       return <Banknote size={size} color="#10B981" />;
     case 'refund_received':

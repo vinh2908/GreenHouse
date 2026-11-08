@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { formatDateTime, formatTime } from '@/utils/date-format';
+import { formatCurrency } from '@/services/i18n';
 import {
   View,
   Text,
@@ -172,8 +173,8 @@ export default function BankAccountScreen() {
     Alert.alert(
       lang === 'en' ? 'Confirm demo top-up (simulation)' : 'Xác nhận nạp tiền mô phỏng',
       lang === 'en'
-        ? `Record a demo top-up of ${new Intl.NumberFormat('en-US').format(num)}₫? No real payment is made and your withdrawable balance does not change.`
-        : `Ghi nhận nạp thử ${new Intl.NumberFormat('vi-VN').format(num)}₫? Chưa có thanh toán thật, số dư rút được không thay đổi.`,
+        ? `Record a demo top-up of ${formatCurrency(num, 'en')}₫? No real payment is made and your withdrawable balance does not change.`
+        : `Ghi nhận nạp thử ${formatCurrency(num, 'vi')}₫? Chưa có thanh toán thật, số dư rút được không thay đổi.`,
       [
         { text: lang === 'en' ? 'Cancel' : 'Hủy', style: 'cancel' },
         {
@@ -505,9 +506,7 @@ export default function BankAccountScreen() {
                           </View>
                         </View>
                         <Text style={{ fontWeight: '800', fontSize: fs(14.5), color: tc.text }}>
-                          {new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'vi-VN').format(
-                            tx.amount,
-                          )}
+                          {formatCurrency(tx.amount, lang)}
                           ₫
                         </Text>
                       </View>
@@ -907,9 +906,7 @@ export default function BankAccountScreen() {
                             color: isSelected ? COLORS.primaryDark : COLORS.gray[700],
                           }}
                         >
-                          {new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'vi-VN').format(
-                            Number(preset),
-                          )}
+                          {formatCurrency(Number(preset), lang)}
                           ₫
                         </Text>
                       </TouchableOpacity>

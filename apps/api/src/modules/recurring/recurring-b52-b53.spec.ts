@@ -80,7 +80,10 @@ describe('RecurringService (B52/B53)', () => {
 
   function nextWeekday(weekday: number, from = new Date()): Date {
     const d = new Date(from);
-    if (d.getDay() === weekday && (d.getHours() < 9 || (d.getHours() === 9 && d.getMinutes() === 0))) {
+    if (
+      d.getDay() === weekday &&
+      (d.getHours() < 9 || (d.getHours() === 9 && d.getMinutes() === 0))
+    ) {
       return d;
     }
     d.setDate(d.getDate() + 1);
@@ -272,11 +275,53 @@ describe('RecurringService (B52/B53)', () => {
     });
 
     it('N7(e): skipped_dates không tăng vô hạn — được prune giới hạn tối đa 60 ngày', async () => {
-      const existingSkipped = Array.from({ length: 65 }, (_, i) => `2025-01-${String((i % 28) + 1).padStart(2, '0')}-${i}`);
+      const existingSkipped = Array.from(
+        { length: 65 },
+        (_, i) => `2025-01-${String((i % 28) + 1).padStart(2, '0')}-${i}`,
+      );
       const { service, plan } = weeklyPlan({ skipped_dates: [...existingSkipped] });
 
       const result = await service.skipNext(customerId, String(plan._id));
       expect(result.skipped_dates.length).toBe(60);
+    });
+
+    it('O7(c): warning marker được tách riêng vào warning_notifications_sent, không làm phình hay nhiễm mảng skipped_dates', async () => {
+      const plan = {
+        _id: new Types.ObjectId(),
+        customer_id: new Types.ObjectId(),
+        title: 'Gói dọn dẹp ngày 31',
+        frequency: 'monthly',
+        month_days: [31],
+        time_start: '09:00',
+        start_date: new Date('2026-01-01'),
+        skipped_dates: [],
+        warning_notifications_sent: [] as string[],
+        status: 'active',
+        save: jest.fn().mockResolvedValue(true),
+      };
+      const planModel: any = {
+        updateOne: jest.fn().mockResolvedValue({ modifiedCount: 1 }),
+        findByIdAndUpdate: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(true) }),
+      };
+      const notifService: any = {
+        create: jest.fn().mockResolvedValue({}),
+      };
+      const dummy = {} as any;
+      const service = new RecurringService(
+        planModel,
+        dummy,
+        dummy,
+        dummy,
+        dummy,
+        notifService,
+      );
+
+      await service.generateJobsForPlan(plan as any);
+
+      // skipped_dates TUYỆT ĐỐI không chứa marker skip_warn_
+      expect(plan.skipped_dates.some((d: string) => d.startsWith('skip_warn_'))).toBe(false);
+      // warning_notifications_sent chứa marker cảnh báo
+      expect(plan.warning_notifications_sent.some((d: string) => d.startsWith('skip_warn_'))).toBe(true);
     });
   });
 });

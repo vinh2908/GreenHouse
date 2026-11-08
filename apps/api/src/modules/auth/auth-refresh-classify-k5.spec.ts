@@ -1,3 +1,5 @@
+import axios, { AxiosError, AxiosHeaders } from 'axios';
+
 let mockSecureStore: Record<string, string> = {};
 
 jest.mock('../../../../../apps/mobile/services/secure-storage', () => ({
@@ -14,117 +16,173 @@ jest.mock('expo-constants', () => ({
   expoConfig: { extra: {} },
 }));
 
-const mockApiGet = jest.fn();
-jest.mock('../../../../../apps/mobile/services/api-client', () => {
-  class SessionExpiredError extends Error {
-    constructor() {
-      super('SESSION_EXPIRED');
-      this.name = 'SessionExpiredError';
-    }
-  }
-  return {
-    __esModule: true,
-    default: {
-      get: (...args: any[]) => mockApiGet(...args),
-      defaults: { baseURL: 'https://greenhouse-api.test' },
-    },
-    SessionExpiredError,
-  };
-});
+jest.mock('react-native-toast-message', () => ({
+  show: jest.fn(),
+  hide: jest.fn(),
+}));
 
-import { SessionExpiredError } from '../../../../../apps/mobile/services/api-client';
+jest.mock('expo-router', () => ({
+  router: {
+    replace: jest.fn(),
+    push: jest.fn(),
+  },
+}));
+
+// KHÔNG mock api-client: nhập trực tiếp apiClient và SessionExpiredError thật
+import apiClient, { SessionExpiredError } from '../../../../../apps/mobile/services/api-client';
 import { useAuthStore } from '../../../../../apps/mobile/stores/auth.store';
 
-describe('K5 & N5: Real Mobile Auth / Startup Token Refresh and 401/SessionExpired Classification', () => {
+describe('K5 & O5: Real Mobile apiClient Interceptor, Token Refresh, and 401/SessionExpired Classification', () => {
+  let axiosPostSpy: jest.SpyInstance;
+  let originalAdapter: any;
+
   beforeEach(() => {
     mockSecureStore = {};
     jest.clearAllMocks();
     jest.useFakeTimers();
+
+    originalAdapter = apiClient.defaults.adapter;
+    axiosPostSpy = jest.spyOn(axios, 'post');
+
+    // Reset auth store
+    useAuthStore.setState({
+      user: null,
+      accessToken: null,
+      refreshToken: null,
+      isAuthenticated: false,
+      isLoading: false,
+    });
   });
 
   afterEach(() => {
+    jest.clearAllTimers();
     jest.useRealTimers();
+    if (axiosPostSpy) axiosPostSpy.mockRestore();
+    apiClient.defaults.adapter = originalAdapter;
   });
 
-  it('giả lập logout thật (SessionExpiredError) → không retry /auth/me, đăng xuất đúng ngay lập tức', async () => {
-    // 1. Seed phiên đăng nhập đã có trong SecureStore
-    mockSecureStore['homemate_access_token'] = 'valid-token';
-    mockSecureStore['homemate_refresh_token'] = 'valid-refresh';
-    mockSecureStore['homemate_user'] = JSON.stringify({ _id: 'u1', full_name: 'Nguyen Van A' });
-
-    // 2. Mock GET /auth/me throw SessionExpiredError (không có .response)
-    mockApiGet.mockRejectedValue(new SessionExpiredError());
-
-    // 3. Chạy loadStoredAuth thật
-    await useAuthStore.getState().loadStoredAuth();
-
-    // 4. Assert: Đã đăng xuất đúng
-    const state = useAuthStore.getState();
-    expect(state.isAuthenticated).toBe(false);
-    expect(state.user).toBeNull();
-    expect(state.accessToken).toBeNull();
-
-    // 5. Assert: KHÔNG retry /auth/me (chỉ gọi 1 lần duy nhất)
-    expect(mockApiGet).toHaveBeenCalledTimes(1);
-
-    // Fast-forward timers to ensure no delayed retry fires
-    jest.runAllTimers();
-    expect(mockApiGet).toHaveBeenCalledTimes(1);
-  });
-
-  it('giả lập lỗi mạng trong lúc refresh → phiên sống, /auth/me được thử lại (không đăng xuất ép)', async () => {
-    // 1. Seed phiên đăng nhập
+  it('O5(a): lỗi mạng trong lúc refresh qua api-client thật → phiên sống, /auth/me được thử lại qua authStore', async () => {
+    // 1. Seed phiên đăng nhập ban đầu
     const user = { _id: 'u1', full_name: 'Nguyen Van A' };
-    mockSecureStore['homemate_access_token'] = 'valid-token';
-    mockSecureStore['homemate_refresh_token'] = 'valid-refresh';
+    mockSecureStore['homemate_access_token'] = 'expired-token';
+    mockSecureStore['homemate_refresh_token'] = 'valid-refresh-token';
     mockSecureStore['homemate_user'] = JSON.stringify(user);
 
-    // 2. Mock GET /auth/me ném lỗi mạng
-    const networkErr: any = new Error('Network Error');
-    networkErr.isNetworkRefreshError = true;
-    networkErr.code = 'ECONNABORTED';
-    mockApiGet.mockRejectedValue(networkErr);
+    // 2. Adapter thật của apiClient: GET /auth/me trả về 401 Unauthorized lần đầu
+    let authMeCalls = 0;
+    apiClient.defaults.adapter = async (config) => {
+      if (config.url?.includes('/auth/me')) {
+        authMeCalls++;
+        const err = new AxiosError(
+          'Request failed with status code 401',
+          'ERR_BAD_REQUEST',
+          config,
+          null,
+          {
+            status: 401,
+            statusText: 'Unauthorized',
+            headers: {},
+            config,
+            data: { message: 'Token expired' },
+          } as any,
+        );
+        throw err;
+      }
+      return { data: {}, status: 200, statusText: 'OK', headers: {}, config };
+    };
 
-    // 3. Chạy loadStoredAuth thật
+    // 3. Giả lập axios.post('/auth/refresh') ném lỗi mạng (ECONNABORTED / không có response)
+    const networkErr = new AxiosError('Network timeout connecting to server', 'ECONNABORTED');
+    axiosPostSpy.mockRejectedValue(networkErr);
+
+    // 4. Chạy loadStoredAuth thật
     await useAuthStore.getState().loadStoredAuth();
 
-    // 4. Assert: Phiên vẫn sống, không bị đăng xuất ép
+    // 5. Assert:
+    // - refreshAccessToken bắt lỗi mạng thoáng qua, KHÔNG xóa token trong SecureStore
+    expect(mockSecureStore['homemate_refresh_token']).toBe('valid-refresh-token');
+
+    // - Phiên vẫn sống trong authStore (isAuthenticated = true)
     let state = useAuthStore.getState();
     expect(state.isAuthenticated).toBe(true);
     expect(state.user?._id).toBe('u1');
-    expect(state.accessToken).toBe('valid-token');
-    expect(mockApiGet).toHaveBeenCalledTimes(1);
+    expect(authMeCalls).toBe(1);
 
-    // 5. Assert: Thử lại tự động qua timer (2 retries qua setTimeout async)
+    // - /auth/me được lên lịch thử lại qua setTimeout
     await jest.advanceTimersByTimeAsync(3000);
-    expect(mockApiGet).toHaveBeenCalledTimes(2);
+    expect(authMeCalls).toBe(2);
 
     await jest.advanceTimersByTimeAsync(4500);
-    expect(mockApiGet).toHaveBeenCalledTimes(3);
+    expect(authMeCalls).toBe(3);
 
-    // Phiên vẫn sống sau các lần retry lỗi mạng
+    // Phiên vẫn giữ nguyên trạng thái đăng nhập sau các lần retry lỗi mạng
     state = useAuthStore.getState();
     expect(state.isAuthenticated).toBe(true);
     expect(state.user?._id).toBe('u1');
   });
 
-  it('giả lập 401 thật từ server (có response.status = 401) → đăng xuất ngay, không retry', async () => {
-    mockSecureStore['homemate_access_token'] = 'valid-token';
-    mockSecureStore['homemate_refresh_token'] = 'valid-refresh';
-    mockSecureStore['homemate_user'] = JSON.stringify({ _id: 'u1', full_name: 'Nguyen Van A' });
+  it('O5(b): logout thật (refresh token bị từ chối 401 dứt điểm) qua api-client thật → throw SessionExpiredError, xóa token, không retry', async () => {
+    // 1. Seed phiên đăng nhập
+    const user = { _id: 'u1', full_name: 'Nguyen Van A' };
+    mockSecureStore['homemate_access_token'] = 'expired-token';
+    mockSecureStore['homemate_refresh_token'] = 'revoked-refresh-token';
+    mockSecureStore['homemate_user'] = JSON.stringify(user);
 
-    const server401Err: any = new Error('Unauthorized');
-    server401Err.response = { status: 401, data: { message: 'Token revoked' } };
-    mockApiGet.mockRejectedValue(server401Err);
+    let authMeCalls = 0;
+    apiClient.defaults.adapter = async (config) => {
+      if (config.url?.includes('/auth/me')) {
+        authMeCalls++;
+        throw new AxiosError(
+          'Request failed with status code 401',
+          'ERR_BAD_REQUEST',
+          config,
+          null,
+          {
+            status: 401,
+            statusText: 'Unauthorized',
+            headers: {},
+            config,
+            data: { message: 'Unauthorized' },
+          } as any,
+        );
+      }
+      return { data: {}, status: 200, statusText: 'OK', headers: {}, config };
+    };
 
+    // 2. Giả lập axios.post('/auth/refresh') bị từ chối 401 dứt điểm từ máy chủ
+    const refresh401Err = new AxiosError(
+      'Refresh token expired or revoked',
+      'ERR_BAD_REQUEST',
+      {} as any,
+      null,
+      {
+        status: 401,
+        statusText: 'Unauthorized',
+        headers: {},
+        config: {} as any,
+        data: { message: 'Refresh token invalid' },
+      } as any,
+    );
+    axiosPostSpy.mockRejectedValue(refresh401Err);
+
+    // 3. Chạy loadStoredAuth thật
     await useAuthStore.getState().loadStoredAuth();
 
+    // 4. Assert:
+    // - refreshAccessToken phát hiện 401 → xóa cặp token trong SecureStore và ném SessionExpiredError
+    expect(mockSecureStore['homemate_access_token']).toBeUndefined();
+    expect(mockSecureStore['homemate_refresh_token']).toBeUndefined();
+
+    // - authStore đăng xuất ngay lập tức
     const state = useAuthStore.getState();
     expect(state.isAuthenticated).toBe(false);
     expect(state.user).toBeNull();
-    expect(mockApiGet).toHaveBeenCalledTimes(1);
+    expect(state.accessToken).toBeNull();
+
+    // - TUYỆT ĐỐI KHÔNG retry /auth/me (chỉ gọi 1 lần ban đầu)
+    expect(authMeCalls).toBe(1);
 
     jest.runAllTimers();
-    expect(mockApiGet).toHaveBeenCalledTimes(1);
+    expect(authMeCalls).toBe(1);
   });
 });

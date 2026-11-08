@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { formatDateTime, formatTime } from '@/utils/date-format';
+import { formatCurrency } from '@/services/i18n';
 import {
   View,
   Text,
@@ -81,8 +82,7 @@ export default function HelperEarningsScreen() {
   const router = useRouter();
   const { t, fs, lang, formatTxDesc } = useTranslation();
   const tc = useThemeColors();
-  const fmt = (n?: number) =>
-    new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'vi-VN').format(n ?? 0);
+  const fmt = (n?: number) => formatCurrency(n, lang);
   const { data: wallet, isLoading, isError: isWalletError, refetch: refetchWallet } = useWallet();
   const [txPage, setTxPage] = useState(1);
   const {

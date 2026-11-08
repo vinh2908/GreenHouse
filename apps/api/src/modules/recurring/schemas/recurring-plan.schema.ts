@@ -98,6 +98,10 @@ export class RecurringPlan {
   @Prop({ type: [String], default: [] })
   skipped_dates: string[];
 
+  /** O7(c): Tách riêng danh sách marker cảnh báo đã gửi (ví dụ 'skip_warn_2026-02-31') không làm phình mảng skipped_dates */
+  @Prop({ type: [String], default: [] })
+  warning_notifications_sent?: string[];
+
   /** Cảnh báo lịch nếu có (ví dụ ngày 31 ở tháng không đủ ngày) */
   @Prop()
   schedule_warning?: string;
