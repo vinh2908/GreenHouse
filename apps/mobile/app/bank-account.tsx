@@ -506,8 +506,7 @@ export default function BankAccountScreen() {
                           </View>
                         </View>
                         <Text style={{ fontWeight: '800', fontSize: fs(14.5), color: tc.text }}>
-                          {formatCurrency(tx.amount, lang)}
-                          ₫
+                          {formatCurrency(tx.amount, lang)}₫
                         </Text>
                       </View>
                     </TouchableOpacity>
@@ -906,8 +905,7 @@ export default function BankAccountScreen() {
                             color: isSelected ? COLORS.primaryDark : COLORS.gray[700],
                           }}
                         >
-                          {formatCurrency(Number(preset), lang)}
-                          ₫
+                          {formatCurrency(Number(preset), lang)}₫
                         </Text>
                       </TouchableOpacity>
                     );

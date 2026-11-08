@@ -222,8 +222,8 @@ describe('VouchersService.restoreForJob (hủy đơn theo SOS)', () => {
 
       // Assert: userConcurrent vẫn còn nguyên trong used_user_ids, userId đã được gỡ, used_count = 1
       // Nếu là code cũ (read-modify-write dựa trên snapshot đọc ban đầu), nó sẽ ghi đè mảng rỗng [] làm mất userConcurrent
-      expect((voucher['used_user_ids'] as any[])).toContainEqual(userConcurrent);
-      expect((voucher['used_user_ids'] as any[])).not.toContainEqual(userId);
+      expect(voucher['used_user_ids'] as any[]).toContainEqual(userConcurrent);
+      expect(voucher['used_user_ids'] as any[]).not.toContainEqual(userId);
       expect(voucher['used_count']).toBe(1);
     });
   });

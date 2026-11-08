@@ -148,9 +148,7 @@ describe('K6 & N5: Offline Queue Optimistic Updates, Rollback on Conflict, and R
         title: 'Đơn mới nhận chưa có AsyncStorage cache',
         status: 'quote_selected',
       });
-      queryClient.setQueryData(['jobs', 'available'], [
-        { _id: jobId, status: 'quote_selected' },
-      ]);
+      queryClient.setQueryData(['jobs', 'available'], [{ _id: jobId, status: 'quote_selected' }]);
 
       // 3. Enqueue thao tác 'on_the_way'
       await enqueueAction('on_the_way', jobId);

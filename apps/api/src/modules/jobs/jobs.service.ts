@@ -4769,7 +4769,9 @@ export class JobsService implements OnModuleInit {
                 : typeof (queryRes as any)?.sort === 'function'
                   ? await (queryRes as any).sort({ created_at: -1 }).exec()
                   : await (queryRes as any);
-            const jobMap = new Map((Array.isArray(fullJobs) ? fullJobs : []).map(j => [String(j._id), j]));
+            const jobMap = new Map(
+              (Array.isArray(fullJobs) ? fullJobs : []).map(j => [String(j._id), j]),
+            );
             pagedJobs = pageIds.map(id => jobMap.get(String(id))).filter(Boolean) as JobDocument[];
           } else {
             pagedJobs = [];

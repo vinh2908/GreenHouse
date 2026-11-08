@@ -307,21 +307,16 @@ describe('RecurringService (B52/B53)', () => {
         create: jest.fn().mockResolvedValue({}),
       };
       const dummy = {} as any;
-      const service = new RecurringService(
-        planModel,
-        dummy,
-        dummy,
-        dummy,
-        dummy,
-        notifService,
-      );
+      const service = new RecurringService(planModel, dummy, dummy, dummy, dummy, notifService);
 
       await service.generateJobsForPlan(plan as any);
 
       // skipped_dates TUYỆT ĐỐI không chứa marker skip_warn_
       expect(plan.skipped_dates.some((d: string) => d.startsWith('skip_warn_'))).toBe(false);
       // warning_notifications_sent chứa marker cảnh báo
-      expect(plan.warning_notifications_sent.some((d: string) => d.startsWith('skip_warn_'))).toBe(true);
+      expect(plan.warning_notifications_sent.some((d: string) => d.startsWith('skip_warn_'))).toBe(
+        true,
+      );
     });
   });
 });

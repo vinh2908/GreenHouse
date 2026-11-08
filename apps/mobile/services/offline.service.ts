@@ -306,7 +306,9 @@ export async function rollbackOptimisticStatus(jobId: string, prevStatus?: strin
       queryClient.setQueriesData({ queryKey: ['jobs', 'helper'] }, (old: any) => {
         if (!old) return old;
         if (Array.isArray(old)) {
-          return old.map(j => (String(j._id) === String(jobId) ? { ...j, status: targetStatus } : j));
+          return old.map(j =>
+            String(j._id) === String(jobId) ? { ...j, status: targetStatus } : j,
+          );
         }
         if (Array.isArray(old.items)) {
           return {
@@ -321,7 +323,9 @@ export async function rollbackOptimisticStatus(jobId: string, prevStatus?: strin
       queryClient.setQueriesData({ queryKey: ['jobs', 'available'] }, (old: any) => {
         if (!old) return old;
         if (Array.isArray(old)) {
-          return old.map(j => (String(j._id) === String(jobId) ? { ...j, status: targetStatus } : j));
+          return old.map(j =>
+            String(j._id) === String(jobId) ? { ...j, status: targetStatus } : j,
+          );
         }
         if (Array.isArray(old.items)) {
           return {

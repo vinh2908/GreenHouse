@@ -841,16 +841,31 @@ describe('ĐỢT 2 (P1) — G1–G9 & J1–J3 Regression & Correctness Specs', (
           findOne: jest.fn().mockReturnValue({
             select: jest.fn().mockReturnValue({
               lean: jest.fn().mockReturnValue({
-                exec: jest.fn().mockResolvedValue({ _id: helperId, verification_status: 'approved' }),
+                exec: jest
+                  .fn()
+                  .mockResolvedValue({ _id: helperId, verification_status: 'approved' }),
               }),
             }),
           }),
         };
 
         const jobsService = new JobsService(
-          jobModel, dummy, dummy, dummy, helperModel, dummy, dummy, dummy, dummy, dummy, dummy,
+          jobModel,
+          dummy,
+          dummy,
+          dummy,
+          helperModel,
+          dummy,
+          dummy,
+          dummy,
+          dummy,
+          dummy,
+          dummy,
           { getRoutesBatch: jest.fn().mockResolvedValue(new Map()) } as any,
-          dummy, dummy, dummy, dummy,
+          dummy,
+          dummy,
+          dummy,
+          dummy,
         );
 
         const res = await jobsService.getAvailableJobs(helperId, undefined, 1, 10, 10.77, 106.68);
@@ -904,16 +919,31 @@ describe('ĐỢT 2 (P1) — G1–G9 & J1–J3 Regression & Correctness Specs', (
           findOne: jest.fn().mockReturnValue({
             select: jest.fn().mockReturnValue({
               lean: jest.fn().mockReturnValue({
-                exec: jest.fn().mockResolvedValue({ _id: helperId, verification_status: 'approved' }),
+                exec: jest
+                  .fn()
+                  .mockResolvedValue({ _id: helperId, verification_status: 'approved' }),
               }),
             }),
           }),
         };
 
         const jobsService = new JobsService(
-          jobModel, dummy, dummy, dummy, helperModel, dummy, dummy, dummy, dummy, dummy, dummy,
+          jobModel,
+          dummy,
+          dummy,
+          dummy,
+          helperModel,
+          dummy,
+          dummy,
+          dummy,
+          dummy,
+          dummy,
+          dummy,
           { getRoutesBatch: jest.fn().mockResolvedValue(new Map()) } as any,
-          dummy, dummy, dummy, dummy,
+          dummy,
+          dummy,
+          dummy,
+          dummy,
         );
 
         const res = await jobsService.getAvailableJobs(helperId, undefined, 1, 10, 10.77, 106.68);
@@ -961,16 +991,31 @@ describe('ĐỢT 2 (P1) — G1–G9 & J1–J3 Regression & Correctness Specs', (
           findOne: jest.fn().mockReturnValue({
             select: jest.fn().mockReturnValue({
               lean: jest.fn().mockReturnValue({
-                exec: jest.fn().mockResolvedValue({ _id: helperId, verification_status: 'approved' }),
+                exec: jest
+                  .fn()
+                  .mockResolvedValue({ _id: helperId, verification_status: 'approved' }),
               }),
             }),
           }),
         };
 
         const jobsService = new JobsService(
-          jobModel, dummy, dummy, dummy, helperModel, dummy, dummy, dummy, dummy, dummy, dummy,
+          jobModel,
+          dummy,
+          dummy,
+          dummy,
+          helperModel,
+          dummy,
+          dummy,
+          dummy,
+          dummy,
+          dummy,
+          dummy,
           { getRoutesBatch: jest.fn().mockResolvedValue(new Map()) } as any,
-          dummy, dummy, dummy, dummy,
+          dummy,
+          dummy,
+          dummy,
+          dummy,
         );
 
         // Trang 2: skip 2 (bằng đúng geoCount = 2) → toàn bộ thuộc tập non-geo
@@ -992,11 +1037,13 @@ describe('ĐỢT 2 (P1) — G1–G9 & J1–J3 Regression & Correctness Specs', (
             return { exec: jest.fn().mockResolvedValue(2) };
           }),
           aggregate: jest.fn().mockReturnValue({
-            exec: jest.fn().mockResolvedValue([{
-              _id: 'job-geo-mine',
-              title: 'Đơn của tôi có GPS',
-              address: { location: { type: 'Point', coordinates: [106.7, 10.78] } },
-            }]),
+            exec: jest.fn().mockResolvedValue([
+              {
+                _id: 'job-geo-mine',
+                title: 'Đơn của tôi có GPS',
+                address: { location: { type: 'Point', coordinates: [106.7, 10.78] } },
+              },
+            ]),
           }),
           find: jest.fn().mockImplementation((q: any) => {
             capturedNonGeoQuery = q;
@@ -1018,16 +1065,31 @@ describe('ĐỢT 2 (P1) — G1–G9 & J1–J3 Regression & Correctness Specs', (
           findOne: jest.fn().mockReturnValue({
             select: jest.fn().mockReturnValue({
               lean: jest.fn().mockReturnValue({
-                exec: jest.fn().mockResolvedValue({ _id: helperId, verification_status: 'approved' }),
+                exec: jest
+                  .fn()
+                  .mockResolvedValue({ _id: helperId, verification_status: 'approved' }),
               }),
             }),
           }),
         };
 
         const jobsService = new JobsService(
-          jobModel, dummy, dummy, dummy, helperModel, dummy, dummy, dummy, dummy, dummy, dummy,
+          jobModel,
+          dummy,
+          dummy,
+          dummy,
+          helperModel,
+          dummy,
+          dummy,
+          dummy,
+          dummy,
+          dummy,
+          dummy,
           { getRoutesBatch: jest.fn().mockResolvedValue(new Map()) } as any,
-          dummy, dummy, dummy, dummy,
+          dummy,
+          dummy,
+          dummy,
+          dummy,
         );
 
         await jobsService.getAvailableJobs(helperId, undefined, 1, 10, 10.77, 106.68);
@@ -1038,16 +1100,20 @@ describe('ĐỢT 2 (P1) — G1–G9 & J1–J3 Regression & Correctness Specs', (
         expect(Array.isArray(capturedNonGeoQuery.$and)).toBe(true);
 
         // Kiểm tra xem $or private offer ban đầu có được giữ lại trong $and không
-        const hasPrivateOfferCondition = capturedNonGeoQuery.$and.some((clause: any) =>
-          Array.isArray(clause.$or) &&
-          clause.$or.some((item: any) => 'private_offer_helper_id' in item),
+        const hasPrivateOfferCondition = capturedNonGeoQuery.$and.some(
+          (clause: any) =>
+            Array.isArray(clause.$or) &&
+            clause.$or.some((item: any) => 'private_offer_helper_id' in item),
         );
         expect(hasPrivateOfferCondition).toBe(true);
 
         // Kiểm tra xem $or non-geo có nằm trong $and không
-        const hasNonGeoCondition = capturedNonGeoQuery.$and.some((clause: any) =>
-          Array.isArray(clause.$or) &&
-          clause.$or.some((item: any) => 'address.location' in item || 'address.location.coordinates.0' in item),
+        const hasNonGeoCondition = capturedNonGeoQuery.$and.some(
+          (clause: any) =>
+            Array.isArray(clause.$or) &&
+            clause.$or.some(
+              (item: any) => 'address.location' in item || 'address.location.coordinates.0' in item,
+            ),
         );
         expect(hasNonGeoCondition).toBe(true);
       });
@@ -1121,9 +1187,22 @@ describe('ĐỢT 2 (P1) — G1–G9 & J1–J3 Regression & Correctness Specs', (
 
       const dummy = {} as never;
       const jobsService = new JobsService(
-        jobModel, dummy, dummy, dummy, helperModel, dummy, dummy, dummy, dummy, dummy, dummy,
+        jobModel,
+        dummy,
+        dummy,
+        dummy,
+        helperModel,
+        dummy,
+        dummy,
+        dummy,
+        dummy,
+        dummy,
+        dummy,
         { getRoutesBatch: jest.fn().mockResolvedValue(new Map()) } as any,
-        dummy, dummy, dummy, dummy,
+        dummy,
+        dummy,
+        dummy,
+        dummy,
       );
 
       const res = await jobsService.getAvailableJobs(helperId, undefined, 1, 10);
@@ -1191,9 +1270,22 @@ describe('ĐỢT 2 (P1) — G1–G9 & J1–J3 Regression & Correctness Specs', (
 
       const dummy = {} as never;
       const jobsService = new JobsService(
-        jobModel, dummy, dummy, dummy, helperModel, dummy, dummy, dummy, dummy, dummy, dummy,
+        jobModel,
+        dummy,
+        dummy,
+        dummy,
+        helperModel,
+        dummy,
+        dummy,
+        dummy,
+        dummy,
+        dummy,
+        dummy,
         { getRoutesBatch: jest.fn().mockResolvedValue(new Map()) } as any,
-        dummy, dummy, dummy, dummy,
+        dummy,
+        dummy,
+        dummy,
+        dummy,
       );
 
       // Yêu cầu trang cuối cùng: trang 13 với limit = 20 (skip = 240, còn 10 đơn từ index 240-249)
