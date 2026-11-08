@@ -339,7 +339,14 @@ export default function NotificationsScreen() {
 
       {/* C1: Ghi chú cho phiên bản web không nhận push khi tab đóng */}
       <View style={{ paddingHorizontal: 16, paddingTop: 8, paddingBottom: 4 }}>
-        <Text style={{ fontSize: fs(11), color: tc.textMuted, fontStyle: 'italic', textAlign: 'center' }}>
+        <Text
+          style={{
+            fontSize: fs(11),
+            color: tc.textMuted,
+            fontStyle: 'italic',
+            textAlign: 'center',
+          }}
+        >
           {lang === 'en'
             ? 'Note: Web browser tabs do not receive push notifications when closed. Keep tab open for live updates.'
             : 'Lưu ý: Trình duyệt web không nhận thông báo đẩy khi đóng tab. Giữ tab mở để nhận thông báo tức thời.'}

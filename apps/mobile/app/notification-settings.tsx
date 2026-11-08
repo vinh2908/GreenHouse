@@ -451,7 +451,14 @@ export default function NotificationSettingsScreen() {
 
           {/* C1: Ghi chú trình duyệt web */}
           <View style={{ marginTop: 12, paddingHorizontal: 4 }}>
-            <Text style={{ fontSize: fs(12), color: tc.textMuted, fontStyle: 'italic', textAlign: 'center' }}>
+            <Text
+              style={{
+                fontSize: fs(12),
+                color: tc.textMuted,
+                fontStyle: 'italic',
+                textAlign: 'center',
+              }}
+            >
               {lang === 'en'
                 ? 'Web browser version does not receive push notifications when the tab is closed; notifications rely on real-time sockets while the app tab is open.'
                 : 'Phiên bản web không nhận thông báo đẩy khi đóng tab; thông báo hoạt động qua socket khi tab đang mở.'}

@@ -109,8 +109,7 @@ export class OtpService {
       this.configService.get<string>('app.env') === 'production' ||
       process.env['NODE_ENV'] === 'production';
     const isDev =
-      !isProd &&
-      (process.env['NODE_ENV'] === 'development' || process.env['NODE_ENV'] === 'test');
+      !isProd && (process.env['NODE_ENV'] === 'development' || process.env['NODE_ENV'] === 'test');
 
     if (isEmail) {
       // F16: gửi mail lỗi thì phải báo lỗi rõ về client — không được tạo mã

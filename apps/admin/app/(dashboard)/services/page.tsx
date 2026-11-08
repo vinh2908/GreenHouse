@@ -263,9 +263,7 @@ export default function ServicesPage() {
                   onChange={set('fixed_price')}
                 />
               )}
-              {formError && (
-                <p className="text-sm text-destructive sm:col-span-2">{formError}</p>
-              )}
+              {formError && <p className="text-sm text-destructive sm:col-span-2">{formError}</p>}
               {!draft.id && !draft.category_id && (
                 <p className="text-xs text-amber-600 sm:col-span-2">
                   * Vui lòng chọn hoặc tạo danh mục trước khi lưu

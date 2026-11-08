@@ -140,9 +140,7 @@ export default function FeedbackPage() {
                   </div>
                 </CardHeader>
                 <CardContent className="py-3 px-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                  <p className="text-sm whitespace-pre-wrap break-words flex-1">
-                    {item.message}
-                  </p>
+                  <p className="text-sm whitespace-pre-wrap break-words flex-1">{item.message}</p>
                   {item.status === 'open' && (
                     <Button
                       size="sm"

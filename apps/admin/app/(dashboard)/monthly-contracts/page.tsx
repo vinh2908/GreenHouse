@@ -315,9 +315,7 @@ export default function AdminMonthlyContractsPage() {
                 </p>
               </div>
               <Badge
-                variant={
-                  STATUS_MAP[viewingContract.status]?.variant ?? ('secondary' as const)
-                }
+                variant={STATUS_MAP[viewingContract.status]?.variant ?? ('secondary' as const)}
               >
                 {STATUS_MAP[viewingContract.status]?.label ?? viewingContract.status}
               </Badge>
@@ -335,9 +333,7 @@ export default function AdminMonthlyContractsPage() {
               </div>
               <div>
                 <span className="text-xs text-muted-foreground block">Thợ:</span>
-                <span className="font-semibold">
-                  {viewingContract.helper_id?.full_name || '—'}
-                </span>
+                <span className="font-semibold">{viewingContract.helper_id?.full_name || '—'}</span>
                 <span className="text-xs text-muted-foreground block">
                   {viewingContract.helper_id?.phone}
                 </span>

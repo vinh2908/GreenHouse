@@ -1451,7 +1451,13 @@ export class PaymentsService {
         .exec(),
       this.transactionModel.countDocuments({ user_id: new Types.ObjectId(userId) }).exec(),
     ]);
-    return { transactions, total, page: safePage, limit: safeLimit, total_pages: Math.ceil(total / safeLimit) };
+    return {
+      transactions,
+      total,
+      page: safePage,
+      limit: safeLimit,
+      total_pages: Math.ceil(total / safeLimit),
+    };
   }
 
   // ─── Withdrawal ───────────────────────────────────────────────────────────
