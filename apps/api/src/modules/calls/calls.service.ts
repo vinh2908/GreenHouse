@@ -137,8 +137,9 @@ export class CallsService {
         started_at: new Date(),
       });
     } catch (err: any) {
-      // H21 Race condition: 2 cuộc gọi cùng lúc tới cùng 1 đơn (E11000 duplicate key error)
-      if (err?.code === 11000 || err?.name === 'MongoServerError') {
+      // H21 & K13(g): Race condition: 2 cuộc gọi cùng lúc tới cùng 1 đơn (E11000 duplicate key error)
+      // Thu hẹp đúng lỗi trùng khóa (code 11000), không nuốt các lỗi MongoDB khác
+      if (err?.code === 11000) {
         const racedSession = await this.callSessionModel
           .findOne({
             job_id: job._id,

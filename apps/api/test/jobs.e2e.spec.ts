@@ -5,17 +5,21 @@ import { MongoMemoryServer } from 'mongodb-memory-server';
 import { Types } from 'mongoose';
 import { ConfigModule } from '@nestjs/config';
 import { ThrottlerModule } from '@nestjs/throttler';
-import { HelperStatus, VerificationStatus } from '@homemate/types';
+import { HelperStatus, VerificationStatus, PaymentStatus } from '@homemate/types';
 import { AuthModule } from '../src/modules/auth/auth.module';
 import { UsersModule } from '../src/modules/users/users.module';
 import { ServicesModule } from '../src/modules/services/services.module';
 import { JobsModule } from '../src/modules/jobs/jobs.module';
+import { NotificationsModule } from '../src/modules/notifications/notifications.module';
 import { HttpExceptionFilter } from '../src/common/filters/http-exception.filter';
 import { TransformInterceptor } from '../src/common/interceptors/transform.interceptor';
 import { ServicesService } from '../src/modules/services/services.service';
 import { HelperProfile } from '../src/modules/helpers/schemas/helper-profile.schema';
 import appConfig from '../src/config/app.config';
 import jwtConfig from '../src/config/jwt.config';
+
+import * as fs from 'fs';
+import * as path from 'path';
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const request = require('supertest');
@@ -31,7 +35,14 @@ describe('Jobs E2E (Phase 5)', () => {
   let quoteId: string;
 
   beforeAll(async () => {
-    mongod = await MongoMemoryServer.create();
+    const dbPath = path.join('D:\\tmp', 'mongo_jobs_' + Date.now());
+    fs.mkdirSync(dbPath, { recursive: true });
+    mongod = await MongoMemoryServer.create({
+      instance: {
+        dbPath,
+        args: ['--wiredTigerCacheSizeGB', '0.25'],
+      },
+    });
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [
         ConfigModule.forRoot({ isGlobal: true, load: [appConfig, jwtConfig], ignoreEnvFile: true }),
@@ -41,6 +52,7 @@ describe('Jobs E2E (Phase 5)', () => {
         UsersModule,
         ServicesModule,
         JobsModule,
+        NotificationsModule,
       ],
     }).compile();
 
@@ -82,6 +94,11 @@ describe('Jobs E2E (Phase 5)', () => {
       status: HelperStatus.ONLINE,
       verification_status: VerificationStatus.APPROVED,
     });
+
+    await app.get(getModelToken(HelperProfile.name)).syncIndexes();
+
+    // K12(c): Seed user đã xác minh email để qua gate xác minh tài khoản
+    await app.get(getModelToken('User')).updateMany({}, { $set: { is_verified: true } });
   });
 
   afterAll(async () => {
@@ -107,6 +124,8 @@ describe('Jobs E2E (Phase 5)', () => {
             location: { type: 'Point', coordinates: [106.7, 10.73] },
           },
           preferred_date: new Date(Date.now() + 86400000).toISOString(),
+          preferred_time_start: '08:00',
+          preferred_time_end: '10:00',
           is_flexible_time: true,
         })
         .expect(201);
@@ -118,12 +137,18 @@ describe('Jobs E2E (Phase 5)', () => {
     });
 
     it('should notify nearby online and verified helpers for the matching service', async () => {
-      const res = await request(app.getHttpServer())
-        .get('/api/v1/notifications')
-        .set('Authorization', `Bearer ${helperToken}`)
-        .expect(200);
+      let notifications: any[] = [];
+      for (let i = 0; i < 20; i++) {
+        const res = await request(app.getHttpServer())
+          .get('/api/v1/notifications')
+          .set('Authorization', `Bearer ${helperToken}`)
+          .expect(200);
+        notifications = res.body.data;
+        if (notifications.length > 0) break;
+        await new Promise(r => setTimeout(r, 100));
+      }
 
-      expect(res.body.data).toEqual(
+      expect(notifications).toEqual(
         expect.arrayContaining([
           expect.objectContaining({
             type: 'new_job_nearby',
@@ -308,6 +333,10 @@ describe('Jobs E2E (Phase 5)', () => {
     });
 
     it('customer: approve completion + review', async () => {
+      await app.get(getModelToken('Job')).updateOne(
+        { _id: new Types.ObjectId(jobId) },
+        { $set: { payment_status: PaymentStatus.PAID } },
+      );
       const res = await request(app.getHttpServer())
         .patch(`/api/v1/jobs/${jobId}/approve`)
         .set('Authorization', `Bearer ${customerToken}`)
@@ -345,6 +374,9 @@ describe('Jobs E2E (Phase 5)', () => {
             city: 'TP. Hồ Chí Minh',
             location: { type: 'Point', coordinates: [106.7, 10.77] },
           },
+          preferred_date: new Date(Date.now() + 86400000 * 2).toISOString(),
+          preferred_time_start: '08:00',
+          preferred_time_end: '10:00',
         })
         .expect(201);
       cancelJobId = res.body.data._id;

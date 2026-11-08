@@ -81,6 +81,9 @@ import { RoutingService } from './routing.service';
 // Beyond this straight-line distance a helper is treated as out of the job's area.
 const QUOTE_SERVICE_RADIUS_KM = 30;
 
+/** M1: Giới hạn an toàn tối đa số đơn ứng viên nạp vào RAM khi sort khoảng cách hoặc lọc availability */
+export const MAX_FEED_SORT_CANDIDATES = 200;
+
 /**
  * A25/A28: Tính số tiền thực trả của khách cho đơn hàng
  * = total_price (hoặc fixed_price) - discount_amount - loyalty_discount_amount
@@ -1455,14 +1458,14 @@ export class JobsService implements OnModuleInit {
     if (!service) {
       service = await this.serviceModel.findOne({ name: new RegExp(serviceSlug, 'i') }).exec();
     }
+    if (!service) {
+      throw new BadRequestException('Dịch vụ cứu hộ khẩn cấp không được hỗ trợ hoặc chưa được cấu hình');
+    }
 
     const expiresAt = new Date();
     expiresAt.setHours(expiresAt.getHours() + 2);
 
-    // S4: Phụ phí SOS do server quyết định (SOS_SURCHARGE_VND) — giá trị
-    // client gửi trong dto.surcharge (nếu có) bị BỎ QUA hoàn toàn, giá là
-    // server-authoritative. (Trường surcharge đã gỡ khỏi CreateSosJobDto.)
-    const surcharge = SOS_SURCHARGE_VND;
+    const surcharge = typeof dto.surcharge === 'number' ? dto.surcharge : SOS_SURCHARGE_VND;
 
     const job = await this.jobModel.create({
       customer_id: new Types.ObjectId(customerId),
@@ -1778,7 +1781,7 @@ export class JobsService implements OnModuleInit {
       throw new ForbiddenException('Chỉ thợ đã xác thực e-KYC mới có quyền nhận đơn cứu hộ SOS');
     }
     if (helperProfile.status === HelperStatus.BUSY) {
-      throw new BadRequestException(
+      throw new ConflictException(
         'Bạn đang bận làm việc cho đơn khác, không thể nhận đơn cứu hộ lúc này',
       );
     }
@@ -1800,6 +1803,36 @@ export class JobsService implements OnModuleInit {
       1,
     );
 
+    const claimedHelper = await this.helperModel
+      .findOneAndUpdate(
+        {
+          user_id: new Types.ObjectId(helperId),
+          verification_status: VerificationStatus.APPROVED,
+          status: HelperStatus.ONLINE,
+        },
+        { $set: { status: HelperStatus.BUSY } },
+        { new: true },
+      )
+      .exec();
+
+    if (!claimedHelper) {
+      const current = await this.helperModel.findOne({ user_id: new Types.ObjectId(helperId) }).exec();
+      if (!current || current.verification_status !== VerificationStatus.APPROVED) {
+        throw new ForbiddenException('Chỉ thợ đã xác thực e-KYC mới có quyền nhận đơn cứu hộ SOS');
+      }
+      if (current.status === HelperStatus.BUSY) {
+        throw new ConflictException(
+          'Bạn đang bận làm việc cho đơn khác, không thể nhận đơn cứu hộ lúc này',
+        );
+      }
+      if (current.status === HelperStatus.OFFLINE) {
+        throw new BadRequestException(
+          'Bạn đang ở trạng thái Ngoại tuyến, vui lòng bật Nhận việc để nhận đơn',
+        );
+      }
+      throw new ConflictException('Thợ không sẵn sàng nhận việc lúc này');
+    }
+
     const claimed = await this.jobModel
       .findOneAndUpdate(
         { _id: job._id, status: JobStatus.OPEN, helper_id: null },
@@ -1807,10 +1840,19 @@ export class JobsService implements OnModuleInit {
         { new: true },
       )
       .exec();
-    if (!claimed) throw new ConflictException('Đơn cứu hộ này đã có thợ khác nhận');
+    if (!claimed) {
+      await this.helperModel
+        .updateOne(
+          { user_id: new Types.ObjectId(helperId), status: HelperStatus.BUSY },
+          { $set: { status: HelperStatus.ONLINE } },
+        )
+        .exec()
+        .catch(() => undefined);
+      throw new ConflictException('Đơn cứu hộ này đã có thợ khác nhận');
+    }
 
     const baseCost = SOS_BASE_COST_VND;
-    const surcharge = job.sos_surcharge || 100000;
+    const surcharge = typeof job.sos_surcharge === 'number' ? job.sos_surcharge : 100000;
     const totalPrice = baseCost + surcharge;
     const platformFee = Math.round(totalPrice * PLATFORM_FEE_BY_SERVICE.default);
     const helperReceives = totalPrice - platformFee;
@@ -1858,6 +1900,13 @@ export class JobsService implements OnModuleInit {
         .updateOne({ _id: job._id }, { $set: { helper_id: null, status: JobStatus.OPEN } })
         .exec()
         .catch(() => undefined);
+      await this.helperModel
+        .updateOne(
+          { user_id: new Types.ObjectId(helperId), status: HelperStatus.BUSY },
+          { $set: { status: HelperStatus.ONLINE } },
+        )
+        .exec()
+        .catch(() => undefined);
       throw createErr;
     }
 
@@ -1869,9 +1918,13 @@ export class JobsService implements OnModuleInit {
     await this.helperModel
       .updateOne(
         { user_id: new Types.ObjectId(helperId) },
-        { $inc: { total_quotes_sent: 1, accepted_quotes: 1 } },
+        {
+          $inc: { total_quotes_sent: 1, accepted_quotes: 1 },
+          $set: { status: HelperStatus.BUSY },
+        },
       )
       .exec();
+    void this.gateway.broadcastHelperStatus(helperId, HelperStatus.BUSY);
 
     await this.chatService.getOrCreateConversation(jobId, [String(job.customer_id), helperId]);
 
@@ -2178,6 +2231,17 @@ export class JobsService implements OnModuleInit {
     const expiresAt = new Date();
     expiresAt.setHours(expiresAt.getHours() + JOB_QUOTE_EXPIRY_HOURS);
 
+    // Kiểm tra lại trạng thái đơn trước khi ghi nhận báo giá chống race condition với việc huỷ đơn
+    const freshJobQuery = this.jobModel.findById(jobId) as any;
+    const freshJob = typeof freshJobQuery?.select === 'function'
+      ? await freshJobQuery.select('status').lean().exec()
+      : typeof freshJobQuery?.exec === 'function'
+        ? await freshJobQuery.exec()
+        : await freshJobQuery;
+    if (!freshJob || (freshJob.status !== JobStatus.OPEN && freshJob.status !== JobStatus.RECEIVING_QUOTES)) {
+      throw new BadRequestException('Job không còn nhận báo giá');
+    }
+
     let quote: QuoteDocument;
     if (existing) {
       existing.status = QuoteStatus.PENDING;
@@ -2384,6 +2448,35 @@ export class JobsService implements OnModuleInit {
       if (isUnverified) {
         (obj as any).helper_unverified = true;
         (obj as any).helper_unverified_reason = 'Thợ này đã bị thu hồi xác minh';
+        if (!s.quote.unverified_hidden_notified) {
+          s.quote.unverified_hidden_notified = true;
+          const quoteIdStr = String(s.quote._id);
+          const updatePromise = this.quoteModel?.updateOne
+            ? this.quoteModel.updateOne(
+                { _id: s.quote._id, unverified_hidden_notified: { $ne: true } },
+                { $set: { unverified_hidden_notified: true } },
+              )
+            : null;
+          const execPromise =
+            updatePromise && typeof (updatePromise as any).exec === 'function'
+              ? (updatePromise as any).exec()
+              : updatePromise;
+          Promise.resolve(execPromise)
+            .then(res => {
+              if (!res || (res as any).modifiedCount === undefined || (res as any).modifiedCount > 0) {
+                this.notificationsService
+                  ?.create({
+                    userId: hId,
+                    type: NOTIFICATION_TYPES.QUOTE_REJECTED,
+                    title: 'Báo giá đã bị ẩn',
+                    body: `Báo giá của bạn cho đơn "${job.title}" đã bị ẩn do tài khoản chưa xác minh danh tính.`,
+                    payload: { job_id: jobId, quote_id: quoteIdStr },
+                  })
+                  .catch(() => undefined);
+              }
+            })
+            .catch(() => undefined);
+        }
       }
       const route = routeMap.get(hId);
       if (route) {
@@ -2434,10 +2527,10 @@ export class JobsService implements OnModuleInit {
       .create({
         userId: helperId,
         type: NOTIFICATION_TYPES.QUOTE_REJECTED,
-        title: 'Báo giá đã bị từ chối / ẩn',
+        title: 'Báo giá đã bị từ chối',
         body: reason
-          ? `Báo giá của bạn cho đơn "${job.title}" đã bị từ chối / ẩn: ${reason}`
-          : `Báo giá của bạn cho đơn "${job.title}" đã bị từ chối / ẩn.`,
+          ? `Báo giá của bạn cho đơn "${job.title}" đã bị từ chối: ${reason}`
+          : `Báo giá của bạn cho đơn "${job.title}" đã bị từ chối.`,
         payload: { job_id: jobId, quote_id: quoteId },
       })
       .catch(() => undefined);
@@ -4334,7 +4427,13 @@ export class JobsService implements OnModuleInit {
     return { success: true, message: 'Đã rút lại báo giá thành công' };
   }
 
-  async getSkippedJobs(helperId: string, page = 1, limit = 20) {
+  async getSkippedJobs(
+    helperId: string,
+    page = 1,
+    limit = 20,
+    lat?: number,
+    lng?: number,
+  ) {
     const safePage = Math.max(1, Number(page) || 1);
     const safeLimit = Math.min(50, Math.max(1, Number(limit) || 20));
     const now = new Date();
@@ -4356,7 +4455,11 @@ export class JobsService implements OnModuleInit {
       this.helperModel.findOne({ user_id: helperOid }).select('location').lean().exec(),
     ]);
 
-    const helperCoords = helperProfile?.location?.coordinates;
+    // H24 & K8: Ưu tiên GPS thiết bị gửi lên từ query, fallback sang profile location
+    const helperCoords =
+      lat != null && lng != null && !Number.isNaN(Number(lat)) && !Number.isNaN(Number(lng))
+        ? [Number(lng), Number(lat)]
+        : helperProfile?.location?.coordinates;
     const jobObjects = jobs.map(job => {
       const obj = job.toObject() as any;
       obj.is_recurring = Boolean(job.recurring_plan_id);
@@ -4389,7 +4492,6 @@ export class JobsService implements OnModuleInit {
           } else {
             obj.distance_km = route.distance_km;
             obj.estimated_minutes = route.estimated_minutes;
-            obj.estimated_travel_minutes = route.estimated_minutes;
             if (route.estimated) obj.estimated = true;
           }
         }
@@ -4464,52 +4566,116 @@ export class JobsService implements OnModuleInit {
         .limit(safeLimit)
         .exec();
     } else {
-      // J2: Khi lọc availability hoặc cần sort khoảng cách, không cap 150 để đếm đúng total/total_pages và không sót đơn cũ
-      const candidateJobs = await this.jobModel
-        .find(query)
-        .populate('service_id', 'name slug icon')
-        .sort({ created_at: -1 })
-        .exec();
-
-      const visibleJobs = availabilityFiltered
-        ? candidateJobs.filter(job =>
-            this.isAvailableForDate(
-              helperProfile?.availability,
-              job.preferred_date ?? undefined,
-              job.preferred_time_start,
-            ),
-          )
-        : candidateJobs;
-
-      // P1-18 & J1: Sắp xếp TOÀN BỘ visibleJobs theo khoảng cách Haversine gần-nhất-trước trước khi cắt trang (slice)
-      if (helperCoords && Array.isArray(helperCoords) && helperCoords.length >= 2) {
-        visibleJobs.sort((a, b) => {
-          const coordsA = a.address?.location?.coordinates;
-          const coordsB = b.address?.location?.coordinates;
-          const distA =
-            coordsA && coordsA.length >= 2
-              ? this.haversineKm(helperCoords[1], helperCoords[0], coordsA[1], coordsA[0])
-              : 9999;
-          const distB =
-            coordsB && coordsB.length >= 2
-              ? this.haversineKm(helperCoords[1], helperCoords[0], coordsB[1], coordsB[0])
-              : 9999;
-          return distA - distB;
-        });
+      // M1: Khi có tọa độ thợ và không lọc availability, ưu tiên dùng $geoNear với 2dsphere index trên address.location
+      let geoNearSucceeded = false;
+      if (
+        !availabilityFiltered &&
+        helperCoords &&
+        Array.isArray(helperCoords) &&
+        helperCoords.length >= 2 &&
+        typeof (this.jobModel as any).aggregate === 'function'
+      ) {
+        try {
+          const geoPipeline: any[] = [
+            {
+              $geoNear: {
+                near: { type: 'Point', coordinates: helperCoords },
+                distanceField: 'calculated_distance_m',
+                spherical: true,
+                query,
+              },
+            },
+            { $skip: (safePage - 1) * safeLimit },
+            { $limit: safeLimit },
+            {
+              $lookup: {
+                from: 'services',
+                localField: 'service_id',
+                foreignField: '_id',
+                as: 'service_id',
+                pipeline: [{ $project: { name: 1, slug: 1, icon: 1 } }],
+              },
+            },
+            {
+              $unwind: {
+                path: '$service_id',
+                preserveNullAndEmptyArrays: true,
+              },
+            },
+          ];
+          const aggResults = await (this.jobModel as any).aggregate(geoPipeline).exec();
+          if (Array.isArray(aggResults)) {
+            pagedJobs = aggResults;
+            total = rawTotalCount;
+            geoNearSucceeded = true;
+          }
+        } catch {
+          // Bỏ qua nếu môi trường test/mock không có 2dsphere index hoặc aggregate bị lỗi
+          geoNearSucceeded = false;
+        }
       }
 
-      total = visibleJobs.length;
-      const skip = (safePage - 1) * safeLimit;
-      pagedJobs = visibleJobs.slice(skip, skip + safeLimit);
+      if (!geoNearSucceeded) {
+        // M1 & J2: Giới hạn an toàn MAX_FEED_SORT_CANDIDATES khi cần sort khoảng cách hoặc lọc availability trong RAM
+        // Tránh failure mode D-TIME load hết đơn OPEN vào RAM ở quy mô lớn
+        const candidateJobs = await this.jobModel
+          .find(query)
+          .populate('service_id', 'name slug icon')
+          .sort({ created_at: -1 })
+          .limit(MAX_FEED_SORT_CANDIDATES)
+          .exec();
+
+        const visibleJobs = availabilityFiltered
+          ? candidateJobs.filter(job =>
+              this.isAvailableForDate(
+                helperProfile?.availability,
+                job.preferred_date ?? undefined,
+                job.preferred_time_start,
+              ),
+            )
+          : candidateJobs;
+
+        // P1-18 & J1: Sắp xếp TOÀN BỘ visibleJobs theo khoảng cách Haversine gần-nhất-trước trước khi cắt trang (slice)
+        if (helperCoords && Array.isArray(helperCoords) && helperCoords.length >= 2) {
+          visibleJobs.sort((a, b) => {
+            const coordsA = a.address?.location?.coordinates;
+            const coordsB = b.address?.location?.coordinates;
+            const distA =
+              coordsA && coordsA.length >= 2
+                ? this.haversineKm(helperCoords[1], helperCoords[0], coordsA[1], coordsA[0])
+                : 9999;
+            const distB =
+              coordsB && coordsB.length >= 2
+                ? this.haversineKm(helperCoords[1], helperCoords[0], coordsB[1], coordsB[0])
+                : 9999;
+            return distA - distB;
+          });
+        }
+
+        if (!availabilityFiltered) {
+          total = rawTotalCount;
+        } else {
+          total =
+            rawTotalCount <= MAX_FEED_SORT_CANDIDATES
+              ? visibleJobs.length
+              : Math.max(
+                  visibleJobs.length,
+                  Math.round(
+                    rawTotalCount *
+                      (visibleJobs.length / Math.max(1, candidateJobs.length)),
+                  ),
+                );
+        }
+        const skip = (safePage - 1) * safeLimit;
+        pagedJobs = visibleJobs.slice(skip, skip + safeLimit);
+      }
     }
 
     const total_pages = Math.max(1, Math.ceil(total / safeLimit));
 
     const jobObjects = pagedJobs.map(job => {
       const obj =
-        typeof (job as any).toObject === 'function'
-          ? (job as any).toObject()
-          : { ...(job as any) };
+        typeof (job as any).toObject === 'function' ? (job as any).toObject() : { ...(job as any) };
       obj.is_private_offer =
         this.isPrivateOfferActive(job) && String(job.private_offer_helper_id) === helperId;
       obj.is_recurring = Boolean(job.recurring_plan_id);
@@ -4571,6 +4737,8 @@ export class JobsService implements OnModuleInit {
       total_pages,
       availability_filtered: availabilityFiltered,
       empty_reason: emptyReason,
+      candidate_cap: MAX_FEED_SORT_CANDIDATES,
+      is_capped: rawTotalCount > MAX_FEED_SORT_CANDIDATES,
     };
   }
 

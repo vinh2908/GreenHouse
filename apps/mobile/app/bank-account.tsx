@@ -500,7 +500,7 @@ export default function BankAccountScreen() {
                           >
                             <Clock size={12} color={COLORS.gray[400]} />
                             <Text style={{ fontSize: fs(12), color: tc.textMuted }}>
-                              {formatDateTime(dayjs(tx.created_at))}
+                              {formatDateTime(dayjs(tx.created_at), lang)}
                             </Text>
                           </View>
                         </View>

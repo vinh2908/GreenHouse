@@ -433,8 +433,8 @@ export default function MonthlyContractDetailScreen() {
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
             <Text style={{ flex: 1, fontSize: fs(15), fontWeight: '800', color: tc.text }}>
               {lang === 'en'
-                ? `Attendance for Month ${formatMonthSlash(`${month}-01`)}`
-                : `Điểm danh tháng ${formatMonthSlash(`${month}-01`)}`}
+                ? `Attendance for Month ${formatMonthSlash(`${month}-01`, lang)}`
+                : `Điểm danh tháng ${formatMonthSlash(`${month}-01`, lang)}`}
             </Text>
             <TouchableOpacity
               onPress={() =>
@@ -693,8 +693,8 @@ export default function MonthlyContractDetailScreen() {
           <Card style={{ gap: 8 }}>
             <Text style={{ fontSize: fs(15), fontWeight: '800', color: tc.text }}>
               {lang === 'en'
-                ? `Wage Settlement for Month ${formatMonthSlash(`${month}-01`)}`
-                : `Chốt lương tháng ${formatMonthSlash(`${month}-01`)}`}
+                ? `Wage Settlement for Month ${formatMonthSlash(`${month}-01`, lang)}`
+                : `Chốt lương tháng ${formatMonthSlash(`${month}-01`, lang)}`}
             </Text>
             {settlement ? (
               <>
@@ -735,8 +735,8 @@ export default function MonthlyContractDetailScreen() {
                   <Badge
                     label={
                       lang === 'en'
-                        ? `Wages settled${settlement.settled_at ? ` · ${formatDateTime(dayjs(settlement.settled_at))}` : ''}`
-                        : `Đã chốt lương${settlement.settled_at ? ` · ${formatDateTime(dayjs(settlement.settled_at))}` : ''}`
+                        ? `Wages settled${settlement.settled_at ? ` · ${formatDateTime(dayjs(settlement.settled_at), lang)}` : ''}`
+                        : `Đã chốt lương${settlement.settled_at ? ` · ${formatDateTime(dayjs(settlement.settled_at), lang)}` : ''}`
                     }
                     color={COLORS.successLight}
                     textColor={COLORS.success}

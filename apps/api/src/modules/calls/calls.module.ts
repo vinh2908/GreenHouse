@@ -38,7 +38,7 @@ const callProviderFactory = {
     ]),
     // forwardRef: AppGateway inject CallsService (handler call:declined)
     forwardRef(() => ChatModule), // AppGateway — báo cuộc gọi đến qua socket
-    NotificationsModule,
+    forwardRef(() => NotificationsModule),
   ],
   controllers: [CallsController],
   providers: [CallsService, StringeeProvider, VoipPushService, callProviderFactory],

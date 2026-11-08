@@ -74,6 +74,7 @@ function makeService() {
   ];
 
   const voucherModel = {
+    findById: (id: unknown) => execOf(matches(voucher, { _id: id }) ? voucher : null),
     findOne: (filter: Record<string, unknown>) => execOf(matches(voucher, filter) ? voucher : null),
     findOneAndUpdate: (filter: Record<string, unknown>, update: Record<string, unknown>) => {
       if (!matches(voucher, filter)) return execOf(null);

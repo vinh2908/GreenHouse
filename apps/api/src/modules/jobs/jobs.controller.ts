@@ -136,15 +136,25 @@ export class JobsController {
   @ApiOperation({ summary: '[Helper] Danh sách các đơn đã bỏ qua' })
   @ApiQuery({ name: 'page', required: false, type: Number })
   @ApiQuery({ name: 'limit', required: false, type: Number })
+  @ApiQuery({ name: 'lat', required: false, type: Number })
+  @ApiQuery({ name: 'lng', required: false, type: Number })
   async getSkippedJobs(
     @CurrentUser() user: { sub: string },
     @Query('page') page?: number,
     @Query('limit') limit?: number,
+    @Query('lat') lat?: number,
+    @Query('lng') lng?: number,
   ) {
     await this.jobsService.requireVerifiedHelper(user.sub);
     const safePage = Math.max(1, Number(page) || 1);
     const safeLimit = Math.min(50, Math.max(1, Number(limit) || 20));
-    return this.jobsService.getSkippedJobs(user.sub, safePage, safeLimit);
+    return this.jobsService.getSkippedJobs(
+      user.sub,
+      safePage,
+      safeLimit,
+      lat ? Number(lat) : undefined,
+      lng ? Number(lng) : undefined,
+    );
   }
 
   // ─── Helper: Own jobs ─────────────────────────────────────────────────────

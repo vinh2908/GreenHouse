@@ -6,6 +6,8 @@ import {
   TouchableOpacity,
   RefreshControl,
   ActivityIndicator,
+  NativeSyntheticEvent,
+  NativeScrollEvent,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -28,6 +30,7 @@ import {
 import Toast from 'react-native-toast-message';
 import { formatTime, formatRelativeTime } from '@/utils/date-format';
 import { useAuthStore } from '@/stores/auth.store';
+import { locationService } from '@/services/location.service';
 import {
   useAvailableJobs,
   useHelperJobs,
@@ -66,8 +69,21 @@ export default function HelperJobsScreen() {
     { key: 'history', label: t('helper_jobs_tab_history') },
   ];
 
+  const [availablePage, setAvailablePage] = useState(1);
+  const [activePage, setActivePage] = useState(1);
+  const [historyPage, setHistoryPage] = useState(1);
+  const [accumulatedAvailable, setAccumulatedAvailable] = useState<any[]>([]);
+  const [accumulatedActive, setAccumulatedActive] = useState<any[]>([]);
+  const [accumulatedHistory, setAccumulatedHistory] = useState<any[]>([]);
+
   const handleSelectTab = (index: number) => {
     setTab(index);
+    setAvailablePage(1);
+    setActivePage(1);
+    setHistoryPage(1);
+    setAccumulatedAvailable([]);
+    setAccumulatedActive([]);
+    setAccumulatedHistory([]);
     const layout = tabLayouts.current[index];
     if (layout && containerWidthRef.current > 0) {
       const targetX = Math.max(0, layout.x - (containerWidthRef.current - layout.width) / 2);
@@ -91,13 +107,33 @@ export default function HelperJobsScreen() {
   const kycStatus = helperProfile?.verification_status as string | undefined;
   const isVerified = kycStatus === 'approved';
 
+  const [deviceCoords, setDeviceCoords] = useState<{ lat?: number; lng?: number } | null>(() => {
+    const c = locationService.getCachedCoordinates();
+    return c ? { lat: c.latitude, lng: c.longitude } : null;
+  });
+
+  useEffect(() => {
+    let mounted = true;
+    locationService
+      .getCurrentCoordinates()
+      .then(c => {
+        if (mounted && c) {
+          setDeviceCoords({ lat: c.latitude, lng: c.longitude });
+        }
+      })
+      .catch(() => {});
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
   // Lệnh 7: Xem và hoàn tác đơn đã bỏ qua
   const [showSkipped, setShowSkipped] = useState(false);
   const {
     data: skippedData,
     isLoading: skippedLoading,
     refetch: refetchSkipped,
-  } = useSkippedJobs(1, Boolean(isAuth && isVerified !== false));
+  } = useSkippedJobs(1, Boolean(isAuth && isVerified !== false), deviceCoords);
   const unrejectJob = useUnrejectJob();
 
   const getJobServiceLabel = (job: any) => {
@@ -108,9 +144,7 @@ export default function HelperJobsScreen() {
     if (svcName) return svcName;
     return t('common_service');
   };
-  const [availablePage, setAvailablePage] = useState(1);
-  const [activePage, setActivePage] = useState(1);
-  const [historyPage, setHistoryPage] = useState(1);
+
   const {
     data: available,
     isLoading: aLoading,
@@ -119,7 +153,12 @@ export default function HelperJobsScreen() {
     isRefetching: aRefetching,
     refetch: ra,
     dataUpdatedAt: aUpdatedAt,
-  } = useAvailableJobs(undefined, availablePage, Boolean(isAuth && isVerified !== false));
+  } = useAvailableJobs(
+    undefined,
+    availablePage,
+    Boolean(isAuth && isVerified !== false),
+    deviceCoords,
+  );
   const {
     data: active,
     isLoading: acLoading,
@@ -143,30 +182,93 @@ export default function HelperJobsScreen() {
     dataUpdatedAt: hUpdatedAt,
   } = useHelperJobs('completed,cancelled,refunded', historyPage, 10);
 
+  useEffect(() => {
+    if (available?.jobs) {
+      if (availablePage === 1) {
+        setAccumulatedAvailable(available.jobs);
+      } else {
+        setAccumulatedAvailable(prev => {
+          const ids = new Set(prev.map(j => j._id));
+          return [...prev, ...available.jobs.filter((j: any) => !ids.has(j._id))];
+        });
+      }
+    }
+  }, [available, availablePage]);
+
+  useEffect(() => {
+    const items = Array.isArray(active) ? active : (active?.items ?? []);
+    if (items.length > 0 || active) {
+      if (activePage === 1) {
+        setAccumulatedActive(items);
+      } else {
+        setAccumulatedActive(prev => {
+          const ids = new Set(prev.map(j => j._id));
+          return [...prev, ...items.filter((j: any) => !ids.has(j._id))];
+        });
+      }
+    }
+  }, [active, activePage]);
+
+  useEffect(() => {
+    const items = Array.isArray(history) ? history : (history?.items ?? []);
+    if (items.length > 0 || history) {
+      if (historyPage === 1) {
+        setAccumulatedHistory(items);
+      } else {
+        setAccumulatedHistory(prev => {
+          const ids = new Set(prev.map(j => j._id));
+          return [...prev, ...items.filter((j: any) => !ids.has(j._id))];
+        });
+      }
+    }
+  }, [history, historyPage]);
+
   const datasets = [
     {
-      data: available?.jobs,
+      data:
+        availablePage === 1 && (aLoading || accumulatedAvailable.length === 0)
+          ? available?.jobs
+          : accumulatedAvailable,
       loading: aLoading,
       isError: aError,
       error: aErrorObj,
       refetching: aRefetching,
-      refetch: ra,
+      refetch: () => {
+        setAvailablePage(1);
+        ra();
+      },
     },
     {
-      data: Array.isArray(active) ? active : (active?.items ?? []),
+      data:
+        activePage === 1 && (acLoading || accumulatedActive.length === 0)
+          ? Array.isArray(active)
+            ? active
+            : (active?.items ?? [])
+          : accumulatedActive,
       loading: acLoading,
       isError: acError,
       error: acErrorObj,
       refetching: acRefetching,
-      refetch: rac,
+      refetch: () => {
+        setActivePage(1);
+        rac();
+      },
     },
     {
-      data: Array.isArray(history) ? history : (history?.items ?? []),
+      data:
+        historyPage === 1 && (hLoading || accumulatedHistory.length === 0)
+          ? Array.isArray(history)
+            ? history
+            : (history?.items ?? [])
+          : accumulatedHistory,
       loading: hLoading,
       isError: hError,
       error: hErrorObj,
       refetching: hRefetching,
-      refetch: rh,
+      refetch: () => {
+        setHistoryPage(1);
+        rh();
+      },
     },
   ];
 
@@ -234,6 +336,39 @@ export default function HelperJobsScreen() {
       <ScrollView
         showsVerticalScrollIndicator={false}
         nestedScrollEnabled={true}
+        scrollEventThrottle={32}
+        onScroll={({ nativeEvent }: NativeSyntheticEvent<NativeScrollEvent>) => {
+          const isCloseToBottom =
+            nativeEvent.layoutMeasurement.height + nativeEvent.contentOffset.y >=
+            nativeEvent.contentSize.height - 80;
+          if (!isCloseToBottom) return;
+
+          if (
+            tabIndex === 0 &&
+            !aLoading &&
+            !aRefetching &&
+            available &&
+            availablePage < available.total_pages
+          ) {
+            setAvailablePage(p => p + 1);
+          } else if (
+            tabIndex === 1 &&
+            !acLoading &&
+            !acRefetching &&
+            active &&
+            activePage < active.total_pages
+          ) {
+            setActivePage(p => p + 1);
+          } else if (
+            tabIndex === 2 &&
+            !hLoading &&
+            !hRefetching &&
+            history &&
+            historyPage < history.total_pages
+          ) {
+            setHistoryPage(p => p + 1);
+          }
+        }}
         contentContainerStyle={{ padding: 16, gap: 10, paddingBottom: 110 }}
         refreshControl={
           <RefreshControl
@@ -625,7 +760,9 @@ export default function HelperJobsScreen() {
                     {job.is_fixed_price ? (
                       <Badge
                         label={t('jobs_badge_fixed_price', {
-                          price: new Intl.NumberFormat('vi-VN').format(job.fixed_price ?? 0),
+                          price: new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'vi-VN').format(
+                            job.fixed_price ?? 0,
+                          ),
                         })}
                         size="sm"
                         color="#ECFDF5"
@@ -657,9 +794,9 @@ export default function HelperJobsScreen() {
                           {job.distance_km === 0 ? '< 100m' : `${job.distance_km} km`} ~{' '}
                           {(job.estimated_minutes ?? (job as any).estimated_travel_minutes)
                             ? `${job.estimated_minutes ?? (job as any).estimated_travel_minutes} ${t('jobs_minutes_unit')}`
-                            : job.distance_km > 0
-                              ? `${Math.max(1, Math.round((job.distance_km / 25) * 60))} ${t('jobs_minutes_unit')}`
-                              : '< 1 phút'}
+                            : lang === 'en'
+                              ? 'unspecified'
+                              : 'chưa xác định'}
                         </Text>
                       </View>
                     ) : (job as any).routing_error ? (
@@ -768,186 +905,72 @@ export default function HelperJobsScreen() {
           )
         )}
 
-        {tabIndex === 0 && available && available.total_pages > 1 && (
-          <View
-            style={{
-              flexDirection: 'row',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              paddingVertical: 12,
-              paddingHorizontal: 8,
-            }}
-          >
-            <TouchableOpacity
-              disabled={availablePage <= 1}
-              onPress={() => setAvailablePage(p => Math.max(1, p - 1))}
-              style={{
-                paddingHorizontal: 14,
-                paddingVertical: 8,
-                borderRadius: 10,
-                backgroundColor: availablePage <= 1 ? COLORS.gray[100] : COLORS.primaryLight,
-              }}
-            >
-              <Text
+        {tabIndex === 0 && available && availablePage < available.total_pages && (
+          <View style={{ alignItems: 'center', marginVertical: 14 }}>
+            {aRefetching ? (
+              <ActivityIndicator size="small" color={COLORS.primary} />
+            ) : (
+              <TouchableOpacity
+                activeOpacity={0.8}
+                onPress={() => setAvailablePage(p => p + 1)}
                 style={{
-                  fontSize: fs(13),
-                  fontWeight: '700',
-                  color: availablePage <= 1 ? COLORS.gray[400] : COLORS.primary,
+                  paddingHorizontal: 20,
+                  paddingVertical: 10,
+                  borderRadius: 12,
+                  backgroundColor: COLORS.primaryLight,
                 }}
               >
-                {lang === 'en' ? 'Previous' : 'Trang trước'}
-              </Text>
-            </TouchableOpacity>
-
-            <Text style={{ fontSize: fs(13), fontWeight: '600', color: tc.textMuted }}>
-              {lang === 'en'
-                ? `Page ${available.page} / ${available.total_pages}`
-                : `Trang ${available.page} / ${available.total_pages}`}
-            </Text>
-
-            <TouchableOpacity
-              disabled={availablePage >= available.total_pages}
-              onPress={() => setAvailablePage(p => p + 1)}
-              style={{
-                paddingHorizontal: 14,
-                paddingVertical: 8,
-                borderRadius: 10,
-                backgroundColor:
-                  availablePage >= available.total_pages ? COLORS.gray[100] : COLORS.primaryLight,
-              }}
-            >
-              <Text
-                style={{
-                  fontSize: fs(13),
-                  fontWeight: '700',
-                  color: availablePage >= available.total_pages ? COLORS.gray[400] : COLORS.primary,
-                }}
-              >
-                {lang === 'en' ? 'Next' : 'Trang sau'}
-              </Text>
-            </TouchableOpacity>
+                <Text style={{ fontSize: fs(13), fontWeight: '700', color: COLORS.primary }}>
+                  {lang === 'en' ? 'Load more jobs...' : 'Tải thêm việc làm...'}
+                </Text>
+              </TouchableOpacity>
+            )}
           </View>
         )}
 
-        {tabIndex === 1 && active && active.total_pages > 1 && (
-          <View
-            style={{
-              flexDirection: 'row',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              paddingVertical: 12,
-              paddingHorizontal: 8,
-            }}
-          >
-            <TouchableOpacity
-              disabled={activePage <= 1}
-              onPress={() => setActivePage(p => Math.max(1, p - 1))}
-              style={{
-                paddingHorizontal: 14,
-                paddingVertical: 8,
-                borderRadius: 10,
-                backgroundColor: activePage <= 1 ? COLORS.gray[100] : COLORS.primaryLight,
-              }}
-            >
-              <Text
+        {tabIndex === 1 && active && activePage < active.total_pages && (
+          <View style={{ alignItems: 'center', marginVertical: 14 }}>
+            {acRefetching ? (
+              <ActivityIndicator size="small" color={COLORS.primary} />
+            ) : (
+              <TouchableOpacity
+                activeOpacity={0.8}
+                onPress={() => setActivePage(p => p + 1)}
                 style={{
-                  fontSize: fs(13),
-                  fontWeight: '700',
-                  color: activePage <= 1 ? COLORS.gray[400] : COLORS.primary,
+                  paddingHorizontal: 20,
+                  paddingVertical: 10,
+                  borderRadius: 12,
+                  backgroundColor: COLORS.primaryLight,
                 }}
               >
-                {lang === 'en' ? 'Previous' : 'Trang trước'}
-              </Text>
-            </TouchableOpacity>
-
-            <Text style={{ fontSize: fs(13), fontWeight: '600', color: tc.textMuted }}>
-              {lang === 'en'
-                ? `Page ${active.page} / ${active.total_pages}`
-                : `Trang ${active.page} / ${active.total_pages}`}
-            </Text>
-
-            <TouchableOpacity
-              disabled={activePage >= active.total_pages}
-              onPress={() => setActivePage(p => p + 1)}
-              style={{
-                paddingHorizontal: 14,
-                paddingVertical: 8,
-                borderRadius: 10,
-                backgroundColor:
-                  activePage >= active.total_pages ? COLORS.gray[100] : COLORS.primaryLight,
-              }}
-            >
-              <Text
-                style={{
-                  fontSize: fs(13),
-                  fontWeight: '700',
-                  color: activePage >= active.total_pages ? COLORS.gray[400] : COLORS.primary,
-                }}
-              >
-                {lang === 'en' ? 'Next' : 'Trang sau'}
-              </Text>
-            </TouchableOpacity>
+                <Text style={{ fontSize: fs(13), fontWeight: '700', color: COLORS.primary }}>
+                  {lang === 'en' ? 'Load more...' : 'Tải thêm đơn...'}
+                </Text>
+              </TouchableOpacity>
+            )}
           </View>
         )}
 
-        {tabIndex === 2 && history && history.total_pages > 1 && (
-          <View
-            style={{
-              flexDirection: 'row',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              paddingVertical: 12,
-              paddingHorizontal: 8,
-            }}
-          >
-            <TouchableOpacity
-              disabled={historyPage <= 1}
-              onPress={() => setHistoryPage(p => Math.max(1, p - 1))}
-              style={{
-                paddingHorizontal: 14,
-                paddingVertical: 8,
-                borderRadius: 10,
-                backgroundColor: historyPage <= 1 ? COLORS.gray[100] : COLORS.primaryLight,
-              }}
-            >
-              <Text
+        {tabIndex === 2 && history && historyPage < history.total_pages && (
+          <View style={{ alignItems: 'center', marginVertical: 14 }}>
+            {hRefetching ? (
+              <ActivityIndicator size="small" color={COLORS.primary} />
+            ) : (
+              <TouchableOpacity
+                activeOpacity={0.8}
+                onPress={() => setHistoryPage(p => p + 1)}
                 style={{
-                  fontSize: fs(13),
-                  fontWeight: '700',
-                  color: historyPage <= 1 ? COLORS.gray[400] : COLORS.primary,
+                  paddingHorizontal: 20,
+                  paddingVertical: 10,
+                  borderRadius: 12,
+                  backgroundColor: COLORS.primaryLight,
                 }}
               >
-                {lang === 'en' ? 'Previous' : 'Trang trước'}
-              </Text>
-            </TouchableOpacity>
-
-            <Text style={{ fontSize: fs(13), fontWeight: '600', color: tc.textMuted }}>
-              {lang === 'en'
-                ? `Page ${history.page} / ${history.total_pages}`
-                : `Trang ${history.page} / ${history.total_pages}`}
-            </Text>
-
-            <TouchableOpacity
-              disabled={historyPage >= history.total_pages}
-              onPress={() => setHistoryPage(p => p + 1)}
-              style={{
-                paddingHorizontal: 14,
-                paddingVertical: 8,
-                borderRadius: 10,
-                backgroundColor:
-                  historyPage >= history.total_pages ? COLORS.gray[100] : COLORS.primaryLight,
-              }}
-            >
-              <Text
-                style={{
-                  fontSize: fs(13),
-                  fontWeight: '700',
-                  color: historyPage >= history.total_pages ? COLORS.gray[400] : COLORS.primary,
-                }}
-              >
-                {lang === 'en' ? 'Next' : 'Trang sau'}
-              </Text>
-            </TouchableOpacity>
+                <Text style={{ fontSize: fs(13), fontWeight: '700', color: COLORS.primary }}>
+                  {lang === 'en' ? 'Load more...' : 'Tải thêm lịch sử...'}
+                </Text>
+              </TouchableOpacity>
+            )}
           </View>
         )}
       </ScrollView>

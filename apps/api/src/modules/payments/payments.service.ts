@@ -44,6 +44,8 @@ export class PaymentsService {
     @Optional() @InjectConnection() private connection?: Connection,
   ) {}
 
+  private readonly activeWithdrawalUsers = new Set<string>();
+
   /**
    * F19 (R5): Tự động gỡ các thanh toán bị kẹt trạng thái 'processing' quá 15 phút về 'unpaid'
    */
@@ -1567,70 +1569,83 @@ export class PaymentsService {
       throw new BadRequestException('Số tiền rút phải là số nguyên (không có phần thập phân)');
     }
 
-    const pending = await this.withdrawalModel
-      .findOne({ user_id: new Types.ObjectId(helperId), status: 'pending' })
-      .exec();
-    if (pending) throw new ConflictException('Bạn đã có yêu cầu rút tiền đang chờ xử lý');
-
-    const resolvedBankAccount =
-      bankAccount ??
-      (await this.helperModel.findOne({ user_id: new Types.ObjectId(helperId) }).exec())
-        ?.bank_account;
-    if (!resolvedBankAccount?.account_number) {
-      throw new BadRequestException('Vui lòng cập nhật tài khoản ngân hàng trước khi rút tiền');
+    if (this.activeWithdrawalUsers.has(helperId)) {
+      throw new ConflictException('Bạn đã có yêu cầu rút tiền đang chờ xử lý');
     }
+    this.activeWithdrawalUsers.add(helperId);
 
-    await this.getOrCreateWallet(helperId);
-    const wallet = await this.walletModel
-      .findOneAndUpdate(
-        { user_id: new Types.ObjectId(helperId), balance: { $gte: amount } },
-        { $inc: { balance: -amount } },
-        { new: true },
-      )
-      .exec();
-    if (!wallet) {
-      const current = await this.getOrCreateWallet(helperId);
-      throw new BadRequestException(
-        `Số dư không đủ. Hiện có: ${current.balance.toLocaleString('vi-VN')}₫`,
-      );
-    }
-
+    let wallet: any = null;
+    let withdrawal: any = null;
     try {
-      const withdrawal = await this.withdrawalModel.create({
-        user_id: new Types.ObjectId(helperId),
-        amount,
-        status: 'pending',
-        bank_account: {
-          bank_name: resolvedBankAccount.bank_name,
-          account_number: resolvedBankAccount.account_number,
-          account_name: resolvedBankAccount.account_name,
-        },
-      });
+      const pending = await this.withdrawalModel
+        .findOne({ user_id: new Types.ObjectId(helperId), status: 'pending' })
+        .exec();
+      if (pending) throw new ConflictException('Bạn đã có yêu cầu rút tiền đang chờ xử lý');
+      const resolvedBankAccount =
+        bankAccount ??
+        (await this.helperModel.findOne({ user_id: new Types.ObjectId(helperId) }).exec())
+          ?.bank_account;
+      if (!resolvedBankAccount?.account_number) {
+        throw new BadRequestException('Vui lòng cập nhật tài khoản ngân hàng trước khi rút tiền');
+      }
 
-      await this.transactionModel.create({
-        wallet_id: wallet._id,
-        user_id: new Types.ObjectId(helperId),
-        type: 'withdrawal',
-        status: 'pending',
-        amount,
-        balance_before: wallet.balance + amount,
-        balance_after: wallet.balance,
-        description: `Yêu cầu rút tiền`,
-        metadata: { withdrawal_id: String(withdrawal._id) },
-      });
+      await this.getOrCreateWallet(helperId);
+      wallet = await this.walletModel
+        .findOneAndUpdate(
+          { user_id: new Types.ObjectId(helperId), balance: { $gte: amount } },
+          { $inc: { balance: -amount } },
+          { new: true },
+        )
+        .exec();
+      if (!wallet) {
+        const current = await this.getOrCreateWallet(helperId);
+        throw new BadRequestException(
+          `Số dư không đủ. Hiện có: ${current.balance.toLocaleString('vi-VN')}₫`,
+        );
+      }
 
-      return withdrawal;
-    } catch (err) {
-      await this.walletModel
-        .updateOne({ _id: wallet._id }, { $inc: { balance: amount } })
-        .exec()
-        .catch(refundErr => {
-          // F20: hoàn tiền vào ví lỗi thì phải log rõ (tiền rút đã trừ nhưng chưa hoàn lại).
-          this.logger.error(
-            `Failed to refund ${amount} to wallet ${String(wallet._id)} after withdrawal failure: ${refundErr}`,
-          );
+      try {
+        withdrawal = await this.withdrawalModel.create({
+          user_id: new Types.ObjectId(helperId),
+          amount,
+          status: 'pending',
+          bank_account: {
+            bank_name: resolvedBankAccount.bank_name,
+            account_number: resolvedBankAccount.account_number,
+            account_name: resolvedBankAccount.account_name,
+          },
         });
-      throw err;
+
+        await this.transactionModel.create({
+          wallet_id: wallet._id,
+          user_id: new Types.ObjectId(helperId),
+          type: 'withdrawal',
+          status: 'pending',
+          amount,
+          balance_before: wallet.balance + amount,
+          balance_after: wallet.balance,
+          description: `Yêu cầu rút tiền`,
+          metadata: { withdrawal_id: String(withdrawal._id) },
+        });
+
+        return withdrawal;
+      } catch (err) {
+        if (withdrawal?._id) {
+          await this.withdrawalModel.deleteOne({ _id: withdrawal._id }).exec().catch(() => null);
+        }
+        await this.walletModel
+          .updateOne({ _id: wallet._id }, { $inc: { balance: amount } })
+          .exec()
+          .catch(refundErr => {
+            // F20: hoàn tiền vào ví lỗi thì phải log rõ (tiền rút đã trừ nhưng chưa hoàn lại).
+            this.logger.error(
+              `Failed to refund ${amount} to wallet ${String(wallet._id)} after withdrawal failure: ${refundErr}`,
+            );
+          });
+        throw err;
+      }
+    } finally {
+      this.activeWithdrawalUsers.delete(helperId);
     }
   }
 
@@ -1682,51 +1697,69 @@ export class PaymentsService {
     }
 
     // B91: các ghi ví/giao dịch khi xử lý rút tiền chạy trong 1 transaction
-    await this.runInTransaction(async session => {
-      if (action === 'approve') {
+    let refunded = false;
+    let refundWalletId: any = null;
+    try {
+      await this.runInTransaction(async session => {
+        if (action === 'approve') {
+          await this.walletModel
+            .findOneAndUpdate(
+              { user_id: withdrawal.user_id },
+              { $inc: { total_withdrawn: withdrawal.amount } },
+              { session },
+            )
+            .exec();
+          await this.transactionModel
+            .findOneAndUpdate(
+              { 'metadata.withdrawal_id': withdrawalId },
+              { status: 'success' },
+              { session },
+            )
+            .exec();
+        } else {
+          const wallet = await this.getOrCreateWallet(String(withdrawal.user_id));
+          refundWalletId = wallet._id;
+          await this.walletModel
+            .findByIdAndUpdate(wallet._id, { $inc: { balance: withdrawal.amount } }, { session })
+            .exec();
+          refunded = true;
+          await this.transactionModel.create(
+            [
+              {
+                wallet_id: wallet._id,
+                user_id: withdrawal.user_id,
+                type: 'refund',
+                status: 'success',
+                amount: withdrawal.amount,
+                balance_before: wallet.balance,
+                balance_after: wallet.balance + withdrawal.amount,
+                description: `Hoàn tiền rút thất bại`,
+              },
+            ],
+            { session },
+          );
+          await this.transactionModel
+            .findOneAndUpdate(
+              { 'metadata.withdrawal_id': withdrawalId },
+              { status: 'failed' },
+              { session },
+            )
+            .exec();
+        }
+      });
+    } catch (txErr) {
+      await this.withdrawalModel
+        .updateOne({ _id: new Types.ObjectId(withdrawalId) }, { $set: { status: 'pending' } })
+        .exec()
+        .catch(() => undefined);
+      if (refunded && refundWalletId) {
         await this.walletModel
-          .findOneAndUpdate(
-            { user_id: withdrawal.user_id },
-            { $inc: { total_withdrawn: withdrawal.amount } },
-            { session },
-          )
-          .exec();
-        await this.transactionModel
-          .findOneAndUpdate(
-            { 'metadata.withdrawal_id': withdrawalId },
-            { status: 'success' },
-            { session },
-          )
-          .exec();
-      } else {
-        const wallet = await this.getOrCreateWallet(String(withdrawal.user_id));
-        await this.walletModel
-          .findByIdAndUpdate(wallet._id, { $inc: { balance: withdrawal.amount } }, { session })
-          .exec();
-        await this.transactionModel.create(
-          [
-            {
-              wallet_id: wallet._id,
-              user_id: withdrawal.user_id,
-              type: 'refund',
-              status: 'success',
-              amount: withdrawal.amount,
-              balance_before: wallet.balance,
-              balance_after: wallet.balance + withdrawal.amount,
-              description: `Hoàn tiền rút thất bại`,
-            },
-          ],
-          { session },
-        );
-        await this.transactionModel
-          .findOneAndUpdate(
-            { 'metadata.withdrawal_id': withdrawalId },
-            { status: 'failed' },
-            { session },
-          )
-          .exec();
+          .findByIdAndUpdate(refundWalletId, { $inc: { balance: -withdrawal.amount } })
+          .exec()
+          .catch(() => undefined);
       }
-    });
+      throw txErr;
+    }
     withdrawal.status = action === 'approve' ? 'completed' : 'rejected';
 
     withdrawal.admin_note = adminNote;

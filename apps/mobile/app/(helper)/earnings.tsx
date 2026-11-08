@@ -552,7 +552,7 @@ export default function HelperEarningsScreen() {
                               {formatTxDesc(tx.description)}
                             </Text>
                             <Text style={{ fontSize: fs(12), color: tc.textMuted, marginTop: 2 }}>
-                              {formatDateTime(dayjs(tx.created_at))}
+                              {formatDateTime(dayjs(tx.created_at), lang)}
                             </Text>
                           </View>
                           <View style={{ alignItems: 'flex-end' }}>

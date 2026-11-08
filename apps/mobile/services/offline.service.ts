@@ -15,6 +15,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Toast from 'react-native-toast-message';
 import apiClient from '@/services/api-client';
+import { queryClient } from '@/services/query-client';
 import { useOfflineStore } from '@/stores/offline.store';
 import { useSettingsStore } from '@/stores/settings.store';
 
@@ -28,6 +29,7 @@ export interface QueuedAction {
   id: string;
   kind: OfflineActionKind;
   job_id: string;
+  previous_status?: string;
   payload?: Record<string, unknown>;
   queued_at: string;
 }
@@ -41,11 +43,13 @@ export function isNetworkError(err: unknown): boolean {
   return !!e && typeof e === 'object' && !e.response;
 }
 
-/** H14: Phân biệt timeout (mạng chậm/quá giờ) vs mất mạng thật */
+/** H14 & K6: Phân biệt timeout (mạng chậm/quá giờ, gồm ECONNABORTED & ETIMEDOUT) vs mất mạng thật */
 export function isTimeoutError(err: unknown): boolean {
   const e = err as { code?: string; message?: string } | null;
   return (
-    e?.code === 'ECONNABORTED' || (typeof e?.message === 'string' && /timeout/i.test(e.message))
+    e?.code === 'ECONNABORTED' ||
+    e?.code === 'ETIMEDOUT' ||
+    (typeof e?.message === 'string' && /timeout/i.test(e.message))
   );
 }
 
@@ -128,12 +132,17 @@ export async function enqueueAction(
   payload?: Record<string, unknown>,
 ): Promise<void> {
   const queue = await readQueue();
+  // Lấy trạng thái hiện tại từ cache trước khi áp dụng lạc quan để có thể rollback khi xung đột
+  const cachedCurrent = await getCachedJobDetail<Record<string, unknown>>(jobId);
+  const prevStatus = (cachedCurrent?.status as string) || undefined;
+
   // M-10: Chống trùng lặp hàng đợi offline theo (kind, job_id)
   const existingIdx = queue.findIndex(a => a.kind === kind && a.job_id === jobId);
   const action: QueuedAction = {
     id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
     kind,
     job_id: jobId,
+    previous_status: prevStatus,
     payload,
     queued_at: new Date().toISOString(),
   };
@@ -144,7 +153,7 @@ export async function enqueueAction(
   }
   await writeQueue(queue);
 
-  // H14: Cập nhật trạng thái lạc quan trong cache chi tiết đơn và danh sách đơn của thợ
+  // H14 & K6: Cập nhật trạng thái lạc quan trong cache chi tiết đơn, danh sách đơn của thợ và React Query cache
   const STATUS_BY_KIND: Record<OfflineActionKind, string> = {
     on_the_way: 'helper_on_the_way',
     arrived: 'helper_arrived',
@@ -168,9 +177,73 @@ export async function enqueueAction(
           await cacheActiveJobs(activeJobs);
         }
       }
+
+      // K6: Cập nhật cả React Query cache của màn hình đã render
+      queryClient.setQueryData(['job', jobId], (old: any) => {
+        if (!old) return old;
+        return { ...old, status: optimisticStatus, updated_at: new Date().toISOString() };
+      });
+      queryClient.setQueriesData({ queryKey: ['jobs', 'helper'] }, (old: any) => {
+        if (!old) return old;
+        if (Array.isArray(old)) {
+          return old.map(j =>
+            String(j._id) === String(jobId) ? { ...j, status: optimisticStatus } : j,
+          );
+        }
+        if (Array.isArray(old.items)) {
+          return {
+            ...old,
+            items: old.items.map((j: any) =>
+              String(j._id) === String(jobId) ? { ...j, status: optimisticStatus } : j,
+            ),
+          };
+        }
+        return old;
+      });
     } catch {
       /* bỏ qua lỗi cache */
     }
+  }
+}
+
+/** K6: Rollback trạng thái lạc quan khi flush gặp xung đột (4xx/409) */
+export async function rollbackOptimisticStatus(jobId: string, prevStatus: string): Promise<void> {
+  try {
+    const cached = await getCachedJobDetail<Record<string, unknown>>(jobId);
+    if (cached) {
+      cached.status = prevStatus;
+      cached.updated_at = new Date().toISOString();
+      await cacheJobDetail(cached);
+    }
+    const activeJobs = await getCachedActiveJobs<any[]>();
+    if (Array.isArray(activeJobs)) {
+      const idx = activeJobs.findIndex(j => String(j._id) === String(jobId));
+      if (idx >= 0) {
+        activeJobs[idx] = { ...activeJobs[idx], status: prevStatus };
+        await cacheActiveJobs(activeJobs);
+      }
+    }
+    queryClient.setQueryData(['job', jobId], (old: any) => {
+      if (!old) return old;
+      return { ...old, status: prevStatus, updated_at: new Date().toISOString() };
+    });
+    queryClient.setQueriesData({ queryKey: ['jobs', 'helper'] }, (old: any) => {
+      if (!old) return old;
+      if (Array.isArray(old)) {
+        return old.map(j => (String(j._id) === String(jobId) ? { ...j, status: prevStatus } : j));
+      }
+      if (Array.isArray(old.items)) {
+        return {
+          ...old,
+          items: old.items.map((j: any) =>
+            String(j._id) === String(jobId) ? { ...j, status: prevStatus } : j,
+          ),
+        };
+      }
+      return old;
+    });
+  } catch {
+    /* rollback cache error ignored */
   }
 }
 
@@ -281,10 +354,13 @@ export async function flushQueue(): Promise<number> {
       } catch (err) {
         const status = (err as { response?: { status?: number } })?.response?.status;
         if (status && status >= 400 && status < 500) {
-          // Xung đột trạng thái: server thắng → hủy thao tác này, đi tiếp.
+          // K6: Xung đột trạng thái: server thắng → hủy thao tác này, rollback trạng thái lạc quan
           queue = queue.slice(1);
           conflicts += 1;
           await writeQueue(queue);
+          if (item.previous_status) {
+            await rollbackOptimisticStatus(item.job_id, item.previous_status);
+          }
           continue;
         }
         // Mất mạng / server lỗi → dừng, giữ lại phần còn lại.

@@ -13,7 +13,8 @@ import { useTranslation } from '@/hooks/use-i18n';
 import { useClaimForJob, useCreateClaim, type InsuranceClaimStatus } from '@/hooks/use-api';
 import { Badge, Button, Card, COLORS, LoadingSpinner, useThemeColors } from '@/components/ui';
 
-const fmt = (n?: number) => new Intl.NumberFormat('vi-VN').format(n ?? 0);
+const fmt = (n?: number, l: string = 'vi') =>
+  new Intl.NumberFormat(l === 'en' ? 'en-US' : 'vi-VN').format(n ?? 0);
 
 const STATUS_META: Record<
   InsuranceClaimStatus,
@@ -280,7 +281,7 @@ export default function ClaimScreen() {
                 )}
                 <Text style={{ fontSize: fs(12), color: tc.textMuted }}>
                   {lang === 'en' ? 'Submitted at ' : 'Gửi lúc '}
-                  {formatDateTime(dayjs(claim.created_at))}
+                  {formatDateTime(dayjs(claim.created_at), lang)}
                 </Text>
               </Card>
 
@@ -338,7 +339,7 @@ export default function ClaimScreen() {
                       ) : null}
                       <Text style={{ fontSize: fs(11.5), color: tc.textMuted }}>
                         {entry.actor_role === 'admin' ? 'Admin' : lang === 'en' ? 'You' : 'Bạn'} ·{' '}
-                        {formatDateTime(dayjs(entry.at))}
+                        {formatDateTime(dayjs(entry.at), lang)}
                       </Text>
                     </View>
                   </View>

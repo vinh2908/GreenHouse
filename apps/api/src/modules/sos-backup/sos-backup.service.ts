@@ -180,9 +180,9 @@ export class SosBackupService implements OnModuleInit, OnModuleDestroy {
   async createSos(helperId: string, jobId: string, dto: CreateSosBackupDto) {
     if (!Types.ObjectId.isValid(jobId)) throw new BadRequestException('job_id không hợp lệ');
 
-    // H6: Thợ phải được xác minh danh tính
+    // H6 & K13(c): Thợ phải được xác minh danh tính (falsy check — doc cũ thiếu trường hoặc is_verified=false đều bị chặn)
     const helperUser = await this.userModel.findById(helperId).select('is_verified').lean();
-    if (helperUser && helperUser.is_verified === false) {
+    if (!helperUser || !helperUser.is_verified) {
       throw new ForbiddenException('Tài khoản người giúp việc chưa được xác minh danh tính');
     }
 
@@ -895,13 +895,13 @@ export class SosBackupService implements OnModuleInit, OnModuleDestroy {
 
     const userIds = profiles.map(p => String(p.user_id));
 
-    // H6: Thợ dự phòng SOS phải có user.is_verified !== false
+    // H6 & K13(c): Thợ dự phòng SOS phải có user.is_verified = true (chặn falsy / thiếu trường)
     let eligibleProfiles = profiles;
     if (this.userModel && typeof this.userModel.find === 'function') {
       const unverifiedUsers = await this.userModel
         .find({
           _id: { $in: userIds.map(id => new Types.ObjectId(id)) },
-          is_verified: false,
+          is_verified: { $ne: true },
         })
         .select('_id')
         .lean()
@@ -943,7 +943,7 @@ export class SosBackupService implements OnModuleInit, OnModuleDestroy {
         const age = profile.last_location_update
           ? nowMs - new Date(profile.last_location_update).getTime()
           : Number.POSITIVE_INFINITY;
-        if (age > maxGpsAgeMs) continue; // vị trí GPS quá 12 giờ
+        if (age > maxGpsAgeMs) continue; // H22: vị trí GPS quá 120 phút
       }
       filterSteps.gpsFresh += 1;
 

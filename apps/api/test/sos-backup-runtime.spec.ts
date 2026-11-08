@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigModule } from '@nestjs/config';
 import { MongooseModule, getModelToken } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
+import { MongoMemoryServer } from 'mongodb-memory-server';
 import * as dotenv from 'dotenv';
 import * as path from 'path';
 
@@ -48,15 +49,10 @@ import { JobStatus, ContractStatus, PaymentStatus, HelperStatus } from '@homemat
 import { SOCKET_EVENTS } from '@homemate/constants';
 import { recordHelperCancellation } from '../src/modules/helpers/utils/record-cancellation';
 
-dotenv.config({ path: path.resolve(__dirname, '../.env') });
-const testDbUri = (process.env.MONGODB_URI || 'mongodb://localhost:27017/homemate').replace(
-  /\/homemate(\?|$)/,
-  '/homemate_test$1',
-);
-
 describe('SOS Backup & Roadmap Financial Logic Runtime Suite (Real MongoDB)', () => {
-  jest.setTimeout(30000);
+  jest.setTimeout(60000);
 
+  let mongod: MongoMemoryServer;
   let moduleRef: TestingModule;
   let service: SosBackupService;
   let sosModel: Model<SosBackupRequestDocument>;
@@ -65,6 +61,7 @@ describe('SOS Backup & Roadmap Financial Logic Runtime Suite (Real MongoDB)', ()
   let helperModel: Model<HelperProfileDocument>;
   let penaltyEventModel: Model<HelperPenaltyEventDocument>;
   let serviceModel: Model<ServiceDocument>;
+  let userModel: Model<any>;
 
   const emittedEvents: Array<{ target: string; event: string; data: any }> = [];
   const refundedCalls: Array<{
@@ -115,6 +112,11 @@ describe('SOS Backup & Roadmap Financial Logic Runtime Suite (Real MongoDB)', ()
   };
 
   beforeAll(async () => {
+    mongod = await MongoMemoryServer.create({
+      instance: { args: ['--wiredTigerCacheSizeGB', '0.25'] },
+    });
+    const testDbUri = mongod.getUri();
+
     moduleRef = await Test.createTestingModule({
       imports: [
         ConfigModule.forRoot({
@@ -163,10 +165,12 @@ describe('SOS Backup & Roadmap Financial Logic Runtime Suite (Real MongoDB)', ()
     helperModel = moduleRef.get(getModelToken(HelperProfile.name));
     penaltyEventModel = moduleRef.get(getModelToken(HelperPenaltyEvent.name));
     serviceModel = moduleRef.get(getModelToken(Service.name));
+    userModel = moduleRef.get(getModelToken(User.name));
   }, 30000);
 
   afterAll(async () => {
-    await moduleRef.close();
+    await moduleRef?.close();
+    await mongod?.stop();
   });
 
   beforeEach(async () => {
@@ -174,6 +178,9 @@ describe('SOS Backup & Roadmap Financial Logic Runtime Suite (Real MongoDB)', ()
     refundedCalls.length = 0;
     onlineUsers.clear();
     jest.clearAllMocks();
+    if (userModel) {
+      await userModel.deleteMany({});
+    }
   });
 
   // ═════════════════════════════════════════════════════════════════════════════
@@ -183,6 +190,12 @@ describe('SOS Backup & Roadmap Financial Logic Runtime Suite (Real MongoDB)', ()
     const customerId = new Types.ObjectId();
     const helperAId = new Types.ObjectId();
     const helperBId = new Types.ObjectId();
+
+    await userModel.create([
+      { _id: helperAId, full_name: 'Helper A', role: 'helper', is_verified: true, phone: '0901111111', password_hash: 'pwd1' },
+      { _id: helperBId, full_name: 'Helper B', role: 'helper', is_verified: true, phone: '0902222222', password_hash: 'pwd2' },
+      { _id: customerId, full_name: 'Customer', role: 'customer', is_verified: true, phone: '0903333333', password_hash: 'pwd3' },
+    ]);
 
     // 0. Tạo Service
     const serviceDoc = await serviceModel.create({
@@ -340,6 +353,11 @@ describe('SOS Backup & Roadmap Financial Logic Runtime Suite (Real MongoDB)', ()
     const customerId = new Types.ObjectId();
     const helperAId = new Types.ObjectId();
 
+    await userModel.create([
+      { _id: helperAId, full_name: 'Helper A', role: 'helper', is_verified: true, phone: '0901111111', password_hash: 'pwd1' },
+      { _id: customerId, full_name: 'Customer', role: 'customer', is_verified: true, phone: '0903333333', password_hash: 'pwd3' },
+    ]);
+
     const serviceDoc = await serviceModel.create({
       name: 'Sửa điện',
       description: 'Dịch vụ sửa chữa điện dân dụng',
@@ -443,6 +461,13 @@ describe('SOS Backup & Roadmap Financial Logic Runtime Suite (Real MongoDB)', ()
     const helperBId = new Types.ObjectId();
     const helperCId = new Types.ObjectId();
     const serviceId = new Types.ObjectId();
+
+    await userModel.create([
+      { _id: helperAId, full_name: 'Helper A', role: 'helper', is_verified: true, phone: '0901111111', password_hash: 'pwd1' },
+      { _id: helperBId, full_name: 'Helper B', role: 'helper', is_verified: true, phone: '0902222222', password_hash: 'pwd2' },
+      { _id: helperCId, full_name: 'Helper C', role: 'helper', is_verified: true, phone: '0904444444', password_hash: 'pwd4' },
+      { _id: customerId, full_name: 'Customer', role: 'customer', is_verified: true, phone: '0903333333', password_hash: 'pwd3' },
+    ]);
 
     await helperModel.deleteMany({ user_id: { $in: [helperAId, helperBId, helperCId] } });
     await helperModel.create([
@@ -573,6 +598,11 @@ describe('SOS Backup & Roadmap Financial Logic Runtime Suite (Real MongoDB)', ()
     const customerId = new Types.ObjectId();
     const helperAId = new Types.ObjectId();
     const serviceId = new Types.ObjectId();
+
+    await userModel.create([
+      { _id: helperAId, full_name: 'Helper A', role: 'helper', is_verified: true, phone: '0901111111', password_hash: 'pwd1' },
+      { _id: customerId, full_name: 'Customer', role: 'customer', is_verified: true, phone: '0903333333', password_hash: 'pwd3' },
+    ]);
 
     await helperModel.deleteMany({ user_id: helperAId });
     await helperModel.create({

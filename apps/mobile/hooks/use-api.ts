@@ -585,13 +585,21 @@ export function useUnrejectJob() {
   });
 }
 
-export function useSkippedJobs(page = 1, enabled = true) {
+export function useSkippedJobs(
+  page = 1,
+  enabled = true,
+  coords?: { lat?: number; lng?: number } | null,
+) {
   return useQuery({
     enabled,
-    queryKey: ['jobs', 'skipped', page],
+    queryKey: ['jobs', 'skipped', page, coords?.lat, coords?.lng],
     queryFn: async () => {
       const { data } = await apiClient.get('/jobs/skipped', {
-        params: { page },
+        params: {
+          page,
+          lat: coords?.lat,
+          lng: coords?.lng,
+        },
       });
       return data.data;
     },

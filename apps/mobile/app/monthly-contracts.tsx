@@ -15,7 +15,8 @@ import { Badge, Card, COLORS, EmptyState, LoadingSpinner, useThemeColors } from 
 
 const WEEKDAY_LABELS_VI = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
 const WEEKDAY_LABELS_EN = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-const fmt = (n?: number) => new Intl.NumberFormat('vi-VN').format(n ?? 0);
+const fmt = (n?: number, l: string = 'vi') =>
+  new Intl.NumberFormat(l === 'en' ? 'en-US' : 'vi-VN').format(n ?? 0);
 
 export const MONTHLY_STATUS_META: Record<
   MonthlyContractStatus,

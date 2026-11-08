@@ -166,7 +166,7 @@ export function SosBackupPopup() {
               <Text style={{ fontSize: fs(13.5), color: tc.textSecondary }}>
                 {t('sos_popup_payout')}{' '}
                 <Text style={{ fontWeight: '800', color: COLORS.success }}>
-                  {incoming.payout.toLocaleString('vi-VN')}₫
+                  {incoming.payout.toLocaleString(lang === 'en' ? 'en-US' : 'vi-VN')}₫
                 </Text>
               </Text>
             ) : null}

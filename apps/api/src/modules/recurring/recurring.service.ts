@@ -199,6 +199,49 @@ export class RecurringService implements OnApplicationBootstrap, OnModuleDestroy
       key => !plan.skipped_dates.includes(key),
     );
 
+    // K13(d) & H5: Cảnh báo cho khách khi tháng trong rolling window bị bỏ qua do không có ngày tương ứng (ví dụ ngày 31)
+    if (plan.frequency === RecurringFrequency.MONTHLY && plan.month_days?.length) {
+      const sortedMonthDays = [...plan.month_days].sort((a, b) => a - b);
+      const [startYear, startMonth] = this.dateKey(today).split('-').map(Number);
+      const [endYear, endMonth] = this.dateKey(windowEnd).split('-').map(Number);
+      let curY = startYear;
+      let curM = startMonth;
+      while (curY < endYear || (curY === endYear && curM <= endMonth)) {
+        const lastDay = new Date(Date.UTC(curY, curM, 0)).getUTCDate();
+        for (const md of sortedMonthDays) {
+          if (md > lastDay) {
+            const skipKey = `skip_warn_${curY}-${String(curM).padStart(2, '0')}-${md}`;
+            const alreadyNotified = plan.skipped_dates?.includes(skipKey);
+            if (!alreadyNotified) {
+              await this.notificationsService
+                ?.create({
+                  userId: String(plan.customer_id),
+                  type: NOTIFICATION_TYPES.SYSTEM,
+                  title: 'Lịch định kỳ: Bỏ qua lượt trong tháng',
+                  body: `Tháng ${curM}/${curY} không có ngày ${md} nên lịch định kỳ "${plan.title}" tự động bỏ qua lượt này.`,
+                  payload: { plan_id: String(plan._id), year: curY, month: curM, day: md },
+                })
+                .catch(() => undefined);
+
+              if (this.planModel) {
+                await this.planModel
+                  .updateOne({ _id: plan._id }, { $addToSet: { skipped_dates: skipKey } })
+                  .catch(() => undefined);
+              }
+              if (plan.skipped_dates) {
+                plan.skipped_dates.push(skipKey);
+              }
+            }
+          }
+        }
+        curM++;
+        if (curM > 12) {
+          curM = 1;
+          curY++;
+        }
+      }
+    }
+
     // Lịch làm việc (Feature 13): nếu gói có thợ quen, nạp lịch của thợ 1 lần;
     // lượt nào thợ không làm (ngày nghỉ / ngoài giờ / ngày chặn) thì lượt đó
     // được tạo CÔNG KHAI thay vì gửi riêng cho thợ.
@@ -478,6 +521,12 @@ export class RecurringService implements OnApplicationBootstrap, OnModuleDestroy
       }
     }
 
+    const monthDaysList = dto.frequency === 'monthly' ? [...new Set(dto.month_days ?? [])] : [];
+    const highDays = monthDaysList.filter(d => d >= 29).sort((a, b) => a - b);
+    const scheduleWarning = highDays.length > 0
+      ? `Lưu ý: Các tháng không có ngày ${highDays.join(', ')} (như tháng 2 hoặc các tháng 30 ngày) sẽ tự động bỏ qua lượt đó.`
+      : undefined;
+
     const plan = await this.planModel.create({
       customer_id: new Types.ObjectId(customerId),
       service_id: new Types.ObjectId(dto.service_id),
@@ -494,7 +543,7 @@ export class RecurringService implements OnApplicationBootstrap, OnModuleDestroy
       },
       frequency: dto.frequency,
       weekdays: dto.frequency === 'weekly' ? [...new Set(dto.weekdays ?? [])] : [],
-      month_days: dto.frequency === 'monthly' ? [...new Set(dto.month_days ?? [])] : [],
+      month_days: monthDaysList,
       time_start: dto.time_start,
       time_end: dto.time_end,
       duration_hours: dto.duration_hours,
@@ -505,6 +554,7 @@ export class RecurringService implements OnApplicationBootstrap, OnModuleDestroy
         : undefined,
       status: RecurringPlanStatus.ACTIVE,
       skipped_dates: [],
+      schedule_warning: scheduleWarning,
     });
 
     // B52: Sinh đơn lần đầu — lỗi sinh đơn không được làm mất gói vừa tạo:
@@ -633,6 +683,16 @@ export class RecurringService implements OnApplicationBootstrap, OnModuleDestroy
       plan.preferred_helper_id = dto.preferred_helper_id
         ? new Types.ObjectId(dto.preferred_helper_id)
         : undefined;
+    }
+    const effectiveFreq = plan.frequency;
+    const effectiveMonthDays = plan.month_days ?? [];
+    if (effectiveFreq === RecurringFrequency.MONTHLY) {
+      const highDays = effectiveMonthDays.filter(d => d >= 29).sort((a, b) => a - b);
+      plan.schedule_warning = highDays.length > 0
+        ? `Lưu ý: Các tháng không có ngày ${highDays.join(', ')} (như tháng 2 hoặc các tháng 30 ngày) sẽ tự động bỏ qua lượt đó.`
+        : undefined;
+    } else {
+      plan.schedule_warning = undefined;
     }
     await plan.save();
 

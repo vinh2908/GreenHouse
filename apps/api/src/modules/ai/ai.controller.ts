@@ -113,6 +113,8 @@ export class AiController {
         intent: 'faq',
         source: 'faq',
         confidence: 1,
+        is_mock: !this.aiConfig.enabled,
+        mock: !this.aiConfig.enabled,
       };
     }
 
@@ -120,6 +122,11 @@ export class AiController {
       dto.history?.map(h => ({ role: h.role, content: h.content })) ?? [],
       dto.message,
     );
-    return { ...response, source: 'ai' };
+    return {
+      ...response,
+      source: 'ai',
+      is_mock: response.is_mock ?? !this.aiConfig.enabled,
+      mock: response.mock ?? !this.aiConfig.enabled,
+    };
   }
 }

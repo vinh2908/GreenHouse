@@ -239,13 +239,11 @@ describe('Auth E2E', () => {
   // ── OTP ───────────────────────────────────────────────────────────────────
 
   describe('OTP flow', () => {
-    it('should send OTP for existing user', async () => {
-      const res = await request(app.getHttpServer())
+    it('P0-6: should reject phone OTP send with 400 per intentional policy', async () => {
+      await request(app.getHttpServer())
         .post('/api/v1/auth/otp/send')
         .send({ phone: '0901234567' })
-        .expect(200);
-
-      expect(res.body.success).toBe(true);
+        .expect(400);
     });
 
     it('should reject OTP send for non-existent user', async () => {

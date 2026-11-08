@@ -1157,8 +1157,8 @@ export default function JobDetailScreen() {
             </Text>
             <Text style={{ fontSize: fs(13), color: tc.textSecondary, lineHeight: 19 }}>
               {lang === 'en'
-                ? `Only selected helper can view and quote this job until ${formatDateTime(dayjs(job.private_offer_expires_at))}. Afterward, job opens publicly.`
-                : `Chỉ thợ được chọn mới thấy và báo giá đơn này đến ${formatDateTime(dayjs(job.private_offer_expires_at))}. Hết thời gian chờ, đơn tự mở công khai cho mọi thợ.`}
+                ? `Only selected helper can view and quote this job until ${formatDateTime(dayjs(job.private_offer_expires_at), lang)}. Afterward, job opens publicly.`
+                : `Chỉ thợ được chọn mới thấy và báo giá đơn này đến ${formatDateTime(dayjs(job.private_offer_expires_at), lang)}. Hết thời gian chờ, đơn tự mở công khai cho mọi thợ.`}
             </Text>
             <Button
               title={
@@ -1371,7 +1371,7 @@ export default function JobDetailScreen() {
                       : 'Hoàn tiền 100% cho Khách hàng'
                     : job.dispute_resolution.action === 'refund_partial'
                       ? lang === 'en'
-                        ? `Partial refund (${new Intl.NumberFormat('vi-VN').format(job.dispute_resolution.refund_amount || 0)}₫)`
+                        ? `Partial refund (${new Intl.NumberFormat('en-US').format(job.dispute_resolution.refund_amount || 0)}₫)`
                         : `Hoàn một phần (${new Intl.NumberFormat('vi-VN').format(job.dispute_resolution.refund_amount || 0)}₫)`
                       : lang === 'en'
                         ? 'Payout released to Helper'
@@ -1450,7 +1450,7 @@ export default function JobDetailScreen() {
                       ? 'Cancellation time: '
                       : 'Thời gian hủy đơn: '}
                 </Text>
-                {formatDateTime(dayjs(job.updated_at))}
+                {formatDateTime(dayjs(job.updated_at), lang)}
               </Text>
             )}
 
@@ -1470,7 +1470,7 @@ export default function JobDetailScreen() {
                 </Text>
                 {lang === 'en' ? 'Refunded to customer' : 'Đã hoàn tiền cho khách hàng'}
                 {job.dispute_resolution?.refund_amount
-                  ? ` (${new Intl.NumberFormat('vi-VN').format(job.dispute_resolution.refund_amount)}₫)`
+                  ? ` (${new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'vi-VN').format(job.dispute_resolution.refund_amount)}₫)`
                   : ''}
                 .
               </Text>
@@ -1507,9 +1507,9 @@ export default function JobDetailScreen() {
                 : null;
               const stepTime =
                 s.key === 'open' && job.created_at
-                  ? formatDateTime(dayjs(job.created_at))
+                  ? formatDateTime(dayjs(job.created_at), lang)
                   : stepEvent?.created_at
-                    ? formatDateTime(dayjs(stepEvent.created_at))
+                    ? formatDateTime(dayjs(stepEvent.created_at), lang)
                     : null;
 
               return (
@@ -1645,7 +1645,7 @@ export default function JobDetailScreen() {
                 <Badge
                   label={
                     lang === 'en'
-                      ? `Fixed price ${new Intl.NumberFormat('vi-VN').format(job.fixed_price ?? 0)}₫`
+                      ? `Fixed price ${new Intl.NumberFormat('en-US').format(job.fixed_price ?? 0)}₫`
                       : `Giá cam kết ${new Intl.NumberFormat('vi-VN').format(job.fixed_price ?? 0)}₫`
                   }
                   color="#ECFDF5"
@@ -1838,7 +1838,7 @@ export default function JobDetailScreen() {
                   <Tag size={18} color="#065F46" />
                   <Text style={{ fontWeight: '800', fontSize: fs(16), color: '#065F46' }}>
                     {lang === 'en'
-                      ? `Fixed price: ${new Intl.NumberFormat('vi-VN').format(job.fixed_price ?? 0)}₫`
+                      ? `Fixed price: ${new Intl.NumberFormat('en-US').format(job.fixed_price ?? 0)}₫`
                       : `Giá cam kết: ${new Intl.NumberFormat('vi-VN').format(job.fixed_price ?? 0)}₫`}
                   </Text>
                 </View>
@@ -1917,9 +1917,9 @@ export default function JobDetailScreen() {
                               {q.helper_unverified ? (
                                 <View
                                   style={{
-                                    backgroundColor: '#FEF2F2',
+                                    backgroundColor: COLORS.errorLight,
                                     borderWidth: 1,
-                                    borderColor: '#FECACA',
+                                    borderColor: COLORS.error,
                                     borderRadius: 6,
                                     paddingHorizontal: 6,
                                     paddingVertical: 2,
@@ -1928,7 +1928,7 @@ export default function JobDetailScreen() {
                                   <Text
                                     style={{
                                       fontSize: fs(10),
-                                      color: '#DC2626',
+                                      color: COLORS.error,
                                       fontWeight: '700',
                                     }}
                                   >
@@ -1974,35 +1974,7 @@ export default function JobDetailScreen() {
                           </View>
                         )}
 
-                        {q.helper_unverified ? (
-                          <View
-                            style={{
-                              flexDirection: 'row',
-                              alignItems: 'center',
-                              gap: 6,
-                              marginTop: 6,
-                              backgroundColor: '#FEF2F2',
-                              padding: 8,
-                              borderRadius: 8,
-                              borderWidth: 1,
-                              borderColor: '#FECACA',
-                            }}
-                          >
-                            <AlertTriangle size={14} color="#DC2626" />
-                            <Text
-                              style={{
-                                fontSize: fs(12),
-                                color: '#DC2626',
-                                fontWeight: '600',
-                                flex: 1,
-                              }}
-                            >
-                              {lang === 'en'
-                                ? 'Unverified Helper · Quote Hidden'
-                                : 'Thợ chưa xác minh danh tính · Báo giá bị ẩn'}
-                            </Text>
-                          </View>
-                        ) : ['rejected', 'withdrawn', 'expired'].includes(q.status) ? (
+                        {['rejected', 'withdrawn', 'expired'].includes(q.status) ? (
                           <View
                             style={{
                               flexDirection: 'row',
@@ -2045,6 +2017,34 @@ export default function JobDetailScreen() {
                                 {q.rejection_reason}
                               </Text>
                             )}
+                          </View>
+                        ) : q.helper_unverified ? (
+                          <View
+                            style={{
+                              flexDirection: 'row',
+                              alignItems: 'center',
+                              gap: 6,
+                              marginTop: 6,
+                              backgroundColor: COLORS.errorLight,
+                              padding: 8,
+                              borderRadius: 8,
+                              borderWidth: 1,
+                              borderColor: COLORS.error,
+                            }}
+                          >
+                            <AlertTriangle size={14} color={COLORS.error} />
+                            <Text
+                              style={{
+                                fontSize: fs(12),
+                                color: COLORS.error,
+                                fontWeight: '600',
+                                flex: 1,
+                              }}
+                            >
+                              {lang === 'en'
+                                ? 'Unverified Helper · Quote Hidden'
+                                : 'Thợ chưa xác minh danh tính · Báo giá bị ẩn'}
+                            </Text>
                           </View>
                         ) : (
                           <View
@@ -2220,9 +2220,13 @@ export default function JobDetailScreen() {
                       </Text>
                       <Text style={{ fontSize: fs(12), color: tc.textSecondary }}>
                         {lang === 'en' ? 'Additional labor: +' : 'Công phát sinh: +'}
-                        {new Intl.NumberFormat('vi-VN').format(am.additional_labor_cost || 0)}₫ •{' '}
+                        {new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'vi-VN').format(
+                          am.additional_labor_cost || 0,
+                        )}₫ •{' '}
                         {lang === 'en' ? 'Materials: +' : 'Vật tư: +'}
-                        {new Intl.NumberFormat('vi-VN').format(am.additional_materials_cost || 0)}₫
+                        {new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'vi-VN').format(
+                          am.additional_materials_cost || 0,
+                        )}₫
                       </Text>
                       {am.status === 'rejected' && am.rejection_reason && (
                         <Text style={{ fontSize: fs(12), color: '#991B1B', fontStyle: 'italic' }}>
@@ -2999,13 +3003,15 @@ export default function JobDetailScreen() {
                   const totalDiscount = discount + loyaltyDiscount;
                   const finalPayable = Math.max(0, rawTotal - totalDiscount);
 
+                  const numLoc = lang === 'en' ? 'en-US' : 'vi-VN';
+
                   return (
                     <>
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                         <CreditCard size={18} color={COLORS.primary} />
                         <Text style={{ fontWeight: '800', fontSize: fs(15), color: tc.text }}>
                           {lang === 'en' ? 'Payment method' : 'Phương thức thanh toán'} (
-                          {new Intl.NumberFormat('vi-VN').format(finalPayable)}₫)
+                          {new Intl.NumberFormat(numLoc).format(finalPayable)}₫)
                         </Text>
                       </View>
 
@@ -3032,7 +3038,7 @@ export default function JobDetailScreen() {
                                 color: tc.text,
                               }}
                             >
-                              {new Intl.NumberFormat('vi-VN').format(rawTotal)}₫
+                              {new Intl.NumberFormat(numLoc).format(rawTotal)}₫
                             </Text>
                           </View>
                           {job.voucher_code && discount > 0 && (
@@ -3058,7 +3064,7 @@ export default function JobDetailScreen() {
                                   color: COLORS.primary,
                                 }}
                               >
-                                -{new Intl.NumberFormat('vi-VN').format(discount)}₫
+                                -{new Intl.NumberFormat(numLoc).format(discount)}₫
                               </Text>
                             </View>
                           )}
@@ -3075,7 +3081,7 @@ export default function JobDetailScreen() {
                               <Text
                                 style={{ fontSize: fs(13), fontWeight: '800', color: '#D97706' }}
                               >
-                                -{new Intl.NumberFormat('vi-VN').format(loyaltyDiscount)}₫
+                                -{new Intl.NumberFormat(numLoc).format(loyaltyDiscount)}₫
                               </Text>
                             </View>
                           )}
@@ -3103,7 +3109,7 @@ export default function JobDetailScreen() {
                                 color: COLORS.primaryDark,
                               }}
                             >
-                              {new Intl.NumberFormat('vi-VN').format(finalPayable)}₫
+                              {new Intl.NumberFormat(numLoc).format(finalPayable)}₫
                             </Text>
                           </View>
                         </View>
@@ -4169,7 +4175,7 @@ export default function JobDetailScreen() {
                     </View>
                     <Text style={{ fontSize: fs(12), color: tc.textMuted }}>
                       {lang === 'en' ? 'Created at: ' : 'Thời gian: '}
-                      {formatDateTime(dayjs(s.created_at))}
+                      {formatDateTime(dayjs(s.created_at), lang)}
                     </Text>
                     {orig && (
                       <Text style={{ fontSize: fs(13), color: tc.textSecondary }}>
@@ -4232,7 +4238,7 @@ function JobVoucherRow({ job, contractTotal }: { job: any; contractTotal: number
             </Text>
           </View>
           <Text style={{ color: COLORS.success, fontSize: fs(14), fontWeight: '800' }}>
-            −{new Intl.NumberFormat('vi-VN').format(appliedDiscount)}₫
+            −{new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'vi-VN').format(appliedDiscount)}₫
           </Text>
         </View>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
@@ -4240,7 +4246,9 @@ function JobVoucherRow({ job, contractTotal }: { job: any; contractTotal: number
             {lang === 'en' ? 'Payable amount' : 'Khách thực thanh toán'}
           </Text>
           <Text style={{ fontWeight: '800', color: tc.text, fontSize: fs(14) }}>
-            {new Intl.NumberFormat('vi-VN').format(Math.max(0, contractTotal - appliedDiscount))}₫
+            {new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'vi-VN').format(
+              Math.max(0, contractTotal - appliedDiscount),
+            )}₫
           </Text>
         </View>
       </View>
@@ -4360,7 +4368,7 @@ function JobVoucherRow({ job, contractTotal }: { job: any; contractTotal: number
       {preview && preview.discount_amount > 0 && (
         <Text style={{ fontSize: fs(12.5), color: COLORS.success, fontWeight: '700' }}>
           {lang === 'en'
-            ? `Est. discount ~${new Intl.NumberFormat('vi-VN').format(preview.discount_amount)}₫ at checkout`
+            ? `Est. discount ~${new Intl.NumberFormat('en-US').format(preview.discount_amount)}₫ at checkout`
             : `Sẽ giảm khoảng ${new Intl.NumberFormat('vi-VN').format(preview.discount_amount)}₫ khi thanh toán`}
         </Text>
       )}

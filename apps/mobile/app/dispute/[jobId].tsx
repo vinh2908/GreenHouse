@@ -49,7 +49,8 @@ import {
   useThemeColors,
 } from '@/components/ui';
 
-const fmt = (n?: number) => new Intl.NumberFormat('vi-VN').format(n ?? 0);
+const fmt = (n?: number, l: string = 'vi') =>
+  new Intl.NumberFormat(l === 'en' ? 'en-US' : 'vi-VN').format(n ?? 0);
 
 const KIND_META: Record<DisputeTimelineEntry['kind'], { label: string; label_en: string }> = {
   opened: { label: 'Mở tranh chấp', label_en: 'Dispute opened' },
@@ -283,7 +284,7 @@ export default function DisputeCaseScreen() {
               <Text style={{ fontSize: fs(12), color: tc.textMuted }}>
                 {lang === 'en' ? 'Opened by ' : 'Mở bởi '}
                 {roleLabel(caseData.opened_by_role, lang)} ·{' '}
-                {formatDateTime(dayjs(caseData.created_at))}
+                {formatDateTime(dayjs(caseData.created_at), lang)}
               </Text>
             </Card>
 
@@ -326,7 +327,7 @@ export default function DisputeCaseScreen() {
                 )}
                 {caseData.resolution.resolved_at && (
                   <Text style={{ fontSize: fs(12), color: tc.textMuted }}>
-                    {formatDateTime(dayjs(caseData.resolution.resolved_at))}
+                    {formatDateTime(dayjs(caseData.resolution.resolved_at), lang)}
                   </Text>
                 )}
                 {caseData.can_appeal && (
@@ -336,7 +337,7 @@ export default function DisputeCaseScreen() {
                         ? 'You may appeal once before '
                         : 'Bạn có thể kháng cáo 1 lần trước '}
                       {caseData.appeal_deadline
-                        ? formatDateTime(dayjs(caseData.appeal_deadline))
+                        ? formatDateTime(dayjs(caseData.appeal_deadline), lang)
                         : ''}
                       .
                     </Text>
@@ -396,7 +397,7 @@ export default function DisputeCaseScreen() {
                         />
                       </View>
                       <Text style={{ fontSize: fs(11.5), color: tc.textMuted }}>
-                        {formatDateTime(dayjs(entry.created_at))}
+                        {formatDateTime(dayjs(entry.created_at), lang)}
                       </Text>
                       {entry.text ? (
                         <Text style={{ fontSize: fs(13.5), color: tc.text, lineHeight: 20 }}>

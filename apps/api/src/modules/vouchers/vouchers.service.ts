@@ -258,15 +258,34 @@ export class VouchersService {
       .exec();
     if (!redemption) return { restored: false, discount_amount: 0 };
 
-    await this.voucherModel
-      .findOneAndUpdate(
-        { _id: redemption.voucher_id, used_count: { $gt: 0 } },
-        {
-          $inc: { used_count: -1 },
-          $pull: { used_user_ids: new Types.ObjectId(userId) },
-        },
-      )
-      .exec();
+    // K10: Khi hoàn thì chỉ xóa đúng 1 entry userId trong used_user_ids (không dùng $pull xóa hết mọi entry trùng)
+    const voucher = (await (typeof this.voucherModel.findById === 'function'
+      ? this.voucherModel.findById(redemption.voucher_id).exec()
+      : this.voucherModel.findOne({ _id: redemption.voucher_id }).exec())) as VoucherDocument | null;
+    if (voucher) {
+      const userIds = voucher.used_user_ids || [];
+      const idx = userIds.findIndex(id => String(id) === String(userId));
+      if (idx !== -1) {
+        const updatedUserIds = [...userIds];
+        updatedUserIds.splice(idx, 1);
+        await this.voucherModel
+          .findOneAndUpdate(
+            { _id: redemption.voucher_id, used_count: { $gt: 0 } },
+            {
+              $inc: { used_count: -1 },
+              $set: { used_user_ids: updatedUserIds },
+            },
+          )
+          .exec();
+      } else {
+        await this.voucherModel
+          .findOneAndUpdate(
+            { _id: redemption.voucher_id, used_count: { $gt: 0 } },
+            { $inc: { used_count: -1 } },
+          )
+          .exec();
+      }
+    }
 
     return {
       restored: true,

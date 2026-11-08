@@ -5,7 +5,8 @@ import { useValidateVoucher, type VoucherPreview } from '@/hooks/use-api';
 import { Card, COLORS, useThemeColors } from '@/components/ui';
 import { useTranslation } from '@/hooks/use-i18n';
 
-const fmt = (n: number) => new Intl.NumberFormat('vi-VN').format(n);
+const fmt = (n: number, l: string = 'vi') =>
+  new Intl.NumberFormat(l === 'en' ? 'en-US' : 'vi-VN').format(n);
 
 /**
  * Nhập + kiểm tra mã giảm giá (Roadmap Phase 1).

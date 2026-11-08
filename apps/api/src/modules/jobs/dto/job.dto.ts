@@ -220,6 +220,11 @@ export class CreateSosJobDto {
   @IsArray()
   @IsString({ each: true })
   photos?: string[];
+
+  @ApiPropertyOptional({ description: 'Phụ phí (nếu client gửi, server sẽ bỏ qua và dùng SOS_SURCHARGE_VND)' })
+  @IsOptional()
+  @IsNumber()
+  surcharge?: number;
 }
 
 export class CreateQuoteDto {

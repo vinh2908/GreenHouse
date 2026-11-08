@@ -192,7 +192,7 @@ export default function ReceiptScreen() {
                 {lang === 'en' ? 'Settlement Time' : 'Thời gian quyết toán'}
               </Text>
               <Text style={[styles.detailVal, { fontSize: fs(13) }]}>
-                {formatDateTime(dayjs(job.updated_at || job.created_at))}
+                {formatDateTime(dayjs(job.updated_at || job.created_at), lang)}
               </Text>
             </View>
 

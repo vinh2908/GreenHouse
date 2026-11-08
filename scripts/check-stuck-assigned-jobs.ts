@@ -60,6 +60,12 @@ async function checkAndFixStuckAssignedJobs() {
 
     console.log('\nTiến hành sửa các đơn kẹt (hủy gán về OPEN để có thể gán lại chuẩn)...');
     for (const job of stuckJobs) {
+      if (job.status !== 'confirmed' && job.status !== 'quote_selected') {
+        console.warn(
+          `⚠️ Bỏ qua đơn ${job._id} vì đang ở trạng thái ${job.status}. Chỉ tự động unassign đơn ở trạng thái confirmed/quote_selected.`,
+        );
+        continue;
+      }
       const helperId = job.helper_id;
       await jobsCol.updateOne(
         { _id: job._id },
@@ -79,20 +85,36 @@ async function checkAndFixStuckAssignedJobs() {
         },
       );
 
-      // Giải phóng trạng thái busy của thợ nếu thợ không còn đơn nào khác đang làm
-      const otherActiveJob = await jobsCol.findOne({
-        helper_id: helperId,
-        status: { $in: ['in_progress', 'arrived', 'on_the_way'] },
-      });
-      if (!otherActiveJob) {
-        await helpersCol.updateOne({ user_id: helperId }, { $set: { status: 'online' } });
-      }
+      // L3(c): Giải phóng trạng thái thợ qua setHelperBusy thay vì set trực tiếp
+      await setHelperBusy(db, helperId, false);
       console.log(`✓ Đã sửa đơn ${job._id}: hủy gán về OPEN, giải phóng thợ ${helperId}.`);
     }
   }
   console.log('────────────────────────────────────────────────────────\n');
 
   await mongoose.disconnect();
+}
+
+/** L3(c): Tương đương jobsService.setHelperBusy */
+async function setHelperBusy(db: any, helperId: any, busy: boolean) {
+  const helperObjId = new Types.ObjectId(String(helperId));
+  const helpersCol = db.collection('helpers');
+  const jobsCol = db.collection('jobs');
+  if (busy) {
+    await helpersCol.updateOne({ user_id: helperObjId }, { $set: { status: 'busy' } });
+  } else {
+    const activeStatuses = ['on_the_way', 'arrived', 'in_progress', 'pending_review'];
+    const hasOtherActive = await jobsCol.findOne({
+      helper_id: helperObjId,
+      status: { $in: activeStatuses },
+    });
+    if (!hasOtherActive) {
+      await helpersCol.updateOne(
+        { user_id: helperObjId, status: 'busy' },
+        { $set: { status: 'online' } },
+      );
+    }
+  }
 }
 
 checkAndFixStuckAssignedJobs().catch(err => {

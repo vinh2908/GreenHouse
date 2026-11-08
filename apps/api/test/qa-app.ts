@@ -2,7 +2,7 @@ import { Test } from '@nestjs/testing';
 import { ValidationPipe } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { MongooseModule, getModelToken } from '@nestjs/mongoose';
-import { MongoMemoryReplSet } from 'mongodb-memory-server';
+import { MongoMemoryServer } from 'mongodb-memory-server';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { Types } from 'mongoose';
 import { AuthModule } from '../src/modules/auth/auth.module';
@@ -22,13 +22,12 @@ import { HttpExceptionFilter } from '../src/common/filters/http-exception.filter
 import { TransformInterceptor } from '../src/common/interceptors/transform.interceptor';
 import appConfig from '../src/config/app.config';
 import jwtConfig from '../src/config/jwt.config';
-import request from 'supertest';
+const request = require('supertest');
 
-// Never imports AppModule or .env: all data lives in this disposable replica set.
+// Never imports AppModule or .env: all data lives in this disposable memory server.
 export async function createQaApp() {
-  const mongo = await MongoMemoryReplSet.create({
-    replSet: { count: 1 },
-    instanceOpts: [{ args: ['--wiredTigerCacheSizeGB', '0.25'] }],
+  const mongo = await MongoMemoryServer.create({
+    instance: { args: ['--wiredTigerCacheSizeGB', '0.25'] },
   });
   const module = await Test.createTestingModule({
     imports: [
@@ -93,6 +92,7 @@ export async function createQaApp() {
     await app.get(getModelToken('User')).updateOne(
       { _id: id },
       {
+        is_verified: true,
         roles:
           role === 'helper' ? ['customer', 'helper'] : role === 'admin' ? ['admin'] : ['customer'],
         active_role: role === 'outsider' ? 'customer' : role,
@@ -105,6 +105,7 @@ export async function createQaApp() {
     accounts[role] = {
       id,
       phone,
+      email: `qa.${role}@example.com`,
       token: login.body.data.access_token,
       refresh: login.body.data.refresh_token,
     };
@@ -115,6 +116,9 @@ export async function createQaApp() {
     verification_status: 'approved',
     status: 'online',
     location: { type: 'Point', coordinates: [106.701, 10.731] },
+    id_card_front: 'https://example.com/front.jpg',
+    id_card_back: 'https://example.com/back.jpg',
+    selfie_photo: 'https://example.com/selfie.jpg',
     bank_account: {
       bank_name: 'QA Bank',
       account_name: 'QA HELPER',

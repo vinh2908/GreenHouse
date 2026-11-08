@@ -434,6 +434,9 @@ export class Quote {
   @Prop({ required: true })
   expires_at: Date;
 
+  @Prop({ default: false })
+  unverified_hidden_notified?: boolean;
+
   created_at: Date;
   updated_at: Date;
 }

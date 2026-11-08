@@ -275,7 +275,7 @@ export default function LoyaltyScreen() {
                         </Text>
                         <Text style={{ fontSize: fs(12), color: tc.textMuted, marginTop: 2 }}>
                           {t('loyalty_balance_after', {
-                            time: formatDateTime(dayjs(tx.created_at)),
+                            time: formatDateTime(dayjs(tx.created_at), lang),
                             balance: fmt(tx.balance_after),
                           })}
                         </Text>

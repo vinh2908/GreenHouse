@@ -330,10 +330,15 @@ export function LocationPicker({
   };
 
   useEffect(() => {
-    if (!visible) return;
-    if (!mapLoadedRef.current) {
+    if (!visible) {
+      // K9: Reset mapLoadedRef và mapLoading khi đóng để khi mở lại luôn hiện skeleton
+      mapLoadedRef.current = false;
       setMapLoading(true);
+      return;
     }
+    // K9: Khi mở modal, reset cờ để luôn hiện skeleton trong lúc bản đồ load lại, không hiện màn trống
+    mapLoadedRef.current = false;
+    setMapLoading(true);
     setQuery('');
     setResults([]);
     setGeo(null);
