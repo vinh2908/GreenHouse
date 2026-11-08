@@ -449,7 +449,9 @@ export default function HelperDashboardScreen() {
                 }
                 return (
                   <ErrorState
-                    title={lang === 'en' ? 'Unable to load helper profile' : 'Không thể tải hồ sơ thợ'}
+                    title={
+                      lang === 'en' ? 'Unable to load helper profile' : 'Không thể tải hồ sơ thợ'
+                    }
                     subtitle={
                       lang === 'en'
                         ? 'Could not connect to profile service. Please retry.'
@@ -736,7 +738,9 @@ export default function HelperDashboardScreen() {
                 }
                 return (
                   <ErrorState
-                    title={lang === 'en' ? 'Unable to load active jobs' : 'Không thể tải đơn đang làm'}
+                    title={
+                      lang === 'en' ? 'Unable to load active jobs' : 'Không thể tải đơn đang làm'
+                    }
                     subtitle={
                       lang === 'en'
                         ? 'Could not connect to active jobs service. Please retry.'
@@ -853,7 +857,9 @@ export default function HelperDashboardScreen() {
                 }
                 return (
                   <ErrorState
-                    title={lang === 'en' ? 'Unable to load nearby jobs' : 'Không thể tải đơn hàng mới'}
+                    title={
+                      lang === 'en' ? 'Unable to load nearby jobs' : 'Không thể tải đơn hàng mới'
+                    }
                     subtitle={
                       lang === 'en'
                         ? 'Could not connect to job service. Please retry.'
@@ -975,8 +981,13 @@ export default function HelperDashboardScreen() {
                             {job.address?.district || job.address?.city || t('jobs_unspecified')}
                           </Text>
                           {(job as any).distance_km != null ? (
-                            <Text style={{ fontSize: fs(12), color: COLORS.primary, fontWeight: '700' }}>
-                              · {(job as any).distance_km === 0 ? '< 100m' : `${(job as any).distance_km} km`}
+                            <Text
+                              style={{ fontSize: fs(12), color: COLORS.primary, fontWeight: '700' }}
+                            >
+                              ·{' '}
+                              {(job as any).distance_km === 0
+                                ? '< 100m'
+                                : `${(job as any).distance_km} km`}
                             </Text>
                           ) : null}
                         </View>
@@ -1069,9 +1080,7 @@ export default function HelperDashboardScreen() {
                         fontSize: fs(13),
                         fontWeight: '700',
                         color:
-                          dashPage >= availableJobs.total_pages
-                            ? COLORS.gray[400]
-                            : COLORS.primary,
+                          dashPage >= availableJobs.total_pages ? COLORS.gray[400] : COLORS.primary,
                       }}
                     >
                       {lang === 'en' ? 'Next' : 'Trang sau'}

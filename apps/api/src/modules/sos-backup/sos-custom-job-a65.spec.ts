@@ -30,7 +30,7 @@ describe('SosBackupService.computeCandidatePool — custom job (G16/A65)', () =>
       // Trả profile khi KHÔNG lọc theo service; trả rỗng khi có lọc service
       // (mô phỏng: thợ này không có service đó trong service_ids).
       find: jest.fn((filter: Record<string, unknown>) => ({
-        exec: async () => (('service_ids' in filter || '$or' in filter) ? [] : [profile]),
+        exec: async () => ('service_ids' in filter || '$or' in filter ? [] : [profile]),
       })),
     };
     const jobModel: any = {

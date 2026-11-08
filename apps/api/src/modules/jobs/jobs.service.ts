@@ -488,13 +488,18 @@ export class JobsService implements OnModuleInit {
           // P1-3: Khi đạt 5 lần thất bại, đơn rơi khỏi sweep. Báo admin đối soát, báo khách chờ xử lý thủ công!
           if (job.refund_retry_count >= 5) {
             (job as any).admin_attention = true;
-            (job as any).admin_note = `Hoàn tiền tự động thất bại 5 lần (${(err as Error).message}). Cần đối soát ví thủ công.`;
+            (job as any).admin_note =
+              `Hoàn tiền tự động thất bại 5 lần (${(err as Error).message}). Cần đối soát ví thủ công.`;
             await this.notificationsService
               .notifyAdmins({
                 type: NOTIFICATION_TYPES.SYSTEM,
                 title: 'Cần đối soát hoàn tiền đơn hàng',
                 body: `Đơn "${job.title}" (${job._id}) hoàn ${refundAmount.toLocaleString('vi-VN')}₫ thất bại 5 lần. Cần admin xử lý thủ công.`,
-                payload: { job_id: String(job._id), amount: refundAmount, customer_id: String(job.customer_id) },
+                payload: {
+                  job_id: String(job._id),
+                  amount: refundAmount,
+                  customer_id: String(job.customer_id),
+                },
               })
               .catch(() => undefined);
 
@@ -1499,7 +1504,10 @@ export class JobsService implements OnModuleInit {
       verifiedHelpers = await this.helperModel
         .aggregate([
           {
-            $match: { status: HelperStatus.ONLINE, verification_status: VerificationStatus.APPROVED },
+            $match: {
+              status: HelperStatus.ONLINE,
+              verification_status: VerificationStatus.APPROVED,
+            },
           },
           { $lookup: { from: 'users', localField: 'user_id', foreignField: '_id', as: 'user' } },
           { $match: { 'user.status': { $ne: 'suspended' }, 'user.is_deleted': { $ne: true } } },
@@ -1716,7 +1724,10 @@ export class JobsService implements OnModuleInit {
         'Tài khoản thợ chưa được xác minh qua email. Vui lòng xác minh email trước khi nhận đơn cứu hộ SOS.',
       );
     }
-    if ((user as any)?.status === UserStatus.SUSPENDED || (user as any)?.status === UserStatus.INACTIVE) {
+    if (
+      (user as any)?.status === UserStatus.SUSPENDED ||
+      (user as any)?.status === UserStatus.INACTIVE
+    ) {
       throw new ForbiddenException('Tài khoản của bạn đang bị tạm khoá hoặc ngừng hoạt động');
     }
 
@@ -1727,10 +1738,14 @@ export class JobsService implements OnModuleInit {
       throw new ForbiddenException('Chỉ thợ đã xác thực e-KYC mới có quyền nhận đơn cứu hộ SOS');
     }
     if (helperProfile.status === HelperStatus.BUSY) {
-      throw new BadRequestException('Bạn đang bận làm việc cho đơn khác, không thể nhận đơn cứu hộ lúc này');
+      throw new BadRequestException(
+        'Bạn đang bận làm việc cho đơn khác, không thể nhận đơn cứu hộ lúc này',
+      );
     }
     if (helperProfile.status === HelperStatus.OFFLINE) {
-      throw new BadRequestException('Bạn đang ở trạng thái Ngoại tuyến, vui lòng bật Nhận việc để nhận đơn');
+      throw new BadRequestException(
+        'Bạn đang ở trạng thái Ngoại tuyến, vui lòng bật Nhận việc để nhận đơn',
+      );
     }
     if (job.expires_at && new Date() > new Date(job.expires_at)) {
       throw new BadRequestException('Đơn cứu hộ SOS đã hết hạn');
@@ -1794,7 +1809,10 @@ export class JobsService implements OnModuleInit {
       });
     } catch (createErr) {
       if ((quote as any)?._id) {
-        await this.quoteModel.deleteOne({ _id: (quote as any)._id }).exec().catch(() => undefined);
+        await this.quoteModel
+          .deleteOne({ _id: (quote as any)._id })
+          .exec()
+          .catch(() => undefined);
       }
       await this.jobModel
         .updateOne({ _id: job._id }, { $set: { helper_id: null, status: JobStatus.OPEN } })
@@ -2624,10 +2642,14 @@ export class JobsService implements OnModuleInit {
       throw new ForbiddenException('Tài khoản của bạn đang bị tạm khoá hoặc ngừng hoạt động');
     }
     if (helperProfile.status === HelperStatus.BUSY) {
-      throw new BadRequestException('Bạn đang bận làm việc cho đơn khác, không thể nhận việc lúc này');
+      throw new BadRequestException(
+        'Bạn đang bận làm việc cho đơn khác, không thể nhận việc lúc này',
+      );
     }
     if (helperProfile.status === HelperStatus.OFFLINE) {
-      throw new BadRequestException('Bạn đang ở trạng thái Ngoại tuyến, vui lòng bật Nhận việc để nhận đơn');
+      throw new BadRequestException(
+        'Bạn đang ở trạng thái Ngoại tuyến, vui lòng bật Nhận việc để nhận đơn',
+      );
     }
 
     if (job.expires_at && new Date() > new Date(job.expires_at)) {
@@ -3146,9 +3168,10 @@ export class JobsService implements OnModuleInit {
     // P0-4: Nghiệm thu bằng tiền mặt bắt buộc thợ đã xác nhận nhận tiền mặt
     if (effectivePaymentMethod === 'cash' && !existing.is_warranty) {
       const hasCashConfirmed = existing.helper_cash_confirmed === true;
-      const hasRecordedCashTx = typeof this.paymentsService?.hasRecordedCashPayment === 'function'
-        ? await this.paymentsService.hasRecordedCashPayment(String(existing._id))
-        : false;
+      const hasRecordedCashTx =
+        typeof this.paymentsService?.hasRecordedCashPayment === 'function'
+          ? await this.paymentsService.hasRecordedCashPayment(String(existing._id))
+          : false;
       if (!hasCashConfirmed && !hasRecordedCashTx) {
         throw new BadRequestException(
           'Thợ chưa xác nhận đã nhận tiền mặt từ khách. Vui lòng yêu cầu thợ bấm xác nhận đã nhận tiền mặt trước khi nghiệm thu đơn tiền mặt.',
@@ -3181,14 +3204,13 @@ export class JobsService implements OnModuleInit {
         // P0-3: Chỉ giải ngân số tiền tương ứng với số tiền khách thực tế đã thanh toán (tránh giải ngân vượt số tiền đã thu)
         let maxPayable = contract.helper_receives;
         if (!existing.is_warranty) {
-          const totalPaidByCustomer = typeof this.paymentsService?.getTotalPaidForJob === 'function'
-            ? await this.paymentsService.getTotalPaidForJob(String(existing._id))
-            : contract.total_price;
-          const fee = contract.platform_fee ?? Math.max(0, contract.total_price - contract.helper_receives);
-          maxPayable = Math.min(
-            contract.helper_receives,
-            Math.max(0, totalPaidByCustomer - fee),
-          );
+          const totalPaidByCustomer =
+            typeof this.paymentsService?.getTotalPaidForJob === 'function'
+              ? await this.paymentsService.getTotalPaidForJob(String(existing._id))
+              : contract.total_price;
+          const fee =
+            contract.platform_fee ?? Math.max(0, contract.total_price - contract.helper_receives);
+          maxPayable = Math.min(contract.helper_receives, Math.max(0, totalPaidByCustomer - fee));
         }
         payoutAmount = existing.is_warranty ? contract.helper_receives : maxPayable;
 
@@ -3198,7 +3220,8 @@ export class JobsService implements OnModuleInit {
             payoutCredited = true;
             isSimulatedPayout = false;
           } else {
-            const verified = (await this.paymentsService.hasVerifiedWalletPayment?.(jobId)) ?? false;
+            const verified =
+              (await this.paymentsService.hasVerifiedWalletPayment?.(jobId)) ?? false;
             if (verified) {
               await this.creditJobPayout(existing, payoutAmount);
               payoutCredited = true;
@@ -3810,9 +3833,10 @@ export class JobsService implements OnModuleInit {
       job.voucher_code = undefined;
     }
 
-    const netPaid = (job.payment_status === PaymentStatus.PAID && job.payment_method !== 'cash')
-      ? computeNetPaidAmount(job, contractTotalPrice)
-      : 0;
+    const netPaid =
+      job.payment_status === PaymentStatus.PAID && job.payment_method !== 'cash'
+        ? computeNetPaidAmount(job, contractTotalPrice)
+        : 0;
 
     // P1-2: Lưu trạng thái hủy và cờ refund_pending vào DB TRƯỚC khi gọi hoàn tiền
     job.status = JobStatus.CANCELLED;

@@ -57,11 +57,21 @@ export default function PaymentsPage() {
   const [rejectNote, setRejectNote] = useState('');
   const [approvingItem, setApprovingItem] = useState<any | null>(null);
 
-  const { data: withdrawals, isLoading: wLoading, isError: wError, refetch: refetchW } = useAdminWithdrawals({
+  const {
+    data: withdrawals,
+    isLoading: wLoading,
+    isError: wError,
+    refetch: refetchW,
+  } = useAdminWithdrawals({
     status: wStatus || undefined,
     page: wPage,
   });
-  const { data: transactions, isLoading: txLoading, isError: txError, refetch: refetchTx } = useAdminTransactions({
+  const {
+    data: transactions,
+    isLoading: txLoading,
+    isError: txError,
+    refetch: refetchTx,
+  } = useAdminTransactions({
     type: txType || undefined,
     page: txPage,
   });
@@ -104,7 +114,9 @@ export default function PaymentsPage() {
             <Loading />
           ) : wError ? (
             <div className="p-8 text-center space-y-3">
-              <p className="text-destructive font-medium">Không thể tải danh sách yêu cầu rút tiền</p>
+              <p className="text-destructive font-medium">
+                Không thể tải danh sách yêu cầu rút tiền
+              </p>
               <Button variant="outline" size="sm" onClick={() => refetchW()}>
                 Tải lại
               </Button>
@@ -296,7 +308,10 @@ export default function PaymentsPage() {
                     {transactions.transactions.map(
                       (tx: {
                         _id: string;
-                        user_id?: string | { _id: string; full_name?: string; phone?: string; email?: string } | null;
+                        user_id?:
+                          | string
+                          | { _id: string; full_name?: string; phone?: string; email?: string }
+                          | null;
                         type: string;
                         description: string;
                         amount: number;

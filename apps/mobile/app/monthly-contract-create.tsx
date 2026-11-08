@@ -143,14 +143,11 @@ export default function MonthlyContractCreateScreen() {
       Array.isArray(selectedAddress.location.coordinates) &&
       selectedAddress.location.coordinates.length >= 2
     ) {
-      coords = [
-        selectedAddress.location.coordinates[0],
-        selectedAddress.location.coordinates[1],
-      ];
+      coords = [selectedAddress.location.coordinates[0], selectedAddress.location.coordinates[1]];
     } else {
       const qFull = selectedAddress ? selectedAddress.full_address : fullAddress.trim();
       const qDist = selectedAddress ? selectedAddress.district : district.trim();
-      const qCity = selectedAddress ? selectedAddress.city : (city.trim() || 'Hồ Chí Minh');
+      const qCity = selectedAddress ? selectedAddress.city : city.trim() || 'Hồ Chí Minh';
       const queryParts = [qFull, qDist, qCity].filter(Boolean);
       if (queryParts.length > 0) {
         try {
@@ -170,9 +167,7 @@ export default function MonthlyContractCreateScreen() {
       Toast.show({
         type: 'error',
         text1:
-          lang === 'en'
-            ? 'Unconfirmed address coordinates'
-            : 'Chưa xác định được tọa độ địa chỉ',
+          lang === 'en' ? 'Unconfirmed address coordinates' : 'Chưa xác định được tọa độ địa chỉ',
         text2:
           lang === 'en'
             ? 'Please enter a detailed address or select from saved addresses.'

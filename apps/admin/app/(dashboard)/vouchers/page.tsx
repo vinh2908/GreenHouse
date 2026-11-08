@@ -67,7 +67,10 @@ const toDateInput = (iso?: string) => (iso ? iso.slice(0, 10) : '');
 export default function VouchersPage() {
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
-  const { data, isLoading, isError, refetch } = useAdminVouchers({ search: search || undefined, page });
+  const { data, isLoading, isError, refetch } = useAdminVouchers({
+    search: search || undefined,
+    page,
+  });
   const save = useSaveVoucher();
   const toggle = useToggleVoucher();
   const deleteVoucher = useDeleteVoucher();

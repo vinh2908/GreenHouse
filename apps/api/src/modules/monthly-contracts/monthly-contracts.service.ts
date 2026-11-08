@@ -753,9 +753,10 @@ export class MonthlyContractsService {
     // Ngoại lệ duy nhất: chế độ "trả ngoài hệ thống" (cash_direct) thì chỉ ghi
     // nhận công, cộng 0₫ vào ví thợ.
     if (!isCashDirect && summary.gross_amount > 0) {
-      const customerWallet = typeof this.paymentsService?.getWallet === 'function'
-        ? await this.paymentsService.getWallet(customerId)
-        : null;
+      const customerWallet =
+        typeof this.paymentsService?.getWallet === 'function'
+          ? await this.paymentsService.getWallet(customerId)
+          : null;
       if (customerWallet) {
         const customerBalance =
           (customerWallet?.balance ?? 0) + (customerWallet?.simulated_balance ?? 0);

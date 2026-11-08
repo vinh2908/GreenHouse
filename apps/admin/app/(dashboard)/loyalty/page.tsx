@@ -31,13 +31,23 @@ export default function AdminLoyaltyPage() {
   const [message, setMessage] = useState('');
   const [confirmAdjust, setConfirmAdjust] = useState(false);
 
-  const { data: usersData, isLoading: usersLoading, isError: usersError, refetch: refetchUsers } = useAdminUsers({
+  const {
+    data: usersData,
+    isLoading: usersLoading,
+    isError: usersError,
+    refetch: refetchUsers,
+  } = useAdminUsers({
     search: search || undefined,
     page: 1,
   });
   const users = usersData?.users ?? [];
 
-  const { data: loyalty, isLoading: loyaltyLoading, isError: loyaltyError, refetch: refetchLoyalty } = useAdminLoyaltyUser(selectedId || undefined);
+  const {
+    data: loyalty,
+    isLoading: loyaltyLoading,
+    isError: loyaltyError,
+    refetch: refetchLoyalty,
+  } = useAdminLoyaltyUser(selectedId || undefined);
   const adjust = useAdminAdjustLoyalty();
 
   const selectedUser = users.find((u: any) => u._id === selectedId);

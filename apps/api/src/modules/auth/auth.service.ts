@@ -202,10 +202,7 @@ export class AuthService {
     // P1-19: Tự xóa tài khoản -> gỡ hồ sơ thợ khỏi trạng thái ONLINE (chuyển sang OFFLINE)
     if (this.helperModel) {
       await this.helperModel
-        .updateOne(
-          { user_id: user._id },
-          { status: HelperStatus.OFFLINE, deleted_at: new Date() },
-        )
+        .updateOne({ user_id: user._id }, { status: HelperStatus.OFFLINE, deleted_at: new Date() })
         .exec()
         .catch(() => undefined);
     }
