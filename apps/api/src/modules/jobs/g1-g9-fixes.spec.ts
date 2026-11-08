@@ -1,8 +1,10 @@
 import { RoutingService } from './routing.service';
 import { Types } from 'mongoose';
-import { JobStatus, PaymentStatus } from '@homemate/types';
+import { JobStatus, PaymentStatus, VerificationStatus } from '@homemate/types';
+import { JobsService } from './jobs.service';
+import { AdminService } from '../admin/admin.service';
 
-describe('ĐỢT 2 (P1) — G1–G9 Regression & Correctness Specs', () => {
+describe('ĐỢT 2 (P1) — G1–G9 & J1–J3 Regression & Correctness Specs', () => {
   // ─── G3 & G4: Routing Service ──────────────────────────────────────────────
   describe('G3 & G4: RoutingService error throwing and deadline fallback', () => {
     let routingService: RoutingService;
@@ -58,48 +60,57 @@ describe('ĐỢT 2 (P1) — G1–G9 Regression & Correctness Specs', () => {
     });
   });
 
-  // ─── G5: Admin hủy đơn khôi phục quyền lợi khách hàng ───────────────────────
-  describe('G5: Admin cancelJob restores voucher and loyalty benefits', () => {
-    it('AdminService.updateJobStatus(CANCELLED) gọi restoreJobBenefitsOnCancel', async () => {
-      const restoreMock = jest.fn().mockResolvedValue(undefined);
+  // ─── G5 & J3: Admin hủy đơn khôi phục quyền lợi khách qua code AdminService thật ───
+  describe('G5 & J3: Admin cancelJob calls restoreJobBenefitsOnCancel on real AdminService', () => {
+    it('AdminService.updateJobStatus(CANCELLED) chạy qua AdminService thật và gọi restoreJobBenefitsOnCancel', async () => {
+      const jobId = new Types.ObjectId().toString();
+      const adminId = new Types.ObjectId().toString();
       const mockJob: any = {
-        _id: new Types.ObjectId(),
-        status: JobStatus.OPEN,
-        payment_status: PaymentStatus.UNPAID,
+        _id: new Types.ObjectId(jobId),
+        status: JobStatus.IN_PROGRESS,
+        payment_status: PaymentStatus.PAID,
         events: [],
         save: jest.fn().mockResolvedValue(true),
       };
 
-      const adminService = {
-        jobModel: {
-          findById: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(mockJob) }),
-        },
-        contractModel: {
-          findOne: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(null) }),
-        },
-        jobsService: {
-          restoreJobBenefitsOnCancel: restoreMock,
-          emitJobStatusChange: jest.fn(),
-          emitJobCancelled: jest.fn(),
-        },
-        logger: { error: jest.fn() },
+      const restoreMock = jest.fn().mockResolvedValue(undefined);
+      const jobsServiceMock: any = {
+        restoreJobBenefitsOnCancel: restoreMock,
+        emitJobStatusChange: jest.fn(),
+        emitJobCancelled: jest.fn(),
       };
 
-      // Giả lập logic updateJobStatus ở nhánh CANCELLED
-      const status = JobStatus.CANCELLED;
-      mockJob.status = status;
-      mockJob.events.push({ status, note: 'Admin hủy' });
-      await mockJob.save();
+      const jobModel = {
+        findById: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(mockJob) }),
+        updateOne: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue({}) }),
+      };
+      const contractModel = {
+        findOne: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(null) }),
+      };
 
-      if (
-        adminService.jobsService &&
-        typeof adminService.jobsService.restoreJobBenefitsOnCancel === 'function'
-      ) {
-        await adminService.jobsService.restoreJobBenefitsOnCancel(mockJob);
-      }
+      const adminService = new AdminService(
+        {} as any, // userModel
+        {} as any, // helperModel
+        jobModel as any,
+        contractModel as any,
+        {} as any, // notificationModel
+        {} as any, // walletModel
+        { findOne: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(null) }) } as any, // transactionModel
+        {} as any, // withdrawalModel
+        { exists: jest.fn().mockResolvedValue(false) } as any, // reviewModel
+        {} as any, // customerModel
+        {} as any, // sosModel
+        {} as any, // penaltyEventModel
+        { create: jest.fn().mockResolvedValue({}) } as any, // notificationsService
+        {} as any, // paymentsService
+        jobsServiceMock,
+      );
 
+      const result = await adminService.updateJobStatus(jobId, JobStatus.CANCELLED, 'Admin test cancel', adminId);
+
+      expect(result.status).toBe(JobStatus.CANCELLED);
       expect(restoreMock).toHaveBeenCalledWith(mockJob);
-      expect(mockJob.status).toBe(JobStatus.CANCELLED);
+      expect(jobsServiceMock.emitJobCancelled).toHaveBeenCalledWith(mockJob, 'Admin test cancel');
     });
   });
 
@@ -155,15 +166,328 @@ describe('ĐỢT 2 (P1) — G1–G9 Regression & Correctness Specs', () => {
     });
   });
 
-  // ─── G9: Refund Sweep logic không có code chết hoàn trùng ───────────────────
-  describe('G9: Refund sweep logic', () => {
-    it('toRefund được tính bằng Math.max(0, refundAmount - refundedSoFar) không có code chết || refundAmount', () => {
-      const refundAmount = 500_000;
-      const refundedSoFar = 500_000;
+  // ─── G9 & J3: Refund Sweep logic chạy code thật của JobsService.sweepPendingRefundRetries ───
+  describe('G9 & J3: JobsService.sweepPendingRefundRetries refund logic', () => {
+    it('chạy logic sweep thật: chỉ hoàn phần còn lại toRefund = Math.max(0, refundAmount - refundedSoFar)', async () => {
+      const jobId = new Types.ObjectId();
+      const customerId = new Types.ObjectId();
 
-      // Logic mới đã xóa code chết:
-      const toRefund = Math.max(0, refundAmount - refundedSoFar);
-      expect(toRefund).toBe(0); // Không bị fallback thành 500_000
+      const pendingJob: any = {
+        _id: jobId,
+        customer_id: customerId,
+        title: 'Đơn test hoàn tiền dở dang',
+        status: JobStatus.CANCELLED,
+        payment_status: PaymentStatus.PAID,
+        refund_pending_retry: true,
+        refund_pending_amount: 500_000,
+        refund_retry_count: 0,
+        save: jest.fn().mockResolvedValue(true),
+      };
+
+      const jobModel = {
+        find: jest.fn().mockReturnValue({
+          exec: jest.fn().mockResolvedValue([pendingJob]),
+        }),
+      };
+
+      const paymentsService = {
+        getTotalRefundedForJob: jest.fn().mockResolvedValue(200_000), // Đã hoàn 200k trước đó
+        refundCustomer: jest.fn().mockResolvedValue({}),
+      };
+
+      const notificationsService = {
+        create: jest.fn().mockResolvedValue({}),
+      };
+
+      const dummy = {} as never;
+      const jobsService = new JobsService(
+        jobModel as any,
+        dummy, // quoteModel
+        dummy, // contractModel
+        dummy, // serviceModel
+        dummy, // helperModel
+        dummy, // penaltyEventModel
+        dummy, // userModel
+        dummy, // gateway
+        notificationsService as any,
+        dummy, // chatService
+        paymentsService as any,
+        dummy, // routingService
+        dummy, // favoritesService
+        dummy, // vouchersService
+        dummy, // loyaltyService
+        dummy, // disputesService
+      );
+
+      const recovered = await jobsService.sweepPendingRefundRetries();
+
+      expect(recovered).toBe(1);
+      // Kiểm tra toRefund được tính đúng là 500k - 200k = 300k, KHÔNG phải 500k
+      expect(paymentsService.refundCustomer).toHaveBeenCalledWith(
+        String(customerId),
+        String(jobId),
+        300_000,
+        expect.any(String),
+      );
+    });
+
+    it('nếu đã hoàn đủ (refundedSoFar >= refundAmount), không gọi refundCustomer lần nữa', async () => {
+      const jobId = new Types.ObjectId();
+      const customerId = new Types.ObjectId();
+
+      const pendingJob: any = {
+        _id: jobId,
+        customer_id: customerId,
+        title: 'Đơn test đã hoàn đủ',
+        status: JobStatus.CANCELLED,
+        payment_status: PaymentStatus.PAID,
+        refund_pending_retry: true,
+        refund_pending_amount: 500_000,
+        refund_retry_count: 0,
+        save: jest.fn().mockResolvedValue(true),
+      };
+
+      const jobModel = {
+        find: jest.fn().mockReturnValue({
+          exec: jest.fn().mockResolvedValue([pendingJob]),
+        }),
+      };
+
+      const paymentsService = {
+        // Lần 1 (guard): trả về 0 (ví dụ tx vừa xong chưa thấy)
+        // Lần 2 (ngay trước khi hoàn): trả về 500k (đã hoàn đủ)
+        getTotalRefundedForJob: jest.fn().mockResolvedValueOnce(0).mockResolvedValueOnce(500_000),
+        refundCustomer: jest.fn().mockResolvedValue({}),
+      };
+
+      const notificationsService = {
+        create: jest.fn().mockResolvedValue({}),
+      };
+
+      const dummy = {} as never;
+      const jobsService = new JobsService(
+        jobModel as any,
+        dummy,
+        dummy,
+        dummy,
+        dummy,
+        dummy,
+        dummy,
+        dummy,
+        notificationsService as any,
+        dummy,
+        paymentsService as any,
+        dummy,
+        dummy,
+        dummy,
+        dummy,
+        dummy,
+      );
+
+      const recovered = await jobsService.sweepPendingRefundRetries();
+
+      expect(recovered).toBe(0);
+      // Đã hoàn đủ -> không gọi refundCustomer
+      expect(paymentsService.refundCustomer).not.toHaveBeenCalled();
+    });
+  });
+
+  // ─── J1: Feed thợ sắp xếp gần-nhất-trước (P1-18) ───────────────────────────
+  describe('J1: getAvailableJobs feed sorts by distance nearest-first', () => {
+    it('với tọa độ thợ + các đơn đã biết trước -> feed trả về đơn gần nhất lên đầu trên trang 1', async () => {
+      const helperId = new Types.ObjectId().toString();
+      // Tọa độ thợ: 16.0544, 108.2022 (Đà Nẵng)
+      const helperLat = 16.0544;
+      const helperLng = 108.2022;
+
+      // 3 đơn:
+      // Job Far: tạo mới nhất (10:00), khoảng cách xa (~15km)
+      const jobFar: any = {
+        _id: new Types.ObjectId(),
+        title: 'Job Far (15km)',
+        status: JobStatus.OPEN,
+        created_at: new Date('2026-11-08T10:00:00Z'),
+        address: { location: { coordinates: [108.30, 16.15] } },
+        toObject: function () { return { ...this }; },
+      };
+      // Job Mid: tạo lúc 09:00, khoảng cách trung bình (~8km)
+      const jobMid: any = {
+        _id: new Types.ObjectId(),
+        title: 'Job Mid (8km)',
+        status: JobStatus.OPEN,
+        created_at: new Date('2026-11-08T09:00:00Z'),
+        address: { location: { coordinates: [108.25, 16.10] } },
+        toObject: function () { return { ...this }; },
+      };
+      // Job Near: tạo cũ nhất (08:00), khoảng cách gần nhất (~1km)
+      const jobNear: any = {
+        _id: new Types.ObjectId(),
+        title: 'Job Near (1km)',
+        status: JobStatus.OPEN,
+        created_at: new Date('2026-11-08T08:00:00Z'),
+        address: { location: { coordinates: [108.205, 16.055] } },
+        toObject: function () { return { ...this }; },
+      };
+
+      const allJobs = [jobFar, jobMid, jobNear];
+
+      const jobModel: any = {
+        countDocuments: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(3) }),
+        find: jest.fn().mockImplementation(() => {
+          let skipVal = 0;
+          let limitVal = 50;
+          const chain: any = {
+            populate: jest.fn().mockReturnThis(),
+            sort: jest.fn().mockImplementation((sortObj: any) => {
+              if (sortObj?.created_at === -1) {
+                allJobs.sort((a, b) => b.created_at.getTime() - a.created_at.getTime());
+              }
+              return chain;
+            }),
+            skip: jest.fn().mockImplementation((n: number) => {
+              skipVal = n;
+              return chain;
+            }),
+            limit: jest.fn().mockImplementation((n: number) => {
+              limitVal = n;
+              return chain;
+            }),
+            exec: jest.fn().mockImplementation(async () => {
+              return allJobs.slice(skipVal, skipVal + limitVal);
+            }),
+          };
+          return chain;
+        }),
+      };
+
+      const helperModel: any = {
+        findOne: jest.fn().mockReturnValue({
+          select: jest.fn().mockReturnValue({
+            lean: jest.fn().mockReturnValue({
+              exec: jest.fn().mockResolvedValue({
+                location: { coordinates: [helperLng, helperLat] },
+                availability: { enabled: false },
+              }),
+            }),
+          }),
+        }),
+      };
+
+      const routingService = new RoutingService();
+      const dummy = {} as never;
+      const jobsService = new JobsService(
+        jobModel,
+        dummy,
+        dummy,
+        dummy,
+        helperModel,
+        dummy,
+        dummy,
+        dummy,
+        dummy,
+        dummy,
+        dummy,
+        routingService,
+        dummy,
+        dummy,
+        dummy,
+        dummy,
+      );
+
+      // Gọi getAvailableJobs với page = 1, limit = 2
+      const res = await jobsService.getAvailableJobs(helperId, undefined, 1, 2, helperLat, helperLng);
+
+      // KẾT QUẢ MONG MUỐN: Job Near gần nhất (1km) PHẢI xuất hiện trên trang 1 và đứng đầu tiên!
+      expect(res.jobs.length).toBe(2);
+      expect(res.jobs[0].title).toBe('Job Near (1km)');
+      expect(res.jobs[1].title).toBe('Job Mid (8km)');
+    });
+  });
+
+  // ─── J2: Nhánh lọc availability đếm đúng total và total_pages khi có > 150 đơn ───
+  describe('J2: getAvailableJobs availability branch counts true total', () => {
+    it('khi có hơn 150 đơn khớp availability -> total và total_pages đếm đúng tổng thật', async () => {
+      const helperId = new Types.ObjectId().toString();
+
+      // Tạo 180 đơn khớp điều kiện
+      const jobs180: any[] = [];
+      for (let i = 0; i < 180; i++) {
+        jobs180.push({
+          _id: new Types.ObjectId(),
+          title: `Job ${i}`,
+          status: JobStatus.OPEN,
+          preferred_date: new Date('2026-11-09T08:00:00Z'),
+          preferred_time_start: '09:00',
+          created_at: new Date(Date.now() - i * 60000),
+          toObject: function () { return { ...this }; },
+        });
+      }
+
+      const jobModel: any = {
+        countDocuments: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(180) }),
+        find: jest.fn().mockImplementation(() => {
+          let limitVal = 180;
+          const chain: any = {
+            populate: jest.fn().mockReturnThis(),
+            sort: jest.fn().mockReturnThis(),
+            limit: jest.fn().mockImplementation((n: number) => {
+              limitVal = n;
+              return chain;
+            }),
+            exec: jest.fn().mockImplementation(async () => {
+              return jobs180.slice(0, limitVal);
+            }),
+          };
+          return chain;
+        }),
+      };
+
+      // Thợ bật availability tất cả các ngày trong tuần
+      const helperModel: any = {
+        findOne: jest.fn().mockReturnValue({
+          select: jest.fn().mockReturnValue({
+            lean: jest.fn().mockReturnValue({
+              exec: jest.fn().mockResolvedValue({
+                availability: {
+                  enabled: true,
+                  days_of_week: [0, 1, 2, 3, 4, 5, 6],
+                  start_time: '07:00',
+                  end_time: '20:00',
+                },
+              }),
+            }),
+          }),
+        }),
+      };
+
+      const routingService = new RoutingService();
+      const dummy = {} as never;
+      const jobsService = new JobsService(
+        jobModel,
+        dummy,
+        dummy,
+        dummy,
+        helperModel,
+        dummy,
+        dummy,
+        dummy,
+        dummy,
+        dummy,
+        dummy,
+        routingService,
+        dummy,
+        dummy,
+        dummy,
+        dummy,
+      );
+
+      // Trang 1, limit 20
+      const res = await jobsService.getAvailableJobs(helperId, undefined, 1, 20);
+
+      // Cũ (lỗi): cap 150 -> res.total = 150, res.total_pages = 8
+      // Mới (sửa đúng): res.total = 180, res.total_pages = 9
+      expect(res.total).toBe(180);
+      expect(res.total_pages).toBe(9);
     });
   });
 });

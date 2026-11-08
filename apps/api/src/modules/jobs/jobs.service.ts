@@ -4451,8 +4451,11 @@ export class JobsService implements OnModuleInit {
     let pagedJobs: JobDocument[] = [];
     let total = rawTotalCount;
 
-    // G4: Phân trang tầng DB (không load toàn bộ đơn vào RAM gây timeout/nghẽn)
-    if (!availabilityFiltered) {
+    // G4 & J1: Phân trang tầng DB khi không có tọa độ thợ và không lọc availability
+    if (
+      !availabilityFiltered &&
+      (!helperCoords || !Array.isArray(helperCoords) || helperCoords.length < 2)
+    ) {
       pagedJobs = await this.jobModel
         .find(query)
         .populate('service_id', 'name slug icon')
@@ -4461,21 +4464,40 @@ export class JobsService implements OnModuleInit {
         .limit(safeLimit)
         .exec();
     } else {
-      // Khi thợ bật lịch làm việc, giới hạn tối đa 150 đơn mới nhất để lọc in-memory an toàn
+      // J2: Khi lọc availability hoặc cần sort khoảng cách, không cap 150 để đếm đúng total/total_pages và không sót đơn cũ
       const candidateJobs = await this.jobModel
         .find(query)
         .populate('service_id', 'name slug icon')
         .sort({ created_at: -1 })
-        .limit(150)
         .exec();
 
-      const visibleJobs = candidateJobs.filter(job =>
-        this.isAvailableForDate(
-          helperProfile?.availability,
-          job.preferred_date ?? undefined,
-          job.preferred_time_start,
-        ),
-      );
+      const visibleJobs = availabilityFiltered
+        ? candidateJobs.filter(job =>
+            this.isAvailableForDate(
+              helperProfile?.availability,
+              job.preferred_date ?? undefined,
+              job.preferred_time_start,
+            ),
+          )
+        : candidateJobs;
+
+      // P1-18 & J1: Sắp xếp TOÀN BỘ visibleJobs theo khoảng cách Haversine gần-nhất-trước trước khi cắt trang (slice)
+      if (helperCoords && Array.isArray(helperCoords) && helperCoords.length >= 2) {
+        visibleJobs.sort((a, b) => {
+          const coordsA = a.address?.location?.coordinates;
+          const coordsB = b.address?.location?.coordinates;
+          const distA =
+            coordsA && coordsA.length >= 2
+              ? this.haversineKm(helperCoords[1], helperCoords[0], coordsA[1], coordsA[0])
+              : 9999;
+          const distB =
+            coordsB && coordsB.length >= 2
+              ? this.haversineKm(helperCoords[1], helperCoords[0], coordsB[1], coordsB[0])
+              : 9999;
+          return distA - distB;
+        });
+      }
+
       total = visibleJobs.length;
       const skip = (safePage - 1) * safeLimit;
       pagedJobs = visibleJobs.slice(skip, skip + safeLimit);
@@ -4484,7 +4506,10 @@ export class JobsService implements OnModuleInit {
     const total_pages = Math.max(1, Math.ceil(total / safeLimit));
 
     const jobObjects = pagedJobs.map(job => {
-      const obj = job.toObject() as any;
+      const obj =
+        typeof (job as any).toObject === 'function'
+          ? (job as any).toObject()
+          : { ...(job as any) };
       obj.is_private_offer =
         this.isPrivateOfferActive(job) && String(job.private_offer_helper_id) === helperId;
       obj.is_recurring = Boolean(job.recurring_plan_id);

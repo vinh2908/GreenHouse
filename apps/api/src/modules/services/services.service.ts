@@ -98,7 +98,9 @@ export class ServicesService {
     const durMin = dto.estimated_duration_min;
     const durMax = dto.estimated_duration_max;
     if (durMin !== undefined && durMax !== undefined && durMin > durMax) {
-      throw new BadRequestException('Thời lượng ước tính tối thiểu không được lớn hơn thời lượng tối đa');
+      throw new BadRequestException(
+        'Thời lượng ước tính tối thiểu không được lớn hơn thời lượng tối đa',
+      );
     }
     if (dto.pricing_model === 'fixed') {
       const fixedPrice = dto.fixed_price ?? minP;
