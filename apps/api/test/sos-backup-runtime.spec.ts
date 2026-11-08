@@ -192,9 +192,30 @@ describe('SOS Backup & Roadmap Financial Logic Runtime Suite (Real MongoDB)', ()
     const helperBId = new Types.ObjectId();
 
     await userModel.create([
-      { _id: helperAId, full_name: 'Helper A', role: 'helper', is_verified: true, phone: '0901111111', password_hash: 'pwd1' },
-      { _id: helperBId, full_name: 'Helper B', role: 'helper', is_verified: true, phone: '0902222222', password_hash: 'pwd2' },
-      { _id: customerId, full_name: 'Customer', role: 'customer', is_verified: true, phone: '0903333333', password_hash: 'pwd3' },
+      {
+        _id: helperAId,
+        full_name: 'Helper A',
+        role: 'helper',
+        is_verified: true,
+        phone: '0901111111',
+        password_hash: 'pwd1',
+      },
+      {
+        _id: helperBId,
+        full_name: 'Helper B',
+        role: 'helper',
+        is_verified: true,
+        phone: '0902222222',
+        password_hash: 'pwd2',
+      },
+      {
+        _id: customerId,
+        full_name: 'Customer',
+        role: 'customer',
+        is_verified: true,
+        phone: '0903333333',
+        password_hash: 'pwd3',
+      },
     ]);
 
     // 0. Tạo Service
@@ -354,8 +375,22 @@ describe('SOS Backup & Roadmap Financial Logic Runtime Suite (Real MongoDB)', ()
     const helperAId = new Types.ObjectId();
 
     await userModel.create([
-      { _id: helperAId, full_name: 'Helper A', role: 'helper', is_verified: true, phone: '0901111111', password_hash: 'pwd1' },
-      { _id: customerId, full_name: 'Customer', role: 'customer', is_verified: true, phone: '0903333333', password_hash: 'pwd3' },
+      {
+        _id: helperAId,
+        full_name: 'Helper A',
+        role: 'helper',
+        is_verified: true,
+        phone: '0901111111',
+        password_hash: 'pwd1',
+      },
+      {
+        _id: customerId,
+        full_name: 'Customer',
+        role: 'customer',
+        is_verified: true,
+        phone: '0903333333',
+        password_hash: 'pwd3',
+      },
     ]);
 
     const serviceDoc = await serviceModel.create({
@@ -463,10 +498,38 @@ describe('SOS Backup & Roadmap Financial Logic Runtime Suite (Real MongoDB)', ()
     const serviceId = new Types.ObjectId();
 
     await userModel.create([
-      { _id: helperAId, full_name: 'Helper A', role: 'helper', is_verified: true, phone: '0901111111', password_hash: 'pwd1' },
-      { _id: helperBId, full_name: 'Helper B', role: 'helper', is_verified: true, phone: '0902222222', password_hash: 'pwd2' },
-      { _id: helperCId, full_name: 'Helper C', role: 'helper', is_verified: true, phone: '0904444444', password_hash: 'pwd4' },
-      { _id: customerId, full_name: 'Customer', role: 'customer', is_verified: true, phone: '0903333333', password_hash: 'pwd3' },
+      {
+        _id: helperAId,
+        full_name: 'Helper A',
+        role: 'helper',
+        is_verified: true,
+        phone: '0901111111',
+        password_hash: 'pwd1',
+      },
+      {
+        _id: helperBId,
+        full_name: 'Helper B',
+        role: 'helper',
+        is_verified: true,
+        phone: '0902222222',
+        password_hash: 'pwd2',
+      },
+      {
+        _id: helperCId,
+        full_name: 'Helper C',
+        role: 'helper',
+        is_verified: true,
+        phone: '0904444444',
+        password_hash: 'pwd4',
+      },
+      {
+        _id: customerId,
+        full_name: 'Customer',
+        role: 'customer',
+        is_verified: true,
+        phone: '0903333333',
+        password_hash: 'pwd3',
+      },
     ]);
 
     await helperModel.deleteMany({ user_id: { $in: [helperAId, helperBId, helperCId] } });
@@ -600,8 +663,22 @@ describe('SOS Backup & Roadmap Financial Logic Runtime Suite (Real MongoDB)', ()
     const serviceId = new Types.ObjectId();
 
     await userModel.create([
-      { _id: helperAId, full_name: 'Helper A', role: 'helper', is_verified: true, phone: '0901111111', password_hash: 'pwd1' },
-      { _id: customerId, full_name: 'Customer', role: 'customer', is_verified: true, phone: '0903333333', password_hash: 'pwd3' },
+      {
+        _id: helperAId,
+        full_name: 'Helper A',
+        role: 'helper',
+        is_verified: true,
+        phone: '0901111111',
+        password_hash: 'pwd1',
+      },
+      {
+        _id: customerId,
+        full_name: 'Customer',
+        role: 'customer',
+        is_verified: true,
+        phone: '0903333333',
+        password_hash: 'pwd3',
+      },
     ]);
 
     await helperModel.deleteMany({ user_id: helperAId });

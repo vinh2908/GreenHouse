@@ -1126,9 +1126,9 @@ describe('ĐỢT 1 — P0 Regression & Correctness Specs', () => {
         exec: jest.fn().mockResolvedValue(null),
       });
 
-      await expect(
-        adminService.repairStuckAssignedJob(jobId, 'unassign', adminId),
-      ).rejects.toThrow('Không thể sửa đơn ở trạng thái "in_progress"');
+      await expect(adminService.repairStuckAssignedJob(jobId, 'unassign', adminId)).rejects.toThrow(
+        'Không thể sửa đơn ở trạng thái "in_progress"',
+      );
     });
 
     it('L3(b): mode không hợp lệ -> ném BadRequestException, không tự ý unassign', async () => {

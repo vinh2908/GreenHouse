@@ -231,9 +231,7 @@ describe('QA extended workflows: SOS, admin actions, live sockets', () => {
     await payments.creditHelper(qa.accounts.helper.id, new Types.ObjectId().toHexString(), 400000);
     const before = (await payments.getWallet(qa.accounts.helper.id)).balance;
     const ledger = qa.app.get(getModelToken('Transaction'));
-    const spy = jest
-      .spyOn(ledger, 'create')
-      .mockRejectedValueOnce(new Error('QA ledger failure'));
+    const spy = jest.spyOn(ledger, 'create').mockRejectedValueOnce(new Error('QA ledger failure'));
     try {
       await expect(payments.requestWithdrawal(qa.accounts.helper.id, 100000)).rejects.toThrow(
         'QA ledger failure',
@@ -259,9 +257,7 @@ describe('QA extended workflows: SOS, admin actions, live sockets', () => {
     expect((await payments.getWallet(qa.accounts.helper.id)).balance).toBe(before - 100000);
     const id = responses.find(r => r.status === 201)!.body.data._id;
     const ledger = qa.app.get(getModelToken('Transaction'));
-    const spy = jest
-      .spyOn(ledger, 'create')
-      .mockRejectedValueOnce(new Error('QA refund failure'));
+    const spy = jest.spyOn(ledger, 'create').mockRejectedValueOnce(new Error('QA refund failure'));
     try {
       await expect(
         payments.processWithdrawal(id, 'reject', 'QA', qa.accounts.admin.id),

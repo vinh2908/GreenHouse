@@ -3071,7 +3071,7 @@ export default function CustomerHomeScreen() {
                 statusDesc = t('home_status_processing_desc');
               }
 
-              const displayDate = formatDate(dayjs(j.scheduled_at || j.created_at));
+              const displayDate = formatDate(dayjs(j.scheduled_at || j.created_at), lang);
               const displayTime = j.preferred_time_start || formatTime(dayjs(j.created_at));
               // Không suy diễn quận/huyện từ vị trí hiện tại của khách
               // khi đơn không có địa chỉ.
@@ -3228,7 +3228,9 @@ export default function CustomerHomeScreen() {
           (() => {
             const pastJob = completedJobs[0];
             const pastPrice = pastJob.final_price || pastJob.agreed_price || pastJob.target_price;
-            const displayPriceStr = pastPrice ? `${pastPrice.toLocaleString(lang === 'en' ? 'en-US' : 'vi-VN')}₫` : '';
+            const displayPriceStr = pastPrice
+              ? `${pastPrice.toLocaleString(lang === 'en' ? 'en-US' : 'vi-VN')}₫`
+              : '';
             const completedDateStr = formatDate(
               dayjs(pastJob.completed_at || pastJob.updated_at || pastJob.created_at),
               lang,

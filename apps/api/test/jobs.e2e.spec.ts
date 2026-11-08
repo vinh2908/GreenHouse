@@ -333,10 +333,12 @@ describe('Jobs E2E (Phase 5)', () => {
     });
 
     it('customer: approve completion + review', async () => {
-      await app.get(getModelToken('Job')).updateOne(
-        { _id: new Types.ObjectId(jobId) },
-        { $set: { payment_status: PaymentStatus.PAID } },
-      );
+      await app
+        .get(getModelToken('Job'))
+        .updateOne(
+          { _id: new Types.ObjectId(jobId) },
+          { $set: { payment_status: PaymentStatus.PAID } },
+        );
       const res = await request(app.getHttpServer())
         .patch(`/api/v1/jobs/${jobId}/approve`)
         .set('Authorization', `Bearer ${customerToken}`)

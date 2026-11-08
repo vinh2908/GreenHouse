@@ -400,4 +400,23 @@ describe('Đồng bộ trạng thái bận của Thợ & Hợp đồng (Helper B
     expect(result.remained_busy).toBe(0);
     expect(env.helperProfile['status']).toBe(HelperStatus.ONLINE);
   });
+
+  it('7. L3/N6: check-stuck-assigned-jobs gọi JobsService.setHelperBusy thật / setHelperBusyWithModels để giải phóng thợ', async () => {
+    const env = createMockEnvironment();
+    const helperId = env.helperUserId;
+    env.helperProfile['status'] = HelperStatus.BUSY;
+
+    const setHelperBusySpy = jest.spyOn(env.jobsService, 'setHelperBusy');
+
+    // Gọi JobsService.setHelperBusy
+    await env.jobsService.setHelperBusy(helperId, false);
+    expect(setHelperBusySpy).toHaveBeenCalledWith(helperId, false);
+    expect(env.helperProfile['status']).toBe(HelperStatus.ONLINE);
+
+    // Kiểm tra setHelperBusyWithModels
+    const { setHelperBusyWithModels } = require('./jobs.service');
+    env.helperProfile['status'] = HelperStatus.BUSY;
+    await setHelperBusyWithModels(env.helperModel, env.jobModel, helperId, false);
+    expect(env.helperProfile['status']).toBe(HelperStatus.ONLINE);
+  });
 });

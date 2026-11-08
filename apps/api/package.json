@@ -93,7 +93,8 @@
     "moduleNameMapper": {
       "^@homemate/constants$": "<rootDir>/../../packages/constants/src",
       "^@homemate/types$": "<rootDir>/../../packages/types/src",
-      "^@homemate/utils$": "<rootDir>/../../packages/utils/src"
+      "^@homemate/utils$": "<rootDir>/../../packages/utils/src",
+      "^@/(.*)$": "<rootDir>/../../apps/mobile/$1"
     },
     "roots": [
       "<rootDir>/src",

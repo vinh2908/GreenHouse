@@ -2886,7 +2886,7 @@ export default function BookingScreen() {
                     )}
                     <Text style={{ fontSize: fs(12), color: tc.textMuted, lineHeight: 17 }}>
                       {t('booking_recurring_preview', {
-                        date: formatDate(date),
+                        date: formatDate(date, lang),
                         time: timeSlot,
                         duration,
                       })}

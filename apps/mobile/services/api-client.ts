@@ -79,7 +79,7 @@ apiClient.interceptors.request.use(
 // Mọi request 401 đồng thời (một màn hình bắn 4–6 query lúc access token vừa
 // hết hạn) dùng CHUNG một lần gọi /auth/refresh đang bay, thay vì mỗi request
 // tự refresh và giẫm lên token của nhau.
-class SessionExpiredError extends Error {
+export class SessionExpiredError extends Error {
   constructor() {
     super('SESSION_EXPIRED');
     this.name = 'SessionExpiredError';
@@ -89,7 +89,7 @@ class SessionExpiredError extends Error {
 // Chưa từng có phiên nào (khách chưa đăng nhập / đã đăng xuất hẳn):
 // KHÁC với hết phiên — không toast "Phiên đăng nhập hết hạn", chỉ fail
 // request này để màn hình tự hiển thị trạng thái khách/trống.
-class NoSessionError extends Error {
+export class NoSessionError extends Error {
   constructor() {
     super('NO_SESSION');
     this.name = 'NoSessionError';

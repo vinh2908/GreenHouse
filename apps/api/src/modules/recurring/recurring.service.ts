@@ -225,11 +225,24 @@ export class RecurringService implements OnApplicationBootstrap, OnModuleDestroy
 
               if (this.planModel) {
                 await this.planModel
-                  .updateOne({ _id: plan._id }, { $addToSet: { skipped_dates: skipKey } })
+                  .updateOne(
+                    { _id: plan._id },
+                    {
+                      $push: {
+                        skipped_dates: {
+                          $each: [skipKey],
+                          $slice: -60,
+                        },
+                      },
+                    },
+                  )
                   .catch(() => undefined);
               }
               if (plan.skipped_dates) {
                 plan.skipped_dates.push(skipKey);
+                if (plan.skipped_dates.length > 60) {
+                  plan.skipped_dates = plan.skipped_dates.slice(-60);
+                }
               }
             }
           }
@@ -523,9 +536,10 @@ export class RecurringService implements OnApplicationBootstrap, OnModuleDestroy
 
     const monthDaysList = dto.frequency === 'monthly' ? [...new Set(dto.month_days ?? [])] : [];
     const highDays = monthDaysList.filter(d => d >= 29).sort((a, b) => a - b);
-    const scheduleWarning = highDays.length > 0
-      ? `Lưu ý: Các tháng không có ngày ${highDays.join(', ')} (như tháng 2 hoặc các tháng 30 ngày) sẽ tự động bỏ qua lượt đó.`
-      : undefined;
+    const scheduleWarning =
+      highDays.length > 0
+        ? `Lưu ý: Các tháng không có ngày ${highDays.join(', ')} (như tháng 2 hoặc các tháng 30 ngày) sẽ tự động bỏ qua lượt đó.`
+        : undefined;
 
     const plan = await this.planModel.create({
       customer_id: new Types.ObjectId(customerId),
@@ -688,9 +702,10 @@ export class RecurringService implements OnApplicationBootstrap, OnModuleDestroy
     const effectiveMonthDays = plan.month_days ?? [];
     if (effectiveFreq === RecurringFrequency.MONTHLY) {
       const highDays = effectiveMonthDays.filter(d => d >= 29).sort((a, b) => a - b);
-      plan.schedule_warning = highDays.length > 0
-        ? `Lưu ý: Các tháng không có ngày ${highDays.join(', ')} (như tháng 2 hoặc các tháng 30 ngày) sẽ tự động bỏ qua lượt đó.`
-        : undefined;
+      plan.schedule_warning =
+        highDays.length > 0
+          ? `Lưu ý: Các tháng không có ngày ${highDays.join(', ')} (như tháng 2 hoặc các tháng 30 ngày) sẽ tự động bỏ qua lượt đó.`
+          : undefined;
     } else {
       plan.schedule_warning = undefined;
     }
@@ -795,6 +810,10 @@ export class RecurringService implements OnApplicationBootstrap, OnModuleDestroy
     }
 
     plan.skipped_dates.push(nextKey);
+    // N7(e): Prune skipped_dates để chống phình mảng vô hạn (giữ tối đa 60 ngày gần nhất)
+    if (plan.skipped_dates.length > 60) {
+      plan.skipped_dates = plan.skipped_dates.slice(-60);
+    }
     await plan.save();
 
     if (existingJob) {

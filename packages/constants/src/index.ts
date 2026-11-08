@@ -127,6 +127,7 @@ export const SOCKET_EVENTS = {
   QUOTE_RECEIVED: 'quote:received', // Customer nhận được báo giá mới
   QUOTE_ACCEPTED: 'quote:accepted', // Helper biết quote được chọn
   QUOTE_REJECTED: 'quote:rejected', // Helper biết quote bị từ chối
+  QUOTE_HIDDEN: 'quote:hidden', // Helper biết báo giá bị ẩn do hồ sơ chưa xác minh
 
   // Contract
   CONTRACT_AMENDED: 'contract:amended', // Đề xuất thay đổi hợp đồng
@@ -238,6 +239,7 @@ export const NOTIFICATION_TYPES = {
   NEW_JOB_NEARBY: 'new_job_nearby',
   QUOTE_ACCEPTED: 'quote_accepted',
   QUOTE_REJECTED: 'quote_rejected',
+  QUOTE_HIDDEN: 'quote_hidden',
   KYC_APPROVED: 'kyc_approved',
   KYC_REJECTED: 'kyc_rejected',
   WITHDRAWAL_PROCESSED: 'withdrawal_processed',

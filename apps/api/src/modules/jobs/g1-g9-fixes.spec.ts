@@ -764,14 +764,16 @@ describe('ĐỢT 2 (P1) — G1–G9 & J1–J3 Regression & Correctness Specs', (
       };
 
       const routingService = new RoutingService();
-      jest.spyOn(routingService, 'getRoutesBatch').mockResolvedValue(
-        new Map([
-          [
-            '507f1f77bcf86cd799439088',
-            { distance_km: 2.5, estimated_minutes: 10, estimated: false } as any,
-          ],
-        ]),
-      );
+      jest
+        .spyOn(routingService, 'getRoutesBatch')
+        .mockResolvedValue(
+          new Map([
+            [
+              '507f1f77bcf86cd799439088',
+              { distance_km: 2.5, estimated_minutes: 10, estimated: false } as any,
+            ],
+          ]),
+        );
 
       const dummy = {} as never;
       const jobsService = new JobsService(
@@ -806,6 +808,230 @@ describe('ĐỢT 2 (P1) — G1–G9 & J1–J3 Regression & Correctness Specs', (
         10.77,
         106.68,
         expect.arrayContaining([expect.objectContaining({ id: '507f1f77bcf86cd799439088' })]),
+      );
+    });
+  });
+
+  describe('N2, N3 & N7(a): $geoNear non-geo fallback, availability exact total & warn logging', () => {
+    it('N2: đơn không có tọa độ vẫn xuất hiện và xếp cuối trong nhánh $geoNear, total/total_pages phản ánh đúng tổng số đơn', async () => {
+      const helperId = '507f1f77bcf86cd799439011';
+      const geoJob1 = {
+        _id: 'job-geo-1',
+        title: 'Đơn có GPS 1',
+        address: { location: { type: 'Point', coordinates: [106.7, 10.78] } },
+      };
+      const geoJob2 = {
+        _id: 'job-geo-2',
+        title: 'Đơn có GPS 2',
+        address: { location: { type: 'Point', coordinates: [106.71, 10.79] } },
+      };
+      const nonGeoJob = {
+        _id: 'job-no-geo',
+        title: 'Đơn không có GPS',
+        address: { full_address: '123 Đường Test, Quận 1' },
+      };
+
+      const jobModel: any = {
+        countDocuments: jest.fn().mockImplementation((query: any) => {
+          if (query && query['address.location.coordinates.0']) {
+            return { exec: jest.fn().mockResolvedValue(2) }; // 2 đơn có tọa độ
+          }
+          return { exec: jest.fn().mockResolvedValue(3) }; // tổng cộng 3 đơn
+        }),
+        aggregate: jest.fn().mockReturnValue({
+          exec: jest.fn().mockResolvedValue([geoJob1, geoJob2]),
+        }),
+        find: jest.fn().mockReturnValue({
+          populate: jest.fn().mockReturnValue({
+            sort: jest.fn().mockReturnValue({
+              skip: jest.fn().mockReturnValue({
+                limit: jest.fn().mockReturnValue({
+                  exec: jest.fn().mockResolvedValue([nonGeoJob]),
+                }),
+              }),
+            }),
+          }),
+        }),
+      };
+
+      const helperModel: any = {
+        findOne: jest.fn().mockReturnValue({
+          select: jest.fn().mockReturnValue({
+            lean: jest.fn().mockReturnValue({
+              exec: jest.fn().mockResolvedValue({ _id: helperId, verification_status: 'approved' }),
+            }),
+          }),
+        }),
+      };
+
+      const dummy = {} as never;
+      const jobsService = new JobsService(
+        jobModel,
+        dummy,
+        dummy,
+        dummy,
+        helperModel,
+        dummy,
+        dummy,
+        dummy,
+        dummy,
+        dummy,
+        dummy,
+        { getRoutesBatch: jest.fn().mockResolvedValue(new Map()) } as any,
+        dummy,
+        dummy,
+        dummy,
+        dummy,
+      );
+
+      // Gọi getAvailableJobs với safePage = 1, safeLimit = 10 (cần 10, geo có 2, bù 1 non-geo)
+      const res = await jobsService.getAvailableJobs(helperId, undefined, 1, 10, 10.77, 106.68);
+
+      expect(res.jobs).toHaveLength(3);
+      expect(res.jobs[0]._id).toBe('job-geo-1');
+      expect(res.jobs[1]._id).toBe('job-geo-2');
+      // Đơn không có tọa độ xếp ở cuối
+      expect(res.jobs[2]._id).toBe('job-no-geo');
+      // Total và total_pages khớp đúng tổng 3 đơn
+      expect(res.total).toBe(3);
+      expect(res.total_pages).toBe(1);
+    });
+
+    it('N3: khi > 200 đơn ở nhánh availability, total tính đúng tổng thật và total_pages nhất quán', async () => {
+      const helperId = '507f1f77bcf86cd799439011';
+      // Tạo 250 đơn
+      const leanCandidates = Array.from({ length: 250 }, (_, i) => ({
+        preferred_date: new Date('2026-11-09'),
+        preferred_time_start: i % 2 === 0 ? '08:00' : '14:00',
+      }));
+
+      const candidateJobs = leanCandidates.map((c, i) => ({
+        _id: `job-${i}`,
+        title: `Job ${i}`,
+        preferred_date: c.preferred_date,
+        preferred_time_start: c.preferred_time_start,
+      }));
+
+      const jobModel: any = {
+        countDocuments: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(250) }),
+        find: jest.fn().mockImplementation((query: any) => {
+          return {
+            populate: jest.fn().mockReturnValue({
+              sort: jest.fn().mockReturnValue({
+                limit: jest.fn().mockReturnValue({
+                  exec: jest.fn().mockResolvedValue(candidateJobs.slice(0, 200)),
+                }),
+              }),
+            }),
+            select: jest.fn().mockReturnValue({
+              lean: jest.fn().mockReturnValue({
+                exec: jest.fn().mockResolvedValue(leanCandidates),
+              }),
+            }),
+          };
+        }),
+      };
+
+      const helperModel: any = {
+        findOne: jest.fn().mockReturnValue({
+          select: jest.fn().mockReturnValue({
+            lean: jest.fn().mockReturnValue({
+              exec: jest.fn().mockResolvedValue({
+                _id: helperId,
+                verification_status: 'approved',
+                availability: {
+                  enabled: true,
+                  days_of_week: [1], // Monday
+                  start_time: '07:00',
+                  end_time: '12:00', // chỉ khớp ca sáng (125 đơn)
+                },
+              }),
+            }),
+          }),
+        }),
+      };
+
+      const dummy = {} as never;
+      const jobsService = new JobsService(
+        jobModel,
+        dummy,
+        dummy,
+        dummy,
+        helperModel,
+        dummy,
+        dummy,
+        dummy,
+        dummy,
+        dummy,
+        dummy,
+        { getRoutesBatch: jest.fn().mockResolvedValue(new Map()) } as any,
+        dummy,
+        dummy,
+        dummy,
+        dummy,
+      );
+
+      // availabilityFiltered = true (khi helperProfile có availability)
+      const res = await jobsService.getAvailableJobs(helperId, undefined, 1, 10);
+
+      // 250 đơn có đúng 125 đơn ca 08:00 khớp availability
+      expect(res.total).toBe(125);
+      expect(res.total_pages).toBe(13); // Math.ceil(125 / 10)
+    });
+
+    it('N7(a): lỗi $geoNear được log cảnh báo với context rõ trước khi fallback', async () => {
+      const helperId = '507f1f77bcf86cd799439011';
+      const jobModel: any = {
+        countDocuments: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(5) }),
+        aggregate: jest.fn().mockReturnValue({
+          exec: jest.fn().mockRejectedValue(new Error('MongoServerError: 2dsphere index missing')),
+        }),
+        find: jest.fn().mockReturnValue({
+          populate: jest.fn().mockReturnValue({
+            sort: jest.fn().mockReturnValue({
+              limit: jest.fn().mockReturnValue({
+                exec: jest.fn().mockResolvedValue([]),
+              }),
+            }),
+          }),
+        }),
+      };
+
+      const helperModel: any = {
+        findOne: jest.fn().mockReturnValue({
+          select: jest.fn().mockReturnValue({
+            lean: jest.fn().mockReturnValue({
+              exec: jest.fn().mockResolvedValue({ _id: helperId, verification_status: 'approved' }),
+            }),
+          }),
+        }),
+      };
+
+      const dummy = {} as never;
+      const jobsService = new JobsService(
+        jobModel,
+        dummy,
+        dummy,
+        dummy,
+        helperModel,
+        dummy,
+        dummy,
+        dummy,
+        dummy,
+        dummy,
+        dummy,
+        { getRoutesBatch: jest.fn().mockResolvedValue(new Map()) } as any,
+        dummy,
+        dummy,
+        dummy,
+        dummy,
+      );
+
+      const warnSpy = jest.spyOn((jobsService as any).logger, 'warn');
+      await jobsService.getAvailableJobs(helperId, undefined, 1, 10, 10.77, 106.68);
+
+      expect(warnSpy).toHaveBeenCalledWith(
+        expect.stringContaining('$geoNear aggregation failed, falling back to in-memory sort'),
       );
     });
   });

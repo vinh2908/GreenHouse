@@ -499,7 +499,7 @@ function PlanDetail({ planId, lang = 'vi' }: { planId: string; lang?: string }) 
           style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 4 }}
         >
           <Text style={{ flex: 1, fontSize: fs(13), color: tc.textSecondary }}>
-            {job.occurrence_date ?? formatDate(job.preferred_date)} ·{' '}
+            {job.occurrence_date ?? formatDate(job.preferred_date, lang === 'en' ? 'en' : 'vi')} ·{' '}
             {job.preferred_time_start ?? ''}
           </Text>
           <Text style={{ fontSize: fs(12), fontWeight: '700', color: tc.textMuted }}>

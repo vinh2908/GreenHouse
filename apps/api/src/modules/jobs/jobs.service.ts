@@ -175,6 +175,50 @@ export function isAvailableForDate(
   return true;
 }
 
+export async function setHelperBusyWithModels(
+  helperModel: any,
+  jobModel: any,
+  helperId: string | Types.ObjectId,
+  busy: boolean,
+  gateway?: any,
+) {
+  const helperObjId = new Types.ObjectId(String(helperId));
+  if (busy) {
+    const res = await helperModel.updateOne(
+      {
+        user_id: helperObjId,
+        status: { $ne: HelperStatus.BUSY },
+      },
+      { status: HelperStatus.BUSY },
+    );
+    if (typeof res?.exec === 'function') await res.exec();
+  } else {
+    // Chỉ đặt thợ về ONLINE khi không còn đơn đang hoạt động nào khác
+    const countQuery = jobModel.countDocuments({
+      helper_id: helperObjId,
+      status: {
+        $in: JobsService.ACTIVE_HELPER_JOB_STATUSES,
+      },
+    });
+    const otherActiveJobsCount =
+      typeof countQuery?.exec === 'function' ? await countQuery.exec() : await countQuery;
+
+    if (otherActiveJobsCount === 0) {
+      const res = await helperModel.updateOne(
+        {
+          user_id: helperObjId,
+          status: HelperStatus.BUSY,
+        },
+        { status: HelperStatus.ONLINE },
+      );
+      if (typeof res?.exec === 'function') await res.exec();
+      if (gateway && typeof gateway.broadcastHelperStatus === 'function') {
+        void gateway.broadcastHelperStatus(String(helperObjId), HelperStatus.ONLINE);
+      }
+    }
+  }
+}
+
 @Injectable()
 export class JobsService implements OnModuleInit {
   private readonly logger = new Logger(JobsService.name);
@@ -641,39 +685,7 @@ export class JobsService implements OnModuleInit {
   ];
 
   async setHelperBusy(helperId: string | Types.ObjectId, busy: boolean) {
-    const helperObjId = new Types.ObjectId(String(helperId));
-    if (busy) {
-      await this.helperModel
-        .updateOne(
-          {
-            user_id: helperObjId,
-            status: { $ne: HelperStatus.BUSY },
-          },
-          { status: HelperStatus.BUSY },
-        )
-        .exec();
-    } else {
-      // Chỉ đặt thợ về ONLINE khi không còn đơn đang hoạt động nào khác
-      const otherActiveJobsCount = await this.jobModel.countDocuments({
-        helper_id: helperObjId,
-        status: {
-          $in: JobsService.ACTIVE_HELPER_JOB_STATUSES,
-        },
-      });
-
-      if (otherActiveJobsCount === 0) {
-        await this.helperModel
-          .updateOne(
-            {
-              user_id: helperObjId,
-              status: HelperStatus.BUSY,
-            },
-            { status: HelperStatus.ONLINE },
-          )
-          .exec();
-        void this.gateway.broadcastHelperStatus(String(helperObjId), HelperStatus.ONLINE);
-      }
-    }
+    return setHelperBusyWithModels(this.helperModel, this.jobModel, helperId, busy, this.gateway);
   }
 
   async isVerifiedHelper(userId: string | Types.ObjectId): Promise<boolean> {
@@ -1459,7 +1471,9 @@ export class JobsService implements OnModuleInit {
       service = await this.serviceModel.findOne({ name: new RegExp(serviceSlug, 'i') }).exec();
     }
     if (!service) {
-      throw new BadRequestException('Dịch vụ cứu hộ khẩn cấp không được hỗ trợ hoặc chưa được cấu hình');
+      throw new BadRequestException(
+        'Dịch vụ cứu hộ khẩn cấp không được hỗ trợ hoặc chưa được cấu hình',
+      );
     }
 
     const expiresAt = new Date();
@@ -1816,7 +1830,9 @@ export class JobsService implements OnModuleInit {
       .exec();
 
     if (!claimedHelper) {
-      const current = await this.helperModel.findOne({ user_id: new Types.ObjectId(helperId) }).exec();
+      const current = await this.helperModel
+        .findOne({ user_id: new Types.ObjectId(helperId) })
+        .exec();
       if (!current || current.verification_status !== VerificationStatus.APPROVED) {
         throw new ForbiddenException('Chỉ thợ đã xác thực e-KYC mới có quyền nhận đơn cứu hộ SOS');
       }
@@ -2233,12 +2249,16 @@ export class JobsService implements OnModuleInit {
 
     // Kiểm tra lại trạng thái đơn trước khi ghi nhận báo giá chống race condition với việc huỷ đơn
     const freshJobQuery = this.jobModel.findById(jobId) as any;
-    const freshJob = typeof freshJobQuery?.select === 'function'
-      ? await freshJobQuery.select('status').lean().exec()
-      : typeof freshJobQuery?.exec === 'function'
-        ? await freshJobQuery.exec()
-        : await freshJobQuery;
-    if (!freshJob || (freshJob.status !== JobStatus.OPEN && freshJob.status !== JobStatus.RECEIVING_QUOTES)) {
+    const freshJob =
+      typeof freshJobQuery?.select === 'function'
+        ? await freshJobQuery.select('status').lean().exec()
+        : typeof freshJobQuery?.exec === 'function'
+          ? await freshJobQuery.exec()
+          : await freshJobQuery;
+    if (
+      !freshJob ||
+      (freshJob.status !== JobStatus.OPEN && freshJob.status !== JobStatus.RECEIVING_QUOTES)
+    ) {
       throw new BadRequestException('Job không còn nhận báo giá');
     }
 
@@ -2463,11 +2483,15 @@ export class JobsService implements OnModuleInit {
               : updatePromise;
           Promise.resolve(execPromise)
             .then(res => {
-              if (!res || (res as any).modifiedCount === undefined || (res as any).modifiedCount > 0) {
+              if (
+                !res ||
+                (res as any).modifiedCount === undefined ||
+                (res as any).modifiedCount > 0
+              ) {
                 this.notificationsService
                   ?.create({
                     userId: hId,
-                    type: NOTIFICATION_TYPES.QUOTE_REJECTED,
+                    type: NOTIFICATION_TYPES.QUOTE_HIDDEN,
                     title: 'Báo giá đã bị ẩn',
                     body: `Báo giá của bạn cho đơn "${job.title}" đã bị ẩn do tài khoản chưa xác minh danh tính.`,
                     payload: { job_id: jobId, quote_id: quoteIdStr },
@@ -4427,13 +4451,7 @@ export class JobsService implements OnModuleInit {
     return { success: true, message: 'Đã rút lại báo giá thành công' };
   }
 
-  async getSkippedJobs(
-    helperId: string,
-    page = 1,
-    limit = 20,
-    lat?: number,
-    lng?: number,
-  ) {
+  async getSkippedJobs(helperId: string, page = 1, limit = 20, lat?: number, lng?: number) {
     const safePage = Math.max(1, Number(page) || 1);
     const safeLimit = Math.min(50, Math.max(1, Number(limit) || 20));
     const now = new Date();
@@ -4566,7 +4584,7 @@ export class JobsService implements OnModuleInit {
         .limit(safeLimit)
         .exec();
     } else {
-      // M1: Khi có tọa độ thợ và không lọc availability, ưu tiên dùng $geoNear với 2dsphere index trên address.location
+      // M1 & N2: Khi có tọa độ thợ và không lọc availability, dùng $geoNear có bù đơn không có tọa độ ở cuối trang
       let geoNearSucceeded = false;
       if (
         !availabilityFiltered &&
@@ -4576,41 +4594,118 @@ export class JobsService implements OnModuleInit {
         typeof (this.jobModel as any).aggregate === 'function'
       ) {
         try {
-          const geoPipeline: any[] = [
-            {
-              $geoNear: {
-                near: { type: 'Point', coordinates: helperCoords },
-                distanceField: 'calculated_distance_m',
-                spherical: true,
-                query,
+          const geoQuery = { ...query, 'address.location.coordinates.0': { $exists: true } };
+          const nonGeoQuery = {
+            ...query,
+            $or: [
+              { 'address.location.coordinates.0': { $exists: false } },
+              { 'address.location': { $exists: false } },
+            ],
+          };
+
+          const geoCount = await this.jobModel.countDocuments(geoQuery).exec();
+          const pageSkip = (safePage - 1) * safeLimit;
+          const pageSize = safeLimit;
+
+          let combinedJobs: any[] = [];
+
+          if (pageSkip + pageSize <= geoCount) {
+            // Toàn bộ trang nằm trong tập có tọa độ
+            const geoPipeline: any[] = [
+              {
+                $geoNear: {
+                  near: { type: 'Point', coordinates: helperCoords },
+                  distanceField: 'calculated_distance_m',
+                  spherical: true,
+                  query: geoQuery,
+                },
               },
-            },
-            { $skip: (safePage - 1) * safeLimit },
-            { $limit: safeLimit },
-            {
-              $lookup: {
-                from: 'services',
-                localField: 'service_id',
-                foreignField: '_id',
-                as: 'service_id',
-                pipeline: [{ $project: { name: 1, slug: 1, icon: 1 } }],
+              { $skip: pageSkip },
+              { $limit: pageSize },
+              {
+                $lookup: {
+                  from: 'services',
+                  localField: 'service_id',
+                  foreignField: '_id',
+                  as: 'service_id',
+                  pipeline: [{ $project: { name: 1, slug: 1, icon: 1 } }],
+                },
               },
-            },
-            {
-              $unwind: {
-                path: '$service_id',
-                preserveNullAndEmptyArrays: true,
+              {
+                $unwind: {
+                  path: '$service_id',
+                  preserveNullAndEmptyArrays: true,
+                },
               },
-            },
-          ];
-          const aggResults = await (this.jobModel as any).aggregate(geoPipeline).exec();
-          if (Array.isArray(aggResults)) {
-            pagedJobs = aggResults;
-            total = rawTotalCount;
-            geoNearSucceeded = true;
+            ];
+            const aggResults = await (this.jobModel as any).aggregate(geoPipeline).exec();
+            combinedJobs = Array.isArray(aggResults) ? aggResults : [];
+          } else if (pageSkip < geoCount) {
+            // Trang ranh giới: một phần có tọa độ + phần bù không có tọa độ
+            const neededGeo = geoCount - pageSkip;
+            const neededNonGeo = pageSize - neededGeo;
+
+            const geoPipeline: any[] = [
+              {
+                $geoNear: {
+                  near: { type: 'Point', coordinates: helperCoords },
+                  distanceField: 'calculated_distance_m',
+                  spherical: true,
+                  query: geoQuery,
+                },
+              },
+              { $skip: pageSkip },
+              { $limit: neededGeo },
+              {
+                $lookup: {
+                  from: 'services',
+                  localField: 'service_id',
+                  foreignField: '_id',
+                  as: 'service_id',
+                  pipeline: [{ $project: { name: 1, slug: 1, icon: 1 } }],
+                },
+              },
+              {
+                $unwind: {
+                  path: '$service_id',
+                  preserveNullAndEmptyArrays: true,
+                },
+              },
+            ];
+            const aggResults = await (this.jobModel as any).aggregate(geoPipeline).exec();
+            const geoPart = Array.isArray(aggResults) ? aggResults : [];
+
+            const nonGeoPart = await this.jobModel
+              .find(nonGeoQuery)
+              .populate('service_id', 'name slug icon')
+              .sort({ created_at: -1 })
+              .skip(0)
+              .limit(neededNonGeo)
+              .exec();
+
+            combinedJobs = [...geoPart, ...(nonGeoPart || [])];
+          } else {
+            // Toàn bộ trang nằm trong tập không có tọa độ (xếp ở cuối feed)
+            const nonGeoSkip = pageSkip - geoCount;
+            const nonGeoPart = await this.jobModel
+              .find(nonGeoQuery)
+              .populate('service_id', 'name slug icon')
+              .sort({ created_at: -1 })
+              .skip(nonGeoSkip)
+              .limit(pageSize)
+              .exec();
+
+            combinedJobs = nonGeoPart || [];
           }
-        } catch {
-          // Bỏ qua nếu môi trường test/mock không có 2dsphere index hoặc aggregate bị lỗi
+
+          pagedJobs = combinedJobs;
+          total = rawTotalCount;
+          geoNearSucceeded = true;
+        } catch (geoErr: any) {
+          // N7(a): Log cảnh báo rõ context khi aggregate $geoNear lỗi trước khi fallback
+          this.logger.warn(
+            `[JobsService] $geoNear aggregation failed, falling back to in-memory sort: ${geoErr?.message || geoErr}`,
+          );
           geoNearSucceeded = false;
         }
       }
@@ -4654,17 +4749,23 @@ export class JobsService implements OnModuleInit {
 
         if (!availabilityFiltered) {
           total = rawTotalCount;
+        } else if (rawTotalCount <= MAX_FEED_SORT_CANDIDATES) {
+          total = visibleJobs.length;
         } else {
-          total =
-            rawTotalCount <= MAX_FEED_SORT_CANDIDATES
-              ? visibleJobs.length
-              : Math.max(
-                  visibleJobs.length,
-                  Math.round(
-                    rawTotalCount *
-                      (visibleJobs.length / Math.max(1, candidateJobs.length)),
-                  ),
-                );
+          // N3: Khi > 200 đơn trong nhánh availability, giữ tổng thật chính xác bằng query projection gọn nhẹ
+          // chỉ lấy preferred_date và preferred_time_start để lọc qua isAvailableForDate, tránh phình RAM
+          const leanCandidates = await this.jobModel
+            .find(query)
+            .select('preferred_date preferred_time_start')
+            .lean()
+            .exec();
+          total = leanCandidates.filter(job =>
+            this.isAvailableForDate(
+              helperProfile?.availability,
+              job.preferred_date ?? undefined,
+              job.preferred_time_start,
+            ),
+          ).length;
         }
         const skip = (safePage - 1) * safeLimit;
         pagedJobs = visibleJobs.slice(skip, skip + safeLimit);

@@ -138,10 +138,10 @@ export default function HelpCenterScreen() {
       const reply = res?.data?.answer || res?.answer || res?.data?.reply || res?.reply;
       const isMock = Boolean(
         res?.data?.is_mock ??
-          res?.is_mock ??
-          res?.data?.mock ??
-          res?.mock ??
-          res?.source === 'sample_template',
+        res?.is_mock ??
+        res?.data?.mock ??
+        res?.mock ??
+        res?.source === 'sample_template',
       );
       if (reply) {
         setAiAnswer(reply);

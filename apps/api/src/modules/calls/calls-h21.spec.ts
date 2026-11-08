@@ -147,8 +147,8 @@ describe('H21: Race-safe Call Session Creation', () => {
       {} as never,
     );
 
-    await expect(
-      service.initiateCall(String(jobId), String(customerId)),
-    ).rejects.toThrow('Mongo connection error');
+    await expect(service.initiateCall(String(jobId), String(customerId))).rejects.toThrow(
+      'Mongo connection error',
+    );
   });
 });

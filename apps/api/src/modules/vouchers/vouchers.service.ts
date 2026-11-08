@@ -258,33 +258,68 @@ export class VouchersService {
       .exec();
     if (!redemption) return { restored: false, discount_amount: 0 };
 
-    // K10: Khi hoàn thì chỉ xóa đúng 1 entry userId trong used_user_ids (không dùng $pull xóa hết mọi entry trùng)
-    const voucher = (await (typeof this.voucherModel.findById === 'function'
-      ? this.voucherModel.findById(redemption.voucher_id).exec()
-      : this.voucherModel.findOne({ _id: redemption.voucher_id }).exec())) as VoucherDocument | null;
-    if (voucher) {
-      const userIds = voucher.used_user_ids || [];
-      const idx = userIds.findIndex(id => String(id) === String(userId));
-      if (idx !== -1) {
-        const updatedUserIds = [...userIds];
-        updatedUserIds.splice(idx, 1);
-        await this.voucherModel
-          .findOneAndUpdate(
-            { _id: redemption.voucher_id, used_count: { $gt: 0 } },
-            {
-              $inc: { used_count: -1 },
-              $set: { used_user_ids: updatedUserIds },
+    // N1: Cập nhật nguyên tử qua aggregation pipeline update, không dùng read-modify-write (findById -> splice -> $set)
+    // 1 lần restore chỉ bỏ đúng 1 entry userId trong used_user_ids ($indexOfArray + $concatArrays/$slice)
+    // và luôn giảm used_count nguyên tử ($max(0, used_count - 1)), không bỏ sót kể cả khi findById trả null
+    const userObj = Types.ObjectId.isValid(userId) ? new Types.ObjectId(userId) : userId;
+    const userStr = String(userId);
+
+    const updatePipeline = [
+      {
+        $set: {
+          used_count: { $max: [0, { $subtract: ['$used_count', 1] }] },
+          used_user_ids: {
+            $let: {
+              vars: {
+                arr: { $ifNull: ['$used_user_ids', []] },
+                idxObj: {
+                  $indexOfArray: [{ $ifNull: ['$used_user_ids', []] }, userObj],
+                },
+                idxStr: {
+                  $indexOfArray: [{ $ifNull: ['$used_user_ids', []] }, userStr],
+                },
+              },
+              in: {
+                $let: {
+                  vars: {
+                    idx: {
+                      $cond: [{ $gte: ['$$idxObj', 0] }, '$$idxObj', '$$idxStr'],
+                    },
+                  },
+                  in: {
+                    $cond: [
+                      { $gte: ['$$idx', 0] },
+                      {
+                        $concatArrays: [
+                          { $slice: ['$$arr', 0, '$$idx'] },
+                          {
+                            $slice: [
+                              '$$arr',
+                              { $add: ['$$idx', 1] },
+                              { $size: '$$arr' },
+                            ],
+                          },
+                        ],
+                      },
+                      '$$arr',
+                    ],
+                  },
+                },
+              },
             },
-          )
-          .exec();
-      } else {
-        await this.voucherModel
-          .findOneAndUpdate(
-            { _id: redemption.voucher_id, used_count: { $gt: 0 } },
-            { $inc: { used_count: -1 } },
-          )
-          .exec();
-      }
+          },
+        },
+      },
+    ];
+
+    if (this.voucherModel) {
+      const updateFn = this.voucherModel.findOneAndUpdate
+        ? this.voucherModel.findOneAndUpdate.bind(this.voucherModel)
+        : this.voucherModel.updateOne.bind(this.voucherModel);
+      await updateFn(
+        { _id: redemption.voucher_id, used_count: { $gt: 0 } },
+        updatePipeline as any,
+      ).exec?.();
     }
 
     return {
