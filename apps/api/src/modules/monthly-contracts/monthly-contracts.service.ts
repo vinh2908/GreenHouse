@@ -891,12 +891,17 @@ export class MonthlyContractsService {
       }
     }
 
-    // B100: chốt lương xong → báo cả thợ (đã có) và khách
+    const actualHelperReceives = isCashDirect ? 0 : summary.helper_receives;
+
+    // B100 & F1: chốt lương xong → báo cả thợ và khách với số tiền đã chốt
+    // Ở chế độ cash_direct (trả ngoài hệ thống) thì ghi rõ 0₫ / trả ngoài, không cộng ví
     await this.notificationsService.create({
       userId: contract.helper_id.toString(),
       type: NOTIFICATION_TYPES.MONTHLY_CONTRACT_SETTLED,
       title: '💰 Đã chốt lương tháng ' + dto.month,
-      body: `Hợp đồng "${contract.title}": ${summary.confirmed_days}/${summary.scheduled_days} buổi — bạn nhận ${summary.helper_receives.toLocaleString('vi-VN')}₫ vào ví.`,
+      body: isCashDirect
+        ? `Hợp đồng "${contract.title}": ${summary.confirmed_days}/${summary.scheduled_days} buổi — trả ngoài hệ thống, không cộng ví (0₫).`
+        : `Hợp đồng "${contract.title}": ${summary.confirmed_days}/${summary.scheduled_days} buổi — bạn nhận ${actualHelperReceives.toLocaleString('vi-VN')}₫ vào ví.`,
       payload: { contract_id: String(contract._id), month: dto.month, kind: 'monthly_contract' },
     });
     await this.notificationsService
@@ -904,7 +909,9 @@ export class MonthlyContractsService {
         userId: contract.customer_id.toString(),
         type: 'monthly_contract_settled',
         title: '💰 Đã chốt lương tháng ' + dto.month,
-        body: `Hợp đồng "${contract.title}": đã chốt lương tháng ${dto.month} — thợ nhận ${summary.helper_receives.toLocaleString('vi-VN')}₫ (${summary.confirmed_days}/${summary.scheduled_days} buổi).`,
+        body: isCashDirect
+          ? `Hợp đồng "${contract.title}": đã chốt lương tháng ${dto.month} (${summary.confirmed_days}/${summary.scheduled_days} buổi) — trả ngoài hệ thống, không trừ ví.`
+          : `Hợp đồng "${contract.title}": đã chốt lương tháng ${dto.month} — thợ nhận ${actualHelperReceives.toLocaleString('vi-VN')}₫ (${summary.confirmed_days}/${summary.scheduled_days} buổi).`,
         payload: { contract_id: String(contract._id), month: dto.month, kind: 'monthly_contract' },
       })
       .catch(() => undefined);
@@ -920,9 +927,12 @@ export class MonthlyContractsService {
 
     return {
       ...summary,
+      helper_receives: actualHelperReceives,
       status: 'settled' as const,
       settled_at: settlement.settled_at,
       settlement_id: String(settlement._id),
+      payment_mode: isCashDirect ? 'cash_direct' : (dto.payment_mode || 'wallet'),
+      note: isCashDirect ? 'Trả ngoài hệ thống, không cộng ví' : undefined,
     };
   }
 

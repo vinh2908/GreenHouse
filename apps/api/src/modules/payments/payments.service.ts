@@ -450,8 +450,9 @@ export class PaymentsService {
       }
 
       const executePaymentFlow = async (sess?: any) => {
-        // A2: Chặn thanh toán cho đơn hàng không ở trạng thái hợp lệ
+        // A2 & F4: Chặn thanh toán cho đơn hàng không ở trạng thái hợp lệ (bao gồm QUOTE_SELECTED sau khi gán thợ)
         const payableStatuses: string[] = [
+          JobStatus.QUOTE_SELECTED,
           JobStatus.CONFIRMED,
           JobStatus.HELPER_ON_THE_WAY,
           JobStatus.HELPER_ARRIVED,
@@ -550,6 +551,8 @@ export class PaymentsService {
           walletDebit = await this.debitWalletForPayment(customerId, resolvedAmount, sess);
         }
 
+        const nextStatus =
+          job.status === JobStatus.QUOTE_SELECTED ? JobStatus.CONFIRMED : job.status;
         await this.jobModel!.findByIdAndUpdate(
           job._id,
           {
@@ -557,6 +560,7 @@ export class PaymentsService {
               payment_status: PaymentStatus.PAID,
               payment_method: paymentMethod,
               paid_amount: (job.paid_amount || paidSoFar) + resolvedAmount,
+              status: nextStatus,
               ...(discountAmount > 0 ? { discount_amount: discountAmount } : {}),
             },
           },
@@ -1028,7 +1032,7 @@ export class PaymentsService {
     helperNetEarned = 0,
     session?: ClientSession | null,
   ): Promise<TransactionDocument> {
-    // P0-5 & R3: Idempotency check — chống trừ phí hoa hồng tiền mặt trùng 2 lần
+    // P0-5, R3, F5: Idempotency check & atomic claim — chống trừ phí hoa hồng tiền mặt trùng 2 lần
     if (
       this.transactionModel &&
       typeof this.transactionModel.findOne === 'function' &&
@@ -1045,6 +1049,48 @@ export class PaymentsService {
         .exec();
       if (existingTx) {
         return existingTx;
+      }
+    }
+
+    // F5: Atomic claim trên Job nếu có jobModel để chống race condition song song
+    let didClaimJob = false;
+    if (
+      this.jobModel &&
+      typeof this.jobModel.findOneAndUpdate === 'function' &&
+      Types.ObjectId.isValid(jobId)
+    ) {
+      const claimed = await this.jobModel
+        .findOneAndUpdate(
+          {
+            _id: new Types.ObjectId(jobId),
+            cash_commission_deducted: { $ne: true },
+          },
+          {
+            $set: { cash_commission_deducted: true },
+          },
+          { session: session ?? undefined },
+        )
+        .exec();
+
+      if (!claimed) {
+        // Đã bị claim bởi 1 thao tác khác chạy song song! Chờ và trả về transaction đã trừ
+        if (this.transactionModel && typeof this.transactionModel.findOne === 'function') {
+          for (let wait = 0; wait < 10; wait++) {
+            const tx = await this.transactionModel
+              .findOne({
+                job_id: new Types.ObjectId(jobId),
+                user_id: new Types.ObjectId(helperId),
+                type: 'commission',
+                status: 'success',
+              })
+              .session(session ?? null)
+              .exec();
+            if (tx) return tx;
+            await new Promise(r => setTimeout(r, 50));
+          }
+        }
+      } else {
+        didClaimJob = true;
       }
     }
     // H5 (G2): mẫu nguyên tử như deductWallet — $inc có guard $gte trên số
@@ -1235,19 +1281,49 @@ export class PaymentsService {
     return Boolean(tx);
   }
 
-  /** P0-3: Tính tổng số tiền khách đã thanh toán thành công cho đơn hàng này */
+  /** P0-3 & F6: Tính tổng số tiền net khách đã thanh toán thành công cho đơn hàng (tổng thanh toán trừ đi tổng đã hoàn tiền) */
   async getTotalPaidForJob(jobId: string): Promise<number> {
     if (!this.transactionModel || typeof this.transactionModel.find !== 'function') return 0;
-    const txs = await this.transactionModel
-      .find({
-        job_id: new Types.ObjectId(jobId),
-        type: 'payment',
-        status: 'success',
-      })
-      .select('amount')
-      .lean()
-      .exec();
-    return txs.reduce((sum, tx) => sum + (tx.amount || 0), 0);
+    const [payments, refunds] = await Promise.all([
+      this.transactionModel
+        .find({
+          job_id: new Types.ObjectId(jobId),
+          type: 'payment',
+          status: 'success',
+        })
+        .select('amount')
+        .lean()
+        .exec(),
+      this.transactionModel
+        .find({
+          job_id: new Types.ObjectId(jobId),
+          type: 'refund',
+          status: 'success',
+        })
+        .select('amount')
+        .lean()
+        .exec(),
+    ]);
+    const totalPaid = (payments || []).reduce((sum, tx) => sum + (tx.amount || 0), 0);
+    const totalRefunded = (refunds || []).reduce((sum, tx) => sum + (tx.amount || 0), 0);
+    const netPaid = Math.max(0, totalPaid - totalRefunded);
+
+    // F6: Cập nhật paid_amount trên Job cho khớp với tổng thực tế đã trả (nếu có jobModel)
+    if (
+      this.jobModel &&
+      typeof this.jobModel.updateOne === 'function' &&
+      Types.ObjectId.isValid(jobId)
+    ) {
+      await this.jobModel
+        .updateOne(
+          { _id: new Types.ObjectId(jobId) },
+          { $set: { paid_amount: netPaid, refunded_amount: totalRefunded } },
+        )
+        .exec()
+        .catch(() => undefined);
+    }
+
+    return netPaid;
   }
 
   // ─── Báo cáo thu nhập nâng cao (Feature 14) ────────────────────────────────

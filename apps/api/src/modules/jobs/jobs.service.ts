@@ -3369,12 +3369,17 @@ export class JobsService implements OnModuleInit {
 
     let payoutCredited = false;
     let isSimulatedPayout = false;
+    let isCashCommission = false;
     let payoutAmount = 0;
     try {
       if (job.helper_id && contract && contract.total_price > 0) {
         if (effectivePaymentMethod === 'cash') {
           // Đơn Tiền mặt: Thợ đã thu 100% tiền mặt trực tiếp từ khách -> Khấu trừ 15% phí sàn từ Ví thợ
           await this.deductCashCommission(job, contract.platform_fee, contract.helper_receives);
+          // F5: set payoutCredited ở mọi nhánh kể cả tiền mặt
+          payoutCredited = true;
+          isCashCommission = true;
+          payoutAmount = contract.platform_fee;
         } else if (contract.helper_receives > 0) {
           // P0-3: Chỉ giải ngân số tiền tương ứng với số tiền khách thực tế đã thanh toán (tránh giải ngân vượt số tiền đã thu)
           let maxPayable = contract.helper_receives;
@@ -3417,30 +3422,51 @@ export class JobsService implements OnModuleInit {
           }
         }
       }
-    } catch (payoutErr) {
-      // Rollback nếu giải ngân thất bại
-      await this.jobModel
-        .updateOne(
-          { _id: job._id },
-          {
-            $set: {
-              status: existing.status,
-              payment_status: existing.payment_status,
-              payment_method: existing.payment_method,
-              completed_at: existing.completed_at,
-              customer_rating: existing.customer_rating,
-              customer_review: existing.customer_review,
+    } catch (payoutErr: any) {
+      // F5: Rollback nếu giải ngân thất bại — log + báo lỗi rõ, không nuốt lặng
+      try {
+        await this.jobModel
+          .updateOne(
+            { _id: job._id },
+            {
+              $set: {
+                status: existing.status,
+                payment_status: existing.payment_status,
+                payment_method: existing.payment_method,
+                completed_at: existing.completed_at,
+                customer_rating: existing.customer_rating,
+                customer_review: existing.customer_review,
+              },
+              $pull: {
+                events: { note: `Nghiệm thu hoàn thành (${effectivePaymentMethod.toUpperCase()})` },
+              },
             },
-            $pull: {
-              events: { note: `Nghiệm thu hoàn thành (${effectivePaymentMethod.toUpperCase()})` },
-            },
-          },
-        )
-        .exec()
-        .catch(() => undefined);
+          )
+          .exec();
+      } catch (rollbackStatusErr: any) {
+        this.logger.error(
+          `F5: Không thể khôi phục trạng thái đơn ${jobId} khi giải ngân thất bại: ${rollbackStatusErr?.message ?? rollbackStatusErr}`,
+        );
+      }
 
       if (payoutCredited && job.helper_id && payoutAmount > 0) {
-        if (isSimulatedPayout) {
+        if (isCashCommission) {
+          await this.paymentsService
+            .creditWallet(
+              String(job.helper_id),
+              payoutAmount,
+              {
+                description: `Hoàn phí sàn đơn tiền mặt #${jobId.slice(-6)} do lỗi nghiệm thu`,
+                reference: `ROLLBACK-COMMISSION-${jobId}`,
+                type: 'refund',
+              },
+            )
+            .catch(rollbackErr => {
+              this.logger.error(
+                `Failed to roll back cash commission for job ${jobId} after approval error: ${rollbackErr}`,
+              );
+            });
+        } else if (isSimulatedPayout) {
           await this.paymentsService
             .deductWalletSimulated(
               String(job.helper_id),

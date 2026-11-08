@@ -246,6 +246,9 @@ export class Job {
   @Prop({ default: 0 })
   paid_amount?: number;
 
+  @Prop({ default: false })
+  cash_commission_deducted?: boolean;
+
   @Prop()
   payment_method?: string;
 
