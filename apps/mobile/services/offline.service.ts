@@ -116,13 +116,20 @@ export async function enqueueAction(
   payload?: Record<string, unknown>,
 ): Promise<void> {
   const queue = await readQueue();
-  queue.push({
+  // M-10: Chống trùng lặp hàng đợi offline theo (kind, job_id)
+  const existingIdx = queue.findIndex(a => a.kind === kind && a.job_id === jobId);
+  const action: QueuedAction = {
     id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
     kind,
     job_id: jobId,
     payload,
     queued_at: new Date().toISOString(),
-  });
+  };
+  if (existingIdx >= 0) {
+    queue[existingIdx] = action; // cập nhật payload mới nhất, không sinh trùng
+  } else {
+    queue.push(action);
+  }
   await writeQueue(queue);
 }
 

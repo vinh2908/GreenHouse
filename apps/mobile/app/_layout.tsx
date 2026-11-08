@@ -1,5 +1,5 @@
 import { useTranslation, fs } from '@/hooks/use-i18n';
-import { Stack, useRouter } from 'expo-router';
+import { Stack, useRouter, router } from 'expo-router';
 import React, { Component, useEffect, type ReactNode } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -52,27 +52,73 @@ class RootErrorBoundary extends Component<
 
   render() {
     if (this.state.hasError) {
-      // B27: màn lỗi root hiển thị theo ngôn ngữ đã chọn (đọc từ store vì đây là class component)
+      // B27 & M-24: Màn lỗi root thân thiện, không in raw stack trace, hỗ trợ Thử lại / Về trang chủ
       const lang = useSettingsStore.getState().language || 'vi';
+      const isEn = lang === 'en';
       return (
         <View
-          style={{ flex: 1, backgroundColor: '#FEF2F2', padding: 24, justifyContent: 'center' }}
+          style={{ flex: 1, backgroundColor: '#FEF2F2', padding: 24, justifyContent: 'center', alignItems: 'center' }}
         >
+          <View
+            style={{
+              width: 64,
+              height: 64,
+              borderRadius: 32,
+              backgroundColor: '#FEE2E2',
+              alignItems: 'center',
+              justifyContent: 'center',
+              marginBottom: 16,
+            }}
+          >
+            <AlertTriangle size={32} color="#DC2626" />
+          </View>
           <Text
-            style={{ fontSize: fs(20), fontWeight: 'bold', color: '#991B1B', marginBottom: 12 }}
+            style={{ fontSize: fs(18), fontWeight: 'bold', color: '#991B1B', marginBottom: 8, textAlign: 'center' }}
           >
             {translate(lang, 'root_error_title')}
           </Text>
-          <Text style={{ fontSize: fs(14), color: '#B91C1C', marginBottom: 16 }}>
-            {this.state.error?.message || translate(lang, 'root_error_unknown')}
-          </Text>
-          <ScrollView
-            style={{ maxHeight: 250, backgroundColor: '#FFF', padding: 10, borderRadius: 8 }}
+          <Text
+            style={{ fontSize: fs(14), color: '#4B5563', marginBottom: 24, textAlign: 'center', lineHeight: 20 }}
           >
-            <Text style={{ fontSize: fs(11), color: '#374151', fontFamily: 'monospace' }}>
-              {this.state.error?.stack}
-            </Text>
-          </ScrollView>
+            {isEn
+              ? 'An unexpected error occurred. Please try again or return to the home screen.'
+              : 'Đã xảy ra sự cố trong quá trình hiển thị. Vui lòng thử lại hoặc quay về trang chủ.'}
+          </Text>
+          <View style={{ flexDirection: 'row', gap: 12 }}>
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() => this.setState({ hasError: false, error: null })}
+              style={{
+                paddingVertical: 12,
+                paddingHorizontal: 20,
+                backgroundColor: '#DC2626',
+                borderRadius: 10,
+              }}
+            >
+              <Text style={{ color: '#FFFFFF', fontWeight: 'bold', fontSize: fs(14) }}>
+                {isEn ? 'Try again' : 'Thử lại'}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() => {
+                this.setState({ hasError: false, error: null });
+                router.replace('/');
+              }}
+              style={{
+                paddingVertical: 12,
+                paddingHorizontal: 20,
+                backgroundColor: '#FFFFFF',
+                borderRadius: 10,
+                borderWidth: 1,
+                borderColor: '#E5E7EB',
+              }}
+            >
+              <Text style={{ color: '#374151', fontWeight: '600', fontSize: fs(14) }}>
+                {isEn ? 'Home' : 'Về trang chủ'}
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
       );
     }
@@ -192,11 +238,11 @@ function ToastCard() {
         </View>
         <View style={{ flex: 1, paddingRight: 8 }}>
           {text1 ? (
-            <Text style={{ fontWeight: '800', fontSize: fs(14.5), color: '#1f2937' }}>{text1}</Text>
+            <Text style={{ fontWeight: '800', fontSize: fs(14.5), color: tc.text }}>{text1}</Text>
           ) : null}
           {text2 ? (
             <Text
-              style={{ fontSize: fs(12.5), color: '#4b5563', marginTop: 4, lineHeight: 18 }}
+              style={{ fontSize: fs(12.5), color: tc.textSecondary, marginTop: 4, lineHeight: 18 }}
               numberOfLines={3}
             >
               {text2}

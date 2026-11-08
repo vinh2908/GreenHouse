@@ -334,9 +334,26 @@ export default function EditProfileScreen() {
 
       // 2. Nếu là Thợ -> Cập nhật thêm thông tin chuyên môn + vị trí GPS
       if (isHelper && (activeTab === 'career' || activeTab === 'general')) {
+        let parsedYears = 0;
+        if (experienceYears.trim()) {
+          const val = Number(experienceYears.trim());
+          if (isNaN(val) || val < 0 || !Number.isInteger(val)) {
+            Toast.show({
+              type: 'error',
+              text1:
+                lang === 'en'
+                  ? 'Experience years must be an integer ≥ 0'
+                  : 'Số năm kinh nghiệm phải là số nguyên ≥ 0',
+            });
+            setSaving(false);
+            return;
+          }
+          parsedYears = val;
+        }
+
         await apiClient.patch('/helpers/me/profile', {
           bio: bio.trim() || undefined,
-          years_experience: parseInt(experienceYears, 10) || 0,
+          years_experience: parsedYears,
           working_areas: workingAreas
             .split(',')
             .map(a => a.trim())

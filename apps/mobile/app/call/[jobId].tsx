@@ -267,13 +267,12 @@ export default function CallScreen() {
           answerTimerRef.current = setTimeout(() => {
             if (endedRef.current) return;
             const diag = stringeeService.getDiagnostics();
-            const diagMsg =
-              (lang === 'en'
-                ? 'Call ended or no signal received from SDK '
-                : 'Cuộc gọi đã kết thúc hoặc không nhận được tín hiệu từ SDK ') +
-              `[Diagnostics: clientReady=${diag.clientReady}, callRef=${diag.hasCallRef}, incoming=${diag.pendingIncoming || 'null'}]`;
-            console.warn('[CallScreen] Answer timeout:', diagMsg);
-            setErrorMsg(diagMsg);
+            console.warn('[CallScreen] Answer timeout diagnostics:', diag);
+            const userMsg =
+              lang === 'en'
+                ? 'Call ended or no signal received from the connection'
+                : 'Cuộc gọi đã kết thúc hoặc không nhận được tín hiệu kết nối';
+            setErrorMsg(userMsg);
             setUiState('error');
             endSentRef.current = true;
             void endCall.mutateAsync({ sessionId, reason: 'missed' }).catch(() => undefined);

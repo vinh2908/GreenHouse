@@ -49,6 +49,12 @@ const HELPER_STATUS_BADGE: Record<string, 'success' | 'warning' | 'secondary'> =
   offline: 'secondary',
 };
 
+const HELPER_STATUS_VI: Record<string, string> = {
+  online: 'Trực tuyến',
+  busy: 'Đang bận',
+  offline: 'Ngoại tuyến',
+};
+
 export default function HelpersPage() {
   const [search, setSearch] = useState('');
   const [searchInput, setSearchInput] = useState('');
@@ -169,7 +175,7 @@ export default function HelpersPage() {
                           </TableCell>
                           <TableCell>
                             <Badge variant={HELPER_STATUS_BADGE[h.status] ?? 'secondary'}>
-                              {h.status}
+                              {HELPER_STATUS_VI[h.status] ?? h.status}
                             </Badge>
                           </TableCell>
                           <TableCell>
@@ -186,7 +192,7 @@ export default function HelpersPage() {
                               <span className="text-muted-foreground text-sm">—</span>
                             )}
                           </TableCell>
-                          <TableCell>{completedVal} jobs</TableCell>
+                          <TableCell>{completedVal} việc</TableCell>
                           <TableCell className="text-sm text-muted-foreground">
                             {formatDateTime(h.created_at)}
                           </TableCell>

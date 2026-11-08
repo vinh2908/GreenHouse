@@ -22,6 +22,14 @@ import {
 } from '@/components/ui';
 import { formatDateTime } from '@/lib/utils';
 
+const LOYALTY_TX_TYPE_VI: Record<string, string> = {
+  earn: 'Tích điểm',
+  redeem: 'Đổi điểm',
+  adjust: 'Điều chỉnh',
+  refund: 'Hoàn điểm',
+  expire: 'Hết hạn',
+};
+
 export default function AdminLoyaltyPage() {
   const [search, setSearch] = useState('');
   const [searchInput, setSearchInput] = useState('');
@@ -66,7 +74,9 @@ export default function AdminLoyaltyPage() {
     }
     const currentPoints = account?.points_balance ?? 0;
     if (currentPoints + points < 0) {
-      setMessage(`Không thể trừ vượt quá số dư hiện tại (${currentPoints.toLocaleString('vi-VN')} điểm).`);
+      setMessage(
+        `Không thể trừ vượt quá số dư hiện tại (${currentPoints.toLocaleString('vi-VN')} điểm).`,
+      );
       return;
     }
     setMessage('');
@@ -225,7 +235,11 @@ export default function AdminLoyaltyPage() {
                               <TableCell className="text-sm text-muted-foreground">
                                 {formatDateTime(tx.created_at)}
                               </TableCell>
-                              <TableCell>{tx.type}</TableCell>
+                              <TableCell>
+                                <Badge variant="secondary">
+                                  {LOYALTY_TX_TYPE_VI[tx.type] ?? tx.type}
+                                </Badge>
+                              </TableCell>
                               <TableCell
                                 className={
                                   tx.points > 0

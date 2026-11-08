@@ -152,6 +152,7 @@ export class HelpersService {
       id_card_back: dto.id_card_back,
       selfie_photo: dto.selfie_photo,
       verification_status: VerificationStatus.PENDING,
+      verification_submitted_at: new Date(),
       rejection_reason: undefined,
     });
 

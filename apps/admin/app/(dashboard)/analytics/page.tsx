@@ -22,8 +22,10 @@ import { Card, CardHeader, CardTitle, CardContent, Loading } from '@/components/
 import { formatVND } from '@/lib/utils';
 
 const STATUS_VI: Record<string, string> = {
+  draft: 'Nháp',
   open: 'Mở',
   receiving_quotes: 'Nhận báo giá',
+  quote_selected: 'Đã chọn báo giá',
   confirmed: 'Xác nhận',
   helper_on_the_way: 'Trên đường',
   helper_arrived: 'Đã đến',
@@ -32,6 +34,7 @@ const STATUS_VI: Record<string, string> = {
   completed: 'Hoàn thành',
   cancelled: 'Đã hủy',
   disputed: 'Tranh chấp',
+  expired: 'Đã hết hạn',
   refunded: 'Đã hoàn tiền',
 };
 

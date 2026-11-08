@@ -1331,20 +1331,17 @@ export default function BookingScreen() {
       setFieldErrors({});
       setStep(1);
     } else if (step === 1) {
+      // M-26: Đồng bộ validate địa chỉ bước 1 với submit (quận HOẶC (phường VÀ thành phố))
       const hasFullAddress = address.full_address.trim().length > 0;
-      const hasLocality = Boolean(
-        address.district.trim() ||
-        address.ward.trim() ||
-        address.city.trim() ||
-        (address.coordinates && (address.coordinates[0] !== 0 || address.coordinates[1] !== 0)),
-      );
+      const hasDistrictOrFallback =
+        address.district.trim().length > 0 || Boolean(address.ward?.trim() && address.city?.trim());
       if (!hasFullAddress) {
         nextErrors.full_address = t('booking_address_validation_error');
-      } else if (!hasLocality) {
+      } else if (!hasDistrictOrFallback) {
         nextErrors.full_address =
           lang === 'en'
-            ? 'Please provide district/ward or pick location on map'
-            : 'Vui lòng điền quận/huyện hoặc định vị trên bản đồ';
+            ? 'Please provide district or (ward and city)'
+            : 'Vui lòng điền quận/huyện hoặc (phường và thành phố)';
       }
       if (Object.keys(nextErrors).length > 0) {
         setFieldErrors(nextErrors);

@@ -92,7 +92,7 @@ export default function SupportChatScreen() {
 
   const handleSend = async (raw?: string) => {
     const content = (raw ?? text).trim();
-    if (!content || sendMsg.isPending) return;
+    if (!content || sendMsg.isPending || isClosed) return;
     const id = await ensureId();
     if (!id) {
       Toast.show({
@@ -420,24 +420,26 @@ export default function SupportChatScreen() {
                 paddingVertical: 11,
                 fontSize: fs(15),
                 maxHeight: 100,
-                backgroundColor: tc.background,
+                backgroundColor: isClosed ? tc.subtle : tc.background,
                 color: tc.text,
+                opacity: isClosed ? 0.6 : 1,
               }}
-              placeholder={t('support_placeholder')}
+              placeholder={isClosed ? (lang === 'en' ? 'Conversation closed' : 'Hội thoại đã đóng') : t('support_placeholder')}
               value={text}
               onChangeText={setText}
+              editable={!isClosed}
               multiline
               placeholderTextColor={COLORS.gray[400]}
             />
             <TouchableOpacity
               activeOpacity={0.8}
               onPress={() => handleSend()}
-              disabled={!text.trim() || sendMsg.isPending}
+              disabled={!text.trim() || sendMsg.isPending || isClosed}
               style={{
                 width: 44,
                 height: 44,
                 borderRadius: 14,
-                backgroundColor: text.trim() ? COLORS.primary : COLORS.gray[200],
+                backgroundColor: text.trim() && !isClosed ? COLORS.primary : COLORS.gray[200],
                 alignItems: 'center',
                 justifyContent: 'center',
               }}
@@ -445,7 +447,7 @@ export default function SupportChatScreen() {
               {sendMsg.isPending ? (
                 <ActivityIndicator size="small" color="#fff" />
               ) : (
-                <Send size={18} color={text.trim() ? '#fff' : COLORS.gray[400]} />
+                <Send size={18} color={text.trim() && !isClosed ? '#fff' : COLORS.gray[400]} />
               )}
             </TouchableOpacity>
           </View>

@@ -96,6 +96,31 @@ const TXN_VI: Record<string, string> = {
   refund: 'Hoàn tiền',
 };
 
+const TXN_STATUS_VI: Record<string, string> = {
+  pending: 'Chờ xử lý',
+  completed: 'Thành công',
+  success: 'Thành công',
+  failed: 'Thất bại',
+  cancelled: 'Đã hủy',
+  rejected: 'Từ chối',
+};
+
+const WITHDRAWAL_STATUS_VI: Record<
+  string,
+  { label: string; variant: 'warning' | 'info' | 'success' | 'danger' | 'secondary' }
+> = {
+  pending: { label: 'Chờ duyệt', variant: 'warning' },
+  processing: { label: 'Đang xử lý', variant: 'info' },
+  completed: { label: 'Thành công', variant: 'success' },
+  rejected: { label: 'Từ chối', variant: 'danger' },
+};
+
+const HELPER_STATUS_VI: Record<string, string> = {
+  online: 'Đang trực tuyến',
+  busy: 'Đang bận',
+  offline: 'Ngoại tuyến',
+};
+
 const sum = (counts?: Record<string, number>) =>
   Object.values(counts ?? {}).reduce((a, b) => a + b, 0);
 
@@ -111,14 +136,24 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 function JobsTable({
   jobs,
   counterpart,
+  totalCount,
 }: {
   jobs: JobRow[];
   counterpart: 'customer_id' | 'helper_id';
+  totalCount?: number;
 }) {
   if (!jobs.length) return <EmptyState message="Chưa có công việc" />;
   return (
-    <div className="overflow-x-auto w-full">
-      <Table className="min-w-[600px]">
+    <div className="space-y-2">
+      {totalCount != null && totalCount > jobs.length ? (
+        <p className="text-xs text-muted-foreground italic">
+          Hiển thị {jobs.length} công việc mới nhất trong tổng số {totalCount} đơn
+        </p>
+      ) : totalCount != null ? (
+        <p className="text-xs text-muted-foreground italic">Tổng số: {totalCount} đơn</p>
+      ) : null}
+      <div className="overflow-x-auto w-full">
+        <Table className="min-w-[600px]">
         <TableHeader>
           <TableRow>
             <TableHead>Công việc</TableHead>
@@ -159,6 +194,7 @@ function JobsTable({
           ))}
         </TableBody>
       </Table>
+      </div>
     </div>
   );
 }
@@ -350,7 +386,7 @@ export default function UserDetailPage() {
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard title="Đơn đã đặt" value={sum(job_counts?.as_customer)} />
         <StatCard title="Việc đã nhận" value={sum(job_counts?.as_helper)} />
-        <StatCard title="Số dư ví" value={formatVND(wallet?.balance ?? 0)} />
+        <StatCard title="Số dư ví" value={wallet ? formatVND(wallet.balance) : 'Chưa có ví'} />
         <StatCard
           title="Đánh giá (thợ)"
           value={rating_stats?.total ? `${rating_stats.average}★` : '—'}
@@ -404,7 +440,9 @@ export default function UserDetailPage() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid gap-4 sm:grid-cols-2">
-                  <Field label="Trạng thái">{hp?.status}</Field>
+                  <Field label="Trạng thái">
+                    {hp?.status ? HELPER_STATUS_VI[hp.status] ?? hp.status : '—'}
+                  </Field>
                   <Field label="Kinh nghiệm">
                     {hp?.years_experience != null ? `${hp.years_experience} năm` : null}
                   </Field>
@@ -524,7 +562,11 @@ export default function UserDetailPage() {
       {tab === 'customer' && (
         <Card>
           <CardContent className="pt-6">
-            <JobsTable jobs={data.jobs_as_customer} counterpart="helper_id" />
+            <JobsTable
+              jobs={data.jobs_as_customer}
+              counterpart="helper_id"
+              totalCount={sum(job_counts?.as_customer)}
+            />
           </CardContent>
         </Card>
       )}
@@ -532,7 +574,11 @@ export default function UserDetailPage() {
       {tab === 'helper' && (
         <Card>
           <CardContent className="pt-6">
-            <JobsTable jobs={data.jobs_as_helper} counterpart="customer_id" />
+            <JobsTable
+              jobs={data.jobs_as_helper}
+              counterpart="customer_id"
+              totalCount={sum(job_counts?.as_helper)}
+            />
           </CardContent>
         </Card>
       )}
@@ -540,9 +586,9 @@ export default function UserDetailPage() {
       {tab === 'wallet' && (
         <div className="space-y-6">
           <div className="grid gap-4 sm:grid-cols-3">
-            <StatCard title="Số dư" value={formatVND(wallet?.balance ?? 0)} />
-            <StatCard title="Tổng thu nhập" value={formatVND(wallet?.total_earned ?? 0)} />
-            <StatCard title="Đã rút" value={formatVND(wallet?.total_withdrawn ?? 0)} />
+            <StatCard title="Số dư" value={wallet ? formatVND(wallet.balance) : 'Chưa có ví'} />
+            <StatCard title="Tổng thu nhập" value={wallet ? formatVND(wallet.total_earned ?? 0) : '—'} />
+            <StatCard title="Đã rút" value={wallet ? formatVND(wallet.total_withdrawn ?? 0) : '—'} />
           </div>
           <Card>
             <CardHeader>
@@ -571,12 +617,66 @@ export default function UserDetailPage() {
                           {t.type === 'earning' || t.type === 'refund' ? '+' : '−'}
                           {formatVND(t.amount)}
                         </TableCell>
-                        <TableCell className="text-sm">{t.status}</TableCell>
+                        <TableCell className="text-sm">
+                          {TXN_STATUS_VI[t.status] ?? t.status}
+                        </TableCell>
                         <TableCell className="text-sm text-muted-foreground">
                           {formatDateTime(t.created_at)}
                         </TableCell>
                       </TableRow>
                     ))}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* B01: Lịch sử rút tiền của user */}
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle className="text-base">Lịch sử rút tiền (10 gần nhất)</CardTitle>
+              <Link href="/payments" className="text-xs text-primary hover:underline">
+                Xem tất cả tại trang Thanh toán →
+              </Link>
+            </CardHeader>
+            <CardContent className="overflow-x-auto w-full">
+              {!data.withdrawals?.length ? (
+                <EmptyState message="Chưa có yêu cầu rút tiền" />
+              ) : (
+                <Table className="min-w-[600px]">
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Mã</TableHead>
+                      <TableHead>Số tiền</TableHead>
+                      <TableHead>Ngân hàng</TableHead>
+                      <TableHead>Trạng thái</TableHead>
+                      <TableHead>Thời gian</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {data.withdrawals.map((w: any) => {
+                      const st = WITHDRAWAL_STATUS_VI[w.status] ?? {
+                        label: w.status,
+                        variant: 'secondary' as const,
+                      };
+                      return (
+                        <TableRow key={w._id}>
+                          <TableCell className="font-mono text-xs">{w._id.slice(-8)}</TableCell>
+                          <TableCell className="text-sm font-medium">
+                            {formatVND(w.amount)}
+                          </TableCell>
+                          <TableCell className="text-xs text-muted-foreground">
+                            {w.bank_info?.bank_name} · {w.bank_info?.account_number}
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={st.variant}>{st.label}</Badge>
+                          </TableCell>
+                          <TableCell className="text-sm text-muted-foreground">
+                            {formatDateTime(w.created_at)}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
                   </TableBody>
                 </Table>
               )}

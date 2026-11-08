@@ -175,13 +175,16 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         });
       }
     } catch {
-      // Token load failed — stay logged out
-      set({
-        user: null,
-        accessToken: null,
-        refreshToken: null,
-        isAuthenticated: false,
-      });
+      // M-20: Khi SecureStore timeout thoáng qua, không tự ý set logged-out nếu đã có token từ initAuth
+      const current = get();
+      if (!current.accessToken) {
+        set({
+          user: null,
+          accessToken: null,
+          refreshToken: null,
+          isAuthenticated: false,
+        });
+      }
     } finally {
       set({ isLoading: false });
     }

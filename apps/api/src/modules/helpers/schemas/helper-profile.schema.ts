@@ -88,6 +88,9 @@ export class HelperProfile {
   rejection_reason?: string;
 
   @Prop()
+  verification_submitted_at?: Date;
+
+  @Prop()
   verified_at?: Date;
 
   // Stats & Quality / Risk Control

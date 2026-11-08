@@ -2,6 +2,8 @@ import {
   BadRequestException,
   ConflictException,
   Injectable,
+  InternalServerErrorException,
+  Logger,
   NotFoundException,
   forwardRef,
   Inject,
@@ -96,7 +98,7 @@ const ADMIN_JOB_STATUS_TRANSITIONS: Record<string, string[]> = {
     JobStatus.CANCELLED,
   ],
   [JobStatus.DISPUTED]: [
-    JobStatus.IN_PROGRESS,
+    // P2-26: Cấm chuyển trực tiếp DISPUTED -> IN_PROGRESS, phải phân xử khiếu nại (completed/refunded/cancelled)
     JobStatus.COMPLETED,
     JobStatus.REFUNDED,
     JobStatus.CANCELLED,
@@ -108,6 +110,8 @@ const ADMIN_JOB_STATUS_TRANSITIONS: Record<string, string[]> = {
 
 @Injectable()
 export class AdminService {
+  private readonly logger = new Logger(AdminService.name);
+
   constructor(
     @InjectModel(User.name) private userModel: Model<UserDocument>,
     @InjectModel(HelperProfile.name) private helperModel: Model<HelperProfileDocument>,
@@ -222,8 +226,13 @@ export class AdminService {
   }
 
   async getUsers(search?: string, status?: string, page = 1, limit = 20) {
-    const query: Record<string, unknown> = { is_deleted: false };
-    if (status) query['status'] = status;
+    const query: Record<string, unknown> = {};
+    if (status === 'deleted') {
+      query['is_deleted'] = true;
+    } else {
+      query['is_deleted'] = false;
+      if (status) query['status'] = status;
+    }
     if (search) {
       query['$or'] = [
         { full_name: { $regex: search, $options: 'i' } },
@@ -377,15 +386,23 @@ export class AdminService {
       .exec();
     if (!user) throw new NotFoundException('Người dùng không tồn tại');
 
-    // A13: Mở khóa tài khoản -> nếu là thợ và e-KYC đã duyệt thì đưa thợ về ONLINE
+    // A13 & R5: Mở khóa tài khoản -> nếu là thợ và e-KYC đã duyệt thì đưa thợ về ONLINE
     if (user.roles?.includes(UserRole.HELPER)) {
-      await this.helperModel
-        .updateOne(
-          { user_id: user._id, verification_status: VerificationStatus.APPROVED },
-          { status: HelperStatus.ONLINE },
-        )
-        .exec()
-        .catch(() => undefined);
+      try {
+        await this.helperModel
+          .updateOne(
+            { user_id: user._id, verification_status: VerificationStatus.APPROVED },
+            { status: HelperStatus.ONLINE },
+          )
+          .exec();
+      } catch (err) {
+        this.logger.error(
+          `activateUser: Failed to update helper status to ONLINE for user ${id}: ${(err as Error).message}`,
+        );
+        throw new InternalServerErrorException(
+          `Mở khóa tài khoản người dùng thành công nhưng cập nhật trạng thái thợ thất bại: ${(err as Error).message}`,
+        );
+      }
     }
 
     return user;
@@ -435,7 +452,22 @@ export class AdminService {
     const query: Record<string, unknown> = {};
     if (verificationStatus) query['verification_status'] = verificationStatus;
 
-    // If searching, join with users collection
+    // P2-17: Nếu tìm kiếm, query trước user_id để đếm total và phân trang chính xác
+    if (search?.trim() && this.userModel?.find) {
+      const matchingUsers = await this.userModel
+        .find({
+          $or: [
+            { full_name: { $regex: search.trim(), $options: 'i' } },
+            { phone: { $regex: search.trim(), $options: 'i' } },
+          ],
+        })
+        .select('_id')
+        .lean()
+        .exec();
+      const userIds = (matchingUsers || []).map(u => u._id);
+      query['user_id'] = { $in: userIds };
+    }
+
     const skip = (page - 1) * limit;
     const [helpers, total] = await Promise.all([
       this.helperModel
@@ -443,14 +475,6 @@ export class AdminService {
         .populate({
           path: 'user_id',
           select: 'full_name phone email avatar status',
-          match: search
-            ? {
-                $or: [
-                  { full_name: { $regex: search, $options: 'i' } },
-                  { phone: { $regex: search, $options: 'i' } },
-                ],
-              }
-            : undefined,
         })
         .sort({ created_at: -1 })
         .skip(skip)
@@ -459,11 +483,7 @@ export class AdminService {
       this.helperModel.countDocuments(query).exec(),
     ]);
 
-    const filtered = search ? helpers.filter(h => h.user_id !== null) : helpers;
-    // F3: che số TK ở danh sách admin — trang danh sách helpers không dùng
-    // bank_account; chỉ che bank_account, không che CCCD/ảnh (trang duyệt
-    // KYC cần id_card_number/front/back + selfie; STK đầy đủ chỉ hiện ở
-    // trang duyệt rút tiền / chi tiết user, endpoint riêng).
+    const filtered = helpers.filter(h => h.user_id !== null);
     return {
       helpers: filtered.map(h => maskHelperBankAccount(h)),
       total,

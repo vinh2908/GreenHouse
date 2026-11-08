@@ -18,15 +18,16 @@ export class MailService {
     return process.env.SENDGRID_API_KEY;
   }
 
-  private get fromEmail(): string {
-    return process.env.SENDGRID_FROM || process.env.GMAIL_USER || 'htcuteman@gmail.com';
+  private get fromEmail(): string | undefined {
+    return process.env.SENDGRID_FROM || process.env.GMAIL_USER;
   }
 
   async sendOtpEmail(toEmail: string, code: string, purpose: 'verify' | 'reset'): Promise<boolean> {
     const isVerify = purpose === 'verify';
     const actionText = isVerify ? 'xác thực tài khoản' : 'đặt lại mật khẩu';
 
-    const subject = `[GreenHouse] Mã OTP ${actionText}: ${code}`;
+    // P3-2: Bỏ mã OTP khỏi tiêu đề email
+    const subject = `[GreenHouse] Mã OTP ${actionText}`;
     const text = `Xin chào,\n\nMã OTP để ${actionText} của bạn trên hệ thống GreenHouse là: ${code}\nMã có hiệu lực trong vòng 5 phút. Vui lòng không chia sẻ mã này với bất kỳ ai.\n\nTrân trọng,\nĐội ngũ GreenHouse`;
 
     const html = `
@@ -57,9 +58,9 @@ export class MailService {
       </div>
     `;
 
-    if (!this.apiKey) {
+    if (!this.apiKey || !this.fromEmail) {
       this.logger.warn(
-        `[SENDGRID SIMULATED] To: ${toEmail} | Code: ${code} | Purpose: ${purpose} (SENDGRID_API_KEY chưa được cấu hình)`,
+        `[SENDGRID SIMULATED] To: ${toEmail} | Code: ${code} | Purpose: ${purpose} (SENDGRID_API_KEY hoặc SENDGRID_FROM chưa được cấu hình)`,
       );
       return false;
     }

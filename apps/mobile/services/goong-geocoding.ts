@@ -1,25 +1,14 @@
 /**
- * Goong REST API (https://rsapi.goong.io) — lớp geocoding dữ liệu Việt Nam
- * cho location.service.ts.
+ * Goong REST API (https://rsapi.goong.io) — nền tảng geocoding chính cho dữ liệu Việt Nam.
  *
- * Vì sao có lớp này: cascade cũ (Photon/Nominatim/BigDataCloud) đều dựa trên
- * dữ liệu OpenStreetMap — ở Việt Nam OSM rất thiếu số nhà, nhất là trong hẻm.
- * Goong là nền tảng bản đồ Việt Nam, trả về được street_number cho phần lớn
- * địa chỉ phố chính. Tài liệu: https://docs.goong.io/help/ (đã đối chiếu:
- * base URL rsapi.goong.io, endpoint /Geocode?latlng=..&api_key=.., REST API
- * key giới hạn 30.000 request/tháng, autocomplete dùng session token gộp
- * billing với 1 lần Place Detail).
- *
- * Module này thuần TypeScript (không import expo/react-native) để kiểm tra
- * độc lập bằng script Node: xem ~/workspace/greenhouse-goong/.
- *
- * Hành vi khi KHÔNG có key: getGoongApiKey() trả '' và location.service bỏ
- * qua toàn bộ lớp Goong — cascade hoạt động đúng như trước.
+ * Kiến trúc Goong-only: Goong là nguồn dữ liệu địa chỉ và geocoding duy nhất
+ * cho thị trường Việt Nam (trả về chi tiết số nhà, ngõ ngách, phường, quận, thành phố).
+ * Tài liệu: https://docs.goong.io/help/
  */
 
 export const GOONG_API_BASE = 'https://rsapi.goong.io';
 
-/** Timeout cho mọi request Goong: chậm quá thì rơi xuống lớp OSM kế tiếp. */
+/** Timeout cho request Goong (6 giây). */
 const GOONG_TIMEOUT_MS = 6000;
 
 /**

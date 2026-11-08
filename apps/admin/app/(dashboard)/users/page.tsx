@@ -26,6 +26,7 @@ const STATUS_OPTIONS = [
   { value: 'active', label: 'Đang hoạt động' },
   { value: 'inactive', label: 'Chưa kích hoạt' },
   { value: 'suspended', label: 'Bị đình chỉ' },
+  { value: 'deleted', label: 'Đã xóa' },
 ];
 
 const STATUS_BADGE: Record<string, 'success' | 'danger' | 'warning' | 'secondary'> = {
@@ -33,6 +34,7 @@ const STATUS_BADGE: Record<string, 'success' | 'danger' | 'warning' | 'secondary
   inactive: 'secondary',
   suspended: 'danger',
   pending_verification: 'warning',
+  deleted: 'danger',
 };
 
 const STATUS_VI: Record<string, string> = {
@@ -40,6 +42,13 @@ const STATUS_VI: Record<string, string> = {
   inactive: 'Chưa KT',
   suspended: 'Đình chỉ',
   pending_verification: 'Chờ xác minh',
+  deleted: 'Đã xóa',
+};
+
+const ROLE_VI: Record<string, string> = {
+  customer: 'Khách',
+  helper: 'Thợ',
+  admin: 'Quản trị',
 };
 
 export default function UsersPage() {
@@ -147,6 +156,7 @@ export default function UsersPage() {
                       phone: string;
                       roles: string[];
                       status: string;
+                      is_deleted?: boolean;
                       created_at: string;
                     }) => {
                       const isAdmin = user.roles?.includes('admin');
@@ -170,14 +180,20 @@ export default function UsersPage() {
                             <div className="flex gap-1 flex-wrap">
                               {user.roles.map(r => (
                                 <Badge key={r} variant="outline">
-                                  {r}
+                                  {ROLE_VI[r] ?? r}
                                 </Badge>
                               ))}
                             </div>
                           </TableCell>
                           <TableCell>
-                            <Badge variant={STATUS_BADGE[user.status] ?? 'secondary'}>
-                              {STATUS_VI[user.status] ?? user.status}
+                            <Badge
+                              variant={
+                                user.is_deleted
+                                  ? 'danger'
+                                  : STATUS_BADGE[user.status] ?? 'secondary'
+                              }
+                            >
+                              {user.is_deleted ? 'Đã xóa' : STATUS_VI[user.status] ?? user.status}
                             </Badge>
                           </TableCell>
                           <TableCell className="text-sm text-muted-foreground">
@@ -186,6 +202,13 @@ export default function UsersPage() {
                           <TableCell className="text-right">
                             {isAdmin ? (
                               <span className="text-xs text-muted-foreground">Quản trị viên</span>
+                            ) : user.is_deleted ? (
+                              <Link
+                                href={`/users/${user._id}`}
+                                className="text-xs text-primary hover:underline font-medium"
+                              >
+                                Xem & khôi phục
+                              </Link>
                             ) : user.status === 'suspended' ? (
                               <Button
                                 size="sm"
@@ -211,28 +234,29 @@ export default function UsersPage() {
                     },
                   )}
                 </TableBody>
-                {suspendTarget && (
-                  <PromptDialog
-                    title="Đình chỉ tài khoản"
-                    label={'Lý do đình chỉ tài khoản "' + (suspendTarget.full_name ?? '') + '"'}
-                    placeholder="Nhập lý do đình chỉ..."
-                    confirmLabel="Đình chỉ"
-                    onSubmit={reason => {
-                      suspend.mutate({
-                        id: suspendTarget._id,
-                        reason: reason || 'Vi phạm quy định nền tảng',
-                      });
-                      setSuspendTarget(null);
-                    }}
-                    onClose={() => setSuspendTarget(null)}
-                  />
-                )}
               </Table>
             </div>
             <Pagination page={page} totalPages={data.total_pages ?? 1} onPageChange={setPage} />
           </>
         )}
       </div>
+
+      {suspendTarget && (
+        <PromptDialog
+          title="Đình chỉ tài khoản"
+          label={'Lý do đình chỉ tài khoản "' + (suspendTarget.full_name ?? '') + '"'}
+          placeholder="Nhập lý do đình chỉ..."
+          confirmLabel="Đình chỉ"
+          onSubmit={reason => {
+            suspend.mutate({
+              id: suspendTarget._id,
+              reason: reason || 'Vi phạm quy định nền tảng',
+            });
+            setSuspendTarget(null);
+          }}
+          onClose={() => setSuspendTarget(null)}
+        />
+      )}
     </div>
   );
 }

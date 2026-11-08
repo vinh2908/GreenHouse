@@ -30,6 +30,7 @@ export function formatDate(date: Date | string): string {
     day: '2-digit',
     month: '2-digit',
     year: 'numeric',
+    timeZone: 'Asia/Ho_Chi_Minh',
   }).format(new Date(date));
 }
 
@@ -40,5 +41,6 @@ export function formatDateTime(date: Date | string): string {
     year: 'numeric',
     hour: '2-digit',
     minute: '2-digit',
+    timeZone: 'Asia/Ho_Chi_Minh',
   }).format(new Date(date));
 }

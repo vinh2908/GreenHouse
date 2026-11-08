@@ -28,7 +28,8 @@ const TOAST_MAP_EN: Record<string, string> = {
   'Đăng việc thành công!': 'Job posted successfully!',
   'Đang phát thông báo tới các thợ trong khu vực': 'Notifying nearby helpers',
   ' BẠN ĐÃ NHẬN ĐƠN CỨU HỘ SOS!': 'YOU ACCEPTED SOS RESCUE JOB!',
-  'Vui lòng di chuyển khẩn cấp đến địa chỉ khách hàng': 'Please head urgently to the customer address',
+  'Vui lòng di chuyển khẩn cấp đến địa chỉ khách hàng':
+    'Please head urgently to the customer address',
   'Đã nhận việc thành công! ': 'Job accepted successfully!',
   'Hợp đồng đã được tạo — bạn có thể bắt đầu di chuyển đến khách.':
     'Contract created — you can now travel to customer.',
@@ -72,8 +73,7 @@ const TOAST_MAP_EN: Record<string, string> = {
   'Đã từ chối lời mời': 'Declined team invitation',
   'Đã bổ sung vào hồ sơ tranh chấp': 'Added evidence to dispute case',
   'Đã gửi kháng cáo': 'Appeal submitted',
-  'Admin sẽ xem xét lại hồ sơ và phản hồi sớm nhất':
-    'Admin will review the case and respond soon',
+  'Admin sẽ xem xét lại hồ sơ và phản hồi sớm nhất': 'Admin will review the case and respond soon',
   'Đánh giá thành công!': 'Review submitted successfully!',
   'Đã gửi phản hồi đánh giá!': 'Review response submitted!',
   'Đã gửi kháng nghị cho quản trị viên': 'Report submitted to admin',
@@ -305,14 +305,18 @@ export function useServices() {
 
 // ─── Jobs (Customer & Helper) ──────────────────────────────────────────────────
 
-export function useMyJobs(status?: string) {
+export function useMyJobs(status?: string, page?: number, limit?: number) {
   const isAuth = useAuthStore(s => s.isAuthenticated);
   return useQuery({
-    queryKey: ['jobs', 'my', status],
+    queryKey: ['jobs', 'my', status, page, limit],
     queryFn: async () => {
       const t0 = Date.now();
       try {
-        const { data } = await apiClient.get('/jobs/my', { params: { status } });
+        const params: Record<string, any> = {};
+        if (status) params.status = status;
+        if (page) params.page = page;
+        if (limit) params.limit = limit;
+        const { data } = await apiClient.get('/jobs/my', { params });
         const ms = Date.now() - t0;
         if (__DEV__) console.log(`[API Timing] GET /jobs/my finished in ${ms}ms`);
         return data.data;
@@ -762,19 +766,25 @@ export function useDemandMap() {
   });
 }
 
-export function useHelperJobs(status?: string) {
+export function useHelperJobs(status?: string, page?: number, limit?: number) {
   return useQuery({
-    queryKey: ['jobs', 'helper', status],
+    queryKey: ['jobs', 'helper', status, page, limit],
     queryFn: async () => {
       try {
-        const { data } = await apiClient.get('/jobs/helper/my', { params: { status } });
+        const params: Record<string, any> = {};
+        if (status) params.status = status;
+        if (page) params.page = page;
+        if (limit) params.limit = limit;
+        const { data } = await apiClient.get('/jobs/helper/my', { params });
+        const payload = data.data;
+        const items = Array.isArray(payload) ? payload : (payload?.items ?? []);
         // Feature 16: snapshot danh sách đơn đang làm (tab "Đang thực hiện")
         // làm cache offline chính của thợ.
         if (!status || status.includes('confirmed')) {
-          void cacheActiveJobs(data.data);
+          void cacheActiveJobs(items);
         }
         useOfflineStore.getState().setFromCache(false);
-        return data.data;
+        return payload;
       } catch (err) {
         // Chỉ fallback cho đúng danh sách đã cache (đơn đang làm) — các tab
         // lọc khác (lịch sử...) không có cache riêng nên giữ nguyên lỗi.

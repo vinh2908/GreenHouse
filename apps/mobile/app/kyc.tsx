@@ -43,10 +43,6 @@ import {
 import { useTranslation } from '@/hooks/use-i18n';
 
 // Ảnh mẫu demo e-KYC (phục vụ test nhanh)
-const SAMPLE_FRONT = 'https://images.unsplash.com/photo-1544717305-2782549b5136';
-const SAMPLE_BACK = 'https://images.unsplash.com/photo-1544717305-2782549b5136';
-const SAMPLE_SELFIE = 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d';
-
 export default function KycScreen() {
   const router = useRouter();
   const { t, fs, lang } = useTranslation();
@@ -174,29 +170,6 @@ export default function KycScreen() {
     }
   };
 
-  const handleUseSamplePhoto = () => {
-    setPickerModalVisible(false);
-    if (activeImageType === 'front') {
-      setFrontImage(SAMPLE_FRONT);
-      Toast.show({
-        type: 'info',
-        text1: lang === 'en' ? 'Sample used: ID Card Front' : 'Đã dùng ảnh mẫu: Mặt trước CCCD',
-      });
-    } else if (activeImageType === 'back') {
-      setBackImage(SAMPLE_BACK);
-      Toast.show({
-        type: 'info',
-        text1: lang === 'en' ? 'Sample used: ID Card Back' : 'Đã dùng ảnh mẫu: Mặt sau CCCD',
-      });
-    } else {
-      setSelfieImage(SAMPLE_SELFIE);
-      Toast.show({
-        type: 'info',
-        text1: lang === 'en' ? 'Sample used: Selfie Portrait' : 'Đã dùng ảnh mẫu: Chân dung selfie',
-      });
-    }
-  };
-
   const handleSubmit = async () => {
     if (!idCardNumber.trim() || idCardNumber.length < 9) {
       Toast.show({
@@ -215,6 +188,17 @@ export default function KycScreen() {
           lang === 'en'
             ? 'Please provide all 3 photos (Front, Back and Selfie)'
             : 'Vui lòng cung cấp đủ 3 ảnh (Mặt trước, mặt sau và chân dung)',
+      });
+      return;
+    }
+    // M-21: Chặn submit e-KYC nếu 3 ảnh trùng URI
+    if (frontImage === backImage || frontImage === selfieImage || backImage === selfieImage) {
+      Toast.show({
+        type: 'error',
+        text1:
+          lang === 'en'
+            ? 'ID front, ID back, and selfie photos must be distinct'
+            : 'Ảnh mặt trước, mặt sau CCCD và ảnh selfie không được trùng nhau',
       });
       return;
     }
@@ -1075,50 +1059,6 @@ export default function KycScreen() {
               </View>
               <ChevronRight size={18} color={COLORS.gray[400]} />
             </TouchableOpacity>
-
-            {/* Nút 3: Ảnh mẫu chỉ dùng khi phát triển — bản release không được nộp ảnh stock */}
-            {__DEV__ && (
-              <TouchableOpacity
-                activeOpacity={0.75}
-                onPress={handleUseSamplePhoto}
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: 14,
-                  padding: 14,
-                  borderRadius: 14,
-                  backgroundColor: '#F5F3FF',
-                  borderWidth: 1,
-                  borderColor: '#DDD6FE',
-                }}
-              >
-                <View
-                  style={{
-                    width: 44,
-                    height: 44,
-                    borderRadius: 14,
-                    backgroundColor: '#EDE9FE',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <Sparkles size={22} color="#7C3AED" />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: fs(15), fontWeight: '700', color: '#5B21B6' }}>
-                    {lang === 'en'
-                      ? 'Use sample test photo (Quick test)'
-                      : 'Dùng ảnh mẫu thử nghiệm (Test nhanh)'}
-                  </Text>
-                  <Text style={{ fontSize: fs(12), color: '#7C3AED', marginTop: 2 }}>
-                    {lang === 'en'
-                      ? 'Auto-fills valid ID photos for quick testing'
-                      : 'Tự động điền ảnh chuẩn để nộp duyệt nhanh'}
-                  </Text>
-                </View>
-                <ChevronRight size={18} color="#A78BFA" />
-              </TouchableOpacity>
-            )}
           </TouchableOpacity>
         </TouchableOpacity>
       </Modal>

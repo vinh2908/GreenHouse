@@ -105,19 +105,22 @@ export class OtpService {
       created_at: new Date(),
     });
 
+    const isProd =
+      this.configService.get<string>('app.env') === 'production' ||
+      process.env['NODE_ENV'] === 'production';
+    const isDev =
+      !isProd &&
+      (process.env['NODE_ENV'] === 'development' || process.env['NODE_ENV'] === 'test');
+
     if (isEmail) {
       // F16: gửi mail lỗi thì phải báo lỗi rõ về client — không được tạo mã
       // rồi trả "đã gửi" giả khi không có mail nào được gửi đi. Ở dev (chưa
       // cấu hình Gmail) vẫn giữ mô phỏng qua log + trả mã để test.
       const sent = await this.mailService.sendOtpEmail(target, code, purpose);
-      const isProd =
-        this.configService.get<string>('app.env') === 'production' ||
-        process.env['NODE_ENV'] === 'production';
-      const isDev = !isProd && this.configService.get<string>('app.env') !== 'production';
       if (!sent && !isDev) {
         await this.otpModel.deleteOne({ target, code }).exec();
         this.logger.error(
-          `OTP email failed for ${target} (${purpose}) — Gmail not configured or send failed`,
+          `OTP email failed for ${target} (${purpose}) — SendGrid not configured or send failed`,
         );
         throw new HttpException(
           'Gửi mã OTP thất bại. Vui lòng thử lại sau.',
@@ -126,13 +129,16 @@ export class OtpService {
       }
     }
 
-    const isProd =
-      this.configService.get<string>('app.env') === 'production' ||
-      process.env['NODE_ENV'] === 'production';
-    const isDev = !isProd && this.configService.get<string>('app.env') !== 'production';
+    // P3-10: Chỉ bypass trả mã khi có cấu hình dev/test hoặc OTP_BYPASS=true tường minh
+    const allowBypass =
+      !isProd &&
+      (process.env['OTP_BYPASS'] === 'true' ||
+        this.configService.get<string>('auth.otpBypass') === 'true' ||
+        process.env['NODE_ENV'] === 'development' ||
+        process.env['NODE_ENV'] === 'test');
 
-    if (isDev) {
-      // In dev: log OTP to console
+    if (allowBypass) {
+      // In dev with explicit bypass: log OTP to console
       this.logger.warn(`[DEV OTP] Target: ${target} | Code: ${code} | Purpose: ${purpose}`);
       return code;
     } else {

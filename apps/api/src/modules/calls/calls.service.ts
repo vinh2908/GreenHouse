@@ -86,9 +86,36 @@ export class CallsService {
       throw new ForbiddenException('Bạn không thuộc đơn này nên không thể gọi');
     }
 
-    // Đối tác: khách ↔ thợ chính; thành viên nhóm → gọi thợ chính
-    const calleeId = isCustomer ? String(job.helper_id) : String(job.customer_id);
+    // P2-9: Đối tác: khách ↔ thợ chính; thành viên nhóm → gọi thợ chính (lead)
+    const calleeId = isCustomer
+      ? String(job.helper_id)
+      : isLead
+        ? String(job.customer_id)
+        : String(job.helper_id);
     const roomId = `gh-job-${jobId}`;
+
+    // P2-8: Nếu đã có session đang mở cho job thì trả lại session đó, tránh tạo cuộc gọi trùng
+    const existingActiveSession = this.callSessionModel?.findOne
+      ? await this.callSessionModel
+          .findOne({
+            job_id: job._id,
+            status: { $in: ['initiated', 'ringing', 'connected'] },
+          })
+          .sort({ started_at: -1 })
+          .exec()
+      : null;
+
+    if (existingActiveSession) {
+      const { token, expires_at } = await this.provider.createAccessToken(callerId);
+      return {
+        session_id: String(existingActiveSession._id),
+        provider: existingActiveSession.provider,
+        room_id: existingActiveSession.provider_room_id,
+        token,
+        expires_at,
+        callee_id: String(existingActiveSession.callee_id),
+      };
+    }
 
     const { token, expires_at } = await this.provider.createAccessToken(callerId);
     const session = await this.callSessionModel.create({

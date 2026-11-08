@@ -1932,6 +1932,7 @@ export const SERVICE_NAME_EN_MAP: Record<string, string> = {
   'dọn nhà': 'House cleaning',
   'dọn dẹp nhà': 'House cleaning',
   'dọn dẹp vệ sinh nhà cửa': 'House cleaning',
+  'tổng vệ sinh nhà': 'Deep house cleaning',
   'tổng vệ sinh nhà cửa': 'Deep house cleaning',
   'tổng vệ sinh': 'Deep cleaning',
   'vệ sinh nhà': 'House cleaning',
@@ -2022,6 +2023,18 @@ export const SERVICE_SLUG_EN_MAP: Record<string, string> = {
   pest_control: 'Pest control',
   sos: 'Emergency SOS rescue',
   custom: 'Other service',
+  'tong-ve-sinh-nha': 'Deep house cleaning',
+  'tong-ve-sinh': 'Deep cleaning',
+  'don-dep-nha-cua': 'House cleaning',
+  'don-nha': 'House cleaning',
+  'giup-viec-theo-gio': 'Hourly housekeeping',
+  'giup-viec-dinh-ky': 'Periodic housekeeping',
+  've-sinh-may-lanh': 'AC cleaning & repair',
+  'sua-dien': 'Home electrician',
+  'sua-ong-nuoc': 'Plumbing repair',
+  'nau-an': 'Home cooking',
+  'cham-soc-thu-cung': 'Pet care',
+  'boc-hang-van-chuyen': 'Cargo & logistics',
 };
 
 export function translateServiceName(
@@ -2234,6 +2247,7 @@ export const SOS_BACKUP_REASONS_I18N: Record<string, { vi: string; en: string }>
   vehicle_breakdown: { vi: 'Hỏng xe giữa đường', en: 'Vehicle breakdown' },
   health_emergency: { vi: 'Sự cố sức khỏe đột xuất', en: 'Sudden health emergency' },
   family_emergency: { vi: 'Việc gia đình khẩn cấp', en: 'Urgent family emergency' },
+  personal_emergency: { vi: 'Việc cá nhân khẩn cấp', en: 'Personal emergency' },
   equipment_failure: {
     vi: 'Hỏng dụng cụ chuyên dụng không thể làm tiếp',
     en: 'Specialized equipment failure',

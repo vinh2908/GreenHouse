@@ -14,6 +14,7 @@ import {
 } from './schemas/monthly-contract.schema';
 import { HelperProfile, HelperProfileSchema } from '../helpers/schemas/helper-profile.schema';
 import { Service, ServiceSchema } from '../services/schemas/service.schema';
+import { User, UserSchema } from '../users/schemas/user.schema';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { PaymentsModule } from '../payments/payments.module';
 import { ChatModule } from '../chat/chat.module';
@@ -27,6 +28,7 @@ import { ChatModule } from '../chat/chat.module';
       { name: MonthlySettlement.name, schema: MonthlySettlementSchema },
       { name: HelperProfile.name, schema: HelperProfileSchema },
       { name: Service.name, schema: ServiceSchema },
+      { name: User.name, schema: UserSchema },
     ]),
     NotificationsModule,
     PaymentsModule,

@@ -7,6 +7,7 @@ import {
   Patch,
   Param,
   Body,
+  Query,
   UseGuards,
   NotFoundException,
 } from '@nestjs/common';
@@ -46,11 +47,37 @@ export class FeedbackService {
   list(userId?: string) {
     return this.model
       .find(userId ? { user_id: new Types.ObjectId(userId) } : {})
-      .populate('user_id', 'full_name')
+      .populate('user_id', 'full_name phone email')
       .sort({ createdAt: -1 })
       .limit(100)
       .lean()
       .exec();
+  }
+  async listAdmin(params?: { status?: string; page?: number; limit?: number }) {
+    const page = Math.max(1, Number(params?.page) || 1);
+    const limit = Math.max(1, Math.min(100, Number(params?.limit) || 20));
+    const filter: Record<string, any> = {};
+    if (params?.status && params.status !== 'all') {
+      filter.status = params.status;
+    }
+    const [items, total] = await Promise.all([
+      this.model
+        .find(filter)
+        .populate('user_id', 'full_name phone email')
+        .sort({ createdAt: -1 })
+        .skip((page - 1) * limit)
+        .limit(limit)
+        .lean()
+        .exec(),
+      this.model.countDocuments(filter).exec(),
+    ]);
+    return {
+      items,
+      total,
+      page,
+      limit,
+      total_pages: Math.ceil(total / limit) || 1,
+    };
   }
   async update(id: string, status: string) {
     const item = await this.model
@@ -73,8 +100,16 @@ export class FeedbackController {
   @Get('admin')
   @UseGuards(RolesGuard)
   @Roles(UserRole.ADMIN)
-  all() {
-    return this.service.list();
+  all(
+    @Query('status') status?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.service.listAdmin({
+      status,
+      page: page ? Number(page) : undefined,
+      limit: limit ? Number(limit) : undefined,
+    });
   }
   @Patch(':id/status')
   @UseGuards(RolesGuard)

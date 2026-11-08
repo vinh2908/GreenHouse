@@ -78,8 +78,10 @@ export default function ServicesPage() {
   const createCategory = useCreateServiceCategory();
   const [draft, setDraft] = useState<Draft | null>(null);
   const [newCategory, setNewCategory] = useState('');
+  const [formError, setFormError] = useState<string | null>(null);
 
-  const edit = (s: AdminService) =>
+  const edit = (s: AdminService) => {
+    setFormError(null);
     setDraft({
       id: s._id,
       name: s.name,
@@ -92,11 +94,25 @@ export default function ServicesPage() {
       pricing_model: s.pricing_model === 'fixed' ? 'fixed' : 'quote',
       fixed_price: String(s.fixed_price ?? 0),
     });
+  };
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!draft) return;
     const { id, category_id, description, ...rest } = draft;
+
+    const minVal = Number(rest.price_range_min) || 0;
+    const maxVal = Number(rest.price_range_max) || 0;
+    if (minVal > maxVal && maxVal > 0) {
+      setFormError('Giá thấp nhất không được lớn hơn giá cao nhất');
+      return;
+    }
+    if (rest.pricing_model === 'fixed' && (Number(rest.fixed_price) || 0) <= 0) {
+      setFormError('Giá cam kết phải lớn hơn 0₫ khi chọn mô hình Giá cam kết');
+      return;
+    }
+    setFormError(null);
+
     save.mutate(
       {
         id,
@@ -104,10 +120,10 @@ export default function ServicesPage() {
         // Existing services may point to a missing category; only send one when chosen.
         ...(category_id ? { category_id } : {}),
         ...(description.trim() ? { description: description.trim() } : {}),
-        price_range_min: Number(rest.price_range_min) || 0,
-        price_range_max: Number(rest.price_range_max) || 0,
-        base_price_min: Number(rest.price_range_min) || 0,
-        base_price_max: Number(rest.price_range_max) || 0,
+        price_range_min: minVal,
+        price_range_max: maxVal,
+        base_price_min: minVal,
+        base_price_max: maxVal,
         platform_fee_percent: Number(rest.platform_fee_percent),
         pricing_model: rest.pricing_model,
         fixed_price: Number(rest.fixed_price) || 0,
@@ -246,6 +262,14 @@ export default function ServicesPage() {
                   value={draft.fixed_price}
                   onChange={set('fixed_price')}
                 />
+              )}
+              {formError && (
+                <p className="text-sm text-destructive sm:col-span-2">{formError}</p>
+              )}
+              {!draft.id && !draft.category_id && (
+                <p className="text-xs text-amber-600 sm:col-span-2">
+                  * Vui lòng chọn hoặc tạo danh mục trước khi lưu
+                </p>
               )}
               {(save.error || createCategory.error) && (
                 <p className="text-sm text-destructive sm:col-span-2">

@@ -201,7 +201,8 @@ export function TimeDropdownPicker({
       return () => clearTimeout(timer);
     } else if (modalType === 'minute') {
       const timer = setTimeout(() => {
-        const targetY = Math.max(0, (currentMinute - 1) * 44);
+        // M-25: Danh sách phút bắt đầu từ 00 (index = phút): targetY = currentMinute * 44
+        const targetY = Math.max(0, currentMinute * 44);
         minuteScrollRef.current?.scrollTo({ y: targetY, animated: false });
       }, 60);
       return () => clearTimeout(timer);

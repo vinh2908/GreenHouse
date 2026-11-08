@@ -1178,12 +1178,12 @@ export default function CustomerHomeScreen() {
     } else {
       bookingParams.custom_service_name =
         quickServiceChip === 'boc_hang'
-          ? 'Bốc hàng, vận chuyển'
+          ? (lang === 'en' ? 'Moving & Loading Help' : 'Bốc hàng, vận chuyển')
           : quickServiceChip === 'don_nha'
-            ? 'Dọn dẹp nhà cửa'
+            ? (lang === 'en' ? 'House Cleaning' : 'Dọn dẹp nhà cửa')
             : quickServiceChip === 'may_lanh'
-              ? 'Vệ sinh máy lạnh'
-              : 'Dịch vụ theo yêu cầu';
+              ? (lang === 'en' ? 'AC Cleaning & Repair' : 'Vệ sinh máy lạnh')
+              : (lang === 'en' ? 'Custom Service' : 'Dịch vụ theo yêu cầu');
     }
 
     router.push({

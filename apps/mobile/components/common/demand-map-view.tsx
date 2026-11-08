@@ -292,7 +292,7 @@ const demandMapHtml = (
 };
 
 export function DemandMapView({ areas, focus, height = 300, userCoords, onFocusArea }: Props) {
-  const { lang } = useTranslation();
+  const { lang, fs } = useTranslation();
   const tc = useThemeColors();
   const withCoords = useMemo(
     () => (areas ?? []).filter(a => a.lat != null && a.lng != null),
@@ -387,12 +387,12 @@ export function DemandMapView({ areas, focus, height = 300, userCoords, onFocusA
         }}
       >
         <MapPin size={28} color={COLORS.gray[400]} />
-        <Text style={{ fontSize: 14, fontWeight: '700', color: tc.text, textAlign: 'center' }}>
+        <Text style={{ fontSize: fs(14), fontWeight: '700', color: tc.text, textAlign: 'center' }}>
           {lang === 'en'
             ? 'No location to show the demand map'
             : 'Chưa có vị trí để hiển thị bản đồ'}
         </Text>
-        <Text style={{ fontSize: 12, color: tc.textMuted, textAlign: 'center' }}>
+        <Text style={{ fontSize: fs(12), color: tc.textMuted, textAlign: 'center' }}>
           {lang === 'en'
             ? 'Enable location or wait for jobs with coordinates to appear.'
             : 'Hãy bật định vị hoặc chờ các đơn có tọa độ xuất hiện.'}

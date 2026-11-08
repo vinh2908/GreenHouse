@@ -41,15 +41,27 @@ export class ChatService {
       .exec();
     if (existing) return existing;
 
-    const newConv = await this.conversationModel.create({
-      job_id: new Types.ObjectId(jobId),
-      participants: participantIds.map(id => new Types.ObjectId(id)),
-    });
+    try {
+      const newConv = await this.conversationModel.create({
+        job_id: new Types.ObjectId(jobId),
+        participants: participantIds.map(id => new Types.ObjectId(id)),
+      });
 
-    return this.conversationModel
-      .findById(newConv._id)
-      .populate('participants', 'full_name avatar phone')
-      .exec() as Promise<ConversationDocument>;
+      return (await this.conversationModel
+        .findById(newConv._id)
+        .populate('participants', 'full_name avatar phone')
+        .exec()) as ConversationDocument;
+    } catch (err: any) {
+      // P2-18: Bắt lỗi trùng E11000 khi 2 bên tạo cùng lúc
+      if (err?.code === 11000) {
+        const found = await this.conversationModel
+          .findOne({ job_id: new Types.ObjectId(jobId) })
+          .populate('participants', 'full_name avatar phone')
+          .exec();
+        if (found) return found;
+      }
+      throw err;
+    }
   }
 
   /** Thêm thành viên vào cuộc trò chuyện của job (dùng cho đơn nhóm — Feature 5) */
@@ -149,8 +161,11 @@ export class ChatService {
     content: string,
     type = 'text',
   ): Promise<MessageDocument> {
-    // B70: Tin nhắn tối đa 2000 ký tự, type chỉ nhận text / image / location
-    if (typeof content !== 'string' || content.length > 2000) {
+    // B70 & P3-4: Tin nhắn không được rỗng, tối đa 2000 ký tự, type chỉ nhận text / image / location
+    if (typeof content !== 'string' || content.trim().length === 0) {
+      throw new BadRequestException('Nội dung tin nhắn không được để trống');
+    }
+    if (content.length > 2000) {
       throw new BadRequestException('Tin nhắn tối đa 2000 ký tự');
     }
     if (!['text', 'image', 'location'].includes(type)) {

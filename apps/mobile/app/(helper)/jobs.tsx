@@ -149,7 +149,7 @@ export default function HelperJobsScreen() {
       refetch: ra,
     },
     {
-      data: active,
+      data: Array.isArray(active) ? active : (active?.items ?? []),
       loading: acLoading,
       isError: acError,
       error: acErrorObj,
@@ -157,7 +157,7 @@ export default function HelperJobsScreen() {
       refetch: rac,
     },
     {
-      data: history,
+      data: Array.isArray(history) ? history : (history?.items ?? []),
       loading: hLoading,
       isError: hError,
       error: hErrorObj,

@@ -47,6 +47,7 @@ export default function CustomerJobsScreen() {
     refetch,
     dataUpdatedAt,
   } = useMyJobs(TABS[activeTab].key);
+  const jobList: any[] = Array.isArray(jobs) ? jobs : (jobs?.items ?? []);
   const insets = useSafeAreaInsets();
 
   useEffect(() => {
@@ -153,7 +154,7 @@ export default function CustomerJobsScreen() {
           <Text style={{ fontSize: fs(12), color: tc.textMuted, marginTop: 2 }}>
             {t('jobs_subtitle')}{' '}
             {dataUpdatedAt
-              ? `• ${lang === 'en' ? 'Updated' : 'Cập nhật'} lúc ${formatTime(dayjs(dataUpdatedAt))}`
+              ? `• ${lang === 'en' ? 'Updated at ' : 'Cập nhật lúc '}${formatTime(dayjs(dataUpdatedAt))}`
               : ''}
           </Text>
         </View>
@@ -242,7 +243,7 @@ export default function CustomerJobsScreen() {
               onRetry={() => refetch()}
             />
           </Card>
-        ) : !isLoading && (!jobs || jobs.length === 0) ? (
+        ) : !isLoading && (!jobList || jobList.length === 0) ? (
           <Card style={{ alignItems: 'center', paddingVertical: 40 }}>
             <EmptyState
               icon={<ClipboardList size={36} color={COLORS.gray[400]} />}
@@ -257,7 +258,7 @@ export default function CustomerJobsScreen() {
             />
           </Card>
         ) : (
-          (jobs ?? []).map(
+          jobList.map(
             (job: {
               _id: string;
               title: string;

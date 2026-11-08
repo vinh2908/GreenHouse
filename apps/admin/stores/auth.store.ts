@@ -35,8 +35,8 @@ export const useAuthStore = create<AuthState>()(
         const { access_token, refresh_token, user } = data.data;
 
         // Verify admin role
-        if (!user.roles.includes('admin')) {
-          throw new Error('Tài khoản không có quyền admin');
+        if (!Array.isArray(user?.roles) || !user.roles.includes('admin')) {
+          throw new Error('Tài khoản không có quyền truy cập quản trị');
         }
 
         set({

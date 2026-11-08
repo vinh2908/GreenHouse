@@ -62,6 +62,11 @@ export default function ReviewsPage() {
   const [replyText, setReplyText] = useState('');
   // B106: xác nhận bằng PromptDialog thay cho hộp thoại confirm của trình duyệt.
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
+  const [appealDecisionTarget, setAppealDecisionTarget] = useState<{
+    id: string;
+    decision: 'upheld' | 'rejected';
+  } | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   // B71: ẩn/hiện đánh giá + quyết định kháng nghị
   const setVisibility = useSetReviewVisibility();
@@ -102,6 +107,18 @@ export default function ReviewsPage() {
           className="w-48"
         />
       </div>
+
+      {actionError && (
+        <div className="rounded-lg bg-destructive/10 border border-destructive/30 p-3 text-sm text-destructive flex justify-between items-center">
+          <span>{actionError}</span>
+          <button
+            onClick={() => setActionError(null)}
+            className="text-xs font-semibold hover:underline"
+          >
+            Đóng
+          </button>
+        </div>
+      )}
 
       <div className="rounded-lg border bg-card overflow-hidden max-w-full">
         {isLoading ? (
@@ -230,7 +247,8 @@ export default function ReviewsPage() {
                                   <Button
                                     size="sm"
                                     disabled={!replyText.trim() || replyMutation.isPending}
-                                    onClick={() =>
+                                    onClick={() => {
+                                      setActionError(null);
                                       replyMutation.mutate(
                                         { id: r._id, reply: replyText.trim() },
                                         {
@@ -238,9 +256,16 @@ export default function ReviewsPage() {
                                             setReplyingId(null);
                                             setReplyText('');
                                           },
+                                          onError: (err: any) => {
+                                            setActionError(
+                                              err?.response?.data?.message ||
+                                                err?.message ||
+                                                'Không thể gửi phản hồi',
+                                            );
+                                          },
                                         },
-                                      )
-                                    }
+                                      );
+                                    }}
                                   >
                                     Gửi
                                   </Button>
@@ -272,26 +297,40 @@ export default function ReviewsPage() {
                               size="sm"
                               variant="outline"
                               disabled={setVisibility.isPending}
-                              onClick={() =>
-                                setVisibility.mutate({ id: r._id, hidden: !r.is_hidden })
-                              }
+                              onClick={() => {
+                                setActionError(null);
+                                setVisibility.mutate(
+                                  { id: r._id, hidden: !r.is_hidden },
+                                  {
+                                    onError: (err: any) => {
+                                      setActionError(
+                                        err?.response?.data?.message ||
+                                          err?.message ||
+                                          'Không thể thay đổi trạng thái ẩn/hiện đánh giá',
+                                      );
+                                    },
+                                  },
+                                );
+                              }}
                             >
                               {r.is_hidden ? 'Hiện lại' : 'Ẩn'}
                             </Button>
                             {r.appeal_status === 'pending' && (
                               <>
                                 <button
-                                  className="text-xs border rounded px-2 py-1 text-green-700"
+                                  className="text-xs border rounded px-2 py-1 text-green-700 hover:bg-green-50"
+                                  disabled={resolveAppeal.isPending}
                                   onClick={() =>
-                                    resolveAppeal.mutate({ id: r._id, decision: 'upheld' })
+                                    setAppealDecisionTarget({ id: r._id, decision: 'upheld' })
                                   }
                                 >
                                   Chấp nhận KN
                                 </button>
                                 <button
-                                  className="text-xs border rounded px-2 py-1"
+                                  className="text-xs border rounded px-2 py-1 hover:bg-muted"
+                                  disabled={resolveAppeal.isPending}
                                   onClick={() =>
-                                    resolveAppeal.mutate({ id: r._id, decision: 'rejected' })
+                                    setAppealDecisionTarget({ id: r._id, decision: 'rejected' })
                                   }
                                 >
                                   Bác KN
@@ -319,6 +358,43 @@ export default function ReviewsPage() {
         )}
       </div>
 
+      {appealDecisionTarget && (
+        <PromptDialog
+          title={
+            appealDecisionTarget.decision === 'upheld'
+              ? 'Chấp nhận kháng nghị'
+              : 'Bác bỏ kháng nghị'
+          }
+          message={
+            appealDecisionTarget.decision === 'upheld'
+              ? 'Bạn có chắc chắn muốn chấp nhận kháng nghị này? Đánh giá này sẽ được ẩn khỏi trang thợ.'
+              : 'Bạn có chắc chắn muốn bác bỏ kháng nghị này? Đánh giá sẽ được giữ nguyên.'
+          }
+          confirmLabel={
+            appealDecisionTarget.decision === 'upheld' ? 'Chấp nhận' : 'Bác kháng nghị'
+          }
+          requireInput={false}
+          onSubmit={() => {
+            const target = appealDecisionTarget;
+            setAppealDecisionTarget(null);
+            setActionError(null);
+            resolveAppeal.mutate(
+              { id: target.id, decision: target.decision },
+              {
+                onError: (err: any) => {
+                  setActionError(
+                    err?.response?.data?.message ||
+                      err?.message ||
+                      'Không thể xử lý quyết định kháng nghị',
+                  );
+                },
+              },
+            );
+          }}
+          onClose={() => setAppealDecisionTarget(null)}
+        />
+      )}
+
       {deleteTargetId && (
         <PromptDialog
           title="Xoá đánh giá"
@@ -328,7 +404,13 @@ export default function ReviewsPage() {
           onSubmit={() => {
             const id = deleteTargetId;
             setDeleteTargetId(null);
-            deleteMutation.mutate(id);
+            deleteMutation.mutate(id, {
+              onError: (err: any) => {
+                setActionError(
+                  err?.response?.data?.message || err?.message || 'Không thể xoá đánh giá',
+                );
+              },
+            });
           }}
           onClose={() => setDeleteTargetId(null)}
         />
