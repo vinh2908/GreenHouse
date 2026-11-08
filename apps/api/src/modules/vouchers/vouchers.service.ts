@@ -150,63 +150,73 @@ export class VouchersService {
       throw new BadRequestException('Mã giảm giá không áp dụng được cho đơn này');
     }
 
-    // Tăng used_count nguyên tử, tôn trọng cả total_usage_limit và per_user_limit khi gọi song song
+    // H3: Tăng used_count và kiểm tra per_user_limit nguyên tử qua findOneAndUpdate (không check-then-act, không rollback)
     const userLimit = voucher.per_user_limit ?? 1;
-
-    // P2-16: Chống race condition khi per_user_limit > 1
-    if (userLimit > 1) {
-      const userRedemptions = await this.redemptionModel
-        .countDocuments({
-          voucher_id: voucher._id,
-          user_id: new Types.ObjectId(userId),
-          status: 'redeemed',
-        })
-        .session(session ?? null)
-        .exec();
-      if (userRedemptions >= userLimit) {
-        throw new BadRequestException(
-          `Bạn đã dùng mã này tối đa số lần cho phép (${userLimit} lần)`,
-        );
-      }
-    }
+    const userObjId = new Types.ObjectId(userId);
 
     const updateQuery: Record<string, unknown> = {
       _id: voucher._id,
       is_active: true,
-      $or: [
-        { total_usage_limit: { $exists: false } },
-        { total_usage_limit: null },
-        { $expr: { $lt: ['$used_count', '$total_usage_limit'] } },
+      $and: [
+        {
+          $or: [
+            { total_usage_limit: { $exists: false } },
+            { total_usage_limit: null },
+            { $expr: { $lt: ['$used_count', '$total_usage_limit'] } },
+          ],
+        },
+        userLimit === 1
+          ? { used_user_ids: { $ne: userObjId } }
+          : {
+              $expr: {
+                $lt: [
+                  {
+                    $size: {
+                      $filter: {
+                        input: { $ifNull: ['$used_user_ids', []] },
+                        as: 'uid',
+                        cond: { $eq: ['$$uid', userObjId] },
+                      },
+                    },
+                  },
+                  userLimit,
+                ],
+              },
+            },
       ],
     };
-    if (userLimit === 1) {
-      updateQuery['used_user_ids'] = { $ne: new Types.ObjectId(userId) };
-    }
 
     const updated = await this.voucherModel
       .findOneAndUpdate(
         updateQuery,
         {
           $inc: { used_count: 1 },
-          ...(userLimit === 1 ? { $addToSet: { used_user_ids: new Types.ObjectId(userId) } } : {}),
+          $push: { used_user_ids: userObjId },
         },
         { new: true, session: session ?? undefined },
       )
       .exec();
     if (!updated) {
       const currentVoucher = await this.voucherModel.findById(voucher._id).exec();
-      if (currentVoucher?.used_user_ids?.some(id => String(id) === String(userId))) {
-        throw new BadRequestException('Bạn đã dùng mã này tối đa số lần cho phép');
+      const currentCount = (currentVoucher?.used_user_ids ?? []).filter(
+        id => String(id) === String(userId),
+      ).length;
+      if (currentCount >= userLimit) {
+        throw new BadRequestException(
+          userLimit > 1
+            ? `Bạn đã dùng mã này tối đa số lần cho phép (${userLimit} lần)`
+            : 'Bạn đã dùng mã này tối đa số lần cho phép',
+        );
       }
       throw new BadRequestException('Mã giảm giá đã hết lượt sử dụng');
     }
 
-    const newRedemptions = await this.redemptionModel.create(
+    await this.redemptionModel.create(
       [
         {
           voucher_id: voucher._id,
           code: voucher.code,
-          user_id: new Types.ObjectId(userId),
+          user_id: userObjId,
           job_id: new Types.ObjectId(jobId),
           discount_amount: discount,
           status: 'redeemed',
@@ -214,30 +224,6 @@ export class VouchersService {
       ],
       { session: session ?? undefined },
     );
-
-    if (userLimit > 1 && newRedemptions[0]) {
-      const countAfter = await this.redemptionModel
-        .countDocuments({
-          voucher_id: voucher._id,
-          user_id: new Types.ObjectId(userId),
-          status: 'redeemed',
-        })
-        .session(session ?? null)
-        .exec();
-      if (countAfter > userLimit) {
-        await this.redemptionModel
-          .deleteOne({ _id: newRedemptions[0]._id })
-          .session(session ?? null)
-          .exec();
-        await this.voucherModel
-          .updateOne({ _id: voucher._id }, { $inc: { used_count: -1 } })
-          .session(session ?? null)
-          .exec();
-        throw new BadRequestException(
-          `Bạn đã dùng mã này tối đa số lần cho phép (${userLimit} lần)`,
-        );
-      }
-    }
 
     return { discount_amount: discount, voucher };
   }

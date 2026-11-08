@@ -76,6 +76,7 @@ export default function HelpCenterScreen() {
   const [expandedFaq, setExpandedFaq] = useState<number | null>(0);
   const [aiQuestion, setAiQuestion] = useState('');
   const [aiAnswer, setAiAnswer] = useState<string | null>(null);
+  const [aiIsMock, setAiIsMock] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
 
   const faqs = lang === 'en' ? FAQS_EN : FAQS_VI;
@@ -130,17 +131,22 @@ export default function HelpCenterScreen() {
     if (!question) return;
     setAiLoading(true);
     setAiAnswer(null);
+    setAiIsMock(false);
 
     try {
       const res: any = await aiSupport.mutateAsync({ message: question });
       const reply = res?.data?.reply || res?.reply;
+      const isMock = Boolean(res?.data?.mock || res?.mock || res?.source === 'sample_template');
       if (reply) {
         setAiAnswer(reply);
+        setAiIsMock(isMock);
       } else {
         setAiAnswer(getFallbackAiAnswer(question));
+        setAiIsMock(true);
       }
     } catch {
       setAiAnswer(getFallbackAiAnswer(question));
+      setAiIsMock(true);
     } finally {
       setAiLoading(false);
     }
@@ -385,13 +391,21 @@ export default function HelpCenterScreen() {
           {aiAnswer && (
             <View
               style={{
-                backgroundColor: '#DCFCE7',
+                backgroundColor: aiIsMock ? '#FFFBEB' : '#DCFCE7',
                 padding: 12,
                 borderRadius: 14,
                 borderLeftWidth: 4,
-                borderLeftColor: COLORS.primary,
+                borderLeftColor: aiIsMock ? '#F59E0B' : COLORS.primary,
+                gap: 6,
               }}
             >
+              {aiIsMock && (
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                  <Text style={{ fontSize: fs(11), color: '#B45309', fontWeight: '700' }}>
+                    {lang === 'en' ? '⚠️ Simulated answer (Mock mode)' : '⚠️ Câu trả lời mô phỏng (Chế độ mẫu)'}
+                  </Text>
+                </View>
+              )}
               <Text style={{ fontSize: fs(13.5), color: tc.text, lineHeight: 20 }}>{aiAnswer}</Text>
             </View>
           )}

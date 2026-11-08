@@ -128,13 +128,11 @@ export class OtpService {
       }
     }
 
-    // P3-10: Chỉ bypass trả mã khi có cấu hình dev/test hoặc OTP_BYPASS=true tường minh
+    // H17: Chỉ bypass trả mã khi có cấu hình OTP_BYPASS=true tường minh, KHÔNG dựa vào NODE_ENV
     const allowBypass =
       !isProd &&
       (process.env['OTP_BYPASS'] === 'true' ||
-        this.configService.get<string>('auth.otpBypass') === 'true' ||
-        process.env['NODE_ENV'] === 'development' ||
-        process.env['NODE_ENV'] === 'test');
+        this.configService.get<string>('auth.otpBypass') === 'true');
 
     if (allowBypass) {
       // In dev with explicit bypass: log OTP to console

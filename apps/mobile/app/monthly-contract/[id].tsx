@@ -46,7 +46,7 @@ import { useTranslation } from '@/hooks/use-i18n';
 import { useMonthlyContractSocket } from '@/hooks/use-socket';
 import { MONTHLY_STATUS_META, describeMonthlySchedule, personName } from '../monthly-contracts';
 
-const fmt = (n?: number) => new Intl.NumberFormat('vi-VN').format(n ?? 0);
+const fmt = (n?: number, l: string = 'vi') => new Intl.NumberFormat(l === 'en' ? 'en-US' : 'vi-VN').format(n ?? 0);
 
 const ATT_META: Record<
   AttendanceStatus,
@@ -95,6 +95,7 @@ export default function MonthlyContractDetailScreen() {
   const insets = useSafeAreaInsets();
   const { t, fs, lang } = useTranslation();
   const tc = useThemeColors();
+  const fmt = (n?: number) => new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'vi-VN').format(n ?? 0);
   const user = useAuthStore(s => s.user);
   const isHelper = user?.active_role === 'helper';
 
@@ -874,7 +875,7 @@ function InfoRow({ label, value, strong }: { label: string; value: string; stron
         style={{
           flex: 1,
           fontSize: fs(13.5),
-          color: strong ? COLORS.gray[900] : COLORS.gray[700],
+          color: strong ? tc.text : tc.textSecondary,
           fontWeight: strong ? '800' : '600',
         }}
       >

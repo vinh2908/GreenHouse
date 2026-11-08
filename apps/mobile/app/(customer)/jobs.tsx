@@ -38,6 +38,7 @@ export default function CustomerJobsScreen() {
   const isAuthLoading = useAuthStore(s => s.isLoading);
   const isSwitchingRole = useAuthStore(s => s.isSwitchingRole);
   const isHelper = user?.active_role === 'helper';
+  const [page, setPage] = useState(1);
 
   const {
     data: jobs,
@@ -46,8 +47,9 @@ export default function CustomerJobsScreen() {
     isRefetching,
     refetch,
     dataUpdatedAt,
-  } = useMyJobs(TABS[activeTab].key);
+  } = useMyJobs(TABS[activeTab].key, page, 10);
   const jobList: any[] = Array.isArray(jobs) ? jobs : (jobs?.items ?? []);
+  const totalPages = jobs?.total_pages ?? 1;
   const insets = useSafeAreaInsets();
 
   useEffect(() => {
@@ -196,7 +198,10 @@ export default function CustomerJobsScreen() {
             <TouchableOpacity
               key={i}
               activeOpacity={0.8}
-              onPress={() => setActiveTab(i)}
+              onPress={() => {
+                setActiveTab(i);
+                setPage(1);
+              }}
               style={{
                 paddingHorizontal: 16,
                 paddingVertical: 8,
@@ -459,6 +464,65 @@ export default function CustomerJobsScreen() {
               </TouchableOpacity>
             ),
           )
+        )}
+
+        {totalPages > 1 && (
+          <View
+            style={{
+              flexDirection: 'row',
+              justifyContent: 'center',
+              alignItems: 'center',
+              gap: 12,
+              marginTop: 12,
+              marginBottom: 20,
+            }}
+          >
+            <TouchableOpacity
+              activeOpacity={0.8}
+              disabled={page <= 1}
+              onPress={() => setPage(p => Math.max(1, p - 1))}
+              style={{
+                paddingHorizontal: 16,
+                paddingVertical: 8,
+                borderRadius: 10,
+                backgroundColor: page <= 1 ? tc.subtle : COLORS.primaryLight,
+              }}
+            >
+              <Text
+                style={{
+                  fontSize: fs(13),
+                  fontWeight: '700',
+                  color: page <= 1 ? tc.textMuted : COLORS.primary,
+                }}
+              >
+                {lang === 'en' ? 'Previous' : 'Trang trước'}
+              </Text>
+            </TouchableOpacity>
+            <Text style={{ fontSize: fs(13), fontWeight: '700', color: tc.textSecondary }}>
+              {page} / {totalPages}
+            </Text>
+            <TouchableOpacity
+              activeOpacity={0.8}
+              disabled={page >= totalPages}
+              onPress={() => setPage(p => Math.min(totalPages, p + 1))}
+              style={{
+                paddingHorizontal: 16,
+                paddingVertical: 8,
+                borderRadius: 10,
+                backgroundColor: page >= totalPages ? tc.subtle : COLORS.primaryLight,
+              }}
+            >
+              <Text
+                style={{
+                  fontSize: fs(13),
+                  fontWeight: '700',
+                  color: page >= totalPages ? tc.textMuted : COLORS.primary,
+                }}
+              >
+                {lang === 'en' ? 'Next' : 'Trang sau'}
+              </Text>
+            </TouchableOpacity>
+          </View>
         )}
       </ScrollView>
     </View>

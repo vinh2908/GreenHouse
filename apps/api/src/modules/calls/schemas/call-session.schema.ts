@@ -10,7 +10,7 @@ export type CallSessionDocument = CallSession & Document;
  */
 @Schema({ timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' }, versionKey: false })
 export class CallSession {
-  @Prop({ type: Types.ObjectId, ref: 'Job', required: true, index: true })
+  @Prop({ type: Types.ObjectId, ref: 'Job', required: true })
   job_id: Types.ObjectId;
 
   @Prop({ type: Types.ObjectId, ref: 'User', required: true })
@@ -50,3 +50,12 @@ export class CallSession {
 }
 
 export const CallSessionSchema = SchemaFactory.createForClass(CallSession);
+CallSessionSchema.index(
+  { job_id: 1 },
+  {
+    unique: true,
+    partialFilterExpression: {
+      status: { $in: ['initiated', 'ringing', 'connected'] },
+    },
+  },
+);

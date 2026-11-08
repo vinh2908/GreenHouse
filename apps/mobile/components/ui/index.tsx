@@ -704,10 +704,10 @@ export function PriceText({
   color?: string;
   bold?: boolean;
 }) {
-  const { fs } = useTranslation();
+  const { fs, lang } = useTranslation();
   return (
     <Text style={{ fontSize: fs(size), color, fontWeight: bold ? '800' : '500' }}>
-      {new Intl.NumberFormat('vi-VN').format(amount)}₫
+      {new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'vi-VN').format(amount)}₫
     </Text>
   );
 }

@@ -142,7 +142,7 @@ export class SosBackupService implements OnModuleInit, OnModuleDestroy {
     return Math.max(...upto);
   }
   private get locationMaxAgeMs(): number {
-    return this.cfgNum('SOS_BACKUP_LOCATION_MAX_AGE_MINUTES', 720) * 60_000; // Mặc định 12 giờ (P3-5)
+    return this.cfgNum('SOS_BACKUP_LOCATION_MAX_AGE_MINUTES', 120) * 60_000; // H22: Mặc định 120 phút (2 giờ) cho đơn cứu hộ SOS khẩn cấp
   }
   /** Trọng số điểm phạt hủy đơn trong chi phí Hungarian (env SOS_BACKUP_COST_PENALTY_WEIGHT, mặc định 2) */
   private get penaltyCostWeight(): number {
@@ -179,6 +179,12 @@ export class SosBackupService implements OnModuleInit, OnModuleDestroy {
   // ═══════════════════════════════════════════════════════════════════════════
   async createSos(helperId: string, jobId: string, dto: CreateSosBackupDto) {
     if (!Types.ObjectId.isValid(jobId)) throw new BadRequestException('job_id không hợp lệ');
+
+    // H6: Thợ phải được xác minh danh tính
+    const helperUser = await this.userModel.findById(helperId).select('is_verified').lean();
+    if (helperUser && helperUser.is_verified === false) {
+      throw new ForbiddenException('Tài khoản người giúp việc chưa được xác minh danh tính');
+    }
 
     const job = await this.jobModel.findById(jobId).populate('service_id', 'name slug').exec();
     if (!job) throw new NotFoundException('Job không tồn tại');
@@ -888,6 +894,22 @@ export class SosBackupService implements OnModuleInit, OnModuleDestroy {
     }
 
     const userIds = profiles.map(p => String(p.user_id));
+
+    // H6: Thợ dự phòng SOS phải có user.is_verified !== false
+    let eligibleProfiles = profiles;
+    if (this.userModel && typeof this.userModel.find === 'function') {
+      const unverifiedUsers = await this.userModel
+        .find({
+          _id: { $in: userIds.map(id => new Types.ObjectId(id)) },
+          is_verified: false,
+        })
+        .select('_id')
+        .lean()
+        .exec();
+      const unverifiedSet = new Set((unverifiedUsers || []).map(u => String(u._id)));
+      eligibleProfiles = profiles.filter(p => !unverifiedSet.has(String(p.user_id)));
+    }
+
     const activeJobs = await this.jobModel
       .find({
         helper_id: { $in: userIds.map(id => new Types.ObjectId(id)) },
@@ -904,11 +926,11 @@ export class SosBackupService implements OnModuleInit, OnModuleDestroy {
 
     const nowMs = Date.now();
     const pool: CandidateInfo[] = [];
-    const maxGpsAgeMs = this.locationMaxAgeMs; // P3-5: dùng locationMaxAgeMs (mặc định 12 giờ)
+    const maxGpsAgeMs = this.locationMaxAgeMs;
     // F13: bán kính theo đợt mời (30 → 50 → 100km), truyền từ inviteWave.
     const maxAllowedDist = maxDistanceKm ?? this.maxDistanceKm;
 
-    for (const profile of profiles) {
+    for (const profile of eligibleProfiles) {
       const helperId = String(profile.user_id);
       if (helperId === String(job.customer_id)) continue;
       filterSteps.afterSelf += 1;

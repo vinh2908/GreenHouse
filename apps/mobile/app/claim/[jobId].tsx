@@ -76,6 +76,7 @@ export default function ClaimScreen() {
   const insets = useSafeAreaInsets();
   const { t, fs, lang } = useTranslation();
   const tc = useThemeColors();
+  const fmt = (n?: number) => new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'vi-VN').format(n ?? 0);
   dayjs.locale(lang === 'vi' ? 'vi' : 'en');
 
   const { data: claim, isLoading } = useClaimForJob(jobId);

@@ -91,9 +91,14 @@ export class ServicesService {
 
     const minP = dto.base_price_min ?? dto.price_range_min ?? 0;
     const maxP = dto.base_price_max ?? dto.price_range_max ?? 0;
-    // B09: Chặn khoảng giá ngược (min > max) và giá cam kết <= 0
-    if (minP > maxP && maxP > 0) {
+    // B09 & H15: Chặn khoảng giá ngược: min > max (kể cả khi max = 0 và min > 0)
+    if (minP > maxP) {
       throw new BadRequestException('Giá tối thiểu không được lớn hơn giá tối đa');
+    }
+    const durMin = dto.estimated_duration_min;
+    const durMax = dto.estimated_duration_max;
+    if (durMin !== undefined && durMax !== undefined && durMin > durMax) {
+      throw new BadRequestException('Thời lượng ước tính tối thiểu không được lớn hơn thời lượng tối đa');
     }
     if (dto.pricing_model === 'fixed') {
       const fixedPrice = dto.fixed_price ?? minP;
@@ -115,6 +120,9 @@ export class ServicesService {
   }
 
   async update(id: string, dto: UpdateServiceDto) {
+    const existing = await this.serviceModel.findById(id).exec();
+    if (!existing) throw new NotFoundException('Dịch vụ không tồn tại');
+
     const updatePayload: any = { ...dto };
     if (dto.base_price_min !== undefined || dto.price_range_min !== undefined) {
       const minP = dto.base_price_min ?? dto.price_range_min;
@@ -127,12 +135,38 @@ export class ServicesService {
       updatePayload.price_range_max = maxP;
     }
 
-    // B09: Kiểm tra chéo khoảng giá và giá cam kết
-    const finalMin = updatePayload.base_price_min;
-    const finalMax = updatePayload.base_price_max;
-    if (finalMin !== undefined && finalMax !== undefined && finalMin > finalMax && finalMax > 0) {
+    // B09 & H15: Kiểm tra chéo khoảng giá với dữ liệu hiện tại trong DB (xử lý cả khi update chỉ 1 trường và max = 0)
+    const effectiveMin =
+      updatePayload.base_price_min !== undefined
+        ? updatePayload.base_price_min
+        : (existing.base_price_min ?? existing.price_range_min ?? 0);
+    const effectiveMax =
+      updatePayload.base_price_max !== undefined
+        ? updatePayload.base_price_max
+        : (existing.base_price_max ?? existing.price_range_max ?? 0);
+
+    if (effectiveMin > effectiveMax) {
       throw new BadRequestException('Giá tối thiểu không được lớn hơn giá tối đa');
     }
+
+    const effectiveDurMin =
+      updatePayload.estimated_duration_min !== undefined
+        ? updatePayload.estimated_duration_min
+        : existing.estimated_duration_min;
+    const effectiveDurMax =
+      updatePayload.estimated_duration_max !== undefined
+        ? updatePayload.estimated_duration_max
+        : existing.estimated_duration_max;
+    if (
+      effectiveDurMin !== undefined &&
+      effectiveDurMax !== undefined &&
+      effectiveDurMin > effectiveDurMax
+    ) {
+      throw new BadRequestException(
+        'Thời lượng ước tính tối thiểu không được lớn hơn thời lượng tối đa',
+      );
+    }
+
     if (dto.pricing_model === 'fixed' && dto.fixed_price !== undefined && dto.fixed_price <= 0) {
       throw new BadRequestException('Dịch vụ giá cam kết bắt buộc phải có giá cố định lớn hơn 0₫');
     }
@@ -140,8 +174,7 @@ export class ServicesService {
     const service = await this.serviceModel
       .findByIdAndUpdate(id, { $set: updatePayload }, { new: true, runValidators: true })
       .exec();
-    if (!service) throw new NotFoundException('Dịch vụ không tồn tại');
-    return service;
+    return service!;
   }
 
   async updateStatus(id: string, status: ServiceStatus) {

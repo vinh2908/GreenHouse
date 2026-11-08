@@ -147,8 +147,11 @@ export class RecurringService implements OnApplicationBootstrap, OnModuleDestroy
         const yStr = String(curY);
         const mStr = String(curM).padStart(2, '0');
         for (const md of monthDays) {
-          // P2-14 & G1: Với các tháng thiếu ngày (vd ngày 31 ở tháng 2 hoặc tháng 30 ngày), dời sang ngày cuối cùng của tháng
-          const day = Math.min(md, lastDay);
+          // H5: Bỏ qua tháng không có ngày tương ứng (ví dụ ngày 31 ở tháng 2 hoặc tháng 30 ngày), không dời kẹp lặng
+          if (md > lastDay) {
+            continue;
+          }
+          const day = md;
           const dStr = String(day).padStart(2, '0');
           const candKey = `${yStr}-${mStr}-${dStr}`;
           if (
@@ -374,16 +377,20 @@ export class RecurringService implements OnApplicationBootstrap, OnModuleDestroy
     if (dto.frequency === 'monthly' && (!dto.month_days || dto.month_days.length === 0)) {
       throw new BadRequestException('Gói hàng tháng cần chọn ít nhất 1 ngày trong tháng');
     }
-    // P3-9: Giờ làm việc trong khung 07:00–22:00
+    // P3-9 & H1: Giờ làm việc trong khung 07:00–22:00, từ chối định dạng sai
     if (dto.time_start) {
       const match = dto.time_start.trim().match(/^(\d{1,2}):(\d{2})$/);
-      if (match) {
-        const h = parseInt(match[1], 10);
-        const m = parseInt(match[2], 10);
-        const min = h * 60 + m;
-        if (min < 7 * 60 || min > 22 * 60) {
-          throw new BadRequestException('Giờ làm việc định kỳ phải trong khung 07:00–22:00');
-        }
+      if (!match) {
+        throw new BadRequestException('Định dạng giờ không hợp lệ (HH:mm)');
+      }
+      const h = parseInt(match[1], 10);
+      const m = parseInt(match[2], 10);
+      if (h < 0 || h > 23 || m < 0 || m > 59) {
+        throw new BadRequestException('Định dạng giờ không hợp lệ (HH:mm)');
+      }
+      const min = h * 60 + m;
+      if (min < 7 * 60 || min > 22 * 60) {
+        throw new BadRequestException('Giờ làm việc định kỳ phải trong khung 07:00–22:00');
       }
     }
   }
@@ -418,14 +425,12 @@ export class RecurringService implements OnApplicationBootstrap, OnModuleDestroy
     this.validateSchedule(dto);
     await this.validatePreferredHelper(customerId, dto.preferred_helper_id);
 
-    // P3-9: Không cho ngày bắt đầu trong quá khứ
-    if (process.env['NODE_ENV'] !== 'test') {
-      const vnNow = new Date(Date.now() + 7 * 60 * 60 * 1000);
-      const todayVnStr = vnNow.toISOString().slice(0, 10);
-      const startDateStr = typeof dto.start_date === 'string' ? dto.start_date.slice(0, 10) : '';
-      if (startDateStr && startDateStr < todayVnStr) {
-        throw new BadRequestException('Ngày bắt đầu không thể ở trong quá khứ');
-      }
+    // P3-9 & H1: Không cho ngày bắt đầu trong quá khứ (không chặn bởi NODE_ENV !== test)
+    const vnNow = new Date(Date.now() + 7 * 60 * 60 * 1000);
+    const todayVnStr = vnNow.toISOString().slice(0, 10);
+    const startDateStr = typeof dto.start_date === 'string' ? dto.start_date.slice(0, 10) : '';
+    if (startDateStr && startDateStr < todayVnStr) {
+      throw new BadRequestException('Ngày bắt đầu không thể ở trong quá khứ');
     }
 
     // A40: Kiểm tra lịch trùng (cùng customer_id, service_id, frequency, time_start)
@@ -584,8 +589,26 @@ export class RecurringService implements OnApplicationBootstrap, OnModuleDestroy
       frequency: dto.frequency ?? plan.frequency,
       weekdays: dto.weekdays ?? plan.weekdays,
       month_days: dto.month_days ?? plan.month_days,
+      time_start: dto.time_start ?? plan.time_start,
     };
     this.validateSchedule(next);
+
+    // H1: Snapshot lịch cũ TRƯỚC khi cập nhật plan để so sánh chính xác scheduleChanged
+    const oldFrequency = plan.frequency;
+    const oldWeekdays = [...(plan.weekdays || [])].sort();
+    const oldMonthDays = [...(plan.month_days || [])].sort();
+    const oldTimeStart = plan.time_start;
+
+    const newWeekdays = dto.weekdays ? [...new Set(dto.weekdays)].sort() : oldWeekdays;
+    const newMonthDays = dto.month_days ? [...new Set(dto.month_days)].sort() : oldMonthDays;
+    const newFrequency = (dto.frequency as RecurringFrequency) ?? oldFrequency;
+    const newTimeStart = dto.time_start ?? oldTimeStart;
+
+    const scheduleChanged =
+      newFrequency !== oldFrequency ||
+      JSON.stringify(newWeekdays) !== JSON.stringify(oldWeekdays) ||
+      JSON.stringify(newMonthDays) !== JSON.stringify(oldMonthDays) ||
+      newTimeStart !== oldTimeStart;
 
     if (dto.title) plan.title = dto.title;
     if (dto.description) plan.description = dto.description;
@@ -612,13 +635,6 @@ export class RecurringService implements OnApplicationBootstrap, OnModuleDestroy
         : undefined;
     }
     await plan.save();
-
-    // P3-9: Khi thay đổi lịch, hủy các job OPEN chưa tới theo lịch cũ để sinh lại theo lịch mới
-    const scheduleChanged =
-      (dto.frequency && dto.frequency !== plan.frequency) ||
-      (dto.weekdays && JSON.stringify(dto.weekdays) !== JSON.stringify(plan.weekdays)) ||
-      (dto.month_days && JSON.stringify(dto.month_days) !== JSON.stringify(plan.month_days)) ||
-      (dto.time_start && dto.time_start !== plan.time_start);
 
     if (scheduleChanged) {
       const todayKey = this.dateKey(new Date());

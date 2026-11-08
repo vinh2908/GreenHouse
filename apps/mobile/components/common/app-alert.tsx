@@ -201,7 +201,7 @@ export function AppAlertHost() {
                 style={{
                   fontSize: fs(18.5),
                   fontWeight: '800',
-                  color: '#111827',
+                  color: tc.text,
                   textAlign: 'center',
                   marginBottom: 8,
                   lineHeight: Math.round(fs(25)),

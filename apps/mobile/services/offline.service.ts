@@ -41,6 +41,19 @@ export function isNetworkError(err: unknown): boolean {
   return !!e && typeof e === 'object' && !e.response;
 }
 
+/** H14: Phân biệt timeout (mạng chậm/quá giờ) vs mất mạng thật */
+export function isTimeoutError(err: unknown): boolean {
+  const e = err as { code?: string; message?: string } | null;
+  return (
+    e?.code === 'ECONNABORTED' ||
+    (typeof e?.message === 'string' && /timeout/i.test(e.message))
+  );
+}
+
+export function isNetworkLostError(err: unknown): boolean {
+  return isNetworkError(err) && !isTimeoutError(err);
+}
+
 // ─── Cache đơn của thợ ────────────────────────────────────────────────────────
 
 export async function cacheActiveJobs(jobs: unknown): Promise<void> {
@@ -131,6 +144,35 @@ export async function enqueueAction(
     queue.push(action);
   }
   await writeQueue(queue);
+
+  // H14: Cập nhật trạng thái lạc quan trong cache chi tiết đơn và danh sách đơn của thợ
+  const STATUS_BY_KIND: Record<OfflineActionKind, string> = {
+    on_the_way: 'helper_on_the_way',
+    arrived: 'helper_arrived',
+    start: 'in_progress',
+    complete: 'pending_review',
+  };
+  const optimisticStatus = STATUS_BY_KIND[kind];
+  if (optimisticStatus) {
+    try {
+      const cached = await getCachedJobDetail<Record<string, unknown>>(jobId);
+      if (cached) {
+        cached.status = optimisticStatus;
+        cached.updated_at = new Date().toISOString();
+        await cacheJobDetail(cached);
+      }
+      const activeJobs = await getCachedActiveJobs<any[]>();
+      if (Array.isArray(activeJobs)) {
+        const idx = activeJobs.findIndex(j => String(j._id) === String(jobId));
+        if (idx >= 0) {
+          activeJobs[idx] = { ...activeJobs[idx], status: optimisticStatus };
+          await cacheActiveJobs(activeJobs);
+        }
+      }
+    } catch {
+      /* bỏ qua lỗi cache */
+    }
+  }
 }
 
 export async function loadPendingCount(): Promise<number> {
@@ -139,15 +181,19 @@ export async function loadPendingCount(): Promise<number> {
   return queue.length;
 }
 
-/** Toast dùng chung khi 1 thao tác được xếp hàng offline. */
-export function toastQueuedOffline(): void {
+/** Toast dùng chung khi 1 thao tác được xếp hàng offline: phân biệt timeout vs mất mạng */
+export function toastQueuedOffline(err?: unknown): void {
   const lang = useSettingsStore.getState().language;
+  const timeout = isTimeoutError(err);
   Toast.show({
     type: 'info',
-    text1:
-      lang === 'en'
-        ? 'Action saved — will sync when online'
-        : ' Đã lưu thao tác — sẽ tự đồng bộ khi có mạng',
+    text1: timeout
+      ? lang === 'en'
+        ? 'Connection slow / timed out — action queued for auto-sync'
+        : 'Kết nối mạng chậm / quá giờ — đã lưu thao tác để tự đồng bộ'
+      : lang === 'en'
+        ? 'Network lost — action queued for auto-sync'
+        : 'Mất kết nối mạng — đã lưu thao tác để tự đồng bộ khi có mạng',
   });
 }
 

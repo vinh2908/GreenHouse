@@ -52,13 +52,15 @@ describe('OtpService - F16 mail failure', () => {
     expect(otpModel.deleteOne).not.toHaveBeenCalled();
   });
 
-  it('F16: dev (chưa cấu hình Gmail) vẫn mô phỏng qua log + trả mã để test', async () => {
+  it('F16/H17: dev (chưa cấu hình Gmail) mô phỏng qua log; trả mã khi OTP_BYPASS=true', async () => {
     process.env.NODE_ENV = 'development';
+    process.env.OTP_BYPASS = 'true';
     await build(undefined, false);
     const code = await service.sendOtp('user@example.com', 'reset');
     expect(typeof code).toBe('string');
     expect(code).toHaveLength(6);
     expect(otpModel.deleteOne).not.toHaveBeenCalled();
+    delete process.env.OTP_BYPASS;
   });
 
   it('P0-6: target SĐT -> ném 400 rõ ràng (SMS OTP chưa hỗ trợ), không tạo mã, không gửi mail', async () => {

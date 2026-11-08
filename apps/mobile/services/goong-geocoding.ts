@@ -87,8 +87,8 @@ export interface GoongLocationResult {
   coordinates: [number, number]; // [longitude, latitude]
 }
 
-/** Khớp cấu trúc OsmPlace của location.service.ts (structural typing). */
-export interface GoongOsmPlace {
+/** Khớp cấu trúc địa điểm chuẩn của location.service.ts (structural typing). */
+export interface GoongResolvedPlace {
   place_id: number;
   display_name: string;
   lat: string;
@@ -144,7 +144,7 @@ function componentByType(components: GoongAddressComponent[] | undefined, types:
 /**
  * Map address_components của Goong sang các mảnh địa chỉ app cần.
  * Thứ tự ưu tiên theo quy ước dữ liệu địa chỉ Việt Nam của Goong/Google:
- * - Số nhà: street_number (đây là phần OSM hầu như không có ở VN).
+ * - Số nhà: street_number.
  * - Phường/Xã: sublocality_level_1 (dự phòng: sublocality, ward, neighborhood).
  * - Quận/Huyện: administrative_area_level_2 (dự phòng: locality khi khác tỉnh).
  * - Tỉnh/Thành: administrative_area_level_1 (dự phòng: locality).
@@ -192,7 +192,7 @@ export async function goongReverseGeocode(
  * road = "số nhà + tên đường" — mục đích chính của việc tích hợp Goong.
  * full_address ưu tiên formatted_address của Goong (đã là chuỗi địa chỉ VN
  * hoàn chỉnh); không có mới tự ghép từ các mảnh (bỏ qua mảnh rỗng).
- * coordinates giữ nguyên điểm người dùng đã ghim (như mọi lớp OSM khác).
+ * coordinates giữ nguyên điểm người dùng đã ghim.
  */
 export function mapGoongGeocodeResult(
   result: GoongGeocodeResult,
@@ -249,16 +249,14 @@ export async function goongPlaceDetail(
 }
 
 /**
- * Map Place Detail (+ prediction gốc) sang OsmPlace của app.
- * place_id trong OsmPlace là number (id số của OSM) — Goong dùng id chuỗi
- * nên dùng index trong danh sách kết quả, giống fallback `p.osm_id || idx`
- * của lớp Photon hiện tại.
+ * Map Place Detail (+ prediction gốc) sang cấu trúc địa điểm của app.
+ * place_id dùng index trong danh sách kết quả do Goong dùng id chuỗi.
  */
-export function mapGoongPlaceToOsmPlace(
+export function mapGoongPlaceToResolvedPlace(
   detail: GoongPlaceDetail,
   prediction: GoongPrediction | undefined,
   index: number,
-): GoongOsmPlace | null {
+): GoongResolvedPlace | null {
   const loc = detail.geometry?.location;
   if (!loc || typeof loc.lat !== 'number' || typeof loc.lng !== 'number') {
     return null;
@@ -304,13 +302,13 @@ export function mapGoongPlaceToOsmPlace(
  * Tìm địa điểm bằng Goong: AutoComplete lấy gợi ý → Place Detail lấy tọa độ
  * + thành phần địa chỉ cho từng gợi ý (picker hiện tại cần sẵn lat/lon trong
  * từng kết quả để đặt ghim ngay khi người dùng chạm vào).
- * Trả [] khi không có gợi ý/không resolve được — caller rơi xuống OSM.
+ * Trả [] khi không có gợi ý/không resolve được.
  */
 export async function searchPlacesWithGoong(
   query: string,
   apiKey: string,
   location?: { latitude: number; longitude: number } | null,
-): Promise<GoongOsmPlace[]> {
+): Promise<GoongResolvedPlace[]> {
   const sessionToken = newAutocompleteSessionToken();
   const predictions = await goongAutocomplete(query, apiKey, sessionToken, location);
   if (!predictions.length) return [];
@@ -318,11 +316,11 @@ export async function searchPlacesWithGoong(
     predictions.map(async (prediction, idx) => {
       try {
         const detail = await goongPlaceDetail(prediction.place_id as string, apiKey, sessionToken);
-        return detail ? mapGoongPlaceToOsmPlace(detail, prediction, idx) : null;
+        return detail ? mapGoongPlaceToResolvedPlace(detail, prediction, idx) : null;
       } catch {
         return null;
       }
     }),
   );
-  return details.filter((d): d is GoongOsmPlace => d !== null);
+  return details.filter((d): d is GoongResolvedPlace => d !== null);
 }

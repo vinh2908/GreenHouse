@@ -172,8 +172,8 @@ export default function BankAccountScreen() {
     Alert.alert(
       lang === 'en' ? 'Confirm demo top-up (simulation)' : 'Xác nhận nạp tiền mô phỏng',
       lang === 'en'
-        ? `Record a demo top-up of ${num.toLocaleString('vi-VN')}₫? No real payment is made and your withdrawable balance does not change.`
-        : `Ghi nhận nạp thử ${num.toLocaleString('vi-VN')}₫? Chưa có thanh toán thật, số dư rút được không thay đổi.`,
+        ? `Record a demo top-up of ${new Intl.NumberFormat('en-US').format(num)}₫? No real payment is made and your withdrawable balance does not change.`
+        : `Ghi nhận nạp thử ${new Intl.NumberFormat('vi-VN').format(num)}₫? Chưa có thanh toán thật, số dư rút được không thay đổi.`,
       [
         { text: lang === 'en' ? 'Cancel' : 'Hủy', style: 'cancel' },
         {
@@ -907,7 +907,7 @@ export default function BankAccountScreen() {
                             color: isSelected ? COLORS.primaryDark : COLORS.gray[700],
                           }}
                         >
-                          {new Intl.NumberFormat('vi-VN').format(Number(preset))}₫
+                          {new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'vi-VN').format(Number(preset))}₫
                         </Text>
                       </TouchableOpacity>
                     );

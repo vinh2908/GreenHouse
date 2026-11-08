@@ -1,8 +1,13 @@
 {
   "moduleFileExtensions": ["js", "json", "ts"],
-  "rootDir": ".",
+  "rootDir": "..",
   "testEnvironment": "node",
-  "testRegex": ".e2e.spec.ts$",
+  "testRegex": "(\\.e2e\\.spec\\.ts$|sos-backup-runtime\\.spec\\.ts$)",
+  "moduleNameMapper": {
+    "^@homemate/constants$": "<rootDir>/../../packages/constants/src",
+    "^@homemate/types$": "<rootDir>/../../packages/types/src",
+    "^@homemate/utils$": "<rootDir>/../../packages/utils/src"
+  },
   "transform": {
     "^.+\\.(t|j)s$": "ts-jest"
   },

@@ -107,26 +107,65 @@ export class CallsService {
 
     if (existingActiveSession) {
       const { token, expires_at } = await this.provider.createAccessToken(callerId);
+      const partnerId =
+        String(existingActiveSession.caller_id) === callerId
+          ? String(existingActiveSession.callee_id)
+          : String(existingActiveSession.caller_id);
       return {
         session_id: String(existingActiveSession._id),
         provider: existingActiveSession.provider,
         room_id: existingActiveSession.provider_room_id,
         token,
+        token_expires_at: expires_at,
         expires_at,
-        callee_id: String(existingActiveSession.callee_id),
+        partner_id: partnerId,
+        callee_id: partnerId,
+        my_user_id: callerId,
       };
     }
 
     const { token, expires_at } = await this.provider.createAccessToken(callerId);
-    const session = await this.callSessionModel.create({
-      job_id: job._id,
-      caller_id: new Types.ObjectId(callerId),
-      callee_id: new Types.ObjectId(calleeId),
-      provider: this.provider.name,
-      provider_room_id: roomId,
-      status: 'initiated',
-      started_at: new Date(),
-    });
+    let session: CallSessionDocument;
+    try {
+      session = await this.callSessionModel.create({
+        job_id: job._id,
+        caller_id: new Types.ObjectId(callerId),
+        callee_id: new Types.ObjectId(calleeId),
+        provider: this.provider.name,
+        provider_room_id: roomId,
+        status: 'initiated',
+        started_at: new Date(),
+      });
+    } catch (err: any) {
+      // H21 Race condition: 2 cuộc gọi cùng lúc tới cùng 1 đơn (E11000 duplicate key error)
+      if (err?.code === 11000 || err?.name === 'MongoServerError') {
+        const racedSession = await this.callSessionModel
+          .findOne({
+            job_id: job._id,
+            status: { $in: ['initiated', 'ringing', 'connected'] },
+          })
+          .sort({ started_at: -1 })
+          .exec();
+        if (racedSession) {
+          const partnerId =
+            String(racedSession.caller_id) === callerId
+              ? String(racedSession.callee_id)
+              : String(racedSession.caller_id);
+          return {
+            session_id: String(racedSession._id),
+            provider: racedSession.provider,
+            room_id: racedSession.provider_room_id,
+            token,
+            token_expires_at: expires_at,
+            expires_at,
+            partner_id: partnerId,
+            callee_id: partnerId,
+            my_user_id: callerId,
+          };
+        }
+      }
+      throw err;
+    }
 
     // Báo cho đối tác có cuộc gọi đến (app đang mở sẽ hiện màn hình nhận cuộc gọi)
     this.gateway.emitToUser(calleeId, SOCKET_EVENTS.CALL_INCOMING, {
@@ -170,6 +209,7 @@ export class CallsService {
       token_expires_at: expires_at,
       room_id: roomId,
       partner_id: calleeId,
+      callee_id: calleeId,
       // SDK phía client dùng userId này để connect; không hề lộ số điện thoại thật
       my_user_id: callerId,
     };

@@ -118,6 +118,18 @@ export function localDateKey(d: Date): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
 
+/** P2-4 & H27(a): Chuỗi ngày 'YYYY-MM-DD' theo giờ Việt Nam (+07:00), tránh lệch ngày UTC khi dùng Date object. */
+export function toVnDateString(dateInput: unknown): string {
+  if (!dateInput) return '';
+  if (typeof dateInput === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateInput.trim())) {
+    return dateInput.trim();
+  }
+  const d = new Date(dateInput as any);
+  if (isNaN(d.getTime())) return '';
+  const vnTime = new Date(d.getTime() + 7 * 60 * 60 * 1000);
+  return vnTime.toISOString().slice(0, 10);
+}
+
 const HH_MM_RE = /^(\d{1,2}):(\d{2})/;
 
 /**
@@ -335,8 +347,8 @@ export class JobsService implements OnModuleInit {
         const parts = job.preferred_time_start.split(':').map(Number);
         const hours = parts[0] ?? 0;
         const minutes = parts[1] ?? 0;
-        // P1-15: Dựng startTime theo múi giờ Việt Nam (+07:00) thay vì local UTC của server
-        const dateStr = new Date(job.preferred_date).toISOString().slice(0, 10);
+        // P1-15 & H27(a): Dựng startTime theo múi giờ Việt Nam (+07:00) thay vì local UTC của server
+        const dateStr = toVnDateString(job.preferred_date);
         const hh = String(hours).padStart(2, '0');
         const mm = String(minutes).padStart(2, '0');
         const startTime = new Date(`${dateStr}T${hh}:${mm}:00+07:00`);
@@ -860,10 +872,7 @@ export class JobsService implements OnModuleInit {
       dto.preferred_time_start &&
       /^\d{1,2}:\d{2}$/.test(dto.preferred_time_start.trim())
     ) {
-      const dateStr =
-        typeof dto.preferred_date === 'string'
-          ? dto.preferred_date.slice(0, 10)
-          : new Date(dto.preferred_date).toISOString().slice(0, 10);
+      const dateStr = toVnDateString(dto.preferred_date);
       const [h, m] = dto.preferred_time_start.trim().split(':').map(Number);
       const startUtc = new Date(
         `${dateStr}T${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:00+07:00`,
@@ -2425,10 +2434,10 @@ export class JobsService implements OnModuleInit {
       .create({
         userId: helperId,
         type: NOTIFICATION_TYPES.QUOTE_REJECTED,
-        title: 'Báo giá đã bị từ chối',
+        title: 'Báo giá đã bị từ chối / ẩn',
         body: reason
-          ? `Báo giá của bạn cho đơn "${job.title}" đã bị từ chối: ${reason}`
-          : `Báo giá của bạn cho đơn "${job.title}" đã bị từ chối.`,
+          ? `Báo giá của bạn cho đơn "${job.title}" đã bị từ chối / ẩn: ${reason}`
+          : `Báo giá của bạn cho đơn "${job.title}" đã bị từ chối / ẩn.`,
         payload: { job_id: jobId, quote_id: quoteId },
       })
       .catch(() => undefined);
@@ -2468,10 +2477,7 @@ export class JobsService implements OnModuleInit {
       job.preferred_time_start &&
       /^\d{1,2}:\d{2}$/.test(job.preferred_time_start.trim())
     ) {
-      const dateStr =
-        typeof job.preferred_date === 'string'
-          ? (job.preferred_date as string).slice(0, 10)
-          : new Date(job.preferred_date).toISOString().slice(0, 10);
+      const dateStr = toVnDateString(job.preferred_date);
       const [h, m] = job.preferred_time_start.trim().split(':').map(Number);
       const startUtc = new Date(
         `${dateStr}T${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:00+07:00`,
@@ -2623,12 +2629,7 @@ export class JobsService implements OnModuleInit {
     // tomorrow-09:00 default. Derive it from preferred_date +
     // preferred_time_start (VN wall time) and use it when the client sent
     // nothing, an unparseable value, or exactly that default.
-    const jobDateStr =
-      typeof job.preferred_date === 'string'
-        ? (job.preferred_date as string).slice(0, 10)
-        : job.preferred_date
-          ? new Date(job.preferred_date).toISOString().slice(0, 10)
-          : '';
+    const jobDateStr = toVnDateString(job.preferred_date);
     const jobTimeStr = (job.preferred_time_start ?? '').trim();
     let jobScheduledAt: Date | null = null;
     if (/^\d{4}-\d{2}-\d{2}$/.test(jobDateStr) && /^\d{1,2}:\d{2}$/.test(jobTimeStr)) {
@@ -2841,12 +2842,7 @@ export class JobsService implements OnModuleInit {
     tomorrow.setDate(tomorrow.getDate() + 1);
 
     // P2-4: scheduled_at phải là giờ làm thật của đơn, tính từ preferred_date + preferred_time_start (+07:00)
-    const jobDateStr =
-      typeof job.preferred_date === 'string'
-        ? (job.preferred_date as string).slice(0, 10)
-        : job.preferred_date
-          ? new Date(job.preferred_date).toISOString().slice(0, 10)
-          : '';
+    const jobDateStr = toVnDateString(job.preferred_date);
     const jobTimeStr = (job.preferred_time_start ?? '').trim();
     let resolvedScheduledAt: Date = tomorrow;
     if (/^\d{4}-\d{2}-\d{2}$/.test(jobDateStr)) {
@@ -3939,19 +3935,9 @@ export class JobsService implements OnModuleInit {
     }
 
     const previousStatus = job.status;
-    // P2-12: Đơn đang làm hoặc chờ duyệt chỉ có thể khiếu nại (mở tranh chấp)
-    if (previousStatus === JobStatus.IN_PROGRESS || previousStatus === JobStatus.PENDING_REVIEW) {
-      throw new BadRequestException(
-        'Đơn hàng đang thực hiện hoặc chờ duyệt chỉ có thể khiếu nại (mở tranh chấp), không thể hủy trực tiếp.',
-      );
-    }
-    this.validateTransition(job.status, JobStatus.CANCELLED);
-    job.cancellation_reason = dto.reason;
-    job.cancelled_by = new Types.ObjectId(actorId);
-    job.cancelled_by_role = actorRole;
-    this.addEvent(job, JobStatus.CANCELLED, actorId, actorRole, `Hủy: ${dto.reason}`);
 
-    // Nếu Thợ tự ý hủy đơn sau khi đã chốt hợp đồng (confirmed / helper_on_the_way / helper_arrived / in_progress / pending_review) -> phạt điểm rủi ro (No-Show / Late Cancel)
+    // H2: Nếu Thợ tự ý hủy đơn sau khi đã chốt hợp đồng (confirmed / helper_on_the_way / helper_arrived / in_progress / pending_review)
+    // Phạt điểm rủi ro và ghi lịch sử phạt TRƯỚC (kể cả khi đơn IN_PROGRESS/PENDING_REVIEW bị chặn ném lỗi phía sau)
     if (
       actorRole === 'helper' &&
       job.helper_id &&
@@ -3965,9 +3951,10 @@ export class JobsService implements OnModuleInit {
     ) {
       const helperDoc = await this.helperModel.findOne({ user_id: job.helper_id }).exec();
       const newLateCount = ((helperDoc as any)?.late_cancellation_count || 0) + 1;
+      // H27(b): Mẫu số tính tỉ lệ hủy: không cộng trùng accepted_quotes + completed_jobs
       const totalAccepted = Math.max(
         1,
-        ((helperDoc as any)?.accepted_quotes || 0) + ((helperDoc as any)?.completed_jobs || 0),
+        (helperDoc as any)?.accepted_quotes || (helperDoc as any)?.completed_jobs || 0,
       );
       const newRate = Math.min(100, Math.round((newLateCount / totalAccepted) * 100));
 
@@ -3998,6 +3985,18 @@ export class JobsService implements OnModuleInit {
         );
       }
     }
+
+    // P2-12: Đơn đang làm hoặc chờ duyệt chỉ có thể khiếu nại (mở tranh chấp)
+    if (previousStatus === JobStatus.IN_PROGRESS || previousStatus === JobStatus.PENDING_REVIEW) {
+      throw new BadRequestException(
+        'Đơn hàng đang thực hiện hoặc chờ duyệt chỉ có thể khiếu nại (mở tranh chấp), không thể hủy trực tiếp.',
+      );
+    }
+    this.validateTransition(job.status, JobStatus.CANCELLED);
+    job.cancellation_reason = dto.reason;
+    job.cancelled_by = new Types.ObjectId(actorId);
+    job.cancelled_by_role = actorRole;
+    this.addEvent(job, JobStatus.CANCELLED, actorId, actorRole, `Hủy: ${dto.reason}`);
 
     // B60: Báo cho mọi thợ đã báo giá khi báo giá của họ bị chuyển sang
     // rejected do hủy đơn — lấy danh sách trước rồi mới cập nhật trạng thái.
@@ -4400,12 +4399,20 @@ export class JobsService implements OnModuleInit {
     return {
       jobs: jobObjects,
       total,
-      page,
-      total_pages: Math.max(1, Math.ceil(total / limit)),
+      page: safePage,
+      limit: safeLimit,
+      total_pages: Math.max(1, Math.ceil(total / safeLimit)),
     };
   }
 
-  async getAvailableJobs(helperId: string, serviceId?: string, page = 1, limit = 20) {
+  async getAvailableJobs(
+    helperId: string,
+    serviceId?: string,
+    page = 1,
+    limit = 20,
+    lat?: number,
+    lng?: number,
+  ) {
     const safePage = Math.max(1, Number(page) || 1);
     const safeLimit = Math.min(50, Math.max(1, Number(limit) || 20));
     const now = new Date();
@@ -4434,7 +4441,11 @@ export class JobsService implements OnModuleInit {
         .exec(),
     ]);
 
-    const helperCoords = helperProfile?.location?.coordinates;
+    // H24: Ưu tiên tọa độ GPS thật của thiết bị gửi lên từ query, nếu không có mới fallback sang profile location
+    const helperCoords =
+      lat != null && lng != null && !Number.isNaN(Number(lat)) && !Number.isNaN(Number(lng))
+        ? [Number(lng), Number(lat)]
+        : helperProfile?.location?.coordinates;
     const availabilityFiltered = Boolean(helperProfile?.availability?.enabled);
 
     let pagedJobs: JobDocument[] = [];

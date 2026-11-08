@@ -209,6 +209,10 @@ export class NotificationsService {
           translatedBody = 'A new job matching your services is available nearby.';
         }
         break;
+      case 'job_private_offer_expired':
+        translatedTitle = 'Private Offer Expired';
+        translatedBody = 'A private job offer has expired.';
+        break;
       case 'new_quote_received':
         translatedTitle = 'New Quote Received';
         translatedBody = 'A helper has submitted a new quote for your job.';

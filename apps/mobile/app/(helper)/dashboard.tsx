@@ -557,7 +557,7 @@ export default function HelperDashboardScreen() {
                           ? '#92400E'
                           : effectiveOnline
                             ? '#FFFFFF'
-                            : COLORS.gray[900],
+                            : tc.text,
                       }}
                     >
                       {isWorking

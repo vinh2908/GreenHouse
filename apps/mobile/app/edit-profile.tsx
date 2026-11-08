@@ -838,7 +838,7 @@ export default function EditProfileScreen() {
                         borderRadius: 14,
                         padding: 14,
                         fontSize: fs(15),
-                        color: COLORS.gray[900],
+                        color: tc.text,
                         backgroundColor: '#fff',
                       }}
                       placeholder="123456"

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -9,6 +9,7 @@ import {
   StatusBar,
   Easing,
   Platform,
+  TouchableOpacity,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -25,6 +26,7 @@ export default function SplashScreen() {
   const insets = useSafeAreaInsets();
   const { lang } = useTranslation();
   const hasNavigated = useRef(false);
+  const [authStuck, setAuthStuck] = useState(false);
 
   // ── Animations ─────────────────────────────────────────────────────────────
   const scaleAnim = useRef(new Animated.Value(0.3)).current;
@@ -115,9 +117,15 @@ export default function SplashScreen() {
     };
 
     const timer = setTimeout(navigateNext, 1800);
+    const stuckTimer = setTimeout(() => {
+      if (!hasNavigated.current && useAuthStore.getState().isLoading) {
+        setAuthStuck(true);
+      }
+    }, 5000);
 
     return () => {
       clearTimeout(timer);
+      clearTimeout(stuckTimer);
     };
   }, [router]);
 
@@ -215,6 +223,78 @@ export default function SplashScreen() {
             : 'GREEN HOUSE ECOSYSTEM • PHIÊN BẢN 1.0.0'}
         </Text>
       </Animated.View>
+
+      {authStuck && (
+        <View
+          style={{
+            position: 'absolute',
+            bottom: Math.max(height * 0.12, insets.bottom + 60),
+            left: 24,
+            right: 24,
+            backgroundColor: 'rgba(255, 255, 255, 0.95)',
+            borderRadius: 16,
+            padding: 16,
+            alignItems: 'center',
+            gap: 10,
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.2,
+            shadowRadius: 10,
+            elevation: 10,
+            zIndex: 10000,
+          }}
+        >
+          <Text
+            style={{
+              fontSize: fs(13.5),
+              fontWeight: '700',
+              color: '#1F2937',
+              textAlign: 'center',
+              lineHeight: 19,
+            }}
+          >
+            {lang === 'en'
+              ? 'Connecting to server is taking longer than usual...'
+              : 'Đang kết nối đến máy chủ, vui lòng đợi hoặc thử lại...'}
+          </Text>
+          <View style={{ flexDirection: 'row', gap: 10, marginTop: 4 }}>
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() => {
+                setAuthStuck(false);
+                void useAuthStore.getState().loadStoredAuth();
+              }}
+              style={{
+                paddingHorizontal: 16,
+                paddingVertical: 9,
+                borderRadius: 10,
+                backgroundColor: '#16A34A',
+              }}
+            >
+              <Text style={{ color: '#fff', fontWeight: '700', fontSize: fs(13) }}>
+                {lang === 'en' ? 'Retry' : 'Thử lại'}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() => {
+                hasNavigated.current = true;
+                router.replace('/(customer)/home');
+              }}
+              style={{
+                paddingHorizontal: 16,
+                paddingVertical: 9,
+                borderRadius: 10,
+                backgroundColor: '#F3F4F6',
+              }}
+            >
+              <Text style={{ color: '#374151', fontWeight: '700', fontSize: fs(13) }}>
+                {lang === 'en' ? 'Continue as Guest' : 'Tiếp tục vào app'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
     </View>
   );
 }

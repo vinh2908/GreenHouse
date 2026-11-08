@@ -63,7 +63,7 @@ describe('RecurringService (B52/B53)', () => {
       time_start: '09:00',
       time_end: '11:00',
       duration_hours: 2,
-      start_date: '2026-11-01',
+      start_date: new Date(Date.now() + 7 * 60 * 60 * 1000).toISOString().slice(0, 10),
       end_date: '2026-12-31',
       ...overrides,
     } as never;
@@ -107,7 +107,7 @@ describe('RecurringService (B52/B53)', () => {
       expect(plans.length).toBe(1);
     });
 
-    it('tháng thiếu ngày 31 → dời sang ngày cuối tháng (tháng 2 → 28/02)', () => {
+    it('H5: tháng thiếu ngày 31 → bỏ qua tháng không có ngày 31, tháng đủ 31 ngày sinh đúng', () => {
       const { service } = makeService();
       const plan: any = {
         start_date: new Date('2026-01-01'),
@@ -115,12 +115,21 @@ describe('RecurringService (B52/B53)', () => {
         frequency: 'monthly',
         month_days: [31],
       };
-      const dates = (service as any).occurrenceDates(
+      // Tháng 2 (không có ngày 31) -> không sinh đơn
+      const febDates = (service as any).occurrenceDates(
         plan,
         new Date('2026-02-01'),
         new Date('2026-02-28'),
       );
-      expect(dates).toEqual(['2026-02-28']);
+      expect(febDates).toEqual([]);
+
+      // Tháng 3 (có ngày 31) -> sinh đúng 31/03
+      const marDates = (service as any).occurrenceDates(
+        plan,
+        new Date('2026-03-01'),
+        new Date('2026-03-31'),
+      );
+      expect(marDates).toEqual(['2026-03-31']);
     });
 
     it('không sinh đơn sau end_date', () => {

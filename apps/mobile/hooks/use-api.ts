@@ -742,13 +742,23 @@ export function useRespondAmendment() {
 
 // ─── Jobs (Helper) ─────────────────────────────────────────────────────────────
 
-export function useAvailableJobs(serviceId?: string, page = 1, enabled = true) {
+export function useAvailableJobs(
+  serviceId?: string,
+  page = 1,
+  enabled = true,
+  coords?: { lat?: number; lng?: number } | null,
+) {
   return useQuery({
     enabled,
-    queryKey: ['jobs', 'available', serviceId, page],
+    queryKey: ['jobs', 'available', serviceId, page, coords?.lat, coords?.lng],
     queryFn: async () => {
       const { data } = await apiClient.get('/jobs/available', {
-        params: { service_id: serviceId, page },
+        params: {
+          service_id: serviceId,
+          page,
+          lat: coords?.lat,
+          lng: coords?.lng,
+        },
       });
       return data.data;
     },
@@ -848,7 +858,7 @@ export function useHelperOnTheWay() {
         // Feature 16: mất mạng → xếp hàng offline, trả sentinel thay vì ném lỗi
         if (isNetworkError(err)) {
           await enqueueAction('on_the_way', jobId);
-          toastQueuedOffline();
+          toastQueuedOffline(err);
           return QUEUED_OFFLINE as unknown as Awaited<ReturnType<typeof apiClient.patch>>;
         }
         throw err;
@@ -870,7 +880,7 @@ export function useHelperArrived() {
       } catch (err) {
         if (isNetworkError(err)) {
           await enqueueAction('arrived', jobId);
-          toastQueuedOffline();
+          toastQueuedOffline(err);
           return QUEUED_OFFLINE as unknown as Awaited<ReturnType<typeof apiClient.patch>>;
         }
         throw err;
@@ -892,7 +902,7 @@ export function useStartJob() {
       } catch (err) {
         if (isNetworkError(err)) {
           await enqueueAction('start', jobId);
-          toastQueuedOffline();
+          toastQueuedOffline(err);
           return QUEUED_OFFLINE as unknown as Awaited<ReturnType<typeof apiClient.patch>>;
         }
         throw err;
@@ -934,7 +944,7 @@ export function useCompleteJob() {
         // → xếp hàng offline, flush sẽ gửi lại nguyên payload này.
         if (isNetworkError(err)) {
           await enqueueAction('complete', jobId, payload as Record<string, unknown>);
-          toastQueuedOffline();
+          toastQueuedOffline(err);
           return QUEUED_OFFLINE as unknown as Awaited<ReturnType<typeof apiClient.patch>>;
         }
         throw err;
