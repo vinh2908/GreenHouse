@@ -100,9 +100,7 @@ describe('ĐỢT 1 — P0 Regression & Correctness Specs', () => {
         }),
       });
 
-      await expect(jobsService.rejectJob(helperId, jobId)).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(jobsService.rejectJob(helperId, jobId)).rejects.toThrow(BadRequestException);
     });
 
     it('rejectJob: chuyển quote PENDING sang WITHDRAWN và đồng bộ số quote', async () => {

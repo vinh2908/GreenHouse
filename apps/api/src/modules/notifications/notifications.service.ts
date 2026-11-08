@@ -181,6 +181,94 @@ export class NotificationsService {
   }
 
   /**
+   * X7: Bản dịch thông báo push sang tiếng Anh khi thiết bị đăng ký ngôn ngữ 'en'
+   */
+  private translatePushNotification(
+    title: string,
+    body: string,
+    type?: string,
+    data?: any,
+  ): { title: string; body: string } {
+    let translatedTitle = title;
+    let translatedBody = body;
+
+    switch (type) {
+      case 'job_reminder':
+        translatedTitle = 'Upcoming Job Reminder';
+        translatedBody = 'Your scheduled job starts soon. Please be prepared.';
+        break;
+      case 'new_job_nearby':
+        if (data?.is_sos || /cứu hộ|sos/i.test(title)) {
+          translatedTitle = 'Emergency SOS Request Nearby!';
+          translatedBody = 'A customer nearby needs urgent SOS assistance.';
+        } else if (data?.is_private || /việc riêng/i.test(title)) {
+          translatedTitle = 'Private Job Offer from Regular Customer!';
+          translatedBody = 'A regular customer sent you a private job offer.';
+        } else {
+          translatedTitle = 'New job near you';
+          translatedBody = 'A new job matching your services is available nearby.';
+        }
+        break;
+      case 'new_quote_received':
+        translatedTitle = 'New Quote Received';
+        translatedBody = 'A helper has submitted a new quote for your job.';
+        break;
+      case 'quote_accepted':
+        translatedTitle = 'Quote Accepted!';
+        translatedBody = 'Customer has accepted your quote. Please get ready.';
+        break;
+      case 'job_completed':
+        if (/đánh giá/i.test(title) || data?.action === 'review') {
+          translatedTitle = 'Please Review Service';
+          translatedBody = 'Please take a moment to rate and review the service quality.';
+        } else {
+          translatedTitle = 'Job Completed';
+          translatedBody = 'Your job has been marked as completed.';
+        }
+        break;
+      case 'payment_success':
+        translatedTitle = 'Payment Successful';
+        translatedBody = 'Payment for your job has been processed successfully.';
+        break;
+      case 'refund_received':
+        translatedTitle = 'Refund Received';
+        translatedBody = 'A refund has been credited to your Green House wallet.';
+        break;
+      case 'job_cancelled':
+        translatedTitle = 'Job Cancelled';
+        translatedBody = 'The job has been cancelled.';
+        break;
+      case 'cost_proposal':
+        translatedTitle = 'Extra Cost Proposal';
+        translatedBody = 'Helper submitted an additional expense proposal for your job.';
+        break;
+      case 'dispute_opened':
+        translatedTitle = 'Dispute Case Opened';
+        translatedBody = 'A dispute case has been opened and is awaiting review.';
+        break;
+      case 'dispute_resolved':
+        translatedTitle = 'Dispute Case Resolved';
+        translatedBody = 'Admin has resolved the dispute case.';
+        break;
+      case 'kyc_approved':
+        translatedTitle = 'e-KYC Profile Approved';
+        translatedBody = 'Your e-KYC profile has been approved.';
+        break;
+      case 'kyc_rejected':
+        translatedTitle = 'e-KYC Profile Rejected';
+        translatedBody = 'Your e-KYC profile was rejected. Please review.';
+        break;
+      default:
+        if (/cứu hộ|sos/i.test(title)) {
+          translatedTitle = 'Emergency SOS Request Nearby!';
+        }
+        break;
+    }
+
+    return { title: translatedTitle, body: translatedBody };
+  }
+
+  /**
    * Gửi OS push tới mọi thiết bị của user qua Expo Push Service.
    * data đính kèm luôn chứa `type` + toàn bộ payload gốc để app deep-link
    * đúng màn hình khi user chạm vào push (xem utils/notification-route.ts phía mobile).
@@ -199,7 +287,7 @@ export class NotificationsService {
       }
       const user = await this.userModel
         .findById(userId)
-        .select('push_tokens notification_settings')
+        .select('push_tokens notification_settings language')
         .lean()
         .exec();
 
@@ -226,14 +314,23 @@ export class NotificationsService {
         return;
       }
 
+      // X7: Gửi push theo ngôn ngữ đã đăng ký của user
+      let pushTitle = title;
+      let pushBody = body;
+      if ((user as any)?.language === 'en') {
+        const translated = this.translatePushNotification(title, body, notifType, data);
+        pushTitle = translated.title;
+        pushBody = translated.body;
+      }
+
       this.logger.log(
-        `[sendExpoPush] Dispatching push to userId=${userId}, tokens=${tokens.length}, title="${title}"`,
+        `[sendExpoPush] Dispatching push to userId=${userId}, tokens=${tokens.length}, title="${pushTitle}"`,
       );
 
       const messages = tokens.map(to => ({
         to,
-        title,
-        body,
+        title: pushTitle,
+        body: pushBody,
         data,
         sound: settings.sound ? ('default' as const) : null,
         priority: 'high' as const,
@@ -387,7 +484,13 @@ export class NotificationsService {
   }
 
   // System message to every active user, pushed live to everyone connected without broadcast leakage.
-  async broadcastAll(userIds: Types.ObjectId[], title: string, body: string) {
+  async broadcastAll(
+    userIds: Types.ObjectId[],
+    title: string,
+    body: string,
+    batchId?: string,
+  ) {
+    const broadcastBatchId = batchId || new Types.ObjectId().toString();
     await this.notificationModel.insertMany(
       userIds.map(id => ({
         user_id: id,
@@ -395,6 +498,7 @@ export class NotificationsService {
         title,
         body,
         is_read: false,
+        data: { broadcast_batch_id: broadcastBatchId },
       })),
     );
     // A83: Gửi theo room riêng của từng user và push Expo, không broadcast toàn cục
@@ -405,14 +509,16 @@ export class NotificationsService {
         type: NOTIFICATION_TYPES.SYSTEM,
         title,
         body,
+        data: { broadcast_batch_id: broadcastBatchId },
         is_read: false,
         created_at: now,
       });
       void this.sendExpoPush(uid, title, body, {
         type: NOTIFICATION_TYPES.SYSTEM,
+        broadcast_batch_id: broadcastBatchId,
       }).catch(() => undefined);
     });
-    return { sent: userIds.length };
+    return { sent: userIds.length, batch_id: broadcastBatchId };
   }
 
   // B73: One unread notification per conversation. Merging a new message into
@@ -496,7 +602,8 @@ export class NotificationsService {
     return { deleted: res.deletedCount ?? 0 };
   }
 
-  @Cron('0 3 * * *')
+  // T6: Chạy lúc 03:00 sáng theo giờ Việt Nam
+  @Cron('0 3 * * *', { timeZone: 'Asia/Ho_Chi_Minh' })
   async cleanupOldReadNotificationsCron(): Promise<void> {
     try {
       await this.cleanupOldReadNotifications();

@@ -16,6 +16,7 @@ import { socketService, SOCKET_EVENTS } from '@/services/socket.service';
 import apiClient from '@/services/api-client';
 import { useAuthStore } from '@/stores/auth.store';
 import { useSosBackupStore } from '@/stores/sos-backup.store';
+import { useSettingsStore } from '@/stores/settings.store';
 
 // ─── Bắt kịp trạng thái SOS qua REST ─────────────────────────────────────────
 // Socket có thể lỡ sự kiện (app bị đóng, rớt mạng) mà cửa sổ quyết định của
@@ -128,9 +129,13 @@ export function useSosBackupListener() {
         if (payload?.sos_id) {
           removeIncoming(payload.sos_id);
           if (payload?.outcome === 'taken') {
+            const lang = useSettingsStore.getState().language;
             Toast.show({
               type: 'info',
-              text1: 'Đã có người khác nhận đơn backup này',
+              text1:
+                lang === 'en'
+                  ? 'Another helper accepted this backup request'
+                  : 'Đã có người khác nhận đơn backup này',
             });
           }
         }

@@ -335,8 +335,11 @@ export class JobsService implements OnModuleInit {
         const parts = job.preferred_time_start.split(':').map(Number);
         const hours = parts[0] ?? 0;
         const minutes = parts[1] ?? 0;
-        const startTime = new Date(job.preferred_date);
-        startTime.setHours(hours, minutes, 0, 0);
+        // P1-15: Dựng startTime theo múi giờ Việt Nam (+07:00) thay vì local UTC của server
+        const dateStr = new Date(job.preferred_date).toISOString().slice(0, 10);
+        const hh = String(hours).padStart(2, '0');
+        const mm = String(minutes).padStart(2, '0');
+        const startTime = new Date(`${dateStr}T${hh}:${mm}:00+07:00`);
 
         const diffMinutes = Math.round((startTime.getTime() - now.getTime()) / 60000);
         const reminders = [...(job.reminders_sent || [])];
@@ -426,10 +429,15 @@ export class JobsService implements OnModuleInit {
         // Guard đọc lỗi → bỏ qua đơn này trong lần quét này (fail-closed:
         // không hoàn khi chưa chứng minh được là chưa hoàn).
         try {
-          const alreadyRefunded =
-            job.payment_status === PaymentStatus.REFUNDED ||
-            (await this.paymentsService.hasSuccessfulRefund(String(job._id)));
-          if (alreadyRefunded) {
+          let refundedSoFar = 0;
+          if (typeof this.paymentsService?.getTotalRefundedForJob === 'function') {
+            refundedSoFar = await this.paymentsService.getTotalRefundedForJob(String(job._id));
+          } else if (typeof this.paymentsService?.hasSuccessfulRefund === 'function') {
+            refundedSoFar = (await this.paymentsService.hasSuccessfulRefund(String(job._id))) ? refundAmount : 0;
+          }
+          const remainingRefund = Math.max(0, refundAmount - refundedSoFar);
+
+          if (job.payment_status === PaymentStatus.REFUNDED || remainingRefund <= 0) {
             job.payment_status = PaymentStatus.REFUNDED;
             job.refund_pending_retry = false;
             job.refund_pending_amount = undefined;
@@ -457,10 +465,16 @@ export class JobsService implements OnModuleInit {
         }
 
         try {
+          let refundedSoFar = 0;
+          if (typeof this.paymentsService?.getTotalRefundedForJob === 'function') {
+            refundedSoFar = await this.paymentsService.getTotalRefundedForJob(String(job._id));
+          }
+          const toRefund = Math.max(0, refundAmount - refundedSoFar) || refundAmount;
+
           await this.paymentsService.refundCustomer(
             String(job.customer_id),
             String(job._id),
-            refundAmount,
+            toRefund,
             job.refund_pending_reason || 'Thử lại hoàn tiền đơn hủy',
           );
           job.payment_status = PaymentStatus.REFUNDED;
@@ -3918,29 +3932,41 @@ export class JobsService implements OnModuleInit {
     }
     await job.save();
 
-    // A25 & F7 & P1-2: Tự động hoàn tiền vào ví khách khi huỷ đơn nếu đơn đã thanh toán điện tử
+    // A25 & F7 & P1-2 & N4: Tự động hoàn tiền vào ví khách khi huỷ đơn nếu đơn đã thanh toán điện tử
     if (netPaid > 0) {
-      const alreadyRefunded = (await this.paymentsService.hasSuccessfulRefund?.(jobId)) ?? false;
-      if (!alreadyRefunded) {
+      let refundedSoFar = 0;
+      if (typeof this.paymentsService?.getTotalRefundedForJob === 'function') {
+        refundedSoFar = await this.paymentsService.getTotalRefundedForJob(jobId);
+      } else if (typeof this.paymentsService?.hasSuccessfulRefund === 'function') {
+        refundedSoFar = (await this.paymentsService.hasSuccessfulRefund(jobId)) ? netPaid : 0;
+      }
+      const remainingRefund = Math.max(0, netPaid - refundedSoFar);
+
+      if (remainingRefund > 0) {
         try {
           await this.paymentsService.refundCustomer(
             String(job.customer_id),
             jobId,
-            netPaid,
+            remainingRefund,
             dto.reason || 'Hủy đơn hàng đã thanh toán',
           );
-          job.payment_status = PaymentStatus.REFUNDED;
-          job.refund_pending_retry = false;
-          job.refund_pending_amount = undefined;
-          job.refund_pending_reason = undefined;
+          refundedSoFar += remainingRefund;
+          if (refundedSoFar >= netPaid) {
+            job.payment_status = PaymentStatus.REFUNDED;
+            job.refund_pending_retry = false;
+            job.refund_pending_amount = undefined;
+            job.refund_pending_reason = undefined;
+          } else {
+            job.refund_pending_amount = netPaid - refundedSoFar;
+          }
           await job.save();
           await this.notificationsService
             .create({
               userId: String(job.customer_id),
               type: NOTIFICATION_TYPES.REFUND_RECEIVED,
               title: 'Hoàn tiền đơn hàng đã hủy',
-              body: `Đã hoàn ${netPaid.toLocaleString('vi-VN')}₫ vào ví của bạn cho công việc "${job.title}"`,
-              payload: { job_id: jobId, amount: netPaid },
+              body: `Đã hoàn ${remainingRefund.toLocaleString('vi-VN')}₫ vào ví của bạn cho công việc "${job.title}"`,
+              payload: { job_id: jobId, amount: remainingRefund },
             })
             .catch(() => undefined);
         } catch (refundErr) {
@@ -4140,7 +4166,11 @@ export class JobsService implements OnModuleInit {
         .exec(),
       this.quoteModel
         .updateMany(
-          { job_id: new Types.ObjectId(jobId), helper_id: helperOid, status: QuoteStatus.WITHDRAWN },
+          {
+            job_id: new Types.ObjectId(jobId),
+            helper_id: helperOid,
+            status: QuoteStatus.WITHDRAWN,
+          },
           { $set: { status: QuoteStatus.PENDING } },
         )
         .exec(),

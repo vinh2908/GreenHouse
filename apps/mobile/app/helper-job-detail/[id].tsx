@@ -145,9 +145,15 @@ export default function HelperJobDetailScreen() {
     return { latitude: gps.lat, longitude: gps.lng };
   }, [gps?.lat, gps?.lng]);
 
-  // B7: Tính khoảng cách và ETA dự phòng từ tọa độ nếu live map chưa bắn metrics
+  // B7 + D-ETA: Thống nhất khoảng cách và ETA: ưu tiên metrics từ routing server / live map
   const effectiveMetrics = useMemo(() => {
     if (routeMetrics) return routeMetrics;
+    if ((job as any)?.distance_km != null && (job as any)?.estimated_minutes != null) {
+      return {
+        distanceKm: (job as any).distance_km,
+        etaMinutes: (job as any).estimated_minutes,
+      };
+    }
     const destCoords = job?.address?.location?.coordinates;
     if (!destCoords || !Array.isArray(destCoords) || destCoords.length < 2) return null;
     const destLat = destCoords[1];
@@ -172,6 +178,8 @@ export default function HelperJobDetailScreen() {
     };
   }, [
     routeMetrics,
+    (job as any)?.distance_km,
+    (job as any)?.estimated_minutes,
     job?.address?.location?.coordinates,
     gps,
     helperProfile?.location?.coordinates,
@@ -1782,7 +1790,9 @@ export default function HelperJobDetailScreen() {
                   </View>
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
                     <Text style={{ color: tc.textMuted, fontWeight: '500' }}>
-                      {t('helper_job.platform_fee')}
+                      {lang === 'en'
+                        ? `Platform fee (${quoteFeePercent}%)`
+                        : `Phí nền tảng (${quoteFeePercent}%)`}
                     </Text>
                     <PriceText
                       amount={platformFee}

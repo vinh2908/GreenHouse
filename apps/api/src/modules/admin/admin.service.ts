@@ -137,9 +137,73 @@ export class AdminService {
 
   // ─── Users ────────────────────────────────────────────────────────────────
 
-  // B108: lịch sử thông báo đã gửi (mới nhất trước) — nội dung, người nhận,
-  // thời gian, đã đọc/chưa đọc. Dùng chung parseAdminPagination (B90).
-  async getSentNotifications(page = 1, limit = 20, type?: string, userId?: string) {
+  // B108 & A08: lịch sử thông báo đã gửi (mới nhất trước) — nội dung, người nhận,
+  // thời gian, đã đọc/chưa đọc. Hỗ trợ grouped=true để nhóm theo đợt broadcast.
+  async getSentNotifications(
+    page = 1,
+    limit = 20,
+    type?: string,
+    userId?: string,
+    grouped = false,
+  ) {
+    if (grouped) {
+      const matchStage: Record<string, unknown> = {};
+      if (type) matchStage['type'] = type;
+      else matchStage['type'] = NOTIFICATION_TYPES.SYSTEM;
+      if (userId) matchStage['user_id'] = new Types.ObjectId(userId);
+
+      const pipeline: any[] = [
+        { $match: matchStage },
+        {
+          $group: {
+            _id: {
+              $ifNull: [
+                '$data.broadcast_batch_id',
+                {
+                  $concat: [
+                    '$title',
+                    '::',
+                    { $dateToString: { format: '%Y-%m-%d %H:%M', date: '$created_at' } },
+                  ],
+                },
+              ],
+            },
+            title: { $first: '$title' },
+            body: { $first: '$body' },
+            type: { $first: '$type' },
+            created_at: { $first: '$created_at' },
+            recipient_count: { $sum: 1 },
+          },
+        },
+        { $sort: { created_at: -1 } },
+        {
+          $facet: {
+            metadata: [{ $count: 'total' }],
+            data: [{ $skip: (page - 1) * limit }, { $limit: limit }],
+          },
+        },
+      ];
+
+      const aggResult = await this.notificationModel.aggregate(pipeline).exec();
+      const total = aggResult[0]?.metadata[0]?.total || 0;
+      const data = aggResult[0]?.data || [];
+
+      return {
+        notifications: data.map((d: any) => ({
+          _id: String(d._id),
+          title: d.title,
+          body: d.body,
+          type: d.type,
+          recipient_count: d.recipient_count,
+          created_at: d.created_at,
+        })),
+        total,
+        page,
+        limit,
+        total_pages: Math.ceil(total / limit),
+      };
+    }
+
     const query: Record<string, unknown> = {};
     if (type) query['type'] = type;
     if (userId) query['user_id'] = new Types.ObjectId(userId);
@@ -661,20 +725,28 @@ export class AdminService {
       if (job.payment_status === PaymentStatus.PAID && job.payment_method !== 'cash') {
         const netPaid = computeNetPaidAmount(job, contract?.total_price);
         if (netPaid > 0) {
-          const alreadyRefunded =
-            (await this.paymentsService?.hasSuccessfulRefund?.(jobId)) ?? false;
-          if (!alreadyRefunded) {
+          let refundedSoFar = 0;
+          if (typeof this.paymentsService?.getTotalRefundedForJob === 'function') {
+            refundedSoFar = await this.paymentsService.getTotalRefundedForJob(jobId);
+          } else if (typeof this.paymentsService?.hasSuccessfulRefund === 'function') {
+            refundedSoFar = (await this.paymentsService.hasSuccessfulRefund(jobId)) ? netPaid : 0;
+          }
+          const remainingRefund = Math.max(0, netPaid - refundedSoFar);
+          if (remainingRefund > 0) {
             await this.paymentsService?.refundCustomer?.(
               String(job.customer_id),
               jobId,
-              netPaid,
+              remainingRefund,
               note || `Admin can thiệp chuyển trạng thái sang ${status}`,
             );
+            refundedSoFar += remainingRefund;
           }
-          refundDone = true;
+          if (refundedSoFar >= netPaid) {
+            refundDone = true;
+          }
         }
       }
-      // R2: Chỉ đánh dấu REFUNDED nếu tiền thực tế đã được hoàn trả, đơn UNPAID hoặc cash giữ nguyên
+      // R2 & N4: Chỉ đánh dấu REFUNDED nếu tiền thực tế đã được hoàn trả đủ, đơn UNPAID hoặc cash giữ nguyên
       if (refundDone) {
         job.payment_status = PaymentStatus.REFUNDED;
       }
@@ -953,15 +1025,20 @@ export class AdminService {
 
   // ─── Broadcast notification ───────────────────────────────────────────────
 
-  async broadcastNotification(title: string, body: string): Promise<{ sent: number }> {
+  async broadcastNotification(
+    title: string,
+    body: string,
+  ): Promise<{ sent: number; batch_id?: string }> {
     const users = await this.userModel
       .find({ is_deleted: false, status: { $ne: UserStatus.SUSPENDED } })
       .select('_id')
       .exec();
+    const batchId = new Types.ObjectId().toString();
     return this.notificationsService.broadcastAll(
       users.map(u => u._id as Types.ObjectId),
       title,
       body,
+      batchId,
     );
   }
 
@@ -985,9 +1062,12 @@ export class AdminService {
   // ─── Dashboard stats ──────────────────────────────────────────────────────
 
   async getDashboardStats() {
-    const now = new Date();
-    const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    // T1: Tính startOfDay và startOfMonth theo múi giờ Việt Nam Asia/Ho_Chi_Minh (UTC+7)
+    const vnNow = new Date(Date.now() + 7 * 60 * 60 * 1000);
+    const vnDateStr = `${vnNow.getUTCFullYear()}-${String(vnNow.getUTCMonth() + 1).padStart(2, '0')}-${String(vnNow.getUTCDate()).padStart(2, '0')}`;
+    const vnMonthStr = `${vnNow.getUTCFullYear()}-${String(vnNow.getUTCMonth() + 1).padStart(2, '0')}-01`;
+    const startOfDay = new Date(`${vnDateStr}T00:00:00+07:00`);
+    const startOfMonth = new Date(`${vnMonthStr}T00:00:00+07:00`);
 
     const [
       totalUsers,
@@ -1276,7 +1356,9 @@ export class AdminService {
     // R-B11: Giá đơn thật — cấm bịa giá 200k khi chưa có giá
     const agreedPrice = job.is_fixed_price ? job.fixed_price : job.target_price;
     if (!agreedPrice || agreedPrice <= 0) {
-      throw new BadRequestException('Đơn chưa có giá chốt hoặc giá dự kiến hợp lệ, không thể gán thợ');
+      throw new BadRequestException(
+        'Đơn chưa có giá chốt hoặc giá dự kiến hợp lệ, không thể gán thợ',
+      );
     }
     const totalPrice = agreedPrice;
     let platformFeeRate: number = PLATFORM_FEE_BY_SERVICE.default;

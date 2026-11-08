@@ -62,10 +62,10 @@ export default function DashboardPage() {
     refetch: refetchStats,
   } = useDashboardStats();
   const { data: summary, isError: summaryError, refetch: refetchSummary } = useAnalyticsSummary();
-  const { data: jobsPerDay } = useJobsPerDay(30);
-  const { data: jobsByStatus } = useJobsByStatus();
-  const { data: revenuePerMonth } = useRevenuePerMonth(6);
-  const { data: topHelpers } = useTopHelpers();
+  const { data: jobsPerDay, isError: jobsPerDayError } = useJobsPerDay(30);
+  const { data: jobsByStatus, isError: jobsByStatusError } = useJobsByStatus();
+  const { data: revenuePerMonth, isError: revenueError } = useRevenuePerMonth(6);
+  const { data: topHelpers, isError: topHelpersError } = useTopHelpers();
 
   if (statsLoading) return <Loading />;
 
@@ -173,6 +173,10 @@ export default function DashboardPage() {
                   />
                 </LineChart>
               </ResponsiveContainer>
+            ) : jobsPerDayError ? (
+              <div className="h-[220px] flex items-center justify-center text-destructive text-sm font-medium">
+                Không thể tải dữ liệu việc làm theo ngày
+              </div>
             ) : (
               <div className="h-[220px] flex items-center justify-center text-muted-foreground text-sm">
                 Chưa có dữ liệu
@@ -200,6 +204,10 @@ export default function DashboardPage() {
                   <Bar dataKey="total" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
+            ) : revenueError ? (
+              <div className="h-[220px] flex items-center justify-center text-destructive text-sm font-medium">
+                Không thể tải dữ liệu doanh thu
+              </div>
             ) : (
               <div className="h-[220px] flex items-center justify-center text-muted-foreground text-sm">
                 Chưa có dữ liệu
@@ -242,6 +250,10 @@ export default function DashboardPage() {
                   <Tooltip formatter={(v: number, n: string) => [v, STATUS_VI[n] ?? n]} />
                 </PieChart>
               </ResponsiveContainer>
+            ) : jobsByStatusError ? (
+              <div className="h-[220px] flex items-center justify-center text-destructive text-sm font-medium">
+                Không thể tải phân bố trạng thái
+              </div>
             ) : (
               <div className="h-[220px] flex items-center justify-center text-muted-foreground text-sm">
                 Chưa có dữ liệu
@@ -281,6 +293,10 @@ export default function DashboardPage() {
                       </div>
                     ),
                   )}
+              </div>
+            ) : topHelpersError ? (
+              <div className="h-[220px] flex items-center justify-center text-destructive text-sm font-medium">
+                Không thể tải danh sách top helpers
               </div>
             ) : (
               <div className="h-[220px] flex items-center justify-center text-muted-foreground text-sm">

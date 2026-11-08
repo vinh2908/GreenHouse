@@ -27,7 +27,7 @@ export class AnalyticsService {
         {
           $group: {
             _id: {
-              $dateToString: { format: '%Y-%m-%d', date: '$created_at' },
+              $dateToString: { format: '%Y-%m-%d', date: '$created_at', timezone: '+07:00' },
             },
             count: { $sum: 1 },
           },
@@ -75,7 +75,7 @@ export class AnalyticsService {
         {
           $group: {
             _id: {
-              month: { $dateToString: { format: '%Y-%m', date: '$created_at' } },
+              month: { $dateToString: { format: '%Y-%m', date: '$created_at', timezone: '+07:00' } },
               type: '$type',
             },
             total: { $sum: '$amount' },
@@ -148,7 +148,7 @@ export class AnalyticsService {
         {
           $group: {
             _id: {
-              $dateToString: { format: '%Y-%m-%d', date: '$created_at' },
+              $dateToString: { format: '%Y-%m-%d', date: '$created_at', timezone: '+07:00' },
             },
             count: { $sum: 1 },
           },
@@ -240,10 +240,13 @@ export class AnalyticsService {
   // ─── Summary stats ─────────────────────────────────────────────────────────
 
   async getSummary() {
-    const now = new Date();
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-    const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-    const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0);
+    // T2: Mốc tháng theo múi giờ Việt Nam Asia/Ho_Chi_Minh (UTC+7)
+    const vnNow = new Date(Date.now() + 7 * 60 * 60 * 1000);
+    const vnYear = vnNow.getUTCFullYear();
+    const vnMonth = vnNow.getUTCMonth(); // 0-based
+    const startOfMonth = new Date(Date.UTC(vnYear, vnMonth, 1) - 7 * 60 * 60 * 1000);
+    const startOfLastMonth = new Date(Date.UTC(vnYear, vnMonth - 1, 1) - 7 * 60 * 60 * 1000);
+    const endOfLastMonth = new Date(Date.UTC(vnYear, vnMonth, 0, 23, 59, 59, 999) - 7 * 60 * 60 * 1000);
 
     const [
       thisMonthJobs,

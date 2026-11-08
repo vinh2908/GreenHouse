@@ -86,19 +86,23 @@ export class RecurringService implements OnApplicationBootstrap, OnModuleDestroy
     }
   }
 
-  // ─── Date helpers (giờ địa phương của server) ─────────────────────────────
+  // ─── Date helpers (chuẩn hoá theo múi giờ Việt Nam Asia/Ho_Chi_Minh UTC+7) ──────
+
+  private toVnDate(d: Date): Date {
+    return new Date(d.getTime() + 7 * 60 * 60 * 1000);
+  }
 
   private dateKey(d: Date): string {
-    const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
+    const vn = this.toVnDate(d);
+    const y = vn.getUTCFullYear();
+    const m = String(vn.getUTCMonth() + 1).padStart(2, '0');
+    const day = String(vn.getUTCDate()).padStart(2, '0');
     return `${y}-${m}-${day}`;
   }
 
   private startOfDay(d: Date): Date {
-    const x = new Date(d);
-    x.setHours(0, 0, 0, 0);
-    return x;
+    const key = this.dateKey(d);
+    return new Date(`${key}T00:00:00+07:00`);
   }
 
   private addDays(d: Date, days: number): Date {
@@ -119,7 +123,8 @@ export class RecurringService implements OnApplicationBootstrap, OnModuleDestroy
       const weekdays = new Set(plan.weekdays ?? []);
       for (let d = new Date(rangeStart); d <= rangeEnd; d = this.addDays(d, 1)) {
         if (end && d > end) break;
-        if (weekdays.has(d.getDay())) dates.push(this.dateKey(d));
+        const vnDay = this.toVnDate(d).getUTCDay();
+        if (weekdays.has(vnDay)) dates.push(this.dateKey(d));
       }
     } else {
       const monthDays = [...(plan.month_days ?? [])].sort((a, b) => a - b);
@@ -147,10 +152,8 @@ export class RecurringService implements OnApplicationBootstrap, OnModuleDestroy
       key => !plan.skipped_dates?.includes(key),
     );
     if (upcoming.length === 0) return undefined;
-    const [hh, mm] = (plan.time_start || '09:00').split(':').map(Number);
     for (const dateKey of upcoming) {
-      const [y, m, d] = dateKey.split('-').map(Number);
-      const cand = new Date(y, (m ?? 1) - 1, d ?? 1, hh ?? 9, mm ?? 0, 0, 0);
+      const cand = new Date(`${dateKey}T${plan.time_start || '09:00'}:00+07:00`);
       if (cand.getTime() > now.getTime()) {
         return cand;
       }
@@ -310,6 +313,16 @@ export class RecurringService implements OnApplicationBootstrap, OnModuleDestroy
           this.logger.warn(
             `Plan ${String(plan._id)}: job creation failed for date ${key}: ${err instanceof Error ? err.message : err}`,
           );
+          // P1-16: Báo cho khách biết khi lượt trong ngày bị lỗi thay vì bỏ qua trong im lặng
+          await this.notificationsService
+            .create({
+              userId: String(plan.customer_id),
+              type: NOTIFICATION_TYPES.SYSTEM,
+              title: 'Lịch định kỳ chưa thể tạo đơn',
+              body: `Hệ thống chưa thể tạo đơn cho lịch định kỳ ngày ${key} ("${plan.title}"): ${err instanceof Error ? err.message : String(err)}. Vui lòng kiểm tra lại cấu hình gói!`,
+              payload: { plan_id: String(plan._id), occurrence_date: key },
+            })
+            .catch(() => undefined);
         }
       }
     }

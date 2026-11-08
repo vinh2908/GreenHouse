@@ -250,10 +250,7 @@ export class JobsController {
   @Post(':jobId/quotes/withdraw')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: '[Helper] Rút báo giá đã gửi' })
-  async withdrawQuote(
-    @CurrentUser() user: { sub: string },
-    @Param('jobId') jobId: string,
-  ) {
+  async withdrawQuote(@CurrentUser() user: { sub: string }, @Param('jobId') jobId: string) {
     return this.jobsService.withdrawQuote(user.sub, jobId);
   }
 

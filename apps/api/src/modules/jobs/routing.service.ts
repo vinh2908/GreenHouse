@@ -38,11 +38,17 @@ export class RoutingService {
     destinations: Array<{ lat: number; lng: number; id: string }>,
   ): Promise<Map<string, RouteResult>> {
     const results = new Map<string, RouteResult>();
-    const promises = destinations.map(async dest => {
-      const route = await this.getRoute(fromLat, fromLng, dest.lat, dest.lng);
-      results.set(dest.id, route);
-    });
-    await Promise.all(promises);
+    // D-TIME: Giới hạn concurrency tối đa 5 requests song song tới Goong API để chống timeout/rate-limit
+    const BATCH_SIZE = 5;
+    for (let i = 0; i < destinations.length; i += BATCH_SIZE) {
+      const chunk = destinations.slice(i, i + BATCH_SIZE);
+      await Promise.all(
+        chunk.map(async dest => {
+          const route = await this.getRoute(fromLat, fromLng, dest.lat, dest.lng);
+          results.set(dest.id, route);
+        }),
+      );
+    }
     return results;
   }
 

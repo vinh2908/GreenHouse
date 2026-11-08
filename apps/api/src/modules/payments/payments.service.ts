@@ -482,7 +482,11 @@ export class PaymentsService {
         if (contract?.total_price) {
           if (isSupplemental && contract.total_price > paidSoFar) {
             const remainingToPay = contract.total_price - paidSoFar;
-            if (resolvedAmount <= 0 || resolvedAmount > remainingToPay || resolvedAmount === contract.total_price) {
+            if (
+              resolvedAmount <= 0 ||
+              resolvedAmount > remainingToPay ||
+              resolvedAmount === contract.total_price
+            ) {
               resolvedAmount = remainingToPay;
             }
           } else if (resolvedAmount <= 0) {
@@ -1072,6 +1076,11 @@ export class PaymentsService {
     }
     const balanceBefore = balanceAfter + deducted;
 
+    const feePercent =
+      platformFee + helperNetEarned > 0
+        ? Math.round((platformFee / (platformFee + helperNetEarned)) * 100)
+        : 15;
+
     const [tx] = await this.transactionModel.create(
       [
         {
@@ -1087,13 +1096,19 @@ export class PaymentsService {
           amount: deducted,
           balance_before: balanceBefore,
           balance_after: balanceAfter,
-          description: `Khấu trừ phí sàn (15%) đơn Tiền mặt #${jobId.slice(-6)}`,
+          description: `Khấu trừ phí sàn (${feePercent}%) đơn Tiền mặt #${jobId.slice(-6)}`,
           metadata: {
             payment_method: 'cash',
             job_id: jobId,
             platform_fee: platformFee,
+            platform_fee_percent: feePercent,
+            total_price: platformFee + helperNetEarned,
             unpaid_fee: platformFee - deducted,
-            helper_net_earned: helperNetEarned || Math.round((platformFee * 85) / 15),
+            helper_net_earned:
+              helperNetEarned ||
+              (feePercent > 0 && feePercent < 100
+                ? Math.round((platformFee * (100 - feePercent)) / feePercent)
+                : Math.round((platformFee * 85) / 15)),
           },
         },
       ],
@@ -1176,12 +1191,28 @@ export class PaymentsService {
    * thái đơn, không hoàn lần nữa. Chỉ đọc, không đổi luồng hoàn tiền lần đầu.
    */
   async hasSuccessfulRefund(jobId: string): Promise<boolean> {
+    if (!this.transactionModel || typeof this.transactionModel.findOne !== 'function') return false;
     const tx = await this.transactionModel
       .findOne({ job_id: new Types.ObjectId(jobId), type: 'refund', status: 'success' })
       .select('_id')
       .lean()
       .exec();
     return Boolean(tx);
+  }
+
+  /** N4: Tính tổng số tiền đã hoàn thành công cho đơn hàng này */
+  async getTotalRefundedForJob(jobId: string): Promise<number> {
+    if (!this.transactionModel || typeof this.transactionModel.find !== 'function') return 0;
+    const txs = await this.transactionModel
+      .find({
+        job_id: new Types.ObjectId(jobId),
+        type: 'refund',
+        status: 'success',
+      })
+      .select('amount')
+      .lean()
+      .exec();
+    return txs.reduce((sum, tx) => sum + (tx.amount || 0), 0);
   }
 
   /** P0-4: Kiểm tra đơn hàng đã có giao dịch tiền mặt thành công được ghi nhận chưa */
@@ -1226,26 +1257,38 @@ export class PaymentsService {
   // là đủ và đơn giản hơn aggregation pipeline.
 
   async getEarningsReport(userId: string) {
+    // T3: Chuẩn hóa theo múi giờ Việt Nam Asia/Ho_Chi_Minh (UTC+7)
+    const toVn = (d: Date) => new Date(d.getTime() + 7 * 60 * 60 * 1000);
     const pad = (n: number) => String(n).padStart(2, '0');
-    const dateKey = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-    const startOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
-    const addDays = (d: Date, n: number) =>
-      new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
+    const dateKey = (d: Date) => {
+      const vn = toVn(d);
+      return `${vn.getUTCFullYear()}-${pad(vn.getUTCMonth() + 1)}-${pad(vn.getUTCDate())}`;
+    };
+    const startOfDayVn = (d: Date) => {
+      const key = dateKey(d);
+      return new Date(`${key}T00:00:00+07:00`);
+    };
+    const addDaysVn = (d: Date, n: number) => new Date(d.getTime() + n * 86400000);
 
     const now = new Date();
-    const today = startOfDay(now);
+    const today = startOfDayVn(now);
+    const vnNow = toVn(now);
     // Tuần hiện tại: Thứ 2 – Chủ nhật
-    const monday = addDays(today, -((today.getDay() + 6) % 7));
-    const prevWeekStart = addDays(monday, -7);
-    const nextMonday = addDays(monday, 7);
-    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-    const prevMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-    const nextMonthStart = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+    const vnDayOfWeek = (vnNow.getUTCDay() + 6) % 7;
+    const monday = addDaysVn(today, -vnDayOfWeek);
+    const prevWeekStart = addDaysVn(monday, -7);
+    const nextMonday = addDaysVn(monday, 7);
+
+    const vnYear = vnNow.getUTCFullYear();
+    const vnMonth = vnNow.getUTCMonth();
+    const monthStart = new Date(Date.UTC(vnYear, vnMonth, 1) - 7 * 60 * 60 * 1000);
+    const prevMonthStart = new Date(Date.UTC(vnYear, vnMonth - 1, 1) - 7 * 60 * 60 * 1000);
+    const nextMonthStart = new Date(Date.UTC(vnYear, vnMonth + 1, 1) - 7 * 60 * 60 * 1000);
     const fetchSince = prevWeekStart < prevMonthStart ? prevWeekStart : prevMonthStart;
 
     const buildEmptyReport = (monthlyGoal = 0) => {
       const weekDays = Array.from({ length: 7 }, (_, i) => {
-        const day = addDays(monday, i);
+        const day = addDaysVn(monday, i);
         return { date: dateKey(day), amount: 0 };
       });
       return {
@@ -1294,7 +1337,20 @@ export class PaymentsService {
         if (tx.type === 'earning') return tx.amount;
         if (tx.type === 'commission') {
           const meta = tx.metadata as any;
-          return meta?.helper_net_earned ?? Math.round((tx.amount * 85) / 15);
+          if (typeof meta?.helper_net_earned === 'number' && meta.helper_net_earned > 0) {
+            return meta.helper_net_earned;
+          }
+          // FEE-15: fallback theo tỉ lệ phí thật của đơn thay vì hardcode 85/15
+          const feePercent =
+            typeof meta?.platform_fee_percent === 'number'
+              ? meta.platform_fee_percent
+              : typeof meta?.platform_fee === 'number' &&
+                  typeof meta?.total_price === 'number' &&
+                  meta.total_price > 0
+                ? Math.round((meta.platform_fee / meta.total_price) * 100)
+                : 15;
+          const helperRate = (100 - feePercent) / (feePercent || 15);
+          return Math.round(tx.amount * helperRate);
         }
         return 0;
       };
@@ -1312,8 +1368,8 @@ export class PaymentsService {
 
       // Tuần hiện tại theo từng ngày
       const weekDays = Array.from({ length: 7 }, (_, i) => {
-        const day = addDays(monday, i);
-        return { date: dateKey(day), amount: sumIn(day, addDays(day, 1)) };
+        const day = addDaysVn(monday, i);
+        return { date: dateKey(day), amount: sumIn(day, addDaysVn(day, 1)) };
       });
       const weekTotal = weekDays.reduce((sum, d) => sum + d.amount, 0);
       const prevWeekTotal = sumIn(prevWeekStart, monday);
@@ -1327,8 +1383,8 @@ export class PaymentsService {
       const prevMonthTotal = sumIn(prevMonthStart, monthStart);
       const byWeekMap = new Map<number, number>();
       for (const tx of monthTxs) {
-        const d = new Date(tx.created_at);
-        const weekOfMonth = Math.floor((d.getDate() - 1) / 7) + 1;
+        const vnD = toVn(new Date(tx.created_at));
+        const weekOfMonth = Math.floor((vnD.getUTCDate() - 1) / 7) + 1;
         byWeekMap.set(weekOfMonth, (byWeekMap.get(weekOfMonth) ?? 0) + signed(tx));
       }
       const byWeek = [1, 2, 3, 4, 5].map(week => ({

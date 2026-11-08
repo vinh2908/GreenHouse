@@ -134,9 +134,11 @@ export class UsersService {
     await this.userModel.findByIdAndUpdate(id, { fcm_token: fcmToken }).exec();
   }
 
-  /** Lưu Expo push token của 1 thiết bị (không trùng lặp). */
-  async addPushToken(id: string, token: string): Promise<void> {
-    await this.userModel.findByIdAndUpdate(id, { $addToSet: { push_tokens: token } }).exec();
+  /** Lưu Expo push token của 1 thiết bị (không trùng lặp) + ngôn ngữ của thiết bị. */
+  async addPushToken(id: string, token: string, language?: string): Promise<void> {
+    const update: any = { $addToSet: { push_tokens: token } };
+    if (language) update.language = language;
+    await this.userModel.findByIdAndUpdate(id, update).exec();
   }
 
   /** Gỡ Expo push token khi đăng xuất / tắt thông báo trên thiết bị. */

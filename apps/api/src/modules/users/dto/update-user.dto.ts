@@ -36,6 +36,11 @@ export class UpdateUserDto {
   @IsOptional()
   @IsString()
   fcm_token?: string;
+
+  @ApiPropertyOptional({ example: 'vi' })
+  @IsOptional()
+  @IsString()
+  language?: string;
 }
 
 export class UpdateRoleDto {

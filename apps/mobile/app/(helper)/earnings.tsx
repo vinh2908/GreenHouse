@@ -664,8 +664,8 @@ export default function HelperEarningsScreen() {
                   }}
                 >
                   {lang === 'en'
-                    ? 'Maintaining a wallet balance helps automatically settle platform fees (15%) when customers pay you in cash.'
-                    : 'Duy trì số dư ví giúp tự động quyết toán phí nền tảng (15%) khi bạn nhận các đơn khách trả tiền mặt trực tiếp.'}
+                    ? 'Maintaining a wallet balance helps automatically settle platform fees when customers pay you in cash.'
+                    : 'Duy trì số dư ví giúp tự động quyết toán phí nền tảng theo từng dịch vụ khi bạn nhận các đơn khách trả tiền mặt trực tiếp.'}
                 </Text>
               </Card>
 

@@ -3,6 +3,7 @@ import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import Toast from 'react-native-toast-message';
 import apiClient from './api-client';
+import { useSettingsStore } from '@/stores/settings.store';
 
 /**
  * Feature 11 (Hóa đơn điện tử): tải PDF hóa đơn của 1 job từ
@@ -60,7 +61,12 @@ export async function downloadInvoicePdf(jobId: string): Promise<void> {
     anchor.click();
     anchor.remove();
     g.URL.revokeObjectURL(url);
-    Toast.show({ type: 'success', text1: 'Đã tải hóa đơn PDF ', text2: fileName });
+    const lang = useSettingsStore.getState().language;
+    Toast.show({
+      type: 'success',
+      text1: lang === 'en' ? 'Downloaded PDF invoice' : 'Đã tải hóa đơn PDF ',
+      text2: fileName,
+    });
     return;
   }
 
@@ -78,10 +84,11 @@ export async function downloadInvoicePdf(jobId: string): Promise<void> {
     });
     return;
   }
+  const lang = useSettingsStore.getState().language;
   Toast.show({
     type: 'success',
-    text1: 'Đã tải hóa đơn PDF ',
-    text2: `Đã lưu tại: ${fileUri}`,
+    text1: lang === 'en' ? 'Downloaded PDF invoice' : 'Đã tải hóa đơn PDF ',
+    text2: lang === 'en' ? `Saved at: ${fileUri}` : `Đã lưu tại: ${fileUri}`,
     visibilityTime: 5000,
   });
 }

@@ -60,6 +60,15 @@ export default function AdminLoyaltyPage() {
       setMessage('Nhập số điểm là số nguyên khác 0 (dương = cộng, âm = trừ).');
       return;
     }
+    if (Math.abs(points) >= 10000 && !noteInput.trim()) {
+      setMessage('Điều chỉnh từ 10.000 điểm trở lên bắt buộc phải nhập lý do.');
+      return;
+    }
+    const currentPoints = account?.points_balance ?? 0;
+    if (currentPoints + points < 0) {
+      setMessage(`Không thể trừ vượt quá số dư hiện tại (${currentPoints.toLocaleString('vi-VN')} điểm).`);
+      return;
+    }
     setMessage('');
     setConfirmAdjust(true);
   };
@@ -247,7 +256,7 @@ export default function AdminLoyaltyPage() {
       {confirmAdjust && (
         <PromptDialog
           title="Xác nhận điều chỉnh điểm thưởng"
-          message={`Bạn có chắc chắn muốn ${Number(pointsInput) > 0 ? 'cộng' : 'trừ'} ${Math.abs(Number(pointsInput)).toLocaleString('vi-VN')} điểm cho người dùng "${selectedUser?.full_name ?? selectedId}"${noteInput.trim() ? ` với lý do: "${noteInput.trim()}"` : ''}?`}
+          message={`Khách hàng: ${selectedUser?.full_name ?? selectedId} (${selectedUser?.phone || selectedUser?.email || 'N/A'})\n\n• Thay đổi: ${Number(pointsInput) > 0 ? '+' : ''}${Number(pointsInput).toLocaleString('vi-VN')} điểm\n• Số dư hiện tại: ${(account?.points_balance ?? 0).toLocaleString('vi-VN')} điểm\n• Số dư sau điều chỉnh: ${((account?.points_balance ?? 0) + Number(pointsInput)).toLocaleString('vi-VN')} điểm${noteInput.trim() ? `\n• Lý do: "${noteInput.trim()}"` : ''}`}
           confirmLabel={adjust.isPending ? 'Đang điều chỉnh...' : 'Xác nhận điều chỉnh'}
           requireInput={false}
           onSubmit={() => {

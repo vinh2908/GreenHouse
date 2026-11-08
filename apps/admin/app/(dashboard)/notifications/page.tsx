@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useBroadcast, useAdminSentNotifications } from '@/hooks/use-admin';
 import {
   Badge,
@@ -23,6 +23,16 @@ import {
 import { formatDateTime } from '@/lib/utils';
 import { PromptDialog } from '@/components/common/prompt-dialog';
 
+interface GroupedNotificationItem {
+  id: string;
+  title: string;
+  body: string;
+  type: string;
+  recipient_count: number;
+  sample_recipient: string;
+  created_at: string;
+}
+
 export default function BroadcastPage() {
   const broadcast = useBroadcast();
   const [title, setTitle] = useState('');
@@ -35,46 +45,20 @@ export default function BroadcastPage() {
     isLoading: historyLoading,
     isError: historyError,
     refetch: refetchHistory,
-  } = useAdminSentNotifications({ page });
+  } = useAdminSentNotifications({ page, type: 'system', grouped: true });
 
-  const groupedNotifications = (() => {
+  const groupedNotifications: GroupedNotificationItem[] = useMemo(() => {
     if (!history?.notifications) return [];
-    const map = new Map<
-      string,
-      {
-        id: string;
-        title: string;
-        body: string;
-        type: string;
-        recipient_count: number;
-        sample_recipient: string;
-        created_at: string;
-      }
-    >();
-
-    for (const n of history.notifications) {
-      // Group key: gom theo type + title + body + khung thời gian 2 phút
-      const timeBucket = Math.floor(new Date(n.created_at).getTime() / (2 * 60 * 1000));
-      const key = `${n.type}:${n.title}:${n.body}:${timeBucket}`;
-      const recipient =
-        n.user_id?.full_name || n.user_id?.phone || n.user_id?.email || 'Người dùng';
-      if (!map.has(key)) {
-        map.set(key, {
-          id: n._id,
-          title: n.title,
-          body: n.body,
-          type: n.type,
-          recipient_count: 1,
-          sample_recipient: recipient,
-          created_at: n.created_at,
-        });
-      } else {
-        const item = map.get(key)!;
-        item.recipient_count += 1;
-      }
-    }
-    return Array.from(map.values());
-  })();
+    return history.notifications.map((n: any) => ({
+      id: String(n._id),
+      title: n.title,
+      body: n.body,
+      type: n.type,
+      recipient_count: n.recipient_count ?? 1,
+      sample_recipient: n.user_id?.full_name || n.user_id?.phone || 'Toàn hệ thống',
+      created_at: n.created_at,
+    }));
+  }, [history]);
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();

@@ -3,6 +3,7 @@ import * as SecureStore from '@/services/secure-storage';
 import Constants from 'expo-constants';
 import Toast from 'react-native-toast-message';
 import { usableEndpoint } from '@/services/endpoint-config';
+import { useSettingsStore } from '@/stores/settings.store';
 
 const getBaseApiUrl = () => {
   // 1. URL cố định (tunnel / server thật): đặt EXPO_PUBLIC_API_URL trong apps/mobile/.env.
@@ -210,14 +211,18 @@ apiClient.interceptors.response.use(
         originalRequest.headers.Authorization = `Bearer ${accessToken}`;
         return apiClient(originalRequest);
       } catch (refreshError) {
+        const lang = useSettingsStore.getState().language;
         if (refreshError instanceof SessionExpiredError) {
           // Chỉ toast khi user THẬT SỰ có phiên mà server từ chối refresh
           // (hết hạn/bị thu hồi). Khách chưa đăng nhập (NoSessionError) thì
           // im lặng — màn hình tự hiển thị trạng thái khách.
           Toast.show({
             type: 'error',
-            text1: 'Phiên đăng nhập hết hạn',
-            text2: 'Vui lòng đăng nhập lại để tiếp tục',
+            text1: lang === 'en' ? 'Session expired' : 'Phiên đăng nhập hết hạn',
+            text2:
+              lang === 'en'
+                ? 'Please log in again to continue'
+                : 'Vui lòng đăng nhập lại để tiếp tục',
           });
           triggerSessionExpiredLogout();
         }
@@ -228,25 +233,35 @@ apiClient.interceptors.response.use(
     }
 
     // ── 2. Xử lý lỗi mất kết nối mạng / Timeout / Server lỗi ─────────────────
+    const lang = useSettingsStore.getState().language;
     if (!error.response) {
       if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
         Toast.show({
           type: 'error',
-          text1: 'Yêu cầu quá hạn',
-          text2: 'Máy chủ phản hồi chậm. Vui lòng kiểm tra lại kết nối mạng.',
+          text1: lang === 'en' ? 'Request timed out' : 'Yêu cầu quá hạn',
+          text2:
+            lang === 'en'
+              ? 'Server response timed out. Please check your connection.'
+              : 'Máy chủ phản hồi chậm. Vui lòng kiểm tra lại kết nối mạng.',
         });
       } else {
         Toast.show({
           type: 'error',
-          text1: 'Mất kết nối máy chủ',
-          text2: 'Không thể kết nối đến hệ thống. Vui lòng kiểm tra WiFi/4G.',
+          text1: lang === 'en' ? 'Server connection lost' : 'Mất kết nối máy chủ',
+          text2:
+            lang === 'en'
+              ? 'Unable to connect to the system. Please check WiFi/4G.'
+              : 'Không thể kết nối đến hệ thống. Vui lòng kiểm tra WiFi/4G.',
         });
       }
     } else if (error.response.status >= 500) {
       Toast.show({
         type: 'error',
-        text1: 'Máy chủ bận',
-        text2: 'Hệ thống đang xử lý hoặc bảo trì. Vui lòng thử lại sau giây lát.',
+        text1: lang === 'en' ? 'Server busy' : 'Máy chủ bận',
+        text2:
+          lang === 'en'
+            ? 'System is processing or under maintenance. Please try again shortly.'
+            : 'Hệ thống đang xử lý hoặc bảo trì. Vui lòng thử lại sau giây lát.',
       });
     }
 
