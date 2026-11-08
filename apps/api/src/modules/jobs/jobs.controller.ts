@@ -245,6 +245,18 @@ export class JobsController {
     return this.jobsService.submitQuote(user.sub, jobId, dto);
   }
 
+  // ─── Helper: Rút báo giá (P3-7) ──────────────────────────────────────────
+
+  @Post(':jobId/quotes/withdraw')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: '[Helper] Rút báo giá đã gửi' })
+  async withdrawQuote(
+    @CurrentUser() user: { sub: string },
+    @Param('jobId') jobId: string,
+  ) {
+    return this.jobsService.withdrawQuote(user.sub, jobId);
+  }
+
   // ─── Customer: Tạo đơn bảo hành 1 chạm (Feature 9) ────────────────────────
 
   @Post(':jobId/warranty')

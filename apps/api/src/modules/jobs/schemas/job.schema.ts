@@ -243,6 +243,9 @@ export class Job {
   @Prop({ type: String, enum: PaymentStatus, default: PaymentStatus.UNPAID })
   payment_status: PaymentStatus;
 
+  @Prop({ default: 0 })
+  paid_amount?: number;
+
   @Prop()
   payment_method?: string;
 

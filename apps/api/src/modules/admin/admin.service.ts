@@ -615,32 +615,49 @@ export class AdminService {
       }
     }
 
-    // P1-1: Di chuyển dòng tiền tương ứng khi Admin chuyển sang COMPLETED / CANCELLED / REFUNDED
+    // P1-1, P0-4, N3, R2, R3: Di chuyển dòng tiền tương ứng khi Admin chuyển sang COMPLETED / CANCELLED / REFUNDED
     if (status === JobStatus.COMPLETED) {
-      if (
-        contract &&
-        job.helper_id &&
-        (job.payment_status === PaymentStatus.PAID || job.payment_method === 'cash')
-      ) {
-        const payout = contract.helper_receives;
-        if (payout > 0) {
-          const isSimulated =
-            (await this.paymentsService?.hasSimulatedOnlinePayment?.(jobId)) ?? false;
-          if (isSimulated) {
-            await this.paymentsService?.creditHelperSimulated?.(
-              String(job.helper_id),
-              jobId,
-              payout,
+      if (contract && job.helper_id) {
+        if (job.payment_method === 'cash') {
+          // P0-4: Đơn tiền mặt -> bắt buộc thợ đã xác nhận nhận tiền mặt
+          if (!job.helper_cash_confirmed) {
+            throw new BadRequestException(
+              'Thợ chưa xác nhận đã nhận tiền mặt từ khách. Không thể hoàn thành đơn tiền mặt.',
             );
-          } else {
-            await this.paymentsService?.creditHelper?.(String(job.helper_id), jobId, payout);
           }
+          // Chỉ khấu trừ hoa hồng sàn từ ví thợ, tuyệt đối không creditHelper tiền công cash!
+          await this.paymentsService?.deductCommissionForCashJob?.(
+            String(job.helper_id),
+            jobId,
+            contract.platform_fee,
+            contract.helper_receives,
+          );
+        } else if (job.payment_status === PaymentStatus.PAID) {
+          const payout = contract.helper_receives;
+          if (payout > 0) {
+            const isSimulated =
+              (await this.paymentsService?.hasSimulatedOnlinePayment?.(jobId)) ?? false;
+            if (isSimulated) {
+              await this.paymentsService?.creditHelperSimulated?.(
+                String(job.helper_id),
+                jobId,
+                payout,
+              );
+            } else {
+              await this.paymentsService?.creditHelper?.(String(job.helper_id), jobId, payout);
+            }
+          }
+        } else {
+          // N3: Đơn chưa thanh toán hoặc UNPAID sau phụ lục -> chặn hoàn thành khống
+          throw new BadRequestException(
+            'Đơn hàng chưa được thanh toán thành công, không thể chuyển sang hoàn thành',
+          );
         }
       }
-      job.payment_status = PaymentStatus.PAID;
       job.completed_at = new Date();
       await job.save();
     } else if (status === JobStatus.CANCELLED || status === JobStatus.REFUNDED) {
+      let refundDone = false;
       if (job.payment_status === PaymentStatus.PAID && job.payment_method !== 'cash') {
         const netPaid = computeNetPaidAmount(job, contract?.total_price);
         if (netPaid > 0) {
@@ -654,9 +671,13 @@ export class AdminService {
               note || `Admin can thiệp chuyển trạng thái sang ${status}`,
             );
           }
+          refundDone = true;
         }
       }
-      job.payment_status = PaymentStatus.REFUNDED;
+      // R2: Chỉ đánh dấu REFUNDED nếu tiền thực tế đã được hoàn trả, đơn UNPAID hoặc cash giữ nguyên
+      if (refundDone) {
+        job.payment_status = PaymentStatus.REFUNDED;
+      }
       await job.save();
     }
 
@@ -1212,6 +1233,9 @@ export class AdminService {
       throw new BadRequestException('Thợ chưa hoàn tất xác thực e-KYC');
     }
     const helperUser = helperProfile.user_id as any;
+    if (helperUser?.is_verified === false) {
+      throw new BadRequestException('Tài khoản thợ chưa được xác minh qua email');
+    }
     if (helperUser?.status === UserStatus.SUSPENDED || helperUser?.status === UserStatus.INACTIVE) {
       throw new BadRequestException('Tài khoản thợ đang bị tạm khóa hoặc ngừng hoạt động');
     }
@@ -1249,8 +1273,12 @@ export class AdminService {
       throw new ConflictException('Đơn hàng đã được nhận hoặc gán bởi thao tác khác');
     }
 
-    // Giá đơn
-    const totalPrice = job.is_fixed_price ? (job.fixed_price ?? 0) : (job.target_price ?? 200_000);
+    // R-B11: Giá đơn thật — cấm bịa giá 200k khi chưa có giá
+    const agreedPrice = job.is_fixed_price ? job.fixed_price : job.target_price;
+    if (!agreedPrice || agreedPrice <= 0) {
+      throw new BadRequestException('Đơn chưa có giá chốt hoặc giá dự kiến hợp lệ, không thể gán thợ');
+    }
+    const totalPrice = agreedPrice;
     let platformFeeRate: number = PLATFORM_FEE_BY_SERVICE.default;
     if (job.service_id && this.serviceModel) {
       const service = await this.serviceModel
@@ -1268,6 +1296,16 @@ export class AdminService {
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
 
+    // R-B11: Dựng scheduled_at từ preferred_date + preferred_time_start theo múi giờ VN (+07:00)
+    let scheduledAt: Date;
+    if (job.preferred_date) {
+      const datePart = new Date(job.preferred_date).toISOString().slice(0, 10);
+      const timePart = job.preferred_time_start ? `${job.preferred_time_start}:00` : '08:00:00';
+      scheduledAt = new Date(`${datePart}T${timePart}+07:00`);
+    } else {
+      scheduledAt = tomorrow;
+    }
+
     let contract: ContractDocument;
     try {
       contract = await this.contractModel.create({
@@ -1280,8 +1318,7 @@ export class AdminService {
         platform_fee: platformFee,
         helper_receives: helperReceives,
         warranty_days: 30,
-        scheduled_at: job.preferred_date ? new Date(job.preferred_date) : tomorrow,
-        signed_by_customer_at: new Date(),
+        scheduled_at: scheduledAt,
       });
     } catch (contractErr) {
       await this.jobModel
