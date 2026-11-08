@@ -189,7 +189,7 @@ export default function CustomerVouchersScreen() {
                     <Text style={{ fontSize: fs(12), color: tc.textMuted }}>
                       {lang === 'en' ? 'Expires: ' : 'Hết hạn: '}
                       {v.valid_to || v.end_date || (v as any).expires_at
-                        ? formatDate(v.valid_to || v.end_date || (v as any).expires_at)
+                        ? formatDate(v.valid_to || v.end_date || (v as any).expires_at, lang)
                         : lang === 'en'
                           ? 'No expiration'
                           : 'Không thời hạn'}

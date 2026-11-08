@@ -80,6 +80,9 @@ describe('RecurringService (B52/B53)', () => {
 
   function nextWeekday(weekday: number, from = new Date()): Date {
     const d = new Date(from);
+    if (d.getDay() === weekday && (d.getHours() < 9 || (d.getHours() === 9 && d.getMinutes() === 0))) {
+      return d;
+    }
     d.setDate(d.getDate() + 1);
     while (d.getDay() !== weekday) d.setDate(d.getDate() + 1);
     return d;
@@ -266,6 +269,14 @@ describe('RecurringService (B52/B53)', () => {
       await expect(service.skipNext(customerId, String(plan._id))).rejects.toThrow(
         'Không còn lượt nào trong tương lai để bỏ qua',
       );
+    });
+
+    it('N7(e): skipped_dates không tăng vô hạn — được prune giới hạn tối đa 60 ngày', async () => {
+      const existingSkipped = Array.from({ length: 65 }, (_, i) => `2025-01-${String((i % 28) + 1).padStart(2, '0')}-${i}`);
+      const { service, plan } = weeklyPlan({ skipped_dates: [...existingSkipped] });
+
+      const result = await service.skipNext(customerId, String(plan._id));
+      expect(result.skipped_dates.length).toBe(60);
     });
   });
 });

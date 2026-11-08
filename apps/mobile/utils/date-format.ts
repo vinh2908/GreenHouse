@@ -161,11 +161,12 @@ export function formatMonthKey(dateInput: DateInput): string {
   return date.isValid() ? date.format('YYYY-MM') : '';
 }
 
-/** 'MM/YYYY' của một thời điểm, tính theo giờ VN. */
+/** 'MM/YYYY' (vi) hoặc 'MMM YYYY' (en) của một thời điểm, tính theo giờ VN. */
 export function formatMonthSlash(dateInput: DateInput, lang: 'vi' | 'en' = 'vi'): string {
   if (!dateInput) return '';
   const date = toVnDayjs(dateInput);
-  return date.isValid() ? date.format('MM/YYYY') : '';
+  if (!date.isValid()) return '';
+  return lang === 'en' ? date.locale('en').format('MMM YYYY') : date.format('MM/YYYY');
 }
 
 /**

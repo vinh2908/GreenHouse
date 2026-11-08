@@ -1631,7 +1631,10 @@ export class PaymentsService {
         return withdrawal;
       } catch (err) {
         if (withdrawal?._id) {
-          await this.withdrawalModel.deleteOne({ _id: withdrawal._id }).exec().catch(() => null);
+          await this.withdrawalModel
+            .deleteOne({ _id: withdrawal._id })
+            .exec()
+            .catch(() => null);
         }
         await this.walletModel
           .updateOne({ _id: wallet._id }, { $inc: { balance: amount } })

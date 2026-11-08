@@ -132,9 +132,12 @@ export async function enqueueAction(
   payload?: Record<string, unknown>,
 ): Promise<void> {
   const queue = await readQueue();
-  // Lấy trạng thái hiện tại từ cache trước khi áp dụng lạc quan để có thể rollback khi xung đột
+  // N5: Snapshot trạng thái pre-offline ban đầu: nếu đã có action trước đó trong hàng đợi cho đơn này,
+  // giữ nguyên previous_status gốc để các action kế tiếp không rollback nhầm về trạng thái lạc quan.
+  const existingJobAction = queue.find(a => a.job_id === jobId && a.previous_status);
   const cachedCurrent = await getCachedJobDetail<Record<string, unknown>>(jobId);
-  const prevStatus = (cachedCurrent?.status as string) || undefined;
+  const prevStatus =
+    existingJobAction?.previous_status ?? (cachedCurrent?.status as string) ?? undefined;
 
   // M-10: Chống trùng lặp hàng đợi offline theo (kind, job_id)
   const existingIdx = queue.findIndex(a => a.kind === kind && a.job_id === jobId);
@@ -178,12 +181,29 @@ export async function enqueueAction(
         }
       }
 
-      // K6: Cập nhật cả React Query cache của màn hình đã render
+      // K6 & N5: Cập nhật cả React Query cache của màn hình đã render, bao gồm danh sách đơn đang nhận
       queryClient.setQueryData(['job', jobId], (old: any) => {
         if (!old) return old;
         return { ...old, status: optimisticStatus, updated_at: new Date().toISOString() };
       });
       queryClient.setQueriesData({ queryKey: ['jobs', 'helper'] }, (old: any) => {
+        if (!old) return old;
+        if (Array.isArray(old)) {
+          return old.map(j =>
+            String(j._id) === String(jobId) ? { ...j, status: optimisticStatus } : j,
+          );
+        }
+        if (Array.isArray(old.items)) {
+          return {
+            ...old,
+            items: old.items.map((j: any) =>
+              String(j._id) === String(jobId) ? { ...j, status: optimisticStatus } : j,
+            ),
+          };
+        }
+        return old;
+      });
+      queryClient.setQueriesData({ queryKey: ['jobs', 'available'] }, (old: any) => {
         if (!old) return old;
         if (Array.isArray(old)) {
           return old.map(j =>
@@ -206,12 +226,13 @@ export async function enqueueAction(
   }
 }
 
-/** K6: Rollback trạng thái lạc quan khi flush gặp xung đột (4xx/409) */
-export async function rollbackOptimisticStatus(jobId: string, prevStatus: string): Promise<void> {
+/** K6 & N5: Rollback trạng thái lạc quan khi flush gặp xung đột (4xx/409) */
+export async function rollbackOptimisticStatus(jobId: string, prevStatus?: string): Promise<void> {
+  const targetStatus = prevStatus || 'confirmed';
   try {
     const cached = await getCachedJobDetail<Record<string, unknown>>(jobId);
     if (cached) {
-      cached.status = prevStatus;
+      cached.status = targetStatus;
       cached.updated_at = new Date().toISOString();
       await cacheJobDetail(cached);
     }
@@ -219,29 +240,46 @@ export async function rollbackOptimisticStatus(jobId: string, prevStatus: string
     if (Array.isArray(activeJobs)) {
       const idx = activeJobs.findIndex(j => String(j._id) === String(jobId));
       if (idx >= 0) {
-        activeJobs[idx] = { ...activeJobs[idx], status: prevStatus };
+        activeJobs[idx] = { ...activeJobs[idx], status: targetStatus };
         await cacheActiveJobs(activeJobs);
       }
     }
     queryClient.setQueryData(['job', jobId], (old: any) => {
       if (!old) return old;
-      return { ...old, status: prevStatus, updated_at: new Date().toISOString() };
+      return { ...old, status: targetStatus, updated_at: new Date().toISOString() };
     });
     queryClient.setQueriesData({ queryKey: ['jobs', 'helper'] }, (old: any) => {
       if (!old) return old;
       if (Array.isArray(old)) {
-        return old.map(j => (String(j._id) === String(jobId) ? { ...j, status: prevStatus } : j));
+        return old.map(j => (String(j._id) === String(jobId) ? { ...j, status: targetStatus } : j));
       }
       if (Array.isArray(old.items)) {
         return {
           ...old,
           items: old.items.map((j: any) =>
-            String(j._id) === String(jobId) ? { ...j, status: prevStatus } : j,
+            String(j._id) === String(jobId) ? { ...j, status: targetStatus } : j,
           ),
         };
       }
       return old;
     });
+    queryClient.setQueriesData({ queryKey: ['jobs', 'available'] }, (old: any) => {
+      if (!old) return old;
+      if (Array.isArray(old)) {
+        return old.map(j => (String(j._id) === String(jobId) ? { ...j, status: targetStatus } : j));
+      }
+      if (Array.isArray(old.items)) {
+        return {
+          ...old,
+          items: old.items.map((j: any) =>
+            String(j._id) === String(jobId) ? { ...j, status: targetStatus } : j,
+          ),
+        };
+      }
+      return old;
+    });
+    queryClient.invalidateQueries({ queryKey: ['job', jobId] });
+    queryClient.invalidateQueries({ queryKey: ['jobs'] });
   } catch {
     /* rollback cache error ignored */
   }
@@ -354,13 +392,11 @@ export async function flushQueue(): Promise<number> {
       } catch (err) {
         const status = (err as { response?: { status?: number } })?.response?.status;
         if (status && status >= 400 && status < 500) {
-          // K6: Xung đột trạng thái: server thắng → hủy thao tác này, rollback trạng thái lạc quan
+          // K6 & N5: Xung đột trạng thái: server thắng → hủy thao tác này, rollback trạng thái lạc quan
           queue = queue.slice(1);
           conflicts += 1;
           await writeQueue(queue);
-          if (item.previous_status) {
-            await rollbackOptimisticStatus(item.job_id, item.previous_status);
-          }
+          await rollbackOptimisticStatus(item.job_id, item.previous_status);
           continue;
         }
         // Mất mạng / server lỗi → dừng, giữ lại phần còn lại.

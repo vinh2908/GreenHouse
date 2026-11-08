@@ -47,10 +47,7 @@ export function IsGreaterThanOrEqualToField(
 }
 
 /** K7: Cross-field validator ensuring property <= related property */
-export function IsLessThanOrEqualToField(
-  property: string,
-  validationOptions?: ValidationOptions,
-) {
+export function IsLessThanOrEqualToField(property: string, validationOptions?: ValidationOptions) {
   return function (object: Object, propertyName: string) {
     registerDecorator({
       name: 'isLessThanOrEqualToField',
@@ -134,7 +131,6 @@ export class CreateServiceDto {
   @IsNumber()
   @Min(0)
   @IsLessThanOrEqualToField('price_range_max')
-  @IsLessThanOrEqualToField('base_price_max')
   price_range_min?: number;
 
   @ApiPropertyOptional({ default: 0 })
@@ -142,7 +138,6 @@ export class CreateServiceDto {
   @IsNumber()
   @Min(0)
   @IsGreaterThanOrEqualToField('price_range_min')
-  @IsGreaterThanOrEqualToField('base_price_min')
   price_range_max?: number;
 
   @ApiPropertyOptional({ default: 0 })
@@ -150,7 +145,6 @@ export class CreateServiceDto {
   @IsNumber()
   @Min(0)
   @IsLessThanOrEqualToField('base_price_max')
-  @IsLessThanOrEqualToField('price_range_max')
   base_price_min?: number;
 
   @ApiPropertyOptional({ default: 0 })
@@ -158,7 +152,6 @@ export class CreateServiceDto {
   @IsNumber()
   @Min(0)
   @IsGreaterThanOrEqualToField('base_price_min')
-  @IsGreaterThanOrEqualToField('price_range_min')
   base_price_max?: number;
 
   @ApiPropertyOptional({ default: 1 })

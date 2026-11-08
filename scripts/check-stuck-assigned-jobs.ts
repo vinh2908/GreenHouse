@@ -1,6 +1,7 @@
 import mongoose, { Types } from 'mongoose';
 import * as dotenv from 'dotenv';
 import * as path from 'path';
+import { setHelperBusyWithModels } from '../apps/api/src/modules/jobs/jobs.service';
 
 dotenv.config({ path: path.resolve(process.cwd(), 'apps/api/.env') });
 dotenv.config({ path: path.resolve(process.cwd(), '.env') });
@@ -8,9 +9,17 @@ dotenv.config({ path: path.resolve(process.cwd(), '.env') });
 const MONGODB_URI =
   process.env.MONGODB_URI || 'mongodb://admin:password@localhost:27017/homemate?authSource=admin';
 
-async function checkAndFixStuckAssignedJobs() {
-  console.log('Connecting to MongoDB at:', MONGODB_URI.replace(/:([^:@]+)@/, ':****@'));
-  await mongoose.connect(MONGODB_URI);
+export async function checkAndFixStuckAssignedJobs(options?: {
+  dbUri?: string;
+  autoFix?: boolean;
+  jobsService?: { setHelperBusy: (helperId: any, busy: boolean) => Promise<any> };
+  disconnectOnFinish?: boolean;
+}) {
+  const dbUri = options?.dbUri || MONGODB_URI;
+  console.log('Connecting to MongoDB at:', dbUri.replace(/:([^:@]+)@/, ':****@'));
+  if (mongoose.connection.readyState !== 1) {
+    await mongoose.connect(dbUri);
+  }
   console.log('Connected to MongoDB.\n');
 
   const db = mongoose.connection.db;
@@ -85,39 +94,25 @@ async function checkAndFixStuckAssignedJobs() {
         },
       );
 
-      // L3(c): Giải phóng trạng thái thợ qua setHelperBusy thay vì set trực tiếp
-      await setHelperBusy(db, helperId, false);
+      // L3(c) & N6: Giải phóng trạng thái thợ qua JobsService.setHelperBusy thật
+      if (options?.jobsService?.setHelperBusy) {
+        await options.jobsService.setHelperBusy(helperId, false);
+      } else {
+        await setHelperBusyWithModels(helpersCol, jobsCol, helperId, false);
+      }
       console.log(`✓ Đã sửa đơn ${job._id}: hủy gán về OPEN, giải phóng thợ ${helperId}.`);
     }
   }
   console.log('────────────────────────────────────────────────────────\n');
 
-  await mongoose.disconnect();
-}
-
-/** L3(c): Tương đương jobsService.setHelperBusy */
-async function setHelperBusy(db: any, helperId: any, busy: boolean) {
-  const helperObjId = new Types.ObjectId(String(helperId));
-  const helpersCol = db.collection('helpers');
-  const jobsCol = db.collection('jobs');
-  if (busy) {
-    await helpersCol.updateOne({ user_id: helperObjId }, { $set: { status: 'busy' } });
-  } else {
-    const activeStatuses = ['on_the_way', 'arrived', 'in_progress', 'pending_review'];
-    const hasOtherActive = await jobsCol.findOne({
-      helper_id: helperObjId,
-      status: { $in: activeStatuses },
-    });
-    if (!hasOtherActive) {
-      await helpersCol.updateOne(
-        { user_id: helperObjId, status: 'busy' },
-        { $set: { status: 'online' } },
-      );
-    }
+  if (options?.disconnectOnFinish !== false) {
+    await mongoose.disconnect();
   }
 }
 
-checkAndFixStuckAssignedJobs().catch(err => {
-  console.error('Lỗi khi chạy script check-stuck-assigned-jobs:', err);
-  process.exit(1);
-});
+if (require.main === module) {
+  checkAndFixStuckAssignedJobs().catch(err => {
+    console.error('Lỗi khi chạy script check-stuck-assigned-jobs:', err);
+    process.exit(1);
+  });
+}

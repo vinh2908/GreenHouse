@@ -94,11 +94,7 @@ export class ServicesService {
     const minP = dto.base_price_min ?? dto.price_range_min ?? 0;
     // B09, H15 & K13(f): Nếu chỉ truyền min mà không truyền max -> maxP mặc định bằng minP để luồng tạo cũ vẫn chạy được.
     // Nếu có truyền max (kể cả max = 0) -> dùng max thật để bắt lỗi min > max.
-    const maxP = hasMax
-      ? (dto.base_price_max ?? dto.price_range_max ?? 0)
-      : hasMin
-        ? minP
-        : 0;
+    const maxP = hasMax ? (dto.base_price_max ?? dto.price_range_max ?? 0) : hasMin ? minP : 0;
     if (minP > maxP) {
       throw new BadRequestException('Giá tối thiểu không được lớn hơn giá tối đa');
     }

@@ -307,9 +307,9 @@ export default function MonthlyContractDetailScreen() {
           />
           <InfoRow
             label={lang === 'en' ? 'Duration' : 'Thời gian'}
-            value={`${formatDate(contract.start_date)}${
+            value={`${formatDate(contract.start_date, lang)}${
               contract.end_date
-                ? ` → ${formatDate(contract.end_date)}`
+                ? ` → ${formatDate(contract.end_date, lang)}`
                 : lang === 'en'
                   ? ' → Ongoing'
                   : ' → Chưa ấn định ngày kết thúc'
@@ -374,8 +374,8 @@ export default function MonthlyContractDetailScreen() {
           <Card style={{ gap: 8 }}>
             <Text style={{ fontSize: fs(14.5), fontWeight: '800', color: tc.text }}>
               {lang === 'en'
-                ? `Today's Attendance (${formatDate(dayjs())})`
-                : `Điểm danh hôm nay (${formatDate(dayjs())})`}
+                ? `Today's Attendance (${formatDate(dayjs(), 'en')})`
+                : `Điểm danh hôm nay (${formatDate(dayjs(), 'vi')})`}
             </Text>
             {todayRecord ? (
               <Text style={{ fontSize: fs(13), color: tc.textSecondary }}>
@@ -587,8 +587,8 @@ export default function MonthlyContractDetailScreen() {
                     }}
                   >
                     {lang === 'en'
-                      ? `Leave on ${formatDate(l.date)}`
-                      : `Nghỉ ngày ${formatDate(l.date)}`}
+                      ? `Leave on ${formatDate(l.date, 'en')}`
+                      : `Nghỉ ngày ${formatDate(l.date, 'vi')}`}
                   </Text>
                   <Badge
                     label={lang === 'en' ? m.label_en : m.label}

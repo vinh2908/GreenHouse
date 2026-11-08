@@ -227,11 +227,11 @@ export default function MonthlyContractsScreen() {
                     <Text style={{ fontSize: fs(12.5), color: tc.textMuted }}>
                       {lang === 'en' ? 'Schedule: ' : 'Lịch: '}
                       {describeMonthlySchedule(c, lang)} · {lang === 'en' ? 'From ' : 'Từ '}
-                      {formatDate(c.start_date)}
+                      {formatDate(c.start_date, lang)}
                       {c.end_date
                         ? lang === 'en'
-                          ? ` to ${formatDate(c.end_date)}`
-                          : ` đến ${formatDate(c.end_date)}`
+                          ? ` to ${formatDate(c.end_date, lang)}`
+                          : ` đến ${formatDate(c.end_date, lang)}`
                         : ''}
                     </Text>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>

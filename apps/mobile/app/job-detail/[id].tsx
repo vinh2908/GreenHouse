@@ -1433,7 +1433,7 @@ export default function JobDetailScreen() {
                   }}
                 >
                   {lang === 'en'
-                    ? `SOS Emergency rescue — helper arrives in 15 mins${job.sos_surcharge ? ` (emergency surcharge ${new Intl.NumberFormat('vi-VN').format(job.sos_surcharge)}₫)` : ''}`
+                    ? `SOS Emergency rescue — helper arrives in 15 mins${job.sos_surcharge ? ` (emergency surcharge ${new Intl.NumberFormat('en-US').format(job.sos_surcharge)}₫)` : ''}`
                     : `Đơn cứu hộ khẩn cấp SOS — yêu cầu thợ có mặt trong 15 phút${job.sos_surcharge ? ` (phụ phí khẩn cấp ${new Intl.NumberFormat('vi-VN').format(job.sos_surcharge)}₫)` : ''}`}
                 </Text>
               </View>
@@ -1629,7 +1629,7 @@ export default function JobDetailScreen() {
               <Badge label={tService(serviceObj) || t('common_service')} />
               {job.preferred_date && (
                 <Badge
-                  label={formatDate(job.preferred_date)}
+                  label={formatDate(job.preferred_date, lang)}
                   color={COLORS.gray[100]}
                   textColor={COLORS.gray[700]}
                 />
@@ -1947,7 +1947,7 @@ export default function JobDetailScreen() {
                                 : lang === 'en'
                                   ? 'Helper location unavailable'
                                   : 'Chưa xác định được vị trí thợ'}
-                              {q.available_date && ` • ${formatDate(q.available_date)}`}
+                              {q.available_date && ` • ${formatDate(q.available_date, lang)}`}
                             </Text>
                           </View>
                           <PriceText amount={q.total_price} size={18} />
@@ -2222,11 +2222,12 @@ export default function JobDetailScreen() {
                         {lang === 'en' ? 'Additional labor: +' : 'Công phát sinh: +'}
                         {new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'vi-VN').format(
                           am.additional_labor_cost || 0,
-                        )}₫ •{' '}
-                        {lang === 'en' ? 'Materials: +' : 'Vật tư: +'}
+                        )}
+                        ₫ • {lang === 'en' ? 'Materials: +' : 'Vật tư: +'}
                         {new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'vi-VN').format(
                           am.additional_materials_cost || 0,
-                        )}₫
+                        )}
+                        ₫
                       </Text>
                       {am.status === 'rejected' && am.rejection_reason && (
                         <Text style={{ fontSize: fs(12), color: '#991B1B', fontStyle: 'italic' }}>
@@ -4248,7 +4249,8 @@ function JobVoucherRow({ job, contractTotal }: { job: any; contractTotal: number
           <Text style={{ fontWeight: '800', color: tc.text, fontSize: fs(14) }}>
             {new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'vi-VN').format(
               Math.max(0, contractTotal - appliedDiscount),
-            )}₫
+            )}
+            ₫
           </Text>
         </View>
       </View>

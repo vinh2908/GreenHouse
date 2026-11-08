@@ -861,10 +861,7 @@ export class AdminService {
           }
 
           await this.jobModel
-            .updateOne(
-              { _id: job._id },
-              jobUpdate,
-            )
+            .updateOne({ _id: job._id }, jobUpdate)
             .exec()
             .catch(rErr => {
               this.logger.error(
@@ -882,10 +879,7 @@ export class AdminService {
             }
 
             await this.contractModel
-              .updateOne(
-                { _id: contract._id },
-                contractUpdate,
-              )
+              .updateOne({ _id: contract._id }, contractUpdate)
               .exec()
               .catch(() => undefined);
             contract.status = origContractStatus;

@@ -155,9 +155,12 @@ describe('K7: DTO cross-field min/max validation for CreateServiceDto and Update
     });
     const errors = await validate(dto);
     const minMaxErrors = errors.filter(e =>
-      ['base_price_min', 'base_price_max', 'estimated_duration_min', 'estimated_duration_max'].includes(
-        e.property,
-      ),
+      [
+        'base_price_min',
+        'base_price_max',
+        'estimated_duration_min',
+        'estimated_duration_max',
+      ].includes(e.property),
     );
     expect(minMaxErrors.length).toBe(0);
   });
@@ -177,5 +180,25 @@ describe('K7: DTO cross-field min/max validation for CreateServiceDto and Update
     });
     const errors = await validate(dto);
     expect(errors.length).toBe(0);
+  });
+
+  it('N7(c): 2 cặp alias độc lập: base_price và price_range mỗi cặp tự check độc lập, không cross-couple làm reject oan', async () => {
+    const dto = plainToInstance(CreateServiceDto, {
+      category_id: '507f1f77bcf86cd799439011',
+      name: 'Vệ sinh máy lạnh',
+      slug: 've-sinh-may-lanh',
+      description: 'Mô tả dịch vụ',
+      base_price_min: 150_000,
+      base_price_max: 200_000,
+      price_range_min: 80_000,
+      price_range_max: 120_000,
+    });
+    const errors = await validate(dto);
+    const priceErrors = errors.filter(e =>
+      ['base_price_min', 'base_price_max', 'price_range_min', 'price_range_max'].includes(
+        e.property,
+      ),
+    );
+    expect(priceErrors.length).toBe(0);
   });
 });

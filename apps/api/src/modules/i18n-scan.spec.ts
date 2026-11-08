@@ -1,5 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
+import { formatDate, formatDateTime, formatMonthSlash } from '../../../../apps/mobile/utils/date-format';
+import { formatCurrency } from '../../../../apps/mobile/services/i18n';
 
 describe('G7: Quét toàn bộ key t() sử dụng trong mobile codebase', () => {
   const rootDir = path.resolve(__dirname, '../../../..');
@@ -85,27 +87,25 @@ describe('G7: Quét toàn bộ key t() sử dụng trong mobile codebase', () =>
     expect(stringsKeys.has(extractedKey)).toBe(false);
   });
 
-  describe('K1: format ngày/giờ và tiền tệ theo ngôn ngữ en vs vi', () => {
-    it('format ngày và tiền tệ ở chế độ tiếng Anh cho ra kết quả chuẩn Anh', () => {
-      // 1. Format tiền:
+  describe('K1/N4: format ngày/giờ/tháng và tiền tệ theo ngôn ngữ en vs vi qua code thật', () => {
+    it('format ngày, giờ, tháng và tiền tệ ở chế độ tiếng Anh cho ra kết quả chuẩn Anh và phân biệt với tiếng Việt', () => {
+      // 1. Format tiền bằng formatCurrency thật
       const amount = 1_500_000;
-      const formattedEn = new Intl.NumberFormat('en-US').format(amount);
-      const formattedVi = new Intl.NumberFormat('vi-VN').format(amount);
-      expect(formattedEn).toBe('1,500,000');
-      expect(formattedVi).toBe('1.500.000');
+      expect(formatCurrency(amount, 'en')).toBe('1,500,000');
+      expect(formatCurrency(amount, 'vi')).toBe('1.500.000');
 
-      // 2. Format ngày giờ:
-      const dayjs = require('dayjs');
-      const utc = require('dayjs/plugin/utc');
-      const timezone = require('dayjs/plugin/timezone');
-      dayjs.extend(utc);
-      dayjs.extend(timezone);
+      // 2. Format ngày giờ bằng formatDateTime thật
+      const testDate = '2026-11-08T15:30:00+07:00';
+      expect(formatDateTime(testDate, 'en')).toBe('15:30 11/08/2026');
+      expect(formatDateTime(testDate, 'vi')).toBe('15:30 08/11/2026');
 
-      const d = dayjs('2026-11-08T15:30:00+07:00').tz('Asia/Ho_Chi_Minh');
-      const dtEn = d.format('HH:mm MM/DD/YYYY');
-      const dtVi = d.format('HH:mm DD/MM/YYYY');
-      expect(dtEn).toBe('15:30 11/08/2026'); // MM/DD/YYYY (US/English)
-      expect(dtVi).toBe('15:30 08/11/2026'); // DD/MM/YYYY (Vietnamese)
+      // 3. Format ngày bằng formatDate thật
+      expect(formatDate(testDate, 'en')).toBe('11/08/2026');
+      expect(formatDate(testDate, 'vi')).toBe('08/11/2026');
+
+      // 4. Format tháng bằng formatMonthSlash thật
+      expect(formatMonthSlash(testDate, 'en')).toBe('Nov 2026');
+      expect(formatMonthSlash(testDate, 'vi')).toBe('11/2026');
     });
   });
 });

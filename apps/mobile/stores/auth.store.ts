@@ -144,16 +144,20 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   loadStoredAuth: async () => {
     set({ isLoading: true });
     try {
-      const timeoutPromise = new Promise<null>((_, reject) =>
-        setTimeout(() => reject(new Error('SecureStore timeout')), 2500),
-      );
-      const accessToken = await Promise.race([SecureStore.getItemAsync(TOKEN_KEY), timeoutPromise]);
-      const refreshToken = await Promise.race([
-        SecureStore.getItemAsync(REFRESH_TOKEN_KEY),
-        timeoutPromise,
-      ]);
-      const storedUser = await Promise.race([SecureStore.getItemAsync(USER_KEY), timeoutPromise]);
-      const storedRole = await Promise.race([SecureStore.getItemAsync(ROLE_KEY), timeoutPromise]);
+      const withTimeout = <T>(p: Promise<T>, ms = 2500): Promise<T> => {
+        let timer: any;
+        return Promise.race([
+          p,
+          new Promise<T>((_, reject) => {
+            timer = setTimeout(() => reject(new Error('SecureStore timeout')), ms);
+          }),
+        ]).finally(() => clearTimeout(timer));
+      };
+
+      const accessToken = await withTimeout(SecureStore.getItemAsync(TOKEN_KEY));
+      const refreshToken = await withTimeout(SecureStore.getItemAsync(REFRESH_TOKEN_KEY));
+      const storedUser = await withTimeout(SecureStore.getItemAsync(USER_KEY));
+      const storedRole = await withTimeout(SecureStore.getItemAsync(ROLE_KEY));
       const parsedUser = storedUser ? JSON.parse(storedUser) : null;
       if (parsedUser && storedRole) {
         parsedUser.active_role = storedRole;
@@ -182,20 +186,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
               set({ user: freshUser });
             }
           } catch (err: any) {
-            const isNetworkError =
-              err?.isNetworkRefreshError ||
-              !err?.response ||
-              err?.code === 'ECONNABORTED' ||
-              err?.message?.includes('Network Error') ||
-              err?.message?.includes('timeout') ||
-              (err?.response?.status && err.response.status >= 500);
+            // N5: Phân loại đúng SessionExpiredError / 401 thật TRƯỚC khi check !response
+            const isSessionExpired =
+              err?.name === 'SessionExpiredError' ||
+              (err?.response?.status === 401 && !err?.isNetworkRefreshError);
 
-            const isTrue401 =
-              (err?.response?.status === 401 || err?.name === 'SessionExpiredError') &&
-              !isNetworkError;
-
-            if (isTrue401) {
-              // Token thật sự hết hạn hoặc bị từ chối bởi server
+            if (isSessionExpired) {
+              // Token thật sự hết hạn hoặc bị từ chối bởi server: đăng xuất ngay, không retry
               await SecureStore.deleteItemAsync(TOKEN_KEY);
               await SecureStore.deleteItemAsync(REFRESH_TOKEN_KEY);
               await SecureStore.deleteItemAsync(USER_KEY);
@@ -206,18 +203,27 @@ export const useAuthStore = create<AuthState>((set, get) => ({
                 refreshToken: null,
                 isAuthenticated: false,
               });
-            } else {
-              // Cold start / timeout / mạng chậm / refresh lỗi mạng: GIỮ NGUYÊN phiên đã lưu từ SecureStore
-              if (__DEV__) {
-                console.warn(
-                  '[Startup] GET /auth/me failed transiently or cold-starting — retaining local session',
-                );
-              }
-              if (retries > 0) {
-                setTimeout(() => {
-                  fetchMeWithRetry(retries - 1, delayMs * 1.5).catch(() => {});
-                }, delayMs);
-              }
+              return;
+            }
+
+            const isNetworkError =
+              err?.isNetworkRefreshError ||
+              !err?.response ||
+              err?.code === 'ECONNABORTED' ||
+              err?.message?.includes('Network Error') ||
+              err?.message?.includes('timeout') ||
+              (err?.response?.status && err.response.status >= 500);
+
+            // Cold start / timeout / mạng chậm / refresh lỗi mạng: GIỮ NGUYÊN phiên đã lưu từ SecureStore
+            if (typeof __DEV__ !== 'undefined' && __DEV__) {
+              console.warn(
+                '[Startup] GET /auth/me failed transiently or cold-starting — retaining local session',
+              );
+            }
+            if (retries > 0) {
+              setTimeout(() => {
+                fetchMeWithRetry(retries - 1, delayMs * 1.5).catch(() => {});
+              }, delayMs);
             }
           }
         };
@@ -273,7 +279,7 @@ if (gEnv?.window && typeof gEnv.window.addEventListener === 'function') {
         });
       } else {
         // Tab khác đã đăng nhập hoặc refresh token -> đồng bộ phiên mới
-        let parsedUser = null;
+        let parsedUser: any = null;
         try {
           parsedUser = userStr ? JSON.parse(userStr) : null;
           if (parsedUser && role) parsedUser.active_role = role;

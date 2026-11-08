@@ -56,7 +56,31 @@ function matches(doc: Doc, filter: Record<string, unknown>): boolean {
   return true;
 }
 
-function applyUpdate(doc: Doc, update: Record<string, unknown>): void {
+function applyUpdate(doc: Doc, update: any): void {
+  if (Array.isArray(update)) {
+    for (const stage of update) {
+      if (stage.$set) {
+        for (const [k, v] of Object.entries(stage.$set)) {
+          if (k === 'used_count') {
+            doc.used_count = Math.max(0, ((doc.used_count as number) ?? 0) - 1);
+          } else if (k === 'used_user_ids') {
+            const arr = Array.isArray(doc.used_user_ids) ? [...doc.used_user_ids] : [];
+            const targetId =
+              (v as any)?.$let?.vars?.idxObj?.$indexOfArray?.[1] ??
+              (v as any)?.$let?.vars?.idxStr?.$indexOfArray?.[1];
+            const idx = arr.findIndex(id => eq(id, targetId) || String(id) === String(targetId));
+            if (idx >= 0) {
+              arr.splice(idx, 1);
+            }
+            doc.used_user_ids = arr;
+          } else {
+            doc[k] = v;
+          }
+        }
+      }
+    }
+    return;
+  }
   for (const [op, fields] of Object.entries(update)) {
     if (op === '$set') Object.assign(doc, fields as Doc);
     if (op === '$inc') {

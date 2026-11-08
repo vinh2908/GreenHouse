@@ -35,7 +35,31 @@ function matches(doc: Doc, filter: Record<string, unknown>): boolean {
   return true;
 }
 
-function applyUpdate(doc: Doc, update: Record<string, unknown>): void {
+function applyUpdate(doc: Doc, update: any): void {
+  if (Array.isArray(update)) {
+    for (const stage of update) {
+      if (stage.$set) {
+        for (const [k, v] of Object.entries(stage.$set)) {
+          if (k === 'used_count') {
+            doc.used_count = Math.max(0, ((doc.used_count as number) ?? 0) - 1);
+          } else if (k === 'used_user_ids') {
+            const arr = Array.isArray(doc.used_user_ids) ? [...doc.used_user_ids] : [];
+            const targetId =
+              (v as any)?.$let?.vars?.idxObj?.$indexOfArray?.[1] ??
+              (v as any)?.$let?.vars?.idxStr?.$indexOfArray?.[1];
+            const idx = arr.findIndex(id => eq(id, targetId) || String(id) === String(targetId));
+            if (idx >= 0) {
+              arr.splice(idx, 1);
+            }
+            doc.used_user_ids = arr;
+          } else {
+            doc[k] = v;
+          }
+        }
+      }
+    }
+    return;
+  }
   for (const [op, fields] of Object.entries(update)) {
     if (op === '$set') Object.assign(doc, fields as Doc);
     if (op === '$inc') {
@@ -146,5 +170,38 @@ describe('VouchersService.restoreForJob (hủy đơn theo SOS)', () => {
     // Lượt đã reversed → không còn bị chặn, tính giảm bình thường
     const preview = await service.preview('SOS10', String(userId), 200_000);
     expect(preview.discount_amount).toBe(50_000);
+  });
+
+  describe('N1: Atomic aggregation-pipeline restore & edge cases', () => {
+    it('(a) atomic restore: chỉ bỏ đúng 1 entry userId trong used_user_ids, không làm mất entry của user khác hoặc entry còn lại', async () => {
+      const { service, userId, jobId, voucher, redemptions } = makeService();
+      const user2 = new Types.ObjectId();
+      // Giả sử mảng used_user_ids có 2 entry của userId và 1 entry của user2
+      voucher['used_user_ids'] = [userId, user2, userId];
+      voucher['used_count'] = 3;
+
+      const result = await service.restoreForJob(String(userId), String(jobId));
+      expect(result.restored).toBe(true);
+
+      // Đúng 1 entry của userId bị bỏ, còn lại [user2, userId] (hoặc giữ nguyên entry user2 và 1 entry userId)
+      const user1Count = (voucher['used_user_ids'] as any[]).filter(id => eq(id, userId)).length;
+      const user2Count = (voucher['used_user_ids'] as any[]).filter(id => eq(id, user2)).length;
+      expect(user1Count).toBe(1);
+      expect(user2Count).toBe(1);
+      expect(voucher['used_count']).toBe(2);
+    });
+
+    it('(b) redemption đã flip reversed nhưng findById trả null → used_count vẫn giảm đúng nguyên tử', async () => {
+      const { service, userId, jobId, voucher, redemptions } = makeService();
+      // findById cố ý trả null (mô phỏng edge case)
+      (service as any).voucherModel.findById = jest.fn().mockReturnValue(execOf(null));
+      voucher['used_count'] = 5;
+
+      const result = await service.restoreForJob(String(userId), String(jobId));
+      expect(result.restored).toBe(true);
+      // Code cũ phụ thuộc findById != null sẽ skip giảm used_count (used_count vẫn là 5).
+      // Code mới cập nhật nguyên tử qua updatePipeline không phụ thuộc findById → used_count giảm thành 4!
+      expect(voucher['used_count']).toBe(4);
+    });
   });
 });
