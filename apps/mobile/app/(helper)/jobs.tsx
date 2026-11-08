@@ -148,8 +148,22 @@ export default function HelperJobsScreen() {
       refetching: aRefetching,
       refetch: ra,
     },
-    { data: active, loading: acLoading, isError: acError, error: acErrorObj, refetching: acRefetching, refetch: rac },
-    { data: history, loading: hLoading, isError: hError, error: hErrorObj, refetching: hRefetching, refetch: rh },
+    {
+      data: active,
+      loading: acLoading,
+      isError: acError,
+      error: acErrorObj,
+      refetching: acRefetching,
+      refetch: rac,
+    },
+    {
+      data: history,
+      loading: hLoading,
+      isError: hError,
+      error: hErrorObj,
+      refetching: hRefetching,
+      refetch: rh,
+    },
   ];
 
   const insets = useSafeAreaInsets();
@@ -466,7 +480,9 @@ export default function HelperJobsScreen() {
             return (
               <Card style={{ alignItems: 'center', paddingVertical: 20 }}>
                 <ErrorState
-                  title={lang === 'en' ? 'Unable to load jobs' : 'Không thể tải danh sách công việc'}
+                  title={
+                    lang === 'en' ? 'Unable to load jobs' : 'Không thể tải danh sách công việc'
+                  }
                   subtitle={
                     lang === 'en'
                       ? 'Connection to server failed. Please check your network and retry.'
@@ -632,10 +648,10 @@ export default function HelperJobsScreen() {
                         <Text
                           style={{ fontSize: fs(12), color: COLORS.primary, fontWeight: '700' }}
                         >
-                          {job.distance_km === 0
-                            ? '< 100m'
-                            : `${job.distance_km} km`}{' '}
-                          ~ {job.estimated_minutes ? `${job.estimated_minutes} ${t('jobs_minutes_unit')}` : '< 1 phút'}
+                          {job.distance_km === 0 ? '< 100m' : `${job.distance_km} km`} ~{' '}
+                          {job.estimated_minutes
+                            ? `${job.estimated_minutes} ${t('jobs_minutes_unit')}`
+                            : '< 1 phút'}
                         </Text>
                       </View>
                     ) : (
@@ -777,8 +793,7 @@ export default function HelperJobsScreen() {
                 style={{
                   fontSize: fs(13),
                   fontWeight: '700',
-                  color:
-                    availablePage >= available.total_pages ? COLORS.gray[400] : COLORS.primary,
+                  color: availablePage >= available.total_pages ? COLORS.gray[400] : COLORS.primary,
                 }}
               >
                 {lang === 'en' ? 'Next' : 'Trang sau'}

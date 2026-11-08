@@ -115,7 +115,8 @@ export default function JobDetailPage() {
           </Link>
           <h1 className="mt-1 break-words text-2xl font-bold tracking-tight">{job.title}</h1>
           <p className="text-sm text-muted-foreground">
-            {(job.service_id as any)?.name || (job as any).custom_service_name || 'Dịch vụ tự do'} · Tạo lúc {formatDateTime(job.created_at)}
+            {(job.service_id as any)?.name || (job as any).custom_service_name || 'Dịch vụ tự do'} ·
+            Tạo lúc {formatDateTime(job.created_at)}
           </p>
         </div>
         <Badge variant={STATUS_BADGE[job.status] ?? 'secondary'}>
@@ -270,7 +271,7 @@ export default function JobDetailPage() {
             {/* Danh sách Báo giá (A02) */}
             <div className="rounded-lg border p-4 space-y-3">
               <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                Danh sách báo giá (Quotes) · {(job.quotes?.length ?? 0)} báo giá
+                Danh sách báo giá (Quotes) · {job.quotes?.length ?? 0} báo giá
               </p>
               {job.quotes && job.quotes.length > 0 ? (
                 <div className="overflow-x-auto">
@@ -295,7 +296,9 @@ export default function JobDetailPage() {
                           <td className="py-2 font-semibold">
                             {(q.price ?? 0).toLocaleString('vi-VN')} ₫
                           </td>
-                          <td className="py-2">{q.estimated_duration ? `${q.estimated_duration} giờ` : '—'}</td>
+                          <td className="py-2">
+                            {q.estimated_duration ? `${q.estimated_duration} giờ` : '—'}
+                          </td>
                           <td className="py-2 text-muted-foreground">{q.message || '—'}</td>
                           <td className="py-2">
                             <span
@@ -303,11 +306,15 @@ export default function JobDetailPage() {
                                 q.status === 'accepted'
                                   ? 'bg-emerald-100 text-emerald-800'
                                   : q.status === 'rejected'
-                                  ? 'bg-rose-100 text-rose-800'
-                                  : 'bg-amber-100 text-amber-800'
+                                    ? 'bg-rose-100 text-rose-800'
+                                    : 'bg-amber-100 text-amber-800'
                               }`}
                             >
-                              {q.status === 'accepted' ? 'Đã chọn' : q.status === 'rejected' ? 'Từ chối' : 'Chờ duyệt'}
+                              {q.status === 'accepted'
+                                ? 'Đã chọn'
+                                : q.status === 'rejected'
+                                  ? 'Từ chối'
+                                  : 'Chờ duyệt'}
                             </span>
                           </td>
                           <td className="py-2 text-muted-foreground font-mono">
@@ -319,7 +326,9 @@ export default function JobDetailPage() {
                   </table>
                 </div>
               ) : (
-                <p className="text-xs text-muted-foreground italic">Chưa có báo giá nào cho đơn này.</p>
+                <p className="text-xs text-muted-foreground italic">
+                  Chưa có báo giá nào cho đơn này.
+                </p>
               )}
             </div>
 
@@ -336,7 +345,11 @@ export default function JobDetailPage() {
                 <div>
                   <span className="text-muted-foreground">Hình thức:</span>
                   <p className="font-semibold mt-0.5">
-                    {job.payment_method === 'cash' ? 'Tiền mặt' : job.payment_method === 'wallet' ? 'Ví Homemate' : job.payment_method || '—'}
+                    {job.payment_method === 'cash'
+                      ? 'Tiền mặt'
+                      : job.payment_method === 'wallet'
+                        ? 'Ví Homemate'
+                        : job.payment_method || '—'}
                   </p>
                 </div>
                 <div>
@@ -356,15 +369,21 @@ export default function JobDetailPage() {
                 <div className="border-t pt-2 grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs">
                   <div>
                     <span className="text-muted-foreground">Giá hợp đồng:</span>
-                    <p className="font-medium">{(job.contract.final_price ?? 0).toLocaleString('vi-VN')} ₫</p>
+                    <p className="font-medium">
+                      {(job.contract.final_price ?? 0).toLocaleString('vi-VN')} ₫
+                    </p>
                   </div>
                   <div>
                     <span className="text-muted-foreground">Thợ thực nhận:</span>
-                    <p className="font-medium text-emerald-700">{(job.contract.helper_receives ?? 0).toLocaleString('vi-VN')} ₫</p>
+                    <p className="font-medium text-emerald-700">
+                      {(job.contract.helper_receives ?? 0).toLocaleString('vi-VN')} ₫
+                    </p>
                   </div>
                   <div>
                     <span className="text-muted-foreground">Phí nền tảng:</span>
-                    <p className="font-medium text-purple-700">{(job.contract.platform_fee ?? 0).toLocaleString('vi-VN')} ₫</p>
+                    <p className="font-medium text-purple-700">
+                      {(job.contract.platform_fee ?? 0).toLocaleString('vi-VN')} ₫
+                    </p>
                   </div>
                 </div>
               )}

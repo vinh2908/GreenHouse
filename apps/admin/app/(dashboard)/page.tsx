@@ -55,7 +55,12 @@ const STATUS_VI: Record<string, string> = {
 };
 
 export default function DashboardPage() {
-  const { data: stats, isLoading: statsLoading, isError: statsError, refetch: refetchStats } = useDashboardStats();
+  const {
+    data: stats,
+    isLoading: statsLoading,
+    isError: statsError,
+    refetch: refetchStats,
+  } = useDashboardStats();
   const { data: summary, isError: summaryError, refetch: refetchSummary } = useAnalyticsSummary();
   const { data: jobsPerDay } = useJobsPerDay(30);
   const { data: jobsByStatus } = useJobsByStatus();

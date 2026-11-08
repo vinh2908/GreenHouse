@@ -109,13 +109,7 @@ export default function HelperJobDetailScreen() {
   useJobSocketUpdates(id);
   const { width } = useWindowDimensions();
 
-  const {
-    data: job,
-    isLoading,
-    isError,
-    error: jobError,
-    refetch: refetchJob,
-  } = useJobDetail(id);
+  const { data: job, isLoading, isError, error: jobError, refetch: refetchJob } = useJobDetail(id);
   const { data: quotes } = useJobQuotes(id);
   const { data: contract } = useJobContract(id);
   const { data: helperProfile } = useHelperProfile();

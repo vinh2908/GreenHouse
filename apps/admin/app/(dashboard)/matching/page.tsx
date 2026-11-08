@@ -35,7 +35,9 @@ export default function AdminMatchingPage() {
     helperName: string;
     jobTitle: string;
   } | null>(null);
-  const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(
+    null,
+  );
 
   const runBatch = () => {
     setBatchResult(null);
@@ -51,7 +53,10 @@ export default function AdminMatchingPage() {
       {
         onSuccess: () => {
           setAssignConfirm(null);
-          setFeedback({ type: 'success', message: `Đã gán thợ ${assignConfirm.helperName} thành công!` });
+          setFeedback({
+            type: 'success',
+            message: `Đã gán thợ ${assignConfirm.helperName} thành công!`,
+          });
           refetch();
         },
         onError: (err: any) => {

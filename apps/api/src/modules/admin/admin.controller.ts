@@ -227,7 +227,9 @@ export class AdminController {
   }
 
   @Post('jobs/:id/assign-helper')
-  @ApiOperation({ summary: '[Admin] B11: Gán thợ thủ công cho đơn hàng (Hungarian matching hoặc gán tay)' })
+  @ApiOperation({
+    summary: '[Admin] B11: Gán thợ thủ công cho đơn hàng (Hungarian matching hoặc gán tay)',
+  })
   async assignHelper(
     @Param('id') id: string,
     @Body() dto: AdminAssignHelperDto,

@@ -2315,7 +2315,9 @@ export function formatNotificationTitle(
       case 'sos_backup_withdrawn':
         return 'Replacement Request Retracted';
       case 'team_response':
-        return /từ chối|declined/i.test(t) ? 'Team Invitation Declined' : 'Team Invitation Accepted';
+        return /từ chối|declined/i.test(t)
+          ? 'Team Invitation Declined'
+          : 'Team Invitation Accepted';
     }
   }
 

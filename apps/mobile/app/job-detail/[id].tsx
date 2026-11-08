@@ -3201,8 +3201,12 @@ export default function JobDetailScreen() {
             <Button
               title={
                 reviewError || (job as any)?.status === 'completed'
-                  ? (lang === 'en' ? 'Retry Sending Review' : 'Thử lại gửi đánh giá')
-                  : (lang === 'en' ? 'Confirm Acceptance & Payment' : 'Xác nhận nghiệm thu & Thanh toán')
+                  ? lang === 'en'
+                    ? 'Retry Sending Review'
+                    : 'Thử lại gửi đánh giá'
+                  : lang === 'en'
+                    ? 'Confirm Acceptance & Payment'
+                    : 'Xác nhận nghiệm thu & Thanh toán'
               }
               loading={approveJob.isPending || createReview.isPending || payJob.isPending}
               onPress={handleSubmitReview}

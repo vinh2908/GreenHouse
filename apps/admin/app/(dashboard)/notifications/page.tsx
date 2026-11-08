@@ -56,7 +56,8 @@ export default function BroadcastPage() {
       // Group key: gom theo type + title + body + khung thời gian 2 phút
       const timeBucket = Math.floor(new Date(n.created_at).getTime() / (2 * 60 * 1000));
       const key = `${n.type}:${n.title}:${n.body}:${timeBucket}`;
-      const recipient = n.user_id?.full_name || n.user_id?.phone || n.user_id?.email || 'Người dùng';
+      const recipient =
+        n.user_id?.full_name || n.user_id?.phone || n.user_id?.email || 'Người dùng';
       if (!map.has(key)) {
         map.set(key, {
           id: n._id,

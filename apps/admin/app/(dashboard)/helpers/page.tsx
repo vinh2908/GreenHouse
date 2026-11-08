@@ -111,7 +111,9 @@ export default function HelpersPage() {
           <Loading />
         ) : isError ? (
           <div className="p-8 text-center space-y-3">
-            <p className="text-destructive font-medium">Không thể tải danh sách người giúp việc. Vui lòng thử lại.</p>
+            <p className="text-destructive font-medium">
+              Không thể tải danh sách người giúp việc. Vui lòng thử lại.
+            </p>
             <Button variant="outline" size="sm" onClick={() => refetch()}>
               Tải lại
             </Button>

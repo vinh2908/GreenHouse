@@ -62,7 +62,10 @@ export default function ClaimsPage() {
   const [status, setStatus] = useState('');
   const [page, setPage] = useState(1);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const { data, isLoading, isError, refetch } = useAdminClaims({ status: status || undefined, page });
+  const { data, isLoading, isError, refetch } = useAdminClaims({
+    status: status || undefined,
+    page,
+  });
 
   const claims = data?.claims ?? [];
 

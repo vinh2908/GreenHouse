@@ -963,7 +963,9 @@ export function useAssignHelper() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ jobId, helperId }: { jobId: string; helperId: string }) => {
-      const { data } = await apiClient.post(`/admin/jobs/${jobId}/assign-helper`, { helper_id: helperId });
+      const { data } = await apiClient.post(`/admin/jobs/${jobId}/assign-helper`, {
+        helper_id: helperId,
+      });
       return data.data;
     },
     onSuccess: (_, { jobId }) => {

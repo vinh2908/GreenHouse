@@ -274,7 +274,9 @@ export default function KycPendingPage() {
             <div>
               <p className="font-semibold">
                 Duyệt hàng loạt hoàn tất: {batchResult.successCount} thành công
-                {batchResult.failedItems.length > 0 ? `, ${batchResult.failedItems.length} thất bại` : ''}
+                {batchResult.failedItems.length > 0
+                  ? `, ${batchResult.failedItems.length} thất bại`
+                  : ''}
               </p>
               {batchResult.failedItems.length > 0 && (
                 <ul className="mt-2 list-disc pl-4 text-xs space-y-1">

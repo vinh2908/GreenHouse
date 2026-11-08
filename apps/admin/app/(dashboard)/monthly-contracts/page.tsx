@@ -71,7 +71,8 @@ export default function AdminMonthlyContractsPage() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Hợp đồng tháng & Chấm công</h1>
           <p className="text-sm text-muted-foreground">
-            Danh sách hợp đồng giúp việc định kỳ theo tháng, lịch làm việc hàng tuần và lịch sử chốt lương
+            Danh sách hợp đồng giúp việc định kỳ theo tháng, lịch làm việc hàng tuần và lịch sử chốt
+            lương
           </p>
         </div>
         <div className="w-48">
@@ -104,7 +105,9 @@ export default function AdminMonthlyContractsPage() {
             </div>
           ) : isError ? (
             <div className="py-12 text-center space-y-3">
-              <p className="text-destructive font-medium">Không thể tải danh sách hợp đồng tháng. Vui lòng thử lại.</p>
+              <p className="text-destructive font-medium">
+                Không thể tải danh sách hợp đồng tháng. Vui lòng thử lại.
+              </p>
               <Button variant="outline" size="sm" onClick={() => refetch()}>
                 Tải lại
               </Button>

@@ -624,9 +624,14 @@ export class AdminService {
       ) {
         const payout = contract.helper_receives;
         if (payout > 0) {
-          const isSimulated = (await this.paymentsService?.hasSimulatedOnlinePayment?.(jobId)) ?? false;
+          const isSimulated =
+            (await this.paymentsService?.hasSimulatedOnlinePayment?.(jobId)) ?? false;
           if (isSimulated) {
-            await this.paymentsService?.creditHelperSimulated?.(String(job.helper_id), jobId, payout);
+            await this.paymentsService?.creditHelperSimulated?.(
+              String(job.helper_id),
+              jobId,
+              payout,
+            );
           } else {
             await this.paymentsService?.creditHelper?.(String(job.helper_id), jobId, payout);
           }
@@ -639,7 +644,8 @@ export class AdminService {
       if (job.payment_status === PaymentStatus.PAID && job.payment_method !== 'cash') {
         const netPaid = computeNetPaidAmount(job, contract?.total_price);
         if (netPaid > 0) {
-          const alreadyRefunded = (await this.paymentsService?.hasSuccessfulRefund?.(jobId)) ?? false;
+          const alreadyRefunded =
+            (await this.paymentsService?.hasSuccessfulRefund?.(jobId)) ?? false;
           if (!alreadyRefunded) {
             await this.paymentsService?.refundCustomer?.(
               String(job.customer_id),
@@ -839,7 +845,9 @@ export class AdminService {
 
     // P0-2: Claim nguyên tử phần tiền hoàn trên job để chống 2 lần hoàn song song vượt netPaid
     if ((job.refunded_amount || 0) < totalRefundedTxs) {
-      await this.jobModel.updateOne({ _id: job._id }, { $set: { refunded_amount: totalRefundedTxs } }).exec();
+      await this.jobModel
+        .updateOne({ _id: job._id }, { $set: { refunded_amount: totalRefundedTxs } })
+        .exec();
     }
 
     const updatedJob = await this.jobModel
@@ -847,10 +855,7 @@ export class AdminService {
         {
           _id: job._id,
           $expr: {
-            $lte: [
-              { $add: [{ $ifNull: ['$refunded_amount', 0] }, amount] },
-              netPaid,
-            ],
+            $lte: [{ $add: [{ $ifNull: ['$refunded_amount', 0] }, amount] }, netPaid],
           },
         },
         {
@@ -877,30 +882,34 @@ export class AdminService {
       );
     } catch (refundErr) {
       // Rollback claimed amount on failure
-      await this.jobModel.updateOne({ _id: job._id }, { $inc: { refunded_amount: -amount } }).exec();
+      await this.jobModel
+        .updateOne({ _id: job._id }, { $inc: { refunded_amount: -amount } })
+        .exec();
       throw refundErr;
     }
 
     // Ghi event vào đơn và cập nhật payment_status sang REFUNDED nếu đã hoàn 100%
     const isFullyRefunded = (updatedJob.refunded_amount || 0) >= netPaid;
-    await this.jobModel.updateOne(
-      { _id: job._id },
-      {
-        ...(isFullyRefunded ? { payment_status: PaymentStatus.REFUNDED } : {}),
-        $push: {
-          events: {
-            status: job.status,
-            note: `Admin hoàn tiền trực tiếp ${amount.toLocaleString('vi-VN')}₫ vào ví khách hàng. Lý do: ${reason}`,
-            actor_id:
-              adminId && Types.ObjectId.isValid(adminId)
-                ? new Types.ObjectId(adminId)
-                : (job.customer_id as any) || new Types.ObjectId(),
-            actor_role: 'admin',
-            timestamp: new Date(),
+    await this.jobModel
+      .updateOne(
+        { _id: job._id },
+        {
+          ...(isFullyRefunded ? { payment_status: PaymentStatus.REFUNDED } : {}),
+          $push: {
+            events: {
+              status: job.status,
+              note: `Admin hoàn tiền trực tiếp ${amount.toLocaleString('vi-VN')}₫ vào ví khách hàng. Lý do: ${reason}`,
+              actor_id:
+                adminId && Types.ObjectId.isValid(adminId)
+                  ? new Types.ObjectId(adminId)
+                  : (job.customer_id as any) || new Types.ObjectId(),
+              actor_role: 'admin',
+              timestamp: new Date(),
+            },
           },
         },
-      },
-    ).exec();
+      )
+      .exec();
 
     await this.notificationsService
       .create({
@@ -1187,7 +1196,9 @@ export class AdminService {
     const job = await this.jobModel.findById(jobId).exec();
     if (!job) throw new NotFoundException('Đơn hàng không tồn tại');
     if (job.status !== JobStatus.OPEN && job.status !== JobStatus.RECEIVING_QUOTES) {
-      throw new BadRequestException('Chỉ có thể gán thợ cho đơn hàng đang chờ thợ (OPEN hoặc RECEIVING_QUOTES)');
+      throw new BadRequestException(
+        'Chỉ có thể gán thợ cho đơn hàng đang chờ thợ (OPEN hoặc RECEIVING_QUOTES)',
+      );
     }
     if (job.expires_at && new Date() > new Date(job.expires_at)) {
       throw new BadRequestException('Đơn hàng đã hết hạn nhận việc');
@@ -1239,9 +1250,7 @@ export class AdminService {
     }
 
     // Giá đơn
-    const totalPrice = job.is_fixed_price
-      ? (job.fixed_price ?? 0)
-      : (job.target_price ?? 200_000);
+    const totalPrice = job.is_fixed_price ? (job.fixed_price ?? 0) : (job.target_price ?? 200_000);
     let platformFeeRate: number = PLATFORM_FEE_BY_SERVICE.default;
     if (job.service_id && this.serviceModel) {
       const service = await this.serviceModel
@@ -1276,10 +1285,7 @@ export class AdminService {
       });
     } catch (contractErr) {
       await this.jobModel
-        .updateOne(
-          { _id: job._id },
-          { $set: { helper_id: null, status: job.status } },
-        )
+        .updateOne({ _id: job._id }, { $set: { helper_id: null, status: job.status } })
         .exec()
         .catch(() => undefined);
       throw contractErr;
@@ -1288,7 +1294,10 @@ export class AdminService {
     claimed.events.push({
       status: JobStatus.CONFIRMED,
       note: `Admin gán thợ thủ công ${helperUser?.full_name ?? helperId} qua kết quả ghép Hungarian (Admin ID: ${adminId ?? 'hệ thống'})`,
-      actor_id: adminId && Types.ObjectId.isValid(adminId) ? new Types.ObjectId(adminId) : (job.customer_id as any),
+      actor_id:
+        adminId && Types.ObjectId.isValid(adminId)
+          ? new Types.ObjectId(adminId)
+          : (job.customer_id as any),
       actor_role: 'admin',
       timestamp: new Date(),
     });
