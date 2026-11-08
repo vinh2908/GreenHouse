@@ -33,6 +33,7 @@ import 'dayjs/locale/en';
 import Toast from 'react-native-toast-message';
 import { useAuthStore } from '@/stores/auth.store';
 import { useTranslation } from '@/hooks/use-i18n';
+import { formatCurrency } from '@/services/i18n';
 import {
   useDisputeCase,
   useAddDisputeEntry,
@@ -49,8 +50,7 @@ import {
   useThemeColors,
 } from '@/components/ui';
 
-const fmt = (n?: number, l: string = 'vi') =>
-  new Intl.NumberFormat(l === 'en' ? 'en-US' : 'vi-VN').format(n ?? 0);
+const fmt = (n?: number, l: string = 'vi') => formatCurrency(n, l as any);
 
 const KIND_META: Record<DisputeTimelineEntry['kind'], { label: string; label_en: string }> = {
   opened: { label: 'Mở tranh chấp', label_en: 'Dispute opened' },
@@ -109,8 +109,7 @@ export default function DisputeCaseScreen() {
   const insets = useSafeAreaInsets();
   const { t, fs, lang } = useTranslation();
   const tc = useThemeColors();
-  const fmt = (n?: number) =>
-    new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'vi-VN').format(n ?? 0);
+  const fmt = (n?: number) => formatCurrency(n, lang);
   dayjs.locale(lang === 'vi' ? 'vi' : 'en');
   const currentUser = useAuthStore(s => s.user);
 

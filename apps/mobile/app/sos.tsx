@@ -34,6 +34,7 @@ import { useAuthStore } from '@/stores/auth.store';
 import { lightImpact } from '@/services/haptics';
 import { SOS_SURCHARGE_VND, SOS_BASE_COST_VND } from '@homemate/constants';
 import { useTranslation } from '@/hooks/use-i18n';
+import { formatCurrency } from '@/services/i18n';
 import { locationService, parseVietnameseAddress } from '@/services/location.service';
 import {
   Button,
@@ -277,8 +278,8 @@ export default function SosScreen() {
     const title = lang === 'en' ? 'Confirm Emergency SOS' : 'Xác nhận cứu hộ khẩn cấp';
     const msg =
       lang === 'en'
-        ? `Emergency type: ${selectedCatObj.name}\nAddress: ${address.full_address}\nEstimated total: ${new Intl.NumberFormat('en-US').format(totalEstimate)}₫ (includes emergency surcharge ${new Intl.NumberFormat('en-US').format(surcharge)}₫).\n\nDo you want to dispatch SOS signal now?`
-        : `Loại sự cố: ${selectedCatObj.name}\nĐịa chỉ: ${address.full_address}\nTổng tiền ước tính: ${new Intl.NumberFormat('vi-VN').format(totalEstimate)}₫ (đã gồm phụ phí khẩn cấp: ${new Intl.NumberFormat('vi-VN').format(surcharge)}₫).\n\nBạn có chắc chắn muốn gửi tín hiệu cứu hộ SOS ngay?`;
+        ? `Emergency type: ${selectedCatObj.name}\nAddress: ${address.full_address}\nEstimated total: ${formatCurrency(totalEstimate, 'en')}₫ (includes emergency surcharge ${formatCurrency(surcharge, 'en')}₫).\n\nDo you want to dispatch SOS signal now?`
+        : `Loại sự cố: ${selectedCatObj.name}\nĐịa chỉ: ${address.full_address}\nTổng tiền ước tính: ${formatCurrency(totalEstimate, 'vi')}₫ (đã gồm phụ phí khẩn cấp: ${formatCurrency(surcharge, 'vi')}₫).\n\nBạn có chắc chắn muốn gửi tín hiệu cứu hộ SOS ngay?`;
 
     Alert.alert(title, msg, [
       {

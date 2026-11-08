@@ -134,23 +134,48 @@ describe('K6 & N5: Offline Queue Optimistic Updates, Rollback on Conflict, and R
       expect(availableJobsQueryData[0]?.status).toBe('confirmed');
     });
 
-    it('previous_status là undefined → rollback vẫn về trạng thái mặc định "confirmed" và không bỏ qua', async () => {
-      const jobId = 'job-order-456';
-      await cacheJobDetail({ _id: jobId, status: 'helper_on_the_way' } as any);
-      queryClient.setQueryData(['job', jobId], { _id: jobId, status: 'helper_on_the_way' });
-      queryClient.setQueryData(['jobs', 'available'], [{ _id: jobId, status: 'helper_on_the_way' }]);
+    it('O5: đơn KHÔNG có trong cache AsyncStorage ở lần enqueue đầu → đọc trạng thái thật từ React Query cache và rollback đúng về trạng thái thật (quote_selected, không phải confirmed đoán mò)', async () => {
+      const jobId = 'job-order-no-async-cache-789';
 
-      // Gọi rollback với undefined
-      await rollbackOptimisticStatus(jobId, undefined);
+      // 1. AsyncStorage hoàn toàn TRỐNG cho đơn này (getCachedJobDetail trả null)
+      delete mockStorage[`job_detail_${jobId}`];
+      const initialCached = await getCachedJobDetail<any>(jobId);
+      expect(initialCached).toBeNull();
 
-      const cached = await getCachedJobDetail<any>(jobId);
-      expect(cached?.status).toBe('confirmed');
+      // 2. Trạng thái thật của đơn đang nằm trong React Query cache là 'quote_selected' (không phải 'confirmed')
+      queryClient.setQueryData(['job', jobId], {
+        _id: jobId,
+        title: 'Đơn mới nhận chưa có AsyncStorage cache',
+        status: 'quote_selected',
+      });
+      queryClient.setQueryData(['jobs', 'available'], [
+        { _id: jobId, status: 'quote_selected' },
+      ]);
 
-      const qData = queryClient.getQueryData(['job', jobId]) as any;
-      expect(qData?.status).toBe('confirmed');
+      // 3. Enqueue thao tác 'on_the_way'
+      await enqueueAction('on_the_way', jobId);
 
-      const availData = queryClient.getQueryData(['jobs', 'available']) as any[];
-      expect(availData[0]?.status).toBe('confirmed');
+      // Trạng thái lạc quan được ghi thành helper_on_the_way
+      const rqOptimistic = queryClient.getQueryData(['job', jobId]) as any;
+      expect(rqOptimistic?.status).toBe('helper_on_the_way');
+
+      // 4. Giả lập flush gặp lỗi xung đột 409
+      mockApiClientPatch.mockRejectedValueOnce({
+        response: { status: 409, data: { message: 'Đơn đã có thay đổi khác' } },
+      });
+
+      await flushQueue();
+
+      // 5. Assert: Phải rollback về đúng trạng thái thật trước action là 'quote_selected',
+      // TUYỆT ĐỐI KHÔNG đoán mò về 'confirmed'
+      const rqRolledBack = queryClient.getQueryData(['job', jobId]) as any;
+      expect(rqRolledBack?.status).toBe('quote_selected');
+
+      const cachedRolledBack = await getCachedJobDetail<any>(jobId);
+      expect(cachedRolledBack?.status).toBe('quote_selected');
+
+      const availRolledBack = queryClient.getQueryData(['jobs', 'available']) as any[];
+      expect(availRolledBack[0]?.status).toBe('quote_selected');
     });
   });
 });

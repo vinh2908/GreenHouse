@@ -211,7 +211,10 @@ export class RecurringService implements OnApplicationBootstrap, OnModuleDestroy
         for (const md of sortedMonthDays) {
           if (md > lastDay) {
             const skipKey = `skip_warn_${curY}-${String(curM).padStart(2, '0')}-${md}`;
-            const alreadyNotified = plan.skipped_dates?.includes(skipKey);
+            // O7(c): Tách riêng marker cảnh báo vào warning_notifications_sent, không lưu chung vào mảng skipped_dates của khách
+            const alreadyNotified =
+              (plan as any).warning_notifications_sent?.includes(skipKey) ||
+              plan.skipped_dates?.includes(skipKey);
             if (!alreadyNotified) {
               await this.notificationsService
                 ?.create({
@@ -229,7 +232,7 @@ export class RecurringService implements OnApplicationBootstrap, OnModuleDestroy
                     { _id: plan._id },
                     {
                       $push: {
-                        skipped_dates: {
+                        warning_notifications_sent: {
                           $each: [skipKey],
                           $slice: -60,
                         },
@@ -238,11 +241,11 @@ export class RecurringService implements OnApplicationBootstrap, OnModuleDestroy
                   )
                   .catch(() => undefined);
               }
-              if (plan.skipped_dates) {
-                plan.skipped_dates.push(skipKey);
-                if (plan.skipped_dates.length > 60) {
-                  plan.skipped_dates = plan.skipped_dates.slice(-60);
-                }
+              const warnList = ((plan as any).warning_notifications_sent =
+                (plan as any).warning_notifications_sent || []);
+              warnList.push(skipKey);
+              if (warnList.length > 60) {
+                (plan as any).warning_notifications_sent = warnList.slice(-60);
               }
             }
           }

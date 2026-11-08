@@ -73,7 +73,7 @@ import {
 } from 'lucide-react-native';
 import { useAuthStore } from '@/stores/auth.store';
 import { useTranslation } from '@/hooks/use-i18n';
-import { I18nKey } from '@/services/i18n';
+import { I18nKey, formatCurrency } from '@/services/i18n';
 import {
   useServices,
   useMyJobs,
@@ -2076,8 +2076,8 @@ export default function CustomerHomeScreen() {
                         ? `${v.discount_value}% OFF`
                         : `Giảm ${v.discount_value}%`
                       : lang === 'en'
-                        ? `${Number(v.discount_value).toLocaleString('en-US')}₫ OFF`
-                        : `Giảm ${Number(v.discount_value).toLocaleString('vi-VN')}₫`;
+                        ? `${formatCurrency(v.discount_value, 'en')}₫ OFF`
+                        : `Giảm ${formatCurrency(v.discount_value, 'vi')}₫`;
                   const isCopied = copiedVoucher === v.code;
 
                   return (

@@ -1,6 +1,10 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { formatDate, formatDateTime, formatMonthSlash } from '../../../../apps/mobile/utils/date-format';
+import {
+  formatDate,
+  formatDateTime,
+  formatMonthSlash,
+} from '../../../../apps/mobile/utils/date-format';
 import { formatCurrency } from '../../../../apps/mobile/services/i18n';
 
 describe('G7: Quét toàn bộ key t() sử dụng trong mobile codebase', () => {

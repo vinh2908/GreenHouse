@@ -293,11 +293,7 @@ export class VouchersService {
                         $concatArrays: [
                           { $slice: ['$$arr', 0, '$$idx'] },
                           {
-                            $slice: [
-                              '$$arr',
-                              { $add: ['$$idx', 1] },
-                              { $size: '$$arr' },
-                            ],
+                            $slice: ['$$arr', { $add: ['$$idx', 1] }, { $size: '$$arr' }],
                           },
                         ],
                       },

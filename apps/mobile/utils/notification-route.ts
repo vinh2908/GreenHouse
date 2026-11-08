@@ -29,6 +29,7 @@ type Role = 'customer' | 'helper' | string | null | undefined;
 const HELPER_JOB_TYPES = new Set([
   'quote_accepted',
   'quote_rejected',
+  'quote_hidden',
   'review_received',
   'new_job_nearby',
 ]);

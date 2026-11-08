@@ -43,11 +43,11 @@ import {
 } from '@/hooks/use-api';
 import { Badge, Button, Card, COLORS, LoadingSpinner, useThemeColors } from '@/components/ui';
 import { useTranslation } from '@/hooks/use-i18n';
+import { formatCurrency } from '@/services/i18n';
 import { useMonthlyContractSocket } from '@/hooks/use-socket';
 import { MONTHLY_STATUS_META, describeMonthlySchedule, personName } from '../monthly-contracts';
 
-const fmt = (n?: number, l: string = 'vi') =>
-  new Intl.NumberFormat(l === 'en' ? 'en-US' : 'vi-VN').format(n ?? 0);
+const fmt = (n?: number, l: string = 'vi') => formatCurrency(n, l as any);
 
 const ATT_META: Record<
   AttendanceStatus,
@@ -96,8 +96,7 @@ export default function MonthlyContractDetailScreen() {
   const insets = useSafeAreaInsets();
   const { t, fs, lang } = useTranslation();
   const tc = useThemeColors();
-  const fmt = (n?: number) =>
-    new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'vi-VN').format(n ?? 0);
+  const fmt = (n?: number) => formatCurrency(n, lang);
   const user = useAuthStore(s => s.user);
   const isHelper = user?.active_role === 'helper';
 

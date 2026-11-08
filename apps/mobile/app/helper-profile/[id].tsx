@@ -19,6 +19,7 @@ import { formatRelativeTime } from '@/utils/date-format';
 import Toast from 'react-native-toast-message';
 import { useAuthStore } from '@/stores/auth.store';
 import { useTranslation } from '@/hooks/use-i18n';
+import { formatCurrency } from '@/services/i18n';
 import {
   useHelperPublicProfile,
   useHelperReviews,
@@ -200,12 +201,11 @@ export default function HelperPublicProfileScreen() {
   const formatPriceRange = (s: any): string => {
     const min = s.base_price_min;
     const max = s.base_price_max;
-    const loc = lang === 'en' ? 'en-US' : 'vi-VN';
     if (typeof min === 'number' && typeof max === 'number' && max > min)
-      return `${min.toLocaleString(loc)}₫ – ${max.toLocaleString(loc)}₫`;
+      return `${formatCurrency(min, lang)}₫ – ${formatCurrency(max, lang)}₫`;
     if (typeof min === 'number')
-      return `${lang === 'en' ? 'From ' : 'Từ '}${min.toLocaleString(loc)}₫`;
-    return `${(max as number).toLocaleString(loc)}₫`;
+      return `${lang === 'en' ? 'From ' : 'Từ '}${formatCurrency(min, lang)}₫`;
+    return `${formatCurrency(max as number, lang)}₫`;
   };
   // Khung giờ thật: chỉ khi thợ đã bật lịch làm việc (availability.enabled);
   // mặc định enabled=false nghĩa là nhận việc linh hoạt, không phải 07:00–19:00.
