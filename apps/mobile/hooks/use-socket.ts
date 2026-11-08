@@ -43,8 +43,11 @@ export function useSocketConnection() {
           (lang === 'en' ? 'Partner' : 'Đối tác');
         const content =
           data?.message?.type === 'image'
-            ? (lang === 'en' ? 'Sent an image' : 'Đã gửi một hình ảnh')
-            : data?.message?.content || (lang === 'en' ? 'You have a new message' : 'Bạn có tin nhắn mới');
+            ? lang === 'en'
+              ? 'Sent an image'
+              : 'Đã gửi một hình ảnh'
+            : data?.message?.content ||
+              (lang === 'en' ? 'You have a new message' : 'Bạn có tin nhắn mới');
 
         Toast.show({
           type: 'info',

@@ -71,7 +71,9 @@ export default function SupportPage() {
       await reply.mutateAsync({ id: selectedId, content });
     } catch (err: any) {
       setDraft(content);
-      setSendError(err?.response?.data?.message || err?.message || 'Không thể gửi tin nhắn phản hồi');
+      setSendError(
+        err?.response?.data?.message || err?.message || 'Không thể gửi tin nhắn phản hồi',
+      );
     }
   };
 
@@ -245,9 +247,7 @@ export default function SupportPage() {
                   </p>
                 ) : (
                   <div className="space-y-2">
-                    {sendError && (
-                      <p className="text-xs text-destructive">{sendError}</p>
-                    )}
+                    {sendError && <p className="text-xs text-destructive">{sendError}</p>}
                     <div className="flex gap-2">
                       <input
                         className="flex-1 h-10 rounded-md border border-input bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"

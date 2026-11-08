@@ -424,7 +424,13 @@ export default function SupportChatScreen() {
                 color: tc.text,
                 opacity: isClosed ? 0.6 : 1,
               }}
-              placeholder={isClosed ? (lang === 'en' ? 'Conversation closed' : 'Hội thoại đã đóng') : t('support_placeholder')}
+              placeholder={
+                isClosed
+                  ? lang === 'en'
+                    ? 'Conversation closed'
+                    : 'Hội thoại đã đóng'
+                  : t('support_placeholder')
+              }
               value={text}
               onChangeText={setText}
               editable={!isClosed}

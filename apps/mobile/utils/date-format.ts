@@ -237,7 +237,11 @@ export function formatDateTime(dateInput: DateInput): string {
 export function formatDate(dateInput: DateInput, lang: 'vi' | 'en' = 'vi'): string {
   if (!dateInput) return '';
   const date = toVnDayjs(dateInput);
-  return date.isValid() ? (lang === 'en' ? date.format('MM/DD/YYYY') : date.format('DD/MM/YYYY')) : '';
+  return date.isValid()
+    ? lang === 'en'
+      ? date.format('MM/DD/YYYY')
+      : date.format('DD/MM/YYYY')
+    : '';
 }
 
 export function formatTime(dateInput: DateInput): string {

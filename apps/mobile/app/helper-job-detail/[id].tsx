@@ -1793,8 +1793,12 @@ export default function HelperJobDetailScreen() {
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
                     <Text style={{ color: tc.textMuted, fontWeight: '500' }}>
                       {quoteServiceObj?.platform_fee_percent != null
-                        ? (lang === 'en' ? `Platform fee (${quoteFeePercent}%)` : `Phí nền tảng (${quoteFeePercent}%)`)
-                        : (lang === 'en' ? 'Platform fee (per service)' : 'Phí sàn (theo dịch vụ)')}
+                        ? lang === 'en'
+                          ? `Platform fee (${quoteFeePercent}%)`
+                          : `Phí nền tảng (${quoteFeePercent}%)`
+                        : lang === 'en'
+                          ? 'Platform fee (per service)'
+                          : 'Phí sàn (theo dịch vụ)'}
                     </Text>
                     <PriceText
                       amount={platformFee}

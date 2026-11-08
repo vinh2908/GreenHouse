@@ -92,10 +92,7 @@ export class MonthlyContractsController {
 
   @Get(':id')
   @ApiOperation({ summary: 'Chi tiết hợp đồng theo tháng' })
-  async detail(
-    @CurrentUser() user: { sub: string; roles?: string[] },
-    @Param('id') id: string,
-  ) {
+  async detail(@CurrentUser() user: { sub: string; roles?: string[] }, @Param('id') id: string) {
     return this.service.getContract(user.sub, id, user.roles);
   }
 

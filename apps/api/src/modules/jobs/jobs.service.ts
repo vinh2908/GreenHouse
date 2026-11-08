@@ -4988,7 +4988,10 @@ export class JobsService implements OnModuleInit {
     if (invitedUser?.is_verified === false) {
       throw new BadRequestException('Tài khoản thợ chưa được xác minh qua email');
     }
-    if (invitedUser?.status === UserStatus.SUSPENDED || invitedUser?.status === UserStatus.INACTIVE) {
+    if (
+      invitedUser?.status === UserStatus.SUSPENDED ||
+      invitedUser?.status === UserStatus.INACTIVE
+    ) {
       throw new BadRequestException('Tài khoản thợ đang bị tạm khoá hoặc ngừng hoạt động');
     }
     if (invitedProfile.status === HelperStatus.BUSY) {

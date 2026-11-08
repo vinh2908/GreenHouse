@@ -57,7 +57,13 @@ class RootErrorBoundary extends Component<
       const isEn = lang === 'en';
       return (
         <View
-          style={{ flex: 1, backgroundColor: '#FEF2F2', padding: 24, justifyContent: 'center', alignItems: 'center' }}
+          style={{
+            flex: 1,
+            backgroundColor: '#FEF2F2',
+            padding: 24,
+            justifyContent: 'center',
+            alignItems: 'center',
+          }}
         >
           <View
             style={{
@@ -73,12 +79,24 @@ class RootErrorBoundary extends Component<
             <AlertTriangle size={32} color="#DC2626" />
           </View>
           <Text
-            style={{ fontSize: fs(18), fontWeight: 'bold', color: '#991B1B', marginBottom: 8, textAlign: 'center' }}
+            style={{
+              fontSize: fs(18),
+              fontWeight: 'bold',
+              color: '#991B1B',
+              marginBottom: 8,
+              textAlign: 'center',
+            }}
           >
             {translate(lang, 'root_error_title')}
           </Text>
           <Text
-            style={{ fontSize: fs(14), color: '#4B5563', marginBottom: 24, textAlign: 'center', lineHeight: 20 }}
+            style={{
+              fontSize: fs(14),
+              color: '#4B5563',
+              marginBottom: 24,
+              textAlign: 'center',
+              lineHeight: 20,
+            }}
           >
             {isEn
               ? 'An unexpected error occurred. Please try again or return to the home screen.'

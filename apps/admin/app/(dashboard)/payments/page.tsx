@@ -499,7 +499,9 @@ export default function PaymentsPage() {
                       },
                       onError: (err: any) => {
                         setApproveError(
-                          err?.response?.data?.message || err?.message || 'Duyệt chuyển khoản thất bại',
+                          err?.response?.data?.message ||
+                            err?.message ||
+                            'Duyệt chuyển khoản thất bại',
                         );
                       },
                     },

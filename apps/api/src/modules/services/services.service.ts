@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import {
@@ -93,7 +98,9 @@ export class ServicesService {
     if (dto.pricing_model === 'fixed') {
       const fixedPrice = dto.fixed_price ?? minP;
       if (!fixedPrice || fixedPrice <= 0) {
-        throw new BadRequestException('Dịch vụ giá cam kết bắt buộc phải có giá cố định lớn hơn 0₫');
+        throw new BadRequestException(
+          'Dịch vụ giá cam kết bắt buộc phải có giá cố định lớn hơn 0₫',
+        );
       }
     }
 

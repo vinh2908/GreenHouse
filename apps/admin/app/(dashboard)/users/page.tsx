@@ -190,10 +190,10 @@ export default function UsersPage() {
                               variant={
                                 user.is_deleted
                                   ? 'danger'
-                                  : STATUS_BADGE[user.status] ?? 'secondary'
+                                  : (STATUS_BADGE[user.status] ?? 'secondary')
                               }
                             >
-                              {user.is_deleted ? 'Đã xóa' : STATUS_VI[user.status] ?? user.status}
+                              {user.is_deleted ? 'Đã xóa' : (STATUS_VI[user.status] ?? user.status)}
                             </Badge>
                           </TableCell>
                           <TableCell className="text-sm text-muted-foreground">

@@ -370,9 +370,7 @@ export default function ReviewsPage() {
               ? 'Bạn có chắc chắn muốn chấp nhận kháng nghị này? Đánh giá này sẽ được ẩn khỏi trang thợ.'
               : 'Bạn có chắc chắn muốn bác bỏ kháng nghị này? Đánh giá sẽ được giữ nguyên.'
           }
-          confirmLabel={
-            appealDecisionTarget.decision === 'upheld' ? 'Chấp nhận' : 'Bác kháng nghị'
-          }
+          confirmLabel={appealDecisionTarget.decision === 'upheld' ? 'Chấp nhận' : 'Bác kháng nghị'}
           requireInput={false}
           onSubmit={() => {
             const target = appealDecisionTarget;

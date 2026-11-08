@@ -154,46 +154,46 @@ function JobsTable({
       ) : null}
       <div className="overflow-x-auto w-full">
         <Table className="min-w-[600px]">
-        <TableHeader>
-          <TableRow>
-            <TableHead>Công việc</TableHead>
-            <TableHead>{counterpart === 'helper_id' ? 'Thợ' : 'Khách hàng'}</TableHead>
-            <TableHead>Trạng thái</TableHead>
-            <TableHead>Ngày tạo</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {jobs.map(j => (
-            <TableRow key={j._id}>
-              <TableCell>
-                <Link href={`/jobs/${j._id}`} className="font-medium hover:underline">
-                  {j.title}
-                </Link>
-                <p className="text-xs text-muted-foreground">
-                  {j.service_id?.name} · {j.address?.district}, {j.address?.city}
-                </p>
-              </TableCell>
-              <TableCell className="text-sm">
-                {j[counterpart] ? (
-                  <Link href={`/users/${j[counterpart]!._id}`} className="hover:underline">
-                    {j[counterpart]!.full_name}
-                  </Link>
-                ) : (
-                  '—'
-                )}
-              </TableCell>
-              <TableCell>
-                <Badge variant={STATUS_BADGE[j.status] ?? 'secondary'}>
-                  {STATUS_VI[j.status] ?? j.status}
-                </Badge>
-              </TableCell>
-              <TableCell className="text-sm text-muted-foreground">
-                {formatDateTime(j.created_at)}
-              </TableCell>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Công việc</TableHead>
+              <TableHead>{counterpart === 'helper_id' ? 'Thợ' : 'Khách hàng'}</TableHead>
+              <TableHead>Trạng thái</TableHead>
+              <TableHead>Ngày tạo</TableHead>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+          </TableHeader>
+          <TableBody>
+            {jobs.map(j => (
+              <TableRow key={j._id}>
+                <TableCell>
+                  <Link href={`/jobs/${j._id}`} className="font-medium hover:underline">
+                    {j.title}
+                  </Link>
+                  <p className="text-xs text-muted-foreground">
+                    {j.service_id?.name} · {j.address?.district}, {j.address?.city}
+                  </p>
+                </TableCell>
+                <TableCell className="text-sm">
+                  {j[counterpart] ? (
+                    <Link href={`/users/${j[counterpart]!._id}`} className="hover:underline">
+                      {j[counterpart]!.full_name}
+                    </Link>
+                  ) : (
+                    '—'
+                  )}
+                </TableCell>
+                <TableCell>
+                  <Badge variant={STATUS_BADGE[j.status] ?? 'secondary'}>
+                    {STATUS_VI[j.status] ?? j.status}
+                  </Badge>
+                </TableCell>
+                <TableCell className="text-sm text-muted-foreground">
+                  {formatDateTime(j.created_at)}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
       </div>
     </div>
   );
@@ -441,7 +441,7 @@ export default function UserDetailPage() {
               <CardContent className="space-y-4">
                 <div className="grid gap-4 sm:grid-cols-2">
                   <Field label="Trạng thái">
-                    {hp?.status ? HELPER_STATUS_VI[hp.status] ?? hp.status : '—'}
+                    {hp?.status ? (HELPER_STATUS_VI[hp.status] ?? hp.status) : '—'}
                   </Field>
                   <Field label="Kinh nghiệm">
                     {hp?.years_experience != null ? `${hp.years_experience} năm` : null}
@@ -587,8 +587,14 @@ export default function UserDetailPage() {
         <div className="space-y-6">
           <div className="grid gap-4 sm:grid-cols-3">
             <StatCard title="Số dư" value={wallet ? formatVND(wallet.balance) : 'Chưa có ví'} />
-            <StatCard title="Tổng thu nhập" value={wallet ? formatVND(wallet.total_earned ?? 0) : '—'} />
-            <StatCard title="Đã rút" value={wallet ? formatVND(wallet.total_withdrawn ?? 0) : '—'} />
+            <StatCard
+              title="Tổng thu nhập"
+              value={wallet ? formatVND(wallet.total_earned ?? 0) : '—'}
+            />
+            <StatCard
+              title="Đã rút"
+              value={wallet ? formatVND(wallet.total_withdrawn ?? 0) : '—'}
+            />
           </div>
           <Card>
             <CardHeader>

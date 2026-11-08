@@ -182,7 +182,11 @@ export class MonthlyContractsService {
   async createContract(customerId: string, dto: CreateMonthlyContractDto) {
     // P2-20: Chặn tạo hợp đồng tháng khi tài khoản khách chưa xác minh email
     if (this.userModel?.findById) {
-      const customerUser = await this.userModel.findById(customerId).select('is_verified').lean().exec();
+      const customerUser = await this.userModel
+        .findById(customerId)
+        .select('is_verified')
+        .lean()
+        .exec();
       if (customerUser && customerUser.is_verified === false) {
         throw new BadRequestException(
           'Tài khoản chưa được xác minh qua email. Vui lòng xác minh email trước khi tạo hợp đồng tháng.',
