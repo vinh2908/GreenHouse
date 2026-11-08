@@ -466,8 +466,12 @@ export function useToggleService() {
 
 // ─── Broadcast ──────────────────────────────────────────────────────────────────
 
-// B108: lịch sử thông báo đã gửi
-export function useAdminSentNotifications(params: { page?: number; type?: string }) {
+// B108 & A08: lịch sử thông báo đã gửi
+export function useAdminSentNotifications(params: {
+  page?: number;
+  type?: string;
+  grouped?: boolean;
+}) {
   return useQuery({
     queryKey: ['admin', 'notifications', 'sent', params],
     queryFn: async () => {

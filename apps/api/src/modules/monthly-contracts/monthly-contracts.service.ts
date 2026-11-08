@@ -100,15 +100,21 @@ export class MonthlyContractsService {
     return !!found;
   }
 
+  // P1-17: Chuẩn hoá sang múi giờ Việt Nam Asia/Ho_Chi_Minh (UTC+7)
+  private toVnDate(d: Date): Date {
+    return new Date(d.getTime() + 7 * 60 * 60 * 1000);
+  }
+
   private todayStr(): string {
     const d = new Date();
     return this.toDateStr(d);
   }
 
   private toDateStr(d: Date): string {
-    const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
+    const vn = this.toVnDate(d);
+    const y = vn.getUTCFullYear();
+    const m = String(vn.getUTCMonth() + 1).padStart(2, '0');
+    const day = String(vn.getUTCDate()).padStart(2, '0');
     return `${y}-${m}-${day}`;
   }
 
@@ -134,7 +140,7 @@ export class MonthlyContractsService {
     const result: string[] = [];
     const cursor = new Date(from);
     while (cursor <= to) {
-      if (days.has(cursor.getDay())) result.push(this.toDateStr(cursor));
+      if (days.has(this.toVnDate(cursor).getUTCDay())) result.push(this.toDateStr(cursor));
       cursor.setDate(cursor.getDate() + 1);
     }
     return result;
@@ -378,10 +384,10 @@ export class MonthlyContractsService {
       throw new ConflictException('Hợp đồng chưa có hiệu lực hoặc đã kết thúc');
     }
 
-    // A38: Kiểm tra giờ hiện tại có nằm trong ca làm việc không (cho phép lệch ±30 phút)
+    // P1-17: Kiểm tra giờ hiện tại có nằm trong ca làm việc không theo giờ Việt Nam (+07:00) (cho phép lệch ±30 phút)
     if (contract.schedule?.time_start && contract.schedule?.time_end) {
-      const now = new Date();
-      const currentMinutes = now.getHours() * 60 + now.getMinutes();
+      const vnNow = this.toVnDate(new Date());
+      const currentMinutes = vnNow.getUTCHours() * 60 + vnNow.getUTCMinutes();
       const [startH, startM] = contract.schedule.time_start.split(':').map(Number);
       const [endH, endM] = contract.schedule.time_end.split(':').map(Number);
       const startMinutes = (startH ?? 0) * 60 + (startM ?? 0);
@@ -903,10 +909,12 @@ export class MonthlyContractsService {
    *  - chốt lương xong (gửi ngay trong settle(), xem trên)
    * Hợp đồng đã huỷ/kết thúc/từ chối thì không nhắc.
    */
-  @Cron('0 8 * * *')
+  // T6: Chạy lúc 08:00 sáng theo giờ Việt Nam
+  @Cron('0 8 * * *', { timeZone: 'Asia/Ho_Chi_Minh' })
   async notifyMonthlyContractMilestones(): Promise<void> {
     const now = new Date();
-    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const todayKey = this.todayStr();
+    const todayStart = new Date(`${todayKey}T00:00:00+07:00`);
     const todayEnd = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000);
     const in3Days = new Date(todayStart.getTime() + 3 * 24 * 60 * 60 * 1000);
 

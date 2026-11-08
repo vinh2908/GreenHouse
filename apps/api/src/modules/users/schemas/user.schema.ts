@@ -54,6 +54,9 @@ export class User {
   @Prop({ type: [String], default: [] })
   push_tokens: string[];
 
+  @Prop({ default: 'vi' })
+  language?: string;
+
   // VoIP tokens để đánh thức cuộc gọi đến khi app chạy nền / bị đóng hẳn
   // (CallKeep): iOS = PushKit token (gửi qua APNs VoIP), Android = FCM token
   // (gửi FCM high-priority). Kèm platform để API chọn đúng kênh gửi.

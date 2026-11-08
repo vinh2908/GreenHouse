@@ -384,8 +384,8 @@ export const STRINGS = {
     en: 'Green House v1.0.0 • Professional home services',
   },
   earn_note: {
-    vi: ' Đơn thanh toán Online sẽ cộng 85% vào ví. Đơn thu Tiền mặt trực tiếp sẽ khấu trừ 15% phí sàn từ ví ký quỹ.',
-    en: ' Online-paid jobs credit 85% to your wallet. Cash jobs deduct the 15% platform fee from your escrow wallet.',
+    vi: ' Đơn thanh toán Online sẽ cộng phần thu nhập thực nhận vào ví. Đơn thu Tiền mặt trực tiếp sẽ khấu trừ phí sàn theo từng dịch vụ (thông thường 15%–20%) từ ví ký quỹ.',
+    en: ' Online-paid jobs credit helper earnings to your wallet. Cash jobs deduct the platform fee (typically 15%–20% based on service) from your escrow wallet.',
   },
   common_service: { vi: 'Dịch vụ', en: 'Service' },
   // ─── Support chat ─────────────────────────────────────────────────────────
@@ -1779,6 +1779,10 @@ export const STRINGS = {
     vi: 'Vui lòng nhập số điện thoại 10 số hợp lệ',
     en: 'Please enter a valid 10-digit phone number',
   },
+  common_error: {
+    vi: 'Có lỗi xảy ra',
+    en: 'An error occurred',
+  },
 } as const;
 
 export type I18nKey = keyof typeof STRINGS;
@@ -1790,6 +1794,9 @@ export function translate(
   params?: Record<string, string | number>,
 ): string {
   const entry = (STRINGS as Record<string, { vi: string; en: string }>)[key];
+  if (!entry && typeof __DEV__ !== 'undefined' && __DEV__) {
+    console.warn(`[i18n] Missing translation key: "${key}"`);
+  }
   let text = entry ? entry[lang] || entry.vi : key;
   if (params) {
     for (const [k, v] of Object.entries(params)) {
@@ -1842,6 +1849,79 @@ export function mapAuthErrorMessage(message: unknown, lang: AppLanguage): string
   if (typeof message !== 'string' || !message) return undefined;
   if (lang !== 'en') return message;
   return AUTH_ERROR_EN_MAP[message.trim()] ?? message;
+}
+
+// ─── Business Server Error Mapping (X9) ─────────────────────────────────────
+export const SERVER_ERROR_EN_MAP: Record<string, string> = {
+  'Số tiền rút tối thiểu là 50.000₫': 'Minimum withdrawal amount is 50,000₫',
+  'Số tiền rút tối thiểu là 50.000đ': 'Minimum withdrawal amount is 50,000₫',
+  'Số tiền nạp tối thiểu là 10.000₫': 'Minimum deposit amount is 10,000₫',
+  'Số dư ví không đủ': 'Insufficient wallet balance',
+  'Số dư không đủ': 'Insufficient balance',
+  'Số dư ví khả dụng không đủ': 'Insufficient available wallet balance',
+  'Số tiền rút vượt quá số dư khả dụng': 'Withdrawal amount exceeds available balance',
+  'Job đã có thợ nhận': 'This job has already been taken by a helper',
+  'Đơn hàng đã có thợ nhận': 'This job has already been taken by a helper',
+  'Công việc đã có thợ nhận': 'This job has already been taken by a helper',
+  'Không thể nhận việc': 'Cannot accept this job',
+  'Không thể hủy đơn': 'Cannot cancel this job',
+  'Không thể hủy đơn hàng': 'Cannot cancel this job',
+  'Đơn hàng chưa được thanh toán thành công': 'Job has not been paid successfully',
+  'Đơn hàng chưa được thanh toán thành công, không thể chuyển sang hoàn thành':
+    'Job has not been paid successfully, cannot complete',
+  'Đơn hàng đã hoàn thành': 'Job is already completed',
+  'Đơn hàng đã bị hủy': 'Job is already cancelled',
+  'Vui lòng nhập lý do': 'Please enter a reason',
+  'Mã giảm giá không hợp lệ': 'Invalid promo code',
+  'Mã giảm giá đã hết hạn': 'Promo code has expired',
+  'Mã giảm giá đã hết lượt sử dụng': 'Promo code has reached its usage limit',
+  'Tài khoản thợ chưa được xác minh e-KYC': 'Helper account has not been e-KYC verified',
+  'Bạn đã gửi báo giá cho đơn này rồi': 'You have already submitted a quote for this job',
+  'Bạn đã báo giá cho đơn này rồi': 'You have already submitted a quote for this job',
+  'Không tìm thấy công việc': 'Job not found',
+  'Job không tồn tại': 'Job not found',
+  'Không tìm thấy người dùng': 'User not found',
+  'Không có quyền thực hiện': 'You do not have permission to perform this action',
+  'Phiên đăng nhập đã hết hạn': 'Session has expired, please sign in again',
+  'Số tiền phải lớn hơn 0': 'Amount must be greater than 0',
+  'Số tiền phải lớn hơn 0₫': 'Amount must be greater than 0₫',
+  'Yêu cầu rút tiền đang được xử lý': 'A withdrawal request is already pending',
+  'Vui lòng hoàn thành thông tin ngân hàng trước khi rút tiền':
+    'Please complete your bank account details before withdrawing',
+  'Tài khoản ngân hàng không hợp lệ': 'Invalid bank account',
+  'Chưa liên kết tài khoản ngân hàng': 'Bank account not linked yet',
+  'Không thể đổi vai trò': 'Cannot switch role',
+  'Thợ chưa xác nhận đã nhận tiền mặt từ khách. Không thể hoàn thành đơn tiền mặt.':
+    'Helper has not confirmed receiving cash from customer. Cannot complete cash job.',
+  'Thợ chưa xác nhận đã nhận tiền mặt từ khách':
+    'Helper has not confirmed receiving cash from customer',
+};
+
+export function mapServerErrorMessage(rawMessage: unknown, lang: AppLanguage = 'vi'): string {
+  if (typeof rawMessage !== 'string' || !rawMessage) {
+    return lang === 'en' ? 'An error occurred' : 'Có lỗi xảy ra';
+  }
+  const trimmed = rawMessage.trim();
+  if (lang !== 'en') return trimmed;
+
+  if (SERVER_ERROR_EN_MAP[trimmed]) {
+    return SERVER_ERROR_EN_MAP[trimmed];
+  }
+
+  if (/tối thiểu/i.test(trimmed) && /rút/i.test(trimmed)) {
+    return 'Minimum withdrawal amount is 50,000₫';
+  }
+  if (/không đủ/i.test(trimmed) && /số dư/i.test(trimmed)) {
+    return 'Insufficient wallet balance';
+  }
+  if (/đã có thợ/i.test(trimmed)) {
+    return 'This job has already been taken';
+  }
+  if (/hết hạn/i.test(trimmed) && /phiên/i.test(trimmed)) {
+    return 'Session expired, please log in again';
+  }
+
+  return trimmed;
 }
 
 // ─── Service Catalog Name Translation (Điểm 3) ───────────────────────────────
@@ -2200,9 +2280,21 @@ export function formatNotificationTitle(
       case 'new_quote_received':
         return 'New Quote Received';
       case 'new_job_nearby':
+        if (data?.is_sos || /cứu hộ|sos/i.test(t)) return 'Emergency SOS Request Nearby!';
+        if (data?.is_private || /việc riêng|khách quen/i.test(t))
+          return 'Private Job Offer from Regular Customer!';
         return 'New job near you';
+      case 'review_requested':
+        return 'Please Review Service';
       case 'job_completed':
+        if (/đánh giá/i.test(t) || data?.action === 'review') return 'Please Review Service';
         return 'Job Completed';
+      case 'job_status_changed':
+        return 'Job Status Updated';
+      case 'recurring_job_created':
+        return 'Recurring Job Created';
+      case 'job_reminder':
+        return 'Upcoming Job Reminder';
       case 'helper_on_the_way':
         return 'Helper is on the way';
       case 'helper_arrived':
@@ -2321,62 +2413,68 @@ export function formatNotificationTitle(
     }
   }
 
-  if (/^Hoàn tất đơn Tiền mặt!?$/i.test(t)) return 'Cash Order Completed!';
-  if (/^Tiền công đã cộng vào ví!?$/i.test(t)) return 'Earnings Credited to Wallet!';
-  if (/^\s*Thợ đã nhận việc bảo hành!?$/i.test(t)) return 'Helper Accepted Warranty Job!';
-  if (/^\s*Đã có thợ nhận việc giá cam kết!?$/i.test(t)) return 'Helper Accepted Fixed-Price Job!';
-  if (/^\s*Khách đã duyệt chi phí phát sinh!?$/i.test(t)) return 'Customer Approved Extra Expenses';
-  if (/^\s*Khách từ chối chi phí phát sinh!?$/i.test(t)) return 'Customer Rejected Extra Expenses';
-  if (/^\s*Thợ đã nhận hợp đồng theo tháng!?$/i.test(t)) return 'Helper Accepted Monthly Contract';
-  if (/^\s*Thợ đã từ chối hợp đồng theo tháng!?$/i.test(t))
+  // X2-X4: Bỏ emoji ở đầu chuỗi trước khi chạy regex dự phòng
+  const cleanT = t.replace(/^[\p{Emoji}\p{Extended_Pictographic}\s\uFE0F\u200D]+/u, '').trim();
+  const matchT = (regex: RegExp) => regex.test(t) || regex.test(cleanT);
+
+  if (matchT(/^Hoàn tất đơn Tiền mặt!?$/i)) return 'Cash Order Completed!';
+  if (matchT(/^Tiền công đã cộng vào ví!?$/i)) return 'Earnings Credited to Wallet!';
+  if (matchT(/^\s*Thợ đã nhận việc bảo hành!?$/i)) return 'Helper Accepted Warranty Job!';
+  if (matchT(/^\s*Đã có thợ nhận việc giá cam kết!?$/i)) return 'Helper Accepted Fixed-Price Job!';
+  if (matchT(/^\s*Khách đã duyệt chi phí phát sinh!?$/i)) return 'Customer Approved Extra Expenses';
+  if (matchT(/^\s*Khách từ chối chi phí phát sinh!?$/i)) return 'Customer Rejected Extra Expenses';
+  if (matchT(/^\s*Thợ đã nhận hợp đồng theo tháng!?$/i)) return 'Helper Accepted Monthly Contract';
+  if (matchT(/^\s*Thợ đã từ chối hợp đồng theo tháng!?$/i))
     return 'Helper Declined Monthly Contract';
 
-  if (/^Báo giá được chọn!?$/i.test(t)) return 'Quote Accepted!';
-  if (/^Công việc bị hủy$/i.test(t)) return 'Job Cancelled';
-  if (/^Đơn hàng đã bị hủy bởi Quản trị viên$/i.test(t)) return 'Order Cancelled by Admin';
-  if (/^Báo giá mới$/i.test(t)) return 'New Quote Received';
-  if (/^Có đơn mới gần bạn\s*(|)?$/i.test(t)) return 'New job near you';
-  if (/^\s*Bạn được khách quen gửi việc riêng!$/i.test(t))
+  if (matchT(/^Báo giá được chọn!?$/i)) return 'Quote Accepted!';
+  if (matchT(/^Công việc bị hủy$/i)) return 'Job Cancelled';
+  if (matchT(/^Đơn hàng đã bị hủy bởi Quản trị viên$/i)) return 'Order Cancelled by Admin';
+  if (matchT(/^Báo giá mới$/i)) return 'New Quote Received';
+  if (matchT(/^Có đơn mới gần bạn\s*(|)?$/i)) return 'New job near you';
+  if (matchT(/^\s*Bạn được khách quen gửi việc riêng!$/i))
     return 'You received a private job from a regular customer!';
-  if (/^Hoàn thành công việc$/i.test(t)) return 'Job Completed';
-  if (/^Người giúp việc đang trên đường$/i.test(t)) return 'Helper is on the way';
-  if (/^Người giúp việc đã đến$/i.test(t)) return 'Helper has arrived';
-  if (/^Người giúp việc có sự cố khẩn cấp$/i.test(t)) return 'Helper Emergency Reported';
-  if (/^Đã có người giúp việc thay thế$/i.test(t)) return 'Replacement Helper Assigned';
-  if (/^Đã có người thay thế bạn$/i.test(t)) return 'You Have Been Replaced';
-  if (/^Đơn đã hủy\s*[—–-]\s*bạn được giải phóng$/i.test(t))
+  if (matchT(/^Hoàn thành công việc$/i)) return 'Job Completed';
+  if (matchT(/^Đánh giá dịch vụ$/i)) return 'Please Review Service';
+  if (matchT(/^Nhắc hẹn:?\s*(.*)$/i)) return 'Upcoming Job Reminder';
+  if (matchT(/^Người giúp việc đang trên đường$/i)) return 'Helper is on the way';
+  if (matchT(/^Người giúp việc đã đến$/i)) return 'Helper has arrived';
+  if (matchT(/^Người giúp việc có sự cố khẩn cấp$/i)) return 'Helper Emergency Reported';
+  if (matchT(/^Đã có người giúp việc thay thế$/i)) return 'Replacement Helper Assigned';
+  if (matchT(/^Đã có người thay thế bạn$/i)) return 'You Have Been Replaced';
+  if (matchT(/^Đơn đã hủy\s*[—–-]\s*bạn được giải phóng$/i))
     return 'Job Cancelled — You Are Released';
-  if (/^Đơn đã hủy & hoàn tiền theo chính sách SOS$/i.test(t))
+  if (matchT(/^Đơn đã hủy & hoàn tiền theo chính sách SOS$/i))
     return 'Job Cancelled & Refunded under SOS Policy';
-  if (/^Đơn đã hủy\s*[—–-]\s*Khoản hoàn tiền đang chờ đối soát$/i.test(t))
+  if (matchT(/^Đơn đã hủy\s*[—–-]\s*Khoản hoàn tiền đang chờ đối soát$/i))
     return 'Job Cancelled — Refund Pending Review';
-  if (/^Người giúp việc đã thu hồi yêu cầu SOS$/i.test(t)) return 'Helper Retracted SOS Request';
-  if (/^Chưa tìm được người thay thế$/i.test(t)) return 'No Replacement Helper Found Yet';
-  if (/^Chưa có thợ thay thế phù hợp$/i.test(t)) return 'No Suitable Replacement Helper Yet';
-  if (/^SOS backup hết hạn\s*[—–-]\s*cần xử lý thủ công$/i.test(t))
+  if (matchT(/^Người giúp việc đã thu hồi yêu cầu SOS$/i)) return 'Helper Retracted SOS Request';
+  if (matchT(/^Chưa tìm được người thay thế$/i)) return 'No Replacement Helper Found Yet';
+  if (matchT(/^Chưa có thợ thay thế phù hợp$/i)) return 'No Suitable Replacement Helper Yet';
+  if (matchT(/^SOS backup hết hạn\s*[—–-]\s*cần xử lý thủ công$/i))
     return 'SOS Backup Expired — Manual Review Required';
-  if (/^Nhắc:\s*cần bạn quyết định cho đơn đang chờ$/i.test(t))
+  if (matchT(/^Nhắc:\s*cần bạn quyết định cho đơn đang chờ$/i))
     return 'Reminder: Action Required for Pending Job';
-  if (/^\s*Lời mời hỗ trợ khẩn cấp\s*\(SOS Backup\)/i.test(t))
+  if (matchT(/^\s*Lời mời hỗ trợ khẩn cấp\s*\(SOS Backup\)/i))
     return 'Emergency Backup Invitation (SOS)';
-  if (/^\s*CỨU HỘ KHẨN CẤP SOS GẦN BẠN!?$/i.test(t)) return 'URGENT SOS EMERGENCY NEAR YOU!';
-  if (/^\s*ĐÃ CÓ THỢ NHẬN CỨU HỘ SOS!?$/i.test(t)) return 'A HELPER ACCEPTED SOS RESCUE!';
-  if (/^\s*\[SOS CỨU HỘ\]\s*(.*)$/i.test(t)) {
-    const rest = t.replace(/^\s*\[SOS CỨU HỘ\]\s*/i, '');
+  if (matchT(/^\s*CỨU HỘ KHẨN CẤP SOS GẦN BẠN!?$/i)) return 'URGENT SOS EMERGENCY NEAR YOU!';
+  if (matchT(/^\s*ĐÃ CÓ THỢ NHẬN CỨU HỘ SOS!?$/i)) return 'A HELPER ACCEPTED SOS RESCUE!';
+  if (matchT(/^\s*\[SOS CỨU HỘ\]\s*(.*)$/i)) {
+    const rest = cleanT.replace(/^\s*\[SOS CỨU HỘ\]\s*/i, '');
     return `[SOS RESCUE] ${rest}`;
   }
-  if (/^Hồ sơ e-KYC đã được duyệt$/i.test(t)) return 'e-KYC Profile Approved';
-  if (/^Hồ sơ e-KYC bị từ chối$/i.test(t)) return 'e-KYC Profile Rejected';
-  if (/^Hoàn tiền vào ví Green House$/i.test(t)) return 'Refund Credited to Green House Wallet';
-  if (/^Rút tiền thành công$/i.test(t)) return 'Withdrawal Successful';
-  if (/^Yêu cầu rút tiền bị từ chối$/i.test(t)) return 'Withdrawal Request Rejected';
-  if (/^Tin nhắn mới$/i.test(t)) return 'New Message';
-  if (/^Đội hỗ trợ đã phản hồi$/i.test(t)) return 'Support Team Replied';
-  if (/^Bạn nhận được đánh giá\s*(\d+)★$/i.test(t)) {
-    return t.replace(/^Bạn nhận được đánh giá\s*(\d+)★$/i, 'You received a $1-star review');
+  if (matchT(/^Hồ sơ e-KYC đã được duyệt$/i)) return 'e-KYC Profile Approved';
+  if (matchT(/^Hồ sơ e-KYC bị từ chối$/i)) return 'e-KYC Profile Rejected';
+  if (matchT(/^Hoàn tiền vào ví Green House$/i)) return 'Refund Credited to Green House Wallet';
+  if (matchT(/^Rút tiền thành công$/i)) return 'Withdrawal Successful';
+  if (matchT(/^Yêu cầu rút tiền bị từ chối$/i)) return 'Withdrawal Request Rejected';
+  if (matchT(/^Tin nhắn mới$/i)) return 'New Message';
+  if (matchT(/^Đội hỗ trợ đã phản hồi$/i)) return 'Support Team Replied';
+  if (matchT(/^Bạn nhận được đánh giá\s*(\d+)★$/i)) {
+    return cleanT.replace(/^Bạn nhận được đánh giá\s*(\d+)★$/i, 'You received a $1-star review');
   }
-  if (/^\s*Đề xuất phát sinh vật tư \/ chi phí$/i.test(t)) return 'Extra Supplies / Costs Proposal';
-  if (/^\s*Đơn hàng đang có khiếu nại \/ tranh chấp$/i.test(t))
+  if (matchT(/^\s*Đề xuất phát sinh vật tư \/ chi phí$/i)) return 'Extra Supplies / Costs Proposal';
+  if (matchT(/^\s*Đơn hàng đang có khiếu nại \/ tranh chấp$/i))
     return 'Order Has Dispute / Complaint';
   if (/^\s*Kết quả phân xử khiếu nại từ Admin$/i.test(t)) return 'Dispute Resolution from Admin';
   if (/^\s*Hồ sơ tranh chấp có cập nhật$/i.test(t)) return 'Dispute Case Updated';
@@ -2556,6 +2654,18 @@ export function formatNotificationBody(
     const m = b.match(/Đơn\s*(".*?"|'.*?'|“.*?”)/i);
     const accepted = /đồng ý/i.test(b);
     return `Job ${m ? m[1] : ''}: a helper just ${accepted ? 'accepted' : 'declined'} the team invitation.`;
+  }
+  if (type === 'job_status_changed') {
+    return 'Job status has been updated.';
+  }
+  if (type === 'recurring_job_created') {
+    return 'A new recurring job session has been scheduled.';
+  }
+  if (type === 'job_reminder') {
+    return 'Your scheduled job starts soon. Please be prepared.';
+  }
+  if (type === 'review_requested') {
+    return 'Please take a moment to rate and review the service quality.';
   }
 
   // 2. job_confirmed (warranty & fixed price) — F11: map theo type + payload

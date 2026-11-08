@@ -199,8 +199,11 @@ export class InvoicesService {
       day: '2-digit',
     });
     const day = formatter.format(now).replace(/-/g, '');
-    const dayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const dayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+    const yStr = day.slice(0, 4);
+    const mStr = day.slice(4, 6);
+    const dStr = day.slice(6, 8);
+    const dayStart = new Date(`${yStr}-${mStr}-${dStr}T00:00:00+07:00`);
+    const dayEnd = new Date(dayStart.getTime() + 86400000);
 
     for (let attempt = 0; attempt < 5; attempt++) {
       const todayCount = await this.invoiceModel

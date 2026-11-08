@@ -11,6 +11,7 @@ import { useRouter } from 'expo-router';
 import * as Notifications from 'expo-notifications';
 import apiClient from '@/services/api-client';
 import { useAuthStore } from '@/stores/auth.store';
+import { useSettingsStore } from '@/stores/settings.store';
 import {
   configurePushForegroundHandler,
   registerForPushNotifications,
@@ -98,7 +99,8 @@ export function usePushNotifications() {
         savedTokenRef.current = token;
         try {
           console.log('[usePushNotifications] Registering push token to server:', token);
-          await apiClient.patch('/users/me/push-token', { token });
+          const language = useSettingsStore.getState().language;
+          await apiClient.patch('/users/me/push-token', { token, language });
           console.log('[usePushNotifications] Push token registered to server successfully');
         } catch (err: any) {
           console.warn(

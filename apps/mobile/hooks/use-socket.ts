@@ -237,7 +237,11 @@ export function useJobSocketUpdates(jobId?: string) {
       data => {
         if (data?.job_id && data.job_id !== jobId) return;
         qc.invalidateQueries({ queryKey: ['job', jobId, 'quotes'] });
-        Toast.show({ type: 'success', text1: 'Có báo giá mới!' });
+        const lang = useSettingsStore.getState().language;
+        Toast.show({
+          type: 'success',
+          text1: lang === 'en' ? 'New quote received!' : 'Có báo giá mới!',
+        });
       },
     );
 
@@ -245,10 +249,17 @@ export function useJobSocketUpdates(jobId?: string) {
       if (data?.job_id && data.job_id !== jobId) return;
       qc.invalidateQueries({ queryKey: ['job', jobId, 'contract'] });
       qc.invalidateQueries({ queryKey: ['job', jobId] });
+      const lang = useSettingsStore.getState().language;
       Toast.show({
         type: 'info',
-        text1: ' Có đề xuất phát sinh vật tư / chi phí mới!',
-        text2: 'Vui lòng kiểm tra mục Hợp đồng dịch vụ để duyệt.',
+        text1:
+          lang === 'en'
+            ? ' New extra expense proposed!'
+            : ' Có đề xuất phát sinh vật tư / chi phí mới!',
+        text2:
+          lang === 'en'
+            ? 'Please check Contract section to review.'
+            : 'Vui lòng kiểm tra mục Hợp đồng dịch vụ để duyệt.',
       });
     });
 
@@ -258,12 +269,17 @@ export function useJobSocketUpdates(jobId?: string) {
         if (data?.job_id && data.job_id !== jobId) return;
         qc.invalidateQueries({ queryKey: ['job', jobId, 'contract'] });
         qc.invalidateQueries({ queryKey: ['job', jobId] });
+        const lang = useSettingsStore.getState().language;
         Toast.show({
           type: data?.status === 'accepted' ? 'success' : 'info',
           text1:
             data?.status === 'accepted'
-              ? ' Khách hàng đã đồng ý chi phí phát sinh!'
-              : 'ℹ Khách hàng đã từ chối khoản phát sinh',
+              ? lang === 'en'
+                ? ' Customer approved extra expenses!'
+                : ' Khách hàng đã đồng ý chi phí phát sinh!'
+              : lang === 'en'
+                ? ' Customer declined extra expenses'
+                : 'ℹ Khách hàng đã từ chối khoản phát sinh',
         });
       },
     );

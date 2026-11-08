@@ -36,6 +36,37 @@ const CANCELLABLE = [
   'helper_on_the_way',
 ];
 
+const ADMIN_JOB_STATUS_TRANSITIONS: Record<string, string[]> = {
+  draft: ['open', 'cancelled'],
+  open: ['receiving_quotes', 'confirmed', 'cancelled'],
+  receiving_quotes: ['quote_selected', 'confirmed', 'cancelled'],
+  quote_selected: ['confirmed', 'receiving_quotes', 'cancelled'],
+  confirmed: ['helper_on_the_way', 'in_progress', 'cancelled'],
+  helper_on_the_way: ['helper_arrived', 'in_progress', 'cancelled'],
+  helper_arrived: ['in_progress', 'cancelled'],
+  in_progress: ['pending_review', 'completed', 'disputed', 'cancelled'],
+  pending_review: ['completed', 'disputed', 'in_progress', 'cancelled'],
+  disputed: ['in_progress', 'completed', 'refunded', 'cancelled'],
+  completed: [],
+  cancelled: ['refunded'],
+  refunded: [],
+};
+
+const ALL_STATUS_LABELS: Record<string, string> = {
+  open: 'Đăng yêu cầu (open)',
+  receiving_quotes: 'Đang nhận báo giá (receiving_quotes)',
+  quote_selected: 'Đã chọn báo giá (quote_selected)',
+  confirmed: 'Đã chốt thợ (confirmed)',
+  helper_on_the_way: 'Thợ đang di chuyển (helper_on_the_way)',
+  helper_arrived: 'Thợ đã đến nơi (helper_arrived)',
+  in_progress: 'Đang làm việc (in_progress)',
+  pending_review: 'Chờ nghiệm thu (pending_review)',
+  completed: 'Hoàn tất (completed)',
+  disputed: 'Tranh chấp (disputed)',
+  cancelled: 'Đã hủy (cancelled)',
+  refunded: 'Đã hoàn tiền (refunded)',
+};
+
 const DISPUTE_ACTION_OPTIONS = [
   { value: 'refund_full', label: 'Hoàn tiền 100% cho Khách hàng (Thợ vi phạm)' },
   { value: 'refund_partial', label: 'Hoàn tiền một phần cho Khách & Giải ngân phần còn lại' },
@@ -531,24 +562,30 @@ export default function JobDetailPage() {
                 <p className="text-xs font-semibold text-muted-foreground uppercase">
                   Đổi trạng thái thủ công
                 </p>
-                <Select
-                  value={manualStatus || job.status}
-                  onChange={e => setManualStatus(e.target.value)}
-                  options={[
-                    { value: 'open', label: 'Đăng yêu cầu (open)' },
-                    { value: 'receiving_quotes', label: 'Đang nhận báo giá (receiving_quotes)' },
-                    { value: 'quote_selected', label: 'Đã chọn báo giá (quote_selected)' },
-                    { value: 'confirmed', label: 'Đã chốt thợ (confirmed)' },
-                    { value: 'helper_on_the_way', label: 'Thợ đang di chuyển (helper_on_the_way)' },
-                    { value: 'helper_arrived', label: 'Thợ đã đến nơi (helper_arrived)' },
-                    { value: 'in_progress', label: 'Đang làm việc (in_progress)' },
-                    { value: 'pending_review', label: 'Chờ nghiệm thu (pending_review)' },
-                    { value: 'completed', label: 'Hoàn tất (completed)' },
-                    { value: 'disputed', label: 'Tranh chấp (disputed)' },
-                    { value: 'cancelled', label: 'Đã hủy (cancelled)' },
-                    { value: 'refunded', label: 'Đã hoàn tiền (refunded)' },
-                  ]}
-                />
+                {(() => {
+                  const allowedTransitions = ADMIN_JOB_STATUS_TRANSITIONS[job.status] || [];
+                  if (allowedTransitions.length === 0) {
+                    return (
+                      <p className="text-xs text-muted-foreground italic py-1">
+                        Trạng thái &quot;{STATUS_VI[job.status] || job.status}&quot; là trạng thái cuối, không thể chuyển đổi tiếp.
+                      </p>
+                    );
+                  }
+                  const options = [
+                    { value: job.status, label: `${ALL_STATUS_LABELS[job.status] || job.status} (Hiện tại)` },
+                    ...allowedTransitions.map(s => ({
+                      value: s,
+                      label: ALL_STATUS_LABELS[s] || s,
+                    })),
+                  ];
+                  return (
+                    <Select
+                      value={manualStatus || job.status}
+                      onChange={e => setManualStatus(e.target.value)}
+                      options={options}
+                    />
+                  );
+                })()}
                 <Input
                   placeholder="Ghi chú lý do đổi trạng thái (tùy chọn)"
                   value={manualNote}
@@ -563,7 +600,12 @@ export default function JobDetailPage() {
                 <Button
                   variant="outline"
                   className="w-full text-xs"
-                  disabled={!manualStatus || manualStatus === job.status || updateStatus.isPending}
+                  disabled={
+                    !manualStatus ||
+                    manualStatus === job.status ||
+                    !(ADMIN_JOB_STATUS_TRANSITIONS[job.status] || []).includes(manualStatus) ||
+                    updateStatus.isPending
+                  }
                   onClick={() => setConfirmStatus(true)}
                 >
                   {updateStatus.isPending ? 'Đang cập nhật…' : 'Cập nhật trạng thái'}

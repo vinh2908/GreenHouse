@@ -3070,6 +3070,15 @@ export default function JobDetailScreen() {
                 <View style={{ gap: 8 }}>
                   {PAYMENT_METHODS.map(pm => {
                     const selected = paymentMethod === pm.id;
+                    const feePercent = (job?.service_id as any)?.platform_fee_percent ?? 15;
+                    const displayLabel =
+                      pm.id === 'cash'
+                        ? lang === 'en'
+                          ? `Direct cash (${feePercent}% platform fee deducted from helper escrow)`
+                          : `Tiền mặt trực tiếp (Trừ phí ${feePercent}% ví ký quỹ thợ)`
+                        : lang === 'en'
+                          ? pm.label_en
+                          : pm.label;
                     return (
                       <TouchableOpacity
                         key={pm.id}
@@ -3112,7 +3121,7 @@ export default function JobDetailScreen() {
                               flex: 1,
                             }}
                           >
-                            {lang === 'en' ? pm.label_en : pm.label}
+                            {displayLabel}
                           </Text>
                         </View>
                         {selected && <Check size={16} color={COLORS.primary} />}

@@ -47,7 +47,7 @@ export class UsersController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Lưu Expo push token của thiết bị hiện tại' })
   async savePushToken(@CurrentUser() user: { sub: string }, @Body() dto: PushTokenDto) {
-    await this.usersService.addPushToken(user.sub, dto.token);
+    await this.usersService.addPushToken(user.sub, dto.token, dto.language);
     return { success: true };
   }
 

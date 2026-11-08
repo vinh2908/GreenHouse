@@ -75,14 +75,16 @@ export class AdminController {
   @ApiQuery({ name: 'limit', required: false, type: Number })
   @ApiQuery({ name: 'type', required: false, type: String })
   @ApiQuery({ name: 'user_id', required: false, type: String })
+  @ApiQuery({ name: 'grouped', required: false, type: Boolean })
   async getSentNotifications(
     @Query('page') page?: string,
     @Query('limit') limit?: string,
     @Query('type') type?: string,
     @Query('user_id') userId?: string,
+    @Query('grouped') grouped?: string,
   ) {
     const { page: p, limit: l } = parseAdminPagination(page, limit);
-    return this.adminService.getSentNotifications(p, l, type, userId);
+    return this.adminService.getSentNotifications(p, l, type, userId, grouped === 'true');
   }
 
   @Get('users')

@@ -187,3 +187,45 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
   },
 }));
+
+// S4: Đồng bộ trạng thái đăng nhập / đăng xuất giữa các tab web qua storage event
+const gEnv = typeof globalThis !== 'undefined' ? (globalThis as any) : null;
+if (gEnv?.window && typeof gEnv.window.addEventListener === 'function') {
+  gEnv.window.addEventListener('storage', (event: any) => {
+    if (
+      event?.key === TOKEN_KEY ||
+      event?.key === REFRESH_TOKEN_KEY ||
+      event?.key === USER_KEY ||
+      event?.key === null // storage.clear() fires with key === null
+    ) {
+      const token = gEnv?.localStorage?.getItem(TOKEN_KEY);
+      const refresh = gEnv?.localStorage?.getItem(REFRESH_TOKEN_KEY);
+      const userStr = gEnv?.localStorage?.getItem(USER_KEY);
+      const role = gEnv?.localStorage?.getItem(ROLE_KEY);
+
+      if (!token || !refresh) {
+        // Tab khác đã đăng xuất -> đồng bộ logout trên tab này
+        useAuthStore.setState({
+          user: null,
+          accessToken: null,
+          refreshToken: null,
+          isAuthenticated: false,
+        });
+      } else {
+        // Tab khác đã đăng nhập hoặc refresh token -> đồng bộ phiên mới
+        let parsedUser = null;
+        try {
+          parsedUser = userStr ? JSON.parse(userStr) : null;
+          if (parsedUser && role) parsedUser.active_role = role;
+        } catch {}
+
+        useAuthStore.setState({
+          user: parsedUser,
+          accessToken: token,
+          refreshToken: refresh,
+          isAuthenticated: true,
+        });
+      }
+    }
+  });
+}

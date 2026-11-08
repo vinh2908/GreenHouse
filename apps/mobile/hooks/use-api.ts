@@ -15,8 +15,113 @@ import {
 } from '@/services/offline.service';
 import { useOfflineStore } from '@/stores/offline.store';
 import { useAuthStore } from '@/stores/auth.store';
+import { useSettingsStore } from '@/stores/settings.store';
 import { useTranslation } from '@/hooks/use-i18n';
-import Toast from 'react-native-toast-message';
+import { mapServerErrorMessage } from '@/services/i18n';
+import BaseToast from 'react-native-toast-message';
+
+// X1: Translation map for toast messages in use-api.ts
+const TOAST_MAP_EN: Record<string, string> = {
+  'Mã xác nhận đã gửi tới email mới': 'Verification code sent to new email',
+  'Đổi email thành công': 'Email changed successfully',
+  'Cập nhật thành công': 'Updated successfully',
+  'Đăng việc thành công!': 'Job posted successfully!',
+  'Đang phát thông báo tới các thợ trong khu vực': 'Notifying nearby helpers',
+  ' BẠN ĐÃ NHẬN ĐƠN CỨU HỘ SOS!': 'YOU ACCEPTED SOS RESCUE JOB!',
+  'Vui lòng di chuyển khẩn cấp đến địa chỉ khách hàng': 'Please head urgently to the customer address',
+  'Đã nhận việc thành công! ': 'Job accepted successfully!',
+  'Hợp đồng đã được tạo — bạn có thể bắt đầu di chuyển đến khách.':
+    'Contract created — you can now travel to customer.',
+  'Nghiệm thu thành công!': 'Job inspected and completed!',
+  'Cảm ơn bạn đã đánh giá': 'Thank you for your rating and review',
+  'Đã gửi khiếu nại lên Ban quản trị': 'Dispute sent to Admin team',
+  'Admin sẽ kiểm tra bằng chứng và phản hồi sớm nhất': 'Admin will review evidence and reply soon',
+  'Đã gửi đề xuất phát sinh chi phí': 'Cost proposal submitted',
+  'Chờ khách hàng xác nhận trên ứng dụng': 'Waiting for customer approval in app',
+  'Đã duyệt phụ lục hợp đồng': 'Contract amendment approved',
+  'Đã từ chối khoản phát sinh': 'Cost proposal declined',
+  'Đã gửi bằng chứng hoàn thành!': 'Completion proof submitted!',
+  'Đang chờ khách hàng kiểm tra & nghiệm thu': 'Waiting for customer inspection & review',
+  'Nộp hồ sơ e-KYC thành công!': 'e-KYC profile submitted successfully!',
+  'Hồ sơ đang được xét duyệt trong 24h': 'Profile is being reviewed within 24h',
+  'Cập nhật tài khoản ngân hàng thành công!': 'Bank account updated successfully!',
+  'Yêu cầu rút tiền đã gửi!': 'Withdrawal request submitted!',
+  'Sẽ được xử lý trong 1-3 ngày làm việc': 'Will be processed in 1-3 business days',
+  'Không thể đánh dấu đã đọc, vui lòng thử lại': 'Cannot mark as read, please retry',
+  'Không thể đánh dấu tất cả đã đọc, vui lòng thử lại': 'Cannot mark all as read, please retry',
+  'Đã thêm địa chỉ': 'Address added',
+  'Đã thêm vào thợ yêu thích ': 'Added to favorite helpers',
+  'Đã bỏ khỏi danh sách yêu thích': 'Removed from favorite helpers',
+  'Đã đặt lại việc thành công!': 'Job re-booked successfully!',
+  'Đơn mới đang ưu tiên cho thợ quen của bạn': 'New job prioritized for your familiar helper',
+  'Đặt lại thất bại': 'Re-booking failed',
+  'Đã mở công khai đơn hàng': 'Job opened to public',
+  'Tất cả thợ gần bạn giờ có thể gửi báo giá': 'All nearby helpers can now submit quotes',
+  'Đã tạo gói định kỳ ': 'Recurring plan created',
+  'Hệ thống sẽ tự tạo đơn cho từng buổi sắp tới': 'System will auto-schedule upcoming sessions',
+  'Đã chốt lương tháng ': 'Monthly salary finalized',
+  'Tiền đã được cộng vào ví của thợ': 'Earnings credited to helper wallet',
+  'Đã gửi yêu cầu bồi thường ': 'Insurance claim submitted',
+  'Đội ngũ Green House sẽ xem xét và phản hồi sớm nhất':
+    'Green House team will review and respond soon',
+  'Đã áp mã giảm giá ': 'Promo code applied',
+  'Đã gỡ mã giảm giá': 'Promo code removed',
+  'Đã gửi lời mời vào nhóm': 'Team invitation sent',
+  'Không gửi được lời mời': 'Could not send invitation',
+  'Đã nhận lời vào nhóm ': 'Accepted team invitation',
+  'Đã từ chối lời mời': 'Declined team invitation',
+  'Đã bổ sung vào hồ sơ tranh chấp': 'Added evidence to dispute case',
+  'Đã gửi kháng cáo': 'Appeal submitted',
+  'Admin sẽ xem xét lại hồ sơ và phản hồi sớm nhất':
+    'Admin will review the case and respond soon',
+  'Đánh giá thành công!': 'Review submitted successfully!',
+  'Đã gửi phản hồi đánh giá!': 'Review response submitted!',
+  'Đã gửi kháng nghị cho quản trị viên': 'Report submitted to admin',
+  'Đã áp dụng điểm thành viên ': 'Loyalty points applied',
+  'Đã gỡ điểm khỏi đơn': 'Loyalty points removed',
+  'Đã lưu lịch làm việc ': 'Work schedule saved',
+  'Đã đặt mục tiêu thu nhập ': 'Income goal saved',
+  'Đã gửi yêu cầu SOS': 'SOS emergency request sent',
+  'Đang chờ khách hàng xác nhận đổi người hoặc hủy đơn':
+    'Waiting for customer decision to replace or cancel',
+  'Đã thu hồi yêu cầu SOS': 'SOS request retracted',
+  'Không thu hồi được yêu cầu SOS': 'Could not retract SOS request',
+  'Đã đồng ý đổi người — đang tìm thợ thay thế': 'Agreed to replace — finding replacement helper',
+  'Đã hủy đơn hàng & nhận hoàn tiền': 'Job cancelled & refund processed',
+  'Thao tác thất bại': 'Action failed',
+  'Đã có lỗi xảy ra': 'An error occurred',
+  'Không thể thêm thợ yêu thích': 'Cannot add favorite helper',
+  'Không thể bỏ thợ yêu thích': 'Cannot remove favorite helper',
+  'Không gửi được': 'Failed to send',
+  'Không áp dụng được điểm': 'Cannot apply points',
+  'Không lưu được lịch làm việc': 'Cannot save work schedule',
+  'Không đặt được mục tiêu': 'Cannot set income goal',
+};
+
+// X1: Bọc Toast.show để tự động dịch sang tiếng Anh khi chế độ ngôn ngữ là 'en'
+const Toast = {
+  ...BaseToast,
+  show: (options: any) => {
+    const lang = useSettingsStore.getState().language;
+    let t1 = options?.text1;
+    let t2 = options?.text2;
+
+    if (lang === 'en') {
+      if (typeof t1 === 'string') {
+        t1 = TOAST_MAP_EN[t1.trim()] || mapServerErrorMessage(t1, 'en');
+      }
+      if (typeof t2 === 'string') {
+        t2 = TOAST_MAP_EN[t2.trim()] || mapServerErrorMessage(t2, 'en');
+      }
+    }
+
+    BaseToast.show({
+      ...options,
+      text1: t1,
+      text2: t2,
+    });
+  },
+};
 
 // ─── Auth ──────────────────────────────────────────────────────────────────────
 

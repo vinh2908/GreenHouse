@@ -1,4 +1,4 @@
-import { IsString, MinLength, MaxLength } from 'class-validator';
+import { IsString, MinLength, MaxLength, IsOptional } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class PushTokenDto {
@@ -7,4 +7,9 @@ export class PushTokenDto {
   @MinLength(10)
   @MaxLength(200)
   token: string;
+
+  @ApiProperty({ required: false, example: 'vi' })
+  @IsOptional()
+  @IsString()
+  language?: string;
 }

@@ -6,6 +6,7 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { syncDayjsLocale } from '@/services/i18n';
+import apiClient from '@/services/api-client';
 
 export type AppLanguage = 'vi' | 'en';
 export type TextSize = 'normal' | 'large';
@@ -29,6 +30,7 @@ export const useSettingsStore = create<SettingsState>()(
       setLanguage: language => {
         syncDayjsLocale(language);
         set({ language });
+        apiClient.patch('/users/me', { language }).catch(() => {});
       },
       setTextSize: textSize => set({ textSize }),
       setTheme: theme => set({ theme }),

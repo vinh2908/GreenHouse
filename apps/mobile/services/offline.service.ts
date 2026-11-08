@@ -16,6 +16,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import Toast from 'react-native-toast-message';
 import apiClient from '@/services/api-client';
 import { useOfflineStore } from '@/stores/offline.store';
+import { useSettingsStore } from '@/stores/settings.store';
 
 const KEY_ACTIVE_JOBS = 'gh_offline_active_jobs_v1';
 const KEY_JOB_DETAIL = 'gh_offline_job_detail_v1';
@@ -133,9 +134,13 @@ export async function loadPendingCount(): Promise<number> {
 
 /** Toast dùng chung khi 1 thao tác được xếp hàng offline. */
 export function toastQueuedOffline(): void {
+  const lang = useSettingsStore.getState().language;
   Toast.show({
     type: 'info',
-    text1: ' Đã lưu thao tác — sẽ tự đồng bộ khi có mạng',
+    text1:
+      lang === 'en'
+        ? 'Action saved — will sync when online'
+        : ' Đã lưu thao tác — sẽ tự đồng bộ khi có mạng',
   });
 }
 
@@ -235,16 +240,23 @@ export async function flushQueue(): Promise<number> {
       }
     }
 
+    const lang = useSettingsStore.getState().language;
     if (conflicts > 0) {
       Toast.show({
         type: 'error',
-        text1: 'Một thao tác offline không còn áp dụng được (trạng thái đơn đã thay đổi)',
+        text1:
+          lang === 'en'
+            ? 'An offline action could not be applied (job status changed)'
+            : 'Một thao tác offline không còn áp dụng được (trạng thái đơn đã thay đổi)',
       });
     }
     if (flushed > 0) {
       Toast.show({
         type: 'success',
-        text1: ` Đã đồng bộ ${flushed} thao tác offline`,
+        text1:
+          lang === 'en'
+            ? `Synced ${flushed} offline action(s)`
+            : ` Đã đồng bộ ${flushed} thao tác offline`,
       });
     }
     return flushed;

@@ -505,7 +505,8 @@ export class VouchersService {
    * đã từng dùng mã và vẫn còn lượt dùng. Ghi cờ expiry_reminder_sent_at để
    * cron ngày hôm sau không nhắc lại.
    */
-  @Cron('0 9 * * *')
+  // T6: Chạy lúc 09:00 sáng theo giờ Việt Nam
+  @Cron('0 9 * * *', { timeZone: 'Asia/Ho_Chi_Minh' })
   async remindExpiringVouchers(): Promise<{ reminded: number }> {
     const now = new Date();
     const in3Days = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000);
