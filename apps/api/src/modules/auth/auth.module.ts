@@ -10,12 +10,16 @@ import { JwtStrategy } from './strategies/jwt.strategy';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { JwtAuthOptionalGuard } from './guards/jwt-optional.guard';
 import { UsersModule } from '../users/users.module';
+import { HelperProfile, HelperProfileSchema } from '../helpers/schemas/helper-profile.schema';
 
 @Module({
   imports: [
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.register({}), // Dynamic config via AuthService.generateTokens
-    MongooseModule.forFeature([{ name: Otp.name, schema: OtpSchema }]),
+    MongooseModule.forFeature([
+      { name: Otp.name, schema: OtpSchema },
+      { name: HelperProfile.name, schema: HelperProfileSchema },
+    ]),
     UsersModule,
   ],
   controllers: [AuthController],

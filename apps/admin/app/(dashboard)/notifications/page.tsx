@@ -30,7 +30,50 @@ export default function BroadcastPage() {
   const [page, setPage] = useState(1);
   // B106: xác nhận bằng PromptDialog thay cho hộp thoại confirm của trình duyệt.
   const [confirmBroadcast, setConfirmBroadcast] = useState(false);
-  const { data: history, isLoading: historyLoading } = useAdminSentNotifications({ page });
+  const {
+    data: history,
+    isLoading: historyLoading,
+    isError: historyError,
+    refetch: refetchHistory,
+  } = useAdminSentNotifications({ page });
+
+  const groupedNotifications = (() => {
+    if (!history?.notifications) return [];
+    const map = new Map<
+      string,
+      {
+        id: string;
+        title: string;
+        body: string;
+        type: string;
+        recipient_count: number;
+        sample_recipient: string;
+        created_at: string;
+      }
+    >();
+
+    for (const n of history.notifications) {
+      // Group key: gom theo type + title + body + khung thời gian 2 phút
+      const timeBucket = Math.floor(new Date(n.created_at).getTime() / (2 * 60 * 1000));
+      const key = `${n.type}:${n.title}:${n.body}:${timeBucket}`;
+      const recipient = n.user_id?.full_name || n.user_id?.phone || n.user_id?.email || 'Người dùng';
+      if (!map.has(key)) {
+        map.set(key, {
+          id: n._id,
+          title: n.title,
+          body: n.body,
+          type: n.type,
+          recipient_count: 1,
+          sample_recipient: recipient,
+          created_at: n.created_at,
+        });
+      } else {
+        const item = map.get(key)!;
+        item.recipient_count += 1;
+      }
+    }
+    return Array.from(map.values());
+  })();
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -110,7 +153,14 @@ export default function BroadcastPage() {
         <CardContent>
           {historyLoading ? (
             <Loading />
-          ) : !history?.notifications?.length ? (
+          ) : historyError ? (
+            <div className="p-8 text-center space-y-3">
+              <p className="text-destructive font-medium">Không thể tải lịch sử thông báo</p>
+              <Button variant="outline" size="sm" onClick={() => refetchHistory()}>
+                Tải lại
+              </Button>
+            </div>
+          ) : !groupedNotifications.length ? (
             <EmptyState message="Chưa có thông báo nào được gửi" />
           ) : (
             <>
@@ -118,31 +168,41 @@ export default function BroadcastPage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Nội dung</TableHead>
-                    <TableHead>Người nhận</TableHead>
+                    <TableHead>Người nhận / Quy mô</TableHead>
                     <TableHead>Thời gian</TableHead>
-                    <TableHead>Trạng thái</TableHead>
+                    <TableHead>Loại</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {history.notifications.map((n: any) => (
-                    <TableRow key={n._id}>
+                  {groupedNotifications.map(n => (
+                    <TableRow key={n.id}>
                       <TableCell>
                         <div className="font-medium">{n.title}</div>
                         <div className="text-sm text-muted-foreground line-clamp-2">{n.body}</div>
-                        <div className="text-xs text-muted-foreground">{n.type}</div>
                       </TableCell>
                       <TableCell>
-                        {n.user_id?.full_name ?? n.user_id?.phone ?? n.user_id?.email ?? '—'}
-                        {n.user_id?.phone ? (
-                          <div className="text-xs text-muted-foreground">{n.user_id.phone}</div>
-                        ) : null}
+                        {n.recipient_count > 1 ? (
+                          <div>
+                            <span className="font-semibold text-primary">
+                              {n.recipient_count} người nhận
+                            </span>
+                            <div className="text-xs text-muted-foreground">
+                              Đợt gửi thông báo toàn hệ thống
+                            </div>
+                          </div>
+                        ) : (
+                          <div>
+                            <span className="font-medium">{n.sample_recipient}</span>
+                            <div className="text-xs text-muted-foreground">1 người nhận</div>
+                          </div>
+                        )}
                       </TableCell>
                       <TableCell className="whitespace-nowrap text-sm">
                         {formatDateTime(n.created_at)}
                       </TableCell>
                       <TableCell>
-                        <Badge variant={n.is_read ? 'success' : 'warning'}>
-                          {n.is_read ? 'Đã đọc' : 'Chưa đọc'}
+                        <Badge variant={n.type === 'broadcast' ? 'default' : 'secondary'}>
+                          {n.type === 'broadcast' ? 'Quảng bá' : n.type}
                         </Badge>
                       </TableCell>
                     </TableRow>

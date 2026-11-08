@@ -79,3 +79,17 @@ export class AdminDirectRefundDto {
   @IsNotEmpty()
   reason: string;
 }
+
+export class AdminAssignHelperDto {
+  @ApiProperty({ description: 'ID người giúp việc cần gán' })
+  @IsString()
+  @IsNotEmpty()
+  helper_id: string;
+}
+
+export class AdminResolveSosDto {
+  @ApiPropertyOptional({ description: 'Ghi chú xử lý của admin' })
+  @IsOptional()
+  @IsString()
+  note?: string;
+}

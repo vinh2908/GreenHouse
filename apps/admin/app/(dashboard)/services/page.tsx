@@ -71,7 +71,7 @@ const errorMessage = (err: unknown) => {
 };
 
 export default function ServicesPage() {
-  const { data: services, isLoading } = useAdminServices();
+  const { data: services, isLoading, isError, refetch } = useAdminServices();
   const { data: categories } = useServiceCategories();
   const save = useSaveService();
   const toggle = useToggleService();
@@ -271,6 +271,13 @@ export default function ServicesPage() {
       <div className="overflow-x-auto rounded-lg border bg-card">
         {isLoading ? (
           <Loading />
+        ) : isError ? (
+          <div className="p-8 text-center space-y-3">
+            <p className="text-destructive font-medium">Không thể tải danh sách dịch vụ</p>
+            <Button variant="outline" size="sm" onClick={() => refetch()}>
+              Tải lại
+            </Button>
+          </div>
         ) : !services?.length ? (
           <EmptyState message="Chưa có dịch vụ nào" />
         ) : (

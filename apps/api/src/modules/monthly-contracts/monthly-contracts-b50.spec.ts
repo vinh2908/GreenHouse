@@ -15,6 +15,7 @@ describe('MonthlyContractsService.computeSummary (B50)', () => {
       {} as never,
       {} as never,
       {} as never,
+      {} as never,
       { emitToUser: jest.fn() } as never,
     );
     return service;

@@ -273,6 +273,7 @@ export default function JobDetailScreen() {
   const [downloadingInvoice, setDownloadingInvoice] = useState(false);
 
   const [showReview, setShowReview] = useState(false);
+  const [reviewError, setReviewError] = useState<string | null>(null);
   const [quoteToAccept, setQuoteToAccept] = useState<string | null>(null);
 
   // ── Deep-link focus (đi từ thông báo): tự cuộn tới khu vực thao tác ──────
@@ -847,69 +848,88 @@ export default function JobDetailScreen() {
 
   const handleSubmitReview = async () => {
     try {
+      setReviewError(null);
       // P0-3: never charge before checking the approval precondition.
       // approveCompletion rejects jobs with zero completion photos, so
       // charging first strands the money in paid-but-unapproved. Refetch
       // so the check uses the server state, not a stale snapshot.
       const { data: freshJob } = await refetchJob();
       const current = (freshJob ?? job) as any;
-      if (!(current?.completion_photos?.length ?? 0)) {
-        Toast.show({
-          type: 'error',
-          text1:
-            lang === 'en'
-              ? 'Helper has not uploaded completion photos yet'
-              : 'Thợ chưa tải ảnh bằng chứng hoàn thành',
-          text2:
-            lang === 'en'
-              ? 'Ask the helper to upload completion photos before approval — no payment was taken.'
-              : 'Hãy yêu cầu thợ tải ảnh hoàn thành trước khi nghiệm thu — chưa trừ tiền.',
-        });
-        return;
-      }
 
-      // 1. Ghi nhận thanh toán nếu đơn chưa thanh toán (đơn bảo hành miễn phí — bỏ qua)
-      if (current.payment_status !== 'paid' && !current.is_warranty) {
-        try {
-          await payJob.mutateAsync({ job_id: id!, payment_method: paymentMethod });
-        } catch (payErr: any) {
-          // P0-3: retry must not re-charge when already paid — the local
-          // job snapshot may be stale; a 409 "already paid" means the first
-          // charge went through, so continue to approval instead of failing.
-          const msg = String(payErr?.response?.data?.message ?? payErr?.message ?? '');
-          if (/đã được thanh toán|already paid/i.test(msg)) {
-            await refetchJob();
-          } else {
-            throw payErr;
+      if (current?.status !== 'completed') {
+        if (!(current?.completion_photos?.length ?? 0)) {
+          Toast.show({
+            type: 'error',
+            text1:
+              lang === 'en'
+                ? 'Helper has not uploaded completion photos yet'
+                : 'Thợ chưa tải ảnh bằng chứng hoàn thành',
+            text2:
+              lang === 'en'
+                ? 'Ask the helper to upload completion photos before approval — no payment was taken.'
+                : 'Hãy yêu cầu thợ tải ảnh hoàn thành trước khi nghiệm thu — chưa trừ tiền.',
+          });
+          return;
+        }
+
+        // 1. Ghi nhận thanh toán nếu đơn chưa thanh toán (đơn bảo hành miễn phí — bỏ qua)
+        if (current.payment_status !== 'paid' && !current.is_warranty) {
+          try {
+            await payJob.mutateAsync({ job_id: id!, payment_method: paymentMethod });
+          } catch (payErr: any) {
+            // P0-3: retry must not re-charge when already paid — the local
+            // job snapshot may be stale; a 409 "already paid" means the first
+            // charge went through, so continue to approval instead of failing.
+            const msg = String(payErr?.response?.data?.message ?? payErr?.message ?? '');
+            if (/đã được thanh toán|already paid/i.test(msg)) {
+              await refetchJob();
+            } else {
+              throw payErr;
+            }
           }
         }
+
+        // 2. Nghiệm thu hoàn thành công việc & quyết toán theo phương thức (Tiền mặt vs Escrow)
+        await approveJob.mutateAsync({
+          jobId: id!,
+          rating,
+          review: reviewText,
+          payment_method: paymentMethod,
+        });
+
+        // 3. Invalidate loyalty cache để cập nhật điểm mới ngay lập tức
+        queryClient.invalidateQueries({ queryKey: ['loyalty'] });
+        queryClient.invalidateQueries({ queryKey: ['loyalty-account'] });
+        queryClient.invalidateQueries({ queryKey: ['loyalty-history'] });
       }
 
-      // 2. Nghiệm thu hoàn thành công việc & quyết toán theo phương thức (Tiền mặt vs Escrow)
-      await approveJob.mutateAsync({
-        jobId: id!,
-        rating,
-        review: reviewText,
-        payment_method: paymentMethod,
-      });
-
-      // 3. Invalidate loyalty cache để cập nhật điểm mới ngay lập tức
-      queryClient.invalidateQueries({ queryKey: ['loyalty'] });
-      queryClient.invalidateQueries({ queryKey: ['loyalty-account'] });
-      queryClient.invalidateQueries({ queryKey: ['loyalty-history'] });
-
-      // 4. Ghi nhận đánh giá vào bảng Reviews
+      // 4. Ghi nhận đánh giá vào bảng Reviews (M-07: bắt lỗi, toast lỗi, không đóng modal)
       if (job.helper_id) {
         const helperIdStr = typeof job.helper_id === 'string' ? job.helper_id : job.helper_id._id;
-        await createReview
-          .mutateAsync({
+        try {
+          await createReview.mutateAsync({
             job_id: id!,
             helper_id: helperIdStr,
             rating,
             comment: reviewText,
-          })
-          .catch(() => undefined);
+          });
+        } catch (revErr: any) {
+          const revMsg =
+            revErr?.response?.data?.message ||
+            (lang === 'en'
+              ? 'Acceptance done, but could not save review. Please tap retry.'
+              : 'Nghiệm thu thành công nhưng chưa lưu được đánh giá. Vui lòng bấm thử lại.');
+          setReviewError(revMsg);
+          Toast.show({
+            type: 'error',
+            text1: lang === 'en' ? 'Review save failed' : 'Lưu đánh giá thất bại',
+            text2: revMsg,
+          });
+          return;
+        }
       }
+
+      setReviewError(null);
       Toast.show({
         type: 'success',
         text1:
@@ -2828,7 +2848,6 @@ export default function JobDetailScreen() {
               onPress={handleSubmitDispute}
             />
           </ScrollView>
-          <Toast />
         </KeyboardAvoidingView>
       </Modal>
 
@@ -3163,15 +3182,32 @@ export default function JobDetailScreen() {
               />
             </View>
 
+            {reviewError && (
+              <View
+                style={{
+                  backgroundColor: '#FEF2F2',
+                  padding: 12,
+                  borderRadius: 10,
+                  borderWidth: 1,
+                  borderColor: '#FCA5A5',
+                }}
+              >
+                <Text style={{ color: '#DC2626', fontSize: fs(13), fontWeight: '700' }}>
+                  {reviewError}
+                </Text>
+              </View>
+            )}
+
             <Button
               title={
-                lang === 'en' ? 'Confirm Acceptance & Payment' : 'Xác nhận nghiệm thu & Thanh toán'
+                reviewError || (job as any)?.status === 'completed'
+                  ? (lang === 'en' ? 'Retry Sending Review' : 'Thử lại gửi đánh giá')
+                  : (lang === 'en' ? 'Confirm Acceptance & Payment' : 'Xác nhận nghiệm thu & Thanh toán')
               }
               loading={approveJob.isPending || createReview.isPending || payJob.isPending}
               onPress={handleSubmitReview}
             />
           </ScrollView>
-          <Toast />
         </View>
       </Modal>
 

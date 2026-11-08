@@ -2,6 +2,7 @@ import { Module, forwardRef } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { JobsModule } from '../jobs/jobs.module';
+import { PaymentsModule } from '../payments/payments.module';
 import { AdminController } from './admin.controller';
 import { AdminService } from './admin.service';
 import { User, UserSchema } from '../users/schemas/user.schema';
@@ -26,6 +27,8 @@ import {
   HelperPenaltyEvent,
   HelperPenaltyEventSchema,
 } from '../helpers/schemas/helper-penalty-event.schema';
+import { Quote, QuoteSchema } from '../jobs/schemas/job.schema';
+import { Service, ServiceSchema } from '../services/schemas/service.schema';
 
 @Module({
   imports: [
@@ -34,6 +37,8 @@ import {
       { name: HelperProfile.name, schema: HelperProfileSchema },
       { name: Job.name, schema: JobSchema },
       { name: Contract.name, schema: ContractSchema },
+      { name: Quote.name, schema: QuoteSchema },
+      { name: Service.name, schema: ServiceSchema },
       { name: Notification.name, schema: NotificationSchema },
       { name: Wallet.name, schema: WalletSchema },
       { name: Transaction.name, schema: TransactionSchema },
@@ -44,6 +49,7 @@ import {
       { name: HelperPenaltyEvent.name, schema: HelperPenaltyEventSchema },
     ]),
     NotificationsModule,
+    PaymentsModule,
     forwardRef(() => JobsModule),
   ],
   controllers: [AdminController],

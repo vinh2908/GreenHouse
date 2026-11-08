@@ -2296,6 +2296,26 @@ export function formatNotificationTitle(
         return 'Missed Call';
       case 'sos_backup_candidate_withdrawn':
         return 'Replacement Candidate Withdrew';
+      case 'job_cancelled':
+        return 'Job Cancelled';
+      case 'job_updated':
+        return 'Job Updated';
+      case 'cost_proposal':
+        return 'Additional Expense Proposal';
+      case 'cost_proposal_response':
+        return /từ chối|rejected|declined/i.test(t)
+          ? 'Expense Proposal Declined'
+          : 'Expense Proposal Approved';
+      case 'dispute_opened':
+        return 'Dispute Opened';
+      case 'dispute_resolved':
+        return 'Dispute Resolved';
+      case 'claim_submitted':
+        return 'Insurance Claim Submitted';
+      case 'sos_backup_withdrawn':
+        return 'Replacement Request Retracted';
+      case 'team_response':
+        return /từ chối|declined/i.test(t) ? 'Team Invitation Declined' : 'Team Invitation Accepted';
     }
   }
 
@@ -2481,6 +2501,59 @@ export function formatNotificationBody(
   }
   if (type === 'sos_backup_candidate_withdrawn') {
     return 'A replacement candidate withdrew from the SOS request.';
+  }
+  if (type === 'job_cancelled') {
+    const custCancel = b.match(/^Khách hàng đã hủy công việc\s*(".*?"|'.*?'|“.*?”)/i);
+    if (custCancel) return `The customer has cancelled the job ${custCancel[1]}`;
+    const helperCancel = b.match(/^Người giúp việc đã hủy công việc\s*(".*?"|'.*?'|“.*?”)/i);
+    if (helperCancel) return `The helper has cancelled the job ${helperCancel[1]}`;
+    const adminCancel = b.match(/^Công việc\s*(".*?"|'.*?'|“.*?”)\s*đã bị hủy\.\s*Lý do:\s*(.*)$/i);
+    if (adminCancel) return `Job ${adminCancel[1]} has been cancelled. Reason: ${adminCancel[2]}`;
+    return 'The job has been cancelled.';
+  }
+  if (type === 'job_updated') {
+    return 'The job details have been updated.';
+  }
+  if (type === 'cost_proposal') {
+    const extraSupply = b.match(
+      /^Thợ đề xuất bổ sung\s*\+([0-9.,]+₫?)\s*cho\s*(".*?"|'.*?'|“.*?”)\.\s*Lý do:\s*(.*)$/i,
+    );
+    if (extraSupply)
+      return `Helper proposed an additional +${extraSupply[1]} for ${extraSupply[2]}. Reason: ${extraSupply[3]}`;
+    return 'A helper proposed an additional expense for your job.';
+  }
+  if (type === 'cost_proposal_response') {
+    const amendmentApproved = b.match(/^Tổng giá trị hợp đồng mới:\s*(.*?₫?)\.?$/i);
+    if (amendmentApproved) return `New total contract value: ${amendmentApproved[1]}`;
+    const amendmentRejected = b.match(/^Khách hàng không đồng ý khoản phát sinh\s*\((.*?)\)\.?$/i);
+    if (amendmentRejected) return `Customer did not approve extra cost (${amendmentRejected[1]}).`;
+    return /không đồng ý|từ chối/i.test(b)
+      ? 'Customer declined the proposed extra cost.'
+      : 'Customer approved the proposed extra cost.';
+  }
+  if (type === 'dispute_opened') {
+    const disputeWait = b.match(
+      /^Công việc\s*(".*?"|'.*?'|“.*?”)\s*đã chuyển sang trạng thái chờ Admin phân xử\.\s*Lý do:\s*(.*)$/i,
+    );
+    if (disputeWait)
+      return `Job ${disputeWait[1]} is now awaiting Admin dispute resolution. Reason: ${disputeWait[2]}`;
+    return 'A dispute has been opened and is awaiting admin resolution.';
+  }
+  if (type === 'dispute_resolved') {
+    const disputeResult = b.match(/^Đơn\s*(".*?"|'.*?'|“.*?”):\s*(.*)$/i);
+    if (disputeResult) return `Job ${disputeResult[1]}: ${disputeResult[2]}`;
+    return 'The dispute has been resolved by Admin.';
+  }
+  if (type === 'claim_submitted') {
+    return 'Your insurance claim has been submitted and is under review.';
+  }
+  if (type === 'sos_backup_withdrawn') {
+    return 'Helper has retracted the SOS backup request.';
+  }
+  if (type === 'team_response') {
+    const m = b.match(/Đơn\s*(".*?"|'.*?'|“.*?”)/i);
+    const accepted = /đồng ý/i.test(b);
+    return `Job ${m ? m[1] : ''}: a helper just ${accepted ? 'accepted' : 'declined'} the team invitation.`;
   }
 
   // 2. job_confirmed (warranty & fixed price) — F11: map theo type + payload

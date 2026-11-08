@@ -42,6 +42,7 @@ describe('MonthlyContractsService.respondLeave (B51)', () => {
       leaveModel,
       {} as never,
       {} as never,
+      {} as never,
       { create: jest.fn(async () => ({})) } as never,
       {} as never,
       { emitToUser: jest.fn() } as never,

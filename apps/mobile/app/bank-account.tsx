@@ -874,6 +874,7 @@ export default function BankAccountScreen() {
                   isLoading={isWalletLoading}
                   isError={isWalletError}
                   onRetry={refetchWallet}
+                  theme="light"
                   textStyle={{ fontSize: fs(20), fontWeight: '800', color: COLORS.primary }}
                 />
               </Card>

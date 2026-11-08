@@ -9,6 +9,7 @@ import {
   MonthlySettlement,
 } from './schemas/monthly-contract.schema';
 import { HelperProfile } from '../helpers/schemas/helper-profile.schema';
+import { Service } from '../services/schemas/service.schema';
 import { NotificationsService } from '../notifications/notifications.service';
 import { PaymentsService } from '../payments/payments.service';
 import { AppGateway } from '../chat/app.gateway';
@@ -48,7 +49,11 @@ describe('MonthlyContractsService - F20 settle transaction', () => {
           { ...docs[0], _id: new Types.ObjectId(), settled_at: new Date() },
         ]),
     };
-    paymentsService = { creditWallet: jest.fn().mockResolvedValue({ _id: new Types.ObjectId() }) };
+    paymentsService = {
+      getWallet: jest.fn().mockResolvedValue({ balance: 50_000_000, simulated_balance: 0 }),
+      creditWallet: jest.fn().mockResolvedValue({ _id: new Types.ObjectId() }),
+      deductWallet: jest.fn().mockResolvedValue({ _id: new Types.ObjectId() }),
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -58,6 +63,7 @@ describe('MonthlyContractsService - F20 settle transaction', () => {
         { provide: getModelToken(LeaveRequest.name), useValue: {} },
         { provide: getModelToken(MonthlySettlement.name), useValue: settlementModel },
         { provide: getModelToken(HelperProfile.name), useValue: {} },
+        { provide: getModelToken(Service.name), useValue: {} },
         {
           provide: NotificationsService,
           useValue: { create: jest.fn().mockResolvedValue({}) },

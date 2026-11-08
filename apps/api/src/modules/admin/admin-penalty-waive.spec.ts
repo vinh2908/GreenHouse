@@ -202,6 +202,7 @@ function makeService() {
     sosModel as never, // sosModel
     penaltyEventModel as never, // penaltyEventModel
     dummy, // notificationsService
+    dummy, // paymentsService
     dummy, // jobsService
   );
 

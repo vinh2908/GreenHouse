@@ -50,7 +50,7 @@ export default function ReviewsPage() {
   const [ratingFilter, setRatingFilter] = useState('');
   const [page, setPage] = useState(1);
 
-  const { data, isLoading } = useAdminReviews({
+  const { data, isLoading, isError, refetch } = useAdminReviews({
     min_rating: minRating,
     max_rating: maxRating,
     page,
@@ -106,6 +106,13 @@ export default function ReviewsPage() {
       <div className="rounded-lg border bg-card overflow-hidden max-w-full">
         {isLoading ? (
           <Loading />
+        ) : isError ? (
+          <div className="p-8 text-center space-y-3">
+            <p className="text-destructive font-medium">Không thể tải danh sách đánh giá</p>
+            <Button variant="outline" size="sm" onClick={() => refetch()}>
+              Tải lại
+            </Button>
+          </div>
         ) : !data?.reviews?.length ? (
           <EmptyState message="Chưa có đánh giá nào" />
         ) : (

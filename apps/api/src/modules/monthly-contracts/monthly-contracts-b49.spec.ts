@@ -53,6 +53,7 @@ describe('MonthlyContractsService.createContract (B49)', () => {
       {} as never,
       {} as never,
       helperModel,
+      {} as never,
       { create: jest.fn(async () => ({})) } as never,
       {} as never,
       { emitToUser: jest.fn() } as never,

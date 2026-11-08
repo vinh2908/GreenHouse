@@ -33,8 +33,10 @@ const STATUS_MAP: Record<
   string,
   { label: string; variant: 'default' | 'secondary' | 'success' | 'destructive' | 'outline' }
 > = {
+  pending: { label: 'Chờ thợ duyệt', variant: 'secondary' },
   pending_helper: { label: 'Chờ thợ duyệt', variant: 'secondary' },
   active: { label: 'Đang hiệu lực', variant: 'success' },
+  rejected: { label: 'Đã từ chối', variant: 'destructive' },
   cancelled: { label: 'Đã hủy', variant: 'destructive' },
   ended: { label: 'Đã kết thúc', variant: 'outline' },
 };
@@ -43,7 +45,7 @@ export default function AdminMonthlyContractsPage() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [page, setPage] = useState(1);
 
-  const { data, isLoading } = useAdminMonthlyContracts({
+  const { data, isLoading, isError, refetch } = useAdminMonthlyContracts({
     status: statusFilter === 'all' ? undefined : statusFilter,
     page,
     limit: 20,
@@ -69,7 +71,7 @@ export default function AdminMonthlyContractsPage() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Hợp đồng tháng & Chấm công</h1>
           <p className="text-sm text-muted-foreground">
-            Quản trị các hợp đồng giúp việc định kỳ theo tháng, theo dõi lịch chấm công & chốt lương
+            Danh sách hợp đồng giúp việc định kỳ theo tháng, lịch làm việc hàng tuần và lịch sử chốt lương
           </p>
         </div>
         <div className="w-48">
@@ -81,8 +83,9 @@ export default function AdminMonthlyContractsPage() {
             }}
             options={[
               { value: 'all', label: 'Tất cả trạng thái' },
-              { value: 'pending_helper', label: 'Chờ thợ duyệt' },
+              { value: 'pending', label: 'Chờ thợ duyệt' },
               { value: 'active', label: 'Đang hiệu lực' },
+              { value: 'rejected', label: 'Đã từ chối' },
               { value: 'ended', label: 'Đã kết thúc' },
               { value: 'cancelled', label: 'Đã hủy' },
             ]}
@@ -98,6 +101,13 @@ export default function AdminMonthlyContractsPage() {
           {isLoading ? (
             <div className="py-12 flex justify-center">
               <Loading />
+            </div>
+          ) : isError ? (
+            <div className="py-12 text-center space-y-3">
+              <p className="text-destructive font-medium">Không thể tải danh sách hợp đồng tháng. Vui lòng thử lại.</p>
+              <Button variant="outline" size="sm" onClick={() => refetch()}>
+                Tải lại
+              </Button>
             </div>
           ) : !contracts.length ? (
             <EmptyState message="Không có hợp đồng tháng nào được tạo theo tiêu chí lọc này." />

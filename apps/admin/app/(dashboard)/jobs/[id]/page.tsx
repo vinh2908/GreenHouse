@@ -95,6 +95,10 @@ export default function JobDetailPage() {
   const [confirmCancel, setConfirmCancel] = useState(false);
   const [confirmStatus, setConfirmStatus] = useState(false);
   const [confirmRefund, setConfirmRefund] = useState(false);
+  const [statusFeedback, setStatusFeedback] = useState<{
+    type: 'success' | 'error';
+    message: string;
+  } | null>(null);
 
   if (isLoading) return <Loading />;
   if (error || !job) return <EmptyState message="Không tìm thấy job" />;
@@ -111,7 +115,7 @@ export default function JobDetailPage() {
           </Link>
           <h1 className="mt-1 break-words text-2xl font-bold tracking-tight">{job.title}</h1>
           <p className="text-sm text-muted-foreground">
-            {job.service_id?.name ?? '—'} · Tạo lúc {formatDateTime(job.created_at)}
+            {(job.service_id as any)?.name || (job as any).custom_service_name || 'Dịch vụ tự do'} · Tạo lúc {formatDateTime(job.created_at)}
           </p>
         </div>
         <Badge variant={STATUS_BADGE[job.status] ?? 'secondary'}>
@@ -262,6 +266,109 @@ export default function JobDetailPage() {
             {job.cancellation_reason && (
               <p className="text-sm text-destructive">Lý do hủy: {job.cancellation_reason}</p>
             )}
+
+            {/* Danh sách Báo giá (A02) */}
+            <div className="rounded-lg border p-4 space-y-3">
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Danh sách báo giá (Quotes) · {(job.quotes?.length ?? 0)} báo giá
+              </p>
+              {job.quotes && job.quotes.length > 0 ? (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-sm">
+                    <thead>
+                      <tr className="border-b text-xs text-muted-foreground">
+                        <th className="pb-2 font-medium">Thợ</th>
+                        <th className="pb-2 font-medium">Giá đề xuất</th>
+                        <th className="pb-2 font-medium">Ước tính</th>
+                        <th className="pb-2 font-medium">Ghi chú</th>
+                        <th className="pb-2 font-medium">Trạng thái</th>
+                        <th className="pb-2 font-medium">Gửi lúc</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y text-xs">
+                      {job.quotes.map((q: any) => (
+                        <tr key={q._id}>
+                          <td className="py-2">
+                            <p className="font-medium">{q.helper_id?.full_name || 'Thợ'}</p>
+                            <p className="font-mono text-muted-foreground">{q.helper_id?.phone}</p>
+                          </td>
+                          <td className="py-2 font-semibold">
+                            {(q.price ?? 0).toLocaleString('vi-VN')} ₫
+                          </td>
+                          <td className="py-2">{q.estimated_duration ? `${q.estimated_duration} giờ` : '—'}</td>
+                          <td className="py-2 text-muted-foreground">{q.message || '—'}</td>
+                          <td className="py-2">
+                            <span
+                              className={`px-2 py-0.5 rounded text-[11px] font-medium ${
+                                q.status === 'accepted'
+                                  ? 'bg-emerald-100 text-emerald-800'
+                                  : q.status === 'rejected'
+                                  ? 'bg-rose-100 text-rose-800'
+                                  : 'bg-amber-100 text-amber-800'
+                              }`}
+                            >
+                              {q.status === 'accepted' ? 'Đã chọn' : q.status === 'rejected' ? 'Từ chối' : 'Chờ duyệt'}
+                            </span>
+                          </td>
+                          <td className="py-2 text-muted-foreground font-mono">
+                            {formatDateTime(q.created_at)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <p className="text-xs text-muted-foreground italic">Chưa có báo giá nào cho đơn này.</p>
+              )}
+            </div>
+
+            {/* Thông tin Thanh toán & Hợp đồng (A02) */}
+            <div className="rounded-lg border p-4 space-y-3 bg-muted/10">
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Thông tin Thanh toán & Hợp đồng
+              </p>
+              <div className="grid grid-cols-2 gap-4 text-xs sm:grid-cols-4">
+                <div>
+                  <span className="text-muted-foreground">Thanh toán:</span>
+                  <p className="font-semibold uppercase mt-0.5">{job.payment_status || 'UNPAID'}</p>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Hình thức:</span>
+                  <p className="font-semibold mt-0.5">
+                    {job.payment_method === 'cash' ? 'Tiền mặt' : job.payment_method === 'wallet' ? 'Ví Homemate' : job.payment_method || '—'}
+                  </p>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Khách đã trả (Net paid):</span>
+                  <p className="font-semibold text-emerald-600 mt-0.5">
+                    {((job as any).net_paid ?? 0).toLocaleString('vi-VN')} ₫
+                  </p>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Tối đa hoàn lại:</span>
+                  <p className="font-semibold text-amber-600 mt-0.5">
+                    {((job as any).max_refundable ?? 0).toLocaleString('vi-VN')} ₫
+                  </p>
+                </div>
+              </div>
+              {job.contract && (
+                <div className="border-t pt-2 grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs">
+                  <div>
+                    <span className="text-muted-foreground">Giá hợp đồng:</span>
+                    <p className="font-medium">{(job.contract.final_price ?? 0).toLocaleString('vi-VN')} ₫</p>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Thợ thực nhận:</span>
+                    <p className="font-medium text-emerald-700">{(job.contract.helper_receives ?? 0).toLocaleString('vi-VN')} ₫</p>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Phí nền tảng:</span>
+                    <p className="font-medium text-purple-700">{(job.contract.platform_fee ?? 0).toLocaleString('vi-VN')} ₫</p>
+                  </div>
+                </div>
+              )}
+            </div>
           </CardContent>
         </Card>
 
@@ -389,6 +496,17 @@ export default function JobDetailPage() {
               <CardTitle className="text-base">Can thiệp Admin</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
+              {statusFeedback && (
+                <div
+                  className={`p-3 rounded-lg text-xs ${
+                    statusFeedback.type === 'success'
+                      ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                      : 'bg-rose-50 text-rose-800 border border-rose-200'
+                  }`}
+                >
+                  {statusFeedback.message}
+                </div>
+              )}
               {/* Đổi trạng thái thủ công */}
               <div className="space-y-2 border-b pb-3">
                 <p className="text-xs font-semibold text-muted-foreground uppercase">
@@ -407,7 +525,9 @@ export default function JobDetailPage() {
                     { value: 'in_progress', label: 'Đang làm việc (in_progress)' },
                     { value: 'pending_review', label: 'Chờ nghiệm thu (pending_review)' },
                     { value: 'completed', label: 'Hoàn tất (completed)' },
+                    { value: 'disputed', label: 'Tranh chấp (disputed)' },
                     { value: 'cancelled', label: 'Đã hủy (cancelled)' },
+                    { value: 'refunded', label: 'Đã hoàn tiền (refunded)' },
                   ]}
                 />
                 <Input
@@ -516,13 +636,18 @@ export default function JobDetailPage() {
                 onSuccess: () => {
                   setManualStatus('');
                   setManualNote('');
-                  alert('Đã cập nhật trạng thái đơn thành công');
+                  setStatusFeedback({
+                    type: 'success',
+                    message: 'Đã cập nhật trạng thái đơn thành công',
+                  });
                 },
                 onError: (err: any) => {
-                  alert(
-                    err?.response?.data?.message ||
+                  setStatusFeedback({
+                    type: 'error',
+                    message:
+                      err?.response?.data?.message ||
                       'Không thể cập nhật trạng thái đơn. Vui lòng kiểm tra lại.',
-                  );
+                  });
                 },
               },
             );
@@ -548,13 +673,18 @@ export default function JobDetailPage() {
                 onSuccess: () => {
                   setDirectRefundAmount('');
                   setDirectRefundReason('');
-                  alert('Đã hoàn tiền vào ví khách hàng thành công');
+                  setStatusFeedback({
+                    type: 'success',
+                    message: 'Đã hoàn tiền vào ví khách hàng thành công',
+                  });
                 },
                 onError: (err: any) => {
-                  alert(
-                    err?.response?.data?.message ||
+                  setStatusFeedback({
+                    type: 'error',
+                    message:
+                      err?.response?.data?.message ||
                       'Không thể hoàn tiền trực tiếp. Vui lòng thử lại.',
-                  );
+                  });
                 },
               },
             );

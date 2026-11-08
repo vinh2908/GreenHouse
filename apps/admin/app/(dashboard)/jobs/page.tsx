@@ -41,7 +41,7 @@ export default function JobsPage() {
   const [searchInput, setSearchInput] = useState('');
   const [page, setPage] = useState(1);
 
-  const { data, isLoading } = useAdminJobs({ status, search, page });
+  const { data, isLoading, isError, refetch } = useAdminJobs({ status, search, page });
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -84,6 +84,13 @@ export default function JobsPage() {
       <div className="rounded-lg border bg-card overflow-hidden max-w-full">
         {isLoading ? (
           <Loading />
+        ) : isError ? (
+          <div className="p-8 text-center space-y-3">
+            <p className="text-destructive font-medium">Không thể tải danh sách đơn hàng. Vui lòng thử lại.</p>
+            <Button variant="outline" size="sm" onClick={() => refetch()}>
+              Tải lại
+            </Button>
+          </div>
         ) : !data?.jobs?.length ? (
           <EmptyState message="Không tìm thấy job nào" />
         ) : (
@@ -108,6 +115,7 @@ export default function JobsPage() {
                       customer_id: { full_name: string; phone: string } | null;
                       helper_id: { full_name: string; phone: string } | null;
                       service_id: { name: string } | null;
+                      custom_service_name?: string;
                       status: string;
                       address: { district: string; city: string };
                       created_at: string;
@@ -147,7 +155,9 @@ export default function JobsPage() {
                           )}
                         </TableCell>
                         <TableCell>
-                          <span className="text-sm">{job.service_id?.name ?? '—'}</span>
+                          <span className="text-sm">
+                            {job.service_id?.name || job.custom_service_name || '—'}
+                          </span>
                         </TableCell>
                         <TableCell>
                           <Badge variant={STATUS_BADGE[job.status] ?? 'secondary'}>

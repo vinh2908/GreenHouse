@@ -60,13 +60,12 @@ export default function ReceiptScreen() {
   const sosSurcharge = job.sos_surcharge ?? 0;
   const discountAmount = job.discount_amount ?? 0;
   const loyaltyDiscount = job.loyalty_discount_amount ?? 0;
-  const netPaid = Math.max(
-    0,
-    (contract?.total_price ?? job.total_price ?? job.fixed_price ?? baseLabor + materialsCost) +
-      sosSurcharge -
-      discountAmount -
-      loyaltyDiscount,
-  );
+  const basePrice =
+    contract?.total_price ??
+    job.total_price ??
+    job.fixed_price ??
+    baseLabor + materialsCost + sosSurcharge;
+  const netPaid = Math.max(0, basePrice - discountAmount - loyaltyDiscount);
 
   const paymentMethodLabel = (() => {
     switch (job.payment_method) {

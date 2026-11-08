@@ -33,6 +33,8 @@ import {
   MapPin,
   Clock,
   RotateCcw,
+  AlertCircle,
+  ClipboardList,
 } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import dayjs from 'dayjs';
@@ -74,6 +76,8 @@ import {
   JobStatusBadge,
   COLORS,
   LoadingSpinner,
+  EmptyState,
+  ErrorState,
   Separator,
   PriceText,
   Badge,
@@ -85,7 +89,8 @@ import Toast from 'react-native-toast-message';
 // derived from job.service_id inside the component (see quoteFeePercent).
 
 export default function HelperJobDetailScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const rawParams = useLocalSearchParams<{ id: string }>();
+  const id = Array.isArray(rawParams.id) ? rawParams.id[0] : rawParams.id;
   const router = useRouter();
   const { t, tService, fs, lang } = useTranslation();
   const tc = useThemeColors();
@@ -104,7 +109,13 @@ export default function HelperJobDetailScreen() {
   useJobSocketUpdates(id);
   const { width } = useWindowDimensions();
 
-  const { data: job, isLoading } = useJobDetail(id);
+  const {
+    data: job,
+    isLoading,
+    isError,
+    error: jobError,
+    refetch: refetchJob,
+  } = useJobDetail(id);
   const { data: quotes } = useJobQuotes(id);
   const { data: contract } = useJobContract(id);
   const { data: helperProfile } = useHelperProfile();
@@ -216,8 +227,106 @@ export default function HelperJobDetailScreen() {
 
   const insets = useSafeAreaInsets();
 
-  if (isLoading) return <LoadingSpinner />;
-  if (!job) return null;
+  if (isLoading) {
+    return (
+      <View
+        style={{
+          flex: 1,
+          backgroundColor: tc.background,
+          justifyContent: 'center',
+          alignItems: 'center',
+          paddingTop: insets.top,
+        }}
+      >
+        <LoadingSpinner />
+      </View>
+    );
+  }
+
+  const is401 =
+    (jobError as any)?.response?.status === 401 ||
+    (jobError as any)?.status === 401 ||
+    (jobError as any)?.name === 'SessionExpiredError' ||
+    (jobError as any)?.isSessionExpired;
+
+  if (is401) {
+    return (
+      <View
+        style={{
+          flex: 1,
+          backgroundColor: tc.background,
+          justifyContent: 'center',
+          alignItems: 'center',
+          padding: 24,
+          paddingTop: insets.top,
+        }}
+      >
+        <EmptyState
+          icon={<AlertCircle size={40} color={COLORS.gray[400]} />}
+          title={lang === 'en' ? 'Session expired' : 'Phiên đăng nhập đã hết hạn'}
+          subtitle={
+            lang === 'en'
+              ? 'Your session has expired. Please log in again to view job details.'
+              : 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại để xem chi tiết đơn.'
+          }
+          action={lang === 'en' ? 'Log in again' : 'Đăng nhập lại'}
+          onAction={() => router.replace('/(auth)/login')}
+        />
+      </View>
+    );
+  }
+
+  if (isError) {
+    return (
+      <View
+        style={{
+          flex: 1,
+          backgroundColor: tc.background,
+          justifyContent: 'center',
+          alignItems: 'center',
+          padding: 24,
+          paddingTop: insets.top,
+        }}
+      >
+        <ErrorState
+          title={lang === 'en' ? 'Unable to load job details' : 'Không thể tải chi tiết đơn hàng'}
+          subtitle={
+            lang === 'en'
+              ? 'Could not connect to job service. Please retry.'
+              : 'Không thể kết nối đến máy chủ. Vui lòng bấm thử lại.'
+          }
+          onRetry={() => refetchJob()}
+        />
+      </View>
+    );
+  }
+
+  if (!job) {
+    return (
+      <View
+        style={{
+          flex: 1,
+          backgroundColor: tc.background,
+          justifyContent: 'center',
+          alignItems: 'center',
+          padding: 24,
+          paddingTop: insets.top,
+        }}
+      >
+        <EmptyState
+          icon={<ClipboardList size={40} color={COLORS.gray[400]} />}
+          title={lang === 'en' ? 'Job not found' : 'Không tìm thấy đơn hàng'}
+          subtitle={
+            lang === 'en'
+              ? 'This job may have been removed or does not exist.'
+              : 'Đơn hàng này có thể đã bị xóa hoặc không tồn tại.'
+          }
+          action={lang === 'en' ? 'Back to jobs' : 'Về danh sách việc'}
+          onAction={handleBack}
+        />
+      </View>
+    );
+  }
 
   // Kiểm tra xem thợ hiện tại đã từ chối đơn này chưa
   const isRejectedByMe = Boolean(
@@ -1604,7 +1713,6 @@ export default function HelperJobDetailScreen() {
               />
             </ScrollView>
           </KeyboardAvoidingView>
-          <Toast />
         </View>
       </Modal>
 
@@ -1764,7 +1872,6 @@ export default function HelperJobDetailScreen() {
               />
             </ScrollView>
           </KeyboardAvoidingView>
-          <Toast />
         </View>
       </Modal>
 
@@ -2099,7 +2206,6 @@ export default function HelperJobDetailScreen() {
               />
             </ScrollView>
           </KeyboardAvoidingView>
-          <Toast />
         </View>
       </Modal>
     </View>

@@ -214,6 +214,34 @@ export default function NotificationSettingsScreen() {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ padding: 16, gap: 16, paddingBottom: 40 }}
         >
+          {/* ── Web Push Disclaimer ────────────────────────────────────────── */}
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'flex-start',
+              padding: 12,
+              borderRadius: 12,
+              backgroundColor: '#EFF6FF',
+              borderWidth: 1,
+              borderColor: '#BFDBFE',
+            }}
+          >
+            <Smartphone size={18} color="#2563EB" style={{ marginRight: 10, marginTop: 2 }} />
+            <Text
+              style={{
+                flex: 1,
+                fontSize: fs(12),
+                color: '#1E40AF',
+                lineHeight: 18,
+                fontWeight: '500',
+              }}
+            >
+              {lang === 'en'
+                ? 'Note: The Web version does not receive push notifications when the browser or tab is closed. Please use the mobile app on your phone for instant alerts.'
+                : 'Lưu ý: Phiên bản Web không nhận được thông báo đẩy (push notifications) khi đóng trình duyệt hoặc tắt tab. Vui lòng sử dụng app trên điện thoại để nhận thông báo tức thì.'}
+            </Text>
+          </View>
+
           {/* ── 1. Đơn hàng & Tin nhắn ─────────────────────────────────────── */}
           <View>
             <Text

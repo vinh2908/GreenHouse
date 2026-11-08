@@ -55,7 +55,7 @@ export default function HelpersPage() {
   const [status, setStatus] = useState('');
   const [page, setPage] = useState(1);
 
-  const { data, isLoading } = useAdminHelpers({ search, status, page });
+  const { data, isLoading, isError, refetch } = useAdminHelpers({ search, status, page });
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -109,6 +109,13 @@ export default function HelpersPage() {
       <div className="rounded-lg border bg-card overflow-hidden max-w-full">
         {isLoading ? (
           <Loading />
+        ) : isError ? (
+          <div className="p-8 text-center space-y-3">
+            <p className="text-destructive font-medium">Không thể tải danh sách người giúp việc. Vui lòng thử lại.</p>
+            <Button variant="outline" size="sm" onClick={() => refetch()}>
+              Tải lại
+            </Button>
+          </div>
         ) : !data?.helpers?.length ? (
           <EmptyState message="Không tìm thấy helper nào" />
         ) : (

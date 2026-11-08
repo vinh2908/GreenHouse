@@ -19,6 +19,8 @@ import {
   AdminWaivePenaltyDto,
   AdminUpdateJobStatusDto,
   AdminDirectRefundDto,
+  AdminAssignHelperDto,
+  AdminResolveSosDto,
 } from './dto/admin.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
@@ -224,6 +226,17 @@ export class AdminController {
     return this.adminService.directRefund(id, Number(dto.amount), dto.reason, adminId);
   }
 
+  @Post('jobs/:id/assign-helper')
+  @ApiOperation({ summary: '[Admin] B11: Gán thợ thủ công cho đơn hàng (Hungarian matching hoặc gán tay)' })
+  async assignHelper(
+    @Param('id') id: string,
+    @Body() dto: AdminAssignHelperDto,
+    @CurrentUser() adminUser: any,
+  ) {
+    const adminId = adminUser?.sub || adminUser?._id || adminUser?.id;
+    return this.adminService.adminAssignHelper(id, dto.helper_id, adminId);
+  }
+
   // ─── Notifications broadcast ──────────────────────────────────────────────
 
   @Post('notifications/broadcast')
@@ -241,6 +254,17 @@ export class AdminController {
   async getFlaggedSosRequests(@Query('page') page?: number, @Query('limit') limit?: number) {
     const { page: pg, limit: lm } = parseAdminPagination(page, limit);
     return this.adminService.getFlaggedSosRequests(pg, lm);
+  }
+
+  @Patch('sos-backup/:id/resolve')
+  @ApiOperation({ summary: '[Admin] A09: Xử lý và gỡ cờ admin_attention cho yêu cầu SOS' })
+  async resolveFlaggedSos(
+    @Param('id') id: string,
+    @Body() dto: AdminResolveSosDto,
+    @CurrentUser() adminUser: any,
+  ) {
+    const adminId = adminUser?.sub || adminUser?._id || adminUser?.id;
+    return this.adminService.resolveFlaggedSos(id, dto.note, adminId);
   }
 
   @Get('helper-penalty-events')

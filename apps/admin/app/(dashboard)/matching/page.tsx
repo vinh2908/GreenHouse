@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { useOptimalHelpers, useMatchBatch } from '@/hooks/use-admin';
+import { useOptimalHelpers, useMatchBatch, useAssignHelper } from '@/hooks/use-admin';
+import { PromptDialog } from '@/components/common/prompt-dialog';
 import {
   Badge,
   Button,
@@ -24,15 +25,44 @@ import {
 export default function AdminMatchingPage() {
   const [jobIdInput, setJobIdInput] = useState('');
   const [jobId, setJobId] = useState('');
-  const { data: matches, isLoading, isError } = useOptimalHelpers(jobId || undefined);
+  const { data: matches, isLoading, isError, refetch } = useOptimalHelpers(jobId || undefined);
   const batch = useMatchBatch();
+  const assignMutation = useAssignHelper();
   const [batchResult, setBatchResult] = useState<any>(null);
+  const [assignConfirm, setAssignConfirm] = useState<{
+    jobId: string;
+    helperId: string;
+    helperName: string;
+    jobTitle: string;
+  } | null>(null);
+  const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   const runBatch = () => {
     setBatchResult(null);
     batch.mutate(undefined, {
       onSuccess: d => setBatchResult(d),
     });
+  };
+
+  const handleAssignSubmit = () => {
+    if (!assignConfirm) return;
+    assignMutation.mutate(
+      { jobId: assignConfirm.jobId, helperId: assignConfirm.helperId },
+      {
+        onSuccess: () => {
+          setAssignConfirm(null);
+          setFeedback({ type: 'success', message: `Đã gán thợ ${assignConfirm.helperName} thành công!` });
+          refetch();
+        },
+        onError: (err: any) => {
+          setAssignConfirm(null);
+          setFeedback({
+            type: 'error',
+            message: err?.response?.data?.message || 'Gán thợ thất bại. Vui lòng kiểm tra lại.',
+          });
+        },
+      },
+    );
   };
 
   return (
@@ -49,6 +79,17 @@ export default function AdminMatchingPage() {
           <CardTitle>Thợ tối ưu cho 1 đơn</CardTitle>
         </CardHeader>
         <CardContent>
+          {feedback && (
+            <div
+              className={`p-3 rounded-lg text-sm mb-4 ${
+                feedback.type === 'success'
+                  ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                  : 'bg-rose-50 text-rose-800 border border-rose-200'
+              }`}
+            >
+              {feedback.message}
+            </div>
+          )}
           <div className="flex gap-2">
             <Input
               placeholder="Nhập ID đơn hàng (job_id)..."
@@ -86,6 +127,7 @@ export default function AdminMatchingPage() {
                         <TableHead>Khoảng cách</TableHead>
                         <TableHead>Điểm ghép</TableHead>
                         <TableHead>Lý do xếp hạng</TableHead>
+                        <TableHead className="text-right">Thao tác</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -112,6 +154,22 @@ export default function AdminMatchingPage() {
                                 <li key={j}>{r}</li>
                               ))}
                             </ul>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Button
+                              size="sm"
+                              disabled={assignMutation.isPending}
+                              onClick={() =>
+                                setAssignConfirm({
+                                  jobId: (m.job as any)?._id || jobId,
+                                  helperId: m.helper._id,
+                                  helperName: m.helper.full_name,
+                                  jobTitle: m.job.title,
+                                })
+                              }
+                            >
+                              Gán thợ này
+                            </Button>
                           </TableCell>
                         </TableRow>
                       ))}
@@ -142,6 +200,17 @@ export default function AdminMatchingPage() {
           )}
         </CardContent>
       </Card>
+
+      {assignConfirm && (
+        <PromptDialog
+          title="Xác nhận gán thợ thủ công"
+          message={`Bạn có chắc chắn muốn gán thợ ${assignConfirm.helperName} cho đơn #${assignConfirm.jobId.slice(-6)} ("${assignConfirm.jobTitle}")? Thao tác này sẽ tạo hợp đồng và chuyển đơn sang trạng thái ĐÃ NHẬN VIỆC.`}
+          confirmLabel={assignMutation.isPending ? 'Đang gán...' : 'Xác nhận gán'}
+          requireInput={false}
+          onSubmit={handleAssignSubmit}
+          onClose={() => setAssignConfirm(null)}
+        />
+      )}
     </div>
   );
 }

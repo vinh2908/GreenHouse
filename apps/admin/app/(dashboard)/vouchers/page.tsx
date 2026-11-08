@@ -67,7 +67,7 @@ const toDateInput = (iso?: string) => (iso ? iso.slice(0, 10) : '');
 export default function VouchersPage() {
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
-  const { data, isLoading } = useAdminVouchers({ search: search || undefined, page });
+  const { data, isLoading, isError, refetch } = useAdminVouchers({ search: search || undefined, page });
   const save = useSaveVoucher();
   const toggle = useToggleVoucher();
   const deleteVoucher = useDeleteVoucher();
@@ -156,6 +156,13 @@ export default function VouchersPage() {
         <CardContent>
           {isLoading ? (
             <Loading />
+          ) : isError ? (
+            <div className="p-8 text-center space-y-3">
+              <p className="text-destructive font-medium">Không thể tải danh sách mã giảm giá</p>
+              <Button variant="outline" size="sm" onClick={() => refetch()}>
+                Tải lại
+              </Button>
+            </div>
           ) : vouchers.length === 0 ? (
             <EmptyState message="Chưa có mã giảm giá nào — bấm “Tạo mã mới” để bắt đầu." />
           ) : (

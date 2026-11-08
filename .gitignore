@@ -33,4 +33,5 @@ _backup_pre_patch/
 reports/
 dist-qa/
 apps/mobile/dist-qa/
+scratch/
 

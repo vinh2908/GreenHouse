@@ -19,6 +19,7 @@ import { JobStatus, UserRole } from '@homemate/types';
 import { NotificationsService } from '../notifications/notifications.service';
 import { NOTIFICATION_TYPES } from '@homemate/constants';
 import { PaymentsService } from '../payments/payments.service';
+import { computeNetPaidAmount } from '../jobs/jobs.service';
 
 const OPEN_STATUSES: InsuranceClaimStatus[] = ['submitted', 'under_review'];
 
@@ -65,6 +66,16 @@ export class ClaimsService {
     const contract = await this.contractModel
       .findOne({ job_id: new Types.ObjectId(dto.job_id) })
       .exec();
+
+    // P1-21: Chặn số tiền yêu cầu bồi thường vượt quá số tiền thực trả của đơn hàng
+    const netPaid = computeNetPaidAmount(job, contract?.total_price);
+    const reqAmount = Number(dto.requested_amount ?? 0);
+    if (reqAmount > netPaid) {
+      throw new BadRequestException(
+        `Số tiền yêu cầu bồi thường (${reqAmount.toLocaleString('vi-VN')}₫) không được vượt quá số tiền thực trả của đơn hàng (${netPaid.toLocaleString('vi-VN')}₫)`,
+      );
+    }
+
     const windowDays = contract && contract.warranty_days > 0 ? contract.warranty_days : 30;
     const completedAt = contract?.completed_at ?? job.updated_at;
     const deadline = new Date(completedAt).getTime() + windowDays * 24 * 3600 * 1000;
@@ -308,6 +319,9 @@ export class ClaimsService {
       );
       throw refundErr;
     }
+    const isSimulated = (await this.paymentsService.hasSimulatedOnlinePayment?.(jobIdStr)) ?? false;
+    const destName = isSimulated ? 'số dư mô phỏng (không rút được tiền mặt)' : 'ví';
+
     // Ghi 'paid' + payout_transaction_id có điều kiện — chỉ request đang giữ
     // trạng thái 'approved' mới ghi được, chống ghi đè trùng.
     const paid = await this.claimModel
@@ -326,7 +340,7 @@ export class ClaimsService {
           $push: {
             timeline: {
               status: 'paid',
-              note: `Đã cộng ${dto.approved_amount.toLocaleString('vi-VN')}₫ vào ví khách hàng`,
+              note: `Đã cộng ${dto.approved_amount.toLocaleString('vi-VN')}₫ vào ${destName} khách hàng`,
               actor_id: new Types.ObjectId(adminId),
               actor_role: 'admin',
               at: new Date(),
@@ -349,7 +363,7 @@ export class ClaimsService {
     await this.notifyCustomer(
       claim,
       '💰 Bồi thường bảo hiểm đã được chi trả',
-      `Yêu cầu bồi thường cho đơn #${jobIdStr.slice(-6)} đã được duyệt: ${dto.approved_amount.toLocaleString('vi-VN')}₫ đã cộng vào ví của bạn.`,
+      `Yêu cầu bồi thường cho đơn #${jobIdStr.slice(-6)} đã được duyệt: ${dto.approved_amount.toLocaleString('vi-VN')}₫ đã cộng vào ${destName} của bạn.`,
     );
     return this.adminGet(id);
   }

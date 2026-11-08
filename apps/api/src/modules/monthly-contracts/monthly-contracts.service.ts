@@ -23,6 +23,7 @@ import {
 } from './schemas/monthly-contract.schema';
 import { CreateMonthlyContractDto, SettleMonthDto } from './dto/monthly-contract.dto';
 import { HelperProfile, HelperProfileDocument } from '../helpers/schemas/helper-profile.schema';
+import { Service, ServiceDocument } from '../services/schemas/service.schema';
 import { VerificationStatus } from '@homemate/types';
 import { NOTIFICATION_TYPES } from '@homemate/constants';
 import { NotificationsService } from '../notifications/notifications.service';
@@ -31,6 +32,8 @@ import { AppGateway } from '../chat/app.gateway';
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const MONTH_RE = /^\d{4}-(0[1-9]|1[0-2])$/;
+
+export const DEFAULT_MONTHLY_PLATFORM_FEE_PERCENT = 15;
 
 export interface SettlementSummary {
   contract_id: string;
@@ -76,6 +79,8 @@ export class MonthlyContractsService {
     private settlementModel: Model<MonthlySettlementDocument>,
     @InjectModel(HelperProfile.name)
     private helperModel: Model<HelperProfileDocument>,
+    @InjectModel(Service.name)
+    private serviceModel: Model<ServiceDocument>,
     private readonly notificationsService: NotificationsService,
     private readonly paymentsService: PaymentsService,
     @Inject(forwardRef(() => AppGateway))
@@ -202,13 +207,21 @@ export class MonthlyContractsService {
       }
     }
 
+    let platformFeePercent = DEFAULT_MONTHLY_PLATFORM_FEE_PERCENT;
+    if (dto.service_id && typeof this.serviceModel?.findById === 'function') {
+      const svc = await this.serviceModel.findById(dto.service_id).lean().exec();
+      if (typeof svc?.platform_fee_percent === 'number') {
+        platformFeePercent = svc.platform_fee_percent;
+      }
+    }
+
     const contract = await this.contractModel.create({
       customer_id: new Types.ObjectId(customerId),
       helper_id: new Types.ObjectId(dto.helper_id),
       service_id: dto.service_id ? new Types.ObjectId(dto.service_id) : undefined,
       title: dto.title,
       monthly_salary: dto.monthly_salary,
-      platform_fee_percent: 15,
+      platform_fee_percent: platformFeePercent,
       address: {
         ...dto.address,
         location: {
@@ -667,7 +680,9 @@ export class MonthlyContractsService {
       totalScheduledDaysInMonth > 0
         ? Math.round((contract.monthly_salary * confirmed) / totalScheduledDaysInMonth)
         : 0;
-    const fee = Math.round((gross * (contract.platform_fee_percent ?? 15)) / 100);
+    const fee = Math.round(
+      (gross * (contract.platform_fee_percent ?? DEFAULT_MONTHLY_PLATFORM_FEE_PERCENT)) / 100,
+    );
     return {
       contract_id: String(contract._id),
       month,
@@ -731,6 +746,27 @@ export class MonthlyContractsService {
 
     const summary = await this.computeSummary(contract, dto.month);
 
+    const isCashDirect = dto.payment_mode === 'cash_direct';
+
+    // P0-1 + QUY TẮC ĐÃ QUYẾT 1: Chốt lương tháng chỉ cộng ví thợ SAU KHI đã
+    // trừ ví khách; ví khách không đủ thì chặn chốt lương + báo nạp thêm.
+    // Ngoại lệ duy nhất: chế độ "trả ngoài hệ thống" (cash_direct) thì chỉ ghi
+    // nhận công, cộng 0₫ vào ví thợ.
+    if (!isCashDirect && summary.gross_amount > 0) {
+      const customerWallet = typeof this.paymentsService?.getWallet === 'function'
+        ? await this.paymentsService.getWallet(customerId)
+        : null;
+      if (customerWallet) {
+        const customerBalance =
+          (customerWallet?.balance ?? 0) + (customerWallet?.simulated_balance ?? 0);
+        if (customerBalance < summary.gross_amount) {
+          throw new BadRequestException(
+            `Số dư ví khách hàng không đủ để chốt lương tháng ${dto.month}. Cần tối thiểu ${summary.gross_amount.toLocaleString('vi-VN')}₫ (hiện có ${customerBalance.toLocaleString('vi-VN')}₫). Vui lòng nạp thêm tiền vào ví trước khi chốt lương.`,
+          );
+        }
+      }
+    }
+
     // F20: bọc toàn bộ chốt lương trong MongoDB transaction — tạo bản ghi
     // chốt lương + cộng tiền vào ví thợ cùng commit hoặc cùng rollback.
     // Không còn cộng tiền trước rồi rollback tay bằng deductWallet (lỗi
@@ -745,6 +781,17 @@ export class MonthlyContractsService {
     }
 
     const doSettle = async (sess: any): Promise<MonthlySettlementDocument> => {
+      // 1. Trừ ví khách nếu thanh toán qua hệ thống
+      if (!isCashDirect && summary.gross_amount > 0) {
+        await this.paymentsService.deductWallet(
+          customerId,
+          summary.gross_amount,
+          `Thanh toán lương tháng ${dto.month} — hợp đồng "${contract.title}" (${summary.confirmed_days}/${summary.scheduled_days} buổi)`,
+          sess,
+        );
+      }
+
+      // 2. Tạo bản ghi chốt lương
       const [settlement] = await this.settlementModel.create(
         [
           {
@@ -756,7 +803,7 @@ export class MonthlyContractsService {
             absent_days: summary.absent_days,
             gross_amount: summary.gross_amount,
             platform_fee: summary.platform_fee,
-            helper_receives: summary.helper_receives,
+            helper_receives: isCashDirect ? 0 : summary.helper_receives,
             status: 'settled',
             settled_at: new Date(),
             settled_by: new Types.ObjectId(customerId),
@@ -764,12 +811,14 @@ export class MonthlyContractsService {
         ],
         { session: sess ?? undefined },
       );
-      if (summary.helper_receives > 0) {
+
+      // 3. Cộng ví thợ nếu thanh toán qua hệ thống
+      if (!isCashDirect && summary.helper_receives > 0) {
         await this.paymentsService.creditWallet(
           contract.helper_id.toString(),
           summary.helper_receives,
           {
-            description: `Lương tháng ${dto.month} — hợp đồng "${contract.title}" (${summary.confirmed_days}/${summary.scheduled_days} buổi, đã trừ phí sàn ${contract.platform_fee_percent ?? 15}%)`,
+            description: `Lương tháng ${dto.month} — hợp đồng "${contract.title}" (${summary.confirmed_days}/${summary.scheduled_days} buổi, đã trừ phí sàn ${contract.platform_fee_percent ?? DEFAULT_MONTHLY_PLATFORM_FEE_PERCENT}%)`,
             reference: `MONTHLY-${String(contract._id).slice(-6)}-${dto.month}`,
             type: 'earning',
           },

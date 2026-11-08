@@ -4,7 +4,10 @@ import {
   BadRequestException,
   ConflictException,
   Logger,
+  Optional,
 } from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcryptjs';
@@ -21,7 +24,8 @@ import {
   ResendEmailOtpDto,
 } from './dto/auth.dto';
 import { OtpService } from './otp.service';
-import { JwtPayload, UserRole, UserStatus } from '@homemate/types';
+import { JwtPayload, UserRole, UserStatus, HelperStatus } from '@homemate/types';
+import { HelperProfile, HelperProfileDocument } from '../helpers/schemas/helper-profile.schema';
 
 @Injectable()
 export class AuthService {
@@ -32,6 +36,9 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
     private readonly otpService: OtpService,
+    @Optional()
+    @InjectModel(HelperProfile.name)
+    private readonly helperModel?: Model<HelperProfileDocument>,
   ) {}
 
   // ─── Register ──────────────────────────────────────────────────────────────
@@ -191,44 +198,32 @@ export class AuthService {
     user.invalid_tokens = [];
     await user.save();
     await this.usersService.incrementTokenVersion(userId);
+
+    // P1-19: Tự xóa tài khoản -> gỡ hồ sơ thợ khỏi trạng thái ONLINE (chuyển sang OFFLINE)
+    if (this.helperModel) {
+      await this.helperModel
+        .updateOne(
+          { user_id: user._id },
+          { status: HelperStatus.OFFLINE, deleted_at: new Date() },
+        )
+        .exec()
+        .catch(() => undefined);
+    }
+
     this.logger.log(`User soft-deleted account: ${user.phone}`);
     return { success: true, message: 'Tài khoản đã được xóa' };
   }
 
   // ─── OTP ───────────────────────────────────────────────────────────────────
 
-  async sendOtp(dto: SendOtpDto) {
-    const user = await this.usersService.findByPhone(dto.phone);
-    if (!user) throw new BadRequestException('Số điện thoại chưa được đăng ký');
-
-    await this.otpService.sendOtp(dto.phone, 'verify');
-    return { message: 'OTP đã được gửi. Có hiệu lực trong 5 phút.' };
+  async sendOtp(_dto: SendOtpDto) {
+    // P1-12: Trả lỗi rõ ràng thay vì nuốt lỗi gửi SMS không hỗ trợ
+    throw new BadRequestException('Hệ thống hiện chỉ hỗ trợ xác minh qua Email');
   }
 
-  async verifyOtp(dto: VerifyOtpDto) {
-    const isValid = await this.otpService.verifyOtp(dto.phone, dto.otp, 'verify');
-    if (!isValid) throw new BadRequestException('OTP không đúng hoặc đã hết hạn');
-
-    const user = await this.usersService.findByPhone(dto.phone);
-    if (!user) throw new BadRequestException('Số điện thoại không tồn tại');
-
-    await this.usersService.markVerified(user.id as string);
-
-    // Generate tokens so user is immediately logged in after OTP verification
-    const tokens = await this.generateTokens(user);
-
-    return {
-      message: 'Xác minh số điện thoại thành công',
-      ...tokens,
-      user: {
-        id: user.id,
-        phone: user.phone,
-        full_name: user.full_name,
-        roles: user.roles,
-        active_role: user.active_role,
-        is_phone_verified: true,
-      },
-    };
+  async verifyOtp(_dto: VerifyOtpDto) {
+    // P1-12: Trả lỗi rõ ràng
+    throw new BadRequestException('Hệ thống hiện chỉ hỗ trợ xác minh qua Email');
   }
 
   // ─── Forgot / Reset Password ───────────────────────────────────────────────
@@ -306,6 +301,9 @@ export class AuthService {
 
     const passwordHash = await bcrypt.hash(dto.new_password, 12);
     await this.usersService.updatePassword(user.id as string, passwordHash);
+    // P1-13: Thu hồi toàn bộ refresh tokens và tăng token_version để hủy bỏ các phiên đăng nhập khác
+    await this.usersService.revokeAllRefreshTokens(user.id as string);
+    await this.usersService.incrementTokenVersion(user.id as string);
 
     return { message: 'Đặt lại mật khẩu thành công' };
   }
