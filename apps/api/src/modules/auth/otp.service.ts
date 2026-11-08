@@ -186,9 +186,11 @@ export class OtpService {
 
     // P1-11: So khớp mã OTP trước — nếu nhập đúng ở lần thứ 5 thì vẫn thành công
     if (otp.code === code) {
-      otp.is_used = true;
-      await otp.save();
-      return true;
+      // Tiêu thụ nguyên tử chống race condition (chỉ đúng 1 request đồng thời thành công)
+      const consumed = await this.otpModel
+        .findOneAndUpdate({ _id: otp._id, is_used: false }, { $set: { is_used: true } })
+        .exec();
+      return !!consumed;
     }
 
     // Nhập sai mã -> tăng số lần thử sai

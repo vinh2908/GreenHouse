@@ -45,6 +45,8 @@ export interface AiSupportResponse {
   intent?: string; // 'cancel_booking' | 'check_status' | 'general'
   suggested_actions?: string[];
   confidence: number;
+  mock?: boolean;
+  is_mock?: boolean;
 }
 
 // ─── Feature Flag ──────────────────────────────────────────────────────────────

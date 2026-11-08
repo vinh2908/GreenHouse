@@ -252,7 +252,8 @@ export class AdminController {
     @CurrentUser() adminUser: any,
   ) {
     const adminId = adminUser?.sub || adminUser?._id || adminUser?.id;
-    return this.adminService.repairStuckAssignedJob(id, dto?.mode || 'unassign', adminId);
+    const mode = dto?.mode !== undefined ? dto.mode : 'unassign';
+    return this.adminService.repairStuckAssignedJob(id, mode as any, adminId);
   }
 
   // ─── Notifications broadcast ──────────────────────────────────────────────

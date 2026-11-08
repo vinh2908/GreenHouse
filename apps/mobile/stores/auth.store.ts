@@ -167,40 +167,62 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           isAuthenticated: true,
         });
 
-        // H13: Gọi GET /auth/me khi mở app để làm mới thông tin phiên;
-        // nếu cold start / timeout / mạng chậm thì GIỮ NGUYÊN phiên, không đăng xuất ép.
-        try {
-          const { data } = await apiClient.get('/auth/me', { timeout: 8000 });
-          if (data?.data) {
-            const freshUser = data.data;
-            if (storedRole) {
-              freshUser.active_role = storedRole;
+        // K5: Gọi GET /auth/me khi mở app để làm mới thông tin phiên;
+        // nếu cold start / timeout / mạng chậm thì GIỮ NGUYÊN phiên và tự thử lại sau delay;
+        // chỉ đăng xuất ép khi 401 thật sự từ server (không phải lỗi mạng trong lúc refresh).
+        const fetchMeWithRetry = async (retries = 2, delayMs = 3000): Promise<void> => {
+          try {
+            const { data } = await apiClient.get('/auth/me', { timeout: 8000 });
+            if (data?.data) {
+              const freshUser = data.data;
+              if (storedRole) {
+                freshUser.active_role = storedRole;
+              }
+              await SecureStore.setItemAsync(USER_KEY, JSON.stringify(freshUser));
+              set({ user: freshUser });
             }
-            await SecureStore.setItemAsync(USER_KEY, JSON.stringify(freshUser));
-            set({ user: freshUser });
-          }
-        } catch (err: any) {
-          if (err?.response?.status === 401) {
-            // Token thật sự hết hạn hoặc bị từ chối bởi server
-            await SecureStore.deleteItemAsync(TOKEN_KEY);
-            await SecureStore.deleteItemAsync(REFRESH_TOKEN_KEY);
-            await SecureStore.deleteItemAsync(USER_KEY);
-            await SecureStore.deleteItemAsync(ROLE_KEY);
-            set({
-              user: null,
-              accessToken: null,
-              refreshToken: null,
-              isAuthenticated: false,
-            });
-          } else {
-            // Cold start / timeout / mạng chậm: GIỮ NGUYÊN phiên đã lưu từ SecureStore
-            if (__DEV__) {
-              console.warn(
-                '[Startup] GET /auth/me timed out or cold-starting — retaining local session',
-              );
+          } catch (err: any) {
+            const isNetworkError =
+              err?.isNetworkRefreshError ||
+              !err?.response ||
+              err?.code === 'ECONNABORTED' ||
+              err?.message?.includes('Network Error') ||
+              err?.message?.includes('timeout') ||
+              (err?.response?.status && err.response.status >= 500);
+
+            const isTrue401 =
+              (err?.response?.status === 401 || err?.name === 'SessionExpiredError') &&
+              !isNetworkError;
+
+            if (isTrue401) {
+              // Token thật sự hết hạn hoặc bị từ chối bởi server
+              await SecureStore.deleteItemAsync(TOKEN_KEY);
+              await SecureStore.deleteItemAsync(REFRESH_TOKEN_KEY);
+              await SecureStore.deleteItemAsync(USER_KEY);
+              await SecureStore.deleteItemAsync(ROLE_KEY);
+              set({
+                user: null,
+                accessToken: null,
+                refreshToken: null,
+                isAuthenticated: false,
+              });
+            } else {
+              // Cold start / timeout / mạng chậm / refresh lỗi mạng: GIỮ NGUYÊN phiên đã lưu từ SecureStore
+              if (__DEV__) {
+                console.warn(
+                  '[Startup] GET /auth/me failed transiently or cold-starting — retaining local session',
+                );
+              }
+              if (retries > 0) {
+                setTimeout(() => {
+                  fetchMeWithRetry(retries - 1, delayMs * 1.5).catch(() => {});
+                }, delayMs);
+              }
             }
           }
-        }
+        };
+
+        await fetchMeWithRetry(2, 3000);
       } else {
         set({
           user: null,

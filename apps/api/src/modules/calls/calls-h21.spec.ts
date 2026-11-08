@@ -100,4 +100,55 @@ describe('H21: Race-safe Call Session Creation', () => {
     expect(resHelper.partner_id).toBe(String(customerId));
     expect(resHelper.callee_id).toBe(String(customerId));
   });
+
+  it('K13(g): non-11000 MongoServerError is rethrown, not swallowed', async () => {
+    const customerId = new Types.ObjectId();
+    const helperId = new Types.ObjectId();
+    const jobId = new Types.ObjectId();
+
+    const job = {
+      _id: jobId,
+      status: 'in_progress',
+      customer_id: customerId,
+      helper_id: helperId,
+      team: [],
+    };
+    const jobModel: any = {
+      findById: jest.fn(() => ({ exec: async () => job })),
+    };
+    const callSessionModel: any = {
+      create: jest.fn(async () => {
+        const err: any = new Error('Mongo connection error');
+        err.name = 'MongoServerError';
+        err.code = 99999;
+        throw err;
+      }),
+    };
+    const userModel: any = {
+      findById: jest.fn(() => ({
+        select: jest.fn(() => ({ exec: async () => ({ full_name: 'Test' }) })),
+      })),
+    };
+    const provider: any = {
+      isConfigured: () => true,
+      name: 'stringee',
+      createAccessToken: jest.fn(async () => ({
+        token: 'tok-1',
+        expires_at: new Date(Date.now() + 3600000),
+      })),
+    };
+    const service = new CallsService(
+      callSessionModel,
+      jobModel,
+      userModel,
+      provider,
+      { emitToUser: jest.fn() } as never,
+      { notifyIncomingCall: jest.fn() } as never,
+      {} as never,
+    );
+
+    await expect(
+      service.initiateCall(String(jobId), String(customerId)),
+    ).rejects.toThrow('Mongo connection error');
+  });
 });

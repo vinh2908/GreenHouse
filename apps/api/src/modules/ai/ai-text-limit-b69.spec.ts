@@ -90,9 +90,11 @@ describe('AI services (B69)', () => {
     ).rejects.toThrow('Tin nhắn trong lịch sử tối đa 2000 ký tự');
   });
 
-  it('support chat: tin nhắn ngắn → chạy bình thường (FAQ khi tắt AI)', async () => {
+  it('support chat: tin nhắn ngắn → chạy bình thường (FAQ khi tắt AI, có cờ is_mock)', async () => {
     const service = new AiSupportService(aiConfig);
     const result = await service.chat([], 'Cho tôi hỏi về giá dịch vụ');
     expect(result.answer).toBeDefined();
+    expect(result.is_mock).toBe(true);
+    expect(result.mock).toBe(true);
   });
 });

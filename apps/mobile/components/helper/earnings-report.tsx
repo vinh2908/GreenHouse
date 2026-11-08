@@ -5,7 +5,8 @@ import { useEarningsReport, useSetIncomeGoal } from '@/hooks/use-api';
 import { useTranslation } from '@/hooks/use-i18n';
 import { Card, COLORS, useThemeColors } from '@/components/ui';
 
-const fmt = (n: number) => new Intl.NumberFormat('vi-VN').format(n);
+const fmt = (n: number, l: string = 'vi') =>
+  new Intl.NumberFormat(l === 'en' ? 'en-US' : 'vi-VN').format(n);
 const WEEKDAY_LABELS_VI = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN']; // days[] bắt đầu từ Thứ 2
 const WEEKDAY_LABELS_EN = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 

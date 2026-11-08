@@ -770,10 +770,10 @@ describe('ĐỢT 1 — P0 Regression & Correctness Specs', () => {
       expect(mockJob.payment_status).toBe(PaymentStatus.UNPAID); // Giữ nguyên UNPAID
     });
 
-    it('I1: giải ngân lỗi -> hợp đồng và đơn đều rollback về đúng status + completed_at gốc, không kẹt COMPLETED', async () => {
+    it('I1 & L1 & L2: giải ngân lỗi -> hợp đồng và đơn đều rollback về đúng status và $unset completed_at khi gốc là undefined', async () => {
       const prevStatus = JobStatus.IN_PROGRESS;
       const prevContractStatus = ContractStatus.ACTIVE;
-      const prevCompletedAt = null;
+      const prevCompletedAt = undefined;
       const contractId = new Types.ObjectId();
       const mockContract = {
         _id: contractId,
@@ -794,6 +794,7 @@ describe('ĐỢT 1 — P0 Regression & Correctness Specs', () => {
           status: prevStatus,
           payment_status: PaymentStatus.PAID,
           helper_id: new Types.ObjectId(),
+          completed_at: undefined,
         }),
       });
       jobModelAdmin.findOneAndUpdate.mockReturnValue({
@@ -814,6 +815,66 @@ describe('ĐỢT 1 — P0 Regression & Correctness Specs', () => {
         { _id: new Types.ObjectId(jobId) },
         expect.objectContaining({
           $set: expect.objectContaining({ status: prevStatus }),
+          $unset: { completed_at: '' },
+        }),
+      );
+
+      expect(contractModelAdmin.updateOne).toHaveBeenCalledWith(
+        { _id: contractId },
+        expect.objectContaining({
+          $set: expect.objectContaining({
+            status: prevContractStatus,
+          }),
+          $unset: { completed_at: '' },
+        }),
+      );
+    });
+
+    it('L1 & L2: giải ngân lỗi -> khi đơn và hợp đồng đã có completed_at gốc thì rollback $set khôi phục đúng giá trị', async () => {
+      const prevStatus = JobStatus.IN_PROGRESS;
+      const prevContractStatus = ContractStatus.ACTIVE;
+      const prevCompletedAt = new Date('2026-11-01T08:00:00Z');
+      const contractId = new Types.ObjectId();
+      const mockContract = {
+        _id: contractId,
+        status: prevContractStatus,
+        completed_at: prevCompletedAt,
+        total_price: 500_000,
+        platform_fee: 75_000,
+        helper_receives: 425_000,
+        save: jest.fn().mockResolvedValue({}),
+      };
+      contractModelAdmin.findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(mockContract),
+      });
+
+      jobModelAdmin.findById.mockReturnValue({
+        exec: jest.fn().mockResolvedValue({
+          _id: new Types.ObjectId(jobId),
+          status: prevStatus,
+          payment_status: PaymentStatus.PAID,
+          helper_id: new Types.ObjectId(),
+          completed_at: prevCompletedAt,
+        }),
+      });
+      jobModelAdmin.findOneAndUpdate.mockReturnValue({
+        exec: jest.fn().mockResolvedValue({
+          _id: new Types.ObjectId(jobId),
+          status: JobStatus.COMPLETED,
+          payment_status: PaymentStatus.PAID,
+          helper_id: new Types.ObjectId(),
+        }),
+      });
+      paymentsServiceMock.creditHelper.mockRejectedValue(new Error('Gateway down'));
+
+      await expect(
+        adminService.updateJobStatus(jobId, JobStatus.COMPLETED, 'Admin done', adminId),
+      ).rejects.toThrow('Gateway down');
+
+      expect(jobModelAdmin.updateOne).toHaveBeenCalledWith(
+        { _id: new Types.ObjectId(jobId) },
+        expect.objectContaining({
+          $set: expect.objectContaining({ status: prevStatus, completed_at: prevCompletedAt }),
         }),
       );
 
@@ -1044,6 +1105,54 @@ describe('ĐỢT 1 — P0 Regression & Correctness Specs', () => {
           total_price: 500_000,
         }),
       );
+    });
+
+    it('L3(a): đơn IN_PROGRESS có helper_id nhưng không có hợp đồng -> gọi repairStuckAssignedJob bị chặn 400', async () => {
+      const jobInProgress = {
+        _id: new Types.ObjectId(jobId),
+        status: JobStatus.IN_PROGRESS,
+        helper_id: new Types.ObjectId(helperId),
+        customer_id: new Types.ObjectId(),
+        target_price: 500_000,
+        is_fixed_price: false,
+        payment_status: PaymentStatus.PAID,
+        events: [] as any[],
+        save: jest.fn().mockResolvedValue({}),
+      };
+      jobModelAssign.findById.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(jobInProgress),
+      });
+      contractModelAssign.findOne = jest.fn().mockReturnValue({
+        exec: jest.fn().mockResolvedValue(null),
+      });
+
+      await expect(
+        adminService.repairStuckAssignedJob(jobId, 'unassign', adminId),
+      ).rejects.toThrow('Không thể sửa đơn ở trạng thái "in_progress"');
+    });
+
+    it('L3(b): mode không hợp lệ -> ném BadRequestException, không tự ý unassign', async () => {
+      const stuckJob = {
+        _id: new Types.ObjectId(jobId),
+        status: JobStatus.CONFIRMED,
+        helper_id: new Types.ObjectId(helperId),
+        customer_id: new Types.ObjectId(),
+        target_price: 500_000,
+        is_fixed_price: false,
+        payment_status: PaymentStatus.PAID,
+        events: [] as any[],
+        save: jest.fn().mockResolvedValue({}),
+      };
+      jobModelAssign.findById.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(stuckJob),
+      });
+      contractModelAssign.findOne = jest.fn().mockReturnValue({
+        exec: jest.fn().mockResolvedValue(null),
+      });
+
+      await expect(
+        adminService.repairStuckAssignedJob(jobId, 'invalid_mode' as any, adminId),
+      ).rejects.toThrow('Chế độ sửa "invalid_mode" không hợp lệ');
     });
   });
 });

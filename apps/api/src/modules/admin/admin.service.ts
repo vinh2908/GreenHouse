@@ -47,6 +47,10 @@ import {
   HelperScoreResult,
 } from '../helpers/utils/helper-score';
 import { maskHelperBankAccount } from '../helpers/utils/mask-bank-account';
+
+function escapeRegex(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
 import {
   ContractStatus,
   HelperStatus,
@@ -63,6 +67,7 @@ import {
   JobsService,
   ACTIVE_HELPER_JOB_STATUSES,
   computeNetPaidAmount,
+  toVnDateString,
 } from '../jobs/jobs.service';
 
 const ADMIN_JOB_STATUS_TRANSITIONS: Record<string, string[]> = {
@@ -238,11 +243,12 @@ export class AdminService {
       query['is_deleted'] = false;
       if (status) query['status'] = status;
     }
-    if (search) {
+    if (search?.trim()) {
+      const safeSearch = escapeRegex(search.trim());
       query['$or'] = [
-        { full_name: { $regex: search, $options: 'i' } },
-        { phone: { $regex: search, $options: 'i' } },
-        { email: { $regex: search, $options: 'i' } },
+        { full_name: { $regex: safeSearch, $options: 'i' } },
+        { phone: { $regex: safeSearch, $options: 'i' } },
+        { email: { $regex: safeSearch, $options: 'i' } },
       ];
     }
     const skip = (page - 1) * limit;
@@ -459,11 +465,12 @@ export class AdminService {
 
     // P2-17: Nếu tìm kiếm, query trước user_id để đếm total và phân trang chính xác
     if (search?.trim() && this.userModel?.find) {
+      const safeSearch = escapeRegex(search.trim());
       const matchingUsers = await this.userModel
         .find({
           $or: [
-            { full_name: { $regex: search.trim(), $options: 'i' } },
-            { phone: { $regex: search.trim(), $options: 'i' } },
+            { full_name: { $regex: safeSearch, $options: 'i' } },
+            { phone: { $regex: safeSearch, $options: 'i' } },
           ],
         })
         .select('_id')
@@ -528,8 +535,11 @@ export class AdminService {
     const profile = await this.helperModel.findOne(query).exec();
     if (!profile) throw new NotFoundException('Helper profile not found');
 
-    // A72: Kiểm tra trạng thái pending và đầy đủ giấy tờ e-KYC
-    if (profile.verification_status !== VerificationStatus.PENDING) {
+    // A72: Kiểm tra trạng thái pending/rejected và đầy đủ giấy tờ e-KYC
+    if (
+      profile.verification_status !== VerificationStatus.PENDING &&
+      profile.verification_status !== VerificationStatus.REJECTED
+    ) {
       throw new BadRequestException('Hồ sơ không ở trạng thái chờ duyệt (PENDING)');
     }
     if (!profile.id_card_front || !profile.id_card_back || !profile.selfie_photo) {
@@ -585,11 +595,12 @@ export class AdminService {
   async getJobs(status?: string, search?: string, page = 1, limit = 20) {
     const query: Record<string, unknown> = {};
     if (status) query['status'] = status;
-    if (search) {
+    if (search?.trim()) {
+      const safeSearch = escapeRegex(search.trim());
       query['$or'] = [
-        { title: { $regex: search, $options: 'i' } },
-        { 'address.city': { $regex: search, $options: 'i' } },
-        { 'address.district': { $regex: search, $options: 'i' } },
+        { title: { $regex: safeSearch, $options: 'i' } },
+        { 'address.city': { $regex: safeSearch, $options: 'i' } },
+        { 'address.district': { $regex: safeSearch, $options: 'i' } },
       ];
     }
     const skip = (page - 1) * limit;
@@ -830,23 +841,29 @@ export class AdminService {
         this.logger.error(
           `F3: Giải ngân lỗi khi admin hoàn thành đơn ${jobId}: ${disburseErr?.message ?? disburseErr}`,
         );
-        // Rollback nếu đơn vừa được claim sang COMPLETED
+        // Rollback nếu đơn vừa được claim sang COMPLETED (L1 & L2: dùng $unset nếu completed_at gốc là null/undefined)
         if (job.status !== JobStatus.COMPLETED) {
+          const jobUpdate: Record<string, any> = {
+            $set: {
+              status: job.status,
+              payment_status: job.payment_status,
+            },
+            $pull: {
+              events: {
+                note: note || `Admin can thiệp thủ công: chuyển trạng thái sang ${status}`,
+              },
+            },
+          };
+          if (job.completed_at != null) {
+            jobUpdate.$set.completed_at = job.completed_at;
+          } else {
+            jobUpdate.$unset = { completed_at: '' };
+          }
+
           await this.jobModel
             .updateOne(
               { _id: job._id },
-              {
-                $set: {
-                  status: job.status,
-                  payment_status: job.payment_status,
-                  completed_at: job.completed_at,
-                },
-                $pull: {
-                  events: {
-                    note: note || `Admin can thiệp thủ công: chuyển trạng thái sang ${status}`,
-                  },
-                },
-              },
+              jobUpdate,
             )
             .exec()
             .catch(rErr => {
@@ -855,10 +872,19 @@ export class AdminService {
               );
             });
           if (contract && origContractStatus !== undefined) {
+            const contractUpdate: Record<string, any> = {
+              $set: { status: origContractStatus },
+            };
+            if (origContractCompletedAt != null) {
+              contractUpdate.$set.completed_at = origContractCompletedAt;
+            } else {
+              contractUpdate.$unset = { completed_at: '' };
+            }
+
             await this.contractModel
               .updateOne(
                 { _id: contract._id },
-                { $set: { status: origContractStatus, completed_at: origContractCompletedAt } },
+                contractUpdate,
               )
               .exec()
               .catch(() => undefined);
@@ -1590,10 +1616,10 @@ export class AdminService {
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
 
-    // R-B11: Dựng scheduled_at từ preferred_date + preferred_time_start theo múi giờ VN (+07:00)
+    // R-B11 & P2-4: Dựng scheduled_at từ preferred_date + preferred_time_start theo múi giờ VN (+07:00)
     let scheduledAt: Date;
     if (job.preferred_date) {
-      const datePart = new Date(job.preferred_date).toISOString().slice(0, 10);
+      const datePart = toVnDateString(job.preferred_date);
       const timePart = job.preferred_time_start ? `${job.preferred_time_start}:00` : '08:00:00';
       scheduledAt = new Date(`${datePart}T${timePart}+07:00`);
     } else {
@@ -1676,6 +1702,21 @@ export class AdminService {
     const job = await this.jobModel.findById(jobId).exec();
     if (!job) throw new NotFoundException('Đơn hàng không tồn tại');
 
+    // L3(b): Kiểm tra mode hợp lệ, từ chối mode không hợp lệ thay vì lặng lẽ fallback
+    if (mode !== 'unassign' && mode !== 'backfill') {
+      throw new BadRequestException(
+        `Chế độ sửa "${mode}" không hợp lệ. Chỉ chấp nhận "unassign" hoặc "backfill".`,
+      );
+    }
+
+    // L3(a): Chỉ cho sửa đơn ở CONFIRMED hoặc QUOTE_SELECTED (chặn unassign đơn đang làm dở)
+    const allowedStatuses = [JobStatus.CONFIRMED, JobStatus.QUOTE_SELECTED];
+    if (!allowedStatuses.includes(job.status as JobStatus)) {
+      throw new BadRequestException(
+        `Không thể sửa đơn ở trạng thái "${job.status}". Chỉ cho phép sửa đơn kẹt ở trạng thái CONFIRMED hoặc QUOTE_SELECTED.`,
+      );
+    }
+
     const existingContract = await this.contractModel.findOne({ job_id: job._id }).exec();
     if (existingContract) {
       throw new BadRequestException(
@@ -1712,7 +1753,7 @@ export class AdminService {
       tomorrow.setDate(tomorrow.getDate() + 1);
       let scheduledAt: Date = tomorrow;
       if (job.preferred_date) {
-        const datePart = new Date(job.preferred_date).toISOString().slice(0, 10);
+        const datePart = toVnDateString(job.preferred_date);
         const timePart = job.preferred_time_start ? `${job.preferred_time_start}:00` : '08:00:00';
         scheduledAt = new Date(`${datePart}T${timePart}+07:00`);
       }

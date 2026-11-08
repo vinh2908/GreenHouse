@@ -231,10 +231,14 @@ apiClient.interceptors.response.use(
                 : 'Vui lòng đăng nhập lại để tiếp tục',
           });
           triggerSessionExpiredLogout();
+          return Promise.reject(refreshError);
         }
-        // Lỗi refresh thoáng qua (mạng/5xx): không toast hết phiên, không xóa
-        // token — chỉ fail request này.
-        return Promise.reject(error);
+        // K5: Lỗi refresh thoáng qua (mạng/5xx): không toast hết phiên, không xóa
+        // token — chỉ fail request này với refreshError và gắn cờ mạng để phân biệt với 401 thật
+        if (refreshError && typeof refreshError === 'object') {
+          (refreshError as any).isNetworkRefreshError = true;
+        }
+        return Promise.reject(refreshError);
       }
     }
 

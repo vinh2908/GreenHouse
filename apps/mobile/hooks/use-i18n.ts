@@ -10,6 +10,7 @@ import {
   formatNotificationTitle,
   formatNotificationBody,
   formatTransactionDescription,
+  formatCurrency,
   syncDayjsLocale,
   type I18nKey,
 } from '@/services/i18n';
@@ -66,6 +67,11 @@ export function useTranslation() {
     [language],
   );
 
+  const formatMoney = useCallback(
+    (amount?: number | null) => formatCurrency(amount, language),
+    [language],
+  );
+
   const textScale = textScaleFor(textSize);
   /** Nhân cỡ chữ theo cài đặt: fs(14) → 14 (thường) hoặc 17.5 (lớn). */
   const fs = useCallback((base: number) => Math.round(base * textScale * 10) / 10, [textScale]);
@@ -79,6 +85,8 @@ export function useTranslation() {
     formatNotifTitle,
     formatNotifBody,
     formatTxDesc,
+    formatMoney,
+    fmt: formatMoney,
     language,
     theme,
     setTheme,

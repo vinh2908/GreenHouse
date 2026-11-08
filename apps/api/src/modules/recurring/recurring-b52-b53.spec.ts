@@ -132,6 +132,57 @@ describe('RecurringService (B52/B53)', () => {
       expect(marDates).toEqual(['2026-03-31']);
     });
 
+    it('H5 & K13(d): gói ngày 31 có schedule_warning khi tạo và sinh thông báo khi tháng bị bỏ qua', async () => {
+      const { service } = makeService();
+      const plan = await service.createPlan(
+        customerId,
+        dto({
+          frequency: 'monthly',
+          month_days: [31],
+        }),
+      );
+      expect(plan.schedule_warning).toContain('31');
+
+      const notifications: any[] = [];
+      const notificationsService = {
+        create: jest.fn(async (n: any) => {
+          notifications.push(n);
+          return {};
+        }),
+      };
+      const testPlan: any = {
+        _id: new Types.ObjectId(),
+        customer_id: customerId,
+        title: 'Dọn nhà tháng 31',
+        frequency: 'monthly',
+        month_days: [31],
+        status: 'active',
+        skipped_dates: [],
+        time_start: '09:00',
+        save: jest.fn(),
+      };
+      const realService = new RecurringService(
+        {
+          updateOne: jest.fn(async () => ({})),
+          findByIdAndUpdate: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue({}) }),
+        } as never,
+        { exists: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(null) }) } as never,
+        {} as never,
+        { isVerifiedHelper: jest.fn(async () => true) } as never,
+        { isFavorite: jest.fn(async () => true) } as never,
+        notificationsService as never,
+      );
+      (realService as any).dateKey = (d: Date) => d.toISOString().slice(0, 10);
+      (realService as any).startOfDay = () => new Date('2026-02-01T00:00:00Z');
+      (realService as any).addDays = () => new Date('2026-02-28T23:59:59Z');
+      (realService as any).occurrenceDates = () => [];
+
+      await realService.generateJobsForPlan(testPlan);
+      expect(notificationsService.create).toHaveBeenCalled();
+      expect(notifications[0].title).toContain('Lịch định kỳ: Bỏ qua lượt trong tháng');
+      expect(notifications[0].body).toContain('Tháng 2/2026 không có ngày 31');
+    });
+
     it('không sinh đơn sau end_date', () => {
       const { service } = makeService();
       const plan: any = {

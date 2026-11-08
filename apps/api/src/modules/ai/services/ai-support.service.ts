@@ -39,6 +39,8 @@ export class AiSupportService {
         intent: 'general',
         suggested_actions: ['Xem bảng giá', 'Liên hệ hotline'],
         confidence: 0.9,
+        is_mock: true,
+        mock: true,
       };
     }
 
@@ -71,6 +73,8 @@ export class AiSupportService {
         answer,
         intent,
         confidence: 0.9,
+        is_mock: false,
+        mock: false,
       };
     } catch (err) {
       this.logger.error('AI support chat failed', err);
@@ -79,6 +83,8 @@ export class AiSupportService {
           'Xin lỗi, tôi đang gặp sự cố kỹ thuật. Vui lòng thử lại sau hoặc liên hệ hotline 0365290805.',
         intent: 'error',
         confidence: 0,
+        is_mock: false,
+        mock: false,
       };
     }
   }

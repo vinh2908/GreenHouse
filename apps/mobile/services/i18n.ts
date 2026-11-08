@@ -2225,6 +2225,14 @@ export function formatVoucherDescription(
   return viText;
 }
 
+/**
+ * Định dạng tiền tệ theo ngôn ngữ (vi: '100.000', en: '100,000')
+ */
+export function formatCurrency(amount?: number | null, lang: AppLanguage = 'vi'): string {
+  const n = amount ?? 0;
+  return new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'vi-VN').format(n);
+}
+
 // ─── Loyalty Tier Name Translation (Điểm 6) ──────────────────────────────────
 export const LOYALTY_TIER_EN_MAP: Record<string, string> = {
   vàng: 'Gold',

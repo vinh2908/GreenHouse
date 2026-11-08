@@ -1,7 +1,7 @@
 import { RoutingService } from './routing.service';
 import { Types } from 'mongoose';
 import { JobStatus, PaymentStatus, VerificationStatus } from '@homemate/types';
-import { JobsService } from './jobs.service';
+import { JobsService, MAX_FEED_SORT_CANDIDATES } from './jobs.service';
 import { AdminService } from '../admin/admin.service';
 
 describe('ĐỢT 2 (P1) — G1–G9 & J1–J3 Regression & Correctness Specs', () => {
@@ -106,7 +106,12 @@ describe('ĐỢT 2 (P1) — G1–G9 & J1–J3 Regression & Correctness Specs', (
         jobsServiceMock,
       );
 
-      const result = await adminService.updateJobStatus(jobId, JobStatus.CANCELLED, 'Admin test cancel', adminId);
+      const result = await adminService.updateJobStatus(
+        jobId,
+        JobStatus.CANCELLED,
+        'Admin test cancel',
+        adminId,
+      );
 
       expect(result.status).toBe(JobStatus.CANCELLED);
       expect(restoreMock).toHaveBeenCalledWith(mockJob);
@@ -307,8 +312,10 @@ describe('ĐỢT 2 (P1) — G1–G9 & J1–J3 Regression & Correctness Specs', (
         title: 'Job Far (15km)',
         status: JobStatus.OPEN,
         created_at: new Date('2026-11-08T10:00:00Z'),
-        address: { location: { coordinates: [108.30, 16.15] } },
-        toObject: function () { return { ...this }; },
+        address: { location: { coordinates: [108.3, 16.15] } },
+        toObject: function () {
+          return { ...this };
+        },
       };
       // Job Mid: tạo lúc 09:00, khoảng cách trung bình (~8km)
       const jobMid: any = {
@@ -316,8 +323,10 @@ describe('ĐỢT 2 (P1) — G1–G9 & J1–J3 Regression & Correctness Specs', (
         title: 'Job Mid (8km)',
         status: JobStatus.OPEN,
         created_at: new Date('2026-11-08T09:00:00Z'),
-        address: { location: { coordinates: [108.25, 16.10] } },
-        toObject: function () { return { ...this }; },
+        address: { location: { coordinates: [108.25, 16.1] } },
+        toObject: function () {
+          return { ...this };
+        },
       };
       // Job Near: tạo cũ nhất (08:00), khoảng cách gần nhất (~1km)
       const jobNear: any = {
@@ -326,7 +335,9 @@ describe('ĐỢT 2 (P1) — G1–G9 & J1–J3 Regression & Correctness Specs', (
         status: JobStatus.OPEN,
         created_at: new Date('2026-11-08T08:00:00Z'),
         address: { location: { coordinates: [108.205, 16.055] } },
-        toObject: function () { return { ...this }; },
+        toObject: function () {
+          return { ...this };
+        },
       };
 
       const allJobs = [jobFar, jobMid, jobNear];
@@ -395,7 +406,14 @@ describe('ĐỢT 2 (P1) — G1–G9 & J1–J3 Regression & Correctness Specs', (
       );
 
       // Gọi getAvailableJobs với page = 1, limit = 2
-      const res = await jobsService.getAvailableJobs(helperId, undefined, 1, 2, helperLat, helperLng);
+      const res = await jobsService.getAvailableJobs(
+        helperId,
+        undefined,
+        1,
+        2,
+        helperLat,
+        helperLng,
+      );
 
       // KẾT QUẢ MONG MUỐN: Job Near gần nhất (1km) PHẢI xuất hiện trên trang 1 và đứng đầu tiên!
       expect(res.jobs.length).toBe(2);
@@ -419,7 +437,9 @@ describe('ĐỢT 2 (P1) — G1–G9 & J1–J3 Regression & Correctness Specs', (
           preferred_date: new Date('2026-11-09T08:00:00Z'),
           preferred_time_start: '09:00',
           created_at: new Date(Date.now() - i * 60000),
-          toObject: function () { return { ...this }; },
+          toObject: function () {
+            return { ...this };
+          },
         });
       }
 
@@ -488,6 +508,305 @@ describe('ĐỢT 2 (P1) — G1–G9 & J1–J3 Regression & Correctness Specs', (
       // Mới (sửa đúng): res.total = 180, res.total_pages = 9
       expect(res.total).toBe(180);
       expect(res.total_pages).toBe(9);
+    });
+  });
+
+  // ─── M1: getAvailableJobs sort gần-nhất với > 150 đơn có giới hạn RAM + đếm tổng đúng ───
+  describe('M1: getAvailableJobs feed bounded query and true total with 150+ jobs', () => {
+    it('khi có hơn 150 đơn khớp -> trang đầu trả về đơn gần nhất lên đầu, query bị giới hạn bởi MAX_FEED_SORT_CANDIDATES và total/total_pages đúng tổng thật', async () => {
+      const helperId = new Types.ObjectId().toString();
+      const helperLat = 16.0544;
+      const helperLng = 108.2022;
+
+      // Tạo 160 đơn: đơn 0 gần nhất (1km), các đơn sau xa dần
+      const jobs160: any[] = [];
+      for (let i = 0; i < 160; i++) {
+        jobs160.push({
+          _id: new Types.ObjectId(),
+          title: `Job ${i} (${i + 1}km)`,
+          status: JobStatus.OPEN,
+          address: {
+            location: {
+              coordinates: [helperLng + 0.005 * (i + 1), helperLat + 0.005 * (i + 1)],
+            },
+          },
+          created_at: new Date(Date.now() - i * 60000),
+          toObject: function () {
+            return { ...this };
+          },
+        });
+      }
+
+      let limitApplied: number | undefined;
+      const jobModel: any = {
+        countDocuments: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(160) }),
+        find: jest.fn().mockImplementation(() => {
+          const chain: any = {
+            populate: jest.fn().mockReturnThis(),
+            sort: jest.fn().mockReturnThis(),
+            limit: jest.fn().mockImplementation((n: number) => {
+              limitApplied = n;
+              return chain;
+            }),
+            exec: jest.fn().mockImplementation(async () => {
+              return jobs160.slice(0, limitApplied ?? 160);
+            }),
+          };
+          return chain;
+        }),
+      };
+
+      const helperModel: any = {
+        findOne: jest.fn().mockReturnValue({
+          select: jest.fn().mockReturnValue({
+            lean: jest.fn().mockReturnValue({
+              exec: jest.fn().mockResolvedValue({
+                location: { coordinates: [helperLng, helperLat] },
+                availability: { enabled: false },
+              }),
+            }),
+          }),
+        }),
+      };
+
+      const routingService = new RoutingService();
+      const dummy = {} as never;
+      const jobsService = new JobsService(
+        jobModel,
+        dummy,
+        dummy,
+        dummy,
+        helperModel,
+        dummy,
+        dummy,
+        dummy,
+        dummy,
+        dummy,
+        dummy,
+        routingService,
+        dummy,
+        dummy,
+        dummy,
+        dummy,
+      );
+
+      const res = await jobsService.getAvailableJobs(
+        helperId,
+        undefined,
+        1,
+        20,
+        helperLat,
+        helperLng,
+      );
+
+      // (a) Trang đầu trả về đúng thứ tự gần nhất lên đầu
+      expect(res.jobs[0].title).toBe('Job 0 (1km)');
+      expect(res.jobs.length).toBe(20);
+
+      // (b) Total và total_pages đúng tổng thật
+      expect(res.total).toBe(160);
+      expect(res.total_pages).toBe(8);
+
+      // (c) Query có giới hạn an toàn, không load toàn bộ RAM vô hạn
+      expect(limitApplied).toBe(MAX_FEED_SORT_CANDIDATES);
+      expect(res.candidate_cap).toBe(MAX_FEED_SORT_CANDIDATES);
+    });
+  });
+
+  describe('K2: Ẩn báo giá của thợ chưa xác minh danh tính và gửi thông báo đúng 1 lần', () => {
+    it('thợ chưa xác minh danh tính -> báo giá bị gắn cờ unverified, gửi thông báo cho thợ và cập nhật cờ DB', async () => {
+      const jobId = '507f1f77bcf86cd799439011';
+      const customerId = '507f1f77bcf86cd799439012';
+      const helperId = '507f1f77bcf86cd799439013';
+      const quoteId = '507f1f77bcf86cd799439014';
+
+      const mockJob = {
+        _id: jobId,
+        customer_id: customerId,
+        title: 'Sửa ống nước',
+        address: { location: { coordinates: [106.68, 10.77] } },
+      };
+
+      const mockQuote = {
+        _id: quoteId,
+        job_id: jobId,
+        helper_id: helperId,
+        status: 'pending',
+        total_price: 200000,
+        unverified_hidden_notified: false,
+        toObject: function () {
+          return { ...this };
+        },
+      };
+
+      const jobModel: any = {
+        findById: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(mockJob) }),
+      };
+
+      const quoteModel: any = {
+        find: jest.fn().mockReturnValue({
+          populate: jest.fn().mockReturnValue({
+            exec: jest.fn().mockResolvedValue([mockQuote]),
+          }),
+        }),
+        updateOne: jest.fn().mockReturnValue({
+          exec: jest.fn().mockResolvedValue({ modifiedCount: 1 }),
+        }),
+      };
+
+      const helperModel: any = {
+        find: jest.fn().mockReturnValue({
+          select: jest.fn().mockReturnValue({
+            lean: jest.fn().mockReturnValue({
+              exec: jest.fn().mockResolvedValue([
+                {
+                  user_id: helperId,
+                  verification_status: VerificationStatus.REJECTED,
+                  rating: 4.5,
+                  completed_jobs: 5,
+                },
+              ]),
+            }),
+          }),
+        }),
+      };
+
+      const notificationsService: any = {
+        create: jest.fn().mockResolvedValue({}),
+      };
+
+      const routingService = new RoutingService();
+      const dummy = {} as never;
+      const jobsService = new JobsService(
+        jobModel,
+        quoteModel,
+        dummy,
+        dummy,
+        helperModel,
+        dummy,
+        dummy,
+        dummy,
+        notificationsService,
+        dummy,
+        dummy,
+        routingService,
+        dummy,
+        dummy,
+        dummy,
+        dummy,
+      );
+
+      const quotes = await jobsService.getJobQuotes(jobId, customerId, 'customer');
+      expect(quotes).toHaveLength(1);
+      expect((quotes[0] as any).helper_unverified).toBe(true);
+      expect((quotes[0] as any).helper_unverified_reason).toBe('Thợ này đã bị thu hồi xác minh');
+
+      // Đợi promise microtask chạy xong
+      await new Promise(resolve => setTimeout(resolve, 50));
+
+      expect(quoteModel.updateOne).toHaveBeenCalledWith(
+        { _id: quoteId, unverified_hidden_notified: { $ne: true } },
+        { $set: { unverified_hidden_notified: true } },
+      );
+      expect(notificationsService.create).toHaveBeenCalledTimes(1);
+      expect(notificationsService.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          userId: helperId,
+          title: 'Báo giá đã bị ẩn',
+          body: expect.stringContaining('chưa xác minh danh tính'),
+        }),
+      );
+
+      // Khi đã gắn cờ unverified_hidden_notified = true thì lần lấy tiếp theo không gửi lại
+      notificationsService.create.mockClear();
+      quoteModel.updateOne.mockClear();
+      mockQuote.unverified_hidden_notified = true;
+
+      const quotes2 = await jobsService.getJobQuotes(jobId, customerId, 'customer');
+      expect((quotes2[0] as any).helper_unverified).toBe(true);
+      await new Promise(resolve => setTimeout(resolve, 50));
+      expect(notificationsService.create).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('K8: getSkippedJobs tính ETA từ GPS thiết bị khi thợ không có vị trí profile và xóa estimated_travel_minutes', () => {
+    it('thợ không có location trong profile -> nhận GPS lat/lng từ query, tính route và chỉ trả estimated_minutes (không trả estimated_travel_minutes)', async () => {
+      const helperId = '507f1f77bcf86cd799439099';
+      const skippedJob = {
+        _id: '507f1f77bcf86cd799439088',
+        title: 'Đơn đã bỏ qua',
+        address: { location: { coordinates: [106.69, 10.78] } },
+        toObject: function () {
+          return { ...this };
+        },
+      };
+
+      const jobModel: any = {
+        find: jest.fn().mockReturnValue({
+          populate: jest.fn().mockReturnThis(),
+          sort: jest.fn().mockReturnThis(),
+          skip: jest.fn().mockReturnThis(),
+          limit: jest.fn().mockReturnThis(),
+          exec: jest.fn().mockResolvedValue([skippedJob]),
+        }),
+        countDocuments: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(1) }),
+      };
+
+      // Profile thợ hoàn toàn không có location
+      const helperModel: any = {
+        findOne: jest.fn().mockReturnValue({
+          select: jest.fn().mockReturnValue({
+            lean: jest.fn().mockReturnValue({
+              exec: jest.fn().mockResolvedValue({ _id: helperId, location: null }),
+            }),
+          }),
+        }),
+      };
+
+      const routingService = new RoutingService();
+      jest.spyOn(routingService, 'getRoutesBatch').mockResolvedValue(
+        new Map([
+          [
+            '507f1f77bcf86cd799439088',
+            { distance_km: 2.5, estimated_minutes: 10, estimated: false } as any,
+          ],
+        ]),
+      );
+
+      const dummy = {} as never;
+      const jobsService = new JobsService(
+        jobModel,
+        dummy,
+        dummy,
+        dummy,
+        helperModel,
+        dummy,
+        dummy,
+        dummy,
+        dummy,
+        dummy,
+        dummy,
+        routingService,
+        dummy,
+        dummy,
+        dummy,
+        dummy,
+      );
+
+      // Gọi getSkippedJobs với GPS thiết bị (lat: 10.77, lng: 106.68)
+      const res = await jobsService.getSkippedJobs(helperId, 1, 20, 10.77, 106.68);
+
+      expect(res.jobs).toHaveLength(1);
+      const j = res.jobs[0] as any;
+      expect(j.distance_km).toBe(2.5);
+      expect(j.estimated_minutes).toBe(10);
+      // Assert xóa hẳn tên trường cũ estimated_travel_minutes
+      expect(j.estimated_travel_minutes).toBeUndefined();
+      expect(routingService.getRoutesBatch).toHaveBeenCalledWith(
+        10.77,
+        106.68,
+        expect.arrayContaining([expect.objectContaining({ id: '507f1f77bcf86cd799439088' })]),
+      );
     });
   });
 });

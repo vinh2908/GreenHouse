@@ -77,13 +77,38 @@ export default function HelperDashboardScreen() {
     refetch: refetchProfile,
   } = useHelperProfile();
   const [dashPage, setDashPage] = useState(1);
+  const [deviceCoords, setDeviceCoords] = useState<{ lat?: number; lng?: number } | null>(() => {
+    const c = locationService.getCachedCoordinates();
+    return c ? { lat: c.latitude, lng: c.longitude } : null;
+  });
+
+  useEffect(() => {
+    let mounted = true;
+    locationService
+      .getCurrentCoordinates()
+      .then(c => {
+        if (mounted && c) {
+          setDeviceCoords({ lat: c.latitude, lng: c.longitude });
+        }
+      })
+      .catch(() => {});
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
   const {
     data: availableJobs,
     isLoading: aLoading,
     isError: aError,
     error: aErrorObj,
     refetch: refetchJobs,
-  } = useAvailableJobs(undefined, dashPage, profile?.verification_status === 'approved');
+  } = useAvailableJobs(
+    undefined,
+    dashPage,
+    profile?.verification_status === 'approved',
+    deviceCoords,
+  );
   const {
     data: myJobs,
     isLoading: mLoading,
@@ -145,7 +170,9 @@ export default function HelperDashboardScreen() {
         text2: t('helper_dash_sos_body', {
           title: data.title ?? '',
           district: data.district ?? '',
-          surcharge: new Intl.NumberFormat('vi-VN').format(data.surcharge ?? 0),
+          surcharge: new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'vi-VN').format(
+            data.surcharge ?? 0,
+          ),
         }),
         visibilityTime: 10000,
       });

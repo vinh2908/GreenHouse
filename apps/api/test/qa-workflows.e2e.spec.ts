@@ -4,7 +4,7 @@ import { createQaApp } from './qa-app';
 import { JobsService } from '../src/modules/jobs/jobs.service';
 import { ChatService } from '../src/modules/chat/chat.service';
 import { PaymentsService } from '../src/modules/payments/payments.service';
-import request from 'supertest';
+const request = require('supertest');
 import { io } from 'socket.io-client';
 
 describe('QA extended workflows: SOS, admin actions, live sockets', () => {
@@ -131,7 +131,7 @@ describe('QA extended workflows: SOS, admin actions, live sockets', () => {
     await online();
     const id = await sos();
     const model = qa.app.get(getModelToken('Contract'));
-    const spy = jest.spyOn(model.prototype, 'save').mockRejectedValueOnce(new Error('QA failure'));
+    const spy = jest.spyOn(model, 'create').mockRejectedValueOnce(new Error('QA failure'));
     try {
       await expect(qa.app.get(JobsService).acceptSosJob(qa.accounts.helper.id, id)).rejects.toThrow(
         'QA failure',
@@ -179,6 +179,12 @@ describe('QA extended workflows: SOS, admin actions, live sockets', () => {
       .expect(400);
   });
   it('admin KYC rejection prevents quotes until approved', async () => {
+    await qa.app
+      .get(getModelToken('HelperProfile'))
+      .updateOne(
+        { user_id: new Types.ObjectId(qa.accounts.helper.id) },
+        { verification_status: 'pending' },
+      );
     await api()
       .patch(`/api/v1/admin/helpers/${qa.accounts.helper.id}/kyc/reject`)
       .set('Authorization', auth('admin'))
@@ -226,7 +232,7 @@ describe('QA extended workflows: SOS, admin actions, live sockets', () => {
     const before = (await payments.getWallet(qa.accounts.helper.id)).balance;
     const ledger = qa.app.get(getModelToken('Transaction'));
     const spy = jest
-      .spyOn(ledger.prototype, 'save')
+      .spyOn(ledger, 'create')
       .mockRejectedValueOnce(new Error('QA ledger failure'));
     try {
       await expect(payments.requestWithdrawal(qa.accounts.helper.id, 100000)).rejects.toThrow(
@@ -254,7 +260,7 @@ describe('QA extended workflows: SOS, admin actions, live sockets', () => {
     const id = responses.find(r => r.status === 201)!.body.data._id;
     const ledger = qa.app.get(getModelToken('Transaction'));
     const spy = jest
-      .spyOn(ledger.prototype, 'save')
+      .spyOn(ledger, 'create')
       .mockRejectedValueOnce(new Error('QA refund failure'));
     try {
       await expect(

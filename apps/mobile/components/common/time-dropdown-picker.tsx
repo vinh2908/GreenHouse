@@ -866,7 +866,7 @@ export function ScheduledTimePreview({
         <View style={styles.previewRow}>
           <Text style={[styles.previewLabel, { fontSize: fs(12) }]}>{t('picker_deal_price')}</Text>
           <Text style={[styles.previewValue, { color: COLORS.primary, fontSize: fs(12.5) }]}>
-            {new Intl.NumberFormat('vi-VN').format(price)}₫
+            {new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'vi-VN').format(price)}₫
           </Text>
         </View>
       )}

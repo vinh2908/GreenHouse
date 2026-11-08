@@ -162,7 +162,7 @@ export function formatMonthKey(dateInput: DateInput): string {
 }
 
 /** 'MM/YYYY' của một thời điểm, tính theo giờ VN. */
-export function formatMonthSlash(dateInput: DateInput): string {
+export function formatMonthSlash(dateInput: DateInput, lang: 'vi' | 'en' = 'vi'): string {
   if (!dateInput) return '';
   const date = toVnDayjs(dateInput);
   return date.isValid() ? date.format('MM/YYYY') : '';

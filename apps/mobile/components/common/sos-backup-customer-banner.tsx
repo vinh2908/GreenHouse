@@ -103,12 +103,12 @@ export function SosBackupCustomerBanner({ job }: { job: any }) {
             {lang === 'en'
               ? `The previous helper encountered an unexpected incident, so another helper has taken over your job${
                   replacement.replaced_at
-                    ? ` since ${formatDateTime(dayjs(replacement.replaced_at))}`
+                    ? ` since ${formatDateTime(dayjs(replacement.replaced_at), lang)}`
                     : ''
                 }. Your job price and escrow hold remain unchanged.`
               : `Người giúp việc trước gặp sự cố bất khả kháng nên một thợ khác đã tiếp tục đơn của bạn${
                   replacement.replaced_at
-                    ? ` từ ${formatDateTime(dayjs(replacement.replaced_at))}`
+                    ? ` từ ${formatDateTime(dayjs(replacement.replaced_at), lang)}`
                     : ''
                 }. Giá đơn và số tiền giữ đảm bảo của bạn không thay đổi.`}
           </Text>

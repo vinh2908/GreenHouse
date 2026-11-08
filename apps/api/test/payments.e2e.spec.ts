@@ -12,6 +12,8 @@ import { HttpExceptionFilter } from '../src/common/filters/http-exception.filter
 import { TransformInterceptor } from '../src/common/interceptors/transform.interceptor';
 import { PaymentsService } from '../src/modules/payments/payments.service';
 import { HelperProfile } from '../src/modules/helpers/schemas/helper-profile.schema';
+import { Job, Contract } from '../src/modules/jobs/schemas/job.schema';
+import { JobStatus, PaymentStatus, ContractStatus } from '@homemate/types';
 import appConfig from '../src/config/app.config';
 import jwtConfig from '../src/config/jwt.config';
 
@@ -24,6 +26,7 @@ describe('Payments E2E (Phase 7)', () => {
   let helperToken: string;
   let helperId: string;
   let customerToken: string;
+  let customerUserId: string;
 
   beforeAll(async () => {
     mongod = await MongoMemoryServer.create();
@@ -73,6 +76,7 @@ describe('Payments E2E (Phase 7)', () => {
       password: 'Password123!',
     });
     customerToken = res.body.data.access_token;
+    customerUserId = res.body.data.user._id;
   });
 
   afterAll(async () => {
@@ -101,12 +105,45 @@ describe('Payments E2E (Phase 7)', () => {
   });
 
   describe('Mock payment', () => {
+    let mockJobId: string;
+
+    beforeAll(async () => {
+      const jobModel = app.get(getModelToken(Job.name));
+      const contractModel = app.get(getModelToken(Contract.name));
+      const job = await jobModel.create({
+        customer_id: new Types.ObjectId(customerUserId),
+        helper_id: new Types.ObjectId(helperId),
+        service_id: new Types.ObjectId(),
+        title: 'Mock payment test',
+        description: 'Test job for mock payment',
+        status: JobStatus.CONFIRMED,
+        payment_status: PaymentStatus.UNPAID,
+        address: {
+          city: 'TP. Hồ Chí Minh',
+          district: 'Quận 1',
+          full_address: '123 Test St',
+          location: { type: 'Point', coordinates: [106.698, 10.772] },
+        },
+      });
+      mockJobId = job._id.toString();
+      await contractModel.create({
+        job_id: job._id,
+        customer_id: new Types.ObjectId(customerUserId),
+        helper_id: new Types.ObjectId(helperId),
+        status: ContractStatus.ACTIVE,
+        scheduled_at: new Date(),
+        total_price: 150000,
+        labor_cost: 150000,
+        platform_fee: 22500,
+        helper_receives: 127500,
+      });
+    });
+
     it('POST /payments/pay - mock payment should succeed', async () => {
-      const fakeJobId = '507f1f77bcf86cd799439011';
       const res = await request(app.getHttpServer())
         .post('/api/v1/payments/pay')
         .set('Authorization', `Bearer ${customerToken}`)
-        .send({ job_id: fakeJobId, payment_method: 'mock_card' })
+        .send({ job_id: mockJobId, payment_method: 'vietqr' })
         .expect(200);
       // Service returns {transaction, success} with 'success' key
       // TransformInterceptor passes through unchanged when it sees 'success'

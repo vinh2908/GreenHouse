@@ -98,6 +98,10 @@ export class RecurringPlan {
   @Prop({ type: [String], default: [] })
   skipped_dates: string[];
 
+  /** Cảnh báo lịch nếu có (ví dụ ngày 31 ở tháng không đủ ngày) */
+  @Prop()
+  schedule_warning?: string;
+
   @Prop()
   next_occurrence_at?: Date;
 

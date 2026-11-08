@@ -200,11 +200,12 @@ export default function HelperPublicProfileScreen() {
   const formatPriceRange = (s: any): string => {
     const min = s.base_price_min;
     const max = s.base_price_max;
+    const loc = lang === 'en' ? 'en-US' : 'vi-VN';
     if (typeof min === 'number' && typeof max === 'number' && max > min)
-      return `${min.toLocaleString('vi-VN')}₫ – ${max.toLocaleString('vi-VN')}₫`;
+      return `${min.toLocaleString(loc)}₫ – ${max.toLocaleString(loc)}₫`;
     if (typeof min === 'number')
-      return `${lang === 'en' ? 'From ' : 'Từ '}${min.toLocaleString('vi-VN')}₫`;
-    return `${(max as number).toLocaleString('vi-VN')}₫`;
+      return `${lang === 'en' ? 'From ' : 'Từ '}${min.toLocaleString(loc)}₫`;
+    return `${(max as number).toLocaleString(loc)}₫`;
   };
   // Khung giờ thật: chỉ khi thợ đã bật lịch làm việc (availability.enabled);
   // mặc định enabled=false nghĩa là nhận việc linh hoạt, không phải 07:00–19:00.

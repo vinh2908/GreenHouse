@@ -6,6 +6,7 @@ import { MongoMemoryServer } from 'mongodb-memory-server';
 import { Types } from 'mongoose';
 import { AppGateway } from '../src/modules/chat/app.gateway';
 import { ChatService } from '../src/modules/chat/chat.service';
+import { CallsService } from '../src/modules/calls/calls.service';
 import { Job, JobSchema } from '../src/modules/jobs/schemas/job.schema';
 import { SOCKET_EVENTS } from '@homemate/constants';
 import { JobsService } from '../src/modules/jobs/jobs.service';
@@ -64,6 +65,7 @@ describe('Live GPS through real Socket.IO and isolated MongoDB', () => {
         AppGateway,
         { provide: ChatService, useValue: {} },
         { provide: ConfigService, useValue: { get: () => 'isolated-map-test-only' } },
+        { provide: CallsService, useValue: {} },
       ],
     }).compile();
     app = module.createNestApplication({ logger: false });

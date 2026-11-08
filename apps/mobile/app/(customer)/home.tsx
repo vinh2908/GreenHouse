@@ -2327,7 +2327,7 @@ export default function CustomerHomeScreen() {
                   // Giá thật từ API; API không có giá thì "Thương lượng",
                   // không dùng giá cứng trong catalog.
                   const displayPrice = matched?.base_price_min
-                    ? `${fromPrefix}${matched.base_price_min.toLocaleString('vi-VN')}₫`
+                    ? `${fromPrefix}${matched.base_price_min.toLocaleString(lang === 'en' ? 'en-US' : 'vi-VN')}₫`
                     : svc.isCustom || svc.priceType === 'custom_deal'
                       ? t('price_negotiate')
                       : svc.priceType === 'quote_job'
@@ -3228,9 +3228,10 @@ export default function CustomerHomeScreen() {
           (() => {
             const pastJob = completedJobs[0];
             const pastPrice = pastJob.final_price || pastJob.agreed_price || pastJob.target_price;
-            const displayPriceStr = pastPrice ? `${pastPrice.toLocaleString('vi-VN')}₫` : '';
+            const displayPriceStr = pastPrice ? `${pastPrice.toLocaleString(lang === 'en' ? 'en-US' : 'vi-VN')}₫` : '';
             const completedDateStr = formatDate(
               dayjs(pastJob.completed_at || pastJob.updated_at || pastJob.created_at),
+              lang,
             );
             return (
               <View style={{ paddingHorizontal: 16, marginTop: 24 }}>

@@ -237,7 +237,10 @@ export class HelpersService {
   async approveKyc(userId: string): Promise<any> {
     const profile = await this.helperModel.findOne({ user_id: new Types.ObjectId(userId) }).exec();
     if (!profile) throw new NotFoundException('Helper không tồn tại');
-    if (profile.verification_status !== VerificationStatus.PENDING) {
+    if (
+      profile.verification_status !== VerificationStatus.PENDING &&
+      profile.verification_status !== VerificationStatus.REJECTED
+    ) {
       throw new BadRequestException('Hồ sơ không ở trạng thái chờ duyệt');
     }
     // A72: Bắt buộc đủ giấy tờ e-KYC

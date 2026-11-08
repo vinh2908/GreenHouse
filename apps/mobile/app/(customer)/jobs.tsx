@@ -1,6 +1,15 @@
 import { useState, useEffect } from 'react';
 import { formatTime, formatRelativeTime } from '@/utils/date-format';
-import { View, Text, ScrollView, TouchableOpacity, RefreshControl } from 'react-native';
+import {
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  RefreshControl,
+  ActivityIndicator,
+  NativeSyntheticEvent,
+  NativeScrollEvent,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { ChevronRight, Plus, Clock, MapPin, ClipboardList } from 'lucide-react-native';
@@ -39,6 +48,7 @@ export default function CustomerJobsScreen() {
   const isSwitchingRole = useAuthStore(s => s.isSwitchingRole);
   const isHelper = user?.active_role === 'helper';
   const [page, setPage] = useState(1);
+  const [accumulatedJobs, setAccumulatedJobs] = useState<any[]>([]);
 
   const {
     data: jobs,
@@ -48,8 +58,28 @@ export default function CustomerJobsScreen() {
     refetch,
     dataUpdatedAt,
   } = useMyJobs(TABS[activeTab].key, page, 10);
-  const jobList: any[] = Array.isArray(jobs) ? jobs : (jobs?.items ?? []);
   const totalPages = jobs?.total_pages ?? 1;
+
+  useEffect(() => {
+    if (jobs) {
+      const items = Array.isArray(jobs) ? jobs : (jobs?.items ?? []);
+      if (page === 1) {
+        setAccumulatedJobs(items);
+      } else {
+        setAccumulatedJobs(prev => {
+          const ids = new Set(prev.map(j => j._id));
+          return [...prev, ...items.filter((j: any) => !ids.has(j._id))];
+        });
+      }
+    }
+  }, [jobs, page]);
+
+  const jobList: any[] =
+    page === 1 && (isLoading || accumulatedJobs.length === 0)
+      ? Array.isArray(jobs)
+        ? jobs
+        : (jobs?.items ?? [])
+      : accumulatedJobs;
   const insets = useSafeAreaInsets();
 
   useEffect(() => {
@@ -201,6 +231,7 @@ export default function CustomerJobsScreen() {
               onPress={() => {
                 setActiveTab(i);
                 setPage(1);
+                setAccumulatedJobs([]);
               }}
               style={{
                 paddingHorizontal: 16,
@@ -226,11 +257,23 @@ export default function CustomerJobsScreen() {
       {/* Job Cards List */}
       <ScrollView
         showsVerticalScrollIndicator={false}
+        scrollEventThrottle={32}
+        onScroll={({ nativeEvent }: NativeSyntheticEvent<NativeScrollEvent>) => {
+          const isCloseToBottom =
+            nativeEvent.layoutMeasurement.height + nativeEvent.contentOffset.y >=
+            nativeEvent.contentSize.height - 80;
+          if (isCloseToBottom && !isLoading && !isRefetching && page < totalPages) {
+            setPage(p => p + 1);
+          }
+        }}
         contentContainerStyle={{ padding: 16, gap: 12, paddingBottom: 110 }}
         refreshControl={
           <RefreshControl
             refreshing={isLoading || isRefetching}
-            onRefresh={refetch}
+            onRefresh={() => {
+              setPage(1);
+              refetch();
+            }}
             colors={[COLORS.primary]}
             tintColor={COLORS.primary}
           />
@@ -466,62 +509,38 @@ export default function CustomerJobsScreen() {
           )
         )}
 
-        {totalPages > 1 && (
+        {page < totalPages && (
           <View
             style={{
-              flexDirection: 'row',
-              justifyContent: 'center',
               alignItems: 'center',
-              gap: 12,
               marginTop: 12,
               marginBottom: 20,
             }}
           >
-            <TouchableOpacity
-              activeOpacity={0.8}
-              disabled={page <= 1}
-              onPress={() => setPage(p => Math.max(1, p - 1))}
-              style={{
-                paddingHorizontal: 16,
-                paddingVertical: 8,
-                borderRadius: 10,
-                backgroundColor: page <= 1 ? tc.subtle : COLORS.primaryLight,
-              }}
-            >
-              <Text
+            {isRefetching ? (
+              <ActivityIndicator size="small" color={COLORS.primary} />
+            ) : (
+              <TouchableOpacity
+                activeOpacity={0.8}
+                onPress={() => setPage(p => p + 1)}
                 style={{
-                  fontSize: fs(13),
-                  fontWeight: '700',
-                  color: page <= 1 ? tc.textMuted : COLORS.primary,
+                  paddingHorizontal: 20,
+                  paddingVertical: 10,
+                  borderRadius: 12,
+                  backgroundColor: COLORS.primaryLight,
                 }}
               >
-                {lang === 'en' ? 'Previous' : 'Trang trước'}
-              </Text>
-            </TouchableOpacity>
-            <Text style={{ fontSize: fs(13), fontWeight: '700', color: tc.textSecondary }}>
-              {page} / {totalPages}
-            </Text>
-            <TouchableOpacity
-              activeOpacity={0.8}
-              disabled={page >= totalPages}
-              onPress={() => setPage(p => Math.min(totalPages, p + 1))}
-              style={{
-                paddingHorizontal: 16,
-                paddingVertical: 8,
-                borderRadius: 10,
-                backgroundColor: page >= totalPages ? tc.subtle : COLORS.primaryLight,
-              }}
-            >
-              <Text
-                style={{
-                  fontSize: fs(13),
-                  fontWeight: '700',
-                  color: page >= totalPages ? tc.textMuted : COLORS.primary,
-                }}
-              >
-                {lang === 'en' ? 'Next' : 'Trang sau'}
-              </Text>
-            </TouchableOpacity>
+                <Text
+                  style={{
+                    fontSize: fs(13),
+                    fontWeight: '700',
+                    color: COLORS.primary,
+                  }}
+                >
+                  {lang === 'en' ? 'Load more...' : 'Tải thêm đơn...'}
+                </Text>
+              </TouchableOpacity>
+            )}
           </View>
         )}
       </ScrollView>

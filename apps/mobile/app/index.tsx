@@ -27,6 +27,16 @@ export default function SplashScreen() {
   const { lang } = useTranslation();
   const hasNavigated = useRef(false);
   const [authStuck, setAuthStuck] = useState(false);
+  const stuckTimerRef = useRef<any>(null);
+
+  const armStuckTimer = () => {
+    if (stuckTimerRef.current) clearTimeout(stuckTimerRef.current);
+    stuckTimerRef.current = setTimeout(() => {
+      if (!hasNavigated.current && useAuthStore.getState().isLoading) {
+        setAuthStuck(true);
+      }
+    }, 5000);
+  };
 
   // ── Animations ─────────────────────────────────────────────────────────────
   const scaleAnim = useRef(new Animated.Value(0.3)).current;
@@ -117,15 +127,11 @@ export default function SplashScreen() {
     };
 
     const timer = setTimeout(navigateNext, 1800);
-    const stuckTimer = setTimeout(() => {
-      if (!hasNavigated.current && useAuthStore.getState().isLoading) {
-        setAuthStuck(true);
-      }
-    }, 5000);
+    armStuckTimer();
 
     return () => {
       clearTimeout(timer);
-      clearTimeout(stuckTimer);
+      if (stuckTimerRef.current) clearTimeout(stuckTimerRef.current);
     };
   }, [router]);
 
@@ -262,6 +268,7 @@ export default function SplashScreen() {
               activeOpacity={0.8}
               onPress={() => {
                 setAuthStuck(false);
+                armStuckTimer();
                 void useAuthStore.getState().loadStoredAuth();
               }}
               style={{

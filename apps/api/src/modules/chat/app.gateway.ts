@@ -102,6 +102,20 @@ export class AppGateway implements OnGatewayConnection, OnGatewayDisconnect {
       client.data.userId = userId;
       client.data.roles = payload.roles;
 
+      if (this.jobModel?.db && Types.ObjectId.isValid(userId)) {
+        const user = await this.jobModel.db
+          .collection('users')
+          .findOne(
+            { _id: new Types.ObjectId(userId) },
+            { projection: { status: 1, is_deleted: 1 } },
+          );
+        if (user && (user.status === 'suspended' || user.is_deleted)) {
+          this.logger.warn(`Suspended or deleted user rejected: ${userId}`);
+          client.disconnect();
+          return;
+        }
+      }
+
       // Join personal room
       client.join(`user:${userId}`);
 
