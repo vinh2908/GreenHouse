@@ -85,10 +85,7 @@ async function checkAndFixStuckAssignedJobs() {
         status: { $in: ['in_progress', 'arrived', 'on_the_way'] },
       });
       if (!otherActiveJob) {
-        await helpersCol.updateOne(
-          { user_id: helperId },
-          { $set: { status: 'online' } },
-        );
+        await helpersCol.updateOne({ user_id: helperId }, { $set: { status: 'online' } });
       }
       console.log(`✓ Đã sửa đơn ${job._id}: hủy gán về OPEN, giải phóng thợ ${helperId}.`);
     }
