@@ -479,16 +479,21 @@ export class PaymentsService {
         // P0-3: Kiểm tra các đợt thanh toán trước đó (hỗ trợ thanh toán bổ sung khi có phụ lục tăng giá)
         const paidSoFar = await this.getTotalPaidForJob(jobId);
         const isSupplemental = paidSoFar > 0;
+        const expectedRemaining =
+          isSupplemental && contract?.total_price && contract.total_price > paidSoFar
+            ? contract.total_price - paidSoFar
+            : (contract?.total_price ?? 0);
+
+        // P3-1: Validate amount nếu client gửi lên
+        if (amount > 0 && expectedRemaining > 0 && amount !== expectedRemaining) {
+          throw new BadRequestException(
+            `Số tiền thanh toán (${amount.toLocaleString('vi-VN')}₫) không khớp với số tiền cần thanh toán (${expectedRemaining.toLocaleString('vi-VN')}₫)`,
+          );
+        }
+
         if (contract?.total_price) {
           if (isSupplemental && contract.total_price > paidSoFar) {
-            const remainingToPay = contract.total_price - paidSoFar;
-            if (
-              resolvedAmount <= 0 ||
-              resolvedAmount > remainingToPay ||
-              resolvedAmount === contract.total_price
-            ) {
-              resolvedAmount = remainingToPay;
-            }
+            resolvedAmount = expectedRemaining;
           } else if (resolvedAmount <= 0) {
             resolvedAmount = contract.total_price;
           }
@@ -1433,17 +1438,20 @@ export class PaymentsService {
   // ─── Transactions ─────────────────────────────────────────────────────────
 
   async getTransactions(userId: string, page = 1, limit = 20) {
-    const skip = (page - 1) * limit;
+    // P3-3: Chặn limit tối đa 50
+    const safePage = Math.max(1, Number(page) || 1);
+    const safeLimit = Math.min(50, Math.max(1, Number(limit) || 20));
+    const skip = (safePage - 1) * safeLimit;
     const [transactions, total] = await Promise.all([
       this.transactionModel
         .find({ user_id: new Types.ObjectId(userId) })
         .sort({ created_at: -1 })
         .skip(skip)
-        .limit(limit)
+        .limit(safeLimit)
         .exec(),
       this.transactionModel.countDocuments({ user_id: new Types.ObjectId(userId) }).exec(),
     ]);
-    return { transactions, total, page, limit, total_pages: Math.ceil(total / limit) };
+    return { transactions, total, page: safePage, limit: safeLimit, total_pages: Math.ceil(total / safeLimit) };
   }
 
   // ─── Withdrawal ───────────────────────────────────────────────────────────

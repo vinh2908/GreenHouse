@@ -22,9 +22,17 @@ import { formatDateTime, formatVND } from '@/lib/utils';
 const WITHDRAWAL_STATUS_OPTIONS = [
   { value: '', label: 'Tất cả' },
   { value: 'pending', label: 'Chờ xử lý' },
+  { value: 'processing', label: 'Đang xử lý' },
   { value: 'completed', label: 'Hoàn thành' },
   { value: 'rejected', label: 'Từ chối' },
 ];
+
+const WITHDRAWAL_STATUS_VI: Record<string, string> = {
+  pending: 'Chờ xử lý',
+  processing: 'Đang xử lý',
+  completed: 'Hoàn thành',
+  rejected: 'Từ chối',
+};
 
 const TX_TYPE_OPTIONS = [
   { value: '', label: 'Tất cả loại' },
@@ -34,11 +42,26 @@ const TX_TYPE_OPTIONS = [
   { value: 'refund', label: 'Hoàn tiền' },
 ];
 
+const TX_TYPE_VI: Record<string, string> = {
+  payment: 'Thanh toán',
+  earning: 'Thu nhập',
+  withdrawal: 'Rút tiền',
+  refund: 'Hoàn tiền',
+};
+
+const TX_STATUS_VI: Record<string, string> = {
+  pending: 'Chờ xử lý',
+  success: 'Thành công',
+  completed: 'Thành công',
+  failed: 'Thất bại',
+  cancelled: 'Đã hủy',
+};
+
 const WITHDRAWAL_BADGE: Record<string, 'success' | 'danger' | 'warning' | 'secondary'> = {
   completed: 'success',
   rejected: 'danger',
   pending: 'warning',
-  processing: 'info' as 'warning',
+  processing: 'secondary',
 };
 
 const TX_TYPE_BADGE: Record<string, 'success' | 'danger' | 'info' | 'secondary'> = {
@@ -55,7 +78,9 @@ export default function PaymentsPage() {
   const [txPage, setTxPage] = useState(1);
   const [rejectingId, setRejectingId] = useState<string | null>(null);
   const [rejectNote, setRejectNote] = useState('');
+  const [rejectError, setRejectError] = useState<string | null>(null);
   const [approvingItem, setApprovingItem] = useState<any | null>(null);
+  const [approveError, setApproveError] = useState<string | null>(null);
 
   const {
     data: withdrawals,
@@ -77,14 +102,28 @@ export default function PaymentsPage() {
   });
   const process = useProcessWithdrawal();
 
-  const handleApprove = (id: string) => {
-    process.mutate({ id, action: 'approve' });
+  const handleApprove = (item: any) => {
+    setApproveError(null);
+    setApprovingItem(item);
   };
 
   const handleReject = (id: string) => {
-    process.mutate({ id, action: 'reject', admin_note: rejectNote });
-    setRejectingId(null);
-    setRejectNote('');
+    setRejectError(null);
+    process.mutate(
+      { id, action: 'reject', admin_note: rejectNote },
+      {
+        onSuccess: () => {
+          setRejectingId(null);
+          setRejectNote('');
+          setRejectError(null);
+        },
+        onError: (err: any) => {
+          setRejectError(
+            err?.response?.data?.message || err?.message || 'Từ chối yêu cầu rút tiền thất bại',
+          );
+        },
+      },
+    );
   };
 
   return (
@@ -186,7 +225,7 @@ export default function PaymentsPage() {
                             </TableCell>
                             <TableCell>
                               <Badge variant={WITHDRAWAL_BADGE[w.status] ?? 'secondary'}>
-                                {w.status}
+                                {WITHDRAWAL_STATUS_VI[w.status] ?? w.status}
                               </Badge>
                             </TableCell>
                             <TableCell className="text-sm text-muted-foreground">
@@ -200,7 +239,7 @@ export default function PaymentsPage() {
                                     variant="outline"
                                     className="text-green-600 border-green-300"
                                     loading={process.isPending && approvingItem?._id === w._id}
-                                    onClick={() => setApprovingItem(w)}
+                                    onClick={() => handleApprove(w)}
                                   >
                                     Duyệt
                                   </Button>
@@ -208,9 +247,10 @@ export default function PaymentsPage() {
                                     size="sm"
                                     variant="outline"
                                     className="text-red-600 border-red-300"
-                                    onClick={() =>
-                                      setRejectingId(rejectingId === w._id ? null : w._id)
-                                    }
+                                    onClick={() => {
+                                      setRejectError(null);
+                                      setRejectingId(rejectingId === w._id ? null : w._id);
+                                    }}
                                   >
                                     Từ chối
                                   </Button>
@@ -221,28 +261,36 @@ export default function PaymentsPage() {
                           {rejectingId === w._id && (
                             <TableRow key={`${w._id}-reject`}>
                               <TableCell colSpan={6} className="bg-muted/30 py-2 px-4">
-                                <div className="flex gap-2">
-                                  <input
-                                    className="flex-1 h-8 rounded border border-input px-2 text-sm"
-                                    placeholder="Ghi chú từ chối..."
-                                    value={rejectNote}
-                                    onChange={e => setRejectNote(e.target.value)}
-                                  />
-                                  <Button
-                                    size="sm"
-                                    variant="destructive"
-                                    loading={process.isPending}
-                                    onClick={() => handleReject(w._id)}
-                                  >
-                                    Xác nhận
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    onClick={() => setRejectingId(null)}
-                                  >
-                                    Hủy
-                                  </Button>
+                                <div className="space-y-1">
+                                  <div className="flex gap-2">
+                                    <input
+                                      className="flex-1 h-8 rounded border border-input px-2 text-sm"
+                                      placeholder="Ghi chú từ chối..."
+                                      value={rejectNote}
+                                      onChange={e => setRejectNote(e.target.value)}
+                                    />
+                                    <Button
+                                      size="sm"
+                                      variant="destructive"
+                                      loading={process.isPending}
+                                      onClick={() => handleReject(w._id)}
+                                    >
+                                      Xác nhận
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      onClick={() => {
+                                        setRejectingId(null);
+                                        setRejectError(null);
+                                      }}
+                                    >
+                                      Hủy
+                                    </Button>
+                                  </div>
+                                  {rejectError && (
+                                    <p className="text-xs text-destructive">{rejectError}</p>
+                                  )}
                                 </div>
                               </TableCell>
                             </TableRow>
@@ -334,7 +382,9 @@ export default function PaymentsPage() {
                             )}
                           </TableCell>
                           <TableCell>
-                            <Badge variant={TX_TYPE_BADGE[tx.type] ?? 'secondary'}>{tx.type}</Badge>
+                            <Badge variant={TX_TYPE_BADGE[tx.type] ?? 'secondary'}>
+                              {TX_TYPE_VI[tx.type] ?? tx.type}
+                            </Badge>
                           </TableCell>
                           <TableCell className="text-sm">{tx.description}</TableCell>
                           <TableCell
@@ -350,14 +400,14 @@ export default function PaymentsPage() {
                           <TableCell>
                             <Badge
                               variant={
-                                tx.status === 'success'
+                                tx.status === 'success' || tx.status === 'completed'
                                   ? 'success'
                                   : tx.status === 'failed'
                                     ? 'danger'
                                     : 'warning'
                               }
                             >
-                              {tx.status}
+                              {TX_STATUS_VI[tx.status] ?? tx.status}
                             </Badge>
                           </TableCell>
                           <TableCell className="text-sm text-muted-foreground">
@@ -384,6 +434,11 @@ export default function PaymentsPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="w-full max-w-md rounded-xl bg-card p-6 shadow-xl border space-y-4">
             <h3 className="text-lg font-bold">Xác nhận duyệt rút tiền</h3>
+            {approveError && (
+              <div className="rounded-lg bg-destructive/10 border border-destructive/30 p-3 text-xs text-destructive">
+                {approveError}
+              </div>
+            )}
             <div className="rounded-lg bg-muted/40 p-4 space-y-2 text-sm">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Người nhận:</span>
@@ -421,16 +476,33 @@ export default function PaymentsPage() {
               dư ví và gửi thông báo tới thợ.
             </p>
             <div className="flex justify-end gap-2 pt-2">
-              <Button variant="outline" onClick={() => setApprovingItem(null)}>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setApprovingItem(null);
+                  setApproveError(null);
+                }}
+              >
                 Hủy bỏ
               </Button>
               <Button
                 className="bg-green-600 hover:bg-green-700 text-white"
                 loading={process.isPending}
                 onClick={() => {
+                  setApproveError(null);
                   process.mutate(
                     { id: approvingItem._id, action: 'approve' },
-                    { onSettled: () => setApprovingItem(null) },
+                    {
+                      onSuccess: () => {
+                        setApprovingItem(null);
+                        setApproveError(null);
+                      },
+                      onError: (err: any) => {
+                        setApproveError(
+                          err?.response?.data?.message || err?.message || 'Duyệt chuyển khoản thất bại',
+                        );
+                      },
+                    },
                   );
                 }}
               >

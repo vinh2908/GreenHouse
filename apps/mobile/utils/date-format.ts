@@ -234,10 +234,10 @@ export function formatDateTime(dateInput: DateInput): string {
   return date.isValid() ? date.format('HH:mm DD/MM/YYYY') : '';
 }
 
-export function formatDate(dateInput: DateInput): string {
+export function formatDate(dateInput: DateInput, lang: 'vi' | 'en' = 'vi'): string {
   if (!dateInput) return '';
   const date = toVnDayjs(dateInput);
-  return date.isValid() ? date.format('DD/MM/YYYY') : '';
+  return date.isValid() ? (lang === 'en' ? date.format('MM/DD/YYYY') : date.format('DD/MM/YYYY')) : '';
 }
 
 export function formatTime(dateInput: DateInput): string {

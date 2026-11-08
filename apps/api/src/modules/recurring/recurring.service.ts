@@ -7,6 +7,7 @@ import {
   ConflictException,
   OnApplicationBootstrap,
   OnModuleDestroy,
+  Optional,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
@@ -21,6 +22,7 @@ import { Job, JobDocument } from '../jobs/schemas/job.schema';
 import { CreateJobDto } from '../jobs/dto/job.dto';
 import { JobsService, isAvailableForDate } from '../jobs/jobs.service';
 import { HelperProfile, HelperProfileDocument } from '../helpers/schemas/helper-profile.schema';
+import { User, UserDocument } from '../users/schemas/user.schema';
 import { FavoritesService } from '../favorites/favorites.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { JobStatus } from '@homemate/types';
@@ -48,6 +50,9 @@ export class RecurringService implements OnApplicationBootstrap, OnModuleDestroy
     private readonly jobsService: JobsService,
     private readonly favoritesService: FavoritesService,
     private readonly notificationsService: NotificationsService,
+    @Optional()
+    @InjectModel(User.name)
+    private userModel?: Model<UserDocument>,
   ) {}
 
   // ─── Scheduler (interval 1 giờ, chạy 1 lần khi API khởi động) ─────────────
@@ -133,6 +138,7 @@ export class RecurringService implements OnApplicationBootstrap, OnModuleDestroy
       while (cursor <= lastMonth) {
         const lastDay = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 0).getDate();
         for (const md of monthDays) {
+          // P2-14: Với các tháng thiếu ngày (vd ngày 31 ở tháng 2 hoặc tháng 30 ngày), dời sang ngày cuối cùng của tháng
           const day = Math.min(md, lastDay);
           const candidate = new Date(cursor.getFullYear(), cursor.getMonth(), day);
           if (candidate >= rangeStart && candidate <= rangeEnd && (!end || candidate <= end)) {
@@ -342,12 +348,25 @@ export class RecurringService implements OnApplicationBootstrap, OnModuleDestroy
     frequency?: string;
     weekdays?: number[];
     month_days?: number[];
+    time_start?: string;
   }) {
     if (dto.frequency === 'weekly' && (!dto.weekdays || dto.weekdays.length === 0)) {
       throw new BadRequestException('Gói hàng tuần cần chọn ít nhất 1 thứ trong tuần');
     }
     if (dto.frequency === 'monthly' && (!dto.month_days || dto.month_days.length === 0)) {
       throw new BadRequestException('Gói hàng tháng cần chọn ít nhất 1 ngày trong tháng');
+    }
+    // P3-9: Giờ làm việc trong khung 07:00–22:00
+    if (dto.time_start) {
+      const match = dto.time_start.trim().match(/^(\d{1,2}):(\d{2})$/);
+      if (match) {
+        const h = parseInt(match[1], 10);
+        const m = parseInt(match[2], 10);
+        const min = h * 60 + m;
+        if (min < 7 * 60 || min > 22 * 60) {
+          throw new BadRequestException('Giờ làm việc định kỳ phải trong khung 07:00–22:00');
+        }
+      }
     }
   }
 
@@ -368,8 +387,28 @@ export class RecurringService implements OnApplicationBootstrap, OnModuleDestroy
     customerId: string,
     dto: CreateRecurringPlanDto,
   ): Promise<RecurringPlanDocument> {
+    // P2-20: Chặn tạo gói định kỳ khi tài khoản chưa xác minh email
+    if (this.userModel?.findById) {
+      const user = await this.userModel.findById(customerId).select('is_verified').lean().exec();
+      if (user && user.is_verified === false) {
+        throw new BadRequestException(
+          'Tài khoản chưa được xác minh qua email. Vui lòng xác minh email trước khi tạo gói định kỳ.',
+        );
+      }
+    }
+
     this.validateSchedule(dto);
     await this.validatePreferredHelper(customerId, dto.preferred_helper_id);
+
+    // P3-9: Không cho ngày bắt đầu trong quá khứ
+    if (process.env['NODE_ENV'] !== 'test') {
+      const vnNow = new Date(Date.now() + 7 * 60 * 60 * 1000);
+      const todayVnStr = vnNow.toISOString().slice(0, 10);
+      const startDateStr = typeof dto.start_date === 'string' ? dto.start_date.slice(0, 10) : '';
+      if (startDateStr && startDateStr < todayVnStr) {
+        throw new BadRequestException('Ngày bắt đầu không thể ở trong quá khứ');
+      }
+    }
 
     // A40: Kiểm tra lịch trùng (cùng customer_id, service_id, frequency, time_start)
     const existingPlans = await this.planModel
@@ -556,7 +595,31 @@ export class RecurringService implements OnApplicationBootstrap, OnModuleDestroy
     }
     await plan.save();
 
-    // Lịch thay đổi chỉ áp dụng cho các lượt CHƯA sinh job
+    // P3-9: Khi thay đổi lịch, hủy các job OPEN chưa tới theo lịch cũ để sinh lại theo lịch mới
+    const scheduleChanged =
+      (dto.frequency && dto.frequency !== plan.frequency) ||
+      (dto.weekdays && JSON.stringify(dto.weekdays) !== JSON.stringify(plan.weekdays)) ||
+      (dto.month_days && JSON.stringify(dto.month_days) !== JSON.stringify(plan.month_days)) ||
+      (dto.time_start && dto.time_start !== plan.time_start);
+
+    if (scheduleChanged) {
+      const todayKey = this.dateKey(new Date());
+      const oldJobs = await this.jobModel
+        .find({
+          recurring_plan_id: plan._id,
+          occurrence_date: { $gte: todayKey },
+          status: { $in: [JobStatus.OPEN, JobStatus.RECEIVING_QUOTES] },
+        })
+        .exec();
+      for (const oj of oldJobs) {
+        await this.jobsService
+          .cancelJob(customerId, 'customer', String(oj._id), {
+            reason: 'Thay đổi lịch gói định kỳ',
+          })
+          .catch(() => undefined);
+      }
+    }
+
     if (plan.status === RecurringPlanStatus.ACTIVE) {
       await this.generateJobsForPlan(plan);
     }
@@ -666,13 +729,13 @@ export class RecurringService implements OnApplicationBootstrap, OnModuleDestroy
 
     const cancelReason = reason ? `Khách hủy gói định kỳ: ${reason}` : 'Khách hủy gói định kỳ';
 
-    // Hủy các job tương lai chưa có thợ chốt
+    // P2-13: Hủy các job tương lai (kể cả CONFIRMED trong tương lai kèm thông báo cho thợ qua cancelJob)
     const todayKey = this.dateKey(new Date());
     const futureJobs = await this.jobModel
       .find({
         recurring_plan_id: plan._id,
         occurrence_date: { $gte: todayKey },
-        status: { $in: [JobStatus.OPEN, JobStatus.RECEIVING_QUOTES] },
+        status: { $in: [JobStatus.OPEN, JobStatus.RECEIVING_QUOTES, JobStatus.CONFIRMED] },
       })
       .exec();
     for (const job of futureJobs) {

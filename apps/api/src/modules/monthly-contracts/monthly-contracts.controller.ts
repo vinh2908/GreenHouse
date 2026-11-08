@@ -92,8 +92,11 @@ export class MonthlyContractsController {
 
   @Get(':id')
   @ApiOperation({ summary: 'Chi tiết hợp đồng theo tháng' })
-  async detail(@CurrentUser() user: { sub: string }, @Param('id') id: string) {
-    return this.service.getContract(user.sub, id);
+  async detail(
+    @CurrentUser() user: { sub: string; roles?: string[] },
+    @Param('id') id: string,
+  ) {
+    return this.service.getContract(user.sub, id, user.roles);
   }
 
   @Patch(':id/respond')
@@ -144,11 +147,11 @@ export class MonthlyContractsController {
   @ApiOperation({ summary: 'Điểm danh của 1 tháng + các ngày theo lịch (để vẽ lịch)' })
   @ApiQuery({ name: 'month', required: false, description: 'YYYY-MM' })
   async attendance(
-    @CurrentUser() user: { sub: string },
+    @CurrentUser() user: { sub: string; roles?: string[] },
     @Param('id') id: string,
     @Query('month') month?: string,
   ) {
-    return this.service.getAttendance(user.sub, id, month);
+    return this.service.getAttendance(user.sub, id, month, user.roles);
   }
 
   @Patch(':id/attendance/:date/confirm')
@@ -196,11 +199,11 @@ export class MonthlyContractsController {
   @ApiOperation({ summary: 'Tóm tắt chốt lương 1 tháng (preview hoặc đã chốt)' })
   @ApiQuery({ name: 'month', required: false, description: 'YYYY-MM' })
   async settlement(
-    @CurrentUser() user: { sub: string },
+    @CurrentUser() user: { sub: string; roles?: string[] },
     @Param('id') id: string,
     @Query('month') month?: string,
   ) {
-    return this.service.getSettlement(user.sub, id, month);
+    return this.service.getSettlement(user.sub, id, month, user.roles);
   }
 
   @Post(':id/settlement/settle')

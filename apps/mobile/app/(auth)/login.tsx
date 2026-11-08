@@ -492,25 +492,6 @@ export default function LoginScreen() {
                     </>
                   )}
                 </Text>
-                {__DEV__ && (
-                  <TouchableOpacity
-                    onPress={() => setResetOtp('123456')}
-                    style={{
-                      backgroundColor: '#F0FDF4',
-                      borderColor: '#86EFAC',
-                      borderWidth: 1,
-                      paddingVertical: 8,
-                      paddingHorizontal: 12,
-                      borderRadius: 8,
-                    }}
-                  >
-                    <Text style={{ fontSize: fs(12.5), color: '#16A34A', fontWeight: '700' }}>
-                      {lang === 'en'
-                        ? 'Dev test OTP: 123456 (Tap to fill)'
-                        : 'Mã OTP thử nghiệm (Dev): 123456 (Chạm để điền)'}
-                    </Text>
-                  </TouchableOpacity>
-                )}
                 <Input
                   label={lang === 'en' ? 'OTP Code (6 digits) *' : 'Mã OTP (6 số) *'}
                   placeholder={lang === 'en' ? 'Enter 6-digit OTP' : 'Nhập 6 chữ số OTP'}

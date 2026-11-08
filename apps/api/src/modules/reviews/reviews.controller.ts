@@ -62,14 +62,6 @@ export class ReviewsController {
     return this.reviewsService.adminReplyToReview(id, dto.reply);
   }
 
-  @Patch('admin/:id/hide')
-  @UseGuards(RolesGuard)
-  @Roles(UserRole.ADMIN)
-  @ApiOperation({ summary: '[Admin] Ẩn / hiện lại đánh giá' })
-  async adminHide(@Param('id') id: string, @Body() dto: { hidden: boolean }) {
-    return this.reviewsService.adminSetHidden(id, dto.hidden !== false);
-  }
-
   @Delete('admin/:id')
   @UseGuards(RolesGuard)
   @Roles(UserRole.ADMIN)

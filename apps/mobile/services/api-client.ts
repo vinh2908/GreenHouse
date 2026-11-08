@@ -197,6 +197,11 @@ function refreshAccessToken(): Promise<string> {
   return refreshPromise;
 }
 
+// M-11: Throttle toast lỗi kết nối mạng (tối đa 1 toast mỗi 30s cho cùng loại lỗi mạng)
+let lastNetworkToastTime = 0;
+let lastServerErrorToastTime = 0;
+const TOAST_THROTTLE_MS = 30000;
+
 // Response interceptor
 apiClient.interceptors.response.use(
   response => response,
@@ -234,35 +239,42 @@ apiClient.interceptors.response.use(
 
     // ── 2. Xử lý lỗi mất kết nối mạng / Timeout / Server lỗi ─────────────────
     const lang = useSettingsStore.getState().language;
+    const now = Date.now();
     if (!error.response) {
-      if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
-        Toast.show({
-          type: 'error',
-          text1: lang === 'en' ? 'Request timed out' : 'Yêu cầu quá hạn',
-          text2:
-            lang === 'en'
-              ? 'Server response timed out. Please check your connection.'
-              : 'Máy chủ phản hồi chậm. Vui lòng kiểm tra lại kết nối mạng.',
-        });
-      } else {
-        Toast.show({
-          type: 'error',
-          text1: lang === 'en' ? 'Server connection lost' : 'Mất kết nối máy chủ',
-          text2:
-            lang === 'en'
-              ? 'Unable to connect to the system. Please check WiFi/4G.'
-              : 'Không thể kết nối đến hệ thống. Vui lòng kiểm tra WiFi/4G.',
-        });
+      if (now - lastNetworkToastTime > TOAST_THROTTLE_MS) {
+        lastNetworkToastTime = now;
+        if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
+          Toast.show({
+            type: 'error',
+            text1: lang === 'en' ? 'Request timed out' : 'Yêu cầu quá hạn',
+            text2:
+              lang === 'en'
+                ? 'Server response timed out. Please check your connection.'
+                : 'Máy chủ phản hồi chậm. Vui lòng kiểm tra lại kết nối mạng.',
+          });
+        } else {
+          Toast.show({
+            type: 'error',
+            text1: lang === 'en' ? 'Server connection lost' : 'Mất kết nối máy chủ',
+            text2:
+              lang === 'en'
+                ? 'Unable to connect to the system. Please check WiFi/4G.'
+                : 'Không thể kết nối đến hệ thống. Vui lòng kiểm tra WiFi/4G.',
+          });
+        }
       }
     } else if (error.response.status >= 500) {
-      Toast.show({
-        type: 'error',
-        text1: lang === 'en' ? 'Server busy' : 'Máy chủ bận',
-        text2:
-          lang === 'en'
-            ? 'System is processing or under maintenance. Please try again shortly.'
-            : 'Hệ thống đang xử lý hoặc bảo trì. Vui lòng thử lại sau giây lát.',
-      });
+      if (now - lastServerErrorToastTime > TOAST_THROTTLE_MS) {
+        lastServerErrorToastTime = now;
+        Toast.show({
+          type: 'error',
+          text1: lang === 'en' ? 'Server busy' : 'Máy chủ bận',
+          text2:
+            lang === 'en'
+              ? 'System is processing or under maintenance. Please try again shortly.'
+              : 'Hệ thống đang xử lý hoặc bảo trì. Vui lòng thử lại sau giây lát.',
+        });
+      }
     }
 
     return Promise.reject(error);

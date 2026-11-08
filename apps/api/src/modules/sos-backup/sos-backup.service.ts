@@ -142,7 +142,7 @@ export class SosBackupService implements OnModuleInit, OnModuleDestroy {
     return Math.max(...upto);
   }
   private get locationMaxAgeMs(): number {
-    return this.cfgNum('SOS_BACKUP_LOCATION_MAX_AGE_MINUTES', 120) * 60_000;
+    return this.cfgNum('SOS_BACKUP_LOCATION_MAX_AGE_MINUTES', 720) * 60_000; // Mặc định 12 giờ (P3-5)
   }
   /** Trọng số điểm phạt hủy đơn trong chi phí Hungarian (env SOS_BACKUP_COST_PENALTY_WEIGHT, mặc định 2) */
   private get penaltyCostWeight(): number {
@@ -904,7 +904,7 @@ export class SosBackupService implements OnModuleInit, OnModuleDestroy {
 
     const nowMs = Date.now();
     const pool: CandidateInfo[] = [];
-    const maxGpsAgeMs = 12 * 60 * 60 * 1000; // A64: nới lỏng GPS 12 giờ
+    const maxGpsAgeMs = this.locationMaxAgeMs; // P3-5: dùng locationMaxAgeMs (mặc định 12 giờ)
     // F13: bán kính theo đợt mời (30 → 50 → 100km), truyền từ inviteWave.
     const maxAllowedDist = maxDistanceKm ?? this.maxDistanceKm;
 
@@ -1243,10 +1243,23 @@ export class SosBackupService implements OnModuleInit, OnModuleDestroy {
     if (!Types.ObjectId.isValid(sosId)) throw new BadRequestException('sos_id không hợp lệ');
     const sos = await this.sosModel.findById(sosId).exec();
     if (!sos) throw new NotFoundException('Yêu cầu SOS không tồn tại');
-    if (sos.status !== SosBackupStatus.PENDING) return { success: true };
+    // P3-6: Trả trạng thái thật khi không còn PENDING
+    if (sos.status !== SosBackupStatus.PENDING) {
+      return {
+        success: false,
+        status: sos.status,
+        message: 'Yêu cầu cứu hộ SOS không còn khả dụng hoặc đã kết thúc',
+      };
+    }
 
     const candidate = sos.candidates.find(c => String(c.helper_id) === helperId);
-    if (!candidate || candidate.state !== 'invited') return { success: true };
+    if (!candidate || candidate.state !== 'invited') {
+      return {
+        success: false,
+        status: candidate?.state ?? 'not_invited',
+        message: 'Bạn không có lời mời nào đang chờ phản hồi cho yêu cầu SOS này',
+      };
+    }
 
     const now = new Date();
     await this.sosModel
@@ -1455,9 +1468,23 @@ export class SosBackupService implements OnModuleInit, OnModuleDestroy {
     return { sos: active ?? serialized[0], sos_list: serialized };
   }
 
-  // A95: Lấy toàn bộ lịch sử các lần SOS của đơn hàng
-  async getHistoryByJob(userId: string, jobId: string) {
+  // A95 & P2-21: Lấy toàn bộ lịch sử các lần SOS của đơn hàng (kiểm tra quyền truy cập)
+  async getHistoryByJob(userId: string, jobId: string, isAdmin = false) {
     if (!Types.ObjectId.isValid(jobId)) return [];
+    if (!isAdmin) {
+      const isParticipant = await this.sosModel.exists({
+        job_id: new Types.ObjectId(jobId),
+        $or: [
+          { original_helper_id: new Types.ObjectId(userId) },
+          { customer_id: new Types.ObjectId(userId) },
+          { replacement_helper_id: new Types.ObjectId(userId) },
+          { 'candidates.helper_id': new Types.ObjectId(userId) },
+        ],
+      });
+      if (!isParticipant) {
+        throw new ForbiddenException('Bạn không có quyền xem lịch sử cứu hộ SOS của đơn này');
+      }
+    }
     const list = await this.sosModel
       .find({
         job_id: new Types.ObjectId(jobId),

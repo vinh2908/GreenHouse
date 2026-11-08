@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import {
   LineChart,
   Line,
@@ -27,8 +28,10 @@ import { StatCard, Card, CardHeader, CardTitle, CardContent, Loading } from '@/c
 import { formatVND } from '@/lib/utils';
 
 const STATUS_COLORS: Record<string, string> = {
+  draft: '#94a3b8',
   open: '#3b82f6',
   receiving_quotes: '#8b5cf6',
+  quote_selected: '#6366f1',
   confirmed: '#f59e0b',
   helper_on_the_way: '#f97316',
   helper_arrived: '#eab308',
@@ -37,21 +40,27 @@ const STATUS_COLORS: Record<string, string> = {
   completed: '#10b981',
   cancelled: '#ef4444',
   disputed: '#dc2626',
+  expired: '#64748b',
+  refunded: '#a855f7',
 };
 
 const PIE_COLORS = ['#3b82f6', '#8b5cf6', '#f59e0b', '#f97316', '#22c55e', '#ef4444', '#10b981'];
 
 const STATUS_VI: Record<string, string> = {
+  draft: 'Nháp',
   open: 'Mở',
   receiving_quotes: 'Nhận báo giá',
+  quote_selected: 'Đã chọn báo giá',
   confirmed: 'Đã xác nhận',
-  helper_on_the_way: 'Helper trên đường',
-  helper_arrived: 'Helper đã đến',
+  helper_on_the_way: 'Thợ trên đường',
+  helper_arrived: 'Thợ đã đến',
   in_progress: 'Đang làm',
   pending_review: 'Chờ nghiệm thu',
   completed: 'Hoàn thành',
   cancelled: 'Đã hủy',
   disputed: 'Tranh chấp',
+  expired: 'Đã hết hạn',
+  refunded: 'Đã hoàn tiền',
 };
 
 export default function DashboardPage() {
@@ -93,23 +102,34 @@ export default function DashboardPage() {
         <p className="text-muted-foreground">Tổng quan hệ thống Green House</p>
       </div>
 
-      {/* A77: Đếm số việc chờ xử lý */}
+      {/* A77, C08, C12: Đếm số việc chờ xử lý kèm link và responsive flex-wrap */}
       {Number((stats as any)?.pending_actions_count || 0) > 0 && (
-        <div className="flex items-center justify-between rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-amber-900 shadow-sm">
-          <div className="flex items-center gap-3">
-            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-amber-200 font-bold text-amber-800 text-sm">
+        <div className="flex flex-wrap items-center justify-between rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-amber-900 shadow-sm gap-3">
+          <div className="flex items-center gap-3 flex-wrap">
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-amber-200 font-bold text-amber-800 text-sm">
               {(stats as any)?.pending_actions_count}
             </span>
             <div>
               <p className="font-semibold text-sm">
                 {(stats as any)?.pending_actions_count} việc đang chờ Admin xử lý
               </p>
-              <p className="text-xs text-amber-700">
-                {(stats as any)?.jobs?.pending ?? 0} đơn chờ báo giá •{' '}
-                {(stats as any)?.jobs?.disputed ?? 0} tranh chấp •{' '}
-                {(stats as any)?.helpers?.pending_kyc ?? 0} hồ sơ e-KYC •{' '}
-                {(stats as any)?.pending_withdrawals ?? 0} yêu cầu rút tiền
-              </p>
+              <div className="text-xs text-amber-700 flex flex-wrap gap-x-2 gap-y-1 mt-0.5">
+                <Link href="/jobs?status=receiving_quotes" className="hover:underline font-medium">
+                  {(stats as any)?.jobs?.pending ?? 0} đơn chờ báo giá
+                </Link>
+                <span>•</span>
+                <Link href="/disputes" className="hover:underline font-medium">
+                  {(stats as any)?.jobs?.disputed ?? 0} tranh chấp
+                </Link>
+                <span>•</span>
+                <Link href="/helpers/kyc" className="hover:underline font-medium">
+                  {(stats as any)?.helpers?.pending_kyc ?? 0} hồ sơ e-KYC
+                </Link>
+                <span>•</span>
+                <Link href="/payments?status=pending" className="hover:underline font-medium">
+                  {(stats as any)?.pending_withdrawals ?? 0} yêu cầu rút tiền
+                </Link>
+              </div>
             </div>
           </div>
         </div>

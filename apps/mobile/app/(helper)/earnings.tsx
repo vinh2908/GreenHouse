@@ -161,8 +161,8 @@ export default function HelperEarningsScreen() {
     Alert.alert(
       lang === 'en' ? 'Confirm withdrawal' : 'Xác nhận rút tiền',
       lang === 'en'
-        ? `Withdraw ${amountText}, fee 0₫, to account ${maskedAccount} (${bankName.trim()})?`
-        : `Rút ${amountText}, phí 0₫, về tài khoản ${maskedAccount} (${bankName.trim()})?`,
+        ? `Withdraw ${amountText} (fee as applicable) to account ${maskedAccount} (${bankName.trim()})?`
+        : `Rút ${amountText} (phí theo quy định) về tài khoản ${maskedAccount} (${bankName.trim()})?`,
       [
         { text: lang === 'en' ? 'Cancel' : 'Hủy', style: 'cancel' },
         {
@@ -324,7 +324,7 @@ export default function HelperEarningsScreen() {
           <View style={{ flexDirection: 'row', gap: 12 }}>
             <Card style={{ flex: 1, alignItems: 'center', gap: 6 }}>
               <TrendingUp size={22} color={COLORS.success} />
-              <PriceText amount={wallet?.total_earned ?? 0} size={14} color={COLORS.gray[900]} />
+              <PriceText amount={wallet?.total_earned ?? 0} size={14} color={tc.text} />
               <Text
                 style={{
                   fontSize: fs(11),
@@ -338,7 +338,7 @@ export default function HelperEarningsScreen() {
             </Card>
             <Card style={{ flex: 1, alignItems: 'center', gap: 6 }}>
               <ArrowDownCircle size={22} color={COLORS.secondary} />
-              <PriceText amount={wallet?.total_withdrawn ?? 0} size={14} color={COLORS.gray[900]} />
+              <PriceText amount={wallet?.total_withdrawn ?? 0} size={14} color={tc.text} />
               <Text
                 style={{
                   fontSize: fs(11),

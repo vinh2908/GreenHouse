@@ -93,8 +93,15 @@ export class JobsController {
   @Get('my')
   @ApiOperation({ summary: '[Customer] Lấy danh sách job của tôi' })
   @ApiQuery({ name: 'status', required: false })
-  async getMyJobs(@CurrentUser() user: { sub: string }, @Query('status') status?: string) {
-    return this.jobsService.getCustomerJobs(user.sub, status);
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  async getMyJobs(
+    @CurrentUser() user: { sub: string },
+    @Query('status') status?: string,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+  ) {
+    return this.jobsService.getCustomerJobs(user.sub, status, page, limit);
   }
 
   // ─── Helper: Available job feed ───────────────────────────────────────────
@@ -137,8 +144,15 @@ export class JobsController {
   @Get('helper/my')
   @ApiOperation({ summary: '[Helper] Xem lịch sử công việc của tôi' })
   @ApiQuery({ name: 'status', required: false })
-  async getHelperJobs(@CurrentUser() user: { sub: string }, @Query('status') status?: string) {
-    return this.jobsService.getHelperJobs(user.sub, status);
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  async getHelperJobs(
+    @CurrentUser() user: { sub: string },
+    @Query('status') status?: string,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+  ) {
+    return this.jobsService.getHelperJobs(user.sub, status, page, limit);
   }
 
   // ─── Bản đồ nhu cầu (Roadmap Phase 2 — Feature 15) ──────────────────────

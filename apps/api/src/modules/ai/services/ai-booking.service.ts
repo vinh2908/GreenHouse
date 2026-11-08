@@ -89,6 +89,9 @@ export class AiBookingService {
       price_max: ref.max * (ref.unit === 'hour' ? hours : 1),
       confidence: 0.6,
       raw_input: text,
+      mock: true,
+      source: 'sample_template',
+      note: 'Gợi ý mẫu, chưa qua phân tích AI',
     };
   }
 

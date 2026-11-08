@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useQuery } from '@tanstack/react-query';
+import apiClient from '@/lib/api-client';
 import {
   AdminMonthlyContract,
   useAdminMonthlyContracts,
@@ -26,7 +28,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui';
-import { formatDateTime, formatVND } from '@/lib/utils';
+import { formatDate, formatDateTime, formatVND } from '@/lib/utils';
 import { PromptDialog } from '@/components/common/prompt-dialog';
 
 const STATUS_MAP: Record<
@@ -65,14 +67,24 @@ export default function AdminMonthlyContractsPage() {
   const cancelMutation = useAdminCancelMonthlyContract();
   const endMutation = useAdminEndMonthlyContract();
 
+  // B12: Xem chấm công của hợp đồng
+  const [viewingContract, setViewingContract] = useState<AdminMonthlyContract | null>(null);
+  const { data: attendanceData, isLoading: attendanceLoading } = useQuery({
+    queryKey: ['admin', 'monthly-contract-attendance', viewingContract?._id],
+    queryFn: async () => {
+      const res = await apiClient.get(`/monthly-contracts/${viewingContract?._id}/attendance`);
+      return res.data.data;
+    },
+    enabled: !!viewingContract?._id,
+  });
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Hợp đồng tháng & Chấm công</h1>
           <p className="text-sm text-muted-foreground">
-            Danh sách hợp đồng giúp việc định kỳ theo tháng, lịch làm việc hàng tuần và lịch sử chốt
-            lương
+            Danh sách hợp đồng giúp việc định kỳ theo tháng & xem lịch chấm công thợ
           </p>
         </div>
         <div className="w-48">
@@ -137,7 +149,18 @@ export default function AdminMonthlyContractsPage() {
                     };
                     return (
                       <TableRow key={c._id}>
-                        <TableCell className="font-semibold text-primary">{c.title}</TableCell>
+                        <TableCell>
+                          <button
+                            onClick={() => setViewingContract(c)}
+                            className="text-left font-semibold text-primary hover:underline"
+                          >
+                            {c.title}
+                          </button>
+                          <p className="text-xs text-muted-foreground">
+                            {formatDate(c.start_date)} –{' '}
+                            {c.end_date ? formatDate(c.end_date) : 'Vô thời hạn'}
+                          </p>
+                        </TableCell>
                         <TableCell>
                           {c.customer_id ? (
                             <div>
@@ -172,6 +195,14 @@ export default function AdminMonthlyContractsPage() {
                         </TableCell>
                         <TableCell>
                           <div className="flex flex-col gap-1.5 min-w-[110px]">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="text-xs text-primary h-7 px-2 justify-start hover:bg-primary/10"
+                              onClick={() => setViewingContract(c)}
+                            >
+                              Xem chấm công
+                            </Button>
                             {c.status === 'pending' && (
                               <Button
                                 size="sm"
@@ -269,6 +300,134 @@ export default function AdminMonthlyContractsPage() {
           }}
           onClose={() => setConfirmContract(null)}
         />
+      )}
+
+      {/* B12: Modal xem chi tiết hợp đồng & chấm công */}
+      {viewingContract && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-2xl rounded-xl bg-card p-6 shadow-xl border space-y-4 max-h-[85vh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b pb-3">
+              <div>
+                <h3 className="text-lg font-bold">{viewingContract.title}</h3>
+                <p className="text-xs text-muted-foreground">
+                  Thời hạn: {formatDate(viewingContract.start_date)} –{' '}
+                  {viewingContract.end_date ? formatDate(viewingContract.end_date) : 'Vô thời hạn'}
+                </p>
+              </div>
+              <Badge
+                variant={
+                  STATUS_MAP[viewingContract.status]?.variant ?? ('secondary' as const)
+                }
+              >
+                {STATUS_MAP[viewingContract.status]?.label ?? viewingContract.status}
+              </Badge>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 text-sm bg-muted/30 p-3 rounded-lg">
+              <div>
+                <span className="text-xs text-muted-foreground block">Khách hàng:</span>
+                <span className="font-semibold">
+                  {viewingContract.customer_id?.full_name || '—'}
+                </span>
+                <span className="text-xs text-muted-foreground block">
+                  {viewingContract.customer_id?.phone}
+                </span>
+              </div>
+              <div>
+                <span className="text-xs text-muted-foreground block">Thợ:</span>
+                <span className="font-semibold">
+                  {viewingContract.helper_id?.full_name || '—'}
+                </span>
+                <span className="text-xs text-muted-foreground block">
+                  {viewingContract.helper_id?.phone}
+                </span>
+              </div>
+              <div>
+                <span className="text-xs text-muted-foreground block">Lương tháng:</span>
+                <span className="font-bold text-emerald-600">
+                  {formatVND(viewingContract.monthly_amount ?? 0)}
+                </span>
+              </div>
+              <div>
+                <span className="text-xs text-muted-foreground block">Khung giờ làm việc:</span>
+                <span className="font-medium">
+                  {viewingContract.time_start || '08:00'} – {viewingContract.time_end || '12:00'}
+                </span>
+              </div>
+            </div>
+
+            <div>
+              <h4 className="text-sm font-semibold mb-2">Lịch chấm công tháng</h4>
+              {attendanceLoading ? (
+                <div className="py-6 flex justify-center">
+                  <Loading />
+                </div>
+              ) : !attendanceData?.scheduled_dates?.length ? (
+                <EmptyState message="Chưa có lịch chấm công nào cho tháng này." />
+              ) : (
+                <div className="border rounded-lg overflow-hidden">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Ngày</TableHead>
+                        <TableHead>Thợ điểm danh</TableHead>
+                        <TableHead>Khách xác nhận</TableHead>
+                        <TableHead>Trạng thái</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {attendanceData.scheduled_dates.map((dateStr: string) => {
+                        const rec = (attendanceData.records ?? []).find(
+                          (r: any) => r.date === dateStr,
+                        );
+                        return (
+                          <TableRow key={dateStr}>
+                            <TableCell className="font-mono text-xs">{dateStr}</TableCell>
+                            <TableCell className="text-xs">
+                              {rec?.checkin_time ? (
+                                <span className="text-emerald-600 font-medium">
+                                  {rec.checkin_time}
+                                </span>
+                              ) : (
+                                <span className="text-muted-foreground">—</span>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-xs">
+                              {rec?.customer_confirmed ? (
+                                <Badge variant="success">Đã xác nhận</Badge>
+                              ) : rec?.checkin_time ? (
+                                <Badge variant="warning">Chờ khách duyệt</Badge>
+                              ) : (
+                                <span className="text-muted-foreground">—</span>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-xs">
+                              {rec?.status === 'present' ? (
+                                <span className="text-emerald-600 font-semibold">Có mặt</span>
+                              ) : rec?.status === 'leave' ? (
+                                <span className="text-amber-600 font-medium">Nghỉ phép</span>
+                              ) : rec?.status === 'absent' ? (
+                                <span className="text-destructive font-semibold">Vắng mặt</span>
+                              ) : (
+                                <span className="text-muted-foreground">Chưa đến lượt</span>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </div>
+
+            <div className="flex justify-end pt-2">
+              <Button variant="outline" onClick={() => setViewingContract(null)}>
+                Đóng
+              </Button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

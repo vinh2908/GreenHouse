@@ -33,6 +33,7 @@ type KycHelper = {
   id_card_front?: string;
   id_card_back?: string;
   selfie_photo?: string;
+  verification_submitted_at?: string;
   created_at: string;
 };
 
@@ -376,7 +377,9 @@ export default function KycPendingPage() {
                             {h.id_card_number ?? '—'}
                           </TableCell>
                           <TableCell className="text-sm text-muted-foreground">
-                            {formatDateTime(h.created_at)}
+                            {h.verification_submitted_at
+                              ? formatDateTime(h.verification_submitted_at)
+                              : '—'}
                           </TableCell>
                           <TableCell className="text-right">
                             <div className="flex gap-2 justify-end">
@@ -394,7 +397,15 @@ export default function KycPendingPage() {
                                 size="sm"
                                 variant="outline"
                                 className="text-red-600 border-red-300 hover:bg-red-50"
-                                onClick={() => setRejectingId(rejectingId === h._id ? null : h._id)}
+                                onClick={() => {
+                                  if (rejectingId === h._id) {
+                                    setRejectingId(null);
+                                    setRejectReason('');
+                                  } else {
+                                    setRejectingId(h._id);
+                                    setRejectReason('');
+                                  }
+                                }}
                               >
                                 <XCircle className="mr-1 h-3 w-3" />
                                 Từ chối

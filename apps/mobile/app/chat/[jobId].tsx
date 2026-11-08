@@ -38,7 +38,7 @@ import { uploadFile } from '@/services/upload.service';
 import { ImageViewerModal } from '@/components/common/photo-thumbs';
 import { Alert } from '@/components/common/app-alert';
 import { useTranslation } from '@/hooks/use-i18n';
-import { formatDayLabel, formatTime } from '@/utils/date-format';
+import { formatDayLabel, formatTime, toVnDayjs } from '@/utils/date-format';
 import {
   Avatar,
   COLORS,
@@ -748,7 +748,7 @@ export default function ChatScreen() {
               // B21: dải phân cách ngày khi created_at đổi ngày so với tin trước
               const prev = index > 0 ? allMessages[index - 1] : null;
               const showDaySeparator =
-                !prev || !dayjs(prev.created_at).isSame(dayjs(item.created_at), 'day');
+                !prev || !toVnDayjs(prev.created_at).isSame(toVnDayjs(item.created_at), 'day');
               const daySeparator = showDaySeparator ? (
                 <View style={{ alignItems: 'center', marginVertical: 6 }}>
                   <Text

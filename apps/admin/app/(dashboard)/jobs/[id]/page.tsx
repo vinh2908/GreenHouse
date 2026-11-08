@@ -567,12 +567,16 @@ export default function JobDetailPage() {
                   if (allowedTransitions.length === 0) {
                     return (
                       <p className="text-xs text-muted-foreground italic py-1">
-                        Trạng thái &quot;{STATUS_VI[job.status] || job.status}&quot; là trạng thái cuối, không thể chuyển đổi tiếp.
+                        Trạng thái &quot;{STATUS_VI[job.status] || job.status}&quot; là trạng thái
+                        cuối, không thể chuyển đổi tiếp.
                       </p>
                     );
                   }
                   const options = [
-                    { value: job.status, label: `${ALL_STATUS_LABELS[job.status] || job.status} (Hiện tại)` },
+                    {
+                      value: job.status,
+                      label: `${ALL_STATUS_LABELS[job.status] || job.status} (Hiện tại)`,
+                    },
                     ...allowedTransitions.map(s => ({
                       value: s,
                       label: ALL_STATUS_LABELS[s] || s,

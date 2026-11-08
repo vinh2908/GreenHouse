@@ -91,7 +91,7 @@ export default function SplashScreen() {
 
       const state = useAuthStore.getState();
       if (state.isLoading) {
-        // Đợi auth hydrate xong từ SecureStore nếu đang chạy dở
+        // M-30: Đợi auth hydrate xong từ SecureStore (isLoading === false), không dùng timeout cưỡng bức
         const unsub = useAuthStore.subscribe(curr => {
           if (!curr.isLoading && !hasNavigated.current) {
             hasNavigated.current = true;
@@ -103,20 +103,6 @@ export default function SplashScreen() {
             }
           }
         });
-        setTimeout(() => {
-          if (!hasNavigated.current) {
-            hasNavigated.current = true;
-            try {
-              unsub();
-            } catch {}
-            const latest = useAuthStore.getState();
-            if (latest.isAuthenticated && latest.user?.active_role === 'helper') {
-              router.replace('/(helper)/dashboard');
-            } else {
-              router.replace('/(customer)/home');
-            }
-          }
-        }, 1200);
         return;
       }
 

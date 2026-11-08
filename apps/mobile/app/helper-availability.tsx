@@ -258,6 +258,7 @@ export default function HelperAvailabilityScreen() {
               onChange={setEndTime}
               showChips={false}
               checkPast={false}
+              minTime={startTime}
             />
           </View>
           <Text style={{ fontSize: fs(12), color: tc.textMuted }}>

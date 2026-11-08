@@ -7,6 +7,7 @@ import {
   Inject,
   forwardRef,
   Logger,
+  Optional,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Cron } from '@nestjs/schedule';
@@ -24,7 +25,8 @@ import {
 import { CreateMonthlyContractDto, SettleMonthDto } from './dto/monthly-contract.dto';
 import { HelperProfile, HelperProfileDocument } from '../helpers/schemas/helper-profile.schema';
 import { Service, ServiceDocument } from '../services/schemas/service.schema';
-import { VerificationStatus } from '@homemate/types';
+import { User, UserDocument } from '../users/schemas/user.schema';
+import { VerificationStatus, UserRole } from '@homemate/types';
 import { NOTIFICATION_TYPES } from '@homemate/constants';
 import { NotificationsService } from '../notifications/notifications.service';
 import { PaymentsService } from '../payments/payments.service';
@@ -85,6 +87,9 @@ export class MonthlyContractsService {
     private readonly paymentsService: PaymentsService,
     @Inject(forwardRef(() => AppGateway))
     private readonly gateway: AppGateway,
+    @Optional()
+    @InjectModel(User.name)
+    private userModel?: Model<UserDocument>,
   ) {}
 
   // ─── Helpers ──────────────────────────────────────────────────────────────
@@ -153,7 +158,12 @@ export class MonthlyContractsService {
     return contract;
   }
 
-  private assertParticipant(contract: MonthlyContractDocument, userId: string) {
+  private assertParticipant(
+    contract: MonthlyContractDocument,
+    userId: string,
+    userRoles: string[] = [],
+  ) {
+    if (userRoles.includes('admin') || userRoles.includes(UserRole.ADMIN)) return;
     if (contract.customer_id.toString() !== userId && contract.helper_id.toString() !== userId) {
       throw new ForbiddenException('Bạn không thuộc hợp đồng này');
     }
@@ -170,6 +180,16 @@ export class MonthlyContractsService {
   // ─── CRUD / vòng đời hợp đồng ─────────────────────────────────────────────
 
   async createContract(customerId: string, dto: CreateMonthlyContractDto) {
+    // P2-20: Chặn tạo hợp đồng tháng khi tài khoản khách chưa xác minh email
+    if (this.userModel?.findById) {
+      const customerUser = await this.userModel.findById(customerId).select('is_verified').lean().exec();
+      if (customerUser && customerUser.is_verified === false) {
+        throw new BadRequestException(
+          'Tài khoản chưa được xác minh qua email. Vui lòng xác minh email trước khi tạo hợp đồng tháng.',
+        );
+      }
+    }
+
     if (dto.helper_id === customerId) {
       throw new BadRequestException('Không thể tự thuê chính mình');
     }
@@ -276,9 +296,9 @@ export class MonthlyContractsService {
     return contracts;
   }
 
-  async getContract(userId: string, id: string) {
+  async getContract(userId: string, id: string, userRoles: string[] = []) {
     const contract = await this.getContractOrFail(id);
-    this.assertParticipant(contract, userId);
+    this.assertParticipant(contract, userId, userRoles);
     return this.populate(contract);
   }
 
@@ -469,9 +489,9 @@ export class MonthlyContractsService {
     return record;
   }
 
-  async getAttendance(userId: string, id: string, month?: string) {
+  async getAttendance(userId: string, id: string, month?: string, userRoles: string[] = []) {
     const contract = await this.getContractOrFail(id);
-    this.assertParticipant(contract, userId);
+    this.assertParticipant(contract, userId, userRoles);
     const m = this.assertMonth(month);
     const scheduled = this.scheduledDatesOfMonth(contract, m);
     const records = await this.attendanceModel
@@ -703,9 +723,9 @@ export class MonthlyContractsService {
     };
   }
 
-  async getSettlement(userId: string, id: string, month?: string) {
+  async getSettlement(userId: string, id: string, month?: string, userRoles: string[] = []) {
     const contract = await this.getContractOrFail(id);
-    this.assertParticipant(contract, userId);
+    this.assertParticipant(contract, userId, userRoles);
     const m = this.assertMonth(month);
     const existing = await this.settlementModel
       .findOne({ contract_id: contract._id, month: m })

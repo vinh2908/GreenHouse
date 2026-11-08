@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import {
@@ -86,6 +86,16 @@ export class ServicesService {
 
     const minP = dto.base_price_min ?? dto.price_range_min ?? 0;
     const maxP = dto.base_price_max ?? dto.price_range_max ?? 0;
+    // B09: Chặn khoảng giá ngược (min > max) và giá cam kết <= 0
+    if (minP > maxP && maxP > 0) {
+      throw new BadRequestException('Giá tối thiểu không được lớn hơn giá tối đa');
+    }
+    if (dto.pricing_model === 'fixed') {
+      const fixedPrice = dto.fixed_price ?? minP;
+      if (!fixedPrice || fixedPrice <= 0) {
+        throw new BadRequestException('Dịch vụ giá cam kết bắt buộc phải có giá cố định lớn hơn 0₫');
+      }
+    }
 
     return this.serviceModel.create({
       ...dto,
@@ -108,6 +118,16 @@ export class ServicesService {
       const maxP = dto.base_price_max ?? dto.price_range_max;
       updatePayload.base_price_max = maxP;
       updatePayload.price_range_max = maxP;
+    }
+
+    // B09: Kiểm tra chéo khoảng giá và giá cam kết
+    const finalMin = updatePayload.base_price_min;
+    const finalMax = updatePayload.base_price_max;
+    if (finalMin !== undefined && finalMax !== undefined && finalMin > finalMax && finalMax > 0) {
+      throw new BadRequestException('Giá tối thiểu không được lớn hơn giá tối đa');
+    }
+    if (dto.pricing_model === 'fixed' && dto.fixed_price !== undefined && dto.fixed_price <= 0) {
+      throw new BadRequestException('Dịch vụ giá cam kết bắt buộc phải có giá cố định lớn hơn 0₫');
     }
 
     const service = await this.serviceModel

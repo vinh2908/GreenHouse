@@ -125,12 +125,32 @@ export default function ClaimScreen() {
       return;
     }
     const amountNum = amount.trim() ? Number(amount.replace(/[^\d]/g, '')) : undefined;
+    if (!amountNum || amountNum <= 0) {
+      Toast.show({
+        type: 'error',
+        text1:
+          lang === 'en'
+            ? 'Please enter the requested claim amount'
+            : 'Vui lòng nhập số tiền đề nghị bồi thường hợp lệ',
+      });
+      return;
+    }
+    if (photos.length === 0) {
+      Toast.show({
+        type: 'error',
+        text1:
+          lang === 'en'
+            ? 'Please attach at least 1 evidence photo'
+            : 'Vui lòng đính kèm ít nhất 1 ảnh bằng chứng thiệt hại',
+      });
+      return;
+    }
     try {
       await createClaim.mutateAsync({
         job_id: jobId,
         description: description.trim(),
-        photos: photos.length > 0 ? photos : undefined,
-        requested_amount: amountNum && amountNum > 0 ? amountNum : undefined,
+        photos,
+        requested_amount: amountNum,
       });
       setSubmitted(true);
     } catch {
@@ -381,8 +401,8 @@ export default function ClaimScreen() {
                 />
                 <Text style={{ fontWeight: '800', fontSize: fs(15), color: tc.text }}>
                   {lang === 'en'
-                    ? 'Requested claim amount (optional)'
-                    : 'Số tiền đề nghị bồi thường (không bắt buộc)'}
+                    ? 'Requested claim amount (₫) *'
+                    : 'Số tiền đề nghị bồi thường (₫) *'}
                 </Text>
                 <TextInput
                   value={amount}
@@ -392,7 +412,7 @@ export default function ClaimScreen() {
                   style={inputStyle}
                 />
                 <Text style={{ fontWeight: '800', fontSize: fs(15), color: tc.text }}>
-                  {lang === 'en' ? 'Evidence Photos' : 'Ảnh bằng chứng'}
+                  {lang === 'en' ? 'Evidence Photos *' : 'Ảnh bằng chứng *'}
                 </Text>
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
                   {photos.map((uri, i) => (

@@ -292,7 +292,14 @@ export class NotificationsService {
         .exec();
 
       const notifType = String(data?.type || '');
-      const settings = (user as any)?.notification_settings;
+      // P2-19: Fallback đầy đủ các trường cài đặt khi user chưa có notification_settings
+      const settings = (user as any)?.notification_settings ?? {
+        sound: true,
+        vibrate: true,
+        job_status: true,
+        chat_messages: true,
+        marketing: true,
+      };
 
       if (!this.isNotificationAllowed(notifType, settings)) {
         this.logger.log(
@@ -332,7 +339,7 @@ export class NotificationsService {
         title: pushTitle,
         body: pushBody,
         data,
-        sound: settings.sound ? ('default' as const) : null,
+        sound: settings?.sound !== false ? ('default' as const) : null,
         priority: 'high' as const,
         channelId: 'default',
       }));
@@ -484,12 +491,7 @@ export class NotificationsService {
   }
 
   // System message to every active user, pushed live to everyone connected without broadcast leakage.
-  async broadcastAll(
-    userIds: Types.ObjectId[],
-    title: string,
-    body: string,
-    batchId?: string,
-  ) {
+  async broadcastAll(userIds: Types.ObjectId[], title: string, body: string, batchId?: string) {
     const broadcastBatchId = batchId || new Types.ObjectId().toString();
     await this.notificationModel.insertMany(
       userIds.map(id => ({

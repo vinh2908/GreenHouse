@@ -152,6 +152,24 @@ export class VouchersService {
 
     // Tăng used_count nguyên tử, tôn trọng cả total_usage_limit và per_user_limit khi gọi song song
     const userLimit = voucher.per_user_limit ?? 1;
+
+    // P2-16: Chống race condition khi per_user_limit > 1
+    if (userLimit > 1) {
+      const userRedemptions = await this.redemptionModel
+        .countDocuments({
+          voucher_id: voucher._id,
+          user_id: new Types.ObjectId(userId),
+          status: 'redeemed',
+        })
+        .session(session ?? null)
+        .exec();
+      if (userRedemptions >= userLimit) {
+        throw new BadRequestException(
+          `Bạn đã dùng mã này tối đa số lần cho phép (${userLimit} lần)`,
+        );
+      }
+    }
+
     const updateQuery: Record<string, unknown> = {
       _id: voucher._id,
       is_active: true,
@@ -183,7 +201,7 @@ export class VouchersService {
       throw new BadRequestException('Mã giảm giá đã hết lượt sử dụng');
     }
 
-    await this.redemptionModel.create(
+    const newRedemptions = await this.redemptionModel.create(
       [
         {
           voucher_id: voucher._id,
@@ -196,6 +214,30 @@ export class VouchersService {
       ],
       { session: session ?? undefined },
     );
+
+    if (userLimit > 1 && newRedemptions[0]) {
+      const countAfter = await this.redemptionModel
+        .countDocuments({
+          voucher_id: voucher._id,
+          user_id: new Types.ObjectId(userId),
+          status: 'redeemed',
+        })
+        .session(session ?? null)
+        .exec();
+      if (countAfter > userLimit) {
+        await this.redemptionModel
+          .deleteOne({ _id: newRedemptions[0]._id })
+          .session(session ?? null)
+          .exec();
+        await this.voucherModel
+          .updateOne({ _id: voucher._id }, { $inc: { used_count: -1 } })
+          .session(session ?? null)
+          .exec();
+        throw new BadRequestException(
+          `Bạn đã dùng mã này tối đa số lần cho phép (${userLimit} lần)`,
+        );
+      }
+    }
 
     return { discount_amount: discount, voucher };
   }

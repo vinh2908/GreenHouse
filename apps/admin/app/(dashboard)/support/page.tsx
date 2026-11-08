@@ -20,6 +20,7 @@ import {
   Loading,
   Select,
 } from '@/components/ui';
+import { PromptDialog } from '@/components/common/prompt-dialog';
 import { formatDateTime } from '@/lib/utils';
 
 const userName = (c: AdminSupportConversation) =>
@@ -31,12 +32,19 @@ export default function SupportPage() {
   const [status, setStatus] = useState('open');
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [draft, setDraft] = useState('');
+  const [closeConfirmOpen, setCloseConfirmOpen] = useState(false);
+  const [sendError, setSendError] = useState<string | null>(null);
 
   const { data: conversations, isLoading, isError, refetch } = useSupportConversations(status);
   const list = conversations ?? [];
   const selected = list.find(c => c._id === selectedId) ?? null;
 
-  const { data: messages, isLoading: threadLoading } = useSupportThread(selectedId);
+  const {
+    data: messages,
+    isLoading: threadLoading,
+    isError: threadError,
+    refetch: refetchThread,
+  } = useSupportThread(selectedId);
   const reply = useAdminSupportReply();
   const closeConv = useAdminSupportClose();
   const markRead = useAdminSupportRead();
@@ -57,8 +65,14 @@ export default function SupportPage() {
   const handleSend = async () => {
     const content = draft.trim();
     if (!content || !selectedId || reply.isPending) return;
+    setSendError(null);
     setDraft('');
-    await reply.mutateAsync({ id: selectedId, content }).catch(() => setDraft(content));
+    try {
+      await reply.mutateAsync({ id: selectedId, content });
+    } catch (err: any) {
+      setDraft(content);
+      setSendError(err?.response?.data?.message || err?.message || 'Không thể gửi tin nhắn phản hồi');
+    }
   };
 
   return (
@@ -155,7 +169,7 @@ export default function SupportPage() {
                   size="sm"
                   variant="outline"
                   loading={closeConv.isPending}
-                  onClick={() => closeConv.mutate(selected._id)}
+                  onClick={() => setCloseConfirmOpen(true)}
                 >
                   Đóng hội thoại
                 </Button>
@@ -183,6 +197,15 @@ export default function SupportPage() {
               <EmptyState message="Chọn một hội thoại ở cột trái để xem và phản hồi." />
             ) : threadLoading ? (
               <Loading />
+            ) : threadError ? (
+              <div className="p-8 text-center space-y-3">
+                <p className="text-destructive font-medium text-sm">
+                  Không thể tải nội dung tin nhắn
+                </p>
+                <Button variant="outline" size="sm" onClick={() => refetchThread()}>
+                  Tải lại
+                </Button>
+              </div>
             ) : (
               <div className="space-y-4">
                 <div className="space-y-3 max-h-[480px] overflow-y-auto pr-1">
@@ -221,23 +244,28 @@ export default function SupportPage() {
                     Hội thoại đã đóng. Người dùng gửi tin nhắn mới sẽ tạo hội thoại mới.
                   </p>
                 ) : (
-                  <div className="flex gap-2">
-                    <input
-                      className="flex-1 h-10 rounded-md border border-input bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                      placeholder="Nhập phản hồi cho người dùng..."
-                      value={draft}
-                      onChange={e => setDraft(e.target.value)}
-                      onKeyDown={e => {
-                        if (e.key === 'Enter') void handleSend();
-                      }}
-                    />
-                    <Button
-                      onClick={() => void handleSend()}
-                      loading={reply.isPending}
-                      disabled={!draft.trim()}
-                    >
-                      Gửi
-                    </Button>
+                  <div className="space-y-2">
+                    {sendError && (
+                      <p className="text-xs text-destructive">{sendError}</p>
+                    )}
+                    <div className="flex gap-2">
+                      <input
+                        className="flex-1 h-10 rounded-md border border-input bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        placeholder="Nhập phản hồi cho người dùng..."
+                        value={draft}
+                        onChange={e => setDraft(e.target.value)}
+                        onKeyDown={e => {
+                          if (e.key === 'Enter') void handleSend();
+                        }}
+                      />
+                      <Button
+                        onClick={() => void handleSend()}
+                        loading={reply.isPending}
+                        disabled={!draft.trim()}
+                      >
+                        Gửi
+                      </Button>
+                    </div>
                   </div>
                 )}
               </div>
@@ -245,6 +273,20 @@ export default function SupportPage() {
           </CardContent>
         </Card>
       </div>
+
+      {closeConfirmOpen && selected && (
+        <PromptDialog
+          title="Đóng hội thoại"
+          message={`Bạn có chắc chắn muốn đóng hội thoại hỗ trợ với ${userName(selected)}? Sau khi đóng, người dùng chỉ có thể gửi tin nhắn qua một hội thoại mới.`}
+          confirmLabel="Đóng hội thoại"
+          requireInput={false}
+          onSubmit={() => {
+            setCloseConfirmOpen(false);
+            closeConv.mutate(selected._id);
+          }}
+          onClose={() => setCloseConfirmOpen(false)}
+        />
+      )}
     </div>
   );
 }

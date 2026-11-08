@@ -10,6 +10,9 @@ export interface AiBookingAnalysis {
   price_max?: number;
   confidence: number; // 0-1
   raw_input: string;
+  mock?: boolean;
+  source?: string;
+  note?: string;
 }
 
 export interface AiPriceEstimate {

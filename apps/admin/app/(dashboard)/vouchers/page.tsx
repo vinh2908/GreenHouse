@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   AdminVoucher,
   useAdminVouchers,
@@ -65,10 +65,21 @@ const errorMessage = (err: unknown) => {
 const toDateInput = (iso?: string) => (iso ? iso.slice(0, 10) : '');
 
 export default function VouchersPage() {
-  const [search, setSearch] = useState('');
+  const [searchInput, setSearchInput] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [page, setPage] = useState(1);
+
+  // C03: Debounce 300ms cho ô tìm kiếm
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchInput.trim());
+      setPage(1);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchInput]);
+
   const { data, isLoading, isError, refetch } = useAdminVouchers({
-    search: search || undefined,
+    search: debouncedSearch || undefined,
     page,
   });
   const save = useSaveVoucher();
@@ -99,6 +110,28 @@ export default function VouchersPage() {
   const handleSave = async () => {
     if (!draft) return;
     setError(null);
+
+    // C02: Client-side validations
+    if (!draft.id && !draft.code.trim()) {
+      setError('Mã voucher không được để trống');
+      return;
+    }
+    const val = Number(draft.discount_value) || 0;
+    if (val <= 0) {
+      setError('Giá trị giảm giá phải lớn hơn 0');
+      return;
+    }
+    if (draft.discount_type === 'percent' && val > 100) {
+      setError('Phần trăm giảm giá không được vượt quá 100%');
+      return;
+    }
+    if (draft.valid_from && draft.valid_to) {
+      if (new Date(draft.valid_to) <= new Date(draft.valid_from)) {
+        setError('Ngày hết hạn phải sau ngày bắt đầu áp dụng');
+        return;
+      }
+    }
+
     const num = (s: string) => (s.trim() === '' ? undefined : Number(s));
     try {
       await save.mutateAsync({
@@ -146,11 +179,8 @@ export default function VouchersPage() {
           <div className="flex items-center gap-3">
             <Input
               placeholder="Tìm theo mã…"
-              value={search}
-              onChange={e => {
-                setSearch(e.target.value);
-                setPage(1);
-              }}
+              value={searchInput}
+              onChange={e => setSearchInput(e.target.value)}
               className="max-w-xs"
             />
             <span className="text-sm text-muted-foreground">{data?.total ?? 0} mã</span>
@@ -308,6 +338,8 @@ export default function VouchersPage() {
                 </label>
                 <Input
                   type="number"
+                  min={1}
+                  max={draft.discount_type === 'percent' ? 100 : undefined}
                   value={draft.discount_value}
                   onChange={e => setDraft({ ...draft, discount_value: e.target.value })}
                 />

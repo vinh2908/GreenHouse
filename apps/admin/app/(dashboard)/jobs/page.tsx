@@ -23,16 +23,20 @@ import { STATUS_BADGE, STATUS_VI } from './status';
 
 const JOB_STATUS_OPTIONS = [
   { value: '', label: 'Tất cả trạng thái' },
+  { value: 'draft', label: 'Nháp' },
   { value: 'open', label: 'Mở' },
   { value: 'receiving_quotes', label: 'Nhận báo giá' },
+  { value: 'quote_selected', label: 'Đã chọn báo giá' },
   { value: 'confirmed', label: 'Đã xác nhận' },
-  { value: 'helper_on_the_way', label: 'Helper trên đường' },
-  { value: 'helper_arrived', label: 'Helper đã đến' },
+  { value: 'helper_on_the_way', label: 'Thợ trên đường' },
+  { value: 'helper_arrived', label: 'Thợ đã đến' },
   { value: 'in_progress', label: 'Đang làm' },
   { value: 'pending_review', label: 'Chờ nghiệm thu' },
   { value: 'completed', label: 'Hoàn thành' },
   { value: 'cancelled', label: 'Đã hủy' },
   { value: 'disputed', label: 'Tranh chấp' },
+  { value: 'expired', label: 'Đã hết hạn' },
+  { value: 'refunded', label: 'Đã hoàn tiền' },
 ];
 
 export default function JobsPage() {

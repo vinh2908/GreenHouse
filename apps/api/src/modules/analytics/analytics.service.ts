@@ -75,7 +75,9 @@ export class AnalyticsService {
         {
           $group: {
             _id: {
-              month: { $dateToString: { format: '%Y-%m', date: '$created_at', timezone: '+07:00' } },
+              month: {
+                $dateToString: { format: '%Y-%m', date: '$created_at', timezone: '+07:00' },
+              },
               type: '$type',
             },
             total: { $sum: '$amount' },
@@ -246,7 +248,9 @@ export class AnalyticsService {
     const vnMonth = vnNow.getUTCMonth(); // 0-based
     const startOfMonth = new Date(Date.UTC(vnYear, vnMonth, 1) - 7 * 60 * 60 * 1000);
     const startOfLastMonth = new Date(Date.UTC(vnYear, vnMonth - 1, 1) - 7 * 60 * 60 * 1000);
-    const endOfLastMonth = new Date(Date.UTC(vnYear, vnMonth, 0, 23, 59, 59, 999) - 7 * 60 * 60 * 1000);
+    const endOfLastMonth = new Date(
+      Date.UTC(vnYear, vnMonth, 0, 23, 59, 59, 999) - 7 * 60 * 60 * 1000,
+    );
 
     const [
       thisMonthJobs,

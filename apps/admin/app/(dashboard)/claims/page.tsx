@@ -44,6 +44,13 @@ const TIMELINE_LABEL: Record<AdminClaimStatus, string> = {
   rejected: 'Từ chối bồi thường',
 };
 
+const ACTOR_ROLE_VI: Record<string, string> = {
+  admin: 'Admin',
+  customer: 'Khách hàng',
+  helper: 'Thợ',
+  system: 'Hệ thống',
+};
+
 const errorMessage = (err: unknown) => {
   const msg = (err as { response?: { data?: { message?: string } } })?.response?.data;
   return msg?.message || 'Có lỗi xảy ra';
@@ -54,7 +61,7 @@ const personName = (p: AdminClaim['customer_id']) =>
 const personPhone = (p: AdminClaim['customer_id']) =>
   p && typeof p === 'object' ? (p.phone ?? '') : '';
 const jobTitle = (j: AdminClaim['job_id']) =>
-  j && typeof j === 'object' ? (j.title ?? 'Đơn đã hoàn thành') : 'Đơn đã hoàn thành';
+  j && typeof j === 'object' ? (j.title ?? 'Đơn không còn tồn tại') : 'Đơn không còn tồn tại';
 const jobIdOf = (j: AdminClaim['job_id']) =>
   j && typeof j === 'object' ? j._id : typeof j === 'string' ? j : '';
 
@@ -218,7 +225,8 @@ function ClaimDetail({ claimId, onClose }: { claimId: string; onClose: () => voi
   };
 
   const job = claim?.job_id && typeof claim.job_id === 'object' ? claim.job_id : null;
-  const isFinal = claim?.status === 'paid' || claim?.status === 'rejected';
+  const isFinal =
+    claim?.status === 'paid' || claim?.status === 'rejected' || claim?.status === 'approved';
 
   return (
     <Card>
@@ -312,7 +320,7 @@ function ClaimDetail({ claimId, onClose }: { claimId: string; onClose: () => voi
                       <b>{TIMELINE_LABEL[t.status] ?? t.status}</b>
                       {t.note ? ` — ${t.note}` : ''}{' '}
                       <span className="text-muted-foreground">
-                        ({t.actor_role === 'admin' ? 'Admin' : 'Khách hàng'})
+                        ({ACTOR_ROLE_VI[t.actor_role] ?? t.actor_role})
                       </span>
                     </span>
                   </div>

@@ -291,7 +291,7 @@ export class JobsService implements OnModuleInit {
       await this.notificationsService
         .create({
           userId: String(job.private_offer_helper_id),
-          type: NOTIFICATION_TYPES.JOB_PRIVATE_OFFER,
+          type: NOTIFICATION_TYPES.JOB_PRIVATE_OFFER_EXPIRED,
           title: 'Ưu đãi riêng đã hết hạn',
           body: `Ưu đãi riêng cho đơn "${job.title}" đã hết hạn.`,
           payload: { job_id: String(job._id), is_private_offer: true },
@@ -433,7 +433,9 @@ export class JobsService implements OnModuleInit {
           if (typeof this.paymentsService?.getTotalRefundedForJob === 'function') {
             refundedSoFar = await this.paymentsService.getTotalRefundedForJob(String(job._id));
           } else if (typeof this.paymentsService?.hasSuccessfulRefund === 'function') {
-            refundedSoFar = (await this.paymentsService.hasSuccessfulRefund(String(job._id))) ? refundAmount : 0;
+            refundedSoFar = (await this.paymentsService.hasSuccessfulRefund(String(job._id)))
+              ? refundAmount
+              : 0;
           }
           const remainingRefund = Math.max(0, refundAmount - refundedSoFar);
 
@@ -1137,8 +1139,10 @@ export class JobsService implements OnModuleInit {
       throw new BadRequestException('Chỉ có thể đặt lại từ đơn đã hoàn thành hoặc đã hết hạn');
     }
 
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
+    // P2-5: Tính ngày mai theo múi giờ Việt Nam (+07:00)
+    const vnTomorrow = new Date(Date.now() + 7 * 60 * 60 * 1000);
+    vnTomorrow.setUTCDate(vnTomorrow.getUTCDate() + 1);
+    const tomorrowVnStr = vnTomorrow.toISOString().slice(0, 10);
 
     // H3 (R3): giờ đặt lại mặc định lấy từ đơn gốc — phải qua gate
     // 07:00–22:00 (đơn gốc hoàn thành lúc 23:00 thì báo lỗi rõ ràng).
@@ -1171,7 +1175,7 @@ export class JobsService implements OnModuleInit {
           coordinates: source.address.location.coordinates,
         } as CreateJobDto['address']['location'],
       },
-      preferred_date: (dto.preferred_date ?? tomorrow.toISOString()).slice(0, 10),
+      preferred_date: (dto.preferred_date ?? tomorrowVnStr).slice(0, 10),
       preferred_time_start: startTime,
       // Khách nhập duration mới → duration là tín hiệu duy nhất, bỏ giờ kết
       // thúc cũ để tránh 2 tín hiệu mâu thuẫn.
@@ -1258,12 +1262,14 @@ export class JobsService implements OnModuleInit {
       );
     }
 
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
+    // P2-5: Tính ngày mai theo múi giờ Việt Nam (+07:00)
+    const vnTomorrow = new Date(Date.now() + 7 * 60 * 60 * 1000);
+    vnTomorrow.setUTCDate(vnTomorrow.getUTCDate() + 1);
+    const tomorrowVnStr = vnTomorrow.toISOString().slice(0, 10);
 
     const issueText =
       dto?.issue_description?.trim() || 'Khách yêu cầu kiểm tra / xử lý lại vấn đề.';
-    const chosenDate = dto?.preferred_date?.trim() || tomorrow.toISOString().slice(0, 10);
+    const chosenDate = dto?.preferred_date?.trim() || tomorrowVnStr;
     const chosenTime = dto?.preferred_time_start?.trim() || source.preferred_time_start || '08:00';
 
     // H2 (R2): giờ bảo hành mặc định lấy từ đơn gốc — phải qua gate
@@ -1424,6 +1430,16 @@ export class JobsService implements OnModuleInit {
   // ─── Customer: Create SOS Emergency Job ───────────────────────────────────
 
   async createSosJob(customerId: string, dto: CreateSosJobDto): Promise<JobDocument> {
+    // P2-20: Chặn tạo đơn SOS khi tài khoản khách chưa xác minh email
+    if (this.userModel?.findById) {
+      const customerUser = await this.userModel.findById(customerId).select('is_verified').lean();
+      if (customerUser && customerUser.is_verified === false) {
+        throw new BadRequestException(
+          'Tài khoản chưa được xác minh qua email. Vui lòng xác minh email trước khi tạo đơn cứu hộ SOS.',
+        );
+      }
+    }
+
     const serviceSlug = dto.category || 'electrician';
     let service = await this.serviceModel.findOne({ slug: serviceSlug }).exec();
     if (!service) {
@@ -1876,7 +1892,7 @@ export class JobsService implements OnModuleInit {
 
   // ─── Customer: Get own jobs ───────────────────────────────────────────────
 
-  async getCustomerJobs(customerId: string, status?: string) {
+  async getCustomerJobs(customerId: string, status?: string, page?: number, limit?: number) {
     const query: Record<string, unknown> = { customer_id: new Types.ObjectId(customerId) };
     if (status) {
       const statuses = status
@@ -1885,6 +1901,30 @@ export class JobsService implements OnModuleInit {
         .filter(Boolean);
       query['status'] = statuses.length > 1 ? { $in: statuses } : statuses[0];
     }
+
+    if (page !== undefined || limit !== undefined) {
+      const p = Math.max(1, Number(page) || 1);
+      const l = Math.min(50, Math.max(1, Number(limit) || 20));
+      const [items, total] = await Promise.all([
+        this.jobModel
+          .find(query)
+          .populate('service_id', 'name slug icon')
+          .populate('helper_id', 'full_name phone avatar')
+          .sort({ created_at: -1 })
+          .skip((p - 1) * l)
+          .limit(l)
+          .exec(),
+        this.jobModel.countDocuments(query).exec(),
+      ]);
+      return {
+        items,
+        total,
+        page: p,
+        limit: l,
+        total_pages: Math.ceil(total / l),
+      };
+    }
+
     return this.jobModel
       .find(query)
       .populate('service_id', 'name slug icon')
@@ -2235,9 +2275,9 @@ export class JobsService implements OnModuleInit {
       q => (q.helper_id as unknown as { _id: Types.ObjectId })?._id ?? q.helper_id,
     );
     const helperProfiles = await this.helperModel
-      .find({ user_id: { $in: helperIds }, verification_status: VerificationStatus.APPROVED })
+      .find({ user_id: { $in: helperIds } })
       .select(
-        'user_id location rating total_reviews completed_jobs years_experience completion_rate cancellation_rate risk_score',
+        'user_id verification_status location rating total_reviews completed_jobs years_experience completion_rate cancellation_rate risk_score',
       )
       .lean()
       .exec();
@@ -2324,6 +2364,11 @@ export class JobsService implements OnModuleInit {
       );
       const profile = profileMap.get(hId);
       const obj = s.quote.toObject();
+      const isUnverified = profile?.verification_status !== VerificationStatus.APPROVED;
+      if (isUnverified) {
+        (obj as any).helper_unverified = true;
+        (obj as any).helper_unverified_reason = 'Thợ này đã bị thu hồi xác minh';
+      }
       const route = routeMap.get(hId);
       if (route) {
         (obj as any).distance_km = route.distance_km;
@@ -2528,16 +2573,24 @@ export class JobsService implements OnModuleInit {
       throw new ConflictException('Job đã chọn báo giá bởi thao tác khác');
     }
 
-    // A12: Tìm các thợ bị từ chối để bắn socket thông báo quote:rejected
+    // A12 & P2-3: Chỉ từ chối và thông báo cho các báo giá đang PENDING
     const otherQuotes = await this.quoteModel
-      .find({ job_id: new Types.ObjectId(jobId), _id: { $ne: new Types.ObjectId(dto.quote_id) } })
+      .find({
+        job_id: new Types.ObjectId(jobId),
+        _id: { $ne: new Types.ObjectId(dto.quote_id) },
+        status: QuoteStatus.PENDING,
+      })
       .select('helper_id')
       .lean()
       .exec();
 
     await this.quoteModel
       .updateMany(
-        { job_id: new Types.ObjectId(jobId), _id: { $ne: new Types.ObjectId(dto.quote_id) } },
+        {
+          job_id: new Types.ObjectId(jobId),
+          _id: { $ne: new Types.ObjectId(dto.quote_id) },
+          status: QuoteStatus.PENDING,
+        },
         { status: QuoteStatus.REJECTED },
       )
       .exec();
@@ -2780,6 +2833,25 @@ export class JobsService implements OnModuleInit {
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
 
+    // P2-4: scheduled_at phải là giờ làm thật của đơn, tính từ preferred_date + preferred_time_start (+07:00)
+    const jobDateStr =
+      typeof job.preferred_date === 'string'
+        ? (job.preferred_date as string).slice(0, 10)
+        : job.preferred_date
+          ? new Date(job.preferred_date).toISOString().slice(0, 10)
+          : '';
+    const jobTimeStr = (job.preferred_time_start ?? '').trim();
+    let resolvedScheduledAt: Date = tomorrow;
+    if (/^\d{4}-\d{2}-\d{2}$/.test(jobDateStr)) {
+      const [jh, jm] = /^\d{1,2}:\d{2}$/.test(jobTimeStr)
+        ? jobTimeStr.split(':').map(Number)
+        : [9, 0];
+      const parsed = new Date(
+        `${jobDateStr}T${String(jh).padStart(2, '0')}:${String(jm).padStart(2, '0')}:00+07:00`,
+      );
+      if (!Number.isNaN(parsed.getTime())) resolvedScheduledAt = parsed;
+    }
+
     let contract: ContractDocument;
     try {
       contract = await this.contractModel.create({
@@ -2794,7 +2866,7 @@ export class JobsService implements OnModuleInit {
         // Mặc định bảo hành của luồng chốt đơn trực tiếp (như đơn SOS): 30 ngày.
         // Riêng đơn bảo hành tự nó không sinh thêm kỳ bảo hành mới (0 ngày).
         warranty_days: isWarrantyJob ? 0 : 30,
-        scheduled_at: job.preferred_date ? new Date(job.preferred_date) : tomorrow,
+        scheduled_at: resolvedScheduledAt,
         signed_by_customer_at: new Date(),
       });
     } catch (contractErr) {
@@ -2864,10 +2936,15 @@ export class JobsService implements OnModuleInit {
       throw new ForbiddenException('Chỉ thợ phụ trách đơn mới có quyền đề xuất phát sinh chi phí');
     }
     if (
-      ![JobStatus.CONFIRMED, JobStatus.HELPER_ARRIVED, JobStatus.IN_PROGRESS].includes(job.status)
+      ![
+        JobStatus.CONFIRMED,
+        JobStatus.HELPER_ON_THE_WAY,
+        JobStatus.HELPER_ARRIVED,
+        JobStatus.IN_PROGRESS,
+      ].includes(job.status)
     ) {
       throw new BadRequestException(
-        'Chỉ có thể đề xuất phát sinh vật tư/chi phí khi đã đến nơi hoặc đang làm việc',
+        'Chỉ có thể đề xuất phát sinh vật tư/chi phí khi đã nhận đơn, đang di chuyển, đã đến nơi hoặc đang làm việc',
       );
     }
 
@@ -3777,10 +3854,12 @@ export class JobsService implements OnModuleInit {
       })
       .catch(() => undefined);
 
-    // A59: Thông báo thợ ghi đúng kết quả phân xử (không báo trừ tiền sai sự thật)
+    // A59 & P2-1: Thông báo thợ ghi đúng kết quả phân xử (không báo trừ tiền sai sự thật; khi !moveMoney thông báo đối soát thủ công)
     if (job.helper_id) {
       let helperBody = `Đơn "${job.title}": ${dto.admin_note}`;
-      if (dto.action === 'refund_full') {
+      if (!moveMoney) {
+        helperBody = `Đơn "${job.title}": Phán quyết thay đổi, đối soát ví thủ công. Lý do: ${dto.admin_note}`;
+      } else if (dto.action === 'refund_full') {
         helperBody = `Đã phân xử hoàn lại ${refundAmount.toLocaleString('vi-VN')}₫ cho khách hàng. Bạn bị trừ 5 điểm uy tín.`;
       } else if (dto.action === 'refund_partial') {
         helperBody = `Đã phân xử hoàn ${refundAmount.toLocaleString('vi-VN')}₫ cho khách hàng và giải ngân ${helperPayout.toLocaleString('vi-VN')}₫ cho bạn.`;
@@ -3831,24 +3910,45 @@ export class JobsService implements OnModuleInit {
     }
 
     const previousStatus = job.status;
+    // P2-12: Đơn đang làm hoặc chờ duyệt chỉ có thể khiếu nại (mở tranh chấp)
+    if (previousStatus === JobStatus.IN_PROGRESS || previousStatus === JobStatus.PENDING_REVIEW) {
+      throw new BadRequestException(
+        'Đơn hàng đang thực hiện hoặc chờ duyệt chỉ có thể khiếu nại (mở tranh chấp), không thể hủy trực tiếp.',
+      );
+    }
     this.validateTransition(job.status, JobStatus.CANCELLED);
     job.cancellation_reason = dto.reason;
     job.cancelled_by = new Types.ObjectId(actorId);
     job.cancelled_by_role = actorRole;
     this.addEvent(job, JobStatus.CANCELLED, actorId, actorRole, `Hủy: ${dto.reason}`);
 
-    // Nếu Thợ tự ý hủy đơn sau khi đã chốt hợp đồng (confirmed / helper_on_the_way / helper_arrived) -> phạt điểm rủi ro (No-Show / Late Cancel)
+    // Nếu Thợ tự ý hủy đơn sau khi đã chốt hợp đồng (confirmed / helper_on_the_way / helper_arrived / in_progress / pending_review) -> phạt điểm rủi ro (No-Show / Late Cancel)
     if (
       actorRole === 'helper' &&
       job.helper_id &&
-      [JobStatus.CONFIRMED, JobStatus.HELPER_ON_THE_WAY, JobStatus.HELPER_ARRIVED].includes(
-        previousStatus,
-      )
+      [
+        JobStatus.CONFIRMED,
+        JobStatus.HELPER_ON_THE_WAY,
+        JobStatus.HELPER_ARRIVED,
+        JobStatus.IN_PROGRESS,
+        JobStatus.PENDING_REVIEW,
+      ].includes(previousStatus)
     ) {
+      const helperDoc = await this.helperModel.findOne({ user_id: job.helper_id }).exec();
+      const newLateCount = ((helperDoc as any)?.late_cancellation_count || 0) + 1;
+      const totalAccepted = Math.max(
+        1,
+        ((helperDoc as any)?.accepted_quotes || 0) + ((helperDoc as any)?.completed_jobs || 0),
+      );
+      const newRate = Math.min(100, Math.round((newLateCount / totalAccepted) * 100));
+
       await this.helperModel
         .updateOne(
           { user_id: job.helper_id },
-          { $inc: { late_cancellation_count: 1, risk_score: 15, cancellation_rate: 5 } },
+          {
+            $inc: { late_cancellation_count: 1, risk_score: 15 },
+            $set: { cancellation_rate: newRate },
+          },
         )
         .exec();
 
@@ -4203,6 +4303,8 @@ export class JobsService implements OnModuleInit {
   }
 
   async getSkippedJobs(helperId: string, page = 1, limit = 20) {
+    const safePage = Math.max(1, Number(page) || 1);
+    const safeLimit = Math.min(50, Math.max(1, Number(limit) || 20));
     const now = new Date();
     const helperOid = new Types.ObjectId(helperId);
     const query: Record<string, unknown> = {
@@ -4215,8 +4317,8 @@ export class JobsService implements OnModuleInit {
         .find(query)
         .populate('service_id', 'name slug icon')
         .sort({ created_at: -1 })
-        .skip((page - 1) * limit)
-        .limit(limit)
+        .skip((safePage - 1) * safeLimit)
+        .limit(safeLimit)
         .exec(),
       this.jobModel.countDocuments(query).exec(),
       this.helperModel.findOne({ user_id: helperOid }).select('location').lean().exec(),
@@ -4265,6 +4367,8 @@ export class JobsService implements OnModuleInit {
   }
 
   async getAvailableJobs(helperId: string, serviceId?: string, page = 1, limit = 20) {
+    const safePage = Math.max(1, Number(page) || 1);
+    const safeLimit = Math.min(50, Math.max(1, Number(limit) || 20));
     const now = new Date();
     const helperOid = new Types.ObjectId(helperId);
     const query: Record<string, unknown> = {
@@ -4328,9 +4432,9 @@ export class JobsService implements OnModuleInit {
     }
 
     const total = visibleJobs.length;
-    const total_pages = Math.max(1, Math.ceil(total / limit));
-    const skip = (page - 1) * limit;
-    const pagedJobs = visibleJobs.slice(skip, skip + limit);
+    const total_pages = Math.max(1, Math.ceil(total / safeLimit));
+    const skip = (safePage - 1) * safeLimit;
+    const pagedJobs = visibleJobs.slice(skip, skip + safeLimit);
 
     const jobObjects = pagedJobs.map(job => {
       const obj = job.toObject() as any;
@@ -4383,8 +4487,8 @@ export class JobsService implements OnModuleInit {
     return {
       jobs: jobObjects,
       total,
-      page,
-      limit,
+      page: safePage,
+      limit: safeLimit,
       total_pages,
       availability_filtered: availabilityFiltered,
       empty_reason: emptyReason,
@@ -4493,7 +4597,7 @@ export class JobsService implements OnModuleInit {
     return rows;
   }
 
-  async getHelperJobs(helperId: string, status?: string) {
+  async getHelperJobs(helperId: string, status?: string, page?: number, limit?: number) {
     const query: Record<string, unknown> = { helper_id: new Types.ObjectId(helperId) };
     if (status) {
       const statuses = status
@@ -4502,6 +4606,30 @@ export class JobsService implements OnModuleInit {
         .filter(Boolean);
       query['status'] = statuses.length > 1 ? { $in: statuses } : statuses[0];
     }
+
+    if (page !== undefined || limit !== undefined) {
+      const p = Math.max(1, Number(page) || 1);
+      const l = Math.min(50, Math.max(1, Number(limit) || 20));
+      const [items, total] = await Promise.all([
+        this.jobModel
+          .find(query)
+          .populate('service_id', 'name slug icon')
+          .populate('customer_id', 'full_name phone avatar')
+          .sort({ created_at: -1 })
+          .skip((p - 1) * l)
+          .limit(l)
+          .exec(),
+        this.jobModel.countDocuments(query).exec(),
+      ]);
+      return {
+        items,
+        total,
+        page: p,
+        limit: l,
+        total_pages: Math.ceil(total / l),
+      };
+    }
+
     return this.jobModel
       .find(query)
       .populate('service_id', 'name slug icon')
@@ -4848,10 +4976,36 @@ export class JobsService implements OnModuleInit {
         `Tổng tỉ lệ chia cho thành viên không vượt quá 90% (lead giữ tối thiểu 10%). Hiện đã dùng ${usedSplit}%.`,
       );
     }
-    const ok = await this.isVerifiedHelper(dto.helper_id);
-    if (!ok) {
+    // P2-24: Kiểm tra thợ được mời: e-KYC, không bị khóa, không bận, không ngoại tuyến, không trùng lịch
+    const invitedProfile = await this.helperModel
+      .findOne({ user_id: new Types.ObjectId(dto.helper_id) })
+      .populate('user_id', 'full_name status is_verified')
+      .exec();
+    if (!invitedProfile || invitedProfile.verification_status !== VerificationStatus.APPROVED) {
       throw new BadRequestException('Thợ được mời chưa hoàn tất xác thực e-KYC');
     }
+    const invitedUser = invitedProfile.user_id as any;
+    if (invitedUser?.is_verified === false) {
+      throw new BadRequestException('Tài khoản thợ chưa được xác minh qua email');
+    }
+    if (invitedUser?.status === UserStatus.SUSPENDED || invitedUser?.status === UserStatus.INACTIVE) {
+      throw new BadRequestException('Tài khoản thợ đang bị tạm khoá hoặc ngừng hoạt động');
+    }
+    if (invitedProfile.status === HelperStatus.BUSY) {
+      throw new BadRequestException('Thợ đang bận thực hiện đơn công việc khác');
+    }
+    if (invitedProfile.status === HelperStatus.OFFLINE) {
+      throw new BadRequestException('Thợ hiện đang ngoại tuyến, không thể nhận lời mời');
+    }
+
+    await this.checkHelperScheduleConflict(
+      dto.helper_id,
+      job.preferred_date,
+      job.preferred_time_start,
+      jobId,
+      job.preferred_time_end,
+      job.estimated_duration,
+    );
 
     job.team = [
       ...(job.team ?? []),

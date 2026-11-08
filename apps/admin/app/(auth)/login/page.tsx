@@ -22,12 +22,11 @@ export default function LoginPage() {
     try {
       await login(phone, password);
       router.push('/');
-    } catch (err: unknown) {
+    } catch (err: any) {
+      const serverMsg = err?.response?.data?.message;
       const msg =
-        err instanceof Error
-          ? err.message
-          : ((err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-            'Đăng nhập thất bại');
+        (Array.isArray(serverMsg) ? serverMsg.join(', ') : serverMsg) ||
+        (err instanceof Error ? err.message : 'Đăng nhập thất bại');
       setError(msg);
     } finally {
       setLoading(false);

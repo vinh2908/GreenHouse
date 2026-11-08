@@ -192,15 +192,6 @@ export function useAdminReplyReview() {
   });
 }
 
-export function useAdminHideReview() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: ({ id, hidden }: { id: string; hidden: boolean }) =>
-      apiClient.patch(`/reviews/admin/${id}/hide`, { hidden }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'reviews'] }),
-  });
-}
-
 // B71: Admin ẩn/hiện đánh giá + quyết định kháng nghị
 export function useSetReviewVisibility() {
   const qc = useQueryClient();
