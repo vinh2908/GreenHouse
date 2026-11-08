@@ -67,7 +67,12 @@ import {
 
 const ADMIN_JOB_STATUS_TRANSITIONS: Record<string, string[]> = {
   [JobStatus.DRAFT]: [JobStatus.OPEN, JobStatus.CANCELLED],
-  [JobStatus.OPEN]: [JobStatus.RECEIVING_QUOTES, JobStatus.CONFIRMED, JobStatus.CANCELLED],
+  [JobStatus.OPEN]: [
+    JobStatus.RECEIVING_QUOTES,
+    JobStatus.QUOTE_SELECTED,
+    JobStatus.CONFIRMED,
+    JobStatus.CANCELLED,
+  ],
   [JobStatus.RECEIVING_QUOTES]: [
     JobStatus.QUOTE_SELECTED,
     JobStatus.CONFIRMED,
@@ -653,21 +658,235 @@ export class AdminService {
     const job = await this.jobModel.findById(jobId).exec();
     if (!job) throw new NotFoundException('Job không tồn tại');
 
+    const contract = await this.contractModel
+      .findOne({ job_id: new Types.ObjectId(jobId) })
+      .exec();
+
+    // F3: Kiểm tra đơn đã hoàn thành và đã giải ngân chưa
+    const isDisbursed = async (jobDoc: JobDocument): Promise<boolean> => {
+      if (!jobDoc.helper_id || !contract) return true;
+      if (jobDoc.payment_method === 'cash') {
+        const commTx = await this.transactionModel
+          .findOne({
+            job_id: jobDoc._id,
+            user_id: jobDoc.helper_id,
+            type: 'commission',
+            status: 'success',
+          })
+          .exec();
+        return Boolean(commTx);
+      } else {
+        const earningTx = await this.transactionModel
+          .findOne({
+            job_id: jobDoc._id,
+            user_id: jobDoc.helper_id,
+            type: 'earning',
+            status: 'success',
+          })
+          .exec();
+        return Boolean(earningTx);
+      }
+    };
+
     if (job.status === status) {
-      return job;
+      if (status === JobStatus.COMPLETED) {
+        const disbursed = await isDisbursed(job);
+        if (disbursed) {
+          return job;
+        }
+        // Chưa giải ngân -> Tiếp tục xuống khối COMPLETED để retry giải ngân
+      } else {
+        return job;
+      }
     }
 
     const currentStatus = String(job.status || '');
-    const allowed = ADMIN_JOB_STATUS_TRANSITIONS[currentStatus] || [];
-    if (!allowed.includes(status)) {
-      throw new BadRequestException(
-        `Không thể chuyển trạng thái từ "${currentStatus}" sang "${status}". Chuyển đổi trạng thái không hợp lệ.`,
-      );
+    if (job.status !== status) {
+      const allowed = ADMIN_JOB_STATUS_TRANSITIONS[currentStatus] || [];
+      if (!allowed.includes(status)) {
+        throw new BadRequestException(
+          `Không thể chuyển trạng thái từ "${currentStatus}" sang "${status}". Chuyển đổi trạng thái không hợp lệ.`,
+        );
+      }
     }
 
+    // F2 & F3: Nhánh COMPLETED
+    if (status === JobStatus.COMPLETED) {
+      const isCash = job.payment_method === 'cash';
+      const isWarranty = !!job.is_warranty;
+
+      // F2: Kiểm tra tiền mặt & UNPAID TRƯỚC LẦN LƯU ĐẦU TIÊN
+      if (contract && job.helper_id) {
+        if (isCash && !isWarranty) {
+          const hasCashConfirmed = job.helper_cash_confirmed === true;
+          let hasRecordedCashTx = false;
+          if (typeof this.paymentsService?.hasRecordedCashPayment === 'function') {
+            hasRecordedCashTx = await this.paymentsService.hasRecordedCashPayment(jobId);
+          }
+          if (!hasCashConfirmed && !hasRecordedCashTx) {
+            throw new BadRequestException(
+              'Thợ chưa xác nhận đã nhận tiền mặt từ khách. Không thể hoàn thành đơn tiền mặt.',
+            );
+          }
+        } else if (!isWarranty && job.payment_status !== PaymentStatus.PAID) {
+          throw new BadRequestException(
+            'Đơn hàng chưa được thanh toán thành công, không thể chuyển sang hoàn thành',
+          );
+        }
+      }
+
+      // F3: Atomic claim để chống 2 admin hoàn thành trùng
+      let claimedJob: JobDocument | null = null;
+      if (job.status !== JobStatus.COMPLETED) {
+        const updateSet: any = {
+          status: JobStatus.COMPLETED,
+          completed_at: new Date(),
+        };
+        // F2: Đơn cash admin hoàn thành khi đã xác nhận nhận tiền thì set payment_status=PAID như luồng khách
+        if (isCash && !isWarranty) {
+          updateSet.payment_status = PaymentStatus.PAID;
+        }
+
+        claimedJob = await this.jobModel
+          .findOneAndUpdate(
+            { _id: job._id, status: job.status },
+            {
+              $set: updateSet,
+              $push: {
+                events: {
+                  status: JobStatus.COMPLETED,
+                  note: note || `Admin can thiệp thủ công: chuyển trạng thái sang ${status}`,
+                  actor_id:
+                    adminId && Types.ObjectId.isValid(adminId)
+                      ? new Types.ObjectId(adminId)
+                      : (job.customer_id as any) || new Types.ObjectId(),
+                  actor_role: 'admin',
+                  timestamp: new Date(),
+                },
+              },
+            },
+            { new: true },
+          )
+          .exec();
+
+        if (!claimedJob) {
+          throw new ConflictException('Công việc đã được cập nhật trạng thái bởi thao tác khác');
+        }
+
+        if (contract) {
+          contract.status = ContractStatus.COMPLETED;
+          contract.completed_at = new Date();
+          await contract.save();
+        }
+      } else {
+        claimedJob = job;
+      }
+
+      // F3: Giải ngân với rollback nếu giải ngân lỗi
+      try {
+        if (contract && claimedJob.helper_id) {
+          if (isCash && !isWarranty) {
+            await this.paymentsService?.deductCommissionForCashJob?.(
+              String(claimedJob.helper_id),
+              jobId,
+              contract.platform_fee,
+              contract.helper_receives,
+            );
+          } else if (isWarranty) {
+            if (contract.helper_receives > 0) {
+              await this.paymentsService?.creditHelper?.(
+                String(claimedJob.helper_id),
+                jobId,
+                contract.helper_receives,
+              );
+            }
+          } else if (claimedJob.payment_status === PaymentStatus.PAID) {
+            const payout = contract.helper_receives;
+            if (payout > 0) {
+              const isSimulated =
+                (await this.paymentsService?.hasSimulatedOnlinePayment?.(jobId)) ?? false;
+              if (isSimulated) {
+                await this.paymentsService?.creditHelperSimulated?.(
+                  String(claimedJob.helper_id),
+                  jobId,
+                  payout,
+                );
+              } else {
+                await this.paymentsService?.creditHelper?.(
+                  String(claimedJob.helper_id),
+                  jobId,
+                  payout,
+                );
+              }
+            }
+          }
+        }
+      } catch (disburseErr: any) {
+        this.logger.error(
+          `F3: Giải ngân lỗi khi admin hoàn thành đơn ${jobId}: ${disburseErr?.message ?? disburseErr}`,
+        );
+        // Rollback nếu đơn vừa được claim sang COMPLETED
+        if (job.status !== JobStatus.COMPLETED) {
+          await this.jobModel
+            .updateOne(
+              { _id: job._id },
+              {
+                $set: {
+                  status: job.status,
+                  payment_status: job.payment_status,
+                  completed_at: job.completed_at,
+                },
+                $pull: {
+                  events: {
+                    note: note || `Admin can thiệp thủ công: chuyển trạng thái sang ${status}`,
+                  },
+                },
+              },
+            )
+            .exec()
+            .catch(rErr => {
+              this.logger.error(
+                `Rollback trạng thái đơn ${jobId} thất bại: ${rErr?.message ?? rErr}`,
+              );
+            });
+          if (contract) {
+            await this.contractModel
+              .updateOne(
+                { _id: contract._id },
+                { $set: { status: contract.status, completed_at: contract.completed_at } },
+              )
+              .exec()
+              .catch(() => undefined);
+          }
+        }
+        throw disburseErr;
+      }
+
+      if (claimedJob.helper_id) {
+        await this.jobsService.setHelperBusy(claimedJob.helper_id, false);
+      }
+      this.jobsService.emitJobStatusChange(claimedJob);
+      this.jobsService.emitJobCompleted(claimedJob);
+      if (!claimedJob.review_reminder_sent) {
+        const hasReviewed = await this.reviewModel.exists({ job_id: claimedJob._id });
+        if (!hasReviewed) {
+          await this.notificationsService
+            .create({
+              userId: String(claimedJob.customer_id),
+              type: NOTIFICATION_TYPES.JOB_COMPLETED,
+              title: '⭐ Đánh giá dịch vụ',
+              body: `Công việc "${claimedJob.title}" đã hoàn thành. Hãy để lại đánh giá cho thợ nhé!`,
+              payload: { job_id: String(claimedJob._id) },
+            })
+            .catch(() => undefined);
+          await this.jobModel.updateOne({ _id: claimedJob._id }, { review_reminder_sent: true });
+        }
+      }
+      return claimedJob;
+    }
+
+    // Các trạng thái khác (CANCELLED, REFUNDED, v.v.)
     job.status = status as any;
-    // F15: admin chuyển đơn sang CANCELLED thì ghi rõ người hủy là admin
-    // để banner phía thợ/khách hiển thị đúng, không gán nhầm thành khách hủy.
     if (status === JobStatus.CANCELLED) {
       if (adminId && Types.ObjectId.isValid(adminId)) {
         job.cancelled_by = new Types.ObjectId(adminId);
@@ -686,61 +905,14 @@ export class AdminService {
     });
     await job.save();
 
-    // 1. Đồng bộ hợp đồng nếu chuyển sang trạng thái kết thúc
-    const contract = await this.contractModel.findOne({ job_id: new Types.ObjectId(jobId) }).exec();
     if (contract) {
-      if (status === JobStatus.COMPLETED) {
-        contract.status = ContractStatus.COMPLETED;
-        contract.completed_at = new Date();
-        await contract.save();
-      } else if (status === JobStatus.CANCELLED || status === JobStatus.REFUNDED) {
+      if (status === JobStatus.CANCELLED || status === JobStatus.REFUNDED) {
         contract.status = ContractStatus.CANCELLED;
         await contract.save();
       }
     }
 
-    // P1-1, P0-4, N3, R2, R3: Di chuyển dòng tiền tương ứng khi Admin chuyển sang COMPLETED / CANCELLED / REFUNDED
-    if (status === JobStatus.COMPLETED) {
-      if (contract && job.helper_id) {
-        if (job.payment_method === 'cash') {
-          // P0-4: Đơn tiền mặt -> bắt buộc thợ đã xác nhận nhận tiền mặt
-          if (!job.helper_cash_confirmed) {
-            throw new BadRequestException(
-              'Thợ chưa xác nhận đã nhận tiền mặt từ khách. Không thể hoàn thành đơn tiền mặt.',
-            );
-          }
-          // Chỉ khấu trừ hoa hồng sàn từ ví thợ, tuyệt đối không creditHelper tiền công cash!
-          await this.paymentsService?.deductCommissionForCashJob?.(
-            String(job.helper_id),
-            jobId,
-            contract.platform_fee,
-            contract.helper_receives,
-          );
-        } else if (job.payment_status === PaymentStatus.PAID) {
-          const payout = contract.helper_receives;
-          if (payout > 0) {
-            const isSimulated =
-              (await this.paymentsService?.hasSimulatedOnlinePayment?.(jobId)) ?? false;
-            if (isSimulated) {
-              await this.paymentsService?.creditHelperSimulated?.(
-                String(job.helper_id),
-                jobId,
-                payout,
-              );
-            } else {
-              await this.paymentsService?.creditHelper?.(String(job.helper_id), jobId, payout);
-            }
-          }
-        } else {
-          // N3: Đơn chưa thanh toán hoặc UNPAID sau phụ lục -> chặn hoàn thành khống
-          throw new BadRequestException(
-            'Đơn hàng chưa được thanh toán thành công, không thể chuyển sang hoàn thành',
-          );
-        }
-      }
-      job.completed_at = new Date();
-      await job.save();
-    } else if (status === JobStatus.CANCELLED || status === JobStatus.REFUNDED) {
+    if (status === JobStatus.CANCELLED || status === JobStatus.REFUNDED) {
       let refundDone = false;
       if (job.payment_status === PaymentStatus.PAID && job.payment_method !== 'cash') {
         const netPaid = computeNetPaidAmount(job, contract?.total_price);
@@ -769,11 +941,11 @@ export class AdminService {
       // R2 & N4: Chỉ đánh dấu REFUNDED nếu tiền thực tế đã được hoàn trả đủ, đơn UNPAID hoặc cash giữ nguyên
       if (refundDone) {
         job.payment_status = PaymentStatus.REFUNDED;
+        await job.save();
       }
-      await job.save();
     }
 
-    // 2. Đồng bộ trạng thái bận của thợ khi chuyển sang trạng thái kết thúc (completed, refunded, cancelled)
+    // Đồng bộ trạng thái bận của thợ khi chuyển sang trạng thái kết thúc (completed, refunded, cancelled)
     if (
       job.helper_id &&
       [JobStatus.COMPLETED, JobStatus.REFUNDED, JobStatus.CANCELLED].includes(status as JobStatus)
@@ -781,7 +953,7 @@ export class AdminService {
       await this.jobsService.setHelperBusy(job.helper_id, false);
     }
 
-    // 3. Gửi tín hiệu realtime
+    // Gửi tín hiệu realtime
     this.jobsService.emitJobStatusChange(job);
     if (status === JobStatus.COMPLETED) {
       this.jobsService.emitJobCompleted(job);
@@ -1356,6 +1528,18 @@ export class AdminService {
       job.estimated_duration,
     );
 
+    // F4 & R-B11: Kiểm tra giá đơn TRƯỚC atomic claim — cấm claim trước rồi mới check giá làm kẹt đơn
+    const agreedPrice = job.is_fixed_price ? job.fixed_price : job.target_price;
+    if (!agreedPrice || agreedPrice <= 0) {
+      throw new BadRequestException(
+        'Đơn chưa có giá chốt hoặc giá dự kiến hợp lệ, không thể gán thợ',
+      );
+    }
+
+    // F4: Đơn sau khi gán ở trạng thái chờ thanh toán (QUOTE_SELECTED) nếu chưa trả, chỉ CONFIRMED khi đã PAID
+    const isPaid = job.payment_status === PaymentStatus.PAID;
+    const targetStatus = isPaid ? JobStatus.CONFIRMED : JobStatus.QUOTE_SELECTED;
+
     // Claim nguyên tử
     const claimed = await this.jobModel
       .findOneAndUpdate(
@@ -1363,7 +1547,7 @@ export class AdminService {
         {
           $set: {
             helper_id: new Types.ObjectId(helperId),
-            status: JobStatus.CONFIRMED,
+            status: targetStatus,
           },
         },
         { new: true },
@@ -1373,13 +1557,6 @@ export class AdminService {
       throw new ConflictException('Đơn hàng đã được nhận hoặc gán bởi thao tác khác');
     }
 
-    // R-B11: Giá đơn thật — cấm bịa giá 200k khi chưa có giá
-    const agreedPrice = job.is_fixed_price ? job.fixed_price : job.target_price;
-    if (!agreedPrice || agreedPrice <= 0) {
-      throw new BadRequestException(
-        'Đơn chưa có giá chốt hoặc giá dự kiến hợp lệ, không thể gán thợ',
-      );
-    }
     const totalPrice = agreedPrice;
     let platformFeeRate: number = PLATFORM_FEE_BY_SERVICE.default;
     if (job.service_id && this.serviceModel) {
@@ -1431,7 +1608,7 @@ export class AdminService {
     }
 
     claimed.events.push({
-      status: JobStatus.CONFIRMED,
+      status: targetStatus,
       note: `Admin gán thợ thủ công ${helperUser?.full_name ?? helperId} qua kết quả ghép Hungarian (Admin ID: ${adminId ?? 'hệ thống'})`,
       actor_id:
         adminId && Types.ObjectId.isValid(adminId)
@@ -1459,7 +1636,10 @@ export class AdminService {
         userId: String(job.customer_id),
         type: NOTIFICATION_TYPES.JOB_CONFIRMED,
         title: 'Đơn hàng đã có thợ phụ trách',
-        body: `Thợ ${helperUser?.full_name ?? ''} đã được chỉ định phụ trách công việc "${job.title}".`,
+        body:
+          targetStatus === JobStatus.QUOTE_SELECTED
+            ? `Thợ ${helperUser?.full_name ?? ''} đã được chỉ định phụ trách công việc "${job.title}". Vui lòng thanh toán để xác nhận đơn hàng.`
+            : `Thợ ${helperUser?.full_name ?? ''} đã được chỉ định phụ trách công việc "${job.title}".`,
         payload: { job_id: jobId, helper_id: helperId },
       })
       .catch(() => undefined);
