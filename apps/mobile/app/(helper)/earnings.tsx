@@ -47,6 +47,7 @@ import {
 import dayjs from 'dayjs';
 import { EarningsReport } from '@/components/helper/earnings-report';
 import { useTranslation } from '@/hooks/use-i18n';
+import { mapServerErrorMessage } from '@/services/i18n';
 
 function renderTxIcon(type: string, size = 20) {
   switch (type) {
@@ -186,9 +187,10 @@ export default function HelperEarningsScreen() {
       setShowWithdraw(false);
       setAmount('');
     } catch (err: any) {
-      const msg =
-        err?.response?.data?.message ||
-        (lang === 'en' ? 'Withdrawal request failed' : 'Yêu cầu rút tiền thất bại');
+      const serverMsg = err?.response?.data?.message || err?.message;
+      const msg = serverMsg
+        ? mapServerErrorMessage(serverMsg, lang)
+        : (lang === 'en' ? 'Withdrawal request failed' : 'Yêu cầu rút tiền thất bại');
       Toast.show({ type: 'error', text1: msg });
     }
   };
@@ -226,8 +228,10 @@ export default function HelperEarningsScreen() {
       await topup.mutateAsync({ amount: amt, payment_method: 'vietqr' });
       setShowTopup(false);
     } catch (err: any) {
-      const msg =
-        err?.response?.data?.message || (lang === 'en' ? 'Top-up failed' : 'Nạp tiền thất bại');
+      const serverMsg = err?.response?.data?.message || err?.message;
+      const msg = serverMsg
+        ? mapServerErrorMessage(serverMsg, lang)
+        : (lang === 'en' ? 'Top-up failed' : 'Nạp tiền thất bại');
       Toast.show({ type: 'error', text1: msg });
     }
   };

@@ -217,6 +217,128 @@ export class NotificationsService {
         translatedTitle = 'Quote Accepted!';
         translatedBody = 'Customer has accepted your quote. Please get ready.';
         break;
+      case 'quote_rejected':
+        translatedTitle = 'Quote Not Selected';
+        translatedBody = 'Customer selected another quote for this job.';
+        break;
+      case 'job_confirmed':
+        translatedTitle = 'Booking Confirmed';
+        translatedBody = 'Your booking has been confirmed.';
+        break;
+      case 'helper_on_the_way':
+        translatedTitle = 'Helper On The Way';
+        translatedBody = 'The helper is heading to your location.';
+        break;
+      case 'helper_arrived':
+        translatedTitle = 'Helper Arrived';
+        translatedBody = 'The helper has arrived at your location.';
+        break;
+      case 'job_started':
+      case 'in_progress':
+        translatedTitle = 'Work In Progress';
+        translatedBody = 'The helper has started working on the job.';
+        break;
+      case 'job_expired':
+        translatedTitle = 'Job Request Expired';
+        translatedBody = 'Your job request has expired with no quotes selected.';
+        break;
+      case 'job_expiring_soon':
+        translatedTitle = 'Job Expiring Soon';
+        translatedBody = 'Your job request is expiring soon. Please review quotes.';
+        break;
+      case 'withdrawal_processed':
+        translatedTitle = 'Withdrawal Processed';
+        translatedBody = 'Your withdrawal request has been processed.';
+        break;
+      case 'review_received':
+        translatedTitle = 'New Review Received';
+        translatedBody = 'A new review and rating has been submitted.';
+        break;
+      case 'loyalty_points_earned':
+        translatedTitle = 'Loyalty Points Earned';
+        translatedBody = 'You have earned loyalty reward points.';
+        break;
+      case 'voucher_restored':
+        translatedTitle = 'Voucher & Points Restored';
+        translatedBody = 'Your voucher and reward points have been restored to your account.';
+        break;
+      case 'voucher_expiring_soon':
+        translatedTitle = 'Voucher Expiring Soon';
+        translatedBody = 'One of your promotional vouchers is expiring soon. Use it now!';
+        break;
+      case 'review_appeal':
+        translatedTitle = 'Review Appeal Notice';
+        translatedBody = 'A review appeal is being processed by administration.';
+        break;
+      case 'new_message':
+        translatedTitle = 'New Message';
+        translatedBody = 'You have received a new chat message.';
+        break;
+      case 'promotion':
+        translatedTitle = 'Special Promotion';
+        translatedBody = 'Check out exclusive offers and deals in Green House!';
+        break;
+      case 'support_reply':
+        translatedTitle = 'Support Reply';
+        translatedBody = 'Customer support has replied to your request.';
+        break;
+      case 'monthly_contract_new':
+        translatedTitle = 'New Monthly Contract';
+        translatedBody = 'You received a new monthly service contract offer.';
+        break;
+      case 'monthly_contract_accepted':
+        translatedTitle = 'Monthly Contract Accepted';
+        translatedBody = 'The monthly service contract has been accepted and activated.';
+        break;
+      case 'monthly_contract_rejected':
+        translatedTitle = 'Monthly Contract Declined';
+        translatedBody = 'The monthly contract offer was declined.';
+        break;
+      case 'monthly_contract_cancelled':
+        translatedTitle = 'Monthly Contract Cancelled';
+        translatedBody = 'The monthly service contract has been cancelled.';
+        break;
+      case 'monthly_contract_ended':
+        translatedTitle = 'Monthly Contract Ended';
+        translatedBody = 'The monthly contract term has concluded.';
+        break;
+      case 'monthly_contract_checkin':
+        translatedTitle = 'Shift Check-in Recorded';
+        translatedBody = 'Helper has checked in for the scheduled shift.';
+        break;
+      case 'monthly_contract_attendance':
+        translatedTitle = 'Attendance Update';
+        translatedBody = 'Attendance for your monthly contract has been updated.';
+        break;
+      case 'monthly_contract_leave_request':
+        translatedTitle = 'Leave Request';
+        translatedBody = 'A leave request was submitted for this contract.';
+        break;
+      case 'monthly_contract_settled':
+        translatedTitle = 'Monthly Salary Settled';
+        translatedBody = 'Monthly salary and contract settlement has been completed.';
+        break;
+      case 'sos_broadcast':
+      case 'sos_request':
+        translatedTitle = 'Emergency SOS Alert Nearby!';
+        translatedBody = 'An urgent emergency assistance request is nearby.';
+        break;
+      case 'sos_accepted':
+        translatedTitle = 'SOS Request Accepted';
+        translatedBody = 'A helper has accepted the emergency SOS request and is on the way.';
+        break;
+      case 'sos_completed':
+        translatedTitle = 'SOS Request Completed';
+        translatedBody = 'The emergency SOS assistance has been completed.';
+        break;
+      case 'sos_cancelled':
+        translatedTitle = 'SOS Request Cancelled';
+        translatedBody = 'The emergency SOS request has been cancelled.';
+        break;
+      case 'admin_penalty':
+        translatedTitle = 'Policy Notice';
+        translatedBody = 'An administrative policy notice was recorded on your account.';
+        break;
       case 'job_completed':
         if (/đánh giá/i.test(title) || data?.action === 'review') {
           translatedTitle = 'Please Review Service';
@@ -261,6 +383,11 @@ export class NotificationsService {
       default:
         if (/cứu hộ|sos/i.test(title)) {
           translatedTitle = 'Emergency SOS Request Nearby!';
+          translatedBody = 'Urgent emergency assistance is requested.';
+        } else if (/[à-ỹÀ-ỸđĐ]/.test(title)) {
+          // G9: Fallback sang tiếng Anh cho bất kỳ loại thông báo nào chưa liệt kê
+          translatedTitle = 'Green House Notification';
+          translatedBody = 'You have a new update. Tap to open the app.';
         }
         break;
     }

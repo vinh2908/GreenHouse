@@ -973,6 +973,14 @@ export class AdminService {
         }
       }
     } else if (status === JobStatus.CANCELLED) {
+      // G5: Admin hủy đơn thì khôi phục voucher + điểm giống hệt cancelJob
+      if (this.jobsService && typeof this.jobsService.restoreJobBenefitsOnCancel === 'function') {
+        await this.jobsService.restoreJobBenefitsOnCancel(job).catch(err => {
+          this.logger.error(
+            `G5: Lỗi khôi phục voucher/điểm khi admin hủy đơn ${jobId}: ${err?.message ?? err}`,
+          );
+        });
+      }
       this.jobsService.emitJobCancelled(job, note);
     }
 

@@ -6,6 +6,8 @@ import relativeTime from 'dayjs/plugin/relativeTime';
 import 'dayjs/locale/vi';
 import 'dayjs/locale/en';
 
+declare const __DEV__: boolean | undefined;
+
 dayjs.extend(relativeTime);
 
 export function syncDayjsLocale(lang: AppLanguage) {
@@ -1899,7 +1901,7 @@ export const SERVER_ERROR_EN_MAP: Record<string, string> = {
 
 export function mapServerErrorMessage(rawMessage: unknown, lang: AppLanguage = 'vi'): string {
   if (typeof rawMessage !== 'string' || !rawMessage) {
-    return lang === 'en' ? 'An error occurred' : 'Có lỗi xảy ra';
+    return lang === 'en' ? 'Something went wrong, please try again' : 'Có lỗi xảy ra';
   }
   const trimmed = rawMessage.trim();
   if (lang !== 'en') return trimmed;
@@ -1909,7 +1911,11 @@ export function mapServerErrorMessage(rawMessage: unknown, lang: AppLanguage = '
   }
 
   if (/tối thiểu/i.test(trimmed) && /rút/i.test(trimmed)) {
-    return 'Minimum withdrawal amount is 50,000₫';
+    const amountMatch = trimmed.match(/(\d+[\d.,]*\s*(?:₫|đ|VND)?)/i);
+    if (amountMatch) {
+      return `Minimum withdrawal amount is ${amountMatch[1].trim()}`;
+    }
+    return 'Minimum withdrawal amount required';
   }
   if (/không đủ/i.test(trimmed) && /số dư/i.test(trimmed)) {
     return 'Insufficient wallet balance';
@@ -1921,7 +1927,8 @@ export function mapServerErrorMessage(rawMessage: unknown, lang: AppLanguage = '
     return 'Session expired, please log in again';
   }
 
-  return trimmed;
+  // G6: Lỗi server chưa map ở chế độ tiếng Anh -> fallback chung thay vì trả nguyên tiếng Việt
+  return 'Something went wrong, please try again';
 }
 
 // ─── Service Catalog Name Translation (Điểm 3) ───────────────────────────────

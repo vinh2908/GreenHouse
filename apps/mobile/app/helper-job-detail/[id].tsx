@@ -70,6 +70,7 @@ import {
 } from '@/hooks/use-api';
 import { useAuthStore } from '@/stores/auth.store';
 import { useTranslation } from '@/hooks/use-i18n';
+import { mapServerErrorMessage } from '@/services/i18n';
 import {
   Button,
   Card,
@@ -145,44 +146,23 @@ export default function HelperJobDetailScreen() {
     return { latitude: gps.lat, longitude: gps.lng };
   }, [gps?.lat, gps?.lng]);
 
-  // B7 + D-ETA: Thống nhất khoảng cách và ETA: ưu tiên metrics từ routing server / live map
+  // B7, D-ETA, G2, G3: Thống nhất khoảng cách và ETA: ưu tiên metrics từ routing server / live map
   const effectiveMetrics = useMemo(() => {
     if (routeMetrics) return routeMetrics;
-    if ((job as any)?.distance_km != null && (job as any)?.estimated_minutes != null) {
+    const etaMins = (job as any)?.estimated_minutes ?? (job as any)?.estimated_travel_minutes;
+    if ((job as any)?.distance_km != null && etaMins != null) {
       return {
         distanceKm: (job as any).distance_km,
-        etaMinutes: (job as any).estimated_minutes,
+        etaMinutes: etaMins,
       };
     }
-    const destCoords = job?.address?.location?.coordinates;
-    if (!destCoords || !Array.isArray(destCoords) || destCoords.length < 2) return null;
-    const destLat = destCoords[1];
-    const destLng = destCoords[0];
-    if (!destLat || !destLng) return null;
-
-    const myLat = gps?.lat ?? helperProfile?.location?.coordinates?.[1];
-    const myLng = gps?.lng ?? helperProfile?.location?.coordinates?.[0];
-    if (!myLat || !myLng) return null;
-
-    const rad = Math.PI / 180;
-    const dLat = (destLat - myLat) * rad;
-    const dLng = (destLng - myLng) * rad;
-    const a =
-      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos(myLat * rad) * Math.cos(destLat * rad) * Math.sin(dLng / 2) * Math.sin(dLng / 2);
-    const distKm = 6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    const etaMins = Math.max(1, Math.round((distKm / 25) * 60));
-    return {
-      distanceKm: Math.round(distKm * 10) / 10,
-      etaMinutes: etaMins,
-    };
+    // G3: Bỏ fallback haversine phía client ở màn chi tiết (không tự tính đường thẳng 25km/h khi server thiếu số liệu)
+    return null;
   }, [
     routeMetrics,
     (job as any)?.distance_km,
     (job as any)?.estimated_minutes,
-    job?.address?.location?.coordinates,
-    gps,
-    helperProfile?.location?.coordinates,
+    (job as any)?.estimated_travel_minutes,
   ]);
 
   const submitQuote = useSubmitQuote();
@@ -394,9 +374,8 @@ export default function HelperJobDetailScreen() {
       });
       setShowQuoteModal(false);
     } catch (err: unknown) {
-      const msg =
-        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-        t('helper_job.quote_fail');
+      const serverMsg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      const msg = serverMsg ? mapServerErrorMessage(serverMsg, lang) : t('helper_job.quote_fail');
       Toast.show({ type: 'error', text1: msg });
     }
   };
@@ -415,7 +394,8 @@ export default function HelperJobDetailScreen() {
     try {
       await acceptFixed.mutateAsync(id!);
     } catch (err: any) {
-      const msg = err?.response?.data?.message || t('helper_job.accept_fail');
+      const serverMsg = err?.response?.data?.message || err?.message;
+      const msg = serverMsg ? mapServerErrorMessage(serverMsg, lang) : t('helper_job.accept_fail');
       Toast.show({ type: 'error', text1: msg });
     }
   };
@@ -436,7 +416,8 @@ export default function HelperJobDetailScreen() {
             });
             router.back();
           } catch (err: any) {
-            const msg = err?.response?.data?.message || err?.message || t('helper_job.reject_fail');
+            const serverMsg = err?.response?.data?.message || err?.message;
+            const msg = serverMsg ? mapServerErrorMessage(serverMsg, lang) : t('helper_job.reject_fail');
             Toast.show({ type: 'error', text1: msg });
           }
         },
@@ -477,12 +458,11 @@ export default function HelperJobDetailScreen() {
         text1: lang === 'en' ? 'Job cancelled' : 'Đã hủy đơn hàng thành công',
       });
     } catch (err: any) {
-      Alert.alert(
-        t('common_error'),
-        err?.response?.data?.message ||
-          err?.message ||
-          (lang === 'en' ? 'Failed to cancel job' : 'Không thể hủy đơn hàng'),
-      );
+      const serverMsg = err?.response?.data?.message || err?.message;
+      const msg = serverMsg
+        ? mapServerErrorMessage(serverMsg, lang)
+        : (lang === 'en' ? 'Failed to cancel job' : 'Không thể hủy đơn hàng');
+      Alert.alert(t('common_error'), msg);
     }
   };
 
@@ -515,7 +495,8 @@ export default function HelperJobDetailScreen() {
       setAmendMaterialsCost('');
       setAmendReason('');
     } catch (err: any) {
-      const msg = err?.response?.data?.message || t('helper_job.amendment_submit_fail');
+      const serverMsg = err?.response?.data?.message || err?.message;
+      const msg = serverMsg ? mapServerErrorMessage(serverMsg, lang) : t('helper_job.amendment_submit_fail');
       Toast.show({ type: 'error', text1: msg });
     }
   };
@@ -643,8 +624,10 @@ export default function HelperJobDetailScreen() {
           });
           setShowCompleteModal(false);
         } catch (err: any) {
-          const m =
-            err?.response?.data?.message || (lang === 'en' ? 'Update failed' : 'Cập nhật thất bại');
+          const serverMsg = err?.response?.data?.message || err?.message;
+          const m = serverMsg
+            ? mapServerErrorMessage(serverMsg, lang)
+            : (lang === 'en' ? 'Update failed' : 'Cập nhật thất bại');
           Toast.show({ type: 'error', text1: m });
         }
       };
@@ -665,8 +648,10 @@ export default function HelperJobDetailScreen() {
       });
       setShowCompleteModal(false);
     } catch (err: any) {
-      const msg =
-        err?.response?.data?.message || (lang === 'en' ? 'Update failed' : 'Cập nhật thất bại');
+      const serverMsg = err?.response?.data?.message || err?.message;
+      const msg = serverMsg
+        ? mapServerErrorMessage(serverMsg, lang)
+        : (lang === 'en' ? 'Update failed' : 'Cập nhật thất bại');
       Toast.show({ type: 'error', text1: msg });
     }
   };
@@ -696,9 +681,10 @@ export default function HelperJobDetailScreen() {
             Toast.show({ type: 'success', text1: t('helper_job.step_working_toast') });
         }
       } catch (err: any) {
-        const msg =
-          err?.response?.data?.message ||
-          (lang === 'en' ? 'Progress update failed' : 'Cập nhật tiến trình thất bại');
+        const serverMsg = err?.response?.data?.message || err?.message;
+        const msg = serverMsg
+          ? mapServerErrorMessage(serverMsg, lang)
+          : (lang === 'en' ? 'Progress update failed' : 'Cập nhật tiến trình thất bại');
         Toast.show({ type: 'error', text1: msg });
       }
     };
@@ -970,7 +956,7 @@ export default function HelperJobDetailScreen() {
               >
                 {formatDisplayAddress(job.address)}
               </Text>
-              {effectiveMetrics && (
+              {effectiveMetrics ? (
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 }}>
                   <Navigation size={14} color={COLORS.primary} />
                   <Text style={{ fontSize: fs(13), color: COLORS.primary, fontWeight: '700' }}>
@@ -979,7 +965,26 @@ export default function HelperJobDetailScreen() {
                       : `Khoảng cách: ~${effectiveMetrics.distanceKm.toFixed(1)} km · ETA ước tính: ~${effectiveMetrics.etaMinutes} phút`}
                   </Text>
                 </View>
-              )}
+              ) : (job as any)?.routing_error ? (
+                <TouchableOpacity
+                  onPress={() => refetchJob()}
+                  style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 }}
+                >
+                  <AlertCircle size={14} color={COLORS.error || '#ef4444'} />
+                  <Text
+                    style={{
+                      fontSize: fs(13),
+                      color: COLORS.error || '#ef4444',
+                      fontWeight: '600',
+                      textDecorationLine: 'underline',
+                    }}
+                  >
+                    {lang === 'en'
+                      ? 'Route error · Tap to retry'
+                      : 'Không lấy được tuyến đường · Bấm thử lại'}
+                  </Text>
+                </TouchableOpacity>
+              ) : null}
             </View>
           </View>
         </Card>

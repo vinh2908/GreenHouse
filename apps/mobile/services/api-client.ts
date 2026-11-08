@@ -4,6 +4,7 @@ import Constants from 'expo-constants';
 import Toast from 'react-native-toast-message';
 import { usableEndpoint } from '@/services/endpoint-config';
 import { useSettingsStore } from '@/stores/settings.store';
+import { mapServerErrorMessage } from '@/services/i18n';
 
 const getBaseApiUrl = () => {
   // 1. URL cố định (tunnel / server thật): đặt EXPO_PUBLIC_API_URL trong apps/mobile/.env.
@@ -239,6 +240,16 @@ apiClient.interceptors.response.use(
 
     // ── 2. Xử lý lỗi mất kết nối mạng / Timeout / Server lỗi ─────────────────
     const lang = useSettingsStore.getState().language;
+    // G6: Tự động dịch lỗi máy chủ nếu client đang ở chế độ tiếng Anh cho mọi catch site
+    if (error.response?.data?.message) {
+      if (typeof error.response.data.message === 'string') {
+        error.response.data.message = mapServerErrorMessage(error.response.data.message, lang);
+      } else if (Array.isArray(error.response.data.message)) {
+        error.response.data.message = error.response.data.message.map((m: unknown) =>
+          typeof m === 'string' ? mapServerErrorMessage(m, lang) : String(m),
+        );
+      }
+    }
     const now = Date.now();
     if (!error.response) {
       if (now - lastNetworkToastTime > TOAST_THROTTLE_MS) {

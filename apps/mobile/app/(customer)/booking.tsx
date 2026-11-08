@@ -2579,7 +2579,7 @@ export default function BookingScreen() {
                   label={t('common_service')}
                   value={
                     selectedService === 'custom' || !selectedServiceData
-                      ? customServiceName.trim() || t('booking_custom_service_title')
+                      ? customServiceName.trim() || t('svc_custom')
                       : tService(selectedServiceData) || customServiceName.trim() || '—'
                   }
                 />
