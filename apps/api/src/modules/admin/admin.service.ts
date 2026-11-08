@@ -658,9 +658,7 @@ export class AdminService {
     const job = await this.jobModel.findById(jobId).exec();
     if (!job) throw new NotFoundException('Job không tồn tại');
 
-    const contract = await this.contractModel
-      .findOne({ job_id: new Types.ObjectId(jobId) })
-      .exec();
+    const contract = await this.contractModel.findOne({ job_id: new Types.ObjectId(jobId) }).exec();
 
     // F3: Kiểm tra đơn đã hoàn thành và đã giải ngân chưa
     const isDisbursed = async (jobDoc: JobDocument): Promise<boolean> => {

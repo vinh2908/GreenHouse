@@ -931,7 +931,7 @@ export class MonthlyContractsService {
       status: 'settled' as const,
       settled_at: settlement.settled_at,
       settlement_id: String(settlement._id),
-      payment_mode: isCashDirect ? 'cash_direct' : (dto.payment_mode || 'wallet'),
+      payment_mode: isCashDirect ? 'cash_direct' : dto.payment_mode || 'wallet',
       note: isCashDirect ? 'Trả ngoài hệ thống, không cộng ví' : undefined,
     };
   }
