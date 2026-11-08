@@ -17,9 +17,9 @@ describe('ĐỢT 2 (P1) — G1–G9 Regression & Correctness Specs', () => {
       globalThis.fetch = jest.fn().mockRejectedValue(new Error('Goong 500 Server Error'));
 
       try {
-        await expect(
-          routingService.getRoute(16.054, 108.202, 16.07, 108.22),
-        ).rejects.toThrow('Goong 500 Server Error');
+        await expect(routingService.getRoute(16.054, 108.202, 16.07, 108.22)).rejects.toThrow(
+          'Goong 500 Server Error',
+        );
       } finally {
         globalThis.fetch = originalFetch;
       }
@@ -91,7 +91,10 @@ describe('ĐỢT 2 (P1) — G1–G9 Regression & Correctness Specs', () => {
       mockJob.events.push({ status, note: 'Admin hủy' });
       await mockJob.save();
 
-      if (adminService.jobsService && typeof adminService.jobsService.restoreJobBenefitsOnCancel === 'function') {
+      if (
+        adminService.jobsService &&
+        typeof adminService.jobsService.restoreJobBenefitsOnCancel === 'function'
+      ) {
         await adminService.jobsService.restoreJobBenefitsOnCancel(mockJob);
       }
 
@@ -107,7 +110,10 @@ describe('ĐỢT 2 (P1) — G1–G9 Regression & Correctness Specs', () => {
     beforeAll(() => {
       const fs = require('fs');
       const path = require('path');
-      const i18nContent = fs.readFileSync(path.resolve(__dirname, '../../../../mobile/services/i18n.ts'), 'utf8');
+      const i18nContent = fs.readFileSync(
+        path.resolve(__dirname, '../../../../mobile/services/i18n.ts'),
+        'utf8',
+      );
       const mapMatch = i18nContent.match(/const SERVER_ERROR_EN_MAP[\s\S]*?\n\};/);
       const fnMatch = i18nContent.match(/export function mapServerErrorMessage\([\s\S]*?\n\}/);
       const cleanedMap = mapMatch![0].replace(/: Record<string, string>/, '');
@@ -115,7 +121,9 @@ describe('ĐỢT 2 (P1) — G1–G9 Regression & Correctness Specs', () => {
         "export function mapServerErrorMessage(rawMessage: unknown, lang: AppLanguage = 'vi'): string",
         'function mapServerErrorMessage(rawMessage, lang = "vi")',
       );
-      mapServerErrorMessage = new Function(`${cleanedMap}\n${cleanedFn}\nreturn mapServerErrorMessage;`)();
+      mapServerErrorMessage = new Function(
+        `${cleanedMap}\n${cleanedFn}\nreturn mapServerErrorMessage;`,
+      )();
     });
 
     it('ở chế độ tiếng Anh (en), lỗi server chưa map fallback về "Something went wrong, please try again"', () => {
@@ -141,7 +149,9 @@ describe('ĐỢT 2 (P1) — G1–G9 Regression & Correctness Specs', () => {
 
     it('giữ nguyên các ánh xạ lỗi phổ biến đã có', () => {
       expect(mapServerErrorMessage('Không đủ số dư ví', 'en')).toBe('Insufficient wallet balance');
-      expect(mapServerErrorMessage('Đơn hàng này đã có thợ', 'en')).toBe('This job has already been taken');
+      expect(mapServerErrorMessage('Đơn hàng này đã có thợ', 'en')).toBe(
+        'This job has already been taken',
+      );
     });
   });
 

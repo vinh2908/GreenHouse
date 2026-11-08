@@ -190,7 +190,9 @@ export default function HelperEarningsScreen() {
       const serverMsg = err?.response?.data?.message || err?.message;
       const msg = serverMsg
         ? mapServerErrorMessage(serverMsg, lang)
-        : (lang === 'en' ? 'Withdrawal request failed' : 'Yêu cầu rút tiền thất bại');
+        : lang === 'en'
+          ? 'Withdrawal request failed'
+          : 'Yêu cầu rút tiền thất bại';
       Toast.show({ type: 'error', text1: msg });
     }
   };
@@ -231,7 +233,9 @@ export default function HelperEarningsScreen() {
       const serverMsg = err?.response?.data?.message || err?.message;
       const msg = serverMsg
         ? mapServerErrorMessage(serverMsg, lang)
-        : (lang === 'en' ? 'Top-up failed' : 'Nạp tiền thất bại');
+        : lang === 'en'
+          ? 'Top-up failed'
+          : 'Nạp tiền thất bại';
       Toast.show({ type: 'error', text1: msg });
     }
   };

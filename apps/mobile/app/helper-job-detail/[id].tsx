@@ -374,7 +374,8 @@ export default function HelperJobDetailScreen() {
       });
       setShowQuoteModal(false);
     } catch (err: unknown) {
-      const serverMsg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      const serverMsg = (err as { response?: { data?: { message?: string } } })?.response?.data
+        ?.message;
       const msg = serverMsg ? mapServerErrorMessage(serverMsg, lang) : t('helper_job.quote_fail');
       Toast.show({ type: 'error', text1: msg });
     }
@@ -417,7 +418,9 @@ export default function HelperJobDetailScreen() {
             router.back();
           } catch (err: any) {
             const serverMsg = err?.response?.data?.message || err?.message;
-            const msg = serverMsg ? mapServerErrorMessage(serverMsg, lang) : t('helper_job.reject_fail');
+            const msg = serverMsg
+              ? mapServerErrorMessage(serverMsg, lang)
+              : t('helper_job.reject_fail');
             Toast.show({ type: 'error', text1: msg });
           }
         },
@@ -461,7 +464,9 @@ export default function HelperJobDetailScreen() {
       const serverMsg = err?.response?.data?.message || err?.message;
       const msg = serverMsg
         ? mapServerErrorMessage(serverMsg, lang)
-        : (lang === 'en' ? 'Failed to cancel job' : 'Không thể hủy đơn hàng');
+        : lang === 'en'
+          ? 'Failed to cancel job'
+          : 'Không thể hủy đơn hàng';
       Alert.alert(t('common_error'), msg);
     }
   };
@@ -496,7 +501,9 @@ export default function HelperJobDetailScreen() {
       setAmendReason('');
     } catch (err: any) {
       const serverMsg = err?.response?.data?.message || err?.message;
-      const msg = serverMsg ? mapServerErrorMessage(serverMsg, lang) : t('helper_job.amendment_submit_fail');
+      const msg = serverMsg
+        ? mapServerErrorMessage(serverMsg, lang)
+        : t('helper_job.amendment_submit_fail');
       Toast.show({ type: 'error', text1: msg });
     }
   };
@@ -627,7 +634,9 @@ export default function HelperJobDetailScreen() {
           const serverMsg = err?.response?.data?.message || err?.message;
           const m = serverMsg
             ? mapServerErrorMessage(serverMsg, lang)
-            : (lang === 'en' ? 'Update failed' : 'Cập nhật thất bại');
+            : lang === 'en'
+              ? 'Update failed'
+              : 'Cập nhật thất bại';
           Toast.show({ type: 'error', text1: m });
         }
       };
@@ -651,7 +660,9 @@ export default function HelperJobDetailScreen() {
       const serverMsg = err?.response?.data?.message || err?.message;
       const msg = serverMsg
         ? mapServerErrorMessage(serverMsg, lang)
-        : (lang === 'en' ? 'Update failed' : 'Cập nhật thất bại');
+        : lang === 'en'
+          ? 'Update failed'
+          : 'Cập nhật thất bại';
       Toast.show({ type: 'error', text1: msg });
     }
   };
@@ -684,7 +695,9 @@ export default function HelperJobDetailScreen() {
         const serverMsg = err?.response?.data?.message || err?.message;
         const msg = serverMsg
           ? mapServerErrorMessage(serverMsg, lang)
-          : (lang === 'en' ? 'Progress update failed' : 'Cập nhật tiến trình thất bại');
+          : lang === 'en'
+            ? 'Progress update failed'
+            : 'Cập nhật tiến trình thất bại';
         Toast.show({ type: 'error', text1: msg });
       }
     };
