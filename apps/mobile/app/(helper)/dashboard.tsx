@@ -28,6 +28,7 @@ import {
 } from 'lucide-react-native';
 import { WalletBalanceDisplay } from '@/components/common/wallet-balance-display';
 import { formatRelativeTime } from '@/utils/date-format';
+import { formatCurrency } from '@/services/i18n';
 import { Alert } from '@/components/common/app-alert';
 import { useAuthStore } from '@/stores/auth.store';
 import {
@@ -170,9 +171,7 @@ export default function HelperDashboardScreen() {
         text2: t('helper_dash_sos_body', {
           title: data.title ?? '',
           district: data.district ?? '',
-          surcharge: new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'vi-VN').format(
-            data.surcharge ?? 0,
-          ),
+          surcharge: formatCurrency(data.surcharge ?? 0, lang),
         }),
         visibilityTime: 10000,
       });

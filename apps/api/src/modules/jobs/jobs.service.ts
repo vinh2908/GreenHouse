@@ -2307,6 +2307,25 @@ export class JobsService implements OnModuleInit {
       }
     }
 
+    // P8(b): Atomic guard chống race condition giữa submitQuote và cancelJob:
+    // Nếu đơn hàng đã bị chuyển sang CANCELLED trong lúc đang tạo quote,
+    // lập tức chuyển trạng thái quote vừa tạo sang REJECTED để không tồn tại quote pending trên đơn đã huỷ.
+    const latestJobQuery = this.jobModel.findById(jobId) as any;
+    const latestJobStatus =
+      typeof latestJobQuery?.select === 'function'
+        ? await latestJobQuery.select('status').lean().exec()
+        : typeof latestJobQuery?.exec === 'function'
+          ? await latestJobQuery.exec()
+          : await latestJobQuery;
+    if (latestJobStatus?.status === JobStatus.CANCELLED) {
+      if (typeof this.quoteModel?.updateOne === 'function') {
+        await this.quoteModel.updateOne(
+          { _id: quote._id, status: QuoteStatus.PENDING },
+          { $set: { status: QuoteStatus.REJECTED } },
+        );
+      }
+    }
+
     await this.syncJobQuotesState(jobId);
 
     await this.helperModel
@@ -4177,6 +4196,14 @@ export class JobsService implements OnModuleInit {
     }
     await job.save();
 
+    // P8(b): Quét dọn nguyên tử lần 2 mọi báo giá PENDING vừa được tạo trong lúc huỷ đơn
+    await this.quoteModel
+      .updateMany(
+        { job_id: new Types.ObjectId(jobId), status: QuoteStatus.PENDING },
+        { $set: { status: QuoteStatus.REJECTED } },
+      )
+      .exec();
+
     // A25 & F7 & P1-2 & N4: Tự động hoàn tiền vào ví khách khi huỷ đơn nếu đơn đã thanh toán điện tử
     if (netPaid > 0) {
       let refundedSoFar = 0;
@@ -4570,6 +4597,7 @@ export class JobsService implements OnModuleInit {
 
     let pagedJobs: JobDocument[] = [];
     let total = rawTotalCount;
+    let geoNearSucceeded = false;
 
     // G4 & J1: Phân trang tầng DB khi không có tọa độ thợ và không lọc availability
     if (
@@ -4585,7 +4613,6 @@ export class JobsService implements OnModuleInit {
         .exec();
     } else {
       // M1 & N2: Khi có tọa độ thợ và không lọc availability, dùng $geoNear có bù đơn không có tọa độ ở cuối trang
-      let geoNearSucceeded = false;
       if (
         !availabilityFiltered &&
         helperCoords &&
@@ -4722,13 +4749,17 @@ export class JobsService implements OnModuleInit {
         // M1 & J2: Giới hạn an toàn MAX_FEED_SORT_CANDIDATES khi cần sort khoảng cách hoặc lọc availability trong RAM
         // Tránh failure mode D-TIME load hết đơn OPEN vào RAM ở quy mô lớn
         if (availabilityFiltered && rawTotalCount > MAX_FEED_SORT_CANDIDATES) {
-          // O3: Khi thợ bật bộ lọc thời gian rảnh và tổng số đơn > 200, quét lean các đơn OPEN để lấy đúng danh sách ID khớp lịch,
-          // hỗ trợ phân trang sâu mà không trả rỗng ở các trang > 200 đơn và không phình RAM
-          const leanCandidates = await this.jobModel
+          // O3 & P7(b): Khi thợ bật bộ lọc thời gian rảnh và tổng số đơn > 200, quét lean các đơn OPEN để lấy đúng danh sách ID khớp lịch,
+          // hỗ trợ phân trang sâu mà không trả rỗng ở các trang > 200 đơn và không phình RAM.
+          // P7(b): Thêm sort({ created_at: -1 }) để khi không có GPS thì thứ tự trang sâu luôn xếp đơn mới nhất lên đầu.
+          const leanQuery = this.jobModel
             .find(query)
-            .select('preferred_date preferred_time_start address.location')
-            .lean()
-            .exec();
+            .select('preferred_date preferred_time_start address.location created_at');
+          const sortedQuery =
+            typeof (leanQuery as any)?.sort === 'function'
+              ? (leanQuery as any).sort({ created_at: -1 })
+              : leanQuery;
+          const leanCandidates = await sortedQuery.lean().exec();
 
           const matchingCandidates = (leanCandidates || []).filter(job =>
             this.isAvailableForDate(
@@ -4777,42 +4808,49 @@ export class JobsService implements OnModuleInit {
             pagedJobs = [];
           }
         } else {
-          const candidateJobs = await this.jobModel
-            .find(query)
-            .populate('service_id', 'name slug icon')
-            .sort({ created_at: -1 })
-            .limit(MAX_FEED_SORT_CANDIDATES)
-            .exec();
-
-          const visibleJobs = availabilityFiltered
-            ? candidateJobs.filter(job =>
-                this.isAvailableForDate(
-                  helperProfile?.availability,
-                  job.preferred_date ?? undefined,
-                  job.preferred_time_start,
-                ),
-              )
-            : candidateJobs;
-
-          if (helperCoords && Array.isArray(helperCoords) && helperCoords.length >= 2) {
-            visibleJobs.sort((a, b) => {
-              const coordsA = a.address?.location?.coordinates;
-              const coordsB = b.address?.location?.coordinates;
-              const distA =
-                coordsA && coordsA.length >= 2
-                  ? this.haversineKm(helperCoords[1], helperCoords[0], coordsA[1], coordsA[0])
-                  : 9999;
-              const distB =
-                coordsB && coordsB.length >= 2
-                  ? this.haversineKm(helperCoords[1], helperCoords[0], coordsB[1], coordsB[0])
-                  : 9999;
-              return distA - distB;
-            });
-          }
-
-          total = availabilityFiltered ? visibleJobs.length : rawTotalCount;
+          // P7(c): Phân trang ở nhánh không-availability khi không dùng được $geoNear
           const skip = (safePage - 1) * safeLimit;
-          pagedJobs = visibleJobs.slice(skip, skip + safeLimit);
+          total = rawTotalCount;
+
+          if (skip >= MAX_FEED_SORT_CANDIDATES) {
+            // Khi phân trang sâu vượt quá MAX_FEED_SORT_CANDIDATES (200 đơn):
+            // Truy vấn trực tiếp từ MongoDB theo sort { created_at: -1 } với skip & limit để các trang sâu
+            // không bị trả về mảng rỗng [] trong khi total/total_pages vẫn báo còn dữ liệu.
+            pagedJobs = await this.jobModel
+              .find(query)
+              .populate('service_id', 'name slug icon')
+              .sort({ created_at: -1 })
+              .skip(skip)
+              .limit(safeLimit)
+              .exec();
+          } else {
+            const candidateJobs = await this.jobModel
+              .find(query)
+              .populate('service_id', 'name slug icon')
+              .sort({ created_at: -1 })
+              .limit(MAX_FEED_SORT_CANDIDATES)
+              .exec();
+
+            const visibleJobs = candidateJobs;
+
+            if (helperCoords && Array.isArray(helperCoords) && helperCoords.length >= 2) {
+              visibleJobs.sort((a, b) => {
+                const coordsA = a.address?.location?.coordinates;
+                const coordsB = b.address?.location?.coordinates;
+                const distA =
+                  coordsA && coordsA.length >= 2
+                    ? this.haversineKm(helperCoords[1], helperCoords[0], coordsA[1], coordsA[0])
+                    : 9999;
+                const distB =
+                  coordsB && coordsB.length >= 2
+                    ? this.haversineKm(helperCoords[1], helperCoords[0], coordsB[1], coordsB[0])
+                    : 9999;
+                return distA - distB;
+              });
+            }
+
+            pagedJobs = visibleJobs.slice(skip, skip + safeLimit);
+          }
         }
       }
     }
@@ -4875,6 +4913,12 @@ export class JobsService implements OnModuleInit {
       }
     }
 
+    const capApplies =
+      !geoNearSucceeded &&
+      !availabilityFiltered &&
+      Boolean(helperCoords && Array.isArray(helperCoords) && helperCoords.length >= 2);
+    const isActuallyCapped = capApplies && rawTotalCount > MAX_FEED_SORT_CANDIDATES;
+
     return {
       jobs: jobObjects,
       total,
@@ -4883,8 +4927,8 @@ export class JobsService implements OnModuleInit {
       total_pages,
       availability_filtered: availabilityFiltered,
       empty_reason: emptyReason,
-      candidate_cap: MAX_FEED_SORT_CANDIDATES,
-      is_capped: rawTotalCount > MAX_FEED_SORT_CANDIDATES,
+      candidate_cap: capApplies ? MAX_FEED_SORT_CANDIDATES : undefined,
+      is_capped: isActuallyCapped,
     };
   }
 

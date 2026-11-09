@@ -5,6 +5,7 @@ import { ArrowLeft, Ticket, Copy, Check, Clock, Sparkles } from 'lucide-react-na
 import Toast from 'react-native-toast-message';
 import { useMyVouchers } from '@/hooks/use-api';
 import { formatDate } from '@/utils/date-format';
+import { formatCurrency } from '@/services/i18n';
 import { useTranslation } from '@/hooks/use-i18n';
 import {
   Card,
@@ -108,8 +109,8 @@ export default function CustomerVouchersScreen() {
                 ? `${v.discount_value}% OFF`
                 : `Giảm ${v.discount_value}%`
               : lang === 'en'
-                ? `${new Intl.NumberFormat('en-US').format(v.discount_value)}₫ OFF`
-                : `Giảm ${new Intl.NumberFormat('vi-VN').format(v.discount_value)}₫`;
+                ? `${formatCurrency(v.discount_value, 'en')}₫ OFF`
+                : `Giảm ${formatCurrency(v.discount_value, 'vi')}₫`;
 
             return (
               <Card
@@ -166,10 +167,7 @@ export default function CustomerVouchersScreen() {
                     <Text style={{ fontSize: fs(12), color: tc.textSecondary }}>
                       • {lang === 'en' ? 'Min order: ' : 'Đơn tối thiểu: '}
                       <Text style={{ fontWeight: '700' }}>
-                        {new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'vi-VN').format(
-                          v.min_order_amount,
-                        )}
-                        ₫
+                        {formatCurrency(v.min_order_amount, lang)}₫
                       </Text>
                     </Text>
                   )}
@@ -177,10 +175,7 @@ export default function CustomerVouchersScreen() {
                     <Text style={{ fontSize: fs(12), color: tc.textSecondary }}>
                       • {lang === 'en' ? 'Max discount: ' : 'Giảm tối đa: '}
                       <Text style={{ fontWeight: '700' }}>
-                        {new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'vi-VN').format(
-                          v.max_discount_amount,
-                        )}
-                        ₫
+                        {formatCurrency(v.max_discount_amount, lang)}₫
                       </Text>
                     </Text>
                   )}

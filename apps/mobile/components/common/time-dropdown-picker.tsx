@@ -18,6 +18,7 @@ import {
 import { Clock, ChevronDown, Check, X } from 'lucide-react-native';
 import { COLORS, useThemeColors } from '@/components/ui';
 import { useTranslation, fs } from '@/hooks/use-i18n';
+import { formatCurrency } from '@/services/i18n';
 
 /** Khung giờ làm việc (server G3, jobs.service.ts): bắt đầu 07:00–22:00. */
 export const WORK_START_HOUR = 7;
@@ -866,7 +867,7 @@ export function ScheduledTimePreview({
         <View style={styles.previewRow}>
           <Text style={[styles.previewLabel, { fontSize: fs(12) }]}>{t('picker_deal_price')}</Text>
           <Text style={[styles.previewValue, { color: COLORS.primary, fontSize: fs(12.5) }]}>
-            {new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'vi-VN').format(price)}₫
+            {formatCurrency(price, lang)}₫
           </Text>
         </View>
       )}

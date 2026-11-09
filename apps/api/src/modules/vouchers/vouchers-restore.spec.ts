@@ -204,24 +204,57 @@ describe('VouchersService.restoreForJob (hủy đơn theo SOS)', () => {
       expect(voucher['used_count']).toBe(4);
     });
 
-    it('O7(b): kịch bản đồng thời — redeem đồng thời xen giữa restore: atomic pipeline bảo toàn entry user khác mà read-modify-write cũ làm mất', async () => {
-      const { service, userId, jobId, voucher, redemptions } = makeService();
+    it('P2 & O7(b): kịch bản đồng thời — lần ghi đồng thời xen VÀO GIỮA lần đọc và lần ghi (findById exec bị hoãn): atomic pipeline không bị phụ thuộc snapshot đọc, bảo toàn entry user khác mà read-modify-write cũ làm mất', async () => {
+      const { service, userId, jobId, voucher } = makeService();
       const userConcurrent = new Types.ObjectId();
 
       voucher['used_user_ids'] = [userId];
       voucher['used_count'] = 1;
 
-      // Mô phỏng luồng đồng thời:
-      // Thao tác đồng thời thêm userConcurrent vào mảng used_user_ids ngay khi restore đang chạy
-      const restorePromise = service.restoreForJob(String(userId), String(jobId));
+      // Giả lập cho code cũ read-modify-write:
+      // findById chụp snapshot [userId] rồi bị hoãn (deferred exec);
+      // trong lúc hoãn, giao dịch khác đồng thời ghi userConcurrent vào DB.
+      let concurrentWritten = false;
+      const doConcurrentWrite = () => {
+        if (!concurrentWritten) {
+          concurrentWritten = true;
+          (voucher['used_user_ids'] as any[]).push(userConcurrent);
+          voucher['used_count'] = 2;
+        }
+      };
 
-      (voucher['used_user_ids'] as any[]).push(userConcurrent);
-      voucher['used_count'] = 2;
+      (service as any).voucherModel.findById = jest.fn().mockImplementation((id: unknown) => {
+        const staleSnapshot = {
+          ...voucher,
+          used_user_ids: [userId],
+        };
+        return {
+          exec: () =>
+            new Promise(resolve => {
+              // Lần ghi đồng thời xảy ra khi findById đang đọc dở (hoãn)
+              doConcurrentWrite();
+              resolve(staleSnapshot);
+            }),
+        };
+      });
 
-      await restorePromise;
+      // Với code mới (atomic pipeline): không gọi findById, lần ghi đồng thời xen vào
+      // ngay sau khi redemption status chuyển sang reversed và trước khi voucher pipeline chạy
+      const origRedemptionFindOneAndUpdate = (service as any).redemptionModel.findOneAndUpdate;
+      (service as any).redemptionModel.findOneAndUpdate = jest
+        .fn()
+        .mockImplementation((filter: any, update: any) => {
+          const res = origRedemptionFindOneAndUpdate(filter, update);
+          doConcurrentWrite();
+          return res;
+        });
+
+      const result = await service.restoreForJob(String(userId), String(jobId));
+      expect(result.restored).toBe(true);
 
       // Assert: userConcurrent vẫn còn nguyên trong used_user_ids, userId đã được gỡ, used_count = 1
-      // Nếu là code cũ (read-modify-write dựa trên snapshot đọc ban đầu), nó sẽ ghi đè mảng rỗng [] làm mất userConcurrent
+      // Nếu là code cũ (read-modify-write dựa trên snapshot đọc ban đầu [userId]),
+      // nó sẽ ghi đè mảng rỗng [] làm mất userConcurrent
       expect(voucher['used_user_ids'] as any[]).toContainEqual(userConcurrent);
       expect(voucher['used_user_ids'] as any[]).not.toContainEqual(userId);
       expect(voucher['used_count']).toBe(1);

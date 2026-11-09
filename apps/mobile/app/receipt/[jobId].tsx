@@ -1,5 +1,6 @@
 import React from 'react';
 import { formatDateTime } from '@/utils/date-format';
+import { formatCurrency } from '@/services/i18n';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -230,8 +231,7 @@ export default function ReceiptScreen() {
                   {lang === 'en' ? 'Voucher Discount' : 'Giảm giá Voucher'}
                 </Text>
                 <Text style={{ fontSize: fs(13), color: COLORS.success, fontWeight: '700' }}>
-                  -{new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'vi-VN').format(discountAmount)}
-                  ₫
+                  -{formatCurrency(discountAmount, lang)}₫
                 </Text>
               </View>
             )}
@@ -242,9 +242,7 @@ export default function ReceiptScreen() {
                   {lang === 'en' ? 'Loyalty Points Discount' : 'Giảm điểm thưởng'}
                 </Text>
                 <Text style={{ fontSize: fs(13), color: COLORS.success, fontWeight: '700' }}>
-                  -
-                  {new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'vi-VN').format(loyaltyDiscount)}
-                  ₫
+                  -{formatCurrency(loyaltyDiscount, lang)}₫
                 </Text>
               </View>
             )}

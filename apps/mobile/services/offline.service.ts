@@ -153,15 +153,17 @@ export async function enqueueAction(
         if (found?.status) {
           prevStatus = found.status;
         } else {
-          const rqHelperJobs =
-            queryClient.getQueryData<any>(['jobs', 'helper']) ||
-            queryClient.getQueryData<any>(['jobs', 'available']);
-          const list = Array.isArray(rqHelperJobs)
-            ? rqHelperJobs
-            : Array.isArray(rqHelperJobs?.items)
-              ? rqHelperJobs.items
-              : null;
-          const matched = list?.find((j: any) => String(j._id) === String(jobId));
+          const findInList = (data: any) => {
+            const list = Array.isArray(data)
+              ? data
+              : Array.isArray(data?.items)
+                ? data.items
+                : null;
+            return list?.find((j: any) => String(j._id) === String(jobId));
+          };
+          const matchedHelper = findInList(queryClient.getQueryData<any>(['jobs', 'helper']));
+          const matchedAvail = findInList(queryClient.getQueryData<any>(['jobs', 'available']));
+          const matched = matchedHelper || matchedAvail;
           if (matched?.status) {
             prevStatus = matched.status;
           }
@@ -199,14 +201,29 @@ export async function enqueueAction(
     try {
       const cached = await getCachedJobDetail<Record<string, unknown>>(jobId);
       if (cached) {
+        if (!cached._pre_optimistic_status && prevStatus) {
+          cached._pre_optimistic_status = prevStatus;
+        }
         cached.status = optimisticStatus;
         cached.updated_at = new Date().toISOString();
         await cacheJobDetail(cached);
       } else {
-        const rqJob = queryClient.getQueryData<any>(['job', jobId]);
-        if (rqJob) {
+        const findInList = (data: any) => {
+          const list = Array.isArray(data)
+            ? data
+            : Array.isArray(data?.items)
+              ? data.items
+              : null;
+          return list?.find((j: any) => String(j._id) === String(jobId));
+        };
+        const sourceJob =
+          queryClient.getQueryData<any>(['job', jobId]) ||
+          findInList(queryClient.getQueryData<any>(['jobs', 'helper'])) ||
+          findInList(queryClient.getQueryData<any>(['jobs', 'available']));
+        if (sourceJob) {
           await cacheJobDetail({
-            ...rqJob,
+            ...sourceJob,
+            ...(prevStatus ? { _pre_optimistic_status: prevStatus } : {}),
             status: optimisticStatus,
             updated_at: new Date().toISOString(),
           });
@@ -266,12 +283,23 @@ export async function enqueueAction(
   }
 }
 
-/** K6, N5 & O5: Rollback trạng thái lạc quan khi flush gặp xung đột (4xx/409) */
+/** K6, N5, O5 & P1: Rollback trạng thái lạc quan khi flush gặp xung đột (4xx/409) */
 export async function rollbackOptimisticStatus(jobId: string, prevStatus?: string): Promise<void> {
+  const OPTIMISTIC_STATUSES = new Set([
+    'helper_on_the_way',
+    'helper_arrived',
+    'in_progress',
+    'pending_review',
+  ]);
+
   let targetStatus = prevStatus;
   if (!targetStatus) {
     const cached = await getCachedJobDetail<Record<string, unknown>>(jobId);
-    if (cached?.status) targetStatus = cached.status as string;
+    if (cached?._pre_optimistic_status) {
+      targetStatus = cached._pre_optimistic_status as string;
+    } else if (cached?.status && !OPTIMISTIC_STATUSES.has(cached.status as string)) {
+      targetStatus = cached.status as string;
+    }
   }
 
   try {
@@ -279,6 +307,7 @@ export async function rollbackOptimisticStatus(jobId: string, prevStatus?: strin
       const cached = await getCachedJobDetail<Record<string, unknown>>(jobId);
       if (cached) {
         cached.status = targetStatus;
+        delete cached._pre_optimistic_status;
         cached.updated_at = new Date().toISOString();
         await cacheJobDetail(cached);
       } else {

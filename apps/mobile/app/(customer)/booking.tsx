@@ -85,7 +85,7 @@ import {
 } from '@/hooks/use-api';
 import type { IssuePhotoAnalysis } from '@/hooks/use-api';
 import { useResendVerification } from '@/components/common/verification-banner';
-import { mapAuthErrorMessage } from '@/services/i18n';
+import { mapAuthErrorMessage, formatCurrency } from '@/services/i18n';
 import { locationService, OsmPlace, parseVietnameseAddress } from '@/services/location.service';
 import { Button, Input, Card, COLORS, Skeleton, useThemeColors } from '@/components/ui';
 import { VoucherInput } from '@/components/common/voucher-input';
@@ -1596,14 +1596,8 @@ export default function BookingScreen() {
                         }}
                       >
                         {t('booking_ai_est_price')}{' '}
-                        {new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'vi-VN').format(
-                          aiSuggestion.price_min,
-                        )}
-                        ₫ –{' '}
-                        {new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'vi-VN').format(
-                          aiSuggestion.price_max ?? 0,
-                        )}
-                        ₫
+                        {formatCurrency(aiSuggestion.price_min, lang)}₫ –{' '}
+                        {formatCurrency(aiSuggestion.price_max ?? 0, lang)}₫
                       </Text>
                     )}
 
@@ -1767,10 +1761,7 @@ export default function BookingScreen() {
                             }}
                           >
                             {t('booking_fixed_price')}{' '}
-                            {new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'vi-VN').format(
-                              svc.fixed_price,
-                            )}
-                            ₫ — {t('booking_fixed_price_sub')}
+                            {formatCurrency(svc.fixed_price, lang)}₫ — {t('booking_fixed_price_sub')}
                           </Text>
                         ) : svc.base_price_min ? (
                           <Text
@@ -1782,8 +1773,8 @@ export default function BookingScreen() {
                             }}
                           >
                             {lang === 'en'
-                              ? `From ${new Intl.NumberFormat('en-US').format(svc.base_price_min)}₫`
-                              : `Từ ${new Intl.NumberFormat('vi-VN').format(svc.base_price_min)}₫`}
+                              ? `From ${formatCurrency(svc.base_price_min, 'en')}₫`
+                              : `Từ ${formatCurrency(svc.base_price_min, 'vi')}₫`}
                           </Text>
                         ) : null}
                       </View>
@@ -2527,14 +2518,8 @@ export default function BookingScreen() {
                   {photoAnalysis.price_min != null && photoAnalysis.price_max != null && (
                     <Text style={{ fontSize: fs(13), color: tc.textSecondary }}>
                       {t('booking_ai_price_range')}{' '}
-                      {new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'vi-VN').format(
-                        photoAnalysis.price_min,
-                      )}
-                      ₫ –{' '}
-                      {new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'vi-VN').format(
-                        photoAnalysis.price_max,
-                      )}
-                      ₫
+                      {formatCurrency(photoAnalysis.price_min, lang)}₫ –{' '}
+                      {formatCurrency(photoAnalysis.price_max, lang)}₫
                       {photoAnalysis.confidence != null
                         ? ` · ${t('booking_ai_confidence')} ${Math.round(photoAnalysis.confidence * 100)}%`
                         : ''}
@@ -2577,14 +2562,8 @@ export default function BookingScreen() {
                     {t('booking_ai_estimate_title')}
                   </Text>
                   <Text style={{ fontSize: fs(22), fontWeight: '800', color: tc.text }}>
-                    {new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'vi-VN').format(
-                      priceEstimate.price_min,
-                    )}
-                    ₫ –
-                    {new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'vi-VN').format(
-                      priceEstimate.price_max,
-                    )}
-                    ₫
+                    {formatCurrency(priceEstimate.price_min, lang)}₫ –{' '}
+                    {formatCurrency(priceEstimate.price_max, lang)}₫
                   </Text>
                   <Text style={{ fontSize: fs(12), color: tc.textMuted }}>
                     {t('booking_ai_market_note')}
@@ -2663,10 +2642,7 @@ export default function BookingScreen() {
                 >
                   <Text style={{ fontWeight: '800', fontSize: fs(16), color: '#065F46' }}>
                     {t('booking_fixed_price')}{' '}
-                    {new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'vi-VN').format(
-                      selectedServiceData?.fixed_price ?? 0,
-                    )}
-                    ₫
+                    {formatCurrency(selectedServiceData?.fixed_price ?? 0, lang)}₫
                   </Text>
                   <Text style={{ fontSize: fs(13), color: tc.textSecondary, lineHeight: 19 }}>
                     {t('booking_fixed_price_desc')}
@@ -2897,8 +2873,7 @@ export default function BookingScreen() {
 
               {/* ── Bảng tóm tắt giá (Tạm tính − Tiền giảm = Còn phải trả) ── */}
               {(() => {
-                const fmtNum = (n: number) =>
-                  new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'vi-VN').format(n);
+                const fmtNum = (n: number) => formatCurrency(n, lang);
 
                 let subtotalText = '';
                 if (priceEstimate) {

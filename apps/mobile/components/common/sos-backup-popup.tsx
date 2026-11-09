@@ -13,6 +13,7 @@ import { useAcceptSosBackup, useDeclineSosBackup } from '@/hooks/use-api';
 import { useNowTick, formatCountdown } from '@/hooks/use-countdown';
 import { COLORS, useThemeColors } from '@/components/ui';
 import { useTranslation } from '@/hooks/use-i18n';
+import { formatCurrency } from '@/services/i18n';
 
 export function SosBackupPopup() {
   const incoming = useSosBackupStore(s => s.incoming);
@@ -166,7 +167,7 @@ export function SosBackupPopup() {
               <Text style={{ fontSize: fs(13.5), color: tc.textSecondary }}>
                 {t('sos_popup_payout')}{' '}
                 <Text style={{ fontWeight: '800', color: COLORS.success }}>
-                  {incoming.payout.toLocaleString(lang === 'en' ? 'en-US' : 'vi-VN')}₫
+                  {formatCurrency(incoming.payout, lang)}₫
                 </Text>
               </Text>
             ) : null}

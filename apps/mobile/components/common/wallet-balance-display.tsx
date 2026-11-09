@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleProp, TextStyle, ViewStyle } from 'react-native';
 import { RefreshCw } from 'lucide-react-native';
 import { useTranslation, fs } from '@/hooks/use-i18n';
+import { formatCurrency } from '@/services/i18n';
 
 interface WalletBalanceDisplayProps {
   balance?: number | null;
@@ -86,7 +87,7 @@ export function WalletBalanceDisplay({
   }
 
   const safeBalance = balance ?? 0;
-  const formatted = new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'vi-VN').format(safeBalance);
+  const formatted = formatCurrency(safeBalance, lang);
 
   return (
     <View style={containerStyle}>

@@ -29,7 +29,11 @@ export async function checkAndFixStuckAssignedJobs(options?: {
 
   const jobsCol = db.collection('jobs');
   const contractsCol = db.collection('contracts');
-  const helpersCol = db.collection('helpers');
+  const hasHelperProfiles =
+    typeof db.listCollections === 'function'
+      ? await db.listCollections({ name: 'helperprofiles' }).hasNext()
+      : false;
+  const helpersCol = hasHelperProfiles ? db.collection('helperprofiles') : db.collection('helpers');
 
   // Tìm các đơn có helper_id != null và trạng thái chưa hoàn thành/hủy
   const assignedJobs = await jobsCol
@@ -110,8 +114,41 @@ export async function checkAndFixStuckAssignedJobs(options?: {
   }
 }
 
+export async function runScriptEntryPoint(options?: {
+  dbUri?: string;
+  autoFix?: boolean;
+  disconnectOnFinish?: boolean;
+}) {
+  const dbUri = options?.dbUri || MONGODB_URI;
+  if (mongoose.connection.readyState !== 1) {
+    await mongoose.connect(dbUri);
+  }
+  const db = mongoose.connection.db;
+  if (!db) {
+    throw new Error('Database connection is not available');
+  }
+
+  const hasHelperProfiles =
+    typeof db.listCollections === 'function'
+      ? await db.listCollections({ name: 'helperprofiles' }).hasNext()
+      : false;
+  const helpersCol = hasHelperProfiles ? db.collection('helperprofiles') : db.collection('helpers');
+  const jobsCol = db.collection('jobs');
+
+  const jobsService = {
+    setHelperBusy: async (helperId: any, busy: boolean) => {
+      return setHelperBusyWithModels(helpersCol, jobsCol, helperId, busy);
+    },
+  };
+
+  return checkAndFixStuckAssignedJobs({
+    ...options,
+    jobsService,
+  });
+}
+
 if (require.main === module) {
-  checkAndFixStuckAssignedJobs().catch(err => {
+  runScriptEntryPoint().catch(err => {
     console.error('Lỗi khi chạy script check-stuck-assigned-jobs:', err);
     process.exit(1);
   });
