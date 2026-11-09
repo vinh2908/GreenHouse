@@ -96,29 +96,6 @@ export function useSocketConnection() {
         });
       });
 
-      const unsubQuoteHidden = socketService.on<{
-        job_id?: string;
-        quote_id?: string;
-        reason?: string;
-      }>(SOCKET_EVENTS.QUOTE_HIDDEN, data => {
-        qc.invalidateQueries({ queryKey: ['jobs'] });
-        qc.invalidateQueries({ queryKey: ['helper', 'dashboard'] });
-        if (data?.job_id) {
-          qc.invalidateQueries({ queryKey: ['job', data.job_id] });
-        }
-        const lang = useSettingsStore.getState().language || 'vi';
-        Toast.show({
-          type: 'info',
-          text1: lang === 'en' ? 'Quote Hidden' : 'Báo giá đã bị ẩn',
-          text2:
-            data?.reason ||
-            (lang === 'en'
-              ? 'Your quote has been hidden because your profile is not identity-verified.'
-              : 'Báo giá của bạn đã bị ẩn do hồ sơ chưa xác minh danh tính.'),
-          visibilityTime: 5000,
-        });
-      });
-
       // B16: listener cho các socket event đang phát mà không ai nghe
       const lang = () => useSettingsStore.getState().language || 'vi';
       const unsubJobCreated = socketService.on<{ job_id?: string }>(
@@ -213,7 +190,6 @@ export function useSocketConnection() {
         unsubChat();
         unsubStatus();
         unsubQuoteRejected();
-        unsubQuoteHidden();
         unsubJobCreated();
         unsubPrivateOffer();
         unsubTeamInvitation();
@@ -342,23 +318,12 @@ export function useJobSocketUpdates(jobId?: string) {
       },
     );
 
-    const unsub6 = socketService.on<{ job_id?: string; quote_id?: string }>(
-      SOCKET_EVENTS.QUOTE_HIDDEN,
-      data => {
-        if (data?.job_id && data.job_id !== jobId) return;
-        qc.invalidateQueries({ queryKey: ['job', jobId] });
-        qc.invalidateQueries({ queryKey: ['job', jobId, 'quotes'] });
-        qc.invalidateQueries({ queryKey: ['jobs'] });
-      },
-    );
-
     return () => {
       unsub1();
       unsub2();
       unsub3();
       unsub4();
       unsub5();
-      unsub6();
       unsubTeam();
       unsubMatching();
       socketService.leaveJob(jobId);

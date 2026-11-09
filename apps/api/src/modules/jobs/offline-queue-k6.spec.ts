@@ -175,5 +175,42 @@ describe('K6 & N5: Offline Queue Optimistic Updates, Rollback on Conflict, and R
       const availRolledBack = queryClient.getQueryData(['jobs', 'available']) as any[];
       expect(availRolledBack[0]?.status).toBe('quote_selected');
     });
+
+    it('P1: khi [jobs, helper] đã populate rỗng [] và đơn chỉ nằm trong [jobs, available] -> enqueue -> flush 409 -> rollback về đúng trạng thái ban đầu, không phải optimistic và không no-op', async () => {
+      const jobId = 'job-p1-available-only-123';
+
+      // 1. AsyncStorage hoàn toàn trống cho đơn này
+      delete mockStorage[`job_detail_${jobId}`];
+
+      // 2. [job, jobId] hoàn toàn trống (không có cache đơn lẻ)
+      queryClient.setQueryData(['job', jobId], undefined);
+
+      // 3. [jobs, helper] đã populate nhưng RỖNG [] -> truthy!
+      queryClient.setQueryData(['jobs', 'helper'], []);
+
+      // 4. Đơn CHỈ nằm trong [jobs, available] với status 'quote_selected'
+      queryClient.setQueryData(['jobs', 'available'], [{ _id: jobId, status: 'quote_selected' }]);
+
+      // 5. Enqueue thao tác 'on_the_way'
+      await enqueueAction('on_the_way', jobId);
+
+      // Trạng thái lạc quan được ghi thành helper_on_the_way trong [jobs, available]
+      const availOptimistic = queryClient.getQueryData(['jobs', 'available']) as any[];
+      expect(availOptimistic[0]?.status).toBe('helper_on_the_way');
+
+      // 6. Giả lập flush gặp lỗi xung đột 409
+      mockApiClientPatch.mockRejectedValueOnce({
+        response: { status: 409, data: { message: 'Đơn đã có thay đổi' } },
+      });
+
+      await flushQueue();
+
+      // 7. Assert: Phải rollback về đúng trạng thái thật 'quote_selected', không bị no-op và không kẹt ở 'helper_on_the_way'
+      const availRolledBack = queryClient.getQueryData(['jobs', 'available']) as any[];
+      expect(availRolledBack[0]?.status).toBe('quote_selected');
+
+      const cachedRolledBack = await getCachedJobDetail<any>(jobId);
+      expect(cachedRolledBack?.status).toBe('quote_selected');
+    });
   });
 });

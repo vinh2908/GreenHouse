@@ -4,9 +4,9 @@ import { TicketPercent, X } from 'lucide-react-native';
 import { useValidateVoucher, type VoucherPreview } from '@/hooks/use-api';
 import { Card, COLORS, useThemeColors } from '@/components/ui';
 import { useTranslation } from '@/hooks/use-i18n';
+import { formatCurrency } from '@/services/i18n';
 
-const fmt = (n: number, l: string = 'vi') =>
-  new Intl.NumberFormat(l === 'en' ? 'en-US' : 'vi-VN').format(n);
+const fmt = (n: number, l: any = 'vi') => formatCurrency(n, l);
 
 /**
  * Nhập + kiểm tra mã giảm giá (Roadmap Phase 1).
@@ -31,7 +31,7 @@ export function VoucherInput({
   const validate = useValidateVoucher();
   const { fs, lang } = useTranslation();
   const tc = useThemeColors();
-  const fmt = (n: number) => new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'vi-VN').format(n);
+  const fmt = (n: number) => formatCurrency(n, lang);
 
   const handleApply = async () => {
     const trimmed = code.trim();

@@ -900,8 +900,8 @@ export default function HelperJobDetailScreen() {
               <Badge
                 label={
                   lang === 'en'
-                    ? `Fixed price: ${new Intl.NumberFormat('en-US').format(job.fixed_price ?? 0)}₫`
-                    : `Giá cam kết ${new Intl.NumberFormat('vi-VN').format(job.fixed_price ?? 0)}₫`
+                    ? `Fixed price: ${formatCurrency(job.fixed_price ?? 0, 'en')}₫`
+                    : `Giá cam kết ${formatCurrency(job.fixed_price ?? 0, 'vi')}₫`
                 }
                 color="#ECFDF5"
                 textColor="#065F46"
@@ -1115,8 +1115,7 @@ export default function HelperJobDetailScreen() {
                         }}
                       >
                         <Text style={{ fontSize: fs(13), fontWeight: '700', color: tc.text }}>
-                          +{new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'vi-VN').format(addAmt)}
-                          ₫
+                          +{formatCurrency(addAmt, lang)}₫
                         </Text>
                         <Badge
                           label={
@@ -1333,8 +1332,8 @@ export default function HelperJobDetailScreen() {
                   {job.is_warranty
                     ? t('helper_job.warranty_badge')
                     : lang === 'en'
-                      ? `Fixed price: ${new Intl.NumberFormat('en-US').format(job.fixed_price ?? 0)}₫`
-                      : `Giá cam kết: ${new Intl.NumberFormat('vi-VN').format(job.fixed_price ?? 0)}₫`}
+                      ? `Fixed price: ${formatCurrency(job.fixed_price ?? 0, 'en')}₫`
+                      : `Giá cam kết: ${formatCurrency(job.fixed_price ?? 0, 'vi')}₫`}
                 </Text>
                 {job.is_warranty ? (
                   <Text style={{ fontSize: fs(13.5), color: tc.textSecondary, lineHeight: 20 }}>

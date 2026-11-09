@@ -17,6 +17,7 @@ import {
 import { AlertTriangle, RotateCw, ClipboardList, Phone } from 'lucide-react-native';
 import { OFFICIAL_CONTACT_PHONE, OFFICIAL_CONTACT_PHONE_DISPLAY } from '@homemate/constants';
 import { useTranslation } from '@/hooks/use-i18n';
+import { formatCurrency } from '@/services/i18n';
 import { useSettingsStore, type AppTheme } from '@/stores/settings.store';
 import { lightImpact } from '@/services/haptics';
 
@@ -707,7 +708,7 @@ export function PriceText({
   const { fs, lang } = useTranslation();
   return (
     <Text style={{ fontSize: fs(size), color, fontWeight: bold ? '800' : '500' }}>
-      {new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'vi-VN').format(amount)}₫
+      {formatCurrency(amount, lang)}₫
     </Text>
   );
 }

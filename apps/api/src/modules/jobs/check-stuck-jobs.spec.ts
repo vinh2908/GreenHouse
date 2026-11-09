@@ -1,68 +1,78 @@
 import { Types } from 'mongoose';
 import mongoose from 'mongoose';
-import { checkAndFixStuckAssignedJobs } from '../../../../../scripts/check-stuck-assigned-jobs';
+import { MongoClient } from 'mongodb';
+import { MongoMemoryServer } from 'mongodb-memory-server';
+import {
+  checkAndFixStuckAssignedJobs,
+  runScriptEntryPoint,
+} from '../../../../../scripts/check-stuck-assigned-jobs';
 import { setHelperBusyWithModels } from './jobs.service';
 import { HelperStatus } from '@homemate/types';
 
-describe('O2 & O6: checkAndFixStuckAssignedJobs and setHelperBusyWithModels', () => {
-  describe('O2: setHelperBusyWithModels hỗ trợ cả native collection (bắt buộc $set) và Mongoose model', () => {
-    it('thả thợ về ONLINE trên raw MongoDB driver collection không bị lỗi MongoInvalidArgumentError', async () => {
+describe('O2, P4 & O6: checkAndFixStuckAssignedJobs and setHelperBusyWithModels', () => {
+  describe('O2 & P4: setHelperBusyWithModels chạy trên raw MongoDB driver collection THẬT (MongoMemoryServer)', () => {
+    let mongod: MongoMemoryServer;
+    let client: MongoClient;
+    let rawHelpersCol: any;
+    let rawJobsCol: any;
+
+    beforeAll(async () => {
+      mongod = await MongoMemoryServer.create();
+      client = new MongoClient(mongod.getUri());
+      await client.connect();
+      const db = client.db('test_o2_p4_driver');
+      rawHelpersCol = db.collection('helpers');
+      rawJobsCol = db.collection('jobs');
+    }, 60000);
+
+    afterAll(async () => {
+      if (client) await client.close();
+      if (mongod) await mongod.stop();
+    });
+
+    beforeEach(async () => {
+      await rawHelpersCol.deleteMany({});
+      await rawJobsCol.deleteMany({});
+    });
+
+    it('P4: trên driver MongoDB thật, update thiếu $set ném MongoInvalidArgumentError, còn code mới { $set: ... } chạy thành công và thả thợ về ONLINE', async () => {
       const helperId = new Types.ObjectId('507f1f77bcf86cd799439011');
-      let helperStatus = HelperStatus.BUSY;
+      await rawHelpersCol.insertOne({ user_id: helperId, status: HelperStatus.BUSY });
 
-      // Mock native collection của MongoDB driver: ném lỗi nếu update không có atomic operator ($set, ...)
-      const rawHelpersCol = {
-        updateOne: jest.fn().mockImplementation(async (filter: any, update: any) => {
-          const keys = Object.keys(update);
-          const hasAtomicOp = keys.some(k => k.startsWith('$'));
-          if (!hasAtomicOp) {
-            throw new Error('MongoInvalidArgumentError: Update document requires atomic operators');
-          }
-          if (update.$set?.status) {
-            helperStatus = update.$set.status;
-          }
-          return { acknowledged: true, modifiedCount: 1 };
-        }),
-      };
+      // 1. Chứng minh driver thật NÉM LỖI nếu không có $set (code cũ bị lỗi)
+      await expect(
+        rawHelpersCol.updateOne({ user_id: helperId }, { status: HelperStatus.ONLINE } as any),
+      ).rejects.toThrow(/Update document requires atomic operators/i);
 
-      const rawJobsCol = {
-        countDocuments: jest.fn().mockResolvedValue(0), // không còn đơn hoạt động nào khác
-      };
-
-      // Gọi setHelperBusyWithModels với busy = false
+      // 2. Chạy hàm setHelperBusyWithModels với fix { $set: { status: HelperStatus.ONLINE } }
       await expect(
         setHelperBusyWithModels(rawHelpersCol, rawJobsCol, helperId, false),
       ).resolves.not.toThrow();
 
-      expect(rawHelpersCol.updateOne).toHaveBeenCalledWith(
-        expect.objectContaining({ user_id: helperId, status: HelperStatus.BUSY }),
-        { $set: { status: HelperStatus.ONLINE } },
-      );
-      expect(helperStatus).toBe(HelperStatus.ONLINE);
+      // 3. Document thật trong MongoDB đã được cập nhật thành ONLINE
+      const updated = await rawHelpersCol.findOne({ user_id: helperId });
+      expect(updated).toBeDefined();
+      expect(updated.status).toBe(HelperStatus.ONLINE);
     });
 
-    it('đặt thợ thành BUSY trên raw MongoDB driver collection dùng $set đúng chuẩn', async () => {
+    it('P4: đặt thợ thành BUSY trên raw MongoDB driver collection thật dùng $set đúng chuẩn', async () => {
       const helperId = new Types.ObjectId('507f1f77bcf86cd799439011');
-      const rawHelpersCol = {
-        updateOne: jest.fn().mockImplementation(async (filter: any, update: any) => {
-          const keys = Object.keys(update);
-          const hasAtomicOp = keys.some(k => k.startsWith('$'));
-          if (!hasAtomicOp) {
-            throw new Error('MongoInvalidArgumentError: Update document requires atomic operators');
-          }
-          return { acknowledged: true, modifiedCount: 1 };
-        }),
-      };
-      const rawJobsCol = { countDocuments: jest.fn().mockResolvedValue(0) };
+      await rawHelpersCol.insertOne({ user_id: helperId, status: HelperStatus.ONLINE });
 
+      // 1. Update thiếu $set ném lỗi trên driver thật
+      await expect(
+        rawHelpersCol.updateOne({ user_id: helperId }, { status: HelperStatus.BUSY } as any),
+      ).rejects.toThrow(/Update document requires atomic operators/i);
+
+      // 2. Chạy hàm setHelperBusyWithModels với fix { $set: { status: HelperStatus.BUSY } }
       await expect(
         setHelperBusyWithModels(rawHelpersCol, rawJobsCol, helperId, true),
       ).resolves.not.toThrow();
 
-      expect(rawHelpersCol.updateOne).toHaveBeenCalledWith(
-        expect.objectContaining({ user_id: helperId, status: { $ne: HelperStatus.BUSY } }),
-        { $set: { status: HelperStatus.BUSY } },
-      );
+      // 3. Document thật trong MongoDB đã được cập nhật thành BUSY
+      const updated = await rawHelpersCol.findOne({ user_id: helperId });
+      expect(updated).toBeDefined();
+      expect(updated.status).toBe(HelperStatus.BUSY);
     });
   });
 
@@ -217,6 +227,70 @@ describe('O2 & O6: checkAndFixStuckAssignedJobs and setHelperBusyWithModels', ()
 
       expect(mockJobsService.setHelperBusy).toHaveBeenCalledWith(helperId, false);
       expect(rawHelpersCol.updateOne).not.toHaveBeenCalled();
+    });
+
+    it('P6: entry point của script (runScriptEntryPoint) tự động nối jobsService và điều phối tới JobsService.setHelperBusy thật', async () => {
+      const helperId = new Types.ObjectId('507f1f77bcf86cd799439044');
+      const stuckJob: any = {
+        _id: new Types.ObjectId(),
+        title: 'Đơn kẹt chạy qua entry point script',
+        status: 'confirmed',
+        helper_id: helperId,
+        events: [],
+      };
+
+      const rawJobsCol = {
+        find: jest.fn().mockReturnValue({
+          toArray: jest.fn().mockResolvedValue([stuckJob]),
+        }),
+        updateOne: jest.fn().mockImplementation(async (filter: any, update: any) => {
+          if (filter._id === stuckJob._id) {
+            stuckJob.status = update.$set.status;
+            stuckJob.helper_id = update.$set.helper_id;
+          }
+          return { modifiedCount: 1 };
+        }),
+        countDocuments: jest.fn().mockResolvedValue(0),
+      };
+      const rawContractsCol = {
+        findOne: jest.fn().mockResolvedValue(null),
+      };
+      const rawHelpersCol = {
+        updateOne: jest.fn().mockResolvedValue({ modifiedCount: 1 }),
+      };
+
+      const mockDb = {
+        listCollections: jest.fn().mockReturnValue({
+          hasNext: jest.fn().mockResolvedValue(true), // tìm thấy helperprofiles
+        }),
+        collection: jest.fn().mockImplementation((name: string) => {
+          if (name === 'jobs') return rawJobsCol;
+          if (name === 'contracts') return rawContractsCol;
+          if (name === 'helperprofiles' || name === 'helpers') return rawHelpersCol;
+          return {};
+        }),
+      };
+
+      Object.defineProperty(mongoose, 'connection', {
+        value: {
+          readyState: 1,
+          db: mockDb,
+        },
+        configurable: true,
+      });
+
+      // Chạy qua entry point thật của script
+      await runScriptEntryPoint({ disconnectOnFinish: false });
+
+      // Đơn bị unassign về OPEN
+      expect(stuckJob.status).toBe('open');
+      expect(stuckJob.helper_id).toBeNull();
+
+      // Thợ được giải phóng về ONLINE với toán tử $set nguyên tử trên collection helperprofiles
+      expect(rawHelpersCol.updateOne).toHaveBeenCalledWith(
+        expect.objectContaining({ user_id: helperId }),
+        { $set: { status: HelperStatus.ONLINE } },
+      );
     });
   });
 });

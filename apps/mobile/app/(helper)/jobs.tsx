@@ -29,6 +29,7 @@ import {
 } from 'lucide-react-native';
 import Toast from 'react-native-toast-message';
 import { formatTime, formatRelativeTime } from '@/utils/date-format';
+import { formatCurrency } from '@/services/i18n';
 import { useAuthStore } from '@/stores/auth.store';
 import { locationService } from '@/services/location.service';
 import {
@@ -760,9 +761,7 @@ export default function HelperJobsScreen() {
                     {job.is_fixed_price ? (
                       <Badge
                         label={t('jobs_badge_fixed_price', {
-                          price: new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'vi-VN').format(
-                            job.fixed_price ?? 0,
-                          ),
+                          price: formatCurrency(job.fixed_price ?? 0, lang),
                         })}
                         size="sm"
                         color="#ECFDF5"
@@ -882,8 +881,8 @@ export default function HelperJobsScreen() {
                               ? 'Accept warranty job'
                               : 'Nhận việc bảo hành'
                             : lang === 'en'
-                              ? `Accept now • ${new Intl.NumberFormat('en-US').format(job.fixed_price ?? 0)}₫`
-                              : `Nhận việc ngay • ${new Intl.NumberFormat('vi-VN').format(job.fixed_price ?? 0)}₫`}
+                              ? `Accept now • ${formatCurrency(job.fixed_price ?? 0, 'en')}₫`
+                              : `Nhận việc ngay • ${formatCurrency(job.fixed_price ?? 0, 'vi')}₫`}
                         </Text>
                       </TouchableOpacity>
                     ) : (

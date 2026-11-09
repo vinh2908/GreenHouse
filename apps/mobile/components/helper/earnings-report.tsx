@@ -4,9 +4,9 @@ import { View, Text, TextInput, TouchableOpacity, ActivityIndicator } from 'reac
 import { useEarningsReport, useSetIncomeGoal } from '@/hooks/use-api';
 import { useTranslation } from '@/hooks/use-i18n';
 import { Card, COLORS, useThemeColors } from '@/components/ui';
+import { formatCurrency } from '@/services/i18n';
 
-const fmt = (n: number, l: string = 'vi') =>
-  new Intl.NumberFormat(l === 'en' ? 'en-US' : 'vi-VN').format(n);
+const fmt = (n: number, l: any = 'vi') => formatCurrency(n, l);
 const WEEKDAY_LABELS_VI = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN']; // days[] bắt đầu từ Thứ 2
 const WEEKDAY_LABELS_EN = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
@@ -51,7 +51,7 @@ function ChangeChip({ percent, lang }: { percent: number | null; lang?: string }
 export function EarningsReport() {
   const { t, fs, lang } = useTranslation();
   const tc = useThemeColors();
-  const fmt = (n: number) => new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'vi-VN').format(n);
+  const fmt = (n: number) => formatCurrency(n, lang);
   const { data: report, isLoading, isError, refetch } = useEarningsReport();
   const setGoal = useSetIncomeGoal();
   const [goalText, setGoalText] = useState('');

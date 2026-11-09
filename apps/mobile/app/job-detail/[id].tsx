@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useMemo } from 'react';
 import { formatDate, formatDateTime, vnDateKey } from '@/utils/date-format';
+import { formatCurrency } from '@/services/i18n';
 import {
   View,
   Text,
@@ -1371,8 +1372,8 @@ export default function JobDetailScreen() {
                       : 'Hoàn tiền 100% cho Khách hàng'
                     : job.dispute_resolution.action === 'refund_partial'
                       ? lang === 'en'
-                        ? `Partial refund (${new Intl.NumberFormat('en-US').format(job.dispute_resolution.refund_amount || 0)}₫)`
-                        : `Hoàn một phần (${new Intl.NumberFormat('vi-VN').format(job.dispute_resolution.refund_amount || 0)}₫)`
+                        ? `Partial refund (${formatCurrency(job.dispute_resolution.refund_amount || 0, 'en')}₫)`
+                        : `Hoàn một phần (${formatCurrency(job.dispute_resolution.refund_amount || 0, 'vi')}₫)`
                       : lang === 'en'
                         ? 'Payout released to Helper'
                         : 'Giải ngân cho Thợ'}
@@ -1433,8 +1434,8 @@ export default function JobDetailScreen() {
                   }}
                 >
                   {lang === 'en'
-                    ? `SOS Emergency rescue — helper arrives in 15 mins${job.sos_surcharge ? ` (emergency surcharge ${new Intl.NumberFormat('en-US').format(job.sos_surcharge)}₫)` : ''}`
-                    : `Đơn cứu hộ khẩn cấp SOS — yêu cầu thợ có mặt trong 15 phút${job.sos_surcharge ? ` (phụ phí khẩn cấp ${new Intl.NumberFormat('vi-VN').format(job.sos_surcharge)}₫)` : ''}`}
+                    ? `SOS Emergency rescue — helper arrives in 15 mins${job.sos_surcharge ? ` (emergency surcharge ${formatCurrency(job.sos_surcharge, 'en')}₫)` : ''}`
+                    : `Đơn cứu hộ khẩn cấp SOS — yêu cầu thợ có mặt trong 15 phút${job.sos_surcharge ? ` (phụ phí khẩn cấp ${formatCurrency(job.sos_surcharge, 'vi')}₫)` : ''}`}
                 </Text>
               </View>
             )}
@@ -1470,7 +1471,7 @@ export default function JobDetailScreen() {
                 </Text>
                 {lang === 'en' ? 'Refunded to customer' : 'Đã hoàn tiền cho khách hàng'}
                 {job.dispute_resolution?.refund_amount
-                  ? ` (${new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'vi-VN').format(job.dispute_resolution.refund_amount)}₫)`
+                  ? ` (${formatCurrency(job.dispute_resolution.refund_amount, lang)}₫)`
                   : ''}
                 .
               </Text>
@@ -1645,8 +1646,8 @@ export default function JobDetailScreen() {
                 <Badge
                   label={
                     lang === 'en'
-                      ? `Fixed price ${new Intl.NumberFormat('en-US').format(job.fixed_price ?? 0)}₫`
-                      : `Giá cam kết ${new Intl.NumberFormat('vi-VN').format(job.fixed_price ?? 0)}₫`
+                      ? `Fixed price ${formatCurrency(job.fixed_price ?? 0, 'en')}₫`
+                      : `Giá cam kết ${formatCurrency(job.fixed_price ?? 0, 'vi')}₫`
                   }
                   color="#ECFDF5"
                   textColor="#065F46"
@@ -1838,8 +1839,8 @@ export default function JobDetailScreen() {
                   <Tag size={18} color="#065F46" />
                   <Text style={{ fontWeight: '800', fontSize: fs(16), color: '#065F46' }}>
                     {lang === 'en'
-                      ? `Fixed price: ${new Intl.NumberFormat('en-US').format(job.fixed_price ?? 0)}₫`
-                      : `Giá cam kết: ${new Intl.NumberFormat('vi-VN').format(job.fixed_price ?? 0)}₫`}
+                      ? `Fixed price: ${formatCurrency(job.fixed_price ?? 0, 'en')}₫`
+                      : `Giá cam kết: ${formatCurrency(job.fixed_price ?? 0, 'vi')}₫`}
                   </Text>
                 </View>
                 <Text style={{ fontSize: fs(13.5), color: tc.textSecondary, lineHeight: 20 }}>
@@ -2220,14 +2221,9 @@ export default function JobDetailScreen() {
                       </Text>
                       <Text style={{ fontSize: fs(12), color: tc.textSecondary }}>
                         {lang === 'en' ? 'Additional labor: +' : 'Công phát sinh: +'}
-                        {new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'vi-VN').format(
-                          am.additional_labor_cost || 0,
-                        )}
-                        ₫ • {lang === 'en' ? 'Materials: +' : 'Vật tư: +'}
-                        {new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'vi-VN').format(
-                          am.additional_materials_cost || 0,
-                        )}
-                        ₫
+                        {formatCurrency(am.additional_labor_cost || 0, lang)}₫ •{' '}
+                        {lang === 'en' ? 'Materials: +' : 'Vật tư: +'}
+                        {formatCurrency(am.additional_materials_cost || 0, lang)}₫
                       </Text>
                       {am.status === 'rejected' && am.rejection_reason && (
                         <Text style={{ fontSize: fs(12), color: '#991B1B', fontStyle: 'italic' }}>
@@ -3012,7 +3008,7 @@ export default function JobDetailScreen() {
                         <CreditCard size={18} color={COLORS.primary} />
                         <Text style={{ fontWeight: '800', fontSize: fs(15), color: tc.text }}>
                           {lang === 'en' ? 'Payment method' : 'Phương thức thanh toán'} (
-                          {new Intl.NumberFormat(numLoc).format(finalPayable)}₫)
+                          {formatCurrency(finalPayable, lang)}₫)
                         </Text>
                       </View>
 
@@ -3039,7 +3035,7 @@ export default function JobDetailScreen() {
                                 color: tc.text,
                               }}
                             >
-                              {new Intl.NumberFormat(numLoc).format(rawTotal)}₫
+                              {formatCurrency(rawTotal, lang)}₫
                             </Text>
                           </View>
                           {job.voucher_code && discount > 0 && (
@@ -3065,7 +3061,7 @@ export default function JobDetailScreen() {
                                   color: COLORS.primary,
                                 }}
                               >
-                                -{new Intl.NumberFormat(numLoc).format(discount)}₫
+                                -{formatCurrency(discount, lang)}₫
                               </Text>
                             </View>
                           )}
@@ -3082,7 +3078,7 @@ export default function JobDetailScreen() {
                               <Text
                                 style={{ fontSize: fs(13), fontWeight: '800', color: '#D97706' }}
                               >
-                                -{new Intl.NumberFormat(numLoc).format(loyaltyDiscount)}₫
+                                -{formatCurrency(loyaltyDiscount, lang)}₫
                               </Text>
                             </View>
                           )}
@@ -3110,7 +3106,7 @@ export default function JobDetailScreen() {
                                 color: COLORS.primaryDark,
                               }}
                             >
-                              {new Intl.NumberFormat(numLoc).format(finalPayable)}₫
+                              {formatCurrency(finalPayable, lang)}₫
                             </Text>
                           </View>
                         </View>
@@ -4239,7 +4235,7 @@ function JobVoucherRow({ job, contractTotal }: { job: any; contractTotal: number
             </Text>
           </View>
           <Text style={{ color: COLORS.success, fontSize: fs(14), fontWeight: '800' }}>
-            −{new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'vi-VN').format(appliedDiscount)}₫
+            −{formatCurrency(appliedDiscount, lang)}₫
           </Text>
         </View>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
@@ -4247,10 +4243,7 @@ function JobVoucherRow({ job, contractTotal }: { job: any; contractTotal: number
             {lang === 'en' ? 'Payable amount' : 'Khách thực thanh toán'}
           </Text>
           <Text style={{ fontWeight: '800', color: tc.text, fontSize: fs(14) }}>
-            {new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'vi-VN').format(
-              Math.max(0, contractTotal - appliedDiscount),
-            )}
-            ₫
+            {formatCurrency(Math.max(0, contractTotal - appliedDiscount), lang)}₫
           </Text>
         </View>
       </View>
@@ -4370,8 +4363,8 @@ function JobVoucherRow({ job, contractTotal }: { job: any; contractTotal: number
       {preview && preview.discount_amount > 0 && (
         <Text style={{ fontSize: fs(12.5), color: COLORS.success, fontWeight: '700' }}>
           {lang === 'en'
-            ? `Est. discount ~${new Intl.NumberFormat('en-US').format(preview.discount_amount)}₫ at checkout`
-            : `Sẽ giảm khoảng ${new Intl.NumberFormat('vi-VN').format(preview.discount_amount)}₫ khi thanh toán`}
+            ? `Est. discount ~${formatCurrency(preview.discount_amount, 'en')}₫ at checkout`
+            : `Sẽ giảm khoảng ${formatCurrency(preview.discount_amount, 'vi')}₫ khi thanh toán`}
         </Text>
       )}
     </View>

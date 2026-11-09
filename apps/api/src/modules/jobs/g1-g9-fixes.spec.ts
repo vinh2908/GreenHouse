@@ -966,6 +966,8 @@ describe('ĐỢT 2 (P1) — G1–G9 & J1–J3 Regression & Correctness Specs', (
           address: { full_address: '789 Đường XYZ, Quận 5' },
         };
 
+        let capturedNonGeoQuery: any = null;
+
         const jobModel: any = {
           countDocuments: jest.fn().mockImplementation((query: any) => {
             if (query && query['address.location.coordinates.0']) {
@@ -974,16 +976,19 @@ describe('ĐỢT 2 (P1) — G1–G9 & J1–J3 Regression & Correctness Specs', (
             return { exec: jest.fn().mockResolvedValue(4) }; // 4 đơn tổng
           }),
           aggregate: jest.fn(),
-          find: jest.fn().mockReturnValue({
-            populate: jest.fn().mockReturnValue({
-              sort: jest.fn().mockReturnValue({
-                skip: jest.fn().mockReturnValue({
-                  limit: jest.fn().mockReturnValue({
-                    exec: jest.fn().mockResolvedValue([nonGeoJob1, nonGeoJob2]),
+          find: jest.fn().mockImplementation((q: any) => {
+            capturedNonGeoQuery = q;
+            return {
+              populate: jest.fn().mockReturnValue({
+                sort: jest.fn().mockReturnValue({
+                  skip: jest.fn().mockReturnValue({
+                    limit: jest.fn().mockReturnValue({
+                      exec: jest.fn().mockResolvedValue([nonGeoJob1, nonGeoJob2]),
+                    }),
                   }),
                 }),
               }),
-            }),
+            };
           }),
         };
 
@@ -1024,6 +1029,20 @@ describe('ĐỢT 2 (P1) — G1–G9 & J1–J3 Regression & Correctness Specs', (
         expect(res.jobs[0]._id).toBe('job-no-geo-1');
         expect(res.jobs[1]._id).toBe('job-no-geo-2');
         expect(jobModel.aggregate).not.toHaveBeenCalled();
+
+        // P3 assert: Bảo toàn $and trong nhánh 3 (toàn-đơn-không-tọa-độ)
+        expect(capturedNonGeoQuery).toBeDefined();
+        expect(capturedNonGeoQuery.$and).toBeDefined();
+        expect(Array.isArray(capturedNonGeoQuery.$and)).toBe(true);
+        const hasNonGeoOr = capturedNonGeoQuery.$and.some(
+          (clause: any) =>
+            Array.isArray(clause.$or) &&
+            clause.$or.some(
+              (item: any) =>
+                'address.location' in item || 'address.location.coordinates.0' in item,
+            ),
+        );
+        expect(hasNonGeoOr).toBe(true);
       });
 
       it('O1 & Nhánh 4: nonGeoQuery bảo toàn $or private-offer qua $and, không làm lọt đơn chào riêng cho thợ khác', async () => {
@@ -1116,6 +1135,138 @@ describe('ĐỢT 2 (P1) — G1–G9 & J1–J3 Regression & Correctness Specs', (
             ),
         );
         expect(hasNonGeoCondition).toBe(true);
+      });
+
+      it('P3: đơn không tọa độ đang private-offer cho thợ B phải VẮNG MẶT trong feed của thợ A', async () => {
+        const helperAId = '507f1f77bcf86cd799439011';
+        const helperBId = '507f1f77bcf86cd799439022';
+        const now = new Date();
+        const futureDate = new Date(Date.now() + 3600000);
+
+        // Job 1: Đơn công khai không có tọa độ GPS
+        const publicNonGeoJob: any = {
+          _id: 'job-public-no-geo',
+          title: 'Đơn dọn dẹp công khai không GPS',
+          status: JobStatus.OPEN,
+          created_at: now,
+          address: { full_address: 'Quận 1, TP.HCM' },
+        };
+
+        // Job 2: Đơn chào riêng cho thợ B, không có GPS, chưa hết hạn
+        const privateJobForB: any = {
+          _id: 'job-private-for-b-no-geo',
+          title: 'Đơn riêng cho thợ B không GPS',
+          status: JobStatus.OPEN,
+          private_offer_helper_id: new Types.ObjectId(helperBId),
+          private_offer_expires_at: futureDate,
+          created_at: now,
+          address: { full_address: 'Quận 3, TP.HCM' },
+        };
+
+        const allCandidateJobs: any[] = [publicNonGeoJob, privateJobForB];
+
+        const jobModel: any = {
+          countDocuments: jest.fn().mockImplementation((q: any) => {
+            if (q && q['address.location.coordinates.0']) {
+              return { exec: jest.fn().mockResolvedValue(0) }; // 0 đơn có GPS
+            }
+            return { exec: jest.fn().mockResolvedValue(1) }; // 1 đơn hợp lệ cho thợ A
+          }),
+          aggregate: jest.fn(),
+          find: jest.fn().mockImplementation((q: any) => {
+            // Mô phỏng bộ lọc của MongoDB engine theo đúng query q nhận được:
+            // Nếu query có $and gồm bộ lọc private offer, đơn privateJobForB sẽ bị loại!
+            // Nếu query cũ ghi đè $or bằng nonGeoOr (mất điều kiện private offer), privateJobForB sẽ lọt vào!
+            const filtered = allCandidateJobs.filter(j => {
+              if (q.$and && Array.isArray(q.$and)) {
+                const privateOfferClause = q.$and.find(
+                  (clause: any) =>
+                    Array.isArray(clause.$or) &&
+                    clause.$or.some((item: any) => 'private_offer_helper_id' in item),
+                );
+                if (privateOfferClause) {
+                  const matchPrivate = privateOfferClause.$or.some((cond: any) => {
+                    if (
+                      cond.private_offer_helper_id &&
+                      (cond.private_offer_helper_id instanceof Types.ObjectId ||
+                        typeof cond.private_offer_helper_id === 'string')
+                    ) {
+                      return (
+                        String(j.private_offer_helper_id) === String(cond.private_offer_helper_id)
+                      );
+                    }
+                    if (cond.private_offer_helper_id === null) {
+                      return !j.private_offer_helper_id;
+                    }
+                    if (cond.private_offer_helper_id?.$exists === false) {
+                      return !j.private_offer_helper_id;
+                    }
+                    if (cond.private_offer_expires_at?.$lte) {
+                      return Boolean(
+                        j.private_offer_expires_at &&
+                          j.private_offer_expires_at <= cond.private_offer_expires_at.$lte,
+                      );
+                    }
+                    return false;
+                  });
+                  if (!matchPrivate) return false;
+                }
+              }
+              return true;
+            });
+
+            return {
+              populate: jest.fn().mockReturnValue({
+                sort: jest.fn().mockReturnValue({
+                  skip: jest.fn().mockReturnValue({
+                    limit: jest.fn().mockReturnValue({
+                      exec: jest.fn().mockResolvedValue(filtered),
+                    }),
+                  }),
+                }),
+              }),
+            };
+          }),
+        };
+
+        const helperModel: any = {
+          findOne: jest.fn().mockReturnValue({
+            select: jest.fn().mockReturnValue({
+              lean: jest.fn().mockReturnValue({
+                exec: jest
+                  .fn()
+                  .mockResolvedValue({ _id: helperAId, verification_status: 'approved' }),
+              }),
+            }),
+          }),
+        };
+
+        const jobsService = new JobsService(
+          jobModel,
+          dummy,
+          dummy,
+          dummy,
+          helperModel,
+          dummy,
+          dummy,
+          dummy,
+          dummy,
+          dummy,
+          dummy,
+          { getRoutesBatch: jest.fn().mockResolvedValue(new Map()) } as any,
+          dummy,
+          dummy,
+          dummy,
+          dummy,
+        );
+
+        // Thợ A lấy danh sách đơn với GPS device
+        const res = await jobsService.getAvailableJobs(helperAId, undefined, 1, 10, 10.77, 106.68);
+
+        // Assert hành vi: Đơn của thợ B TUYỆT ĐỐI KHÔNG xuất hiện trong feed thợ A
+        expect(res.jobs.map(j => j._id)).toContain('job-public-no-geo');
+        expect(res.jobs.map(j => j._id)).not.toContain('job-private-for-b-no-geo');
+        expect(res.jobs).toHaveLength(1);
       });
     });
 
@@ -1353,6 +1504,290 @@ describe('ĐỢT 2 (P1) — G1–G9 & J1–J3 Regression & Correctness Specs', (
       expect(warnSpy).toHaveBeenCalledWith(
         expect.stringContaining('$geoNear aggregation failed, falling back to in-memory sort'),
       );
+    });
+
+    // ─── P7: Phân trang sâu, sắp xếp created_at: -1 và tính đúng is_capped / candidate_cap ───
+    it('P7(b): phân trang sâu không GPS sắp xếp theo created_at: -1', async () => {
+      const helperId = '507f1f77bcf86cd799439011';
+      let sortArg: any = null;
+      let skipArg: any = null;
+      let limitArg: any = null;
+
+      const mockJobs = Array.from({ length: 10 }, (_, i) => ({
+        _id: `job-deep-${i + 200}`,
+        title: `Job ${i + 200}`,
+        created_at: new Date(Date.now() - (i + 200) * 1000),
+        service_id: { name: 'Dọn dẹp' },
+      }));
+
+      const jobModel: any = {
+        countDocuments: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(250) }),
+        find: jest.fn().mockReturnValue({
+          populate: jest.fn().mockReturnValue({
+            sort: jest.fn().mockImplementation((arg: any) => {
+              sortArg = arg;
+              return {
+                skip: jest.fn().mockImplementation((s: number) => {
+                  skipArg = s;
+                  return {
+                    limit: jest.fn().mockImplementation((l: number) => {
+                      limitArg = l;
+                      return {
+                        exec: jest.fn().mockResolvedValue(mockJobs),
+                      };
+                    }),
+                  };
+                }),
+              };
+            }),
+          }),
+        }),
+      };
+
+      const helperModel: any = {
+        findOne: jest.fn().mockReturnValue({
+          select: jest.fn().mockReturnValue({
+            lean: jest.fn().mockReturnValue({
+              exec: jest.fn().mockResolvedValue({
+                _id: helperId,
+                verification_status: 'approved',
+                location: undefined,
+                availability: { enabled: false },
+              }),
+            }),
+          }),
+        }),
+      };
+
+      const dummy = {} as never;
+      const jobsService = new JobsService(
+        jobModel,
+        dummy,
+        dummy,
+        dummy,
+        helperModel,
+        dummy,
+        dummy,
+        dummy,
+        dummy,
+        dummy,
+        dummy,
+        { getRoutesBatch: jest.fn().mockResolvedValue(new Map()) } as any,
+        dummy,
+        dummy,
+        dummy,
+        dummy,
+      );
+
+      // Yêu cầu trang 11 (skip = 200 >= MAX_FEED_SORT_CANDIDATES)
+      const res = await jobsService.getAvailableJobs(helperId, undefined, 11, 20);
+
+      expect(sortArg).toEqual({ created_at: -1 });
+      expect(skipArg).toBe(200);
+      expect(limitArg).toBe(20);
+      expect(res.jobs).toHaveLength(10);
+      expect(res.jobs[0]._id).toBe('job-deep-200');
+    });
+
+    it('P7(c): phân trang sâu nhánh không-availability (> 200 đơn) trả về đơn ở trang cuối không bị rỗng', async () => {
+      const helperId = '507f1f77bcf86cd799439011';
+      const mockJobsPage13 = Array.from({ length: 10 }, (_, i) => ({
+        _id: `job-page13-${i + 240}`,
+        title: `Job ${i + 240}`,
+        service_id: { name: 'Sửa điện' },
+      }));
+
+      const jobModel: any = {
+        countDocuments: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(250) }),
+        find: jest.fn().mockReturnValue({
+          populate: jest.fn().mockReturnValue({
+            sort: jest.fn().mockReturnValue({
+              skip: jest.fn().mockImplementation((skip: number) => ({
+                limit: jest.fn().mockImplementation((limit: number) => ({
+                  exec: jest.fn().mockResolvedValue(skip === 240 ? mockJobsPage13 : []),
+                })),
+              })),
+            }),
+          }),
+        }),
+      };
+
+      const helperModel: any = {
+        findOne: jest.fn().mockReturnValue({
+          select: jest.fn().mockReturnValue({
+            lean: jest.fn().mockReturnValue({
+              exec: jest.fn().mockResolvedValue({
+                _id: helperId,
+                verification_status: 'approved',
+                location: undefined,
+                availability: { enabled: false },
+              }),
+            }),
+          }),
+        }),
+      };
+
+      const dummy = {} as never;
+      const jobsService = new JobsService(
+        jobModel,
+        dummy,
+        dummy,
+        dummy,
+        helperModel,
+        dummy,
+        dummy,
+        dummy,
+        dummy,
+        dummy,
+        dummy,
+        { getRoutesBatch: jest.fn().mockResolvedValue(new Map()) } as any,
+        dummy,
+        dummy,
+        dummy,
+        dummy,
+      );
+
+      // Trang 13 với limit 20 -> skip = 240
+      const res = await jobsService.getAvailableJobs(helperId, undefined, 13, 20);
+
+      expect(res.total).toBe(250);
+      expect(res.total_pages).toBe(13);
+      expect(res.jobs).toHaveLength(10);
+      expect(res.jobs[0]._id).toBe('job-page13-240');
+      expect(res.jobs[9]._id).toBe('job-page13-249');
+    });
+
+    it('P7(d): is_capped và candidate_cap phản ánh chính xác khi cap áp dụng và không báo true sai', async () => {
+      const helperId = '507f1f77bcf86cd799439011';
+
+      // Case 1: Availability enabled, 250 jobs -> KHÔNG bị cap bộ nhớ 200 (quét lean toàn bộ), is_capped = false
+      const leanCandidates = Array.from({ length: 250 }, (_, i) => ({
+        _id: `job-avail-${i}`,
+        preferred_date: new Date('2026-11-09'),
+        preferred_time_start: '08:00',
+      }));
+
+      const jobModelAvail: any = {
+        countDocuments: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(250) }),
+        find: jest.fn().mockImplementation((query: any) => {
+          if (query?._id?.$in) {
+            return {
+              populate: jest.fn().mockReturnValue({
+                exec: jest.fn().mockResolvedValue([]),
+              }),
+            };
+          }
+          return {
+            select: jest.fn().mockReturnValue({
+              sort: jest.fn().mockReturnValue({
+                lean: jest.fn().mockReturnValue({
+                  exec: jest.fn().mockResolvedValue(leanCandidates),
+                }),
+              }),
+              lean: jest.fn().mockReturnValue({
+                exec: jest.fn().mockResolvedValue(leanCandidates),
+              }),
+            }),
+          };
+        }),
+      };
+
+      const helperModelAvail: any = {
+        findOne: jest.fn().mockReturnValue({
+          select: jest.fn().mockReturnValue({
+            lean: jest.fn().mockReturnValue({
+              exec: jest.fn().mockResolvedValue({
+                _id: helperId,
+                verification_status: 'approved',
+                availability: {
+                  enabled: true,
+                  days_of_week: [1],
+                  start_time: '07:00',
+                  end_time: '12:00',
+                },
+              }),
+            }),
+          }),
+        }),
+      };
+
+      const dummy = {} as never;
+      const jobsServiceAvail = new JobsService(
+        jobModelAvail,
+        dummy,
+        dummy,
+        dummy,
+        helperModelAvail,
+        dummy,
+        dummy,
+        dummy,
+        dummy,
+        dummy,
+        dummy,
+        { getRoutesBatch: jest.fn().mockResolvedValue(new Map()) } as any,
+        dummy,
+        dummy,
+        dummy,
+        dummy,
+      );
+
+      const resAvail = await jobsServiceAvail.getAvailableJobs(helperId, undefined, 1, 10);
+      expect(resAvail.availability_filtered).toBe(true);
+      expect(resAvail.is_capped).toBe(false);
+      expect(resAvail.candidate_cap).toBeUndefined();
+
+      // Case 2: Availability disabled, fallback in-memory sort với 250 jobs (> 200) -> is_capped = true, candidate_cap = 200
+      const jobModelFallback: any = {
+        countDocuments: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(250) }),
+        find: jest.fn().mockReturnValue({
+          populate: jest.fn().mockReturnValue({
+            sort: jest.fn().mockReturnValue({
+              limit: jest.fn().mockReturnValue({
+                exec: jest.fn().mockResolvedValue([]),
+              }),
+            }),
+          }),
+        }),
+      };
+
+      const helperModelFallback: any = {
+        findOne: jest.fn().mockReturnValue({
+          select: jest.fn().mockReturnValue({
+            lean: jest.fn().mockReturnValue({
+              exec: jest.fn().mockResolvedValue({
+                _id: helperId,
+                verification_status: 'approved',
+                location: { coordinates: [106.68, 10.77] },
+                availability: { enabled: false },
+              }),
+            }),
+          }),
+        }),
+      };
+
+      const jobsServiceFallback = new JobsService(
+        jobModelFallback,
+        dummy,
+        dummy,
+        dummy,
+        helperModelFallback,
+        dummy,
+        dummy,
+        dummy,
+        dummy,
+        dummy,
+        dummy,
+        { getRoutesBatch: jest.fn().mockResolvedValue(new Map()) } as any,
+        dummy,
+        dummy,
+        dummy,
+        dummy,
+      );
+
+      const resFallback = await jobsServiceFallback.getAvailableJobs(helperId, undefined, 1, 10, 10.77, 106.68);
+      expect(resFallback.availability_filtered).toBe(false);
+      expect(resFallback.is_capped).toBe(true);
+      expect(resFallback.candidate_cap).toBe(MAX_FEED_SORT_CANDIDATES);
     });
   });
 });
