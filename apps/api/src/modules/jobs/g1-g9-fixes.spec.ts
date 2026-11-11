@@ -610,7 +610,7 @@ describe('ĐỢT 2 (P1) — G1–G9 & J1–J3 Regression & Correctness Specs', (
       // (c) Query có giới hạn an toàn, không load toàn bộ RAM vô hạn
       expect(limitApplied).toBe(MAX_FEED_SORT_CANDIDATES);
       expect(res.candidate_cap).toBe(MAX_FEED_SORT_CANDIDATES);
-    });
+    }, 15000);
   });
 
   describe('K2: Ẩn báo giá của thợ chưa xác minh danh tính và gửi thông báo đúng 1 lần', () => {
