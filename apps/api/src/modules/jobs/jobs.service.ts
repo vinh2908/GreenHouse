@@ -213,7 +213,14 @@ export async function setHelperBusyWithModels(
       );
       if (typeof res?.exec === 'function') await res.exec();
       if (gateway && typeof gateway.broadcastHelperStatus === 'function') {
-        void gateway.broadcastHelperStatus(String(helperObjId), HelperStatus.ONLINE);
+        // Q5: broadcast là best-effort. Khi chạy qua script (process riêng, không
+        // có socket server), AppGateway.server là undefined nên emit sẽ reject;
+        // DB đã cập nhật xong trước đó nên không được để rejection chưa bắt làm
+        // crash tiến trình. Client live chỉ nhận được broadcast từ API server
+        // đang chạy; sau khi script sửa, DB (ONLINE) là nguồn thật duy nhất.
+        void Promise.resolve(
+          gateway.broadcastHelperStatus(String(helperObjId), HelperStatus.ONLINE),
+        ).catch(() => undefined);
       }
     }
   }
