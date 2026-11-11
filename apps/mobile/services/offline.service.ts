@@ -374,6 +374,23 @@ export async function rollbackOptimisticStatus(jobId: string, prevStatus?: strin
   }
 }
 
+/** Q7(d): Dọn `_pre_optimistic_status` khỏi cache chi tiết đơn khi flush thành công.
+ * Trạng thái lạc quan đã được server xác nhận nên không còn cần giữ trạng thái trước
+ * đó; để lại sẽ khiến lần rollback sau (nếu có) khôi phục sai về trạng thái cũ.
+ * Lỗi cache không được làm hỏng flush nên tự nuốt lỗi. */
+export async function clearPreOptimisticStatus(jobId: string): Promise<void> {
+  try {
+    const cached = await getCachedJobDetail<Record<string, unknown>>(jobId);
+    if (cached?._pre_optimistic_status) {
+      delete cached._pre_optimistic_status;
+      cached.updated_at = new Date().toISOString();
+      await cacheJobDetail(cached);
+    }
+  } catch {
+    /* bỏ qua lỗi cache */
+  }
+}
+
 export async function loadPendingCount(): Promise<number> {
   const queue = await readQueue();
   useOfflineStore.getState().setPendingCount(queue.length);
@@ -478,6 +495,9 @@ export async function flushQueue(): Promise<number> {
         queue = queue.slice(1);
         flushed += 1;
         await writeQueue(queue);
+        // Q7(d): flush thành công → server đã xác nhận trạng thái lạc quan,
+        // dọn _pre_optimistic_status khỏi cache chi tiết đơn.
+        await clearPreOptimisticStatus(item.job_id);
       } catch (err) {
         const status = (err as { response?: { status?: number } })?.response?.status;
         if (status && status >= 400 && status < 500) {

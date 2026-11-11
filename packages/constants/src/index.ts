@@ -127,7 +127,6 @@ export const SOCKET_EVENTS = {
   QUOTE_RECEIVED: 'quote:received', // Customer nhận được báo giá mới
   QUOTE_ACCEPTED: 'quote:accepted', // Helper biết quote được chọn
   QUOTE_REJECTED: 'quote:rejected', // Helper biết quote bị từ chối
-  QUOTE_HIDDEN: 'quote:hidden', // Helper biết báo giá bị ẩn do hồ sơ chưa xác minh
 
   // Contract
   CONTRACT_AMENDED: 'contract:amended', // Đề xuất thay đổi hợp đồng

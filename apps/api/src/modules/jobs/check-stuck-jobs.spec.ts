@@ -90,90 +90,89 @@ describe('O2, P4 & O6: checkAndFixStuckAssignedJobs and setHelperBusyWithModels'
       });
     });
 
-    it('chạy fallback path với raw driver collection: unassign tất cả các đơn kẹt và thả thợ mà không crash', async () => {
-      const helper1 = new Types.ObjectId('507f1f77bcf86cd799439011');
-      const helper2 = new Types.ObjectId('507f1f77bcf86cd799439022');
-      const stuckJob1: any = {
-        _id: new Types.ObjectId(),
-        title: 'Đơn kẹt 1',
-        status: 'confirmed',
-        helper_id: helper1,
-        events: [],
-      };
-      const stuckJob2: any = {
-        _id: new Types.ObjectId(),
-        title: 'Đơn kẹt 2',
-        status: 'quote_selected',
-        helper_id: helper2,
-        events: [],
-      };
+    describe('O6 (Q7(e)): fallback path chạy trên raw driver collection THẬT (MongoMemoryServer)', () => {
+      let mongod: MongoMemoryServer;
+      let client: MongoClient;
+      let db: any;
+      let rawHelpersCol: any;
+      let rawJobsCol: any;
 
-      const rawJobsCol = {
-        find: jest.fn().mockReturnValue({
-          toArray: jest.fn().mockResolvedValue([stuckJob1, stuckJob2]),
-        }),
-        updateOne: jest.fn().mockImplementation(async (filter: any, update: any) => {
-          const target = [stuckJob1, stuckJob2].find(j => String(j._id) === String(filter._id));
-          if (target && update.$set) {
-            Object.assign(target, update.$set);
-          }
-          return { modifiedCount: 1 };
-        }),
-        countDocuments: jest.fn().mockResolvedValue(0),
-      };
+      beforeAll(async () => {
+        mongod = await MongoMemoryServer.create();
+        client = new MongoClient(mongod.getUri());
+        await client.connect();
+        db = client.db('test_o6_driver');
+        rawHelpersCol = db.collection('helpers');
+        rawJobsCol = db.collection('jobs');
+      }, 60000);
 
-      const rawContractsCol = {
-        findOne: jest.fn().mockResolvedValue(null), // Cả 2 đơn đều không có hợp đồng (đơn kẹt)
-      };
-
-      const rawHelpersCol = {
-        updateOne: jest.fn().mockImplementation(async (filter: any, update: any) => {
-          const keys = Object.keys(update);
-          if (!keys.some(k => k.startsWith('$'))) {
-            throw new Error('MongoInvalidArgumentError: Update document requires atomic operators');
-          }
-          return { modifiedCount: 1 };
-        }),
-      };
-
-      const mockDb = {
-        collection: jest.fn().mockImplementation((name: string) => {
-          if (name === 'jobs') return rawJobsCol;
-          if (name === 'contracts') return rawContractsCol;
-          if (name === 'helpers') return rawHelpersCol;
-          return {};
-        }),
-      };
-
-      Object.defineProperty(mongoose, 'connection', {
-        value: {
-          readyState: 1,
-          db: mockDb,
-        },
-        configurable: true,
+      afterAll(async () => {
+        if (client) await client.close();
+        if (mongod) await mongod.stop();
       });
 
-      // Chạy script với disconnectOnFinish: false để không gọi mongoose.disconnect trong unit test
-      await expect(
-        checkAndFixStuckAssignedJobs({ disconnectOnFinish: false }),
-      ).resolves.not.toThrow();
+      beforeEach(async () => {
+        await rawHelpersCol.deleteMany({});
+        await rawJobsCol.deleteMany({});
+        await db.collection('contracts').deleteMany({});
+        // Nối mongoose.connection.db tới DB thật để script chạy đúng đường production
+        // (script đọc mongoose.connection.db, không nhận db qua options).
+        Object.defineProperty(mongoose, 'connection', {
+          value: { readyState: 1, db },
+          configurable: true,
+        });
+      });
 
-      // Cả 2 đơn đều được đưa về OPEN và gỡ helper_id
-      expect(stuckJob1.status).toBe('open');
-      expect(stuckJob1.helper_id).toBeNull();
-      expect(stuckJob2.status).toBe('open');
-      expect(stuckJob2.helper_id).toBeNull();
+      it('chạy fallback path với raw driver collection thật: unassign tất cả các đơn kẹt và thả thợ mà không crash', async () => {
+        const helper1 = new Types.ObjectId('507f1f77bcf86cd799439011');
+        const helper2 = new Types.ObjectId('507f1f77bcf86cd799439022');
+        await rawHelpersCol.insertMany([
+          { user_id: helper1, status: HelperStatus.BUSY },
+          { user_id: helper2, status: HelperStatus.BUSY },
+        ]);
+        const jobId1 = new Types.ObjectId();
+        const jobId2 = new Types.ObjectId();
+        await rawJobsCol.insertMany([
+          {
+            _id: jobId1,
+            title: 'Đơn kẹt 1',
+            status: 'confirmed',
+            helper_id: helper1,
+            events: [],
+          },
+          {
+            _id: jobId2,
+            title: 'Đơn kẹt 2',
+            status: 'quote_selected',
+            helper_id: helper2,
+            events: [],
+          },
+        ]);
 
-      // Helpers được gọi updateOne giải phóng trạng thái với toán tử $set
-      expect(rawHelpersCol.updateOne).toHaveBeenCalledTimes(2);
-      expect(rawHelpersCol.updateOne).toHaveBeenCalledWith(
-        expect.objectContaining({ user_id: helper1 }),
-        { $set: { status: HelperStatus.ONLINE } },
-      );
-      expect(rawHelpersCol.updateOne).toHaveBeenCalledWith(
-        expect.objectContaining({ user_id: helper2 }),
-        { $set: { status: HelperStatus.ONLINE } },
-      );
+        // Chạy script với disconnectOnFinish: false để không gọi mongoose.disconnect trong unit test
+        await expect(
+          checkAndFixStuckAssignedJobs({ disconnectOnFinish: false }),
+        ).resolves.not.toThrow();
+
+        // Cả 2 đơn đều được đưa về OPEN và gỡ helper_id — đọc lại từ collection THẬT
+        const fixedJob1 = await rawJobsCol.findOne({ _id: jobId1 });
+        const fixedJob2 = await rawJobsCol.findOne({ _id: jobId2 });
+        expect(fixedJob1.status).toBe('open');
+        expect(fixedJob1.helper_id).toBeNull();
+        expect(fixedJob2.status).toBe('open');
+        expect(fixedJob2.helper_id).toBeNull();
+        // Script ghi lại event unassign bằng $push trên collection thật
+        expect(fixedJob1.events).toHaveLength(1);
+        expect(fixedJob1.events[0].status).toBe('open');
+        expect(fixedJob2.events).toHaveLength(1);
+
+        // Helpers được giải phóng về ONLINE trên collection thật
+        // (qua $set của setHelperBusyWithModels — code cũ thiếu $set sẽ ném lỗi trên driver thật)
+        const freedHelper1 = await rawHelpersCol.findOne({ user_id: helper1 });
+        const freedHelper2 = await rawHelpersCol.findOne({ user_id: helper2 });
+        expect(freedHelper1.status).toBe(HelperStatus.ONLINE);
+        expect(freedHelper2.status).toBe(HelperStatus.ONLINE);
+      });
     });
 
     it('khi truyền jobsService: giải phóng thợ qua JobsService.setHelperBusy thật', async () => {
