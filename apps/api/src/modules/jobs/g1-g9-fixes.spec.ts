@@ -511,6 +511,104 @@ describe('ĐỢT 2 (P1) — G1–G9 & J1–J3 Regression & Correctness Specs', (
     });
   });
 
+  // ─── Q1: Nhánh fallback ≤200 đơn vẫn lọc availability (regression P7(c)) ───
+  describe('Q1: getAvailableJobs fallback branch keeps availability filter when total <= 200', () => {
+    it('thợ bật lịch rảnh, tổng ≤ 200 đơn trộn khớp/không khớp -> chỉ trả đơn khớp, total = số đơn khớp', async () => {
+      const helperId = new Types.ObjectId().toString();
+
+      // 180 đơn: 100 khớp (thứ 2, 09:00 trong khung 07:00–20:00), 80 không khớp (thứ 3)
+      const jobs180: any[] = [];
+      for (let i = 0; i < 180; i++) {
+        const matching = i % 9 < 5; // xen kẽ để trang 1 cũng trộn cả hai loại
+        jobs180.push({
+          _id: new Types.ObjectId(),
+          title: `Job ${i}`,
+          status: JobStatus.OPEN,
+          preferred_date: matching
+            ? new Date('2026-11-09T08:00:00Z') // thứ 2
+            : new Date('2026-11-10T08:00:00Z'), // thứ 3
+          preferred_time_start: '09:00',
+          created_at: new Date(Date.now() - i * 60000),
+          toObject: function () {
+            return { ...this };
+          },
+        });
+      }
+      const matchingCount = jobs180.filter(j => j.preferred_date.getDay() === 1).length;
+      expect(matchingCount).toBe(100);
+
+      const jobModel: any = {
+        countDocuments: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(180) }),
+        find: jest.fn().mockImplementation(() => {
+          let limitVal = 180;
+          const chain: any = {
+            populate: jest.fn().mockReturnThis(),
+            sort: jest.fn().mockReturnThis(),
+            limit: jest.fn().mockImplementation((n: number) => {
+              limitVal = n;
+              return chain;
+            }),
+            exec: jest.fn().mockImplementation(async () => {
+              return jobs180.slice(0, limitVal);
+            }),
+          };
+          return chain;
+        }),
+      };
+
+      // Thợ bật availability chỉ thứ 2, khung 07:00–20:00, không có vị trí (đi nhánh fallback, không $geoNear)
+      const helperModel: any = {
+        findOne: jest.fn().mockReturnValue({
+          select: jest.fn().mockReturnValue({
+            lean: jest.fn().mockReturnValue({
+              exec: jest.fn().mockResolvedValue({
+                availability: {
+                  enabled: true,
+                  days_of_week: [1],
+                  start_time: '07:00',
+                  end_time: '20:00',
+                },
+              }),
+            }),
+          }),
+        }),
+      };
+
+      const routingService = new RoutingService();
+      const dummy = {} as never;
+      const jobsService = new JobsService(
+        jobModel,
+        dummy,
+        dummy,
+        dummy,
+        helperModel,
+        dummy,
+        dummy,
+        dummy,
+        dummy,
+        dummy,
+        dummy,
+        routingService,
+        dummy,
+        dummy,
+        dummy,
+        dummy,
+      );
+
+      // Trang 1, limit 20 — tổng 180 ≤ 200 nên đi nhánh fallback
+      const res = await jobsService.getAvailableJobs(helperId, undefined, 1, 20);
+
+      // Lỗi P7(c): total = 180, trang 1 chứa cả đơn thứ 3 ngoài lịch rảnh
+      // Sửa đúng: total = 100, total_pages = 5, trang 1 chỉ có đơn thứ 2
+      expect(res.total).toBe(100);
+      expect(res.total_pages).toBe(5);
+      expect(res.jobs.length).toBe(20);
+      for (const job of res.jobs) {
+        expect(new Date(job.preferred_date).getDay()).toBe(1);
+      }
+    });
+  });
+
   // ─── M1: getAvailableJobs sort gần-nhất với > 150 đơn có giới hạn RAM + đếm tổng đúng ───
   describe('M1: getAvailableJobs feed bounded query and true total with 150+ jobs', () => {
     it('khi có hơn 150 đơn khớp -> trang đầu trả về đơn gần nhất lên đầu, query bị giới hạn bởi MAX_FEED_SORT_CANDIDATES và total/total_pages đúng tổng thật', async () => {
@@ -1038,8 +1136,7 @@ describe('ĐỢT 2 (P1) — G1–G9 & J1–J3 Regression & Correctness Specs', (
           (clause: any) =>
             Array.isArray(clause.$or) &&
             clause.$or.some(
-              (item: any) =>
-                'address.location' in item || 'address.location.coordinates.0' in item,
+              (item: any) => 'address.location' in item || 'address.location.coordinates.0' in item,
             ),
         );
         expect(hasNonGeoOr).toBe(true);
@@ -1204,7 +1301,7 @@ describe('ĐỢT 2 (P1) — G1–G9 & J1–J3 Regression & Correctness Specs', (
                     if (cond.private_offer_expires_at?.$lte) {
                       return Boolean(
                         j.private_offer_expires_at &&
-                          j.private_offer_expires_at <= cond.private_offer_expires_at.$lte,
+                        j.private_offer_expires_at <= cond.private_offer_expires_at.$lte,
                       );
                     }
                     return false;
@@ -1784,7 +1881,14 @@ describe('ĐỢT 2 (P1) — G1–G9 & J1–J3 Regression & Correctness Specs', (
         dummy,
       );
 
-      const resFallback = await jobsServiceFallback.getAvailableJobs(helperId, undefined, 1, 10, 10.77, 106.68);
+      const resFallback = await jobsServiceFallback.getAvailableJobs(
+        helperId,
+        undefined,
+        1,
+        10,
+        10.77,
+        106.68,
+      );
       expect(resFallback.availability_filtered).toBe(false);
       expect(resFallback.is_capped).toBe(true);
       expect(resFallback.candidate_cap).toBe(MAX_FEED_SORT_CANDIDATES);

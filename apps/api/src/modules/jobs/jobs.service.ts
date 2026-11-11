@@ -2132,7 +2132,14 @@ export class JobsService implements OnModuleInit {
       update.status = activeCount > 0 ? JobStatus.RECEIVING_QUOTES : JobStatus.OPEN;
     }
 
-    await this.jobModel.findByIdAndUpdate(jobOid, { $set: update }).exec();
+    // Q2: update có điều kiện — chỉ ghi khi đơn vẫn OPEN/RECEIVING_QUOTES, tránh stale-write
+    // ghi đè đơn đã CANCELLED về lại RECEIVING_QUOTES sau cancelJob.save()
+    await this.jobModel
+      .findOneAndUpdate(
+        { _id: jobOid, status: { $in: [JobStatus.OPEN, JobStatus.RECEIVING_QUOTES] } },
+        { $set: update },
+      )
+      .exec();
   }
 
   // ─── Helper: Submit quote ─────────────────────────────────────────────────
@@ -4809,13 +4816,14 @@ export class JobsService implements OnModuleInit {
           }
         } else {
           // P7(c): Phân trang ở nhánh không-availability khi không dùng được $geoNear
+          // Q1: khi thợ bật lọc lịch rảnh và tổng ≤ 200 đơn, nhánh fallback này vẫn phải lọc isAvailableForDate
           const skip = (safePage - 1) * safeLimit;
-          total = rawTotalCount;
 
-          if (skip >= MAX_FEED_SORT_CANDIDATES) {
+          if (!availabilityFiltered && skip >= MAX_FEED_SORT_CANDIDATES) {
             // Khi phân trang sâu vượt quá MAX_FEED_SORT_CANDIDATES (200 đơn):
             // Truy vấn trực tiếp từ MongoDB theo sort { created_at: -1 } với skip & limit để các trang sâu
             // không bị trả về mảng rỗng [] trong khi total/total_pages vẫn báo còn dữ liệu.
+            total = rawTotalCount;
             pagedJobs = await this.jobModel
               .find(query)
               .populate('service_id', 'name slug icon')
@@ -4831,7 +4839,19 @@ export class JobsService implements OnModuleInit {
               .limit(MAX_FEED_SORT_CANDIDATES)
               .exec();
 
-            const visibleJobs = candidateJobs;
+            // Q1: khôi phục filter lịch rảnh đã rớt ở P7(c) — chỉ giữ đơn khớp lịch khi availabilityFiltered bật
+            const visibleJobs = availabilityFiltered
+              ? candidateJobs.filter(job =>
+                  this.isAvailableForDate(
+                    helperProfile?.availability,
+                    job.preferred_date ?? undefined,
+                    job.preferred_time_start,
+                  ),
+                )
+              : candidateJobs;
+
+            // Q1: total/total_pages tính trên tập đã lọc khi lọc bật; giữ nguyên rawTotalCount khi không lọc
+            total = availabilityFiltered ? visibleJobs.length : rawTotalCount;
 
             if (helperCoords && Array.isArray(helperCoords) && helperCoords.length >= 2) {
               visibleJobs.sort((a, b) => {
