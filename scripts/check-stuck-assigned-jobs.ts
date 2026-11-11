@@ -1,7 +1,19 @@
 import mongoose, { Types } from 'mongoose';
 import * as dotenv from 'dotenv';
 import * as path from 'path';
-import { setHelperBusyWithModels } from '../apps/api/src/modules/jobs/jobs.service';
+import { NestFactory } from '@nestjs/core';
+import { AppModule } from '../apps/api/src/app.module';
+import { JobsService, setHelperBusyWithModels } from '../apps/api/src/modules/jobs/jobs.service';
+
+// Q5: entry point chạy bằng JobsService THẬT qua Nest DI (AppModule) thay vì
+// object literal tự chế. Nhờ đó đường giải phóng thợ đi qua đúng code production:
+// model Mongoose thật + AppGateway thật (broadcast helper:status_changed).
+// LƯU Ý broadcast: script chạy trong process riêng, không có socket server
+// (AppGateway.server undefined) nên emit tới client đang kết nối KHÔNG thể xảy
+// ra từ process này — chỉ API server đang chạy mới phát tới client live được.
+// DB (helper -> ONLINE, đơn -> open) là nguồn thật duy nhất sau khi script chạy;
+// client sẽ thấy ONLINE ở lần đọc API tiếp theo. Xem thêm chú thích ở
+// setHelperBusyWithModels (jobs.service.ts).
 
 dotenv.config({ path: path.resolve(process.cwd(), 'apps/api/.env') });
 dotenv.config({ path: path.resolve(process.cwd(), '.env') });
@@ -118,33 +130,39 @@ export async function runScriptEntryPoint(options?: {
   dbUri?: string;
   autoFix?: boolean;
   disconnectOnFinish?: boolean;
+  // Seam cho test: truyền sẵn service (thường là JobsService thật dựng từ
+  // model Mongoose thật) để không phải boot cả AppModule trong unit test.
+  jobsService?: { setHelperBusy: (helperId: any, busy: boolean) => Promise<any> };
+  // Seam cho test: factory trả về service thật; entry point vẫn là nơi gọi
+  // factory để lấy service (kiểm chứng được đường nối ở entry point).
+  createJobsService?: () => Promise<{
+    setHelperBusy: (helperId: any, busy: boolean) => Promise<any>;
+  }>;
 }) {
-  const dbUri = options?.dbUri || MONGODB_URI;
-  if (mongoose.connection.readyState !== 1) {
-    await mongoose.connect(dbUri);
+  // Production: boot Nest application context thật và lấy JobsService từ DI.
+  // Không dùng object literal { setHelperBusy: ... } nữa (Q5).
+  let app: Awaited<ReturnType<typeof NestFactory.createApplicationContext>> | undefined;
+  let jobsService = options?.jobsService;
+  if (!jobsService && options?.createJobsService) {
+    jobsService = await options.createJobsService();
   }
-  const db = mongoose.connection.db;
-  if (!db) {
-    throw new Error('Database connection is not available');
+  if (!jobsService) {
+    app = await NestFactory.createApplicationContext(AppModule, {
+      logger: ['error', 'warn', 'log'],
+    });
+    jobsService = app.get(JobsService);
   }
 
-  const hasHelperProfiles =
-    typeof db.listCollections === 'function'
-      ? await db.listCollections({ name: 'helperprofiles' }).hasNext()
-      : false;
-  const helpersCol = hasHelperProfiles ? db.collection('helperprofiles') : db.collection('helpers');
-  const jobsCol = db.collection('jobs');
-
-  const jobsService = {
-    setHelperBusy: async (helperId: any, busy: boolean) => {
-      return setHelperBusyWithModels(helpersCol, jobsCol, helperId, busy);
-    },
-  };
-
-  return checkAndFixStuckAssignedJobs({
-    ...options,
-    jobsService,
-  });
+  try {
+    return await checkAndFixStuckAssignedJobs({
+      ...options,
+      jobsService,
+    });
+  } finally {
+    if (app) {
+      await app.close().catch(() => undefined);
+    }
+  }
 }
 
 if (require.main === module) {
