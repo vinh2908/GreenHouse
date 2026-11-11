@@ -1225,7 +1225,7 @@ export default function HelperDashboardScreen() {
                   {t('dash_sos_modal_min_payout')}
                 </Text>
                 <Text style={{ fontSize: fs(18), fontWeight: '900', color: COLORS.success }}>
-                  255.000₫
+                  {formatCurrency(255000, lang)}₫
                 </Text>
               </View>
               <Text style={{ fontSize: fs(11.5), color: '#047857' }}>
