@@ -1604,21 +1604,141 @@ describe('ĐỢT 2 (P1) — G1–G9 & J1–J3 Regression & Correctness Specs', (
     });
 
     // ─── P7: Phân trang sâu, sắp xếp created_at: -1 và tính đúng is_capped / candidate_cap ───
-    it('P7(b): phân trang sâu không GPS sắp xếp theo created_at: -1', async () => {
+    it('P7(b): phân trang sâu NHÁNH LEAN-SCAN (availability BẬT, tổng > 200, không GPS) sắp xếp theo created_at: -1', async () => {
+      const helperId = '507f1f77bcf86cd799439011';
+      let sortArg: any = null;
+
+      // 250 đơn đều khớp lịch thợ (thứ 2 09:00, thợ rảnh thứ 2 07:00–20:00),
+      // nhưng created_at CỐ TÌNH XÁO TRỘN (nửa sau mới hơn nửa đầu) để chứng minh
+      // thứ tự trang sâu đến từ sort({ created_at: -1 }) của lean query,
+      // không phải thứ tự chèn của mock. Code cũ (pre-P7(b)) không gọi .sort()
+      // nên trang sâu sẽ sai thứ tự -> test FAIL trên code cũ.
+      const base = new Date('2026-11-09T09:00:00+07:00').getTime();
+      const ordered = Array.from({ length: 250 }, (_, i) => ({
+        _id: `job-lean-${i}`,
+        preferred_date: new Date('2026-11-09'),
+        preferred_time_start: '09:00',
+        created_at: new Date(base - i * 60_000), // i càng nhỏ càng mới
+      }));
+      const leanCandidates = [...ordered.slice(125), ...ordered.slice(0, 125)];
+
+      const jobModel: any = {
+        countDocuments: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(250) }),
+        find: jest.fn().mockImplementation((query: any) => {
+          if (query?._id?.$in) {
+            const pageDocs = leanCandidates
+              .filter(c => query._id.$in.map(String).includes(String(c._id)))
+              .map(c => ({
+                _id: c._id,
+                title: `Job ${c._id}`,
+                preferred_date: c.preferred_date,
+                preferred_time_start: c.preferred_time_start,
+                created_at: c.created_at,
+                service_id: { name: 'Dọn nhà' },
+              }));
+            return {
+              populate: jest.fn().mockReturnValue({
+                exec: jest.fn().mockResolvedValue(pageDocs),
+              }),
+            };
+          }
+          return {
+            select: jest.fn().mockReturnValue({
+              // Mô phỏng DB sort: chỉ khi service gọi .sort({ created_at: -1 })
+              // thì candidates mới được xếp mới-nhất-trước (như MongoDB thật).
+              sort: jest.fn().mockImplementation((arg: any) => {
+                sortArg = arg;
+                const sorted =
+                  arg && arg.created_at === -1
+                    ? [...leanCandidates].sort(
+                        (a, b) => b.created_at.getTime() - a.created_at.getTime(),
+                      )
+                    : leanCandidates;
+                return {
+                  lean: jest.fn().mockReturnValue({
+                    exec: jest.fn().mockResolvedValue(sorted),
+                  }),
+                };
+              }),
+              // Code cũ (pre-P7(b)) đi thẳng .lean() không qua .sort():
+              // trả candidates theo thứ tự chèn (đã xáo trộn).
+              lean: jest.fn().mockReturnValue({
+                exec: jest.fn().mockResolvedValue(leanCandidates),
+              }),
+            }),
+          };
+        }),
+      };
+
+      const helperModel: any = {
+        findOne: jest.fn().mockReturnValue({
+          select: jest.fn().mockReturnValue({
+            lean: jest.fn().mockReturnValue({
+              exec: jest.fn().mockResolvedValue({
+                _id: helperId,
+                verification_status: 'approved',
+                location: undefined,
+                availability: {
+                  enabled: true,
+                  days_of_week: [1], // Thứ 2
+                  start_time: '07:00',
+                  end_time: '20:00',
+                },
+              }),
+            }),
+          }),
+        }),
+      };
+
+      const dummy = {} as never;
+      const jobsService = new JobsService(
+        jobModel,
+        dummy,
+        dummy,
+        dummy,
+        helperModel,
+        dummy,
+        dummy,
+        dummy,
+        dummy,
+        dummy,
+        dummy,
+        { getRoutesBatch: jest.fn().mockResolvedValue(new Map()) } as any,
+        dummy,
+        dummy,
+        dummy,
+        dummy,
+      );
+
+      // Trang 11, limit 20 -> skip = 200; nhánh lean-scan (availability ON, tổng 250 > 200, không GPS)
+      const res = await jobsService.getAvailableJobs(helperId, undefined, 11, 20);
+
+      expect(sortArg).toEqual({ created_at: -1 });
+      expect(res.total).toBe(250);
+      expect(res.total_pages).toBe(13); // Math.ceil(250 / 20)
+      expect(res.jobs).toHaveLength(20);
+      expect(res.jobs[0]._id).toBe('job-lean-200'); // đơn mới thứ 201
+      expect(res.jobs[19]._id).toBe('job-lean-219');
+    });
+
+    it('P7(c): phân trang sâu NHÁNH FALLBACK DEEP-PAGE (không-availability, CÓ GPS nhưng $geoNear lỗi, skip ≥ 200) trả về đơn ở trang cuối không bị rỗng', async () => {
       const helperId = '507f1f77bcf86cd799439011';
       let sortArg: any = null;
       let skipArg: any = null;
       let limitArg: any = null;
 
-      const mockJobs = Array.from({ length: 10 }, (_, i) => ({
-        _id: `job-deep-${i + 200}`,
-        title: `Job ${i + 200}`,
-        created_at: new Date(Date.now() - (i + 200) * 1000),
-        service_id: { name: 'Dọn dẹp' },
+      const mockJobsPage13 = Array.from({ length: 10 }, (_, i) => ({
+        _id: `job-page13-${i + 240}`,
+        title: `Job ${i + 240}`,
+        service_id: { name: 'Sửa điện' },
       }));
 
       const jobModel: any = {
         countDocuments: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(250) }),
+        // $geoNear lỗi -> rơi vào nhánh fallback (như N7(a)); CÓ GPS nên KHÔNG đi nhánh G4.
+        aggregate: jest.fn().mockReturnValue({
+          exec: jest.fn().mockRejectedValue(new Error('MongoServerError: 2dsphere index missing')),
+        }),
         find: jest.fn().mockReturnValue({
           populate: jest.fn().mockReturnValue({
             sort: jest.fn().mockImplementation((arg: any) => {
@@ -1630,10 +1750,15 @@ describe('ĐỢT 2 (P1) — G1–G9 & J1–J3 Regression & Correctness Specs', (
                     limit: jest.fn().mockImplementation((l: number) => {
                       limitArg = l;
                       return {
-                        exec: jest.fn().mockResolvedValue(mockJobs),
+                        exec: jest.fn().mockResolvedValue(s === 240 ? mockJobsPage13 : []),
                       };
                     }),
                   };
+                }),
+                // Nhánh fallback cũ (pre-P7(c)) gọi .limit(200) trực tiếp sau .sort():
+                // trả [] để test FAIL ở assert số đơn thay vì TypeError.
+                limit: jest.fn().mockReturnValue({
+                  exec: jest.fn().mockResolvedValue([]),
                 }),
               };
             }),
@@ -1676,77 +1801,13 @@ describe('ĐỢT 2 (P1) — G1–G9 & J1–J3 Regression & Correctness Specs', (
         dummy,
       );
 
-      // Yêu cầu trang 11 (skip = 200 >= MAX_FEED_SORT_CANDIDATES)
-      const res = await jobsService.getAvailableJobs(helperId, undefined, 11, 20);
+      // Trang 13, limit 20 -> skip = 240; CÓ GPS (10.77, 106.68) để thoát nhánh G4,
+      // $geoNear lỗi -> nhánh fallback deep-page (không-availability, skip ≥ 200).
+      const res = await jobsService.getAvailableJobs(helperId, undefined, 13, 20, 10.77, 106.68);
 
       expect(sortArg).toEqual({ created_at: -1 });
-      expect(skipArg).toBe(200);
+      expect(skipArg).toBe(240);
       expect(limitArg).toBe(20);
-      expect(res.jobs).toHaveLength(10);
-      expect(res.jobs[0]._id).toBe('job-deep-200');
-    });
-
-    it('P7(c): phân trang sâu nhánh không-availability (> 200 đơn) trả về đơn ở trang cuối không bị rỗng', async () => {
-      const helperId = '507f1f77bcf86cd799439011';
-      const mockJobsPage13 = Array.from({ length: 10 }, (_, i) => ({
-        _id: `job-page13-${i + 240}`,
-        title: `Job ${i + 240}`,
-        service_id: { name: 'Sửa điện' },
-      }));
-
-      const jobModel: any = {
-        countDocuments: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(250) }),
-        find: jest.fn().mockReturnValue({
-          populate: jest.fn().mockReturnValue({
-            sort: jest.fn().mockReturnValue({
-              skip: jest.fn().mockImplementation((skip: number) => ({
-                limit: jest.fn().mockImplementation((limit: number) => ({
-                  exec: jest.fn().mockResolvedValue(skip === 240 ? mockJobsPage13 : []),
-                })),
-              })),
-            }),
-          }),
-        }),
-      };
-
-      const helperModel: any = {
-        findOne: jest.fn().mockReturnValue({
-          select: jest.fn().mockReturnValue({
-            lean: jest.fn().mockReturnValue({
-              exec: jest.fn().mockResolvedValue({
-                _id: helperId,
-                verification_status: 'approved',
-                location: undefined,
-                availability: { enabled: false },
-              }),
-            }),
-          }),
-        }),
-      };
-
-      const dummy = {} as never;
-      const jobsService = new JobsService(
-        jobModel,
-        dummy,
-        dummy,
-        dummy,
-        helperModel,
-        dummy,
-        dummy,
-        dummy,
-        dummy,
-        dummy,
-        dummy,
-        { getRoutesBatch: jest.fn().mockResolvedValue(new Map()) } as any,
-        dummy,
-        dummy,
-        dummy,
-        dummy,
-      );
-
-      // Trang 13 với limit 20 -> skip = 240
-      const res = await jobsService.getAvailableJobs(helperId, undefined, 13, 20);
-
       expect(res.total).toBe(250);
       expect(res.total_pages).toBe(13);
       expect(res.jobs).toHaveLength(10);
