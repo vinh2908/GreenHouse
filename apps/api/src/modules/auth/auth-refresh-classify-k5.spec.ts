@@ -226,34 +226,78 @@ describe('K5 & O5 & P8: Real Mobile apiClient Interceptor, Token Refresh, and 40
     expect(axiosPostSpy).toHaveBeenCalledTimes(1);
   });
 
-  it('P8 Revert-Check: chứng minh lỗi mạng thoáng qua không có isNetworkRefreshError (hành vi cũ) sẽ làm sai logic và đăng xuất nhầm', () => {
-    // Giả lập cơ chế phân loại của authStore:
-    // Code cũ: nếu interceptor trả về error 401 mà không gắn cờ isNetworkRefreshError,
-    // authStore sẽ nhận định isSessionExpired = true và xóa phiên người dùng.
-    const rawLegacyError: any = {
-      response: { status: 401, data: { message: 'Token expired' } },
-      // Chưa được gắn cờ isNetworkRefreshError
+  it('P8 Revert-Check: lỗi mạng thoáng qua trong lúc refresh qua api-client + auth.store thật → interceptor gắn cờ isNetworkRefreshError lên lỗi thật, phiên được giữ', async () => {
+    // 1. Seed phiên đăng nhập ban đầu
+    const user = { _id: 'u1', full_name: 'Nguyen Van A' };
+    mockSecureStore['homemate_access_token'] = 'expired-token';
+    mockSecureStore['homemate_refresh_token'] = 'valid-refresh-token';
+    mockSecureStore['homemate_user'] = JSON.stringify(user);
+
+    // 2. Adapter thật của apiClient: GET /auth/me luôn trả 401 khi token chưa refresh
+    apiClient.defaults.adapter = async config => {
+      if (config.url?.includes('/auth/me')) {
+        const err = new AxiosError(
+          'Request failed with status code 401',
+          'ERR_BAD_REQUEST',
+          config,
+          null,
+          {
+            status: 401,
+            statusText: 'Unauthorized',
+            headers: {},
+            config,
+            data: { message: 'Token expired' },
+          } as any,
+        );
+        throw err;
+      }
+      return { data: {}, status: 200, statusText: 'OK', headers: {}, config };
     };
 
-    const isSessionExpiredLegacy =
-      rawLegacyError?.name === 'SessionExpiredError' ||
-      (rawLegacyError?.response?.status === 401 && !rawLegacyError?.isNetworkRefreshError);
+    // 3. axios.post('/auth/refresh') luôn ném lỗi mạng thoáng qua (ECONNABORTED, không có response)
+    const networkErr = new AxiosError('Network timeout connecting to server', 'ECONNABORTED');
+    axiosPostSpy.mockRejectedValue(networkErr);
 
-    // Trên code cũ chưa sửa: bị nhận nhầm là hết phiên
-    expect(isSessionExpiredLegacy).toBe(true);
+    // 4a. Gọi apiClient THẬT: interceptor thật chạy refreshAccessToken thật
+    //     (axios.post('/auth/refresh') ném lỗi mạng) rồi reject với chính lỗi đó.
+    let caught: any = null;
+    try {
+      await apiClient.get('/auth/me');
+    } catch (err) {
+      caught = err;
+    }
+    expect(caught).not.toBeNull();
 
-    // Với code K5 đã sửa: interceptor gắn cờ isNetworkRefreshError = true khi lỗi refresh do mạng
-    const fixedNetworkRefreshError: any = {
-      response: { status: 401, data: { message: 'Token expired' } },
-      isNetworkRefreshError: true,
-    };
+    // - Lỗi reject ra là đúng lỗi mạng thoáng qua, KHÔNG phải SessionExpiredError
+    expect(caught).not.toBeInstanceOf(SessionExpiredError);
+    expect(caught.code).toBe('ECONNABORTED');
+    // - ĐÂY LÀ REVERT-CHECK: interceptor thật PHẢI gắn cờ isNetworkRefreshError
+    //   lên chính lỗi này. Xóa dòng `isNetworkRefreshError = true` khỏi
+    //   interceptor thật thì assertion này FAIL (undefined !== true).
+    expect((caught as any).isNetworkRefreshError).toBe(true);
+    // - Pin: refresh thật đã được gọi 1 lần với đúng refresh token
+    expect(axiosPostSpy).toHaveBeenCalledTimes(1);
+    expect(axiosPostSpy).toHaveBeenCalledWith(
+      expect.stringContaining('/auth/refresh'),
+      expect.objectContaining({ refresh_token: 'valid-refresh-token' }),
+      expect.any(Object),
+    );
+    // - refresh lỗi mạng KHÔNG xóa token trong SecureStore
+    expect(mockSecureStore['homemate_refresh_token']).toBe('valid-refresh-token');
+    expect(mockSecureStore['homemate_access_token']).toBe('expired-token');
 
-    const isSessionExpiredFixed =
-      fixedNetworkRefreshError?.name === 'SessionExpiredError' ||
-      (fixedNetworkRefreshError?.response?.status === 401 &&
-        !fixedNetworkRefreshError?.isNetworkRefreshError);
+    // 4b. Cùng lỗi mạng đó đi qua loadStoredAuth THẬT → phân loại thật trong
+    //     auth.store giữ nguyên phiên (không logout, không xóa token).
+    await useAuthStore.getState().loadStoredAuth();
 
-    // Trên code K5 đã sửa: cờ isNetworkRefreshError bảo vệ phiên, không bị đăng xuất nhầm
-    expect(isSessionExpiredFixed).toBe(false);
+    const state = useAuthStore.getState();
+    expect(state.isAuthenticated).toBe(true);
+    expect(state.user?._id).toBe('u1');
+    expect(state.accessToken).toBe('expired-token');
+    expect(state.refreshToken).toBe('valid-refresh-token');
+    expect(mockSecureStore['homemate_refresh_token']).toBe('valid-refresh-token');
+    expect(mockSecureStore['homemate_access_token']).toBe('expired-token');
+    // - Refresh được gọi thêm 1 lần nữa cho lần /auth/me trong loadStoredAuth
+    expect(axiosPostSpy).toHaveBeenCalledTimes(2);
   });
 });
