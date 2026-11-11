@@ -6,7 +6,9 @@ import {
   checkAndFixStuckAssignedJobs,
   runScriptEntryPoint,
 } from '../../../../../scripts/check-stuck-assigned-jobs';
-import { setHelperBusyWithModels } from './jobs.service';
+import { JobsService, setHelperBusyWithModels } from './jobs.service';
+import { Job, JobSchema } from './schemas/job.schema';
+import { HelperProfile, HelperProfileSchema } from '../helpers/schemas/helper-profile.schema';
 import { HelperStatus } from '@homemate/types';
 
 describe('O2, P4 & O6: checkAndFixStuckAssignedJobs and setHelperBusyWithModels', () => {
@@ -228,68 +230,139 @@ describe('O2, P4 & O6: checkAndFixStuckAssignedJobs and setHelperBusyWithModels'
       expect(rawHelpersCol.updateOne).not.toHaveBeenCalled();
     });
 
-    it('P6: entry point của script (runScriptEntryPoint) tự động nối jobsService và điều phối tới JobsService.setHelperBusy thật', async () => {
-      const helperId = new Types.ObjectId('507f1f77bcf86cd799439044');
-      const stuckJob: any = {
-        _id: new Types.ObjectId(),
-        title: 'Đơn kẹt chạy qua entry point script',
-        status: 'confirmed',
-        helper_id: helperId,
-        events: [],
-      };
-
-      const rawJobsCol = {
-        find: jest.fn().mockReturnValue({
-          toArray: jest.fn().mockResolvedValue([stuckJob]),
-        }),
-        updateOne: jest.fn().mockImplementation(async (filter: any, update: any) => {
-          if (filter._id === stuckJob._id) {
-            stuckJob.status = update.$set.status;
-            stuckJob.helper_id = update.$set.helper_id;
-          }
-          return { modifiedCount: 1 };
-        }),
-        countDocuments: jest.fn().mockResolvedValue(0),
-      };
-      const rawContractsCol = {
-        findOne: jest.fn().mockResolvedValue(null),
-      };
-      const rawHelpersCol = {
-        updateOne: jest.fn().mockResolvedValue({ modifiedCount: 1 }),
-      };
-
-      const mockDb = {
-        listCollections: jest.fn().mockReturnValue({
-          hasNext: jest.fn().mockResolvedValue(true), // tìm thấy helperprofiles
-        }),
-        collection: jest.fn().mockImplementation((name: string) => {
-          if (name === 'jobs') return rawJobsCol;
-          if (name === 'contracts') return rawContractsCol;
-          if (name === 'helperprofiles' || name === 'helpers') return rawHelpersCol;
-          return {};
-        }),
-      };
-
-      Object.defineProperty(mongoose, 'connection', {
-        value: {
-          readyState: 1,
-          db: mockDb,
-        },
-        configurable: true,
-      });
-
-      // Chạy qua entry point thật của script
-      await runScriptEntryPoint({ disconnectOnFinish: false });
-
-      // Đơn bị unassign về OPEN
-      expect(stuckJob.status).toBe('open');
-      expect(stuckJob.helper_id).toBeNull();
-
-      // Thợ được giải phóng về ONLINE với toán tử $set nguyên tử trên collection helperprofiles
-      expect(rawHelpersCol.updateOne).toHaveBeenCalledWith(
-        expect.objectContaining({ user_id: helperId }),
-        { $set: { status: HelperStatus.ONLINE } },
-      );
-    });
+    // P6 (cũ, đã xóa ở Q5): test này chạy entry point với mongoose mock và
+    // KHÔNG truyền jobsService, dựa vào object literal nội bộ của entry point
+    // để gọi setHelperBusyWithModels. Q5 đã xóa object literal đó — entry point
+    // giờ lấy JobsService thật từ Nest DI (mặc định) hoặc từ seam
+    // jobsService/createJobsService. Đường entry-point + service thật được
+    // kiểm chứng ở describe 'Q5' cuối file (test Q5-B dùng createJobsService).
   });
+});
+
+// ─── Q5: entry point nối JobsService THẬT ─────────────────────────────────────
+// JobsService thật (class thật + model Mongoose thật trên MongoMemoryServer +
+// gateway stub có spy broadcast) thay vì object literal / mock object.
+// Chứng minh: spy trên setHelperBusy THẬT được gọi, helper về ONLINE trong DB
+// thật, job kẹt về open, và broadcastHelperStatus được gọi.
+describe('Q5: checkAndFixStuckAssignedJobs + entry point dùng JobsService THẬT', () => {
+  let mongod: MongoMemoryServer;
+  let db: any;
+  let realService: JobsService;
+  let setHelperBusySpy: jest.SpyInstance;
+  let broadcastSpy: jest.Mock;
+
+  beforeAll(async () => {
+    mongod = await MongoMemoryServer.create();
+    await mongoose.connect(mongod.getUri());
+    db = mongoose.connection.db;
+
+    const JobModel = (mongoose.models[Job.name] as any) ?? mongoose.model(Job.name, JobSchema);
+    const HelperProfileModel =
+      (mongoose.models[HelperProfile.name] as any) ??
+      mongoose.model(HelperProfile.name, HelperProfileSchema);
+
+    broadcastSpy = jest.fn().mockResolvedValue(undefined);
+    const gatewayStub = { broadcastHelperStatus: broadcastSpy };
+    const dummy = {} as never;
+    realService = new JobsService(
+      JobModel,
+      dummy,
+      dummy,
+      dummy,
+      HelperProfileModel,
+      dummy,
+      dummy,
+      gatewayStub as any,
+      dummy,
+      dummy,
+      dummy,
+      dummy,
+      dummy,
+      dummy,
+      dummy,
+      dummy,
+    );
+    setHelperBusySpy = jest.spyOn(realService, 'setHelperBusy');
+  }, 60000);
+
+  afterAll(async () => {
+    if (mongoose.connection.readyState !== 0) {
+      await mongoose.disconnect();
+    }
+    if (mongod) await mongod.stop();
+  });
+
+  beforeEach(async () => {
+    await db.collection('jobs').deleteMany({});
+    await db.collection('contracts').deleteMany({});
+    await db.collection('helperprofiles').deleteMany({});
+    jest.clearAllMocks();
+  });
+
+  async function seedStuckJob() {
+    const helperId = new Types.ObjectId('507f1f77bcf86cd799439055');
+    const jobId = new Types.ObjectId();
+    await db.collection('helperprofiles').insertOne({
+      user_id: helperId,
+      status: HelperStatus.BUSY,
+      verification_status: 'approved',
+    });
+    await db.collection('jobs').insertOne({
+      _id: jobId,
+      title: 'Đơn kẹt Q5',
+      status: 'confirmed',
+      helper_id: helperId,
+      customer_id: new Types.ObjectId(),
+      events: [],
+    });
+    return { helperId, jobId };
+  }
+
+  it('Q5-A: chạy với JobsService THẬT — spy setHelperBusy thật được gọi, thợ về ONLINE trong DB thật, broadcast được gọi', async () => {
+    const { helperId, jobId } = await seedStuckJob();
+
+    await checkAndFixStuckAssignedJobs({
+      jobsService: realService,
+      disconnectOnFinish: false,
+    });
+
+    // setHelperBusy THẬT (không phải mock object) được gọi đúng tham số
+    expect(setHelperBusySpy).toHaveBeenCalledTimes(1);
+    expect(setHelperBusySpy).toHaveBeenCalledWith(helperId, false);
+
+    // Đơn kẹt về OPEN + gỡ helper trong DB thật
+    const job = await db.collection('jobs').findOne({ _id: jobId });
+    expect(job.status).toBe('open');
+    expect(job.helper_id).toBeNull();
+
+    // Thợ về ONLINE trong DB thật (model Mongoose thật, $set nguyên tử)
+    const helper = await db.collection('helperprofiles').findOne({ user_id: helperId });
+    expect(helper.status).toBe(HelperStatus.ONLINE);
+
+    // Broadcast helper:status_changed được gọi qua gateway thật của service
+    expect(broadcastSpy).toHaveBeenCalledWith(String(helperId), HelperStatus.ONLINE);
+  }, 30000);
+
+  it('Q5-B (P6 mới): entry point (runScriptEntryPoint) nối service qua createJobsService và điều phối tới setHelperBusy THẬT', async () => {
+    const { helperId, jobId } = await seedStuckJob();
+    const factorySpy = jest.fn(async () => realService);
+
+    await runScriptEntryPoint({
+      createJobsService: factorySpy,
+      disconnectOnFinish: false,
+    });
+
+    // Entry point đã gọi factory để lấy service (đường nối ở entry point)
+    expect(factorySpy).toHaveBeenCalledTimes(1);
+    expect(setHelperBusySpy).toHaveBeenCalledTimes(1);
+    expect(setHelperBusySpy).toHaveBeenCalledWith(helperId, false);
+
+    const job = await db.collection('jobs').findOne({ _id: jobId });
+    expect(job.status).toBe('open');
+    expect(job.helper_id).toBeNull();
+
+    const helper = await db.collection('helperprofiles').findOne({ user_id: helperId });
+    expect(helper.status).toBe(HelperStatus.ONLINE);
+    expect(broadcastSpy).toHaveBeenCalledWith(String(helperId), HelperStatus.ONLINE);
+  }, 30000);
 });
