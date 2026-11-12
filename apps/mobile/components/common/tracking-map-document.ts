@@ -24,7 +24,7 @@ html,body,#map{height:100%;width:100%;margin:0;background:#f1f5f9;font-family:sy
 <div class="goong-attribution">© <a href="https://goong.io" target="_blank" rel="noopener">Goong Maps</a></div>
 <div id="info" role="status">${isEn ? 'Loading map…' : 'Đang tải bản đồ…'}</div>
 <div id="error-card"><span id="error-msg">${isEn ? 'Unable to load Goong map.' : 'Không tải được bản đồ Goong.'}</span><button class="map-retry-btn" onclick="window.location.reload()">${isEn ? 'Retry' : 'Thử lại'}</button></div>
-<button id="recenter" aria-label="${isEn ? 'View entire route' : 'Xem toàn bộ hành trình'}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1f2937" stroke-width="2.5"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="2" fill="#1f2937"/><line x1="12" y1="2" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22"/><line x1="2" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="22" y2="12"/></svg></button>
+<button id="recenter" aria-label="${isEn ? 'View entire route' : 'Xem toàn bộ hành trình'}" title="${isEn ? 'View entire route' : 'Xem toàn bộ hành trình'}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1f2937" stroke-width="2.5"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="2" fill="#1f2937"/><line x1="12" y1="2" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22"/><line x1="2" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="22" y2="12"/></svg></button>
 <script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
 <script>
 (function(){
@@ -37,6 +37,34 @@ html,body,#map{height:100%;width:100%;margin:0;background:#f1f5f9;font-family:sy
     if(window.ReactNativeWebView) window.ReactNativeWebView.postMessage(JSON.stringify(data));
     else window.parent.postMessage(data, '*');
   }
+  // B4: gán handler cho nút "Xem toàn bộ hành trình" NGAY TỪ ĐẦU, trước mọi
+  // return sớm (thiếu thư viện map / thiếu key Goong): trước đây nút không có
+  // handler trong các trường hợp đó nên bấm bao nhiêu lần cũng không có tác
+  // dụng. fit() tự guard khi map/dest chưa sẵn sàng.
+  var map;
+  var dest = null;
+  function fit(){
+    if(!map || !dest) return;
+    if(helperMarker){
+      var hPos = helperMarker.getLngLat();
+      var minLng = Math.min(dest.lng, hPos.lng);
+      var maxLng = Math.max(dest.lng, hPos.lng);
+      var minLat = Math.min(dest.lat, hPos.lat);
+      var maxLat = Math.max(dest.lat, hPos.lat);
+      if(minLng === maxLng && minLat === maxLat){
+        map.flyTo({ center: [dest.lng, dest.lat], zoom: 16 });
+      } else {
+        map.fitBounds([[minLng, minLat], [maxLng, maxLat]], {
+          padding: { top: 48, bottom: 48, left: 48, right: 48 },
+          maxZoom: 16
+        });
+      }
+    } else {
+      map.flyTo({ center: [dest.lng, dest.lat], zoom: 16 });
+    }
+  }
+  document.getElementById('recenter').onclick = fit;
+
   if(!window.maplibregl){
     info.textContent = isEn ? 'Unable to load map library' : 'Không tải được thư viện bản đồ';
     errorCard.style.display = 'flex';
@@ -51,7 +79,6 @@ html,body,#map{height:100%;width:100%;margin:0;background:#f1f5f9;font-family:sy
     return;
   }
 
-  var map;
   try {
     map = new maplibregl.Map({
       container: 'map',
@@ -132,7 +159,7 @@ html,body,#map{height:100%;width:100%;margin:0;background:#f1f5f9;font-family:sy
     notify({type: 'ready'});
   });
 
-  var customerMarker = null, helperMarker = null, dest = null, state = null, route = null;
+  var customerMarker = null, helperMarker = null, state = null, route = null;
   var point = null, frame = 0, version = 0, controller = null, lastFetch = 0, lastMetrics = '';
   var lastDrawAt = 0, initGpsTime = Date.now();
   var lastRouteOrigin = null, routeFails = 0, retryAfter = 0, lastMovedAt = 0, SNAP_MAX = 120;
@@ -195,27 +222,7 @@ html,body,#map{height:100%;width:100%;margin:0;background:#f1f5f9;font-family:sy
     return el;
   }
 
-  function fit(){
-    if(!dest) return;
-    if(helperMarker){
-      var hPos = helperMarker.getLngLat();
-      var minLng = Math.min(dest.lng, hPos.lng);
-      var maxLng = Math.max(dest.lng, hPos.lng);
-      var minLat = Math.min(dest.lat, hPos.lat);
-      var maxLat = Math.max(dest.lat, hPos.lat);
-      if(minLng === maxLng && minLat === maxLat){
-        map.flyTo({ center: [dest.lng, dest.lat], zoom: 16 });
-      } else {
-        map.fitBounds([[minLng, minLat], [maxLng, maxLat]], {
-          padding: { top: 48, bottom: 48, left: 48, right: 48 },
-          maxZoom: 16
-        });
-      }
-    } else {
-      map.flyTo({ center: [dest.lng, dest.lat], zoom: 16 });
-    }
-  }
-  document.getElementById('recenter').onclick = fit;
+  // (B4: fit() + onclick đã gán ở đầu file để nút không chết khi map lỗi.)
 
   function project(p){
     if(!route) return null;

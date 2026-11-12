@@ -49,6 +49,7 @@ import { TeamCard } from '@/components/common/team-card';
 import { OfflineBanner } from '@/components/common/offline-banner';
 import { SosBackupHelperCard } from '@/components/common/sos-backup-helper-card';
 import { formatDisplayAddress } from '@/utils/address-formatter';
+import { isMyActiveJob as isMyActiveJobGate, effectiveJobStatus } from '@/utils/job-assignment';
 
 dayjs.extend(relativeTime);
 
@@ -360,6 +361,11 @@ export default function HelperJobDetailScreen() {
         const helperId = typeof q.helper_id === 'string' ? q.helper_id : q.helper_id?._id;
         return helperId === currentUser?._id && q.status === 'pending';
       });
+
+  // B4: báo giá ĐÃ ĐƯỢC CHỌN của chính thợ được cổng isMyActiveJob dùng làm
+  // bằng chứng dự phòng (xem utils/job-assignment.ts) khi payload job còn cũ
+  // (helper_id null). API getJobQuotes đã trả cả 'accepted' cho thợ gọi
+  // (chỉ báo giá của chính mình).
 
   const quoteServiceObj =
     typeof job.service_id === 'object' && job.service_id ? (job.service_id as any) : null;
@@ -769,17 +775,19 @@ export default function HelperJobDetailScreen() {
     ]);
   };
 
-  const helperIdStr = job.helper_id
-    ? typeof job.helper_id === 'string'
-      ? job.helper_id
-      : job.helper_id._id || job.helper_id.toString?.()
-    : null;
-  const isAssignedToMe = Boolean(helperIdStr && String(helperIdStr) === String(currentUser?._id));
-  const isMyActiveJob =
-    isAssignedToMe && !['cancelled', 'completed', 'refunded'].includes(job.status);
+  // B4: cổng "đơn đang làm của tôi" — xem utils/job-assignment.ts. Ngoài
+  // job.helper_id còn chấp nhận báo giá accepted của chính thợ (khi helper_id
+  // còn null vì payload cũ), để 3 thẻ khách / hợp đồng / tiến độ không biến
+  // mất lúc hiện lúc ẩn sau khi khách chọn báo giá.
+  const isMyActiveJob = isMyActiveJobGate(job, currentUser?._id, quotes);
+  // Trạng thái hiệu lực chỉ dùng cho thẻ tiến độ (xem effectiveJobStatus):
+  // payload cũ còn 'open' nhưng báo giá đã accepted thì coi như 'confirmed'
+  // để nút "Bắt đầu di chuyển đến khách" hiện đúng; server vẫn kiểm tra
+  // helper_id thật khi bấm nên không bấm nhầm đơn người khác.
+  const progressStatus = effectiveJobStatus(job, currentUser?._id, quotes);
   const canProposeAmendment =
     isMyActiveJob &&
-    ['confirmed', 'helper_on_the_way', 'helper_arrived', 'in_progress'].includes(job.status);
+    ['confirmed', 'helper_on_the_way', 'helper_arrived', 'in_progress'].includes(progressStatus);
 
   return (
     <View style={{ flex: 1, backgroundColor: tc.background }}>
@@ -1239,28 +1247,28 @@ export default function HelperJobDetailScreen() {
               {t('helper_job_detail.update_progress_title')}
             </Text>
 
-            {job.status === 'confirmed' && (
+            {progressStatus === 'confirmed' && (
               <Button
                 title={t('helper_job_detail.start_moving_btn')}
                 loading={onTheWay.isPending}
                 onPress={() => handleAction('on_the_way')}
               />
             )}
-            {job.status === 'helper_on_the_way' && (
+            {progressStatus === 'helper_on_the_way' && (
               <Button
                 title={t('helper_job_detail.i_arrived_btn')}
                 loading={arrived.isPending}
                 onPress={() => handleAction('arrived')}
               />
             )}
-            {job.status === 'helper_arrived' && (
+            {progressStatus === 'helper_arrived' && (
               <Button
                 title={t('helper_job_detail.start_work_btn')}
                 loading={startJob.isPending}
                 onPress={() => handleAction('start')}
               />
             )}
-            {job.status === 'in_progress' && (
+            {progressStatus === 'in_progress' && (
               <Button
                 title={t('helper_job_detail.complete_work_btn')}
                 loading={completeJob.isPending}
@@ -1269,7 +1277,7 @@ export default function HelperJobDetailScreen() {
             )}
             {/* P1-15: backend also allows cancel at helper_arrived (with the
                 late-cancel penalty branch) — same as the customer side. */}
-            {['confirmed', 'helper_on_the_way', 'helper_arrived'].includes(job.status) && (
+            {['confirmed', 'helper_on_the_way', 'helper_arrived'].includes(progressStatus) && (
               <Button
                 title={lang === 'en' ? 'Cancel job' : 'Hủy nhận đơn'}
                 variant="outline"
@@ -1279,7 +1287,7 @@ export default function HelperJobDetailScreen() {
                 onPress={handleHelperCancelJob}
               />
             )}
-            {job.status === 'pending_review' && (
+            {progressStatus === 'pending_review' && (
               <View style={{ alignItems: 'center', gap: 8, paddingVertical: 10 }}>
                 <Clock size={36} color={COLORS.gray[400]} />
                 <Text style={{ fontWeight: '800', fontSize: fs(15), color: tc.text }}>
