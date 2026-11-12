@@ -111,13 +111,47 @@ export default function HelperJobDetailScreen() {
   useJobSocketUpdates(id);
   const { width } = useWindowDimensions();
 
-  const { data: job, isLoading, isError, error: jobError, refetch: refetchJob } = useJobDetail(id);
   const { data: quotes } = useJobQuotes(id);
   const { data: contract } = useJobContract(id);
   const { data: helperProfile } = useHelperProfile();
   const gps = useLiveGpsStore(s => s.point);
   const gpsError = useLiveGpsStore(s => s.error);
   const [routeMetrics, setRouteMetrics] = useState<RouteMetrics | null>(null);
+  // B2: mỗi lần bấm "Bấm thử lại" tuyến đường: gửi GPS hiện tại của thợ + buộc
+  // server tính lại (bỏ cache 30 phút). Trước đây nút này chỉ refetch và server
+  // tính lại từ cùng một vị trí đã lưu cũ nên lỗi nào cũng trả về y nguyên.
+  const [routeRetry, setRouteRetry] = useState<{
+    lat?: number;
+    lng?: number;
+    nonce: number;
+  } | null>(null);
+  const handleRetryRoute = useCallback(() => {
+    setRouteRetry(prev => ({
+      lat: gps?.lat,
+      lng: gps?.lng,
+      nonce: (prev?.nonce ?? 0) + 1,
+    }));
+  }, [gps?.lat, gps?.lng]);
+
+  const {
+    data: job,
+    isLoading,
+    isError,
+    error: jobError,
+    refetch: refetchJob,
+  } = useJobDetail(
+    id,
+    // B2: chỉ gửi GPS + buộc tính lại khi thợ bấm "Bấm thử lại" (routeRetry) —
+    // lần tải đầu vẫn dùng vị trí đã lưu như cũ để tránh refetch theo GPS trôi.
+    routeRetry
+      ? {
+          lat: routeRetry.lat,
+          lng: routeRetry.lng,
+          refreshRoute: true,
+          nonce: routeRetry.nonce,
+        }
+      : undefined,
+  );
 
   const handleRouteMetrics = useCallback((metrics: RouteMetrics | null) => {
     setRouteMetrics(prev => {
@@ -980,7 +1014,7 @@ export default function HelperJobDetailScreen() {
                 </View>
               ) : (job as any)?.routing_error ? (
                 <TouchableOpacity
-                  onPress={() => refetchJob()}
+                  onPress={handleRetryRoute}
                   style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 }}
                 >
                   <AlertCircle size={14} color={COLORS.error || '#ef4444'} />
