@@ -157,8 +157,11 @@ export class AuthController {
   @Get('me')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Kiểm tra token hợp lệ + lấy thông tin user' })
-  async me(@CurrentUser() user: unknown) {
-    return user;
+  async me(@CurrentUser() user: { sub: string }) {
+    // B4-R2: trả user đầy đủ từ DB (có _id) thay vì object validate của JWT
+    // ({sub, phone, roles, active_role}) — mobile lưu object này làm
+    // currentUser, thiếu _id thì mọi so sánh currentUser._id đều sai.
+    return this.authService.getMe(String(user.sub));
   }
 
   // ─── Logout ─────────────────────────────────────────────────────────────────
