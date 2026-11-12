@@ -171,6 +171,20 @@ export class AuthService {
 
   // ─── Logout ─────────────────────────────────────────────────────────────────
 
+  // B4-R2: GET /auth/me phải trả về user đầy đủ (có _id). Trước đây controller
+  // trả thẳng object JwtStrategy.validate() ({sub, phone, roles, active_role})
+  // không có _id; loadStoredAuth ở mobile ghi đè user đã lưu bằng object đó
+  // mỗi lần mở lại app, nên currentUser._id thành undefined và isMyActiveJob
+  // luôn false — thẻ tiến độ của thợ được giao không bao giờ hiện dù job
+  // payload đúng (helper_id khớp, status confirmed) và dù useJobDetail có poll.
+  // Đây mới là nguyên nhân gốc live đơn B 2026-11-12: R1 sửa poll + quote
+  // filter nhưng cả hai đường vào cổng đều cần currentUser._id nên đều chết.
+  // findById trả Mongoose doc; toJSON của User schema đã strip password_hash,
+  // fcm/push/voip tokens nên trả trực tiếp là an toàn.
+  async getMe(userId: string) {
+    return this.usersService.findById(userId);
+  }
+
   async logout(userId: string, refreshToken?: string) {
     if (refreshToken) {
       await this.usersService.revokeRefreshToken(userId, refreshToken);
