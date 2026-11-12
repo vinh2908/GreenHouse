@@ -182,8 +182,20 @@ export const useAuthStore = create<AuthState>((set, get) => ({
               if (storedRole) {
                 freshUser.active_role = storedRole;
               }
-              await SecureStore.setItemAsync(USER_KEY, JSON.stringify(freshUser));
-              set({ user: freshUser });
+              // B4-R2: KHÔNG ghi đè mù user đã lưu bằng object /auth/me. Bản
+              // /auth/me cũ chỉ có {sub, phone, roles, active_role}, không có
+              // _id — ghi đè làm mất currentUser._id sau mỗi lần mở lại app,
+              // khiến isMyActiveJob luôn false và thẻ tiến độ của thợ được
+              // giao không bao giờ hiện (đơn B live 2026-11-12). Merge lên
+              // trên user cũ và suy _id từ sub khi bản mới không có _id; kể
+              // cả khi server đã sửa thì merge này vẫn đúng và vô hại.
+              const mergedUser = {
+                ...parsedUser,
+                ...freshUser,
+                _id: freshUser._id ?? freshUser.sub ?? parsedUser?._id,
+              };
+              await SecureStore.setItemAsync(USER_KEY, JSON.stringify(mergedUser));
+              set({ user: mergedUser });
             }
           } catch (err: any) {
             // N5: Phân loại đúng SessionExpiredError / 401 thật TRƯỚC khi check !response
