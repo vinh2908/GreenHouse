@@ -336,13 +336,26 @@ export class JobsService implements OnModuleInit {
       await job.save();
     }
 
-    // 3. Quét các báo giá riêng lẻ quá hạn
+    // 3. Quét các báo giá riêng lẻ quá hạn — sau khi hết hạn phải đồng bộ
+    // lại số lượng/trạng thái đơn (syncJobQuotesState), nếu không đơn kẹt ở
+    // RECEIVING_QUOTES với total_quotes_count cũ dù không còn báo giá chờ nào.
+    const expiringQuotes = await this.quoteModel
+      .find({ status: QuoteStatus.PENDING, expires_at: { $lte: now } })
+      .select('job_id')
+      .lean()
+      .exec();
     await this.quoteModel
       .updateMany(
         { status: QuoteStatus.PENDING, expires_at: { $lte: now } },
         { $set: { status: QuoteStatus.EXPIRED } },
       )
       .exec();
+    const affectedJobIds = [
+      ...new Set((expiringQuotes ?? []).map(q => String((q as any).job_id)).filter(Boolean)),
+    ];
+    for (const affectedJobId of affectedJobIds) {
+      await this.syncJobQuotesState(affectedJobId).catch(() => undefined);
+    }
 
     // 4. B101: ưu đãi riêng (private offer) hết hạn → báo cho thợ được mời, 1 lần
     const expiredOffers = await this.jobModel
@@ -2236,10 +2249,14 @@ export class JobsService implements OnModuleInit {
       })
       .exec();
 
+    // Báo giá EXPIRED cũng được gửi lại như WITHDRAWN/REJECTED: báo giá hết
+    // hạn 24h không còn hiệu lực, trong khi đơn vẫn mở nhận báo giá tới 72h —
+    // chặn gửi lại thì thợ mất hẳn quyền báo giá cho đơn đó.
     if (
       existing &&
       existing.status !== QuoteStatus.WITHDRAWN &&
-      existing.status !== QuoteStatus.REJECTED
+      existing.status !== QuoteStatus.REJECTED &&
+      existing.status !== QuoteStatus.EXPIRED
     ) {
       throw new ConflictException('Bạn đã gửi báo giá cho đơn hàng này');
     }
@@ -2574,6 +2591,11 @@ export class JobsService implements OnModuleInit {
     }
     await quote.save();
 
+    // Đồng bộ lại số lượng/trạng thái đơn (như withdrawQuote/rejectJob):
+    // từ chối báo giá chờ cuối cùng phải đưa đơn về OPEN + count về 0, nếu
+    // không khách vẫn thấy "có báo giá" dù không còn báo giá chờ nào.
+    await this.syncJobQuotesState(jobId);
+
     const helperId = String(quote.helper_id);
     this.gateway.emitToUser(helperId, SOCKET_EVENTS.QUOTE_REJECTED, {
       job_id: jobId,
@@ -2835,18 +2857,26 @@ export class JobsService implements OnModuleInit {
         signed_by_customer_at: new Date(),
       });
     } catch (contractErr) {
-      // P1-22: Rollback quote và job về trạng thái trước khi claim nếu tạo hợp đồng thất bại
+      // P1-22: Rollback quote và job về trạng thái trước khi claim nếu tạo hợp đồng thất bại.
+      // Chỉ khôi phục đúng các báo giá mà lần chọn này vừa từ chối (otherQuotes):
+      // rollback cũ dùng _id: { $ne: quote_id } nên hồi sinh cả những báo giá
+      // đã REJECTED/EXPIRED/WITHDRAWN từ trước thành PENDING.
       await this.quoteModel
         .updateOne({ _id: updatedQuote._id }, { $set: { status: QuoteStatus.PENDING } })
         .exec()
         .catch(() => undefined);
-      await this.quoteModel
-        .updateMany(
-          { job_id: new Types.ObjectId(jobId), _id: { $ne: new Types.ObjectId(dto.quote_id) } },
-          { $set: { status: QuoteStatus.PENDING } },
-        )
-        .exec()
-        .catch(() => undefined);
+      if (otherQuotes.length > 0) {
+        await this.quoteModel
+          .updateMany(
+            {
+              job_id: new Types.ObjectId(jobId),
+              _id: { $in: otherQuotes.map(oq => (oq as any)._id) },
+            },
+            { $set: { status: QuoteStatus.PENDING } },
+          )
+          .exec()
+          .catch(() => undefined);
+      }
       await this.jobModel
         .updateOne(
           { _id: job._id },
@@ -4447,7 +4477,14 @@ export class JobsService implements OnModuleInit {
   ): Promise<{ success: boolean; message: string }> {
     const job = await this.jobModel.findById(jobId).exec();
     if (!job) throw new NotFoundException('Đơn hàng không tồn tại');
+    // Chỉ hoàn tác trên đơn đang mở (như rejectJob): đơn đã CONFIRMED/
+    // CANCELLED mà hồi sinh báo giá WITHDRAWN thành PENDING sẽ để lại báo
+    // giá chờ trên đơn đã chốt/hủy. Báo giá đã hết hạn cũng không hồi sinh.
+    if (job.status !== JobStatus.OPEN && job.status !== JobStatus.RECEIVING_QUOTES) {
+      throw new BadRequestException('Chỉ có thể hoàn tác bỏ qua đơn hàng đang mở');
+    }
     const helperOid = new Types.ObjectId(helperId);
+    const now = new Date();
     await Promise.all([
       this.jobModel
         .findByIdAndUpdate(jobId, {
@@ -4460,6 +4497,7 @@ export class JobsService implements OnModuleInit {
             job_id: new Types.ObjectId(jobId),
             helper_id: helperOid,
             status: QuoteStatus.WITHDRAWN,
+            expires_at: { $gt: now },
           },
           { $set: { status: QuoteStatus.PENDING } },
         )
