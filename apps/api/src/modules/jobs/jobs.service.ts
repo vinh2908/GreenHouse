@@ -277,6 +277,45 @@ export class JobsService implements OnModuleInit {
   }
 
   /**
+   * B3: hết hạn 1 đơn + toàn bộ báo giá PENDING của nó (tách riêng khỏi
+   * sweep để 1 đơn lỗi không kẹt cả vòng quét — xem try/catch ở bước 1).
+   */
+  private async expireJobAndQuotes(job: JobDocument): Promise<void> {
+    job.status = JobStatus.EXPIRED;
+    // Mọi báo giá PENDING của đơn đều bị chuyển EXPIRED ở dưới — reset số
+    // lượng để màn hình danh sách không còn hiện số báo giá cũ.
+    job.total_quotes_count = 0;
+    job.cancellation_reason = 'Đơn đã hết hạn nhận báo giá (quá 72 giờ)';
+    this.addEvent(
+      job,
+      JobStatus.EXPIRED,
+      'system',
+      'system',
+      'Đơn đã hết hạn nhận báo giá (quá 72 giờ)',
+    );
+    await job.save();
+
+    // Cập nhật các báo giá của job sang EXPIRED
+    await this.quoteModel
+      .updateMany(
+        { job_id: job._id, status: QuoteStatus.PENDING },
+        { $set: { status: QuoteStatus.EXPIRED } },
+      )
+      .exec();
+
+    // Gửi notification kèm cờ đăng lại
+    await this.notificationsService.create({
+      userId: String(job.customer_id),
+      type: NOTIFICATION_TYPES.JOB_EXPIRED,
+      title: 'Đơn yêu cầu dịch vụ đã hết hạn',
+      body: `Đơn "${job.title}" đã hết hạn nhận báo giá sau 72 giờ. Bạn có thể bấm để đăng lại yêu cầu bất kỳ lúc nào.`,
+      payload: { job_id: String(job._id), action: 'repost' },
+    });
+
+    this.emitJobStatusChange(job);
+  }
+
+  /**
    * F12 (A45): Quét đơn quá hạn nhận báo giá (72h) chuyển sang EXPIRED và nhắc 24h
    */
   @Cron('*/5 * * * *')
@@ -292,35 +331,13 @@ export class JobsService implements OnModuleInit {
       .exec();
 
     for (const job of expiredJobs) {
-      job.status = JobStatus.EXPIRED;
-      job.cancellation_reason = 'Đơn đã hết hạn nhận báo giá (quá 72 giờ)';
-      this.addEvent(
-        job,
-        JobStatus.EXPIRED,
-        'system',
-        'system',
-        'Đơn đã hết hạn nhận báo giá (quá 72 giờ)',
-      );
-      await job.save();
-
-      // Cập nhật các báo giá của job sang EXPIRED
-      await this.quoteModel
-        .updateMany(
-          { job_id: job._id, status: QuoteStatus.PENDING },
-          { $set: { status: QuoteStatus.EXPIRED } },
-        )
-        .exec();
-
-      // Gửi notification kèm cờ đăng lại
-      await this.notificationsService.create({
-        userId: String(job.customer_id),
-        type: NOTIFICATION_TYPES.JOB_EXPIRED,
-        title: 'Đơn yêu cầu dịch vụ đã hết hạn',
-        body: `Đơn "${job.title}" đã hết hạn nhận báo giá sau 72 giờ. Bạn có thể bấm để đăng lại yêu cầu bất kỳ lúc nào.`,
-        payload: { job_id: String(job._id), action: 'repost' },
-      });
-
-      this.emitJobStatusChange(job);
+      // B3: một đơn lỗi không được kẹt cả sweep — trước đây lỗi ở đơn đầu
+      // (vd: addEvent ném BSONError) làm bước 2–4 không bao giờ chạy.
+      try {
+        await this.expireJobAndQuotes(job);
+      } catch (err) {
+        this.logger.error(`B3: expire job ${String(job._id)} failed: ${(err as Error).message}`);
+      }
     }
 
     // 2. Nhắc trước 24 giờ cho các đơn sắp hết hạn
@@ -348,6 +365,8 @@ export class JobsService implements OnModuleInit {
     // 3. Quét các báo giá riêng lẻ quá hạn — sau khi hết hạn phải đồng bộ
     // lại số lượng/trạng thái đơn (syncJobQuotesState), nếu không đơn kẹt ở
     // RECEIVING_QUOTES với total_quotes_count cũ dù không còn báo giá chờ nào.
+    // B3: lấy danh sách đơn bị ảnh hưởng TRƯỚC khi cập nhật, để sau đó đồng
+    // bộ lại trạng thái đơn.
     const expiringQuotes = await this.quoteModel
       .find({ status: QuoteStatus.PENDING, expires_at: { $lte: now } })
       .select('job_id')
@@ -363,7 +382,14 @@ export class JobsService implements OnModuleInit {
       ...new Set((expiringQuotes ?? []).map(q => String((q as any).job_id)).filter(Boolean)),
     ];
     for (const affectedJobId of affectedJobIds) {
-      await this.syncJobQuotesState(affectedJobId).catch(() => undefined);
+      try {
+        await this.syncJobQuotesState(affectedJobId);
+      } catch (err) {
+        // B3: một đơn lỗi không được làm chết cả sweep — ghi log và đi tiếp.
+        this.logger.warn(
+          `syncJobQuotesState failed for job ${affectedJobId} after quote expiry: ${(err as Error).message}`,
+        );
+      }
     }
 
     // 4. B101: ưu đãi riêng (private offer) hết hạn → báo cho thợ được mời, 1 lần
@@ -691,10 +717,18 @@ export class JobsService implements OnModuleInit {
     actorRole: string,
     note?: string,
   ) {
+    // B3: actor 'system' (sweep hết hạn) không phải ObjectId hợp lệ —
+    // `new Types.ObjectId('system')` ném BSONError, làm sweep bước 1 chết
+    // ngay trước job.save() và kẹt toàn bộ sweep 5 phút (bước 2–4 không
+    // bao giờ chạy) từ lúc có đơn đầu tiên hết hạn. Dùng sentinel
+    // ObjectId toàn 0 cho actor hệ thống để giữ đúng kiểu schema.
+    const actorObjectId = Types.ObjectId.isValid(actorId)
+      ? new Types.ObjectId(actorId)
+      : new Types.ObjectId('000000000000000000000000');
     job.events.push({
       status,
       note,
-      actor_id: new Types.ObjectId(actorId),
+      actor_id: actorObjectId,
       actor_role: actorRole,
       timestamp: new Date(),
     });
@@ -2345,6 +2379,15 @@ export class JobsService implements OnModuleInit {
 
     const expiresAt = new Date();
     expiresAt.setHours(expiresAt.getHours() + JOB_QUOTE_EXPIRY_HOURS);
+    // B3: báo giá không được sống lâu hơn cửa sổ nhận báo giá của chính đơn
+    // đó. Đơn SOS chỉ mở 2 giờ (createSosJob), đơn thường 72 giờ — nếu giữ
+    // nguyên +24h thì API hứa 24h nhưng sweep hết hạn của đơn có thể giết
+    // báo giá chỉ vài phút sau khi gửi (đơn hết hạn → báo giá EXPIRED) mà
+    // khách/thợ không hay biết. Capped ở job.expires_at để hạn lưu trong DB
+    // luôn đúng với thực tế.
+    if (job.expires_at && new Date(job.expires_at).getTime() < expiresAt.getTime()) {
+      expiresAt.setTime(new Date(job.expires_at).getTime());
+    }
 
     // Kiểm tra lại trạng thái đơn trước khi ghi nhận báo giá chống race condition với việc huỷ đơn
     const freshJobQuery = this.jobModel.findById(jobId) as any;
@@ -2665,7 +2708,8 @@ export class JobsService implements OnModuleInit {
 
     // Đồng bộ lại số lượng/trạng thái đơn (như withdrawQuote/rejectJob):
     // từ chối báo giá chờ cuối cùng phải đưa đơn về OPEN + count về 0, nếu
-    // không khách vẫn thấy "có báo giá" dù không còn báo giá chờ nào.
+    // không khách vẫn thấy "có báo giá" dù không còn báo giá chờ nào (B3:
+    // cùng lỗi stale-label như sweep hết hạn ở trên).
     await this.syncJobQuotesState(jobId);
 
     const helperId = String(quote.helper_id);
