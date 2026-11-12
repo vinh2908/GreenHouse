@@ -2034,8 +2034,30 @@ export class JobsService implements OnModuleInit {
 
   // ─── Customer: Get own jobs ───────────────────────────────────────────────
 
+  /**
+   * R2 (/jobs trống cả 7 tab, live 2026-11-12): so khớp id chủ đơn dù
+   * `customer_id` / `helper_id` được lưu dưới dạng ObjectId (đường tạo đơn
+   * bình thường qua Mongoose) HAY chuỗi hex (ghi thô: seed / Atlas / import
+   * — `db.collection('jobs').insertOne`, không qua Mongoose nên không cast).
+   *
+   * Vì sao `{ customer_id: new Types.ObjectId(sub) }` cũ bỏ sót: Mongo chỉ
+   * so khớp ĐÚNG KIỂU — ObjectId ≠ chuỗi hex cùng giá trị — nên đơn lưu
+   * dạng chuỗi biến mất khỏi MỌI tab list, trong khi trang chi tiết vẫn mở
+   * được (getJobById/getJobForUser chỉ so sánh `String(customer_id)`).
+   * Không thể sửa bằng `$in: [ObjectId, 'hex']`: Mongoose cast mọi phần tử
+   * của filter theo kiểu schema (ObjectId) nên chuỗi lại thành ObjectId và
+   * vẫn trượt (đã kiểm chứng với mongodb-memory-server). `$expr` +
+   * `$toString` được Mongo truyền thẳng, không bị cast: ObjectId → hex,
+   * chuỗi → chính nó, thiếu/null → không khớp (không ném lỗi). Đồng thời
+   * chịu được `sub` không phải hex hợp lệ (trả [] thay vì 500 BSONError
+   * như `new Types.ObjectId(sub)` cũ).
+   */
+  private ownerIdFilter(field: 'customer_id' | 'helper_id', id: string) {
+    return { $expr: { $eq: [{ $toString: `$${field}` }, id] } };
+  }
+
   async getCustomerJobs(customerId: string, status?: string, page?: number, limit?: number) {
-    const query: Record<string, unknown> = { customer_id: new Types.ObjectId(customerId) };
+    const query: Record<string, unknown> = this.ownerIdFilter('customer_id', customerId);
     if (status) {
       const statuses = status
         .split(',')
@@ -5216,7 +5238,8 @@ export class JobsService implements OnModuleInit {
   }
 
   async getHelperJobs(helperId: string, status?: string, page?: number, limit?: number) {
-    const query: Record<string, unknown> = { helper_id: new Types.ObjectId(helperId) };
+    // R2: cùng lỗi như getCustomerJobs — helper_id lưu dạng chuỗi cũng phải khớp.
+    const query: Record<string, unknown> = this.ownerIdFilter('helper_id', helperId);
     if (status) {
       const statuses = status
         .split(',')
