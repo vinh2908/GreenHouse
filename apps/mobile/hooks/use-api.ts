@@ -345,12 +345,36 @@ export function useMyJobs(status?: string, page?: number, limit?: number) {
   });
 }
 
-export function useJobDetail(jobId?: string) {
+/** B2: tuỳ chọn tính lại tuyến cho chi tiết đơn — GPS thật + buộc server tính lại. */
+export interface JobDetailRouteOptions {
+  lat?: number;
+  lng?: number;
+  refreshRoute?: boolean;
+  /** Tăng mỗi lần bấm thử lại để query key đổi và tự fetch lại (kể cả khi GPS không đổi). */
+  nonce?: number;
+}
+
+export function useJobDetail(jobId?: string, routeOpts?: JobDetailRouteOptions) {
   return useQuery({
-    queryKey: ['job', jobId],
+    queryKey: [
+      'job',
+      jobId,
+      routeOpts?.lat != null ? Number(routeOpts.lat.toFixed(3)) : undefined,
+      routeOpts?.lng != null ? Number(routeOpts.lng.toFixed(3)) : undefined,
+      routeOpts?.refreshRoute ? 1 : 0,
+      routeOpts?.nonce ?? 0,
+    ],
     queryFn: async () => {
       try {
-        const { data } = await apiClient.get(`/jobs/${jobId}`);
+        // B2: gửi GPS thật + refresh_route để server tính lại tuyến từ vị trí hiện tại.
+        const params = new URLSearchParams();
+        if (routeOpts?.lat != null && routeOpts?.lng != null) {
+          params.set('lat', String(routeOpts.lat));
+          params.set('lng', String(routeOpts.lng));
+        }
+        if (routeOpts?.refreshRoute) params.set('refresh_route', '1');
+        const qs = params.toString();
+        const { data } = await apiClient.get(`/jobs/${jobId}${qs ? `?${qs}` : ''}`);
         // Feature 16: lưu cache chi tiết đơn để xem offline
         void cacheJobDetail(data.data);
         useOfflineStore.getState().setFromCache(false);

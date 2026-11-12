@@ -76,7 +76,16 @@ import {
   HelperProfileDocument,
   HelperAvailability,
 } from '../helpers/schemas/helper-profile.schema';
-import { RoutingService } from './routing.service';
+import { GoongRouteError, RoutingService } from './routing.service';
+
+/** B2: tuỳ chọn tính lại tuyến cho chi tiết đơn — GPS thật + buộc tính lại (bỏ cache). */
+export interface JobRouteOptions {
+  /** GPS thật của thiết bị thợ (ưu tiên hơn vị trí đã lưu). */
+  lat?: number;
+  lng?: number;
+  /** Bỏ qua cache tuyến 30 phút, tính lại từ Goong. */
+  refreshRoute?: boolean;
+}
 
 // Beyond this straight-line distance a helper is treated as out of the job's area.
 const QUOTE_SERVICE_RADIUS_KM = 30;
@@ -2032,7 +2041,7 @@ export class JobsService implements OnModuleInit {
     return job;
   }
 
-  async getJobForUser(jobId: string, userId: string, roles: string[]) {
+  async getJobForUser(jobId: string, userId: string, roles: string[], routeOpts?: JobRouteOptions) {
     const job = await this.getJobById(jobId);
     const ownerId = String((job.customer_id as any)?._id ?? job.customer_id);
     const helperId = job.helper_id ? String((job.helper_id as any)?._id ?? job.helper_id) : null;
@@ -2044,6 +2053,7 @@ export class JobsService implements OnModuleInit {
         result = await this.enrichJobWithDistance(
           await this.withTeamDisplay(job.toObject()),
           userId,
+          routeOpts,
         );
       } else {
         result = await this.withTeamDisplay(job.toObject());
@@ -2088,34 +2098,92 @@ export class JobsService implements OnModuleInit {
         avatar: preview.customer_id.avatar,
       };
     }
-    return this.enrichJobWithDistance(preview, userId);
+    return this.enrichJobWithDistance(preview, userId, routeOpts);
   }
 
-  private async enrichJobWithDistance(jobObj: any, helperId: string) {
+  /**
+   * B2: Vị trí GPS đã lưu quá 120 phút thì coi như hết hạn (cùng chuẩn H22 của SOS) —
+   * đem một điểm cũ đi tính tuyến chỉ cho ra tuyến sai hoặc lỗi Goong khó hiểu.
+   */
+  private static readonly STALE_HELPER_GPS_MS = 120 * 60 * 1000;
+
+  private async enrichJobWithDistance(jobObj: any, helperId: string, opts?: JobRouteOptions) {
     const helperProfile = await this.helperModel
       .findOne({ user_id: new Types.ObjectId(helperId) })
-      .select('location')
+      .select('location location_source last_location_update')
       .lean()
       .exec();
-    const helperCoords = helperProfile?.location?.coordinates;
     const jobCoords = jobObj.address?.location?.coordinates;
-    if (helperCoords && jobCoords) {
+    // B2: ưu tiên GPS thật của thiết bị (như danh sách đơn đã làm ở H24/K8) thay vì
+    // chỉ dùng vị trí đã lưu — vị trí đã lưu có thể là điểm cũ từ lần bật online
+    // trước, đem đi tính tuyến là sai ngay từ điểm xuất phát.
+    const origin = this.resolveRouteOrigin(helperProfile, opts);
+    if (origin && jobCoords) {
       try {
         const route = await this.routingService.getRoute(
-          helperCoords[1],
-          helperCoords[0],
+          origin.lat,
+          origin.lng,
           jobCoords[1],
           jobCoords[0],
+          undefined,
+          { forceRefresh: opts?.refreshRoute },
         );
         jobObj.distance_km = route.distance_km;
         jobObj.estimated_minutes = route.estimated_minutes;
         jobObj.estimated_travel_minutes = route.estimated_minutes;
         if (route.estimated) jobObj.estimated = true;
-      } catch {
+      } catch (err) {
+        // B2: không nuốt lỗi lặng nữa — gắn lý do để client/log biết Goong lỗi vì
+        // key, quota, timeout hay không có tuyến (lý do chi tiết đã log ở RoutingService).
         jobObj.routing_error = true;
+        jobObj.routing_error_reason = err instanceof GoongRouteError ? err.kind : 'http';
       }
     }
     return jobObj;
+  }
+
+  /**
+   * B2: chọn điểm xuất phát để tính tuyến. Thứ tự: (1) GPS thật gửi kèm request,
+   * (2) vị trí đã lưu — ghim tay (manual) không hết hạn, GPS cũ > 120 phút thì bỏ.
+   * Trả null khi không có điểm xuất phát đáng tin: không gọi Goong và không gắn
+   * routing_error (chưa hề thử lấy tuyến thì không có gì để báo lỗi).
+   */
+  private resolveRouteOrigin(
+    helperProfile: any,
+    opts?: JobRouteOptions,
+  ): { lat: number; lng: number } | null {
+    if (
+      opts?.lat != null &&
+      opts?.lng != null &&
+      Number.isFinite(opts.lat) &&
+      Number.isFinite(opts.lng) &&
+      opts.lat >= 8 &&
+      opts.lat <= 23.5 &&
+      opts.lng >= 102 &&
+      opts.lng <= 110
+    ) {
+      return { lat: opts.lat, lng: opts.lng };
+    }
+    const stored = helperProfile?.location?.coordinates;
+    if (!stored || !Array.isArray(stored) || stored.length < 2) return null;
+    const source = helperProfile?.location_source;
+    // Ghim tay (manual) là điểm cố định do thợ tự chọn nên không hết hạn; chỉ
+    // GPS tự động mới cũ đi theo thời gian (chuẩn H22: 120 phút).
+    if (source !== 'manual' && (source === 'gps' || helperProfile?.last_location_update)) {
+      const updatedAt = helperProfile?.last_location_update
+        ? new Date(helperProfile.last_location_update).getTime()
+        : NaN;
+      const ageMs = Number.isFinite(updatedAt) ? Date.now() - updatedAt : Number.POSITIVE_INFINITY;
+      if (ageMs > JobsService.STALE_HELPER_GPS_MS) {
+        this.logger.debug(
+          'Bỏ qua vị trí GPS đã lưu quá 120 phút khi tính tuyến đường — cần GPS mới từ thiết bị',
+        );
+        return null;
+      }
+    }
+    const [lng, lat] = stored;
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+    return { lat, lng };
   }
 
   /** Q0: Đồng bộ số lượng báo giá và trạng thái đơn hàng (OPEN <-> RECEIVING_QUOTES) */
