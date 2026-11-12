@@ -2034,8 +2034,30 @@ export class JobsService implements OnModuleInit {
 
   // ─── Customer: Get own jobs ───────────────────────────────────────────────
 
+  /**
+   * R2 (/jobs trống cả 7 tab, live 2026-11-12): so khớp id chủ đơn dù
+   * `customer_id` / `helper_id` được lưu dưới dạng ObjectId (đường tạo đơn
+   * bình thường qua Mongoose) HAY chuỗi hex (ghi thô: seed / Atlas / import
+   * — `db.collection('jobs').insertOne`, không qua Mongoose nên không cast).
+   *
+   * Vì sao `{ customer_id: new Types.ObjectId(sub) }` cũ bỏ sót: Mongo chỉ
+   * so khớp ĐÚNG KIỂU — ObjectId ≠ chuỗi hex cùng giá trị — nên đơn lưu
+   * dạng chuỗi biến mất khỏi MỌI tab list, trong khi trang chi tiết vẫn mở
+   * được (getJobById/getJobForUser chỉ so sánh `String(customer_id)`).
+   * Không thể sửa bằng `$in: [ObjectId, 'hex']`: Mongoose cast mọi phần tử
+   * của filter theo kiểu schema (ObjectId) nên chuỗi lại thành ObjectId và
+   * vẫn trượt (đã kiểm chứng với mongodb-memory-server). `$expr` +
+   * `$toString` được Mongo truyền thẳng, không bị cast: ObjectId → hex,
+   * chuỗi → chính nó, thiếu/null → không khớp (không ném lỗi). Đồng thời
+   * chịu được `sub` không phải hex hợp lệ (trả [] thay vì 500 BSONError
+   * như `new Types.ObjectId(sub)` cũ).
+   */
+  private ownerIdFilter(field: 'customer_id' | 'helper_id', id: string) {
+    return { $expr: { $eq: [{ $toString: `$${field}` }, id] } };
+  }
+
   async getCustomerJobs(customerId: string, status?: string, page?: number, limit?: number) {
-    const query: Record<string, unknown> = { customer_id: new Types.ObjectId(customerId) };
+    const query: Record<string, unknown> = this.ownerIdFilter('customer_id', customerId);
     if (status) {
       const statuses = status
         .split(',')
@@ -2468,26 +2490,44 @@ export class JobsService implements OnModuleInit {
       }
     }
 
-    await this.syncJobQuotesState(jobId);
+    // R2-B3: báo giá đã ghi xong ở trên (commit point) — mọi tác vụ sau đây
+    // chỉ là đồng bộ/fan-out. Lỗi ở chúng KHÔNG được biến một báo giá đã lưu
+    // thành lỗi 500: app hiện toast lỗi + form ở lại, thợ gửi lại thì gặp
+    // Conflict trong khi báo giá đã PENDING trong DB (đã chứng minh bằng
+    // test document thật: notify/gateway ném sau save vẫn để lại PENDING).
+    // Chỉ ghi log và trả thành công như báo giá đã lưu.
+    try {
+      await this.syncJobQuotesState(jobId);
+    } catch (err) {
+      this.logger.error(
+        `R2-B3: syncJobQuotesState failed after quote ${String(quote._id)} saved (job ${jobId}): ${(err as Error).message}`,
+      );
+    }
 
-    await this.helperModel
-      .updateOne({ user_id: new Types.ObjectId(helperId) }, { $inc: { total_quotes_sent: 1 } })
-      .exec();
+    try {
+      await this.helperModel
+        .updateOne({ user_id: new Types.ObjectId(helperId) }, { $inc: { total_quotes_sent: 1 } })
+        .exec();
 
-    const quotePayload = {
-      job_id: jobId,
-      quote_id: String(quote._id),
-      helper_id: helperId,
-      total_price: totalPrice,
-    };
-    this.gateway.emitToUser(String(job.customer_id), SOCKET_EVENTS.QUOTE_RECEIVED, quotePayload);
+      const quotePayload = {
+        job_id: jobId,
+        quote_id: String(quote._id),
+        helper_id: helperId,
+        total_price: totalPrice,
+      };
+      this.gateway.emitToUser(String(job.customer_id), SOCKET_EVENTS.QUOTE_RECEIVED, quotePayload);
 
-    await this.notificationsService.notifyNewQuote(
-      String(job.customer_id),
-      (helperProfile.user_id as unknown as { full_name?: string })?.full_name ?? 'Thợ',
-      job.title,
-      jobId,
-    );
+      await this.notificationsService.notifyNewQuote(
+        String(job.customer_id),
+        (helperProfile.user_id as unknown as { full_name?: string })?.full_name ?? 'Thợ',
+        job.title,
+        jobId,
+      );
+    } catch (err) {
+      this.logger.warn(
+        `R2-B3: post-save fan-out failed for quote ${String(quote._id)} (job ${jobId}): ${(err as Error).message} — quote already persisted, returning success`,
+      );
+    }
 
     // A77: Báo cho Admin khi có báo giá mới
     void this.notificationsService
@@ -5216,7 +5256,8 @@ export class JobsService implements OnModuleInit {
   }
 
   async getHelperJobs(helperId: string, status?: string, page?: number, limit?: number) {
-    const query: Record<string, unknown> = { helper_id: new Types.ObjectId(helperId) };
+    // R2: cùng lỗi như getCustomerJobs — helper_id lưu dạng chuỗi cũng phải khớp.
+    const query: Record<string, unknown> = this.ownerIdFilter('helper_id', helperId);
     if (status) {
       const statuses = status
         .split(',')
