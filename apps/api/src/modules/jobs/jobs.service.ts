@@ -2477,7 +2477,11 @@ export class JobsService implements OnModuleInit {
       status:
         requesterRole === 'customer'
           ? { $in: [QuoteStatus.PENDING, QuoteStatus.REJECTED, QuoteStatus.ACCEPTED] }
-          : QuoteStatus.PENDING,
+          : // B4: thợ phải thấy cả báo giá ĐÃ ĐƯỢC CHỌN của chính mình — đó là
+            // bằng chứng khách đã giao đơn khi payload job trong cache cũ còn
+            // helper_id null (thẻ tiến độ lúc hiện lúc ẩn, đơn B 2026-11-12).
+            // Vẫn giới hạn helper_id = người gọi nên không lộ báo giá thợ khác.
+            { $in: [QuoteStatus.PENDING, QuoteStatus.ACCEPTED] },
     };
     if (requesterRole === 'helper') {
       query['helper_id'] = new Types.ObjectId(requesterId);

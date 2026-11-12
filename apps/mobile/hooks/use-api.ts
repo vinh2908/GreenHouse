@@ -392,6 +392,14 @@ export function useJobDetail(jobId?: string, routeOpts?: JobDetailRouteOptions) 
       }
     },
     enabled: !!jobId,
+    // B4: trạng thái giao đơn (helper_id / status) đổi phía server bất cứ lúc
+    // nào khi khách chọn báo giá — màn chi tiết đang mở không được chỉ trông
+    // chờ socket event (lỡ 1 event vì socket rớt / tab nền là mất luôn, không
+    // phát lại). Poll cùng nhịp 15s như useJobQuotes + fetch mới mỗi lần mở
+    // màn, để thẻ tiến độ của thợ được giao hiện lại chậm nhất sau 15s thay
+    // vì kẹt ở snapshot cũ (helper_id null) vô thời hạn.
+    refetchInterval: 15_000,
+    refetchOnMount: 'always',
   });
 }
 
