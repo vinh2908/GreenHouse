@@ -368,6 +368,12 @@ export function useJobDetail(jobId?: string) {
       }
     },
     enabled: !!jobId,
+    // B3: chi tiết đơn KHÔNG tự refetch trong khi useJobQuotes refetch mỗi
+    // 15s — đơn hết hạn phía server (sweep 5 phút) thì danh sách báo giá
+    // về 0 nhưng badge trạng thái ("Có báo giá") vẫn hiện số liệu cũ trên
+    // màn hình đang mở. Poll 30s (cùng nhịp useAvailableJobs) để trạng
+    // thái đơn luôn khớp với danh sách báo giá.
+    refetchInterval: 30000,
   });
 }
 
