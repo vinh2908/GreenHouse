@@ -22,6 +22,25 @@ import { AppGateway } from '../chat/app.gateway';
 import { MatchingService } from '../matching/matching.service';
 import { maskHelperBankAccount } from './utils/mask-bank-account';
 
+/**
+ * B1: availability lưu trong Mongoose là subdocument — spread trực tiếp
+ * {...subdoc} không copy các field (nằm trong _doc, chỉ đọc qua getter)
+ * nên caller nhận về object rỗng/lạ thay vì giá trị đã lưu. Chuyển về
+ * POJO sạch trước khi merge/trả về; plain object thì giữ nguyên.
+ */
+function plainAvailability(value: unknown): HelperAvailability {
+  if (!value) return {} as HelperAvailability;
+  if (typeof (value as any).toObject === 'function') {
+    const plain = (value as any).toObject();
+    // Schema bật virtuals nên toObject() kèm _id + virtual id — không thuộc
+    // HelperAvailability nên gỡ để GET/PATCH trả đúng shape cho client.
+    delete plain._id;
+    delete plain.id;
+    return plain as HelperAvailability;
+  }
+  return value as HelperAvailability;
+}
+
 @Injectable()
 export class HelpersService {
   constructor(
@@ -198,7 +217,12 @@ export class HelpersService {
 
   async getAvailability(userId: string): Promise<HelperAvailability> {
     const profile = await this.getOrCreate(userId);
-    return { ...DEFAULT_HELPER_AVAILABILITY, ...(profile.availability ?? {}) };
+    // B1: profile.availability là Mongoose subdocument — spread trực tiếp
+    // {...subdoc} KHÔNG copy các field (chúng nằm trong _doc, chỉ đọc được
+    // qua getter), nên GET luôn trả về DEFAULT dù PATCH đã lưu đúng xuống
+    // MongoDB, và app revert về OFF/đủ 7 ngày sau mỗi lần refetch/reload.
+    // Phải chuyển về POJO qua toObject() trước khi merge với default.
+    return { ...DEFAULT_HELPER_AVAILABILITY, ...plainAvailability(profile.availability) };
   }
 
   async updateAvailability(
@@ -217,7 +241,8 @@ export class HelpersService {
       blocked_dates: [...new Set(dto.blocked_dates ?? [])].sort(),
     };
     await profile.save();
-    return profile.availability;
+    // B1: trả về POJO như getAvailability (không trả subdocument thô).
+    return plainAvailability(profile.availability);
   }
 
   // ─── Mục tiêu thu nhập tháng (Feature 14) ──────────────────────────────────
