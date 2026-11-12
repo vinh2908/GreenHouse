@@ -192,6 +192,14 @@ export function TimeDropdownPicker({
   const isToday = isTodayVietnam(selectedDate);
   const nowVn = getNowVietnam();
 
+  // B1 (phụ): chỉ vô hiệu hoá giờ đã qua khi (a) caller KHÔNG tắt checkPast
+  // và (b) ngày đã chọn là hôm nay. Trước đây danh sách giờ/phút trong modal
+  // chỉ kiểm tra isToday mà bỏ qua checkPast — màn hình lịch làm việc
+  // (checkPast={false}, không có ngày cụ thể — lịch lặp theo tuần) vẫn khoá
+  // các giờ 07:00–17:00 thành "(đã qua)" sau giờ đó, và ngày mai cũng bị
+  // so với giờ hiện tại thay vì so với ngày đã chọn.
+  const disablePast = checkPast !== false && isToday;
+
   useEffect(() => {
     if (modalType === 'hour') {
       const timer = setTimeout(() => {
@@ -210,13 +218,13 @@ export function TimeDropdownPicker({
     }
   }, [modalType, currentHour, currentMinute]);
 
-  // Kiểm tra giờ quá khứ (theo múi giờ Asia/Ho_Chi_Minh)
+  // Kiểm tra giờ quá khứ (theo múi giờ Asia/Ho_Chi_Minh) — chỉ khi
+  // disablePast (xem trên): ngày đã chọn là hôm nay và caller bật checkPast.
   const isPast = useMemo(() => {
-    if (checkPast === false) return false;
-    if (!isToday) return false;
+    if (!disablePast) return false;
     const selectedTotal = currentHour * 60 + currentMinute;
     return selectedTotal <= nowVn.totalMinutes;
-  }, [checkPast, isToday, currentHour, currentMinute, nowVn.totalMinutes]);
+  }, [disablePast, currentHour, currentMinute, nowVn.totalMinutes]);
 
   const isBeforeMinTime = useMemo(() => {
     if (!minTime || !/^\d{1,2}:\d{2}$/.test(minTime.trim())) return false;
@@ -256,7 +264,7 @@ export function TimeDropdownPicker({
 
   const handleSelectHour = (h: number) => {
     let nextMinute = currentMinute;
-    if (isToday && h === nowVn.hours && nextMinute <= nowVn.minutes) {
+    if (disablePast && h === nowVn.hours && nextMinute <= nowVn.minutes) {
       nextMinute = Math.min(59, nowVn.minutes + 1);
     }
     // 22:00 là giờ bắt đầu muộn nhất (P1-29) — áp sau điều chỉnh quá khứ
@@ -436,9 +444,10 @@ export function TimeDropdownPicker({
                 (_, i) => i + WORK_START_HOUR,
               ).map(h => {
                 const isSelected = h === currentHour;
-                // Nếu hôm nay và giờ < giờ hiện tại (hoặc bằng giờ hiện tại nhưng phút đã 59)
+                // B1 (phụ): chỉ khoá giờ đã qua khi disablePast — trước đây
+                // bỏ qua checkPast nên lịch làm việc vẫn hiện "(đã qua)".
                 const isHourPast =
-                  isToday && (h < nowVn.hours || (h === nowVn.hours && nowVn.minutes >= 59));
+                  disablePast && (h < nowVn.hours || (h === nowVn.hours && nowVn.minutes >= 59));
                 return (
                   <TouchableOpacity
                     key={h}
@@ -505,7 +514,8 @@ export function TimeDropdownPicker({
             >
               {Array.from({ length: 60 }, (_, i) => i).map(m => {
                 const isSelected = m === currentMinute;
-                const isMinPast = isToday && currentHour === nowVn.hours && m <= nowVn.minutes;
+                // B1 (phụ): như giờ — chỉ khoá phút đã qua khi disablePast.
+                const isMinPast = disablePast && currentHour === nowVn.hours && m <= nowVn.minutes;
                 // 22:00 là giờ bắt đầu muộn nhất — 22:01+ ngoài khung (P1-29)
                 const isMinOutOfWindow = currentHour === WORK_END_HOUR && m > 0;
                 const isMinDisabled = isMinPast || isMinOutOfWindow;

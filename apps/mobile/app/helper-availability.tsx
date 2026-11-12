@@ -148,13 +148,21 @@ export default function HelperAvailabilityScreen() {
       });
       return;
     }
-    await update.mutateAsync({
-      enabled,
-      days_of_week: days,
-      start_time: startTime,
-      end_time: endTime,
-      blocked_dates: blockedDates,
-    });
+    // B1: mutateAsync reject khi PATCH lỗi — onError trong useUpdateAvailability
+    // đã toast lỗi, ở đây chỉ chặn rejection để không thành unhandled rejection
+    // (và KHÔNG toast "Đã lưu": toast success chỉ nằm trong onSuccess của hook).
+    try {
+      await update.mutateAsync({
+        enabled,
+        days_of_week: days,
+        start_time: startTime,
+        end_time: endTime,
+        blocked_dates: blockedDates,
+      });
+    } catch {
+      // Đã toast lỗi trong onError — không làm gì thêm, giữ nguyên state local
+      // để thợ sửa lại và bấm lưu lần nữa.
+    }
   };
 
   if (isLoading) return <LoadingSpinner />;
