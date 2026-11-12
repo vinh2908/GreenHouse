@@ -225,11 +225,23 @@ export class JobsController {
 
   @Get(':jobId')
   @ApiOperation({ summary: 'Xem chi tiết job' })
+  @ApiQuery({ name: 'lat', required: false, type: Number })
+  @ApiQuery({ name: 'lng', required: false, type: Number })
+  @ApiQuery({ name: 'refresh_route', required: false, type: String })
   async getJob(
     @Param('jobId') jobId: string,
     @CurrentUser() user: { sub: string; roles: string[] },
+    // B2: GPS thật + buộc tính lại tuyến — nút "Bấm thử lại" ở màn chi tiết thợ
+    // gửi kèm để server tính lại từ vị trí hiện tại thay vì vị trí đã lưu cũ.
+    @Query('lat') lat?: string,
+    @Query('lng') lng?: string,
+    @Query('refresh_route') refreshRoute?: string,
   ) {
-    return this.jobsService.getJobForUser(jobId, user.sub, user.roles ?? []);
+    return this.jobsService.getJobForUser(jobId, user.sub, user.roles ?? [], {
+      lat: lat != null && lat !== '' ? Number(lat) : undefined,
+      lng: lng != null && lng !== '' ? Number(lng) : undefined,
+      refreshRoute: refreshRoute === '1' || refreshRoute === 'true',
+    });
   }
 
   @Patch(':jobId')
