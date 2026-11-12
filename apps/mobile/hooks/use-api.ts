@@ -397,7 +397,9 @@ export function useJobDetail(jobId?: string, routeOpts?: JobDetailRouteOptions) 
     // chờ socket event (lỡ 1 event vì socket rớt / tab nền là mất luôn, không
     // phát lại). Poll cùng nhịp 15s như useJobQuotes + fetch mới mỗi lần mở
     // màn, để thẻ tiến độ của thợ được giao hiện lại chậm nhất sau 15s thay
-    // vì kẹt ở snapshot cũ (helper_id null) vô thời hạn.
+    // vì kẹt ở snapshot cũ (helper_id null) vô thời hạn. Nhịp 15s này cũng
+    // giữ badge trạng thái ("Có báo giá") khớp với danh sách báo giá sau khi
+    // server hết hạn báo giá (B3: sweep 5 phút).
     refetchInterval: 15_000,
     refetchOnMount: 'always',
   });
