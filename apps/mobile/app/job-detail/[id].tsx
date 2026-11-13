@@ -103,6 +103,7 @@ import { LoyaltyPointsInput } from '@/components/common/loyalty-points-input';
 import { LocationPicker } from '@/components/common/location-picker';
 import { validCoordinate } from '@/services/tracking';
 import { formatDisplayAddress } from '@/utils/address-formatter';
+import { missingCompletionEvidenceText, resolveApprovalErrorMessage } from '@/utils/approval-error';
 import {
   Button,
   Card,
@@ -859,16 +860,15 @@ export default function JobDetailScreen() {
 
       if (current?.status !== 'completed') {
         if (!(current?.completion_photos?.length ?? 0)) {
+          // B5c: toast ở đây VÔ HÌNH khi modal đang mở (ToastCard ở root nằm
+          // sau RN <Modal> trên web/native) — nên lỗi còn phải hiện bằng
+          // banner inline reviewError trong chính modal này.
+          const evidenceText = missingCompletionEvidenceText(lang);
+          setReviewError(`${evidenceText.title}. ${evidenceText.detail}`);
           Toast.show({
             type: 'error',
-            text1:
-              lang === 'en'
-                ? 'Helper has not uploaded completion photos yet'
-                : 'Thợ chưa tải ảnh bằng chứng hoàn thành',
-            text2:
-              lang === 'en'
-                ? 'Ask the helper to upload completion photos before approval — no payment was taken.'
-                : 'Hãy yêu cầu thợ tải ảnh hoàn thành trước khi nghiệm thu — chưa trừ tiền.',
+            text1: evidenceText.title,
+            text2: evidenceText.detail,
           });
           return;
         }
@@ -915,11 +915,13 @@ export default function JobDetailScreen() {
             comment: reviewText,
           });
         } catch (revErr: any) {
-          const revMsg =
-            revErr?.response?.data?.message ||
-            (lang === 'en'
+          const revMsg = resolveApprovalErrorMessage(
+            revErr,
+            lang,
+            lang === 'en'
               ? 'Acceptance done, but could not save review. Please tap retry.'
-              : 'Nghiệm thu thành công nhưng chưa lưu được đánh giá. Vui lòng bấm thử lại.');
+              : 'Nghiệm thu thành công nhưng chưa lưu được đánh giá. Vui lòng bấm thử lại.',
+          );
           setReviewError(revMsg);
           Toast.show({
             type: 'error',
@@ -944,9 +946,11 @@ export default function JobDetailScreen() {
       });
       setShowReview(false);
     } catch (err: any) {
-      const msg =
-        err?.response?.data?.message ||
-        (lang === 'en' ? 'Submission failed' : 'Gửi nghiệm thu thất bại');
+      // B5c: toast ở đây VÔ HÌNH khi modal đang mở (ToastCard ở root nằm sau
+      // RN <Modal>) — lỗi server (vd B57 'Chưa có ảnh bằng chứng hoàn thành')
+      // phải hiện bằng banner inline reviewError trong chính modal này.
+      const msg = resolveApprovalErrorMessage(err, lang);
+      setReviewError(msg);
       Toast.show({ type: 'error', text1: msg });
     }
   };
@@ -3267,6 +3271,21 @@ export default function JobDetailScreen() {
               loading={approveJob.isPending || createReview.isPending || payJob.isPending}
               onPress={handleSubmitReview}
             />
+            {/* B5c: nút đang loading thì disabled (Button) — phải có dòng trạng
+                thái nhìn thấy được, không để nút kẹt spinner mà không phản hồi. */}
+            {(approveJob.isPending || createReview.isPending || payJob.isPending) && (
+              <Text
+                style={{
+                  textAlign: 'center',
+                  fontSize: fs(13),
+                  color: tc.textSecondary,
+                }}
+              >
+                {lang === 'en'
+                  ? 'Processing acceptance & payment…'
+                  : 'Đang xử lý nghiệm thu & thanh toán…'}
+              </Text>
+            )}
           </ScrollView>
         </View>
       </Modal>
