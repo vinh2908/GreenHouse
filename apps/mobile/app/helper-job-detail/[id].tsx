@@ -51,6 +51,10 @@ import { SosBackupHelperCard } from '@/components/common/sos-backup-helper-card'
 import { formatDisplayAddress } from '@/utils/address-formatter';
 import { isMyActiveJob as isMyActiveJobGate, effectiveJobStatus } from '@/utils/job-assignment';
 import { checkCompletionEvidence } from '@/utils/completion-evidence';
+import {
+  shouldShowEvidenceReupload,
+  prefillReuploadMedia,
+} from '@/utils/evidence-reupload';
 
 dayjs.extend(relativeTime);
 
@@ -240,6 +244,9 @@ export default function HelperJobDetailScreen() {
 
   // ── Completion Evidence States ───────────────────────────────────────────
   const [showCompleteModal, setShowCompleteModal] = useState(false);
+  // R4: modal mở ở chế độ re-upload (bổ sung bằng chứng ở pending_review)
+  // hay chế độ hoàn thành lần đầu (in_progress) — tiêu đề/nút gửi đổi theo.
+  const [isReuploadMode, setIsReuploadMode] = useState(false);
   const [completionPhotos, setCompletionPhotos] = useState<string[]>([]);
   const [completionVideos, setCompletionVideos] = useState<string[]>([]);
   const [completionNotes, setCompletionNotes] = useState('');
@@ -659,6 +666,29 @@ export default function HelperJobDetailScreen() {
     }
   };
 
+  // R4: mở modal ở chế độ re-upload — PREFILL ảnh/video/ghi chú đã lưu của
+  // đơn trước khi mở. Server REPLACE completion_photos khi DTO có photos nên
+  // không prefill thì thợ thêm 1 ảnh mới sẽ âm thầm xóa hết ảnh cũ. URL đã
+  // upload được uploadFiles pass-through nguyên vẹn, chỉ URI local mới được
+  // upload lại. Đóng modal không gửi thì reset state để luồng hoàn thành lần
+  // đầu không bị nhiễm dữ liệu cũ.
+  const openReuploadModal = () => {
+    const prefill = prefillReuploadMedia(job);
+    setCompletionPhotos(prefill.photos);
+    setCompletionVideos(prefill.videos);
+    setCompletionNotes(prefill.notes);
+    setIsReuploadMode(true);
+    setShowCompleteModal(true);
+  };
+
+  const closeCompleteModal = () => {
+    setShowCompleteModal(false);
+    setIsReuploadMode(false);
+    setCompletionPhotos([]);
+    setCompletionVideos([]);
+    setCompletionNotes('');
+  };
+
   const handleCompleteSubmission = async () => {
     // B5b: B57 ở approveCompletion yêu cầu ≥1 ảnh; gửi nghiệm thu không ảnh
     // (kể cả chỉ có video) sẽ kẹt đơn ở bước 7 không ai nghiệm thu được —
@@ -679,7 +709,9 @@ export default function HelperJobDetailScreen() {
         completion_videos: completionVideos,
         completion_notes: completionNotes || undefined,
       });
-      setShowCompleteModal(false);
+      // Toast thành công do useCompleteJob.onSuccess hiển thị; ở đây chỉ
+      // đóng modal + reset state (kể cả chế độ re-upload).
+      closeCompleteModal();
     } catch (err: any) {
       const serverMsg = err?.response?.data?.message || err?.message;
       const msg = serverMsg
@@ -693,6 +725,9 @@ export default function HelperJobDetailScreen() {
 
   const handleAction = (action: string) => {
     if (action === 'complete') {
+      // Hoàn thành lần đầu (in_progress): modal bắt đầu rỗng, không phải
+      // chế độ re-upload.
+      setIsReuploadMode(false);
       setShowCompleteModal(true);
       return;
     }
@@ -1284,6 +1319,52 @@ export default function HelperJobDetailScreen() {
                     ? 'Customer will confirm and payout will be automatically credited to your wallet.'
                     : 'Khách hàng sẽ xác nhận và tiền công sẽ tự động cộng vào ví của bạn.'}
                 </Text>
+                {/* R4: ảnh bằng chứng đã lưu của đơn (nếu có) + nút bổ sung
+                    bằng chứng — gọi nhánh re-upload ở server qua modal hoàn
+                    thành. Nút chỉ hiện ở pending_review cho thợ được giao. */}
+                {job.completion_photos && job.completion_photos.length > 0 && (
+                  <View style={{ gap: 6, alignSelf: 'stretch', marginTop: 6 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                      <Camera size={16} color={COLORS.gray[700]} />
+                      <Text
+                        style={{ fontSize: fs(13), fontWeight: '700', color: tc.textSecondary }}
+                      >
+                        {t('helper_job.evidence_uploaded_title')} ({job.completion_photos.length})
+                      </Text>
+                    </View>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                      <View style={{ flexDirection: 'row', gap: 10 }}>
+                        {job.completion_photos.map((uri: string, idx: number) => (
+                          <View
+                            key={`reupload-p-${idx}`}
+                            style={{
+                              width: 110,
+                              height: 110,
+                              borderRadius: 14,
+                              overflow: 'hidden',
+                              borderWidth: 1.5,
+                              borderColor: tc.border,
+                            }}
+                          >
+                            <Image
+                              source={{ uri }}
+                              style={{ width: '100%', height: '100%' }}
+                              resizeMode="cover"
+                            />
+                          </View>
+                        ))}
+                      </View>
+                    </ScrollView>
+                  </View>
+                )}
+                {shouldShowEvidenceReupload(progressStatus, isMyActiveJob) && (
+                  <Button
+                    title={t('helper_job.evidence_reupload_btn')}
+                    variant="outline"
+                    onPress={openReuploadModal}
+                    style={{ marginTop: 6, alignSelf: 'stretch' }}
+                  />
+                )}
               </View>
             )}
           </Card>
@@ -1981,11 +2062,13 @@ export default function HelperJobDetailScreen() {
             }}
           >
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-              <TouchableOpacity onPress={() => setShowCompleteModal(false)}>
+              <TouchableOpacity onPress={closeCompleteModal}>
                 <X size={24} color={COLORS.gray[700]} />
               </TouchableOpacity>
               <Text style={{ fontSize: fs(18), fontWeight: '800', color: tc.text }}>
-                {t('helper_job.evidence_title')}
+                {isReuploadMode
+                  ? t('helper_job.evidence_reupload_title')
+                  : t('helper_job.evidence_title')}
               </Text>
             </View>
             <Badge
@@ -2013,11 +2096,15 @@ export default function HelperJobDetailScreen() {
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                   <Sparkles size={16} color={COLORS.primary} />
                   <Text style={{ fontWeight: '800', fontSize: fs(14), color: COLORS.primaryDark }}>
-                    {t('helper_job.evidence_sub')}
+                    {isReuploadMode
+                      ? t('helper_job.evidence_reupload_sub')
+                      : t('helper_job.evidence_sub')}
                   </Text>
                 </View>
                 <Text style={{ fontSize: fs(12.5), color: tc.textSecondary, lineHeight: 18 }}>
-                  {t('helper_job.evidence_hint')}
+                  {isReuploadMode
+                    ? t('helper_job.evidence_reupload_hint')
+                    : t('helper_job.evidence_hint')}
                 </Text>
               </View>
 
@@ -2288,7 +2375,11 @@ export default function HelperJobDetailScreen() {
               </View>
 
               <Button
-                title={t('helper_job.evidence_submit_btn')}
+                title={
+                  isReuploadMode
+                    ? t('helper_job.evidence_reupload_submit_btn')
+                    : t('helper_job.evidence_submit_btn')
+                }
                 loading={completeJob.isPending}
                 onPress={handleCompleteSubmission}
                 style={{ marginTop: 10 }}
