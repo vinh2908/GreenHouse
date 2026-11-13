@@ -1605,15 +1605,14 @@ export const STRINGS = {
     en: 'Unable to select video from gallery',
   },
   'helper_job.evidence_no_media_title': {
-    vi: 'Chưa có bằng chứng nghiệm thu',
-    en: 'No acceptance evidence yet',
+    vi: 'Cần ít nhất 1 ảnh nghiệm thu',
+    en: 'At least 1 acceptance photo required',
   },
   'helper_job.evidence_no_media_msg': {
-    vi: 'Khách hàng cần xem ảnh/video kết quả công việc để kiểm tra và nghiệm thu nhanh chóng. Bạn có chắc muốn tiếp tục gửi mà không có ảnh/video?',
-    en: 'Customer needs to view photos/videos of completed work to review and accept promptly. Are you sure you want to proceed without photos/videos?',
+    vi: 'Cần ít nhất 1 ảnh kết quả công việc để gửi nghiệm thu. Khách hàng xem ảnh để kiểm tra và nghiệm thu; chỉ gửi video sẽ không đủ để nghiệm thu.',
+    en: 'At least 1 photo of the completed work is required to submit for acceptance. The customer reviews the photos to check and accept the work; video alone is not enough for acceptance.',
   },
   'helper_job.evidence_capture_now': { vi: 'Chụp/Quay ngay', en: 'Capture now' },
-  'helper_job.evidence_submit_anyway': { vi: 'Tiếp tục gửi', en: 'Submit anyway' },
   'helper_job.step_moving_toast': {
     vi: 'Bắt đầu di chuyển đến khách hàng ',
     en: 'Heading to customer location ',

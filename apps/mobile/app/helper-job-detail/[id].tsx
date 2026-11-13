@@ -50,6 +50,7 @@ import { OfflineBanner } from '@/components/common/offline-banner';
 import { SosBackupHelperCard } from '@/components/common/sos-backup-helper-card';
 import { formatDisplayAddress } from '@/utils/address-formatter';
 import { isMyActiveJob as isMyActiveJobGate, effectiveJobStatus } from '@/utils/job-assignment';
+import { checkCompletionEvidence } from '@/utils/completion-evidence';
 
 dayjs.extend(relativeTime);
 
@@ -659,31 +660,14 @@ export default function HelperJobDetailScreen() {
   };
 
   const handleCompleteSubmission = async () => {
-    if (completionPhotos.length === 0 && completionVideos.length === 0) {
-      const msg = t('helper_job.evidence_no_media_msg');
-      const doSubmit = async () => {
-        try {
-          await completeJob.mutateAsync({
-            jobId: id!,
-            completion_photos: completionPhotos,
-            completion_videos: completionVideos,
-            completion_notes: completionNotes || undefined,
-          });
-          setShowCompleteModal(false);
-        } catch (err: any) {
-          const serverMsg = err?.response?.data?.message || err?.message;
-          const m = serverMsg
-            ? mapServerErrorMessage(serverMsg, lang)
-            : lang === 'en'
-              ? 'Update failed'
-              : 'Cập nhật thất bại';
-          Toast.show({ type: 'error', text1: m });
-        }
-      };
-
-      Alert.alert(t('helper_job.evidence_no_media_title'), msg, [
+    // B5b: B57 ở approveCompletion yêu cầu ≥1 ảnh; gửi nghiệm thu không ảnh
+    // (kể cả chỉ có video) sẽ kẹt đơn ở bước 7 không ai nghiệm thu được —
+    // đơn B live 2026-11-13. Chặn ngay tại UI, không cho submit khi chưa có
+    // ảnh. Dialog chỉ còn nút chụp ảnh / đóng, không còn đường "gửi tiếp".
+    const gate = checkCompletionEvidence({ photos: completionPhotos, videos: completionVideos });
+    if (!gate.allowed) {
+      Alert.alert(t('helper_job.evidence_no_media_title'), t('helper_job.evidence_no_media_msg'), [
         { text: t('helper_job.evidence_capture_now'), style: 'cancel' },
-        { text: t('helper_job.evidence_submit_anyway'), onPress: doSubmit },
       ]);
       return;
     }
