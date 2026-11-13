@@ -3560,7 +3560,16 @@ export class JobsService implements OnModuleInit {
     const job = await this.jobModel.findById(jobId).exec();
     if (!job) throw new NotFoundException('Job không tồn tại');
     if (job.helper_id?.toString() !== helperId) throw new ForbiddenException();
-    this.validateTransition(job.status, JobStatus.PENDING_REVIEW);
+    // R3-B5a: đơn đã kẹt ở PENDING_REVIEW không có ảnh (thợ nộp hoàn thành
+    // không kèm ảnh trước đây được app chấp nhận) — cho phép thợ bổ sung
+    // bằng chứng mà KHÔNG đổi trạng thái. Không thêm PENDING_REVIEW →
+    // PENDING_REVIEW vào JOB_STATUS_TRANSITIONS (không nới lỏng máy trạng
+    // thái toàn cục); đây là nhánh cập nhật bằng chứng cùng-trạng-thái
+    // tường minh trong completeByHelper.
+    const isReupload = job.status === JobStatus.PENDING_REVIEW;
+    if (!isReupload) {
+      this.validateTransition(job.status, JobStatus.PENDING_REVIEW);
+    }
     if (dto.completion_photos?.length) {
       job.completion_photos = dto.completion_photos;
     }
@@ -3575,9 +3584,19 @@ export class JobsService implements OnModuleInit {
       job.helper_cash_confirmed = true;
       job.helper_cash_confirmed_at = new Date();
     }
-    this.addEvent(job, JobStatus.PENDING_REVIEW, helperId, 'helper', 'Upload ảnh/video hoàn thành');
+    this.addEvent(
+      job,
+      JobStatus.PENDING_REVIEW,
+      helperId,
+      'helper',
+      isReupload ? 'Bổ sung ảnh/video hoàn thành' : 'Upload ảnh/video hoàn thành',
+    );
     await job.save();
-    await this.setHelperBusy(helperId, false);
+    // Re-upload: thợ vẫn đang chờ nghiệm thu (PENDING_REVIEW nằm trong
+    // ACTIVE_HELPER_JOB_STATUSES) nên không gọi setHelperBusy(false) lại.
+    if (!isReupload) {
+      await this.setHelperBusy(helperId, false);
+    }
 
     this.emitJobStatusChange(job);
     this.gateway.emitToJob(jobId, SOCKET_EVENTS.JOB_COMPLETION_UPLOADED, {
