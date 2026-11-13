@@ -1710,6 +1710,30 @@ export const STRINGS = {
     vi: 'Gửi kết quả & Báo hoàn thành',
     en: 'Submit results & report completion',
   },
+  'helper_job.evidence_reupload_btn': {
+    vi: 'Bổ sung ảnh bằng chứng',
+    en: 'Add completion photos',
+  },
+  'helper_job.evidence_reupload_title': {
+    vi: 'Bổ sung bằng chứng hoàn thành',
+    en: 'Add completion evidence',
+  },
+  'helper_job.evidence_reupload_sub': {
+    vi: 'Gửi thêm ảnh để khách nghiệm thu',
+    en: 'Send additional photos for customer acceptance',
+  },
+  'helper_job.evidence_reupload_hint': {
+    vi: 'Ảnh bổ sung sẽ được gửi cho khách hàng để nghiệm thu. Đơn vẫn ở trạng thái chờ nghiệm thu cho đến khi khách xác nhận.',
+    en: 'Additional photos go to the customer for acceptance. The job stays awaiting acceptance until the customer confirms.',
+  },
+  'helper_job.evidence_reupload_submit_btn': {
+    vi: 'Gửi ảnh bổ sung',
+    en: 'Send additional photos',
+  },
+  'helper_job.evidence_uploaded_title': {
+    vi: 'Ảnh bằng chứng đã tải lên',
+    en: 'Uploaded completion photos',
+  },
   'sos_helper.issue_title': {
     vi: 'Gặp sự cố không thể tiếp tục đơn?',
     en: 'Encountered an issue and cannot continue?',
