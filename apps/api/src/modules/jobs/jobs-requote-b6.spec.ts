@@ -14,12 +14,13 @@
  * filter for a revived row. Two mechanisms that CAN produce the exact
  * live symptom (list (0) while the job badge stays RECEIVING_QUOTES)
  * were proven in diagnostics and are recorded for the coordinator:
- * - B6-4: a request whose JWT active_role is not 'customer' (e.g.
- *   'helper') silently returns [] — the helper branch adds
- *   helper_id = requesterId, which matches no quote for a customer id.
- *   Live check needed: the active_role on the customer session that
- *   viewed job C (and whether it flipped after the E2E accept at 08:31,
- *   when the list demonstrably worked).
+ * - B6-4 (SUPERSEDED by the R7-B6 owner override in getJobQuotes): a
+ *   request whose JWT active_role was not 'customer' (e.g. 'helper')
+ *   silently returned [] — the helper branch adds helper_id = requesterId,
+ *   which matches no quote for a customer id. The R7 fix forces the
+ *   customer view when the viewer owns the job, whatever the JWT role is;
+ *   B6-4 now asserts the fixed behavior (owner sees 1 quote under either
+ *   role) and jobs-r7-b.spec.ts carries the full guard set.
  * - (removed test B6-5, observed failing): if routingService.
  *   getRoutesBatch REJECTS outright, getJobQuotes throws and the whole
  *   endpoint 500s — the screen has no error branch so it shows
@@ -357,14 +358,18 @@ describe('JobsService re-quote after expiry (B6, real mongod)', () => {
     expect(quotes).toHaveLength(1);
   });
 
-  it('B6-4 (diagnostic): role-branch mechanism — a customer id passed with role helper sees []', async () => {
+  it('B6-4 (diagnostic, SUPERSEDED by the R7 owner override): role-branch mechanism — a customer id passed with role helper used to see []', async () => {
     const { customer, helperUser, job } = await seedJob();
     await service.submitQuote(String(helperUser._id), String(job._id), quoteDto);
 
-    // Controller passes user.active_role straight through. With role
-    // 'customer' the quote lists; with any other role the query adds
-    // helper_id = requesterId, so a CUSTOMER id matches no quote and the
-    // endpoint silently returns [] — the exact B6 screen symptom.
+    // BEFORE R7 this was the live B6 symptom: the controller passes
+    // user.active_role straight through, and with role 'helper' the query
+    // added helper_id = requesterId, so a CUSTOMER id matched no quote and
+    // the endpoint silently returned []. R7-B6 adds the customer-owner
+    // override in getJobQuotes: when the viewer OWNS the job the customer
+    // view is forced whatever the JWT role is — so the owner now sees the
+    // quote under EITHER role. (The R7-B spec asserts the same fix plus
+    // the non-owner guards; this test stays as the regression record.)
     const asCustomer = await service.getJobQuotes(
       String(job._id),
       String(customer._id),
@@ -376,6 +381,6 @@ describe('JobsService re-quote after expiry (B6, real mongod)', () => {
       String(customer._id),
       'helper',
     );
-    expect(asHelperRole).toHaveLength(0);
+    expect(asHelperRole).toHaveLength(1);
   });
 });

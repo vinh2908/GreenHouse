@@ -201,7 +201,10 @@ describe('JobsService completeByHelper evidence re-upload (R3-B5a, real document
     const after = await JobModel.findById(job._id).lean();
     expect(after?.status).toBe(JobStatus.PENDING_REVIEW);
     expect(after?.completion_photos).toEqual(['https://cdn.example.com/photo1.jpg']);
-    // Same fan-out as the normal completion path.
+    // Same fan-out as the normal completion path, EXCEPT the notify: R7
+    // (live 2026-11-14) — a re-upload is not a new completion, the customer
+    // was already notified at the first completion, so re-notifying sends a
+    // second identical 'Hoàn thành công việc' notification.
     expect(gateway.emitToJob).toHaveBeenCalledWith(
       String(job._id),
       'job:completion_uploaded',
@@ -209,11 +212,7 @@ describe('JobsService completeByHelper evidence re-upload (R3-B5a, real document
         completion_photos: ['https://cdn.example.com/photo1.jpg'],
       }),
     );
-    expect(notifications.notifyJobCompleted).toHaveBeenCalledWith(
-      expect.any(String),
-      job.title,
-      String(job._id),
-    );
+    expect(notifications.notifyJobCompleted).not.toHaveBeenCalled();
   }, 60000);
 
   it('R3-B5a-2: after re-upload the same job passes approveCompletion (B57 satisfied) → COMPLETED', async () => {

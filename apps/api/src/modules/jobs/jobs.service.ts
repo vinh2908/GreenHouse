@@ -2551,14 +2551,25 @@ export class JobsService implements OnModuleInit {
     const job = await this.jobModel.findById(jobId).exec();
     if (!job) throw new NotFoundException('Job không tồn tại');
 
-    if (requesterRole === 'customer') {
+    // R7-B6 (live 2026-11-14 ~09:28): the viewer OWNS this job → force the
+    // customer view whatever active_role the JWT carries. A dual-role
+    // session that landed in helper mode (stale persisted active_role, or a
+    // device whose stored role flipped) used to fall into the helper branch,
+    // which adds helper_id = requesterId — a customer id matches no quote,
+    // so the endpoint silently returned [] (HTTP 200) and the customer list
+    // showed (0) + "Đang quét..." forever. Ownership is the entitlement
+    // here: the owner may always see every quote on their own job.
+    const isOwner = job.customer_id.toString() === requesterId;
+    const effectiveRole = isOwner ? 'customer' : requesterRole;
+
+    if (effectiveRole === 'customer') {
       if (job.customer_id.toString() !== requesterId) throw new ForbiddenException();
     }
 
     const query: Record<string, unknown> = {
       job_id: new Types.ObjectId(jobId),
       status:
-        requesterRole === 'customer'
+        effectiveRole === 'customer'
           ? { $in: [QuoteStatus.PENDING, QuoteStatus.REJECTED, QuoteStatus.ACCEPTED] }
           : // B4: thợ phải thấy cả báo giá ĐÃ ĐƯỢC CHỌN của chính mình — đó là
             // bằng chứng khách đã giao đơn khi payload job trong cache cũ còn
@@ -2566,7 +2577,7 @@ export class JobsService implements OnModuleInit {
             // Vẫn giới hạn helper_id = người gọi nên không lộ báo giá thợ khác.
             { $in: [QuoteStatus.PENDING, QuoteStatus.ACCEPTED] },
     };
-    if (requesterRole === 'helper') {
+    if (effectiveRole === 'helper') {
       query['helper_id'] = new Types.ObjectId(requesterId);
     }
 
@@ -2574,7 +2585,7 @@ export class JobsService implements OnModuleInit {
       .find(query)
       .populate('helper_id', 'full_name avatar')
       .exec();
-    if (requesterRole === 'helper') return quotes;
+    if (effectiveRole === 'helper') return quotes;
 
     const helperIds = quotes.map(
       q => (q.helper_id as unknown as { _id: Types.ObjectId })?._id ?? q.helper_id,
@@ -3606,7 +3617,18 @@ export class JobsService implements OnModuleInit {
       completion_notes: dto.completion_notes,
     });
 
-    await this.notificationsService.notifyJobCompleted(String(job.customer_id), job.title, jobId);
+    // R7 (live 2026-11-14 08:47, E2E job): the 'Hoàn thành công việc'
+    // acceptance notification arrived TWICE, identical. Root cause: this
+    // notify ran on EVERY completeByHelper call, including re-uploads
+    // (isReupload — R4 re-upload button, or the offline queue replaying a
+    // completion whose first response was lost to a network error). A
+    // re-upload is not a new completion — the customer was already told to
+    // review at the first completion — so it must not notify again. One
+    // completion → exactly one notification; the socket fan-out above still
+    // fires on re-upload so the customer UI refreshes.
+    if (!isReupload) {
+      await this.notificationsService.notifyJobCompleted(String(job.customer_id), job.title, jobId);
+    }
 
     return job;
   }
