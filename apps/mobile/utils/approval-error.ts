@@ -99,3 +99,28 @@ export function missingCompletionEvidenceText(lang: ApprovalLang = 'vi'): {
     detail: 'Hãy yêu cầu thợ tải ảnh hoàn thành trước khi nghiệm thu — chưa trừ tiền.',
   };
 }
+
+/**
+ * B5f: sau khi pay lỗi "đã được thanh toán" và refetch, CHỈ được proceed
+ * approve khi job refetch thấy payment_status === 'paid'.
+ *
+ * Cơ chế đã chứng minh live 2026-11-13 (đơn B 6af59e07bb2b94f98da7e088):
+ * pay lần đầu kẹt PROCESSING, server trả Conflict "Đơn hàng này đã được
+ * thanh toán hoặc đang được xử lý thanh toán" — client cũ match regex
+ * /đã được thanh toán|already paid/i rồi coi như "đã trả rồi" và approve
+ * luôn, nhưng approve ném "Đơn hàng chưa được thanh toán trực tuyến thành
+ * công" vì payment_status vẫn PROCESSING, không phải PAID. Message lỗi pay
+ * KHÔNG chứng minh được tiền đã trừ — chỉ payment_status === 'paid' trên
+ * job refetch mới chứng minh được.
+ */
+export function alreadyPaidRefetchAllowsApprove(refetchedJob: unknown): boolean {
+  return (
+    (refetchedJob as { payment_status?: unknown } | null | undefined)?.payment_status === 'paid'
+  );
+}
+
+/** Thông báo khi refetch sau lỗi "đã được thanh toán" vẫn chưa thấy paid. */
+export function unfinishedPaymentText(lang: ApprovalLang = 'vi'): string {
+  if (lang === 'en') return 'Payment is not complete yet, please try again.';
+  return 'Thanh toán chưa hoàn tất, vui lòng thử lại';
+}
