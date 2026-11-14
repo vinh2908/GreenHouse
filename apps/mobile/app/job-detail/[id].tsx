@@ -103,7 +103,12 @@ import { LoyaltyPointsInput } from '@/components/common/loyalty-points-input';
 import { LocationPicker } from '@/components/common/location-picker';
 import { validCoordinate } from '@/services/tracking';
 import { formatDisplayAddress } from '@/utils/address-formatter';
-import { missingCompletionEvidenceText, resolveApprovalErrorMessage } from '@/utils/approval-error';
+import {
+  alreadyPaidRefetchAllowsApprove,
+  missingCompletionEvidenceText,
+  resolveApprovalErrorMessage,
+  unfinishedPaymentText,
+} from '@/utils/approval-error';
 import {
   Button,
   Card,
@@ -883,7 +888,20 @@ export default function JobDetailScreen() {
             // charge went through, so continue to approval instead of failing.
             const msg = String(payErr?.response?.data?.message ?? payErr?.message ?? '');
             if (/đã được thanh toán|already paid/i.test(msg)) {
-              await refetchJob();
+              // B5f: message lỗi pay KHÔNG chứng minh được tiền đã trừ —
+              // lần charge đầu có thể đang kẹt PROCESSING (live đơn B
+              // 2026-11-13: pay Conflict "đang được xử lý thanh toán" rồi
+              // approve ném "chưa được thanh toán trực tuyến thành công").
+              // Chỉ proceed approve khi refetch thấy payment_status 'paid'
+              // thật; chưa paid thì dừng ở đây, hiện lỗi bằng banner inline
+              // reviewError (cơ chế B5c) — KHÔNG gọi approve.
+              const { data: refetchedJob } = await refetchJob();
+              if (!alreadyPaidRefetchAllowsApprove(refetchedJob ?? job)) {
+                const notPaidText = unfinishedPaymentText(lang);
+                setReviewError(notPaidText);
+                Toast.show({ type: 'error', text1: notPaidText });
+                return;
+              }
             } else {
               throw payErr;
             }
