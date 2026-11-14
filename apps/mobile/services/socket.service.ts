@@ -88,12 +88,10 @@ class SocketService {
     });
 
     this.socket.on('connect', () => {
-      console.log('[Socket] Connected:', this.socket?.id);
       this.rooms.forEach(({ event, payload }) => this.socket?.emit(event, payload));
     });
 
     this.socket.on('disconnect', reason => {
-      console.log('[Socket] Disconnected:', reason);
       // The server drops sockets with an expired token and socket.io will not retry
       // a server-side disconnect. Any authenticated request refreshes the token
       // (api-client interceptor); then reconnect.

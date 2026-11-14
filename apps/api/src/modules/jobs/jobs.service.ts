@@ -1492,7 +1492,7 @@ export class JobsService implements OnModuleInit {
           this.notificationsService.create({
             userId: String(helper.user_id),
             type: NOTIFICATION_TYPES.NEW_JOB_NEARBY,
-            title: 'Có đơn mới gần bạn 🎉',
+            title: 'Có đơn mới gần bạn',
             body: `${job.title}${district}. Mở mục Công việc để xem chi tiết và gửi báo giá.`,
             payload: {
               job_id: String(job._id),
@@ -1553,7 +1553,7 @@ export class JobsService implements OnModuleInit {
       sos_category: dto.category,
       sos_surcharge: surcharge,
       sos_eta_minutes: 15,
-      title: `🚨 [SOS CỨU HỘ] ${dto.title}`,
+      title: `[SOS CỨU HỘ] ${dto.title}`,
       description: dto.description,
       photos: dto.photos ?? [],
       address: {
@@ -1574,7 +1574,7 @@ export class JobsService implements OnModuleInit {
           actor_id: new Types.ObjectId(customerId),
           actor_role: 'customer',
           timestamp: new Date(),
-          note: '🚨 Yêu cầu cứu hộ khẩn cấp SOS',
+          note: 'Yêu cầu cứu hộ khẩn cấp SOS',
         },
       ],
     });
@@ -1659,7 +1659,7 @@ export class JobsService implements OnModuleInit {
         .create({
           userId: String(helper.user_id),
           type: NOTIFICATION_TYPES.NEW_JOB_NEARBY,
-          title: '🚨 CỨU HỘ KHẨN CẤP SOS GẦN BẠN!',
+          title: 'CỨU HỘ KHẨN CẤP SOS GẦN BẠN!',
           body: `${dto.title}${dto.address.district ? ` tại ${dto.address.district}` : ''}. Phụ phí SOS: +${surcharge.toLocaleString()}đ`,
           payload: { job_id: String(job._id), is_sos: true },
         })
@@ -1949,7 +1949,7 @@ export class JobsService implements OnModuleInit {
         helper_receives: helperReceives,
         estimated_duration: 1,
         warranty_days: 30,
-        notes: '🚨 Đơn cứu hộ khẩn cấp SOS - Thợ có mặt sau 15 phút',
+        notes: 'Đơn cứu hộ khẩn cấp SOS - Thợ có mặt sau 15 phút',
         status: QuoteStatus.ACCEPTED,
         expires_at: new Date(Date.now() + 3600 * 1000 * 2),
       });
@@ -2024,7 +2024,7 @@ export class JobsService implements OnModuleInit {
     await this.notificationsService.create({
       userId: String(job.customer_id),
       type: NOTIFICATION_TYPES.JOB_CONFIRMED,
-      title: '🚨 ĐÃ CÓ THỢ NHẬN CỨU HỘ SOS!',
+      title: 'ĐÃ CÓ THỢ NHẬN CỨU HỘ SOS!',
       body: `Thợ đang chuẩn bị đồ nghề và di chuyển gấp đến bạn (Dự kiến 15 phút).`,
       payload: { job_id: jobId, is_sos: true, job_title: job.title },
     });
