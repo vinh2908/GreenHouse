@@ -343,6 +343,15 @@ export class Job {
   @Prop()
   overdue_notified_for?: string;
 
+  // R7 watchdog (iii)/(iv): cờ đơn có nguy cơ kẹt (thợ chưa bắt đầu sau
+  // giờ hẹn / khách chưa nghiệm thu nhiều ngày) + mốc lần đầu phát hiện,
+  // để admin lọc/xem. Chỉ phát hiện + nhắc — không tự hủy/hoàn.
+  @Prop({ type: [String], default: [] })
+  at_risk_flags?: string[];
+
+  @Prop()
+  at_risk_detected_at?: Date;
+
   // B101: đã gửi thông báo ưu đãi riêng hết hạn cho thợ (1 lần)
   @Prop({ default: false })
   private_offer_expiry_notified?: boolean;

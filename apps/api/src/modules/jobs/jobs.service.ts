@@ -64,6 +64,13 @@ import { LoyaltyService } from '../loyalty/loyalty.service';
 import { DisputesService } from './disputes.service';
 import { MatchingService } from '../matching/matching.service';
 import { MailService } from '../auth/mail.service';
+import { HH_MM_RE, jobScheduledStart, toVnDateString } from './job-schedule';
+import {
+  AT_RISK_HELPER_NO_START,
+  AT_RISK_REVIEW_WAITING_3D,
+  AT_RISK_REVIEW_WAITING_7D,
+  detectAtRiskFlags,
+} from './at-risk';
 import {
   HelperPenaltyEvent,
   HelperPenaltyEventDocument,
@@ -135,41 +142,10 @@ export function localDateKey(d: Date): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
 
-/** P2-4 & H27(a): Chuỗi ngày 'YYYY-MM-DD' theo giờ Việt Nam (+07:00), tránh lệch ngày UTC khi dùng Date object. */
-export function toVnDateString(dateInput: unknown): string {
-  if (!dateInput) return '';
-  if (typeof dateInput === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateInput.trim())) {
-    return dateInput.trim();
-  }
-  const d = new Date(dateInput as any);
-  if (isNaN(d.getTime())) return '';
-  const vnTime = new Date(d.getTime() + 7 * 60 * 60 * 1000);
-  return vnTime.toISOString().slice(0, 10);
-}
-
-const HH_MM_RE = /^(\d{1,2}):(\d{2})/;
-
-/**
- * R7 item 2 — "quá giờ hẹn thì ẩn hết bên thợ" (Vinh, decided 2026-11-14):
- * a job is past its scheduled start when it has a parsable VN date +
- * 'HH:mm' start whose instant is already behind `now`. Jobs without a
- * usable date/time (flexible jobs) are never past-start.
- */
-export function jobScheduledStart(job: {
-  preferred_date?: unknown;
-  preferred_time_start?: string | null;
-}): Date | null {
-  const dateStr = toVnDateString(job.preferred_date);
-  const timeStr = (job.preferred_time_start ?? '').trim();
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr) || !/^\d{1,2}:\d{2}$/.test(timeStr)) {
-    return null;
-  }
-  const [h, m] = timeStr.split(':').map(Number);
-  const start = new Date(
-    `${dateStr}T${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:00+07:00`,
-  );
-  return Number.isNaN(start.getTime()) ? null : start;
-}
+// R7: toVnDateString / jobScheduledStart đã chuyển sang job-schedule.ts
+// (dùng chung với at-risk.ts); re-export để các nơi import từ đây không
+// phải sửa (admin.service, các spec H2/H3/H1).
+export { toVnDateString, jobScheduledStart } from './job-schedule';
 
 /**
  * R7 item 2: true when the job's start has passed AND no helper is assigned
@@ -355,6 +331,10 @@ export class JobsService implements OnModuleInit {
     // giờ trong lúc API ngủ (Render free tier).
     this.sweepOverdueUnassignedJobs().catch(err =>
       this.logger.error(`Initial overdue sweep failed: ${err?.message ?? err}`),
+    );
+    // R7 watchdog (iii)/(iv): quét đơn có nguy cơ kẹt ngay khi khởi động.
+    this.sweepAtRiskJobs().catch(err =>
+      this.logger.error(`Initial at-risk sweep failed: ${err?.message ?? err}`),
     );
   }
 
@@ -784,6 +764,123 @@ export class JobsService implements OnModuleInit {
       await this.mailService.sendJobEmail(email, subject, text, html);
     } catch (err) {
       this.logger.warn(`sendJobEmailToCustomer job ${job._id} failed: ${(err as Error).message}`);
+    }
+  }
+
+  /**
+   * R7 watchdog (iii)/(iv): phát hiện đơn có nguy cơ kẹt — DETECT + NOTIFY
+   * + lưu cờ để admin lọc, KHÔNG tự sửa. Chỉ thông báo khi cờ MỚI xuất
+   * hiện (so với at_risk_flags đã lưu) để không spam mỗi vòng quét.
+   * - helper_no_start (thợ chưa bắt đầu 1h sau giờ hẹn): nhắc khách (gợi ý
+   *   liên hệ thợ / SOS tìm thợ khác) + nhắc thợ.
+   * - review_waiting_3d: nhắc khách nghiệm thu.
+   * - review_waiting_7d: nhắc lại khách + leo thang tới admin (notifyAdmins).
+   * Ngưỡng 1h/3d/7d là ĐỀ XUẤT, chưa được Vinh quyết — nếu Vinh đổi ngưỡng,
+   * chỉ cần đổi hằng trong at-risk.ts. Không hủy/hoàn/gán lại ở đây.
+   * Nhịp 15 phút (các cửa sổ tính bằng giờ/ngày nên không cần quét dày).
+   */
+  @Cron('*/15 * * * *')
+  async sweepAtRiskJobs(): Promise<void> {
+    const nowMs = Date.now();
+    const candidates = await this.jobModel
+      .find({
+        $or: [
+          {
+            status: {
+              $in: [
+                JobStatus.CONFIRMED,
+                JobStatus.HELPER_ON_THE_WAY,
+                JobStatus.HELPER_ARRIVED,
+                JobStatus.PENDING_REVIEW,
+              ],
+            },
+          },
+          // Đơn đã mang cờ phải được quét lại để xóa cờ khi hết kẹt
+          // (VD thợ đã bắt đầu → IN_PROGRESS không nằm trong danh sách trên).
+          { at_risk_flags: { $exists: true, $ne: [] } },
+        ],
+      })
+      .exec();
+
+    for (const job of candidates) {
+      try {
+        const flags = detectAtRiskFlags(job as any, nowMs);
+        const stored: string[] = (job as any).at_risk_flags ?? [];
+        const newFlags = flags.filter(f => !stored.includes(f));
+
+        if (newFlags.includes(AT_RISK_HELPER_NO_START)) {
+          const jobId = String(job._id);
+          await Promise.allSettled([
+            this.notificationsService.create({
+              userId: String(job.customer_id),
+              type: NOTIFICATION_TYPES.JOB_STATUS_CHANGED,
+              title: 'Thợ chưa bắt đầu công việc',
+              body: `Thợ phụ trách đơn "${job.title}" chưa bắt đầu sau 1 giờ kể từ giờ hẹn (${job.preferred_time_start}). Bạn có thể liên hệ thợ hoặc yêu cầu thợ khác (SOS).`,
+              payload: { job_id: jobId },
+            }),
+            job.helper_id
+              ? this.notificationsService.create({
+                  userId: String(job.helper_id),
+                  type: NOTIFICATION_TYPES.JOB_STATUS_CHANGED,
+                  title: 'Bạn chưa bắt đầu công việc',
+                  body: `Đơn "${job.title}" đã đến giờ làm (${job.preferred_time_start}) mà bạn chưa bắt đầu. Vui lòng bắt đầu hoặc liên hệ khách hàng.`,
+                  payload: { job_id: jobId },
+                })
+              : Promise.resolve(),
+          ]);
+        }
+        if (newFlags.includes(AT_RISK_REVIEW_WAITING_3D)) {
+          await this.notificationsService.create({
+            userId: String(job.customer_id),
+            type: NOTIFICATION_TYPES.JOB_STATUS_CHANGED,
+            title: 'Đơn đang chờ bạn nghiệm thu',
+            body: `Đơn "${job.title}" đã hoàn thành và đang chờ bạn nghiệm thu. Vui lòng xác nhận để thợ nhận thu nhập.`,
+            payload: { job_id: String(job._id) },
+          });
+        }
+        if (newFlags.includes(AT_RISK_REVIEW_WAITING_7D)) {
+          await Promise.allSettled([
+            this.notificationsService.create({
+              userId: String(job.customer_id),
+              type: NOTIFICATION_TYPES.JOB_STATUS_CHANGED,
+              title: 'Đơn đang chờ bạn nghiệm thu',
+              body: `Đơn "${job.title}" đã hoàn thành 7 ngày mà chưa được nghiệm thu. Vui lòng xác nhận hoặc liên hệ hỗ trợ.`,
+              payload: { job_id: String(job._id) },
+            }),
+            this.notificationsService.notifyAdmins({
+              type: NOTIFICATION_TYPES.SYSTEM,
+              title: 'Đơn chờ nghiệm thu quá 7 ngày',
+              body: `Đơn "${job.title}" (${job._id}) đã PENDING_REVIEW 7 ngày mà khách chưa nghiệm thu. Cần admin kiểm tra.`,
+              payload: { job_id: String(job._id) },
+            }),
+          ]);
+        }
+
+        // Lưu cờ mới (và mốc phát hiện lần đầu) / xóa cờ khi đơn hết kẹt.
+        if (flags.length === 0) {
+          if (stored.length > 0) {
+            await this.jobModel
+              .updateOne(
+                { _id: job._id },
+                { $set: { at_risk_flags: [] }, $unset: { at_risk_detected_at: '' } },
+              )
+              .exec();
+          }
+        } else if (stored.length === 0) {
+          await this.jobModel
+            .updateOne(
+              { _id: job._id },
+              { $set: { at_risk_flags: flags, at_risk_detected_at: new Date(nowMs) } },
+            )
+            .exec();
+        } else if (flags.join(',') !== stored.join(',')) {
+          await this.jobModel
+            .updateOne({ _id: job._id }, { $set: { at_risk_flags: flags } })
+            .exec();
+        }
+      } catch (err) {
+        this.logger.warn(`sweepAtRiskJobs job ${job._id} failed: ${(err as Error).message}`);
+      }
     }
   }
 
