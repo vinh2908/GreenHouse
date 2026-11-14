@@ -49,12 +49,10 @@ import { TeamCard } from '@/components/common/team-card';
 import { OfflineBanner } from '@/components/common/offline-banner';
 import { SosBackupHelperCard } from '@/components/common/sos-backup-helper-card';
 import { formatDisplayAddress } from '@/utils/address-formatter';
+import { isJobNoLongerAvailableError } from '@/utils/job-unavailable';
 import { isMyActiveJob as isMyActiveJobGate, effectiveJobStatus } from '@/utils/job-assignment';
 import { checkCompletionEvidence } from '@/utils/completion-evidence';
-import {
-  shouldShowEvidenceReupload,
-  prefillReuploadMedia,
-} from '@/utils/evidence-reupload';
+import { shouldShowEvidenceReupload, prefillReuploadMedia } from '@/utils/evidence-reupload';
 import {
   resolveCompleteErrorMessage,
   shouldShowCompleteErrorBanner,
@@ -316,6 +314,36 @@ export default function HelperJobDetailScreen() {
           }
           action={lang === 'en' ? 'Log in again' : 'Đăng nhập lại'}
           onAction={() => router.replace('/(auth)/login')}
+        />
+      </View>
+    );
+  }
+
+  // R8-B: đơn không còn khả dụng (đã hủy / hết hạn / đã giao cho thợ khác)
+  // — API trả 410 Gone, khác với lỗi mạng/máy chủ (5xx/timeout) và 403 thật
+  // (gửi riêng cho thợ khác). Không có nút thử lại: thử lại cũng vẫn 410.
+  if (isError && isJobNoLongerAvailableError(jobError)) {
+    return (
+      <View
+        style={{
+          flex: 1,
+          backgroundColor: tc.background,
+          justifyContent: 'center',
+          alignItems: 'center',
+          padding: 24,
+          paddingTop: insets.top,
+        }}
+      >
+        <EmptyState
+          icon={<Ban size={40} color={COLORS.gray[400]} />}
+          title={lang === 'en' ? 'This job is no longer available' : 'Đơn này không còn khả dụng'}
+          subtitle={
+            lang === 'en'
+              ? 'This job was cancelled, expired, or has already been assigned to another helper.'
+              : 'Đơn đã bị hủy, đã hết hạn hoặc đã được giao cho thợ khác.'
+          }
+          action={lang === 'en' ? 'Back to job list' : 'Quay lại danh sách đơn'}
+          onAction={handleBack}
         />
       </View>
     );
