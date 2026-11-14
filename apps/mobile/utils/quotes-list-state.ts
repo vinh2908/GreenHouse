@@ -22,11 +22,12 @@
 //                loading/error, không chữ "đang quét".
 //
 // Một báo giá "hồi sinh" (thợ báo lại sau khi hết hạn) về phía client có
-// hình dạng Y HỆT một báo giá mới: một row PENDING mới (status 'pending',
-// _id mới), helper_id đã populate (full_name/avatar), total_price. Không
-// có gì ở payload client phân biệt được "báo lại" với "báo mới" — nên chỉ
-// cần danh sách render đúng mọi row PENDING là đủ; phần lọc sai phía
-// server (nếu có) thuộc worker R6-A, không sửa ở đây.
+// hình dạng Y HỆT một báo giá mới: một row PENDING (status 'pending',
+// helper_id đã populate (full_name/avatar), total_price. Server cập nhật
+// row cũ tại chỗ qua existing.save() nên _id giữ nguyên — không có gì ở
+// payload client phân biệt được "báo lại" với "báo mới", nên chỉ cần danh
+// sách render đúng mọi row PENDING là đủ; phần lọc sai phía server (nếu
+// có) thuộc worker R6-A, không sửa ở đây.
 
 export type QuotesListState = 'list' | 'loading' | 'error' | 'empty';
 
