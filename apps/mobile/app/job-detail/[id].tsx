@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useMemo } from 'react';
 import { formatDate, formatDateTime, vnDateKey } from '@/utils/date-format';
+import { resolveQuotesErrorMessage, resolveQuotesListState } from '@/utils/quotes-list-state';
 import { formatCurrency } from '@/services/i18n';
 import {
   View,
@@ -235,7 +236,23 @@ export default function JobDetailScreen() {
       longitude: helperLocation.lng,
     };
   }, [helperLocation?.lat, helperLocation?.lng]);
-  const { data: quotes } = useJobQuotes(id);
+  const {
+    data: quotes,
+    isLoading: quotesLoading,
+    isError: quotesError,
+    error: quotesFetchError,
+    refetch: refetchQuotes,
+  } = useJobQuotes(id);
+  // B6 (R6): phân biệt loading / error / empty cho danh sách báo giá — fetch
+  // lỗi không được giả làm "đang quét" nữa. useJobQuotes trả về useQuery nên
+  // isLoading/isError/error/refetch đã có sẵn, màn hình trước đây chỉ lấy
+  // data nên bỏ qua hết. Poll 15s + timeout của api-client không đổi.
+  const quotesListState = resolveQuotesListState({
+    quotes,
+    isLoading: quotesLoading,
+    isError: quotesError,
+  });
+  const quotesErrorMessage = resolveQuotesErrorMessage(quotesFetchError);
   const { data: contract } = useJobContract(id);
   const selectQuote = useSelectQuote();
   const cancelJob = useCancelJob();
@@ -1887,15 +1904,7 @@ export default function JobDetailScreen() {
                   </Text>
                 </View>
 
-                {!quotes || quotes.length === 0 ? (
-                  <View style={{ paddingVertical: 14, alignItems: 'center' }}>
-                    <Text style={{ fontSize: fs(13), color: tc.textMuted }}>
-                      {lang === 'en'
-                        ? 'Scanning and notifying nearby helpers...'
-                        : 'Đang quét và gửi đơn tới các thợ trong khu vực lân cận...'}
-                    </Text>
-                  </View>
-                ) : (
+                {quotesListState === 'list' ? (
                   quotes.map((q: any) => {
                     const hName =
                       q.helper_id?.full_name || (lang === 'en' ? 'Partner Helper' : 'Thợ đối tác');
@@ -2100,6 +2109,75 @@ export default function JobDetailScreen() {
                       </View>
                     );
                   })
+                ) : quotesListState === 'error' ? (
+                  // B6 (R6): fetch báo giá lỗi PHẢI hiện lỗi + nút thử lại — không
+                  // bao giờ giả làm "đang quét" hay danh sách rỗng.
+                  <View style={{ paddingVertical: 14, alignItems: 'center', gap: 8 }}>
+                    <AlertTriangle size={20} color={COLORS.error} />
+                    <Text
+                      style={{
+                        fontSize: fs(14),
+                        fontWeight: '800',
+                        color: tc.text,
+                        textAlign: 'center',
+                      }}
+                    >
+                      {lang === 'en' ? "Couldn't load quotes" : 'Không tải được danh sách báo giá'}
+                    </Text>
+                    <Text
+                      style={{
+                        fontSize: fs(13),
+                        color: tc.textMuted,
+                        textAlign: 'center',
+                        lineHeight: 19,
+                      }}
+                    >
+                      {lang === 'en'
+                        ? 'Please check your connection and try again — the quotes may already exist.'
+                        : 'Vui lòng kiểm tra kết nối mạng và thử lại — có thể báo giá đã có nhưng chưa tải được.'}
+                    </Text>
+                    {quotesErrorMessage ? (
+                      <Text style={{ fontSize: fs(12), color: tc.textMuted, textAlign: 'center' }}>
+                        {quotesErrorMessage}
+                      </Text>
+                    ) : null}
+                    <Button
+                      title={lang === 'en' ? 'Retry' : 'Thử lại'}
+                      size="sm"
+                      fullWidth={false}
+                      icon={<RotateCcw size={16} color="#FFF" />}
+                      onPress={() => void refetchQuotes()}
+                    />
+                  </View>
+                ) : quotesListState === 'loading' ? (
+                  // B6 (R6): chỉ fetch ĐẦU TIÊN chưa có dữ liệu mới được hiện
+                  // "đang quét" — kèm spinner thật.
+                  <View
+                    style={{
+                      paddingVertical: 14,
+                      alignItems: 'center',
+                      flexDirection: 'row',
+                      justifyContent: 'center',
+                      gap: 8,
+                    }}
+                  >
+                    <ActivityIndicator size="small" color={COLORS.primary} />
+                    <Text style={{ fontSize: fs(13), color: tc.textMuted }}>
+                      {lang === 'en'
+                        ? 'Scanning and notifying nearby helpers...'
+                        : 'Đang quét và gửi đơn tới các thợ trong khu vực lân cận...'}
+                    </Text>
+                  </View>
+                ) : (
+                  // B6 (R6): đã tải xong, 0 báo giá — trạng thái rỗng trung thực,
+                  // không chữ "đang quét".
+                  <View style={{ paddingVertical: 14, alignItems: 'center' }}>
+                    <Text style={{ fontSize: fs(13), color: tc.textMuted, textAlign: 'center' }}>
+                      {lang === 'en'
+                        ? 'No quotes yet — nearby helpers have been notified; their quotes will appear here as soon as they respond.'
+                        : 'Chưa có thợ nào báo giá — đơn đã được gửi tới các thợ trong khu vực lân cận, báo giá sẽ hiển thị tại đây ngay khi thợ phản hồi.'}
+                    </Text>
+                  </View>
                 )}
               </Card>
             )}
