@@ -121,6 +121,30 @@ export async function checkAndFixStuckAssignedJobs(options?: {
   }
   console.log('────────────────────────────────────────────────────────\n');
 
+  // R7 watchdog (iii)/(iv): báo cáo đơn đang mang cờ nguy cơ kẹt (thợ chưa
+  // bắt đầu sau giờ hẹn / khách chưa nghiệm thu nhiều ngày). Chỉ báo cáo —
+  // script không tự hủy/hoàn gì thêm; đường sửa legacy ở trên giữ nguyên.
+  const atRiskJobs = await jobsCol.find({ at_risk_flags: { $exists: true, $ne: [] } }).toArray();
+  console.log('────────────────────────────────────────────────────────');
+  console.log('ĐƠN CÓ NGUY CƠ KẸT (at_risk_flags):');
+  console.log(`Số lượng: ${atRiskJobs.length}`);
+  if (atRiskJobs.length === 0) {
+    console.log('✓ Không có đơn nào đang mang cờ nguy cơ kẹt.');
+  } else {
+    console.table(
+      atRiskJobs.map(j => ({
+        job_id: String(j._id),
+        title: j.title,
+        status: j.status,
+        at_risk_flags: (j.at_risk_flags ?? []).join(', '),
+        at_risk_detected_at: j.at_risk_detected_at
+          ? new Date(j.at_risk_detected_at).toISOString()
+          : '',
+      })),
+    );
+  }
+  console.log('');
+
   if (options?.disconnectOnFinish !== false) {
     await mongoose.disconnect();
   }
