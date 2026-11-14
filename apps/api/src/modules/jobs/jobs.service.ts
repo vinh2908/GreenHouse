@@ -4,6 +4,7 @@ import {
   NotFoundException,
   BadRequestException,
   ForbiddenException,
+  GoneException,
   ConflictException,
   OnModuleInit,
   Optional,
@@ -2544,7 +2545,16 @@ export class JobsService implements OnModuleInit {
     }
 
     const browsable = [JobStatus.OPEN, JobStatus.RECEIVING_QUOTES].includes(job.status);
-    if (!browsable || !roles.includes('helper')) {
+    if (!browsable) {
+      // R8-B: đơn không còn khả dụng với thợ lạ (đã hủy / hết hạn / đã giao
+      // cho thợ khác / đã hoàn thành, ...) — 410 Gone để client phân biệt
+      // với 403 thật (gửi riêng cho thợ khác, chưa KYC) và với lỗi mạng /
+      // máy chủ (5xx/timeout). Không lộ dữ liệu đơn trong lỗi.
+      throw new GoneException(
+        job.status === JobStatus.CANCELLED ? 'Đơn này đã bị hủy' : 'Đơn này không còn khả dụng',
+      );
+    }
+    if (!roles.includes('helper')) {
       throw new ForbiddenException('Bạn không có quyền xem công việc này');
     }
     // Đơn đang gửi riêng: thợ khác (không phải người được ưu tiên) chưa xem được
