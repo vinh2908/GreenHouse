@@ -82,11 +82,14 @@ import {
   useCreateJob,
   useNearbyHelpers,
   useMyVouchers,
+  useRebroadcastJob,
 } from '@/hooks/use-api';
 import { locationService } from '@/services/location.service';
 import { useMatchingSuggestionSocket } from '@/hooks/use-socket';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LocationPicker, PickerCoords } from '@/components/common/location-picker';
+import { OverdueJobBanner } from '@/components/common/overdue-job-banner';
+import { isOverdueUnassigned } from '@/utils/job-overdue';
 import { VerificationBanner } from '@/components/common/verification-banner';
 import { Avatar, COLORS, ErrorState, Skeleton, useThemeColors } from '@/components/ui';
 import { removeVietnameseDiacritics } from '@/utils/search';
@@ -1205,6 +1208,28 @@ export default function CustomerHomeScreen() {
       (j: { status: string }) =>
         !['completed', 'cancelled', 'refunded', 'disputed'].includes(j.status),
     ) ?? [];
+
+  // R7 item 3: đơn quá giờ hẹn chưa có thợ đầu tiên (nếu có) — banner ở home.
+  const overdueJob = activeJobs.find((j: any) => isOverdueUnassigned(j));
+  const rebroadcastJob = useRebroadcastJob();
+  const [rebroadcastingId, setRebroadcastingId] = useState<string | null>(null);
+
+  const handleHomeRebroadcast = async (jobId: string) => {
+    if (rebroadcastJob.isPending) return;
+    setRebroadcastingId(jobId);
+    try {
+      await rebroadcastJob.mutateAsync(jobId);
+      Toast.show({ type: 'success', text1: t('overdue_rebroadcast_sent') });
+    } catch (err: any) {
+      const msg = err?.response?.data?.message;
+      Toast.show({
+        type: 'error',
+        text1: typeof msg === 'string' && msg ? msg : t('overdue_rebroadcast_cooldown'),
+      });
+    } finally {
+      setRebroadcastingId(null);
+    }
+  };
 
   const completedJobs =
     recentJobs?.filter((j: { status: string }) => j.status === 'completed') ?? [];
@@ -2963,6 +2988,28 @@ export default function CustomerHomeScreen() {
             )}
           </View>
 
+          {/* R7 item 3: banner đơn quá giờ hẹn chưa có thợ (đơn quá giờ đầu
+              tiên trong danh sách việc đang làm). Dời giờ mở thẳng modal sửa
+              ở màn chi tiết (focus=edit); hủy mở màn chi tiết (cần nhập lý do). */}
+          {overdueJob && (
+            <View style={{ marginBottom: 12 }}>
+              <OverdueJobBanner
+                timeLabel={`${overdueJob.preferred_time_start ?? ''} · ${overdueJob.preferred_date ? formatDate(overdueJob.preferred_date, lang) : ''}`}
+                onReschedule={() =>
+                  router.push({
+                    pathname: '/job-detail/[id]',
+                    params: { id: overdueJob._id, focus: 'edit' },
+                  })
+                }
+                onRebroadcast={() => handleHomeRebroadcast(overdueJob._id)}
+                onCancel={() =>
+                  router.push({ pathname: '/job-detail/[id]', params: { id: overdueJob._id } })
+                }
+                rebroadcasting={rebroadcastingId === overdueJob._id}
+              />
+            </View>
+          )}
+
           {isAuth && jError ? (
             <View
               style={{
@@ -3228,9 +3275,7 @@ export default function CustomerHomeScreen() {
           (() => {
             const pastJob = completedJobs[0];
             const pastPrice = pastJob.final_price || pastJob.agreed_price || pastJob.target_price;
-            const displayPriceStr = pastPrice
-              ? `${formatCurrency(pastPrice, lang)}₫`
-              : '';
+            const displayPriceStr = pastPrice ? `${formatCurrency(pastPrice, lang)}₫` : '';
             const completedDateStr = formatDate(
               dayjs(pastJob.completed_at || pastJob.updated_at || pastJob.created_at),
               lang,

@@ -950,6 +950,30 @@ export const STRINGS = {
   booking_step_address_title: { vi: 'Địa chỉ làm việc', en: 'Work address' },
   booking_step_schedule_title: { vi: 'Chọn lịch hẹn', en: 'Select schedule' },
   booking_start_time_title: { vi: 'Thời gian bắt đầu làm việc', en: 'Work start time' },
+
+  // ─── R7 item 3: Banner đơn quá giờ hẹn chưa có thợ ──────────────────────
+  overdue_banner_title: {
+    vi: 'Đã quá giờ hẹn, chưa có thợ nhận',
+    en: 'Past the scheduled time — no helper has taken this job yet',
+  },
+  overdue_banner_body: {
+    vi: 'Đơn đến giờ làm mà chưa có thợ nào nhận. Dời giờ, gửi lại cho thợ gần đây, hoặc hủy đơn.',
+    en: 'The job start time has passed and no helper has taken it yet. Reschedule, re-broadcast to nearby helpers, or cancel the job.',
+  },
+  overdue_action_reschedule: { vi: 'Dời giờ', en: 'Reschedule' },
+  overdue_action_rebroadcast: {
+    vi: 'Gửi lại cho thợ gần đây',
+    en: 'Re-broadcast to nearby helpers',
+  },
+  overdue_action_cancel: { vi: 'Hủy đơn', en: 'Cancel job' },
+  overdue_rebroadcast_sent: {
+    vi: 'Đã gửi lại đơn cho thợ gần đây',
+    en: 'Job re-broadcast to nearby helpers',
+  },
+  overdue_rebroadcast_cooldown: {
+    vi: 'Vừa gửi lại, vui lòng đợi vài phút rồi gửi lại',
+    en: 'Just re-broadcast — please wait a few minutes before sending again',
+  },
   booking_tap_to_open_calendar: {
     vi: 'Bấm để mở lịch tháng trong bottom sheet',
     en: 'Tap to open monthly calendar sheet',

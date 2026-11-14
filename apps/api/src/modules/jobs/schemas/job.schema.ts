@@ -333,6 +333,10 @@ export class Job {
   @Prop({ default: false })
   expiry_reminder_sent?: boolean;
 
+  // R7 item 3: lần gửi lại đơn cho thợ gần đây gần nhất (chống spam nút gửi lại)
+  @Prop()
+  last_rebroadcast_at?: Date;
+
   // B101: đã gửi thông báo ưu đãi riêng hết hạn cho thợ (1 lần)
   @Prop({ default: false })
   private_offer_expiry_notified?: boolean;
