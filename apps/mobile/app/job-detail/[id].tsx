@@ -348,6 +348,25 @@ export default function JobDetailScreen() {
     timer = setTimeout(attempt, 80);
     return () => clearTimeout(timer);
   }, [focus, job, quotes]);
+
+  // R9: canEdit hoisted above the early returns cùng với effect focus='edit'
+  // (dep của nó) — chỉ phụ thuộc job?.status nên an toàn khi job còn null.
+  const canEdit = !!job && !['completed', 'cancelled', 'disputed', 'refunded'].includes(job.status);
+
+  // R7 item 3: focus='edit' mở thẳng modal sửa (kèm đổi lịch B7).
+  // R9: effect NÀY PHẢI ĐỨNG TRÊN CÁC EARLY RETURN (if (jLoading) / if (!job)).
+  // Gọi useEffect sau early return vi phạm Rules of Hooks: render loading gọi
+  // N hook, render đã tải gọi N+1 → React ném "Rendered more hooks than during
+  // the previous render" và RootErrorBoundary hiển thị "Lỗi hiển thị màn hình".
+  // handleOpenEdit khai báo sau đây nhưng chỉ dùng TRONG callback (chạy sau khi
+  // toàn bộ thân component đã thực thi) nên an toàn.
+  useEffect(() => {
+    if (focus !== 'edit' || editOpenedRef.current || !job) return;
+    if (!canEdit) return;
+    editOpenedRef.current = true;
+    handleOpenEdit();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focus, job, canEdit]);
   const [rating, setRating] = useState(5);
   const [reviewText, setReviewText] = useState('');
   // Default to cash; VietQR/MoMo/ZaloPay are offered as labelled
@@ -571,7 +590,6 @@ export default function JobDetailScreen() {
     'helper_on_the_way',
     'helper_arrived',
   ].includes(job.status);
-  const canEdit = !['completed', 'cancelled', 'disputed', 'refunded'].includes(job.status);
   const canApprove = job.status === 'pending_review';
   // P1-9: backend also allows a dispute on a COMPLETED job within 72h of
   // completion (openDispute). completed_at: completion event → job field →
@@ -711,16 +729,6 @@ export default function JobDetailScreen() {
     editOriginalScheduleRef.current = schedule;
     setShowEditModal(true);
   };
-
-  // R7 item 3: focus='edit' mở thẳng modal sửa (kèm đổi lịch B7) — đặt sau
-  // handleOpenEdit để không dùng biến trước khi khai báo.
-  useEffect(() => {
-    if (focus !== 'edit' || editOpenedRef.current || !job) return;
-    if (!canEdit) return;
-    editOpenedRef.current = true;
-    handleOpenEdit();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [focus, job, canEdit]);
 
   const handleGetLiveLocationForEdit = async () => {
     setIsLocatingEdit(true);
