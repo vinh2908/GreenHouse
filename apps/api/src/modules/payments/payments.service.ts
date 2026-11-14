@@ -197,7 +197,12 @@ export class PaymentsService {
     amount: number,
     session?: ClientSession | null,
   ): Promise<{ walletId: Types.ObjectId; balanceBefore: number; balanceAfter: number }> {
-    const wallet = await this.getOrCreateWallet(userId);
+    // B5e (R5): the upsert MUST run in the same session as the $inc below.
+    // getOrCreateWallet bumps the wallet's updated_at (timestamps), so
+    // running it outside the transaction and then debiting the same wallet
+    // document inside it is a WriteConflict -> withTransaction retries the
+    // whole flow forever (see mockPayJob).
+    const wallet = await this.getOrCreateWallet(userId, session);
     const updated = await this.walletModel
       .findOneAndUpdate(
         { _id: wallet._id, balance: { $gte: amount } },
@@ -480,7 +485,11 @@ export class PaymentsService {
         }
 
         // P0-3: Kiểm tra các đợt thanh toán trước đó (hỗ trợ thanh toán bổ sung khi có phụ lục tăng giá)
-        const paidSoFar = await this.getTotalPaidForJob(jobId);
+        // B5e (R5): pass the transaction session — getTotalPaidForJob syncs
+        // paid_amount onto the same job document this flow later writes
+        // inside the transaction; an out-of-session sync write is a
+        // WriteConflict that makes withTransaction retry in a loop.
+        const paidSoFar = await this.getTotalPaidForJob(jobId, sess);
         const isSupplemental = paidSoFar > 0;
         const expectedRemaining =
           isSupplemental && contract?.total_price && contract.total_price > paidSoFar
@@ -548,7 +557,10 @@ export class PaymentsService {
           balanceBefore: number;
           balanceAfter: number;
         } | null = null;
-        let wallet = await this.getOrCreateWallet(customerId);
+        // B5e (R5): same session as the in-transaction writes below — the
+        // upsert bumps the wallet's updated_at, so an out-of-session call
+        // here + the in-transaction debit is a WriteConflict retry loop.
+        let wallet = await this.getOrCreateWallet(customerId, sess);
         if (paymentMethod === 'wallet' && resolvedAmount > 0) {
           walletDebit = await this.debitWalletForPayment(customerId, resolvedAmount, sess);
         }
@@ -623,9 +635,18 @@ export class PaymentsService {
       try {
         if (session) {
           try {
-            await session.withTransaction(async () => {
-              await executePaymentFlow(session);
-            });
+            // B5e (R5): FAIL FAST. The driver retries TransientTransactionError
+            // (e.g. WriteConflict) for up to its 120s MAX_TIMEOUT by default
+            // — far past the client's ~35s axios timeout, so a retry loop
+            // looks like a hang and the PROCESSING reset never runs in time.
+            // 20s bounds the whole transaction (retries + commit) and still
+            // leaves room for the rollback + reset + a clear error response.
+            await session.withTransaction(
+              async () => {
+                await executePaymentFlow(session);
+              },
+              { timeoutMS: 20000 },
+            );
           } catch (txErr: any) {
             if (
               txErr?.message?.includes('replica set member') ||
@@ -661,18 +682,8 @@ export class PaymentsService {
         } catch (loyaltyErr) {
           this.logger.error(`Failed to rollback loyalty for job ${jobId}: ${loyaltyErr}`);
         }
-        await this.jobModel
-          .updateOne(
-            { _id: job._id, payment_status: PaymentStatus.PROCESSING },
-            { $set: { payment_status: PaymentStatus.UNPAID } },
-          )
-          .exec()
-          .catch(resetErr => {
-            // F20: lỗi reset trạng thái phải được log rõ, không nuốt im lặng.
-            this.logger.error(
-              `Failed to reset job ${jobId} payment_status to UNPAID after payment error: ${resetErr}`,
-            );
-          });
+        // B5e (R5): robust reset — retries once, logs loudly if it fails.
+        await this.resetPaymentClaim(jobId, (err as any)?.message ?? String(err));
         throw err;
       } finally {
         if (session) {
@@ -1300,7 +1311,7 @@ export class PaymentsService {
   }
 
   /** P0-3 & F6: Tính tổng số tiền net khách đã thanh toán thành công cho đơn hàng (tổng thanh toán trừ đi tổng đã hoàn tiền) */
-  async getTotalPaidForJob(jobId: string): Promise<number> {
+  async getTotalPaidForJob(jobId: string, session?: ClientSession | null): Promise<number> {
     if (!this.transactionModel || typeof this.transactionModel.find !== 'function') return 0;
     const [payments, refunds] = await Promise.all([
       this.transactionModel
@@ -1310,6 +1321,7 @@ export class PaymentsService {
           status: 'success',
         })
         .select('amount')
+        .session(session ?? null)
         .lean()
         .exec(),
       this.transactionModel
@@ -1319,6 +1331,7 @@ export class PaymentsService {
           status: 'success',
         })
         .select('amount')
+        .session(session ?? null)
         .lean()
         .exec(),
     ]);
@@ -1327,6 +1340,13 @@ export class PaymentsService {
     const netPaid = Math.max(0, totalPaid - totalRefunded);
 
     // F6: Cập nhật paid_amount trên Job cho khớp với tổng thực tế đã trả (nếu có jobModel)
+    // B5e (R5): when called from inside a transaction (mockPayJob), this
+    // sync write MUST run in the same session. It bumps the job's
+    // updated_at (timestamps), so running it outside the transaction and
+    // then writing the same job document inside it is a WriteConflict ->
+    // withTransaction retries the whole flow in a loop for up to the
+    // driver's 120s MAX_TIMEOUT and the request never answers. Callers
+    // outside any transaction pass no session and behave exactly as before.
     if (
       this.jobModel &&
       typeof this.jobModel.updateOne === 'function' &&
@@ -1336,12 +1356,45 @@ export class PaymentsService {
         .updateOne(
           { _id: new Types.ObjectId(jobId) },
           { $set: { paid_amount: netPaid, refunded_amount: totalRefunded } },
+          { session: session ?? undefined },
         )
         .exec()
         .catch(() => undefined);
     }
 
     return netPaid;
+  }
+
+  /**
+   * B5e (R5): reset a stuck PROCESSING claim back to UNPAID. The reset does
+   * NOT use the (possibly failed) payment session — it is a plain write.
+   * A failed pay must never leave a stuck claim: retry once after a short
+   * delay, and LOG LOUDLY (job id + reason) if the reset itself fails, so
+   * the only remaining backstop is the 15-min `clearStuckProcessingPayments`
+   * cron — never silence.
+   */
+  private async resetPaymentClaim(jobId: string, reason: string): Promise<void> {
+    for (let attempt = 1; attempt <= 2; attempt++) {
+      try {
+        await this.jobModel!.updateOne(
+          { _id: new Types.ObjectId(jobId), payment_status: PaymentStatus.PROCESSING },
+          { $set: { payment_status: PaymentStatus.UNPAID } },
+        ).exec();
+        return;
+      } catch (resetErr: any) {
+        if (attempt === 1) {
+          this.logger.warn(
+            `B5e: reset job ${jobId} payment_status to UNPAID failed (attempt 1/2, reason: ${reason}), retrying: ${resetErr?.message ?? resetErr}`,
+          );
+          await new Promise(r => setTimeout(r, 500));
+          continue;
+        }
+        // F20: lỗi reset trạng thái phải được log rõ, không nuốt im lặng.
+        this.logger.error(
+          `B5e: FAILED to reset job ${jobId} payment_status to UNPAID after payment error (reason: ${reason}) — claim may stay PROCESSING until the 15-min stuck-payment cron clears it: ${resetErr?.message ?? resetErr}`,
+        );
+      }
+    }
   }
 
   // ─── Báo cáo thu nhập nâng cao (Feature 14) ────────────────────────────────
