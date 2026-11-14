@@ -145,6 +145,75 @@ export function toVnDateString(dateInput: unknown): string {
 const HH_MM_RE = /^(\d{1,2}):(\d{2})/;
 
 /**
+ * R7 item 2 — "quá giờ hẹn thì ẩn hết bên thợ" (Vinh, decided 2026-11-14):
+ * a job is past its scheduled start when it has a parsable VN date +
+ * 'HH:mm' start whose instant is already behind `now`. Jobs without a
+ * usable date/time (flexible jobs) are never past-start.
+ */
+export function jobScheduledStart(job: {
+  preferred_date?: unknown;
+  preferred_time_start?: string | null;
+}): Date | null {
+  const dateStr = toVnDateString(job.preferred_date);
+  const timeStr = (job.preferred_time_start ?? '').trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr) || !/^\d{1,2}:\d{2}$/.test(timeStr)) {
+    return null;
+  }
+  const [h, m] = timeStr.split(':').map(Number);
+  const start = new Date(
+    `${dateStr}T${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:00+07:00`,
+  );
+  return Number.isNaN(start.getTime()) ? null : start;
+}
+
+/**
+ * R7 item 2: true when the job's start has passed AND no helper is assigned
+ * yet (helper_id null/missing). Assigned jobs (accepted quote + contract)
+ * are never hidden from their own helper and never blocked by this rule —
+ * an in-progress job is not hidden from its helper.
+ * Strict `start < now` (no buffer): the accept gate's 2-minute buffer stays
+ * for quotes already sent, but NO NEW quote may be created once the start
+ * has passed.
+ */
+export function isPastStartUnassigned(
+  job: {
+    preferred_date?: unknown;
+    preferred_time_start?: string | null;
+    helper_id?: unknown;
+  },
+  now = new Date(),
+): boolean {
+  if (job.helper_id !== null && job.helper_id !== undefined) return false;
+  const start = jobScheduledStart(job);
+  if (!start) return false;
+  return start.getTime() < now.getTime();
+}
+
+/**
+ * R7 item 2, DB layer: the cheap range half of the rule — excludes jobs whose
+ * scheduled DATE is before today (VN) from a helper-facing query. It works in
+ * every feed path including the $geoNear query (plain field predicate, no
+ * $expr). Jobs with no date, a null date, or a string date are left in and
+ * decided by the exact in-memory `isPastStartUnassigned` post-filter
+ * (today's passed times can only be decided in memory: date + time combine
+ * into one instant). Merge as `{ $and: [pastStartDateFilter(now)] }` — the
+ * feed's $geoNear handling already merges an existing $and correctly.
+ * The stored preferred_date is a Date (UTC midnight of the VN date), so
+ * `>= today 00:00+07:00` is exactly "VN date is today or later".
+ */
+export function pastStartDateFilter(now = new Date()): Record<string, unknown> {
+  const todayVnStart = new Date(`${toVnDateString(now)}T00:00:00+07:00`);
+  return {
+    $or: [
+      { preferred_date: { $gte: todayVnStart } },
+      { preferred_date: { $exists: false } },
+      { preferred_date: null },
+      { preferred_date: { $type: 'string' } },
+    ],
+  };
+}
+
+/**
  * Thợ có sẵn sàng cho 1 ngày/giờ hay không (Feature 13 — Lịch làm việc).
  * - Chưa bật lịch (enabled=false / chưa có) → luôn sẵn sàng (hành vi cũ).
  * - Không có ngày → sẵn sàng. Ngày dạng 'YYYY-MM-DD' được parse theo giờ địa phương.
@@ -2333,6 +2402,14 @@ export class JobsService implements OnModuleInit {
       throw new BadRequestException('Đơn hàng đã hết hạn nhận báo giá');
     }
 
+    // R7 item 2: quá giờ hẹn + chưa có thợ → không nhận báo giá mới (server
+    // guard; feed đã ẩn nhưng gọi trực tiếp qua URL cũng phải chặn).
+    if (isPastStartUnassigned(job)) {
+      throw new BadRequestException(
+        'Đã quá giờ hẹn, đơn này không còn nhận báo giá. Khách hàng cần cập nhật lại thời gian trước.',
+      );
+    }
+
     // Đơn giá cam kết (Feature 7): không qua vòng báo giá — thợ nhận việc trực tiếp
     if (job.is_fixed_price) {
       throw new BadRequestException(
@@ -3117,6 +3194,14 @@ export class JobsService implements OnModuleInit {
 
     if (job.expires_at && new Date() > new Date(job.expires_at)) {
       throw new BadRequestException('Đơn hàng đã hết hạn nhận việc');
+    }
+
+    // R7 item 2: như submitQuote — quá giờ hẹn + chưa có thợ thì không nhận
+    // việc trực tiếp (đơn giá cam kết / bảo hành cũng vậy).
+    if (isPastStartUnassigned(job)) {
+      throw new BadRequestException(
+        'Đã quá giờ hẹn, đơn này không còn nhận thợ. Khách hàng cần cập nhật lại thời gian trước.',
+      );
     }
 
     // Feature 9: cùng endpoint này nhận cả đơn bảo hành (is_warranty, giá 0₫)
@@ -4714,6 +4799,8 @@ export class JobsService implements OnModuleInit {
       status: { $in: [JobStatus.OPEN, JobStatus.RECEIVING_QUOTES] },
       expires_at: { $gt: now },
       rejected_helper_ids: helperOid,
+      // R7 item 2: như feed — loại đơn có ngày hẹn đã qua (lớp DB).
+      $and: [pastStartDateFilter(now)],
     };
     const [jobs, total, helperProfile] = await Promise.all([
       this.jobModel
@@ -4727,12 +4814,15 @@ export class JobsService implements OnModuleInit {
       this.helperModel.findOne({ user_id: helperOid }).select('location').lean().exec(),
     ]);
 
+    // R7 item 2: lớp chính xác — ẩn đơn quá giờ hẹn hôm nay.
+    const visibleJobs = jobs.filter(job => !isPastStartUnassigned(job as any, now));
+
     // H24 & K8: Ưu tiên GPS thiết bị gửi lên từ query, fallback sang profile location
     const helperCoords =
       lat != null && lng != null && !Number.isNaN(Number(lat)) && !Number.isNaN(Number(lng))
         ? [Number(lng), Number(lat)]
         : helperProfile?.location?.coordinates;
-    const jobObjects = jobs.map(job => {
+    const jobObjects = visibleJobs.map(job => {
       const obj = job.toObject() as any;
       obj.is_recurring = Boolean(job.recurring_plan_id);
       obj.is_fixed_price = Boolean(job.is_fixed_price);
@@ -4802,6 +4892,9 @@ export class JobsService implements OnModuleInit {
         { private_offer_expires_at: { $lte: now } },
         { private_offer_helper_id: helperOid },
       ],
+      // R7 item 2: lớp DB — loại đơn có ngày hẹn đã qua (ngày trước hôm nay).
+      // Giờ đã qua trong NGÀY HÔM NAY do post-filter chính xác ở dưới quyết.
+      $and: [pastStartDateFilter(now)],
     };
     if (serviceId && Types.ObjectId.isValid(serviceId)) {
       query['service_id'] = new Types.ObjectId(serviceId);
@@ -5097,6 +5190,13 @@ export class JobsService implements OnModuleInit {
 
     const total_pages = Math.max(1, Math.ceil(total / safeLimit));
 
+    // R7 item 2: lớp chính xác — ẩn đơn quá giờ hẹn trong NGÀY HÔM NAY (lớp
+    // DB chỉ loại được ngày đã qua; giờ + ngày chỉ gộp được thành một mốc
+    // trong bộ nhớ). Áp ở điểm hội tụ duy nhất của mọi nhánh feed (find /
+    // $geoNear / fallback) nên mọi đường đều ẩn như nhau. `total` giữ nguyên
+    // số đếm DB (đã loại ngày qua) — phần dư chỉ là các đơn quá giờ hôm nay.
+    pagedJobs = pagedJobs.filter(job => !isPastStartUnassigned(job as any, now));
+
     const jobObjects = pagedJobs.map(job => {
       const obj =
         typeof (job as any).toObject === 'function' ? (job as any).toObject() : { ...(job as any) };
@@ -5199,6 +5299,8 @@ export class JobsService implements OnModuleInit {
         { private_offer_expires_at: { $lte: now } },
         ...(helperOid ? [{ private_offer_helper_id: helperOid }] : []),
       ],
+      // R7 item 2: như feed — loại đơn có ngày hẹn đã qua (lớp DB).
+      $and: [pastStartDateFilter(now)],
     };
     if (serviceId && Types.ObjectId.isValid(serviceId)) {
       query['service_id'] = new Types.ObjectId(serviceId);
@@ -5206,20 +5308,24 @@ export class JobsService implements OnModuleInit {
 
     const jobs = await this.jobModel
       .find(query)
-      .select('address preferred_date preferred_time_start is_fixed_price ai_price_suggestion')
+      .select(
+        'address preferred_date preferred_time_start helper_id is_fixed_price ai_price_suggestion',
+      )
       .lean()
       .exec();
 
+    // R7 item 2: lớp chính xác — ẩn đơn quá giờ hẹn hôm nay.
+    const pastStartHidden = jobs.filter(j => !isPastStartUnassigned(j as any, now));
     const availabilityFiltered = Boolean(helperProfile?.availability?.enabled);
     const visibleJobs = availabilityFiltered
-      ? jobs.filter(j =>
+      ? pastStartHidden.filter(j =>
           this.isAvailableForDate(
             helperProfile?.availability,
             j.preferred_date ?? undefined,
             j.preferred_time_start,
           ),
         )
-      : jobs;
+      : pastStartHidden;
 
     const groupMap = new Map<
       string,
