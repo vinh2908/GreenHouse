@@ -1729,6 +1729,19 @@ export function useRebookJob() {
   });
 }
 
+// R7 item 3: nút "Gửi lại cho thợ gần đây" trên banner đơn quá giờ hẹn.
+export function useRebroadcastJob() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (jobId: string) => apiClient.post(`/jobs/${jobId}/rebroadcast`),
+    onSuccess: (_, jobId) => {
+      qc.invalidateQueries({ queryKey: ['job', jobId] });
+      qc.invalidateQueries({ queryKey: ['jobs', 'my'] });
+      qc.invalidateQueries({ queryKey: ['jobs'] });
+    },
+  });
+}
+
 export function useReleasePrivateOffer() {
   const qc = useQueryClient();
   return useMutation({

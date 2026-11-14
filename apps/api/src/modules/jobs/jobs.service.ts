@@ -1584,6 +1584,39 @@ export class JobsService implements OnModuleInit {
     }
   }
 
+  /**
+   * R7 item 3: nút "Gửi lại cho thợ gần đây" trên banner đơn quá giờ hẹn.
+   * Tái dùng đúng cơ chế phát đơn lúc tạo (notifyNearbyHelpers — socket
+   * JOB_CREATED + thông báo NEW_JOB_NEARBY cho thợ ONLINE gần đó), KHÔNG
+   * dựng hệ thống broadcast mới. Chỉ chủ đơn, đơn còn mở và chưa có thợ mới
+   * gửi lại được; chống spam bằng khoảng cách tối thiểu 10 phút/lần.
+   */
+  async rebroadcastJob(
+    customerId: string,
+    jobId: string,
+  ): Promise<{ success: boolean; message: string }> {
+    const job = await this.jobModel.findById(jobId).exec();
+    if (!job) throw new NotFoundException('Job không tồn tại');
+    if (job.customer_id.toString() !== customerId) throw new ForbiddenException();
+    if (job.status !== JobStatus.OPEN && job.status !== JobStatus.RECEIVING_QUOTES) {
+      throw new BadRequestException('Chỉ có thể gửi lại đơn đang mở nhận báo giá');
+    }
+    if (job.helper_id) {
+      throw new BadRequestException('Đơn đã có thợ phụ trách, không cần gửi lại');
+    }
+    const lastAt = job.last_rebroadcast_at ? new Date(job.last_rebroadcast_at).getTime() : 0;
+    if (Date.now() - lastAt < 10 * 60 * 1000) {
+      throw new BadRequestException(
+        'Vừa gửi lại, vui lòng đợi vài phút rồi gửi lại cho thợ gần đây',
+      );
+    }
+    await this.notifyNearbyHelpers(job);
+    this.addEvent(job, job.status, customerId, 'customer', 'Gửi lại đơn cho thợ gần đây');
+    job.last_rebroadcast_at = new Date();
+    await job.save();
+    return { success: true, message: 'Đã gửi lại đơn cho thợ gần đây' };
+  }
+
   // ─── Customer: Create SOS Emergency Job ───────────────────────────────────
 
   async createSosJob(customerId: string, dto: CreateSosJobDto): Promise<JobDocument> {

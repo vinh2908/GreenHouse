@@ -81,6 +81,7 @@ import {
   useReleasePrivateOffer,
   useCreateWarrantyJob,
   useRebookJob,
+  useRebroadcastJob,
   useClaimForJob,
   useValidateVoucher,
   useApplyVoucherToJob,
@@ -99,6 +100,8 @@ import {
 } from '@/services/location.service';
 import { downloadInvoicePdf } from '@/services/invoice.service';
 import { LiveTrackingMap } from '@/components/common/live-tracking-map';
+import { OverdueJobBanner } from '@/components/common/overdue-job-banner';
+import { isOverdueUnassigned } from '@/utils/job-overdue';
 import {
   TimeDropdownPicker,
   DurationDropdownPicker,
@@ -272,6 +275,7 @@ export default function JobDetailScreen() {
   const selectQuote = useSelectQuote();
   const cancelJob = useCancelJob();
   const updateJob = useUpdateJob();
+  const rebroadcastJob = useRebroadcastJob();
   const approveJob = useApproveJob();
   const createReview = useCreateReview();
   const payJob = usePayJob();
@@ -318,12 +322,14 @@ export default function JobDetailScreen() {
   // ── Deep-link focus (đi từ thông báo): tự cuộn tới khu vực thao tác ──────
   // focus='quotes'   → mục "Danh sách thợ báo giá" (nơi bấm "Chấp nhận thợ này")
   // focus='tracking' → bản đồ theo dõi trực tiếp (nơi xem thợ đang tới)
+  // focus='edit'     → mở thẳng modal sửa đơn (banner "Dời giờ" ở danh sách / home)
   // Chỉ cuộn 1 lần, sau khi dữ liệu đã tải và section đã đo được vị trí.
   // Section không render (vd đơn đã hết nhận báo giá) → bỏ qua, không lỗi.
   const scrollRef = useRef<ScrollView | null>(null);
   const quotesSectionY = useRef<number | null>(null);
   const trackingSectionY = useRef<number | null>(null);
   const focusScrolled = useRef(false);
+  const editOpenedRef = useRef(false);
 
   useEffect(() => {
     if (!focus || focusScrolled.current || !job) return;
@@ -706,6 +712,16 @@ export default function JobDetailScreen() {
     setShowEditModal(true);
   };
 
+  // R7 item 3: focus='edit' mở thẳng modal sửa (kèm đổi lịch B7) — đặt sau
+  // handleOpenEdit để không dùng biến trước khi khai báo.
+  useEffect(() => {
+    if (focus !== 'edit' || editOpenedRef.current || !job) return;
+    if (!canEdit) return;
+    editOpenedRef.current = true;
+    handleOpenEdit();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focus, job, canEdit]);
+
   const handleGetLiveLocationForEdit = async () => {
     setIsLocatingEdit(true);
     try {
@@ -838,6 +854,24 @@ export default function JobDetailScreen() {
           ? 'Update failed. Please try again.'
           : 'Cập nhật thất bại. Vui lòng thử lại.');
       Toast.show({ type: 'error', text1: msg });
+    }
+  };
+
+  // R7 item 3: nút "Gửi lại cho thợ gần đây" trên banner đơn quá giờ hẹn.
+  const handleRebroadcast = async () => {
+    if (!id || rebroadcastJob.isPending) return;
+    try {
+      await rebroadcastJob.mutateAsync(id);
+      Toast.show({
+        type: 'success',
+        text1: t('overdue_rebroadcast_sent'),
+      });
+    } catch (err: any) {
+      const msg = err?.response?.data?.message;
+      Toast.show({
+        type: 'error',
+        text1: typeof msg === 'string' && msg ? msg : t('overdue_rebroadcast_cooldown'),
+      });
     }
   };
 
@@ -1853,6 +1887,18 @@ export default function JobDetailScreen() {
             </Text>
           </View>
         </Card>
+
+        {/* R7 item 3: banner đơn quá giờ hẹn chưa có thợ — chỉ khi quá giờ
+            bắt đầu VÀ chưa có thợ (không bao giờ hiện cho đơn đã có thợ). */}
+        {isOverdueUnassigned(job as any) && (
+          <OverdueJobBanner
+            timeLabel={`${job.preferred_time_start ?? ''} · ${job.preferred_date ? formatDate(job.preferred_date, lang) : ''}`}
+            onReschedule={handleOpenEdit}
+            onRebroadcast={handleRebroadcast}
+            onCancel={handleCancel}
+            rebroadcasting={rebroadcastJob.isPending}
+          />
+        )}
 
         {/* ── Helper assigned card ───────────────────────────────────── */}
         {hasHelperAssigned && helperObj && (
