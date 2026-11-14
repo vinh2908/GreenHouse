@@ -1313,28 +1313,23 @@ export class PaymentsService {
   /** P0-3 & F6: Tính tổng số tiền net khách đã thanh toán thành công cho đơn hàng (tổng thanh toán trừ đi tổng đã hoàn tiền) */
   async getTotalPaidForJob(jobId: string, session?: ClientSession | null): Promise<number> {
     if (!this.transactionModel || typeof this.transactionModel.find !== 'function') return 0;
-    const [payments, refunds] = await Promise.all([
-      this.transactionModel
+    // B5e (R5): attach the session only when one is passed AND the query
+    // object supports .session() — a real Mongoose query always does; a
+    // unit-test double of the model may not, and skipping it then is
+    // correct (no transaction in play). Calling .session() unconditionally
+    // broke the mocked F6 test (p0-fixes.spec.ts).
+    const paidQuery = (type: string) => {
+      const q: any = this.transactionModel
         .find({
           job_id: new Types.ObjectId(jobId),
-          type: 'payment',
+          type,
           status: 'success',
         })
-        .select('amount')
-        .session(session ?? null)
-        .lean()
-        .exec(),
-      this.transactionModel
-        .find({
-          job_id: new Types.ObjectId(jobId),
-          type: 'refund',
-          status: 'success',
-        })
-        .select('amount')
-        .session(session ?? null)
-        .lean()
-        .exec(),
-    ]);
+        .select('amount');
+      if (session && typeof q.session === 'function') q.session(session);
+      return q.lean().exec();
+    };
+    const [payments, refunds] = await Promise.all([paidQuery('payment'), paidQuery('refund')]);
     const totalPaid = (payments || []).reduce((sum, tx) => sum + (tx.amount || 0), 0);
     const totalRefunded = (refunds || []).reduce((sum, tx) => sum + (tx.amount || 0), 0);
     const netPaid = Math.max(0, totalPaid - totalRefunded);
@@ -1352,11 +1347,14 @@ export class PaymentsService {
       typeof this.jobModel.updateOne === 'function' &&
       Types.ObjectId.isValid(jobId)
     ) {
+      // B5e (R5): pass the session through ONLY when one is in play — the
+      // no-session call keeps its exact 2-argument shape (the F6 spec
+      // asserts it), and the in-transaction call runs in the session.
       await this.jobModel
         .updateOne(
           { _id: new Types.ObjectId(jobId) },
           { $set: { paid_amount: netPaid, refunded_amount: totalRefunded } },
-          { session: session ?? undefined },
+          ...(session ? [{ session }] : []),
         )
         .exec()
         .catch(() => undefined);
