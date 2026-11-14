@@ -290,8 +290,6 @@ export function useServices() {
       const t0 = Date.now();
       try {
         const { data } = await apiClient.get('/services');
-        const ms = Date.now() - t0;
-        if (__DEV__) console.log(`[API Timing] GET /services finished in ${ms}ms`);
         return data.data as {
           _id: string;
           name: string;
@@ -330,8 +328,6 @@ export function useMyJobs(status?: string, page?: number, limit?: number) {
         if (page) params.page = page;
         if (limit) params.limit = limit;
         const { data } = await apiClient.get('/jobs/my', { params });
-        const ms = Date.now() - t0;
-        if (__DEV__) console.log(`[API Timing] GET /jobs/my finished in ${ms}ms`);
         return data.data;
       } catch (err) {
         const ms = Date.now() - t0;
@@ -1187,6 +1183,9 @@ export function useWallet() {
 export function useTopupWallet() {
   const qc = useQueryClient();
   const { lang } = useTranslation();
+  // F6: top-up thành công phải gọi đúng tên ví theo vai trò đang dùng —
+  // khách nạp vào "Ví GreenHouse", thợ nạp vào "ví ký quỹ".
+  const isHelper = useAuthStore(s => s.user?.active_role) === 'helper';
   return useMutation({
     mutationFn: (dto: { amount: number; payment_method?: string }) =>
       apiClient.post('/payments/wallet/topup', dto),
@@ -1198,8 +1197,13 @@ export function useTopupWallet() {
       // no real payment happens and the withdrawable balance does not change.
       Toast.show({
         type: 'success',
-        text1:
-          lang === 'en' ? 'Demo top-up recorded (simulation)' : 'Đã ghi nhận nạp tiền mô phỏng',
+        text1: isHelper
+          ? lang === 'en'
+            ? 'Demo top-up recorded to your escrow wallet (simulation)'
+            : 'Đã ghi nhận nạp tiền mô phỏng vào ví ký quỹ'
+          : lang === 'en'
+            ? 'Demo top-up recorded to your GreenHouse Wallet (simulation)'
+            : 'Đã ghi nhận nạp tiền mô phỏng vào ví GreenHouse',
         text2:
           lang === 'en'
             ? 'No real payment was made; withdrawable balance unchanged.'

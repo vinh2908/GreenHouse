@@ -70,10 +70,8 @@ export async function registerForPushNotifications(): Promise<string | null> {
       Constants.easConfig?.projectId ??
       '00bd43d9-3219-4c63-85af-0964f8651091';
 
-    console.log('[PushService] Getting Expo push token with projectId:', projectId);
     const tokenResponse = await Notifications.getExpoPushTokenAsync({ projectId });
     const token = tokenResponse?.data ?? null;
-    console.log('[PushService] Expo push token obtained:', token);
     return token;
   } catch (err: any) {
     console.warn('[PushService] registerForPushNotifications error:', err?.message || err);

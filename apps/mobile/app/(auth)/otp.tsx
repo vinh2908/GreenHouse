@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, TextInput } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Smartphone } from 'lucide-react-native';
+import { ArrowLeft, Mail } from 'lucide-react-native';
 import Toast from 'react-native-toast-message';
 import { useAuthStore } from '@/stores/auth.store';
 import { useTranslation } from '@/hooks/use-i18n';
@@ -187,7 +187,7 @@ export default function OtpScreen() {
               marginBottom: 20,
             }}
           >
-            <Smartphone size={36} color={COLORS.primary[600]} />
+            <Mail size={36} color={COLORS.primary[600]} />
           </View>
           <Text
             style={{
@@ -209,8 +209,8 @@ export default function OtpScreen() {
             }}
           >
             {lang === 'en'
-              ? `A 6-digit OTP was sent to\n`
-              : `Mã OTP 6 số đã được gửi đến ${email ? 'email' : 'số điện thoại'}\n`}
+              ? `A 6-digit OTP was sent to your email\n`
+              : `Mã OTP 6 số đã được gửi đến email\n`}
             <Text style={{ fontWeight: '700', color: tc.text }}>{email || phone}</Text>
           </Text>
           <Text

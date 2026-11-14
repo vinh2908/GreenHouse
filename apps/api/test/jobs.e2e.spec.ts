@@ -152,7 +152,7 @@ describe('Jobs E2E (Phase 5)', () => {
         expect.arrayContaining([
           expect.objectContaining({
             type: 'new_job_nearby',
-            title: 'Có đơn mới gần bạn 🎉',
+            title: 'Có đơn mới gần bạn',
             data: expect.objectContaining({ job_id: jobId, is_sos: false }),
           }),
         ]),
