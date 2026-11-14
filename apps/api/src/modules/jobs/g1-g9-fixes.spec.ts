@@ -4,6 +4,19 @@ import { JobStatus, PaymentStatus, VerificationStatus } from '@homemate/types';
 import { JobsService, MAX_FEED_SORT_CANDIDATES } from './jobs.service';
 import { AdminService } from '../admin/admin.service';
 
+// Coordinator fixup (R7 merge): R7 item 2 hides past-start unassigned jobs
+// from the helper feed, so fixtures must use a FUTURE Monday/Tuesday —
+// computed from now, not a fixed date that goes stale (the old fixed
+// 2026-11-09 Monday fixtures were all hidden by the new filter).
+function nextWeekdayFromNow(weekday: number): Date {
+  const d = new Date();
+  d.setDate(d.getDate() + ((weekday - d.getDay() + 7) % 7 || 7));
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+const FIX_MON = nextWeekdayFromNow(1); // thứ 2 tới
+const FIX_TUE = nextWeekdayFromNow(2); // thứ 3 tới
+
 describe('ĐỢT 2 (P1) — G1–G9 & J1–J3 Regression & Correctness Specs', () => {
   // ─── G3 & G4: Routing Service ──────────────────────────────────────────────
   describe('G3 & G4: RoutingService error throwing and deadline fallback', () => {
@@ -434,7 +447,7 @@ describe('ĐỢT 2 (P1) — G1–G9 & J1–J3 Regression & Correctness Specs', (
           _id: new Types.ObjectId(),
           title: `Job ${i}`,
           status: JobStatus.OPEN,
-          preferred_date: new Date('2026-11-09T08:00:00Z'),
+          preferred_date: FIX_MON,
           preferred_time_start: '09:00',
           created_at: new Date(Date.now() - i * 60000),
           toObject: function () {
@@ -525,8 +538,8 @@ describe('ĐỢT 2 (P1) — G1–G9 & J1–J3 Regression & Correctness Specs', (
           title: `Job ${i}`,
           status: JobStatus.OPEN,
           preferred_date: matching
-            ? new Date('2026-11-09T08:00:00Z') // thứ 2
-            : new Date('2026-11-10T08:00:00Z'), // thứ 3
+            ? FIX_MON // thứ 2
+            : FIX_TUE, // thứ 3
           preferred_time_start: '09:00',
           created_at: new Date(Date.now() - i * 60000),
           toObject: function () {
@@ -1375,12 +1388,12 @@ describe('ĐỢT 2 (P1) — G1–G9 & J1–J3 Regression & Correctness Specs', (
       const leanCandidates = [
         ...Array.from({ length: 200 }, () => ({
           _id: new Types.ObjectId(),
-          preferred_date: new Date('2026-11-09'),
+          preferred_date: FIX_MON,
           preferred_time_start: '14:00', // không khớp
         })),
         ...Array.from({ length: 50 }, (_, i) => ({
           _id: new Types.ObjectId(),
-          preferred_date: new Date('2026-11-09'),
+          preferred_date: FIX_MON,
           preferred_time_start: '08:00', // khớp ca sáng
         })),
       ];
@@ -1466,7 +1479,7 @@ describe('ĐỢT 2 (P1) — G1–G9 & J1–J3 Regression & Correctness Specs', (
       // 250 đơn đều khớp lịch ca sáng
       const leanCandidates = Array.from({ length: 250 }, (_, i) => ({
         _id: `job-avail-${i}`,
-        preferred_date: new Date('2026-11-09'),
+        preferred_date: FIX_MON,
         preferred_time_start: '08:00',
       }));
 
@@ -1477,7 +1490,7 @@ describe('ĐỢT 2 (P1) — G1–G9 & J1–J3 Regression & Correctness Specs', (
             const pageDocs = query._id.$in.map((id: string) => ({
               _id: id,
               title: `Job ${id}`,
-              preferred_date: new Date('2026-11-09'),
+              preferred_date: FIX_MON,
               preferred_time_start: '08:00',
               service_id: { name: 'Dọn dẹp' },
             }));
@@ -1616,7 +1629,7 @@ describe('ĐỢT 2 (P1) — G1–G9 & J1–J3 Regression & Correctness Specs', (
       const base = new Date('2026-11-09T09:00:00+07:00').getTime();
       const ordered = Array.from({ length: 250 }, (_, i) => ({
         _id: `job-lean-${i}`,
-        preferred_date: new Date('2026-11-09'),
+        preferred_date: FIX_MON,
         preferred_time_start: '09:00',
         created_at: new Date(base - i * 60_000), // i càng nhỏ càng mới
       }));
@@ -1821,7 +1834,7 @@ describe('ĐỢT 2 (P1) — G1–G9 & J1–J3 Regression & Correctness Specs', (
       // Case 1: Availability enabled, 250 jobs -> KHÔNG bị cap bộ nhớ 200 (quét lean toàn bộ), is_capped = false
       const leanCandidates = Array.from({ length: 250 }, (_, i) => ({
         _id: `job-avail-${i}`,
-        preferred_date: new Date('2026-11-09'),
+        preferred_date: FIX_MON,
         preferred_time_start: '08:00',
       }));
 

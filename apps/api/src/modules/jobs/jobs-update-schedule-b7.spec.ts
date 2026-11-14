@@ -129,6 +129,24 @@ describe('JobsService update schedule rescues a past-start job (B7, real mongod)
     return { customer, helperUser, job };
   }
 
+  // Coordinator fixup (R7 merge): R7 item 2 now REJECTS new quotes on
+  // past-start unassigned jobs at the submitQuote guard, so a pending quote
+  // on such a job can only exist if it was submitted while the start was
+  // still future (the real job-C shape) — seed it directly instead of
+  // going through the endpoint.
+  async function seedPendingQuote(job: any, helperUser: any) {
+    return QuoteModel.create({
+      job_id: job._id,
+      helper_id: helperUser._id,
+      status: QuoteStatus.PENDING,
+      labor_cost: 70000,
+      materials_cost: 0,
+      total_price: 70000,
+      estimated_duration: 2,
+      expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000),
+    });
+  }
+
   const quoteDto = {
     labor_cost: 70000,
     materials_cost: 0,
@@ -218,7 +236,7 @@ describe('JobsService update schedule rescues a past-start job (B7, real mongod)
 
   it('B7-0 (repro): past start + pending quote -> accept throws the live error', async () => {
     const { customer, helperUser, job } = await seedPastStartJob();
-    const quote = await service.submitQuote(String(helperUser._id), String(job._id), quoteDto);
+    const quote = await seedPendingQuote(job, helperUser);
     expect(quote.status).toBe(QuoteStatus.PENDING);
 
     await expect(
@@ -230,7 +248,7 @@ describe('JobsService update schedule rescues a past-start job (B7, real mongod)
 
   it('B7-1: util patch + updateJob reschedules -> the SAME quote can then be accepted', async () => {
     const { customer, helperUser, job } = await seedPastStartJob();
-    const quote = await service.submitQuote(String(helperUser._id), String(job._id), quoteDto);
+    const quote = await seedPendingQuote(job, helperUser);
 
     // The modal prefills the CURRENT schedule — even though it is past —
     // and the pickers flag it; the user moves it to tomorrow 10:00.
