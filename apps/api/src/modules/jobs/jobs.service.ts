@@ -156,15 +156,33 @@ export { toVnDateString, jobScheduledStart } from './job-schedule';
  * Strict `start < now` (no buffer): the accept gate's 2-minute buffer stays
  * for quotes already sent, but NO NEW quote may be created once the start
  * has passed.
+ *
+ * R8 item 1: same status gate as the client's `isOverdueUnassigned`. When
+ * the job carries a status it must be OPEN / RECEIVING_QUOTES, otherwise
+ * false — a cancelled job must not be treated as past-start-unassigned (in
+ * `acceptFixedPrice` the status guard sits AFTER this check, so an ungated
+ * predicate made a cancelled job fail with the wrong "Đã quá giờ hẹn"
+ * error instead of the status error). When no status is present (e.g. the
+ * demand-map projection, which selects no status field) the old behaviour
+ * is preserved — those paths already filter status OPEN / RECEIVING_QUOTES
+ * in the DB query, so a cancelled job never reaches them.
  */
 export function isPastStartUnassigned(
   job: {
     preferred_date?: unknown;
     preferred_time_start?: string | null;
     helper_id?: unknown;
+    status?: unknown;
   },
   now = new Date(),
 ): boolean {
+  if (
+    job.status !== undefined &&
+    job.status !== null &&
+    job.status !== JobStatus.OPEN &&
+    job.status !== JobStatus.RECEIVING_QUOTES
+  )
+    return false;
   if (job.helper_id !== null && job.helper_id !== undefined) return false;
   const start = jobScheduledStart(job);
   if (!start) return false;
