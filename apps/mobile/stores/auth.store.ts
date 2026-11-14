@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import * as SecureStore from '@/services/secure-storage';
 import apiClient from '@/services/api-client';
 import type { IUser, UserRole } from '@homemate/types';
+import { resolveLandingRole } from '@/utils/landing-role';
 
 interface AuthState {
   user: IUser | null;
@@ -76,15 +77,31 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   setAuth: async (user, accessToken, refreshToken) => {
+    // R7-B6: resolve the landing role BEFORE overwriting the stored one —
+    // the mode last used on this device wins for dual-role users, otherwise
+    // a customer-owned session lands on customer mode (not a stale server
+    // 'helper'). The resolved role is stored locally and drives navigation
+    // (splash + login redirect read user.active_role); it does not touch
+    // the server — useSwitchRole stays the only server-side role switch.
+    let effectiveUser = user;
+    if (user) {
+      const lastUsedRole = await SecureStore.getItemAsync(ROLE_KEY).catch(() => null);
+      const landingRole = resolveLandingRole(
+        (user as any)?.roles,
+        (user as any)?.active_role,
+        lastUsedRole ?? undefined,
+      );
+      effectiveUser = { ...user, active_role: landingRole };
+    }
     await SecureStore.setItemAsync(TOKEN_KEY, accessToken);
     await SecureStore.setItemAsync(REFRESH_TOKEN_KEY, refreshToken);
-    if (user) {
-      await SecureStore.setItemAsync(USER_KEY, JSON.stringify(user));
-      if (user.active_role) {
-        await SecureStore.setItemAsync(ROLE_KEY, user.active_role);
+    if (effectiveUser) {
+      await SecureStore.setItemAsync(USER_KEY, JSON.stringify(effectiveUser));
+      if (effectiveUser.active_role) {
+        await SecureStore.setItemAsync(ROLE_KEY, effectiveUser.active_role);
       }
     }
-    set({ user, accessToken, refreshToken, isAuthenticated: true });
+    set({ user: effectiveUser, accessToken, refreshToken, isAuthenticated: true });
   },
 
   setUser: user => {
@@ -159,8 +176,15 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const storedUser = await withTimeout(SecureStore.getItemAsync(USER_KEY));
       const storedRole = await withTimeout(SecureStore.getItemAsync(ROLE_KEY));
       const parsedUser = storedUser ? JSON.parse(storedUser) : null;
-      if (parsedUser && storedRole) {
-        parsedUser.active_role = storedRole;
+      if (parsedUser) {
+        // R7-B6: resolve the landing role instead of blindly trusting the
+        // stored role or the server value — last-used mode on this device
+        // wins for dual-role users, otherwise customer is the default.
+        parsedUser.active_role = resolveLandingRole(
+          parsedUser?.roles,
+          parsedUser?.active_role,
+          storedRole ?? undefined,
+        );
       }
 
       if (accessToken && refreshToken) {
@@ -179,9 +203,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             const { data } = await apiClient.get('/auth/me', { timeout: 8000 });
             if (data?.data) {
               const freshUser = data.data;
-              if (storedRole) {
-                freshUser.active_role = storedRole;
-              }
+              // R7-B6: same landing rule as setAuth — the stored last-used
+              // mode wins for dual-role users; without one, a customer-owned
+              // session lands on customer mode, not a stale server 'helper'.
+              freshUser.active_role = resolveLandingRole(
+                freshUser?.roles ?? parsedUser?.roles,
+                freshUser?.active_role,
+                storedRole ?? undefined,
+              );
               // B4-R2: KHÔNG ghi đè mù user đã lưu bằng object /auth/me. Bản
               // /auth/me cũ chỉ có {sub, phone, roles, active_role}, không có
               // _id — ghi đè làm mất currentUser._id sau mỗi lần mở lại app,
