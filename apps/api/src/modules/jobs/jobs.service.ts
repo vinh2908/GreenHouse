@@ -63,6 +63,7 @@ import { VouchersService } from '../vouchers/vouchers.service';
 import { LoyaltyService } from '../loyalty/loyalty.service';
 import { DisputesService } from './disputes.service';
 import { MatchingService } from '../matching/matching.service';
+import { MailService } from '../auth/mail.service';
 import {
   HelperPenaltyEvent,
   HelperPenaltyEventDocument,
@@ -89,6 +90,10 @@ export interface JobRouteOptions {
 
 // Beyond this straight-line distance a helper is treated as out of the job's area.
 const QUOTE_SERVICE_RADIUS_KM = 30;
+
+// R7 auto-cancel (Vinh quyết 2026-11-14): đơn chưa có thợ sẽ tự hủy khi quá
+// giờ làm đúng khoảng này (5 phút) — không phải 30 phút / 2 giờ (đã bỏ).
+const AUTO_CANCEL_OVERDUE_MS = 5 * 60 * 1000;
 
 /** M1: Giới hạn an toàn tối đa số đơn ứng viên nạp vào RAM khi sort khoảng cách hoặc lọc availability */
 export const MAX_FEED_SORT_CANDIDATES = 200;
@@ -329,6 +334,9 @@ export class JobsService implements OnModuleInit {
     // B67: @Optional để các test cũ khởi tạo trực tiếp JobsService (không
     // truyền MatchingService) vẫn chạy; module thật luôn có MatchingModule.
     @Optional() private readonly matchingService?: MatchingService,
+    // R7 item 1: @Optional để các test cũ khởi tạo trực tiếp JobsService
+    // (không truyền MailService) vẫn chạy; module thật có AuthModule.
+    @Optional() private readonly mailService?: MailService,
   ) {}
 
   /** B67: Xoá cache gợi ý thợ của đơn khi đơn thay đổi (báo giá mới / chọn báo giá / huỷ đơn) */
@@ -342,6 +350,11 @@ export class JobsService implements OnModuleInit {
     );
     this.sweepUpcomingJobReminders().catch(err =>
       this.logger.error(`Initial reminder sweep failed: ${err?.message ?? err}`),
+    );
+    // R7 item 1 + auto-cancel: quét ngay khi khởi động để bắt đơn đã quá
+    // giờ trong lúc API ngủ (Render free tier).
+    this.sweepOverdueUnassignedJobs().catch(err =>
+      this.logger.error(`Initial overdue sweep failed: ${err?.message ?? err}`),
     );
   }
 
@@ -579,6 +592,198 @@ export class JobsService implements OnModuleInit {
       }
     } catch (err) {
       this.logger.warn(`sweepUpcomingJobReminders failed: ${(err as Error).message}`);
+    }
+  }
+
+  /**
+   * R7 item 1 + auto-cancel (Vinh quyết 2026-11-14): một sweep, hai mốc thời
+   * gian cho đơn đang mở chưa có thợ phụ trách.
+   * - Tới giờ làm (start <= now): báo khách "Chưa có thợ nhận đơn" (in-app +
+   *   email SendGrid), 1 lần cho mỗi cặp đơn+giờ làm (khóa overdue_notified_for
+   *   = "YYYY-MM-DDTHH:MM"; dời giờ đổi khóa → đồng hồ chạy lại theo giờ mới).
+   * - Start + 5 phút vẫn chưa có thợ: TỰ ĐỘNG HỦY đơn (status CANCELLED, lý do
+   *   + actor 'system' trong event để xem trong admin/audit), báo khách
+   *   in-app + email, từ chối mọi báo giá PENDING (báo thợ như khi hủy đơn),
+   *   hoàn voucher/điểm đã dùng. KHÔNG chạm tiền: lúc này chưa có hợp đồng
+   *   và chưa có escrow — KHÔNG gọi paymentsService (spec kiểm chứng).
+   * - Đơn đã có thợ (helper_id) hoặc đã có hợp đồng: KHÔNG BAO GIỜ tự hủy
+   *   theo rule này.
+   * - Nếu đơn đã quá start+5' ngay trong lần quét đầu tiên (VD API vừa ngủ
+   *   dậy), chỉ gửi thông báo hủy — thông báo "chưa có thợ" bị bỏ qua vì
+   *   thông báo hủy đã nói rõ lý do.
+   * Nhịp 5 phút/lần nên thông báo tới giờ rơi vào 0–5' sau giờ làm và hủy rơi
+   * vào 5–10' sau giờ làm. Mỗi đơn lỗi không kẹt cả vòng (try/catch theo
+   * đơn, mẫu B3). Mail là best-effort: thiếu cấu hình / gửi lỗi → log,
+   * không sập sweep.
+   */
+  @Cron('*/5 * * * *')
+  async sweepOverdueUnassignedJobs(): Promise<void> {
+    const nowMs = Date.now();
+    const candidates = await this.jobModel
+      .find({
+        status: { $in: [JobStatus.OPEN, JobStatus.RECEIVING_QUOTES] },
+        helper_id: null,
+        preferred_date: { $exists: true, $ne: null },
+        preferred_time_start: { $regex: /^\d{1,2}:\d{2}$/ },
+      })
+      .exec();
+
+    for (const job of candidates) {
+      try {
+        const startMs = jobScheduledStart(job as any)?.getTime() ?? null;
+        if (startMs == null) continue;
+        if (nowMs < startMs) continue; // chưa tới giờ làm
+
+        // Lấy lại trạng thái mới nhất: có thể đã có thợ/hợp đồng kể từ lúc
+        // query (VD khách vừa chấp nhận báo giá trong lúc sweep chạy).
+        const fresh = await this.jobModel.findById(job._id).exec();
+        if (!fresh || fresh.helper_id) continue;
+        if (fresh.status !== JobStatus.OPEN && fresh.status !== JobStatus.RECEIVING_QUOTES) {
+          continue;
+        }
+
+        const startKey = `${toVnDateString(fresh.preferred_date)}T${fresh.preferred_time_start}`;
+
+        // Mốc 2: start + 5' vẫn chưa có thợ → tự động hủy (kiểm tra hợp đồng
+        // để chắc chắn: có hợp đồng nghĩa là đã có thợ phụ trách).
+        if (nowMs >= startMs + AUTO_CANCEL_OVERDUE_MS) {
+          const contract = this.contractModel?.findOne
+            ? await this.contractModel.findOne({ job_id: fresh._id }).exec()
+            : null;
+          if (contract) {
+            this.logger.warn(
+              `sweepOverdueUnassignedJobs: job ${fresh._id} has a contract — skip auto-cancel`,
+            );
+            continue;
+          }
+          await this.autoCancelOverdueJob(fresh);
+          continue;
+        }
+
+        // Mốc 1: tới giờ làm, chưa báo cho giờ này → báo khách (in-app + mail).
+        if (fresh.overdue_notified_for === startKey) continue;
+        await this.notifyNoHelperAtStart(fresh, startKey);
+      } catch (err) {
+        this.logger.warn(
+          `sweepOverdueUnassignedJobs job ${job._id} failed: ${(err as Error).message}`,
+        );
+      }
+    }
+  }
+
+  /** R7 item 1: báo khách "Chưa có thợ nhận đơn" (đã duyệt wording). */
+  private async notifyNoHelperAtStart(job: JobDocument, startKey: string): Promise<void> {
+    const customerId = String(job.customer_id);
+    const body = `Đơn "${job.title}" đến giờ làm (${job.preferred_time_start} hôm nay) nhưng chưa có thợ nào nhận. Bạn có thể dời giờ, gửi lại cho thợ gần đây, hoặc hủy đơn.`;
+    await this.notificationsService.create({
+      userId: customerId,
+      type: NOTIFICATION_TYPES.JOB_NO_HELPER_AT_START,
+      title: 'Chưa có thợ nhận đơn',
+      body,
+      payload: { job_id: String(job._id) },
+    });
+    // Ghi khóa SAU khi tạo thông báo in-app: nếu tạo thông báo lỗi thì vòng
+    // sau thử lại; mail là best-effort nên không được làm thông báo gửi lại
+    // (dedupe ở tầng tạo thông báo cho event này).
+    await this.jobModel
+      .updateOne({ _id: job._id }, { $set: { overdue_notified_for: startKey } })
+      .exec();
+    await this.sendJobEmailToCustomer(
+      job,
+      '[GreenHouse] Chưa có thợ nhận đơn',
+      body,
+      `Job "${job.title}" is due at ${job.preferred_time_start} today but no helper has taken it yet. You can reschedule, re-broadcast to nearby helpers, or cancel the job in the GreenHouse app.`,
+    );
+  }
+
+  /**
+   * R7 auto-cancel: hủy đơn quá giờ +5' chưa có thợ. Dùng logic hủy tối
+   * thiểu (không dùng cancelJob — actor 'system' bị chặn ở đó): ghi lý do +
+   * actor system, từ chối báo giá PENDING (báo thợ như B60), hoàn
+   * voucher/điểm. KHÔNG gọi paymentsService — không có hợp đồng/escrow
+   * nên không có tiền để hoàn (spec kiểm chứng).
+   */
+  private async autoCancelOverdueJob(job: JobDocument): Promise<void> {
+    const jobId = String(job._id);
+    const customerId = String(job.customer_id);
+    const reason = 'Tự động hủy: quá giờ hẹn 5 phút mà chưa có thợ nhận';
+    job.cancellation_reason = reason;
+    job.cancelled_by_role = 'system';
+    this.addEvent(job, JobStatus.CANCELLED, 'system', 'system', reason);
+    // B46: gỡ liên kết voucher trước khi lưu (lượt dùng được trả lại trong
+    // restoreJobBenefitsOnCancel, như cancelJob).
+    if (job.voucher_code) job.voucher_code = undefined;
+    await job.save();
+
+    // Từ chối mọi báo giá PENDING + báo thợ (như B60 trong cancelJob).
+    const pendingQuotes = await this.quoteModel
+      .find({ job_id: job._id, status: QuoteStatus.PENDING })
+      .select('helper_id')
+      .lean()
+      .exec();
+    await this.quoteModel
+      .updateMany(
+        { job_id: job._id, status: QuoteStatus.PENDING },
+        { $set: { status: QuoteStatus.REJECTED } },
+      )
+      .exec();
+    for (const q of pendingQuotes) {
+      await this.notificationsService
+        .create({
+          userId: String((q as any).helper_id),
+          type: NOTIFICATION_TYPES.SYSTEM,
+          title: 'Đơn hàng đã bị hủy',
+          body: `Công việc "${job.title}" đã bị hủy. Báo giá của bạn cho đơn này không còn hiệu lực.`,
+          payload: { job_id: jobId },
+        })
+        .catch(() => undefined);
+    }
+
+    // Hoàn voucher/điểm đã dùng cho đơn (idempotent qua benefits_restored_at).
+    await this.restoreJobBenefitsOnCancel(job);
+
+    this.emitJobStatusChange(job);
+
+    const body = `Đơn "${job.title}" đã tự động hủy vì quá giờ hẹn mà chưa có thợ nhận.`;
+    await this.notificationsService.create({
+      userId: customerId,
+      type: NOTIFICATION_TYPES.JOB_AUTO_CANCELLED,
+      title: 'Đơn đã tự động hủy',
+      body,
+      payload: { job_id: jobId },
+    });
+    await this.sendJobEmailToCustomer(
+      job,
+      '[GreenHouse] Đơn đã tự động hủy vì quá giờ hẹn',
+      body,
+      `Job "${job.title}" was automatically cancelled because no helper had taken it 5 minutes past the scheduled time. You can post a new job in the GreenHouse app anytime.`,
+    );
+    this.logger.log(
+      `sweepOverdueUnassignedJobs: auto-cancelled job ${jobId} (no helper by start+5m)`,
+    );
+  }
+
+  /** R7 item 1: gửi mail sự kiện đơn cho khách (best-effort, không ném lỗi). */
+  private async sendJobEmailToCustomer(
+    job: JobDocument,
+    subject: string,
+    bodyVi: string,
+    bodyEn: string,
+  ): Promise<void> {
+    try {
+      const customer = await this.userModel
+        .findById(job.customer_id)
+        .select('email full_name')
+        .lean()
+        .exec();
+      const email = (customer as any)?.email as string | undefined;
+      if (!email || !this.mailService?.sendJobEmail) return;
+      const name = (customer as any)?.full_name || 'bạn';
+      const text = `Xin chào ${name},\n\n${bodyVi}\n\n${bodyEn}\n\nTrân trọng,\nĐội ngũ GreenHouse`;
+      const html = `<div style="font-family: sans-serif; max-width: 520px; margin: 0 auto; padding: 24px;"><h2 style="color: #10B981; margin: 0 0 16px;">GREENHOUSE</h2><p>Xin chào ${name},</p><p>${bodyVi}</p><p style="color: #6B7280;">${bodyEn}</p><p style="font-size: 12px; color: #9CA3AF;">&copy; ${new Date().getFullYear()} GreenHouse.</p></div>`;
+      await this.mailService.sendJobEmail(email, subject, text, html);
+    } catch (err) {
+      this.logger.warn(`sendJobEmailToCustomer job ${job._id} failed: ${(err as Error).message}`);
     }
   }
 
