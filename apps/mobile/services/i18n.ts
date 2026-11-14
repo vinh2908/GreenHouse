@@ -2395,6 +2395,11 @@ export function formatNotificationTitle(
         return 'Job Expired';
       case 'job_expiring_soon':
         return 'Job Expiring Soon';
+      // R7 item 1 + auto-cancel: EN titles for the two new types (approved wording).
+      case 'job_no_helper_at_start':
+        return 'No helper has taken your job yet';
+      case 'job_auto_cancelled':
+        return 'Job automatically cancelled';
       case 'sos_backup_request':
         return 'Emergency Backup Invitation (SOS)';
       case 'sos_backup_decision_request':
@@ -2703,6 +2708,19 @@ export function formatNotificationBody(
     const adminCancel = b.match(/^Công việc\s*(".*?"|'.*?'|“.*?”)\s*đã bị hủy\.\s*Lý do:\s*(.*)$/i);
     if (adminCancel) return `Job ${adminCancel[1]} has been cancelled. Reason: ${adminCancel[2]}`;
     return 'The job has been cancelled.';
+  }
+  // R7 item 1 + auto-cancel: EN bodies for the two new types.
+  if (type === 'job_no_helper_at_start') {
+    const m = b.match(/Đơn\s*(".*?"|'.*?'|“.*?”).*?đến giờ làm\s*\((\d{1,2}:\d{2})/i);
+    return m
+      ? `Job ${m[1]} is due at ${m[2]} today but no helper has taken it yet. You can reschedule, re-broadcast to nearby helpers, or cancel the job.`
+      : 'Your job is due now but no helper has taken it yet. You can reschedule, re-broadcast to nearby helpers, or cancel the job.';
+  }
+  if (type === 'job_auto_cancelled') {
+    const m = b.match(/Đơn\s*(".*?"|'.*?'|“.*?”)/i);
+    return m
+      ? `Job ${m[1]} was automatically cancelled because no helper had taken it 5 minutes past the scheduled time.`
+      : 'Your job was automatically cancelled because no helper had taken it 5 minutes past the scheduled time.';
   }
   if (type === 'job_updated') {
     return 'The job details have been updated.';

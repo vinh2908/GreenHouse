@@ -337,6 +337,12 @@ export class Job {
   @Prop()
   last_rebroadcast_at?: Date;
 
+  // R7 item 1: khóa "giờ bắt đầu" đã gửi thông báo chưa có thợ (dạng
+  // "YYYY-MM-DDTHH:MM" — ngày + giờ làm). Dời giờ (B7) đổi khóa → đồng hồ
+  // 5 phút của rule auto-cancel chạy lại theo giờ mới.
+  @Prop()
+  overdue_notified_for?: string;
+
   // B101: đã gửi thông báo ưu đãi riêng hết hạn cho thợ (1 lần)
   @Prop({ default: false })
   private_offer_expiry_notified?: boolean;

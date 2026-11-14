@@ -33,6 +33,69 @@ export class MailService implements OnModuleInit {
     return process.env.SENDGRID_FROM;
   }
 
+  /**
+   * R7 item 1 / auto-cancel: gửi mail sự kiện đơn hàng (không phải OTP) qua
+   * cùng SendGrid Web API v3. Best-effort — trả false khi chưa cấu hình /
+   * SendGrid lỗi, không ném lỗi (caller sweep không được sập vì mail).
+   * Body đã song ngữ (VI chính + EN) ở caller.
+   */
+  async sendJobEmail(
+    toEmail: string,
+    subject: string,
+    text: string,
+    html: string,
+  ): Promise<boolean> {
+    return this.send(toEmail, subject, text, html, 'Job email');
+  }
+
+  /** Bước gửi chung: kiểm tra cấu hình + POST SendGrid + log. */
+  private async send(
+    toEmail: string,
+    subject: string,
+    text: string,
+    html: string,
+    kind: string,
+  ): Promise<boolean> {
+    if (!this.apiKey || !this.fromEmail) {
+      this.logger.warn(
+        `[SENDGRID SIMULATED] To: ${toEmail} | Subject: ${subject} (${kind}, SENDGRID_API_KEY hoặc SENDGRID_FROM chưa được cấu hình)`,
+      );
+      return false;
+    }
+
+    try {
+      const res = await fetch(SENDGRID_URL, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${this.apiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          personalizations: [{ to: [{ email: toEmail }] }],
+          from: { email: this.fromEmail, name: 'GreenHouse' },
+          subject,
+          content: [
+            { type: 'text/plain', value: text },
+            { type: 'text/html', value: html },
+          ],
+        }),
+        // Hạn mức cứng 15s: SendGrid không trả lời thì fail nhanh để API trả
+        // lỗi rõ (502) thay vì app xoay vòng đến hết timeout 35s.
+        signal: AbortSignal.timeout(SEND_TIMEOUT_MS),
+      });
+      if (res.status === 202) {
+        this.logger.log(`${kind} sent to ${toEmail} via SendGrid`);
+        return true;
+      }
+      const errBody = await res.text().catch(() => '');
+      this.logger.error(`SendGrid send failed to ${toEmail}: HTTP ${res.status} ${errBody}`);
+      return false;
+    } catch (err: any) {
+      this.logger.error(`Failed to send ${kind} to ${toEmail}: ${err?.message ?? err}`);
+      return false;
+    }
+  }
+
   async sendOtpEmail(toEmail: string, code: string, purpose: 'verify' | 'reset'): Promise<boolean> {
     const isVerify = purpose === 'verify';
     const actionText = isVerify ? 'xác thực tài khoản' : 'đặt lại mật khẩu';
@@ -69,43 +132,6 @@ export class MailService implements OnModuleInit {
       </div>
     `;
 
-    if (!this.apiKey || !this.fromEmail) {
-      this.logger.warn(
-        `[SENDGRID SIMULATED] To: ${toEmail} | Code: ${code} | Purpose: ${purpose} (SENDGRID_API_KEY hoặc SENDGRID_FROM chưa được cấu hình)`,
-      );
-      return false;
-    }
-
-    try {
-      const res = await fetch(SENDGRID_URL, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${this.apiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          personalizations: [{ to: [{ email: toEmail }] }],
-          from: { email: this.fromEmail, name: 'GreenHouse' },
-          subject,
-          content: [
-            { type: 'text/plain', value: text },
-            { type: 'text/html', value: html },
-          ],
-        }),
-        // Hạn mức cứng 15s: SendGrid không trả lời thì fail nhanh để API trả
-        // lỗi rõ (502) thay vì app xoay vòng đến hết timeout 35s.
-        signal: AbortSignal.timeout(SEND_TIMEOUT_MS),
-      });
-      if (res.status === 202) {
-        this.logger.log(`OTP email sent to ${toEmail} via SendGrid`);
-        return true;
-      }
-      const errBody = await res.text().catch(() => '');
-      this.logger.error(`SendGrid send failed to ${toEmail}: HTTP ${res.status} ${errBody}`);
-      return false;
-    } catch (err: any) {
-      this.logger.error(`Failed to send OTP email to ${toEmail}: ${err?.message ?? err}`);
-      return false;
-    }
+    return this.send(toEmail, subject, text, html, 'OTP email');
   }
 }
