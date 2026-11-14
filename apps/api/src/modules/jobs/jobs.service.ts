@@ -63,6 +63,14 @@ import { VouchersService } from '../vouchers/vouchers.service';
 import { LoyaltyService } from '../loyalty/loyalty.service';
 import { DisputesService } from './disputes.service';
 import { MatchingService } from '../matching/matching.service';
+import { MailService } from '../auth/mail.service';
+import { HH_MM_RE, jobScheduledStart, toVnDateString } from './job-schedule';
+import {
+  AT_RISK_HELPER_NO_START,
+  AT_RISK_REVIEW_WAITING_3D,
+  AT_RISK_REVIEW_WAITING_7D,
+  detectAtRiskFlags,
+} from './at-risk';
 import {
   HelperPenaltyEvent,
   HelperPenaltyEventDocument,
@@ -89,6 +97,10 @@ export interface JobRouteOptions {
 
 // Beyond this straight-line distance a helper is treated as out of the job's area.
 const QUOTE_SERVICE_RADIUS_KM = 30;
+
+// R7 auto-cancel (Vinh quyết 2026-11-14): đơn chưa có thợ sẽ tự hủy khi quá
+// giờ làm đúng khoảng này (5 phút) — không phải 30 phút / 2 giờ (đã bỏ).
+const AUTO_CANCEL_OVERDUE_MS = 5 * 60 * 1000;
 
 /** M1: Giới hạn an toàn tối đa số đơn ứng viên nạp vào RAM khi sort khoảng cách hoặc lọc availability */
 export const MAX_FEED_SORT_CANDIDATES = 200;
@@ -130,19 +142,57 @@ export function localDateKey(d: Date): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
 
-/** P2-4 & H27(a): Chuỗi ngày 'YYYY-MM-DD' theo giờ Việt Nam (+07:00), tránh lệch ngày UTC khi dùng Date object. */
-export function toVnDateString(dateInput: unknown): string {
-  if (!dateInput) return '';
-  if (typeof dateInput === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateInput.trim())) {
-    return dateInput.trim();
-  }
-  const d = new Date(dateInput as any);
-  if (isNaN(d.getTime())) return '';
-  const vnTime = new Date(d.getTime() + 7 * 60 * 60 * 1000);
-  return vnTime.toISOString().slice(0, 10);
+// R7: toVnDateString / jobScheduledStart đã chuyển sang job-schedule.ts
+// (dùng chung với at-risk.ts); re-export để các nơi import từ đây không
+// phải sửa (admin.service, các spec H2/H3/H1).
+export { toVnDateString, jobScheduledStart } from './job-schedule';
+
+/**
+ * R7 item 2: true when the job's start has passed AND no helper is assigned
+ * yet (helper_id null/missing). Assigned jobs (accepted quote + contract)
+ * are never hidden from their own helper and never blocked by this rule —
+ * an in-progress job is not hidden from its helper.
+ * Strict `start < now` (no buffer): the accept gate's 2-minute buffer stays
+ * for quotes already sent, but NO NEW quote may be created once the start
+ * has passed.
+ */
+export function isPastStartUnassigned(
+  job: {
+    preferred_date?: unknown;
+    preferred_time_start?: string | null;
+    helper_id?: unknown;
+  },
+  now = new Date(),
+): boolean {
+  if (job.helper_id !== null && job.helper_id !== undefined) return false;
+  const start = jobScheduledStart(job);
+  if (!start) return false;
+  return start.getTime() < now.getTime();
 }
 
-const HH_MM_RE = /^(\d{1,2}):(\d{2})/;
+/**
+ * R7 item 2, DB layer: the cheap range half of the rule — excludes jobs whose
+ * scheduled DATE is before today (VN) from a helper-facing query. It works in
+ * every feed path including the $geoNear query (plain field predicate, no
+ * $expr). Jobs with no date, a null date, or a string date are left in and
+ * decided by the exact in-memory `isPastStartUnassigned` post-filter
+ * (today's passed times can only be decided in memory: date + time combine
+ * into one instant). Merge as `{ $and: [pastStartDateFilter(now)] }` — the
+ * feed's $geoNear handling already merges an existing $and correctly.
+ * The stored preferred_date is a Date (UTC midnight of the VN date), so
+ * `>= today 00:00+07:00` is exactly "VN date is today or later".
+ */
+export function pastStartDateFilter(now = new Date()): Record<string, unknown> {
+  const todayVnStart = new Date(`${toVnDateString(now)}T00:00:00+07:00`);
+  return {
+    $or: [
+      { preferred_date: { $gte: todayVnStart } },
+      { preferred_date: { $exists: false } },
+      { preferred_date: null },
+      { preferred_date: { $type: 'string' } },
+    ],
+  };
+}
 
 /**
  * Thợ có sẵn sàng cho 1 ngày/giờ hay không (Feature 13 — Lịch làm việc).
@@ -260,6 +310,9 @@ export class JobsService implements OnModuleInit {
     // B67: @Optional để các test cũ khởi tạo trực tiếp JobsService (không
     // truyền MatchingService) vẫn chạy; module thật luôn có MatchingModule.
     @Optional() private readonly matchingService?: MatchingService,
+    // R7 item 1: @Optional để các test cũ khởi tạo trực tiếp JobsService
+    // (không truyền MailService) vẫn chạy; module thật có AuthModule.
+    @Optional() private readonly mailService?: MailService,
   ) {}
 
   /** B67: Xoá cache gợi ý thợ của đơn khi đơn thay đổi (báo giá mới / chọn báo giá / huỷ đơn) */
@@ -273,6 +326,15 @@ export class JobsService implements OnModuleInit {
     );
     this.sweepUpcomingJobReminders().catch(err =>
       this.logger.error(`Initial reminder sweep failed: ${err?.message ?? err}`),
+    );
+    // R7 item 1 + auto-cancel: quét ngay khi khởi động để bắt đơn đã quá
+    // giờ trong lúc API ngủ (Render free tier).
+    this.sweepOverdueUnassignedJobs().catch(err =>
+      this.logger.error(`Initial overdue sweep failed: ${err?.message ?? err}`),
+    );
+    // R7 watchdog (iii)/(iv): quét đơn có nguy cơ kẹt ngay khi khởi động.
+    this.sweepAtRiskJobs().catch(err =>
+      this.logger.error(`Initial at-risk sweep failed: ${err?.message ?? err}`),
     );
   }
 
@@ -510,6 +572,315 @@ export class JobsService implements OnModuleInit {
       }
     } catch (err) {
       this.logger.warn(`sweepUpcomingJobReminders failed: ${(err as Error).message}`);
+    }
+  }
+
+  /**
+   * R7 item 1 + auto-cancel (Vinh quyết 2026-11-14): một sweep, hai mốc thời
+   * gian cho đơn đang mở chưa có thợ phụ trách.
+   * - Tới giờ làm (start <= now): báo khách "Chưa có thợ nhận đơn" (in-app +
+   *   email SendGrid), 1 lần cho mỗi cặp đơn+giờ làm (khóa overdue_notified_for
+   *   = "YYYY-MM-DDTHH:MM"; dời giờ đổi khóa → đồng hồ chạy lại theo giờ mới).
+   * - Start + 5 phút vẫn chưa có thợ: TỰ ĐỘNG HỦY đơn (status CANCELLED, lý do
+   *   + actor 'system' trong event để xem trong admin/audit), báo khách
+   *   in-app + email, từ chối mọi báo giá PENDING (báo thợ như khi hủy đơn),
+   *   hoàn voucher/điểm đã dùng. KHÔNG chạm tiền: lúc này chưa có hợp đồng
+   *   và chưa có escrow — KHÔNG gọi paymentsService (spec kiểm chứng).
+   * - Đơn đã có thợ (helper_id) hoặc đã có hợp đồng: KHÔNG BAO GIỜ tự hủy
+   *   theo rule này.
+   * - Nếu đơn đã quá start+5' ngay trong lần quét đầu tiên (VD API vừa ngủ
+   *   dậy), chỉ gửi thông báo hủy — thông báo "chưa có thợ" bị bỏ qua vì
+   *   thông báo hủy đã nói rõ lý do.
+   * Nhịp 5 phút/lần nên thông báo tới giờ rơi vào 0–5' sau giờ làm và hủy rơi
+   * vào 5–10' sau giờ làm. Mỗi đơn lỗi không kẹt cả vòng (try/catch theo
+   * đơn, mẫu B3). Mail là best-effort: thiếu cấu hình / gửi lỗi → log,
+   * không sập sweep.
+   */
+  @Cron('*/5 * * * *')
+  async sweepOverdueUnassignedJobs(): Promise<void> {
+    const nowMs = Date.now();
+    const candidates = await this.jobModel
+      .find({
+        status: { $in: [JobStatus.OPEN, JobStatus.RECEIVING_QUOTES] },
+        helper_id: null,
+        preferred_date: { $exists: true, $ne: null },
+        preferred_time_start: { $regex: /^\d{1,2}:\d{2}$/ },
+      })
+      .exec();
+
+    for (const job of candidates) {
+      try {
+        const startMs = jobScheduledStart(job as any)?.getTime() ?? null;
+        if (startMs == null) continue;
+        if (nowMs < startMs) continue; // chưa tới giờ làm
+
+        // Lấy lại trạng thái mới nhất: có thể đã có thợ/hợp đồng kể từ lúc
+        // query (VD khách vừa chấp nhận báo giá trong lúc sweep chạy).
+        const fresh = await this.jobModel.findById(job._id).exec();
+        if (!fresh || fresh.helper_id) continue;
+        if (fresh.status !== JobStatus.OPEN && fresh.status !== JobStatus.RECEIVING_QUOTES) {
+          continue;
+        }
+
+        const startKey = `${toVnDateString(fresh.preferred_date)}T${fresh.preferred_time_start}`;
+
+        // Mốc 2: start + 5' vẫn chưa có thợ → tự động hủy (kiểm tra hợp đồng
+        // để chắc chắn: có hợp đồng nghĩa là đã có thợ phụ trách).
+        if (nowMs >= startMs + AUTO_CANCEL_OVERDUE_MS) {
+          const contract = this.contractModel?.findOne
+            ? await this.contractModel.findOne({ job_id: fresh._id }).exec()
+            : null;
+          if (contract) {
+            this.logger.warn(
+              `sweepOverdueUnassignedJobs: job ${fresh._id} has a contract — skip auto-cancel`,
+            );
+            continue;
+          }
+          await this.autoCancelOverdueJob(fresh);
+          continue;
+        }
+
+        // Mốc 1: tới giờ làm, chưa báo cho giờ này → báo khách (in-app + mail).
+        if (fresh.overdue_notified_for === startKey) continue;
+        await this.notifyNoHelperAtStart(fresh, startKey);
+      } catch (err) {
+        this.logger.warn(
+          `sweepOverdueUnassignedJobs job ${job._id} failed: ${(err as Error).message}`,
+        );
+      }
+    }
+  }
+
+  /** R7 item 1: báo khách "Chưa có thợ nhận đơn" (đã duyệt wording). */
+  private async notifyNoHelperAtStart(job: JobDocument, startKey: string): Promise<void> {
+    const customerId = String(job.customer_id);
+    const body = `Đơn "${job.title}" đến giờ làm (${job.preferred_time_start} hôm nay) nhưng chưa có thợ nào nhận. Bạn có thể dời giờ, gửi lại cho thợ gần đây, hoặc hủy đơn.`;
+    await this.notificationsService.create({
+      userId: customerId,
+      type: NOTIFICATION_TYPES.JOB_NO_HELPER_AT_START,
+      title: 'Chưa có thợ nhận đơn',
+      body,
+      payload: { job_id: String(job._id) },
+    });
+    // Ghi khóa SAU khi tạo thông báo in-app: nếu tạo thông báo lỗi thì vòng
+    // sau thử lại; mail là best-effort nên không được làm thông báo gửi lại
+    // (dedupe ở tầng tạo thông báo cho event này).
+    await this.jobModel
+      .updateOne({ _id: job._id }, { $set: { overdue_notified_for: startKey } })
+      .exec();
+    await this.sendJobEmailToCustomer(
+      job,
+      '[GreenHouse] Chưa có thợ nhận đơn',
+      body,
+      `Job "${job.title}" is due at ${job.preferred_time_start} today but no helper has taken it yet. You can reschedule, re-broadcast to nearby helpers, or cancel the job in the GreenHouse app.`,
+    );
+  }
+
+  /**
+   * R7 auto-cancel: hủy đơn quá giờ +5' chưa có thợ. Dùng logic hủy tối
+   * thiểu (không dùng cancelJob — actor 'system' bị chặn ở đó): ghi lý do +
+   * actor system, từ chối báo giá PENDING (báo thợ như B60), hoàn
+   * voucher/điểm. KHÔNG gọi paymentsService — không có hợp đồng/escrow
+   * nên không có tiền để hoàn (spec kiểm chứng).
+   */
+  private async autoCancelOverdueJob(job: JobDocument): Promise<void> {
+    const jobId = String(job._id);
+    const customerId = String(job.customer_id);
+    const reason = 'Tự động hủy: quá giờ hẹn 5 phút mà chưa có thợ nhận';
+    job.cancellation_reason = reason;
+    job.cancelled_by_role = 'system';
+    this.addEvent(job, JobStatus.CANCELLED, 'system', 'system', reason);
+    // B46: gỡ liên kết voucher trước khi lưu (lượt dùng được trả lại trong
+    // restoreJobBenefitsOnCancel, như cancelJob).
+    if (job.voucher_code) job.voucher_code = undefined;
+    await job.save();
+
+    // Từ chối mọi báo giá PENDING + báo thợ (như B60 trong cancelJob).
+    const pendingQuotes = await this.quoteModel
+      .find({ job_id: job._id, status: QuoteStatus.PENDING })
+      .select('helper_id')
+      .lean()
+      .exec();
+    await this.quoteModel
+      .updateMany(
+        { job_id: job._id, status: QuoteStatus.PENDING },
+        { $set: { status: QuoteStatus.REJECTED } },
+      )
+      .exec();
+    for (const q of pendingQuotes) {
+      await this.notificationsService
+        .create({
+          userId: String((q as any).helper_id),
+          type: NOTIFICATION_TYPES.SYSTEM,
+          title: 'Đơn hàng đã bị hủy',
+          body: `Công việc "${job.title}" đã bị hủy. Báo giá của bạn cho đơn này không còn hiệu lực.`,
+          payload: { job_id: jobId },
+        })
+        .catch(() => undefined);
+    }
+
+    // Hoàn voucher/điểm đã dùng cho đơn (idempotent qua benefits_restored_at).
+    await this.restoreJobBenefitsOnCancel(job);
+
+    this.emitJobStatusChange(job);
+
+    const body = `Đơn "${job.title}" đã tự động hủy vì quá giờ hẹn mà chưa có thợ nhận.`;
+    await this.notificationsService.create({
+      userId: customerId,
+      type: NOTIFICATION_TYPES.JOB_AUTO_CANCELLED,
+      title: 'Đơn đã tự động hủy',
+      body,
+      payload: { job_id: jobId },
+    });
+    await this.sendJobEmailToCustomer(
+      job,
+      '[GreenHouse] Đơn đã tự động hủy vì quá giờ hẹn',
+      body,
+      `Job "${job.title}" was automatically cancelled because no helper had taken it 5 minutes past the scheduled time. You can post a new job in the GreenHouse app anytime.`,
+    );
+    this.logger.log(
+      `sweepOverdueUnassignedJobs: auto-cancelled job ${jobId} (no helper by start+5m)`,
+    );
+  }
+
+  /** R7 item 1: gửi mail sự kiện đơn cho khách (best-effort, không ném lỗi). */
+  private async sendJobEmailToCustomer(
+    job: JobDocument,
+    subject: string,
+    bodyVi: string,
+    bodyEn: string,
+  ): Promise<void> {
+    try {
+      const customer = await this.userModel
+        .findById(job.customer_id)
+        .select('email full_name')
+        .lean()
+        .exec();
+      const email = (customer as any)?.email as string | undefined;
+      if (!email || !this.mailService?.sendJobEmail) return;
+      const name = (customer as any)?.full_name || 'bạn';
+      const text = `Xin chào ${name},\n\n${bodyVi}\n\n${bodyEn}\n\nTrân trọng,\nĐội ngũ GreenHouse`;
+      const html = `<div style="font-family: sans-serif; max-width: 520px; margin: 0 auto; padding: 24px;"><h2 style="color: #10B981; margin: 0 0 16px;">GREENHOUSE</h2><p>Xin chào ${name},</p><p>${bodyVi}</p><p style="color: #6B7280;">${bodyEn}</p><p style="font-size: 12px; color: #9CA3AF;">&copy; ${new Date().getFullYear()} GreenHouse.</p></div>`;
+      await this.mailService.sendJobEmail(email, subject, text, html);
+    } catch (err) {
+      this.logger.warn(`sendJobEmailToCustomer job ${job._id} failed: ${(err as Error).message}`);
+    }
+  }
+
+  /**
+   * R7 watchdog (iii)/(iv): phát hiện đơn có nguy cơ kẹt — DETECT + NOTIFY
+   * + lưu cờ để admin lọc, KHÔNG tự sửa. Chỉ thông báo khi cờ MỚI xuất
+   * hiện (so với at_risk_flags đã lưu) để không spam mỗi vòng quét.
+   * - helper_no_start (thợ chưa bắt đầu 1h sau giờ hẹn): nhắc khách (gợi ý
+   *   liên hệ thợ / SOS tìm thợ khác) + nhắc thợ.
+   * - review_waiting_3d: nhắc khách nghiệm thu.
+   * - review_waiting_7d: nhắc lại khách + leo thang tới admin (notifyAdmins).
+   * Ngưỡng 1h/3d/7d là ĐỀ XUẤT, chưa được Vinh quyết — nếu Vinh đổi ngưỡng,
+   * chỉ cần đổi hằng trong at-risk.ts. Không hủy/hoàn/gán lại ở đây.
+   * Nhịp 15 phút (các cửa sổ tính bằng giờ/ngày nên không cần quét dày).
+   */
+  @Cron('*/15 * * * *')
+  async sweepAtRiskJobs(): Promise<void> {
+    const nowMs = Date.now();
+    const candidates = await this.jobModel
+      .find({
+        $or: [
+          {
+            status: {
+              $in: [
+                JobStatus.CONFIRMED,
+                JobStatus.HELPER_ON_THE_WAY,
+                JobStatus.HELPER_ARRIVED,
+                JobStatus.PENDING_REVIEW,
+              ],
+            },
+          },
+          // Đơn đã mang cờ phải được quét lại để xóa cờ khi hết kẹt
+          // (VD thợ đã bắt đầu → IN_PROGRESS không nằm trong danh sách trên).
+          { at_risk_flags: { $exists: true, $ne: [] } },
+        ],
+      })
+      .exec();
+
+    for (const job of candidates) {
+      try {
+        const flags = detectAtRiskFlags(job as any, nowMs);
+        const stored: string[] = (job as any).at_risk_flags ?? [];
+        const newFlags = flags.filter(f => !stored.includes(f));
+
+        if (newFlags.includes(AT_RISK_HELPER_NO_START)) {
+          const jobId = String(job._id);
+          await Promise.allSettled([
+            this.notificationsService.create({
+              userId: String(job.customer_id),
+              type: NOTIFICATION_TYPES.JOB_STATUS_CHANGED,
+              title: 'Thợ chưa bắt đầu công việc',
+              body: `Thợ phụ trách đơn "${job.title}" chưa bắt đầu sau 1 giờ kể từ giờ hẹn (${job.preferred_time_start}). Bạn có thể liên hệ thợ hoặc yêu cầu thợ khác (SOS).`,
+              payload: { job_id: jobId },
+            }),
+            job.helper_id
+              ? this.notificationsService.create({
+                  userId: String(job.helper_id),
+                  type: NOTIFICATION_TYPES.JOB_STATUS_CHANGED,
+                  title: 'Bạn chưa bắt đầu công việc',
+                  body: `Đơn "${job.title}" đã đến giờ làm (${job.preferred_time_start}) mà bạn chưa bắt đầu. Vui lòng bắt đầu hoặc liên hệ khách hàng.`,
+                  payload: { job_id: jobId },
+                })
+              : Promise.resolve(),
+          ]);
+        }
+        if (newFlags.includes(AT_RISK_REVIEW_WAITING_3D)) {
+          await this.notificationsService.create({
+            userId: String(job.customer_id),
+            type: NOTIFICATION_TYPES.JOB_STATUS_CHANGED,
+            title: 'Đơn đang chờ bạn nghiệm thu',
+            body: `Đơn "${job.title}" đã hoàn thành và đang chờ bạn nghiệm thu. Vui lòng xác nhận để thợ nhận thu nhập.`,
+            payload: { job_id: String(job._id) },
+          });
+        }
+        if (newFlags.includes(AT_RISK_REVIEW_WAITING_7D)) {
+          await Promise.allSettled([
+            this.notificationsService.create({
+              userId: String(job.customer_id),
+              type: NOTIFICATION_TYPES.JOB_STATUS_CHANGED,
+              title: 'Đơn đang chờ bạn nghiệm thu',
+              body: `Đơn "${job.title}" đã hoàn thành 7 ngày mà chưa được nghiệm thu. Vui lòng xác nhận hoặc liên hệ hỗ trợ.`,
+              payload: { job_id: String(job._id) },
+            }),
+            this.notificationsService.notifyAdmins({
+              type: NOTIFICATION_TYPES.SYSTEM,
+              title: 'Đơn chờ nghiệm thu quá 7 ngày',
+              body: `Đơn "${job.title}" (${job._id}) đã PENDING_REVIEW 7 ngày mà khách chưa nghiệm thu. Cần admin kiểm tra.`,
+              payload: { job_id: String(job._id) },
+            }),
+          ]);
+        }
+
+        // Lưu cờ mới (và mốc phát hiện lần đầu) / xóa cờ khi đơn hết kẹt.
+        if (flags.length === 0) {
+          if (stored.length > 0) {
+            await this.jobModel
+              .updateOne(
+                { _id: job._id },
+                { $set: { at_risk_flags: [] }, $unset: { at_risk_detected_at: '' } },
+              )
+              .exec();
+          }
+        } else if (stored.length === 0) {
+          await this.jobModel
+            .updateOne(
+              { _id: job._id },
+              { $set: { at_risk_flags: flags, at_risk_detected_at: new Date(nowMs) } },
+            )
+            .exec();
+        } else if (flags.join(',') !== stored.join(',')) {
+          await this.jobModel
+            .updateOne({ _id: job._id }, { $set: { at_risk_flags: flags } })
+            .exec();
+        }
+      } catch (err) {
+        this.logger.warn(`sweepAtRiskJobs job ${job._id} failed: ${(err as Error).message}`);
+      }
     }
   }
 
@@ -1515,6 +1886,39 @@ export class JobsService implements OnModuleInit {
     }
   }
 
+  /**
+   * R7 item 3: nút "Gửi lại cho thợ gần đây" trên banner đơn quá giờ hẹn.
+   * Tái dùng đúng cơ chế phát đơn lúc tạo (notifyNearbyHelpers — socket
+   * JOB_CREATED + thông báo NEW_JOB_NEARBY cho thợ ONLINE gần đó), KHÔNG
+   * dựng hệ thống broadcast mới. Chỉ chủ đơn, đơn còn mở và chưa có thợ mới
+   * gửi lại được; chống spam bằng khoảng cách tối thiểu 10 phút/lần.
+   */
+  async rebroadcastJob(
+    customerId: string,
+    jobId: string,
+  ): Promise<{ success: boolean; message: string }> {
+    const job = await this.jobModel.findById(jobId).exec();
+    if (!job) throw new NotFoundException('Job không tồn tại');
+    if (job.customer_id.toString() !== customerId) throw new ForbiddenException();
+    if (job.status !== JobStatus.OPEN && job.status !== JobStatus.RECEIVING_QUOTES) {
+      throw new BadRequestException('Chỉ có thể gửi lại đơn đang mở nhận báo giá');
+    }
+    if (job.helper_id) {
+      throw new BadRequestException('Đơn đã có thợ phụ trách, không cần gửi lại');
+    }
+    const lastAt = job.last_rebroadcast_at ? new Date(job.last_rebroadcast_at).getTime() : 0;
+    if (Date.now() - lastAt < 10 * 60 * 1000) {
+      throw new BadRequestException(
+        'Vừa gửi lại, vui lòng đợi vài phút rồi gửi lại cho thợ gần đây',
+      );
+    }
+    await this.notifyNearbyHelpers(job);
+    this.addEvent(job, job.status, customerId, 'customer', 'Gửi lại đơn cho thợ gần đây');
+    job.last_rebroadcast_at = new Date();
+    await job.save();
+    return { success: true, message: 'Đã gửi lại đơn cho thợ gần đây' };
+  }
+
   // ─── Customer: Create SOS Emergency Job ───────────────────────────────────
 
   async createSosJob(customerId: string, dto: CreateSosJobDto): Promise<JobDocument> {
@@ -2333,6 +2737,14 @@ export class JobsService implements OnModuleInit {
       throw new BadRequestException('Đơn hàng đã hết hạn nhận báo giá');
     }
 
+    // R7 item 2: quá giờ hẹn + chưa có thợ → không nhận báo giá mới (server
+    // guard; feed đã ẩn nhưng gọi trực tiếp qua URL cũng phải chặn).
+    if (isPastStartUnassigned(job)) {
+      throw new BadRequestException(
+        'Đã quá giờ hẹn, đơn này không còn nhận báo giá. Khách hàng cần cập nhật lại thời gian trước.',
+      );
+    }
+
     // Đơn giá cam kết (Feature 7): không qua vòng báo giá — thợ nhận việc trực tiếp
     if (job.is_fixed_price) {
       throw new BadRequestException(
@@ -3128,6 +3540,14 @@ export class JobsService implements OnModuleInit {
 
     if (job.expires_at && new Date() > new Date(job.expires_at)) {
       throw new BadRequestException('Đơn hàng đã hết hạn nhận việc');
+    }
+
+    // R7 item 2: như submitQuote — quá giờ hẹn + chưa có thợ thì không nhận
+    // việc trực tiếp (đơn giá cam kết / bảo hành cũng vậy).
+    if (isPastStartUnassigned(job)) {
+      throw new BadRequestException(
+        'Đã quá giờ hẹn, đơn này không còn nhận thợ. Khách hàng cần cập nhật lại thời gian trước.',
+      );
     }
 
     // Feature 9: cùng endpoint này nhận cả đơn bảo hành (is_warranty, giá 0₫)
@@ -4736,6 +5156,8 @@ export class JobsService implements OnModuleInit {
       status: { $in: [JobStatus.OPEN, JobStatus.RECEIVING_QUOTES] },
       expires_at: { $gt: now },
       rejected_helper_ids: helperOid,
+      // R7 item 2: như feed — loại đơn có ngày hẹn đã qua (lớp DB).
+      $and: [pastStartDateFilter(now)],
     };
     const [jobs, total, helperProfile] = await Promise.all([
       this.jobModel
@@ -4749,12 +5171,15 @@ export class JobsService implements OnModuleInit {
       this.helperModel.findOne({ user_id: helperOid }).select('location').lean().exec(),
     ]);
 
+    // R7 item 2: lớp chính xác — ẩn đơn quá giờ hẹn hôm nay.
+    const visibleJobs = jobs.filter(job => !isPastStartUnassigned(job as any, now));
+
     // H24 & K8: Ưu tiên GPS thiết bị gửi lên từ query, fallback sang profile location
     const helperCoords =
       lat != null && lng != null && !Number.isNaN(Number(lat)) && !Number.isNaN(Number(lng))
         ? [Number(lng), Number(lat)]
         : helperProfile?.location?.coordinates;
-    const jobObjects = jobs.map(job => {
+    const jobObjects = visibleJobs.map(job => {
       const obj = job.toObject() as any;
       obj.is_recurring = Boolean(job.recurring_plan_id);
       obj.is_fixed_price = Boolean(job.is_fixed_price);
@@ -4824,6 +5249,9 @@ export class JobsService implements OnModuleInit {
         { private_offer_expires_at: { $lte: now } },
         { private_offer_helper_id: helperOid },
       ],
+      // R7 item 2: lớp DB — loại đơn có ngày hẹn đã qua (ngày trước hôm nay).
+      // Giờ đã qua trong NGÀY HÔM NAY do post-filter chính xác ở dưới quyết.
+      $and: [pastStartDateFilter(now)],
     };
     if (serviceId && Types.ObjectId.isValid(serviceId)) {
       query['service_id'] = new Types.ObjectId(serviceId);
@@ -5119,6 +5547,13 @@ export class JobsService implements OnModuleInit {
 
     const total_pages = Math.max(1, Math.ceil(total / safeLimit));
 
+    // R7 item 2: lớp chính xác — ẩn đơn quá giờ hẹn trong NGÀY HÔM NAY (lớp
+    // DB chỉ loại được ngày đã qua; giờ + ngày chỉ gộp được thành một mốc
+    // trong bộ nhớ). Áp ở điểm hội tụ duy nhất của mọi nhánh feed (find /
+    // $geoNear / fallback) nên mọi đường đều ẩn như nhau. `total` giữ nguyên
+    // số đếm DB (đã loại ngày qua) — phần dư chỉ là các đơn quá giờ hôm nay.
+    pagedJobs = pagedJobs.filter(job => !isPastStartUnassigned(job as any, now));
+
     const jobObjects = pagedJobs.map(job => {
       const obj =
         typeof (job as any).toObject === 'function' ? (job as any).toObject() : { ...(job as any) };
@@ -5221,6 +5656,8 @@ export class JobsService implements OnModuleInit {
         { private_offer_expires_at: { $lte: now } },
         ...(helperOid ? [{ private_offer_helper_id: helperOid }] : []),
       ],
+      // R7 item 2: như feed — loại đơn có ngày hẹn đã qua (lớp DB).
+      $and: [pastStartDateFilter(now)],
     };
     if (serviceId && Types.ObjectId.isValid(serviceId)) {
       query['service_id'] = new Types.ObjectId(serviceId);
@@ -5228,20 +5665,24 @@ export class JobsService implements OnModuleInit {
 
     const jobs = await this.jobModel
       .find(query)
-      .select('address preferred_date preferred_time_start is_fixed_price ai_price_suggestion')
+      .select(
+        'address preferred_date preferred_time_start helper_id is_fixed_price ai_price_suggestion',
+      )
       .lean()
       .exec();
 
+    // R7 item 2: lớp chính xác — ẩn đơn quá giờ hẹn hôm nay.
+    const pastStartHidden = jobs.filter(j => !isPastStartUnassigned(j as any, now));
     const availabilityFiltered = Boolean(helperProfile?.availability?.enabled);
     const visibleJobs = availabilityFiltered
-      ? jobs.filter(j =>
+      ? pastStartHidden.filter(j =>
           this.isAvailableForDate(
             helperProfile?.availability,
             j.preferred_date ?? undefined,
             j.preferred_time_start,
           ),
         )
-      : jobs;
+      : pastStartHidden;
 
     const groupMap = new Map<
       string,

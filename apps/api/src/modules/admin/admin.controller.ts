@@ -188,6 +188,11 @@ export class AdminController {
   @ApiOperation({ summary: '[Admin] Danh sách tất cả jobs' })
   @ApiQuery({ name: 'status', required: false })
   @ApiQuery({ name: 'search', required: false })
+  @ApiQuery({
+    name: 'at_risk',
+    required: false,
+    description: 'true = chỉ đơn có cờ nguy cơ kẹt (R7)',
+  })
   @ApiQuery({ name: 'page', required: false, type: Number })
   @ApiQuery({ name: 'limit', required: false, type: Number })
   async getJobs(
@@ -195,9 +200,10 @@ export class AdminController {
     @Query('search') search?: string,
     @Query('page') page?: number,
     @Query('limit') limit?: number,
+    @Query('at_risk') atRisk?: string,
   ) {
     const { page: pg, limit: lm } = parseAdminPagination(page, limit);
-    return this.adminService.getJobs(status, search, pg, lm);
+    return this.adminService.getJobs(status, search, pg, lm, atRisk === 'true');
   }
 
   @Get('jobs/:id')

@@ -21,6 +21,7 @@ import { FavoritesModule } from '../favorites/favorites.module';
 import { VouchersModule } from '../vouchers/vouchers.module';
 import { LoyaltyModule } from '../loyalty/loyalty.module';
 import { MatchingModule } from '../matching/matching.module';
+import { AuthModule } from '../auth/auth.module';
 
 @Module({
   imports: [
@@ -41,6 +42,7 @@ import { MatchingModule } from '../matching/matching.module';
     VouchersModule,
     LoyaltyModule,
     MatchingModule,
+    AuthModule,
   ],
   controllers: [JobsController, DisputesController],
   providers: [JobsService, RoutingService, DisputesService],
