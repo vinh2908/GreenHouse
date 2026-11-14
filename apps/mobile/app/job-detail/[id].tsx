@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useMemo } from 'react';
-import { formatDate, formatDateTime, vnDateKey } from '@/utils/date-format';
+import { formatDate, formatDateTime, formatDateWithWeekday, vnDateKey } from '@/utils/date-format';
 import { resolveQuotesErrorMessage, resolveQuotesListState } from '@/utils/quotes-list-state';
 import { formatCurrency } from '@/services/i18n';
 import {
@@ -23,6 +23,7 @@ import {
   ArrowLeft,
   MessageCircle,
   ChevronRight,
+  Calendar,
   MapPin,
   Check,
   X,
@@ -98,6 +99,20 @@ import {
 } from '@/services/location.service';
 import { downloadInvoicePdf } from '@/services/invoice.service';
 import { LiveTrackingMap } from '@/components/common/live-tracking-map';
+import {
+  TimeDropdownPicker,
+  DurationDropdownPicker,
+  ScheduledTimePreview,
+} from '@/components/common/time-dropdown-picker';
+import { DateTimePickerBottomSheet } from '@/components/common/date-time-bottom-sheet';
+import {
+  deriveEditSchedule,
+  buildSchedulePatchIfChanged,
+  buildSchedulePatch,
+  validateEditSchedule,
+  type EditSchedule,
+  type ScheduleValidationError,
+} from '@/utils/job-schedule-edit';
 import { TeamCard } from '@/components/common/team-card';
 import { SosBackupCustomerBanner } from '@/components/common/sos-backup-customer-banner';
 import { LoyaltyPointsInput } from '@/components/common/loyalty-points-input';
@@ -374,6 +389,17 @@ export default function JobDetailScreen() {
   const [editCoords, setEditCoords] = useState<[number, number] | null>(null);
   const [isLocatingEdit, setIsLocatingEdit] = useState(false);
   const [showEditMap, setShowEditMap] = useState(false);
+
+  // ── B7: Lịch làm việc trong modal sửa đơn (giờ đã qua → đổi lịch mới chọn
+  // được thợ). Prefill = lịch hiện tại của đơn (kể cả khi đã qua — picker
+  // tự gắn cờ quá khứ, khách phải dời tới tương lai mới lưu được, đúng luật
+  // server updateJob F4). Chỉ gửi lịch khi khách đổi (tránh tự bịa lịch cho
+  // đơn vốn không có lịch). ───────────────────────────────────────────────
+  const [editDate, setEditDate] = useState('');
+  const [editTimeStart, setEditTimeStart] = useState('09:00');
+  const [editDurationMinutes, setEditDurationMinutes] = useState(60);
+  const [editDatePickerOpen, setEditDatePickerOpen] = useState(false);
+  const editOriginalScheduleRef = useRef<EditSchedule | null>(null);
 
   // ── Goong Address AutoComplete States for Edit Modal ───────────────────────
   const [editSearchResults, setEditSearchResults] = useState<OsmPlace[]>([]);
@@ -671,6 +697,12 @@ export default function JobDetailScreen() {
     setEditCoords(job.address?.location?.coordinates || null);
     setEditSearchResults([]);
     setHasSearchedEdit(false);
+    // B7: prefill lịch hiện tại của đơn (kể cả khi đã qua).
+    const schedule = deriveEditSchedule(job as any);
+    setEditDate(schedule.date);
+    setEditTimeStart(schedule.timeStart);
+    setEditDurationMinutes(schedule.durationMinutes);
+    editOriginalScheduleRef.current = schedule;
     setShowEditModal(true);
   };
 
@@ -729,12 +761,54 @@ export default function JobDetailScreen() {
       });
       return;
     }
+    // B7: Lịch bắt buộc hợp lệ trước khi lưu — server (updateJob F4) chặn
+    // MỌI lần lưu khi giờ bắt đầu đã qua, kể cả khi chỉ sửa địa chỉ, nên
+    // modal phải chặn tại chỗ với hướng dẫn rõ ràng thay vì để API trả lỗi.
+    const editedSchedule: EditSchedule = {
+      date: editDate,
+      timeStart: editTimeStart,
+      durationMinutes: editDurationMinutes,
+    };
+    const scheduleError: ScheduleValidationError | null = validateEditSchedule(editedSchedule);
+    if (scheduleError) {
+      const scheduleErrorText: Record<ScheduleValidationError, string> = {
+        invalid_date: lang === 'en' ? 'Please select a work date' : 'Vui lòng chọn ngày làm việc',
+        invalid_time: lang === 'en' ? 'Please select a start time' : 'Vui lòng chọn giờ bắt đầu',
+        outside_hours:
+          lang === 'en'
+            ? 'Work hours are 07:00–22:00. Please pick another time.'
+            : 'Giờ làm việc phải trong khung 07:00–22:00. Vui lòng chọn giờ khác.',
+        past:
+          lang === 'en'
+            ? 'The start time has passed. Please pick a future time so you can select a helper.'
+            : 'Thời gian bắt đầu đã qua. Vui lòng chọn thời gian trong tương lai để chọn được thợ.',
+        too_short:
+          lang === 'en'
+            ? 'Minimum duration is 15 minutes.'
+            : 'Thời lượng công việc tối thiểu là 15 phút.',
+        too_long:
+          lang === 'en'
+            ? 'Maximum duration is 12 hours.'
+            : 'Thời lượng công việc tối đa là 12 giờ.',
+        crosses_midnight:
+          lang === 'en'
+            ? 'The duration runs past midnight. Please shorten it or start earlier.'
+            : 'Thời lượng vượt quá nửa đêm. Vui lòng rút ngắn thời lượng hoặc bắt đầu sớm hơn.',
+      };
+      Toast.show({ type: 'error', text1: scheduleErrorText[scheduleError] });
+      return;
+    }
+    // B7: chỉ gửi lịch khi khách đổi (so với lịch prefill lúc mở modal).
+    const schedulePatch = editOriginalScheduleRef.current
+      ? buildSchedulePatchIfChanged(editOriginalScheduleRef.current, editedSchedule)
+      : buildSchedulePatch(editedSchedule);
     try {
       await updateJob.mutateAsync({
         jobId: id,
         data: {
           title: editTitle || undefined,
           description: editDescription || undefined,
+          ...(schedulePatch ?? {}),
           address: {
             full_address: editFullAddress,
             ward: editWard || undefined,
@@ -1667,20 +1741,29 @@ export default function JobDetailScreen() {
           >
             <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap', flex: 1 }}>
               <Badge label={tService(serviceObj) || t('common_service')} />
-              {job.preferred_date && (
-                <Badge
-                  label={formatDate(job.preferred_date, lang)}
-                  color={COLORS.gray[100]}
-                  textColor={COLORS.gray[700]}
-                />
-              )}
-              {job.preferred_time_start && (
-                <Badge
-                  label={job.preferred_time_start}
-                  color={COLORS.gray[100]}
-                  textColor={COLORS.gray[700]}
-                />
-              )}
+              {/* B7: chip ngày/giờ bấm được → mở modal sửa (kèm đổi lịch); trước
+                  đây chỉ là chữ tĩnh trong khi chính nó là thứ đang kẹt. */}
+              <TouchableOpacity
+                activeOpacity={canEdit ? 0.7 : 1}
+                disabled={!canEdit}
+                onPress={handleOpenEdit}
+                style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}
+              >
+                {job.preferred_date && (
+                  <Badge
+                    label={formatDate(job.preferred_date, lang)}
+                    color={COLORS.gray[100]}
+                    textColor={COLORS.gray[700]}
+                  />
+                )}
+                {job.preferred_time_start && (
+                  <Badge
+                    label={job.preferred_time_start}
+                    color={COLORS.gray[100]}
+                    textColor={COLORS.gray[700]}
+                  />
+                )}
+              </TouchableOpacity>
               {job.is_fixed_price && (
                 <Badge
                   label={
@@ -3658,6 +3741,74 @@ export default function JobDetailScreen() {
               />
             </View>
 
+            {/* B7: Lịch làm việc — dropdown giờ/phút + thời lượng (mẫu F9 đã
+                duyệt, dùng chung với booking/home), ngày qua calendar cũ
+                (DateTimePickerBottomSheet). Không có mục này, đơn có giờ bắt
+                đầu đã qua không thể lưu bất kỳ thay đổi nào (server chặn). */}
+            <View style={{ gap: 10 }}>
+              <Text style={{ fontSize: fs(14), fontWeight: '700', color: tc.text }}>
+                {t('booking_start_time_title')}
+              </Text>
+
+              <TouchableOpacity
+                activeOpacity={0.8}
+                onPress={() => setEditDatePickerOpen(true)}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 10,
+                  paddingVertical: 12,
+                  paddingHorizontal: 14,
+                  borderRadius: 14,
+                  backgroundColor: '#F0FDF4',
+                  borderWidth: 1.5,
+                  borderColor: '#16A34A',
+                }}
+              >
+                <Calendar size={18} color="#16A34A" />
+                <View style={{ flex: 1 }}>
+                  <Text
+                    style={{ fontSize: fs(15), fontWeight: '700', color: tc.text }}
+                    numberOfLines={1}
+                  >
+                    {formatDateWithWeekday(editDate || vnDateKey(1), lang)}
+                  </Text>
+                  <Text
+                    style={{
+                      fontSize: fs(11),
+                      color: '#64748B',
+                      fontWeight: '500',
+                      marginTop: 1,
+                    }}
+                  >
+                    {t('booking_tap_to_open_calendar')}
+                  </Text>
+                </View>
+                <ChevronRight size={18} color="#16A34A" />
+              </TouchableOpacity>
+
+              <TimeDropdownPicker
+                value={editTimeStart}
+                onChange={setEditTimeStart}
+                selectedDate={editDate}
+                label={t('booking_time_label')}
+                showChips
+              />
+
+              <DurationDropdownPicker
+                valueMinutes={editDurationMinutes}
+                onChangeMinutes={setEditDurationMinutes}
+                minMinutes={15}
+                maxMinutes={720}
+              />
+
+              <ScheduledTimePreview
+                startDate={editDate}
+                startTime={editTimeStart}
+                durationMinutes={editDurationMinutes}
+              />
+            </View>
+
             <Button
               title={lang === 'en' ? 'Save location & details' : 'Lưu thay đổi vị trí & thông tin'}
               loading={updateJob.isPending}
@@ -3667,6 +3818,22 @@ export default function JobDetailScreen() {
           </ScrollView>
         </KeyboardAvoidingView>
       </Modal>
+
+      {/* B7: Bottom sheet chọn ngày (calendar cũ, dùng chung với booking/home)
+          cho mục lịch trong modal sửa đơn — render ở root (ngoài Modal sửa)
+          để không lồng Modal trong Modal. */}
+      <DateTimePickerBottomSheet
+        visible={editDatePickerOpen}
+        initialDate={editDate}
+        initialTime={editTimeStart}
+        initialTab="date"
+        onClose={() => setEditDatePickerOpen(false)}
+        onConfirm={(selectedDate: string, selectedTime: string) => {
+          setEditDate(selectedDate);
+          setEditTimeStart(selectedTime);
+          setEditDatePickerOpen(false);
+        }}
+      />
 
       {/* ── Modal tạo đơn bảo hành (BH1) ─────────────────────────── */}
       <Modal
