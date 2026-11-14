@@ -55,6 +55,15 @@ import {
   shouldShowEvidenceReupload,
   prefillReuploadMedia,
 } from '@/utils/evidence-reupload';
+import {
+  resolveCompleteErrorMessage,
+  shouldShowCompleteErrorBanner,
+} from '@/utils/helper-complete-error';
+import {
+  isCashPaymentFlow,
+  resolveCashConfirmErrorMessage,
+  shouldShowCashConfirmButton,
+} from '@/utils/cash-confirm';
 
 dayjs.extend(relativeTime);
 
@@ -67,6 +76,7 @@ import {
   useHelperArrived,
   useStartJob,
   useCompleteJob,
+  useConfirmCashPayment,
   useHelperProfile,
   useProposeAmendment,
   useCallConfig,
@@ -224,6 +234,7 @@ export default function HelperJobDetailScreen() {
   const arrived = useHelperArrived();
   const startJob = useStartJob();
   const completeJob = useCompleteJob();
+  const confirmCashPayment = useConfirmCashPayment();
   const proposeAmendment = useProposeAmendment();
 
   const [showQuoteModal, setShowQuoteModal] = useState(false);
@@ -250,6 +261,14 @@ export default function HelperJobDetailScreen() {
   const [completionPhotos, setCompletionPhotos] = useState<string[]>([]);
   const [completionVideos, setCompletionVideos] = useState<string[]>([]);
   const [completionNotes, setCompletionNotes] = useState('');
+
+  // B5d: lỗi gửi bằng chứng hoàn thành — banner đỏ inline trong complete
+  // modal (cùng cơ chế câm như B5c: Toast ở root nằm sau RN <Modal> nên thợ
+  // không thấy; Toast giữ làm kênh phụ, thấy được khi modal đóng).
+  const [completeError, setCompleteError] = useState<string | null>(null);
+  // B5g: phản hồi inline cho nút xác nhận tiền mặt ở thẻ pending_review.
+  const [cashConfirmError, setCashConfirmError] = useState<string | null>(null);
+  const [cashConfirmSuccess, setCashConfirmSuccess] = useState<string | null>(null);
 
   const insets = useSafeAreaInsets();
 
@@ -678,12 +697,15 @@ export default function HelperJobDetailScreen() {
     setCompletionVideos(prefill.videos);
     setCompletionNotes(prefill.notes);
     setIsReuploadMode(true);
+    // B5d: mở modal mới thì xóa lỗi của lần gửi trước (kể cả re-upload).
+    setCompleteError(null);
     setShowCompleteModal(true);
   };
 
   const closeCompleteModal = () => {
     setShowCompleteModal(false);
     setIsReuploadMode(false);
+    setCompleteError(null);
     setCompletionPhotos([]);
     setCompletionVideos([]);
     setCompletionNotes('');
@@ -703,6 +725,8 @@ export default function HelperJobDetailScreen() {
     }
 
     try {
+      // B5d: bấm gửi lại thì xóa lỗi cũ — lỗi mới (nếu có) sẽ hiện lại.
+      setCompleteError(null);
       await completeJob.mutateAsync({
         jobId: id!,
         completion_photos: completionPhotos,
@@ -713,12 +737,35 @@ export default function HelperJobDetailScreen() {
       // đóng modal + reset state (kể cả chế độ re-upload).
       closeCompleteModal();
     } catch (err: any) {
-      const serverMsg = err?.response?.data?.message || err?.message;
-      const msg = serverMsg
-        ? mapServerErrorMessage(serverMsg, lang)
-        : lang === 'en'
-          ? 'Update failed'
-          : 'Cập nhật thất bại';
+      // B5d: Toast ở đây VÔ HÌNH khi modal đang mở (ToastCard ở root nằm sau
+      // RN <Modal> — cùng cơ chế B5c phía khách) nên lỗi phải hiện bằng
+      // banner đỏ inline completeError trong chính modal này; Toast giữ làm
+      // kênh phụ (thấy được khi modal đóng). Áp dụng cho cả gửi lần đầu và
+      // re-upload (cùng handleCompleteSubmission).
+      const msg = resolveCompleteErrorMessage(err, lang);
+      setCompleteError(msg);
+      Toast.show({ type: 'error', text1: msg });
+    }
+  };
+
+  // B5g: xác nhận đã nhận tiền mặt — gọi POST /jobs/:id/confirm-cash để
+  // thỏa cổng P0-4 ở approveCompletion (đơn tiền mặt không có xác nhận này
+  // thì khách không nghiệm thu được). Phản hồi chính là dòng inline trong
+  // thẻ pending_review; Toast của hook giữ làm kênh phụ.
+  const handleConfirmCashPayment = async () => {
+    setCashConfirmError(null);
+    setCashConfirmSuccess(null);
+    try {
+      await confirmCashPayment.mutateAsync(id!);
+      setCashConfirmSuccess(
+        lang === 'en'
+          ? 'Cash receipt confirmed. The customer can now accept the job.'
+          : 'Đã xác nhận đã nhận tiền mặt. Khách có thể nghiệm thu đơn.',
+      );
+      await refetchJob();
+    } catch (err: any) {
+      const msg = resolveCashConfirmErrorMessage(err, lang);
+      setCashConfirmError(msg);
       Toast.show({ type: 'error', text1: msg });
     }
   };
@@ -726,8 +773,9 @@ export default function HelperJobDetailScreen() {
   const handleAction = (action: string) => {
     if (action === 'complete') {
       // Hoàn thành lần đầu (in_progress): modal bắt đầu rỗng, không phải
-      // chế độ re-upload.
+      // chế độ re-upload. B5d: xóa lỗi của lần gửi trước.
       setIsReuploadMode(false);
+      setCompleteError(null);
       setShowCompleteModal(true);
       return;
     }
@@ -1364,6 +1412,84 @@ export default function HelperJobDetailScreen() {
                     onPress={openReuploadModal}
                     style={{ marginTop: 6, alignSelf: 'stretch' }}
                   />
+                )}
+                {/* B5g: xác nhận đã nhận tiền mặt — gọi POST
+                    /jobs/:id/confirm-cash để thỏa cổng P0-4 ở approveCompletion.
+                    Chỉ hiện ở bước 7 + thợ được giao + luồng tiền mặt
+                    (payment_method 'cash' hoặc chưa ghi nhận thanh toán
+                    online); KHÔNG bao giờ hiện cho đơn online (vietqr/momo/
+                    wallet), đơn bảo hành, hoặc khi đã xác nhận rồi. */}
+                {shouldShowCashConfirmButton(job, isMyActiveJob) && (
+                  <Button
+                    title={lang === 'en' ? 'Confirm cash received' : 'Xác nhận đã nhận tiền mặt'}
+                    loading={confirmCashPayment.isPending}
+                    onPress={handleConfirmCashPayment}
+                    style={{ marginTop: 6, alignSelf: 'stretch' }}
+                  />
+                )}
+                {/* B5g: đã xác nhận rồi thì hiện dòng xanh thay cho nút. */}
+                {isMyActiveJob &&
+                  (job as any)?.helper_cash_confirmed === true &&
+                  isCashPaymentFlow(job) && (
+                    <View
+                      style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        gap: 6,
+                        alignSelf: 'stretch',
+                        backgroundColor: '#ECFDF5',
+                        borderWidth: 1,
+                        borderColor: '#A7F3D0',
+                        borderRadius: 10,
+                        padding: 12,
+                        marginTop: 6,
+                      }}
+                    >
+                      <CheckCircle2 size={18} color="#059669" />
+                      <Text
+                        style={{ color: '#065F46', fontSize: fs(13), fontWeight: '700', flex: 1 }}
+                      >
+                        {lang === 'en'
+                          ? 'Cash receipt confirmed — the customer can now accept the job.'
+                          : 'Đã xác nhận đã nhận tiền mặt — khách có thể nghiệm thu đơn.'}
+                      </Text>
+                    </View>
+                  )}
+                {/* B5g: phản hồi inline cho lần bấm xác nhận tiền mặt
+                    (lỗi / thành công), Toast của hook giữ làm kênh phụ. */}
+                {cashConfirmError && (
+                  <View
+                    style={{
+                      backgroundColor: '#FEF2F2',
+                      padding: 12,
+                      borderRadius: 10,
+                      borderWidth: 1,
+                      borderColor: '#FCA5A5',
+                      alignSelf: 'stretch',
+                      marginTop: 6,
+                    }}
+                  >
+                    <Text style={{ color: '#DC2626', fontSize: fs(13), fontWeight: '700' }}>
+                      {cashConfirmError}
+                    </Text>
+                  </View>
+                )}
+                {cashConfirmSuccess && (
+                  <View
+                    style={{
+                      backgroundColor: '#ECFDF5',
+                      padding: 12,
+                      borderRadius: 10,
+                      borderWidth: 1,
+                      borderColor: '#A7F3D0',
+                      alignSelf: 'stretch',
+                      marginTop: 6,
+                    }}
+                  >
+                    <Text style={{ color: '#065F46', fontSize: fs(13), fontWeight: '700' }}>
+                      {cashConfirmSuccess}
+                    </Text>
+                  </View>
                 )}
               </View>
             )}
@@ -2373,6 +2499,26 @@ export default function HelperJobDetailScreen() {
                   placeholderTextColor={COLORS.gray[400]}
                 />
               </View>
+
+              {/* B5d: banner đỏ inline — lỗi gửi bằng chứng phải hiện trong
+                  chính modal đang mở (Toast ở root nằm sau RN <Modal> nên vô
+                  hình, cùng cơ chế B5c). Áp dụng cho cả gửi lần đầu và
+                  re-upload. */}
+              {shouldShowCompleteErrorBanner(completeError) && (
+                <View
+                  style={{
+                    backgroundColor: '#FEF2F2',
+                    padding: 12,
+                    borderRadius: 10,
+                    borderWidth: 1,
+                    borderColor: '#FCA5A5',
+                  }}
+                >
+                  <Text style={{ color: '#DC2626', fontSize: fs(13), fontWeight: '700' }}>
+                    {completeError}
+                  </Text>
+                </View>
+              )}
 
               <Button
                 title={

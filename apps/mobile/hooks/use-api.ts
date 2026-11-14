@@ -1004,6 +1004,29 @@ export function useCompleteJob() {
   });
 }
 
+// B5g: [Helper] Xác nhận đã nhận tiền mặt — POST /jobs/:id/confirm-cash.
+// Server chỉ set helper_cash_confirmed = true cho thợ của đơn; không có UI
+// nào gọi endpoint này nên nghiệm thu tiền mặt không thỏa được cổng P0-4 ở
+// approveCompletion (helper_cash_confirmed hoặc giao dịch tiền mặt đã ghi
+// nhận) và đơn tiền mặt kẹt ở bước 7. Nút chỉ hiện ở pending_review + luồng
+// tiền mặt (xem utils/cash-confirm.ts — màn helper-job-detail).
+export function useConfirmCashPayment() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (jobId: string) => apiClient.post(`/jobs/${jobId}/confirm-cash`),
+    onSuccess: (_, jobId) => {
+      qc.invalidateQueries({ queryKey: ['job', jobId] });
+      qc.invalidateQueries({ queryKey: ['jobs', 'my'] });
+      qc.invalidateQueries({ queryKey: ['jobs'] });
+      Toast.show({
+        type: 'success',
+        text1: 'Đã xác nhận nhận tiền mặt',
+        text2: 'Khách hàng có thể nghiệm thu đơn tiền mặt',
+      });
+    },
+  });
+}
+
 // ─── Helper Profile ────────────────────────────────────────────────────────────
 
 export function useHelperProfile() {
