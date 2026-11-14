@@ -234,6 +234,9 @@ export const NOTIFICATION_TYPES = {
   JOB_COMPLETED: 'job_completed',
   JOB_EXPIRED: 'job_expired',
   JOB_EXPIRING_SOON: 'job_expiring_soon',
+  // R7 item 1 + auto-cancel: tới giờ làm chưa có thợ / tự động hủy quá giờ +5'
+  JOB_NO_HELPER_AT_START: 'job_no_helper_at_start',
+  JOB_AUTO_CANCELLED: 'job_auto_cancelled',
   // Helper
   NEW_JOB_NEARBY: 'new_job_nearby',
   QUOTE_ACCEPTED: 'quote_accepted',

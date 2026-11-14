@@ -254,6 +254,14 @@ export class JobsController {
     return this.jobsService.updateJob(user.sub, jobId, dto);
   }
 
+  // R7 item 3: nút "Gửi lại cho thợ gần đây" trên banner đơn quá giờ hẹn.
+  @Post(':jobId/rebroadcast')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: '[Customer] Gửi lại đơn đang mở cho thợ gần đây' })
+  async rebroadcastJob(@CurrentUser() user: { sub: string }, @Param('jobId') jobId: string) {
+    return this.jobsService.rebroadcastJob(user.sub, jobId);
+  }
+
   // ─── Get quotes for job ───────────────────────────────────────────────────
 
   @Get(':jobId/quotes')

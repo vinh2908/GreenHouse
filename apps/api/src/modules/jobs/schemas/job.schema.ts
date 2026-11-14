@@ -333,6 +333,25 @@ export class Job {
   @Prop({ default: false })
   expiry_reminder_sent?: boolean;
 
+  // R7 item 3: lần gửi lại đơn cho thợ gần đây gần nhất (chống spam nút gửi lại)
+  @Prop()
+  last_rebroadcast_at?: Date;
+
+  // R7 item 1: khóa "giờ bắt đầu" đã gửi thông báo chưa có thợ (dạng
+  // "YYYY-MM-DDTHH:MM" — ngày + giờ làm). Dời giờ (B7) đổi khóa → đồng hồ
+  // 5 phút của rule auto-cancel chạy lại theo giờ mới.
+  @Prop()
+  overdue_notified_for?: string;
+
+  // R7 watchdog (iii)/(iv): cờ đơn có nguy cơ kẹt (thợ chưa bắt đầu sau
+  // giờ hẹn / khách chưa nghiệm thu nhiều ngày) + mốc lần đầu phát hiện,
+  // để admin lọc/xem. Chỉ phát hiện + nhắc — không tự hủy/hoàn.
+  @Prop({ type: [String], default: [] })
+  at_risk_flags?: string[];
+
+  @Prop()
+  at_risk_detected_at?: Date;
+
   // B101: đã gửi thông báo ưu đãi riêng hết hạn cho thợ (1 lần)
   @Prop({ default: false })
   private_offer_expiry_notified?: boolean;

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { formatTime, formatRelativeTime } from '@/utils/date-format';
+import { formatDate, formatTime, formatRelativeTime } from '@/utils/date-format';
+import Toast from 'react-native-toast-message';
 import {
   View,
   Text,
@@ -15,8 +16,10 @@ import { useRouter } from 'expo-router';
 import { ChevronRight, Plus, Clock, MapPin, ClipboardList } from 'lucide-react-native';
 import dayjs from 'dayjs';
 import { useAuthStore } from '@/stores/auth.store';
-import { useMyJobs, useMyProfile } from '@/hooks/use-api';
+import { useMyJobs, useMyProfile, useRebroadcastJob } from '@/hooks/use-api';
 import { useTranslation } from '@/hooks/use-i18n';
+import { OverdueJobBanner } from '@/components/common/overdue-job-banner';
+import { isOverdueUnassigned } from '@/utils/job-overdue';
 import {
   Card,
   JobStatusBadge,
@@ -49,6 +52,26 @@ export default function CustomerJobsScreen() {
   const isHelper = user?.active_role === 'helper';
   const [page, setPage] = useState(1);
   const [accumulatedJobs, setAccumulatedJobs] = useState<any[]>([]);
+  // R7 item 3: nút gửi lại trên banner quá giờ (theo dõi đúng đơn đang gửi).
+  const rebroadcastJob = useRebroadcastJob();
+  const [rebroadcastingId, setRebroadcastingId] = useState<string | null>(null);
+
+  const handleRebroadcast = async (jobId: string) => {
+    if (rebroadcastJob.isPending) return;
+    setRebroadcastingId(jobId);
+    try {
+      await rebroadcastJob.mutateAsync(jobId);
+      Toast.show({ type: 'success', text1: t('overdue_rebroadcast_sent') });
+    } catch (err: any) {
+      const msg = err?.response?.data?.message;
+      Toast.show({
+        type: 'error',
+        text1: typeof msg === 'string' && msg ? msg : t('overdue_rebroadcast_cooldown'),
+      });
+    } finally {
+      setRebroadcastingId(null);
+    }
+  };
 
   const {
     data: jobs,
@@ -320,191 +343,228 @@ export default function CustomerJobsScreen() {
               private_offer_helper_id?: string;
               is_warranty?: boolean;
               is_sos?: boolean;
+              preferred_date?: string;
+              preferred_time_start?: string;
             }) => (
-              <TouchableOpacity
-                key={job._id}
-                activeOpacity={0.85}
-                onPress={() =>
-                  router.push({ pathname: '/job-detail/[id]', params: { id: job._id } })
-                }
-              >
-                <Card style={{ gap: 10, padding: 16 }}>
-                  <View
-                    style={{
-                      flexDirection: 'row',
-                      justifyContent: 'space-between',
-                      alignItems: 'flex-start',
-                    }}
-                  >
-                    <Text
+              <View key={job._id} style={{ gap: 10 }}>
+                <TouchableOpacity
+                  activeOpacity={0.85}
+                  onPress={() =>
+                    router.push({ pathname: '/job-detail/[id]', params: { id: job._id } })
+                  }
+                >
+                  <Card style={{ gap: 10, padding: 16 }}>
+                    <View
                       style={{
-                        fontWeight: '800',
-                        fontSize: fs(15),
-                        color: tc.text,
-                        flex: 1,
-                        marginRight: 8,
-                        lineHeight: Math.round(fs(20)),
+                        flexDirection: 'row',
+                        justifyContent: 'space-between',
+                        alignItems: 'flex-start',
                       }}
-                      numberOfLines={2}
                     >
-                      {job.title}
-                    </Text>
-                    {/* B109: badge SOS đỏ cho đơn SOS */}
-                    {job.is_sos ? (
-                      <View
+                      <Text
                         style={{
-                          backgroundColor: '#DC2626',
-                          borderRadius: 6,
-                          paddingHorizontal: 6,
-                          paddingVertical: 2,
-                          marginRight: 6,
+                          fontWeight: '800',
+                          fontSize: fs(15),
+                          color: tc.text,
+                          flex: 1,
+                          marginRight: 8,
+                          lineHeight: Math.round(fs(20)),
                         }}
+                        numberOfLines={2}
                       >
-                        <Text style={{ color: '#fff', fontWeight: '800', fontSize: fs(11) }}>
-                          SOS
+                        {job.title}
+                      </Text>
+                      {/* B109: badge SOS đỏ cho đơn SOS */}
+                      {job.is_sos ? (
+                        <View
+                          style={{
+                            backgroundColor: '#DC2626',
+                            borderRadius: 6,
+                            paddingHorizontal: 6,
+                            paddingVertical: 2,
+                            marginRight: 6,
+                          }}
+                        >
+                          <Text style={{ color: '#fff', fontWeight: '800', fontSize: fs(11) }}>
+                            SOS
+                          </Text>
+                        </View>
+                      ) : null}
+                      <JobStatusBadge status={job.status} />
+                    </View>
+
+                    <View
+                      style={{
+                        flexDirection: 'row',
+                        gap: 8,
+                        alignItems: 'center',
+                        flexWrap: 'wrap',
+                      }}
+                    >
+                      <Badge
+                        label={tService(job.service_id) || t('jobs_service_fallback')}
+                        size="sm"
+                      />
+                      {job.recurring_plan_id ? (
+                        <Badge
+                          label={t('jobs_badge_recurring')}
+                          size="sm"
+                          color="#EFF6FF"
+                          textColor="#1D4ED8"
+                        />
+                      ) : null}
+                      {job.private_offer_helper_id ? (
+                        <Badge
+                          label={t('jobs_badge_private')}
+                          size="sm"
+                          color="#FDF2F8"
+                          textColor="#9D174D"
+                        />
+                      ) : null}
+                      {job.is_warranty ? (
+                        <Badge
+                          label={t('jobs_badge_warranty')}
+                          size="sm"
+                          color="#FFFBEB"
+                          textColor="#92400E"
+                        />
+                      ) : null}
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
+                        <MapPin size={13} color={COLORS.gray[500]} />
+                        <Text
+                          style={{ fontSize: fs(12), color: tc.textSecondary, fontWeight: '500' }}
+                        >
+                          {job.address?.district || job.address?.city || t('jobs_unspecified')}
                         </Text>
                       </View>
-                    ) : null}
-                    <JobStatusBadge status={job.status} />
-                  </View>
-
-                  <View
-                    style={{ flexDirection: 'row', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}
-                  >
-                    <Badge
-                      label={tService(job.service_id) || t('jobs_service_fallback')}
-                      size="sm"
-                    />
-                    {job.recurring_plan_id ? (
-                      <Badge
-                        label={t('jobs_badge_recurring')}
-                        size="sm"
-                        color="#EFF6FF"
-                        textColor="#1D4ED8"
-                      />
-                    ) : null}
-                    {job.private_offer_helper_id ? (
-                      <Badge
-                        label={t('jobs_badge_private')}
-                        size="sm"
-                        color="#FDF2F8"
-                        textColor="#9D174D"
-                      />
-                    ) : null}
-                    {job.is_warranty ? (
-                      <Badge
-                        label={t('jobs_badge_warranty')}
-                        size="sm"
-                        color="#FFFBEB"
-                        textColor="#92400E"
-                      />
-                    ) : null}
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
-                      <MapPin size={13} color={COLORS.gray[500]} />
-                      <Text
-                        style={{ fontSize: fs(12), color: tc.textSecondary, fontWeight: '500' }}
-                      >
-                        {job.address?.district || job.address?.city || t('jobs_unspecified')}
-                      </Text>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
+                        <Clock size={13} color={COLORS.gray[400]} />
+                        <Text style={{ fontSize: fs(12), color: tc.textMuted }}>
+                          {formatRelativeTime(job.created_at, lang)}
+                        </Text>
+                      </View>
                     </View>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
-                      <Clock size={13} color={COLORS.gray[400]} />
-                      <Text style={{ fontSize: fs(12), color: tc.textMuted }}>
-                        {formatRelativeTime(job.created_at, lang)}
-                      </Text>
-                    </View>
-                  </View>
 
-                  <View
-                    style={{
-                      flexDirection: 'row',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      paddingTop: 10,
-                      borderTopWidth: 1,
-                      borderTopColor: tc.border,
-                    }}
-                  >
-                    {(() => {
-                      if (job.status === 'cancelled') {
-                        return (
-                          <Text
-                            style={{ fontSize: fs(12.5), color: COLORS.error, fontWeight: '700' }}
-                          >
-                            {t('jobs_customer_cancelled')}
-                          </Text>
-                        );
-                      }
-                      if (job.status === 'refunded') {
+                    <View
+                      style={{
+                        flexDirection: 'row',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        paddingTop: 10,
+                        borderTopWidth: 1,
+                        borderTopColor: tc.border,
+                      }}
+                    >
+                      {(() => {
+                        if (job.status === 'cancelled') {
+                          return (
+                            <Text
+                              style={{ fontSize: fs(12.5), color: COLORS.error, fontWeight: '700' }}
+                            >
+                              {t('jobs_customer_cancelled')}
+                            </Text>
+                          );
+                        }
+                        if (job.status === 'refunded') {
+                          return (
+                            <Text
+                              style={{
+                                fontSize: fs(12.5),
+                                color: tc.textSecondary,
+                                fontWeight: '700',
+                              }}
+                            >
+                              {t('status_refunded')}
+                            </Text>
+                          );
+                        }
+                        if (job.status === 'disputed') {
+                          return (
+                            <Text
+                              style={{ fontSize: fs(12.5), color: COLORS.error, fontWeight: '700' }}
+                            >
+                              {t('status_disputed')}
+                            </Text>
+                          );
+                        }
+                        if (job.status === 'completed') {
+                          return (
+                            <Text
+                              style={{
+                                fontSize: fs(12.5),
+                                color: COLORS.success,
+                                fontWeight: '700',
+                              }}
+                            >
+                              {job.helper_id
+                                ? `${t('jobs_helper_label')} ${(job.helper_id as any).full_name}`
+                                : t('status_completed')}
+                            </Text>
+                          );
+                        }
+                        if (job.helper_id) {
+                          return (
+                            <Text
+                              style={{
+                                fontSize: fs(13),
+                                color: tc.textSecondary,
+                                fontWeight: '600',
+                              }}
+                            >
+                              {t('jobs_helper_label')}{' '}
+                              <Text style={{ color: tc.text, fontWeight: '700' }}>
+                                {(job.helper_id as any).full_name}
+                              </Text>
+                            </Text>
+                          );
+                        }
                         return (
                           <Text
                             style={{
                               fontSize: fs(12.5),
-                              color: tc.textSecondary,
+                              color: job.total_quotes_count > 0 ? COLORS.primary : COLORS.gray[500],
                               fontWeight: '700',
                             }}
                           >
-                            {t('status_refunded')}
+                            {job.total_quotes_count > 0
+                              ? t('jobs_quotes_count', { count: job.total_quotes_count })
+                              : t('jobs_waiting_quotes')}
                           </Text>
                         );
-                      }
-                      if (job.status === 'disputed') {
-                        return (
-                          <Text
-                            style={{ fontSize: fs(12.5), color: COLORS.error, fontWeight: '700' }}
-                          >
-                            {t('status_disputed')}
-                          </Text>
-                        );
-                      }
-                      if (job.status === 'completed') {
-                        return (
-                          <Text
-                            style={{ fontSize: fs(12.5), color: COLORS.success, fontWeight: '700' }}
-                          >
-                            {job.helper_id
-                              ? `${t('jobs_helper_label')} ${(job.helper_id as any).full_name}`
-                              : t('status_completed')}
-                          </Text>
-                        );
-                      }
-                      if (job.helper_id) {
-                        return (
-                          <Text
-                            style={{ fontSize: fs(13), color: tc.textSecondary, fontWeight: '600' }}
-                          >
-                            {t('jobs_helper_label')}{' '}
-                            <Text style={{ color: tc.text, fontWeight: '700' }}>
-                              {(job.helper_id as any).full_name}
-                            </Text>
-                          </Text>
-                        );
-                      }
-                      return (
+                      })()}
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}>
                         <Text
-                          style={{
-                            fontSize: fs(12.5),
-                            color: job.total_quotes_count > 0 ? COLORS.primary : COLORS.gray[500],
-                            fontWeight: '700',
-                          }}
+                          style={{ fontSize: fs(12.5), color: COLORS.primary, fontWeight: '700' }}
                         >
-                          {job.total_quotes_count > 0
-                            ? t('jobs_quotes_count', { count: job.total_quotes_count })
-                            : t('jobs_waiting_quotes')}
+                          {t('jobs_details')}
                         </Text>
-                      );
-                    })()}
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}>
-                      <Text
-                        style={{ fontSize: fs(12.5), color: COLORS.primary, fontWeight: '700' }}
-                      >
-                        {t('jobs_details')}
-                      </Text>
-                      <ChevronRight size={14} color={COLORS.primary} />
+                        <ChevronRight size={14} color={COLORS.primary} />
+                      </View>
                     </View>
-                  </View>
-                </Card>
-              </TouchableOpacity>
+                  </Card>
+                </TouchableOpacity>
+
+                {/* R7 item 3: banner đơn quá giờ hẹn chưa có thợ — đặt NGOÀI
+                    TouchableOpacity của thẻ để 3 nút bấm không kích hoạt điều
+                    hướng sang chi tiết. Dời giờ mở thẳng modal sửa ở màn chi
+                    tiết (focus=edit); hủy mở màn chi tiết (cần nhập lý do). */}
+                {isOverdueUnassigned(job as any) && (
+                  <OverdueJobBanner
+                    timeLabel={`${job.preferred_time_start ?? ''} · ${job.preferred_date ? formatDate(job.preferred_date, lang) : ''}`}
+                    onReschedule={() =>
+                      router.push({
+                        pathname: '/job-detail/[id]',
+                        params: { id: job._id, focus: 'edit' },
+                      })
+                    }
+                    onRebroadcast={() => handleRebroadcast(job._id)}
+                    onCancel={() =>
+                      router.push({ pathname: '/job-detail/[id]', params: { id: job._id } })
+                    }
+                    rebroadcasting={rebroadcastingId === job._id}
+                  />
+                )}
+              </View>
             ),
           )
         )}

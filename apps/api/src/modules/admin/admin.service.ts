@@ -592,9 +592,11 @@ export class AdminService {
 
   // ─── Jobs ─────────────────────────────────────────────────────────────────
 
-  async getJobs(status?: string, search?: string, page = 1, limit = 20) {
+  async getJobs(status?: string, search?: string, page = 1, limit = 20, atRisk?: boolean) {
     const query: Record<string, unknown> = {};
     if (status) query['status'] = status;
+    // R7 watchdog: at_risk=true chỉ lấy đơn đang mang cờ nguy cơ kẹt.
+    if (atRisk) query['at_risk_flags'] = { $exists: true, $ne: [] };
     if (search?.trim()) {
       const safeSearch = escapeRegex(search.trim());
       query['$or'] = [

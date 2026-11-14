@@ -950,6 +950,30 @@ export const STRINGS = {
   booking_step_address_title: { vi: 'Địa chỉ làm việc', en: 'Work address' },
   booking_step_schedule_title: { vi: 'Chọn lịch hẹn', en: 'Select schedule' },
   booking_start_time_title: { vi: 'Thời gian bắt đầu làm việc', en: 'Work start time' },
+
+  // ─── R7 item 3: Banner đơn quá giờ hẹn chưa có thợ ──────────────────────
+  overdue_banner_title: {
+    vi: 'Đã quá giờ hẹn, chưa có thợ nhận',
+    en: 'Past the scheduled time — no helper has taken this job yet',
+  },
+  overdue_banner_body: {
+    vi: 'Đơn đến giờ làm mà chưa có thợ nào nhận. Dời giờ, gửi lại cho thợ gần đây, hoặc hủy đơn.',
+    en: 'The job start time has passed and no helper has taken it yet. Reschedule, re-broadcast to nearby helpers, or cancel the job.',
+  },
+  overdue_action_reschedule: { vi: 'Dời giờ', en: 'Reschedule' },
+  overdue_action_rebroadcast: {
+    vi: 'Gửi lại cho thợ gần đây',
+    en: 'Re-broadcast to nearby helpers',
+  },
+  overdue_action_cancel: { vi: 'Hủy đơn', en: 'Cancel job' },
+  overdue_rebroadcast_sent: {
+    vi: 'Đã gửi lại đơn cho thợ gần đây',
+    en: 'Job re-broadcast to nearby helpers',
+  },
+  overdue_rebroadcast_cooldown: {
+    vi: 'Vừa gửi lại, vui lòng đợi vài phút rồi gửi lại',
+    en: 'Just re-broadcast — please wait a few minutes before sending again',
+  },
   booking_tap_to_open_calendar: {
     vi: 'Bấm để mở lịch tháng trong bottom sheet',
     en: 'Tap to open monthly calendar sheet',
@@ -2371,6 +2395,11 @@ export function formatNotificationTitle(
         return 'Job Expired';
       case 'job_expiring_soon':
         return 'Job Expiring Soon';
+      // R7 item 1 + auto-cancel: EN titles for the two new types (approved wording).
+      case 'job_no_helper_at_start':
+        return 'No helper has taken your job yet';
+      case 'job_auto_cancelled':
+        return 'Job automatically cancelled';
       case 'sos_backup_request':
         return 'Emergency Backup Invitation (SOS)';
       case 'sos_backup_decision_request':
@@ -2679,6 +2708,19 @@ export function formatNotificationBody(
     const adminCancel = b.match(/^Công việc\s*(".*?"|'.*?'|“.*?”)\s*đã bị hủy\.\s*Lý do:\s*(.*)$/i);
     if (adminCancel) return `Job ${adminCancel[1]} has been cancelled. Reason: ${adminCancel[2]}`;
     return 'The job has been cancelled.';
+  }
+  // R7 item 1 + auto-cancel: EN bodies for the two new types.
+  if (type === 'job_no_helper_at_start') {
+    const m = b.match(/Đơn\s*(".*?"|'.*?'|“.*?”).*?đến giờ làm\s*\((\d{1,2}:\d{2})/i);
+    return m
+      ? `Job ${m[1]} is due at ${m[2]} today but no helper has taken it yet. You can reschedule, re-broadcast to nearby helpers, or cancel the job.`
+      : 'Your job is due now but no helper has taken it yet. You can reschedule, re-broadcast to nearby helpers, or cancel the job.';
+  }
+  if (type === 'job_auto_cancelled') {
+    const m = b.match(/Đơn\s*(".*?"|'.*?'|“.*?”)/i);
+    return m
+      ? `Job ${m[1]} was automatically cancelled because no helper had taken it 5 minutes past the scheduled time.`
+      : 'Your job was automatically cancelled because no helper had taken it 5 minutes past the scheduled time.';
   }
   if (type === 'job_updated') {
     return 'The job details have been updated.';
