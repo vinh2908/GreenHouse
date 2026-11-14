@@ -98,10 +98,8 @@ export function usePushNotifications() {
         }
         savedTokenRef.current = token;
         try {
-          console.log('[usePushNotifications] Registering push token to server:', token);
           const language = useSettingsStore.getState().language;
           await apiClient.patch('/users/me/push-token', { token, language });
-          console.log('[usePushNotifications] Push token registered to server successfully');
         } catch (err: any) {
           console.warn(
             '[usePushNotifications] Failed to patch push token to server:',
@@ -119,7 +117,6 @@ export function usePushNotifications() {
       const token = savedTokenRef.current;
       savedTokenRef.current = null;
       if (token) {
-        console.log('[usePushNotifications] Unregistering push token from server:', token);
         void apiClient.delete('/users/me/push-token', { data: { token } }).catch((err: any) => {
           console.warn(
             '[usePushNotifications] Failed to unregister push token:',

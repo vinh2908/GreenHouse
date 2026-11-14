@@ -71,7 +71,7 @@ export default function ReceiptScreen() {
   const paymentMethodLabel = (() => {
     switch (job.payment_method) {
       case 'wallet':
-        return lang === 'en' ? 'GreenHouse Escrow Wallet' : 'Ví ký quỹ GreenHouse';
+        return lang === 'en' ? 'GreenHouse Wallet' : 'Ví GreenHouse';
       case 'momo':
         return lang === 'en' ? 'MoMo / ZaloPay' : 'Ví điện tử MoMo / ZaloPay';
       case 'vietqr':
