@@ -817,7 +817,7 @@ export class SosBackupService implements OnModuleInit, OnModuleDestroy {
         .create({
           userId: c.helperId,
           type: NOTIFICATION_TYPES.SOS_BACKUP_REQUEST,
-          title: '🚨 Lời mời hỗ trợ khẩn cấp (SOS Backup)',
+          title: 'Lời mời hỗ trợ khẩn cấp (SOS Backup)',
           body: `Có đơn SOS "${sos.job_title}" tại ${locStr || 'khu vực của bạn'} đang cần bạn hỗ trợ thay thế. Thu nhập: ${payoutStr}.`,
           payload: {
             ...this.popupPayload(sos),

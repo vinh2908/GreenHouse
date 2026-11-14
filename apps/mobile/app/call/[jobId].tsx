@@ -246,9 +246,6 @@ export default function CallScreen() {
         .mutateAsync(sessionId)
         .then(s => {
           setSessionBoth(s);
-          console.log(
-            `[CallScreen] Callee fetched token for userId: ${s.my_user_id}, partner: ${s.partner_id}`,
-          );
           const connected = stringeeService.ensureConnected(s.token, s.my_user_id);
           if (!connected) {
             setErrorMsg(
@@ -313,9 +310,6 @@ export default function CallScreen() {
       .mutateAsync(jobId)
       .then(s => {
         setSessionBoth(s);
-        console.log(
-          `[CallScreen] Caller fetched token for userId: ${s.my_user_id}, partner: ${s.partner_id}`,
-        );
         const connected = stringeeService.ensureConnected(s.token, s.my_user_id);
         if (!connected) {
           setErrorMsg(

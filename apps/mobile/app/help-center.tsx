@@ -269,7 +269,7 @@ export default function HelpCenterScreen() {
               <Text
                 style={{ fontSize: fs(11.5), color: 'rgba(255,255,255,0.6)', fontWeight: '600' }}
               >
-                {lang === 'en' ? 'TOLL-FREE HOTLINE' : 'HOTLINE MIỄN PHÍ CƯỚC'}
+                {lang === 'en' ? 'HOTLINE' : 'ĐƯỜNG DÂY NÓNG'}
               </Text>
               <Text style={{ fontSize: fs(20), fontWeight: '900', color: '#34D399', marginTop: 2 }}>
                 {OFFICIAL_CONTACT_PHONE_DISPLAY}
