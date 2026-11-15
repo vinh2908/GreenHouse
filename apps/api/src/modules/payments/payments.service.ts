@@ -1295,21 +1295,6 @@ export class PaymentsService {
     return txs.reduce((sum, tx) => sum + (tx.amount || 0), 0);
   }
 
-  /** P0-4: Kiểm tra đơn hàng đã có giao dịch tiền mặt thành công được ghi nhận chưa */
-  async hasRecordedCashPayment(jobId: string): Promise<boolean> {
-    if (!this.transactionModel) return false;
-    const tx = await this.transactionModel
-      .findOne({
-        job_id: new Types.ObjectId(jobId),
-        'metadata.cash_paid_in_hand': true,
-        status: 'success',
-      })
-      .select('_id')
-      .lean()
-      .exec();
-    return Boolean(tx);
-  }
-
   /** P0-3 & F6: Tính tổng số tiền net khách đã thanh toán thành công cho đơn hàng (tổng thanh toán trừ đi tổng đã hoàn tiền) */
   async getTotalPaidForJob(jobId: string, session?: ClientSession | null): Promise<number> {
     if (!this.transactionModel || typeof this.transactionModel.find !== 'function') return 0;
