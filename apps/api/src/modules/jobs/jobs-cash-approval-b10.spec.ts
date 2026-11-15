@@ -25,8 +25,9 @@
  * Pattern: mocked models + mocked paymentsService, as in p0-fixes.spec.ts
  * (P0-4 block). The mocked hasRecordedCashPayment resolving TRUE stands
  * in for the cash transaction mockPayJob records — the gate only ever
- * consulted that seam. All four tests FAIL on base (5684c45) and PASS
- * after the fix.
+ * consulted that seam. B10-1, B10-3 and B10-4 FAIL on base (5684c45) and
+ * PASS after the fix; B10-2 (confirm → approve happy path) passes on base
+ * too, by design — it guards the post-confirm flow, not the bypass.
  */
 import { Test, TestingModule } from '@nestjs/testing';
 import { getModelToken } from '@nestjs/mongoose';
