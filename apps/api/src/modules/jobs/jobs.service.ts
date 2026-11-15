@@ -4038,11 +4038,11 @@ export class JobsService implements OnModuleInit {
     if (dto.completion_notes) {
       job.completion_notes = dto.completion_notes;
     }
-    // P0-4: Thợ xác nhận đã nhận tiền mặt ngay khi nộp bằng chứng hoàn thành
-    if (dto.cash_received) {
-      job.helper_cash_confirmed = true;
-      job.helper_cash_confirmed_at = new Date();
-    }
+    // B10 (R10): KHÔNG còn set helper_cash_confirmed ở đây. Nhánh cũ
+    // (dto.cash_received) là dead code — không client nào gửi field này
+    // (grep toàn repo: 0 sender) — và nó gộp "nộp ảnh hoàn thành" với
+    // "xác nhận đã nhận tiền mặt", cho phép set cờ mà không cần thợ bấm
+    // xác nhận. Xác nhận tiền mặt duy nhất qua confirmCashPayment.
     this.addEvent(
       job,
       JobStatus.PENDING_REVIEW,
@@ -4137,13 +4137,12 @@ export class JobsService implements OnModuleInit {
     }
 
     // P0-4: Nghiệm thu bằng tiền mặt bắt buộc thợ đã xác nhận nhận tiền mặt
+    // B10 (R10): CHỈ helper_cash_confirmed mới mở gate. Giao dịch tiền mặt
+    // do chính khách bấm trả (mockPayJob ghi metadata.cash_paid_in_hand)
+    // KHÔNG được thay thế xác nhận của thợ — nếu không gate tự thỏa ngay
+    // khi khách trả tiền, thợ không bao giờ cần bấm xác nhận.
     if (effectivePaymentMethod === 'cash' && !existing.is_warranty) {
-      const hasCashConfirmed = existing.helper_cash_confirmed === true;
-      const hasRecordedCashTx =
-        typeof this.paymentsService?.hasRecordedCashPayment === 'function'
-          ? await this.paymentsService.hasRecordedCashPayment(String(existing._id))
-          : false;
-      if (!hasCashConfirmed && !hasRecordedCashTx) {
+      if (existing.helper_cash_confirmed !== true) {
         throw new BadRequestException(
           'Thợ chưa xác nhận đã nhận tiền mặt từ khách. Vui lòng yêu cầu thợ bấm xác nhận đã nhận tiền mặt trước khi nghiệm thu đơn tiền mặt.',
         );

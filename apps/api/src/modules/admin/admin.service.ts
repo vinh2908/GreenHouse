@@ -729,14 +729,12 @@ export class AdminService {
       const origContractCompletedAt = contract?.completed_at;
 
       // F2 & I4: Kiểm tra tiền mặt & UNPAID TRƯỚC LẦN LƯU ĐẦU TIÊN
+      // B10 (R10): giống gate P0-4 ở approveCompletion — CHỈ
+      // helper_cash_confirmed mới mở gate; giao dịch tiền mặt do khách
+      // bấm trả không thay thế được xác nhận của thợ.
       if (job.helper_id) {
         if (isCash && !isWarranty) {
-          const hasCashConfirmed = job.helper_cash_confirmed === true;
-          let hasRecordedCashTx = false;
-          if (typeof this.paymentsService?.hasRecordedCashPayment === 'function') {
-            hasRecordedCashTx = await this.paymentsService.hasRecordedCashPayment(jobId);
-          }
-          if (!hasCashConfirmed && !hasRecordedCashTx) {
+          if (job.helper_cash_confirmed !== true) {
             throw new BadRequestException(
               'Thợ chưa xác nhận đã nhận tiền mặt từ khách. Không thể hoàn thành đơn tiền mặt.',
             );
