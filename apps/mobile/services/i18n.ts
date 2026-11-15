@@ -1944,6 +1944,13 @@ export const SERVER_ERROR_EN_MAP: Record<string, string> = {
     'Helper has not confirmed receiving cash from customer. Cannot complete cash job.',
   'Thợ chưa xác nhận đã nhận tiền mặt từ khách':
     'Helper has not confirmed receiving cash from customer',
+  // R10: P0-4 ở approveCompletion (jobs.service.ts) — message đầy đủ, khác
+  // biến thể admin ('... Không thể hoàn thành đơn tiền mặt.') nên exact-match
+  // cũ miss và EN rơi về fallback chung 'Something went wrong...' (khách
+  // không biết phải yêu cầu thợ bấm xác nhận). Không có entry này, banner đỏ
+  // inline ở modal nghiệm thu hiện fallback chung thay vì hướng dẫn.
+  'Thợ chưa xác nhận đã nhận tiền mặt từ khách. Vui lòng yêu cầu thợ bấm xác nhận đã nhận tiền mặt trước khi nghiệm thu đơn tiền mặt.':
+    'Helper has not confirmed receiving cash from customer. Please ask the helper to tap "Confirm cash received" before approving this cash job.',
 };
 
 export function mapServerErrorMessage(rawMessage: unknown, lang: AppLanguage = 'vi'): string {
