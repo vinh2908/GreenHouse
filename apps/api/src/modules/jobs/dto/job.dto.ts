@@ -290,11 +290,6 @@ export class CompleteJobDto {
   @IsOptional()
   @IsString()
   completion_notes?: string;
-
-  @ApiPropertyOptional({ description: 'P0-4: Thợ xác nhận đã nhận tiền mặt từ khách' })
-  @IsOptional()
-  @IsBoolean()
-  cash_received?: boolean;
 }
 
 export class ReviewJobDto {
