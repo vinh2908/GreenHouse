@@ -24,6 +24,10 @@ describe('QA extended workflows: SOS, admin actions, live sockets', () => {
     qa = await createQaApp();
     await qa.app.listen(0, '127.0.0.1');
     baseUrl = await qa.app.getUrl();
+    // $geoNear trong createSosJob cần index 2dsphere trên location — đồng bộ
+    // index trước khi test chạy, tránh lỗi "unable to find index for $geoNear
+    // query" khi autoIndex chưa kịp build (mẫu: jobs.e2e.spec.ts).
+    await qa.app.get(getModelToken('HelperProfile')).syncIndexes();
     const service = await qa.app.get(getModelToken('Service')).findById(qa.serviceId).lean();
     delete service._id;
     emergencyId = String(
