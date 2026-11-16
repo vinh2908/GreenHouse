@@ -34,6 +34,7 @@ import { useAuthStore } from '@/stores/auth.store';
 import { useMyProfile, useSwitchRole, useLoyaltyAccount, useWallet } from '@/hooks/use-api';
 import { Avatar, Card, COLORS, Separator, LoadingSpinner, useThemeColors } from '@/components/ui';
 import { useTranslation, fs } from '@/hooks/use-i18n';
+import { roleSwitchFailureToast } from '@/utils/role-switch-toast';
 import { WalletBalanceDisplay } from '@/components/common/wallet-balance-display';
 import { DisplaySettingsSection } from '@/components/common/display-settings';
 import { AppPermissionsSection } from '@/components/common/initial-permissions-modal';
@@ -157,11 +158,8 @@ export default function CustomerProfileScreen() {
       router.replace('/(helper)/dashboard');
     } catch (err: any) {
       useAuthStore.getState().setSwitchingRole(false);
-      Toast.show({
-        type: 'error',
-        text1: 'Đổi vai trò thất bại',
-        text2: err?.response?.data?.message || 'Vui lòng thử lại sau',
-      });
+      // R11 (M3): toast lỗi đổi vai trò theo ngôn ngữ giao diện.
+      Toast.show({ type: 'error', ...roleSwitchFailureToast(lang, err?.response?.data?.message) });
     } finally {
       setIsSwitching(false);
     }

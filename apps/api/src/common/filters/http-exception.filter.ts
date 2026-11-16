@@ -20,6 +20,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
     let status = HttpStatus.INTERNAL_SERVER_ERROR;
     let message = 'Internal server error';
     let code = 'INTERNAL_ERROR';
+    let explicitCode: string | undefined;
     let details: unknown[] = [];
 
     if (exception instanceof HttpException) {
@@ -32,6 +33,13 @@ export class HttpExceptionFilter implements ExceptionFilter {
         const res = exceptionResponse as Record<string, unknown>;
         message = (res.message as string) || message;
         code = (res.error as string) || code;
+        // R11 (L10): exception có thể mang mã lỗi ổn định (res.code) để
+        // client match theo mã thay vì theo nội dung message tiếng Việt.
+        // Chỉ exception nào tự mang code mới đổi mã trả về; còn lại giữ
+        // nguyên hành vi cũ (mã theo HTTP status).
+        if (typeof res.code === 'string' && res.code.trim()) {
+          explicitCode = res.code.trim();
+        }
         details = Array.isArray(res.message) ? (res.message as unknown[]) : [];
         if (details.length > 0) {
           message = typeof details[0] === 'string' ? details[0] : 'Validation failed';
@@ -54,7 +62,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
       success: false,
       message,
       error: {
-        code: this.getErrorCode(status, code),
+        code: this.getErrorCode(status, explicitCode, code),
         details,
       },
     });
@@ -68,7 +76,10 @@ export class HttpExceptionFilter implements ExceptionFilter {
     );
   }
 
-  private getErrorCode(status: number, fallback: string): string {
+  private getErrorCode(status: number, explicitCode: string | undefined, fallback: string): string {
+    // Mã ổn định do exception tự mang (vd. EMAIL_NOT_VERIFIED) được ưu tiên
+    // hơn mã suy ra từ HTTP status.
+    if (explicitCode) return explicitCode;
     const codes: Record<number, string> = {
       400: 'BAD_REQUEST',
       401: 'UNAUTHORIZED',

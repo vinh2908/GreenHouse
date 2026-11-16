@@ -3,9 +3,9 @@
 // Vấn đề: server ĐÃ có endpoint POST /jobs/:id/confirm-cash
 // (jobsService.confirmCashPayment — chỉ set helper_cash_confirmed = true cho
 // thợ của đơn) nhưng app KHÔNG có UI nào gọi nó — nên nghiệm thu tiền mặt
-// không bao giờ thỏa được cổng P0-4 ở approveCompletion (yêu cầu
-// helper_cash_confirmed hoặc giao dịch tiền mặt đã ghi nhận) và đơn tiền mặt
-// kẹt ở bước 7. Nút này vá đường gọi còn thiếu đó.
+// không bao giờ thỏa được cổng P0-4 ở approveCompletion (R10: CHỈ
+// helper_cash_confirmed mới mở gate) và đơn tiền mặt kẹt ở bước 7. Nút này
+// vá đường gọi còn thiếu đó.
 //
 // Quy tắc hiện nút (thuần để jest của apps/api kiểm chứng được — apps/mobile
 // chưa có jest harness, cùng pattern với utils/evidence-reupload.ts):

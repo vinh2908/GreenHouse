@@ -1,5 +1,6 @@
 import {
   Injectable,
+  Logger,
   NotFoundException,
   ConflictException,
   BadRequestException,
@@ -14,9 +15,18 @@ import { HelperProfile, HelperProfileDocument } from '../helpers/schemas/helper-
 import { JobStatus } from '@homemate/types';
 import { NOTIFICATION_TYPES } from '@homemate/constants';
 import { NotificationsService } from '../notifications/notifications.service';
+import {
+  computeHelperScore,
+  countCancellationsInWindow,
+  helperScoreConfigFromEnv,
+  helperScoreInputFromProfile,
+  pruneCancellationTimestamps,
+} from '../helpers/utils/helper-score';
 
 @Injectable()
 export class ReviewsService {
+  private readonly logger = new Logger(ReviewsService.name);
+
   constructor(
     @InjectModel(Review.name) private reviewModel: Model<ReviewDocument>,
     @InjectModel(Job.name) private jobModel: Model<JobDocument>,
@@ -67,14 +77,45 @@ export class ReviewsService {
   }
 
   // Keep the denormalised rating on the helper profile in step with the reviews collection.
+  // R11 (Copilot review): rating nuôi thành phần Rating-20 của performance_score
+  // nên phải tính lại snapshot điểm tại đây — nếu không, điểm lưu trên hồ sơ
+  // (hiển thị trên thẻ thợ SOS) lỗi thời ngay sau đánh giá mới, tới tận lần
+  // hủy/miễn phạt tiếp theo mới được tính lại. Hoàn thành đơn KHÔNG cần tính
+  // lại: completed_jobs không phải input của công thức điểm.
   private async syncHelperRating(helperId: string) {
-    const stats = await this.getHelperRatingStats(helperId);
-    await this.helperModel
-      .updateOne(
-        { user_id: new Types.ObjectId(helperId) },
-        { rating: stats.average_rating, total_reviews: stats.total_reviews },
-      )
-      .exec();
+    // Ghi điểm là việc phụ: lỗi ở đây không được chặn việc tạo/sửa/xoá đánh
+    // giá (đánh giá đã lưu rồi mà sync ném lỗi thì client retry sẽ dính
+    // Conflict dù đánh giá đã tồn tại). Log warn để đối soát sau.
+    try {
+      const stats = await this.getHelperRatingStats(helperId);
+      const profile = await this.helperModel
+        .findOne({ user_id: new Types.ObjectId(helperId) })
+        .exec();
+      if (!profile) return;
+      profile.rating = stats.average_rating;
+      profile.total_reviews = stats.total_reviews;
+
+      const config = helperScoreConfigFromEnv(key => process.env[key]);
+      const now = new Date();
+      const pruned = pruneCancellationTimestamps(
+        profile.cancellation_timestamps ?? [],
+        now,
+        config.windowDays,
+      );
+      const count = countCancellationsInWindow(pruned, now, config.windowDays);
+      const result = computeHelperScore(helperScoreInputFromProfile(profile, count), config);
+      profile.cancellation_timestamps = pruned;
+      profile.cancellations_last_7_days = count;
+      profile.penalty_points = result.penaltyPoints;
+      profile.performance_score = result.total;
+      profile.score_breakdown = result.breakdown;
+      profile.score_updated_at = now;
+      await profile.save();
+    } catch (err) {
+      this.logger.warn(
+        `syncHelperRating failed for helper ${helperId}: ${err instanceof Error ? err.message : err}`,
+      );
+    }
   }
 
   // ─── Helper: Reply to review ───────────────────────────────────────────────

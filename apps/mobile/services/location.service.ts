@@ -30,6 +30,11 @@ export interface LocationResult {
   coordinates: [number, number]; // [longitude, latitude]
 }
 
+// R11 (L11): tên type lịch sử — dữ liệu THẬT đến từ Goong
+// (searchPlacesWithGoong), được map về shape này. Không đổi tên type vì nó
+// được dùng ở booking / job-detail / location-picker (churn không đáng giá
+// cho một cleanup); chỉ ghi rõ nguồn dữ liệu ở đây để lần sau không nhầm
+// với OSM/Nominatim. Goong-only: không có fallback OSM ở bất cứ đâu.
 export interface OsmPlace {
   place_id: number;
   display_name: string;

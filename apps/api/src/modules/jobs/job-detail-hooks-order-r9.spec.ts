@@ -126,7 +126,10 @@ describe('R9 job-detail hooks order', () => {
       .filter(({ text }) => /^\s*const canEdit =/.test(text));
     expect(defs.map(d => d.line)).toHaveLength(1);
     expect(defs[0].line).toBeLessThan(loadingReturn + 1);
-    expect(defs[0].text).toContain('!!job');
+    // R11 (L9): định nghĩa giờ gọi canEditJob(job?.status) thay cho biểu
+    // thức inline cũ — null-guard vẫn giữ (util trả false khi status null),
+    // và danh sách trạng thái cấm sửa sống trong util (có spec riêng).
+    expect(defs[0].text).toContain('canEditJob(job?.status)');
   });
 
   it('R9-4 (guard): helper detail page has no hook after its early returns', () => {

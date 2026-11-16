@@ -91,6 +91,7 @@ import { Button, Input, Card, COLORS, Skeleton, useThemeColors } from '@/compone
 import { VoucherInput } from '@/components/common/voucher-input';
 import type { VoucherPreview } from '@/hooks/use-api';
 import { useTranslation } from '@/hooks/use-i18n';
+import { isEmailNotVerifiedError } from '@/utils/booking-email-verified-error';
 
 const STEPS = [
   'booking_step_service',
@@ -1285,8 +1286,9 @@ export default function BookingScreen() {
       }
 
       // P0-7: server vẫn có thể chặn (vd. profile chưa kịp load ở pre-check)
-      // → đưa lối gửi lại mã thay vì toast lỗi trần.
-      if (typeof msgStr === 'string' && msgStr.includes('chưa được xác minh')) {
+      // → đưa lối gửi lại mã thay vì toast lỗi trần. R11 (L10): nhận diện
+      // theo mã lỗi EMAIL_NOT_VERIFIED, chuỗi message cũ chỉ là fallback.
+      if (isEmailNotVerifiedError(err)) {
         promptVerifyBeforeBooking(
           (myProfile as { email?: string } | undefined)?.email ??
             (useAuthStore.getState().user as { email?: string } | null)?.email,

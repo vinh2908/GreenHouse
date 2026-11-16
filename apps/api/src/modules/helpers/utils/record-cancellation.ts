@@ -49,29 +49,13 @@ export async function recordHelperCancellation(args: {
     .exec();
   if (!profile) return null;
 
-  // A7: Thợ kích hoạt SOS hợp lệ không bị tính vào cửa sổ phạt hủy thường ("thợ không bị phạt")
-  if (args.source === 'sos_initiation') {
-    const pruned = pruneCancellationTimestamps(
-      profile.cancellation_timestamps ?? [],
-      now,
-      config.windowDays,
-    );
-    const result = computeHelperScore(helperScoreInputFromProfile(profile, pruned.length), config);
-    profile.cancellation_timestamps = pruned;
-    profile.cancellations_last_7_days = pruned.length;
-    profile.penalty_points = result.penaltyPoints;
-    profile.performance_score = result.total;
-    profile.score_breakdown = result.breakdown;
-    profile.score_updated_at = now;
-    await profile.save();
-
-    return {
-      ...result,
-      just_penalized: false,
-      points_deducted_now: 0,
-    };
-  }
-
+  // H2 (R11): SOS ĐƯỢC tính vào cửa sổ hủy 7 ngày (điểm UY TÍN) như hủy đơn
+  // thường — 1 lần SOS = 1 lần thợ không thể hoàn thành đơn (xem comment
+  // trong createSos, sos-backup.service.ts). Nhánh này KHÔNG cộng
+  // late_cancellation_count / risk_score cho chính đơn SOS (phần "không bị
+  // phạt" của SOS) — hai trường đó chỉ được cộng trong cancelJob khi thợ hủy
+  // đơn thường, không nằm trong hàm này. Vì vậy SOS đi chung đường code với
+  // hủy đơn thường ở dưới: append mốc mới rồi recompute điểm.
   const pruned = pruneCancellationTimestamps(
     profile.cancellation_timestamps ?? [],
     now,

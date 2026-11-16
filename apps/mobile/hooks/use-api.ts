@@ -1003,9 +1003,9 @@ export function useCompleteJob() {
 // B5g: [Helper] Xác nhận đã nhận tiền mặt — POST /jobs/:id/confirm-cash.
 // Server chỉ set helper_cash_confirmed = true cho thợ của đơn; không có UI
 // nào gọi endpoint này nên nghiệm thu tiền mặt không thỏa được cổng P0-4 ở
-// approveCompletion (helper_cash_confirmed hoặc giao dịch tiền mặt đã ghi
-// nhận) và đơn tiền mặt kẹt ở bước 7. Nút chỉ hiện ở pending_review + luồng
-// tiền mặt (xem utils/cash-confirm.ts — màn helper-job-detail).
+// approveCompletion (R10: CHỈ helper_cash_confirmed mới mở gate) và đơn tiền
+// mặt kẹt ở bước 7. Nút chỉ hiện ở pending_review + luồng tiền mặt (xem
+// utils/cash-confirm.ts — màn helper-job-detail).
 export function useConfirmCashPayment() {
   const qc = useQueryClient();
   return useMutation({

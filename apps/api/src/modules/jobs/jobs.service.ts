@@ -1312,9 +1312,13 @@ export class JobsService implements OnModuleInit {
     // A103: Chặn đặt đơn khi tài khoản chưa xác minh email
     const customerUser = await this.userModel.findById(customerId).select('is_verified').lean();
     if (customerUser && customerUser.is_verified === false) {
-      throw new BadRequestException(
-        'Tài khoản chưa được xác minh qua email. Vui lòng xác minh email trước khi tạo đơn.',
-      );
+      // R11 (L10): mang mã ổn định EMAIL_NOT_VERIFIED để client match theo
+      // mã thay vì theo nội dung message tiếng Việt (xem HttpExceptionFilter).
+      throw new BadRequestException({
+        message:
+          'Tài khoản chưa được xác minh qua email. Vui lòng xác minh email trước khi tạo đơn.',
+        code: 'EMAIL_NOT_VERIFIED',
+      });
     }
 
     // A10: Đơn yêu cầu bắt buộc phải có ít nhất dịch vụ trong danh mục hoặc tên dịch vụ tùy chỉnh
@@ -4089,6 +4093,29 @@ export class JobsService implements OnModuleInit {
     if (job.helper_id?.toString() !== helperId) {
       throw new ForbiddenException('Chỉ thợ của đơn hàng mới có quyền xác nhận nhận tiền mặt');
     }
+    // R11 (L2): chỉ xác nhận được ở PENDING_REVIEW (bước 7, chờ nghiệm thu)
+    // — giống nút client (shouldShowCashConfirmButton). Xác nhận sớm ở trạng
+    // thái khác sẽ nằm sẵn đó và tự thỏa gate P0-4/R10 ở bước nghiệm thu sau.
+    if (job.status !== JobStatus.PENDING_REVIEW) {
+      throw new BadRequestException(
+        'Chỉ xác nhận nhận tiền mặt khi đơn đang chờ khách nghiệm thu',
+      );
+    }
+    // Review R11: chỉ xác nhận được khi đơn đang ở luồng tiền mặt — cùng
+    // điều kiện với nút client (isCashPaymentFlow): payment_method 'cash',
+    // hoặc chưa chọn phương thức mà chưa thanh toán (khách vẫn có thể trả
+    // tiền mặt sau). Đơn đã thu online (vietqr/wallet PAID) mà thợ bấm xác
+    // nhận trước rồi khách đổi sang cash ở bước nghiệm thu sẽ lách gate
+    // P0-4 dù thợ chưa hề cầm tiền mặt (hoa hồng bị trừ oan).
+    const confirmMethod = (job.payment_method ?? '').trim().toLowerCase();
+    const isCashFlow =
+      confirmMethod === 'cash' ||
+      (!confirmMethod && job.payment_status !== PaymentStatus.PAID);
+    if (!isCashFlow) {
+      throw new BadRequestException(
+        'Chỉ xác nhận nhận tiền mặt khi đơn thanh toán bằng tiền mặt',
+      );
+    }
     job.helper_cash_confirmed = true;
     job.helper_cash_confirmed_at = new Date();
     this.addEvent(
@@ -4122,7 +4149,18 @@ export class JobsService implements OnModuleInit {
       );
     }
 
-    const effectivePaymentMethod = dto.payment_method || existing.payment_method || 'vietqr';
+    // R11 (L1): phương thức nghiệm thu theo tiền THỰC THU. Đơn đã thu tiền
+    // mặt (payment_method 'cash' + PAID) mà nghiệm thu với payment_method
+    // 'vietqr' sẽ lách gate P0-4 rồi kẹt ở bước giải ngân với lỗi gây hiểu
+    // lầm — ép về 'cash' để gate + nhánh tiền mặt luôn chạy. Đơn cash chưa
+    // thu tiền (UNPAID) hoặc đơn bảo hành không bị ép.
+    const cashCollected =
+      !existing.is_warranty &&
+      existing.payment_method === 'cash' &&
+      existing.payment_status === PaymentStatus.PAID;
+    const effectivePaymentMethod = cashCollected
+      ? 'cash'
+      : dto.payment_method || existing.payment_method || 'vietqr';
 
     // A56: Chặn đổi sang tiền mặt nếu đơn gốc đặt online và chưa thanh toán
     if (
@@ -4537,7 +4575,51 @@ export class JobsService implements OnModuleInit {
     const contract = await this.contractModel.findOne({ job_id: new Types.ObjectId(jobId) }).exec();
     const totalPrice = contract?.total_price ?? job.fixed_price ?? 0;
     const defaultHelperReceives = contract?.helper_receives ?? 0;
-    const netPaid = computeNetPaidAmount(job, totalPrice);
+    // R11 (L3): hoàn theo số tiền THỰC THU, không hoàn nhiều hơn số đã thu
+    // (payment_status có thể bị gán tay PAID trong khi paid_amount < net).
+    const contractNetPaid = computeNetPaidAmount(job, totalPrice);
+    const actuallyPaidRaw =
+      typeof this.paymentsService?.getTotalPaidForJob === 'function'
+        ? await this.paymentsService.getTotalPaidForJob(jobId)
+        : contractNetPaid;
+    // Review R11: getTotalPaidForJob không bao giờ trả non-number ở bản thật,
+    // nhưng Math.min lan NaN → hoàn 0₫ lặng lẽ nếu có stub lạ; fallback về net.
+    const actuallyPaid = Number.isFinite(actuallyPaidRaw) ? actuallyPaidRaw : contractNetPaid;
+    const netPaid = Math.max(0, Math.min(contractNetPaid, actuallyPaid));
+
+    // Phân xử LẦN 2 (sau kháng cáo — Feature 4): tiền đã thực sự di chuyển ở
+    // phán quyết đầu tiên, nên lần này KHÔNG tự động hoàn/giải ngân/khấu trừ
+    // lần nữa (tránh giao dịch trùng). Admin đối soát & điều chỉnh ví thủ công
+    // nếu phán quyết mới khác phán quyết cũ. Xem README Phase 1.
+    // Review R11: gate tiền mặt KHÔNG áp cho phân xử lần 2 — lần này không
+    // di chuyển tiền, chỉ sửa lại hồ sơ phán quyết; đơn đã về COMPLETED (hoặc
+    // REFUNDED) từ phán quyết đầu nên gate không còn gì để chặn.
+    const isReResolution = !!job.dispute_resolution;
+    const moveMoney = !isReResolution;
+    if (isReResolution) {
+      this.logger.warn(
+        `Re-resolving dispute for job ${jobId} after appeal — automatic money movement SKIPPED (manual wallet reconciliation required)`,
+      );
+    }
+
+    // R11 (M1): phân xử KHÔNG được hoàn tất đơn tiền mặt khi thợ chưa xác nhận
+    // đã nhận tiền mặt — cùng gate P0-4/R10 như approveCompletion. Tranh chấp
+    // mở được trên đơn PENDING_REVIEW, nên không có gate này thì
+    // release_to_helper đưa đơn về COMPLETED + khấu trừ hoa hồng tiền mặt
+    // như thể thợ đã nhận tiền. Đặt TRƯỚC rào hoàn tiền để lỗi xác nhận tiền
+    // mặt hiện ra trước cho cả hai nhánh cash (release_to_helper,
+    // refund_partial); đơn bảo hành được miễn như ở approveCompletion.
+    if (
+      job.payment_method === 'cash' &&
+      !job.is_warranty &&
+      !isReResolution &&
+      (dto.action === 'release_to_helper' || dto.action === 'refund_partial') &&
+      job.helper_cash_confirmed !== true
+    ) {
+      throw new BadRequestException(
+        'Thợ chưa xác nhận đã nhận tiền mặt từ khách. Vui lòng yêu cầu thợ bấm xác nhận đã nhận tiền mặt trước khi phân xử đơn tiền mặt.',
+      );
+    }
 
     if (['refund_full', 'refund_partial'].includes(dto.action)) {
       if (job.payment_status !== PaymentStatus.PAID) {
@@ -4550,18 +4632,6 @@ export class JobsService implements OnModuleInit {
           'Đơn hàng thanh toán tiền mặt không thể hoàn tiền điện tử vào ví',
         );
       }
-    }
-
-    // Phân xử LẦN 2 (sau kháng cáo — Feature 4): tiền đã thực sự di chuyển ở
-    // phán quyết đầu tiên, nên lần này KHÔNG tự động hoàn/giải ngân/khấu trừ
-    // lần nữa (tránh giao dịch trùng). Admin đối soát & điều chỉnh ví thủ công
-    // nếu phán quyết mới khác phán quyết cũ. Xem README Phase 1.
-    const isReResolution = !!job.dispute_resolution;
-    const moveMoney = !isReResolution;
-    if (isReResolution) {
-      this.logger.warn(
-        `Re-resolving dispute for job ${jobId} after appeal — automatic money movement SKIPPED (manual wallet reconciliation required)`,
-      );
     }
 
     let refundAmount = 0;
@@ -4760,8 +4830,19 @@ export class JobsService implements OnModuleInit {
 
     const previousStatus = job.status;
 
-    // H2: Nếu Thợ tự ý hủy đơn sau khi đã chốt hợp đồng (confirmed / helper_on_the_way / helper_arrived / in_progress / pending_review)
-    // Phạt điểm rủi ro và ghi lịch sử phạt TRƯỚC (kể cả khi đơn IN_PROGRESS/PENDING_REVIEW bị chặn ném lỗi phía sau)
+    // M5 (R11): guard P2-12 chạy TRƯỚC khối phạt — đơn IN_PROGRESS /
+    // PENDING_REVIEW bị từ chối hủy thì KHÔNG được ghi phạt gì cả (trước đây
+    // khối phạt chạy trước guard nên một lần hủy thất bại vẫn tính như một
+    // lần hủy thật: +late_cancellation_count, +risk_score, +mốc hủy 7 ngày).
+    // P2-12: Đơn đang làm hoặc chờ duyệt chỉ có thể khiếu nại (mở tranh chấp)
+    if (previousStatus === JobStatus.IN_PROGRESS || previousStatus === JobStatus.PENDING_REVIEW) {
+      throw new BadRequestException(
+        'Đơn hàng đang thực hiện hoặc chờ duyệt chỉ có thể khiếu nại (mở tranh chấp), không thể hủy trực tiếp.',
+      );
+    }
+
+    // H2: Nếu Thợ tự ý hủy đơn sau khi đã chốt hợp đồng (confirmed / helper_on_the_way / helper_arrived)
+    // Phạt điểm rủi ro và ghi lịch sử phạt — chỉ chạy khi đơn hủy được chấp nhận (guard P2-12 ở trên đã loại IN_PROGRESS/PENDING_REVIEW).
     if (
       actorRole === 'helper' &&
       job.helper_id &&
@@ -4769,8 +4850,6 @@ export class JobsService implements OnModuleInit {
         JobStatus.CONFIRMED,
         JobStatus.HELPER_ON_THE_WAY,
         JobStatus.HELPER_ARRIVED,
-        JobStatus.IN_PROGRESS,
-        JobStatus.PENDING_REVIEW,
       ].includes(previousStatus)
     ) {
       const helperDoc = await this.helperModel.findOne({ user_id: job.helper_id }).exec();
@@ -4793,7 +4872,7 @@ export class JobsService implements OnModuleInit {
         .exec();
 
       // Điểm hiệu suất (thang 100): ghi mốc hủy vào cửa sổ trượt 7 ngày —
-      // hủy quá 3 đơn/7 ngày thì trừ điểm tiêu chí Độ tin cậy (xem helper-score.ts).
+      // hủy quá 3 đơn/7 ngày thì trừ 5đ vào tổng điểm mỗi lần vượt (xem helper-score.ts).
       // Ghi điểm là việc phụ: lỗi ở đây không được chặn việc hủy đơn.
       try {
         await recordHelperCancellation({
@@ -4810,12 +4889,6 @@ export class JobsService implements OnModuleInit {
       }
     }
 
-    // P2-12: Đơn đang làm hoặc chờ duyệt chỉ có thể khiếu nại (mở tranh chấp)
-    if (previousStatus === JobStatus.IN_PROGRESS || previousStatus === JobStatus.PENDING_REVIEW) {
-      throw new BadRequestException(
-        'Đơn hàng đang thực hiện hoặc chờ duyệt chỉ có thể khiếu nại (mở tranh chấp), không thể hủy trực tiếp.',
-      );
-    }
     this.validateTransition(job.status, JobStatus.CANCELLED);
     job.cancellation_reason = dto.reason;
     job.cancelled_by = new Types.ObjectId(actorId);
@@ -4869,10 +4942,21 @@ export class JobsService implements OnModuleInit {
       job.voucher_code = undefined;
     }
 
-    const netPaid =
-      job.payment_status === PaymentStatus.PAID && job.payment_method !== 'cash'
-        ? computeNetPaidAmount(job, contractTotalPrice)
-        : 0;
+    // R11 (M6 + L3): hoàn theo số tiền THỰC THU, không gate trên cờ
+    // payment_status. Chấp nhận phụ lục tăng giá đưa đơn PAID về UNPAID
+    // trong khi tiền gốc vẫn đang giữ — gate cũ làm hủy trong cửa sổ đó hoàn
+    // 0₫ và không gắn cờ retry. Net theo hợp đồng có thể lớn hơn số thực thu
+    // sau phụ lục (hoặc khi payment_status bị admin gán tay) nên lấy min()
+    // để không hoàn nhiều hơn số đã thu.
+    const contractNetPaid =
+      job.payment_method !== 'cash' ? computeNetPaidAmount(job, contractTotalPrice) : 0;
+    const actuallyPaidRaw =
+      typeof this.paymentsService?.getTotalPaidForJob === 'function'
+        ? await this.paymentsService.getTotalPaidForJob(String(job._id))
+        : contractNetPaid;
+    // Review R11: Math.min lan NaN → hoàn 0₫ lặng lẽ nếu có stub lạ; fallback về net.
+    const actuallyPaid = Number.isFinite(actuallyPaidRaw) ? actuallyPaidRaw : contractNetPaid;
+    const netPaid = Math.max(0, Math.min(contractNetPaid, actuallyPaid));
 
     // P1-2: Lưu trạng thái hủy và cờ refund_pending vào DB TRƯỚC khi gọi hoàn tiền
     job.status = JobStatus.CANCELLED;

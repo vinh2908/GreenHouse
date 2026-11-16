@@ -759,7 +759,7 @@ describe('SOS Backup & Roadmap Financial Logic Runtime Suite (Real MongoDB)', ()
   // ═════════════════════════════════════════════════════════════════════════════
   // CHECKLIST 5: Điểm phạt hủy (Cửa sổ 7 ngày, >3 lần trừ -5đ/lần)
   // ═════════════════════════════════════════════════════════════════════════════
-  it('5. Điểm phạt hủy: 3 lần đầu không phạt (SOS không tính — A7); lần hủy thường thứ 4 trừ 5 điểm & ghi HelperPenaltyEvent', async () => {
+  it('5. Điểm phạt hủy (R11/H2): SOS ĐƯỢC tính vào cửa sổ 7 ngày như hủy thường; mốc thứ 4 trừ 5 điểm & ghi HelperPenaltyEvent', async () => {
     const helperId = new Types.ObjectId();
     const jobId = new Types.ObjectId();
 
@@ -805,7 +805,11 @@ describe('SOS Backup & Roadmap Financial Logic Runtime Suite (Real MongoDB)', ()
     expect(r2?.penaltyPoints).toBe(0);
     expect(r2?.warningLevel).toBe('approaching');
 
-    // Lần 3: gửi SOS — A7: SOS hợp lệ KHÔNG bị tính vào cửa sổ phạt hủy thường
+    // Lần 3: gửi SOS — R11 (H2): 1 lần SOS = 1 lần thợ không thể hoàn thành
+    // đơn → TÍNH vào cửa sổ hủy 7 ngày như hủy đơn thường (điểm UY TÍN).
+    // Chỉ khác: SOS không cộng late-cancel/risk cho chính đơn đó (phần
+    // "không bị phạt" của SOS — hai trường đó sống trong cancelJob, không
+    // nằm trong recordHelperCancellation). Mốc thứ 3, vẫn trong ngưỡng.
     const r3 = await recordHelperCancellation({
       helperModel,
       penaltyEventModel,
@@ -814,9 +818,11 @@ describe('SOS Backup & Roadmap Financial Logic Runtime Suite (Real MongoDB)', ()
       jobId: jobId.toString(),
     });
     expect(r3?.penaltyPoints).toBe(0); // Vẫn trong ngưỡng 3 lần, chưa bị phạt
-    expect(r3?.cancellationsInWindow).toBe(2); // SOS không thêm mốc hủy
+    expect(r3?.cancellationsInWindow).toBe(3); // SOS thêm 1 mốc hủy
+    expect(r3?.just_penalized).toBe(false);
+    expect(r3?.warningLevel).toBe('approaching');
 
-    // Lần 4: hủy đơn thường (mốc thứ 3) — vẫn trong ngưỡng
+    // Lần 4: hủy đơn thường (mốc thứ 4) — VƯỢT NGƯỠNG (4 > 3) → trừ 5đ
     const r4 = await recordHelperCancellation({
       helperModel,
       penaltyEventModel,
@@ -824,11 +830,15 @@ describe('SOS Backup & Roadmap Financial Logic Runtime Suite (Real MongoDB)', ()
       source: 'job_cancel',
       jobId: jobId.toString(),
     });
-    expect(r4?.penaltyPoints).toBe(0);
-    expect(r4?.just_penalized).toBe(false);
-    expect(r4?.total).toBe(60);
+    expect(r4?.penaltyPoints).toBe(5); // Phạt 5 điểm
+    expect(r4?.points_deducted_now).toBe(5);
+    expect(r4?.just_penalized).toBe(true);
+    expect(r4?.warningLevel).toBe('penalized');
+    // Phạt 5đ trừ vào TỔNG (60 → 55); breakdown 4 tiêu chí giữ nguyên
+    expect(r4?.breakdown).toEqual({ distance: 0, skill: 30, rating: 20, kyc: 10 });
+    expect(r4?.total).toBe(55);
 
-    // Lần 5: hủy đơn thường (mốc thứ 4) -> VƯỢT NGƯỠNG (lần 4 > 3)
+    // Lần 5: hủy đơn thường (mốc thứ 5) -> vượt ngưỡng lần 2: tổng phạt 10đ
     const r5 = await recordHelperCancellation({
       helperModel,
       penaltyEventModel,
@@ -836,21 +846,28 @@ describe('SOS Backup & Roadmap Financial Logic Runtime Suite (Real MongoDB)', ()
       source: 'job_cancel',
       jobId: jobId.toString(),
     });
-    expect(r5?.penaltyPoints).toBe(5); // Phạt 5 điểm
+    expect(r5?.penaltyPoints).toBe(10); // 5đ (mốc 4) + 5đ (mốc 5)
     expect(r5?.points_deducted_now).toBe(5);
     expect(r5?.just_penalized).toBe(true);
     expect(r5?.warningLevel).toBe('penalized');
-    // Phạt 5đ trừ vào TỔNG (60 → 55); breakdown 4 tiêu chí giữ nguyên
     expect(r5?.breakdown).toEqual({ distance: 0, skill: 30, rating: 20, kyc: 10 });
-    expect(r5?.total).toBe(55);
+    expect(r5?.total).toBe(50);
 
-    // Kiểm tra HelperPenaltyEvent đã được ghi vào database
-    const penaltyEvents = await penaltyEventModel.find({ helper_id: helperId }).lean();
-    expect(penaltyEvents).toHaveLength(1);
+    // Kiểm tra HelperPenaltyEvent đã được ghi vào database — 2 sự kiện
+    // (mốc 4 và mốc 5, mỗi lần trừ 5đ)
+    const penaltyEvents = await penaltyEventModel
+      .find({ helper_id: helperId })
+      .sort({ created_at: 1 })
+      .lean();
+    expect(penaltyEvents).toHaveLength(2);
     expect(penaltyEvents[0].points_deducted).toBe(5);
     expect(penaltyEvents[0].cancellations_in_window).toBe(4);
     expect(penaltyEvents[0].excess_count).toBe(1);
     expect(penaltyEvents[0].performance_score_after).toBe(55);
+    expect(penaltyEvents[1].points_deducted).toBe(5);
+    expect(penaltyEvents[1].cancellations_in_window).toBe(5);
+    expect(penaltyEvents[1].excess_count).toBe(2);
+    expect(penaltyEvents[1].performance_score_after).toBe(50);
 
     // Dọn dẹp
     await helperModel.deleteOne({ user_id: helperId });
