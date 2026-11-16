@@ -386,17 +386,23 @@ export class SosBackupService implements OnModuleInit, OnModuleDestroy {
     let refundAmount = 0;
     let refundFailed = false;
     const contract = await this.contractModel.findOne({ job_id: job._id }).exec();
-    if (
-      job.payment_status === PaymentStatus.PAID &&
-      job.payment_method !== 'cash' &&
-      contract &&
-      contract.total_price > 0
-    ) {
-      // Hoàn đúng số khách thực trả = giá chốt − giảm voucher − giảm điểm (phần giảm do sàn chịu)
-      refundAmount = Math.max(
+    if (job.payment_method !== 'cash' && contract && contract.total_price > 0) {
+      // R11 (M6 + L3): hoàn theo số tiền THỰC THU, không gate trên cờ
+      // payment_status. Chấp nhận phụ lục tăng giá đưa đơn PAID về UNPAID
+      // trong khi tiền gốc vẫn đang giữ — gate cũ làm SOS hủy trong cửa sổ
+      // đó hoàn 0₫ và không gắn cờ retry. Net theo hợp đồng có thể lớn hơn
+      // số thực thu sau phụ lục nên lấy min() để không hoàn nhiều hơn đã thu.
+      const contractNetPaid = Math.max(
         0,
         contract.total_price - (job.discount_amount || 0) - (job.loyalty_discount_amount || 0),
       );
+      const actuallyPaidRaw =
+        typeof this.paymentsService?.getTotalPaidForJob === 'function'
+          ? await this.paymentsService.getTotalPaidForJob(jobId)
+          : contractNetPaid;
+      // Review R11: Math.min lan NaN → hoàn 0₫ lặng lẽ nếu có stub lạ; fallback về net.
+      const actuallyPaid = Number.isFinite(actuallyPaidRaw) ? actuallyPaidRaw : contractNetPaid;
+      refundAmount = Math.min(contractNetPaid, Math.max(0, actuallyPaid));
       if (refundAmount > 0) {
         try {
           await this.paymentsService.refundCustomer(
@@ -443,6 +449,16 @@ export class SosBackupService implements OnModuleInit, OnModuleDestroy {
       await contract.save();
     }
 
+    // R11 (LM1): đơn tiền mặt ĐÃ thu tiền thì không có khoản hoàn ví nào —
+    // tiền mặt đang ở tay thợ, phải đối soát trực tiếp giữa khách và thợ.
+    // Nhắn rõ ở event + thông báo hai bên để khách không tưởng sẽ có hoàn
+    // tiền vào ví. Đơn cash chưa thu tiền (UNPAID) thì không có gì để đối soát.
+    const isCashPaid =
+      job.payment_method === 'cash' && job.payment_status === PaymentStatus.PAID;
+    const cashSettlementNote = isCashPaid
+      ? ' Tiền mặt khách đã trả cần đối soát trực tiếp với thợ.'
+      : '';
+
     const previousStatus = job.status;
     job.status = JobStatus.CANCELLED;
     job.cancellation_reason =
@@ -455,8 +471,8 @@ export class SosBackupService implements OnModuleInit, OnModuleDestroy {
       status: JobStatus.CANCELLED,
       note:
         by === 'customer'
-          ? `SOS Backup: khách đồng ý hủy đơn (trạng thái trước: ${previousStatus}), hoàn tiền ${refundAmount.toLocaleString('vi-VN')}₫, thợ không bị phạt`
-          : `SOS Backup: quá hạn chờ khách quyết định → hủy đơn theo mặc định, hoàn tiền ${refundAmount.toLocaleString('vi-VN')}₫, thợ không bị phạt`,
+          ? `SOS Backup: khách đồng ý hủy đơn (trạng thái trước: ${previousStatus}), hoàn tiền ${refundAmount.toLocaleString('vi-VN')}₫, thợ không bị phạt${cashSettlementNote}`
+          : `SOS Backup: quá hạn chờ khách quyết định → hủy đơn theo mặc định, hoàn tiền ${refundAmount.toLocaleString('vi-VN')}₫, thợ không bị phạt${cashSettlementNote}`,
       actor_id: job.customer_id,
       actor_role: by === 'customer' ? 'customer' : 'system',
       timestamp: new Date(),
@@ -511,8 +527,8 @@ export class SosBackupService implements OnModuleInit, OnModuleDestroy {
         title: 'Đơn đã hủy — bạn được giải phóng',
         body:
           by === 'customer'
-            ? `Khách hàng đã chọn hủy đơn "${sos.job_title}" sau yêu cầu SOS của bạn. Bạn không bị tính phạt cho lần hủy này.`
-            : `Đơn "${sos.job_title}" đã tự động hủy do khách không phản hồi yêu cầu SOS trong thời hạn. Bạn không bị tính phạt cho lần hủy này.`,
+            ? `Khách hàng đã chọn hủy đơn "${sos.job_title}" sau yêu cầu SOS của bạn. Bạn không bị tính phạt cho lần hủy này.${isCashPaid ? ' Nếu bạn đã nhận tiền mặt của khách, vui lòng trả lại trực tiếp cho khách.' : ''}`
+            : `Đơn "${sos.job_title}" đã tự động hủy do khách không phản hồi yêu cầu SOS trong thời hạn. Bạn không bị tính phạt cho lần hủy này.${isCashPaid ? ' Nếu bạn đã nhận tiền mặt của khách, vui lòng trả lại trực tiếp cho khách.' : ''}`,
         payload: { job_id: jobId, sos_id: String(sos._id) },
       })
       .catch(() => undefined);
@@ -526,9 +542,11 @@ export class SosBackupService implements OnModuleInit, OnModuleDestroy {
           : 'Đơn đã hủy & hoàn tiền theo chính sách SOS',
         body: refundFailed
           ? `Đơn "${sos.job_title}" đã hủy. Khoản hoàn ${refundAmount.toLocaleString('vi-VN')}₫ đang chờ quản trị viên đối soát ví thủ công.`
-          : refundAmount > 0
-            ? `Đơn "${sos.job_title}" đã hủy. ${refundAmount.toLocaleString('vi-VN')}₫ đã được hoàn vào ví của bạn.`
-            : `Đơn "${sos.job_title}" đã hủy theo chính sách SOS.`,
+          : isCashPaid
+            ? `Đơn "${sos.job_title}" đã hủy. Bạn đã trả tiền mặt cho thợ — vui lòng liên hệ trực tiếp với thợ để nhận lại số tiền mặt đã trả.`
+            : refundAmount > 0
+              ? `Đơn "${sos.job_title}" đã hủy. ${refundAmount.toLocaleString('vi-VN')}₫ đã được hoàn vào ví của bạn.`
+              : `Đơn "${sos.job_title}" đã hủy theo chính sách SOS.`,
         payload: { job_id: jobId, sos_id: String(sos._id) },
       })
       .catch(() => undefined);

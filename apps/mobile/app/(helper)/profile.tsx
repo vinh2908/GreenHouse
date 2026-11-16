@@ -32,6 +32,7 @@ import {
 import { locationService } from '@/services/location.service';
 import { Avatar, Card, COLORS, Separator, useThemeColors } from '@/components/ui';
 import { useTranslation } from '@/hooks/use-i18n';
+import { roleSwitchFailureToast } from '@/utils/role-switch-toast';
 import { DisplaySettingsSection } from '@/components/common/display-settings';
 import { AppPermissionsSection } from '@/components/common/initial-permissions-modal';
 import { VerificationBanner } from '@/components/common/verification-banner';
@@ -122,11 +123,8 @@ export default function HelperProfileScreen() {
       router.replace('/(customer)/home');
     } catch (err: any) {
       useAuthStore.getState().setSwitchingRole(false);
-      Toast.show({
-        type: 'error',
-        text1: 'Đổi vai trò thất bại',
-        text2: err?.response?.data?.message || 'Vui lòng thử lại sau',
-      });
+      // R11 (M3): toast lỗi đổi vai trò theo ngôn ngữ giao diện.
+      Toast.show({ type: 'error', ...roleSwitchFailureToast(lang, err?.response?.data?.message) });
     } finally {
       setIsSwitching(false);
     }

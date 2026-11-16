@@ -93,6 +93,7 @@ import { isOverdueUnassigned } from '@/utils/job-overdue';
 import { VerificationBanner } from '@/components/common/verification-banner';
 import { Avatar, COLORS, ErrorState, Skeleton, useThemeColors } from '@/components/ui';
 import { removeVietnameseDiacritics } from '@/utils/search';
+import { nearbyHelperStatusLabel } from '@/utils/nearby-helper-status';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import 'dayjs/locale/vi';
@@ -489,16 +490,10 @@ export default function CustomerHomeScreen() {
             ? `${Math.round(distKm * 1000)} m`
             : `${distKm.toFixed(1).replace('.', ',')} km`;
         // Trạng thái thật từ API: findNearby chỉ trả thợ ONLINE (đang nhận việc).
-        // Không hardcode "Đang rảnh" cho mọi thợ.
-        const rawStatus = typeof h.status === 'string' ? h.status : '';
-        const status =
-          rawStatus === 'online'
-            ? 'Đang rảnh'
-            : rawStatus === 'busy'
-              ? 'Đang bận'
-              : rawStatus === 'offline'
-                ? 'Ngoại tuyến'
-                : '';
+        // Không hardcode "Đang rảnh" cho mọi thợ. Giữ MÃ trạng thái thô trong
+        // dữ liệu; nhãn hiển thị map theo ngôn ngữ ở lúc render (R11/M2 —
+        // nearbyHelperStatusLabel), tránh rò tiếng Việt ở chế độ tiếng Anh.
+        const status = typeof h.status === 'string' ? h.status : '';
         return {
           id: String(h._id || idx),
           name: helperName,
@@ -564,7 +559,9 @@ export default function CustomerHomeScreen() {
   );
 
   // Sinh HTML Goong bản đồ mini với ghim gọn, tương tác kéo/zoom/chọn thợ không reload
-  const leafletMiniMapHtml = useMemo(() => {
+// R11 (L11): tên biến cũ gây hiểu lầm — HTML này dùng MapLibre + Goong,
+// không phải Leaflet. Đổi tên cho đúng bản đồ đang dùng.
+  const goongMiniMapHtml = useMemo(() => {
     if (!mapCenter) return '';
     const pinsJson = nearbyPinsJson;
 
@@ -1515,7 +1512,7 @@ export default function CustomerHomeScreen() {
               Platform.OS === 'web' ? (
                 <iframe
                   ref={mapIframeRef}
-                  srcDoc={leafletMiniMapHtml}
+                  srcDoc={goongMiniMapHtml}
                   style={{ width: '100%', height: '100%', border: 'none' }}
                   title="Goong Mini Map"
                   sandbox="allow-scripts allow-same-origin"
@@ -1524,7 +1521,7 @@ export default function CustomerHomeScreen() {
                 <WebView
                   ref={mapWebViewRef}
                   originWhitelist={['*']}
-                  source={{ html: leafletMiniMapHtml }}
+                  source={{ html: goongMiniMapHtml }}
                   scrollEnabled={false}
                   style={{ flex: 1, backgroundColor: '#f8fafc' }}
                   onMessage={event => {
@@ -1774,11 +1771,7 @@ export default function CustomerHomeScreen() {
                         >
                           {helper.status ? (
                             <Text style={{ fontSize: fs(12), color: tc.textMuted }}>
-                              {helper.status === 'Đang rảnh' || helper.status === 'Sẵn sàng'
-                                ? lang === 'en'
-                                  ? 'Available'
-                                  : helper.status
-                                : helper.status}{' '}
+                              {nearbyHelperStatusLabel(helper.status, lang)}{' '}
                               ·
                             </Text>
                           ) : null}

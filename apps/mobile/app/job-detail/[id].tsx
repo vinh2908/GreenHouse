@@ -102,6 +102,7 @@ import { downloadInvoicePdf } from '@/services/invoice.service';
 import { LiveTrackingMap } from '@/components/common/live-tracking-map';
 import { OverdueJobBanner } from '@/components/common/overdue-job-banner';
 import { isOverdueUnassigned } from '@/utils/job-overdue';
+import { canEditJob } from '@/utils/job-can-edit';
 import {
   TimeDropdownPicker,
   DurationDropdownPicker,
@@ -351,7 +352,8 @@ export default function JobDetailScreen() {
 
   // R9: canEdit hoisted above the early returns cùng với effect focus='edit'
   // (dep của nó) — chỉ phụ thuộc job?.status nên an toàn khi job còn null.
-  const canEdit = !!job && !['completed', 'cancelled', 'disputed', 'refunded'].includes(job.status);
+  // R11 (L9): khớp server updateJob — pending_review cũng không sửa được.
+  const canEdit = canEditJob(job?.status);
 
   // R7 item 3: focus='edit' mở thẳng modal sửa (kèm đổi lịch B7).
   // R9: effect NÀY PHẢI ĐỨNG TRÊN CÁC EARLY RETURN (if (jLoading) / if (!job)).
@@ -711,6 +713,10 @@ export default function JobDetailScreen() {
   };
 
   const handleOpenEdit = () => {
+    // Review R11 (L9, defense-in-depth): mọi lối vào hôm nay đã gate bằng
+    // canEdit, nhưng modal sửa không được mở lén nếu sau này có caller mới
+    // quên gate — server cũng từ chối, nhưng client không mở modal mới đúng.
+    if (!canEdit) return;
     setEditTitle(job.title || '');
     setEditDescription(job.description || '');
     setEditFullAddress(job.address?.full_address || '');

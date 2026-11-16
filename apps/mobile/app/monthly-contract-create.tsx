@@ -9,6 +9,7 @@ import { vnDateKey } from '@/utils/date-format';
 import { useTranslation } from '@/hooks/use-i18n';
 import { Avatar, Button, Card, COLORS, LoadingSpinner, useThemeColors } from '@/components/ui';
 import { locationService } from '@/services/location.service';
+import { resolveMonthlyContractCity } from '@/utils/monthly-contract-city';
 
 // Thứ hiển thị T2..CN → giá trị JS Date.getDay(): T2=1 … T7=6, CN=0
 const DAY_OPTIONS_VI = [
@@ -56,7 +57,9 @@ export default function MonthlyContractCreateScreen() {
   const [addressIdx, setAddressIdx] = useState(0);
   const [fullAddress, setFullAddress] = useState('');
   const [district, setDistrict] = useState('');
-  const [city, setCity] = useState(lang === 'en' ? 'Ho Chi Minh' : 'Hồ Chí Minh');
+  // R11 (H1): KHÔNG mặc định thành phố — ô Tỉnh/Thành phố để trống cho
+  // khách nhập; địa chỉ đã lưu dùng city của nó (xem resolveMonthlyContractCity).
+  const [city, setCity] = useState('');
 
   // Địa chỉ đã lưu: chọn sẵn địa chỉ mặc định/đầu tiên nếu có
   const savedAddresses: any[] = useMemo(() => {
@@ -147,7 +150,7 @@ export default function MonthlyContractCreateScreen() {
     } else {
       const qFull = selectedAddress ? selectedAddress.full_address : fullAddress.trim();
       const qDist = selectedAddress ? selectedAddress.district : district.trim();
-      const qCity = selectedAddress ? selectedAddress.city : city.trim() || 'Hồ Chí Minh';
+      const qCity = resolveMonthlyContractCity(selectedAddress?.city, city);
       const queryParts = [qFull, qDist, qCity].filter(Boolean);
       if (queryParts.length > 0) {
         try {
@@ -181,7 +184,7 @@ export default function MonthlyContractCreateScreen() {
           full_address: selectedAddress.full_address,
           ward: selectedAddress.ward || undefined,
           district: selectedAddress.district,
-          city: selectedAddress.city,
+          city: resolveMonthlyContractCity(selectedAddress.city, city),
           notes: selectedAddress.notes || undefined,
           location: {
             type: 'Point',
@@ -191,10 +194,12 @@ export default function MonthlyContractCreateScreen() {
       : {
           full_address: fullAddress.trim(),
           district: district.trim(),
-          city: city.trim() || 'Hồ Chí Minh',
+          city: resolveMonthlyContractCity(selectedAddress?.city, city),
           location: { type: 'Point', coordinates: coords },
         };
-    if (!address.full_address || !address.district) {
+    // R11 (H1): nhập tay thì thành phố là bắt buộc (không tự điền). Địa
+    // chỉ đã lưu thì city đến từ lựa chọn đó nên không bắt buộc ở đây.
+    if (!address.full_address || !address.district || (!selectedAddress && !address.city)) {
       errors.address =
         lang === 'en' ? 'Please enter full work address' : 'Vui lòng nhập đầy đủ địa chỉ làm việc';
     }
@@ -537,9 +542,12 @@ export default function MonthlyContractCreateScreen() {
               />
               <TextInput
                 value={city}
-                onChangeText={setCity}
+                onChangeText={v => {
+                  setCity(v);
+                  clearFieldError('address');
+                }}
                 placeholder={lang === 'en' ? 'Province / City' : 'Tỉnh / Thành phố'}
-                style={inputStyle}
+                style={[inputStyle, fieldErrors.address ? { borderColor: COLORS.error } : null]}
               />
             </View>
           )}
