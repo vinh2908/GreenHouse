@@ -35,7 +35,11 @@ export default function RegisterScreen() {
   const handleRegister = async () => {
     const cleanPhone = phone.trim().replace(/\s+/g, '').replace(/^\+84/, '0');
     const cleanEmail = email.trim().toLowerCase();
-    if (!fullName.trim() || !cleanPhone || !cleanEmail || !password.trim()) {
+    // R12-5: mật khẩu validate VÀ gửi đều dùng bản đã trim — trước đây
+    // validate password.trim() nhưng so sánh / đo dài / gửi password thô.
+    const cleanPassword = password.trim();
+    const cleanConfirmPassword = confirmPassword.trim();
+    if (!fullName.trim() || !cleanPhone || !cleanEmail || !cleanPassword) {
       Toast.show({
         type: 'error',
         text1: lang === 'en' ? 'Please fill in all information' : 'Vui lòng điền đầy đủ thông tin',
@@ -59,7 +63,7 @@ export default function RegisterScreen() {
       });
       return;
     }
-    if (password !== confirmPassword) {
+    if (cleanPassword !== cleanConfirmPassword) {
       Toast.show({
         type: 'error',
         text1:
@@ -67,7 +71,7 @@ export default function RegisterScreen() {
       });
       return;
     }
-    if (password.length < 8) {
+    if (cleanPassword.length < 8) {
       Toast.show({
         type: 'error',
         text1:
@@ -82,7 +86,7 @@ export default function RegisterScreen() {
         phone: cleanPhone,
         email: cleanEmail,
         full_name: fullName.trim(),
-        password,
+        password: cleanPassword,
       });
       const data = res.data?.data;
       // G5 (F16): chỉ báo "đã gửi mã" khi gửi thật thành công. API trả lỗi rõ

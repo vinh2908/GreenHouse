@@ -8,6 +8,7 @@ import { Modal, View, Text, TouchableOpacity, ActivityIndicator } from 'react-na
 import { AlertTriangle } from 'lucide-react-native';
 import Toast from 'react-native-toast-message';
 import { SOS_BACKUP_REASON_LABELS, useSosBackupStore } from '@/stores/sos-backup.store';
+import { refreshSosState } from '@/hooks/use-sos-backup';
 import { PhotoThumbRow } from '@/components/common/photo-thumbs';
 import { useCustomerSosDecision } from '@/hooks/use-api';
 import { useNowTick, formatCountdown } from '@/hooks/use-countdown';
@@ -37,6 +38,20 @@ export function SosCustomerDecisionPopup() {
     const t = setTimeout(() => clearDecision(), 10_000);
     return () => clearTimeout(t);
   }, [decision, expired, clearDecision]);
+
+  // R12-24 (same as SosBackupPopup): if the SOS is withdrawn/cancelled
+  // while this popup is visible and the socket event is missed, the popup
+  // would sit on a dead SOS until its own countdown ends. Re-validate
+  // against the server while visible — refreshSosState() clears the queue
+  // when GET /sos-backup/customer-pending comes back empty.
+  useEffect(() => {
+    if (!decision) return;
+    void refreshSosState();
+    const t = setInterval(() => {
+      void refreshSosState();
+    }, 20_000);
+    return () => clearInterval(t);
+  }, [decision]);
 
   if (!decision) return null;
 

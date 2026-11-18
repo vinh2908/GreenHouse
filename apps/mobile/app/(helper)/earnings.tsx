@@ -10,8 +10,8 @@ import {
   TextInput,
   KeyboardAvoidingView,
   Platform,
-  Alert,
 } from 'react-native';
+import { Alert } from '@/components/common/app-alert';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
 import { useRouter } from 'expo-router';
@@ -49,6 +49,7 @@ import dayjs from 'dayjs';
 import { EarningsReport } from '@/components/helper/earnings-report';
 import { useTranslation } from '@/hooks/use-i18n';
 import { mapServerErrorMessage } from '@/services/i18n';
+import { getWithdrawAvailability, MIN_WITHDRAWAL_VND } from '@/utils/withdraw-availability';
 
 function renderTxIcon(type: string, size = 20) {
   switch (type) {
@@ -115,6 +116,8 @@ export default function HelperEarningsScreen() {
   const [accountName, setAccountName] = useState('');
 
   const currentBank = profile?.bank_account;
+  // R12-17: single source of truth for the withdraw gate (API minimum 50.000₫).
+  const withdrawAvailability = getWithdrawAvailability(wallet?.balance);
 
   useEffect(() => {
     if (currentBank) {
@@ -326,6 +329,22 @@ export default function HelperEarningsScreen() {
           >
             {t('earn_total_received')} {fmt(wallet?.total_earned ?? 0)}₫
           </Text>
+          {/* R12-19: lifetime total counts REAL (withdrawable) income only,
+              while the week/month report below also includes simulated demo
+              income — label the definition so the numbers are not misleading. */}
+          <Text
+            style={{
+              color: 'rgba(255,255,255,0.65)',
+              fontSize: fs(11.5),
+              marginTop: 4,
+              fontWeight: '500',
+              lineHeight: 16,
+            }}
+          >
+            {lang === 'en'
+              ? 'Real income only (withdrawable). Week/month report below also includes simulated demo income.'
+              : 'Chỉ tính thu nhập thật (rút được). Báo cáo tuần/tháng bên dưới có gồm cả thu nhập mô phỏng (demo).'}
+          </Text>
         </View>
 
         {/* ── Stats ─────────────────────────────────────────────────── */}
@@ -375,19 +394,37 @@ export default function HelperEarningsScreen() {
             />
             <Button
               title={t('earn_withdraw_bank')}
-              variant={wallet?.balance >= 50000 ? 'primary' : 'secondary'}
+              variant={withdrawAvailability.canWithdraw ? 'primary' : 'secondary'}
               fullWidth={false}
               style={{ flex: 1 }}
-              disabled={!wallet || wallet.balance < 50000}
+              disabled={!wallet || !withdrawAvailability.canWithdraw}
               onPress={() => setShowWithdraw(true)}
               icon={
                 <ArrowDownCircle
                   size={18}
-                  color={wallet?.balance >= 50000 ? '#fff' : COLORS.gray[400]}
+                  color={withdrawAvailability.canWithdraw ? '#fff' : COLORS.gray[400]}
                 />
               }
             />
           </View>
+          {/* R12-17: never leave the withdraw button disabled without a reason —
+              the API minimum is 50.000₫, so e.g. a 42.500₫ balance cannot be
+              withdrawn yet; say exactly how much more is needed. */}
+          {wallet && !withdrawAvailability.canWithdraw && (
+            <Text
+              style={{
+                fontSize: fs(12),
+                color: '#B45309',
+                textAlign: 'center',
+                lineHeight: 18,
+                fontWeight: '600',
+              }}
+            >
+              {lang === 'en'
+                ? `Minimum withdrawal is ${fmt(MIN_WITHDRAWAL_VND)}₫ — current balance ${fmt(wallet.balance)}₫, ${fmt(withdrawAvailability.shortfallVnd)}₫ more needed to withdraw.`
+                : `Số tiền rút tối thiểu là ${fmt(MIN_WITHDRAWAL_VND)}₫ — số dư hiện tại ${fmt(wallet.balance)}₫, còn thiếu ${fmt(withdrawAvailability.shortfallVnd)}₫ nữa mới rút được.`}
+            </Text>
+          )}
           <Text
             style={{
               fontSize: fs(12),

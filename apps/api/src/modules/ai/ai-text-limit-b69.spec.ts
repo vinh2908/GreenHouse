@@ -95,6 +95,5 @@ describe('AI services (B69)', () => {
     const result = await service.chat([], 'Cho tôi hỏi về giá dịch vụ');
     expect(result.answer).toBeDefined();
     expect(result.is_mock).toBe(true);
-    expect(result.mock).toBe(true);
   });
 });

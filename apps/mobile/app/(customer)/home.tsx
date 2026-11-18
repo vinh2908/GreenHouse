@@ -1,12 +1,13 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import {
   formatDate,
   formatDateKey,
-  formatDateWithWeekday,
+  formatDateKeyWithWeekday,
   formatTime,
   vnDateKey,
   vnNow,
 } from '@/utils/date-format';
+import { resolveDateChip } from '@/utils/quick-date';
 import {
   View,
   Text,
@@ -34,7 +35,7 @@ import {
 import { DateTimePickerBottomSheet } from '@/components/common/date-time-bottom-sheet';
 import Svg, { Defs, LinearGradient as SvgLinearGradient, Stop, Rect } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { WebView } from 'react-native-webview';
 import Toast from 'react-native-toast-message';
@@ -441,6 +442,20 @@ export default function CustomerHomeScreen() {
   const [quickCustomTimeInput, setQuickCustomTimeInput] = useState('');
   const [quickDuration, setQuickDuration] = useState(2);
   const [isSubmittingQuick, setIsSubmittingQuick] = useState(false);
+
+  // R12-27: chip-relative dates ("tomorrow", "sat", "sun") go stale when
+  // the home tab stays mounted across midnight — quickDate was computed
+  // once at mount, so "tomorrow" kept pointing at the day the app was
+  // opened and the preview showed 17/11 for an 18/11 job. Re-resolve the
+  // active chip whenever the screen regains focus; an absolute calendar
+  // pick (chip null) is the user's explicit date and is never touched.
+  useFocusEffect(
+    useCallback(() => {
+      if (!quickDateChip) return;
+      const fresh = resolveDateChip(quickDateChip, Date.now());
+      if (fresh !== quickDate) setQuickDate(fresh);
+    }, [quickDateChip, quickDate]),
+  );
 
   // Tìm kiếm dịch vụ tương tác (Item 8 & Bug 5: không phân biệt dấu + tự cuộn)
   const [serviceSearchQuery, setServiceSearchQuery] = useState('');
@@ -2721,7 +2736,7 @@ export default function CustomerHomeScreen() {
                     style={{ fontSize: fs(15), fontWeight: '700', color: tc.text }}
                     numberOfLines={1}
                   >
-                    {formatDateWithWeekday(quickDate, lang)}
+                    {formatDateKeyWithWeekday(quickDate, lang)}
                   </Text>
                   <Text
                     style={{

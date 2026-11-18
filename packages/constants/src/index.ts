@@ -112,7 +112,9 @@ export const SOS_BASE_COST_VND = 200_000;
 
 // ─── Warranty ─────────────────────────────────────────────────────────────────
 
-export const DEFAULT_WARRANTY_DAYS = 0; // Mặc định không bảo hành
+// R12-10: mặc định bảo hành 30 ngày — khớp banner "Bảo hành trong 30 ngày"
+// trên job-detail, claims.service (fallback 30) và admin.service (ghi 30).
+export const DEFAULT_WARRANTY_DAYS = 30; // Mặc định bảo hành 30 ngày
 export const MAX_WARRANTY_DAYS = 365; // Tối đa 1 năm
 
 // ─── Socket Events (cập nhật theo model mới) ──────────────────────────────────
@@ -211,16 +213,6 @@ export const CACHE_KEYS = {
   RATE_LIMIT: (ip: string, route: string) => `rate_limit:${ip}:${route}`,
   JOB_NEARBY_HELPERS: (jobId: string) => `job:nearby_helpers:${jobId}`,
   HELPER_ACTIVE_JOB: (helperId: string) => `helper:active_job:${helperId}`,
-} as const;
-
-// ─── MinIO Buckets ─────────────────────────────────────────────────────────────
-
-export const MINIO_BUCKETS = {
-  AVATARS: 'avatars',
-  ID_CARDS: 'id-cards',
-  JOB_PHOTOS: 'job-photos', // Customer upload ảnh hiện trạng
-  JOB_VIDEOS: 'job-videos', // Customer upload video
-  COMPLETION_PHOTOS: 'completion-photos', // Helper upload ảnh sau hoàn thành
 } as const;
 
 // ─── Notification Types ────────────────────────────────────────────────────────

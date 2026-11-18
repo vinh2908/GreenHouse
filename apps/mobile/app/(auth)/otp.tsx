@@ -32,11 +32,14 @@ export default function OtpScreen() {
   const [resending, setResending] = useState(false);
   const inputs = useRef<(TextInput | null)[]>([]);
 
+  // R12-4 (same pattern as login.tsx): only recreate the interval when the
+  // countdown starts/stops, not every second while it runs.
+  const isCountingDown = countdown > 0;
   useEffect(() => {
-    if (countdown <= 0) return;
-    const t = setInterval(() => setCountdown(c => c - 1), 1000);
+    if (!isCountingDown) return;
+    const t = setInterval(() => setCountdown(c => Math.max(0, c - 1)), 1000);
     return () => clearInterval(t);
-  }, [countdown]);
+  }, [isCountingDown]);
 
   const handleChange = (text: string, index: number) => {
     const newOtp = [...otp];

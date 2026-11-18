@@ -58,17 +58,22 @@ function formatDate(d: Date): string {
  * Nhãn phương thức thanh toán hiển thị trên hóa đơn — ghi đúng thực tế.
  * MoMo/ZaloPay chưa tích hợp cổng thật: mọi thanh toán điện tử mô phỏng đều
  * đi qua ví/ký quỹ GreenHouse nên nhãn là "Ví GreenHouse", không ghi tên
- * cổng chưa tích hợp (B54).
+ * cổng chưa tích hợp (B54). R12 (theo rule receiptPaymentMethodLabel phía
+ * mobile): các phương thức MÔ PHỎNG (vietqr/momo/zalopay) phải mang nhãn
+ * "(MÔ PHỎNG)" — biên lai PDF cũ ghi trần "Chuyển khoản VietQR" đọc như
+ * tiền thật đã chuyển. Ví GreenHouse thật và tiền mặt là tiền thật nên
+ * không mang nhãn mô phỏng.
  */
 export function paymentMethodLabel(method?: string): string {
   switch (method) {
     case 'cash':
       return 'Tiền mặt';
     case 'vietqr':
-      return 'Chuyển khoản VietQR';
-    case 'wallet':
+      return 'Chuyển khoản VietQR (MÔ PHỎNG)';
     case 'momo':
     case 'zalopay':
+      return 'Ví GreenHouse (MÔ PHỎNG)';
+    case 'wallet':
       return 'Ví GreenHouse';
     default:
       return method || '—';

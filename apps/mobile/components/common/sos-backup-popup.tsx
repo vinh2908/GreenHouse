@@ -8,6 +8,7 @@ import { AlertCircle } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import Toast from 'react-native-toast-message';
 import { useSosBackupStore } from '@/stores/sos-backup.store';
+import { refreshSosState } from '@/hooks/use-sos-backup';
 import { PhotoThumbRow } from '@/components/common/photo-thumbs';
 import { useAcceptSosBackup, useDeclineSosBackup } from '@/hooks/use-api';
 import { useNowTick, formatCountdown } from '@/hooks/use-countdown';
@@ -31,6 +32,29 @@ export function SosBackupPopup() {
       clearIncoming();
     }
   }, [incoming?.expires_at_ms, now, clearIncoming]);
+
+  // R12-24: a MANUAL job cancel is only emitted to the JOB room, which
+  // candidate helpers never join — so no socket event ever reaches this
+  // popup and it stays up with a running countdown until reload. While
+  // the popup is visible, re-validate against the server every 20s:
+  // GET /sos-backup/active returns empty once the SOS is gone and
+  // refreshSosState() clears the queue (debounced 1.5s + in-flight
+  // guard inside, so this is cheap and only runs while the popup shows).
+  useEffect(() => {
+    if (!incoming) return;
+    void refreshSosState();
+    const t = setInterval(() => {
+      void refreshSosState();
+    }, 20_000);
+    return () => clearInterval(t);
+  }, [incoming]);
+
+  // R12 mục 15: hook phải đứng TRƯỚC mọi early return — 2 useState này từng
+  // nằm sau `if (!incoming) return null` nên thứ tự hook đổi khi popup
+  // xuất hiện/biến mất (vi phạm Rules of Hooks). Chỉ dời lên.
+  // B105: từ chối phải qua màn xác nhận có ô lý do — không từ chối ngay khi bấm
+  const [confirmingDecline, setConfirmingDecline] = useState(false);
+  const [declineReason, setDeclineReason] = useState('');
 
   if (!incoming) return null;
 
@@ -67,10 +91,6 @@ export function SosBackupPopup() {
       }
     }
   };
-
-  // B105: từ chối phải qua màn xác nhận có ô lý do — không từ chối ngay khi bấm
-  const [confirmingDecline, setConfirmingDecline] = useState(false);
-  const [declineReason, setDeclineReason] = useState('');
 
   const handleConfirmDecline = async () => {
     try {

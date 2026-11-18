@@ -11,7 +11,7 @@
         "buildType": "apk"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://greenhouse-api-chb9.onrender.com/api/v1"
+        "EXPO_PUBLIC_API_URL": "http://localhost:3000/api/v1"
       }
     },
     "preview": {

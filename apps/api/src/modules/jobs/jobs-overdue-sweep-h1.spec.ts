@@ -285,6 +285,18 @@ describe('Overdue sweep: start notification + auto-cancel at +5m (R7, real mongo
     // Pending quote rejected + helper told.
     const quote = await QuoteModel.findOne({ job_id: job._id }).lean();
     expect(quote.status).toBe(QuoteStatus.REJECTED);
+    // R12-28: báo giá bị từ chối có ghi lý do + thợ vẫn thấy được báo giá
+    // (trạng thái REJECTED) thay vì biến mất lặng lẽ — FAILS on base (không
+    // có rejection_reason; getJobQuotes lọc REJECTED khỏi phía thợ nên trả []).
+    expect(quote.rejection_reason).toMatch(/tự động hủy/);
+    const helperQuotes = await service.getJobQuotes(
+      String(job._id),
+      String(helperUser._id),
+      'helper',
+    );
+    expect(helperQuotes).toHaveLength(1);
+    expect((helperQuotes[0] as any).status).toBe(QuoteStatus.REJECTED);
+    expect((helperQuotes[0] as any).rejection_reason).toMatch(/tự động hủy/);
     expect(notifOfType('system').length).toBe(1);
     // Cancel notification exactly once (in-app + email); the start-time
     // "no helper yet" notice is suppressed when the cancel is due already.

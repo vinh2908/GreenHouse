@@ -11,7 +11,8 @@
     "ios": "node --max-old-space-size=4096 ../../node_modules/expo/bin/cli run:ios",
     "web": "node --max-old-space-size=4096 ../../node_modules/expo/bin/cli start --web",
     "build:web": "node --max-old-space-size=4096 ../../node_modules/expo/bin/cli export -p web",
-    "lint": "tsc --noEmit",
+    "lint": "tsc --noEmit && eslint app components hooks services stores types utils",
+    "lint:hooks": "eslint app components hooks services stores types utils",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
@@ -72,7 +73,11 @@
     "@babel/core": "^7.25.2",
     "@expo/ngrok": "^4.1.3",
     "@types/react": "~19.2.18",
+    "@typescript-eslint/eslint-plugin": "^8.20.0",
+    "@typescript-eslint/parser": "^8.20.0",
     "babel-preset-expo": "~57.0.13",
+    "eslint": "^9.18.0",
+    "eslint-plugin-react-hooks": "^5.2.0",
     "tailwindcss": "^3.4.17",
     "typescript": "^6.0.3"
   }

@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import {
   formatDate,
-  formatDateWithWeekday,
+  formatDateKeyWithWeekday,
   formatDateKey,
   vnDateKey,
   vnNow,
@@ -16,9 +16,11 @@ import {
   Platform,
 } from 'react-native';
 import { Clock, ChevronDown, Check, X } from 'lucide-react-native';
+import Toast from 'react-native-toast-message';
 import { COLORS, useThemeColors } from '@/components/ui';
 import { useTranslation, fs } from '@/hooks/use-i18n';
 import { formatCurrency } from '@/services/i18n';
+import { clampPickerDuration } from '@/utils/duration-clamp';
 
 /** Khung giờ làm việc (server G3, jobs.service.ts): bắt đầu 07:00–22:00. */
 export const WORK_START_HOUR = 7;
@@ -610,17 +612,41 @@ export function DurationDropdownPicker({
     }
   }, [modalType, durationHours, durationMinutes]);
 
+  // R12-29: the minimum is still enforced, but NEVER silently — when a
+  // pick is clamped, say so (toast) so the user knows why the value moved.
+  const announceClamp = (result: { clampedUp: boolean; clampedDown: boolean }) => {
+    if (result.clampedUp) {
+      Toast.show({
+        type: 'info',
+        text1:
+          lang === 'en'
+            ? `Minimum duration is ${minMinutes} minutes`
+            : `Thời lượng tối thiểu là ${minMinutes} phút`,
+      });
+    } else if (result.clampedDown) {
+      Toast.show({
+        type: 'info',
+        text1:
+          lang === 'en'
+            ? `Maximum duration is ${maxMinutes} minutes`
+            : `Thời lượng tối đa là ${maxMinutes} phút`,
+      });
+    }
+  };
+
   const handleSelectHour = (h: number) => {
     const newTotal = h * 60 + durationMinutes;
-    const clamped = Math.max(minMinutes, Math.min(maxMinutes, newTotal));
-    onChangeMinutes(clamped);
+    const result = clampPickerDuration(newTotal, minMinutes, maxMinutes);
+    announceClamp(result);
+    onChangeMinutes(result.minutes);
     setModalType(null);
   };
 
   const handleSelectMinute = (m: number) => {
     const newTotal = durationHours * 60 + m;
-    const clamped = Math.max(minMinutes, Math.min(maxMinutes, newTotal));
-    onChangeMinutes(clamped);
+    const result = clampPickerDuration(newTotal, minMinutes, maxMinutes);
+    announceClamp(result);
+    onChangeMinutes(result.minutes);
     setModalType(null);
   };
 
@@ -655,6 +681,14 @@ export function DurationDropdownPicker({
           <ChevronDown size={16} color={COLORS.gray[500]} />
         </TouchableOpacity>
       </View>
+
+      {/* R12-29: state the minimum up front — a duration below it used to
+          be silently clamped to the minimum with no message. */}
+      <Text style={{ fontSize: fs(11.5), color: tc.textMuted, marginTop: 6 }}>
+        {lang === 'en'
+          ? `Minimum duration: ${minMinutes} mins`
+          : `Thời lượng tối thiểu: ${minMinutes} phút`}
+      </Text>
 
       {/* Chip thời lượng nhanh */}
       <ScrollView
@@ -815,7 +849,9 @@ export function ScheduledTimePreview({
     if (dateLabel) return dateLabel;
     if (startDate) {
       try {
-        return formatDateWithWeekday(startDate, lang);
+        // R12-27: a bare 'YYYY-MM-DD' key is rendered by direct parsing so
+        // the preview can never show the day before the selected date.
+        return formatDateKeyWithWeekday(startDate, lang);
       } catch {
         return startDate;
       }

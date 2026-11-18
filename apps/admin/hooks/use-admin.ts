@@ -375,7 +375,7 @@ export function useAdminResolveDispute() {
       admin_note,
     }: {
       id: string;
-      action: 'refund_full' | 'refund_partial' | 'release_to_helper';
+      action: 'refund_full' | 'refund_partial' | 'release_to_helper' | 'reject_dispute';
       refund_amount?: number;
       admin_note: string;
     }) => apiClient.patch(`/jobs/${id}/resolve-dispute`, { action, refund_amount, admin_note }),
@@ -761,6 +761,27 @@ export function useFlaggedSosRequests(params: { page?: number }) {
   });
 }
 
+/** Nhật ký SOS đầy đủ — MỌI yêu cầu (GET /admin/sos-backup, R12 mục 6) */
+export function useSosBackupHistory(params: {
+  status?: string;
+  helper_id?: string;
+  page?: number;
+}) {
+  return useQuery({
+    queryKey: ['admin', 'sos-backup', 'history', params],
+    queryFn: async () => {
+      const { data } = await apiClient.get('/admin/sos-backup', { params });
+      return data.data as {
+        requests: AdminSosRequest[];
+        total: number;
+        page: number;
+        limit: number;
+        total_pages: number;
+      };
+    },
+  });
+}
+
 /** 1 dòng sổ phạt hủy đơn của thợ (GET /admin/helper-penalty-events) */
 export interface AdminPenaltyEvent {
   _id: string;
@@ -773,8 +794,19 @@ export interface AdminPenaltyEvent {
   excess_count: number;
   /** Điểm bị trừ bởi chính lần hủy này */
   points_deducted: number;
-  /** Điểm hiệu suất tổng sau khi áp phạt (đối soát) */
+  /** Điểm hiệu suất tổng sau khi áp phạt — ẢNH CHỤP lúc ghi sự kiện (đối soát lịch sử) */
   performance_score_after: number;
+  /**
+   * R12 (mục 25): điểm tin cậy HIỆN TẠI của thợ (cùng snapshot
+   * HelperProfile.performance_score mà thợ thấy ở màn SOS). Khác
+   * performance_score_after khi thợ hủy thêm / được đánh giá sau lúc ghi.
+   * null = không còn hồ sơ thợ.
+   */
+  helper_current_score: number | null;
+  /** Điểm đang bị trừ vào tổng hiện tại (0 nếu đã hết phạt / đã miễn) */
+  helper_current_penalty_points?: number | null;
+  /** Mốc tính lại điểm hiện tại */
+  helper_score_updated_at?: string | null;
   status: 'active' | 'waived';
   waived_by?: string;
   waived_at?: string;

@@ -69,6 +69,11 @@ export default function KycScreen() {
   const [pickerModalVisible, setPickerModalVisible] = useState(false);
   const [activeImageType, setActiveImageType] = useState<'front' | 'back' | 'selfie'>('front');
 
+  // R12 mục 15: hook phải đứng TRƯỚC mọi early return — useSafeAreaInsets()
+  // từng nằm sau `if (isLoading) return ...` nên thứ tự hook đổi khi
+  // isLoading lật (vi phạm Rules of Hooks). Chỉ dời lên, không đổi logic.
+  const insets = useSafeAreaInsets();
+
   if (isLoading) return <LoadingSpinner />;
 
   const kycStatus = profile?.verification_status || 'unsubmitted';
@@ -218,8 +223,6 @@ export default function KycScreen() {
       Toast.show({ type: 'error', text1: msg });
     }
   };
-
-  const insets = useSafeAreaInsets();
 
   const getTargetTitle = () => {
     if (activeImageType === 'front')

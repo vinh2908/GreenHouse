@@ -91,10 +91,21 @@ describe('B5g: cash-confirm button shows only at pending_review + cash', () => {
     expect(shouldShowCashConfirmButton(cashJob(), true)).toBe(true);
   });
 
-  it('(b) pending_review + chưa chọn phương thức + chưa paid → hiện nút (khách chọn ở bước nghiệm thu, mặc định cash)', () => {
-    expect(shouldShowCashConfirmButton(cashJob({ payment_method: undefined }), true)).toBe(true);
-    expect(shouldShowCashConfirmButton(cashJob({ payment_method: '' }), true)).toBe(true);
-    expect(shouldShowCashConfirmButton(cashJob({ payment_method: null }), true)).toBe(true);
+  it('(b) R12-20: pending_review + chưa chọn phương thức + chưa paid → KHÔNG hiện nữa (chỉ tiền mặt đã ghi nhận); đơn tranh chấp thì vẫn hiện theo heuristic cũ', () => {
+    expect(shouldShowCashConfirmButton(cashJob({ payment_method: undefined }), true)).toBe(false);
+    expect(shouldShowCashConfirmButton(cashJob({ payment_method: '' }), true)).toBe(false);
+    expect(shouldShowCashConfirmButton(cashJob({ payment_method: null }), true)).toBe(false);
+    // Tranh chấp mở từ bước 7: khách không ghi nhận được phương thức (pay bị
+    // chặn ở DISPUTED) nên giữ heuristic — chưa chọn + chưa paid = tiền mặt.
+    expect(
+      shouldShowCashConfirmButton(
+        cashJob({ status: 'disputed', payment_method: undefined }),
+        true,
+      ),
+    ).toBe(true);
+    expect(
+      shouldShowCashConfirmButton(cashJob({ status: 'disputed', payment_method: '' }), true),
+    ).toBe(true);
   });
 
   it('(c) đơn online → KHÔNG bao giờ hiện, kể cả đúng bước 7 và đúng thợ', () => {
@@ -113,7 +124,7 @@ describe('B5g: cash-confirm button shows only at pending_review + cash', () => {
     ).toBe(false);
   });
 
-  it('(e) trạng thái khác pending_review → không hiện, kể cả đơn cash', () => {
+  it('(e) trạng thái khác pending_review/disputed → không hiện, kể cả đơn cash', () => {
     for (const status of [
       'open',
       'confirmed',
@@ -121,10 +132,19 @@ describe('B5g: cash-confirm button shows only at pending_review + cash', () => {
       'in_progress',
       'completed',
       'cancelled',
-      'disputed',
     ]) {
       expect(shouldShowCashConfirmButton(cashJob({ status }), true)).toBe(false);
     }
+  });
+
+  it('(e2) R12-2: đơn tranh chấp mở từ bước 7 + tiền mặt → hiện nút (không kẹt deadlock); đơn online thì không', () => {
+    expect(shouldShowCashConfirmButton(cashJob({ status: 'disputed' }), true)).toBe(true);
+    expect(
+      shouldShowCashConfirmButton(cashJob({ status: 'disputed', payment_method: 'vietqr' }), true),
+    ).toBe(false);
+    expect(
+      shouldShowCashConfirmButton(cashJob({ status: 'disputed', payment_method: 'wallet' }), true),
+    ).toBe(false);
   });
 
   it('(f) không phải thợ được giao → không hiện', () => {

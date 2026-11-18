@@ -48,7 +48,6 @@ const apiClient: AxiosInstance = axios.create({
   baseURL: API_URL,
   headers: {
     'Content-Type': 'application/json',
-    'Bypass-Tunnel-Reminder': 'true', // Bỏ qua trang xác thực của localtunnel
   },
   timeout: 35000,
 });
@@ -61,8 +60,13 @@ apiClient.interceptors.request.use(
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
       }
-    } catch {
-      // SecureStore error fallback
+    } catch (err) {
+      // R12-14: đọc token thất bại (SecureStore lỗi) — request vẫn đi tiếp
+      // không kèm Authorization, server trả 401 rồi refresh-flow xử lý.
+      // Chỉ log ở dev để không spam log prod; không được nuốt lỗi lặng.
+      if (typeof __DEV__ !== 'undefined' && __DEV__) {
+        console.warn('[api-client] Failed to read access token from SecureStore', err);
+      }
     }
 
     // Nếu gửi FormData (upload file/ảnh), gỡ Content-Type application/json để Axios/trình duyệt tự gắn boundary

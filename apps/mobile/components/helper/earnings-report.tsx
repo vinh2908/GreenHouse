@@ -347,10 +347,14 @@ export function EarningsReport() {
         )}
       </Card>
 
+      {/* R12-19: state the definition — week/month totals below include
+          simulated demo income (the API sums every successful earning
+          transaction, simulated included), while the lifetime "total
+          received" on the wallet header counts real income only. */}
       <Text style={{ fontSize: fs(11.5), color: tc.textMuted }}>
         {lang === 'en'
-          ? '* Figures represent net earnings (platform fees deducted).'
-          : '* Số liệu là thu nhập ròng (đã trừ phí sàn đối với đơn tiền mặt).'}
+          ? '* Figures represent net earnings (platform fees deducted). Week/month totals include simulated demo income (not withdrawable); the lifetime total above counts real income only.'
+          : '* Số liệu là thu nhập ròng (đã trừ phí sàn đối với đơn tiền mặt). Tổng tuần/tháng có gồm thu nhập mô phỏng (demo, không rút được); tổng đã nhận phía trên chỉ tính thu nhập thật.'}
       </Text>
     </View>
   );

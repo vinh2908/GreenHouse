@@ -31,8 +31,6 @@ import { translate } from '@/services/i18n';
 import { COLORS, useThemeColors } from '@/components/ui';
 import { takePendingToastRoute } from '@/services/toast-navigation';
 
-console.warn('[Startup] 0. _layout.tsx module evaluating...');
-
 // Do not hold native splash synchronously — let React draw the animated Splash directly
 SplashScreen.hideAsync().catch(() => {});
 

@@ -34,9 +34,9 @@ export default function DisputesPage() {
   const resolveDispute = useAdminResolveDispute();
 
   const [resolvingJob, setResolvingJob] = useState<any | null>(null);
-  const [action, setAction] = useState<'refund_full' | 'refund_partial' | 'release_to_helper'>(
-    'refund_full',
-  );
+  const [action, setAction] = useState<
+    'refund_full' | 'refund_partial' | 'release_to_helper' | 'reject_dispute'
+  >('refund_full');
   const [refundAmount, setRefundAmount] = useState<string>('');
   const [adminNote, setAdminNote] = useState<string>('');
   const [resolveError, setResolveError] = useState<string | null>(null);
@@ -60,7 +60,7 @@ export default function DisputesPage() {
 
     const payload: {
       id: string;
-      action: 'refund_full' | 'refund_partial' | 'release_to_helper';
+      action: 'refund_full' | 'refund_partial' | 'release_to_helper' | 'reject_dispute';
       refund_amount?: number;
       admin_note: string;
     } = {
@@ -248,6 +248,10 @@ export default function DisputesPage() {
                     {
                       value: 'release_to_helper',
                       label: 'Bác khiếu nại, thanh toán đầy đủ cho thợ',
+                    },
+                    {
+                      value: 'reject_dispute',
+                      label: 'Bác khiếu nại, đơn trở lại bước trước tranh chấp (không di chuyển tiền)',
                     },
                   ]}
                 />

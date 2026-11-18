@@ -319,9 +319,9 @@ export class OpenDisputeDto {
 }
 
 export class ResolveDisputeDto {
-  @ApiProperty({ enum: ['refund_full', 'refund_partial', 'release_to_helper'] })
-  @IsIn(['refund_full', 'refund_partial', 'release_to_helper'])
-  action: 'refund_full' | 'refund_partial' | 'release_to_helper';
+  @ApiProperty({ enum: ['refund_full', 'refund_partial', 'release_to_helper', 'reject_dispute'] })
+  @IsIn(['refund_full', 'refund_partial', 'release_to_helper', 'reject_dispute'])
+  action: 'refund_full' | 'refund_partial' | 'release_to_helper' | 'reject_dispute';
 
   @ApiPropertyOptional({ description: 'Số tiền hoàn lại cho khách (dùng khi refund_partial)' })
   @IsOptional()
