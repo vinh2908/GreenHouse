@@ -114,6 +114,70 @@ export interface IJob {
   selected_quote_id?: string;
   total_quotes_count: number;
 
+  // ── R10: các trường runtime trên Job schema (apps/api/.../job.schema.ts) ──
+  // Chỉ có trên payload đơn đầy đủ; các endpoint list có thể select thiếu nên
+  // để optional — KHÔNG được đọc như thể luôn có mặt.
+  estimated_duration?: number; // Giờ ước tính (snapshot lúc tạo đơn)
+
+  // SOS khẩn cấp (đơn SOS thường)
+  is_sos?: boolean;
+  sos_category?: string; // 'electric' | 'plumbing' | 'lock' | 'ac_gas'
+  sos_surcharge?: number; // Phụ phí SOS (VNĐ)
+  sos_eta_minutes?: number;
+
+  // Giá cam kết / Fixed price (Feature 7): đơn không nhận báo giá
+  is_fixed_price?: boolean;
+  fixed_price?: number; // Giá cam kết (VNĐ), snapshot từ service.fixed_price
+
+  // Đơn bảo hành 1 chạm (Feature 9): miễn phí, giao đúng thợ đơn gốc
+  is_warranty?: boolean;
+  warranty_source_job_id?: string;
+
+  // Private offer cho thợ yêu thích
+  private_offer_helper_id?: string;
+  private_offer_expires_at?: Date;
+
+  // Đơn sinh từ gói định kỳ
+  recurring_plan_id?: string;
+  occurrence_date?: string; // 'YYYY-MM-DD'
+
+  // GPS lúc giao việc (không phải địa chỉ làm việc thợ tự ghim)
+  live_helper_location?: {
+    lat: number;
+    lng: number;
+    accuracy?: number;
+    recorded_at: number;
+    helper_id: string;
+  };
+
+  // SOS Backup: vết lần thay thợ gần nhất (giá + tiền đã trả KHÔNG đổi)
+  sos_backup_replacement?: {
+    sos_request_id: string;
+    previous_helper_id: string;
+    new_helper_id: string;
+    reason?: string;
+    replaced_at: Date;
+  };
+  sos_backup_count?: number;
+
+  // Voucher + Loyalty (Feature 12)
+  voucher_code?: string;
+  discount_amount?: number; // Số tiền đã giảm chính thức (khi thanh toán)
+  loyalty_points_requested?: number; // Điểm khách muốn đổi (snapshot ý định)
+  loyalty_discount_amount?: number; // Số tiền giảm tương ứng
+  benefits_restored_at?: Date; // Đã khôi phục voucher + điểm khi hủy theo SOS
+
+  // Đơn nhóm / Team jobs (Feature 5)
+  helpers_needed?: number; // 1 = đơn thường
+  team?: {
+    helper_id: string;
+    role: 'lead' | 'member';
+    status: 'invited' | 'accepted' | 'declined';
+    split_percent: number;
+    invited_at?: Date;
+    responded_at?: Date;
+  }[];
+
   // Hợp đồng số (sau khi chọn báo giá)
   contract?: IContract;
 
@@ -123,6 +187,8 @@ export interface IJob {
   // Thanh toán
   payment_status: PaymentStatus;
   payment_method?: string;
+  paid_amount?: number; // Tổng đã trả (VNĐ)
+  cash_commission_deducted?: boolean;
 
   // Kết quả
   completion_photos?: string[]; // Ảnh sau khi làm xong (helper upload)
@@ -132,11 +198,49 @@ export interface IJob {
   customer_review?: string;
   helper_rating?: number; // Customer đánh giá helper
   helper_review?: string;
+  completed_at?: Date;
+  reminders_sent?: string[];
+  review_reminder_sent?: boolean;
 
   // Audit trail
   events: IJobEvent[];
   cancellation_reason?: string;
   cancelled_by?: string;
+  cancelled_by_role?: string; // 'customer' | 'helper' | 'admin' (F15)
+
+  // Khiếu nại / tranh chấp
+  dispute_reason?: string;
+  dispute_photos?: string[];
+  dispute_opened_by?: string;
+  dispute_opened_at?: Date;
+  dispute_resolution?: {
+    action: 'refund_full' | 'refund_partial' | 'release_to_helper' | 'reject_dispute';
+    refund_amount?: number;
+    helper_payout?: number;
+    admin_note?: string;
+    resolved_by?: string;
+    resolved_at?: Date;
+  };
+
+  // Hết hạn / nhắc nhở / watchdog
+  rejected_helper_ids?: string[];
+  expiry_reminder_sent?: boolean;
+  last_rebroadcast_at?: Date;
+  overdue_notified_for?: string; // Khóa "YYYY-MM-DDTHH:MM" đã nhắc chưa có thợ
+  at_risk_flags?: string[];
+  at_risk_detected_at?: Date;
+  private_offer_expiry_notified?: boolean;
+
+  // Hoàn tiền (R7/F7)
+  refund_pending_retry?: boolean;
+  refund_retry_count?: number;
+  refund_pending_amount?: number;
+  refund_pending_reason?: string;
+  refunded_amount?: number; // Tổng đã hoàn cho đơn (chống hoàn vượt netPaid)
+
+  // R10 (B10): tiền mặt chỉ được duyệt khi THỢ xác nhận đã nhận đủ tiền
+  helper_cash_confirmed?: boolean;
+  helper_cash_confirmed_at?: Date;
 
   // Expiry
   expires_at?: Date; // Job tự đóng nhận báo giá sau X giờ

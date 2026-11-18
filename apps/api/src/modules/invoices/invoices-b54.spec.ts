@@ -93,18 +93,19 @@ describe('InvoicesService (B54)', () => {
     expect(invoiceModel.create).not.toHaveBeenCalled();
   });
 
-  describe('nhãn phương thức thanh toán (B54)', () => {
-    it('momo / zalopay / wallet → "Ví GreenHouse", không còn chữ MoMo/ZaloPay', () => {
-      for (const method of ['momo', 'zalopay', 'wallet']) {
+  describe('nhãn phương thức thanh toán (B54 + R12 MÔ PHỎNG)', () => {
+    it('momo / zalopay → "Ví GreenHouse (MÔ PHỎNG)", wallet thật → "Ví GreenHouse", không còn chữ MoMo/ZaloPay', () => {
+      for (const method of ['momo', 'zalopay']) {
         const label = paymentMethodLabel(method);
-        expect(label).toBe('Ví GreenHouse');
+        expect(label).toBe('Ví GreenHouse (MÔ PHỎNG)');
         expect(label).not.toMatch(/MoMo|ZaloPay/);
       }
+      expect(paymentMethodLabel('wallet')).toBe('Ví GreenHouse');
     });
 
-    it('cash → "Tiền mặt", vietqr → "Chuyển khoản VietQR"', () => {
+    it('cash → "Tiền mặt", vietqr → "Chuyển khoản VietQR (MÔ PHỎNG)"', () => {
       expect(paymentMethodLabel('cash')).toBe('Tiền mặt');
-      expect(paymentMethodLabel('vietqr')).toBe('Chuyển khoản VietQR');
+      expect(paymentMethodLabel('vietqr')).toBe('Chuyển khoản VietQR (MÔ PHỎNG)');
     });
   });
 });

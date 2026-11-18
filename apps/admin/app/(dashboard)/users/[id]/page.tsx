@@ -454,6 +454,85 @@ export default function UserDetailPage() {
                   <Field label="Khu vực">{hp?.working_areas?.join(', ') || null}</Field>
                 </div>
 
+                {/* R12 (mục 25): Điểm tin cậy — CÙNG số thợ thấy ở màn SOS
+                    (HelperProfile.performance_score, 1 công thức duy nhất:
+                    Khoảng cách 40 / Kỹ năng 30 / Đánh giá 20 / e-KYC 10 −
+                    phạt hủy vượt 3 lần/7 ngày). Trước đây trang admin không
+                    hiện trường này nên admin đọc "Điểm sau phạt" trong sổ
+                    phạt (ảnh chụp lúc ghi) như điểm hiện tại. */}
+                {hp?.performance_score != null && (
+                  <div className="rounded-lg border bg-muted/20 p-4 space-y-3">
+                    <div className="flex flex-wrap items-center gap-3">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                        Điểm tin cậy (hiệu suất)
+                      </p>
+                      <span className="text-2xl font-bold">{hp.performance_score}/100</span>
+                      <Badge
+                        variant={
+                          hp.performance_score >= 80
+                            ? 'success'
+                            : hp.performance_score >= 50
+                              ? 'warning'
+                              : 'danger'
+                        }
+                      >
+                        {hp.performance_score >= 80
+                          ? 'Tốt'
+                          : hp.performance_score >= 50
+                            ? 'Trung bình'
+                            : 'Thấp'}
+                      </Badge>
+                    </div>
+                    <div className="grid gap-3 sm:grid-cols-2 text-sm">
+                      <div>
+                        <span className="text-xs text-muted-foreground">Khoảng cách: </span>
+                        <span className="font-medium">
+                          {hp.score_breakdown?.distance ?? 0}đ / 40
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          {' '}
+                          (0đ khi xem không gắn đơn cụ thể — theo thiết kế)
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-xs text-muted-foreground">Kỹ năng: </span>
+                        <span className="font-medium">
+                          {hp.score_breakdown?.skill ?? 0}đ / 30
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-xs text-muted-foreground">Đánh giá: </span>
+                        <span className="font-medium">
+                          {hp.score_breakdown?.rating ?? 0}đ / 20
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-xs text-muted-foreground">e-KYC: </span>
+                        <span className="font-medium">
+                          {hp.score_breakdown?.kyc ?? 0}đ / 10
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-xs text-muted-foreground">Đang trừ phạt: </span>
+                        <span className="font-medium">{hp.penalty_points ?? 0}đ</span>
+                      </div>
+                      <div>
+                        <span className="text-xs text-muted-foreground">Hủy/SOS 7 ngày: </span>
+                        <span className="font-medium">
+                          {hp.cancellations_last_7_days ?? 0} lần
+                        </span>
+                      </div>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Đây là điểm thợ thấy ở cảnh báo SOS (“điểm hiện tại …/100”). Điểm
+                      trong sổ phạt là ảnh chụp lúc ghi sự kiện, có thể khác điểm này.
+                      {hp.score_updated_at
+                        ? ` Tính lại lúc ${formatDateTime(hp.score_updated_at)}.`
+                        : ''}
+                    </p>
+                  </div>
+                )}
+
                 {/* Lịch làm việc chi tiết (Lệnh 6) */}
                 <div className="rounded-lg border bg-muted/20 p-4 space-y-3">
                   <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">

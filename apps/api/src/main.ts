@@ -109,8 +109,7 @@ async function bootstrap() {
     },
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,
-    // Bypass-Tunnel-Reminder is sent by the mobile client; browsers need it allowed (web build).
-    allowedHeaders: 'Content-Type,Accept,Authorization,X-Requested-With,Bypass-Tunnel-Reminder',
+    allowedHeaders: 'Content-Type,Accept,Authorization,X-Requested-With',
   });
 
   // Global pipes

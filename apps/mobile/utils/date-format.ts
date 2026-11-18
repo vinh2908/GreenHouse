@@ -285,6 +285,31 @@ export function formatDateWithWeekday(dateInput: DateInput, lang: 'vi' | 'en' = 
   return weekday && date ? `${weekday}, ${date}` : '';
 }
 
+const DATE_KEY_RE = /^\d{4}-\d{2}-\d{2}$/;
+const WEEKDAYS_VI = ['Chủ nhật', 'Thứ hai', 'Thứ ba', 'Thứ tư', 'Thứ năm', 'Thứ sáu', 'Thứ bảy'];
+const WEEKDAYS_EN = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+/**
+ * R12-27: same output as formatDateWithWeekday, but for a bare 'YYYY-MM-DD'
+ * date KEY the date is rendered by direct parsing — never through a
+ * timezone conversion. A key names a calendar day, not an instant, so no
+ * runtime (Hermes without Intl, a western device TZ, a stale dayjs.tz)
+ * may shift it to the day before. Non-key inputs fall back to
+ * formatDateWithWeekday unchanged.
+ */
+export function formatDateKeyWithWeekday(dateInput: DateInput, lang: 'vi' | 'en' = 'vi'): string {
+  if (typeof dateInput === 'string' && DATE_KEY_RE.test(dateInput.trim())) {
+    const [y, m, d] = dateInput.trim().split('-').map(Number);
+    const dow = new Date(Date.UTC(y, m - 1, d)).getUTCDay();
+    const weekday = lang === 'en' ? WEEKDAYS_EN[dow] : WEEKDAYS_VI[dow];
+    const mm = String(m).padStart(2, '0');
+    const dd = String(d).padStart(2, '0');
+    const date = lang === 'en' ? `${mm}/${dd}/${y}` : `${dd}/${mm}/${y}`;
+    return `${weekday}, ${date}`;
+  }
+  return formatDateWithWeekday(dateInput, lang);
+}
+
 /** 'Thứ hai, 08/11/2026 09:00' / 'Monday, 11/08/2026 09:00' theo giờ VN. */
 export function formatDateTimeWithWeekday(dateInput: DateInput, lang: 'vi' | 'en' = 'vi'): string {
   if (!dateInput) return '';

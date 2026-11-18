@@ -71,6 +71,10 @@ const DISPUTE_ACTION_OPTIONS = [
   { value: 'refund_full', label: 'Hoàn tiền 100% cho Khách hàng (Thợ vi phạm)' },
   { value: 'refund_partial', label: 'Hoàn tiền một phần cho Khách & Giải ngân phần còn lại' },
   { value: 'release_to_helper', label: 'Bác khiếu nại & Giải ngân 100% cho Thợ' },
+  {
+    value: 'reject_dispute',
+    label: 'Bác khiếu nại, đơn trở lại bước trước tranh chấp (không di chuyển tiền)',
+  },
 ];
 
 interface Person {
@@ -110,7 +114,7 @@ export default function JobDetailPage() {
 
   const [reason, setReason] = useState('');
   const [disputeAction, setDisputeAction] = useState<
-    'refund_full' | 'refund_partial' | 'release_to_helper'
+    'refund_full' | 'refund_partial' | 'release_to_helper' | 'reject_dispute'
   >('refund_full');
   const [refundAmount, setRefundAmount] = useState('');
   const [adminNote, setAdminNote] = useState('');
@@ -457,7 +461,11 @@ export default function JobDetailPage() {
                     value={disputeAction}
                     onChange={e =>
                       setDisputeAction(
-                        e.target.value as 'refund_full' | 'refund_partial' | 'release_to_helper',
+                        e.target.value as
+                          | 'refund_full'
+                          | 'refund_partial'
+                          | 'release_to_helper'
+                          | 'reject_dispute',
                       )
                     }
                   />

@@ -100,6 +100,10 @@ function resolutionLabel(action?: string, lang?: string) {
     return lang === 'en'
       ? 'Dispute dismissed — payout released to helper'
       : 'Bác khiếu nại — giải ngân cho thợ';
+  if (action === 'reject_dispute')
+    return lang === 'en'
+      ? 'Dispute dismissed — no money moved'
+      : 'Bác khiếu nại — không di chuyển tiền';
   return '—';
 }
 

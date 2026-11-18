@@ -81,8 +81,10 @@ export async function refreshSosState(): Promise<void> {
 export function useSosBackupListener() {
   const setIncoming = useSosBackupStore(s => s.setIncoming);
   const removeIncoming = useSosBackupStore(s => s.removeIncoming);
+  const removeIncomingByJob = useSosBackupStore(s => s.removeIncomingByJob);
   const setDecision = useSosBackupStore(s => s.setDecision);
   const removeDecision = useSosBackupStore(s => s.removeDecision);
+  const removeDecisionByJob = useSosBackupStore(s => s.removeDecisionByJob);
   const userId = useAuthStore(s => s.user?._id);
   const qc = useQueryClient();
 
@@ -156,11 +158,36 @@ export function useSosBackupListener() {
       }),
       socketService.on<any>(SOCKET_EVENTS.SOS_BACKUP_DECIDED, payload => {
         if (payload?.sos_id) removeDecision(payload.sos_id);
+        // R12-24: a cancel decision kills the broadcast too — the candidate
+        // popup names the job, not the decision, so drop it by job as well.
+        if (
+          payload?.job_id &&
+          (payload?.decision === 'cancel_job' ||
+            payload?.decision === 'CANCEL_JOB' ||
+            payload?.decision === 'sos_withdrawn')
+        ) {
+          removeIncomingByJob(payload.job_id);
+        }
         if (payload?.job_id) {
           qc.invalidateQueries({ queryKey: ['job', payload.job_id] });
           qc.invalidateQueries({
             queryKey: ['sos-backup', 'by-job', payload.job_id],
           });
+        }
+      }),
+      // R12-24: manual job cancel — the server emits JOB_CANCELLED /
+      // SOS_CANCELLED to the JOB room only, but a candidate who somehow
+      // receives it must not keep staring at a dead invite.
+      socketService.on<any>(SOCKET_EVENTS.JOB_CANCELLED, payload => {
+        if (payload?.job_id) {
+          removeIncomingByJob(payload.job_id);
+          removeDecisionByJob(payload.job_id);
+        }
+      }),
+      socketService.on<any>(SOCKET_EVENTS.SOS_CANCELLED, payload => {
+        if (payload?.job_id) {
+          removeIncomingByJob(payload.job_id);
+          removeDecisionByJob(payload.job_id);
         }
       }),
       socketService.on<any>(SOCKET_EVENTS.SOS_BACKUP_HELPER_REPLACED, payload => {
@@ -189,5 +216,13 @@ export function useSosBackupListener() {
       }),
     ];
     return () => unsubs.forEach(u => u());
-  }, [setIncoming, removeIncoming, setDecision, removeDecision, qc]);
+  }, [
+    setIncoming,
+    removeIncoming,
+    removeIncomingByJob,
+    setDecision,
+    removeDecision,
+    removeDecisionByJob,
+    qc,
+  ]);
 }

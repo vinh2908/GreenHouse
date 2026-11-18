@@ -123,6 +123,7 @@ import { LoyaltyPointsInput } from '@/components/common/loyalty-points-input';
 import { LocationPicker } from '@/components/common/location-picker';
 import { validCoordinate } from '@/services/tracking';
 import { formatDisplayAddress } from '@/utils/address-formatter';
+import { resolveJobDetailErrorState } from '@/utils/job-detail-error';
 import {
   alreadyPaidRefetchAllowsApprove,
   missingCompletionEvidenceText,
@@ -141,6 +142,7 @@ import {
   Badge,
   Input,
   EmptyState,
+  ErrorState,
   useThemeColors,
 } from '@/components/ui';
 
@@ -231,7 +233,17 @@ export default function JobDetailScreen() {
   };
 
   useJobSocketUpdates(id);
-  const { data: job, isLoading: jLoading, refetch: refetchJob } = useJobDetail(id);
+  const {
+    data: job,
+    isLoading: jLoading,
+    isError: jError,
+    error: jFetchError,
+    refetch: refetchJob,
+  } = useJobDetail(id);
+  // R12-26: never collapse a fetch failure into "not found" — a cancelled
+  // job (410), a transient network failure and a real 404 are different
+  // states with different actions (retry only helps the transient one).
+  const jobErrorState = jError ? resolveJobDetailErrorState(jFetchError) : null;
   const [isCancelling, setIsCancelling] = useState(false);
   const cancellingRef = useRef(false);
   const helperLocation = useHelperLocation(
@@ -559,6 +571,144 @@ export default function JobDetailScreen() {
   const insets = useSafeAreaInsets();
 
   if (jLoading) return <LoadingSpinner />;
+  // R12-26: a cancelled job must open as "cancelled" (status + reason live
+  // in the detail body below when the fetch succeeds for the owner), and a
+  // failed fetch must say WHY it failed. Only a real 404 keeps the old
+  // "not found" text; transient failures get a retry instead.
+  if (jError && jobErrorState) {
+    if (jobErrorState.kind === 'gone_cancelled') {
+      return (
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: tc.surface,
+            justifyContent: 'center',
+            alignItems: 'center',
+            padding: 20,
+            gap: 12,
+          }}
+        >
+          <Text
+            style={{ fontSize: fs(16), fontWeight: '800', color: tc.text, textAlign: 'center' }}
+          >
+            {lang === 'en' ? 'This job was cancelled' : 'Đơn này đã bị hủy'}
+          </Text>
+          <Text style={{ fontSize: fs(14), color: tc.textSecondary, textAlign: 'center' }}>
+            {lang === 'en'
+              ? 'This job was cancelled and its details can no longer be opened.'
+              : 'Đơn đã bị hủy nên không còn mở được chi tiết nữa.'}
+          </Text>
+          <Button
+            title={lang === 'en' ? 'Back' : 'Quay lại'}
+            variant="outline"
+            onPress={handleBack}
+          />
+        </View>
+      );
+    }
+    if (jobErrorState.kind === 'gone_other') {
+      return (
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: tc.surface,
+            justifyContent: 'center',
+            alignItems: 'center',
+            padding: 20,
+            gap: 12,
+          }}
+        >
+          <Text
+            style={{ fontSize: fs(16), fontWeight: '800', color: tc.text, textAlign: 'center' }}
+          >
+            {lang === 'en' ? 'This job is no longer available' : 'Đơn này không còn khả dụng'}
+          </Text>
+          <Text style={{ fontSize: fs(14), color: tc.textSecondary, textAlign: 'center' }}>
+            {jobErrorState.serverMessage ||
+              (lang === 'en'
+                ? 'This job was cancelled, expired, or assigned to another helper.'
+                : 'Đơn đã bị hủy, đã hết hạn hoặc đã được giao cho thợ khác.')}
+          </Text>
+          <Button
+            title={lang === 'en' ? 'Back' : 'Quay lại'}
+            variant="outline"
+            onPress={handleBack}
+          />
+        </View>
+      );
+    }
+    if (jobErrorState.kind === 'not_found') {
+      return (
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: tc.surface,
+            justifyContent: 'center',
+            alignItems: 'center',
+            padding: 20,
+          }}
+        >
+          <Text style={{ fontSize: fs(16), color: tc.textSecondary, marginBottom: 16 }}>
+            {lang === 'en' ? 'Job request not found' : 'Không tìm thấy thông tin đơn hàng'}
+          </Text>
+          <Button
+            title={lang === 'en' ? 'Back' : 'Quay lại'}
+            variant="outline"
+            onPress={handleBack}
+          />
+        </View>
+      );
+    }
+    if (jobErrorState.kind === 'forbidden') {
+      return (
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: tc.surface,
+            justifyContent: 'center',
+            alignItems: 'center',
+            padding: 20,
+            gap: 12,
+          }}
+        >
+          <Text
+            style={{ fontSize: fs(16), fontWeight: '800', color: tc.text, textAlign: 'center' }}
+          >
+            {lang === 'en'
+              ? 'You do not have access to this job'
+              : 'Bạn không có quyền xem đơn hàng này'}
+          </Text>
+          <Button
+            title={lang === 'en' ? 'Back' : 'Quay lại'}
+            variant="outline"
+            onPress={handleBack}
+          />
+        </View>
+      );
+    }
+    // network / server — transient: retry instead of "not found".
+    return (
+      <View
+        style={{
+          flex: 1,
+          backgroundColor: tc.surface,
+          justifyContent: 'center',
+          alignItems: 'center',
+          padding: 20,
+        }}
+      >
+        <ErrorState
+          title={lang === 'en' ? 'Unable to load job details' : 'Không thể tải chi tiết đơn hàng'}
+          subtitle={
+            lang === 'en'
+              ? 'Could not connect to job service. Please retry.'
+              : 'Không thể kết nối đến máy chủ. Vui lòng bấm thử lại.'
+          }
+          onRetry={() => refetchJob()}
+        />
+      </View>
+    );
+  }
   if (!job) {
     return (
       <View
@@ -1535,9 +1685,13 @@ export default function JobDetailScreen() {
                       ? lang === 'en'
                         ? `Partial refund (${formatCurrency(job.dispute_resolution.refund_amount || 0, 'en')}₫)`
                         : `Hoàn một phần (${formatCurrency(job.dispute_resolution.refund_amount || 0, 'vi')}₫)`
-                      : lang === 'en'
-                        ? 'Payout released to Helper'
-                        : 'Giải ngân cho Thợ'}
+                      : job.dispute_resolution.action === 'reject_dispute'
+                        ? lang === 'en'
+                          ? 'Dispute dismissed — no money moved'
+                          : 'Bác khiếu nại — không di chuyển tiền'
+                        : lang === 'en'
+                          ? 'Payout released to Helper'
+                          : 'Giải ngân cho Thợ'}
                 </Text>
                 <Text style={{ fontSize: fs(13), color: tc.textSecondary }}>
                   {job.dispute_resolution.resolution_notes}
@@ -4477,12 +4631,19 @@ export default function JobDetailScreen() {
                   switch (s.status) {
                     case 'completed':
                     case 'matched':
+                    case 'accepted':
                       return lang === 'en' ? 'Replacement assigned' : 'Đã có thợ thay';
                     case 'cancelled':
+                    case 'customer_cancelled':
+                    case 'decision_timeout':
                       return lang === 'en' ? 'Cancelled' : 'Đã hủy';
                     case 'expired':
                       return lang === 'en' ? 'Expired' : 'Hết hạn tìm thợ';
                     default:
+                      // awaiting_customer / pending = vẫn đang điều phối.
+                      // R12-23: 'accepted' / 'customer_cancelled' /
+                      // 'decision_timeout' trước đây rơi vào nhánh này nên hồ
+                      // sơ đã xử lý xong vẫn hiện "Đang xử lý".
                       return lang === 'en' ? 'Searching' : 'Đang xử lý';
                   }
                 })();
@@ -4502,10 +4663,16 @@ export default function JobDetailScreen() {
                       <Badge
                         label={statusLabel}
                         color={
-                          s.status === 'completed' || s.status === 'matched' ? '#D1FAE5' : '#F3F4F6'
+                          s.status === 'completed' ||
+                          s.status === 'matched' ||
+                          s.status === 'accepted'
+                            ? '#D1FAE5'
+                            : '#F3F4F6'
                         }
                         textColor={
-                          s.status === 'completed' || s.status === 'matched'
+                          s.status === 'completed' ||
+                          s.status === 'matched' ||
+                          s.status === 'accepted'
                             ? '#065F46'
                             : COLORS.gray[700]
                         }

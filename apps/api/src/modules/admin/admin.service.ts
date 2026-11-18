@@ -1372,6 +1372,40 @@ export class AdminService {
     return { requests, total, page, limit, total_pages: Math.ceil(total / limit) };
   }
 
+  /**
+   * R12 (mục 6): Nhật ký SOS đầy đủ — MỌI yêu cầu SOS Backup, mới nhất
+   * trước, lọc theo trạng thái / thợ gốc nếu có. Danh sách /sos trước đây
+   * chỉ có hàng đợi "cần chú ý" (admin_attention = true) nên các yêu cầu
+   * S2/S3 (đã xử lý, đã thay thợ, đã hủy...) biến mất khỏi tầm mắt admin
+   * ngay khi gỡ cờ — nhật ký này là nơi duy nhất xem lại lịch sử SOS.
+   * Chỉ đọc, không đổi trạng thái hay business logic SOS nào.
+   */
+  async getSosBackupHistory(status?: string, helperId?: string, page = 1, limit = 20) {
+    const query: Record<string, unknown> = {};
+    if (status) query['status'] = status;
+    if (helperId) {
+      if (!Types.ObjectId.isValid(helperId)) {
+        throw new BadRequestException('helper_id không hợp lệ');
+      }
+      query['original_helper_id'] = new Types.ObjectId(helperId);
+    }
+    const skip = (page - 1) * limit;
+    const [requests, total] = await Promise.all([
+      this.sosModel
+        .find(query)
+        .populate('job_id', 'title status payment_status payment_method')
+        .populate('customer_id', 'full_name phone')
+        .populate('original_helper_id', 'full_name phone')
+        .populate('replacement_helper_id', 'full_name phone')
+        .sort({ created_at: -1 })
+        .skip(skip)
+        .limit(limit)
+        .exec(),
+      this.sosModel.countDocuments(query).exec(),
+    ]);
+    return { requests, total, page, limit, total_pages: Math.ceil(total / limit) };
+  }
+
   /** Sổ sự kiện phạt hủy đơn của thợ (lọc theo helper_id / trạng thái nếu có), mới nhất trước */
   async getHelperPenaltyEvents(helperId?: string, status?: string, page = 1, limit = 20) {
     const query: Record<string, unknown> = {};
@@ -1394,7 +1428,48 @@ export class AdminService {
         .exec(),
       this.penaltyEventModel.countDocuments(query).exec(),
     ]);
-    return { events, total, page, limit, total_pages: Math.ceil(total / limit) };
+    // R12 (mục 25): performance_score_after trên sự kiện là ẢNH CHỤP lúc ghi
+    // (điểm ngay sau lần hủy đó) — sẽ lệch với điểm thợ thấy HIỆN TẠI khi thợ
+    // hủy thêm / được đánh giá sau đó. Kèm điểm hiện tại (cùng snapshot
+    // HelperProfile.performance_score mà thợ thấy ở màn SOS) để admin đối
+    // soát đúng 1 số, thay vì đọc ảnh chụp cũ như điểm hiện tại.
+    // helper_id đã populate thành User doc → lấy _id; chưa populate thì
+    // chính nó là ObjectId (String(doc) trực tiếp ra '[object Object]').
+    const helperKeyOf = (raw: unknown): string => {
+      const obj = raw as { _id?: unknown } | null;
+      const id =
+        obj && typeof obj === 'object' && '_id' in obj && obj._id != null ? obj._id : raw;
+      return String(id ?? '');
+    };
+    const helperObjectIds = [...new Set(events.map(ev => helperKeyOf(ev.helper_id)))].filter(
+      id => id && Types.ObjectId.isValid(id),
+    );
+    const profiles = helperObjectIds.length
+      ? await this.helperModel
+          .find({ user_id: { $in: helperObjectIds.map(id => new Types.ObjectId(id)) } })
+          .exec()
+      : [];
+    const scoreByHelperId = new Map(profiles.map(p => [String(p.user_id), p] as const));
+    const eventsWithCurrentScore: Record<string, unknown>[] = events.map(ev => {
+      const profile = scoreByHelperId.get(helperKeyOf(ev.helper_id));
+      const plain: Record<string, unknown> =
+        typeof (ev as unknown as { toObject?: () => unknown }).toObject === 'function'
+          ? (ev as unknown as { toObject: () => Record<string, unknown> }).toObject()
+          : { ...(ev as unknown as Record<string, unknown>) };
+      return {
+        ...plain,
+        helper_current_score: profile?.performance_score ?? null,
+        helper_current_penalty_points: profile?.penalty_points ?? null,
+        helper_score_updated_at: profile?.score_updated_at ?? null,
+      };
+    });
+    return {
+      events: eventsWithCurrentScore,
+      total,
+      page,
+      limit,
+      total_pages: Math.ceil(total / limit),
+    };
   }
 
   /**

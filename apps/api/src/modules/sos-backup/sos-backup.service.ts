@@ -374,14 +374,19 @@ export class SosBackupService implements OnModuleInit, OnModuleDestroy {
    * Lưu ý: trạng thái HELPER_ARRIVED / IN_PROGRESS không có cạnh → CANCELLED
    * trong state machine thường; chính sách SOS cho phép ép hủy vì thợ không
    * thể tiếp tục và khách đã đồng ý (hoặc quá hạn theo cấu hình mặc định).
+   *
+   * `by` phân biệt đúng nguyên nhân hủy — R12-21: hết hạn tìm thợ thay thế
+   * (rematch_expired) KHÔNG được ghi nhận là "khách không phản hồi trong hạn"
+   * (timeout); khách đã phản hồi đúng hạn (chọn đổi người) nhưng không tìm
+   * được thợ thay.
    */
   private async cancelJobWithSosPolicy(
     sos: SosBackupRequestDocument,
-    by: 'customer' | 'timeout',
-  ): Promise<{ refundFailed: boolean; refundAmount: number }> {
+    by: 'customer' | 'timeout' | 'rematch_expired',
+  ): Promise<{ refundFailed: boolean; refundAmount: number; isCashPaid: boolean }> {
     const jobId = String(sos.job_id);
     const job = await this.jobModel.findById(sos.job_id).exec();
-    if (!job) return { refundFailed: false, refundAmount: 0 };
+    if (!job) return { refundFailed: false, refundAmount: 0, isCashPaid: false };
 
     let refundAmount = 0;
     let refundFailed = false;
@@ -403,15 +408,21 @@ export class SosBackupService implements OnModuleInit, OnModuleDestroy {
       // Review R11: Math.min lan NaN → hoàn 0₫ lặng lẽ nếu có stub lạ; fallback về net.
       const actuallyPaid = Number.isFinite(actuallyPaidRaw) ? actuallyPaidRaw : contractNetPaid;
       refundAmount = Math.min(contractNetPaid, Math.max(0, actuallyPaid));
+      // R12-21: lý do hoàn tiền theo đúng nguyên nhân hủy — hết hạn tìm thợ
+      // thay thế là 'rematch_expired', KHÔNG phải 'timeout' (khách không phản hồi).
+      const sosCancelReason =
+        by === 'customer'
+          ? 'Hủy đơn do thợ gặp sự cố (SOS) — khách chọn hủy'
+          : by === 'rematch_expired'
+            ? 'Hủy đơn do thợ gặp sự cố (SOS) — hết hạn tìm thợ thay thế'
+            : 'Hủy đơn do thợ gặp sự cố (SOS) — khách không phản hồi trong hạn';
       if (refundAmount > 0) {
         try {
           await this.paymentsService.refundCustomer(
             String(job.customer_id),
             jobId,
             refundAmount,
-            by === 'customer'
-              ? 'Hủy đơn do thợ gặp sự cố (SOS) — khách chọn hủy'
-              : 'Hủy đơn do thợ gặp sự cố (SOS) — khách không phản hồi trong hạn',
+            sosCancelReason,
           );
           job.payment_status = PaymentStatus.REFUNDED;
         } catch (err) {
@@ -436,10 +447,7 @@ export class SosBackupService implements OnModuleInit, OnModuleDestroy {
           job.refund_pending_retry = true;
           job.refund_retry_count = 0;
           job.refund_pending_amount = refundAmount;
-          job.refund_pending_reason =
-            by === 'customer'
-              ? 'Hủy đơn do thợ gặp sự cố (SOS) — khách chọn hủy'
-              : 'Hủy đơn do thợ gặp sự cố (SOS) — khách không phản hồi trong hạn';
+          job.refund_pending_reason = sosCancelReason;
         }
       }
     }
@@ -461,10 +469,15 @@ export class SosBackupService implements OnModuleInit, OnModuleDestroy {
 
     const previousStatus = job.status;
     job.status = JobStatus.CANCELLED;
+    // R12-21: lý do hủy ghi đúng nguyên nhân — 'rematch_expired' (khách đã
+    // chọn đổi người đúng hạn nhưng hết hạn tìm thợ thay) khác 'timeout'
+    // (khách không phản hồi trong hạn).
     job.cancellation_reason =
       by === 'customer'
         ? 'sos_backup: khách chọn hủy đơn sau khi thợ báo sự cố'
-        : 'sos_backup: khách không phản hồi trong hạn — hủy theo chính sách mặc định';
+        : by === 'rematch_expired'
+          ? 'sos_backup: hết hạn tìm thợ thay thế — hủy theo chính sách SOS'
+          : 'sos_backup: khách không phản hồi trong hạn — hủy theo chính sách mặc định';
     job.cancelled_by = job.customer_id;
     job.live_helper_location = undefined;
     job.events.push({
@@ -472,7 +485,9 @@ export class SosBackupService implements OnModuleInit, OnModuleDestroy {
       note:
         by === 'customer'
           ? `SOS Backup: khách đồng ý hủy đơn (trạng thái trước: ${previousStatus}), hoàn tiền ${refundAmount.toLocaleString('vi-VN')}₫, thợ không bị phạt${cashSettlementNote}`
-          : `SOS Backup: quá hạn chờ khách quyết định → hủy đơn theo mặc định, hoàn tiền ${refundAmount.toLocaleString('vi-VN')}₫, thợ không bị phạt${cashSettlementNote}`,
+          : by === 'rematch_expired'
+            ? `SOS Backup: hết hạn tìm thợ thay thế → hủy đơn, hoàn tiền ${refundAmount.toLocaleString('vi-VN')}₫, thợ không bị phạt${cashSettlementNote}`
+            : `SOS Backup: quá hạn chờ khách quyết định → hủy đơn theo mặc định, hoàn tiền ${refundAmount.toLocaleString('vi-VN')}₫, thợ không bị phạt${cashSettlementNote}`,
       actor_id: job.customer_id,
       actor_role: by === 'customer' ? 'customer' : 'system',
       timestamp: new Date(),
@@ -493,6 +508,28 @@ export class SosBackupService implements OnModuleInit, OnModuleDestroy {
         },
       )
       .exec();
+    // R12-23: cập nhật trạng thái hồ sơ SOS về giá trị kết thúc tương ứng
+    // với nguyên nhân hủy khi hồ sơ còn đang hoạt động (các luồng gọi đã
+    // claim trạng thái trước đó, đây là chốt chặn phòng khi có luồng gọi mới
+    // quên claim — hồ sơ không được ở lại "Đang xử lý" sau khi đã hủy đơn).
+    await this.sosModel
+      .updateOne(
+        {
+          _id: sos._id,
+          status: { $in: [SosBackupStatus.AWAITING_CUSTOMER, SosBackupStatus.PENDING] },
+        },
+        {
+          $set: {
+            status:
+              by === 'customer'
+                ? SosBackupStatus.CUSTOMER_CANCELLED
+                : by === 'rematch_expired'
+                  ? SosBackupStatus.EXPIRED
+                  : SosBackupStatus.DECISION_TIMEOUT,
+          },
+        },
+      )
+      .exec();
 
     // Khôi phục quyền lợi khách (voucher + điểm loyalty đã trừ lúc thanh
     // toán) — việc PHỤ, best-effort: chạy sau khi hủy + hoàn tiền đã xong,
@@ -505,7 +542,8 @@ export class SosBackupService implements OnModuleInit, OnModuleDestroy {
       sos_id: String(sos._id),
       job_id: jobId,
       decision: SosBackupDecision.CANCEL_JOB,
-      decided_by: by === 'customer' ? 'customer' : 'timeout_default',
+      decided_by:
+        by === 'customer' ? 'customer' : by === 'rematch_expired' ? 'rematch_expired' : 'timeout_default',
       refund_amount: refundAmount,
     };
     this.gateway.emitToUser(
@@ -528,30 +566,39 @@ export class SosBackupService implements OnModuleInit, OnModuleDestroy {
         body:
           by === 'customer'
             ? `Khách hàng đã chọn hủy đơn "${sos.job_title}" sau yêu cầu SOS của bạn. Bạn không bị tính phạt cho lần hủy này.${isCashPaid ? ' Nếu bạn đã nhận tiền mặt của khách, vui lòng trả lại trực tiếp cho khách.' : ''}`
-            : `Đơn "${sos.job_title}" đã tự động hủy do khách không phản hồi yêu cầu SOS trong thời hạn. Bạn không bị tính phạt cho lần hủy này.${isCashPaid ? ' Nếu bạn đã nhận tiền mặt của khách, vui lòng trả lại trực tiếp cho khách.' : ''}`,
+            : by === 'rematch_expired'
+              ? `Đơn "${sos.job_title}" đã tự động hủy do hết hạn tìm thợ thay thế. Bạn không bị tính phạt cho lần hủy này.${isCashPaid ? ' Nếu bạn đã nhận tiền mặt của khách, vui lòng trả lại trực tiếp cho khách.' : ''}`
+              : `Đơn "${sos.job_title}" đã tự động hủy do khách không phản hồi yêu cầu SOS trong thời hạn. Bạn không bị tính phạt cho lần hủy này.${isCashPaid ? ' Nếu bạn đã nhận tiền mặt của khách, vui lòng trả lại trực tiếp cho khách.' : ''}`,
         payload: { job_id: jobId, sos_id: String(sos._id) },
       })
       .catch(() => undefined);
 
+    // R12-22: tiêu đề + nội dung phải phản ánh đúng số tiền THỰC HOÀN —
+    // đơn chưa từng trả tiền (refundAmount = 0) thì KHÔNG được ghi "đã hoàn
+    // tiền" (tiêu đề cũ 'Đơn đã hủy & hoàn tiền theo chính sách SOS' hiện cả
+    // khi hoàn 0₫). Đơn tiền mặt đã thu thì đã có nhánh riêng (đối soát
+    // trực tiếp, không hoàn ví).
     await this.notificationsService
       .create({
         userId: String(job.customer_id),
         type: NOTIFICATION_TYPES.SOS_BACKUP_JOB_CANCELLED,
         title: refundFailed
           ? 'Đơn đã hủy — Khoản hoàn tiền đang chờ đối soát'
-          : 'Đơn đã hủy & hoàn tiền theo chính sách SOS',
+          : refundAmount > 0
+            ? 'Đơn đã hủy & hoàn tiền theo chính sách SOS'
+            : 'Đơn đã hủy theo chính sách SOS',
         body: refundFailed
           ? `Đơn "${sos.job_title}" đã hủy. Khoản hoàn ${refundAmount.toLocaleString('vi-VN')}₫ đang chờ quản trị viên đối soát ví thủ công.`
           : isCashPaid
             ? `Đơn "${sos.job_title}" đã hủy. Bạn đã trả tiền mặt cho thợ — vui lòng liên hệ trực tiếp với thợ để nhận lại số tiền mặt đã trả.`
             : refundAmount > 0
               ? `Đơn "${sos.job_title}" đã hủy. ${refundAmount.toLocaleString('vi-VN')}₫ đã được hoàn vào ví của bạn.`
-              : `Đơn "${sos.job_title}" đã hủy theo chính sách SOS.`,
+              : `Đơn "${sos.job_title}" đã hủy theo chính sách SOS. Bạn chưa thanh toán đơn này nên không có khoản hoàn tiền.`,
         payload: { job_id: jobId, sos_id: String(sos._id) },
       })
       .catch(() => undefined);
 
-    return { refundFailed, refundAmount };
+    return { refundFailed, refundAmount, isCashPaid };
   }
 
   /**
@@ -1635,9 +1682,11 @@ export class SosBackupService implements OnModuleInit, OnModuleDestroy {
     );
 
     // A60 & P1-5: Khi SOS hết hạn phát sóng không có thợ thay, tự động huỷ đơn + hoàn tiền 100% số thực trả cho khách
-    let cancelResult: { refundFailed: boolean; refundAmount: number } | undefined;
+    // R12-21: hết hạn tìm thợ thay thế là 'rematch_expired' — khách ĐÃ phản
+    // hồi đúng hạn (chọn đổi người), không được ghi là "không phản hồi".
+    let cancelResult: { refundFailed: boolean; refundAmount: number; isCashPaid: boolean } | undefined;
     try {
-      cancelResult = await this.cancelJobWithSosPolicy(claimed, 'timeout');
+      cancelResult = await this.cancelJobWithSosPolicy(claimed, 'rematch_expired');
     } catch (cancelErr) {
       this.logger.error(
         `Failed to cancel and refund job on SOS expiry: ${(cancelErr as Error).message}`,
@@ -1645,16 +1694,27 @@ export class SosBackupService implements OnModuleInit, OnModuleDestroy {
     }
 
     const refundFailed = cancelResult?.refundFailed ?? false;
+    const refundAmount = cancelResult?.refundAmount ?? 0;
+    const isCashPaid = cancelResult?.isCashPaid ?? false;
+    // R12-22: thông báo phải phản ánh đúng số tiền THỰC HOÀN — đơn chưa
+    // từng trả tiền (0₫) thì không được ghi "đã hoàn tiền vào ví"; đơn
+    // tiền mặt đã thu thì đối soát trực tiếp với thợ, không hoàn ví.
     await this.notificationsService
       .create({
         userId: String(sos.customer_id),
         type: NOTIFICATION_TYPES.SOS_BACKUP_EXPIRED,
         title: refundFailed
           ? 'Không tìm được thợ thay, đang chờ đối soát hoàn tiền'
-          : 'Không tìm được thợ thay, đã hoàn tiền',
+          : refundAmount > 0
+            ? 'Không tìm được thợ thay, đã hoàn tiền'
+            : 'Không tìm được thợ thay, đơn đã hủy',
         body: refundFailed
           ? `Không tìm được người giúp việc thay thế cho đơn "${sos.job_title}". Đơn đã tự động hủy, hệ thống đang đối soát để hoàn tiền vào ví cho bạn trong thời gian sớm nhất.`
-          : `Không tìm được người giúp việc thay thế cho đơn "${sos.job_title}". Đơn đã tự động hủy và hoàn tiền vào ví của bạn.`,
+          : refundAmount > 0
+            ? `Không tìm được người giúp việc thay thế cho đơn "${sos.job_title}". Đơn đã tự động hủy và hoàn tiền vào ví của bạn.`
+            : isCashPaid
+              ? `Không tìm được người giúp việc thay thế cho đơn "${sos.job_title}". Đơn đã tự động hủy. Bạn đã trả tiền mặt cho thợ — vui lòng liên hệ trực tiếp với thợ để nhận lại số tiền mặt đã trả.`
+              : `Không tìm được người giúp việc thay thế cho đơn "${sos.job_title}". Đơn đã tự động hủy. Bạn chưa thanh toán đơn này nên không có khoản hoàn tiền.`,
         payload: { job_id: String(sos.job_id), sos_id: String(sos._id) },
       })
       .catch(() => undefined);

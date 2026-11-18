@@ -36,7 +36,10 @@ const TimelineEntrySchema = {
 };
 
 const ResolutionSnapshotSchema = {
-  action: { type: String, enum: ['refund_full', 'refund_partial', 'release_to_helper'] },
+  action: {
+    type: String,
+    enum: ['refund_full', 'refund_partial', 'release_to_helper', 'reject_dispute'],
+  },
   refund_amount: { type: Number, default: 0 },
   helper_payout: { type: Number, default: 0 },
   admin_note: { type: String },
@@ -90,7 +93,7 @@ export class DisputeCase {
 
   @Prop({ type: ResolutionSnapshotSchema })
   resolution?: {
-    action: 'refund_full' | 'refund_partial' | 'release_to_helper';
+    action: 'refund_full' | 'refund_partial' | 'release_to_helper' | 'reject_dispute';
     refund_amount?: number;
     helper_payout?: number;
     admin_note?: string;

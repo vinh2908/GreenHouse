@@ -17,6 +17,7 @@ import dayjs from 'dayjs';
 import Toast from 'react-native-toast-message';
 import { useJobDetail, useJobContract } from '@/hooks/use-api';
 import { useTranslation } from '@/hooks/use-i18n';
+import { receiptPaymentMethodLabel } from '@/utils/payment-method-label';
 import { downloadInvoicePdf } from '@/services/invoice.service';
 import {
   Button,
@@ -68,20 +69,9 @@ export default function ReceiptScreen() {
     baseLabor + materialsCost + sosSurcharge;
   const netPaid = Math.max(0, basePrice - discountAmount - loyaltyDiscount);
 
-  const paymentMethodLabel = (() => {
-    switch (job.payment_method) {
-      case 'wallet':
-        return lang === 'en' ? 'GreenHouse Wallet' : 'Ví GreenHouse';
-      case 'momo':
-        return lang === 'en' ? 'MoMo / ZaloPay' : 'Ví điện tử MoMo / ZaloPay';
-      case 'vietqr':
-        return lang === 'en' ? 'Bank Transfer (VietQR)' : 'Chuyển khoản VietQR';
-      case 'cash':
-        return lang === 'en' ? 'Direct Cash' : 'Tiền mặt trực tiếp';
-      default:
-        return lang === 'en' ? 'Electronic Payment' : 'Thanh toán điện tử';
-    }
-  })();
+  // R12-18: VietQR/MoMo/ZaloPay are simulations (no real gateway) — the
+  // receipt must say so, matching the wallet history ("MÔ PHỎNG").
+  const paymentMethodLabel = receiptPaymentMethodLabel(job.payment_method, lang);
 
   const handleDownloadPdf = async () => {
     try {
@@ -131,8 +121,12 @@ export default function ReceiptScreen() {
             </Text>
             <View style={styles.paidBadge}>
               <ShieldCheck size={14} color="#059669" />
+              {/* R12-A: the escrow-settled badge must not claim escrow for a
+                  cash settlement — cash is paid directly, not via escrow. */}
               <Text style={[styles.paidBadgeText, { fontSize: fs(11) }]}>
-                {lang === 'en' ? 'ESCROW SETTLED & VERIFIED' : 'ĐÃ QUYẾT TOÁN ESCROW'}
+                {job.payment_method === 'cash'
+                  ? (lang === 'en' ? 'CASH PAID & VERIFIED' : 'ĐÃ THANH TOÁN TIỀN MẶT')
+                  : (lang === 'en' ? 'ESCROW SETTLED & VERIFIED' : 'ĐÃ QUYẾT TOÁN ESCROW')}
               </Text>
             </View>
           </View>

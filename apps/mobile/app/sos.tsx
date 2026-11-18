@@ -7,10 +7,10 @@ import {
   TextInput,
   KeyboardAvoidingView,
   Platform,
-  Alert,
   Linking,
   ActivityIndicator,
 } from 'react-native';
+import { Alert } from '@/components/common/app-alert';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import {
@@ -94,6 +94,11 @@ export default function SosScreen() {
   useEffect(() => {
     if (!isAuthLoading && !isAuth) router.replace('/(auth)/login');
   }, [isAuthLoading, isAuth]);
+
+  // R12 mục 15: hook phải đứng TRƯỚC mọi early return — useSafeAreaInsets()
+  // từng nằm sau `if (isAuthLoading || !isAuth) return ...` nên thứ tự hook
+  // đổi khi trạng thái auth lật (vi phạm Rules of Hooks). Chỉ dời lên.
+  const insets = useSafeAreaInsets();
 
   const sosCategories = [
     {
@@ -293,8 +298,6 @@ export default function SosScreen() {
       },
     ]);
   };
-
-  const insets = useSafeAreaInsets();
 
   return (
     <View style={{ flex: 1, backgroundColor: tc.background }}>

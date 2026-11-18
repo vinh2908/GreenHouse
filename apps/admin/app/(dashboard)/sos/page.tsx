@@ -4,10 +4,12 @@ import Link from 'next/link';
 import { useState } from 'react';
 import {
   useFlaggedSosRequests,
+  useSosBackupHistory,
   useHelperPenaltyEvents,
   useWaivePenaltyEvent,
   useResolveFlaggedSos,
   type AdminPenaltyEvent,
+  type AdminSosRequest,
   type AdminSosUserRef,
 } from '@/hooks/use-admin';
 import { PromptDialog } from '@/components/common/prompt-dialog';
@@ -27,7 +29,7 @@ import {
   TableCell,
 } from '@/components/ui';
 import { formatDateTime, formatVND } from '@/lib/utils';
-import { Siren, ScrollText, X } from 'lucide-react';
+import { Siren, ScrollText, History, X } from 'lucide-react';
 
 // ─── Nhãn tiếng Việt (theo enum phía API) ─────────────────────────────────────
 
@@ -86,6 +88,110 @@ function jobIdOf(job: AdminPenaltyEvent['job_id'] | { _id: string } | string | n
   return job && typeof job === 'object' ? job._id : typeof job === 'string' ? job : '';
 }
 
+// ─── Bảng yêu cầu SOS dùng chung (tab "cần chú ý" + tab "lịch sử") ───────────
+
+function SosRequestsTable({
+  requests,
+  showAttention,
+  onResolve,
+  resolving,
+}: {
+  requests: AdminSosRequest[];
+  showAttention?: boolean;
+  onResolve?: (id: string) => void;
+  resolving?: boolean;
+}) {
+  return (
+    <div className="overflow-x-auto w-full">
+      <Table className="min-w-[700px]">
+        <TableHeader>
+          <TableRow>
+            <TableHead>Thời gian</TableHead>
+            <TableHead>Đơn</TableHead>
+            <TableHead>Khách hàng</TableHead>
+            <TableHead>Thợ gốc</TableHead>
+            <TableHead>Lý do SOS</TableHead>
+            <TableHead>Trạng thái</TableHead>
+            {showAttention && <TableHead>Cần chú ý</TableHead>}
+            <TableHead className="text-right">Thao tác</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {requests.map(r => {
+            const jobId = jobIdOf(r.job_id);
+            const jobTitle =
+              r.job_id && typeof r.job_id === 'object' && r.job_id.title
+                ? r.job_id.title
+                : r.job_title;
+            return (
+              <TableRow key={r._id}>
+                <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
+                  {formatDateTime(r.created_at)}
+                </TableCell>
+                <TableCell>
+                  {jobId ? (
+                    <Link href={`/jobs/${jobId}`} className="font-medium hover:underline">
+                      {jobTitle}
+                    </Link>
+                  ) : (
+                    <span className="font-medium">{jobTitle}</span>
+                  )}
+                  <p className="text-xs text-muted-foreground">
+                    #{jobId.slice(-6)}
+                    {r.service_name ? ` • ${r.service_name}` : ''}
+                    {r.refund_amount > 0 ? ` • Đã hoàn ${formatVND(r.refund_amount)}` : ''}
+                  </p>
+                </TableCell>
+                <TableCell>
+                  <PersonCell person={r.customer_id} />
+                </TableCell>
+                <TableCell>
+                  <PersonCell person={r.original_helper_id} />
+                  {r.replacement_helper_id && typeof r.replacement_helper_id === 'object' && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Thay: {r.replacement_helper_id.full_name}
+                    </p>
+                  )}
+                </TableCell>
+                <TableCell className="text-sm">{REASON_VI[r.reason] ?? r.reason}</TableCell>
+                <TableCell>
+                  <Badge variant={SOS_STATUS_BADGE[r.status] ?? 'secondary'}>
+                    {SOS_STATUS_VI[r.status] ?? r.status}
+                  </Badge>
+                  {r.admin_note && (
+                    <p className="text-xs text-muted-foreground mt-1 max-w-56">{r.admin_note}</p>
+                  )}
+                </TableCell>
+                {showAttention && (
+                  <TableCell>
+                    {r.admin_attention ? (
+                      <Badge variant="warning">Cần chú ý</Badge>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">Đã xử lý</span>
+                    )}
+                  </TableCell>
+                )}
+                <TableCell className="text-right">
+                  {onResolve && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={resolving}
+                      onClick={() => onResolve(r._id)}
+                    >
+                      Xử lý & Ghi chú
+                    </Button>
+                  )}
+                </TableCell>
+              </TableRow>
+            );
+          })}
+        </TableBody>
+      </Table>
+    </div>
+  );
+}
+
 // ─── Tab 1: SOS bị gắn cờ ─────────────────────────────────────────────────────
 
 function FlaggedSosTab({
@@ -122,78 +228,11 @@ function FlaggedSosTab({
         <EmptyState message="Không có yêu cầu SOS nào đang cần chú ý" />
       ) : (
         <>
-          <div className="overflow-x-auto w-full">
-            <Table className="min-w-[700px]">
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Thời gian</TableHead>
-                  <TableHead>Đơn</TableHead>
-                  <TableHead>Khách hàng</TableHead>
-                  <TableHead>Thợ gốc</TableHead>
-                  <TableHead>Lý do SOS</TableHead>
-                  <TableHead>Trạng thái</TableHead>
-                  <TableHead className="text-right">Thao tác</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {requests.map(r => {
-                  const jobId = jobIdOf(r.job_id);
-                  const jobTitle =
-                    r.job_id && typeof r.job_id === 'object' && r.job_id.title
-                      ? r.job_id.title
-                      : r.job_title;
-                  return (
-                    <TableRow key={r._id}>
-                      <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
-                        {formatDateTime(r.created_at)}
-                      </TableCell>
-                      <TableCell>
-                        {jobId ? (
-                          <Link href={`/jobs/${jobId}`} className="font-medium hover:underline">
-                            {jobTitle}
-                          </Link>
-                        ) : (
-                          <span className="font-medium">{jobTitle}</span>
-                        )}
-                        <p className="text-xs text-muted-foreground">
-                          #{jobId.slice(-6)}
-                          {r.service_name ? ` • ${r.service_name}` : ''}
-                          {r.refund_amount > 0 ? ` • Đã hoàn ${formatVND(r.refund_amount)}` : ''}
-                        </p>
-                      </TableCell>
-                      <TableCell>
-                        <PersonCell person={r.customer_id} />
-                      </TableCell>
-                      <TableCell>
-                        <PersonCell person={r.original_helper_id} />
-                        {r.replacement_helper_id && typeof r.replacement_helper_id === 'object' && (
-                          <p className="text-xs text-muted-foreground mt-1">
-                            Thay: {r.replacement_helper_id.full_name}
-                          </p>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-sm">{REASON_VI[r.reason] ?? r.reason}</TableCell>
-                      <TableCell>
-                        <Badge variant={SOS_STATUS_BADGE[r.status] ?? 'secondary'}>
-                          {SOS_STATUS_VI[r.status] ?? r.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          disabled={resolveSos.isPending}
-                          onClick={() => setResolvingId(r._id)}
-                        >
-                          Xử lý & Ghi chú
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          </div>
+          <SosRequestsTable
+            requests={requests}
+            onResolve={id => setResolvingId(id)}
+            resolving={resolveSos.isPending}
+          />
           <Pagination page={page} totalPages={data?.total_pages ?? 1} onPageChange={setPage} />
         </>
       )}
@@ -213,6 +252,102 @@ function FlaggedSosTab({
           onClose={() => setResolvingId(null)}
         />
       )}
+    </div>
+  );
+}
+
+// ─── Tab 2: Lịch sử SOS (R12 mục 6) ───────────────────────────────────────────
+// MỌI yêu cầu SOS (kể cả đã xử lý / đã thay thợ / đã hủy) — hàng đợi "cần chú
+// ý" ở tab 1 chỉ hiện yêu cầu đang gắn cờ nên lịch sử biến mất khỏi tầm mắt
+// admin ngay khi gỡ cờ; tab này là nơi duy nhất xem lại toàn bộ SOS.
+
+function SosHistoryTab({
+  data,
+  isLoading,
+  isError,
+  refetch,
+  page,
+  setPage,
+  status,
+  setStatus,
+  helperId,
+  setHelperId,
+}: {
+  data: ReturnType<typeof useSosBackupHistory>['data'];
+  isLoading: boolean;
+  isError: boolean;
+  refetch: () => void;
+  page: number;
+  setPage: (p: number) => void;
+  status: string;
+  setStatus: (s: string) => void;
+  helperId: string;
+  setHelperId: (id: string) => void;
+}) {
+  const [helperIdInput, setHelperIdInput] = useState('');
+  const requests = data?.requests ?? [];
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-end gap-3 flex-wrap">
+        <div className="w-52">
+          <Select
+            label="Trạng thái"
+            value={status}
+            onChange={e => {
+              setStatus(e.target.value);
+              setPage(1);
+            }}
+            options={[
+              { value: '', label: 'Tất cả trạng thái' },
+              ...Object.keys(SOS_STATUS_VI).map(s => ({ value: s, label: SOS_STATUS_VI[s]! })),
+            ]}
+          />
+        </div>
+        <div className="w-72">
+          <Input
+            label="Lọc theo ID thợ gốc (user_id)"
+            placeholder="Dán user_id của thợ..."
+            value={helperIdInput}
+            onChange={e => setHelperIdInput(e.target.value)}
+            onKeyDown={e => {
+              if (e.key === 'Enter') {
+                setHelperId(helperIdInput.trim());
+                setPage(1);
+              }
+            }}
+          />
+        </div>
+        <Button
+          variant="outline"
+          onClick={() => {
+            setHelperId(helperIdInput.trim());
+            setPage(1);
+          }}
+        >
+          Lọc
+        </Button>
+      </div>
+
+      <div className="rounded-lg border bg-card">
+        {isLoading ? (
+          <Loading />
+        ) : isError ? (
+          <div className="p-8 text-center space-y-3">
+            <p className="text-destructive font-medium">Không thể tải lịch sử SOS</p>
+            <Button variant="outline" size="sm" onClick={() => refetch()}>
+              Tải lại
+            </Button>
+          </div>
+        ) : requests.length === 0 ? (
+          <EmptyState message="Chưa có yêu cầu SOS nào khớp bộ lọc" />
+        ) : (
+          <>
+            <SosRequestsTable requests={requests} showAttention />
+            <Pagination page={page} totalPages={data?.total_pages ?? 1} onPageChange={setPage} />
+          </>
+        )}
+      </div>
     </div>
   );
 }
@@ -311,7 +446,7 @@ function WaiveDialog({ event, onClose }: { event: AdminPenaltyEvent; onClose: ()
   );
 }
 
-// ─── Tab 2: Sổ điểm phạt ──────────────────────────────────────────────────────
+// ─── Tab 3: Sổ điểm phạt ──────────────────────────────────────────────────────
 
 function PenaltyEventsTab({
   data,
@@ -425,8 +560,16 @@ function PenaltyEventsTab({
                         <TableCell>
                           <span className="font-semibold text-red-600">−{ev.points_deducted}đ</span>
                           <p className="text-xs text-muted-foreground">
-                            {ev.cancellations_in_window} lần hủy / 7 ngày • Điểm sau phạt:{' '}
-                            {ev.performance_score_after}
+                            {ev.cancellations_in_window} lần hủy / 7 ngày • Điểm sau phạt (lúc
+                            ghi): {ev.performance_score_after}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            Điểm hiện tại: {ev.helper_current_score ?? '—'}/100
+                            {ev.helper_current_penalty_points != null &&
+                              ev.helper_current_penalty_points > 0 &&
+                              ` (đang trừ ${ev.helper_current_penalty_points}đ)`}
+                            {ev.helper_score_updated_at &&
+                              ` • ${formatDateTime(ev.helper_score_updated_at)}`}
                           </p>
                         </TableCell>
                         <TableCell className="text-sm">
@@ -480,14 +623,22 @@ function PenaltyEventsTab({
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function SosOversightPage() {
-  const [tab, setTab] = useState<'flagged' | 'penalties'>('flagged');
+  const [tab, setTab] = useState<'flagged' | 'history' | 'penalties'>('flagged');
   // B12: mỗi query chỉ gọi 1 lần ở cấp trang, truyền xuống tab qua props
   // (trước đây trang + tab gọi trùng nhau).
   const [flaggedPage, setFlaggedPage] = useState(1);
+  const [historyPage, setHistoryPage] = useState(1);
+  const [historyStatus, setHistoryStatus] = useState('');
+  const [historyHelperId, setHistoryHelperId] = useState('');
   const [penaltyPage, setPenaltyPage] = useState(1);
   const [penaltyStatus, setPenaltyStatus] = useState('');
   const [penaltyHelperId, setPenaltyHelperId] = useState('');
   const flagged = useFlaggedSosRequests({ page: flaggedPage });
+  const history = useSosBackupHistory({
+    status: historyStatus || undefined,
+    helper_id: historyHelperId || undefined,
+    page: historyPage,
+  });
   const penalties = useHelperPenaltyEvents({
     helper_id: penaltyHelperId || undefined,
     status: penaltyStatus || undefined,
@@ -501,18 +652,27 @@ export default function SosOversightPage() {
         <p className="text-muted-foreground">
           <span className="font-semibold text-foreground">{flagged.data?.total ?? 0}</span> yêu cầu
           SOS đang cần chú ý •{' '}
+          <span className="font-semibold text-foreground">{history.data?.total ?? 0}</span> yêu cầu
+          SOS trong nhật ký •{' '}
           <span className="font-semibold text-foreground">{penalties.data?.total ?? 0}</span> sự
           kiện phạt trong sổ
         </p>
       </div>
 
-      <div className="flex gap-2">
+      <div className="flex gap-2 flex-wrap">
         <Button
           variant={tab === 'flagged' ? 'default' : 'outline'}
           onClick={() => setTab('flagged')}
         >
           <Siren className="mr-2 h-4 w-4" />
           SOS cần chú ý
+        </Button>
+        <Button
+          variant={tab === 'history' ? 'default' : 'outline'}
+          onClick={() => setTab('history')}
+        >
+          <History className="mr-2 h-4 w-4" />
+          Lịch sử SOS
         </Button>
         <Button
           variant={tab === 'penalties' ? 'default' : 'outline'}
@@ -531,6 +691,25 @@ export default function SosOversightPage() {
           refetch={flagged.refetch}
           page={flaggedPage}
           setPage={setFlaggedPage}
+        />
+      ) : tab === 'history' ? (
+        <SosHistoryTab
+          data={history.data}
+          isLoading={history.isLoading}
+          isError={history.isError}
+          refetch={history.refetch}
+          page={historyPage}
+          setPage={setHistoryPage}
+          status={historyStatus}
+          setStatus={s => {
+            setHistoryStatus(s);
+            setHistoryPage(1);
+          }}
+          helperId={historyHelperId}
+          setHelperId={id => {
+            setHistoryHelperId(id);
+            setHistoryPage(1);
+          }}
         />
       ) : (
         <PenaltyEventsTab

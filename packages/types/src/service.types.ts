@@ -32,12 +32,24 @@ export interface IService {
   price_range_min: number; // VND
   price_range_max: number; // VND
 
+  // Giá gốc (base) — admin sửa khoảng giá qua 2 trường này
+  // (apps/admin/.../services/page.tsx ghi base_price_min/max)
+  base_price_min: number; // VND
+  base_price_max: number; // VND
+
   // Thời gian ước tính
   estimated_duration_min: number; // hours
   estimated_duration_max: number; // hours
 
   // Cài đặt platform
   platform_fee_percent: number;
+
+  // Giá cam kết / Fixed price (Feature 7 — khớp Service schema):
+  // 'quote' = thợ gửi báo giá như cũ; 'fixed' = giá cố định sàn công bố,
+  // thợ nhận việc trực tiếp, không qua vòng báo giá.
+  pricing_model: 'quote' | 'fixed';
+  fixed_price: number; // Giá cam kết (VNĐ) — chỉ dùng khi pricing_model = 'fixed'
+
   requires_site_visit: boolean; // Cần xem nhà trước khi báo giá chính xác
   allows_video_upload: boolean;
 

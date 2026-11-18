@@ -52,11 +52,16 @@ interface SosBackupState {
   setIncoming: (incoming: SosBackupIncoming) => void;
   setIncomingQueue: (list: SosBackupIncoming[]) => void;
   removeIncoming: (sosId: string) => void;
+  /** R12-24: drop every queued invite for one job (e.g. the job was
+      manually cancelled — the cancel event names the job, not the SOS). */
+  removeIncomingByJob: (jobId: string) => void;
   clearIncoming: () => void;
   clearAllIncoming: () => void;
   setDecision: (decision: SosDecisionRequest) => void;
   setDecisionQueue: (list: SosDecisionRequest[]) => void;
   removeDecision: (sosId: string) => void;
+  /** R12-24: same, for the customer decision queue. */
+  removeDecisionByJob: (jobId: string) => void;
   clearDecision: () => void;
   clearAllDecisions: () => void;
 }
@@ -90,6 +95,16 @@ export const useSosBackupStore = create<SosBackupState>(set => ({
   removeIncoming: sosId => {
     set(state => {
       const nextQueue = state.incomingQueue.filter(i => i.sos_id !== sosId);
+      return {
+        incomingQueue: nextQueue,
+        incoming: nextQueue[0] || null,
+      };
+    });
+  },
+
+  removeIncomingByJob: jobId => {
+    set(state => {
+      const nextQueue = state.incomingQueue.filter(i => i.job_id !== jobId);
       return {
         incomingQueue: nextQueue,
         incoming: nextQueue[0] || null,
@@ -137,6 +152,16 @@ export const useSosBackupStore = create<SosBackupState>(set => ({
   removeDecision: sosId => {
     set(state => {
       const nextQueue = state.decisionQueue.filter(d => d.sos_id !== sosId);
+      return {
+        decisionQueue: nextQueue,
+        decision: nextQueue[0] || null,
+      };
+    });
+  },
+
+  removeDecisionByJob: jobId => {
+    set(state => {
+      const nextQueue = state.decisionQueue.filter(d => d.job_id !== jobId);
       return {
         decisionQueue: nextQueue,
         decision: nextQueue[0] || null,

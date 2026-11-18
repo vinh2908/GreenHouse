@@ -45,7 +45,9 @@ export interface AiSupportResponse {
   intent?: string; // 'cancel_booking' | 'check_status' | 'general'
   suggested_actions?: string[];
   confidence: number;
-  mock?: boolean;
+  // Cờ "trả lời mẫu / AI tắt": CHỈ is_mock — trường trùng `mock` đã bỏ
+  // (ai-support.service.ts từng gửi cả hai với cùng giá trị; mobile đọc
+  // is_mock trước nên bỏ `mock` không đổi hành vi).
   is_mock?: boolean;
 }
 

@@ -10,8 +10,8 @@ import {
   KeyboardAvoidingView,
   Platform,
   Modal,
-  Alert,
 } from 'react-native';
+import { Alert } from '@/components/common/app-alert';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import {

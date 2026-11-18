@@ -281,6 +281,24 @@ export class AdminController {
     return this.adminService.getFlaggedSosRequests(pg, lm);
   }
 
+  @Get('sos-backup')
+  @ApiOperation({
+    summary: '[Admin] R12: Nhật ký SOS đầy đủ (mọi yêu cầu, kể cả đã xử lý / đã thay thợ / đã hủy)',
+  })
+  @ApiQuery({ name: 'status', required: false, description: 'Lọc theo trạng thái SOS' })
+  @ApiQuery({ name: 'helper_id', required: false, description: 'Lọc theo thợ gốc (user_id)' })
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  async getSosBackupHistory(
+    @Query('status') status?: string,
+    @Query('helper_id') helperId?: string,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+  ) {
+    const { page: pg, limit: lm } = parseAdminPagination(page, limit);
+    return this.adminService.getSosBackupHistory(status || undefined, helperId || undefined, pg, lm);
+  }
+
   @Patch('sos-backup/:id/resolve')
   @ApiOperation({ summary: '[Admin] A09: Xử lý và gỡ cờ admin_attention cho yêu cầu SOS' })
   async resolveFlaggedSos(

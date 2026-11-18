@@ -1,5 +1,5 @@
 import { Types } from 'mongoose';
-import { NotFoundException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { AdminService } from './admin.service';
 
 /**
@@ -149,18 +149,23 @@ function makeService() {
       _id: new Types.ObjectId(),
       admin_attention: true,
       status: 'expired',
+      original_helper_id: helperId,
       created_at: new Date(now - HOUR),
     },
     {
       _id: new Types.ObjectId(),
       admin_attention: false,
       status: 'accepted',
+      original_helper_id: otherHelperId,
       created_at: new Date(now - 2 * HOUR),
     },
   ];
 
   const helperModel = {
     findOne: () => ({ exec: async () => profile }),
+    find: (filter: Record<string, unknown>) => ({
+      exec: async () => [profile].filter(p => matches(p, filter)),
+    }),
   };
   const penaltyEventModel = {
     findOneAndUpdate: (filter: Record<string, unknown>, update: Record<string, unknown>) => ({
@@ -278,5 +283,59 @@ describe('AdminService — danh sách giám sát SOS', () => {
 
     const all = await service.getHelperPenaltyEvents(undefined, undefined, 1, 20);
     expect(all.total).toBe(3);
+  });
+
+  it('R12 (mục 25): sổ phạt kèm ĐIỂM HIỆN TẠI của thợ — ảnh chụp lúc ghi giữ nguyên, điểm hiện tại lấy từ hồ sơ', async () => {
+    const { service, helperId, otherHelperId } = makeService();
+    const all = await service.getHelperPenaltyEvents(undefined, undefined, 1, 20);
+    // Hồ sơ thợ (fixture): performance_score = 50 sau khi tính lại —
+    // khác ảnh chụp lúc ghi của từng sự kiện (95 / 90), đúng như live.
+    const mine = all.events.filter(
+      e => String((e.helper_id as unknown as Types.ObjectId) ?? '') === String(helperId),
+    );
+    expect(mine).toHaveLength(2);
+    for (const e of mine) {
+      expect((e as unknown as Doc)['helper_current_score']).toBe(50);
+      expect((e as unknown as Doc)['helper_current_penalty_points']).toBe(10);
+      // Ảnh chụp lịch sử KHÔNG bị sửa
+      expect((e as unknown as Doc)['performance_score_after']).toBeGreaterThan(50);
+    }
+    const others = all.events.filter(
+      e => String((e.helper_id as unknown as Types.ObjectId) ?? '') === String(otherHelperId),
+    );
+    expect(others).toHaveLength(1);
+    expect((others[0] as unknown as Doc)['helper_current_score']).toBeNull();
+  });
+});
+
+describe('AdminService — nhật ký SOS đầy đủ (R12 mục 6)', () => {
+  it('getSosBackupHistory trả MỌI yêu cầu (kể cả đã xử lý / admin_attention=false), mới nhất trước', async () => {
+    const { service } = makeService();
+    const result = await service.getSosBackupHistory(undefined, undefined, 1, 20);
+    expect(result.total).toBe(2);
+    expect(result.requests).toHaveLength(2);
+    expect(result.requests[0]!['status']).toBe('expired');
+    expect(result.requests[1]!['status']).toBe('accepted');
+  });
+
+  it('getSosBackupHistory lọc theo trạng thái', async () => {
+    const { service } = makeService();
+    const result = await service.getSosBackupHistory('accepted', undefined, 1, 20);
+    expect(result.total).toBe(1);
+    expect(result.requests[0]!['status']).toBe('accepted');
+  });
+
+  it('getSosBackupHistory lọc theo thợ gốc', async () => {
+    const { service, helperId } = makeService();
+    const result = await service.getSosBackupHistory(undefined, String(helperId), 1, 20);
+    expect(result.total).toBe(1);
+    expect(result.requests[0]!['status']).toBe('expired');
+  });
+
+  it('getSosBackupHistory helper_id sai định dạng → 400', async () => {
+    const { service } = makeService();
+    await expect(service.getSosBackupHistory(undefined, 'khong-phai-objectid', 1, 20)).rejects.toBeInstanceOf(
+      BadRequestException,
+    );
   });
 });

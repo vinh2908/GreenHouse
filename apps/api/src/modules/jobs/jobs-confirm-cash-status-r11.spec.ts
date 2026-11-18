@@ -96,8 +96,22 @@ describe('JobsService.confirmCashPayment — PENDING_REVIEW only (L2/R11)', () =
     expect(jobDoc.save).not.toHaveBeenCalled();
   });
 
-  it('xác nhận trên đơn chưa chọn phương thức + chưa thanh toán ở PENDING_REVIEW → thành công', async () => {
+  it('xác nhận trên đơn chưa chọn phương thức + chưa thanh toán ở PENDING_REVIEW → R12-20 chặn (chỉ tiền mặt đã ghi nhận)', async () => {
     const { service, jobDoc, helperId, jobId } = makeService(JobStatus.PENDING_REVIEW, {
+      paymentMethod: undefined,
+      paymentStatus: PaymentStatus.UNPAID,
+    });
+
+    await expect(service.confirmCashPayment(String(helperId), String(jobId))).rejects.toThrow(
+      'thanh toán bằng tiền mặt',
+    );
+
+    expect(jobDoc.helper_cash_confirmed).toBe(false);
+    expect(jobDoc.save).not.toHaveBeenCalled();
+  });
+
+  it('xác nhận trên đơn DISPUTED mở từ bước 7 (chưa chọn phương thức + chưa thanh toán) → R12-2 thành công', async () => {
+    const { service, jobDoc, helperId, jobId } = makeService(JobStatus.DISPUTED, {
       paymentMethod: undefined,
       paymentStatus: PaymentStatus.UNPAID,
     });

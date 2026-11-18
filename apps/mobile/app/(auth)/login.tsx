@@ -43,16 +43,23 @@ export default function LoginScreen() {
   // P2-21: đếm ngược gửi lại mã ở bước reset (OTP hết hạn sau 5 phút)
   const [resetCountdown, setResetCountdown] = useState(0);
 
+  // R12-4: chỉ tạo lại interval khi đếm ngược bắt đầu/dừng (resetCountdown
+  // đổi từ 0 sang > 0 hoặc ngược lại). Dep cũ [resetCountdown] tạo lại
+  // interval mỗi giây khi bộ đếm đang chạy.
+  const isResetCountingDown = resetCountdown > 0;
   useEffect(() => {
-    if (resetCountdown <= 0) return;
-    const timer = setInterval(() => setResetCountdown(c => c - 1), 1000);
+    if (!isResetCountingDown) return;
+    const timer = setInterval(() => setResetCountdown(c => Math.max(0, c - 1)), 1000);
     return () => clearInterval(timer);
-  }, [resetCountdown]);
+  }, [isResetCountingDown]);
 
   const handleLogin = async () => {
     setLoginError(null);
     const identifier = phone.trim();
-    if (!identifier || !password.trim()) {
+    // R12-5: mật khẩu validate VÀ gửi đều dùng bản đã trim — trước đây
+    // validate password.trim() nhưng gửi password thô, lệch nhau.
+    const cleanPassword = password.trim();
+    if (!identifier || !cleanPassword) {
       const emptyMsg =
         lang === 'en'
           ? 'Please enter phone number or email and password'
@@ -66,7 +73,7 @@ export default function LoginScreen() {
       : identifier.replace(/\s+/g, '').replace(/^\+84/, '0');
 
     try {
-      const { data } = await login.mutateAsync({ phone: cleanIdentifier, password });
+      const { data } = await login.mutateAsync({ phone: cleanIdentifier, password: cleanPassword });
       const { access_token, refresh_token, user } = data.data;
       await setAuth(user, access_token, refresh_token);
 
@@ -85,7 +92,30 @@ export default function LoginScreen() {
         router.replace('/(customer)/home');
       }
     } catch (err: unknown) {
-      const dataMsg = (err as any)?.response?.data?.message;
+      // R12-3: lỗi mạng / server (Render cold-start, timeout, 5xx) không có
+      // response lỗi xác thực — phải báo lỗi kết nối riêng, KHÔNG được báo
+      // "sai mật khẩu" (lỗi đó chỉ dành cho 4xx có response từ server).
+      // Guard isAxiosError để lỗi từ setAuth (SecureStore) không bị nhận
+      // nhầm thành lỗi mạng.
+      const axiosErr = err as { isAxiosError?: boolean; response?: { status?: number; data?: { message?: unknown } } };
+      const status = axiosErr?.response?.status;
+      const isServerUnreachable =
+        axiosErr?.isAxiosError === true &&
+        (!axiosErr.response || (typeof status === 'number' && status >= 500));
+      if (isServerUnreachable) {
+        const netMsg =
+          lang === 'en'
+            ? 'Cannot reach the server. Please check your connection and try again.'
+            : 'Không thể kết nối tới máy chủ. Vui lòng kiểm tra mạng và thử lại.';
+        setLoginError(netMsg);
+        Toast.show({
+          type: 'error',
+          text1: lang === 'en' ? 'Login failed' : 'Đăng nhập thất bại',
+          text2: netMsg,
+        });
+        return;
+      }
+      const dataMsg = axiosErr?.response?.data?.message;
       const rawMsg = Array.isArray(dataMsg) ? dataMsg[0] : dataMsg;
       // P2-16: dịch message backend sang tiếng Anh khi ở chế độ English
       const msg =
@@ -171,7 +201,9 @@ export default function LoginScreen() {
       });
       return;
     }
-    if (newPassword.trim().length < 8) {
+    // R12-5: mật khẩu mới validate VÀ gửi đều dùng bản đã trim (như login).
+    const cleanNewPassword = newPassword.trim();
+    if (cleanNewPassword.length < 8) {
       Toast.show({
         type: 'error',
         text1:
@@ -185,13 +217,13 @@ export default function LoginScreen() {
       await resetPassword.mutateAsync({
         phone: resetPhone,
         otp: resetOtp.trim(),
-        new_password: newPassword,
+        new_password: cleanNewPassword,
       });
       setShowForgotModal(false);
       setForgotStep('phone');
       setResetCountdown(0);
       setPhone(resetPhone);
-      setPassword(newPassword);
+      setPassword(cleanNewPassword);
       setResetOtp('');
       setNewPassword('');
       Toast.show({

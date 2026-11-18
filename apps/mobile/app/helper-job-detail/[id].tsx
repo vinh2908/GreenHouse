@@ -50,6 +50,7 @@ import { OfflineBanner } from '@/components/common/offline-banner';
 import { SosBackupHelperCard } from '@/components/common/sos-backup-helper-card';
 import { formatDisplayAddress } from '@/utils/address-formatter';
 import { isJobNoLongerAvailableError } from '@/utils/job-unavailable';
+import { resolveJobDetailErrorState } from '@/utils/job-detail-error';
 import { isMyActiveJob as isMyActiveJobGate, effectiveJobStatus } from '@/utils/job-assignment';
 import { checkCompletionEvidence } from '@/utils/completion-evidence';
 import { shouldShowEvidenceReupload, prefillReuploadMedia } from '@/utils/evidence-reupload';
@@ -322,7 +323,11 @@ export default function HelperJobDetailScreen() {
   // R8-B: đơn không còn khả dụng (đã hủy / hết hạn / đã giao cho thợ khác)
   // — API trả 410 Gone, khác với lỗi mạng/máy chủ (5xx/timeout) và 403 thật
   // (gửi riêng cho thợ khác). Không có nút thử lại: thử lại cũng vẫn 410.
+  // R12-26: phân biệt đơn ĐÃ BỊ HỦY với các lý do khác — thợ mở đơn đã hủy
+  // phải thấy rõ trạng thái "đã hủy", không phải câu chung chung.
   if (isError && isJobNoLongerAvailableError(jobError)) {
+    const detailError = resolveJobDetailErrorState(jobError);
+    const isCancelled = detailError.kind === 'gone_cancelled';
     return (
       <View
         style={{
@@ -336,11 +341,23 @@ export default function HelperJobDetailScreen() {
       >
         <EmptyState
           icon={<Ban size={40} color={COLORS.gray[400]} />}
-          title={lang === 'en' ? 'This job is no longer available' : 'Đơn này không còn khả dụng'}
+          title={
+            isCancelled
+              ? lang === 'en'
+                ? 'This job was cancelled'
+                : 'Đơn này đã bị hủy'
+              : lang === 'en'
+                ? 'This job is no longer available'
+                : 'Đơn này không còn khả dụng'
+          }
           subtitle={
-            lang === 'en'
-              ? 'This job was cancelled, expired, or has already been assigned to another helper.'
-              : 'Đơn đã bị hủy, đã hết hạn hoặc đã được giao cho thợ khác.'
+            isCancelled
+              ? lang === 'en'
+                ? 'This job was cancelled, so its details can no longer be opened. The cancellation reason is only shown to the customer and the assigned helper.'
+                : 'Đơn đã bị hủy nên không còn mở được chi tiết nữa. Lý do hủy chỉ hiển thị cho khách đặt đơn và thợ được giao.'
+              : lang === 'en'
+                ? 'This job was cancelled, expired, or has already been assigned to another helper.'
+                : 'Đơn đã bị hủy, đã hết hạn hoặc đã được giao cho thợ khác.'
           }
           action={lang === 'en' ? 'Back to job list' : 'Quay lại danh sách đơn'}
           onAction={handleBack}
@@ -416,6 +433,14 @@ export default function HelperJobDetailScreen() {
         const helperId = typeof q.helper_id === 'string' ? q.helper_id : q.helper_id?._id;
         return helperId === currentUser?._id && q.status === 'pending';
       });
+
+  // R12-28: báo giá của chính thợ đã bị từ chối (vd đơn tự động hủy ở
+  // start+5) — trước đây getJobQuotes lọc REJECTED khỏi phía thợ nên báo giá
+  // "biến mất lặng lẽ"; giờ API trả cả REJECTED kèm rejection_reason.
+  const myRejectedQuote = quotes?.find((q: any) => {
+    const helperId = typeof q.helper_id === 'string' ? q.helper_id : q.helper_id?._id;
+    return helperId === currentUser?._id && q.status === 'rejected';
+  });
 
   // B4: báo giá ĐÃ ĐƯỢC CHỌN của chính thợ được cổng isMyActiveJob dùng làm
   // bằng chứng dự phòng (xem utils/job-assignment.ts) khi payload job còn cũ
@@ -976,6 +1001,39 @@ export default function HelperJobDetailScreen() {
                 <Text style={{ fontWeight: '600' }}>{job.cancellation_reason}</Text>
               </Text>
             ) : null}
+            {/* R12-28: báo giá của thợ đã bị từ chối kèm lý do — không để báo
+                giá "biến mất lặng lẽ" khi đơn tự động hủy. */}
+            {myRejectedQuote ? (
+              <View
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 6,
+                  backgroundColor: tc.subtle,
+                  padding: 8,
+                  borderRadius: 8,
+                }}
+              >
+                <Badge
+                  label={lang === 'en' ? 'Quote rejected' : 'Báo giá đã bị từ chối'}
+                  color={COLORS.gray[200]}
+                  textColor={COLORS.gray[600]}
+                  size="sm"
+                />
+                {(myRejectedQuote as any)?.rejection_reason ? (
+                  <Text
+                    style={{
+                      fontSize: fs(12),
+                      color: tc.textSecondary,
+                      fontStyle: 'italic',
+                      flex: 1,
+                    }}
+                  >
+                    {(myRejectedQuote as any).rejection_reason}
+                  </Text>
+                ) : null}
+              </View>
+            ) : null}
             <Text style={{ fontSize: fs(12), color: tc.textMuted }}>
               {lang === 'en'
                 ? 'This job is no longer active. No further actions are needed.'
@@ -1443,10 +1501,12 @@ export default function HelperJobDetailScreen() {
                 )}
                 {/* B5g: xác nhận đã nhận tiền mặt — gọi POST
                     /jobs/:id/confirm-cash để thỏa cổng P0-4 ở approveCompletion.
-                    Chỉ hiện ở bước 7 + thợ được giao + luồng tiền mặt
-                    (payment_method 'cash' hoặc chưa ghi nhận thanh toán
-                    online); KHÔNG bao giờ hiện cho đơn online (vietqr/momo/
-                    wallet), đơn bảo hành, hoặc khi đã xác nhận rồi. */}
+                    Chỉ hiện ở bước 7 + thợ được giao + tiền mặt ĐÃ GHI NHẬN
+                    (payment_method 'cash', R12-20) hoặc đơn đang tranh chấp
+                    mở từ bước 7 (R12-2, giữ heuristic chưa chọn + chưa paid
+                    vì lúc tranh chấp khách không ghi nhận được phương thức);
+                    KHÔNG bao giờ hiện cho đơn online (vietqr/momo/wallet),
+                    đơn bảo hành, hoặc khi đã xác nhận rồi. */}
                 {shouldShowCashConfirmButton(job, isMyActiveJob) && (
                   <Button
                     title={lang === 'en' ? 'Confirm cash received' : 'Xác nhận đã nhận tiền mặt'}
