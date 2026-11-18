@@ -26,6 +26,15 @@ export class Wallet {
   @Prop({ default: 0 })
   total_earned: number;
 
+  // R13-N1: phí sàn tiền mặt chưa thu đủ — ghi NỢ thay vì mất lặng.
+  // deductCommissionForCashJob chỉ trừ được tối đa số dư ví; phần thiếu
+  // trước đây chỉ nằm trong metadata.unpaid_fee của giao dịch commission
+  // (không ai đọc) nên nền tảng mất tiền. Nay phần thiếu cộng vào đây và
+  // được trừ dần từ thu nhập THẬT sau này (creditHelper/creditWallet) và
+  // khi rút tiền. Tiền mô phỏng KHÔNG bao giờ trả nợ này.
+  @Prop({ default: 0, min: 0 })
+  commission_debt: number; // VND — phí sàn tiền mặt còn nợ nền tảng
+
   @Prop({ default: 0 })
   total_withdrawn: number;
 

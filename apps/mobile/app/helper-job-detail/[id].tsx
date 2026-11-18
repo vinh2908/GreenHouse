@@ -265,7 +265,7 @@ export default function HelperJobDetailScreen() {
   // modal (cùng cơ chế câm như B5c: Toast ở root nằm sau RN <Modal> nên thợ
   // không thấy; Toast giữ làm kênh phụ, thấy được khi modal đóng).
   const [completeError, setCompleteError] = useState<string | null>(null);
-  // B5g: phản hồi inline cho nút xác nhận tiền mặt ở thẻ pending_review.
+  // B5g: phản hồi inline cho nút xác nhận tiền mặt (khối R13-B2: pending_review + disputed).
   const [cashConfirmError, setCashConfirmError] = useState<string | null>(null);
   const [cashConfirmSuccess, setCashConfirmSuccess] = useState<string | null>(null);
 
@@ -353,8 +353,8 @@ export default function HelperJobDetailScreen() {
           subtitle={
             isCancelled
               ? lang === 'en'
-                ? 'This job was cancelled, so its details can no longer be opened. The cancellation reason is only shown to the customer and the assigned helper.'
-                : 'Đơn đã bị hủy nên không còn mở được chi tiết nữa. Lý do hủy chỉ hiển thị cho khách đặt đơn và thợ được giao.'
+                ? 'This job was cancelled, so its details can no longer be opened. The cancellation reason is shown to the customer, the assigned helper, and helpers who quoted on it.'
+                : 'Đơn đã bị hủy nên không còn mở được chi tiết nữa. Lý do hủy chỉ hiển thị cho khách đặt đơn, thợ được giao và thợ đã báo giá.'
               : lang === 'en'
                 ? 'This job was cancelled, expired, or has already been assigned to another helper.'
                 : 'Đơn đã bị hủy, đã hết hạn hoặc đã được giao cho thợ khác.'
@@ -804,7 +804,7 @@ export default function HelperJobDetailScreen() {
   // B5g: xác nhận đã nhận tiền mặt — gọi POST /jobs/:id/confirm-cash để
   // thỏa cổng P0-4 ở approveCompletion (đơn tiền mặt không có xác nhận này
   // thì khách không nghiệm thu được). Phản hồi chính là dòng inline trong
-  // thẻ pending_review; Toast của hook giữ làm kênh phụ.
+  // khối R13-B2 (pending_review + disputed); Toast của hook giữ làm kênh phụ.
   const handleConfirmCashPayment = async () => {
     setCashConfirmError(null);
     setCashConfirmSuccess(null);
@@ -978,21 +978,27 @@ export default function HelperJobDetailScreen() {
                     ? lang === 'en'
                       ? 'Customer cancelled this job'
                       : 'Khách hàng đã hủy đơn hàng'
-                    : job.cancelled_by_role === 'helper'
-                      ? String(job.cancelled_by) === String(currentUser?._id)
-                        ? lang === 'en'
-                          ? 'You cancelled this job'
-                          : 'Bạn đã hủy đơn hàng này'
-                        : lang === 'en'
-                          ? 'Helper cancelled this job'
-                          : 'Thợ đã hủy đơn hàng'
-                      : String(job.cancelled_by) === String(currentUser?._id)
-                        ? lang === 'en'
-                          ? 'You cancelled this job'
-                          : 'Bạn đã hủy đơn hàng này'
-                        : lang === 'en'
-                          ? 'Customer cancelled this job'
-                          : 'Khách hàng đã hủy đơn hàng'}
+                    : // R13-N5: tự động hủy (sweep start+5) lưu 'system' — trước
+                      // đây rơi xuống nhánh cuối và bị ghi nhầm là khách hủy.
+                      job.cancelled_by_role === 'system'
+                      ? lang === 'en'
+                        ? 'System auto-cancelled this job'
+                        : 'Hệ thống tự động hủy đơn hàng'
+                      : job.cancelled_by_role === 'helper'
+                        ? String(job.cancelled_by) === String(currentUser?._id)
+                          ? lang === 'en'
+                            ? 'You cancelled this job'
+                            : 'Bạn đã hủy đơn hàng này'
+                          : lang === 'en'
+                            ? 'Helper cancelled this job'
+                            : 'Thợ đã hủy đơn hàng'
+                        : String(job.cancelled_by) === String(currentUser?._id)
+                          ? lang === 'en'
+                            ? 'You cancelled this job'
+                            : 'Bạn đã hủy đơn hàng này'
+                          : lang === 'en'
+                            ? 'Customer cancelled this job'
+                            : 'Khách hàng đã hủy đơn hàng'}
               </Text>
             </View>
             {job.cancellation_reason ? (
@@ -1150,51 +1156,59 @@ export default function HelperJobDetailScreen() {
               </Text>
             </View>
           )}
-          <Separator my={4} />
-          <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 8 }}>
-            <MapPin size={16} color={COLORS.primary} />
-            <View style={{ flex: 1, gap: 4 }}>
-              <Text
-                style={{
-                  fontSize: fs(14),
-                  color: tc.textSecondary,
-                  lineHeight: 20,
-                  fontWeight: '600',
-                }}
-              >
-                {formatDisplayAddress(job.address)}
-              </Text>
-              {effectiveMetrics ? (
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 }}>
-                  <Navigation size={14} color={COLORS.primary} />
-                  <Text style={{ fontSize: fs(13), color: COLORS.primary, fontWeight: '700' }}>
-                    {lang === 'en'
-                      ? `Distance: ~${effectiveMetrics.distanceKm.toFixed(1)} km · Est ETA: ~${effectiveMetrics.etaMinutes} mins`
-                      : `Khoảng cách: ~${effectiveMetrics.distanceKm.toFixed(1)} km · ETA ước tính: ~${effectiveMetrics.etaMinutes} phút`}
-                  </Text>
-                </View>
-              ) : (job as any)?.routing_error ? (
-                <TouchableOpacity
-                  onPress={handleRetryRoute}
-                  style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 }}
-                >
-                  <AlertCircle size={14} color={COLORS.error || '#ef4444'} />
+          {/* R13-N5: bản rút gọn (thợ từng báo giá xem đơn đã hủy) không có
+              địa chỉ — ẩn luôn hàng địa chỉ thay vì hiện pin + dòng trống. */}
+          {job.address && (
+            <>
+              <Separator my={4} />
+              <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 8 }}>
+                <MapPin size={16} color={COLORS.primary} />
+                <View style={{ flex: 1, gap: 4 }}>
                   <Text
                     style={{
-                      fontSize: fs(13),
-                      color: COLORS.error || '#ef4444',
+                      fontSize: fs(14),
+                      color: tc.textSecondary,
+                      lineHeight: 20,
                       fontWeight: '600',
-                      textDecorationLine: 'underline',
                     }}
                   >
-                    {lang === 'en'
-                      ? 'Route error · Tap to retry'
-                      : 'Không lấy được tuyến đường · Bấm thử lại'}
+                    {formatDisplayAddress(job.address)}
                   </Text>
-                </TouchableOpacity>
-              ) : null}
-            </View>
-          </View>
+                  {effectiveMetrics ? (
+                    <View
+                      style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 }}
+                    >
+                      <Navigation size={14} color={COLORS.primary} />
+                      <Text style={{ fontSize: fs(13), color: COLORS.primary, fontWeight: '700' }}>
+                        {lang === 'en'
+                          ? `Distance: ~${effectiveMetrics.distanceKm.toFixed(1)} km · Est ETA: ~${effectiveMetrics.etaMinutes} mins`
+                          : `Khoảng cách: ~${effectiveMetrics.distanceKm.toFixed(1)} km · ETA ước tính: ~${effectiveMetrics.etaMinutes} phút`}
+                      </Text>
+                    </View>
+                  ) : (job as any)?.routing_error ? (
+                    <TouchableOpacity
+                      onPress={handleRetryRoute}
+                      style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 }}
+                    >
+                      <AlertCircle size={14} color={COLORS.error || '#ef4444'} />
+                      <Text
+                        style={{
+                          fontSize: fs(13),
+                          color: COLORS.error || '#ef4444',
+                          fontWeight: '600',
+                          textDecorationLine: 'underline',
+                        }}
+                      >
+                        {lang === 'en'
+                          ? 'Route error · Tap to retry'
+                          : 'Không lấy được tuyến đường · Bấm thử lại'}
+                      </Text>
+                    </TouchableOpacity>
+                  ) : null}
+                </View>
+              </View>
+            </>
+          )}
         </Card>
 
         {/* ── Customer info ─────────────────────────────────────────── */}
@@ -1499,14 +1513,23 @@ export default function HelperJobDetailScreen() {
                     style={{ marginTop: 6, alignSelf: 'stretch' }}
                   />
                 )}
+              </View>
+            )}
+            {/* R13-B2: xác nhận tiền mặt — hoisted khỏi khối pending_review-only:
+                nút + dòng đã-xác-nhận + phản hồi inline phải hiện cả khi đơn đang
+                tranh chấp (disputed mở từ bước 7). Các con tự gate bằng
+                shouldShowCashConfirmButton / helper_cash_confirmed / lỗi-thành công,
+                nên khối này chỉ mount ở pending_review hoặc disputed. */}
+            {['pending_review', 'disputed'].includes(progressStatus) && (
+              <View style={{ gap: 8 }}>
                 {/* B5g: xác nhận đã nhận tiền mặt — gọi POST
-                    /jobs/:id/confirm-cash để thỏa cổng P0-4 ở approveCompletion.
-                    Chỉ hiện ở bước 7 + thợ được giao + tiền mặt ĐÃ GHI NHẬN
-                    (payment_method 'cash', R12-20) hoặc đơn đang tranh chấp
-                    mở từ bước 7 (R12-2, giữ heuristic chưa chọn + chưa paid
-                    vì lúc tranh chấp khách không ghi nhận được phương thức);
-                    KHÔNG bao giờ hiện cho đơn online (vietqr/momo/wallet),
-                    đơn bảo hành, hoặc khi đã xác nhận rồi. */}
+                  /jobs/:id/confirm-cash để thỏa cổng P0-4 ở approveCompletion.
+                  Chỉ hiện ở bước 7 + thợ được giao + tiền mặt ĐÃ GHI NHẬN
+                  (payment_method 'cash', R12-20) hoặc đơn đang tranh chấp
+                  mở từ bước 7 (R12-2, giữ heuristic chưa chọn + chưa paid
+                  vì lúc tranh chấp khách không ghi nhận được phương thức);
+                  KHÔNG bao giờ hiện cho đơn online (vietqr/momo/wallet),
+                  đơn bảo hành, hoặc khi đã xác nhận rồi. */}
                 {shouldShowCashConfirmButton(job, isMyActiveJob) && (
                   <Button
                     title={lang === 'en' ? 'Confirm cash received' : 'Xác nhận đã nhận tiền mặt'}
@@ -1544,7 +1567,7 @@ export default function HelperJobDetailScreen() {
                     </View>
                   )}
                 {/* B5g: phản hồi inline cho lần bấm xác nhận tiền mặt
-                    (lỗi / thành công), Toast của hook giữ làm kênh phụ. */}
+                  (lỗi / thành công), Toast của hook giữ làm kênh phụ. */}
                 {cashConfirmError && (
                   <View
                     style={{

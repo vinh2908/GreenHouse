@@ -39,7 +39,7 @@ import {
   HelperPenaltyEventSchema,
 } from '../helpers/schemas/helper-penalty-event.schema';
 import { User, UserSchema } from '../users/schemas/user.schema';
-import { JobStatus, VerificationStatus, HelperStatus, UserStatus, UserRole } from '@homemate/types';
+import { JobStatus, QuoteStatus, VerificationStatus, HelperStatus, UserStatus, UserRole } from '@homemate/types';
 import { isJobNoLongerAvailableError } from '@/utils/job-unavailable';
 
 jest.setTimeout(90000);
@@ -53,6 +53,7 @@ const PORT = 27126;
 describe('R8-B (cancelled / non-browsable job detail → 410 Gone, real mongod)', () => {
   let conn: mongoose.Connection;
   let JobModel: any;
+  let QuoteModel: any;
   let ServiceModel: any;
   let HelperModel: any;
   let UserModel: any;
@@ -150,6 +151,24 @@ describe('R8-B (cancelled / non-browsable job detail → 410 Gone, real mongod)'
     });
   }
 
+  async function seedQuote(
+    jobId: string,
+    helperId: string,
+    status: QuoteStatus,
+    extra: Record<string, unknown> = {},
+  ) {
+    return QuoteModel.create({
+      job_id: new Types.ObjectId(jobId),
+      helper_id: new Types.ObjectId(helperId),
+      status,
+      labor_cost: 50000,
+      total_price: 50000,
+      estimated_duration: 1,
+      expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000),
+      ...extra,
+    });
+  }
+
   /** Rejects unless the promise fails with exactly the expected HTTP status. */
   async function expectHttpStatus(promise: Promise<unknown>, status: number) {
     try {
@@ -221,7 +240,7 @@ describe('R8-B (cancelled / non-browsable job detail → 410 Gone, real mongod)'
     });
 
     JobModel = conn.model(Job.name, JobSchema);
-    conn.model(Quote.name, QuoteSchema);
+    QuoteModel = conn.model(Quote.name, QuoteSchema);
     conn.model(Contract.name, ContractSchema);
     ServiceModel = conn.model(Service.name, ServiceSchema);
     HelperModel = conn.model(HelperProfile.name, HelperProfileSchema);
@@ -249,6 +268,7 @@ describe('R8-B (cancelled / non-browsable job detail → 410 Gone, real mongod)'
 
   beforeEach(async () => {
     await JobModel.deleteMany({});
+    await QuoteModel.deleteMany({});
     await ServiceModel.deleteMany({});
     await HelperModel.deleteMany({});
     await UserModel.deleteMany({});
@@ -339,6 +359,110 @@ describe('R8-B (cancelled / non-browsable job detail → 410 Gone, real mongod)'
         403,
       );
       expect(err).toBeInstanceOf(ForbiddenException);
+    });
+  });
+
+  describe('R13-N5 (quoting helper sees the cancel reason — redacted 200)', () => {
+    // Policy (coordinator decision, Vinh may overturn): the auto-cancel
+    // reason is NOT sensitive to a helper who already quoted on the job —
+    // they saw the job, they just need to know WHY it vanished. Uninvolved
+    // helpers still get the bare 410 (guard: R8-B-1, no quote → 410).
+    // FAIL-ON-OLD: N5-1/N5-2 FAIL on base d06aa9c (410 Gone) and PASS
+    // after the fix. N5-3/N5-4 pass on base AND after (guards: 410 stays
+    // for non-cancelled jobs; the R12-28 quote surface already worked).
+    const AUTO_REASON = 'Tự động hủy: quá giờ hẹn 5 phút mà chưa có thợ nhận';
+
+    it('R13-N5-1 (the fix): PENDING quote on a CANCELLED job → 200 redacted payload with the reason, no private fields', async () => {
+      const { customer, helperUser } = await seedUsers();
+      const job = await seedJob(String(customer._id), JobStatus.CANCELLED, {
+        cancellation_reason: AUTO_REASON,
+        cancelled_by_role: 'system',
+      });
+      await seedQuote(String(job._id), String(helperUser._id), QuoteStatus.PENDING);
+
+      const loaded = await service.getJobForUser(String(job._id), String(helperUser._id), [
+        'helper',
+      ]);
+      expect((loaded as any).status).toBe(JobStatus.CANCELLED);
+      expect((loaded as any).title).toBe('TEST R8-B');
+      expect((loaded as any).cancellation_reason).toBe(AUTO_REASON);
+      expect((loaded as any).cancelled_by_role).toBe('system');
+      expect((loaded as any).address).toBeUndefined();
+      expect((loaded as any).customer_id).toBeUndefined();
+      expect((loaded as any).total_price).toBeUndefined();
+      expect((loaded as any).preferred_date).toBeUndefined();
+      expect((loaded as any).description).toBeUndefined();
+      expect(Object.keys(loaded as any).sort()).toEqual([
+        '_id',
+        'cancellation_reason',
+        'cancelled_by_role',
+        'service_id',
+        'status',
+        'title',
+      ]);
+    });
+
+    it('R13-N5-2 (the fix): REJECTED quote on a CANCELLED job → same 200 redacted payload', async () => {
+      const { customer, helperUser } = await seedUsers();
+      const job = await seedJob(String(customer._id), JobStatus.CANCELLED, {
+        cancellation_reason: AUTO_REASON,
+        cancelled_by_role: 'system',
+      });
+      await seedQuote(String(job._id), String(helperUser._id), QuoteStatus.REJECTED, {
+        rejection_reason: AUTO_REASON,
+      });
+
+      const loaded = await service.getJobForUser(String(job._id), String(helperUser._id), [
+        'helper',
+      ]);
+      expect((loaded as any).status).toBe(JobStatus.CANCELLED);
+      expect((loaded as any).cancellation_reason).toBe(AUTO_REASON);
+      expect((loaded as any).address).toBeUndefined();
+    });
+
+    it('R13-N5-3 (guard): COMPLETED job, quoting helper → still 410 (redaction is cancel-only)', async () => {
+      const { customer, helperUser } = await seedUsers();
+      const job = await seedJob(String(customer._id), JobStatus.COMPLETED);
+      await seedQuote(String(job._id), String(helperUser._id), QuoteStatus.ACCEPTED);
+
+      const err = await expectHttpStatus(
+        service.getJobForUser(String(job._id), String(helperUser._id), ['helper']),
+        410,
+      );
+      expect(err).toBeInstanceOf(GoneException);
+    });
+
+    it('R13-N5-5 (review 2): manual-cancel free-text reason stays hidden — no phone leak', async () => {
+      const { customer, helperUser } = await seedUsers();
+      const job = await seedJob(String(customer._id), JobStatus.CANCELLED, {
+        cancellation_reason: 'Tôi bận, gọi tôi 0901234567',
+        cancelled_by_role: 'customer',
+      });
+      await seedQuote(String(job._id), String(helperUser._id), QuoteStatus.PENDING);
+
+      const loaded = await service.getJobForUser(String(job._id), String(helperUser._id), [
+        'helper',
+      ]);
+      expect((loaded as any).status).toBe(JobStatus.CANCELLED);
+      expect((loaded as any).cancellation_reason).toBeNull();
+      expect((loaded as any).cancelled_by_role).toBe('customer');
+      expect(JSON.stringify(loaded)).not.toContain('0901234567');
+    });
+
+    it('R13-N5-4 (the fix): getJobQuotes on a CANCELLED job still returns the helper’s own REJECTED quote + reason (R12-28 surface)', async () => {
+      const { customer, helperUser } = await seedUsers();
+      const job = await seedJob(String(customer._id), JobStatus.CANCELLED, {
+        cancellation_reason: AUTO_REASON,
+        cancelled_by_role: 'system',
+      });
+      await seedQuote(String(job._id), String(helperUser._id), QuoteStatus.REJECTED, {
+        rejection_reason: AUTO_REASON,
+      });
+
+      const quotes = await service.getJobQuotes(String(job._id), String(helperUser._id), 'helper');
+      expect(quotes).toHaveLength(1);
+      expect((quotes[0] as any).status).toBe(QuoteStatus.REJECTED);
+      expect((quotes[0] as any).rejection_reason).toBe(AUTO_REASON);
     });
   });
 

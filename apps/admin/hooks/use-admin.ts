@@ -865,11 +865,14 @@ export interface AdminMonthlyContract {
   helper_id?: { _id: string; full_name?: string; phone?: string; avatar?: string };
   title: string;
   status: string;
-  monthly_amount: number;
+  monthly_salary: number;
   start_date: string;
   end_date?: string;
-  time_start?: string;
-  time_end?: string;
+  schedule?: {
+    days_of_week?: number[];
+    time_start?: string;
+    time_end?: string;
+  };
   created_at: string;
 }
 

@@ -33,4 +33,12 @@ export const zaloConfig = registerAs('zalo', () => ({
   accessToken: process.env.ZALO_OA_ACCESS_TOKEN || '',
   znsTemplateId: process.env.ZALO_ZNS_TEMPLATE_ID || '',
   enabled: !!(process.env.ZALO_OA_ACCESS_TOKEN && process.env.ZALO_ZNS_TEMPLATE_ID),
+  // R13-I2: OAuth refresh — access token OA chỉ sống ~25 giờ nên token tĩnh
+  // từ env sẽ chết lặng sau 1 ngày. Có đủ 3 biến này thì ZaloTokenService
+  // tự refresh (refresh token dùng 1 lần, sống ~3 tháng, token mới được
+  // lưu vào Mongo ngay sau mỗi lần refresh). Thiếu 3 biến → giữ hành vi
+  // cũ (dùng token tĩnh, tự bỏ qua khi thiếu token/template).
+  appId: process.env.ZALO_APP_ID || '',
+  appSecret: process.env.ZALO_APP_SECRET || '',
+  refreshToken: process.env.ZALO_OA_REFRESH_TOKEN || '',
 }));

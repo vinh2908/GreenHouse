@@ -8,6 +8,7 @@ import {
   IsEmail,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Transform } from 'class-transformer';
 import { VIETNAMESE_PHONE_REGEX } from '@homemate/utils';
 
 export class RegisterDto {
@@ -28,6 +29,10 @@ export class RegisterDto {
 
   @ApiProperty({ example: 'Password123!', minLength: 8 })
   @IsString()
+  // R13-I3: cắt khoảng trắng đầu/cuối TRƯỚC khi đo MinLength — mobile R12-5
+  // đã trim khi gửi, server phải lưu cùng dạng đã trim, nếu không tài khoản
+  // tạo bằng mật khẩu có khoảng trắng sẽ không đăng nhập được nữa.
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
   @MinLength(8, { message: 'Mật khẩu phải có ít nhất 8 ký tự' })
   @MaxLength(64)
   password: string;
@@ -111,6 +116,8 @@ export class ResetPasswordDto {
 
   @ApiProperty({ example: 'NewPassword123!' })
   @IsString()
+  // R13-I3: như RegisterDto.password — lưu dạng đã trim.
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
   @MinLength(8)
   @MaxLength(64)
   new_password: string;

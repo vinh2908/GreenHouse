@@ -24,11 +24,12 @@ describe('PaymentsService - G2 atomic credit/deduct', () => {
   let createdTxs: any[];
   // Mô phỏng số dư ví trong bộ nhớ: $inc áp dụng nguyên tử lên biến này.
   let balance: number;
+  let walletId: Types.ObjectId;
 
   beforeEach(async () => {
     balance = 100000;
     createdTxs = [];
-    const walletId = new Types.ObjectId();
+    walletId = new Types.ObjectId();
 
     const applyWalletUpdate = (filter: any, update: any) => ({
       exec: jest.fn(async () => {
@@ -91,9 +92,14 @@ describe('PaymentsService - G2 atomic credit/deduct', () => {
     expect(tx.balance_before).toBe(100000);
     expect(tx.balance_after).toBe(150000);
     expect(balance).toBe(150000);
-    // $inc được gọi với session.
-    expect(walletModel.findByIdAndUpdate).toHaveBeenCalledWith(
-      expect.anything(),
+    // $inc được gọi với session (R13-N1: findOneAndUpdate + guard
+    // commission_debt >= repaid để trừ nợ cùng $inc nguyên tử; nợ = 0 ở
+    // đây nên $inc giữ nguyên hình dạng cũ — chỉ đổi tên phương thức).
+    // R13-N1b (review 2): pin cả _id để chắc chắn đúng ví được cập nhật.
+    // Lưu ý: nợ = 0 nên filter KHÔNG có guard commission_debt (guard chỉ
+    // kèm khi repaid > 0 — ví trước R13 thiếu field sẽ trượt guard $gte: 0).
+    expect(walletModel.findOneAndUpdate).toHaveBeenCalledWith(
+      { _id: walletId },
       { $inc: { balance: 50000, total_earned: 50000 } },
       expect.objectContaining({ new: true, session: mockSession }),
     );

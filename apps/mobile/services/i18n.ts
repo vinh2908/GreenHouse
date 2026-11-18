@@ -1519,6 +1519,14 @@ export const STRINGS = {
     vi: ' — điểm hiện tại {score}/100',
     en: ' — current score {score}/100',
   },
+  'sos_helper.score_breakdown': {
+    vi: 'Chi tiết: Khoảng cách {distance}/40 · Kỹ năng {skill}/30 · Đánh giá {rating}/20 · e-KYC {kyc}/10{penalty}',
+    en: 'Breakdown: Distance {distance}/40 · Skill {skill}/30 · Rating {rating}/20 · e-KYC {kyc}/10{penalty}',
+  },
+  'sos_helper.score_penalty_suffix': {
+    vi: ' · Trừ phạt −{points}',
+    en: ' · Penalty −{points}',
+  },
   'sos_helper.open_modal_btn': {
     vi: ' Gửi SOS — xin đổi người',
     en: ' Submit SOS — request replacement',

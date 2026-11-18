@@ -182,10 +182,10 @@ export default function AdminMonthlyContractsPage() {
                           )}
                         </TableCell>
                         <TableCell className="font-bold text-emerald-600">
-                          {formatVND(c.monthly_amount ?? 0)}
+                          {formatVND(c.monthly_salary ?? 0)}
                         </TableCell>
                         <TableCell className="text-xs text-muted-foreground">
-                          {c.time_start || '08:00'} – {c.time_end || '12:00'}
+                          {c.schedule?.time_start || '08:00'} – {c.schedule?.time_end || '12:00'}
                         </TableCell>
                         <TableCell>
                           <Badge variant={st.variant}>{st.label}</Badge>
@@ -341,13 +341,14 @@ export default function AdminMonthlyContractsPage() {
               <div>
                 <span className="text-xs text-muted-foreground block">Lương tháng:</span>
                 <span className="font-bold text-emerald-600">
-                  {formatVND(viewingContract.monthly_amount ?? 0)}
+                  {formatVND(viewingContract.monthly_salary ?? 0)}
                 </span>
               </div>
               <div>
                 <span className="text-xs text-muted-foreground block">Khung giờ làm việc:</span>
                 <span className="font-medium">
-                  {viewingContract.time_start || '08:00'} – {viewingContract.time_end || '12:00'}
+                  {viewingContract.schedule?.time_start || '08:00'} –{' '}
+                  {viewingContract.schedule?.time_end || '12:00'}
                 </span>
               </div>
             </div>
@@ -380,25 +381,25 @@ export default function AdminMonthlyContractsPage() {
                           <TableRow key={dateStr}>
                             <TableCell className="font-mono text-xs">{dateStr}</TableCell>
                             <TableCell className="text-xs">
-                              {rec?.checkin_time ? (
+                              {rec?.checkin_at ? (
                                 <span className="text-emerald-600 font-medium">
-                                  {rec.checkin_time}
+                                  {formatDateTime(rec.checkin_at)}
                                 </span>
                               ) : (
                                 <span className="text-muted-foreground">—</span>
                               )}
                             </TableCell>
                             <TableCell className="text-xs">
-                              {rec?.customer_confirmed ? (
+                              {rec?.status === 'confirmed' ? (
                                 <Badge variant="success">Đã xác nhận</Badge>
-                              ) : rec?.checkin_time ? (
+                              ) : rec?.status === 'checked_in' ? (
                                 <Badge variant="warning">Chờ khách duyệt</Badge>
                               ) : (
                                 <span className="text-muted-foreground">—</span>
                               )}
                             </TableCell>
                             <TableCell className="text-xs">
-                              {rec?.status === 'present' ? (
+                              {rec?.status === 'checked_in' || rec?.status === 'confirmed' ? (
                                 <span className="text-emerald-600 font-semibold">Có mặt</span>
                               ) : rec?.status === 'leave' ? (
                                 <span className="text-amber-600 font-medium">Nghỉ phép</span>

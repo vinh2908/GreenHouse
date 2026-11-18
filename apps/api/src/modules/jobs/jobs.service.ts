@@ -2574,6 +2574,32 @@ export class JobsService implements OnModuleInit {
       return result;
     }
 
+    // R13-N5: đơn ĐÃ HỦY + thợ từng báo giá → trả bản rút gọn (200) thay vì
+    // 410 trơ. Lý do hủy (đặc biệt lý do tự động hủy) không phải dữ liệu
+    // nhạy cảm với thợ đã tham gia báo giá; thợ lạ (chưa từng báo giá)
+    // vẫn nhận 410 như cũ. Chỉ trả đúng các trường cần để hiển thị lý do
+    // + huy hiệu REJECTED — KHÔNG địa chỉ, khách, điện thoại, giá.
+    // R13-N5b (review 2): chỉ lộ lý do khi là lý do HỆ THỐNG (tự động hủy)
+    // — lý do hủy do người viết tay (free text) có thể chứa SĐT/địa chỉ nên
+    // KHÔNG lộ cho thợ chỉ từng báo giá.
+    if (job.status === JobStatus.CANCELLED && roles.includes('helper')) {
+      const quoted = await this.quoteModel.exists({
+        job_id: job._id,
+        helper_id: new Types.ObjectId(userId),
+      });
+      if (quoted) {
+        const isSystemReason = (job as any).cancelled_by_role === 'system';
+        return {
+          _id: job._id,
+          status: JobStatus.CANCELLED,
+          title: job.title,
+          service_id: job.service_id,
+          cancellation_reason: isSystemReason ? (job as any).cancellation_reason ?? null : null,
+          cancelled_by_role: (job as any).cancelled_by_role ?? null,
+        };
+      }
+    }
+
     const browsable = [JobStatus.OPEN, JobStatus.RECEIVING_QUOTES].includes(job.status);
     if (!browsable) {
       // R8-B: đơn không còn khả dụng với thợ lạ (đã hủy / hết hạn / đã giao
@@ -4355,6 +4381,9 @@ export class JobsService implements OnModuleInit {
               description: `Hoàn phí sàn đơn tiền mặt #${jobId.slice(-6)} do lỗi nghiệm thu`,
               reference: `ROLLBACK-COMMISSION-${jobId}`,
               type: 'refund',
+              // R13-N1: hoàn tác phải trả nguyên vẹn cho thợ (khôi phục đúng
+              // trạng thái trước lỗi), KHÔNG dùng để trừ nợ phí sàn khác.
+              skipDebtRepayment: true,
             })
             .catch(rollbackErr => {
               this.logger.error(

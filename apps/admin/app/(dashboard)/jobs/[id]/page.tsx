@@ -405,7 +405,9 @@ export default function JobDetailPage() {
                   <div>
                     <span className="text-muted-foreground">Giá hợp đồng:</span>
                     <p className="font-medium">
-                      {(job.contract.final_price ?? 0).toLocaleString('vi-VN')} ₫
+                      {/* R13-B3: Contract không có field final_price (luôn
+                          undefined → 0₫); giá hợp đồng là total_price. */}
+                      {(job.contract.total_price ?? 0).toLocaleString('vi-VN')} ₫
                     </p>
                   </div>
                   <div>

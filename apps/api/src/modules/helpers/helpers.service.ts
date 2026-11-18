@@ -1,5 +1,6 @@
 import {
   Injectable,
+  Logger,
   NotFoundException,
   BadRequestException,
   ConflictException,
@@ -21,6 +22,7 @@ import { HelperStatus, VerificationStatus } from '@homemate/types';
 import { AppGateway } from '../chat/app.gateway';
 import { MatchingService } from '../matching/matching.service';
 import { maskHelperBankAccount } from './utils/mask-bank-account';
+import { refreshHelperScoreSnapshot } from './utils/refresh-score-snapshot';
 
 /**
  * B1: availability lưu trong Mongoose là subdocument — spread trực tiếp
@@ -43,6 +45,8 @@ function plainAvailability(value: unknown): HelperAvailability {
 
 @Injectable()
 export class HelpersService {
+  private readonly logger = new Logger(HelpersService.name);
+
   constructor(
     @InjectModel(HelperProfile.name)
     private helperModel: Model<HelperProfileDocument>,
@@ -69,7 +73,21 @@ export class HelpersService {
 
   async getProfile(userId: string): Promise<any> {
     const profile = await this.getOrCreate(userId);
-    return this.maskHelperBankAccount(profile);
+    // R13-N2-I2: snapshot điểm có thể cũ (duyệt KYC / đổi dịch vụ / mốc hủy
+    // hết hạn 7 ngày) — làm mới lười trước khi trả; lỗi làm mới không chặn
+    // việc đọc hồ sơ (trả snapshot cũ như trước).
+    try {
+      const refreshed = await refreshHelperScoreSnapshot({
+        helperModel: this.helperModel,
+        helperId: userId,
+      });
+      return this.maskHelperBankAccount(refreshed ?? profile);
+    } catch (err) {
+      this.logger.warn(
+        `getProfile: refreshHelperScoreSnapshot failed for ${userId}: ${(err as Error)?.message ?? err}`,
+      );
+      return this.maskHelperBankAccount(profile);
+    }
   }
 
   toSafePublicProfile(profile: any): any {
@@ -112,6 +130,25 @@ export class HelpersService {
       .exec();
 
     if (!profile) throw new NotFoundException('Helper không tồn tại');
+    // R13-N2-I2: làm mới lười snapshot điểm (như getProfile) — hồ sơ đã
+    // tải rồi nên chép các giá trị mới vào bản sao trong bộ nhớ thay vì
+    // đọc lại từ DB.
+    try {
+      const refreshed = await refreshHelperScoreSnapshot({
+        helperModel: this.helperModel,
+        helperId: String((profile.user_id as any)?._id ?? profile.user_id),
+      });
+      if (refreshed) {
+        profile.performance_score = refreshed.performance_score;
+        profile.penalty_points = refreshed.penalty_points;
+        profile.cancellations_last_7_days = refreshed.cancellations_last_7_days;
+        profile.score_breakdown = refreshed.score_breakdown;
+      }
+    } catch (err) {
+      this.logger.warn(
+        `getPublicProfile: refreshHelperScoreSnapshot failed: ${(err as Error)?.message ?? err}`,
+      );
+    }
     return this.toSafePublicProfile(profile);
   }
 
