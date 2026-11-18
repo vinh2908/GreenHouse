@@ -674,6 +674,14 @@ export default function UserDetailPage() {
               title="Đã rút"
               value={wallet ? formatVND(wallet.total_withdrawn ?? 0) : '—'}
             />
+            {/* R13-N1: phí sàn tiền mặt còn nợ — trừ dần từ thu nhập thật. */}
+            {(wallet?.commission_debt ?? 0) > 0 && (
+              <StatCard
+                title="Phí sàn còn nợ"
+                value={formatVND(wallet.commission_debt)}
+                description="Trừ dần từ thu nhập thật sau này"
+              />
+            )}
           </div>
           <Card>
             <CardHeader>

@@ -56,7 +56,13 @@ export function SosBackupHelperCard({ job }: { job: any }) {
   const isActive = ACTIVE_STATUSES.includes(job?.status);
   const { data: sosResp } = useSosBackupByJob(isMine && isActive ? job?._id : undefined);
   const sos = sosResp?.sos;
-  const outgoing = sos && sos.original_helper_id === myId ? sos : null;
+  // R13-B1: chỉ SOS đang hoạt động mới là "outgoing" — API đã trả sos: null
+  // khi không còn SOS hoạt động, nhưng card vẫn tự gate để không render
+  // banner cho bản ghi terminal nếu API hồi quy.
+  const outgoing =
+    sos && sos.original_helper_id === myId && ['awaiting_customer', 'pending'].includes(sos.status)
+      ? sos
+      : null;
   const now = useNowTick(!!outgoing && outgoing.status === 'awaiting_customer');
 
   if (!job) return null;
@@ -229,15 +235,33 @@ export function SosBackupHelperCard({ job }: { job: any }) {
           {t('sos_helper.trigger_desc')}
         </Text>
         {cancels7d >= 2 && (
-          <Text style={{ fontSize: fs(12.5), color: '#B45309', lineHeight: 18 }}>
-            {t('sos_helper.trigger_reputation_warning', {
-              cancels: cancels7d,
-              score:
-                performanceScore != null
-                  ? t('sos_helper.score_suffix', { score: performanceScore })
-                  : '',
-            })}
-          </Text>
+          <>
+            <Text style={{ fontSize: fs(12.5), color: '#B45309', lineHeight: 18 }}>
+              {t('sos_helper.trigger_reputation_warning', {
+                cancels: cancels7d,
+                score:
+                  performanceScore != null
+                    ? t('sos_helper.score_suffix', { score: performanceScore })
+                    : '',
+              })}
+            </Text>
+            {/* R13-N2-I3: thợ phải đối chiếu được tổng điểm — hiện chi tiết
+                4 tiêu chí + điểm trừ phạt ngay dưới tổng điểm. */}
+            {profile?.score_breakdown && (
+              <Text style={{ fontSize: fs(12.5), color: tc.textSecondary, lineHeight: 18 }}>
+                {t('sos_helper.score_breakdown', {
+                  distance: profile.score_breakdown.distance ?? 0,
+                  skill: profile.score_breakdown.skill ?? 0,
+                  rating: profile.score_breakdown.rating ?? 0,
+                  kyc: profile.score_breakdown.kyc ?? 0,
+                  penalty:
+                    (profile?.penalty_points ?? 0) > 0
+                      ? t('sos_helper.score_penalty_suffix', { points: profile.penalty_points })
+                      : '',
+                })}
+              </Text>
+            )}
+          </>
         )}
         <Button
           title={t('sos_helper.open_modal_btn')}

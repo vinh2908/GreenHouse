@@ -2,6 +2,7 @@ import { Types } from 'mongoose';
 import {
   computeHelperScore,
   countCancellationsInWindow,
+  helperScoreConfigFromEnv,
   helperScoreInputFromProfile,
 } from './helper-score';
 import { MatchingService } from '../../matching/matching.service';
@@ -141,5 +142,55 @@ describe('G8/B87 — 1 công thức điểm thợ cho cả gợi ý và xếp h�
     const adminWithSameInput = computeHelperScore({ ...adminInput, distanceKm: 2 });
     expect(adminWithSameInput.total).toBe(96);
     expect(adminWithSameInput.total).toBe(utility.score);
+  });
+
+  it('R13-N2-I1: matching tôn trọng cấu hình env (phạt/lần + cửa sổ) như đường admin', () => {
+    // Trước fix: computeUtilityScore hard-code DEFAULT_HELPER_SCORE_CONFIG
+    // (cửa sổ 7 ngày, trừ 5đ/lần) nên đổi env không ảnh hưởng gợi ý trong
+    // khi đường admin/record đã đổi theo — hai đường lệch nhau. FAILS trên
+    // base d06aa9c (gợi ý vẫn 52 / 57), PASS sau fix.
+    const prevPenalty = process.env.HELPER_SCORE_PENALTY_PER_EXCESS;
+    const prevWindow = process.env.HELPER_SCORE_CANCEL_WINDOW_DAYS;
+    const now = new Date();
+    const stampsRecent = [1, 2, 3, 4].map(h => new Date(now.getTime() - h * 60 * 60 * 1000));
+    try {
+      process.env.HELPER_SCORE_PENALTY_PER_EXCESS = '10';
+      const config = helperScoreConfigFromEnv(key => process.env[key]);
+      expect(config.pointsPerExcess).toBe(10);
+
+      // 4 lần hủy mới đây, phạt 10đ/lần vượt ngưỡng 3 → gợi ý 57 − 10 = 47.
+      const utility = matching.computeUtilityScore(
+        { ...helperNoCoords, cancellation_timestamps: stampsRecent },
+        jobNoCoords,
+      );
+      expect(utility.score).toBe(47);
+
+      // Đường admin với cùng config env → cùng 47.
+      const count = countCancellationsInWindow(stampsRecent, now, config.windowDays);
+      const adminResult = computeHelperScore(
+        helperScoreInputFromProfile(profileNoCoords, count),
+        config,
+      );
+      expect(adminResult.total).toBe(47);
+      expect(utility.score).toBe(adminResult.total);
+
+      // Cửa sổ 1 ngày: 4 lần hủy cách đây 2 ngày nằm NGOÀI cửa sổ → 0 lần
+      // tính, không phạt — gợi ý lại 57 như đường admin.
+      process.env.HELPER_SCORE_CANCEL_WINDOW_DAYS = '1';
+      const config1d = helperScoreConfigFromEnv(key => process.env[key]);
+      const stampsOld = [2, 3, 4, 5].map(d => new Date(now.getTime() - d * 24 * 60 * 60 * 1000));
+      const utilityOld = matching.computeUtilityScore(
+        { ...helperNoCoords, cancellation_timestamps: stampsOld },
+        jobNoCoords,
+      );
+      expect(utilityOld.score).toBe(57);
+      const countOld = countCancellationsInWindow(stampsOld, now, config1d.windowDays);
+      expect(countOld).toBe(0);
+    } finally {
+      if (prevPenalty === undefined) delete process.env.HELPER_SCORE_PENALTY_PER_EXCESS;
+      else process.env.HELPER_SCORE_PENALTY_PER_EXCESS = prevPenalty;
+      if (prevWindow === undefined) delete process.env.HELPER_SCORE_CANCEL_WINDOW_DAYS;
+      else process.env.HELPER_SCORE_CANCEL_WINDOW_DAYS = prevWindow;
+    }
   });
 });

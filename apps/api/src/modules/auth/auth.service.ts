@@ -52,7 +52,9 @@ export class AuthService {
       if (existingEmail) throw new ConflictException('Email đã được đăng ký');
     }
 
-    const passwordHash = await bcrypt.hash(dto.password, 12);
+    // R13-I3: lưu hash của mật khẩu ĐÃ trim (phòng khi DTO transform bị
+    // bypass) — mobile R12-5 gửi mật khẩu đã trim nên server phải khớp dạng đó.
+    const passwordHash = await bcrypt.hash(dto.password.trim(), 12);
 
     // G5 (F16): gửi mail OTP TRƯỚC khi tạo user. OtpService.sendOtp ở prod
     // ném 502 khi gửi mail thất bại (xem otp.service.ts + otp-mail-failure.spec)
@@ -92,7 +94,15 @@ export class AuthService {
 
     if (!user) throw new UnauthorizedException('Số điện thoại, email hoặc mật khẩu không đúng');
 
-    const isPasswordValid = await bcrypt.compare(dto.password, user.password_hash);
+    // R13-I3: so khớp 2 dạng — trimmed trước (dạng chuẩn sau R12-5), rồi
+    // raw nếu chưa khớp (tài khoản tạo trước R12 có thể lưu hash của mật
+    // khẩu chưa trim; mobile mới đã cắt khoảng trắng nên không bao giờ thấy
+    // lại dạng gốc — chỉ reset mật khẩu mới cứu được các tài khoản đó).
+    const trimmedPassword = dto.password.trim();
+    let isPasswordValid = await bcrypt.compare(trimmedPassword, user.password_hash);
+    if (!isPasswordValid && trimmedPassword !== dto.password) {
+      isPasswordValid = await bcrypt.compare(dto.password, user.password_hash);
+    }
     if (!isPasswordValid)
       throw new UnauthorizedException('Số điện thoại, email hoặc mật khẩu không đúng');
 
@@ -202,7 +212,12 @@ export class AuthService {
     const user = await this.usersService.findByIdWithPassword(userId);
     if (!user || (user as any).is_deleted)
       throw new UnauthorizedException('Tài khoản không tồn tại');
-    const ok = await bcrypt.compare(password, user.password_hash);
+    // R13-I3: so khớp 2 dạng như login (xem ghi chú ở login).
+    const trimmedPassword = password.trim();
+    let ok = await bcrypt.compare(trimmedPassword, user.password_hash);
+    if (!ok && trimmedPassword !== password) {
+      ok = await bcrypt.compare(password, user.password_hash);
+    }
     if (!ok) throw new UnauthorizedException('Mật khẩu không đúng');
     // Xóa mềm: giữ lại toàn bộ dữ liệu đơn cũ cho admin tra cứu, chỉ khóa
     // đăng nhập (is_deleted + vô hiệu mọi token đang có).
@@ -310,7 +325,8 @@ export class AuthService {
 
     if (!isValid) throw new BadRequestException('Mã OTP không đúng hoặc đã hết hạn');
 
-    const passwordHash = await bcrypt.hash(dto.new_password, 12);
+    // R13-I3: lưu hash của mật khẩu mới ĐÃ trim.
+    const passwordHash = await bcrypt.hash(dto.new_password.trim(), 12);
     await this.usersService.updatePassword(user.id as string, passwordHash);
     // P1-13: Thu hồi toàn bộ refresh tokens và tăng token_version để hủy bỏ các phiên đăng nhập khác
     await this.usersService.revokeAllRefreshTokens(user.id as string);

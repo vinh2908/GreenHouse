@@ -779,23 +779,51 @@ export class PaymentsService {
     }
     const wallet = await this.getOrCreateWallet(helperId, session);
 
-    // G2: $inc nguyên tử + lấy balance_after TỪ KẾT QUẢ $inc (new: true),
-    // không đọc trước rồi cộng tay — 2 lần trả tiền song song trước đây có
-    // thể ghi cùng balance_after sai. Ghi giao dịch trong cùng session khi có.
-    const updatedWallet = await this.walletModel
-      .findByIdAndUpdate(
-        wallet._id,
-        {
-          $inc: { balance: amount, total_earned: amount },
-        },
-        { new: true, session: session ?? undefined },
-      )
-      .exec();
+    // R13-N1: thu hồi phí sàn tiền mặt còn nợ (Wallet.commission_debt) từ
+    // thu nhập thật — trong CÙNG $inc nguyên tử với lần cộng tiền, có guard
+    // commission_debt >= repaid để 2 lần cộng song song không trừ nợ trùng
+    // (thử lại tối đa 5 lần với số nợ vừa đọc). total_earned vẫn cộng GỘP
+    // (giữ ngữ nghĩa cũ); số thực cộng vào balance là amount − repaid.
+    // Tiền mô phỏng không qua đây nên không bao giờ trả nợ này.
+    let repaid = 0;
+    let debtRemaining = 0;
+    let updatedWallet: WalletDocument | null = null;
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const fresh = attempt === 0 ? wallet : await this.getOrCreateWallet(helperId, session);
+      const debt = Math.max(0, (fresh as any).commission_debt ?? 0);
+      repaid = Math.min(amount, debt);
+      updatedWallet = await this.walletModel
+        .findOneAndUpdate(
+          // R13-N1b (review 2): CHỈ kèm guard commission_debt khi repaid > 0.
+          // Mongo $gte KHÔNG khớp document thiếu field — ví tạo trước R13
+          // không có commission_debt nên guard $gte: 0 vẫn trượt, mọi lần
+          // cộng tiền đều ConflictException. Khi không có nợ thì không cần
+          // guard (không có gì để bảo vệ khỏi trừ trùng).
+          {
+            _id: fresh._id,
+            ...(repaid > 0 ? { commission_debt: { $gte: repaid } } : {}),
+          },
+          {
+            $inc: {
+              balance: amount - repaid,
+              ...(repaid > 0 ? { commission_debt: -repaid } : {}),
+              total_earned: amount,
+            },
+          },
+          { new: true, session: session ?? undefined },
+        )
+        .exec();
+      if (updatedWallet) {
+        debtRemaining = Math.max(0, (updatedWallet as any).commission_debt ?? 0);
+        break;
+      }
+      // Nợ đổi giữa chừng do 1 lần cộng khác chen ngang — đọc lại, thử lại.
+    }
     if (!updatedWallet) {
-      throw new BadRequestException('Không tìm thấy ví thợ để cộng tiền');
+      throw new ConflictException('Không thể cộng tiền do xung đột song song, vui lòng thử lại');
     }
     const balanceAfter = updatedWallet.balance;
-    const balanceBefore = balanceAfter - amount;
+    const balanceBefore = balanceAfter - (amount - repaid);
 
     const [tx] = await this.transactionModel.create(
       [
@@ -808,7 +836,15 @@ export class PaymentsService {
           amount,
           balance_before: balanceBefore,
           balance_after: balanceAfter,
-          description: `Thu nhập từ công việc #${jobId.slice(-6)}`,
+          description:
+            `Thu nhập từ công việc #${jobId.slice(-6)}` +
+            (repaid > 0
+              ? ` — đã trừ ${repaid.toLocaleString('vi-VN')}₫ phí sàn tiền mặt còn nợ (còn nợ ${debtRemaining.toLocaleString('vi-VN')}₫)`
+              : ''),
+          metadata:
+            repaid > 0
+              ? { debt_repaid: repaid, debt_remaining: debtRemaining }
+              : undefined,
         },
       ],
       { session: session ?? undefined },
@@ -894,7 +930,14 @@ export class PaymentsService {
   async creditWallet(
     userId: string,
     amount: number,
-    opts: { description: string; reference: string; type?: string },
+    opts: {
+      description: string;
+      reference: string;
+      type?: string;
+      // R13-N1: true = hoàn tác/khôi phục (vd rollback phí sàn sau lỗi
+      // nghiệm thu) — trả nguyên vẹn cho thợ, KHÔNG dùng để trừ nợ.
+      skipDebtRepayment?: boolean;
+    },
     session?: ClientSession | null,
   ): Promise<TransactionDocument> {
     if (!amount || amount <= 0) {
@@ -902,22 +945,44 @@ export class PaymentsService {
     }
     const wallet = await this.getOrCreateWallet(userId, session);
 
-    // G2: như creditHelper — balance_after lấy từ kết quả $inc (new: true),
-    // không đọc trước rồi cộng tay.
-    const updatedWallet = await this.walletModel
-      .findByIdAndUpdate(
-        wallet._id,
-        {
-          $inc: { balance: amount, total_earned: amount },
-        },
-        { new: true, session: session ?? undefined },
-      )
-      .exec();
+    // R13-N1: như creditHelper — thu hồi phí sàn còn nợ từ thu nhập thật
+    // trong cùng $inc nguyên tử (guard commission_debt >= repaid, thử lại
+    // tối đa 5 lần). Trừ khi skipDebtRepayment (hoàn tác).
+    let repaid = 0;
+    let debtRemaining = 0;
+    let updatedWallet: WalletDocument | null = null;
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const fresh = attempt === 0 ? wallet : await this.getOrCreateWallet(userId, session);
+      const debt = opts.skipDebtRepayment ? 0 : Math.max(0, (fresh as any).commission_debt ?? 0);
+      repaid = Math.min(amount, debt);
+      updatedWallet = await this.walletModel
+        .findOneAndUpdate(
+          // R13-N1b (review 2): như creditHelper — chỉ kèm guard khi repaid > 0,
+          // ví trước R13 thiếu field commission_debt sẽ trượt guard $gte: 0.
+          {
+            _id: fresh._id,
+            ...(repaid > 0 ? { commission_debt: { $gte: repaid } } : {}),
+          },
+          {
+            $inc: {
+              balance: amount - repaid,
+              ...(repaid > 0 ? { commission_debt: -repaid } : {}),
+              total_earned: amount,
+            },
+          },
+          { new: true, session: session ?? undefined },
+        )
+        .exec();
+      if (updatedWallet) {
+        debtRemaining = Math.max(0, (updatedWallet as any).commission_debt ?? 0);
+        break;
+      }
+    }
     if (!updatedWallet) {
-      throw new BadRequestException('Không tìm thấy ví để cộng tiền');
+      throw new ConflictException('Không thể cộng tiền do xung đột song song, vui lòng thử lại');
     }
     const balanceAfter = updatedWallet.balance;
-    const balanceBefore = balanceAfter - amount;
+    const balanceBefore = balanceAfter - (amount - repaid);
 
     const [tx] = await this.transactionModel.create(
       [
@@ -930,9 +995,16 @@ export class PaymentsService {
           amount,
           balance_before: balanceBefore,
           balance_after: balanceAfter,
-          description: opts.description,
+          description:
+            opts.description +
+            (repaid > 0
+              ? ` — đã trừ ${repaid.toLocaleString('vi-VN')}₫ phí sàn tiền mặt còn nợ (còn nợ ${debtRemaining.toLocaleString('vi-VN')}₫)`
+              : ''),
           reference: opts.reference,
-          metadata: { reference: opts.reference },
+          metadata:
+            repaid > 0
+              ? { reference: opts.reference, debt_repaid: repaid, debt_remaining: debtRemaining }
+              : { reference: opts.reference },
         },
       ],
       { session: session ?? undefined },
@@ -1131,22 +1203,36 @@ export class PaymentsService {
     // chen ngang: khi đó $inc trả null, đọc lại số dư và thử lại (tối đa 5
     // lần). Mỗi lần thử đều nguyên tử nên 2 lần trừ song song không bao giờ
     // làm ví âm và tổng số trừ không vượt số dư ban đầu.
+    // R13-N1: phần thiếu (fee − deducted) GHI NỢ vào commission_debt trong
+    // CÙNG $inc — cờ cash_commission_deducted đã set thì lần trừ này không
+    // bao giờ chạy lại được, nên đây là nơi duy nhất để ghi nợ. Nợ được
+    // trừ dần từ thu nhập thật sau này (xem creditHelper/creditWallet) và
+    // khi rút tiền (xem requestWithdrawal).
     const fee = Math.max(0, platformFee);
     let wallet: WalletDocument | null = null;
     let deducted = 0;
     let balanceAfter: number | undefined;
+    let debtAfter = 0;
     for (let attempt = 0; attempt < 5; attempt++) {
       wallet = await this.getOrCreateWallet(helperId, session);
       deducted = Math.min(Math.max(0, wallet.balance), fee);
+      const shortfall = fee - deducted;
       const updatedWallet = await this.walletModel
         .findOneAndUpdate(
           { _id: wallet._id, balance: { $gte: deducted } },
-          { $inc: { balance: -deducted, total_earned: helperNetEarned } },
+          {
+            $inc: {
+              balance: -deducted,
+              ...(shortfall > 0 ? { commission_debt: shortfall } : {}),
+              total_earned: helperNetEarned,
+            },
+          },
           { new: true, session: session ?? undefined },
         )
         .exec();
       if (updatedWallet) {
         balanceAfter = updatedWallet.balance;
+        debtAfter = Math.max(0, (updatedWallet as any).commission_debt ?? 0);
         break;
       }
       // Số dư đổi giữa chừng do 1 lần trừ khác chen ngang — đọc lại, thử lại.
@@ -1184,6 +1270,9 @@ export class PaymentsService {
             platform_fee_percent: feePercent,
             total_price: platformFee + helperNetEarned,
             unpaid_fee: platformFee - deducted,
+            // R13-N1: tổng nợ phí sàn sau lần trừ này (để đối chiếu; xem
+            // Wallet.commission_debt — nguồn thật của số nợ).
+            commission_debt_after: debtAfter,
             helper_net_earned:
               helperNetEarned ||
               (feePercent > 0 && feePercent < 100
@@ -1625,18 +1714,44 @@ export class PaymentsService {
         throw new BadRequestException('Vui lòng cập nhật tài khoản ngân hàng trước khi rút tiền');
       }
 
-      await this.getOrCreateWallet(helperId);
+      // R13-N1: rút tiền thì quyết toán nợ phí sàn TRƯỚC — nợ trừ thẳng từ
+      // số dư trong cùng $inc nguyên tử, rồi mới trả phần còn lại cho thợ.
+      // Thợ chỉ rút được tối đa balance − debt; nếu phần còn lại nhỏ hơn số
+      // tiền yêu cầu thì từ chối với lý do rõ ràng kèm số nợ.
+      const current = await this.getOrCreateWallet(helperId);
+      const debt = Math.max(0, (current as any).commission_debt ?? 0);
+      const debtToSettle = Math.min(debt, current.balance);
+      const maxPayout = current.balance - debtToSettle;
+      if (amount > maxPayout) {
+        throw new BadRequestException(
+          debtToSettle > 0
+            ? `Số tiền rút tối đa là ${maxPayout.toLocaleString('vi-VN')}₫ vì bạn còn nợ ${debt.toLocaleString('vi-VN')}₫ phí sàn tiền mặt — phí nợ sẽ được trừ trước khi rút.`
+            : `Số dư không đủ. Hiện có: ${current.balance.toLocaleString('vi-VN')}₫`,
+        );
+      }
       wallet = await this.walletModel
         .findOneAndUpdate(
-          { user_id: new Types.ObjectId(helperId), balance: { $gte: amount } },
-          { $inc: { balance: -amount } },
+          {
+            user_id: new Types.ObjectId(helperId),
+            balance: { $gte: amount + debtToSettle },
+            // R13-N1b (review 2): chỉ kèm guard khi debtToSettle > 0 — ví
+            // trước R13 thiếu field commission_debt sẽ trượt guard $gte: 0
+            // và thợ nhận nhầm lỗi "Số dư không đủ" dù đủ tiền.
+            ...(debtToSettle > 0 ? { commission_debt: { $gte: debtToSettle } } : {}),
+          },
+          {
+            $inc: {
+              balance: -(amount + debtToSettle),
+              ...(debtToSettle > 0 ? { commission_debt: -debtToSettle } : {}),
+            },
+          },
           { new: true },
         )
         .exec();
       if (!wallet) {
-        const current = await this.getOrCreateWallet(helperId);
+        const reread = await this.getOrCreateWallet(helperId);
         throw new BadRequestException(
-          `Số dư không đủ. Hiện có: ${current.balance.toLocaleString('vi-VN')}₫`,
+          `Số dư không đủ. Hiện có: ${reread.balance.toLocaleString('vi-VN')}₫`,
         );
       }
 
@@ -1658,10 +1773,14 @@ export class PaymentsService {
           type: 'withdrawal',
           status: 'pending',
           amount,
-          balance_before: wallet.balance + amount,
+          balance_before: wallet.balance + amount + debtToSettle,
           balance_after: wallet.balance,
-          description: `Yêu cầu rút tiền`,
-          metadata: { withdrawal_id: String(withdrawal._id) },
+          description:
+            `Yêu cầu rút tiền` +
+            (debtToSettle > 0
+              ? ` (đã trừ ${debtToSettle.toLocaleString('vi-VN')}₫ phí sàn tiền mặt còn nợ)`
+              : ''),
+          metadata: { withdrawal_id: String(withdrawal._id), debt_settled: debtToSettle },
         });
 
         return withdrawal;
@@ -1673,7 +1792,17 @@ export class PaymentsService {
             .catch(() => null);
         }
         await this.walletModel
-          .updateOne({ _id: wallet._id }, { $inc: { balance: amount } })
+          // R13-N1: hoàn lại CẢ phần nợ đã quyết toán cùng lần rút này,
+          // nếu không thợ mất tiền nợ trong khi yêu cầu rút đã thất bại.
+          .updateOne(
+            { _id: wallet._id },
+            {
+              $inc: {
+                balance: amount + debtToSettle,
+                ...(debtToSettle > 0 ? { commission_debt: debtToSettle } : {}),
+              },
+            },
+          )
           .exec()
           .catch(refundErr => {
             // F20: hoàn tiền vào ví lỗi thì phải log rõ (tiền rút đã trừ nhưng chưa hoàn lại).

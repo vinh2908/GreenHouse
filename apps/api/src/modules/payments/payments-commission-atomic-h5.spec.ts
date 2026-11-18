@@ -26,9 +26,12 @@ describe('PaymentsService - H5 atomic deductCommissionForCashJob', () => {
   let createdTxs: any[];
   // Mô phỏng số dư ví trong bộ nhớ: $inc áp dụng nguyên tử lên biến này.
   let balance: number;
+  // R13-N1: mô phỏng nợ phí sàn trong bộ nhớ (cùng cách mô phỏng như balance).
+  let debt: number;
 
   function buildService(initialBalance: number) {
     balance = initialBalance;
+    debt = 0;
     createdTxs = [];
     const walletId = new Types.ObjectId();
 
@@ -36,16 +39,23 @@ describe('PaymentsService - H5 atomic deductCommissionForCashJob', () => {
       exec: jest.fn(async () => {
         // getOrCreateWallet: upsert, chỉ đọc số dư hiện tại.
         if (update.$setOnInsert) {
-          return { _id: walletId, balance };
+          return { _id: walletId, balance, commission_debt: debt };
         }
         // Guard $gte — không đủ số dư cho số tiền trừ này thì không trừ, trả null.
         if (filter?.balance?.$gte !== undefined && balance < filter.balance.$gte) {
           return null;
         }
+        // R13-N1: guard nợ + áp dụng $inc.commission_debt.
+        if (filter?.commission_debt?.$gte !== undefined && debt < filter.commission_debt.$gte) {
+          return null;
+        }
         if (update.$inc?.balance !== undefined) {
           balance += update.$inc.balance;
         }
-        return { _id: walletId, balance };
+        if (update.$inc?.commission_debt !== undefined) {
+          debt += update.$inc.commission_debt;
+        }
+        return { _id: walletId, balance, commission_debt: debt };
       }),
     });
 
@@ -133,6 +143,9 @@ describe('PaymentsService - H5 atomic deductCommissionForCashJob', () => {
     expect(tx.metadata.platform_fee).toBe(50_000);
     expect(tx.metadata.unpaid_fee).toBe(20_000);
     expect(balance).toBe(0);
+    // R13-N1: phần thiếu ghi nợ, không mất lặng.
+    expect(tx.metadata.commission_debt_after).toBe(20_000);
+    expect(debt).toBe(20_000);
   });
 
   it('ví 0đ: không trừ, unpaid_fee = toàn bộ phí, balance_after 0', async () => {
@@ -146,6 +159,9 @@ describe('PaymentsService - H5 atomic deductCommissionForCashJob', () => {
     expect(tx.balance_after).toBe(0);
     expect(tx.metadata.unpaid_fee).toBe(50_000);
     expect(balance).toBe(0);
+    // R13-N1: toàn bộ phí ghi nợ.
+    expect(tx.metadata.commission_debt_after).toBe(50_000);
+    expect(debt).toBe(50_000);
   });
 
   it('2 lần trừ song song, tổng phí vượt số dư: ví không âm, tổng trừ = đúng số dư, không trừ trùng', async () => {
@@ -171,6 +187,11 @@ describe('PaymentsService - H5 atomic deductCommissionForCashJob', () => {
       0, 40_000,
     ]);
     expect(createdTxs).toHaveLength(2);
+    // R13-N1: tổng nợ sau 2 lần trừ = đúng tổng thiếu (40.000₫), ví không âm.
+    expect(Math.max(tx1.metadata.commission_debt_after, tx2.metadata.commission_debt_after)).toBe(
+      40_000,
+    );
+    expect(debt).toBe(40_000);
   });
 
   it('2 lần trừ song song, đủ số dư cho cả 2: mỗi lần trừ đúng 50k, balance_after nối tiếp nhau', async () => {

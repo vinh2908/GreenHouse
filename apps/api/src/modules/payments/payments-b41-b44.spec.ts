@@ -11,27 +11,35 @@ describe('PaymentsService - B41/B42/B43/B44 validation', () => {
   const helperId = new Types.ObjectId().toHexString();
   const jobId = new Types.ObjectId().toHexString();
 
-  function makeService(balance = 1_000_000, pendingWithdrawal: any = null) {
+  function makeService(balance = 1_000_000, pendingWithdrawal: any = null, initialDebt = 0) {
     // H5: mock ví áp dụng $inc lên số dư trong bộ nhớ (như
     // payments-credit-atomic-g2.spec.ts) để các test B43 kiểm chứng số dư
     // THẬT sau trừ phí, thay vì mock cũ trả lại đúng số dư ban đầu bất kể
     // $inc. Guard $gte: không đủ số dư thì trả null (không trừ).
     let currentBalance = balance;
+    let currentDebt = initialDebt;
     const walletId = new Types.ObjectId();
     const applyWalletUpdate = (filter: any, update: any) => ({
       exec: jest.fn(async () => {
         // getOrCreateWallet: upsert, chỉ đọc số dư hiện tại.
         if (update?.$setOnInsert) {
-          return { _id: walletId, balance: currentBalance };
+          return { _id: walletId, balance: currentBalance, commission_debt: currentDebt };
         }
         // Guard $gte (deductCommissionForCashJob / requestWithdrawal).
         if (filter?.balance?.$gte !== undefined && currentBalance < filter.balance.$gte) {
           return null;
         }
+        // R13-N1: guard nợ + áp dụng $inc.commission_debt.
+        if (filter?.commission_debt?.$gte !== undefined && currentDebt < filter.commission_debt.$gte) {
+          return null;
+        }
         if (update?.$inc?.balance !== undefined) {
           currentBalance += update.$inc.balance;
         }
-        return { _id: walletId, balance: currentBalance };
+        if (update?.$inc?.commission_debt !== undefined) {
+          currentDebt += update.$inc.commission_debt;
+        }
+        return { _id: walletId, balance: currentBalance, commission_debt: currentDebt };
       }),
     });
     const walletModel: any = {
@@ -255,6 +263,17 @@ describe('PaymentsService - B41/B42/B43/B44 validation', () => {
       expect(tx.balance_after).toBe(0);
       expect(tx.metadata.platform_fee).toBe(50_000);
       expect(tx.metadata.unpaid_fee).toBe(20_000);
+      // R13-N1: phần thiếu 20.000₫ ghi NỢ (không mất lặng nữa).
+      expect(tx.metadata.commission_debt_after).toBe(20_000);
+    });
+
+    it('ví 0đ: không trừ gì, toàn bộ phí 50.000₫ ghi nợ', async () => {
+      const { service } = makeService(0);
+      const tx: any = await service.deductCommissionForCashJob(helperId, jobId, 50_000, 450_000);
+      expect(tx.amount).toBe(0);
+      expect(tx.balance_after).toBe(0);
+      expect(tx.metadata.unpaid_fee).toBe(50_000);
+      expect(tx.metadata.commission_debt_after).toBe(50_000);
     });
   });
 

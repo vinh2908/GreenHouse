@@ -319,6 +319,22 @@ export default function HelperEarningsScreen() {
                 : `Số dư mô phỏng (không rút được): ${fmt(wallet.simulated_balance)}₫`}
             </Text>
           )}
+          {/* R13-N1: phí sàn tiền mặt còn nợ — trừ dần từ thu nhập thật sau
+              này; hiển thị để thợ không bất ngờ khi rút tiền bị trừ. */}
+          {(wallet?.commission_debt ?? 0) > 0 && (
+            <Text
+              style={{
+                color: 'rgba(255,255,255,0.8)',
+                fontSize: fs(12),
+                marginTop: 4,
+                fontWeight: '600',
+              }}
+            >
+              {lang === 'en'
+                ? `Outstanding platform fee: ${fmt(wallet.commission_debt)}₫ — deducted from future real earnings`
+                : `Phí sàn còn nợ: ${fmt(wallet.commission_debt)}₫ — sẽ trừ dần từ thu nhập thật sau này`}
+            </Text>
+          )}
           <Text
             style={{
               color: 'rgba(255,255,255,0.8)',

@@ -43,9 +43,10 @@ import {
   countCancellationsInWindow,
   helperScoreConfigFromEnv,
   helperScoreInputFromProfile,
-  pruneCancellationTimestamps,
   HelperScoreResult,
 } from '../helpers/utils/helper-score';
+import { removeCancellationTimestamp } from '../helpers/utils/remove-cancellation';
+import { refreshHelperScoreSnapshot } from '../helpers/utils/refresh-score-snapshot';
 import { maskHelperBankAccount } from '../helpers/utils/mask-bank-account';
 
 function escapeRegex(s: string): string {
@@ -275,6 +276,19 @@ export class AdminService {
   async getUserDetail(id: string) {
     const user = await this.getUserById(id);
     const uid = user._id as Types.ObjectId;
+    // R13-N2-I2: làm mới lười snapshot điểm trước khi đọc hồ sơ — điểm có
+    // thể cũ sau duyệt KYC / đổi dịch vụ / mốc hủy hết hạn 7 ngày. Lỗi làm
+    // mới không chặn việc đọc (trả snapshot cũ như trước).
+    try {
+      await refreshHelperScoreSnapshot({
+        helperModel: this.helperModel,
+        helperId: String(uid),
+      });
+    } catch (err) {
+      this.logger.warn(
+        `getUserDetail: refreshHelperScoreSnapshot failed for ${uid}: ${(err as Error)?.message ?? err}`,
+      );
+    }
     const jobFields = 'title status created_at address.district address.city is_sos';
     const [
       helperProfile,
@@ -650,8 +664,34 @@ export class AdminService {
         .exec(),
     ]);
 
-    const netPaid = computeNetPaidAmount(job as any, contract?.total_price);
-    const maxRefundable = Math.max(0, netPaid - ((job as any).refunded_amount || 0));
+    // R13-B3: net_paid phải là tiền THỰC THU, không phải giá hợp đồng.
+    // Trước đây computeNetPaidAmount (giá − giảm giá) được hiển thị như
+    // "Khách đã trả" nên đơn UNPAID vẫn hiện 50.000₫. Lấy theo mẫu R12
+    // ở jobs.service: min của giá hợp đồng và tổng đã thu thực tế.
+    // Tiền mặt đi ngoài nền tảng nên getTotalPaidForJob trả 0 — chỉ tin
+    // tiền mặt khi thợ đã xác nhận (helper_cash_confirmed); bảo hành 0₫.
+    const contractNetPaid = computeNetPaidAmount(job as any, contract?.total_price);
+    const isCashConfirmed =
+      (job as any).payment_method === 'cash' && (job as any).helper_cash_confirmed === true;
+    const actuallyPaidRaw = isCashConfirmed
+      ? contractNetPaid
+      : typeof this.paymentsService?.getTotalPaidForJob === 'function'
+        ? await this.paymentsService.getTotalPaidForJob(jobId)
+        : contractNetPaid;
+    const actuallyPaid = Number.isFinite(actuallyPaidRaw) ? actuallyPaidRaw : contractNetPaid;
+    const netPaid =
+      (job as any).is_warranty === true
+        ? 0
+        : Math.max(0, Math.min(contractNetPaid, actuallyPaid));
+    // R13-B3 (review fix): getTotalPaidForJob đã TRỪ hoàn tiền (net) nên
+    // max_refundable của đơn không-phải-tiền-mặt = netPaid luôn — trừ thêm
+    // refunded_amount nữa là trừ 2 lần (50k đã trả, hoàn 20k → net 30k
+    // nhưng max_refundable chỉ còn 10k). Tiền mặt thì khác: actuallyPaid
+    // là giá hợp đồng GỘP (tiền mặt đi ngoài nền tảng, getTotalPaidForJob
+    // trả 0) nên vẫn trừ refunded_amount 1 lần.
+    const maxRefundable = isCashConfirmed
+      ? Math.max(0, netPaid - ((job as any).refunded_amount || 0))
+      : netPaid;
 
     return {
       ...job,
@@ -1545,41 +1585,15 @@ export class AdminService {
     event: HelperPenaltyEventDocument,
     now: Date,
   ): Promise<HelperScoreResult | null> {
-    const profile = await this.helperModel.findOne({ user_id: event.helper_id }).exec();
-    if (!profile) return null;
-    const config = helperScoreConfigFromEnv(key => process.env[key]);
-
-    const stamps = [...(profile.cancellation_timestamps ?? [])];
-    if (event.created_at) {
-      // Mốc hủy sinh ra sự kiện nằm gần như trùng thời điểm ghi sự kiện
-      // (recordHelperCancellation ghi mốc rồi mới tạo event). Chỉ gỡ khi tìm
-      // thấy mốc đủ gần (≤ 5 phút) — sự kiện cũ đã rơi khỏi cửa sổ thì mốc
-      // của nó cũng không còn được tính, không được gỡ nhầm mốc khác.
-      const eventMs = new Date(event.created_at).getTime();
-      let removeIdx = -1;
-      let bestDelta = Number.POSITIVE_INFINITY;
-      stamps.forEach((t, i) => {
-        const delta = Math.abs(new Date(t).getTime() - eventMs);
-        if (delta < bestDelta) {
-          bestDelta = delta;
-          removeIdx = i;
-        }
-      });
-      if (removeIdx >= 0 && bestDelta <= 5 * 60 * 1000) stamps.splice(removeIdx, 1);
-    }
-
-    const pruned = pruneCancellationTimestamps(stamps, now, config.windowDays);
-    const count = countCancellationsInWindow(pruned, now, config.windowDays);
-    const result = computeHelperScore(helperScoreInputFromProfile(profile, count), config);
-
-    profile.cancellation_timestamps = pruned;
-    profile.cancellations_last_7_days = count;
-    profile.penalty_points = result.penaltyPoints;
-    profile.performance_score = result.total;
-    profile.score_breakdown = result.breakdown;
-    profile.score_updated_at = now;
-    await profile.save();
-    return result;
+    // R13-N4: dùng chung util gỡ mốc hủy với đường thu hồi SOS (cancelSos)
+    // để hai đường phủ định không bao giờ lệch nhau. Sự kiện đã được đánh
+    // 'waived' ở waivePenaltyEvent nên bước miễn event trong util là no-op.
+    return removeCancellationTimestamp({
+      helperModel: this.helperModel,
+      helperId: String(event.helper_id),
+      near: event.created_at ? new Date(event.created_at) : null,
+      now,
+    });
   }
 
   /** A09: Admin xử lý và gỡ cờ yêu cầu SOS cần chú ý */

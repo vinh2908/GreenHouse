@@ -35,6 +35,7 @@ import {
   recordHelperCancellation,
   CancellationScoreSummary,
 } from '../helpers/utils/record-cancellation';
+import { removeCancellationTimestamp } from '../helpers/utils/remove-cancellation';
 import { AppGateway } from '../chat/app.gateway';
 import { ChatService } from '../chat/chat.service';
 import { NotificationsService } from '../notifications/notifications.service';
@@ -1463,8 +1464,31 @@ export class SosBackupService implements OnModuleInit, OnModuleDestroy {
         job.markModified('events');
         await job.save();
       }
-    } catch {
-      /* ignore */
+    } catch (err) {
+      // R13-B1: đừng nuốt lặng lỗi rollback — sos_backup_searching=true còn
+      // sót sẽ giữ banner phụ ở helper-job-detail; ghi log để thấy.
+      this.logger.warn(
+        `cancelSos: A61 rollback failed for job ${sos.job_id}: ${(err as Error)?.message ?? err}`,
+      );
+    }
+
+    // R13-N4: thợ thu hồi SOS → lần SOS này KHÔNG còn tính là hủy đơn.
+    // Gỡ mốc hủy mà createSos đã ghi lúc khởi tạo + miễn sự kiện phạt (nếu
+    // có) để điểm phục hồi (vd 37 → 42). Lỗi ở đây không bao giờ chặn việc
+    // thu hồi SOS — chỉ ghi log (như recordHelperCancellation ở createSos).
+    try {
+      await removeCancellationTimestamp({
+        helperModel: this.helperModel,
+        penaltyEventModel: this.penaltyEventModel,
+        helperId,
+        near: (sos as any).created_at ? new Date((sos as any).created_at) : null,
+        sosId: String(sos._id),
+        waiveReason: 'SOS withdrawn by helper — withdrawn SOS must not count as cancellation (R13-N4)',
+      });
+    } catch (err) {
+      this.logger.warn(
+        `cancelSos: penalty negation failed for sos ${sos._id}: ${(err as Error)?.message ?? err}`,
+      );
     }
 
     return this.serialize(claimed);
@@ -1552,7 +1576,13 @@ export class SosBackupService implements OnModuleInit, OnModuleDestroy {
       serialized.find(
         s => s.status === SosBackupStatus.AWAITING_CUSTOMER || s.status === SosBackupStatus.PENDING,
       );
-    return { sos: active ?? serialized[0], sos_list: serialized };
+    // R13-B1: `sos` chỉ là SOS đang hoạt động; bản ghi terminal (cancelled/
+    // resolved/expired) không được lộ làm SOS hiện tại — fallback cũ
+    // `serialized[0]` khiến banner thợ hiện "Đang tìm người thay thế…" mãi
+    // sau khi thợ đã thu hồi SOS. Lịch sử vẫn đầy đủ trong `sos_list`.
+    // Khi lọc ?status= thì giữ tương thích cũ: sos = mới nhất khớp lọc.
+    const sos = status ? (serialized[0] ?? null) : (active || null);
+    return { sos, sos_list: serialized };
   }
 
   // A95 & P2-21: Lấy toàn bộ lịch sử các lần SOS của đơn hàng (kiểm tra quyền truy cập)
@@ -1743,8 +1773,11 @@ export class SosBackupService implements OnModuleInit, OnModuleDestroy {
         job.markModified('events');
         await job.save();
       }
-    } catch {
-      /* ignore */
+    } catch (err) {
+      // R13-B1: đừng nuốt lặng lỗi rollback (như ở cancelSos).
+      this.logger.warn(
+        `expireSos: searching-flag rollback failed for job ${sos.job_id}: ${(err as Error)?.message ?? err}`,
+      );
     }
 
     // Admin: thông báo cho mọi tài khoản admin (P1-6: sửa query User schema đúng field roles và is_deleted)

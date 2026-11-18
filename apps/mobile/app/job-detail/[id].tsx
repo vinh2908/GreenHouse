@@ -2913,7 +2913,11 @@ export default function JobDetailScreen() {
             />
           )}
           {/* ── Hóa đơn điện tử (Feature 11) & Biên lai (A96) ── */}
-          {(job.payment_status === 'paid' || job.status === 'completed') && !job.is_warranty && (
+          {/* R13-B4: chỉ mở biên lai khi đã thanh toán thật — completed-nhưng-
+              chưa-trả mà mở biên lai sẽ in "ESCROW SETTLED" + giá hợp đồng dù
+              chưa có tiền. approveCompletion luôn gán payment_status 'paid'
+              (kể cả tiền mặt) nên cổng này không chặn đơn đã trả thật. */}
+          {job.payment_status === 'paid' && !job.is_warranty && (
             <>
               <Button
                 title={lang === 'en' ? 'View payment receipt' : 'Xem biên lai thanh toán điện tử'}

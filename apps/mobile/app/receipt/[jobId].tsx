@@ -17,7 +17,7 @@ import dayjs from 'dayjs';
 import Toast from 'react-native-toast-message';
 import { useJobDetail, useJobContract } from '@/hooks/use-api';
 import { useTranslation } from '@/hooks/use-i18n';
-import { receiptPaymentMethodLabel } from '@/utils/payment-method-label';
+import { receiptPaymentMethodLabel, receiptSettlementBadge } from '@/utils/payment-method-label';
 import { downloadInvoicePdf } from '@/services/invoice.service';
 import {
   Button,
@@ -73,6 +73,26 @@ export default function ReceiptScreen() {
   // receipt must say so, matching the wallet history ("MÔ PHỎNG").
   const paymentMethodLabel = receiptPaymentMethodLabel(job.payment_method, lang);
 
+  // R13-B4: badge + số tiền theo chứng cứ quyết toán thật, không theo
+  // payment_method đơn thuần — đơn bảo hành / chưa chọn phương thức / chưa
+  // trả thì không được in "ESCROW SETTLED" và không được in giá hợp đồng
+  // như tiền đã trả. Tiền mặt chỉ tính khi thợ đã xác nhận đã nhận.
+  const settlement = receiptSettlementBadge(job);
+  const settlementText =
+    settlement === 'cash'
+      ? (lang === 'en' ? 'CASH PAID & VERIFIED' : 'ĐÃ THANH TOÁN TIỀN MẶT')
+      : settlement === 'escrow'
+        ? (lang === 'en' ? 'ESCROW SETTLED & VERIFIED' : 'ĐÃ QUYẾT TOÁN ESCROW')
+        : settlement === 'warranty'
+          ? (lang === 'en' ? 'WARRANTY — NO CHARGE' : 'BẢO HÀNH — MIỄN PHÍ')
+          : (lang === 'en' ? 'UNPAID — NO SETTLEMENT' : 'CHƯA THANH TOÁN');
+  const settlementSettled = settlement === 'cash' || settlement === 'escrow';
+  const amountPaid = !settlementSettled
+    ? 0
+    : (job.paid_amount ?? 0) > 0
+      ? job.paid_amount
+      : netPaid;
+
   const handleDownloadPdf = async () => {
     try {
       await downloadInvoicePdf(jobId);
@@ -119,14 +139,21 @@ export default function ReceiptScreen() {
                 ? 'Official Electronic Payment Receipt'
                 : 'Biên lai thanh toán điện tử chính thức'}
             </Text>
-            <View style={styles.paidBadge}>
-              <ShieldCheck size={14} color="#059669" />
-              {/* R12-A: the escrow-settled badge must not claim escrow for a
-                  cash settlement — cash is paid directly, not via escrow. */}
-              <Text style={[styles.paidBadgeText, { fontSize: fs(11) }]}>
-                {job.payment_method === 'cash'
-                  ? (lang === 'en' ? 'CASH PAID & VERIFIED' : 'ĐÃ THANH TOÁN TIỀN MẶT')
-                  : (lang === 'en' ? 'ESCROW SETTLED & VERIFIED' : 'ĐÃ QUYẾT TOÁN ESCROW')}
+            <View
+              style={[
+                styles.paidBadge,
+                !settlementSettled && { backgroundColor: '#FEF3C7' },
+              ]}
+            >
+              <ShieldCheck size={14} color={settlementSettled ? '#059669' : '#D97706'} />
+              <Text
+                style={[
+                  styles.paidBadgeText,
+                  { fontSize: fs(11) },
+                  !settlementSettled && { color: '#92400E' },
+                ]}
+              >
+                {settlementText}
               </Text>
             </View>
           </View>
@@ -136,7 +163,7 @@ export default function ReceiptScreen() {
             <Text style={[styles.amountLabel, { fontSize: fs(13) }]}>
               {lang === 'en' ? 'Total Amount Paid' : 'Tổng số tiền đã thanh toán'}
             </Text>
-            <PriceText amount={netPaid} size={28} color={COLORS.primaryDark} />
+            <PriceText amount={amountPaid} size={28} color={COLORS.primaryDark} />
             <Text style={[styles.paymentMethodText, { fontSize: fs(12) }]}>
               {paymentMethodLabel}
             </Text>

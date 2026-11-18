@@ -10,9 +10,9 @@ import { NotificationsService } from '../notifications/notifications.service';
 import { MatchingCacheService } from './matching-cache.service';
 import { SOCKET_EVENTS } from '@homemate/constants';
 import {
-  DEFAULT_HELPER_SCORE_CONFIG,
   computeHelperScore,
   countCancellationsInWindow,
+  helperScoreConfigFromEnv,
 } from '../helpers/utils/helper-score';
 
 export interface MatchPair {
@@ -82,19 +82,27 @@ export class MatchingService {
     const hasService = (helper.service_ids || []).some(
       (sId: any) => sId.toString() === jobServiceId,
     );
-    const result = computeHelperScore({
-      distanceKm,
-      hasService,
-      rating: helper.rating || 0,
-      isVerified: helper.verification_status === VerificationStatus.APPROVED,
-      // G8: gợi ý và xếp hạng dùng cùng 1 hàm + cùng quy tắc phạt hủy đơn —
-      // thợ đang bị phạt phải bị trừ điểm ở cả 2 nơi (≤ ngưỡng → 0, không đổi điểm).
-      cancellationsInWindow: countCancellationsInWindow(
-        helper.cancellation_timestamps ?? [],
-        new Date(),
-        DEFAULT_HELPER_SCORE_CONFIG.windowDays,
-      ),
-    });
+    // R13-N2-I1: dùng cấu hình env như mọi đường ghi điểm khác
+    // (record-cancellation / reviews / admin) thay vì hard-code default —
+    // hôm nay các biến env chưa được đặt nên không đổi hành vi, nhưng khi
+    // chủ đổi ngưỡng/phạt thì gợi ý phải đổi theo.
+    const config = helperScoreConfigFromEnv(key => process.env[key]);
+    const result = computeHelperScore(
+      {
+        distanceKm,
+        hasService,
+        rating: helper.rating || 0,
+        isVerified: helper.verification_status === VerificationStatus.APPROVED,
+        // G8: gợi ý và xếp hạng dùng cùng 1 hàm + cùng quy tắc phạt hủy đơn —
+        // thợ đang bị phạt phải bị trừ điểm ở cả 2 nơi (≤ ngưỡng → 0, không đổi điểm).
+        cancellationsInWindow: countCancellationsInWindow(
+          helper.cancellation_timestamps ?? [],
+          new Date(),
+          config.windowDays,
+        ),
+      },
+      config,
+    );
     return { score: result.total, distance_km: distanceKm, reasons: result.reasons };
   }
 
