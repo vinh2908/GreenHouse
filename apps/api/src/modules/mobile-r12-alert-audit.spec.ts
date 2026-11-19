@@ -45,9 +45,7 @@ describe('R12-16: Alert.alert audit — no react-native Alert anywhere', () => {
     for (const { file, content } of files) {
       const rel = path.relative(mobileDir, file);
       expect(content).toMatch(/from\s*'@\/components\/common\/app-alert'/);
-      expect(content).not.toMatch(
-        /import\s*\{[^}]*\bAlert\b[^}]*\}\s*from\s*'react-native'/s,
-      );
+      expect(content).not.toMatch(/import\s*\{[^}]*\bAlert\b[^}]*\}\s*from\s*'react-native'/s);
       // Belt and braces: no RN Alert import line at all in these files.
       expect(content).not.toMatch(/^\s*Alert,\s*$/m);
       void rel;
@@ -55,17 +53,11 @@ describe('R12-16: Alert.alert audit — no react-native Alert anywhere', () => {
   });
 
   it('the previously broken files (top-up / withdraw / SOS) are web-safe', () => {
-    const mustBeSafe = [
-      'app/bank-account.tsx',
-      'app/(helper)/earnings.tsx',
-      'app/sos.tsx',
-    ];
+    const mustBeSafe = ['app/bank-account.tsx', 'app/(helper)/earnings.tsx', 'app/sos.tsx'];
     for (const rel of mustBeSafe) {
       const content = fs.readFileSync(path.join(mobileDir, rel), 'utf8');
       expect(content).toContain(`from '@/components/common/app-alert'`);
-      expect(content).not.toMatch(
-        /import\s*\{[^}]*\bAlert\b[^}]*\}\s*from\s*'react-native'/s,
-      );
+      expect(content).not.toMatch(/import\s*\{[^}]*\bAlert\b[^}]*\}\s*from\s*'react-native'/s);
     }
   });
 

@@ -18,7 +18,9 @@ export async function startStandaloneMongo(): Promise<StandaloneMongoTestInstanc
   return { mongod, conn, uri };
 }
 
-export async function stopStandaloneMongo(instance?: StandaloneMongoTestInstance | null): Promise<void> {
+export async function stopStandaloneMongo(
+  instance?: StandaloneMongoTestInstance | null,
+): Promise<void> {
   if (!instance) return;
   try {
     await instance.conn?.close();
@@ -39,7 +41,9 @@ export async function startReplSetMongo(): Promise<ReplSetMongoTestInstance> {
   const port = mongod.instanceInfo?.port;
   if (!port) throw new Error('MongoMemoryServer did not allocate a port for replSet');
 
-  const direct = mongoose.createConnection(`mongodb://127.0.0.1:${port}/test?directConnection=true`);
+  const direct = mongoose.createConnection(
+    `mongodb://127.0.0.1:${port}/test?directConnection=true`,
+  );
   await new Promise<void>((resolve, reject) => {
     direct.once('connected', () => resolve());
     direct.once('error', reject);
@@ -87,4 +91,3 @@ export async function stopReplSetMongo(instance?: ReplSetMongoTestInstance | nul
     await instance.mongod?.stop({ doCleanup: true, force: true });
   } catch {}
 }
-

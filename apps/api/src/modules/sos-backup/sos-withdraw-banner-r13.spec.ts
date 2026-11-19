@@ -76,7 +76,10 @@ describe('SosBackupService.getByJob / cancelSos — R13-B1 withdrawn SOS banner'
       gateway as never,
       dummy, // chatService
       notificationsService as never,
-      { refundCustomer: jest.fn(async () => ({})), getTotalPaidForJob: jest.fn(async () => 0) } as never,
+      {
+        refundCustomer: jest.fn(async () => ({})),
+        getTotalPaidForJob: jest.fn(async () => 0),
+      } as never,
       { restoreForJob: jest.fn(async () => ({ restored: false })) } as never,
       { reverseRedeemForJob: jest.fn(async () => ({ points_restored: 0 })) } as never,
       { get: jest.fn(() => undefined) } as never, // configService

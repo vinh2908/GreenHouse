@@ -85,7 +85,11 @@ describe('R13-I2: ZaloTokenService', () => {
     const fetchMock = jest.fn(async (..._args: any[]) =>
       okJson({ access_token: 'tokA', refresh_token: 'rtA', expires_in: 90000 }),
     );
-    const service = new ZaloTokenService(makeConfig(OAUTH_CONFIG), makeModel(null), fetchMock as any);
+    const service = new ZaloTokenService(
+      makeConfig(OAUTH_CONFIG),
+      makeModel(null),
+      fetchMock as any,
+    );
     await service.refreshAccessToken();
     expect(await service.getAccessToken()).toBe('tokA');
     expect(fetchMock).toHaveBeenCalledTimes(1);
@@ -95,8 +99,14 @@ describe('R13-I2: ZaloTokenService', () => {
     const fetchMock = jest
       .fn()
       .mockResolvedValueOnce(okJson({ access_token: 'tokA', refresh_token: 'rtA', expires_in: 1 }))
-      .mockResolvedValueOnce(okJson({ access_token: 'tokB', refresh_token: 'rtB', expires_in: 90000 }));
-    const service = new ZaloTokenService(makeConfig(OAUTH_CONFIG), makeModel(null), fetchMock as any);
+      .mockResolvedValueOnce(
+        okJson({ access_token: 'tokB', refresh_token: 'rtB', expires_in: 90000 }),
+      );
+    const service = new ZaloTokenService(
+      makeConfig(OAUTH_CONFIG),
+      makeModel(null),
+      fetchMock as any,
+    );
     await service.refreshAccessToken();
     expect(await service.getAccessToken()).toBe('tokB');
     expect(fetchMock).toHaveBeenCalledTimes(2);
@@ -104,8 +114,17 @@ describe('R13-I2: ZaloTokenService', () => {
 
   it('concurrent refreshes share one in-flight request (single-flight)', async () => {
     let resolveFetch!: (v: any) => void;
-    const fetchMock = jest.fn((..._args: any[]) => new Promise(res => { resolveFetch = res; }));
-    const service = new ZaloTokenService(makeConfig(OAUTH_CONFIG), makeModel(null), fetchMock as any);
+    const fetchMock = jest.fn(
+      (..._args: any[]) =>
+        new Promise(res => {
+          resolveFetch = res;
+        }),
+    );
+    const service = new ZaloTokenService(
+      makeConfig(OAUTH_CONFIG),
+      makeModel(null),
+      fetchMock as any,
+    );
     const p1 = service.refreshAccessToken();
     const p2 = service.refreshAccessToken();
     const p3 = service.refreshAccessToken();
@@ -119,7 +138,11 @@ describe('R13-I2: ZaloTokenService', () => {
     const fetchMock = jest.fn(async (..._args: any[]) =>
       okJson({ error: -216, message: 'invalid refresh token' }),
     );
-    const service = new ZaloTokenService(makeConfig(OAUTH_CONFIG), makeModel(null), fetchMock as any);
+    const service = new ZaloTokenService(
+      makeConfig(OAUTH_CONFIG),
+      makeModel(null),
+      fetchMock as any,
+    );
     await expect(service.refreshAccessToken()).resolves.toBeNull();
     expect(await service.getAccessToken()).toBe('staticTok');
   });
@@ -158,9 +181,17 @@ describe('R13-I2: ZaloTokenService', () => {
   it('invalidateAndRefresh forces a refresh even with a valid cache', async () => {
     const fetchMock = jest
       .fn()
-      .mockResolvedValueOnce(okJson({ access_token: 'tokA', refresh_token: 'rtA', expires_in: 90000 }))
-      .mockResolvedValueOnce(okJson({ access_token: 'tokB', refresh_token: 'rtB', expires_in: 90000 }));
-    const service = new ZaloTokenService(makeConfig(OAUTH_CONFIG), makeModel(null), fetchMock as any);
+      .mockResolvedValueOnce(
+        okJson({ access_token: 'tokA', refresh_token: 'rtA', expires_in: 90000 }),
+      )
+      .mockResolvedValueOnce(
+        okJson({ access_token: 'tokB', refresh_token: 'rtB', expires_in: 90000 }),
+      );
+    const service = new ZaloTokenService(
+      makeConfig(OAUTH_CONFIG),
+      makeModel(null),
+      fetchMock as any,
+    );
     await service.refreshAccessToken();
     expect(await service.invalidateAndRefresh()).toBe('tokB');
     expect(fetchMock).toHaveBeenCalledTimes(2);
@@ -175,7 +206,9 @@ describe('R13-I2: ZaloNotificationService retries once after an auth error', () 
   });
 
   function makeService(tokenService: any, fetchMock: jest.Mock) {
-    const config = { get: jest.fn((key: string) => (key === 'zalo.znsTemplateId' ? 'tmpl1' : '')) } as any;
+    const config = {
+      get: jest.fn((key: string) => (key === 'zalo.znsTemplateId' ? 'tmpl1' : '')),
+    } as any;
     const userModel: any = {
       findById: jest.fn(() => ({
         select: () => ({
@@ -198,7 +231,11 @@ describe('R13-I2: ZaloNotificationService retries once after an auth error', () 
   it('error -216 → refresh once and retry once with the new token', async () => {
     const fetchMock = jest
       .fn(async (..._args: any[]) => ({ ok: true, status: 200, json: async () => ({ error: 0 }) }))
-      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ error: -216, message: 'invalid token' }) })
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({ error: -216, message: 'invalid token' }),
+      })
       .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ error: 0 }) });
     const tokenService = {
       getAccessToken: jest.fn(async () => 'tok1'),
@@ -217,7 +254,11 @@ describe('R13-I2: ZaloNotificationService retries once after an auth error', () 
   it('non-auth error → no retry', async () => {
     const fetchMock = jest
       .fn(async (..._args: any[]) => ({ ok: true, status: 200, json: async () => ({ error: 0 }) }))
-      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ error: -1234, message: 'other' }) });
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({ error: -1234, message: 'other' }),
+      });
     const tokenService = {
       getAccessToken: jest.fn(async () => 'tok1'),
       invalidateAndRefresh: jest.fn(async () => 'tok2'),
@@ -231,7 +272,11 @@ describe('R13-I2: ZaloNotificationService retries once after an auth error', () 
   });
 
   it('no token at all → no send attempt', async () => {
-    const fetchMock = jest.fn(async (..._args: any[]) => ({ ok: true, status: 200, json: async () => ({ error: 0 }) }));
+    const fetchMock = jest.fn(async (..._args: any[]) => ({
+      ok: true,
+      status: 200,
+      json: async () => ({ error: 0 }),
+    }));
     const tokenService = {
       getAccessToken: jest.fn(async () => null),
       invalidateAndRefresh: jest.fn(async () => null),

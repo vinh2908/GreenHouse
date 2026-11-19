@@ -209,11 +209,7 @@ export async function enqueueAction(
         await cacheJobDetail(cached);
       } else {
         const findInList = (data: any) => {
-          const list = Array.isArray(data)
-            ? data
-            : Array.isArray(data?.items)
-              ? data.items
-              : null;
+          const list = Array.isArray(data) ? data : Array.isArray(data?.items) ? data.items : null;
           return list?.find((j: any) => String(j._id) === String(jobId));
         };
         const sourceJob =

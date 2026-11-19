@@ -705,7 +705,7 @@ export default function MonthlyContractDetailScreen() {
                 />
                 <InfoRow
                   label={lang === 'en' ? 'Confirmed sessions' : 'Buổi đã xác nhận'}
-                  value={`${settlement.strictly_confirmed_days ?? (settlement.confirmed_days - (settlement.checked_in_days ?? 0))} ${lang === 'en' ? 'sessions' : 'buổi'}`}
+                  value={`${settlement.strictly_confirmed_days ?? settlement.confirmed_days - (settlement.checked_in_days ?? 0)} ${lang === 'en' ? 'sessions' : 'buổi'}`}
                 />
                 {settlement.status === 'preview' && (settlement.checked_in_days ?? 0) > 0 && (
                   <InfoRow
@@ -953,13 +953,16 @@ export default function MonthlyContractDetailScreen() {
                 borderColor: settlePaymentMode === 'wallet' ? COLORS.primary : tc.border,
                 borderRadius: 12,
                 padding: 12,
-                backgroundColor:
-                  settlePaymentMode === 'wallet' ? COLORS.primaryLight : tc.surface,
+                backgroundColor: settlePaymentMode === 'wallet' ? COLORS.primaryLight : tc.surface,
                 gap: 4,
               }}
             >
               <View
-                style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                }}
               >
                 <Text style={{ fontSize: fs(14), fontWeight: '800', color: tc.text }}>
                   {lang === 'en' ? 'Homemate Wallet' : 'Ví Homemate'}
@@ -970,8 +973,7 @@ export default function MonthlyContractDetailScreen() {
                     height: 18,
                     borderRadius: 9,
                     borderWidth: 2,
-                    borderColor:
-                      settlePaymentMode === 'wallet' ? COLORS.primary : COLORS.gray[400],
+                    borderColor: settlePaymentMode === 'wallet' ? COLORS.primary : COLORS.gray[400],
                     alignItems: 'center',
                     justifyContent: 'center',
                   }}
@@ -1010,7 +1012,11 @@ export default function MonthlyContractDetailScreen() {
               }}
             >
               <View
-                style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                }}
               >
                 <Text style={{ fontSize: fs(14), fontWeight: '800', color: tc.text }}>
                   {lang === 'en' ? 'Cash / External payment' : 'Trả ngoài hệ thống / Tiền mặt'}

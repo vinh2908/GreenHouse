@@ -25,7 +25,11 @@
  * driver fails the handshake against mongod 8.2.6). Port 27121 / dbpath
  * /tmp/mongo-r7-a so it does not clash with other R7 workers.
  */
-import { startStandaloneMongo, stopStandaloneMongo, StandaloneMongoTestInstance } from '../../../test/standalone-mongo-helper';
+import {
+  startStandaloneMongo,
+  stopStandaloneMongo,
+  StandaloneMongoTestInstance,
+} from '../../../test/standalone-mongo-helper';
 import mongoose, { Types } from 'mongoose';
 import { JobsService } from './jobs.service';
 import { Job, JobSchema, Quote, QuoteSchema, Contract, ContractSchema } from './schemas/job.schema';

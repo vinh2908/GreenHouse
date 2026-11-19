@@ -8,9 +8,7 @@ import { receiptPaymentMethodLabel } from '@/utils/payment-method-label';
 describe('R12-18: receiptPaymentMethodLabel', () => {
   it('VietQR receipt carries the simulation marker', () => {
     expect(receiptPaymentMethodLabel('vietqr', 'vi')).toBe('Chuyển khoản VietQR (MÔ PHỎNG)');
-    expect(receiptPaymentMethodLabel('vietqr', 'en')).toBe(
-      'Bank Transfer (VietQR) (SIMULATION)',
-    );
+    expect(receiptPaymentMethodLabel('vietqr', 'en')).toBe('Bank Transfer (VietQR) (SIMULATION)');
   });
 
   it('MoMo / ZaloPay receipts carry the simulation marker too', () => {
@@ -43,15 +41,13 @@ import { receiptSettlementBadge } from '@/utils/payment-method-label';
 
 describe('R13-B4: receiptSettlementBadge', () => {
   it('warranty job never earns a settlement badge', () => {
-    expect(receiptSettlementBadge({ is_warranty: true, payment_status: 'paid' })).toBe(
-      'warranty',
-    );
+    expect(receiptSettlementBadge({ is_warranty: true, payment_status: 'paid' })).toBe('warranty');
   });
 
   it('cash counts only when the helper confirmed receipt', () => {
-    expect(
-      receiptSettlementBadge({ payment_method: 'cash', helper_cash_confirmed: true }),
-    ).toBe('cash');
+    expect(receiptSettlementBadge({ payment_method: 'cash', helper_cash_confirmed: true })).toBe(
+      'cash',
+    );
     expect(
       receiptSettlementBadge({
         payment_method: 'cash',
@@ -69,9 +65,9 @@ describe('R13-B4: receiptSettlementBadge', () => {
     expect(receiptSettlementBadge({ payment_method: 'vietqr', payment_status: 'paid' })).toBe(
       'escrow',
     );
-    expect(
-      receiptSettlementBadge({ payment_method: 'vietqr', payment_status: 'unpaid' }),
-    ).toBe('unpaid');
+    expect(receiptSettlementBadge({ payment_method: 'vietqr', payment_status: 'unpaid' })).toBe(
+      'unpaid',
+    );
     expect(receiptSettlementBadge({ payment_status: 'unpaid' })).toBe('unpaid');
     expect(receiptSettlementBadge({})).toBe('unpaid');
     expect(receiptSettlementBadge(null)).toBe('unpaid');

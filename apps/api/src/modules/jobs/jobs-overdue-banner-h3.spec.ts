@@ -17,7 +17,11 @@
  * /tmp/mongo-r7-a-3 (B7 = 27121, item 2 = 27122 — separate ports so suites
  * can run in parallel).
  */
-import { startStandaloneMongo, stopStandaloneMongo, StandaloneMongoTestInstance } from '../../../test/standalone-mongo-helper';
+import {
+  startStandaloneMongo,
+  stopStandaloneMongo,
+  StandaloneMongoTestInstance,
+} from '../../../test/standalone-mongo-helper';
 import mongoose, { Types } from 'mongoose';
 import { JobsService, isPastStartUnassigned } from './jobs.service';
 import { Job, JobSchema, Quote, QuoteSchema, Contract, ContractSchema } from './schemas/job.schema';

@@ -94,7 +94,10 @@ function makeService(opts: { paymentMethod: string; paymentStatus: PaymentStatus
   return { service, job, sos, notificationsService, paymentsService, customerId, helperId };
 }
 
-function customerNotification(notificationsService: { create: jest.Mock }, customerId: Types.ObjectId) {
+function customerNotification(
+  notificationsService: { create: jest.Mock },
+  customerId: Types.ObjectId,
+) {
   const call = notificationsService.create.mock.calls.find(
     ([arg]: [Doc]) => arg.userId === String(customerId),
   );

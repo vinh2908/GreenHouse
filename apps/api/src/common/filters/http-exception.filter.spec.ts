@@ -28,7 +28,8 @@ describe('HttpExceptionFilter — explicit error code passthrough (L10/R11)', ()
   it('exception mang code EMAIL_NOT_VERIFIED → body.error.code giữ nguyên mã đó, message giữ nguyên', () => {
     const { status, body } = runFilter(
       new BadRequestException({
-        message: 'Tài khoản chưa được xác minh qua email. Vui lòng xác minh email trước khi tạo đơn.',
+        message:
+          'Tài khoản chưa được xác minh qua email. Vui lòng xác minh email trước khi tạo đơn.',
         code: 'EMAIL_NOT_VERIFIED',
       }),
     );
@@ -41,7 +42,9 @@ describe('HttpExceptionFilter — explicit error code passthrough (L10/R11)', ()
   });
 
   it('BadRequestException thường (không code) → BAD_REQUEST như cũ', () => {
-    const { status, body } = runFilter(new BadRequestException('Giá mong muốn tối thiểu là 50.000₫'));
+    const { status, body } = runFilter(
+      new BadRequestException('Giá mong muốn tối thiểu là 50.000₫'),
+    );
     expect(status).toHaveBeenCalledWith(400);
     expect(body.message).toBe('Giá mong muốn tối thiểu là 50.000₫');
     expect(body.error.code).toBe('BAD_REQUEST');

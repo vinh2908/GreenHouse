@@ -98,7 +98,10 @@ export default function LoginScreen() {
       // "sai mật khẩu" (lỗi đó chỉ dành cho 4xx có response từ server).
       // Guard isAxiosError để lỗi từ setAuth (SecureStore) không bị nhận
       // nhầm thành lỗi mạng.
-      const axiosErr = err as { isAxiosError?: boolean; response?: { status?: number; data?: { message?: unknown } } };
+      const axiosErr = err as {
+        isAxiosError?: boolean;
+        response?: { status?: number; data?: { message?: unknown } };
+      };
       const status = axiosErr?.response?.status;
       const isServerUnreachable =
         axiosErr?.isAxiosError === true &&

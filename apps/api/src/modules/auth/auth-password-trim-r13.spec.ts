@@ -111,9 +111,7 @@ describe('AuthService — R13-I3 password trim parity', () => {
   it('login with trimmed input succeeds against a trimmed hash', async () => {
     const { service, usersService } = makeService();
     const hash = await bcrypt.hash('Password123!', 12);
-    (usersService.findByPhoneWithPassword as jest.Mock).mockResolvedValue(
-      makeUserWithHash(hash),
-    );
+    (usersService.findByPhoneWithPassword as jest.Mock).mockResolvedValue(makeUserWithHash(hash));
     const res = await service.login({ phone: PHONE, password: 'Password123!' } as any);
     expect(res.user.phone).toBe(PHONE);
   });
@@ -134,9 +132,9 @@ describe('AuthService — R13-I3 password trim parity', () => {
     (usersService.findByPhoneWithPassword as jest.Mock).mockResolvedValue(
       makeUserWithHash(legacyHash),
     );
-    await expect(
-      service.login({ phone: PHONE, password: 'Password123!' } as any),
-    ).rejects.toThrow('Số điện thoại, email hoặc mật khẩu không đúng');
+    await expect(service.login({ phone: PHONE, password: 'Password123!' } as any)).rejects.toThrow(
+      'Số điện thoại, email hoặc mật khẩu không đúng',
+    );
   });
 
   it('resetPassword stores the hash of the TRIMMED new password', async () => {

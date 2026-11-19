@@ -186,9 +186,7 @@ describe('JobsService.resolveDispute / confirmCashPayment — R12 items 1, 2, 20
     deductCashCommission = jest
       .spyOn(service as any, 'deductCashCommission')
       .mockResolvedValue(undefined);
-    releasePayoutForJob = jest
-      .spyOn(service as any, 'releasePayoutForJob')
-      .mockResolvedValue(true);
+    releasePayoutForJob = jest.spyOn(service as any, 'releasePayoutForJob').mockResolvedValue(true);
     jest.spyOn(service as any, 'setHelperBusy').mockResolvedValue(undefined);
   });
 

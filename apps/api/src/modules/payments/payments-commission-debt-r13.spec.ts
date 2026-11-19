@@ -40,7 +40,10 @@ describe('PaymentsService — R13-N1 commission debt', () => {
         if (filter?.balance?.$gte !== undefined && currentBalance < filter.balance.$gte) {
           return null;
         }
-        if (filter?.commission_debt?.$gte !== undefined && currentDebt < filter.commission_debt.$gte) {
+        if (
+          filter?.commission_debt?.$gte !== undefined &&
+          currentDebt < filter.commission_debt.$gte
+        ) {
           return null;
         }
         if (update?.$inc?.balance !== undefined) currentBalance += update.$inc.balance;
@@ -83,7 +86,11 @@ describe('PaymentsService — R13-N1 commission debt', () => {
     const helperModel: any = {
       findOne: jest.fn().mockReturnValue({
         exec: jest.fn().mockResolvedValue({
-          bank_account: { bank_name: 'VCB', account_number: '123456', account_name: 'NGUYEN VAN A' },
+          bank_account: {
+            bank_name: 'VCB',
+            account_number: '123456',
+            account_name: 'NGUYEN VAN A',
+          },
         }),
       }),
     };
@@ -185,9 +192,7 @@ describe('PaymentsService — R13-N1 commission debt', () => {
 
   it('withdrawal is impossible when the debt eats the whole balance', async () => {
     const { service, state } = makeService(10_000, 20_000);
-    await expect(service.requestWithdrawal(helperId, 50_000)).rejects.toThrow(
-      /tối đa là 0₫/,
-    );
+    await expect(service.requestWithdrawal(helperId, 50_000)).rejects.toThrow(/tối đa là 0₫/);
     expect(state()).toEqual({ balance: 10_000, debt: 20_000, simulated: 0 });
   });
 

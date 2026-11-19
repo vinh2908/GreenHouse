@@ -26,7 +26,11 @@
  * fails the handshake against mongod 8.2.6). Port 27126 / dbpath
  * /tmp/mongo-r8-b so it does not clash with the R6/R7 suites (27119–27125).
  */
-import { startStandaloneMongo, stopStandaloneMongo, StandaloneMongoTestInstance } from '../../../test/standalone-mongo-helper';
+import {
+  startStandaloneMongo,
+  stopStandaloneMongo,
+  StandaloneMongoTestInstance,
+} from '../../../test/standalone-mongo-helper';
 import mongoose, { Types } from 'mongoose';
 import { ForbiddenException, GoneException } from '@nestjs/common';
 import { JobsService } from './jobs.service';
@@ -38,7 +42,14 @@ import {
   HelperPenaltyEventSchema,
 } from '../helpers/schemas/helper-penalty-event.schema';
 import { User, UserSchema } from '../users/schemas/user.schema';
-import { JobStatus, QuoteStatus, VerificationStatus, HelperStatus, UserStatus, UserRole } from '@homemate/types';
+import {
+  JobStatus,
+  QuoteStatus,
+  VerificationStatus,
+  HelperStatus,
+  UserStatus,
+  UserRole,
+} from '@homemate/types';
 import { isJobNoLongerAvailableError } from '@/utils/job-unavailable';
 
 jest.setTimeout(90000);

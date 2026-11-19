@@ -52,8 +52,7 @@ function readStatus(error: unknown): number | undefined {
 }
 
 function readCode(error: unknown): string | undefined {
-  const data = (error as { response?: { data?: { error?: { code?: unknown } } } })?.response
-    ?.data;
+  const data = (error as { response?: { data?: { error?: { code?: unknown } } } })?.response?.data;
   const code = data?.error?.code;
   return typeof code === 'string' ? code : undefined;
 }

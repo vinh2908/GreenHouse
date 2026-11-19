@@ -574,8 +574,8 @@ export default function CustomerHomeScreen() {
   );
 
   // Sinh HTML Goong bản đồ mini với ghim gọn, tương tác kéo/zoom/chọn thợ không reload
-// R11 (L11): tên biến cũ gây hiểu lầm — HTML này dùng MapLibre + Goong,
-// không phải Leaflet. Đổi tên cho đúng bản đồ đang dùng.
+  // R11 (L11): tên biến cũ gây hiểu lầm — HTML này dùng MapLibre + Goong,
+  // không phải Leaflet. Đổi tên cho đúng bản đồ đang dùng.
   const goongMiniMapHtml = useMemo(() => {
     if (!mapCenter) return '';
     const pinsJson = nearbyPinsJson;
@@ -1786,8 +1786,7 @@ export default function CustomerHomeScreen() {
                         >
                           {helper.status ? (
                             <Text style={{ fontSize: fs(12), color: tc.textMuted }}>
-                              {nearbyHelperStatusLabel(helper.status, lang)}{' '}
-                              ·
+                              {nearbyHelperStatusLabel(helper.status, lang)} ·
                             </Text>
                           ) : null}
                           {helper.rating > 0 ? (

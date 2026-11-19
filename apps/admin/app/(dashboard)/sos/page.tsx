@@ -560,8 +560,8 @@ function PenaltyEventsTab({
                         <TableCell>
                           <span className="font-semibold text-red-600">−{ev.points_deducted}đ</span>
                           <p className="text-xs text-muted-foreground">
-                            {ev.cancellations_in_window} lần hủy / 7 ngày • Điểm sau phạt (lúc
-                            ghi): {ev.performance_score_after}
+                            {ev.cancellations_in_window} lần hủy / 7 ngày • Điểm sau phạt (lúc ghi):{' '}
+                            {ev.performance_score_after}
                           </p>
                           <p className="text-xs text-muted-foreground">
                             Điểm hiện tại: {ev.helper_current_score ?? '—'}/100

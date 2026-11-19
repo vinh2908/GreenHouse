@@ -84,7 +84,10 @@ async function main(): Promise<void> {
         { $set: { cancellation_reason: SOS_CANCEL_REASON_REMATCH_EXPIRED } },
       );
       if (res.modifiedCount === 1) updated += 1;
-      else console.log(`[warn] job ${job._id}: updateOne modified ${res.modifiedCount} (already changed?)`);
+      else
+        console.log(
+          `[warn] job ${job._id}: updateOne modified ${res.modifiedCount} (already changed?)`,
+        );
     }
   }
 

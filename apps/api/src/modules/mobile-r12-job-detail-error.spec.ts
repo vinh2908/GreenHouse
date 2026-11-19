@@ -21,9 +21,10 @@ function axiosError(status: number, message: string, code?: string): unknown {
 
 describe('R12-26: resolveJobDetailErrorState', () => {
   it('410 + "Đơn này đã bị hủy" → gone_cancelled (not "not found")', () => {
-    expect(
-      resolveJobDetailErrorState(axiosError(410, 'Đơn này đã bị hủy', 'Gone')),
-    ).toEqual({ kind: 'gone_cancelled', serverMessage: 'Đơn này đã bị hủy' });
+    expect(resolveJobDetailErrorState(axiosError(410, 'Đơn này đã bị hủy', 'Gone'))).toEqual({
+      kind: 'gone_cancelled',
+      serverMessage: 'Đơn này đã bị hủy',
+    });
   });
 
   it('410 + generic message → gone_other', () => {
@@ -41,9 +42,10 @@ describe('R12-26: resolveJobDetailErrorState', () => {
   });
 
   it('404 → not_found (the only case that keeps the old text)', () => {
-    expect(
-      resolveJobDetailErrorState(axiosError(404, 'Job không tồn tại', 'NOT_FOUND')),
-    ).toEqual({ kind: 'not_found', serverMessage: 'Job không tồn tại' });
+    expect(resolveJobDetailErrorState(axiosError(404, 'Job không tồn tại', 'NOT_FOUND'))).toEqual({
+      kind: 'not_found',
+      serverMessage: 'Job không tồn tại',
+    });
   });
 
   it('403 → forbidden', () => {
@@ -66,16 +68,12 @@ describe('R12-26: resolveJobDetailErrorState', () => {
   });
 
   it('5xx → server (even with a stray "Gone" code — status wins)', () => {
-    expect(
-      resolveJobDetailErrorState(axiosError(500, 'Internal server error', 'Gone')),
-    ).toEqual({
+    expect(resolveJobDetailErrorState(axiosError(500, 'Internal server error', 'Gone'))).toEqual({
       kind: 'server',
       serverMessage: 'Internal server error',
     });
     expect(
-      resolveJobDetailErrorState(
-        axiosError(500, 'Internal server error', 'INTERNAL_SERVER_ERROR'),
-      ),
+      resolveJobDetailErrorState(axiosError(500, 'Internal server error', 'INTERNAL_SERVER_ERROR')),
     ).toEqual({
       kind: 'server',
       serverMessage: 'Internal server error',

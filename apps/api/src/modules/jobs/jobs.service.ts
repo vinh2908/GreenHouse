@@ -2594,7 +2594,7 @@ export class JobsService implements OnModuleInit {
           status: JobStatus.CANCELLED,
           title: job.title,
           service_id: job.service_id,
-          cancellation_reason: isSystemReason ? (job as any).cancellation_reason ?? null : null,
+          cancellation_reason: isSystemReason ? ((job as any).cancellation_reason ?? null) : null,
           cancelled_by_role: (job as any).cancelled_by_role ?? null,
         };
       }
@@ -4141,9 +4141,7 @@ export class JobsService implements OnModuleInit {
     // quyết toán ở bước nghiệm thu, xác nhận lúc này chỉ tạo cờ giả cho lần
     // phân xử sau.
     if (job.status !== JobStatus.PENDING_REVIEW && job.status !== JobStatus.DISPUTED) {
-      throw new BadRequestException(
-        'Chỉ xác nhận nhận tiền mặt khi đơn đang chờ khách nghiệm thu',
-      );
+      throw new BadRequestException('Chỉ xác nhận nhận tiền mặt khi đơn đang chờ khách nghiệm thu');
     }
     if (
       job.status === JobStatus.DISPUTED &&
@@ -4168,13 +4166,10 @@ export class JobsService implements OnModuleInit {
     const confirmMethod = (job.payment_method ?? '').trim().toLowerCase();
     const isCashFlow =
       job.status === JobStatus.DISPUTED
-        ? confirmMethod === 'cash' ||
-          (!confirmMethod && job.payment_status !== PaymentStatus.PAID)
+        ? confirmMethod === 'cash' || (!confirmMethod && job.payment_status !== PaymentStatus.PAID)
         : confirmMethod === 'cash';
     if (!isCashFlow) {
-      throw new BadRequestException(
-        'Chỉ xác nhận nhận tiền mặt khi đơn thanh toán bằng tiền mặt',
-      );
+      throw new BadRequestException('Chỉ xác nhận nhận tiền mặt khi đơn thanh toán bằng tiền mặt');
     }
     job.helper_cash_confirmed = true;
     job.helper_cash_confirmed_at = new Date();
@@ -4987,11 +4982,9 @@ export class JobsService implements OnModuleInit {
     if (
       actorRole === 'helper' &&
       job.helper_id &&
-      [
-        JobStatus.CONFIRMED,
-        JobStatus.HELPER_ON_THE_WAY,
-        JobStatus.HELPER_ARRIVED,
-      ].includes(previousStatus)
+      [JobStatus.CONFIRMED, JobStatus.HELPER_ON_THE_WAY, JobStatus.HELPER_ARRIVED].includes(
+        previousStatus,
+      )
     ) {
       const helperDoc = await this.helperModel.findOne({ user_id: job.helper_id }).exec();
       const newLateCount = ((helperDoc as any)?.late_cancellation_count || 0) + 1;

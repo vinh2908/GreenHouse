@@ -13,7 +13,11 @@ export type ZaloTokenStateDocument = ZaloTokenState & Document;
  * lần refresh thành công (xem ZaloTokenService), trước khi access token
  * mới được dùng. Đây là credential — KHÔNG BAO GIỜ log giá trị của nó.
  */
-@Schema({ collection: 'zalo_token_states', timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' }, versionKey: false })
+@Schema({
+  collection: 'zalo_token_states',
+  timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' },
+  versionKey: false,
+})
 export class ZaloTokenState {
   @Prop({ required: true, unique: true })
   key: string;

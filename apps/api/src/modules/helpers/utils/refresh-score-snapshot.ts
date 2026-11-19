@@ -53,9 +53,7 @@ export async function refreshHelperScoreSnapshot(args: {
   const result = computeHelperScore(helperScoreInputFromProfile(profile, count), config);
 
   const breakdown = profile.score_breakdown as
-    | { distance: number; skill: number; rating: number; kyc: number }
-    | null
-    | undefined;
+    { distance: number; skill: number; rating: number; kyc: number } | null | undefined;
   const breakdownChanged =
     !breakdown ||
     breakdown.distance !== result.breakdown.distance ||

@@ -51,10 +51,6 @@ export function shouldBackfillSosCancelReason(
 }
 
 /** Maps the old wrong text to the corrected R12 text; null for anything else (idempotent — already-correct rows are untouched). */
-export function correctedSosCancelReason(
-  oldReason: string | null | undefined,
-): string | null {
-  return oldReason === SOS_CANCEL_REASON_NO_RESPONSE
-    ? SOS_CANCEL_REASON_REMATCH_EXPIRED
-    : null;
+export function correctedSosCancelReason(oldReason: string | null | undefined): string | null {
+  return oldReason === SOS_CANCEL_REASON_NO_RESPONSE ? SOS_CANCEL_REASON_REMATCH_EXPIRED : null;
 }

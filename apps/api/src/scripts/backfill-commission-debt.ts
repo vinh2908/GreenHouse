@@ -42,7 +42,9 @@ async function main(): Promise<void> {
   const collections = await db.listCollections().toArray();
   for (const name of ['transactions', 'wallets']) {
     if (!collections.some(c => c.name === name)) {
-      throw new Error(`Collection '${name}' not found. Available: ${collections.map(c => c.name).join(', ') || '(none)'}`);
+      throw new Error(
+        `Collection '${name}' not found. Available: ${collections.map(c => c.name).join(', ') || '(none)'}`,
+      );
     }
   }
 
@@ -87,7 +89,9 @@ async function main(): Promise<void> {
   let updated = 0;
   let total = 0;
   for (const userId of userIds) {
-    const wallet = await db.collection('wallets').findOne({ user_id: new mongoose.Types.ObjectId(userId) });
+    const wallet = await db
+      .collection('wallets')
+      .findOne({ user_id: new mongoose.Types.ObjectId(userId) });
     const stored = Math.max(0, wallet?.commission_debt ?? 0);
     const target = computed[userId];
     total += target;

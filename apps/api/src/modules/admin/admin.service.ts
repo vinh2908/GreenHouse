@@ -680,9 +680,7 @@ export class AdminService {
         : contractNetPaid;
     const actuallyPaid = Number.isFinite(actuallyPaidRaw) ? actuallyPaidRaw : contractNetPaid;
     const netPaid =
-      (job as any).is_warranty === true
-        ? 0
-        : Math.max(0, Math.min(contractNetPaid, actuallyPaid));
+      (job as any).is_warranty === true ? 0 : Math.max(0, Math.min(contractNetPaid, actuallyPaid));
     // R13-B3 (review fix): getTotalPaidForJob đã TRỪ hoàn tiền (net) nên
     // max_refundable của đơn không-phải-tiền-mặt = netPaid luôn — trừ thêm
     // refunded_amount nữa là trừ 2 lần (50k đã trả, hoàn 20k → net 30k
@@ -1477,8 +1475,7 @@ export class AdminService {
     // chính nó là ObjectId (String(doc) trực tiếp ra '[object Object]').
     const helperKeyOf = (raw: unknown): string => {
       const obj = raw as { _id?: unknown } | null;
-      const id =
-        obj && typeof obj === 'object' && '_id' in obj && obj._id != null ? obj._id : raw;
+      const id = obj && typeof obj === 'object' && '_id' in obj && obj._id != null ? obj._id : raw;
       return String(id ?? '');
     };
     const helperObjectIds = [...new Set(events.map(ev => helperKeyOf(ev.helper_id)))].filter(

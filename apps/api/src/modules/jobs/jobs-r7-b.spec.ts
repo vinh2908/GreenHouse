@@ -35,7 +35,11 @@
  * /tmp/mongo-r7-b so it does not clash with other R7 workers. Both suites
  * share this one mongod (one file) so they cannot clash with each other.
  */
-import { startStandaloneMongo, stopStandaloneMongo, StandaloneMongoTestInstance } from '../../../test/standalone-mongo-helper';
+import {
+  startStandaloneMongo,
+  stopStandaloneMongo,
+  StandaloneMongoTestInstance,
+} from '../../../test/standalone-mongo-helper';
 import mongoose, { Types } from 'mongoose';
 import { JobsService } from './jobs.service';
 import { Job, JobSchema, Quote, QuoteSchema, Contract, ContractSchema } from './schemas/job.schema';

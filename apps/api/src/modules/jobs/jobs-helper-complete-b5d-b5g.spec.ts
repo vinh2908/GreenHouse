@@ -98,10 +98,7 @@ describe('B5g: cash-confirm button shows only at pending_review + cash', () => {
     // Tranh chấp mở từ bước 7: khách không ghi nhận được phương thức (pay bị
     // chặn ở DISPUTED) nên giữ heuristic — chưa chọn + chưa paid = tiền mặt.
     expect(
-      shouldShowCashConfirmButton(
-        cashJob({ status: 'disputed', payment_method: undefined }),
-        true,
-      ),
+      shouldShowCashConfirmButton(cashJob({ status: 'disputed', payment_method: undefined }), true),
     ).toBe(true);
     expect(
       shouldShowCashConfirmButton(cashJob({ status: 'disputed', payment_method: '' }), true),
