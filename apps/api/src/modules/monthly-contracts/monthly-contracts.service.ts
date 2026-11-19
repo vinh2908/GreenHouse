@@ -42,6 +42,8 @@ export interface SettlementSummary {
   month: string;
   scheduled_days: number;
   confirmed_days: number;
+  checked_in_days?: number;
+  strictly_confirmed_days?: number;
   leave_days: number;
   absent_days: number;
   gross_amount: number;
@@ -49,6 +51,7 @@ export interface SettlementSummary {
   helper_receives: number;
   status: 'settled' | 'preview';
   settled_at?: Date;
+  settlement_id?: string;
 }
 
 /**
@@ -686,7 +689,8 @@ export class MonthlyContractsService {
     const byDate = new Map(records.map(r => [r.date, r.status]));
     const today = this.todayStr();
 
-    let confirmed = 0;
+    let strictlyConfirmed = 0;
+    let checkedIn = 0;
     let leave = 0;
     let absent = 0;
     for (const date of scheduled) {
@@ -695,12 +699,15 @@ export class MonthlyContractsService {
       // kể cả khi khách chưa kịp bấm xác nhận — lương tính theo buổi làm thật,
       // không phải buổi dự kiến. Chỉ 'confirmed' thì lương đã thiếu khi khách
       // chưa xác nhận kịp lúc chốt lương.
-      if (st === 'confirmed' || st === 'checked_in') confirmed += 1;
+      if (st === 'confirmed') strictlyConfirmed += 1;
+      else if (st === 'checked_in') checkedIn += 1;
       else if (st === 'leave') leave += 1;
       else if (st === 'absent') absent += 1;
       else if (!st && date < today) absent += 1; // quá khứ không có record = vắng
       // Ngày hôm nay/tương lai chưa có record: chưa tính
     }
+
+    const payableDays = strictlyConfirmed + checkedIn;
 
     // A39: Tính lương theo tỷ lệ số buổi đã xác nhận / tổng số buổi theo lịch trọn tháng
     const fullMonthScheduled = this.fullMonthScheduledDates(contract, month);
@@ -708,7 +715,7 @@ export class MonthlyContractsService {
       fullMonthScheduled.length > 0 ? fullMonthScheduled.length : scheduled.length;
     const gross =
       totalScheduledDaysInMonth > 0
-        ? Math.round((contract.monthly_salary * confirmed) / totalScheduledDaysInMonth)
+        ? Math.round((contract.monthly_salary * payableDays) / totalScheduledDaysInMonth)
         : 0;
     const fee = Math.round(
       (gross * (contract.platform_fee_percent ?? DEFAULT_MONTHLY_PLATFORM_FEE_PERCENT)) / 100,
@@ -717,7 +724,9 @@ export class MonthlyContractsService {
       contract_id: String(contract._id),
       month,
       scheduled_days: scheduled.length,
-      confirmed_days: confirmed,
+      confirmed_days: payableDays,
+      checked_in_days: checkedIn,
+      strictly_confirmed_days: strictlyConfirmed,
       leave_days: leave,
       absent_days: absent,
       gross_amount: gross,
@@ -740,6 +749,8 @@ export class MonthlyContractsService {
         month: m,
         scheduled_days: existing.scheduled_days,
         confirmed_days: existing.confirmed_days,
+        checked_in_days: 0,
+        strictly_confirmed_days: existing.confirmed_days,
         leave_days: existing.leave_days,
         absent_days: existing.absent_days,
         gross_amount: existing.gross_amount,

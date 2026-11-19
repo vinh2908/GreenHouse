@@ -61,8 +61,31 @@ describe('MonthlyContractsService.computeSummary (B50)', () => {
     const summary = await serviceWithRecords.computeSummary(c, '2026-10');
 
     expect(summary.confirmed_days).toBe(2);
+    expect(summary.checked_in_days).toBe(1);
+    expect(summary.strictly_confirmed_days).toBe(1);
     expect(summary.leave_days).toBe(1);
     // Các buổi còn lại trong quá khứ không có record → vắng
     expect(summary.absent_days).toBe(scheduled.length - 3);
+  });
+
+  it('R14-Lỗi 7: phân biệt buổi mới điểm danh (chờ xác nhận) với buổi đã xác nhận mà không đổi cách tính tiền', async () => {
+    const service = makeService([]);
+    const c = contract();
+    const scheduled = service.scheduledDatesOfMonth(c, '2026-10');
+    // 1 buổi mới check in (chờ xác nhận), 3 buổi đã confirmed
+    const records = [
+      { date: scheduled[0], status: 'checked_in' },
+      { date: scheduled[1], status: 'confirmed' },
+      { date: scheduled[2], status: 'confirmed' },
+      { date: scheduled[3], status: 'confirmed' },
+    ];
+    const serviceWithRecords = makeService(records);
+    const summary = await serviceWithRecords.computeSummary(c, '2026-10');
+
+    expect(summary.checked_in_days).toBe(1);
+    expect(summary.strictly_confirmed_days).toBe(3);
+    // confirmed_days vẫn là tổng payable (4 buổi) giữ nguyên công thức tính lương
+    expect(summary.confirmed_days).toBe(4);
+    expect(summary.gross_amount).toBe(Math.round((6_000_000 * 4) / scheduled.length));
   });
 });

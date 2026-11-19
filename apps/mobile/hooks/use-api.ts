@@ -1936,6 +1936,8 @@ export interface SettlementSummary {
   month: string;
   scheduled_days: number;
   confirmed_days: number;
+  checked_in_days?: number;
+  strictly_confirmed_days?: number;
   leave_days: number;
   absent_days: number;
   gross_amount: number;
@@ -1953,22 +1955,41 @@ const monthlyErr = (err: any, fallback: string) => {
 
 export function useMonthlyContracts(as: 'customer' | 'helper') {
   return useQuery({
-    queryKey: ['monthly-contracts', as],
+    queryKey: ['monthly-contracts', 'list', as],
     queryFn: async () => {
       const { data } = await apiClient.get('/monthly-contracts', { params: { as } });
       return data.data as MonthlyContractItem[];
     },
+    staleTime: 30000,
   });
 }
 
 export function useMonthlyContract(id?: string) {
+  const qc = useQueryClient();
   return useQuery({
-    queryKey: ['monthly-contracts', 'detail', id],
+    queryKey: ['monthly-contract', id],
     queryFn: async () => {
       const { data } = await apiClient.get(`/monthly-contracts/${id}`);
       return data.data as MonthlyContractItem;
     },
-    enabled: !!id,
+    enabled: Boolean(id),
+    staleTime: 30000,
+    initialData: () => {
+      if (!id) return undefined;
+      const cachedCustomer = qc.getQueryData<MonthlyContractItem[]>([
+        'monthly-contracts',
+        'list',
+        'customer',
+      ]);
+      const foundCust = cachedCustomer?.find(c => c._id === id);
+      if (foundCust) return foundCust;
+      const cachedHelper = qc.getQueryData<MonthlyContractItem[]>([
+        'monthly-contracts',
+        'list',
+        'helper',
+      ]);
+      return cachedHelper?.find(c => c._id === id);
+    },
   });
 }
 
@@ -1977,7 +1998,7 @@ export function useCreateMonthlyContract() {
   return useMutation({
     mutationFn: (dto: any) => apiClient.post('/monthly-contracts', dto),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['monthly-contracts'] });
+      qc.invalidateQueries({ queryKey: ['monthly-contracts', 'list'] });
       Toast.show({
         type: 'success',
         text1: 'Đã gửi đề nghị hợp đồng ',
@@ -1993,8 +2014,9 @@ function useMonthlyContractAction(successText: string) {
   return useMutation({
     mutationFn: ({ id, path, body }: { id: string; path: string; body?: any }) =>
       apiClient.patch(`/monthly-contracts/${id}/${path}`, body ?? {}),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['monthly-contracts'] });
+    onSuccess: (_, vars) => {
+      qc.invalidateQueries({ queryKey: ['monthly-contracts', 'list'] });
+      if (vars.id) qc.invalidateQueries({ queryKey: ['monthly-contract', vars.id] });
       Toast.show({ type: 'success', text1: successText });
     },
     onError: (err: any) => monthlyErr(err, 'Thao tác thất bại'),
@@ -2015,7 +2037,7 @@ export function useEndMonthlyContract() {
 
 export function useMonthlyAttendance(id?: string, month?: string) {
   return useQuery({
-    queryKey: ['monthly-contracts', id, 'attendance', month],
+    queryKey: ['monthly-contract', id, 'attendance', month],
     queryFn: async () => {
       const { data } = await apiClient.get(`/monthly-contracts/${id}/attendance`, {
         params: { month },
@@ -2028,7 +2050,8 @@ export function useMonthlyAttendance(id?: string, month?: string) {
         today: string;
       };
     },
-    enabled: !!id,
+    enabled: Boolean(id && month),
+    staleTime: 30000,
   });
 }
 
@@ -2037,8 +2060,8 @@ export function useCheckinMonthly() {
   return useMutation({
     mutationFn: (id: string) => apiClient.post(`/monthly-contracts/${id}/attendance/checkin`),
     onSuccess: (_, id) => {
-      qc.invalidateQueries({ queryKey: ['monthly-contracts', id] });
-      qc.invalidateQueries({ queryKey: ['monthly-contracts'] });
+      qc.invalidateQueries({ queryKey: ['monthly-contract', id] });
+      qc.invalidateQueries({ queryKey: ['monthly-contracts', 'list'] });
       Toast.show({ type: 'success', text1: 'Đã điểm danh hôm nay ' });
     },
     onError: (err: any) => monthlyErr(err, 'Điểm danh thất bại'),
@@ -2051,21 +2074,34 @@ export function useConfirmAttendance() {
     mutationFn: ({ id, date, approve }: { id: string; date: string; approve: boolean }) =>
       apiClient.patch(`/monthly-contracts/${id}/attendance/${date}/confirm`, { approve }),
     onSuccess: (_, vars) => {
-      qc.invalidateQueries({ queryKey: ['monthly-contracts', vars.id] });
-      Toast.show({ type: 'success', text1: 'Đã cập nhật điểm danh' });
+      qc.invalidateQueries({ queryKey: ['monthly-contract', vars.id] });
+      if (vars.approve) {
+        Toast.show({
+          type: 'success',
+          text1: 'Xác nhận có mặt thành công',
+          text2: `Đã xác nhận buổi làm ngày ${vars.date}`,
+        });
+      } else {
+        Toast.show({
+          type: 'success',
+          text1: 'Đã đánh dấu vắng',
+          text2: `Buổi làm ngày ${vars.date}`,
+        });
+      }
     },
     onError: (err: any) => monthlyErr(err, 'Cập nhật điểm danh thất bại'),
   });
 }
 
-export function useMonthlyLeaveRequests(id?: string) {
+export function useMonthlyLeaveRequests(id?: string, enabled = true) {
   return useQuery({
-    queryKey: ['monthly-contracts', id, 'leave-requests'],
+    queryKey: ['monthly-contract', id, 'leave-requests'],
     queryFn: async () => {
       const { data } = await apiClient.get(`/monthly-contracts/${id}/leave-requests`);
       return data.data as LeaveRequestItem[];
     },
-    enabled: !!id,
+    enabled: Boolean(id && enabled),
+    staleTime: 30000,
   });
 }
 
@@ -2075,7 +2111,7 @@ export function useRequestLeave() {
     mutationFn: ({ id, date, reason }: { id: string; date: string; reason: string }) =>
       apiClient.post(`/monthly-contracts/${id}/leave-requests`, { date, reason }),
     onSuccess: (_, vars) => {
-      qc.invalidateQueries({ queryKey: ['monthly-contracts', vars.id, 'leave-requests'] });
+      qc.invalidateQueries({ queryKey: ['monthly-contract', vars.id, 'leave-requests'] });
       Toast.show({ type: 'success', text1: 'Đã gửi đơn xin nghỉ ' });
     },
     onError: (err: any) => monthlyErr(err, 'Gửi đơn xin nghỉ thất bại'),
@@ -2088,8 +2124,8 @@ export function useRespondLeave() {
     mutationFn: ({ id, leaveId, approve }: { id: string; leaveId: string; approve: boolean }) =>
       apiClient.patch(`/monthly-contracts/${id}/leave-requests/${leaveId}/respond`, { approve }),
     onSuccess: (_, vars) => {
-      qc.invalidateQueries({ queryKey: ['monthly-contracts', vars.id, 'leave-requests'] });
-      qc.invalidateQueries({ queryKey: ['monthly-contracts', vars.id, 'attendance'] });
+      qc.invalidateQueries({ queryKey: ['monthly-contract', vars.id, 'leave-requests'] });
+      qc.invalidateQueries({ queryKey: ['monthly-contract', vars.id, 'attendance'] });
       Toast.show({ type: 'success', text1: 'Đã xử lý đơn xin nghỉ' });
     },
     onError: (err: any) => monthlyErr(err, 'Xử lý đơn xin nghỉ thất bại'),
@@ -2098,31 +2134,48 @@ export function useRespondLeave() {
 
 export function useMonthlySettlement(id?: string, month?: string) {
   return useQuery({
-    queryKey: ['monthly-contracts', id, 'settlement', month],
+    queryKey: ['monthly-contract', id, 'settlement', month],
     queryFn: async () => {
       const { data } = await apiClient.get(`/monthly-contracts/${id}/settlement`, {
         params: { month },
       });
       return data.data as SettlementSummary;
     },
-    enabled: !!id,
+    enabled: Boolean(id && month),
+    staleTime: 30000,
   });
 }
 
 export function useSettleMonth() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, month }: { id: string; month: string }) =>
-      apiClient.post(`/monthly-contracts/${id}/settlement/settle`, { month }),
+    mutationFn: ({
+      id,
+      month,
+      payment_mode,
+    }: {
+      id: string;
+      month: string;
+      payment_mode?: 'wallet' | 'cash_direct';
+    }) => apiClient.post(`/monthly-contracts/${id}/settlement/settle`, { month, payment_mode }),
     onSuccess: (_, vars) => {
-      qc.invalidateQueries({ queryKey: ['monthly-contracts', vars.id, 'settlement'] });
-      qc.invalidateQueries({ queryKey: ['monthly-contracts'] });
+      qc.invalidateQueries({ queryKey: ['monthly-contract', vars.id, 'settlement'] });
+      qc.invalidateQueries({ queryKey: ['monthly-contract', vars.id] });
+      qc.invalidateQueries({ queryKey: ['monthly-contracts', 'list'] });
       qc.invalidateQueries({ queryKey: ['wallet'] });
-      Toast.show({
-        type: 'success',
-        text1: 'Đã chốt lương tháng ',
-        text2: 'Tiền đã được cộng vào ví của thợ',
-      });
+      if (vars.payment_mode === 'cash_direct') {
+        Toast.show({
+          type: 'success',
+          text1: 'Chốt lương tháng thành công',
+          text2: 'Đã ghi nhận công (trả ngoài hệ thống, cộng 0₫ vào ví)',
+        });
+      } else {
+        Toast.show({
+          type: 'success',
+          text1: 'Chốt lương tháng thành công',
+          text2: 'Tiền đã được trừ ví khách và cộng vào ví thợ',
+        });
+      }
     },
     onError: (err: any) => monthlyErr(err, 'Chốt lương thất bại'),
   });

@@ -17,8 +17,7 @@
  * /tmp/mongo-r7-a-3 (B7 = 27121, item 2 = 27122 — separate ports so suites
  * can run in parallel).
  */
-import { spawn, spawnSync } from 'child_process';
-import * as fs from 'fs';
+import { startStandaloneMongo, stopStandaloneMongo, StandaloneMongoTestInstance } from '../../../test/standalone-mongo-helper';
 import mongoose, { Types } from 'mongoose';
 import { JobsService, isPastStartUnassigned } from './jobs.service';
 import { Job, JobSchema, Quote, QuoteSchema, Contract, ContractSchema } from './schemas/job.schema';
@@ -36,9 +35,7 @@ jest.setTimeout(90000);
 
 const sleep = (ms: number) => new Promise<void>(r => setTimeout(r, ms));
 
-const MONGOD = `${process.env.HOME}/.cache/mongodb-binaries/mongod-x64-ubuntu-8.2.6`;
-const DBPATH = '/tmp/mongo-r7-a-3';
-const PORT = 27123;
+let mongoInstance: StandaloneMongoTestInstance;
 
 describe('Overdue banner predicate + rebroadcast (R7 item 3, real mongod)', () => {
   let conn: mongoose.Connection;
@@ -113,32 +110,8 @@ describe('Overdue banner predicate + rebroadcast (R7 item 3, real mongod)', () =
   }
 
   beforeAll(async () => {
-    spawnSync(MONGOD, ['--dbpath', DBPATH, '--shutdown'], { stdio: 'ignore' });
-    fs.rmSync(DBPATH, { recursive: true, force: true });
-    fs.mkdirSync(DBPATH, { recursive: true });
-    const child = spawn(
-      MONGOD,
-      [
-        '--dbpath',
-        DBPATH,
-        '--port',
-        String(PORT),
-        '--bind_ip',
-        '127.0.0.1',
-        '--logpath',
-        '/tmp/mongo-r7-a-3-mongod.log',
-        '--fork',
-      ],
-      { stdio: 'ignore' },
-    );
-    await new Promise<void>((resolve, reject) => {
-      child.on('exit', c => (c === 0 ? resolve() : reject(new Error(`mongod fork exit ${c}`))));
-    });
-    conn = mongoose.createConnection(`mongodb://127.0.0.1:${PORT}/h3`);
-    await new Promise<void>((resolve, reject) => {
-      conn.once('connected', () => resolve());
-      conn.once('error', reject);
-    });
+    mongoInstance = await startStandaloneMongo();
+    conn = mongoInstance.conn;
 
     JobModel = conn.model(Job.name, JobSchema);
     conn.model(Quote.name, QuoteSchema);
@@ -180,13 +153,7 @@ describe('Overdue banner predicate + rebroadcast (R7 item 3, real mongod)', () =
   });
 
   afterAll(async () => {
-    try {
-      await Promise.race([conn.close(), sleep(5000)]);
-    } catch {
-      /* ignore */
-    }
-    spawnSync(MONGOD, ['--dbpath', DBPATH, '--shutdown'], { stdio: 'ignore' });
-    fs.rmSync(DBPATH, { recursive: true, force: true });
+    await stopStandaloneMongo(mongoInstance);
   });
 
   beforeEach(async () => {

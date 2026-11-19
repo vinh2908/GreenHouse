@@ -107,12 +107,10 @@ export default function MonthlyContractDetailScreen() {
   const [month, setMonth] = useState(currentMonth);
 
   const { data: contract, isLoading, refetch, isRefetching } = useMonthlyContract(id);
-  const { data: attendance } = useMonthlyAttendance(id, month);
-  const { data: leaves } = useMonthlyLeaveRequests(id);
-  const { data: settlement } = useMonthlySettlement(
-    id,
-    contract && (contract.status === 'active' || contract.status === 'ended') ? month : undefined,
-  );
+  const isActiveOrEnded = contract?.status === 'active' || contract?.status === 'ended';
+  const { data: attendance } = useMonthlyAttendance(id, isActiveOrEnded ? month : undefined);
+  const { data: leaves } = useMonthlyLeaveRequests(id, isActiveOrEnded);
+  const { data: settlement } = useMonthlySettlement(id, isActiveOrEnded ? month : undefined);
 
   const respond = useRespondMonthlyContract();
   const cancel = useCancelMonthlyContract();
@@ -128,6 +126,10 @@ export default function MonthlyContractDetailScreen() {
   // A102: Lý do bắt buộc khi kết thúc / hủy / từ chối hợp đồng — bên kia nhận thông báo ghi rõ lý do.
   const [reasonAction, setReasonAction] = useState<'end' | 'cancel' | 'decline' | null>(null);
   const [actionReason, setActionReason] = useState('');
+
+  // R14: Lựa chọn phương thức thanh toán khi chốt lương (ví Homemate vs trả ngoài)
+  const [settleModalVisible, setSettleModalVisible] = useState(false);
+  const [settlePaymentMode, setSettlePaymentMode] = useState<'wallet' | 'cash_direct'>('wallet');
 
   const recordByDate = useMemo(() => {
     const map = new Map<string, AttendanceStatus>();
@@ -703,8 +705,14 @@ export default function MonthlyContractDetailScreen() {
                 />
                 <InfoRow
                   label={lang === 'en' ? 'Confirmed sessions' : 'Buổi đã xác nhận'}
-                  value={`${settlement.confirmed_days} ${lang === 'en' ? 'sessions' : 'buổi'}`}
+                  value={`${settlement.strictly_confirmed_days ?? (settlement.confirmed_days - (settlement.checked_in_days ?? 0))} ${lang === 'en' ? 'sessions' : 'buổi'}`}
                 />
+                {settlement.status === 'preview' && (settlement.checked_in_days ?? 0) > 0 && (
+                  <InfoRow
+                    label={lang === 'en' ? 'Awaiting confirmation' : 'Buổi đang chờ xác nhận'}
+                    value={`${settlement.checked_in_days} ${lang === 'en' ? 'sessions (counted in wages)' : 'buổi (đã tính vào lương)'}`}
+                  />
+                )}
                 <InfoRow
                   label={lang === 'en' ? 'Leave sessions' : 'Buổi nghỉ phép'}
                   value={`${settlement.leave_days} ${lang === 'en' ? 'sessions' : 'buổi'}`}
@@ -744,16 +752,7 @@ export default function MonthlyContractDetailScreen() {
                   <Button
                     title={lang === 'en' ? 'Settle wages for this month' : 'Chốt lương tháng này'}
                     loading={settle.isPending}
-                    onPress={() =>
-                      confirmDialog(
-                        lang === 'en' ? 'Settle wages for this month?' : 'Chốt lương tháng này?',
-                        lang === 'en'
-                          ? `Helper will receive ${fmt(settlement.helper_receives)}₫ in wallet (platform fee deducted). This month cannot be resettled.`
-                          : `Thợ sẽ nhận ${fmt(settlement.helper_receives)}₫ vào ví (đã trừ phí sàn). Tháng này sẽ không chốt lại được.`,
-                        lang === 'en' ? 'Settle wages' : 'Chốt lương',
-                        () => settle.mutate({ id: contract._id, month }),
-                      )
-                    }
+                    onPress={() => setSettleModalVisible(true)}
                   />
                 ) : (
                   <Text style={{ fontSize: fs(12.5), color: tc.textMuted }}>
@@ -857,6 +856,219 @@ export default function MonthlyContractDetailScreen() {
                 loading={end.isPending || cancel.isPending || respond.isPending}
                 disabled={actionReason.trim().length < 3}
                 onPress={handleConfirmReasonAction}
+              />
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* R14: Modal chốt lương tháng & lựa chọn phương thức thanh toán */}
+      <Modal
+        visible={settleModalVisible}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setSettleModalVisible(false)}
+      >
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: 'rgba(0,0,0,0.5)',
+            justifyContent: 'flex-end',
+          }}
+        >
+          <View
+            style={{
+              backgroundColor: tc.surface,
+              borderTopLeftRadius: 20,
+              borderTopRightRadius: 20,
+              padding: 20,
+              gap: 14,
+            }}
+          >
+            <Text style={{ fontSize: fs(17), fontWeight: '800', color: tc.text }}>
+              {lang === 'en'
+                ? `Settle Wages for Month ${formatMonthSlash(`${month}-01`, lang)}`
+                : `Chốt lương tháng ${formatMonthSlash(`${month}-01`, lang)}`}
+            </Text>
+
+            {settlement && (
+              <View
+                style={{
+                  backgroundColor: tc.subtle,
+                  borderRadius: 12,
+                  padding: 12,
+                  gap: 6,
+                }}
+              >
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                  <Text style={{ fontSize: fs(13), color: tc.textSecondary }}>
+                    {lang === 'en' ? 'Actual earnings:' : 'Lương theo buổi thực tế:'}
+                  </Text>
+                  <Text style={{ fontSize: fs(13), fontWeight: '700', color: tc.text }}>
+                    {fmt(settlement.gross_amount)}₫
+                  </Text>
+                </View>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                  <Text style={{ fontSize: fs(13), color: tc.textSecondary }}>
+                    {lang === 'en'
+                      ? `Platform fee (${contract.platform_fee_percent ?? 15}%):`
+                      : `Phí sàn (${contract.platform_fee_percent ?? 15}%):`}
+                  </Text>
+                  <Text style={{ fontSize: fs(13), color: COLORS.error }}>
+                    −{fmt(settlement.platform_fee)}₫
+                  </Text>
+                </View>
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    justifyContent: 'space-between',
+                    borderTopWidth: 1,
+                    borderTopColor: tc.border,
+                    paddingTop: 6,
+                    marginTop: 2,
+                  }}
+                >
+                  <Text style={{ fontSize: fs(14), fontWeight: '800', color: tc.text }}>
+                    {lang === 'en' ? 'Helper receives:' : 'Thợ thực nhận:'}
+                  </Text>
+                  <Text style={{ fontSize: fs(15), fontWeight: '800', color: COLORS.primaryDark }}>
+                    {settlePaymentMode === 'cash_direct'
+                      ? '0₫'
+                      : `${fmt(settlement.helper_receives)}₫`}
+                  </Text>
+                </View>
+              </View>
+            )}
+
+            <Text style={{ fontSize: fs(13.5), fontWeight: '700', color: tc.text }}>
+              {lang === 'en' ? 'Choose payment method:' : 'Chọn phương thức thanh toán:'}
+            </Text>
+
+            {/* Option 1: Ví Homemate */}
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() => setSettlePaymentMode('wallet')}
+              style={{
+                borderWidth: 1.5,
+                borderColor: settlePaymentMode === 'wallet' ? COLORS.primary : tc.border,
+                borderRadius: 12,
+                padding: 12,
+                backgroundColor:
+                  settlePaymentMode === 'wallet' ? COLORS.primaryLight : tc.surface,
+                gap: 4,
+              }}
+            >
+              <View
+                style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
+              >
+                <Text style={{ fontSize: fs(14), fontWeight: '800', color: tc.text }}>
+                  {lang === 'en' ? 'Homemate Wallet' : 'Ví Homemate'}
+                </Text>
+                <View
+                  style={{
+                    width: 18,
+                    height: 18,
+                    borderRadius: 9,
+                    borderWidth: 2,
+                    borderColor:
+                      settlePaymentMode === 'wallet' ? COLORS.primary : COLORS.gray[400],
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  {settlePaymentMode === 'wallet' && (
+                    <View
+                      style={{
+                        width: 10,
+                        height: 10,
+                        borderRadius: 5,
+                        backgroundColor: COLORS.primary,
+                      }}
+                    />
+                  )}
+                </View>
+              </View>
+              <Text style={{ fontSize: fs(12), color: tc.textSecondary, lineHeight: 17 }}>
+                {lang === 'en'
+                  ? 'Deduct from customer wallet and credit helper wallet. Requires sufficient customer balance.'
+                  : `Trừ ví khách ${fmt(settlement?.gross_amount)}₫, cộng vào ví thợ ${fmt(settlement?.helper_receives)}₫. Yêu cầu ví khách đủ số dư.`}
+              </Text>
+            </TouchableOpacity>
+
+            {/* Option 2: Trả ngoài hệ thống (cash_direct) */}
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() => setSettlePaymentMode('cash_direct')}
+              style={{
+                borderWidth: 1.5,
+                borderColor: settlePaymentMode === 'cash_direct' ? COLORS.primary : tc.border,
+                borderRadius: 12,
+                padding: 12,
+                backgroundColor:
+                  settlePaymentMode === 'cash_direct' ? COLORS.primaryLight : tc.surface,
+                gap: 4,
+              }}
+            >
+              <View
+                style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
+              >
+                <Text style={{ fontSize: fs(14), fontWeight: '800', color: tc.text }}>
+                  {lang === 'en' ? 'Cash / External payment' : 'Trả ngoài hệ thống / Tiền mặt'}
+                </Text>
+                <View
+                  style={{
+                    width: 18,
+                    height: 18,
+                    borderRadius: 9,
+                    borderWidth: 2,
+                    borderColor:
+                      settlePaymentMode === 'cash_direct' ? COLORS.primary : COLORS.gray[400],
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  {settlePaymentMode === 'cash_direct' && (
+                    <View
+                      style={{
+                        width: 10,
+                        height: 10,
+                        borderRadius: 5,
+                        backgroundColor: COLORS.primary,
+                      }}
+                    />
+                  )}
+                </View>
+              </View>
+              <Text style={{ fontSize: fs(12), color: tc.textSecondary, lineHeight: 17 }}>
+                {lang === 'en'
+                  ? 'Two parties settle cash externally. System records working sessions, credits 0₫ into wallet.'
+                  : 'Hai bên tự thanh toán tiền mặt bên ngoài. Hệ thống chỉ ghi nhận số buổi công, cộng 0₫ vào ví.'}
+              </Text>
+            </TouchableOpacity>
+
+            <View style={{ flexDirection: 'row', gap: 10, marginTop: 4 }}>
+              <Button
+                title={lang === 'en' ? 'Cancel' : 'Hủy'}
+                variant="outline"
+                style={{ flex: 1 }}
+                onPress={() => setSettleModalVisible(false)}
+              />
+              <Button
+                title={lang === 'en' ? 'Confirm settlement' : 'Xác nhận chốt lương'}
+                style={{ flex: 1 }}
+                loading={settle.isPending}
+                onPress={async () => {
+                  try {
+                    await settle.mutateAsync({
+                      id: contract._id,
+                      month,
+                      payment_mode: settlePaymentMode,
+                    });
+                    setSettleModalVisible(false);
+                  } catch {
+                    // Lỗi đã được toast bởi useSettleMonth
+                  }
+                }}
               />
             </View>
           </View>

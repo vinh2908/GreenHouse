@@ -148,7 +148,7 @@ export default function MonthlyContractsScreen() {
         )}
       </View>
 
-      {isLoading ? (
+      {isLoading && !contracts ? (
         <LoadingSpinner />
       ) : (
         <ScrollView

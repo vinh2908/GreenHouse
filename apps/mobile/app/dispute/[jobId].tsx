@@ -25,6 +25,7 @@ import {
   MessageSquare,
   Shield,
   RotateCcw,
+  CheckCircle2,
 } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import dayjs from 'dayjs';
@@ -38,8 +39,16 @@ import {
   useDisputeCase,
   useAddDisputeEntry,
   useAppealDispute,
+  useJobDetail,
+  useConfirmCashPayment,
   type DisputeTimelineEntry,
 } from '@/hooks/use-api';
+import {
+  isCashPaymentFlow,
+  resolveCashConfirmErrorMessage,
+  shouldShowCashConfirmButton,
+} from '@/utils/cash-confirm';
+import { isMyActiveJob as isMyActiveJobGate } from '@/utils/job-assignment';
 import {
   Badge,
   Button,
@@ -118,13 +127,38 @@ export default function DisputeCaseScreen() {
   const currentUser = useAuthStore(s => s.user);
 
   const { data: caseData, isLoading, error } = useDisputeCase(jobId);
+  const { data: job, refetch: refetchJob } = useJobDetail(jobId);
   const addEntry = useAddDisputeEntry();
   const appeal = useAppealDispute();
+  const confirmCashPayment = useConfirmCashPayment();
 
   const [text, setText] = useState('');
   const [photos, setPhotos] = useState<string[]>([]);
   const [showAppeal, setShowAppeal] = useState(false);
   const [appealReason, setAppealReason] = useState('');
+  const [cashConfirmError, setCashConfirmError] = useState<string | null>(null);
+  const [cashConfirmSuccess, setCashConfirmSuccess] = useState<string | null>(null);
+
+  const isMyActiveJob = isMyActiveJobGate(job, currentUser?._id);
+
+  const handleConfirmCashPayment = async () => {
+    if (!jobId) return;
+    setCashConfirmError(null);
+    setCashConfirmSuccess(null);
+    try {
+      await confirmCashPayment.mutateAsync(jobId);
+      setCashConfirmSuccess(
+        lang === 'en'
+          ? 'Cash receipt confirmed. The customer can now accept the job.'
+          : 'Đã xác nhận đã nhận tiền mặt. Khách có thể nghiệm thu đơn.',
+      );
+      await refetchJob();
+    } catch (err: any) {
+      const msg = resolveCashConfirmErrorMessage(err, lang);
+      setCashConfirmError(msg);
+      Toast.show({ type: 'error', text1: msg });
+    }
+  };
 
   const handleBack = () => {
     if (router.canGoBack()) router.back();
@@ -290,6 +324,92 @@ export default function DisputeCaseScreen() {
                 {formatDateTime(dayjs(caseData.created_at), lang)}
               </Text>
             </Card>
+
+            {/* ── R14-L3: Xác nhận đã nhận tiền mặt trên trang tranh chấp ─────────── */}
+            {['pending_review', 'disputed'].includes(job?.status ?? '') && (
+              <View style={{ gap: 8 }}>
+                {shouldShowCashConfirmButton(job, isMyActiveJob) && (
+                  <Card style={{ gap: 8 }}>
+                    <Text style={{ fontWeight: '800', fontSize: fs(14.5), color: tc.text }}>
+                      {lang === 'en' ? 'Cash payment confirmation' : 'Xác nhận thanh toán tiền mặt'}
+                    </Text>
+                    <Text style={{ fontSize: fs(13), color: tc.textSecondary, lineHeight: 19 }}>
+                      {lang === 'en'
+                        ? 'If you have received cash from the customer, please confirm below so the dispute settlement can proceed.'
+                        : 'Nếu bạn đã nhận tiền mặt từ khách, vui lòng xác nhận bên dưới để quá trình phân xử và nghiệm thu có thể tiến hành.'}
+                    </Text>
+                    <Button
+                      title={lang === 'en' ? 'Confirm cash received' : 'Xác nhận đã nhận tiền mặt'}
+                      loading={confirmCashPayment.isPending}
+                      onPress={handleConfirmCashPayment}
+                      style={{ marginTop: 4, alignSelf: 'stretch' }}
+                    />
+                  </Card>
+                )}
+                {isMyActiveJob &&
+                  (job as any)?.helper_cash_confirmed === true &&
+                  isCashPaymentFlow(job) && (
+                    <View
+                      style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        gap: 8,
+                        alignSelf: 'stretch',
+                        backgroundColor: '#ECFDF5',
+                        borderWidth: 1,
+                        borderColor: '#A7F3D0',
+                        borderRadius: 12,
+                        padding: 12,
+                      }}
+                    >
+                      <CheckCircle2 size={18} color="#059669" />
+                      <Text
+                        style={{ color: '#065F46', fontSize: fs(13), fontWeight: '700', flex: 1 }}
+                      >
+                        {lang === 'en'
+                          ? 'Cash receipt confirmed — the customer can now accept the job.'
+                          : 'Đã xác nhận đã nhận tiền mặt — khách có thể nghiệm thu đơn.'}
+                      </Text>
+                    </View>
+                  )}
+                {cashConfirmSuccess && (
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: 6,
+                      backgroundColor: '#ECFDF5',
+                      borderWidth: 1,
+                      borderColor: '#A7F3D0',
+                      borderRadius: 10,
+                      padding: 10,
+                    }}
+                  >
+                    <CheckCircle2 size={16} color="#059669" />
+                    <Text
+                      style={{ color: '#065F46', fontSize: fs(12.5), fontWeight: '600', flex: 1 }}
+                    >
+                      {cashConfirmSuccess}
+                    </Text>
+                  </View>
+                )}
+                {cashConfirmError && (
+                  <View
+                    style={{
+                      backgroundColor: '#FEF2F2',
+                      borderWidth: 1,
+                      borderColor: '#FECACA',
+                      borderRadius: 10,
+                      padding: 10,
+                    }}
+                  >
+                    <Text style={{ color: '#991B1B', fontSize: fs(12.5), fontWeight: '600' }}>
+                      {cashConfirmError}
+                    </Text>
+                  </View>
+                )}
+              </View>
+            )}
 
             {/* ── Phán quyết ───────────────────────────────────────────── */}
             {caseData.resolution && (

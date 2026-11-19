@@ -410,12 +410,14 @@ export function useMonthlyContractSocket(contractId?: string) {
   const qc = useQueryClient();
 
   useEffect(() => {
-    // B111: chỉ cập nhật khi event thuộc hợp đồng đang mở (hoặc đang xem danh sách)
+    // B111 + R14: cập nhật danh sách và hợp đồng liên quan một cách chính xác,
+    // không dùng prefix bao trùm để tránh làm bay cache chi tiết gây chậm/treo spinner.
     const handleUpdate = (data?: { contract_id?: string }) => {
       if (contractId && data?.contract_id && data.contract_id !== contractId) return;
-      qc.invalidateQueries({ queryKey: ['monthly-contracts'] });
-      if (contractId) {
-        qc.invalidateQueries({ queryKey: ['monthly-contract', contractId] });
+      qc.invalidateQueries({ queryKey: ['monthly-contracts', 'list'] });
+      const targetId = contractId || data?.contract_id;
+      if (targetId) {
+        qc.invalidateQueries({ queryKey: ['monthly-contract', targetId] });
       }
     };
 
