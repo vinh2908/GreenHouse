@@ -496,21 +496,15 @@ export default function UserDetailPage() {
                       </div>
                       <div>
                         <span className="text-xs text-muted-foreground">Kỹ năng: </span>
-                        <span className="font-medium">
-                          {hp.score_breakdown?.skill ?? 0}đ / 30
-                        </span>
+                        <span className="font-medium">{hp.score_breakdown?.skill ?? 0}đ / 30</span>
                       </div>
                       <div>
                         <span className="text-xs text-muted-foreground">Đánh giá: </span>
-                        <span className="font-medium">
-                          {hp.score_breakdown?.rating ?? 0}đ / 20
-                        </span>
+                        <span className="font-medium">{hp.score_breakdown?.rating ?? 0}đ / 20</span>
                       </div>
                       <div>
                         <span className="text-xs text-muted-foreground">e-KYC: </span>
-                        <span className="font-medium">
-                          {hp.score_breakdown?.kyc ?? 0}đ / 10
-                        </span>
+                        <span className="font-medium">{hp.score_breakdown?.kyc ?? 0}đ / 10</span>
                       </div>
                       <div>
                         <span className="text-xs text-muted-foreground">Đang trừ phạt: </span>
@@ -518,14 +512,12 @@ export default function UserDetailPage() {
                       </div>
                       <div>
                         <span className="text-xs text-muted-foreground">Hủy/SOS 7 ngày: </span>
-                        <span className="font-medium">
-                          {hp.cancellations_last_7_days ?? 0} lần
-                        </span>
+                        <span className="font-medium">{hp.cancellations_last_7_days ?? 0} lần</span>
                       </div>
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      Đây là điểm thợ thấy ở cảnh báo SOS (“điểm hiện tại …/100”). Điểm
-                      trong sổ phạt là ảnh chụp lúc ghi sự kiện, có thể khác điểm này.
+                      Đây là điểm thợ thấy ở cảnh báo SOS (“điểm hiện tại …/100”). Điểm trong sổ
+                      phạt là ảnh chụp lúc ghi sự kiện, có thể khác điểm này.
                       {hp.score_updated_at
                         ? ` Tính lại lúc ${formatDateTime(hp.score_updated_at)}.`
                         : ''}

@@ -251,7 +251,8 @@ export default function DisputesPage() {
                     },
                     {
                       value: 'reject_dispute',
-                      label: 'Bác khiếu nại, đơn trở lại bước trước tranh chấp (không di chuyển tiền)',
+                      label:
+                        'Bác khiếu nại, đơn trở lại bước trước tranh chấp (không di chuyển tiền)',
                     },
                   ]}
                 />

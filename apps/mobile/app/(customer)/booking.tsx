@@ -1597,9 +1597,8 @@ export default function BookingScreen() {
                           marginTop: 2,
                         }}
                       >
-                        {t('booking_ai_est_price')}{' '}
-                        {formatCurrency(aiSuggestion.price_min, lang)}₫ –{' '}
-                        {formatCurrency(aiSuggestion.price_max ?? 0, lang)}₫
+                        {t('booking_ai_est_price')} {formatCurrency(aiSuggestion.price_min, lang)}₫
+                        – {formatCurrency(aiSuggestion.price_max ?? 0, lang)}₫
                       </Text>
                     )}
 
@@ -1762,8 +1761,8 @@ export default function BookingScreen() {
                               fontWeight: '700',
                             }}
                           >
-                            {t('booking_fixed_price')}{' '}
-                            {formatCurrency(svc.fixed_price, lang)}₫ — {t('booking_fixed_price_sub')}
+                            {t('booking_fixed_price')} {formatCurrency(svc.fixed_price, lang)}₫ —{' '}
+                            {t('booking_fixed_price_sub')}
                           </Text>
                         ) : svc.base_price_min ? (
                           <Text
@@ -2519,9 +2518,8 @@ export default function BookingScreen() {
                   </Text>
                   {photoAnalysis.price_min != null && photoAnalysis.price_max != null && (
                     <Text style={{ fontSize: fs(13), color: tc.textSecondary }}>
-                      {t('booking_ai_price_range')}{' '}
-                      {formatCurrency(photoAnalysis.price_min, lang)}₫ –{' '}
-                      {formatCurrency(photoAnalysis.price_max, lang)}₫
+                      {t('booking_ai_price_range')} {formatCurrency(photoAnalysis.price_min, lang)}₫
+                      – {formatCurrency(photoAnalysis.price_max, lang)}₫
                       {photoAnalysis.confidence != null
                         ? ` · ${t('booking_ai_confidence')} ${Math.round(photoAnalysis.confidence * 100)}%`
                         : ''}

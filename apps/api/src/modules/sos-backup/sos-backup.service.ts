@@ -462,8 +462,7 @@ export class SosBackupService implements OnModuleInit, OnModuleDestroy {
     // tiền mặt đang ở tay thợ, phải đối soát trực tiếp giữa khách và thợ.
     // Nhắn rõ ở event + thông báo hai bên để khách không tưởng sẽ có hoàn
     // tiền vào ví. Đơn cash chưa thu tiền (UNPAID) thì không có gì để đối soát.
-    const isCashPaid =
-      job.payment_method === 'cash' && job.payment_status === PaymentStatus.PAID;
+    const isCashPaid = job.payment_method === 'cash' && job.payment_status === PaymentStatus.PAID;
     const cashSettlementNote = isCashPaid
       ? ' Tiền mặt khách đã trả cần đối soát trực tiếp với thợ.'
       : '';
@@ -544,7 +543,11 @@ export class SosBackupService implements OnModuleInit, OnModuleDestroy {
       job_id: jobId,
       decision: SosBackupDecision.CANCEL_JOB,
       decided_by:
-        by === 'customer' ? 'customer' : by === 'rematch_expired' ? 'rematch_expired' : 'timeout_default',
+        by === 'customer'
+          ? 'customer'
+          : by === 'rematch_expired'
+            ? 'rematch_expired'
+            : 'timeout_default',
       refund_amount: refundAmount,
     };
     this.gateway.emitToUser(
@@ -1483,7 +1486,8 @@ export class SosBackupService implements OnModuleInit, OnModuleDestroy {
         helperId,
         near: (sos as any).created_at ? new Date((sos as any).created_at) : null,
         sosId: String(sos._id),
-        waiveReason: 'SOS withdrawn by helper — withdrawn SOS must not count as cancellation (R13-N4)',
+        waiveReason:
+          'SOS withdrawn by helper — withdrawn SOS must not count as cancellation (R13-N4)',
       });
     } catch (err) {
       this.logger.warn(
@@ -1581,7 +1585,7 @@ export class SosBackupService implements OnModuleInit, OnModuleDestroy {
     // `serialized[0]` khiến banner thợ hiện "Đang tìm người thay thế…" mãi
     // sau khi thợ đã thu hồi SOS. Lịch sử vẫn đầy đủ trong `sos_list`.
     // Khi lọc ?status= thì giữ tương thích cũ: sos = mới nhất khớp lọc.
-    const sos = status ? (serialized[0] ?? null) : (active || null);
+    const sos = status ? (serialized[0] ?? null) : active || null;
     return { sos, sos_list: serialized };
   }
 
@@ -1714,7 +1718,8 @@ export class SosBackupService implements OnModuleInit, OnModuleDestroy {
     // A60 & P1-5: Khi SOS hết hạn phát sóng không có thợ thay, tự động huỷ đơn + hoàn tiền 100% số thực trả cho khách
     // R12-21: hết hạn tìm thợ thay thế là 'rematch_expired' — khách ĐÃ phản
     // hồi đúng hạn (chọn đổi người), không được ghi là "không phản hồi".
-    let cancelResult: { refundFailed: boolean; refundAmount: number; isCashPaid: boolean } | undefined;
+    let cancelResult:
+      { refundFailed: boolean; refundAmount: number; isCashPaid: boolean } | undefined;
     try {
       cancelResult = await this.cancelJobWithSosPolicy(claimed, 'rematch_expired');
     } catch (cancelErr) {

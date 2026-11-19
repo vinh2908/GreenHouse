@@ -20,7 +20,11 @@
  * ports so suites can run in parallel). notifications + mail + payments are
  * mocks so we can assert exactly-once delivery and zero money calls.
  */
-import { startStandaloneMongo, stopStandaloneMongo, StandaloneMongoTestInstance } from '../../../test/standalone-mongo-helper';
+import {
+  startStandaloneMongo,
+  stopStandaloneMongo,
+  StandaloneMongoTestInstance,
+} from '../../../test/standalone-mongo-helper';
 import mongoose, { Types } from 'mongoose';
 import { JobsService } from './jobs.service';
 import { Job, JobSchema, Quote, QuoteSchema, Contract, ContractSchema } from './schemas/job.schema';

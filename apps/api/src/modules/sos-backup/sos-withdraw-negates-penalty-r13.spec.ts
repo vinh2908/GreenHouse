@@ -100,7 +100,10 @@ describe('SosBackupService.cancelSos — R13-N4 withdrawn SOS negates the penalt
       { emitToUser: jest.fn(), emitToJob: jest.fn() } as never,
       dummy,
       { create: jest.fn(async () => ({})) } as never,
-      { refundCustomer: jest.fn(async () => ({})), getTotalPaidForJob: jest.fn(async () => 0) } as never,
+      {
+        refundCustomer: jest.fn(async () => ({})),
+        getTotalPaidForJob: jest.fn(async () => 0),
+      } as never,
       { restoreForJob: jest.fn(async () => ({ restored: false })) } as never,
       { reverseRedeemForJob: jest.fn(async () => ({ points_restored: 0 })) } as never,
       { get: jest.fn(() => undefined) } as never,

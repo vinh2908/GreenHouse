@@ -49,9 +49,7 @@ export function shouldShowEvidenceReupload(
  * (spread copy) để việc xóa/thêm trong modal không mutate job gốc; job
  * thiếu/trống thì trả về mảng rỗng + ghi chú rỗng.
  */
-export function prefillReuploadMedia(
-  job: ReuploadMediaInput | null | undefined,
-): ReuploadMedia {
+export function prefillReuploadMedia(job: ReuploadMediaInput | null | undefined): ReuploadMedia {
   return {
     photos: Array.isArray(job?.completion_photos) ? [...job.completion_photos] : [],
     videos: Array.isArray(job?.completion_videos) ? [...job.completion_videos] : [],

@@ -18,9 +18,7 @@ export interface WithdrawAvailability {
   shortfallVnd: number;
 }
 
-export function getWithdrawAvailability(
-  balance: number | null | undefined,
-): WithdrawAvailability {
+export function getWithdrawAvailability(balance: number | null | undefined): WithdrawAvailability {
   const b = typeof balance === 'number' && Number.isFinite(balance) ? balance : 0;
   if (b >= MIN_WITHDRAWAL_VND) return { canWithdraw: true, shortfallVnd: 0 };
   return { canWithdraw: false, shortfallVnd: MIN_WITHDRAWAL_VND - b };

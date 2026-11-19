@@ -118,10 +118,7 @@ export class ZaloTokenService {
     if (!this.storedRefreshTokenLoaded) {
       this.storedRefreshTokenLoaded = true;
       try {
-        const doc = await this.tokenStateModel
-          ?.findOne({ key: TOKEN_STATE_KEY })
-          .lean()
-          .exec();
+        const doc = await this.tokenStateModel?.findOne({ key: TOKEN_STATE_KEY }).lean().exec();
         this.storedRefreshToken = doc?.refresh_token ?? null;
       } catch (err) {
         this.logger.warn(

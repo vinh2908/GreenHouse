@@ -841,10 +841,7 @@ export class PaymentsService {
             (repaid > 0
               ? ` — đã trừ ${repaid.toLocaleString('vi-VN')}₫ phí sàn tiền mặt còn nợ (còn nợ ${debtRemaining.toLocaleString('vi-VN')}₫)`
               : ''),
-          metadata:
-            repaid > 0
-              ? { debt_repaid: repaid, debt_remaining: debtRemaining }
-              : undefined,
+          metadata: repaid > 0 ? { debt_repaid: repaid, debt_remaining: debtRemaining } : undefined,
         },
       ],
       { session: session ?? undefined },

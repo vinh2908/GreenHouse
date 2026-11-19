@@ -80,12 +80,20 @@ export default function ReceiptScreen() {
   const settlement = receiptSettlementBadge(job);
   const settlementText =
     settlement === 'cash'
-      ? (lang === 'en' ? 'CASH PAID & VERIFIED' : 'ĐÃ THANH TOÁN TIỀN MẶT')
+      ? lang === 'en'
+        ? 'CASH PAID & VERIFIED'
+        : 'ĐÃ THANH TOÁN TIỀN MẶT'
       : settlement === 'escrow'
-        ? (lang === 'en' ? 'ESCROW SETTLED & VERIFIED' : 'ĐÃ QUYẾT TOÁN ESCROW')
+        ? lang === 'en'
+          ? 'ESCROW SETTLED & VERIFIED'
+          : 'ĐÃ QUYẾT TOÁN ESCROW'
         : settlement === 'warranty'
-          ? (lang === 'en' ? 'WARRANTY — NO CHARGE' : 'BẢO HÀNH — MIỄN PHÍ')
-          : (lang === 'en' ? 'UNPAID — NO SETTLEMENT' : 'CHƯA THANH TOÁN');
+          ? lang === 'en'
+            ? 'WARRANTY — NO CHARGE'
+            : 'BẢO HÀNH — MIỄN PHÍ'
+          : lang === 'en'
+            ? 'UNPAID — NO SETTLEMENT'
+            : 'CHƯA THANH TOÁN';
   const settlementSettled = settlement === 'cash' || settlement === 'escrow';
   const amountPaid = !settlementSettled
     ? 0
@@ -139,12 +147,7 @@ export default function ReceiptScreen() {
                 ? 'Official Electronic Payment Receipt'
                 : 'Biên lai thanh toán điện tử chính thức'}
             </Text>
-            <View
-              style={[
-                styles.paidBadge,
-                !settlementSettled && { backgroundColor: '#FEF3C7' },
-              ]}
-            >
+            <View style={[styles.paidBadge, !settlementSettled && { backgroundColor: '#FEF3C7' }]}>
               <ShieldCheck size={14} color={settlementSettled ? '#059669' : '#D97706'} />
               <Text
                 style={[

@@ -296,7 +296,12 @@ export class AdminController {
     @Query('limit') limit?: number,
   ) {
     const { page: pg, limit: lm } = parseAdminPagination(page, limit);
-    return this.adminService.getSosBackupHistory(status || undefined, helperId || undefined, pg, lm);
+    return this.adminService.getSosBackupHistory(
+      status || undefined,
+      helperId || undefined,
+      pg,
+      lm,
+    );
   }
 
   @Patch('sos-backup/:id/resolve')

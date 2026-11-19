@@ -334,8 +334,8 @@ describe('AdminService — nhật ký SOS đầy đủ (R12 mục 6)', () => {
 
   it('getSosBackupHistory helper_id sai định dạng → 400', async () => {
     const { service } = makeService();
-    await expect(service.getSosBackupHistory(undefined, 'khong-phai-objectid', 1, 20)).rejects.toBeInstanceOf(
-      BadRequestException,
-    );
+    await expect(
+      service.getSosBackupHistory(undefined, 'khong-phai-objectid', 1, 20),
+    ).rejects.toBeInstanceOf(BadRequestException);
   });
 });

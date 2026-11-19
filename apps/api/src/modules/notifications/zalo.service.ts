@@ -109,7 +109,10 @@ export class ZaloNotificationService {
   }
 
   /** Lỗi auth của Zalo: access token không hợp lệ (-216) hoặc đã hết hạn (-220), hoặc HTTP 401. */
-  private isAuthError(result: { json: { error?: number; message?: string } | null; status: number }): boolean {
+  private isAuthError(result: {
+    json: { error?: number; message?: string } | null;
+    status: number;
+  }): boolean {
     return result.json?.error === -216 || result.json?.error === -220 || result.status === 401;
   }
 

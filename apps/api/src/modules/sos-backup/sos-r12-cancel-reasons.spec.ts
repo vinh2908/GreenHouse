@@ -269,10 +269,7 @@ describe('SosBackupService.cancelJobWithSosPolicy / expireSos — R12 items 21, 
       expect(statusSets.length).toBeGreaterThanOrEqual(1);
       expect(statusSets[0][1].$set.status).toBe(expectedStatus);
       expect(statusSets[0][0].status.$in).toEqual(
-        expect.arrayContaining([
-          SosBackupStatus.AWAITING_CUSTOMER,
-          SosBackupStatus.PENDING,
-        ]),
+        expect.arrayContaining([SosBackupStatus.AWAITING_CUSTOMER, SosBackupStatus.PENDING]),
       );
     },
   );

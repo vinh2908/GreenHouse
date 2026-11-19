@@ -82,7 +82,11 @@ check(
   false,
   'other 400 not matched',
 );
-check(isEmailNotVerifiedError(axiosErr({ success: false, message: 'Unauthorized' })), false, '401 msg not matched');
+check(
+  isEmailNotVerifiedError(axiosErr({ success: false, message: 'Unauthorized' })),
+  false,
+  '401 msg not matched',
+);
 check(isEmailNotVerifiedError(undefined), false, 'undefined err not matched');
 check(isEmailNotVerifiedError(null), false, 'null err not matched');
 check(isEmailNotVerifiedError({}), false, 'empty err not matched');

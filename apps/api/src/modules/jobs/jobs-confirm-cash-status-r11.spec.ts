@@ -41,10 +41,21 @@ function makeService(
   const dummy = {} as never;
   const service = new JobsService(
     jobModel as never,
-    dummy, dummy, dummy, dummy, dummy, dummy,
+    dummy,
+    dummy,
+    dummy,
+    dummy,
+    dummy,
+    dummy,
     { emitToJob: jest.fn(), emitToUser: jest.fn() } as never,
     { create: jest.fn(async () => ({})) } as never,
-    dummy, dummy, dummy, dummy, dummy, dummy, dummy,
+    dummy,
+    dummy,
+    dummy,
+    dummy,
+    dummy,
+    dummy,
+    dummy,
   );
   return { service, jobDoc, helperId, jobId };
 }
@@ -53,9 +64,9 @@ describe('JobsService.confirmCashPayment — PENDING_REVIEW only (L2/R11)', () =
   it('xác nhận trên đơn IN_PROGRESS → chặn, cờ không đổi', async () => {
     const { service, jobDoc, helperId, jobId } = makeService(JobStatus.IN_PROGRESS);
 
-    await expect(
-      service.confirmCashPayment(String(helperId), String(jobId)),
-    ).rejects.toThrow('chờ khách nghiệm thu');
+    await expect(service.confirmCashPayment(String(helperId), String(jobId))).rejects.toThrow(
+      'chờ khách nghiệm thu',
+    );
 
     expect(jobDoc.helper_cash_confirmed).toBe(false);
     expect(jobDoc.save).not.toHaveBeenCalled();
@@ -64,9 +75,9 @@ describe('JobsService.confirmCashPayment — PENDING_REVIEW only (L2/R11)', () =
   it('xác nhận trên đơn COMPLETED → chặn, cờ không đổi', async () => {
     const { service, jobDoc, helperId, jobId } = makeService(JobStatus.COMPLETED);
 
-    await expect(
-      service.confirmCashPayment(String(helperId), String(jobId)),
-    ).rejects.toThrow('chờ khách nghiệm thu');
+    await expect(service.confirmCashPayment(String(helperId), String(jobId))).rejects.toThrow(
+      'chờ khách nghiệm thu',
+    );
 
     expect(jobDoc.helper_cash_confirmed).toBe(false);
     expect(jobDoc.save).not.toHaveBeenCalled();

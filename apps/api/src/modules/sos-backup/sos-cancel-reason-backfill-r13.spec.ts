@@ -14,7 +14,9 @@ import {
  */
 describe('R13-B5: SOS cancel-reason backfill match rule', () => {
   const oldJob = { status: 'cancelled', cancellation_reason: SOS_CANCEL_REASON_NO_RESPONSE };
-  const expiredSos = [{ status: 'expired', customer_decision: 'accept_replacement', decided_by: 'customer' }];
+  const expiredSos = [
+    { status: 'expired', customer_decision: 'accept_replacement', decided_by: 'customer' },
+  ];
 
   it('cancelled + old reason + expired SOS → backfill, mapping is the exact R12 string', () => {
     expect(shouldBackfillSosCancelReason(oldJob, expiredSos)).toBe(true);
@@ -24,9 +26,7 @@ describe('R13-B5: SOS cancel-reason backfill match rule', () => {
   });
 
   it('decision-timeout SOS (no expired record) → no backfill', () => {
-    expect(
-      shouldBackfillSosCancelReason(oldJob, [{ status: 'decision_timeout' }]),
-    ).toBe(false);
+    expect(shouldBackfillSosCancelReason(oldJob, [{ status: 'decision_timeout' }])).toBe(false);
     expect(shouldBackfillSosCancelReason(oldJob, [])).toBe(false);
     expect(shouldBackfillSosCancelReason(oldJob, null)).toBe(false);
   });
@@ -39,7 +39,9 @@ describe('R13-B5: SOS cancel-reason backfill match rule', () => {
       ),
     ).toBe(false);
     expect(correctedSosCancelReason(SOS_CANCEL_REASON_REMATCH_EXPIRED)).toBeNull();
-    expect(correctedSosCancelReason('sos_backup: khách chọn hủy đơn sau khi thợ báo sự cố')).toBeNull();
+    expect(
+      correctedSosCancelReason('sos_backup: khách chọn hủy đơn sau khi thợ báo sự cố'),
+    ).toBeNull();
     expect(correctedSosCancelReason(null)).toBeNull();
   });
 

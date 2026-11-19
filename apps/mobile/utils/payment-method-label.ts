@@ -21,9 +21,7 @@ export function receiptPaymentMethodLabel(
     case 'wallet':
       return lang === 'en' ? 'GreenHouse Wallet' : 'Ví GreenHouse';
     case 'momo':
-      return lang === 'en'
-        ? `MoMo / ZaloPay ${sim}`
-        : `Ví điện tử MoMo / ZaloPay ${sim}`;
+      return lang === 'en' ? `MoMo / ZaloPay ${sim}` : `Ví điện tử MoMo / ZaloPay ${sim}`;
     case 'vietqr':
       return lang === 'en' ? `Bank Transfer (VietQR) ${sim}` : `Chuyển khoản VietQR ${sim}`;
     case 'zalopay':
@@ -35,8 +33,12 @@ export function receiptPaymentMethodLabel(
       // tử" — biên lai đơn chưa chọn phương thức in nhãn đó là sai. Chỉ
       // giữ nhãn điện tử cho method lạ đã có giá trị.
       return method
-        ? (lang === 'en' ? 'Electronic Payment' : 'Thanh toán điện tử')
-        : (lang === 'en' ? '—' : 'Chưa chọn phương thức');
+        ? lang === 'en'
+          ? 'Electronic Payment'
+          : 'Thanh toán điện tử'
+        : lang === 'en'
+          ? '—'
+          : 'Chưa chọn phương thức';
   }
 }
 

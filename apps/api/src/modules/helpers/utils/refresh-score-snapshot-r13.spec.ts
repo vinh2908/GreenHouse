@@ -41,7 +41,10 @@ describe('refreshHelperScoreSnapshot — R13-N2-I2 lazy refresh on read', () => 
     const profile = makeProfile({ verification_status: 'approved' });
     const helperModel = makeHelperModel(profile);
 
-    const out = await refreshHelperScoreSnapshot({ helperModel, helperId: String(profile.user_id) });
+    const out = await refreshHelperScoreSnapshot({
+      helperModel,
+      helperId: String(profile.user_id),
+    });
 
     expect(out).toBe(profile);
     expect(profile.performance_score).toBe(22);

@@ -30,7 +30,10 @@ describe('PaymentsService - B41/B42/B43/B44 validation', () => {
           return null;
         }
         // R13-N1: guard nợ + áp dụng $inc.commission_debt.
-        if (filter?.commission_debt?.$gte !== undefined && currentDebt < filter.commission_debt.$gte) {
+        if (
+          filter?.commission_debt?.$gte !== undefined &&
+          currentDebt < filter.commission_debt.$gte
+        ) {
           return null;
         }
         if (update?.$inc?.balance !== undefined) {

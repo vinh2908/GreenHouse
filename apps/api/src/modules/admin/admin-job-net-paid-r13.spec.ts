@@ -36,8 +36,23 @@ describe('AdminService.getJobById — R13-B3 net_paid is money actually paid', (
     const paymentsService: any = { getTotalPaidForJob: jest.fn(async () => totalPaid) };
     const dummy = {} as never;
     const service = new AdminService(
-      dummy, dummy, jobModel, contractModel, dummy, dummy, dummy, dummy, dummy, dummy,
-      dummy, dummy, dummy, paymentsService, dummy, quoteModel, dummy,
+      dummy,
+      dummy,
+      jobModel,
+      contractModel,
+      dummy,
+      dummy,
+      dummy,
+      dummy,
+      dummy,
+      dummy,
+      dummy,
+      dummy,
+      dummy,
+      paymentsService,
+      dummy,
+      quoteModel,
+      dummy,
     );
     return service;
   }

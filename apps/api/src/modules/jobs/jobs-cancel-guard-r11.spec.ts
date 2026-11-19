@@ -82,7 +82,16 @@ function makeJobsService(jobStatus: JobStatus) {
     dummy, // disputesService
   );
 
-  return { service, jobRecord, profile, helperModel, penaltyEventModel, customerId, helperId, jobId };
+  return {
+    service,
+    jobRecord,
+    profile,
+    helperModel,
+    penaltyEventModel,
+    customerId,
+    helperId,
+    jobId,
+  };
 }
 
 describe('JobsService.cancelJob — rejected cancel records no penalty (M5/R11)', () => {
@@ -117,8 +126,9 @@ describe('JobsService.cancelJob — rejected cancel records no penalty (M5/R11)'
   });
 
   it('thợ hủy đơn CONFIRMED → thành công, phạt vẫn được ghi như thường', async () => {
-    const { service, jobRecord, profile, helperModel, helperId, jobId } =
-      makeJobsService(JobStatus.CONFIRMED);
+    const { service, jobRecord, profile, helperModel, helperId, jobId } = makeJobsService(
+      JobStatus.CONFIRMED,
+    );
 
     const result = await service.cancelJob(String(helperId), 'helper', String(jobId), {
       reason: 'Bận đột xuất',
