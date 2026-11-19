@@ -329,12 +329,13 @@ export default function JobDetailPage() {
                             <p className="font-mono text-muted-foreground">{q.helper_id?.phone}</p>
                           </td>
                           <td className="py-2 font-semibold">
-                            {(q.price ?? 0).toLocaleString('vi-VN')} ₫
+                            {/* R14-L1: Quote schema uses total_price (or labor_cost), not price (was 0₫) */}
+                            {(q.total_price ?? q.price ?? q.labor_cost ?? 0).toLocaleString('vi-VN')} ₫
                           </td>
                           <td className="py-2">
                             {q.estimated_duration ? `${q.estimated_duration} giờ` : '—'}
                           </td>
-                          <td className="py-2 text-muted-foreground">{q.message || '—'}</td>
+                          <td className="py-2 text-muted-foreground">{q.notes || q.message || '—'}</td>
                           <td className="py-2">
                             <span
                               className={`px-2 py-0.5 rounded text-[11px] font-medium ${

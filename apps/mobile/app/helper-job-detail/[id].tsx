@@ -63,6 +63,7 @@ import {
   resolveCashConfirmErrorMessage,
   shouldShowCashConfirmButton,
 } from '@/utils/cash-confirm';
+import { shouldShowOpenDisputeBanner } from '@/utils/dispute-display';
 
 dayjs.extend(relativeTime);
 
@@ -1382,7 +1383,8 @@ export default function HelperJobDetailScreen() {
         <TeamCard job={job} currentUserId={currentUser?._id} />
 
         {/* ── Hồ sơ tranh chấp (Roadmap Phase 1) ─────────────────────── */}
-        {(job.status === 'disputed' || (job as any).dispute_resolution) && (
+        {/* R14-L2: Hộp đỏ chỉ hiện khi tranh chấp còn mở — ẩn khi dispute đã giải quyết hoặc job đã hoàn thành */}
+        {shouldShowOpenDisputeBanner(job) && (
           <Card
             style={{
               gap: 10,

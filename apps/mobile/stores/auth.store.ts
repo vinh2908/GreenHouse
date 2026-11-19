@@ -3,6 +3,11 @@ import * as SecureStore from '@/services/secure-storage';
 import apiClient from '@/services/api-client';
 import type { IUser, UserRole } from '@homemate/types';
 import { resolveLandingRole } from '@/utils/landing-role';
+import {
+  saveLastUsedRole,
+  getLastUsedRole,
+  determineLoginLandingRole,
+} from '@/utils/last-used-role';
 
 interface AuthState {
   user: IUser | null;
@@ -85,13 +90,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     // the server — useSwitchRole stays the only server-side role switch.
     let effectiveUser = user;
     if (user) {
-      const lastUsedRole = await SecureStore.getItemAsync(ROLE_KEY).catch(() => null);
-      const landingRole = resolveLandingRole(
-        (user as any)?.roles,
-        (user as any)?.active_role,
-        lastUsedRole ?? undefined,
-      );
+      // R14-L4: Read last-used role using dedicated utility (phone-specific + device fallback).
+      // This survives logout so dual-role accounts (e.g. 0365290805) land in helper mode directly.
+      const lastUsedRole =
+        (await getLastUsedRole(user?.phone ?? user?.email)) ??
+        (await SecureStore.getItemAsync(ROLE_KEY).catch(() => null));
+      const landingRole = determineLoginLandingRole(user, lastUsedRole);
       effectiveUser = { ...user, active_role: landingRole };
+      await saveLastUsedRole(landingRole, user?.phone ?? user?.email);
     }
     await SecureStore.setItemAsync(TOKEN_KEY, accessToken);
     await SecureStore.setItemAsync(REFRESH_TOKEN_KEY, refreshToken);
@@ -124,6 +130,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       } catch {}
     }
     if (user) {
+      if (role === 'customer' || role === 'helper') {
+        saveLastUsedRole(role, user.phone ?? user.email).catch(() => {});
+      }
       const updatedRoles = Array.isArray(user.roles) ? [...user.roles] : [];
       const updatedUser = { ...user, roles: updatedRoles, active_role: role };
       if (g?.localStorage) {
@@ -177,13 +186,16 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const storedRole = await withTimeout(SecureStore.getItemAsync(ROLE_KEY));
       const parsedUser = storedUser ? JSON.parse(storedUser) : null;
       if (parsedUser) {
-        // R7-B6: resolve the landing role instead of blindly trusting the
+        const lastRole =
+          (await getLastUsedRole(parsedUser?.phone ?? parsedUser?.email).catch(() => null)) ??
+          storedRole;
+        // R7-B6 + R14-L4: resolve the landing role instead of blindly trusting the
         // stored role or the server value — last-used mode on this device
         // wins for dual-role users, otherwise customer is the default.
         parsedUser.active_role = resolveLandingRole(
           parsedUser?.roles,
           parsedUser?.active_role,
-          storedRole ?? undefined,
+          lastRole ?? undefined,
         );
       }
 

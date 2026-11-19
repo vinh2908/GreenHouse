@@ -20,8 +20,7 @@
  * ports so suites can run in parallel). notifications + mail + payments are
  * mocks so we can assert exactly-once delivery and zero money calls.
  */
-import { spawn, spawnSync } from 'child_process';
-import * as fs from 'fs';
+import { startStandaloneMongo, stopStandaloneMongo, StandaloneMongoTestInstance } from '../../../test/standalone-mongo-helper';
 import mongoose, { Types } from 'mongoose';
 import { JobsService } from './jobs.service';
 import { Job, JobSchema, Quote, QuoteSchema, Contract, ContractSchema } from './schemas/job.schema';
@@ -46,9 +45,7 @@ jest.setTimeout(90000);
 
 const sleep = (ms: number) => new Promise<void>(r => setTimeout(r, ms));
 
-const MONGOD = `${process.env.HOME}/.cache/mongodb-binaries/mongod-x64-ubuntu-8.2.6`;
-const DBPATH = '/tmp/mongo-r7-a-4';
-const PORT = 27124;
+let mongoInstance: StandaloneMongoTestInstance;
 
 /** VN date+time (HH:mm) for a target instant, matching jobScheduledStart. */
 function vnDateTime(targetMs: number): { date: Date; time: string } {
@@ -131,32 +128,8 @@ describe('Overdue sweep: start notification + auto-cancel at +5m (R7, real mongo
   }
 
   beforeAll(async () => {
-    spawnSync(MONGOD, ['--dbpath', DBPATH, '--shutdown'], { stdio: 'ignore' });
-    fs.rmSync(DBPATH, { recursive: true, force: true });
-    fs.mkdirSync(DBPATH, { recursive: true });
-    const child = spawn(
-      MONGOD,
-      [
-        '--dbpath',
-        DBPATH,
-        '--port',
-        String(PORT),
-        '--bind_ip',
-        '127.0.0.1',
-        '--logpath',
-        '/tmp/mongo-r7-a-4-mongod.log',
-        '--fork',
-      ],
-      { stdio: 'ignore' },
-    );
-    await new Promise<void>((resolve, reject) => {
-      child.on('exit', c => (c === 0 ? resolve() : reject(new Error(`mongod fork exit ${c}`))));
-    });
-    conn = mongoose.createConnection(`mongodb://127.0.0.1:${PORT}/h1`);
-    await new Promise<void>((resolve, reject) => {
-      conn.once('connected', () => resolve());
-      conn.once('error', reject);
-    });
+    mongoInstance = await startStandaloneMongo();
+    conn = mongoInstance.conn;
 
     JobModel = conn.model(Job.name, JobSchema);
     QuoteModel = conn.model(Quote.name, QuoteSchema);
@@ -204,13 +177,7 @@ describe('Overdue sweep: start notification + auto-cancel at +5m (R7, real mongo
   });
 
   afterAll(async () => {
-    try {
-      await Promise.race([conn.close(), sleep(5000)]);
-    } catch {
-      /* ignore */
-    }
-    spawnSync(MONGOD, ['--dbpath', DBPATH, '--shutdown'], { stdio: 'ignore' });
-    fs.rmSync(DBPATH, { recursive: true, force: true });
+    await stopStandaloneMongo(mongoInstance);
   });
 
   let customer: any;

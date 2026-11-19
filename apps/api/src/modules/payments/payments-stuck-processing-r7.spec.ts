@@ -13,55 +13,31 @@
  * HARNESS: real mongod from the cached binary. Port 27126 / dbpath
  * /tmp/mongo-r7-a-6 (separate port so suites can run in parallel).
  */
-import { spawn, spawnSync } from 'child_process';
-import * as fs from 'fs';
 import mongoose, { Types } from 'mongoose';
 import { PaymentsService } from './payments.service';
 import { Job, JobSchema } from '../jobs/schemas/job.schema';
 import { Service, ServiceSchema } from '../services/schemas/service.schema';
 import { User, UserSchema } from '../users/schemas/user.schema';
 import { JobStatus, PaymentStatus, UserStatus, UserRole } from '@homemate/types';
+import {
+  startStandaloneMongo,
+  stopStandaloneMongo,
+  StandaloneMongoTestInstance,
+} from '../../../test/standalone-mongo-helper';
 
 jest.setTimeout(90000);
 
 const sleep = (ms: number) => new Promise<void>(r => setTimeout(r, ms));
 
-const MONGOD = `${process.env.HOME}/.cache/mongodb-binaries/mongod-x64-ubuntu-8.2.6`;
-const DBPATH = '/tmp/mongo-r7-a-6';
-const PORT = 27126;
-
 describe('Stuck PROCESSING reclaim (R7 watchdog (i), real mongod)', () => {
+  let instance: StandaloneMongoTestInstance;
   let conn: mongoose.Connection;
   let JobModel: any;
   let service: PaymentsService;
 
   beforeAll(async () => {
-    spawnSync(MONGOD, ['--dbpath', DBPATH, '--shutdown'], { stdio: 'ignore' });
-    fs.rmSync(DBPATH, { recursive: true, force: true });
-    fs.mkdirSync(DBPATH, { recursive: true });
-    const child = spawn(
-      MONGOD,
-      [
-        '--dbpath',
-        DBPATH,
-        '--port',
-        String(PORT),
-        '--bind_ip',
-        '127.0.0.1',
-        '--logpath',
-        '/tmp/mongo-r7-a-6-mongod.log',
-        '--fork',
-      ],
-      { stdio: 'ignore' },
-    );
-    await new Promise<void>((resolve, reject) => {
-      child.on('exit', c => (c === 0 ? resolve() : reject(new Error(`mongod fork exit ${c}`))));
-    });
-    conn = mongoose.createConnection(`mongodb://127.0.0.1:${PORT}/p`);
-    await new Promise<void>((resolve, reject) => {
-      conn.once('connected', () => resolve());
-      conn.once('error', reject);
-    });
+    instance = await startStandaloneMongo();
+    conn = instance.conn;
 
     JobModel = conn.model(Job.name, JobSchema);
     conn.model(Service.name, ServiceSchema);
@@ -77,16 +53,6 @@ describe('Stuck PROCESSING reclaim (R7 watchdog (i), real mongod)', () => {
       {} as never,
       JobModel,
     );
-  });
-
-  afterAll(async () => {
-    try {
-      await Promise.race([conn.close(), sleep(5000)]);
-    } catch {
-      /* ignore */
-    }
-    spawnSync(MONGOD, ['--dbpath', DBPATH, '--shutdown'], { stdio: 'ignore' });
-    fs.rmSync(DBPATH, { recursive: true, force: true });
   });
 
   it('reclaims PROCESSING > 15 min to UNPAID; leaves fresh PROCESSING and PAID alone', async () => {
@@ -152,5 +118,9 @@ describe('Stuck PROCESSING reclaim (R7 watchdog (i), real mongod)', () => {
 
     // Second run: nothing left to reclaim.
     expect(await service.clearStuckProcessingPayments()).toBe(0);
+  });
+
+  afterAll(async () => {
+    await stopStandaloneMongo(instance);
   });
 });

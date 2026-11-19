@@ -85,8 +85,9 @@ export default function LoginScreen() {
             : `Xin chào ${user.full_name ?? 'bạn'}!`,
       });
 
-      // Redirect by active role
-      if (user.active_role === 'helper') {
+      // R14-L4: Redirect by the resolved active role from auth store (preserves last-used role for dual-role users)
+      const effectiveRole = useAuthStore.getState().user?.active_role || user.active_role;
+      if (effectiveRole === 'helper') {
         router.replace('/(helper)/dashboard');
       } else {
         router.replace('/(customer)/home');

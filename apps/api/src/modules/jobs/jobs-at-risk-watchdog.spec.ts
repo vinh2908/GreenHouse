@@ -23,8 +23,7 @@
  * /tmp/mongo-r7-a-5 (B7 = 27121, item 2 = 27122, item 3 = 27123, item 1 =
  * 27124 — separate ports so suites can run in parallel).
  */
-import { spawn, spawnSync } from 'child_process';
-import * as fs from 'fs';
+import { MongoMemoryServer } from 'mongodb-memory-server';
 import mongoose, { Types } from 'mongoose';
 import { JobsService } from './jobs.service';
 import { Job, JobSchema, Quote, QuoteSchema, Contract, ContractSchema } from './schemas/job.schema';
@@ -48,9 +47,7 @@ jest.setTimeout(90000);
 
 const sleep = (ms: number) => new Promise<void>(r => setTimeout(r, ms));
 
-const MONGOD = `${process.env.HOME}/.cache/mongodb-binaries/mongod-x64-ubuntu-8.2.6`;
-const DBPATH = '/tmp/mongo-r7-a-5';
-const PORT = 27125;
+let mongodInstance: MongoMemoryServer;
 
 function vnDateTime(targetMs: number): { date: Date; time: string } {
   const vn = new Date(targetMs + 7 * 60 * 60 * 1000);
@@ -72,28 +69,8 @@ describe('At-risk watchdog (iii)/(iv) (R7, real mongod)', () => {
   let notifyAdmins: jest.Mock;
 
   beforeAll(async () => {
-    spawnSync(MONGOD, ['--dbpath', DBPATH, '--shutdown'], { stdio: 'ignore' });
-    fs.rmSync(DBPATH, { recursive: true, force: true });
-    fs.mkdirSync(DBPATH, { recursive: true });
-    const child = spawn(
-      MONGOD,
-      [
-        '--dbpath',
-        DBPATH,
-        '--port',
-        String(PORT),
-        '--bind_ip',
-        '127.0.0.1',
-        '--logpath',
-        '/tmp/mongo-r7-a-5-mongod.log',
-        '--fork',
-      ],
-      { stdio: 'ignore' },
-    );
-    await new Promise<void>((resolve, reject) => {
-      child.on('exit', c => (c === 0 ? resolve() : reject(new Error(`mongod fork exit ${c}`))));
-    });
-    conn = mongoose.createConnection(`mongodb://127.0.0.1:${PORT}/w`);
+    mongodInstance = await MongoMemoryServer.create();
+    conn = mongoose.createConnection(mongodInstance.getUri());
     await new Promise<void>((resolve, reject) => {
       conn.once('connected', () => resolve());
       conn.once('error', reject);
@@ -160,12 +137,13 @@ describe('At-risk watchdog (iii)/(iv) (R7, real mongod)', () => {
 
   afterAll(async () => {
     try {
-      await Promise.race([conn.close(), sleep(5000)]);
+      await conn?.close();
     } catch {
       /* ignore */
     }
-    spawnSync(MONGOD, ['--dbpath', DBPATH, '--shutdown'], { stdio: 'ignore' });
-    fs.rmSync(DBPATH, { recursive: true, force: true });
+    if (mongodInstance) {
+      await mongodInstance.stop();
+    }
   });
 
   let customer: any;

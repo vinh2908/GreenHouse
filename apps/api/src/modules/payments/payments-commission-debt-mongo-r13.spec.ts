@@ -1,5 +1,4 @@
-import { spawn, spawnSync } from 'child_process';
-import * as fs from 'fs';
+import { startStandaloneMongo, stopStandaloneMongo, StandaloneMongoTestInstance } from '../../../test/standalone-mongo-helper';
 import mongoose, { Types } from 'mongoose';
 import { PaymentsService } from './payments.service';
 import {
@@ -39,9 +38,7 @@ jest.setTimeout(90000);
 
 const sleep = (ms: number) => new Promise<void>(r => setTimeout(r, ms));
 
-const MONGOD = `${process.env.HOME}/.cache/mongodb-binaries/mongod-x64-ubuntu-8.2.6`;
-const DBPATH = '/tmp/mongo-n1b';
-const PORT = 27127;
+let mongoInstance: StandaloneMongoTestInstance;
 
 describe('R13-N1b (field-less pre-R13 wallet still pays out — real mongod)', () => {
   let conn: mongoose.Connection;
@@ -63,32 +60,8 @@ describe('R13-N1b (field-less pre-R13 wallet still pays out — real mongod)', (
   }
 
   beforeAll(async () => {
-    spawnSync(MONGOD, ['--dbpath', DBPATH, '--shutdown'], { stdio: 'ignore' });
-    fs.rmSync(DBPATH, { recursive: true, force: true });
-    fs.mkdirSync(DBPATH, { recursive: true });
-    const child = spawn(
-      MONGOD,
-      [
-        '--dbpath',
-        DBPATH,
-        '--port',
-        String(PORT),
-        '--bind_ip',
-        '127.0.0.1',
-        '--logpath',
-        '/tmp/mongo-n1b-mongod.log',
-        '--fork',
-      ],
-      { stdio: 'ignore' },
-    );
-    await new Promise<void>((resolve, reject) => {
-      child.on('exit', c => (c === 0 ? resolve() : reject(new Error(`mongod fork exit ${c}`))));
-    });
-    conn = mongoose.createConnection(`mongodb://127.0.0.1:${PORT}/n1b`);
-    await new Promise<void>((resolve, reject) => {
-      conn.once('connected', () => resolve());
-      conn.once('error', reject);
-    });
+    mongoInstance = await startStandaloneMongo();
+    conn = mongoInstance.conn;
 
     WalletModel = conn.model(Wallet.name, WalletSchema);
     TransactionModel = conn.model(Transaction.name, TransactionSchema);
@@ -111,13 +84,7 @@ describe('R13-N1b (field-less pre-R13 wallet still pays out — real mongod)', (
   });
 
   afterAll(async () => {
-    try {
-      await Promise.race([conn.close(), sleep(5000)]);
-    } catch {
-      /* ignore */
-    }
-    spawnSync(MONGOD, ['--dbpath', DBPATH, '--shutdown'], { stdio: 'ignore' });
-    fs.rmSync(DBPATH, { recursive: true, force: true });
+    await stopStandaloneMongo(mongoInstance);
   });
 
   beforeEach(async () => {
