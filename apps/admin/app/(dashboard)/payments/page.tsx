@@ -42,6 +42,7 @@ const TX_TYPE_OPTIONS = [
   { value: 'refund', label: 'Hoàn tiền' },
   { value: 'topup', label: 'Nạp tiền' },
   { value: 'commission', label: 'Phí dịch vụ' },
+  { value: 'adjustment', label: 'Điều chỉnh' },
 ];
 
 const TX_TYPE_VI: Record<string, string> = {
@@ -51,6 +52,7 @@ const TX_TYPE_VI: Record<string, string> = {
   refund: 'Hoàn tiền',
   topup: 'Nạp tiền',
   commission: 'Phí dịch vụ',
+  adjustment: 'Điều chỉnh',
 };
 
 const TX_STATUS_VI: Record<string, string> = {
@@ -68,13 +70,14 @@ const WITHDRAWAL_BADGE: Record<string, 'success' | 'danger' | 'warning' | 'secon
   processing: 'secondary',
 };
 
-const TX_TYPE_BADGE: Record<string, 'success' | 'danger' | 'info' | 'secondary'> = {
+const TX_TYPE_BADGE: Record<string, 'success' | 'danger' | 'info' | 'secondary' | 'warning'> = {
   payment: 'info',
   earning: 'success',
   withdrawal: 'danger',
   refund: 'secondary',
   topup: 'success',
   commission: 'danger',
+  adjustment: 'warning',
 };
 
 export default function PaymentsPage() {
@@ -408,10 +411,9 @@ export default function PaymentsPage() {
                                 : 'text-foreground'
                             }`}
                           >
-                            {tx.type === 'earning' || tx.type === 'refund' || tx.type === 'topup'
-                              ? '+'
-                              : '−'}
-                            {formatVND(tx.amount)}
+                            {tx.amount < 0
+                              ? formatVND(tx.amount)
+                              : `${tx.type === 'earning' || tx.type === 'refund' || tx.type === 'topup' ? '+' : '−'}${formatVND(tx.amount)}`}
                           </TableCell>
                           <TableCell>
                             <Badge

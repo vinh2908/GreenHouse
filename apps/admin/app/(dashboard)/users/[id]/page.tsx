@@ -96,6 +96,7 @@ const TXN_VI: Record<string, string> = {
   refund: 'Hoàn tiền',
   topup: 'Nạp tiền',
   commission: 'Phí dịch vụ',
+  adjustment: 'Điều chỉnh',
 };
 
 const TXN_STATUS_VI: Record<string, string> = {
@@ -725,10 +726,9 @@ export default function UserDetailPage() {
                         <TableCell className="text-sm">{TXN_VI[t.type] ?? t.type}</TableCell>
                         <TableCell className="text-sm">{t.description}</TableCell>
                         <TableCell className="text-sm font-medium">
-                          {t.type === 'earning' || t.type === 'refund' || t.type === 'topup'
-                            ? '+'
-                            : '−'}
-                          {formatVND(t.amount)}
+                          {t.amount < 0
+                            ? formatVND(t.amount)
+                            : `${t.type === 'earning' || t.type === 'refund' || t.type === 'topup' ? '+' : '−'}${formatVND(t.amount)}`}
                         </TableCell>
                         <TableCell className="text-sm">
                           {TXN_STATUS_VI[t.status] ?? t.status}

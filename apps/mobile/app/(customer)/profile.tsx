@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState } from 'react';
+import { useRef, useEffect, useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import Toast from 'react-native-toast-message';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   User,
@@ -91,11 +91,22 @@ export default function CustomerProfileScreen() {
   const displayUser = profile ?? user;
   const effectiveRole = user?.active_role ?? displayUser?.active_role;
 
+  useFocusEffect(
+    useCallback(() => {
+      if (useAuthStore.getState().isAuthenticated) {
+        refetchWallet();
+        refetchProfile();
+        refetchLoyalty();
+      }
+    }, [refetchWallet, refetchProfile, refetchLoyalty]),
+  );
+
   useEffect(() => {
     if (useAuthStore.getState().isAuthenticated) {
+      refetchWallet();
       refetchLoyalty();
     }
-  }, [refetchLoyalty]);
+  }, [refetchWallet, refetchLoyalty]);
 
   // Khi đang ở chế độ thợ và không trong quá trình đổi vai trò, chuyển ngay sang dashboard thợ
   useEffect(() => {
